@@ -1,0 +1,63 @@
+#ifndef FFTFILEGRID_H
+#define FFTFILEGRID_H
+
+#include "fft/include/fftw.h"
+
+#include "fftgrid.h"
+
+class SegY;
+class Corr;
+class Wavelet;
+class Simbox;
+
+class FFTFileGrid : public FFTGrid
+{ 
+public:
+  FFTFileGrid(int nx, int ny, int nz, int nxp, int nyp, int nzp);
+  FFTFileGrid(FFTFileGrid * FFTFileGrid);
+  ~FFTFileGrid();
+
+  fftw_complex getNextComplex() ;
+  float        getNextReal() ;
+  float        getRealValue(int i, int j, int k);
+  int          setRealValue(int i, int j, int k, float value);
+  int          setNextComplex(fftw_complex);
+  int          setNextReal(float);
+  int          square();
+  int          expTransf();
+  int          logTransf();
+  void         multiplyByScalar(float scalar);
+  int          collapseAndAdd(float*);
+  void         add(FFTGrid* fftGrid);
+  void         multiply(FFTGrid* fftGrid);              // pointwise multiplication! 
+  void         fillInComplexNoise(RandomGen * ranGen);
+  void         fftInPlace();	
+  void         invFFTInPlace();
+  void         createRealGrid();
+  void         createComplexGrid();
+
+  void         setAccessMode(int mode);
+  void         endAccess();
+  void         writeFile(const char * fileName, const Simbox * simbox, bool writeSegy=true); //Use this instead of the ones below.
+  void         writeStormFile(const char * fileName, const Simbox * simbox, bool ascii = false,
+                              bool padding = false, bool flat = false);
+  int          writeSegyFile(const char * fileName, const Simbox * simbox);
+
+  bool         isFile() {return(1);}
+
+private:
+  int accMode_;
+  int modified_;   //Tells if grid is modified during RANDOMACCESS.
+  char * fNameIn_; //Temporary names, switches whenever a write has occured.
+  char * fNameOut_;
+  FILE * inFile_;
+  FILE * outFile_;
+
+  static int gNum; //Number used for generating temporary files.
+
+  void genFileName();
+  void load();
+  void unload();
+  void save();
+};
+#endif

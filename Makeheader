@@ -1,0 +1,39 @@
+#
+# The available CRAVA compiler directives are
+#    -DSEGY_ISEX
+#    -DBYPASS_COORDINATE_SCALING
+#    -DBIGENDIAN                  (needed for IRIX,SUNOS, etc...)  
+#
+CDIR       = -DBYPASS_COORDINATE_SCALING
+CXX        = g++
+CC         = gcc
+OPT        = -O2
+GCCWARNING = -Wall -pedantic
+GXXWARNING = -Wall -pedantic -Woverloaded-virtual
+PURIFY     = /nr/prog/rational/releases/PurifyPlus.7.0.0.0-008/i386_linux2/bin/purify
+PROGRAM    = cravarun
+mode       = all
+
+#
+# Test of "make-mode"
+#
+ifeq ($(mode),debug)
+DEBUG   = -ggdb
+endif
+
+ifeq ($(mode),profile)
+DEBUG   = -g
+PROFILE = -pg
+endif
+
+ifeq ($(mode),purify)
+DEBUG   = -g
+PROGRAM = cravarun.purify
+endif
+
+EXTRAFLAGS := $(strip $(OPT) $(PROFILE) $(DEBUG) $(CDIR))
+
+CFLAGS    = $(GCCWARNING)
+CXXFLAGS  = $(GXXWARNING)
+CPPFLAGS  = $(EXTRAFLAGS)
+LFLAGS    = $(PROFILE) -s -static -lm
