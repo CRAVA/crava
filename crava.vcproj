@@ -42,9 +42,9 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalOptions="/D &quot;_CRT_SECURE_NO_DEPRECATE&quot;  /wd4512 /wd4127 /w44263 /w44264 /w44062 /I &quot;P:\sand\user\ragnar\crava\trunk&quot; /I &quot;P:\sand\user\ragnar\crava\trunk\fft\include&quot;"
+				AdditionalOptions="/D &quot;_CRT_SECURE_NO_DEPRECATE&quot;  /wd4512 /wd4127 /w44263 /w44264 /w44062 /I &quot;.&quot; /I &quot;.\fft\include&quot;"
 				Optimization="0"
-				AdditionalIncludeDirectories="P:\sand\user\ragnar\crava"
+				AdditionalIncludeDirectories=""
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
