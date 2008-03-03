@@ -345,7 +345,7 @@ Wavelet::WaveletReadJason(char * fileName)
       }
     }
   }  // end while
-  float shift=atof(dummyStr);
+  float shift=float(atof(dummyStr));
   if(fscanf(file,"%s",dummyStr) == EOF)
   {
     readToEOL(file);
@@ -354,7 +354,7 @@ Wavelet::WaveletReadJason(char * fileName)
     errCode_=2; 
     return;
   } // endif
-  dz_=atof(dummyStr);
+  dz_=float(atof(dummyStr));
   if(fscanf(file,"%s",dummyStr) == EOF)
   {
     readToEOL(file);
@@ -385,7 +385,7 @@ Wavelet::WaveletReadJason(char * fileName)
     } // endif
     else
     {
-      rAmp_[i] = atof(dummyStr);
+      rAmp_[i] = (fftw_real) atof(dummyStr);
     }
   }
   fclose(file);
@@ -1110,7 +1110,7 @@ void Wavelet::invFFT1DInPlace()
     isReal_=true;
     double scale= double(1.0/double(nzp_));
     for(int i=0; i < nzp_; i++)
-      rAmp_[i] *= scale;  
+      rAmp_[i] *= (fftw_real) scale;  
   }
 }
 
@@ -1353,8 +1353,8 @@ Wavelet::writeWaveletToFile(char* fileName,float approxDzIn)
    {
      if(i < cnzp_)
      {
-       waveletNew_c[i].re = cAmp_[i].re*multiplyer;
-       waveletNew_c[i].im = cAmp_[i].im*multiplyer;
+       waveletNew_c[i].re = (fftw_real) cAmp_[i].re*((fftw_real) multiplyer);
+       waveletNew_c[i].im = (fftw_real) cAmp_[i].im*((fftw_real) multiplyer);
        if((i==(cnzp_-1)) & (2*((cnzp_-1)/2) != cnzp_-1)) //boundary effect in fft domain
          waveletNew_c[i].re*=0.5;
      }
@@ -1946,7 +1946,7 @@ Wavelet::getNoiseStandardDeviation(Simbox * simbox, FFTGrid * seisCube, WellData
         estimateCor(synt_c[w],seis_c[w],cor_seis_synt_c[w],cnzp);
         fftInv(cor_seis_synt_c[w],cor_seis_synt_r[w],nzp);
         float shift=findBulkShift(cor_seis_synt_r[w],dz[w], nzp);
-        shift = floor(shift*10.0+0.5)/10.0;//rounds to nearest 0.1 ms (don't have more accuracy)
+        shift = floor(shift*10.0f+0.5f)/10.0f;//rounds to nearest 0.1 ms (don't have more accuracy)
         shiftWell[w]=shift;
         fftInv(synt_c[w],synt_r[w],nzp);
         shiftReal(-shift/dz[w],synt_r[w],nzp);
@@ -2183,7 +2183,7 @@ Wavelet::findOptimalWaveletScale(fftw_real** synt_seis_r,fftw_real** seis_r,int 
 
 int Wavelet::getWaveletLengthI()
 {
-  float minimumRelevantAmp=0.005;
+  float minimumRelevantAmp=0.005f;
   bool trans=false;
   if(isReal_==false)
   {

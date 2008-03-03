@@ -681,8 +681,8 @@ Model::estimateXYPaddingSizes()
     xPad          = factor * MAXIM(fabs(range1*cos(angle)),fabs(range2*sin(angle)));
     yPad          = factor * MAXIM(fabs(range1*sin(angle)),fabs(range2*cos(angle)));
 
-    xPadFac       = MINIM(1.0f, xPad / timeSimbox_->getlx()); // A padding of more than 100% is insensible
-    yPadFac       = MINIM(1.0f, yPad / timeSimbox_->getly());
+    xPadFac       = float(MINIM(1.0f, xPad / timeSimbox_->getlx())); // A padding of more than 100% is insensible
+    yPadFac       = float(MINIM(1.0f, yPad / timeSimbox_->getly()));
 
     modelSettings_->setXpad(xPadFac);
     modelSettings_->setYpad(yPadFac);
@@ -710,7 +710,7 @@ Model::estimateZPaddingSize()
     float factor  = 1.0f;
     float wLength = 300.0f;                  // Assume a wavelet is approx 300ms.
     zPad          = factor * wLength / 2.0f; // Use one wavelet as padding
-    zPadFac       = MINIM(1.0f,zPad / (timeSimbox_->getlz()*timeSimbox_->getMinRelThick()));
+    zPadFac       = float(MINIM(1.0f,zPad / (timeSimbox_->getlz()*timeSimbox_->getMinRelThick())));
     
     modelSettings_->setZpad(zPadFac);
     newPadding = true;

@@ -32,7 +32,6 @@ private:
                                     float ** lnDataBeta,
                                     float ** lnDataRho); //Returns 1 if error. NBNB prints own error message
   void            estimateCorrTAndVar0(float  * CorrT, 
-                                       float ** pointVar0, 
                                        float ** Var0, 
                                        float ** lnDataAlpha,
                                        float ** lnDataBeta,

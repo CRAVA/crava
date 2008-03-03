@@ -188,7 +188,7 @@ ModelSettings::setOutputFlag(int outputFlag)
   if (outputFlag == PREDICTION)
     outputFlag_ = outputFlag_ | 1;
   else
-    if (outputFlag_ & PREDICTION > 0)
+    if ((outputFlag_ & PREDICTION) > 0)
       outputFlag_ = outputFlag | PREDICTION;
     else
       outputFlag_ = outputFlag;

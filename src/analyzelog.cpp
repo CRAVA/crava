@@ -82,7 +82,7 @@ Analyzelog::estimate(ModelSettings * modelSettings,
   CorrT_ = new float[numberOfLags_+1];	
   float dt = static_cast<float>(simbox_->getdz()); 
 
-  estimateCorrTAndVar0(CorrT_, pointVar0_, Var0_, 
+  estimateCorrTAndVar0(CorrT_, Var0_, 
                        lnDataAlpha, lnDataBeta, lnDataRho, 
                        allVsLogsAreSynthetic, dt, 
                        numberOfLags_, maxnd);
@@ -366,7 +366,6 @@ Analyzelog::estimatePointVar0(float ** Var0,
 //
 void
 Analyzelog::estimateCorrTAndVar0(float  * CorrT, 
-                                 float ** pointVar0, 
                                  float ** Var0,
                                  float ** lnDataAlpha,
                                  float ** lnDataBeta,

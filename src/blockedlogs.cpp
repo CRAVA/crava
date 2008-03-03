@@ -212,7 +212,7 @@ BlockedLogs::blockDiscreteLog(const int *  bInd,
 int 
 BlockedLogs::findMostProbable(const int * count,
                               int         nActualValues,
-                              RandomGen * random) 
+                              RandomGen * rndgen) 
 { //
   // Find which value have the highest frequency. Add a random [0,1]
   // value to ensure that two Facies never get the same probability. 
@@ -220,13 +220,15 @@ BlockedLogs::findMostProbable(const int * count,
   double maxFreqValue = IMISSING;
   int    maxFreqIndex = IMISSING;
   for (int i=0 ; i < nActualValues ; i++ ) {
-    double freqValue = static_cast<double>(count[i]) + random->unif01();
+    double freqValue = static_cast<double>(count[i]) + rndgen->unif01();
     if (freqValue > maxFreqValue) {
       maxFreqValue = freqValue;
       maxFreqIndex = i;
     }
   }
   return (maxFreqIndex);
+
+  rndgen; //To eliminate warning.
 }
 
 //------------------------------------------------------------------------------
