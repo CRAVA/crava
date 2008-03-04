@@ -23,10 +23,10 @@ SystemCall::getUserName()
     if (GetUserName(userName, &nUserName)) 
     {
       if (userName == NULL) 
-        LogKit::writeLog("Empty user name found\n");
+        sprintf(userName,"Empty user name found\n");
     }
     else 
-      LogKit::writeLog("User name not found.\n");
+      sprintf(userName,"User name not found.\n");
 #else
  struct passwd on_the_stack; 
     struct passwd* pw = 0;  
