@@ -1110,7 +1110,7 @@ void Wavelet::invFFT1DInPlace()
     isReal_=true;
     double scale= double(1.0/double(nzp_));
     for(int i=0; i < nzp_; i++)
-      rAmp_[i] *= (fftw_real) scale;  
+      rAmp_[i] = (fftw_real) (rAmp_[i]*scale);  
   }
 }
 
@@ -1353,8 +1353,8 @@ Wavelet::writeWaveletToFile(char* fileName,float approxDzIn)
    {
      if(i < cnzp_)
      {
-       waveletNew_c[i].re = (fftw_real) cAmp_[i].re*((fftw_real) multiplyer);
-       waveletNew_c[i].im = (fftw_real) cAmp_[i].im*((fftw_real) multiplyer);
+       waveletNew_c[i].re = (fftw_real) (cAmp_[i].re*multiplyer);
+       waveletNew_c[i].im = (fftw_real) (cAmp_[i].im*multiplyer);
        if((i==(cnzp_-1)) & (2*((cnzp_-1)/2) != cnzp_-1)) //boundary effect in fft domain
          waveletNew_c[i].re*=0.5;
      }
