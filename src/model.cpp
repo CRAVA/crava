@@ -1375,10 +1375,18 @@ Model::processWavelets(void)
   LogKit::writeLog("\n***********************************************************************");
   LogKit::writeLog("\n***                 Processing/generating wavelets                  ***"); 
   LogKit::writeLog("\n***********************************************************************\n");
-  LogKit::writeLog("\nWells that cannot be used in wavelet generation or noise estimation:");
-  LogKit::writeLog("\n  Deviated wells.");
-  LogKit::writeLog("\n  Wells with too little data.\n");
-  
+  bool estimateStuff = false;
+  for(int i=0 ; i < modelSettings_->getNumberOfAngles() ; i++)
+  {  
+    estimateStuff = estimateStuff || (modelFile_->getWaveletFile()[i][0] == '*'); 
+    estimateStuff = estimateStuff || (modelSettings_->getNoiseEnergy()[i]==RMISSING); 
+  }
+  if (estimateStuff) 
+  {
+    LogKit::writeLog("\nWells that cannot be used in wavelet generation or noise estimation:");
+    LogKit::writeLog("\n  Deviated wells.");
+    LogKit::writeLog("\n  Wells with too little data.\n");
+  }
   wavelet_ = new Wavelet *[modelSettings_->getNumberOfAngles()];
 
   char ** waveletFile     = modelFile_->getWaveletFile();
@@ -1387,14 +1395,12 @@ Model::processWavelets(void)
 
   for(int i=0 ; i < modelSettings_->getNumberOfAngles() ; i++)
   {  
-    LogKit::writeLog("\nAngle stack : %d deg\n",int(floor(modelSettings_->getAngle()[i]*180.0/PI+0.5)));
+    LogKit::writeLog("\nAngle stack : %.1f deg",modelSettings_->getAngle()[i]*180.0/PI);
     if (waveletFile[i][0] == '*') 
-      wavelet_[i] = new Wavelet(timeSimbox_, seisCube_[i], wells_, modelSettings_->getNumberOfWells(), 
-                                modelSettings_->getWaveletTaperingL(), 
-                                reflectionMatrix_[i]);
+      wavelet_[i] = new Wavelet(timeSimbox_, seisCube_[i], wells_, modelSettings_, reflectionMatrix_[i]);
     else 
     {
-      wavelet_[i] = new Wavelet(waveletFile[i], 1.0f); // Wavelets are scaled later
+      wavelet_[i] = new Wavelet(waveletFile[i], modelSettings_);
       wavelet_[i]->resample(static_cast<float>(timeSimbox_->getdz()), timeSimbox_->getnz(), 
                             modelSettings_->getZpad(), modelSettings_->getAngle()[i]);
       wavelet_[i]->setReflCoeff(reflectionMatrix_[i]);
@@ -1625,7 +1631,6 @@ Model::printSettings(void)
     LogKit::writeLog("  White noise component                    : %10.2f\n",modelSettings_->getWNC());
     LogKit::writeLog("  Low cut for inversion                    : %10.1f\n",modelSettings_->getLowCut());
     LogKit::writeLog("  High cut for inversion                   : %10.1f\n",modelSettings_->getHighCut());
-    LogKit::writeLog("  Segy offset                              : %10.1f\n",modelSettings_->getSegyOffset());
     corr  = modelSettings_->getAngularCorr();
     GenExpVario * pCorr = dynamic_cast<GenExpVario*>(corr);
     LogKit::writeLog("  Angular correlation:\n");
@@ -1638,10 +1643,21 @@ Model::printSettings(void)
       LogKit::writeLog("    Subrange                               : %10.1f\n",corr->getSubRange()*180.0/PI);
       LogKit::writeLog("    Angle                                  : %10.1f\n",corr->getAngle());
     }
+    bool estimateNoise = false;
+    for (int i = 0 ; i < modelSettings_->getNumberOfAngles() ; i++) {
+      estimateNoise = estimateNoise || (modelSettings_->getNoiseEnergy()[i]==RMISSING); 
+    }
+    LogKit::writeLog("\nGeneral settings for wavelet:\n");
+    if (estimateNoise)
+      LogKit::writeLog("  Maximum shift in noise estimation        : %10.1f\n",modelSettings_->getMaxWaveletShift());
+    LogKit::writeLog("  Minimum relative amplitude                 : %10.3f\n",modelSettings_->getMinRelWaveletAmp());
+    LogKit::writeLog("  Wavelet tapering length                  : %10.1f\n",modelSettings_->getWaveletTaperingL());
+    
     for (int i = 0 ; i < modelSettings_->getNumberOfAngles() ; i++)
     {
       LogKit::writeLog("\nSettings for AVO stack %d:\n",i+1);
       LogKit::writeLog("  Angle                                    : %10.1f\n",(modelSettings_->getAngle()[i]*180/PI));
+      LogKit::writeLog("  Segy offset                              : %10.1f\n",modelSettings_->getSegyOffset());
       LogKit::writeLog("  Data                                     : %s\n",modelFile_->getSeismicFile()[i]);
       if (modelFile_->getWaveletFile()[i][0] == '*')
         LogKit::writeLog("  Estimate wavelet                         : %10s\n", "yes");

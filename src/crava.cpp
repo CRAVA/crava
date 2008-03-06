@@ -2068,8 +2068,8 @@ Crava::printEnergyToScreen()
 {
   int i;
   LogKit::writeLog("                ");
-  for(i=0;i < ntheta_; i++) LogKit::writeLog("  Seismic %3.1f ",theta_[i]/PI*180);
-  LogKit::writeLog("\n------------------------------------------------------------");
+  for(i=0;i < ntheta_; i++) LogKit::writeLog("  Seismic %4.1f ",theta_[i]/PI*180);
+  LogKit::writeLog("\n---------------------------------------------------------------------------");
   LogKit::writeLog("\nData variance   :");
   for(i=0;i < ntheta_; i++) LogKit::writeLog("    %1.3e  ",dataVariance_[i]);
   LogKit::writeLog("\nSignal variance :");

@@ -47,6 +47,8 @@ public:
   float          getHighCut(void)              const { return highCut_          ;}
   float          getWNC(void)                  const { return wnc_              ;}
   float          getEnergyThreshold(void)      const { return energyThreshold_  ;}
+  float          getMinRelWaveletAmp(void)     const { return minRelWaveletAmp_ ;}
+  float          getMaxWaveletShift(void)      const { return maxWaveletShift_  ;}
   float          getWaveletTaperingL(void)     const { return waveletTaperingL_ ;}
   float          getXpad(void)                 const { return xPad_             ;}
   float          getYpad(void)                 const { return yPad_             ;}
@@ -88,6 +90,8 @@ public:
   void           setHighCut(float highCut)                   {highCut_          = highCut          ;}
   void           setWNC(float wnc)                           {wnc_              = wnc              ;}
   void           setEnergyThreshold(float energyThreshold)   {energyThreshold_  = energyThreshold  ;}
+  void           setinRelWaveletAmp(float minRelWaveletAmp)  {minRelWaveletAmp_ = minRelWaveletAmp ;}
+  void           setMaxWaveletShift(float maxWaveletShift)   {maxWaveletShift_  = maxWaveletShift  ;}
   void           setWaveletTaperingL(float waveletTaperingL) {waveletTaperingL_ = waveletTaperingL ;}
   void           setXpad(float xPad)                         {xPad_             = xPad             ;}
   void           setYpad(float yPad)                         {yPad_             = yPad             ;}
@@ -172,6 +176,8 @@ private:
                                          // in reflection traces is lower than this, the reflections
                                          // will be interpolated. Default 0.
 
+  float          minRelWaveletAmp_;      // Minimum relative wavelet amplitude. Smaller amplitudes are disregarded.
+  float          maxWaveletShift_;       // Largest allowed shift when estimating wavelet
   float          waveletTaperingL_;      // Til Odds waveletestimering
 
   float          xPad_;                  // Padding factor in x direction

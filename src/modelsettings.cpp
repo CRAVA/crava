@@ -51,6 +51,8 @@ ModelSettings::ModelSettings(void)
 
   energyThreshold_       =    0.0f;
 
+  minRelWaveletAmp_      =   0.05f;
+  maxWaveletShift_       =   11.0f;
   waveletTaperingL_      =  200.0f;
 
   xPad_                  =    0.0f;   // If the PADDING command is not called, proper paddings

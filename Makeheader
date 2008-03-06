@@ -35,7 +35,7 @@ PROFILE := $(strip $(PROFILE))
 DEBUG   := $(strip $(DEBUG))
 CDIR    := $(strip $(CDIR))
 
-EXTRAFLAGS = $(OPT) $(PROFILE) $(DEBUG) $(CDIR)
+EXTRAFLAGS = $(strip $(OPT) $(PROFILE) $(DEBUG) $(CDIR))
 
 CFLAGS     = $(GCCWARNING)
 CXXFLAGS   = $(GXXWARNING)

@@ -8,17 +8,15 @@ class Simbox;
 class FFTGrid;
 class WellData;
 struct irapgrid;
-class model;
+class ModelSettings;
 
 class Wavelet {
 public:
-  static const int    MAXSHIFT=11;
   void invFFT1DInPlace();
   void fft1DInPlace();
 
-  Wavelet(Simbox * simbox, FFTGrid * seisCube, WellData ** wells, int nWells, float waveletLength, 
-          float * coef);
-  Wavelet(char * fileName, float scale);
+  Wavelet(Simbox * simbox, FFTGrid * seisCube, WellData ** wells, ModelSettings * modelSettings, float * coef);
+  Wavelet(char * fileName, ModelSettings * modelSettings);
   Wavelet(Wavelet * wavelet);
   Wavelet(Wavelet * wavelet,int difftype);
   Wavelet(int difftype, int nz, int nzp);
@@ -109,6 +107,7 @@ private:
 
   float          getArrayValueOrZero(int i ,float * Wavelet, int nz);
   float          maxShift_;//maximum shift of wavelet in ms
+  float          minRelativeAmp_;
 
   //NBNB The following parameters are NOT copied in copy constructor.
   int            gridNI_;                // number of elements for  i in shiftGrid_ and gainGrid_;

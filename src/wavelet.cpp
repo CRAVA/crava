@@ -15,25 +15,28 @@
 #include "lib/irapgrid.h"
 #include "lib/log.h"
 
-#include "src/fftgrid.h"
-#include "src/simbox.h"
-#include "src/model.h"
+#include "src/modelsettings.h"
 #include "src/blockedlogs.h"
 #include "src/welldata.h"
+#include "src/fftgrid.h"
+#include "src/simbox.h"
 
-Wavelet::Wavelet(Simbox    * simbox,
-                 FFTGrid   * seisCube,
-                 WellData ** wells,
-                 int         nWells,
-                 float       waveletLength,
-                 float     * coeff) 
+Wavelet::Wavelet(Simbox         * simbox,
+                 FFTGrid        * seisCube,
+                 WellData      ** wells,
+                 ModelSettings  * modelSettings,
+                 float          * coeff) 
 {
   LogKit::writeLog("  Estimating wavelet from seismic data and (nonfiltered) blocked wells\n");
   readtype_ = ESTIMATE;
   // initialization
-  maxShift_=float(MAXSHIFT);// ms
-  LogKit::writeLog("  Max wavelet shift used in estimation is %f ms.\n",maxShift_);
-  scale_=1; 
+
+  int   nWells        = modelSettings->getNumberOfWells();
+  float waveletLength = modelSettings->getWaveletTaperingL();
+  maxShift_           = modelSettings->getMaxWaveletShift();
+  minRelativeAmp_     = modelSettings->getMinRelWaveletAmp();
+
+  scale_=1.0f; 
   gridNI_=0;   
   gridNJ_=0;
   shiftGrid_=NULL;  
@@ -265,15 +268,14 @@ Wavelet::Wavelet(Simbox    * simbox,
   //flipUpDown(); //NB ODD temporary fix
 }
 
-
-
-Wavelet::Wavelet(char * fileName, float scale)
+Wavelet::Wavelet(char * fileName, ModelSettings * modelSettings)
 {
-  maxShift_=float(MAXSHIFT);// ms
-  LogKit::writeLog("  Max wavelet shift used in estimation of noise %f ms\n",maxShift_);
+  maxShift_       = modelSettings->getMaxWaveletShift();
+  minRelativeAmp_ = modelSettings->getMinRelWaveletAmp();
+
   isReal_     = true;
   inFFTorder_ = false;
-  scale_=scale; 
+  scale_=1; 
   gridNI_=0;   
   gridNJ_=0;
   shiftGrid_=NULL;  
@@ -310,7 +312,7 @@ Wavelet::Wavelet(char * fileName, float scale)
     {  
       if(i < nzp_)
       {
-        rAmp_[i]*=scale;
+        rAmp_[i]*=scale_;
       }
       else
       {
@@ -824,7 +826,7 @@ Wavelet::resample(float dz, int nz, float pz, float theta)
 {
   theta_=theta;
   if(errCode_==0){
-    LogKit::writeLog("  Resampling wavelet\n");
+    //LogKit::writeLog("  Resampling wavelet\n");
     assert(isReal_);
     assert(!inFFTorder_);
     int nzp,cnzp,rnzp,k;
@@ -2183,21 +2185,18 @@ Wavelet::findOptimalWaveletScale(fftw_real** synt_seis_r,fftw_real** seis_r,int 
 
 int Wavelet::getWaveletLengthI()
 {
-  float minimumRelevantAmp=0.005f;
   bool trans=false;
   if(isReal_==false)
   {
     invFFT1DInPlace();
     trans=true;
   }
-  LogKit::writeLog("  Minimum Relevant Wavelet amplitude is %1.2f percent of max amplitude\n",100.0* minimumRelevantAmp);
-
   float maxAmp =  fabs(rAmp_[0]); // gets max amp 
   for(int i=1;i <nzp_;i++)
     if(fabs(rAmp_[i]) > maxAmp)
       maxAmp = fabs(rAmp_[i]);
 
-  float minAmp= maxAmp*minimumRelevantAmp; // minimum relevant amplitude
+  float minAmp= maxAmp*minRelativeAmp_; // minimum relevant amplitude
 
   int wLength=nzp_;
 
