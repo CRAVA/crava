@@ -253,6 +253,55 @@ void lib_matrAxeqbCpx(
 
 }
 
+/*FUNC*****************************************************************
+DESCRIPTION:
+
+Solves the n set of i_dim linear equations A * X = B for real
+numbers. Here the matrix A is input
+as its LU-decomposition. The function 'lib_matrCholR' should be used on
+A before this function is called.
+
+B is i_dim*n, where n is number of columns.
+
+
+HOW TO USE THE FUNCTION:
+lib_matrAXeqBMatCpx(i_dim, i_mat, x_mat, n);
+
+SIDE-EFFECTS: The input-matrix B is destroyed on output.
+
+RETURN VALUE: void.
+
+************************************************************************/
+
+void lib_matrAXeqBMatR(int i_dim, double **i_mat, double **x_mat, int n)
+{
+
+  int l_i, l_j;
+  double l_x;
+  float help;
+  int i;
+  for(i=0;i<n;i++)
+  {
+    for (l_i = 0; l_i < i_dim; l_i++) {
+      l_x = x_mat[l_i][i];
+      for (l_j = 0; l_j < l_i; l_j++) {
+        l_x -= (x_mat[l_j][i] * i_mat[l_i][l_j]);
+      }
+      help = (i_mat[l_i][l_i]*i_mat[l_i][l_i]);
+      x_mat[l_i][i] = (l_x*i_mat[l_i][l_i])/help;                    
+    }
+
+    for (l_i = i_dim - 1; l_i >= 0; l_i--) {
+      l_x = x_mat[l_i][i];
+      
+      for (l_j = i_dim - 1; l_j > l_i; l_j--) { 
+        l_x = l_x - (x_mat[l_j][i] * i_mat[l_j][l_i] ) ;
+      }
+      help = (i_mat[l_i][l_i]*i_mat[l_i][l_i]);
+      x_mat[l_i][i] = (l_x*i_mat[l_i][l_i])/help;                    
+    } 
+  }
+}
 
 /*FUNC*****************************************************************
 DESCRIPTION:

@@ -8,6 +8,7 @@ extern "C"
 #endif
   extern int lib_matrCholR(int i_dim, double **x_mat);
   extern void lib_matrAxeqbR(int i_dim, double **i_mat, double *x_vec);
+  extern void lib_matrAXeqBMatR(int i_dim, double ** i_mat, double **x_mat, int n);
   extern int lib_matrCholCpx(int i_dim, fftw_complex **x_mat);
   extern void lib_matrAxeqbCpx(int i_dim, fftw_complex **i_mat,fftw_complex *x_vec);
   extern void lib_matrAXeqBMatCpx(int i_dim, fftw_complex **i_mat, fftw_complex **x_mat, int n);
