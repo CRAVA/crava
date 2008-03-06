@@ -14,26 +14,30 @@ PURIFY     = /nr/prog/rational/releases/PurifyPlus.7.0.0.0-008/i386_linux2/bin/p
 PROGRAM    = cravarun
 mode       = all
 
-#
-# Test of "make-mode"
-#
 ifeq ($(mode),debug)
 DEBUG   = -ggdb
 endif
 
 ifeq ($(mode),profile)
-DEBUG   = -g
+# Don't use -ggdb here
+DEBUG   = -g 
 PROFILE = -pg
 endif
 
 ifeq ($(mode),purify)
+# Don't use -ggdb here
 DEBUG   = -g
 PROGRAM = cravarun.purify
 endif
 
-EXTRAFLAGS := $(strip $(OPT) $(PROFILE) $(DEBUG) $(CDIR))
+OPT     := $(strip $(OPT))
+PROFILE := $(strip $(PROFILE))
+DEBUG   := $(strip $(DEBUG))
+CDIR    := $(strip $(CDIR))
 
-CFLAGS    = $(GCCWARNING)
-CXXFLAGS  = $(GXXWARNING)
-CPPFLAGS  = $(EXTRAFLAGS)
-LFLAGS    = $(PROFILE) -s -static -lm
+EXTRAFLAGS = $(OPT) $(PROFILE) $(DEBUG) $(CDIR)
+
+CFLAGS     = $(GCCWARNING)
+CXXFLAGS   = $(GXXWARNING)
+CPPFLAGS   = $(EXTRAFLAGS)
+LFLAGS     = $(PROFILE) $(DEBUG) -static -lm
