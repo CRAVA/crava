@@ -595,6 +595,16 @@ Model::makeTimeSimbox(char * errText)
 
       if(error == 0)
       {
+        LogKit::writeLog("\nTime surfaces:\n");
+        LogKit::writeLog("  Interval thickness    avg / min / max    : %6.1f /%6.1f /%6.1f\n", 
+                         timeSimbox_->getlz()*timeSimbox_->getAvgRelThick(),
+                         timeSimbox_->getlz()*timeSimbox_->getMinRelThick(),
+                         timeSimbox_->getlz());
+        LogKit::writeLog("  Sampling density      avg / min / max    : %6.2f /%6.2f /%6.2f\n", 
+                         timeSimbox_->getdz()*timeSimbox_->getAvgRelThick(),
+                         timeSimbox_->getdz(),
+                         timeSimbox_->getdz()*timeSimbox_->getMinRelThick());
+        
         estimateXYPaddingSizes();
         //
         // Check if CRAVA has enough memory to run calculation without buffering to disk

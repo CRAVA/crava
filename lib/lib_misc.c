@@ -68,7 +68,7 @@ findClosestFactorableNumber(int leastint)
   int maxant13   = (int) 0;
   int closestprod= (int) pow(2.0f,maxant2);
 
-  // kan forbedres ved aa trekke fra i endepunktene.i for lokkene
+  /* kan forbedres ved aa trekke fra i endepunktene.i for lokkene*/
   for(i=0;i<maxant2+1;i++)
     for(j=0;j<maxant3+1;j++)
       for(k=0;k<maxant5+1;k++)
@@ -90,9 +90,11 @@ findClosestFactorableNumber(int leastint)
 void
 readUntilStop(int pos, char * in, char * out  ,const char stop)
 { 
-  //  reads a string from position pos+1 
-  //  until the terminating char given in stop 
-  //  returns the string   excluding the stop
+  /*
+    reads a string from position pos+1 
+    until the terminating char given in stop 
+    returns the string   excluding the stop
+  */
 
   int   i = 0; 
 

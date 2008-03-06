@@ -27,7 +27,7 @@ Define macros
 #define DUMMYZONE 999999 /* Used in lib_obs/GenWell to identify zone border
 where the zonenumber above/below is unknown    */
 
-// NBNB Ragnar: Collides with windows def, not used by us, so removed. #define MAX_PATH  2000  /* Max length of filenames */
+  /* NBNB Ragnar: Collides with windows def, not used by us, so removed. #define MAX_PATH  2000  */
 
 #define MAX_STRING 2400  /* Max length of string parameters */
 

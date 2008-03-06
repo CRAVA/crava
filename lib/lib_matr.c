@@ -41,9 +41,11 @@ int lib_matrCholR(
 
   for (l_i=0; l_i < i_dim; l_i++)
     if (x_mat[l_i][l_i] <= TOL) {
-      //fprintf(stderr, "Matrix to be Cholesky factorized not valid! %s\n",
-      // "Diagonal-element near 0.0");
-      //lib_matrPrintR( (float**)x_mat, i_dim, i_dim);
+      /*
+        fprintf(stderr, "Matrix to be Cholesky factorized not valid! %s\n",
+        "Diagonal-element near 0.0");
+        lib_matrPrintR( (float**)x_mat, i_dim, i_dim);
+      */
       r_value = 1;
       return(r_value);
     } else {
@@ -58,7 +60,9 @@ int lib_matrCholR(
         l_r += x_mat[l_i][l_k] * x_mat[l_i][l_k];
       l_r = x_mat[l_i][l_i] - l_r;
       if (l_r <= TOL) {
-        //fprintf(stderr, "Matrix to be Cholesky factorized not valid !\n");
+        /*
+          fprintf(stderr, "Matrix to be Cholesky factorized not valid !\n"); 
+        */
         r_value = 1;
         return(r_value);
       }	  
@@ -104,9 +108,11 @@ int lib_matrCholCpx(
 
     for (l_i=0; l_i < i_dim; l_i++)
       if (x_mat[l_i][l_i].re <= TOL) {
-        //  fprintf(stderr, "Matrix to be Cholesky factorized not valid! %s\n",
-        //    "Diagonal-element near 0.0");
-        //lib_matrPrintCpx( x_mat, i_dim, i_dim);
+        /*
+          fprintf(stderr, "Matrix to be Cholesky factorized not valid! %s\n",
+          "Diagonal-element near 0.0");
+          lib_matrPrintCpx( x_mat, i_dim, i_dim);
+        */
         r_value = 1;
         return(r_value);
       } else {
@@ -133,8 +139,10 @@ int lib_matrCholCpx(
         l_r.re = x_mat[l_i][l_i].re - l_r.re;
         /* l_r.im = x_mat[l_i][l_i].im - l_r.im;*/
         if (l_r.re <= TOL) {
-          //fprintf(stderr, "Matrix to be Cholesky factorized not valid !\n");
-          //lib_matrPrintCpx( x_mat, i_dim, i_dim);
+          /*
+          fprintf(stderr, "Matrix to be Cholesky factorized not valid !\n");
+          lib_matrPrintCpx( x_mat, i_dim, i_dim);
+          */
           r_value = 1;
           return(r_value);
         }	  
@@ -739,7 +747,9 @@ void lib_matrAdjoint(fftw_complex **mat, int n1, int n2, fftw_complex **outmat)
 }
 
 
-// Conjungates the matrix mat and returns it in 
+/*
+  Conjungates the matrix mat and returns it in 
+*/
 void lib_matrConj(fftw_complex **mat, int n1, int n2, fftw_complex **outmat)
 {
   int i, j;
@@ -857,19 +867,24 @@ RETURN VALUE:
 /* Since the input to the functions tred2 and tqli will be destroyed, we
    make a copy of i_mat.  */
 
-  //l_mat = (double **) Mmatrix_2d(0, i_n-1, 0, i_n-1, sizeof(double), 1);
- // l_mat = new double *[i_n];
+/*
+  l_mat = (double **) Mmatrix_2d(0, i_n-1, 0, i_n-1, sizeof(double), 1);
+  l_mat = new double *[i_n];
+*/
   l_mat = malloc(sizeof(double)*i_n);
   for(i=0;i<i_n;i++)
     l_mat[i]= malloc(sizeof(double)*i_n);
-   // l_mat[i] = new double[i_n];
-   l_d = malloc(sizeof(double)*i_n);
+  /*
+    l_mat[i] = new double[i_n];
+  */
+  l_d = malloc(sizeof(double)*i_n);
   l_e = malloc(sizeof(double)*i_n);
-  //l_d = new double[i_n];
-  //l_e = new double[i_n];
-  //l_d = (double *) Mmatrix_1d(0,i_n-1, sizeof(double), 1);
-//  l_e = (double *) Mmatrix_1d(0,i_n-1, sizeof(double), 1);
-
+  /*
+    l_d = new double[i_n];
+    l_e = new double[i_n];
+    l_d = (double *) Mmatrix_1d(0,i_n-1, sizeof(double), 1);
+    l_e = (double *) Mmatrix_1d(0,i_n-1, sizeof(double), 1);
+  */
   for (i=0; i<=i_n-1; i++) 
     for (j=0; j<=i_n-1; j++) 
       l_mat[i][j] = i_mat[i][j];
@@ -887,16 +902,17 @@ RETURN VALUE:
   
   for(i=0;i<i_n;i++)
     free(l_mat[i]);
- //delete [] l_mat;
+  /* delete [] l_mat; */
   free(l_mat);
   free(l_d);
   free(l_e);
-// delete [] l_d;
-// delete [] l_e;
-
- // l_mat = (double **)Fmatrix_2d((char **)&l_mat[0][0], (char *)&l_mat[0]);
- // l_d = (double *)Fmatrix_1d((char *)&l_d[0]);
- // l_e = (double *)Fmatrix_1d((char *)&l_e[0]);
+  /* 
+     delete [] l_d;
+     delete [] l_e;   
+     l_mat = (double **)Fmatrix_2d((char **)&l_mat[0][0], (char *)&l_mat[0]);
+     l_d = (double *)Fmatrix_1d((char *)&l_d[0]);
+     l_e = (double *)Fmatrix_1d((char *)&l_e[0]);
+  */
 }
 
 static void lib_matr_tred2(int i_n, double **x_a, double o_d[], double o_e[])

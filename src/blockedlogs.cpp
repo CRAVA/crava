@@ -226,9 +226,9 @@ BlockedLogs::findMostProbable(const int * count,
       maxFreqIndex = i;
     }
   }
+  //No! Gives WARNING under Linux. Also when moved here
+  //rndgen; //To eliminate warning 
   return (maxFreqIndex);
-
-  rndgen; //To eliminate warning.
 }
 
 //------------------------------------------------------------------------------

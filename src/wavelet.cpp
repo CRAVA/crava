@@ -2190,7 +2190,7 @@ int Wavelet::getWaveletLengthI()
     invFFT1DInPlace();
     trans=true;
   }
-  LogKit::writeLog("Minimum Relevant Wavelet amplitude is %1.2f percent of max amplitude\n",100.0* minimumRelevantAmp);
+  LogKit::writeLog("  Minimum Relevant Wavelet amplitude is %1.2f percent of max amplitude\n",100.0* minimumRelevantAmp);
 
   float maxAmp =  fabs(rAmp_[0]); // gets max amp 
   for(int i=1;i <nzp_;i++)
