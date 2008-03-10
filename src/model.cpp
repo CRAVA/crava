@@ -896,13 +896,13 @@ Model::processWells(char * errText)
       }
       if(wells_[i]->getNd() == 0) 
       {
-        LogKit::writeLog("  IGNORED (no log entries found.)\n");
+        LogKit::writeLog("  IGNORED (no log entries found)\n");
         skip = true;
         empty++;
       }
       if(wells_[i]->isFaciesOk()==0)
       {
-        LogKit::writeLog("   IGNORED (wrong facies log.)\n");
+        LogKit::writeLog("   IGNORED (facies log has wrong entries)\n");
         skip = true;
         facieslognotok++;
       }
@@ -1650,7 +1650,7 @@ Model::printSettings(void)
     LogKit::writeLog("\nGeneral settings for wavelet:\n");
     if (estimateNoise)
       LogKit::writeLog("  Maximum shift in noise estimation        : %10.1f\n",modelSettings_->getMaxWaveletShift());
-    LogKit::writeLog("  Minimum relative amplitude                 : %10.3f\n",modelSettings_->getMinRelWaveletAmp());
+    LogKit::writeLog("  Minimum relative amplitude               : %10.3f\n",modelSettings_->getMinRelWaveletAmp());
     LogKit::writeLog("  Wavelet tapering length                  : %10.1f\n",modelSettings_->getWaveletTaperingL());
     
     for (int i = 0 ; i < modelSettings_->getNumberOfAngles() ; i++)

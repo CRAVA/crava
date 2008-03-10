@@ -285,7 +285,7 @@ WellData::readRMSWell(const char * wellFileName, char **headerList, bool faciesL
     fscanf(file,"%s",tmpStr);
     if(strcmp(uppercase(tmpStr),parameterList[4])==0)
     {
-      fscanf(file,"%s",tmpStr); // read code word DISC
+     fscanf(file,"%s",tmpStr); // read code word DISC
       // facies types given here
       for(k=0;k<nFacies_;k++)
       {
@@ -519,9 +519,9 @@ int WellData::checkSimbox(Simbox *simbox)
   if (error)
   {
     if (insideArea)
-      LogKit::writeLog("   IGNORED (well is inside inversion area but does not hit the inversion volume.)\n");
+      LogKit::writeLog("   IGNORED (well is inside inversion area but does not hit the inversion volume)\n");
     else
-      LogKit::writeLog("   IGNORED (well is not inside inversion area.)\n");
+      LogKit::writeLog("   IGNORED (well is not inside inversion area)\n");
   }
   return(error);
 }
