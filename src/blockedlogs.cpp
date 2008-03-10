@@ -221,7 +221,7 @@ BlockedLogs::findMostProbable(const int * count,
   int    maxFreqIndex = IMISSING;
   for (int i=0 ; i < nActualValues ; i++ ) {
     double freqValue = static_cast<double>(count[i]) + rndgen->unif01();
-    if (freqValue > maxFreqValue) {
+    if (freqValue > maxFreqValue && count[i]>0) {
       maxFreqValue = freqValue;
       maxFreqIndex = i;
     }
