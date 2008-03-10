@@ -36,12 +36,19 @@ FaciesProb::FaciesProb(int filegrid, const float ** sigma0, float *corrprior, Si
   bgRho_    = new FFTGrid(bgRho);
   int i, j;
   sigma0_ = new float*[3];
+  sigmaPost_= new float*[3];
   for(i=0;i<3;i++)
+  {
     sigma0_[i] = new float[3];
+    sigmaPost_[i]=new float[3];
+  }
 
   for(i=0;i<3;i++)
     for(j=0;j<3;j++)
+    {
       sigma0_[i][j] = sigma0[i][j];
+      sigmaPost_[i][j] = RMISSING;
+    }
 
   int rnzp = 2*(nzp_/2+1);
   corrprior_ = (fftw_real*) fftw_malloc(sizeof(float)*rnzp);
@@ -52,9 +59,14 @@ FaciesProb::FaciesProb(int filegrid, const float ** sigma0, float *corrprior, Si
 FaciesProb::~FaciesProb()
 {
   for(int i=0;i<3;i++)
+  {
     delete [] sigma0_[i];
+    delete [] sigmaPost_[i];
+  }
   delete [] sigma0_;
+  delete [] sigmaPost_;
 
+  delete [] priorFacies_;
   for(int i=0;i<nFacies_;i++)
   {
     delete density_[i]; 
@@ -66,6 +78,9 @@ FaciesProb::~FaciesProb()
   delete [] alphafiltered_;
   delete [] betafiltered_;
   delete [] rhofiltered_;
+  delete [] alphablock_;
+  delete [] betablock_;
+  delete [] rhoblock_;
   delete [] facieslog_;
 
   delete bgAlpha_;
@@ -76,45 +91,11 @@ FaciesProb::~FaciesProb()
 
   delete simbox_;
 }
-
-void FaciesProb::makeFaciesProb(int nfac, FFTGrid *alphagrid, FFTGrid *betagrid, FFTGrid *rhogrid)
+float**      
+FaciesProb::makeFaciesHistAndSetPriorProb(float* alpha, float* beta, float* rho,int* faciesL)
 {
-  int i,j,k,l,facies;
-  nFacies_ = nfac;
   float **hist=new float*[nFacies_];
-  float kstda, kstdb, kstdr, hopt;
-  nbins_  = 100;
-  nbinsr_ = 50;
-  nobs_   = 0;
-  nData_  = new int[nFacies_];
-  float *smooth = new float[nbins_*nbins_*nbinsr_];
-  for(i=0;i<ndata_;i++)
-  {
-    if(facieslog_[i]!=IMISSING)
-      nobs_++;
-  }
-
-  // Make bins.
-
-  hopt  = static_cast<float>(pow(4.0/7,1.0/7)*pow(static_cast<double>(nobs_),-1.0/7));
-  kstda = hopt*sqrt(varAlpha_);
-  kstdb = hopt*sqrt(varBeta_);
-  kstdr = hopt*sqrt(varRho_);
-
-  alphamin_ -= 3.0f*kstda;
-  alphamax_ += 3.0f*kstda;
-  betamin_  -= 3.0f*kstdb;
-  betamax_  += 3.0f*kstdb;
-  rhomin_   -= 3.0f*kstdr;
-  rhomax_   += 3.0f*kstdr;
-
-  dalpha_ = (alphamax_-alphamin_)/nbins_;
-  dbeta_  = (betamax_-betamin_)/nbins_;
-  drho_   = (rhomax_-rhomin_)/nbinsr_;
-
-  for(i=0;i<nFacies_;i++)
-    nData_[i] = 0;
-
+  int i,j,k,l;
   for(i=0;i<nFacies_;i++)
   {
     hist[i] = new float[nbins_*nbins_*nbinsr_];
@@ -128,37 +109,101 @@ void FaciesProb::makeFaciesProb(int nfac, FFTGrid *alphagrid, FFTGrid *betagrid,
     }
   }
   
+  for(i=0;i<nFacies_;i++)
+    nData_[i] = 0;
+
+  int facies;
   for(i=0;i<ndata_;i++)
   {
-    if(facieslog_[i]!=IMISSING)
+    if(faciesL[i]!=IMISSING)
     {
       j=k=l=0;
-      j = int (floor((alphafiltered_[i]-alphamin_)/dalpha_));
+      j = int (floor((alpha[i]-alphamin_)/dalpha_));
       if(j<0)
         j = 0;
       if(j>nbins_-1)
         j = nbins_-1;
-      k = int (floor((betafiltered_[i]-betamin_)/dbeta_));
+      k = int (floor((beta[i]-betamin_)/dbeta_));
       if(k<0)
         k = 0;
       if(k>nbins_-1)
         k = nbins_-1;
-      l = int (floor((rhofiltered_[i]-rhomin_)/drho_));
+      l = int (floor((rho[i]-rhomin_)/drho_));
       if(l<0)
         l = 0;
       if(l>nbinsr_-1)
         l = nbinsr_-1;
-      //facies = wellpt->GetFacies();
-      facies = facieslog_[i];
+      
+      facies = faciesL[i];
       nData_[facies]++;
       hist[facies][j+k*nbins_+l*nbins_*nbins_]+=1.0;
     }
   }
+ 
+  float sum = 0.0f;
+  for(i=0;i<nFacies_;i++)
+    sum+=nData_[i];
+
+  for(i=0;i<nFacies_;i++)
+     priorFacies_[i] = float(nData_[i])/sum;
+
+  for(i=0;i<nFacies_;i++)
+  {
+    double nf = 1.0/double(nData_[i]);
+    for(j=0;j<nbins_*nbins_*nbinsr_;j++)
+       hist[i][j] = float(double(hist[i][j])*double(nf));
+  }
+  return hist;
+}
+
+void       
+FaciesProb::makeFaciesDens(int nfac)
+{ 
+  int i,j,k,l;
+  nFacies_ = nfac;
+
+  priorFacies_ = new float[nFacies_];
+  float kstda, kstdb, kstdr, hopt;
+  nbins_  = 100;
+  nbinsr_ = 50;
+
+  nobs_   = 0;
+  nData_  = new int[nFacies_];
+  float *smooth = new float[nbins_*nbins_*nbinsr_];
+  for(i=0;i<ndata_;i++)
+  {
+    if(facieslog_[i]!=IMISSING)
+      nobs_++;
+  }
+ 
+  // Make bins.
+  calculateVariances(alphafiltered_,betafiltered_,rhofiltered_,facieslog_);//sets varAlpha_ etc....
+  hopt  = static_cast<float>(pow(4.0/7,1.0/7)*pow(static_cast<double>(nobs_),-1.0/7));
+  kstda = hopt*sqrt(varAlpha_);
+  kstdb = hopt*sqrt(varBeta_);
+  kstdr = hopt*sqrt(varRho_);
 
 
+
+  getMinMax(alphafiltered_,betafiltered_,rhofiltered_,facieslog_);// sets alpamin_etc....
+  alphamin_ -= 5.0f*kstda;
+  alphamax_ += 5.0f*kstda;
+  betamin_  -= 5.0f*kstdb;
+  betamax_  += 5.0f*kstdb;
+  rhomin_   -= 5.0f*kstdr;
+  rhomax_   += 5.0f*kstdr;
+
+  dalpha_ = (alphamax_-alphamin_)/nbins_;
+  dbeta_  = (betamax_-betamin_)/nbins_;
+  drho_   = (rhomax_-rhomin_)/nbinsr_;
+
+  float** hist=makeFaciesHistAndSetPriorProb(alphafiltered_,betafiltered_,rhofiltered_,facieslog_);
+  
+ 
   int jj,jjj,kk,kkk,ll,lll;
   lll=2;
-  float sum = 0;
+  
+  float sum = 0.0f;
   for(l=0;l<nbinsr_;l++)
   {
     kkk=2;
@@ -214,13 +259,21 @@ void FaciesProb::makeFaciesProb(int nfac, FFTGrid *alphagrid, FFTGrid *betagrid,
     //char* fN=new char[MAX_STRING];
     //sprintf(fN,"Hist%d",i);
     //density_[i]->writeAsciiRaw(fN);
+    //delete [] fN;
     density_[i]->fftInPlace();
     density_[i]->multiply(smoother);
     density_[i]->invFFTInPlace();
     density_[i]->multiplyByScalar(float(sqrt(double(nbins_*nbins_*nbinsr_))));
-    //sprintf(fN,"Dens%d",i);
-    //density_[i]->writeAsciiRaw(fN);
-    //delete [] fN;
+    if(LogKit::getDebugLevel()>=1)
+    {
+      char* fN1=new char[MAX_STRING];
+      char* fN2=new char[MAX_STRING];
+      sprintf(fN2,"Dens_%d",i);
+      fN1=LogKit::makeFullFileName(fN2,".txt") ;
+      density_[i]->writeAsciiRaw(fN1);
+      delete [] fN1;
+      delete [] fN2;
+    }
   }
 
   delete smoother;
@@ -228,29 +281,340 @@ void FaciesProb::makeFaciesProb(int nfac, FFTGrid *alphagrid, FFTGrid *betagrid,
   for (int i = 0 ; i < nFacies_ ; i++)
     delete [] hist[i];
   delete [] hist;
+}
 
+float**      
+FaciesProb::makeFaciesHistAndSetPriorProb2(float* alpha, float* beta, float* rho,int* faciesL)
+{
+  double** sigma0Inv=new double*[3];
+  double** sigma0=new double*[3];
+  int i,j,k,l;
+
+  for(i=0;i<3;i++)
+  {
+    sigma0[i]=new double[3];
+    sigma0Inv[i]=new double[3];
+    for(j=0;j<3;j++)
+    {
+      sigma0[i][j]=double(sigma0_[i][j]);
+      sigma0Inv[i][j]=0.0;
+    }
+     sigma0Inv[i][i]      = 1.0;
+  }
+  
+  sigma0[0][0] = MAXIM( sigma0[0][0],varAlpha_);
+  sigma0[1][1] = MAXIM( sigma0[0][0],varBeta_);
+  sigma0[2][2] = MAXIM( sigma0[0][0],varRho_);
+
+  
+  float **hist=new float*[nFacies_];
+
+  for(i=0;i<nFacies_;i++)
+  {
+    hist[i] = new float[nbins_*nbins_*nbinsr_];
+    for(l=0;l<nbinsr_;l++)
+    {
+      for(k=0;k<nbins_;k++)
+      {
+        for(j=0;j<nbins_;j++)
+          hist[i][j+k*nbins_+l*nbins_*nbins_] = 0.0;
+      }
+    }
+  }
+  
+  for(i=0;i<nFacies_;i++)
+    nData_[i] = 0;
+
+  lib_matrCholR(3, sigma0);
+  lib_matrAXeqBMatR(3, sigma0, sigma0Inv, 3);
+
+  int facies;
+  for(i=0;i<ndata_;i++)
+  {
+    if(faciesL[i]!=IMISSING)
+    {
+      j=k=l=0;
+      j = int (floor((alpha[i]-alphamin_)/dalpha_));
+      if(j<0)
+        j = 0;
+      if(j>nbins_-1)
+        j = nbins_-1;
+      k = int (floor((beta[i]-betamin_)/dbeta_));
+      if(k<0)
+        k = 0;
+      if(k>nbins_-1)
+        k = nbins_-1;
+      l = int (floor((rho[i]-rhomin_)/drho_));
+      if(l<0)
+        l = 0;
+      if(l>nbinsr_-1)
+        l = nbinsr_-1;
+      
+      facies = faciesL[i];
+      nData_[facies]++;
+      
+      double * vec = new double[3];
+      vec[0]=alphablock_[i]-meanA_;vec[1]=betablock_[i]-meanB_;vec[2]=rhoblock_[i]-meanR_;
+      int c1,c2;
+      double mahDist =0.0;
+
+      for(c1=0;c1<3;c1++)
+        for(c2=0;c2<3;c2++)
+          mahDist+=vec[c1]*sigma0Inv[c1][c2]*vec[c2];
+      delete [] vec;
+
+      hist[facies][j+k*nbins_+l*nbins_*nbins_]+= float(exp(0.5*mahDist));// add divide by prior......;
+    }
+  }
+  float sum = 0.0f;
+  for(i=0;i<nFacies_;i++)
+    sum+=nData_[i];
+
+  for(i=0;i<nFacies_;i++)
+     priorFacies_[i] = float(nData_[i])/sum;
+
+  // Normalizes hist to be ratios of denseities. not multiplied with ...
+  for(i=0;i<nFacies_;i++)
+  {
+    double nf = 1.0/double(nData_[i]);
+    for(j=0;j<nbins_*nbins_*nbinsr_;j++)
+       hist[i][j] =  float(double(hist[i][j])*double(nf));
+  }
+ for(i=0;i<3;i++)
+  {
+    delete [] sigma0[i];
+     delete [] sigma0Inv[i];
+  }  
+   delete []  sigma0;
+   delete []  sigma0Inv;
+
+  return hist;
+}
+
+void       
+FaciesProb::makeFaciesDens2(int nfac)
+{
+  int i,j,k,l;
+  nFacies_ = nfac;
+   priorFacies_ = new float[nFacies_];
+  float kstda, kstdb, kstdr, hopt;
+  nbins_  = 150;
+  nbinsr_ = 100;
+  nobs_   = 0;
+  nData_  = new int[nFacies_];
+  float *smooth = new float[nbins_*nbins_*nbinsr_];
+  for(i=0;i<ndata_;i++)
+  {
+    if(facieslog_[i]!=IMISSING)
+      nobs_++;
+  }
+
+  // Make bins.
+  calculateVariances(alphablock_,betablock_,rhoblock_,facieslog_);
+
+  hopt  = static_cast<float>(pow(4.0/7,1.0/7)*pow(static_cast<double>(nobs_),-1.0/7));
+  kstda = hopt*sqrt(sigma0_[0][0]);
+  kstdb = hopt*sqrt(sigma0_[1][1]);
+  kstdr = hopt*sqrt(sigma0_[2][2]);
+
+  double** sigmaSmooth=new double*[3];
+  double** sigmaSmoothInv=new double*[3];
+  
+  for(i=0;i<3;i++)
+  {
+    sigmaSmooth[i]=new double[3];
+    sigmaSmoothInv[i]=new double[3];
+    for(j=0;j<3;j++)
+    {
+      sigmaSmooth[i][j]= double(sigmaPost_[i][j]);
+      sigmaSmoothInv[i][j]=0.0;
+    }
+     sigmaSmoothInv[i][i] = 1.0;
+  }
+
+
+  if((kstda*kstda)> sigmaSmooth[0][0])
+    sigmaSmooth[0][0]=double(kstda*kstda);
+
+  if((kstdb*kstdb)> sigmaSmooth[1][1])
+    sigmaSmooth[1][1]=double(kstdb*kstdb);
+
+  if((kstdr*kstdr)> sigmaSmooth[2][2])
+    sigmaSmooth[2][2]=double(kstdr*kstdr);
+
+ 
+
+  
+  getMinMax(alphablock_,betablock_,rhoblock_,facieslog_);
+  alphamin_ -= 4.0f*float(sqrt(sigmaSmooth[0][0]));
+  alphamax_ += 4.0f*float(sqrt(sigmaSmooth[0][0]));
+  betamin_  -= 4.0f*float(sqrt(sigmaSmooth[1][1]));
+  betamax_  += 4.0f*float(sqrt(sigmaSmooth[1][1]));
+  rhomin_   -= 4.0f*float(sqrt(sigmaSmooth[2][2]));
+  rhomax_   += 4.0f*float(sqrt(sigmaSmooth[2][2]));
+
+  dalpha_ = (alphamax_-alphamin_)/nbins_;
+  dbeta_  = (betamax_-betamin_)/nbins_;
+  drho_   = (rhomax_-rhomin_)/nbinsr_;
+
+  float**hist= makeFaciesHistAndSetPriorProb2(alphablock_,betablock_,rhoblock_,facieslog_);
+
+
+  lib_matrCholR(3, sigmaSmooth); // NB "destroys" sigmaSmooth
+  lib_matrAXeqBMatR(3, sigmaSmooth, sigmaSmoothInv, 3);
+
+
+  int jj,jjj,kk,kkk,ll,lll;
+  lll=2;
+  float sum = 0;
+  for(l=0;l<nbinsr_;l++)
+  {
+    kkk=2;
+    if(l<=nbinsr_/2)
+      ll = l;
+    else
+    {
+      ll = -(l-lll);
+      lll+=2;
+    }
+    for(k=0;k<nbins_;k++)
+    {
+      jjj=2;
+      if(k<=nbins_/2)
+        kk=k;
+      else
+      {
+        kk = -(k-kkk);
+        kkk+=2;
+      }
+      for(j=0;j<nbins_;j++)
+      {
+        if(j<=nbins_/2)
+          jj=j;
+        else
+        {
+          jj = -(j-jjj);
+          jjj+=2;
+        }
+        double* vec =new double[3];
+        vec[0]=jj*dalpha_;vec[1]=kk*dbeta_;vec[2]=ll*drho_;
+        int c1,c2;
+        double mahDist =0.0;
+        for(c1=0;c1<3;c1++)
+          for(c2=0;c2<3;c2++)
+            mahDist+=vec[c1]*sigmaSmoothInv[c1][c2]*vec[c2];
+        delete [] vec;
+        smooth[j+k*nbins_+l*nbins_*nbins_] = float(exp(-0.5*mahDist));
+        sum = sum+smooth[j+k*nbins_+l*nbins_*nbins_];
+      }
+    }
+  }
+  // normalize smoother
+  for(l=0;l<nbinsr_;l++)
+    for(k=0;k<nbins_;k++)
+      for(j=0;j<nbins_;j++)
+        smooth[j+k*nbins_+l*nbins_*nbins_]/=sum;
+
+  density_ = new FFTGrid*[nFacies_];
+  FFTGrid *smoother;
+  smoother = new FFTGrid(nbins_,nbins_,nbinsr_,nbins_,nbins_,nbinsr_);
+  smoother->fillInFromArray(smooth);
+  //smoother->writeAsciiRaw("smooth_PC");
+  smoother->fftInPlace();
+
+  for(i=0;i<nFacies_;i++)
+  {
+    density_[i] = new FFTGrid(nbins_,nbins_,nbinsr_,nbins_,nbins_,nbinsr_); //No padding because alphamin/alphamax are far from observed values
+    density_[i]->fillInFromArray(hist[i]);
+    //char* fN=new char[MAX_STRING];
+    //sprintf(fN,"Hist_PC%d",i);
+    //density_[i]->writeAsciiRaw(fN);
+    density_[i]->fftInPlace();
+    density_[i]->multiply(smoother);
+    density_[i]->invFFTInPlace();
+    density_[i]->multiplyByScalar(float(sqrt(double(nbins_*nbins_*nbinsr_))));
+   //sprintf(fN,"Dens_PC%d",i);
+    //density_[i]->writeAsciiRaw(fN);
+    //delete [] fN;
+  }
+
+  delete smoother;
+  delete [] smooth;
+  delete [] hist;
+
+  for(i=0;i<3;i++)
+  {
+    delete [] sigmaSmooth[i];
+     delete [] sigmaSmoothInv[i];
+  }  
+   delete []  sigmaSmooth;
+   delete []  sigmaSmoothInv;
+  
+}
+
+
+void FaciesProb::makeFaciesProb(int nfac, FFTGrid *alphagrid, FFTGrid *betagrid, FFTGrid *rhogrid)
+{
+  makeFaciesDens(nfac);
   calculateFaciesProb(alphagrid, betagrid, rhogrid);
 }
 float FaciesProb::findDensity(float alpha, float beta, float rho, int facies)
 {
-  int j,k,l;
-  j=k=l=0;
-  j =  int (floor((alpha-alphamin_)/dalpha_));
-  if(j<0)
-    j = 0;
-  if(j>nbins_-1)
-    j = nbins_-1;
-  k  = int (floor((beta-betamin_)/dbeta_));
-  if(k<0)
-    k = 0;
-  if(k>nbins_-1)
-    k = nbins_-1;
-  l = int (floor((rho-rhomin_)/drho_));
-  if(l<0)
-    l = 0;
-  if(l>nbinsr_-1)
-    l = nbinsr_-1;
-  float value = density_[facies]->getRealValue(j,k,l)/nData_[facies];
+  int j1,k1,l1;
+  int j2,k2,l2;
+  float wj,wk,wl;
+  j1=k1=l1=j2=k2=l2=0;
+  j1 =  int (floor((alpha-alphamin_+dalpha_*0.5)/dalpha_));
+  if(j1<0)
+    j1 = 0;
+  if(j1>nbins_-1)
+    j1 = nbins_-1;
+  j2=j1+1;
+  if(j2>nbins_-1)
+    j2 = nbins_-1; 
+  wj= MINIM(1,MAXIM(0,(alpha-alphamin_+dalpha_*0.5f-j1*dalpha_)/dalpha_));
+
+  k1  = int (floor((beta-betamin_+dbeta_*0.5f)/dbeta_));
+  if(k1<0)
+    k1 = 0;
+  if(k1>nbins_-1)
+    k1 = nbins_-1;
+  k2=k1+1;
+  if(k2>nbins_-1)
+    k2 = nbins_-1; 
+  wk= MINIM(1,MAXIM(0,(beta-betamin_+dbeta_*0.5f-k1*dbeta_)/dbeta_));
+
+  l1 = int (floor((rho-rhomin_+drho_*0.5f)/drho_));
+  if(l1<0)
+    l1 = 0;
+  if(l1>nbinsr_-1)
+    l1 = nbinsr_-1;
+  l2=l1+1;
+  if(l2>nbinsr_-1)
+    l2 = nbinsr_-1; 
+  wl= MINIM(1,MAXIM(0,(rho-rhomin_+drho_*0.5f-l1*drho_)/drho_));
+
+
+  float value1 = MAXIM(0,density_[facies]->getRealValue(j1,k1,l1));
+  float value2 = MAXIM(0,density_[facies]->getRealValue(j1,k1,l2));
+  float value3 = MAXIM(0,density_[facies]->getRealValue(j1,k2,l1));
+  float value4 = MAXIM(0,density_[facies]->getRealValue(j1,k2,l2));
+  float value5 = MAXIM(0,density_[facies]->getRealValue(j2,k1,l1));
+  float value6 = MAXIM(0,density_[facies]->getRealValue(j2,k1,l2));
+  float value7 = MAXIM(0,density_[facies]->getRealValue(j2,k2,l1));
+  float value8 = MAXIM(0,density_[facies]->getRealValue(j2,k2,l2));
+  
+  float value=0;
+  value += (1.0f-wj)*(1.0f-wk)*(1.0f-wl)*value1;
+  value += (1.0f-wj)*(1.0f-wk)*(     wl)*value2;
+  value += (1.0f-wj)*(     wk)*(1.0f-wl)*value3;
+  value += (1.0f-wj)*(     wk)*(     wl)*value4;
+  value += (     wj)*(1.0f-wk)*(1.0f-wl)*value5;
+  value += (     wj)*(1.0f-wk)*(     wl)*value6;
+  value += (     wj)*(     wk)*(1.0f-wl)*value7;
+  value += (     wj)*(     wk)*(     wl)*value8;
+
+
   if (value > 0.0)
     return(value);
   else
@@ -261,7 +625,6 @@ float FaciesProb::findDensity(float alpha, float beta, float rho, int facies)
 void FaciesProb::calculateFaciesProb(FFTGrid *alphagrid, FFTGrid *betagrid, FFTGrid *rhogrid)
 {
   float * value       = new float[nFacies_];
-  float * priorFacies = new float[nFacies_];
   int i,j,k,l;
   int nx, ny, nz, rnxp, nyp, nzp, smallrnxp;
   float alpha, beta, rho, sum;
@@ -271,14 +634,12 @@ void FaciesProb::calculateFaciesProb(FFTGrid *alphagrid, FFTGrid *betagrid, FFTG
   nx = alphagrid->getNx();
   ny = alphagrid->getNy();
   nz = alphagrid->getNz();
-  //p_undefined = 0.01f;
   faciesProb_ = new FFTGrid*[nFacies_]; 
   alphagrid->setAccessMode(FFTGrid::READ);
   betagrid->setAccessMode(FFTGrid::READ);
   rhogrid->setAccessMode(FFTGrid::READ);
   for(i=0;i<nFacies_;i++)
   {
-    priorFacies[i] = float(nData_[i])/nobs_;
     if(fileGrid_==1)
       faciesProb_[i] = new FFTFileGrid(nx, ny, nz, nx, ny, nz);
     else
@@ -302,12 +663,11 @@ void FaciesProb::calculateFaciesProb(FFTGrid *alphagrid, FFTGrid *betagrid, FFTG
         //   rho = rhogrid->getRealValue(k,j,i);
         if(k<smallrnxp && j<ny && i<nz)
         {
-          //sum = 0.0;
-         
+          
           sum = p_undefined_/(nbins_*nbins_*nbinsr_);
           for(l=0;l<nFacies_;l++)
           {
-            value[l] = priorFacies[l]*findDensity(alpha, beta, rho, l); 
+            value[l] = priorFacies_[l]*findDensity(alpha, beta, rho, l); 
             sum = sum+value[l];
           }
           for(l=0;l<nFacies_;l++)
@@ -323,7 +683,6 @@ void FaciesProb::calculateFaciesProb(FFTGrid *alphagrid, FFTGrid *betagrid, FFTG
       }
   }
   delete [] value;
-  delete [] priorFacies;
 
 }
 
@@ -338,16 +697,34 @@ void FaciesProb::filterWellLogs(WellData **wells, int nwells,
   int w, w1,i,j;
   ndata_ = nWells_*nz_;
   alphafiltered_ = new float[ndata_];
-  betafiltered_  = new float[ndata_];
-  rhofiltered_   = new float[ndata_];
-  facieslog_     = new int[ndata_];
+  betafiltered_ = new float[ndata_];
+  rhofiltered_ = new float[ndata_];
+  alphablock_ = new float[ndata_];
+  betablock_ = new float[ndata_];
+  rhoblock_ = new float[ndata_];
+  facieslog_ = new int[ndata_];
+
   for(i=0;i<ndata_;i++)
   {
     alphafiltered_[i] = RMISSING;
     betafiltered_[i] = RMISSING;
     rhofiltered_[i] = RMISSING;
+    alphablock_[i] = RMISSING;
+    betablock_[i] = RMISSING;
+    rhoblock_[i] = RMISSING;
     facieslog_[i] = IMISSING;
   }
+  
+  sigmaPost_[0][0]=postcova[0];
+  sigmaPost_[1][1]=postcovb[0];
+  sigmaPost_[2][2]=postcovr[0];
+  sigmaPost_[0][1]=postcrab[0];
+  sigmaPost_[1][0]=postcrab[0];
+  sigmaPost_[0][2]=postcrar[0];
+  sigmaPost_[2][0]=postcrar[0];
+  sigmaPost_[1][2]=postcrbr[0];
+  sigmaPost_[2][1]=postcrbr[0];
+
 
   // Do fourier transform of covariances
   rfftwnd_plan p1 = rfftwnd_create_plan(1, &nzp_, FFTW_REAL_TO_COMPLEX, FFTW_ESTIMATE | FFTW_IN_PLACE);
@@ -387,9 +764,14 @@ void FaciesProb::filterWellLogs(WellData **wells, int nwells,
   float * vtBetaBg  = new float[nz_];
   float * vtRhoBg   = new float[nz_];
 
-  FILE *file = fopen("filteredlogs.dat","w");
-  FILE *file2 = fopen("originallogs.dat","w");
-  FILE *file3 = fopen("background.dat","w");
+  char* fileName = new char[MAX_STRING];
+  fileName =LogKit::makeFullFileName("filteredlogs.dat");
+  FILE *file = fopen(fileName,"w");
+  fileName =LogKit::makeFullFileName("originallogs.dat");
+  FILE *file2 = fopen(fileName,"w");
+  fileName =LogKit::makeFullFileName("background.dat");
+  FILE *file3 = fopen(fileName,"w");
+  delete [] fileName;
   for (w1 = 0 ; w1 < nWells_ ; w1++)
   {
     if(!(wells[w1]->isDeviated()))
@@ -435,8 +817,8 @@ void FaciesProb::filterWellLogs(WellData **wells, int nwells,
         beta_rAmp[i] = vtBeta[i] - vtBetaBg[i];
         rho_rAmp[i] = vtRho[i] - vtRhoBg[i];
         
-        fprintf(file2,"%d %f %f %f %f\n",w1, z+i*dz,vtAlpha[i], vtBeta[i], vtRho[i]);
-        fprintf(file3,"%d %f %f %f %f\n",w1, z+i*dz,vtAlphaBg[i], vtBetaBg[i], vtRhoBg[i]);
+        fprintf(file2,"%d %f %f %f %f %d\n",w1, z+i*dz,vtAlpha[i], vtBeta[i], vtRho[i],facieslog_[i+w1*nz_]);
+        fprintf(file3,"%d %f %f %f %f %d\n",w1, z+i*dz,vtAlphaBg[i], vtBetaBg[i], vtRhoBg[i],facieslog_[i+w1*nz_] );
       }
       
       j = nz_-1;
@@ -585,14 +967,18 @@ void FaciesProb::filterWellLogs(WellData **wells, int nwells,
       // Add background model to filtered data
       
       simbox_->getCoord(ipos[0],jpos[0],kpos[0],x,y,z);
-      for(i=0;i<nz_;i++)
-      {
-        alphafiltered_[i+w1*nz_] = alpha_rAmp[i]/nzp_+vtAlphaBg[i];
-        betafiltered_[i+w1*nz_] = beta_rAmp[i]/nzp_+vtBetaBg[i];
-        rhofiltered_[i+w1*nz_] = rho_rAmp[i]/nzp_+vtRhoBg[i];
-        fprintf(file,"%d %f %f %f %f \n",w1, z+dz*i,alphafiltered_[i+w1*nz_],betafiltered_[i+w1*nz_],rhofiltered_[i+w1*nz_]);
-      }
-      fftwnd_destroy_plan(p2);
+    for(i=0;i<nz_;i++)
+    {
+      alphafiltered_[i+w1*nz_] = alpha_rAmp[i]/nzp_+vtAlphaBg[i];
+      betafiltered_[i+w1*nz_]  = beta_rAmp[i]/nzp_+vtBetaBg[i];
+      rhofiltered_[i+w1*nz_]   = rho_rAmp[i]/nzp_+vtRhoBg[i];
+      alphablock_[i+w1*nz_]    = vtAlpha[i];
+      betablock_[i+w1*nz_]     = vtBeta[i];
+      rhoblock_[i+w1*nz_]      = vtRho[i];
+      fprintf(file,"%d %f %f %f %f %d \n",w1, z+dz*i,alphafiltered_[i+w1*nz_],betafiltered_[i+w1*nz_],rhofiltered_[i+w1*nz_],facieslog_[i+w1*nz_]);   
+    }
+    fftwnd_destroy_plan(p2);
+
 
       for(i=0;i<3;i++)
       {
@@ -613,8 +999,6 @@ void FaciesProb::filterWellLogs(WellData **wells, int nwells,
   fclose(file2);
   fclose(file3);
   fftwnd_destroy_plan(p1);
-  getMinMax();
-  calculateVariances();
 
   delete [] vtAlpha;            // vt = vertical trend
   delete [] vtBeta;
@@ -703,15 +1087,9 @@ FaciesProb::calcFilter(fftw_complex **sigmaK, fftw_complex **sigmaE, double **F)
   delete [] help;
 }
 
-void FaciesProb::getMinMax()
+void FaciesProb::getMinMax(float* alpha,float* beta,float* rho,int* facies)
 {
   int i;
- // alphamin_ = alphafiltered_[0];
-//  alphamax_ = alphafiltered_[0];
- // betamin_ = betafiltered_[0];
-//  betamax_ = betafiltered_[0];
- // rhomin_ = rhofiltered_[0];
-//  rhomax_ = rhofiltered_[0];
   alphamin_ = 1000.0;
   alphamax_ = -1000.0;
   betamin_ = 1000.0;
@@ -720,54 +1098,53 @@ void FaciesProb::getMinMax()
   rhomax_ = -1000.0;
   for(i=0;i<ndata_;i++)
   {
-    if(alphafiltered_[i]<alphamin_ && facieslog_[i]!=IMISSING)
-      alphamin_ = alphafiltered_[i];
-    if(alphafiltered_[i]>alphamax_ && facieslog_[i] != IMISSING)
-      alphamax_ = alphafiltered_[i];
-    if(betafiltered_[i]<betamin_&& facieslog_[i] != IMISSING)
-      betamin_ = betafiltered_[i];
-    if(betafiltered_[i]>betamax_&& facieslog_[i] != IMISSING)
-      betamax_ = betafiltered_[i];
-    if(rhofiltered_[i]<rhomin_&& facieslog_[i] != IMISSING)
-      rhomin_ = rhofiltered_[i];
-    if(rhofiltered_[i]>rhomax_&& facieslog_[i] != IMISSING)
-      rhomax_ = rhofiltered_[i];
+    if(alpha[i]<alphamin_ && facies[i]!=IMISSING)
+      alphamin_ = alpha[i];
+    if(alpha[i]>alphamax_ && facies[i] != IMISSING)
+      alphamax_ = alpha[i];
+    if(beta[i]<betamin_&& facies[i] != IMISSING)
+      betamin_ = beta[i];
+    if(beta[i]>betamax_&& facies[i] != IMISSING)
+      betamax_ = beta[i];
+    if(rhofiltered_[i]<rhomin_&& facies[i] != IMISSING)
+      rhomin_ = rho[i];
+    if(rho[i]>rhomax_&& facies[i] != IMISSING)
+      rhomax_ = rho[i];
   }
 }
 
-void FaciesProb::calculateVariances()
+void FaciesProb::calculateVariances(float* alpha,float* beta,float* rho,int* facies)
 {
   int i;
-  float meanA, meanB, meanR;
   //bool validA, validB, validR;
   int nA, nB, nR;
   nA = nB = nR = 0;
-  meanA = meanB = meanR = 0.0;
+  meanA_ = meanB_ = meanR_ = 0.0;
   // int ndata = nWells_*nz_;
   for(i=0;i<ndata_;i++)
   {
-    if(facieslog_[i]!=IMISSING)
+    if(facies[i]!=IMISSING)
     {
-      meanA+=alphafiltered_[i];
+      meanA_+=alpha[i];
       nA++;
-      meanB+=betafiltered_[i];
+      meanB_+=beta[i];
       nB++;
-      meanR+=rhofiltered_[i];
+      meanR_+=rho[i];
     nR++;
     }
   }
-  meanA/=nA;
-  meanB/=nB;
-  meanR/=nR;
+  meanA_/=nA;
+  meanB_/=nB;
+  meanR_/=nR;
   varAlpha_ = varBeta_ = varRho_ = 0.0;
 
   for(i=0;i<ndata_;i++)
   {
-    if(facieslog_[i]!=IMISSING)
+    if(facies[i]!=IMISSING)
     {
-      varAlpha_+=pow(alphafiltered_[i]-meanA,2);
-      varBeta_+=pow(betafiltered_[i]-meanB,2);
-      varRho_+=pow(rhofiltered_[i]-meanR,2);
+      varAlpha_+=pow(alpha[i]-meanA_,2);
+      varBeta_+=pow(beta[i]-meanB_,2);
+      varRho_+=pow(rho[i]-meanR_,2);
     }
   }
   varAlpha_ /= nA-1;
