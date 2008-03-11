@@ -267,12 +267,9 @@ FaciesProb::makeFaciesDens(int nfac)
     if(LogKit::getDebugLevel()>=1)
     {
       char* fN1=new char[MAX_STRING];
-      char* fN2=new char[MAX_STRING];
-      sprintf(fN2,"Dens_%d",i);
-      fN1=LogKit::makeFullFileName(fN2,".txt") ;
+      sprintf(fN1,"Dens_%d",i);
       density_[i]->writeAsciiRaw(fN1);
       delete [] fN1;
-      delete [] fN2;
     }
   }
 
