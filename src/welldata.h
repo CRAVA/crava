@@ -105,6 +105,7 @@ private:
   bool            syntheticVsLog_;
   bool            isDeviated_;
   int             nFacies_;
+  char          * faciesLogName_;
   char         ** faciesNames_;
   int           * faciesNr_;
   int             nd_;                          // number of obs. in well

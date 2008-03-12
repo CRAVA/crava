@@ -56,6 +56,7 @@ WellData::~WellData()
 
   if (nFacies_ > 0)
   {
+    delete faciesLogName_;
     for (int i = 0 ; i < nFacies_ ; i++)
       if(faciesNames_[i] != NULL)
         delete [] faciesNames_[i];
@@ -152,6 +153,8 @@ WellData::readRMSWell(const char * wellFileName, char **headerList, bool faciesL
         pos[j] = i + 4;
         if(j==4)
         {
+          faciesLogName_ = new char[MAX_STRING];
+          strcpy(faciesLogName_,parameterList[4]);
           // facies log - save names
           fscanf(file,"%s",tmpStr); // read code word DISC
           if(strcmp(tmpStr,"DISC")!=0)
@@ -456,19 +459,40 @@ WellData::writeRMSWell(void)
     fprintf(file,"%s%d UNK lin\n",params[i],int(maxHz_background));
     fprintf(file,"%s%d UNK lin\n",params[i],int(maxHz_seismic));
   }
+  if (nFacies_ > 0) {
+    fprintf(file,"%s   DISC ",faciesLogName_);
+    for (int i =0 ; i < nFacies_ ; i++)
+      fprintf(file," %d %s",faciesNr_[i],faciesNames_[i]);
+    fprintf(file,"\n");    
+  }
   for (int i=0 ; i<nd_ ;i++) {
-    fprintf(file,"%.4f %.4f %.4f %.5f %.5f %.5f %.5f %.5f %.5f %.5f %.5f %.5f\n",
-            xpos_[i],ypos_[i],zpos_[i],
-            (alpha_[i]==RMISSING                       ? WELLMISSING : alpha_[i]), 
-            (alpha_background_resolution_[i]==RMISSING ? WELLMISSING : alpha_background_resolution_[i]), 
-            (alpha_seismic_resolution_[i]==RMISSING    ? WELLMISSING : alpha_seismic_resolution_[i]),
-            (beta_[i]==RMISSING                        ? WELLMISSING : beta_[i]), 
-            (beta_background_resolution_[i]==RMISSING  ? WELLMISSING : beta_background_resolution_[i]), 
-            (beta_seismic_resolution_[i]==RMISSING     ? WELLMISSING : beta_seismic_resolution_[i]),
-            (rho_[i]==RMISSING                         ? WELLMISSING : rho_[i]), 
-            (rho_background_resolution_[i]==RMISSING   ? WELLMISSING : rho_background_resolution_[i]), 
-            (rho_seismic_resolution_[i]==RMISSING      ? WELLMISSING : rho_seismic_resolution_[i])
-            );
+    if (nFacies_ > 0)
+      fprintf(file,"%.4f %.4f %.4f %.5f %.5f %.5f %.5f %.5f %.5f %.5f %.5f %.5f %5d\n",
+              xpos_[i],ypos_[i],zpos_[i],
+              (alpha_[i]==RMISSING                       ? WELLMISSING : alpha_[i]), 
+              (alpha_background_resolution_[i]==RMISSING ? WELLMISSING : alpha_background_resolution_[i]), 
+              (alpha_seismic_resolution_[i]==RMISSING    ? WELLMISSING : alpha_seismic_resolution_[i]),
+              (beta_[i]==RMISSING                        ? WELLMISSING : beta_[i]), 
+              (beta_background_resolution_[i]==RMISSING  ? WELLMISSING : beta_background_resolution_[i]), 
+              (beta_seismic_resolution_[i]==RMISSING     ? WELLMISSING : beta_seismic_resolution_[i]),
+              (rho_[i]==RMISSING                         ? WELLMISSING : rho_[i]), 
+              (rho_background_resolution_[i]==RMISSING   ? WELLMISSING : rho_background_resolution_[i]), 
+              (rho_seismic_resolution_[i]==RMISSING      ? WELLMISSING : rho_seismic_resolution_[i]),
+              (facies_[i]==IMISSING                      ? int(WELLMISSING) : facies_[i])
+              );
+    else
+      fprintf(file,"%.4f %.4f %.4f %.5f %.5f %.5f %.5f %.5f %.5f %.5f %.5f %.5f\n",
+              xpos_[i],ypos_[i],zpos_[i],
+              (alpha_[i]==RMISSING                       ? WELLMISSING : alpha_[i]), 
+              (alpha_background_resolution_[i]==RMISSING ? WELLMISSING : alpha_background_resolution_[i]), 
+              (alpha_seismic_resolution_[i]==RMISSING    ? WELLMISSING : alpha_seismic_resolution_[i]),
+              (beta_[i]==RMISSING                        ? WELLMISSING : beta_[i]), 
+              (beta_background_resolution_[i]==RMISSING  ? WELLMISSING : beta_background_resolution_[i]), 
+              (beta_seismic_resolution_[i]==RMISSING     ? WELLMISSING : beta_seismic_resolution_[i]),
+              (rho_[i]==RMISSING                         ? WELLMISSING : rho_[i]), 
+              (rho_background_resolution_[i]==RMISSING   ? WELLMISSING : rho_background_resolution_[i]), 
+              (rho_seismic_resolution_[i]==RMISSING      ? WELLMISSING : rho_seismic_resolution_[i])
+              );
   }
 
   fclose(file);
