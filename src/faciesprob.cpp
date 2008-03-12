@@ -762,11 +762,11 @@ void FaciesProb::filterWellLogs(WellData **wells, int nwells,
   float * vtRhoBg   = new float[nz_];
 
   char* fileName = new char[MAX_STRING];
-  fileName =LogKit::makeFullFileName("filteredlogs.dat");
+  fileName =LogKit::makeFullFileName("BW_filteredlogs.dat");
   FILE *file = fopen(fileName,"w");
-  fileName =LogKit::makeFullFileName("originallogs.dat");
+  fileName =LogKit::makeFullFileName("BW_originallogs.dat");
   FILE *file2 = fopen(fileName,"w");
-  fileName =LogKit::makeFullFileName("background.dat");
+  fileName =LogKit::makeFullFileName("BW_background.dat");
   FILE *file3 = fopen(fileName,"w");
   delete [] fileName;
   for (w1 = 0 ; w1 < nWells_ ; w1++)
