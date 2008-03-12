@@ -453,7 +453,10 @@ WellData::writeRMSWell(void)
   fprintf(file,"1.0\n");
   fprintf(file,"CRAVA\n");
   fprintf(file,"%s %.2f %.2f\n",wellname_,xpos0_,ypos0_);
-  fprintf(file,"%d\n",3*3);
+  if (nFacies_ > 0)
+    fprintf(file,"%d\n",3*3+1);
+  else
+    fprintf(file,"%d\n",3*3);
   for (int i =0 ; i<3 ; i++) {
     fprintf(file,"%s   UNK lin\n",params[i]);
     fprintf(file,"%s%d UNK lin\n",params[i],int(maxHz_background));
