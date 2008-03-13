@@ -7,33 +7,38 @@
 #include <time.h>
 #include <assert.h>
 #include <stdio.h>
+
+#include "lib/lib_matr.h"
+#include "lib/random.h"
+#include "lib/kriging1d.h"
+
 #include "src/welldata.h"
-#include "src/model.h"
 #include "src/faciesprob.h"
 #include "src/fftgrid.h"
 #include "src/fftfilegrid.h"
 #include "src/crava.h"
-#include "lib/lib_matr.h"
 #include "src/simbox.h"
-#include "lib/random.h"
-#include "lib/kriging1d.h"
 #include "src/blockedlogs.h"
+#include "src/modelsettings.h"
 
 
-FaciesProb::FaciesProb(int filegrid, const float ** sigma0, float *corrprior, Simbox *simbox, const Simbox& osimbox, int nzp, int nz, 
+FaciesProb::FaciesProb(ModelSettings * modelSettings,
+                       int filegrid, const float ** sigma0, float *corrprior, Simbox *simbox, const Simbox& osimbox, int nzp, int nz, 
                        FFTGrid* bgAlpha, FFTGrid* bgBeta, FFTGrid* bgRho, RandomGen *random, float p_undef)
-                       :origSimbox_(osimbox)
+  : origSimbox_(osimbox)
 {
-  fileGrid_ = filegrid;
-  simbox_   = simbox;
-  nzp_      = nzp;
-  nz_       = nz;
-  random_   = random;
-  p_undefined_ = p_undef;
+  modelSettings_ = modelSettings;
+  fileGrid_      = filegrid;
+  simbox_        = simbox;
+  nzp_           = nzp;
+  nz_            = nz;
+  random_        = random;
+  p_undefined_   = p_undef;
   
-  bgAlpha_  = new FFTGrid(bgAlpha);
-  bgBeta_   = new FFTGrid(bgBeta);
-  bgRho_    = new FFTGrid(bgRho);
+  bgAlpha_ = new FFTGrid(bgAlpha);
+  bgBeta_  = new FFTGrid(bgBeta);
+  bgRho_   = new FFTGrid(bgRho);
+
   int i, j;
   sigma0_ = new float*[3];
   sigmaPost_= new float*[3];
@@ -198,8 +203,7 @@ FaciesProb::makeFaciesDens(int nfac)
   drho_   = (rhomax_-rhomin_)/nbinsr_;
 
   float** hist=makeFaciesHistAndSetPriorProb(alphafiltered_,betafiltered_,rhofiltered_,facieslog_);
-  
- 
+
   int jj,jjj,kk,kkk,ll,lll;
   lll=2;
   
@@ -429,7 +433,6 @@ FaciesProb::makeFaciesDens2(int nfac)
      sigmaSmoothInv[i][i] = 1.0;
   }
 
-
   if((kstda*kstda)> sigmaSmooth[0][0])
     sigmaSmooth[0][0]=double(kstda*kstda);
 
@@ -438,9 +441,6 @@ FaciesProb::makeFaciesDens2(int nfac)
 
   if((kstdr*kstdr)> sigmaSmooth[2][2])
     sigmaSmooth[2][2]=double(kstdr*kstdr);
-
- 
-
   
   getMinMax(alphablock_,betablock_,rhoblock_,facieslog_);
   alphamin_ -= 4.0f*float(sqrt(sigmaSmooth[0][0]));
@@ -456,10 +456,8 @@ FaciesProb::makeFaciesDens2(int nfac)
 
   float**hist= makeFaciesHistAndSetPriorProb2(alphablock_,betablock_,rhoblock_,facieslog_);
 
-
   lib_matrCholR(3, sigmaSmooth); // NB "destroys" sigmaSmooth
   lib_matrAXeqBMatR(3, sigmaSmooth, sigmaSmoothInv, 3);
-
 
   int jj,jjj,kk,kkk,ll,lll;
   lll=2;
@@ -544,17 +542,17 @@ FaciesProb::makeFaciesDens2(int nfac)
     delete [] sigmaSmooth[i];
      delete [] sigmaSmoothInv[i];
   }  
-   delete []  sigmaSmooth;
-   delete []  sigmaSmoothInv;
-  
+   delete [] sigmaSmooth;
+   delete [] sigmaSmoothInv;
 }
 
 
-void FaciesProb::makeFaciesProb(int nfac, FFTGrid *alphagrid, FFTGrid *betagrid, FFTGrid *rhogrid)
+void FaciesProb::makeFaciesProb(int nfac, FFTGrid *postAlpha, FFTGrid *postBeta, FFTGrid *postRho)
 {
   makeFaciesDens(nfac);
-  calculateFaciesProb(alphagrid, betagrid, rhogrid);
+  calculateFaciesProb(postAlpha, postBeta, postRho);
 }
+
 float FaciesProb::findDensity(float alpha, float beta, float rho, int facies)
 {
   int j1,k1,l1;
@@ -591,7 +589,6 @@ float FaciesProb::findDensity(float alpha, float beta, float rho, int facies)
     l2 = nbinsr_-1; 
   wl= MINIM(1,MAXIM(0,(rho-rhomin_+drho_*0.5f-l1*drho_)/drho_));
 
-
   float value1 = MAXIM(0,density_[facies]->getRealValue(j1,k1,l1));
   float value2 = MAXIM(0,density_[facies]->getRealValue(j1,k1,l2));
   float value3 = MAXIM(0,density_[facies]->getRealValue(j1,k2,l1));
@@ -611,26 +608,151 @@ float FaciesProb::findDensity(float alpha, float beta, float rho, int facies)
   value += (     wj)*(     wk)*(1.0f-wl)*value7;
   value += (     wj)*(     wk)*(     wl)*value8;
 
-
   if (value > 0.0)
     return(value);
   else
     return 0.0;
+}
 
+void FaciesProb::calculateConditionalFaciesProb(WellData **wells, int nWells)
+{
+  //
+  // Block wells
+  //
+  // NBNB-PAL: De blokkede loggene burde kanskje ha vært mellomlagert ettersom de benyttes to ganger...
+  //
+  BlockedLogs ** bw = new BlockedLogs * [nWells];  
+  int nonDeviatedWells = 0;
+  int totBlocks = 0;
+  for (int i = 0 ; i < nWells ; i++)
+  {
+    if(!(wells[i]->isDeviated()))
+    { 
+      bw[i] = new BlockedLogs(wells[i], simbox_, random_) ;
+      totBlocks += bw[i]->getNumberOfBlocks();
+      nonDeviatedWells++;
+    }
+  }
+
+  //
+  // Put all blocked facies logs in one vector
+  //
+  int ib = 0;
+  int * BWfacies = new int[totBlocks]; 
+  for (int i = 0 ; i < nonDeviatedWells ; i++)
+  {
+    const int * BWfacies_i = bw[i]->getFacies();
+    for (int b = 0 ; b < bw[i]->getNumberOfBlocks() ; b++)
+    {
+      BWfacies[ib] = BWfacies_i[b];
+      //LogKit::writeLog("ib, BWfacies[ib] = %d %d\n",ib,BWfacies[ib]);
+      ib++;
+    }
+  }
+  const int maxBlocks = ib;
+  
+  //
+  // Block facies probabilities and put them in one vector
+  //
+  float ** BWfaciesProb = new float * [nFacies_];
+  for(int f = 0 ; f < nFacies_ ; f++)
+  {
+    BWfaciesProb[f] = new float[maxBlocks];
+    ib = 0;
+    for (int i = 0 ; i < nonDeviatedWells ; i++)
+    {
+      const int * ipos = bw[i]->getIpos();
+      const int * jpos = bw[i]->getJpos();
+      const int * kpos = bw[i]->getKpos();
+
+      for(int b = 0 ; b < bw[i]->getNumberOfBlocks() ; b++)
+      {
+        BWfaciesProb[f][ib] = faciesProb_[f]->getRealValue(ipos[b],jpos[b],kpos[b]);
+        //LogKit::writeLog("f,ib, BWfaciesProb[f][ib] = %d %d %.5f\n",f,ib,BWfaciesProb[f][ib]);
+        ib++;
+      }
+    }
+  }
+
+  //
+  // Estimate P( facies2 | facies1 )
+  //
+  float ** condFaciesProb = new float * [nFacies_];
+  for(int f1 = 0 ; f1 < nFacies_ ; f1++)
+  {
+    condFaciesProb[f1] = new float[nFacies_];
+    for(int f2 = 0 ; f2 < nFacies_ ; f2++)
+    {
+      float meanProb = 0.0f;
+      int count = 0;
+      for(ib = 0 ; ib < maxBlocks ; ib++)
+      {
+        if (BWfacies[ib] == f1) {
+          //LogKit::writeLog("f1,f2 = %d,%d   ib = %d    BWfacies[ib] = %d   meanProb = %.5f\n",f1,f2,ib,BWfacies[ib],meanProb);
+          meanProb += BWfaciesProb[f2][ib];
+          count++;
+        }
+      }
+      if (count > 0)
+        condFaciesProb[f1][f2] = meanProb/count;
+      else
+        condFaciesProb[f1][f2] = 0.0f;
+    }
+  }
+
+  //
+  // Log P( facies2 | facies1 )
+  //
+  LogKit::writeLog("\nThe table below gives the mean conditional probability of finding one of");
+  LogKit::writeLog("\nthe facies specified in the left column when one of the facies specified");
+  LogKit::writeLog("\nin the top row are observed in well logs ==> P(A|B)\n");
+  LogKit::writeLog("\nFacies      |");
+  for(int f=0 ; f < nFacies_ ; f++)
+    LogKit::writeLog(" %11s",modelSettings_->getFaciesName(f));
+  LogKit::writeLog("\n------------+");
+  for(int f=0 ; f < nFacies_ ; f++)
+    LogKit::writeLog("------------",f);
+  LogKit::writeLog("\n");
+  for(int f1=0 ; f1 < nFacies_ ; f1++)
+  {
+    LogKit::writeLog("%-11s |",modelSettings_->getFaciesName(f1));
+    for(int f2=0 ; f2 < nFacies_ ; f2++)
+    {
+      LogKit::writeLog(" %11.3f",condFaciesProb[f1][f2]);
+    }
+    LogKit::writeLog("\n");
+  }
+
+  for(int i=0 ; i < nFacies_ ; i++)
+    delete [] BWfaciesProb[i];
+  delete BWfaciesProb;
+
+  delete [] BWfacies;
+
+  for(int i=0 ; i < nFacies_ ; i++)
+    delete [] condFaciesProb[i];
+  delete condFaciesProb;
+  
+  //
+  // NBNB-PAL: gir segmentation fault -> purify?
+  //
+  //for (i = 0 ; i < nonDeviatedWells ; i++)
+  //  delete [] bw[i];
+  //delete [] bw;
 }
 
 void FaciesProb::calculateFaciesProb(FFTGrid *alphagrid, FFTGrid *betagrid, FFTGrid *rhogrid)
 {
-  float * value       = new float[nFacies_];
+  float * value = new float[nFacies_];
   int i,j,k,l;
   int nx, ny, nz, rnxp, nyp, nzp, smallrnxp;
   float alpha, beta, rho, sum;
   rnxp = alphagrid->getRNxp();
-  nyp = alphagrid->getNyp();
-  nzp = alphagrid->getNzp();
-  nx = alphagrid->getNx();
-  ny = alphagrid->getNy();
-  nz = alphagrid->getNz();
+  nyp  = alphagrid->getNyp();
+  nzp  = alphagrid->getNzp();
+  nx   = alphagrid->getNx();
+  ny   = alphagrid->getNy();
+  nz   = alphagrid->getNz();
   faciesProb_ = new FFTGrid*[nFacies_]; 
   alphagrid->setAccessMode(FFTGrid::READ);
   betagrid->setAccessMode(FFTGrid::READ);
@@ -684,8 +806,9 @@ void FaciesProb::calculateFaciesProb(FFTGrid *alphagrid, FFTGrid *betagrid, FFTG
 }
 
 void FaciesProb::filterWellLogs(WellData **wells, int nwells,
-                                fftw_real *postcova,fftw_real *postcovb,fftw_real *postcovr,fftw_real *postcrab,
-                                fftw_real *postcrar, fftw_real *postcrbr, float lowCut, float highCut)
+                                fftw_real *postcova, fftw_real *postcovb, fftw_real *postcovr,
+                                fftw_real *postcrab, fftw_real *postcrar, fftw_real *postcrbr, 
+                                float lowCut, float highCut)
 {
   nWells_ = nwells;
   float lowcut  = lowCut;
@@ -1009,6 +1132,7 @@ void FaciesProb::filterWellLogs(WellData **wells, int nwells,
   fftw_free(beta_rAmp);
   fftw_free(rho_rAmp);
 }
+
 void
 FaciesProb::calcFilter(fftw_complex **sigmaK, fftw_complex **sigmaE, double **F)
 {
@@ -1174,12 +1298,12 @@ FaciesProb::extrapolate(float * log,
     for(int i=last_nonmissing + 1 ; i < nz ; i++) { 
       log[i] = log[last_nonmissing]; 
     }
-  //  if (first_nonmissing > 0)
-  //    LogKit::writeLog("Vertical trend for %s extrapolated first %d cells.\n",
- //                      pName, first_nonmissing + 1);
-//    if (nz - 1 - last_nonmissing > 0)
- //     LogKit::writeLog("Vertical trend for %s extrapolated last %d cells.\n",
- //                      pName, nz - 1 - last_nonmissing);
+    //  if (first_nonmissing > 0)
+    //    LogKit::writeLog("Vertical trend for %s extrapolated first %d cells.\n",
+    //                      pName, first_nonmissing + 1);
+    //    if (nz - 1 - last_nonmissing > 0)
+    //     LogKit::writeLog("Vertical trend for %s extrapolated last %d cells.\n",
+    //                      pName, nz - 1 - last_nonmissing);
     //for (int i=0 ; i<nz ; i++) {
     //  printf("i log[i]  %d %.3f\n",i,log[i]);
     //}

@@ -27,7 +27,7 @@ Wavelet::Wavelet(Simbox         * simbox,
                  ModelSettings  * modelSettings,
                  float          * coeff) 
 {
-  LogKit::writeLog("  Estimating wavelet from seismic data and (nonfiltered) blocked wells\n");
+  LogKit::writeLog("\n  Estimating wavelet from seismic data and (nonfiltered) blocked wells\n");
   readtype_ = ESTIMATE;
   // initialization
 
@@ -1835,7 +1835,7 @@ Wavelet::averageWavelets(fftw_real** wavelet_r,int nWells,int nzp,float* wellWei
 float         
 Wavelet::getNoiseStandardDeviation(Simbox * simbox, FFTGrid * seisCube, WellData ** wells, int nWells)
 {
-  LogKit::writeLog("\n  Estimating noise from seismic data and (nonfiltered) blocked wells");
+  //LogKit::writeLog("\n  Estimating noise from seismic data and (nonfiltered) blocked wells");
 
   float errStd  = 0.0f;
   float dataVar = 0.0f;
@@ -2015,7 +2015,7 @@ Wavelet::getNoiseStandardDeviation(Simbox * simbox, FFTGrid * seisCube, WellData
   errStd  /= float(nData);
   errStd   = sqrt(errStd);
   
-  LogKit::writeLog("\n  Reporting errors (as standard deviations) estimated in different ways:\n\n");
+  //LogKit::writeLog("\n  Reporting errors (as standard deviations) estimated in different ways:\n\n");
   LogKit::writeLog("                                     SeisData        ActuallyUsed       OptimalGlobal      OptimalLocal\n");
   LogKit::writeLog("  Well                  shift[ms]     StdDev          Gain   S/N         Gain   S/N         Gain   S/N \n");
   LogKit::writeLog("  --------------------------------------------------------------------------------------------------------\n");

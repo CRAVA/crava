@@ -1432,7 +1432,7 @@ Model::processWavelets(void)
         noiseEnergy[i] = wavelet_[i]->getNoiseStandardDeviation(timeSimbox_, seisCube_[i], wells_, modelSettings_->getNumberOfWells());
         if (hasSignalToNoiseRatio_) 
         {
-          LogKit::writeLog("\n  Since seismic noise is estimated directly, keyword GIVESIGNALTONOISERATIO has no effect.\n");
+          //LogKit::writeLog("\n  Since seismic noise is estimated directly, keyword GIVESIGNALTONOISERATIO has no effect.\n");
           hasSignalToNoiseRatio_ = false;
         }
       }

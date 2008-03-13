@@ -470,7 +470,7 @@ WellData::writeRMSWell(void)
   }
   for (int i=0 ; i<nd_ ;i++) {
     if (nFacies_ > 0)
-      fprintf(file,"%.4f %.4f %.4f %.5f %.5f %.5f %.5f %.5f %.5f %.5f %.5f %.5f %5d\n",
+      fprintf(file,"%.4f %.4f %.4f %.5f %.5f %.5f %.5f %.5f %.5f %.5f %.5f %.5f %d\n",
               xpos_[i],ypos_[i],zpos_[i],
               (alpha_[i]==RMISSING                       ? WELLMISSING : alpha_[i]), 
               (alpha_background_resolution_[i]==RMISSING ? WELLMISSING : alpha_background_resolution_[i]), 

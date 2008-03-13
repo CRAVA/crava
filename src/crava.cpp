@@ -161,7 +161,8 @@ Crava::Crava(Model * model)
   //  fclose(test);
     Simbox *regularSimbox = new Simbox(simbox_);
     regularSimbox->setDepth(simbox_->getTopGrid(), 0, simbox_->getlz(), simbox_->getdz());
-    fprob_ = new FaciesProb(fileGrid_, parPointCov_,corrprior, regularSimbox, *(const Simbox*)simbox_, 
+    fprob_ = new FaciesProb(model->getModelSettings(),
+                            fileGrid_, parPointCov_,corrprior, regularSimbox, *(const Simbox*)simbox_, 
                             nzp_, nz_, meanAlpha_, meanBeta_, meanRho_, random_, 
                             model->getModelSettings()->getPundef());
     delete [] corrprior;
@@ -2067,22 +2068,23 @@ void
 Crava::printEnergyToScreen()
 {
   int i;
-  LogKit::writeLog("                ");
+  LogKit::writeLog("                       ");
   for(i=0;i < ntheta_; i++) LogKit::writeLog("  Seismic %4.1f ",theta_[i]/PI*180);
-  LogKit::writeLog("\n---------------------------------------------------------------------------");
-  LogKit::writeLog("\nData variance   :");
+  LogKit::writeLog("\n----------------------");
+  for(i=0;i < ntheta_; i++) LogKit::writeLog("---------------");
+  LogKit::writeLog("\nObserved data variance :");
   for(i=0;i < ntheta_; i++) LogKit::writeLog("    %1.3e  ",dataVariance_[i]);
-  LogKit::writeLog("\nSignal variance :");
+  LogKit::writeLog("\nModelled data variance :");
   for(i=0;i < ntheta_; i++) LogKit::writeLog("    %1.3e  ",signalVariance_[i]);
-  LogKit::writeLog("\nModel variance  :");
-  for(i=0;i < ntheta_; i++) LogKit::writeLog("    %1.3e  ",modelVariance_[i]);
-  LogKit::writeLog("\nError variance  :");
+  //LogKit::writeLog("\nModel variance         :");
+  //for(i=0;i < ntheta_; i++) LogKit::writeLog("    %1.3e  ",modelVariance_[i]);
+  LogKit::writeLog("\nError variance         :");
   for(i=0;i < ntheta_; i++) LogKit::writeLog("    %1.3e  ",errorVariance_[i]);
-  LogKit::writeLog("\nWavelet scale   :");
+  LogKit::writeLog("\nWavelet scale          :");
   for(i=0;i < ntheta_; i++) LogKit::writeLog("    %2.3e  ",seisWavelet_[i]->getScale());
-  LogKit::writeLog("\nEmpirical   S/N :");
+  LogKit::writeLog("\nGiven S/N              :");
   for(i=0;i < ntheta_; i++) LogKit::writeLog("    %5.3f      ",empSNRatio_[i]);
-  LogKit::writeLog("\nTheoretical S/N :");
+  LogKit::writeLog("\nModelled S/N           :");
   for(i=0;i < ntheta_; i++) LogKit::writeLog("    %5.3f      ",theoSNRatio_[i]);
   LogKit::writeLog("\n");
 }
@@ -2192,7 +2194,10 @@ void Crava::computeFaciesProb()
     }
     
     WellData** ppWellData = (WellData**)(wells_);
-    fprob_->filterWellLogs(ppWellData,nWells_,postcova,postcovb,postcovr,postcrab,postcrar,postcrbr, lowCut_, highCut_);
+    fprob_->filterWellLogs(ppWellData,nWells_,
+                           postcova,postcovb,postcovr,
+                           postcrab,postcrar,postcrbr, 
+                           lowCut_, highCut_);
 
     if(postCovAlpha_->getIsTransformed()==false)
       postCovAlpha_->fftInPlace();
@@ -2210,6 +2215,8 @@ void Crava::computeFaciesProb()
 
     int nfac = model_->getModelSettings()->getNumberOfFacies();
     fprob_->makeFaciesProb(nfac,postAlpha_,postBeta_, postRho_);
+
+    fprob_->calculateConditionalFaciesProb(wells_, nWells_);
 
     FFTGrid *grid;
     char fileName[MAX_STRING];
