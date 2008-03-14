@@ -637,75 +637,147 @@ void FaciesProb::calculateConditionalFaciesProb(WellData **wells, int nWells)
   //
   // Put all blocked facies logs in one vector
   //
-  int ib = 0;
-  int * BWfacies = new int[totBlocks]; 
+  int ** BWfacies = new int * [nonDeviatedWells]; 
   for (int i = 0 ; i < nonDeviatedWells ; i++)
   {
+    const int   nBlocks    = bw[i]->getNumberOfBlocks();
     const int * BWfacies_i = bw[i]->getFacies();
-    for (int b = 0 ; b < bw[i]->getNumberOfBlocks() ; b++)
+    BWfacies[i] = new int[nBlocks]; 
+    for (int b = 0 ; b < nBlocks ; b++)
     {
-      BWfacies[ib] = BWfacies_i[b];
-      //LogKit::writeLog("ib, BWfacies[ib] = %d %d\n",ib,BWfacies[ib]);
-      ib++;
+      BWfacies[i][b] = BWfacies_i[b];
+      //LogKit::writeLog("ib, BWfacies[i][b] = %d %d\n",ib,BWfacies[ib]);
     }
   }
-  const int maxBlocks = ib;
-  
+   
   //
   // Block facies probabilities and put them in one vector
   //
-  float ** BWfaciesProb = new float * [nFacies_];
+  float *** BWfaciesProb = new float ** [nFacies_];
   for(int f = 0 ; f < nFacies_ ; f++)
   {
-    BWfaciesProb[f] = new float[maxBlocks];
-    ib = 0;
+    BWfaciesProb[f] = new float * [nonDeviatedWells];
     for (int i = 0 ; i < nonDeviatedWells ; i++)
     {
-      const int * ipos = bw[i]->getIpos();
-      const int * jpos = bw[i]->getJpos();
-      const int * kpos = bw[i]->getKpos();
-
-      for(int b = 0 ; b < bw[i]->getNumberOfBlocks() ; b++)
+      const int   nBlocks = bw[i]->getNumberOfBlocks();
+      const int * ipos    = bw[i]->getIpos();
+      const int * jpos    = bw[i]->getJpos();
+      const int * kpos    = bw[i]->getKpos();
+      BWfaciesProb[f][i] = new float[nBlocks];
+      for(int b = 0 ; b < nBlocks ; b++)
       {
-        BWfaciesProb[f][ib] = faciesProb_[f]->getRealValue(ipos[b],jpos[b],kpos[b]);
-        //LogKit::writeLog("f,ib, BWfaciesProb[f][ib] = %d %d %.5f\n",f,ib,BWfaciesProb[f][ib]);
-        ib++;
+        BWfaciesProb[f][i][b] = faciesProb_[f]->getRealValue(ipos[b],jpos[b],kpos[b]);
+        //LogKit::writeLog("f,ib, BWfaciesProb[f][i][b] = %d %d %.5f\n",f,ib,BWfaciesProb[f][ib]);
       }
     }
+  }
+
+  //
+  // Sum probabilities for a given facies
+  //
+  float *** sumProb = new float ** [nFacies_];
+  int   *** numProb = new int ** [nFacies_];
+  for(int f1 = 0 ; f1 < nFacies_ ; f1++)
+  {
+    sumProb[f1] = new float * [nFacies_];
+    numProb[f1] = new int * [nFacies_];
+    for(int f2 = 0 ; f2 < nFacies_ ; f2++)
+    {
+      sumProb[f1][f2] = new float[nonDeviatedWells];
+      numProb[f1][f2] = new int[nonDeviatedWells];
+      for (int i = 0 ; i < nonDeviatedWells ; i++)
+      {
+        sumProb[f1][f2][i] = 0.0f;
+        numProb[f1][f2][i] = 0;
+        for(int b = 0 ; b < bw[i]->getNumberOfBlocks() ; b++)
+        {
+          if (BWfacies[i][b] == f1) {
+            //LogKit::writeLog("f1,f2 = %d,%d   ib = %d    BWfacies[i][b] = %d   sumProb = %.5f\n",f1,f2,ib,BWfacies[i][b],sumProb);
+            sumProb[f1][f2][i] += BWfaciesProb[f2][i][b];
+            numProb[f1][f2][i] += 1;
+          }
+        }
+      }
+    }
+  }
+
+  float ** condFaciesProb  = new float * [nFacies_];
+  for(int f = 0 ; f < nFacies_ ; f++)
+    condFaciesProb[f] = new float[nFacies_];
+
+  float * totProb = new float[nFacies_];
+
+  //
+  // Estimate P( facies2 | facies1 ) for each well
+  //
+  for (int i = 0 ; i < nonDeviatedWells ; i++)
+  {
+    for(int f1 = 0 ; f1 < nFacies_ ; f1++)
+    {
+      totProb[f1] = 0.0f;
+      for(int f2 = 0 ; f2 < nFacies_ ; f2++)
+      {
+        if (numProb[f1][f2][i] > 0) 
+          condFaciesProb[f1][f2] = sumProb[f1][f2][i]/numProb[f1][f2][i];
+        else
+          condFaciesProb[f1][f2] = 0.0f;
+        totProb[f1] += condFaciesProb[f1][f2];
+      }
+    }
+    LogKit::writeLog("\nWell: %s\n",bw[i]->getWellname());
+    LogKit::writeLog("\nFacies      |");
+    for(int f=0 ; f < nFacies_ ; f++)
+      LogKit::writeLog(" %11s",modelSettings_->getFaciesName(f));
+    LogKit::writeLog("\n------------+");
+    for(int f=0 ; f < nFacies_ ; f++)
+      LogKit::writeLog("------------",f);
+    LogKit::writeLog("\n");
+    for(int f1=0 ; f1 < nFacies_ ; f1++)
+    {
+      LogKit::writeLog("%-11s |",modelSettings_->getFaciesName(f1));
+      for(int f2=0 ; f2 < nFacies_ ; f2++)
+      {
+        LogKit::writeLog(" %11.3f",condFaciesProb[f2][f1]);
+      }
+      LogKit::writeLog("\n");
+    }
+    LogKit::writeLog("Total Prob  |");
+    for(int f=0 ; f < nFacies_ ; f++)
+    {
+      LogKit::writeLog(" %11.3f",totProb[f]);
+    }
+    LogKit::writeLog("\n");
   }
 
   //
   // Estimate P( facies2 | facies1 )
   //
-  float ** condFaciesProb = new float * [nFacies_];
+  //LogKit::writeLog("\nThe table below gives the mean conditional probability of finding one of");
+  //LogKit::writeLog("\nthe facies specified in the left column when one of the facies specified");
+  //LogKit::writeLog("\nin the top row are observed in well logs ==> P(A|B)\n");
   for(int f1 = 0 ; f1 < nFacies_ ; f1++)
   {
-    condFaciesProb[f1] = new float[nFacies_];
+    totProb[f1] = 0.0f;
     for(int f2 = 0 ; f2 < nFacies_ ; f2++)
     {
-      float meanProb = 0.0f;
-      int count = 0;
-      for(ib = 0 ; ib < maxBlocks ; ib++)
+      float sumFaciesProb = 0.0f;
+      int   numFaciesProb =   0;
+      for (int i = 0 ; i < nonDeviatedWells ; i++)
       {
-        if (BWfacies[ib] == f1) {
-          //LogKit::writeLog("f1,f2 = %d,%d   ib = %d    BWfacies[ib] = %d   meanProb = %.5f\n",f1,f2,ib,BWfacies[ib],meanProb);
-          meanProb += BWfaciesProb[f2][ib];
-          count++;
+        if (numProb[f1][f2][i] > 0)
+        {
+          sumFaciesProb += sumProb[f1][f2][i];
+          numFaciesProb += numProb[f1][f2][i];
         }
       }
-      if (count > 0)
-        condFaciesProb[f1][f2] = meanProb/count;
+      if (numFaciesProb > 0)
+        condFaciesProb[f1][f2] = sumFaciesProb/numFaciesProb;
       else
         condFaciesProb[f1][f2] = 0.0f;
+      totProb[f1] += condFaciesProb[f1][f2];
     }
   }
-
-  //
-  // Log P( facies2 | facies1 )
-  //
-  LogKit::writeLog("\nThe table below gives the mean conditional probability of finding one of");
-  LogKit::writeLog("\nthe facies specified in the left column when one of the facies specified");
-  LogKit::writeLog("\nin the top row are observed in well logs ==> P(A|B)\n");
+  LogKit::writeLog("\nFor all wells:\n");
   LogKit::writeLog("\nFacies      |");
   for(int f=0 ; f < nFacies_ ; f++)
     LogKit::writeLog(" %11s",modelSettings_->getFaciesName(f));
@@ -717,21 +789,30 @@ void FaciesProb::calculateConditionalFaciesProb(WellData **wells, int nWells)
   {
     LogKit::writeLog("%-11s |",modelSettings_->getFaciesName(f1));
     for(int f2=0 ; f2 < nFacies_ ; f2++)
-    {
-      LogKit::writeLog(" %11.3f",condFaciesProb[f1][f2]);
-    }
+      LogKit::writeLog(" %11.3f",condFaciesProb[f2][f1]);
     LogKit::writeLog("\n");
   }
+  LogKit::writeLog("Total Prob  |");
+  for(int f=0 ; f < nFacies_ ; f++)
+  {
+    LogKit::writeLog(" %11.3f",totProb[f]);
+  }
+  LogKit::writeLog("\n");
 
-  for(int i=0 ; i < nFacies_ ; i++)
-    delete [] BWfaciesProb[i];
-  delete BWfaciesProb;
+  
+// for(int i=0 ; i < nFacies_ ; i++)
+//     delete [] BWfaciesProb[i];
+//   delete BWfaciesProb;
 
-  delete [] BWfacies;
+//   delete [] BWfacies;
 
-  for(int i=0 ; i < nFacies_ ; i++)
-    delete [] condFaciesProb[i];
-  delete condFaciesProb;
+//   for(int i=0 ; i < nFacies_ ; i++)
+//     delete [] condFaciesProb[i];
+//   delete condFaciesProb;
+  
+//   for(int i=0 ; i < nFacies_ ; i++)
+//     delete [] condFaciesCount[i];
+//   delete condFaciesProb;
   
   //
   // NBNB-PAL: gir segmentation fault -> purify?
