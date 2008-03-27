@@ -461,7 +461,7 @@ Wavelet::WaveletReadOld(char * fileName)
   {      
     if( maxWaveletL  > nSamples )
     {
-      char * target = new char[1];
+      char * target = new char[2];
       strcpy(target,"F");
       pos = findEnd(tmpStr, 0, target);
       delete [] target;
