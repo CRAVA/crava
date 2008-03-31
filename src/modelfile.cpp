@@ -357,9 +357,9 @@ ModelFile::ModelFile(char * fileName)
     LogKit::writeLog("  PSSEISMIC\n");
     LogKit::writeLog("  REFLECTIONMATRIX\n");
     LogKit::writeLog("  SEED\n");
-    LogKit::writeLog("  SEISMICRESOLUTION\n");
     LogKit::writeLog("  SEGYOFFSET\n");
     LogKit::writeLog("  SEISMIC\n");
+    LogKit::writeLog("  SEISMICRESOLUTION\n");
     LogKit::writeLog("  WAVELETLENGTH\n");
     LogKit::writeLog("  WELLS\n");
     LogKit::writeLog("  WHITENOISE\n");
@@ -415,6 +415,15 @@ ModelFile::ModelFile(char * fileName)
   if(modelSettings_->getGenerateSeismic() && generateBackground_)
   {
     strcpy(errText,"Background model and seismic cannot both be generated.\n");
+    errorList[nErrors] = new char[strlen(errText)+1];
+    strcpy(errorList[nErrors], errText);
+    nErrors++;
+  }
+  
+  if(generateBackground_ && modelSettings_->getMaxHzBackground() < modelSettings_->getLowCut())
+  {
+    sprintf(errText,"The frequency high cut for the background (%.1f) must be larger than the frequency low cut for the inversion (%.1f).\n",
+            modelSettings_->getMaxHzBackground(),modelSettings_->getLowCut());
     errorList[nErrors] = new char[strlen(errText)+1];
     strcpy(errorList[nErrors], errText);
     nErrors++;
@@ -593,13 +602,16 @@ int
 ModelFile::readCommandBackground(char ** params, int & pos, char * errText)
 {
   int error;
-  int nPar = getParNum(params, pos, error, errText, params[pos-1], 3, -1);
+  int nPar = getParNum(params, pos, error, errText, params[pos-1], 2, -1);
   if(error == 1)
   {
     pos += nPar+1;
     return(1);
   }
-
+  //
+  // If the number of parameters are exactly 3 we assume the background model
+  // to be given either on file or as constants.
+  //
   if (nPar == 3) 
   {
     generateBackground_ = false;

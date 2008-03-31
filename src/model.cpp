@@ -1098,86 +1098,82 @@ void Model::checkFaciesNames(void)
 void 
 Model::processBackground(char * errText)
 {
-  if (modelSettings_->getDoInversion() || (modelSettings_->getOutputFlag() & ModelSettings::BACKGROUND) > 0 )
+  FFTGrid * backModel[3];
+  if (modelFile_->getGenerateBackground()) 
   {
-    FFTGrid * backModel[3];
-    if (modelFile_->getGenerateBackground()) 
+    LogKit::writeLog("\n***********************************************************************");
+    LogKit::writeLog("\n***              Prior Expectations / Background Model              ***"); 
+    LogKit::writeLog("\n***********************************************************************\n");
+    
+    if(modelSettings_->getBackgroundVario() == NULL)
     {
-      LogKit::writeLog("\n***********************************************************************");
-      LogKit::writeLog("\n***              Prior Expectations / Background Model              ***"); 
-      LogKit::writeLog("\n***********************************************************************\n");
-      
-      if(modelSettings_->getBackgroundVario() == NULL)
-      {
-        printf("ERROR: Did not manage to make variogram for background modelling\n");
-        exit(1);
-      }
-      
-      for (int i=0 ; i<3 ; i++)
-      {
-        backModel[i] = new FFTGrid(timeSimbox_->getnx(), timeSimbox_->getny(), timeSimbox_->getnz(), 
-                                   nxPad_, nyPad_, nzPad_);              
-        backModel[i]->setType(FFTGrid::PARAMETER);
-      }
-      
-      background_ = new Background(backModel, wells_, timeSimbox_, modelSettings_);
+      printf("ERROR: Did not manage to make variogram for background modelling\n");
+      exit(1);
     }
-    else 
+    
+    for (int i=0 ; i<3 ; i++)
     {
-      const char * parName[]={"Vp background","Vs background","Rho background"};
-      for(int i=0 ; i<3 ; i++)
+      backModel[i] = new FFTGrid(timeSimbox_->getnx(), timeSimbox_->getny(), timeSimbox_->getnz(), 
+                                 nxPad_, nyPad_, nzPad_);              
+      backModel[i]->setType(FFTGrid::PARAMETER);
+    }
+    
+    background_ = new Background(backModel, wells_, timeSimbox_, modelSettings_);
+  }
+  else 
+  {
+    const char * parName[]={"Vp background","Vs background","Rho background"};
+    for(int i=0 ; i<3 ; i++)
+    {
+      float  * constBack = modelFile_->getConstBack();
+      char  ** backFile  = modelFile_->getBackFile();
+      
+      if(constBack[i] < 0)
       {
-        float  * constBack = modelFile_->getConstBack();
-        char  ** backFile  = modelFile_->getBackFile();
-        
-        if(constBack[i] < 0)
+        if(backFile[i] != NULL)
         {
-          if(backFile[i] != NULL)
-          {
-            int readerror = 0;
-            if(constBack[i] == ModelFile::SEGYFILE)
-              readerror = readSegyFiles(backFile, 1, backModel, errText, FFTGrid::PARAMETER, i);
-            else
-              readerror = readStormFile(backFile[i], backModel[i], parName[i], errText);
-            if(readerror != 0)
-              {
-                LogKit::writeLog("ERROR: Reading of file \'%s\' for parameter \'%s\' failed\n",
-                                 backFile[i],parName[i]);
-                printf("       %s\n",errText);
-                exit(1);
-              }
-          }
+          int readerror = 0;
+          if(constBack[i] == ModelFile::SEGYFILE)
+            readerror = readSegyFiles(backFile, 1, backModel, errText, FFTGrid::PARAMETER, i);
           else
+            readerror = readStormFile(backFile[i], backModel[i], parName[i], errText);
+          if(readerror != 0)
           {
-            LogKit::writeLog("ERROR: Reading of file for parameter \'%s\' failed. File pointer is NULL\n",
-                             parName[i]);
+            LogKit::writeLog("ERROR: Reading of file \'%s\' for parameter \'%s\' failed\n",
+                             backFile[i],parName[i]);
+            printf("       %s\n",errText);
             exit(1);
           }
         }
-        else if(constBack[i] > 0)
-        {
-          if(modelSettings_->getFileGrid() == 1)
-            backModel[i] = new FFTFileGrid(timeSimbox_->getnx(), timeSimbox_->getny(), timeSimbox_->getnz(), 
-                                           nxPad_, nyPad_, nzPad_);
-          else
-            backModel[i] = new FFTGrid(timeSimbox_->getnx(), timeSimbox_->getny(), timeSimbox_->getnz(), 
-                                       nxPad_, nyPad_, nzPad_);              
-          backModel[i]->setType(FFTGrid::PARAMETER);
-          backModel[i]->fillInConstant(float( log( constBack[i] )));
-        }
         else
         {
-          LogKit::writeLog("ERROR: Could not set background model constBack[%d] == NULL\n",i);
+          LogKit::writeLog("ERROR: Reading of file for parameter \'%s\' failed. File pointer is NULL\n",
+                           parName[i]);
           exit(1);
         }
       }
-      background_ = new Background(backModel);
+      else if(constBack[i] > 0)
+      {
+        if(modelSettings_->getFileGrid() == 1)
+          backModel[i] = new FFTFileGrid(timeSimbox_->getnx(), timeSimbox_->getny(), timeSimbox_->getnz(), 
+                                         nxPad_, nyPad_, nzPad_);
+        else
+          backModel[i] = new FFTGrid(timeSimbox_->getnx(), timeSimbox_->getny(), timeSimbox_->getnz(), 
+                                     nxPad_, nyPad_, nzPad_);              
+        backModel[i]->setType(FFTGrid::PARAMETER);
+        backModel[i]->fillInConstant(float( log( constBack[i] )));
+      }
+      else
+      {
+        LogKit::writeLog("ERROR: Could not set background model constBack[%d] == NULL\n",i);
+        exit(1);
+      }
     }
-    if((modelSettings_->getOutputFlag() & ModelSettings::BACKGROUND) > 0)
-      background_->writeBackgrounds(timeSimbox_); 
+    background_ = new Background(backModel);
   }
+  if((modelSettings_->getOutputFlag() & ModelSettings::BACKGROUND) > 0)
+    background_->writeBackgrounds(timeSimbox_); 
 }
-
 
 void 
 Model::processPriorCorrelations(char * errText)
