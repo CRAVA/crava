@@ -534,6 +534,8 @@ ModelFile::~ModelFile()
     delete [] backFile_; 
   }
 
+  if(paramCorrFile_!=NULL)
+    delete [] paramCorrFile_;
   delete [] angle_;
   delete [] noiseEnergy_;
   delete [] waveScale_;
@@ -1498,6 +1500,8 @@ ModelFile::readCommandParameterCorr(char ** params, int & pos, char * errText)
 {
   int error;
   int nPar = getParNum(params, pos, error, errText, params[pos-1], 1);
+  paramCorrFile_ = new char[MAX_STRING]; 
+
   if(error == 0)
   {
     error = checkFileOpen(&(params[pos]), 1, params[pos-1], errText);
