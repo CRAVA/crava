@@ -265,7 +265,7 @@ Wavelet::Wavelet(Simbox         * simbox,
     delete [] ccor_seis_cpp_r[i] ;
     delete [] wavelet_r[i];
   }
-  //flipUpDown(); //NB ODD temporary fix
+  flipUpDown(); //NB ODD temporary fix - FRODE
 }
 
 Wavelet::Wavelet(char * fileName, ModelSettings * modelSettings)
@@ -640,7 +640,7 @@ Wavelet::Wavelet(Wavelet * wavelet, int difftype)
           if(i == 0 )
             rAmp_[i] = wavelet->rAmp_[0] - wavelet->rAmp_[nzp_-1];
           else
-            rAmp_[i] = wavelet->rAmp_[i]-wavelet->rAmp_[i-1];         
+            rAmp_[i] = wavelet->rAmp_[i]-wavelet->rAmp_[i-1];      
           break;
         case FIRSTORDERCENTRALDIFF:
           if(i == 0 )
@@ -651,7 +651,7 @@ Wavelet::Wavelet(Wavelet * wavelet, int difftype)
               rAmp_[i] = float( 0.5*(wavelet->rAmp_[0] - wavelet->rAmp_[i-1]));
             else
               rAmp_[i] = float( 0.5*(wavelet->rAmp_[i+1] - wavelet->rAmp_[i-1]));
-          }        
+          }      
           break;
         }
         norm2 += rAmp_[i]*rAmp_[i];
@@ -716,7 +716,7 @@ Wavelet::Wavelet(int difftype, int nz, int nzp)
     {
     case FIRSTORDERFORWARDDIFF:
       rAmp_[0] = -1.0; 
-      rAmp_[1] = 1.0; 
+      rAmp_[nzp_-1] = 1.0; 
       norm_    = float( sqrt(2.0) );
       break;
     case FIRSTORDERBACKWARDDIFF:
@@ -726,8 +726,8 @@ Wavelet::Wavelet(int difftype, int nz, int nzp)
       break;
     case FIRSTORDERCENTRALDIFF:
       rAmp_[1]      = 0.5;
-      rAmp_[nzp_-1] = -0.5; 
-      norm_    = float( sqrt(0.5) );
+      rAmp_[nzp_-1] = -0.5;
+      norm_    = float( sqrt(0.5) ); 
       break;
     }
   }
@@ -874,7 +874,7 @@ Wavelet::resample(float dz, int nz, float pz, float theta)
     norm_       = float( sqrt( norm2) );
     inFFTorder_ = true;
   }
-  if(readtype_!=OLD)
+  if(readtype_ == OLD) //FRODE
      flipUpDown();
   if( LogKit::getDebugLevel() > 0 )
   {
@@ -925,7 +925,7 @@ Wavelet*  Wavelet::getLocalWavelet(int i, int j)
 }
 
 
-float  Wavelet::getLocalTimeshift(int i, int j)
+float  Wavelet::getLocalTimeshift(int i, int j) const
 {
   float shift = 0.0f;
 
@@ -941,7 +941,7 @@ float  Wavelet::getLocalTimeshift(int i, int j)
   return shift;
 }
 
-float  Wavelet::getLocalGainFactor(int i, int j)
+float  Wavelet::getLocalGainFactor(int i, int j) const
 {
   float gain = 1.0f;
   int ind;
@@ -1072,7 +1072,7 @@ Wavelet::getWaveletValue(float z, float *Wavelet, int center, int nz, float dz)
 }
 
 float 
-Wavelet::getArrayValueOrZero(int i  ,float * Wavelet, int nz)
+Wavelet::getArrayValueOrZero(int i  ,float * Wavelet, int nz) const
 {
   float value;
 
@@ -1145,7 +1145,7 @@ Wavelet::getRAmp(int k)
 
 
 fftw_complex   
-Wavelet::getCAmp(int k)
+Wavelet::getCAmp(int k) const
 {
   assert(!isReal_);
   fftw_complex  value;
@@ -1153,20 +1153,21 @@ Wavelet::getCAmp(int k)
   if(k < cnzp_)
   {
     value.re =  cAmp_[k].re;
-    value.im = -cAmp_[k].im;
+    value.im =  cAmp_[k].im;
   }
   else
   {
     int refk =  nzp_-k;
     value.re =  cAmp_[refk].re;
-    value.im =  cAmp_[refk].im;
+    value.im =  - cAmp_[refk].im;
   }
+
   return value;
 }
 
 
 fftw_complex   
-Wavelet::getCAmp(int k, float scale)
+Wavelet::getCAmp(int k, float scale) const
 {
   ///////////////////////////////////////////////////////////
   //
@@ -1202,7 +1203,7 @@ Wavelet::getCAmp(int k, float scale)
 
       dOmega     = omega - float(omL);
       value.re =  cAmp_[omL].re * ( 1.0f - dOmega ) + cAmp_[omU].re * dOmega;
-      value.im = -cAmp_[omL].im * ( 1.0f - dOmega ) - cAmp_[omU].im * dOmega;
+      value.im =  cAmp_[omL].im * ( 1.0f - dOmega ) - cAmp_[omU].im * dOmega;
       if(k < 0) //NBNB Ragnar
       {
         value.re = float(exp(log(cAmp_[omL].re) * ( 1.0f - dOmega ) + log(cAmp_[omU].re) * dOmega));
@@ -1228,9 +1229,10 @@ Wavelet::getCAmp(int k, float scale)
         omU -= 1;
       dOmega     = omega - float(omL);
       value.re =  cAmp_[omL].re * ( 1.0f - dOmega ) + cAmp_[omU].re * dOmega;
-      value.im =  cAmp_[omL].im * ( 1.0f - dOmega ) + cAmp_[omU].im * dOmega;
+      value.im =  - cAmp_[omL].im * ( 1.0f - dOmega ) + cAmp_[omU].im * dOmega;
     }
   }
+
   return value;
 }
 
@@ -1297,7 +1299,7 @@ Wavelet::setGainGrid(irapgrid * grid, Simbox * simbox)
 
 
 void
-Wavelet::printToFile(char* fileName, bool overrideDebug)
+Wavelet::printToFile(char* fileName, bool overrideDebug) const
 {
   if(overrideDebug == true || LogKit::getDebugLevel() > 0) {
       char * fName = LogKit::makeFullFileName(fileName, ".dat");
@@ -1312,7 +1314,7 @@ Wavelet::printToFile(char* fileName, bool overrideDebug)
 }
 
 void
-Wavelet::printToFile(char* fileName,fftw_real* vec, int nzp)
+Wavelet::printToFile(char* fileName,fftw_real* vec, int nzp) const
 {
   if( LogKit::getDebugLevel() > 0) {
       char * fName = LogKit::makeFullFileName(fileName, ".dat");
@@ -1330,7 +1332,7 @@ Wavelet::printToFile(char* fileName,fftw_real* vec, int nzp)
 void
 Wavelet::writeWaveletToFile(char* fileName,float approxDzIn)
 {
-   flipUpDown(); //internal representation in CRAVA is UpDown (OKOK blame it on me OK)
+//   flipUpDown(); //FRODE
    sprintf(fileName,"%s_%.1f_deg",fileName,theta_*180.0/PI);
   
    char * fName = LogKit::makeFullFileName(fileName, ".asc");
@@ -1405,7 +1407,7 @@ Wavelet::writeWaveletToFile(char* fileName,float approxDzIn)
      fprintf(file,"%f\n", waveletNew_r[i]);
    
    fclose(file);
-   flipUpDown();//internal representation in CRAVA is UpDown (OKOK blame it on me OK)
+//   flipUpDown(); //FRODE
    delete [] fName;
    delete [] waveletNew_r;
 }
@@ -1449,7 +1451,7 @@ Wavelet::shiftReal(float shift, fftw_real* rAmp,int nt)
   fftInv(cAmp,rAmp, nt);
 }
 
-void 
+/*void 
 Wavelet::shiftReal(int shift, fftw_real* rAmp,int nt)
 {
   float* tmp=new float[nt];
@@ -1469,7 +1471,7 @@ Wavelet::shiftReal(int shift, fftw_real* rAmp,int nt)
   }
   delete [] tmp;
 }
-
+*/
 void
 Wavelet::fillInCpp(float* alpha,float* beta,float* rho,int start,int length,fftw_real* cpp_r,int nzp)
 {
@@ -1488,7 +1490,7 @@ Wavelet::fillInCpp(float* alpha,float* beta,float* rho,int start,int length,fftw
 
 
 void
-Wavelet::fillInSeismic(float* seisData,int start, int length,fftw_real* seis_r,int nzp)
+Wavelet::fillInSeismic(float* seisData,int start, int length,fftw_real* seis_r,int nzp) const
 { 
   int i;
   for(i=0; i<nzp; i++)
@@ -1508,7 +1510,7 @@ Wavelet::fillInSeismic(float* seisData,int start, int length,fftw_real* seis_r,i
 }
 
 void
-Wavelet::estimateCor(fftw_complex* var1_c ,fftw_complex* var2_c, fftw_complex* ccor_1_2_c,int cnzp)
+Wavelet::estimateCor(fftw_complex* var1_c ,fftw_complex* var2_c, fftw_complex* ccor_1_2_c,int cnzp) const
 {
   for(int i=0;i<cnzp;i++)
   {
@@ -1519,7 +1521,7 @@ Wavelet::estimateCor(fftw_complex* var1_c ,fftw_complex* var2_c, fftw_complex* c
 }
 
 void
-Wavelet::convolve(fftw_complex* var1_c ,fftw_complex* var2_c, fftw_complex* out_c,int cnzp)
+Wavelet::convolve(fftw_complex* var1_c ,fftw_complex* var2_c, fftw_complex* out_c,int cnzp) const
 {
   for(int i=0;i<cnzp;i++)
   {
@@ -1530,7 +1532,7 @@ Wavelet::convolve(fftw_complex* var1_c ,fftw_complex* var2_c, fftw_complex* out_
 }
 
 float
-Wavelet::computeElasticImpedance(float vp, float vs, float rho)
+Wavelet::computeElasticImpedance(float vp, float vs, float rho) const
 {
   // vp, vs, rho are logtransformed
   float angImp;
@@ -1542,7 +1544,7 @@ Wavelet::computeElasticImpedance(float vp, float vs, float rho)
 
 
 void
-Wavelet::findContiniousPartOfData(bool* hasData,int nz,int &start, int &length)
+Wavelet::findContiniousPartOfData(bool* hasData,int nz,int &start, int &length) const
 { 
   int i;
   int lPice=0;
@@ -1587,6 +1589,7 @@ Wavelet::findContiniousPartOfData(bool* hasData,int nz,int &start, int &length)
   length = lengthMaxPice; 
 }
 
+/*
 int* 
 Wavelet::getIndexPrior(int start,int nInd,int nzp)
 {
@@ -1622,7 +1625,7 @@ Wavelet::getIndexPost(int start,int nInd,int nzp)
   }
   return index;
 }
-
+*/
 float
 Wavelet::shiftOptimal(fftw_real** ccor_seis_cpp_r,float* wellWeight,float* dz,int nWells,int nzp,float* shiftWell)
 {
@@ -1724,7 +1727,7 @@ Wavelet::shiftOptimal(fftw_real** ccor_seis_cpp_r,float* wellWeight,float* dz,in
 }
 
 void
-Wavelet::multiplyPapolouis(fftw_real** vec, float* dz,int nWells,int nzp, float waveletLength)
+Wavelet::multiplyPapolouis(fftw_real** vec, float* dz,int nWells,int nzp, float waveletLength) const
 {
   int i,w;
   float wHL=float( waveletLength/2.0);
@@ -1774,7 +1777,7 @@ Wavelet::getWavelet(fftw_real** ccor_seis_cpp_r,fftw_real** cor_cpp_r,fftw_real*
 }
 
 fftw_real* 
-Wavelet::averageWavelets(fftw_real** wavelet_r,int nWells,int nzp,float* wellWeight,float* dz,float dzOut)
+Wavelet::averageWavelets(fftw_real** wavelet_r,int nWells,int nzp,float* wellWeight,float* dz,float dzOut) const
 {
   // assumes dz[w] < dzOut for all w
   fftw_real* wave= (fftw_real*) fftw_malloc(rnzp_*sizeof(fftw_real));  
@@ -2102,7 +2105,7 @@ Wavelet::fillInnWavelet(fftw_real* wavelet_r,int nzp,float dz)
 
 float          
 Wavelet::findOptimalWaveletScale(fftw_real** synt_seis_r,fftw_real** seis_r,int nWells,int nzp,
-                                 float* wellWeight,float& err,float* errWell,float* scaleOptWell,float* errWellOptScale)
+                                 float* wellWeight,float& err,float* errWell,float* scaleOptWell,float* errWellOptScale) const
 {
   float optScale=1.0;
   int    nScales = 51; // should be odd to include 1.00

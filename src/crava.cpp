@@ -1438,7 +1438,7 @@ Crava::computeSyntSeismic(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho)
 
   for(i=0;i<ntheta_;i++)
   {
-    seisWavelet_[i]->flipUpDown();
+//    seisWavelet_[i]->flipUpDown();
     if(seisWavelet_[i]->getIsReal() == true)
       seisWavelet_[i]->fft1DInPlace();
   }
