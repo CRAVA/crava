@@ -1098,81 +1098,86 @@ void Model::checkFaciesNames(void)
 void 
 Model::processBackground(char * errText)
 {
-  FFTGrid * backModel[3];
-  if (modelFile_->getGenerateBackground()) 
+  if (modelSettings_->getDoInversion() || 
+      modelSettings_->getGenerateSeismic() || 
+      (modelSettings_->getOutputFlag() & ModelSettings::BACKGROUND) > 0 )
   {
-    LogKit::writeLog("\n***********************************************************************");
-    LogKit::writeLog("\n***              Prior Expectations / Background Model              ***"); 
-    LogKit::writeLog("\n***********************************************************************\n");
-    
-    if(modelSettings_->getBackgroundVario() == NULL)
+    FFTGrid * backModel[3];
+    if (modelFile_->getGenerateBackground()) 
     {
-      printf("ERROR: Did not manage to make variogram for background modelling\n");
-      exit(1);
-    }
-    
-    for (int i=0 ; i<3 ; i++)
-    {
-      backModel[i] = new FFTGrid(timeSimbox_->getnx(), timeSimbox_->getny(), timeSimbox_->getnz(), 
-                                 nxPad_, nyPad_, nzPad_);              
-      backModel[i]->setType(FFTGrid::PARAMETER);
-    }
-    
-    background_ = new Background(backModel, wells_, timeSimbox_, modelSettings_);
-  }
-  else 
-  {
-    const char * parName[]={"Vp background","Vs background","Rho background"};
-    for(int i=0 ; i<3 ; i++)
-    {
-      float  * constBack = modelFile_->getConstBack();
-      char  ** backFile  = modelFile_->getBackFile();
+      LogKit::writeLog("\n***********************************************************************");
+      LogKit::writeLog("\n***              Prior Expectations / Background Model              ***"); 
+      LogKit::writeLog("\n***********************************************************************\n");
       
-      if(constBack[i] < 0)
+      if(modelSettings_->getBackgroundVario() == NULL)
       {
-        if(backFile[i] != NULL)
+        printf("ERROR: Did not manage to make variogram for background modelling\n");
+        exit(1);
+      }
+      
+      for (int i=0 ; i<3 ; i++)
+      {
+        backModel[i] = new FFTGrid(timeSimbox_->getnx(), timeSimbox_->getny(), timeSimbox_->getnz(), 
+                                   nxPad_, nyPad_, nzPad_);              
+        backModel[i]->setType(FFTGrid::PARAMETER);
+      }
+      
+      background_ = new Background(backModel, wells_, timeSimbox_, modelSettings_);
+    }
+    else 
+    {
+      const char * parName[]={"Vp background","Vs background","Rho background"};
+      for(int i=0 ; i<3 ; i++)
+      {
+        float  * constBack = modelFile_->getConstBack();
+        char  ** backFile  = modelFile_->getBackFile();
+        
+        if(constBack[i] < 0)
         {
-          int readerror = 0;
-          if(constBack[i] == ModelFile::SEGYFILE)
-            readerror = readSegyFiles(backFile, 1, backModel, errText, FFTGrid::PARAMETER, i);
-          else
-            readerror = readStormFile(backFile[i], backModel[i], parName[i], errText);
-          if(readerror != 0)
+          if(backFile[i] != NULL)
           {
-            LogKit::writeLog("ERROR: Reading of file \'%s\' for parameter \'%s\' failed\n",
-                             backFile[i],parName[i]);
-            printf("       %s\n",errText);
+            int readerror = 0;
+            if(constBack[i] == ModelFile::SEGYFILE)
+              readerror = readSegyFiles(backFile, 1, backModel, errText, FFTGrid::PARAMETER, i);
+            else
+              readerror = readStormFile(backFile[i], backModel[i], parName[i], errText);
+            if(readerror != 0)
+            {
+              LogKit::writeLog("ERROR: Reading of file \'%s\' for parameter \'%s\' failed\n",
+                               backFile[i],parName[i]);
+              printf("       %s\n",errText);
+              exit(1);
+            }
+          }
+          else
+          {
+            LogKit::writeLog("ERROR: Reading of file for parameter \'%s\' failed. File pointer is NULL\n",
+                             parName[i]);
             exit(1);
           }
         }
+        else if(constBack[i] > 0)
+        {
+          if(modelSettings_->getFileGrid() == 1)
+            backModel[i] = new FFTFileGrid(timeSimbox_->getnx(), timeSimbox_->getny(), timeSimbox_->getnz(), 
+                                           nxPad_, nyPad_, nzPad_);
+          else
+            backModel[i] = new FFTGrid(timeSimbox_->getnx(), timeSimbox_->getny(), timeSimbox_->getnz(), 
+                                       nxPad_, nyPad_, nzPad_);              
+          backModel[i]->setType(FFTGrid::PARAMETER);
+          backModel[i]->fillInConstant(float( log( constBack[i] )));
+        }
         else
         {
-          LogKit::writeLog("ERROR: Reading of file for parameter \'%s\' failed. File pointer is NULL\n",
-                           parName[i]);
+          LogKit::writeLog("ERROR: Could not set background model constBack[%d] == NULL\n",i);
           exit(1);
         }
       }
-      else if(constBack[i] > 0)
-      {
-        if(modelSettings_->getFileGrid() == 1)
-          backModel[i] = new FFTFileGrid(timeSimbox_->getnx(), timeSimbox_->getny(), timeSimbox_->getnz(), 
-                                         nxPad_, nyPad_, nzPad_);
-        else
-          backModel[i] = new FFTGrid(timeSimbox_->getnx(), timeSimbox_->getny(), timeSimbox_->getnz(), 
-                                     nxPad_, nyPad_, nzPad_);              
-        backModel[i]->setType(FFTGrid::PARAMETER);
-        backModel[i]->fillInConstant(float( log( constBack[i] )));
-      }
-      else
-      {
-        LogKit::writeLog("ERROR: Could not set background model constBack[%d] == NULL\n",i);
-        exit(1);
-      }
+      background_ = new Background(backModel);
     }
-    background_ = new Background(backModel);
+    if((modelSettings_->getOutputFlag() & ModelSettings::BACKGROUND) > 0)
+      background_->writeBackgrounds(timeSimbox_); 
   }
-  if((modelSettings_->getOutputFlag() & ModelSettings::BACKGROUND) > 0)
-    background_->writeBackgrounds(timeSimbox_); 
 }
 
 void 
@@ -1386,7 +1391,9 @@ Model::processReflectionMatrix(char * errText)
 void 
 Model::processWavelets(void)
 {
-  if (modelSettings_->getDoInversion() || (modelSettings_->getOutputFlag() & ModelSettings::WAVELETS) > 0 )
+  if (modelSettings_->getDoInversion() || 
+      modelSettings_->getGenerateSeismic() || 
+      (modelSettings_->getOutputFlag() & ModelSettings::WAVELETS) > 0 )
   {
     LogKit::writeLog("\n***********************************************************************");
     LogKit::writeLog("\n***                 Processing/generating wavelets                  ***"); 
