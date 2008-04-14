@@ -14,6 +14,7 @@
 #include "lib/lib_matr.h"
 #include "lib/irapgrid.h"
 #include "lib/log.h"
+#include "lib/sgri.h"
 
 #include "src/modelsettings.h"
 #include "src/blockedlogs.h"
@@ -270,57 +271,71 @@ Wavelet::Wavelet(Simbox         * simbox,
 
 Wavelet::Wavelet(char * fileName, ModelSettings * modelSettings)
 {
-  maxShift_       = modelSettings->getMaxWaveletShift();
-  minRelativeAmp_ = modelSettings->getMinRelWaveletAmp();
+	maxShift_       = modelSettings->getMaxWaveletShift();
+	minRelativeAmp_ = modelSettings->getMinRelWaveletAmp();
 
-  isReal_     = true;
-  inFFTorder_ = false;
-  scale_=1; 
-  gridNI_=0;   
-  gridNJ_=0;
-  shiftGrid_=NULL;  
-  gainGrid_=NULL; 
-  errCode_=0;
-  FILE* file = fopen(fileName,"r");
- 
-  if(file == 0)
-  {
-    sprintf(errText_,"Error: Could not open file %s for reading.\n", fileName);
-    errCode_=1;
-    return;
-  }
-  else
-    fclose(file);
+	isReal_     = true;
+	inFFTorder_ = false;
+	scale_=1; 
+	gridNI_=0;   
+	gridNJ_=0;
+	shiftGrid_=NULL;  
+	gainGrid_=NULL; 
+	errCode_=0;
+	FILE* file = fopen(fileName,"r");
 
-  int fileFormat = getWaveletFileFormat(fileName);
-  
-  if(fileFormat < 0)
-  {
-    if (errCode_ == 0)  
-    {
-      sprintf(errText_,"Error: Unknown file format of file  %s.\n", fileName);
-      errCode_=2;
-      return;
-    }
-   }
-   if(fileFormat==OLD)
-      WaveletReadOld(fileName);
-   if(fileFormat==JASON)
-     WaveletReadJason(fileName);
-   
-   for(int i=0; i < rnzp_ ;i++)
-    {  
-      if(i < nzp_)
-      {
-        rAmp_[i]*=scale_;
-      }
-      else
-      {
-        rAmp_[i]=RMISSING;
-      }// endif
-    }//end for i 
-  
+	if(file == 0)
+	{
+		sprintf(errText_,"Error: Could not open file %s for reading.\n", fileName);
+		errCode_=1;
+		return;
+	}
+	else
+		fclose(file);
+
+	int fileFormat = getWaveletFileFormat(fileName);
+
+	if(fileFormat < 0)
+	{
+		if (errCode_ == 0)  
+		{
+			sprintf(errText_,"Error: Unknown file format of file  %s.\n", fileName);
+			errCode_=2;
+			return;
+		}
+	}
+	switch (fileFormat)
+	{
+	case OLD: WaveletReadOld(fileName);
+		break;
+	case JASON: WaveletReadJason(fileName);
+		break;
+	case SGRI: 
+    WaveletReadSgri(fileName);
+    printf("\nERROR: Only reading of Sgri wavelets implemented. No processing. Program terminates.\n");
+    exit(0);
+		break;
+	}
+	for(int i=0; i < rnzp_ ;i++)
+	{  
+		if(i < nzp_)
+		{
+			rAmp_[i]*=scale_;
+		}
+		else
+		{
+			rAmp_[i]=RMISSING;
+		}// endif
+	}//end for i 
 }
+
+void
+Wavelet::WaveletReadSgri(char * fileName)
+{
+	readtype_ = SGRI;
+	Sgri sgri(fileName, errText_, errCode_);
+}
+
 void
 Wavelet::WaveletReadJason(char * fileName)
 {
@@ -395,6 +410,7 @@ Wavelet::WaveletReadJason(char * fileName)
   LogKit::writeLog("\n  Estimated wavelet length:  %.1fms.",waveletLength_);
   delete [] dummyStr;
 }
+
 void
 Wavelet::WaveletReadOld(char * fileName)
 {
@@ -788,33 +804,51 @@ Wavelet::getWaveletFileFormat(char * fileName)
 
   if(fileformat<0) // not old format
   {
-    // test for jason file format
-    file = fopen(fileName,"r");
-    bool lineIsComment = true; 
-    while( lineIsComment ==true)
-    {
-      if(fscanf(file,"%s",dummyStr) == EOF)
-      {
-        readToEOL(file);
-        if (errCode_ == 0)  sprintf(errText_,"Error: End of file %s premature.\n", fileName);
-        else sprintf(errText_,"%sError: End of file %s premature.\n", errText_,fileName);
-        errCode_=2; 
-        return fileformat;    
-      } // endif
-      else
-      {
-        readToEOL(file);
-        if((dummyStr[0]!='*') &  (dummyStr[0]!='"'))
-        {
-          lineIsComment = false;
-        }
-      }
-    }  // end while
-    fclose(file);
-    if(atof(dummyStr)!=0) // not convertable number
-    {
-      fileformat= JASON;
+    // Test for Sgri format
+	file = fopen(fileName, "r");
+	if (fscanf(file, "%s", dummyStr) == EOF)
+	{
+	  if (errCode_ == 0)  sprintf(errText_,"Error: End of file %s premature.\n", fileName);
+      else sprintf(errText_,"%sError: End of file %s premature.\n", errText_,fileName);
+      errCode_=2; 
+      return fileformat;
     }
+	fclose(file);
+	strcpy(targetString, "NORSAR");
+	readToEOL(file);
+	pos = findEnd(dummyStr, 0, targetString);
+    if (pos >= 0)
+	   fileformat = SGRI;
+	
+	if (fileformat != SGRI) {
+		// test for jason file format
+		file = fopen(fileName,"r");
+		bool lineIsComment = true; 
+		while( lineIsComment ==true)
+		{
+			if(fscanf(file,"%s",dummyStr) == EOF)
+			{
+				readToEOL(file);
+				if (errCode_ == 0)  sprintf(errText_,"Error: End of file %s premature.\n", fileName);
+				else sprintf(errText_,"%sError: End of file %s premature.\n", errText_,fileName);
+				errCode_=2; 
+				return fileformat;    
+			} // endif
+			else
+			{
+				readToEOL(file);
+				if((dummyStr[0]!='*') &  (dummyStr[0]!='"'))
+				{
+					lineIsComment = false;
+				}
+			}
+		}  // end while
+		fclose(file);
+		if(atof(dummyStr)!=0) // not convertable number
+		{
+			fileformat= JASON;
+		}
+	}
   }
 
   delete[] dummyStr;

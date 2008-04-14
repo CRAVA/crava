@@ -14,7 +14,6 @@ class Wavelet {
 public:
   enum          difftypes{FIRSTORDERFORWARDDIFF,FIRSTORDERCENTRALDIFF,FIRSTORDERBACKWARDDIFF,FOURIER};
   
-  void invFFT1DInPlace();
   void fft1DInPlace();
 
   //Constructors and destructor
@@ -47,8 +46,9 @@ public:
   void           setReflCoeff(float * coeff) {for(int i=0;i<3;i++) coeff_[i] = coeff[i];}
 
 private:
-  enum           waveletreadtypes{OLD,JASON,ESTIMATE};
+  enum           waveletreadtypes{OLD,JASON,ESTIMATE,SGRI};
   
+  void           invFFT1DInPlace();
   void           flipUpDown();
   float          getWaveletValue(float z, float * Wavelet, int center,int nx, float dz);
 //  void           printRealWaveletToScreen(){for(int i=0;i < nzp_;i++) printf("value %i: %f \n", i,rAmp_[i]) ;}
@@ -63,6 +63,7 @@ private:
   int            getWaveletFileFormat(char * fileName);
   void           WaveletReadOld(char * fileName);
   void           WaveletReadJason(char * fileName);
+  void			 WaveletReadSgri(char *fileName);
   
   // for wavelet estimation
   void           fft(fftw_real* rAmp,fftw_complex* cAmp,int nt);     
@@ -92,7 +93,7 @@ private:
   float          getLocalGainFactor(int i, int j) const;
 
   float          theta_;                 // the reflection angle that the wavelet correspond to
-  int            readtype_;              // how is wavelet obtained? read from file[OLD JASON] or ESTIMATE
+  int            readtype_;              // how is wavelet obtained? read from file[OLD JASON SGRI] or ESTIMATE
 
   float          dz_;                    // Sampling interval of wavelet, unit [ ms ]
   int            nz_;                    // length of wavelet
