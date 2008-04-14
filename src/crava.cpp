@@ -197,7 +197,6 @@ Crava::Crava(Model * model)
   {
     if(simbox_->getIsConstantThick() == false)
     {
-      //adjustData();
       divideDataByScaleWavelet();
     }
     parSpatialCorr_  ->fftInPlace();
@@ -482,75 +481,6 @@ Crava::checkScale(void)
     }
   }
   return isOk;
-}
-
-
-void
-Crava::adjustData()
-{
-  int i,j,k,l,flag;
-  float modW, modScaleW;
-
-  fftw_real*    rData;
-  fftw_complex* cData;
-  fftw_complex scaleWVal,wVal,multiplier,tmp;
-  rfftwnd_plan plan1,plan2; 
-
-  rData  = (fftw_real*) fftw_malloc(2*(nzp_/2+1)*sizeof(fftw_real)); 
-  cData  = (fftw_complex* ) rData;
-
-  flag   = FFTW_ESTIMATE | FFTW_IN_PLACE;
-  plan1  = rfftwnd_create_plan(1,&nzp_ ,FFTW_REAL_TO_COMPLEX,flag);
-  plan2  = rfftwnd_create_plan(1,&nzp_,FFTW_COMPLEX_TO_REAL,flag);
-
-  for(l=0 ; l< ntheta_ ; l++ )
-  {
-    seisWavelet_[l]->fft1DInPlace();
-
-    seisData_[l]->setAccessMode(FFTGrid::RANDOMACCESS);
-    for(i=0; i < nxp_; i++)
-      for(j=0; j< nyp_; j++)
-      {
-        float sf = static_cast<float>(simbox_->getRelThick(i,j));
-
-        for(k=0;k<nzp_;k++)
-          rData[k] = seisData_[l]->getRealValue(i,j,k)/float(sqrt((float)nzp_));
-        rfftwnd_one_real_to_complex(plan1,rData ,cData);
-        for(k=0;k < (nzp_/2 +1);k++) // all complex values
-        {
-          scaleWVal    =  seisWavelet_[l]->getCAmp(k,sf);
-          // note this is acctually the value of the complex conjugate
-          // (see definition of getCAmp)         
-          wVal         =  seisWavelet_[l]->getCAmp(k);
-          wVal.im      =  -wVal.im; 
-          //  Here we need the true value hence the conjungation
-          // ( see definition of getCAmp)  
-
-          modScaleW      =  scaleWVal.re * scaleWVal.re + scaleWVal.im * scaleWVal.im;
-          modW           =  wVal.re * wVal.re + wVal.im * wVal.im;
-
-          float tolFac= 25.0f;
-          if(modScaleW <  tolFac * modW)
-          {
-            modScaleW =   tolFac * modW;
-          } 
-
-          multiplier.re = (scaleWVal.re*wVal.re - scaleWVal.im*wVal.im) / modScaleW;
-          multiplier.im = (scaleWVal.im*wVal.re + scaleWVal.re*wVal.im) / modScaleW;
-          tmp.re        = cData[k].re * multiplier.re - cData[k].im * multiplier.im;
-          cData[k].im   = cData[k].im * multiplier.re + cData[k].re * multiplier.im;
-          cData[k].re   = tmp.re;
-        }
-        rfftwnd_one_complex_to_real(plan2,cData ,rData);
-        for(k=0;k<nzp_;k++)
-          seisData_[l]->setRealValue(i,j,k,rData[k]/float(sqrt((float)nzp_)) );
-      }
-      seisData_[l]->endAccess();
-  }
-
-  fftw_free(rData);
-  fftwnd_destroy_plan(plan1); 
-  fftwnd_destroy_plan(plan2); 
 }
 
 void

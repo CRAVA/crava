@@ -132,7 +132,6 @@ private:
   float              computeWDCorrMVar (Wavelet* WD, fftw_real* corrT);
 
   int                outputFlag_; //See model.h for bit interpretation.
-  void               adjustData();
   void               divideDataByScaleWavelet();
   void               multiplyDataByScaleWaveletAndWriteToFile(const char* typeName);
   void               dumpCorrT(float* corrT,float dt);
