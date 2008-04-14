@@ -3334,6 +3334,10 @@
 				Name="lib"
 				>
 				<File
+					RelativePath=".\lib\fileio.cpp"
+					>
+				</File>
+				<File
 					RelativePath="lib\irapgrid.cpp"
 					>
 					<FileConfiguration
@@ -3478,6 +3482,10 @@
 					</FileConfiguration>
 				</File>
 				<File
+					RelativePath=".\lib\sgri.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\lib\systemcall.cpp"
 					>
 				</File>
@@ -3603,7 +3611,27 @@
 				Name="lib No. 1"
 				>
 				<File
+					RelativePath=".\lib\exception.hpp"
+					>
+				</File>
+				<File
+					RelativePath=".\lib\fileio.hpp"
+					>
+				</File>
+				<File
+					RelativePath=".\lib\fileio_impl.hpp"
+					>
+				</File>
+				<File
+					RelativePath=".\lib\fileio_internal.hpp"
+					>
+				</File>
+				<File
 					RelativePath="lib\global_def.h"
+					>
+				</File>
+				<File
+					RelativePath=".\lib\grid.hpp"
 					>
 				</File>
 				<File
@@ -3636,6 +3664,10 @@
 				</File>
 				<File
 					RelativePath="lib\segylib.h"
+					>
+				</File>
+				<File
+					RelativePath=".\lib\sgri.h"
 					>
 				</File>
 				<File
