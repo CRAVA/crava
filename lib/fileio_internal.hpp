@@ -16,7 +16,11 @@
 static const unsigned int masks[4] = 
 {0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000};
 
-static const unsigned long long lmasks[8] = 
+//
+// NBNB-PAL: Does not compile on Linux
+//
+//static const unsigned long long lmasks[8] = 
+static const unsigned long lmasks[8] = 
 {0x00000000000000ff, 0x000000000000ff00, 
  0x0000000000ff0000, 0x00000000ff000000,
  0x000000ff00000000, 0x0000ff0000000000,
@@ -29,7 +33,11 @@ namespace NRLib2_internal {
   };
 
   union DoubleAsLongLong {
-    /* uint64_t */ unsigned long long ull;
+    //
+    // NBNB-PAL: Does not compile on Linux
+    //
+    //    /* uint64_t */ unsigned long long ull;
+    /* uint64_t */ unsigned long ull;
     double d;
   };
 
