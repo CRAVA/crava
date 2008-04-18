@@ -21,18 +21,18 @@ using namespace NRLib2;
 
 Sgri::Sgri(char * fileName, char *errText, int &errCode) :
   Grid<float>(0,0,0),
-  dX_(0.0),
-  dY_(0.0),
-  dZ_(0.0),
   x0_(RMISSING),
   y0_(RMISSING),
   z0_(RMISSING),
+  dX_(0.0),
+  dY_(0.0),
+  dZ_(0.0),
   scaleX_(1.0),
   scaleY_(1.0),
   scaleZ_(1.0),
-  hasComplex_(0),
   rotAngle_(0.0),
-  dipAngle_(0.0)
+  dipAngle_(0.0),
+  hasComplex_(0)
 {
   if (!readHeaderFile(fileName, errText, errCode))
     return;
@@ -126,7 +126,7 @@ Sgri::readHeaderFile(char * fileName, char *errText, int &errCode)
       if (errCode == 0)  
         sprintf(errText,"Error: Axis configuration can not be XX, YY, ZZ, XY or YX.\n");
       else 
-        sprintf(errText,"%sError: Axis configuration can not be XX, YY, ZZ, XY or YX.\n", errText, i);
+        sprintf(errText,"%sError: Axis configuration can not be XX, YY, ZZ, XY or YX.\n", errText);
       errCode=2;
       return(false);
     }

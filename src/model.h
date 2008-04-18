@@ -69,6 +69,7 @@ private:
   void             checkAvailableMemory(void);
   void             checkFaciesNames(void);
   void             printSettings(void);
+  int              getWaveletFileFormat(char * fileName);
 
   ModelFile      * modelFile_;
   ModelSettings  * modelSettings_;

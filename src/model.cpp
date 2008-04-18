@@ -8,7 +8,8 @@
 #include "src/model.h"
 #include "src/modelfile.h"
 #include "src/modelsettings.h"
-#include "src/wavelet.h"
+#include "src/wavelet1D.h"
+#include "src/wavelet3D.h"
 #include "src/corr.h"
 #include "src/analyzelog.h"
 #include "src/vario.h"
@@ -1420,12 +1421,25 @@ Model::processWavelets(void)
     {  
       LogKit::writeLog("\nAngle stack : %.1f deg",modelSettings_->getAngle()[i]*180.0/PI);
       if (waveletFile[i][0] == '*') 
-        wavelet_[i] = new Wavelet(timeSimbox_, seisCube_[i], wells_, modelSettings_, reflectionMatrix_[i]);
-      else 
+        wavelet_[i] = new Wavelet1D(timeSimbox_, seisCube_[i], wells_, modelSettings_, reflectionMatrix_[i]);
+      else
       {
-        wavelet_[i] = new Wavelet(waveletFile[i], modelSettings_);
-        wavelet_[i]->resample(static_cast<float>(timeSimbox_->getdz()), timeSimbox_->getnz(), 
-                              modelSettings_->getZpad(), modelSettings_->getAngle()[i]);
+        int fileFormat = getWaveletFileFormat(waveletFile[i]);
+        if(fileFormat < 0)
+        {
+          LogKit::writeLog("ERROR: Unknown file format of file  %s.\n",waveletFile[i]);
+          exit(1);
+        }
+        if (fileFormat == Wavelet::SGRI) {
+          wavelet_[i] = new Wavelet3D(waveletFile[i], modelSettings_);
+          //resample variant
+          exit(0); //Until processing of 3d wavelets is implemented
+        }
+        else {
+          wavelet_[i] = new Wavelet1D(waveletFile[i], modelSettings_, fileFormat);
+          wavelet_[i]->resample(static_cast<float>(timeSimbox_->getdz()), timeSimbox_->getnz(), 
+                                modelSettings_->getZpad(), modelSettings_->getAngle()[i]);
+        }
         wavelet_[i]->setReflCoeff(reflectionMatrix_[i]);
       }
       if (waveScale[i] != RMISSING)        // If RMISSING we will later scale wavelet to get EmpSN = TheoSN.
@@ -1460,6 +1474,78 @@ Model::processWavelets(void)
         wavelet_[i]->setGainGrid(gainGrids_[i], timeSimbox_);
     }
   }
+}
+
+int
+Model::getWaveletFileFormat(char * fileName)
+{
+  int fileformat=-1;
+  char* dummyStr = new char[MAX_STRING];
+  // test for old file format
+  FILE* file = fopen(fileName,"r");
+  for(int i = 0; i < 5; i++)
+  {
+    if(fscanf(file,"%s",dummyStr) == EOF)
+    {
+      LogKit::writeLog("ERROR: End of file %s is premature\n",fileName);
+      exit(1);
+    } // endif
+  }  // end for i
+  fclose(file);
+  char* targetString =new char[MAX_STRING];
+  strcpy(targetString,"CMX");
+  int  pos = findEnd(dummyStr, 0, targetString);
+  if(pos>=0)
+    fileformat= Wavelet::OLD;
+
+  if(fileformat<0) // not old format
+  {
+    // Test for Sgri format
+    file = fopen(fileName, "r");
+    if (fscanf(file, "%s", dummyStr) == EOF)
+    {
+      LogKit::writeLog("ERROR: End of file %s is premature\n",fileName);
+      exit(1);
+    }
+    strcpy(targetString, "NORSAR");
+    readToEOL(file);
+    pos = findEnd(dummyStr, 0, targetString);
+    if (pos >= 0)
+      fileformat = Wavelet::SGRI;
+    fclose(file);
+
+    if (fileformat != Wavelet::SGRI) {
+      // test for jason file format
+      file = fopen(fileName,"r");
+      bool lineIsComment = true; 
+      while( lineIsComment ==true)
+      {
+        if(fscanf(file,"%s",dummyStr) == EOF)
+        {
+          readToEOL(file);
+          LogKit::writeLog("ERROR: End of file %s is premature\n",fileName);
+          exit(1);  
+        } // endif
+        else
+        {
+          readToEOL(file);
+          if((dummyStr[0]!='*') &  (dummyStr[0]!='"'))
+          {
+            lineIsComment = false;
+          }
+        }
+      }  // end while
+      fclose(file);
+      if(atof(dummyStr)!=0) // not convertable number
+      {
+        fileformat= Wavelet::JASON;
+      }
+    }
+  }
+
+  delete[] dummyStr;
+  delete [] targetString;
+  return fileformat;
 }
 
 void

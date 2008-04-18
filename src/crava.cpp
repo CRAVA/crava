@@ -2,7 +2,7 @@
 
 #include "fft/include/rfftw.h"
 
-#include "src/wavelet.h"
+#include "src/wavelet1D.h"
 #include "src/corr.h"
 #include "src/model.h"
 #include "src/fftgrid.h"
@@ -121,7 +121,7 @@ Crava::Crava(Model * model)
   {	
     if(!model->getModelSettings()->getGenerateSeismic())
       assert(seisData_[i]->consistentSize(nx_,ny_,nz_,nxp_,nyp_,nzp_));  
-    assert(seisWavelet_[i]->consistentSize(nzp_));
+    assert(seisWavelet_[i]->consistentSize(nzp_, nyp_, nxp_));
   }
 
   // all  parameters to be estimated are created.
@@ -343,7 +343,7 @@ Crava::computeVariances(fftw_real* corrT,
 
   for(int i=0 ; i < ntheta_ ; i++)
   {
-    errorSmooth[i] = new Wavelet(seisWavelet_[i],Wavelet::FIRSTORDERFORWARDDIFF);
+    errorSmooth[i] = new Wavelet1D(seisWavelet_[i],Wavelet::FIRSTORDERFORWARDDIFF,1);
     sprintf(fileName,"Wavediff_%d.dat",i);
     errorSmooth[i]->printToFile(fileName);
   }
@@ -729,9 +729,9 @@ Crava::computePostMeanResidAndFFTCov()
   for(i = 0; i < 3; i++)
     reduceVar[i]= new fftw_complex[3];  
 
-  Wavelet * diff1Operator = new Wavelet(Wavelet::FIRSTORDERFORWARDDIFF,nz_,nzp_);
-  Wavelet * diff2Operator = new Wavelet(diff1Operator,Wavelet::FIRSTORDERBACKWARDDIFF);
-  Wavelet * diff3Operator = new Wavelet(diff2Operator,Wavelet::FIRSTORDERCENTRALDIFF);
+  Wavelet * diff1Operator = new Wavelet1D(Wavelet::FIRSTORDERFORWARDDIFF,nz_,nzp_,1);
+  Wavelet * diff2Operator = new Wavelet1D(diff1Operator,Wavelet::FIRSTORDERBACKWARDDIFF,1);
+  Wavelet * diff3Operator = new Wavelet1D(diff2Operator,Wavelet::FIRSTORDERCENTRALDIFF,1);
 
   diff1Operator->fft1DInPlace();
   diff2Operator->fft1DInPlace();
@@ -748,9 +748,9 @@ Crava::computePostMeanResidAndFFTCov()
   for(i = 0; i < ntheta_ ; i++)
   {  
     thetaDeg = int ( theta_[i]/PI*180 + 0.5 );
-    errorSmooth[i]  = new Wavelet(seisWavelet_[i],Wavelet::FIRSTORDERFORWARDDIFF);
-    errorSmooth2[i] = new Wavelet(errorSmooth[i], Wavelet::FIRSTORDERBACKWARDDIFF);
-    errorSmooth3[i] = new Wavelet(errorSmooth2[i],Wavelet::FIRSTORDERCENTRALDIFF); 
+    errorSmooth[i]  = new Wavelet1D(seisWavelet_[i],Wavelet::FIRSTORDERFORWARDDIFF,1);
+    errorSmooth2[i] = new Wavelet1D(errorSmooth[i], Wavelet::FIRSTORDERBACKWARDDIFF,1);
+    errorSmooth3[i] = new Wavelet1D(errorSmooth2[i],Wavelet::FIRSTORDERCENTRALDIFF,1); 
     sprintf(fileName,"ErrorSmooth_%i",thetaDeg);
     errorSmooth3[i]->printToFile(fileName);
     errorSmooth[i]->fft1DInPlace();
@@ -1382,7 +1382,7 @@ Crava::computeSyntSeismic(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho)
   for(i = 0; i < ntheta_; i++)
     WDA[i] = new fftw_complex[3];
 
-  Wavelet * diffOperator     = new Wavelet(Wavelet::FIRSTORDERFORWARDDIFF,nz_,nzp_);
+  Wavelet * diffOperator     = new Wavelet1D(Wavelet::FIRSTORDERFORWARDDIFF,nz_,nzp_);
   diffOperator->fft1DInPlace();
 
   Alpha->setAccessMode(FFTGrid::READ);

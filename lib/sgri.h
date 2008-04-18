@@ -25,9 +25,9 @@ private:
 	int					        nGrid_;
 	double				      x0_, y0_, z0_; 
 	double				      dX_, dY_, dZ_;
-	double				      rotAngle_, dipAngle_;
 	double				      scaleX_, scaleY_, scaleZ_;
-	char				        binFileName_[MAX_STRING];
+	double				      rotAngle_, dipAngle_;
+  char				        binFileName_[MAX_STRING];
 	int 				        hasComplex_;
 	std::string*	      axisLabels_;
 	std::string*	      gridLabels_;

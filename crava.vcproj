@@ -498,6 +498,14 @@
 					</FileConfiguration>
 				</File>
 				<File
+					RelativePath=".\src\wavelet1D.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\src\wavelet3D.cpp"
+					>
+				</File>
+				<File
 					RelativePath="src\welldata.cpp"
 					>
 					<FileConfiguration
@@ -3576,6 +3584,14 @@
 				</File>
 				<File
 					RelativePath="src\wavelet.h"
+					>
+				</File>
+				<File
+					RelativePath=".\src\wavelet1D.h"
+					>
+				</File>
+				<File
+					RelativePath=".\src\wavelet3D.h"
 					>
 				</File>
 				<File
