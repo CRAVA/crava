@@ -79,7 +79,7 @@ int main(int argc, char** argv)
       time(&timestart);
       
       LogKit::writeLog("\n***********************************************************************");
-      LogKit::writeLog("\n***                    Builing Stochastic Model                     ***"); 
+      LogKit::writeLog("\n***                    Building Stochastic Model                     ***"); 
       LogKit::writeLog("\n***********************************************************************\n\n");
 
       crava = new Crava(model);
