@@ -43,7 +43,7 @@ void NRLib2::WriteBinaryFloat(std::ostream& stream,
 float NRLib2::ReadBinaryFloat(std::istream& stream, 
                               Endianess file_format)
 {
-  float f;
+  float f = -99999.0f;
   char buffer[4];
 
   if (!stream.read(buffer, 4)) {
@@ -89,7 +89,7 @@ void NRLib2::WriteBinaryDouble(std::ostream& stream,
 double NRLib2::ReadBinaryDouble(std::istream& stream, 
                                 Endianess file_format)
 {
-  double d;
+  double d = -99999.0;
   char buffer[8];
 
   if (!stream.read(buffer, 8)) {

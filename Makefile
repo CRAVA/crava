@@ -12,7 +12,7 @@ CPPFLAGS += $(INCLUDE)
 all:	$(PROGRAM)
 
 $(PROGRAM): $(DIRS) main.o
-	$(CXX) $(LFLAGS) -o $@ $(OBJDIR)/*.o $(OBJSUBDIR)/*.o main.o
+	$(PURIFY) $(CXX) $(LFLAGS) -o $@ $(OBJDIR)/*.o $(OBJSUBDIR)/*.o main.o
 
 $(OBJDIR):
 	install -d $(OBJDIR)

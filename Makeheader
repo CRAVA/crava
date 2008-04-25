@@ -10,12 +10,12 @@ CC         = gcc
 OPT        = -O2
 GCCWARNING = -Wall -pedantic -Wno-long-long
 GXXWARNING = -Wall -pedantic -Woverloaded-virtual -Wno-long-long
-PURIFY     = /nr/prog/rational/releases/PurifyPlus.7.0.0.0-008/i386_linux2/bin/purify
 PROGRAM    = cravarun
+PURIFY     =
 mode       = all
 
 ifeq ($(mode),debug)
-DEBUG   = -ggdb
+DEBUG = -ggdb
 endif
 
 ifeq ($(mode),profile)
@@ -28,12 +28,14 @@ ifeq ($(mode),purify)
 # Don't use -ggdb here
 DEBUG   = -g
 PROGRAM = cravarun.purify
+PURIFY  = /nr/prog/rational/releases/PurifyPlus.7.0.0.0-008/i386_linux2/bin/purify
 endif
 
 OPT     := $(strip $(OPT))
 PROFILE := $(strip $(PROFILE))
 DEBUG   := $(strip $(DEBUG))
 CDIR    := $(strip $(CDIR))
+PURIFY  := $(strip $(PURIFY))
 
 EXTRAFLAGS = $(strip $(OPT) $(PROFILE) $(DEBUG) $(CDIR))
 
