@@ -1404,7 +1404,14 @@ Crava::computeSyntSeismic(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho)
   for(k = 0; k < nzp_; k++)
   {
     kD = diffOperator->getCAmp(k);                   // defines content of kWD    
-    fillkW(k,kWD);                                   // defines content of kWD    
+ //   fillkW(k,kWD);                                   // defines content of kWD
+//FRODE
+    for(l = 0; l < ntheta_; l++)
+    {
+      kWD[l].re  = float( seisWavelet_[l]->getCAmp(k).re );// 
+      kWD[l].im  = float( -seisWavelet_[l]->getCAmp(k).im );// 
+    }
+//FRODE
     lib_matrProdScalVecCpx(kD, kWD, ntheta_);        // defines content of kWD
     lib_matrProdDiagCpxR(kWD, A_, ntheta_, 3, WDA);  // defines content of WDA  
     for( j = 0; j < nyp_; j++)
