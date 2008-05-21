@@ -41,6 +41,7 @@ public:
   virtual int          setNextComplex(fftw_complex);            // Accessmode write/readandwrite
   virtual int          setNextReal(float);                      // Accessmode write/readandwrite
   float                getRealValue(int i, int j, int k, bool extSimbox = false);  // Accessmode randomaccess
+  fftw_complex         getComplexValue(int i, int j, int k, bool extSimbox = false) const;
   int                  setRealValue(int i, int j, int k, float value, bool extSimbox = false);  // Accessmode randomaccess
   fftw_complex         getFirstComplexValue();    
   virtual int          square();                                // No mode/randomaccess

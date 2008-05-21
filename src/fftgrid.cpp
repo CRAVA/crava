@@ -742,6 +742,37 @@ FFTGrid::getRealValue(int i, int j, int k, bool extSimbox)
   return( value );
 }
 
+fftw_complex        
+FFTGrid::getComplexValue(int i, int j, int k, bool extSimbox) const
+{ 
+  // when index is in simbox (or the extended simbox if extSimbox is true) it returns the grid value  
+  // else it returns RMISSING
+  // i index in x direction 
+  // j index in y direction 
+  // k index in z direction 
+  fftw_complex value;
+
+  assert(istransformed_==true);
+
+  bool  inSimbox   = (extSimbox ? ( (i < nxp_) && (j < nyp_) && (k < nzp_)):
+  ((i < nx_) && (j < ny_) && (k < nz_)));
+  bool  notMissing = ( (i > -1) && (j > -1) && (k > -1));
+
+
+  if( inSimbox && notMissing )
+  { // if index in simbox
+    int index=i + j*cnxp_ + k*cnxp_*nyp_;
+    value = fftw_complex (cvalue_[index]); 
+  }
+  else
+  {
+    value.re = RMISSING;
+    value.im = RMISSING;
+  }
+
+  return( value );
+}
+
 
 fftw_complex       
 FFTGrid::getFirstComplexValue()
