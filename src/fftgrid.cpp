@@ -1036,7 +1036,51 @@ FFTGrid::add(FFTGrid* fftGrid)
     }
   }
 }
+void
+FFTGrid::subtract(FFTGrid* fftGrid)
+{
+  assert(nxp_==fftGrid->getNxp());
+  if(istransformed_==true)
+  {
+    int i;
+    for(i=0;i<csize_;i++)
+    {
+      cvalue_[i].re -= fftGrid->cvalue_[i].re;
+      cvalue_[i].im -= fftGrid->cvalue_[i].im; 
+    }
+  }
 
+  if(istransformed_==false)
+  {
+    int i;
+    for(i=0;i < rsize_;i++)
+    {
+      rvalue_[i] -= fftGrid->rvalue_[i];
+    }
+  }
+}
+void
+FFTGrid::changeSign()
+{
+  if(istransformed_==true)
+  {
+    int i;
+    for(i=0;i<csize_;i++)
+    {
+      cvalue_[i].re = -cvalue_[i].re;
+      cvalue_[i].im = -cvalue_[i].im; 
+    }
+  }
+
+  if(istransformed_==false)
+  {
+    int i;
+    for(i=0;i < rsize_;i++)
+    {
+      rvalue_[i] = -rvalue_[i];
+    }
+  }
+}
 void
 FFTGrid::multiply(FFTGrid* fftGrid)
 {

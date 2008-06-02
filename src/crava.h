@@ -88,6 +88,9 @@ private:
   FFTGrid          * meanAlpha_;       // mean values
   FFTGrid          * meanBeta_;
   FFTGrid          * meanRho_;
+  FFTGrid          * meanAlpha2_;       // copy of mean values, to be used for facies prob, new method 
+  FFTGrid          * meanBeta2_;
+  FFTGrid          * meanRho2_;
   FFTGrid          * parSpatialCorr_;   // parameter correlation
   const float     ** parPointCov_; 
 

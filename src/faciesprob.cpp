@@ -24,7 +24,7 @@
 
 FaciesProb::FaciesProb(ModelSettings * modelSettings,
                        int filegrid, const float ** sigma0, float *corrprior, Simbox *simbox, const Simbox& osimbox, int nzp, int nz, 
-                       FFTGrid* bgAlpha, FFTGrid* bgBeta, FFTGrid* bgRho, RandomGen *random, float p_undef)
+                       FFTGrid* bgAlpha, FFTGrid* bgBeta, FFTGrid* bgRho, RandomGen *random, float p_undef, float *priorFacies)
   : origSimbox_(osimbox)
 {
   modelSettings_ = modelSettings;
@@ -34,7 +34,8 @@ FaciesProb::FaciesProb(ModelSettings * modelSettings,
   nz_            = nz;
   random_        = random;
   p_undefined_   = p_undef;
-  
+  priorFacies_ = priorFacies;
+
   bgAlpha_ = new FFTGrid(bgAlpha);
   bgBeta_  = new FFTGrid(bgBeta);
   bgRho_   = new FFTGrid(bgRho);
@@ -145,12 +146,12 @@ FaciesProb::makeFaciesHistAndSetPriorProb(float* alpha, float* beta, float* rho,
     }
   }
  
-  float sum = 0.0f;
-  for(i=0;i<nFacies_;i++)
-    sum+=nData_[i];
+ // float sum = 0.0f;
+ // for(i=0;i<nFacies_;i++)
+ //   sum+=nData_[i];
 
-  for(i=0;i<nFacies_;i++)
-     priorFacies_[i] = float(nData_[i])/sum;
+//  for(i=0;i<nFacies_;i++)
+ //    priorFacies_[i] = float(nData_[i])/sum;
 
   for(i=0;i<nFacies_;i++)
   {
@@ -167,7 +168,7 @@ FaciesProb::makeFaciesDens(int nfac)
   int i,j,k,l;
   nFacies_ = nfac;
 
-  priorFacies_ = new float[nFacies_];
+  //priorFacies_ = new float[nFacies_];
   float kstda, kstdb, kstdr, hopt;
   nbins_  = 100;
   nbinsr_ = 50;
@@ -889,7 +890,7 @@ void FaciesProb::calculateFaciesProb(FFTGrid *alphagrid, FFTGrid *betagrid, FFTG
 void FaciesProb::filterWellLogs(WellData **wells, int nwells,
                                 fftw_real *postcova, fftw_real *postcovb, fftw_real *postcovr,
                                 fftw_real *postcrab, fftw_real *postcrar, fftw_real *postcrbr, 
-                                float lowCut, float highCut)
+                                float lowCut, float highCut, int relative)
 {
   nWells_ = nwells;
   float lowcut  = lowCut;
@@ -1165,14 +1166,15 @@ void FaciesProb::filterWellLogs(WellData **wells, int nwells,
       rfftwnd_one_complex_to_real(p2, alpha_cAmp, alpha_rAmp);
       rfftwnd_one_complex_to_real(p2, beta_cAmp, beta_rAmp);
       rfftwnd_one_complex_to_real(p2, rho_cAmp, rho_rAmp);
-      // Add background model to filtered data
+      // Add background model to filtered data if not relative method is used.
       
       simbox_->getCoord(ipos[0],jpos[0],kpos[0],x,y,z);
+     
     for(i=0;i<nz_;i++)
     {
-      alphafiltered_[i+w1*nz_] = alpha_rAmp[i]/nzp_+vtAlphaBg[i];
-      betafiltered_[i+w1*nz_]  = beta_rAmp[i]/nzp_+vtBetaBg[i];
-      rhofiltered_[i+w1*nz_]   = rho_rAmp[i]/nzp_+vtRhoBg[i];
+      alphafiltered_[i+w1*nz_] = alpha_rAmp[i]/nzp_+(1-relative)*vtAlphaBg[i];
+      betafiltered_[i+w1*nz_]  = beta_rAmp[i]/nzp_+(1-relative)*vtBetaBg[i];
+      rhofiltered_[i+w1*nz_]   = rho_rAmp[i]/nzp_+(1-relative)*vtRhoBg[i];
       alphablock_[i+w1*nz_]    = vtAlpha[i];
       betablock_[i+w1*nz_]     = vtBeta[i];
       rhoblock_[i+w1*nz_]      = vtRho[i];

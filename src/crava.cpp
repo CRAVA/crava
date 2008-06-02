@@ -138,6 +138,12 @@ Crava::Crava(Model * model)
   postCrCovAlphaRho_ -> setType(FFTGrid::COVARIANCE);
   postCrCovBetaRho_  -> setType(FFTGrid::COVARIANCE);
   postCovRho_        -> setType(FFTGrid::COVARIANCE);
+  if((outputFlag_ & ModelSettings::FACIESPROBRELATIVE)>0)
+  {
+    meanAlpha2_ = copyFFTGrid(meanAlpha_);
+    meanBeta2_ = copyFFTGrid(meanBeta_);
+    meanRho2_ = copyFFTGrid(meanRho_);
+  }
  
   if((outputFlag_ & ModelSettings::FACIESPROB) >0)
   {
@@ -164,7 +170,7 @@ Crava::Crava(Model * model)
     fprob_ = new FaciesProb(model->getModelSettings(),
                             fileGrid_, parPointCov_,corrprior, regularSimbox, *(const Simbox*)simbox_, 
                             nzp_, nz_, meanAlpha_, meanBeta_, meanRho_, random_, 
-                            model->getModelSettings()->getPundef());
+                            model->getModelSettings()->getPundef(), model->getPriorFacies());
     delete [] corrprior;
   }
 
@@ -2074,10 +2080,13 @@ void Crava::writeToFile(char * fileName1, char * fileName2, FFTGrid * grid) {
 
 void Crava::computeFaciesProb()
 {
-  if((outputFlag_ & ModelSettings::FACIESPROB) >0)
+  if((outputFlag_ & ModelSettings::FACIESPROB) >0 || (outputFlag_ & ModelSettings::FACIESPROBRELATIVE)>0)
   {
     LogKit::writeLog("\nStart computing facies probability cubes ...\n");
-
+    int relative;
+    if((outputFlag_ & ModelSettings::FACIESPROBRELATIVE)>0)
+      relative = 1;
+    else relative = 0;
     fftw_real *postcova, *postcovb, *postcovr, *postcrab, *postcrar, *postcrbr;
 
     int rnzp = 2*(nzp_/2+1);
@@ -2135,7 +2144,7 @@ void Crava::computeFaciesProb()
     fprob_->filterWellLogs(ppWellData,nWells_,
                            postcova,postcovb,postcovr,
                            postcrab,postcrar,postcrbr, 
-                           lowCut_, highCut_);
+                           lowCut_, highCut_, relative);
 
     if(postCovAlpha_->getIsTransformed()==false)
       postCovAlpha_->fftInPlace();
@@ -2152,8 +2161,19 @@ void Crava::computeFaciesProb()
       postCrCovBetaRho_->fftInPlace();
 
     int nfac = model_->getModelSettings()->getNumberOfFacies();
-    fprob_->makeFaciesProb(nfac,postAlpha_,postBeta_, postRho_);
+    if(relative==0)
+      fprob_->makeFaciesProb(nfac,postAlpha_,postBeta_, postRho_);
+    else
+    {
+      meanAlpha2_->subtract(postAlpha_);
+      meanAlpha2_->changeSign();
+      meanBeta2_->subtract(postBeta_);
+      meanBeta2_->changeSign();
+      meanRho2_->subtract(postRho_);
+      meanRho2_->changeSign();
+      fprob_->makeFaciesProb(nfac,meanAlpha2_,meanBeta2_,meanRho2_);
 
+    }
     fprob_->calculateConditionalFaciesProb(wells_, nWells_);
 
     FFTGrid *grid;
@@ -2161,6 +2181,8 @@ void Crava::computeFaciesProb()
     char fileName2[MAX_STRING];
     char postfix[20];
     LogKit::writeLog("\nProbability cubes done\n");
+    if(relative==0)
+    {
     for(i=0;i<nfac;i++)
     {
       grid = fprob_->getFaciesProb(i);
@@ -2169,6 +2191,23 @@ void Crava::computeFaciesProb()
       sprintf(fileName2,"FaciesProb_Depth%s",postfix);
       writeToFile(fileName,fileName2,grid);
     }
+    }
+    else
+    {
+    for(i=0;i<nfac;i++)
+    {
+      grid = fprob_->getFaciesProb(i);
+      sprintf(postfix,"_%s",model_->getModelSettings()->getFaciesName(i));
+      sprintf(fileName,"FaciesProbRelative%s",postfix);
+      sprintf(fileName2,"FaciesProbRelative_Depth%s",postfix);
+      writeToFile(fileName,fileName2,grid);
+    }
+    delete meanAlpha2_;
+    delete meanBeta2_;
+    delete meanRho2_;
+    }
+
+
     fftw_free(postcova);
     fftw_free(postcovb);
     fftw_free(postcovr);

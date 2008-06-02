@@ -21,7 +21,7 @@ public:
              int filegrid, const float ** sigma0, float *corrprior, 
              Simbox *simbox, const Simbox& osimbox, int nzp, int nz, 
              FFTGrid* bgAlpha, FFTGrid* bgBeta, FFTGrid* bgRho, 
-             RandomGen *random, float p_undef);
+             RandomGen *random, float p_undef, float *priorFacies);
   ~FaciesProb();
   float        ** makeFaciesHistAndSetPriorProb(float* alphafiltered_,float* betafiltered_,float* rhofiltered_,int* facieslog_);
   void            makeFaciesDens(int nfac);
@@ -30,7 +30,7 @@ public:
   void            filterWellLogs(WellData **wells, int nwells,
                                  fftw_real *postcova,fftw_real *postcovb, fftw_real *postcovr,
                                  fftw_real *postcrab,fftw_real *postcrar, fftw_real *postcrbr, 
-                                 float lowCut, float highCut);
+                                 float lowCut, float highCut, int relative);
   // FOR COMPARISION TO PCUBE
   float        ** makeFaciesHistAndSetPriorProb2(float* alpha, float* beta, float* rho,int* faciesL); // PCUBE
   void            makeFaciesDens2(int nfac);// PCUBE

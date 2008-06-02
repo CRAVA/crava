@@ -124,7 +124,8 @@ public:
                              WELLS             = 65536, 
                              WAVELETS          = 131072, 
                              NOTIME            = 262144,
-                             FACIESPROB        = 524288};
+                             FACIESPROB        = 524288,
+                             FACIESPROBRELATIVE = 1048576};
   enum             sseismicTypes{STANDARDSEIS = 0, PSSEIS = 1};
 
 private:

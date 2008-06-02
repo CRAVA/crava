@@ -54,6 +54,8 @@ public:
 
 
   virtual void         add(FFTGrid* fftGrid);                   // No mode/randomaccess
+  virtual void         subtract(FFTGrid* fftGrid);                   // No mode/randomaccess
+  virtual void         changeSign();                   // No mode/randomaccess
   virtual void         multiply(FFTGrid* fftGrid);              // pointwise multiplication!    
   bool                 consistentSize(int nx,int ny, int nz, int nxp, int nyp, int nzp);
   int                  getCounterForGet() const {return(counterForGet_);}

@@ -102,6 +102,7 @@ Model::Model(char * fileName)
           processPriorCorrelations(errText);
           processReflectionMatrix(errText);  // Needs background
           processWavelets();
+          processPriorFaciesProb();
         }
       }
     }
@@ -1789,4 +1790,63 @@ Model::printSettings(void)
         LogKit::writeLog("  Wavelet scale                            : %10.2e\n",modelFile_->getWaveletScale()[i]);
     }
   }
+}
+void Model::processPriorFaciesProb()
+{
+  int outputFlag = modelFile_->getModelSettings()->getOutputFlag();
+  if((outputFlag & ModelSettings::FACIESPROB) >0 || (outputFlag & ModelSettings::FACIESPROBRELATIVE)>0)
+  {
+    int w1, i;
+    int nz = modelFile_->getTimeNz();
+    float * vtAlpha = new float[nz];            // vt = vertical trend
+    float * vtBeta  = new float[nz];
+    float * vtRho   = new float[nz];
+    
+    int nWells = modelFile_->getModelSettings()->getNumberOfWells();
+    int nFacies = modelFile_->getModelSettings()->getNumberOfFacies();
+    int ndata = nWells*nz;
+    int * facieslog = new int[ndata];
+    for (w1 = 0 ; w1 < nWells ; w1++)
+    {
+      if(!(wells_[w1]->isDeviated()))
+      { 
+        BlockedLogs * bw = new BlockedLogs(wells_[w1], timeSimbox_, randomGen_) ;
+        bw->getVerticalTrend(bw->getAlpha(),vtAlpha);
+        bw->getVerticalTrend(bw->getBeta(),vtBeta);
+        bw->getVerticalTrend(bw->getRho(),vtRho);
+        int * facies = new int[nz];
+        bw->getVerticalTrendDiscrete(bw->getFacies(),facies,randomGen_);
+        for(i=0;i<nz;i++)
+        {
+          if(vtAlpha[i]!=RMISSING && vtBeta[i]!=RMISSING && vtRho[i]!=RMISSING)
+            facieslog[i+w1*nz] = facies[i];
+          else
+            facieslog[i+w1*nz] = IMISSING;
+        }
+      }
+    }
+
+    int f;
+    float sum = 0.0f;
+    int * nData = new int[nFacies];
+    priorFacies_ = new float[nFacies];
+    for(i=0;i<nFacies;i++)
+      nData[i] = 0;
+
+    for(i=0;i<ndata;i++)
+    {
+      if(facieslog[i]!=IMISSING)
+      {
+        f = facieslog[i];
+        nData[f]++;
+      }
+    }
+    for(i=0;i<nFacies;i++)
+      sum+=nData[i];
+
+    for(i=0;i<nFacies;i++)
+      priorFacies_[i] = float(nData[i])/sum;
+  }
+  else
+    priorFacies_ = NULL;
 }

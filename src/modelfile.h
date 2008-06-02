@@ -44,7 +44,7 @@ public:
   bool            getParallelTimeSurfaces(void)  const { return parallelTimeSurfaces_  ;}
   bool            getParallelDepthSurfaces(void) const { return parallelDepthSurfaces_ ;}
   bool            getParsingFailed(void)         const { return failed_                ;}
-
+  
   enum             backFileTypes{STORMFILE = -2, SEGYFILE = -1};
   
 private:
@@ -109,7 +109,7 @@ private:
 
   char          ** fName_;                 // Facies names
   int            * fnr_;                   // Facies labels
-  int              nFacies_;
+ // int              nFacies_;
 
   float          * constBack_;             // Constant background model (temporarily stored)
                                            // Note: Negative value ==> read from file (actual value gives format).

@@ -40,7 +40,7 @@ public:
   bool             getFailed()                const { return failed_                 ;}
   void             releaseWells();                                        // Deallocates well data.
   void             releaseGrids();                                        // Cuts connection to SeisCube_ and  backModel_
-
+  float          * getPriorFacies()           const { return priorFacies_;};  
 private:
   void             makeTimeSimbox(char * errText);
   void             makeDepthSimbox(char * errText);
@@ -50,6 +50,7 @@ private:
   void             processPriorCorrelations(char * errText);
   void             processReflectionMatrix(char * errText);
   void             processWavelets(void);
+  void             processPriorFaciesProb();
   void             setSimboxSurfaces(Simbox * simbox, char ** surfFile, bool parallelSurfaces, 
                                      double dTop, double lz, double dz, int nz, int & error);
   void             estimateXYPaddingSizes(void);
@@ -93,6 +94,8 @@ private:
 
   bool             hasSignalToNoiseRatio_; // Use SN ratio instead of error variance in model file. 
   bool             failed_;                // Indicates whether errors ocuured during construction. 
+
+  float         * priorFacies_;
 };
 
 #endif

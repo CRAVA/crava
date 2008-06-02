@@ -1206,7 +1206,7 @@ ModelFile::readCommandOutput(char ** params, int & pos, char * errText)
   int nPar = getParNum(params, pos, error, errText, params[pos-1], 1, -1);
   if(error == 0)
   {
-    int i, key, nKeys = 22;
+    int i, key, nKeys = 23;
     char ** keywords;
     keywords = new char*[nKeys];
     for(i=0;i<nKeys;i++)
@@ -1234,6 +1234,7 @@ ModelFile::readCommandOutput(char ** params, int & pos, char * errText)
     strcpy(keywords[i++],"WAVELETS");
     strcpy(keywords[i++],"NOTIME");
     strcpy(keywords[i++],"FACIESPROB");
+    strcpy(keywords[i++],"FACIESPROBRELATIVE");
 
     if (i != nKeys)
     { 
@@ -1268,6 +1269,12 @@ ModelFile::readCommandOutput(char ** params, int & pos, char * errText)
     for(i=0;i<nKeys;i++)
       delete [] keywords[i];
     delete [] keywords;
+
+    if((outputFlag & ModelSettings::FACIESPROB) >0 && (outputFlag & ModelSettings::FACIESPROBRELATIVE)>0)
+    {
+      outputFlag -=1048576;
+      LogKit::writeLog("Warning: Both FACIESPROB and FACIESPROBRELATIVE arr wanted as output. Only FACIESPROB is given.\n");
+    }
 
     modelSettings_->setFormatFlag(formatFlag);
     modelSettings_->setOutputFlag(outputFlag);
