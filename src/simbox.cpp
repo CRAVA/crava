@@ -202,10 +202,10 @@ Simbox::getZInterpolation(double x, double y, double z,
     if(error == 0 && zBot != z1Grid_->missingcode)
     {
       double dz = (zBot-zTop)/static_cast<double>(nz_);
-      zInd1 = static_cast<int>(floor((z-zTop)/dz));
+      zInd1 = static_cast<int>(floor((z-zTop)/dz)-0.5); //Find cell center above.
       if(zInd1 >=0 && zInd1 < nz_-1)
       {
-        t = (z-zTop)/dz - static_cast<double>(zInd1);
+        t = (z-zTop)/dz - 0.5 - static_cast<double>(zInd1);
         zInd2 = zInd1+1;
       }
       else 
