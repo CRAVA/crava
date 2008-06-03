@@ -15,30 +15,30 @@ public:
   enum          difftypes{FIRSTORDERFORWARDDIFF,FIRSTORDERCENTRALDIFF,FIRSTORDERBACKWARDDIFF,FOURIER};
   enum          waveletreadtypes{OLD,JASON,ESTIMATE,SGRI};
   
-  void fft1DInPlace();
+  virtual void   fft1DInPlace() = 0;
+  virtual void   invFFT1DInPlace() = 0;
 
   //Constructors and destructor
   Wavelet(int dim);
   Wavelet(ModelSettings * modelSettings, int dim);
   Wavelet(Wavelet * wavelet, int dim);
-  Wavelet(Wavelet * wavelet,int difftype, int dim);
-  Wavelet(int difftype, int nz, int nzp, int dim);
   virtual ~Wavelet();
 
   Wavelet*       getLocalWavelet(int i,int j);
-  virtual void   resample(float dz, int nz, float pz,float theta) = 0;
+  virtual void   resample(float, int, float, float) {};
   virtual bool   consistentSize(int nzp, int nyp, int nxp) const = 0;
-  fftw_complex   getCAmp(int k) const;
-  fftw_real      getRAmp(int k);
-  fftw_complex   getCAmp(int k, float scale) const;
+  virtual fftw_complex   getCAmp(int k, int j=0, int i=0) const = 0;
+  virtual fftw_real      getRAmp(int k, int j=0, int i=0) = 0;
+  virtual fftw_complex   getCAmp(int k, float scale, int j=0, int i=0) const = 0;
+  virtual void   setRAmp(float value, int k, int j=0, int i=0) = 0;
   float          getNorm() const {return norm_;}
   bool           getIsReal() const {return(isReal_);} 
-  void           scale(float gain);
+  virtual void   scale(float gain);
   int            getDim() const {return dim_;}
 
   //Note: Function below is mainly controlled by debugflag. Set overrideDebug = true to force.
-  void           printToFile(char* fileName, bool overrideDebug = false) const;
-  void           writeWaveletToFile(char* fileName,float approxDz);
+  virtual void   printToFile(char* fileName, bool overrideDebug = false) = 0;
+  virtual void   writeWaveletToFile(char*, float, Simbox * simbox = NULL) = 0;
   void           setShiftGrid(irapgrid * grid, Simbox * simbox);
   void           setGainGrid(irapgrid * grid, Simbox * simbox);
   float          getScale() const {return scale_;}
@@ -48,9 +48,8 @@ public:
   void           setReflCoeff(float * coeff) {for(int i=0;i<3;i++) coeff_[i] = coeff[i];}
 
 protected:
-  void           invFFT1DInPlace();
-  virtual float  getWaveletValue(float z, float * Wavelet, int center,int nx, float dz) = 0;
-  void           shiftAndScale(float shift,float gain);
+//  virtual float  getWaveletValue(float z, float * Wavelet, int center,int nx, float dz) = 0;
+  virtual void   shiftAndScale(float, float) {};
   void           printToFile(char* fileName, fftw_real* vec ,int nzp) const;
 
   // for wavelet estimation
@@ -70,22 +69,18 @@ protected:
   float          findBulkShift(fftw_real* vec_r,float dz,int nzp);
   float          getLocalTimeshift(int i, int j) const;
   float          getLocalGainFactor(int i, int j) const;
-
+  
   float          theta_;                 // the reflection angle that the wavelet correspond to
   int            readtype_;              // how is wavelet obtained? read from file[OLD JASON SGRI] or ESTIMATE
 
   float          dz_;                    // Sampling interval of wavelet, unit [ ms ]
   int            nz_;                    // length of wavelet
   int            nzp_;                   // length of padded wavelet
-  int	           cnzp_;	                 // size in z direction for storage inplace algorithm (complex grid) nzp_/2+1
-  int	           rnzp_	;                // expansion in z direction for storage inplace algorithm (real grid) 2*(nzp_/2+1)
-
+  
   int            cz_;                    // position of central point   
   bool           inFFTorder_;            // is true if the wavelet is ordred with the central point at the start
                                          // false if the central point is in the middle
   bool           isReal_;                // is true if the wavlet is real, false if it is fourier transformed 
-  fftw_real*     rAmp_;                  // The amplitude of the wavelet  
-  fftw_complex*  cAmp_;                  // The amplitude of the wavelet complex (if fourier transformed )
   float          norm_;                  // The (vector) norm of the wavelet (not function norm that divides by dz) 
   float          waveletLength_;         // Length of wavelet estimated as is amplitudes larger than 1/1000 * max amplitude
 

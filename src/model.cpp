@@ -1431,11 +1431,8 @@ Model::processWavelets(void)
           LogKit::writeLog("ERROR: Unknown file format of file  %s.\n",waveletFile[i]);
           exit(1);
         }
-        if (fileFormat == Wavelet::SGRI) {
-          wavelet_[i] = new Wavelet3D(waveletFile[i], modelSettings_);
-          //resample variant
-          exit(0); //Until processing of 3d wavelets is implemented
-        }
+        if (fileFormat == Wavelet::SGRI)
+          wavelet_[i] = new Wavelet3D(waveletFile[i], modelSettings_, timeSimbox_, modelSettings_->getAngle()[i]);
         else {
           wavelet_[i] = new Wavelet1D(waveletFile[i], modelSettings_, fileFormat);
           wavelet_[i]->resample(static_cast<float>(timeSimbox_->getdz()), timeSimbox_->getnz(), 

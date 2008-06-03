@@ -843,6 +843,24 @@ FFTGrid::setRealValue(int i, int j ,int k, float  value, bool extSimbox)
     return(1);
 }
 
+int   
+FFTGrid::setComplexValue(int i, int j ,int k, fftw_complex value, bool extSimbox)
+{    
+  assert(istransformed_== true);
+
+  bool  inSimbox   = (extSimbox ? ( (i < nxp_) && (j < nyp_) && (k < nzp_)):
+  ((i < nx_) && (j < ny_) && (k < nz_)));
+  bool  notMissing = ( (i > -1) && (j > -1) && (k > -1));
+
+  if( inSimbox && notMissing )
+  { // if index in simbox
+    int index=i + j*cnxp_ + k*cnxp_*nyp_;
+    cvalue_[index] = value; 
+    return( 0 );
+  }
+  else
+    return(1);
+}
 
 int
 FFTGrid::square()

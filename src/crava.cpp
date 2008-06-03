@@ -735,9 +735,9 @@ Crava::computePostMeanResidAndFFTCov()
   for(i = 0; i < 3; i++)
     reduceVar[i]= new fftw_complex[3];  
 
-  Wavelet * diff1Operator = new Wavelet1D(Wavelet::FIRSTORDERFORWARDDIFF,nz_,nzp_,1);
-  Wavelet * diff2Operator = new Wavelet1D(diff1Operator,Wavelet::FIRSTORDERBACKWARDDIFF,1);
-  Wavelet * diff3Operator = new Wavelet1D(diff2Operator,Wavelet::FIRSTORDERCENTRALDIFF,1);
+  Wavelet1D * diff1Operator = new Wavelet1D(Wavelet::FIRSTORDERFORWARDDIFF,nz_,nzp_,1);
+  Wavelet1D * diff2Operator = new Wavelet1D(diff1Operator,Wavelet::FIRSTORDERBACKWARDDIFF,1);
+  Wavelet1D * diff3Operator = new Wavelet1D(diff2Operator,Wavelet::FIRSTORDERCENTRALDIFF,1);
 
   diff1Operator->fft1DInPlace();
   diff2Operator->fft1DInPlace();
@@ -1383,18 +1383,12 @@ Crava::computeSyntSeismic(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho)
   fftw_complex * kWD         = new fftw_complex[ntheta_];
   fftw_complex * ijkSeis     = new fftw_complex[ntheta_];
   fftw_complex * ijkParam    = new fftw_complex[3];
-
-  fftw_complex**  WDA  = new fftw_complex*[ntheta_];
+  fftw_complex** WDA         = new fftw_complex*[ntheta_];
   for(i = 0; i < ntheta_; i++)
     WDA[i] = new fftw_complex[3];
 
   Wavelet * diffOperator     = new Wavelet1D(Wavelet::FIRSTORDERFORWARDDIFF,nz_,nzp_);
   diffOperator->fft1DInPlace();
-
-  Alpha->setAccessMode(FFTGrid::READ);
-  Beta->setAccessMode(FFTGrid::READ);
-  Rho->setAccessMode(FFTGrid::READ);
-
 
   FFTGrid** seisData = new FFTGrid*[ntheta_];
   for(l=0;l<ntheta_;l++)
@@ -1406,39 +1400,66 @@ Crava::computeSyntSeismic(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho)
   }
 
   int cnxp  = nxp_/2+1;
-
-  for(k = 0; k < nzp_; k++)
-  {
-    kD = diffOperator->getCAmp(k);                   // defines content of kWD    
- //   fillkW(k,kWD);                                   // defines content of kWD
-//FRODE
-    for(l = 0; l < ntheta_; l++)
+  
+  if (seisWavelet_[0]->getDim() == 1) {
+    Alpha->setAccessMode(FFTGrid::READ);
+    Beta->setAccessMode(FFTGrid::READ);
+    Rho->setAccessMode(FFTGrid::READ);
+    for(k = 0; k < nzp_; k++)
     {
-      kWD[l].re  = float( seisWavelet_[l]->getCAmp(k).re );// 
-      kWD[l].im  = float( -seisWavelet_[l]->getCAmp(k).im );//
-    }
-//FRODE
-    lib_matrProdScalVecCpx(kD, kWD, ntheta_);        // defines content of kWD
-    lib_matrProdDiagCpxR(kWD, A_, ntheta_, 3, WDA);  // defines content of WDA  
-    for( j = 0; j < nyp_; j++)
-    {
-      for( i = 0; i < cnxp; i++)
+      kD = diffOperator->getCAmp(k);                   // defines content of kWD    
+      //   fillkW(k,kWD);                                   // defines content of kWD
+      //FRODE - substituted prev. call with following loop - may08
+      for(l = 0; l < ntheta_; l++)
       {
-        ijkParam[0]=Alpha->getNextComplex();
-        ijkParam[1]=Beta ->getNextComplex();
-        ijkParam[2]=Rho  ->getNextComplex();
-
-        lib_matrProdMatVecCpx(WDA,ijkParam,ntheta_,3,ijkSeis); //defines  ijkSeis 
-
-        for(l=0;l<ntheta_;l++)
+        kWD[l].re  = float( seisWavelet_[l]->getCAmp(k).re );// 
+        kWD[l].im  = float( -seisWavelet_[l]->getCAmp(k).im );//
+      }
+      //FRODE
+      lib_matrProdScalVecCpx(kD, kWD, ntheta_);        // defines content of kWD
+      lib_matrProdDiagCpxR(kWD, A_, ntheta_, 3, WDA);  // defines content of WDA  
+      for( j = 0; j < nyp_; j++)
+      {
+        for( i = 0; i < cnxp; i++)
         {
-          seisData[l]->setNextComplex(ijkSeis[l]);
-        }
+          ijkParam[0]=Alpha->getNextComplex();
+          ijkParam[1]=Beta ->getNextComplex();
+          ijkParam[2]=Rho  ->getNextComplex();
 
+          lib_matrProdMatVecCpx(WDA,ijkParam,ntheta_,3,ijkSeis); //defines  ijkSeis 
+
+          for(l=0;l<ntheta_;l++)
+          {
+            seisData[l]->setNextComplex(ijkSeis[l]);
+          }
+        }
       }
     }
   }
-
+  else { //dim > 1
+    Alpha->setAccessMode(FFTGrid::RANDOMACCESS);
+    Beta->setAccessMode(FFTGrid::RANDOMACCESS);
+    Rho->setAccessMode(FFTGrid::RANDOMACCESS);
+    for (k=0; k<nzp_; k++) {
+      kD = diffOperator->getCAmp(k);
+      for (j=0; j<nyp_; j++) {
+        for (i=0; i<cnxp; i++) {
+           for(l = 0; l < ntheta_; l++) {
+            kWD[l].re  = float( seisWavelet_[l]->getCAmp(k,j,i).re ); 
+            kWD[l].im  = float( -seisWavelet_[l]->getCAmp(k,j,i).im );
+          }
+          lib_matrProdScalVecCpx(kD, kWD, ntheta_);        // defines content of kWD  
+          lib_matrProdDiagCpxR(kWD, A_, ntheta_, 3, WDA);  // defines content of WDA  
+          ijkParam[0]=Alpha->getComplexValue(i,j,k,true);
+          ijkParam[1]=Beta ->getComplexValue(i,j,k,true);
+          ijkParam[2]=Rho  ->getComplexValue(i,j,k,true);
+          lib_matrProdMatVecCpx(WDA,ijkParam,ntheta_,3,ijkSeis);
+          for(l=0;l<ntheta_;l++)
+            seisData[l]->setComplexValue(i, j, k, ijkSeis[l], true);
+        }
+      }
+    }
+  }
   Alpha->endAccess();
   Beta->endAccess();
   Rho->endAccess();

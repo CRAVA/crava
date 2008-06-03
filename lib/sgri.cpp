@@ -1,12 +1,12 @@
 /*#include <math.h>
 #include <time.h>
 #include <stdio.h>
-#include <assert.h>
 */
 //#include <iostream>
 #include <fstream>
 using std::ifstream;
 #include <string>
+#include <assert.h>
 
 #include "lib/global_def.h"
 #include "lib/sgri.h"
@@ -37,6 +37,17 @@ Sgri::Sgri(char * fileName, char *errText, int &errCode) :
   if (!readHeaderFile(fileName, errText, errCode))
     return;
 
+  ci_ = static_cast<int> (- x0_ / dX_); //Index for x=0 or closest gridpoint below
+  cj_ = static_cast<int> (- y0_ / dY_); //Index for y=0 or closest gridpoint below
+  ck_ = static_cast<int> (- z0_ / dZ_); //Index for z=0 or closest gridpoint below
+  centerX_ = x0_ + ci_ * dX_; //X-value at ci_
+  centerY_ = y0_ + cj_ * dY_; //Y-value at cj_
+  centerZ_ = z0_ + ck_ * dZ_; //Z-value at ck_
+
+  xMax_ = x0_ + (GetNI()-1) * dX_;
+  yMax_ = y0_ + (GetNJ()-1) * dY_;
+  zMax_ = z0_ + (GetNK()-1) * dZ_;
+  
   ifstream binFile(binFileName_, ios::in | ios::binary);
   if(!binFile) {
     if (errCode == 0) 
@@ -90,7 +101,7 @@ Sgri::readHeaderFile(char * fileName, char *errText, int &errCode)
   for (i=0; i<dim_; i++)
     getline(headerFile, axisLabels_[i]);
   getline(headerFile, gridValLabel_);
-  int config;
+  int config = IMISSING;
   enum Planes {XZ, ZX, YZ, ZY};
   if (dim_ == 2) { //Must find the right axis configuration
     bool map[2][3];
@@ -156,9 +167,9 @@ Sgri::readHeaderFile(char * fileName, char *errText, int &errCode)
   gridLabels_ = new string[nGrid_];
   for (i=0; i<nGrid_; i++)
     getline(headerFile, gridLabels_[i]);
-  double *dValues1 = new double[dim_];
-  double *dValues2 = new double[dim_];
-  double *dValues3 = new double[dim_];
+  float *dValues1 = new float[dim_];
+  float *dValues2 = new float[dim_];
+  float *dValues3 = new float[dim_];
   int *iValues = new int[dim_];
   //Reading record 5+dim+ngrid: Scaling factor of grid values
   for (i=0; i<dim_; i++)
@@ -272,7 +283,7 @@ Sgri::readHeaderFile(char * fileName, char *errText, int &errCode)
     errCode=2;
     retValue = false;
   }
-  if ((xActive) && (dX_ <= 0.0)) {
+  if (xActive && (dX_ <= 0.0)) {
     if (errCode == 0)  
       sprintf(errText,"Error: Grid sampling in X-dir in waveletfile %s must be > 0.0.\n", fileName);
     else 
@@ -280,7 +291,7 @@ Sgri::readHeaderFile(char * fileName, char *errText, int &errCode)
     errCode=2;
     retValue = false;
   }
-  if ((yActive) && (dY_ <= 0.0)) {
+  if (yActive && (dY_ <= 0.0)) {
     if (errCode == 0)  
       sprintf(errText,"Error: Grid sampling in Y-dir in waveletfile %s must be > 0.0.\n", fileName);
     else 
@@ -293,6 +304,54 @@ Sgri::readHeaderFile(char * fileName, char *errText, int &errCode)
       sprintf(errText,"Error: Grid sampling in Z-dir in waveletfile %s must be > 0.0.\n", fileName);
     else 
       sprintf(errText,"%sError: Grid sampling in Z-dir in waveletfile %s must be > 0.0.\n", errText,fileName);
+    errCode=2;
+    retValue = false;
+  }
+  if (xActive && (x0_ > 0.0)) {
+    if (errCode == 0)  
+      sprintf(errText,"Error: Grid origin in X-dir in waveletfile %s must be <= 0.0.\n", fileName);
+    else 
+      sprintf(errText,"%sError: Grid origin in X-dir in waveletfile %s must be <= 0.0.\n", errText,fileName);
+    errCode=2;
+    retValue = false;
+  }
+  if (yActive && (y0_ > 0.0)) {
+    if (errCode == 0)  
+      sprintf(errText,"Error: Grid origin in Y-dir in waveletfile %s must be <= 0.0.\n", fileName);
+    else 
+      sprintf(errText,"%sError: Grid origin in Y-dir in waveletfile %s must be <= 0.0.\n", errText,fileName);
+    errCode=2;
+    retValue = false;
+  }
+  if (z0_ > 0.0) {
+    if (errCode == 0)  
+      sprintf(errText,"Error: Grid origin in Z-dir in waveletfile %s must be <= 0.0.\n", fileName);
+    else 
+      sprintf(errText,"%sError: Grid origin in Z-dir in waveletfile %s must be <= 0.0.\n", errText,fileName);
+    errCode=2;
+    retValue = false;
+  }
+  if (xActive && ((x0_ + (nX * dX_)) < 0.0)) {
+    if (errCode == 0)  
+      sprintf(errText,"Error: Grid end-point in X-dir in waveletfile %s must be >= 0.0.\n", fileName);
+    else 
+      sprintf(errText,"%sError: Grid end-point in X-dir in waveletfile %s must be >= 0.0.\n", errText,fileName);
+    errCode=2;
+    retValue = false;
+  }
+  if (yActive && ((y0_ + (nY * dY_)) < 0.0)) {
+    if (errCode == 0)  
+      sprintf(errText,"Error: Grid end-point in Y-dir in waveletfile %s must be >= 0.0.\n", fileName);
+    else 
+      sprintf(errText,"%sError: Grid end-point in Y-dir in waveletfile %s must be >= 0.0.\n", errText,fileName);
+    errCode=2;
+    retValue = false;
+  }
+  if (z0_ + (nZ * dZ_) < 0.0) {
+    if (errCode == 0)  
+      sprintf(errText,"Error: Grid end-point in Z-dir in waveletfile %s must be >= 0.0.\n", fileName);
+    else 
+      sprintf(errText,"%sError: Grid end-point in Z-dir in waveletfile %s must be >= 0.0.\n", errText,fileName);
     errCode=2;
     retValue = false;
   }
@@ -360,4 +419,66 @@ Sgri::readBinaryFile(int n, char *errText, int &errCode)
   }
   
   return;
+}
+
+float
+Sgri::getWaveletValue(float x, float y, float z) const
+{
+  if (x < x0_ || x > xMax_ || y < y0_ || y > yMax_ || z < z0_ || z > zMax_)
+    return (0.0);
+
+  int i0, i1, j0, j1, k0, k1;
+  i0 = static_cast<int> ((x-centerX_) / dX_) + ci_;
+  if (i0 + 1 == GetNI())
+    i1 = i0;
+  else
+    i1 = i0 + 1;
+  j0 = static_cast<int> ((y-centerY_) / dY_) + cj_;
+  if (j0 + 1 == GetNJ())
+    j1 = j0;
+  else
+    j1 = j0 + 1;
+  k0 = static_cast<int> ((z-centerZ_) / dZ_) + ck_;
+  if (k0 + 1 == GetNK())
+    k1 = k0;
+  else
+    k1 = k0 + 1;
+
+  float C000 = (*this)(i0,j0,k0);
+  float C100 = (*this)(i1,j0,k0);
+  float C010 = (*this)(i0,j1,k0);
+  float C110 = (*this)(i1,j1,k0);
+  float C001 = (*this)(i0,j0,k1);
+  float C101 = (*this)(i1,j0,k1);
+  float C011 = (*this)(i0,j1,k1);
+  float C111 = (*this)(i1,j1,k1);
+
+  float xLow = x0_ + i0*dX_;
+  float xFrac = (x - xLow) / dX_;
+  float C00 = C000 * (1.0f - xFrac) + C100 * xFrac;
+  float C10 = C010 * (1.0f - xFrac) + C110 * xFrac;
+  float C01 = C001 * (1.0f - xFrac) + C101 * xFrac;
+  float C11 = C011 * (1.0f - xFrac) + C111 * xFrac;
+
+  float yLow = y0_ + j0*dY_;
+  float yFrac = (y - yLow) / dY_;
+  float C0 = C00 * (1.0f - yFrac) + C10 * yFrac;
+  float C1 = C01 * (1.0f - yFrac) + C11 * yFrac;
+  
+  float zLow = z0_ + k0*dZ_;
+  float zFrac = (z - zLow) / dZ_;
+  float C = C0 * (1.0f - zFrac) + C1 * zFrac;
+
+  return(C);
+}
+
+bool               
+Sgri::sizeOk(float xLim, float yLim, float zLim)
+{
+  bool ok = true;
+
+  if (x0_ < -xLim || xMax_ > xLim || y0_ < -yLim || y0_ > yLim || z0_ < -zLim || z0_ > zLim)
+    ok = false;
+
+  return (ok);
 }

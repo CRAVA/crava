@@ -4,25 +4,31 @@
 #include "fft/include/fftw.h"
 #include "lib/global_def.h"
 #include "src/wavelet.h"
+#include "src/fftgrid.h"
+#include "lib/sgri.h"
 
 class Wavelet3D : public Wavelet {
 public:
- // void fft1DInPlace();
-
+  void           fft1DInPlace();
+  void           invFFT1DInPlace();
   //Constructors and destructor
-  Wavelet3D(char * fileName, ModelSettings * modelSettings, int dim = 3);
+  Wavelet3D(char * fileName, ModelSettings * modelSettings, Simbox *simBox, float theta, int dim = 3);
   Wavelet3D(Wavelet * wavelet, int dim = 3);
-//  Wavelet(Wavelet * wavelet,int difftype);
-//  Wavelet(int difftype, int nz, int nzp);
   virtual ~Wavelet3D() {}
 
-  void           resample(float dz, int nz, float pz,float theta);
   bool           consistentSize(int nzp, int nyp, int nxp) const; 
+  fftw_complex   getCAmp(int k, int j, int i) const;
+  fftw_real      getRAmp(int k, int j, int i);
+  fftw_complex   getCAmp(int k, float scale, int j, int i) const;
+  void           setRAmp(float value, int k, int j, int i);
+
+  void           writeWaveletToFile(char* fileName, float, Simbox *simbox);
+  void           printToFile(char* fileName, bool overrideDebug = false);
   
 private:
-  void			     WaveletReadSgri(char *fileName);
-  float          getWaveletValue(float, float *, int, int, float) {return(0.0);}
+  void           shiftFFTGrid(FFTGrid *shiftAmp);
 
+  FFTGrid        ampCube_;
   float          dy_, dx_;
   int            ny_, nx_;
   int            nyp_, nxp_;

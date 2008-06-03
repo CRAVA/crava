@@ -45,8 +45,6 @@ Wavelet::Wavelet(ModelSettings * modelSettings, int dim)
 	errCode_=0;
 }
 
-
-
 Wavelet::Wavelet(Wavelet * wavelet, int dim)
   : dim_(dim)
 {
@@ -54,13 +52,11 @@ Wavelet::Wavelet(Wavelet * wavelet, int dim)
   gridNJ_    = 0;
   shiftGrid_ = NULL;  
   gainGrid_  = NULL; 
-
+  if(! wavelet->getIsReal() ) wavelet->invFFT1DInPlace();
   theta_     = wavelet->theta_;
   dz_        = wavelet->dz_;
   nz_        = wavelet->nz_;
   nzp_       = wavelet->nzp_;
-  cnzp_      = wavelet->cnzp_;
-  rnzp_	     = wavelet->rnzp_;
   cz_        = wavelet->cz_;
   inFFTorder_= wavelet->inFFTorder_;
   isReal_    = wavelet->isReal_;  
@@ -69,25 +65,12 @@ Wavelet::Wavelet(Wavelet * wavelet, int dim)
 
   if(errCode_ != 0)
     strcpy(errText_, wavelet->errText_) ;   
-  rAmp_      = (fftw_real*) fftw_malloc(rnzp_*sizeof(fftw_real));  
-  cAmp_      = (fftw_complex*) rAmp_;
-
-  if(isReal_)
-    for(int i = 0; i < rnzp_; i++)
-    {
-      rAmp_[i] = wavelet->rAmp_[i];  
-    }
-  else
-    for(int i = 0; i < cnzp_; i++)
-    {
-      cAmp_[i].re = wavelet->cAmp_[i].re; 
-      cAmp_[i].im = wavelet->cAmp_[i].im; 
-    }
 }
 
 // Makes error correlations 
 //
 //
+/*
 Wavelet::Wavelet(Wavelet * wavelet, int difftype, int dim)
   : dim_(dim)
 {
@@ -100,8 +83,6 @@ Wavelet::Wavelet(Wavelet * wavelet, int difftype, int dim)
   dz_        = wavelet->dz_;
   nz_        = wavelet->nz_;
   nzp_       = wavelet->nzp_;
-  cnzp_      = wavelet->cnzp_;
-  rnzp_	     = wavelet->rnzp_;
   cz_        = wavelet->cz_;
   inFFTorder_= wavelet->inFFTorder_;
   isReal_    = wavelet->isReal_;  
@@ -109,68 +90,7 @@ Wavelet::Wavelet(Wavelet * wavelet, int difftype, int dim)
   errCode_   = wavelet->errCode_;   
   if(errCode_ != 0)
     strcpy(errText_, wavelet->errText_) ;   
-  rAmp_      = (fftw_real*) fftw_malloc(rnzp_*sizeof(fftw_real));  
-  cAmp_      = (fftw_complex*) rAmp_;
-  int i;
-
-  double norm2 = 0.0;
-
-  if(difftype != FOURIER)
-  {
-    for( i = 0; i < rnzp_; i++)
-    {
-      if(i < nzp_)
-      {
-        switch(difftype)
-        {
-        case FIRSTORDERFORWARDDIFF:
-          if(i == nzp_-1 )
-            rAmp_[i] = wavelet->rAmp_[0] - wavelet->rAmp_[i];
-          else
-            rAmp_[i] = wavelet->rAmp_[i+1]-wavelet->rAmp_[i];      
-          break;
-        case FIRSTORDERBACKWARDDIFF:
-          if(i == 0 )
-            rAmp_[i] = wavelet->rAmp_[0] - wavelet->rAmp_[nzp_-1];
-          else
-            rAmp_[i] = wavelet->rAmp_[i]-wavelet->rAmp_[i-1];      
-          break;
-        case FIRSTORDERCENTRALDIFF:
-          if(i == 0 )
-            rAmp_[i] = float( 0.5*(wavelet->rAmp_[i+1] - wavelet->rAmp_[nzp_-1]) );
-          else
-          {
-            if(i == nzp_-1 )
-              rAmp_[i] = float( 0.5*(wavelet->rAmp_[0] - wavelet->rAmp_[i-1]));
-            else
-              rAmp_[i] = float( 0.5*(wavelet->rAmp_[i+1] - wavelet->rAmp_[i-1]));
-          }      
-          break;
-        }
-        norm2 += rAmp_[i]*rAmp_[i];
-      }
-      else
-        rAmp_[i] = RMISSING;
-    }
-    norm_=float( sqrt(norm2) );
-  }
-  else
-  {
-    fftw_complex  iValue;
-    for(i=0; i < nzp_; i++ )
-      rAmp_[i] = wavelet->rAmp_[i];
-    fft1DInPlace();
-    for(i=0; i < cnzp_; i++ )
-    {
-      iValue  =  cAmp_[i];
-      cAmp_[i].re = float( - iValue.im * 2 * PI * float(i)/float(nzp_) );
-      cAmp_[i].im = float(   iValue.re * 2 * PI * float(i)/float(nzp_) );
-    }
-    invFFT1DInPlace();
-    for(i=0; i < nzp_; i++ )
-      norm2 += rAmp_[i]*rAmp_[i];
-    norm_= float( sqrt(norm2));
-  }
+  
 }
 
 Wavelet::Wavelet(int difftype, int nz, int nzp, int dim)
@@ -184,72 +104,14 @@ Wavelet::Wavelet(int difftype, int nz, int nzp, int dim)
   dz_         = RMISSING;
   nz_         = nz;
   nzp_        = nzp;
-  cnzp_       = nzp_/2+1;
-  rnzp_	      = 2*cnzp_;
   cz_         = 0;
   inFFTorder_ = true;
   errCode_    = 0;
-  rAmp_       = (fftw_real*) fftw_malloc(rnzp_*sizeof(fftw_real));  
-  cAmp_       = (fftw_complex*) rAmp_;
-  norm_       = RMISSING;
-  int i;
-
-  if(difftype != FOURIER)
-  {
-    isReal_    = true;
-
-    for(i=0;i < rnzp_; i++)
-    {
-      if( i < nzp_)
-        rAmp_[i] = 0.0;
-      else
-        rAmp_[i] = RMISSING;
-    }
-
-    switch(difftype)
-    {
-    case FIRSTORDERFORWARDDIFF:
-      rAmp_[0] = -1.0; 
-      rAmp_[nzp_-1] = 1.0; 
-      norm_    = float( sqrt(2.0) );
-      break;
-    case FIRSTORDERBACKWARDDIFF:
-      rAmp_[0]      = 1.0;
-      rAmp_[nzp_-1] =  -1.0;      
-      norm_    = float( sqrt(2.0) ); 
-      break;
-    case FIRSTORDERCENTRALDIFF:
-      rAmp_[1]      = 0.5;
-      rAmp_[nzp_-1] = -0.5;
-      norm_    = float( sqrt(0.5) ); 
-      break;
-    }
-  }
-  else
-  {
-    double norm2 = 0.0;
-    isReal_    = false;
-
-    for(i=0;i < cnzp_; i++)
-    {
-      cAmp_[i].re = 0.0;
-      cAmp_[i].im = float( 2.0 * PI * float( i ) / float( nzp_ ) );   
-    }
-
-    invFFT1DInPlace();
-
-    for(i = 0; i < nzp_;i++) 
-      norm2 +=  rAmp_[i]* rAmp_[i];
-
-    norm_= float( sqrt( norm2 ) );
-  }       
 }
-
+*/
 
 Wavelet::~Wavelet()
 {
-  fftw_free(rAmp_);
-
   if(shiftGrid_!=NULL)
     delete [] shiftGrid_;
   if(gainGrid_!=NULL)
@@ -259,15 +121,14 @@ Wavelet::~Wavelet()
 Wavelet*  Wavelet::getLocalWavelet(int i, int j)
 {
   Wavelet * localWavelet;
-  if (dim_ == 1)
+  if (dim_ == 1) {
     localWavelet = new Wavelet1D(this);
+    float  ts    = this->getLocalTimeshift(i,j);
+    float gain   = this->getLocalGainFactor(i,j);
+    localWavelet->shiftAndScale(ts,gain);
+  }
   else
     localWavelet = new Wavelet3D(this);
-
-  float  ts    = this->getLocalTimeshift(i,j);
-  float gain   = this->getLocalGainFactor(i,j);
-
-  localWavelet->shiftAndScale(ts,gain);
 
   return localWavelet;
 }
@@ -303,206 +164,13 @@ float  Wavelet::getLocalGainFactor(int i, int j) const
   return(gain);
 }
 
-
-void
-Wavelet::shiftAndScale(float shift,float gain)
-{
-  int k;
-
-  fftw_complex  ampMultiplier,tmp;
-
-  if(isReal_) 
-    fft1DInPlace();
-
-  float iShift=shift/dz_;
-
-  for(k=0;k < cnzp_; k++)
-  {
-    ampMultiplier.re = float(gain*cos(2.0*(PI*(iShift)*k)/float(nzp_)));
-    ampMultiplier.im = float(gain*sin(-2.0*(PI*(iShift)*k)/float(nzp_)));
-
-    tmp.re = ampMultiplier.re*cAmp_[k].re - ampMultiplier.im*cAmp_[k].im;
-    tmp.im = ampMultiplier.im*cAmp_[k].re + ampMultiplier.re*cAmp_[k].im;
-
-    cAmp_[k] =tmp;
-  }
-}
-
 void
 Wavelet::scale(float scale)
 {
   if (scale != 1.0f)
     LogKit::writeLog("  Scaling wavelet with gain factor         : %.3e\n",scale);
   scale_ = scale;
-  for(int i=0; i < rnzp_ ; i++)
-    if(rAmp_[i] != RMISSING)
-      rAmp_[i]=rAmp_[i]*scale;
-  
-  /*
-    if(isReal_) 
-    fft1DInPlace();
-    
-    for(int k=0 ; k < cnzp_ ; k++)
-    {
-    cAmp_[k].re = scale*cAmp_[k].re;
-    cAmp_[k].im = scale*cAmp_[k].im;
-    }
-  */
 }
-
-void Wavelet::fft1DInPlace()
-{
-  // use the operator version of the fourier transform
-  if(isReal_){
-    int flag; 
-    rfftwnd_plan plan;  
-    flag    = FFTW_ESTIMATE | FFTW_IN_PLACE;
-    plan    = rfftwnd_create_plan(1, &nzp_ ,FFTW_REAL_TO_COMPLEX,flag);
-    rfftwnd_one_real_to_complex(plan,rAmp_,cAmp_);
-    fftwnd_destroy_plan(plan);
-    isReal_ = false;
-  }
-}
-
-void Wavelet::invFFT1DInPlace()
-{
-  // use the operator version of the fourier transform
-  if(!isReal_)
-  {
-    int flag;
-    rfftwnd_plan plan; 
-
-    flag = FFTW_ESTIMATE | FFTW_IN_PLACE;
-    plan= rfftwnd_create_plan(1,&nzp_,FFTW_COMPLEX_TO_REAL,flag);
-    rfftwnd_one_complex_to_real(plan,cAmp_,rAmp_);
-    fftwnd_destroy_plan(plan);
-    isReal_=true;
-    double scale= double(1.0/double(nzp_));
-    for(int i=0; i < nzp_; i++)
-      rAmp_[i] = (fftw_real) (rAmp_[i]*scale);  
-  }
-}
-
-
-fftw_real  
-Wavelet::getRAmp(int k)
-{
-  fftw_real value;
-
-  if(isReal_)
-  {
-    if(k < nzp_)
-      value = rAmp_[k];
-    else
-      value = 0.0;
-  }
-  else
-  {
-    invFFT1DInPlace();
-
-    if(k < nzp_)
-      value = rAmp_[k];
-    else
-      value = 0.0;
-
-    fft1DInPlace();
-  }
-  return value;
-}
-
-
-fftw_complex   
-Wavelet::getCAmp(int k) const
-{
-  assert(!isReal_);
-  fftw_complex  value;
-
-  if(k < cnzp_)
-  {
-    value.re =  cAmp_[k].re;
-    value.im =  cAmp_[k].im;
-  }
-  else
-  {
-    int refk =  nzp_-k;
-    value.re =  cAmp_[refk].re;
-    value.im =  - cAmp_[refk].im;
-  }
-
-  return value;
-}
-
-
-fftw_complex   
-Wavelet::getCAmp(int k, float scale) const
-{
-  ///////////////////////////////////////////////////////////
-  //
-  // Get the  fourier transform of the streched wavelet.
-  // scale is  in [0 1] wavelet
-  // scale = 1 this is identical to getCAmp(int k)
-  // Note we do not use the normal scale relation:  
-  //  
-  // FFT( w(s*t) ) = fw(w/s) * ( 1/s )   with  fw( w ) = FFT( w(t) )
-  //
-  // We return:  fw(w/s) 
-  ///////////////////////////////////////////////////////////// 
-
-  assert(!isReal_);
-
-  fftw_complex  value;
-  float omega,dOmega;  
-  int   omU, omL;
-  if( k < cnzp_)
-  {
-    omega  = float(k) / scale;
-    if(omega >= cnzp_)
-    {
-      value.re =  0.0f;
-      value.im =  0.0f;
-    }
-    else
-    {
-      omL        = int(floor( omega ));
-      omU        = int( floor( omega )) + 1;
-      if(omU >= cnzp_) 
-        omU -= 1;    
-
-      dOmega     = omega - float(omL);
-      value.re =  cAmp_[omL].re * ( 1.0f - dOmega ) + cAmp_[omU].re * dOmega;
-      value.im =  cAmp_[omL].im * ( 1.0f - dOmega ) - cAmp_[omU].im * dOmega;
-      if(k < 0) //NBNB Ragnar
-      {
-        value.re = float(exp(log(cAmp_[omL].re) * ( 1.0f - dOmega ) + log(cAmp_[omU].re) * dOmega));
-        value.re = float(exp(log(cAmp_[omL].im) * ( 1.0f - dOmega ) + log(cAmp_[omU].im) * dOmega));
-      }
-    }
-  }
-  else
-  {
-    int refk =  nzp_-k;
-    omega = float(refk)/scale;
-
-    if(omega >= cnzp_)
-    {
-      value.re =  0.0f;
-      value.im =  0.0f;
-    }
-    else
-    {
-      omL        = int(floor( omega ));
-      omU        = int( floor( omega )) + 1;
-      if(omU >= cnzp_) 
-        omU -= 1;
-      dOmega     = omega - float(omL);
-      value.re =  cAmp_[omL].re * ( 1.0f - dOmega ) + cAmp_[omU].re * dOmega;
-      value.im =  - cAmp_[omL].im * ( 1.0f - dOmega ) + cAmp_[omU].im * dOmega;
-    }
-  }
-
-  return value;
-}
-
 
 void 
 Wavelet::setShiftGrid(irapgrid * grid, Simbox * simbox)
@@ -522,64 +190,6 @@ Wavelet::setShiftGrid(irapgrid * grid, Simbox * simbox)
     }
 }
 
-void 
-Wavelet::setGainGrid(irapgrid * grid, Simbox * simbox)
-{
-  double sum = 0.0;
-  int nData = 0;
-  gridNI_ = simbox->getnx();
-  gridNJ_ = simbox->getny();
-  if(gainGrid_ != NULL)
-    delete [] gainGrid_;
-  gainGrid_ = new float[gridNI_*gridNJ_];
-  for(int j=0;j<gridNJ_;j++)
-    for(int i=0;i<gridNI_;i++)
-    {
-      int outside;
-      double x, y, z;
-      simbox->getCoord(i, j, 0, x, y, z);
-      double value = irapgridGetValue(x, y, grid, &outside);
-      gainGrid_[i+gridNI_*j] = static_cast<float>(value);
-      if(value != WELLMISSING)
-      {
-        sum += log(value);
-        nData++;
-      }
-    }
-    float invGeoMean = float(exp(-sum/static_cast<double>(nData)));
-    for(int j=0;j<gridNJ_;j++)
-      for(int i=0;i<gridNI_;i++)
-      {
-        if(gainGrid_[i+gridNI_*j] != WELLMISSING)
-          gainGrid_[i+gridNI_*j] *= invGeoMean;
-      }
-      float geoMean = 1/invGeoMean;
-      norm_ *= geoMean;
-      bool fftflag = isReal_;
-      if(fftflag == true)
-        invFFT1DInPlace();
-      for(int i=0;i<nzp_;i++)
-        rAmp_[i] *= geoMean;
-      if(fftflag == true)
-        fft1DInPlace();
-}
-
-
-void
-Wavelet::printToFile(char* fileName, bool overrideDebug) const
-{
-  if(overrideDebug == true || LogKit::getDebugLevel() > 0) {
-      char * fName = LogKit::makeFullFileName(fileName, ".dat");
-      FILE *file = fopen(fName,"wb");
-      int i;
-      for(i=0;i<nzp_;i++)
-        fprintf(file,"%f\n",rAmp_[i]);
-
-      fclose(file);
-      delete [] fName;
-    }
-}
-
 void
 Wavelet::printToFile(char* fileName,fftw_real* vec, int nzp) const
 {
@@ -593,90 +203,6 @@ Wavelet::printToFile(char* fileName,fftw_real* vec, int nzp) const
       fclose(file);
       delete [] fName;
     }
-}
-
-
-void
-Wavelet::writeWaveletToFile(char* fileName,float approxDzIn)
-{
-//   flipUpDown(); //FRODE
-   sprintf(fileName,"%s_%.1f_deg",fileName,theta_*180.0/PI);
-  
-   char * fName = LogKit::makeFullFileName(fileName, ".asc");
-   LogKit::writeLog("  Writing Wavelet to file : \'%s\'\n", fName);
-   int i;
-   float approxDz;
-
-   approxDz = MINIM(approxDzIn,floor(dz_*10)/10);
-   approxDz = MINIM(approxDzIn,dz_);
-
-   float T = nzp_*dz_;
-   int nzpNew  = int(ceil(T/approxDz - 0.5));  
-   float dznew   = T/float(nzpNew);
-   int cnzpNew = (nzpNew/2)+1;
-
-   fftw_real*     waveletNew_r = new fftw_real[2*cnzpNew];
-   fftw_complex*  waveletNew_c =(fftw_complex*) waveletNew_r;
-   fft1DInPlace();
-   double multiplyer = double(nzpNew)/double(nzp_);
-
-   for(i=0;i<cnzpNew;i++)
-   {
-     if(i < cnzp_)
-     {
-       waveletNew_c[i].re = (fftw_real) (cAmp_[i].re*multiplyer);
-       waveletNew_c[i].im = (fftw_real) (cAmp_[i].im*multiplyer);
-       if((i==(cnzp_-1)) & (2*((cnzp_-1)/2) != cnzp_-1)) //boundary effect in fft domain
-         waveletNew_c[i].re*=0.5;
-     }
-     else
-     { 
-        waveletNew_c[i].re = 0;
-        waveletNew_c[i].im = 0;
-     }
-   }
-   invFFT1DInPlace();
-   fftInv(waveletNew_c,waveletNew_r,nzpNew );// note might be n^2 algorithm for some nzpNew
-
-   int wLength = int(floor(waveletLength_/dznew+0.5));
-   int halfLength = wLength/2; // integer division
-   wLength =  halfLength*2+1;// allways odd
-   if( wLength>nzpNew)
-   {  
-     wLength=2*(nzpNew/2)-1;// allways odd
-     halfLength=wLength/2;
-   }
-
-   float shift = -dznew*halfLength;
-   FILE * file = fopen(fName,"wb");
-
-   fprintf(file,"\"* Export format using Comma Separated Values\"\n");
-   fprintf(file,"\"*Wavelet written from CRAVA\"\n");
-   fprintf(file,"\"* Generated \"\n");
-   fprintf(file,"\"*\"\n");
-   fprintf(file,"\"* File format: \"\n");
-   fprintf(file,"\"* - N lines starting with * are comment (such as this line)\"\n");
-   fprintf(file,"\"* - 1 line with four fields (data type, data unit, depth type, depth unit) \"\n");
-   fprintf(file,"\"* - 1 line with start time  \"\n");
-   fprintf(file,"\"* - 1 line with sample interval \"\n");
-   fprintf(file,"\"* - 1 line with number of data lines \"\n");
-   fprintf(file,"\"* - N lines with trace data \"\n");
-   fprintf(file,"\"* Data values are represented as floating point numbers,\"\n");
-   fprintf(file,"\"* \"\n");
-   fprintf(file,"\"wavelet\",\"none\",\"time\",\"ms\"\n");
-   fprintf(file,"%1.0f\n",shift);
-   fprintf(file,"%1.2f\n",dznew);
-   fprintf(file,"%d\n", wLength);  
-
-   for(i=halfLength;i > 0;i--)
-     fprintf(file,"%f\n", waveletNew_r[nzpNew-i]);
-   for(i=0;i<=halfLength;i++)
-     fprintf(file,"%f\n", waveletNew_r[i]);
-   
-   fclose(file);
-//   flipUpDown(); //FRODE
-   delete [] fName;
-   delete [] waveletNew_r;
 }
 
 void           
@@ -1130,39 +656,6 @@ Wavelet::getNoiseStandardDeviation(Simbox * simbox, FFTGrid * seisCube, WellData
   return errStd;
 }
 
-void
-Wavelet::fillInnWavelet(fftw_real* wavelet_r,int nzp,float dz)
-{
-  //Note: Assumes that dz_ > dz
-  // NBNB OddK 
-  fftw_real previous1 = rAmp_[0];
-  fftw_real previous2 = rAmp_[0];
-  fftw_real current1 = 0.0f;
-  fftw_real current2 = 0.0f;
-  wavelet_r[0]        = previous1;
-  //wavelet_r[nzp/2]    = 0;
-  //wavelet_r[nzp/2+1]    = 0;
-  int counterForWavelet   = 1;
-
-  float w;
-  int i;
-  for(i=1;i<= nzp/2;i++)
-  {
-    if(counterForWavelet*dz_ < i*dz)
-    {
-      counterForWavelet++;
-      previous1=current1;
-      previous2=current2;
-    }
-    current1=rAmp_[counterForWavelet];
-    current2=rAmp_[nzp-counterForWavelet];
-    w = (counterForWavelet*dz_-i*dz) /dz_;
-    wavelet_r[i]     = (1-w)*current1+ w*previous1;
-    wavelet_r[nzp-i] = (1-w)*current2+ w*previous2;
-  }
-}
-
-
 float          
 Wavelet::findOptimalWaveletScale(fftw_real** synt_seis_r,fftw_real** seis_r,int nWells,int nzp,
                                  float* wellWeight,float& err,float* errWell,float* scaleOptWell,float* errWellOptScale) const
@@ -1333,5 +826,83 @@ Wavelet::findBulkShift(fftw_real* vec_r,float dz,int nzp)
   return shift;
 }
 
+void
+Wavelet::fillInnWavelet(fftw_real* wavelet_r,int nzp,float dz)
+{
+  //Note: Assumes that dz_ > dz
+  // NBNB OddK 
+  fftw_real previous1 = getRAmp(0);
+  fftw_real previous2 = getRAmp(0);
+  fftw_real current1 = 0.0f;
+  fftw_real current2 = 0.0f;
+  wavelet_r[0]        = previous1;
+  //wavelet_r[nzp/2]    = 0;
+  //wavelet_r[nzp/2+1]    = 0;
+  int counterForWavelet   = 1;
+
+  float w;
+  int i;
+  for(i=1;i<= nzp/2;i++)
+  {
+    if(counterForWavelet*dz_ < i*dz)
+    {
+      counterForWavelet++;
+      previous1=current1;
+      previous2=current2;
+    }
+    current1=getRAmp(counterForWavelet);
+    current2=getRAmp(nzp-counterForWavelet);
+    w = (counterForWavelet*dz_-i*dz) /dz_;
+    wavelet_r[i]     = (1-w)*current1+ w*previous1;
+    wavelet_r[nzp-i] = (1-w)*current2+ w*previous2;
+  }
+}
+
+
+void 
+Wavelet::setGainGrid(irapgrid * grid, Simbox * simbox)
+{
+  double sum = 0.0;
+  int nData = 0;
+  gridNI_ = simbox->getnx();
+  gridNJ_ = simbox->getny();
+  if(gainGrid_ != NULL)
+    delete [] gainGrid_;
+  gainGrid_ = new float[gridNI_*gridNJ_];
+  for(int j=0;j<gridNJ_;j++)
+    for(int i=0;i<gridNI_;i++)
+    {
+      int outside;
+      double x, y, z;
+      simbox->getCoord(i, j, 0, x, y, z);
+      double value = irapgridGetValue(x, y, grid, &outside);
+      gainGrid_[i+gridNI_*j] = static_cast<float>(value);
+      if(value != WELLMISSING)
+      {
+        sum += log(value);
+        nData++;
+      }
+    }
+    float invGeoMean = float(exp(-sum/static_cast<double>(nData)));
+    for(int j=0;j<gridNJ_;j++)
+      for(int i=0;i<gridNI_;i++)
+      {
+        if(gainGrid_[i+gridNI_*j] != WELLMISSING)
+          gainGrid_[i+gridNI_*j] *= invGeoMean;
+      }
+      float geoMean = 1/invGeoMean;
+      norm_ *= geoMean;
+      bool fftflag = isReal_;
+      if(fftflag == true)
+        invFFT1DInPlace();
+      for(int i=0;i<nzp_;i++) {
+        float rAmp = getRAmp(i);
+        rAmp *= geoMean;
+        setRAmp(rAmp,i);
+        //        rAmp_[i] *= geoMean;
+      }
+        if(fftflag == true)
+          fft1DInPlace();
+}
 
 
