@@ -831,6 +831,7 @@ ModelFile::readCommandTimeSurfaces(char ** params, int & pos, char * errText)
 
   if(isNumber(params[pos+1])) //Only one reference surface
   {
+    timeSurfFile_[1] = NULL;
     if(nPar == 4)
     {
       parallelTimeSurfaces_  = true;
