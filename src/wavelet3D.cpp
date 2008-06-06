@@ -42,7 +42,7 @@ Wavelet3D::Wavelet3D(char * fileName, ModelSettings * modelSettings, Simbox *sim
 
   ampCube_ = FFTGrid(nx_, ny_, nz_, nxp_, nyp_, nzp_);
   ampCube_.createRealGrid();
-  ampCube_.setType(FFTGrid::DATA);
+  ampCube_.setType(FFTGrid::COVARIANCE);
   ampCube_.setAccessMode(FFTGrid::RANDOMACCESS);
   ampCube_.setOutputFormat(modelSettings->getFormatFlag());
 
@@ -129,7 +129,6 @@ Wavelet3D::Wavelet3D(char * fileName, ModelSettings * modelSettings, Simbox *sim
       } 
     }
   }
-  ampCube_.writeFile("FFT3DWavelet", simBox);
   
   FFTGrid *shiftAmp = new FFTGrid(nx_, ny_, nz_, nx_, ny_, nz_);
   shiftAmp->fillInConstant(0.0);
