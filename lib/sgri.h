@@ -10,13 +10,6 @@ public:
 	Sgri(char * fileName, char *errText, int &errCode); //For reading
 	~Sgri();
 
-  int                GetDim() const {return (dim_);}
-  float              GetX0() const {return (x0_);}
-  float              GetY0() const {return (y0_);}
-  float              GetZ0() const {return (z0_);}
-  float              GetDX() const {return (dX_);}
-  float              GetDY() const {return (dY_);}
-  float              GetDZ() const {return (dZ_);}
   float              getWaveletValue(float x, float y, float z) const;
   bool               sizeOk(float xLim, float yLim, float zLim);
 
@@ -35,9 +28,6 @@ private:
 	std::string*	      gridLabels_;
 	std::string		      gridValLabel_;
 	float				        unDef_;
-  int                 ci_, cj_, ck_;  
-  float               xMax_, yMax_, zMax_;
-  float               centerX_, centerY_, centerZ_;
 };
 
 #endif
