@@ -145,7 +145,7 @@ Crava::Crava(Model * model)
     meanRho2_ = copyFFTGrid(meanRho_);
   }
  
-  if((outputFlag_ & ModelSettings::FACIESPROB) >0)
+  if((outputFlag_ & ModelSettings::FACIESPROB) >0 || (outputFlag_ & ModelSettings::FACIESPROBRELATIVE)>0)
   {
     float * corrprior = new float[nzp_];
  //   FILE *test = fopen("test.dat","w");
