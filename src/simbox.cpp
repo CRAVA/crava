@@ -456,7 +456,7 @@ Simbox::checkError(double lzLimit, char * errText)
     if(lzMin < 0.0)
     {
       status_ = INTERNALERROR;
-      sprintf(errText,"Top surface is lower than base surface. Are surfaces given in wrong order?\n");
+      sprintf(errText,"At least parts of the Top surface is lower than the base surface. Are surfaces given in wrong order?\n");
     }
     else
     {

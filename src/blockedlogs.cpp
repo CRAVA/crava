@@ -473,16 +473,28 @@ BlockedLogs::getVerticalTrendDiscrete(const int * blockedLog,
     //
     for (int i = 0 ; i < maxAllowedValue ; i++)
       table[i] = IMISSING;
-    for (int i = 0 ; i < nActualValues_ ; i++)
+    for (int i = 0 ; i < nActualValues_ ; i++) {
       table[actualValues_[i]] = i;
+      printf("\n i, actualValues_[i], table[act...] = %d, %d, %d",i,actualValues_[i],i);
+    }
 
     for (int k = 0 ; k < nLayers_ ; k++) {
       for (int i = 0 ; i < nActualValues_ ; i++)
         count[i] = 0;
       for (int m = 0 ; m < nBlocks_ ; m++) {
         if (kpos_[m] == k) {
-          if(blockedLog[m] != IMISSING)
+          
+          printf("\nm=%d  kpos_[m]=k=%d",m,k);
+
+          if(blockedLog[m] != IMISSING) {
+
+            printf("\nAAAAA\n");
+            fflush(stdout);
+            printf("\nblockedLog[m] %d\n",blockedLog[m]);
+
             count[table[blockedLog[m]]]++; // Count the number of times a facies occurs in layer 'k'
+          }
+
         }
       }
       trend[k] = findMostProbable(count, nActualValues_, random);
