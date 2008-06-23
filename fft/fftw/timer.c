@@ -101,8 +101,9 @@ static int gFirstTime = 1;
 
 unsigned long GetPerfTime(void)
 {
-//-Nils-Henrik (Roxar) This wouldn't link on Windows
-//-commenting it out for now
+  /*-Nils-Henrik (Roxar) This wouldn't link on Windows
+   *-commenting it out for now
+   */
 #if 0
      LARGE_INTEGER lCounter;
 
@@ -127,7 +128,7 @@ unsigned long GetPerfTime(void)
 double GetPerfSec(double pTime)
 {
      if (gHaveHiResTimer) {
-	  return pTime / gFreq.u.LowPart;	// assumes HighPart==0
+       return pTime / gFreq.u.LowPart;	/* assumes HighPart==0 */
 
      } else {
 	  return pTime / CLOCKS_PER_SEC;
@@ -147,8 +148,9 @@ double GetPerfSec(double pTime)
 fftw_time fftw_gettimeofday_get_time(void)
 {
      struct timeval tv;
-//-Nils-Henrik (Roxar) This wouldn't link on Windows
-//-commenting it out for now     
+     /*-Nils-Henrik (Roxar) This wouldn't link on Windows
+      *-commenting it out for now     
+      */
 #if 0
      gettimeofday(&tv, 0);
 #endif

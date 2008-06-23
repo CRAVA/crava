@@ -48,17 +48,17 @@ private:
   ModelSettings * modelSettings_;
   Simbox        * simbox_;
   const Simbox  & origSimbox_;
-  int             nWells_;
   fftw_real     * corrprior_;
   float        ** sigma0_;
   int             nFacies_, nbins_, nbinsr_, nobs_;
   int           * nData_;
-  float           dalpha_, dbeta_, drho_;
   FFTGrid      ** density_;  // Note: normalizes to the number of observations of facies type. 
-  float           alphamin_,betamin_,rhomin_, alphamax_,betamax_,rhomax_;
   FFTGrid      ** faciesProb_;
-  int             fileGrid_;
+  float           dalpha_, dbeta_, drho_;
+  float           alphamin_, betamin_, rhomin_;
+  float           alphamax_, betamax_, rhomax_;
   int             nzp_, nz_, ndata_;
+  int             fileGrid_;
 
   FFTGrid       * bgAlpha_;
   FFTGrid       * bgBeta_;

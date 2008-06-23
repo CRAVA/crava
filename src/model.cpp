@@ -35,6 +35,7 @@ Model::Model(char * fileName)
   wells_                 = NULL;
   background_            = NULL;
   priorCorrelations_     = NULL;
+  priorFacies_           = NULL;
   seisCube_              = NULL;
   wavelet_               = NULL;
   shiftGrids_            = NULL;
@@ -857,6 +858,7 @@ Model::processWells(char * errText)
   char ** wellFile   = modelFile_->getWellFile();
   char ** headerList = modelFile_->getHeaderList();
   int     nWells     = modelSettings_->getNumberOfWells();
+  int     nFacies    = 0;
 
   int error = checkFileOpen(wellFile, nWells, "DUMMY", errText, 0);
 
@@ -880,8 +882,10 @@ Model::processWells(char * errText)
     }
   }
 
-  if(modelFile_->getFaciesLogGiven()) 
+  if(modelFile_->getFaciesLogGiven()) { 
     checkFaciesNames();
+    nFacies = modelSettings_->getNumberOfFacies(); // nFacies is set in checkFaciesNames()
+  }
 
   LogKit::writeLog("\n***********************************************************************");
   LogKit::writeLog("\n***                       Processing Wells                          ***"); 
@@ -895,7 +899,14 @@ Model::processWells(char * errText)
   int   * nInvalidRho   = new int[nWells];
   float * rankCorr      = new float[nWells];
   float * devAngle      = new float[nWells];
-  
+  int  ** faciesCount   = NULL;
+
+  if(nFacies > 0) { 
+    faciesCount = new int * [nWells]; 
+    for (int i = 0 ; i < nWells ; i++)
+      faciesCount[i] = new int[nFacies];
+  }
+
   int count = 0;
   int nohit=0;
   int empty=0;
@@ -933,9 +944,9 @@ Model::processWells(char * errText)
         wells_[i]->filterLogs();
         wells_[i]->lookForSyntheticVsLog(rankCorr[i]);
         wells_[i]->calculateDeviation(devAngle[i]);
-        wells_[i]->setBlockedLogsPropThick( new BlockedLogs(wells_[i], 
-                                                            timeSimbox_,
-                                                            randomGen_) );
+        wells_[i]->setBlockedLogsPropThick( new BlockedLogs(wells_[i], timeSimbox_, randomGen_) );
+        if (nFacies > 0)
+          wells_[i]->countFacies(timeSimbox_,faciesCount[i]);
         if((modelSettings_->getOutputFlag() & ModelSettings::WELLS) > 0) 
           wells_[i]->writeRMSWell();
         if(modelSettings_->getDebugFlag() > 0)
@@ -971,6 +982,40 @@ Model::processWells(char * errText)
   }
 
   //
+  // Print facies count for each well
+  //
+  if(nFacies > 0) { 
+    LogKit::writeLog("\nFacies distributions for each well: \n");
+    LogKit::writeLog("\nWell                    ");
+    for (int i = 0 ; i < nFacies ; i++)
+      LogKit::writeLog("%12s ",modelSettings_->getFaciesName(i));
+    LogKit::writeLog("\n");
+    for (int i = 0 ; i < 24+13*nFacies ; i++)
+      LogKit::writeLog("-");
+    LogKit::writeLog("\n");
+    for (int i = 0 ; i < nWells ; i++) {
+      if (validIndex[i]) {
+        float tot = 0.0;
+        for (int f = 0 ; f < nFacies ; f++)
+          tot += static_cast<float>(faciesCount[i][f]);
+        LogKit::writeLog("%-23s ",wells_[i]->getWellname());
+        for (int f = 0 ; f < nFacies ; f++) {
+          float faciesProb = static_cast<float>(faciesCount[i][f])/tot;
+          LogKit::writeLog("%12.4f ",faciesCount[i][f],faciesProb);
+        }
+        LogKit::writeLog("\n");
+      } 
+      else {
+        LogKit::writeLog("%-23s ",wells_[i]->getWellname());
+      for (int f = 0 ; f < nFacies ; f++)
+        LogKit::writeLog("         -   ");
+      LogKit::writeLog("\n");
+      }
+    }
+    LogKit::writeLog("\n");
+  }
+
+  //
   // Remove invalid wells
   //
   for(int i=0 ; i<nWells ; i++)
@@ -991,7 +1036,11 @@ Model::processWells(char * errText)
   delete [] nInvalidRho;
   delete [] rankCorr;
   delete [] devAngle;
-  
+  if(nFacies > 0) { 
+    for (int i = 0 ; i<nWells ; i++)
+      delete [] faciesCount[i];
+    delete [] faciesCount;
+  }
   if (nohit>0)
     LogKit::writeLog("\nWARNING: %d well(s) do not hit the inversion volume and will be ignored.\n",nohit);
   if (empty>0)
@@ -1018,10 +1067,11 @@ Model::processWells(char * errText)
 
 void Model::checkFaciesNames(void)
 {
-  int i, j, w;
-  int min,max, globalmin = 0,globalmax = 0;
+  int min,max;
+  int globalmin = 0;
+  int globalmax = 0;
   bool first = true;
-  for (w = 0; w < modelSettings_->getNumberOfWells(); w++) {
+  for (int w = 0; w < modelSettings_->getNumberOfWells(); w++) {
     if(wells_[w]->isFaciesLogDefined())
     {
       wells_[w]->getMinMaxFnr(min,max);
@@ -1041,23 +1091,25 @@ void Model::checkFaciesNames(void)
     }
   }
 
-  int     nnames = globalmax-globalmin+1;
-  char ** names  = new char*[nnames];
+  int     nnames  = globalmax - globalmin + 1;
+  char ** names   = new char * [nnames];
 
-  for (i =0 ; i < nnames ; i++)
-    names[i] = NULL;
+  for (int i =0 ; i < nnames ; i++) {
+    names[i]   = NULL;
+  }
   
-  for(w=0 ; w<modelSettings_->getNumberOfWells() ; w++)
+  for(int w=0 ; w<modelSettings_->getNumberOfWells() ; w++)
   {
     if(wells_[w]->isFaciesLogDefined())
     {
-      for(i=0 ; i < wells_[w]->getNFacies() ; i++)
+      for(int i=0 ; i < wells_[w]->getNFacies() ; i++)
       {
         char * name = wells_[w]->getFaciesName(i);
         int    fnr  = wells_[w]->getFaciesNr(i) - globalmin;
 
-        if(names[fnr] == NULL)
-          names[fnr] = name;
+        if(names[fnr] == NULL) {
+          names[fnr]   = name;
+        }
         else if(strcmp(names[fnr],name) != 0)
         {
           LogKit::writeLog("Error in facies logs. Facies names and numbers are not uniquely defined.\n");
@@ -1067,27 +1119,26 @@ void Model::checkFaciesNames(void)
     }
   }
 
-  LogKit::writeLog("\nFaciesNumber      FaciesName            ");
+  LogKit::writeLog("\nFaciesLabel      FaciesName           ");
   LogKit::writeLog("\n--------------------------------------\n");
-  for(i=0 ; i<nnames ; i++)
+  for(int i=0 ; i<nnames ; i++)
     if(names[i] != NULL) 
-      LogKit::writeLog("     %2d           %-20s\n",i+globalmin,names[i]);
-
+      LogKit::writeLog("    %2d           %-20s\n",i+globalmin,names[i]);
 
   int nFacies = 0;
-  for(i=0 ; i<nnames ; i++)
+  for(int i=0 ; i<nnames ; i++)
     if(names[i] != NULL) 
       nFacies++;
 
-  char ** faciesNames = new char*[nFacies];
+  char ** faciesNames = new char * [nFacies];
 
-  j = -1;
-  for(i=0 ; i<nnames ; i++)
+  int j = -1;
+  for(int i=0 ; i<nnames ; i++)
   {
     if(names[i] != NULL)
     {
       j++;
-      faciesNames[j] = names[i];
+      faciesNames[j]   = names[i];
     }
   }
   modelSettings_->setNumberOfFacies(nFacies);
@@ -1249,7 +1300,7 @@ Model::processPriorCorrelations(char * errText)
     // CorrXY  (PriorCorrXY)
     // Var0    (PriorVar0)
     //
-    // may be read from file.... currently only Var0_ may be read.
+    // may be read from file.... currently only Var0_ can be read.
     //
     //
     if(paramCorr != NULL)
@@ -1546,6 +1597,136 @@ Model::getWaveletFileFormat(char * fileName)
   return fileformat;
 }
 
+void Model::processPriorFaciesProb()
+{
+  int outputFlag = modelSettings_->getOutputFlag();
+  int nFacies    = modelSettings_->getNumberOfFacies();
+  if(nFacies > 0 && outputFlag & (ModelSettings::FACIESPROB + ModelSettings::FACIESPROBRELATIVE) > 0)
+  {
+    LogKit::writeLog("\n***********************************************************************");
+    LogKit::writeLog("\n***                     Prior Facies Probabilities                  ***"); 
+    LogKit::writeLog("\n***********************************************************************\n\n");
+    //
+    // NBNB-PAL: We should be able to read priorFacies_ from file. 
+    //
+
+    int nWells  = modelSettings_->getNumberOfWells();
+    int nFacies = modelSettings_->getNumberOfFacies();
+    int nz      = modelFile_->getTimeNz();
+    int ndata   = nWells*nz;
+
+    int ** faciesCount = new int * [nWells]; 
+    for (int w = 0 ; w < nWells ; w++)
+      faciesCount[w] = new int[nFacies];
+
+    for (int w = 0 ; w < nWells ; w++)
+      for (int i = 0 ; i < nFacies ; i++)
+        faciesCount[w][i] = 0;
+    
+    int * faciesLog = new int[ndata];   // NB! *internal* log numbering (0, 1, 2, ...)
+    for (int i = 0 ; i < ndata ; i++)
+      faciesLog[i] = IMISSING;
+
+    float * vtAlpha   = new float[nz];  // vt = vertical trend
+    float * vtBeta    = new float[nz];
+    float * vtRho     = new float[nz];
+    int   * vtFacies  = new int[nz];
+
+    for (int w = 0 ; w < nWells ; w++)
+    {
+      if(!(wells_[w]->isDeviated()))
+      { 
+        //
+        // Note that we use timeSimbox to calculate prior facies probabilities
+        // instead of the simbox with parallel top and base surfaces. This
+        // will make the prior probabilities slightly different, but that
+        // should not be a problem.
+        //
+        BlockedLogs * bl = wells_[w]->getBlockedLogsPropThick();
+        bl->getVerticalTrend(bl->getAlpha(),vtAlpha);
+        bl->getVerticalTrend(bl->getBeta(),vtBeta);
+        bl->getVerticalTrend(bl->getRho(),vtRho);
+        bl->getVerticalTrend(bl->getFacies(),vtFacies,randomGen_);
+        for(int i=0 ; i<nz ; i++)
+        {
+          if(vtAlpha[i] != RMISSING && vtBeta[i] != RMISSING && vtRho[i] != RMISSING) {
+            if (vtFacies[i] != IMISSING)
+              faciesCount[w][vtFacies[i]]++;
+            faciesLog[w*nz + i] = vtFacies[i];
+          }
+          else
+            faciesLog[w*nz + i] = IMISSING;
+        }
+      }
+    }
+    delete [] vtAlpha;
+    delete [] vtBeta; 
+    delete [] vtRho;  
+    delete [] vtFacies; 
+
+    //
+    // Print facies count for each well
+    //
+    LogKit::writeLog("BlockedWell             ");
+    for (int i = 0 ; i < nFacies ; i++)
+      LogKit::writeLog("%12s ",modelSettings_->getFaciesName(i));
+    LogKit::writeLog("\n");
+    for (int i = 0 ; i < 24+13*nFacies ; i++)
+      LogKit::writeLog("-");
+    LogKit::writeLog("\n");
+    for (int w = 0 ; w < nWells ; w++)
+    {
+      if(!(wells_[w]->isDeviated()))
+      { 
+        float tot = 0.0;
+        for (int i = 0 ; i < nFacies ; i++)
+          tot += static_cast<float>(faciesCount[w][i]);
+        LogKit::writeLog("%-23s ",wells_[w]->getWellname());
+        for (int i = 0 ; i < nFacies ; i++) {
+          float faciesProb = static_cast<float>(faciesCount[w][i])/tot;
+          LogKit::writeLog("%12.4f ",faciesCount[w][i],faciesProb);
+        }
+        LogKit::writeLog("\n");
+      }
+    }
+    LogKit::writeLog("\n");
+    for (int w = 0 ; w < nWells ; w++)
+      delete [] faciesCount[w];
+    delete [] faciesCount;
+
+    //
+    // Make prior facies probabilities
+    //
+    float sum = 0.0f;
+    int * nData = new int[nFacies];
+    for(int i=0 ; i<nFacies ; i++)
+      nData[i] = 0;
+
+    for(int i=0 ; i<ndata ; i++) {
+      if(faciesLog[i] != IMISSING)
+        nData[faciesLog[i]]++;
+    }
+    delete [] faciesLog;
+    
+    for(int i=0 ; i<nFacies ; i++)
+      sum += nData[i];
+
+    if (sum > 0) {
+      LogKit::writeLog("Facies         Probability\n");
+      LogKit::writeLog("--------------------------\n");
+      priorFacies_ = new float[nFacies];
+      for(int i=0 ; i<nFacies ; i++) {
+        priorFacies_[i] = float(nData[i])/sum;
+        LogKit::writeLog("%-15s %10.4f\n",modelSettings_->getFaciesName(i),priorFacies_[i]);
+      }
+    }
+    else { 
+      LogKit::writeLog("\nWARNING: No valid facies log entries have been found\n");
+    }
+    delete [] nData;
+  }
+}
+
 void
 Model::printSettings(void)
 {
@@ -1656,6 +1837,8 @@ Model::printSettings(void)
     LogKit::writeLog("  Top surface                              : %s\n",   modelFile_->getDepthSurfFile()[0]);
     LogKit::writeLog("  Base surface                             : %s\n",   modelFile_->getDepthSurfFile()[1]);
     LogKit::writeLog("  Number of layers                         : %10d\n", modelFile_->getDepthNz());
+    LogKit::writeLog("\nVelocity model:\n");
+    LogKit::writeLog("  Constant\n");
   }
   //
   // BACKGROUND
@@ -1787,63 +1970,4 @@ Model::printSettings(void)
         LogKit::writeLog("  Wavelet scale                            : %10.2e\n",modelFile_->getWaveletScale()[i]);
     }
   }
-}
-void Model::processPriorFaciesProb()
-{
-  int outputFlag = modelFile_->getModelSettings()->getOutputFlag();
-  if((outputFlag & ModelSettings::FACIESPROB) >0 || (outputFlag & ModelSettings::FACIESPROBRELATIVE)>0)
-  {
-    int w1, i;
-    int nz = modelFile_->getTimeNz();
-    float * vtAlpha = new float[nz];            // vt = vertical trend
-    float * vtBeta  = new float[nz];
-    float * vtRho   = new float[nz];
-    
-    int nWells = modelFile_->getModelSettings()->getNumberOfWells();
-    int nFacies = modelFile_->getModelSettings()->getNumberOfFacies();
-    int ndata = nWells*nz;
-    int * facieslog = new int[ndata];
-    for (w1 = 0 ; w1 < nWells ; w1++)
-    {
-      if(!(wells_[w1]->isDeviated()))
-      { 
-        BlockedLogs * bw = new BlockedLogs(wells_[w1], timeSimbox_, randomGen_) ;
-        bw->getVerticalTrend(bw->getAlpha(),vtAlpha);
-        bw->getVerticalTrend(bw->getBeta(),vtBeta);
-        bw->getVerticalTrend(bw->getRho(),vtRho);
-        int * facies = new int[nz];
-        bw->getVerticalTrendDiscrete(bw->getFacies(),facies,randomGen_);
-        for(i=0;i<nz;i++)
-        {
-          if(vtAlpha[i]!=RMISSING && vtBeta[i]!=RMISSING && vtRho[i]!=RMISSING)
-            facieslog[i+w1*nz] = facies[i];
-          else
-            facieslog[i+w1*nz] = IMISSING;
-        }
-      }
-    }
-
-    int f;
-    float sum = 0.0f;
-    int * nData = new int[nFacies];
-    priorFacies_ = new float[nFacies];
-    for(i=0;i<nFacies;i++)
-      nData[i] = 0;
-
-    for(i=0;i<ndata;i++)
-    {
-      if(facieslog[i]!=IMISSING)
-      {
-        f = facieslog[i];
-        nData[f]++;
-      }
-    }
-    for(i=0;i<nFacies;i++)
-      sum+=nData[i];
-
-    for(i=0;i<nFacies;i++)
-      priorFacies_[i] = float(nData[i])/sum;
-  }
-  else
-    priorFacies_ = NULL;
 }

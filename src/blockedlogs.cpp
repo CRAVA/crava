@@ -83,7 +83,7 @@ BlockedLogs::blockWell(WellData  * well,
                        Simbox    * simbox,
                        RandomGen * random) 
 {
-  wellname_  = new char[MAX_STRING];
+  wellname_ = new char[MAX_STRING];
   strcpy(wellname_, well->getWellname());
 
   int * bInd = new int[well->getNd()]; // Gives which block each well log entry contributes to
@@ -151,8 +151,8 @@ BlockedLogs::blockContinuousLog(const int   *  bInd,
 void 
 BlockedLogs::blockDiscreteLog(const int *  bInd,
                               const int *  wellLog,
-                              const int *  actualValues,
-                              int          nActualValues,
+                              const int *  faciesNumbers,
+                              int          nFacies,
                               int       *& blockedLog,
                               RandomGen *  random)
 {
@@ -160,28 +160,39 @@ BlockedLogs::blockDiscreteLog(const int *  bInd,
     //
     // Allocate memory and set undefined
     //
-    actualValues_ = actualValues;
-    nActualValues_ = nActualValues;
+    faciesNumbers_ = faciesNumbers;
+    nFacies_ = nFacies;
     blockedLog = new int[nBlocks_];
     for (int m = 0 ; m < nBlocks_ ; m++)
       blockedLog[m] = IMISSING;
     
     int   maxAllowedValue = 100;  // Largest allowed value (facies number).
-    int * count = new int[nActualValues];
+    int * count = new int[nFacies];
     int * table = new int[maxAllowedValue];                  
 
     //
-    // Set up facies-to-position table
+    // Set up facies-to-position table. 
+    //
+    // Example: If log values range from 2 to 4 the table looks like 
+    //
+    // table[0] = IMISSING
+    // table[1] = IMISSING
+    // table[2] =    0
+    // table[3] =    1
+    // table[4] =    2
+    // table[5] = IMISSING
+    //    .          .
+    //    .          . 
     //
     for (int i = 0 ; i < maxAllowedValue ; i++)
       table[i] = IMISSING;
-    for (int i = 0 ; i < nActualValues ; i++)
-      table[actualValues[i]] = i;
+    for (int i = 0 ; i < nFacies ; i++)
+      table[faciesNumbers[i]] = i;
 
     //
     // Block log
     //
-    for (int i = 0 ; i < nActualValues ; i++)
+    for (int i = 0 ; i < nFacies ; i++)
       count[i] = 0;
     int value = wellLog[firstM_];
     if(value!=IMISSING)
@@ -189,37 +200,44 @@ BlockedLogs::blockDiscreteLog(const int *  bInd,
 
     for (int m = firstM_+1 ; m < lastM_ + 1 ; m++) {
       if (bInd[m] != bInd[m - 1]) {
-        blockedLog[bInd[m-1]] = findMostProbable(count, nActualValues, random);
-        for (int i = 0 ; i < nActualValues ; i++)
+        blockedLog[bInd[m-1]] = findMostProbable(count, nFacies, random);
+        for (int i = 0 ; i < nFacies ; i++)
           count[i] = 0;
       }
     value = wellLog[m];
     if(value!=IMISSING)
       count[table[value]]++;
     }
-    blockedLog[bInd[lastM_]] = findMostProbable(count, nActualValues, random);
+    blockedLog[bInd[lastM_]] = findMostProbable(count, nFacies, random);
 
     delete [] count;
     delete [] table;
 
-    // NBNB-PAL
+    // 
+    // NOTE: The blocked log contains internal numbers 0, 1, 2, ... and
+    //       is NOT the facies lables.
+    //
     //for (int b = 0 ; b < nBlocks_ ; b++)
-    //  LogKit::writeLog("b=%d   blockedLog[b]=%d\n",b,blockedLog[b]);
+    //  if (blockedLog[b] != IMISSING)
+    //    LogKit::writeLog("b=%-3d   blockedLog[b]=%6d   (facies label=%d)\n",
+    //                     b,blockedLog[b],faciesNumbers[blockedLog[b]]);
+    //  else
+    //    LogKit::writeLog("b=%-3d   blockedLog[b]=%6d\n",b,IMISSING);
   }
 }
 
 //------------------------------------------------------------------------------
 int 
 BlockedLogs::findMostProbable(const int * count,
-                              int         nActualValues,
+                              int         nFacies,
                               RandomGen * rndgen) 
 { //
   // Find which value have the highest frequency. Add a random [0,1]
   // value to ensure that two Facies never get the same probability. 
   //
-  double maxFreqValue = IMISSING;
+  double maxFreqValue = RMISSING;
   int    maxFreqIndex = IMISSING;
-  for (int i=0 ; i < nActualValues ; i++ ) {
+  for (int i=0 ; i < nFacies ; i++ ) {
     double freqValue = static_cast<double>(count[i]) + rndgen->unif01();
     if (freqValue > maxFreqValue && count[i]>0) {
       maxFreqValue = freqValue;
@@ -438,72 +456,46 @@ BlockedLogs::getVerticalTrend(const float * blockedLog,
     delete [] count;
   }
   else {
-    LogKit::writeLog("ERROR in BlockedLogs::getVerticalTrend(): Trying to use an undefined log\n");
+    if (blockedLog == NULL)
+      LogKit::writeLog("ERROR in BlockedLogs::getVerticalTrend(): Trying to use an undefined blocked log (NULL pointer)\n");
+    if (trend == NULL)
+      LogKit::writeLog("ERROR in BlockedLogs::getVerticalTrend(): Trying to use an undefined trend (NULL pointer)\n");
     exit(1);
   }    
 }
 
 //------------------------------------------------------------------------------
 void
-BlockedLogs::getVerticalTrendDiscrete(const int * blockedLog,
-                                      int       * trend,
-                                      RandomGen * random)
+BlockedLogs::getVerticalTrend(const int * blockedLog,
+                              int       * trend,
+                              RandomGen * random)
 {
   if (blockedLog != NULL && trend != NULL) {
-    int * count = new int[nActualValues_];
-    for (int k = 0 ; k < nActualValues_ ; k++) {
-      count[k] = 0;
-    }
-    int maxAllowedValue = 100;
-    int * table = new int[maxAllowedValue];                  
 
-    //
-    // Set up facies-to-position table. 
-    //
-    // Example: If log values range from 2 to 4 the table looks like 
-    //
-    // table[0] = IMISSING
-    // table[1] = IMISSING
-    // table[2] =    0
-    // table[3] =    1
-    // table[4] =    2
-    // table[5] = IMISSING
-    //    .          .
-    //    .          . 
-    //
-    for (int i = 0 ; i < maxAllowedValue ; i++)
-      table[i] = IMISSING;
-    for (int i = 0 ; i < nActualValues_ ; i++) {
-      table[actualValues_[i]] = i;
-      printf("\n i, actualValues_[i], table[act...] = %d, %d, %d",i,actualValues_[i],i);
+    int * count = new int[nFacies_];
+    for (int k = 0 ; k < nFacies_ ; k++) {
+      count[k] = 0;
     }
 
     for (int k = 0 ; k < nLayers_ ; k++) {
-      for (int i = 0 ; i < nActualValues_ ; i++)
+      for (int i = 0 ; i < nFacies_ ; i++)
         count[i] = 0;
       for (int m = 0 ; m < nBlocks_ ; m++) {
         if (kpos_[m] == k) {
-          
-          printf("\nm=%d  kpos_[m]=k=%d",m,k);
-
           if(blockedLog[m] != IMISSING) {
-
-            printf("\nAAAAA\n");
-            fflush(stdout);
-            printf("\nblockedLog[m] %d\n",blockedLog[m]);
-
-            count[table[blockedLog[m]]]++; // Count the number of times a facies occurs in layer 'k'
+            count[blockedLog[m]]++;        // Count the number of times a facies occurs in layer 'k'
           }
-
         }
       }
-      trend[k] = findMostProbable(count, nActualValues_, random);
+      trend[k] = findMostProbable(count, nFacies_, random);
     }
-    delete [] table;
     delete [] count;
   }
   else {
-    LogKit::writeLog("ERROR in BlockedLogs::getVerticalTrendDiscrete(): Trying to use an undefined log\n");
+    if (blockedLog == NULL)
+      LogKit::writeLog("ERROR in BlockedLogs::getVerticalTrend(): Trying to use an undefined blocked log (NULL pointer)\n");
+    if (trend == NULL)
+      LogKit::writeLog("ERROR in BlockedLogs::getVerticalTrend(): Trying to use an undefined trend (NULL pointer)\n");
     exit(1);
   }    
 }

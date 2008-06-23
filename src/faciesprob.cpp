@@ -887,17 +887,14 @@ void FaciesProb::calculateFaciesProb(FFTGrid *alphagrid, FFTGrid *betagrid, FFTG
 
 }
 
-void FaciesProb::filterWellLogs(WellData **wells, int nwells,
+void FaciesProb::filterWellLogs(WellData **wells, int nWells,
                                 fftw_real *postcova, fftw_real *postcovb, fftw_real *postcovr,
                                 fftw_real *postcrab, fftw_real *postcrar, fftw_real *postcrbr, 
                                 float lowCut, float highCut, int relative)
 {
-  nWells_ = nwells;
-  float lowcut  = lowCut;
-  float highcut = highCut;
   float domega  = static_cast<float> (1000.0/(nzp_*simbox_->getdz()));  //dz in milliseconds
   int w, w1,i,j;
-  ndata_ = nWells_*nz_;
+  ndata_ = nWells*nz_;
   alphafiltered_ = new float[ndata_];
   betafiltered_ = new float[ndata_];
   rhofiltered_ = new float[ndata_];
@@ -965,6 +962,7 @@ void FaciesProb::filterWellLogs(WellData **wells, int nwells,
   float * vtAlphaBg = new float[nz_];          // vt = vertical trend
   float * vtBetaBg  = new float[nz_];
   float * vtRhoBg   = new float[nz_];
+  int   * vtFacies  = new int[nz_];
 
   char* fileName = new char[MAX_STRING];
   fileName =LogKit::makeFullFileName("BW_filteredlogs.dat");
@@ -974,7 +972,7 @@ void FaciesProb::filterWellLogs(WellData **wells, int nwells,
   fileName =LogKit::makeFullFileName("BW_background.dat");
   FILE *file3 = fopen(fileName,"w");
   delete [] fileName;
-  for (w1 = 0 ; w1 < nWells_ ; w1++)
+  for (w1 = 0 ; w1 < nWells ; w1++)
   {
     if(!(wells[w1]->isDeviated()))
     { 
@@ -993,26 +991,27 @@ void FaciesProb::filterWellLogs(WellData **wells, int nwells,
       bw->getVerticalTrend(bw->getAlpha(),vtAlpha);
       bw->getVerticalTrend(bw->getBeta(),vtBeta);
       bw->getVerticalTrend(bw->getRho(),vtRho);
-      int * facies = new int[nz_];
-      bw->getVerticalTrendDiscrete(bw->getFacies(),facies,random_);
+      bw->getVerticalTrend(bw->getFacies(),vtFacies,random_);
       const int * ipos = bw->getIpos();
       const int * jpos = bw->getJpos();
       const int * kpos = bw->getKpos();
+
       for(i=0;i<nz_;i++)
       {
         simbox_->getCoord(ipos[0],jpos[0],kpos[0]+i,x,y,z);
         insideOrigSimbox = origSimbox_.getIndex(x,y,z);
         if(vtAlpha[i]!=RMISSING && vtBeta[i]!=RMISSING && vtRho[i]!=RMISSING && insideOrigSimbox!=IMISSING)
-          facieslog_[i+w1*nz_] = facies[i];
+          facieslog_[i+w1*nz_] = vtFacies[i];
         else
           facieslog_[i+w1*nz_] = IMISSING;
       }
-      delete [] facies;
+
       float dz = static_cast<float> (simbox_->getdz()*simbox_->getRelThick(ipos[0],jpos[0]));
       Kriging1D::krigVector(vtAlpha, vtAlphaBg, nz_, dz);
       Kriging1D::krigVector(vtBeta, vtBetaBg, nz_, dz);
       Kriging1D::krigVector(vtRho, vtRhoBg, nz_, dz);
       simbox_->getCoord(ipos[0],jpos[0],kpos[0],x,y,z);
+
       for(i=0;i<nz_;i++)
       {
         alpha_rAmp[i] = vtAlpha[i] - vtAlphaBg[i];
@@ -1138,7 +1137,7 @@ void FaciesProb::filterWellLogs(WellData **wells, int nwells,
         
         //Do cholesky of sigmaK
         ok = lib_matrCholCpx(3,sigmaK);
-        if(ok==0 &&(w*domega>lowcut && w*domega<highcut))
+        if(ok==0 && (w*domega > lowCut && w*domega < highCut) )
         {
           calcFilter(sigmaK, sigmaE, F);
           //apply filter on alpha, beta, rho
@@ -1169,17 +1168,21 @@ void FaciesProb::filterWellLogs(WellData **wells, int nwells,
       // Add background model to filtered data if not relative method is used.
       
       simbox_->getCoord(ipos[0],jpos[0],kpos[0],x,y,z);
-     
-    for(i=0;i<nz_;i++)
-    {
-      alphafiltered_[i+w1*nz_] = alpha_rAmp[i]/nzp_+(1-relative)*vtAlphaBg[i];
-      betafiltered_[i+w1*nz_]  = beta_rAmp[i]/nzp_+(1-relative)*vtBetaBg[i];
-      rhofiltered_[i+w1*nz_]   = rho_rAmp[i]/nzp_+(1-relative)*vtRhoBg[i];
-      alphablock_[i+w1*nz_]    = vtAlpha[i];
-      betablock_[i+w1*nz_]     = vtBeta[i];
-      rhoblock_[i+w1*nz_]      = vtRho[i];
-      fprintf(file,"%d %f %f %f %f %d \n",w1, z+dz*i,alphafiltered_[i+w1*nz_],betafiltered_[i+w1*nz_],rhofiltered_[i+w1*nz_],facieslog_[i+w1*nz_]);   
-    }
+      
+      for(i=0;i<nz_;i++)
+      {
+        alphafiltered_[i+w1*nz_] = alpha_rAmp[i]/nzp_+(1-relative)*vtAlphaBg[i];
+        betafiltered_[i+w1*nz_]  = beta_rAmp[i]/nzp_+(1-relative)*vtBetaBg[i];
+        rhofiltered_[i+w1*nz_]   = rho_rAmp[i]/nzp_+(1-relative)*vtRhoBg[i];
+        alphablock_[i+w1*nz_]    = vtAlpha[i];
+        betablock_[i+w1*nz_]     = vtBeta[i];
+        rhoblock_[i+w1*nz_]      = vtRho[i];
+        fprintf(file,"%d %f %f %f %f %d \n",w1, z+dz*i,
+                alphafiltered_[i+w1*nz_],
+                betafiltered_[i+w1*nz_],
+                rhofiltered_[i+w1*nz_],
+                facieslog_[i+w1*nz_]);   
+      }
     fftwnd_destroy_plan(p2);
 
 
@@ -1195,8 +1198,8 @@ void FaciesProb::filterWellLogs(WellData **wells, int nwells,
       delete [] help;
       delete [] paramvec;
       delete bw;
-    }// end if
-  }//end for wells
+    } // end if
+  } //end for wells
   // Calculate min and max
   fclose(file);
   fclose(file2);
@@ -1206,6 +1209,7 @@ void FaciesProb::filterWellLogs(WellData **wells, int nwells,
   delete [] vtAlpha;            // vt = vertical trend
   delete [] vtBeta;
   delete [] vtRho;
+  delete [] vtFacies;
 
   delete [] vtAlphaBg;          // vt = vertical trend
   delete [] vtBetaBg;
@@ -1324,7 +1328,6 @@ void FaciesProb::calculateVariances(float* alpha,float* beta,float* rho,int* fac
   int nA, nB, nR;
   nA = nB = nR = 0;
   meanA_ = meanB_ = meanR_ = 0.0;
-  // int ndata = nWells_*nz_;
   for(i=0;i<ndata_;i++)
   {
     if(facies[i]!=IMISSING)

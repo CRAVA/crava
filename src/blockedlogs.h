@@ -37,7 +37,7 @@ public:
   const float  * getBetaSeismicResolution(void)     const { return beta_seismic_resolution_ ;} 
   const float  * getRhoSeismicResolution(void)      const { return rho_seismic_resolution_ ;}  
   void           getVerticalTrend(const float * blockedLog, float * trend);
-  void           getVerticalTrendDiscrete(const int * blockedLog,int * trend, RandomGen * random);
+  void           getVerticalTrend(const int * blockedLog,int * trend, RandomGen * random);
   void           getBlockedGrid(FFTGrid * grid, float * blockedLog);
   void           writeToFile(float dz, int type, bool exptrans) const;
 
@@ -50,12 +50,12 @@ private:
                                     float       *& blockedLog);
   void           blockDiscreteLog(const int * bInd,
                                   const int *  wellLog,
-                                  const int *  actualValues,
-                                  int          nActualValues,
+                                  const int *  faciesNumbers,
+                                  int          nFacies,
                                   int       *& blockedLog,
                                   RandomGen * random);
   int            findMostProbable(const int * count,
-                                  int         nActualValues,
+                                  int         nFacies,
                                   RandomGen * random); 
   void           findSizeAndBlockPointers(WellData * well,
                                           Simbox   * simbox,
@@ -78,7 +78,7 @@ private:
   float       * alpha_;                       //|
   float       * beta_;                        //| Raw logs (log-domain)
   float       * rho_;                         //|
-  int 	      * facies_;                      //|
+  int 	      * facies_;                      //| Facies numbers using *internal* numbering
 
   float       * alpha_background_resolution_; //| 
   float       * beta_background_resolution_;  //| Logs filtered to background resolution (log-domain)
@@ -97,8 +97,8 @@ private:
   int           nBlocks_;                     //| Number of blocks
   int           nLayers_;                     //| Number of vertical layers (nz)
 
-  const int   * actualValues_;
-  int           nActualValues_;
+  const int   * faciesNumbers_;
+  int           nFacies_;
 };
 
 #endif

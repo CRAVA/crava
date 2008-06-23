@@ -31,14 +31,14 @@ public:
   const double  * getXpos(int &nData)      const;
   const double  * getYpos(int &nData)      const;
   const double  * getZpos(int &nData)      const;
-  const char    * getWellname(void)        const {return wellname_;} 
-  const bool      hasSyntheticVsLog(void)  const {return syntheticVsLog_;}
-  const bool      isDeviated(void)         const {return isDeviated_;}
+  const char    * getWellname(void)        const { return wellname_       ;} 
+  const bool      hasSyntheticVsLog(void)  const { return syntheticVsLog_ ;}
+  const bool      isDeviated(void)         const { return isDeviated_     ;}
   bool            isFaciesLogDefined(void) const;
-  int             getNFacies(void)         const {return nFacies_;}
-  int           * getFaciesNr(void)        const {return faciesNr_;}
-  int             getFaciesNr(int i)       const {return faciesNr_[i];};
-  char          * getFaciesName(int i)     const {return faciesNames_[i];};
+  int             getNFacies(void)         const { return nFacies_        ;}
+  int           * getFaciesNr(void)        const { return faciesNr_       ;}
+  int             getFaciesNr(int i)       const { return faciesNr_[i]    ;}
+  char          * getFaciesName(int i)     const { return faciesNames_[i] ;}
   void            getMinMaxFnr(int &min, int &max) const;
 
   BlockedLogs   * getBlockedLogsPropThick(void)  const { return blockedLogsPropThick_ ;}
@@ -55,6 +55,7 @@ public:
   void            filterLogs(void);
   void            lookForSyntheticVsLog(float & rank_correlation);
   void            calculateDeviation(float & devAngle);
+  void            countFacies(Simbox *simbox, int * faciesCount);
   void            writeRMSWell(void);
 
   static void     applyFilter(float *log_filtered, float *log_interpolated, int nt, double dt_milliseconds, float maxHz);

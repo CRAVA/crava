@@ -301,23 +301,21 @@ WellData::readRMSWell(const char * wellFileName, char **headerList, bool faciesL
   double OPENWORKS_MISSING = -999.25;
   bool wrongMissingValues = false;
   // Read data into variables.
-  xpos_        = new double[nd_];
-  ypos_        = new double[nd_];
-  zpos_        = new double[nd_];
-  alpha_       = new float[nd_];
-  beta_        = new float[nd_];
-  rho_         = new float[nd_];
-  facies_      = new int[nd_];   // Always allocate a facies log (for code simplicity)
-  alpha        = RMISSING;
-  beta         = RMISSING;
-  rho          = RMISSING;
-  zpos         = RMISSING;
-  facies       = IMISSING;
-  k            = -1;
-  int kk;
-  int legal    = 0;
-  int faciesok = 0;
+  xpos_     = new double[nd_];
+  ypos_     = new double[nd_];
+  zpos_     = new double[nd_];
+  alpha_    = new float[nd_];
+  beta_     = new float[nd_];
+  rho_      = new float[nd_];
+  facies_   = new int[nd_];   // Always allocate a facies log (for code simplicity)
+  alpha     = RMISSING;
+  beta      = RMISSING;
+  rho       = RMISSING;
+  zpos      = RMISSING;
+  facies    = IMISSING;
+  k         = -1;
   faciesok_ = 1;
+  int legal = 0;
   for(i=0;i<nData;i++)
   {
     // fscanf(file, "%lf %lf %lf %f %f %f",&xpos, &ypos, &zpos, &alpha, &beta, &rho);
@@ -375,16 +373,18 @@ WellData::readRMSWell(const char * wellFileName, char **headerList, bool faciesL
           facies = int(dummy);
         else
           facies = IMISSING;
-        faciesok = 0;
         if(facies!=IMISSING)
         {
-          for(kk=0;kk<nFacies_;kk++)
-         {
-           if(facies==faciesNr_[kk])
+          int faciesok = 0;
+          for(int kk=0 ; kk<nFacies_ ; kk++)
+          {
+            if(facies == faciesNr_[kk]) {
               faciesok = 1;
-         }
-         if(faciesok==0)
-          faciesok_ = 0;
+              break;
+            }
+          }
+          if(faciesok == 0)
+            faciesok_ = 0;
         }
       }
     }
@@ -518,7 +518,7 @@ int WellData::checkError(char *errText)
 }
 
 //----------------------------------------------------------------------------
-int WellData::checkSimbox(Simbox *simbox)
+int WellData::checkSimbox(Simbox * simbox)
 {
   bool insideArea = false;
   int error = 1;
@@ -1246,6 +1246,42 @@ WellData::calculateDeviation(float & devAngle)
   {
     isDeviated_ = false;
     LogKit::writeLog("\n");
+  }
+}
+
+//----------------------------------------------------------------------------
+void 
+WellData::countFacies(Simbox *simbox, int * faciesCount)
+{
+  for (int i=0 ; i < nFacies_ ; i++)
+    faciesCount[i] = 0;
+
+  if (nFacies_ > 0) {
+    for(int i=0 ; i < nd_ ; i++) {
+      if (faciesNr_[i] != IMISSING) {
+        //
+        // Count facies only when logs
+        //
+        if (alpha_[i] != RMISSING && beta_[i] != RMISSING && rho_[i] != RMISSING) {
+          //
+          // Count facies only for part of well inside simbox
+          //
+          if(simbox->isInside(xpos_[i], ypos_[i])) {
+            if(zpos_[i] > simbox->getTop(xpos_[i], ypos_[i]) && zpos_[i] < simbox->getBot(xpos_[i], ypos_[i]))  {
+              //
+              // Find facies index...
+              //
+              for (int j=0 ; j<nFacies_ ; j++) {
+                if (faciesNr_[j] == facies_[i]) {
+                  faciesCount[j]++;
+                  break;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
   }
 }
 

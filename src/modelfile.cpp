@@ -404,9 +404,10 @@ ModelFile::ModelFile(char * fileName)
   }
   delete [] genNeed;
 
-  if((modelSettings_->getOutputFlag() & ModelSettings::FACIESPROB) > 0 && faciesLogGiven_==false)
+  if((modelSettings_->getOutputFlag() & (ModelSettings::FACIESPROB + ModelSettings::FACIESPROBRELATIVE)) > 0 
+     && faciesLogGiven_==false)
   {
-    strcpy(errText,"FACIESPROB can not be generated without facies logs in wells.\n");
+    strcpy(errText,"Facies probabilities can not be generated. Please specify a facies log under WELLS.\n");
     errorList[nErrors] = new char[strlen(errText)+1];
     strcpy(errorList[nErrors], errText);
     nErrors++;
