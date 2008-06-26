@@ -471,9 +471,25 @@ SegY::readTrace(FILE * file, char * buffer, double x, double y)
   if(zBot == RMISSING || zBot == WELLMISSING)
     //    zBot = nz_*dz_+z0_;
     return(NULL);
+
+  if(static_cast<int>((zTop - z0_)/dz_) < 0) {
+    LogKit::writeLog("\nERROR: A part of the top time surface reaches above the seismic gather. (seismic\n");
+    LogKit::writeLog("       start time =%7.1f). Include more seismic data or lower the top surface.\n",z0_);
+    LogKit::writeLog("       zTop = %7.2f\n");    
+    exit(1);
+  } 
+  //NBNB-PAL: Tried nz_ - 1 below, but that failed  (incorrectly
+  //NBBN-PAL: I think) in the facies case of test suite
+  if(static_cast<int>((zBot - z0_)/dz_) + 1 > nz_) { 
+    LogKit::writeLog("\nERROR: A part of the base time surface reaches below the seismic gather. Include\n");
+    LogKit::writeLog("       more seismic data or highten the base surface.\n");
+    exit(1);
+  } 
+
   double pad = 0.5*zPad_*(zBot - zTop);
   int j0 = static_cast<int>((zTop - pad - z0_)/dz_);
   int j1 = static_cast<int>((zBot + pad - z0_)/dz_) + 1; //Add 1 since int truncates.
+
   if(j0 < 0)
     j0 = 0;
   if(j1 > nz_-1)
