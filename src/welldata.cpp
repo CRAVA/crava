@@ -1258,7 +1258,7 @@ WellData::countFacies(Simbox *simbox, int * faciesCount)
 
   if (nFacies_ > 0) {
     for(int i=0 ; i < nd_ ; i++) {
-      if (faciesNr_[i] != IMISSING) {
+      if (facies_[i] != IMISSING) {
         //
         // Count facies only when logs
         //
