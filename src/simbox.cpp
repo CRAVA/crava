@@ -1,19 +1,23 @@
 #include <math.h>
 #include <assert.h>
+#include <algorithm>
 
-#include "lib/irapgrid.h"
+#include "nrlib/volume/volume.hpp"
+#include "nrlib/surface/surfaceio.hpp"
+
 #include "lib/log.h"
 
 #include "src/simbox.h"
 #include "src/model.h"
 
-Simbox::Simbox(void)
+
+using namespace NRLib2;
+
+Simbox::Simbox(void) : Volume()
 {
   status_      = EMPTY;
-  topName_     = NULL;
-  botName_     = NULL;
-  z0Grid_      = NULL;
-  z1Grid_      = NULL;
+  topName_     = "";
+  botName_     = "";
   inLine0_     = 0;
   crossLine0_  = 0;
   ilStep_      = 1;
@@ -21,53 +25,42 @@ Simbox::Simbox(void)
   constThick_  = true;
   minRelThick_ = 1.0;
   dz_          = 0;
-  lz_          = 0;
 }
 
-Simbox::Simbox(double x0, double y0, irapgrid * z0, double lx, double ly, double lz,
-               double rot, double dx, double dy, double dz)
+Simbox::Simbox(double x0, double y0, RegularSurface<double> * z0, double lx, 
+               double ly, double lz, double rot, double dx, double dy, double dz) :
+  Volume()
 {
   status_      = BOXOK;
-  topName_     = NULL;
-  botName_     = NULL;
-  x0_          = x0;
-  y0_          = y0;
-  z0Grid_      = z0;
-  lx_          = lx;
-  ly_          = ly;
-  lz_          = lz;
-  int error    = 0;
-  z1Grid_      = irapgridArithmeticConstant(z0Grid_, lz_, 1, &error);
-  rot_         = rot;
-  cosrot_      = cos(rot_);
-  sinrot_      = sin(rot_);
+  topName_     = "";
+  botName_     = "";
+  SetDimensions(x0,y0,lx,ly);
+  SetAngle(rot);
+  
+  RegularSurface<double> * z1 = new RegularSurface<double>(*z0);
+  z1->Add(lz);
+  SetSurfaces(z0,z1); //Automatically sets lz correct in this case.
+
+  cosrot_      = cos(rot);
+  sinrot_      = sin(rot);
   dx_          = dx;
   dy_          = dy;
   dz_          = dz;
-  nx_          = int(0.5+lx_/dx_);
-  ny_          = int(0.5+ly_/dy_);
-  nz_          = int(0.5+lz_/dz_);
+  nx_          = int(0.5+lx/dx_);
+  ny_          = int(0.5+ly/dy_);
+  nz_          = int(0.5+lz/dz_);
   inLine0_     = 0;
   crossLine0_  = 0;
   constThick_  = true;
   minRelThick_ = 1.0;
 }
 
-Simbox::Simbox(const Simbox *simbox)
+Simbox::Simbox(const Simbox *simbox) : 
+  Volume(*simbox)
 {
   status_      = simbox->status_;
-  topName_     = NULL;
-  botName_     = NULL;
-  z0Grid_      = NULL;
-  z1Grid_      = NULL;
-  x0_          = simbox->x0_;
-  y0_          = simbox->y0_;
-  lx_          = simbox->lx_;
-  ly_          = simbox->ly_;
-  lz_          = simbox->lz_;
-  rot_         = simbox->rot_;
-  cosrot_      = simbox->cosrot_;
-  sinrot_      = simbox->sinrot_;
+  cosrot_      = cos(GetAngle());
+  sinrot_      = sin(GetAngle());
   dx_          = simbox->dx_;
   dy_          = simbox->dy_;
   dz_          = simbox->dz_;
@@ -82,33 +75,12 @@ Simbox::Simbox(const Simbox *simbox)
   topName_ = new char [MAX_STRING]; 
   botName_ = new char [MAX_STRING]; 
 
-  int failure = 0;
-  if(simbox->z0Grid_ != NULL)
-    z0Grid_ = irapgridCopyGrid(simbox->z0Grid_,&failure);
-  if(simbox->z1Grid_ != NULL)
-    z1Grid_ = irapgridCopyGrid(simbox->z1Grid_,&failure);
-  if(simbox->topName_ != NULL)
-    strcpy(topName_,simbox->topName_);
-  if(simbox->botName_ != NULL )
-    strcpy(botName_,simbox->botName_);
+  topName_ = simbox->topName_;
+  botName_ = simbox->botName_;
 }   
 
 Simbox::~Simbox()
 {
-  if(z0Grid_ != NULL)
-  {
-    freeIrapgrid(z0Grid_);
-    free(z0Grid_);
-  }
-  if(z1Grid_ != NULL)
-  {
-    freeIrapgrid(z1Grid_);
-    free(z1Grid_);
-  }
-  if(topName_ != NULL)
-    delete [] topName_;
-  if(botName_ != NULL)
-    delete [] botName_;
 }
 
 int
@@ -119,7 +91,7 @@ Simbox::getIndex(double x, double y, double z) const
   int i, j, k;
   getIndexes(x,y,z,i,j,k);
   if(k != IMISSING && j != IMISSING && i != IMISSING)
-    index = int(i+j*floor(lx_/dx_+0.5)+k*floor((lx_/dx_)*(ly_/dy_)+0.5));
+    index = int(i+j*nx_+k*nx_*ny_);
   return(index);
 }
 
@@ -146,16 +118,15 @@ Simbox::getIndexes(double x, double y, double z, int & xInd, int & yInd, int & z
   xInd = IMISSING;
   yInd = IMISSING;
   zInd = IMISSING;
-  double rx =  (x-x0_)*cosrot_ + (y-y0_)*sinrot_;
-  double ry = -(x-x0_)*sinrot_ + (y-y0_)*cosrot_;
-  if(rx > 0 && rx < lx_ && ry>0 && ry < ly_)
+  double rx =  (x-GetXMin())*cosrot_ + (y-GetYMin())*sinrot_;
+  double ry = -(x-GetXMin())*sinrot_ + (y-GetYMin())*cosrot_;
+  if(rx > 0 && rx < GetLX() && ry>0 && ry < GetLY())
   {
-    int error = 0;
-    double zBot, zTop = irapgridGetValue(x, y, z0Grid_, &error);
-    if(error == 0 && zTop != z0Grid_->missingcode)
+    double zBot, zTop = GetTopSurface().GetZ(x,y);
+    if(GetTopSurface().IsMissing(zTop) == false)
     {
-      zBot = irapgridGetValue(x, y, z1Grid_, &error);
-      if(error == 0 && zBot != z1Grid_->missingcode &&  z > zTop && z < zBot)
+      zBot = GetBotSurface().GetZ(x,y);
+      if(GetBotSurface().IsMissing(zBot) == false &&  z > zTop && z < zBot)
       {
         xInd = int(floor(rx/dx_));
         yInd = int(floor(ry/dy_));
@@ -169,17 +140,16 @@ Simbox::getIndexes(double x, double y, double z, int & xInd, int & yInd, int & z
 void 
 Simbox::getIndexesFull(double x, double y, double z, int & xInd, int & yInd, int & zInd) const
 {
-  double rx =  (x-x0_)*cosrot_ + (y-y0_)*sinrot_;
-  double ry = -(x-x0_)*sinrot_ + (y-y0_)*cosrot_;
+  double rx =  (x-GetXMin())*cosrot_ + (y-GetYMin())*sinrot_;
+  double ry = -(x-GetXMin())*sinrot_ + (y-GetYMin())*cosrot_;
   xInd = int(floor(rx/dx_));
   yInd = int(floor(ry/dy_));
   zInd = IMISSING;
-  int error = 0;
-  double zBot, zTop = irapgridGetValue(x, y, z0Grid_, &error);
-  if(error == 0 && zTop != z0Grid_->missingcode)
+  double zBot, zTop = GetTopSurface().GetZ(x,y);
+  if(GetTopSurface().IsMissing(zTop) == false)
   {
-    zBot = irapgridGetValue(x, y, z1Grid_, &error);
-    if(error == 0 && zBot != z1Grid_->missingcode)
+    zBot = GetBotSurface().GetZ(x,y);
+    if(GetBotSurface().IsMissing(zBot) == false)
       zInd = int(floor(static_cast<double>(nz_)*(z-zTop)/(zBot-zTop)));
   }
 }
@@ -188,18 +158,17 @@ void
 Simbox::getZInterpolation(double x, double y, double z, 
                           int & index1, int & index2, double & t) const
 {
-  double rx =  (x-x0_)*cosrot_ + (y-y0_)*sinrot_;
-  double ry = -(x-x0_)*sinrot_ + (y-y0_)*cosrot_;
+  double rx =  (x-GetXMin())*cosrot_ + (y-GetYMin())*sinrot_;
+  double ry = -(x-GetXMin())*sinrot_ + (y-GetYMin())*cosrot_;
   int xInd = int(floor(rx/dx_));
   int yInd = int(floor(ry/dy_));
   int zInd2, zInd1;
   index1 = IMISSING;
-  int error = 0;
-  double zBot, zTop = irapgridGetValue(x, y, z0Grid_, &error);
-  if(error == 0 && zTop != z0Grid_->missingcode)
+  double zBot, zTop = GetTopSurface().GetZ(x,y);
+  if(GetTopSurface().IsMissing(zTop) == false)
   {
-    zBot = irapgridGetValue(x, y, z1Grid_, &error);
-    if(error == 0 && zBot != z1Grid_->missingcode)
+    zBot = GetBotSurface().GetZ(x,y);
+    if(GetBotSurface().IsMissing(zBot) == false)
     {
       double dz = (zBot-zTop)/static_cast<double>(nz_);
       zInd1 = static_cast<int>(floor((z-zTop)/dz)-0.5); //Find cell center above.
@@ -228,15 +197,14 @@ Simbox::getCoord(int xInd, int yInd, int zInd, double &x, double &y, double &z) 
 {
   double rx = (static_cast<double>(xInd) + 0.5)*dx_;
   double ry = (static_cast<double>(yInd) + 0.5)*dy_;
-  x = rx*cosrot_-ry*sinrot_ + x0_;
-  y = rx*sinrot_+ry*cosrot_ + y0_;
+  x = rx*cosrot_-ry*sinrot_ + GetXMin();
+  y = rx*sinrot_+ry*cosrot_ + GetYMin();
   z = RMISSING;
-  int error = 0;
-  double zBot, zTop = irapgridGetValue(x, y, z0Grid_, &error);
-  if(error == 0 && zTop != z0Grid_->missingcode)
+  double zBot, zTop = GetTopSurface().GetZ(x,y);
+  if(GetTopSurface().IsMissing(zTop) == false)
   {
-    zBot = irapgridGetValue(x, y, z1Grid_, &error);
-    if(error == 0 && zBot != z1Grid_->missingcode)
+    zBot = GetBotSurface().GetZ(x,y);
+    if(GetBotSurface().IsMissing(zBot) == false)
     {
       double dz = (zBot-zTop)/static_cast<double>(nz_);
       z = zTop + (static_cast<double>(zInd) + 0.5)*dz;
@@ -248,19 +216,16 @@ Simbox::getCoord(int xInd, int yInd, int zInd, double &x, double &y, double &z) 
 void
 Simbox::getMinMaxZ(double &minZ, double &maxZ) const
 {
-  double min, max;
-  irapgridMinMaxValue(z0Grid_, &min, &max);
-  minZ = min;
-  irapgridMinMaxValue(z1Grid_, &min, &max);
-  maxZ = max;
+  minZ = GetTopSurface().Min();
+  maxZ = GetTopSurface().Min();
 }
 
 int
 Simbox::isInside(double x, double y) const
 {
-  double rx = (x-x0_)*cosrot_+(y-y0_)*sinrot_;
-  double ry = -(x-x0_)*sinrot_ + (y-y0_)*cosrot_;
-  if(rx < 0 || rx > lx_ || ry<0 || ry > ly_)
+  double rx =  (x-GetXMin())*cosrot_ + (y-GetYMin())*sinrot_;
+  double ry = -(x-GetXMin())*sinrot_ + (y-GetYMin())*cosrot_;
+  if(rx < 0 || rx > GetLX() || ry<0 || ry > GetLY())
     return(0);
   else
     return(1);
@@ -272,29 +237,29 @@ Simbox::insideRectangle(double xr, double yr, double rotr, double lxr, double ly
   int allOk = 1;
   double cosrotr = cos(rotr);
   double sinrotr = sin(rotr);
-  double x = x0_;
-  double y = y0_;
+  double x = GetXMin();
+  double y = GetYMin();
   double rx =  (x-xr)*cosrotr + (y-yr)*sinrotr;
   double ry = -(x-xr)*sinrotr + (y-yr)*cosrotr;
   if(rx < -0.01*dx_ || rx > lxr+0.01*dx_ || ry<-0.01*dy_ || ry > lyr+0.01*dy_)
     allOk = 0;
 
-  x = x0_+lx_*cosrot_;
-  y = y0_+lx_*sinrot_;
+  x = GetXMin()+GetLX()*cosrot_;
+  y = GetYMin()+GetLX()*sinrot_;
   rx =  (x-xr)*cosrotr + (y-yr)*sinrotr;
   ry = -(x-xr)*sinrotr + (y-yr)*cosrotr;
   if(rx < -0.01*dx_ || rx > lxr+0.01*dx_ || ry<-0.01*dy_ || ry > lyr+0.01*dy_)
     allOk = 0;
 
-  x = x0_-ly_*sinrot_;
-  y = y0_+ly_*cosrot_;
+  x = GetXMin()-GetLY()*sinrot_;
+  y = GetYMin()+GetLY()*cosrot_;
   rx =  (x-xr)*cosrotr + (y-yr)*sinrotr;
   ry = -(x-xr)*sinrotr + (y-yr)*cosrotr;
   if(rx < -0.01*dx_ || rx > lxr+0.01*dx_ || ry<-0.01*dy_ || ry > lyr+0.01*dy_)
     allOk = 0;
 
-  x = x0_+lx_*cosrot_-ly_*sinrot_;
-  y = y0_+lx_*sinrot_+ly_*cosrot_;
+  x = GetXMin()+GetLX()*cosrot_-GetLY()*sinrot_;
+  y = GetYMin()+GetLX()*sinrot_+GetLY()*cosrot_;
   rx =  (x-xr)*cosrotr + (y-yr)*sinrotr;
   ry = -(x-xr)*sinrotr + (y-yr)*cosrotr;
   if(rx < -0.01*dx_ || rx > lxr+0.01*dx_ || ry<-0.01*dy_ || ry > lyr+0.01*dy_)
@@ -303,17 +268,17 @@ Simbox::insideRectangle(double xr, double yr, double rotr, double lxr, double ly
   {
     LogKit::writeLog("\n             X0         Y0              DeltaX       DeltaY    Angle\n");
     LogKit::writeLog("---------------------------------------------------------------------\n");
-    LogKit::writeLog("Area:    %11.2f %11.2f   %11.2f %11.2f   %8.3f\n", x0_, y0_, lx_, ly_, (rot_*180)/PI);
+    LogKit::writeLog("Area:    %11.2f %11.2f   %11.2f %11.2f   %8.3f\n", GetXMin(), GetYMin(), GetLX(), GetLY(), (GetAngle()*180)/PI);
     LogKit::writeLog("Seismic: %11.2f %11.2f   %11.2f %11.2f   %8.3f\n", xr, yr, lxr, lyr, (rotr*180/PI));
     LogKit::writeLog("\nCorner     XY Area                    XY Seismic\n");
     LogKit::writeLog("-----------------------------------------------------------\n");
-    LogKit::writeLog("A %18.2f %11.2f    %11.2f %11.2f\n", x0_,y0_, xr,yr);
-    LogKit::writeLog("B %18.2f %11.2f    %11.2f %11.2f\n", x0_+lx_*cosrot_, y0_+lx_*sinrot_,
+    LogKit::writeLog("A %18.2f %11.2f    %11.2f %11.2f\n", GetXMin(),GetYMin(), xr,yr);
+    LogKit::writeLog("B %18.2f %11.2f    %11.2f %11.2f\n", GetXMin()+GetLX()*cosrot_, GetYMin()+GetLX()*sinrot_,
       xr+lxr*cosrotr, yr+lxr*sinrotr);
-    LogKit::writeLog("C %18.2f %11.2f    %11.2f %11.2f\n", x0_-ly_*sinrot_, y0_+ly_*cosrot_,
+    LogKit::writeLog("C %18.2f %11.2f    %11.2f %11.2f\n", GetXMin()-GetLY()*sinrot_, GetYMin()+GetLY()*cosrot_,
       xr -lyr*sinrotr, yr +lyr*cosrotr);
     LogKit::writeLog("D %18.2f %11.2f    %11.2f %11.2f\n", 
-      x0_+lx_*cosrot_-ly_*sinrot_, y0_+lx_*sinrot_+ly_*cosrot_,
+      GetXMin()+GetLX()*cosrot_-GetLY()*sinrot_, GetYMin()+GetLX()*sinrot_+GetLY()*cosrot_,
       xr +lxr*cosrotr-lyr*sinrotr, yr +lxr*sinrotr+lyr*cosrotr);
   }
 
@@ -329,9 +294,8 @@ Simbox::insideRectangle(double xr, double yr, double rotr, double lxr, double ly
 double
 Simbox::getTop(double x, double y) const
 {
-  int error = 0;
-  double zTop = irapgridGetValue(x, y, z0Grid_, &error);
-  if(error != 0 || zTop == z0Grid_->missingcode)
+  double zTop = GetTopSurface().GetZ(x, y);
+  if(GetTopSurface().IsMissing(zTop))
     zTop = RMISSING;
   return(zTop);
 }
@@ -339,9 +303,8 @@ Simbox::getTop(double x, double y) const
 double
 Simbox::getBot(double x, double y) const
 {
-  int error = 0;
-  double zBot = irapgridGetValue(x, y, z1Grid_, &error);
-  if(error != 0 || zBot == z1Grid_->missingcode)
+  double zBot = GetBotSurface().GetZ(x, y);
+  if(GetBotSurface().IsMissing(zBot))
     zBot = RMISSING;
   return(zBot);
 }
@@ -350,7 +313,7 @@ char *
 Simbox::getStormHeader(int cubetype, int nx, int ny, int nz, bool flat, bool ascii) const
 {
   if(flat == false)
-    assert(topName_ != NULL);
+    assert(topName_ != "");
   char * header = new char[500];
   if(ascii == false)
     sprintf(header,"storm_petro_binary\n");
@@ -360,17 +323,18 @@ Simbox::getStormHeader(int cubetype, int nx, int ny, int nz, bool flat, bool asc
   sprintf(header,"%s0 %d %f\n",  header, cubetype, RMISSING);
   sprintf(header,"%sFFTGrid\n",header);
   if(flat == false)
-    sprintf(header,"%s%f %f %f %f %s %s 0.0 0.0\n", header, x0_, lx_, 
-    y0_, ly_, topName_, botName_);
+    sprintf(header,"%s%f %f %f %f %s %s 0.0 0.0\n", header, GetXMin(), GetLX(), 
+    GetYMin(), GetLY(), topName_.c_str(), botName_.c_str());
   else
-    sprintf(header,"%s%f %f %f %f 0.0 %f 0.0 0.0\n", header, x0_, lx_, 
-    y0_, ly_, lz_);
+    sprintf(header,"%s%f %f %f %f 0.0 %f 0.0 0.0\n", header, GetXMin(), GetLX(), 
+    GetYMin(), GetLY(), GetLZ());
 
-  sprintf(header,"%s%f %f\n\n", header, lz_, rot_*180/PI);
+  sprintf(header,"%s%f %f\n\n", header, GetLZ(), GetAngle()*180/PI);
   sprintf(header,"%s%d %d %d\n", header, nx, ny, nz);
   return(header);
 }
 
+//NBNB Ragnar: Drep char * her ved bytte av logkit.
 void
 Simbox::writeTopBotGrids(const char * topname, const char * botname)
 {
@@ -380,32 +344,40 @@ Simbox::writeTopBotGrids(const char * topname, const char * botname)
 #endif
 
   char * tmpName = LogKit::makeFullFileName(topname);
-  irapgridWriteBin(tmpName, z0Grid_);
+  std::string tName(tmpName);
+  assert(typeid(GetTopSurface()) == typeid(RegularSurface<double>));
+  const RegularSurface<double> & wtsurf = 
+    dynamic_cast<const RegularSurface<double> &>(GetTopSurface());
+  NRLib2::WriteStormBinarySurf(wtsurf, tName);
 
   //Strip away path
   int i;
   for(i = strlen(tmpName)-1;i >=0; i--)
     if(tmpName[i] == dirsep)
       break;
-  if(topName_ == NULL)
+  if(topName_ == "")
   {
-    topName_ = new char[strlen(tmpName)-i+1];
-    strcpy(topName_, &(tmpName[i+1]));
-    //  botName_ = new char[strlen(topName_)+1];
-    //  strcpy(botName_,topName_);
-    //  i = strlen(botName_);
-    //  botName_[i-12] = 'b';
-    //  botName_[i-10] = 't';
+    char * tmpTopName = new char[strlen(tmpName)-i+1];
+    strcpy(tmpTopName, &(tmpName[i+1]));
+    topName_ = std::string(tmpTopName);
+    delete [] tmpTopName;
   }
   delete [] tmpName;
 
   tmpName =LogKit::makeFullFileName(botname);
-  if(botName_ ==NULL)
+  if(botName_ == "")
     {
-      botName_ = new char[strlen(tmpName)-i+1];
-    strcpy(botName_, &(tmpName[i+1]));
+      char * tmpBotName = new char[strlen(tmpName)-i+1];
+      strcpy(tmpBotName, &(tmpName[i+1]));
+      botName_ = std::string(tmpBotName);
+      delete [] tmpBotName;
     }
-  irapgridWriteBin(tmpName, z1Grid_);
+  
+  std::string bName(tmpName);
+  assert(typeid(GetBotSurface()) == typeid(RegularSurface<double>));
+  const RegularSurface<double> & wbsurf = 
+    dynamic_cast<const RegularSurface<double> &>(GetTopSurface());
+  NRLib2::WriteStormBinarySurf(wbsurf, bName);
   delete [] tmpName;
 }
 
@@ -434,19 +406,15 @@ Simbox::checkError(double lzLimit, char * errText)
       rx = 0.5f*dx_;
       for(i=0;i<nx_;i++)
       {
-        x = rx*cosrot_-ry*sinrot_ + x0_;
-        y = rx*sinrot_+ry*cosrot_ + y0_;
-        int error = 0;
-        z0 = irapgridGetValue(x, y, z0Grid_, &error);
-        if(error == 0)
-          z1 = irapgridGetValue(x, y, z1Grid_, &error);
-        if(error == 0 && z0 != z0Grid_->missingcode && z1 != z1Grid_->missingcode)
+        x = rx*cosrot_-ry*sinrot_ + GetXMin();
+        y = rx*sinrot_+ry*cosrot_ + GetYMin();
+        z0 = GetTopSurface().GetZ(x,y);
+        z1 = GetBotSurface().GetZ(x,y);
+        if(GetTopSurface().IsMissing(z0) == false && GetBotSurface().IsMissing(z1) == false )
         {
           lzCur = z1 - z0;
           if(lzCur < lzMin)
             lzMin = lzCur;
-          if(lzCur > lz_)
-            lz_ = lzCur;
         }
         rx += dx_;
       }
@@ -460,7 +428,7 @@ Simbox::checkError(double lzLimit, char * errText)
     }
     else
     {
-      double lzFac = lzMin/lz_;
+      double lzFac = lzMin/GetLZ();
       minRelThick_ = lzFac;
       if(lzFac < lzLimit) 
       {
@@ -469,7 +437,7 @@ Simbox::checkError(double lzLimit, char * errText)
       }
       else 
       {
-        dz_ = lz_/static_cast<double>(nz_);
+        dz_ = GetLZ()/static_cast<double>(nz_);
       }
     }
   }
@@ -480,44 +448,31 @@ Simbox::checkError(double lzLimit, char * errText)
 void
 Simbox::setArea(double x0, double y0, double lx, double ly, double rot, double dx, double dy)
 {
-  x0_     = x0;
-  y0_     = y0;
-  lx_     = lx;
-  ly_     = ly;
-  rot_    = rot;
-  cosrot_ = cos(rot_);
-  sinrot_ = sin(rot_);
+  SetDimensions(x0,y0,lx,ly);
+  SetAngle(rot);
+  cosrot_ = cos(rot);
+  sinrot_ = sin(rot);
   dx_     = dx;
   dy_     = dy;
-  nx_     = int(0.5+lx_/dx_);
-  ny_     = int(0.5+ly_/dy_);
+  nx_     = int(0.5+lx/dx_);
+  ny_     = int(0.5+ly/dy_);
   if(status_ == EMPTY)
     status_ = NODEPTH;
   else if(status_ == NOAREA)
     status_ = BOXOK;
-//	LogKit::writeDebugLog(1,"%f %f %f %f %d %d\n",lx_,ly_,dx_,dy_,nx_,ny_);
 }
 
 
 void
-Simbox::setDepth(irapgrid * zref, double zShift, double lz, double dz)
+Simbox::setDepth(RegularSurface<double> * zref, double zShift, double lz, 
+                 double dz)
 {
-  int error = 0;
- if(z0Grid_ != NULL)
-  {
-    freeIrapgrid(z0Grid_);
-    free(z0Grid_);
-  }
-  if(z1Grid_ != NULL)
-  {
-    freeIrapgrid(z1Grid_);
-    free(z1Grid_);
-  }
-  z0Grid_ = irapgridArithmeticConstant(zref, zShift, 1, &error);
-  z1Grid_ = irapgridArithmeticConstant(zref, zShift+lz, 1, &error);
-  lz_ = lz;
+  zref->Add(zShift);
+  RegularSurface<double> * zBot = new RegularSurface<double>(*zref);
+  zBot->Add(lz);
+  SetSurfaces(zref,zBot);
   dz_ = dz;
-  nz_ = int(0.5+lz_/dz_);
+  nz_ = int(0.5+lz/dz_);
   if(status_ == EMPTY)
     status_ = NOAREA;
   else if(status_ == NODEPTH)
@@ -526,21 +481,10 @@ Simbox::setDepth(irapgrid * zref, double zShift, double lz, double dz)
 
 
 void
-Simbox::setDepth(irapgrid * z0, irapgrid * z1, int nz)
+Simbox::setDepth(RegularSurface<double> * z0, 
+                 RegularSurface<double> * z1, int nz)
 {
- 
- if(z0Grid_ != NULL)
-  {
-    freeIrapgrid(z0Grid_);
-    free(z0Grid_);
-  }
-  if(z1Grid_ != NULL)
-  {
-    freeIrapgrid(z1Grid_);
-    free(z1Grid_);
-  }
-  z0Grid_ = z0;
-  z1Grid_ = z1;
+  SetSurfaces(z0, z1);
   nz_ = nz;
   dz_ = -1;
   if(status_ == EMPTY)
@@ -580,22 +524,19 @@ Simbox::getRelThick(int i, int j) const
 {
   double rx = (static_cast<double>(i) + 0.5)*dx_;
   double ry = (static_cast<double>(j) + 0.5)*dy_;
-  double x = rx*cosrot_-ry*sinrot_ + x0_;
-  double y = rx*sinrot_+ry*cosrot_ + y0_;
+  double x = rx*cosrot_-ry*sinrot_ + GetXMin();
+  double y = rx*sinrot_+ry*cosrot_ + GetYMin();
   return(getRelThick(x, y));
 }
 
 double
 Simbox::getRelThick(double x, double y) const
 {
-  int error = 0;
-  double zBot = 0.0f;
-  double zTop = irapgridGetValue(x, y, z0Grid_, &error);
   double relThick = 1; //Default value to be used outside grid.
-  if(error == 0)
-    zBot = irapgridGetValue(x, y, z1Grid_, &error);
-  if(error == 0 && zTop != z0Grid_->missingcode && 
-    zBot != z1Grid_->missingcode)  
-    relThick = (zBot-zTop)/lz_;
+  double zTop = GetTopSurface().GetZ(x,y);
+  double zBot = GetBotSurface().GetZ(x,y);
+  if(GetTopSurface().IsMissing(zTop) == false && 
+     GetBotSurface().IsMissing(zBot) == false)
+    relThick = (zBot-zTop)/GetLZ();
   return(relThick);
 }

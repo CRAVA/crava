@@ -12,7 +12,6 @@
 #include "lib/global_def.h"
 #include "lib/lib_misc.h"
 #include "lib/lib_matr.h"
-#include "lib/irapgrid.h"
 #include "lib/log.h"
 #include "lib/sgri.h"
 

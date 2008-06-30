@@ -146,7 +146,7 @@ SegY::SegY(char * fileName, const Simbox * simbox, float zPad, float z0)
       printf("^");
       fflush(stdout);
     }
- }
+  }
   double deltaX = x1 - x0_;
   double deltaY = y1 - y0_;
   double xl = sqrt(deltaX*deltaX+deltaY*deltaY);

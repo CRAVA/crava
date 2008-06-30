@@ -426,7 +426,7 @@ BlockedLogs::findBlockXYZ(Simbox * simbox)
   ypos_ = new double[nBlocks_];
   zpos_ = new double[nBlocks_];
   for (int l = 0 ; l < nBlocks_ ; l++) {
-    simbox->getCoord(ipos_[l],jpos_[l],kpos_[l],xpos_[l],zpos_[l],zpos_[l]);
+    simbox->getCoord(ipos_[l],jpos_[l],kpos_[l],xpos_[l],ypos_[l],zpos_[l]);
   }
 }
 

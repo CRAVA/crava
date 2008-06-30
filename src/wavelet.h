@@ -1,13 +1,14 @@
 #ifndef WAVELET_H
 #define WAVELET_H
 
+#include "nrlib/surface/regularsurface.hpp"
+
 #include "fft/include/fftw.h"
 #include "lib/global_def.h"
 
 class Simbox;
 class FFTGrid;
 class WellData;
-struct irapgrid;
 class ModelSettings;
 
 class Wavelet {
@@ -39,8 +40,8 @@ public:
   //Note: Function below is mainly controlled by debugflag. Set overrideDebug = true to force.
   virtual void   printToFile(char* fileName, bool overrideDebug = false) = 0;
   virtual void   writeWaveletToFile(char*, float, Simbox * simbox = NULL) = 0;
-  void           setShiftGrid(irapgrid * grid, Simbox * simbox);
-  void           setGainGrid(irapgrid * grid, Simbox * simbox);
+  void           setShiftGrid(NRLib2::RegularSurface<double> * grid, Simbox * simbox);
+  void           setGainGrid(NRLib2::RegularSurface<double> * grid, Simbox * simbox);
   float          getScale() const {return scale_;}
   
   // for noise estimation

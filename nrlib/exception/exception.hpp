@@ -1,18 +1,19 @@
-// $Id: exception.hpp 30 2008-04-04 12:39:42Z perroe $
+// $Id: exception.hpp 43 2008-04-11 13:47:10Z perroe $
 
 #ifndef NRLIB_EXCEPTION_HPP
 #define NRLIB_EXCEPTION_HPP
 
+#include <exception>
 #include <string>
 
 namespace NRLib2 {
 
-class Exception 
+class Exception : public std::exception
 { 
 public:
   explicit Exception(const std::string& msg = "") : msg_(msg) { }
-  virtual ~Exception() {}
-  virtual std::string what() {return msg_;}
+  virtual ~Exception() throw() {}
+  virtual const char * what() const throw() {return msg_.c_str();}
 private:
   std::string msg_;
 };

@@ -3,7 +3,7 @@
 
 #include <string>
 #include <vector>
-#include "lib/grid.hpp"
+#include "nrlib/grid/grid.hpp"
 
 class Sgri : public NRLib2::Grid<float> {
 public:

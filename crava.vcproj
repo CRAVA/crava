@@ -3342,30 +3342,6 @@
 				Name="lib"
 				>
 				<File
-					RelativePath=".\lib\fileio.cpp"
-					>
-				</File>
-				<File
-					RelativePath="lib\irapgrid.cpp"
-					>
-					<FileConfiguration
-						Name="Debug|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							PreprocessorDefinitions=""
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Release|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							PreprocessorDefinitions=""
-						/>
-					</FileConfiguration>
-				</File>
-				<File
 					RelativePath=".\lib\kriging1d.cpp"
 					>
 				</File>
@@ -3502,6 +3478,48 @@
 					>
 				</File>
 			</Filter>
+			<Filter
+				Name="nrlib"
+				>
+				<File
+					RelativePath=".\nrlib\iotools\fileio.cpp"
+					>
+					<FileConfiguration
+						Name="Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\$(InputName)1.obj"
+							XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\$(InputName)1.obj"
+							XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath=".\nrlib\iotools\stringtools.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\nrlib\surface\surface.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\nrlib\surface\surfaceio.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\nrlib\volume\volume.cpp"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -3627,31 +3645,7 @@
 				Name="lib No. 1"
 				>
 				<File
-					RelativePath=".\lib\exception.hpp"
-					>
-				</File>
-				<File
-					RelativePath=".\lib\fileio.hpp"
-					>
-				</File>
-				<File
-					RelativePath=".\lib\fileio_impl.hpp"
-					>
-				</File>
-				<File
-					RelativePath=".\lib\fileio_internal.hpp"
-					>
-				</File>
-				<File
 					RelativePath="lib\global_def.h"
-					>
-				</File>
-				<File
-					RelativePath=".\lib\grid.hpp"
-					>
-				</File>
-				<File
-					RelativePath="lib\irapgrid.h"
 					>
 				</File>
 				<File
@@ -3692,6 +3686,42 @@
 				</File>
 				<File
 					RelativePath=".\lib\utils.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="nrlib"
+				>
+				<File
+					RelativePath=".\nrlib\exception\exception.hpp"
+					>
+				</File>
+				<File
+					RelativePath=".\nrlib\iotools\fileio.hpp"
+					>
+				</File>
+				<File
+					RelativePath=".\nrlib\grid\grid2d.hpp"
+					>
+				</File>
+				<File
+					RelativePath=".\nrlib\surface\regularsurface.hpp"
+					>
+				</File>
+				<File
+					RelativePath=".\nrlib\iotools\stringtools.hpp"
+					>
+				</File>
+				<File
+					RelativePath=".\nrlib\surface\surface.hpp"
+					>
+				</File>
+				<File
+					RelativePath=".\nrlib\surface\surfaceio.hpp"
+					>
+				</File>
+				<File
+					RelativePath=".\nrlib\volume\volume.hpp"
 					>
 				</File>
 			</Filter>

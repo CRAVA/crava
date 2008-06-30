@@ -6,6 +6,8 @@
 #include <assert.h>
 #include <math.h>
 
+#include "nrlib/surface/regularsurface.hpp"
+
 #include "fft/include/fftw.h"
 #include "fft/include/rfftw.h"
 #include "fft/include/fftw-int.h"
@@ -14,7 +16,6 @@
 #include "lib/global_def.h"
 #include "lib/lib_misc.h"
 #include "lib/lib_matr.h"
-#include "lib/irapgrid.h"
 #include "lib/log.h"
 #include "lib/sgri.h"
 
@@ -173,7 +174,7 @@ Wavelet::scale(float scale)
 }
 
 void 
-Wavelet::setShiftGrid(irapgrid * grid, Simbox * simbox)
+Wavelet::setShiftGrid(NRLib2::RegularSurface<double> * grid, Simbox * simbox)
 {
   gridNI_ = simbox->getnx();
   gridNJ_ = simbox->getny();
@@ -183,10 +184,9 @@ Wavelet::setShiftGrid(irapgrid * grid, Simbox * simbox)
   for(int j=0;j<gridNJ_;j++)
     for(int i=0;i<gridNI_;i++)
     {
-      int outside;
       double x, y, z;
       simbox->getCoord(i, j, 0, x, y, z);
-      shiftGrid_[i+gridNI_*j] = static_cast<float>(irapgridGetValue(x, y, grid, &outside));
+      shiftGrid_[i+gridNI_*j] = static_cast<float>(grid->GetZ(x,y));
     }
 }
 
@@ -860,7 +860,7 @@ Wavelet::fillInnWavelet(fftw_real* wavelet_r,int nzp,float dz)
 
 
 void 
-Wavelet::setGainGrid(irapgrid * grid, Simbox * simbox)
+Wavelet::setGainGrid(NRLib2::RegularSurface<double> * grid, Simbox * simbox)
 {
   double sum = 0.0;
   int nData = 0;
@@ -872,10 +872,9 @@ Wavelet::setGainGrid(irapgrid * grid, Simbox * simbox)
   for(int j=0;j<gridNJ_;j++)
     for(int i=0;i<gridNI_;i++)
     {
-      int outside;
       double x, y, z;
       simbox->getCoord(i, j, 0, x, y, z);
-      double value = irapgridGetValue(x, y, grid, &outside);
+      double value = grid->GetZ(x,y);
       gainGrid_[i+gridNI_*j] = static_cast<float>(value);
       if(value != WELLMISSING)
       {

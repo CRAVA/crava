@@ -14,7 +14,6 @@
 
 #include "lib/log.h"
 #include "lib/global_def.h"
-#include "lib/irapgrid.h"
 
 Analyzelog::Analyzelog(WellData      ** wells,
                        Background     * background,

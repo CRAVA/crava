@@ -443,7 +443,7 @@ FFTGrid::fillInParamCorr(Corr* corr,int minIntFq)
       {    
         if(i < nxp_)  // computes the index reference from the cube puts it in value
         {
-          value = float( corr->getCorrXY()->grid[i+nxp_*j] ) * circCorrT[k];
+          value = float( (*(corr->getCorrXY()))(i+nxp_*j)) * circCorrT[k];
         }
         else
           value = RMISSING;        
@@ -486,7 +486,7 @@ FFTGrid::fillInErrCorr(Corr* parCorr)
 
         if(i < nxp_)  // computes the index reference from the cube puts it in value
         {
-          value = float( parCorr->getCorrXY()->grid[i+nxp_*j] )*mult ;
+          value = float( (*(parCorr->getCorrXY()))(i+nxp_*j) )*mult ;
         }
         else
           value = RMISSING;        

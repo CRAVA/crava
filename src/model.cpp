@@ -5,6 +5,8 @@
 #include <time.h>
 #include <assert.h>
 
+#include "nrlib/surface/surfaceio.hpp"
+
 #include "src/model.h"
 #include "src/modelfile.h"
 #include "src/modelsettings.h"
@@ -22,10 +24,11 @@
 
 #include "lib/random.h"
 #include "lib/lib_misc.h"
-#include "lib/irapgrid.h"
 #include "lib/global_def.h"
 #include "lib/segy.h"
 #include "lib/log.h"
+
+using namespace NRLib2;
 
 Model::Model(char * fileName)
 {
@@ -137,8 +140,7 @@ Model::~Model()
     for(int i=0;i<modelSettings_->getNumberOfAngles();i++)
       if(shiftGrids_[i] != NULL)
       {
-        freeIrapgrid(shiftGrids_[i]);
-        free(shiftGrids_[i]);
+        delete shiftGrids_[i];
       }
   }
 
@@ -147,8 +149,7 @@ Model::~Model()
     for(int i=0;i<modelSettings_->getNumberOfAngles();i++)
       if(gainGrids_[i] != NULL)
       {
-        freeIrapgrid(gainGrids_[i]);
-        free(gainGrids_[i]);
+        delete gainGrids_[i];
       }
   }
   delete modelSettings_;
@@ -454,13 +455,12 @@ Model::readStormFile(char *fName, FFTGrid * & target, const char * parName, char
     fscanf(file,"%f",&rot);
     rot = rot*float(PI/180.0);
     fscanf(file,"%d %d %d",&nx, &ny, &nz);
-    int tmpErr = 0;
     float lmax = lx;
     if(ly > lmax)
       lmax = ly;
     lmax *= 1.1f;
-    irapgrid * tmpTop = irapgridConstGrid(x0-1.5*lmax,y0-1.5*lmax,3*lmax,3*lmax,2,2,z0,
-      &tmpErr);
+    RegularSurface<double> * tmpTop = 
+      new RegularSurface<double>(x0-1.5*lmax,y0-1.5*lmax,3*lmax,3*lmax,2,2,z0);
     Simbox * tmpSimbox = new Simbox(x0, y0, tmpTop, lx, ly, lz, rot,
       lx/float(nx), ly/float(ny), lz/float(nz));
     readToEOL(file);
@@ -652,17 +652,17 @@ Model::setSimboxSurfaces(Simbox * simbox, char ** surfFile, bool parallelSurface
                          double dTop, double lz, double dz, int nz,
                          int & error)
 {
-  irapgrid * z0Grid = irapgridRead(surfFile[0], &error);
-  if(error != 0)
-  {
-    if(error == -3)
-      LogKit::writeLog("ERROR: Failed to allocate memory for top surface %s.\n",surfFile[0]);
-    else 
-      LogKit::writeLog("ERROR: Reading of top surface from file %s failed.\n", surfFile[0]);
-    error = 1;
-    free(z0Grid);
+  RegularSurface<double> * z0Grid = NULL;
+  try {
+    RegularSurface<double> tmpSurf = NRLib2::ReadStormSurf(surfFile[0]);
+    z0Grid = new RegularSurface<double>(tmpSurf);
   }
-  else
+  catch (Exception & e) {
+    LogKit::writeLog(e.what());
+    error = 1;
+  }
+
+  if(error == 0)
   {
     if(parallelSurfaces) //Only one reference surface
     {
@@ -670,23 +670,17 @@ Model::setSimboxSurfaces(Simbox * simbox, char ** surfFile, bool parallelSurface
     }
     else
     {
-      irapgrid * z1Grid = irapgridRead(surfFile[1], &error);
-      if(error != 0)
-      {
-        if(error == -3)
-          LogKit::writeLog("ERROR: Failed to allocate memory for base surface %s.\n",surfFile[1]);
-        else 
-          LogKit::writeLog("ERROR: Reading of base surface from file %s failed.\n", surfFile[1]);
+      RegularSurface<double> * z1Grid = NULL;
+      try {
+        RegularSurface<double> tmpSurf = NRLib2::ReadStormSurf(surfFile[1]);
+        z1Grid = new RegularSurface<double>(tmpSurf);
+      }
+      catch (Exception & e) {
+        LogKit::writeLog(e.what());
         error = 1;
-
-        freeIrapgrid(z0Grid); //Note that the use of z0 and z1 here is correct.
-        free(z0Grid);
-        free(z1Grid);
       }
-      else
-      {
+      if(error == 0)
         simbox->setDepth(z0Grid, z1Grid, nz);
-      }
     }
   }
 }
@@ -1263,9 +1257,9 @@ Model::processPriorCorrelations(char * errText)
       LogKit::writeLog("Parameter correlation read from file.\n\n");
     }
 
-    irapgrid * CorrXY = getCorrXYGrid();
+    RegularSurface<double> * CorrXY = getCorrXYGrid();
 
-    if(CorrXY->grid == NULL) { // NBNB-PAL: this will never be true (default lateral corr)
+    if(modelSettings_->getLateralCorr()==NULL) { // NBNB-PAL: this will never be true (default lateral corr)
       estimateCorrXYFromSeismic(CorrXY);
       time(&timeend);
       LogKit::writeLog("\nEstimate parameter lateral correlation from seismic in %d seconds.\n",
@@ -1316,7 +1310,7 @@ Model::processPriorCorrelations(char * errText)
   }
 }
 
-irapgrid * 
+RegularSurface<double> * 
 Model::getCorrXYGrid()
 {
   int npix, nx, ny;
@@ -1330,23 +1324,9 @@ Model::getCorrXYGrid()
   nx = findClosestFactorableNumber(static_cast<int>(ceil(snx*(1.0f+modelSettings_->getXpad())))); //Use padded grid
   ny = findClosestFactorableNumber(static_cast<int>(ceil(sny*(1.0f+modelSettings_->getYpad()))));
   npix = nx*ny;
-  struct irapgrid *rIrap;
-  rIrap = (struct irapgrid *) calloc(1, sizeof(struct irapgrid));
-  rIrap->xmin = 0;
-  rIrap->xmax = dx*nx;
-  rIrap->ymin = 0;
-  rIrap->ymax = dy*ny;
-  rIrap->xinc = dx;
-  rIrap->yinc = dy;
-  rIrap->nx = nx;
-  rIrap->ny = ny;
-  rIrap->bin = 0;
-  rIrap->missingcode = IRAPMISSING;
-  rIrap->constValue = IRAPMISSING;
-  rIrap->filename = 0;
+  RegularSurface<double> * grid = new RegularSurface<double>(0, 0, dx*nx, dy*ny, nx, ny, RMISSING);
   if(modelSettings_->getLateralCorr()!=NULL) // NBNB-PAL: Denne her blir aldri null etter at jeg la inn en default lateral correlation i modelsettings.
   {
-    rIrap->grid = (double *) malloc(((unsigned) npix)*sizeof(double));
     for(j=0;j<ny;j++)
     {
       for(i=0;i<nx;i++)
@@ -1367,24 +1347,20 @@ Model::getCorrXYGrid()
         {
           refj = j-ny;
         }
-        rIrap->grid[j*nx+i] = modelSettings_->getLateralCorr()->corr(refi*dx, refj*dy);
+        (*grid)(j*nx+i) = modelSettings_->getLateralCorr()->corr(refi*dx, refj*dy);
       }
     }
   }
-  else
-  {
-    rIrap->grid = NULL;
-  }
-  return(rIrap);
+  return(grid);
 }
 
 void 
-Model::estimateCorrXYFromSeismic(irapgrid * CorrXY)
+Model::estimateCorrXYFromSeismic(RegularSurface<double> * corrXY)
 {
   FFTGrid * transf;
   float   * grid;
 
-  int n = CorrXY->nx*CorrXY->ny;
+  int n = corrXY->GetNI()*corrXY->GetNJ();
   grid = new float[n];
 
   for(int i=0 ; i<n ; i++)
@@ -1406,16 +1382,9 @@ Model::estimateCorrXYFromSeismic(irapgrid * CorrXY)
     delete transf;
   }
   float sill = grid[0];
-  CorrXY->grid = (double *) malloc(((unsigned) n)*sizeof(double));
   for(int i=0;i<n;i++)
-    CorrXY->grid[i] = grid[i]/sill;
+    (*corrXY)(i) = grid[i]/sill;
   delete [] grid;
-
-  char * fName= LogKit::makeFullFileName("PriorCorrXY_EstimatedFromSeismic",".irap");
-  FILE * file = fopen(fName, "w");
-  irapgridWritept(file,CorrXY);
-  fclose(file);
-  delete [] fName;
 }
 
 void 
@@ -1601,7 +1570,7 @@ void Model::processPriorFaciesProb()
 {
   int outputFlag = modelSettings_->getOutputFlag();
   int nFacies    = modelSettings_->getNumberOfFacies();
-  if(nFacies > 0 && outputFlag & (ModelSettings::FACIESPROB + ModelSettings::FACIESPROBRELATIVE) > 0)
+  if(nFacies > 0 && (outputFlag & (ModelSettings::FACIESPROB + ModelSettings::FACIESPROBRELATIVE)) > 0)
   {
     LogKit::writeLog("\n***********************************************************************");
     LogKit::writeLog("\n***                     Prior Facies Probabilities                  ***"); 

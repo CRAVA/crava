@@ -2,9 +2,11 @@
 #include "model.h"
 #include <stdio.h>
 
+using namespace NRLib2;
+
 #include "lib/log.h"
 Corr::Corr(float **pointVar0, float **Var0, float *CorrT, int n, float dt, 
-           irapgrid *CorrXY)
+           NRLib2::RegularSurface<double> * CorrXY)
 {
   Var0_ = Var0;
   pointVar0_ = pointVar0;
@@ -24,9 +26,9 @@ Corr::~Corr(void)
   delete [] pointVar0_;
   delete [] Var0_;
   delete [] CorrT_;
-  freeIrapgrid(CorrXY_);
-  free(CorrXY_);
+  delete CorrXY_;
 }
+
 const float* Corr::getCorrT(int &n, float &dt) const
 {
   n = n_;
@@ -40,9 +42,9 @@ const float** Corr::getVar0() const
   return (const float **) Var0_;	
 }
 
-const irapgrid* Corr::getCorrXY() const
+const RegularSurface<double>* Corr::getCorrXY() const
 {
-  return (const irapgrid *) CorrXY_;
+  return (const RegularSurface<double>*) CorrXY_;
 }
 
 void Corr::dumpResult() const
@@ -55,7 +57,8 @@ void Corr::dumpResult() const
   FILE *file2 = fopen(filename2, "w");
   FILE *file3 = fopen(filename3, "w");
 
-  irapgridWritept(file3,CorrXY_);
+  //NBNB Snakk med Ragnar om du saknar dette veldig.
+  //irapgridWritept(file3,CorrXY_); 
   fclose(file3);
   for(i=0;i<3;i++)
   {

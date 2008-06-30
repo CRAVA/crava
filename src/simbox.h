@@ -1,13 +1,16 @@
 #ifndef SIMBOX_H
 #define SIMBOX_H
 
+#include "nrlib/volume/volume.hpp"
+#include "nrlib/surface/regularsurface.hpp"
+
 struct irapgrid;
 
-class Simbox{
+class Simbox : public NRLib2::Volume {
 public:
   Simbox(void);
-  Simbox(double x0, double y0, irapgrid * z0, double lx, double ly, double lz,
-         double rot, double dx, double dy, double dz); //Assumes constant thickness.
+  Simbox(double x0, double y0, NRLib2::RegularSurface<double> * z0, double lx, 
+         double ly, double lz, double rot, double dx, double dy, double dz); //Assumes constant thickness.
   Simbox(const Simbox *simbox);
   ~Simbox();
 
@@ -24,12 +27,12 @@ public:
   double     getdx()                         const { return dx_ ;}
   double     getdy()                         const { return dy_ ;}
   double     getdz()                         const { return dz_ ;} // Maximum dz (nz is constant).
-  double     getlx()                         const { return lx_ ;}
-  double     getly()                         const { return ly_ ;}
-  double     getlz()                         const { return lz_ ;} // Maximum thickness
-  double     getx0()                         const { return x0_ ;}
-  double     gety0()                         const { return y0_ ;}
-  double     getAngle()                      const { return rot_ ;}
+  double     getlx()                         const { return(GetLX());}
+  double     getly()                         const { return(GetLY());}
+  double     getlz()                         const { return(GetLZ());} // Maximum thickness
+  double     getx0()                         const { return(GetXMin());}
+  double     gety0()                         const { return(GetYMin());}
+  double     getAngle()                      const { return(GetAngle());}
   int        getIL0()                        const { return inLine0_ ;}
   int        getXL0()                        const { return crossLine0_ ;}
   int        getILStep()                     const { return ilStep_  ;}
@@ -48,30 +51,24 @@ public:
   void       writeTopBotGrids(const char * topname, const char * botname);
   int        checkError(double lzLimit, char * errText);
   void       setArea(double x0, double y0, double lx, double ly, double rot, double dx, double dy);
-  void       setDepth(irapgrid * zref, double zShift, double lz, double dz);
-  void       setDepth(irapgrid * z0, irapgrid * z1, int nz);
+  void       setDepth(NRLib2::RegularSurface<double> * zref, double zShift, double lz, double dz);
+  void       setDepth(NRLib2::RegularSurface<double> * z0, NRLib2::RegularSurface<double> * z1, int nz);
   void       setSeisLines(int il0, int cl0, int ilStep, int xlStep);
   int        status() const {return(status_);}
   void       externalFailure() {status_ = EXTERNALERROR;}
 
-  irapgrid * getTopGrid()const {return z0Grid_;};
-
   enum       simboxstatus{BOXOK, INTERNALERROR, EXTERNALERROR, EMPTY, NOAREA, NODEPTH};
 
 private:
-  double     x0_, y0_, lx_, ly_, lz_;  // Simbox is regular, except for top surface.
-  irapgrid * z0Grid_;                  // Top surface given as Irapgrid.
-  irapgrid * z1Grid_;                  // Bottom surface given as Irapgrid.
-  double     rot_;                     // Rotation angle of box.
-  double     dx_, dy_, dz_;            // Working resolution.
-  int        nx_, ny_, nz_;            // Number of cells in each direction.
-  int        status_;                  // Since Simbox may be incomplete or with error
-  double     cosrot_, sinrot_;         // Saving time in transformations.
-  int        inLine0_, crossLine0_;
-  int        ilStep_, xlStep_;
-  char     * topName_;
-  char     * botName_;
-  bool       constThick_;
-  double     minRelThick_;
+  double      dx_, dy_, dz_;            // Working resolution.
+  int         nx_, ny_, nz_;            // Number of cells in each direction.
+  int         status_;                  // Since Simbox may be incomplete or with error
+  double      cosrot_, sinrot_;         // Saving time in transformations.
+  int         inLine0_, crossLine0_;
+  int         ilStep_, xlStep_;
+  std::string topName_;
+  std::string botName_;
+  bool        constThick_;
+  double      minRelThick_;
 };
 #endif

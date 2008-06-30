@@ -20,6 +20,8 @@
 #include <assert.h>
 #include <time.h>
 
+using namespace NRLib2;
+
 Crava::Crava(Model * model)
 {	
   int   i;
@@ -166,7 +168,12 @@ Crava::Crava(Model * model)
 
   //  fclose(test);
     Simbox *regularSimbox = new Simbox(simbox_);
-    regularSimbox->setDepth(simbox_->getTopGrid(), 0, simbox_->getlz(), simbox_->getdz());
+    assert(typeid(simbox_->GetTopSurface()) == typeid(RegularSurface<double>));
+    RegularSurface<double> * tsurf = 
+      new RegularSurface<double>(dynamic_cast<const RegularSurface<double> &>
+                                 (simbox_->GetTopSurface()));
+
+    regularSimbox->setDepth(tsurf, 0, simbox_->getlz(), simbox_->getdz());
     fprob_ = new FaciesProb(model->getModelSettings(),
                             fileGrid_, parPointCov_,corrprior, regularSimbox, *(const Simbox*)simbox_, 
                             nzp_, nz_, meanAlpha_, meanBeta_, meanRho_, random_, 

@@ -14,9 +14,8 @@ using std::ifstream;
 #include "lib/sgri.h"
 #include "lib/lib_misc.h"
 #include "lib/log.h"
-#include "lib/fileio.hpp"
-#include "lib/exception.hpp"
-#include "lib/grid.hpp"
+#include "nrlib/iotools/fileio.hpp"
+#include "nrlib/exception/exception.hpp"
 
 using namespace std;
 using namespace NRLib2;
@@ -354,9 +353,9 @@ Sgri::readBinaryFile(int n, char *errText, int &errCode)
   }
   catch (NRLib2::Exception& e) {
     if (errCode == 0)  
-      sprintf(errText, "Error: Reading from binary waveletfile %s. %s\n", binFileName_, e.what().c_str());
+      sprintf(errText, "Error: Reading from binary waveletfile %s. %s\n", binFileName_, e.what());
     else 
-      sprintf(errText, "%sError: Reading from binary waveletfile %s. %s\n", errText, binFileName_, e.what().c_str());
+      sprintf(errText, "%sError: Reading from binary waveletfile %s. %s\n", errText, binFileName_, e.what());
     errCode=2;
   }
   
