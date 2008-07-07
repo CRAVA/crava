@@ -1,7 +1,7 @@
 #include "src/bwellpt.h"
 #include "lib/global_def.h"
 #include "lib/random.h"
-#include "lib/log.h"
+#include "nrlib/iotools/logkit.hpp"
 
 #include <stdio.h>
 #include <assert.h>

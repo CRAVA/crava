@@ -1,6 +1,6 @@
 #include "lib/systemcall.h"
 #include "lib/global_def.h"
-#include "lib/log.h"
+#include "nrlib/iotools/logkit.hpp"
 
 #if defined(__WIN32__) || defined(WIN32) || defined(_WINDOWS)
 #include <winsock2.h>

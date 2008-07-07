@@ -1,7 +1,7 @@
 #ifndef BLOCKEDLOGS_H
 #define BLOCKEDLOGS_H
 
-#include "lib/log.h"
+#include "nrlib/iotools/logkit.hpp"
 #include <stdlib.h>
 
 

@@ -10,7 +10,7 @@
 #include "fft/include/f77_func.h"
 
 #include "lib/global_def.h"
-#include "lib/log.h"
+#include "nrlib/iotools/logkit.hpp"
 #include "lib/lib_misc.h"
 
 #include "src/fftfilegrid.h"
@@ -509,7 +509,7 @@ FFTFileGrid::genFileName()
   fNameIn_ = NULL;
   char * tmpName = new char[MAX_STRING];
   sprintf(tmpName,"tmpgrid%d",gNum);
-  fNameOut_ = LogKit::makeFullFileName(tmpName);
+  fNameOut_ = ModelSettings::makeFullFileName(tmpName);
   gNum++;
   delete [] tmpName;
 }

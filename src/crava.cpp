@@ -15,7 +15,7 @@
 #include "src/faciesprob.h"
 #include "lib/random.h"
 #include "lib/lib_matr.h"
-#include "lib/log.h"
+#include "nrlib/iotools/logkit.hpp"
 
 #include <assert.h>
 #include <time.h>
@@ -327,9 +327,9 @@ Crava::setupErrorCorrelation(Model * model)
     }
     if (empSNRatio_[l] < 1.1f) 
     {
-      LogKit::writeLog("\nERROR: The empirical signal-to-noise ratio for angle stack %d is %7.1e. Ratios smaller than\n",l+1,empSNRatio_[l]);
-      LogKit::writeLog("       1 are illegal and CRAVA has to stop. CRAVA was for some reason not able to estimate\n");
-      LogKit::writeLog("       this ratio reliably, and you must give it as input to the model file\n\n");
+      LogKit::LogFormatted(LogKit::LOW,"\nERROR: The empirical signal-to-noise ratio for angle stack %d is %7.1e. Ratios smaller than\n",l+1,empSNRatio_[l]);
+      LogKit::LogFormatted(LogKit::LOW,"       1 are illegal and CRAVA has to stop. CRAVA was for some reason not able to estimate\n");
+      LogKit::LogFormatted(LogKit::LOW,"       this ratio reliably, and you must give it as input to the model file\n\n");
       exit(1);
     }
   }
@@ -387,7 +387,7 @@ Crava::computeVariances(fftw_real* corrT,
   {
     if (model->getModelSettings()->getMatchEnergies()[l])
     {
-      LogKit::writeLog("Matching syntethic and empirical energies:\n");
+      LogKit::LogFormatted(LogKit::LOW,"Matching syntethic and empirical energies:\n");
       float gain = sqrt((errorVariance_[l]/modelVariance_[l])*(empSNRatio_[l] - 1.0f));
       seisWavelet_[l]->scale(gain);
       if((outputFlag_ & ModelSettings::WAVELETS) > 0) 
@@ -599,14 +599,14 @@ Crava:: divideDataByScaleWavelet()
         }
       }
       char fName[200];
-      if(LogKit::getDebugLevel() > 0)
+      if(ModelSettings::getDebugLevel() > 0)
       {
         sprintf(fName,"refl%d",l);
         seisData_[l]->writeFile(fName, simbox_);
       }
-      LogKit::writeLog("Interpolating reflections in cube %d: ",l);
+      LogKit::LogFormatted(LogKit::LOW,"Interpolating reflections in cube %d: ",l);
       seisData_[l]->interpolateSeismic(energyTreshold_);
-      if(LogKit::getDebugLevel() > 0)
+      if(ModelSettings::getDebugLevel() > 0)
       {
         sprintf(fName,"reflInterpolated%d",l);
         seisData_[l]->writeFile(fName, simbox_);
@@ -950,7 +950,7 @@ Crava::computePostMeanResidAndFFTCov()
   //postCovAlpha_->writeAsciiRaw("covalphadump.txt");
 
   //  time(&timeend);
-  // LogKit::writeLog("\n Core inversion finished after %ld seconds ***\n",timeend-timestart);
+  // LogKit::LogFormatted(LogKit::LOW,"\n Core inversion finished after %ld seconds ***\n",timeend-timestart);
   // these does not have the initial meaning
   meanAlpha_ = NULL; //the content is taken care of by  postAlpha_
   meanBeta_  = NULL; //the content is taken care of by  postBeta_
@@ -982,9 +982,9 @@ Crava::computePostMeanResidAndFFTCov()
     if(krigingParams_ != 0) { 
       if (!pKriging_)
         initPostKriging();
-      LogKit::writeLog("\n***********************************************************************");
-      LogKit::writeLog("\n***                     Conditioning to wells                       ***"); 
-      LogKit::writeLog("\n***********************************************************************\n");
+      LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************");
+      LogKit::LogFormatted(LogKit::LOW,"\n***                     Conditioning to wells                       ***"); 
+      LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************\n");
       pKriging_->KrigAll(*postAlpha_, *postBeta_, *postRho_);
     }
     writePars(postAlpha_, postBeta_, postRho_, -1);
@@ -1202,9 +1202,9 @@ Crava::simulate( RandomGen * randomGen)
           if(krigingParams_ != 0) { 
             if (!pKriging_)
               initPostKriging();
-            LogKit::writeLog("\n***********************************************************************");
-            LogKit::writeLog("\n***                     Conditioning to wells                       ***"); 
-            LogKit::writeLog("\n***********************************************************************\n");
+            LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************");
+            LogKit::LogFormatted(LogKit::LOW,"\n***                     Conditioning to wells                       ***"); 
+            LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************\n");
             pKriging_->KrigAll(*seed0, *seed1, *seed2);
           }
           writePars(seed0, seed1, seed2, simNr);  
@@ -1320,7 +1320,7 @@ Crava::computePostCov()
   delete postCrCovBetaRho_;
   postCrCovBetaRho_=NULL;
 
-  char * fName = LogKit::makeFullFileName("PosteriorVar0",".dat");
+  char * fName = ModelSettings::makeFullFileName("PosteriorVar0",".dat");
   FILE* file=fopen(fName,"w");
   for(i=0;i<3;i++)
   {
@@ -1333,7 +1333,7 @@ Crava::computePostCov()
   fclose(file);
   delete [] fName;
 
-  fName = LogKit::makeFullFileName("PosteriorCorrTVp",".dat");
+  fName = ModelSettings::makeFullFileName("PosteriorCorrTVp",".dat");
   file=fopen(fName,"w");
   for(k=0;k<nz_;k++)
   {
@@ -1342,7 +1342,7 @@ Crava::computePostCov()
   fclose(file);
   delete [] fName;
 
-  fName = LogKit::makeFullFileName("PosteriorCorrTVs",".dat");
+  fName = ModelSettings::makeFullFileName("PosteriorCorrTVs",".dat");
   file=fopen(fName,"w");
   for(k=0;k<nz_;k++)
   {
@@ -1351,7 +1351,7 @@ Crava::computePostCov()
   fclose(file);
   delete [] fName;
 
-  fName = LogKit::makeFullFileName("PosteriorCorrTRho",".dat");
+  fName = ModelSettings::makeFullFileName("PosteriorCorrTRho",".dat");
   file=fopen(fName,"w");
   for(k=0;k<nz_;k++)
   {
@@ -2040,31 +2040,31 @@ void
 Crava::printEnergyToScreen()
 {
   int i;
-  LogKit::writeLog("                       ");
-  for(i=0;i < ntheta_; i++) LogKit::writeLog("  Seismic %4.1f ",theta_[i]/PI*180);
-  LogKit::writeLog("\n----------------------");
-  for(i=0;i < ntheta_; i++) LogKit::writeLog("---------------");
-  LogKit::writeLog("\nObserved data variance :");
-  for(i=0;i < ntheta_; i++) LogKit::writeLog("    %1.3e  ",dataVariance_[i]);
-  LogKit::writeLog("\nModelled data variance :");
-  for(i=0;i < ntheta_; i++) LogKit::writeLog("    %1.3e  ",signalVariance_[i]);
-  //LogKit::writeLog("\nModel variance         :");
-  //for(i=0;i < ntheta_; i++) LogKit::writeLog("    %1.3e  ",modelVariance_[i]);
-  LogKit::writeLog("\nError variance         :");
-  for(i=0;i < ntheta_; i++) LogKit::writeLog("    %1.3e  ",errorVariance_[i]);
-  LogKit::writeLog("\nWavelet scale          :");
-  for(i=0;i < ntheta_; i++) LogKit::writeLog("    %2.3e  ",seisWavelet_[i]->getScale());
-  LogKit::writeLog("\nGiven S/N              :");
-  for(i=0;i < ntheta_; i++) LogKit::writeLog("    %5.3f      ",empSNRatio_[i]);
-  LogKit::writeLog("\nModelled S/N           :");
-  for(i=0;i < ntheta_; i++) LogKit::writeLog("    %5.3f      ",theoSNRatio_[i]);
-  LogKit::writeLog("\n");
+  LogKit::LogFormatted(LogKit::LOW,"                       ");
+  for(i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::LOW,"  Seismic %4.1f ",theta_[i]/PI*180);
+  LogKit::LogFormatted(LogKit::LOW,"\n----------------------");
+  for(i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::LOW,"---------------");
+  LogKit::LogFormatted(LogKit::LOW,"\nObserved data variance :");
+  for(i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::LOW,"    %1.3e  ",dataVariance_[i]);
+  LogKit::LogFormatted(LogKit::LOW,"\nModelled data variance :");
+  for(i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::LOW,"    %1.3e  ",signalVariance_[i]);
+  //LogKit::LogFormatted(LogKit::LOW,"\nModel variance         :");
+  //for(i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::LOW,"    %1.3e  ",modelVariance_[i]);
+  LogKit::LogFormatted(LogKit::LOW,"\nError variance         :");
+  for(i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::LOW,"    %1.3e  ",errorVariance_[i]);
+  LogKit::LogFormatted(LogKit::LOW,"\nWavelet scale          :");
+  for(i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::LOW,"    %2.3e  ",seisWavelet_[i]->getScale());
+  LogKit::LogFormatted(LogKit::LOW,"\nGiven S/N              :");
+  for(i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::LOW,"    %5.3f      ",empSNRatio_[i]);
+  LogKit::LogFormatted(LogKit::LOW,"\nModelled S/N           :");
+  for(i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::LOW,"    %5.3f      ",theoSNRatio_[i]);
+  LogKit::LogFormatted(LogKit::LOW,"\n");
 }
 
 void
 Crava::dumpCorrT(float* corrT,float dt)
 {
-  char * filename= LogKit::makeFullFileName("PriorCorrT",".dat");
+  char * filename= ModelSettings::makeFullFileName("PriorCorrT",".dat");
   int i;
   FILE *file = fopen(filename, "w");
 
@@ -2110,7 +2110,7 @@ void Crava::computeFaciesProb()
 {
   if((outputFlag_ & ModelSettings::FACIESPROB) >0 || (outputFlag_ & ModelSettings::FACIESPROBRELATIVE)>0)
   {
-    LogKit::writeLog("\nStart computing facies probability cubes ...\n");
+    LogKit::LogFormatted(LogKit::LOW,"\nStart computing facies probability cubes ...\n");
     int relative;
     if((outputFlag_ & ModelSettings::FACIESPROBRELATIVE)>0)
       relative = 1;
@@ -2208,7 +2208,7 @@ void Crava::computeFaciesProb()
     char fileName[MAX_STRING];
     char fileName2[MAX_STRING];
     char postfix[20];
-    LogKit::writeLog("\nProbability cubes done\n");
+    LogKit::LogFormatted(LogKit::LOW,"\nProbability cubes done\n");
     if(relative==0)
     {
     for(i=0;i<nfac;i++)

@@ -5,7 +5,7 @@
 #include "nrlib/volume/volume.hpp"
 #include "nrlib/surface/surfaceio.hpp"
 
-#include "lib/log.h"
+#include "nrlib/iotools/logkit.hpp"
 
 #include "src/simbox.h"
 #include "src/model.h"
@@ -131,7 +131,7 @@ Simbox::getIndexes(double x, double y, double z, int & xInd, int & yInd, int & z
         xInd = int(floor(rx/dx_));
         yInd = int(floor(ry/dy_));
         zInd = int(floor(static_cast<double>(nz_)*(z-zTop)/(zBot-zTop)));
-        //LogKit::writeLog("rx,dx,xInd = %.4f %.4f %d   ry,dy,yInd = %.4f %.4f %d    %d\n",rx,dx_,xInd,ry,dy_,yInd,zInd);
+        //LogKit::LogFormatted(LogKit::LOW,"rx,dx,xInd = %.4f %.4f %d   ry,dy,yInd = %.4f %.4f %d    %d\n",rx,dx_,xInd,ry,dy_,yInd,zInd);
       }
     }
   }
@@ -266,18 +266,18 @@ Simbox::insideRectangle(double xr, double yr, double rotr, double lxr, double ly
     allOk = 0;
   if(allOk == 0)
   {
-    LogKit::writeLog("\n             X0         Y0              DeltaX       DeltaY    Angle\n");
-    LogKit::writeLog("---------------------------------------------------------------------\n");
-    LogKit::writeLog("Area:    %11.2f %11.2f   %11.2f %11.2f   %8.3f\n", GetXMin(), GetYMin(), GetLX(), GetLY(), (GetAngle()*180)/PI);
-    LogKit::writeLog("Seismic: %11.2f %11.2f   %11.2f %11.2f   %8.3f\n", xr, yr, lxr, lyr, (rotr*180/PI));
-    LogKit::writeLog("\nCorner     XY Area                    XY Seismic\n");
-    LogKit::writeLog("-----------------------------------------------------------\n");
-    LogKit::writeLog("A %18.2f %11.2f    %11.2f %11.2f\n", GetXMin(),GetYMin(), xr,yr);
-    LogKit::writeLog("B %18.2f %11.2f    %11.2f %11.2f\n", GetXMin()+GetLX()*cosrot_, GetYMin()+GetLX()*sinrot_,
+    LogKit::LogFormatted(LogKit::LOW,"\n             X0         Y0              DeltaX       DeltaY    Angle\n");
+    LogKit::LogFormatted(LogKit::LOW,"---------------------------------------------------------------------\n");
+    LogKit::LogFormatted(LogKit::LOW,"Area:    %11.2f %11.2f   %11.2f %11.2f   %8.3f\n", GetXMin(), GetYMin(), GetLX(), GetLY(), (GetAngle()*180)/PI);
+    LogKit::LogFormatted(LogKit::LOW,"Seismic: %11.2f %11.2f   %11.2f %11.2f   %8.3f\n", xr, yr, lxr, lyr, (rotr*180/PI));
+    LogKit::LogFormatted(LogKit::LOW,"\nCorner     XY Area                    XY Seismic\n");
+    LogKit::LogFormatted(LogKit::LOW,"-----------------------------------------------------------\n");
+    LogKit::LogFormatted(LogKit::LOW,"A %18.2f %11.2f    %11.2f %11.2f\n", GetXMin(),GetYMin(), xr,yr);
+    LogKit::LogFormatted(LogKit::LOW,"B %18.2f %11.2f    %11.2f %11.2f\n", GetXMin()+GetLX()*cosrot_, GetYMin()+GetLX()*sinrot_,
       xr+lxr*cosrotr, yr+lxr*sinrotr);
-    LogKit::writeLog("C %18.2f %11.2f    %11.2f %11.2f\n", GetXMin()-GetLY()*sinrot_, GetYMin()+GetLY()*cosrot_,
+    LogKit::LogFormatted(LogKit::LOW,"C %18.2f %11.2f    %11.2f %11.2f\n", GetXMin()-GetLY()*sinrot_, GetYMin()+GetLY()*cosrot_,
       xr -lyr*sinrotr, yr +lyr*cosrotr);
-    LogKit::writeLog("D %18.2f %11.2f    %11.2f %11.2f\n", 
+    LogKit::LogFormatted(LogKit::LOW,"D %18.2f %11.2f    %11.2f %11.2f\n", 
       GetXMin()+GetLX()*cosrot_-GetLY()*sinrot_, GetYMin()+GetLX()*sinrot_+GetLY()*cosrot_,
       xr +lxr*cosrotr-lyr*sinrotr, yr +lxr*sinrotr+lyr*cosrotr);
   }
@@ -343,7 +343,7 @@ Simbox::writeTopBotGrids(const char * topname, const char * botname)
   dirsep = '\\';
 #endif
 
-  char * tmpName = LogKit::makeFullFileName(topname);
+  char * tmpName = ModelSettings::makeFullFileName(topname);
   std::string tName(tmpName);
   assert(typeid(GetTopSurface()) == typeid(RegularSurface<double>));
   const RegularSurface<double> & wtsurf = 
@@ -364,7 +364,7 @@ Simbox::writeTopBotGrids(const char * topname, const char * botname)
   }
   delete [] tmpName;
 
-  tmpName =LogKit::makeFullFileName(botname);
+  tmpName =ModelSettings::makeFullFileName(botname);
   if(botName_ == "")
     {
       char * tmpBotName = new char[strlen(tmpName)-i+1];

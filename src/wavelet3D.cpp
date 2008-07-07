@@ -12,14 +12,18 @@
 #include "lib/global_def.h"
 #include "lib/lib_misc.h"
 #include "lib/lib_matr.h"
-#include "lib/log.h"
 #include "lib/sgri.h"
 
+#include "nrlib/iotools/logkit.hpp"
+
 #include "src/modelsettings.h"
+#include "src/model.h"
 #include "src/blockedlogs.h"
 #include "src/welldata.h"
 #include "src/fftgrid.h"
 #include "src/simbox.h"
+
+using namespace NRLib2;
 
 Wavelet3D::Wavelet3D(char * fileName, ModelSettings * modelSettings, Simbox *simBox, float theta, int dim)
   :Wavelet(modelSettings, dim)
@@ -48,8 +52,8 @@ Wavelet3D::Wavelet3D(char * fileName, ModelSettings * modelSettings, Simbox *sim
   readtype_ = Wavelet::SGRI;
 	Sgri *sgri = new Sgri(fileName, errText_, errCode_);
   if (errCode_ != 0) {
-    LogKit::writeLog("Error when reading sgri from file %s.\n",fileName);
-    LogKit::writeLog("%s \n", errText_);
+    LogKit::LogFormatted(LogKit::LOW,"Error when reading sgri from file %s.\n",fileName);
+    LogKit::LogFormatted(LogKit::LOW,"%s \n", errText_);
     exit(1);
   }
 
@@ -62,8 +66,8 @@ Wavelet3D::Wavelet3D(char * fileName, ModelSettings * modelSettings, Simbox *sim
     else  
       sprintf(errText_,"%s3-D wavelet read from file %s has too big size compared to padded fft-grid.\n",errText_,fileName); 
     errCode_=1; 
-    LogKit::writeLog("\nToo big wavelet grid read from file  %s.\n",fileName);
-    LogKit::writeLog("%s \n", errText_);
+    LogKit::LogFormatted(LogKit::LOW,"\nToo big wavelet grid read from file  %s.\n",fileName);
+    LogKit::LogFormatted(LogKit::LOW,"%s \n", errText_);
     exit(1);
   }
 
@@ -205,10 +209,10 @@ Wavelet3D::setRAmp(float value, int k, int j, int i)
 void
 Wavelet3D::printToFile(char* fileName, bool overrideDebug) 
 {
-  if(overrideDebug == true || LogKit::getDebugLevel() > 0) {
-    char * fName = LogKit::makeFullFileName(fileName, ".txt");
+  if(overrideDebug == true || ModelSettings::getDebugLevel() > 0) {
+    char * fName = ModelSettings::makeFullFileName(fileName, ".txt");
     FILE *file = fopen(fName,"w");
-    LogKit::writeLog("\nWriting STORM ascii file %s...",fName);
+    LogKit::LogFormatted(LogKit::LOW,"\nWriting STORM ascii file %s...",fName);
     int i,j,k;
     for(k=0;k<nzp_;k++)
       for(j=0;j<nyp_;j++) {

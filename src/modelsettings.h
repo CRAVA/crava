@@ -59,6 +59,7 @@ public:
   int            getOutputFlag(void)           const { return outputFlag_       ;}
   int            getFormatFlag(void)           const { return formatFlag_       ;}
   int            getDebugFlag(void)            const { return debugFlag_        ;}
+  static int     getDebugLevel(void)                 { return debugFlag_        ;}
   int            getFileGrid(void)             const { return fileGrid_         ;}
   bool           getGenerateSeismic(void)      const { return generateSeismic_  ;}
   bool           getDoInversion(void);       
@@ -128,6 +129,9 @@ public:
                              FACIESPROBRELATIVE = 1048576};
   enum             sseismicTypes{STANDARDSEIS = 0, PSSEIS = 1};
 
+  static void     setFilePrefix(char * filePrefix);
+  static char   * makeFullFileName(const char * name, const char * postfix = NULL);
+
 private:
 
   Vario        * angularCorr_;           // Variogram for lateral error correlation
@@ -193,10 +197,12 @@ private:
 
   int            outputFlag_;            // Decides which grids to write (except simulation)
   int            formatFlag_;            // Decides output format, see fftgird.h
-  int            debugFlag_;
   int            fileGrid_;              // Indicator telling if grids are to be kept on file
 
   bool           generateSeismic_;        // Forward modelling
+
+  static int          debugFlag_;
+  static std::string  filePrefix_;            // Prefix (including path) for all output files
 };
 
 #endif

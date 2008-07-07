@@ -2,7 +2,7 @@
 #include <string.h>
 
 #include "lib/global_def.h"
-#include "lib/log.h"
+#include "nrlib/iotools/logkit.hpp"
 
 #include "src/modelsettings.h"
 #include "src/vario.h"
@@ -195,3 +195,29 @@ ModelSettings::setOutputFlag(int outputFlag)
     else
       outputFlag_ = outputFlag;
 }
+
+void
+ModelSettings::setFilePrefix(char * filePrefix)               
+{
+  filePrefix_ = std::string(filePrefix);
+}
+
+char *
+ModelSettings::makeFullFileName(const char * name, const char * postfix)
+{
+  char * result;
+  if(postfix != NULL)
+  {
+    result = new char[strlen(name)+strlen(filePrefix_.c_str())+strlen(postfix)+1];
+    sprintf(result,"%s%s%s",filePrefix_.c_str(), name, postfix);
+  }
+  else
+  {
+    result = new char[strlen(name)+strlen(filePrefix_.c_str())+1];
+    sprintf(result,"%s%s",filePrefix_.c_str(), name);
+  }
+  return(result);
+}
+
+std::string ModelSettings::filePrefix_ = "CRAVA_";
+int         ModelSettings::debugFlag_  = 0;

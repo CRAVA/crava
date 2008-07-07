@@ -12,14 +12,18 @@
 #include "lib/global_def.h"
 #include "lib/lib_misc.h"
 #include "lib/lib_matr.h"
-#include "lib/log.h"
 #include "lib/sgri.h"
 
+#include "nrlib/iotools/logkit.hpp"
+
 #include "src/modelsettings.h"
+#include "src/model.h"
 #include "src/blockedlogs.h"
 #include "src/welldata.h"
 #include "src/fftgrid.h"
 #include "src/simbox.h"
+
+using namespace NRLib2;
 
 Wavelet1D::Wavelet1D(Simbox         * simbox,
                      FFTGrid        * seisCube,
@@ -29,7 +33,7 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
                      int              dim)
   : Wavelet (dim)
 {
-  LogKit::writeLog("\n  Estimating 1D wavelet from seismic data and (nonfiltered) blocked wells\n");
+  LogKit::LogFormatted(LogKit::LOW,"\n  Estimating 1D wavelet from seismic data and (nonfiltered) blocked wells\n");
   readtype_ = ESTIMATE;
   // initialization
 
@@ -204,9 +208,9 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
   shiftAndScale(shiftAvg,scaleOpt);//shifts wavelet average from wells
   invFFT1DInPlace();
   waveletLength_ = getWaveletLengthF();
-  LogKit::writeLog("  Estimated wavelet length:  %.1fms\n",waveletLength_);
+  LogKit::LogFormatted(LogKit::LOW,"  Estimated wavelet length:  %.1fms\n",waveletLength_);
 
-  if( LogKit::getDebugLevel() > 0 )
+  if( ModelSettings::getDebugLevel() > 0 )
   {
     //flipUpDown();
     sprintf(fileName,"estimated_wavelet");
@@ -221,7 +225,7 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
   //char* fileName=new char[MAX_STRING];
 
 
-  if(LogKit::getDebugLevel() > 1) {
+  if(ModelSettings::getDebugLevel() > 1) {
     sprintf(fileName,"estimated_wavelet_full_%d.txt",int(ceil((theta_*180/PI)-0.5)) );
     FILE* fid = fopen(fileName,"w");
     for(i=0;i<nzp_;i++)
@@ -533,7 +537,7 @@ Wavelet1D::WaveletReadJason(char * fileName)
   }
   fclose(file);
   waveletLength_ = getWaveletLengthF();
-  LogKit::writeLog("\n  Estimated wavelet length:  %.1fms.",waveletLength_);
+  LogKit::LogFormatted(LogKit::LOW,"\n  Estimated wavelet length:  %.1fms.",waveletLength_);
   delete [] dummyStr;
 }
 
@@ -642,8 +646,8 @@ Wavelet1D::WaveletReadOld(char * fileName)
       //
       // NBNB-PAL: Temporary? hack since the errorCode is never returned from constructor
       //
-      LogKit::writeLog("\nError when reading wavelet shift from file  %s.",fileName);
-      LogKit::writeLog("\n    --> No SHIFT and even number of data.\n");
+      LogKit::LogFormatted(LogKit::LOW,"\nError when reading wavelet shift from file  %s.",fileName);
+      LogKit::LogFormatted(LogKit::LOW,"\n    --> No SHIFT and even number of data.\n");
       exit(1);
     }
     //cz_ = shift;   // case no flip
@@ -689,13 +693,13 @@ Wavelet1D::WaveletReadOld(char * fileName)
   }
 
   fftw_free(tempWave);
-  // LogKit::writeLog("\nReading wavelet file %s  ... done.\n",fileName);
+  // LogKit::LogFormatted(LogKit::LOW,"\nReading wavelet file %s  ... done.\n",fileName);
 
   //
   // Estimate wavelet length
   //
   waveletLength_ = getWaveletLengthF();
-  LogKit::writeLog("\n  Estimated wavelet length:  %.1fms.\n",waveletLength_);
+  LogKit::LogFormatted(LogKit::LOW,"\n  Estimated wavelet length:  %.1fms.\n",waveletLength_);
 }
 
 void
@@ -703,7 +707,7 @@ Wavelet1D::resample(float dz, int nz, float pz, float theta)
 {
   theta_=theta;
   if(errCode_==0){
-    //LogKit::writeLog("  Resampling wavelet\n");
+    //LogKit::LogFormatted(LogKit::LOW,"  Resampling wavelet\n");
     assert(isReal_);
     assert(!inFFTorder_);
     int nzp,cnzp,rnzp,k;
@@ -753,7 +757,7 @@ Wavelet1D::resample(float dz, int nz, float pz, float theta)
   }
   if(readtype_ == OLD) //FRODE
      flipUpDown();
-  if( LogKit::getDebugLevel() > 0 )
+  if( ModelSettings::getDebugLevel() > 0 )
   {
     //flipUpDown();// ODD temporary debugfix
     char* fileName = new char[MAX_STRING];
@@ -1071,8 +1075,8 @@ void Wavelet1D::invFFT1DInPlace()
 void
 Wavelet1D::printToFile(char* fileName, bool overrideDebug)
 {
-  if(overrideDebug == true || LogKit::getDebugLevel() > 0) {
-      char * fName = LogKit::makeFullFileName(fileName, ".dat");
+  if(overrideDebug == true || ModelSettings::getDebugLevel() > 0) {
+      char * fName = ModelSettings::makeFullFileName(fileName, ".dat");
       FILE *file = fopen(fName,"wb");
       int i;
       for(i=0;i<nzp_;i++)
@@ -1089,8 +1093,8 @@ Wavelet1D::writeWaveletToFile(char* fileName,float approxDzIn, Simbox *)
 //   flipUpDown(); //FRODE
    sprintf(fileName,"%s_%.1f_deg",fileName,theta_*180.0/PI);
   
-   char * fName = LogKit::makeFullFileName(fileName, ".asc");
-   LogKit::writeLog("  Writing Wavelet to file : \'%s\'\n", fName);
+   char * fName = ModelSettings::makeFullFileName(fileName, ".asc");
+   LogKit::LogFormatted(LogKit::LOW,"  Writing Wavelet to file : \'%s\'\n", fName);
    int i;
    float approxDz;
 

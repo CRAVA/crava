@@ -8,18 +8,20 @@
 #include "lib/segy.h"
 #include "lib/lib_misc.h"
 #include "lib/random.h"
+
 #include "fft/include/fftw.h"
 #include "fft/include/rfftw.h"
 #include "fft/include/fftw-int.h"
 #include "fft/include/f77_func.h"
-#include "lib/log.h"
+
+#include "nrlib/iotools/logkit.hpp"
 
 #include "fftgrid.h"
 #include "corr.h"
 #include "simbox.h"
 #include "model.h"
 
-#include <time.h>
+using namespace NRLib2;
 
 FFTGrid::FFTGrid(int nx, int ny, int nz, int nxp, int nyp, int nzp)
 {
@@ -125,7 +127,7 @@ FFTGrid::fillInFromSegY(SegY* segy)
       }
   } // endif
 
-  LogKit::writeLog("\nResampling seismic data into %dx%dx%d grid:\n",nxp_,nyp_,nzp_);
+  LogKit::LogFormatted(LogKit::LOW,"\nResampling seismic data into %dx%dx%d grid:\n",nxp_,nyp_,nzp_);
   setAccessMode(WRITE);
 
   int monitorSize = MAXIM(1,int(nyp_*nzp_*0.02));
@@ -167,7 +169,7 @@ FFTGrid::fillInFromSegY(SegY* segy)
       }
     }
   }
-  LogKit::writeLog("\n");
+  LogKit::LogFormatted(LogKit::LOW,"\n");
   endAccess();
   if(isParameter) fftw_free(meanvalue);
 }
@@ -213,7 +215,7 @@ FFTGrid::fillInFromStorm(Simbox * tmpSimBox, Simbox * actSimBox,
       meanvalue[i+j*nxp_] = val;
     }
 
-  LogKit::writeLog("Resampling %s into %dx%dx%d grid:\n",parName,nxp_,nyp_,nzp_);
+  LogKit::LogFormatted(LogKit::LOW,"Resampling %s into %dx%dx%d grid:\n",parName,nxp_,nyp_,nzp_);
   setAccessMode(WRITE);
   
   int monitorSize = MAXIM(1,int(nyp_*nzp_*0.02));
@@ -262,7 +264,7 @@ FFTGrid::fillInFromStorm(Simbox * tmpSimBox, Simbox * actSimBox,
       }
     }
   }
-  LogKit::writeLog("\n");
+  LogKit::LogFormatted(LogKit::LOW,"\n");
   endAccess();
   fftw_free(meanvalue);
 }
@@ -561,7 +563,7 @@ FFTGrid::createRealGrid()
   counterForGet_  = 0; 
   counterForSet_  = 0;
   //  time(&timeend);
-  //  LogKit::writeLog("\nReal grid created in %ld seconds.\n",timeend-timestart);
+  //  LogKit::LogFormatted(LogKit::LOW,"\nReal grid created in %ld seconds.\n",timeend-timestart);
 }
 
 void
@@ -575,7 +577,7 @@ FFTGrid::createComplexGrid()
   counterForGet_  = 0; 
   counterForSet_  = 0;
   //  time(&timeend);
-  //  LogKit::writeLog("\nComplex grid created in %ld seconds.\n",timeend-timestart);
+  //  LogKit::LogFormatted(LogKit::LOW,"\nComplex grid created in %ld seconds.\n",timeend-timestart);
 }
 
 int 
@@ -984,7 +986,7 @@ FFTGrid::fftInPlace()
   fftwnd_destroy_plan(plan);
   istransformed_=true;
   time(&timeend);
-  LogKit::writeDebugLog("\nFFT of grid type %d finished after %ld seconds \n",cubetype_, timeend-timestart);  
+  LogKit::LogFormatted(LogKit::DEBUGLOW,"\nFFT of grid type %d finished after %ld seconds \n",cubetype_, timeend-timestart);  
 }
 
 void
@@ -1016,7 +1018,7 @@ FFTGrid::invFFTInPlace()
   istransformed_=false; 
   FFTGrid::multiplyByScalar( scale);
   time(&timeend);
-  LogKit::writeDebugLog("\nInverse FFT of grid type %d finished after %ld seconds \n",cubetype_, timeend-timestart);  
+  LogKit::LogFormatted(LogKit::DEBUGLOW,"\nInverse FFT of grid type %d finished after %ld seconds \n",cubetype_, timeend-timestart);  
 }
 
 void
@@ -1193,8 +1195,8 @@ FFTGrid::makeCircCorrTPosDef(fftw_real* CircCorrT,int minIntFq)
     scale = float( 1.0/CircCorrT[0] );
   else
   {
-    LogKit::writeLog("\nERROR: The circular temporal correlation (CircCorrT) is undefined. You\n");
-    LogKit::writeLog("       probably need to increase the number of layers...\n\nAborting\n");
+    LogKit::LogFormatted(LogKit::LOW,"\nERROR: The circular temporal correlation (CircCorrT) is undefined. You\n");
+    LogKit::LogFormatted(LogKit::LOW,"       probably need to increase the number of layers...\n\nAborting\n");
     exit(1);
   }    
   for(k = 0; k < nzp_; k++)
@@ -1293,9 +1295,9 @@ FFTGrid::writeStormFile(const char * fileName, const Simbox * simbox, bool ascii
   float value;
 
   if(ascii == false) {
-    gfName = LogKit::makeFullFileName(fileName, ".storm");
+    gfName = ModelSettings::makeFullFileName(fileName, ".storm");
     file = fopen(gfName,"wb");
-    LogKit::writeLog("\nWriting STORM binary file %s...",gfName);
+    LogKit::LogFormatted(LogKit::LOW,"\nWriting STORM binary file %s...",gfName);
     fwrite(header, 1, strlen(header), file);
     char * output = (char * ) &value;
     for(k=0;k<nz;k++)
@@ -1317,9 +1319,9 @@ FFTGrid::writeStormFile(const char * fileName, const Simbox * simbox, bool ascii
     fwrite(output, 2, 1, file);
   }
   else {
-    gfName = LogKit::makeFullFileName(fileName, ".txt");
+    gfName = ModelSettings::makeFullFileName(fileName, ".txt");
     file = fopen(gfName,"w");
-    LogKit::writeLog("\nWriting STORM ascii file %s...",gfName);
+    LogKit::LogFormatted(LogKit::LOW,"\nWriting STORM ascii file %s...",gfName);
     fprintf(file,"%s",header);
     for(k=0;k<nz;k++)
       for(j=0;j<ny;j++) {
@@ -1334,7 +1336,7 @@ FFTGrid::writeStormFile(const char * fileName, const Simbox * simbox, bool ascii
   delete [] gfName;
 
   fclose(file);
-  LogKit::writeLog("done\n");
+  LogKit::LogFormatted(LogKit::LOW,"done\n");
   //  time(&timeend);
   //printf("\n Write Storm was performed in %ld seconds.\n",timeend-timestart);
   delete [] header;
@@ -1347,15 +1349,15 @@ FFTGrid::writeSegyFile(const char * fileName, const Simbox * simbox)
   //  long int timestart, timeend;
   //  time(&timestart);
 
-  char * gfName = LogKit::makeFullFileName(fileName, ".segy");
+  char * gfName = ModelSettings::makeFullFileName(fileName, ".segy");
   SegY * segy = new SegY(gfName, simbox);
-  LogKit::writeLog("\nWriting SEGY file %s...",gfName);
-  //  LogKit::writeLog("%d x %d traces.\n",nx_, ny_);
+  LogKit::LogFormatted(LogKit::LOW,"\nWriting SEGY file %s...",gfName);
+  //  LogKit::LogFormatted(LogKit::LOW,"%d x %d traces.\n",nx_, ny_);
   delete [] gfName;
   char errMsg[MAX_STRING];
   if(segy->checkError(errMsg) > 0)
   {
-    LogKit::writeLog("failed\n");
+    LogKit::LogFormatted(LogKit::LOW,"failed\n");
     return(1);
   }
   int i, j, jStart, jEnd, dj;
@@ -1380,7 +1382,7 @@ FFTGrid::writeSegyFile(const char * fileName, const Simbox * simbox)
 
 
       /* Old code, assumes dz equal everywhere
-      //      LogKit::writeLog("*** Trace %d %d of %d %d\n",i, j, nx_, ny_); 
+      //      LogKit::LogFormatted(LogKit::LOW,"*** Trace %d %d of %d %d\n",i, j, nx_, ny_); 
       for(k=0;k<nz_;k++)
       value[k] = getRealValue(i,j,k);
       segy->writeTrace(i, j, value);
@@ -1388,7 +1390,7 @@ FFTGrid::writeSegyFile(const char * fileName, const Simbox * simbox)
     }
     delete segy; //Closes file.
     delete [] value;
-    LogKit::writeLog("done\n");
+    LogKit::LogFormatted(LogKit::LOW,"done\n");
     //  time(&timeend);
     //printf("\n Write SEGY was performed in %ld seconds.\n",timeend-timestart);
     return(0);
@@ -1397,9 +1399,9 @@ FFTGrid::writeSegyFile(const char * fileName, const Simbox * simbox)
 void
 FFTGrid::writeAsciiFile(char * fileName)
 {
-  char * gfName = LogKit::makeFullFileName(fileName, ".ascii");
+  char * gfName = ModelSettings::makeFullFileName(fileName, ".ascii");
   FILE *file = fopen(gfName,"wb");
-  LogKit::writeLog("\nWriting ASCII file %s...",gfName);
+  LogKit::LogFormatted(LogKit::LOW,"\nWriting ASCII file %s...",gfName);
   delete [] gfName;
   int i, j, k;
   float value;
@@ -1411,15 +1413,15 @@ FFTGrid::writeAsciiFile(char * fileName)
         fprintf(file,"%f\n",value);
       }
       fclose(file);
-      LogKit::writeLog("done.\n");
+      LogKit::LogFormatted(LogKit::LOW,"done.\n");
 }
 
 void
 FFTGrid::writeAsciiRaw(char * fileName)
 {
-  char * gfName = LogKit::makeFullFileName(fileName, ".ascii");
+  char * gfName = ModelSettings::makeFullFileName(fileName, ".ascii");
   FILE *file = fopen(gfName,"wb");
-  LogKit::writeLog("\nWriting ASCII file %s...",fileName);
+  LogKit::LogFormatted(LogKit::LOW,"\nWriting ASCII file %s...",fileName);
   int i, j, k;
   float value;
   for(k=0;k<nzp_;k++)
@@ -1430,7 +1432,7 @@ FFTGrid::writeAsciiRaw(char * fileName)
         fprintf(file,"%d %d %d %f\n",i, j, k, value);
       }
       fclose(file);
-      LogKit::writeLog("done.\n");
+      LogKit::LogFormatted(LogKit::LOW,"done.\n");
 }
 
 
@@ -1491,7 +1493,7 @@ FFTGrid::interpolateSeismic(float energyTreshold)
         index++;
       }
 
-      LogKit::writeLog("Interpolated %d of %d traces (%d with zero response).\n\n",
+      LogKit::LogFormatted(LogKit::LOW,"Interpolated %d of %d traces (%d with zero response).\n\n",
         nInter, nx_*ny_, nInter0);
       int curIndex = 0;
       for(j=0;j<ny_;j++)

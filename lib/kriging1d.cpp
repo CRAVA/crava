@@ -1,10 +1,13 @@
+#include <math.h>
 
 #include "lib/kriging1d.h"
 #include "lib/global_def.h"
 #include "lib/lib_matr.h"
 #include "lib/utils.h"
-#include "lib/log.h"
-#include <math.h>
+
+#include "nrlib/iotools/logkit.hpp"
+
+using namespace NRLib2;
 
 //-----------------------------------------------------------------------
 void
@@ -53,7 +56,7 @@ Kriging1D::krigVector(float * data,
     bool debug = false;
     if (debug) {
       for (int i = 0 ; i < nd ; i++) {
-        LogKit::writeLog(" i krigedData[i] : %3d  %.5f\n",i,data[i]);
+        LogKit::LogFormatted(LogKit::LOW," i krigedData[i] : %3d  %.5f\n",i,data[i]);
       }
     }
   }
@@ -75,16 +78,16 @@ Kriging1D::locateValidData(float * data,
     }
   }
   if (count == 0) {
-    LogKit::writeLog("\nWARNING in Kriging1D::locateDataIndices() : ");
-    LogKit::writeLog("Only missing values found in data vector.\n");
+    LogKit::LogFormatted(LogKit::LOW,"\nWARNING in Kriging1D::locateDataIndices() : ");
+    LogKit::LogFormatted(LogKit::LOW,"Only missing values found in data vector.\n");
   }
   md = count;
 
   bool debug = false;
   if (debug) {
-    LogKit::writeLog("\nData vector after trend subtraction:\n");
+    LogKit::LogFormatted(LogKit::LOW,"\nData vector after trend subtraction:\n");
     for (int i = 0 ; i < md ; i++) {
-      LogKit::writeLog(" i index[i]  data : %3d %3d  %.5f\n",i,index[i],data[index[i]]);
+      LogKit::LogFormatted(LogKit::LOW," i index[i]  data : %3d %3d  %.5f\n",i,index[i],data[index[i]]);
     }
   }
 }
@@ -101,9 +104,9 @@ Kriging1D::subtractTrend(float * data,
   }
   bool debug = false;
   if (debug) {
-    LogKit::writeLog("\nData vector after trend subtraction:\n");
+    LogKit::LogFormatted(LogKit::LOW,"\nData vector after trend subtraction:\n");
     for (int i = 0 ; i < md ; i++) {
-      LogKit::writeLog(" i index[i]  data : %3d %3d  %.5f\n",i,index[i],data[index[i]]);
+      LogKit::LogFormatted(LogKit::LOW," i index[i]  data : %3d %3d  %.5f\n",i,index[i],data[index[i]]);
     }
   }
 }
@@ -190,7 +193,7 @@ Kriging1D::cholesky(double ** K,
       K[i][i] *= choleskyRepairFactor;
     count++;
     if (count > 5)
-      LogKit::writeLog("\nERROR in Kriging1D::Cholesky(): Could not find cholesky factor\n");
+      LogKit::LogFormatted(LogKit::LOW,"\nERROR in Kriging1D::Cholesky(): Could not find cholesky factor\n");
   }
 }
 

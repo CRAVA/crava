@@ -1,19 +1,20 @@
-
-#include "lib/utils.h"
-#include "lib/log.h"
 #include <iostream>
 
-//#include <math.h>
+#include "lib/utils.h"
+
+#include "nrlib/iotools/logkit.hpp"
+
+using namespace NRLib2;
 
 //------------------------------------------------------------
 void    
 Utils::writeTitler(const char * text)
 {
   const int length = static_cast<int>(strlen(text));
-  LogKit::writeLog("\n%s\n",text);
+  LogKit::LogFormatted(LogKit::LOW,"\n%s\n",text);
   for (int i = 0 ; i < length ; i++)
-    LogKit::writeLog("-");
-  LogKit::writeLog("\n");
+    LogKit::LogFormatted(LogKit::LOW,"-");
+  LogKit::LogFormatted(LogKit::LOW,"\n");
 }  
 
 //------------------------------------------------------------
@@ -44,9 +45,9 @@ Utils::writeVector(float * vector,
                    int     ndim)
 {
   for (int i = 0 ; i < ndim ; i++) {
-    LogKit::writeLog("%10.6f ",vector[i]);
+    LogKit::LogFormatted(LogKit::LOW,"%10.6f ",vector[i]);
   }
-  LogKit::writeLog("\n");
+  LogKit::LogFormatted(LogKit::LOW,"\n");
 }
 
 //------------------------------------------------------------
@@ -55,9 +56,9 @@ Utils::writeVector(double * vector,
                    int      ndim)
 {
   for (int i = 0 ; i < ndim ; i++) {
-    LogKit::writeLog("%10.6f ",vector[i]);
+    LogKit::LogFormatted(LogKit::LOW,"%10.6f ",vector[i]);
   }
-  LogKit::writeLog("\n");
+  LogKit::LogFormatted(LogKit::LOW,"\n");
 }
 
 //------------------------------------------------------------
@@ -68,9 +69,9 @@ Utils::writeMatrix(float ** matrix,
 {
   for (int i = 0 ; i < ndim1 ; i++) {
     for (int j = 0 ; j < ndim2 ; j++) {
-      LogKit::writeLog("%10.6f ",matrix[i][j]);
+      LogKit::LogFormatted(LogKit::LOW,"%10.6f ",matrix[i][j]);
     }
-    LogKit::writeLog("\n");
+    LogKit::LogFormatted(LogKit::LOW,"\n");
   }
 }
 
@@ -82,9 +83,9 @@ Utils::writeMatrix(double ** matrix,
 {
   for (int i = 0 ; i < ndim1 ; i++) {
     for (int j = 0 ; j < ndim2 ; j++) {
-      LogKit::writeLog("%10.6f ",matrix[i][j]);
+      LogKit::LogFormatted(LogKit::LOW,"%10.6f ",matrix[i][j]);
     }
-    LogKit::writeLog("\n");
+    LogKit::LogFormatted(LogKit::LOW,"\n");
   }
 }
 

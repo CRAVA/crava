@@ -3386,26 +3386,6 @@
 					</FileConfiguration>
 				</File>
 				<File
-					RelativePath="lib\log.cpp"
-					>
-					<FileConfiguration
-						Name="Debug|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							PreprocessorDefinitions=""
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Release|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							PreprocessorDefinitions=""
-						/>
-					</FileConfiguration>
-				</File>
-				<File
 					RelativePath="lib\random.cpp"
 					>
 					<FileConfiguration
@@ -3474,6 +3454,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\lib\timekit.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\lib\utils.cpp"
 					>
 				</File>
@@ -3502,6 +3486,10 @@
 							XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
 						/>
 					</FileConfiguration>
+				</File>
+				<File
+					RelativePath=".\nrlib\iotools\logkit.cpp"
+					>
 				</File>
 				<File
 					RelativePath=".\nrlib\iotools\stringtools.cpp"
@@ -3661,10 +3649,6 @@
 					>
 				</File>
 				<File
-					RelativePath="lib\log.h"
-					>
-				</File>
-				<File
 					RelativePath="lib\random.h"
 					>
 				</File>
@@ -3685,6 +3669,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\lib\timekit.hpp"
+					>
+				</File>
+				<File
 					RelativePath=".\lib\utils.h"
 					>
 				</File>
@@ -3702,6 +3690,10 @@
 				</File>
 				<File
 					RelativePath=".\nrlib\grid\grid2d.hpp"
+					>
+				</File>
+				<File
+					RelativePath=".\nrlib\iotools\logkit.hpp"
 					>
 				</File>
 				<File

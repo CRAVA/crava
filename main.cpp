@@ -5,8 +5,10 @@
 
 #include "lib/systemcall.h"
 #include "lib/global_def.h"
-#include "lib/log.h"
 #include "lib/segy.h"
+#include "lib/timekit.hpp"
+
+#include "nrlib/iotools/logkit.hpp"
 
 #include "src/model.h"
 #include "src/wavelet.h"
@@ -14,21 +16,24 @@
 #include "src/fftgrid.h"
 #include "src/simbox.h"
 
+using namespace NRLib2;
+
 int main(int argc, char** argv)
 {  
   if (argc != 2) {
     printf("Usage: %s modelfile\n",argv[0]);
     exit(1);
   }
-  LogKit::initialize(true);
+  LogKit::SetScreenLog(LogKit::L_LOW);
+  LogKit::StartBuffering();
 
   double wall=0.0, cpu=0.0;
-  LogKit::getTime(wall,cpu);
-  LogKit::writeLog("\n***********************************************************************");
-  LogKit::writeLog("\n***                                                                 ***"); 
-  LogKit::writeLog("\n***                        C  R  A  V  A                            ***"); 
-  LogKit::writeLog("\n***                                                                 ***"); 
-  LogKit::writeLog("\n***********************************************************************\n\n");
+  TimeKit::getTime(wall,cpu);
+  LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************");
+  LogKit::LogFormatted(LogKit::LOW,"\n***                                                                 ***"); 
+  LogKit::LogFormatted(LogKit::LOW,"\n***                        C  R  A  V  A                            ***"); 
+  LogKit::LogFormatted(LogKit::LOW,"\n***                                                                 ***"); 
+  LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************\n\n");
 
   char segyMode[50];
   char bypassCoordScaling[50];
@@ -51,12 +56,12 @@ int main(int argc, char** argv)
   const char * userName    = SystemCall::getUserName();
   const char * dateAndTime = SystemCall::getCurrentTime();
   const char * hostName    = SystemCall::getHostName();
-  LogKit::writeLog("Compile-time directives used in this version:\n");
-  LogKit::writeLog("  SegY mode: %s\n",segyMode);
-  LogKit::writeLog("  Bypass coordinate scaling: %s\n\n",bypassCoordScaling);
-  LogKit::writeLog("Log written by                             : %s\n",userName);
-  LogKit::writeLog("Date and time                              : %s"  ,dateAndTime);
-  LogKit::writeLog("Host                                       : %s\n",hostName);
+  LogKit::LogFormatted(LogKit::LOW,"Compile-time directives used in this version:\n");
+  LogKit::LogFormatted(LogKit::LOW,"  SegY mode: %s\n",segyMode);
+  LogKit::LogFormatted(LogKit::LOW,"  Bypass coordinate scaling: %s\n\n",bypassCoordScaling);
+  LogKit::LogFormatted(LogKit::LOW,"Log written by                             : %s\n",userName);
+  LogKit::LogFormatted(LogKit::LOW,"Date and time                              : %s"  ,dateAndTime);
+  LogKit::LogFormatted(LogKit::LOW,"Host                                       : %s\n",hostName);
   delete [] userName;
   delete [] dateAndTime;
   delete [] hostName;
@@ -65,7 +70,7 @@ int main(int argc, char** argv)
   Model * model = new Model(argv[1]);
   if(model->getFailed())
   {
-    LogKit::writeLog("\nErrors detected in model file processing.\nAborting.\n");
+    LogKit::LogFormatted(LogKit::LOW,"\nErrors detected in model file processing.\nAborting.\n");
     return(1);
   }
 
@@ -78,9 +83,9 @@ int main(int argc, char** argv)
       time_t timestart, timeend;
       time(&timestart);
       
-      LogKit::writeLog("\n***********************************************************************");
-      LogKit::writeLog("\n***                    Building Stochastic Model                     ***"); 
-      LogKit::writeLog("\n***********************************************************************\n\n");
+      LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************");
+      LogKit::LogFormatted(LogKit::LOW,"\n***                    Building Stochastic Model                     ***"); 
+      LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************\n\n");
 
       crava = new Crava(model);
       
@@ -88,35 +93,35 @@ int main(int argc, char** argv)
       
       if(crava->getWarning( warningText ) != 0)
        {
-         LogKit::writeLog("\nWarning  !!!\n");
-         LogKit::writeLog("%s",warningText);
-         LogKit::writeLog("\n");
+         LogKit::LogFormatted(LogKit::LOW,"\nWarning  !!!\n");
+         LogKit::LogFormatted(LogKit::LOW,"%s",warningText);
+         LogKit::LogFormatted(LogKit::LOW,"\n");
        }
       crava->printEnergyToScreen();
       
       time(&timeend);
-      LogKit::writeDebugLog("\nTime elapsed :  %d\n",timeend-timestart);  
-      LogKit::writeLog("\n***********************************************************************");
-      LogKit::writeLog("\n***             Posterior model / Performing Inversion              ***"); 
-      LogKit::writeLog("\n***********************************************************************\n\n");
+      LogKit::LogFormatted(LogKit::DEBUGLOW,"\nTime elapsed :  %d\n",timeend-timestart);  
+      LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************");
+      LogKit::LogFormatted(LogKit::LOW,"\n***             Posterior model / Performing Inversion              ***"); 
+      LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************\n\n");
       crava->computePostMeanResidAndFFTCov();
       time(&timeend);
-      LogKit::writeDebugLog("\nTime elapsed :  %d\n",timeend-timestart);  
+      LogKit::LogFormatted(LogKit::DEBUGLOW,"\nTime elapsed :  %d\n",timeend-timestart);  
       
       if(model->getModelSettings()->getNumberOfSimulations() > 0)
       {
-        LogKit::writeLog("\n***********************************************************************");
-        LogKit::writeLog("\n***                Simulating from posterior model                  ***"); 
-        LogKit::writeLog("\n***********************************************************************\n\n");
+        LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************");
+        LogKit::LogFormatted(LogKit::LOW,"\n***                Simulating from posterior model                  ***"); 
+        LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************\n\n");
         crava->simulate(model->getRandomGen());
       }
       
       // Posterior covariance
       if((model->getModelSettings()->getOutputFlag() & ModelSettings::CORRELATION) > 0)
       {
-        LogKit::writeLog("\nPost process ...\n"); 
+        LogKit::LogFormatted(LogKit::LOW,"\nPost process ...\n"); 
         crava->computePostCov();
-        LogKit::writeLog("\n             ... post prosess ended\n");
+        LogKit::LogFormatted(LogKit::LOW,"\n             ... post prosess ended\n");
         
       }
       crava->computeFaciesProb();
@@ -126,25 +131,25 @@ int main(int argc, char** argv)
   }
   else
   {
-    LogKit::writeLog("\nBuilding model ...\n");
+    LogKit::LogFormatted(LogKit::LOW,"\nBuilding model ...\n");
     crava = new Crava(model);
-    LogKit::writeLog("\n               ... model built\n");
+    LogKit::LogFormatted(LogKit::LOW,"\n               ... model built\n");
 
     // Computing synthetic seismic
-    LogKit::writeLog("\nComputing synthetic seismic ..."); 
+    LogKit::LogFormatted(LogKit::LOW,"\nComputing synthetic seismic ..."); 
     crava->computeSyntSeismic(crava->getpostAlpha(),crava->getpostBeta(),crava->getpostRho());
-    LogKit::writeLog("                              ... synthetic seismic computed.\n");
+    LogKit::LogFormatted(LogKit::LOW,"                              ... synthetic seismic computed.\n");
 	
     delete crava;
   } 
   delete model;
 
-  LogKit::writeLog("\n*** CRAVA closing  ***\n"); 
-  LogKit::getTime(wall,cpu);
-  LogKit::writeLog("\nTotal CPU  time used in CRAVA: %6d seconds", static_cast<int>(cpu));
-  LogKit::writeLog("\nTotal Wall time used in CRAVA: %6d seconds\n", static_cast<int>(wall));
-  LogKit::writeLog("\n*** CRAVA finished ***\n");
+  LogKit::LogFormatted(LogKit::LOW,"\n*** CRAVA closing  ***\n"); 
+  TimeKit::getTime(wall,cpu);
+  LogKit::LogFormatted(LogKit::LOW,"\nTotal CPU  time used in CRAVA: %6d seconds", static_cast<int>(cpu));
+  LogKit::LogFormatted(LogKit::LOW,"\nTotal Wall time used in CRAVA: %6d seconds\n", static_cast<int>(wall));
+  LogKit::LogFormatted(LogKit::LOW,"\n*** CRAVA finished ***\n");
 
-  LogKit::terminate();
+  LogKit::EndLog();
   return(0);
 }

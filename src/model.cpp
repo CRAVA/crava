@@ -26,7 +26,7 @@
 #include "lib/lib_misc.h"
 #include "lib/global_def.h"
 #include "lib/segy.h"
-#include "lib/log.h"
+#include "nrlib/iotools/logkit.hpp"
 
 using namespace NRLib2;
 
@@ -59,13 +59,17 @@ Model::Model(char * fileName)
 
     hasSignalToNoiseRatio_ = modelFile_->getHasSignalToNoiseRatio();     // NBNB-PAL: ==> UT
 
+    char * logFileName = ModelSettings::makeFullFileName("logFile.txt");
+      LogKit::SetFileLog(logFileName,LogKit::L_LOW);
+    delete [] logFileName;
     if(modelSettings_->getDebugFlag() > 0)
     {
-      char * fName = LogKit::makeFullFileName("debug",".txt");
-      LogKit::setDebug(modelSettings_->getDebugFlag(), fName);
+      char * fName = ModelSettings::makeFullFileName("debug",".txt");
+      LogKit::SetFileLog(std::string(fName), LogKit::DEBUGHIGH+LogKit::DEBUGLOW);
       delete [] fName;
     }
-
+    LogKit::EndBuffering();
+    
     if(modelFile_->getSeedFile()==NULL)
       randomGen_ = new RandomGen(modelFile_->getSeed());
     else
@@ -76,9 +80,9 @@ Model::Model(char * fileName)
     
     printSettings();
     
-    LogKit::writeLog("\n***********************************************************************");
-    LogKit::writeLog("\n***                       Reading input data                        ***"); 
-    LogKit::writeLog("\n***********************************************************************\n");
+    LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************");
+    LogKit::LogFormatted(LogKit::LOW,"\n***                       Reading input data                        ***"); 
+    LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************\n");
 
     char errText[MAX_STRING];
 
@@ -190,7 +194,7 @@ Model::checkFileOpen(char ** fNames, int nFiles, const char * command, char * er
   strcpy(errFiles," ");
   for(i=start;i<nFiles+start;i++)
   {
-    //    LogKit::writeLog("CFO: %s\n",fNames[i]);
+    //    LogKit::LogFormatted(LogKit::LOW,"CFO: %s\n",fNames[i]);
     if(fNames[i][0] != '*' && fNames[i][0] != '?')
     {
       FILE * file = fopen(fNames[i],"r");
@@ -221,7 +225,7 @@ Model::readMatrix(char * fileName, int n1, int n2, const char * readReason, char
 {
   float * tmpRes = new float[n1*n2+1];
   FILE * inFile = fopen(fileName,"r");
-  LogKit::writeLog("Reading %s from file %s .... ",readReason, fileName);
+  LogKit::LogFormatted(LogKit::LOW,"Reading %s from file %s .... ",readReason, fileName);
   char storage[MAX_STRING];
   int index = 0;
   int error = 0;
@@ -248,7 +252,7 @@ Model::readMatrix(char * fileName, int n1, int n2, const char * readReason, char
 
   float ** result = NULL;
   if(error == 0) {
-    LogKit::writeLog("ok.\n");
+    LogKit::LogFormatted(LogKit::LOW,"ok.\n");
     result = new float * [n1];
     int i, j;
     index = 0;
@@ -261,7 +265,7 @@ Model::readMatrix(char * fileName, int n1, int n2, const char * readReason, char
     }
   }
   else
-    LogKit::writeLog("failed.\n");
+    LogKit::LogFormatted(LogKit::LOW,"failed.\n");
   delete [] tmpRes;
   return(result);
 }
@@ -301,7 +305,7 @@ Model::checkAvailableMemory()
   if(memchunk[nGrids-1] == NULL)  //Could not allocate memory
   {
     modelSettings_->setFileGrid(1);
-    LogKit::writeLog("Not enough memory to hold all grids. Using file storage.\n");
+    LogKit::LogFormatted(LogKit::LOW,"Not enough memory to hold all grids. Using file storage.\n");
   }
   else
   {
@@ -393,7 +397,7 @@ Model::readSegyFiles(char ** fNames, int nFiles, FFTGrid ** target, char * errTe
     }
   }
   //  time(&timeend);
-  //  LogKit::writeLog("SEGY read and interpolate %i grids in %ld seconds \n",nFiles,timeend-timestart);
+  //  LogKit::LogFormatted(LogKit::LOW,"SEGY read and interpolate %i grids in %ld seconds \n",nFiles,timeend-timestart);
   return(error);
 }
 
@@ -552,7 +556,7 @@ Model::setupDefaultReflectionMatrix()
     }
   }
   reflectionMatrix_ = A;
-  LogKit::writeLog("\nMaking reflection parameters using a Vp/Vs ratio of %4.2f\n",1.0f/vsvp);
+  LogKit::LogFormatted(LogKit::LOW,"\nMaking reflection parameters using a Vp/Vs ratio of %4.2f\n",1.0f/vsvp);
 }
 
 float **
@@ -584,7 +588,7 @@ Model::makeTimeSimbox(char * errText)
       timeSimbox_->writeTopBotGrids(topname, botname);
 
     if(modelFile_->getNWaveletTransfArgs() > 0 && timeSimbox_->getIsConstantThick() == true)
-      LogKit::writeLog("\nWarning: LOCALWAVELET is ignored when using constant thickness in DEPTH.\n");
+      LogKit::LogFormatted(LogKit::LOW,"\nWarning: LOCALWAVELET is ignored when using constant thickness in DEPTH.\n");
 
     double * areaParams = modelFile_->getAreaParameters(); 
     estimateZPaddingSize();   
@@ -598,12 +602,12 @@ Model::makeTimeSimbox(char * errText)
 
       if(error == 0)
       {
-        LogKit::writeLog("\nTime surfaces:\n");
-        LogKit::writeLog("  Interval thickness    avg / min / max    : %6.1f /%6.1f /%6.1f\n", 
+        LogKit::LogFormatted(LogKit::LOW,"\nTime surfaces:\n");
+        LogKit::LogFormatted(LogKit::LOW,"  Interval thickness    avg / min / max    : %6.1f /%6.1f /%6.1f\n", 
                          timeSimbox_->getlz()*timeSimbox_->getAvgRelThick(),
                          timeSimbox_->getlz()*timeSimbox_->getMinRelThick(),
                          timeSimbox_->getlz());
-        LogKit::writeLog("  Sampling density      avg / min / max    : %6.2f /%6.2f /%6.2f\n", 
+        LogKit::LogFormatted(LogKit::LOW,"  Sampling density      avg / min / max    : %6.2f /%6.2f /%6.2f\n", 
                          timeSimbox_->getdz()*timeSimbox_->getAvgRelThick(),
                          timeSimbox_->getdz(),
                          timeSimbox_->getdz()*timeSimbox_->getMinRelThick());
@@ -614,13 +618,13 @@ Model::makeTimeSimbox(char * errText)
             if (modelFile_->getWaveletFile()[i][0] == '*')
               estimateWavelet = true;
           if (estimateWavelet) {
-            LogKit::writeLog("\nWARNING: The minimum sampling density is lower than 4.0. The WAVELETS generated by \n");
-            LogKit::writeLog("         CRAVA are not reliable and the output results should be treated accordingly.\n");
+            LogKit::LogFormatted(LogKit::LOW,"\nWARNING: The minimum sampling density is lower than 4.0. The WAVELETS generated by \n");
+            LogKit::LogFormatted(LogKit::LOW,"         CRAVA are not reliable and the output results should be treated accordingly.\n");
           }
           if((modelSettings_->getOutputFlag() & (ModelSettings::FACIESPROB + ModelSettings::FACIESPROBRELATIVE > 0))) {
-            LogKit::writeLog("\nWARNING: The minimum sampling density is lower than 4.0. The FACIES PROBABILITIES\n");
-            LogKit::writeLog("         generated by CRAVA are not reliable. To get more reliable probabilities    \n");
-            LogKit::writeLog("         the number of layers must be increased.                                    \n");
+            LogKit::LogFormatted(LogKit::LOW,"\nWARNING: The minimum sampling density is lower than 4.0. The FACIES PROBABILITIES\n");
+            LogKit::LogFormatted(LogKit::LOW,"         generated by CRAVA are not reliable. To get more reliable probabilities    \n");
+            LogKit::LogFormatted(LogKit::LOW,"         the number of layers must be increased.                                    \n");
           }
         }
         estimateXYPaddingSizes();
@@ -633,8 +637,8 @@ Model::makeTimeSimbox(char * errText)
       {
         if(error == Simbox::INTERNALERROR)
         {
-          LogKit::writeLog("ERROR: A problems was encountered for simulation grid\n");
-          LogKit::writeLog("       %s\n",errText);
+          LogKit::LogFormatted(LogKit::LOW,"ERROR: A problems was encountered for simulation grid\n");
+          LogKit::LogFormatted(LogKit::LOW,"       %s\n",errText);
         }
         failed_ = true;
       }
@@ -658,7 +662,7 @@ Model::setSimboxSurfaces(Simbox * simbox, char ** surfFile, bool parallelSurface
     z0Grid = new RegularSurface<double>(tmpSurf);
   }
   catch (Exception & e) {
-    LogKit::writeLog(e.what());
+    LogKit::LogFormatted(LogKit::LOW,e.what());
     error = 1;
   }
 
@@ -676,7 +680,7 @@ Model::setSimboxSurfaces(Simbox * simbox, char ** surfFile, bool parallelSurface
         z1Grid = new RegularSurface<double>(tmpSurf);
       }
       catch (Exception & e) {
-        LogKit::writeLog(e.what());
+        LogKit::LogFormatted(LogKit::LOW,e.what());
         error = 1;
       }
       if(error == 0)
@@ -715,9 +719,9 @@ Model::estimateXYPaddingSizes()
 
   if (newPaddings)
   {
-    LogKit::writeLog("\nPadding sizes estimated from lateral correlation ranges:\n");
-    LogKit::writeLog("  xPad, xPadFac, nxPad                     : %8.f, %6.2f, %6d\n", xPad, xPadFac, nxPad_);
-    LogKit::writeLog("  yPad, yPadFac, nyPad                     : %8.f, %6.2f, %6d\n", yPad, yPadFac, nyPad_);
+    LogKit::LogFormatted(LogKit::LOW,"\nPadding sizes estimated from lateral correlation ranges:\n");
+    LogKit::LogFormatted(LogKit::LOW,"  xPad, xPadFac, nxPad                     : %8.f, %6.2f, %6d\n", xPad, xPadFac, nxPad_);
+    LogKit::LogFormatted(LogKit::LOW,"  yPad, yPadFac, nyPad                     : %8.f, %6.2f, %6d\n", yPad, yPadFac, nyPad_);
   }
 }
 
@@ -741,8 +745,8 @@ Model::estimateZPaddingSize()
 
   if (newPadding)
   {
-    LogKit::writeLog("\nPadding sizes estimated from an assumed wavelet length:\n");
-    LogKit::writeLog("  zPad, zPadFac, nzPad                     : %8.f, %6.2f, %6d\n", zPad, zPadFac, nzPad_);
+    LogKit::LogFormatted(LogKit::LOW,"\nPadding sizes estimated from an assumed wavelet length:\n");
+    LogKit::LogFormatted(LogKit::LOW,"  zPad, zPadFac, nzPad                     : %8.f, %6.2f, %6d\n", zPad, zPadFac, nzPad_);
   }
 }
 
@@ -778,19 +782,19 @@ Model::makeDepthSimbox(char * errText)
 
         if(error == Simbox::INTERNALERROR)
         {
-          LogKit::writeLog("ERROR: A problems was encountered for simulation grid\n");
-          LogKit::writeLog("       %s\n",errText);
+          LogKit::LogFormatted(LogKit::LOW,"ERROR: A problems was encountered for simulation grid\n");
+          LogKit::LogFormatted(LogKit::LOW,"       %s\n",errText);
           failed_ = true;
         }
       }
       if (depthSimbox_->status() == Simbox::BOXOK)
       {
-        LogKit::writeLog("\nDepth surfaces:\n");
-        LogKit::writeLog("  Interval thickness    avg / min / max    : %6.1f /%6.1f /%6.1f\n", 
+        LogKit::LogFormatted(LogKit::LOW,"\nDepth surfaces:\n");
+        LogKit::LogFormatted(LogKit::LOW,"  Interval thickness    avg / min / max    : %6.1f /%6.1f /%6.1f\n", 
                          depthSimbox_->getlz()*depthSimbox_->getAvgRelThick(),
                          depthSimbox_->getlz()*depthSimbox_->getMinRelThick(),
                          depthSimbox_->getlz());
-        LogKit::writeLog("  Sampling density      avg / min / max    : %6.2f /%6.2f /%6.2f\n", 
+        LogKit::LogFormatted(LogKit::LOW,"  Sampling density      avg / min / max    : %6.2f /%6.2f /%6.2f\n", 
                          depthSimbox_->getdz()*depthSimbox_->getAvgRelThick(),
                          depthSimbox_->getdz(),
                          depthSimbox_->getdz()*depthSimbox_->getMinRelThick());
@@ -828,11 +832,11 @@ Model::processSeismic(char * errText)
           seisCube_[i]->writeFile(sName, timeSimbox_);
         }
       }
-      LogKit::writeLog("\nTime simulation grids:\n");
-      LogKit::writeLog("  Output grid         %4i * %4i * %4i   : %10i\n",
+      LogKit::LogFormatted(LogKit::LOW,"\nTime simulation grids:\n");
+      LogKit::LogFormatted(LogKit::LOW,"  Output grid         %4i * %4i * %4i   : %10i\n",
                        timeSimbox_->getnx(),timeSimbox_->getny(),timeSimbox_->getnz(),
                        timeSimbox_->getnx()*timeSimbox_->getny()*timeSimbox_->getnz()); 
-      LogKit::writeLog("  FFT grid            %4i * %4i * %4i   : %10i\n",
+      LogKit::LogFormatted(LogKit::LOW,"  FFT grid            %4i * %4i * %4i   : %10i\n",
                        nxPad_,nyPad_,nzPad_,nxPad_*nyPad_*nzPad_);
     }
     else
@@ -847,7 +851,7 @@ Model::processSeismic(char * errText)
 void 
 Model::processWells(char * errText)
 {
-  LogKit::writeLog("\nReading well data:\n");
+  LogKit::LogFormatted(LogKit::LOW,"\nReading well data:\n");
 
   char ** wellFile   = modelFile_->getWellFile();
   char ** headerList = modelFile_->getHeaderList();
@@ -881,9 +885,9 @@ Model::processWells(char * errText)
     nFacies = modelSettings_->getNumberOfFacies(); // nFacies is set in checkFaciesNames()
   }
 
-  LogKit::writeLog("\n***********************************************************************");
-  LogKit::writeLog("\n***                       Processing Wells                          ***"); 
-  LogKit::writeLog("\n***********************************************************************\n\n");
+  LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************");
+  LogKit::LogFormatted(LogKit::LOW,"\n***                       Processing Wells                          ***"); 
+  LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************\n\n");
   
   int   * validWells    = new int[nWells];
   bool  * validIndex    = new bool[nWells];
@@ -908,7 +912,7 @@ Model::processWells(char * errText)
   for (int i=0 ; i<nWells ; i++)
   {
     bool skip = false;
-    LogKit::writeLog("%s : \n",wells_[i]->getWellname());
+    LogKit::LogFormatted(LogKit::LOW,"%s : \n",wells_[i]->getWellname());
     if(wells_[i]!=NULL)
     {
       if(wells_[i]->checkSimbox(timeSimbox_) == 1) 
@@ -918,13 +922,13 @@ Model::processWells(char * errText)
       }
       if(wells_[i]->getNd() == 0) 
       {
-        LogKit::writeLog("  IGNORED (no log entries found)\n");
+        LogKit::LogFormatted(LogKit::LOW,"  IGNORED (no log entries found)\n");
         skip = true;
         empty++;
       }
       if(wells_[i]->isFaciesOk()==0)
       {
-        LogKit::writeLog("   IGNORED (facies log has wrong entries)\n");
+        LogKit::LogFormatted(LogKit::LOW,"   IGNORED (facies log has wrong entries)\n");
         skip = true;
         facieslognotok++;
       }
@@ -954,14 +958,14 @@ Model::processWells(char * errText)
   //
   // Write summary.
   //
-  LogKit::writeLog("\n");
-  LogKit::writeLog("                                      Invalid                                    \n");
-  LogKit::writeLog("Well                    Merges      Vp   Vs  Rho  synthVs/Corr    Deviated/Angle \n");
-  LogKit::writeLog("---------------------------------------------------------------------------------\n");
+  LogKit::LogFormatted(LogKit::LOW,"\n");
+  LogKit::LogFormatted(LogKit::LOW,"                                      Invalid                                    \n");
+  LogKit::LogFormatted(LogKit::LOW,"Well                    Merges      Vp   Vs  Rho  synthVs/Corr    Deviated/Angle \n");
+  LogKit::LogFormatted(LogKit::LOW,"---------------------------------------------------------------------------------\n");
   for(int i=0 ; i<nWells ; i++)
   {
     if (validIndex[i]) 
-      LogKit::writeLog("%-23s %6d    %4d %4d %4d     %3s / %5.3f      %3s / %4.1f\n",
+      LogKit::LogFormatted(LogKit::LOW,"%-23s %6d    %4d %4d %4d     %3s / %5.3f      %3s / %4.1f\n",
                        wells_[i]->getWellname(),
                        nMerges[i],
                        nInvalidAlpha[i], 
@@ -972,41 +976,41 @@ Model::processWells(char * errText)
                        (devAngle[i] > modelSettings_->getMaxDevAngle() ? "yes" : " no"),
                        devAngle[i]);
      else  
-       LogKit::writeLog("%-23s      -       -    -    -       - /     -       -  /    -\n",wells_[i]->getWellname());
+       LogKit::LogFormatted(LogKit::LOW,"%-23s      -       -    -    -       - /     -       -  /    -\n",wells_[i]->getWellname());
   }
 
   //
   // Print facies count for each well
   //
   if(nFacies > 0) { 
-    LogKit::writeLog("\nFacies distributions for each well: \n");
-    LogKit::writeLog("\nWell                    ");
+    LogKit::LogFormatted(LogKit::LOW,"\nFacies distributions for each well: \n");
+    LogKit::LogFormatted(LogKit::LOW,"\nWell                    ");
     for (int i = 0 ; i < nFacies ; i++)
-      LogKit::writeLog("%12s ",modelSettings_->getFaciesName(i));
-    LogKit::writeLog("\n");
+      LogKit::LogFormatted(LogKit::LOW,"%12s ",modelSettings_->getFaciesName(i));
+    LogKit::LogFormatted(LogKit::LOW,"\n");
     for (int i = 0 ; i < 24+13*nFacies ; i++)
-      LogKit::writeLog("-");
-    LogKit::writeLog("\n");
+      LogKit::LogFormatted(LogKit::LOW,"-");
+    LogKit::LogFormatted(LogKit::LOW,"\n");
     for (int i = 0 ; i < nWells ; i++) {
       if (validIndex[i]) {
         float tot = 0.0;
         for (int f = 0 ; f < nFacies ; f++)
           tot += static_cast<float>(faciesCount[i][f]);
-        LogKit::writeLog("%-23s ",wells_[i]->getWellname());
+        LogKit::LogFormatted(LogKit::LOW,"%-23s ",wells_[i]->getWellname());
         for (int f = 0 ; f < nFacies ; f++) {
           float faciesProb = static_cast<float>(faciesCount[i][f])/tot;
-          LogKit::writeLog("%12.4f ",faciesCount[i][f],faciesProb);
+          LogKit::LogFormatted(LogKit::LOW,"%12.4f ",faciesCount[i][f],faciesProb);
         }
-        LogKit::writeLog("\n");
+        LogKit::LogFormatted(LogKit::LOW,"\n");
       } 
       else {
-        LogKit::writeLog("%-23s ",wells_[i]->getWellname());
+        LogKit::LogFormatted(LogKit::LOW,"%-23s ",wells_[i]->getWellname());
       for (int f = 0 ; f < nFacies ; f++)
-        LogKit::writeLog("         -   ");
-      LogKit::writeLog("\n");
+        LogKit::LogFormatted(LogKit::LOW,"         -   ");
+      LogKit::LogFormatted(LogKit::LOW,"\n");
       }
     }
-    LogKit::writeLog("\n");
+    LogKit::LogFormatted(LogKit::LOW,"\n");
   }
 
   //
@@ -1036,25 +1040,25 @@ Model::processWells(char * errText)
     delete [] faciesCount;
   }
   if (nohit>0)
-    LogKit::writeLog("\nWARNING: %d well(s) do not hit the inversion volume and will be ignored.\n",nohit);
+    LogKit::LogFormatted(LogKit::LOW,"\nWARNING: %d well(s) do not hit the inversion volume and will be ignored.\n",nohit);
   if (empty>0)
-    LogKit::writeLog("\nWARNING: %d well(s) contain no log entries and will be ignored.\n",empty);
+    LogKit::LogFormatted(LogKit::LOW,"\nWARNING: %d well(s) contain no log entries and will be ignored.\n",empty);
   if(facieslognotok>0)
-    LogKit::writeLog("\nWARNING: %d well(s) have wrong facies logs and will be ignored.\n",facieslognotok);
+    LogKit::LogFormatted(LogKit::LOW,"\nWARNING: %d well(s) have wrong facies logs and will be ignored.\n",facieslognotok);
   if (nWells==0)
   {
-    LogKit::writeLog("\nERROR: There are no wells left for data analysis. Please check that the inversion area given");
-    LogKit::writeLog("\n       below is correct. If it is not, you probably have problems with coordinate scaling. To");
-    LogKit::writeLog("\n       correct this problem the seismic data must be re-exported from your data base using");
-    LogKit::writeLog("\n       the \'by-pass coordinate scaling (byte 71-72)\' toggle that matches your version of");
-    LogKit::writeLog("\n       CRAVA (see beginning of CRAVA log file). Alternatively, CRAVA can be recompiled.\n");
-    LogKit::writeLog("\n                                   X0          Y0        DeltaX      DeltaY      Angle");
-    LogKit::writeLog("\n       -------------------------------------------------------------------------------");
-    LogKit::writeLog("\n       Inversion area:    %11.2f %11.2f   %11.2f %11.2f   %8.3f\n", 
+    LogKit::LogFormatted(LogKit::LOW,"\nERROR: There are no wells left for data analysis. Please check that the inversion area given");
+    LogKit::LogFormatted(LogKit::LOW,"\n       below is correct. If it is not, you probably have problems with coordinate scaling. To");
+    LogKit::LogFormatted(LogKit::LOW,"\n       correct this problem the seismic data must be re-exported from your data base using");
+    LogKit::LogFormatted(LogKit::LOW,"\n       the \'by-pass coordinate scaling (byte 71-72)\' toggle that matches your version of");
+    LogKit::LogFormatted(LogKit::LOW,"\n       CRAVA (see beginning of CRAVA log file). Alternatively, CRAVA can be recompiled.\n");
+    LogKit::LogFormatted(LogKit::LOW,"\n                                   X0          Y0        DeltaX      DeltaY      Angle");
+    LogKit::LogFormatted(LogKit::LOW,"\n       -------------------------------------------------------------------------------");
+    LogKit::LogFormatted(LogKit::LOW,"\n       Inversion area:    %11.2f %11.2f   %11.2f %11.2f   %8.3f\n", 
                      timeSimbox_->getx0(), timeSimbox_->gety0(), 
                      timeSimbox_->getlx(), timeSimbox_->getly(), 
                      (timeSimbox_->getAngle()*180)/PI);
-    LogKit::writeLog("\nAborting\n");
+    LogKit::LogFormatted(LogKit::LOW,"\nAborting\n");
     exit(1);
   }
 }
@@ -1106,18 +1110,18 @@ void Model::checkFaciesNames(void)
         }
         else if(strcmp(names[fnr],name) != 0)
         {
-          LogKit::writeLog("Error in facies logs. Facies names and numbers are not uniquely defined.\n");
+          LogKit::LogFormatted(LogKit::LOW,"Error in facies logs. Facies names and numbers are not uniquely defined.\n");
           exit(1);
         }
       }
     }
   }
 
-  LogKit::writeLog("\nFaciesLabel      FaciesName           ");
-  LogKit::writeLog("\n--------------------------------------\n");
+  LogKit::LogFormatted(LogKit::LOW,"\nFaciesLabel      FaciesName           ");
+  LogKit::LogFormatted(LogKit::LOW,"\n--------------------------------------\n");
   for(int i=0 ; i<nnames ; i++)
     if(names[i] != NULL) 
-      LogKit::writeLog("    %2d           %-20s\n",i+globalmin,names[i]);
+      LogKit::LogFormatted(LogKit::LOW,"    %2d           %-20s\n",i+globalmin,names[i]);
 
   int nFacies = 0;
   for(int i=0 ; i<nnames ; i++)
@@ -1152,9 +1156,9 @@ Model::processBackground(char * errText)
     FFTGrid * backModel[3];
     if (modelFile_->getGenerateBackground()) 
     {
-      LogKit::writeLog("\n***********************************************************************");
-      LogKit::writeLog("\n***              Prior Expectations / Background Model              ***"); 
-      LogKit::writeLog("\n***********************************************************************\n");
+      LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************");
+      LogKit::LogFormatted(LogKit::LOW,"\n***              Prior Expectations / Background Model              ***"); 
+      LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************\n");
       
       if(modelSettings_->getBackgroundVario() == NULL)
       {
@@ -1190,16 +1194,16 @@ Model::processBackground(char * errText)
               readerror = readStormFile(backFile[i], backModel[i], parName[i], errText);
             if(readerror != 0)
             {
-              LogKit::writeLog("ERROR: Reading of file \'%s\' for parameter \'%s\' failed\n",
-                               backFile[i],parName[i]);
+              LogKit::LogFormatted(LogKit::LOW,"ERROR: Reading of file \'%s\' for parameter \'%s\' failed\n",
+                                   backFile[i],parName[i]);
               printf("       %s\n",errText);
               exit(1);
             }
           }
           else
           {
-            LogKit::writeLog("ERROR: Reading of file for parameter \'%s\' failed. File pointer is NULL\n",
-                             parName[i]);
+            LogKit::LogFormatted(LogKit::LOW,"ERROR: Reading of file for parameter \'%s\' failed. File pointer is NULL\n",
+                                 parName[i]);
             exit(1);
           }
         }
@@ -1216,7 +1220,7 @@ Model::processBackground(char * errText)
         }
         else
         {
-          LogKit::writeLog("ERROR: Could not set background model constBack[%d] == NULL\n",i);
+          LogKit::LogFormatted(LogKit::LOW,"ERROR: Could not set background model constBack[%d] == NULL\n",i);
           exit(1);
         }
       }
@@ -1233,9 +1237,9 @@ Model::processPriorCorrelations(char * errText)
   bool printResult = (modelSettings_->getOutputFlag() & (ModelSettings::PRIORCORRELATIONS + ModelSettings::CORRELATION)) > 0;
   if (modelSettings_->getDoInversion() || printResult)
   {
-    LogKit::writeLog("\n***********************************************************************");
-    LogKit::writeLog("\n***                        Prior Covariance                         ***"); 
-    LogKit::writeLog("\n***********************************************************************\n");
+    LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************");
+    LogKit::LogFormatted(LogKit::LOW,"\n***                        Prior Covariance                         ***"); 
+    LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************\n");
     time_t timestart, timeend;
     time(&timestart);
 
@@ -1250,11 +1254,11 @@ Model::processPriorCorrelations(char * errText)
       paramCorr = readMatrix(paramCorrFile, 3, 3, "parameter correlation", errText);
       if(paramCorrFile == NULL) 
       {
-        LogKit::writeLog("ERROR: Reading of file \'%s\' for parameter correlation matrix failed\n",paramCorrFile);
-        LogKit::writeLog("       %s\n",errText);
+        LogKit::LogFormatted(LogKit::LOW,"ERROR: Reading of file \'%s\' for parameter correlation matrix failed\n",paramCorrFile);
+        LogKit::LogFormatted(LogKit::LOW,"       %s\n",errText);
         exit(1);
       }
-      LogKit::writeLog("Parameter correlation read from file.\n\n");
+      LogKit::LogFormatted(LogKit::LOW,"Parameter correlation read from file.\n\n");
     }
 
     RegularSurface<double> * CorrXY = getCorrXYGrid();
@@ -1262,7 +1266,7 @@ Model::processPriorCorrelations(char * errText)
     if(modelSettings_->getLateralCorr()==NULL) { // NBNB-PAL: this will never be true (default lateral corr)
       estimateCorrXYFromSeismic(CorrXY);
       time(&timeend);
-      LogKit::writeLog("\nEstimate parameter lateral correlation from seismic in %d seconds.\n",
+      LogKit::LogFormatted(LogKit::LOW,"\nEstimate parameter lateral correlation from seismic in %d seconds.\n",
                        static_cast<int>(timeend-timestart));
     }
 
@@ -1283,7 +1287,7 @@ Model::processPriorCorrelations(char * errText)
 
     if(priorCorrelations_ == NULL)
     {
-      LogKit::writeLog("\nErrors detected when estimating prior covariance.\nAborting\n");
+      LogKit::LogFormatted(LogKit::LOW,"\nErrors detected when estimating prior covariance.\nAborting\n");
       exit(1);
     }
 
@@ -1306,7 +1310,7 @@ Model::processPriorCorrelations(char * errText)
     priorCorrelations_->printVariancesToScreen();
 
     time(&timeend);
-    LogKit::writeDebugLog("\n\nTime elapsed :  %d\n",timeend-timestart);  
+    LogKit::LogFormatted(LogKit::DEBUGLOW,"\n\nTime elapsed :  %d\n",timeend-timestart);  
   }
 }
 
@@ -1398,11 +1402,11 @@ Model::processReflectionMatrix(char * errText)
   if(reflMatrFile != NULL) {
     reflectionMatrix_ = readMatrix(reflMatrFile, modelSettings_->getNumberOfAngles(), 3, "reflection matrix", errText);
     if(reflectionMatrix_ == NULL) {
-      LogKit::writeLog("ERROR: Reading of file \'%s\' for reflection matrix failed\n",reflMatrFile);
-      LogKit::writeLog("       %s\n",errText);
+      LogKit::LogFormatted(LogKit::LOW,"ERROR: Reading of file \'%s\' for reflection matrix failed\n",reflMatrFile);
+      LogKit::LogFormatted(LogKit::LOW,"       %s\n",errText);
       exit(1);
     }
-    LogKit::writeLog("Reflection parameters read from file.\n\n");
+    LogKit::LogFormatted(LogKit::LOW,"Reflection parameters read from file.\n\n");
   }
   else
   {
@@ -1417,9 +1421,9 @@ Model::processWavelets(void)
       modelSettings_->getGenerateSeismic() || 
       (modelSettings_->getOutputFlag() & ModelSettings::WAVELETS) > 0 )
   {
-    LogKit::writeLog("\n***********************************************************************");
-    LogKit::writeLog("\n***                 Processing/generating wavelets                  ***"); 
-    LogKit::writeLog("\n***********************************************************************\n");
+    LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************");
+    LogKit::LogFormatted(LogKit::LOW,"\n***                 Processing/generating wavelets                  ***"); 
+    LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************\n");
     bool estimateStuff = false;
     for(int i=0 ; i < modelSettings_->getNumberOfAngles() ; i++)
     {  
@@ -1428,9 +1432,9 @@ Model::processWavelets(void)
     }
     if (estimateStuff) 
     {
-      LogKit::writeLog("\nWells that cannot be used in wavelet generation or noise estimation:");
-      LogKit::writeLog("\n  Deviated wells.");
-      LogKit::writeLog("\n  Wells with too little data.\n");
+      LogKit::LogFormatted(LogKit::LOW,"\nWells that cannot be used in wavelet generation or noise estimation:");
+      LogKit::LogFormatted(LogKit::LOW,"\n  Deviated wells.");
+      LogKit::LogFormatted(LogKit::LOW,"\n  Wells with too little data.\n");
     }
     wavelet_ = new Wavelet *[modelSettings_->getNumberOfAngles()];
     
@@ -1440,7 +1444,7 @@ Model::processWavelets(void)
     
     for(int i=0 ; i < modelSettings_->getNumberOfAngles() ; i++)
     {  
-      LogKit::writeLog("\nAngle stack : %.1f deg",modelSettings_->getAngle()[i]*180.0/PI);
+      LogKit::LogFormatted(LogKit::LOW,"\nAngle stack : %.1f deg",modelSettings_->getAngle()[i]*180.0/PI);
       if (waveletFile[i][0] == '*') 
         wavelet_[i] = new Wavelet1D(timeSimbox_, seisCube_[i], wells_, modelSettings_, reflectionMatrix_[i]);
       else
@@ -1448,7 +1452,7 @@ Model::processWavelets(void)
         int fileFormat = getWaveletFileFormat(waveletFile[i]);
         if(fileFormat < 0)
         {
-          LogKit::writeLog("ERROR: Unknown file format of file  %s.\n",waveletFile[i]);
+          LogKit::LogFormatted(LogKit::LOW,"ERROR: Unknown file format of file  %s.\n",waveletFile[i]);
           exit(1);
         }
         if (fileFormat == Wavelet::SGRI)
@@ -1467,7 +1471,7 @@ Model::processWavelets(void)
         noiseEnergy[i] = wavelet_[i]->getNoiseStandardDeviation(timeSimbox_, seisCube_[i], wells_, modelSettings_->getNumberOfWells());
         if (hasSignalToNoiseRatio_) 
         {
-          //LogKit::writeLog("\n  Since seismic noise is estimated directly, keyword GIVESIGNALTONOISERATIO has no effect.\n");
+          //LogKit::LogFormatted(LogKit::LOW,"\n  Since seismic noise is estimated directly, keyword GIVESIGNALTONOISERATIO has no effect.\n");
           hasSignalToNoiseRatio_ = false;
         }
       }
@@ -1475,8 +1479,8 @@ Model::processWavelets(void)
       {
         if (hasSignalToNoiseRatio_ && (noiseEnergy[i] <= 1.0 || noiseEnergy[i] > 10.0))
         {
-          LogKit::writeLog("ERROR: Illegal signal-to-noise ratio of %.3f for cube %d\n",noiseEnergy[i],i);
-          LogKit::writeLog("       Ratio must be in interval 1.0 < SNratio < 10.0\n");
+          LogKit::LogFormatted(LogKit::LOW,"ERROR: Illegal signal-to-noise ratio of %.3f for cube %d\n",noiseEnergy[i],i);
+          LogKit::LogFormatted(LogKit::LOW,"       Ratio must be in interval 1.0 < SNratio < 10.0\n");
           exit(1);
         }
       }
@@ -1505,7 +1509,7 @@ Model::getWaveletFileFormat(char * fileName)
   {
     if(fscanf(file,"%s",dummyStr) == EOF)
     {
-      LogKit::writeLog("ERROR: End of file %s is premature\n",fileName);
+      LogKit::LogFormatted(LogKit::LOW,"ERROR: End of file %s is premature\n",fileName);
       exit(1);
     } // endif
   }  // end for i
@@ -1522,7 +1526,7 @@ Model::getWaveletFileFormat(char * fileName)
     file = fopen(fileName, "r");
     if (fscanf(file, "%s", dummyStr) == EOF)
     {
-      LogKit::writeLog("ERROR: End of file %s is premature\n",fileName);
+      LogKit::LogFormatted(LogKit::LOW,"ERROR: End of file %s is premature\n",fileName);
       exit(1);
     }
     strcpy(targetString, "NORSAR");
@@ -1541,7 +1545,7 @@ Model::getWaveletFileFormat(char * fileName)
         if(fscanf(file,"%s",dummyStr) == EOF)
         {
           readToEOL(file);
-          LogKit::writeLog("ERROR: End of file %s is premature\n",fileName);
+          LogKit::LogFormatted(LogKit::LOW,"ERROR: End of file %s is premature\n",fileName);
           exit(1);  
         } // endif
         else
@@ -1572,9 +1576,9 @@ void Model::processPriorFaciesProb()
   int nFacies    = modelSettings_->getNumberOfFacies();
   if(nFacies > 0 && (outputFlag & (ModelSettings::FACIESPROB + ModelSettings::FACIESPROBRELATIVE)) > 0)
   {
-    LogKit::writeLog("\n***********************************************************************");
-    LogKit::writeLog("\n***                     Prior Facies Probabilities                  ***"); 
-    LogKit::writeLog("\n***********************************************************************\n\n");
+    LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************");
+    LogKit::LogFormatted(LogKit::LOW,"\n***                     Prior Facies Probabilities                  ***"); 
+    LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************\n\n");
     //
     // NBNB-PAL: We should be able to read priorFacies_ from file. 
     //
@@ -1636,13 +1640,13 @@ void Model::processPriorFaciesProb()
     //
     // Print facies count for each well
     //
-    LogKit::writeLog("BlockedWell             ");
+    LogKit::LogFormatted(LogKit::LOW,"BlockedWell             ");
     for (int i = 0 ; i < nFacies ; i++)
-      LogKit::writeLog("%12s ",modelSettings_->getFaciesName(i));
-    LogKit::writeLog("\n");
+      LogKit::LogFormatted(LogKit::LOW,"%12s ",modelSettings_->getFaciesName(i));
+    LogKit::LogFormatted(LogKit::LOW,"\n");
     for (int i = 0 ; i < 24+13*nFacies ; i++)
-      LogKit::writeLog("-");
-    LogKit::writeLog("\n");
+      LogKit::LogFormatted(LogKit::LOW,"-");
+    LogKit::LogFormatted(LogKit::LOW,"\n");
     for (int w = 0 ; w < nWells ; w++)
     {
       if(!(wells_[w]->isDeviated()))
@@ -1650,15 +1654,15 @@ void Model::processPriorFaciesProb()
         float tot = 0.0;
         for (int i = 0 ; i < nFacies ; i++)
           tot += static_cast<float>(faciesCount[w][i]);
-        LogKit::writeLog("%-23s ",wells_[w]->getWellname());
+        LogKit::LogFormatted(LogKit::LOW,"%-23s ",wells_[w]->getWellname());
         for (int i = 0 ; i < nFacies ; i++) {
           float faciesProb = static_cast<float>(faciesCount[w][i])/tot;
-          LogKit::writeLog("%12.4f ",faciesCount[w][i],faciesProb);
+          LogKit::LogFormatted(LogKit::LOW,"%12.4f ",faciesCount[w][i],faciesProb);
         }
-        LogKit::writeLog("\n");
+        LogKit::LogFormatted(LogKit::LOW,"\n");
       }
     }
-    LogKit::writeLog("\n");
+    LogKit::LogFormatted(LogKit::LOW,"\n");
     for (int w = 0 ; w < nWells ; w++)
       delete [] faciesCount[w];
     delete [] faciesCount;
@@ -1681,16 +1685,16 @@ void Model::processPriorFaciesProb()
       sum += nData[i];
 
     if (sum > 0) {
-      LogKit::writeLog("Facies         Probability\n");
-      LogKit::writeLog("--------------------------\n");
+      LogKit::LogFormatted(LogKit::LOW,"Facies         Probability\n");
+      LogKit::LogFormatted(LogKit::LOW,"--------------------------\n");
       priorFacies_ = new float[nFacies];
       for(int i=0 ; i<nFacies ; i++) {
         priorFacies_[i] = float(nData[i])/sum;
-        LogKit::writeLog("%-15s %10.4f\n",modelSettings_->getFaciesName(i),priorFacies_[i]);
+        LogKit::LogFormatted(LogKit::LOW,"%-15s %10.4f\n",modelSettings_->getFaciesName(i),priorFacies_[i]);
       }
     }
     else { 
-      LogKit::writeLog("\nWARNING: No valid facies log entries have been found\n");
+      LogKit::LogFormatted(LogKit::LOW,"\nWARNING: No valid facies log entries have been found\n");
     }
     delete [] nData;
   }
@@ -1699,167 +1703,167 @@ void Model::processPriorFaciesProb()
 void
 Model::printSettings(void)
 {
-  LogKit::writeLog("\nGeneral settings:\n");
+  LogKit::LogFormatted(LogKit::LOW,"\nGeneral settings:\n");
   if (modelSettings_->getNumberOfSimulations() == 0)
   {
-    LogKit::writeLog("  Modelling mode                           : prediction\n");
+    LogKit::LogFormatted(LogKit::LOW,"  Modelling mode                           : prediction\n");
   }
   else
   {
-    LogKit::writeLog("  Modelling mode                           : simulation\n");
+    LogKit::LogFormatted(LogKit::LOW,"  Modelling mode                           : simulation\n");
     if(modelFile_->getSeedFile()==NULL) {
       if (modelFile_->getSeed() == 0)
-        LogKit::writeLog("  Seed                                     :          0 (default seed)\n");
+        LogKit::LogFormatted(LogKit::LOW,"  Seed                                     :          0 (default seed)\n");
       else
-        LogKit::writeLog("  Seed                                     : %10d\n",modelFile_->getSeed());
+        LogKit::LogFormatted(LogKit::LOW,"  Seed                                     : %10d\n",modelFile_->getSeed());
     }
     else
-      LogKit::writeLog("  Seed read from file                    : %10s\n",modelFile_->getSeedFile());
-    LogKit::writeLog("  Number of realisations                   : %10d\n",modelSettings_->getNumberOfSimulations());
+      LogKit::LogFormatted(LogKit::LOW,"  Seed read from file                    : %10s\n",modelFile_->getSeedFile());
+    LogKit::LogFormatted(LogKit::LOW,"  Number of realisations                   : %10d\n",modelSettings_->getNumberOfSimulations());
   }
-  LogKit::writeLog("  Kriging                                  : %10s\n",(modelSettings_->getKrigingParameters()==NULL ? "no" : "yes"));
+  LogKit::LogFormatted(LogKit::LOW,"  Kriging                                  : %10s\n",(modelSettings_->getKrigingParameters()==NULL ? "no" : "yes"));
 
-  LogKit::writeLog("\nUnit settings/assumptions:\n");
-  LogKit::writeLog("  Time                                     : %10s\n","ms TWT");
-  LogKit::writeLog("  Frequency                                : %10s\n","Hz");
-  LogKit::writeLog("  Length                                   : %10s\n","m");
-  LogKit::writeLog("  Velocities                               : %10s\n","m/s");
-  LogKit::writeLog("  Density                                  : %10s\n","kg/dm3");
-  LogKit::writeLog("  Angle                                    : %10s\n","degrees");
+  LogKit::LogFormatted(LogKit::LOW,"\nUnit settings/assumptions:\n");
+  LogKit::LogFormatted(LogKit::LOW,"  Time                                     : %10s\n","ms TWT");
+  LogKit::LogFormatted(LogKit::LOW,"  Frequency                                : %10s\n","Hz");
+  LogKit::LogFormatted(LogKit::LOW,"  Length                                   : %10s\n","m");
+  LogKit::LogFormatted(LogKit::LOW,"  Velocities                               : %10s\n","m/s");
+  LogKit::LogFormatted(LogKit::LOW,"  Density                                  : %10s\n","kg/dm3");
+  LogKit::LogFormatted(LogKit::LOW,"  Angle                                    : %10s\n","degrees");
 
-  LogKit::writeLog("\nSettings for well processing:\n");
-  LogKit::writeLog("  Threshold for merging log entries        : %10.2f ms\n",modelSettings_->getMaxMergeDist());
-  LogKit::writeLog("  Threshold for Vp-Vs rank correlation     : %10.2f\n",modelSettings_->getMaxRankCorr());
-  LogKit::writeLog("  Threshold for deviation angle            : %10.1f (=%.2fm/ms TWT)\n",
+  LogKit::LogFormatted(LogKit::LOW,"\nSettings for well processing:\n");
+  LogKit::LogFormatted(LogKit::LOW,"  Threshold for merging log entries        : %10.2f ms\n",modelSettings_->getMaxMergeDist());
+  LogKit::LogFormatted(LogKit::LOW,"  Threshold for Vp-Vs rank correlation     : %10.2f\n",modelSettings_->getMaxRankCorr());
+  LogKit::LogFormatted(LogKit::LOW,"  Threshold for deviation angle            : %10.1f (=%.2fm/ms TWT)\n",
                    modelSettings_->getMaxDevAngle(),tan(modelSettings_->getMaxDevAngle()*PI/180.0));
-  LogKit::writeLog("  High cut for background modelling        : %10.1f\n",modelSettings_->getMaxHzBackground());
-  LogKit::writeLog("  High cut for seismic resolution          : %10.1f\n",modelSettings_->getMaxHzSeismic());
-  LogKit::writeLog("\nRange of allowed parameter values:\n");
-  LogKit::writeLog("  Vp  - min                                : %10.0f\n",modelSettings_->getAlphaMin());
-  LogKit::writeLog("  Vp  - max                                : %10.0f\n",modelSettings_->getAlphaMax());
-  LogKit::writeLog("  Vs  - min                                : %10.0f\n",modelSettings_->getBetaMin());
-  LogKit::writeLog("  Vs  - max                                : %10.0f\n",modelSettings_->getBetaMax());
-  LogKit::writeLog("  Rho - min                                : %10.1f\n",modelSettings_->getRhoMin());
-  LogKit::writeLog("  Rho - max                                : %10.1f\n",modelSettings_->getRhoMax());  
+  LogKit::LogFormatted(LogKit::LOW,"  High cut for background modelling        : %10.1f\n",modelSettings_->getMaxHzBackground());
+  LogKit::LogFormatted(LogKit::LOW,"  High cut for seismic resolution          : %10.1f\n",modelSettings_->getMaxHzSeismic());
+  LogKit::LogFormatted(LogKit::LOW,"\nRange of allowed parameter values:\n");
+  LogKit::LogFormatted(LogKit::LOW,"  Vp  - min                                : %10.0f\n",modelSettings_->getAlphaMin());
+  LogKit::LogFormatted(LogKit::LOW,"  Vp  - max                                : %10.0f\n",modelSettings_->getAlphaMax());
+  LogKit::LogFormatted(LogKit::LOW,"  Vs  - min                                : %10.0f\n",modelSettings_->getBetaMin());
+  LogKit::LogFormatted(LogKit::LOW,"  Vs  - max                                : %10.0f\n",modelSettings_->getBetaMax());
+  LogKit::LogFormatted(LogKit::LOW,"  Rho - min                                : %10.1f\n",modelSettings_->getRhoMin());
+  LogKit::LogFormatted(LogKit::LOW,"  Rho - max                                : %10.1f\n",modelSettings_->getRhoMax());  
 
   //
   // WELL DATA
   //
   if (modelSettings_->getNumberOfWells() > 0)
   {
-    LogKit::writeLog("\nWell logs:\n");
+    LogKit::LogFormatted(LogKit::LOW,"\nWell logs:\n");
     char ** headerList = modelFile_->getHeaderList();
     if (headerList != NULL)
     {
-      LogKit::writeLog("  Time                                     : %10s\n",  headerList[0]);
+      LogKit::LogFormatted(LogKit::LOW,"  Time                                     : %10s\n",  headerList[0]);
       if(strcmp(uppercase(headerList[1]),"VP"    )==0 ||
          strcmp(uppercase(headerList[1]),"LFP_VP")==0)
-        LogKit::writeLog("  p-wave velocity                          : %10s\n",headerList[1]);
+        LogKit::LogFormatted(LogKit::LOW,"  p-wave velocity                          : %10s\n",headerList[1]);
       else
-        LogKit::writeLog("  Sonic                                    : %10s\n",headerList[1]);
+        LogKit::LogFormatted(LogKit::LOW,"  Sonic                                    : %10s\n",headerList[1]);
       if(strcmp(uppercase(headerList[3]),"VS"    )==0 || 
          strcmp(uppercase(headerList[3]),"LFP_VS")==0)
-        LogKit::writeLog("  s-wave velocity                          : %10s\n",headerList[3]);
+        LogKit::LogFormatted(LogKit::LOW,"  s-wave velocity                          : %10s\n",headerList[3]);
       else
-        LogKit::writeLog("  Shear sonic                              : %10s\n",headerList[3]);
-      LogKit::writeLog("  Density                                  : %10s\n",  headerList[2]);
+        LogKit::LogFormatted(LogKit::LOW,"  Shear sonic                              : %10s\n",headerList[3]);
+      LogKit::LogFormatted(LogKit::LOW,"  Density                                  : %10s\n",  headerList[2]);
       if (modelFile_->getFaciesLogGiven())
-        LogKit::writeLog("  Facies                                   : %10s\n",headerList[4]);
+        LogKit::LogFormatted(LogKit::LOW,"  Facies                                   : %10s\n",headerList[4]);
     }
     else
     {
-      LogKit::writeLog("  Time                                     : %10s\n","TWT");
-      LogKit::writeLog("  Sonic                                    : %10s\n","DT");
-      LogKit::writeLog("  Shear sonic                              : %10s\n","DTS");
-      LogKit::writeLog("  Density                                  : %10s\n","RHOB");
-      LogKit::writeLog("  Facies                                   : %10s\n","FACIES");
+      LogKit::LogFormatted(LogKit::LOW,"  Time                                     : %10s\n","TWT");
+      LogKit::LogFormatted(LogKit::LOW,"  Sonic                                    : %10s\n","DT");
+      LogKit::LogFormatted(LogKit::LOW,"  Shear sonic                              : %10s\n","DTS");
+      LogKit::LogFormatted(LogKit::LOW,"  Density                                  : %10s\n","RHOB");
+      LogKit::LogFormatted(LogKit::LOW,"  Facies                                   : %10s\n","FACIES");
     }
-    LogKit::writeLog("\nWell files:\n");
+    LogKit::LogFormatted(LogKit::LOW,"\nWell files:\n");
     for (int i = 0 ; i < modelSettings_->getNumberOfWells() ; i++) 
     {
-      LogKit::writeLog("  %-2d                                       : %s\n",i+1,modelFile_->getWellFile()[i]);
+      LogKit::LogFormatted(LogKit::LOW,"  %-2d                                       : %s\n",i+1,modelFile_->getWellFile()[i]);
     }
   }
 
   //
   // SURFACES
   // 
-  LogKit::writeLog("\nTime surfaces:\n");
+  LogKit::LogFormatted(LogKit::LOW,"\nTime surfaces:\n");
   if (modelFile_->getParallelTimeSurfaces())
   {
-    LogKit::writeLog("  Surface                                  : %s\n",     modelFile_->getTimeSurfFile()[0]);
-    LogKit::writeLog("  Shift to top surface                     : %10.1f\n", modelFile_->getTimeDTop());
-    LogKit::writeLog("  Time slice                               : %10.1f\n", modelFile_->getTimeLz());
-    LogKit::writeLog("  Sampling density                         : %10.1f\n", modelFile_->getTimeDz());
-    LogKit::writeLog("  Number of layers                         : %10d\n",   int(modelFile_->getTimeLz()/modelFile_->getTimeDz()+0.5));
+    LogKit::LogFormatted(LogKit::LOW,"  Surface                                  : %s\n",     modelFile_->getTimeSurfFile()[0]);
+    LogKit::LogFormatted(LogKit::LOW,"  Shift to top surface                     : %10.1f\n", modelFile_->getTimeDTop());
+    LogKit::LogFormatted(LogKit::LOW,"  Time slice                               : %10.1f\n", modelFile_->getTimeLz());
+    LogKit::LogFormatted(LogKit::LOW,"  Sampling density                         : %10.1f\n", modelFile_->getTimeDz());
+    LogKit::LogFormatted(LogKit::LOW,"  Number of layers                         : %10d\n",   int(modelFile_->getTimeLz()/modelFile_->getTimeDz()+0.5));
   }
   else
   {
-    LogKit::writeLog("  Top surface                              : %s\n",     modelFile_->getTimeSurfFile()[0]);
-    LogKit::writeLog("  Base surface                             : %s\n",     modelFile_->getTimeSurfFile()[1]);
-    LogKit::writeLog("  Number of layers                         : %10d\n",   modelFile_->getTimeNz());
-    LogKit::writeLog("  Minimum allowed value for lmin/lmax      : %10.2f\n", modelSettings_->getLzLimit());
+    LogKit::LogFormatted(LogKit::LOW,"  Top surface                              : %s\n",     modelFile_->getTimeSurfFile()[0]);
+    LogKit::LogFormatted(LogKit::LOW,"  Base surface                             : %s\n",     modelFile_->getTimeSurfFile()[1]);
+    LogKit::LogFormatted(LogKit::LOW,"  Number of layers                         : %10d\n",   modelFile_->getTimeNz());
+    LogKit::LogFormatted(LogKit::LOW,"  Minimum allowed value for lmin/lmax      : %10.2f\n", modelSettings_->getLzLimit());
   }
   if (modelFile_->getDepthSurfFile() != NULL)
   {
-    LogKit::writeLog("\nDepth surfaces:\n");
-    LogKit::writeLog("  Top surface                              : %s\n",   modelFile_->getDepthSurfFile()[0]);
-    LogKit::writeLog("  Base surface                             : %s\n",   modelFile_->getDepthSurfFile()[1]);
-    LogKit::writeLog("  Number of layers                         : %10d\n", modelFile_->getDepthNz());
-    LogKit::writeLog("\nVelocity model:\n");
-    LogKit::writeLog("  Constant\n");
+    LogKit::LogFormatted(LogKit::LOW,"\nDepth surfaces:\n");
+    LogKit::LogFormatted(LogKit::LOW,"  Top surface                              : %s\n",   modelFile_->getDepthSurfFile()[0]);
+    LogKit::LogFormatted(LogKit::LOW,"  Base surface                             : %s\n",   modelFile_->getDepthSurfFile()[1]);
+    LogKit::LogFormatted(LogKit::LOW,"  Number of layers                         : %10d\n", modelFile_->getDepthNz());
+    LogKit::LogFormatted(LogKit::LOW,"\nVelocity model:\n");
+    LogKit::LogFormatted(LogKit::LOW,"  Constant\n");
   }
   //
   // BACKGROUND
   //
   if (modelFile_->getGenerateBackground()) 
   {
-    LogKit::writeLog("\nBackground model (estimated):\n");
+    LogKit::LogFormatted(LogKit::LOW,"\nBackground model (estimated):\n");
     Vario       * vario  = modelSettings_->getBackgroundVario();
     GenExpVario * pVario = dynamic_cast<GenExpVario*>(vario);
-    LogKit::writeLog("  Variogram\n");
-    LogKit::writeLog("    Model                                  : %10s\n",vario->getType());
+    LogKit::LogFormatted(LogKit::LOW,"  Variogram\n");
+    LogKit::LogFormatted(LogKit::LOW,"    Model                                  : %10s\n",vario->getType());
     if (pVario != NULL)
-    LogKit::writeLog("    Power                                  : %10.1f\n",pVario->getPower());
-    LogKit::writeLog("    Range                                  : %10.1f\n",vario->getRange());
+    LogKit::LogFormatted(LogKit::LOW,"    Power                                  : %10.1f\n",pVario->getPower());
+    LogKit::LogFormatted(LogKit::LOW,"    Range                                  : %10.1f\n",vario->getRange());
     if (vario->getAnisotropic()) 
     {
-      LogKit::writeLog("    Subrange                               : %10.1f\n",vario->getSubRange());
-      LogKit::writeLog("    Angle                                  : %10.1f\n",vario->getAngle());
+      LogKit::LogFormatted(LogKit::LOW,"    Subrange                               : %10.1f\n",vario->getSubRange());
+      LogKit::LogFormatted(LogKit::LOW,"    Angle                                  : %10.1f\n",vario->getAngle());
     }
-    LogKit::writeLog("  High cut frequency for well logs         : %10.1f\n",modelSettings_->getMaxHzBackground());
+    LogKit::LogFormatted(LogKit::LOW,"  High cut frequency for well logs         : %10.1f\n",modelSettings_->getMaxHzBackground());
   }
   else
   {
     float * constBack = modelFile_->getConstBack();
-    LogKit::writeLog("\nBackground model:\n");
+    LogKit::LogFormatted(LogKit::LOW,"\nBackground model:\n");
     if (constBack[0] > 0)
-      LogKit::writeLog("  p-wave velocity                          : %10.1f\n",constBack[0]);
+      LogKit::LogFormatted(LogKit::LOW,"  p-wave velocity                          : %10.1f\n",constBack[0]);
     else
-      LogKit::writeLog("  p-wave velocity read from file           : %10s\n",modelFile_->getBackFile()[0]);
+      LogKit::LogFormatted(LogKit::LOW,"  p-wave velocity read from file           : %10s\n",modelFile_->getBackFile()[0]);
     
     if (constBack[1] > 0)
-      LogKit::writeLog("  s-wave velocity                          : %10.1f\n",constBack[1]);
+      LogKit::LogFormatted(LogKit::LOW,"  s-wave velocity                          : %10.1f\n",constBack[1]);
     else
-      LogKit::writeLog("  s-wave velocity read from file           : %10s\n",modelFile_->getBackFile()[1]);
+      LogKit::LogFormatted(LogKit::LOW,"  s-wave velocity read from file           : %10s\n",modelFile_->getBackFile()[1]);
       
     if (constBack[2] > 0)
-      LogKit::writeLog("  Density                                  : %10.1f\n",constBack[2]);
+      LogKit::LogFormatted(LogKit::LOW,"  Density                                  : %10.1f\n",constBack[2]);
     else
-      LogKit::writeLog("  Density read from file                   : %10s\n",modelFile_->getBackFile()[2]);
+      LogKit::LogFormatted(LogKit::LOW,"  Density read from file                   : %10s\n",modelFile_->getBackFile()[2]);
   }
   //
   // SEISMIC
   //
   if (modelSettings_->getGenerateSeismic())
   {
-    LogKit::writeLog("\nGeneral settings for seismic:\n");
-    LogKit::writeLog("  Generating seismic                       : %10s\n","yes");
+    LogKit::LogFormatted(LogKit::LOW,"\nGeneral settings for seismic:\n");
+    LogKit::LogFormatted(LogKit::LOW,"  Generating seismic                       : %10s\n","yes");
     for (int i = 0 ; i < modelSettings_->getNumberOfAngles() ; i++)
     {
-      LogKit::writeLog("\nSettings for AVO stack %d:\n",i+1);
-      LogKit::writeLog("  Angle                                    : %10.1f\n",(modelSettings_->getAngle()[i]*180/PI));
-      LogKit::writeLog("  Read wavelet from file                   : %s\n",modelFile_->getWaveletFile()[i]);
+      LogKit::LogFormatted(LogKit::LOW,"\nSettings for AVO stack %d:\n",i+1);
+      LogKit::LogFormatted(LogKit::LOW,"  Angle                                    : %10.1f\n",(modelSettings_->getAngle()[i]*180/PI));
+      LogKit::LogFormatted(LogKit::LOW,"  Read wavelet from file                   : %s\n",modelFile_->getWaveletFile()[i]);
     }
   }
   else
@@ -1868,75 +1872,75 @@ Model::printSettings(void)
     Vario * corr = modelSettings_->getLateralCorr();
     if (corr != NULL) {
       GenExpVario * pCorr = dynamic_cast<GenExpVario*>(corr);
-      LogKit::writeLog("\nPrior correlation (of residuals):\n");
-      LogKit::writeLog("  Range of allowed parameter values:\n");
-      LogKit::writeLog("    Var{Vp}  - min                         : %10.1e\n",modelSettings_->getVarAlphaMin());
-      LogKit::writeLog("    Var{Vp}  - max                         : %10.1e\n",modelSettings_->getVarAlphaMax());
-      LogKit::writeLog("    Var{Vs}  - min                         : %10.1e\n",modelSettings_->getVarBetaMin());
-      LogKit::writeLog("    Var{Vs}  - max                         : %10.1e\n",modelSettings_->getVarBetaMax());
-      LogKit::writeLog("    Var{Rho} - min                         : %10.1e\n",modelSettings_->getVarRhoMin());
-      LogKit::writeLog("    Var{Rho} - max                         : %10.1e\n",modelSettings_->getVarRhoMax());  
-      LogKit::writeLog("  Lateral correlation:\n");
-      LogKit::writeLog("    Model                                  : %10s\n",corr->getType());
+      LogKit::LogFormatted(LogKit::LOW,"\nPrior correlation (of residuals):\n");
+      LogKit::LogFormatted(LogKit::LOW,"  Range of allowed parameter values:\n");
+      LogKit::LogFormatted(LogKit::LOW,"    Var{Vp}  - min                         : %10.1e\n",modelSettings_->getVarAlphaMin());
+      LogKit::LogFormatted(LogKit::LOW,"    Var{Vp}  - max                         : %10.1e\n",modelSettings_->getVarAlphaMax());
+      LogKit::LogFormatted(LogKit::LOW,"    Var{Vs}  - min                         : %10.1e\n",modelSettings_->getVarBetaMin());
+      LogKit::LogFormatted(LogKit::LOW,"    Var{Vs}  - max                         : %10.1e\n",modelSettings_->getVarBetaMax());
+      LogKit::LogFormatted(LogKit::LOW,"    Var{Rho} - min                         : %10.1e\n",modelSettings_->getVarRhoMin());
+      LogKit::LogFormatted(LogKit::LOW,"    Var{Rho} - max                         : %10.1e\n",modelSettings_->getVarRhoMax());  
+      LogKit::LogFormatted(LogKit::LOW,"  Lateral correlation:\n");
+      LogKit::LogFormatted(LogKit::LOW,"    Model                                  : %10s\n",corr->getType());
       if (pCorr != NULL)
-        LogKit::writeLog("    Power                                  : %10.1f\n",pCorr->getPower());
-      LogKit::writeLog("    Range                                  : %10.1f\n",corr->getRange());
+        LogKit::LogFormatted(LogKit::LOW,"    Power                                  : %10.1f\n",pCorr->getPower());
+      LogKit::LogFormatted(LogKit::LOW,"    Range                                  : %10.1f\n",corr->getRange());
       if (corr->getAnisotropic())
       {
-        LogKit::writeLog("    Subrange                               : %10.1f\n",corr->getSubRange());
-        LogKit::writeLog("    Angle                                  : %10.1f\n",corr->getAngle());
+        LogKit::LogFormatted(LogKit::LOW,"    Subrange                               : %10.1f\n",corr->getSubRange());
+        LogKit::LogFormatted(LogKit::LOW,"    Angle                                  : %10.1f\n",corr->getAngle());
       }
     }
-    LogKit::writeLog("\nGeneral settings for seismic:\n");
-    LogKit::writeLog("  White noise component                    : %10.2f\n",modelSettings_->getWNC());
-    LogKit::writeLog("  Low cut for inversion                    : %10.1f\n",modelSettings_->getLowCut());
-    LogKit::writeLog("  High cut for inversion                   : %10.1f\n",modelSettings_->getHighCut());
+    LogKit::LogFormatted(LogKit::LOW,"\nGeneral settings for seismic:\n");
+    LogKit::LogFormatted(LogKit::LOW,"  White noise component                    : %10.2f\n",modelSettings_->getWNC());
+    LogKit::LogFormatted(LogKit::LOW,"  Low cut for inversion                    : %10.1f\n",modelSettings_->getLowCut());
+    LogKit::LogFormatted(LogKit::LOW,"  High cut for inversion                   : %10.1f\n",modelSettings_->getHighCut());
     corr  = modelSettings_->getAngularCorr();
     GenExpVario * pCorr = dynamic_cast<GenExpVario*>(corr);
-    LogKit::writeLog("  Angular correlation:\n");
-    LogKit::writeLog("    Model                                  : %10s\n",corr->getType());
+    LogKit::LogFormatted(LogKit::LOW,"  Angular correlation:\n");
+    LogKit::LogFormatted(LogKit::LOW,"    Model                                  : %10s\n",corr->getType());
     if (pCorr != NULL)
-      LogKit::writeLog("    Power                                  : %10.1f\n",pCorr->getPower());
-    LogKit::writeLog("    Range                                  : %10.1f\n",corr->getRange()*180.0/PI);
+      LogKit::LogFormatted(LogKit::LOW,"    Power                                  : %10.1f\n",pCorr->getPower());
+    LogKit::LogFormatted(LogKit::LOW,"    Range                                  : %10.1f\n",corr->getRange()*180.0/PI);
     if (corr->getAnisotropic())
     {
-      LogKit::writeLog("    Subrange                               : %10.1f\n",corr->getSubRange()*180.0/PI);
-      LogKit::writeLog("    Angle                                  : %10.1f\n",corr->getAngle());
+      LogKit::LogFormatted(LogKit::LOW,"    Subrange                               : %10.1f\n",corr->getSubRange()*180.0/PI);
+      LogKit::LogFormatted(LogKit::LOW,"    Angle                                  : %10.1f\n",corr->getAngle());
     }
     bool estimateNoise = false;
     for (int i = 0 ; i < modelSettings_->getNumberOfAngles() ; i++) {
       estimateNoise = estimateNoise || (modelSettings_->getNoiseEnergy()[i]==RMISSING); 
     }
-    LogKit::writeLog("\nGeneral settings for wavelet:\n");
+    LogKit::LogFormatted(LogKit::LOW,"\nGeneral settings for wavelet:\n");
     if (estimateNoise)
-      LogKit::writeLog("  Maximum shift in noise estimation        : %10.1f\n",modelSettings_->getMaxWaveletShift());
-    LogKit::writeLog("  Minimum relative amplitude               : %10.3f\n",modelSettings_->getMinRelWaveletAmp());
-    LogKit::writeLog("  Wavelet tapering length                  : %10.1f\n",modelSettings_->getWaveletTaperingL());
+      LogKit::LogFormatted(LogKit::LOW,"  Maximum shift in noise estimation        : %10.1f\n",modelSettings_->getMaxWaveletShift());
+    LogKit::LogFormatted(LogKit::LOW,"  Minimum relative amplitude               : %10.3f\n",modelSettings_->getMinRelWaveletAmp());
+    LogKit::LogFormatted(LogKit::LOW,"  Wavelet tapering length                  : %10.1f\n",modelSettings_->getWaveletTaperingL());
     
     for (int i = 0 ; i < modelSettings_->getNumberOfAngles() ; i++)
     {
-      LogKit::writeLog("\nSettings for AVO stack %d:\n",i+1);
-      LogKit::writeLog("  Angle                                    : %10.1f\n",(modelSettings_->getAngle()[i]*180/PI));
-      LogKit::writeLog("  Segy offset                              : %10.1f\n",modelSettings_->getSegyOffset());
-      LogKit::writeLog("  Data                                     : %s\n",modelFile_->getSeismicFile()[i]);
+      LogKit::LogFormatted(LogKit::LOW,"\nSettings for AVO stack %d:\n",i+1);
+      LogKit::LogFormatted(LogKit::LOW,"  Angle                                    : %10.1f\n",(modelSettings_->getAngle()[i]*180/PI));
+      LogKit::LogFormatted(LogKit::LOW,"  Segy offset                              : %10.1f\n",modelSettings_->getSegyOffset());
+      LogKit::LogFormatted(LogKit::LOW,"  Data                                     : %s\n",modelFile_->getSeismicFile()[i]);
       if (modelFile_->getWaveletFile()[i][0] == '*')
-        LogKit::writeLog("  Estimate wavelet                         : %10s\n", "yes");
+        LogKit::LogFormatted(LogKit::LOW,"  Estimate wavelet                         : %10s\n", "yes");
       else
-        LogKit::writeLog("  Read wavelet from file                   : %s\n",modelFile_->getWaveletFile()[i]);
+        LogKit::LogFormatted(LogKit::LOW,"  Read wavelet from file                   : %s\n",modelFile_->getWaveletFile()[i]);
       
       float * noiseEnergy   = modelSettings_->getNoiseEnergy();
       bool  * matchEnergies = modelSettings_->getMatchEnergies();
       if (noiseEnergy[i] == RMISSING) 
-        LogKit::writeLog("  Estimate signal-to-noise ratio           : %10s\n", "yes");
+        LogKit::LogFormatted(LogKit::LOW,"  Estimate signal-to-noise ratio           : %10s\n", "yes");
       else
         if (hasSignalToNoiseRatio_)
-          LogKit::writeLog("  Signal-to-noise ratio                    : %10.1f\n",noiseEnergy[i]);
+          LogKit::LogFormatted(LogKit::LOW,"  Signal-to-noise ratio                    : %10.1f\n",noiseEnergy[i]);
         else
-          LogKit::writeLog("  Error std.dev. in seismic                : %10.2e\n",noiseEnergy[i]);
+          LogKit::LogFormatted(LogKit::LOW,"  Error std.dev. in seismic                : %10.2e\n",noiseEnergy[i]);
       if (matchEnergies[i]) 
-        LogKit::writeLog("  Match empirical and theoretical energies : %10s\n", "yes");
+        LogKit::LogFormatted(LogKit::LOW,"  Match empirical and theoretical energies : %10s\n", "yes");
       else
-        LogKit::writeLog("  Wavelet scale                            : %10.2e\n",modelFile_->getWaveletScale()[i]);
+        LogKit::LogFormatted(LogKit::LOW,"  Wavelet scale                            : %10.2e\n",modelFile_->getWaveletScale()[i]);
     }
   }
 }

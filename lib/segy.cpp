@@ -3,14 +3,17 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include "src/simbox.h"
-#include "src/fftgrid.h"
-
 #include "lib/global_def.h"
 #include "lib/segy.h"
 #include "lib/segylib.h"
 #include "lib/lib_misc.h"
-#include "lib/log.h"
+
+#include "nrlib/iotools/logkit.hpp"
+
+#include "src/simbox.h"
+#include "src/fftgrid.h"
+
+using namespace NRLib2;
 
 SegY::SegY(char * fileName, const Simbox * simbox, float zPad, float z0)
 {
@@ -37,7 +40,7 @@ SegY::SegY(char * fileName, const Simbox * simbox, float zPad, float z0)
   {
     error_ = 1;
     errMsg_ = new char[120];
-    LogKit::writeLog("failed\n");
+    LogKit::LogFormatted(LogKit::LOW,"failed\n");
     sprintf(errMsg_,
       "Can not read SegY-file \'%s\' that use floating point with gain representation.\n",
       fileName);
@@ -63,7 +66,7 @@ SegY::SegY(char * fileName, const Simbox * simbox, float zPad, float z0)
   double x1 = 0.0 , y1 = 0.0 , x2 = 0.0 , y2 = 0.0 , prevx = 0.0 , prevy = 0.0 ;
   int nTraces = static_cast<int>(ceil((static_cast<double>(fSize)-3600.0)/static_cast<double>(datasize_*nz_+240.0)));
   //nTraces = 1161347;
-  LogKit::writeLog("\nReading SEGY file %s.\n", fileName); 
+  LogKit::LogFormatted(LogKit::LOW,"\nReading SEGY file %s.\n", fileName); 
   char*  buffer = new char[nz_*4];
   traces_ = new SegYTrace *[nTraces];
   traces_[0] = readTrace(file, buffer, x0_, y0_);
@@ -83,7 +86,7 @@ SegY::SegY(char * fileName, const Simbox * simbox, float zPad, float z0)
     {
       error_ = 1;
       errMsg_ = new char[120];
-      LogKit::writeLog("failed\n");
+      LogKit::LogFormatted(LogKit::LOW,"failed\n");
       sprintf(errMsg_,"Heading information about ns or dt changed in file %s\n",
         fileName);
       break;
@@ -118,7 +121,7 @@ SegY::SegY(char * fileName, const Simbox * simbox, float zPad, float z0)
       {
         if(nHeaders > 0)
           nTraces = count*(fSize/(3600+count*(datasize_*nz_+240)));
-        LogKit::writeLog("%d traces (%d x %d), %d samples per trace:\n",
+        LogKit::LogFormatted(LogKit::LOW,"%d traces (%d x %d), %d samples per trace:\n",
                          nTraces, count, nTraces/count, nz_);
         if(flag == 0)
           nx_ = count; //Associate x with crossline
@@ -191,7 +194,7 @@ SegY::SegY(char * fileName, const Simbox * simbox, float zPad, float z0)
   delete [] binaryHeader;
   delete [] header;
   //  time(&timeend);
-  // LogKit::writeLog("SEGY read  in %ld seconds \n",timeend-timestart);
+  // LogKit::LogFormatted(LogKit::LOW,"SEGY read  in %ld seconds \n",timeend-timestart);
 }
 
 SegY::SegY(char * fileName, const Simbox * simbox)
@@ -473,16 +476,16 @@ SegY::readTrace(FILE * file, char * buffer, double x, double y)
     return(NULL);
 
   if(static_cast<int>((zTop - z0_)/dz_) < 0) {
-    LogKit::writeLog("\nERROR: A part of the top time surface reaches above the seismic gather. (seismic\n");
-    LogKit::writeLog("       start time =%7.1f). Include more seismic data or lower the top surface.\n",z0_);
-    LogKit::writeLog("       zTop = %7.2f\n");    
+    LogKit::LogFormatted(LogKit::LOW,"\nERROR: A part of the top time surface reaches above the seismic gather. (seismic\n");
+    LogKit::LogFormatted(LogKit::LOW,"       start time =%7.1f). Include more seismic data or lower the top surface.\n",z0_);
+    LogKit::LogFormatted(LogKit::LOW,"       zTop = %7.2f\n");    
     exit(1);
   } 
   //NBNB-PAL: Tried nz_ - 1 below, but that failed  (incorrectly
   //NBBN-PAL: I think) in the facies case of test suite
   if(static_cast<int>((zBot - z0_)/dz_) + 1 > nz_) { 
-    LogKit::writeLog("\nERROR: A part of the base time surface reaches below the seismic gather. Include\n");
-    LogKit::writeLog("       more seismic data or highten the base surface.\n");
+    LogKit::LogFormatted(LogKit::LOW,"\nERROR: A part of the base time surface reaches below the seismic gather. Include\n");
+    LogKit::LogFormatted(LogKit::LOW,"       more seismic data or highten the base surface.\n");
     exit(1);
   } 
 
@@ -752,11 +755,11 @@ SegY::completeTimeSimbox(Simbox * simbox, double lzLimit, char * errText)
   simbox->setSeisLines(inLine0_, crossLine0_, ilStep_, xlStep_);
   int error = simbox->checkError(lzLimit, errText);
 
-  LogKit::writeLog("\n\nExtracting inversion grid information from seismic volume:\n");
-  LogKit::writeLog("\n                  x0          y0          lx        ly       dx     dy      angle");
-  LogKit::writeLog("\n---------------------------------------------------------------------------------");
-  LogKit::writeLog("\nArea:    %11.2f %11.2f   %9.2f %9.2f   %6.2f %6.2f   %8.3f  ", ax0, ay0, lx, ly, dx_, dy_, 180.0*rot/PI);
-  LogKit::writeLog("\nSeismic: %11.2f %11.2f   %9.2f %9.2f   %6.2f %6.2f   %8.3f\n", x0_, y0_, lx, ly, dx_, dy_, 180.0*rot/PI);
+  LogKit::LogFormatted(LogKit::LOW,"\n\nExtracting inversion grid information from seismic volume:\n");
+  LogKit::LogFormatted(LogKit::LOW,"\n                  x0          y0          lx        ly       dx     dy      angle");
+  LogKit::LogFormatted(LogKit::LOW,"\n---------------------------------------------------------------------------------");
+  LogKit::LogFormatted(LogKit::LOW,"\nArea:    %11.2f %11.2f   %9.2f %9.2f   %6.2f %6.2f   %8.3f  ", ax0, ay0, lx, ly, dx_, dy_, 180.0*rot/PI);
+  LogKit::LogFormatted(LogKit::LOW,"\nSeismic: %11.2f %11.2f   %9.2f %9.2f   %6.2f %6.2f   %8.3f\n", x0_, y0_, lx, ly, dx_, dy_, 180.0*rot/PI);
   return(error);
 }
 
@@ -829,11 +832,11 @@ SegYTrace::SegYTrace(float * data, int jStart, int jEnd, int format)
 {
   int i, nData = jEnd - jStart + 1;  
   if(nData < 0)
-    LogKit::writeLog("Oooops...\n");
+    LogKit::LogFormatted(LogKit::LOW,"Oooops...\n");
   data_ = new float[nData];
   if(data_ == NULL)
   {
-    LogKit::writeLog("Ran out of memory while reading segy file.\n");
+    LogKit::LogFormatted(LogKit::LOW,"Ran out of memory while reading segy file.\n");
     exit(1);
   }
   if(format < 3)

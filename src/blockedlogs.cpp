@@ -1,13 +1,17 @@
+#include <iostream>
+#include <math.h>
+
+#include "lib/random.h"
+
+#include "nrlib/iotools/logkit.hpp"
+
 #include "src/blockedlogs.h"
 #include "src/welldata.h"
 #include "src/fftgrid.h"
 #include "src/simbox.h"
+#include "src/model.h"
 
-#include "lib/random.h"
-#include "lib/log.h"
-
-#include <iostream>
-#include <math.h>
+using namespace NRLib2;
 
 BlockedLogs::BlockedLogs(WellData  * well, 
                          Simbox    * simbox,
@@ -132,13 +136,13 @@ BlockedLogs::blockContinuousLog(const int   *  bInd,
       if (wellLog[m] != RMISSING) {
         blockedLog[bInd[m]] += log(wellLog[m]); //NBNB-PAL: Flytt denne logaritmen nedover...
         count[bInd[m]]++;
-        //LogKit::writeLog("m=%d bInd[m]  log(wellLog[m])  %d  %.5f \n",m,bInd[m],log(wellLog[m]));
+        //LogKit::LogFormatted(LogKit::LOW,"m=%d bInd[m]  log(wellLog[m])  %d  %.5f \n",m,bInd[m],log(wellLog[m]));
       }
     }
     for (int l = 0 ; l < nBlocks_ ; l++) {
       if (count[l] > 0) {
         blockedLog[l] /= count[l];
-        //LogKit::writeLog("l=%d   count[l]=%d  sum=%.3f  blockedLog[l]=%.4f \n",l,count[l],sum, blockedLog[l]);
+        //LogKit::LogFormatted(LogKit::LOW,"l=%d   count[l]=%d  sum=%.3f  blockedLog[l]=%.4f \n",l,count[l],sum, blockedLog[l]);
       }
       else
         blockedLog[l] = RMISSING;
@@ -219,10 +223,10 @@ BlockedLogs::blockDiscreteLog(const int *  bInd,
     //
     //for (int b = 0 ; b < nBlocks_ ; b++)
     //  if (blockedLog[b] != IMISSING)
-    //    LogKit::writeLog("b=%-3d   blockedLog[b]=%6d   (facies label=%d)\n",
+    //    LogKit::LogFormatted(LogKit::LOW,"b=%-3d   blockedLog[b]=%6d   (facies label=%d)\n",
     //                     b,blockedLog[b],faciesNumbers[blockedLog[b]]);
     //  else
-    //    LogKit::writeLog("b=%-3d   blockedLog[b]=%6d\n",b,IMISSING);
+    //    LogKit::LogFormatted(LogKit::LOW,"b=%-3d   blockedLog[b]=%6d\n",b,IMISSING);
   }
 }
 
@@ -342,11 +346,11 @@ BlockedLogs::findSizeAndBlockPointers(WellData * well,
   
   bool debug = false;
   if (debug) {  
-    LogKit::writeLog("firstM_, lastM_          = %d, %d    \n",firstM_,lastM_);
-    LogKit::writeLog("nLayers_                 = %d        \n",nLayers_);
-    LogKit::writeLog("firstI,firstJ,firstK     = %d, %d, %d\n",firstI,firstJ,firstK);
-    LogKit::writeLog("lastI,lastJ,lastK        = %d, %d, %d\n",lastI,lastJ,lastK);
-    LogKit::writeLog("nDefinedBlocks, nBlocks_ = %d, %d    \n",nDefinedBlocks,nBlocks_);
+    LogKit::LogFormatted(LogKit::LOW,"firstM_, lastM_          = %d, %d    \n",firstM_,lastM_);
+    LogKit::LogFormatted(LogKit::LOW,"nLayers_                 = %d        \n",nLayers_);
+    LogKit::LogFormatted(LogKit::LOW,"firstI,firstJ,firstK     = %d, %d, %d\n",firstI,firstJ,firstK);
+    LogKit::LogFormatted(LogKit::LOW,"lastI,lastJ,lastK        = %d, %d, %d\n",lastI,lastJ,lastK);
+    LogKit::LogFormatted(LogKit::LOW,"nDefinedBlocks, nBlocks_ = %d, %d    \n",nDefinedBlocks,nBlocks_);
   }
   delete [] simboxInd;
 }
@@ -412,9 +416,9 @@ BlockedLogs::findBlockIJK(WellData  * well,
 
   bool debug = false;
   if (debug) {
-    LogKit::writeLog("firstB_, lastB_      = %d, %d    \n",firstB_,lastB_);
+    LogKit::LogFormatted(LogKit::LOW,"firstB_, lastB_      = %d, %d    \n",firstB_,lastB_);
     for (int b = 0 ; b < nBlocks_ ; b++)
-      LogKit::writeLog("b=%d   i,j,k=%d,%d,%d\n",b,ipos_[b],jpos_[b],kpos_[b]);
+      LogKit::LogFormatted(LogKit::LOW,"b=%d   i,j,k=%d,%d,%d\n",b,ipos_[b],jpos_[b],kpos_[b]);
   }
 }
 
@@ -457,9 +461,9 @@ BlockedLogs::getVerticalTrend(const float * blockedLog,
   }
   else {
     if (blockedLog == NULL)
-      LogKit::writeLog("ERROR in BlockedLogs::getVerticalTrend(): Trying to use an undefined blocked log (NULL pointer)\n");
+      LogKit::LogFormatted(LogKit::LOW,"ERROR in BlockedLogs::getVerticalTrend(): Trying to use an undefined blocked log (NULL pointer)\n");
     if (trend == NULL)
-      LogKit::writeLog("ERROR in BlockedLogs::getVerticalTrend(): Trying to use an undefined trend (NULL pointer)\n");
+      LogKit::LogFormatted(LogKit::LOW,"ERROR in BlockedLogs::getVerticalTrend(): Trying to use an undefined trend (NULL pointer)\n");
     exit(1);
   }    
 }
@@ -493,9 +497,9 @@ BlockedLogs::getVerticalTrend(const int * blockedLog,
   }
   else {
     if (blockedLog == NULL)
-      LogKit::writeLog("ERROR in BlockedLogs::getVerticalTrend(): Trying to use an undefined blocked log (NULL pointer)\n");
+      LogKit::LogFormatted(LogKit::LOW,"ERROR in BlockedLogs::getVerticalTrend(): Trying to use an undefined blocked log (NULL pointer)\n");
     if (trend == NULL)
-      LogKit::writeLog("ERROR in BlockedLogs::getVerticalTrend(): Trying to use an undefined trend (NULL pointer)\n");
+      LogKit::LogFormatted(LogKit::LOW,"ERROR in BlockedLogs::getVerticalTrend(): Trying to use an undefined trend (NULL pointer)\n");
     exit(1);
   }    
 }
@@ -532,7 +536,7 @@ BlockedLogs::writeToFile(float dz,
   else
     sprintf(filename,"lnBW_%s",tmpWellName);
 
-  filename = LogKit::makeFullFileName(filename,".dat");
+  filename = ModelSettings::makeFullFileName(filename,".dat");
 
   FILE * file = fopen(filename, "w");
 

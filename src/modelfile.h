@@ -45,8 +45,8 @@ public:
   bool            getParallelDepthSurfaces(void) const { return parallelDepthSurfaces_ ;}
   bool            getParsingFailed(void)         const { return failed_                ;}
   
-  enum             backFileTypes{STORMFILE = -2, SEGYFILE = -1};
-  
+  enum            backFileTypes{STORMFILE = -2, SEGYFILE = -1};
+
 private:
   
   int              readCommandWells(char ** params, int & pos, char * errText);
@@ -132,6 +132,7 @@ private:
   bool             generateBackground_;    // Generate background model from filtered wells.
   bool             hasSignalToNoiseRatio_; // Use SN ratio instead of error variance in model file. 
   bool             failed_;                // Indicates whether errors ocuured during construction. 
+
 };
 
 #endif

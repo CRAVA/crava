@@ -1,13 +1,16 @@
+#include <stdlib.h>
+#include <math.h>
+
+#include "lib/global_def.h"
+
+#include "nrlib/iotools/logkit.hpp"
+
 #include "src/krigingdata3d.h"
 #include "src/welldata.h"
 #include "src/bwellpt.h"
 #include "src/model.h"
 
-#include "lib/global_def.h"
-#include "lib/log.h"
-
-#include <stdlib.h>
-#include <math.h>
+using namespace NRLib2;
 
 //---------------------------------------------------------------------
 KrigingData3D::KrigingData3D(int ntot) 
@@ -65,7 +68,7 @@ KrigingData3D::KrigingData3D(WellData ** wells,
       rho   = bl->getRhoSeismicResolution();
     }
     else {
-      LogKit::writeLog("ERROR: Undefined log type %d\n",type);
+      LogKit::LogFormatted(LogKit::LOW,"ERROR: Undefined log type %d\n",type);
       exit(1);
     }
     
@@ -136,8 +139,8 @@ KrigingData3D::addData(const float * alpha,
         // This is not a problem, but normally two wells should not share the same
         // set of blocks (with the possible exception of side-tracks).
         //
-        LogKit::writeLog("\nNOTE: Blocked log with indices i,j,k = %d,%d,%d has been referred to twice\n",i,j,k);
-        LogKit::writeLog("\n      Is the grid too coarse, or do you have wells with side-tracks?\n");
+        LogKit::LogFormatted(LogKit::LOW,"\nNOTE: Blocked log with indices i,j,k = %d,%d,%d has been referred to twice\n",i,j,k);
+        LogKit::LogFormatted(LogKit::LOW,"\n      Is the grid too coarse, or do you have wells with side-tracks?\n");
       }
     }
   }
@@ -178,7 +181,7 @@ KrigingData3D::writeToFile(const char * type)
   char * tmp = new char[MAX_STRING];
 
   sprintf(tmp,"KrigingData_%s",type);
-  fileName = LogKit::makeFullFileName(tmp,".dat");
+  fileName = ModelSettings::makeFullFileName(tmp,".dat");
 
   FILE * file = fopen(fileName, "w");
 

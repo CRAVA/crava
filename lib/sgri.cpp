@@ -13,7 +13,7 @@ using std::ifstream;
 #include "lib/global_def.h"
 #include "lib/sgri.h"
 #include "lib/lib_misc.h"
-#include "lib/log.h"
+#include "nrlib/iotools/logkit.hpp"
 #include "nrlib/iotools/fileio.hpp"
 #include "nrlib/exception/exception.hpp"
 
@@ -81,9 +81,9 @@ Sgri::readHeaderFile(char * fileName, char *errText, int &errCode)
     return (false);
   }
   else if (dim_ == 1) {
-    LogKit::writeLog("\nWarning  !!!\n");
-    LogKit::writeLog("Dimension for wavelet set to 1. Z-direction for 1D wavelet grid chosen.\n");
-    LogKit::writeLog("\n");
+    LogKit::LogFormatted(LogKit::LOW,"\nWarning  !!!\n");
+    LogKit::LogFormatted(LogKit::LOW,"Dimension for wavelet set to 1. Z-direction for 1D wavelet grid chosen.\n");
+    LogKit::LogFormatted(LogKit::LOW,"\n");
   }
   getline(headerFile, tmpStr);
   //Reading record 3 ... 3+dim: Axis labels + grid value label
@@ -335,9 +335,9 @@ Sgri::readBinaryFile(int n, char *errText, int &errCode)
   ifstream binFile(binFileName_,ios::in | ios::binary); //Check opening of file before calling this function
  
   if (nGrid_ > 1) {
-    LogKit::writeLog("\nWarning  !!!\n");
-    LogKit::writeLog("%d %s", nGrid_, "grids read from Sgri-file. Only the first is used.\n");
-    LogKit::writeLog("\n");
+    LogKit::LogFormatted(LogKit::LOW,"\nWarning  !!!\n");
+    LogKit::LogFormatted(LogKit::LOW,"%d %s", nGrid_, "grids read from Sgri-file. Only the first is used.\n");
+    LogKit::LogFormatted(LogKit::LOW,"\n");
   }
   if (hasComplex_) {
     if (errCode == 0)  

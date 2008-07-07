@@ -12,6 +12,8 @@
 #include "lib/random.h"
 #include "lib/kriging1d.h"
 
+#include "nrlib/iotools/logkit.hpp"
+
 #include "src/welldata.h"
 #include "src/faciesprob.h"
 #include "src/fftgrid.h"
@@ -19,8 +21,9 @@
 #include "src/crava.h"
 #include "src/simbox.h"
 #include "src/blockedlogs.h"
-#include "src/modelsettings.h"
+#include "src/model.h"
 
+using namespace NRLib2;
 
 FaciesProb::FaciesProb(ModelSettings * modelSettings,
                        int filegrid, const float ** sigma0, float *corrprior, Simbox *simbox, const Simbox& osimbox, int nzp, int nz, 
@@ -269,7 +272,7 @@ FaciesProb::makeFaciesDens(int nfac)
     density_[i]->multiply(smoother);
     density_[i]->invFFTInPlace();
     density_[i]->multiplyByScalar(float(sqrt(double(nbins_*nbins_*nbinsr_))));
-    if(LogKit::getDebugLevel()>=1)
+    if(ModelSettings::getDebugLevel()>=1)
     {
       char* fN1=new char[MAX_STRING];
       sprintf(fN1,"Dens_%d",i);
@@ -647,7 +650,7 @@ void FaciesProb::calculateConditionalFaciesProb(WellData **wells, int nWells)
     for (int b = 0 ; b < nBlocks ; b++)
     {
       BWfacies[i][b] = BWfacies_i[b];
-      //LogKit::writeLog("ib, BWfacies[i][b] = %d %d\n",ib,BWfacies[ib]);
+      //LogKit::LogFormatted(LogKit::LOW,"ib, BWfacies[i][b] = %d %d\n",ib,BWfacies[ib]);
     }
   }
    
@@ -668,7 +671,7 @@ void FaciesProb::calculateConditionalFaciesProb(WellData **wells, int nWells)
       for(int b = 0 ; b < nBlocks ; b++)
       {
         BWfaciesProb[f][i][b] = faciesProb_[f]->getRealValue(ipos[b],jpos[b],kpos[b]);
-        //LogKit::writeLog("f,ib, BWfaciesProb[f][i][b] = %d %d %.5f\n",f,ib,BWfaciesProb[f][ib]);
+        //LogKit::LogFormatted(LogKit::LOW,"f,ib, BWfaciesProb[f][i][b] = %d %d %.5f\n",f,ib,BWfaciesProb[f][ib]);
       }
     }
   }
@@ -693,7 +696,7 @@ void FaciesProb::calculateConditionalFaciesProb(WellData **wells, int nWells)
         for(int b = 0 ; b < bw[i]->getNumberOfBlocks() ; b++)
         {
           if (BWfacies[i][b] == f1) {
-            //LogKit::writeLog("f1,f2 = %d,%d   ib = %d    BWfacies[i][b] = %d   sumProb = %.5f\n",f1,f2,ib,BWfacies[i][b],sumProb);
+            //LogKit::LogFormatted(LogKit::LOW,"f1,f2 = %d,%d   ib = %d    BWfacies[i][b] = %d   sumProb = %.5f\n",f1,f2,ib,BWfacies[i][b],sumProb);
             sumProb[f1][f2][i] += BWfaciesProb[f2][i][b];
             numProb[f1][f2][i] += 1;
           }
@@ -725,37 +728,37 @@ void FaciesProb::calculateConditionalFaciesProb(WellData **wells, int nWells)
         totProb[f1] += condFaciesProb[f1][f2];
       }
     }
-    LogKit::writeLog("\nWell: %s\n",bw[i]->getWellname());
-    LogKit::writeLog("\nFacies      |");
+    LogKit::LogFormatted(LogKit::LOW,"\nWell: %s\n",bw[i]->getWellname());
+    LogKit::LogFormatted(LogKit::LOW,"\nFacies      |");
     for(int f=0 ; f < nFacies_ ; f++)
-      LogKit::writeLog(" %11s",modelSettings_->getFaciesName(f));
-    LogKit::writeLog("\n------------+");
+      LogKit::LogFormatted(LogKit::LOW," %11s",modelSettings_->getFaciesName(f));
+    LogKit::LogFormatted(LogKit::LOW,"\n------------+");
     for(int f=0 ; f < nFacies_ ; f++)
-      LogKit::writeLog("------------",f);
-    LogKit::writeLog("\n");
+      LogKit::LogFormatted(LogKit::LOW,"------------",f);
+    LogKit::LogFormatted(LogKit::LOW,"\n");
     for(int f1=0 ; f1 < nFacies_ ; f1++)
     {
-      LogKit::writeLog("%-11s |",modelSettings_->getFaciesName(f1));
+      LogKit::LogFormatted(LogKit::LOW,"%-11s |",modelSettings_->getFaciesName(f1));
       for(int f2=0 ; f2 < nFacies_ ; f2++)
       {
-        LogKit::writeLog(" %11.3f",condFaciesProb[f2][f1]);
+        LogKit::LogFormatted(LogKit::LOW," %11.3f",condFaciesProb[f2][f1]);
       }
-      LogKit::writeLog("\n");
+      LogKit::LogFormatted(LogKit::LOW,"\n");
     }
-    LogKit::writeLog("Total Prob  |");
+    LogKit::LogFormatted(LogKit::LOW,"Total Prob  |");
     for(int f=0 ; f < nFacies_ ; f++)
     {
-      LogKit::writeLog(" %11.3f",totProb[f]);
+      LogKit::LogFormatted(LogKit::LOW," %11.3f",totProb[f]);
     }
-    LogKit::writeLog("\n");
+    LogKit::LogFormatted(LogKit::LOW,"\n");
   }
 
   //
   // Estimate P( facies2 | facies1 )
   //
-  //LogKit::writeLog("\nThe table below gives the mean conditional probability of finding one of");
-  //LogKit::writeLog("\nthe facies specified in the left column when one of the facies specified");
-  //LogKit::writeLog("\nin the top row are observed in well logs ==> P(A|B)\n");
+  //LogKit::LogFormatted(LogKit::LOW,"\nThe table below gives the mean conditional probability of finding one of");
+  //LogKit::LogFormatted(LogKit::LOW,"\nthe facies specified in the left column when one of the facies specified");
+  //LogKit::LogFormatted(LogKit::LOW,"\nin the top row are observed in well logs ==> P(A|B)\n");
   for(int f1 = 0 ; f1 < nFacies_ ; f1++)
   {
     totProb[f1] = 0.0f;
@@ -778,27 +781,27 @@ void FaciesProb::calculateConditionalFaciesProb(WellData **wells, int nWells)
       totProb[f1] += condFaciesProb[f1][f2];
     }
   }
-  LogKit::writeLog("\nFor all wells:\n");
-  LogKit::writeLog("\nFacies      |");
+  LogKit::LogFormatted(LogKit::LOW,"\nFor all wells:\n");
+  LogKit::LogFormatted(LogKit::LOW,"\nFacies      |");
   for(int f=0 ; f < nFacies_ ; f++)
-    LogKit::writeLog(" %11s",modelSettings_->getFaciesName(f));
-  LogKit::writeLog("\n------------+");
+    LogKit::LogFormatted(LogKit::LOW," %11s",modelSettings_->getFaciesName(f));
+  LogKit::LogFormatted(LogKit::LOW,"\n------------+");
   for(int f=0 ; f < nFacies_ ; f++)
-    LogKit::writeLog("------------",f);
-  LogKit::writeLog("\n");
+    LogKit::LogFormatted(LogKit::LOW,"------------",f);
+  LogKit::LogFormatted(LogKit::LOW,"\n");
   for(int f1=0 ; f1 < nFacies_ ; f1++)
   {
-    LogKit::writeLog("%-11s |",modelSettings_->getFaciesName(f1));
+    LogKit::LogFormatted(LogKit::LOW,"%-11s |",modelSettings_->getFaciesName(f1));
     for(int f2=0 ; f2 < nFacies_ ; f2++)
-      LogKit::writeLog(" %11.3f",condFaciesProb[f2][f1]);
-    LogKit::writeLog("\n");
+      LogKit::LogFormatted(LogKit::LOW," %11.3f",condFaciesProb[f2][f1]);
+    LogKit::LogFormatted(LogKit::LOW,"\n");
   }
-  LogKit::writeLog("Total Prob  |");
+  LogKit::LogFormatted(LogKit::LOW,"Total Prob  |");
   for(int f=0 ; f < nFacies_ ; f++)
   {
-    LogKit::writeLog(" %11.3f",totProb[f]);
+    LogKit::LogFormatted(LogKit::LOW," %11.3f",totProb[f]);
   }
-  LogKit::writeLog("\n");
+  LogKit::LogFormatted(LogKit::LOW,"\n");
 
   
 // for(int i=0 ; i < nFacies_ ; i++)
@@ -965,11 +968,11 @@ void FaciesProb::filterWellLogs(WellData **wells, int nWells,
   int   * vtFacies  = new int[nz_];
 
   char* fileName = new char[MAX_STRING];
-  fileName =LogKit::makeFullFileName("BW_filteredlogs.dat");
+  fileName =ModelSettings::makeFullFileName("BW_filteredlogs.dat");
   FILE *file = fopen(fileName,"w");
-  fileName =LogKit::makeFullFileName("BW_originallogs.dat");
+  fileName =ModelSettings::makeFullFileName("BW_originallogs.dat");
   FILE *file2 = fopen(fileName,"w");
-  fileName =LogKit::makeFullFileName("BW_background.dat");
+  fileName =ModelSettings::makeFullFileName("BW_background.dat");
   FILE *file3 = fopen(fileName,"w");
   delete [] fileName;
   for (w1 = 0 ; w1 < nWells ; w1++)
@@ -1385,10 +1388,10 @@ FaciesProb::extrapolate(float * log,
       log[i] = log[last_nonmissing]; 
     }
     //  if (first_nonmissing > 0)
-    //    LogKit::writeLog("Vertical trend for %s extrapolated first %d cells.\n",
+    //    LogKit::LogFormatted(LogKit::LOW,"Vertical trend for %s extrapolated first %d cells.\n",
     //                      pName, first_nonmissing + 1);
     //    if (nz - 1 - last_nonmissing > 0)
-    //     LogKit::writeLog("Vertical trend for %s extrapolated last %d cells.\n",
+    //     LogKit::LogFormatted(LogKit::LOW,"Vertical trend for %s extrapolated last %d cells.\n",
     //                      pName, nz - 1 - last_nonmissing);
     //for (int i=0 ; i<nz ; i++) {
     //  printf("i log[i]  %d %.3f\n",i,log[i]);
@@ -1396,6 +1399,6 @@ FaciesProb::extrapolate(float * log,
   }
   else
   {
-    LogKit::writeLog("WARNING: All ... trend values are missing.\n");
+    LogKit::LogFormatted(LogKit::LOW,"WARNING: All ... trend values are missing.\n");
   }
 }

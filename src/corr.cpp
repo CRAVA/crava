@@ -1,10 +1,11 @@
-#include "corr.h"
-#include "model.h"
 #include <stdio.h>
+
+#include "src/corr.h"
+#include "src/model.h"
+#include "nrlib/iotools/logkit.hpp"
 
 using namespace NRLib2;
 
-#include "lib/log.h"
 Corr::Corr(float **pointVar0, float **Var0, float *CorrT, int n, float dt, 
            NRLib2::RegularSurface<double> * CorrXY)
 {
@@ -49,9 +50,9 @@ const RegularSurface<double>* Corr::getCorrXY() const
 
 void Corr::dumpResult() const
 {
-  char * filename1= LogKit::makeFullFileName("PriorVar0",".dat");
-  char * filename2= LogKit::makeFullFileName("PriorCorrTUnFiltered",".dat");
-  char * filename3= LogKit::makeFullFileName("PriorCorrXY",".irap");
+  char * filename1= ModelSettings::makeFullFileName("PriorVar0",".dat");
+  char * filename2= ModelSettings::makeFullFileName("PriorCorrTUnFiltered",".dat");
+  char * filename3= ModelSettings::makeFullFileName("PriorCorrXY",".irap");
   int i,j;
   FILE *file1 = fopen(filename1, "w");
   FILE *file2 = fopen(filename2, "w");
@@ -94,20 +95,20 @@ Corr::setVar0(float ** var0)
 
 void Corr::printVariancesToScreen()
 {
-  LogKit::writeLog("\n");
-  LogKit::writeLog("                         ln Vp     ln Vs    ln Rho         \n");
-  LogKit::writeLog("--------------------------------------------------------------------\n");
-  LogKit::writeLog("Parameter variances:   %.1e   %.1e   %.1e (used by program)\n",Var0_[0][0],Var0_[1][1],Var0_[2][2]);
-  LogKit::writeLog("Well-log  variances:   %.1e   %.1e   %.1e                  \n",pointVar0_[0][0],pointVar0_[1][1],pointVar0_[2][2]);
+  LogKit::LogFormatted(LogKit::LOW,"\n");
+  LogKit::LogFormatted(LogKit::LOW,"                         ln Vp     ln Vs    ln Rho         \n");
+  LogKit::LogFormatted(LogKit::LOW,"--------------------------------------------------------------------\n");
+  LogKit::LogFormatted(LogKit::LOW,"Parameter variances:   %.1e   %.1e   %.1e (used by program)\n",Var0_[0][0],Var0_[1][1],Var0_[2][2]);
+  LogKit::LogFormatted(LogKit::LOW,"Well-log  variances:   %.1e   %.1e   %.1e                  \n",pointVar0_[0][0],pointVar0_[1][1],pointVar0_[2][2]);
 
   float corr01 = Var0_[0][1]/(sqrt(Var0_[0][0]*Var0_[1][1]));
   float corr02 = Var0_[0][2]/(sqrt(Var0_[0][0]*Var0_[2][2]));
   float corr12 = Var0_[1][2]/(sqrt(Var0_[1][1]*Var0_[2][2]));
-  LogKit::writeLog("\n");
-  LogKit::writeLog("Parameter correlations:\n");
-  LogKit::writeLog("           ln Vp     ln Vs    ln Rho \n");
-  LogKit::writeLog("-------------------------------------\n");
-  LogKit::writeLog("ln Vp      %5.2f     %5.2f     %5.2f \n",1.0f, corr01, corr02);
-  LogKit::writeLog("ln Vs                %5.2f     %5.2f \n",1.0f, corr12);
-  LogKit::writeLog("ln Rho                         %5.2f \n",1.0f);
+  LogKit::LogFormatted(LogKit::LOW,"\n");
+  LogKit::LogFormatted(LogKit::LOW,"Parameter correlations:\n");
+  LogKit::LogFormatted(LogKit::LOW,"           ln Vp     ln Vs    ln Rho \n");
+  LogKit::LogFormatted(LogKit::LOW,"-------------------------------------\n");
+  LogKit::LogFormatted(LogKit::LOW,"ln Vp      %5.2f     %5.2f     %5.2f \n",1.0f, corr01, corr02);
+  LogKit::LogFormatted(LogKit::LOW,"ln Vs                %5.2f     %5.2f \n",1.0f, corr12);
+  LogKit::LogFormatted(LogKit::LOW,"ln Rho                         %5.2f \n",1.0f);
 }

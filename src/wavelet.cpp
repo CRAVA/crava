@@ -1,12 +1,10 @@
-#include "wavelet.h"
-#include "wavelet1D.h"
-#include "wavelet3D.h"
-
 #include <string.h>
 #include <assert.h>
 #include <math.h>
 
-#include "nrlib/surface/regularsurface.hpp"
+#include "wavelet.h"
+#include "wavelet1D.h"
+#include "wavelet3D.h"
 
 #include "fft/include/fftw.h"
 #include "fft/include/rfftw.h"
@@ -16,14 +14,19 @@
 #include "lib/global_def.h"
 #include "lib/lib_misc.h"
 #include "lib/lib_matr.h"
-#include "lib/log.h"
 #include "lib/sgri.h"
 
+#include "nrlib/surface/regularsurface.hpp"
+#include "nrlib/iotools/logkit.hpp"
+
 #include "src/modelsettings.h"
+#include "src/model.h"
 #include "src/blockedlogs.h"
 #include "src/welldata.h"
 #include "src/fftgrid.h"
 #include "src/simbox.h"
+
+using namespace NRLib2;
 
 Wavelet::Wavelet(int dim)
   : dim_(dim)
@@ -169,7 +172,7 @@ void
 Wavelet::scale(float scale)
 {
   if (scale != 1.0f)
-    LogKit::writeLog("  Scaling wavelet with gain factor         : %.3e\n",scale);
+    LogKit::LogFormatted(LogKit::LOW,"  Scaling wavelet with gain factor         : %.3e\n",scale);
   scale_ = scale;
 }
 
@@ -193,8 +196,8 @@ Wavelet::setShiftGrid(NRLib2::RegularSurface<double> * grid, Simbox * simbox)
 void
 Wavelet::printToFile(char* fileName,fftw_real* vec, int nzp) const
 {
-  if( LogKit::getDebugLevel() > 0) {
-      char * fName = LogKit::makeFullFileName(fileName, ".dat");
+  if( ModelSettings::getDebugLevel() > 0) {
+      char * fName = ModelSettings::makeFullFileName(fileName, ".dat");
       FILE *file = fopen(fName,"wb");
       int i;
       for(i=0;i<nzp;i++)
@@ -424,7 +427,7 @@ Wavelet::getIndexPost(int start,int nInd,int nzp)
 float         
 Wavelet::getNoiseStandardDeviation(Simbox * simbox, FFTGrid * seisCube, WellData ** wells, int nWells)
 {
-  //LogKit::writeLog("\n  Estimating noise from seismic data and (nonfiltered) blocked wells");
+  //LogKit::LogFormatted(LogKit::LOW,"\n  Estimating noise from seismic data and (nonfiltered) blocked wells");
 
   float errStd  = 0.0f;
   float dataVar = 0.0f;
@@ -542,7 +545,7 @@ Wavelet::getNoiseStandardDeviation(Simbox * simbox, FFTGrid * seisCube, WellData
         fftInv(synt_c[w],synt_r[w],nzp);
         shiftReal(-shift/dz[w],synt_r[w],nzp);
         fillInSeismic(seisData,start, length,seis_r[w],nzp);
-        if(LogKit::getDebugLevel() > 0)
+        if(ModelSettings::getDebugLevel() > 0)
         {
           char* fileName = new char[MAX_STRING];
           sprintf(fileName,"seismic_Well_%d_%d",w,int(floor(theta_/PI*180.0+0.5)));
@@ -550,7 +553,7 @@ Wavelet::getNoiseStandardDeviation(Simbox * simbox, FFTGrid * seisCube, WellData
           sprintf(fileName,"synthetic_seismic_Well_%d_%d",w,int(floor(theta_/PI*180.0+0.5)));
           printToFile(fileName,synt_r[w], nzp);
           sprintf(fileName,"wellTime_Well_%d",w);
-          char * fName = LogKit::makeFullFileName(fileName, ".dat");
+          char * fName = ModelSettings::makeFullFileName(fileName, ".dat");
           FILE *file = fopen(fName,"wb");
           //fprint(file,"%f %f  %f \n",,dz[w],);
           fclose(file);
@@ -568,7 +571,7 @@ Wavelet::getNoiseStandardDeviation(Simbox * simbox, FFTGrid * seisCube, WellData
       else
       {
         nDataUsedInWell[w] = 0; 
-        LogKit::writeLog("\n  Not using vertical well %s for error estimation (length=%.1fms  required length=%.1fms).",
+        LogKit::LogFormatted(LogKit::LOW,"\n  Not using vertical well %s for error estimation (length=%.1fms  required length=%.1fms).",
                          wells[w]->getWellname(),length*dz0,waveletLength_);
       }
     }
@@ -597,41 +600,41 @@ Wavelet::getNoiseStandardDeviation(Simbox * simbox, FFTGrid * seisCube, WellData
 
   if (nData == 0)
   {
-    LogKit::writeLog("\nERROR: Cannot estimate signal-to-noiseratio. No legal well data available. CRAVA must stop\n");
+    LogKit::LogFormatted(LogKit::LOW,"\nERROR: Cannot estimate signal-to-noiseratio. No legal well data available. CRAVA must stop\n");
     exit(1);
   }
   dataVar /= float(nData);
   errStd  /= float(nData);
   errStd   = sqrt(errStd);
   
-  //LogKit::writeLog("\n  Reporting errors (as standard deviations) estimated in different ways:\n\n");
-  LogKit::writeLog("                                     SeisData        ActuallyUsed       OptimalGlobal      OptimalLocal\n");
-  LogKit::writeLog("  Well                  shift[ms]     StdDev          Gain   S/N         Gain   S/N         Gain   S/N \n");
-  LogKit::writeLog("  --------------------------------------------------------------------------------------------------------\n");
+  //LogKit::LogFormatted(LogKit::LOW,"\n  Reporting errors (as standard deviations) estimated in different ways:\n\n");
+  LogKit::LogFormatted(LogKit::LOW,"                                     SeisData        ActuallyUsed       OptimalGlobal      OptimalLocal\n");
+  LogKit::LogFormatted(LogKit::LOW,"  Well                  shift[ms]     StdDev          Gain   S/N         Gain   S/N         Gain   S/N \n");
+  LogKit::LogFormatted(LogKit::LOW,"  --------------------------------------------------------------------------------------------------------\n");
   for(i=0;i<nWells;i++)
   {
     if(nActiveData[i]>0) {
       float SNActuallyUsed  = dataVarWell[i]/errVarWell[i];
       float SNOptimalGlobal = dataVarWell[i]/(errWell[i]*errWell[i]);
       float SNOptimalLocal  = dataVarWell[i]/(errWellOptScale[i]*errWellOptScale[i]);
-      LogKit::writeLog("  %-20s   %6.2f     %9.2e        1.00 %7.2f     %6.2f %7.2f     %6.2f %7.2f\n", 
+      LogKit::LogFormatted(LogKit::LOW,"  %-20s   %6.2f     %9.2e        1.00 %7.2f     %6.2f %7.2f     %6.2f %7.2f\n", 
                        wells[i]->getWellname(),shiftWell[i],sqrt(dataVarWell[i]),
                        SNActuallyUsed,optScale,SNOptimalGlobal,scaleOptWell[i],SNOptimalLocal);
     }
     else
-      LogKit::writeLog("  %-20s      -            -             -      -           -      -           -      -   \n",
+      LogKit::LogFormatted(LogKit::LOW,"  %-20s      -            -             -      -           -      -           -      -   \n",
                        wells[i]->getWellname()); 
   }
   float empSNRatio = dataVar/(errStd*errStd);
-  LogKit::writeLog("\n  Signal to noise ratio used for this angle stack is: %6.2f\n", empSNRatio);
+  LogKit::LogFormatted(LogKit::LOW,"\n  Signal to noise ratio used for this angle stack is: %6.2f\n", empSNRatio);
 
   if (empSNRatio < 1.1f) 
   {
-    LogKit::writeLog("\nERROR: The empirical signal-to-noise ratio Var(seismic data)/Var(noise) is %.2f. Ratios\n",empSNRatio);
-    LogKit::writeLog("       smaller than 1 are illegal and CRAVA has to stop. CRAVA was for some reason not able\n");
-    LogKit::writeLog("       to estimate this ratio reliably, and you must give it as input to the model file.\n");
-    LogKit::writeLog("\nNOTE: If the wavelet was estimated by CRAVA the solution may be to remove one or more wells\n");
-    LogKit::writeLog("      from the wavelet estimation (compare shifts and SN-ratios for different wells).\n\n");
+    LogKit::LogFormatted(LogKit::LOW,"\nERROR: The empirical signal-to-noise ratio Var(seismic data)/Var(noise) is %.2f. Ratios\n",empSNRatio);
+    LogKit::LogFormatted(LogKit::LOW,"       smaller than 1 are illegal and CRAVA has to stop. CRAVA was for some reason not able\n");
+    LogKit::LogFormatted(LogKit::LOW,"       to estimate this ratio reliably, and you must give it as input to the model file.\n");
+    LogKit::LogFormatted(LogKit::LOW,"\nNOTE: If the wavelet was estimated by CRAVA the solution may be to remove one or more wells\n");
+    LogKit::LogFormatted(LogKit::LOW,"      from the wavelet estimation (compare shifts and SN-ratios for different wells).\n\n");
     exit(1);
   }
  

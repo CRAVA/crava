@@ -4,15 +4,17 @@
 #include <string.h>
 #include <time.h>
 
+#include "lib/global_def.h"
+#include "lib/lib_misc.h"
+
+#include "nrlib/iotools/logkit.hpp"
+
 #include "src/modelsettings.h"
 #include "src/modelfile.h"
 #include "src/model.h"
-
 #include "src/vario.h"
 
-#include "lib/global_def.h"
-#include "lib/lib_misc.h"
-#include "lib/log.h"
+using namespace NRLib2;
 
 ModelFile::ModelFile(char * fileName)
 {
@@ -60,7 +62,7 @@ ModelFile::ModelFile(char * fileName)
   FILE* file = fopen(fileName,"r");
   if(file == 0)
   {
-    LogKit::writeLog("Error: Could not open file %s for reading.\n", fileName);
+    LogKit::LogFormatted(LogKit::LOW,"Error: Could not open file %s for reading.\n", fileName);
     exit(1);
   }
   int nParam = 0;
@@ -333,36 +335,36 @@ ModelFile::ModelFile(char * fileName)
  
   if (wrongCommand)
   {
-    LogKit::writeLog("\nValid commands are:\n");
-    LogKit::writeLog("  ANGULARCORRELATION\n");
-    LogKit::writeLog("  AREA\n");
-    LogKit::writeLog("  BACKGROUND\n");
-    LogKit::writeLog("  BACKGROUNDCONTROL\n");
-    LogKit::writeLog("  DEBUG\n");
-    LogKit::writeLog("  DEPTH\n");
-    LogKit::writeLog("  DEPTHSURFACES\n");
-    LogKit::writeLog("  ENERGYTRESHOLD\n");
-    LogKit::writeLog("  FORCEFILE\n");
-    LogKit::writeLog("  FREQUENCYBAND\n");
-    LogKit::writeLog("  GIVESIGNALTONOISERATIO\n");
-    LogKit::writeLog("  KRIGING\n");
-    LogKit::writeLog("  LATERALCORRELATION\n");
-    LogKit::writeLog("  LOCALWAVELET\n");
-    LogKit::writeLog("  NSIMULATIONS\n");
-    LogKit::writeLog("  OUTPUT\n");
-    LogKit::writeLog("  PADDING\n");
-    LogKit::writeLog("  PARAMETERCORRELATION\n");
-    LogKit::writeLog("  PREDICTION\n");
-    LogKit::writeLog("  PREFIX\n");
-    LogKit::writeLog("  PSSEISMIC\n");
-    LogKit::writeLog("  REFLECTIONMATRIX\n");
-    LogKit::writeLog("  SEED\n");
-    LogKit::writeLog("  SEGYOFFSET\n");
-    LogKit::writeLog("  SEISMIC\n");
-    LogKit::writeLog("  SEISMICRESOLUTION\n");
-    LogKit::writeLog("  WAVELETLENGTH\n");
-    LogKit::writeLog("  WELLS\n");
-    LogKit::writeLog("  WHITENOISE\n");
+    LogKit::LogFormatted(LogKit::LOW,"\nValid commands are:\n");
+    LogKit::LogFormatted(LogKit::LOW,"  ANGULARCORRELATION\n");
+    LogKit::LogFormatted(LogKit::LOW,"  AREA\n");
+    LogKit::LogFormatted(LogKit::LOW,"  BACKGROUND\n");
+    LogKit::LogFormatted(LogKit::LOW,"  BACKGROUNDCONTROL\n");
+    LogKit::LogFormatted(LogKit::LOW,"  DEBUG\n");
+    LogKit::LogFormatted(LogKit::LOW,"  DEPTH\n");
+    LogKit::LogFormatted(LogKit::LOW,"  DEPTHSURFACES\n");
+    LogKit::LogFormatted(LogKit::LOW,"  ENERGYTRESHOLD\n");
+    LogKit::LogFormatted(LogKit::LOW,"  FORCEFILE\n");
+    LogKit::LogFormatted(LogKit::LOW,"  FREQUENCYBAND\n");
+    LogKit::LogFormatted(LogKit::LOW,"  GIVESIGNALTONOISERATIO\n");
+    LogKit::LogFormatted(LogKit::LOW,"  KRIGING\n");
+    LogKit::LogFormatted(LogKit::LOW,"  LATERALCORRELATION\n");
+    LogKit::LogFormatted(LogKit::LOW,"  LOCALWAVELET\n");
+    LogKit::LogFormatted(LogKit::LOW,"  NSIMULATIONS\n");
+    LogKit::LogFormatted(LogKit::LOW,"  OUTPUT\n");
+    LogKit::LogFormatted(LogKit::LOW,"  PADDING\n");
+    LogKit::LogFormatted(LogKit::LOW,"  PARAMETERCORRELATION\n");
+    LogKit::LogFormatted(LogKit::LOW,"  PREDICTION\n");
+    LogKit::LogFormatted(LogKit::LOW,"  PREFIX\n");
+    LogKit::LogFormatted(LogKit::LOW,"  PSSEISMIC\n");
+    LogKit::LogFormatted(LogKit::LOW,"  REFLECTIONMATRIX\n");
+    LogKit::LogFormatted(LogKit::LOW,"  SEED\n");
+    LogKit::LogFormatted(LogKit::LOW,"  SEGYOFFSET\n");
+    LogKit::LogFormatted(LogKit::LOW,"  SEISMIC\n");
+    LogKit::LogFormatted(LogKit::LOW,"  SEISMICRESOLUTION\n");
+    LogKit::LogFormatted(LogKit::LOW,"  WAVELETLENGTH\n");
+    LogKit::LogFormatted(LogKit::LOW,"  WELLS\n");
+    LogKit::LogFormatted(LogKit::LOW,"  WHITENOISE\n");
     exit(1);
   }
 
@@ -444,10 +446,10 @@ ModelFile::ModelFile(char * fileName)
 
   if(nErrors > 0)
   {
-    LogKit::writeLog("\nThe following errors were found when parsing %s:\n", fileName);
+    LogKit::LogFormatted(LogKit::LOW,"\nThe following errors were found when parsing %s:\n", fileName);
     for(int i=0;i<nErrors;i++)
     {
-      LogKit::writeLog("%s", errorList[i]);
+      LogKit::LogFormatted(LogKit::LOW,"%s", errorList[i]);
       delete [] errorList[i];
     }
     failed_ = true;    
@@ -1191,12 +1193,8 @@ ModelFile::readCommandPrefix(char ** params, int & pos, char * errText)
 {
   int error;
   int nPar = getParNum(params, pos, error, errText, params[pos-1], 1);
-  if(error == 0) {
-    LogKit::setFilePrefix(params[pos]);
-    char * logFileName = LogKit::makeFullFileName("logFile.txt");
-    LogKit::setLogFileName(logFileName);
-    delete [] logFileName;
-  }
+  if(error == 0)
+    ModelSettings::setFilePrefix(params[pos]);
   pos += nPar+1;
   return(error);
 }
@@ -1275,7 +1273,7 @@ ModelFile::readCommandOutput(char ** params, int & pos, char * errText)
     if((outputFlag & ModelSettings::FACIESPROB) >0 && (outputFlag & ModelSettings::FACIESPROBRELATIVE)>0)
     {
       outputFlag -=1048576;
-      LogKit::writeLog("Warning: Both FACIESPROB and FACIESPROBRELATIVE arr wanted as output. Only FACIESPROB is given.\n");
+      LogKit::LogFormatted(LogKit::LOW,"Warning: Both FACIESPROB and FACIESPROBRELATIVE arr wanted as output. Only FACIESPROB is given.\n");
     }
 
     modelSettings_->setFormatFlag(formatFlag);
@@ -1441,7 +1439,7 @@ ModelFile::readCommandLocalWavelet(char ** params, int & pos, char * errText)
           if(openError != 0)
             error = 1;
 
-          LogKit::writeLog("ERROR: Keyword LOCALWAVELET has temporarily been deactivated..\n");
+          LogKit::LogFormatted(LogKit::LOW,"ERROR: Keyword LOCALWAVELET has temporarily been deactivated..\n");
           exit(1);
 
           /* 
@@ -1680,7 +1678,7 @@ ModelFile::checkFileOpen(char ** fNames, int nFiles, const char * command, char 
   if(details == true && nFiles >= 32)
   {
     details = false;
-    LogKit::writeLog("\nINFO: Log details for checkFileOpen() has been turned off since nFiles>=32\n");
+    LogKit::LogFormatted(LogKit::LOW,"\nINFO: Log details for checkFileOpen() has been turned off since nFiles>=32\n");
   }
   int i, error = 0;
   int flag = 1;
@@ -1785,3 +1783,4 @@ ModelFile::createVario(char ** param, int nPar, const char * command, char * err
   delete [] varPar;
   return(result);
 }
+
