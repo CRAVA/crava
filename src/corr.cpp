@@ -1,13 +1,12 @@
 #include <stdio.h>
 
 #include "src/corr.h"
+#include "src/definitions.h"
 #include "src/model.h"
 #include "nrlib/iotools/logkit.hpp"
 
-using namespace NRLib2;
-
 Corr::Corr(float **pointVar0, float **Var0, float *CorrT, int n, float dt, 
-           NRLib2::RegularSurface<double> * CorrXY)
+           Surface * CorrXY)
 {
   Var0_ = Var0;
   pointVar0_ = pointVar0;
@@ -43,9 +42,9 @@ const float** Corr::getVar0() const
   return (const float **) Var0_;	
 }
 
-const RegularSurface<double>* Corr::getCorrXY() const
+const NRLib2::RegularSurface<double>* Corr::getCorrXY() const
 {
-  return (const RegularSurface<double>*) CorrXY_;
+  return (const NRLib2::RegularSurface<double>*) CorrXY_;
 }
 
 void Corr::dumpResult() const

@@ -23,10 +23,9 @@
 #include "src/model.h"
 #include "src/blockedlogs.h"
 #include "src/welldata.h"
+#include "src/definitions.h"
 #include "src/fftgrid.h"
 #include "src/simbox.h"
-
-using namespace NRLib2;
 
 Wavelet::Wavelet(int dim)
   : dim_(dim)
@@ -177,7 +176,7 @@ Wavelet::scale(float scale)
 }
 
 void 
-Wavelet::setShiftGrid(NRLib2::RegularSurface<double> * grid, Simbox * simbox)
+Wavelet::setShiftGrid(Surface * grid, Simbox * simbox)
 {
   gridNI_ = simbox->getnx();
   gridNJ_ = simbox->getny();
@@ -863,7 +862,7 @@ Wavelet::fillInnWavelet(fftw_real* wavelet_r,int nzp,float dz)
 
 
 void 
-Wavelet::setGainGrid(NRLib2::RegularSurface<double> * grid, Simbox * simbox)
+Wavelet::setGainGrid(Surface * grid, Simbox * simbox)
 {
   double sum = 0.0;
   int nData = 0;

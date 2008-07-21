@@ -20,10 +20,9 @@
 #include "src/model.h"
 #include "src/blockedlogs.h"
 #include "src/welldata.h"
+#include "src/definitions.h"
 #include "src/fftgrid.h"
 #include "src/simbox.h"
-
-using namespace NRLib2;
 
 Wavelet3D::Wavelet3D(char * fileName, ModelSettings * modelSettings, Simbox *simBox, float theta, int dim)
   :Wavelet(modelSettings, dim)

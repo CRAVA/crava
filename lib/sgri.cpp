@@ -10,6 +10,7 @@ using std::ifstream;
 #include <vector>
 #include <cmath>
 
+#include "src/definitions.h"
 #include "lib/global_def.h"
 #include "lib/sgri.h"
 #include "lib/lib_misc.h"
@@ -18,10 +19,9 @@ using std::ifstream;
 #include "nrlib/exception/exception.hpp"
 
 using namespace std;
-using namespace NRLib2;
 
 Sgri::Sgri(char * fileName, char *errText, int &errCode) :
-  Grid<float>(0,0,0),
+  NRLib2::Grid<float>(0,0,0),
   x0_(RMISSING),
   y0_(RMISSING),
   z0_(RMISSING),
@@ -349,7 +349,7 @@ Sgri::readBinaryFile(int n, char *errText, int &errCode)
   }
   
   try {
-    ReadBinaryFloatArray(binFile, begin(), n);
+    NRLib2::ReadBinaryFloatArray(binFile, begin(), n);
   }
   catch (NRLib2::Exception& e) {
     if (errCode == 0)  

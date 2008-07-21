@@ -9,8 +9,7 @@
 #include "src/welldata.h"
 #include "src/bwellpt.h"
 #include "src/model.h"
-
-using namespace NRLib2;
+#include "src/definitions.h"
 
 //---------------------------------------------------------------------
 KrigingData3D::KrigingData3D(int ntot) 

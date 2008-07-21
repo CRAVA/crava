@@ -7,6 +7,7 @@
 
 #include "nrlib/iotools/logkit.hpp"
 
+#include "src/definitions.h"
 #include "src/analyzelog.h"
 #include "src/model.h"
 #include "src/modelsettings.h"
@@ -15,8 +16,6 @@
 #include "src/welldata.h"
 #include "src/background.h"
 #include "src/simbox.h"
-
-using namespace NRLib2;
 
 Analyzelog::Analyzelog(WellData      ** wells,
                        Background     * background,

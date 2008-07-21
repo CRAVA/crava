@@ -9,9 +9,7 @@
 
 #include "src/simbox.h"
 #include "src/model.h"
-
-
-using namespace NRLib2;
+#include "src/definitions.h"
 
 Simbox::Simbox(void) : Volume()
 {
@@ -27,7 +25,7 @@ Simbox::Simbox(void) : Volume()
   dz_          = 0;
 }
 
-Simbox::Simbox(double x0, double y0, RegularSurface<double> * z0, double lx, 
+Simbox::Simbox(double x0, double y0, Surface * z0, double lx, 
                double ly, double lz, double rot, double dx, double dy, double dz) :
   Volume()
 {
@@ -37,7 +35,7 @@ Simbox::Simbox(double x0, double y0, RegularSurface<double> * z0, double lx,
   SetDimensions(x0,y0,lx,ly);
   SetAngle(rot);
   
-  RegularSurface<double> * z1 = new RegularSurface<double>(*z0);
+  Surface * z1 = new Surface(*z0);
   z1->Add(lz);
   SetSurfaces(z0,z1); //Automatically sets lz correct in this case.
 
@@ -345,9 +343,8 @@ Simbox::writeTopBotGrids(const char * topname, const char * botname)
 
   char * tmpName = ModelSettings::makeFullFileName(topname);
   std::string tName(tmpName);
-  assert(typeid(GetTopSurface()) == typeid(RegularSurface<double>));
-  const RegularSurface<double> & wtsurf = 
-    dynamic_cast<const RegularSurface<double> &>(GetTopSurface());
+  assert(typeid(GetTopSurface()) == typeid(Surface));
+  const NRLib2::RegularSurface<double> & wtsurf = dynamic_cast<const NRLib2::RegularSurface<double> &>(GetTopSurface());
   NRLib2::WriteStormBinarySurf(wtsurf, tName);
 
   //Strip away path
@@ -374,9 +371,8 @@ Simbox::writeTopBotGrids(const char * topname, const char * botname)
     }
   
   std::string bName(tmpName);
-  assert(typeid(GetBotSurface()) == typeid(RegularSurface<double>));
-  const RegularSurface<double> & wbsurf = 
-    dynamic_cast<const RegularSurface<double> &>(GetTopSurface());
+  assert(typeid(GetBotSurface()) == typeid(Surface));
+  const NRLib2::RegularSurface<double> & wbsurf = dynamic_cast<const NRLib2::RegularSurface<double> &>(GetTopSurface());
   NRLib2::WriteStormBinarySurf(wbsurf, bName);
   delete [] tmpName;
 }
@@ -464,11 +460,10 @@ Simbox::setArea(double x0, double y0, double lx, double ly, double rot, double d
 
 
 void
-Simbox::setDepth(RegularSurface<double> * zref, double zShift, double lz, 
-                 double dz)
+Simbox::setDepth(Surface * zref, double zShift, double lz, double dz)
 {
   zref->Add(zShift);
-  RegularSurface<double> * zBot = new RegularSurface<double>(*zref);
+  Surface * zBot = new Surface(*zref);
   zBot->Add(lz);
   SetSurfaces(zref,zBot);
   dz_ = dz;
@@ -481,8 +476,7 @@ Simbox::setDepth(RegularSurface<double> * zref, double zShift, double lz,
 
 
 void
-Simbox::setDepth(RegularSurface<double> * z0, 
-                 RegularSurface<double> * z1, int nz)
+Simbox::setDepth(Surface * z0, Surface * z1, int nz)
 {
   SetSurfaces(z0, z1);
   nz_ = nz;

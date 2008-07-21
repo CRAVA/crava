@@ -14,8 +14,7 @@
 #include "src/bwellpt.h"
 #include "src/simbox.h"
 #include "src/covgridseparated.h"
-
-using namespace NRLib2;
+#include "src/definitions.h"
 
 CKrigingAdmin::CKrigingAdmin(const Simbox      & simbox, 
                              CBWellPt         ** pBWellPt, 

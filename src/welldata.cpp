@@ -13,11 +13,10 @@
 
 #include "nrlib/iotools/logkit.hpp"
 
+#include "src/definitions.h"
 #include "src/welldata.h"
 #include "src/modelsettings.h"
 #include "src/model.h"
-
-using namespace NRLib2;
 
 //----------------------------------------------------------------------------
 WellData::WellData(const char     * wellFileName, 

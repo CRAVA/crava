@@ -19,11 +19,10 @@
 #include "src/modelsettings.h"
 #include "src/model.h"
 #include "src/blockedlogs.h"
+#include "src/definitions.h"
 #include "src/welldata.h"
 #include "src/fftgrid.h"
 #include "src/simbox.h"
-
-using namespace NRLib2;
 
 Wavelet1D::Wavelet1D(Simbox         * simbox,
                      FFTGrid        * seisCube,

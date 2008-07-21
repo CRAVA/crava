@@ -6,6 +6,7 @@
 #include "nrlib/surface/regularsurface.hpp"
 
 #include "lib/global_def.h"
+#include "src/definitions.h"
 #include "src/background.h" //or move getAlpha & co to cpp-file.
 #include "src/modelsettings.h"
 
@@ -42,7 +43,7 @@ public:
   void             releaseWells();                                        // Deallocates well data.
   void             releaseGrids();                                        // Cuts connection to SeisCube_ and  backModel_
 
-  NRLib2::RegularSurface<double> * getCorrXYGrid();
+  Surface        * getCorrXYGrid();
 
 private:
   void             makeTimeSimbox(char * errText);
@@ -61,7 +62,7 @@ private:
   int              readSegyFiles(char ** fNames, int nFiles, FFTGrid ** target, char * errText,
                                  int gridType, int start = 0);
   int              readStormFile(char *fName, FFTGrid * & target, const char * parName, char * errText);
-  void             estimateCorrXYFromSeismic(NRLib2::RegularSurface<double> * CorrXY);
+  void             estimateCorrXYFromSeismic(Surface * CorrXY);
   int              setPaddingSize(int nx, float px);
   float         ** readMatrix(char * fileName, int n1, int n2, const char * readReason, char * errText);
   float         ** getClassicAMatrix(void);
@@ -82,8 +83,8 @@ private:
   Corr           * priorCorrelations_;     //
   FFTGrid       ** seisCube_;              // Seismic data cubes
   Wavelet       ** wavelet_;               // Wavelet for angle
-  NRLib2::RegularSurface<double> ** shiftGrids_; // Grids containing shift data for wavelets
-  NRLib2::RegularSurface<double> ** gainGrids_;  // Grids containing gain data for wavelets.
+  Surface       ** shiftGrids_;            // Grids containing shift data for wavelets
+  Surface       ** gainGrids_;             // Grids containing gain data for wavelets.
   RandomGen      * randomGen_;             // Random generator.
   float          * priorFacies_;
   float         ** reflectionMatrix_;      // May specify own Zoeppritz-approximation. Default NULL,

@@ -8,8 +8,7 @@
 #include "src/covgridseparated.h"
 #include "src/fftgrid.h"
 #include "src/model.h"
-
-using namespace NRLib2;
+#include "src/definitions.h"
 
 CovGridSeparated::CovGridSeparated(const FFTGrid & grid)
 {

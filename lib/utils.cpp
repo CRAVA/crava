@@ -1,10 +1,9 @@
 #include <iostream>
 
 #include "lib/utils.h"
+#include "src/definitions.h"
 
 #include "nrlib/iotools/logkit.hpp"
-
-using namespace NRLib2;
 
 //------------------------------------------------------------
 void    
@@ -88,8 +87,3 @@ Utils::writeMatrix(double ** matrix,
     LogKit::LogFormatted(LogKit::LOW,"\n");
   }
 }
-
-
-
-
-

@@ -16,12 +16,11 @@
 
 #include "nrlib/iotools/logkit.hpp"
 
-#include "fftgrid.h"
-#include "corr.h"
-#include "simbox.h"
-#include "model.h"
-
-using namespace NRLib2;
+#include "src/fftgrid.h"
+#include "src/corr.h"
+#include "src/simbox.h"
+#include "src/model.h"
+#include "src/definitions.h"
 
 FFTGrid::FFTGrid(int nx, int ny, int nz, int nxp, int nyp, int nzp)
 {

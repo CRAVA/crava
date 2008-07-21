@@ -1,6 +1,7 @@
 #ifndef CORR_H
 #define CORR_H
 
+#include "src/definitions.h"
 #include "nrlib/surface/regularsurface.hpp"
 
 class Corr{
@@ -10,20 +11,16 @@ public:
        float    * CorrT, 
        int        n, 
        float      dt, 
-       NRLib2::RegularSurface<double> * CorrXY);
-
+       Surface  * CorrXY);
   ~Corr(void); 
   const float   ** getVar0() const;
   const float    * getCorrT(int &n, float &dt) const;
-  
-  const NRLib2::RegularSurface<double>*  getCorrXY() const;
-  
+  const Surface  * getCorrXY() const;
   const int        getn()  const { return n_;} ;
   const int        getnx() const { return CorrXY_->GetNI();} 
   const int        getny() const { return CorrXY_->GetNJ();} 
   float            getdt() const { return(dt_); }
   void             setVar0(float ** var0);
-
   void             dumpResult() const;
   void             printVariancesToScreen();
 
@@ -34,6 +31,6 @@ private:
   int              n_;         // length of CorT
   float            dt_;        // time step for CorT
 
-  NRLib2::RegularSurface<double> * CorrXY_;
+  Surface        * CorrXY_;
 };
 #endif

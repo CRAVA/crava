@@ -13,14 +13,13 @@
 #include "src/covgridseparated.h"
 #include "src/krigingadmin.h"
 #include "src/faciesprob.h"
+#include "src/definitions.h"
 #include "lib/random.h"
 #include "lib/lib_matr.h"
 #include "nrlib/iotools/logkit.hpp"
 
 #include <assert.h>
 #include <time.h>
-
-using namespace NRLib2;
 
 Crava::Crava(Model * model)
 {	
@@ -168,9 +167,8 @@ Crava::Crava(Model * model)
 
   //  fclose(test);
     Simbox *regularSimbox = new Simbox(simbox_);
-    assert(typeid(simbox_->GetTopSurface()) == typeid(RegularSurface<double>));
-    RegularSurface<double> * tsurf = 
-      new RegularSurface<double>(dynamic_cast<const RegularSurface<double> &>
+    assert(typeid(simbox_->GetTopSurface()) == typeid(Surface));
+    Surface * tsurf = new Surface(dynamic_cast<const NRLib2::RegularSurface<double> &>
                                  (simbox_->GetTopSurface()));
 
     regularSimbox->setDepth(tsurf, 0, simbox_->getlz(), simbox_->getdz());

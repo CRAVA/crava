@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <assert.h>
 
+#include "src/definitions.h"
 #include "lib/global_def.h"
 #include "lib/segy.h"
 #include "lib/segylib.h"
@@ -12,8 +13,6 @@
 
 #include "src/simbox.h"
 #include "src/fftgrid.h"
-
-using namespace NRLib2;
 
 SegY::SegY(char * fileName, const Simbox * simbox, float zPad, float z0)
 {

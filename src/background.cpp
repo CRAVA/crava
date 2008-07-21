@@ -22,8 +22,6 @@
 #include "src/fftgrid.h"
 #include "src/fftfilegrid.h"
 
-using namespace NRLib2;
-
 Background::Background(FFTGrid       ** grids,
                        WellData      ** wells,
                        Simbox         * simbox,

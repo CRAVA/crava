@@ -5,8 +5,7 @@
 #include <time.h>
 #include <assert.h>
 
-#include "nrlib/surface/surfaceio.hpp"
-
+#include "src/definitions.h"
 #include "src/model.h"
 #include "src/modelfile.h"
 #include "src/modelsettings.h"
@@ -26,9 +25,8 @@
 #include "lib/lib_misc.h"
 #include "lib/global_def.h"
 #include "lib/segy.h"
+#include "nrlib/surface/surfaceio.hpp"
 #include "nrlib/iotools/logkit.hpp"
-
-using namespace NRLib2;
 
 Model::Model(char * fileName)
 {
@@ -463,8 +461,7 @@ Model::readStormFile(char *fName, FFTGrid * & target, const char * parName, char
     if(ly > lmax)
       lmax = ly;
     lmax *= 1.1f;
-    RegularSurface<double> * tmpTop = 
-      new RegularSurface<double>(x0-1.5*lmax,y0-1.5*lmax,3*lmax,3*lmax,2,2,z0);
+    Surface * tmpTop = new Surface(x0-1.5*lmax,y0-1.5*lmax,3*lmax,3*lmax,2,2,z0);
     Simbox * tmpSimbox = new Simbox(x0, y0, tmpTop, lx, ly, lz, rot,
       lx/float(nx), ly/float(ny), lz/float(nz));
     readToEOL(file);
@@ -656,12 +653,12 @@ Model::setSimboxSurfaces(Simbox * simbox, char ** surfFile, bool parallelSurface
                          double dTop, double lz, double dz, int nz,
                          int & error)
 {
-  RegularSurface<double> * z0Grid = NULL;
+  Surface * z0Grid = NULL;
   try {
-    RegularSurface<double> tmpSurf = NRLib2::ReadStormSurf(surfFile[0]);
-    z0Grid = new RegularSurface<double>(tmpSurf);
+    Surface tmpSurf = NRLib2::ReadStormSurf(surfFile[0]);
+    z0Grid = new Surface(tmpSurf);
   }
-  catch (Exception & e) {
+  catch (NRLib2::Exception & e) {
     LogKit::LogFormatted(LogKit::LOW,e.what());
     error = 1;
   }
@@ -674,12 +671,12 @@ Model::setSimboxSurfaces(Simbox * simbox, char ** surfFile, bool parallelSurface
     }
     else
     {
-      RegularSurface<double> * z1Grid = NULL;
+      Surface * z1Grid = NULL;
       try {
-        RegularSurface<double> tmpSurf = NRLib2::ReadStormSurf(surfFile[1]);
-        z1Grid = new RegularSurface<double>(tmpSurf);
+        Surface tmpSurf = NRLib2::ReadStormSurf(surfFile[1]);
+        z1Grid = new Surface(tmpSurf);
       }
-      catch (Exception & e) {
+      catch (NRLib2::Exception & e) {
         LogKit::LogFormatted(LogKit::LOW,e.what());
         error = 1;
       }
@@ -1261,7 +1258,7 @@ Model::processPriorCorrelations(char * errText)
       LogKit::LogFormatted(LogKit::LOW,"Parameter correlation read from file.\n\n");
     }
 
-    RegularSurface<double> * CorrXY = getCorrXYGrid();
+    Surface * CorrXY = getCorrXYGrid();
 
     if(modelSettings_->getLateralCorr()==NULL) { // NBNB-PAL: this will never be true (default lateral corr)
       estimateCorrXYFromSeismic(CorrXY);
@@ -1314,7 +1311,7 @@ Model::processPriorCorrelations(char * errText)
   }
 }
 
-RegularSurface<double> * 
+Surface * 
 Model::getCorrXYGrid()
 {
   int npix, nx, ny;
@@ -1328,7 +1325,7 @@ Model::getCorrXYGrid()
   nx = findClosestFactorableNumber(static_cast<int>(ceil(snx*(1.0f+modelSettings_->getXpad())))); //Use padded grid
   ny = findClosestFactorableNumber(static_cast<int>(ceil(sny*(1.0f+modelSettings_->getYpad()))));
   npix = nx*ny;
-  RegularSurface<double> * grid = new RegularSurface<double>(0, 0, dx*nx, dy*ny, nx, ny, RMISSING);
+  Surface * grid = new Surface(0, 0, dx*nx, dy*ny, nx, ny, RMISSING);
   if(modelSettings_->getLateralCorr()!=NULL) // NBNB-PAL: Denne her blir aldri null etter at jeg la inn en default lateral correlation i modelsettings.
   {
     for(j=0;j<ny;j++)
@@ -1359,7 +1356,7 @@ Model::getCorrXYGrid()
 }
 
 void 
-Model::estimateCorrXYFromSeismic(RegularSurface<double> * corrXY)
+Model::estimateCorrXYFromSeismic(Surface * corrXY)
 {
   FFTGrid * transf;
   float   * grid;

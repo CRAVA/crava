@@ -1,6 +1,7 @@
 #ifndef SIMBOX_H
 #define SIMBOX_H
 
+#include "src/definitions.h"
 #include "nrlib/volume/volume.hpp"
 #include "nrlib/surface/regularsurface.hpp"
 
@@ -9,7 +10,7 @@ struct irapgrid;
 class Simbox : public NRLib2::Volume {
 public:
   Simbox(void);
-  Simbox(double x0, double y0, NRLib2::RegularSurface<double> * z0, double lx, 
+  Simbox(double x0, double y0, Surface * z0, double lx, 
          double ly, double lz, double rot, double dx, double dy, double dz); //Assumes constant thickness.
   Simbox(const Simbox *simbox);
   ~Simbox();
@@ -51,8 +52,8 @@ public:
   void       writeTopBotGrids(const char * topname, const char * botname);
   int        checkError(double lzLimit, char * errText);
   void       setArea(double x0, double y0, double lx, double ly, double rot, double dx, double dy);
-  void       setDepth(NRLib2::RegularSurface<double> * zref, double zShift, double lz, double dz);
-  void       setDepth(NRLib2::RegularSurface<double> * z0, NRLib2::RegularSurface<double> * z1, int nz);
+  void       setDepth(Surface * zref, double zShift, double lz, double dz);
+  void       setDepth(Surface * z0, Surface * z1, int nz);
   void       setSeisLines(int il0, int cl0, int ilStep, int xlStep);
   int        status() const {return(status_);}
   void       externalFailure() {status_ = EXTERNALERROR;}

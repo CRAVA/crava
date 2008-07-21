@@ -2,16 +2,14 @@
 #include <math.h>
 
 #include "lib/random.h"
-
 #include "nrlib/iotools/logkit.hpp"
 
+#include "src/definitions.h"
 #include "src/blockedlogs.h"
 #include "src/welldata.h"
 #include "src/fftgrid.h"
 #include "src/simbox.h"
 #include "src/model.h"
-
-using namespace NRLib2;
 
 BlockedLogs::BlockedLogs(WellData  * well, 
                          Simbox    * simbox,

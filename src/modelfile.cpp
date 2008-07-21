@@ -13,8 +13,7 @@
 #include "src/modelfile.h"
 #include "src/model.h"
 #include "src/vario.h"
-
-using namespace NRLib2;
+#include "src/definitions.h"
 
 ModelFile::ModelFile(char * fileName)
 {

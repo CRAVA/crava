@@ -5,6 +5,7 @@
 
 #include "fft/include/fftw.h"
 #include "lib/global_def.h"
+#include "src/definitions.h"
 
 class Simbox;
 class FFTGrid;
@@ -40,8 +41,8 @@ public:
   //Note: Function below is mainly controlled by debugflag. Set overrideDebug = true to force.
   virtual void   printToFile(char* fileName, bool overrideDebug = false) = 0;
   virtual void   writeWaveletToFile(char*, float, Simbox * simbox = NULL) = 0;
-  void           setShiftGrid(NRLib2::RegularSurface<double> * grid, Simbox * simbox);
-  void           setGainGrid(NRLib2::RegularSurface<double> * grid, Simbox * simbox);
+  void           setShiftGrid(Surface * grid, Simbox * simbox);
+  void           setGainGrid(Surface * grid, Simbox * simbox);
   float          getScale() const {return scale_;}
   
   // for noise estimation
