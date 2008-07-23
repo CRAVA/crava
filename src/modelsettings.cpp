@@ -37,39 +37,43 @@ ModelSettings::ModelSettings(void)
   var_rho_min_           =   2.e-4f; 
   var_rho_max_           = 100.e-4f; 
 
-  maxHz_background_      =    6.0f;       
-  maxHz_seismic_         =   40.0f;       
+  maxHz_background_      =     6.0f;       
+  maxHz_seismic_         =    40.0f;       
 
-  maxRankCorr_           =   0.98f;
-  maxMergeDist_          =   0.01f;   // 0.01ms (approx. 2-3cm) 
-  maxDevAngle_           =   15.0f;
+  maxRankCorr_           =    0.98f;
+  maxMergeDist_          =    0.01f;   // 0.01ms (approx. 2-3cm) 
+  maxDevAngle_           =    15.0f;
 
-  lowCut_                =    5.0f;   
-  highCut_               =   55.0f;   
+  lowCut_                =     5.0f;   
+  highCut_               =    55.0f;   
 
-  wnc_                   =    0.1f;
+  wnc_                   =     0.1f;
 
-  energyThreshold_       =    0.0f;
+  energyThreshold_       =     0.0f;
 
-  minRelWaveletAmp_      =   0.05f;
-  maxWaveletShift_       =   11.0f;
-  waveletTaperingL_      =  200.0f;
+  minRelWaveletAmp_      =    0.05f;
+  maxWaveletShift_       =    11.0f;
+  waveletTaperingL_      =   200.0f;
 
-  xPad_                  =    0.0f;   // If the PADDING command is not called, proper paddings
-  yPad_                  =    0.0f;   // will be estimated in the Models() constructor 
-  zPad_                  =    0.0f;   //
+  xPad_                  =     0.0f;   // If the PADDING command is not called, proper paddings
+  yPad_                  =     0.0f;   // will be estimated in the Models() constructor 
+  zPad_                  =     0.0f;   //
 
-  segyOffset_            =    0.0f;
-  p_undef_               =   0.01f;
+  nxPad_                 = IMISSING;   
+  nyPad_                 = IMISSING;   
+  nzPad_                 = IMISSING;   
 
-  lzLimit_               =    0.47;   // NB! This is a double ==> do not use 'f'.
+  segyOffset_            =     0.0f;
+  p_undef_               =    0.01f;
+
+  lzLimit_               =     0.47;   // NB! This is a double ==> do not use 'f'.
 
   outputFlag_            = VP+VS+RHO; //Default output
-  formatFlag_            =       0;
-  debugFlag_             =       0;
-  fileGrid_              =      -1;
+  formatFlag_            =        0;
+  debugFlag_             =        0;
+  fileGrid_              =       -1;
 
-  generateSeismic_       =   false;
+  generateSeismic_       =    false;
 }
 
 ModelSettings::~ModelSettings(void)

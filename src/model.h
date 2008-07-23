@@ -42,39 +42,109 @@ public:
   bool             getFailed()                const { return failed_                 ;}
   void             releaseWells();                                        // Deallocates well data.
   void             releaseGrids();                                        // Cuts connection to SeisCube_ and  backModel_
-
   Surface        * getCorrXYGrid();
 
 private:
-  void             makeTimeSimbox(char * errText);
-  void             makeDepthSimbox(char * errText);
-  void             processSeismic(char * errText);
-  void             processWells(char * errText);
-  void             processBackground(char * errText);
-  void             processPriorCorrelations(char * errText);
-  void             processReflectionMatrix(char * errText);
-  void             processWavelets(void);
-  void             processPriorFaciesProb();
-  void             setSimboxSurfaces(Simbox * simbox, char ** surfFile, bool parallelSurfaces, 
-                                     double dTop, double lz, double dz, int nz, int & error);
-  void             estimateXYPaddingSizes(void);
-  void             estimateZPaddingSize(void);
-  int              readSegyFiles(char ** fNames, int nFiles, FFTGrid ** target, char * errText,
-                                 int gridType, int start = 0);
-  int              readStormFile(char *fName, FFTGrid * & target, const char * parName, char * errText);
-  void             estimateCorrXYFromSeismic(Surface * CorrXY);
+  void             makeTimeSimbox(Simbox         * timeSimbox,
+                                  ModelSettings *& modelSettings, 
+                                  ModelFile      * modelFile,
+                                  char           * errText,
+                                  bool           & failed);
+  void             makeDepthSimbox(Simbox        * depthSimbox,
+                                   ModelSettings * modelSettings, 
+                                   ModelFile     * modelFile,
+                                   char          * errText,
+                                   bool          & failed);
+  void             processSeismic(FFTGrid      **& seisCube,
+                                  Simbox         * timeSimbox,
+                                  ModelSettings *& modelSettings, 
+                                  ModelFile      * modelFile,
+                                  char           * errText);
+  void             processWells(WellData     **& wells,
+                                Simbox         * timeSimbox,
+                                RandomGen      * randomGen,
+                                ModelSettings *& modelSettings, 
+                                ModelFile      * modelFile,
+                                char           * errText);
+  void             processBackground(Background   *& background, 
+                                     WellData     ** wells,
+                                     Simbox        * timeSimbox,
+                                     ModelSettings * modelSettings, 
+                                     ModelFile     * modelFile, 
+                                     char          * errText);
+  void             processPriorCorrelations(Corr         *& priorCorrelations,
+                                            Background    * background,
+                                            WellData     ** wells,
+                                            Simbox        * timeSimbox,
+                                            ModelSettings * modelSettings, 
+                                            ModelFile     * modelFile,
+                                            char          * errText);
+  void             processReflectionMatrix(float       **& reflectionMatrix,
+                                           Background    * background,
+                                           ModelSettings * modelSettings, 
+                                           ModelFile     * modelFile,                  
+                                           char          * errText);
+  void             processWavelets(Wavelet     **& wavelet,
+                                   FFTGrid      ** seisCube,
+                                   WellData     ** wells,
+                                   float        ** reflectionMatrix,
+                                   Simbox        * timeSimbox,
+                                   Surface      ** shiftGrids,
+                                   Surface      ** gainGrids,
+                                   ModelSettings * modelSettings, 
+                                   ModelFile     * modelFile,
+                                   bool            hasSignalToNoiseRatio);
+  void             processPriorFaciesProb(float        *& priorFacies,
+                                          WellData     ** wells,
+                                          RandomGen     * randomGen,
+                                          int             nz,
+                                          ModelSettings * modelSettings);
+  void             setSimboxSurfaces(Simbox     * simbox, 
+                                     char      ** surfFile, 
+                                     bool         parallelSurfaces, 
+                                     double       dTop, 
+                                     double       lz, 
+                                     double       dz, 
+                                     int          nz, 
+                                     int        & error);
+  void             estimateXYPaddingSizes(Simbox         * timeSimbox,
+                                          ModelSettings *& modelSettings);
+  void             estimateZPaddingSize(Simbox         * timeSimbox,
+                                        ModelSettings *& modelSettings);
+  int              readSegyFiles(char          ** fNames, 
+                                 int              nFiles, 
+                                 FFTGrid       ** target, 
+                                 Simbox         * timeSimbox, 
+                                 ModelSettings *& modelSettings,
+                                 char           * errText, 
+                                 int              gridType, 
+                                 int              start = 0);
+  int              readStormFile(char           * fName, 
+                                 FFTGrid       *& target, 
+                                 const char     * parName,
+                                 Simbox         * timeSimbox,
+                                 ModelSettings *& modelSettings, 
+                                 char           * errText);
+  void             estimateCorrXYFromSeismic(Surface *& CorrXY,
+                                             FFTGrid ** seisCube,
+                                             int        nAngles);
   int              setPaddingSize(int nx, float px);
   float         ** readMatrix(char * fileName, int n1, int n2, const char * readReason, char * errText);
-  float         ** getClassicAMatrix(void);
-  void             setupDefaultReflectionMatrix(void);
+  void             setupDefaultReflectionMatrix(float       **& reflectionMatrix,
+                                                Background    * background,
+                                                ModelSettings * modelSettings,
+                                                ModelFile     * modelFile);
   int              checkFileOpen(char ** fNames, int nFiles, const char * command, char * errText, 
                                  int start = 0, bool details = true);
-  void             checkAvailableMemory(void);
-  void             checkFaciesNames(void);
-  void             printSettings(void);
+  void             checkAvailableMemory(Simbox        * timeSimbox,
+                                        ModelSettings * modelSettings);
+  void             checkFaciesNames(WellData      ** wells,
+                                    ModelSettings *& modelSettings);
+  void             printSettings(ModelSettings * modelSettings,
+                                 ModelFile     * modelFile,
+                                 bool            hasSignalToNoiseRatio);
   int              getWaveletFileFormat(char * fileName);
 
-  ModelFile      * modelFile_;
   ModelSettings  * modelSettings_;
   Simbox         * timeSimbox_;            // Information about simulation area.
   Simbox         * depthSimbox_;           // Simbox with depth surfaces
@@ -89,9 +159,6 @@ private:
   float          * priorFacies_;
   float         ** reflectionMatrix_;      // May specify own Zoeppritz-approximation. Default NULL,
                                            // indicating that standard approximation will be used.
-  int              nxPad_;                 // total grid size size in x direction (padding included)
-  int              nyPad_;
-  int              nzPad_;
 
   bool             hasSignalToNoiseRatio_; // Use SN ratio instead of error variance in model file. 
   bool             failed_;                // Indicates whether errors ocuured during construction. 

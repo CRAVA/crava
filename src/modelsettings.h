@@ -53,6 +53,9 @@ public:
   float          getXpad(void)                 const { return xPad_             ;}
   float          getYpad(void)                 const { return yPad_             ;}
   float          getZpad(void)                 const { return zPad_             ;}
+  float          getNXpad(void)                const { return nxPad_            ;}
+  float          getNYpad(void)                const { return nyPad_            ;}
+  float          getNZpad(void)                const { return nzPad_            ;}
   float          getSegyOffset(void)           const { return segyOffset_       ;}
   float          getPundef(void)               const { return p_undef_          ;}
   double         getLzLimit(void)              const { return lzLimit_          ;}
@@ -69,42 +72,45 @@ public:
   void           setBackgroundVario(Vario * vario);
   void           setKrigingParameters(float * krigingParams, int nParams);
   void           setAngle(float * angle, int nAngles);
-  void           setNumberOfAngles(int nAngles)              {nAngles_          = nAngles          ;} 
+  void           setNumberOfAngles(int nAngles)              { nAngles_          = nAngles          ;} 
   void           setNoiseEnergy(float * noiseEnergy, int nAngles);
   void           setMatchEnergies(float * waveletScale, int nAngles);
   void           setFaciesNames(char ** faciesNames, int nFacies);
-  void           setNumberOfFacies(int nFacies)              {nFacies_          = nFacies          ;}
-  void           setNumberOfWells(int nWells)                {nWells_           = nWells           ;} 
-  void           setNumberOfSimulations(int nSimulations)    {nSimulations_     = nSimulations     ;} 
-  void           setAlphaMin(float alpha_min)                {alpha_min_        = alpha_min        ;}
-  void           setAlphaMax(float alpha_max)                {alpha_max_        = alpha_max        ;}
-  void           setBetaMin(float beta_min)                  {beta_min_         = beta_min         ;}
-  void           setBetaMax(float beta_max)                  {beta_max_         = beta_max         ;}
-  void           setRhoMin(float rho_min)                    {rho_min_          = rho_min          ;}
-  void           setRhoMax(float rho_max)                    {rho_max_          = rho_max          ;}
-  void           setMaxHzBackground(float maxHz_background)  {maxHz_background_ = maxHz_background ;}
-  void           setMaxHzSeismic(float maxHz_seismic)        {maxHz_seismic_    = maxHz_seismic    ;}
-  void           setMaxRankCorr(float maxRankCorr)           {maxRankCorr_      = maxRankCorr      ;}
-  void           setMaxMergeDist(float maxMergeDist)         {maxMergeDist_     = maxMergeDist     ;}
-  void           setMaxDevAngle(float maxDevAngle)           {maxDevAngle_      = maxDevAngle      ;}
-  void           setLowCut(float lowCut)                     {lowCut_           = lowCut           ;}
-  void           setHighCut(float highCut)                   {highCut_          = highCut          ;}
-  void           setWNC(float wnc)                           {wnc_              = wnc              ;}
-  void           setEnergyThreshold(float energyThreshold)   {energyThreshold_  = energyThreshold  ;}
-  void           setinRelWaveletAmp(float minRelWaveletAmp)  {minRelWaveletAmp_ = minRelWaveletAmp ;}
-  void           setMaxWaveletShift(float maxWaveletShift)   {maxWaveletShift_  = maxWaveletShift  ;}
-  void           setWaveletTaperingL(float waveletTaperingL) {waveletTaperingL_ = waveletTaperingL ;}
-  void           setXpad(float xPad)                         {xPad_             = xPad             ;}
-  void           setYpad(float yPad)                         {yPad_             = yPad             ;}
-  void           setZpad(float zPad)                         {zPad_             = zPad             ;}
-  void           setSegyOffset(float segyOffset)             {segyOffset_       = segyOffset       ;}
-  void           setPundef(float p_undef)                    {p_undef_          = p_undef          ;}
-  void           setLzLimit(double lzLimit)                  {lzLimit_          = lzLimit          ;}
+  void           setNumberOfFacies(int nFacies)              { nFacies_          = nFacies          ;}
+  void           setNumberOfWells(int nWells)                { nWells_           = nWells           ;} 
+  void           setNumberOfSimulations(int nSimulations)    { nSimulations_     = nSimulations     ;} 
+  void           setAlphaMin(float alpha_min)                { alpha_min_        = alpha_min        ;}
+  void           setAlphaMax(float alpha_max)                { alpha_max_        = alpha_max        ;}
+  void           setBetaMin(float beta_min)                  { beta_min_         = beta_min         ;}
+  void           setBetaMax(float beta_max)                  { beta_max_         = beta_max         ;}
+  void           setRhoMin(float rho_min)                    { rho_min_          = rho_min          ;}
+  void           setRhoMax(float rho_max)                    { rho_max_          = rho_max          ;}
+  void           setMaxHzBackground(float maxHz_background)  { maxHz_background_ = maxHz_background ;}
+  void           setMaxHzSeismic(float maxHz_seismic)        { maxHz_seismic_    = maxHz_seismic    ;}
+  void           setMaxRankCorr(float maxRankCorr)           { maxRankCorr_      = maxRankCorr      ;}
+  void           setMaxMergeDist(float maxMergeDist)         { maxMergeDist_     = maxMergeDist     ;}
+  void           setMaxDevAngle(float maxDevAngle)           { maxDevAngle_      = maxDevAngle      ;}
+  void           setLowCut(float lowCut)                     { lowCut_           = lowCut           ;}
+  void           setHighCut(float highCut)                   { highCut_          = highCut          ;}
+  void           setWNC(float wnc)                           { wnc_              = wnc              ;}
+  void           setEnergyThreshold(float energyThreshold)   { energyThreshold_  = energyThreshold  ;}
+  void           setinRelWaveletAmp(float minRelWaveletAmp)  { minRelWaveletAmp_ = minRelWaveletAmp ;}
+  void           setMaxWaveletShift(float maxWaveletShift)   { maxWaveletShift_  = maxWaveletShift  ;}
+  void           setWaveletTaperingL(float waveletTaperingL) { waveletTaperingL_ = waveletTaperingL ;}
+  void           setXpad(float xPad)                         { xPad_             = xPad             ;}
+  void           setYpad(float yPad)                         { yPad_             = yPad             ;}
+  void           setZpad(float zPad)                         { zPad_             = zPad             ;}
+  void           setNXpad(int nxPad)                         { nxPad_            = nxPad            ;}
+  void           setNYpad(int nyPad)                         { nyPad_            = nyPad            ;}
+  void           setNZpad(int nzPad)                         { nzPad_            = nzPad            ;}
+  void           setSegyOffset(float segyOffset)             { segyOffset_       = segyOffset       ;}
+  void           setPundef(float p_undef)                    { p_undef_          = p_undef          ;}
+  void           setLzLimit(double lzLimit)                  { lzLimit_          = lzLimit          ;}
   void           setOutputFlag(int outputFlag);
-  void           setFormatFlag(int formatFlag)               {formatFlag_       = formatFlag       ;}
-  void           setDebugFlag(int debugFlag)                 {debugFlag_        = debugFlag        ;}
-  void           setFileGrid(int fileGrid)                   {fileGrid_         = fileGrid         ;}
-  void           setGenerateSeismic(bool generateSeismic)    {generateSeismic_  = generateSeismic  ;}
+  void           setFormatFlag(int formatFlag)               { formatFlag_       = formatFlag       ;}
+  void           setDebugFlag(int debugFlag)                 { debugFlag_        = debugFlag        ;}
+  void           setFileGrid(int fileGrid)                   { fileGrid_         = fileGrid         ;}
+  void           setGenerateSeismic(bool generateSeismic)    { generateSeismic_  = generateSeismic  ;}
 
   enum           outputGrids{PREDICTION        = 1, 
                              CORRELATION       = 2, 
@@ -188,6 +194,10 @@ private:
   float          xPad_;                  // Padding factor in x direction
   float          yPad_;
   float          zPad_; 
+
+  float          nxPad_;                 // Number of cells to pad in x direction
+  float          nyPad_;
+  float          nzPad_; 
 
   float          segyOffset_;            // Starttime for SegY cubes.
 
