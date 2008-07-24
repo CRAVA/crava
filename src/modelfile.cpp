@@ -90,7 +90,7 @@ ModelFile::ModelFile(char * fileName)
   }
   fclose(file);
 
-  int nCommands = 30;
+  int nCommands = 33;
   bool * genNeed = new bool[nCommands]; //If run in generate mode, this list holds the necessity.
 
   //The following variables controls the alternative command system.
@@ -122,23 +122,23 @@ ModelFile::ModelFile(char * fileName)
   }
 
   int neededCommands =  3; // The neededCommands first in the list are normally necessary.
-  int extraCommands  = 25; // 
+  int extraCommands  = 30; // 
 
   strcpy(commandList[0],"WELLS");
-  strcpy(commandList[1],"DEPTH");  // NBNB-PAL: ==> TIME_SURFACES   eller TIMESURFACES
+  strcpy(commandList[1],"DEPTH");                                       // ==> TIME_SURFACES eller TIME
   genNeed[1] = true;
-  strcpy(commandList[2],"SEISMIC");
+  strcpy(commandList[2],"SEISMIC");                                     // ==> PP_SEISMIC
   genNeed[2] = true;
   alternative[2] = new int[2];
   alternative[2][0] = -1;                  //One alternative, non-exclusive.
   alternative[2][1] = neededCommands+extraCommands;   //Number of alternative command.
   //The following commands are optional.
-  strcpy(commandList[neededCommands   ],"ANGULARCORRELATION");
+  strcpy(commandList[neededCommands   ],"ANGULARCORRELATION");          // ==> ANGULAR_CORRELATION
   strcpy(commandList[neededCommands+ 1],"SEED");
-  strcpy(commandList[neededCommands+ 2],"LATERALCORRELATION");
+  strcpy(commandList[neededCommands+ 2],"LATERALCORRELATION");          // ==> LATERAL_CORRELATION
   strcpy(commandList[neededCommands+ 3],"NSIMULATIONS");
-  strcpy(commandList[neededCommands+ 4],"PREDICTION");
-  strcpy(commandList[neededCommands+ 5],"PADDING");
+  strcpy(commandList[neededCommands+ 4],"PREDICTION");             
+  strcpy(commandList[neededCommands+ 5],"PADDING");                     // ==> FFTGRID_PADDING
   strcpy(commandList[neededCommands+ 6],"PREFIX");
   strcpy(commandList[neededCommands+ 7],"AREA");
   genNeed[neededCommands+7] = true;
@@ -150,18 +150,21 @@ ModelFile::ModelFile(char * fileName)
   strcpy(commandList[neededCommands+13],"KRIGING");
   strcpy(commandList[neededCommands+14],"LOCALWAVELET");
   strcpy(commandList[neededCommands+15],"ENERGYTRESHOLD");
-  strcpy(commandList[neededCommands+16],"PARAMETERCORRELATION");
-  strcpy(commandList[neededCommands+17],"REFLECTIONMATRIX");
+  strcpy(commandList[neededCommands+16],"PARAMETERCORRELATION");        // ==> PARAMETER_CORRELATION
+  strcpy(commandList[neededCommands+17],"REFLECTIONMATRIX");            // ==> REFLECTION_MATRIX
   strcpy(commandList[neededCommands+18],"FREQUENCYBAND");
   strcpy(commandList[neededCommands+19],"BACKGROUND");
   genNeed[neededCommands+19] = true;
   strcpy(commandList[neededCommands+20],"BACKGROUNDCONTROL");
   strcpy(commandList[neededCommands+21],"GIVESIGNALTONOISERATIO");
-  strcpy(commandList[neededCommands+22],"SEISMICRESOLUTION");
+  strcpy(commandList[neededCommands+22],"SEISMICRESOLUTION");           // ==> SEISMIC_RESOLUTION
   strcpy(commandList[neededCommands+23],"WAVELETLENGTH");
   strcpy(commandList[neededCommands+24],"DEPTHSURFACES");
   strcpy(commandList[neededCommands+25],"PSSEISMIC");
   strcpy(commandList[neededCommands+26],"PUNDEF");
+  strcpy(commandList[neededCommands+27],"ALLOWED_PARAMETER_VALUES");
+  strcpy(commandList[neededCommands+28],"ALLOWED_PARAMETER_VARIANCES");
+  strcpy(commandList[neededCommands+29],"MAX_DEVIATION_ANGLE");
   alternative[23] = new int[2];
   alternative[23][0] = -1; // One alternative, non-exclusive.
   alternative[23][1] =  2; // Number of alternative command.
@@ -308,6 +311,15 @@ ModelFile::ModelFile(char * fileName)
       case 29:
         error = readCommandPUndef(params,curPos,errText);
         break;
+      case 30:
+        error = readCommandAllowedParameterValues(params,curPos,errText);
+        break;
+      case 31:
+        error = readCommandAllowedParameterVariances(params,curPos,errText);
+        break;
+      case 32:
+        error = readCommandMaxDeviationAngle(params,curPos,errText);
+        break;
       default:
         sprintf(errText, "Unknown command: %s.\n",command);
         wrongCommand = true;
@@ -334,35 +346,53 @@ ModelFile::ModelFile(char * fileName)
  
   if (wrongCommand)
   {
-    LogKit::LogFormatted(LogKit::LOW,"\nValid commands are:\n");
-    LogKit::LogFormatted(LogKit::LOW,"  ANGULARCORRELATION\n");
+    LogKit::LogFormatted(LogKit::LOW,"\nValid commands are:\n\n");
+    LogKit::LogFormatted(LogKit::LOW,"General settings:\n");
+    LogKit::LogFormatted(LogKit::LOW,"=================\n");
     LogKit::LogFormatted(LogKit::LOW,"  AREA\n");
-    LogKit::LogFormatted(LogKit::LOW,"  BACKGROUND\n");
-    LogKit::LogFormatted(LogKit::LOW,"  BACKGROUNDCONTROL\n");
     LogKit::LogFormatted(LogKit::LOW,"  DEBUG\n");
-    LogKit::LogFormatted(LogKit::LOW,"  DEPTH\n");
-    LogKit::LogFormatted(LogKit::LOW,"  DEPTHSURFACES\n");
-    LogKit::LogFormatted(LogKit::LOW,"  ENERGYTRESHOLD\n");
     LogKit::LogFormatted(LogKit::LOW,"  FORCEFILE\n");
     LogKit::LogFormatted(LogKit::LOW,"  FREQUENCYBAND\n");
-    LogKit::LogFormatted(LogKit::LOW,"  GIVESIGNALTONOISERATIO\n");
-    LogKit::LogFormatted(LogKit::LOW,"  KRIGING\n");
-    LogKit::LogFormatted(LogKit::LOW,"  LATERALCORRELATION\n");
-    LogKit::LogFormatted(LogKit::LOW,"  LOCALWAVELET\n");
-    LogKit::LogFormatted(LogKit::LOW,"  NSIMULATIONS\n");
     LogKit::LogFormatted(LogKit::LOW,"  OUTPUT\n");
     LogKit::LogFormatted(LogKit::LOW,"  PADDING\n");
-    LogKit::LogFormatted(LogKit::LOW,"  PARAMETERCORRELATION\n");
-    LogKit::LogFormatted(LogKit::LOW,"  PREDICTION\n");
     LogKit::LogFormatted(LogKit::LOW,"  PREFIX\n");
-    LogKit::LogFormatted(LogKit::LOW,"  PSSEISMIC\n");
+    LogKit::LogFormatted(LogKit::LOW,"  PUNDEF\n");
     LogKit::LogFormatted(LogKit::LOW,"  REFLECTIONMATRIX\n");
     LogKit::LogFormatted(LogKit::LOW,"  SEED\n");
+    LogKit::LogFormatted(LogKit::LOW,"Modelling mode:\n");
+    LogKit::LogFormatted(LogKit::LOW,"===============\n");
+    LogKit::LogFormatted(LogKit::LOW,"  KRIGING\n");
+    LogKit::LogFormatted(LogKit::LOW,"  NSIMULATIONS\n");
+    LogKit::LogFormatted(LogKit::LOW,"  PREDICTION\n");
+    LogKit::LogFormatted(LogKit::LOW,"Well data:\n");
+    LogKit::LogFormatted(LogKit::LOW,"==========\n");
+    LogKit::LogFormatted(LogKit::LOW,"  ALLOWED_PARAMETER_VALUES");
+    LogKit::LogFormatted(LogKit::LOW,"  ALLOWED_PARAMETER_VARIANCES");
+    LogKit::LogFormatted(LogKit::LOW,"  MAX_DEVIATION_ANGLE");
+    LogKit::LogFormatted(LogKit::LOW,"  SEISMICRESOLUTION\n");
+    LogKit::LogFormatted(LogKit::LOW,"  WELLS\n");
+    LogKit::LogFormatted(LogKit::LOW,"Surface data:\n");
+    LogKit::LogFormatted(LogKit::LOW,"=============\n");
+    LogKit::LogFormatted(LogKit::LOW,"  DEPTH\n");
+    LogKit::LogFormatted(LogKit::LOW,"  DEPTHSURFACES\n");
+    LogKit::LogFormatted(LogKit::LOW,"Seismic data:\n");
+    LogKit::LogFormatted(LogKit::LOW,"=============\n");
+    LogKit::LogFormatted(LogKit::LOW,"  ENERGYTRESHOLD\n");
+    LogKit::LogFormatted(LogKit::LOW,"  LOCALWAVELET\n");
+    LogKit::LogFormatted(LogKit::LOW,"  PSSEISMIC\n");
     LogKit::LogFormatted(LogKit::LOW,"  SEGYOFFSET\n");
     LogKit::LogFormatted(LogKit::LOW,"  SEISMIC\n");
-    LogKit::LogFormatted(LogKit::LOW,"  SEISMICRESOLUTION\n");
     LogKit::LogFormatted(LogKit::LOW,"  WAVELETLENGTH\n");
-    LogKit::LogFormatted(LogKit::LOW,"  WELLS\n");
+    LogKit::LogFormatted(LogKit::LOW,"Prior model:\n");
+    LogKit::LogFormatted(LogKit::LOW,"============\n");
+    LogKit::LogFormatted(LogKit::LOW,"  BACKGROUND\n");
+    LogKit::LogFormatted(LogKit::LOW,"  BACKGROUNDCONTROL\n");
+    LogKit::LogFormatted(LogKit::LOW,"  LATERALCORRELATION\n");
+    LogKit::LogFormatted(LogKit::LOW,"  PARAMETERCORRELATION\n");
+    LogKit::LogFormatted(LogKit::LOW,"Error model:\n");
+    LogKit::LogFormatted(LogKit::LOW,"============\n");
+    LogKit::LogFormatted(LogKit::LOW,"  ANGULARCORRELATION\n");
+    LogKit::LogFormatted(LogKit::LOW,"  GIVESIGNALTONOISERATIO\n");
     LogKit::LogFormatted(LogKit::LOW,"  WHITENOISE\n");
     exit(1);
   }
@@ -1632,6 +1662,80 @@ ModelFile::readCommandPUndef(char ** params, int & pos, char * errText)
   return(error);
 }
 
+
+int
+ModelFile::readCommandMaxDeviationAngle(char ** params, int & pos, char * errText)
+{
+  int error;
+  int nPar = getParNum(params, pos, error, errText, params[pos-1], 1);
+  if(error == 0)
+  {
+    float angle = float(atof(params[pos]));
+    if (angle <= 0.0f || angle > 90.0f)
+    {
+      error = 1;
+      sprintf(errText,"Error: The deviation angle must be in the rang 0-90 degrees.\n");
+    }
+    else
+      modelSettings_->setMaxDevAngle(angle);
+  }
+  pos += nPar+1;
+  return(error);
+}
+
+int
+ModelFile::readCommandAllowedParameterValues(char ** params, int & pos, char * errText)
+{
+  int error;
+  int nPar = getParNum(params, pos, error, errText, params[pos-1], 1);
+  if(error == 0)
+  {
+    if(nPar == 6)
+    {
+      modelSettings_->setAlphaMin(float(atof(params[pos+0])));
+      modelSettings_->setAlphaMax(float(atof(params[pos+1])));
+      modelSettings_->setBetaMin (float(atof(params[pos+2])));
+      modelSettings_->setBetaMax (float(atof(params[pos+3])));
+      modelSettings_->setRhoMin  (float(atof(params[pos+4])));
+      modelSettings_->setRhoMax  (float(atof(params[pos+5])));
+    }
+    else
+    {
+      sprintf(errText,"Command %s takes 6 arguments (Vp_min, Vp_max, Vs_min, ...) ; %d given in file.\n",
+              params[pos-1], nPar);
+      error = 1;
+    }
+ }
+  pos += nPar+1;
+  return(error);
+}
+
+int
+ModelFile::readCommandAllowedParameterVariances(char ** params, int & pos, char * errText)
+{
+  int error;
+  int nPar = getParNum(params, pos, error, errText, params[pos-1], 1);
+  if(error == 0)
+  {
+    if(nPar == 6)
+    {
+      modelSettings_->setVarAlphaMin(float(atof(params[pos+0])));
+      modelSettings_->setVarAlphaMax(float(atof(params[pos+1])));
+      modelSettings_->setVarBetaMin (float(atof(params[pos+2])));
+      modelSettings_->setVarBetaMax (float(atof(params[pos+3])));
+      modelSettings_->setVarRhoMin  (float(atof(params[pos+4])));
+      modelSettings_->setVarRhoMax  (float(atof(params[pos+5])));
+    }
+    else
+    {
+      sprintf(errText,"Command %s takes 6 arguments (Vp_min, Vp_max, Vs_min, ...) ; %d given in file.\n",
+              params[pos-1], nPar);
+      error = 1;
+    }
+ }
+  pos += nPar+1;
+  return(error);
+}
 
 int 
 ModelFile::getParNum(char ** params, int pos, int & error, char * errText,

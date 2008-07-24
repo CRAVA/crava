@@ -77,6 +77,9 @@ private:
   int              readCommandSeismicResolution(char ** params, int & pos, char * errText);
   int              readCommandWaveletTaperingL(char ** params, int & pos, char * errText);
   int              readCommandPUndef(char ** params, int & pos, char * errText);
+  int              readCommandMaxDeviationAngle(char ** params, int & pos, char * errText);
+  int              readCommandAllowedParameterValues(char ** params, int & pos, char * errText);
+  int              readCommandAllowedParameterVariances(char ** params, int & pos, char * errText);
   int              getParNum(char ** params, int pos, int & error, char * errText,
                              const char * command, int min, int max = 0);
   int              checkFileOpen(char ** fNames, int nFiles, const char * command, char * errText, int start = 0,

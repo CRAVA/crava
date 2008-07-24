@@ -85,6 +85,12 @@ public:
   void           setBetaMax(float beta_max)                  { beta_max_         = beta_max         ;}
   void           setRhoMin(float rho_min)                    { rho_min_          = rho_min          ;}
   void           setRhoMax(float rho_max)                    { rho_max_          = rho_max          ;}
+  void           setVarAlphaMin(float var_alpha_min)         { var_alpha_min_    = var_alpha_min    ;}
+  void           setVarAlphaMax(float var_alpha_max)         { var_alpha_max_    = var_alpha_max    ;}
+  void           setVarBetaMin(float var_beta_min)           { var_beta_min_     = var_beta_min     ;}
+  void           setVarBetaMax(float var_beta_max)           { var_beta_max_     = var_beta_max     ;}
+  void           setVarRhoMin(float var_rho_min)             { var_rho_min_      = var_rho_min      ;}
+  void           setVarRhoMax(float var_rho_max)             { var_rho_max_      = var_rho_max      ;}
   void           setMaxHzBackground(float maxHz_background)  { maxHz_background_ = maxHz_background ;}
   void           setMaxHzSeismic(float maxHz_seismic)        { maxHz_seismic_    = maxHz_seismic    ;}
   void           setMaxRankCorr(float maxRankCorr)           { maxRankCorr_      = maxRankCorr      ;}
@@ -135,8 +141,8 @@ public:
                              FACIESPROBRELATIVE = 1048576};
   enum             sseismicTypes{STANDARDSEIS = 0, PSSEIS = 1};
 
-  static void     setFilePrefix(char * filePrefix);
-  static char   * makeFullFileName(const char * name, const char * postfix = NULL);
+  static void    setFilePrefix(char * filePrefix);
+  static char  * makeFullFileName(const char * name, const char * postfix = NULL);
 
 private:
 
@@ -211,7 +217,7 @@ private:
 
   bool           generateSeismic_;        // Forward modelling
 
-  static int          debugFlag_;
+  static int     debugFlag_;
   static std::string  filePrefix_;            // Prefix (including path) for all output files
 };
 
