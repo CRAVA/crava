@@ -90,7 +90,7 @@ ModelFile::ModelFile(char * fileName)
   }
   fclose(file);
 
-  int nCommands = 33;
+  int nCommands = 31;
   bool * genNeed = new bool[nCommands]; //If run in generate mode, this list holds the necessity.
 
   //The following variables controls the alternative command system.
@@ -122,7 +122,7 @@ ModelFile::ModelFile(char * fileName)
   }
 
   int neededCommands =  3; // The neededCommands first in the list are normally necessary.
-  int extraCommands  = 30; // 
+  int extraCommands  = 28; // 
 
   strcpy(commandList[0],"WELLS");
   strcpy(commandList[1],"DEPTH");                                       // ==> TIME_SURFACES eller TIME
@@ -155,7 +155,7 @@ ModelFile::ModelFile(char * fileName)
   strcpy(commandList[neededCommands+18],"FREQUENCYBAND");
   strcpy(commandList[neededCommands+19],"BACKGROUND");
   genNeed[neededCommands+19] = true;
-  strcpy(commandList[neededCommands+20],"BACKGROUNDCONTROL");
+  strcpy(commandList[neededCommands+20],"MAX_DEVIATION_ANGLE");
   strcpy(commandList[neededCommands+21],"GIVESIGNALTONOISERATIO");
   strcpy(commandList[neededCommands+22],"SEISMICRESOLUTION");           // ==> SEISMIC_RESOLUTION
   strcpy(commandList[neededCommands+23],"WAVELETLENGTH");
@@ -163,11 +163,10 @@ ModelFile::ModelFile(char * fileName)
   strcpy(commandList[neededCommands+25],"PSSEISMIC");
   strcpy(commandList[neededCommands+26],"PUNDEF");
   strcpy(commandList[neededCommands+27],"ALLOWED_PARAMETER_VALUES");
-  strcpy(commandList[neededCommands+28],"ALLOWED_PARAMETER_VARIANCES");
-  strcpy(commandList[neededCommands+29],"MAX_DEVIATION_ANGLE");
-  alternative[23] = new int[2];
-  alternative[23][0] = -1; // One alternative, non-exclusive.
-  alternative[23][1] =  2; // Number of alternative command.
+  //
+  // NBNB-PAL: Here Ragnars 32-bit brain goes full... (no room for additional commands)
+  //
+  //strcpy(commandList[neededCommands+28],"ALLOWED_PARAMETER_VARIANCES");
 
   char errText[MAX_STRING];
   char ** errorList = new char*[nCommands];
@@ -196,137 +195,146 @@ ModelFile::ModelFile(char * fileName)
     for(i=0;i<nCommands;i++)
       if(strcmp(commandList[i],command) == 0)
         break;
-    comFlag = int(pow(2.0f,i));
-    if(i < nCommands && (comFlag & commandsUsed) > 0) //Bitwise and
+
+    if(i < nCommands) 
     {
-      curPos += getParNum(params, curPos, error, errText, " ", 0, -1) + 1;
-      error = 1;
-      sprintf(errText, "Command %s specified more than once.\n",commandList[i]);
-    }
-    else if(i<nCommands && alternativeUsed[i] > 0) {
-      curPos += getParNum(params, curPos, error, errText, " ", 0, -1) + 1;
-      error = 1;
-      sprintf(errText, "Can not have both command %s and %s.\n", 
-        commandList[i], commandList[alternativeUsed[i]]);
-    }
-    else
-    {
-      commandsUsed = (commandsUsed | comFlag);
-      if(alternative[i] != NULL) {
-        int altSign = (alternative[i][0] > 0) ? 1 : -1;
-        int j;
-        for(j=0;j<altSign*alternative[i][0];j++)
-          alternativeUsed[alternative[i][j+1]] = altSign*i;
-      }
-      switch(i)
+      comFlag = int(pow(2.0f,i));
+      if((comFlag & commandsUsed) > 0) //Bitwise and
       {
-      case 0:
-        error = readCommandWells(params, curPos, errText);
-        break;
-      case 1:
-        error = readCommandTimeSurfaces(params, curPos, errText);
-        break;
-      case 2:
-        error = readCommandSeismic(params, curPos, errText);
-        break;
-      case 3:
-        error = readCommandAngularCorr(params, curPos, errText);
-        break;
-      case 4:
-        error = readCommandSeed(params, curPos, errText);
-        break;
-      case 5:
-        error = readCommandLateralCorr(params, curPos, errText);
-        break;
-      case 6:
-        error = readCommandSimulate(params, curPos, errText);
-        break;
-      case 7:
-        curPos += getParNum(params, curPos, error, errText, "PREDICTION", 0)+1;
-        modelSettings_->setOutputFlag(1);
-        break;
-      case 8:
-        error = readCommandPadding(params, curPos, errText);
-        break;
-      case 9:
-        error = readCommandPrefix(params, curPos, errText);
-        break;
-      case 10:
-        error = readCommandArea(params, curPos, errText);
-        break;
-      case 11:
-        error = readCommandWhiteNoise(params, curPos, errText);
-        break;
-      case 12:
-        error = readCommandOutput(params, curPos, errText);
-        break;
-      case 13:
-        error = readCommandSegYOffset(params, curPos, errText);
-        break;
-      case 14:
-        error = readCommandForceFile(params, curPos, errText);
-        break;
-      case 15:
-        error = readCommandDebug(params, curPos, errText);
-        break;
-      case 16:
-        error = readCommandKriging(params, curPos, errText);
-        break;
-      case 17:
-        error = readCommandLocalWavelet(params, curPos, errText);
-        break;
-      case 18:
-        error = readCommandEnergyTreshold(params, curPos, errText);
-        break;
-      case 19:
-        error = readCommandParameterCorr(params, curPos, errText);
-        break;
-      case 20:
-        error = readCommandReflectionMatrix(params, curPos, errText);
-        break;
-      case 21:
-        error = readCommandFrequencyBand(params, curPos, errText);
-        break;
-      case 22:
-        error = readCommandBackground(params, curPos, errText);
-        break;
-      case 23:
-        error = readCommandBackgroundControl(params, curPos, errText);
-        break;
-      case 24:
-        error = readCommandGiveSignalToNoiseRatios(params, curPos, errText);
-        break;
-      case 25:
-        error = readCommandSeismicResolution(params, curPos, errText);
-        break;
-      case 26:
-        error = readCommandWaveletTaperingL(params, curPos, errText);
-        break;
-      case 27:
-        error = readCommandDepthSurfaces(params, curPos, errText);
-        break;
-      case 28:
-        error = readCommandSeismic(params, curPos, errText, ModelSettings::PSSEIS);
-        break;
-      case 29:
-        error = readCommandPUndef(params,curPos,errText);
-        break;
-      case 30:
-        error = readCommandAllowedParameterValues(params,curPos,errText);
-        break;
-      case 31:
-        error = readCommandAllowedParameterVariances(params,curPos,errText);
-        break;
-      case 32:
-        error = readCommandMaxDeviationAngle(params,curPos,errText);
-        break;
-      default:
-        sprintf(errText, "Unknown command: %s.\n",command);
-        wrongCommand = true;
-        curPos += getParNum(params, curPos, error, errText, "-", 0, -1)+1;
+        curPos += getParNum(params, curPos, error, errText, " ", 0, -1) + 1;
         error = 1;
-        break;
+        sprintf(errText, "Command %s specified more than once.\n",commandList[i]);
       }
+      else if(alternativeUsed[i] > 0) 
+      {
+        curPos += getParNum(params, curPos, error, errText, " ", 0, -1) + 1;
+        error = 1;
+        sprintf(errText, "Can not have both command %s and %s.\n", 
+                commandList[i], commandList[alternativeUsed[i]]);
+      }
+      else
+      {
+        commandsUsed = (commandsUsed | comFlag);
+        if(alternative[i] != NULL) {
+          int altSign = (alternative[i][0] > 0) ? 1 : -1;
+          int j;
+          for(j=0;j<altSign*alternative[i][0];j++)
+            alternativeUsed[alternative[i][j+1]] = altSign*i;
+        }
+        switch(i)
+        {
+        case 0:
+          error = readCommandWells(params, curPos, errText);
+          break;
+        case 1:
+          error = readCommandTimeSurfaces(params, curPos, errText);
+          break;
+        case 2:
+          error = readCommandSeismic(params, curPos, errText);
+          break;
+        case 3:
+          error = readCommandAngularCorr(params, curPos, errText);
+          break;
+        case 4:
+          error = readCommandSeed(params, curPos, errText);
+          break;
+        case 5:
+          error = readCommandLateralCorr(params, curPos, errText);
+          break;
+        case 6:
+          error = readCommandSimulate(params, curPos, errText);
+          break;
+        case 7:
+          curPos += getParNum(params, curPos, error, errText, "PREDICTION", 0)+1;
+          modelSettings_->setOutputFlag(1);
+          break;
+        case 8:
+          error = readCommandPadding(params, curPos, errText);
+          break;
+        case 9:
+          error = readCommandPrefix(params, curPos, errText);
+          break;
+        case 10:
+          error = readCommandArea(params, curPos, errText);
+          break;
+        case 11:
+          error = readCommandWhiteNoise(params, curPos, errText);
+          break;
+        case 12:
+          error = readCommandOutput(params, curPos, errText);
+          break;
+        case 13:
+          error = readCommandSegYOffset(params, curPos, errText);
+          break;
+        case 14:
+          error = readCommandForceFile(params, curPos, errText);
+          break;
+        case 15:
+          error = readCommandDebug(params, curPos, errText);
+          break;
+        case 16:
+          error = readCommandKriging(params, curPos, errText);
+          break;
+        case 17:
+          error = readCommandLocalWavelet(params, curPos, errText);
+          break;
+        case 18:
+          error = readCommandEnergyTreshold(params, curPos, errText);
+          break;
+        case 19:
+          error = readCommandParameterCorr(params, curPos, errText);
+          break;
+        case 20:
+          error = readCommandReflectionMatrix(params, curPos, errText);
+          break;
+        case 21:
+          error = readCommandFrequencyBand(params, curPos, errText);
+          break;
+        case 22:
+          error = readCommandBackground(params, curPos, errText);
+          break;
+        case 23:
+          error = readCommandMaxDeviationAngle(params,curPos,errText);
+          break;
+        case 24:
+          error = readCommandGiveSignalToNoiseRatios(params, curPos, errText);
+          break;
+        case 25:
+          error = readCommandSeismicResolution(params, curPos, errText);
+          break;
+        case 26:
+          error = readCommandWaveletTaperingL(params, curPos, errText);
+          break;
+        case 27:
+          error = readCommandDepthSurfaces(params, curPos, errText);
+          break;
+        case 28:
+          error = readCommandSeismic(params, curPos, errText, ModelSettings::PSSEIS);
+          break;
+        case 29:
+          error = readCommandPUndef(params,curPos,errText);
+          break;
+        case 30:
+          error = readCommandAllowedParameterValues(params,curPos,errText);
+          break;
+        case 31:
+          error = readCommandAllowedParameterVariances(params,curPos,errText);
+          break;
+        default:
+          sprintf(errText, "Unknown command: %s.\n",command);
+          wrongCommand = true;
+          curPos += getParNum(params, curPos, error, errText, "-", 0, -1)+1;
+          error = 1;
+          break;
+        }
+      }
+    }
+    else 
+    {
+      sprintf(errText, "Unknown command: %s.\n",command);
+      wrongCommand = true;
+      curPos += getParNum(params, curPos, error, errText, "-", 0, -1)+1;
+      error = 1;
     }
 
     if(error > 0)
@@ -344,59 +352,6 @@ ModelFile::ModelFile(char * fileName)
     }
   }
  
-  if (wrongCommand)
-  {
-    LogKit::LogFormatted(LogKit::LOW,"\nValid commands are:\n\n");
-    LogKit::LogFormatted(LogKit::LOW,"General settings:\n");
-    LogKit::LogFormatted(LogKit::LOW,"=================\n");
-    LogKit::LogFormatted(LogKit::LOW,"  AREA\n");
-    LogKit::LogFormatted(LogKit::LOW,"  DEBUG\n");
-    LogKit::LogFormatted(LogKit::LOW,"  FORCEFILE\n");
-    LogKit::LogFormatted(LogKit::LOW,"  FREQUENCYBAND\n");
-    LogKit::LogFormatted(LogKit::LOW,"  OUTPUT\n");
-    LogKit::LogFormatted(LogKit::LOW,"  PADDING\n");
-    LogKit::LogFormatted(LogKit::LOW,"  PREFIX\n");
-    LogKit::LogFormatted(LogKit::LOW,"  PUNDEF\n");
-    LogKit::LogFormatted(LogKit::LOW,"  REFLECTIONMATRIX\n");
-    LogKit::LogFormatted(LogKit::LOW,"  SEED\n");
-    LogKit::LogFormatted(LogKit::LOW,"Modelling mode:\n");
-    LogKit::LogFormatted(LogKit::LOW,"===============\n");
-    LogKit::LogFormatted(LogKit::LOW,"  KRIGING\n");
-    LogKit::LogFormatted(LogKit::LOW,"  NSIMULATIONS\n");
-    LogKit::LogFormatted(LogKit::LOW,"  PREDICTION\n");
-    LogKit::LogFormatted(LogKit::LOW,"Well data:\n");
-    LogKit::LogFormatted(LogKit::LOW,"==========\n");
-    LogKit::LogFormatted(LogKit::LOW,"  ALLOWED_PARAMETER_VALUES");
-    LogKit::LogFormatted(LogKit::LOW,"  ALLOWED_PARAMETER_VARIANCES");
-    LogKit::LogFormatted(LogKit::LOW,"  MAX_DEVIATION_ANGLE");
-    LogKit::LogFormatted(LogKit::LOW,"  SEISMICRESOLUTION\n");
-    LogKit::LogFormatted(LogKit::LOW,"  WELLS\n");
-    LogKit::LogFormatted(LogKit::LOW,"Surface data:\n");
-    LogKit::LogFormatted(LogKit::LOW,"=============\n");
-    LogKit::LogFormatted(LogKit::LOW,"  DEPTH\n");
-    LogKit::LogFormatted(LogKit::LOW,"  DEPTHSURFACES\n");
-    LogKit::LogFormatted(LogKit::LOW,"Seismic data:\n");
-    LogKit::LogFormatted(LogKit::LOW,"=============\n");
-    LogKit::LogFormatted(LogKit::LOW,"  ENERGYTRESHOLD\n");
-    LogKit::LogFormatted(LogKit::LOW,"  LOCALWAVELET\n");
-    LogKit::LogFormatted(LogKit::LOW,"  PSSEISMIC\n");
-    LogKit::LogFormatted(LogKit::LOW,"  SEGYOFFSET\n");
-    LogKit::LogFormatted(LogKit::LOW,"  SEISMIC\n");
-    LogKit::LogFormatted(LogKit::LOW,"  WAVELETLENGTH\n");
-    LogKit::LogFormatted(LogKit::LOW,"Prior model:\n");
-    LogKit::LogFormatted(LogKit::LOW,"============\n");
-    LogKit::LogFormatted(LogKit::LOW,"  BACKGROUND\n");
-    LogKit::LogFormatted(LogKit::LOW,"  BACKGROUNDCONTROL\n");
-    LogKit::LogFormatted(LogKit::LOW,"  LATERALCORRELATION\n");
-    LogKit::LogFormatted(LogKit::LOW,"  PARAMETERCORRELATION\n");
-    LogKit::LogFormatted(LogKit::LOW,"Error model:\n");
-    LogKit::LogFormatted(LogKit::LOW,"============\n");
-    LogKit::LogFormatted(LogKit::LOW,"  ANGULARCORRELATION\n");
-    LogKit::LogFormatted(LogKit::LOW,"  GIVESIGNALTONOISERATIO\n");
-    LogKit::LogFormatted(LogKit::LOW,"  WHITENOISE\n");
-    exit(1);
-  }
-
   //
   // Check model file validity 
   //
@@ -482,6 +437,50 @@ ModelFile::ModelFile(char * fileName)
       delete [] errorList[i];
     }
     failed_ = true;    
+  }
+ 
+  if (wrongCommand)
+  {
+    LogKit::LogFormatted(LogKit::LOW,"\nValid commands are:\n\n");
+    LogKit::LogFormatted(LogKit::LOW,"General settings:\n");
+    LogKit::LogFormatted(LogKit::LOW,"  AREA\n");
+    LogKit::LogFormatted(LogKit::LOW,"  DEBUG\n");
+    LogKit::LogFormatted(LogKit::LOW,"  FORCEFILE\n");
+    LogKit::LogFormatted(LogKit::LOW,"  FREQUENCYBAND\n");
+    LogKit::LogFormatted(LogKit::LOW,"  OUTPUT\n");
+    LogKit::LogFormatted(LogKit::LOW,"  PADDING\n");
+    LogKit::LogFormatted(LogKit::LOW,"  PREFIX\n");
+    LogKit::LogFormatted(LogKit::LOW,"  PUNDEF\n");
+    LogKit::LogFormatted(LogKit::LOW,"  REFLECTIONMATRIX\n");
+    LogKit::LogFormatted(LogKit::LOW,"  SEED\n");
+    LogKit::LogFormatted(LogKit::LOW,"Modelling mode:\n");
+    LogKit::LogFormatted(LogKit::LOW,"  KRIGING\n");
+    LogKit::LogFormatted(LogKit::LOW,"  NSIMULATIONS\n");
+    LogKit::LogFormatted(LogKit::LOW,"  PREDICTION\n");
+    LogKit::LogFormatted(LogKit::LOW,"Well data:\n");
+    LogKit::LogFormatted(LogKit::LOW,"  ALLOWED_PARAMETER_VALUES\n");
+    LogKit::LogFormatted(LogKit::LOW,"  ALLOWED_PARAMETER_VARIANCES\n");
+    LogKit::LogFormatted(LogKit::LOW,"  MAX_DEVIATION_ANGLE\n");
+    LogKit::LogFormatted(LogKit::LOW,"  SEISMICRESOLUTION\n");
+    LogKit::LogFormatted(LogKit::LOW,"  WELLS\n");
+    LogKit::LogFormatted(LogKit::LOW,"Surface data:\n");
+    LogKit::LogFormatted(LogKit::LOW,"  DEPTH\n");
+    LogKit::LogFormatted(LogKit::LOW,"  DEPTHSURFACES\n");
+    LogKit::LogFormatted(LogKit::LOW,"Seismic data:\n");
+    LogKit::LogFormatted(LogKit::LOW,"  ENERGYTRESHOLD\n");
+    LogKit::LogFormatted(LogKit::LOW,"  LOCALWAVELET\n");
+    LogKit::LogFormatted(LogKit::LOW,"  PSSEISMIC\n");
+    LogKit::LogFormatted(LogKit::LOW,"  SEGYOFFSET\n");
+    LogKit::LogFormatted(LogKit::LOW,"  SEISMIC\n");
+    LogKit::LogFormatted(LogKit::LOW,"  WAVELETLENGTH\n");
+    LogKit::LogFormatted(LogKit::LOW,"Prior model:\n");
+    LogKit::LogFormatted(LogKit::LOW,"  BACKGROUND\n");
+    LogKit::LogFormatted(LogKit::LOW,"  LATERALCORRELATION\n");
+    LogKit::LogFormatted(LogKit::LOW,"  PARAMETERCORRELATION\n");
+    LogKit::LogFormatted(LogKit::LOW,"Error model:\n");
+    LogKit::LogFormatted(LogKit::LOW,"  ANGULARCORRELATION\n");
+    LogKit::LogFormatted(LogKit::LOW,"  GIVESIGNALTONOISERATIO\n");
+    LogKit::LogFormatted(LogKit::LOW,"  WHITENOISE\n");
   }
 
   for(int i=0;i<nParam;i++)
@@ -1687,25 +1686,16 @@ int
 ModelFile::readCommandAllowedParameterValues(char ** params, int & pos, char * errText)
 {
   int error;
-  int nPar = getParNum(params, pos, error, errText, params[pos-1], 1);
+  int nPar = getParNum(params, pos, error, errText, params[pos-1], 6);
   if(error == 0)
   {
-    if(nPar == 6)
-    {
-      modelSettings_->setAlphaMin(float(atof(params[pos+0])));
-      modelSettings_->setAlphaMax(float(atof(params[pos+1])));
-      modelSettings_->setBetaMin (float(atof(params[pos+2])));
-      modelSettings_->setBetaMax (float(atof(params[pos+3])));
-      modelSettings_->setRhoMin  (float(atof(params[pos+4])));
-      modelSettings_->setRhoMax  (float(atof(params[pos+5])));
-    }
-    else
-    {
-      sprintf(errText,"Command %s takes 6 arguments (Vp_min, Vp_max, Vs_min, ...) ; %d given in file.\n",
-              params[pos-1], nPar);
-      error = 1;
-    }
- }
+    modelSettings_->setAlphaMin(float(atof(params[pos+0])));
+    modelSettings_->setAlphaMax(float(atof(params[pos+1])));
+    modelSettings_->setBetaMin (float(atof(params[pos+2])));
+    modelSettings_->setBetaMax (float(atof(params[pos+3])));
+    modelSettings_->setRhoMin  (float(atof(params[pos+4])));
+    modelSettings_->setRhoMax  (float(atof(params[pos+5])));
+  }
   pos += nPar+1;
   return(error);
 }
@@ -1714,25 +1704,16 @@ int
 ModelFile::readCommandAllowedParameterVariances(char ** params, int & pos, char * errText)
 {
   int error;
-  int nPar = getParNum(params, pos, error, errText, params[pos-1], 1);
+  int nPar = getParNum(params, pos, error, errText, params[pos-1], 6);
   if(error == 0)
   {
-    if(nPar == 6)
-    {
-      modelSettings_->setVarAlphaMin(float(atof(params[pos+0])));
-      modelSettings_->setVarAlphaMax(float(atof(params[pos+1])));
-      modelSettings_->setVarBetaMin (float(atof(params[pos+2])));
-      modelSettings_->setVarBetaMax (float(atof(params[pos+3])));
-      modelSettings_->setVarRhoMin  (float(atof(params[pos+4])));
-      modelSettings_->setVarRhoMax  (float(atof(params[pos+5])));
-    }
-    else
-    {
-      sprintf(errText,"Command %s takes 6 arguments (Vp_min, Vp_max, Vs_min, ...) ; %d given in file.\n",
-              params[pos-1], nPar);
-      error = 1;
-    }
- }
+    modelSettings_->setVarAlphaMin(float(atof(params[pos+0])));
+    modelSettings_->setVarAlphaMax(float(atof(params[pos+1])));
+    modelSettings_->setVarBetaMin (float(atof(params[pos+2])));
+    modelSettings_->setVarBetaMax (float(atof(params[pos+3])));
+    modelSettings_->setVarRhoMin  (float(atof(params[pos+4])));
+    modelSettings_->setVarRhoMax  (float(atof(params[pos+5])));
+  }
   pos += nPar+1;
   return(error);
 }

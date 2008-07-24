@@ -53,9 +53,9 @@ public:
   float          getXpad(void)                 const { return xPad_             ;}
   float          getYpad(void)                 const { return yPad_             ;}
   float          getZpad(void)                 const { return zPad_             ;}
-  float          getNXpad(void)                const { return nxPad_            ;}
-  float          getNYpad(void)                const { return nyPad_            ;}
-  float          getNZpad(void)                const { return nzPad_            ;}
+  int            getNXpad(void)                const { return nxPad_            ;}
+  int            getNYpad(void)                const { return nyPad_            ;}
+  int            getNZpad(void)                const { return nzPad_            ;}
   float          getSegyOffset(void)           const { return segyOffset_       ;}
   float          getPundef(void)               const { return p_undef_          ;}
   double         getLzLimit(void)              const { return lzLimit_          ;}
@@ -201,9 +201,9 @@ private:
   float          yPad_;
   float          zPad_; 
 
-  float          nxPad_;                 // Number of cells to pad in x direction
-  float          nyPad_;
-  float          nzPad_; 
+  int            nxPad_;                 // Number of cells to pad in x direction
+  int            nyPad_;
+  int            nzPad_; 
 
   float          segyOffset_;            // Starttime for SegY cubes.
 

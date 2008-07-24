@@ -652,6 +652,7 @@ Model::makeTimeSimbox(Simbox         * timeSimbox,
           }
         }
         estimateXYPaddingSizes(timeSimbox, modelSettings);
+
         //
         // Check if CRAVA has enough memory to run calculation without buffering to disk
         //
