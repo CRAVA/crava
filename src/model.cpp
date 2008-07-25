@@ -889,7 +889,7 @@ Model::processSeismic(FFTGrid      **& seisCube,
 }
 
 void 
-Model::processWells(WellData      **& wells,
+Model::processWells(WellData     **& wells,
                     Simbox         * timeSimbox,
                     RandomGen      * randomGen,
                     ModelSettings *& modelSettings, 
@@ -986,7 +986,7 @@ Model::processWells(WellData      **& wells,
         wells[i]->setWrongLogEntriesUndefined(nInvalidAlpha[i], nInvalidBeta[i], nInvalidRho[i]);
         wells[i]->filterLogs();
         wells[i]->lookForSyntheticVsLog(rankCorr[i]);
-        wells[i]->calculateDeviation(devAngle[i]);
+        wells[i]->calculateDeviation(devAngle[i], timeSimbox);
         wells[i]->setBlockedLogsPropThick( new BlockedLogs(wells[i], timeSimbox, randomGen) );
         if (nFacies > 0)
           wells[i]->countFacies(timeSimbox,faciesCount[i]);

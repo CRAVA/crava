@@ -181,8 +181,7 @@ template <class A>
 void RegularSurface<A>::GetIndex(double x, double y, int& i, int& j) const
 {
   if (x < GetXMin() || x > GetXMax() || y < GetYMin() || y > GetYMax()) {
-    throw Exception("Point (" + ToString(x) + ", " 
-      + ToString(y) + ") is outside the grid.");  
+    throw Exception("Point (" + ToString(x) + ", " + ToString(y) + ") is outside the grid.");  
   }
 
   i = int((x-GetXMin())/GetDX());

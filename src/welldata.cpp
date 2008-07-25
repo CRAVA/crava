@@ -1211,17 +1211,49 @@ WellData::lookForSyntheticVsLog(float & rank_correlation)
 
 //----------------------------------------------------------------------------
 void 
-WellData::calculateDeviation(float & devAngle)
+WellData::calculateDeviation(float  & devAngle,
+                             Simbox * timeSimbox)
 {
   float maxDevAngle   = modelSettings_->getMaxDevAngle();
   float thr_deviation = float(tan(maxDevAngle*PI/180.0));  // Largest allowed deviation
   float max_deviation =  0.0f;
   float max_dz        = 10.0f;                      // Calculate slope each 10'th millisecond.
 
-  double x0 = xpos_[0];
-  double y0 = ypos_[0];
-  double z0 = zpos_[0];
-  for (int i = 1 ; i < nd_ ; i++) 
+  //
+  // Find first log entry in simbox
+  //
+  int iFirst = IMISSING;
+  int i;
+  for(i=0 ; i < nd_ ; i++)
+  {
+    if(timeSimbox->isInside(xpos_[i], ypos_[i]))
+    { 
+      if (zpos_[i] > timeSimbox->getTop(xpos_[i], ypos_[i]))
+      {
+        iFirst = i; 
+        break;
+      }
+    }
+  }
+  //
+  // Find last log entry in simbox
+  //
+  int iLast = iFirst;
+  for(i = iFirst + 1 ; i < nd_ ; i++)
+  {
+    if(timeSimbox->isInside(xpos_[i], ypos_[i])) 
+    {
+      if (zpos_[i] > timeSimbox->getBot(xpos_[i], ypos_[i]))
+        break;
+    }
+    else
+      break;
+    iLast = i;
+  }
+  double x0 = xpos_[iFirst];
+  double y0 = ypos_[iFirst];
+  double z0 = zpos_[iFirst];
+  for (int i = iFirst+1 ; i < iLast+1 ; i++) 
   {
     double x1 = xpos_[i];
     double y1 = ypos_[i];
