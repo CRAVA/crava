@@ -30,7 +30,7 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
                      ModelSettings  * modelSettings,
                      float          * coeff,
                      int              dim)
-  : Wavelet (dim)
+  : Wavelet(dim)
 {
   LogKit::LogFormatted(LogKit::LOW,"\n  Estimating 1D wavelet from seismic data and (nonfiltered) blocked wells\n");
   readtype_ = ESTIMATE;
@@ -41,22 +41,22 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
   maxShift_           = modelSettings->getMaxWaveletShift();
   minRelativeAmp_     = modelSettings->getMinRelWaveletAmp();
 
-  scale_=1.0f; 
-  gridNI_=0;   
-  gridNJ_=0;
-  shiftGrid_=NULL;  
-  gainGrid_=NULL; 
-  errCode_=0;
-  dz_        = static_cast<float>(simbox->getdz());
-  nz_        = simbox->getnz();
-  nzp_       = seisCube->getNzp();
-  cnzp_      = nzp_/2+1;
-  rnzp_	     = 2*cnzp_;
-  theta_     = seisCube->getTheta();
+  scale_      = 1.0f; 
+  gridNI_     = 0;   
+  gridNJ_     = 0;
+  shiftGrid_  = NULL;  
+  gainGrid_   = NULL; 
+  errCode_    = 0;
+  dz_         = static_cast<float>(simbox->getdz());
+  nz_         = simbox->getnz();
+  nzp_        = seisCube->getNzp();
+  cnzp_       = nzp_/2+1;
+  rnzp_	      = 2*cnzp_;
+  theta_      = seisCube->getTheta();
 
-  inFFTorder_= true;
-  isReal_    = true; 
-  cz_        = 0;
+  inFFTorder_ = true;
+  isReal_     = true; 
+  cz_         = 0;
 
   float* dz = new float[nWells];
   float*  wellWeight=new float[nWells];
@@ -105,10 +105,10 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
     ccor_seis_cpp_r[i] = new fftw_real[rnzp];
     wavelet_r[i]       = new fftw_real[rnzp];
     wellWeight[i]      = 0;
-    const int * ipos = wells[i]->getBlockedLogsPropThick()->getIpos();
-    const int * jpos = wells[i]->getBlockedLogsPropThick()->getJpos();
-    dz[i] = static_cast<float>(simbox->getRelThick(ipos[0],jpos[0])*simbox->getdz());
-    int nBlocks = wells[i]->getBlockedLogsPropThick()->getNumberOfBlocks();
+    const int * ipos   = wells[i]->getBlockedLogsPropThick()->getIpos();
+    const int * jpos   = wells[i]->getBlockedLogsPropThick()->getJpos();
+    dz[i]              = static_cast<float>(simbox->getRelThick(ipos[0],jpos[0])*simbox->getdz());
+    int nBlocks        = wells[i]->getBlockedLogsPropThick()->getNumberOfBlocks();
     if (nBlocks > maxBlocks)
       maxBlocks = nBlocks;
   }
@@ -119,8 +119,10 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
   //
   for (int w = 0 ; w < nWells ; w++) 
   {
-    if (!wells[w]->isDeviated())
+    if (wells[w]->getUseForWaveletEstimation())
     {
+      LogKit::LogFormatted(LogKit::MEDIUM,"  Well :  %s\n",wells[w]->getWellname());
+
       BlockedLogs * bl = wells[w]->getBlockedLogsPropThick();
       //
       // Block seismic data for this well
@@ -133,14 +135,14 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
       bl->getVerticalTrend(bl->getBeta(), beta);
       bl->getVerticalTrend(bl->getRho(), rho);
       bl->getVerticalTrend(seisLog, seisData);
-
+      
       for (k = 0 ; k < nz ; k++) {
         hasData[k] = seisData[k] != RMISSING && alpha[k] != RMISSING && beta[k] != RMISSING && rho[k] != RMISSING;
       }
-
+      
       int start,length;
       findContiniousPartOfData(hasData,nz,start,length);
-
+      
       if(length*dz0 > waveletLength  ) // must have enough data
       {
         fillInCpp(alpha,beta,rho,start,length,cpp_r[w],nzp);
@@ -156,8 +158,6 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
         wellWeight[w] = length*dz[w]*(cor_cpp_r[w][0]+cor_cpp_r[w][1]);// Gives most weight to long datasets with  
                                                                        // large reflection coefficients
       }
-      else
-        wellWeight[w] = 0; 
     }
   }
   delete [] seisLog;
@@ -277,24 +277,24 @@ Wavelet1D::Wavelet1D(char * fileName, ModelSettings * modelSettings, int fileFor
   : Wavelet(modelSettings, dim)
 {
   switch (fileFormat)
-	{
-	case OLD: WaveletReadOld(fileName);
-		break;
-	case JASON: WaveletReadJason(fileName);
-		break;
+  {
+  case OLD: WaveletReadOld(fileName);
+    break;
+  case JASON: WaveletReadJason(fileName);
+    break;
   }
   
-	for(int i=0; i < rnzp_ ;i++)
-	{  
-		if(i < nzp_)
-		{
-			rAmp_[i]*=scale_;
-		}
-		else
-		{
-			rAmp_[i]=RMISSING;
-		}// endif
-	}//end for i
+  for(int i=0; i < rnzp_ ;i++)
+  {  
+    if(i < nzp_)
+    {
+      rAmp_[i]*=scale_;
+    }
+    else
+    {
+      rAmp_[i]=RMISSING;
+    }// endif
+  }//end for i
 }
 
 Wavelet1D::Wavelet1D(Wavelet * wavelet, int difftype, int dim)

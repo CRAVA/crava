@@ -11,7 +11,8 @@
 #include "src/model.h"
 #include "src/definitions.h"
 
-Simbox::Simbox(void) : Volume()
+Simbox::Simbox(void) 
+  : Volume()
 {
   status_      = EMPTY;
   topName_     = "";
@@ -69,12 +70,8 @@ Simbox::Simbox(const Simbox *simbox) :
   crossLine0_  = simbox->crossLine0_;
   constThick_  = simbox->constThick_;
   minRelThick_ = simbox->minRelThick_;
-
-  topName_ = new char [MAX_STRING]; 
-  botName_ = new char [MAX_STRING]; 
-
-  topName_ = simbox->topName_;
-  botName_ = simbox->botName_;
+  topName_     = simbox->topName_;
+  botName_     = simbox->botName_;
 }   
 
 Simbox::~Simbox()
@@ -336,47 +333,44 @@ Simbox::getStormHeader(int cubetype, int nx, int ny, int nz, bool flat, bool asc
 void
 Simbox::writeTopBotGrids(const char * topname, const char * botname)
 {
-  char dirsep = '/';
-#ifdef _WINDOWS
-  dirsep = '\\';
-#endif
+//   char * tmpName;
+//   tmpName  = ModelSettings::makeFullFileName(topname);
+//   topName_ = std::string(tmpName);
+//   delete [] tmpName;
+//   tmpName  = ModelSettings::makeFullFileName(botname);
+//   botName_ = std::string(tmpName);
+//   delete [] tmpName;
 
-  char * tmpName = ModelSettings::makeFullFileName(topname);
-  std::string tName(tmpName);
+//   assert(typeid(GetTopSurface()) == typeid(Surface));
+//   const Surface & wtsurf = dynamic_cast<const Surface &>(GetTopSurface());
+//   NRLib2::WriteStormBinarySurf(wtsurf, topName_);
+
+//   assert(typeid(GetBotSurface()) == typeid(Surface));
+//   const Surface & wbsurf = dynamic_cast<const Surface &>(GetBotSurface());
+//   NRLib2::WriteStormBinarySurf(wbsurf, botName_);
+
+  char * tmpName;
+
+  tmpName  = ModelSettings::makeFullFileName(topname);
+  topName_ = std::string(tmpName);
+  //std::string tName(tmpName);
+  delete [] tmpName;
+
+  tmpName  = ModelSettings::makeFullFileName(botname);
+  botName_ = std::string(tmpName);
+  //std::string bName(tmpName);
+  delete [] tmpName;
+
   assert(typeid(GetTopSurface()) == typeid(Surface));
-  const NRLib2::RegularSurface<double> & wtsurf = dynamic_cast<const NRLib2::RegularSurface<double> &>(GetTopSurface());
-  NRLib2::WriteStormBinarySurf(wtsurf, tName);
+  const Surface & wtsurf = dynamic_cast<const Surface &>(GetTopSurface());
+  //NRLib2::WriteStormBinarySurf(wtsurf, tName);
+  NRLib2::WriteStormBinarySurf(wtsurf, topName_);
 
-  //Strip away path
-  int i;
-  for(i = strlen(tmpName)-1;i >=0; i--)
-    if(tmpName[i] == dirsep)
-      break;
-  if(topName_ == "")
-  {
-    char * tmpTopName = new char[strlen(tmpName)-i+1];
-    strcpy(tmpTopName, &(tmpName[i+1]));
-    topName_ = std::string(tmpTopName);
-    delete [] tmpTopName;
-  }
-  delete [] tmpName;
-
-  tmpName =ModelSettings::makeFullFileName(botname);
-  if(botName_ == "")
-    {
-      char * tmpBotName = new char[strlen(tmpName)-i+1];
-      strcpy(tmpBotName, &(tmpName[i+1]));
-      botName_ = std::string(tmpBotName);
-      delete [] tmpBotName;
-    }
-  
-  std::string bName(tmpName);
   assert(typeid(GetBotSurface()) == typeid(Surface));
-  const NRLib2::RegularSurface<double> & wbsurf = dynamic_cast<const NRLib2::RegularSurface<double> &>(GetTopSurface());
-  NRLib2::WriteStormBinarySurf(wbsurf, bName);
-  delete [] tmpName;
+  const Surface & wbsurf = dynamic_cast<const Surface &>(GetBotSurface());
+  //NRLib2::WriteStormBinarySurf(wbsurf, bName);
+  NRLib2::WriteStormBinarySurf(wbsurf, botName_);
 }
-
 
 int
 Simbox::checkError(double lzLimit, char * errText)

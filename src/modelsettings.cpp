@@ -16,6 +16,9 @@ ModelSettings::ModelSettings(void)
   angle_                 =     NULL;
   noiseEnergy_           =     NULL;
   matchEnergies_         =     NULL;
+  indBGTrend_            =     NULL;
+  indWavelet_            =     NULL;
+  indFacies_             =     NULL;
   faciesNames_           =     NULL;
   nFacies_               =        0;
   nWells_                =        0;
@@ -102,6 +105,15 @@ ModelSettings::~ModelSettings(void)
   if (matchEnergies_ != NULL)
     delete [] matchEnergies_;
 
+  if (indBGTrend_ != NULL)
+    delete [] indBGTrend_;
+
+  if (indWavelet_ != NULL)
+    delete [] indWavelet_;
+
+  if (indFacies_ != NULL)
+    delete [] indFacies_;
+
   if (faciesNames_ != NULL)
   {
     for (int i = 0 ; i < nFacies_ ; i++)
@@ -176,6 +188,41 @@ ModelSettings::setMatchEnergies(float * waveletScale, int nAngles)
   matchEnergies_ = new bool[nAngles];
   for (int i=0 ; i<nAngles ; i++)
     matchEnergies_[i] = (waveletScale[i] == RMISSING);
+}
+
+void           
+ModelSettings::setAllIndicatorsTrue(int nWells)
+{
+  indBGTrend_ = new int[nWells];
+  indWavelet_ = new int[nWells];
+  indFacies_  = new int[nWells];
+  for (int i=0 ; i<nWells ; i++)
+  {
+    indBGTrend_[i] = 1;
+    indWavelet_[i] = 1;
+    indFacies_[i]  = 1;
+  }
+}
+
+void           
+ModelSettings::setIndicatorBGTrend(int * indBGTrend, int nWells)
+{
+  for (int i=0 ; i<nWells ; i++)
+    indBGTrend_[i] = indBGTrend[i];
+}
+
+void           
+ModelSettings::setIndicatorWavelet(int * indWavelet, int nWells)
+{
+  for (int i=0 ; i<nWells ; i++)
+    indWavelet_[i] = indWavelet[i];
+}
+
+void           
+ModelSettings::setIndicatorFacies(int * indFacies, int nWells)
+{
+  for (int i=0 ; i<nWells ; i++)
+    indFacies_[i] = indFacies[i];
 }
 
 void           

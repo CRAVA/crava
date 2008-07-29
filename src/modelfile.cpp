@@ -182,6 +182,9 @@ ModelFile::ModelFile(char * fileName)
     strcpy(errorList[nErrors], errText);
     nErrors++;
   }
+  //
+  // NBNB-PAL: Disse kan kanskje deklareres 'long'
+  //
   int  commandsUsed = 0;
   int  comFlag = 0;
   int  curPos = 0;
@@ -577,57 +580,162 @@ int
 ModelFile::readCommandWells(char ** params, int & pos, char * errText)
 {
   sprintf(errText,"%c",'\0');
-  int error=0;
   char *commandName = params[pos-1];
-  char *command = new char[MAX_STRING];
-  strcpy(command,params[pos]);
-  if(strcmp(uppercase(command),"HEADERS")==0)
-  {
-    int nHeader = getParNum(params, pos+1, error, errText, "HEADERS in WELLS", 4,5);
-    if(nHeader==5)// facies log present
-      faciesLogGiven_ = true;
-    // Read headers from model file
-    if(error==0)
-    { 
-      headerList_ = new char*[5]; // changed from 4 to allow for facies 
+  char *command     = new char[MAX_STRING];
 
-      for(int i=0 ; i<nHeader ; i++)
-      {
-        headerList_[i] = new char[MAX_STRING];
-        sprintf(headerList_[i],uppercase(params[pos+1+i])); 
-      } 
-      if(nHeader<5)// no facies log, dummy name
-      {
-        headerList_[4] = new char[MAX_STRING]; 
-        strcpy(headerList_[4],"FACIES");
+  int error    = 0;
+  int tmperror = 0;
+
+  char tmpErrText[MAX_STRING];
+  int * iwhich    = NULL;
+  int nIndicators = 0;
+
+  //
+  // Make order of keywords INDICATORS and HEADERS arbitrary
+  //
+  strcpy(command,params[pos]);
+  uppercase(command);
+  while (strcmp(command,"HEADERS")==0 || strcmp(command,"INDICATORS")==0) 
+  {
+    if(strcmp(command,"HEADERS")==0)
+    {
+      int nHeader = getParNum(params, pos+1, error, errText, "HEADERS in WELLS", 4,5);
+      if(nHeader==5)// facies log present
+        faciesLogGiven_ = true;
+      // Read headers from model file
+      if(error==0)
+      { 
+        headerList_ = new char*[5]; // changed from 4 to allow for facies 
+        for(int i=0 ; i<nHeader ; i++)
+        {
+          headerList_[i] = new char[MAX_STRING];
+          sprintf(headerList_[i],uppercase(params[pos+1+i])); 
+        } 
+        if(nHeader<5)// no facies log, dummy name
+        {
+          headerList_[4] = new char[MAX_STRING]; 
+          strcpy(headerList_[4],"FACIES");
+        }
       }
+      pos+= nHeader+2;
     }
-    pos+= nHeader+2;
+
+    if(strcmp(command,"INDICATORS")==0)
+    {
+      nIndicators = getParNum(params, pos+1, tmperror, tmpErrText, "INDICATORS in WELLS", 1, 3);
+      if (tmperror == 0)
+      {
+        iwhich = new int[nIndicators];
+        for(int i=0 ; i<nIndicators ; i++)
+        {
+          strcpy(command,uppercase(uppercase(params[pos+1+i])));
+          if (strcmp(command,"BACKGROUNDTREND")==0) 
+            iwhich[i] = 0;
+          else if (strcmp(command,"WAVELET")==0)         
+            iwhich[i] = 1;
+          else if (strcmp(command,"FACIES")==0)          
+            iwhich[i] = 2;
+          else 
+            iwhich[i] = IMISSING;
+        } 
+      }
+      else
+      {
+        sprintf(errText,"%s%s",errText,tmpErrText);
+        error = 1;
+      }
+      pos += nIndicators+2;
+    }
+    strcpy(command,params[pos]);
+    uppercase(command);
   }
   delete [] command;
 
-  int tmperror = 0;
-  char tmpErrText[MAX_STRING];
+  tmperror = 0;
 
-  int nWells = getParNum(params, pos, tmperror, tmpErrText, commandName, 1, -1);
-
+  int nWells = 0;
+  int nElements = getParNum(params, pos, tmperror, tmpErrText, commandName, 1, -1);
   if(tmperror > 0)
   {
     sprintf(errText,"%s%s",errText,tmpErrText);
     pos += 1;
     return(1);
   }
+  if(nIndicators > 0 && (nElements % (nIndicators+1)) != 0)
+  {
+    sprintf(tmpErrText, "Each well must have exactly %d indicators.\n",nIndicators);
+    sprintf(errText,"%s%s",errText,tmpErrText);
+    pos += 1;
+    return(1);
+  }
+  else
+    nWells = nElements/(nIndicators+1);
 
+  int ** ind = NULL;
+  if (nIndicators > 0) 
+  {
+    ind = new int * [nIndicators];
+    for (int i=0 ; i<nIndicators ; i++)
+      ind[i] = new int[nWells];
+  }
+  
+  bool invalidIndicator = false;
   wellFile_ = new char*[nWells];
 
   for(int i=0 ; i<nWells ; i++)
   {
-    wellFile_[i] = new char[strlen(params[pos+i])+1];
-    strcpy(wellFile_[i],params[pos+i]);
+    int iw = pos+(nIndicators+1)*i;
+    wellFile_[i] = new char[strlen(params[iw])+1];
+    strcpy(wellFile_[i],params[iw]);
+    for (int j=0 ; j<nIndicators ; j++)
+    {
+      int indicator = atoi(params[iw+j+1]); 
+      if (indicator == 0 || indicator == 1)
+        ind[j][i] = indicator;
+      else
+      {
+        ind[j][i] = IMISSING;
+        invalidIndicator = true;
+      }
+    }
+  }
+  if (invalidIndicator)
+  { 
+    sprintf(tmpErrText, "Invalid indicator found in command %s. Use 0 or 1 only.\n",commandName);
+    sprintf(errText,"%s%s",errText,tmpErrText);
+    error = 1;
   }
   modelSettings_->setNumberOfWells(nWells);
+  modelSettings_->setAllIndicatorsTrue(nWells);
 
-  pos += nWells+1;
+  for (int j=0 ; j<nIndicators ; j++)
+  {
+    if (iwhich[j]==0)         // BACKGROUNDTREND
+      modelSettings_->setIndicatorBGTrend(ind[j],nWells);
+    else if (iwhich[j]==1)    // WAVELET         
+      modelSettings_->setIndicatorWavelet(ind[j],nWells);
+    else if (iwhich[j]==2)    // FACIES
+      modelSettings_->setIndicatorFacies(ind[j],nWells);
+    else
+    {
+      sprintf(tmpErrText, "Invalid INDICATOR type found for command %s.\n",commandName);
+      sprintf(tmpErrText, "Choose from BACKGROUNDTREND, WAVELET, and FACIES.\n");
+      sprintf(errText,"%s%s",errText,tmpErrText);
+      error = 1;
+    }
+  }
+  pos += nElements + 1;
+
+  if (nIndicators > 0) 
+  {
+    for (int i=0 ; i<nIndicators ; i++)
+      if (ind[i] != NULL)
+        delete [] ind[i];
+    if (ind != NULL)
+      delete [] ind;
+    if (iwhich != NULL)
+      delete [] iwhich;
+  }
   return(error);
 }
 

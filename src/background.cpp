@@ -333,36 +333,47 @@ Background::calculateVerticalTrend(WellData  ** wells,
     trend[k] = 0.0f;
     count[k] = 0;
   }
+  int iWells = 0;
   for (int w = 0 ; w < nWells ; w++) { 
-    BlockedLogs * bl = wells[w]->getBlockedLogsPropThick();
-    if (strcmp(name,"Vp") == 0)
-      bl->getVerticalTrend(bl->getAlpha(), wellTrend);
-    else if (strcmp(name,"Vs") == 0)
-      bl->getVerticalTrend(bl->getBeta(), wellTrend);
-    else if (strcmp(name,"Rho") == 0)
-      bl->getVerticalTrend(bl->getRho(), wellTrend);
-    else {
-      LogKit::LogFormatted(LogKit::LOW,"ERROR in Background::calculateVerticalTrend(): ");
-      LogKit::LogFormatted(LogKit::LOW,"Log \'%s\' requested, but no such log exists.\n",name);
-      exit(1);
+    if (wells[w]->getUseForBackgroundTrend()) {
+      BlockedLogs * bl = wells[w]->getBlockedLogsPropThick();
+      if (strcmp(name,"Vp") == 0)
+        bl->getVerticalTrend(bl->getAlpha(), wellTrend);
+      else if (strcmp(name,"Vs") == 0)
+        bl->getVerticalTrend(bl->getBeta(), wellTrend);
+      else if (strcmp(name,"Rho") == 0)
+        bl->getVerticalTrend(bl->getRho(), wellTrend);
+      else {
+        LogKit::LogFormatted(LogKit::LOW,"ERROR in Background::calculateVerticalTrend(): ");
+        LogKit::LogFormatted(LogKit::LOW,"Log \'%s\' requested, but no such log exists.\n",name);
+        exit(1);
+      }
+      for (int k = 0 ; k < nz ; k++) {
+        if (wellTrend[k] != RMISSING) {
+          trend[k] += exp(wellTrend[k]);
+          count[k]++;
+        }
+      }
+      iWells++;
     }
+  }
+  if (iWells > 0) {
     for (int k = 0 ; k < nz ; k++) {
-      if (wellTrend[k] != RMISSING) {
-        trend[k] += exp(wellTrend[k]);
-        count[k]++;
+      if (count[k] > 0) {
+        trend[k] = trend[k]/count[k]; 
       }
     }
   }
-  for (int k = 0 ; k < nz ; k++) {
-    if (count[k] > 0) {
-      trend[k] = trend[k]/count[k]; 
-    }
+  else {
+    LogKit::LogFormatted(LogKit::LOW,"\nERROR in Background::calculateVerticalTrend(): There are no wells\n");
+    LogKit::LogFormatted(LogKit::LOW,"available for the estimation of background trend.\n");
+    exit(1);
   }
 
   bool use_local_linear_regression = true;
   if (use_local_linear_regression) {
     smoothTrendWithLocalLinearRegression(trend, count,
-                                         nWells, nz, dz, 
+                                         iWells, nz, dz, 
                                          logMin,
                                          logMax,
                                          name);
@@ -376,7 +387,7 @@ Background::calculateVerticalTrend(WellData  ** wells,
     float * interpolated_log = new float[nz]; 
     smoothTrendWithMovingAverage(trend, 
                                  count, 
-                                 nWells, 
+                                 iWells, 
                                  nz);
     WellData::interpolateLog(interpolated_log, trend, nz); 
     WellData::applyFilter(filtered_log, interpolated_log, nz, dz, maxHz);
@@ -397,7 +408,7 @@ Background::calculateVerticalTrend(WellData  ** wells,
 void
 Background::smoothTrendWithLocalLinearRegression(float      * trend, 
                                                  int        * count,
-                                                 int          nWells,
+                                                 int          iWells,
                                                  int          nz,
                                                  float        dz,
                                                  float        min_value, 
@@ -410,7 +421,7 @@ Background::smoothTrendWithLocalLinearRegression(float      * trend,
   //
   // In the center parts of the scatter plots the average value should be
   // accepted as a trend value if the number of data points behind each 
-  // average is fraction * nWells, where fraction is the acceptance
+  // average is fraction * iWells, where fraction is the acceptance
   // fraction, possibly larger than one.
   //
   // Sometimes we have only one, two, or three wells available. In the
@@ -423,7 +434,7 @@ Background::smoothTrendWithLocalLinearRegression(float      * trend,
   // Finally, we must require a definite minimum number of data points 
   // that should be behind each trend value.
   // 
-  // nDataMin = max(min_req_points, max(min_time_sample, fraction * nWells))
+  // nDataMin = max(min_req_points, max(min_time_sample, fraction * iWells))
   //
   // 2. End-parts of scatter plot
   //
@@ -434,10 +445,10 @@ Background::smoothTrendWithLocalLinearRegression(float      * trend,
   // "arbitrary" end behaviour.
   //
 
-  float fraction   = 3.0f;                      // Require minimum 3*nWells
+  float fraction   = 3.0f;                      // Require minimum 3*iWells
   int   nTimeLimit = static_cast<int>(50.0/dz); // The smaller sampling density, the more values are needed.
   int   nLowLimit  = 10;                        // Require minimum 10
-  int   nDataMin   = std::max(nLowLimit, std::max(nTimeLimit, int(fraction * nWells)));
+  int   nDataMin   = std::max(nLowLimit, std::max(nTimeLimit, int(fraction * iWells)));
 
   bool  use_weights = true;
   bool  error = false;
@@ -596,18 +607,18 @@ Background::smoothTrendWithLocalLinearRegression(float      * trend,
 void
 Background::smoothTrendWithMovingAverage(float * trend, 
                                          int   * count,
-                                         int     nWells,
+                                         int     iWells,
                                          int     nz) 
 {
   //
-  // It is unreasonable to require nDataMin = nWells, and we use
+  // It is unreasonable to require nDataMin = iWells, and we use
   // an acceptance fraction to adjust the minimum required number 
   // of data in each trend value.
   //
   // Useful range :  0.5 < fraction < 1.0
   //
   float fraction = 0.51f;                          
-  int   nDataMin = std::max(1, int(fraction * nWells + 0.5f)); 
+  int   nDataMin = std::max(1, int(fraction * iWells + 0.5f)); 
 
   float * mean = new float[nz];
   for (int k = 0 ; k < nz ; k++) {

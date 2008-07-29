@@ -15,7 +15,8 @@ public:
   WellData(const char     * wellFileName, 
            ModelSettings  * modelSettings,
            char          ** headerList,
-           bool             faciesLogGiven);
+           bool             faciesLogGiven,
+           int              i);
   ~WellData(void);
 
   const float   * getAlpha(int &nData) const;
@@ -28,17 +29,20 @@ public:
   const float   * getAlphaSeismicResolution(int &nData) const;
   const float   * getBetaSeismicResolution(int &nData) const; 
   const float   * getRhoSeismicResolution(int &nData) const;  
-  const double  * getXpos(int &nData)      const;
-  const double  * getYpos(int &nData)      const;
-  const double  * getZpos(int &nData)      const;
-  const char    * getWellname(void)        const { return wellname_       ;} 
-  const bool      hasSyntheticVsLog(void)  const { return syntheticVsLog_ ;}
-  const bool      isDeviated(void)         const { return isDeviated_     ;}
+  const double  * getXpos(int &nData) const;
+  const double  * getYpos(int &nData) const;
+  const double  * getZpos(int &nData) const;
+  const char    * getWellname(void)                  const { return wellname_                  ;} 
+  const bool      hasSyntheticVsLog(void)            const { return syntheticVsLog_            ;}
+  const bool      isDeviated(void)                   const { return isDeviated_                ;}
+  const bool      getUseForFaciesProbabilities(void) const { return useForFaciesProbabilities_ ;}
+  const bool      getUseForWaveletEstimation(void)   const { return useForWaveletEstimation_   ;}
+  const bool      getUseForBackgroundTrend(void)     const { return useForBackgroundTrend_     ;}
   bool            isFaciesLogDefined(void) const;
-  int             getNFacies(void)         const { return nFacies_        ;}
-  int           * getFaciesNr(void)        const { return faciesNr_       ;}
-  int             getFaciesNr(int i)       const { return faciesNr_[i]    ;}
-  char          * getFaciesName(int i)     const { return faciesNames_[i] ;}
+  int             getNFacies(void)                   const { return nFacies_                   ;}
+  int           * getFaciesNr(void)                  const { return faciesNr_                  ;}
+  int             getFaciesNr(int i)                 const { return faciesNr_[i]               ;}
+  char          * getFaciesName(int i)               const { return faciesNames_[i]            ;}
   void            getMinMaxFnr(int &min, int &max) const;
 
   BlockedLogs   * getBlockedLogsPropThick(void)  const { return blockedLogsPropThick_ ;}
@@ -101,6 +105,13 @@ private:
   float         * beta_seismic_resolution_;     // 
   float         * rho_seismic_resolution_;      // 
 
+  BlockedLogs   * blockedLogsPropThick_;
+  BlockedLogs   * blockedLogsConstThick_;
+
+  bool            useForFaciesProbabilities_;
+  bool            useForWaveletEstimation_;
+  bool            useForBackgroundTrend_;
+
   char            errTxt_[MAX_STRING];
   int             error_;
   int             timemissing_;
@@ -113,8 +124,6 @@ private:
   int             nd_;                          // number of obs. in well
   int             faciesok_;                    // all faciesnumbers read are present in header
 
-  BlockedLogs   * blockedLogsPropThick_;
-  BlockedLogs   * blockedLogsConstThick_;
 };
 
 inline const float* WellData::getAlpha(int &nData) const

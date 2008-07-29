@@ -1,6 +1,6 @@
 include ../Makeheader
 
-INCLUDE =  -I.. -I../src
+INCLUDE =  -I..
 CPPFLAGS += $(INCLUDE)
 
 OBJDIR = ../obj

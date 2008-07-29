@@ -45,18 +45,18 @@ public:
   Surface        * getCorrXYGrid();
 
 private:
-  void             makeTimeSimbox(Simbox         * timeSimbox,
+  void             makeTimeSimbox(Simbox        *& timeSimbox,
                                   ModelSettings *& modelSettings, 
                                   ModelFile      * modelFile,
                                   char           * errText,
                                   bool           & failed);
-  void             makeDepthSimbox(Simbox        * depthSimbox,
+  void             makeDepthSimbox(Simbox       *& depthSimbox,
                                    ModelSettings * modelSettings, 
                                    ModelFile     * modelFile,
                                    char          * errText,
                                    bool          & failed);
   void             processSeismic(FFTGrid      **& seisCube,
-                                  Simbox         * timeSimbox,
+                                  Simbox        *& timeSimbox,
                                   ModelSettings *& modelSettings, 
                                   ModelFile      * modelFile,
                                   char           * errText);
@@ -99,7 +99,7 @@ private:
                                           RandomGen     * randomGen,
                                           int             nz,
                                           ModelSettings * modelSettings);
-  void             setSimboxSurfaces(Simbox     * simbox, 
+  void             setSimboxSurfaces(Simbox    *& simbox, 
                                      char      ** surfFile, 
                                      bool         parallelSurfaces, 
                                      double       dTop, 
@@ -114,7 +114,7 @@ private:
   int              readSegyFiles(char          ** fNames, 
                                  int              nFiles, 
                                  FFTGrid       ** target, 
-                                 Simbox         * timeSimbox, 
+                                 Simbox        *& timeSimbox, 
                                  ModelSettings *& modelSettings,
                                  char           * errText, 
                                  int              gridType, 
@@ -128,14 +128,23 @@ private:
   void             estimateCorrXYFromSeismic(Surface *& CorrXY,
                                              FFTGrid ** seisCube,
                                              int        nAngles);
-  int              setPaddingSize(int nx, float px);
-  float         ** readMatrix(char * fileName, int n1, int n2, const char * readReason, char * errText);
+  int              setPaddingSize(int   nx, 
+                                  float px);
+  float         ** readMatrix(char       * fileName, 
+                              int          n1, 
+                              int          n2, 
+                              const char * readReason, 
+                              char       * errText);
   void             setupDefaultReflectionMatrix(float       **& reflectionMatrix,
                                                 Background    * background,
                                                 ModelSettings * modelSettings,
                                                 ModelFile     * modelFile);
-  int              checkFileOpen(char ** fNames, int nFiles, const char * command, char * errText, 
-                                 int start = 0, bool details = true);
+  int              checkFileOpen(char      ** fNames, 
+                                 int          nFiles, 
+                                 const char * command, 
+                                 char       * errText, 
+                                 int          start = 0,
+                                 bool         details = true);
   void             checkAvailableMemory(Simbox        * timeSimbox,
                                         ModelSettings * modelSettings);
   void             checkFaciesNames(WellData      ** wells,

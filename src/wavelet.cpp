@@ -481,19 +481,19 @@ Wavelet::getNoiseStandardDeviation(Simbox * simbox, FFTGrid * seisCube, WellData
   //float wShift  = getWaveletShift();
   for(i=0;i<nWells;i++)
   {
-    cpp_r[i]     = new fftw_real[rnzp];
-    seis_r[i]    = new fftw_real[rnzp];
-    cor_seis_synt_r[i]     = new fftw_real[rnzp];
-    wavelet_r[i] = new fftw_real[rnzp];
-    synt_r[i]    = new fftw_real[rnzp];
+    cpp_r[i]           = new fftw_real[rnzp];
+    seis_r[i]          = new fftw_real[rnzp];
+    cor_seis_synt_r[i] = new fftw_real[rnzp];
+    wavelet_r[i]       = new fftw_real[rnzp];
+    synt_r[i]          = new fftw_real[rnzp];
+    nActiveData[i]     = 0;
     nDataUsedInWell[i] = 0;
-    const int * ipos = wells[i]->getBlockedLogsPropThick()->getIpos();
-    const int * jpos = wells[i]->getBlockedLogsPropThick()->getJpos();
-    dz[i] = static_cast<float>(simbox->getRelThick(ipos[0],jpos[0])*simbox->getdz());
-    errVarWell[i]  = 0.0f;
-    dataVarWell[i] =0.0;
-    nActiveData[i] = 0;
-    int nBlocks = wells[i]->getBlockedLogsPropThick()->getNumberOfBlocks();
+    errVarWell[i]      = 0.0f;
+    dataVarWell[i]     = 0.0f;
+    const int * ipos   = wells[i]->getBlockedLogsPropThick()->getIpos();
+    const int * jpos   = wells[i]->getBlockedLogsPropThick()->getJpos();
+    dz[i]              = static_cast<float>(simbox->getRelThick(ipos[0],jpos[0])*simbox->getdz());
+    int nBlocks        = wells[i]->getBlockedLogsPropThick()->getNumberOfBlocks();
     if (nBlocks > maxBlocks)
       maxBlocks = nBlocks;
   }
@@ -504,7 +504,7 @@ Wavelet::getNoiseStandardDeviation(Simbox * simbox, FFTGrid * seisCube, WellData
   //
   for (w = 0 ; w < nWells ; w++) 
   {
-    if (!wells[w]->isDeviated())
+    if (wells[w]->getUseForWaveletEstimation())
     {
       BlockedLogs * bl = wells[w]->getBlockedLogsPropThick();
       //
@@ -569,7 +569,6 @@ Wavelet::getNoiseStandardDeviation(Simbox * simbox, FFTGrid * seisCube, WellData
       }
       else
       {
-        nDataUsedInWell[w] = 0; 
         LogKit::LogFormatted(LogKit::LOW,"\n  Not using vertical well %s for error estimation (length=%.1fms  required length=%.1fms).",
                          wells[w]->getWellname(),length*dz0,waveletLength_);
       }

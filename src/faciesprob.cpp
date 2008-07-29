@@ -622,14 +622,14 @@ void FaciesProb::calculateConditionalFaciesProb(WellData **wells, int nWells)
   //
   // Block wells
   //
-  // NBNB-PAL: De blokkede loggene burde kanskje ha vært mellomlagert ettersom de benyttes to ganger...
+  // NBNB-PAL: De blokkede loggene burde kanskje ha vært mellomlagret ettersom de benyttes to ganger...
   //
   BlockedLogs ** bw = new BlockedLogs * [nWells];  
   int nonDeviatedWells = 0;
   int totBlocks = 0;
   for (int i = 0 ; i < nWells ; i++)
   {
-    if(!(wells[i]->isDeviated()))
+    if(wells[i]->getUseForFaciesProbabilities())
     { 
       bw[i] = new BlockedLogs(wells[i], simbox_, random_) ;
       totBlocks += bw[i]->getNumberOfBlocks();
@@ -894,6 +894,12 @@ void FaciesProb::filterWellLogs(WellData **wells, int nWells,
                                 fftw_real *postcrab, fftw_real *postcrar, fftw_real *postcrbr, 
                                 float lowCut, float highCut, int relative)
 {
+  LogKit::LogFormatted(LogKit::LOW,"\nFiltering well logs\n");
+  LogKit::LogFormatted(LogKit::MEDIUM,"  Wells available:\n");
+  for (int w = 0 ; w < nWells ; w++)
+    if(wells[w]->getUseForFaciesProbabilities())
+      LogKit::LogFormatted(LogKit::MEDIUM,"%s\n",wells[w]->getWellname());
+  
   float domega  = static_cast<float> (1000.0/(nzp_*simbox_->getdz()));  //dz in milliseconds
   int w, w1,i,j;
   ndata_ = nWells*nz_;
@@ -976,7 +982,7 @@ void FaciesProb::filterWellLogs(WellData **wells, int nWells,
   delete [] fileName;
   for (w1 = 0 ; w1 < nWells ; w1++)
   {
-    if(!(wells[w1]->isDeviated()))
+    if(wells[w1]->getUseForFaciesProbabilities())
     { 
       BlockedLogs * bw = new BlockedLogs(wells[w1], simbox_, random_) ;
       //
@@ -1174,18 +1180,18 @@ void FaciesProb::filterWellLogs(WellData **wells, int nWells,
       for(i=0;i<nz_;i++)
       {
         alphafiltered_[i+w1*nz_] = alpha_rAmp[i]/nzp_+(1-relative)*vtAlphaBg[i];
-        betafiltered_[i+w1*nz_]  = beta_rAmp[i]/nzp_+(1-relative)*vtBetaBg[i];
-        rhofiltered_[i+w1*nz_]   = rho_rAmp[i]/nzp_+(1-relative)*vtRhoBg[i];
-        alphablock_[i+w1*nz_]    = vtAlpha[i];
-        betablock_[i+w1*nz_]     = vtBeta[i];
-        rhoblock_[i+w1*nz_]      = vtRho[i];
+        betafiltered_[i+w1*nz_] = beta_rAmp[i]/nzp_+(1-relative)*vtBetaBg[i];
+        rhofiltered_[i+w1*nz_] = rho_rAmp[i]/nzp_+(1-relative)*vtRhoBg[i];
+        alphablock_[i+w1*nz_] = vtAlpha[i];
+        betablock_[i+w1*nz_] = vtBeta[i];
+        rhoblock_[i+w1*nz_] = vtRho[i];
         fprintf(file,"%d %f %f %f %f %d \n",w1, z+dz*i,
                 alphafiltered_[i+w1*nz_],
                 betafiltered_[i+w1*nz_],
                 rhofiltered_[i+w1*nz_],
                 facieslog_[i+w1*nz_]);   
       }
-    fftwnd_destroy_plan(p2);
+      fftwnd_destroy_plan(p2);
 
 
       for(i=0;i<3;i++)

@@ -22,7 +22,8 @@
 WellData::WellData(const char     * wellFileName, 
                    ModelSettings  * modelSettings,
                    char          ** headerList,
-                   bool             faciesLogGiven)
+                   bool             faciesLogGiven,
+                   int              i)
   : modelSettings_(modelSettings),
     wellname_(NULL),
     wellfilename_(NULL),
@@ -40,7 +41,10 @@ WellData::WellData(const char     * wellFileName,
     beta_seismic_resolution_(NULL),
     rho_seismic_resolution_(NULL),
     blockedLogsPropThick_(NULL),
-    blockedLogsConstThick_(NULL)
+    blockedLogsConstThick_(NULL),
+    useForFaciesProbabilities_(modelSettings->getIndicatorFacies(i)==1),
+    useForWaveletEstimation_(modelSettings->getIndicatorWavelet(i)==1),  
+    useForBackgroundTrend_(modelSettings->getIndicatorBGTrend(i)==1)
 {
   readRMSWell(wellFileName, headerList, faciesLogGiven);
 }
@@ -1273,6 +1277,8 @@ WellData::calculateDeviation(float  & devAngle,
 
   if (max_deviation > thr_deviation) 
   {
+    useForFaciesProbabilities_ = false;
+    useForWaveletEstimation_   = false;    
     isDeviated_ = true;
     LogKit::LogFormatted(LogKit::LOW," Well is treated as deviated.\n");
   }

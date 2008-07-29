@@ -23,6 +23,9 @@ public:
   float        * getNoiseEnergy(void)          const { return noiseEnergy_      ;} 
   bool         * getMatchEnergies(void)        const { return matchEnergies_    ;} 
   char         * getFaciesName(int i)          const { return faciesNames_[i]   ;}
+  int            getIndicatorBGTrend(int i)    const { return indBGTrend_[i]    ;}
+  int            getIndicatorWavelet(int i)    const { return indWavelet_[i]    ;}
+  int            getIndicatorFacies(int i)     const { return indFacies_[i]     ;}
   int            getNumberOfFacies(void)       const { return nFacies_          ;}
   int            getNumberOfWells(void)        const { return nWells_           ;}
   int            getNumberOfSimulations(void)  const { return nSimulations_     ;}
@@ -65,7 +68,8 @@ public:
   static int     getDebugLevel(void)                 { return debugFlag_        ;}
   int            getFileGrid(void)             const { return fileGrid_         ;}
   bool           getGenerateSeismic(void)      const { return generateSeismic_  ;}
-  bool           getDoInversion(void);       
+  bool           getDoInversion(void);
+
 
   void           setAngularCorr(Vario * vario);    
   void           setLateralCorr(Vario * vario);    
@@ -75,6 +79,10 @@ public:
   void           setNumberOfAngles(int nAngles)              { nAngles_          = nAngles          ;} 
   void           setNoiseEnergy(float * noiseEnergy, int nAngles);
   void           setMatchEnergies(float * waveletScale, int nAngles);
+  void           setAllIndicatorsTrue(int nWells);
+  void           setIndicatorBGTrend(int * indBGTrend, int nWells);
+  void           setIndicatorWavelet(int * indWavelet, int nWells);
+  void           setIndicatorFacies(int * indFacies, int nWells);
   void           setFaciesNames(char ** faciesNames, int nFacies);
   void           setNumberOfFacies(int nFacies)              { nFacies_          = nFacies          ;}
   void           setNumberOfWells(int nWells)                { nWells_           = nWells           ;} 
@@ -156,6 +164,10 @@ private:
   int            nAngles_;               //
   float        * noiseEnergy_;           // Noise Variance .
   bool         * matchEnergies_;         // Let dataVariance_ = signalVariance_
+
+  int          * indBGTrend_;            // Use well to estimate background trend? (1=yes,0=no)
+  int          * indWavelet_;            // Use well to estimate wavelet? (1=yes,0=no)
+  int          * indFacies_;             // Use well to estimate facies? (1=yes,0=no)
 
   char        ** faciesNames_;           // Facies names
   int            nFacies_;
