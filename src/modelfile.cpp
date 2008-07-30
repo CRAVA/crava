@@ -90,7 +90,7 @@ ModelFile::ModelFile(char * fileName)
   }
   fclose(file);
 
-  int nCommands = 31;
+  int nCommands = 32;
   bool * genNeed = new bool[nCommands]; //If run in generate mode, this list holds the necessity.
 
   //The following variables controls the alternative command system.
@@ -113,17 +113,20 @@ ModelFile::ModelFile(char * fileName)
 
   char * command;
   char ** commandList = new char*[nCommands];
-  for(int i=0;i<nCommands;i++)
+  for(int i=0 ; i<nCommands ; i++)
   {
     commandList[i] = new char[30];
     genNeed[i] = false;
-    alternativeUsed[i] = 0;
     alternative[i] = NULL;
+    alternativeUsed[i] = 0;
   }
 
   int neededCommands =  3; // The neededCommands first in the list are normally necessary.
-  int extraCommands  = 28; // 
+  int extraCommands  = 29; // 
 
+  //
+  // Mandatory commands
+  // 
   strcpy(commandList[0],"WELLS");
   strcpy(commandList[1],"DEPTH");                                       // ==> TIME_SURFACES eller TIME
   genNeed[1] = true;
@@ -132,7 +135,9 @@ ModelFile::ModelFile(char * fileName)
   alternative[2] = new int[2];
   alternative[2][0] = -1;                  //One alternative, non-exclusive.
   alternative[2][1] = neededCommands+extraCommands;   //Number of alternative command.
-  //The following commands are optional.
+  //
+  // Optional commands
+  //
   strcpy(commandList[neededCommands   ],"ANGULARCORRELATION");          // ==> ANGULAR_CORRELATION
   strcpy(commandList[neededCommands+ 1],"SEED");
   strcpy(commandList[neededCommands+ 2],"LATERALCORRELATION");          // ==> LATERAL_CORRELATION
@@ -166,7 +171,7 @@ ModelFile::ModelFile(char * fileName)
   //
   // NBNB-PAL: Here Ragnars 32-bit brain goes full... (no room for additional commands)
   //
-  //strcpy(commandList[neededCommands+28],"ALLOWED_PARAMETER_VARIANCES");
+  strcpy(commandList[neededCommands+28],"ALLOWED_RESIDUAL_VARIANCES");
 
   char errText[MAX_STRING];
   char ** errorList = new char*[nCommands];
@@ -183,10 +188,15 @@ ModelFile::ModelFile(char * fileName)
     nErrors++;
   }
   //
-  // NBNB-PAL: Disse kan kanskje deklareres 'long'
+  // Declared long so that we can handle more than 63(?) rather than 31 keywords 
   //
-  int  commandsUsed = 0;
-  int  comFlag = 0;
+#if defined(__WIN32__) || defined(WIN32) || defined(_WINDOWS)
+  long long commandsUsed = 0;
+  long long comFlag      = 0;
+#else
+  long commandsUsed = 0;
+  long comFlag      = 0;
+#endif
   int  curPos = 0;
   bool wrongCommand = false;
 
@@ -201,7 +211,13 @@ ModelFile::ModelFile(char * fileName)
 
     if(i < nCommands) 
     {
-      comFlag = int(pow(2.0f,i));
+#if defined(__WIN32__) || defined(WIN32) || defined(_WINDOWS)
+      comFlag = static_cast<long long>(pow(2.0f,i));
+#else
+      comFlag = static_cast<long>(pow(2.0f,i));
+#endif
+      printf("comFlag = %ld\n",comFlag);
+
       if((comFlag & commandsUsed) > 0) //Bitwise and
       {
         curPos += getParNum(params, curPos, error, errText, " ", 0, -1) + 1;
@@ -220,8 +236,7 @@ ModelFile::ModelFile(char * fileName)
         commandsUsed = (commandsUsed | comFlag);
         if(alternative[i] != NULL) {
           int altSign = (alternative[i][0] > 0) ? 1 : -1;
-          int j;
-          for(j=0;j<altSign*alternative[i][0];j++)
+          for(int j=0;j<altSign*alternative[i][0];j++)
             alternativeUsed[alternative[i][j+1]] = altSign*i;
         }
         switch(i)
@@ -321,7 +336,7 @@ ModelFile::ModelFile(char * fileName)
           error = readCommandAllowedParameterValues(params,curPos,errText);
           break;
         case 31:
-          error = readCommandAllowedParameterVariances(params,curPos,errText);
+          error = readCommandAllowedResidualVariances(params,curPos,errText);
           break;
         default:
           sprintf(errText, "Unknown command: %s.\n",command);
@@ -1342,6 +1357,10 @@ ModelFile::readCommandOutput(char ** params, int & pos, char * errText)
   int nPar = getParNum(params, pos, error, errText, params[pos-1], 1, -1);
   if(error == 0)
   {
+    //
+    // WARNING: If nKeys becomes larger than 31, we get problems with 
+    //          the 'int' data type and have to switch to 'long'
+    //
     int i, key, nKeys = 23;
     char ** keywords;
     keywords = new char*[nKeys];
@@ -1374,15 +1393,16 @@ ModelFile::readCommandOutput(char ** params, int & pos, char * errText)
 
     if (i != nKeys)
     { 
-      printf("ERROR: i != nKeys\n");
-      exit(1);
+      sprintf(errText,"In readCommandOutput: i != nKeys  (%d != %d)\n", i,nKeys);
+      pos += nPar+1;
+      return(1);
     }
 
     int outputFlag = 0;
     int formatFlag = 0;
 
     char * flag;
-    sprintf(errText,"%c",'\0');
+    //sprintf(errText,"%c",'\0');
 
     for(i=0; i<nPar; i++)
     {
@@ -1391,9 +1411,9 @@ ModelFile::readCommandOutput(char ** params, int & pos, char * errText)
         if(strcmp(flag,keywords[key]) == 0)
           break;
       if(key < 3)   
-        formatFlag = (formatFlag | int(pow(2.0f,key)));
+        formatFlag = (formatFlag | static_cast<int>(pow(2.0f,key)));
       else if(key < nKeys)
-        outputFlag = (outputFlag | int(pow(2.0f,(key-2))));
+        outputFlag = (outputFlag | static_cast<int>(pow(2.0f,(key-2))));
       else
       {
         error = 1;
@@ -1409,7 +1429,7 @@ ModelFile::readCommandOutput(char ** params, int & pos, char * errText)
     if((outputFlag & ModelSettings::FACIESPROB) >0 && (outputFlag & ModelSettings::FACIESPROBRELATIVE)>0)
     {
       outputFlag -=1048576;
-      LogKit::LogFormatted(LogKit::LOW,"Warning: Both FACIESPROB and FACIESPROBRELATIVE arr wanted as output. Only FACIESPROB is given.\n");
+      LogKit::LogFormatted(LogKit::LOW,"Warning: Both FACIESPROB and FACIESPROBRELATIVE are wanted as output. Only FACIESPROB is given.\n");
     }
 
     modelSettings_->setFormatFlag(formatFlag);
@@ -1809,7 +1829,7 @@ ModelFile::readCommandAllowedParameterValues(char ** params, int & pos, char * e
 }
 
 int
-ModelFile::readCommandAllowedParameterVariances(char ** params, int & pos, char * errText)
+ModelFile::readCommandAllowedResidualVariances(char ** params, int & pos, char * errText)
 {
   int error;
   int nPar = getParNum(params, pos, error, errText, params[pos-1], 6);

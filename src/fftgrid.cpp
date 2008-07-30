@@ -1304,14 +1304,14 @@ FFTGrid::writeStormFile(const char * fileName, const Simbox * simbox, bool ascii
         for(i=0;i<nx;i++)
         {
           value = getRealValue(i,j,k,true);
-  #ifndef UNIX
+#ifndef BIGENDIAN
           fwrite(&(output[3]),1,1,file);
           fwrite(&(output[2]),1,1,file);
           fwrite(&(output[1]),1,1,file);
           fwrite(&(output[0]),1,1,file);
-  #else
+#else
           fwrite(output, 1, 4, file);
-  #endif
+#endif
         }
     output[0] = '0';
     output[1] = '\n';

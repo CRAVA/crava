@@ -79,7 +79,7 @@ private:
   int              readCommandPUndef(char ** params, int & pos, char * errText);
   int              readCommandMaxDeviationAngle(char ** params, int & pos, char * errText);
   int              readCommandAllowedParameterValues(char ** params, int & pos, char * errText);
-  int              readCommandAllowedParameterVariances(char ** params, int & pos, char * errText);
+  int              readCommandAllowedResidualVariances(char ** params, int & pos, char * errText);
   int              getParNum(char ** params, int pos, int & error, char * errText,
                              const char * command, int min, int max = 0);
   int              checkFileOpen(char ** fNames, int nFiles, const char * command, char * errText, int start = 0,
@@ -135,7 +135,6 @@ private:
   bool             generateBackground_;    // Generate background model from filtered wells.
   bool             hasSignalToNoiseRatio_; // Use SN ratio instead of error variance in model file. 
   bool             failed_;                // Indicates whether errors ocuured during construction. 
-
 };
 
 #endif

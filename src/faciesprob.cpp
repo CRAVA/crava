@@ -1,7 +1,4 @@
-#ifndef UNIX
 #include <float.h>
-#endif
-
 #include <iostream>
 #include <math.h>
 #include <time.h>
