@@ -130,6 +130,10 @@ private:
                                              int        nAngles);
   int              setPaddingSize(int   nx, 
                                   float px);
+  void             loadExtraSurfaces(Surface  **& waveletEstimInterval,
+                                     Surface  **& faciesEstimInterval,
+                                     Surface   *& correlationDirection,
+                                     ModelFile  * modelFile);
   float         ** readMatrix(char       * fileName, 
                               int          n1, 
                               int          n2, 
@@ -164,6 +168,9 @@ private:
   Wavelet       ** wavelet_;               // Wavelet for angle
   Surface       ** shiftGrids_;            // Grids containing shift data for wavelets
   Surface       ** gainGrids_;             // Grids containing gain data for wavelets.
+  Surface       ** waveletEstimInterval_;  // Grids giving the wavelet estimation interval.
+  Surface       ** faciesEstimInterval_;   // Grids giving the facies estimation intervals.
+  Surface        * correlationDirection_;  // Grid giving the correlation direction.
   RandomGen      * randomGen_;             // Random generator.
   float          * priorFacies_;
   float         ** reflectionMatrix_;      // May specify own Zoeppritz-approximation. Default NULL,

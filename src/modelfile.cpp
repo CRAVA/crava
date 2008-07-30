@@ -27,8 +27,11 @@ ModelFile::ModelFile(char * fileName)
   depthSurfFile_         = NULL;
   seismicFile_           = NULL;
   waveletFile_           = NULL;
+  waveletEstIntFile_     = NULL;
+  faciesEstIntFile_      = NULL;
   reflMatrFile_          = NULL;
   paramCorrFile_         = NULL;
+  corrDirFile_           = NULL;
   seisType_              = NULL;  
   waveScale_             = NULL;
   angle_                 = NULL; // Must be kept as class variable due to reuse of readCommandSeismic()
@@ -90,7 +93,7 @@ ModelFile::ModelFile(char * fileName)
   }
   fclose(file);
 
-  int nCommands = 32;
+  int nCommands = 36;
   bool * genNeed = new bool[nCommands]; //If run in generate mode, this list holds the necessity.
 
   //The following variables controls the alternative command system.
@@ -122,7 +125,7 @@ ModelFile::ModelFile(char * fileName)
   }
 
   int neededCommands =  3; // The neededCommands first in the list are normally necessary.
-  int extraCommands  = 29; // 
+  int extraCommands  = 33; // 
 
   //
   // Mandatory commands
@@ -168,10 +171,11 @@ ModelFile::ModelFile(char * fileName)
   strcpy(commandList[neededCommands+25],"PSSEISMIC");
   strcpy(commandList[neededCommands+26],"PUNDEF");
   strcpy(commandList[neededCommands+27],"ALLOWED_PARAMETER_VALUES");
-  //
-  // NBNB-PAL: Here Ragnars 32-bit brain goes full... (no room for additional commands)
-  //
   strcpy(commandList[neededCommands+28],"ALLOWED_RESIDUAL_VARIANCES");
+  strcpy(commandList[neededCommands+29],"CORRELATION_DIRECTION");
+  strcpy(commandList[neededCommands+30],"WAVELET_ESTIMATION_INTERVAL");
+  strcpy(commandList[neededCommands+31],"FACIES_ESTIMATION_INTERVAL");
+  strcpy(commandList[neededCommands+32],"LOG_LEVEL");
 
   char errText[MAX_STRING];
   char ** errorList = new char*[nCommands];
@@ -216,8 +220,6 @@ ModelFile::ModelFile(char * fileName)
 #else
       comFlag = static_cast<long>(pow(2.0f,i));
 #endif
-      printf("comFlag = %ld\n",comFlag);
-
       if((comFlag & commandsUsed) > 0) //Bitwise and
       {
         curPos += getParNum(params, curPos, error, errText, " ", 0, -1) + 1;
@@ -337,6 +339,18 @@ ModelFile::ModelFile(char * fileName)
           break;
         case 31:
           error = readCommandAllowedResidualVariances(params,curPos,errText);
+          break;
+        case 32:
+          error = readCommandCorrelationDirection(params,curPos,errText);
+          break;
+        case 33:
+          error = readCommandWaveletEstimationInterval(params,curPos,errText);
+          break;
+        case 34:
+          error = readCommandFaciesEstimationInterval(params,curPos,errText);
+          break;
+        case 35:
+          error = readCommandLogLevel(params,curPos,errText);
           break;
         default:
           sprintf(errText, "Unknown command: %s.\n",command);
@@ -471,19 +485,22 @@ ModelFile::ModelFile(char * fileName)
     LogKit::LogFormatted(LogKit::LOW,"  PUNDEF\n");
     LogKit::LogFormatted(LogKit::LOW,"  REFLECTIONMATRIX\n");
     LogKit::LogFormatted(LogKit::LOW,"  SEED\n");
+    LogKit::LogFormatted(LogKit::LOW,"  LOG_LEVEL\n");
     LogKit::LogFormatted(LogKit::LOW,"Modelling mode:\n");
     LogKit::LogFormatted(LogKit::LOW,"  KRIGING\n");
-    LogKit::LogFormatted(LogKit::LOW,"  NSIMULATIONS\n");
     LogKit::LogFormatted(LogKit::LOW,"  PREDICTION\n");
+    LogKit::LogFormatted(LogKit::LOW,"  NSIMULATIONS\n");
     LogKit::LogFormatted(LogKit::LOW,"Well data:\n");
+    LogKit::LogFormatted(LogKit::LOW,"  WELLS\n");
     LogKit::LogFormatted(LogKit::LOW,"  ALLOWED_PARAMETER_VALUES\n");
-    LogKit::LogFormatted(LogKit::LOW,"  ALLOWED_PARAMETER_VARIANCES\n");
     LogKit::LogFormatted(LogKit::LOW,"  MAX_DEVIATION_ANGLE\n");
     LogKit::LogFormatted(LogKit::LOW,"  SEISMICRESOLUTION\n");
-    LogKit::LogFormatted(LogKit::LOW,"  WELLS\n");
     LogKit::LogFormatted(LogKit::LOW,"Surface data:\n");
     LogKit::LogFormatted(LogKit::LOW,"  DEPTH\n");
     LogKit::LogFormatted(LogKit::LOW,"  DEPTHSURFACES\n");
+    LogKit::LogFormatted(LogKit::LOW,"  CORRELATION_DIRECTION      \n");
+    LogKit::LogFormatted(LogKit::LOW,"  FACIES_ESTIMATION_INTERVAL \n");
+    LogKit::LogFormatted(LogKit::LOW,"  WAVELET_ESTIMATION_INTERVAL\n");
     LogKit::LogFormatted(LogKit::LOW,"Seismic data:\n");
     LogKit::LogFormatted(LogKit::LOW,"  ENERGYTRESHOLD\n");
     LogKit::LogFormatted(LogKit::LOW,"  LOCALWAVELET\n");
@@ -495,6 +512,7 @@ ModelFile::ModelFile(char * fileName)
     LogKit::LogFormatted(LogKit::LOW,"  BACKGROUND\n");
     LogKit::LogFormatted(LogKit::LOW,"  LATERALCORRELATION\n");
     LogKit::LogFormatted(LogKit::LOW,"  PARAMETERCORRELATION\n");
+    LogKit::LogFormatted(LogKit::LOW,"  ALLOWED_RESIDUAL_VARIANCES\n");
     LogKit::LogFormatted(LogKit::LOW,"Error model:\n");
     LogKit::LogFormatted(LogKit::LOW,"  ANGULARCORRELATION\n");
     LogKit::LogFormatted(LogKit::LOW,"  GIVESIGNALTONOISERATIO\n");
@@ -566,6 +584,26 @@ ModelFile::~ModelFile()
     delete [] waveletFile_;  
   }
 
+  if(backFile_ != NULL)
+  {
+    for(int i=0;i<3;i++)
+      if(backFile_[i]!=NULL)
+        delete [] backFile_[i];
+    delete [] backFile_; 
+  }
+
+  if(waveletEstIntFile_ != NULL)
+  {
+    delete [] waveletEstIntFile_[0];
+    delete [] waveletEstIntFile_[1];
+  }
+
+  if(faciesEstIntFile_ != NULL)
+  {
+    delete [] faciesEstIntFile_[0];
+    delete [] faciesEstIntFile_[1];
+  }
+
   if (areaParams_ != NULL)
     delete [] areaParams_;
 
@@ -575,16 +613,12 @@ ModelFile::~ModelFile()
   if (constBack_ != NULL)
     delete [] constBack_;
 
-  if(backFile_!=NULL)
-  {
-    for(int i=0;i<3;i++)
-      if(backFile_[i]!=NULL)
-        delete [] backFile_[i];
-    delete [] backFile_; 
-  }
-
-  if(paramCorrFile_!=NULL)
+  if(paramCorrFile_ != NULL)
     delete [] paramCorrFile_;
+
+  if(corrDirFile_ != NULL)
+    delete [] corrDirFile_;
+
   delete [] angle_;
   delete [] noiseEnergy_;
   delete [] waveScale_;
@@ -877,78 +911,6 @@ ModelFile::readCommandBackground(char ** params, int & pos, char * errText)
 }
 
 int 
-ModelFile::readCommandBackgroundControl(char ** params, int & pos, char * errText)
-{
-  //printf("\nDont used readCommandBackgroundControl....");
-  //printf("\nDont used readCommandBackgroundControl....");
-  //printf("\nDont used readCommandBackgroundControl....\n");
-  //exit(1);
-
-  generateBackground_ = true;
-
-  int error;
-  int nPar = getParNum(params, pos, error, errText, params[pos-1], 2, -1);
-  if(error == 0)
-  {
-    int i, nSubCommands = 2;
-    char ** subCommand = new char * [nSubCommands];
-    for(i=0;i<nSubCommands;i++)
-      subCommand[i] = new char[30];
-    strcpy(subCommand[0],"VARIOGRAM");
-    strcpy(subCommand[1],"FREQUENCY");
-    int subCom, comPar, curPar = 0;
-    while(curPar < nPar && error == 0) {
-      comPar = 1;
-      while(isNumber(params[pos+curPar+comPar]))
-        comPar++;
-      subCom = 0;
-      while(subCom < nSubCommands && strcmp(params[pos+curPar], subCommand[subCom]) != 0)
-        subCom++;
-      switch(subCom) {
-        case 0:
-          if(comPar > 1) {
-            error = 1;
-            sprintf(errText,"Subcommand VARIOGRAM in command %s needs variogram type.\n",params[pos-1]);
-          }
-          else {
-            comPar = 2;
-            while(isNumber(params[pos+curPar+comPar]))
-              comPar++;
-            if(strcmp(params[pos+curPar],"VARIOGRAM") == 0) {
-              Vario * vario = createVario(&(params[pos+curPar+1]), comPar-1, params[pos-1], errText);
-              if(vario == NULL)
-                error = 1;
-              else
-                modelSettings_->setBackgroundVario(vario);
-            }
-          }
-          break;
-        case 1:
-          if(comPar != 2) {
-            error = 1;
-            sprintf(errText,"Subcommand FREQUENCY in command %s takes 1 parameter, not %d as was given.\n",
-              params[pos-1], comPar-1);
-          }
-          else 
-            modelSettings_->setMaxHzBackground(float(atof(params[pos+curPar+1])));
-          break;
-        default: 
-          error = 1;
-          sprintf(errText,"Unknown subcommand %s found in command %s.\n", params[pos+curPar],params[pos-1]);
-          break;
-      }
-      curPar += comPar;
-    }
-    for(i=0;i<nSubCommands;i++)
-      delete [] subCommand[i];
-    delete [] subCommand;
-  }
-  pos += nPar+1;
-
-  return(error);
-}
-
-int 
 ModelFile::readCommandArea(char ** params, int & pos, char * errText)
 {
   int error;
@@ -977,7 +939,7 @@ int
 ModelFile::readCommandTimeSurfaces(char ** params, int & pos, char * errText)
 {
   int error = 0;
-  int nPar  = getParNum(params, pos, error, errText, params[pos-1], 3,4);
+  int nPar  = getParNum(params, pos, error, errText, params[pos-1], 3, 4);
 
   timeSurfFile_    = new char*[2]; // top and base surface
   timeSurfFile_[0] = new char[strlen(params[pos])+1];
@@ -1026,7 +988,7 @@ ModelFile::readCommandDepthSurfaces(char ** params, int & pos, char * errText)
   hasDepthSurfaces_ = true;
 
   int error = 0;
-  int nPar= getParNum(params, pos, error, errText, params[pos-1], 3,4);
+  int nPar= getParNum(params, pos, error, errText, params[pos-1], 3, 4);
 
   depthSurfFile_    = new char*[2]; // top and base surface
   depthSurfFile_[0] = new char[strlen(params[pos])+1];
@@ -1841,6 +1803,97 @@ ModelFile::readCommandAllowedResidualVariances(char ** params, int & pos, char *
     modelSettings_->setVarBetaMax (float(atof(params[pos+3])));
     modelSettings_->setVarRhoMin  (float(atof(params[pos+4])));
     modelSettings_->setVarRhoMax  (float(atof(params[pos+5])));
+  }
+  pos += nPar+1;
+  return(error);
+}
+
+int
+ModelFile::readCommandCorrelationDirection(char ** params, int & pos, char * errText)
+{
+  int error;
+  int nPar = getParNum(params, pos, error, errText, params[pos-1], 1);
+  if(error == 0)
+  {
+    corrDirFile_ = new char[strlen(params[pos])+1];
+    strcpy(corrDirFile_,params[pos]);
+    sprintf(errText,"Command %s is not active yet\n",params[pos-1]);
+    error = 1;
+  }
+  pos += nPar+1;
+  return(error);
+}
+
+int
+ModelFile::readCommandWaveletEstimationInterval(char ** params, int & pos, char * errText)
+{
+  int error;
+  int nPar = getParNum(params, pos, error, errText, params[pos-1], 2);
+  if(error == 0)
+  {
+    waveletEstIntFile_    = new char*[2]; // top and base surface
+    waveletEstIntFile_[0] = new char[strlen(params[pos])+1];
+    waveletEstIntFile_[1] = new char[strlen(params[pos+1])+1];
+    strcpy(waveletEstIntFile_[0],params[pos]);
+    strcpy(waveletEstIntFile_[1],params[pos+1]);
+    sprintf(errText,"Command %s is not active yet\n",params[pos-1]);
+    error = 1;
+  }
+  pos += nPar+1;
+  return(error);
+}
+
+int
+ModelFile::readCommandFaciesEstimationInterval(char ** params, int & pos, char * errText)
+{
+  int error;
+  int nPar = getParNum(params, pos, error, errText, params[pos-1], 2);
+  if(error == 0)
+  {
+    faciesEstIntFile_    = new char*[2]; // top and base surface
+    faciesEstIntFile_[0] = new char[strlen(params[pos])+1];
+    faciesEstIntFile_[1] = new char[strlen(params[pos+1])+1];
+    strcpy(faciesEstIntFile_[0],params[pos]);
+    strcpy(faciesEstIntFile_[1],params[pos+1]);
+    sprintf(errText,"Command %s is not active yet\n",params[pos-1]);
+    error = 1;
+  }
+  pos += nPar+1;
+  return(error);
+}
+
+int
+ModelFile::readCommandLogLevel(char ** params, int & pos, char * errText)
+{
+  int error;
+  int nPar = getParNum(params, pos, error, errText, params[pos-1], 1);
+  if(error == 0)
+  {
+    char * level = new char[MAX_STRING];
+    strcpy(level,params[pos]);
+    uppercase(level);
+    LogKit::MessageLevels logLevel = LogKit::ERROR;
+    if(strcmp(level,"ERROR") == 0)
+      logLevel = LogKit::ERROR;
+    else if(strcmp(level,"WARNING") == 0)
+      logLevel = LogKit::WARNING;
+    else if(strcmp(level,"LOW") == 0)
+      logLevel = LogKit::LOW;
+    else if(strcmp(level,"MEDIUM") == 0)
+      logLevel = LogKit::MEDIUM;
+    else if(strcmp(level,"HIGH") == 0)
+      logLevel = LogKit::HIGH;
+    else if(strcmp(level,"DEBUGLOW") == 0)
+      logLevel = LogKit::DEBUGLOW;
+    else if(strcmp(level,"DEBUGHIGH") == 0)
+      logLevel = LogKit::DEBUGHIGH;
+    else {
+      sprintf(errText,"Unknown log level %s in command %s\n",params[pos],params[pos-1]);
+      sprintf(errText,"%sChoose from ERROR, WARNING, LOW, MEDIUM, and HIGH\n",errText);
+      error = 1;
+    }
+    modelSettings_->setLogLevel(logLevel);
+    delete [] level;
   }
   pos += nPar+1;
   return(error);

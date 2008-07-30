@@ -30,6 +30,7 @@
 
 Model::Model(char * fileName)
 {
+  modelSettings_         = NULL;
   timeSimbox_            = new Simbox();
   depthSimbox_           = NULL;
   wells_                 = NULL;
@@ -40,7 +41,11 @@ Model::Model(char * fileName)
   wavelet_               = NULL;
   shiftGrids_            = NULL;
   gainGrids_             = NULL;
+  waveletEstimInterval_  = NULL;
+  faciesEstimInterval_   = NULL; 
+  correlationDirection_  = NULL;     
   reflectionMatrix_      = NULL;
+  randomGen_             = NULL;
   failed_                = false;
 
   ModelFile * modelFile = new ModelFile(fileName);
@@ -53,8 +58,10 @@ Model::Model(char * fileName)
 
     hasSignalToNoiseRatio_ = modelFile->getHasSignalToNoiseRatio();     // NBNB-PAL: ==> UT
 
+    LogKit::SetScreenLog(modelSettings_->getLogLevel());
+
     char * logFileName = ModelSettings::makeFullFileName("logFile.txt");
-    LogKit::SetFileLog(logFileName,LogKit::L_LOW);
+    LogKit::SetFileLog(logFileName,modelSettings_->getLogLevel());
     delete [] logFileName;
 
     if(modelSettings_->getDebugFlag() > 0)
@@ -134,6 +141,10 @@ Model::Model(char * fileName)
                                  randomGen_,
                                  modelFile->getTimeNz(),
                                  modelSettings_);
+          loadExtraSurfaces(waveletEstimInterval_,
+                            faciesEstimInterval_,
+                            correlationDirection_,
+                            modelFile);
         }
       }
     }
@@ -680,7 +691,7 @@ Model::setSimboxSurfaces(Simbox *& simbox,
     z0Grid = new Surface(tmpSurf);
   }
   catch (NRLib2::Exception & e) {
-    LogKit::LogFormatted(LogKit::LOW,e.what());
+    LogKit::LogFormatted(LogKit::ERROR,e.what());
     error = 1;
   }
 
@@ -698,7 +709,7 @@ Model::setSimboxSurfaces(Simbox *& simbox,
         z1Grid = new Surface(tmpSurf);
       }
       catch (NRLib2::Exception & e) {
-        LogKit::LogFormatted(LogKit::LOW,e.what());
+        LogKit::LogFormatted(LogKit::ERROR,e.what());
         error = 1;
       }
       if(error == 0)
@@ -1824,15 +1835,107 @@ void Model::processPriorFaciesProb(float         *& priorFacies,
 }
 
 void
+Model::loadExtraSurfaces(Surface  **& waveletEstimInterval,
+                         Surface  **& faciesEstimInterval,
+                         Surface   *& correlationDirection,
+                         ModelFile  * modelFile)
+{
+  bool error = false;
+  //
+  // Get correlation direction
+  //
+  if (modelFile->getCorrDirFile() != NULL) {  
+    try {
+      Surface tmpSurf = NRLib2::ReadStormSurf(modelFile->getCorrDirFile());
+      correlationDirection = new Surface(tmpSurf);
+    }
+    catch (NRLib2::Exception & e) {
+      LogKit::LogFormatted(LogKit::ERROR,e.what());
+      error = true;
+    }
+  }
+  //
+  // Get wavelet estimation interval
+  //
+  if (modelFile->getWaveletEstIntFile() != NULL) {  
+    try {
+      Surface tmpSurf = NRLib2::ReadStormSurf(modelFile->getWaveletEstIntFile()[0]);
+      waveletEstimInterval[0] = new Surface(tmpSurf);
+    }
+    catch (NRLib2::Exception & e) {
+      LogKit::LogFormatted(LogKit::ERROR,e.what());
+      error = true;
+    }
+    try {
+      Surface tmpSurf = NRLib2::ReadStormSurf(modelFile->getWaveletEstIntFile()[1]);
+      waveletEstimInterval[1] = new Surface(tmpSurf);
+    }
+    catch (NRLib2::Exception & e) {
+      LogKit::LogFormatted(LogKit::ERROR,e.what());
+      error = true;
+    }
+  }
+  //
+  // Get facies estimation interval
+  //
+  if (modelFile->getFaciesEstIntFile() != NULL) {  
+    try {
+      Surface tmpSurf = NRLib2::ReadStormSurf(modelFile->getFaciesEstIntFile()[0]);
+      waveletEstimInterval[0] = new Surface(tmpSurf);
+    }
+    catch (NRLib2::Exception & e) {
+      LogKit::LogFormatted(LogKit::ERROR,e.what());
+      error = true;
+    }
+    try {
+      Surface tmpSurf = NRLib2::ReadStormSurf(modelFile->getFaciesEstIntFile()[1]);
+      waveletEstimInterval[1] = new Surface(tmpSurf);
+    }
+    catch (NRLib2::Exception & e) {
+      LogKit::LogFormatted(LogKit::ERROR,e.what());
+      error = true;
+    }
+  }
+  if (error)
+    LogKit::LogFormatted(LogKit::ERROR,"ERROR loading on or more surfaces\nAborting\n");
+}
+
+void
 Model::printSettings(ModelSettings * modelSettings,
                      ModelFile     * modelFile,
                      bool            hasSignalToNoiseRatio)
 {
-  LogKit::LogFormatted(LogKit::LOW,"\nGeneral settings:\n");
-  if (modelSettings->getNumberOfSimulations() == 0)
-  {
-    LogKit::LogFormatted(LogKit::LOW,"  Modelling mode                           : prediction\n");
+  if (modelFile->getCorrDirFile() != NULL)
+    LogKit::LogFormatted(LogKit::LOW,"  Correlation direction file: %10s\n",modelFile->getCorrDirFile());
+  if (modelFile->getWaveletEstIntFile() != NULL) {
+    LogKit::LogFormatted(LogKit::LOW,"  Wavelet estimation file 1:  %10s\n",modelFile->getWaveletEstIntFile()[0]);
+    LogKit::LogFormatted(LogKit::LOW,"  Wavelet estimation file 2:  %10s\n",modelFile->getWaveletEstIntFile()[1]);
   }
+  if (modelFile->getFaciesEstIntFile() != NULL) {
+    LogKit::LogFormatted(LogKit::LOW,"  Facies estimation file 1:   %10s\n",modelFile->getFaciesEstIntFile()[0]);
+    LogKit::LogFormatted(LogKit::LOW,"  Facies estimation file 2:   %10s\n",modelFile->getFaciesEstIntFile()[1]);
+  }
+
+  LogKit::LogFormatted(LogKit::LOW,"\nGeneral settings:\n");
+  LogKit::MessageLevels logLevel = modelSettings->getLogLevel();
+  std::string logText("*NONE*");
+  if (logLevel == LogKit::ERROR)
+    logText = "ERROR";
+  else if (logLevel == LogKit::WARNING)
+    logText = "WARNING";
+  else if (logLevel == LogKit::LOW)
+    logText = "LOW";
+  else if (logLevel == LogKit::MEDIUM)
+    logText = "MEDIUM";
+  else if (logLevel == LogKit::HIGH)
+    logText = "HIGH";
+  else if (logLevel == LogKit::DEBUGLOW)
+     logText = "DEBUGLOW";
+  else if (logLevel == LogKit::DEBUGHIGH)
+    logText = "DEBUGHIGH";
+  LogKit::LogFormatted(LogKit::LOW,"  Log level                                : %10s\n",logText.c_str());
+  if (modelSettings->getNumberOfSimulations() == 0)
+    LogKit::LogFormatted(LogKit::LOW,"  Modelling mode                           : prediction\n");
   else
   {
     LogKit::LogFormatted(LogKit::LOW,"  Modelling mode                           : simulation\n");

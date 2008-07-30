@@ -5,6 +5,8 @@
 #include <stdio.h>
 
 #include "lib/global_def.h"
+#include "src/definitions.h"
+#include "nrlib/iotools/logkit.hpp"
 
 class Vario;
 
@@ -68,6 +70,7 @@ public:
   static int     getDebugLevel(void)                 { return debugFlag_        ;}
   int            getFileGrid(void)             const { return fileGrid_         ;}
   bool           getGenerateSeismic(void)      const { return generateSeismic_  ;}
+  LogKit::MessageLevels getLogLevel(void)      const { return logLevel_         ;}
   bool           getDoInversion(void);
 
 
@@ -125,6 +128,7 @@ public:
   void           setDebugFlag(int debugFlag)                 { debugFlag_        = debugFlag        ;}
   void           setFileGrid(int fileGrid)                   { fileGrid_         = fileGrid         ;}
   void           setGenerateSeismic(bool generateSeismic)    { generateSeismic_  = generateSeismic  ;}
+  void           setLogLevel(LogKit::MessageLevels logLevel) { logLevel_         = logLevel         ;}
 
   enum           outputGrids{PREDICTION        = 1, 
                              CORRELATION       = 2, 
@@ -147,13 +151,13 @@ public:
                              NOTIME            = 262144,
                              FACIESPROB        = 524288,
                              FACIESPROBRELATIVE = 1048576};
-  enum             sseismicTypes{STANDARDSEIS = 0, PSSEIS = 1};
+  enum           sseismicTypes{STANDARDSEIS = 0, PSSEIS = 1};
 
   static void    setFilePrefix(char * filePrefix);
   static char  * makeFullFileName(const char * name, const char * postfix = NULL);
 
 private:
-
+ 
   Vario        * angularCorr_;           // Variogram for lateral error correlation
   Vario        * lateralCorr_;           // Variogram for lateral parameter correlation 
   Vario        * backgroundVario_;       // Used for lateral background correlation.
@@ -227,10 +231,13 @@ private:
   int            formatFlag_;            // Decides output format, see fftgird.h
   int            fileGrid_;              // Indicator telling if grids are to be kept on file
 
-  bool           generateSeismic_;        // Forward modelling
+  bool           generateSeismic_;       // Forward modelling
 
-  static int     debugFlag_;
+  LogKit::MessageLevels logLevel_;      
+
+  static int          debugFlag_;
   static std::string  filePrefix_;            // Prefix (including path) for all output files
+ 
 };
 
 #endif

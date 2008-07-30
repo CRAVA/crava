@@ -4,6 +4,7 @@
 #include "lib/global_def.h"
 #include "nrlib/iotools/logkit.hpp"
 
+#include "src/definitions.h"
 #include "src/modelsettings.h"
 #include "src/vario.h"
 
@@ -75,8 +76,10 @@ ModelSettings::ModelSettings(void)
   formatFlag_            =        0;
   debugFlag_             =        0;
   fileGrid_              =       -1;
-
+ 
   generateSeismic_       =    false;
+
+  logLevel_              = LogKit::LOW;
 }
 
 ModelSettings::~ModelSettings(void)
