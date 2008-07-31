@@ -31,7 +31,6 @@ public:
   int              getNWaveletTransfArgs(void)    const { return nWaveletTransfArgs_    ;}
   int              getSeed(void)                  const { return seed_                  ;}
   float          * getConstBack(void)             const { return constBack_             ;}
-  double         * getAreaParameters(void)        const { return areaParams_            ;}
   double           getTimeDTop(void)              const { return time_dTop_             ;}
   double           getTimeLz(void)                const { return time_lz_               ;}
   double           getTimeDz(void)                const { return time_dz_               ;}
@@ -126,7 +125,6 @@ private:
 
   float          * constBack_;             // Constant background model (temporarily stored)
                                            // Note: Negative value ==> read from file (actual value gives format).
-  double         * areaParams_;
 
   double           time_dTop_;             // Used when top and base surfaces are parallel
   double           time_lz_;

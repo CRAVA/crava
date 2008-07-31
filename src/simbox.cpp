@@ -436,8 +436,16 @@ Simbox::checkError(double lzLimit, char * errText)
 
 
 void
-Simbox::setArea(double x0, double y0, double lx, double ly, double rot, double dx, double dy)
+Simbox::setArea(double * areaParams)
 {
+  double x0  = areaParams[0];
+  double y0  = areaParams[1];
+  double lx  = areaParams[2];
+  double ly  = areaParams[3];
+  double rot = areaParams[4];
+  double dx  = areaParams[5];
+  double dy  = areaParams[6];
+
   SetDimensions(x0,y0,lx,ly);
   SetAngle(rot);
   cosrot_ = cos(rot);
@@ -452,6 +460,14 @@ Simbox::setArea(double x0, double y0, double lx, double ly, double rot, double d
     status_ = BOXOK;
 }
 
+void
+Simbox::setSeisLines(int * lineParams)
+{
+  inLine0_    = lineParams[0];
+  crossLine0_ = lineParams[1];
+  ilStep_     = lineParams[2];
+  xlStep_     = lineParams[3];
+}
 
 void
 Simbox::setDepth(Surface * zref, double zShift, double lz, double dz)
@@ -468,7 +484,6 @@ Simbox::setDepth(Surface * zref, double zShift, double lz, double dz)
     status_ = BOXOK;
 }
 
-
 void
 Simbox::setDepth(Surface * z0, Surface * z1, int nz)
 {
@@ -482,17 +497,6 @@ Simbox::setDepth(Surface * z0, Surface * z1, int nz)
 
   constThick_ = false;
 }
-
-
-void
-Simbox::setSeisLines(int il0, int xl0, int ilStep, int xlStep)
-{
-  inLine0_ = il0;
-  crossLine0_ = xl0;
-  ilStep_ = ilStep;
-  xlStep_ = xlStep;
-}
-
 
 double
 Simbox::getAvgRelThick(void) const

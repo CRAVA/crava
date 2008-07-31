@@ -738,8 +738,8 @@ SegY::fileSize(char * fileName)
 }
 
 
-int
-SegY::completeTimeSimbox(Simbox * simbox, double lzLimit, char * errText)
+void
+SegY::getAreaParameters(double * areaParams)
 {
   double rot = acos(cosRot_);
   if(sinRot_ < 0)
@@ -750,31 +750,28 @@ SegY::completeTimeSimbox(Simbox * simbox, double lzLimit, char * errText)
   double lx  = nx_*dx_; 
   double ly  = ny_*dy_; 
 
-  simbox->setArea(ax0, ay0, lx, ly, rot, dx_, dy_);
-  simbox->setSeisLines(inLine0_, crossLine0_, ilStep_, xlStep_);
-  int error = simbox->checkError(lzLimit, errText);
+  areaParams[0] = ax0;
+  areaParams[1] = ay0;
+  areaParams[2] =  lx;
+  areaParams[3] =  ly;
+  areaParams[4] = rot;
+  areaParams[5] = dx_;
+  areaParams[6] = dy_;
 
   LogKit::LogFormatted(LogKit::LOW,"\n\nExtracting inversion grid information from seismic volume:\n");
   LogKit::LogFormatted(LogKit::LOW,"\n                  x0          y0          lx        ly       dx     dy      angle");
   LogKit::LogFormatted(LogKit::LOW,"\n---------------------------------------------------------------------------------");
   LogKit::LogFormatted(LogKit::LOW,"\nArea:    %11.2f %11.2f   %9.2f %9.2f   %6.2f %6.2f   %8.3f  ", ax0, ay0, lx, ly, dx_, dy_, 180.0*rot/PI);
   LogKit::LogFormatted(LogKit::LOW,"\nSeismic: %11.2f %11.2f   %9.2f %9.2f   %6.2f %6.2f   %8.3f\n", x0_, y0_, lx, ly, dx_, dy_, 180.0*rot/PI);
-  return(error);
 }
 
 void
-SegY::completeDepthSimbox(Simbox * depthSimbox)
+SegY::getSeisLines(int * seisLines)
 {
-  double rot = acos(cosRot_);
-  if(sinRot_ < 0)
-    rot = -rot;
-
-  double ax0 = x0_ - 0.5*(dx_*cosRot_-dy_*sinRot_);
-  double ay0 = y0_ - 0.5*(dy_*cosRot_+dx_*sinRot_);
-  double lx  = nx_*dx_; 
-  double ly  = ny_*dy_; 
-
-  depthSimbox->setArea(ax0, ay0, lx, ly, rot, dx_, dy_);
+  seisLines[0] = inLine0_;
+  seisLines[1] = crossLine0_;
+  seisLines[2] = ilStep_;
+  seisLines[3] = xlStep_;
 }
 
 void SegY::ebcdicHeader(char * ebcdicH)

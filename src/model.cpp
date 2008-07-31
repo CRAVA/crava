@@ -365,27 +365,24 @@ Model::checkAvailableMemory(Simbox        * timeSimbox,
 
 
 // readSegyFiles: reads SegY files form fNames table and stores in target table.
-// NB: Also deallocates file names.
 int
 Model::readSegyFiles(char          ** fNames, 
                      int              nFiles, 
                      FFTGrid       ** target, 
                      Simbox        *& timeSimbox, 
                      ModelSettings *& modelSettings, 
-                     char           * errText, 
-                     int              gridType, 
-                     int              start)
+                     char           * errText)
 {
   //  long int timestart, timeend;
   //  time(&timestart);
   char tmpErr[MAX_STRING];
   int error = 0;
   int sbError = 0;
-  int okFiles = checkFileOpen(fNames, nFiles, "DUMMY", tmpErr, start);
+  int okFiles = checkFileOpen(fNames, nFiles, "DUMMY", tmpErr, 0);
   strcpy(errText, "");
   SegY * segy;
   int i, flag = 1;
-  for(i=start;i<nFiles+start;i++)
+  for(i=0 ; i<nFiles ; i++)
   {
     target[i] = NULL;
     if((okFiles & flag) == 0)
@@ -400,7 +397,26 @@ Model::readSegyFiles(char          ** fNames,
       {
         if(timeSimbox->status() == Simbox::NOAREA)
         {
-          sbError = segy->completeTimeSimbox(timeSimbox, modelSettings->getLzLimit(), tmpErr);
+          //
+          // Needed in modelSettings (at least) for depth simbox 
+          //
+          double * ap = new double[7]; 
+          segy->getAreaParameters(ap);
+          modelSettings->setAreaParameters(ap);
+          timeSimbox->setArea(ap);
+          delete [] ap;
+
+          //
+          // Get information about seismic lines
+          //
+          int * sl = new int[4]; 
+          segy->getSeisLines(sl);
+          //modelSettings->setSeisLines(sl);
+          timeSimbox->setSeisLines(sl);
+          delete [] sl;
+
+          sbError = timeSimbox->checkError(modelSettings->getLzLimit(), errText);
+
           if(sbError == 0)
           {
             estimateXYPaddingSizes(timeSimbox, modelSettings);
@@ -417,20 +433,6 @@ Model::readSegyFiles(char          ** fNames,
         }
         if(sbError == 0)
         {
-          //
-          // NBNB-PAL: Det er ikke bra å komplettere depthSimbox her på denne måten.
-          //           Kompletteringsinformasjonen burde heller kommet fra timeSimbox
-          //
-          //           depthSimbox->setArea(timeSimbox->getArea())    
-          //
-          //           Dette bør gjøres utenfor processSeismic()
-          //
-          //
-          //
-          //
-          if(depthSimbox_ != NULL && depthSimbox_->status() == Simbox::NOAREA)
-            segy->completeDepthSimbox(depthSimbox_);
-
           if(modelSettings->getFileGrid() == 1)
             target[i] = new FFTFileGrid(timeSimbox->getnx(),
                                         timeSimbox->getny(), 
@@ -446,16 +448,9 @@ Model::readSegyFiles(char          ** fNames,
                                     modelSettings->getNYpad(), 
                                     modelSettings->getNZpad());
 
-          target[i]->setType(gridType);
+          target[i]->setType(FFTGrid::DATA);
           target[i]->fillInFromSegY(segy);
-          if(target[i]->getType() == FFTGrid::DATA)
-          {
-            target[i]->setAngle(modelSettings->getAngle()[i]);
-          }
-          else if(target[i]->getType() == FFTGrid::PARAMETER)
-          {
-            target[i]->logTransf();
-          }
+          target[i]->setAngle(modelSettings->getAngle()[i]);
         }
       }
       delete segy;
@@ -466,6 +461,49 @@ Model::readSegyFiles(char          ** fNames,
   return(error);
 }
 
+int
+Model::readSegyFile(char          * fName, 
+                    FFTGrid       * target, 
+                    Simbox        * timeSimbox, 
+                    ModelSettings * modelSettings, 
+                    char          * errText) 
+{
+  char tmpErr[MAX_STRING];
+  int error = 0;
+
+  SegY * segy;
+  target = NULL;
+  segy = new SegY(fName, timeSimbox, modelSettings->getZpad(), modelSettings->getSegyOffset());
+  if(segy->checkError(tmpErr) != 0)
+  {
+    sprintf(errText,"%s%s", errText, tmpErr);
+    error = 1;
+  }
+  else
+  {
+    if(modelSettings->getFileGrid() == 1)
+      target = new FFTFileGrid(timeSimbox->getnx(),
+                               timeSimbox->getny(), 
+                               timeSimbox->getnz(),
+                               modelSettings->getNXpad(), 
+                               modelSettings->getNYpad(), 
+                               modelSettings->getNZpad());
+    else
+      target = new FFTGrid(timeSimbox->getnx(), 
+                           timeSimbox->getny(), 
+                           timeSimbox->getnz(),
+                           modelSettings->getNXpad(), 
+                           modelSettings->getNYpad(), 
+                           modelSettings->getNZpad());
+    
+    target->setType(FFTGrid::PARAMETER);
+    target->fillInFromSegY(segy);
+    target->logTransf();
+  }
+  delete segy;
+
+  return(error);
+}
 
 //NBNB Following routine only to be used for parameters!
 int
@@ -477,7 +515,6 @@ Model::readStormFile(char           * fName,
                      char           * errText)
 {
   int error = 0;
-  sprintf(errText,"%c",'\0');
   FILE * file = fopen(fName,"rb");
   float x0, y0, z0, lx, ly, lz, rot;
   int nx, ny, nz, i;
@@ -628,13 +665,11 @@ Model::makeTimeSimbox(Simbox        *& timeSimbox,
     if(modelFile->getNWaveletTransfArgs() > 0 && timeSimbox->getIsConstantThick() == true)
       LogKit::LogFormatted(LogKit::LOW,"\nWarning: LOCALWAVELET is ignored when using constant thickness in DEPTH.\n");
 
-    double * areaParams = modelFile->getAreaParameters(); 
+    double * areaParams = modelSettings->getAreaParameters(); 
     estimateZPaddingSize(timeSimbox, modelSettings);   
     if (areaParams != NULL)
     {
-      timeSimbox->setArea(areaParams[0], areaParams[1], areaParams[2], 
-                          areaParams[3], areaParams[4], areaParams[5], 
-                          areaParams[6]);
+      timeSimbox->setArea(areaParams);
       
       error = timeSimbox->checkError(modelSettings->getLzLimit(),errText);
 
@@ -809,13 +844,10 @@ Model::makeDepthSimbox(Simbox       *& depthSimbox,
       const char * botname = "botdepth.storm";
       depthSimbox->writeTopBotGrids(topname, botname);
 
-      double * areaParams = modelFile->getAreaParameters(); 
+      double * areaParams = modelSettings->getAreaParameters(); 
       if (areaParams != NULL)
       {
-        depthSimbox->setArea(areaParams[0], areaParams[1], areaParams[2], 
-                             areaParams[3], areaParams[4], areaParams[5], 
-                             areaParams[6]);
-        
+        depthSimbox->setArea(areaParams);
         error = depthSimbox->checkError(modelSettings->getLzLimit(),errText);
 
         if(error == Simbox::INTERNALERROR)
@@ -824,6 +856,11 @@ Model::makeDepthSimbox(Simbox       *& depthSimbox,
           LogKit::LogFormatted(LogKit::LOW,"       %s\n",errText);
           failed = true;
         }
+      }
+      else
+      {
+        LogKit::LogFormatted(LogKit::ERROR,"ERROR: No area available for depth simbox\n");
+        failed = true;
       }
       if (depthSimbox->status() == Simbox::BOXOK)
       {
@@ -860,7 +897,7 @@ Model::processSeismic(FFTGrid      **& seisCube,
     seisCube = new FFTGrid * [modelSettings->getNumberOfAngles()];
 
     if(readSegyFiles(seismicFile, modelSettings->getNumberOfAngles(), seisCube, 
-                     timeSimbox, modelSettings, errText, FFTGrid::DATA) == 0)
+                     timeSimbox, modelSettings, errText) == 0)
     {
       int formatFlag = modelSettings->getFormatFlag();
       if(formatFlag == 0)
@@ -1247,18 +1284,30 @@ Model::processBackground(Background   *& background,
         {
           if(backFile[i] != NULL)
           {
-            int readerror = 0;
-            if(constBack[i] == ModelFile::SEGYFILE)
-              readerror = readSegyFiles(backFile, 1, backModel, 
-                                        timeSimbox, modelSettings,
-                                        errText, FFTGrid::PARAMETER, i);
-            else
-              readerror = readStormFile(backFile[i], backModel[i], parName[i], 
-                                        timeSimbox, modelSettings,errText);
-            if(readerror != 0)
+            sprintf(errText,"%c",'\0');
+            int okFiles = checkFileOpen(backFile, 1, "DUMMY", errText, i);
+            if(okFiles == 0)
             {
-              LogKit::LogFormatted(LogKit::LOW,"ERROR: Reading of file \'%s\' for parameter \'%s\' failed\n",
-                                   backFile[i],parName[i]);
+              int readerror = 0;
+              if(constBack[i] == ModelFile::SEGYFILE)
+                readerror = readSegyFile(backFile[i], backModel[i],
+                                         timeSimbox, modelSettings,
+                                         errText);
+              else
+                readerror = readStormFile(backFile[i], backModel[i], parName[i], 
+                                          timeSimbox, modelSettings,
+                                          errText);
+              if(readerror != 0)
+              {
+                LogKit::LogFormatted(LogKit::LOW,"ERROR: Reading of file \'%s\' for parameter \'%s\' failed\n",
+                                     backFile[i],parName[i]);
+                printf("       %s\n",errText);
+                exit(1);
+              }
+            }
+            else 
+            {
+              LogKit::LogFormatted(LogKit::LOW,errText);
               printf("       %s\n",errText);
               exit(1);
             }

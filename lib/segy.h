@@ -19,8 +19,8 @@ public:
   int            checkError(char * errText) {if(error_ > 0) strcpy(errText, errMsg_);return(error_);}
   void           writeTrace(int i, int j, float * data);
   void           writeTrace(int i, int j, FFTGrid * grid);
-  int            completeTimeSimbox(Simbox * simbox, double lzLimit, char * errText);
-  void           completeDepthSimbox(Simbox * simbox);
+  void           getAreaParameters(double * areaParams);
+  void           getSeisLines(int * seisLines);
   enum           outsideModes{MISSING, ZERO, CLOSEST};
 
 private:

@@ -37,7 +37,6 @@ ModelFile::ModelFile(char * fileName)
   angle_                 = NULL; // Must be kept as class variable due to reuse of readCommandSeismic()
   noiseEnergy_           = NULL; // Must be kept as class variable due to reuse of readCommandSeismic()
   constBack_             = NULL;
-  areaParams_            = NULL;
 
   nSeisData_             =  0;
   nWaveletTransfArgs_    = -1;
@@ -604,9 +603,6 @@ ModelFile::~ModelFile()
     delete [] faciesEstIntFile_[1];
   }
 
-  if (areaParams_ != NULL)
-    delete [] areaParams_;
-
   if(seedFile_!=NULL)
     delete seedFile_;
 
@@ -921,19 +917,22 @@ ModelFile::readCommandArea(char ** params, int & pos, char * errText)
     pos += nPar+1;
     return(1);
   }
-  areaParams_ = new double[7];
-  areaParams_[0] = static_cast<double>(atof(params[pos]));            // x0 
-  areaParams_[1] = static_cast<double>(atof(params[pos+1]));          // y0 
-  areaParams_[2] = static_cast<double>(atof(params[pos+2]));          // lx 
-  areaParams_[3] = static_cast<double>(atof(params[pos+3]));          // ly 
-  areaParams_[4] = static_cast<double>(PI*atof(params[pos+4])/180.0); // rot
-  areaParams_[5] = static_cast<double>(atof(params[pos+5]));          // dx 
-  areaParams_[6] = static_cast<double>(atof(params[pos+6]));          // dy 
+  double * areaParams = new double[7];
+
+  areaParams[0] = static_cast<double>(atof(params[pos]));            // x0 
+  areaParams[1] = static_cast<double>(atof(params[pos+1]));          // y0 
+  areaParams[2] = static_cast<double>(atof(params[pos+2]));          // lx 
+  areaParams[3] = static_cast<double>(atof(params[pos+3]));          // ly 
+  areaParams[4] = static_cast<double>(PI*atof(params[pos+4])/180.0); // rot
+  areaParams[5] = static_cast<double>(atof(params[pos+5]));          // dx 
+  areaParams[6] = static_cast<double>(atof(params[pos+6]));          // dy 
+
+  modelSettings_->setAreaParameters(areaParams);
+  delete [] areaParams;
 
   pos += nPar+1;
   return(error);
 }
-
 
 int 
 ModelFile::readCommandTimeSurfaces(char ** params, int & pos, char * errText)
