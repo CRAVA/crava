@@ -136,7 +136,7 @@ ModelFile::ModelFile(char * fileName)
   genNeed[2] = true;
   alternative[2] = new int[2];
   alternative[2][0] = -1;                  //One alternative, non-exclusive.
-  alternative[2][1] = neededCommands+extraCommands;   //Number of alternative command.
+  alternative[2][1] = neededCommands+25;   //Number of alternative command. (PSSEISMIC)
   //
   // Optional commands
   //
@@ -168,6 +168,9 @@ ModelFile::ModelFile(char * fileName)
   strcpy(commandList[neededCommands+23],"WAVELETLENGTH");
   strcpy(commandList[neededCommands+24],"DEPTHSURFACES");
   strcpy(commandList[neededCommands+25],"PSSEISMIC");
+  alternative[neededCommands+25]    = new int[2];
+  alternative[neededCommands+25][0] = -1;                  //One alternative, non-exclusive.
+  alternative[neededCommands+25][1] = 2;   //Number of alternative command. (SEISMIC)
   strcpy(commandList[neededCommands+26],"PUNDEF");
   strcpy(commandList[neededCommands+27],"ALLOWED_PARAMETER_VALUES");
   strcpy(commandList[neededCommands+28],"ALLOWED_RESIDUAL_VARIANCES");
