@@ -93,7 +93,7 @@ private:
                                    Surface      ** gainGrids,
                                    ModelSettings * modelSettings, 
                                    ModelFile     * modelFile,
-                                   bool            hasSignalToNoiseRatio);
+                                   bool          & hasSignalToNoiseRatio);
   void             processPriorFaciesProb(float        *& priorFacies,
                                           WellData     ** wells,
                                           RandomGen     * randomGen,
