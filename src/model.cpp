@@ -1588,7 +1588,7 @@ Model::processWavelets(Wavelet     **& wavelet,
                        Surface      ** gainGrids,
                        ModelSettings * modelSettings, 
                        ModelFile     * modelFile,
-                       bool            hasSignalToNoiseRatio)
+                       bool          & hasSignalToNoiseRatio)
 {
   if (modelSettings->getDoInversion() || 
       modelSettings->getGenerateSeismic() || 
