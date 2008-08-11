@@ -212,7 +212,7 @@ void
 Simbox::getMinMaxZ(double &minZ, double &maxZ) const
 {
   minZ = GetTopSurface().Min();
-  maxZ = GetTopSurface().Min();
+  maxZ = GetBotSurface().Max();
 }
 
 int
