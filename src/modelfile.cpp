@@ -124,8 +124,6 @@ ModelFile::ModelFile(char * fileName)
   }
 
   int neededCommands =  3; // The neededCommands first in the list are normally necessary.
-  int extraCommands  = 33; // 
-
   //
   // Mandatory commands
   // 
@@ -134,9 +132,11 @@ ModelFile::ModelFile(char * fileName)
   genNeed[1] = true;
   strcpy(commandList[2],"SEISMIC");                                     // ==> PP_SEISMIC
   genNeed[2] = true;
+
   alternative[2] = new int[2];
   alternative[2][0] = -1;                  //One alternative, non-exclusive.
   alternative[2][1] = neededCommands+25;   //Number of alternative command. (PSSEISMIC)
+
   //
   // Optional commands
   //
@@ -949,6 +949,7 @@ ModelFile::readCommandTimeSurfaces(char ** params, int & pos, char * errText)
 
   if(isNumber(params[pos+1])) //Only one reference surface
   {
+    error = checkFileOpen(timeSurfFile_, 1, params[pos-1], errText);
     timeSurfFile_[1] = NULL;
     if(nPar == 4)
     {
@@ -970,6 +971,7 @@ ModelFile::readCommandTimeSurfaces(char ** params, int & pos, char * errText)
     {
       timeSurfFile_[1] = new char[strlen(params[pos+1])+1];
       strcpy(timeSurfFile_[1],params[pos+1]);
+      error = checkFileOpen(timeSurfFile_, 2, params[pos-1], errText);
       time_nz_ = atoi(params[pos+2]);
     }
     else
@@ -979,7 +981,7 @@ ModelFile::readCommandTimeSurfaces(char ** params, int & pos, char * errText)
       error = 1;
     }
   }
-
+  
   pos += nPar+1;
   return(error);
 }
@@ -998,6 +1000,8 @@ ModelFile::readCommandDepthSurfaces(char ** params, int & pos, char * errText)
 
   if(isNumber(params[pos+1])) //Only a reference surface
   {
+    error = checkFileOpen(depthSurfFile_, 1, params[pos-1], errText);
+    depthSurfFile_[1] = NULL;
     if(nPar == 4)
     {
       parallelDepthSurfaces_ = true;
@@ -1018,6 +1022,7 @@ ModelFile::readCommandDepthSurfaces(char ** params, int & pos, char * errText)
     {
       depthSurfFile_[1] = new char[strlen(params[pos+1])+1];
       strcpy(depthSurfFile_[1],params[pos+1]);
+      error = checkFileOpen(depthSurfFile_, 2, params[pos-1], errText);
       depth_nz_ = atoi(params[pos+2]);
     }
     else
