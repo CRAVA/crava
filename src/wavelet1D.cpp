@@ -1169,49 +1169,6 @@ Wavelet1D::writeWaveletToFile(char* fileName,float approxDzIn, Simbox *)
    delete [] waveletNew_r;
 }
 
-
-int Wavelet1D::getWaveletLengthI()
-{
-  bool trans=false;
-  if(isReal_==false)
-  {
-    invFFT1DInPlace();
-    trans=true;
-  }
-  float maxAmp =  fabs(rAmp_[0]); // gets max amp 
-  for(int i=1;i <nzp_;i++)
-    if(fabs(rAmp_[i]) > maxAmp)
-      maxAmp = fabs(rAmp_[i]);
-
-  float minAmp= maxAmp*minRelativeAmp_; // minimum relevant amplitude
-
-  int wLength=nzp_;
-
-  for(int i=nzp_/2;i>0;i--)
-  {
-    if(fabs(rAmp_[i]) >minAmp)
-    {
-      wLength= (i*2+1);// adds both sides 
-      break;
-    }
-    if(fabs(rAmp_[nzp_-i]) > minAmp)
-    {
-      wLength= (2*i+1);// adds both sides 
-      break;
-    }
-  }
-  wLength =MINIM(wLength,2*(nzp_/2)-1); // allways even number
-  if(trans==true)
-    fft1DInPlace();
-
-  return wLength;
-}
-float
-Wavelet1D::getWaveletLengthF()
-{
-  return dz_*float( getWaveletLengthI() );
-}
-
 float
 Wavelet1D::shiftOptimal(fftw_real** ccor_seis_cpp_r,float* wellWeight,float* dz,int nWells,int nzp,float* shiftWell)
 {

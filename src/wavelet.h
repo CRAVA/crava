@@ -46,7 +46,7 @@ public:
   float          getScale() const {return scale_;}
   
   // for noise estimation
-  float          getNoiseStandardDeviation(Simbox * simbox, FFTGrid * seisCube, WellData ** wells, int nWells); 
+  float          getNoiseStandardDeviation(Simbox * simbox, FFTGrid * seisCube, WellData ** wells, int nWells, char *errText, int &error); 
   void           setReflCoeff(float * coeff) {for(int i=0;i<3;i++) coeff_[i] = coeff[i];}
 
 protected:
@@ -71,6 +71,8 @@ protected:
   float          findBulkShift(fftw_real* vec_r,float dz,int nzp);
   float          getLocalTimeshift(int i, int j) const;
   float          getLocalGainFactor(int i, int j) const;
+  int            getWaveletLengthI();
+  float          getWaveletLengthF();
   
   float          theta_;                 // the reflection angle that the wavelet correspond to
   int            readtype_;              // how is wavelet obtained? read from file[OLD JASON SGRI] or ESTIMATE

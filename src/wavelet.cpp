@@ -321,7 +321,8 @@ Wavelet::convolve(fftw_complex* var1_c ,fftw_complex* var2_c, fftw_complex* out_
   for(int i=0;i<cnzp;i++)
   {
     out_c[i].re = var1_c[i].re*var2_c[i].re-var1_c[i].im*var2_c[i].im;
-    out_c[i].im = var1_c[i].re*var2_c[i].im + var1_c[i].im*var2_c[i].re;
+//    out_c[i].im = var1_c[i].re*var2_c[i].im + var1_c[i].im*var2_c[i].re; //Frode 120808
+    out_c[i].im = var1_c[i].im*var2_c[i].re - var1_c[i].re*var2_c[i].im; //Frode 120808
   }
 
 }
@@ -422,9 +423,52 @@ Wavelet::getIndexPost(int start,int nInd,int nzp)
 }
 */
 
+int Wavelet::getWaveletLengthI()
+{
+  bool trans=false;
+  if(isReal_==false)
+  {
+    invFFT1DInPlace();
+    trans=true;
+  }
+  
+  float maxAmp =  fabs(getRAmp(0)); // gets max amp 
+  for(int i=1;i <nzp_;i++)
+    if(fabs(getRAmp(i)) > maxAmp)
+      maxAmp = fabs(getRAmp(i));
+
+  float minAmp= maxAmp*minRelativeAmp_; // minimum relevant amplitude
+
+  int wLength=nzp_;
+
+  for(int i=nzp_/2;i>0;i--)
+  {
+    if(fabs(getRAmp(i)) >minAmp)
+    {
+      wLength= (i*2+1);// adds both sides 
+      break;
+    }
+    if(fabs(getRAmp(nzp_-i)) > minAmp)
+    {
+      wLength= (2*i+1);// adds both sides 
+      break;
+    }
+  }
+  wLength =MINIM(wLength,2*(nzp_/2)-1); // allways even number
+  if(trans==true)
+    fft1DInPlace();
+
+  return wLength;
+}
+
+float
+Wavelet::getWaveletLengthF()
+{
+  return dz_*float( getWaveletLengthI() );
+}
 
 float         
-Wavelet::getNoiseStandardDeviation(Simbox * simbox, FFTGrid * seisCube, WellData ** wells, int nWells)
+Wavelet::getNoiseStandardDeviation(Simbox * simbox, FFTGrid * seisCube, WellData ** wells, int nWells, char *errText, int &error)
 {
   //LogKit::LogFormatted(LogKit::LOW,"\n  Estimating noise from seismic data and (nonfiltered) blocked wells");
 
@@ -598,8 +642,9 @@ Wavelet::getNoiseStandardDeviation(Simbox * simbox, FFTGrid * seisCube, WellData
 
   if (nData == 0)
   {
-    LogKit::LogFormatted(LogKit::LOW,"\nERROR: Cannot estimate signal-to-noiseratio. No legal well data available. CRAVA must stop\n");
-    exit(1);
+    sprintf(errText, "%s ERROR: Cannot estimate signal-to-noiseratio. No legal well data available. CRAVA must stop\n", errText);
+    LogKit::LogFormatted(LogKit::ERROR,"\nERROR: Cannot estimate signal-to-noiseratio. No legal well data available. CRAVA must stop\n");
+    error += 1;
   }
   dataVar /= float(nData);
   errStd  /= float(nData);
@@ -628,12 +673,12 @@ Wavelet::getNoiseStandardDeviation(Simbox * simbox, FFTGrid * seisCube, WellData
 
   if (empSNRatio < 1.1f) 
   {
-    LogKit::LogFormatted(LogKit::LOW,"\nERROR: The empirical signal-to-noise ratio Var(seismic data)/Var(noise) is %.2f. Ratios\n",empSNRatio);
-    LogKit::LogFormatted(LogKit::LOW,"       smaller than 1 are illegal and CRAVA has to stop. CRAVA was for some reason not able\n");
-    LogKit::LogFormatted(LogKit::LOW,"       to estimate this ratio reliably, and you must give it as input to the model file.\n");
-    LogKit::LogFormatted(LogKit::LOW,"\nNOTE: If the wavelet was estimated by CRAVA the solution may be to remove one or more wells\n");
-    LogKit::LogFormatted(LogKit::LOW,"      from the wavelet estimation (compare shifts and SN-ratios for different wells).\n\n");
-    exit(1);
+    sprintf(errText, "%s ERROR: The empirical signal-to-noise ratio Var(seismic data)/Var(noise) is %.2f. Ratios\n",errText, empSNRatio);
+    sprintf(errText, "%s       smaller than 1 are illegal and CRAVA has to stop. CRAVA was for some reason not able\n", errText);
+    sprintf(errText,"%s       to estimate this ratio reliably, and you must give it as input to the model file.\n", errText);
+    sprintf(errText,"%s \nNOTE: If the wavelet was estimated by CRAVA the solution may be to remove one or more wells\n", errText);
+    sprintf(errText,"%s      from the wavelet estimation (compare shifts and SN-ratios for different wells).\n\n", errText);
+    error += 1;
   }
  
   delete [] alpha;

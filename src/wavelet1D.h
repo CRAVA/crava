@@ -32,8 +32,6 @@ private:
   void           flipUpDown();
   float          getWaveletValue(float z, float * Wavelet, int center,int nx, float dz);
   void           shiftAndScale(float shift,float gain);
-  int            getWaveletLengthI();
-  float          getWaveletLengthF();
   void           WaveletReadOld(char * fileName);
   void           WaveletReadJason(char * fileName);
   float          shiftOptimal(fftw_real** ccor_seis_cpp_r,float* wellWeight,float* dz,int nWells,int nzp,float* shiftWell);
