@@ -71,7 +71,7 @@ public:
   static int     getDebugLevel(void)                 { return debugFlag_        ;}
   int            getFileGrid(void)             const { return fileGrid_         ;}
   bool           getGenerateSeismic(void)      const { return generateSeismic_  ;}
-  LogKit::MessageLevels getLogLevel(void)      const { return logLevel_         ;}
+  int            getLogLevel(void)      const { return logLevel_         ;}
   bool           getDoInversion(void);
 
 
@@ -237,7 +237,7 @@ private:
 
   bool           generateSeismic_;       // Forward modelling
 
-  LogKit::MessageLevels logLevel_;      
+  int            logLevel_;      
 
   static int          debugFlag_;
   static std::string  filePrefix_;            // Prefix (including path) for all output files
