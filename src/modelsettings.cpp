@@ -80,7 +80,7 @@ ModelSettings::ModelSettings(void)
  
   generateSeismic_       =    false;
 
-  logLevel_              = LogKit::LOW;
+  logLevel_              = LogKit::L_LOW;
 }
 
 ModelSettings::~ModelSettings(void)
