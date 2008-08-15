@@ -80,15 +80,14 @@ Model::Model(char * fileName)
     if(modelSettings_->getNumberOfSimulations() == 0)
       modelSettings_->setOutputFlag(ModelSettings::PREDICTION); //write predicted grids. 
     
-    printSettings(modelSettings_, 
-                  modelFile, 
-                  hasSignalToNoiseRatio_);
+    printSettings(modelSettings_, modelFile, hasSignalToNoiseRatio_);
     
     LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************");
     LogKit::LogFormatted(LogKit::LOW,"\n***                       Reading input data                        ***"); 
     LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************\n");
 
     char errText[MAX_STRING];
+    sprintf(errText, "");
 
     makeTimeSimbox(timeSimbox_, modelSettings_, modelFile, 
                    errText, failed_);
@@ -103,19 +102,26 @@ Model::Model(char * fileName)
         processReflectionMatrix(reflectionMatrix_, background_, 
                                 modelSettings_, modelFile, 
                                 errText);  
-        processWavelets(wavelet_, seisCube_, wells_, reflectionMatrix_,
-                        timeSimbox_, shiftGrids_, gainGrids_,
-                        modelSettings_, modelFile,
-                        hasSignalToNoiseRatio_);        
+        if (processWavelets(wavelet_, seisCube_, wells_, reflectionMatrix_,
+                          timeSimbox_, shiftGrids_, gainGrids_,
+                          modelSettings_, modelFile,
+                          hasSignalToNoiseRatio_, errText) != 0) {
+            failed_ = true;
+            LogKit::LogFormatted(LogKit::ERROR,"\nERROR(S) while processing wavelets: \n %s", errText);
+            sprintf(errText, "");
+        }
         if(modelSettings_->getFormatFlag() == 0)
           modelSettings_->setFormatFlag(1);  //Default, but not initialized due to possible double output.
         background_->getAlpha()->setOutputFormat(modelSettings_->getFormatFlag()); //static, controls all grids.
       }
       else
       {
-        processSeismic(seisCube_, timeSimbox_,
-                       modelSettings_, modelFile, 
-                       errText);
+        bool failedSeismic = false;
+        if (processSeismic(seisCube_, timeSimbox_, modelSettings_, modelFile, errText) != 0) {
+          failedSeismic = true;
+          LogKit::LogFormatted(LogKit::ERROR,"\nERROR(s) while processing seismic data:\n %s", errText);
+          sprintf(errText, "");
+        }
         makeDepthSimbox(depthSimbox_, modelSettings_, modelFile, 
                         errText, failed_);
         if(failed_ == false)
@@ -132,10 +138,14 @@ Model::Model(char * fileName)
           processReflectionMatrix(reflectionMatrix_, background_, 
                                   modelSettings_, modelFile, 
                                   errText);
-          processWavelets(wavelet_, seisCube_, wells_, reflectionMatrix_,
+          if (processWavelets(wavelet_, seisCube_, wells_, reflectionMatrix_,
                           timeSimbox_, shiftGrids_, gainGrids_,
                           modelSettings_, modelFile,
-                          hasSignalToNoiseRatio_);
+                          hasSignalToNoiseRatio_, errText) != 0) {
+              failed_ = true;
+              LogKit::LogFormatted(LogKit::ERROR,"\nERROR(s) while processing wavelets: \n%s", errText);
+              sprintf(errText, "");
+          }
           processPriorFaciesProb(priorFacies_,
                                  wells_,
                                  randomGen_,
@@ -146,8 +156,12 @@ Model::Model(char * fileName)
                             correlationDirection_,
                             modelFile);
         }
+        if (failedSeismic)
+          failed_ = true;
       }
     }
+    if (failed_) 
+      LogKit::LogFormatted(LogKit::ERROR,"\nERROR(s) in input from modelfile. \n %s", errText);
   }
   delete modelFile;
 }
@@ -883,7 +897,7 @@ Model::makeDepthSimbox(Simbox       *& depthSimbox,
   }
 }
 
-void 
+int 
 Model::processSeismic(FFTGrid      **& seisCube,
                       Simbox        *& timeSimbox,
                       ModelSettings *& modelSettings, 
@@ -891,13 +905,15 @@ Model::processSeismic(FFTGrid      **& seisCube,
                       char           * errText)
 {
   char ** seismicFile = modelFile->getSeismicFile();
+  int error = 0;
 
   if(seismicFile != NULL)
   {
     seisCube = new FFTGrid * [modelSettings->getNumberOfAngles()];
 
+    char tmpErrText[MAX_STRING];
     if(readSegyFiles(seismicFile, modelSettings->getNumberOfAngles(), seisCube, 
-                     timeSimbox, modelSettings, errText) == 0)
+                     timeSimbox, modelSettings, tmpErrText) == 0)
     {
       int formatFlag = modelSettings->getFormatFlag();
       if(formatFlag == 0)
@@ -922,11 +938,11 @@ Model::processSeismic(FFTGrid      **& seisCube,
     }
     else
     {
-      printf("ERROR: Reading of seismic data files failed:\n");
-      printf("       %s\n",errText);
-      exit(1);
+      sprintf(errText, "%sERROR: Reading of seismic data files failed:\n %s\n", errText, tmpErrText);
+      error = 1;
     }
   }
+  return (error);
 }
 
 void 
@@ -1578,7 +1594,7 @@ Model::setupDefaultReflectionMatrix(float       **& reflectionMatrix,
   LogKit::LogFormatted(LogKit::LOW,"\nMaking reflection parameters using a Vp/Vs ratio of %4.2f\n",1.0f/vsvp);
 }
 
-void 
+int 
 Model::processWavelets(Wavelet     **& wavelet,
                        FFTGrid      ** seisCube,
                        WellData     ** wells,
@@ -1588,8 +1604,10 @@ Model::processWavelets(Wavelet     **& wavelet,
                        Surface      ** gainGrids,
                        ModelSettings * modelSettings, 
                        ModelFile     * modelFile,
-                       bool          & hasSignalToNoiseRatio)
+                       bool          & hasSignalToNoiseRatio,
+                       char          * errText)
 {
+  int error = 0;
   if (modelSettings->getDoInversion() || 
       modelSettings->getGenerateSeismic() || 
       (modelSettings->getOutputFlag() & ModelSettings::WAVELETS) > 0 )
@@ -1632,50 +1650,69 @@ Model::processWavelets(Wavelet     **& wavelet,
         int fileFormat = getWaveletFileFormat(waveletFile[i]);
         if(fileFormat < 0)
         {
-          LogKit::LogFormatted(LogKit::LOW,"ERROR: Unknown file format of file  %s.\n",waveletFile[i]);
-          exit(1);
+          sprintf(errText, "%sERROR: Unknown file format of file  %s.\n", errText, waveletFile[i]);
+          error += 1;
         }
-        if (fileFormat == Wavelet::SGRI)
-          wavelet[i] = new Wavelet3D(waveletFile[i], modelSettings, timeSimbox, modelSettings->getAngle()[i]);
         else {
-          wavelet[i] = new Wavelet1D(waveletFile[i], modelSettings, fileFormat);
-          wavelet[i]->resample(static_cast<float>(timeSimbox->getdz()), timeSimbox->getnz(), 
-                                modelSettings->getZpad(), modelSettings->getAngle()[i]);
+          if (fileFormat == Wavelet::SGRI)
+            wavelet[i] = new Wavelet3D(waveletFile[i], modelSettings, timeSimbox, modelSettings->getAngle()[i]);
+          else {
+            wavelet[i] = new Wavelet1D(waveletFile[i], modelSettings, fileFormat);
+            wavelet[i]->resample(static_cast<float>(timeSimbox->getdz()), timeSimbox->getnz(), 
+              modelSettings->getZpad(), modelSettings->getAngle()[i]);
+          }
+          wavelet[i]->setReflCoeff(reflectionMatrix[i]);
         }
-        wavelet[i]->setReflCoeff(reflectionMatrix[i]);
       }
-      if (waveScale[i] != RMISSING)        // If RMISSING we will later scale wavelet to get EmpSN = TheoSN.
-        wavelet[i]->scale(waveScale[i]);
-      if (noiseEnergy[i] == RMISSING)
-      {
-        noiseEnergy[i] = wavelet[i]->getNoiseStandardDeviation(timeSimbox, seisCube[i], wells, modelSettings->getNumberOfWells());
-        if (hasSignalToNoiseRatio) 
+      if (error == 0) {
+        if (waveScale[i] != RMISSING)        // If RMISSING we will later scale wavelet to get EmpSN = TheoSN.
+          wavelet[i]->scale(waveScale[i]);
+        if ((wavelet[i]->getDim() == 3) && !timeSimbox->getIsConstantThick()) {
+          sprintf(errText, "%s ERROR: Simbox must have constant thickness when 3D wavelet.\n", errText);
+          error += 1;
+        }
+        if (noiseEnergy[i] == RMISSING)
         {
-          //LogKit::LogFormatted(LogKit::LOW,"\n  Since seismic noise is estimated directly, keyword GIVESIGNALTONOISERATIO has no effect.\n");
-          hasSignalToNoiseRatio = false;
+          if (wavelet[i]->getDim() == 3) { //Not possible to estimate noise variance when 3D wavelet
+            sprintf(errText, "%s ERROR: Estimation of noise st. dev. is not possible for 3D wavelet.\n", errText);
+            sprintf(errText, "%s        Noise st.dev. or s/n ratio must be specified in modelfile\n", errText);
+            error += 1;
+          }
+          else {
+            noiseEnergy[i] = wavelet[i]->getNoiseStandardDeviation(timeSimbox, seisCube[i], wells, modelSettings->getNumberOfWells(), 
+                                                                   errText, error);
+            if (hasSignalToNoiseRatio) 
+            {
+              //LogKit::LogFormatted(LogKit::LOW,"\n  Since seismic noise is estimated directly, keyword GIVESIGNALTONOISERATIO has no effect.\n");
+              hasSignalToNoiseRatio = false;
+            }
+          }
         }
-      }
-      else
-      {
-        if (hasSignalToNoiseRatio && (noiseEnergy[i] <= 1.0 || noiseEnergy[i] > 10.0))
+        else
         {
-          LogKit::LogFormatted(LogKit::LOW,"ERROR: Illegal signal-to-noise ratio of %.3f for cube %d\n",noiseEnergy[i],i);
-          LogKit::LogFormatted(LogKit::LOW,"       Ratio must be in interval 1.0 < SNratio < 10.0\n");
-          exit(1);
+          if (hasSignalToNoiseRatio && (noiseEnergy[i] <= 1.0 || noiseEnergy[i] > 10.0))
+          {
+            sprintf(errText, "%s ERROR: Illegal signal-to-noise ratio of %.3f for cube %d\n", errText, noiseEnergy[i],i);
+            sprintf(errText, "%s       Ratio must be in interval 1.0 < SNratio < 10.0\n", errText);
+            error += 1;
+          }
+        }
+        if (error == 0) {
+          if((modelSettings->getOutputFlag() & ModelSettings::WAVELETS) > 0) 
+          {
+            char fileName[MAX_STRING];
+            sprintf(fileName,"Wavelet_Scaled");
+            wavelet[i]->writeWaveletToFile(fileName, 1.0); // dt_max = 1.0;
+          }
+          if(shiftGrids != NULL && shiftGrids[i] != NULL)
+            wavelet[i]->setShiftGrid(shiftGrids[i], timeSimbox);
+          if(gainGrids != NULL && gainGrids[i] != NULL)
+            wavelet[i]->setGainGrid(gainGrids[i], timeSimbox);
         }
       }
-      if((modelSettings->getOutputFlag() & ModelSettings::WAVELETS) > 0) 
-      {
-        char fileName[MAX_STRING];
-        sprintf(fileName,"Wavelet_Scaled");
-        wavelet[i]->writeWaveletToFile(fileName, 1.0); // dt_max = 1.0;
-      }
-      if(shiftGrids != NULL && shiftGrids[i] != NULL)
-        wavelet[i]->setShiftGrid(shiftGrids[i], timeSimbox);
-      if(gainGrids != NULL && gainGrids[i] != NULL)
-        wavelet[i]->setGainGrid(gainGrids[i], timeSimbox);
     }
   }
+  return (error);
 }
 
 int
@@ -1930,7 +1967,7 @@ Model::loadExtraSurfaces(Surface  **& waveletEstimInterval,
   if (modelFile->getFaciesEstIntFile() != NULL) {  
     try {
       Surface tmpSurf = NRLib2::ReadStormSurf(modelFile->getFaciesEstIntFile()[0]);
-      waveletEstimInterval[0] = new Surface(tmpSurf);
+      faciesEstimInterval[0] = new Surface(tmpSurf);
     }
     catch (NRLib2::Exception & e) {
       LogKit::LogFormatted(LogKit::ERROR,e.what());
@@ -1938,7 +1975,7 @@ Model::loadExtraSurfaces(Surface  **& waveletEstimInterval,
     }
     try {
       Surface tmpSurf = NRLib2::ReadStormSurf(modelFile->getFaciesEstIntFile()[1]);
-      waveletEstimInterval[1] = new Surface(tmpSurf);
+      faciesEstimInterval[1] = new Surface(tmpSurf);
     }
     catch (NRLib2::Exception & e) {
       LogKit::LogFormatted(LogKit::ERROR,e.what());
@@ -1966,7 +2003,7 @@ Model::printSettings(ModelSettings * modelSettings,
   }
 
   LogKit::LogFormatted(LogKit::LOW,"\nGeneral settings:\n");
-  LogKit::MessageLevels logLevel = modelSettings->getLogLevel();
+  int logLevel = modelSettings->getLogLevel();
   std::string logText("*NONE*");
   if (logLevel == LogKit::ERROR)
     logText = "ERROR";
