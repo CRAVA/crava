@@ -70,7 +70,7 @@ Wavelet3D::Wavelet3D(char * fileName, ModelSettings * modelSettings, Simbox *sim
     exit(1);
   }
 
-  float sf = 100.0;
+  float sf = 100.0; //Just preliminary in order to get not too small values
   int i,j,k;
   float x, y, z, value;
   for (k=0; k<=nzp_/2; k++) {
@@ -131,7 +131,16 @@ Wavelet3D::Wavelet3D(char * fileName, ModelSettings * modelSettings, Simbox *sim
       } 
     }
   }
+  waveletLength_ = getWaveletLengthF();
   
+  double norm2=0.0;
+  for(i=0; i < nxp_; i++ )
+    for (j=0; j < nyp_; j++)
+      for (k=0; k < nzp_; k++)
+        norm2 += getRAmp(k,j,i)*getRAmp(k,j,i);
+  norm_= float( sqrt(norm2));
+
+  //For debugging purposes, the shifted FFTGrid is written to file to compare to input sgri
   FFTGrid *shiftAmp = new FFTGrid(nx_, ny_, nz_, nx_, ny_, nz_);
   shiftAmp->fillInConstant(0.0);
   shiftAmp->setType(FFTGrid::DATA);
@@ -141,6 +150,7 @@ Wavelet3D::Wavelet3D(char * fileName, ModelSettings * modelSettings, Simbox *sim
   shiftFFTGrid(shiftAmp);
   shiftAmp->writeFile("3DWavelet", simBox);
   delete shiftAmp;
+  //End for debugging purposes
 
   delete sgri;
 }
