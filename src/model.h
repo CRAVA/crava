@@ -55,7 +55,7 @@ private:
                                    ModelFile     * modelFile,
                                    char          * errText,
                                    bool          & failed);
-  void             processSeismic(FFTGrid      **& seisCube,
+  int              processSeismic(FFTGrid      **& seisCube,
                                   Simbox        *& timeSimbox,
                                   ModelSettings *& modelSettings, 
                                   ModelFile      * modelFile,
@@ -84,7 +84,7 @@ private:
                                            ModelSettings * modelSettings, 
                                            ModelFile     * modelFile,                  
                                            char          * errText);
-  void             processWavelets(Wavelet     **& wavelet,
+  int              processWavelets(Wavelet     **& wavelet,
                                    FFTGrid      ** seisCube,
                                    WellData     ** wells,
                                    float        ** reflectionMatrix,
@@ -93,7 +93,8 @@ private:
                                    Surface      ** gainGrids,
                                    ModelSettings * modelSettings, 
                                    ModelFile     * modelFile,
-                                   bool          & hasSignalToNoiseRatio);
+                                   bool          & hasSignalToNoiseRatio,
+                                   char          * errText);
   void             processPriorFaciesProb(float        *& priorFacies,
                                           WellData     ** wells,
                                           RandomGen     * randomGen,
