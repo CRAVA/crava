@@ -68,7 +68,7 @@ Crava::Crava(Model * model)
     // NBNB   nzp_*0.001*corr->getdt() = T    lowCut = lowIntCut*domega = lowIntCut/T
     int lowIntCut = int(floor(lowCut_*(nzp_*0.001*corr->getdt()))); 
     // computes the integer whis corresponds to the low cut frequency.
-    corrT = parSpatialCorr_-> fillInParamCorr(corr,lowIntCut);
+    corrT = parSpatialCorr_-> fillInParamCorr(corr,lowIntCut);//NBNB KorrPlan2: Få med rotasjonsvinklar inn her.
   }
   else
   {

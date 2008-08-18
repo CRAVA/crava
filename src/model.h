@@ -50,11 +50,13 @@ private:
                                   ModelFile      * modelFile,
                                   char           * errText,
                                   bool           & failed);
-  void             makeDepthSimbox(Simbox       *& depthSimbox,
-                                   ModelSettings * modelSettings, 
-                                   ModelFile     * modelFile,
-                                   char          * errText,
-                                   bool          & failed);
+  void             setupExtendedTimeSimbox(Simbox * timeSimbox, 
+                                           Surface * corrSurf);
+  void             completeSimboxes(Simbox       *& depthSimbox,
+                                    ModelSettings * modelSettings, 
+                                    ModelFile     * modelFile,
+                                    char          * errText,
+                                    bool          & failed);
   int              processSeismic(FFTGrid      **& seisCube,
                                   Simbox        *& timeSimbox,
                                   ModelSettings *& modelSettings, 
@@ -136,7 +138,6 @@ private:
                                   float px);
   void             loadExtraSurfaces(Surface  **& waveletEstimInterval,
                                      Surface  **& faciesEstimInterval,
-                                     Surface   *& correlationDirection,
                                      ModelFile  * modelFile);
   float         ** readMatrix(char       * fileName, 
                               int          n1, 
@@ -162,8 +163,15 @@ private:
                                  bool            hasSignalToNoiseRatio);
   int              getWaveletFileFormat(char * fileName);
 
+  double *         findPlane(Surface * surf); //Finds plane l2-closest to surface.             
+  //Create planar surface with same extent as template, p[0]+p[1]*x+p[2]*y
+  Surface *        createPlaneSurface(double * planeParams, Surface * templateSurf);
+
+
   ModelSettings  * modelSettings_;
   Simbox         * timeSimbox_;            // Information about simulation area.
+  Simbox         * timeCutSimbox_;         // Information about area of interest.
+                                           // Only used with correlation surface.
   Simbox         * depthSimbox_;           // Simbox with depth surfaces
   WellData      ** wells_;                 // Well data
   Background     * background_;            // Holds the background model.
@@ -181,6 +189,11 @@ private:
                                            // indicating that standard approximation will be used.
 
   bool             hasSignalToNoiseRatio_; // Use SN ratio instead of error variance in model file. 
+  
+  double           gradX_;                 // X-gradient of correlation rotation. 
+  double           gradY_;                 // Y-gradient of correlation rotation.
+                                           // These are only used with correaltion surfaces.
+
   bool             failed_;                // Indicates whether errors ocuured during construction. 
 };
 

@@ -11,7 +11,7 @@ namespace NRLib2 {
     /// \brief Generate a copy of the underlying object.
     virtual Surface* Clone() const = 0;
 
-    virtual double GetZ(double x, double y) const = 0;
+    virtual double GetZ(double x, double y, bool failOutside = true) const = 0;
     
     virtual bool EnclosesRectangle(double x_min, double x_max, 
                                  double y_min, double y_max) const = 0;
@@ -36,7 +36,7 @@ namespace NRLib2 {
       return z_;
     }
     
-    double GetZ(double /*x*/, double /*y*/) const
+    double GetZ(double /*x*/, double /*y*/, bool /*failOutside*/ = true) const
     { return z_; }
         
     bool EnclosesRectangle(double /*x_min*/, double /*x_max*/, 

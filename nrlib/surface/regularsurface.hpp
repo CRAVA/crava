@@ -26,7 +26,8 @@ public:
   Surface* Clone() const 
   { return new RegularSurface<A>(*this); }
 
-  double GetZ(double x, double y) const;
+  ///Return z. If outside, throws exception when failOutside is true, returns missing otherwise.
+  double GetZ(double x, double y, bool failOutside = true) const;
   
   bool EnclosesRectangle(double x_min, double x_max, 
                          double y_min, double y_max) const;
@@ -36,6 +37,16 @@ public:
     for(i=this->begin();i<this->end();i++)
       *i += c;
   }
+
+  void Multiply(double c) {
+    typename Grid2D<A>::iterator i;
+    for(i=this->begin();i<this->end();i++)
+      *i *= c;
+  }
+
+  bool Add(const Surface * s2);
+  bool Subtract(const Surface * s2);
+
 
   double Min() const {
     return(double(*(std::min_element(this->begin(),this->end()))));
@@ -47,11 +58,20 @@ public:
 
 
   /// Returns vector with the four corners around the point (x,y).
-  std::vector<A> GetCorners(double x, double y) const;
+  std::vector<A> GetCorners(double x, double y, bool failOutside = true) const;
 
   /// Gets the index for the nearest point up, and to the left of
   /// (x,y), the corner point with the lowest i and j values.
-  void GetIndex(double x, double y, int& i, int& j) const;
+  void GetIndex(double x, double y, int& i, int& j, bool failOutside = true) const;
+  void GetXY(int i, int j, double & x, double & y) const {
+    x = x_min_+i*dx_;
+    y = y_min_+j*dy_;
+  }
+  void GetXY(int index, double & x, double & y) const {
+    int j = index/this->GetNI();
+    int i = index-j*this->GetNI();
+    GetXY(i,j,x,y);
+  }
 
   double GetXMin() const     
   { return x_min_; }
@@ -126,7 +146,7 @@ RegularSurface<A>::RegularSurface(double x_min, double y_min,
 
 
 template <class A>
-double RegularSurface<A>::GetZ(double x, double y) const
+double RegularSurface<A>::GetZ(double x, double y, bool failOutside) const
 {
   // Hack to prevent problems when we are at the edge of the surface.
   if(x == GetXMax())
@@ -151,8 +171,11 @@ double RegularSurface<A>::GetZ(double x, double y) const
 
   if (n_missing == 4) {
     // All surrounding values are missing
-    throw Exception("Grid cell containing (" + ToString(x) + ", " 
-      + ToString(y) + ") is missing.");    
+    if(failOutside == true)
+      throw Exception("Grid cell containing (" + ToString(x) + ", " 
+        + ToString(y) + ") is missing.");
+    else
+      return(missing_val_);
   }
   else if (n_missing == 0) {
     double x1 = CellRelX(x);
@@ -162,6 +185,39 @@ double RegularSurface<A>::GetZ(double x, double y) const
   else {
     return double(sum/(4-n_missing));
   }
+}
+
+template <class A>
+bool RegularSurface<A>::Add(const Surface * s2)
+{
+  double x,y,value;
+  int i;
+  for(i=0;i<this->GetN();i++) {
+    GetXY(i, x, y);
+    value = s2->GetZ(x,y,false);
+    if(s2->IsMissing(value) == false)
+      (*this)(i) += value;
+    else
+      (*this)(i) = missing_val_;
+  }
+  return(true);
+}
+
+
+template <class A>
+bool RegularSurface<A>::Subtract(const Surface * s2)
+{
+  double x,y,value;
+  int i;
+  for(i=0;i<this->GetN();i++) {
+    GetXY(i, x, y);
+    value = s2->GetZ(x,y,false);
+    if(s2->IsMissing(value) == false)
+      (*this)(i) -= value;
+    else
+      (*this)(i) = missing_val_;
+  }
+  return(true);
 }
 
 
@@ -178,9 +234,11 @@ bool RegularSurface<A>::EnclosesRectangle(double x_min, double x_max,
 }
 
 template <class A>
-void RegularSurface<A>::GetIndex(double x, double y, int& i, int& j) const
+void RegularSurface<A>::GetIndex(double x, double y, int& i, int& j,
+                                 bool failOutside) const
 {
-  if (x < GetXMin() || x > GetXMax() || y < GetYMin() || y > GetYMax()) {
+  if(failOutside == true && 
+     (x < GetXMin() || x > GetXMax() || y < GetYMin() || y > GetYMax())) {
     throw Exception("Point (" + ToString(x) + ", " + ToString(y) + ") is outside the grid.");  
   }
 
@@ -190,17 +248,44 @@ void RegularSurface<A>::GetIndex(double x, double y, int& i, int& j) const
 
 
 template <class A>
-std::vector<A> RegularSurface<A>::GetCorners(double x, double y) const
+std::vector<A> RegularSurface<A>::GetCorners(double x, double y, bool failOutside) const
 {
   int i, j;
-  GetIndex(x, y, i , j);
+  GetIndex(x, y, i , j, failOutside);
   std::vector<A> corners(4);
   
-  corners[0] = (*this)(i, j);
-  corners[1] = (*this)(i+1, j);
-  corners[2] = (*this)(i, j+1);
-  corners[3] = (*this)(i+1, j+1);
-  
+  if(failOutside == true) {
+    corners[0] = (*this)(i, j);
+    corners[1] = (*this)(i+1, j);
+    corners[2] = (*this)(i, j+1);
+    corners[3] = (*this)(i+1, j+1);
+  }
+  else {
+    if(i+1 >= 0 && i < this->GetNI() && j+1 >= 0 && j < this->GetNJ()) {
+      if(i >=0 && j>= 0)
+        corners[0] = (*this)(i, j);
+      else
+        corners[0] = missing_val_;
+      if(i+1 < this->GetNI() && j>= 0)
+        corners[1] = (*this)(i+1, j);
+      else
+        corners[1] = missing_val_;
+      if(i >=0 && j+1 < this->GetNJ())
+        corners[2] = (*this)(i, j+1);
+      else
+        corners[2] = missing_val_;
+      if(i+1 < this->GetNI() && j+1 < this->GetNJ())
+        corners[3] = (*this)(i+1, j+1);
+      else
+        corners[3] = missing_val_;
+    }
+    else {
+      corners[0] = missing_val_;
+      corners[1] = missing_val_;
+      corners[2] = missing_val_;
+      corners[3] = missing_val_;
+    }
+  }
   return corners;
 }
 

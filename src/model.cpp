@@ -23,6 +23,7 @@
 
 #include "lib/random.h"
 #include "lib/lib_misc.h"
+#include "lib/lib_matr.h"
 #include "lib/global_def.h"
 #include "lib/segy.h"
 #include "nrlib/surface/surfaceio.hpp"
@@ -31,6 +32,7 @@
 Model::Model(char * fileName)
 {
   modelSettings_         = NULL;
+  timeCutSimbox_         = NULL;
   timeSimbox_            = new Simbox();
   depthSimbox_           = NULL;
   wells_                 = NULL;
@@ -89,8 +91,10 @@ Model::Model(char * fileName)
     char errText[MAX_STRING];
     sprintf(errText, "");
 
-    makeTimeSimbox(timeSimbox_, modelSettings_, modelFile, 
+    makeTimeSimbox(timeSimbox_, modelSettings_, modelFile, //Handles correlation direction too.
                    errText, failed_);
+    if(failed_)
+      LogKit::LogFormatted(LogKit::ERROR,errText);
 
     if(failed_ == false)
     { 
@@ -122,8 +126,8 @@ Model::Model(char * fileName)
           LogKit::LogFormatted(LogKit::ERROR,"\nERROR(s) while processing seismic data:\n %s", errText);
           sprintf(errText, "");
         }
-        makeDepthSimbox(depthSimbox_, modelSettings_, modelFile, 
-                        errText, failed_);
+        completeSimboxes(depthSimbox_, modelSettings_, modelFile,  //Creates depth simbox if needed.
+                         errText, failed_);                        //Copies area to timeCutSimbox if needed.
         if(failed_ == false)
         { 
           processWells(wells_, timeSimbox_, randomGen_, 
@@ -153,7 +157,6 @@ Model::Model(char * fileName)
                                  modelSettings_);
           loadExtraSurfaces(waveletEstimInterval_,
                             faciesEstimInterval_,
-                            correlationDirection_,
                             modelFile);
         }
         if (failedSeismic)
@@ -671,13 +674,14 @@ Model::makeTimeSimbox(Simbox        *& timeSimbox,
                     error);
   if(error == 0)
   {
+    sprintf(errText,"");
     const char * topname = "toptime.storm";
     const char * botname = "bottime.storm";
     if(!((modelSettings->getOutputFlag() & ModelSettings::NOTIME) > 0))
       timeSimbox->writeTopBotGrids(topname, botname);
 
     if(modelFile->getNWaveletTransfArgs() > 0 && timeSimbox->getIsConstantThick() == true)
-      LogKit::LogFormatted(LogKit::LOW,"\nWarning: LOCALWAVELET is ignored when using constant thickness in DEPTH.\n");
+      LogKit::LogFormatted(LogKit::WARNING,"\nWarning: LOCALWAVELET is ignored when using constant thickness in DEPTH.\n");
 
     double * areaParams = modelSettings->getAreaParameters(); 
     estimateZPaddingSize(timeSimbox, modelSettings);   
@@ -689,7 +693,7 @@ Model::makeTimeSimbox(Simbox        *& timeSimbox,
 
       if(error == 0)
       {
-        LogKit::LogFormatted(LogKit::LOW,"\nTime surfaces:\n");
+        LogKit::LogFormatted(LogKit::LOW,"\nTime cut surfaces:\n");
         LogKit::LogFormatted(LogKit::LOW,"  Interval thickness    avg / min / max    : %6.1f /%6.1f /%6.1f\n", 
                          timeSimbox->getlz()*timeSimbox->getAvgRelThick(),
                          timeSimbox->getlz()*timeSimbox->getMinRelThick(),
@@ -698,21 +702,11 @@ Model::makeTimeSimbox(Simbox        *& timeSimbox,
                          timeSimbox->getdz()*timeSimbox->getAvgRelThick(),
                          timeSimbox->getdz(),
                          timeSimbox->getdz()*timeSimbox->getMinRelThick());
-        
-        estimateXYPaddingSizes(timeSimbox, modelSettings);
-
-        //
-        // Check if CRAVA has enough memory to run calculation without buffering to disk
-        //
-        checkAvailableMemory(timeSimbox, modelSettings); 
       }
       else
       {
         if(error == Simbox::INTERNALERROR)
-        {
-          LogKit::LogFormatted(LogKit::LOW,"ERROR: A problems was encountered for simulation grid\n");
-          LogKit::LogFormatted(LogKit::LOW,"       %s\n",errText);
-        }
+          sprintf(errText,"%sERROR: A problems was encountered for simulation grid\n",errText);
         failed = true;
       }
     }
@@ -721,6 +715,50 @@ Model::makeTimeSimbox(Simbox        *& timeSimbox,
   {
     timeSimbox->externalFailure();
     failed = true;
+  }
+
+  if(modelFile->getCorrDirFile() != NULL) {
+    //
+    // Get correlation direction
+    //
+    try {
+      Surface tmpSurf = NRLib2::ReadStormSurf(modelFile->getCorrDirFile());
+      correlationDirection_ = new Surface(tmpSurf);
+    }
+    catch (NRLib2::Exception & e) {
+      sprintf(errText,"%s%s",errText,e.what());
+      failed = true;
+    }
+    if(failed == false && modelSettings->getGenerateSeismic() == false)
+      setupExtendedTimeSimbox(timeSimbox, correlationDirection_); 
+      //Extends timeSimbox for correlation coverage. Original stored in timeCutSimbox_
+    error = timeSimbox->checkError(modelSettings->getLzLimit(),errText);
+    if(error == 0)
+    {
+      LogKit::LogFormatted(LogKit::LOW,"\nActual inversion surfaces:\n");
+      LogKit::LogFormatted(LogKit::LOW,"  Interval thickness    avg / min / max    : %6.1f /%6.1f /%6.1f\n", 
+                       timeSimbox->getlz()*timeSimbox->getAvgRelThick(),
+                       timeSimbox->getlz()*timeSimbox->getMinRelThick(),
+                       timeSimbox->getlz());
+      LogKit::LogFormatted(LogKit::LOW,"  Sampling density      avg / min / max    : %6.2f /%6.2f /%6.2f\n", 
+                       timeSimbox->getdz()*timeSimbox->getAvgRelThick(),
+                       timeSimbox->getdz(),
+                       timeSimbox->getdz()*timeSimbox->getMinRelThick());
+    }
+    else
+    {
+      if(error == Simbox::INTERNALERROR)
+        sprintf(errText,"%sERROR: A problems was encountered for simulation grid\n",errText);
+      failed = true;
+    }
+  }
+
+  if(failed == false) {
+    estimateXYPaddingSizes(timeSimbox, modelSettings);
+    //
+    // Check if CRAVA has enough memory to run calculation without buffering to disk
+    //
+    checkAvailableMemory(timeSimbox, modelSettings); 
   }
 }
 
@@ -766,6 +804,113 @@ Model::setSimboxSurfaces(Simbox *& simbox,
     }
   }
 }
+
+void
+Model::setupExtendedTimeSimbox(Simbox * timeSimbox, Surface * corrSurf)
+{
+  timeCutSimbox_ = new Simbox(timeSimbox);
+
+  double * corrPlanePars = findPlane(corrSurf);
+
+  Surface * meanSurf = new Surface(*corrSurf);
+  int i;
+  for(i=0;i<meanSurf->GetN();i++)
+    (*meanSurf)(i) = 0;
+
+  meanSurf->Add(&(timeSimbox->GetTopSurface()));
+  meanSurf->Add(&(timeSimbox->GetBotSurface()));
+  meanSurf->Multiply(0.5);
+  double * refPlanePars = findPlane(meanSurf);
+  delete meanSurf;
+
+  for(i=0;i<3;i++)
+    refPlanePars[i] -= corrPlanePars[i];
+  gradX_ = refPlanePars[1];
+  gradY_ = refPlanePars[2];
+  Surface * refPlane = createPlaneSurface(refPlanePars, corrSurf);
+  refPlane->Add(corrSurf);
+  delete [] corrPlanePars;
+  delete [] refPlanePars;
+
+  Surface * topSurf = new Surface(*refPlane);
+  topSurf->Subtract(&(timeSimbox->GetTopSurface()));
+  double shiftTop = topSurf->Max();
+  shiftTop *= -1.0;
+  topSurf->Add(shiftTop);
+  topSurf->Add(&(timeSimbox->GetTopSurface()));
+
+  Surface * botSurf = new Surface(*refPlane);
+  botSurf->Subtract(&(timeSimbox->GetBotSurface()));
+  double shiftBot = botSurf->Min();
+  shiftBot *= -1.0;
+  botSurf->Add(shiftBot);
+  botSurf->Add(&(timeSimbox->GetBotSurface()));
+
+  double thick = shiftBot-shiftTop;
+  int nz = int(0.5+thick/timeCutSimbox_->getdz());//NBNB Ragnar: Rounding - is it ok?
+
+  timeSimbox->setDepth(topSurf, botSurf, nz);
+
+  delete refPlane;
+}
+
+
+double *
+Model::findPlane(Surface * surf)
+{
+  double ** A = new double * [3];
+  double * b = new double[3];
+  int i, j;
+  for(i=0;i<3;i++) {
+    A[i] = new double[3];
+    for(j=0;j<3;j++)
+      A[i][j] = 0;
+    b[i] = 0;
+  }
+
+  double x, y, z;
+  for(i=0;i<surf->GetN();i++) {
+    surf->GetXY(i, x, y);
+    z = (*surf)(i);
+    A[0][1] += x;
+    A[0][2] += y;
+    A[1][1] += x*x;
+    A[1][2] += x*y;
+    A[2][2] += y*y;
+    b[0] += z;
+    b[1] += x*z;
+    b[2] += y*z;
+  }
+
+  A[0][0] = surf->GetN();
+  A[1][0] = A[0][1];
+  A[2][0] = A[0][2];
+  A[2][1] = A[1][2];
+
+  lib_matrCholR(3, A);
+  lib_matrAxeqbR(3, A, b);
+
+  for(i=0;i<3;i++)
+    delete [] A[i];
+  delete [] A;
+
+  return(b);
+}
+
+
+Surface *
+Model::createPlaneSurface(double * planeParams, Surface * templateSurf)
+{
+  Surface * result = new Surface(*templateSurf);
+  double x,y;
+  int i;
+  for(i=0;i<result->GetN();i++) {
+    result->GetXY(i,x,y);
+    (*result)(i) = planeParams[0]+planeParams[1]*x+planeParams[2]*y;
+  }
+  return(result);
+}
+
 
 void
 Model::estimateXYPaddingSizes(Simbox         * timeSimbox, 
@@ -834,11 +979,11 @@ Model::estimateZPaddingSize(Simbox         * timeSimbox,
 }
 
 void 
-Model::makeDepthSimbox(Simbox       *& depthSimbox,
-                       ModelSettings * modelSettings, 
-                       ModelFile     * modelFile,
-                       char          * errText,
-                       bool          & failed)
+Model::completeSimboxes(Simbox       *& depthSimbox,
+                        ModelSettings * modelSettings, 
+                        ModelFile     * modelFile,
+                        char          * errText,
+                        bool          & failed)
 {
   if (modelFile->getHasDepthSurfaces())
   {
@@ -894,6 +1039,13 @@ Model::makeDepthSimbox(Simbox       *& depthSimbox,
       depthSimbox->externalFailure();
       failed = true;
     }
+  }
+
+  if(timeCutSimbox_ != NULL && timeCutSimbox_->status() == Simbox::NOAREA)
+  {
+    double * areaParams = modelSettings->getAreaParameters(); 
+    if (areaParams != NULL)
+      timeCutSimbox_->setArea(areaParams);
   }
 }
 
@@ -1923,23 +2075,9 @@ void Model::processPriorFaciesProb(float         *& priorFacies,
 void
 Model::loadExtraSurfaces(Surface  **& waveletEstimInterval,
                          Surface  **& faciesEstimInterval,
-                         Surface   *& correlationDirection,
                          ModelFile  * modelFile)
 {
   bool error = false;
-  //
-  // Get correlation direction
-  //
-  if (modelFile->getCorrDirFile() != NULL) {  
-    try {
-      Surface tmpSurf = NRLib2::ReadStormSurf(modelFile->getCorrDirFile());
-      correlationDirection = new Surface(tmpSurf);
-    }
-    catch (NRLib2::Exception & e) {
-      LogKit::LogFormatted(LogKit::ERROR,e.what());
-      error = true;
-    }
-  }
   //
   // Get wavelet estimation interval
   //

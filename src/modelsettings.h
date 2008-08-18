@@ -73,7 +73,8 @@ public:
   bool           getGenerateSeismic(void)      const { return generateSeismic_  ;}
   int            getLogLevel(void)      const { return logLevel_         ;}
   bool           getDoInversion(void);
-
+  //NBNB Ragnar: Not active yet.
+  Surface      * getCorrelationSurface()       const { return NULL              ;}
 
   void           setAngularCorr(Vario * vario);    
   void           setLateralCorr(Vario * vario);    
@@ -131,6 +132,8 @@ public:
   void           setFileGrid(int fileGrid)                   { fileGrid_         = fileGrid         ;}
   void           setGenerateSeismic(bool generateSeismic)    { generateSeismic_  = generateSeismic  ;}
   void           setLogLevel(LogKit::MessageLevels logLevel) { logLevel_         = logLevel         ;}
+
+  
 
   enum           outputGrids{PREDICTION        = 1, 
                              CORRELATION       = 2, 

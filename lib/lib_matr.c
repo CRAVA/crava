@@ -278,7 +278,7 @@ void lib_matrAXeqBMatR(int i_dim, double **i_mat, double **x_mat, int n)
 
   int l_i, l_j;
   double l_x;
-  float help;
+  double help;
   int i;
   for(i=0;i<n;i++)
   {

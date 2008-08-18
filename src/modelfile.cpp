@@ -1824,8 +1824,6 @@ ModelFile::readCommandCorrelationDirection(char ** params, int & pos, char * err
   {
     corrDirFile_ = new char[strlen(params[pos])+1];
     strcpy(corrDirFile_,params[pos]);
-    sprintf(errText,"Command %s is not active yet\n",params[pos-1]);
-    error = 1;
   }
   pos += nPar+1;
   return(error);
