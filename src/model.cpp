@@ -2419,3 +2419,18 @@ Model::printSettings(ModelSettings * modelSettings,
   }
 }
 
+void
+Model::getCorrGradIJ(float & corrGradI, float &corrGradJ) const
+{
+  double angle  = timeSimbox_->getAngle();
+  double cosrot = cos(angle);
+  double sinrot = sin(angle);
+  double dx     = timeSimbox_->getdx();  
+  double dy     = timeSimbox_->getdy();
+
+  double cI = dx*cosrot*gradX_-dy*sinrot*gradY_;
+  double cJ = dx*sinrot*gradX_+dy*cosrot*gradY_;
+
+  corrGradI = float(cI/timeSimbox_->getdz());
+  corrGradJ = float(cJ/timeSimbox_->getdz());
+}

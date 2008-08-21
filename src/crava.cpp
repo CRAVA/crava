@@ -68,13 +68,18 @@ Crava::Crava(Model * model)
     // NBNB   nzp_*0.001*corr->getdt() = T    lowCut = lowIntCut*domega = lowIntCut/T
     int lowIntCut = int(floor(lowCut_*(nzp_*0.001*corr->getdt()))); 
     // computes the integer whis corresponds to the low cut frequency.
-    corrT = parSpatialCorr_-> fillInParamCorr(corr,lowIntCut);//NBNB KorrPlan2: Få med rotasjonsvinklar inn her.
+    float corrGradI, corrGradJ;
+    model->getCorrGradIJ(corrGradI, corrGradJ);
+    corrT = parSpatialCorr_-> fillInParamCorr(corr,lowIntCut,corrGradI, corrGradJ);
+    errCorrUnsmooth_ = createFFTGrid();
+    errCorrUnsmooth_->fillInErrCorr(corr,corrGradI,corrGradJ); 
   }
   else
   {
     model->releaseGrids();
     parSpatialCorr_ = NULL;
     corrT = NULL;
+    errCorrUnsmooth_ = NULL;
   }
 
   if((outputFlag_ & (ModelSettings::PRIORCORRELATIONS + ModelSettings::CORRELATION)) > 0)
@@ -102,18 +107,6 @@ Crava::Crava(Model * model)
   for(i=0;i<ntheta_;i++)
     errThetaCov_[i] = new float[ntheta_]; 
  
-  if(!model->getModelSettings()->getGenerateSeismic())
-  {
-    errCorrUnsmooth_ = createFFTGrid();
-    errCorrUnsmooth_->fillInErrCorr(corr); 
-    // this is not really the true
-    // error correlation, but an un-smoothed verson of it
-    // the true error correlation is smoothet with the wavelet
-    // for the respective angle
-  }
-  else
-    errCorrUnsmooth_ = NULL;
-
   // reality check: all dimensions involved match
   assert(meanBeta_->consistentSize(nx_,ny_,nz_,nxp_,nyp_,nzp_));
   assert(meanRho_->consistentSize(nx_,ny_,nz_,nxp_,nyp_,nzp_));

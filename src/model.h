@@ -44,6 +44,8 @@ public:
   void             releaseGrids();                                        // Cuts connection to SeisCube_ and  backModel_
   Surface        * getCorrXYGrid();
 
+  void             getCorrGradIJ(float & corrGradI, float &corrGradJ) const;
+
 private:
   void             makeTimeSimbox(Simbox        *& timeSimbox,
                                   ModelSettings *& modelSettings, 
@@ -163,6 +165,7 @@ private:
                                  bool            hasSignalToNoiseRatio);
   int              getWaveletFileFormat(char * fileName);
 
+  //Compute correlation gradient in terms of i,j and k in grid.
   double *         findPlane(Surface * surf); //Finds plane l2-closest to surface.             
   //Create planar surface with same extent as template, p[0]+p[1]*x+p[2]*y
   Surface *        createPlaneSurface(double * planeParams, Surface * templateSurf);

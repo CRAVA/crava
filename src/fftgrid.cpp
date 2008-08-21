@@ -419,7 +419,7 @@ FFTGrid::fillInFromArray(float *value) //NB works only for padding size up to nx
 
 }
 fftw_real*
-FFTGrid::fillInParamCorr(Corr* corr,int minIntFq)
+FFTGrid::fillInParamCorr(Corr* corr,int minIntFq, float gradI, float gradJ)
 {
   assert(corr->getnx() == nxp_);
   assert(corr->getny() == nyp_);
@@ -428,8 +428,8 @@ FFTGrid::fillInParamCorr(Corr* corr,int minIntFq)
 
   createRealGrid();
 
-  int i,j,k;
-  float value;
+  int i,j,k,baseK;
+  float value,subK;
   fftw_real* circCorrT;
   //  float * corrXY;
   circCorrT = (fftw_real*) fftw_malloc(2*(nzp_/2+1)*sizeof(fftw_real));
@@ -437,6 +437,7 @@ FFTGrid::fillInParamCorr(Corr* corr,int minIntFq)
   makeCircCorrTPosDef(circCorrT, minIntFq);
   //makeCorrXYPosDef();
   // setAccessMode(RANDOMACCESS);
+
   setAccessMode(WRITE);
   for( k = 0; k < nzp_; k++)
     for( j = 0; j < nyp_; j++)
@@ -444,7 +445,19 @@ FFTGrid::fillInParamCorr(Corr* corr,int minIntFq)
       {    
         if(i < nxp_)  // computes the index reference from the cube puts it in value
         {
-          value = float( (*(corr->getCorrXY()))(i+nxp_*j)) * circCorrT[k];
+          subK  =  k-i*gradI-j*gradJ; //Subtract to counter rotation.
+          baseK =  int(subK);
+          subK  -= baseK;
+          while(baseK < 0)
+            baseK += nzp_;       //Use cyclicity
+          while(baseK >= nzp_)
+            baseK -= nzp_;       //Use cyclicity
+          value = (1-subK)*circCorrT[baseK];
+          if(baseK != nzp_-1)
+            value += subK*circCorrT[baseK+1];
+          else
+            value += subK*circCorrT[0];
+          value *= float( (*(corr->getCorrXY()))(i+nxp_*j));
         }
         else
           value = RMISSING;        
@@ -452,12 +465,12 @@ FFTGrid::fillInParamCorr(Corr* corr,int minIntFq)
         setNextReal(value);
       } //for k,j,i
 
-      endAccess();
-      return circCorrT;//fftw_free(circCorrT);
+  endAccess();
+  return circCorrT;//fftw_free(circCorrT);
 }
 
 void
-FFTGrid::fillInErrCorr(Corr* parCorr)
+FFTGrid::fillInErrCorr(Corr* parCorr, float gradI, float gradJ)
 {
   // Note:  this contain the latteral correlation and the multiplyers for the 
   // time correlation. The time correlation is further adjusted by the wavelet
@@ -471,23 +484,32 @@ FFTGrid::fillInErrCorr(Corr* parCorr)
 
   createRealGrid();
 
-  int i,j,k;
-  float value,mult;
+  int i,j,k,baseK;
+  float value,subK;
+  int range = 1;
   setAccessMode(WRITE);
   for( k = 0; k < nzp_; k++)
     for( j = 0; j < nyp_; j++)
       for( i = 0; i < rnxp_; i++)   
       {    
-        //if( k == 0) mult = 1.0; else  if( k == 1 || k == nzp_ - 1 ) mult = float( -0.33333 ); else mult = 0.0;
-
-        if( k == 0) 
-          mult = 1.0; 
-        else
-          mult = 0.0;
-
-        if(i < nxp_)  // computes the index reference from the cube puts it in value
-        {
-          value = float( (*(parCorr->getCorrXY()))(i+nxp_*j) )*mult ;
+        subK  =  k-i*gradI-j*gradJ; //Subtract to counter rotation.
+        if(i < nxp_) {
+          if(fabs(subK) < range*1.0f || fabs(subK-nzp_) < range*1.0f) {
+            baseK =  int(subK);
+            subK  -= baseK;
+            while(baseK < -range)
+              baseK += nzp_;       //Use cyclicity
+            while(baseK >= range)
+              baseK -= nzp_;       //Use cyclicity
+            
+            if(baseK < 0) {
+              baseK = -1-baseK;
+              subK  = 1-subK;
+            }
+            value = (1-subK)* float( (*(parCorr->getCorrXY()))(i+nxp_*j) );
+          }
+          else 
+            value = 0;
         }
         else
           value = RMISSING;        

@@ -22,18 +22,20 @@ public:
   void setType(int cubeType) {cubetype_ = cubeType;}
   void setAngle(float angle) {theta_ = angle;}
 
-  void                 fillInFromSegY(SegY * segy );            // No mode
+  void                 fillInFromSegY(SegY * segy );             // No mode
   void                 fillInFromStorm(Simbox     * tmpSimbox, 
                                        Simbox     * actSimBox,
                                        float      * grid,
-                                       const char * parName);   // No mode
-  void                 fillInFromRealFFTGrid(FFTGrid& fftGrid); // No mode
-  void                 fillInConstant(float value);             // No mode
-  fftw_real*           fillInParamCorr(Corr* corr,int minIntFq);// No mode
-  void                 fillInErrCorr(Corr* parCorr);            // No mode
-  virtual void         fillInComplexNoise(RandomGen * ranGen);  // No mode/randomaccess
+                                       const char * parName);    // No mode
+  void                 fillInFromRealFFTGrid(FFTGrid& fftGrid);  // No mode
+  void                 fillInConstant(float value);              // No mode
+  fftw_real*           fillInParamCorr(Corr* corr,int minIntFq,
+                                       float gradI, float gradJ);// No mode
+  void                 fillInErrCorr(Corr* parCorr,              // No mode
+                                     float gradI, float gradJ);  // No mode
+  virtual void         fillInComplexNoise(RandomGen * ranGen);   // No mode/randomaccess
 
-  void                 fillInTest(float value1, float value2);  // No mode /DEBUG
+  void                 fillInTest(float value1, float value2);   // No mode /DEBUG
   void                 fillInFromArray(float *value);
 
   virtual fftw_complex getNextComplex() ;                       // Accessmode read/readandwrite
