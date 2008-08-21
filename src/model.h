@@ -59,17 +59,19 @@ private:
                                     ModelFile     * modelFile,
                                     char          * errText,
                                     bool          & failed);
-  int              processSeismic(FFTGrid      **& seisCube,
+  void             processSeismic(FFTGrid      **& seisCube,
                                   Simbox        *& timeSimbox,
                                   ModelSettings *& modelSettings, 
                                   ModelFile      * modelFile,
-                                  char           * errText);
+                                  char           * errText,
+                                  bool           & failed);
   void             processWells(WellData     **& wells,
                                 Simbox         * timeSimbox,
                                 RandomGen      * randomGen,
                                 ModelSettings *& modelSettings, 
                                 ModelFile      * modelFile,
-                                char           * errText);
+                                char           * errText,
+                                bool           & failed);
   void             processBackground(Background   *& background, 
                                      WellData     ** wells,
                                      Simbox        * timeSimbox,
@@ -88,7 +90,7 @@ private:
                                            ModelSettings * modelSettings, 
                                            ModelFile     * modelFile,                  
                                            char          * errText);
-  int              processWavelets(Wavelet     **& wavelet,
+  void             processWavelets(Wavelet     **& wavelet,
                                    FFTGrid      ** seisCube,
                                    WellData     ** wells,
                                    float        ** reflectionMatrix,
@@ -98,7 +100,8 @@ private:
                                    ModelSettings * modelSettings, 
                                    ModelFile     * modelFile,
                                    bool          & hasSignalToNoiseRatio,
-                                   char          * errText);
+                                   char          * errText,
+                                   bool          & failed);
   void             processPriorFaciesProb(float        *& priorFacies,
                                           WellData     ** wells,
                                           RandomGen     * randomGen,
