@@ -86,6 +86,7 @@ private:
   int              readCommandWaveletEstimationInterval(char ** params, int & pos, char * errText);
   int              readCommandFaciesEstimationInterval(char ** params, int & pos, char * errText);
   int              readCommandLogLevel(char ** params, int & pos, char * errText);
+  int              readCommandSegyFormat(char ** params, int & pos, char * errText);
   int              getParNum(char ** params, int pos, int & error, char * errText,
                              const char * command, int min, int max = 0);
   int              checkFileOpen(char ** fNames, int nFiles, const char * command, char * errText, int start = 0,
@@ -121,7 +122,6 @@ private:
 
   char          ** fName_;                 // Facies names
   int            * fnr_;                   // Facies labels
- // int              nFacies_;
 
   float          * constBack_;             // Constant background model (temporarily stored)
                                            // Note: Negative value ==> read from file (actual value gives format).
@@ -142,6 +142,7 @@ private:
   bool             parallelDepthSurfaces_;
   bool             generateBackground_;    // Generate background model from filtered wells.
   bool             hasSignalToNoiseRatio_; // Use SN ratio instead of error variance in model file. 
+
   bool             failed_;                // Indicates whether errors ocuured during construction. 
 };
 

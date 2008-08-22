@@ -1389,12 +1389,12 @@ FFTGrid::writeSegyFile(const char * fileName, const Simbox * simbox, float z0)
   LogKit::LogFormatted(LogKit::LOW,"\nWriting SEGY file %s...",gfName);
   //  LogKit::LogFormatted(LogKit::LOW,"%d x %d traces.\n",nx_, ny_);
   delete [] gfName;
-  char errMsg[MAX_STRING];
-//NBNB //  if(segy->checkError(errMsg) > 0)
- // {
- //   LogKit::LogFormatted(LogKit::LOW,"failed\n");
- //   return(1);
- // }
+  //  char errMsg[MAX_STRING];
+  //NBNB //  if(segy->checkError(errMsg) > 0)
+  // {
+  //   LogKit::LogFormatted(LogKit::LOW,"failed\n");
+  //   return(1);
+  // }
   int i, j;
     int IL,XL;
  int il0,xl0;

@@ -31,7 +31,7 @@ const unsigned char transtab[] =
  };
 
 /// Translates an ASCII character to EBCDIC.
-unsigned char ascii2ebcdic(char c)
+unsigned char ascii2ebcdic(unsigned char c)
 {
   if (c > 128) 
     return 0;

@@ -15,6 +15,7 @@ ModelSettings::ModelSettings(void)
   backgroundVario_       = new GenExpVario(1, 2000, 2000); 
   geometry_            =     NULL;
   krigingParams_         =     NULL;
+  segyParams_            =     NULL;
   angle_                 =     NULL;
   noiseEnergy_           =     NULL;
   matchEnergies_         =     NULL;
@@ -73,7 +74,7 @@ ModelSettings::ModelSettings(void)
 
   lzLimit_               =     0.47;   // NB! This is a double ==> do not use 'f'.
 
-  outputFlag_            = VP+VS+RHO; //Default output
+  outputFlag_            = VP+VS+RHO;  // Default output
   formatFlag_            =        0;
   debugFlag_             =        0;
   fileGrid_              =       -1;
@@ -99,6 +100,9 @@ ModelSettings::~ModelSettings(void)
 
   if(krigingParams_ != NULL)
     delete [] krigingParams_;
+
+  if(segyParams_ != NULL)
+    delete [] segyParams_;
 
   //
   // NBNB-PAL: Purify liker ikke denne deleten, men skjønner ikke hvorfor
@@ -163,12 +167,7 @@ void
 ModelSettings::setAreaParameters(const SegyGeometry * geometry)
 {
   if (geometry_ == NULL) 
-  {
     geometry_ = new SegyGeometry(geometry);
-   // areaParams_ = new double[7];
-   // for (int i=0 ; i<7 ; i++)
-    //  areaParams_[i] = areaParams[i];
-  }
 }
 
 void           
@@ -177,6 +176,14 @@ ModelSettings::setKrigingParameters(float * krigingParams, int nParams)
   krigingParams_ = new float[nParams];
   for (int i=0 ; i<nParams ; i++)
     krigingParams_[i] = krigingParams[i];
+}
+
+void           
+ModelSettings::setSegyParameters(int * segyParams, int nParams)
+{
+  segyParams_ = new int[nParams];
+  for (int i=0 ; i<nParams ; i++)
+    segyParams_[i] = segyParams[i];
 }
 
 void           

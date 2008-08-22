@@ -21,6 +21,7 @@ public:
   Vario        * getBackgroundVario(void)      const { return backgroundVario_  ;} 
   const SegyGeometry       * getAreaParameters(void)       const { return geometry_       ;}    
   float        * getKrigingParameters(void)    const { return krigingParams_    ;}
+  int          * getSegyParameters(void)       const { return segyParams_       ;}
   float        * getAngle(void)                const { return angle_            ;}
   int            getNumberOfAngles(void)       const { return nAngles_          ;} 
   float        * getNoiseEnergy(void)          const { return noiseEnergy_      ;} 
@@ -71,7 +72,7 @@ public:
   static int     getDebugLevel(void)                 { return debugFlag_        ;}
   int            getFileGrid(void)             const { return fileGrid_         ;}
   bool           getGenerateSeismic(void)      const { return generateSeismic_  ;}
-  int            getLogLevel(void)      const { return logLevel_         ;}
+  int            getLogLevel(void)             const { return logLevel_         ;}
   bool           getDoInversion(void);
   //NBNB Ragnar: Not active yet.
   Surface      * getCorrelationSurface()       const { return NULL              ;}
@@ -81,6 +82,7 @@ public:
   void           setBackgroundVario(Vario * vario);
   void           setAreaParameters(const SegyGeometry *geometry);
   void           setKrigingParameters(float * krigingParams, int nParams);
+  void           setSegyParameters(int * segyParams, int nParams);
   void           setAngle(float * angle, int nAngles);
   void           setNumberOfAngles(int nAngles)              { nAngles_          = nAngles          ;} 
   void           setNoiseEnergy(float * noiseEnergy, int nAngles);
@@ -156,7 +158,10 @@ public:
                              NOTIME            = 262144,
                              FACIESPROB        = 524288,
                              FACIESPROBRELATIVE = 1048576};
+
   enum           sseismicTypes{STANDARDSEIS = 0, PSSEIS = 1};
+
+  enum           segyFormats{SEISWORKS = 0, IESX = 1};
 
   static void    setFilePrefix(char * filePrefix);
   static char  * makeFullFileName(const char * name, const char * postfix = NULL);
@@ -167,9 +172,10 @@ private:
   Vario        * lateralCorr_;           // Variogram for lateral parameter correlation 
   Vario        * backgroundVario_;       // Used for lateral background correlation.
 
- // double       * areaParams_;            // Parameters specifying the inversion area   
- SegyGeometry *geometry_;
+  SegyGeometry *geometry_;
+
   float        * krigingParams_;   
+  int          * segyParams_;            // Defining the segy format
 
   float        * angle_;                 // Angles
   int            nAngles_;               //

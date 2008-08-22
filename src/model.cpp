@@ -481,18 +481,18 @@ Model::readSegyFile(char          * fName,
                     ModelSettings * modelSettings, 
                     char          * errText) 
 {
-  char tmpErr[MAX_STRING];
   int error = 0;
 
   SegY * segy;
   target = NULL;
   segy = new SegY(fName, modelSettings->getSegyOffset());
-//NBNB  if(segy->checkError(tmpErr) != 0)
-//  {
-//    sprintf(errText,"%s%s", errText, tmpErr);
- //   error = 1;
-//  }
-//  else
+  //  char tmpErr[MAX_STRING];
+  //NBNB  if(segy->checkError(tmpErr) != 0)
+  //  {
+  //    sprintf(errText,"%s%s", errText, tmpErr);
+  //   error = 1;
+  //  }
+  //  else
   {
     if(modelSettings->getFileGrid() == 1)
       target = new FFTFileGrid(timeSimbox->getnx(),
@@ -2137,19 +2137,19 @@ Model::printSettings(ModelSettings * modelSettings,
   LogKit::LogFormatted(LogKit::LOW,"\nGeneral settings:\n");
   int logLevel = modelSettings->getLogLevel();
   std::string logText("*NONE*");
-  if (logLevel == LogKit::ERROR)
+  if (logLevel == LogKit::L_ERROR)
     logText = "ERROR";
-  else if (logLevel == LogKit::WARNING)
+  else if (logLevel == LogKit::L_WARNING)
     logText = "WARNING";
-  else if (logLevel == LogKit::LOW)
+  else if (logLevel == LogKit::L_LOW)
     logText = "LOW";
-  else if (logLevel == LogKit::MEDIUM)
+  else if (logLevel == LogKit::L_MEDIUM)
     logText = "MEDIUM";
-  else if (logLevel == LogKit::HIGH)
+  else if (logLevel == LogKit::L_HIGH)
     logText = "HIGH";
-  else if (logLevel == LogKit::DEBUGLOW)
+  else if (logLevel == LogKit::L_DEBUGLOW)
      logText = "DEBUGLOW";
-  else if (logLevel == LogKit::DEBUGHIGH)
+  else if (logLevel == LogKit::L_DEBUGHIGH)
     logText = "DEBUGHIGH";
   LogKit::LogFormatted(LogKit::LOW,"  Log level                                : %10s\n",logText.c_str());
   if (modelSettings->getNumberOfSimulations() == 0)
@@ -2177,6 +2177,32 @@ Model::printSettings(ModelSettings * modelSettings,
   LogKit::LogFormatted(LogKit::LOW,"  Density                                  : %10s\n","kg/dm3");
   LogKit::LogFormatted(LogKit::LOW,"  Angle                                    : %10s\n","degrees");
 
+  LogKit::LogFormatted(LogKit::LOW,"\nSettings for SegY format:\n");
+  int * segyParams = modelSettings_->getSegyParameters(); 
+  if (segyParams == NULL) 
+    LogKit::LogFormatted(LogKit::LOW,"  Type                                     :  SeisWorks\n");
+  else 
+  {
+    if (segyParams[0] == IMISSING || segyParams[0] == 0)
+      LogKit::LogFormatted(LogKit::LOW,"  Type                                     :  SeisWorks\n");
+    else if (segyParams[0] == 1)
+      LogKit::LogFormatted(LogKit::LOW,"  Type                                     :       IESX\n");
+    if (segyParams[1] == 1)
+      LogKit::LogFormatted(LogKit::LOW,"  Bypass coordinate scaling                :        yes\n");
+    if (segyParams[2] == 1)
+      LogKit::LogFormatted(LogKit::LOW,"  trace xy-coord given as float            :        yes\n");
+    if (segyParams[3] != IMISSING)
+      LogKit::LogFormatted(LogKit::LOW,"  Start pos trace x coordinate             : %10d\n",segyParams[3]);
+    if (segyParams[4] != IMISSING)
+      LogKit::LogFormatted(LogKit::LOW,"  Start pos trace y coordinate             : %10d\n",segyParams[4]);
+    if (segyParams[5] != IMISSING)
+      LogKit::LogFormatted(LogKit::LOW,"  Start pos inline index                   : %10d\n",segyParams[5]);
+    if (segyParams[6] != IMISSING)
+      LogKit::LogFormatted(LogKit::LOW,"  Start pos crossline index                : %10d\n",segyParams[6]);
+  }
+  //
+  // WELL PROCESSING
+  //
   LogKit::LogFormatted(LogKit::LOW,"\nSettings for well processing:\n");
   LogKit::LogFormatted(LogKit::LOW,"  Threshold for merging log entries        : %10.2f ms\n",modelSettings->getMaxMergeDist());
   LogKit::LogFormatted(LogKit::LOW,"  Threshold for Vp-Vs rank correlation     : %10.2f\n",modelSettings->getMaxRankCorr());
@@ -2320,11 +2346,11 @@ Model::printSettings(ModelSettings * modelSettings,
     else
       LogKit::LogFormatted(LogKit::LOW,"  Density read from file                   : %10s\n",modelFile->getBackFile()[2]);
   }
-  //
-  // SEISMIC
-  //
   if (modelSettings->getGenerateSeismic())
   {
+    //
+    // SEISMIC
+    //
     LogKit::LogFormatted(LogKit::LOW,"\nGeneral settings for seismic:\n");
     LogKit::LogFormatted(LogKit::LOW,"  Generating seismic                       : %10s\n","yes");
     for (int i = 0 ; i < modelSettings->getNumberOfAngles() ; i++)
@@ -2336,7 +2362,9 @@ Model::printSettings(ModelSettings * modelSettings,
   }
   else
   {
+    //
     // PRIOR CORRELATION
+    //
     Vario * corr = modelSettings->getLateralCorr();
     if (corr != NULL) {
       GenExpVario * pCorr = dynamic_cast<GenExpVario*>(corr);
@@ -2359,6 +2387,9 @@ Model::printSettings(ModelSettings * modelSettings,
         LogKit::LogFormatted(LogKit::LOW,"    Angle                                  : %10.1f\n",corr->getAngle());
       }
     }
+    //
+    // SEISMIC
+    //
     LogKit::LogFormatted(LogKit::LOW,"\nGeneral settings for seismic:\n");
     LogKit::LogFormatted(LogKit::LOW,"  White noise component                    : %10.2f\n",modelSettings->getWNC());
     LogKit::LogFormatted(LogKit::LOW,"  Low cut for inversion                    : %10.1f\n",modelSettings->getLowCut());

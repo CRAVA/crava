@@ -93,7 +93,7 @@ ModelFile::ModelFile(char * fileName)
   }
   fclose(file);
 
-  int nCommands = 36;
+  int nCommands = 37;
   bool * genNeed = new bool[nCommands]; //If run in generate mode, this list holds the necessity.
 
   //The following variables controls the alternative command system.
@@ -136,7 +136,7 @@ ModelFile::ModelFile(char * fileName)
 
   alternative[2] = new int[2];
   alternative[2][0] = -1;                  //One alternative, non-exclusive.
-  alternative[2][1] = neededCommands+25;   //Number of alternative command. (PSSEISMIC)
+  alternative[2][1] = neededCommands+26;   //Number of alternative command. (PS_SEISMIC)
 
   //
   // Optional commands
@@ -168,7 +168,7 @@ ModelFile::ModelFile(char * fileName)
   strcpy(commandList[neededCommands+22],"SEISMICRESOLUTION");           // ==> SEISMIC_RESOLUTION
   strcpy(commandList[neededCommands+23],"WAVELETLENGTH");
   strcpy(commandList[neededCommands+24],"DEPTHSURFACES");
-  strcpy(commandList[neededCommands+25],"PSSEISMIC");
+  strcpy(commandList[neededCommands+25],"PS_SEISMIC");
   alternative[neededCommands+25]    = new int[2];
   alternative[neededCommands+25][0] = -1;                  //One alternative, non-exclusive.
   alternative[neededCommands+25][1] = 2;   //Number of alternative command. (SEISMIC)
@@ -179,6 +179,7 @@ ModelFile::ModelFile(char * fileName)
   strcpy(commandList[neededCommands+30],"WAVELET_ESTIMATION_INTERVAL");
   strcpy(commandList[neededCommands+31],"FACIES_ESTIMATION_INTERVAL");
   strcpy(commandList[neededCommands+32],"LOG_LEVEL");
+  strcpy(commandList[neededCommands+33],"SEGY_FORMAT");
 
   char errText[MAX_STRING];
   char ** errorList = new char*[nCommands];
@@ -195,7 +196,7 @@ ModelFile::ModelFile(char * fileName)
     nErrors++;
   }
   //
-  // Declared long so that we can handle more than 63(?) rather than 31 keywords 
+  // NBNB-PAL: Declared long so that we can handle 63(?) rather than 31 keywords 
   //
 #if defined(__WIN32__) || defined(WIN32) || defined(_WINDOWS)
   long long commandsUsed = 0;
@@ -355,8 +356,11 @@ ModelFile::ModelFile(char * fileName)
         case 35:
           error = readCommandLogLevel(params,curPos,errText);
           break;
+        case 36:
+          error = readCommandSegyFormat(params,curPos,errText);
+          break;
         default:
-          sprintf(errText, "Unknown command: %s.\n",command);
+          sprintf(errText, "Unknown command: %s\n",command);
           wrongCommand = true;
           curPos += getParNum(params, curPos, error, errText, "-", 0, -1)+1;
           error = 1;
@@ -505,11 +509,12 @@ ModelFile::ModelFile(char * fileName)
     LogKit::LogFormatted(LogKit::LOW,"  FACIES_ESTIMATION_INTERVAL \n");
     LogKit::LogFormatted(LogKit::LOW,"  WAVELET_ESTIMATION_INTERVAL\n");
     LogKit::LogFormatted(LogKit::LOW,"Seismic data:\n");
+    LogKit::LogFormatted(LogKit::LOW,"  SEISMIC\n");
+    LogKit::LogFormatted(LogKit::LOW,"  PS_SEISMIC\n");
+    LogKit::LogFormatted(LogKit::LOW,"  SEGYOFFSET\n");
+    LogKit::LogFormatted(LogKit::LOW,"  SEGY_FORMAT\n");
     LogKit::LogFormatted(LogKit::LOW,"  ENERGYTRESHOLD\n");
     LogKit::LogFormatted(LogKit::LOW,"  LOCALWAVELET\n");
-    LogKit::LogFormatted(LogKit::LOW,"  PSSEISMIC\n");
-    LogKit::LogFormatted(LogKit::LOW,"  SEGYOFFSET\n");
-    LogKit::LogFormatted(LogKit::LOW,"  SEISMIC\n");
     LogKit::LogFormatted(LogKit::LOW,"  WAVELETLENGTH\n");
     LogKit::LogFormatted(LogKit::LOW,"Prior model:\n");
     LogKit::LogFormatted(LogKit::LOW,"  BACKGROUND\n");
@@ -937,7 +942,6 @@ ModelFile::readCommandArea(char ** params, int & pos, char * errText)
 
   modelSettings_->setAreaParameters(geometry);
   delete [] areaParams;
- // delete [] geometry;
 
   pos += nPar+1;
   return(error);
@@ -1910,9 +1914,136 @@ ModelFile::readCommandLogLevel(char ** params, int & pos, char * errText)
   return(error);
 }
 
+int
+ModelFile::readCommandSegyFormat(char ** params, int & pos, char * errText)
+{
+  int error;
+  int nPar = getParNum(params, pos, error, errText, params[pos-1], 2, -1);
+  if(error == 1)
+  {
+    pos += nPar+1;
+    return(1);
+  }
+
+  int nSegyParams = 8;
+  int * segyParams = new int[nSegyParams];
+  segyParams[0] = IMISSING; // Format type
+  segyParams[1] = IMISSING; // Bypass coordinate scaling
+  segyParams[2] = IMISSING; // trace xy-coord given as float
+  segyParams[3] = IMISSING; // Start pos trace x coordinate
+  segyParams[4] = IMISSING; // Start pos trace y coordinate
+  segyParams[5] = IMISSING; // Start pos inline index
+  segyParams[6] = IMISSING; // Start pos crossline index
+
+  int nSubCommands = 8;
+  char ** subCommand = new char * [nSubCommands];
+  for(int i=0 ; i<nSubCommands ; i++)
+    subCommand[i] = new char[30];
+  strcpy(subCommand[0],"SEISWORKS");
+  strcpy(subCommand[1],"IESX");
+  strcpy(subCommand[2],"BYPASS_COORDINATE_SCALING");
+  strcpy(subCommand[3],"TRACE_XY_COORD_AS_FLOAT");
+  strcpy(subCommand[4],"START_POS_TRACE_X_COORD");
+  strcpy(subCommand[5],"START_POS_TRACE_Y_COORD");
+  strcpy(subCommand[6],"START_POS_INLINE_INDEX");
+  strcpy(subCommand[7],"START_POS_CROSSLINE_INDEX");
+
+  int  curPar = 0;
+  while(curPar < nPar && error == 0) 
+  {
+    //
+    // Find number of elements in current subcommand
+    //
+    int comPar = 1;
+    while(isNumber(params[pos+curPar+comPar]))
+      comPar++;
+
+    int subCom = 0;
+    while(subCom < nSubCommands && strcmp(params[pos+curPar], subCommand[subCom]) != 0)
+      subCom++;
+
+    switch(subCom) 
+    {
+    case 0:
+      segyParams[0] = ModelSettings::SEISWORKS;
+      break;
+
+    case 1:
+      segyParams[0] = ModelSettings::IESX;
+      break;
+
+    case 2:
+      segyParams[1] = 1;  // bypass coordinate scaling
+      break;
+
+    case 3:
+      segyParams[2] = 1;  // use float for trace coordinates
+      break;
+
+    case 4:
+      if(comPar != 2) {
+        error = 1;
+        sprintf(errText,"Subcommand %s in command %s takes 1 parameter, not %d as was given.\n",
+                subCommand[subCom],params[pos-1], comPar-1);
+      }
+      else 
+        segyParams[3] = static_cast<int>(atof(params[pos+curPar+1]));
+      break;
+
+    case 5:
+      if(comPar != 2) {
+        error = 1;
+        sprintf(errText,"Subcommand %s in command %s takes 1 parameter, not %d as was given.\n",
+                subCommand[subCom],params[pos-1], comPar-1);
+      }
+      else 
+        segyParams[4] = static_cast<int>(atof(params[pos+curPar+1]));
+      break;
+
+    case 6:
+      if(comPar != 2) {
+        error = 1;
+        sprintf(errText,"Subcommand %s in command %s takes 1 parameter, not %d as was given.\n",
+                subCommand[subCom],params[pos-1], comPar-1);
+      }
+      else 
+        segyParams[5] = static_cast<int>(atof(params[pos+curPar+1]));
+      break;
+
+    case 7:
+      if(comPar != 2) {
+        error = 1;
+        sprintf(errText,"Subcommand %s in command %s takes 1 parameter, not %d as was given.\n",
+                subCommand[subCom],params[pos-1], comPar-1);
+      }
+      else 
+        segyParams[6] = static_cast<int>(atof(params[pos+curPar+1]));
+      break;
+
+    default: 
+      error = 1;
+      sprintf(errText,"Unknown subcommand %s found in command %s.\n", params[pos+curPar],params[pos-1]);
+      sprintf(errText,"%s\nValid subcommands are:\n",errText);
+      for (int i = 0 ; i < nSubCommands ; i++)
+        sprintf(errText,"%s  %s\n",errText,subCommand[i]);
+      break;
+    }
+    curPar += comPar;
+  }
+  for(int i=0;i<nSubCommands;i++)
+    delete [] subCommand[i];
+  delete [] subCommand;
+
+  modelSettings_->setSegyParameters(segyParams,nSegyParams);
+  delete [] segyParams;
+
+pos += nPar+1;
+return(error);
+}
+
 int 
 ModelFile::getParNum(char ** params, int pos, int & error, char * errText,
-                 const char * command, int min, int max)
+                     const char * command, int min, int max)
 {
   int i=0;
   error = 0;
