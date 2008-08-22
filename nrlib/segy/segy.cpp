@@ -3,7 +3,8 @@
 #include <stdio.h>
 #include <assert.h>
 #include <iostream>
-
+#define _USE_MATH_DEFINES
+#include <cmath>
 
 
 #include "segy.hpp"
@@ -16,9 +17,8 @@
 #include "../surface/surface.hpp"
 #include "../iotools/stringtools.hpp"
 
-const float segyPI = 3.14159265358979323846;
+
 const float segyRMISSING = -99999.000;
-const float segyWELLMISSING  = -999.00000;
 
 
 using namespace NRLib2;
@@ -27,7 +27,6 @@ SegY::SegY(const std::string& fileName,float z0, const TraceHeaderFormat& traceH
 : traceHeaderFormat_(traceHeaderFormat)
 {
   rmissing_ = segyRMISSING;
-  wellmissing_ = segyWELLMISSING;
   fileName_ = fileName;
   singleTrace_ = true;
 
@@ -72,7 +71,6 @@ SegY::SegY(const std::string& fileName, float z0, int nz, float dz,const Textual
   //  traces_ = NULL;
   //buffer_ = NULL;
   rmissing_ = segyRMISSING;
-  wellmissing_ = segyWELLMISSING;
   traceHeader_ = NULL;
   geometry_ = NULL;
   //format_ = NULL;
@@ -112,7 +110,7 @@ SegY::readHeader(TraceHeader * header)
   //char *binaryHeader= new char[400];
   header->read(file_,binaryHeader_->getLino());
   if(header->getDt()/1000 != dz_)
-    dz_ = header->getDt()/1000.0;
+    dz_ = float(header->getDt()/1000.0);
   switch(header->getStatus()) {
   case -1:
     binaryHeader_->Update(file_);
@@ -229,12 +227,12 @@ SegY::readTrace(float x, float y, Volume * volume, double zPad, bool onlyVolume)
       return(NULL);
     //  float zTop = simbox_->getTop(x, y);
     zTop = float(volume->GetTopSurface().GetZ(x,y));
-    if(zTop == rmissing_ || zTop == wellmissing_)
+    if(volume->GetTopSurface().IsMissing(zTop))
       //      zTop = z0_;
       return(NULL);
     //  float zBot = simbox_->getBot(x,y);
     zBot = float(volume->GetBotSurface().GetZ(x,y));
-    if(zBot == rmissing_ || zBot == wellmissing_)
+    if(volume->GetBotSurface().IsMissing(zBot))
       //      zBot = nz_*dz_+z0_;
       return(NULL);
   }
@@ -245,17 +243,21 @@ SegY::readTrace(float x, float y, Volume * volume, double zPad, bool onlyVolume)
   }
 
   if(static_cast<int>((zTop - z0_)/dz_) < 0) {
-    throw Exception("\nERROR: A part of the top time surface reaches above the seismic gather. (seismic\n");
-    throw Exception("       start time = "+ ToString(z0_) + "). Include more seismic data or lower the top surface.\n");
-    throw Exception("       zTop =" + ToString(zTop) + "\n");    
-    exit(1);
+    std::string text;
+    text+= "\nERROR: A part of the top time surface reaches above the seismic gather. (seismic\n";
+    text+="       start time = "+ ToString(z0_) + "). Include more seismic data or lower the top surface.\n";
+    text+="       zTop =" + ToString(zTop) + "\n"; 
+
+    throw Exception(text);
+ 
   } 
   //NBNB-PAL: Tried nz_ - 1 below, but that failed  (incorrectly
   //NBBN-PAL: I think) in the facies case of test suite
-  if(static_cast<int>((zBot - z0_)/dz_) + 1 > nz_) { 
-    throw Exception("\nERROR: A part of the base time surface reaches below the seismic gather. Include\n");
-    throw Exception("       more seismic data or highten the base surface.\n");
-    exit(1);
+  if(static_cast<int>((zBot - z0_)/dz_) + 1 > nz_) {
+    std::string text;
+    text+= "\nERROR: A part of the base time surface reaches below the seismic gather. Include\n";
+    text+="       more seismic data or highten the base surface.\n";
+    throw Exception(text);
   } 
 
   float pad = float(0.5*zPad*(zBot - zTop));
@@ -270,7 +272,6 @@ SegY::readTrace(float x, float y, Volume * volume, double zPad, bool onlyVolume)
   if(j0>j1)
   {
     throw Exception(" Lower horizon above SegY region or upper horizon below SegY region");
-    return NULL;
   }
   if(file_.eof()==false){
     //Les trasen inn i vektor
@@ -339,7 +340,7 @@ float SegY::getValue(double x, double y, double z, int outsideMode)
   double sy = -(x-x0)*geometry_->getSinRot() + (y-y0)*geometry_->getCosRot() + 0.5*geometry_->getDy();
   if(geometry_!=NULL)
   {
-    int ok = geometry_->returnIndex(x,y,xind,yind);
+    int ok = geometry_->returnIndex(float(x),float(y),xind,yind);
 
 
     i = int(xind);
@@ -455,7 +456,7 @@ float SegY::getValue(double x, double y, double z, int outsideMode)
         double dy = geometry_->getDy();
         float ux = float(sx/dx) - float(floor(sx/dx) + 0.5);
         float uy = float(sy/dy) - float(floor(sy/dy) + 0.5);
-        float uz = (z-z0_)/dz_ - float(floor((z-z0_)/dz_) + 0.5);
+        float uz = float((z-z0_)/dz_) - float(floor((z-z0_)/dz_) + 0.5);
         value = a*ux*ux+b*uy*uy+c*uz*uz+d*ux+e*uy+f*uz+g;
       }
       else
@@ -504,44 +505,49 @@ SegY::storeTrace(float x, float y, std::vector<float> data, Volume *volume, floa
   header.setUtmy(y);
   int IL,XL;
   int ok = geometry_->returnILXL(IL,XL,x,y);
-  header.setInline(IL);
-  header.setCrossline(XL);
-
-  // header.write(file_);
-  double ztop = volume->GetTopSurface().GetZ(x,y);
-  std::vector<float>  trace(nz_);
-  int k;
-  if(ztop == rmissing_ || ztop == wellmissing_)
+  if(ok==1)
   {
-    //printf("Missing trace.\n");
-    for(k=0;k<nz_;k++)
-      trace[k] = 0;
+    header.setInline(IL);
+    header.setCrossline(XL);
+
+    // header.write(file_);
+    double ztop = volume->GetTopSurface().GetZ(x,y);
+    std::vector<float>  trace(nz_);
+    int k;
+    if(volume->GetTopSurface().IsMissing(ztop))
+    {
+      //printf("Missing trace.\n");
+      for(k=0;k<nz_;k++)
+        trace[k] = 0;
+    }
+    else
+    {
+      int firstData = int((ztop-z0_)/dz_);
+      //printf("Generating trace %d %d %d.\n", firstData, simbox_->getnz(),nz_);
+      for(k=0;k<firstData;k++)
+        trace[k] = topVal; //data[0];
+      for(k=firstData;k<(firstData+int(data.size()));k++)
+        trace[k] = data[k-firstData];
+      for(k=(firstData+int(data.size()));k<nz_;k++)
+        trace[k] = baseVal; //data[simbox_->getnz()-1];
+      //printf("Trace generated.\n");
+    }
+
+
+
+    int index;
+    int j0 = 0;
+    int j1 = nz_-1;
+
+    int i,j;
+    geometry_->findIJfromXY(x,y,i,j);
+    index = i+geometry_->getNx()*j;
+    traces_[index] = new SegYTrace(trace, j0, j1, x, y, IL, XL);
   }
   else
   {
-    int firstData = int((ztop-z0_)/dz_);
-    //printf("Generating trace %d %d %d.\n", firstData, simbox_->getnz(),nz_);
-    for(k=0;k<firstData;k++)
-      trace[k] = topVal; //data[0];
-    for(k=firstData;k<(firstData+int(data.size()));k++)
-      trace[k] = data[k-firstData];
-    for(k=(firstData+int(data.size()));k<nz_;k++)
-      trace[k] = baseVal; //data[simbox_->getnz()-1];
-    //printf("Trace generated.\n");
+    throw Exception(" Coordinates aer outside grid.");
   }
-
-
-  // iterator b = trace.begin();
-  // iterator e = trace.end();
-  //  WriteBinaryIbmFloatArray(file_,trace.begin(),trace.end());
-  int index;
-  int j0 = 0;
-  int j1 = nz_-1;
-
-  int i,j;
-  geometry_->findIJfromXY(x,y,i,j);
-  index = i+geometry_->getNx()*j;
-  traces_[index] = new SegYTrace(trace, j0, j1, x, y, IL, XL);
 
 }
 
@@ -558,6 +564,8 @@ SegY::writeTrace(float x, float y, std::vector<float> data, const Volume *volume
   header.setUtmy(y);
   int IL,XL;
   int ok = geometry_->returnILXL(IL,XL,x,y);
+  if(ok==1)
+  {
   header.setInline(IL);
   header.setCrossline(XL);
 
@@ -565,7 +573,7 @@ SegY::writeTrace(float x, float y, std::vector<float> data, const Volume *volume
   double ztop = volume->GetTopSurface().GetZ(x,y);
   std::vector<float>  trace(nz_);
   int k;
-  if(ztop == rmissing_ || ztop == wellmissing_)
+  if(volume->GetTopSurface().IsMissing(ztop))
   {
     //printf("Missing trace.\n");
     for(k=0;k<nz_;k++)
@@ -585,9 +593,13 @@ SegY::writeTrace(float x, float y, std::vector<float> data, const Volume *volume
   }
 
 
-  // iterator b = trace.begin();
-  // iterator e = trace.end();
+
   WriteBinaryIbmFloatArray(file_,trace.begin(),trace.end());
+  }
+  else
+  {
+    throw Exception("Corrdinates are outside grid.");
+  }
 }
 
 void SegY::writeTrace(TraceHeader * traceHeader, std::vector<float> data,Volume *volume, float topVal, float baseVal)
@@ -604,7 +616,7 @@ void SegY::writeTrace(TraceHeader * traceHeader, std::vector<float> data,Volume 
   }
   std::vector<float>  trace(nz_);
   int k;
-  if(z == rmissing_ || z == wellmissing_)
+  if(volume->GetTopSurface().IsMissing(z))
   {
     //printf("Missing trace.\n");
     for(k=0;k<nz_;k++)
@@ -773,6 +785,10 @@ SegY::checkGridArea()
   int deltaIL, deltaXL;
   int dIL,dXL, maxdIL,maxdXL;
   float dxIL, dyIL, dxXL, dyXL;
+  dxIL = rmissing_;
+  dyIL = rmissing_;
+  dxXL = rmissing_;
+  dyXL = rmissing_;
   int IL0,XL0;
   float x, y, x0,y0;
   maxdIL = 0;
@@ -906,7 +922,7 @@ SegY::checkGridArea()
   double xl,yl, dx, dy;
   double x00,y00;
   long nx, ny;
-  if(fabs(rot)<=0.25*segyPI)
+  if(fabs(rot)<=0.25*M_PI)
   {
 
     x00 = cornerx[index];
@@ -969,7 +985,9 @@ SegY::checkGridArea()
   int IL10 = int((dyXL*(x-lx0)-dxXL*(y-ly0))/(dxIL*dyXL-dyIL*dxXL)+0.5*deltaIL+0.5);
   int XL10 = int((dyIL*(x-lx0)-dxIL*(y-ly0))/(dxXL*dyIL-dyXL*dxIL)+0.5*deltaXL+0.5);
   int ilStep, xlStep;
-  bool ILxflag;
+  ilStep = IL10-IL0;
+  xlStep = XL10-XL0;
+  bool ILxflag = true;
   if(XL0 != XL10)
   {
     xlStep = XL10-XL0;
@@ -984,8 +1002,6 @@ SegY::checkGridArea()
   x = float(x00-dy*sin(rot));
   y = float(y00+dy*cos(rot));
 
-  //int IL01 = int(((x-y)+ly0-lx0)/(dxIL-dyIL));
-  //int XL01 = int(((x-y)+ly0-lx0)/(dxXL-dyXL));
   int IL01 = int((dyXL*(x-lx0)-dxXL*(y-ly0))/(dxIL*dyXL-dyIL*dxXL)+0.5*deltaIL+0.5);
   int XL01 = int((dyIL*(x-lx0)-dxIL*(y-ly0))/(dxXL*dyIL-dyXL*dxIL)+0.5*deltaXL+0.5);
   if(ILxflag == false)
@@ -1139,9 +1155,10 @@ SegyGeometry::SegyGeometry(std::vector<SegYTrace *> &traces)
 
   xl = traces[0]->getCrossline();
   il = traces[0]->getInline();
-  int index;
+  int index = 0;
   int diff, maxdiff, mindiff;
   maxdiff = 0;
+  mindiff = 0;
   int first = 1;
   for(i=1;i<ntraces;i++)
   {
@@ -1249,7 +1266,7 @@ SegyGeometry::SegyGeometry(std::vector<SegYTrace *> &traces)
 
 
   double lx,ly;
-  if(fabs(rot_)<=0.25*segyPI)
+  if(fabs(rot_)<=0.25*M_PI)
   {
 
     x0_ = cornerx[index];

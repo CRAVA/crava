@@ -109,7 +109,7 @@ private:
  
 
   float rmissing_;
-  float wellmissing_;
+ 
   
  
   /// read one and one trace
