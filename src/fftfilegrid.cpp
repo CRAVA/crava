@@ -416,14 +416,14 @@ FFTFileGrid::fillInComplexNoise(RandomGen * ranGen)
 }
 
 void 
-FFTFileGrid::writeFile(const char * fileName, const Simbox * simbox, bool writeSegy)
+FFTFileGrid::writeFile(const char * fileName, const Simbox * simbox, bool writeSegy, float z0)
 {
   if(formatFlag_ != NONE)
   {
     if((formatFlag_ & STORMFORMAT) == STORMFORMAT)
       writeStormFile(fileName, simbox);
     if((formatFlag_ & SEGYFORMAT) == SEGYFORMAT && writeSegy==1)
-      writeSegyFile(fileName, simbox);
+      writeSegyFile(fileName, simbox, z0);
     if((formatFlag_ & STORMASCIIFORMAT) == STORMASCIIFORMAT)
       writeStormFile(fileName, simbox, true);
   }
@@ -442,12 +442,12 @@ FFTFileGrid::writeStormFile(const char * fileName, const Simbox * simbox, bool a
 
 
 int
-FFTFileGrid::writeSegyFile(const char * fileName, const Simbox * simbox)
+FFTFileGrid::writeSegyFile(const char * fileName, const Simbox * simbox, float z0)
 {
   assert(accMode_ == NONE || accMode_ == RANDOMACCESS);
   if(accMode_ != RANDOMACCESS)
     load();
-  int ok = FFTGrid::writeSegyFile(fileName, simbox);
+  int ok = FFTGrid::writeSegyFile(fileName, simbox, z0);
   if(accMode_ != RANDOMACCESS)
     save();
   return(ok);

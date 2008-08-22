@@ -6,7 +6,6 @@
 #include "nrlib/surface/surfaceio.hpp"
 
 #include "nrlib/iotools/logkit.hpp"
-
 #include "src/simbox.h"
 #include "src/model.h"
 #include "src/definitions.h"
@@ -436,16 +435,23 @@ Simbox::checkError(double lzLimit, char * errText)
 
 
 void
-Simbox::setArea(double * areaParams)
+Simbox::setArea(const SegyGeometry * geometry)
 {
-  double x0  = areaParams[0];
+ /* double x0  = areaParams[0];
   double y0  = areaParams[1];
   double lx  = areaParams[2];
   double ly  = areaParams[3];
   double rot = areaParams[4];
   double dx  = areaParams[5];
-  double dy  = areaParams[6];
-
+  double dy  = areaParams[6];*/
+ double x0  = geometry->getX0();
+  double y0  = geometry->getY0();
+  double lx  = geometry->getlx();
+  double ly  = geometry->getly();
+  double rot = geometry->getAngle();
+  double dx  = geometry->getDx();
+  double dy  = geometry->getDy();
+  ILxflag_ = geometry->getILxflag();
   SetDimensions(x0,y0,lx,ly);
   SetAngle(rot);
   cosrot_ = cos(rot);
@@ -531,4 +537,19 @@ Simbox::getRelThick(double x, double y) const
      GetBotSurface().IsMissing(zBot) == false)
     relThick = (zBot-zTop)/GetLZ();
   return(relThick);
+}
+
+void Simbox::findIJFromILXL(int IL, int XL, int &i, int &j)const
+{
+
+  if(ILxflag_==false)
+  {
+    i = (XL-crossLine0_)/xlStep_;
+    j = (IL-inLine0_)/ilStep_;
+  }
+  else
+  {
+    i = (IL-inLine0_)/ilStep_;
+    j = (XL-crossLine0_)/xlStep_;
+  }
 }

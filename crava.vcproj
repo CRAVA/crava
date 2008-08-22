@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8,00"
+	Version="8.00"
 	Name="crava"
 	ProjectGUID="{7FF3AB5B-854B-46AB-99F6-B59958E1BE91}"
 	>
@@ -3406,46 +3406,6 @@
 					</FileConfiguration>
 				</File>
 				<File
-					RelativePath="lib\segy.cpp"
-					>
-					<FileConfiguration
-						Name="Debug|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							PreprocessorDefinitions=""
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Release|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							PreprocessorDefinitions=""
-						/>
-					</FileConfiguration>
-				</File>
-				<File
-					RelativePath="lib\segylib.c"
-					>
-					<FileConfiguration
-						Name="Debug|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							PreprocessorDefinitions=""
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Release|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							PreprocessorDefinitions=""
-						/>
-					</FileConfiguration>
-				</File>
-				<File
 					RelativePath=".\lib\sgri.cpp"
 					>
 				</File>
@@ -3465,6 +3425,10 @@
 			<Filter
 				Name="nrlib"
 				>
+				<File
+					RelativePath=".\nrlib\segy\commomheaders.cpp"
+					>
+				</File>
 				<File
 					RelativePath=".\nrlib\iotools\fileio.cpp"
 					>
@@ -3492,6 +3456,28 @@
 					>
 				</File>
 				<File
+					RelativePath=".\nrlib\segy\segy.cpp"
+					>
+					<FileConfiguration
+						Name="Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\$(InputName)1.obj"
+							XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\$(InputName)1.obj"
+							XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
 					RelativePath=".\nrlib\iotools\stringtools.cpp"
 					>
 				</File>
@@ -3501,6 +3487,10 @@
 				</File>
 				<File
 					RelativePath=".\nrlib\surface\surfaceio.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\nrlib\segy\traceheader.cpp"
 					>
 				</File>
 				<File
@@ -3657,14 +3647,6 @@
 					>
 				</File>
 				<File
-					RelativePath="lib\segy.h"
-					>
-				</File>
-				<File
-					RelativePath="lib\segylib.h"
-					>
-				</File>
-				<File
 					RelativePath=".\lib\sgri.h"
 					>
 				</File>
@@ -3684,6 +3666,10 @@
 			<Filter
 				Name="nrlib"
 				>
+				<File
+					RelativePath=".\nrlib\segy\commonheaders.hpp"
+					>
+				</File>
 				<File
 					RelativePath=".\nrlib\exception\exception.hpp"
 					>
@@ -3705,6 +3691,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\nrlib\segy\segy.hpp"
+					>
+				</File>
+				<File
 					RelativePath=".\nrlib\iotools\stringtools.hpp"
 					>
 				</File>
@@ -3714,6 +3704,10 @@
 				</File>
 				<File
 					RelativePath=".\nrlib\surface\surfaceio.hpp"
+					>
+				</File>
+				<File
+					RelativePath=".\nrlib\segy\traceheader.hpp"
 					>
 				</File>
 				<File

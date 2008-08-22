@@ -4,6 +4,7 @@
 #include "src/definitions.h"
 #include "nrlib/volume/volume.hpp"
 #include "nrlib/surface/regularsurface.hpp"
+#include "nrlib/segy/segy.hpp"
 
 struct irapgrid;
 
@@ -44,6 +45,7 @@ public:
   double     getRelThick(double x, double y) const;                        // Local relative thickness.
   double     getAvgRelThick(void)            const;
   void       getMinMaxZ(double & minZ, double & maxZ) const;
+  bool       getILxflag()                    const {return(ILxflag_);}
   int        isInside(double x, double y) const;
   int        insideRectangle(double xr, double yr, double rotr, double lxr, double lyr) const;
   double     getTop(double x, double y) const;
@@ -51,13 +53,13 @@ public:
   char     * getStormHeader(int cubetype, int nx, int ny, int nz, bool flat = false, bool ascii = false) const;
   void       writeTopBotGrids(const char * topname, const char * botname);
   int        checkError(double lzLimit, char * errText);
-  void       setArea(double * areaParams);
+  void       setArea(const SegyGeometry * geometry);
   void       setSeisLines(int * lineParams);
   void       setDepth(Surface * zref, double zShift, double lz, double dz);
   void       setDepth(Surface * z0, Surface * z1, int nz);
   int        status() const {return(status_);}
   void       externalFailure() {status_ = EXTERNALERROR;}
-
+  void findIJFromILXL(int IL, int XL, int &i, int &j) const;
   enum       simboxstatus{BOXOK, INTERNALERROR, EXTERNALERROR, EMPTY, NOAREA, NODEPTH};
 
 private:
@@ -71,5 +73,6 @@ private:
   std::string botName_;
   bool        constThick_;
   double      minRelThick_;
+ bool ILxflag_;
 };
 #endif

@@ -2119,7 +2119,7 @@ void Crava::initPostKriging() {
 void Crava::writeToFile(char * fileName1, char * fileName2, FFTGrid * grid) {
 
   if(!((outputFlag_ & ModelSettings::NOTIME)>0))
-    grid->writeFile(fileName1,simbox_,1);
+    grid->writeFile(fileName1,simbox_,1, model_->getModelSettings()->getSegyOffset());
   if(depthSimbox_!=NULL)
     grid->writeFile(fileName2,depthSimbox_,0);
 }

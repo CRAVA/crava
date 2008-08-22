@@ -8,6 +8,7 @@
 #include "lib/lib_misc.h"
 
 #include "nrlib/iotools/logkit.hpp"
+#include "nrlib/segy/segy.hpp"
 
 #include "src/modelsettings.h"
 #include "src/modelfile.h"
@@ -930,8 +931,13 @@ ModelFile::readCommandArea(char ** params, int & pos, char * errText)
   areaParams[5] = static_cast<double>(atof(params[pos+5]));          // dx 
   areaParams[6] = static_cast<double>(atof(params[pos+6]));          // dy 
 
-  modelSettings_->setAreaParameters(areaParams);
+  int nx = int(areaParams[2]/areaParams[5]);
+  int ny = int(areaParams[3]/areaParams[6]);
+  SegyGeometry *geometry = new SegyGeometry(areaParams[0], areaParams[1],areaParams[5], areaParams[6],nx,ny,0,0,1,1,true,areaParams[4]);
+
+  modelSettings_->setAreaParameters(geometry);
   delete [] areaParams;
+ // delete [] geometry;
 
   pos += nPar+1;
   return(error);

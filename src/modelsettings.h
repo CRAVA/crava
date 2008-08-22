@@ -7,7 +7,7 @@
 #include "lib/global_def.h"
 #include "src/definitions.h"
 #include "nrlib/iotools/logkit.hpp"
-
+#include "nrlib/segy/segy.hpp"
 class Vario;
 
 class ModelSettings
@@ -19,7 +19,7 @@ public:
   Vario        * getAngularCorr(void)          const { return angularCorr_      ;} 
   Vario        * getLateralCorr(void)          const { return lateralCorr_      ;}
   Vario        * getBackgroundVario(void)      const { return backgroundVario_  ;} 
-  double       * getAreaParameters(void)       const { return areaParams_       ;}    
+  const SegyGeometry       * getAreaParameters(void)       const { return geometry_       ;}    
   float        * getKrigingParameters(void)    const { return krigingParams_    ;}
   float        * getAngle(void)                const { return angle_            ;}
   int            getNumberOfAngles(void)       const { return nAngles_          ;} 
@@ -79,7 +79,7 @@ public:
   void           setAngularCorr(Vario * vario);    
   void           setLateralCorr(Vario * vario);    
   void           setBackgroundVario(Vario * vario);
-  void           setAreaParameters(double * areaParams);
+  void           setAreaParameters(const SegyGeometry *geometry);
   void           setKrigingParameters(float * krigingParams, int nParams);
   void           setAngle(float * angle, int nAngles);
   void           setNumberOfAngles(int nAngles)              { nAngles_          = nAngles          ;} 
@@ -167,8 +167,8 @@ private:
   Vario        * lateralCorr_;           // Variogram for lateral parameter correlation 
   Vario        * backgroundVario_;       // Used for lateral background correlation.
 
-  double       * areaParams_;            // Parameters specifying the inversion area   
-
+ // double       * areaParams_;            // Parameters specifying the inversion area   
+ SegyGeometry *geometry_;
   float        * krigingParams_;   
 
   float        * angle_;                 // Angles

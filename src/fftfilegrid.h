@@ -10,6 +10,7 @@ class Corr;
 class Wavelet;
 class Simbox;
 
+
 class FFTFileGrid : public FFTGrid
 { 
 public:
@@ -38,10 +39,10 @@ public:
 
   void         setAccessMode(int mode);
   void         endAccess();
-  void         writeFile(const char * fileName, const Simbox * simbox, bool writeSegy=true); //Use this instead of the ones below.
+  void         writeFile(const char * fileName, const Simbox * simbox, bool writeSegy=true, float z0 = 4.0); //Use this instead of the ones below.
   void         writeStormFile(const char * fileName, const Simbox * simbox, bool ascii = false,
                               bool padding = false, bool flat = false);
-  int          writeSegyFile(const char * fileName, const Simbox * simbox);
+  int          writeSegyFile(const char * fileName, const Simbox * simbox, float z0);
 
   bool         isFile() {return(1);}
 

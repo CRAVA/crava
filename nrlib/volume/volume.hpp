@@ -1,4 +1,4 @@
-// $Id: volume.hpp 90 2008-06-19 19:22:52Z perroe $
+// $Id: volume.hpp 117 2008-08-14 08:22:36Z anner $
 
 #ifndef NRLIB_VOLUME_HPP
 #define NRLIB_VOLUME_HPP
@@ -41,6 +41,7 @@ namespace NRLib2 {
     const Surface& GetBotSurface() const {return *z_bot_;}
     const Surface& GetErosionTop() const {return *erosion_top_;}
     const Surface& GetErosionBot() const {return *erosion_bot_;}
+    int isInside(double x, double y);
 
   protected:
     /// \brief Reader and writer on storm-format.

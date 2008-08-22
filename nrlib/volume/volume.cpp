@@ -363,3 +363,12 @@ bool Volume::CheckSurface(const Surface& surface) const
 
   return surface.EnclosesRectangle(x_min, y_min, x_max, y_max);
 }
+int Volume::isInside(double x, double y)
+{
+  double rx = (x-x_min_)*cos(angle_)+(y-y_min_)*sin(angle_);
+  double ry = -(x-x_min_)*sin(angle_) + (y-y_min_)*cos(angle_);
+  if(rx < 0 || rx > lx_ || ry<0 || ry > ly_)
+    return(0);
+  else
+    return(1);
+}

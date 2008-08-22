@@ -3,7 +3,7 @@
 #
 include Makeheader
 
-DIRS      = src lib nrlib/exception nrlib/grid nrlib/iotools nrlib/surface nrlib/volume fft/fftw fft/rfftw
+DIRS      = src lib nrlib/exception nrlib/grid nrlib/iotools nrlib/surface nrlib/volume nrlib/segy fft/fftw fft/rfftw
 OBJDIR    = obj
 OBJSUBDIR = obj/fft
 INCLUDE   = -I. -I./fft/include

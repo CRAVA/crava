@@ -13,7 +13,7 @@ ModelSettings::ModelSettings(void)
   angularCorr_           = new GenExpVario(1, 10*static_cast<float>(PI/180.0)); // Power=1 range=10deg
   lateralCorr_           = new GenExpVario(1, 1000, 1000); 
   backgroundVario_       = new GenExpVario(1, 2000, 2000); 
-  areaParams_            =     NULL;
+  geometry_            =     NULL;
   krigingParams_         =     NULL;
   angle_                 =     NULL;
   noiseEnergy_           =     NULL;
@@ -94,8 +94,8 @@ ModelSettings::~ModelSettings(void)
   if (backgroundVario_ != NULL)
     delete backgroundVario_;
 
-  if(areaParams_ != NULL)
-    delete [] areaParams_;
+  if(geometry_ != NULL)
+    delete geometry_;
 
   if(krigingParams_ != NULL)
     delete [] krigingParams_;
@@ -160,13 +160,14 @@ ModelSettings::setBackgroundVario(Vario * vario)
 }
 
 void           
-ModelSettings::setAreaParameters(double * areaParams)
+ModelSettings::setAreaParameters(const SegyGeometry * geometry)
 {
-  if (areaParams_ == NULL) 
+  if (geometry_ == NULL) 
   {
-    areaParams_ = new double[7];
-    for (int i=0 ; i<7 ; i++)
-      areaParams_[i] = areaParams[i];
+    geometry_ = new SegyGeometry(geometry);
+   // areaParams_ = new double[7];
+   // for (int i=0 ; i<7 ; i++)
+    //  areaParams_[i] = areaParams[i];
   }
 }
 

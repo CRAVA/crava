@@ -5,7 +5,7 @@
 
 #include "lib/systemcall.h"
 #include "lib/global_def.h"
-#include "lib/segy.h"
+#include "nrlib/segy/segy.hpp"
 #include "lib/timekit.hpp"
 
 #include "nrlib/iotools/logkit.hpp"
