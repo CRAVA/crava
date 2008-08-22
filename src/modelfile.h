@@ -86,7 +86,7 @@ private:
   int              readCommandWaveletEstimationInterval(char ** params, int & pos, char * errText);
   int              readCommandFaciesEstimationInterval(char ** params, int & pos, char * errText);
   int              readCommandLogLevel(char ** params, int & pos, char * errText);
-  int              readCommandSegyFormat(char ** params, int & pos, char * errText);
+  int              readCommandTraceHeaderFormat(char ** params, int & pos, char * errText);
   int              getParNum(char ** params, int pos, int & error, char * errText,
                              const char * command, int min, int max = 0);
   int              checkFileOpen(char ** fNames, int nFiles, const char * command, char * errText, int start = 0,

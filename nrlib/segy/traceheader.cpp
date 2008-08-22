@@ -8,8 +8,10 @@
 #include <iostream>
 
 #include "../iotools/fileio.hpp"
+#include "../iotools/stringtools.hpp"
+
 const float RMISSING = -99999.000;
-const int IMISSING = -99999;
+const int   IMISSING = -99999;
 
 using namespace std;
 using namespace NRLib2;
@@ -26,26 +28,56 @@ enum standardLoc {
 
 TraceHeaderFormat::TraceHeaderFormat(int headerformat)
 {
-  if(headerformat==SEISWORKS)
-  {
-   scalCoLoc_ = SCALCO_LOC;
-    utmxLoc_ = SX_LOC;
-    utmyLoc_ = SY_LOC;
-    inlineLoc_ = INLINE_LOC;
-    crosslineLoc_ = CROSSLINE_LOC;
-    coordSys_ = UTM;
-  }
-  else if(headerformat==IESX)
-  {
-    scalCoLoc_ = SCALCO_LOC;
-    utmxLoc_ = SX_LOC;
-    utmyLoc_ = SY_LOC;
-    inlineLoc_ = 221;
-    crosslineLoc_ = CROSSLINE_LOC;
-    coordSys_ = UTM;
+  Init(headerformat);
+}
 
-
+TraceHeaderFormat::TraceHeaderFormat(int headerformat,
+                                     int bypassCoordScaling,
+                                     int scalCoLoc,
+                                     int utmxLoc,
+                                     int utmyLoc,
+                                     int inlineLoc,
+                                     int crosslineLoc,
+                                     int coordSys)
+{
+  Init(headerformat);
+  //
+  // Redefined format if parameters have been given values
+  //
+  if (scalCoLoc != IMISSING)   
+  { 
+    scalCoLoc_ = scalCoLoc;
+    standardType_ = false;
   }
+  if (utmxLoc != IMISSING)    
+  { 
+    utmxLoc_ = utmxLoc;
+    standardType_  = false;
+  }
+  if (utmyLoc != IMISSING)      
+  { 
+    utmyLoc_ = utmyLoc;
+  standardType_ = false;
+  }
+  if (inlineLoc != IMISSING)   
+  { 
+    inlineLoc_ = inlineLoc;
+    standardType_ = false;
+  }
+  if (crosslineLoc != IMISSING)
+  { 
+    crosslineLoc_ = crosslineLoc;
+    standardType_ = false;
+  }
+  if (coordSys != IMISSING)      
+  { 
+    coordSys_ = static_cast<coordSys_t>(coordSys);
+    standardType_ = false;
+  }
+  if (bypassCoordScaling == 1)
+  { 
+    scalCoLoc_ = -1;
+  } 
 }
 
 TraceHeaderFormat::TraceHeaderFormat(int scalCoLoc,
@@ -54,30 +86,60 @@ TraceHeaderFormat::TraceHeaderFormat(int scalCoLoc,
                                      int inlineLoc,
                                      int crosslineLoc,
                                      coordSys_t coordSys)
-  : scalCoLoc_(scalCoLoc),
+  : formatName_("unnamed"),
+    scalCoLoc_(scalCoLoc),
     utmxLoc_(utmxLoc),
     utmyLoc_(utmyLoc),
     inlineLoc_(inlineLoc),
     crosslineLoc_(crosslineLoc),
-    coordSys_(coordSys)
+    coordSys_(coordSys),
+    standardType_(true)
 {}
 
+void
+TraceHeaderFormat::Init(int headerformat)
+{
+  standardType_ = true;
+  if(headerformat==SEISWORKS)
+  {
+    formatName_   = "SeisWorks";
+    scalCoLoc_    = SCALCO_LOC;
+    utmxLoc_      = SX_LOC;
+    utmyLoc_      = SY_LOC;
+    inlineLoc_    = INLINE_LOC;
+    crosslineLoc_ = CROSSLINE_LOC;
+    coordSys_     = UTM;
+  }
+  else if(headerformat==IESX)
+  {
+    formatName_   = "IESX";
+    scalCoLoc_    = SCALCO_LOC;
+    utmxLoc_      = SX_LOC;
+    utmyLoc_      = SY_LOC;
+    inlineLoc_    = 221;
+    crosslineLoc_ = CROSSLINE_LOC;
+    coordSys_     = UTM;
+  }
+  else
+  {
+    throw Exception("ERROR: Undefined trace header format type "
+                    +NRLib2::ToString(headerformat)+
+                    ". Choose from 0 (SeisWorks) or 1 (IESX)");
+  }
+}
 
 
 const char* TraceHeaderFormat::toString() const
 {
   static char output[80];
-  sprintf(output, "Coord used: %s Location in trace header: "
-    "UTM-X: %d UTM-Y: %d IL: %d, XL: %d",
-    (coordSys_ == UTM ? "UTM" : "IL/XL"), 
-    utmxLoc_, utmyLoc_, inlineLoc_, crosslineLoc_);
+  sprintf(output, 
+          "Coord used: %s Location in trace header: "
+          "UTM-X: %d UTM-Y: %d IL: %d, XL: %d",
+          (coordSys_ == UTM ? "UTM" : "IL/XL"), 
+          utmxLoc_, utmyLoc_, inlineLoc_, crosslineLoc_);
   return output;
 }
 
-void TraceHeaderFormat::bypassCoordinateScaling()
-{
-  scalCoLoc_ = -1;
-}
 TraceHeader::TraceHeader(const TraceHeaderFormat& format)
   : format_(format),
     status_(0),
@@ -159,7 +221,6 @@ void TraceHeader::read(std::istream& inFile, int lineNo)
     }
 
   }
-
 
  // swapBuffer();
 

@@ -13,9 +13,9 @@ ModelSettings::ModelSettings(void)
   angularCorr_           = new GenExpVario(1, 10*static_cast<float>(PI/180.0)); // Power=1 range=10deg
   lateralCorr_           = new GenExpVario(1, 1000, 1000); 
   backgroundVario_       = new GenExpVario(1, 2000, 2000); 
-  geometry_            =     NULL;
+  geometry_              =     NULL;
+  traceHeaderFormat_     = new TraceHeaderFormat(0); // SeisWorks;
   krigingParams_         =     NULL;
-  segyParams_            =     NULL;
   angle_                 =     NULL;
   noiseEnergy_           =     NULL;
   matchEnergies_         =     NULL;
@@ -98,11 +98,11 @@ ModelSettings::~ModelSettings(void)
   if(geometry_ != NULL)
     delete geometry_;
 
+  if(traceHeaderFormat_ != NULL)
+    delete traceHeaderFormat_;
+
   if(krigingParams_ != NULL)
     delete [] krigingParams_;
-
-  if(segyParams_ != NULL)
-    delete [] segyParams_;
 
   //
   // NBNB-PAL: Purify liker ikke denne deleten, men skjønner ikke hvorfor
@@ -179,11 +179,11 @@ ModelSettings::setKrigingParameters(float * krigingParams, int nParams)
 }
 
 void           
-ModelSettings::setSegyParameters(int * segyParams, int nParams)
+ModelSettings::setTraceHeaderFormat(const TraceHeaderFormat & traceHeaderFormat)
 {
-  segyParams_ = new int[nParams];
-  for (int i=0 ; i<nParams ; i++)
-    segyParams_[i] = segyParams[i];
+  if (traceHeaderFormat_ != NULL)
+    delete traceHeaderFormat_;
+  traceHeaderFormat_ = new TraceHeaderFormat(traceHeaderFormat);
 }
 
 void           

@@ -36,20 +36,6 @@ int main(int argc, char** argv)
   LogKit::LogFormatted(LogKit::LOW,"\n***                                                                 ***"); 
   LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************\n\n");
 
-  char segyMode[50];
-  char bypassCoordScaling[50];
-
-#ifdef SEGY_ISEX
-  strcpy(segyMode,"ISEX");
-#else
-  strcpy(segyMode,"Seisworks/Charisma");
-#endif
-#ifdef BYPASS_COORDINATE_SCALING
-  strcpy(bypassCoordScaling,"yes");
-#else
-  strcpy(bypassCoordScaling,"no");
-#endif
-
   std::cout 
     << "Compiled: " << SystemCall::getDate() << "/" << SystemCall::getTime() << "\n"
     << std::endl;
@@ -57,9 +43,6 @@ int main(int argc, char** argv)
   const char * userName    = SystemCall::getUserName();
   const char * dateAndTime = SystemCall::getCurrentTime();
   const char * hostName    = SystemCall::getHostName();
-  LogKit::LogFormatted(LogKit::LOW,"Compile-time directives used in this version:\n");
-  LogKit::LogFormatted(LogKit::LOW,"  SegY mode: %s\n",segyMode);
-  LogKit::LogFormatted(LogKit::LOW,"  Bypass coordinate scaling: %s\n\n",bypassCoordScaling);
   LogKit::LogFormatted(LogKit::LOW,"Log written by                             : %s\n",userName);
   LogKit::LogFormatted(LogKit::LOW,"Date and time                              : %s"  ,dateAndTime);
   LogKit::LogFormatted(LogKit::LOW,"Host                                       : %s\n",hostName);

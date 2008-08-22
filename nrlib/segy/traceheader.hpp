@@ -22,13 +22,25 @@ public:
     ILXL = 1    ///< Inline/Crossline coordinates.
   };
   enum headers {
-    SEISWORKS = 1,
-    IESX = 2
+    SEISWORKS = 0,
+    IESX = 1
   };
   /**
-    Default constructor, the standard format.
+    Constructor, the standard format.
    */
   TraceHeaderFormat(int headerformat);
+
+  /**
+    Constructor, the standard format with modification.
+   */
+  TraceHeaderFormat(int headerformat,
+                    int byPassCoordScaling,
+                    int scaleCoLoc,
+                    int utmxLoc,
+                    int utmyLoc,
+                    int inlineLoc,
+                    int crosslineLoc,
+                    int coordSys);
 
   /**
     Constructor. Locations should be set to -1 if not set.
@@ -44,9 +56,9 @@ public:
                     int inlineLoc,
                     int crosslineLoc,
                     coordSys_t coordSys);
-
  
-  void bypassCoordinateScaling();
+  /// Get format type
+  std::string getFormatName() const {return formatName_;}
 
   /// Get location of the UTM-X field. (-1 if non-existant)  
   int getUtmxLoc() const {return utmxLoc_;}
@@ -63,12 +75,22 @@ public:
   /// Get location of the scaling cooefficient field. (-1 if non-existant)
   int getScalCoLoc() const {return scalCoLoc_;}
 
+  /// Get bypassCoodScaling status
+  bool getBypassCoordScaling() const {return scalCoLoc_ == -1;}
+
   /// Get coordinate system.
   coordSys_t getCoordSys() const {return coordSys_;}
+
+  /// Get is this a standard type
+  bool getStandardType() const {return standardType_;}
 
   /// String representation.
   const char* toString() const;
 private:
+  /// Set default values for standard formats
+  void Init(int headerformat);
+  /// Format name
+  std::string formatName_;
   /// Location of scaling coefficient. (-1 if non-existant)
   int scalCoLoc_;
   /// Location of the UTM-X field. (-1 if non-existant)
@@ -81,6 +103,8 @@ private:
   int crosslineLoc_;
   /// Coordinate system to use.
   coordSys_t coordSys_;
+  /// Standard type
+  bool standardType_;
 };
 
 

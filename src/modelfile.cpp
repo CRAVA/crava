@@ -179,7 +179,7 @@ ModelFile::ModelFile(char * fileName)
   strcpy(commandList[neededCommands+30],"WAVELET_ESTIMATION_INTERVAL");
   strcpy(commandList[neededCommands+31],"FACIES_ESTIMATION_INTERVAL");
   strcpy(commandList[neededCommands+32],"LOG_LEVEL");
-  strcpy(commandList[neededCommands+33],"SEGY_FORMAT");
+  strcpy(commandList[neededCommands+33],"TRACE_HEADER_FORMAT");
 
   char errText[MAX_STRING];
   char ** errorList = new char*[nCommands];
@@ -357,7 +357,7 @@ ModelFile::ModelFile(char * fileName)
           error = readCommandLogLevel(params,curPos,errText);
           break;
         case 36:
-          error = readCommandSegyFormat(params,curPos,errText);
+          error = readCommandTraceHeaderFormat(params,curPos,errText);
           break;
         default:
           sprintf(errText, "Unknown command: %s\n",command);
@@ -512,7 +512,7 @@ ModelFile::ModelFile(char * fileName)
     LogKit::LogFormatted(LogKit::LOW,"  SEISMIC\n");
     LogKit::LogFormatted(LogKit::LOW,"  PS_SEISMIC\n");
     LogKit::LogFormatted(LogKit::LOW,"  SEGYOFFSET\n");
-    LogKit::LogFormatted(LogKit::LOW,"  SEGY_FORMAT\n");
+    LogKit::LogFormatted(LogKit::LOW,"  TRACE_HEADER_FORMAT\n");
     LogKit::LogFormatted(LogKit::LOW,"  ENERGYTRESHOLD\n");
     LogKit::LogFormatted(LogKit::LOW,"  LOCALWAVELET\n");
     LogKit::LogFormatted(LogKit::LOW,"  WAVELETLENGTH\n");
@@ -926,22 +926,20 @@ ModelFile::readCommandArea(char ** params, int & pos, char * errText)
     pos += nPar+1;
     return(1);
   }
-  double * areaParams = new double[7];
+  double x0  = static_cast<double>(atof(params[pos]));            
+  double y0  = static_cast<double>(atof(params[pos+1]));          
+  double lx  = static_cast<double>(atof(params[pos+2]));          
+  double ly  = static_cast<double>(atof(params[pos+3]));          
+  double rot = static_cast<double>(PI*atof(params[pos+4])/180.0); 
+  double dx  = static_cast<double>(atof(params[pos+5]));          
+  double dy  = static_cast<double>(atof(params[pos+6]));          
 
-  areaParams[0] = static_cast<double>(atof(params[pos]));            // x0 
-  areaParams[1] = static_cast<double>(atof(params[pos+1]));          // y0 
-  areaParams[2] = static_cast<double>(atof(params[pos+2]));          // lx 
-  areaParams[3] = static_cast<double>(atof(params[pos+3]));          // ly 
-  areaParams[4] = static_cast<double>(PI*atof(params[pos+4])/180.0); // rot
-  areaParams[5] = static_cast<double>(atof(params[pos+5]));          // dx 
-  areaParams[6] = static_cast<double>(atof(params[pos+6]));          // dy 
+  int nx = static_cast<int>(lx/dx);
+  int ny = static_cast<int>(ly/dy);
 
-  int nx = int(areaParams[2]/areaParams[5]);
-  int ny = int(areaParams[3]/areaParams[6]);
-  SegyGeometry *geometry = new SegyGeometry(areaParams[0], areaParams[1],areaParams[5], areaParams[6],nx,ny,0,0,1,1,true,areaParams[4]);
-
+  SegyGeometry * geometry = new SegyGeometry(x0, y0, dx, dy, nx, ny, 0, 0, 1, 1, true, rot);
   modelSettings_->setAreaParameters(geometry);
-  delete [] areaParams;
+  delete geometry;
 
   pos += nPar+1;
   return(error);
@@ -1915,38 +1913,41 @@ ModelFile::readCommandLogLevel(char ** params, int & pos, char * errText)
 }
 
 int
-ModelFile::readCommandSegyFormat(char ** params, int & pos, char * errText)
+ModelFile::readCommandTraceHeaderFormat(char ** params, int & pos, char * errText)
 {
   int error;
-  int nPar = getParNum(params, pos, error, errText, params[pos-1], 2, -1);
+  int nPar = getParNum(params, pos, error, errText, params[pos-1], 1, -1);
   if(error == 1)
   {
     pos += nPar+1;
     return(1);
   }
 
-  int nSegyParams = 8;
-  int * segyParams = new int[nSegyParams];
-  segyParams[0] = IMISSING; // Format type
-  segyParams[1] = IMISSING; // Bypass coordinate scaling
-  segyParams[2] = IMISSING; // trace xy-coord given as float
-  segyParams[3] = IMISSING; // Start pos trace x coordinate
-  segyParams[4] = IMISSING; // Start pos trace y coordinate
-  segyParams[5] = IMISSING; // Start pos inline index
-  segyParams[6] = IMISSING; // Start pos crossline index
+  int type                   = 0;        // Format type (0=SEISWORKS, 1=IESX)
+  int coordSysType           = IMISSING; // Choice of coordinate system
+  int bypassCoordScaling     = IMISSING; // Bypass coordinate scaling
+  int traceCoordGivenAsFloat = IMISSING; // trace xy-coord given as float
+  int startPosCoordScaling   = IMISSING; // Start pos of coordinate scaling
+  int startPosTraceXCoord    = IMISSING; // Start pos trace x coordinate
+  int startPosTraceYCoord    = IMISSING; // Start pos trace y coordinate
+  int startPosILIndex        = IMISSING; // Start pos inline index
+  int startPosXLIndex        = IMISSING; // Start pos crossline index
 
-  int nSubCommands = 8;
+  int nSubCommands = 11;
   char ** subCommand = new char * [nSubCommands];
   for(int i=0 ; i<nSubCommands ; i++)
     subCommand[i] = new char[30];
-  strcpy(subCommand[0],"SEISWORKS");
-  strcpy(subCommand[1],"IESX");
-  strcpy(subCommand[2],"BYPASS_COORDINATE_SCALING");
-  strcpy(subCommand[3],"TRACE_XY_COORD_AS_FLOAT");
-  strcpy(subCommand[4],"START_POS_TRACE_X_COORD");
-  strcpy(subCommand[5],"START_POS_TRACE_Y_COORD");
-  strcpy(subCommand[6],"START_POS_INLINE_INDEX");
-  strcpy(subCommand[7],"START_POS_CROSSLINE_INDEX");
+  strcpy(subCommand[0], "SEISWORKS");
+  strcpy(subCommand[1], "IESX");
+  strcpy(subCommand[2], "UTM");
+  strcpy(subCommand[3], "ILXL");
+  strcpy(subCommand[4], "BYPASS_COORDINATE_SCALING");
+  strcpy(subCommand[5], "TRACE_XY_COORD_AS_FLOAT"); // Currently not used in SegY lib
+  strcpy(subCommand[6], "START_POS_COORD_SCALING");
+  strcpy(subCommand[7], "START_POS_TRACE_X_COORD");
+  strcpy(subCommand[8], "START_POS_TRACE_Y_COORD");
+  strcpy(subCommand[9], "START_POS_INLINE_INDEX");
+  strcpy(subCommand[10],"START_POS_CROSSLINE_INDEX");
 
   int  curPar = 0;
   while(curPar < nPar && error == 0) 
@@ -1965,39 +1966,27 @@ ModelFile::readCommandSegyFormat(char ** params, int & pos, char * errText)
     switch(subCom) 
     {
     case 0:
-      segyParams[0] = ModelSettings::SEISWORKS;
+      type = 0; // SEISWORKS
       break;
 
     case 1:
-      segyParams[0] = ModelSettings::IESX;
+      type = 1; // IESX
       break;
 
     case 2:
-      segyParams[1] = 1;  // bypass coordinate scaling
+      coordSysType = 0; // UTM
       break;
 
     case 3:
-      segyParams[2] = 1;  // use float for trace coordinates
+      coordSysType = 1; // ILXL
       break;
 
     case 4:
-      if(comPar != 2) {
-        error = 1;
-        sprintf(errText,"Subcommand %s in command %s takes 1 parameter, not %d as was given.\n",
-                subCommand[subCom],params[pos-1], comPar-1);
-      }
-      else 
-        segyParams[3] = static_cast<int>(atof(params[pos+curPar+1]));
+      bypassCoordScaling = 1;
       break;
 
     case 5:
-      if(comPar != 2) {
-        error = 1;
-        sprintf(errText,"Subcommand %s in command %s takes 1 parameter, not %d as was given.\n",
-                subCommand[subCom],params[pos-1], comPar-1);
-      }
-      else 
-        segyParams[4] = static_cast<int>(atof(params[pos+curPar+1]));
+      traceCoordGivenAsFloat = 1; 
       break;
 
     case 6:
@@ -2007,7 +1996,7 @@ ModelFile::readCommandSegyFormat(char ** params, int & pos, char * errText)
                 subCommand[subCom],params[pos-1], comPar-1);
       }
       else 
-        segyParams[5] = static_cast<int>(atof(params[pos+curPar+1]));
+        startPosCoordScaling = static_cast<int>(atof(params[pos+curPar+1]));
       break;
 
     case 7:
@@ -2017,7 +2006,37 @@ ModelFile::readCommandSegyFormat(char ** params, int & pos, char * errText)
                 subCommand[subCom],params[pos-1], comPar-1);
       }
       else 
-        segyParams[6] = static_cast<int>(atof(params[pos+curPar+1]));
+        startPosTraceXCoord = static_cast<int>(atof(params[pos+curPar+1]));
+      break;
+
+    case 8:
+      if(comPar != 2) {
+        error = 1;
+        sprintf(errText,"Subcommand %s in command %s takes 1 parameter, not %d as was given.\n",
+                subCommand[subCom],params[pos-1], comPar-1);
+      }
+      else 
+        startPosTraceYCoord = static_cast<int>(atof(params[pos+curPar+1]));
+      break;
+
+    case 9:
+      if(comPar != 2) {
+        error = 1;
+        sprintf(errText,"Subcommand %s in command %s takes 1 parameter, not %d as was given.\n",
+                subCommand[subCom],params[pos-1], comPar-1);
+      }
+      else 
+        startPosILIndex = static_cast<int>(atof(params[pos+curPar+1]));
+      break;
+
+    case 10:
+      if(comPar != 2) {
+        error = 1;
+        sprintf(errText,"Subcommand %s in command %s takes 1 parameter, not %d as was given.\n",
+                subCommand[subCom],params[pos-1], comPar-1);
+      }
+      else 
+        startPosXLIndex = static_cast<int>(atof(params[pos+curPar+1]));
       break;
 
     default: 
@@ -2034,11 +2053,18 @@ ModelFile::readCommandSegyFormat(char ** params, int & pos, char * errText)
     delete [] subCommand[i];
   delete [] subCommand;
 
-  modelSettings_->setSegyParameters(segyParams,nSegyParams);
-  delete [] segyParams;
+  TraceHeaderFormat thf(type,
+                        bypassCoordScaling,
+                        startPosCoordScaling,
+                        startPosTraceXCoord,
+                        startPosTraceYCoord,
+                        startPosILIndex,    
+                        startPosXLIndex,    
+                        coordSysType);
+  modelSettings_->setTraceHeaderFormat(thf);
 
-pos += nPar+1;
-return(error);
+  pos += nPar+1;
+  return(error);
 }
 
 int 

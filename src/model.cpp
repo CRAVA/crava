@@ -464,11 +464,9 @@ Model::readSegyFiles(char          ** fNames,
           target[i]->fillInFromSegY(segy, timeSimbox);
           target[i]->setAngle(modelSettings->getAngle()[i]);
         }
-  delete segy;
+        delete segy;
     }
-     
   }
-
   //  time(&timeend);
   //  LogKit::LogFormatted(LogKit::LOW,"SEGY read and interpolate %i grids in %ld seconds \n",nFiles,timeend-timestart);
   return(error);
@@ -2177,28 +2175,19 @@ Model::printSettings(ModelSettings * modelSettings,
   LogKit::LogFormatted(LogKit::LOW,"  Density                                  : %10s\n","kg/dm3");
   LogKit::LogFormatted(LogKit::LOW,"  Angle                                    : %10s\n","degrees");
 
-  LogKit::LogFormatted(LogKit::LOW,"\nSettings for SegY format:\n");
-  int * segyParams = modelSettings_->getSegyParameters(); 
-  if (segyParams == NULL) 
-    LogKit::LogFormatted(LogKit::LOW,"  Type                                     :  SeisWorks\n");
-  else 
+  TraceHeaderFormat * thf = modelSettings_->getTraceHeaderFormat(); 
+  LogKit::LogFormatted(LogKit::LOW,"\nSegY trace header format:\n");
+  LogKit::LogFormatted(LogKit::LOW,"  Format name                              : %10s\n",thf->getFormatName().c_str());
+  if (thf->getBypassCoordScaling())
+    LogKit::LogFormatted(LogKit::LOW,"  Bypass coordinate scaling                :        yes\n");
+  if (!thf->getStandardType()) 
   {
-    if (segyParams[0] == IMISSING || segyParams[0] == 0)
-      LogKit::LogFormatted(LogKit::LOW,"  Type                                     :  SeisWorks\n");
-    else if (segyParams[0] == 1)
-      LogKit::LogFormatted(LogKit::LOW,"  Type                                     :       IESX\n");
-    if (segyParams[1] == 1)
-      LogKit::LogFormatted(LogKit::LOW,"  Bypass coordinate scaling                :        yes\n");
-    if (segyParams[2] == 1)
-      LogKit::LogFormatted(LogKit::LOW,"  trace xy-coord given as float            :        yes\n");
-    if (segyParams[3] != IMISSING)
-      LogKit::LogFormatted(LogKit::LOW,"  Start pos trace x coordinate             : %10d\n",segyParams[3]);
-    if (segyParams[4] != IMISSING)
-      LogKit::LogFormatted(LogKit::LOW,"  Start pos trace y coordinate             : %10d\n",segyParams[4]);
-    if (segyParams[5] != IMISSING)
-      LogKit::LogFormatted(LogKit::LOW,"  Start pos inline index                   : %10d\n",segyParams[5]);
-    if (segyParams[6] != IMISSING)
-      LogKit::LogFormatted(LogKit::LOW,"  Start pos crossline index                : %10d\n",segyParams[6]);
+    LogKit::LogFormatted(LogKit::LOW,"  Start pos coordinate scaling             : %10d\n",thf->getScalCoLoc());
+    LogKit::LogFormatted(LogKit::LOW,"  Start pos trace x coordinate             : %10d\n",thf->getUtmxLoc());
+    LogKit::LogFormatted(LogKit::LOW,"  Start pos trace y coordinate             : %10d\n",thf->getUtmyLoc());
+    LogKit::LogFormatted(LogKit::LOW,"  Start pos inline index                   : %10d\n",thf->getInlineLoc());
+    LogKit::LogFormatted(LogKit::LOW,"  Start pos crossline index                : %10d\n",thf->getCrosslineLoc());
+    LogKit::LogFormatted(LogKit::LOW,"  Coordinate system                        : %10s\n",thf->getCoordSys()==0 ? "UTM" : "ILXL" );
   }
   //
   // WELL PROCESSING
