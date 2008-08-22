@@ -25,7 +25,7 @@
 #include "lib/lib_misc.h"
 #include "lib/lib_matr.h"
 #include "lib/global_def.h"
-#include "lib/segy.h"
+#include "nrlib/segy/segy.hpp"
 #include "nrlib/surface/surfaceio.hpp"
 #include "nrlib/iotools/logkit.hpp"
 
@@ -409,33 +409,23 @@ Model::readSegyFiles(char          ** fNames,
     target[i] = NULL;
     if((okFiles & flag) == 0)
     {
-      segy = new SegY(fNames[i], timeSimbox, modelSettings->getZpad(), modelSettings->getSegyOffset());
-      if(segy->checkError(tmpErr) != 0)
-      {
-        error++;
-        sprintf(errText,"%s%s", errText, tmpErr);
-      }
-      else
-      {
+      segy = new SegY(fNames[i], modelSettings->getSegyOffset());
+      segy->readAllTraces(timeSimbox, modelSettings->getZpad());
+      segy->createRegularGrid();
+     //NBNB if(segy->checkError(tmpErr) != 0)
+    //  {
+    //    error++;
+    //    sprintf(errText,"%s%s", errText, tmpErr);
+    //  }
+   //   else
+    //  {
         if(timeSimbox->status() == Simbox::NOAREA)
         {
-          //
-          // Needed in modelSettings (at least) for depth simbox 
-          //
-          double * ap = new double[7]; 
-          segy->getAreaParameters(ap);
-          modelSettings->setAreaParameters(ap);
-          timeSimbox->setArea(ap);
-          delete [] ap;
-
-          //
-          // Get information about seismic lines
-          //
-          int * sl = new int[4]; 
-          segy->getSeisLines(sl);
-          //modelSettings->setSeisLines(sl);
-          timeSimbox->setSeisLines(sl);
-          delete [] sl;
+          const SegyGeometry *geometry;
+          geometry = segy->getGeometry();
+          modelSettings->setAreaParameters(geometry);
+          timeSimbox->setArea(geometry);
+         
 
           sbError = timeSimbox->checkError(modelSettings->getLzLimit(), errText);
 
@@ -471,13 +461,14 @@ Model::readSegyFiles(char          ** fNames,
                                     modelSettings->getNZpad());
 
           target[i]->setType(FFTGrid::DATA);
-          target[i]->fillInFromSegY(segy);
+          target[i]->fillInFromSegY(segy, timeSimbox);
           target[i]->setAngle(modelSettings->getAngle()[i]);
         }
-      }
-      delete segy;
+  delete segy;
     }
+     
   }
+
   //  time(&timeend);
   //  LogKit::LogFormatted(LogKit::LOW,"SEGY read and interpolate %i grids in %ld seconds \n",nFiles,timeend-timestart);
   return(error);
@@ -495,13 +486,13 @@ Model::readSegyFile(char          * fName,
 
   SegY * segy;
   target = NULL;
-  segy = new SegY(fName, timeSimbox, modelSettings->getZpad(), modelSettings->getSegyOffset());
-  if(segy->checkError(tmpErr) != 0)
-  {
-    sprintf(errText,"%s%s", errText, tmpErr);
-    error = 1;
-  }
-  else
+  segy = new SegY(fName, modelSettings->getSegyOffset());
+//NBNB  if(segy->checkError(tmpErr) != 0)
+//  {
+//    sprintf(errText,"%s%s", errText, tmpErr);
+ //   error = 1;
+//  }
+//  else
   {
     if(modelSettings->getFileGrid() == 1)
       target = new FFTFileGrid(timeSimbox->getnx(),
@@ -519,7 +510,7 @@ Model::readSegyFile(char          * fName,
                            modelSettings->getNZpad());
     
     target->setType(FFTGrid::PARAMETER);
-    target->fillInFromSegY(segy);
+    target->fillInFromSegY(segy, timeSimbox);
     target->logTransf();
   }
   delete segy;
@@ -677,6 +668,7 @@ Model::makeTimeSimbox(Simbox        *& timeSimbox,
                     modelFile->getTimeDz(), 
                     modelFile->getTimeNz(),
                     error);
+  const SegyGeometry * areaParams = NULL;
   if(error == 0)
   {
     sprintf(errText,"%c",'\0');
@@ -688,7 +680,7 @@ Model::makeTimeSimbox(Simbox        *& timeSimbox,
     if(modelFile->getNWaveletTransfArgs() > 0 && timeSimbox->getIsConstantThick() == true)
       LogKit::LogFormatted(LogKit::WARNING,"\nWarning: LOCALWAVELET is ignored when using constant thickness in DEPTH.\n");
 
-    double * areaParams = modelSettings->getAreaParameters(); 
+    areaParams = modelSettings->getAreaParameters(); 
     estimateZPaddingSize(timeSimbox, modelSettings);   
     if (areaParams != NULL)
     {
@@ -758,7 +750,7 @@ Model::makeTimeSimbox(Simbox        *& timeSimbox,
     }
   }
 
-  if(failed == false) {
+  if(failed == false && areaParams!=NULL) {
     estimateXYPaddingSizes(timeSimbox, modelSettings);
     //
     // Check if CRAVA has enough memory to run calculation without buffering to disk
@@ -1008,7 +1000,7 @@ Model::completeSimboxes(Simbox       *& depthSimbox,
       const char * botname = "botdepth.storm";
       depthSimbox->writeTopBotGrids(topname, botname);
 
-      double * areaParams = modelSettings->getAreaParameters(); 
+      const SegyGeometry * areaParams = modelSettings->getAreaParameters(); 
       if (areaParams != NULL)
       {
         depthSimbox->setArea(areaParams);
@@ -1048,7 +1040,7 @@ Model::completeSimboxes(Simbox       *& depthSimbox,
 
   if(timeCutSimbox_ != NULL && timeCutSimbox_->status() == Simbox::NOAREA)
   {
-    double * areaParams = modelSettings->getAreaParameters(); 
+    const SegyGeometry * areaParams = modelSettings->getAreaParameters(); 
     if (areaParams != NULL)
       timeCutSimbox_->setArea(areaParams);
   }
@@ -1213,6 +1205,7 @@ Model::processWells(WellData     **& wells,
     // Write summary.
     //
     LogKit::LogFormatted(LogKit::LOW,"\n");
+
     LogKit::LogFormatted(LogKit::LOW,"                                      Invalid                                    \n");
     LogKit::LogFormatted(LogKit::LOW,"Well                    Merges      Vp   Vs  Rho  synthVs/Corr    Deviated/Angle \n");
     LogKit::LogFormatted(LogKit::LOW,"---------------------------------------------------------------------------------\n");
@@ -1253,7 +1246,7 @@ Model::processWells(WellData     **& wells,
           LogKit::LogFormatted(LogKit::LOW,"%-23s ",wells[i]->getWellname());
           for (int f = 0 ; f < nFacies ; f++) {
             float faciesProb = static_cast<float>(faciesCount[i][f])/tot;
-            LogKit::LogFormatted(LogKit::LOW,"%12.4f ",faciesCount[i][f],faciesProb);
+            LogKit::LogFormatted(LogKit::LOW,"%d %12.4f ",faciesCount[i][f],faciesProb);
           }
           LogKit::LogFormatted(LogKit::LOW,"\n");
         } 
@@ -1262,6 +1255,7 @@ Model::processWells(WellData     **& wells,
           for (int f = 0 ; f < nFacies ; f++)
             LogKit::LogFormatted(LogKit::LOW,"         -   ");
           LogKit::LogFormatted(LogKit::LOW,"\n");
+
         }
       }
       LogKit::LogFormatted(LogKit::LOW,"\n");
@@ -2029,7 +2023,7 @@ void Model::processPriorFaciesProb(float         *& priorFacies,
         LogKit::LogFormatted(LogKit::LOW,"%-23s ",wells[w]->getWellname());
         for (int i = 0 ; i < nFacies ; i++) {
           float faciesProb = static_cast<float>(faciesCount[w][i])/tot;
-          LogKit::LogFormatted(LogKit::LOW,"%12.4f ",faciesCount[w][i],faciesProb);
+          LogKit::LogFormatted(LogKit::LOW," %d %12.4f ",faciesCount[w][i],faciesProb);
         }
         LogKit::LogFormatted(LogKit::LOW,"\n");
       }

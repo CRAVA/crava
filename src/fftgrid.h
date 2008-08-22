@@ -10,6 +10,7 @@ class Corr;
 class Wavelet;
 class Simbox;
 class RandomGen;
+class SegyGeometry;
 
 class FFTGrid{
 public:
@@ -22,7 +23,9 @@ public:
   void setType(int cubeType) {cubetype_ = cubeType;}
   void setAngle(float angle) {theta_ = angle;}
 
-  void                 fillInFromSegY(SegY * segy );             // No mode
+
+  void                 fillInFromSegY(SegY * segy, Simbox *simbox );            // No mode
+
   void                 fillInFromStorm(Simbox     * tmpSimbox, 
                                        Simbox     * actSimBox,
                                        float      * grid,
@@ -81,10 +84,10 @@ public:
   int                  getType() const {return(cubetype_);}
   virtual void         setAccessMode(int mode){assert(mode>=0);}
   virtual void         endAccess(){}
-  virtual void         writeFile(const char * fileName, const Simbox * simbox, bool writeSegy = true); //Use this instead of the ones below.
+  virtual void         writeFile(const char * fileName, const Simbox * simbox, bool writeSegy = true, float z0 = 4.0); //Use this instead of the ones below.
   virtual void         writeStormFile(const char * fileName, const Simbox * simbox, bool ascii = false, 
                                       bool padding = false, bool flat = false);//No mode/randomaccess
-  virtual int          writeSegyFile(const char * fileName, const Simbox * simbox);   //No mode/randomaccess
+  virtual int          writeSegyFile(const char * fileName, const Simbox * simbox, float z0);   //No mode/randomaccess
   virtual void         writeAsciiFile(char * fileName);
   virtual void         writeAsciiRaw(char * fileName);
 
