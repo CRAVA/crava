@@ -38,10 +38,7 @@ public:
   */
  SegY(const std::string& fileName, float z0, int nz, float dz, const TextualHeader& ebcdicHeader,
       const TraceHeaderFormat& traceHeaderFormat = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS));
-
-  /**
-  destructor
-  */
+  
   ~SegY();
 
   //>>>Begin read all trace mode
@@ -50,7 +47,7 @@ public:
 
   float getValue(double x, double y, double z, int outsideMode = segyIMISSING);
   /// return vector with all values. 
-  std::vector<float>  getAllValues();
+  std::vector<float> getAllValues();
   void createRegularGrid();
   const SegyGeometry * getGeometry(){return(geometry_);} //Only makes sense after command above.
   //<<<End read all trace mode
@@ -58,9 +55,7 @@ public:
   //>>>Begin read single trace mode
   //The following functions are for use when in single trace mode.
   const SegYTrace * getNextTrace(double zPad = 0, NRLib2::Volume * volume = NULL, bool onlyVolume = false);
-  TraceHeader * getTraceHeader() {return(traceHeader_);}
   //<<<End read single trace mode
-
 
   //>>>Begin write mode
   // write single trace to file
@@ -73,44 +68,47 @@ public:
   void WriteAllTracesToFile();
   //<<<End write mode
 
+
   //General functions
   ///
- // int checkError(char * errText) 
- //   {if(error_ > 0) strcpy(errText, errMsg_);return(error_);}
+  // int checkError(char * errText) 
+  //   {if(error_ > 0) strcpy(errText, errMsg_);return(error_);}
   /// Return (possibly upper limit for) number of traces
-  int getNTraces(){return(nTraces_);} 
+  
+  int   getNTraces() {return(nTraces_);} 
+  int   getNz()      {return(nz_);}
+  float getDz()      {return(dz_);}
 
-  int getNz() {return(nz_);}
-  float getDz() {return(dz_);}
-  enum           outsideModes{MISSING, ZERO, CLOSEST};
+  enum  outsideModes{MISSING, ZERO, CLOSEST};
 
-/// Find number of traces
-  int checkSize();
+  int   checkSize(const TraceHeaderFormat & traceHeaderFormat);
  /// Find grid geometry
+
   SegyGeometry * checkGridArea();
-  static int CheckNumberOfTraces(const std::string& fileName, float z0, const TraceHeaderFormat& traceHeaderFormat = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS));
-  static SegyGeometry * CheckGridGeometry(const std::string& fileName, float z0, const TraceHeaderFormat& traceHeaderFormat = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS));
+
+  static int CheckNumberOfTraces(const std::string& fileName, float z0, 
+                                 const TraceHeaderFormat & traceHeaderFormat = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS));
+  static SegyGeometry * CheckGridGeometry(const std::string& fileName, float z0, 
+                                          const TraceHeaderFormat& traceHeaderFormat = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS));
+
 private:
   /// 
   void           ebcdicHeader(std::string& outstring);
   ///
- // void           readBinaryHeader(char * buffer);
+  // void           readBinaryHeader(char * buffer);
+
   /// Trace header
   int            readHeader(TraceHeader * header);
   
   /// read single trace from file
-  SegYTrace    * readTrace(float x, float y, NRLib2::Volume * volume, double zPad, bool onlyVolume = false);
+  SegYTrace    * readTrace(TraceHeader * traceHeader, float x, float y, NRLib2::Volume * volume, double zPad, bool onlyVolume = false);
 
   void           writeMainHeader(const TextualHeader& ebcdicHeader); //Quasi-dummy at the moment. 
   
   double         interpolate(int xyidx, int zidx);
   std::ios::pos_type fileSize(const std::string& fileName);
 
- 
-
   float rmissing_;
- 
-  
  
   /// read one and one trace
   bool singleTrace_;
@@ -134,15 +132,11 @@ private:
   float z0_;
   float dz_;
 
- 
-  ///
   std::fstream file_;
-
-  std::string fileName_;
+  std::string  fileName_;
   
   TraceHeaderFormat traceHeaderFormat_;
 
-  TraceHeader * traceHeader_;
   /// Parameters to find final index from i and j
   SegyGeometry *geometry_;
 
@@ -183,8 +177,6 @@ public:
   int getInline() {return(inLine_);}
   /// Get crossline number
   int getCrossline() {return(crossLine_);}
-
-
 
 private:
   /// Data in trace
@@ -262,10 +254,6 @@ private:
   ///
   double sinRot_, cosRot_;
   double rot_;
-  /// 
-  
-  ///
-  
 };
 
 #endif

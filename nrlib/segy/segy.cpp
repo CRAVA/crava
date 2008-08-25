@@ -20,7 +20,6 @@
 
 const float segyRMISSING = -99999.000;
 
-
 using namespace NRLib2;
 
 SegY::SegY(const std::string& fileName,float z0, const TraceHeaderFormat& traceHeaderFormat)
@@ -42,10 +41,9 @@ SegY::SegY(const std::string& fileName,float z0, const TraceHeaderFormat& traceH
   //fread(junk, 1,3200, file_); 
   file_.read(junk,3200);
 
- 
-  binaryHeader_ = new BinaryHeader(file_);
+   binaryHeader_ = new BinaryHeader(file_);
   nz_ = binaryHeader_->getHns();
-  dz_ = float(binaryHeader_->getHdt()/1000);
+  dz_ = static_cast<float>(binaryHeader_->getHdt()/1000);
   z0_ = z0;
   if(binaryHeader_->getFormat() == 3)
     datasize_ = 2;
@@ -57,11 +55,9 @@ SegY::SegY(const std::string& fileName,float z0, const TraceHeaderFormat& traceH
     throw FileFormatError("Can not read SegY-file \"" + fileName + "\" that use floating point with gain representation.");
     return;
   }
-  traceHeader_ = NULL;
   geometry_ = NULL;
-
-
 }
+
 SegY::SegY(const std::string& fileName, float z0, int nz, float dz,const TextualHeader& ebcdicHeader, 
            const TraceHeaderFormat& traceHeaderFormat)
            : traceHeaderFormat_(traceHeaderFormat)
@@ -71,7 +67,6 @@ SegY::SegY(const std::string& fileName, float z0, int nz, float dz,const Textual
   //  traces_ = NULL;
   //buffer_ = NULL;
   rmissing_ = segyRMISSING;
-  traceHeader_ = NULL;
   geometry_ = NULL;
   //format_ = NULL;
   /// \todo Replace with safe open function.
@@ -82,19 +77,14 @@ SegY::SegY(const std::string& fileName, float z0, int nz, float dz,const Textual
   else
   {
     z0_ = z0;
-
     dz_ = dz;
     nz_ = nz;
     writeMainHeader(ebcdicHeader);
   }
-
 }
 
 SegY::~SegY()
 {
-  if(traceHeader_ != NULL)
-    delete traceHeader_;
-  traceHeader_= NULL;
   if(geometry_!=NULL)
     delete geometry_;
   geometry_ = NULL;
@@ -110,7 +100,7 @@ SegY::readHeader(TraceHeader * header)
   //char *binaryHeader= new char[400];
   header->read(file_,binaryHeader_->getLino());
   if(header->getDt()/1000 != dz_)
-    dz_ = float(header->getDt()/1000.0);
+    dz_ = static_cast<float>(header->getDt()/1000.0);
   switch(header->getStatus()) {
   case -1:
     binaryHeader_->Update(file_);
@@ -130,36 +120,39 @@ SegY::getNextTrace(double zPad, Volume * volume, bool onlyVolume )
 {
   if(file_.eof()==true || singleTrace_ == false)
     return NULL;
+  
+  TraceHeader * traceHeader = new TraceHeader(traceHeaderFormat_);
 
-  if(traceHeader_ == NULL)
-    traceHeader_ = new TraceHeader(traceHeaderFormat_);
   SegYTrace * trace;
-  int readOk = readHeader(traceHeader_);
+  int readOk = readHeader(traceHeader);
   float x,y;
   int inLine, crossLine;
 
   if(readOk > -1)
   {
-    x = traceHeader_->getUtmx();
-    y = traceHeader_->getUtmy();
-    inLine = traceHeader_->getInline();
-    crossLine = traceHeader_->getCrossline();
-    trace = readTrace(traceHeader_->getUtmx(), traceHeader_->getUtmy(), volume, zPad, onlyVolume);  
+    x = traceHeader->getUtmx();
+    y = traceHeader->getUtmy();
+    inLine = traceHeader->getInline();
+    crossLine = traceHeader->getCrossline();
+    trace = readTrace(traceHeader,
+                      traceHeader->getUtmx(), 
+                      traceHeader->getUtmy(), 
+                      volume, zPad, onlyVolume);  
   }
   else
     trace = NULL;
 
   return(trace); 
-
 }
-
 
 void 
 SegY::readAllTraces(Volume *volume, double zPad, bool onlyVolume)
 {
   singleTrace_ = false;
-  traceHeader_ = new TraceHeader(traceHeaderFormat_);
-  //readHeader(file_, traceHeader_, binaryHeader); 
+
+  TraceHeader * traceHeader = new TraceHeader(traceHeaderFormat_);
+
+  //readHeader(file_, traceHeader, binaryHeader); 
   //segy_filelen_t fSize = fileSize(fileName_);
   std::ios::pos_type fSize = fileSize(fileName_);
   nTraces_ = int(ceil((double(fSize)-3600.0)/double(datasize_*nz_+240.0)));
@@ -172,9 +165,11 @@ SegY::readAllTraces(Volume *volume, double zPad, bool onlyVolume)
   //char * buffer;
 
   traces_.resize(nTraces_);
-  readHeader(traceHeader_); 
-  traces_[0] = readTrace(traceHeader_->getUtmx(), traceHeader_->getUtmy(), volume, zPad, onlyVolume);
-
+  readHeader(traceHeader); 
+  traces_[0] = readTrace(traceHeader,
+                         traceHeader->getUtmx(), 
+                         traceHeader->getUtmy(), 
+                         volume, zPad, onlyVolume);
 
   int i;
   double writeInterval = 0.02;
@@ -195,26 +190,30 @@ SegY::readAllTraces(Volume *volume, double zPad, bool onlyVolume)
       printf("^");
       nextWrite+=writeInterval;
     }
-    nHeaders += readHeader(traceHeader_);
+    nHeaders += readHeader(traceHeader);
     if (traceHeaderFormat_.getCoordSys() == TraceHeaderFormat::ILXL) {
-      traces_[i] = readTrace(float(traceHeader_->getInline()), 
-        float(traceHeader_->getCrossline()), volume, zPad, onlyVolume);      
+      traces_[i] = readTrace(traceHeader,
+                             static_cast<float>(traceHeader->getInline()), 
+                             static_cast<float>(traceHeader->getCrossline()), 
+                             volume, zPad, onlyVolume);      
     }
     else {
-      traces_[i] = readTrace(traceHeader_->getUtmx(), 
-        traceHeader_->getUtmy(), volume, zPad, onlyVolume);
+      traces_[i] = readTrace(traceHeader,
+                             traceHeader->getUtmx(), 
+                             traceHeader->getUtmy(), 
+                             volume, zPad, onlyVolume);
     }
     if(file_.eof()==true)
       break;
   }
   printf("^\n");
-
 }
 
 
-
 SegYTrace *
-SegY::readTrace(float x, float y, Volume * volume, double zPad, bool onlyVolume)
+SegY::readTrace(TraceHeader * traceHeader, 
+                float x, float y, 
+                Volume * volume, double zPad, bool onlyVolume)
 {
   //fread(buffer, datasize_, nz_, file);
   // file_.read(buffer,(nz_*datasize_));
@@ -275,9 +274,13 @@ SegY::readTrace(float x, float y, Volume * volume, double zPad, bool onlyVolume)
   }
   if(file_.eof()==false){
     //Les trasen inn i vektor
-
     //send vektor inn til SegyTrace, kopier elementa fra j0 til j1.
-    return(new SegYTrace(file_, j0, j1, binaryHeader_->getFormat(), traceHeader_->getUtmx(), traceHeader_->getUtmy(), traceHeader_->getInline(), traceHeader_->getCrossline(), nz_ ));
+    return(new SegYTrace(file_, j0, j1, binaryHeader_->getFormat(), 
+                         traceHeader->getUtmx(), 
+                         traceHeader->getUtmy(), 
+                         traceHeader->getInline(), 
+                         traceHeader->getCrossline(), 
+                         nz_ ));
   }
   else
     return(NULL);
@@ -591,9 +594,6 @@ SegY::writeTrace(float x, float y, std::vector<float> data, const Volume *volume
       trace[k] = baseVal; //data[simbox_->getnz()-1];
     //printf("Trace generated.\n");
   }
-
-
-
   WriteBinaryIbmFloatArray(file_,trace.begin(),trace.end());
   }
   else
@@ -727,46 +727,13 @@ SegY::fileSize(const std::string& fileName)
   file.seekg(0, std::ios_base::end);
   length = file.tellg(); // ftell64bitWrapper(file);
 
-
   return length;
-}
-
-int SegY::checkSize()
-{
-  traceHeader_ = new TraceHeader(traceHeaderFormat_);
-
-  std::ios::pos_type fSize = fileSize(fileName_);
-  nTraces_ = int(ceil((double(fSize)-3600.0)/double(datasize_*nz_+240.0)));
-  int i;
-  // int tenPercent = MAXIM(1,nTraces_/10);
-  // int activeTraces = 0;
-  int nHeaders = 0;
-  char * buffer = new char[nz_*datasize_];
-
-  nHeaders += readHeader(traceHeader_);
-
-  file_.read(buffer,(nz_*datasize_));
-  int ntr = 1;
-  for(i=1;i<nTraces_;i++)
-  {   
-    if(file_.eof()==false)
-    {
-      ntr++;
-      nHeaders += readHeader(traceHeader_);
-
-      file_.read(buffer,(nz_*datasize_));
-    }
-
-  }
-  delete buffer;
-  return(ntr);
 }
 
 SegyGeometry * 
 SegY::checkGridArea()
 {
-
-  traceHeader_ = new TraceHeader(traceHeaderFormat_);
+  TraceHeader * traceHeader = new TraceHeader(traceHeaderFormat_);
 
   std::ios::pos_type fSize = fileSize(fileName_);
   nTraces_ = int(ceil((double(fSize)-3600.0)/double(datasize_*nz_+240.0)));
@@ -793,11 +760,11 @@ SegY::checkGridArea()
   float x, y, x0,y0;
   maxdIL = 0;
   maxdXL = 0;
-  nHeaders += readHeader(traceHeader_);
-  IL0 = traceHeader_->getInline();
-  XL0 = traceHeader_->getCrossline();
-  x0 = traceHeader_->getUtmx();
-  y0 = traceHeader_->getUtmy();
+  nHeaders += readHeader(traceHeader);
+  IL0 = traceHeader->getInline();
+  XL0 = traceHeader->getCrossline();
+  x0  = traceHeader->getUtmx();
+  y0  = traceHeader->getUtmy();
   minil = IL0;
   maxil = IL0;
   minxl = XL0;
@@ -810,9 +777,9 @@ SegY::checkGridArea()
   {   
     if(file_.eof()==false)
     {
-      nHeaders += readHeader(traceHeader_);
-      IL = traceHeader_->getInline();
-      XL = traceHeader_->getCrossline();
+      nHeaders += readHeader(traceHeader);
+      IL = traceHeader->getInline();
+      XL = traceHeader->getCrossline();
       if(IL<minil )
         minil = IL;
       if(IL>maxil)
@@ -825,16 +792,16 @@ SegY::checkGridArea()
       dXL = XL-XL0;
       if(XL==XL0 && dIL>maxdIL)
       {
-        x = traceHeader_->getUtmx();
-        y = traceHeader_->getUtmy();
+        x = traceHeader->getUtmx();
+        y = traceHeader->getUtmy();
         dxIL = (x-x0)/dIL;
         dyIL = (y-y0)/dIL;
         maxdIL = dIL;
       }
       if(IL==IL0 && dXL>maxdXL)
       {
-        x = traceHeader_->getUtmx();
-        y = traceHeader_->getUtmy();
+        x = traceHeader->getUtmx();
+        y = traceHeader->getUtmy();
         dxXL = (x-x0)/dXL;
         dyXL = (y-y0)/dXL;
         maxdXL = dXL;
@@ -845,12 +812,11 @@ SegY::checkGridArea()
         deltaXL = dXL;
       file_.read(buffer,(nz_*datasize_));
     }
-
-
   }
   float lx0 = x0-XL0*dxXL-IL0*dxIL;
   float ly0 = y0-XL0*dyXL-IL0*dyIL;
 
+  delete traceHeader;
 
   // Find the four corners
 
@@ -1014,11 +980,44 @@ SegY::checkGridArea()
   return(geometry);
 }
 
-int SegY::CheckNumberOfTraces(const std::string& fileName, float z0, const TraceHeaderFormat& traceHeaderFormat)
+int SegY::CheckNumberOfTraces(const std::string& fileName, float z0, const TraceHeaderFormat & traceHeaderFormat)
 {
-  SegY *segy = new SegY(fileName,z0, traceHeaderFormat);
-  int size = segy->checkSize();
+  SegY segy(fileName,z0, traceHeaderFormat);
+  int size = segy.checkSize(traceHeaderFormat);
   return(size);
+}
+
+int SegY::checkSize(const TraceHeaderFormat & traceHeaderFormat)
+{
+  TraceHeader * traceHeader = new TraceHeader(traceHeaderFormat_);
+
+  std::ios::pos_type fSize = fileSize(fileName_);
+  //
+  // Set nTraces_ to largest possible value 
+  //
+  nTraces_ = int(ceil((double(fSize)-3600.0)/double(datasize_*nz_+240.0)));
+
+  int i;
+  int nHeaders = 0;
+  char * buffer = new char[nz_*datasize_];
+
+  nHeaders += readHeader(traceHeader);
+
+  file_.read(buffer,(nz_*datasize_));
+  int ntr = 1;
+  for(i=1;i<nTraces_;i++)
+  {   
+    if(file_.eof()==false)
+    {
+      ntr++;
+      nHeaders += readHeader(traceHeader);
+
+      file_.read(buffer,(nz_*datasize_));
+    }
+  }
+  delete buffer;
+  delete traceHeader;
+  return(ntr);
 }
 
 SegyGeometry *
@@ -1027,10 +1026,7 @@ SegY::CheckGridGeometry(const std::string& fileName, float z0,const TraceHeaderF
   SegY *segy = new SegY(fileName,z0, traceHeaderFormat);
   SegyGeometry *vol = segy->checkGridArea();
   return(vol);
-
 }
-
-
 
 SegYTrace::SegYTrace(std::fstream & file, int jStart, int jEnd, int format, float x, float y, int inLine, int crossLine, int nz)
 {
