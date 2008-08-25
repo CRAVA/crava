@@ -90,8 +90,6 @@ SegY::~SegY()
   geometry_ = NULL;
 }
 
-
-
 int 
 SegY::readHeader(TraceHeader * header)
 {
@@ -101,6 +99,7 @@ SegY::readHeader(TraceHeader * header)
   header->read(file_,binaryHeader_->getLino());
   if(header->getDt()/1000 != dz_)
     dz_ = static_cast<float>(header->getDt()/1000.0);
+
   switch(header->getStatus()) {
   case -1:
     binaryHeader_->Update(file_);
@@ -108,35 +107,27 @@ SegY::readHeader(TraceHeader * header)
     newHead = 1;
     break;
   case -2:
-    return -1;
+    newHead = -1;
   }
-
   return newHead;
 }
 
 
-const SegYTrace*
+const SegYTrace *
 SegY::getNextTrace(double zPad, Volume * volume, bool onlyVolume )
 {
   if(file_.eof()==true || singleTrace_ == false)
     return NULL;
   
   TraceHeader * traceHeader = new TraceHeader(traceHeaderFormat_);
+  int readOk = readHeader(traceHeader);
 
   SegYTrace * trace;
-  int readOk = readHeader(traceHeader);
-  float x,y;
-  int inLine, crossLine;
 
   if(readOk > -1)
   {
-    x = traceHeader->getUtmx();
-    y = traceHeader->getUtmy();
-    inLine = traceHeader->getInline();
-    crossLine = traceHeader->getCrossline();
     trace = readTrace(traceHeader,
-                      traceHeader->getUtmx(), 
-                      traceHeader->getUtmy(), 
+                      traceHeaderFormat_.getCoordSys(),                      
                       volume, zPad, onlyVolume);  
   }
   else
@@ -152,23 +143,16 @@ SegY::readAllTraces(Volume *volume, double zPad, bool onlyVolume)
 
   TraceHeader * traceHeader = new TraceHeader(traceHeaderFormat_);
 
-  //readHeader(file_, traceHeader, binaryHeader); 
-  //segy_filelen_t fSize = fileSize(fileName_);
   std::ios::pos_type fSize = fileSize(fileName_);
   nTraces_ = int(ceil((double(fSize)-3600.0)/double(datasize_*nz_+240.0)));
 
-  //printf("\nReading SEGY file %s.\n", fileName_); 
-  //std::cout<< "\nReading SEGY file "<< fileName_ << "\n";
-  LogKit::LogMessage(LogKit::L_LOW,"\nReading SEGY file " );
-  LogKit::LogMessage(LogKit::L_LOW, fileName_);
-  //buffer = new char[nz_*4];
-  //char * buffer;
+  LogKit::LogMessage(LogKit::LOW,"\nReading SEGY file " );
+  LogKit::LogMessage(LogKit::LOW, fileName_);
 
   traces_.resize(nTraces_);
   readHeader(traceHeader); 
   traces_[0] = readTrace(traceHeader,
-                         traceHeader->getUtmx(), 
-                         traceHeader->getUtmy(), 
+                         traceHeaderFormat_.getCoordSys(),
                          volume, zPad, onlyVolume);
 
   int i;
@@ -177,9 +161,9 @@ SegY::readAllTraces(Volume *volume, double zPad, bool onlyVolume)
   // int activeTraces = 0;
   int nHeaders = 1;
   double size;
-  LogKit::LogMessage(LogKit::L_LOW,"\n  0%        20%      40%       60%       80%       100%");
-  LogKit::LogMessage(LogKit::L_LOW,"\n  |    |    |    |    |    |    |    |    |    |    |  ");
-  LogKit::LogMessage(LogKit::L_LOW,"\n  ^");
+  LogKit::LogMessage(LogKit::LOW,"\n  0%        20%      40%       60%       80%       100%");
+  LogKit::LogMessage(LogKit::LOW,"\n  |    |    |    |    |    |    |    |    |    |    |  ");
+  LogKit::LogMessage(LogKit::LOW,"\n  ^");
   for(i=1;i<nTraces_;i++)
   {
     size = (nHeaders*3600+i*(datasize_*nz_+240))/double(fSize);
@@ -191,18 +175,11 @@ SegY::readAllTraces(Volume *volume, double zPad, bool onlyVolume)
       nextWrite+=writeInterval;
     }
     nHeaders += readHeader(traceHeader);
-    if (traceHeaderFormat_.getCoordSys() == TraceHeaderFormat::ILXL) {
-      traces_[i] = readTrace(traceHeader,
-                             static_cast<float>(traceHeader->getInline()), 
-                             static_cast<float>(traceHeader->getCrossline()), 
-                             volume, zPad, onlyVolume);      
-    }
-    else {
-      traces_[i] = readTrace(traceHeader,
-                             traceHeader->getUtmx(), 
-                             traceHeader->getUtmy(), 
-                             volume, zPad, onlyVolume);
-    }
+
+    traces_[i] = readTrace(traceHeader,
+                           traceHeaderFormat_.getCoordSys(),
+                           volume, zPad, onlyVolume);
+
     if(file_.eof()==true)
       break;
   }
@@ -212,11 +189,25 @@ SegY::readAllTraces(Volume *volume, double zPad, bool onlyVolume)
 
 SegYTrace *
 SegY::readTrace(TraceHeader * traceHeader, 
-                float x, float y, 
+                TraceHeaderFormat::coordSys_t coordSys,
                 Volume * volume, double zPad, bool onlyVolume)
 {
   //fread(buffer, datasize_, nz_, file);
   // file_.read(buffer,(nz_*datasize_));
+
+   float x, y;
+   if (coordSys == TraceHeaderFormat::UTM) {
+     x = traceHeader->getUtmx();
+     y = traceHeader->getUtmy();
+   }
+   else if (coordSys == TraceHeaderFormat::ILXL) {
+     x = static_cast<float>(traceHeader->getInline());
+     y = static_cast<float>(traceHeader->getCrossline());
+   }
+   else {
+    throw Exception("ERROR: Invalid coordinate system number ("+ToString(coordSys)+")");
+   }
+  
   int j0 = 0;
   int j1 = nz_-1;
   float zTop, zBot;
@@ -224,15 +215,11 @@ SegY::readTrace(TraceHeader * traceHeader,
   {
     if(volume->isInside(x,y) == 0 && onlyVolume == true)
       return(NULL);
-    //  float zTop = simbox_->getTop(x, y);
     zTop = float(volume->GetTopSurface().GetZ(x,y));
     if(volume->GetTopSurface().IsMissing(zTop))
-      //      zTop = z0_;
       return(NULL);
-    //  float zBot = simbox_->getBot(x,y);
     zBot = float(volume->GetBotSurface().GetZ(x,y));
     if(volume->GetBotSurface().IsMissing(zBot))
-      //      zBot = nz_*dz_+z0_;
       return(NULL);
   }
   else
@@ -246,9 +233,7 @@ SegY::readTrace(TraceHeader * traceHeader,
     text+= "\nERROR: A part of the top time surface reaches above the seismic gather. (seismic\n";
     text+="       start time = "+ ToString(z0_) + "). Include more seismic data or lower the top surface.\n";
     text+="       zTop =" + ToString(zTop) + "\n"; 
-
-    throw Exception(text);
- 
+    throw Exception(text); 
   } 
   //NBNB-PAL: Tried nz_ - 1 below, but that failed  (incorrectly
   //NBBN-PAL: I think) in the facies case of test suite
@@ -1473,6 +1458,4 @@ void SegyGeometry::findIJFromILXL(int IL, int XL, int &i, int &j)
     i = (IL-inLine0_)/ilStep_;
     j = (XL-crossLine0_)/xlStep_;
   }
-
-
 }

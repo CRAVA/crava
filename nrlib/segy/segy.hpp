@@ -101,7 +101,9 @@ private:
   int            readHeader(TraceHeader * header);
   
   /// read single trace from file
-  SegYTrace    * readTrace(TraceHeader * traceHeader, float x, float y, NRLib2::Volume * volume, double zPad, bool onlyVolume = false);
+  SegYTrace    * readTrace(TraceHeader * traceHeader,                 
+                           TraceHeaderFormat::coordSys_t coordSys,
+                           NRLib2::Volume * volume, double zPad, bool onlyVolume = false);
 
   void           writeMainHeader(const TextualHeader& ebcdicHeader); //Quasi-dummy at the moment. 
   
