@@ -1,15 +1,14 @@
 #
 # The available CRAVA compiler directives are
-#    -DSEGY_ISEX
-#    -DBYPASS_COORDINATE_SCALING
 #    -DBIGENDIAN                  (needed for IRIX,SUNOS, etc...)  
 #
-CDIR       = -DBYPASS_COORDINATE_SCALING
+CDIR       = 
 CXX        = g++
 CC         = gcc
 OPT        = -O2
 GCCWARNING = -Wall -pedantic -Wno-long-long
 #GXXWARNING = -Wall -pedantic -Woverloaded-virtual -Wno-long-long
+#GXXWARNING = -Wall -pedantic -Wno-long-long -Wold-style-cast
 GXXWARNING = -Wall -pedantic -Wno-long-long
 PROGRAM    = cravarun
 PURIFY     =
