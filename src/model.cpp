@@ -411,9 +411,12 @@ Model::readSegyFiles(char          ** fNames,
     target[i] = NULL;
     if((okFiles & flag) == 0)
     {
-      segy = new SegY(fNames[i], modelSettings->getSegyOffset());
+      segy = new SegY(fNames[i], 
+                      modelSettings->getSegyOffset(),
+                      *(modelSettings->getTraceHeaderFormat()));
       segy->readAllTraces(timeSimbox, modelSettings->getZpad());
       segy->createRegularGrid();
+
      //NBNB if(segy->checkError(tmpErr) != 0)
     //  {
     //    error++;
@@ -421,6 +424,7 @@ Model::readSegyFiles(char          ** fNames,
     //  }
    //   else
     //  {
+
         if(timeSimbox->status() == Simbox::NOAREA)
         {
           const SegyGeometry *geometry;
@@ -485,7 +489,10 @@ Model::readSegyFile(char          * fName,
 
   SegY * segy;
   target = NULL;
-  segy = new SegY(fName, modelSettings->getSegyOffset());
+  segy = new SegY(fName, 
+                  modelSettings->getSegyOffset(),
+                  *(modelSettings->getTraceHeaderFormat()));
+
   //  char tmpErr[MAX_STRING];
   //NBNB  if(segy->checkError(tmpErr) != 0)
   //  {
@@ -493,6 +500,7 @@ Model::readSegyFile(char          * fName,
   //   error = 1;
   //  }
   //  else
+
   {
     if(modelSettings->getFileGrid() == 1)
       target = new FFTFileGrid(timeSimbox->getnx(),

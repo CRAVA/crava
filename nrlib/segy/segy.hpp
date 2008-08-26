@@ -30,47 +30,65 @@ public:
   @param[in] fileName  Name of file to read data from
   @param[in] z0
   */
-  SegY(const std::string& fileName, float z0, 
-    const TraceHeaderFormat& traceHeaderFormat = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS)); 
+  SegY(const std::string       & fileName, 
+       float                     z0, 
+       const TraceHeaderFormat & traceHeaderFormat = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS)); 
 /**
   Constructor for writing
   @param[in] fileName  Name of file to write data to
   */
- SegY(const std::string& fileName, float z0, int nz, float dz, const TextualHeader& ebcdicHeader,
-      const TraceHeaderFormat& traceHeaderFormat = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS));
+ SegY(const std::string       & fileName, 
+      float                     z0, 
+      int                       nz, 
+      float                     dz, 
+      const TextualHeader     & ebcdicHeader,
+      const TraceHeaderFormat & traceHeaderFormat = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS));
   
   ~SegY();
 
-  //>>>Begin read all trace mode
-  /// read all traces with their header
-  void readAllTraces(NRLib2::Volume * volume, double zPad, bool onlyVolume = false);
-
-  float getValue(double x, double y, double z, int outsideMode = segyIMISSING);
-  /// return vector with all values. 
-  std::vector<float> getAllValues();
-  void createRegularGrid();
-  const SegyGeometry * getGeometry(){return(geometry_);} //Only makes sense after command above.
+  //>>>Begin read all traces mode
+  void                      readAllTraces(NRLib2::Volume * volume, 
+                                          double           zPad, 
+                                          bool             onlyVolume = false); ///< Read all traces with header
+  float                     getValue(double x, 
+                                     double y, 
+                                     double z, 
+                                     int    outsideMode = segyIMISSING);
+  
+  std::vector<float>        getAllValues(); ///< Return vector with all values. 
+  void                      createRegularGrid();
+  const SegyGeometry      * getGeometry(void)  { return geometry_ ;} //Only makes sense after command above.
   //<<<End read all trace mode
 
   //>>>Begin read single trace mode
-  //The following functions are for use when in single trace mode.
-  const SegYTrace * getNextTrace(double zPad = 0, NRLib2::Volume * volume = NULL, bool onlyVolume = false);
+  const SegYTrace         * getNextTrace(double           zPad = 0, 
+                                         NRLib2::Volume * volume = NULL, 
+                                         bool             onlyVolume = false);
   //<<<End read single trace mode
 
   //>>>Begin write mode
-  // write single trace to file
-  void writeTrace(TraceHeader * traceHeader, std::vector<float> data,NRLib2::Volume *volume,float topVal=0.0f,float baseVal=0.0f);
-  //write single trace to internal memory
-  void writeTrace(float x, float y, std::vector<float> data,const NRLib2::Volume *volume,float topVal=0.0f,float baseVal=0.0f);
-  void storeTrace(float x, float y, std::vector<float> data,NRLib2::Volume *volume,float topVal=0.0f,float baseVal=0.0f);
-  void setGeometry(const SegyGeometry * geometry);
-  // Use only after writeTrace with x and y as input is used for the whole cube
-  void WriteAllTracesToFile();
+  void                      setGeometry(const SegyGeometry * geometry);  
+  void                      storeTrace(float               x, 
+                                       float               y, 
+                                       std::vector<float>  data,
+                                       NRLib2::Volume    * volume,
+                                       float               topVal=0.0f,
+                                       float               baseVal=0.0f);
+  void                      writeTrace(TraceHeader       * traceHeader, 
+                                       std::vector<float>  data,
+                                       NRLib2::Volume    * volume,
+                                       float               topVal=0.0f,
+                                       float               baseVal=0.0f);    ///< Write single trace to file
+  void                      writeTrace(float                  x, 
+                                       float                  y, 
+                                       std::vector<float>     data,
+                                       const NRLib2::Volume * volume,
+                                       float                  topVal=0.0f,
+                                       float                  baseVal=0.0f); ///< Write single trace to internal memory
+  void                      WriteAllTracesToFile(); ///< Use only after writeTrace with x and y as input is used for the whole cube
   //<<<End write mode
 
 
-  //General functions
-  ///
   // int checkError(char * errText) 
   //   {if(error_ > 0) strcpy(errText, errMsg_);return(error_);}
   /// Return (possibly upper limit for) number of traces
@@ -81,19 +99,15 @@ public:
 
   enum                      outsideModes{MISSING, ZERO, CLOSEST};
 
-  int                       checkSize(const TraceHeaderFormat & traceHeaderFormat);
+  int                       findNumberOfTraces(void);
+  static int                findNumberOfTraces(const std::string       & fileName, 
+                                               const TraceHeaderFormat & traceHeaderFormat 
+                                               = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS));
 
-  SegyGeometry            * checkGridArea();                                    ///< Find grid geometry
-
-  static int                CheckNumberOfTraces(const std::string & fileName, 
-                                                float               z0, 
-                                                const TraceHeaderFormat & traceHeaderFormat 
-                                                = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS));
-  static SegyGeometry     * CheckGridGeometry(const std::string & fileName, 
-                                              float               z0, 
-                                              const TraceHeaderFormat & traceHeaderFormat 
-                                              = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS));
-
+  SegyGeometry            * findGridGeometry(void);                                 
+  static SegyGeometry     * findGridGeometry(const std::string       & fileName, 
+                                             const TraceHeaderFormat & traceHeaderFormat 
+                                             = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS));
 private:
   void                      ebcdicHeader(std::string& outstring);               ///<
   bool                      readHeader(TraceHeader * header);                   ///< Trace header
@@ -105,7 +119,7 @@ private:
   
   double                    interpolate(int xyidx, 
                                         int zidx);
-  std::ios::pos_type        fileSize(const std::string & fileName);
+  std::ios::pos_type        findFileSize(const std::string & fileName);
 
   TraceHeaderFormat         traceHeaderFormat_;
 
@@ -193,56 +207,43 @@ public:
   */
   SegyGeometry(std::vector<SegYTrace *> &traces);
   SegyGeometry(double x0,double y0,double dx,double dy,
-                           int nx,int ny,int IL0,int XL0,int ilStep,int xlStep,bool ILxflag,double rot);
-  /// Copy constructor
-  SegyGeometry(const SegyGeometry *geometry);
+               int nx,int ny,int IL0,int XL0,int ilStep,int xlStep,bool ILxflag,double rot);
+  SegyGeometry(const SegyGeometry *geometry);   ///< Copy constructor
   ~SegyGeometry();
-  /// Return grid index for i and j
-  int returnIndex(float x, float y, float &xind, float  &yind);
-  int returnIndex(int IL, int XL, int &i, int &j);
-  int returnILXL(int &IL, int &XL, float x, float y);
-  /// return nx
-  int getNx() const {return(nx_);}
-  /// return ny
-  int getNy() const {return(ny_);}
-  //Fyll på med get-funksjonar. etter behov.
-  bool getILxflag() const{return(ILxflag_);}
- ///
-  double getDx() const {return(dx_);}
-  ///
-  double getDy() const {return(dy_);}
-  double getX0() const {return(x0_);}
-  double getY0() const {return(y0_);}
-  double getlx() const {return(nx_*dx_);}
-  double getly() const {return(ny_*dy_);}
-  double getAngle() const {return(rot_);}
-  double getCosRot() const{return(cosRot_);}
-  double getSinRot() const {return(sinRot_);}
-  int    getInLine0() const {return(inLine0_);}
-  int    getCrossLine0() const {return(crossLine0_);}
-  int    getILstep() const {return(ilStep_);}
-  int    getXLstep() const {return(xlStep_);}
-  void findIJFromILXL(int IL, int XL, int &i, int &j);
-  void findIJfromXY(float x, float y, int &i, int &j);
-  void findXYfromIJ(int i, int j, float &x, float &y) const;
+  
+  int    returnIndex(float x, float y, float &xind, float  &yind); ///< Return grid index for i and j
+  int    returnIndex(int IL, int XL, int &i, int &j);
+  int    returnILXL(int &IL, int &XL, float x, float y);
+  int    getNx()           const { return nx_        ;}            ///< return nx
+  int    getNy()           const { return ny_        ;}            ///< return ny
+  bool   getILxflag()      const { return ILxflag_   ;}
+  // Fyll på med get-funksjonar. etter behov.
+  double getDx()           const { return dx_        ;}
+  double getDy()           const { return dy_        ;}
+  double getX0()           const { return x0_        ;}
+  double getY0()           const { return y0_        ;}
+  double getlx()           const { return nx_*dx_    ;}
+  double getly()           const { return ny_*dy_    ;}
+  double getAngle()        const { return rot_       ;}
+  double getCosRot()       const { return cosRot_    ;}
+  double getSinRot()       const { return sinRot_    ;}
+  int    getInLine0()      const { return inLine0_   ;}
+  int    getCrossLine0()   const { return crossLine0_;}
+  int    getILstep()       const { return ilStep_    ;}
+  int    getXLstep()       const { return xlStep_    ;}
+  void   findIJFromILXL(int IL, int XL, int &i, int &j);
+  void   findIJfromXY(float x, float y, int &i, int &j);
+  void   findXYfromIJ(int i, int j, float &x, float &y) const;
 
 private:
-  ///
-  double x0_, y0_;
-  /// cell increments
-  double dx_, dy_;
-  /// grid dimensions
-  long nx_, ny_;
-  /// start value for inline and crossline
-  int inLine0_, crossLine0_;
-  ///
-  int ilStep_, xlStep_;
-  ///
-  //int yDir_;
-  bool ILxflag_;
-  ///
-  double sinRot_, cosRot_;
-  double rot_;
+  double x0_, y0_;              ///<
+  double dx_, dy_;              ///< Cell increments
+  long nx_, ny_;                ///< Grid dimensions  
+  int inLine0_, crossLine0_;    ///< Start value for inline and crossline
+  int ilStep_, xlStep_;         ///< 
+  bool ILxflag_;                ///<
+  double sinRot_, cosRot_;      ///<
+  double rot_;                  ///<
 };
 
 #endif

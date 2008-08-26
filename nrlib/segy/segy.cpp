@@ -6,7 +6,6 @@
 #define _USE_MATH_DEFINES
 #include <cmath>
 
-
 #include "segy.hpp"
 #include "commonheaders.hpp"
 #include "traceheader.hpp"
@@ -17,31 +16,29 @@
 #include "../surface/surface.hpp"
 #include "../iotools/stringtools.hpp"
 
-
 const float segyRMISSING = -99999.000;
 
 using namespace NRLib2;
 
-SegY::SegY(const std::string& fileName,float z0, const TraceHeaderFormat& traceHeaderFormat)
-: traceHeaderFormat_(traceHeaderFormat)
+SegY::SegY(const std::string       & fileName,
+           float                     z0, 
+           const TraceHeaderFormat & traceHeaderFormat)
+  : traceHeaderFormat_(traceHeaderFormat)
 {
-  rmissing_ = segyRMISSING;
-  fileName_ = fileName;
+  rmissing_    = segyRMISSING;
+  fileName_    = fileName;
   singleTrace_ = true;
 
-
-/// \todo Replace with safe open function.
+  /// \todo Replace with safe open function.
   file_.open(fileName.c_str(), std::ios::in | std::ios::binary);
   if (!file_) {
     throw new IOError("Error opening " + fileName);
   }
 
-// EBCDIC header
+  // EBCDIC header
   char* junk=new char[3200];
-  //fread(junk, 1,3200, file_); 
   file_.read(junk,3200);
-
-   binaryHeader_ = new BinaryHeader(file_);
+  binaryHeader_ = new BinaryHeader(file_);
   nz_ = binaryHeader_->getHns();
   dz_ = static_cast<float>(binaryHeader_->getHdt()/1000);
   z0_ = z0;
@@ -51,24 +48,23 @@ SegY::SegY(const std::string& fileName,float z0, const TraceHeaderFormat& traceH
     datasize_ = 4;
   if(binaryHeader_->getFormat() == 4)
   {
-   // LogKit::LogMessage(1,"failed\n");
     throw FileFormatError("Can not read SegY-file \"" + fileName + "\" that use floating point with gain representation.");
     return;
   }
   geometry_ = NULL;
 }
 
-SegY::SegY(const std::string& fileName, float z0, int nz, float dz,const TextualHeader& ebcdicHeader, 
-           const TraceHeaderFormat& traceHeaderFormat)
-           : traceHeaderFormat_(traceHeaderFormat)
+SegY::SegY(const std::string       & fileName, 
+           float                     z0, 
+           int                       nz, 
+           float                     dz,
+           const TextualHeader     & ebcdicHeader, 
+           const TraceHeaderFormat & traceHeaderFormat)
+  : traceHeaderFormat_(traceHeaderFormat)
 {
-  //error_ = 0;
-  // errMsg_ = 0;
-  //  traces_ = NULL;
-  //buffer_ = NULL;
   rmissing_ = segyRMISSING;
   geometry_ = NULL;
-  //format_ = NULL;
+
   /// \todo Replace with safe open function.
   file_.open(fileName.c_str(), std::ios::out | std::ios::binary);
   if (!file_) {
@@ -106,7 +102,7 @@ SegY::getNextTrace(double zPad, Volume * volume, bool onlyVolume )
 void 
 SegY::readAllTraces(Volume *volume, double zPad, bool onlyVolume)
 {
-  std::ios::pos_type fSize = fileSize(fileName_);
+  std::ios::pos_type fSize = findFileSize(fileName_);
 
   singleTrace_ = false;
   nTraces_     = static_cast<int>(ceil( (static_cast<double>(fSize)-3600.0)/
@@ -266,26 +262,23 @@ SegY::readHeader(TraceHeader * header)
 void 
 SegY::setGeometry(const SegyGeometry * geometry)
 {
-
   geometry_ = new SegyGeometry(geometry);
-  nTraces_ = geometry_->getNx()*geometry_->getNy();
-  int i;
+  nTraces_  = geometry_->getNx()*geometry_->getNy();
   traces_.resize(nTraces_);
-  for(i=0;i<nTraces_;i++)
+  for(int i=0 ; i < nTraces_ ; i++)
   {
     traces_[i] = NULL;
   }
 }
 
-
 void SegY::createRegularGrid()
 {
   geometry_ = new SegyGeometry(traces_);
-  nTraces_ = int(traces_.size());
+  nTraces_  = static_cast<int>(traces_.size());
 
 }
 std::vector<float> 
-SegY::getAllValues()
+SegY::getAllValues(void)
 {
   int i,nTot = 0;
   //int nTraces = nx_*ny_;
@@ -322,22 +315,18 @@ float SegY::getValue(double x, double y, double z, int outsideMode)
   {
     int ok = geometry_->returnIndex(float(x),float(y),xind,yind);
 
-
     i = int(xind);
     j = int(yind);
     int nx = geometry_->getNx();
     int ny = geometry_->getNy();
 
-    //SegYTrace *trace = new SegYTrace();
     int index;
 
     index = j*nx+i; //NBNB er dette rett??
 
     if(traces_[index]!=0 && ok==1 && z>=z0_ && z<=z0_+nz_*dz_)
     {
-      // value = trace[index]->getValue(k);
-
-      int zind = int(floor((z-z0_)/dz_));  //NBNB   irap grid rounding different
+      int zind = static_cast<int>(floor((z-z0_)/dz_));  //NBNB   irap grid rounding different
 
       float v1 = traces_[index]->getValue(zind);
       if(v1 == rmissing_ && outsideMode == CLOSEST)
@@ -345,18 +334,18 @@ float SegY::getValue(double x, double y, double z, int outsideMode)
         zind = traces_[index]->getLegalIndex(zind);
         v1 = traces_[index]->getValue(zind);
         if(traces_[index]->getValue(zind-1) == rmissing_)
-          z = z0_+zind*dz_;          //Want edge value, hence 0/1 dz_ added
-        else                         //(0.5 would give center of cell).
+          z = z0_+zind*dz_;          // Want edge value, hence 0/1 dz_ added
+        else                         // (0.5 would give center of cell).
           z = z0_+(zind+0.99f)*dz_;   
       }
       if(v1 != rmissing_)
       {
-        //Computes interpolated value ax^2+by^2+cz^2+dx+ey+fz+g.
-        //abcdefg estimated from closest point and its closest neighbours.
+        // Computes interpolated value ax^2+by^2+cz^2+dx+ey+fz+g.
+        // abcdefg estimated from closest point and its closest neighbours.
         int maxInd = nx*ny-1;
         float v0, v2, a, b, c, d, e, f, g;
 
-        //Along x:
+        // Along x:
         v0 = rmissing_;
         v2 = rmissing_;
         if(index-1 >= 0 && traces_[index-1] != NULL)
@@ -369,7 +358,7 @@ float SegY::getValue(double x, double y, double z, int outsideMode)
           if(v2 == rmissing_)
             d = 0;
           else
-            d = v2 - v1; //Using unit coordinates in each direction.
+            d = v2 - v1; // Using unit coordinates in each direction.
         } 
         else if(v2 == rmissing_)
         {
@@ -381,14 +370,12 @@ float SegY::getValue(double x, double y, double z, int outsideMode)
           a = (v2+v0-2*v1)/2.0f;
           d = (v2-v0)/2.0f;
         }
-        //Along y:
+        // Along y:
         v0 = rmissing_;
         v2 = rmissing_;
-        //tmpInd = index-yDir_*nx_;
         int tmpInd = index-nx;
         if(tmpInd <= maxInd && tmpInd >= 0 && traces_[tmpInd] != NULL)
           v0 = traces_[tmpInd]->getValue(zind);
-        //tmpInd = index+yDir_*nx_;
         tmpInd = index +nx;
         if(tmpInd <= maxInd && tmpInd >= 0 && traces_[tmpInd] != NULL)
           v2 = traces_[tmpInd]->getValue(zind);
@@ -398,7 +385,7 @@ float SegY::getValue(double x, double y, double z, int outsideMode)
           if(v2 == rmissing_)
             e = 0;
           else
-            e = v2 - v1; //Using unit coordinates in each direction.
+            e = v2 - v1; // Using unit coordinates in each direction.
         }
         else if(v2 == rmissing_)
         {
@@ -454,7 +441,6 @@ float SegY::getValue(double x, double y, double z, int outsideMode)
       else
         value = rmissing_;
     }
-
   }
   else
     value = rmissing_;
@@ -466,10 +452,8 @@ void
 SegY::writeMainHeader(const TextualHeader& ebcdicHeader)
 {
   assert(file_);
-
   ebcdicHeader.write(file_);
   binaryHeader_->write(file_, geometry_, dz_, nz_);
-
 }
 
 void
@@ -496,39 +480,30 @@ SegY::storeTrace(float x, float y, std::vector<float> data, Volume *volume, floa
     int k;
     if(volume->GetTopSurface().IsMissing(ztop))
     {
-      //printf("Missing trace.\n");
       for(k=0;k<nz_;k++)
         trace[k] = 0;
     }
     else
     {
       int firstData = int((ztop-z0_)/dz_);
-      //printf("Generating trace %d %d %d.\n", firstData, simbox_->getnz(),nz_);
       for(k=0;k<firstData;k++)
         trace[k] = topVal; //data[0];
       for(k=firstData;k<(firstData+int(data.size()));k++)
         trace[k] = data[k-firstData];
       for(k=(firstData+int(data.size()));k<nz_;k++)
         trace[k] = baseVal; //data[simbox_->getnz()-1];
-      //printf("Trace generated.\n");
     }
-
-
 
     int index;
     int j0 = 0;
     int j1 = nz_-1;
-
     int i,j;
     geometry_->findIJfromXY(x,y,i,j);
     index = i+geometry_->getNx()*j;
     traces_[index] = new SegYTrace(trace, j0, j1, x, y, IL, XL);
   }
   else
-  {
     throw Exception(" Coordinates aer outside grid.");
-  }
-
 }
 
 void
@@ -548,38 +523,34 @@ SegY::writeTrace(float x, float y, std::vector<float> data, const Volume *volume
   {
   header.setInline(IL);
   header.setCrossline(XL);
-
   header.write(file_);
   double ztop = volume->GetTopSurface().GetZ(x,y);
-  std::vector<float>  trace(nz_);
+
+  std::vector<float> trace(nz_);
   int k;
   if(volume->GetTopSurface().IsMissing(ztop))
   {
-    //printf("Missing trace.\n");
     for(k=0;k<nz_;k++)
       trace[k] = 0;
   }
   else
   {
     int firstData = int((ztop-z0_)/dz_);
-    //printf("Generating trace %d %d %d.\n", firstData, simbox_->getnz(),nz_);
     for(k=0;k<firstData;k++)
       trace[k] = topVal; //data[0];
     for(k=firstData;k<(firstData+int(data.size()));k++)
       trace[k] = data[k-firstData];
     for(k=(firstData+int(data.size()));k<nz_;k++)
       trace[k] = baseVal; //data[simbox_->getnz()-1];
-    //printf("Trace generated.\n");
   }
   WriteBinaryIbmFloatArray(file_,trace.begin(),trace.end());
   }
   else
-  {
     throw Exception("Corrdinates are outside grid.");
-  }
 }
 
-void SegY::writeTrace(TraceHeader * traceHeader, std::vector<float> data,Volume *volume, float topVal, float baseVal)
+void 
+SegY::writeTrace(TraceHeader * traceHeader, std::vector<float> data,Volume *volume, float topVal, float baseVal)
 {
   traceHeader->setNSamples(nz_);
   traceHeader->write(file_);
@@ -591,35 +562,28 @@ void SegY::writeTrace(TraceHeader * traceHeader, std::vector<float> data,Volume 
     z = volume->GetTopSurface().GetZ(traceHeader->getUtmx(),traceHeader->getUtmy());
     nz = int(data.size());
   }
-  std::vector<float>  trace(nz_);
+  std::vector<float> trace(nz_);
   int k;
   if(volume->GetTopSurface().IsMissing(z))
   {
-    //printf("Missing trace.\n");
     for(k=0;k<nz_;k++)
       trace[k] = 0;
   }
   else
   {
     int firstData = int((z-z0_)/dz_);
-    //printf("Generating trace %d %d %d.\n", firstData, simbox_->getnz(),nz_);
     for(k=0;k<firstData;k++)
       trace[k] = topVal; //data[0];
     for(k=firstData;k<firstData+nz;k++)
       trace[k] = data[k-firstData];
     for(k=firstData+nz;k<nz_;k++)
       trace[k] = baseVal; //data[simbox_->getnz()-1];
-    //printf("Trace generated.\n");
   }
-
-
-  // iterator b = trace.begin();
-  //  iterator e = trace.end();
   WriteBinaryIbmFloatArray(file_,trace.begin(),trace.end());
-
-
 }
-void SegY::WriteAllTracesToFile()
+
+void 
+SegY::WriteAllTracesToFile()
 {
   int i,k;
   std::vector<float>  trace(nz_);
@@ -674,26 +638,20 @@ void SegY::WriteAllTracesToFile()
         y = traces_[index]->getY();
         TraceHeader header(traceHeaderFormat_);
         header.setNSamples(nz_);
-        header.setDt((unsigned short) dz_*1000);
-
+        header.setDt(static_cast<unsigned short>(dz_*1000));
         header.setUtmx(x);
         header.setUtmy(y);
-        //int ok = geometry_->returnILXL(IL,XL,x,y);
-        //IL = traces_[i]->getInline();
-        //XL = traces_[i]->getCrossline();
         header.setInline(IL);
         header.setCrossline(XL);
-
         header.write(file_);
         WriteBinaryIbmFloatArray(file_,trace.begin(),trace.end());
       }
     }
   }
-
 }
 
 std::ios::pos_type
-SegY::fileSize(const std::string& fileName)
+SegY::findFileSize(const std::string& fileName)
 {
   std::ios::pos_type length;
   std::ifstream file(fileName.c_str(), std::ios::in | std::ios::binary);
@@ -707,13 +665,67 @@ SegY::fileSize(const std::string& fileName)
   return length;
 }
 
+int 
+SegY::findNumberOfTraces(const std::string       & fileName, 
+                         const TraceHeaderFormat & traceHeaderFormat)
+{
+  float dummy_z0 = 0.0f;
+  SegY segy(fileName, dummy_z0, traceHeaderFormat);
+  int size = segy.findNumberOfTraces();
+  return size;
+}
+
+int 
+SegY::findNumberOfTraces(void)
+{
+  //
+  // NBNB-PAL: Worrying(?) dual usage of nTraces_
+  //
+  // Set nTraces_ to largest possible value 
+  //
+  std::ios::pos_type fSize = findFileSize(fileName_);
+  nTraces_ = static_cast<int>(ceil( (static_cast<double>(fSize)-3600.0)/
+                                     static_cast<double>(datasize_*nz_+240.0)));
+
+  TraceHeader * traceHeader = new TraceHeader(traceHeaderFormat_);
+  readHeader(traceHeader);
+
+  char * buffer = new char[nz_*datasize_];
+  file_.read(buffer,(nz_*datasize_));
+
+  int ntr = 1;
+  for(int i=1 ; i<nTraces_ ; i++)
+  {   
+    if(file_.eof()==false)
+    {
+      ntr++;
+      readHeader(traceHeader);
+      file_.read(buffer,(nz_*datasize_));
+    }
+  }
+  delete buffer;
+  delete traceHeader;
+  return(ntr);
+}
+
+SegyGeometry *
+SegY::findGridGeometry(const std::string       & fileName, 
+                       const TraceHeaderFormat & traceHeaderFormat)
+{
+  float dummy_z0 = 0.0f;
+  SegY segy(fileName, dummy_z0, traceHeaderFormat);
+  SegyGeometry * geometry = segy.findGridGeometry();
+  return geometry;
+}
+
 SegyGeometry * 
-SegY::checkGridArea()
+SegY::findGridGeometry(void)
 {
   TraceHeader * traceHeader = new TraceHeader(traceHeaderFormat_);
 
-  std::ios::pos_type fSize = fileSize(fileName_);
-  nTraces_ = int(ceil((double(fSize)-3600.0)/double(datasize_*nz_+240.0)));
+  std::ios::pos_type fSize = findFileSize(fileName_);
+  nTraces_ = static_cast<int>(ceil((static_cast<double>(fSize)-3600.0)/
+                                    static_cast<double>(datasize_*nz_+240.0)));
   int i;
   int tenPercent;
   if(nTraces_/10>1)
@@ -939,54 +951,9 @@ SegY::checkGridArea()
   return(geometry);
 }
 
-int SegY::CheckNumberOfTraces(const std::string& fileName, float z0, const TraceHeaderFormat & traceHeaderFormat)
-{
-  SegY segy(fileName,z0, traceHeaderFormat);
-  int size = segy.checkSize(traceHeaderFormat);
-  return(size);
-}
-
-int SegY::checkSize(const TraceHeaderFormat & traceHeaderFormat)
-{
-  //
-  // NBNB-PAL: Worrying(?) dual usage of nTraces_
-  //
-  // Set nTraces_ to largest possible value 
-  //
-  std::ios::pos_type fSize = fileSize(fileName_);
-  nTraces_ = static_cast<int>(ceil( (static_cast<double>(fSize)-3600.0)/
-                                     static_cast<double>(datasize_*nz_+240.0)));
-
-  TraceHeader * traceHeader = new TraceHeader(traceHeaderFormat_);
-  readHeader(traceHeader);
-
-  char * buffer = new char[nz_*datasize_];
-  file_.read(buffer,(nz_*datasize_));
-
-  int ntr = 1;
-  for(int i=1 ; i<nTraces_ ; i++)
-  {   
-    if(file_.eof()==false)
-    {
-      ntr++;
-      readHeader(traceHeader);
-      file_.read(buffer,(nz_*datasize_));
-    }
-  }
-  delete buffer;
-  delete traceHeader;
-  return(ntr);
-}
-
-SegyGeometry *
-SegY::CheckGridGeometry(const std::string       & fileName, 
-                        float                     z0,
-                        const TraceHeaderFormat & traceHeaderFormat)
-{
-  SegY *segy = new SegY(fileName,z0, traceHeaderFormat);
-  SegyGeometry *vol = segy->checkGridArea();
-  return(vol);
-}
+//===============================================================================
+//  Class SegYTrace
+//===============================================================================
 
 SegYTrace::SegYTrace(std::fstream & file, int jStart, int jEnd, int format, float x, float y, int inLine, int crossLine, int nz)
 {
@@ -1028,18 +995,13 @@ SegYTrace::SegYTrace(std::fstream & file, int jStart, int jEnd, int format, floa
     ReadBinaryFloatArray(file, predata.begin(), nz);
     for(i=0;i<nData;i++)
       data_[i] = predata[jStart+i];
-
   }
   else
-  {
-    //std::cout<< "Bad format\n";
     throw FileFormatError("Bad format");
-  }
-
 }
+
 SegYTrace::SegYTrace(std::vector<float> indata, int jStart, int jEnd, float x, float y, int inLine, int crossLine)
 {
-
   jStart_ = jStart;
   jEnd_ = jEnd;
   x_ = x;
@@ -1055,9 +1017,8 @@ SegYTrace::SegYTrace(std::vector<float> indata, int jStart, int jEnd, float x, f
 
 SegYTrace::~SegYTrace()
 {
-
-
 }
+
 float
 SegYTrace::getValue(int j)const
 {
@@ -1079,8 +1040,6 @@ SegYTrace::getLegalIndex(int index)
   else
     return(index);
 }
-
-
 
 SegyGeometry::SegyGeometry(std::vector<SegYTrace *> &traces)
 {
@@ -1220,15 +1179,12 @@ SegyGeometry::SegyGeometry(std::vector<SegYTrace *> &traces)
   }
   rot_ = atan((cornery[index]-cornery[index2])/(cornerx[index]-cornerx[index2]));
 
-
   double lx,ly;
   if(fabs(rot_)<=0.25*M_PI)
   {
-
     x0_ = cornerx[index];
     y0_= cornery[index];
     lx = sqrt((cornery[index]-cornery[index2])*(cornery[index]-cornery[index2])+(cornerx[index]-cornerx[index2])*(cornerx[index]-cornerx[index2]));
-    // nx_ = abs(traces[index]->getCrossline()-traces[index2]->getCrossline());
     nx_ = long(abs(cornerxl[index]-cornerxl[index2])/deltaXL);
     if(nx_==0)
       nx_ = long(abs(corneril[index]-corneril[index2])/deltaIL);
@@ -1237,7 +1193,6 @@ SegyGeometry::SegyGeometry(std::vector<SegYTrace *> &traces)
     if(index3==index)
       index3 = index4;
     ly = sqrt((cornery[index]-cornery[index3])*(cornery[index]-cornery[index3])+(cornerx[index]-cornerx[index3])*(cornerx[index]-cornerx[index3]));
-    // ny_ = abs(traces[index]->getCrossline()-traces[index3]->getCrossline());
     ny_ = long(abs(cornerxl[index]-cornerxl[index3])/deltaXL);
     if(ny_==0)
       ny_ = long(abs(corneril[index]-corneril[index3])/deltaIL);
@@ -1256,7 +1211,6 @@ SegyGeometry::SegyGeometry(std::vector<SegYTrace *> &traces)
       index = index2;
     rot_ = atan((cornery[index]-cornery[index3])/(cornerx[index]-cornerx[index3]));
     lx = sqrt((cornery[index]-cornery[index3])*(cornery[index]-cornery[index3])+(cornerx[index]-cornerx[index3])*(cornerx[index]-cornerx[index3]));
-    // nx_ = abs(traces[index]->getCrossline()-traces[index3]->getCrossline());
     nx_ = long(abs(cornerxl[index]-cornerxl[index3])/deltaXL);
     if(nx_==0)
       nx_ = long(abs(corneril[index]-corneril[index3])/deltaIL);
@@ -1264,7 +1218,6 @@ SegyGeometry::SegyGeometry(std::vector<SegYTrace *> &traces)
     if(index3==index4)
       index3 = index;
     ly = sqrt((cornery[index4]-cornery[index3])*(cornery[index4]-cornery[index3])+(cornerx[index4]-cornerx[index3])*(cornerx[index4]-cornerx[index3]));
-    // ny_ = abs(traces[index4]->getCrossline()-traces[index3]->getCrossline());
     ny_ = long(abs(cornerxl[index4]-cornerxl[index3])/deltaXL);
     if(ny_==0)
       ny_ = long(abs(corneril[index4]-corneril[index3])/deltaIL);
@@ -1277,16 +1230,12 @@ SegyGeometry::SegyGeometry(std::vector<SegYTrace *> &traces)
   sinRot_ = sin(rot_);
   cosRot_ = cos(rot_);
 
-  //int IL0 = int(((x0_-y0_)+ly0-lx0)/(dxIL-dyIL));
-  //int XL0 = int(((x0_-y0_)+ly0-lx0)/(dxXL-dyXL));
   int XL0 = int((dyIL*(x0_-lx0)-dxIL*(y0_-ly0))/(dxXL*dyIL-dyXL*dxIL)+0.5*deltaXL + 0.5);
   int IL0 = int((dyXL*(x0_-lx0)-dxXL*(y0_-ly0))/(dxIL*dyXL-dyIL*dxXL)+0.5*deltaIL + 0.5);
   inLine0_ = IL0;
   crossLine0_ = XL0;
   float x,y;
   findXYfromIJ(1,0,x,y);
-  //int IL10 = int(((x-y)+ly0-lx0)/(dxIL-dyIL));
-  //int XL10 = int(((x-y)+ly0-lx0)/(dxXL-dyXL));
   int IL10 = int((dyXL*(x-lx0)-dxXL*(y-ly0))/(dxIL*dyXL-dyIL*dxXL)+0.5*deltaIL+0.5);
   int XL10 = int((dyIL*(x-lx0)-dxIL*(y-ly0))/(dxXL*dyIL-dyXL*dxIL)+0.5*deltaXL+0.5);
   if(XL0 != XL10)
@@ -1300,8 +1249,6 @@ SegyGeometry::SegyGeometry(std::vector<SegYTrace *> &traces)
     ILxflag_ = true;
   }
   findXYfromIJ(0,1,x,y);
-  //int IL01 = int(((x-y)+ly0-lx0)/(dxIL-dyIL));
-  // int XL01 = int(((x-y)+ly0-lx0)/(dxXL-dyXL));
   int IL01 = int((dyXL*(x-lx0)-dxXL*(y-ly0))/(dxIL*dyXL-dyIL*dxXL)+0.5*deltaIL+0.5);
   int XL01 = int((dyIL*(x-lx0)-dxIL*(y-ly0))/(dxXL*dyIL-dyXL*dxIL)+0.5*deltaXL+0.5);
   if(ILxflag_ == false)
@@ -1326,70 +1273,70 @@ SegyGeometry::SegyGeometry(std::vector<SegYTrace *> &traces)
   }
 
   traces.resize(nTraces);
-  //traces = new SegYTrace *[nTraces];
   for(k=0;k<nTraces;k++)
     traces[k] = tracestmp[k];
-
-
 }
 
-SegyGeometry::SegyGeometry(double x0,double y0,double dx,double dy,int nx,int ny,int IL0,int XL0,int ilStep,int xlStep,bool ILxflag,double rot)
+SegyGeometry::SegyGeometry(double x0, double y0, double dx, double dy, int nx, int ny, 
+                           int IL0, int XL0, int ilStep, int xlStep, bool ILxflag, double rot)
 {
-  x0_ = x0;
-  y0_ = y0;
-  dx_ = dx;
-  dy_ = dy;
-  nx_ = nx;
-  ny_ = ny;
-  inLine0_ = IL0;
+  x0_         = x0;
+  y0_         = y0;
+  dx_         = dx;
+  dy_         = dy;
+  nx_         = nx;
+  ny_         = ny;
+  inLine0_    = IL0;
   crossLine0_ = XL0;
-  ilStep_ = ilStep;
-  xlStep_ = xlStep;
-  ILxflag_ = ILxflag;
-  cosRot_ = cos(rot);
-  sinRot_ = sin(rot);
-  rot_ = rot;
-
+  ilStep_     = ilStep;
+  xlStep_     = xlStep;
+  ILxflag_    = ILxflag;
+  cosRot_     = cos(rot);
+  sinRot_     = sin(rot);
+  rot_        = rot;
 }
+
 SegyGeometry::SegyGeometry(const SegyGeometry *geometry)
 {
-  x0_ = geometry->x0_; 
-  y0_ = geometry->y0_;
-  dx_ = geometry->dx_;
-  dy_ = geometry->dy_;
-  nx_ = geometry->nx_;
-  ny_ = geometry->ny_;
-  inLine0_ = geometry->inLine0_;
+  x0_         = geometry->x0_; 
+  y0_         = geometry->y0_;
+  dx_         = geometry->dx_;
+  dy_         = geometry->dy_;
+  nx_         = geometry->nx_;
+  ny_         = geometry->ny_;
+  inLine0_    = geometry->inLine0_;
   crossLine0_ = geometry->crossLine0_;
-  ilStep_ = geometry->ilStep_; 
-  xlStep_ = geometry->xlStep_;
-  ILxflag_ = geometry->ILxflag_;
-  sinRot_ = geometry->sinRot_;
-  cosRot_ = geometry->cosRot_;
-  rot_ = geometry->rot_;
-
+  ilStep_     = geometry->ilStep_; 
+  xlStep_     = geometry->xlStep_;
+  ILxflag_    = geometry->ILxflag_;
+  sinRot_     = geometry->sinRot_;
+  cosRot_     = geometry->cosRot_;
+  rot_        = geometry->rot_;
 }
 
 SegyGeometry::~SegyGeometry()
 {
-
 }
-void SegyGeometry::findXYfromIJ(int i, int j, float &x, float &y)const
+
+void 
+SegyGeometry::findXYfromIJ(int i, int j, float &x, float &y)const
 {
   x = float(x0_+i*dx_*cosRot_-j*dy_*sinRot_);
   y = float(y0_+i*dx_*sinRot_+j*dy_*cosRot_);
 }
 
-void SegyGeometry::findIJfromXY(float x, float y, int &i, int &j)
+void 
+SegyGeometry::findIJfromXY(float x, float y, int &i, int &j)
 {
   double teller1 = (x-x0_)*cosRot_+(y-y0_)*sinRot_;
   i = int(teller1/dx_);
   double teller2 = -(x-x0_)*sinRot_+(y-y0_)*cosRot_;
   j = int(teller2/dy_);
 }
-int SegyGeometry::returnIndex(float x, float y, float &xind, float  &yind)
-{
 
+int 
+SegyGeometry::returnIndex(float x, float y, float &xind, float  &yind)
+{
   xind = float(((x-x0_)*cosRot_+(y-y0_)*sinRot_)/dx_);
   yind = float((-(x-x0_)*sinRot_+(y-y0_)*cosRot_)/dy_);
   if(xind>=0 && xind<nx_ && yind>=0 && yind<ny_)
@@ -1398,10 +1345,10 @@ int SegyGeometry::returnIndex(float x, float y, float &xind, float  &yind)
     return 0;
 }
 
-int SegyGeometry::returnILXL(int &IL, int &XL, float x, float y)
+int 
+SegyGeometry::returnILXL(int &IL, int &XL, float x, float y)
 {
   int i, j;
-
   findIJfromXY(x,y,i,j);
   if(ILxflag_==false)
   {
@@ -1420,7 +1367,9 @@ int SegyGeometry::returnILXL(int &IL, int &XL, float x, float y)
   else
     return 0;
 }
-void SegyGeometry::findIJFromILXL(int IL, int XL, int &i, int &j)
+
+void 
+SegyGeometry::findIJFromILXL(int IL, int XL, int &i, int &j)
 {
 
   if(ILxflag_==false)
