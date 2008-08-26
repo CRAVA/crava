@@ -75,74 +75,61 @@ public:
   //   {if(error_ > 0) strcpy(errText, errMsg_);return(error_);}
   /// Return (possibly upper limit for) number of traces
   
-  int   getNTraces() {return(nTraces_);} 
-  int   getNz()      {return(nz_);}
-  float getDz()      {return(dz_);}
+  int                       getNTraces() { return nTraces_ ;} 
+  int                       getNz()      { return nz_      ;}
+  float                     getDz()      { return dz_      ;}
 
-  enum  outsideModes{MISSING, ZERO, CLOSEST};
+  enum                      outsideModes{MISSING, ZERO, CLOSEST};
 
-  int   checkSize(const TraceHeaderFormat & traceHeaderFormat);
- /// Find grid geometry
+  int                       checkSize(const TraceHeaderFormat & traceHeaderFormat);
 
-  SegyGeometry * checkGridArea();
+  SegyGeometry            * checkGridArea();                                    ///< Find grid geometry
 
-  static int CheckNumberOfTraces(const std::string& fileName, float z0, 
-                                 const TraceHeaderFormat & traceHeaderFormat = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS));
-  static SegyGeometry * CheckGridGeometry(const std::string& fileName, float z0, 
-                                          const TraceHeaderFormat& traceHeaderFormat = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS));
+  static int                CheckNumberOfTraces(const std::string & fileName, 
+                                                float               z0, 
+                                                const TraceHeaderFormat & traceHeaderFormat 
+                                                = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS));
+  static SegyGeometry     * CheckGridGeometry(const std::string & fileName, 
+                                              float               z0, 
+                                              const TraceHeaderFormat & traceHeaderFormat 
+                                              = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS));
 
 private:
-  /// 
-  void           ebcdicHeader(std::string& outstring);
-  ///
-  // void           readBinaryHeader(char * buffer);
-
-  /// Trace header
-  int            readHeader(TraceHeader * header);
+  void                      ebcdicHeader(std::string& outstring);               ///<
+  bool                      readHeader(TraceHeader * header);                   ///< Trace header
+  SegYTrace               * readTrace(NRLib2::Volume * volume, 
+                                      double           zPad, 
+                                      bool           & duplicateHeader, 
+                                      bool             onlyVolume = false);     ///< Read single trace from file
+  void                      writeMainHeader(const TextualHeader& ebcdicHeader); ///< Quasi-dummy at the moment. 
   
-  /// read single trace from file
-  SegYTrace    * readTrace(TraceHeader * traceHeader,                 
-                           TraceHeaderFormat::coordSys_t coordSys,
-                           NRLib2::Volume * volume, double zPad, bool onlyVolume = false);
+  double                    interpolate(int xyidx, 
+                                        int zidx);
+  std::ios::pos_type        fileSize(const std::string & fileName);
 
-  void           writeMainHeader(const TextualHeader& ebcdicHeader); //Quasi-dummy at the moment. 
+  TraceHeaderFormat         traceHeaderFormat_;
+
+  SegyGeometry            * geometry_;             ///< Parameters to find final index from i and j
+  BinaryHeader            * binaryHeader_;         ///<
   
-  double         interpolate(int xyidx, int zidx);
-  std::ios::pos_type fileSize(const std::string& fileName);
+  bool                      singleTrace_;          ///< Read one and one trace
+  bool                      simboxOnly_;           ///<
+  bool                      checkSimbox_;          ///<
 
-  float rmissing_;
- 
-  /// read one and one trace
-  bool singleTrace_;
-  ///
-  bool simboxOnly_;
-  ///
-  bool checkSimbox_;
- 
-  /// All traces
-  std::vector<SegYTrace*>   traces_;
-  ///
-  BinaryHeader *binaryHeader_;
+  std::vector<SegYTrace*>   traces_;               ///< All traces
+  int                       nTraces_;              ///< WARNING: Counts many different things
 
-  /// Bytes per datapoint in file.
-  int            datasize_;         
-  
-  int nTraces_;
+  int                       datasize_;             ///< Bytes per datapoint in file.         
 
-  int nz_;
-   /// top of segy cube
-  float z0_;
-  float dz_;
+  int                       nz_; 
 
-  std::fstream file_;
-  std::string  fileName_;
-  
-  TraceHeaderFormat traceHeaderFormat_;
-
-  /// Parameters to find final index from i and j
-  SegyGeometry *geometry_;
-
-
+  float                     z0_;                   ///< Top of segy cube
+  float                     dz_;                   ///< Sampling density
+                                                                            
+  std::fstream              file_;                                 
+  std::string               fileName_;              
+                                                           
+  float                     rmissing_;                    
 };
 
 
