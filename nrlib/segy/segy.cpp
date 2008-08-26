@@ -178,10 +178,10 @@ SegY::readTrace(Volume * volume,
   {
     if(volume->isInside(x,y) == 0 && onlyVolume == true)
       return(NULL);
-    zTop = float(volume->GetTopSurface().GetZ(x,y));
+    zTop = static_cast<float>(volume->GetTopSurface().GetZ(x,y));
     if(volume->GetTopSurface().IsMissing(zTop))
       return(NULL);
-    zBot = float(volume->GetBotSurface().GetZ(x,y));
+    zBot = static_cast<float>(volume->GetBotSurface().GetZ(x,y));
     if(volume->GetBotSurface().IsMissing(zBot))
       return(NULL);
   }
@@ -302,7 +302,8 @@ SegY::getAllValues(void)
     return(result);
 }
 
-float SegY::getValue(double x, double y, double z, int outsideMode)
+float 
+SegY::getValue(double x, double y, double z, int outsideMode)
 {
   int i, j;
   float xind,yind;
@@ -313,10 +314,10 @@ float SegY::getValue(double x, double y, double z, int outsideMode)
   double sy = -(x-x0)*geometry_->getSinRot() + (y-y0)*geometry_->getCosRot() + 0.5*geometry_->getDy();
   if(geometry_!=NULL)
   {
-    int ok = geometry_->returnIndex(float(x),float(y),xind,yind);
+    int ok = geometry_->returnIndex(static_cast<float>(x),static_cast<float>(y),xind,yind);
 
-    i = int(xind);
-    j = int(yind);
+    i = static_cast<int>(xind);
+    j = static_cast<int>(yind);
     int nx = geometry_->getNx();
     int ny = geometry_->getNy();
 
@@ -421,9 +422,9 @@ float SegY::getValue(double x, double y, double z, int outsideMode)
         g = v1;
         double dx = geometry_->getDx();
         double dy = geometry_->getDy();
-        float ux = float(sx/dx) - float(floor(sx/dx) + 0.5);
-        float uy = float(sy/dy) - float(floor(sy/dy) + 0.5);
-        float uz = float((z-z0_)/dz_) - float(floor((z-z0_)/dz_) + 0.5);
+        float ux = static_cast<float>(sx/dx) - static_cast<float>(floor(sx/dx) + 0.5);
+        float uy = static_cast<float>(sy/dy) - static_cast<float>(floor(sy/dy) + 0.5);
+        float uz = static_cast<float>((z-z0_)/dz_) - static_cast<float>(floor((z-z0_)/dz_) + 0.5);
         value = a*ux*ux+b*uy*uy+c*uz*uz+d*ux+e*uy+f*uz+g;
       }
       else
@@ -485,12 +486,12 @@ SegY::storeTrace(float x, float y, std::vector<float> data, Volume *volume, floa
     }
     else
     {
-      int firstData = int((ztop-z0_)/dz_);
+      int firstData = static_cast<int>((ztop-z0_)/dz_);
       for(k=0;k<firstData;k++)
         trace[k] = topVal; //data[0];
-      for(k=firstData;k<(firstData+int(data.size()));k++)
+      for(k=firstData;k<(firstData+static_cast<int>(data.size()));k++)
         trace[k] = data[k-firstData];
-      for(k=(firstData+int(data.size()));k<nz_;k++)
+      for(k=(firstData+static_cast<int>(data.size()));k<nz_;k++)
         trace[k] = baseVal; //data[simbox_->getnz()-1];
     }
 
@@ -535,12 +536,12 @@ SegY::writeTrace(float x, float y, std::vector<float> data, const Volume *volume
   }
   else
   {
-    int firstData = int((ztop-z0_)/dz_);
+    int firstData = static_cast<int>((ztop-z0_)/dz_);
     for(k=0;k<firstData;k++)
       trace[k] = topVal; //data[0];
-    for(k=firstData;k<(firstData+int(data.size()));k++)
+    for(k=firstData;k<(firstData+static_cast<int>(data.size()));k++)
       trace[k] = data[k-firstData];
-    for(k=(firstData+int(data.size()));k<nz_;k++)
+    for(k=(firstData+static_cast<int>(data.size()));k<nz_;k++)
       trace[k] = baseVal; //data[simbox_->getnz()-1];
   }
   WriteBinaryIbmFloatArray(file_,trace.begin(),trace.end());
@@ -560,7 +561,7 @@ SegY::writeTrace(TraceHeader * traceHeader, std::vector<float> data,Volume *volu
   if(volume != NULL)
   {
     z = volume->GetTopSurface().GetZ(traceHeader->getUtmx(),traceHeader->getUtmy());
-    nz = int(data.size());
+    nz = static_cast<int>(data.size());
   }
   std::vector<float> trace(nz_);
   int k;
@@ -571,7 +572,7 @@ SegY::writeTrace(TraceHeader * traceHeader, std::vector<float> data,Volume *volu
   }
   else
   {
-    int firstData = int((z-z0_)/dz_);
+    int firstData = static_cast<int>((z-z0_)/dz_);
     for(k=0;k<firstData;k++)
       trace[k] = topVal; //data[0];
     for(k=firstData;k<firstData+nz;k++)
@@ -939,8 +940,8 @@ SegY::findGridGeometry(void)
   x = static_cast<float>(x00-dy*sin(rot));
   y = static_cast<float>(y00+dy*cos(rot));
 
-  int IL01 = int((dyXL*(x-lx0)-dxXL*(y-ly0))/(dxIL*dyXL-dyIL*dxXL)+0.5*deltaIL+0.5);
-  int XL01 = int((dyIL*(x-lx0)-dxIL*(y-ly0))/(dxXL*dyIL-dyXL*dxIL)+0.5*deltaXL+0.5);
+  int IL01 = static_cast<int>((dyXL*(x-lx0)-dxXL*(y-ly0))/(dxIL*dyXL-dyIL*dxXL)+0.5*deltaIL+0.5);
+  int XL01 = static_cast<int>((dyIL*(x-lx0)-dxIL*(y-ly0))/(dxXL*dyIL-dyXL*dxIL)+0.5*deltaXL+0.5);
   if(ILxflag == false)
     ilStep = IL01-IL0;
   else
@@ -1066,7 +1067,6 @@ SegyGeometry::SegyGeometry(std::vector<SegYTrace *> &traces)
     if(xl>maxxl)
       maxxl = xl;
   }
-  // float dxil, dyil, dxxl, dyyl;
 
   xl = traces[0]->getCrossline();
   il = traces[0]->getInline();
@@ -1230,14 +1230,14 @@ SegyGeometry::SegyGeometry(std::vector<SegYTrace *> &traces)
   sinRot_ = sin(rot_);
   cosRot_ = cos(rot_);
 
-  int XL0 = int((dyIL*(x0_-lx0)-dxIL*(y0_-ly0))/(dxXL*dyIL-dyXL*dxIL)+0.5*deltaXL + 0.5);
-  int IL0 = int((dyXL*(x0_-lx0)-dxXL*(y0_-ly0))/(dxIL*dyXL-dyIL*dxXL)+0.5*deltaIL + 0.5);
+  int XL0 = static_cast<int>((dyIL*(x0_-lx0)-dxIL*(y0_-ly0))/(dxXL*dyIL-dyXL*dxIL)+0.5*deltaXL + 0.5);
+  int IL0 = static_cast<int>((dyXL*(x0_-lx0)-dxXL*(y0_-ly0))/(dxIL*dyXL-dyIL*dxXL)+0.5*deltaIL + 0.5);
   inLine0_ = IL0;
   crossLine0_ = XL0;
   float x,y;
   findXYfromIJ(1,0,x,y);
-  int IL10 = int((dyXL*(x-lx0)-dxXL*(y-ly0))/(dxIL*dyXL-dyIL*dxXL)+0.5*deltaIL+0.5);
-  int XL10 = int((dyIL*(x-lx0)-dxIL*(y-ly0))/(dxXL*dyIL-dyXL*dxIL)+0.5*deltaXL+0.5);
+  int IL10 = static_cast<int>((dyXL*(x-lx0)-dxXL*(y-ly0))/(dxIL*dyXL-dyIL*dxXL)+0.5*deltaIL+0.5);
+  int XL10 = static_cast<int>((dyIL*(x-lx0)-dxIL*(y-ly0))/(dxXL*dyIL-dyXL*dxIL)+0.5*deltaXL+0.5);
   if(XL0 != XL10)
   {
     xlStep_ = XL10-XL0;
@@ -1249,8 +1249,8 @@ SegyGeometry::SegyGeometry(std::vector<SegYTrace *> &traces)
     ILxflag_ = true;
   }
   findXYfromIJ(0,1,x,y);
-  int IL01 = int((dyXL*(x-lx0)-dxXL*(y-ly0))/(dxIL*dyXL-dyIL*dxXL)+0.5*deltaIL+0.5);
-  int XL01 = int((dyIL*(x-lx0)-dxIL*(y-ly0))/(dxXL*dyIL-dyXL*dxIL)+0.5*deltaXL+0.5);
+  int IL01 = static_cast<int>((dyXL*(x-lx0)-dxXL*(y-ly0))/(dxIL*dyXL-dyIL*dxXL)+0.5*deltaIL+0.5);
+  int XL01 = static_cast<int>((dyIL*(x-lx0)-dxIL*(y-ly0))/(dxXL*dyIL-dyXL*dxIL)+0.5*deltaXL+0.5);
   if(ILxflag_ == false)
     ilStep_ = IL01-IL0;
   else
@@ -1321,24 +1321,24 @@ SegyGeometry::~SegyGeometry()
 void 
 SegyGeometry::findXYfromIJ(int i, int j, float &x, float &y)const
 {
-  x = float(x0_+i*dx_*cosRot_-j*dy_*sinRot_);
-  y = float(y0_+i*dx_*sinRot_+j*dy_*cosRot_);
+  x = static_cast<float>(x0_+i*dx_*cosRot_-j*dy_*sinRot_);
+  y = static_cast<float>(y0_+i*dx_*sinRot_+j*dy_*cosRot_);
 }
 
 void 
 SegyGeometry::findIJfromXY(float x, float y, int &i, int &j)
 {
   double teller1 = (x-x0_)*cosRot_+(y-y0_)*sinRot_;
-  i = int(teller1/dx_);
+  i = static_cast<int>(teller1/dx_);
   double teller2 = -(x-x0_)*sinRot_+(y-y0_)*cosRot_;
-  j = int(teller2/dy_);
+  j = static_cast<int>(teller2/dy_);
 }
 
 int 
 SegyGeometry::returnIndex(float x, float y, float &xind, float  &yind)
 {
-  xind = float(((x-x0_)*cosRot_+(y-y0_)*sinRot_)/dx_);
-  yind = float((-(x-x0_)*sinRot_+(y-y0_)*cosRot_)/dy_);
+  xind = static_cast<float>(( (x-x0_)*cosRot_+(y-y0_)*sinRot_)/dx_);
+  yind = static_cast<float>((-(x-x0_)*sinRot_+(y-y0_)*cosRot_)/dy_);
   if(xind>=0 && xind<nx_ && yind>=0 && yind<ny_)
     return 1;
   else
@@ -1371,7 +1371,6 @@ SegyGeometry::returnILXL(int &IL, int &XL, float x, float y)
 void 
 SegyGeometry::findIJFromILXL(int IL, int XL, int &i, int &j)
 {
-
   if(ILxflag_==false)
   {
     i = (XL-crossLine0_)/xlStep_;
