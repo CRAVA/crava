@@ -71,6 +71,7 @@ Crava::Crava(Model * model)
     float corrGradI, corrGradJ;
     model->getCorrGradIJ(corrGradI, corrGradJ);
     corrT = parSpatialCorr_-> fillInParamCorr(corr,lowIntCut,corrGradI, corrGradJ);
+    parSpatialCorr_->writeStormFile("corrdump",simbox_);
     errCorrUnsmooth_ = createFFTGrid();
     errCorrUnsmooth_->fillInErrCorr(corr,corrGradI,corrGradJ); 
   }

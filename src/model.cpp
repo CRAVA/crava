@@ -49,6 +49,8 @@ Model::Model(char * fileName)
   reflectionMatrix_      = NULL;
   randomGen_             = NULL;
   failed_                = false;
+  gradX_                 = 0;
+  gradY_                 = 0;
 
   ModelFile * modelFile = new ModelFile(fileName);
 
@@ -2442,8 +2444,8 @@ Model::getCorrGradIJ(float & corrGradI, float &corrGradJ) const
   double dx     = timeSimbox_->getdx();  
   double dy     = timeSimbox_->getdy();
 
-  double cI = dx*cosrot*gradX_-dy*sinrot*gradY_;
-  double cJ = dx*sinrot*gradX_+dy*cosrot*gradY_;
+  double cI = dx*cosrot*gradX_+dy*sinrot*gradY_;
+  double cJ = -dx*sinrot*gradX_+dy*cosrot*gradY_;
 
   corrGradI = float(cI/timeSimbox_->getdz());
   corrGradJ = float(cJ/timeSimbox_->getdz());

@@ -179,7 +179,7 @@ FFTGrid::fillInFromSegY(SegY* segy, Simbox *simbox)
   LogKit::LogFormatted(LogKit::LOW,"\n");
   endAccess();
   if(isParameter) fftw_free(meanvalue);
- 
+
 }
 
 void
@@ -223,58 +223,58 @@ FFTGrid::fillInFromStorm(Simbox * tmpSimBox, Simbox * actSimBox,
       meanvalue[i+j*nxp_] = val;
     }
 
-  LogKit::LogFormatted(LogKit::LOW,"Resampling %s into %dx%dx%d grid:\n",parName,nxp_,nyp_,nzp_);
-  setAccessMode(WRITE);
-  
-  int monitorSize = MAXIM(1,int(nyp_*nzp_*0.02));
-  printf("\n  0%%       20%%       40%%       60%%       80%%      100%%");
-  printf("\n  |    |    |    |    |    |    |    |    |    |    |  ");
-  printf("\n  ^");
+    LogKit::LogFormatted(LogKit::LOW,"Resampling %s into %dx%dx%d grid:\n",parName,nxp_,nyp_,nzp_);
+    setAccessMode(WRITE);
 
-  for( k = 0; k < nzp_; k++)
-  {
-    for( j = 0; j < nyp_; j++)
+    int monitorSize = MAXIM(1,int(nyp_*nzp_*0.02));
+    printf("\n  0%%       20%%       40%%       60%%       80%%      100%%");
+    printf("\n  |    |    |    |    |    |    |    |    |    |    |  ");
+    printf("\n  ^");
+
+    for( k = 0; k < nzp_; k++)
     {
-      for( i = 0; i < rnxp_; i++)   
+      for( j = 0; j < nyp_; j++)
       {
-        refi   = getXSimboxIndex(i);
-        refj   = getYSimboxIndex(j);
-        refk   = getZSimboxIndex(k);
-        distx  = getDistToBoundary(i,nx_,nxp_);
-        disty  = getDistToBoundary(j,ny_,nyp_);
-        distz  = getDistToBoundary(k,nz_,nzp_);         
-        mult   = float(pow(MAXIM(1.0-distx*distx-disty*disty-distz*distz,0.0),3));
-        
-        if(i<nxp_)  // computes the index reference from the cube puts it in value
+        for( i = 0; i < rnxp_; i++)   
         {
-          actSimBox->getCoord(refi, refj, refk, x, y, z);
-          
-          /*          index = tmpSimBox->getClosestZIndex(x,y,z);
-                      if(index != RMISSING)
-                      value=grid[index];
-          */
-          tmpSimBox->getZInterpolation(x, y, z, index1, index2, t);
-          if(index1 != IMISSING)
-            value = static_cast<float>((1-t)*grid[index1]+t*grid[index2]);
+          refi   = getXSimboxIndex(i);
+          refj   = getYSimboxIndex(j);
+          refk   = getZSimboxIndex(k);
+          distx  = getDistToBoundary(i,nx_,nxp_);
+          disty  = getDistToBoundary(j,ny_,nyp_);
+          distz  = getDistToBoundary(k,nz_,nzp_);         
+          mult   = float(pow(MAXIM(1.0-distx*distx-disty*disty-distz*distz,0.0),3));
+
+          if(i<nxp_)  // computes the index reference from the cube puts it in value
+          {
+            actSimBox->getCoord(refi, refj, refk, x, y, z);
+
+            /*          index = tmpSimBox->getClosestZIndex(x,y,z);
+            if(index != RMISSING)
+            value=grid[index];
+            */
+            tmpSimBox->getZInterpolation(x, y, z, index1, index2, t);
+            if(index1 != IMISSING)
+              value = static_cast<float>((1-t)*grid[index1]+t*grid[index2]);
+            else
+              value = 0;
+            value=static_cast<float>( ((mult*value+(1.0-mult)*meanvalue[i+j*nxp_])) );
+          }
           else
-            value = 0;
-          value=static_cast<float>( ((mult*value+(1.0-mult)*meanvalue[i+j*nxp_])) );
+            value=RMISSING;        
+
+          setNextReal(value);
+        } //for k,j,i
+        if ((nyp_*k+j+1)%monitorSize == 0) 
+        { 
+          printf("^");
+          fflush(stdout);
         }
-        else
-          value=RMISSING;        
-        
-        setNextReal(value);
-      } //for k,j,i
-      if ((nyp_*k+j+1)%monitorSize == 0) 
-      { 
-        printf("^");
-        fflush(stdout);
       }
     }
-  }
-  LogKit::LogFormatted(LogKit::LOW,"\n");
-  endAccess();
-  fftw_free(meanvalue);
+    LogKit::LogFormatted(LogKit::LOW,"\n");
+    endAccess();
+    fftw_free(meanvalue);
 }
 
 void
@@ -329,10 +329,10 @@ FFTGrid::fillInFromRealFFTGrid(FFTGrid& fftGrid)
           setNextReal(value);
         } //for k,j,i
     }
-  
+
     endAccess();
     fftw_free(meanvalue);
-    
+
 }
 
 
@@ -385,51 +385,48 @@ FFTGrid::fillInFromArray(float *value) //NB works only for padding size up to nx
   kkk = 1;
   for( k = 0; k < nzp_; k++)
   {
-	  jjj = 1;
-	  if(k<nz_)
-		  kk = k;
-	  else
-	  {
-		  kk = k-kkk;
-		  kkk++;
-	  }
+    jjj = 1;
+    if(k<nz_)
+      kk = k;
+    else
+    {
+      kk = k-kkk;
+      kkk++;
+    }
 
     for( j = 0; j < nyp_; j++)
-	{
-		iii = 1;
-		if(j<ny_)
-			jj = j;
-		else
-		{
-			jj = j-jjj;
-			jjj++;
-		}
+    {
+      iii = 1;
+      if(j<ny_)
+        jj = j;
+      else
+      {
+        jj = j-jjj;
+        jjj++;
+      }
       for( i = 0; i < rnxp_; i++) 
       {
-		if(i<nx_)
-			ii = i;
-		else
-		{
-			ii = i-iii;
-			iii++;
-		}
-		if(i<nxp_)
+        if(i<nx_)
+          ii = i;
+        else
+        {
+          ii = i-iii;
+          iii++;
+        }
+        if(i<nxp_)
           setNextReal(value[ii+jj*nx_+kk*nx_*ny_]);
         else
           setNextReal(RMISSING);
       }  
-	}
+    }
   }
 
-      endAccess();
-
-
-
-
+  endAccess();
 }
 
+
 fftw_real*
-FFTGrid::fillInParamCorr(Corr* corr,int minIntFq, float gradI, float gradJ) 
+FFTGrid::fillInParamCorr(Corr* corr,int minIntFq, float gradI, float gradJ)
 {
   assert(corr->getnx() == nxp_);
   assert(corr->getny() == nyp_);
@@ -438,7 +435,7 @@ FFTGrid::fillInParamCorr(Corr* corr,int minIntFq, float gradI, float gradJ)
 
   createRealGrid();
 
-  int i,j,k,baseK;
+  int i,j,k,baseK,cycleI,cycleJ;
   float value,subK;
   fftw_real* circCorrT;
   circCorrT = (fftw_real*) fftw_malloc(2*(nzp_/2+1)*sizeof(fftw_real));
@@ -452,8 +449,15 @@ FFTGrid::fillInParamCorr(Corr* corr,int minIntFq, float gradI, float gradJ)
       {    
         if(i < nxp_)  // computes the index reference from the cube puts it in value
         {
-          subK  =  k-i*gradI-j*gradJ; //Subtract to counter rotation.
-          baseK =  int(subK);
+          cycleI = i-nxp_;
+          if(i < -cycleI)
+            cycleI = i;
+          cycleJ = j-nyp_;
+          if(j < -cycleJ)
+            cycleJ = j;
+
+          subK  =  k+cycleI*gradI+cycleJ*gradJ; //Subtract to counter rotation.
+          baseK =  int(floor(subK));
           subK  -= baseK;
           while(baseK < 0)
             baseK += nzp_;       //Use cyclicity
@@ -472,15 +476,15 @@ FFTGrid::fillInParamCorr(Corr* corr,int minIntFq, float gradI, float gradJ)
         setNextReal(value);
       } //for k,j,i
 
-  endAccess();
-  return circCorrT;//fftw_free(circCorrT); }
+      endAccess();
+      return circCorrT;//fftw_free(circCorrT);
 }
 
 
-
 void
-FFTGrid::fillInErrCorr(Corr* parCorr, float gradI, float gradJ) {
-  // Note:  this contain the latteral correlation and the multiplyers for the
+FFTGrid::fillInErrCorr(Corr* parCorr, float gradI, float gradJ)
+{
+  // Note:  this contain the latteral correlation and the multiplyers for the 
   // time correlation. The time correlation is further adjusted by the wavelet
   // and the derivative of the wavelet.
   // the angular correlation is given by a functional Expression elsewhere
@@ -492,7 +496,7 @@ FFTGrid::fillInErrCorr(Corr* parCorr, float gradI, float gradJ) {
 
   createRealGrid();
 
-  int i,j,k,baseK;
+  int i,j,k,baseK,cycleI,cycleJ;
   float value,subK;
   int range = 1;
   setAccessMode(WRITE);
@@ -500,7 +504,14 @@ FFTGrid::fillInErrCorr(Corr* parCorr, float gradI, float gradJ) {
     for( j = 0; j < nyp_; j++)
       for( i = 0; i < rnxp_; i++)   
       {    
-        subK  =  k-i*gradI-j*gradJ; //Subtract to counter rotation.
+        cycleI = i-nxp_;
+        if(i < -cycleI)
+          cycleI = i;
+        cycleJ = j-nyp_;
+        if(j < -cycleJ)
+          cycleJ = j;
+
+        subK  =  k+cycleI*gradI+cycleJ*gradJ;
         if(i < nxp_) {
           if(fabs(subK) < range*1.0f || fabs(subK-nzp_) < range*1.0f) {
             baseK =  int(subK);
@@ -509,7 +520,7 @@ FFTGrid::fillInErrCorr(Corr* parCorr, float gradI, float gradJ) {
               baseK += nzp_;       //Use cyclicity
             while(baseK >= range)
               baseK -= nzp_;       //Use cyclicity
-            
+
             if(baseK < 0) {
               baseK = -1-baseK;
               subK  = 1-subK;
@@ -526,8 +537,6 @@ FFTGrid::fillInErrCorr(Corr* parCorr, float gradI, float gradJ) {
       } //for k,j,i
       endAccess();
 }
-
-
 
 
 void
@@ -754,10 +763,10 @@ FFTGrid::getRealValue(int i, int j, int k, bool extSimbox)
   // k index in z direction 
   float value;
 
- // assert(istransformed_==false);
+  // assert(istransformed_==false);
 
   bool  inSimbox   = (extSimbox ? ( (i < nxp_) && (j < nyp_) && (k < nzp_)):
-  ((i < nx_) && (j < ny_) && (k < nz_)));
+    ((i < nx_) && (j < ny_) && (k < nz_)));
   bool  notMissing = ( (i > -1) && (j > -1) && (k > -1));
 
 
@@ -787,7 +796,7 @@ FFTGrid::getComplexValue(int i, int j, int k, bool extSimbox) const
   assert(istransformed_==true);
 
   bool  inSimbox   = (extSimbox ? ( (i < nxp_) && (j < nyp_) && (k < nzp_)):
-  ((i < nx_) && (j < ny_) && (k < nz_)));
+    ((i < nx_) && (j < ny_) && (k < nz_)));
   bool  notMissing = ( (i > -1) && (j > -1) && (k > -1));
 
 
@@ -862,7 +871,7 @@ FFTGrid::setRealValue(int i, int j ,int k, float  value, bool extSimbox)
   assert(istransformed_== false);
 
   bool  inSimbox   = (extSimbox ? ( (i < nxp_) && (j < nyp_) && (k < nzp_)):
-  ((i < nx_) && (j < ny_) && (k < nz_)));
+    ((i < nx_) && (j < ny_) && (k < nz_)));
   bool  notMissing = ( (i > -1) && (j > -1) && (k > -1));
 
   if( inSimbox && notMissing )
@@ -881,7 +890,7 @@ FFTGrid::setComplexValue(int i, int j ,int k, fftw_complex value, bool extSimbox
   assert(istransformed_== true);
 
   bool  inSimbox   = (extSimbox ? ( (i < nxp_) && (j < nyp_) && (k < nzp_)):
-  ((i < nx_) && (j < ny_) && (k < nz_)));
+    ((i < nx_) && (j < ny_) && (k < nz_)));
   bool  notMissing = ( (i > -1) && (j > -1) && (k > -1));
 
   if( inSimbox && notMissing )
@@ -1344,9 +1353,9 @@ FFTGrid::writeStormFile(const char * fileName, const Simbox * simbox, bool ascii
           fwrite(output, 1, 4, file);
 #endif
         }
-    output[0] = '0';
-    output[1] = '\n';
-    fwrite(output, 2, 1, file);
+        output[0] = '0';
+        output[1] = '\n';
+        fwrite(output, 2, 1, file);
   }
   else {
     gfName = ModelSettings::makeFullFileName(fileName, ".txt");
@@ -1361,7 +1370,7 @@ FFTGrid::writeStormFile(const char * fileName, const Simbox * simbox, bool ascii
         }
         fprintf(file,"\n");
       }
-    fprintf(file,"0\n");
+      fprintf(file,"0\n");
   }
   delete [] gfName;
 
@@ -1382,7 +1391,7 @@ FFTGrid::writeSegyFile(const char * fileName, const Simbox * simbox, float z0)
   char * gfName = ModelSettings::makeFullFileName(fileName, ".segy");
   //SegY * segy = new SegY(gfName, simbox);
   TextualHeader header = TextualHeader::standardHeader();
-  float dz = floor(simbox->getdz()+0.5);
+  float dz = float(floor(simbox->getdz()+0.5));
   if(dz==0)
     dz = 1.0;
   SegY *segy = new SegY(gfName,z0,nz_,dz,header);
@@ -1396,12 +1405,12 @@ FFTGrid::writeSegyFile(const char * fileName, const Simbox * simbox, float z0)
   //   return(1);
   // }
   int i, j;
-    int IL,XL;
- int il0,xl0;
+  int IL,XL;
+  int il0,xl0;
   int nxl,nil, index;
   double x,y,z;
 
-if(simbox->getILxflag()==true)
+  if(simbox->getILxflag()==true)
   {
     nxl = simbox->getny();
     nil = simbox->getnx();
@@ -1411,11 +1420,11 @@ if(simbox->getILxflag()==true)
     nxl = simbox->getnx();
     nil = simbox->getny();
   }
-if(simbox->getXLStep()>0)
+  if(simbox->getXLStep()>0)
     xl0 = simbox->getXL0();
   else
     xl0 = simbox->getXL0()+(nxl-1)*simbox->getXLStep();
-if(simbox->getILStep()>0)
+  if(simbox->getILStep()>0)
     il0 = simbox->getIL0();
   else
     il0 = simbox->getIL0()+(nil-1)*simbox->getILStep();
@@ -1430,8 +1439,8 @@ if(simbox->getILStep()>0)
     ilend = il0+simbox->getILStep()*(simbox->getny()-1);
     xlend = xl0 + simbox->getXLStep()*(simbox->getnx()-1);
   }
- //float * trace = new float[nz_];
-std::vector<float> trace(nz_);
+  //float * trace = new float[nz_];
+  std::vector<float> trace(nz_);
   int k;
 
   for(IL=il0;IL<ilend;IL++)
@@ -1441,9 +1450,9 @@ std::vector<float> trace(nz_);
       simbox->findIJFromILXL(IL,XL,i,j);
       index = i+j*simbox->getnx();
 
- // float * value = new float[nz_];
+      // float * value = new float[nz_];
       simbox->getCoord(i, j, 0, x, y, z); 
-     
+
       if(z == RMISSING || z == WELLMISSING)
       {
         //printf("Missing trace.\n");
@@ -1453,10 +1462,10 @@ std::vector<float> trace(nz_);
       else
       {
         int firstData = int((z-z0)/dz);
-    //printf("Generating trace %d %d %d.\n", firstData, simbox_->getnz(),nz_);
+        //printf("Generating trace %d %d %d.\n", firstData, simbox_->getnz(),nz_);
         for(k=0;k<firstData;k++)
           trace[k] = 0; //data[0];
-    // NBNB-PAL : change div div to mult
+        // NBNB-PAL : change div div to mult
         double fac = dz/(simbox->getdz()*simbox->getRelThick(i,j));
         int endData = firstData + static_cast<int>(simbox->getnz()/fac);
 
@@ -1470,18 +1479,18 @@ std::vector<float> trace(nz_);
         for(k=endData;k<nz_;k++)
           trace[k] = 0; //data[simbox_->getnz()-1];
         //printf("Trace generated.\n");
-      float xx = float(x);
-      float yy = float(y);
-       segy->writeTrace(xx, yy, trace,simbox,0.0,0.0);
+        float xx = float(x);
+        float yy = float(y);
+        segy->writeTrace(xx, yy, trace,simbox,0.0,0.0);
       }
     }
   }
-    delete segy; //Closes file.
-   // delete [] value;
-    LogKit::LogFormatted(LogKit::LOW,"done\n");
-    //  time(&timeend);
-    //printf("\n Write SEGY was performed in %ld seconds.\n",timeend-timestart);
-    return(0);
+  delete segy; //Closes file.
+  // delete [] value;
+  LogKit::LogFormatted(LogKit::LOW,"done\n");
+  //  time(&timeend);
+  //printf("\n Write SEGY was performed in %ld seconds.\n",timeend-timestart);
+  return(0);
 }
 
 void
@@ -1724,3 +1733,4 @@ FFTGrid::checkNaN()
 }
 
 int FFTGrid::formatFlag_ = FFTGrid::NOOUTPUT;
+
