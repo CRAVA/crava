@@ -188,18 +188,27 @@ SegY::readTrace(Volume * volume,
   float zTop, zBot;
   if(volume != NULL)
   {
-    printf("\nx = %f",x);
-    printf("y = %f",y);
-    printf("volume->isInside(x,y) = %d\n",volume->isInside(x,y));
+//    printf("\nx = %f",x);
+//    printf("y = %f",y);
+ //   printf("volume->isInside(x,y) = %d\n",volume->isInside(x,y));
 
     if(volume->isInside(x,y) == 0 && onlyVolume == true)
+    {
+      readDummyTrace(file_,binaryHeader_->getFormat(),nz_);
       return(NULL);
+    }
     zTop = static_cast<float>(volume->GetTopSurface().GetZ(x,y));
     if(volume->GetTopSurface().IsMissing(zTop))
+    {
+      readDummyTrace(file_,binaryHeader_->getFormat(),nz_);
       return(NULL);
+    }
     zBot = static_cast<float>(volume->GetBotSurface().GetZ(x,y));
     if(volume->GetBotSurface().IsMissing(zBot))
+    {
+      readDummyTrace(file_,binaryHeader_->getFormat(),nz_);
       return(NULL);
+    }
   }
   else
   {
@@ -963,6 +972,39 @@ SegY::findGridGeometry(void)
   return(geometry);
 }
 
+void SegY::readDummyTrace(std::fstream & file, int format, int nz)
+{
+std::vector<float> predata;
+  predata.resize(nz);
+  
+  if(format==1)
+  {
+    //IBM
+    ReadBinaryIbmFloatArray(file, predata.begin(), nz);
+   
+  }
+  else if(format==2)
+  {
+    std::vector<int> b;
+    ReadBinaryIntArray(file, b.begin(), nz);
+
+  }
+  else if(format==3)
+  {
+    std::vector<short> b;
+    ReadBinaryShortArray(file, b.begin(), nz);
+ 
+  }
+  else if(format==5)
+  {
+    ReadBinaryFloatArray(file, predata.begin(), nz);
+
+  }
+  else
+    throw FileFormatError("Bad format");
+
+}
+
 //===============================================================================
 //  Class SegYTrace
 //===============================================================================
@@ -1060,80 +1102,91 @@ SegyGeometry::SegyGeometry(std::vector<SegYTrace *> &traces)
   int minxl, maxxl;
   int il,xl;
   int i;
-
-  minil = traces[0]->getInline();
+  int ii = 0;
+  while(traces[ii]==0)
+    ii++;
+  minil = traces[ii]->getInline();
   maxil = minil;
-  minxl = traces[0]->getCrossline();
+  minxl = traces[ii]->getCrossline();
   maxxl = minxl;
 
-  for(i=1;i<ntraces;i++)
+  for(i=ii+1;i<ntraces;i++)
   {
-    il = traces[i]->getInline();
-    xl = traces[i]->getCrossline();
-    if(il<minil)
-      minil = il;
-    if(il>maxil)
-      maxil = il;
-    if(xl<minxl)
-      minxl = xl;
-    if(xl>maxxl)
-      maxxl = xl;
+    if(traces[i]!=0)
+    {
+      il = traces[i]->getInline();
+      xl = traces[i]->getCrossline();
+      if(il<minil)
+        minil = il;
+      if(il>maxil)
+        maxil = il;
+      if(xl<minxl)
+        minxl = xl;
+      if(xl>maxxl)
+        maxxl = xl;
+    }
   }
 
-  xl = traces[0]->getCrossline();
-  il = traces[0]->getInline();
+  xl = traces[ii]->getCrossline();
+  il = traces[ii]->getInline();
   int index = 0;
   int diff, maxdiff, mindiff;
   maxdiff = 0;
   mindiff = 0;
   int first = 1;
-  for(i=1;i<ntraces;i++)
+  for(i=ii+1;i<ntraces;i++)
   {
-    if(traces[i]->getCrossline()==xl)
+    if(traces[i]!=0)
     {
-      diff = abs(traces[i]->getInline()-il);
-      if(diff>maxdiff)
+      if(traces[i]->getCrossline()==xl)
       {
-        maxdiff = diff;
-        index = i;
-      }
-      if(first==1 || (diff<mindiff && diff>0))
-      {
-        mindiff = diff;
-        first = 0;
+        diff = abs(traces[i]->getInline()-il);
+        if(diff>maxdiff)
+        {
+          maxdiff = diff;
+          index = i;
+        }
+        if(first==1 || (diff<mindiff && diff>0))
+        {
+          mindiff = diff;
+          first = 0;
+        }
       }
     }
   }
   int deltaIL = mindiff;
-  float dxIL = (traces[0]->getX()-traces[index]->getX())/(il-traces[index]->getInline());
-  float dyIL = (traces[0]->getY()-traces[index]->getY())/(il-traces[index]->getInline());
+  float dxIL = (traces[ii]->getX()-traces[index]->getX())/(il-traces[index]->getInline());
+  float dyIL = (traces[ii]->getY()-traces[index]->getY())/(il-traces[index]->getInline());
 
   maxdiff = 0;
   first = 1;
-  for(i=1;i<ntraces;i++)
+  for(i=ii+1;i<ntraces;i++)
   {
-    if(traces[i]->getInline()==il)
+    if(traces[i]!=0)
     {
-      diff = abs(traces[i]->getCrossline()-xl);
-      if(diff>maxdiff)
+      if(traces[i]->getInline()==il)
       {
-        maxdiff = diff;
-        index = i;
-      }
-      if(first==1 || (diff<mindiff && diff>0))
-      {
-        mindiff = diff;
-        first = 0;
+        diff = abs(traces[i]->getCrossline()-xl);
+        if(diff>maxdiff)
+        {
+          maxdiff = diff;
+          index = i;
+        }
+        if(first==1 || (diff<mindiff && diff>0))
+        {
+          mindiff = diff;
+          first = 0;
+        }
       }
     }
   }
 
   int deltaXL = mindiff;
-  float dxXL = (traces[0]->getX()-traces[index]->getX())/(xl-traces[index]->getCrossline());
-  float dyXL = (traces[0]->getY()-traces[index]->getY())/(xl-traces[index]->getCrossline());
+  float dxXL = (traces[ii]->getX()-traces[index]->getX())/(xl-traces[index]->getCrossline());
+  float dyXL = (traces[ii]->getY()-traces[index]->getY())/(xl-traces[index]->getCrossline());
 
-  float lx0 = traces[0]->getX()-traces[0]->getCrossline()*dxXL-traces[0]->getInline()*dxIL;
-  float ly0 = traces[0]->getY()-traces[0]->getCrossline()*dyXL-traces[0]->getInline()*dyIL;
+  float lx0 = traces[ii]->getX()-traces[ii]->getCrossline()*dxXL-traces[ii]->getInline()*dxIL;
+  float ly0 = traces[ii]->getY()-traces[ii]->getCrossline()*dyXL-traces[ii]->getInline()*dyIL;
 
   std::vector<double> cornerx(4);
   std::vector<double> cornery(4);
@@ -1278,10 +1331,13 @@ SegyGeometry::SegyGeometry(std::vector<SegYTrace *> &traces)
 
   for(k=0;k<ntraces;k++)
   {
-    x = traces[k]->getX();
-    y = traces[k]->getY();
-    findIJfromXY(x,y,i,j);
-    tracestmp[i+nx_*j] = traces[k];
+    if(traces[k]!=0)
+    {
+      x = traces[k]->getX();
+      y = traces[k]->getY();
+      findIJfromXY(x,y,i,j);
+      tracestmp[i+nx_*j] = traces[k];
+    }
   }
 
   traces.resize(nTraces);

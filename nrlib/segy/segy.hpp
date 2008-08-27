@@ -116,7 +116,7 @@ private:
                                       bool           & duplicateHeader, 
                                       bool             onlyVolume = false);     ///< Read single trace from file
   void                      writeMainHeader(const TextualHeader& ebcdicHeader); ///< Quasi-dummy at the moment. 
-  
+  void                      readDummyTrace(std::fstream & file, int format, int nz);
   double                    interpolate(int xyidx, 
                                         int zidx);
   std::ios::pos_type        findFileSize(const std::string & fileName);

@@ -416,8 +416,8 @@ Model::readSegyFiles(char          ** fNames,
                         *(modelSettings->getTraceHeaderFormat()));
         segy->readAllTraces(timeSimbox, 
                             modelSettings->getZpad(),
-//                            modelSettings->getAreaParameters() != NULL);
-                            false);
+                            modelSettings->getAreaParameters() != NULL);
+ //                           false);
         segy->createRegularGrid();
       }
       catch (NRLib2::Exception & e)
