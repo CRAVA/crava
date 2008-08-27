@@ -15,7 +15,7 @@ PURIFY     =
 mode       = all
 
 ifeq ($(mode),debug)
-DEBUG = -ggdb
+DEBUG = -g
 endif
 
 ifeq ($(mode),profile)

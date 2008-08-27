@@ -145,6 +145,18 @@ SegY::readAllTraces(Volume *volume, double zPad, bool onlyVolume)
       break;
   }
   LogKit::LogMessage(LogKit::LOW,"^\n");
+ 
+  int count = 0;
+  for(unsigned int i=1 ; i<traces_.size() ; i++)
+    if (traces_[i] != NULL)
+      count++;
+  if (count == 0) 
+  {
+    std::string text;
+    text += "No valid traces found. The specified time surfaces do not cover any part of the\n";
+    text += " seismic data. Do you need to bypass the coordinate scaling in the SegY header?";
+    throw Exception(text);
+  }
 }
 
 SegYTrace *
@@ -176,6 +188,10 @@ SegY::readTrace(Volume * volume,
   float zTop, zBot;
   if(volume != NULL)
   {
+    printf("\nx = %f",x);
+    printf("y = %f",y);
+    printf("volume->isInside(x,y) = %d\n",volume->isInside(x,y));
+
     if(volume->isInside(x,y) == 0 && onlyVolume == true)
       return(NULL);
     zTop = static_cast<float>(volume->GetTopSurface().GetZ(x,y));
@@ -679,11 +695,6 @@ SegY::findNumberOfTraces(const std::string       & fileName,
 int 
 SegY::findNumberOfTraces(void)
 {
-  //
-  // NBNB-PAL: Worrying(?) dual usage of nTraces_
-  //
-  // Set nTraces_ to largest possible value 
-  //
   std::ios::pos_type fSize = findFileSize(fileName_);
   nTraces_ = static_cast<int>(ceil( (static_cast<double>(fSize)-3600.0)/
                                      static_cast<double>(datasize_*nz_+240.0)));
@@ -1049,6 +1060,7 @@ SegyGeometry::SegyGeometry(std::vector<SegYTrace *> &traces)
   int minxl, maxxl;
   int il,xl;
   int i;
+
   minil = traces[0]->getInline();
   maxil = minil;
   minxl = traces[0]->getCrossline();

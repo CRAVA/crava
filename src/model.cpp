@@ -397,44 +397,47 @@ Model::readSegyFiles(char          ** fNames,
                      ModelSettings *& modelSettings, 
                      char           * errText)
 {
-  //  long int timestart, timeend;
-  //  time(&timestart);
   char tmpErr[MAX_STRING];
   int error = 0;
   int sbError = 0;
   int okFiles = checkFileOpen(fNames, nFiles, "DUMMY", tmpErr, 0);
   strcpy(errText, "");
-  SegY * segy;
+  SegY * segy = NULL;
   int i, flag = 1;
   for(i=0 ; i<nFiles ; i++)
   {
     target[i] = NULL;
     if((okFiles & flag) == 0)
     {
-      segy = new SegY(fNames[i], 
-                      modelSettings->getSegyOffset(),
-                      *(modelSettings->getTraceHeaderFormat()));
-      segy->readAllTraces(timeSimbox, modelSettings->getZpad());
-      segy->createRegularGrid();
-
-     //NBNB if(segy->checkError(tmpErr) != 0)
-    //  {
-    //    error++;
-    //    sprintf(errText,"%s%s", errText, tmpErr);
-    //  }
-   //   else
-    //  {
-
+      try
+      {
+        segy = new SegY(fNames[i], 
+                        modelSettings->getSegyOffset(),
+                        *(modelSettings->getTraceHeaderFormat()));
+        segy->readAllTraces(timeSimbox, 
+                            modelSettings->getZpad(),
+//                            modelSettings->getAreaParameters() != NULL);
+                            false);
+        segy->createRegularGrid();
+      }
+      catch (NRLib2::Exception & e)
+      {
+        sprintf(errText,"%s%s",errText,e.what());
+        error++;
+      }
+      
+      if (error ==0)
+      {
         if(timeSimbox->status() == Simbox::NOAREA)
         {
           const SegyGeometry *geometry;
           geometry = segy->getGeometry();
           modelSettings->setAreaParameters(geometry);
           timeSimbox->setArea(geometry);
-         
-
+          
+          
           sbError = timeSimbox->checkError(modelSettings->getLzLimit(), errText);
-
+          
           if(sbError == 0)
           {
             estimateXYPaddingSizes(timeSimbox, modelSettings);
@@ -465,16 +468,16 @@ Model::readSegyFiles(char          ** fNames,
                                     modelSettings->getNXpad(), 
                                     modelSettings->getNYpad(), 
                                     modelSettings->getNZpad());
-
+          
           target[i]->setType(FFTGrid::DATA);
           target[i]->fillInFromSegY(segy, timeSimbox);
           target[i]->setAngle(modelSettings->getAngle()[i]);
         }
+      }
+      if (segy != NULL)
         delete segy;
     }
   }
-  //  time(&timeend);
-  //  LogKit::LogFormatted(LogKit::LOW,"SEGY read and interpolate %i grids in %ld seconds \n",nFiles,timeend-timestart);
   return(error);
 }
 
@@ -1096,7 +1099,7 @@ Model::processSeismic(FFTGrid      **& seisCube,
     }
     else
     {
-      sprintf(errText, "%sERROR: Reading of seismic data files failed:\n %s\n", errText, tmpErrText);
+      sprintf(errText, "%sReading of seismic data failed:\n %s\n", errText, tmpErrText);
       error = 1;
     }
   }
