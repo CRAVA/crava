@@ -1809,13 +1809,15 @@ Model::processWavelets(Wavelet     **& wavelet,
         }
         else {
           if (fileFormat == Wavelet::SGRI)
-            wavelet[i] = new Wavelet3D(waveletFile[i], modelSettings, timeSimbox, modelSettings->getAngle()[i]);
+            wavelet[i] = new Wavelet3D(waveletFile[i], modelSettings, timeSimbox, modelSettings->getAngle()[i], error, errText);
           else {
-            wavelet[i] = new Wavelet1D(waveletFile[i], modelSettings, fileFormat);
-            wavelet[i]->resample(static_cast<float>(timeSimbox->getdz()), timeSimbox->getnz(), 
-              modelSettings->getZpad(), modelSettings->getAngle()[i]);
+            wavelet[i] = new Wavelet1D(waveletFile[i], modelSettings, fileFormat, error, errText);
+            if (error == 0)
+              wavelet[i]->resample(static_cast<float>(timeSimbox->getdz()), timeSimbox->getnz(), 
+                                   modelSettings->getZpad(), modelSettings->getAngle()[i]);
           }
-          wavelet[i]->setReflCoeff(reflectionMatrix[i]);
+          if (error == 0)
+            wavelet[i]->setReflCoeff(reflectionMatrix[i]);
         }
       }
       if (error == 0) {

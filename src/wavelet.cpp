@@ -45,7 +45,6 @@ Wavelet::Wavelet(ModelSettings * modelSettings, int dim)
 	gridNJ_=0;
 	shiftGrid_=NULL;  
 	gainGrid_=NULL; 
-	errCode_=0;
 }
 
 Wavelet::Wavelet(Wavelet * wavelet, int dim)
@@ -64,10 +63,6 @@ Wavelet::Wavelet(Wavelet * wavelet, int dim)
   inFFTorder_= wavelet->inFFTorder_;
   isReal_    = wavelet->isReal_;  
   norm_      = wavelet->norm_;
-  errCode_   = wavelet->errCode_;
-
-  if(errCode_ != 0)
-    strcpy(errText_, wavelet->errText_) ;   
 }
 
 // Makes error correlations 
@@ -90,10 +85,6 @@ Wavelet::Wavelet(Wavelet * wavelet, int difftype, int dim)
   inFFTorder_= wavelet->inFFTorder_;
   isReal_    = wavelet->isReal_;  
   norm_      = wavelet->norm_;
-  errCode_   = wavelet->errCode_;   
-  if(errCode_ != 0)
-    strcpy(errText_, wavelet->errText_) ;   
-  
 }
 
 Wavelet::Wavelet(int difftype, int nz, int nzp, int dim)
@@ -480,7 +471,6 @@ Wavelet::getNoiseStandardDeviation(Simbox * simbox, FFTGrid * seisCube, WellData
   gridNJ_=0;
   shiftGrid_=NULL;  
   gainGrid_=NULL; 
-  errCode_=0;
   
   float * dz = new float[nWells];
   int * nDataUsedInWell = new int[nWells];
@@ -643,7 +633,6 @@ Wavelet::getNoiseStandardDeviation(Simbox * simbox, FFTGrid * seisCube, WellData
   if (nData == 0)
   {
     sprintf(errText, "%s ERROR: Cannot estimate signal-to-noiseratio. No legal well data available. CRAVA must stop\n", errText);
-    LogKit::LogFormatted(LogKit::ERROR,"\nERROR: Cannot estimate signal-to-noiseratio. No legal well data available. CRAVA must stop\n");
     error += 1;
   }
   dataVar /= float(nData);

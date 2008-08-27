@@ -12,7 +12,7 @@ public:
   void           fft1DInPlace();
   void           invFFT1DInPlace();
   //Constructors and destructor
-  Wavelet3D(char * fileName, ModelSettings * modelSettings, Simbox *simBox, float theta, int dim = 3);
+  Wavelet3D(char * fileName, ModelSettings * modelSettings, Simbox *simBox, float theta, int &errCode, char *errText, int dim = 3);
   Wavelet3D(Wavelet * wavelet, int dim = 3);
   virtual ~Wavelet3D() {}
 

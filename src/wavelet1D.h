@@ -12,7 +12,7 @@ public:
 
   //Constructors and destructor
   Wavelet1D(Simbox * simbox, FFTGrid * seisCube, WellData ** wells, ModelSettings * modelSettings, float * coef, int dim = 1);
-  Wavelet1D(char * fileName, ModelSettings * modelSettings, int fileFormat, int dim = 1);
+  Wavelet1D(char * fileName, ModelSettings * modelSettings, int fileFormat, int &errCode, char *errText, int dim = 1);
   Wavelet1D(Wavelet * wavelet, int dim = 1);
   Wavelet1D(Wavelet * wavelet,int difftype, int dim = 1);
   Wavelet1D(int difftype, int nz, int nzp, int dim = 1);
@@ -32,8 +32,8 @@ private:
   void           flipUpDown();
   float          getWaveletValue(float z, float * Wavelet, int center,int nx, float dz);
   void           shiftAndScale(float shift,float gain);
-  void           WaveletReadOld(char * fileName);
-  void           WaveletReadJason(char * fileName);
+  void           WaveletReadOld(char * fileName, int &errCode, char *errText);
+  void           WaveletReadJason(char * fileName, int &errCode, char *errText);
   float          shiftOptimal(fftw_real** ccor_seis_cpp_r,float* wellWeight,float* dz,int nWells,int nzp,float* shiftWell);
   void           multiplyPapolouis(fftw_real** vec, float* dz,int nWells,int nzp, float waveletLength) const;
   void           getWavelet(fftw_real** ccor_seis_cpp_r,fftw_real** cor_cpp_r,fftw_real** wavelet_r,float* wellWeight,int nWells,int nt);

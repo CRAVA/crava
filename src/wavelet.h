@@ -37,7 +37,7 @@ public:
   bool           getIsReal() const {return(isReal_);} 
   virtual void   scale(float gain);
   int            getDim() const {return dim_;}
-
+  
   //Note: Function below is mainly controlled by debugflag. Set overrideDebug = true to force.
   virtual void   printToFile(char* fileName, bool overrideDebug = false) = 0;
   virtual void   writeWaveletToFile(char*, float, Simbox * simbox = NULL) = 0;
@@ -89,9 +89,6 @@ protected:
   float          waveletLength_;         // Length of wavelet estimated as is amplitudes larger than 1/1000 * max amplitude
 
   float          coeff_[3];              //Reflection coefficients.
-
-  int            errCode_;               // Code of error message
-  char           errText_[6*MAX_STRING]; // Error message in case of mistakes in the file format
 
   float          maxShift_;//maximum shift of wavelet in ms
   float          minRelativeAmp_;

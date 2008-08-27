@@ -24,7 +24,7 @@
 #include "src/fftgrid.h"
 #include "src/simbox.h"
 
-Wavelet3D::Wavelet3D(char * fileName, ModelSettings * modelSettings, Simbox *simBox, float theta, int dim)
+Wavelet3D::Wavelet3D(char * fileName, ModelSettings * modelSettings, Simbox *simBox, float theta, int &errCode, char *errText, int dim)
   :Wavelet(modelSettings, dim)
 {
   nx_ = simBox->getnx();
@@ -49,108 +49,130 @@ Wavelet3D::Wavelet3D(char * fileName, ModelSettings * modelSettings, Simbox *sim
   ampCube_.setOutputFormat(modelSettings->getFormatFlag());
 
   readtype_ = Wavelet::SGRI;
-	Sgri *sgri = new Sgri(fileName, errText_, errCode_);
-  if (errCode_ != 0) {
-    LogKit::LogFormatted(LogKit::LOW,"Error when reading sgri from file %s.\n",fileName);
-    LogKit::LogFormatted(LogKit::LOW,"%s \n", errText_);
-    exit(1);
-  }
-
-  float xLim = 0.5f * dx_ * nxp_;
-  float yLim = 0.5f * dy_ * nyp_;
-  float zLim = 0.5f * dz_ * nzp_;
-  if(!sgri->sizeOk(xLim, yLim, zLim)) {
-    if (errCode_ == 0)  
-      sprintf(errText_,"3-D wavelet read from file %s has too big size compared to padded fft-grid.\n", fileName);
-    else  
-      sprintf(errText_,"%s3-D wavelet read from file %s has too big size compared to padded fft-grid.\n",errText_,fileName); 
-    errCode_=1; 
-    LogKit::LogFormatted(LogKit::LOW,"\nToo big wavelet grid read from file  %s.\n",fileName);
-    LogKit::LogFormatted(LogKit::LOW,"%s \n", errText_);
-    exit(1);
-  }
-
-  float sf = 100.0; //Just preliminary in order to get not too small values
-  int i,j,k;
-  float x, y, z, value;
-  for (k=0; k<=nzp_/2; k++) {
-    z = k * dz_;
-    for (j=0; j<=nyp_/2; j++) {
-      y = j * dy_;
-      for (i=0; i<=nxp_/2; i++) {
-        x = i * dx_;
-        value = sf * sgri->getWaveletValue(x, y, z);
-        ampCube_.setRealValue(i, j, k, value, true);
-      }
-      for (i=(nxp_/2)+1; i<nxp_; i++) {
-        x = (i-nxp_) * dx_;
-        value = sf * sgri->getWaveletValue(x, y, z);
-        ampCube_.setRealValue(i, j, k, value, true);
-      }
-    }
-    for (j=(nyp_/2)+1; j<nyp_; j++) {
-      y = (j-nyp_) * dy_;
-      for (i=0; i<=nxp_/2; i++) {
-        x = i * dx_;
-        value = sf * sgri->getWaveletValue(x, y, z);
-        ampCube_.setRealValue(i, j, k, value, true);
-      }
-      for (i=(nxp_/2)+1; i<nxp_; i++) {
-        x = (i-nxp_) * dx_;
-        value = sf * sgri->getWaveletValue(x, y, z);
-        ampCube_.setRealValue(i, j, k, value, true);
-      } 
-    }
-  }
-  for (k=(nzp_/2)+1; k<nzp_; k++) {
-    z = (k-nzp_) * dz_;
-    for (j=0; j<=nyp_/2; j++) {
-      y = j * dy_;
-      for (i=0; i<=nxp_/2; i++) {
-        x = i * dx_;
-        value = sf * sgri->getWaveletValue(x, y, z);
-        ampCube_.setRealValue(i, j, k, value, true);
-      }
-      for (i=(nxp_/2)+1; i<nxp_; i++) {
-        x = (i-nxp_) * dx_;
-        value = sf * sgri->getWaveletValue(x, y, z);
-        ampCube_.setRealValue(i, j, k, value, true);
-      }
-    }
-    for (j=(nyp_/2)+1; j<nyp_; j++) {
-      y = (j-nyp_) * dy_;
-      for (i=0; i<=nxp_/2; i++) {
-        x = i * dx_;
-        value = sf * sgri->getWaveletValue(x, y, z);
-        ampCube_.setRealValue(i, j, k, value, true);
-      }
-      for (i=(nxp_/2)+1; i<nxp_; i++) {
-        x = (i-nxp_) * dx_;
-        value = sf * sgri->getWaveletValue(x, y, z);
-        ampCube_.setRealValue(i, j, k, value, true);
-      } 
-    }
-  }
-  waveletLength_ = getWaveletLengthF();
+	Sgri *sgri = new Sgri(fileName, errText, errCode);
   
-  double norm2=0.0;
-  for(i=0; i < nxp_; i++ )
-    for (j=0; j < nyp_; j++)
-      for (k=0; k < nzp_; k++)
-        norm2 += getRAmp(k,j,i)*getRAmp(k,j,i);
-  norm_= float( sqrt(norm2));
+  if (errCode == 0) {
+    float xLim = 0.5f * dx_ * nxp_;
+    float yLim = 0.5f * dy_ * nyp_;
+    float zLim = 0.5f * dz_ * nzp_;
+    int axisOk = sgri->sizeOk(xLim, yLim, zLim);
+    if (axisOk == 1) {
+      sprintf(errText,"%s3-D wavelet read from file %s has too big size in x-direction compared to padded fft-grid.\n",errText,fileName); 
+      errCode=1;
+    }
+    else if (axisOk == 2) {
+      sprintf(errText,"%s3-D wavelet read from file %s has too big size in y-direction compared to padded fft-grid.\n",errText,fileName); 
+      errCode=1;
+    }
+    else if (axisOk == 3) {
+      sprintf(errText,"%s3-D wavelet read from file %s has too big size in x- and y-direction compared to padded fft-grid.\n",errText,fileName); 
+      errCode=1;
+    }
+    else if (axisOk == 4) {
+      sprintf(errText,"%s3-D wavelet read from file %s has too big size in z-direction compared to padded fft-grid.\n",errText,fileName); 
+      errCode=1;
+    }
+    else if (axisOk == 5) {
+      sprintf(errText,"%s3-D wavelet read from file %s has too big size in x- and z-direction compared to padded fft-grid.\n",errText,fileName); 
+      errCode=1;
+    }
+    else if (axisOk == 6) {
+      sprintf(errText,"%s3-D wavelet read from file %s has too big size in y- and z-direction compared to padded fft-grid.\n",errText,fileName); 
+      errCode=1;
+    }
+    else if (axisOk == 7) {
+      sprintf(errText,"%s3-D wavelet read from file %s has too big size in x-, y- and z-direction compared to padded fft-grid.\n",errText,fileName); 
+      errCode=1;
+    }
+    if (axisOk != 0) {
+      sprintf(errText,"%s\nToo big wavelet grid read from file  %s.\n",errText, fileName);
+      errCode=1;
+    }
+  }
 
-  //For debugging purposes, the shifted FFTGrid is written to file to compare to input sgri
-  FFTGrid *shiftAmp = new FFTGrid(nx_, ny_, nz_, nx_, ny_, nz_);
-  shiftAmp->fillInConstant(0.0);
-  shiftAmp->setType(FFTGrid::DATA);
-  shiftAmp->setAccessMode(FFTGrid::RANDOMACCESS);
-  shiftAmp->setOutputFormat(modelSettings->getFormatFlag());
+  if (errCode == 0) {
+    float sf = 1.0; //Just preliminary in order to get not too small values
+    int i,j,k;
+    float x, y, z, value;
+    for (k=0; k<=nzp_/2; k++) {
+      z = k * dz_;
+      for (j=0; j<=nyp_/2; j++) {
+        y = j * dy_;
+        for (i=0; i<=nxp_/2; i++) {
+          x = i * dx_;
+          value = sf * sgri->getWaveletValue(x, y, z);
+          ampCube_.setRealValue(i, j, k, value, true);
+        }
+        for (i=(nxp_/2)+1; i<nxp_; i++) {
+          x = (i-nxp_) * dx_;
+          value = sf * sgri->getWaveletValue(x, y, z);
+          ampCube_.setRealValue(i, j, k, value, true);
+        }
+      }
+      for (j=(nyp_/2)+1; j<nyp_; j++) {
+        y = (j-nyp_) * dy_;
+        for (i=0; i<=nxp_/2; i++) {
+          x = i * dx_;
+          value = sf * sgri->getWaveletValue(x, y, z);
+          ampCube_.setRealValue(i, j, k, value, true);
+        }
+        for (i=(nxp_/2)+1; i<nxp_; i++) {
+          x = (i-nxp_) * dx_;
+          value = sf * sgri->getWaveletValue(x, y, z);
+          ampCube_.setRealValue(i, j, k, value, true);
+        } 
+      }
+    }
+    for (k=(nzp_/2)+1; k<nzp_; k++) {
+      z = (k-nzp_) * dz_;
+      for (j=0; j<=nyp_/2; j++) {
+        y = j * dy_;
+        for (i=0; i<=nxp_/2; i++) {
+          x = i * dx_;
+          value = sf * sgri->getWaveletValue(x, y, z);
+          ampCube_.setRealValue(i, j, k, value, true);
+        }
+        for (i=(nxp_/2)+1; i<nxp_; i++) {
+          x = (i-nxp_) * dx_;
+          value = sf * sgri->getWaveletValue(x, y, z);
+          ampCube_.setRealValue(i, j, k, value, true);
+        }
+      }
+      for (j=(nyp_/2)+1; j<nyp_; j++) {
+        y = (j-nyp_) * dy_;
+        for (i=0; i<=nxp_/2; i++) {
+          x = i * dx_;
+          value = sf * sgri->getWaveletValue(x, y, z);
+          ampCube_.setRealValue(i, j, k, value, true);
+        }
+        for (i=(nxp_/2)+1; i<nxp_; i++) {
+          x = (i-nxp_) * dx_;
+          value = sf * sgri->getWaveletValue(x, y, z);
+          ampCube_.setRealValue(i, j, k, value, true);
+        } 
+      }
+    }
+    waveletLength_ = getWaveletLengthF();
 
-  shiftFFTGrid(shiftAmp);
-  shiftAmp->writeFile("3DWavelet", simBox);
-  delete shiftAmp;
-  //End for debugging purposes
+    double norm2=0.0;
+    for(i=0; i < nxp_; i++ )
+      for (j=0; j < nyp_; j++)
+        for (k=0; k < nzp_; k++)
+          norm2 += getRAmp(k,j,i)*getRAmp(k,j,i);
+    norm_= float( sqrt(norm2));
+
+    //For debugging purposes, the shifted FFTGrid is written to file to compare to input sgri
+    FFTGrid *shiftAmp = new FFTGrid(nx_, ny_, nz_, nx_, ny_, nz_);
+    shiftAmp->fillInConstant(0.0);
+    shiftAmp->setType(FFTGrid::DATA);
+    shiftAmp->setAccessMode(FFTGrid::RANDOMACCESS);
+    shiftAmp->setOutputFormat(modelSettings->getFormatFlag());
+
+    shiftFFTGrid(shiftAmp);
+    shiftAmp->writeFile("3DWavelet", simBox);
+    delete shiftAmp;
+    //End for debugging purposes
+  }
 
   delete sgri;
 }
