@@ -11,7 +11,7 @@ public:
 	~Sgri();
 
   float              getWaveletValue(float x, float y, float z) const;
-  bool               sizeOk(float xLim, float yLim, float zLim);
+  int                sizeOk(float xLim, float yLim, float zLim);
 
 private:
 	bool				        readHeaderFile(char * fileName, char *errText, int &errCode);
