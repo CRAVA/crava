@@ -696,7 +696,7 @@ ModelFile::readCommandWells(char ** params, int & pos, char * errText)
       else
       {
         sprintf(errText,"%s%s",errText,tmpErrText);
-        error = 1;
+        return(1);
       }
       pos += nIndicators+2;
     }
@@ -761,6 +761,8 @@ ModelFile::readCommandWells(char ** params, int & pos, char * errText)
   }
   modelSettings_->setNumberOfWells(nWells);
   modelSettings_->setAllIndicatorsTrue(nWells);
+
+  printf("nIndicators = %d\n",nIndicators);
 
   for (int j=0 ; j<nIndicators ; j++)
   {
