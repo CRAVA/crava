@@ -640,6 +640,7 @@ Wavelet::getNoiseStandardDeviation(Simbox * simbox, FFTGrid * seisCube, WellData
   errStd   = sqrt(errStd);
   
   //LogKit::LogFormatted(LogKit::LOW,"\n  Reporting errors (as standard deviations) estimated in different ways:\n\n");
+  LogKit::LogFormatted(LogKit::LOW,"\n");
   LogKit::LogFormatted(LogKit::LOW,"                                     SeisData        ActuallyUsed       OptimalGlobal      OptimalLocal\n");
   LogKit::LogFormatted(LogKit::LOW,"  Well                  shift[ms]     StdDev          Gain   S/N         Gain   S/N         Gain   S/N \n");
   LogKit::LogFormatted(LogKit::LOW,"  --------------------------------------------------------------------------------------------------------\n");

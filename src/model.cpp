@@ -407,17 +407,17 @@ Model::readSegyFiles(char          ** fNames,
   for(i=0 ; i<nFiles ; i++)
   {
     target[i] = NULL;
-    if((okFiles & flag) == 0)
+    if((okFiles & flag & error) == 0)
     {
       try
       {
+        bool onlyVolume = true;
         segy = new SegY(fNames[i], 
                         modelSettings->getSegyOffset(),
                         *(modelSettings->getTraceHeaderFormat()));
         segy->readAllTraces(timeSimbox, 
                             modelSettings->getZpad(),
-                            modelSettings->getAreaParameters() != NULL);
- //                           false);
+                            onlyVolume);
         segy->createRegularGrid();
       }
       catch (NRLib2::Exception & e)

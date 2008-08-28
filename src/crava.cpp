@@ -319,9 +319,9 @@ Crava::setupErrorCorrelation(Model * model)
     }
     if (empSNRatio_[l] < 1.1f) 
     {
-      LogKit::LogFormatted(LogKit::LOW,"\nERROR: The empirical signal-to-noise ratio for angle stack %d is %7.1e. Ratios smaller than\n",l+1,empSNRatio_[l]);
-      LogKit::LogFormatted(LogKit::LOW,"       1 are illegal and CRAVA has to stop. CRAVA was for some reason not able to estimate\n");
-      LogKit::LogFormatted(LogKit::LOW,"       this ratio reliably, and you must give it as input to the model file\n\n");
+      LogKit::LogFormatted(LogKit::LOW,"\nThe empirical signal-to-noise ratio for angle stack %d is %7.1e. Ratios smaller than\n",l+1,empSNRatio_[l]);
+      LogKit::LogFormatted(LogKit::LOW," 1 are illegal and CRAVA has to stop. CRAVA was for some reason not able to estimate\n");
+      LogKit::LogFormatted(LogKit::LOW," this ratio reliably, and you must give it as input to the model file\n\n");
       exit(1);
     }
   }
