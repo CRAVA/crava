@@ -218,17 +218,17 @@ SegY::readTrace(Volume * volume,
 
   if(static_cast<int>((zTop - z0_)/dz_) < 0) {
     std::string text;
-    text+= "\nERROR: A part of the top time surface reaches above the seismic gather. (seismic\n";
-    text+="       start time = "+ ToString(z0_) + "). Include more seismic data or lower the top surface.\n";
-    text+="       zTop =" + ToString(zTop) + "\n"; 
+    text+= "A part of the top time surface reaches above the seismic gather. (seismic\n";
+    text+= " start time = "+ToString(z0_)+ " while surface z-value = "+ToString(zTop);
+    text+= "). Include more seismic\n data or lower the top surface.";
     throw Exception(text); 
   } 
   //NBNB-PAL: Tried nz_ - 1 below, but that failed  (incorrectly
   //NBNB-PAL: I think) in the facies case of test suite
   if(static_cast<int>((zBot - z0_)/dz_) + 1 > nz_) {
     std::string text;
-    text+= "\nERROR: A part of the base time surface reaches below the seismic gather. Include\n";
-    text+="       more seismic data or highten the base surface.\n";
+    text+= "A part of the base time surface reaches below the seismic gather. Include\n";
+    text+=" more seismic data or highten the base surface.";
     throw Exception(text);
   } 
 
