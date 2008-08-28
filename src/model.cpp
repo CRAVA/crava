@@ -411,10 +411,11 @@ Model::readSegyFiles(char          ** fNames,
     {
       try
       {
-        bool onlyVolume = true;
         segy = new SegY(fNames[i], 
                         modelSettings->getSegyOffset(),
                         *(modelSettings->getTraceHeaderFormat()));
+        //        bool onlyVolume = true;
+        bool onlyVolume = modelSettings_->getAreaParameters() != NULL;;
         segy->readAllTraces(timeSimbox, 
                             modelSettings->getZpad(),
                             onlyVolume);

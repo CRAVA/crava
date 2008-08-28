@@ -663,11 +663,11 @@ Wavelet::getNoiseStandardDeviation(Simbox * simbox, FFTGrid * seisCube, WellData
 
   if (empSNRatio < 1.1f) 
   {
-    sprintf(errText, "%s ERROR: The empirical signal-to-noise ratio Var(seismic data)/Var(noise) is %.2f. Ratios\n",errText, empSNRatio);
-    sprintf(errText, "%s       smaller than 1 are illegal and CRAVA has to stop. CRAVA was for some reason not able\n", errText);
-    sprintf(errText,"%s       to estimate this ratio reliably, and you must give it as input to the model file.\n", errText);
+    sprintf(errText, "%sThe empirical signal-to-noise ratio Var(seismic data)/Var(noise) is %.2f. Ratios\n",errText, empSNRatio);
+    sprintf(errText, "%s smaller than 1 are illegal and CRAVA has to stop. CRAVA was for some reason not able\n", errText);
+    sprintf(errText,"%s to estimate this ratio reliably, and you must give it as input to the model file.\n", errText);
     sprintf(errText,"%s \nNOTE: If the wavelet was estimated by CRAVA the solution may be to remove one or more wells\n", errText);
-    sprintf(errText,"%s      from the wavelet estimation (compare shifts and SN-ratios for different wells).\n\n", errText);
+    sprintf(errText,"%s from the wavelet estimation (compare shifts and SN-ratios for different wells).\n\n", errText);
     error += 1;
   }
  
