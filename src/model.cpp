@@ -358,7 +358,7 @@ Model::checkAvailableMemory(Simbox        * timeSimbox,
   char   * memchunk0 = new char[workMem];
   float ** memchunk  = new float*[nGrids];
 
-  float    megaBytes = static_cast<float>(4*nGrids*gridSize)/(1024.f*1024.f);
+  float    megaBytes = static_cast<float>(4*nGrids)*static_cast<float>(gridSize)/(1024.f*1024.f);
   float    gigaBytes = megaBytes/1024.f;
   if (gigaBytes < 0.01f)
     LogKit::LogFormatted(LogKit::LOW,"\nMemory needed by CRAVA:  %.2f megaBytes\n",megaBytes);

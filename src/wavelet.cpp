@@ -461,8 +461,7 @@ Wavelet::getWaveletLengthF()
 float         
 Wavelet::getNoiseStandardDeviation(Simbox * simbox, FFTGrid * seisCube, WellData ** wells, int nWells, char *errText, int &error)
 {
-  //LogKit::LogFormatted(LogKit::LOW,"\n  Estimating noise from seismic data and (nonfiltered) blocked wells");
-
+  LogKit::LogFormatted(LogKit::MEDIUM,"\n  Estimating noise from seismic data and (nonfiltered) blocked wells");
   float errStd  = 0.0f;
   float dataVar = 0.0f;
   // initialization
@@ -639,7 +638,7 @@ Wavelet::getNoiseStandardDeviation(Simbox * simbox, FFTGrid * seisCube, WellData
   errStd  /= float(nData);
   errStd   = sqrt(errStd);
   
-  //LogKit::LogFormatted(LogKit::LOW,"\n  Reporting errors (as standard deviations) estimated in different ways:\n\n");
+  LogKit::LogFormatted(LogKit::MEDIUM,"\n  Reporting errors (as standard deviations) estimated in different ways:\n\n");
   LogKit::LogFormatted(LogKit::LOW,"\n");
   LogKit::LogFormatted(LogKit::LOW,"                                     SeisData        ActuallyUsed       OptimalGlobal      OptimalLocal\n");
   LogKit::LogFormatted(LogKit::LOW,"  Well                  shift[ms]     StdDev          Gain   S/N         Gain   S/N         Gain   S/N \n");
@@ -770,7 +769,6 @@ Wavelet::findOptimalWaveletScale(fftw_real** synt_seis_r,fftw_real** seis_r,int 
     scaleOptWell[i]    = scales[optInd];
     errWellOptScale[i] = sqrt(optValue/float(counter[i]));
   }
-
  return optScale;
 }
 

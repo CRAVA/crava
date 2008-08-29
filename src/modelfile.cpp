@@ -762,8 +762,6 @@ ModelFile::readCommandWells(char ** params, int & pos, char * errText)
   modelSettings_->setNumberOfWells(nWells);
   modelSettings_->setAllIndicatorsTrue(nWells);
 
-  printf("nIndicators = %d\n",nIndicators);
-
   for (int j=0 ; j<nIndicators ; j++)
   {
     if (iwhich[j]==0)         // BACKGROUNDTREND
