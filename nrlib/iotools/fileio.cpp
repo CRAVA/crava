@@ -66,7 +66,7 @@ void NRLib2::WriteBinaryShort(std::ostream& stream,
     throw Exception("Invalid file format.");
   }
 
-  if (!stream.write(buffer, 4)) {
+  if (!stream.write(buffer, 2)) {
     throw Exception("Error writing to stream.");
   }
 }
