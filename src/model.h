@@ -124,12 +124,9 @@ private:
                                  FFTGrid       ** target, 
                                  Simbox        *& timeSimbox, 
                                  ModelSettings *& modelSettings,
-                                 char           * errText); 
-  int              readSegyFile(char          * fName, 
-                                FFTGrid       * target, 
-                                Simbox        * timeSimbox, 
-                                ModelSettings * modelSettings,
-                                char          * errText);
+                                 char           * errText,
+                                 int              fileno = -1); 
+ 
   int              readStormFile(char           * fName, 
                                  FFTGrid       *& target, 
                                  const char     * parName,

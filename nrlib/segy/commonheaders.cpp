@@ -182,6 +182,9 @@ BinaryHeader::BinaryHeader(std::istream& file)
  
   Update(file);
 }
+BinaryHeader::BinaryHeader()
+{
+}
 
 void
 BinaryHeader::Update(std::istream& file)

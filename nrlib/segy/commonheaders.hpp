@@ -42,6 +42,8 @@ class BinaryHeader
 public:
   /// Constructor
   BinaryHeader(std::istream& file);
+  // constructor for writing
+  BinaryHeader();
 /// Update variables
   void Update(std::istream& file);
   void write(std::ostream& file, SegyGeometry *geometry, double dz, int nz) const;

@@ -143,7 +143,8 @@ const char* TraceHeaderFormat::toString() const
 TraceHeader::TraceHeader(const TraceHeaderFormat& format)
   : format_(format),
     status_(0),
-    scalCo_(1)
+    scalCo_(1),
+    scalcoinitial_(0)
 {
   memset(buffer_, 0, 240);
   rmissing_ = RMISSING;

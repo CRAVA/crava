@@ -84,6 +84,13 @@ SegY::~SegY()
   if(geometry_!=NULL)
     delete geometry_;
   geometry_ = NULL;
+  if(binaryHeader_!=NULL)
+    delete binaryHeader_;
+  binaryHeader_ = NULL;
+  int i;
+  for(i=0;i<nTraces_;i++)
+    delete traces_[i];
+  file_.close();
 }
 
 const SegYTrace *
@@ -188,25 +195,24 @@ SegY::readTrace(Volume * volume,
   float zTop, zBot;
   if(volume != NULL)
   {
-//    printf("\nx = %f",x);
-//    printf("y = %f",y);
- //   printf("volume->isInside(x,y) = %d\n",volume->isInside(x,y));
-
     if(volume->isInside(x,y) == 0 && onlyVolume == true)
     {
       readDummyTrace(file_,binaryHeader_->getFormat(),nz_);
+      delete traceHeader;
       return(NULL);
     }
     zTop = static_cast<float>(volume->GetTopSurface().GetZ(x,y));
     if(volume->GetTopSurface().IsMissing(zTop))
     {
       readDummyTrace(file_,binaryHeader_->getFormat(),nz_);
+      delete traceHeader;
       return(NULL);
     }
     zBot = static_cast<float>(volume->GetBotSurface().GetZ(x,y));
     if(volume->GetBotSurface().IsMissing(zBot))
     {
       readDummyTrace(file_,binaryHeader_->getFormat(),nz_);
+      delete traceHeader;
       return(NULL);
     }
   }
@@ -479,6 +485,7 @@ SegY::writeMainHeader(const TextualHeader& ebcdicHeader)
 {
   assert(file_);
   ebcdicHeader.write(file_);
+  binaryHeader_ = new BinaryHeader();
   binaryHeader_->write(file_, geometry_, dz_, nz_);
 }
 
@@ -529,7 +536,7 @@ SegY::storeTrace(float x, float y, std::vector<float> data, Volume *volume, floa
     traces_[index] = new SegYTrace(trace, j0, j1, x, y, IL, XL);
   }
   else
-    throw Exception(" Coordinates aer outside grid.");
+    throw Exception(" Coordinates are outside grid.");
 }
 
 void
@@ -547,32 +554,33 @@ SegY::writeTrace(float x, float y, std::vector<float> data, const Volume *volume
   int ok = geometry_->returnILXL(IL,XL,x,y);
   if(ok==1)
   {
-  header.setInline(IL);
-  header.setCrossline(XL);
-  header.write(file_);
-  double ztop = volume->GetTopSurface().GetZ(x,y);
+    header.setInline(IL);
+    header.setCrossline(XL);
+    header.write(file_);
+    double ztop = volume->GetTopSurface().GetZ(x,y);
 
-  std::vector<float> trace(nz_);
-  int k;
-  if(volume->GetTopSurface().IsMissing(ztop))
-  {
-    for(k=0;k<nz_;k++)
-      trace[k] = 0;
+    std::vector<float> trace;
+    trace.resize(nz_);
+    int k;
+    if(volume->GetTopSurface().IsMissing(ztop))
+    {
+      for(k=0;k<nz_;k++)
+        trace[k] = 0;
+    }
+    else
+    {
+      int firstData = static_cast<int>((ztop-z0_)/dz_);
+      for(k=0;k<firstData;k++)
+        trace[k] = topVal; //data[0];
+      for(k=firstData;k<(firstData+static_cast<int>(data.size()));k++)
+        trace[k] = data[k-firstData];
+      for(k=(firstData+static_cast<int>(data.size()));k<nz_;k++)
+        trace[k] = baseVal; //data[simbox_->getnz()-1];
+    }
+    WriteBinaryIbmFloatArray(file_,trace.begin(),trace.end());
   }
   else
-  {
-    int firstData = static_cast<int>((ztop-z0_)/dz_);
-    for(k=0;k<firstData;k++)
-      trace[k] = topVal; //data[0];
-    for(k=firstData;k<(firstData+static_cast<int>(data.size()));k++)
-      trace[k] = data[k-firstData];
-    for(k=(firstData+static_cast<int>(data.size()));k<nz_;k++)
-      trace[k] = baseVal; //data[simbox_->getnz()-1];
-  }
-  WriteBinaryIbmFloatArray(file_,trace.begin(),trace.end());
-  }
-  else
-    throw Exception("Corrdinates are outside grid.");
+    throw Exception("Coordinates are outside grid.");
 }
 
 void 

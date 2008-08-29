@@ -1394,7 +1394,15 @@ FFTGrid::writeSegyFile(const char * fileName, const Simbox * simbox, float z0)
   float dz = float(floor(simbox->getdz()+0.5));
   if(dz==0)
     dz = 1.0;
-  SegY *segy = new SegY(gfName,z0,nz_,dz,header);
+  int segynz;
+  double zmin,zmax;
+  simbox->getMinMaxZ(zmin,zmax);
+  segynz = int(ceil((zmax-z0)/dz));
+  SegY *segy = new SegY(gfName,z0,segynz,dz,header);
+  SegyGeometry * geometry = new SegyGeometry(simbox->getx0(), simbox->gety0(), simbox->getdx(), simbox->getdy(), 
+                                             simbox->getnx(), simbox->getny(),simbox->getIL0(),
+                                             simbox->getXL0(), simbox->getILStep(), simbox->getXLStep(), simbox->getILxflag(), simbox->getAngle());
+  segy->setGeometry(geometry);
   LogKit::LogFormatted(LogKit::LOW,"\nWriting SEGY file %s...",gfName);
   //  LogKit::LogFormatted(LogKit::LOW,"%d x %d traces.\n",nx_, ny_);
   delete [] gfName;
@@ -1443,9 +1451,9 @@ FFTGrid::writeSegyFile(const char * fileName, const Simbox * simbox, float z0)
   std::vector<float> trace(nz_);
   int k;
 
-  for(IL=il0;IL<ilend;IL++)
+  for(IL=il0;IL<=ilend;IL++)
   {
-    for(XL=xl0;XL<xlend;XL++)
+    for(XL=xl0;XL<=xlend;XL++)
     {
       simbox->findIJFromILXL(IL,XL,i,j);
       index = i+j*simbox->getnx();
@@ -1463,21 +1471,24 @@ FFTGrid::writeSegyFile(const char * fileName, const Simbox * simbox, float z0)
       {
         int firstData = int((z-z0)/dz);
         //printf("Generating trace %d %d %d.\n", firstData, simbox_->getnz(),nz_);
-        for(k=0;k<firstData;k++)
-          trace[k] = 0; //data[0];
+       // for(k=0;k<firstData;k++)
+      //    trace[k] = 0; //data[0];
         // NBNB-PAL : change div div to mult
         double fac = dz/(simbox->getdz()*simbox->getRelThick(i,j));
         int endData = firstData + static_cast<int>(simbox->getnz()/fac);
 
-        if(endData > nz_)
+        if(endData > segynz)
         {
           printf("Internal warning: SEGY-grid too small (%d, %d needed). Truncating data.\n", nz_, endData); 
           endData = nz_;
         }
-        for(k=firstData;k<endData;k++)
-          trace[k] = this->getRealValue(i,j,static_cast<int>((k-firstData)*fac+0.5));
-        for(k=endData;k<nz_;k++)
-          trace[k] = 0; //data[simbox_->getnz()-1];
+        for(k=0;k<nz_;k++)
+          trace[k] = this->getRealValue(i,j,static_cast<int>(k*fac+0.5));
+
+       // for(k=firstData;k<endData;k++)
+       //   trace[k] = this->getRealValue(i,j,static_cast<int>((k-firstData)*fac+0.5));
+       // for(k=endData;k<segynz;k++)
+       //   trace[k] = 0; //data[simbox_->getnz()-1];
         //printf("Trace generated.\n");
         float xx = float(x);
         float yy = float(y);

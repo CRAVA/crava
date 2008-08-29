@@ -395,7 +395,7 @@ Model::readSegyFiles(char          ** fNames,
                      FFTGrid       ** target, 
                      Simbox        *& timeSimbox, 
                      ModelSettings *& modelSettings, 
-                     char           * errText)
+                     char           * errText, int fileno)
 {
   char tmpErr[MAX_STRING];
   int error = 0;
@@ -404,13 +404,16 @@ Model::readSegyFiles(char          ** fNames,
   strcpy(errText, "");
   SegY * segy = NULL;
   int i, flag = 1;
+  // flag fileno used if only one of the files should be read from. Used in processBackground.
   for(i=0 ; i<nFiles ; i++)
   {
-    target[i] = NULL;
-    if((okFiles & flag & error) == 0)
+    if(fileno==-1 || fileno==i)
     {
-      try
+      target[i] = NULL;
+      if((okFiles & flag & error) == 0)
       {
+        try
+        {
         segy = new SegY(fNames[i], 
                         modelSettings->getSegyOffset(),
                         *(modelSettings->getTraceHeaderFormat()));
@@ -427,108 +430,64 @@ Model::readSegyFiles(char          ** fNames,
         error++;
       }
       
-      if (error ==0)
-      {
-        if(timeSimbox->status() == Simbox::NOAREA)
+    
+        if (error ==0)
         {
-          const SegyGeometry *geometry;
-          geometry = segy->getGeometry();
-          modelSettings->setAreaParameters(geometry);
-          timeSimbox->setArea(geometry);
-          
-          
-          sbError = timeSimbox->checkError(modelSettings->getLzLimit(), errText);
-          
+          if(timeSimbox->status() == Simbox::NOAREA)
+          {
+            const SegyGeometry *geometry;
+            geometry = segy->getGeometry();
+            modelSettings->setAreaParameters(geometry);
+            timeSimbox->setArea(geometry);
+
+
+            sbError = timeSimbox->checkError(modelSettings->getLzLimit(), errText);
+
+            if(sbError == 0)
+            {
+              estimateXYPaddingSizes(timeSimbox, modelSettings);
+              //
+              // Check if CRAVA has enough memory to run calculation without buffering to disk
+              //
+              checkAvailableMemory(timeSimbox, modelSettings);
+            }
+            else if(sbError == Simbox::INTERNALERROR)
+            {
+              error++;
+              sprintf(errText,"%s%s", errText, tmpErr);
+            }
+          }
           if(sbError == 0)
           {
-            estimateXYPaddingSizes(timeSimbox, modelSettings);
-            //
-            // Check if CRAVA has enough memory to run calculation without buffering to disk
-            //
-            checkAvailableMemory(timeSimbox, modelSettings);
-          }
-          else if(sbError == Simbox::INTERNALERROR)
-          {
-            error++;
-            sprintf(errText,"%s%s", errText, tmpErr);
+            if(modelSettings->getFileGrid() == 1)
+              target[i] = new FFTFileGrid(timeSimbox->getnx(),
+              timeSimbox->getny(), 
+              timeSimbox->getnz(),
+              modelSettings->getNXpad(), 
+              modelSettings->getNYpad(), 
+              modelSettings->getNZpad());
+            else
+              target[i] = new FFTGrid(timeSimbox->getnx(), 
+              timeSimbox->getny(), 
+              timeSimbox->getnz(),
+              modelSettings->getNXpad(), 
+              modelSettings->getNYpad(), 
+              modelSettings->getNZpad());
+
+            target[i]->setType(FFTGrid::DATA);
+            target[i]->fillInFromSegY(segy, timeSimbox);
+            target[i]->setAngle(modelSettings->getAngle()[i]);
           }
         }
-        if(sbError == 0)
-        {
-          if(modelSettings->getFileGrid() == 1)
-            target[i] = new FFTFileGrid(timeSimbox->getnx(),
-                                        timeSimbox->getny(), 
-                                        timeSimbox->getnz(),
-                                        modelSettings->getNXpad(), 
-                                        modelSettings->getNYpad(), 
-                                        modelSettings->getNZpad());
-          else
-            target[i] = new FFTGrid(timeSimbox->getnx(), 
-                                    timeSimbox->getny(), 
-                                    timeSimbox->getnz(),
-                                    modelSettings->getNXpad(), 
-                                    modelSettings->getNYpad(), 
-                                    modelSettings->getNZpad());
-          
-          target[i]->setType(FFTGrid::DATA);
-          target[i]->fillInFromSegY(segy, timeSimbox);
-          target[i]->setAngle(modelSettings->getAngle()[i]);
-        }
+        if (segy != NULL)
+          delete segy;
       }
-      if (segy != NULL)
-        delete segy;
     }
   }
   return(error);
 }
 
-int
-Model::readSegyFile(char          * fName, 
-                    FFTGrid       * target, 
-                    Simbox        * timeSimbox, 
-                    ModelSettings * modelSettings, 
-                    char          * errText) 
-{
-  int error = 0;
 
-  SegY * segy;
-  target = NULL;
-  segy = new SegY(fName, 
-                  modelSettings->getSegyOffset(),
-                  *(modelSettings->getTraceHeaderFormat()));
-
-  //  char tmpErr[MAX_STRING];
-  //NBNB  if(segy->checkError(tmpErr) != 0)
-  //  {
-  //    sprintf(errText,"%s%s", errText, tmpErr);
-  //   error = 1;
-  //  }
-  //  else
-
-  {
-    if(modelSettings->getFileGrid() == 1)
-      target = new FFTFileGrid(timeSimbox->getnx(),
-                               timeSimbox->getny(), 
-                               timeSimbox->getnz(),
-                               modelSettings->getNXpad(), 
-                               modelSettings->getNYpad(), 
-                               modelSettings->getNZpad());
-    else
-      target = new FFTGrid(timeSimbox->getnx(), 
-                           timeSimbox->getny(), 
-                           timeSimbox->getnz(),
-                           modelSettings->getNXpad(), 
-                           modelSettings->getNYpad(), 
-                           modelSettings->getNZpad());
-    
-    target->setType(FFTGrid::PARAMETER);
-    target->fillInFromSegY(segy, timeSimbox);
-    target->logTransf();
-  }
-  delete segy;
-
-  return(error);
-}
 
 //NBNB Following routine only to be used for parameters!
 int
@@ -1463,9 +1422,9 @@ Model::processBackground(Background   *& background,
             {
               int readerror = 0;
               if(constBack[i] == ModelFile::SEGYFILE)
-                readerror = readSegyFile(backFile[i], backModel[i],
+                readerror = readSegyFiles(backFile, 3,backModel,
                                          timeSimbox, modelSettings,
-                                         errText);
+                                         errText, i);
               else
                 readerror = readStormFile(backFile[i], backModel[i], parName[i], 
                                           timeSimbox, modelSettings,
