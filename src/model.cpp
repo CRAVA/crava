@@ -1,3 +1,4 @@
+
 #include <iostream>
 #include <stdio.h>
 #include <math.h>
@@ -59,6 +60,7 @@ Model::Model(char * fileName)
   bool failedSeismic   = false;
   bool failedSimbox    = false;
   bool failedWells     = false;
+  bool failedReflMat   = false;
 
   if (modelFile->getParsingFailed()) {
     failedModelFile = true;
@@ -112,12 +114,14 @@ Model::Model(char * fileName)
                           errText);
         processReflectionMatrix(reflectionMatrix_, background_, 
                                 modelSettings_, modelFile, 
-                                errText);  
-        processWavelets(wavelet_, seisCube_, wells_, reflectionMatrix_,
-                        timeSimbox_, shiftGrids_, gainGrids_,
-                        modelSettings_, modelFile, hasSignalToNoiseRatio_,
-                        errText, failedWavelet);
-        
+                                errText, failedReflMat);  
+        if (!failedReflMat)
+        {
+          processWavelets(wavelet_, seisCube_, wells_, reflectionMatrix_,
+                              timeSimbox_, shiftGrids_, gainGrids_,
+                          modelSettings_, modelFile, hasSignalToNoiseRatio_,
+                          errText, failedWavelet);
+        }              
         if(modelSettings_->getFormatFlag() == 0)
           modelSettings_->setFormatFlag(1);  //Default, but not initialized due to possible double output.
         background_->getAlpha()->setOutputFormat(modelSettings_->getFormatFlag()); //static, controls all grids.
@@ -145,11 +149,14 @@ Model::Model(char * fileName)
                                      errText);
             processReflectionMatrix(reflectionMatrix_, background_, 
                                     modelSettings_, modelFile, 
-                                    errText);
-            processWavelets(wavelet_, seisCube_, wells_, reflectionMatrix_,
-                            timeSimbox_, shiftGrids_, gainGrids_,
-                            modelSettings_, modelFile, hasSignalToNoiseRatio_, 
-                            errText, failedWavelet);
+                                    errText, failedReflMat);
+            if (!failedReflMat)
+            {
+              processWavelets(wavelet_, seisCube_, wells_, reflectionMatrix_,
+                              timeSimbox_, shiftGrids_, gainGrids_,
+                              modelSettings_, modelFile, hasSignalToNoiseRatio_, 
+                              errText, failedWavelet);
+            }
           }
         }
         if (!failedWells)
@@ -165,11 +172,10 @@ Model::Model(char * fileName)
                           modelFile);
       }
     }
-    if (failedSimbox || failedSeismic || failedWavelet || failedWells) 
+    if (failedReflMat || failedSimbox || failedSeismic || failedWavelet || failedWells) 
       LogKit::LogFormatted(LogKit::ERROR,"\nERROR(s) while loading model. \n %s", errText);
   }
-
-  failed_ = failedModelFile || failedSimbox || failedSeismic || failedWavelet || failedWells;
+  failed_ = failedModelFile || failedReflMat || failedSimbox || failedSeismic || failedWavelet || failedWells;
   
   delete modelFile;
 }
@@ -192,10 +198,12 @@ Model::~Model(void)
   if (priorCorrelations_ != NULL)
     delete priorCorrelations_;
 
-  for(int i=0;i<modelSettings_->getNumberOfAngles();i++)
-    if(wavelet_[i] != NULL)
-      delete wavelet_[i];
-  delete [] wavelet_;
+  if (wavelet_ != NULL) {
+    for(int i=0;i<modelSettings_->getNumberOfAngles();i++)
+      if(wavelet_[i] != NULL)
+        delete wavelet_[i];
+    delete [] wavelet_;
+  }
 
   if(shiftGrids_ != NULL)
   {
@@ -1377,7 +1385,8 @@ Model::processBackground(Background   *& background,
 {
   if (modelSettings->getDoInversion() || 
       modelSettings->getGenerateSeismic() || 
-      (modelSettings->getOutputFlag() & ModelSettings::BACKGROUND) > 0 )
+      (modelSettings->getOutputFlag() & ModelSettings::BACKGROUND) > 0 || 
+      (modelSettings->getOutputFlag() & ModelSettings::WAVELETS)   > 0 )
   {
     FFTGrid * backModel[3];
     const int nx    = timeSimbox->getnx();
@@ -1646,28 +1655,39 @@ Model::processReflectionMatrix(float       **& reflectionMatrix,
                                Background    * background,
                                ModelSettings * modelSettings, 
                                ModelFile     * modelFile,                  
-                               char          * errText)
+                               char          * errText,
+                               bool          & failed)
 {
   //
   // About to process wavelets and energy information. Needs the a-matrix, so create
   // if not already made. A-matrix may need Vp/Vs-ratio from background model.
   //
-  char * reflMatrFile = modelFile->getReflMatrFile();
-  if(reflMatrFile != NULL) {
-    reflectionMatrix = readMatrix(reflMatrFile, modelSettings->getNumberOfAngles(), 3, "reflection matrix", errText);
-    if(reflectionMatrix == NULL) {
-      LogKit::LogFormatted(LogKit::LOW,"ERROR: Reading of file \'%s\' for reflection matrix failed\n",reflMatrFile);
-      LogKit::LogFormatted(LogKit::LOW,"       %s\n",errText);
-      exit(1);
-    }
-    LogKit::LogFormatted(LogKit::LOW,"Reflection parameters read from file.\n\n");
-  }
-  else
+  if (modelSettings->getDoInversion() || 
+      modelSettings->getGenerateSeismic() || 
+      (modelSettings->getOutputFlag() & ModelSettings::WAVELETS)   > 0 )
   {
-    setupDefaultReflectionMatrix(reflectionMatrix,
-                                 background,
-                                 modelSettings,
-                                 modelFile);
+    
+    char * reflMatrFile = modelFile->getReflMatrFile();
+    if(reflMatrFile != NULL) {
+      reflectionMatrix = readMatrix(reflMatrFile, modelSettings->getNumberOfAngles(), 3, "reflection matrix", errText);
+      if(reflectionMatrix == NULL) {
+        sprintf(errText,"%sReading of file \'%s\' for reflection matrix failed\n",errText,reflMatrFile);
+        failed = true;
+      }
+      LogKit::LogFormatted(LogKit::LOW,"Reflection parameters read from file.\n\n");
+    }
+    else {
+      if (background != NULL) {
+        setupDefaultReflectionMatrix(reflectionMatrix,
+                                     background,
+                                     modelSettings,
+                                     modelFile);
+      }
+      else {
+        sprintf(errText,"%s\nFailed to set up reflection matrix. Background model is empty.\n",errText);
+        failed = true;
+      }
+    }
   }
 }
 
@@ -1740,9 +1760,9 @@ Model::processWavelets(Wavelet     **& wavelet,
     }
     if (estimateStuff) 
     {
-      LogKit::LogFormatted(LogKit::LOW,"\nWells that cannot be used in wavelet generation or noise estimation:");
-      LogKit::LogFormatted(LogKit::LOW,"\n  Deviated wells.");
-      LogKit::LogFormatted(LogKit::LOW,"\n  Wells with too little data.\n");
+      LogKit::LogFormatted(LogKit::HIGH,"\nWells that cannot be used in wavelet generation or noise estimation:");
+      LogKit::LogFormatted(LogKit::HIGH,"\n  Deviated wells.");
+      LogKit::LogFormatted(LogKit::HIGH,"\n  Wells with too little data.\n");
     }
     wavelet = new Wavelet *[modelSettings->getNumberOfAngles()];
     

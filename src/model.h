@@ -89,7 +89,8 @@ private:
                                            Background    * background,
                                            ModelSettings * modelSettings, 
                                            ModelFile     * modelFile,                  
-                                           char          * errText);
+                                           char          * errText,
+                                           bool          & failed);
   void             processWavelets(Wavelet     **& wavelet,
                                    FFTGrid      ** seisCube,
                                    WellData     ** wells,
