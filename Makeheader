@@ -5,7 +5,6 @@
 CDIR       = 
 CXX        = g++
 CC         = gcc
-OPT        = -O2
 GCCWARNING = -Wall -pedantic -Wno-long-long
 #GXXWARNING = -Wall -pedantic -Woverloaded-virtual -Wno-long-long
 #GXXWARNING = -Wall -pedantic -Wno-long-long -Wold-style-cast
@@ -16,17 +15,20 @@ mode       = all
 
 ifeq ($(mode),debug)
 DEBUG = -g
+OPT   = -O0
 endif
 
 ifeq ($(mode),profile)
 # Don't use -ggdb here
 DEBUG   = -g 
 PROFILE = -pg
+OPT     = -O2
 endif
 
 ifeq ($(mode),purify)
 # Don't use -ggdb here
 DEBUG   = -g
+OPT     = -O0
 PROGRAM = cravarun.purify
 PURIFY  = /nr/prog/rational/releases/PurifyPlus.7.0.0.0-008/i386_linux2/bin/purify
 endif
