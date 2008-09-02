@@ -127,14 +127,15 @@ SegY::readAllTraces(Volume *volume, double zPad, bool onlyVolume)
 
   double writeInterval = 0.02;
   double nextWrite = writeInterval;
-  int nHeaders = 1;
   LogKit::LogMessage(LogKit::LOW,"\n  0%        20%      40%       60%       80%       100%");
   LogKit::LogMessage(LogKit::LOW,"\n  |    |    |    |    |    |    |    |    |    |    |  ");
   LogKit::LogMessage(LogKit::LOW,"\n  ^");
-  for(int i=1 ; i<nTraces_ ; i++)
+  int traceSize = datasize_*nz_+240;
+  long long bytesRead = 3600+traceSize;
+  for(unsigned int i=1 ; i<nTraces_ ; i++)
   {
-    double size = (nHeaders*3600+i*(datasize_*nz_+240))/static_cast<double>(fSize);
-    if(size > nextWrite)
+    double percentDone = bytesRead/static_cast<double>(fSize);
+    if(percentDone > nextWrite)
     {
       LogKit::LogMessage(LogKit::LOW,"^");
       nextWrite+=writeInterval;
@@ -144,9 +145,9 @@ SegY::readAllTraces(Volume *volume, double zPad, bool onlyVolume)
                            zPad, 
                            duplicateHeader,
                            onlyVolume);
-
+    bytesRead += traceSize;
     if (duplicateHeader)
-      nHeaders++; 
+      bytesRead += 3600;
 
     if(file_.eof()==true)
       break;
