@@ -182,7 +182,7 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
     //sprintf(fileName,"cpp");
     //printToFile(fileName,cpp_r[w], nzp);
     fft(cpp_r[w],cpp_c[w],nzp);
-    convolve(wavelet_c[w],cpp_c[w],synt_seis_c[w],cnzp);
+    convolve(cpp_c[w],wavelet_c[w],synt_seis_c[w],cnzp);
     fftInv(synt_seis_c[w],synt_seis_r[w],nzp); // 
     //sprintf(fileName,"syntSeis");
     //printToFile(fileName,synt_seis_r[w], nzp);
