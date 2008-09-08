@@ -184,18 +184,18 @@ Wavelet::setShiftGrid(Surface * grid, Simbox * simbox)
 }
 
 void
-Wavelet::printToFile(char* fileName,fftw_real* vec, int nzp) const
+Wavelet::printVecToFile(char* fileName,fftw_real* vec, int nzp) const
 {
-  if( ModelSettings::getDebugLevel() > 0) {
+  if( ModelSettings::getDebugLevel() > 0) { 
       char * fName = ModelSettings::makeFullFileName(fileName, ".dat");
-      FILE *file = fopen(fName,"wb");
+      FILE *file = fopen(fName,"w");
       int i;
       for(i=0;i<nzp;i++)
         fprintf(file,"%f\n",vec[i]);
 
       fclose(file);
       delete [] fName;
-    }
+    }  
 }
 
 void           
@@ -311,9 +311,8 @@ Wavelet::convolve(fftw_complex* var1_c ,fftw_complex* var2_c, fftw_complex* out_
 {
   for(int i=0;i<cnzp;i++)
   {
-    out_c[i].re = var1_c[i].re*var2_c[i].re-var1_c[i].im*var2_c[i].im;
-//    out_c[i].im = var1_c[i].re*var2_c[i].im + var1_c[i].im*var2_c[i].re; //Frode 120808
-    out_c[i].im = var1_c[i].im*var2_c[i].re - var1_c[i].re*var2_c[i].im; //Frode 120808
+    out_c[i].re = var1_c[i].re*var2_c[i].re+var1_c[i].im*var2_c[i].im; 
+    out_c[i].im = var1_c[i].im*var2_c[i].re - var1_c[i].re*var2_c[i].im;
   }
 
 }
@@ -562,9 +561,10 @@ Wavelet::getNoiseStandardDeviation(Simbox * simbox, FFTGrid * seisCube, WellData
       if(length*dz0 > waveletLength_) // must have enough data
       {
         nDataUsedInWell[w] = length; 
-        fillInCpp(alpha,beta,rho,start,length,cpp_r[w],nzp);
+        fillInCpp(alpha,beta,rho,start,length,cpp_r[w],nzp);  // fills in reflection coefficients
         fft(cpp_r[w],cpp_c[w],nzp);
-        fillInnWavelet(wavelet_r[w],nzp,dz[w]);
+        fillInnWavelet(wavelet_r[w],nzp,dz[w]); // fills inn wavelet
+        //flipVec(wavelet_r[w],nzp);
         fft(wavelet_r[w],wavelet_c[w],nzp);
         convolve(cpp_c[w],wavelet_c[w],synt_c[w],cnzp);
         fillInSeismic(seisData,start, length,seis_r[w],nzp);
@@ -581,9 +581,9 @@ Wavelet::getNoiseStandardDeviation(Simbox * simbox, FFTGrid * seisCube, WellData
         {
           char* fileName = new char[MAX_STRING];
           sprintf(fileName,"seismic_Well_%d_%d",w,int(floor(theta_/PI*180.0+0.5)));
-          printToFile(fileName,seis_r[w], nzp);
+          printVecToFile(fileName,seis_r[w], nzp);
           sprintf(fileName,"synthetic_seismic_Well_%d_%d",w,int(floor(theta_/PI*180.0+0.5)));
-          printToFile(fileName,synt_r[w], nzp);
+          printVecToFile(fileName,synt_r[w], nzp);
           sprintf(fileName,"wellTime_Well_%d",w);
           char * fName = ModelSettings::makeFullFileName(fileName, ".dat");
           FILE *file = fopen(fName,"wb");
@@ -939,3 +939,20 @@ Wavelet::setGainGrid(Surface * grid, Simbox * simbox)
 }
 
 
+/*void           
+Wavelet::flipVec(fftw_real* vec, int n)
+{
+  int i;
+  fftw_real* tmp= new fftw_real[n];
+  for(i=1;i<n;i++)
+  {
+    tmp[i]=vec[i];
+  }
+  
+  for(i=1;i<n;i++)
+  {
+    vec[i]=tmp[n-i];
+  }
+  delete [] tmp;
+}
+*/

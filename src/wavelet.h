@@ -48,11 +48,11 @@ public:
   // for noise estimation
   float          getNoiseStandardDeviation(Simbox * simbox, FFTGrid * seisCube, WellData ** wells, int nWells, char *errText, int &error); 
   void           setReflCoeff(float * coeff) {for(int i=0;i<3;i++) coeff_[i] = coeff[i];}
+  void           printVecToFile(char* fileName, fftw_real* vec ,int nzp) const;
 
 protected:
 //  virtual float  getWaveletValue(float z, float * Wavelet, int center,int nx, float dz) = 0;
   virtual void   shiftAndScale(float, float) {};
-  void           printToFile(char* fileName, fftw_real* vec ,int nzp) const;
 
   // for wavelet estimation
   void           fft(fftw_real* rAmp,fftw_complex* cAmp,int nt);     
@@ -66,6 +66,7 @@ protected:
   void           findContiniousPartOfData(bool* hasData,int nz,int &start,int &length) const;
   float          findOptimalWaveletScale(fftw_real** synt_seis_r,fftw_real** seis_r,int nWells,int nzp,
                     float* wellWeight,float& err,float* errWell,float* scaleOptWell,float* errWellOptScale) const;
+  //void           flipVec(fftw_real* vec, int n);
 
   void           fillInnWavelet(fftw_real* wavelet_r,int nzp,float dz);
   float          findBulkShift(fftw_real* vec_r,float dz,int nzp);

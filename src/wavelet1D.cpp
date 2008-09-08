@@ -141,16 +141,20 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
       
       int start,length;
       findContiniousPartOfData(hasData,nz,start,length);
-      
+      char* fileName = new char[MAX_STRING];
       if(length*dz0 > waveletLength  ) // must have enough data
       {
         fillInCpp(alpha,beta,rho,start,length,cpp_r[w],nzp);
+        sprintf(fileName,"cpp_1");// Debug
+        printVecToFile(fileName,cpp_r[w], nzp);// Debug
         fft(cpp_r[w],cpp_c[w],nzp);
         fillInSeismic(seisData,start,length,seis_r[w],nzp);
+        sprintf(fileName,"seis_1");  // Debug
+        printVecToFile(fileName,seis_r[w], nzp);// Debug
         fft(seis_r[w],seis_c[w],nzp);
         estimateCor(cpp_c[w],cpp_c[w],cor_cpp_c[w],cnzp);
         fftInv(cor_cpp_c[w],cor_cpp_r[w],nzp);
-        estimateCor(seis_c[w],cpp_c[w],ccor_seis_cpp_c[w],cnzp);
+        estimateCor(cpp_c[w],seis_c[w],ccor_seis_cpp_c[w],cnzp);
         fftInv(ccor_seis_cpp_c[w],ccor_seis_cpp_r[w],nzp);
         fftInv(cpp_c[w],cpp_r[w],nzp);
         fftInv(seis_c[w],seis_r[w],nzp);
@@ -166,9 +170,10 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
   multiplyPapolouis(ccor_seis_cpp_r,dz,nWells,nzp, waveletLength);
   multiplyPapolouis(cor_cpp_r,dz,nWells,nzp, waveletLength);
   getWavelet(ccor_seis_cpp_r,cor_cpp_r,wavelet_r,wellWeight, nWells, nzp);
+
   rAmp_      = averageWavelets(wavelet_r,nWells,nzp,wellWeight,dz,dz0); // wavelet centered
   cAmp_      = (fftw_complex*) rAmp_;
-  char* fileName = new char[MAX_STRING];
+   char* fileName = new char[MAX_STRING];
   //sprintf(fileName,"wavelet");
   //printToFile(fileName,rAmp_, nzp);
 
@@ -176,18 +181,18 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
   {
     fillInnWavelet(wavelet_r[w],nzp,dz[w]);
     shiftReal(shiftWell[w]/dz[w],wavelet_r[w],nzp);
-    //sprintf(fileName,"waveletShift");
-    //printToFile(fileName,wavelet_r[w], nzp);
+    sprintf(fileName,"waveletShift");
+    printVecToFile(fileName,wavelet_r[w], nzp);
     fft(wavelet_r[w],wavelet_c[w],nzp);
-    //sprintf(fileName,"cpp");
-    //printToFile(fileName,cpp_r[w], nzp);
+    sprintf(fileName,"cpp");
+    printVecToFile(fileName,cpp_r[w], nzp);
     fft(cpp_r[w],cpp_c[w],nzp);
     convolve(cpp_c[w],wavelet_c[w],synt_seis_c[w],cnzp);
     fftInv(synt_seis_c[w],synt_seis_r[w],nzp); // 
-    //sprintf(fileName,"syntSeis");
-    //printToFile(fileName,synt_seis_r[w], nzp);
-    //sprintf(fileName,"seis");
-    //printToFile(fileName,seis_r[w], nzp);
+    sprintf(fileName,"syntSeis");
+    printVecToFile(fileName,synt_seis_r[w], nzp);
+    sprintf(fileName,"seis");
+    printVecToFile(fileName,seis_r[w], nzp);
     //printf("Test run\n");
   }
 
@@ -257,6 +262,7 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
       fclose(fid);
     }
   }
+
   delete [] alpha;
   delete [] beta;
   delete [] rho;
@@ -269,7 +275,7 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
     delete [] ccor_seis_cpp_r[i] ;
     delete [] wavelet_r[i];
   }
-  flipUpDown(); //NB ODD temporary fix - FRODE
+  //flipUpDown(); //NB ODD temporary fix - FRODE
 }
 
 Wavelet1D::Wavelet1D(char * fileName, ModelSettings * modelSettings, int fileFormat, int &errCode, char *errText, int dim)
@@ -1080,7 +1086,6 @@ Wavelet1D::printToFile(char* fileName, bool overrideDebug)
 void
 Wavelet1D::writeWaveletToFile(char* fileName,float approxDzIn, Simbox *)
 {
-//   flipUpDown(); //FRODE
    sprintf(fileName,"%s_%.1f_deg",fileName,theta_*180.0/PI);
   
    char * fName = ModelSettings::makeFullFileName(fileName, ".asc");
@@ -1155,7 +1160,6 @@ Wavelet1D::writeWaveletToFile(char* fileName,float approxDzIn, Simbox *)
      fprintf(file,"%f\n", waveletNew_r[i]);
    
    fclose(file);
-//   flipUpDown(); //FRODE
    delete [] fName;
    delete [] waveletNew_r;
 }
@@ -1364,7 +1368,7 @@ Wavelet1D::averageWavelets(fftw_real** wavelet_r,int nWells,int nzp,float* wellW
   
   char* fileName = new char[MAX_STRING];
   sprintf(fileName,"wavelet_%d_fftOrder_noshift",int(floor(theta_/PI*180+0.5)));
-  Wavelet::printToFile(fileName,wave,nzp_);
+  Wavelet::printVecToFile(fileName,wave,nzp_);
   
   delete [] weight;
   return wave;
