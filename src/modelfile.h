@@ -19,6 +19,7 @@ public:
   char          ** getHeaderList(void)            const { return headerList_            ;}
   char          ** getTimeSurfFile(void)          const { return timeSurfFile_          ;}
   char          ** getDepthSurfFile(void)         const { return depthSurfFile_         ;}
+  char           * getVelocityField(void)         const { return velocityField_         ;}
   char          ** getSeismicFile(void)           const { return seismicFile_           ;}
   char          ** getWaveletFile(void)           const { return waveletFile_           ;}
   char          ** getWaveletEstIntFile(void)     const { return waveletEstIntFile_     ;}
@@ -35,16 +36,11 @@ public:
   double           getTimeLz(void)                const { return time_lz_               ;}
   double           getTimeDz(void)                const { return time_dz_               ;}
   int              getTimeNz(void)                const { return time_nz_               ;}
-  double           getDepthDTop(void)             const { return depth_dTop_            ;}
-  double           getDepthLz(void)               const { return depth_lz_              ;}
-  double           getDepthDz(void)               const { return depth_dz_              ;}
-  int              getDepthNz(void)               const { return depth_nz_              ;}
   bool             getHasSignalToNoiseRatio(void) const { return hasSignalToNoiseRatio_ ;}
   bool             getFaciesLogGiven(void)        const { return faciesLogGiven_        ;}
-  bool             getHasDepthSurfaces(void)      const { return hasDepthSurfaces_      ;}
+  bool             getDoDepthConversion(void)     const { return doDepthConversion_     ;}
   bool             getGenerateBackground(void)    const { return generateBackground_    ;}
   bool             getParallelTimeSurfaces(void)  const { return parallelTimeSurfaces_  ;}
-  bool             getParallelDepthSurfaces(void) const { return parallelDepthSurfaces_ ;}
   bool             getParsingFailed(void)         const { return failed_                ;}
   
   enum             backFileTypes{STORMFILE = -2, SEGYFILE = -1};
@@ -55,7 +51,7 @@ private:
   int              readCommandBackground(char ** params, int & pos, char * errText);
   int              readCommandArea(char ** params, int & pos, char * errText);
   int              readCommandTimeSurfaces(char ** params, int & pos, char * errText);
-  int              readCommandDepthSurfaces(char ** params, int & pos, char * errText);
+  int              readCommandDepthConversion(char ** params, int & pos, char * errText);
   int              readCommandSeismic(char ** params, int & pos, char * errText, int seisType = 0);
   int              readCommandAngularCorr(char ** params, int & pos, char * errText);
   int              readCommandLateralCorr(char ** params, int & pos, char * errText);
@@ -101,6 +97,7 @@ private:
   char          ** backFile_;              // File names (temporarily stored).
   char          ** timeSurfFile_;          // File names: top and base time surfaces
   char          ** depthSurfFile_;         // File names: top and base depth surfaces
+  char           * velocityField_;         // File names: velocity field, or command
   char          ** seismicFile_;           // File names: seismic data
   char          ** waveletFile_;           // File names: wavelets
   char          ** waveletEstIntFile_;     // File names: Wavelet estimation interval
@@ -131,15 +128,9 @@ private:
   double           time_dz_;
   int              time_nz_;
 
-  double           depth_dTop_;            // Used when top and base surfaces are parallel
-  double           depth_lz_;              // NBNB-PAL: parallelle topp- og bunnflater for dybde høres
-  double           depth_dz_;              // NBNB-PAL: ikke særlig smart ut.
-  int              depth_nz_;
-
   bool             faciesLogGiven_;
-  bool             hasDepthSurfaces_;      // Flag taking value 1 if depth surfaces are defined
+  bool             doDepthConversion_;     // Flag taking value 1 if depth surfaces are defined
   bool             parallelTimeSurfaces_;
-  bool             parallelDepthSurfaces_;
   bool             generateBackground_;    // Generate background model from filtered wells.
   bool             hasSignalToNoiseRatio_; // Use SN ratio instead of error variance in model file. 
 

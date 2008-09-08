@@ -418,27 +418,25 @@ Model::readSegyFiles(char          ** fNames,
     if(fileno==-1 || fileno==i)
     {
       target[i] = NULL;
-      if((okFiles & flag & error) == 0)
+      if((okFiles & flag) == 0 && error == 0)
       {
         try
         {
-        segy = new SegY(fNames[i], 
-                        modelSettings->getSegyOffset(),
-                        *(modelSettings->getTraceHeaderFormat()));
-        //        bool onlyVolume = true;
-        bool onlyVolume = modelSettings_->getAreaParameters() != NULL;;
-        segy->readAllTraces(timeSimbox, 
-                            modelSettings->getZpad(),
-                            onlyVolume);
-        segy->createRegularGrid();
-      }
-      catch (NRLib2::Exception & e)
-      {
-        sprintf(errText,"%s%s",errText,e.what());
-        error++;
-      }
-      
-    
+          segy = new SegY(fNames[i], 
+                          modelSettings->getSegyOffset(),
+                          *(modelSettings->getTraceHeaderFormat()));
+          bool onlyVolume = modelSettings_->getAreaParameters() != NULL;;
+          segy->readAllTraces(timeSimbox, 
+                              modelSettings->getZpad(),
+                              onlyVolume);
+          segy->createRegularGrid();
+        }
+        catch (NRLib2::Exception & e)
+        {
+          sprintf(errText,"%s%s",errText,e.what());
+          error++;
+        }
+        
         if (error ==0)
         {
           if(timeSimbox->status() == Simbox::NOAREA)
@@ -447,7 +445,6 @@ Model::readSegyFiles(char          ** fNames,
             geometry = segy->getGeometry();
             modelSettings->setAreaParameters(geometry);
             timeSimbox->setArea(geometry);
-
 
             sbError = timeSimbox->checkError(modelSettings->getLzLimit(), errText);
 
@@ -961,17 +958,17 @@ Model::completeSimboxes(Simbox       *& depthSimbox,
                         char          * errText,
                         bool          & failed)
 {
-  if (modelFile->getHasDepthSurfaces())
+  if (modelFile->getDoDepthConversion())
   {
     depthSimbox = new Simbox();
     int error = 0;
     setSimboxSurfaces(depthSimbox, 
                       modelFile->getDepthSurfFile(), 
-                      modelFile->getParallelDepthSurfaces(), 
-                      modelFile->getDepthDTop(), 
-                      modelFile->getDepthLz(), 
-                      modelFile->getDepthDz(), 
-                      modelFile->getDepthNz(),
+                      false,
+                      RMISSING,
+                      RMISSING,
+                      RMISSING,
+                      RMISSING,
                       error);
     if(error == 0)
     {
@@ -1209,6 +1206,9 @@ Model::processWells(WellData     **& wells,
     // Print facies count for each well
     //
     if(nFacies > 0) { 
+      //
+      // Probabilities
+      //
       LogKit::LogFormatted(LogKit::LOW,"\nFacies distributions for each well: \n");
       LogKit::LogFormatted(LogKit::LOW,"\nWell                    ");
       for (int i = 0 ; i < nFacies ; i++)
@@ -1225,7 +1225,7 @@ Model::processWells(WellData     **& wells,
           LogKit::LogFormatted(LogKit::LOW,"%-23s ",wells[i]->getWellname());
           for (int f = 0 ; f < nFacies ; f++) {
             float faciesProb = static_cast<float>(faciesCount[i][f])/tot;
-            LogKit::LogFormatted(LogKit::LOW,"%d %12.4f ",faciesCount[i][f],faciesProb);
+            LogKit::LogFormatted(LogKit::LOW,"%12.4f ",faciesProb);
           }
           LogKit::LogFormatted(LogKit::LOW,"\n");
         } 
@@ -1238,6 +1238,37 @@ Model::processWells(WellData     **& wells,
         }
       }
       LogKit::LogFormatted(LogKit::LOW,"\n");
+      //
+      // Counts
+      //
+      LogKit::LogFormatted(LogKit::MEDIUM,"\nFacies counts for each well: \n");
+      LogKit::LogFormatted(LogKit::MEDIUM,"\nWell                    ");
+      for (int i = 0 ; i < nFacies ; i++)
+        LogKit::LogFormatted(LogKit::MEDIUM,"%12s ",modelSettings->getFaciesName(i));
+      LogKit::LogFormatted(LogKit::MEDIUM,"\n");
+      for (int i = 0 ; i < 24+13*nFacies ; i++)
+        LogKit::LogFormatted(LogKit::MEDIUM,"-");
+      LogKit::LogFormatted(LogKit::MEDIUM,"\n");
+      for (int i = 0 ; i < nWells ; i++) {
+        if (validIndex[i]) {
+          float tot = 0.0;
+          for (int f = 0 ; f < nFacies ; f++)
+            tot += static_cast<float>(faciesCount[i][f]);
+          LogKit::LogFormatted(LogKit::MEDIUM,"%-23s ",wells[i]->getWellname());
+          for (int f = 0 ; f < nFacies ; f++) {
+            LogKit::LogFormatted(LogKit::MEDIUM,"%12d ",faciesCount[i][f]);
+          }
+          LogKit::LogFormatted(LogKit::MEDIUM,"\n");
+        } 
+        else {
+          LogKit::LogFormatted(LogKit::MEDIUM,"%-23s ",wells[i]->getWellname());
+          for (int f = 0 ; f < nFacies ; f++)
+            LogKit::LogFormatted(LogKit::MEDIUM,"         -   ");
+          LogKit::LogFormatted(LogKit::MEDIUM,"\n");
+
+        }
+      }
+      LogKit::LogFormatted(LogKit::MEDIUM,"\n");
     }
     
     //
@@ -1772,7 +1803,7 @@ Model::processWavelets(Wavelet     **& wavelet,
     
     for(int i=0 ; i < modelSettings->getNumberOfAngles() ; i++)
     {  
-      LogKit::LogFormatted(LogKit::LOW,"\nAngle stack : %.1f deg",modelSettings->getAngle()[i]*180.0/PI);
+      LogKit::LogFormatted(LogKit::LOW,"\nAngle stack : %.1f deg\n",modelSettings->getAngle()[i]*180.0/PI);
       if (waveletFile[i][0] == '*') 
       {
         if (timeSimbox->getdz() > 4.0f) { // Require this density for wavelet estimation
@@ -2282,14 +2313,18 @@ Model::printSettings(ModelSettings * modelSettings,
     LogKit::LogFormatted(LogKit::LOW,"  Number of layers                         : %10d\n",   modelFile->getTimeNz());
     LogKit::LogFormatted(LogKit::LOW,"  Minimum allowed value for lmin/lmax      : %10.2f\n", modelSettings->getLzLimit());
   }
-  if (modelFile->getDepthSurfFile() != NULL)
+  if (modelFile->getDoDepthConversion())
   {
-    LogKit::LogFormatted(LogKit::LOW,"\nDepth surfaces:\n");
-    LogKit::LogFormatted(LogKit::LOW,"  Top surface                              : %s\n",   modelFile->getDepthSurfFile()[0]);
-    LogKit::LogFormatted(LogKit::LOW,"  Base surface                             : %s\n",   modelFile->getDepthSurfFile()[1]);
-    LogKit::LogFormatted(LogKit::LOW,"  Number of layers                         : %10d\n", modelFile->getDepthNz());
-    LogKit::LogFormatted(LogKit::LOW,"\nVelocity model:\n");
-    LogKit::LogFormatted(LogKit::LOW,"  Constant\n");
+    LogKit::LogFormatted(LogKit::LOW,"\nDepth conversion:\n");
+    if (modelFile->getDepthSurfFile()[0] != NULL)
+      LogKit::LogFormatted(LogKit::LOW,"  Top surface                              : %s\n", modelFile->getDepthSurfFile()[0]);
+    else
+      LogKit::LogFormatted(LogKit::LOW,"  Top surface                              : %s\n", "Not given");
+    if (modelFile->getDepthSurfFile()[1] != NULL)
+      LogKit::LogFormatted(LogKit::LOW,"  Base surface                             : %s\n", modelFile->getDepthSurfFile()[1]);
+    else
+      LogKit::LogFormatted(LogKit::LOW,"  Base surface                             : %s\n", "Not given");
+    LogKit::LogFormatted(LogKit::LOW,"\nVelocity field:                          : %s\n", modelFile->getVelocityField());
   }
   //
   // BACKGROUND

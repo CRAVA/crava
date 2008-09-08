@@ -850,8 +850,8 @@ Background::writeDeviationsFromVerticalTrend(WellData    ** wells,
 
   if (nWells == 1)
   {
-    LogKit::LogFormatted(LogKit::LOW,"\nNOTE: A deviation may be observed even with one well since the global trend is");
-    LogKit::LogFormatted(LogKit::LOW,"\n      estimated from blocked logs rather than the full resolution raw logs.\n");
+    LogKit::LogFormatted(LogKit::MEDIUM,"\nNOTE: A deviation may be observed even with one well since the global trend is");
+    LogKit::LogFormatted(LogKit::MEDIUM,"\n      estimated from blocked logs rather than the full resolution raw logs.\n");
   }
   delete [] rel_avg_dev;
   delete [] index;

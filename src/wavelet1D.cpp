@@ -32,7 +32,7 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
                      int              dim)
   : Wavelet(dim)
 {
-  LogKit::LogFormatted(LogKit::LOW,"\n  Estimating 1D wavelet from seismic data and (nonfiltered) blocked wells\n");
+  LogKit::LogFormatted(LogKit::MEDIUM,"  Estimating 1D wavelet from seismic data and (nonfiltered) blocked wells\n");
   readtype_ = ESTIMATE;
   // initialization
 
@@ -1089,7 +1089,7 @@ Wavelet1D::writeWaveletToFile(char* fileName,float approxDzIn, Simbox *)
    sprintf(fileName,"%s_%.1f_deg",fileName,theta_*180.0/PI);
   
    char * fName = ModelSettings::makeFullFileName(fileName, ".asc");
-   LogKit::LogFormatted(LogKit::LOW,"  Writing Wavelet to file : \'%s\'\n", fName);
+   LogKit::LogFormatted(LogKit::MEDIUM,"  Writing Wavelet to file \'%s\'\n", fName);
    int i;
    float approxDz;
 

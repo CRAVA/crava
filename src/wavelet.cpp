@@ -631,7 +631,7 @@ Wavelet::getNoiseStandardDeviation(Simbox * simbox, FFTGrid * seisCube, WellData
 
   if (nData == 0)
   {
-    sprintf(errText, "%s ERROR: Cannot estimate signal-to-noiseratio. No legal well data available. CRAVA must stop\n", errText);
+    sprintf(errText, "%s Cannot estimate signal-to-noise ratio. No legal well data available.\n", errText);
     error += 1;
   }
   dataVar /= float(nData);
@@ -639,24 +639,50 @@ Wavelet::getNoiseStandardDeviation(Simbox * simbox, FFTGrid * seisCube, WellData
   errStd   = sqrt(errStd);
   
   LogKit::LogFormatted(LogKit::MEDIUM,"\n  Reporting errors (as standard deviations) estimated in different ways:\n\n");
-  LogKit::LogFormatted(LogKit::LOW,"\n");
-  LogKit::LogFormatted(LogKit::LOW,"                                     SeisData        ActuallyUsed       OptimalGlobal      OptimalLocal\n");
-  LogKit::LogFormatted(LogKit::LOW,"  Well                  shift[ms]     StdDev          Gain   S/N         Gain   S/N         Gain   S/N \n");
-  LogKit::LogFormatted(LogKit::LOW,"  --------------------------------------------------------------------------------------------------------\n");
-  for(i=0;i<nWells;i++)
+
+  if (readtype_ == ESTIMATE)
   {
-    if(nActiveData[i]>0) {
-      float SNActuallyUsed  = dataVarWell[i]/errVarWell[i];
-      float SNOptimalGlobal = dataVarWell[i]/(errWell[i]*errWell[i]);
-      float SNOptimalLocal  = dataVarWell[i]/(errWellOptScale[i]*errWellOptScale[i]);
-      LogKit::LogFormatted(LogKit::LOW,"  %-20s   %6.2f     %9.2e        1.00 %7.2f     %6.2f %7.2f     %6.2f %7.2f\n", 
-                       wells[i]->getWellname(),shiftWell[i],sqrt(dataVarWell[i]),
-                       SNActuallyUsed,optScale,SNOptimalGlobal,scaleOptWell[i],SNOptimalLocal);
+    LogKit::LogFormatted(LogKit::LOW,"\n");
+    LogKit::LogFormatted(LogKit::LOW,"                                     SeisData       OptimalGlobal      OptimalLocal\n");
+    LogKit::LogFormatted(LogKit::LOW,"  Well                  shift[ms]     StdDev         Gain   S/N         Gain   S/N \n");
+    LogKit::LogFormatted(LogKit::LOW,"  ----------------------------------------------------------------------------------\n");
+    for(i=0;i<nWells;i++)
+    {
+      if(nActiveData[i]>0) {
+        float SNOptimalGlobal = dataVarWell[i]/(errWell[i]*errWell[i]);
+        float SNOptimalLocal  = dataVarWell[i]/(errWellOptScale[i]*errWellOptScale[i]);
+        LogKit::LogFormatted(LogKit::LOW,"  %-20s   %6.2f     %9.2e     %6.2f %7.2f     %6.2f %7.2f\n", 
+                             wells[i]->getWellname(),shiftWell[i],sqrt(dataVarWell[i]),
+                             optScale,SNOptimalGlobal,scaleOptWell[i],SNOptimalLocal);
+      }
+      else
+        LogKit::LogFormatted(LogKit::LOW,"  %-20s      -            -             -      -           -      -           -      -   \n",
+                             wells[i]->getWellname()); 
     }
-    else
-      LogKit::LogFormatted(LogKit::LOW,"  %-20s      -            -             -      -           -      -           -      -   \n",
-                       wells[i]->getWellname()); 
   }
+  else
+  {
+    LogKit::LogFormatted(LogKit::LOW,"\n");
+    LogKit::LogFormatted(LogKit::LOW,"                                     SeisData        ActuallyUsed       OptimalGlobal      OptimalLocal\n");
+    LogKit::LogFormatted(LogKit::LOW,"  Well                  shift[ms]     StdDev          Gain   S/N         Gain   S/N         Gain   S/N \n");
+    LogKit::LogFormatted(LogKit::LOW,"  ------------------------------------------------------------------------------------------------------\n");
+    for(i=0;i<nWells;i++)
+    {
+      if(nActiveData[i]>0) {
+        float SNActuallyUsed  = dataVarWell[i]/errVarWell[i];
+        float SNOptimalGlobal = dataVarWell[i]/(errWell[i]*errWell[i]);
+        float SNOptimalLocal  = dataVarWell[i]/(errWellOptScale[i]*errWellOptScale[i]);
+        LogKit::LogFormatted(LogKit::LOW,"  %-20s   %6.2f     %9.2e        1.00 %7.2f     %6.2f %7.2f     %6.2f %7.2f\n", 
+                             wells[i]->getWellname(),shiftWell[i],sqrt(dataVarWell[i]),
+                             SNActuallyUsed,optScale,SNOptimalGlobal,scaleOptWell[i],SNOptimalLocal);
+      }
+      else
+        LogKit::LogFormatted(LogKit::LOW,"  %-20s      -            -             -      -           -      -           -      -   \n",
+                             wells[i]->getWellname()); 
+    }
+  }  
+
+
   float empSNRatio = dataVar/(errStd*errStd);
   LogKit::LogFormatted(LogKit::LOW,"\n  Signal to noise ratio used for this angle stack is: %6.2f\n", empSNRatio);
 

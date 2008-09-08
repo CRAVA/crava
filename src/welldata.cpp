@@ -165,7 +165,7 @@ WellData::readRMSWell(const char * wellFileName, char **headerList, bool faciesL
           fscanf(file,"%s",tmpStr); // read code word DISC
           if(strcmp(tmpStr,"DISC")!=0)
           {
-            LogKit::LogFormatted(LogKit::LOW,"ERROR: Facies log must be discrete.\n");
+            LogKit::LogFormatted(LogKit::ERROR,"ERROR: Facies log must be discrete.\n");
             exit(1);
           }
           char EOL   = '\n';

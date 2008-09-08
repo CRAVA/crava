@@ -26,6 +26,7 @@ ModelFile::ModelFile(char * fileName)
   headerList_            = NULL;
   timeSurfFile_          = NULL;
   depthSurfFile_         = NULL;
+  velocityField_         = NULL;
   seismicFile_           = NULL;
   waveletFile_           = NULL;
   waveletEstIntFile_     = NULL;
@@ -48,16 +49,10 @@ ModelFile::ModelFile(char * fileName)
   time_dz_               = 0.0;
   time_nz_               = 0;
 
-  depth_dTop_            = 0.0; // doubles
-  depth_lz_              = 0.0;
-  depth_dz_              = 0.0;
-  depth_nz_              = 0;
-
   faciesLogGiven_        = false;
   hasSignalToNoiseRatio_ = false;
-  hasDepthSurfaces_      = false;
+  doDepthConversion_     = false;
   parallelTimeSurfaces_  = false;
-  parallelDepthSurfaces_ = false;
   generateBackground_    = true;
   failed_                = false;
 
@@ -167,7 +162,7 @@ ModelFile::ModelFile(char * fileName)
   strcpy(commandList[neededCommands+21],"GIVESIGNALTONOISERATIO");
   strcpy(commandList[neededCommands+22],"SEISMICRESOLUTION");           // ==> SEISMIC_RESOLUTION
   strcpy(commandList[neededCommands+23],"WAVELETLENGTH");
-  strcpy(commandList[neededCommands+24],"DEPTHSURFACES");
+  strcpy(commandList[neededCommands+24],"DEPTH_CONVERSION");
   strcpy(commandList[neededCommands+25],"PS_SEISMIC");
   alternative[neededCommands+25]    = new int[2];
   alternative[neededCommands+25][0] = -1;                  //One alternative, non-exclusive.
@@ -330,7 +325,7 @@ ModelFile::ModelFile(char * fileName)
           error = readCommandWaveletTaperingL(params, curPos, errText);
           break;
         case 27:
-          error = readCommandDepthSurfaces(params, curPos, errText);
+          error = readCommandDepthConversion(params, curPos, errText);
           break;
         case 28:
           error = readCommandSeismic(params, curPos, errText, ModelSettings::PSSEIS);
@@ -504,7 +499,7 @@ ModelFile::ModelFile(char * fileName)
     LogKit::LogFormatted(LogKit::LOW,"  SEISMICRESOLUTION\n");
     LogKit::LogFormatted(LogKit::LOW,"Surface data:\n");
     LogKit::LogFormatted(LogKit::LOW,"  DEPTH\n");
-    LogKit::LogFormatted(LogKit::LOW,"  DEPTHSURFACES\n");
+    LogKit::LogFormatted(LogKit::LOW,"  DEPTH_CONVERSION\n");
     LogKit::LogFormatted(LogKit::LOW,"  CORRELATION_DIRECTION      \n");
     LogKit::LogFormatted(LogKit::LOW,"  FACIES_ESTIMATION_INTERVAL \n");
     LogKit::LogFormatted(LogKit::LOW,"  WAVELET_ESTIMATION_INTERVAL\n");
@@ -570,11 +565,15 @@ ModelFile::~ModelFile()
   
   if(depthSurfFile_ != NULL) 
   {
-    delete [] depthSurfFile_[0];   // top surface
+    if (depthSurfFile_[1] != NULL)
+      delete [] depthSurfFile_[0]; // top surface
     if (depthSurfFile_[1] != NULL)
       delete [] depthSurfFile_[1]; // base surface
     delete [] depthSurfFile_;
   }
+
+  if(velocityField_ != NULL) 
+    delete [] velocityField_;
 
   if (seismicFile_ != NULL)
   {
@@ -995,51 +994,87 @@ ModelFile::readCommandTimeSurfaces(char ** params, int & pos, char * errText)
 }
 
 int 
-ModelFile::readCommandDepthSurfaces(char ** params, int & pos, char * errText)
+ModelFile::readCommandDepthConversion(char ** params, int & pos, char * errText)
 {
-  hasDepthSurfaces_ = true;
+  doDepthConversion_ = true;
+
 
   int error = 0;
-  int nPar= getParNum(params, pos, error, errText, params[pos-1], 3, 4);
-
-  depthSurfFile_    = new char*[2]; // top and base surface
-  depthSurfFile_[0] = new char[strlen(params[pos])+1];
-  strcpy(depthSurfFile_[0],params[pos]);
-
-  if(isNumber(params[pos+1])) //Only a reference surface
+  int nPar = getParNum(params, pos, error, errText, params[pos-1], 1, -1);
+  if(error == 1)
   {
-    error = checkFileOpen(depthSurfFile_, 1, params[pos-1], errText);
-    depthSurfFile_[1] = NULL;
-    if(nPar == 4)
-    {
-      parallelDepthSurfaces_ = true;
-      depth_dTop_ = static_cast<double>(atof(params[pos+1]));
-      depth_lz_   = static_cast<double>(atof(params[pos+2]));
-      depth_dz_   = static_cast<double>(atof(params[pos+3]));
-    }
-    else
-    {
-      sprintf(errText,"Command %s with only one grid takes %d arguments; %d given in file.\n", 
-              params[pos-1], 4, nPar);
-      error = 1;
-    }
+    pos += nPar+1;
+    sprintf(errText,"Command %s takes 2 to 6 arguments; %d given in file.\n",
+            params[pos-1], nPar);
+    return(error);
   }
-  else
+
+  depthSurfFile_ = new char*[2];
+  depthSurfFile_[0] = NULL; // top surface
+  depthSurfFile_[1] = NULL; // base surface
+      
+  int nSubCommands = 3;
+  char ** subCommand = new char * [nSubCommands];
+  for(int i=0 ; i<nSubCommands ; i++)
+    subCommand[i] = new char[30];
+  strcpy(subCommand[0], "VELOCITY_FIELD");
+  strcpy(subCommand[1], "TOP_SURFACE");
+  strcpy(subCommand[2], "BASE_SURFACE");
+
+  int  curPar = 0;
+  while(curPar < nPar && error == 0) 
   {
-    if(nPar == 3)
+    //
+    // All subcommands take oneFind number of elements in current subcommand
+    //
+    int comPar = 2;
+
+    int subCom = 0;
+    while(subCom < nSubCommands && strcmp(params[pos+curPar], subCommand[subCom]) != 0)
+      subCom++;
+
+    printf("Subcommand %s\n",subCommand[subCom]);
+    printf("Argument   %s\n",params[pos+curPar]);
+
+    switch(subCom) 
     {
-      depthSurfFile_[1] = new char[strlen(params[pos+1])+1];
-      strcpy(depthSurfFile_[1],params[pos+1]);
-      error = checkFileOpen(depthSurfFile_, 2, params[pos-1], errText);
-      depth_nz_ = atoi(params[pos+2]);
-    }
-    else
-    {
-      sprintf(errText,"Command %s with two grids takes %d arguments; %d given in file.\n", 
-              params[pos-1], 3, nPar);
+    case 0:
+      velocityField_ = new char[strlen(params[pos+curPar])+1]; // Can be file name or command
+      strcpy(velocityField_,params[pos+curPar]);
+      uppercase(velocityField_);
+      if (strcmp(velocityField_,"CONSTANT")==1 && strcmp(velocityField_,"FROM_INVERSION")==1)
+      {
+        error = checkFileOpen(depthSurfFile_, 1, velocityField_, errText);
+      }
+      break;
+
+    case 1:
+      depthSurfFile_[0] = new char[strlen(params[pos+curPar])+1];
+      strcpy(depthSurfFile_[0],params[pos+curPar]);
+      error = checkFileOpen(depthSurfFile_, 1, params[pos+curPar-1], errText);
+      break;
+
+    case 2:
+      depthSurfFile_[1] = new char[strlen(params[pos+curPar])+1];
+      strcpy(depthSurfFile_[1],params[pos+curPar]);
+      error = checkFileOpen(depthSurfFile_, 2, params[pos+curPar-1], errText);
+      break;
+
+    default: 
       error = 1;
+      sprintf(errText,"Unknown subcommand %s found in command %s.\n", params[pos+curPar],params[pos-1]);
+      sprintf(errText,"%s\nValid subcommands are:\n",errText);
+      for (int i = 0 ; i < nSubCommands ; i++)
+        sprintf(errText,"%s  %s\n",errText,subCommand[i]);
+      break;
     }
+    curPar += comPar;
   }
+
+  for(int i=0;i<nSubCommands;i++)
+    delete [] subCommand[i];
+  delete [] subCommand;
+
   pos += nPar+1;
   return(error);
 }
