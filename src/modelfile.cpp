@@ -1045,6 +1045,7 @@ ModelFile::readCommandDepthConversion(char ** params, int & pos, char * errText)
       if (strcmp(velocityField_,"CONSTANT")==1 && strcmp(velocityField_,"FROM_INVERSION")==1)
       {
         error = checkFileOpen(depthSurfFile_, 1, velocityField_, errText);
+        velocityFileType_ = float(checkFileType(velocityField_));
       }
       break;
 

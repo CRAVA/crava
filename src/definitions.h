@@ -3,10 +3,11 @@
 
 #include "nrlib/surface/surfaceio.hpp"
 #include "nrlib/iotools/logkit.hpp"
+#include "nrlib/stormgrid/stormcontgrid.hpp"
 
 typedef  NRLib2::RegularSurface<double>    Surface;
 typedef  NRLib2::LogKit                    LogKit;
-
+typedef  NRLib2::StormContGrid             StormContGrid;
 /**
    Class to hold definitions and constants used by CRAVA. (to replace global_def.h?)
 */    

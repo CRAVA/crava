@@ -20,6 +20,7 @@ class WellData;
 class FFTGrid;
 class RandomGen;
 
+
 class Model{
 public:
   Model(char * fileName);
@@ -45,7 +46,9 @@ public:
   Surface        * getCorrXYGrid();
 
   void             getCorrGradIJ(float & corrGradI, float &corrGradJ) const;
-
+  StormContGrid  * makeTimeDepthMapping(FFTGrid *velocity);
+  FFTGrid        * getVelocity()            const { return velocity_[0]    ;}
+  StormContGrid  * getMapping()                const { return mapping_;}
 private:
   void             makeTimeSimbox(Simbox        *& timeSimbox,
                                   ModelSettings *& modelSettings, 
@@ -108,6 +111,11 @@ private:
                                           RandomGen     * randomGen,
                                           int             nz,
                                           ModelSettings * modelSettings);
+  void             processVelocity(FFTGrid       **& velocity,
+                       Simbox        *timeSimbox,
+                       ModelSettings * modelSettings, 
+                       ModelFile     * modelFile, 
+                       char          * errText);
   void             setSimboxSurfaces(Simbox    *& simbox, 
                                      char      ** surfFile, 
                                      bool         parallelSurfaces, 
@@ -116,6 +124,10 @@ private:
                                      double       dz, 
                                      int          nz, 
                                      int        & error);
+  void             setSimboxSurfacesDepth(Simbox *& simbox, 
+                                          char   ** surfFile, 
+                                          int     & error,
+                                          FFTGrid * velocity);
   void             estimateXYPaddingSizes(Simbox         * timeSimbox,
                                           ModelSettings *& modelSettings);
   void             estimateZPaddingSize(Simbox         * timeSimbox,
@@ -199,6 +211,8 @@ private:
                                            // These are only used with correaltion surfaces.
 
   bool             failed_;                // Indicates whether errors ocuured during construction. 
+  FFTGrid        ** velocity_;
+  StormContGrid  *mapping_;
 };
 
 #endif

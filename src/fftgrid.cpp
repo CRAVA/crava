@@ -183,8 +183,8 @@ FFTGrid::fillInFromSegY(SegY* segy, Simbox *simbox)
 }
 
 void
-FFTGrid::fillInFromStorm(Simbox * tmpSimBox, Simbox * actSimBox,
-                         float * grid, const char * parName)
+FFTGrid::fillInFromStorm(Simbox * actSimBox,
+                         StormContGrid * grid, const char * parName)
 {
   assert(cubetype_ != CTMISSING);
   createRealGrid();
@@ -196,9 +196,9 @@ FFTGrid::fillInFromStorm(Simbox * tmpSimBox, Simbox * actSimBox,
 
   fftw_real value  = 0.0;
 
-  int index, index1, index2;
-  double x,y,z, t;
-  float val;
+  
+  double x,y,z;
+  double val;
 
   meanvalue= (float*)  fftw_malloc(sizeof(float)*nyp_*nxp_);
 
@@ -208,19 +208,15 @@ FFTGrid::fillInFromStorm(Simbox * tmpSimBox, Simbox * actSimBox,
       refi   = getXSimboxIndex(i);
       refj   = getYSimboxIndex(j);
       actSimBox->getCoord(refi, refj, 0, x, y, z);
-      index = tmpSimBox->getClosestZIndex(x,y,z);
-      if(index != IMISSING)
-        val = grid[index];
-      else
-        val = 0;
+      val=grid->getValueZInterpolated(x,y,z);
       actSimBox->getCoord(refi, refj, nz_-1, x, y, z);
-      index = tmpSimBox->getClosestZIndex(x,y,z);
-      if(index != IMISSING)
-        if(val != 0)
-          val = float((grid[index]+val)/2.0);
-        else
-          val = grid[index];
-      meanvalue[i+j*nxp_] = val;
+ 
+        if(val != RMISSING)
+   
+          val = (grid->getValueZInterpolated(x,y,z)+val)/2.0;
+        else     
+          val = grid->getValueZInterpolated(x,y,z);
+      meanvalue[i+j*nxp_] = float(val);
     }
 
     LogKit::LogFormatted(LogKit::LOW,"Resampling %s into %dx%dx%d grid:\n",parName,nxp_,nyp_,nzp_);
@@ -248,15 +244,8 @@ FFTGrid::fillInFromStorm(Simbox * tmpSimBox, Simbox * actSimBox,
           if(i<nxp_)  // computes the index reference from the cube puts it in value
           {
             actSimBox->getCoord(refi, refj, refk, x, y, z);
-
-            /*          index = tmpSimBox->getClosestZIndex(x,y,z);
-            if(index != RMISSING)
-            value=grid[index];
-            */
-            tmpSimBox->getZInterpolation(x, y, z, index1, index2, t);
-            if(index1 != IMISSING)
-              value = static_cast<float>((1-t)*grid[index1]+t*grid[index2]);
-            else
+            value = grid->getValueZInterpolated(x,y,z);
+            if(value==RMISSING)
               value = 0;
             value=static_cast<float>( ((mult*value+(1.0-mult)*meanvalue[i+j*nxp_])) );
           }
@@ -781,6 +770,30 @@ FFTGrid::getRealValue(int i, int j, int k, bool extSimbox)
   }
 
   return( value );
+}
+
+float        
+FFTGrid::getRealValueInterpolated(int i, int j, float kindex, bool extSimbox)
+{ 
+  // when index is in simbox (or the extended simbox if extSimbox is true) it returns the grid value  
+  // else it returns RMISSING
+  // i index in x direction 
+  // j index in y direction 
+  // k index in z direction, float, should interpolate
+
+  float value, val1, val2;
+
+  int k1 = int(floor(kindex));
+  val1 = getRealValue(i,j,k1,extSimbox);
+  if(val1==RMISSING)
+    return(RMISSING);
+  int k2 = k1+1;
+  val2 = getRealValue(i,j,k2,extSimbox);
+  if(val2==RMISSING)
+    return(RMISSING);
+  value = float(1.0-kindex-k1)*val1+float(kindex-k1)*val2;
+  return(value);
+
 }
 
 fftw_complex        

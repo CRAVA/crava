@@ -3,8 +3,8 @@
 #include "volume.hpp"
 
 #include <algorithm>
+#define _USE_MATH_DEFINES
 #include <cmath>
-
 #include "../iotools/fileio.hpp"
 #include "../iotools/stringtools.hpp"
 #include "../surface/regularsurface.hpp"
@@ -237,7 +237,7 @@ void Volume::WriteVolumeToFile(std::ofstream& file,
        << WriteSurface(z_bot_, filename, "_bot") << " "
        << WriteSurface(erosion_top_, filename, "_erosion_top") << " "  
        << WriteSurface(erosion_bot_, filename, "_erosion_bot") << "\n"
-       << GetLZ() << " " << angle_ << "\n";
+       << GetLZ() << " " << (180.0*angle_)/M_PI << "\n";
 }
 
 
@@ -295,7 +295,7 @@ void Volume::ReadVolumeFromFile(std::ifstream& file, int line)
   lz_ = ParseType<double>(token);
 
   GetNextToken(file, token, line);
-  angle_ = ParseType<double>(token);
+  angle_ = (M_PI*ParseType<double>(token))/180.0;
 }
 
 

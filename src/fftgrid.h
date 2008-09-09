@@ -4,6 +4,7 @@
 #include <assert.h>
 
 #include "fft/include/fftw.h"
+#include "definitions.h"
 
 class SegY;
 class Corr;
@@ -11,6 +12,7 @@ class Wavelet;
 class Simbox;
 class RandomGen;
 class SegyGeometry;
+
 
 class FFTGrid{
 public:
@@ -26,9 +28,8 @@ public:
 
   void                 fillInFromSegY(SegY * segy, Simbox *simbox );            // No mode
 
-  void                 fillInFromStorm(Simbox     * tmpSimbox, 
-                                       Simbox     * actSimBox,
-                                       float      * grid,
+  void                 fillInFromStorm(Simbox     * actSimBox,
+                                       StormContGrid      * grid,
                                        const char * parName);    // No mode
   void                 fillInFromRealFFTGrid(FFTGrid& fftGrid);  // No mode
   void                 fillInConstant(float value);              // No mode
@@ -46,6 +47,7 @@ public:
   virtual int          setNextComplex(fftw_complex);            // Accessmode write/readandwrite
   virtual int          setNextReal(float);                      // Accessmode write/readandwrite
   float                getRealValue(int i, int j, int k, bool extSimbox = false);  // Accessmode randomaccess
+  float                getRealValueInterpolated(int i, int j, float kindex, bool extSimbox = false);
   fftw_complex         getComplexValue(int i, int j, int k, bool extSimbox = false) const;
   int                  setRealValue(int i, int j, int k, float value, bool extSimbox = false);  // Accessmode randomaccess
   int                  setComplexValue(int i, int j ,int k, fftw_complex value, bool extSimbox = false);

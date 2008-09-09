@@ -2,6 +2,7 @@
 #define CRAVA_H
 
 #include "fft/include/fftw.h"
+#include "definitions.h"
 
 class Model;
 class FFTGrid;
@@ -66,7 +67,7 @@ public:
   void               writePars(FFTGrid * alpha, FFTGrid * beta, FFTGrid * rho, int simNum); 
   void               printEnergyToScreen();
   void               computeFaciesProb();
-
+  void               writeDepthStormCube(FFTGrid *grid, StormContGrid *mapping, char * fileName);
 private: 
   int                fileGrid_;        // is true if is storage is on file 
   const Simbox     * simbox_;          // the simbox

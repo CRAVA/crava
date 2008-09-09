@@ -17,6 +17,7 @@
 #include "lib/random.h"
 #include "lib/lib_matr.h"
 #include "nrlib/iotools/logkit.hpp"
+#include "nrlib/stormgrid/stormcontgrid.hpp"
 
 #include <assert.h>
 #include <time.h>
@@ -2122,7 +2123,16 @@ void Crava::writeToFile(char * fileName1, char * fileName2, FFTGrid * grid) {
   if(!((outputFlag_ & ModelSettings::NOTIME)>0))
     grid->writeFile(fileName1,simbox_,1, model_->getModelSettings()->getSegyOffset());
   if(depthSimbox_!=NULL)
-    grid->writeFile(fileName2,depthSimbox_,0);
+  {
+    if(model_->getVelocity()!=NULL)
+    {
+      StormContGrid *mapping = model_->getMapping();
+      writeDepthStormCube(model_->getVelocity(), mapping, fileName2);
+    }
+    else
+      grid->writeFile(fileName2,depthSimbox_,0);
+  }
+
 }
 
 void Crava::computeFaciesProb()
@@ -2269,4 +2279,31 @@ void Crava::computeFaciesProb()
     fftw_free(postcrar);
     fftw_free(postcrbr);
   }
+}
+void
+Crava::writeDepthStormCube(FFTGrid *grid, StormContGrid *mapping, char * fileName)
+{
+  int i,j,k;
+  int nz = depthSimbox_->getnz();
+  float time, kindex;
+  double x,y;
+  StormContGrid outgrid(*mapping);
+  for(i=0;i<nx_;i++)
+  {
+    x = simbox_->getx0()+i*simbox_->getdx();
+    for(j=0;j<ny_;j++)
+    {
+      y = simbox_->gety0()+j*simbox_->getdy();
+      for(k=0;k<nz;k++)
+      {
+        time = (*mapping)(i,j,k);
+        kindex = float((time - simbox_->getTop(x,y))/simbox_->getdz());
+        outgrid(i,j,k) = grid->getRealValueInterpolated(i,j,kindex);
+
+      }
+    }
+  }
+  outgrid.WriteToFile(fileName);
+  
+
 }

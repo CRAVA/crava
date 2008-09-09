@@ -29,6 +29,7 @@
 #include "nrlib/segy/segy.hpp"
 #include "nrlib/surface/surfaceio.hpp"
 #include "nrlib/iotools/logkit.hpp"
+#include "nrlib/stormgrid/stormcontgrid.hpp"
 
 Model::Model(char * fileName)
 {
@@ -52,6 +53,8 @@ Model::Model(char * fileName)
   failed_                = false;
   gradX_                 = 0;
   gradY_                 = 0;
+  velocity_              = NULL;
+  mapping_               = NULL;
 
   ModelFile * modelFile = new ModelFile(fileName);
 
@@ -107,6 +110,13 @@ Model::Model(char * fileName)
 
     if(!failedSimbox)
     { 
+      if(modelFile->getDoDepthConversion() == true)
+      {
+        processVelocity(velocity_,timeSimbox_,modelSettings_, modelFile, errText);
+        if(velocity_[0]!=NULL)
+          mapping_ = makeTimeDepthMapping(velocity_[0]);
+      }
+
       if (modelSettings_->getGenerateSeismic() == true)
       {
         processBackground(background_, wells_, timeSimbox_, 
@@ -504,119 +514,44 @@ Model::readStormFile(char           * fName,
                      char           * errText)
 {
   int error = 0;
-  FILE * file = fopen(fName,"rb");
-  float x0, y0, z0, lx, ly, lz, rot;
-  int nx, ny, nz, i;
-  char temp[MAX_STRING];
-  for(i=0;i<5;i++)
-    fscanf(file,"%s",temp);
-  fscanf(file,"%f %f %f %f",&x0, &lx, &y0, &ly);
-  fscanf(file,"%s",temp);
-  if(!isNumber(temp))
-  {
-    z0 = RMISSING; // Dummy setting to avoid warning of uninitialized variable
-    error = 1;
-    sprintf(errText,"Top surface in %s should be constant value\n", fName);
+  StormContGrid *stormgrid = NULL;
+  
+  try
+  {   
+    stormgrid = new StormContGrid(0,0,0);
+    stormgrid->ReadFromFile(fName);
+    stormgrid->SetMissingCode(RMISSING);
   }
-  else
-    z0 = float(atof(temp));
-  fscanf(file,"%s",temp);
-  if(!isNumber(temp))
-  {
-    if(error == 1)
-      sprintf(errText,"%sThe same goes for the bottom surface.\n",
-      errText);
-    else
-    {
-      error = 1;
-      sprintf(errText,"Bottom surface in %s should be constant value\n",
-        fName);
-    }
-  }
-  fscanf(file,"%s",temp);
-  if(!isNumber(temp) || atof(temp) != 0)
-  {
-    sprintf(errText,"%sErosion should be 0 in %s.\n",errText,fName);
-    error = 1;
-    fscanf(file,"%s",temp);
-  }
-  else
-  {
-    fscanf(file,"%s",temp);
-    if(!isNumber(temp) || atof(temp) != 0)
-    {
-      sprintf(errText,"%sErosion should be 0 in %s.\n",errText,fName);
+  catch (NRLib2::Exception & e) {
+      sprintf(errText,"%s%s",errText,e.what());
+      //LogKit::LogFormatted(LogKit::ERROR,e.what());
       error = 1;
     }
-  }
-  if(error == 0)
-  {
-    fscanf(file,"%f",&lz);
-    fscanf(file,"%f",&rot);
-    rot = rot*float(PI/180.0);
-    fscanf(file,"%d %d %d",&nx, &ny, &nz);
-    float lmax = lx;
-    if(ly > lmax)
-      lmax = ly;
-    lmax *= 1.1f;
-    Surface * tmpTop = new Surface(x0-1.5*lmax,y0-1.5*lmax,3*lmax,3*lmax,2,2,z0);
-    Simbox * tmpSimbox = new Simbox(x0, y0, tmpTop, lx, ly, lz, rot,
-      lx/float(nx), ly/float(ny), lz/float(nz));
-    readToEOL(file);
-    int nData = nx*ny*nz;
-    float * grid = new float[nData];
-    fread(grid, 4, nData, file);
-#ifndef BIGENDIAN
-    swap4Bytes((char * ) grid, nData);
-#endif
-    int baseInd, i, j, k, k1, kInd, index;
-    for(i=0; i<nx; i++) 
-      for(j=0;j<ny;j++)
-      {
-        baseInd = i+j*nx;
-        k1 = nz;
-        kInd = -1;
-        for(k=0;k<nz;k++)
-        {
-          index = baseInd + k*nx*ny;
-          if(grid[index] != WELLMISSING) 
-          {
-            if(k < k1)
-              k1 = k;
-            else if(index > kInd)
-              kInd = index;
-          }
-          else if(kInd >= 0)
-            grid[index] = grid[kInd];
-        }
-        if(k1 < nz)
-        {
-          kInd = baseInd + k1*nx*ny;
-          for(k=0;k<k1;k++)
-            grid[baseInd+k*nx*ny] = grid[baseInd+k1*nx*ny];
-        }
-      }
 
-      if(modelSettings->getFileGrid() == 1)
-        target = new FFTFileGrid(timeSimbox->getnx(), 
-                                 timeSimbox->getny(), 
-                                 timeSimbox->getnz(), 
-                                 modelSettings->getNXpad(), 
-                                 modelSettings->getNYpad(), 
-                                 modelSettings->getNZpad());
-      else
-        target = new FFTGrid(timeSimbox->getnx(),
-                             timeSimbox->getny(), 
-                             timeSimbox->getnz(), 
-                             modelSettings->getNXpad(), 
-                             modelSettings->getNYpad(), 
-                             modelSettings->getNZpad());
-      target->setType(FFTGrid::PARAMETER);
-      target->fillInFromStorm(tmpSimbox, timeSimbox, grid, parName);
-      target->logTransf();
-      delete [] grid;
-      delete tmpSimbox;
-  }    
+
+  if(error==0)
+  {
+    if(modelSettings->getFileGrid() == 1)
+      target = new FFTFileGrid(timeSimbox->getnx(), 
+      timeSimbox->getny(), 
+      timeSimbox->getnz(), 
+      modelSettings->getNXpad(), 
+      modelSettings->getNYpad(), 
+      modelSettings->getNZpad());
+    else
+      target = new FFTGrid(timeSimbox->getnx(),
+      timeSimbox->getny(), 
+      timeSimbox->getnz(), 
+      modelSettings->getNXpad(), 
+      modelSettings->getNYpad(), 
+      modelSettings->getNZpad());
+    target->setType(FFTGrid::PARAMETER);
+    // target->fillInFromStorm(tmpSimbox, timeSimbox, grid, parName);
+    target->fillInFromStorm(timeSimbox,stormgrid, parName);
+    target->logTransf();
+    delete  stormgrid;
+  }  
+     
   return(error);
 }
 
@@ -757,6 +692,7 @@ Model::setSimboxSurfaces(Simbox *& simbox,
 
   if(error == 0)
   {
+   
     if(parallelSurfaces) //Only one reference surface
     {
       simbox->setDepth(z0Grid, dTop, lz, dz);
@@ -775,6 +711,86 @@ Model::setSimboxSurfaces(Simbox *& simbox,
       if(error == 0)
         simbox->setDepth(z0Grid, z1Grid, nz);
     }
+  }
+}
+
+
+void 
+Model::setSimboxSurfacesDepth(Simbox *& simbox, 
+                         char   ** surfFile, 
+                         int     & error,
+                         FFTGrid * velocity)
+{
+  assert(surfFile[0]!=NULL || surfFile[1]!=NULL); 
+  int surfmissing = 0;
+  Surface * z0Grid = NULL;
+  if(surfFile[0]!=NULL)
+  {
+    try {
+      Surface tmpSurf = NRLib2::ReadStormSurf(surfFile[0]);
+      z0Grid = new Surface(tmpSurf);
+    }
+    catch (NRLib2::Exception & e) {
+      LogKit::LogFormatted(LogKit::ERROR,e.what());
+      error = 1;
+    }
+  }
+  else
+    surfmissing = 1;
+
+  if(surfFile[1]!=NULL)
+  {
+    try {
+      Surface tmpSurf = NRLib2::ReadStormSurf(surfFile[1]);
+      z0Grid = new Surface(tmpSurf);
+    }
+    catch (NRLib2::Exception & e) {
+      LogKit::LogFormatted(LogKit::ERROR,e.what());
+      error = 1;
+  }
+  }
+  else
+    surfmissing = 2;
+
+
+  if(error == 0)
+  {
+    if(surfmissing>0 && velocity!=NULL)
+    {
+      // calculate new surface
+      
+      int nx,ny, nz;
+      nx = timeSimbox_->getnx();
+      ny = timeSimbox_->getny();
+      nz = timeSimbox_->getnz();
+      double * values = new double[nx*ny];
+      double dt, sum, x, y;
+      int i,j,k;
+      for(i=0;i<nx;i++)
+      {
+        x = timeSimbox_->getx0()+i*timeSimbox_->getdx();
+        for(j=0;j<ny;j++)
+        {
+          y = timeSimbox_->gety0()+i*timeSimbox_->getdy();
+          sum = 0;
+          dt = (timeSimbox_->getBot(x,y)-timeSimbox_->getTop(x,y))/timeSimbox_->getnz();
+          for(k=0;k<timeSimbox_->getnz();k++)          
+            sum+=velocity->getRealValue(i,j,k)*dt;
+            if(surfmissing==2)
+              values[i*nx+j] = z0Grid->GetZ(x,y)+ sum;
+            else if(surfmissing==1)
+              values[i*nx+j] = z0Grid->GetZ(x,y)-sum;
+        }
+      }
+      Surface * z1Grid = new Surface(timeSimbox_->getx0(), timeSimbox_->gety0(), 
+                                     timeSimbox_->getlx(), timeSimbox_->getly(), nx,ny, (*values));
+      if(surfmissing==2)
+        simbox->setDepth(z0Grid, z1Grid, nz);
+      else
+        simbox->setDepth(z1Grid, z0Grid, nz);
+
+    }
+   
   }
 }
 
@@ -962,14 +978,10 @@ Model::completeSimboxes(Simbox       *& depthSimbox,
   {
     depthSimbox = new Simbox();
     int error = 0;
-    setSimboxSurfaces(depthSimbox, 
+    setSimboxSurfacesDepth(depthSimbox, 
                       modelFile->getDepthSurfFile(), 
-                      false,
-                      RMISSING,
-                      RMISSING,
-                      RMISSING,
-                      RMISSING,
-                      error);
+                      error,
+                      velocity_[0]);
     if(error == 0)
     {
       const char * topname = "topdepth.storm";
@@ -2479,4 +2491,91 @@ Model::getCorrGradIJ(float & corrGradI, float &corrGradJ) const
 
   corrGradI = float(cI/timeSimbox_->getdz());
   corrGradJ = float(cJ/timeSimbox_->getdz());
+}
+
+StormContGrid*
+Model::makeTimeDepthMapping(FFTGrid *velocity)
+{
+  int i,j,k,kk;
+  double c, sumz;
+  double deltat,sum,x,y,z;
+  int nx, ny;
+  nx = depthSimbox_->getnx();
+  ny = depthSimbox_->getny();
+  StormContGrid *mapping = new StormContGrid(*depthSimbox_);
+  int nz = depthSimbox_->getnz();
+  //StormContGrid *mapping = new StormContGrid(nx,ny,nz);
+ // mapping->SetDimensions(depthSimbox_->getx0(),depthSimbox_->gety0(),depthSimbox_->getlx(),depthSimbox_->getly());
+ // mapping->SetAngle(depthSimbox_->getAngle());
+ // Surface top = depthSimbox_->GetTopSurface().Clone();
+ // mapping->SetSurfaces(top, depthSimbox_->GetBotSurface());
+  
+
+  for(i=0;i<nx;i++)
+  {
+    x = depthSimbox_->getx0()+i*depthSimbox_->getdx();
+    for(j=0;j<ny;j++)
+    {
+      y = depthSimbox_->gety0()+j*depthSimbox_->getdy();
+      sumz = timeCutSimbox_->getTop(x,y)*velocity->getRealValue(i,j,0);    
+      for(k=1;k<nz;k++)
+        sumz +=k*velocity->getRealValue(i,j,k);
+      c = (depthSimbox_->getTop(x,y)-depthSimbox_->getBot(x,y))/sumz;
+
+      for(k=0;k<nz;k++)
+      {
+        kk = 0;
+        deltat = (timeCutSimbox_->getTop(x,y)-timeCutSimbox_->getBot(x,y))/nz;
+        sum = timeCutSimbox_->getTop(x,y)*velocity->getRealValue(i,j,0);
+        z = depthSimbox_->getTop(x,y)+k*depthSimbox_->getdz();
+        while(sum<z)
+        {
+          kk++;
+          sum+=kk*deltat*velocity->getRealValue(i,j,kk);
+        }
+        float value = float((kk-1)*deltat+(z-sum-kk*deltat*velocity->getRealValue(i,j,kk))/velocity->getRealValue(i,j,kk));
+        (*mapping)(i,j,k) = value;
+      }
+    }
+  }
+  return mapping;
+
+}
+
+void 
+Model::processVelocity(FFTGrid       **& velocity,
+                       Simbox        *timeSimbox,
+                       ModelSettings * modelSettings, 
+                       ModelFile     * modelFile, 
+                       char          * errText)
+{
+  char  ** velocityField = new char*[1];
+  velocityField[0]  = modelFile->getVelocityField();
+  float filetype = modelFile->getVelocityFileType();
+  const char * parName[]={"Velocity"};
+  if(velocityField[0]!=NULL)
+  {
+    int okFiles = checkFileOpen(velocityField, 1, "DUMMY", errText, 0);
+    if(okFiles == 0)
+    {
+      int readerror = 0;
+      if(filetype == ModelFile::SEGYFILE)
+        readerror = readSegyFiles(velocityField, 1,velocity,
+        timeSimbox, modelSettings,
+        errText,0);
+      else
+        readerror = readStormFile(velocityField[0], velocity[0], parName[0], 
+        timeSimbox, modelSettings,
+        errText);
+      if(readerror != 0)
+      {
+        LogKit::LogFormatted(LogKit::LOW,"ERROR: Reading of file \'%s\' for parameter \'%s\' failed\n",
+          velocityField,parName[0]);
+        printf("       %s\n",errText);
+        exit(1);
+      }
+    }
+  }
+  else
+    velocity[0] = NULL;
 }

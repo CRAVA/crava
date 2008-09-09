@@ -189,7 +189,25 @@ FFTFileGrid::getRealValue(int i, int j, int k)
   return((float) (rvalue_[index]));
 }
 
+float        
+FFTFileGrid::getRealValueInterpolated(int i, int j, float kindex)
+{ 
+  
+  // i index in x direction 
+  // j index in y direction 
+  // k index in z direction, float, should interpolate
 
+  float value, val1, val2;
+
+  int k1 = int(floor(kindex));
+  val1 = getRealValue(i,j,k1);
+ 
+  int k2 = k1+1;
+  val2 = getRealValue(i,j,k2);
+
+  value = float(1.0-kindex-k1)*val1+float(kindex-k1)*val2;
+  return(value);
+}
 
 int        
 FFTFileGrid::setRealValue(int i, int j, int k, float value)

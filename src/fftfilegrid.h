@@ -21,6 +21,7 @@ public:
   fftw_complex getNextComplex() ;
   float        getNextReal() ;
   float        getRealValue(int i, int j, int k);
+  float        getRealValueInterpolated(int i, int j, float kindex);
   int          setRealValue(int i, int j, int k, float value);
   int          setNextComplex(fftw_complex);
   int          setNextReal(float);

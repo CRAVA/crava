@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8,00"
+	Version="8.00"
 	Name="crava"
 	ProjectGUID="{7FF3AB5B-854B-46AB-99F6-B59958E1BE91}"
 	>
@@ -3478,6 +3478,10 @@
 					</FileConfiguration>
 				</File>
 				<File
+					RelativePath=".\nrlib\stormgrid\stormcontgrid.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\nrlib\iotools\stringtools.cpp"
 					>
 				</File>
@@ -3679,6 +3683,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\nrlib\grid\grid.hpp"
+					>
+				</File>
+				<File
 					RelativePath=".\nrlib\grid\grid2d.hpp"
 					>
 				</File>
@@ -3692,6 +3700,10 @@
 				</File>
 				<File
 					RelativePath=".\nrlib\segy\segy.hpp"
+					>
+				</File>
+				<File
+					RelativePath=".\nrlib\stormgrid\stormcontgrid.hpp"
 					>
 				</File>
 				<File
