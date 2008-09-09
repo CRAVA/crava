@@ -16,6 +16,8 @@ public:
 private:
 	bool				        readHeaderFile(char * fileName, char *errText, int &errCode);
 	void				        readBinaryFile(int n, char *errText, int &errCode);
+  void                write1DWL();
+
  	int					        dim_;
 	int					        nGrid_;
 	float			  	      x0_, y0_, z0_; 

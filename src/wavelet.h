@@ -50,6 +50,8 @@ public:
   void           setReflCoeff(float * coeff) {for(int i=0;i<3;i++) coeff_[i] = coeff[i];}
   void           printVecToFile(char* fileName, fftw_real* vec ,int nzp) const;
 
+  virtual void   write1DWLas3DWL() {};
+
 protected:
 //  virtual float  getWaveletValue(float z, float * Wavelet, int center,int nx, float dz) = 0;
   virtual void   shiftAndScale(float, float) {};

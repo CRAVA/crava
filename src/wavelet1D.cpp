@@ -1385,3 +1385,62 @@ Wavelet1D::getArrayValueOrZero(int i  ,float * Wavelet, int nz) const
     value = 0.0; 
   return value;
 }
+
+void 
+Wavelet1D::write1DWLas3DWL()
+{
+  char* headerFName = new char[MAX_STRING];
+  sprintf(headerFName,"../../Input/Wavelet/3D/1Das3D.Sgrh");
+  char* gridFName = new char[MAX_STRING];
+  sprintf(gridFName,"../../Input/Wavelet/3D/1Das3D.Sgri");
+  char* asciiFName = new char[MAX_STRING];
+  sprintf(asciiFName,"../../Output/Debug/1Das3D.txt");
+
+  FILE *hFile = fopen(headerFName, "w");
+  LogKit::LogFormatted(LogKit::LOW,"\nWriting 1D Wavelet as 3D Wavelet in header file %s...", headerFName);
+  fprintf(hFile, "NORSAR General Grid Format v1.0\n");
+  fprintf(hFile, "3\n");
+  fprintf(hFile, "X (km)\n");
+  fprintf(hFile, "Y (km)\n");
+  fprintf(hFile, "Z (km)\n");
+  fprintf(hFile, "PSF\n");
+  fprintf(hFile, "1\n");
+  fprintf(hFile, "1D Wavelet as 3D Wavelet\n");
+  fprintf(hFile, "1 1 1\n");
+  fprintf(hFile, "1 1 %d\n", nz_);
+  fprintf(hFile, "1 1 %f\n", dz_ * 0.001);
+  fprintf(hFile, "0 0 0\n");
+  fprintf(hFile, "0 0\n");
+  fprintf(hFile, "-999\n");
+  fprintf(hFile, "%s\n", gridFName);
+  fprintf(hFile, "0\n");
+
+  fclose(hFile);
+
+  FILE *aFile = fopen(asciiFName, "w");
+  FILE *bFile = fopen(gridFName,"wb");
+  LogKit::LogFormatted(LogKit::LOW,"\nWriting 1D Wavelet as 3D Wavelet in binary file %s...", gridFName);
+  float value;
+  char * output = (char * ) &value;
+  for(int k=0;k<nz_;k++) {
+     value = static_cast<float> (getRAmp(k));
+     fprintf(aFile, "%f\n", value);
+#ifndef BIGENDIAN
+     fwrite(&(output[3]),1,1,bFile);
+     fwrite(&(output[2]),1,1,bFile);
+     fwrite(&(output[1]),1,1,bFile);
+     fwrite(&(output[0]),1,1,bFile);
+#else
+     fwrite(output, 1, 4, bFile);
+#endif
+    }
+  output[0] = '0';
+  output[1] = '\n';
+  fwrite(output, 2, 1, bFile);
+  fclose(aFile);
+  fclose(bFile);
+
+  return;
+}
+
+

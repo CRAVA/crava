@@ -1826,9 +1826,11 @@ Model::processWavelets(Wavelet     **& wavelet,
             wavelet[i] = new Wavelet3D(waveletFile[i], modelSettings, timeSimbox, modelSettings->getAngle()[i], error, errText);
           else {
             wavelet[i] = new Wavelet1D(waveletFile[i], modelSettings, fileFormat, error, errText);
-            if (error == 0)
+            if (error == 0) {
               wavelet[i]->resample(static_cast<float>(timeSimbox->getdz()), timeSimbox->getnz(), 
                                    modelSettings->getZpad(), modelSettings->getAngle()[i]);
+//              wavelet[i]->write1DWLas3DWL(); //Frode: For debugging and testing
+            }
           }
           if (error == 0)
             wavelet[i]->setReflCoeff(reflectionMatrix[i]);

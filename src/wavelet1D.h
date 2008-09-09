@@ -27,6 +27,7 @@ public:
   void           scale(float gain);
   void           printToFile(char* fileName, bool overrideDebug = false);
   void           writeWaveletToFile(char* fileName, float approxDz, Simbox *simbox = NULL);
+  void           write1DWLas3DWL();
 
 private:
   void           flipUpDown();

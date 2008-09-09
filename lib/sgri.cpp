@@ -51,6 +51,8 @@ Sgri::Sgri(char * fileName, char *errText, int &errCode) :
 
   readBinaryFile(GetN(), errText, errCode);
 
+//  write1DWL(); //Frode 0808: For debugging
+   
   return;
 }
 
@@ -384,4 +386,17 @@ Sgri::sizeOk(float xLim, float yLim, float zLim)
     axisNotOk += 4;
 
   return (axisNotOk);
+}
+
+void 
+Sgri::write1DWL()
+{
+  char* fileName = new char[MAX_STRING];
+  sprintf(fileName,"../../Output/Debug/3D/1Das3D.Sgrh");
+  FILE *wlFile = fopen(fileName, "w");
+
+  for (int k=0; k<GetNK(); k++)
+    fprintf(wlFile, "%f\n", (*this)(0,0,k));
+
+  fclose(wlFile);
 }

@@ -169,7 +169,7 @@ Wavelet3D::Wavelet3D(char * fileName, ModelSettings * modelSettings, Simbox *sim
     shiftAmp->setOutputFormat(modelSettings->getFormatFlag());
 
     shiftFFTGrid(shiftAmp);
-    shiftAmp->writeFile("3DWavelet", simBox);
+//   shiftAmp->writeFile("../Debug/3DWavelet", simBox);
     delete shiftAmp;
     //End for debugging purposes
   }
