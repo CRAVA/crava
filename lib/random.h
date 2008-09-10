@@ -6,7 +6,8 @@
 static const int MULTIPLIER = 69069;
 static const int SHIFT = 1;
 static const int MODULUS = 256*256*256*64;
-static const double INVMOD = ((double) 1 / ((double) MODULUS))/((double) 4); 
+static const double INVMOD = (static_cast<double>(1) / (static_cast<double>(MODULUS)))/(static_cast<double>(4)); 
+//WAS: static const double INVMOD = ((double) 1 / ((double) MODULUS))/((double) 4); 
 
 class RandomGen{
 public:

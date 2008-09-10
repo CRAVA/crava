@@ -289,7 +289,7 @@ Model::checkFileOpen(char ** fNames, int nFiles, const char * command, char * er
     if(nErr == 1)
       sprintf(errText,"Could not open file %s (command %s).\n",errFiles, command);
     else
-      sprintf(errText,"Could not open these files:%s (command %s).\n",errFiles, command);
+      sprintf(errText,"Could not open these files:\n%s (command %s).\n",errFiles, command);
   }
   return(error);
 }
@@ -1676,7 +1676,7 @@ Model::estimateCorrXYFromSeismic(Surface *& corrXY,
   for(int i=0 ; i<nAngles ; i++)
   {
     if(seisCube[i]->isFile())
-      transf = new FFTFileGrid((FFTFileGrid *) seisCube[i]); //move new out of loop? Copy grid instead
+      transf = new FFTFileGrid(static_cast<FFTFileGrid *>(seisCube[i])); //move new out of loop? Copy grid instead
     else
       transf = new FFTGrid(seisCube[i]); //move new out of loop? Copy grid instead
 

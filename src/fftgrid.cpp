@@ -116,7 +116,7 @@ FFTGrid::fillInFromSegY(SegY* segy, Simbox *simbox)
   float val1,val2;
   if(isParameter)
   { 
-    meanvalue= (float*)  fftw_malloc(sizeof(float)*nyp_*nxp_);
+    meanvalue= static_cast<float*>(fftw_malloc(sizeof(float)*nyp_*nxp_));
 
     for(j=0;j<nyp_;j++)
       for(i=0;i<nxp_;i++)   
@@ -129,7 +129,7 @@ FFTGrid::fillInFromSegY(SegY* segy, Simbox *simbox)
         refk = nz_-1;
         simbox->getCoord(refi,refj,refk,x,y,z);
         val2 = segy->getValue(x,y,z, outMode);
-        meanvalue[i+j*nxp_] = float ((val1+val2)/2.0);
+        meanvalue[i+j*nxp_] = static_cast<float>((val1+val2)/2.0);
       }
   } // endif
 
@@ -200,7 +200,7 @@ FFTGrid::fillInFromStorm(Simbox * actSimBox,
   double x,y,z;
   double val;
 
-  meanvalue= (float*)  fftw_malloc(sizeof(float)*nyp_*nxp_);
+  meanvalue= static_cast<float*>(fftw_malloc(sizeof(float)*nyp_*nxp_));
 
   for(j=0;j<nyp_;j++)
     for(i=0;i<nxp_;i++)   
@@ -216,7 +216,7 @@ FFTGrid::fillInFromStorm(Simbox * actSimBox,
           val = (grid->getValueZInterpolated(x,y,z)+val)/2.0;
         else     
           val = grid->getValueZInterpolated(x,y,z);
-      meanvalue[i+j*nxp_] = float(val);
+      meanvalue[i+j*nxp_] = static_cast<float>(val);
     }
 
     LogKit::LogFormatted(LogKit::LOW,"Resampling %s into %dx%dx%d grid:\n",parName,nxp_,nyp_,nzp_);
@@ -279,7 +279,7 @@ FFTGrid::fillInFromRealFFTGrid(FFTGrid& fftGrid)
 
   fftw_real value  = 0.0;
 
-  meanvalue= (float*)  fftw_malloc(sizeof(float)*nyp_*nxp_);
+  meanvalue= static_cast<float*>(fftw_malloc(sizeof(float)*nyp_*nxp_));
 
   for(j=0;j<nyp_;j++)
     for(i=0;i<nxp_;i++)   
@@ -427,7 +427,7 @@ FFTGrid::fillInParamCorr(Corr* corr,int minIntFq, float gradI, float gradJ)
   int i,j,k,baseK,cycleI,cycleJ;
   float value,subK;
   fftw_real* circCorrT;
-  circCorrT = (fftw_real*) fftw_malloc(2*(nzp_/2+1)*sizeof(fftw_real));
+  circCorrT = reinterpret_cast<fftw_real*>(fftw_malloc(2*(nzp_/2+1)*sizeof(fftw_real)));
   computeCircCorrT(corr,circCorrT);
   makeCircCorrTPosDef(circCorrT, minIntFq);
 
@@ -586,8 +586,8 @@ FFTGrid::createRealGrid()
   //  long int timestart, timeend;
   //  time(&timestart);
   istransformed_=false;
-  rvalue_    = (fftw_real*) fftw_malloc(rsize_ * sizeof(fftw_real));
-  cvalue_    = (fftw_complex*) rvalue_; //
+  rvalue_    = static_cast<fftw_real*>(fftw_malloc(rsize_ * sizeof(fftw_real)));
+  cvalue_    = reinterpret_cast<fftw_complex*>(rvalue_); //
   counterForGet_  = 0; 
   counterForSet_  = 0;
   //  time(&timeend);
@@ -600,8 +600,8 @@ FFTGrid::createComplexGrid()
   //  long int timestart, timeend;
   //  time(&timestart);
   istransformed_  = true;
-  rvalue_         = (fftw_real*) fftw_malloc(rsize_ * sizeof(fftw_real));
-  cvalue_         = (fftw_complex*) rvalue_; //
+  rvalue_         = static_cast<fftw_real*>(fftw_malloc(rsize_ * sizeof(fftw_real)));
+  cvalue_         = reinterpret_cast<fftw_complex*>(rvalue_); //
   counterForGet_  = 0; 
   counterForSet_  = 0;
   //  time(&timeend);
@@ -682,18 +682,18 @@ FFTGrid::getDistToBoundary(int i, int n, int np )
       dist  =  0.0;
     else
     { 
-      taperlength= (float) (MINIM(n,np-n)/2.1) ;// taper goes to zero  at taperlength
+      taperlength= static_cast<float>((MINIM(n,np-n)/2.1)) ;// taper goes to zero  at taperlength
       BeloWnp  = np-i;   
       AbovEn   = i-(n-1);
       if( AbovEn < BeloWnp )
       { 
         // Then the index is closer to end than start.
-        dist= (float) (AbovEn/taperlength);
+        dist = static_cast<float>(AbovEn/taperlength);
       }
       else
       {
         // The it is closer to  start than the end (or identical to)
-        dist=(float)  (BeloWnp/taperlength); 
+        dist = static_cast<float>(BeloWnp/taperlength); 
       }//endif
     }//endif
   }//endif
@@ -735,10 +735,10 @@ FFTGrid::getNextReal()
   if(counterForGet_==rsize_)  
   {
     counterForGet_=0; 
-    r = (float)   rvalue_[rsize_-1];
+    r = static_cast<float>(rvalue_[rsize_-1]);
   } 
   else  
-    r = (float) rvalue_[counterForGet_-1] ;  
+    r = static_cast<float>(rvalue_[counterForGet_-1]);  
   return r;
 } 
 
@@ -762,7 +762,7 @@ FFTGrid::getRealValue(int i, int j, int k, bool extSimbox)
   if( inSimbox && notMissing )
   { // if index in simbox
     int index=i+rnxp_*j+k*rnxp_*nyp_;
-    value = float (rvalue_[index]); 
+    value = static_cast<float>(rvalue_[index]); 
   }
   else
   {
@@ -870,10 +870,10 @@ FFTGrid::setNextReal(float  value)
   if(counterForSet_==rsize_)
   {
     counterForSet_=0;
-    rvalue_[rsize_-1] = (fftw_real) value;
+    rvalue_[rsize_-1] = static_cast<fftw_real>(value);
   }
   else 
-    rvalue_[counterForSet_-1] = (fftw_real) value;
+    rvalue_[counterForSet_-1] = static_cast<fftw_real>(value);
   return(0);  
 }
 
@@ -1028,7 +1028,7 @@ FFTGrid::fftInPlace()
   assert(cubetype_!= CTMISSING);
 
   if( cubetype_!= COVARIANCE )  
-    FFTGrid::multiplyByScalar(float (1.0/( sqrt((float)(nxp_*nyp_*nzp_)) ) ) );
+    FFTGrid::multiplyByScalar(static_cast<float>(1.0/( sqrt(static_cast<float>(nxp_*nyp_*nzp_)) ) ) );
 
   int flag;
   rfftwnd_plan plan;  
@@ -1268,7 +1268,7 @@ FFTGrid::fft1DzInPlace(fftw_real*  in)
 
   rfftwnd_plan plan;  
   fftw_complex* out;
-  out = (fftw_complex*) in;
+  out = reinterpret_cast<fftw_complex*>(in);
 
   flag    = FFTW_ESTIMATE | FFTW_IN_PLACE;
   plan    = rfftwnd_create_plan(1, &nzp_ ,FFTW_REAL_TO_COMPLEX,flag);
@@ -1287,7 +1287,7 @@ FFTGrid::invFFT1DzInPlace(fftw_complex* in)
   int flag;
   rfftwnd_plan plan; 
   fftw_real*  out;
-  out = (fftw_real*) in; 
+  out = reinterpret_cast<fftw_real*>(in); 
 
   flag = FFTW_ESTIMATE | FFTW_IN_PLACE;
   plan= rfftwnd_create_plan(1,&nzp_,FFTW_COMPLEX_TO_REAL,flag);
@@ -1351,7 +1351,7 @@ FFTGrid::writeStormFile(const char * fileName, const Simbox * simbox, bool ascii
     file = fopen(gfName,"wb");
     LogKit::LogFormatted(LogKit::LOW,"\nWriting STORM binary file %s...",gfName);
     fwrite(header, 1, strlen(header), file);
-    char * output = (char * ) &value;
+    char * output = reinterpret_cast<char *>(&value);
     for(k=0;k<nz;k++)
       for(j=0;j<ny;j++)
         for(i=0;i<nx;i++)

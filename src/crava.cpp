@@ -168,7 +168,8 @@ Crava::Crava(Model * model)
 
     regularSimbox->setDepth(tsurf, 0, simbox_->getlz(), simbox_->getdz());
     fprob_ = new FaciesProb(model->getModelSettings(),
-                            fileGrid_, parPointCov_,corrprior, regularSimbox, *(const Simbox*)simbox_, 
+                            fileGrid_, parPointCov_,corrprior, regularSimbox, 
+                            *static_cast<const Simbox*>(simbox_), 
                             nzp_, nz_, meanAlpha_, meanBeta_, meanRho_, random_, 
                             model->getModelSettings()->getPundef(), model->getPriorFacies());
     delete [] corrprior;
@@ -502,8 +503,8 @@ Crava:: divideDataByScaleWavelet()
   fftw_complex scaleWVal;
   rfftwnd_plan plan1,plan2; 
 
-  rData  = (fftw_real*) fftw_malloc(2*(nzp_/2+1)*sizeof(fftw_real)); 
-  cData  = (fftw_complex* ) rData;
+  rData  = static_cast<fftw_real*>(fftw_malloc(2*(nzp_/2+1)*sizeof(fftw_real))); 
+  cData  = reinterpret_cast<fftw_complex*>(rData);
   Wavelet* localWavelet ;
 
 
@@ -529,7 +530,7 @@ Crava:: divideDataByScaleWavelet()
 
         for(k=0;k<nzp_;k++)
         {
-          rData[k] = seisData_[l]->getRealValue(i,j,k, true)/float(sqrt((float)nzp_));
+          rData[k] = seisData_[l]->getRealValue(i,j,k, true)/static_cast<float>(sqrt(static_cast<float>(nzp_)));
 
           if(k > nz_)
           {
@@ -586,9 +587,7 @@ Crava:: divideDataByScaleWavelet()
         rfftwnd_one_complex_to_real(plan2 ,cData ,rData);
         for(k=0;k<nzp_;k++)
         {
-          seisData_[l]->setRealValue(i,j,k,rData[k]/float(sqrt((float)nzp_)),true);
-          //  if(i==0 && l==0)
-          //    fprintf(file4,"%f ",rData[k]);
+          seisData_[l]->setRealValue(i,j,k,rData[k]/static_cast<float>(sqrt(static_cast<float>(nzp_))),true);
         }
       }
       char fName[200];
@@ -628,8 +627,8 @@ Crava::multiplyDataByScaleWaveletAndWriteToFile(const char* typeName)
   fftw_complex scaleWVal;
   rfftwnd_plan plan1,plan2; 
 
-  rData  = (fftw_real*) fftw_malloc(2*(nzp_/2+1)*sizeof(fftw_real)); 
-  cData  = (fftw_complex* ) rData;
+  rData  = static_cast<fftw_real*>(fftw_malloc(2*(nzp_/2+1)*sizeof(fftw_real))); 
+  cData  = reinterpret_cast<fftw_complex*>(rData);
 
   flag   = FFTW_ESTIMATE | FFTW_IN_PLACE;
   plan1  = rfftwnd_create_plan(1, &nzp_ ,FFTW_REAL_TO_COMPLEX,flag);
@@ -649,7 +648,7 @@ Crava::multiplyDataByScaleWaveletAndWriteToFile(const char* typeName)
 
         for(k=0;k<nzp_;k++)
         {
-          rData[k] = seisData_[l]->getRealValue(i,j,k, true)/float(sqrt((float)nzp_));
+          rData[k] = seisData_[l]->getRealValue(i,j,k, true)/static_cast<float>(sqrt(static_cast<float>(nzp_)));
         }
 
         rfftwnd_one_real_to_complex(plan1,rData ,cData);
@@ -2154,12 +2153,12 @@ void Crava::computeFaciesProb()
     fftw_real *postcova, *postcovb, *postcovr, *postcrab, *postcrar, *postcrbr;
 
     int rnzp = 2*(nzp_/2+1);
-    postcova = (fftw_real*)  fftw_malloc(sizeof(float)*rnzp);
-    postcovb = (fftw_real*)  fftw_malloc(sizeof(float)*rnzp);
-    postcovr = (fftw_real*)  fftw_malloc(sizeof(float)*rnzp);
-    postcrab = (fftw_real*)  fftw_malloc(sizeof(float)*rnzp);
-    postcrar = (fftw_real*)  fftw_malloc(sizeof(float)*rnzp);
-    postcrbr = (fftw_real*)  fftw_malloc(sizeof(float)*rnzp);
+    postcova = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp));
+    postcovb = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp));
+    postcovr = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp));
+    postcrab = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp));
+    postcrar = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp));
+    postcrbr = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp));
     
     if(postCovAlpha_->getIsTransformed()==true)
       postCovAlpha_->invFFTInPlace();
@@ -2204,7 +2203,7 @@ void Crava::computeFaciesProb()
       }
     }
     
-    WellData** ppWellData = (WellData**)(wells_);
+    WellData** ppWellData = static_cast<WellData**>(wells_);
     fprob_->filterWellLogs(ppWellData,nWells_,
                            postcova,postcovb,postcovr,
                            postcrab,postcrar,postcrbr, 

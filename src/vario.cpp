@@ -30,18 +30,18 @@ float Vario::findDist(float deltaX, float deltaY) const
 {
   float dist; 
   float txx, txy, tyy;
-  txx = float (cos(angle_)*cos(angle_)/(range1_*range1_) + sin(angle_)*sin(angle_)/(range2_*range2_));
-  tyy = float (sin(angle_)*sin(angle_)/(range1_*range1_) + cos(angle_)*cos(angle_)/(range2_*range2_));
-  txy = float (2*cos(angle_)*sin(angle_)*(1.0/(range1_*range1_)-1.0/(range2_*range2_)));
-  dist =(float) (sqrt(txx*deltaX*deltaX+tyy*deltaY*deltaY+txy*deltaX*deltaY));
+  txx = static_cast<float>(cos(angle_)*cos(angle_)/(range1_*range1_) + sin(angle_)*sin(angle_)/(range2_*range2_));
+  tyy = static_cast<float>(sin(angle_)*sin(angle_)/(range1_*range1_) + cos(angle_)*cos(angle_)/(range2_*range2_));
+  txy = static_cast<float>(2*cos(angle_)*sin(angle_)*(1.0/(range1_*range1_)-1.0/(range2_*range2_)));
+  dist =static_cast<float>(sqrt(txx*deltaX*deltaX+tyy*deltaY*deltaY+txy*deltaX*deltaY));
   return(dist);
 }
 
 void
 Vario::convertRangesFromDegToRad()
 {
-  range1_ *= float(PI/180.0);
-  range2_ *= float(PI/180.0);
+  range1_ *= static_cast<float>(PI/180.0);
+  range2_ *= static_cast<float>(PI/180.0);
 }
 
 SphericalVario::SphericalVario(float range1, float range2, float angle)

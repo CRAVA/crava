@@ -186,7 +186,7 @@ FFTFileGrid::getRealValue(int i, int j, int k)
   int index=i+rnxp_*j+k*rnxp_*nyp_;
 
   assert(index<rsize_); 
-  return((float) (rvalue_[index]));
+  return(static_cast<float>(rvalue_[index]));
 }
 
 float        

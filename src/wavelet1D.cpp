@@ -77,22 +77,22 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
 
   //Wavelet estimation
   fftw_real    ** cpp_r = new fftw_real*[nWells];
-  fftw_complex ** cpp_c = (fftw_complex** ) cpp_r;
+  fftw_complex ** cpp_c = reinterpret_cast<fftw_complex**>(cpp_r);
   
   fftw_real    ** seis_r = new fftw_real*[nWells];
-  fftw_complex ** seis_c = (fftw_complex** ) seis_r;
+  fftw_complex ** seis_c = reinterpret_cast<fftw_complex**>(seis_r);
 
   fftw_real    ** synt_seis_r = new fftw_real*[nWells];
-  fftw_complex ** synt_seis_c = (fftw_complex** ) synt_seis_r;
+  fftw_complex ** synt_seis_c = reinterpret_cast<fftw_complex**>(synt_seis_r);
 
   fftw_real    ** cor_cpp_r = new fftw_real*[nWells];
-  fftw_complex ** cor_cpp_c = (fftw_complex** ) cor_cpp_r;
+  fftw_complex ** cor_cpp_c = reinterpret_cast<fftw_complex**>(cor_cpp_r);
   
   fftw_real    ** ccor_seis_cpp_r = new fftw_real*[nWells];
-  fftw_complex ** ccor_seis_cpp_c = (fftw_complex** ) ccor_seis_cpp_r;
+  fftw_complex ** ccor_seis_cpp_c = reinterpret_cast<fftw_complex**>(ccor_seis_cpp_r);
 
   fftw_real    ** wavelet_r = new fftw_real*[nWells];
-  fftw_complex ** wavelet_c = (fftw_complex** ) wavelet_r; 
+  fftw_complex ** wavelet_c = reinterpret_cast<fftw_complex**>(wavelet_r); 
 
   int maxBlocks = 0;
   for(i=0;i<nWells;i++)
@@ -172,7 +172,7 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
   getWavelet(ccor_seis_cpp_r,cor_cpp_r,wavelet_r,wellWeight, nWells, nzp);
 
   rAmp_      = averageWavelets(wavelet_r,nWells,nzp,wellWeight,dz,dz0); // wavelet centered
-  cAmp_      = (fftw_complex*) rAmp_;
+  cAmp_      = reinterpret_cast<fftw_complex*>(rAmp_);
    char* fileName = new char[MAX_STRING];
   //sprintf(fileName,"wavelet");
   //printToFile(fileName,rAmp_, nzp);
@@ -305,10 +305,10 @@ Wavelet1D::Wavelet1D(char * fileName, ModelSettings * modelSettings, int fileFor
 Wavelet1D::Wavelet1D(Wavelet * wavelet, int difftype, int dim)
   : Wavelet(wavelet, dim)
 {
-  cnzp_       = nzp_/2+1;
-  rnzp_	      = 2*cnzp_;
-  rAmp_      = (fftw_real*) fftw_malloc(rnzp_*sizeof(fftw_real));  
-  cAmp_      = (fftw_complex*) rAmp_;
+  cnzp_ = nzp_/2+1;
+  rnzp_ = 2*cnzp_;
+  rAmp_ = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));  
+  cAmp_ = reinterpret_cast<fftw_complex*>(rAmp_);
   int i;
 
   double norm2 = 0.0;
@@ -387,8 +387,8 @@ Wavelet1D::Wavelet1D(int difftype, int nz, int nzp, int dim)
 
   cnzp_       = nzp_/2+1;
   rnzp_	      = 2*cnzp_;
-  rAmp_       = (fftw_real*) fftw_malloc(rnzp_*sizeof(fftw_real));  
-  cAmp_       = (fftw_complex*) rAmp_;
+  rAmp_       = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));  
+  cAmp_       = reinterpret_cast<fftw_complex*>(rAmp_);
   norm_       = RMISSING;
   int i;
 
@@ -446,10 +446,10 @@ Wavelet1D::Wavelet1D(int difftype, int nz, int nzp, int dim)
 Wavelet1D::Wavelet1D(Wavelet * wavelet, int dim)
   : Wavelet(wavelet, dim)
 {
-  cnzp_       = nzp_/2+1;
-  rnzp_	      = 2*cnzp_;
-  rAmp_      = (fftw_real*) fftw_malloc(rnzp_*sizeof(fftw_real));  
-  cAmp_      = (fftw_complex*) rAmp_;
+  cnzp_ = nzp_/2+1;
+  rnzp_	= 2*cnzp_;
+  rAmp_ = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));  
+  cAmp_ = reinterpret_cast<fftw_complex*>(rAmp_);
 
   if(isReal_)
     for(int i = 0; i < rnzp_; i++)
@@ -515,13 +515,13 @@ Wavelet1D::WaveletReadJason(char * fileName, int &errCode, char *errText)
   } // endif
   nz_=atoi(dummyStr);
 
-  cz_ =  int(floor((fabs(shift/dz_))+0.5));
-  nzp_         = nz_;
-  cnzp_        = nzp_/2+1;
-  rnzp_        = 2*cnzp_; 
-  rAmp_        = (fftw_real* ) fftw_malloc(sizeof(float)*rnzp_);
-  cAmp_        = (fftw_complex* ) rAmp_;
-  norm_        = RMISSING;
+  cz_   =  static_cast<int>(floor((fabs(shift/dz_))+0.5));
+  nzp_  = nz_;
+  cnzp_ = nzp_/2+1;
+  rnzp_ = 2*cnzp_; 
+  rAmp_ = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp_));
+  cAmp_ = reinterpret_cast<fftw_complex*>(rAmp_);
+  norm_ = RMISSING;
 
   for(int i=0; i<nz_;i++)
   {
@@ -535,7 +535,7 @@ Wavelet1D::WaveletReadJason(char * fileName, int &errCode, char *errText)
     } // endif
     else
     {
-      rAmp_[i] = (fftw_real) atof(dummyStr);
+      rAmp_[i] = static_cast<fftw_real>(atof(dummyStr));
     }
   }
   fclose(file);
@@ -601,7 +601,7 @@ Wavelet1D::WaveletReadOld(char * fileName, int &errCode, char *errText)
     dz= float ( atof(number) );
   } //endif
 
-  float * tempWave= (float*) fftw_malloc(sizeof(float)* maxWaveletL );
+  float * tempWave= static_cast<float*>(fftw_malloc(sizeof(float)* maxWaveletL ));
 
   nSamples=0;
 
@@ -615,7 +615,7 @@ Wavelet1D::WaveletReadOld(char * fileName, int &errCode, char *errText)
       delete [] target;
       if(pos == -1)
       {
-        tempWave[nSamples]=float( atof(tmpStr) );
+        tempWave[nSamples]= static_cast<float>( atof(tmpStr) );
       }
       else     
       {
@@ -668,8 +668,8 @@ Wavelet1D::WaveletReadOld(char * fileName, int &errCode, char *errText)
     rnzp_        = 2*cnzp_; 
     inFFTorder_  = false;
     isReal_      = true;
-    rAmp_        = (fftw_real* ) fftw_malloc(sizeof(float)*rnzp_);
-    cAmp_        = (fftw_complex* ) rAmp_;
+    rAmp_        = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp_));
+    cAmp_        = reinterpret_cast<fftw_complex*>(rAmp_);
     norm_        = RMISSING;
 
     // Note the wavelet is fliped left to right  
@@ -710,11 +710,11 @@ Wavelet1D::resample(float dz, int nz, float pz, float theta)
   float z;
   fftw_real* wlet;
 
-  nzp   =  findClosestFactorableNumber( (int) ceil( nz*(1.0f+pz) ) );
+  nzp   =  findClosestFactorableNumber( static_cast<int>(ceil(nz*(1.0f+pz))) );
   cnzp  =  nzp/2 + 1;
   rnzp  =  2*cnzp;
 
-  wlet  = (fftw_real *) fftw_malloc( sizeof(fftw_real)*rnzp );
+  wlet  = static_cast<fftw_real *>(fftw_malloc( sizeof(fftw_real)*rnzp ));
 
   for(k=0; k < rnzp; k++)
   {
@@ -722,11 +722,11 @@ Wavelet1D::resample(float dz, int nz, float pz, float theta)
     {
       if(k < nzp/2+1)
       {
-        z = float( dz*k );
+        z = static_cast<float>( dz*k );
       }
       else
       {
-        z= float( dz*(k-nzp) );
+        z = static_cast<float>( dz*(k-nzp) );
       }
       wlet[k] = getWaveletValue(z, rAmp_ , cz_, nz_, dz_);
     }
@@ -740,8 +740,8 @@ Wavelet1D::resample(float dz, int nz, float pz, float theta)
   float norm2 = 0.0; 
   for(k=0; k < nzp; k++) norm2 +=wlet[k]*wlet[k];
 
-  rAmp_       = (fftw_real *)    wlet; // rAmp_ is not allocated 
-  cAmp_       = (fftw_complex* ) rAmp_;
+  rAmp_       = static_cast<fftw_real *>(wlet); // rAmp_ is not allocated 
+  cAmp_       = reinterpret_cast<fftw_complex*>(rAmp_);
   nzp_        = nzp;
   rnzp_       = rnzp;
   cnzp_       = cnzp;
@@ -1061,9 +1061,9 @@ void Wavelet1D::invFFT1DInPlace()
     rfftwnd_one_complex_to_real(plan,cAmp_,rAmp_);
     fftwnd_destroy_plan(plan);
     isReal_=true;
-    double scale= double(1.0/double(nzp_));
+    double scale= static_cast<double>(1.0/static_cast<double>(nzp_));
     for(int i=0; i < nzp_; i++)
-      rAmp_[i] = (fftw_real) (rAmp_[i]*scale);  
+      rAmp_[i] = static_cast<fftw_real>(rAmp_[i]*scale);  
   }
 }
 
@@ -1102,16 +1102,16 @@ Wavelet1D::writeWaveletToFile(char* fileName,float approxDzIn, Simbox *)
    int cnzpNew = (nzpNew/2)+1;
 
    fftw_real*     waveletNew_r = new fftw_real[2*cnzpNew];
-   fftw_complex*  waveletNew_c =(fftw_complex*) waveletNew_r;
+   fftw_complex*  waveletNew_c =reinterpret_cast<fftw_complex*>(waveletNew_r);
    fft1DInPlace();
-   double multiplyer = double(nzpNew)/double(nzp_);
+   double multiplyer = static_cast<double>(nzpNew)/static_cast<double>(nzp_);
 
    for(i=0;i<cnzpNew;i++)
    {
      if(i < cnzp_)
      {
-       waveletNew_c[i].re = (fftw_real) (cAmp_[i].re*multiplyer);
-       waveletNew_c[i].im = (fftw_real) (cAmp_[i].im*multiplyer);
+       waveletNew_c[i].re = static_cast<fftw_real>(cAmp_[i].re*multiplyer);
+       waveletNew_c[i].im = static_cast<fftw_real>(cAmp_[i].im*multiplyer);
        if((i==(cnzp_-1)) & (2*((cnzp_-1)/2) != cnzp_-1)) //boundary effect in fft domain
          waveletNew_c[i].re*=0.5;
      }
@@ -1296,11 +1296,11 @@ Wavelet1D::getWavelet(fftw_real** ccor_seis_cpp_r,fftw_real** cor_cpp_r,fftw_rea
   {
     if(wellWeight[w] > 0)
     {
-      c_sc   = (fftw_complex*)ccor_seis_cpp_r[w];
+      c_sc   = reinterpret_cast<fftw_complex*>(ccor_seis_cpp_r[w]);
       fft(ccor_seis_cpp_r[w],c_sc,nt);
-      c_cc   = (fftw_complex*)cor_cpp_r[w];
+      c_cc   = reinterpret_cast<fftw_complex*>(cor_cpp_r[w]);
       fft(cor_cpp_r[w],c_cc,nt);
-      wav    = (fftw_complex*) wavelet_r[w];
+      wav    = reinterpret_cast<fftw_complex*>(wavelet_r[w]);
 
       for(int i=0;i<cnzp;i++)
       {
@@ -1318,7 +1318,7 @@ fftw_real*
 Wavelet1D::averageWavelets(fftw_real** wavelet_r,int nWells,int nzp,float* wellWeight,float* dz,float dzOut) const
 {
   // assumes dz[w] < dzOut for all w
-  fftw_real* wave= (fftw_real*) fftw_malloc(rnzp_*sizeof(fftw_real));  
+  fftw_real* wave= static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));  
 
   int w,i;
 
@@ -1421,7 +1421,7 @@ Wavelet1D::write1DWLas3DWL()
   FILE *bFile = fopen(gridFName,"wb");
   LogKit::LogFormatted(LogKit::LOW,"\nWriting 1D Wavelet as 3D Wavelet in binary file %s...", gridFName);
   float value;
-  char * output = (char * ) &value;
+  char * output = reinterpret_cast<char *>(&value);
   for(int k=0;k<nz_;k++) {
      value = static_cast<float> (getRAmp(k));
      fprintf(aFile, "%f\n", value);
@@ -1442,5 +1442,6 @@ Wavelet1D::write1DWLas3DWL()
 
   return;
 }
+
 
 

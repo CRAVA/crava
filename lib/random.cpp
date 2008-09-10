@@ -110,7 +110,7 @@ double RandomGen::unif01()
 {
   double x;
   seed_ = MULTIPLIER * seed_ +SHIFT;
-  x = (double)(seed_) *INVMOD;
+  x = static_cast<double>(seed_) *INVMOD;
   return x;
 }
 

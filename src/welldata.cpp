@@ -170,17 +170,17 @@ WellData::readRMSWell(const char * wellFileName, char **headerList, bool faciesL
           }
           char EOL   = '\n';
           char blank = ' ';
-          char rc = (char)fgetc(file);
+          char rc = static_cast<char>(fgetc(file));
           while(rc == blank)
-            rc = (char)fgetc(file);
+            rc = static_cast<char>(fgetc(file));
           while(rc != EOL)
           {
             // Read numbers or strings           
             while(rc != blank && rc!=EOL)
-              rc = (char)fgetc(file);
+              rc = static_cast<char>(fgetc(file));
             // Read blanks
             while(rc == blank && rc!=EOL)
-              rc = (char)fgetc(file);
+              rc = static_cast<char>(fgetc(file));
             nFacies_++;
           }
           nFacies_ = nFacies_/2;
@@ -255,7 +255,7 @@ WellData::readRMSWell(const char * wellFileName, char **headerList, bool faciesL
     logEntry++;
     int  elements = 0;
     bool lastIsBlank = true;
-    for (i=0 ; i<=(int)strlen(tmpStr) ; i++)
+    for (i=0 ; i<=static_cast<int>(strlen(tmpStr)) ; i++)
     {
       if (tmpStr[i] != ' ' && tmpStr[i] != '\t'  && tmpStr[i] != '\r'  && tmpStr[i] != '\0') 
       {
@@ -347,9 +347,9 @@ WellData::readRMSWell(const char * wellFileName, char **headerList, bool faciesL
         // Found ALPHA variable
         if(dummy != WELLMISSING)
           if (vpLog)
-            alpha = (float) dummy;
+            alpha = static_cast<float>(dummy);
           else
-            alpha = (float) (304800.0/dummy);
+            alpha = static_cast<float>(304800.0/dummy);
         else
           alpha = RMISSING;
       }
@@ -358,9 +358,9 @@ WellData::readRMSWell(const char * wellFileName, char **headerList, bool faciesL
         // Found BETA variable
         if(dummy != WELLMISSING)
           if (vsLog)
-            beta = (float) dummy;
+            beta = static_cast<float>(dummy);
           else
-            beta = (float) (304800.0/dummy);
+            beta = static_cast<float>(304800.0/dummy);
         else
           beta = RMISSING;
       }
@@ -368,7 +368,7 @@ WellData::readRMSWell(const char * wellFileName, char **headerList, bool faciesL
       {
         //Found RHO variable
         if(dummy != WELLMISSING)
-          rho = (float) dummy;
+          rho = static_cast<float>(dummy);
         else
           rho = RMISSING;
       }
@@ -376,7 +376,7 @@ WellData::readRMSWell(const char * wellFileName, char **headerList, bool faciesL
       {
         //Found facies variable
         if(dummy != WELLMISSING)
-          facies = int(dummy);
+          facies = static_cast<int>(dummy);
         else
           facies = IMISSING;
         if(facies!=IMISSING)
@@ -444,7 +444,7 @@ WellData::writeRMSWell(void)
   char * tmpWellName1 = new char[MAX_STRING];
   char * tmpWellName2 = new char[MAX_STRING];
 
-  for (int i=0 ; i<=(int)strlen(wellname_) ; i++){ // need to also copy ASCII null character
+  for (int i=0 ; i<=static_cast<int>(strlen(wellname_)) ; i++){ // need to also copy ASCII null character
     if (wellname_[i]==' ' || wellname_[i]=='/')
       tmpWellName1[i] = '_';
     else
@@ -1044,8 +1044,8 @@ WellData::applyFilter(float * log_filtered, float *log_interpolated, int n_time_
     int   cnt = nt/2 + 1;                  
     int   rnt = 2*cnt; 
 
-    fftw_real*    rAmp = (fftw_real*)    fftw_malloc(sizeof(float)*rnt);
-    fftw_complex* cAmp = (fftw_complex*) rAmp;
+    fftw_real*    rAmp = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnt));
+    fftw_complex* cAmp = reinterpret_cast<fftw_complex*>(rAmp);
     
     for (int i=0 ; i<n_time_samples_defined ; i++) {          // Array to filter is made symmetric
       rAmp[i]      = log_interpolated[first_nonmissing + i];

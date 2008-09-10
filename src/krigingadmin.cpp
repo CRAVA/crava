@@ -109,12 +109,12 @@ void CKrigingAdmin::Init() {
     rangeAlphaY_ = rangeBetaY_ = rangeRhoY_  = simbox_.getny();
     rangeAlphaZ_ = rangeBetaZ_ = rangeRhoZ_  = 0;
 
-    rangeX_ = (float)MAXIM(rangeAlphaX_, rangeBetaX_);
-    rangeX_ = (float)MAXIM(rangeRhoX_, rangeX_);
-    rangeY_ = (float)MAXIM(rangeAlphaY_, rangeBetaY_);
-    rangeY_ = (float)MAXIM(rangeRhoY_, rangeY_);
-    rangeZ_ = (float)MAXIM(rangeAlphaZ_, rangeBetaZ_);
-    rangeZ_ = (float)MAXIM(rangeRhoZ_, rangeZ_);
+    rangeX_ = static_cast<float>(MAXIM(rangeAlphaX_, rangeBetaX_));
+    rangeX_ = static_cast<float>(MAXIM(rangeRhoX_, rangeX_));
+    rangeY_ = static_cast<float>(MAXIM(rangeAlphaY_, rangeBetaY_));
+    rangeY_ = static_cast<float>(MAXIM(rangeRhoY_, rangeY_));
+    rangeZ_ = static_cast<float>(MAXIM(rangeAlphaZ_, rangeBetaZ_));
+    rangeZ_ = static_cast<float>(MAXIM(rangeRhoZ_, rangeZ_));
 
     dxBlock_ = simbox_.getnx();
     dyBlock_ = simbox_.getny();
@@ -150,9 +150,10 @@ void CKrigingAdmin::Init() {
     ppKrigSmoothWeightsZ_[i] = new double[GetSmoothBlockNz()];
   }
 
-  const int sizeMaxBlock = (dxBlock_ + 2*(int)ceil(rangeX_)) *
-    (dyBlock_ + 2*(int)ceil(rangeY_))*
-    (dzBlock_ + 2*(int)ceil(rangeZ_));
+  const int sizeMaxBlock = 
+    (dxBlock_ + 2*static_cast<int>(ceil(rangeX_))) *
+    (dyBlock_ + 2*static_cast<int>(ceil(rangeY_))) *
+    (dzBlock_ + 2*static_cast<int>(ceil(rangeZ_)));
 
   int maxAlphaData2 = MINIM(noValidAlpha_, sizeMaxBlock);
   int maxBetaData2 = MINIM(noValidBeta_, sizeMaxBlock);
@@ -797,123 +798,123 @@ void CKrigingAdmin::EstimateSizeOfBlock() {
   if (!(rangeAlphaX_ > 0 && rangeAlphaY_ > 0 && rangeAlphaZ_ > 0 && 
         rangeBetaX_ > 0 && rangeBetaY_ > 0 && rangeBetaZ_ > 0 && 
         rangeRhoX_ > 0 && rangeRhoY_ > 0 && rangeRhoZ_ > 0)) {
-      failed2EstimateRange_ = true;
-    }
-
-    rangeX_ = (float)MAXIM(rangeAlphaX_, rangeBetaX_);
-    rangeX_ = (float)MAXIM(rangeRhoX_, rangeX_);
-    rangeY_ = (float)MAXIM(rangeAlphaY_, rangeBetaY_);
-    rangeY_ = (float)MAXIM(rangeRhoY_, rangeY_);
-    rangeZ_ = (float)MAXIM(rangeAlphaZ_, rangeBetaZ_);
-    rangeZ_ = (float)MAXIM(rangeRhoZ_, rangeZ_);
-
-    LogKit::LogFormatted(LogKit::LOW,"Estimated ranges(m) from covariance cubes:\n");
-    LogKit::LogFormatted(LogKit::LOW,"             rangeX     rangeY     rangeZ\n");
-    LogKit::LogFormatted(LogKit::LOW,"-----------------------------------------\n");
-    LogKit::LogFormatted(LogKit::LOW,"Vp   :     %8d   %8d   %8d\n", rangeAlphaX_, rangeAlphaY_, rangeAlphaZ_);
-    LogKit::LogFormatted(LogKit::LOW,"Vs   :     %8d   %8d   %8d\n", rangeBetaX_, rangeBetaY_, rangeBetaZ_);
-    LogKit::LogFormatted(LogKit::LOW,"Rho  :     %8d   %8d   %8d\n", rangeRhoX_, rangeRhoY_, rangeRhoZ_);
-    LogKit::LogFormatted(LogKit::LOW,"Used :     %8.0f   %8.0f   %8.0f\n", rangeX_, rangeY_, rangeZ_);
-
-    if (noData_ <= dataTarget_) {
-      dxBlock_ = simbox_.getnx();
-      dyBlock_ = simbox_.getny();
-      dzBlock_ = simbox_.getnz();
-      dxBlockExt_ = (int)rangeX_;
-      dyBlockExt_ = (int)rangeY_;
-      dzBlockExt_ = (int)rangeZ_;
-      return;
-    }
-
-    int dxBlock;
-    float nd;
-
-    int dxBlockT = 0;
-    bool rapidInc = false;
-
-    // find minimum time given that dyBlockExt = rangeY_ 
-    int dyBlockExt = (int)rangeY_;
-    int dyBlockExtT = dyBlockExt;
-    float tMin = CalcCPUTime(1, (float)dyBlockExt, nd, rapidInc);
-    float ndT = nd;
-    for (dxBlock = 2; dxBlock <= simbox_.getnx(); dxBlock += 1) {
-      float t1 = CalcCPUTime((float)dxBlock,(float)dyBlockExt, nd, rapidInc); 			
-      if (t1 < tMin) {
-        tMin = t1;
-        dxBlockT = dxBlock;
-        ndT = nd;
-      }
-    } // end loop dxBlock
-
-    if (ndT < dataTarget_) {
-      dxBlock_ = dxBlockT; 
-      dyBlockExt_ = dyBlockExtT;
-
-      EstimateSizeOfBlock2();
-      return;
-    }
-    // first estimate failed
-    bool test = false;
-    float sumdyBExt = 0.0f, sumdxBlock = 0.0f;
-    int count = 0;
-    CalcCPUTime(1.0f,1.0f, nd, rapidInc);
-    CalcCPUTime((float)simbox_.getnx(),rangeY_, nd, rapidInc); 
-    //int maxNd = (int)nd; // LATER better to use dataTarget_ here ? 
-    int maxNd = dataTarget_;
-    int nd2;
-    const float V = (float)simbox_.getnx() * simbox_.getny() * simbox_.getnz();
-    const float R = rangeX_*rangeY_*rangeZ_;
-
-    // for (nd2 = minNd; nd2 <= maxNd; nd2++) {
-    for (nd2 = maxNd; nd2 <= maxNd; nd2++) {
-      const float a = float(pow(nd2*V/(noValid_*R),0.333333333f));
-      int maxdyBlockExt = (int)(0.5f*(a - 1.0f/rangeX_)*rangeY_);
-      for (dyBlockExt = 1; dyBlockExt <= maxdyBlockExt; dyBlockExt++) {
-        float dxBlock2 = rangeX_ * (a - 2*dyBlockExt/rangeY_);
-        if(dxBlock2 < 1)
-          continue; // should never happen, but...
-
-        //float t1 = CalcCPUTime(dxBlock2,(float)dyBlockExt, nd, rapidInc); //NBNB Bjorn: Used before, keep if change of mind?
-        if (rapidInc) { 
-          test = true;
-          sumdyBExt += dyBlockExt;
-          sumdxBlock += dxBlock2;
-          count++;
-          break;
-        }
-
-      } // end loop dyBlockExt
-    } // end loop nd2 
-    if (test) {
-      dxBlock_ = (int)(ceil(sumdxBlock/count));
-      dyBlockExt_ = (int)(ceil(sumdyBExt/count));
-
-      EstimateSizeOfBlock2();
-      return;
-    }
-
-    // if we are here we failed to estimate, should never happen, but we put in worst case values
-    failed2EstimateDefaultDataBoxAndBlock_ = true;
-    // speed will slow down
+    failed2EstimateRange_ = true;
+  }
+  
+  rangeX_ = static_cast<float>(MAXIM(rangeAlphaX_, rangeBetaX_));
+  rangeX_ = static_cast<float>(MAXIM(rangeRhoX_, rangeX_));
+  rangeY_ = static_cast<float>(MAXIM(rangeAlphaY_, rangeBetaY_));
+  rangeY_ = static_cast<float>(MAXIM(rangeRhoY_, rangeY_));
+  rangeZ_ = static_cast<float>(MAXIM(rangeAlphaZ_, rangeBetaZ_));
+  rangeZ_ = static_cast<float>(MAXIM(rangeRhoZ_, rangeZ_));
+  
+  LogKit::LogFormatted(LogKit::LOW,"Estimated ranges(m) from covariance cubes:\n");
+  LogKit::LogFormatted(LogKit::LOW,"             rangeX     rangeY     rangeZ\n");
+  LogKit::LogFormatted(LogKit::LOW,"-----------------------------------------\n");
+  LogKit::LogFormatted(LogKit::LOW,"Vp   :     %8d   %8d   %8d\n", rangeAlphaX_, rangeAlphaY_, rangeAlphaZ_);
+  LogKit::LogFormatted(LogKit::LOW,"Vs   :     %8d   %8d   %8d\n", rangeBetaX_, rangeBetaY_, rangeBetaZ_);
+  LogKit::LogFormatted(LogKit::LOW,"Rho  :     %8d   %8d   %8d\n", rangeRhoX_, rangeRhoY_, rangeRhoZ_);
+  LogKit::LogFormatted(LogKit::LOW,"Used :     %8.0f   %8.0f   %8.0f\n", rangeX_, rangeY_, rangeZ_);
+  
+  if (noData_ <= dataTarget_) {
     dxBlock_ = simbox_.getnx();
     dyBlock_ = simbox_.getny();
     dzBlock_ = simbox_.getnz();
-    dxBlockExt_ = (int)rangeX_;
-    dyBlockExt_ = (int)rangeY_;
-    dzBlockExt_ = (int)rangeZ_;
+    dxBlockExt_ = static_cast<int>(rangeX_);
+    dyBlockExt_ = static_cast<int>(rangeY_);
+    dzBlockExt_ = static_cast<int>(rangeZ_);
+    return;
+  }
+
+  int dxBlock;
+  float nd;
+
+  int dxBlockT = 0;
+  bool rapidInc = false;
+  
+  // find minimum time given that dyBlockExt = rangeY_ 
+  int dyBlockExt = static_cast<int>(rangeY_);
+  int dyBlockExtT = dyBlockExt;
+  float tMin = CalcCPUTime(1, static_cast<float>(dyBlockExt), nd, rapidInc);
+  float ndT = nd;
+  for (dxBlock = 2; dxBlock <= simbox_.getnx(); dxBlock += 1) {
+    float t1 = CalcCPUTime(static_cast<float>(dxBlock),static_cast<float>(dyBlockExt), nd, rapidInc); 			
+    if (t1 < tMin) {
+      tMin = t1;
+      dxBlockT = dxBlock;
+      ndT = nd;
+    }
+  } // end loop dxBlock
+  
+  if (ndT < dataTarget_) {
+    dxBlock_ = dxBlockT; 
+    dyBlockExt_ = dyBlockExtT;
+    
+    EstimateSizeOfBlock2();
+    return;
+  }
+  // first estimate failed
+  bool test = false;
+  float sumdyBExt = 0.0f, sumdxBlock = 0.0f;
+  int count = 0;
+  CalcCPUTime(1.0f,1.0f, nd, rapidInc);
+  CalcCPUTime(static_cast<float>(simbox_.getnx()),rangeY_, nd, rapidInc); 
+  //int maxNd = (int)nd; // LATER better to use dataTarget_ here ? 
+  int maxNd = dataTarget_;
+  int nd2;
+  const float V = static_cast<float>(simbox_.getnx() * simbox_.getny() * simbox_.getnz());
+  const float R = rangeX_*rangeY_*rangeZ_;
+  
+  // for (nd2 = minNd; nd2 <= maxNd; nd2++) {
+  for (nd2 = maxNd; nd2 <= maxNd; nd2++) {
+    const float a = static_cast<float>(pow(nd2*V/(noValid_*R),0.333333333f));
+    int maxdyBlockExt = static_cast<int>(0.5f*(a - 1.0f/rangeX_)*rangeY_);
+    for (dyBlockExt = 1; dyBlockExt <= maxdyBlockExt; dyBlockExt++) {
+      float dxBlock2 = rangeX_ * (a - 2*dyBlockExt/rangeY_);
+      if(dxBlock2 < 1)
+        continue; // should never happen, but...
+      
+      //float t1 = CalcCPUTime(dxBlock2,(float)dyBlockExt, nd, rapidInc); //NBNB Bjorn: Used before, keep if change of mind?
+      if (rapidInc) { 
+        test = true;
+        sumdyBExt += dyBlockExt;
+        sumdxBlock += dxBlock2;
+        count++;
+        break;
+      }
+      
+    } // end loop dyBlockExt
+  } // end loop nd2 
+  if (test) {
+    dxBlock_    = static_cast<int>(ceil(sumdxBlock/count));
+    dyBlockExt_ = static_cast<int>(ceil(sumdyBExt/count));
+    
+    EstimateSizeOfBlock2();
+    return;
+  }
+  
+  // if we are here we failed to estimate, should never happen, but we put in worst case values
+  failed2EstimateDefaultDataBoxAndBlock_ = true;
+  // speed will slow down
+  dxBlock_ = simbox_.getnx();
+  dyBlock_ = simbox_.getny();
+  dzBlock_ = simbox_.getnz();
+  dxBlockExt_ = static_cast<int>(rangeX_);
+  dyBlockExt_ = static_cast<int>(rangeY_);
+  dzBlockExt_ = static_cast<int>(rangeZ_);
 }
 
 
 void CKrigingAdmin::EstimateSizeOfBlock2() {
-  dyBlock_ = int(ceil((dxBlock_*rangeY_) / rangeX_)); 
-  dzBlock_ = int(ceil((dxBlock_*rangeZ_) / rangeX_));
+  dyBlock_ = static_cast<int>(ceil((dxBlock_*rangeY_) / rangeX_)); 
+  dzBlock_ = static_cast<int>(ceil((dxBlock_*rangeZ_) / rangeX_));
 
-  if (dyBlockExt_ > (int)rangeY_) dyBlockExt_ = (int)rangeY_;
-  dxBlockExt_ = int(ceil((dyBlockExt_*rangeX_) / rangeY_)); 
-  dzBlockExt_ = int(ceil((dyBlockExt_*rangeZ_) / rangeY_));
+  if (dyBlockExt_ > static_cast<int>(rangeY_)) dyBlockExt_ = static_cast<int>(rangeY_);
+  dxBlockExt_ = static_cast<int>(ceil((dyBlockExt_*rangeX_) / rangeY_)); 
+  dzBlockExt_ = static_cast<int>(ceil((dyBlockExt_*rangeZ_) / rangeY_));
 
-  if (dxBlockExt_ > (int)rangeX_) dxBlockExt_ = (int)rangeX_; 
-  if (dzBlockExt_ > (int)rangeZ_) dzBlockExt_ = (int)rangeZ_;
+  if (dxBlockExt_ > static_cast<int>(rangeX_)) dxBlockExt_ = static_cast<int>(rangeX_); 
+  if (dzBlockExt_ > static_cast<int>(rangeZ_)) dzBlockExt_ = static_cast<int>(rangeZ_);
 }
 
 
@@ -923,19 +924,23 @@ float CKrigingAdmin::CalcCPUTime(float dxBlock, float dyBlockExt, float& nd, boo
   //static const float t_solve = 70.0f; static const float t_smallk = 164.0f;
 
   Require(dxBlock >= 1.0f && dyBlockExt >= 0.0f, "dxBlock >= 1.0f && dyBlockExt >= 0.0f");
-  static const float t_bigK = (float)1.50E-6; static const float t_chol = (float)1.90E-8;
-  static const float t_solve = (float)7.0E-7; static const float t_smallk = (float)1.64E-6;
+  static const float t_bigK   = static_cast<float>(1.50E-6); 
+  static const float t_chol   = static_cast<float>(1.90E-8);
+  static const float t_solve  = static_cast<float>(7.00E-7); 
+  static const float t_smallk = static_cast<float>(1.64E-6);
   float dxBlockExt = (dyBlockExt*rangeX_) / rangeY_; 
   float dzBlockExt = (dyBlockExt*rangeZ_) / rangeY_;
   float dyBlock = (dxBlock*rangeY_) / rangeX_; 
   float dzBlock = (dxBlock*rangeZ_) / rangeX_; 
 
-  const float V = (float)simbox_.getnx() * simbox_.getny() * simbox_.getnz();
+  const float V = static_cast<float>(simbox_.getnx() * simbox_.getny() * simbox_.getnz());
   const float v = dxBlock * dyBlock * dzBlock;
   const float Nss = V/v; 
   nd = (dxBlock + 2*dxBlockExt)*(dyBlock + 2*dyBlockExt)*(dzBlock + 2*dzBlockExt)* noValid_ / V;  
-  const float T_BigK = t_bigK*Nss*nd*nd; const float T_chol = t_chol*Nss*nd*nd*nd;
-  const float T_solve = t_solve*Nss*nd*nd; const float T_smallk = t_smallk*V*nd;
+  const float T_BigK = t_bigK*Nss*nd*nd; 
+  const float T_chol = t_chol*Nss*nd*nd*nd;
+  const float T_solve = t_solve*Nss*nd*nd; 
+  const float T_smallk = t_smallk*V*nd;
   rapidInc = (T_chol >= 0.5*T_smallk);
   return T_BigK + T_chol + T_solve + T_smallk;
   //return t_bigK*Nss*nd*nd + t_chol*Nss*nd*nd*nd + t_solve*Nss*nd*nd + t_smallk*V*nd;
@@ -1347,7 +1352,8 @@ void CKrigingAdmin::SmoothKrigedResult(Gamma gamma) {
                   int c;
                   for (c = i2Start - 1; c < c2EndX; c++) {				
                     const int c2 = (c >= simbox_.getnx() ? 2*simbox_.getnx() - c - 1 : c); 
-                    result += (float)ppKrigSmoothWeightsX_[i2-i2Start][c - i2Start + 1] * (pGrid->getRealValue(c2, j2, k2) - trend);	
+                    result += static_cast<float>(ppKrigSmoothWeightsX_[i2-i2Start][c - i2Start + 1]) 
+                      * (pGrid->getRealValue(c2, j2, k2) - trend);	
                   } // end c
                   if (pGrid->setRealValue(i2, j2, k2, result))
                     //if (pGrid->setRealValue(i2, j2, k2, 1.0f))
@@ -1382,7 +1388,8 @@ void CKrigingAdmin::SmoothKrigedResult(Gamma gamma) {
                   int c;
                   for (c = j2Start - 1; c < c2EndY; c++) {									
                     const int c2 = (c >= simbox_.getny() ? 2*simbox_.getny() - c - 1 : c);
-                    result += (float)ppKrigSmoothWeightsY_[j2 - j2Start][c - j2Start + 1] * (pGrid->getRealValue(i2, c2, k2) - trend);	
+                    result += static_cast<float>(ppKrigSmoothWeightsY_[j2 - j2Start][c - j2Start + 1])
+                      * (pGrid->getRealValue(i2, c2, k2) - trend);	
                   } // end c
                   if (pGrid->setRealValue(i2, j2, k2, result))
                     //if (pGrid->setRealValue(i2, j2, k2, 1.0f))
@@ -1417,7 +1424,8 @@ void CKrigingAdmin::SmoothKrigedResult(Gamma gamma) {
                   int c;
                   for (c = k2Start - 1; c < c2EndZ; c++) {									
                     const int c2 = (c >= simbox_.getnz() ? 2*simbox_.getnz() - c - 1 : c);
-                    result += (float)ppKrigSmoothWeightsZ_[k2 - k2Start][c - k2Start + 1] * (pGrid->getRealValue(i2, j2, c2) - trend);	
+                    result += static_cast<float>(ppKrigSmoothWeightsZ_[k2 - k2Start][c - k2Start + 1])
+                      * (pGrid->getRealValue(i2, j2, c2) - trend);	
                   } // end c
                   if (pGrid->setRealValue(i2, j2, k2, result))
                     //if (pGrid->setRealValue(i2, j2, k2, 1.0f))
@@ -1465,9 +1473,8 @@ void CKrigingAdmin::WriteDebugOutput() const {
   LogKit::LogFormatted(LogKit::DEBUGHIGH,"rangeZ_: %f\n", rangeZ_);
 
   LogKit::LogFormatted(LogKit::DEBUGHIGH,"Bool flags\n");
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"failed2EstimateRange_: %d\n", (int)failed2EstimateRange_);
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"failed2EstimateDefaultDataBoxAndBlock_: %d\n", 
-    (int)failed2EstimateDefaultDataBoxAndBlock_);
+  LogKit::LogFormatted(LogKit::DEBUGHIGH,"failed2EstimateRange_: %d\n", static_cast<int>(failed2EstimateRange_));
+  LogKit::LogFormatted(LogKit::DEBUGHIGH,"failed2EstimateDefaultDataBoxAndBlock_: %d\n", static_cast<int>(failed2EstimateDefaultDataBoxAndBlock_));
 
   LogKit::LogFormatted(LogKit::DEBUGHIGH,"Smoothing\n");
   LogKit::LogFormatted(LogKit::DEBUGHIGH,"dxSmoothBlock_: %d\n", dxSmoothBlock_);

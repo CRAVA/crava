@@ -56,7 +56,7 @@ FaciesProb::FaciesProb(ModelSettings * modelSettings,
     }
 
   int rnzp = 2*(nzp_/2+1);
-  corrprior_ = (fftw_real*) fftw_malloc(sizeof(float)*rnzp);
+  corrprior_ = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp));
   for(i=0;i<nzp_;i++)
     corrprior_[i] =corrprior[i];
 }
@@ -933,13 +933,13 @@ void FaciesProb::filterWellLogs(WellData **wells, int nWells,
   // Do fourier transform of covariances
   rfftwnd_plan p1 = rfftwnd_create_plan(1, &nzp_, FFTW_REAL_TO_COMPLEX, FFTW_ESTIMATE | FFTW_IN_PLACE);
   int rnzp = 2*(nzp_/2+1);
-  fftw_complex *postcova_cAmp = (fftw_complex*) postcova;
-  fftw_complex *postcovb_cAmp = (fftw_complex*) postcovb;
-  fftw_complex *postcovr_cAmp = (fftw_complex*) postcovr;
-  fftw_complex *postcovar_cAmp = (fftw_complex*) postcrar;
-  fftw_complex *postcovab_cAmp = (fftw_complex*) postcrab;
-  fftw_complex *postcovbr_cAmp = (fftw_complex*) postcrbr;
-  fftw_complex *corrprior_cAmp = (fftw_complex*) corrprior_;
+  fftw_complex *postcova_cAmp  = reinterpret_cast<fftw_complex*>(postcova);
+  fftw_complex *postcovb_cAmp  = reinterpret_cast<fftw_complex*>(postcovb);
+  fftw_complex *postcovr_cAmp  = reinterpret_cast<fftw_complex*>(postcovr);
+  fftw_complex *postcovar_cAmp = reinterpret_cast<fftw_complex*>(postcrar);
+  fftw_complex *postcovab_cAmp = reinterpret_cast<fftw_complex*>(postcrab);
+  fftw_complex *postcovbr_cAmp = reinterpret_cast<fftw_complex*>(postcrbr);
+  fftw_complex *corrprior_cAmp = reinterpret_cast<fftw_complex*>(corrprior_);
 
   rfftwnd_one_real_to_complex(p1,corrprior_, corrprior_cAmp);
   rfftwnd_one_real_to_complex(p1,postcova, postcova_cAmp);
@@ -949,13 +949,13 @@ void FaciesProb::filterWellLogs(WellData **wells, int nWells,
   rfftwnd_one_real_to_complex(p1,postcrar, postcovar_cAmp);
   rfftwnd_one_real_to_complex(p1,postcrbr, postcovbr_cAmp);
 
-  fftw_real    * alpha_rAmp = (fftw_real*)    fftw_malloc(sizeof(float)*rnzp);
-  fftw_real    * beta_rAmp  = (fftw_real*)    fftw_malloc(sizeof(float)*rnzp);
-  fftw_real    * rho_rAmp   = (fftw_real*)    fftw_malloc(sizeof(float)*rnzp);
+  fftw_real    * alpha_rAmp = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp));
+  fftw_real    * beta_rAmp  = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp));
+  fftw_real    * rho_rAmp   = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp));
  
-  fftw_complex * alpha_cAmp = (fftw_complex*) alpha_rAmp;
-  fftw_complex * beta_cAmp  = (fftw_complex*) beta_rAmp;
-  fftw_complex * rho_cAmp   = (fftw_complex*) rho_rAmp;
+  fftw_complex * alpha_cAmp = reinterpret_cast<fftw_complex*>(alpha_rAmp);
+  fftw_complex * beta_cAmp  = reinterpret_cast<fftw_complex*>(beta_rAmp);
+  fftw_complex * rho_cAmp   = reinterpret_cast<fftw_complex*>(rho_rAmp);
 
   int insideOrigSimbox;
   double x,y,z;

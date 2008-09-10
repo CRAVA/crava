@@ -30,17 +30,17 @@ Wavelet3D::Wavelet3D(char * fileName, ModelSettings * modelSettings, Simbox *sim
   nx_ = simBox->getnx();
   ny_ = simBox->getny();
   nz_ = simBox->getnz();
-  dx_ = static_cast <float> (simBox->getdx());
-  dy_ = static_cast <float> (simBox->getdy());
-  dz_ = static_cast <float> (simBox->getdz());
+  dx_ = static_cast<float>(simBox->getdx());
+  dy_ = static_cast<float>(simBox->getdy());
+  dz_ = static_cast<float>(simBox->getdz());
   theta_ = theta;
 
   float xPad = modelSettings->getXpad();
-  nxp_   =  findClosestFactorableNumber( (int) ceil( nx_*(1.0f+xPad) ) );
+  nxp_   =  findClosestFactorableNumber( static_cast<int>(ceil( nx_*(1.0f+xPad) )) );
   float yPad = modelSettings->getYpad();
-  nyp_   =  findClosestFactorableNumber( (int) ceil( ny_*(1.0f+yPad) ) );
+  nyp_   =  findClosestFactorableNumber( static_cast<int>(ceil( ny_*(1.0f+yPad) )) );
   float zPad = modelSettings->getZpad();
-  nzp_   =  findClosestFactorableNumber( (int) ceil( nz_*(1.0f+zPad) ) );
+  nzp_   =  findClosestFactorableNumber( static_cast<int>(ceil( nz_*(1.0f+zPad) )) );
 
   ampCube_ = FFTGrid(nx_, ny_, nz_, nxp_, nyp_, nzp_);
   ampCube_.createRealGrid();

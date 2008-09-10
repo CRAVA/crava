@@ -8,18 +8,18 @@ TimeKit::getTime(double& wall, double& cpu)
   time_t  tmpwall = time(NULL);
   clock_t tmpcpu  = clock();
 
-  if (tmpwall == (time_t)(-1))  std::cerr << "Unable to get time()\n";
-  if (tmpcpu  == (clock_t)(-1)) std::cerr << "Unable to get clock()\n";
+  if (tmpwall == static_cast<time_t>(-1))  std::cerr << "Unable to get time()\n";
+  if (tmpcpu  == static_cast<clock_t>(-1)) std::cerr << "Unable to get clock()\n";
 
   if (wall==0 && cpu==0) 
   {
-    wall = (double) tmpwall; 
-    cpu  = (double) tmpcpu; 
+    wall = static_cast<double>(tmpwall); 
+    cpu  = static_cast<double>(tmpcpu); 
   }
   else 
   {
-    wall = (double) tmpwall - wall;
-    cpu  = ((double) tmpcpu  - cpu)/CLOCKS_PER_SEC;
+    wall = static_cast<double>(tmpwall) - wall;
+    cpu  = (static_cast<double>(tmpcpu)  - cpu)/CLOCKS_PER_SEC;
   }
 }
 
@@ -34,7 +34,7 @@ TimeKit::markTime()
 double
 TimeKit::getPassedTime()
 {
-  return(double(clock() - timeMark_)/CLOCKS_PER_SEC);
+  return(static_cast<double>(clock() - timeMark_)/CLOCKS_PER_SEC);
 }
 
 clock_t TimeKit::timeMark_   = 0;

@@ -521,7 +521,7 @@ BlockedLogs::writeToFile(float dz,
 {
   char * tmpWellName = new char[MAX_STRING];
   char * filename    = new char[MAX_STRING];
-  for (int i=0 ; i<=(int)strlen(wellname_) ; i++) // need to also copy ASCII null character
+  for (int i=0 ; i<=static_cast<int>(strlen(wellname_)) ; i++) // need to also copy ASCII null character
   {  
     if (wellname_[i]==' ' || wellname_[i]=='/')
       tmpWellName[i] = '_';

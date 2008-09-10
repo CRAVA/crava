@@ -42,9 +42,9 @@ const float** Corr::getVar0() const
   return (const float **) Var0_;	
 }
 
-const NRLib2::RegularSurface<double>* Corr::getCorrXY() const
+const Surface* Corr::getCorrXY() const
 {
-  return (const NRLib2::RegularSurface<double>*) CorrXY_;
+  return (const Surface*) CorrXY_;
 }
 
 void Corr::dumpResult() const

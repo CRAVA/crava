@@ -484,7 +484,7 @@ Analyzelog::estimateCorrTAndVar0(float  * CorrT,
     {
       for(k=j;k<na;k++) // indA points to nonmissing entries of dLnAlpha[]
       {	
-        h = (int) floor(z[indA[k]]-z[indA[j]]+0.5);
+        h = static_cast<int>(floor(z[indA[k]]-z[indA[j]]+0.5));
         covAA[h] += dLnAlpha[indA[j]]*dLnAlpha[indA[k]];
         varAj[h] += dLnAlpha[indA[j]]*dLnAlpha[indA[j]];
         varAk[h] += dLnAlpha[indA[k]]*dLnAlpha[indA[k]];
@@ -497,7 +497,7 @@ Analyzelog::estimateCorrTAndVar0(float  * CorrT,
       {
         for(k=j;k<nb;k++) // indB points to nonmissing entries of dLnBeta[]
         {	
-          h = (int) floor(z[indB[k]]-z[indB[j]]+0.5);
+          h = static_cast<int>(floor(z[indB[k]]-z[indB[j]]+0.5));
           covBB[h] += dLnBeta[indB[j]]*dLnBeta[indB[k]];
           varBj[h] += dLnBeta[indB[j]]*dLnBeta[indB[j]];
           varBk[h] += dLnBeta[indB[k]]*dLnBeta[indB[k]];
@@ -509,7 +509,7 @@ Analyzelog::estimateCorrTAndVar0(float  * CorrT,
     {
       for(k=j;k<nr;k++) // indR points to nonmissing entries of dLnRho[]
       {	
-        h = (int) floor(z[indR[k]]-z[indR[j]]+0.5);
+        h = static_cast<int>(floor(z[indR[k]]-z[indR[j]]+0.5));
         covRR[h] += dLnRho[indR[j]]*dLnRho[indR[k]];
         varRj[h] += dLnRho[indR[j]]*dLnRho[indR[j]];
         varRk[h] += dLnRho[indR[k]]*dLnRho[indR[k]];
@@ -528,7 +528,7 @@ Analyzelog::estimateCorrTAndVar0(float  * CorrT,
     {
       for(k=j;k<nd;k++)
       {	
-        h = (int) floor(z[k]-z[j]+0.5);
+        h = static_cast<int>(floor(z[k]-z[j]+0.5));
         if (h==0)
         {
           if (!wells_[i]->hasSyntheticVsLog())
@@ -664,9 +664,9 @@ Analyzelog::estimateCorrTAndVar0(float  * CorrT,
         error = 1;
       }
       if (naa>1 || nbb>1 || nrr>1)
-        corTT[i] = (naa*corAA + nbb*corBB + nrr*corRR)/((float)(naa+nbb+nrr));  
+        corTT[i] = (naa*corAA + nbb*corBB + nrr*corRR)/(static_cast<float>(naa+nbb+nrr));  
       else
-        corTT[i] = -999.0; // == WELLMISSING
+        corTT[i] = WELLMISSING;
       nTT[i] = naa+nbb+nrr;   
 
       covAA[i] = corAA; // quickhack to get correlations printed to file
@@ -726,8 +726,8 @@ Analyzelog::estimateCorrTAndVar0(float  * CorrT,
     long int ntot=0;
     for(i=1;i<nend+1;i++)
       ntot+=nTT[i];
-    float b = (float)(2*ntot)/(float)(nend+1);  // counts the zero-element as well
-    float a = b/(float)(nend+1);
+    float b = static_cast<float>((2*ntot)/static_cast<float>(nend+1));  // counts the zero-element as well
+    float a = b/static_cast<float>(nend+1);
     for(i=1;i<nend+1;i++)        
     {
       CorrT[i] *= (b - a*i)/b;

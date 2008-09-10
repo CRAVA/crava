@@ -220,7 +220,7 @@ Wavelet::fft(fftw_real* rAmp,fftw_complex* cAmp,int nt)
 void 
 Wavelet::shiftReal(float shift, fftw_real* rAmp,int nt)
 {
-  fftw_complex* cAmp = (fftw_complex*) rAmp;
+  fftw_complex* cAmp = reinterpret_cast<fftw_complex*>(rAmp);
   fft(rAmp,cAmp, nt);
   int cnzp= nt/2+1;
   float expo;
@@ -228,7 +228,7 @@ Wavelet::shiftReal(float shift, fftw_real* rAmp,int nt)
   for(int i=0;i<cnzp;i++)
   {
     tmp     = cAmp[i];
-    expo    = float(-2.0*shift*PI*float(i)/float(nt));
+    expo    = static_cast<float>(-2.0*shift*PI*static_cast<float>(i)/static_cast<float>(nt));
     mult.re = cos(expo);
     mult.im = sin(expo);
     cAmp[i].re = tmp.re*mult.re-tmp.im*mult.im;
@@ -488,22 +488,22 @@ Wavelet::getNoiseStandardDeviation(Simbox * simbox, FFTGrid * seisCube, WellData
 
   //Noise estimation
   fftw_real**       cpp_r = new fftw_real*[nWells];
-  fftw_complex**    cpp_c = (fftw_complex** ) cpp_r;
+  fftw_complex**    cpp_c = reinterpret_cast<fftw_complex**>(cpp_r);
   
   fftw_real**       seis_r = new fftw_real*[nWells];
-  fftw_complex**    seis_c = (fftw_complex** ) seis_r; 
+  fftw_complex**    seis_c = reinterpret_cast<fftw_complex**>(seis_r); 
 
   fftw_real**       synt_r = new fftw_real*[nWells];
-  fftw_complex**    synt_c = (fftw_complex** ) synt_r;
+  fftw_complex**    synt_c = reinterpret_cast<fftw_complex**>(synt_r);
 
   fftw_real**       cor_seis_synt_r = new fftw_real*[nWells];
-  fftw_complex**    cor_seis_synt_c = (fftw_complex** ) cor_seis_synt_r; 
+  fftw_complex**    cor_seis_synt_c = reinterpret_cast<fftw_complex**>(cor_seis_synt_r); 
 
   //fftw_real**       err_r = new fftw_real*[nWells];
 //  fftw_complex**    err_c = (fftw_complex** ) err_r;  //Useful for debug
 
   fftw_real**      wavelet_r = new fftw_real*[nWells];
-  fftw_complex**   wavelet_c = (fftw_complex**) wavelet_r;
+  fftw_complex**   wavelet_c = reinterpret_cast<fftw_complex**>(wavelet_r);
   float* shiftWell   = new float[nWells];
   float* errVarWell  = new float[nWells];
   float* dataVarWell = new float[nWells];

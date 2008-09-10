@@ -497,7 +497,7 @@ SegY::storeTrace(float x, float y, std::vector<float> data, Volume *volume, floa
   assert(geometry_>0);
   TraceHeader header(traceHeaderFormat_);
   header.setNSamples(nz_);
-  header.setDt((unsigned short) dz_*1000);
+  header.setDt(static_cast<unsigned short>(dz_*1000));
 
   header.setUtmx(x);
   header.setUtmy(y);
@@ -547,7 +547,7 @@ SegY::writeTrace(float x, float y, std::vector<float> data, const Volume *volume
   assert(geometry_>0);
   TraceHeader header(traceHeaderFormat_);
   header.setNSamples(nz_);
-  header.setDt((unsigned short) dz_*1000);
+  header.setDt(static_cast<unsigned short>(dz_*1000));
 
   header.setUtmx(x);
   header.setUtmy(y);

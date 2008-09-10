@@ -817,7 +817,7 @@ ModelFile::readCommandBackground(char ** params, int & pos, char * errText)
     {
       if(isNumber(params[pos+i])) // constant background
       { 
-        constBack_[i] = (float)(atof(params[pos+i]));  
+        constBack_[i] = static_cast<float>(atof(params[pos+i]));  
       }
       else // not constant, read from file.
       {
