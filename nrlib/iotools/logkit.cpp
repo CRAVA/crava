@@ -19,6 +19,8 @@ LogKit::SetFileLog(const std::string & fileName, int levels,
 {
   std::ofstream * file = new std::ofstream(fileName.c_str());
   if (!(*file)) {
+    //NBNB-PAL: Tmp fix pfga. manglende feilhåndtering (catch)
+    printf("Could not open file %s\n",fileName.c_str());
     throw new IOError("Error opening " + fileName);
   }
   LogStream * curStream;

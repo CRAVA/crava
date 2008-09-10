@@ -170,12 +170,6 @@ private:
                                                 Background    * background,
                                                 ModelSettings * modelSettings,
                                                 ModelFile     * modelFile);
-  int              checkFileOpen(char      ** fNames, 
-                                 int          nFiles, 
-                                 const char * command, 
-                                 char       * errText, 
-                                 int          start = 0,
-                                 bool         details = true);
   int              findFileType(char * fileName);
   void             checkAvailableMemory(Simbox        * timeSimbox,
                                         ModelSettings * modelSettings);

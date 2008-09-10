@@ -777,6 +777,9 @@ ModelFile::readCommandWells(char ** params, int & pos, char * errText)
       error = 1;
     }
   }
+
+  error += checkFileOpen(wellFile_, nWells, commandName, errText, 0);
+
   pos += nElements + 1;
 
   if (nIndicators > 0) 
@@ -861,7 +864,8 @@ ModelFile::readCommandBackground(char ** params, int & pos, char * errText)
       case 0:
         if(comPar > 1) {
           error = 1;
-          sprintf(errText,"Subcommand VARIOGRAM in command %s needs variogram type.\n",params[pos-1]);
+          sprintf(errText,"%sSubcommand VARIOGRAM in command %s needs variogram type.\n",
+                  errText,params[pos-1]);
         }
         else {
           comPar = 2;
@@ -882,8 +886,8 @@ ModelFile::readCommandBackground(char ** params, int & pos, char * errText)
               //
               if(strcmp(params[pos+curPar+1],"GENEXP") != 0)
               {
-                sprintf(errText,"Subcommand VARIOGRAM in command %s only allows variogram type \'genexp\'.",
-                        params[pos-1]);
+                sprintf(errText,"%sSubcommand VARIOGRAM in command %s only allows variogram type \'genexp\'.",
+                        errText,params[pos-1]);
                 error = 1;
               }
             }
@@ -893,15 +897,16 @@ ModelFile::readCommandBackground(char ** params, int & pos, char * errText)
       case 1:
         if(comPar != 2) {
           error = 1;
-          sprintf(errText,"Subcommand FREQUENCY in command %s takes 1 parameter, not %d as was given.\n",
-                  params[pos-1], comPar-1);
+          sprintf(errText,"%sSubcommand FREQUENCY in command %s takes 1 parameter, not %d as was given.\n",
+                  errText,params[pos-1], comPar-1);
         }
         else 
           modelSettings_->setMaxHzBackground(float(atof(params[pos+curPar+1])));
         break;
       default: 
         error = 1;
-        sprintf(errText,"Unknown subcommand %s found in command %s.\n", params[pos+curPar],params[pos-1]);
+        sprintf(errText,"%sUnknown subcommand %s found in command %s.\n", 
+                errText,params[pos+curPar],params[pos-1]);
         break;
       }
       curPar += comPar;
@@ -1041,10 +1046,8 @@ ModelFile::readCommandDepthConversion(char ** params, int & pos, char * errText)
       {
         char ** tmpFile = new char*[1]; 
         tmpFile[0] = new char[strlen(velocityField_)+1];
-
         strcpy(tmpFile[0],velocityField_);
         error = checkFileOpen(tmpFile, 1, params[pos-1], errText);
-
         delete [] tmpFile[0];
         delete tmpFile;
       }
@@ -1076,6 +1079,13 @@ ModelFile::readCommandDepthConversion(char ** params, int & pos, char * errText)
   for(int i=0;i<nSubCommands;i++)
     delete [] subCommand[i];
   delete [] subCommand;
+
+  if (strcmp(velocityField_,"CONSTANT")==0 && (depthSurfFile_[0]==NULL || depthSurfFile_[1]==NULL)) 
+  {
+    error = 1;
+    sprintf(errText,"%sFor CONSTANT velocity fields both top and base depth surfaces must be given (Command %s).\n",
+            errText,params[pos-1]);
+  }
 
   pos += nPar+1;
   return(error);
@@ -1608,38 +1618,9 @@ ModelFile::readCommandLocalWavelet(char ** params, int & pos, char * errText)
           int openError = checkFileOpen(&(params[pos+keyIndex[i]+1]), nArgs[i], params[pos-1], errText);
           if(openError != 0)
             error = 1;
-
+          
           LogKit::LogFormatted(LogKit::LOW,"ERROR: Keyword LOCALWAVELET has temporarily been deactivated..\n");
           exit(1);
-
-          /* 
-          int j, tmpErr, flag = 1;
-          irapgrid ** grids = new irapgrid * [nArgs[i]];
-          for(j=0;j<nArgs[i];j++)
-          {
-            if((openError & flag) == 0 && params[pos+keyIndex[i]+1+j][0] !='*')
-            {
-              grids[j] = irapgridRead(params[pos+keyIndex[i]+1+j], &tmpErr);
-              if(tmpErr != 0)
-              {
-                sprintf(errText, "Reading of %s grid from file %s failed in command %s.\n", 
-                  keywords[i], params[pos+keyIndex[i]+1+j], params[pos-1]);
-                error = 1;
-              }
-            }
-            else
-              grids[j] = NULL;
-            flag *= 2;
-          }
-          switch(i) {
-          case 0:
-            shiftGrids_ = grids;
-            break;
-          case 1:
-            gainGrids_ = grids;
-          }
-          */
-
         }
     }
   }
@@ -2153,8 +2134,6 @@ ModelFile::checkFileOpen(char ** fNames, int nFiles, const char * command, char 
   int i, error = 0;
   int flag = 1;
   int nErr = 0;
-  char errFiles[MAX_STRING];
-  strcpy(errFiles," ");
   for(i=start;i<nFiles+start;i++)
   {
     if(fNames[i][0] != '*' && fNames[i][0] != '?')
@@ -2164,20 +2143,13 @@ ModelFile::checkFileOpen(char ** fNames, int nFiles, const char * command, char 
       {
         error+= flag;
         nErr++;
-        sprintf(errFiles,"%s%s ", errFiles, fNames[i]);
+        sprintf(errText,"%sCould not open file %s (command %s).\n",errText,fNames[i], command);
       }
       else
         fclose(file);
       if(details == true)
         flag *= 2;
     }
-  }
-  if(error > 0)
-  {
-    if(nErr == 1)
-      sprintf(errText,"Could not open file %s (command %s).\n",errFiles, command);
-    else
-      sprintf(errText,"Could not open these files:%s (command %s).\n",errFiles, command);
   }
   return(error);
 }

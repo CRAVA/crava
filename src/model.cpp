@@ -252,48 +252,6 @@ Model::releaseGrids(void)
   seisCube_ = NULL;
 }
 
-
-// checkFileOpen: checks if the files in fNames table can be opened. Error message is
-//                given in errText if not, and error is binary coded numbering of failures.  
-int 
-Model::checkFileOpen(char ** fNames, int nFiles, const char * command, char * errText, int start,
-                     bool details)
-{
-  if(details == true)
-    assert(nFiles<32); //Otherwise, error overflows.
-  int i, error = 0;
-  int flag = 1;
-  int nErr = 0;
-  char errFiles[MAX_STRING];
-  strcpy(errFiles," ");
-  for(i=start;i<nFiles+start;i++)
-  {
-    //    LogKit::LogFormatted(LogKit::LOW,"CFO: %s\n",fNames[i]);
-    if(fNames[i][0] != '*' && fNames[i][0] != '?')
-    {
-      FILE * file = fopen(fNames[i],"r");
-      if(file == 0)
-      {
-        error+= flag;
-        nErr++;
-        sprintf(errFiles,"%s%s ", errFiles, fNames[i]);
-      }
-      else
-        fclose(file);
-      if(details == true)
-        flag *= 2;
-    }
-  }
-  if(error > 0)
-  {
-    if(nErr == 1)
-      sprintf(errText,"Could not open file %s (command %s).\n",errFiles, command);
-    else
-      sprintf(errText,"Could not open these files:\n%s (command %s).\n",errFiles, command);
-  }
-  return(error);
-}
-
 float **
 Model::readMatrix(char * fileName, int n1, int n2, const char * readReason, char * errText)
 {
@@ -411,22 +369,21 @@ Model::readSegyFiles(char          ** fNames,
                      FFTGrid       ** target, 
                      Simbox        *& timeSimbox, 
                      ModelSettings *& modelSettings, 
-                     char           * errText, int fileno)
+                     char           * errText, 
+                     int              fileno)
 {
   char tmpErr[MAX_STRING];
   int error = 0;
   int sbError = 0;
-  int okFiles = checkFileOpen(fNames, nFiles, "DUMMY", tmpErr, 0);
   strcpy(errText, "");
   SegY * segy = NULL;
-  int i, flag = 1;
   // flag fileno used if only one of the files should be read from. Used in processBackground.
-  for(i=0 ; i<nFiles ; i++)
+  for(int i=0 ; i<nFiles ; i++)
   {
     if(fileno==-1 || fileno==i)
     {
       target[i] = NULL;
-      if((okFiles & flag) == 0 && error == 0)
+      if(error == 0)
       {
         try
         {
@@ -445,7 +402,7 @@ Model::readSegyFiles(char          ** fNames,
           error++;
         }
         
-        if (error ==0)
+        if (error == 0)
         {
           if(timeSimbox->status() == Simbox::NOAREA)
           {
@@ -1101,22 +1058,16 @@ Model::processWells(WellData     **& wells,
   int     nWells         = modelSettings->getNumberOfWells();
   int     nFacies        = 0;
 
+  int error = 0;
+
   char tmpErrText[MAX_STRING];
   sprintf(tmpErrText,"%c",'\0');
-
-  int error = checkFileOpen(wellFile, nWells, "DUMMY", tmpErrText, 0);
-
-  if(error > 0)
-    sprintf(errText,"%s%s", errText, tmpErrText);
-  else {
-    wells = new WellData *[nWells];
-    for(int i=0 ; i<nWells ; i++) {
-      wells[i] = new WellData(wellFile[i], modelSettings, headerList, faciesLogGiven, i);
-
-      if(wells[i]->checkError(tmpErrText) != 0) {
-        sprintf(errText,"%s%s", errText, tmpErrText);
-        error = 1;
-      }
+  wells = new WellData *[nWells];
+  for(int i=0 ; i<nWells ; i++) {
+    wells[i] = new WellData(wellFile[i], modelSettings, headerList, faciesLogGiven, i);
+    if(wells[i]->checkError(tmpErrText) != 0) {
+      sprintf(errText,"%s%s", errText, tmpErrText);
+      error = 1;
     }
   }
 
@@ -1470,29 +1421,19 @@ Model::processBackground(Background   *& background,
           if(backFile[i] != NULL)
           {
             sprintf(errText,"%c",'\0');
-            int okFiles = checkFileOpen(backFile, 1, "DUMMY", errText, i);
-            if(okFiles == 0)
+            int readerror = 0;
+            if(findFileType(backFile[i]) == SEGYFILE)
+              readerror = readSegyFiles(backFile, 3,backModel,
+                                        timeSimbox, modelSettings,
+                                        errText, i);
+            else
+              readerror = readStormFile(backFile[i], backModel[i], parName[i], 
+                                        timeSimbox, modelSettings,
+                                        errText);
+            if(readerror != 0)
             {
-              int readerror = 0;
-              if(findFileType(backFile[i]) == SEGYFILE)
-                readerror = readSegyFiles(backFile, 3,backModel,
-                                         timeSimbox, modelSettings,
-                                         errText, i);
-              else
-                readerror = readStormFile(backFile[i], backModel[i], parName[i], 
-                                          timeSimbox, modelSettings,
-                                          errText);
-              if(readerror != 0)
-              {
-                LogKit::LogFormatted(LogKit::LOW,"ERROR: Reading of file \'%s\' for parameter \'%s\' failed\n",
-                                     backFile[i],parName[i]);
-                printf("       %s\n",errText);
-                exit(1);
-              }
-            }
-            else 
-            {
-              LogKit::LogFormatted(LogKit::LOW,errText);
+              LogKit::LogFormatted(LogKit::LOW,"ERROR: Reading of file \'%s\' for parameter \'%s\' failed\n",
+                                   backFile[i],parName[i]);
               printf("       %s\n",errText);
               exit(1);
             }
@@ -2571,27 +2512,23 @@ Model::processVelocity(FFTGrid     **& velocity,
     const char * parName[]={"Velocity"};
     if(velocityField[0] != NULL && strcmp(velocityField[0],"CONSTANT")!=0 && strcmp(velocityField[0],"FROM_INVERSION")!=0)
     {
-      int okFiles = checkFileOpen(velocityField, 1, "DUMMY", errText, 0);
-      if(okFiles == 0)
+      int readerror = 0;
+      if(findFileType(velocityField[0]) == SEGYFILE)
+        readerror = readSegyFiles(velocityField, 1,velocity,
+                                  timeSimbox, modelSettings,
+                                  errText,0);
+      else
+        readerror = readStormFile(velocityField[0], velocity[0], parName[0], 
+                                  timeSimbox, modelSettings,
+                                  errText);
+      if(readerror != 0)
       {
-        int readerror = 0;
-        if(findFileType(velocityField[0]) == SEGYFILE)
-          readerror = readSegyFiles(velocityField, 1,velocity,
-                                    timeSimbox, modelSettings,
-                                    errText,0);
-        else
-          readerror = readStormFile(velocityField[0], velocity[0], parName[0], 
-                                    timeSimbox, modelSettings,
-                                    errText);
-        if(readerror != 0)
-        {
-          LogKit::LogFormatted(LogKit::LOW,"ERROR: Reading of file \'%s\' for parameter \'%s\' failed\n",
-                               velocityField,parName[0]);
-          printf("       %s\n",errText);
-          exit(1);
-        }
-        mapping_ = makeTimeDepthMapping(velocity[0], depthSimbox_, timeCutSimbox_);
+        LogKit::LogFormatted(LogKit::LOW,"ERROR: Reading of file \'%s\' for parameter \'%s\' failed\n",
+                             velocityField,parName[0]);
+        printf("       %s\n",errText);
+        exit(1);
       }
+      mapping_ = makeTimeDepthMapping(velocity[0], depthSimbox_, timeCutSimbox_);
     }
     else
       velocity[0] = NULL;
