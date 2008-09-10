@@ -46,7 +46,9 @@ public:
   Surface        * getCorrXYGrid();
 
   void             getCorrGradIJ(float & corrGradI, float &corrGradJ) const;
-  StormContGrid  * makeTimeDepthMapping(FFTGrid *velocity);
+  StormContGrid  * makeTimeDepthMapping(FFTGrid *velocity,
+                                        Simbox *depthSimbox,
+                                        Simbox *timeCutSimbox);
   FFTGrid        * getVelocity()            const { return velocity_[0]    ;}
   StormContGrid  * getMapping()                const { return mapping_;}
   

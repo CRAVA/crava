@@ -135,6 +135,9 @@ Model::Model(char * fileName)
                        modelSettings_, modelFile, 
                        errText, failedSeismic);
         completeTimeCutSimbox(timeCutSimbox_, modelSettings_);   // Copies area to timeCutSimbox if needed.
+        processVelocity(velocity_,timeSimbox_,
+                        modelSettings_, modelFile, 
+                        errText);
         makeDepthSimbox(depthSimbox_, modelSettings_, modelFile, // Creates depth simbox if needed.
                         errText, failedSimbox);                  
 
@@ -174,9 +177,7 @@ Model::Model(char * fileName)
         loadExtraSurfaces(waveletEstimInterval_,
                           faciesEstimInterval_,
                           modelFile);
-        processVelocity(velocity_,timeSimbox_,
-                        modelSettings_, modelFile, 
-                        errText);
+      
       }
     }
     if (failedReflMat || failedSimbox || failedSeismic || failedWavelet || failedWells) 
@@ -2510,46 +2511,44 @@ Model::getCorrGradIJ(float & corrGradI, float &corrGradJ) const
 }
 
 StormContGrid*
-Model::makeTimeDepthMapping(FFTGrid *velocity)
+Model::makeTimeDepthMapping(FFTGrid *velocity,
+                            Simbox *depthSimbox,
+                            Simbox *timeCutSimbox)
 {
   int i,j,k,kk;
   double c, sumz;
-  double deltat,sum,x,y,z;
+  double deltat,deltaz,sum,x,y,z;
   int nx, ny;
-  nx = depthSimbox_->getnx();
-  ny = depthSimbox_->getny();
-  StormContGrid *mapping = new StormContGrid(*depthSimbox_);
-  int nz = depthSimbox_->getnz();
-  //StormContGrid *mapping = new StormContGrid(nx,ny,nz);
- // mapping->SetDimensions(depthSimbox_->getx0(),depthSimbox_->gety0(),depthSimbox_->getlx(),depthSimbox_->getly());
- // mapping->SetAngle(depthSimbox_->getAngle());
- // Surface top = depthSimbox_->GetTopSurface().Clone();
- // mapping->SetSurfaces(top, depthSimbox_->GetBotSurface());
-  
+  nx = depthSimbox->getnx();
+  ny = depthSimbox->getny();
+  StormContGrid *mapping = new StormContGrid(*depthSimbox);
+  int nz = depthSimbox->getnz();
+ 
 
   for(i=0;i<nx;i++)
   {
-    x = depthSimbox_->getx0()+i*depthSimbox_->getdx();
+    x = depthSimbox->getx0()+i*depthSimbox->getdx();
     for(j=0;j<ny;j++)
     {
-      y = depthSimbox_->gety0()+j*depthSimbox_->getdy();
-      sumz = timeCutSimbox_->getTop(x,y)*velocity->getRealValue(i,j,0);    
+      y = depthSimbox->gety0()+j*depthSimbox_->getdy();
+      deltat = (timeCutSimbox->getTop(x,y)-timeCutSimbox->getBot(x,y))/timeCutSimbox->getnz();
+      deltaz = (depthSimbox->getTop(x,y)-depthSimbox->getBot(x,y))/nz;    
+      sumz = timeCutSimbox->getTop(x,y)*velocity->getRealValue(i,j,0);    
       for(k=1;k<nz;k++)
-        sumz +=k*velocity->getRealValue(i,j,k);
-      c = (depthSimbox_->getTop(x,y)-depthSimbox_->getBot(x,y))/sumz;
+        sumz +=k*deltat*velocity->getRealValue(i,j,k);
+      c = (depthSimbox->getTop(x,y)-depthSimbox->getBot(x,y))/sumz;
 
       for(k=0;k<nz;k++)
       {
-        kk = 0;
-        deltat = (timeCutSimbox_->getTop(x,y)-timeCutSimbox_->getBot(x,y))/nz;
-        sum = timeCutSimbox_->getTop(x,y)*velocity->getRealValue(i,j,0);
-        z = depthSimbox_->getTop(x,y)+k*depthSimbox_->getdz();
+        kk = 0;       
+        sum = timeCutSimbox->getTop(x,y)*c*velocity->getRealValue(i,j,0);   
+        z = depthSimbox->getTop(x,y)+k*deltaz;
         while(sum<z)
         {
           kk++;
-          sum+=kk*deltat*velocity->getRealValue(i,j,kk);
+          sum+=kk*deltat*c*velocity->getRealValue(i,j,kk);
         }
-        float value = float((kk-1)*deltat+(z-sum-kk*deltat*velocity->getRealValue(i,j,kk))/velocity->getRealValue(i,j,kk));
+        float value = float((kk-1)*deltat+(z-sum-kk*deltat*c*velocity->getRealValue(i,j,kk))/(c*velocity->getRealValue(i,j,kk)));
         (*mapping)(i,j,k) = value;
       }
     }
@@ -2591,7 +2590,7 @@ Model::processVelocity(FFTGrid     **& velocity,
           printf("       %s\n",errText);
           exit(1);
         }
-        mapping_ = makeTimeDepthMapping(velocity[0]);
+        mapping_ = makeTimeDepthMapping(velocity[0], depthSimbox_, timeCutSimbox_);
       }
     }
     else
