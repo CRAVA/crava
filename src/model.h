@@ -49,6 +49,9 @@ public:
   StormContGrid  * makeTimeDepthMapping(FFTGrid *velocity);
   FFTGrid        * getVelocity()            const { return velocity_[0]    ;}
   StormContGrid  * getMapping()                const { return mapping_;}
+  
+  enum             backFileTypes{STORMFILE = -2, SEGYFILE = -1};
+
 private:
   void             makeTimeSimbox(Simbox        *& timeSimbox,
                                   ModelSettings *& modelSettings, 
@@ -57,11 +60,13 @@ private:
                                   bool           & failed);
   void             setupExtendedTimeSimbox(Simbox * timeSimbox, 
                                            Surface * corrSurf);
-  void             completeSimboxes(Simbox       *& depthSimbox,
-                                    ModelSettings * modelSettings, 
-                                    ModelFile     * modelFile,
-                                    char          * errText,
-                                    bool          & failed);
+  void             makeDepthSimbox(Simbox       *& depthSimbox,
+                                   ModelSettings * modelSettings, 
+                                   ModelFile     * modelFile,
+                                   char          * errText,
+                                   bool          & failed);
+  void             completeTimeCutSimbox(Simbox       *& timeCutSimbox,
+                                         ModelSettings * modelSettings);
   void             processSeismic(FFTGrid      **& seisCube,
                                   Simbox        *& timeSimbox,
                                   ModelSettings *& modelSettings, 
@@ -169,6 +174,7 @@ private:
                                  char       * errText, 
                                  int          start = 0,
                                  bool         details = true);
+  int              findFileType(char * fileName);
   void             checkAvailableMemory(Simbox        * timeSimbox,
                                         ModelSettings * modelSettings);
   void             checkFaciesNames(WellData      ** wells,

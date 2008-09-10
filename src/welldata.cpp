@@ -104,7 +104,7 @@ WellData::readRMSWell(const char * wellFileName, char **headerList, bool faciesL
   if(file == 0)
   {
     error_ = 1;
-    sprintf(errTxt_,"Error: Could not open file %s for reading.\n", wellFileName);
+    sprintf(errTxt_,"Could not open file %s for reading.\n", wellFileName);
     //NBNB Incomplete solution, but should never happen.
   }
   int nlog; // number of logs in file
@@ -201,7 +201,7 @@ WellData::readRMSWell(const char * wellFileName, char **headerList, bool faciesL
     }
   }
   if(error_ > 0)
-    sprintf(errTxt_,"Error: Wellfile %s lacks log %s.\n",wellfilename_, missVar);
+    sprintf(errTxt_,"Cannot find log(s) %s in well file %s.\n",missVar,wellfilename_);
 
   //
   // Check whether DT+DTS or VP+VS are used as input.

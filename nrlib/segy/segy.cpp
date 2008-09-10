@@ -132,7 +132,7 @@ SegY::readAllTraces(Volume *volume, double zPad, bool onlyVolume)
   LogKit::LogMessage(LogKit::LOW,"\n  ^");
   int traceSize = datasize_*nz_+240;
   long long bytesRead = 3600+traceSize;
-  for(unsigned int i=1 ; i<nTraces_ ; i++)
+  for(unsigned int i=1 ; i < static_cast<unsigned int>(nTraces_) ; i++)
   {
     double percentDone = bytesRead/static_cast<double>(fSize);
     if(percentDone > nextWrite)

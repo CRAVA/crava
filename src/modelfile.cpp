@@ -827,11 +827,11 @@ ModelFile::readCommandBackground(char ** params, int & pos, char * errText)
         {
           error = 1;
           delete [] backFile_[i];
-          backFile_[i]  = NULL; //Indicates problem with reading file.
-          constBack_[i] = -1;  //Indicates model should be read from file.
+          backFile_[i]  = NULL; // Indicates problem with reading file.
+          constBack_[i] = RMISSING;
         }
         else
-          constBack_[i] = float(checkFileType(backFile_[i]));
+          constBack_[i] = -1;   // Indicates that background is read from file
       }
     }
   }
@@ -998,7 +998,6 @@ ModelFile::readCommandDepthConversion(char ** params, int & pos, char * errText)
 {
   doDepthConversion_ = true;
 
-
   int error = 0;
   int nPar = getParNum(params, pos, error, errText, params[pos-1], 1, -1);
   if(error == 1)
@@ -1025,40 +1024,42 @@ ModelFile::readCommandDepthConversion(char ** params, int & pos, char * errText)
   while(curPar < nPar && error == 0) 
   {
     //
-    // All subcommands take oneFind number of elements in current subcommand
+    // All subcommands take one elements
     //
     int comPar = 2;
-
     int subCom = 0;
     while(subCom < nSubCommands && strcmp(params[pos+curPar], subCommand[subCom]) != 0)
       subCom++;
 
-    printf("Subcommand %s\n",subCommand[subCom]);
-    printf("Argument   %s\n",params[pos+curPar]);
-
     switch(subCom) 
     {
     case 0:
-      velocityField_ = new char[strlen(params[pos+curPar])+1]; // Can be file name or command
-      strcpy(velocityField_,params[pos+curPar]);
+      velocityField_ = new char[strlen(params[pos+curPar+1])+1]; // Can be file name or command
+      strcpy(velocityField_,params[pos+curPar+1]);
       uppercase(velocityField_);
-      if (strcmp(velocityField_,"CONSTANT")==1 && strcmp(velocityField_,"FROM_INVERSION")==1)
+      if (strcmp(velocityField_,"CONSTANT")!=0 && strcmp(velocityField_,"FROM_INVERSION")!=0)
       {
-        error = checkFileOpen(depthSurfFile_, 1, velocityField_, errText);
-        velocityFileType_ = float(checkFileType(velocityField_));
+        char ** tmpFile = new char*[1]; 
+        tmpFile[0] = new char[strlen(velocityField_)+1];
+
+        strcpy(tmpFile[0],velocityField_);
+        error = checkFileOpen(tmpFile, 1, params[pos-1], errText);
+
+        delete [] tmpFile[0];
+        delete tmpFile;
       }
       break;
 
     case 1:
-      depthSurfFile_[0] = new char[strlen(params[pos+curPar])+1];
-      strcpy(depthSurfFile_[0],params[pos+curPar]);
-      error = checkFileOpen(depthSurfFile_, 1, params[pos+curPar-1], errText);
+      depthSurfFile_[0] = new char[strlen(params[pos+curPar+1])+1];
+      strcpy(depthSurfFile_[0],params[pos+curPar+1]);
+      error = checkFileOpen(depthSurfFile_, 1, params[pos-1], errText);
       break;
 
     case 2:
-      depthSurfFile_[1] = new char[strlen(params[pos+curPar])+1];
-      strcpy(depthSurfFile_[1],params[pos+curPar]);
-      error = checkFileOpen(depthSurfFile_, 2, params[pos+curPar-1], errText);
+      depthSurfFile_[1] = new char[strlen(params[pos+curPar+1])+1];
+      strcpy(depthSurfFile_[1],params[pos+curPar+1]);
+      error = checkFileOpen(depthSurfFile_, 2, params[pos-1], errText);
       break;
 
     default: 
@@ -2179,23 +2180,6 @@ ModelFile::checkFileOpen(char ** fNames, int nFiles, const char * command, char 
       sprintf(errText,"Could not open these files:%s (command %s).\n",errFiles, command);
   }
   return(error);
-}
-
-//NBNB The following routine is stupid, and assumes SEGY if file does not
-//start with 'storm_petro_binary'
-
-int
-ModelFile::checkFileType(char * fileName)
-{
-  FILE * file = fopen(fileName,"r");
-  char header[19];
-  fread(header, 1, 18, file);
-  fclose(file);
-  header[18] = 0;
-  if(strcmp(header,"storm_petro_binary") == 0)
-    return(STORMFILE);
-  else
-    return(SEGYFILE);
 }
 
 Vario *

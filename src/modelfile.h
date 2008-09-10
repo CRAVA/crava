@@ -42,12 +42,8 @@ public:
   bool             getGenerateBackground(void)    const { return generateBackground_    ;}
   bool             getParallelTimeSurfaces(void)  const { return parallelTimeSurfaces_  ;}
   bool             getParsingFailed(void)         const { return failed_                ;}
-  float            getVelocityFileType(void)      const { return velocityFileType_      ;}
-  
-  enum             backFileTypes{STORMFILE = -2, SEGYFILE = -1};
 
-private:
-  
+private:  
   int              readCommandWells(char ** params, int & pos, char * errText);
   int              readCommandBackground(char ** params, int & pos, char * errText);
   int              readCommandArea(char ** params, int & pos, char * errText);
@@ -88,7 +84,6 @@ private:
                              const char * command, int min, int max = 0);
   int              checkFileOpen(char ** fNames, int nFiles, const char * command, char * errText, int start = 0,
                                  bool details = true);
-  int              checkFileType(char * fileName);
   Vario          * createVario(char ** param, int nPar, const char * command, char * errText);
 
   ModelSettings  * modelSettings_;
@@ -136,9 +131,6 @@ private:
   bool             hasSignalToNoiseRatio_; // Use SN ratio instead of error variance in model file. 
 
   bool             failed_;                // Indicates whether errors ocuured during construction. 
-  float            velocityFileType_;       // SEGY or Storm
 };
 
-
 #endif
-

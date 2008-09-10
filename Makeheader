@@ -10,10 +10,13 @@ GCCWARNING = -Wall -pedantic -Wno-long-long
 #GXXWARNING = -Wall -pedantic -Wno-long-long -Wold-style-cast
 GXXWARNING = -Wall -pedantic -Wno-long-long
 PROGRAM    = cravarun
-PURIFY     =
+OPT        = -O2
+DEBUG      =
+PURIFY     = 
 mode       = all
 
 ifeq ($(mode),debug)
+# Don't use -O2 (makes it impossible to set breakpoints)
 DEBUG = -g
 OPT   = -O0
 endif
@@ -22,7 +25,6 @@ ifeq ($(mode),profile)
 # Don't use -ggdb here
 DEBUG   = -g 
 PROFILE = -pg
-OPT     = -O2
 endif
 
 ifeq ($(mode),purify)

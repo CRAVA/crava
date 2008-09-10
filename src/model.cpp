@@ -110,13 +110,6 @@ Model::Model(char * fileName)
 
     if(!failedSimbox)
     { 
-      if(modelFile->getDoDepthConversion() == true)
-      {
-        processVelocity(velocity_,timeSimbox_,modelSettings_, modelFile, errText);
-        if(velocity_[0]!=NULL)
-          mapping_ = makeTimeDepthMapping(velocity_[0]);
-      }
-
       if (modelSettings_->getGenerateSeismic() == true)
       {
         processBackground(background_, wells_, timeSimbox_, 
@@ -128,7 +121,7 @@ Model::Model(char * fileName)
         if (!failedReflMat)
         {
           processWavelets(wavelet_, seisCube_, wells_, reflectionMatrix_,
-                              timeSimbox_, shiftGrids_, gainGrids_,
+                          timeSimbox_, shiftGrids_, gainGrids_,
                           modelSettings_, modelFile, hasSignalToNoiseRatio_,
                           errText, failedWavelet);
         }              
@@ -141,8 +134,9 @@ Model::Model(char * fileName)
         processSeismic(seisCube_, timeSimbox_, 
                        modelSettings_, modelFile, 
                        errText, failedSeismic);
-        completeSimboxes(depthSimbox_, modelSettings_, modelFile, // Creates depth simbox if needed.
-                         errText, failedSimbox);                  // Copies area to timeCutSimbox if needed.
+        completeTimeCutSimbox(timeCutSimbox_, modelSettings_);   // Copies area to timeCutSimbox if needed.
+        makeDepthSimbox(depthSimbox_, modelSettings_, modelFile, // Creates depth simbox if needed.
+                        errText, failedSimbox);                  
 
         if(!(failedSeismic || failedSimbox))
         { 
@@ -180,6 +174,9 @@ Model::Model(char * fileName)
         loadExtraSurfaces(waveletEstimInterval_,
                           faciesEstimInterval_,
                           modelFile);
+        processVelocity(velocity_,timeSimbox_,
+                        modelSettings_, modelFile, 
+                        errText);
       }
     }
     if (failedReflMat || failedSimbox || failedSeismic || failedWavelet || failedWells) 
@@ -435,7 +432,7 @@ Model::readSegyFiles(char          ** fNames,
           segy = new SegY(fNames[i], 
                           modelSettings->getSegyOffset(),
                           *(modelSettings->getTraceHeaderFormat()));
-          bool onlyVolume = modelSettings_->getAreaParameters() != NULL;;
+          bool onlyVolume = modelSettings->getAreaParameters() != NULL;;
           segy->readAllTraces(timeSimbox, 
                               modelSettings->getZpad(),
                               onlyVolume);
@@ -601,7 +598,7 @@ Model::makeTimeSimbox(Simbox        *& timeSimbox,
 
       if(error == 0)
       {
-        LogKit::LogFormatted(LogKit::LOW,"\nTime cut surfaces:\n");
+        LogKit::LogFormatted(LogKit::LOW,"\nTime output interval:\n");
         LogKit::LogFormatted(LogKit::LOW,"  Interval thickness    avg / min / max    : %6.1f /%6.1f /%6.1f\n", 
                          timeSimbox->getlz()*timeSimbox->getAvgRelThick(),
                          timeSimbox->getlz()*timeSimbox->getMinRelThick(),
@@ -643,7 +640,7 @@ Model::makeTimeSimbox(Simbox        *& timeSimbox,
     error = timeSimbox->checkError(modelSettings->getLzLimit(),errText);
     if(error == 0)
     {
-      LogKit::LogFormatted(LogKit::LOW,"\nActual inversion surfaces:\n");
+      LogKit::LogFormatted(LogKit::LOW,"\nTime inversion interval:\n");
       LogKit::LogFormatted(LogKit::LOW,"  Interval thickness    avg / min / max    : %6.1f /%6.1f /%6.1f\n", 
                        timeSimbox->getlz()*timeSimbox->getAvgRelThick(),
                        timeSimbox->getlz()*timeSimbox->getMinRelThick(),
@@ -714,88 +711,9 @@ Model::setSimboxSurfaces(Simbox *& simbox,
   }
 }
 
-
-void 
-Model::setSimboxSurfacesDepth(Simbox *& simbox, 
-                         char   ** surfFile, 
-                         int     & error,
-                         FFTGrid * velocity)
-{
-  assert(surfFile[0]!=NULL || surfFile[1]!=NULL); 
-  int surfmissing = 0;
-  Surface * z0Grid = NULL;
-  if(surfFile[0]!=NULL)
-  {
-    try {
-      Surface tmpSurf = NRLib2::ReadStormSurf(surfFile[0]);
-      z0Grid = new Surface(tmpSurf);
-    }
-    catch (NRLib2::Exception & e) {
-      LogKit::LogFormatted(LogKit::ERROR,e.what());
-      error = 1;
-    }
-  }
-  else
-    surfmissing = 1;
-
-  if(surfFile[1]!=NULL)
-  {
-    try {
-      Surface tmpSurf = NRLib2::ReadStormSurf(surfFile[1]);
-      z0Grid = new Surface(tmpSurf);
-    }
-    catch (NRLib2::Exception & e) {
-      LogKit::LogFormatted(LogKit::ERROR,e.what());
-      error = 1;
-  }
-  }
-  else
-    surfmissing = 2;
-
-
-  if(error == 0)
-  {
-    if(surfmissing>0 && velocity!=NULL)
-    {
-      // calculate new surface
-      
-      int nx,ny, nz;
-      nx = timeSimbox_->getnx();
-      ny = timeSimbox_->getny();
-      nz = timeSimbox_->getnz();
-      double * values = new double[nx*ny];
-      double dt, sum, x, y;
-      int i,j,k;
-      for(i=0;i<nx;i++)
-      {
-        x = timeSimbox_->getx0()+i*timeSimbox_->getdx();
-        for(j=0;j<ny;j++)
-        {
-          y = timeSimbox_->gety0()+i*timeSimbox_->getdy();
-          sum = 0;
-          dt = (timeSimbox_->getBot(x,y)-timeSimbox_->getTop(x,y))/timeSimbox_->getnz();
-          for(k=0;k<timeSimbox_->getnz();k++)          
-            sum+=velocity->getRealValue(i,j,k)*dt;
-            if(surfmissing==2)
-              values[i*nx+j] = z0Grid->GetZ(x,y)+ sum;
-            else if(surfmissing==1)
-              values[i*nx+j] = z0Grid->GetZ(x,y)-sum;
-        }
-      }
-      Surface * z1Grid = new Surface(timeSimbox_->getx0(), timeSimbox_->gety0(), 
-                                     timeSimbox_->getlx(), timeSimbox_->getly(), nx,ny, (*values));
-      if(surfmissing==2)
-        simbox->setDepth(z0Grid, z1Grid, nz);
-      else
-        simbox->setDepth(z1Grid, z0Grid, nz);
-
-    }
-   
-  }
-}
-
 void
-Model::setupExtendedTimeSimbox(Simbox * timeSimbox, Surface * corrSurf)
+Model::setupExtendedTimeSimbox(Simbox  * timeSimbox, 
+                               Surface * corrSurf)
 {
   timeCutSimbox_ = new Simbox(timeSimbox);
 
@@ -968,20 +886,32 @@ Model::estimateZPaddingSize(Simbox         * timeSimbox,
 }
 
 void 
-Model::completeSimboxes(Simbox       *& depthSimbox,
-                        ModelSettings * modelSettings, 
-                        ModelFile     * modelFile,
-                        char          * errText,
-                        bool          & failed)
+Model::completeTimeCutSimbox(Simbox        *& timeCutSimbox,
+                             ModelSettings  * modelSettings)
+{
+  if(timeCutSimbox != NULL && timeCutSimbox->status() == Simbox::NOAREA)
+  {
+    const SegyGeometry * areaParams = modelSettings->getAreaParameters(); 
+    if (areaParams != NULL)
+      timeCutSimbox->setArea(areaParams);
+  }
+}
+
+void 
+Model::makeDepthSimbox(Simbox       *& depthSimbox,
+                       ModelSettings * modelSettings, 
+                       ModelFile     * modelFile,
+                       char          * errText,
+                       bool          & failed)
 {
   if (modelFile->getDoDepthConversion())
   {
     depthSimbox = new Simbox();
     int error = 0;
     setSimboxSurfacesDepth(depthSimbox, 
-                      modelFile->getDepthSurfFile(), 
-                      error,
-                      velocity_[0]);
+                           modelFile->getDepthSurfFile(), 
+                           error,
+                           velocity_[0]);
     if(error == 0)
     {
       const char * topname = "topdepth.storm";
@@ -996,19 +926,19 @@ Model::completeSimboxes(Simbox       *& depthSimbox,
 
         if(error == Simbox::INTERNALERROR)
         {
-          LogKit::LogFormatted(LogKit::LOW,"ERROR: A problems was encountered for simulation grid\n");
-          LogKit::LogFormatted(LogKit::LOW,"       %s\n",errText);
+          LogKit::LogFormatted(LogKit::ERROR," A problems was encountered for depth output grid\n");
+          LogKit::LogFormatted(LogKit::ERROR,"       %s\n",errText);
           failed = true;
         }
       }
       else
       {
-        LogKit::LogFormatted(LogKit::ERROR,"ERROR: No area available for depth simbox\n");
+        LogKit::LogFormatted(LogKit::ERROR," No area available for depth simbox\n");
         failed = true;
       }
       if (depthSimbox->status() == Simbox::BOXOK)
       {
-        LogKit::LogFormatted(LogKit::LOW,"\nDepth surfaces:\n");
+        LogKit::LogFormatted(LogKit::LOW,"\nDepth output interval:\n");
         LogKit::LogFormatted(LogKit::LOW,"  Interval thickness    avg / min / max    : %6.1f /%6.1f /%6.1f\n", 
                          depthSimbox->getlz()*depthSimbox->getAvgRelThick(),
                          depthSimbox->getlz()*depthSimbox->getMinRelThick(),
@@ -1025,12 +955,82 @@ Model::completeSimboxes(Simbox       *& depthSimbox,
       failed = true;
     }
   }
+}
 
-  if(timeCutSimbox_ != NULL && timeCutSimbox_->status() == Simbox::NOAREA)
+void 
+Model::setSimboxSurfacesDepth(Simbox *& simbox, 
+                              char   ** surfFile, 
+                              int     & error,
+                              FFTGrid * velocity)
+{
+  int surfmissing = 0;
+  Surface * z0Grid = NULL;
+  if(surfFile[0]!=NULL)
   {
-    const SegyGeometry * areaParams = modelSettings->getAreaParameters(); 
-    if (areaParams != NULL)
-      timeCutSimbox_->setArea(areaParams);
+    try {
+      Surface tmpSurf = NRLib2::ReadStormSurf(surfFile[0]);
+      z0Grid = new Surface(tmpSurf);
+    }
+    catch (NRLib2::Exception & e) {
+      LogKit::LogFormatted(LogKit::ERROR,e.what());
+      error = 1;
+    }
+  }
+  else
+    surfmissing = 1;
+
+  if(surfFile[1]!=NULL)
+  {
+    try {
+      Surface tmpSurf = NRLib2::ReadStormSurf(surfFile[1]);
+      z0Grid = new Surface(tmpSurf);
+    }
+    catch (NRLib2::Exception & e) {
+      LogKit::LogFormatted(LogKit::ERROR,e.what());
+      error = 1;
+    }
+  }
+  else
+    surfmissing = 2;
+
+
+  if(error == 0)
+  {
+    if(surfmissing>0 && velocity!=NULL)
+    {
+      // calculate new surface
+      
+      int nx,ny, nz;
+      nx = timeSimbox_->getnx();
+      ny = timeSimbox_->getny();
+      nz = timeSimbox_->getnz();
+      double * values = new double[nx*ny];
+      double dt, sum, x, y;
+      int i,j,k;
+      for(i=0;i<nx;i++)
+      {
+        x = timeSimbox_->getx0()+i*timeSimbox_->getdx();
+        for(j=0;j<ny;j++)
+        {
+          y = timeSimbox_->gety0()+i*timeSimbox_->getdy();
+          sum = 0;
+          dt = (timeSimbox_->getBot(x,y)-timeSimbox_->getTop(x,y))/timeSimbox_->getnz();
+          for(k=0;k<timeSimbox_->getnz();k++)          
+            sum+=velocity->getRealValue(i,j,k)*dt;
+            if(surfmissing==2)
+              values[i*nx+j] = z0Grid->GetZ(x,y)+ sum;
+            else if(surfmissing==1)
+              values[i*nx+j] = z0Grid->GetZ(x,y)-sum;
+        }
+      }
+      Surface * z1Grid = new Surface(timeSimbox_->getx0(), timeSimbox_->gety0(), 
+                                     timeSimbox_->getlx(), timeSimbox_->getly(), 
+                                     nx,ny, (*values));
+      if(surfmissing==2)
+        simbox->setDepth(z0Grid, z1Grid, nz);
+      else
+        simbox->setDepth(z1Grid, z0Grid, nz);
+    }
   }
 }
 
@@ -1463,7 +1463,7 @@ Model::processBackground(Background   *& background,
       {
         float  * constBack = modelFile->getConstBack();
         char  ** backFile  = modelFile->getBackFile();
-        
+
         if(constBack[i] < 0)
         {
           if(backFile[i] != NULL)
@@ -1473,7 +1473,7 @@ Model::processBackground(Background   *& background,
             if(okFiles == 0)
             {
               int readerror = 0;
-              if(constBack[i] == ModelFile::SEGYFILE)
+              if(findFileType(backFile[i]) == SEGYFILE)
                 readerror = readSegyFiles(backFile, 3,backModel,
                                          timeSimbox, modelSettings,
                                          errText, i);
@@ -1514,7 +1514,7 @@ Model::processBackground(Background   *& background,
         }
         else
         {
-          LogKit::LogFormatted(LogKit::LOW,"ERROR: Could not set background model constBack[%d] == NULL\n",i);
+          LogKit::LogFormatted(LogKit::LOW,"ERROR: Trying to set background model to 0 for parameter %s\n",parName[i]);
           exit(1);
         }
       }
@@ -2156,6 +2156,22 @@ Model::loadExtraSurfaces(Surface  **& waveletEstimInterval,
     LogKit::LogFormatted(LogKit::ERROR,"ERROR loading on or more surfaces\nAborting\n");
 }
 
+// NBNB The following routine is stupid, and assumes SEGY if file 
+// does not start with 'storm_petro_binary'
+int
+Model::findFileType(char * fileName)
+{
+  FILE * file = fopen(fileName,"r");
+  char header[19];
+  fread(header, 1, 18, file);
+  fclose(file);
+  header[18] = 0;
+  if(strcmp(header,"storm_petro_binary") == 0)
+    return(STORMFILE);
+  else
+    return(SEGYFILE);
+}
+
 void
 Model::printSettings(ModelSettings * modelSettings,
                      ModelFile     * modelFile,
@@ -2331,14 +2347,14 @@ Model::printSettings(ModelSettings * modelSettings,
   {
     LogKit::LogFormatted(LogKit::LOW,"\nDepth conversion:\n");
     if (modelFile->getDepthSurfFile()[0] != NULL)
-      LogKit::LogFormatted(LogKit::LOW,"  Top surface                              : %s\n", modelFile->getDepthSurfFile()[0]);
+      LogKit::LogFormatted(LogKit::LOW,"  Top depth surface                        : %s\n", modelFile->getDepthSurfFile()[0]);
     else
-      LogKit::LogFormatted(LogKit::LOW,"  Top surface                              : %s\n", "Not given");
+      LogKit::LogFormatted(LogKit::LOW,"  Top depth surface                        : %s\n", "Not given");
     if (modelFile->getDepthSurfFile()[1] != NULL)
-      LogKit::LogFormatted(LogKit::LOW,"  Base surface                             : %s\n", modelFile->getDepthSurfFile()[1]);
+      LogKit::LogFormatted(LogKit::LOW,"  Base depth surface                       : %s\n", modelFile->getDepthSurfFile()[1]);
     else
-      LogKit::LogFormatted(LogKit::LOW,"  Base surface                             : %s\n", "Not given");
-    LogKit::LogFormatted(LogKit::LOW,"\nVelocity field:                          : %s\n", modelFile->getVelocityField());
+      LogKit::LogFormatted(LogKit::LOW,"  Base depth surface                       : %s\n", "Not given");
+    LogKit::LogFormatted(LogKit::LOW,"  Velocity field:                          : %s\n", modelFile->getVelocityField());
   }
   //
   // BACKGROUND
@@ -2539,43 +2555,46 @@ Model::makeTimeDepthMapping(FFTGrid *velocity)
     }
   }
   return mapping;
-
 }
 
 void 
-Model::processVelocity(FFTGrid       **& velocity,
-                       Simbox        *timeSimbox,
+Model::processVelocity(FFTGrid     **& velocity,
+                       Simbox        * timeSimbox,
                        ModelSettings * modelSettings, 
                        ModelFile     * modelFile, 
                        char          * errText)
 {
-  char  ** velocityField = new char*[1];
-  velocityField[0]  = modelFile->getVelocityField();
-  float filetype = modelFile->getVelocityFileType();
-  const char * parName[]={"Velocity"};
-  if(velocityField[0]!=NULL)
+  if(modelFile->getDoDepthConversion() == true)
   {
-    int okFiles = checkFileOpen(velocityField, 1, "DUMMY", errText, 0);
-    if(okFiles == 0)
+    char ** velocityField = new char*[1];
+    velocityField[0] = modelFile->getVelocityField();
+
+    const char * parName[]={"Velocity"};
+    if(velocityField[0] != NULL && strcmp(velocityField[0],"CONSTANT")!=0 && strcmp(velocityField[0],"FROM_INVERSION")!=0)
     {
-      int readerror = 0;
-      if(filetype == ModelFile::SEGYFILE)
-        readerror = readSegyFiles(velocityField, 1,velocity,
-        timeSimbox, modelSettings,
-        errText,0);
-      else
-        readerror = readStormFile(velocityField[0], velocity[0], parName[0], 
-        timeSimbox, modelSettings,
-        errText);
-      if(readerror != 0)
+      int okFiles = checkFileOpen(velocityField, 1, "DUMMY", errText, 0);
+      if(okFiles == 0)
       {
-        LogKit::LogFormatted(LogKit::LOW,"ERROR: Reading of file \'%s\' for parameter \'%s\' failed\n",
-          velocityField,parName[0]);
-        printf("       %s\n",errText);
-        exit(1);
+        int readerror = 0;
+        if(findFileType(velocityField[0]) == SEGYFILE)
+          readerror = readSegyFiles(velocityField, 1,velocity,
+                                    timeSimbox, modelSettings,
+                                    errText,0);
+        else
+          readerror = readStormFile(velocityField[0], velocity[0], parName[0], 
+                                    timeSimbox, modelSettings,
+                                    errText);
+        if(readerror != 0)
+        {
+          LogKit::LogFormatted(LogKit::LOW,"ERROR: Reading of file \'%s\' for parameter \'%s\' failed\n",
+                               velocityField,parName[0]);
+          printf("       %s\n",errText);
+          exit(1);
+        }
+        mapping_ = makeTimeDepthMapping(velocity[0]);
       }
     }
+    else
+      velocity[0] = NULL;
   }
-  else
-    velocity[0] = NULL;
 }
