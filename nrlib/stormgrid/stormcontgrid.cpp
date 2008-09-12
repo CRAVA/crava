@@ -27,7 +27,7 @@ StormContGrid::StormContGrid(int nx, int ny, int nz)
   variable_name_ = "UNKNOWN";
 }
 
-StormContGrid::StormContGrid(const Volume &vol)
+StormContGrid::StormContGrid(const Volume &vol, int nx, int ny, int nz)
 :Volume(vol)
 {
   file_format_ = STORM_BINARY;
@@ -35,7 +35,7 @@ StormContGrid::StormContGrid(const Volume &vol)
   zone_number_ = 0;
   model_file_name_ = "ModelFile";
   variable_name_ = "UNKNOWN";
- 
+  Resize(nx,ny,nz);
 
 }
 

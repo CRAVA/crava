@@ -38,6 +38,7 @@ SegY::SegY(const std::string       & fileName,
   // EBCDIC header
   char* junk=new char[3200];
   file_.read(junk,3200);
+  delete [] junk;
   binaryHeader_ = new BinaryHeader(file_);
   nz_ = binaryHeader_->getHns();
   dz_ = static_cast<float>(binaryHeader_->getHdt()/1000);

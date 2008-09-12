@@ -49,7 +49,6 @@ public:
   StormContGrid  * makeTimeDepthMapping(FFTGrid *velocity,
                                         Simbox *depthSimbox,
                                         Simbox *timeCutSimbox);
-  FFTGrid        * getVelocity()            const { return velocity_[0]    ;}
   StormContGrid  * getMapping()                const { return mapping_;}
   
   enum             backFileTypes{STORMFILE = -2, SEGYFILE = -1};
@@ -66,7 +65,8 @@ private:
                                    ModelSettings * modelSettings, 
                                    ModelFile     * modelFile,
                                    char          * errText,
-                                   bool          & failed);
+                                   bool          & failed,
+                                   FFTGrid       * velocity);
   void             completeTimeCutSimbox(Simbox       *& timeCutSimbox,
                                          ModelSettings * modelSettings);
   void             processSeismic(FFTGrid      **& seisCube,
@@ -134,7 +134,7 @@ private:
   void             setSimboxSurfacesDepth(Simbox *& simbox, 
                                           char   ** surfFile, 
                                           int     & error,
-                                          FFTGrid * velocity);
+                                          FFTGrid * velocity, Simbox *timeCutSimbox);
   void             estimateXYPaddingSizes(Simbox         * timeSimbox,
                                           ModelSettings *& modelSettings);
   void             estimateZPaddingSize(Simbox         * timeSimbox,
@@ -213,7 +213,6 @@ private:
                                            // These are only used with correaltion surfaces.
 
   bool             failed_;                // Indicates whether errors ocuured during construction. 
-  FFTGrid        ** velocity_;
   StormContGrid  *mapping_;
 };
 

@@ -2123,10 +2123,10 @@ void Crava::writeToFile(char * fileName1, char * fileName2, FFTGrid * grid) {
     grid->writeFile(fileName1,simbox_,1, model_->getModelSettings()->getSegyOffset());
   if(depthSimbox_!=NULL)
   {
-    if(model_->getVelocity()!=NULL)
+    if(model_->getMapping()!=NULL)
     {
       StormContGrid *mapping = model_->getMapping();
-      writeDepthStormCube(model_->getVelocity(), mapping, fileName2);
+      writeDepthStormCube(grid, mapping, fileName2);
     }
     else
       grid->writeFile(fileName2,depthSimbox_,0);

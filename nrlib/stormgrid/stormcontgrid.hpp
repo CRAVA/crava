@@ -15,7 +15,7 @@ namespace NRLib2 {
 
     explicit StormContGrid(const std::string& filename);
     explicit StormContGrid(int nx = 0, int ny = 0, int nz = 0);
-    explicit StormContGrid(const Volume &vol);
+    explicit StormContGrid(const Volume &vol, int nx = 0, int ny = 0, int nz = 0);
 
     void SetMissingCode(double missing_code)
     { missing_code_ = missing_code; }
