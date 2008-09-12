@@ -1137,7 +1137,7 @@ Wavelet1D::writeWaveletToFile(char* fileName,float approxDzIn, Simbox *)
    FILE * file = fopen(fName,"wb");
 
    fprintf(file,"\"* Export format using Comma Separated Values\"\n");
-   fprintf(file,"\"*Wavelet written from CRAVA\"\n");
+   fprintf(file,"\"* Wavelet written from CRAVA\"\n");
    fprintf(file,"\"* Generated \"\n");
    fprintf(file,"\"*\"\n");
    fprintf(file,"\"* File format: \"\n");
