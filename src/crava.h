@@ -67,11 +67,11 @@ public:
   void               writePars(FFTGrid * alpha, FFTGrid * beta, FFTGrid * rho, int simNum); 
   void               printEnergyToScreen();
   void               computeFaciesProb();
-  void               writeDepthStormCube(FFTGrid *grid, StormContGrid *mapping, char * fileName);
+ 
 private: 
   int                fileGrid_;        // is true if is storage is on file 
   const Simbox     * simbox_;          // the simbox
-  const Simbox     * depthSimbox_;     // simbox with depth surfaces
+  //const Simbox     * depthSimbox_;     // simbox with depth surfaces
   int                nx_;              // dimensions of the problem
   int                ny_;
   int                nz_;
@@ -141,6 +141,7 @@ private:
   void               dumpCorrT(float* corrT,float dt);
   void               initPostKriging();          
   void               writeToFile(char * fileName1, char * fileName2, FFTGrid * grid);
+  void               writeResampledStormCube(FFTGrid *grid, StormContGrid *mapping, char * fileName, const Simbox *simbox);
   float              energyTreshold_; //If energy in reflection trace divided by mean energy
                                       //in reflection trace is lower than this, the reflections
                                       //will be interpolated. Default 0, set from model.

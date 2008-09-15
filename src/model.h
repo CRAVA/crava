@@ -46,10 +46,9 @@ public:
   Surface        * getCorrXYGrid();
 
   void             getCorrGradIJ(float & corrGradI, float &corrGradJ) const;
-  StormContGrid  * makeTimeDepthMapping(FFTGrid *velocity,
-                                        Simbox *depthSimbox,
-                                        Simbox *timeCutSimbox);
+  
   StormContGrid  * getMapping()                const { return mapping_;}
+  StormContGrid  * getTimeCutMapping()         const { return timecutmapping_;}
   
   enum             backFileTypes{STORMFILE = -2, SEGYFILE = -1};
 
@@ -185,6 +184,10 @@ private:
   //Create planar surface with same extent as template, p[0]+p[1]*x+p[2]*y
   Surface *        createPlaneSurface(double * planeParams, Surface * templateSurf);
 
+  StormContGrid  * makeTimeDepthMapping(FFTGrid *velocity,
+                                        Simbox *depthSimbox,
+                                        Simbox *timeCutSimbox);
+  void makeTimeCutMapping(Simbox * timeCutSimbox);
 
   ModelSettings  * modelSettings_;
   Simbox         * timeSimbox_;            // Information about simulation area.
@@ -214,6 +217,7 @@ private:
 
   bool             failed_;                // Indicates whether errors ocuured during construction. 
   StormContGrid  *mapping_;
+  StormContGrid  *timecutmapping_;
 };
 
 #endif

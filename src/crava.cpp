@@ -46,7 +46,7 @@ Crava::Crava(Model * model)
   nSim_           = model->getModelSettings()->getNumberOfSimulations();
   wells_          = model->getWells();
   simbox_         = model->getTimeSimbox();
-  depthSimbox_    = model->getDepthSimbox();
+  
   meanAlpha_      = model->getBackAlpha(); 
   meanBeta_       = model->getBackBeta();
   meanRho_        = model->getBackRho();
@@ -2120,16 +2120,24 @@ void Crava::initPostKriging() {
 void Crava::writeToFile(char * fileName1, char * fileName2, FFTGrid * grid) {
 
   if(!((outputFlag_ & ModelSettings::NOTIME)>0))
-    grid->writeFile(fileName1,simbox_,1, model_->getModelSettings()->getSegyOffset());
-  if(depthSimbox_!=NULL)
+  {
+    if(model_->getTimeCutMapping()!=NULL)
+    {
+      StormContGrid *mapping = model_->getTimeCutMapping();
+      writeResampledStormCube(grid, mapping, fileName2, simbox_);
+    }
+    else
+      grid->writeFile(fileName1,simbox_,1, model_->getModelSettings()->getSegyOffset());
+  }
+  if(model_->getDepthSimbox()!=NULL)
   {
     if(model_->getMapping()!=NULL)
     {
       StormContGrid *mapping = model_->getMapping();
-      writeDepthStormCube(grid, mapping, fileName2);
+      writeResampledStormCube(grid, mapping, fileName2, simbox_);
     }
     else
-      grid->writeFile(fileName2,depthSimbox_,0);
+      grid->writeFile(fileName2,model_->getDepthSimbox(),0);
   }
 
 }
@@ -2280,29 +2288,32 @@ void Crava::computeFaciesProb()
   }
 }
 void
-Crava::writeDepthStormCube(FFTGrid *grid, StormContGrid *mapping, char * fileName)
+Crava::writeResampledStormCube(FFTGrid *grid, StormContGrid *mapping, char * fileName, const Simbox *simbox)
 {
   int i,j,k;
-  int nz = depthSimbox_->getnz();
+ // int nz = depthSimbox_->getnz();
+  int nz = mapping->GetNK();
   float time, kindex;
   double x,y;
   StormContGrid outgrid(*mapping);
   for(i=0;i<nx_;i++)
   {
-    x = simbox_->getx0()+i*simbox_->getdx();
+    x = simbox->getx0()+i*simbox->getdx();
     for(j=0;j<ny_;j++)
     {
-      y = simbox_->gety0()+j*simbox_->getdy();
+      y = simbox->gety0()+j*simbox->getdy();
       for(k=0;k<nz;k++)
       {
         time = (*mapping)(i,j,k);
-        kindex = float((time - simbox_->getTop(x,y))/simbox_->getdz());
+        kindex = float((time - simbox->getTop(x,y))/simbox->getdz());
         outgrid(i,j,k) = grid->getRealValueInterpolated(i,j,kindex);
 
       }
     }
   }
-  outgrid.WriteToFile(fileName);
+  char * gfName;
+  gfName = ModelSettings::makeFullFileName(fileName, ".storm");
+  outgrid.WriteToFile(gfName);
   
 
 }

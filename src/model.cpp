@@ -55,6 +55,7 @@ Model::Model(char * fileName)
   gradY_                 = 0;
  
   mapping_               = NULL;
+  timecutmapping_        = NULL;
 
   ModelFile * modelFile = new ModelFile(fileName);
 
@@ -135,6 +136,8 @@ Model::Model(char * fileName)
                        modelSettings_, modelFile, 
                        errText, failedSeismic);
         completeTimeCutSimbox(timeCutSimbox_, modelSettings_);   // Copies area to timeCutSimbox if needed. 
+        if(timeCutSimbox_ !=NULL)
+          makeTimeCutMapping(timeCutSimbox_);
         FFTGrid **velocity  = new FFTGrid*[1];
         velocity[0] = NULL;
         if(timeCutSimbox_!=NULL)
@@ -503,7 +506,6 @@ Model::readStormFile(char           * fName,
   }
   catch (NRLib2::Exception & e) {
       sprintf(errText,"%s%s",errText,e.what());
-      //LogKit::LogFormatted(LogKit::ERROR,e.what());
       error = 1;
     }
 
@@ -525,9 +527,7 @@ Model::readStormFile(char           * fName,
       modelSettings->getNYpad(), 
       modelSettings->getNZpad());
     target->setType(FFTGrid::PARAMETER);
-    // target->fillInFromStorm(tmpSimbox, timeSimbox, grid, parName);
     target->fillInFromStorm(timeSimbox,stormgrid, parName);
-  //  target->logTransf();
     delete  stormgrid;
   }  
      
@@ -2522,12 +2522,12 @@ Model::makeTimeDepthMapping(FFTGrid *velocity,
       for(k=1;k<nz;k++)
       {
         z = k*deltaz;
-        while(sum<z & kk<nz)
+        while(sum<z && kk<nz)
         {
           kk++;
           sum+=deltat*c*velocity->getRealValue(i,j,kk-1);
         }
-        value = float(timeCutSimbox->getTop(x,y)+(kk-1)*deltat+(z-sum+deltat*c*velocity->getRealValue(i,j,kk-1))/(c*velocity->getRealValue(i,j,kk-1)));
+        value = float(timeCutSimbox->getTop(x,y)+2000*(kk-1)*deltat+2000*(z-sum+deltat*c*velocity->getRealValue(i,j,kk-1))/(c*velocity->getRealValue(i,j,kk-1)));
         (*mapping)(i,j,k) = value;
       }
     }
@@ -2573,4 +2573,29 @@ Model::processVelocity(FFTGrid     **& velocity,
     else
       velocity[0] = NULL;
   }
+}
+
+void
+Model::makeTimeCutMapping(Simbox * timeCutSimbox)
+{
+  int nx = timeCutSimbox->getnx();
+  int ny = timeCutSimbox->getny();
+  int nz = timeCutSimbox->getnz();
+  double deltaz, x, y;
+  timecutmapping_ = new StormContGrid(*timeCutSimbox, nx, ny, nz);
+  int i,j,k;
+  for(i=0;i<nx;i++)
+  {
+    x = timeCutSimbox->getx0()+i*timeCutSimbox->getdx();
+    for(j=0;j<ny;j++)
+    {
+      y = timeCutSimbox->gety0()+j*timeCutSimbox_->getdy();
+      deltaz = (timeCutSimbox->getBot(x,y)-timeCutSimbox->getTop(x,y))/nz;    
+      for(k=0;k<nz;k++)      
+        (*timecutmapping_)(i,j,k) = timeCutSimbox->getTop(x,y)+k*deltaz;
+    }
+  }
+
+
+
 }

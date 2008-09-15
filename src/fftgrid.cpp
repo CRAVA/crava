@@ -790,8 +790,8 @@ FFTGrid::getRealValueInterpolated(int i, int j, float kindex, bool extSimbox)
   int k2 = k1+1;
   val2 = getRealValue(i,j,k2,extSimbox);
   if(val2==RMISSING)
-    return(RMISSING);
-  value = float(1.0-kindex-k1)*val1+float(kindex-k1)*val2;
+    return(val1);
+  value = float(1.0-(kindex-k1))*val1+float(kindex-k1)*val2;
   return(value);
 
 }
