@@ -29,6 +29,7 @@ public:
   ModelSettings  * getModelSettings()         const { return modelSettings_          ;}
   Simbox         * getTimeSimbox()            const { return timeSimbox_             ;}
   Simbox         * getDepthSimbox()           const { return depthSimbox_            ;}
+  Simbox         * getTimeCutSimbox()         const { return timeCutSimbox_          ;}
   WellData      ** getWells()                 const { return wells_                  ;}
   FFTGrid        * getBackAlpha()             const { return background_->getAlpha() ;}
   FFTGrid        * getBackBeta()              const { return background_->getBeta()  ;}
@@ -47,9 +48,14 @@ public:
 
   void             getCorrGradIJ(float & corrGradI, float &corrGradJ) const;
   
-  StormContGrid  * getMapping()                const { return mapping_;}
-  StormContGrid  * getTimeCutMapping()         const { return timecutmapping_;}
+  StormContGrid  * getTimeDepthMapping()       const { return timeDepthMapping_;}
+  StormContGrid  * getTimeCutMapping()         const { return timeCutMapping_;}
   
+  StormContGrid  * makeTimeDepthMapping(FFTGrid *velocity,
+                                        Simbox *depthSimbox,
+                                        const Simbox *timeCutSimbox);
+  bool             getVelocityFromInversion()  const { return velocityFromInversion_  ;}
+
   enum             backFileTypes{STORMFILE = -2, SEGYFILE = -1};
 
 private:
@@ -184,9 +190,7 @@ private:
   //Create planar surface with same extent as template, p[0]+p[1]*x+p[2]*y
   Surface *        createPlaneSurface(double * planeParams, Surface * templateSurf);
 
-  StormContGrid  * makeTimeDepthMapping(FFTGrid *velocity,
-                                        Simbox *depthSimbox,
-                                        Simbox *timeCutSimbox);
+ 
   void makeTimeCutMapping(Simbox * timeCutSimbox);
 
   ModelSettings  * modelSettings_;
@@ -216,8 +220,9 @@ private:
                                            // These are only used with correaltion surfaces.
 
   bool             failed_;                // Indicates whether errors ocuured during construction. 
-  StormContGrid  *mapping_;
-  StormContGrid  *timecutmapping_;
+  StormContGrid  *timeDepthMapping_;
+  StormContGrid  *timeCutMapping_;
+  bool            velocityFromInversion_;
 };
 
 #endif

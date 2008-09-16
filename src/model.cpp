@@ -54,9 +54,9 @@ Model::Model(char * fileName)
   gradX_                 = 0;
   gradY_                 = 0;
  
-  mapping_               = NULL;
-  timecutmapping_        = NULL;
-
+  timeDepthMapping_               = NULL;
+  timeCutMapping_        = NULL;
+  velocityFromInversion_ = false;
   ModelFile * modelFile = new ModelFile(fileName);
 
   bool failedModelFile = false;
@@ -154,9 +154,9 @@ Model::Model(char * fileName)
         if(velocity[0]!=NULL)
         {
           if(timeCutSimbox_ !=NULL )
-            mapping_ = makeTimeDepthMapping(velocity[0], depthSimbox_, timeCutSimbox_);
+            timeDepthMapping_ = makeTimeDepthMapping(velocity[0], depthSimbox_, timeCutSimbox_);
           else
-            mapping_ = makeTimeDepthMapping(velocity[0], depthSimbox_, timeSimbox_);
+            timeDepthMapping_ = makeTimeDepthMapping(velocity[0], depthSimbox_, timeSimbox_);
         }
     
       if(velocity[0] !=NULL)
@@ -253,10 +253,11 @@ Model::~Model(void)
       }
   }
   delete modelSettings_;
-  if(mapping_!=NULL)
-    delete mapping_;
+  if(timeDepthMapping_!=NULL)
+    delete timeDepthMapping_;
 
- 
+  if(timeCutMapping_!=NULL)
+    delete timeCutMapping_;
 
 }
 
@@ -2491,7 +2492,7 @@ Model::getCorrGradIJ(float & corrGradI, float &corrGradJ) const
 StormContGrid*
 Model::makeTimeDepthMapping(FFTGrid *velocity,
                             Simbox *depthSimbox,
-                            Simbox *timeCutSimbox)
+                            const Simbox *timeCutSimbox)
 {
   int i,j,k,kk;
   double c, sumz;
@@ -2547,6 +2548,8 @@ Model::processVelocity(FFTGrid     **& velocity,
     char ** velocityField = new char*[1];
     velocityField[0] = modelFile->getVelocityField();
 
+    if(strcmp(velocityField[0],"FROM_INVERSION")==0)
+      velocityFromInversion_ = true;
     const char * parName[]={"Velocity"};
     if(velocityField[0] != NULL && strcmp(velocityField[0],"CONSTANT")!=0 && strcmp(velocityField[0],"FROM_INVERSION")!=0)
     {
@@ -2582,7 +2585,7 @@ Model::makeTimeCutMapping(Simbox * timeCutSimbox)
   int ny = timeCutSimbox->getny();
   int nz = timeCutSimbox->getnz();
   double deltaz, x, y;
-  timecutmapping_ = new StormContGrid(*timeCutSimbox, nx, ny, nz);
+  timeCutMapping_ = new StormContGrid(*timeCutSimbox, nx, ny, nz);
   int i,j,k;
   for(i=0;i<nx;i++)
   {
@@ -2592,7 +2595,7 @@ Model::makeTimeCutMapping(Simbox * timeCutSimbox)
       y = timeCutSimbox->gety0()+j*timeCutSimbox_->getdy();
       deltaz = (timeCutSimbox->getBot(x,y)-timeCutSimbox->getTop(x,y))/nz;    
       for(k=0;k<nz;k++)      
-        (*timecutmapping_)(i,j,k) = timeCutSimbox->getTop(x,y)+k*deltaz;
+        (*timeCutMapping_)(i,j,k) = timeCutSimbox->getTop(x,y)+k*deltaz;
     }
   }
 

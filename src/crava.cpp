@@ -2131,10 +2131,20 @@ void Crava::writeToFile(char * fileName1, char * fileName2, FFTGrid * grid) {
   }
   if(model_->getDepthSimbox()!=NULL)
   {
-    if(model_->getMapping()!=NULL)
+    if(model_->getTimeDepthMapping()!=NULL)
     {
-      StormContGrid *mapping = model_->getMapping();
+      StormContGrid *mapping = model_->getTimeDepthMapping();
       writeResampledStormCube(grid, mapping, fileName2, simbox_);
+    }
+    else if(model_->getVelocityFromInversion()==true) // use velocity from inversion
+    {
+      StormContGrid *mapping; 
+      if(model_->getTimeCutSimbox()!=NULL)
+        mapping = model_->makeTimeDepthMapping(postAlpha_,model_->getDepthSimbox(),model_->getTimeCutSimbox());
+      else
+        mapping = model_->makeTimeDepthMapping(postAlpha_,model_->getDepthSimbox(),simbox_);
+      writeResampledStormCube(grid, mapping, fileName2, simbox_);
+      delete mapping;
     }
     else
       grid->writeFile(fileName2,model_->getDepthSimbox(),0);

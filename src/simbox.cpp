@@ -437,13 +437,6 @@ Simbox::checkError(double lzLimit, char * errText)
 void
 Simbox::setArea(const SegyGeometry * geometry)
 {
- /* double x0  = areaParams[0];
-  double y0  = areaParams[1];
-  double lx  = areaParams[2];
-  double ly  = areaParams[3];
-  double rot = areaParams[4];
-  double dx  = areaParams[5];
-  double dy  = areaParams[6];*/
  double x0  = geometry->getX0();
   double y0  = geometry->getY0();
   double lx  = geometry->getlx();

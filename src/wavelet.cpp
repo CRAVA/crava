@@ -737,7 +737,11 @@ Wavelet::findOptimalWaveletScale(fftw_real** synt_seis_r,fftw_real** seis_r,int 
   float* seisNorm  = new float[nWells];
   float** resNorm  = new float*[nWells];
   for(int i=0;i<nWells;i++)
+  {
     resNorm[i] =   new float[nScales];
+    seisNorm[i] = 0.0;
+  }
+
 
   for(int i=0;i<nWells;i++)
   {
