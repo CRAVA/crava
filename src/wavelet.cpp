@@ -788,16 +788,19 @@ Wavelet::findOptimalWaveletScale(fftw_real** synt_seis_r,fftw_real** seis_r,int 
 
   for(int i=0;i<nWells;i++)
   {
-    optValue = resNorm[i][0];
-    optInd=0;
-    for(int j=1;j<nScales;j++)
-      if(resNorm[i][j]<optValue)
-      {
-        optValue=resNorm[i][j];
-        optInd=j;
-      }
-    scaleOptWell[i]    = scales[optInd];
-    errWellOptScale[i] = sqrt(optValue/float(counter[i]));
+    if(wellWeight[i]>0)
+    {
+      optValue = resNorm[i][0];
+      optInd=0;
+      for(int j=1;j<nScales;j++)
+        if(resNorm[i][j]<optValue)
+        {
+          optValue=resNorm[i][j];
+          optInd=j;
+        }
+        scaleOptWell[i]    = scales[optInd];
+        errWellOptScale[i] = sqrt(optValue/float(counter[i]));
+    }
   }
  return optScale;
 }
