@@ -651,12 +651,12 @@ Wavelet::getNoiseStandardDeviation(Simbox * simbox, FFTGrid * seisCube, WellData
       if(nActiveData[i]>0) {
         float SNOptimalGlobal = dataVarWell[i]/(errWell[i]*errWell[i]);
         float SNOptimalLocal  = dataVarWell[i]/(errWellOptScale[i]*errWellOptScale[i]);
-        LogKit::LogFormatted(LogKit::LOW,"  %-20s   %6.2f     %9.2e     %6.2f %7.2f     %6.2f %7.2f\n", 
+        LogKit::LogFormatted(LogKit::LOW,"  %-20s   %6.2f     %9.2e      %6.2f %6.2f      %6.2f %6.2f\n", 
                              wells[i]->getWellname(),shiftWell[i],sqrt(dataVarWell[i]),
                              optScale,SNOptimalGlobal,scaleOptWell[i],SNOptimalLocal);
       }
       else
-        LogKit::LogFormatted(LogKit::LOW,"  %-20s      -            -             -      -           -      -           -      -   \n",
+        LogKit::LogFormatted(LogKit::LOW,"  %-20s      -            -             -      -           -      -\n",
                              wells[i]->getWellname()); 
     }
   }
