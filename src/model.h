@@ -73,7 +73,9 @@ private:
                                    bool          & failed,
                                    FFTGrid       * velocity);
   void             completeTimeCutSimbox(Simbox       *& timeCutSimbox,
-                                         ModelSettings * modelSettings);
+                                         ModelSettings * modelSettings,
+                                         char            * errText,
+                                         bool            &failed);
   void             processSeismic(FFTGrid      **& seisCube,
                                   Simbox        *& timeSimbox,
                                   ModelSettings *& modelSettings, 

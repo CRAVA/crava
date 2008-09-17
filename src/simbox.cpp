@@ -228,6 +228,7 @@ Simbox::isInside(double x, double y) const
 int
 Simbox::insideRectangle(double xr, double yr, double rotr, double lxr, double lyr) const
 {
+  // check that incoming rectangle is within simbox +-0.5 grid cells
   int allOk = 1;
   double cosrotr = cos(rotr);
   double sinrotr = sin(rotr);
@@ -235,28 +236,28 @@ Simbox::insideRectangle(double xr, double yr, double rotr, double lxr, double ly
   double y = GetYMin();
   double rx =  (x-xr)*cosrotr + (y-yr)*sinrotr;
   double ry = -(x-xr)*sinrotr + (y-yr)*cosrotr;
-  if(rx < -0.01*dx_ || rx > lxr+0.01*dx_ || ry<-0.01*dy_ || ry > lyr+0.01*dy_)
+  if(rx < -0.49*dx_ || rx > lxr+0.49*dx_ || ry<-0.49*dy_ || ry > lyr+0.49*dy_)
     allOk = 0;
 
   x = GetXMin()+GetLX()*cosrot_;
   y = GetYMin()+GetLX()*sinrot_;
   rx =  (x-xr)*cosrotr + (y-yr)*sinrotr;
   ry = -(x-xr)*sinrotr + (y-yr)*cosrotr;
-  if(rx < -0.01*dx_ || rx > lxr+0.01*dx_ || ry<-0.01*dy_ || ry > lyr+0.01*dy_)
+  if(rx < -0.49*dx_ || rx > lxr+0.49*dx_ || ry<-0.49*dy_ || ry > lyr+0.49*dy_)
     allOk = 0;
 
   x = GetXMin()-GetLY()*sinrot_;
   y = GetYMin()+GetLY()*cosrot_;
   rx =  (x-xr)*cosrotr + (y-yr)*sinrotr;
   ry = -(x-xr)*sinrotr + (y-yr)*cosrotr;
-  if(rx < -0.01*dx_ || rx > lxr+0.01*dx_ || ry<-0.01*dy_ || ry > lyr+0.01*dy_)
+  if(rx < -0.49*dx_ || rx > lxr+0.49*dx_ || ry<-0.49*dy_ || ry > lyr+0.49*dy_)
     allOk = 0;
 
   x = GetXMin()+GetLX()*cosrot_-GetLY()*sinrot_;
   y = GetYMin()+GetLX()*sinrot_+GetLY()*cosrot_;
   rx =  (x-xr)*cosrotr + (y-yr)*sinrotr;
   ry = -(x-xr)*sinrotr + (y-yr)*cosrotr;
-  if(rx < -0.01*dx_ || rx > lxr+0.01*dx_ || ry<-0.01*dy_ || ry > lyr+0.01*dy_)
+  if(rx < -0.49*dx_ || rx > lxr+0.49*dx_ || ry<-0.49*dy_ || ry > lyr+0.49*dy_)
     allOk = 0;
   if(allOk == 0)
   {
@@ -281,7 +282,7 @@ Simbox::insideRectangle(double xr, double yr, double rotr, double lxr, double ly
   //
   // Not implemented...
 
-  return(allOk);
+  return(1-allOk);
 }
 
 
@@ -412,8 +413,8 @@ Simbox::checkError(double lzLimit, char * errText)
 }
 
 
-void
-Simbox::setArea(const SegyGeometry * geometry)
+int
+Simbox::setArea(const SegyGeometry * geometry, char * errText)
 {
  double x0  = geometry->getX0();
   double y0  = geometry->getY0();
@@ -422,6 +423,23 @@ Simbox::setArea(const SegyGeometry * geometry)
   double rot = geometry->getAngle();
   double dx  = geometry->getDx();
   double dy  = geometry->getDy();
+  if(status_ !=EMPTY)
+  {
+    if(GetTopSurface().EnclosesRectangle(x0,x0+lx,y0,y0+ly)==false)
+    {
+      status_ = INTERNALERROR;
+      sprintf(errText, "Top surface does not cover the wanted geometry\n"); 
+      return 1;
+    }
+    if(GetBotSurface().EnclosesRectangle(x0,x0+lx,y0,y0+ly)==false)
+    {
+      status_ = INTERNALERROR;
+      sprintf(errText, "Base surface does not cover the wanted geometry\n"); 
+      return 1;
+    }
+
+  }
+
   ILxflag_ = geometry->getILxflag();
   SetDimensions(x0,y0,lx,ly);
   SetAngle(rot);
@@ -435,6 +453,8 @@ Simbox::setArea(const SegyGeometry * geometry)
     status_ = NODEPTH;
   else if(status_ == NOAREA)
     status_ = BOXOK;
+
+  return 0;
 }
 
 void

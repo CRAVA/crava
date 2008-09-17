@@ -204,7 +204,7 @@ double StormContGrid::getValueZInterpolated(double x, double y, double z)const
   if(i<0 || i>GetNI() || j<0 || j> GetNJ())
     return(missing_code_);
 
-  float value;
+  double value;
   if(z<=z_top+0.5*dz)
   {
     value = (*this)(GetIndex(i,j,0));
@@ -246,9 +246,9 @@ double StormContGrid::getValueClosestInZ(double x, double y, double z)const
     z = z_bot+0.5*dz;
   
   int zInd1 = static_cast<int>(floor((z-z_top)/dz)-0.5);
-  float t = (z-z_top)/dz - 0.5 - static_cast<double>(zInd1);
+  double t = (z-z_top)/dz - 0.5 - static_cast<double>(zInd1);
   int zInd2 = zInd1+1;
-  float value = (1-t)*(*this)(GetIndex(i,j,zInd1))+t*(*this)(GetIndex(i,j,zInd2));
+  double value = (1-t)*(*this)(GetIndex(i,j,zInd1))+t*(*this)(GetIndex(i,j,zInd2));
   return(value);
   
 

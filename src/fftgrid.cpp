@@ -244,7 +244,7 @@ FFTGrid::fillInFromStorm(Simbox * actSimBox,
           if(i<nxp_)  // computes the index reference from the cube puts it in value
           {
             actSimBox->getCoord(refi, refj, refk, x, y, z);
-            value = grid->getValueZInterpolated(x,y,z);
+            value = static_cast<fftw_real>(grid->getValueZInterpolated(x,y,z));
             if(value==RMISSING)
               value = 0;
             value=static_cast<float>( ((mult*value+(1.0-mult)*meanvalue[i+j*nxp_])) );

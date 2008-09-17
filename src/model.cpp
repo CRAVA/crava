@@ -135,7 +135,7 @@ Model::Model(char * fileName)
         processSeismic(seisCube_, timeSimbox_, 
                        modelSettings_, modelFile, 
                        errText, failedSeismic);
-        completeTimeCutSimbox(timeCutSimbox_, modelSettings_);   // Copies area to timeCutSimbox if needed. 
+        completeTimeCutSimbox(timeCutSimbox_, modelSettings_, errText,failedSimbox);   // Copies area to timeCutSimbox if needed. 
         if(timeCutSimbox_ !=NULL)
           makeTimeCutMapping(timeCutSimbox_);
         FFTGrid **velocity  = new FFTGrid*[1];
@@ -432,29 +432,50 @@ Model::readSegyFiles(char          ** fNames,
         
         if (error == 0)
         {
-          if(timeSimbox->status() == Simbox::NOAREA)
-          {
             const SegyGeometry *geometry;
             geometry = segy->getGeometry();
+          if(timeSimbox->status() == Simbox::NOAREA)
+          {
+           // const SegyGeometry *geometry;
+           // geometry = segy->getGeometry();
             modelSettings->setAreaParameters(geometry);
-            timeSimbox->setArea(geometry);
-
-            sbError = timeSimbox->checkError(modelSettings->getLzLimit(), errText);
-
-            if(sbError == 0)
+            sbError = timeSimbox->setArea(geometry, tmpErr);
+            if(sbError==1)
             {
-              estimateXYPaddingSizes(timeSimbox, modelSettings);
-              //
-              // Check if CRAVA has enough memory to run calculation without buffering to disk
-              //
-              checkAvailableMemory(timeSimbox, modelSettings);
+              sprintf(errText,"Problem with defining time simbox.",tmpErr);
             }
-            else if(sbError == Simbox::INTERNALERROR)
+            else
             {
+              sbError = timeSimbox->checkError(modelSettings->getLzLimit(), tmpErr);
+
+              if(sbError == 0)
+              {
+                estimateXYPaddingSizes(timeSimbox, modelSettings);
+                //
+                // Check if CRAVA has enough memory to run calculation without buffering to disk
+                //
+                checkAvailableMemory(timeSimbox, modelSettings);
+              }
+              else if(sbError == Simbox::INTERNALERROR)
+              {
+                error++;
+                sprintf(errText,"%s%s", errText, tmpErr);
+              }
+            }
+          }
+          else
+          {
+            sbError = timeSimbox->insideRectangle(geometry->getX0(), geometry->getY0(), geometry->getAngle(), geometry->getlx(), geometry->getly());
+            if(sbError == 1)
+            {
+              sprintf(tmpErr,"Specified area in command AREA is larger than the seismic data from cube %s \n",fNames[i]);
               error++;
               sprintf(errText,"%s%s", errText, tmpErr);
             }
           }
+
+
+
           if(sbError == 0)
           {
             if(modelSettings->getFileGrid() == 1)
@@ -575,27 +596,34 @@ Model::makeTimeSimbox(Simbox        *& timeSimbox,
     estimateZPaddingSize(timeSimbox, modelSettings);   
     if (areaParams != NULL)
     {
-      timeSimbox->setArea(areaParams);
-      
-      error = timeSimbox->checkError(modelSettings->getLzLimit(),errText);
-
-      if(error == 0)
+      error = timeSimbox->setArea(areaParams, errText);
+      if(error==1)
       {
-        LogKit::LogFormatted(LogKit::LOW,"\nTime output interval:\n");
-        LogKit::LogFormatted(LogKit::LOW,"  Interval thickness    avg / min / max    : %6.1f /%6.1f /%6.1f\n", 
-                         timeSimbox->getlz()*timeSimbox->getAvgRelThick(),
-                         timeSimbox->getlz()*timeSimbox->getMinRelThick(),
-                         timeSimbox->getlz());
-        LogKit::LogFormatted(LogKit::LOW,"  Sampling density      avg / min / max    : %6.2f /%6.2f /%6.2f\n", 
-                         timeSimbox->getdz()*timeSimbox->getAvgRelThick(),
-                         timeSimbox->getdz(),
-                         timeSimbox->getdz()*timeSimbox->getMinRelThick());
+        sprintf(errText,"%sERROR: A problem was encountered for simulation grid\n",errText);
+        failed = true;
       }
       else
       {
-        if(error == Simbox::INTERNALERROR)
-          sprintf(errText,"%sERROR: A problems was encountered for simulation grid\n",errText);
-        failed = true;
+        error = timeSimbox->checkError(modelSettings->getLzLimit(),errText);
+
+        if(error == 0)
+        {
+          LogKit::LogFormatted(LogKit::LOW,"\nTime output interval:\n");
+          LogKit::LogFormatted(LogKit::LOW,"  Interval thickness    avg / min / max    : %6.1f /%6.1f /%6.1f\n", 
+                         timeSimbox->getlz()*timeSimbox->getAvgRelThick(),
+                         timeSimbox->getlz()*timeSimbox->getMinRelThick(),
+                         timeSimbox->getlz());
+          LogKit::LogFormatted(LogKit::LOW,"  Sampling density      avg / min / max    : %6.2f /%6.2f /%6.2f\n", 
+                         timeSimbox->getdz()*timeSimbox->getAvgRelThick(),
+                         timeSimbox->getdz(),
+                         timeSimbox->getdz()*timeSimbox->getMinRelThick());
+        }
+        else
+        {
+          if(error == Simbox::INTERNALERROR)
+            sprintf(errText,"%sERROR: A problem was encountered for simulation grid\n",errText);
+          failed = true;
+        }
       }
     }
   }
@@ -870,13 +898,23 @@ Model::estimateZPaddingSize(Simbox         * timeSimbox,
 
 void 
 Model::completeTimeCutSimbox(Simbox        *& timeCutSimbox,
-                             ModelSettings  * modelSettings)
+                             ModelSettings  * modelSettings,
+                             char            * errText,
+                             bool            &failed)
 {
   if(timeCutSimbox != NULL && timeCutSimbox->status() == Simbox::NOAREA)
   {
     const SegyGeometry * areaParams = modelSettings->getAreaParameters(); 
     if (areaParams != NULL)
-      timeCutSimbox->setArea(areaParams);
+    {
+      int error = timeCutSimbox->setArea(areaParams, errText);
+      if(error==1)
+      {
+        sprintf(errText," Problem with definition of depth simbox.",errText);
+        failed = true;
+      }
+
+    }
   }
 }
 
@@ -910,14 +948,22 @@ Model::makeDepthSimbox(Simbox       *& depthSimbox,
       const SegyGeometry * areaParams = modelSettings->getAreaParameters(); 
       if (areaParams != NULL)
       {
-        depthSimbox->setArea(areaParams);
-        error = depthSimbox->checkError(modelSettings->getLzLimit(),errText);
-
-        if(error == Simbox::INTERNALERROR)
+        depthSimbox->setArea(areaParams, errText);
+        if(error ==1)
         {
-          LogKit::LogFormatted(LogKit::ERROR," A problems was encountered for depth output grid\n");
-          LogKit::LogFormatted(LogKit::ERROR,"       %s\n",errText);
-          failed = true;
+          sprintf(errText,"Problems wwith definition of depth simbox.",errText);
+          failed = 1;
+        }
+        else
+        {
+          error = depthSimbox->checkError(modelSettings->getLzLimit(),errText);
+
+          if(error == Simbox::INTERNALERROR)
+          {
+            LogKit::LogFormatted(LogKit::ERROR," A problems was encountered for depth output grid\n");
+            LogKit::LogFormatted(LogKit::ERROR,"       %s\n",errText);
+            failed = true;
+          }
         }
       }
       else
