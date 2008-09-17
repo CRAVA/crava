@@ -1819,9 +1819,10 @@ Model::processWavelets(Wavelet     **& wavelet,
           else {
             wavelet[i] = new Wavelet1D(waveletFile[i], modelSettings, fileFormat, error, errText);
             if (error == 0) {
+//              wavelet[i]->write1DWLas3DWL(); //Frode: For debugging and testing
+//              wavelet[i]->write3DWLfrom1DWL();
               wavelet[i]->resample(static_cast<float>(timeSimbox->getdz()), timeSimbox->getnz(), 
                                    modelSettings->getZpad(), modelSettings->getAngle()[i]);
-//              wavelet[i]->write1DWLas3DWL(); //Frode: For debugging and testing
             }
           }
           if (error == 0)
@@ -1866,7 +1867,7 @@ Model::processWavelets(Wavelet     **& wavelet,
           {
             char fileName[MAX_STRING];
             sprintf(fileName,"Wavelet_Scaled");
-            wavelet[i]->writeWaveletToFile(fileName, 1.0); // dt_max = 1.0;
+            wavelet[i]->writeWaveletToFile(fileName, 1.0, timeSimbox); // dt_max = 1.0;
           }
           if(shiftGrids != NULL && shiftGrids[i] != NULL)
             wavelet[i]->setShiftGrid(shiftGrids[i], timeSimbox);

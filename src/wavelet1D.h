@@ -28,6 +28,7 @@ public:
   void           printToFile(char* fileName, bool overrideDebug = false);
   void           writeWaveletToFile(char* fileName, float approxDz, Simbox *simbox = NULL);
   void           write1DWLas3DWL();
+  void           write3DWLfrom1DWL();
 
 private:
   void           flipUpDown();

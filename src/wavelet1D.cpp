@@ -1453,5 +1453,82 @@ Wavelet1D::write1DWLas3DWL()
   return;
 }
 
+void 
+Wavelet1D::write3DWLfrom1DWL()
+{
+  char* headerFName = new char[MAX_STRING];
+  sprintf(headerFName,"../../Input/Wavelet/3D/Ricker_Gauss_5.Sgrh");
+  char* gridFName = new char[MAX_STRING];
+  sprintf(gridFName,"../../Input/Wavelet/3D/Ricker_Gauss_5.Sgri");
+  char* asciiFName = new char[MAX_STRING];
+  sprintf(asciiFName,"../../Output/Debug/Ricker_Gauss_5.txt");
 
+  double range = 250.0;
+  double dx = 50.0;
+  double dy = 50.0;
+  int nXCells = static_cast<int> (range / dx);
+  int nYCells = static_cast<int> (range / dy);
+  assert (nXCells >= 0);
+  assert (nYCells >= 0);
+  
+  FILE *hFile = fopen(headerFName, "w");
+  LogKit::LogFormatted(LogKit::LOW,"\nWriting 3D Wavelet from 1D Ricker in header file %s...", headerFName);
+  fprintf(hFile, "NORSAR General Grid Format v1.0\n");
+  fprintf(hFile, "3\n");
+  fprintf(hFile, "X (km)\n");
+  fprintf(hFile, "Y (km)\n");
+  fprintf(hFile, "Z (km)\n");
+  fprintf(hFile, "PSF\n");
+  fprintf(hFile, "1\n");
+  fprintf(hFile, "Ricker Gauss with lateral range %f\n", range);
+  fprintf(hFile, "1 1 1\n");
+  fprintf(hFile, "%d %d %d\n", 2*nXCells+1, 2*nYCells+1, nz_);
+  fprintf(hFile, "%f %f %f\n", dx*0.001, dy*0.001, dz_*0.001);
+  fprintf(hFile, "0 0 0\n");
+  fprintf(hFile, "0 0\n");
+  fprintf(hFile, "-999\n");
+  fprintf(hFile, "%s\n", gridFName);
+  fprintf(hFile, "0\n");
+
+  fclose(hFile);
+  
+  float scaleFactor = 0.0;
+  for (int j=-nYCells; j<=nYCells; j++) {
+    for (int i=-nXCells; i<=nXCells; i++) {
+      scaleFactor += static_cast<float> (exp(static_cast<float>(-(i*i)-(j*j))));
+    }
+  }
+
+  FILE *aFile = fopen(asciiFName, "w");
+  FILE *bFile = fopen(gridFName,"wb");
+  LogKit::LogFormatted(LogKit::LOW,"\nWriting 3D Wavelet from Ricker in binary file %s...", gridFName);
+  float value;
+  char * output = (char * ) &value;
+  for(int k=0; k<nz_; k++) {
+    for (int j=-nYCells; j<=nYCells; j++) {
+      for (int i=-nXCells; i<=nXCells; i++) {
+        value = static_cast<float> (getRAmp(k));
+        value *= static_cast<float> (exp(static_cast<float>(-(i*i)-(j*j))));
+        value = value/scaleFactor;
+        fprintf(aFile, "%10.6f ", value);
+#ifndef BIGENDIAN
+        fwrite(&(output[3]),1,1,bFile);
+        fwrite(&(output[2]),1,1,bFile);
+        fwrite(&(output[1]),1,1,bFile);
+        fwrite(&(output[0]),1,1,bFile);
+#else
+        fwrite(output, 1, 4, bFile);
+#endif
+      }
+    }
+    fprintf(aFile, "\n");
+  }
+  output[0] = '0';
+  output[1] = '\n';
+  fwrite(output, 2, 1, bFile);
+  fclose(aFile);
+  fclose(bFile);
+
+  return;
+}
 

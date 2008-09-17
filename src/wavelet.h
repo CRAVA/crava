@@ -51,6 +51,7 @@ public:
   void           printVecToFile(char* fileName, fftw_real* vec ,int nzp) const;
 
   virtual void   write1DWLas3DWL() {};
+  virtual void   write3DWLfrom1DWL() {};
 
 protected:
 //  virtual float  getWaveletValue(float z, float * Wavelet, int center,int nx, float dz) = 0;
