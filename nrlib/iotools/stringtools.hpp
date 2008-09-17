@@ -25,6 +25,13 @@ namespace NRLib2 {
 
   template <typename T>
   std::string ToString(const T obj);
+
+
+  /// Get the path from a full file name.
+  std::string GetPath(const std::string& fName); 
+
+  /// Get file name only (no path) from full file name.
+  std::string RemovePath(const std::string& fName); 
 }
 
 /// @todo Use correct exceptions.

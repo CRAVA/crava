@@ -45,10 +45,15 @@ StormContGrid::StormContGrid(const std::string& filename)
 }
 
 
-void StormContGrid::ReadFromFile(const std::string& filename)
+void StormContGrid::ReadFromFile(const std::string& filename, bool commonPath)
 {
    /// \todo Replace with safe open function.
   std::ifstream file(filename.c_str(), std::ios::out | std::ios::binary);
+
+  std::string path = "";
+  if(commonPath == true)
+    path = GetPath(filename);
+
   if (!file) {
     throw new IOError("Error opening " + filename);
   }
@@ -77,7 +82,7 @@ void StormContGrid::ReadFromFile(const std::string& filename)
     missing_code_ = ParseType<double>(token);
     GetNextToken(file, variable_name_, line);
 
-    ReadVolumeFromFile(file, line);
+    ReadVolumeFromFile(file, line, path);
 
     GetNextToken(file, token, line);
     int nx = ParseType<int>(token);
@@ -125,7 +130,7 @@ void StormContGrid::ReadFromFile(const std::string& filename)
 }
 
 
-void StormContGrid::WriteToFile(const std::string& filename) const
+void StormContGrid::WriteToFile(const std::string& filename, const std::string& predefinedHeader) const
 {
   /// @todo Replace with safe open function.
   std::ofstream file(filename.c_str(), std::ios::out | std::ios::binary);
@@ -134,14 +139,17 @@ void StormContGrid::WriteToFile(const std::string& filename) const
   }
 
   // Header
-  file << format_desc[file_format_] << "\n\n"
-       << zone_number_ << " " << model_file_name_ << " " 
-       << missing_code_ << "\n\n" << variable_name_ << "\n\n" ;
-  
-  WriteVolumeToFile(file, filename);
-  file << "\n";
-  file << GetNI() << " " << GetNJ() << " " << GetNK() << "\n";
-  
+  if(predefinedHeader == "") {
+    file << format_desc[file_format_] << "\n\n"
+         << zone_number_ << " " << model_file_name_ << " " 
+         << missing_code_ << "\n\n" << variable_name_ << "\n\n" ;
+    
+    WriteVolumeToFile(file, filename);
+    file << "\n";
+    file << GetNI() << " " << GetNJ() << " " << GetNK() << "\n";
+  }
+  else
+    file << predefinedHeader;
   // Data
   switch (file_format_) {
   case STORM_BINARY:

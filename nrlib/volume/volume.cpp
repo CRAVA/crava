@@ -241,7 +241,7 @@ void Volume::WriteVolumeToFile(std::ofstream& file,
 }
 
 
-void Volume::ReadVolumeFromFile(std::ifstream& file, int line)
+void Volume::ReadVolumeFromFile(std::ifstream& file, int line, const std::string& path)
 {
   std::string token;
 
@@ -258,7 +258,7 @@ void Volume::ReadVolumeFromFile(std::ifstream& file, int line)
   if (IsType<double>(token)) {
     z_top_ = new ConstantSurface(ParseType<double>(token));  
   } else {
-    z_top_ = new RegularSurface<double>(ReadStormBinarySurf(token));
+    z_top_ = new RegularSurface<double>(ReadStormBinarySurf(path+token));
     if (!CheckSurface(*z_top_)) {
       throw Exception("The top surface does not fit with the volume.");
     }
@@ -267,7 +267,7 @@ void Volume::ReadVolumeFromFile(std::ifstream& file, int line)
   if (IsType<double>(token)) {
     z_bot_ = new ConstantSurface(ParseType<double>(token));  
   } else {
-    z_bot_ = new RegularSurface<double>(ReadStormBinarySurf(token));
+    z_bot_ = new RegularSurface<double>(ReadStormBinarySurf(path+token));
     if (!CheckSurface(*z_bot_)) {
       throw Exception("The bottom surface does not fit with the volume.");
     }
@@ -276,7 +276,7 @@ void Volume::ReadVolumeFromFile(std::ifstream& file, int line)
   if (IsType<double>(token)) {
     erosion_top_ = new ConstantSurface(ParseType<double>(token));  
   } else {
-    erosion_top_ = new RegularSurface<double>(ReadStormBinarySurf(token));
+    erosion_top_ = new RegularSurface<double>(ReadStormBinarySurf(path+token));
     if (!CheckSurface(*erosion_top_)) {
       throw Exception("The erosion top surface does not fit with the volume.");
     }
@@ -285,7 +285,7 @@ void Volume::ReadVolumeFromFile(std::ifstream& file, int line)
   if (IsType<double>(token)) {
     erosion_bot_ = new ConstantSurface(ParseType<double>(token));  
   } else {
-    erosion_bot_ = new RegularSurface<double>(ReadStormBinarySurf(token));
+    erosion_bot_ = new RegularSurface<double>(ReadStormBinarySurf(path+token));
     if (!CheckSurface(*erosion_bot_)) {
       throw Exception("The erosion bottom surface does not fit with the volume.");
     }

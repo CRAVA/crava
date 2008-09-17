@@ -48,7 +48,7 @@ namespace NRLib2 {
     /// \todo  Maybe move to storm-specific files.
     void WriteVolumeToFile(std::ofstream& file, 
                            const std::string& filename) const;
-    void ReadVolumeFromFile(std::ifstream& file, int line);
+    void ReadVolumeFromFile(std::ifstream& file, int line, const std::string& path);
 
     /// \brief The local coorinates are (0,0) in (x_min, y_min), and
     ///        have the same orientation as the volume.

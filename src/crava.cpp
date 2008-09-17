@@ -72,7 +72,6 @@ Crava::Crava(Model * model)
     float corrGradI, corrGradJ;
     model->getCorrGradIJ(corrGradI, corrGradJ);
     corrT = parSpatialCorr_-> fillInParamCorr(corr,lowIntCut,corrGradI, corrGradJ);
-    parSpatialCorr_->writeStormFile("corrdump",simbox_);
     errCorrUnsmooth_ = createFFTGrid();
     errCorrUnsmooth_->fillInErrCorr(corr,corrGradI,corrGradJ); 
   }
@@ -2117,24 +2116,24 @@ void Crava::initPostKriging() {
                                 int(krigingParams_[0]));
 }
 
-void Crava::writeToFile(char * fileName1, char * fileName2, FFTGrid * grid) {
+void Crava::writeToFile(char * timeFileName, char * depthFileName, FFTGrid * grid) {
 
   if(!((outputFlag_ & ModelSettings::NOTIME)>0))
   {
     if(model_->getTimeCutMapping()!=NULL)
     {
       StormContGrid *mapping = model_->getTimeCutMapping();
-      writeResampledStormCube(grid, mapping, fileName2, simbox_);
+      writeResampledStormCube(grid, mapping, timeFileName, simbox_);
     }
     else
-      grid->writeFile(fileName1,simbox_,1, model_->getModelSettings()->getSegyOffset());
+      grid->writeFile(timeFileName,simbox_,1, model_->getModelSettings()->getSegyOffset());
   }
   if(model_->getDepthSimbox()!=NULL)
   {
     if(model_->getTimeDepthMapping()!=NULL)
     {
       StormContGrid *mapping = model_->getTimeDepthMapping();
-      writeResampledStormCube(grid, mapping, fileName2, simbox_);
+      writeResampledStormCube(grid, mapping, depthFileName, simbox_);
     }
     else if(model_->getVelocityFromInversion()==true) // use velocity from inversion
     {
@@ -2143,13 +2142,12 @@ void Crava::writeToFile(char * fileName1, char * fileName2, FFTGrid * grid) {
         mapping = model_->makeTimeDepthMapping(postAlpha_,model_->getDepthSimbox(),model_->getTimeCutSimbox());
       else
         mapping = model_->makeTimeDepthMapping(postAlpha_,model_->getDepthSimbox(),simbox_);
-      writeResampledStormCube(grid, mapping, fileName2, simbox_);
+      writeResampledStormCube(grid, mapping, depthFileName, simbox_);
       delete mapping;
     }
     else
-      grid->writeFile(fileName2,model_->getDepthSimbox(),0);
+      grid->writeFile(depthFileName,model_->getDepthSimbox(),0);
   }
-
 }
 
 void Crava::computeFaciesProb()
@@ -2323,7 +2321,7 @@ Crava::writeResampledStormCube(FFTGrid *grid, StormContGrid *mapping, char * fil
   }
   char * gfName;
   gfName = ModelSettings::makeFullFileName(fileName, ".storm");
-  outgrid.WriteToFile(gfName);
-  
-
+  char * header = simbox->getStormHeader(FFTGrid::PARAMETER,nx_,ny_,nz);
+  outgrid.WriteToFile(gfName,std::string(header));
+  delete [] header;
 }

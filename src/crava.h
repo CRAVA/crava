@@ -140,7 +140,7 @@ private:
   void               multiplyDataByScaleWaveletAndWriteToFile(const char* typeName);
   void               dumpCorrT(float* corrT,float dt);
   void               initPostKriging();          
-  void               writeToFile(char * fileName1, char * fileName2, FFTGrid * grid);
+  void               writeToFile(char * timeFileName, char * depthFileName, FFTGrid * grid);
   void               writeResampledStormCube(FFTGrid *grid, StormContGrid *mapping, char * fileName, const Simbox *simbox);
   float              energyTreshold_; //If energy in reflection trace divided by mean energy
                                       //in reflection trace is lower than this, the reflections

@@ -50,8 +50,10 @@ namespace NRLib2 {
     int GetZoneNumber() const 
     { return zone_number_; }
   
-    void WriteToFile(const std::string& filename) const;
-    void ReadFromFile(const std::string& filename);
+    /// Write to file. If predefinedHeader is not empty, this header is written instead
+    ///                of standard, and surfaces are not written.
+    void WriteToFile(const std::string& filename, const std::string& predefinedHeader = "") const;
+    void ReadFromFile(const std::string& filename, bool commonPath = true);
 
     double GetDX() const {return GetLX()/GetNI();}
     double GetDY() const {return GetLY()/GetNJ();}
