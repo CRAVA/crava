@@ -36,7 +36,7 @@ private:
   void           WaveletReadOld(char * fileName, int &errCode, char *errText);
   void           WaveletReadJason(char * fileName, int &errCode, char *errText);
   float          shiftOptimal(fftw_real** ccor_seis_cpp_r,float* wellWeight,float* dz,int nWells,int nzp,float* shiftWell);
-  void           multiplyPapolouis(fftw_real** vec, float* dz,int nWells,int nzp, float waveletLength) const;
+  void           multiplyPapolouis(fftw_real** vec, float* dz,int nWells,int nzp, float waveletLength, float *wellWeight) const;
   void           getWavelet(fftw_real** ccor_seis_cpp_r,fftw_real** cor_cpp_r,fftw_real** wavelet_r,float* wellWeight,int nWells,int nt);
   fftw_real*     averageWavelets(fftw_real** wavelet_r,int nWells,int nzp,float* wellWeight,float* dz,float dzOut) const;
   float          getArrayValueOrZero(int i ,float * Wavelet, int nz) const;

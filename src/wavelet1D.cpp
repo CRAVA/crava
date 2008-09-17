@@ -98,8 +98,12 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
   for(i=0;i<nWells;i++)
   {
     cpp_r[i]           = new fftw_real[rnzp];
+    for(j=0;j<rnzp;j++)
+      cpp_r[i][j] = 0;
     seis_r[i]          = new fftw_real[rnzp];
     synt_seis_r[i]     = new fftw_real[rnzp];
+    for(j=0;j<rnzp;j++)
+      synt_seis_r[i][j] = 0;
     cor_cpp_r[i]       = new fftw_real[rnzp];
     ccor_seis_cpp_r[i] = new fftw_real[rnzp];
     wavelet_r[i]       = new fftw_real[rnzp];
@@ -111,6 +115,7 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
     if (nBlocks > maxBlocks)
       maxBlocks = nBlocks;
   }
+  
   float * seisLog = new float[maxBlocks];
 
   //
@@ -167,8 +172,8 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
   float* shiftWell = new float[nWells];
   float shiftAvg = shiftOptimal(ccor_seis_cpp_r,wellWeight,dz,nWells,nzp,shiftWell);
 
-  multiplyPapolouis(ccor_seis_cpp_r,dz,nWells,nzp, waveletLength);
-  multiplyPapolouis(cor_cpp_r,dz,nWells,nzp, waveletLength);
+  multiplyPapolouis(ccor_seis_cpp_r,dz,nWells,nzp, waveletLength, wellWeight);
+  multiplyPapolouis(cor_cpp_r,dz,nWells,nzp, waveletLength, wellWeight);
   getWavelet(ccor_seis_cpp_r,cor_cpp_r,wavelet_r,wellWeight, nWells, nzp);
 
   rAmp_      = averageWavelets(wavelet_r,nWells,nzp,wellWeight,dz,dz0); // wavelet centered
@@ -1265,25 +1270,30 @@ Wavelet1D::shiftOptimal(fftw_real** ccor_seis_cpp_r,float* wellWeight,float* dz,
 }
 
 void
-Wavelet1D::multiplyPapolouis(fftw_real** vec, float* dz,int nWells,int nzp, float waveletLength) const
+Wavelet1D::multiplyPapolouis(fftw_real** vec, float* dz,int nWells,int nzp, float waveletLength,float* wellWeight) const
 {
   int i,w;
   float wHL=float( waveletLength/2.0);
   float weight,dist;
   for(w=0;w<nWells;w++)
-    for(i=1;i<nzp;i++)
+  {
+  if(wellWeight[w] > 0)
     {
-      dist =MINIM(i,nzp-i)*dz[w];
-      if(dist < wHL)
+      for(i=1;i<nzp;i++)
       {
-        weight  = float(1.0/PI*fabs(sin(PI*(dist)/wHL))); 
-        weight += float((1-fabs(dist)/wHL)*cos(PI*dist/wHL));
-      }
-      else
-        weight=0;
+        dist =MINIM(i,nzp-i)*dz[w];
+        if(dist < wHL)
+        {
+          weight  = float(1.0/PI*fabs(sin(PI*(dist)/wHL))); 
+          weight += float((1-fabs(dist)/wHL)*cos(PI*dist/wHL));
+        }
+        else
+          weight=0;
 
-      vec[w][i]*=weight;
+        vec[w][i]*=weight;
+      }
     }
+  }
 }
 
 void
