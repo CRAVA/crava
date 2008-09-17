@@ -21,6 +21,7 @@ public:
   fftw_real      getRAmp(int k, int j, int i);
   fftw_complex   getCAmp(int k, float scale, int j, int i) const;
   void           setRAmp(float value, int k, int j, int i);
+  void           scale(float gain);
 
   void           writeWaveletToFile(char* fileName, float, Simbox *simbox);
   void           printToFile(char* fileName, bool overrideDebug = false);

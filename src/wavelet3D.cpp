@@ -169,7 +169,7 @@ Wavelet3D::Wavelet3D(char * fileName, ModelSettings * modelSettings, Simbox *sim
     shiftAmp->setOutputFormat(modelSettings->getFormatFlag());
 
     shiftFFTGrid(shiftAmp);
-//   shiftAmp->writeFile("../Debug/3DWavelet", simBox);
+    shiftAmp->writeFile("WL_as_shiftedFFTGrid", simBox);
     delete shiftAmp;
     //End for debugging purposes
   }
@@ -238,6 +238,25 @@ Wavelet3D::setRAmp(float value, int k, int j, int i)
 }
 
 void
+Wavelet3D::scale(float scale)
+{
+  Wavelet::scale(scale);
+
+  float rAmp;
+  for(int i=0; i < nxp_ ; i++) {
+    for (int j=0; j < nyp_; j++) {
+      for (int k=0; k < nzp_; k++) {
+        rAmp = getRAmp(k,j,i);
+        if (rAmp != RMISSING) {
+          rAmp *= scale;
+          setRAmp(rAmp,k,j,i);
+        }
+      }
+    }
+  }
+}
+
+void
 Wavelet3D::printToFile(char* fileName, bool overrideDebug) 
 {
   if(overrideDebug == true || ModelSettings::getDebugLevel() > 0) {
@@ -261,6 +280,7 @@ Wavelet3D::printToFile(char* fileName, bool overrideDebug)
 void
 Wavelet3D::writeWaveletToFile(char* fileName, float, Simbox *simbox)
 {
+  LogKit::LogFormatted(LogKit::MEDIUM,"  Writing 3D-Wavelet to file. \n");
   ampCube_.writeFile(fileName, simbox, false);
 }
 
@@ -325,4 +345,3 @@ Wavelet3D::shiftFFTGrid(FFTGrid *shiftAmp)
     }
   }
 }
-   
