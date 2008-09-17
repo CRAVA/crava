@@ -607,11 +607,12 @@ Wavelet::getNoiseStandardDeviation(Simbox * simbox, FFTGrid * seisCube, WellData
       }
     }
   }
-  float  errOptScale;
-  float* errWell=new float[nWells];
-  float* scaleOptWell=new float[nWells];
-  float* errWellOptScale=new float[nWells];
 
+  float * scaleOptWell    = new float[nWells];
+  float * errWellOptScale = new float[nWells];
+  float * errWell         = new float[nWells];
+
+  float errOptScale;
   float optScale = findOptimalWaveletScale(synt_r,seis_r,nWells,nzp,dataVarWell,
                                            errOptScale,errWell,scaleOptWell,errWellOptScale);
   delete [] seisLog;
@@ -718,61 +719,70 @@ Wavelet::getNoiseStandardDeviation(Simbox * simbox, FFTGrid * seisCube, WellData
 }
 
 float          
-Wavelet::findOptimalWaveletScale(fftw_real** synt_seis_r,fftw_real** seis_r,int nWells,int nzp,
-                                 float* wellWeight,float& err,float* errWell,float* scaleOptWell,float* errWellOptScale) const
+Wavelet::findOptimalWaveletScale(fftw_real ** synt_seis_r,
+                                 fftw_real ** seis_r,
+                                 int          nWells,
+                                 int          nzp,
+                                 float      * wellWeight,
+                                 float      & err, // NBNB-PAL: Det er uheldig å returnere err slik
+                                 float      * errWell,
+                                 float      * scaleOptWell,
+                                 float      * errWellOptScale) const
 {
-  float optScale=1.0;
-  int    nScales = 51; // should be odd to include 1.00
-  float* scales  = new float[nScales];
-  float* error  = new float[nScales];
-  float  scaleLimit=3.0;
+  float   optScale   = 1.0f;
+  float   scaleLimit = 3.0f;
+  int     nScales    = 51; // should be odd to include 1.00
+  float * scales     = new float[nScales];
+  float * error      = new float[nScales];
 
   for(int i=0;i<nScales;i++)
   {
     scales[i] = exp(-log(scaleLimit)+i*2*(log(scaleLimit))/(nScales-1));
-    error[i]=0.0;
+    error[i]  = 0.0f;
   }
 
-  int* counter     = new int[nWells];
-  float* seisNorm  = new float[nWells];
-  float** resNorm  = new float*[nWells];
-  for(int i=0;i<nWells;i++)
-  {
-    resNorm[i] =   new float[nScales];
-    seisNorm[i] = 0.0;
-  }
-
+  int    * counter  = new int[nWells];
+  float  * seisNorm = new float[nWells];
+  float ** resNorm  = new float*[nWells];
 
   for(int i=0;i<nWells;i++)
   {
+    resNorm[i]  = new float[nScales];
+    seisNorm[i] = 0.0f;
+  }
+
+  float minSeisAmp = 1e-7;
+  int totCount=0;
+
+  for(int i=0;i<nWells;i++)
+  {
+    counter[i]=0;
     if(wellWeight[i]>0)
     {
+      // Count number of layers with seismic data
+      for(int k=0;k<nzp;k++)
+        if(fabs(seis_r[i][k]) > minSeisAmp)
+          counter[i]++;
+      totCount+=counter[i];
+
       for(int j=0;j<nScales;j++)
       {
         resNorm[i][j]=0.0;
-        counter[i]=0;
         for(int k=0;k<nzp;k++)
         {
-          if( fabs(seis_r[i][k])> 1e-7)
+          if(fabs(seis_r[i][k]) > minSeisAmp)
           {
-            seisNorm[i]  +=   seis_r[i][k]* seis_r[i][k];
-            float     foo = scales[j]*synt_seis_r[i][k] - seis_r[i][k];
+            seisNorm[i]   += seis_r[i][k] * seis_r[i][k];
+            float      foo = scales[j]*synt_seis_r[i][k] - seis_r[i][k];
             resNorm[i][j] += foo*foo;
-            counter[i]++;
           }
+          error[j]+=resNorm[i][j];
         }
       }
     }//if
   }
-  int totCount=0;
-  for(int i=0;i<nWells;i++)
-  {
-    for(int j=0;j<nScales;j++)
-      error[j]+=resNorm[i][j];
-    totCount+=counter[i];
-  }
 
-  int optInd=0; 
+  int   optInd=0; 
   float optValue=error[0];
   for(int i=1;i<nScales;i++)
     if(error[i]<optValue)
@@ -781,10 +791,16 @@ Wavelet::findOptimalWaveletScale(fftw_real** synt_seis_r,fftw_real** seis_r,int 
       optInd=i;
     }
 
-  err = sqrt(optValue/float(totCount));
+  err = sqrt(optValue/static_cast<float>(totCount));
   optScale = scales[optInd];
+
   for(int i=0;i<nWells;i++)
-    errWell[i]=sqrt(resNorm[i][optInd]/counter[i]);
+  {
+    if(counter[i]>0)
+      errWell[i] = sqrt(resNorm[i][optInd]/counter[i]);
+    else
+      errWell[i] = 0.0f;
+  }
 
   for(int i=0;i<nWells;i++)
   {
@@ -800,6 +816,11 @@ Wavelet::findOptimalWaveletScale(fftw_real** synt_seis_r,fftw_real** seis_r,int 
         }
         scaleOptWell[i]    = scales[optInd];
         errWellOptScale[i] = sqrt(optValue/float(counter[i]));
+    }
+    else
+    {
+      scaleOptWell[i]    = 0.0f;
+      errWellOptScale[i] = 0.0f;
     }
   }
  return optScale;

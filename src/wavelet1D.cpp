@@ -98,12 +98,13 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
   for(i=0;i<nWells;i++)
   {
     cpp_r[i]           = new fftw_real[rnzp];
-    for(j=0;j<rnzp;j++)
-      cpp_r[i][j] = 0;
-    seis_r[i]          = new fftw_real[rnzp];
     synt_seis_r[i]     = new fftw_real[rnzp];
     for(j=0;j<rnzp;j++)
+    {
+      cpp_r[i][j] = 0;
       synt_seis_r[i][j] = 0;
+    }
+    seis_r[i]          = new fftw_real[rnzp];
     cor_cpp_r[i]       = new fftw_real[rnzp];
     ccor_seis_cpp_r[i] = new fftw_real[rnzp];
     wavelet_r[i]       = new fftw_real[rnzp];
@@ -150,12 +151,12 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
       if(length*dz0 > waveletLength  ) // must have enough data
       {
         fillInCpp(alpha,beta,rho,start,length,cpp_r[w],nzp);
-        sprintf(fileName,"cpp_1");// Debug
-        printVecToFile(fileName,cpp_r[w], nzp);// Debug
+        sprintf(fileName,"cpp_1");               // Debug
+        printVecToFile(fileName,cpp_r[w], nzp);  // Debug
         fft(cpp_r[w],cpp_c[w],nzp);
         fillInSeismic(seisData,start,length,seis_r[w],nzp);
-        sprintf(fileName,"seis_1");  // Debug
-        printVecToFile(fileName,seis_r[w], nzp);// Debug
+        sprintf(fileName,"seis_1");              // Debug
+        printVecToFile(fileName,seis_r[w], nzp); // Debug
         fft(seis_r[w],seis_c[w],nzp);
         estimateCor(cpp_c[w],cpp_c[w],cor_cpp_c[w],cnzp);
         fftInv(cor_cpp_c[w],cor_cpp_r[w],nzp);
@@ -176,8 +177,8 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
   multiplyPapolouis(cor_cpp_r,dz,nWells,nzp, waveletLength, wellWeight);
   getWavelet(ccor_seis_cpp_r,cor_cpp_r,wavelet_r,wellWeight, nWells, nzp);
 
-  rAmp_      = averageWavelets(wavelet_r,nWells,nzp,wellWeight,dz,dz0); // wavelet centered
-  cAmp_      = reinterpret_cast<fftw_complex*>(rAmp_);
+  rAmp_ = averageWavelets(wavelet_r,nWells,nzp,wellWeight,dz,dz0); // wavelet centered
+  cAmp_ = reinterpret_cast<fftw_complex*>(rAmp_);
    char* fileName = new char[MAX_STRING];
   //sprintf(fileName,"wavelet");
   //printToFile(fileName,rAmp_, nzp);
@@ -201,9 +202,10 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
     //printf("Test run\n");
   }
 
-  float* scaleOptWell    = new float[nWells];
-  float* errWellOptScale = new float[nWells];
-  float* errWell = new float[nWells];
+  float * scaleOptWell    = new float[nWells];
+  float * errWellOptScale = new float[nWells];
+  float * errWell         = new float[nWells];
+
   float err;
   float scaleOpt = findOptimalWaveletScale(synt_seis_r,seis_r,nWells,nzp,wellWeight,err,errWell,scaleOptWell,errWellOptScale);
 
@@ -694,7 +696,7 @@ Wavelet1D::WaveletReadOld(char * fileName, int &errCode, char *errText)
   }
 
   fftw_free(tempWave);
-  // LogKit::LogFormatted(LogKit::LOW,"\nReading wavelet file %s  ... done.\n",fileName);
+  LogKit::LogFormatted(LogKit::MEDIUM,"\nReading wavelet file %s  ... done.\n",fileName);
 
   //
   // Estimate wavelet length
@@ -814,7 +816,6 @@ Wavelet1D::getCAmp(int k, int, int) const
     value.re =  cAmp_[refk].re;
     value.im =  - cAmp_[refk].im;
   }
-
   return value;
 }
 
@@ -885,7 +886,6 @@ Wavelet1D::getCAmp(int k, float scale, int, int) const
       value.im =  - cAmp_[omL].im * ( 1.0f - dOmega ) + cAmp_[omU].im * dOmega;
     }
   }
-
   return value;
 }
 

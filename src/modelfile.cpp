@@ -1045,12 +1045,7 @@ ModelFile::readCommandDepthConversion(char ** params, int & pos, char * errText)
       uppercase(velocityField_);
       if (strcmp(velocityField_,"CONSTANT")!=0 && strcmp(velocityField_,"FROM_INVERSION")!=0)
       {
-        char ** tmpFile = new char*[1]; 
-        tmpFile[0] = new char[strlen(velocityField_)+1];
-        strcpy(tmpFile[0],velocityField_);
-        error = checkFileOpen(tmpFile, 1, params[pos-1], errText);
-        delete [] tmpFile[0];
-        delete tmpFile;
+        error = checkFileOpen(&(velocityField_), 1, params[pos-1], errText);
       }
       break;
 
