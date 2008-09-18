@@ -471,7 +471,6 @@ Wavelet::getNoiseStandardDeviation(Simbox * simbox, FFTGrid * seisCube, WellData
   gainGrid_=NULL; 
   
   float * dz = new float[nWells];
-  int * nDataUsedInWell = new int[nWells];
   int i, k, w;
 
   int   nz   = simbox->getnz();
@@ -519,7 +518,6 @@ Wavelet::getNoiseStandardDeviation(Simbox * simbox, FFTGrid * seisCube, WellData
     wavelet_r[i]       = new fftw_real[rnzp];
     synt_r[i]          = new fftw_real[rnzp];
     nActiveData[i]     = 0;
-    nDataUsedInWell[i] = 0;
     errVarWell[i]      = 0.0f;
     dataVarWell[i]     = 0.0f;
     const int * ipos   = wells[i]->getBlockedLogsPropThick()->getIpos();
@@ -560,7 +558,6 @@ Wavelet::getNoiseStandardDeviation(Simbox * simbox, FFTGrid * seisCube, WellData
 
       if(length*dz0 > waveletLength_) // must have enough data
       {
-        nDataUsedInWell[w] = length; 
         fillInCpp(alpha,beta,rho,start,length,cpp_r[w],nzp);  // fills in reflection coefficients
         fft(cpp_r[w],cpp_c[w],nzp);
         fillInnWavelet(wavelet_r[w],nzp,dz[w]); // fills inn wavelet
@@ -616,6 +613,8 @@ Wavelet::getNoiseStandardDeviation(Simbox * simbox, FFTGrid * seisCube, WellData
   float optScale = findOptimalWaveletScale(synt_r,seis_r,nWells,nzp,dataVarWell,
                                            errOptScale,errWell,scaleOptWell,errWellOptScale);
   delete [] seisLog;
+  delete [] dz;
+  delete [] hasData;
 
   int nData=0;
   for(i=0;i<nWells;i++)
@@ -683,6 +682,13 @@ Wavelet::getNoiseStandardDeviation(Simbox * simbox, FFTGrid * seisCube, WellData
     }
   }  
 
+  delete [] shiftWell;
+  delete [] errVarWell;
+  delete [] dataVarWell;
+  delete [] nActiveData;
+  delete [] scaleOptWell;
+  delete [] errWellOptScale;
+  delete [] errWell;
 
   float empSNRatio = dataVar/(errStd*errStd);
   LogKit::LogFormatted(LogKit::LOW,"\n  Signal to noise ratio used for this angle stack is: %6.2f\n", empSNRatio);
@@ -708,12 +714,14 @@ Wavelet::getNoiseStandardDeviation(Simbox * simbox, FFTGrid * seisCube, WellData
     //delete [] err_r[i] ;
     delete [] synt_r[i] ;
     delete [] wavelet_r[i];
+    delete [] cor_seis_synt_r[i];
   }
   delete [] cpp_r;
   delete [] seis_r;
   //delete [] err_r;
   delete [] synt_r;
   delete [] wavelet_r;
+  delete [] cor_seis_synt_r;
       
   return errStd;
 }
@@ -791,39 +799,49 @@ Wavelet::findOptimalWaveletScale(fftw_real ** synt_seis_r,
       optInd=i;
     }
 
-  err = sqrt(optValue/static_cast<float>(totCount));
-  optScale = scales[optInd];
+    delete [] error;
 
-  for(int i=0;i<nWells;i++)
-  {
-    if(counter[i]>0)
-      errWell[i] = sqrt(resNorm[i][optInd]/counter[i]);
-    else
-      errWell[i] = 0.0f;
-  }
+    err = sqrt(optValue/static_cast<float>(totCount));
+    optScale = scales[optInd];
 
-  for(int i=0;i<nWells;i++)
-  {
-    if(wellWeight[i]>0)
+    for(int i=0;i<nWells;i++)
     {
-      optValue = resNorm[i][0];
-      optInd=0;
-      for(int j=1;j<nScales;j++)
-        if(resNorm[i][j]<optValue)
-        {
-          optValue=resNorm[i][j];
-          optInd=j;
-        }
-        scaleOptWell[i]    = scales[optInd];
-        errWellOptScale[i] = sqrt(optValue/float(counter[i]));
+      if(counter[i]>0)
+        errWell[i] = sqrt(resNorm[i][optInd]/counter[i]);
+      else
+        errWell[i] = 0.0f;
     }
-    else
+
+    for(int i=0;i<nWells;i++)
     {
-      scaleOptWell[i]    = 0.0f;
-      errWellOptScale[i] = 0.0f;
+      if(wellWeight[i]>0)
+      {
+        optValue = resNorm[i][0];
+        optInd=0;
+        for(int j=1;j<nScales;j++)
+          if(resNorm[i][j]<optValue)
+          {
+            optValue=resNorm[i][j];
+            optInd=j;
+          }
+          scaleOptWell[i]    = scales[optInd];
+          errWellOptScale[i] = sqrt(optValue/float(counter[i]));
+      }
+      else
+      {
+        scaleOptWell[i]    = 0.0f;
+        errWellOptScale[i] = 0.0f;
+      }
     }
-  }
- return optScale;
+
+    for (int i=0; i<nWells; i++)
+      delete [] resNorm[i];
+    delete [] resNorm;
+    delete [] seisNorm;
+    delete [] counter;
+    delete [] scales;
+
+    return optScale;
 }
 
 float
