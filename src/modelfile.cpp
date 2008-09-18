@@ -935,7 +935,7 @@ ModelFile::readCommandArea(char ** params, int & pos, char * errText)
   double y0  = static_cast<double>(atof(params[pos+1]));          
   double lx  = static_cast<double>(atof(params[pos+2]));          
   double ly  = static_cast<double>(atof(params[pos+3]));          
-  double rot = static_cast<double>(-PI*atof(params[pos+4])/180.0); 
+  double rot = static_cast<double>(PI*atof(params[pos+4])/180.0); 
   double dx  = static_cast<double>(atof(params[pos+5]));          
   double dy  = static_cast<double>(atof(params[pos+6]));          
 
