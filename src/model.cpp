@@ -434,6 +434,7 @@ Model::readSegyFiles(char          ** fNames,
         {
             const SegyGeometry *geometry;
             geometry = segy->getGeometry();
+            geometry->writeGeometry();
           if(timeSimbox->status() == Simbox::NOAREA)
           {
            // const SegyGeometry *geometry;

@@ -234,6 +234,7 @@ public:
   void   findIJFromILXL(int IL, int XL, int &i, int &j);
   void   findIJfromXY(float x, float y, int &i, int &j);
   void   findXYfromIJ(int i, int j, float &x, float &y) const;
+  void   writeGeometry() const;
 
 private:
   double x0_, y0_;              ///<

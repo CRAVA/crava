@@ -1460,3 +1460,13 @@ SegyGeometry::findIJFromILXL(int IL, int XL, int &i, int &j)
     j = (XL-crossLine0_)/xlStep_;
   }
 }
+
+void SegyGeometry::writeGeometry() const
+{
+  float geoangle = -rot_*180/(M_PI);
+
+  LogKit::LogFormatted(LogKit::LOW,"\n             X0         Y0              DeltaX       DeltaY    Angle\n");
+  LogKit::LogFormatted(LogKit::LOW,"---------------------------------------------------------------------\n");
+  LogKit::LogFormatted(LogKit::LOW,"Seismic Area:    %11.2f %11.2f   %11.2f %11.2f   %8.3f\n", x0_, y0_, dx_, dy_, geoangle);
+
+}

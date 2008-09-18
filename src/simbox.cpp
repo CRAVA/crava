@@ -259,8 +259,10 @@ Simbox::insideRectangle(double xr, double yr, double rotr, double lxr, double ly
   ry = -(x-xr)*sinrotr + (y-yr)*cosrotr;
   if(rx < -0.49*dx_ || rx > lxr+0.49*dx_ || ry<-0.49*dy_ || ry > lyr+0.49*dy_)
     allOk = 0;
-  if(allOk == 0)
-  {
+ // if(allOk == 0)
+ // {
+  if(rotr<0)
+    rotr+=2*PI;
     LogKit::LogFormatted(LogKit::LOW,"\n             X0         Y0              DeltaX       DeltaY    Angle\n");
     LogKit::LogFormatted(LogKit::LOW,"---------------------------------------------------------------------\n");
     LogKit::LogFormatted(LogKit::LOW,"Area:    %11.2f %11.2f   %11.2f %11.2f   %8.3f\n", GetXMin(), GetYMin(), GetLX(), GetLY(), (GetAngle()*180)/PI);
@@ -275,7 +277,7 @@ Simbox::insideRectangle(double xr, double yr, double rotr, double lxr, double ly
     LogKit::LogFormatted(LogKit::LOW,"D %18.2f %11.2f    %11.2f %11.2f\n", 
       GetXMin()+GetLX()*cosrot_-GetLY()*sinrot_, GetYMin()+GetLX()*sinrot_+GetLY()*cosrot_,
       xr +lxr*cosrotr-lyr*sinrotr, yr +lxr*sinrotr+lyr*cosrotr);
-  }
+//  }
 
   //
   // Calculate and write the largest possible AREA based on the (dx, dy, angle) given by user.
