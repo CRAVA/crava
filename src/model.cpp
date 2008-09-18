@@ -2565,7 +2565,7 @@ Model::makeTimeDepthMapping(FFTGrid *velocity,
       for(k=0;k<timeCutSimbox->getnz();k++)
         sumz +=deltat*velocity->getRealValue(i,j,k);
       c = (depthSimbox->getBot(x,y)-depthSimbox->getTop(x,y))/sumz;
-      (*mapping)(i,j,0) = timeCutSimbox->getTop(x,y);
+      (*mapping)(i,j,0) = static_cast<float> (timeCutSimbox->getTop(x,y));
       kk = 0;
       sum = 0;
       for(k=1;k<nz;k++)
@@ -2643,7 +2643,7 @@ Model::makeTimeCutMapping(Simbox * timeCutSimbox)
       y = timeCutSimbox->gety0()+j*timeCutSimbox_->getdy();
       deltaz = (timeCutSimbox->getBot(x,y)-timeCutSimbox->getTop(x,y))/nz;    
       for(k=0;k<nz;k++)      
-        (*timeCutMapping_)(i,j,k) = timeCutSimbox->getTop(x,y)+k*deltaz;
+        (*timeCutMapping_)(i,j,k) = static_cast<float> (timeCutSimbox->getTop(x,y)+k*deltaz);
     }
   }
 
