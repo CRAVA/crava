@@ -135,32 +135,40 @@ Model::Model(char * fileName)
         processSeismic(seisCube_, timeSimbox_, 
                        modelSettings_, modelFile, 
                        errText, failedSeismic);
-        completeTimeCutSimbox(timeCutSimbox_, modelSettings_, errText,failedSimbox);   // Copies area to timeCutSimbox if needed. 
-        if(timeCutSimbox_ !=NULL)
-          makeTimeCutMapping(timeCutSimbox_);
-        FFTGrid **velocity  = new FFTGrid*[1];
-        velocity[0] = NULL;
-        if(timeCutSimbox_!=NULL)
-          processVelocity(velocity,timeCutSimbox_,
-                        modelSettings_, modelFile, 
-                        errText);
-        else
-          processVelocity(velocity,timeSimbox_,
-                        modelSettings_, modelFile, 
-                        errText);
- 
-        makeDepthSimbox(depthSimbox_, modelSettings_, modelFile, // Creates depth simbox if needed.
-                        errText, failedSimbox, velocity[0]);
-        if(velocity[0]!=NULL)
+        
+        
+        if(failedSeismic==false)
         {
-          if(timeCutSimbox_ !=NULL )
-            timeDepthMapping_ = makeTimeDepthMapping(velocity[0], depthSimbox_, timeCutSimbox_);
-          else
-            timeDepthMapping_ = makeTimeDepthMapping(velocity[0], depthSimbox_, timeSimbox_);
+          completeTimeCutSimbox(timeCutSimbox_, modelSettings_, errText,failedSimbox);   // Copies area to timeCutSimbox if needed. 
+          if(failedSimbox==false)
+          {
+            if(timeCutSimbox_ !=NULL)
+              makeTimeCutMapping(timeCutSimbox_);
+            FFTGrid **velocity  = new FFTGrid*[1];
+            velocity[0] = NULL;
+            if(timeCutSimbox_!=NULL)
+              processVelocity(velocity,timeCutSimbox_,
+                         modelSettings_, modelFile, 
+                         errText);
+            else
+              processVelocity(velocity,timeSimbox_,
+                          modelSettings_, modelFile, 
+                          errText);
+ 
+            makeDepthSimbox(depthSimbox_, modelSettings_, modelFile, // Creates depth simbox if needed.
+                         errText, failedSimbox, velocity[0]);
+            if(velocity[0]!=NULL)
+            {
+              if(timeCutSimbox_ !=NULL )
+                timeDepthMapping_ = makeTimeDepthMapping(velocity[0], depthSimbox_, timeCutSimbox_);
+              else
+                timeDepthMapping_ = makeTimeDepthMapping(velocity[0], depthSimbox_, timeSimbox_);
+            }
+        
+          if(velocity[0] !=NULL)
+            delete velocity[0];
+          }
         }
-    
-      if(velocity[0] !=NULL)
-        delete velocity[0];
         if(!(failedSeismic || failedSimbox))
         { 
           processWells(wells_, timeSimbox_, randomGen_, 
@@ -404,6 +412,7 @@ Model::readSegyFiles(char          ** fNames,
   int error = 0;
   int sbError = 0;
   strcpy(errText, "");
+  strcpy(tmpErr,"");
   SegY * segy = NULL;
   // flag fileno used if only one of the files should be read from. Used in processBackground.
   for(int i=0 ; i<nFiles ; i++)
@@ -443,7 +452,8 @@ Model::readSegyFiles(char          ** fNames,
             sbError = timeSimbox->setArea(geometry, tmpErr);
             if(sbError==1)
             {
-              sprintf(errText,"Problem with defining time simbox.",tmpErr);
+              error++;
+              sprintf(errText,"%s Problem with defining time simbox.",tmpErr);
             }
             else
             {
@@ -652,15 +662,18 @@ Model::makeTimeSimbox(Simbox        *& timeSimbox,
     error = timeSimbox->checkError(modelSettings->getLzLimit(),errText);
     if(error == 0)
     {
-      LogKit::LogFormatted(LogKit::LOW,"\nTime inversion interval:\n");
-      LogKit::LogFormatted(LogKit::LOW,"  Interval thickness    avg / min / max    : %6.1f /%6.1f /%6.1f\n", 
+      if(areaParams!=NULL)
+      {
+        LogKit::LogFormatted(LogKit::LOW,"\nTime inversion interval:\n");
+        LogKit::LogFormatted(LogKit::LOW,"  Interval thickness    avg / min / max    : %6.1f /%6.1f /%6.1f\n", 
                        timeSimbox->getlz()*timeSimbox->getAvgRelThick(),
                        timeSimbox->getlz()*timeSimbox->getMinRelThick(),
                        timeSimbox->getlz());
-      LogKit::LogFormatted(LogKit::LOW,"  Sampling density      avg / min / max    : %6.2f /%6.2f /%6.2f\n", 
+        LogKit::LogFormatted(LogKit::LOW,"  Sampling density      avg / min / max    : %6.2f /%6.2f /%6.2f\n", 
                        timeSimbox->getdz()*timeSimbox->getAvgRelThick(),
                        timeSimbox->getdz(),
                        timeSimbox->getdz()*timeSimbox->getMinRelThick());
+      }
     }
     else
     {
@@ -911,7 +924,7 @@ Model::completeTimeCutSimbox(Simbox        *& timeCutSimbox,
       int error = timeCutSimbox->setArea(areaParams, errText);
       if(error==1)
       {
-        sprintf(errText," Problem with definition of depth simbox.",errText);
+        sprintf(errText,"%s Problem with definition of time cut simbox.",errText);
         failed = true;
       }
 
@@ -952,7 +965,7 @@ Model::makeDepthSimbox(Simbox       *& depthSimbox,
         depthSimbox->setArea(areaParams, errText);
         if(error ==1)
         {
-          sprintf(errText,"Problems wwith definition of depth simbox.",errText);
+          sprintf(errText," %s Problems wwith definition of depth simbox.",errText);
           failed = 1;
         }
         else

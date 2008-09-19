@@ -418,33 +418,34 @@ Simbox::checkError(double lzLimit, char * errText)
 int
 Simbox::setArea(const SegyGeometry * geometry, char * errText)
 {
- double x0  = geometry->getX0();
+  double x0  = geometry->getX0();
   double y0  = geometry->getY0();
   double lx  = geometry->getlx();
   double ly  = geometry->getly();
   double rot = geometry->getAngle();
   double dx  = geometry->getDx();
   double dy  = geometry->getDy();
-  if(status_ !=EMPTY)
-  {
-    if(GetTopSurface().EnclosesRectangle(x0,x0+lx,y0,y0+ly)==false)
-    {
-      status_ = INTERNALERROR;
-      sprintf(errText, "Top surface does not cover the wanted geometry\n"); 
-      return 1;
-    }
-    if(GetBotSurface().EnclosesRectangle(x0,x0+lx,y0,y0+ly)==false)
-    {
-      status_ = INTERNALERROR;
-      sprintf(errText, "Base surface does not cover the wanted geometry\n"); 
-      return 1;
-    }
-
-  }
+ 
 
   ILxflag_ = geometry->getILxflag();
-  SetDimensions(x0,y0,lx,ly);
-  SetAngle(rot);
+  try
+  {
+    SetDimensions(x0,y0,lx,ly);
+  }
+  catch (NRLib2::Exception & e)
+  {
+    sprintf(errText,"%s%s",errText,e.what());
+    return 1;
+  }
+  try
+  {
+    SetAngle(rot);
+  }
+  catch (NRLib2::Exception & e)
+  {
+    sprintf(errText,"%s%s",errText,e.what());
+    return 1;
+  }
   cosrot_ = cos(rot);
   sinrot_ = sin(rot);
   dx_     = dx;
