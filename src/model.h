@@ -94,14 +94,16 @@ private:
                                      Simbox        * timeSimbox,
                                      ModelSettings * modelSettings, 
                                      ModelFile     * modelFile, 
-                                     char          * errText);
+                                     char          * errText,
+                                     bool          & failed);
   void             processPriorCorrelations(Corr         *& priorCorrelations,
                                             Background    * background,
                                             WellData     ** wells,
                                             Simbox        * timeSimbox,
                                             ModelSettings * modelSettings, 
                                             ModelFile     * modelFile,
-                                            char          * errText);
+                                            char          * errText,
+                                            bool          & failed);
   void             processReflectionMatrix(float       **& reflectionMatrix,
                                            Background    * background,
                                            ModelSettings * modelSettings, 
@@ -125,11 +127,12 @@ private:
                                           RandomGen     * randomGen,
                                           int             nz,
                                           ModelSettings * modelSettings);
-  void             processVelocity(FFTGrid       **& velocity,
-                                   Simbox        *timeSimbox,
+  void             processVelocity(FFTGrid     **& velocity,
+                                   Simbox        * timeSimbox,
                                    ModelSettings * modelSettings, 
                                    ModelFile     * modelFile, 
-                                   char          * errText);
+                                   char          * errText,
+                                   bool          & failed);
   void             setSimboxSurfaces(Simbox    *& simbox, 
                                      char      ** surfFile, 
                                      bool         parallelSurfaces, 
@@ -184,12 +187,14 @@ private:
   void             checkAvailableMemory(Simbox        * timeSimbox,
                                         ModelSettings * modelSettings);
   void             checkFaciesNames(WellData      ** wells,
-                                    ModelSettings *& modelSettings);
+                                    ModelSettings *& modelSettings,
+                                    char           * tmpErrText,
+                                    int            & error);
   void             printSettings(ModelSettings * modelSettings,
                                  ModelFile     * modelFile,
                                  bool            hasSignalToNoiseRatio);
-  int              getWaveletFileFormat(char * fileName);
-
+  int              getWaveletFileFormat(char * fileName, 
+                                        char * errText);
   //Compute correlation gradient in terms of i,j and k in grid.
   double *         findPlane(Surface * surf); //Finds plane l2-closest to surface.             
   //Create planar surface with same extent as template, p[0]+p[1]*x+p[2]*y

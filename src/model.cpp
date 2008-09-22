@@ -33,39 +33,44 @@
 
 Model::Model(char * fileName)
 {
-  modelSettings_         = NULL;
-  timeCutSimbox_         = NULL;
-  timeSimbox_            = new Simbox();
-  depthSimbox_           = NULL;
-  wells_                 = NULL;
-  background_            = NULL;
-  priorCorrelations_     = NULL;
-  priorFacies_           = NULL;
-  seisCube_              = NULL;
-  wavelet_               = NULL;
-  shiftGrids_            = NULL;
-  gainGrids_             = NULL;
-  waveletEstimInterval_  = NULL;
-  faciesEstimInterval_   = NULL; 
-  correlationDirection_  = NULL;     
-  reflectionMatrix_      = NULL;
-  randomGen_             = NULL;
-  failed_                = false;
-  gradX_                 = 0;
-  gradY_                 = 0;
+  modelSettings_          = NULL;
+  timeCutSimbox_          = NULL;
+  timeSimbox_             = new Simbox();
+  depthSimbox_            = NULL;
+  wells_                  = NULL;
+  background_             = NULL;
+  priorCorrelations_      = NULL;
+  priorFacies_            = NULL;
+  seisCube_               = NULL;
+  wavelet_                = NULL;
+  shiftGrids_             = NULL;
+  gainGrids_              = NULL;
+  waveletEstimInterval_   = NULL;
+  faciesEstimInterval_    = NULL; 
+  correlationDirection_   = NULL;     
+  reflectionMatrix_       = NULL;
+  randomGen_              = NULL;
+  failed_                 = false;
+  gradX_                  = 0;
+  gradY_                  = 0;
  
-  timeDepthMapping_               = NULL;
-  timeCutMapping_        = NULL;
-  velocityFromInversion_ = false;
-  ModelFile * modelFile = new ModelFile(fileName);
+  timeDepthMapping_       = NULL;
+  timeCutMapping_         = NULL;
+  velocityFromInversion_  = false;
 
-  bool failedModelFile = false;
-  bool failedWavelet   = false;
-  bool failedSeismic   = false;
-  bool failedSimbox    = false;
-  bool failedWells     = false;
-  bool failedReflMat   = false;
-  bool failedExtraSurf = false;
+  bool failedModelFile    = false;
+  bool failedWavelet      = false;
+  bool failedSeismic      = false;
+  bool failedSimbox       = false;
+  bool failedWells        = false;
+  bool failedReflMat      = false;
+  bool failedExtraSurf    = false;
+  bool failedBackground   = false;
+  bool failedPriorCorr    = false;
+  bool failedVelocity     = false;
+  bool failedLoadingModel = false;
+
+  ModelFile * modelFile   = new ModelFile(fileName);
 
   if (modelFile->getParsingFailed()) {
     failedModelFile = true;
@@ -112,27 +117,36 @@ Model::Model(char * fileName)
 
     if(!failedSimbox)
     { 
+      //
+      // FORWARD MODELLING
+      //
       if (modelSettings_->getGenerateSeismic() == true)
       {
         processBackground(background_, wells_, timeSimbox_, 
                           modelSettings_, modelFile,
-                          errText);
-        processReflectionMatrix(reflectionMatrix_, background_, 
-                                modelSettings_, modelFile, 
-                                errText, failedReflMat);  
-        if (!failedReflMat)
+                          errText, failedBackground);
+        if (!failedBackground)
         {
-          processWavelets(wavelet_, seisCube_, wells_, reflectionMatrix_,
-                          timeSimbox_, shiftGrids_, gainGrids_,
-                          modelSettings_, modelFile, hasSignalToNoiseRatio_,
-                          errText, failedWavelet);
-        }              
+          processReflectionMatrix(reflectionMatrix_, background_, 
+                                  modelSettings_, modelFile, 
+                                  errText, failedReflMat);  
+          if (!failedReflMat)
+          {
+            processWavelets(wavelet_, seisCube_, wells_, reflectionMatrix_,
+                            timeSimbox_, shiftGrids_, gainGrids_,
+                            modelSettings_, modelFile, hasSignalToNoiseRatio_,
+                            errText, failedWavelet);
+          }              
+        }
         if(modelSettings_->getFormatFlag() == 0)
           modelSettings_->setFormatFlag(1);  //Default, but not initialized due to possible double output.
         background_->getAlpha()->setOutputFormat(modelSettings_->getFormatFlag()); //static, controls all grids.
       }
       else
       {
+        //
+        // INVERSION
+        //
         processSeismic(seisCube_, timeSimbox_, 
                        modelSettings_, modelFile, 
                        errText, failedSeismic);
@@ -149,12 +163,12 @@ Model::Model(char * fileName)
             velocity[0] = NULL;
             if(timeCutSimbox_!=NULL)
               processVelocity(velocity,timeCutSimbox_,
-                         modelSettings_, modelFile, 
-                         errText);
+                              modelSettings_, modelFile, 
+                              errText, failedVelocity);
             else
               processVelocity(velocity,timeSimbox_,
-                          modelSettings_, modelFile, 
-                          errText);
+                              modelSettings_, modelFile, 
+                              errText, failedVelocity);
  
             makeDepthSimbox(depthSimbox_, modelSettings_, modelFile, // Creates depth simbox if needed.
                          errText, failedSimbox, velocity[0]);
@@ -179,19 +193,23 @@ Model::Model(char * fileName)
           {
             processBackground(background_, wells_, timeSimbox_, 
                               modelSettings_, modelFile,
-                              errText);
-            processPriorCorrelations(priorCorrelations_, background_, wells_, timeSimbox_,
-                                     modelSettings_,modelFile,
-                                     errText);
-            processReflectionMatrix(reflectionMatrix_, background_, 
-                                    modelSettings_, modelFile, 
-                                    errText, failedReflMat);
-            if (!failedReflMat)
+                              errText, failedBackground);
+
+            if (!failedBackground)
             {
-              processWavelets(wavelet_, seisCube_, wells_, reflectionMatrix_,
-                              timeSimbox_, shiftGrids_, gainGrids_,
-                              modelSettings_, modelFile, hasSignalToNoiseRatio_, 
-                              errText, failedWavelet);
+              processPriorCorrelations(priorCorrelations_, background_, wells_, timeSimbox_,
+                                       modelSettings_,modelFile,
+                                       errText, failedPriorCorr);
+              processReflectionMatrix(reflectionMatrix_, background_, 
+                                      modelSettings_, modelFile, 
+                                      errText, failedReflMat);
+              if (!failedReflMat)
+              {
+                processWavelets(wavelet_, seisCube_, wells_, reflectionMatrix_,
+                                timeSimbox_, shiftGrids_, gainGrids_,
+                                modelSettings_, modelFile, hasSignalToNoiseRatio_, 
+                                errText, failedWavelet);
+              }
             }
           }
         }
@@ -207,17 +225,19 @@ Model::Model(char * fileName)
                           faciesEstimInterval_,
                           timeSimbox_, modelFile,
                           errText, failedExtraSurf);
-      
       }
     }
-    if (failedReflMat || failedSimbox || failedSeismic || failedWavelet || failedWells) 
+
+    failedLoadingModel = failedSimbox  || failedSeismic  || failedPriorCorr  ||
+                         failedWells   || failedReflMat  || failedBackground ||
+                         failedWavelet || failedVelocity || failedExtraSurf;
+
+    if (failedLoadingModel) 
       LogKit::LogFormatted(LogKit::ERROR,"\nERROR(s) while loading model. \n %s", errText);
   }
-  failed_ = failedModelFile || failedReflMat || failedSimbox || failedSeismic || failedWavelet || failedWells;
+  failed_ = failedModelFile || failedLoadingModel;
   
   delete modelFile;
- 
-  
 }
 
 
@@ -324,9 +344,8 @@ Model::readMatrix(char * fileName, int n1, int n2, const char * readReason, char
         tmpRes[index] = float(atof(storage));
       }
       else {
+        sprintf(errText,"Found '%s' in file %s, expected a number.\n", storage, fileName);
         error = 1;
-        sprintf(errText,"Found '%s' in file %s, expected a number.\n",
-          storage, fileName);
       }
     }
     index++;
@@ -473,8 +492,8 @@ Model::readSegyFiles(char          ** fNames,
             sbError = timeSimbox->setArea(geometry, tmpErr);
             if(sbError==1)
             {
-              error++;
               sprintf(errText,"%s Problem with defining time simbox.",tmpErr);
+              error++;
             }
             else
             {
@@ -490,24 +509,25 @@ Model::readSegyFiles(char          ** fNames,
               }
               else if(sbError == Simbox::INTERNALERROR)
               {
-                error++;
                 sprintf(errText,"%s%s", errText, tmpErr);
+                error++;
               }
             }
           }
           else
           {
-            sbError = timeSimbox->insideRectangle(geometry->getX0(), geometry->getY0(), geometry->getAngle(), geometry->getlx(), geometry->getly());
+            sbError = timeSimbox->insideRectangle(geometry->getX0(), 
+                                                  geometry->getY0(), 
+                                                  geometry->getAngle(), 
+                                                  geometry->getlx(), 
+                                                  geometry->getly());
             if(sbError == 1)
             {
-              sprintf(tmpErr,"Specified area in command AREA is larger than the seismic data from cube %s \n",fNames[i]);
+              sprintf(errText,"%sSpecified area in command AREA is larger than the seismic data from volume %s\n",
+                      errText,fNames[i]);
               error++;
-              sprintf(errText,"%s%s", errText, tmpErr);
             }
           }
-
-
-
           if(sbError == 0)
           {
             if(modelSettings->getFileGrid() == 1)
@@ -1188,7 +1208,7 @@ Model::processWells(WellData     **& wells,
 
   if (error == 0) {
     if(modelFile->getFaciesLogGiven()) { 
-      checkFaciesNames(wells, modelSettings);
+      checkFaciesNames(wells, modelSettings, tmpErrText, error);
       nFacies = modelSettings->getNumberOfFacies(); // nFacies is set in checkFaciesNames()
     }
     LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************");
@@ -1402,7 +1422,9 @@ Model::processWells(WellData     **& wells,
 }
 
 void Model::checkFaciesNames(WellData      ** wells,
-                             ModelSettings *& modelSettings)
+                             ModelSettings *& modelSettings,
+                             char           * tmpErrText,
+                             int            & error)
 {
   int min,max;
   int globalmin = 0;
@@ -1432,7 +1454,7 @@ void Model::checkFaciesNames(WellData      ** wells,
   char ** names   = new char * [nnames];
 
   for (int i =0 ; i < nnames ; i++) {
-    names[i]   = NULL;
+    names[i] = NULL;
   }
   
   for(int w=0 ; w<modelSettings->getNumberOfWells() ; w++)
@@ -1449,8 +1471,8 @@ void Model::checkFaciesNames(WellData      ** wells,
         }
         else if(strcmp(names[fnr],name) != 0)
         {
-          LogKit::LogFormatted(LogKit::LOW,"Error in facies logs. Facies names and numbers are not uniquely defined.\n");
-          exit(1);
+          sprintf(tmpErrText,"Problem with facies logs. Facies names and numbers are not uniquely defined.\n");
+          error++;
         }
       }
     }
@@ -1491,7 +1513,8 @@ Model::processBackground(Background   *& background,
                          Simbox        * timeSimbox,
                          ModelSettings * modelSettings, 
                          ModelFile     * modelFile,
-                         char          * errText)
+                         char          * errText,
+                         bool          & failed)
 {
   if (modelSettings->getDoInversion() || 
       modelSettings->getGenerateSeismic() || 
@@ -1513,8 +1536,8 @@ Model::processBackground(Background   *& background,
       
       if(modelSettings->getBackgroundVario() == NULL)
       {
-        printf("ERROR: Did not manage to make variogram for background modelling\n");
-        exit(1);
+        sprintf(errText,"%sDid not manage to make variogram for background modelling\n",errText);
+        failed = true;
       }
       for (int i=0 ; i<3 ; i++)
       {
@@ -1535,32 +1558,31 @@ Model::processBackground(Background   *& background,
         {
           if(backFile[i] != NULL)
           {
-            sprintf(errText,"%c",'\0');
+            char tmpErrText[MAX_STRING];
+            sprintf(tmpErrText,"%c",'\0');
             int readerror = 0;
             if(findFileType(backFile[i]) == SEGYFILE)
               readerror = readSegyFiles(backFile, 3,backModel,
                                         timeSimbox, modelSettings,
-                                        errText, i);
+                                        tmpErrText, i);
             else
               readerror = readStormFile(backFile[i], backModel[i], parName[i], 
                                         timeSimbox, modelSettings,
-                                        errText);
+                                        tmpErrText);
             backModel[i]->logTransf();
             
-              if(readerror != 0)
-              {
-                LogKit::LogFormatted(LogKit::LOW,"ERROR: Reading of file \'%s\' for parameter \'%s\' failed\n",
-                                     backFile[i],parName[i]);
-                printf("       %s\n",errText);
-                exit(1);
-              }
+            if(readerror != 0)
+            {
+              sprintf(errText,"%sReading of file \'%s\' for parameter \'%s\' failed\n",
+                      errText,backFile[i],parName[i]);
+              failed = true;
+            }
           }
-         
           else
           {
-            LogKit::LogFormatted(LogKit::LOW,"ERROR: Reading of file for parameter \'%s\' failed. File pointer is NULL\n",
-                                 parName[i]);
-            exit(1);
+            sprintf(errText,"%sReading of file for parameter \'%s\' failed. File pointer is NULL\n",
+                    errText,parName[i]);
+            failed = true;
           }
         }
         else if(constBack[i] > 0)
@@ -1574,8 +1596,9 @@ Model::processBackground(Background   *& background,
         }
         else
         {
-          LogKit::LogFormatted(LogKit::LOW,"ERROR: Trying to set background model to 0 for parameter %s\n",parName[i]);
-          exit(1);
+          sprintf(errText,"%sTrying to set background model to 0 for parameter %s\n\n",
+                  errText,parName[i]);
+          failed = true;
         }
       }
       background = new Background(backModel);
@@ -1592,7 +1615,8 @@ Model::processPriorCorrelations(Corr         *& priorCorrelations,
                                 Simbox        * timeSimbox,
                                 ModelSettings * modelSettings, 
                                 ModelFile     * modelFile,
-                                char          * errText)
+                                char          * errText,
+                                bool          & failed)
 {
   bool printResult = (modelSettings->getOutputFlag() & (ModelSettings::PRIORCORRELATIONS + ModelSettings::CORRELATION)) > 0;
   if (modelSettings->getDoInversion() || printResult)
@@ -1611,12 +1635,14 @@ Model::processPriorCorrelations(Corr         *& priorCorrelations,
     char   * paramCorrFile = modelFile->getParamCorrFile();
     if(paramCorrFile != NULL) 
     {
-      paramCorr = readMatrix(paramCorrFile, 3, 3, "parameter correlation", errText);
+      char tmpErrText[MAX_STRING];
+      sprintf(tmpErrText,"%c",'\0');
+      paramCorr = readMatrix(paramCorrFile, 3, 3, "parameter correlation", tmpErrText);
       if(paramCorrFile == NULL) 
       {
-        LogKit::LogFormatted(LogKit::LOW,"ERROR: Reading of file \'%s\' for parameter correlation matrix failed\n",paramCorrFile);
-        LogKit::LogFormatted(LogKit::LOW,"       %s\n",errText);
-        exit(1);
+        sprintf(errText,"%sReading of file \'%s\' for parameter correlation matrix failed\n%s\n",
+                errText,paramCorrFile,tmpErrText);
+        failed = true;
       }
       LogKit::LogFormatted(LogKit::LOW,"Parameter correlation read from file.\n\n");
     }
@@ -1647,8 +1673,8 @@ Model::processPriorCorrelations(Corr         *& priorCorrelations,
 
     if(priorCorrelations == NULL)
     {
-      LogKit::LogFormatted(LogKit::LOW,"\nErrors detected when estimating prior covariance.\nAborting\n");
-      exit(1);
+      sprintf(errText,"%sCould not construct prior covariance. Unknown why...\n",errText);
+      failed = true;
     }
 
     //
@@ -1887,7 +1913,7 @@ Model::processWavelets(Wavelet     **& wavelet,
       }
       else
       {
-        int fileFormat = getWaveletFileFormat(waveletFile[i]);
+        int fileFormat = getWaveletFileFormat(waveletFile[i],errText);
         if(fileFormat < 0)
         {
           sprintf(errText, "%sERROR: Unknown file format of file  %s.\n", errText, waveletFile[i]);
@@ -1961,9 +1987,9 @@ Model::processWavelets(Wavelet     **& wavelet,
 }
 
 int
-Model::getWaveletFileFormat(char * fileName)
+Model::getWaveletFileFormat(char * fileName, char * errText)
 {
-  int fileformat=-1;
+  int fileformat = -1;
   char* dummyStr = new char[MAX_STRING];
   // test for old file format
   FILE* file = fopen(fileName,"r");
@@ -1971,8 +1997,8 @@ Model::getWaveletFileFormat(char * fileName)
   {
     if(fscanf(file,"%s",dummyStr) == EOF)
     {
-      LogKit::LogFormatted(LogKit::LOW,"ERROR: End of file %s is premature\n",fileName);
-      exit(1);
+      sprintf(errText,"%sEnd of wavelet file %s is premature\n",errText,fileName);
+      return 0;
     } // endif
   }  // end for i
   fclose(file);
@@ -1988,8 +2014,8 @@ Model::getWaveletFileFormat(char * fileName)
     file = fopen(fileName, "r");
     if (fscanf(file, "%s", dummyStr) == EOF)
     {
-      LogKit::LogFormatted(LogKit::LOW,"ERROR: End of file %s is premature\n",fileName);
-      exit(1);
+      sprintf(errText,"%sEnd of wavelet file %s is premature\n",errText,fileName);
+      return 0;
     }
     strcpy(targetString, "NORSAR");
     readToEOL(file);
@@ -2007,8 +2033,8 @@ Model::getWaveletFileFormat(char * fileName)
         if(fscanf(file,"%s",dummyStr) == EOF)
         {
           readToEOL(file);
-          LogKit::LogFormatted(LogKit::LOW,"ERROR: End of file %s is premature\n",fileName);
-          exit(1);  
+          sprintf(errText,"%sEnd of wavelet file %s is premature\n",errText,fileName);
+          return 0;
         } // endif
         else
         {
@@ -2026,7 +2052,6 @@ Model::getWaveletFileFormat(char * fileName)
       }
     }
   }
-
   delete[] dummyStr;
   delete [] targetString;
   return fileformat;
@@ -2678,7 +2703,8 @@ Model::processVelocity(FFTGrid     **& velocity,
                        Simbox        * timeSimbox,
                        ModelSettings * modelSettings, 
                        ModelFile     * modelFile, 
-                       char          * errText)
+                       char          * errText,
+                       bool          & failed)
 {
   if(modelFile->getDoDepthConversion() == true)
   {
@@ -2688,27 +2714,25 @@ Model::processVelocity(FFTGrid     **& velocity,
     if(strcmp(velocityField[0],"FROM_INVERSION")==0)
       velocityFromInversion_ = true;
     const char * parName[]={"Velocity"};
-    if(velocityField[0] != NULL && strcmp(velocityField[0],"CONSTANT")!=0 && strcmp(velocityField[0],"FROM_INVERSION")!=0)
+    if(velocityField[0] != NULL && strcmp(velocityField[0],"CONSTANT") != 0 && strcmp(velocityField[0],"FROM_INVERSION") != 0)
     {
+      char tmpErrText[MAX_STRING];
+      sprintf(tmpErrText,"%c",'\0');
       int readerror = 0;
       if(findFileType(velocityField[0]) == SEGYFILE)
         readerror = readSegyFiles(velocityField, 1,velocity,
                                   timeSimbox, modelSettings,
-                                  errText,0);
+                                  tmpErrText,0);
       else
         readerror = readStormFile(velocityField[0], velocity[0], parName[0], 
                                   timeSimbox, modelSettings,
-                                  errText);
+                                  tmpErrText);
       if(readerror != 0)
       {
-
-        LogKit::LogFormatted(LogKit::LOW,"ERROR: Reading of file \'%s\' for parameter \'%s\' failed\n",
-                             velocityField,parName[0]);
-        printf("       %s\n",errText);
-        exit(1);
-
+        sprintf(errText,"%sReading of file \'%s\' for parameter \'%s\' failed\n%s\n", 
+                errText,velocityField[0],parName[0],tmpErrText);
+        failed = true;
       }
-    
     }
     else
       velocity[0] = NULL;
@@ -2735,7 +2759,4 @@ Model::makeTimeCutMapping(Simbox * timeCutSimbox)
         (*timeCutMapping_)(i,j,k) = static_cast<float> (timeCutSimbox->getTop(x,y)+k*deltaz);
     }
   }
-
-
-
 }
