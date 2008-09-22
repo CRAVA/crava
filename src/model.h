@@ -126,10 +126,10 @@ private:
                                           int             nz,
                                           ModelSettings * modelSettings);
   void             processVelocity(FFTGrid       **& velocity,
-                       Simbox        *timeSimbox,
-                       ModelSettings * modelSettings, 
-                       ModelFile     * modelFile, 
-                       char          * errText);
+                                   Simbox        *timeSimbox,
+                                   ModelSettings * modelSettings, 
+                                   ModelFile     * modelFile, 
+                                   char          * errText);
   void             setSimboxSurfaces(Simbox    *& simbox, 
                                      char      ** surfFile, 
                                      bool         parallelSurfaces, 
@@ -167,7 +167,10 @@ private:
                                   float px);
   void             loadExtraSurfaces(Surface  **& waveletEstimInterval,
                                      Surface  **& faciesEstimInterval,
-                                     ModelFile  * modelFile);
+                                     Simbox     * timeSimbox,
+                                     ModelFile  * modelFile,
+                                     char       * errText,
+                                     bool       & failed);
   float         ** readMatrix(char       * fileName, 
                               int          n1, 
                               int          n2, 

@@ -65,6 +65,7 @@ Model::Model(char * fileName)
   bool failedSimbox    = false;
   bool failedWells     = false;
   bool failedReflMat   = false;
+  bool failedExtraSurf = false;
 
   if (modelFile->getParsingFailed()) {
     failedModelFile = true;
@@ -202,9 +203,10 @@ Model::Model(char * fileName)
                                  modelFile->getTimeNz(),
                                  modelSettings_);
         }
-        loadExtraSurfaces(waveletEstimInterval_,
+        loadExtraSurfaces(waveletEstimInterval_, 
                           faciesEstimInterval_,
-                          modelFile);
+                          timeSimbox_, modelFile,
+                          errText, failedExtraSurf);
       
       }
     }
@@ -236,7 +238,26 @@ Model::~Model(void)
   if (priorCorrelations_ != NULL)
     delete priorCorrelations_;
 
-  if (wavelet_ != NULL) {
+  if (waveletEstimInterval_ != NULL) 
+  {
+    if (waveletEstimInterval_[0] != NULL)
+      delete waveletEstimInterval_[0];
+    if (waveletEstimInterval_[1] != NULL)
+      delete waveletEstimInterval_[1];
+    delete [] waveletEstimInterval_;
+  }
+
+  if (faciesEstimInterval_ != NULL) 
+  {
+    if (faciesEstimInterval_[0] != NULL)
+      delete faciesEstimInterval_[0];
+    if (faciesEstimInterval_[1] != NULL)
+      delete faciesEstimInterval_[1];
+    delete [] faciesEstimInterval_;
+  }
+
+  if (wavelet_ != NULL) 
+  {
     for(int i=0;i<modelSettings_->getNumberOfAngles();i++)
       if(wavelet_[i] != NULL)
         delete wavelet_[i];
@@ -714,7 +735,6 @@ Model::setSimboxSurfaces(Simbox *& simbox,
 
   if(error == 0)
   {
-   
     if(parallelSurfaces) //Only one reference surface
     {
       simbox->setDepth(z0Grid, dTop, lz, dz);
@@ -2148,53 +2168,86 @@ void Model::processPriorFaciesProb(float         *& priorFacies,
 void
 Model::loadExtraSurfaces(Surface  **& waveletEstimInterval,
                          Surface  **& faciesEstimInterval,
-                         ModelFile  * modelFile)
+                         Simbox     * timeSimbox,
+                         ModelFile  * modelFile,
+                         char       * errText,
+                         bool       & failed)
 {
-  bool error = false;
+  const double x0 = timeSimbox->getx0();
+  const double y0 = timeSimbox->gety0();
+  const double lx = timeSimbox->getlx();
+  const double ly = timeSimbox->getly();
+  const int    nx = timeSimbox->getnx();
+  const int    ny = timeSimbox->getny();
   //
   // Get wavelet estimation interval
   //
   if (modelFile->getWaveletEstIntFile() != NULL) {  
+    waveletEstimInterval = new Surface*[2];
+
+    char * topName  = modelFile->getWaveletEstIntFile()[0]; 
+    char * baseName = modelFile->getWaveletEstIntFile()[1]; 
+
     try {
-      Surface tmpSurf = NRLib2::ReadStormSurf(modelFile->getWaveletEstIntFile()[0]);
-      waveletEstimInterval[0] = new Surface(tmpSurf);
+      if (isNumber(topName)) 
+        waveletEstimInterval[0] = new Surface(x0,y0,lx,ly,nx,ny,atof(topName));
+      else { 
+        Surface tmpSurf = NRLib2::ReadStormSurf(topName);
+        waveletEstimInterval[0] = new Surface(tmpSurf);
+      }
     }
     catch (NRLib2::Exception & e) {
-      LogKit::LogFormatted(LogKit::ERROR,e.what());
-      error = true;
+      sprintf(errText, "%s%s", errText,e.what());
+      failed = true;
     }
+    
     try {
-      Surface tmpSurf = NRLib2::ReadStormSurf(modelFile->getWaveletEstIntFile()[1]);
-      waveletEstimInterval[1] = new Surface(tmpSurf);
+      if (isNumber(baseName)) 
+        waveletEstimInterval[1] = new Surface(x0,y0,lx,ly,nx,ny,atof(baseName));
+      else { 
+        Surface tmpSurf = NRLib2::ReadStormSurf(baseName);
+        waveletEstimInterval[1] = new Surface(tmpSurf);
+      }
     }
     catch (NRLib2::Exception & e) {
-      LogKit::LogFormatted(LogKit::ERROR,e.what());
-      error = true;
+      sprintf(errText, "%s%s", errText,e.what());
+      failed = true;
     }
   }
   //
   // Get facies estimation interval
   //
   if (modelFile->getFaciesEstIntFile() != NULL) {  
+
+    char * topName  = modelFile->getFaciesEstIntFile()[0]; 
+    char * baseName = modelFile->getFaciesEstIntFile()[1]; 
+
     try {
-      Surface tmpSurf = NRLib2::ReadStormSurf(modelFile->getFaciesEstIntFile()[0]);
-      faciesEstimInterval[0] = new Surface(tmpSurf);
+      if (isNumber(topName)) 
+        faciesEstimInterval[0] = new Surface(x0,y0,lx,ly,nx,ny,atof(topName));
+      else { 
+        Surface tmpSurf = NRLib2::ReadStormSurf(topName);
+        faciesEstimInterval[0] = new Surface(tmpSurf);
+      }
     }
     catch (NRLib2::Exception & e) {
-      LogKit::LogFormatted(LogKit::ERROR,e.what());
-      error = true;
+      sprintf(errText, "%s%s", errText,e.what());
+      failed = true;
     }
+
     try {
-      Surface tmpSurf = NRLib2::ReadStormSurf(modelFile->getFaciesEstIntFile()[1]);
-      faciesEstimInterval[1] = new Surface(tmpSurf);
+      if (isNumber(baseName)) 
+        faciesEstimInterval[1] = new Surface(x0,y0,lx,ly,nx,ny,atof(baseName));
+      else { 
+        Surface tmpSurf = NRLib2::ReadStormSurf(baseName);
+        faciesEstimInterval[1] = new Surface(tmpSurf);
+      }
     }
     catch (NRLib2::Exception & e) {
-      LogKit::LogFormatted(LogKit::ERROR,e.what());
-      error = true;
+      sprintf(errText, "%s%s", errText,e.what());
+      failed = true;
     }
   }
-  if (error)
-    LogKit::LogFormatted(LogKit::ERROR,"ERROR loading on or more surfaces\nAborting\n");
 }
 
 // NBNB The following routine is stupid, and assumes SEGY if file 
@@ -2218,17 +2271,6 @@ Model::printSettings(ModelSettings * modelSettings,
                      ModelFile     * modelFile,
                      bool            hasSignalToNoiseRatio)
 {
-  if (modelFile->getCorrDirFile() != NULL)
-    LogKit::LogFormatted(LogKit::LOW,"  Correlation direction file: %10s\n",modelFile->getCorrDirFile());
-  if (modelFile->getWaveletEstIntFile() != NULL) {
-    LogKit::LogFormatted(LogKit::LOW,"  Wavelet estimation file 1:  %10s\n",modelFile->getWaveletEstIntFile()[0]);
-    LogKit::LogFormatted(LogKit::LOW,"  Wavelet estimation file 2:  %10s\n",modelFile->getWaveletEstIntFile()[1]);
-  }
-  if (modelFile->getFaciesEstIntFile() != NULL) {
-    LogKit::LogFormatted(LogKit::LOW,"  Facies estimation file 1:   %10s\n",modelFile->getFaciesEstIntFile()[0]);
-    LogKit::LogFormatted(LogKit::LOW,"  Facies estimation file 2:   %10s\n",modelFile->getFaciesEstIntFile()[1]);
-  }
-
   LogKit::LogFormatted(LogKit::LOW,"\nGeneral settings:\n");
   int logLevel = modelSettings->getLogLevel();
   std::string logText("*NONE*");
@@ -2384,6 +2426,9 @@ Model::printSettings(ModelSettings * modelSettings,
     LogKit::LogFormatted(LogKit::LOW,"  Number of layers                         : %10d\n",   modelFile->getTimeNz());
     LogKit::LogFormatted(LogKit::LOW,"  Minimum allowed value for lmin/lmax      : %10.2f\n", modelSettings->getLzLimit());
   }
+  if (modelFile->getCorrDirFile() != NULL)
+    LogKit::LogFormatted(LogKit::LOW,"\n  Correlation direction                    : %10s\n",   modelFile->getCorrDirFile());
+
   if (modelFile->getDoDepthConversion())
   {
     LogKit::LogFormatted(LogKit::LOW,"\nDepth conversion:\n");
@@ -2395,8 +2440,39 @@ Model::printSettings(ModelSettings * modelSettings,
       LogKit::LogFormatted(LogKit::LOW,"  Base depth surface                       : %s\n", modelFile->getDepthSurfFile()[1]);
     else
       LogKit::LogFormatted(LogKit::LOW,"  Base depth surface                       : %s\n", "Not given");
-    LogKit::LogFormatted(LogKit::LOW,"  Velocity field:                          : %s\n", modelFile->getVelocityField());
+    LogKit::LogFormatted(LogKit::LOW,"  Velocity field                           : %s\n", modelFile->getVelocityField());
   }
+
+  if (modelFile->getWaveletEstIntFile() != NULL) {
+    char * topName  = modelFile->getWaveletEstIntFile()[0]; 
+    char * baseName = modelFile->getWaveletEstIntFile()[1]; 
+    LogKit::LogFormatted(LogKit::LOW,"\nWavelet estimation interval:\n");
+    if (isNumber(topName))
+      LogKit::LogFormatted(LogKit::LOW,"  Start time                               : %10.2f\n",atof(topName));
+    else
+      LogKit::LogFormatted(LogKit::LOW,"  Start time                               : %10s\n",topName);
+    
+    if (isNumber(baseName))
+      LogKit::LogFormatted(LogKit::LOW,"  Stop time                                : %10.2f\n",atof(baseName));
+    else
+      LogKit::LogFormatted(LogKit::LOW,"  Stop time                                : %10s\n",baseName);
+  }
+
+  if (modelFile->getFaciesEstIntFile() != NULL) {
+    char * topName  = modelFile->getFaciesEstIntFile()[0]; 
+    char * baseName = modelFile->getFaciesEstIntFile()[1]; 
+    LogKit::LogFormatted(LogKit::LOW,"\nFacies estimation interval:\n");
+    if (isNumber(topName))
+      LogKit::LogFormatted(LogKit::LOW,"  Start time                               : %10.2f\n",atof(topName));
+    else
+      LogKit::LogFormatted(LogKit::LOW,"  Start time                               : %10s\n",topName);
+    
+    if (isNumber(baseName))
+      LogKit::LogFormatted(LogKit::LOW,"  Stop time                                : %10.2f\n",atof(baseName));
+    else
+      LogKit::LogFormatted(LogKit::LOW,"  Stop time                                : %10s\n",baseName);
+  }
+
   //
   // BACKGROUND
   //

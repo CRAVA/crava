@@ -53,13 +53,13 @@ public:
   char     * getStormHeader(int cubetype, int nx, int ny, int nz, bool flat = false, bool ascii = false) const;
   void       writeTopBotGrids(const char * topname, const char * botname);
   int        checkError(double lzLimit, char * errText);
-  int       setArea(const SegyGeometry * geometry, char * errText);
+  int        setArea(const SegyGeometry * geometry, char * errText);
   void       setSeisLines(int * lineParams);
   void       setDepth(Surface * zref, double zShift, double lz, double dz);
   void       setDepth(Surface * z0, Surface * z1, int nz);
   int        status() const {return(status_);}
   void       externalFailure() {status_ = EXTERNALERROR;}
-  void findIJFromILXL(int IL, int XL, int &i, int &j) const;
+  void       findIJFromILXL(int IL, int XL, int &i, int &j) const;
   enum       simboxstatus{BOXOK, INTERNALERROR, EXTERNALERROR, EMPTY, NOAREA, NODEPTH};
 
 private:
