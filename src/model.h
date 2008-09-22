@@ -21,7 +21,8 @@ class FFTGrid;
 class RandomGen;
 
 
-class Model{
+class Model
+{
 public:
   Model(char * fileName);
   ~Model();
@@ -48,13 +49,13 @@ public:
 
   void             getCorrGradIJ(float & corrGradI, float &corrGradJ) const;
   
-  StormContGrid  * getTimeDepthMapping()       const { return timeDepthMapping_;}
-  StormContGrid  * getTimeCutMapping()         const { return timeCutMapping_;}
+  StormContGrid  * getTimeDepthMapping()      const { return timeDepthMapping_;}
+  StormContGrid  * getTimeCutMapping()        const { return timeCutMapping_;}
   
   StormContGrid  * makeTimeDepthMapping(FFTGrid *velocity,
                                         Simbox *depthSimbox,
                                         const Simbox *timeCutSimbox);
-  bool             getVelocityFromInversion()  const { return velocityFromInversion_  ;}
+  bool             getVelocityFromInversion() const { return velocityFromInversion_  ;}
 
   enum             backFileTypes{STORMFILE = -2, SEGYFILE = -1};
 
@@ -127,7 +128,7 @@ private:
                                           RandomGen     * randomGen,
                                           int             nz,
                                           ModelSettings * modelSettings);
-  void             processVelocity(FFTGrid     **& velocity,
+  void             processVelocity(FFTGrid      *& velocity,
                                    Simbox        * timeSimbox,
                                    ModelSettings * modelSettings, 
                                    ModelFile     * modelFile, 
@@ -230,9 +231,9 @@ private:
                                            // These are only used with correaltion surfaces.
 
   bool             failed_;                // Indicates whether errors ocuured during construction. 
-  StormContGrid  *timeDepthMapping_;
-  StormContGrid  *timeCutMapping_;
-  bool            velocityFromInversion_;
+  StormContGrid  * timeDepthMapping_;
+  StormContGrid  * timeCutMapping_;
+  bool             velocityFromInversion_;
 };
 
 #endif

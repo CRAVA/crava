@@ -151,7 +151,6 @@ Model::Model(char * fileName)
                        modelSettings_, modelFile, 
                        errText, failedSeismic);
         
-        
         if(failedSeismic==false)
         {
           completeTimeCutSimbox(timeCutSimbox_, modelSettings_, errText,failedSimbox);   // Copies area to timeCutSimbox if needed. 
@@ -159,10 +158,9 @@ Model::Model(char * fileName)
           {
             if(timeCutSimbox_ !=NULL)
               makeTimeCutMapping(timeCutSimbox_);
-            FFTGrid **velocity  = new FFTGrid*[1];
-            velocity[0] = NULL;
+            FFTGrid * velocity = NULL;
             if(timeCutSimbox_!=NULL)
-              processVelocity(velocity,timeCutSimbox_,
+              processVelocity(velocity, timeCutSimbox_,
                               modelSettings_, modelFile, 
                               errText, failedVelocity);
             else
@@ -171,17 +169,16 @@ Model::Model(char * fileName)
                               errText, failedVelocity);
  
             makeDepthSimbox(depthSimbox_, modelSettings_, modelFile, // Creates depth simbox if needed.
-                         errText, failedSimbox, velocity[0]);
-            if(velocity[0]!=NULL)
+                            errText, failedSimbox, velocity);
+            if(velocity != NULL)
             {
               if(timeCutSimbox_ !=NULL )
-                timeDepthMapping_ = makeTimeDepthMapping(velocity[0], depthSimbox_, timeCutSimbox_);
+                timeDepthMapping_ = makeTimeDepthMapping(velocity, depthSimbox_, timeCutSimbox_);
               else
-                timeDepthMapping_ = makeTimeDepthMapping(velocity[0], depthSimbox_, timeSimbox_);
+                timeDepthMapping_ = makeTimeDepthMapping(velocity, depthSimbox_, timeSimbox_);
             }
-        
-          if(velocity[0] !=NULL)
-            delete velocity[0];
+            if(velocity !=NULL)
+              delete velocity;
           }
         }
         if(!(failedSeismic || failedSimbox))
@@ -1005,7 +1002,7 @@ Model::makeDepthSimbox(Simbox       *& depthSimbox,
         depthSimbox->setArea(areaParams, errText);
         if(error ==1)
         {
-          sprintf(errText," %s Problems wwith definition of depth simbox.",errText);
+          sprintf(errText," %s Problems with definition of depth simbox.",errText);
           failed = 1;
         }
         else
@@ -2699,7 +2696,7 @@ Model::makeTimeDepthMapping(FFTGrid *velocity,
 }
 
 void 
-Model::processVelocity(FFTGrid     **& velocity,
+Model::processVelocity(FFTGrid      *& velocity,
                        Simbox        * timeSimbox,
                        ModelSettings * modelSettings, 
                        ModelFile     * modelFile, 
@@ -2708,34 +2705,34 @@ Model::processVelocity(FFTGrid     **& velocity,
 {
   if(modelFile->getDoDepthConversion() == true)
   {
-    char ** velocityField = new char*[1];
-    velocityField[0] = modelFile->getVelocityField();
+    char * velocityField = modelFile->getVelocityField();
 
-    if(strcmp(velocityField[0],"FROM_INVERSION")==0)
+    if(strcmp(velocityField,"FROM_INVERSION")==0)
       velocityFromInversion_ = true;
-    const char * parName[]={"Velocity"};
-    if(velocityField[0] != NULL && strcmp(velocityField[0],"CONSTANT") != 0 && strcmp(velocityField[0],"FROM_INVERSION") != 0)
+
+    if(strcmp(velocityField,"CONSTANT") != 0 && strcmp(velocityField,"FROM_INVERSION") != 0)
     {
+      const char * parName = "Velocity";
       char tmpErrText[MAX_STRING];
       sprintf(tmpErrText,"%c",'\0');
       int readerror = 0;
-      if(findFileType(velocityField[0]) == SEGYFILE)
-        readerror = readSegyFiles(velocityField, 1,velocity,
+      if(findFileType(velocityField) == SEGYFILE)
+        readerror = readSegyFiles((&velocityField), 1,(&velocity),
                                   timeSimbox, modelSettings,
                                   tmpErrText,0);
       else
-        readerror = readStormFile(velocityField[0], velocity[0], parName[0], 
+        readerror = readStormFile(velocityField, velocity, parName, 
                                   timeSimbox, modelSettings,
                                   tmpErrText);
       if(readerror != 0)
       {
         sprintf(errText,"%sReading of file \'%s\' for parameter \'%s\' failed\n%s\n", 
-                errText,velocityField[0],parName[0],tmpErrText);
+                errText,velocityField,parName,tmpErrText);
         failed = true;
       }
     }
     else
-      velocity[0] = NULL;
+      velocity = NULL;
   }
 }
 

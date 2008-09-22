@@ -1004,6 +1004,9 @@ ModelFile::readCommandDepthConversion(char ** params, int & pos, char * errText)
 {
   doDepthConversion_ = true;
 
+  velocityField_ = new char[9];
+  sprintf(velocityField_,"CONSTANT"); // Default setting
+
   int error = 0;
   int nPar = getParNum(params, pos, error, errText, params[pos-1], 1, -1);
   if(error == 1)
@@ -1040,6 +1043,7 @@ ModelFile::readCommandDepthConversion(char ** params, int & pos, char * errText)
     switch(subCom) 
     {
     case 0:
+      delete [] velocityField_;
       velocityField_ = new char[strlen(params[pos+curPar+1])+1]; // Can be file name or command
       strcpy(velocityField_,params[pos+curPar+1]);
       uppercase(velocityField_);
