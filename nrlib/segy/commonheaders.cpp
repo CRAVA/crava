@@ -222,12 +222,12 @@ void BinaryHeader::write(std::ostream& file, SegyGeometry *geometry, double dz, 
   WriteBinaryShort(file,dummy2);
   dummy2 = 0;
   WriteBinaryShort(file, dummy2);
-  WriteBinaryShort(file, 1000*dz); // Hdt
+  WriteBinaryShort(file, short(1000*dz)); // Hdt
   WriteBinaryShort(file, dummy2);
-  WriteBinaryShort(file, nz); ///=nz Hns
+  WriteBinaryShort(file, short(nz)); ///=nz Hns
   WriteBinaryShort(file, dummy2);
-  WriteBinaryShort(file, dummy); // format
   dummy2 = 1;
+  WriteBinaryShort(file, dummy2); // format
   WriteBinaryShort(file, dummy2);
   dummy2 = 4;
   WriteBinaryShort(file, dummy2);

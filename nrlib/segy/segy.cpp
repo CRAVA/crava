@@ -1463,7 +1463,7 @@ SegyGeometry::findIJFromILXL(int IL, int XL, int &i, int &j)
 
 void SegyGeometry::writeGeometry() const
 {
-  float geoangle = -rot_*180/(M_PI);
+  double geoangle = -rot_*180/(M_PI);
 
   LogKit::LogFormatted(LogKit::LOW,"\n             X0         Y0              DeltaX       DeltaY    Angle\n");
   LogKit::LogFormatted(LogKit::LOW,"---------------------------------------------------------------------\n");
