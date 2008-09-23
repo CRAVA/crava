@@ -19,7 +19,7 @@ class Simbox;
 class WellData;
 class FFTGrid;
 class RandomGen;
-
+class GridMapping;
 
 class Model
 {
@@ -29,8 +29,8 @@ public:
 
   ModelSettings  * getModelSettings()         const { return modelSettings_          ;}
   Simbox         * getTimeSimbox()            const { return timeSimbox_             ;}
-  Simbox         * getDepthSimbox()           const { return depthSimbox_            ;}
-  Simbox         * getTimeCutSimbox()         const { return timeCutSimbox_          ;}
+  //Simbox         * getDepthSimbox()           const { return depthSimbox_            ;}
+  //Simbox         * getTimeCutSimbox()         const { return timeCutSimbox_          ;}
   WellData      ** getWells()                 const { return wells_                  ;}
   FFTGrid        * getBackAlpha()             const { return background_->getAlpha() ;}
   FFTGrid        * getBackBeta()              const { return background_->getBeta()  ;}
@@ -49,12 +49,10 @@ public:
 
   void             getCorrGradIJ(float & corrGradI, float &corrGradJ) const;
   
-  StormContGrid  * getTimeDepthMapping()      const { return timeDepthMapping_;}
-  StormContGrid  * getTimeCutMapping()        const { return timeCutMapping_;}
+  GridMapping  * getTimeDepthMapping()      const { return timeDepthMapping_;}
+  GridMapping  * getTimeCutMapping()        const { return timeCutMapping_;}
   
-  StormContGrid  * makeTimeDepthMapping(FFTGrid *velocity,
-                                        Simbox *depthSimbox,
-                                        const Simbox *timeCutSimbox);
+ 
   bool             getVelocityFromInversion() const { return velocityFromInversion_  ;}
 
   enum             backFileTypes{STORMFILE = -2, SEGYFILE = -1};
@@ -64,15 +62,11 @@ private:
                                   ModelSettings *& modelSettings, 
                                   ModelFile      * modelFile,
                                   char           * errText,
-                                  bool           & failed);
+                                  bool           & failed,
+                                  Simbox         * timeCutSimbox);
   void             setupExtendedTimeSimbox(Simbox * timeSimbox, 
-                                           Surface * corrSurf);
-  void             makeDepthSimbox(Simbox       *& depthSimbox,
-                                   ModelSettings * modelSettings, 
-                                   ModelFile     * modelFile,
-                                   char          * errText,
-                                   bool          & failed,
-                                   FFTGrid       * velocity);
+                                           Surface * corrSurf, Simbox * timeCutSimbox);
+ 
   void             completeTimeCutSimbox(Simbox       *& timeCutSimbox,
                                          ModelSettings * modelSettings,
                                          char            * errText,
@@ -142,10 +136,7 @@ private:
                                      double       dz, 
                                      int          nz, 
                                      int        & error);
-  void             setSimboxSurfacesDepth(Simbox *& simbox, 
-                                          char   ** surfFile, 
-                                          int     & error,
-                                          FFTGrid * velocity, Simbox *timeCutSimbox);
+
   void             estimateXYPaddingSizes(Simbox         * timeSimbox,
                                           ModelSettings *& modelSettings);
   void             estimateZPaddingSize(Simbox         * timeSimbox,
@@ -202,13 +193,11 @@ private:
   Surface *        createPlaneSurface(double * planeParams, Surface * templateSurf);
 
  
-  void makeTimeCutMapping(Simbox * timeCutSimbox);
+
 
   ModelSettings  * modelSettings_;
   Simbox         * timeSimbox_;            // Information about simulation area.
-  Simbox         * timeCutSimbox_;         // Information about area of interest.
-                                           // Only used with correlation surface.
-  Simbox         * depthSimbox_;           // Simbox with depth surfaces
+  
   WellData      ** wells_;                 // Well data
   Background     * background_;            // Holds the background model.
   Corr           * priorCorrelations_;     //
@@ -231,8 +220,8 @@ private:
                                            // These are only used with correaltion surfaces.
 
   bool             failed_;                // Indicates whether errors ocuured during construction. 
-  StormContGrid  * timeDepthMapping_;
-  StormContGrid  * timeCutMapping_;
+  GridMapping  * timeDepthMapping_;        // Contains both simbox nad maping used for depth conversion
+  GridMapping  * timeCutMapping_;          // Simbox and mapping for timeCut
   bool             velocityFromInversion_;
 };
 

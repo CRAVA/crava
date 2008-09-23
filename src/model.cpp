@@ -21,6 +21,7 @@
 #include "src/blockedlogs.h"
 #include "src/fftgrid.h"
 #include "src/fftfilegrid.h"
+#include "src/gridmapping.h"
 
 #include "lib/random.h"
 #include "lib/lib_misc.h"
@@ -34,9 +35,7 @@
 Model::Model(char * fileName)
 {
   modelSettings_          = NULL;
-  timeCutSimbox_          = NULL;
   timeSimbox_             = new Simbox();
-  depthSimbox_            = NULL;
   wells_                  = NULL;
   background_             = NULL;
   priorCorrelations_      = NULL;
@@ -71,7 +70,7 @@ Model::Model(char * fileName)
   bool failedLoadingModel = false;
 
   ModelFile * modelFile   = new ModelFile(fileName);
-
+  Simbox * timeCutSimbox = NULL;
   if (modelFile->getParsingFailed()) {
     failedModelFile = true;
   }
@@ -113,7 +112,7 @@ Model::Model(char * fileName)
     sprintf(errText,"%c",'\0');
 
     makeTimeSimbox(timeSimbox_, modelSettings_, modelFile, //Handles correlation direction too.
-                   errText, failedSimbox);
+                   errText, failedSimbox, timeCutSimbox);
 
     if(!failedSimbox)
     { 
@@ -153,32 +152,28 @@ Model::Model(char * fileName)
         
         if(failedSeismic==false)
         {
-          completeTimeCutSimbox(timeCutSimbox_, modelSettings_, errText,failedSimbox);   // Copies area to timeCutSimbox if needed. 
+          completeTimeCutSimbox(timeCutSimbox, modelSettings_, errText,failedSimbox);   // Copies area to timeCutSimbox if needed. 
+          if(timeCutSimbox!=NULL)
+            timeCutMapping_ = new GridMapping(timeCutSimbox,modelFile, modelSettings_,0, failedSimbox);
           if(failedSimbox==false)
           {
-            if(timeCutSimbox_ !=NULL)
-              makeTimeCutMapping(timeCutSimbox_);
+        
             FFTGrid * velocity = NULL;
-            if(timeCutSimbox_!=NULL)
-              processVelocity(velocity, timeCutSimbox_,
+            if(timeCutSimbox!=NULL)
+              processVelocity(velocity, timeCutSimbox,
                               modelSettings_, modelFile, 
                               errText, failedVelocity);
             else
               processVelocity(velocity,timeSimbox_,
                               modelSettings_, modelFile, 
                               errText, failedVelocity);
+            if(!failedVelocity && velocity!=NULL)
+              timeDepthMapping_ = new GridMapping(timeSimbox_, modelFile, modelSettings_, 1, failedSimbox, velocity);
  
-            makeDepthSimbox(depthSimbox_, modelSettings_, modelFile, // Creates depth simbox if needed.
-                            errText, failedSimbox, velocity);
-            if(velocity != NULL)
-            {
-              if(timeCutSimbox_ !=NULL )
-                timeDepthMapping_ = makeTimeDepthMapping(velocity, depthSimbox_, timeCutSimbox_);
-              else
-                timeDepthMapping_ = makeTimeDepthMapping(velocity, depthSimbox_, timeSimbox_);
-            }
+      
             if(velocity !=NULL)
               delete velocity;
+              
           }
         }
         if(!(failedSeismic || failedSimbox))
@@ -235,6 +230,8 @@ Model::Model(char * fileName)
   failed_ = failedModelFile || failedLoadingModel;
   
   delete modelFile;
+  if(timeCutSimbox !=NULL)
+    delete timeCutSimbox;
 }
 
 
@@ -249,9 +246,7 @@ Model::~Model(void)
     releaseWells();
   }
 
-  if (depthSimbox_ != NULL)
-    delete depthSimbox_;
-
+ 
   if (priorCorrelations_ != NULL)
     delete priorCorrelations_;
 
@@ -483,8 +478,6 @@ Model::readSegyFiles(char          ** fNames,
             geometry->writeGeometry();
           if(timeSimbox->status() == Simbox::NOAREA)
           {
-           // const SegyGeometry *geometry;
-           // geometry = segy->getGeometry();
             modelSettings->setAreaParameters(geometry);
             sbError = timeSimbox->setArea(geometry, tmpErr);
             if(sbError==1)
@@ -620,7 +613,8 @@ Model::makeTimeSimbox(Simbox        *& timeSimbox,
                       ModelSettings *& modelSettings, 
                       ModelFile      * modelFile,
                       char           * errText,
-                      bool           & failed)
+                      bool           & failed,
+                      Simbox         * timeCutSimbox)
 {
   int error = 0;
   setSimboxSurfaces(timeSimbox, 
@@ -697,7 +691,7 @@ Model::makeTimeSimbox(Simbox        *& timeSimbox,
       failed = true;
     }
     if(failed == false && modelSettings->getGenerateSeismic() == false)
-      setupExtendedTimeSimbox(timeSimbox, correlationDirection_); 
+      setupExtendedTimeSimbox(timeSimbox, correlationDirection_, timeCutSimbox); 
       //Extends timeSimbox for correlation coverage. Original stored in timeCutSimbox_
     error = timeSimbox->checkError(modelSettings->getLzLimit(),errText);
     if(error == 0)
@@ -777,9 +771,9 @@ Model::setSimboxSurfaces(Simbox *& simbox,
 
 void
 Model::setupExtendedTimeSimbox(Simbox  * timeSimbox, 
-                               Surface * corrSurf)
+                               Surface * corrSurf, Simbox * timeCutSimbox)
 {
-  timeCutSimbox_ = new Simbox(timeSimbox);
+  timeCutSimbox = new Simbox(timeSimbox);
 
   double * corrPlanePars = findPlane(corrSurf);
 
@@ -818,7 +812,7 @@ Model::setupExtendedTimeSimbox(Simbox  * timeSimbox,
   botSurf->Add(&(timeSimbox->GetBotSurface()));
 
   double thick = shiftBot-shiftTop;
-  int nz = int(0.5+thick/timeCutSimbox_->getdz());//NBNB Ragnar: Rounding - is it ok?
+  int nz = int(0.5+thick/timeCutSimbox->getdz());//NBNB Ragnar: Rounding - is it ok?
 
   timeSimbox->setDepth(topSurf, botSurf, nz);
 
@@ -968,161 +962,6 @@ Model::completeTimeCutSimbox(Simbox        *& timeCutSimbox,
       }
 
     }
-  }
-}
-
-void 
-Model::makeDepthSimbox(Simbox       *& depthSimbox,
-                       ModelSettings * modelSettings, 
-                       ModelFile     * modelFile,
-                       char          * errText,
-                       bool          & failed, FFTGrid *velocity)
-{
-  if (modelFile->getDoDepthConversion())
-  {
-    depthSimbox = new Simbox();
-    int error = 0;
-    if(timeCutSimbox_!=NULL)
-      setSimboxSurfacesDepth(depthSimbox, 
-                           modelFile->getDepthSurfFile(), 
-                           error,
-                           velocity, timeCutSimbox_);
-    else
-      setSimboxSurfacesDepth(depthSimbox, 
-                           modelFile->getDepthSurfFile(), 
-                           error,
-                           velocity, timeSimbox_);
-    if(error == 0)
-    {
-      const char * topname = "topdepth.storm";
-      const char * botname = "botdepth.storm";
-      depthSimbox->writeTopBotGrids(topname, botname);
-
-      const SegyGeometry * areaParams = modelSettings->getAreaParameters(); 
-      if (areaParams != NULL)
-      {
-        depthSimbox->setArea(areaParams, errText);
-        if(error ==1)
-        {
-          sprintf(errText," %s Problems with definition of depth simbox.",errText);
-          failed = 1;
-        }
-        else
-        {
-          error = depthSimbox->checkError(modelSettings->getLzLimit(),errText);
-
-          if(error == Simbox::INTERNALERROR)
-          {
-            LogKit::LogFormatted(LogKit::ERROR," A problems was encountered for depth output grid\n");
-            LogKit::LogFormatted(LogKit::ERROR,"       %s\n",errText);
-            failed = true;
-          }
-        }
-      }
-      else
-      {
-        LogKit::LogFormatted(LogKit::ERROR," No area available for depth simbox\n");
-        failed = true;
-      }
-      if (depthSimbox->status() == Simbox::BOXOK)
-      {
-        LogKit::LogFormatted(LogKit::LOW,"\nDepth output interval:\n");
-        LogKit::LogFormatted(LogKit::LOW,"  Interval thickness    avg / min / max    : %6.1f /%6.1f /%6.1f\n", 
-                         depthSimbox->getlz()*depthSimbox->getAvgRelThick(),
-                         depthSimbox->getlz()*depthSimbox->getMinRelThick(),
-                         depthSimbox->getlz());
-        LogKit::LogFormatted(LogKit::LOW,"  Sampling density      avg / min / max    : %6.2f /%6.2f /%6.2f\n", 
-                         depthSimbox->getdz()*depthSimbox->getAvgRelThick(),
-                         depthSimbox->getdz(),
-                         depthSimbox->getdz()*depthSimbox->getMinRelThick());
-      }
-    }
-    else
-    {
-      depthSimbox->externalFailure();
-      failed = true;
-    }
-  }
-}
-
-void 
-Model::setSimboxSurfacesDepth(Simbox *& simbox, 
-                              char   ** surfFile, 
-                              int     & error,
-                              FFTGrid * velocity,
-                              Simbox  *timeCutSimbox)
-{
-  int surfmissing = 0;
-  Surface * z0Grid = NULL;
-  if(surfFile[0]!=NULL)
-  {
-    try {
-      Surface tmpSurf = NRLib2::ReadStormSurf(surfFile[0]);
-      z0Grid = new Surface(tmpSurf);
-    }
-    catch (NRLib2::Exception & e) {
-      LogKit::LogFormatted(LogKit::ERROR,e.what());
-      error = 1;
-    }
-  }
-  else
-    surfmissing = 1;
-
-  Surface * z1Grid = NULL;
-  if(surfFile[1]!=NULL)
-  {
-    try {
-      Surface tmpSurf = NRLib2::ReadStormSurf(surfFile[1]);
-      z1Grid = new Surface(tmpSurf);
-    }
-    catch (NRLib2::Exception & e) {
-      LogKit::LogFormatted(LogKit::ERROR,e.what());
-      error = 1;
-    }
-  }
-  else
-    surfmissing = 2;
-
-
-  if(error == 0)
-  {
-    int nz = timeSimbox_->getnz();
-    if(surfmissing>0 && velocity!=NULL)
-    {
-      // calculate new surface
-      
-      int nx,ny;
-      nx = timeCutSimbox->getnx();
-      ny = timeCutSimbox->getny();
-      double * values = new double[nx*ny];
-      double dt, sum, x, y;
-      int i,j,k;
-      for(i=0;i<nx;i++)
-      {
-        x = timeCutSimbox->getx0()+i*timeCutSimbox->getdx();
-        for(j=0;j<ny;j++)
-        {
-          y = timeCutSimbox->gety0()+j*timeCutSimbox->getdy();
-          sum = 0;
-          dt = (timeCutSimbox->getBot(x,y)-timeCutSimbox->getTop(x,y))/(2000.0*timeCutSimbox->getnz());
-          for(k=0;k<timeCutSimbox->getnz();k++)          
-            sum+=velocity->getRealValue(i,j,k)*dt;
-            if(surfmissing==2)
-              values[i*nx+j] = z0Grid->GetZ(x,y)+ sum;
-            else if(surfmissing==1)
-              values[i*nx+j] = z0Grid->GetZ(x,y)-sum;
-        }
-      }
-      z1Grid = new Surface(z0Grid->GetXMin(), z0Grid->GetYMin(), 
-                                     z0Grid->GetLengthX(), z0Grid->GetLengthY(), 
-                                     z0Grid->GetNI(),z0Grid->GetNJ(), (*values));
-      if(surfmissing==2)
-        simbox->setDepth(z0Grid, z1Grid, nz);
-      else
-        simbox->setDepth(z1Grid, z0Grid, nz);
-    }
-    else
-        simbox->setDepth(z0Grid, z1Grid, nz);
   }
 }
 
@@ -2650,52 +2489,6 @@ Model::getCorrGradIJ(float & corrGradI, float &corrGradJ) const
   corrGradJ = float(cJ/timeSimbox_->getdz());
 }
 
-StormContGrid*
-Model::makeTimeDepthMapping(FFTGrid *velocity,
-                            Simbox *depthSimbox,
-                            const Simbox *timeCutSimbox)
-{
-  int i,j,k,kk;
-  double c, sumz;
-  double deltat,deltaz,sum,x,y,z;
-  int nx, ny;
-  nx = depthSimbox->getnx();
-  ny = depthSimbox->getny();
-  int nz = depthSimbox->getnz();
-  StormContGrid *mapping = new StormContGrid(*depthSimbox, nx, ny, nz);
-  
- 
-  float value;
-  for(i=0;i<nx;i++)
-  {
-    x = depthSimbox->getx0()+i*depthSimbox->getdx();
-    for(j=0;j<ny;j++)
-    {
-      y = depthSimbox->gety0()+j*depthSimbox_->getdy();
-      deltat = (timeCutSimbox->getBot(x,y)-timeCutSimbox->getTop(x,y))/(2000*timeCutSimbox->getnz());
-      deltaz = (depthSimbox->getBot(x,y)-depthSimbox->getTop(x,y))/nz;    
-      sumz = 0.0;    
-      for(k=0;k<timeCutSimbox->getnz();k++)
-        sumz +=deltat*velocity->getRealValue(i,j,k);
-      c = (depthSimbox->getBot(x,y)-depthSimbox->getTop(x,y))/sumz;
-      (*mapping)(i,j,0) = static_cast<float> (timeCutSimbox->getTop(x,y));
-      kk = 0;
-      sum = 0;
-      for(k=1;k<nz;k++)
-      {
-        z = k*deltaz;
-        while(sum<z && kk<nz)
-        {
-          kk++;
-          sum+=deltat*c*velocity->getRealValue(i,j,kk-1);
-        }
-        value = float(timeCutSimbox->getTop(x,y)+2000*(kk-1)*deltat+2000*(z-sum+deltat*c*velocity->getRealValue(i,j,kk-1))/(c*velocity->getRealValue(i,j,kk-1)));
-        (*mapping)(i,j,k) = value;
-      }
-    }
-  }
-  return mapping;
-}
 
 void 
 Model::processVelocity(FFTGrid      *& velocity,
@@ -2738,24 +2531,3 @@ Model::processVelocity(FFTGrid      *& velocity,
   }
 }
 
-void
-Model::makeTimeCutMapping(Simbox * timeCutSimbox)
-{
-  int nx = timeCutSimbox->getnx();
-  int ny = timeCutSimbox->getny();
-  int nz = timeCutSimbox->getnz();
-  double deltaz, x, y;
-  timeCutMapping_ = new StormContGrid(*timeCutSimbox, nx, ny, nz);
-  int i,j,k;
-  for(i=0;i<nx;i++)
-  {
-    x = timeCutSimbox->getx0()+i*timeCutSimbox->getdx();
-    for(j=0;j<ny;j++)
-    {
-      y = timeCutSimbox->gety0()+j*timeCutSimbox_->getdy();
-      deltaz = (timeCutSimbox->getBot(x,y)-timeCutSimbox->getTop(x,y))/nz;    
-      for(k=0;k<nz;k++)      
-        (*timeCutMapping_)(i,j,k) = static_cast<float> (timeCutSimbox->getTop(x,y)+k*deltaz);
-    }
-  }
-}

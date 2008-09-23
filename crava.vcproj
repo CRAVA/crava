@@ -386,6 +386,10 @@
 					</FileConfiguration>
 				</File>
 				<File
+					RelativePath=".\src\gridmapping.cpp"
+					>
+				</File>
+				<File
 					RelativePath="src\krigingadmin.cpp"
 					>
 					<FileConfiguration
@@ -3556,6 +3560,10 @@
 				</File>
 				<File
 					RelativePath="src\fftgrid.h"
+					>
+				</File>
+				<File
+					RelativePath=".\src\gridmapping.h"
 					>
 				</File>
 				<File

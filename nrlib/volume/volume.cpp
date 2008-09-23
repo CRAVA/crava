@@ -186,17 +186,25 @@ void Volume::SetSurfaces(Surface* top_surf,
     }
   }
 
-  delete z_top_;
-  z_top_ = top_surf;
+  if (z_top_ != top_surf) {
+    delete z_top_;
+    z_top_ = top_surf;
+  }
 
-  delete z_bot_;
-  z_bot_ = bot_surf;
+  if (z_bot_ != bot_surf) {
+    delete z_bot_;
+    z_bot_ = bot_surf;
+  }
 
-  delete erosion_top_;
-  erosion_top_ = erosion_top;
+  if (erosion_top_ != erosion_top) {
+    delete erosion_top_;
+    erosion_top_ = erosion_top;
+  }
 
-  delete erosion_bot_;
-  erosion_bot_ = erosion_bot;
+  if (erosion_bot_ != erosion_bot) {
+    delete erosion_bot_;
+    erosion_bot_ = erosion_bot;
+  }
 
   lz_ = RecalculateLZ();
 }

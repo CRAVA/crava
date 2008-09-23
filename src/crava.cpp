@@ -14,6 +14,7 @@
 #include "src/krigingadmin.h"
 #include "src/faciesprob.h"
 #include "src/definitions.h"
+#include "src/gridmapping.h"
 #include "lib/random.h"
 #include "lib/lib_matr.h"
 #include "nrlib/iotools/logkit.hpp"
@@ -2122,31 +2123,47 @@ void Crava::writeToFile(char * timeFileName, char * depthFileName, FFTGrid * gri
   {
     if(model_->getTimeCutMapping()!=NULL)
     {
-      StormContGrid *mapping = model_->getTimeCutMapping();
+      StormContGrid *mapping = model_->getTimeCutMapping()->getMapping();
       writeResampledStormCube(grid, mapping, timeFileName, simbox_);
     }
     else
       grid->writeFile(timeFileName,simbox_,1, model_->getModelSettings()->getSegyOffset());
   }
-  if(model_->getDepthSimbox()!=NULL)
+  if(model_->getTimeDepthMapping()!=NULL)
   {
-    if(model_->getTimeDepthMapping()!=NULL)
+    if(model_->getVelocityFromInversion()==false) // velocity from file or no velocity
     {
-      StormContGrid *mapping = model_->getTimeDepthMapping();
-      writeResampledStormCube(grid, mapping, depthFileName, simbox_);
+      StormContGrid *mapping = model_->getTimeDepthMapping()->getMapping();
+      if(mapping!=NULL)
+        writeResampledStormCube(grid, mapping, depthFileName, simbox_);
+      else // only top and bottom surfaces given, no velocity field
+        grid->writeFile(depthFileName,model_->getTimeDepthMapping()->getSimbox(),0);
+
     }
-    else if(model_->getVelocityFromInversion()==true) // use velocity from inversion
+  //  else if(model_->timeDepthMapping()->getVelocityFromInversion()==true) // use velocity from inversion
+    else // get velocity from inversion
     {
       StormContGrid *mapping; 
-      if(model_->getTimeCutSimbox()!=NULL)
-        mapping = model_->makeTimeDepthMapping(postAlpha_,model_->getDepthSimbox(),model_->getTimeCutSimbox());
+      if(model_->getTimeCutMapping()!=NULL)
+      {
+        bool failed;
+        if(model_->getTimeDepthMapping()->getSimbox()==NULL)
+          model_->getTimeDepthMapping()->calculateSurfaceFromVelocity(postAlpha_, model_->getTimeCutMapping()->getSimbox(),model_->getModelSettings(),failed);
+        model_->getTimeDepthMapping()->makeMapping(postAlpha_,model_->getTimeCutMapping()->getSimbox());
+        mapping = model_->getTimeDepthMapping()->getMapping();
+      }
       else
-        mapping = model_->makeTimeDepthMapping(postAlpha_,model_->getDepthSimbox(),simbox_);
+      {
+        bool failed;
+        if(model_->getTimeDepthMapping()->getSimbox()==NULL)
+          model_->getTimeDepthMapping()->calculateSurfaceFromVelocity(postAlpha_, simbox_,model_->getModelSettings(),failed);
+        model_->getTimeDepthMapping()->makeMapping(postAlpha_,simbox_);
+        mapping = model_->getTimeDepthMapping()->getMapping();
+      }
       writeResampledStormCube(grid, mapping, depthFileName, simbox_);
-      delete mapping;
+   
     }
-    else
-      grid->writeFile(depthFileName,model_->getDepthSimbox(),0);
+  
   }
 }
 
