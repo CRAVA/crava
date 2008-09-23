@@ -29,12 +29,11 @@ GridMapping::GridMapping(const Simbox *simbox, ModelFile *modelFile, ModelSettin
 
   int nz = simbox->getnz();
   if(depthmode==1)
-    setSurfaces(modelFile, modelSettings, failed, nz);
+    setSurfaces(modelFile, modelSettings, failed, nz); // If two surfaces are read from file, the simbox is completed in this routine.
   
   if(velocity!=NULL && surfmissing_>0 && depthmode_ ==1)
-    calculateSurfaceFromVelocity(velocity, simbox, modelSettings, failed);
- // if(surfmissing_==0 && depthmode_ == 1)
- //   setSimbox(modelSettings, failed);
+    calculateSurfaceFromVelocity(velocity, simbox, modelSettings, failed); // simbox is set in this routine
+ 
   mapping_ = NULL;
   if(velocity!=NULL || depthmode_==0)
     makeMapping(velocity,simbox);
@@ -147,17 +146,15 @@ void GridMapping::calculateSurfaceFromVelocity(FFTGrid *velocity, const Simbox *
    
     if(surfmissing_==2)
     {
-   //   z1Grid_ = new Surface(simbox->getx0(),simbox->gety0() , 
-   //                simbox->getlx(), simbox->getly(), nx,ny, (*values));
+  
         z1Grid_ = new Surface(z0Grid_->GetXMin(), z0Grid_->GetYMin(), 
                                      z0Grid_->GetLengthX(), z0Grid_->GetLengthY(), 
                                      z0Grid_->GetNI(),z0Grid_->GetNJ(), (*values));
-   //   simbox_->setDepth(z0Grid_, z1Grid_, nz);
+  
     }
     else
     {
-   //   z0Grid_ = new Surface(simbox->getx0(),simbox->gety0() , 
-    //               simbox->getlx(), simbox->getly(), nx,ny, (*values));
+   
         z0Grid_ = new Surface(z1Grid_->GetXMin(), z1Grid_->GetYMin(), 
                                      z1Grid_->GetLengthX(), z1Grid_->GetLengthY(), 
                                      z1Grid_->GetNI(),z1Grid_->GetNJ(), (*values));

@@ -167,7 +167,7 @@ Model::Model(char * fileName)
               processVelocity(velocity,timeSimbox_,
                               modelSettings_, modelFile, 
                               errText, failedVelocity);
-            if(!failedVelocity && velocity!=NULL)
+            if(!failedVelocity && modelFile->getDoDepthConversion()==1)
               timeDepthMapping_ = new GridMapping(timeSimbox_, modelFile, modelSettings_, 1, failedSimbox, velocity);
  
       
