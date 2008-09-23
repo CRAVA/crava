@@ -234,17 +234,35 @@ Model::Model(char * fileName)
 
 Model::~Model(void)
 {
-  delete randomGen_;
-  delete timeSimbox_;
-
   if(!modelSettings_->getGenerateSeismic()) 
   {
-    releaseWells();
+    for(int i=0 ; i<modelSettings_->getNumberOfWells() ; i++)
+      if(wells_[i] != NULL)
+        delete wells_[i];
+    delete [] wells_;
   }
 
- 
-  if (priorCorrelations_ != NULL)
-    delete priorCorrelations_;
+  if (wavelet_ != NULL) 
+  {
+    for(int i=0;i<modelSettings_->getNumberOfAngles();i++)
+      if(wavelet_[i] != NULL)
+        delete wavelet_[i];
+    delete [] wavelet_;
+  }
+
+  if(shiftGrids_ != NULL)
+  {
+    for(int i=0;i<modelSettings_->getNumberOfAngles();i++)
+      if(shiftGrids_[i] != NULL)
+        delete shiftGrids_[i];
+  }
+
+  if(gainGrids_ != NULL)
+  {
+    for(int i=0;i<modelSettings_->getNumberOfAngles();i++)
+      if(gainGrids_[i] != NULL)
+        delete gainGrids_[i];
+  }
 
   if (waveletEstimInterval_ != NULL) 
   {
@@ -264,50 +282,18 @@ Model::~Model(void)
     delete [] faciesEstimInterval_;
   }
 
-  if (wavelet_ != NULL) 
-  {
-    for(int i=0;i<modelSettings_->getNumberOfAngles();i++)
-      if(wavelet_[i] != NULL)
-        delete wavelet_[i];
-    delete [] wavelet_;
-  }
+  if (priorCorrelations_ != NULL)
+    delete priorCorrelations_;
 
-  if(shiftGrids_ != NULL)
-  {
-    for(int i=0;i<modelSettings_->getNumberOfAngles();i++)
-      if(shiftGrids_[i] != NULL)
-      {
-        delete shiftGrids_[i];
-      }
-  }
-
-  if(gainGrids_ != NULL)
-  {
-    for(int i=0;i<modelSettings_->getNumberOfAngles();i++)
-      if(gainGrids_[i] != NULL)
-      {
-        delete gainGrids_[i];
-      }
-  }
-  delete modelSettings_;
   if(timeDepthMapping_!=NULL)
     delete timeDepthMapping_;
 
   if(timeCutMapping_!=NULL)
     delete timeCutMapping_;
 
-}
-
-void
-Model::releaseWells(void)
-{
-  int i;
-  for(i=0;i<modelSettings_->getNumberOfWells();i++)
-  {
-    if(wells_[i] != NULL)
-      delete wells_[i];
-  }
-  delete [] wells_;
+  delete randomGen_;
+  delete modelSettings_;
+  delete timeSimbox_;
 }
 
 void
@@ -1481,7 +1467,7 @@ Model::processPriorCorrelations(Corr         *& priorCorrelations,
       LogKit::LogFormatted(LogKit::LOW,"Parameter correlation read from file.\n\n");
     }
 
-    Surface * CorrXY = getCorrXYGrid();
+    Surface * CorrXY = findCorrXYGrid();
 
     if(modelSettings->getLateralCorr()==NULL) { // NBNB-PAL: this will never be true (default lateral corr)
       estimateCorrXYFromSeismic(CorrXY,
@@ -1535,7 +1521,7 @@ Model::processPriorCorrelations(Corr         *& priorCorrelations,
 }
 
 Surface * 
-Model::getCorrXYGrid(void)
+Model::findCorrXYGrid(void)
 {
   int npix, nx, ny;
   int i,j,refi,refj;

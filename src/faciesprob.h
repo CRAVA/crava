@@ -18,7 +18,7 @@ class FaciesProb
 {
 public:
   FaciesProb(ModelSettings * modelSettings,
-             int filegrid, const float ** sigma0, float *corrprior, 
+             int filegrid, float ** sigma0, float *corrprior, 
              Simbox *simbox, const Simbox& osimbox, int nzp, int nz, 
              FFTGrid* bgAlpha, FFTGrid* bgBeta, FFTGrid* bgRho, 
              RandomGen *random, float p_undef, float *priorFacies);

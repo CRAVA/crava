@@ -8,12 +8,12 @@
 Corr::Corr(float **pointVar0, float **Var0, float *CorrT, int n, float dt, 
            Surface * CorrXY)
 {
-  Var0_ = Var0;
+  Var0_      = Var0;
   pointVar0_ = pointVar0;
-  CorrT_ = CorrT;
-  n_ = n;
-  dt_ = dt;
-  CorrXY_ = CorrXY;
+  CorrT_     = CorrT;
+  n_         = n;
+  dt_        = dt;
+  CorrXY_    = CorrXY;
 }
 
 Corr::~Corr(void)
@@ -29,22 +29,12 @@ Corr::~Corr(void)
   delete CorrXY_;
 }
 
-const float* Corr::getCorrT(int &n, float &dt) const
+float * Corr::getCorrT(int &n, float &dt) const
 {
   n = n_;
   dt = dt_;
   return CorrT_;
 
-}
-
-const float** Corr::getVar0() const
-{
-  return (const float **) Var0_;	
-}
-
-const Surface* Corr::getCorrXY() const
-{
-  return (const Surface*) CorrXY_;
 }
 
 void Corr::dumpResult() const

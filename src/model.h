@@ -42,18 +42,12 @@ public:
   float         ** getAMatrix()               const { return reflectionMatrix_       ;}
   RandomGen      * getRandomGen()             const { return randomGen_              ;} 
   bool             hasSignalToNoiseRatio()    const { return hasSignalToNoiseRatio_  ;}
-  bool             getFailed()                const { return failed_                 ;}
-  void             releaseWells();                                        // Deallocates well data.
-  void             releaseGrids();                                        // Cuts connection to SeisCube_ and  backModel_
-  Surface        * getCorrXYGrid();
-
-  void             getCorrGradIJ(float & corrGradI, float &corrGradJ) const;
-  
-  GridMapping  * getTimeDepthMapping()      const { return timeDepthMapping_;}
-  GridMapping  * getTimeCutMapping()        const { return timeCutMapping_;}
-  
- 
+  GridMapping    * getTimeDepthMapping()      const { return timeDepthMapping_;}
+  GridMapping    * getTimeCutMapping()        const { return timeCutMapping_;}
   bool             getVelocityFromInversion() const { return velocityFromInversion_  ;}
+  bool             getFailed()                const { return failed_                 ;}
+  void             releaseGrids();                                        // Cuts connection to SeisCube_ and  backModel_
+  void             getCorrGradIJ(float & corrGradI, float &corrGradJ) const;
 
   enum             backFileTypes{STORMFILE = -2, SEGYFILE = -1};
 
@@ -66,7 +60,6 @@ private:
                                   Simbox         * timeCutSimbox);
   void             setupExtendedTimeSimbox(Simbox * timeSimbox, 
                                            Surface * corrSurf, Simbox * timeCutSimbox);
- 
   void             completeTimeCutSimbox(Simbox       *& timeCutSimbox,
                                          ModelSettings * modelSettings,
                                          char            * errText,
@@ -136,7 +129,6 @@ private:
                                      double       dz, 
                                      int          nz, 
                                      int        & error);
-
   void             estimateXYPaddingSizes(Simbox         * timeSimbox,
                                           ModelSettings *& modelSettings);
   void             estimateZPaddingSize(Simbox         * timeSimbox,
@@ -158,6 +150,7 @@ private:
   void             estimateCorrXYFromSeismic(Surface *& CorrXY,
                                              FFTGrid ** seisCube,
                                              int        nAngles);
+  Surface        * findCorrXYGrid();
   int              setPaddingSize(int   nx, 
                                   float px);
   void             loadExtraSurfaces(Surface  **& waveletEstimInterval,
@@ -192,37 +185,36 @@ private:
   //Create planar surface with same extent as template, p[0]+p[1]*x+p[2]*y
   Surface *        createPlaneSurface(double * planeParams, Surface * templateSurf);
 
- 
-
 
   ModelSettings  * modelSettings_;
-  Simbox         * timeSimbox_;            // Information about simulation area.
+  Simbox         * timeSimbox_;            ///< Information about simulation area.
   
-  WellData      ** wells_;                 // Well data
-  Background     * background_;            // Holds the background model.
-  Corr           * priorCorrelations_;     //
-  FFTGrid       ** seisCube_;              // Seismic data cubes
-  Wavelet       ** wavelet_;               // Wavelet for angle
-  Surface       ** shiftGrids_;            // Grids containing shift data for wavelets
-  Surface       ** gainGrids_;             // Grids containing gain data for wavelets.
-  Surface       ** waveletEstimInterval_;  // Grids giving the wavelet estimation interval.
-  Surface       ** faciesEstimInterval_;   // Grids giving the facies estimation intervals.
-  Surface        * correlationDirection_;  // Grid giving the correlation direction.
-  RandomGen      * randomGen_;             // Random generator.
+  WellData      ** wells_;                 ///< Well data
+  Background     * background_;            ///< Holds the background model.
+  Corr           * priorCorrelations_;     ///<
+  FFTGrid       ** seisCube_;              ///< Seismic data cubes
+  Wavelet       ** wavelet_;               ///< Wavelet for angle
+  Surface       ** shiftGrids_;            ///< Grids containing shift data for wavelets
+  Surface       ** gainGrids_;             ///< Grids containing gain data for wavelets.
+  Surface       ** waveletEstimInterval_;  ///< Grids giving the wavelet estimation interval.
+  Surface       ** faciesEstimInterval_;   ///< Grids giving the facies estimation intervals.
+  Surface        * correlationDirection_;  ///< Grid giving the correlation direction.
+  RandomGen      * randomGen_;             ///< Random generator.
   float          * priorFacies_;
-  float         ** reflectionMatrix_;      // May specify own Zoeppritz-approximation. Default NULL,
-                                           // indicating that standard approximation will be used.
+  float         ** reflectionMatrix_;      ///< May specify own Zoeppritz-approximation. Default NULL,
+                                           ///< indicating that standard approximation will be used.
 
-  bool             hasSignalToNoiseRatio_; // Use SN ratio instead of error variance in model file. 
-  
-  double           gradX_;                 // X-gradient of correlation rotation. 
-  double           gradY_;                 // Y-gradient of correlation rotation.
-                                           // These are only used with correaltion surfaces.
+  double           gradX_;                 ///< X-gradient of correlation rotation. 
+  double           gradY_;                 ///< Y-gradient of correlation rotation.
+                                           ///< These are only used with correaltion surfaces.
 
-  bool             failed_;                // Indicates whether errors ocuured during construction. 
-  GridMapping  * timeDepthMapping_;        // Contains both simbox nad maping used for depth conversion
-  GridMapping  * timeCutMapping_;          // Simbox and mapping for timeCut
+  bool             failed_;                ///< Indicates whether errors ocuured during construction. 
+  GridMapping    * timeDepthMapping_;      ///< Contains both simbox nad maping used for depth conversion
+  GridMapping    * timeCutMapping_;        ///< Simbox and mapping for timeCut
+
   bool             velocityFromInversion_;
+
+  bool             hasSignalToNoiseRatio_; ///< Use SN ratio instead of error variance in model file. 
 };
 
 #endif

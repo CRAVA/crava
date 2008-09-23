@@ -93,7 +93,7 @@ private:
   FFTGrid          * meanBeta2_;
   FFTGrid          * meanRho2_;
   FFTGrid          * parSpatialCorr_;   // parameter correlation
-  const float     ** parPointCov_; 
+  float           ** parPointCov_; 
 
   Wavelet         ** seisWavelet_;      // wavelet operator that define the forward map.
   FFTGrid         ** seisData_;         // Data
