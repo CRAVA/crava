@@ -270,16 +270,21 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
   delete [] beta;
   delete [] rho;
   delete [] seisData;
+  delete [] hasData;
+  delete [] dz;
+  delete [] wellWeight;
   for(i=0;i<nWells;i++)
   {
     delete [] cpp_r[i]; 
     delete [] seis_r[i] ;
+    delete [] synt_seis_r[i] ;
     delete [] cor_cpp_r[i] ;
     delete [] ccor_seis_cpp_r[i] ;
     delete [] wavelet_r[i];
   }
   delete [] cpp_r; 
   delete [] seis_r;
+  delete [] synt_seis_r;
   delete [] cor_cpp_r;
   delete [] ccor_seis_cpp_r;
   delete [] wavelet_r;
@@ -1382,7 +1387,8 @@ Wavelet1D::averageWavelets(fftw_real** wavelet_r,int nWells,int nzp,float* wellW
   char* fileName = new char[MAX_STRING];
   sprintf(fileName,"wavelet_%d_fftOrder_noshift",int(floor(theta_/PI*180+0.5)));
   Wavelet::printVecToFile(fileName,wave,nzp_);
-  
+  delete [] fileName;
+
   delete [] weight;
   return wave;
 }
