@@ -157,7 +157,6 @@ Model::Model(char * fileName)
             timeCutMapping_ = new GridMapping(timeCutSimbox,modelFile, modelSettings_,0, failedSimbox);
           if(failedSimbox==false)
           {
-        
             FFTGrid * velocity = NULL;
             if(timeCutSimbox!=NULL)
               processVelocity(velocity, timeCutSimbox,
@@ -169,12 +168,9 @@ Model::Model(char * fileName)
                               errText, failedVelocity);
             if(!failedVelocity && modelFile->getDoDepthConversion()==1)
               timeDepthMapping_ = new GridMapping(timeSimbox_, modelFile, modelSettings_, 1, failedSimbox, velocity);
- 
-      
-            if(velocity !=NULL)
+             if(velocity !=NULL)
               delete velocity;
-              
-          }
+           }
         }
         if(!(failedSeismic || failedSimbox))
         { 
@@ -1747,7 +1743,11 @@ Model::processWavelets(Wavelet     **& wavelet,
           LogKit::LogFormatted(LogKit::LOW,"         CRAVA are not reliable and the output results should be treated accordingly.\n");
           LogKit::LogFormatted(LogKit::LOW,"         the number of layers must be increased.                                    \n");
         }
-        wavelet[i] = new Wavelet1D(timeSimbox, seisCube[i], wells, modelSettings, reflectionMatrix[i]);
+        wavelet[i] = new Wavelet1D(timeSimbox, 
+                                   seisCube[i], 
+                                   wells, 
+                                   modelSettings, 
+                                   reflectionMatrix[i]);
       }
       else
       {
@@ -1759,18 +1759,27 @@ Model::processWavelets(Wavelet     **& wavelet,
         }
         else {
           if (fileFormat == Wavelet::SGRI)
-            wavelet[i] = new Wavelet3D(waveletFile[i], modelSettings, timeSimbox, modelSettings->getAngle()[i], error, errText);
+            wavelet[i] = new Wavelet3D(waveletFile[i], 
+                                       modelSettings, 
+                                       timeSimbox, 
+                                       modelSettings->getAngle()[i], 
+                                       reflectionMatrix[i],
+                                       error, 
+                                       errText);
           else {
-            wavelet[i] = new Wavelet1D(waveletFile[i], modelSettings, fileFormat, error, errText);
+            wavelet[i] = new Wavelet1D(waveletFile[i], 
+                                       fileFormat, 
+                                       modelSettings, 
+                                       reflectionMatrix[i],
+                                       error, 
+                                       errText);
             if (error == 0) {
-//              wavelet[i]->write1DWLas3DWL(); //Frode: For debugging and testing
-//              wavelet[i]->write3DWLfrom1DWL();
+              //wavelet[i]->write1DWLas3DWL(); //Frode: For debugging and testing
+              //wavelet[i]->write3DWLfrom1DWL();
               wavelet[i]->resample(static_cast<float>(timeSimbox->getdz()), timeSimbox->getnz(), 
                                    modelSettings->getZpad(), modelSettings->getAngle()[i]);
             }
           }
-          if (error == 0)
-            wavelet[i]->setReflCoeff(reflectionMatrix[i]);
         }
       }
       if (error == 0) {
@@ -2502,10 +2511,14 @@ Model::processVelocity(FFTGrid      *& velocity,
   {
     char * velocityField = modelFile->getVelocityField();
 
-    if(strcmp(velocityField,"FROM_INVERSION")==0)
+    if(strcmp(velocityField,"CONSTANT") != 0)
+      velocity = NULL;
+    else if(strcmp(velocityField,"FROM_INVERSION")==0)
+    {
       velocityFromInversion_ = true;
-
-    if(strcmp(velocityField,"CONSTANT") != 0 && strcmp(velocityField,"FROM_INVERSION") != 0)
+      velocity = NULL;
+    }
+    else
     {
       const char * parName = "Velocity";
       char tmpErrText[MAX_STRING];
@@ -2526,8 +2539,6 @@ Model::processVelocity(FFTGrid      *& velocity,
         failed = true;
       }
     }
-    else
-      velocity = NULL;
   }
 }
 

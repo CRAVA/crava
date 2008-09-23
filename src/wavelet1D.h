@@ -11,11 +11,20 @@ public:
   void           invFFT1DInPlace();
 
   //Constructors and destructor
-  Wavelet1D(Simbox * simbox, FFTGrid * seisCube, WellData ** wells, ModelSettings * modelSettings, float * coef, int dim = 1);
-  Wavelet1D(char * fileName, ModelSettings * modelSettings, int fileFormat, int &errCode, char *errText, int dim = 1);
-  Wavelet1D(Wavelet * wavelet, int dim = 1);
-  Wavelet1D(Wavelet * wavelet,int difftype, int dim = 1);
-  Wavelet1D(int difftype, int nz, int nzp, int dim = 1);
+  Wavelet1D(Simbox         * simbox, 
+            FFTGrid        * seisCube, 
+            WellData      ** wells, 
+            ModelSettings  * modelSettings, 
+            float          * reflCoef);
+  Wavelet1D(char          * fileName, 
+            int             fileFormat, 
+            ModelSettings * modelSettings, 
+            float         * reflCoef,
+            int           & errCode, 
+            char          * errText);
+  Wavelet1D(Wavelet * wavelet);
+  Wavelet1D(Wavelet * wavelet,int difftype);
+  Wavelet1D(int difftype, int nz, int nzp);
   virtual ~Wavelet1D();
 
   void           resample(float dz, int nz, float pz,float theta);

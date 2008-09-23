@@ -32,19 +32,29 @@ Wavelet::Wavelet(int dim)
 {
 }
 
-Wavelet::Wavelet(ModelSettings * modelSettings, int dim)
+Wavelet::Wavelet(int dim, float * reflCoef)
   : dim_(dim)
 {
-	maxShift_       = modelSettings->getMaxWaveletShift();
-	minRelativeAmp_ = modelSettings->getMinRelWaveletAmp();
+  coeff_[0] = reflCoef[0];
+  coeff_[1] = reflCoef[1];
+  coeff_[2] = reflCoef[2];
+}
 
-	isReal_     = true;
-	inFFTorder_ = false;
-	scale_=1; 
-	gridNI_=0;   
-	gridNJ_=0;
-	shiftGrid_=NULL;  
-	gainGrid_=NULL; 
+Wavelet::Wavelet(ModelSettings * modelSettings, int dim, float * reflCoef)
+  : dim_(dim)
+{
+  maxShift_       = modelSettings->getMaxWaveletShift();
+  minRelativeAmp_ = modelSettings->getMinRelWaveletAmp();
+  coeff_[0]       = reflCoef[0];
+  coeff_[1]       = reflCoef[1];
+  coeff_[2]       = reflCoef[2];
+  isReal_         = true;
+  inFFTorder_     = false;
+  scale_          = 1; 
+  gridNI_         = 0;   
+  gridNJ_         = 0;
+  shiftGrid_      = NULL;  
+  gainGrid_       = NULL; 
 }
 
 Wavelet::Wavelet(Wavelet * wavelet, int dim)

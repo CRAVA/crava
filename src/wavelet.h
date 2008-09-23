@@ -22,7 +22,8 @@ public:
 
   //Constructors and destructor
   Wavelet(int dim);
-  Wavelet(ModelSettings * modelSettings, int dim);
+  Wavelet(int dim, float * reflCoef);
+  Wavelet(ModelSettings * modelSettings, int dim, float * reflCoef);
   Wavelet(Wavelet * wavelet, int dim);
   virtual ~Wavelet();
 

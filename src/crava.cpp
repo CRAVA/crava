@@ -350,7 +350,7 @@ Crava::computeVariances(fftw_real* corrT,
 
   for(int i=0 ; i < ntheta_ ; i++)
   {
-    errorSmooth[i] = new Wavelet1D(seisWavelet_[i],Wavelet::FIRSTORDERFORWARDDIFF,1);
+    errorSmooth[i] = new Wavelet1D(seisWavelet_[i],Wavelet::FIRSTORDERFORWARDDIFF);
     sprintf(fileName,"Wavediff_%d.dat",i);
     errorSmooth[i]->printToFile(fileName);
   }
@@ -734,9 +734,9 @@ Crava::computePostMeanResidAndFFTCov()
   for(i = 0; i < 3; i++)
     reduceVar[i]= new fftw_complex[3];  
 
-  Wavelet1D * diff1Operator = new Wavelet1D(Wavelet::FIRSTORDERFORWARDDIFF,nz_,nzp_,1);
-  Wavelet1D * diff2Operator = new Wavelet1D(diff1Operator,Wavelet::FIRSTORDERBACKWARDDIFF,1);
-  Wavelet1D * diff3Operator = new Wavelet1D(diff2Operator,Wavelet::FIRSTORDERCENTRALDIFF,1);
+  Wavelet1D * diff1Operator = new Wavelet1D(Wavelet::FIRSTORDERFORWARDDIFF,nz_,nzp_);
+  Wavelet1D * diff2Operator = new Wavelet1D(diff1Operator,Wavelet::FIRSTORDERBACKWARDDIFF);
+  Wavelet1D * diff3Operator = new Wavelet1D(diff2Operator,Wavelet::FIRSTORDERCENTRALDIFF);
 
   diff1Operator->fft1DInPlace();
   diff2Operator->fft1DInPlace();
@@ -753,9 +753,9 @@ Crava::computePostMeanResidAndFFTCov()
   for(i = 0; i < ntheta_ ; i++)
   {  
     thetaDeg = int ( theta_[i]/PI*180 + 0.5 );
-    errorSmooth[i]  = new Wavelet1D(seisWavelet_[i],Wavelet::FIRSTORDERFORWARDDIFF,1);
-    errorSmooth2[i] = new Wavelet1D(errorSmooth[i], Wavelet::FIRSTORDERBACKWARDDIFF,1);
-    errorSmooth3[i] = new Wavelet1D(errorSmooth2[i],Wavelet::FIRSTORDERCENTRALDIFF,1); 
+    errorSmooth[i]  = new Wavelet1D(seisWavelet_[i],Wavelet::FIRSTORDERFORWARDDIFF);
+    errorSmooth2[i] = new Wavelet1D(errorSmooth[i], Wavelet::FIRSTORDERBACKWARDDIFF);
+    errorSmooth3[i] = new Wavelet1D(errorSmooth2[i],Wavelet::FIRSTORDERCENTRALDIFF); 
     sprintf(fileName,"ErrorSmooth_%i",thetaDeg);
     errorSmooth3[i]->printToFile(fileName);
     errorSmooth[i]->fft1DInPlace();

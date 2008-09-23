@@ -24,8 +24,15 @@
 #include "src/fftgrid.h"
 #include "src/simbox.h"
 
-Wavelet3D::Wavelet3D(char * fileName, ModelSettings * modelSettings, Simbox *simBox, float theta, int &errCode, char *errText, int dim)
-  :Wavelet(modelSettings, dim)
+Wavelet3D::Wavelet3D(char          * fileName, 
+                     ModelSettings * modelSettings, 
+                     Simbox        * simBox, 
+                     float           theta, 
+                     float         * reflCoef,  
+                     int           & errCode, 
+                     char          * errText, 
+                     int             dim)
+: Wavelet(modelSettings, dim, reflCoef)
 {
   nx_ = simBox->getnx();
   ny_ = simBox->getny();

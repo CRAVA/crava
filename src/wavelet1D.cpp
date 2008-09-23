@@ -28,55 +28,46 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
                      FFTGrid        * seisCube,
                      WellData      ** wells,
                      ModelSettings  * modelSettings,
-                     float          * coeff,
-                     int              dim)
-  : Wavelet(dim)
+                     float          * reflCoef)
+  : Wavelet(1,reflCoef)
 {
   LogKit::LogFormatted(LogKit::MEDIUM,"  Estimating 1D wavelet from seismic data and (nonfiltered) blocked wells\n");
-  readtype_ = ESTIMATE;
-  // initialization
 
-  int   nWells        = modelSettings->getNumberOfWells();
-  float waveletLength = modelSettings->getWaveletTaperingL();
-  maxShift_           = modelSettings->getMaxWaveletShift();
-  minRelativeAmp_     = modelSettings->getMinRelWaveletAmp();
+  readtype_             = ESTIMATE;
+  maxShift_             = modelSettings->getMaxWaveletShift();
+  minRelativeAmp_       = modelSettings->getMinRelWaveletAmp();
+  dz_                   = static_cast<float>(simbox->getdz());
+  nz_                   = simbox->getnz();
+  theta_                = seisCube->getTheta();
+  nzp_                  = seisCube->getNzp();
+  cnzp_                 = nzp_/2+1;
+  rnzp_	                = 2*cnzp_;
+  scale_                = 1.0f; 
+  gridNI_               = 0;   
+  gridNJ_               = 0;
+  cz_                   = 0;
+  shiftGrid_            = NULL;  
+  gainGrid_             = NULL; 
+  inFFTorder_           = true;
+  isReal_               = true; 
 
-  scale_      = 1.0f; 
-  gridNI_     = 0;   
-  gridNJ_     = 0;
-  shiftGrid_  = NULL;  
-  gainGrid_   = NULL; 
-  dz_         = static_cast<float>(simbox->getdz());
-  nz_         = simbox->getnz();
-  nzp_        = seisCube->getNzp();
-  cnzp_       = nzp_/2+1;
-  rnzp_	      = 2*cnzp_;
-  theta_      = seisCube->getTheta();
+  char  * fileName      = new char[MAX_STRING];
+  int     nWells        = modelSettings->getNumberOfWells();
+  float   waveletLength = modelSettings->getWaveletTaperingL();
+  float * dz            = new float[nWells];
+  float * wellWeight    = new float[nWells];
+  int     nz            = simbox->getnz();                       // NBNB-PAL: Denne settes ovenfor også som nz_
+  float   dz0           = static_cast<float>(simbox->getdz());   // NBNB-PAL: Denne settes ovenfor også som dz_
+  int     nzp           = seisCube->getNzp();
+  int     cnzp          = (nzp/2+1);
+  int     rnzp          = 2*cnzp;
 
-  inFFTorder_ = true;
-  isReal_     = true; 
-  cz_         = 0;
-
-  char * fileName = new char[MAX_STRING];
-
-  float * dz = new float[nWells];
-  float *  wellWeight=new float[nWells];
-  int i, j, k;
-  for(i=0;i<3;i++)
-    coeff_[i] = coeff[i];
-
-  int   nz   = simbox->getnz();
-  float dz0  = static_cast<float>(simbox->getdz());
-  int   nzp  = seisCube->getNzp();
-  int   cnzp = (nzp/2+1);
-  int   rnzp = 2*cnzp;
-
-  float * alpha    = new float[nz];
-  float * beta     = new float[nz];
-  float * rho      = new float[nz];
-  float * seisData = new float[nz];
-  bool  * hasData  = new bool[nz];
-
+  float * alpha         = new float[nz];
+  float * beta          = new float[nz];
+  float * rho           = new float[nz];
+  float * seisData      = new float[nz];
+  bool  * hasData       = new bool[nz];
+ 
   //Wavelet estimation
   fftw_real    ** cpp_r = new fftw_real*[nWells];
   fftw_complex ** cpp_c = reinterpret_cast<fftw_complex**>(cpp_r);
@@ -95,6 +86,8 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
 
   fftw_real    ** wavelet_r = new fftw_real*[nWells];
   fftw_complex ** wavelet_c = reinterpret_cast<fftw_complex**>(wavelet_r); 
+
+  int i, j, k;
 
   int maxBlocks = 0;
   for(i=0;i<nWells;i++)
@@ -293,8 +286,13 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
   //flipUpDown(); //NB ODD temporary fix - FRODE
 }
 
-Wavelet1D::Wavelet1D(char * fileName, ModelSettings * modelSettings, int fileFormat, int &errCode, char *errText, int dim)
-  : Wavelet(modelSettings, dim)
+Wavelet1D::Wavelet1D(char          * fileName, 
+                     int             fileFormat, 
+                     ModelSettings * modelSettings, 
+                     float         * reflCoef,  
+                     int           & errCode, 
+                     char          * errText)
+  : Wavelet(modelSettings, 1, reflCoef)
 {
   switch (fileFormat)
   {
@@ -317,8 +315,8 @@ Wavelet1D::Wavelet1D(char * fileName, ModelSettings * modelSettings, int fileFor
   }//end for i
 }
 
-Wavelet1D::Wavelet1D(Wavelet * wavelet, int difftype, int dim)
-  : Wavelet(wavelet, dim)
+Wavelet1D::Wavelet1D(Wavelet * wavelet, int difftype)
+  : Wavelet(wavelet, 1)
 {
   cnzp_ = nzp_/2+1;
   rnzp_ = 2*cnzp_;
@@ -386,8 +384,8 @@ Wavelet1D::Wavelet1D(Wavelet * wavelet, int difftype, int dim)
   }
 }
 
-Wavelet1D::Wavelet1D(int difftype, int nz, int nzp, int dim)
-  : Wavelet(dim)
+Wavelet1D::Wavelet1D(int difftype, int nz, int nzp)
+  : Wavelet(1)
 {
   gridNI_     = 0;   
   gridNJ_     = 0;
@@ -458,8 +456,8 @@ Wavelet1D::Wavelet1D(int difftype, int nz, int nzp, int dim)
   }       
 }
 
-Wavelet1D::Wavelet1D(Wavelet * wavelet, int dim)
-  : Wavelet(wavelet, dim)
+Wavelet1D::Wavelet1D(Wavelet * wavelet)
+  : Wavelet(wavelet, 1)
 {
   cnzp_ = nzp_/2+1;
   rnzp_	= 2*cnzp_;
@@ -1512,7 +1510,7 @@ Wavelet1D::write3DWLfrom1DWL()
   FILE *bFile = fopen(gridFName,"wb");
   LogKit::LogFormatted(LogKit::LOW,"\nWriting 3D Wavelet from Ricker in binary file %s...", gridFName);
   float value;
-  char * output = (char * ) &value;
+  char * output = reinterpret_cast<char *>(&value);
   for(int k=0; k<nz_; k++) {
     for (int j=-nYCells; j<=nYCells; j++) {
       for (int i=-nXCells; i<=nXCells; i++) {
