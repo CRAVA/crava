@@ -622,17 +622,18 @@ void FaciesProb::calculateConditionalFaciesProb(WellData **wells, int nWells)
   // NBNB-PAL: De blokkede loggene burde kanskje ha vært mellomlagret ettersom de benyttes to ganger...
   //
   BlockedLogs ** bw = new BlockedLogs * [nWells];  
-  int nonDeviatedWells = 0;
   int totBlocks = 0;
+  int count = 0;
   for (int i = 0 ; i < nWells ; i++)
   {
     if(wells[i]->getUseForFaciesProbabilities())
     { 
-      bw[i] = new BlockedLogs(wells[i], simbox_, random_) ;
-      totBlocks += bw[i]->getNumberOfBlocks();
-      nonDeviatedWells++;
+      bw[count] = new BlockedLogs(wells[i], simbox_, random_) ;
+      totBlocks += bw[count]->getNumberOfBlocks();
+      count++;
     }
   }
+  int nonDeviatedWells = count;
 
   //
   // Put all blocked facies logs in one vector
@@ -700,6 +701,17 @@ void FaciesProb::calculateConditionalFaciesProb(WellData **wells, int nWells)
       }
     }
   }
+  for (int i = 0 ; i < nonDeviatedWells ; i++)
+    delete [] BWfacies[i];
+  delete [] BWfacies;
+   
+  for(int f = 0 ; f < nFacies_ ; f++) {
+    for (int i = 0 ; i < nonDeviatedWells ; i++)
+      delete [] BWfaciesProb[f][i];
+    delete [] BWfaciesProb[f];
+  }
+  delete [] BWfaciesProb;
+
 
   float ** condFaciesProb  = new float * [nFacies_];
   for(int f = 0 ; f < nFacies_ ; f++)
@@ -752,9 +764,9 @@ void FaciesProb::calculateConditionalFaciesProb(WellData **wells, int nWells)
   //
   // Estimate P( facies2 | facies1 )
   //
-  //LogKit::LogFormatted(LogKit::LOW,"\nThe table below gives the mean conditional probability of finding one of");
-  //LogKit::LogFormatted(LogKit::LOW,"\nthe facies specified in the left column when one of the facies specified");
-  //LogKit::LogFormatted(LogKit::LOW,"\nin the top row are observed in well logs ==> P(A|B)\n");
+  LogKit::LogFormatted(LogKit::HIGH,"\nThe table below gives the mean conditional probability of finding one of");
+  LogKit::LogFormatted(LogKit::HIGH,"\nthe facies specified in the left column when one of the facies specified");
+  LogKit::LogFormatted(LogKit::HIGH,"\nin the top row are observed in well logs ==> P(A|B)\n");
   for(int f1 = 0 ; f1 < nFacies_ ; f1++)
   {
     totProb[f1] = 0.0f;
@@ -777,6 +789,18 @@ void FaciesProb::calculateConditionalFaciesProb(WellData **wells, int nWells)
       totProb[f1] += condFaciesProb[f1][f2];
     }
   }
+
+  for(int f1 = 0 ; f1 < nFacies_ ; f1++) {
+    for(int f2 = 0 ; f2 < nFacies_ ; f2++) {
+      delete [] sumProb[f1][f2];
+      delete [] numProb[f1][f2];
+    }
+    delete [] sumProb[f1];
+    delete [] numProb[f1];
+  }
+  delete [] sumProb;
+  delete [] numProb;
+
   LogKit::LogFormatted(LogKit::LOW,"\nFor all wells:\n");
   LogKit::LogFormatted(LogKit::LOW,"\nFacies      |");
   for(int f=0 ; f < nFacies_ ; f++)
@@ -799,27 +823,13 @@ void FaciesProb::calculateConditionalFaciesProb(WellData **wells, int nWells)
   }
   LogKit::LogFormatted(LogKit::LOW,"\n");
 
-  
-// for(int i=0 ; i < nFacies_ ; i++)
-//     delete [] BWfaciesProb[i];
-//   delete BWfaciesProb;
+  for(int i=0 ; i < nFacies_ ; i++)
+    delete [] condFaciesProb[i];
+  delete condFaciesProb;
 
-//   delete [] BWfacies;
-
-//   for(int i=0 ; i < nFacies_ ; i++)
-//     delete [] condFaciesProb[i];
-//   delete condFaciesProb;
-  
-//   for(int i=0 ; i < nFacies_ ; i++)
-//     delete [] condFaciesCount[i];
-//   delete condFaciesProb;
-  
-  //
-  // NBNB-PAL: gir segmentation fault -> purify?
-  //
-  //for (i = 0 ; i < nonDeviatedWells ; i++)
-  //  delete [] bw[i];
-  //delete [] bw;
+  for (int i = 0 ; i < nonDeviatedWells ; i++)
+    delete bw[i];
+  delete [] bw;
 }
 
 void FaciesProb::calculateFaciesProb(FFTGrid *alphagrid, FFTGrid *betagrid, FFTGrid *rhogrid)
@@ -969,14 +979,24 @@ void FaciesProb::filterWellLogs(WellData **wells, int nWells,
   float * vtRhoBg   = new float[nz_];
   int   * vtFacies  = new int[nz_];
 
-  char* fileName = new char[MAX_STRING];
-  fileName =ModelSettings::makeFullFileName("BW_filteredlogs.dat");
-  FILE *file = fopen(fileName,"w");
-  fileName =ModelSettings::makeFullFileName("BW_originallogs.dat");
-  FILE *file2 = fopen(fileName,"w");
-  fileName =ModelSettings::makeFullFileName("BW_background.dat");
-  FILE *file3 = fopen(fileName,"w");
+  char * fileName     = new char[MAX_STRING];
+  char * fullFileName = new char[MAX_STRING];
+
+  sprintf(fileName,"BW_filteredlogs.dat");
+  fullFileName = ModelSettings::makeFullFileName(fileName);
+  FILE *file = fopen(fullFileName,"w");
+
+  sprintf(fileName,"BW_originallogs.dat");
+  fullFileName = ModelSettings::makeFullFileName(fileName);
+  FILE *file2 = fopen(fullFileName,"w");
+
+  sprintf(fileName,"BW_background.dat");
+  fullFileName = ModelSettings::makeFullFileName(fileName);
+  FILE *file3 = fopen(fullFileName,"w");
+
   delete [] fileName;
+  delete [] fullFileName;
+
   for (w1 = 0 ; w1 < nWells ; w1++)
   {
     if(wells[w1]->getUseForFaciesProbabilities())

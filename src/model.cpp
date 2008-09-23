@@ -575,33 +575,35 @@ Model::readStormFile(char           * fName,
     stormgrid->ReadFromFile(fName);
     stormgrid->SetMissingCode(RMISSING);
   }
-  catch (NRLib2::Exception & e) {
-      sprintf(errText,"%s%s",errText,e.what());
-      error = 1;
-    }
-
+  catch (NRLib2::Exception & e) 
+  {
+    sprintf(errText,"%s%s",errText,e.what());
+    error = 1;
+  }
 
   if(error==0)
   {
     if(modelSettings->getFileGrid() == 1)
       target = new FFTFileGrid(timeSimbox->getnx(), 
-      timeSimbox->getny(), 
-      timeSimbox->getnz(), 
-      modelSettings->getNXpad(), 
-      modelSettings->getNYpad(), 
-      modelSettings->getNZpad());
+                               timeSimbox->getny(), 
+                               timeSimbox->getnz(), 
+                               modelSettings->getNXpad(), 
+                               modelSettings->getNYpad(), 
+                               modelSettings->getNZpad());
     else
       target = new FFTGrid(timeSimbox->getnx(),
-      timeSimbox->getny(), 
-      timeSimbox->getnz(), 
-      modelSettings->getNXpad(), 
-      modelSettings->getNYpad(), 
-      modelSettings->getNZpad());
+                           timeSimbox->getny(), 
+                           timeSimbox->getnz(), 
+                           modelSettings->getNXpad(), 
+                           modelSettings->getNYpad(), 
+                           modelSettings->getNZpad());
     target->setType(FFTGrid::PARAMETER);
     target->fillInFromStorm(timeSimbox,stormgrid, parName);
-    delete  stormgrid;
   }  
-     
+
+  if (stormgrid != NULL)
+    delete stormgrid;
+  
   return(error);
 }
 

@@ -57,8 +57,10 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
   isReal_     = true; 
   cz_         = 0;
 
-  float* dz = new float[nWells];
-  float*  wellWeight=new float[nWells];
+  char * fileName = new char[MAX_STRING];
+
+  float * dz = new float[nWells];
+  float *  wellWeight=new float[nWells];
   int i, j, k;
   for(i=0;i<3;i++)
     coeff_[i] = coeff[i];
@@ -147,7 +149,6 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
       
       int start,length;
       findContiniousPartOfData(hasData,nz,start,length);
-      char* fileName = new char[MAX_STRING];
       if(length*dz0 > waveletLength  ) // must have enough data
       {
         fillInCpp(alpha,beta,rho,start,length,cpp_r[w],nzp);
@@ -170,7 +171,7 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
     }
   }
   delete [] seisLog;
-  float* shiftWell = new float[nWells];
+  float * shiftWell = new float[nWells];
   float shiftAvg = shiftOptimal(ccor_seis_cpp_r,wellWeight,dz,nWells,nzp,shiftWell);
 
   multiplyPapolouis(ccor_seis_cpp_r,dz,nWells,nzp, waveletLength, wellWeight);
@@ -179,9 +180,6 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
 
   rAmp_ = averageWavelets(wavelet_r,nWells,nzp,wellWeight,dz,dz0); // wavelet centered
   cAmp_ = reinterpret_cast<fftw_complex*>(rAmp_);
-   char* fileName = new char[MAX_STRING];
-  //sprintf(fileName,"wavelet");
-  //printToFile(fileName,rAmp_, nzp);
 
   for(int w=0;w<nWells;w++) // gets syntetic seismic with estimated wavelet
   {
@@ -199,8 +197,8 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
     printVecToFile(fileName,synt_seis_r[w], nzp);
     sprintf(fileName,"seis");
     printVecToFile(fileName,seis_r[w], nzp);
-    //printf("Test run\n");
   }
+  delete [] shiftWell;
 
   float * scaleOptWell    = new float[nWells];
   float * errWellOptScale = new float[nWells];
@@ -213,7 +211,7 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
   delete [] errWellOptScale;
   delete [] errWell ;
   
-//  shiftReal(shiftAvg/dz0,rAmp_,nzp);
+  //  shiftReal(shiftAvg/dz0,rAmp_,nzp);
   
   shiftAndScale(shiftAvg,scaleOpt);//shifts wavelet average from wells
   invFFT1DInPlace();
@@ -232,8 +230,6 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
   for(i=0; i < nzp_; i++ )
       norm2 += rAmp_[i]*rAmp_[i];
   norm_= float( sqrt(norm2));
-  //char* fileName=new char[MAX_STRING];
-
 
   if(ModelSettings::getDebugLevel() > 1) {
     sprintf(fileName,"estimated_wavelet_full_%d.txt",int(ceil((theta_*180/PI)-0.5)) );
@@ -282,6 +278,13 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
     delete [] ccor_seis_cpp_r[i] ;
     delete [] wavelet_r[i];
   }
+  delete [] cpp_r; 
+  delete [] seis_r;
+  delete [] cor_cpp_r;
+  delete [] ccor_seis_cpp_r;
+  delete [] wavelet_r;
+  delete [] fileName;
+
   //flipUpDown(); //NB ODD temporary fix - FRODE
 }
 

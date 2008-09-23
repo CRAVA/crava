@@ -15,20 +15,20 @@ using namespace NRLib2;
 
 Volume::Volume()
 {
-  x_min_ = 0.0;
-  y_min_ = 0.0;
-  lx_ = 0.0;
-  ly_ = 0.0;
-  lz_ = 0.0;
-  angle_ = 0.0;
-  z_top_ = new ConstantSurface(0.0);
-  z_bot_ = new ConstantSurface(0.0);
+  x_min_       = 0.0;
+  y_min_       = 0.0;
+  lx_          = 0.0;
+  ly_          = 0.0;
+  lz_          = 0.0;
+  angle_       = 0.0;
+  z_top_       = new ConstantSurface(0.0);
+  z_bot_       = new ConstantSurface(0.0);
   erosion_top_ = 0;
   erosion_bot_ = 0;
 }
 
 
-Volume::Volume(const Volume& volume)
+Volume::Volume(const Volume & volume)
 {
   x_min_ = volume.x_min_;
   y_min_ = volume.y_min_;
