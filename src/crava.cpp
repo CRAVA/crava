@@ -2348,4 +2348,5 @@ Crava::writeResampledStormCube(FFTGrid *grid, StormContGrid *mapping, char * fil
   char * header = simbox->getStormHeader(FFTGrid::PARAMETER,nx_,ny_,nz);
   outgrid.WriteToFile(gfName,std::string(header));
   delete [] header;
+  delete [] gfName;
 }

@@ -291,6 +291,8 @@ Model::~Model(void)
   if(timeCutMapping_!=NULL)
     delete timeCutMapping_;
 
+  if(correlationDirection_ !=NULL)
+    delete correlationDirection_;
   delete randomGen_;
   delete modelSettings_;
   delete timeSimbox_;
