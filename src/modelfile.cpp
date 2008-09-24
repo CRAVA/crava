@@ -1870,8 +1870,6 @@ ModelFile::readCommandWaveletEstimationInterval(char ** params, int & pos, char 
     waveletEstIntFile_[1] = new char[strlen(params[pos+1])+1];
     strcpy(waveletEstIntFile_[0],params[pos]);
     strcpy(waveletEstIntFile_[1],params[pos+1]);
-    sprintf(errText,"Command %s is not active yet\n",params[pos-1]);
-    error = 1;
   }
   pos += nPar+1;
   return(error);

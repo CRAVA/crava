@@ -14,6 +14,7 @@ public:
   Wavelet1D(Simbox         * simbox, 
             FFTGrid        * seisCube, 
             WellData      ** wells, 
+            Surface       ** estimInterval,
             ModelSettings  * modelSettings, 
             float          * reflCoef);
   Wavelet1D(char          * fileName, 

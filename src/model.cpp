@@ -132,7 +132,7 @@ Model::Model(char * fileName)
           if (!failedReflMat)
           {
             processWavelets(wavelet_, seisCube_, wells_, reflectionMatrix_,
-                            timeSimbox_, shiftGrids_, gainGrids_,
+                            timeSimbox_, waveletEstimInterval_, shiftGrids_, gainGrids_,
                             modelSettings_, modelFile, hasSignalToNoiseRatio_,
                             errText, failedWavelet);
           }              
@@ -177,6 +177,10 @@ Model::Model(char * fileName)
           processWells(wells_, timeSimbox_, randomGen_, 
                        modelSettings_, modelFile, 
                        errText, failedWells);
+          loadExtraSurfaces(waveletEstimInterval_, 
+                            faciesEstimInterval_,
+                            timeSimbox_, modelFile,
+                            errText, failedExtraSurf);
           if (!failedWells)
           {
             processBackground(background_, wells_, timeSimbox_, 
@@ -191,17 +195,17 @@ Model::Model(char * fileName)
               processReflectionMatrix(reflectionMatrix_, background_, 
                                       modelSettings_, modelFile, 
                                       errText, failedReflMat);
-              if (!failedReflMat)
+              if (!failedReflMat && !failedExtraSurf)
               {
                 processWavelets(wavelet_, seisCube_, wells_, reflectionMatrix_,
-                                timeSimbox_, shiftGrids_, gainGrids_,
+                                timeSimbox_, waveletEstimInterval_, shiftGrids_, gainGrids_,
                                 modelSettings_, modelFile, hasSignalToNoiseRatio_, 
                                 errText, failedWavelet);
               }
             }
           }
         }
-        if (!failedWells)
+        if (!failedWells && !failedExtraSurf)
         {
           processPriorFaciesProb(priorFacies_,
                                  wells_,
@@ -209,10 +213,6 @@ Model::Model(char * fileName)
                                  modelFile->getTimeNz(),
                                  modelSettings_);
         }
-        loadExtraSurfaces(waveletEstimInterval_, 
-                          faciesEstimInterval_,
-                          timeSimbox_, modelFile,
-                          errText, failedExtraSurf);
       }
     }
 
@@ -1722,6 +1722,7 @@ Model::processWavelets(Wavelet     **& wavelet,
                        WellData     ** wells,
                        float        ** reflectionMatrix,
                        Simbox        * timeSimbox,
+                       Surface      ** waveletEstimInterval,
                        Surface      ** shiftGrids,
                        Surface      ** gainGrids,
                        ModelSettings * modelSettings, 
@@ -1769,6 +1770,7 @@ Model::processWavelets(Wavelet     **& wavelet,
         wavelet[i] = new Wavelet1D(timeSimbox, 
                                    seisCube[i], 
                                    wells, 
+                                   waveletEstimInterval,                                   
                                    modelSettings, 
                                    reflectionMatrix[i]);
       }

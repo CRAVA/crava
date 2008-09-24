@@ -27,6 +27,7 @@
 Wavelet1D::Wavelet1D(Simbox         * simbox,
                      FFTGrid        * seisCube,
                      WellData      ** wells,
+                     Surface       ** estimInterval,
                      ModelSettings  * modelSettings,
                      float          * reflCoef)
   : Wavelet(1,reflCoef)
@@ -140,6 +141,24 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
         hasData[k] = seisData[k] != RMISSING && alpha[k] != RMISSING && beta[k] != RMISSING && rho[k] != RMISSING;
       }
       
+      //
+      // Check that data are within wavelet estimation interval
+      //
+      if (estimInterval != NULL) {
+        const double * xPos  = bl->getXpos();
+        const double * yPos  = bl->getYpos();
+        const double * zPos  = bl->getZpos();
+        const double   zTop  = estimInterval[0]->GetZ(xPos[k],yPos[k]);
+        const double   zBase = estimInterval[1]->GetZ(xPos[k],yPos[k]);
+        for (k = 0 ; k < nz ; k++) {
+          if ( (zPos[k]-0.5*dz_) < zTop || (zPos[k]+0.5*dz_) > zBase)
+            hasData[k] = false;
+        }
+      }
+
+      //
+      // Find continuous part of data
+      //
       int start,length;
       findContiniousPartOfData(hasData,nz,start,length);
       if(length*dz0 > waveletLength  ) // must have enough data

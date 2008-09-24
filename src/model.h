@@ -103,6 +103,7 @@ private:
                                    WellData     ** wells,
                                    float        ** reflectionMatrix,
                                    Simbox        * timeSimbox,
+                                   Surface      ** waveletEstimInterval,
                                    Surface      ** shiftGrids,
                                    Surface      ** gainGrids,
                                    ModelSettings * modelSettings, 
