@@ -823,9 +823,11 @@ void FaciesProb::calculateConditionalFaciesProb(WellData **wells, int nWells)
   }
   LogKit::LogFormatted(LogKit::LOW,"\n");
 
+  delete [] totProb;
+
   for(int i=0 ; i < nFacies_ ; i++)
     delete [] condFaciesProb[i];
-  delete condFaciesProb;
+  delete [] condFaciesProb;
 
   for (int i = 0 ; i < nonDeviatedWells ; i++)
     delete bw[i];
@@ -980,22 +982,23 @@ void FaciesProb::filterWellLogs(WellData **wells, int nWells,
   int   * vtFacies  = new int[nz_];
 
   char * fileName     = new char[MAX_STRING];
-  char * fullFileName = new char[MAX_STRING];
+  char * fullFileName;
 
   sprintf(fileName,"BW_filteredlogs.dat");
   fullFileName = ModelSettings::makeFullFileName(fileName);
   FILE *file = fopen(fullFileName,"w");
+  delete [] fullFileName;
 
   sprintf(fileName,"BW_originallogs.dat");
   fullFileName = ModelSettings::makeFullFileName(fileName);
   FILE *file2 = fopen(fullFileName,"w");
+  delete [] fullFileName;
 
   sprintf(fileName,"BW_background.dat");
   fullFileName = ModelSettings::makeFullFileName(fileName);
   FILE *file3 = fopen(fullFileName,"w");
-
-  delete [] fileName;
   delete [] fullFileName;
+  delete [] fileName;
 
   for (w1 = 0 ; w1 < nWells ; w1++)
   {

@@ -62,7 +62,7 @@ WellData::~WellData()
 
   if (nFacies_ > 0)
   {
-    delete faciesLogName_;
+    delete [] faciesLogName_;
     for (int i = 0 ; i < nFacies_ ; i++)
       if(faciesNames_[i] != NULL)
         delete [] faciesNames_[i];
