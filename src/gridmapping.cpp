@@ -18,7 +18,7 @@
 #include "nrlib/stormgrid/stormcontgrid.hpp"
 
 
-GridMapping::GridMapping(const Simbox *simbox, ModelFile *modelFile, ModelSettings *modelSettings, bool depthmode, bool&failed,FFTGrid *velocity)
+GridMapping::GridMapping(const Simbox *simbox, ModelFile *modelFile, ModelSettings *modelSettings, bool depthmode, bool&failed,char *errText,FFTGrid *velocity)
 {
   depthmode_ = depthmode;
   failed = false;
@@ -29,10 +29,10 @@ GridMapping::GridMapping(const Simbox *simbox, ModelFile *modelFile, ModelSettin
 
   int nz = simbox->getnz();
   if(depthmode==1)
-    setSurfaces(modelFile, modelSettings, failed, nz); // If two surfaces are read from file, the simbox is completed in this routine.
+    setSurfaces(modelFile, modelSettings, failed, errText, nz); // If two surfaces are read from file, the simbox is completed in this routine.
   
   if(velocity!=NULL && surfmissing_>0 && depthmode_ ==1)
-    calculateSurfaceFromVelocity(velocity, simbox, modelSettings, failed); // simbox is set in this routine
+    calculateSurfaceFromVelocity(velocity, simbox, modelSettings, failed, errText); // simbox is set in this routine
  
   mapping_ = NULL;
   if(velocity!=NULL || depthmode_==0)
@@ -111,7 +111,7 @@ void GridMapping::makeMapping(FFTGrid *velocity, const Simbox *timeSimbox)
 
 }
 
-void GridMapping::calculateSurfaceFromVelocity(FFTGrid *velocity, const Simbox *simbox, ModelSettings *modelSettings, bool &failed)
+void GridMapping::calculateSurfaceFromVelocity(FFTGrid *velocity, const Simbox *simbox, ModelSettings *modelSettings, bool &failed, char *errText)
 {
     
   if(surfmissing_>0 && velocity!=NULL)
@@ -160,22 +160,22 @@ void GridMapping::calculateSurfaceFromVelocity(FFTGrid *velocity, const Simbox *
                                      z1Grid_->GetNI(),z1Grid_->GetNJ(), (*values));
     //  simbox_->setDepth(z0Grid_, z1Grid_, nz);
     }
-    setSimbox(modelSettings, failed, nz);
+    setSimbox(modelSettings, failed, errText,nz);
   }
   surfmissing_ = 0;
   
   
 }
 
-void GridMapping::setSurfaces(ModelFile *modelFile, ModelSettings *modelSettings, bool &failed, int nz)
+void GridMapping::setSurfaces(ModelFile *modelFile, ModelSettings *modelSettings, bool &failed, char *errText, int nz)
 {
   surfmissing_ = 0;
   char **surfFile = modelFile->getDepthSurfFile();
   z0Grid_ = NULL;
   if(surfFile[0]==0 && surfFile[1]==0)
   {
-    LogKit::LogFormatted(LogKit::ERROR,"Both top and base depth surfaces are missing.");
-    //  error = 1;
+    sprintf(errText,"%s Both top and base depth surfaces are missing.", errText);
+    failed = 1;
   }
 
   if(surfFile[0]!=NULL)
@@ -185,8 +185,8 @@ void GridMapping::setSurfaces(ModelFile *modelFile, ModelSettings *modelSettings
       z0Grid_ = new Surface(tmpSurf);
     }
     catch (NRLib2::Exception & e) {
-      LogKit::LogFormatted(LogKit::ERROR,e.what());
-    //  error = 1;
+      sprintf(errText,"%s%s",errText,e.what());
+      failed = 1;
     }
   }
   else
@@ -200,8 +200,9 @@ void GridMapping::setSurfaces(ModelFile *modelFile, ModelSettings *modelSettings
       z1Grid_ = new Surface(tmpSurf);
     }
     catch (NRLib2::Exception & e) {
-      LogKit::LogFormatted(LogKit::ERROR,e.what());
-    //  error = 1;
+   //   LogKit::LogFormatted(LogKit::ERROR,e.what());
+    sprintf(errText,"%s%s",errText,e.what());
+    failed = 1;
     }
   }
   else
@@ -211,7 +212,7 @@ void GridMapping::setSurfaces(ModelFile *modelFile, ModelSettings *modelSettings
   if(surfmissing_==0)
   {
   //  simbox_->setDepth(z0Grid_, z1Grid_, nz);
-    setSimbox(modelSettings,failed, nz);
+    setSimbox(modelSettings,failed, errText, nz);
   }
  
 
@@ -219,7 +220,7 @@ void GridMapping::setSurfaces(ModelFile *modelFile, ModelSettings *modelSettings
 
 }
 
-void GridMapping::setSimbox(ModelSettings *modelSettings, bool &failed, int nz)
+void GridMapping::setSimbox(ModelSettings *modelSettings, bool &failed, char *errText, int nz)
 {
   simbox_ = new Simbox();
   simbox_->setDepth(z0Grid_, z1Grid_, nz);
@@ -229,16 +230,13 @@ void GridMapping::setSimbox(ModelSettings *modelSettings, bool &failed, int nz)
   const char * botname = "botdepth.storm";
   simbox_->writeTopBotGrids(topname, botname);
   int error = 0;
-  char *errText = "";
   const SegyGeometry * areaParams = modelSettings->getAreaParameters(); 
       if (areaParams != NULL)
       {
         simbox_->setArea(areaParams, errText);
         if(error ==1)
         {
-          LogKit::LogFormatted(LogKit::ERROR,"%s Problems with definition of depth simbox. \n", errText);
-          //sprintf(errText," %s Problems with definition of depth simbox.",errText);
-
+          sprintf(errText," %s Problems with definition of depth simbox.",errText);
           failed = 1;
         }
         else
@@ -247,7 +245,7 @@ void GridMapping::setSimbox(ModelSettings *modelSettings, bool &failed, int nz)
 
           if(error == Simbox::INTERNALERROR)
           {
-            LogKit::LogFormatted(LogKit::ERROR," A problems was encountered for depth output grid\n");
+            sprintf(errText," %s A problems was encountered for depth output grid\n", errText);
             //LogKit::LogFormatted(LogKit::ERROR,"       %s\n",errText);
             failed = true;
           }

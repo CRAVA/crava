@@ -57,9 +57,9 @@ private:
                                   ModelFile      * modelFile,
                                   char           * errText,
                                   bool           & failed,
-                                  Simbox         * timeCutSimbox);
+                                  Simbox         * &timeCutSimbox);
   void             setupExtendedTimeSimbox(Simbox * timeSimbox, 
-                                           Surface * corrSurf, Simbox * timeCutSimbox);
+                                           Surface * corrSurf, Simbox *& timeCutSimbox);
   void             completeTimeCutSimbox(Simbox       *& timeCutSimbox,
                                          ModelSettings * modelSettings,
                                          char            * errText,

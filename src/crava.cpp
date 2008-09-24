@@ -2140,24 +2140,31 @@ void Crava::writeToFile(char * timeFileName, char * depthFileName, FFTGrid * gri
         grid->writeFile(depthFileName,model_->getTimeDepthMapping()->getSimbox(),0);
 
     }
-  //  else if(model_->timeDepthMapping()->getVelocityFromInversion()==true) // use velocity from inversion
     else // get velocity from inversion
     {
       StormContGrid *mapping; 
       if(model_->getTimeCutMapping()!=NULL)
       {
-        bool failed;
+        bool failed = 0;
+        char *errText = "";
         if(model_->getTimeDepthMapping()->getSimbox()==NULL)
-          model_->getTimeDepthMapping()->calculateSurfaceFromVelocity(postAlpha_, model_->getTimeCutMapping()->getSimbox(),model_->getModelSettings(),failed);
-        model_->getTimeDepthMapping()->makeMapping(postAlpha_,model_->getTimeCutMapping()->getSimbox());
+          model_->getTimeDepthMapping()->calculateSurfaceFromVelocity(postAlpha_, model_->getTimeCutMapping()->getSimbox(),model_->getModelSettings(),failed, errText);
+        if(failed)
+          LogKit::LogFormatted(LogKit::ERROR,"\nDepth conversion: Problems calculating surface from Vp. \n %s", errText);
+        if(model_->getTimeDepthMapping()->getMapping()==0)
+          model_->getTimeDepthMapping()->makeMapping(postAlpha_,model_->getTimeCutMapping()->getSimbox());
         mapping = model_->getTimeDepthMapping()->getMapping();
       }
       else
       {
-        bool failed;
+        bool failed = 0;
+        char *errText = "";
         if(model_->getTimeDepthMapping()->getSimbox()==NULL)
-          model_->getTimeDepthMapping()->calculateSurfaceFromVelocity(postAlpha_, simbox_,model_->getModelSettings(),failed);
-        model_->getTimeDepthMapping()->makeMapping(postAlpha_,simbox_);
+          model_->getTimeDepthMapping()->calculateSurfaceFromVelocity(postAlpha_, simbox_,model_->getModelSettings(),failed, errText);
+        if(failed)
+          LogKit::LogFormatted(LogKit::ERROR,"\nDepth conversion: Problems calculating surface from Vp. \n %s", errText);
+        if(model_->getTimeDepthMapping()->getMapping()==0)
+          model_->getTimeDepthMapping()->makeMapping(postAlpha_,simbox_);
         mapping = model_->getTimeDepthMapping()->getMapping();
       }
       writeResampledStormCube(grid, mapping, depthFileName, simbox_);

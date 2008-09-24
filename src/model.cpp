@@ -154,7 +154,7 @@ Model::Model(char * fileName)
         {
           completeTimeCutSimbox(timeCutSimbox, modelSettings_, errText,failedSimbox);   // Copies area to timeCutSimbox if needed. 
           if(timeCutSimbox!=NULL)
-            timeCutMapping_ = new GridMapping(timeCutSimbox,modelFile, modelSettings_,0, failedSimbox);
+            timeCutMapping_ = new GridMapping(timeCutSimbox,modelFile, modelSettings_,0, failedSimbox, errText);
           if(failedSimbox==false)
           {
             FFTGrid * velocity = NULL;
@@ -167,7 +167,7 @@ Model::Model(char * fileName)
                               modelSettings_, modelFile, 
                               errText, failedVelocity);
             if(!failedVelocity && modelFile->getDoDepthConversion()==1)
-              timeDepthMapping_ = new GridMapping(timeSimbox_, modelFile, modelSettings_, 1, failedSimbox, velocity);
+              timeDepthMapping_ = new GridMapping(timeSimbox_, modelFile, modelSettings_, 1, failedSimbox, errText, velocity);
              if(velocity !=NULL)
               delete velocity;
            }
@@ -596,7 +596,7 @@ Model::makeTimeSimbox(Simbox        *& timeSimbox,
                       ModelFile      * modelFile,
                       char           * errText,
                       bool           & failed,
-                      Simbox         * timeCutSimbox)
+                      Simbox         *& timeCutSimbox)
 {
   int error = 0;
   setSimboxSurfaces(timeSimbox, 
@@ -753,7 +753,7 @@ Model::setSimboxSurfaces(Simbox *& simbox,
 
 void
 Model::setupExtendedTimeSimbox(Simbox  * timeSimbox, 
-                               Surface * corrSurf, Simbox * timeCutSimbox)
+                               Surface * corrSurf, Simbox *& timeCutSimbox)
 {
   timeCutSimbox = new Simbox(timeSimbox);
 
@@ -2497,7 +2497,7 @@ Model::processVelocity(FFTGrid      *& velocity,
   {
     char * velocityField = modelFile->getVelocityField();
 
-    if(strcmp(velocityField,"CONSTANT") != 0)
+    if(strcmp(velocityField,"CONSTANT") == 0)
       velocity = NULL;
     else if(strcmp(velocityField,"FROM_INVERSION")==0)
     {

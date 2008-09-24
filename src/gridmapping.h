@@ -18,18 +18,18 @@ class ModelFile;
 
 class GridMapping{
 public:
-  GridMapping(const Simbox *simbox, ModelFile *modelFile, ModelSettings *modelSettings, bool depthmode, bool &failed, FFTGrid *velocity = NULL);
+  GridMapping(const Simbox *simbox, ModelFile *modelFile, ModelSettings *modelSettings, bool depthmode, bool &failed, char *errText,FFTGrid *velocity = NULL);
   ~GridMapping();
 
  void makeMapping(FFTGrid *velocity = NULL, const Simbox *timeSimbox = NULL);
- void calculateSurfaceFromVelocity(FFTGrid *velocity, const Simbox *simbox, ModelSettings *modelSettings, bool &failed);
+ void calculateSurfaceFromVelocity(FFTGrid *velocity, const Simbox *simbox, ModelSettings *modelSettings, bool &failed, char *errText);
  StormContGrid *getMapping()const {return mapping_;}
  Simbox *getSimbox()const {return simbox_;}
  
  
 private:
-  void setSurfaces(ModelFile *modelFile, ModelSettings *modelSettings, bool &failed, int surfmissing);
- void setSimbox(ModelSettings *modelSettings, bool &failed, int nz);
+  void setSurfaces(ModelFile *modelFile, ModelSettings *modelSettings, bool &failed, char *errText,int surfmissing);
+ void setSimbox(ModelSettings *modelSettings, bool &failed, char *errText, int nz);
  
 
   StormContGrid *mapping_;
