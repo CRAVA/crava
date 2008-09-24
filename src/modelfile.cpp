@@ -2177,29 +2177,41 @@ ModelFile::createVario(char ** param, int nPar, const char * command, char * err
 
   Vario * result = NULL;
   if(i == nVario || nPar-1 == varPar[i] || nPar-1 == varPar[i] - 2)
+  {
+    switch(i)
     {
-      switch(i)
-        {
-        case 0:
-          if(nPar-1==varPar[i])
-            result = new SphericalVario(float(atof(param[1])), float(atof(param[2])), 
-                                        float(atof(param[3])));
-          else
-            result = new SphericalVario(float(atof(param[1])));
-          break;
-        case 1:
-          if(nPar-1==varPar[i])
-            result = new GenExpVario(float(atof(param[1])), float(atof(param[2])), 
-                                     float(atof(param[3])), float(atof(param[4])));
-          else
-            result = new GenExpVario(float(atof(param[1])), float(atof(param[2])));
-          break;
-        default: //New vario: Add here.
-          sprintf(errText, "Unknown variogram type %s in command %s.\n",
-                  param[0], command);
-          break;
-        }
+    case 0:
+      if(nPar-1==varPar[i]) {
+        // Convert from azimuth (in degrees) to internal angle (in radians).
+        float rot = static_cast<float>(90.0 - atof(param[3]));
+        result = new SphericalVario(static_cast<float>(atof(param[1])), 
+                                    static_cast<float>(atof(param[2])), 
+                                    rot);
+      }
+      else
+        // Do not convert the angle here
+        result = new SphericalVario(static_cast<float>(atof(param[1])));
+      break;
+    case 1:
+      if(nPar-1==varPar[i]) {
+        // Convert from azimuth (in degrees) to internal angle (in radians).
+        float rot = static_cast<float>(90.0 - atof(param[4]));
+        result = new GenExpVario(static_cast<float>(atof(param[1])), 
+                                 static_cast<float>(atof(param[2])), 
+                                 static_cast<float>(atof(param[3])), 
+                                 rot);
+      }
+      else
+        // Do not convert the angle here.
+        result = new GenExpVario(static_cast<float>(atof(param[1])), 
+                                 static_cast<float>(atof(param[2])));
+      break;
+    default: //New vario: Add here.
+      sprintf(errText, "Unknown variogram type %s in command %s.\n",
+              param[0], command);
+      break;
     }
+  }
   else
     sprintf(errText, 
             "Variogram %s in command %s needs %d parameters (%d given).\n",
