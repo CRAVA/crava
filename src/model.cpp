@@ -413,13 +413,13 @@ Model::checkAvailableMemory(Simbox        * timeSimbox,
 }
 
 
-
 // readSegyFiles: reads SegY files form fNames table and stores in target table.
 int
 Model::readSegyFiles(char          ** fNames, 
                      int              nFiles, 
                      FFTGrid       ** target, 
                      Simbox        *& timeSimbox, 
+                     SegyGeometry **& geometries,
                      ModelSettings *& modelSettings, 
                      char           * errText, 
                      int              fileno)
@@ -460,13 +460,14 @@ Model::readSegyFiles(char          ** fNames,
             const SegyGeometry *geometry;
             geometry = segy->getGeometry();
             geometry->writeGeometry();
+            geometries[i] = new SegyGeometry(geometry);
           if(timeSimbox->status() == Simbox::NOAREA)
           {
             modelSettings->setAreaParameters(geometry);
             sbError = timeSimbox->setArea(geometry, tmpErr);
             if(sbError==1)
             {
-              sprintf(errText,"%s Problem with defining time simbox.",tmpErr);
+              sprintf(errText,"%s Could not define time simulation grid.",tmpErr);
               error++;
             }
             else
@@ -490,11 +491,7 @@ Model::readSegyFiles(char          ** fNames,
           }
           else
           {
-            sbError = timeSimbox->insideRectangle(geometry->getX0(), 
-                                                  geometry->getY0(), 
-                                                  geometry->getAngle(), 
-                                                  geometry->getlx(), 
-                                                  geometry->getly());
+            sbError = timeSimbox->insideRectangle(geometry);
             if(sbError == 1)
             {
               sprintf(errText,"%sSpecified area in command AREA is larger than the seismic data from volume %s\n",
@@ -628,7 +625,7 @@ Model::makeTimeSimbox(Simbox        *& timeSimbox,
       error = timeSimbox->setArea(areaParams, errText);
       if(error==1)
       {
-        sprintf(errText,"%sERROR: A problem was encountered for simulation grid\n",errText);
+        sprintf(errText,"%s The AREA specified in the model file extends outside the surface(s).\n",errText);
         failed = true;
       }
       else
@@ -649,8 +646,7 @@ Model::makeTimeSimbox(Simbox        *& timeSimbox,
         }
         else
         {
-          if(error == Simbox::INTERNALERROR)
-            sprintf(errText,"%sERROR: A problem was encountered for simulation grid\n",errText);
+          sprintf(errText,"%s. Could not make time simulation grid.\n",errText);
           failed = true;
         }
       }
@@ -695,8 +691,7 @@ Model::makeTimeSimbox(Simbox        *& timeSimbox,
     }
     else
     {
-      if(error == Simbox::INTERNALERROR)
-        sprintf(errText,"%sERROR: A problems was encountered for simulation grid\n",errText);
+      sprintf(errText,"%s Could not make the time simulation grid.\n",errText);
       failed = true;
     }
   }
@@ -962,11 +957,17 @@ Model::processSeismic(FFTGrid      **& seisCube,
 
   if(seismicFile != NULL)
   {
-    seisCube = new FFTGrid * [modelSettings->getNumberOfAngles()];
-
     char tmpErrText[MAX_STRING];
-    if(readSegyFiles(seismicFile, modelSettings->getNumberOfAngles(), seisCube, 
-                     timeSimbox, modelSettings, tmpErrText) == 0)
+    bool areaInModelFile = modelSettings->getAreaParameters() != NULL;
+    int nAngles = modelSettings->getNumberOfAngles();
+    SegyGeometry ** geometry = new SegyGeometry * [nAngles];
+    for (int i =0 ; i < nAngles ; i++)
+      geometry[i] = NULL;
+
+    seisCube = new FFTGrid * [nAngles];
+
+    if(readSegyFiles(seismicFile, nAngles, seisCube, timeSimbox, 
+                     geometry, modelSettings, tmpErrText) == 0)
     {
       int formatFlag = modelSettings->getFormatFlag();
       if(formatFlag == 0)
@@ -975,12 +976,32 @@ Model::processSeismic(FFTGrid      **& seisCube,
       if(modelSettings->getDebugFlag() == 1)
       {
         char sName[100];
-        for(int i=0 ; i<modelSettings->getNumberOfAngles() ; i++)
+        for(int i=0 ; i<nAngles ; i++)
         {
           sprintf(sName, "origSeis%d",i);
           seisCube[i]->writeFile(sName, timeSimbox);
         }
       }
+
+      LogKit::LogFormatted(LogKit::LOW,"\nArea/resolution           x0           y0         dx      dy     azimuth\n");
+      LogKit::LogFormatted(LogKit::LOW,"------------------------------------------------------------------------\n");
+      if (areaInModelFile) {
+        double azimuth = (-1)*timeSimbox->getAngle()*(180.0/M_PI);
+        if (azimuth < 0)
+          azimuth += 360.0;
+        LogKit::LogFormatted(LogKit::LOW,"Model file       %11.2f  %11.2f    %7.2f %7.2f    %8.3f\n", 
+                             timeSimbox->getx0(), timeSimbox->gety0(), timeSimbox->getdx(), 
+                             timeSimbox->getdy(), azimuth);
+      }
+      for (int i = 0 ; i < nAngles ; i++)
+        if (geometry[i] != NULL) {
+          double geoAngle = (-1)*timeSimbox->getAngle()*(180/M_PI);
+          if (geoAngle < 0)
+            geoAngle += 360.0f;
+          LogKit::LogFormatted(LogKit::LOW,"Seismic data %d   %11.2f  %11.2f    %7.2f %7.2f    %8.3f\n",i,
+                               geometry[i]->getX0(), geometry[i]->getY0(), geometry[i]->getDx(), 
+                               geometry[i]->getDy(), geoAngle);
+          }
       LogKit::LogFormatted(LogKit::LOW,"\nTime simulation grids:\n");
       LogKit::LogFormatted(LogKit::LOW,"  Output grid         %4i * %4i * %4i   : %10i\n",
                            timeSimbox->getnx(),timeSimbox->getny(),timeSimbox->getnz(),
@@ -988,6 +1009,11 @@ Model::processSeismic(FFTGrid      **& seisCube,
       LogKit::LogFormatted(LogKit::LOW,"  FFT grid            %4i * %4i * %4i   : %10i\n",
                            modelSettings->getNXpad(),modelSettings->getNYpad(),modelSettings->getNZpad(),
                            modelSettings->getNXpad()*modelSettings->getNYpad()*modelSettings->getNZpad());
+
+      for (int i =0 ; i < nAngles ; i++)
+        if (geometry[i] != NULL)
+          delete geometry[i];
+      delete [] geometry;
     }
     else
     {
@@ -1383,10 +1409,19 @@ Model::processBackground(Background   *& background,
             char tmpErrText[MAX_STRING];
             sprintf(tmpErrText,"%c",'\0');
             int readerror = 0;
-            if(findFileType(backFile[i]) == SEGYFILE)
-              readerror = readSegyFiles(backFile, 3,backModel,
-                                        timeSimbox, modelSettings,
+            if(findFileType(backFile[i]) == SEGYFILE) {
+              int nAngles = modelSettings->getNumberOfAngles();
+              SegyGeometry ** geometry = new SegyGeometry * [nAngles];
+              for (int j =0 ; j < nAngles ; j++)
+                geometry[i] = NULL;
+              readerror = readSegyFiles(backFile, 3, backModel, timeSimbox, 
+                                        geometry, modelSettings,
                                         tmpErrText, i);
+              for (int j =0 ; j < nAngles ; j++)
+                if (geometry[i] != NULL)
+                  delete geometry[i];
+              delete [] geometry;
+            }
             else
               readerror = readStormFile(backFile[i], backModel[i], parName[i], 
                                         timeSimbox, modelSettings,
@@ -1742,7 +1777,7 @@ Model::processWavelets(Wavelet     **& wavelet,
         int fileFormat = getWaveletFileFormat(waveletFile[i],errText);
         if(fileFormat < 0)
         {
-          sprintf(errText, "%sERROR: Unknown file format of file  %s.\n", errText, waveletFile[i]);
+          sprintf(errText, "%s Unknown file format of file  %s.\n", errText, waveletFile[i]);
           error += 1;
         }
         else {
@@ -1774,13 +1809,13 @@ Model::processWavelets(Wavelet     **& wavelet,
         if (waveScale[i] != RMISSING)        // If RMISSING we will later scale wavelet to get EmpSN = TheoSN.
           wavelet[i]->scale(waveScale[i]);
         if ((wavelet[i]->getDim() == 3) && !timeSimbox->getIsConstantThick()) {
-          sprintf(errText, "%s ERROR: Simbox must have constant thickness when 3D wavelet.\n", errText);
+          sprintf(errText, "%s Simbox must have constant thickness when 3D wavelet.\n", errText);
           error += 1;
         }
         if (noiseEnergy[i] == RMISSING)
         {
           if (wavelet[i]->getDim() == 3) { //Not possible to estimate noise variance when 3D wavelet
-            sprintf(errText, "%s ERROR: Estimation of noise st. dev. is not possible for 3D wavelet.\n", errText);
+            sprintf(errText, "%s Estimation of noise st. dev. is not possible for 3D wavelet.\n", errText);
             sprintf(errText, "%s        Noise st.dev. or s/n ratio must be specified in modelfile\n", errText);
             error += 1;
           }
@@ -1798,8 +1833,8 @@ Model::processWavelets(Wavelet     **& wavelet,
         {
           if (hasSignalToNoiseRatio && (noiseEnergy[i] <= 1.0 || noiseEnergy[i] > 10.0))
           {
-            sprintf(errText, "%s ERROR: Illegal signal-to-noise ratio of %.3f for cube %d\n", errText, noiseEnergy[i],i);
-            sprintf(errText, "%s       Ratio must be in interval 1.0 < SNratio < 10.0\n", errText);
+            sprintf(errText, "%s Illegal signal-to-noise ratio of %.3f for cube %d\n", errText, noiseEnergy[i],i);
+            sprintf(errText, "%s Ratio must be in interval 1.0 < SNratio < 10.0\n", errText);
             error += 1;
           }
         }
@@ -2257,11 +2292,11 @@ Model::printSettings(ModelSettings * modelSettings,
       LogKit::LogFormatted(LogKit::LOW,"\n");
       for (int i = 0 ; i < modelSettings->getNumberOfWells() ; i++) 
       {
-        LogKit::LogFormatted(LogKit::LOW,"  %-2d                                       :   ",i+1);
+        LogKit::LogFormatted(LogKit::LOW,"  %-2d                                       :  ",i+1);
 
-        if (generateBackground) LogKit::LogFormatted(LogKit::LOW,"  %-6d",modelSettings->getIndicatorBGTrend(i));
-        if (estimateWavelet)    LogKit::LogFormatted(LogKit::LOW,"  %-6d",modelSettings->getIndicatorWavelet(i));
-        if (estimateFaciesProb) LogKit::LogFormatted(LogKit::LOW,"  %-6d",modelSettings->getIndicatorFacies(i));
+        if (generateBackground) LogKit::LogFormatted(LogKit::LOW,"  %-7s",(modelSettings->getIndicatorBGTrend(i) ? "yes" : " no"));
+        if (estimateWavelet)    LogKit::LogFormatted(LogKit::LOW,"  %-7s",(modelSettings->getIndicatorWavelet(i) ? "yes" : " no"));
+        if (estimateFaciesProb) LogKit::LogFormatted(LogKit::LOW,"  %-7s",(modelSettings->getIndicatorFacies(i)  ? "yes" : " no"));
         LogKit::LogFormatted(LogKit::LOW,"\n");
       }
     }
@@ -2512,10 +2547,19 @@ Model::processVelocity(FFTGrid      *& velocity,
       char tmpErrText[MAX_STRING];
       sprintf(tmpErrText,"%c",'\0');
       int readerror = 0;
-      if(findFileType(velocityField) == SEGYFILE)
+      if(findFileType(velocityField) == SEGYFILE) {
+        int nAngles = modelSettings->getNumberOfAngles();
+        SegyGeometry ** geometry = new SegyGeometry * [nAngles];
+        for (int i =0 ; i < nAngles ; i++)
+          geometry[i] = NULL;
         readerror = readSegyFiles((&velocityField), 1,(&velocity),
-                                  timeSimbox, modelSettings,
+                                  timeSimbox, geometry, modelSettings,
                                   tmpErrText,0);
+        for (int i =0 ; i < nAngles ; i++)
+          if (geometry[i] != NULL)
+            delete geometry[i];
+        delete [] geometry;
+      }
       else
         readerror = readStormFile(velocityField, velocity, parName, 
                                   timeSimbox, modelSettings,

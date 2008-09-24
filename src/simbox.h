@@ -8,7 +8,10 @@
 
 struct irapgrid;
 
-class Simbox : public NRLib2::Volume {
+class SegyGeometry;
+
+class Simbox : public NRLib2::Volume 
+{
 public:
   Simbox(void);
   Simbox(double x0, double y0, Surface * z0, double lx, 
@@ -47,7 +50,7 @@ public:
   void       getMinMaxZ(double & minZ, double & maxZ) const;
   bool       getILxflag()                    const {return(ILxflag_);}
   int        isInside(double x, double y) const;
-  int        insideRectangle(double xr, double yr, double rotr, double lxr, double lyr) const;
+  int        insideRectangle(const SegyGeometry *  geometry) const;
   double     getTop(double x, double y) const;
   double     getBot(double x, double y) const;
   char     * getStormHeader(int cubetype, int nx, int ny, int nz, bool flat = false, bool ascii = false) const;

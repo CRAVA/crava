@@ -226,65 +226,77 @@ Simbox::isInside(double x, double y) const
 }
 
 int
-Simbox::insideRectangle(double xr, double yr, double rotr, double lxr, double lyr) const
+Simbox::insideRectangle(const SegyGeometry *  geometry) const
 {
+  double xr   = geometry->getX0();
+  double yr   = geometry->getY0();
+  double rotr = geometry->getAngle();
+  double lxr  = geometry->getlx();
+  double lyr  = geometry->getly();
+  double dxr  = geometry->getDx();
+  double dyr  = geometry->getDy();
+
   // check that incoming rectangle is within simbox +-0.5 grid cells
   int allOk = 1;
   double cosrotr = cos(rotr);
   double sinrotr = sin(rotr);
-  double x = GetXMin();
-  double y = GetYMin();
-  double rx =  (x-xr)*cosrotr + (y-yr)*sinrotr;
-  double ry = -(x-xr)*sinrotr + (y-yr)*cosrotr;
+  double x       = GetXMin();
+  double y       = GetYMin();
+  double rx      =  (x-xr)*cosrotr + (y-yr)*sinrotr;
+  double ry      = -(x-xr)*sinrotr + (y-yr)*cosrotr;
   if(rx < -0.49*dx_ || rx > lxr+0.49*dx_ || ry<-0.49*dy_ || ry > lyr+0.49*dy_)
     allOk = 0;
 
-  x = GetXMin()+GetLX()*cosrot_;
-  y = GetYMin()+GetLX()*sinrot_;
+  x  = GetXMin()+GetLX()*cosrot_;
+  y  = GetYMin()+GetLX()*sinrot_;
   rx =  (x-xr)*cosrotr + (y-yr)*sinrotr;
   ry = -(x-xr)*sinrotr + (y-yr)*cosrotr;
   if(rx < -0.49*dx_ || rx > lxr+0.49*dx_ || ry<-0.49*dy_ || ry > lyr+0.49*dy_)
     allOk = 0;
-
-  x = GetXMin()-GetLY()*sinrot_;
-  y = GetYMin()+GetLY()*cosrot_;
+  
+  x  = GetXMin()-GetLY()*sinrot_;
+  y  = GetYMin()+GetLY()*cosrot_;
   rx =  (x-xr)*cosrotr + (y-yr)*sinrotr;
   ry = -(x-xr)*sinrotr + (y-yr)*cosrotr;
   if(rx < -0.49*dx_ || rx > lxr+0.49*dx_ || ry<-0.49*dy_ || ry > lyr+0.49*dy_)
     allOk = 0;
-
-  x = GetXMin()+GetLX()*cosrot_-GetLY()*sinrot_;
-  y = GetYMin()+GetLX()*sinrot_+GetLY()*cosrot_;
+  
+  x  = GetXMin()+GetLX()*cosrot_-GetLY()*sinrot_;
+  y  = GetYMin()+GetLX()*sinrot_+GetLY()*cosrot_;
   rx =  (x-xr)*cosrotr + (y-yr)*sinrotr;
   ry = -(x-xr)*sinrotr + (y-yr)*cosrotr;
   if(rx < -0.49*dx_ || rx > lxr+0.49*dx_ || ry<-0.49*dy_ || ry > lyr+0.49*dy_)
     allOk = 0;
- // if(allOk == 0)
- // {
   if(rotr<0)
     rotr+=2*PI;
-    LogKit::LogFormatted(LogKit::LOW,"\n             X0         Y0              DeltaX       DeltaY    Angle\n");
-    LogKit::LogFormatted(LogKit::LOW,"---------------------------------------------------------------------\n");
-    LogKit::LogFormatted(LogKit::LOW,"Area:    %11.2f %11.2f   %11.2f %11.2f   %8.3f\n", GetXMin(), GetYMin(), GetLX(), GetLY(), (GetAngle()*180)/PI);
-    LogKit::LogFormatted(LogKit::LOW,"Seismic: %11.2f %11.2f   %11.2f %11.2f   %8.3f\n", xr, yr, lxr, lyr, (rotr*180/PI));
-    LogKit::LogFormatted(LogKit::LOW,"\nCorner     XY Area                    XY Seismic\n");
-    LogKit::LogFormatted(LogKit::LOW,"-----------------------------------------------------------\n");
-    LogKit::LogFormatted(LogKit::LOW,"A %18.2f %11.2f    %11.2f %11.2f\n", GetXMin(),GetYMin(), xr,yr);
-    LogKit::LogFormatted(LogKit::LOW,"B %18.2f %11.2f    %11.2f %11.2f\n", GetXMin()+GetLX()*cosrot_, GetYMin()+GetLX()*sinrot_,
-      xr+lxr*cosrotr, yr+lxr*sinrotr);
-    LogKit::LogFormatted(LogKit::LOW,"C %18.2f %11.2f    %11.2f %11.2f\n", GetXMin()-GetLY()*sinrot_, GetYMin()+GetLY()*cosrot_,
-      xr -lyr*sinrotr, yr +lyr*cosrotr);
-    LogKit::LogFormatted(LogKit::LOW,"D %18.2f %11.2f    %11.2f %11.2f\n", 
-      GetXMin()+GetLX()*cosrot_-GetLY()*sinrot_, GetYMin()+GetLX()*sinrot_+GetLY()*cosrot_,
-      xr +lxr*cosrotr-lyr*sinrotr, yr +lxr*sinrotr+lyr*cosrotr);
-//  }
-
-  //
-  // Calculate and write the largest possible AREA based on the (dx, dy, angle) given by user.
-  //
-  // Not implemented...
-
-  return(1-allOk);
+  
+  if (allOk==0) {
+    double seisAzimuth = (-1)*rotr*(180/M_PI);
+    double areaAzimuth = (-1)*GetAngle()*(180/M_PI);
+    if (seisAzimuth < 0) seisAzimuth += 360.0;
+    if (areaAzimuth < 0) areaAzimuth += 360.0;
+    LogKit::LogFormatted(LogKit::LOW,"                        x0           y0         dx      dy     azimuth\n");
+    LogKit::LogFormatted(LogKit::LOW,"----------------------------------------------------------------------\n");
+    LogKit::LogFormatted(LogKit::LOW,"Model area:    %11.2f  %11.2f    %7.2f %7.2f    %8.3f\n", GetXMin(), GetYMin(), dx_, dy_, areaAzimuth);
+    LogKit::LogFormatted(LogKit::LOW,"Seismic area:  %11.2f  %11.2f    %7.2f %7.2f    %8.3f\n", xr, yr, dxr, dyr, seisAzimuth);
+    
+    LogKit::LogFormatted(LogKit::HIGH,"\nCorner     XY Area                    XY Seismic\n");
+    LogKit::LogFormatted(LogKit::HIGH,"-----------------------------------------------------------\n");
+    LogKit::LogFormatted(LogKit::HIGH,"A %18.2f %11.2f    %11.2f %11.2f\n", GetXMin(),GetYMin(), xr,yr);
+    LogKit::LogFormatted(LogKit::HIGH,"B %18.2f %11.2f    %11.2f %11.2f\n", GetXMin()+GetLX()*cosrot_, GetYMin()+GetLX()*sinrot_,
+                         xr+lxr*cosrotr, yr+lxr*sinrotr);
+    LogKit::LogFormatted(LogKit::HIGH,"C %18.2f %11.2f    %11.2f %11.2f\n", GetXMin()-GetLY()*sinrot_, GetYMin()+GetLY()*cosrot_,
+                         xr -lyr*sinrotr, yr +lyr*cosrotr);
+    LogKit::LogFormatted(LogKit::HIGH,"D %18.2f %11.2f    %11.2f %11.2f\n", 
+                         GetXMin()+GetLX()*cosrot_-GetLY()*sinrot_, GetYMin()+GetLX()*sinrot_+GetLY()*cosrot_,
+                         xr +lxr*cosrotr-lyr*sinrotr, yr +lxr*sinrotr+lyr*cosrotr);
+    //
+    // Calculate and write the largest possible AREA based on the (dx, dy, angle) given by user.
+    //
+    // Not implemented...
+  }
+  int error = 1 - allOk; 
+  return error;
 }
 
 

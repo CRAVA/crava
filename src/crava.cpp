@@ -2146,7 +2146,7 @@ void Crava::writeToFile(char * timeFileName, char * depthFileName, FFTGrid * gri
       if(model_->getTimeCutMapping()!=NULL)
       {
         bool failed = 0;
-        char *errText = "";
+        char * errText = new char[MAX_STRING];
         if(model_->getTimeDepthMapping()->getSimbox()==NULL)
           model_->getTimeDepthMapping()->calculateSurfaceFromVelocity(postAlpha_, model_->getTimeCutMapping()->getSimbox(),model_->getModelSettings(),failed, errText);
         if(failed)
@@ -2154,11 +2154,12 @@ void Crava::writeToFile(char * timeFileName, char * depthFileName, FFTGrid * gri
         if(model_->getTimeDepthMapping()->getMapping()==0)
           model_->getTimeDepthMapping()->makeMapping(postAlpha_,model_->getTimeCutMapping()->getSimbox());
         mapping = model_->getTimeDepthMapping()->getMapping();
+        delete errText;
       }
       else
       {
         bool failed = 0;
-        char *errText = "";
+        char * errText = new char[MAX_STRING];
         if(model_->getTimeDepthMapping()->getSimbox()==NULL)
           model_->getTimeDepthMapping()->calculateSurfaceFromVelocity(postAlpha_, simbox_,model_->getModelSettings(),failed, errText);
         if(failed)
@@ -2166,6 +2167,7 @@ void Crava::writeToFile(char * timeFileName, char * depthFileName, FFTGrid * gri
         if(model_->getTimeDepthMapping()->getMapping()==0)
           model_->getTimeDepthMapping()->makeMapping(postAlpha_,simbox_);
         mapping = model_->getTimeDepthMapping()->getMapping();
+        delete [] errText;
       }
       writeResampledStormCube(grid, mapping, depthFileName, simbox_);
    

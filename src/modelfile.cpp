@@ -931,13 +931,16 @@ ModelFile::readCommandArea(char ** params, int & pos, char * errText)
     pos += nPar+1;
     return(1);
   }
-  double x0  = static_cast<double>(atof(params[pos]));            
-  double y0  = static_cast<double>(atof(params[pos+1]));          
-  double lx  = static_cast<double>(atof(params[pos+2]));          
-  double ly  = static_cast<double>(atof(params[pos+3]));          
-  double rot = static_cast<double>(PI*atof(params[pos+4])/180.0); 
-  double dx  = static_cast<double>(atof(params[pos+5]));          
-  double dy  = static_cast<double>(atof(params[pos+6]));          
+  double x0      = static_cast<double>(atof(params[pos]));            
+  double y0      = static_cast<double>(atof(params[pos+1]));          
+  double lx      = static_cast<double>(atof(params[pos+2]));          
+  double ly      = static_cast<double>(atof(params[pos+3]));          
+  double azimuth = static_cast<double>(atof(params[pos+4])); 
+  double dx      = static_cast<double>(atof(params[pos+5]));          
+  double dy      = static_cast<double>(atof(params[pos+6]));          
+
+  // Convert from azimuth (in degrees) to internal angle (in radians).
+  double rot = (-1)*azimuth*(M_PI/180.0);
 
   int nx = static_cast<int>(lx/dx);
   int ny = static_cast<int>(ly/dy);

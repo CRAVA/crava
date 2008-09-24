@@ -137,6 +137,7 @@ private:
                                  int              nFiles, 
                                  FFTGrid       ** target, 
                                  Simbox        *& timeSimbox, 
+                                 SegyGeometry **& geometry,
                                  ModelSettings *& modelSettings,
                                  char           * errText,
                                  int              fileno = -1); 

@@ -131,16 +131,16 @@ void Volume::SetDimensions(double x_min, double y_min,
  
 
   if (!CheckSurface(*z_top_)) {
-    throw Exception("The top surface does not fit with the volume.");
+    throw Exception("The top surface does not cover the volume.");
   }
   if (!CheckSurface(*z_bot_)) {
-    throw Exception("The bottom surface does not fit with the volume.");
+    throw Exception("The base surface does not cover the volume.");
   }
   if (erosion_top_ != 0 && !CheckSurface(*erosion_top_)) {
-    throw Exception("The erosion top surface does not fit with the volume.");
+    throw Exception("The erosion top surface does not cover the volume.");
   }
   if (erosion_bot_ != 0 && !CheckSurface(*erosion_bot_)) {
-    throw Exception("The erosion bottom surface does not fit with the volume.");
+    throw Exception("The erosion bottom surface does not cover the volume.");
   }
  lz_ = RecalculateLZ();
 }
@@ -151,16 +151,16 @@ void Volume::SetAngle(double angle)
   
 
   if (!CheckSurface(*z_top_)) {
-    throw Exception("The top surface does not fit with the volume.");
+    throw Exception("The top surface does not cover the volume.");
   }
   if (!CheckSurface(*z_bot_)) {
-    throw Exception("The bottom surface does not fit with the volume.");
+    throw Exception("The bottom surface does not cover the volume.");
   }
   if (erosion_top_ != 0 && !CheckSurface(*erosion_top_)) {
-    throw Exception("The erosion top surface does not fit with the volume.");
+    throw Exception("The erosion top surface does not cover the volume.");
   }
   if (erosion_bot_ != 0 && !CheckSurface(*erosion_bot_)) {
-    throw Exception("The erosion bottom surface does not fit with the volume.");
+    throw Exception("The erosion bottom surface does not cover the volume.");
   }
   lz_ = RecalculateLZ();
 }
@@ -173,16 +173,16 @@ void Volume::SetSurfaces(Surface* top_surf,
 {
   if(lx_ > 0 || ly_ > 0 ) { //Check that area is set.
     if (!CheckSurface(*top_surf)) {
-      throw Exception("The top surface does not fit with volume.");
+      throw Exception("The top surface does not cover the volume.");
     }
     if (!CheckSurface(*bot_surf)) {
-      throw Exception("The bottom surface does not fit with the volume.");
+      throw Exception("The bottom surface does not cover the volume.");
     }
     if (erosion_top && !CheckSurface(*erosion_top)) {
-      throw Exception("The erosion top surface does not fit with the volume.");
+      throw Exception("The erosion top surface does not cover the volume.");
     }
     if (erosion_bot && !CheckSurface(*erosion_bot)) {
-      throw Exception("The erosion bottom surface does not fit with the volume.");
+      throw Exception("The erosion bottom surface does not cover the volume.");
     }
   }
 

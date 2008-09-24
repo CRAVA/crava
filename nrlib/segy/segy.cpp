@@ -1464,9 +1464,10 @@ SegyGeometry::findIJFromILXL(int IL, int XL, int &i, int &j)
 void SegyGeometry::writeGeometry() const
 {
   double geoangle = -rot_*180/(M_PI);
+  if (geoangle < 0)
+    geoangle += 360.0;
 
-  LogKit::LogFormatted(LogKit::LOW,"\n             X0         Y0              DeltaX       DeltaY    Angle\n");
-  LogKit::LogFormatted(LogKit::LOW,"---------------------------------------------------------------------\n");
-  LogKit::LogFormatted(LogKit::LOW,"Seismic Area:    %11.2f %11.2f   %11.2f %11.2f   %8.3f\n", x0_, y0_, dx_, dy_, geoangle);
-
+  LogKit::LogFormatted(LogKit::HIGH,"\n                        x0           y0         dx      dy     azimuth\n");
+  LogKit::LogFormatted(LogKit::HIGH,"----------------------------------------------------------------------\n");
+  LogKit::LogFormatted(LogKit::HIGH,"Seismic area:  %11.2f  %11.2f    %7.2f %7.2f    %8.3f\n", x0_, y0_, dx_, dy_, geoangle);
 }
