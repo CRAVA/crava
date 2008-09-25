@@ -392,7 +392,7 @@ void
 Sgri::write1DWL()
 {
   char* fileName = new char[MAX_STRING];
-  sprintf(fileName,"../../Output/Debug/3D/1Das3D.Sgrh");
+  sprintf(fileName,"../../Output/Debug/3Das1D.txt");
   FILE *wlFile = fopen(fileName, "w");
 
   for (int k=0; k<GetNK(); k++)
