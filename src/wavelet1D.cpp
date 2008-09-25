@@ -1483,17 +1483,16 @@ void
 Wavelet1D::write3DWLfrom1DWL()
 {
   char* headerFName = new char[MAX_STRING];
-  sprintf(headerFName,"../../Input/Wavelet/3D/Ricker_Gauss_5.Sgrh");
+  sprintf(headerFName,"../../Input/Wavelet/3D/Ricker_Gauss_1.Sgrh");
   char* gridFName = new char[MAX_STRING];
-  sprintf(gridFName,"../../Input/Wavelet/3D/Ricker_Gauss_5.Sgri");
+  sprintf(gridFName,"../../Input/Wavelet/3D/Ricker_Gauss_1.Sgri");
   char* asciiFName = new char[MAX_STRING];
-  sprintf(asciiFName,"../../Output/Debug/Ricker_Gauss_5.txt");
+  sprintf(asciiFName,"../../Output/Debug/Ricker_Gauss_1.txt");
 
-  double range = 250.0;
   double dx = 50.0;
   double dy = 50.0;
-  int nXCells = static_cast<int> (range / dx);
-  int nYCells = static_cast<int> (range / dy);
+  int nXCells = 1;
+  int nYCells = 1;
   assert (nXCells >= 0);
   assert (nYCells >= 0);
   
@@ -1506,7 +1505,7 @@ Wavelet1D::write3DWLfrom1DWL()
   fprintf(hFile, "Z (km)\n");
   fprintf(hFile, "PSF\n");
   fprintf(hFile, "1\n");
-  fprintf(hFile, "Ricker Gauss with lateral range %f\n", range);
+  fprintf(hFile, "Ricker Gauss with x-range %d cells and y-range %d cells.\n", nXCells, nYCells);
   fprintf(hFile, "1 1 1\n");
   fprintf(hFile, "%d %d %d\n", 2*nXCells+1, 2*nYCells+1, nz_);
   fprintf(hFile, "%f %f %f\n", dx*0.001, dy*0.001, dz_*0.001);
