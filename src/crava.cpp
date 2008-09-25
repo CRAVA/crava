@@ -840,10 +840,11 @@ Crava::computePostMeanResidAndFFTCov()
         fillInverseAbskWRobust(k,errMult3);              // defines content of errMult3
       } //simbox_->getIsConstantThick() 
     }
-    else { //3D-wavelet
-      if( simbox_->getIsConstantThick() == true) {
-        for (j=0; j<nyp_; j++) {
-          for (i=0; i<cnxp; i++) {
+    
+    for( j = 0; j < nyp_; j++) {
+      for( i = 0; i < cnxp; i++) { 
+        if (seisWavelet_[0]->getDim() == 3) { //3D-wavelet
+          if( simbox_->getIsConstantThick() == true) {
             for(l = 0; l < ntheta_; l++) {
               errMult1[l].re  = static_cast<float>( seisWavelet_[l]->getCAmp(k,j,i).re ); 
               errMult1[l].im  = static_cast<float>( seisWavelet_[l]->getCAmp(k,j,i).im ); 
@@ -855,23 +856,17 @@ Crava::computePostMeanResidAndFFTCov()
               errMult1[l].re   = static_cast<float>(seisWavelet_[l]->getCAmp(k,j,i).re / seisWavelet_[l]->getNorm());
               errMult1[l].im   = static_cast<float>(seisWavelet_[l]->getCAmp(k,j,i).im / seisWavelet_[l]->getNorm());
             }       
+            for(l = 0; l < ntheta_; l++) {
+              errMult2[l].re   = static_cast<float>(errorSmooth3[l]->getCAmp(k).re / errorSmooth3[l]->getNorm());
+              errMult2[l].im   = static_cast<float>(errorSmooth3[l]->getCAmp(k).im / errorSmooth3[l]->getNorm());
+            }
+            lib_matrFillOnesVecCpx(errMult3,ntheta_);
           }
-        }
-        for(l = 0; l < ntheta_; l++) {
-          errMult2[l].re   = static_cast<float>(errorSmooth3[l]->getCAmp(k).re / errorSmooth3[l]->getNorm());
-          errMult2[l].im   = static_cast<float>(errorSmooth3[l]->getCAmp(k).im / errorSmooth3[l]->getNorm());
-        }
-        lib_matrFillOnesVecCpx(errMult3,ntheta_);
-      }
-      else {
-        LogKit::LogFormatted(LogKit::LOW,"\nERROR: Not implemented inversion with 3D wavelet for non-constant simbox thickness\n");
-        exit(1);
-      }
-    } //3D-wavelet
-    for( j = 0; j < nyp_; j++)
-    {
-      for( i = 0; i < cnxp; i++)
-      { 
+          else {
+            LogKit::LogFormatted(LogKit::LOW,"\nERROR: Not implemented inversion with 3D wavelet for non-constant simbox thickness\n");
+            exit(1);
+          }
+        } //3D-wavelet
         ijkMean[0] = meanAlpha_->getNextComplex();
         ijkMean[1] = meanBeta_ ->getNextComplex();
         ijkMean[2] = meanRho_  ->getNextComplex(); 
@@ -907,14 +902,14 @@ Crava::computePostMeanResidAndFFTCov()
               {        // Note we multiply kWNorm[l] and comp.conj(kWNorm[m]) hence the + and not a minus as in pure multiplication
                 errVar[l][m].re  = float( 0.5*(1.0-wnc_)*errThetaCov_[l][m] * ijkErrLam.re * ( errMult1[l].re *  errMult1[m].re +  errMult1[l].im *  errMult1[m].im)); 
                 errVar[l][m].re += float( 0.5*(1.0-wnc_)*errThetaCov_[l][m] * ijkErrLam.re * ( errMult2[l].re *  errMult2[m].re +  errMult2[l].im *  errMult2[m].im)); 
-
-                errVar[l][m].im  = float( 0.5*(1.0-wnc_)*errThetaCov_[l][m] * ijkErrLam.re * (-errMult1[l].re * errMult1[m].im + errMult1[l].im * errMult1[m].re));
-                errVar[l][m].im += float( 0.5*(1.0-wnc_)*errThetaCov_[l][m] * ijkErrLam.re * (-errMult2[l].re * errMult2[m].im + errMult2[l].im * errMult2[m].re));
-                if(l==m)
-                {
+                if(l==m) {
                   errVar[l][m].re += float( wnc_*errThetaCov_[l][m] * errMult3[l].re  * errMult3[l].re);
                   errVar[l][m].im   = 0.0;             
-                }        
+                }   
+                else {
+                  errVar[l][m].im  = float( 0.5*(1.0-wnc_)*errThetaCov_[l][m] * ijkErrLam.re * (-errMult1[l].re * errMult1[m].im + errMult1[l].im * errMult1[m].re));
+                  errVar[l][m].im += float( 0.5*(1.0-wnc_)*errThetaCov_[l][m] * ijkErrLam.re * (-errMult2[l].re * errMult2[m].im + errMult2[l].im * errMult2[m].re));
+                }
               }
 
               lib_matrProdCpx(K, parVar , ntheta_, 3 ,3, KS);              //  KS is defined here  
