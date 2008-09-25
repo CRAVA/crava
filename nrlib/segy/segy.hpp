@@ -114,7 +114,8 @@ private:
   SegYTrace               * readTrace(NRLib2::Volume * volume, 
                                       double           zPad, 
                                       bool           & duplicateHeader, 
-                                      bool             onlyVolume = false);     ///< Read single trace from file
+                                      bool             onlyVolume,
+                                      bool           & outsideSurface);     ///< Read single trace from file
   void                      writeMainHeader(const TextualHeader& ebcdicHeader); ///< Quasi-dummy at the moment. 
   void                      readDummyTrace(std::fstream & file, int format, int nz);
   double                    interpolate(int xyidx, 

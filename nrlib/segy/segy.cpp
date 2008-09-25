@@ -97,6 +97,7 @@ SegY::~SegY()
 const SegYTrace *
 SegY::getNextTrace(double zPad, Volume * volume, bool onlyVolume )
 {
+  bool outsideSurface = false;
   bool duplicateHeader; // Only needed for memory allocations in readAllTraces()
   if(file_.eof()==true || singleTrace_ == false)
     return NULL;
@@ -104,7 +105,8 @@ SegY::getNextTrace(double zPad, Volume * volume, bool onlyVolume )
     return readTrace(volume, 
                      zPad,
                      duplicateHeader,
-                     onlyVolume);  
+                     onlyVolume,
+                     outsideSurface);  
 }
 
 void 
@@ -120,11 +122,13 @@ SegY::readAllTraces(Volume *volume, double zPad, bool onlyVolume)
   LogKit::LogMessage(LogKit::LOW,"\nReading SEGY file " );
   LogKit::LogMessage(LogKit::LOW, fileName_);
 
+  bool outsideSurface = false;
   bool duplicateHeader; // Needed for memory allocations.
   traces_[0] = readTrace(volume, 
                          zPad, 
                          duplicateHeader,
-                         onlyVolume);
+                         onlyVolume,
+                         outsideSurface);
 
   double writeInterval = 0.02;
   double nextWrite = writeInterval;
@@ -145,7 +149,8 @@ SegY::readAllTraces(Volume *volume, double zPad, bool onlyVolume)
     traces_[i] = readTrace(volume, 
                            zPad, 
                            duplicateHeader,
-                           onlyVolume);
+                           onlyVolume,
+                           outsideSurface);
     bytesRead += traceSize;
     if (duplicateHeader)
       bytesRead += 3600;
@@ -172,7 +177,8 @@ SegYTrace *
 SegY::readTrace(Volume * volume, 
                 double   zPad, 
                 bool   & duplicateHeader, 
-                bool     onlyVolume)
+                bool     onlyVolume,
+                bool   & outsideSurface)
 {
   TraceHeader * traceHeader = new TraceHeader(traceHeaderFormat_);
 
@@ -203,14 +209,31 @@ SegY::readTrace(Volume * volume,
       delete traceHeader;
       return(NULL);
     }
-    zTop = static_cast<float>(volume->GetTopSurface().GetZ(x,y));
+    try {
+      zTop = static_cast<float>(volume->GetTopSurface().GetZ(x,y));
+    }
+    catch (NRLib2::Exception & e) {
+      outsideSurface = true;
+      readDummyTrace(file_,binaryHeader_->getFormat(),nz_);
+      return(NULL);
+    }
+
     if(volume->GetTopSurface().IsMissing(zTop))
     {
       readDummyTrace(file_,binaryHeader_->getFormat(),nz_);
       delete traceHeader;
       return(NULL);
     }
-    zBot = static_cast<float>(volume->GetBotSurface().GetZ(x,y));
+
+    try {
+      zBot = static_cast<float>(volume->GetBotSurface().GetZ(x,y));
+    }
+    catch (NRLib2::Exception & e) {
+      outsideSurface = true;
+      readDummyTrace(file_,binaryHeader_->getFormat(),nz_);
+      return(NULL);
+    }
+
     if(volume->GetBotSurface().IsMissing(zBot))
     {
       readDummyTrace(file_,binaryHeader_->getFormat(),nz_);
