@@ -30,9 +30,8 @@ Wavelet3D::Wavelet3D(char          * fileName,
                      float           theta, 
                      float         * reflCoef,  
                      int           & errCode, 
-                     char          * errText, 
-                     int             dim)
-: Wavelet(modelSettings, dim, reflCoef)
+                     char          * errText)
+: Wavelet(modelSettings, 3, reflCoef)
 {
   nx_ = simBox->getnx();
   ny_ = simBox->getny();
@@ -184,8 +183,8 @@ Wavelet3D::Wavelet3D(char          * fileName,
   delete sgri;
 }
 
-Wavelet3D::Wavelet3D(Wavelet * wavelet, int dim)
-  : Wavelet(wavelet, dim)
+Wavelet3D::Wavelet3D(Wavelet * wavelet)
+  : Wavelet(wavelet, 3)
 {
 }
 

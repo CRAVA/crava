@@ -18,9 +18,8 @@ public:
             float           theta, 
             float         * reflCoef,  
             int           & errCode, 
-            char          * errText, 
-            int             dim = 3);
-  Wavelet3D(Wavelet * wavelet, int dim = 3);
+            char          * errText);
+  Wavelet3D(Wavelet * wavelet);
   virtual ~Wavelet3D() {}
 
   bool           consistentSize(int nzp, int nyp, int nxp) const; 
