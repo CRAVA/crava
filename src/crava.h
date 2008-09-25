@@ -143,7 +143,7 @@ private:
   void               dumpCorrT(float* corrT,float dt);
   void               initPostKriging();          
   void               writeToFile(char * timeFileName, char * depthFileName, FFTGrid * grid);
-  void               writeResampledStormCube(FFTGrid *grid, GridMapping *gridmapping, char * fileName, const Simbox *simbox, bool ascii);
+  void               writeResampledStormCube(FFTGrid *grid, GridMapping *gridmapping, char * fileName, const Simbox *simbox);
   float              energyTreshold_; //If energy in reflection trace divided by mean energy
                                       //in reflection trace is lower than this, the reflections
                                       //will be interpolated. Default 0, set from model.

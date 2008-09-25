@@ -40,7 +40,7 @@ public:
 
   void         setAccessMode(int mode);
   void         endAccess();
-  void         writeFile(const char * fileName, const Simbox * simbox, bool writeSegy=true, float z0 = 4.0); //Use this instead of the ones below.
+  void         writeFile(const char * fileName, const Simbox * simbox, bool writeSegy=true, float z0 = 0.0, bool writeStorm = true); //Use this instead of the ones below.
   void         writeStormFile(const char * fileName, const Simbox * simbox, bool ascii = false,
                               bool padding = false, bool flat = false);
   int          writeSegyFile(const char * fileName, const Simbox * simbox, float z0);

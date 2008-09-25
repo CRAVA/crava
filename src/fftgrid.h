@@ -86,7 +86,7 @@ public:
   int                  getType() const {return(cubetype_);}
   virtual void         setAccessMode(int mode){assert(mode>=0);}
   virtual void         endAccess(){}
-  virtual void         writeFile(const char * fileName, const Simbox * simbox, bool writeSegy = true, float z0 = 0.0); //Use this instead of the ones below.
+  virtual void         writeFile(const char * fileName, const Simbox * simbox, bool writeSegy = true, float z0 = 0.0, bool writeStorm = true); //Use this instead of the ones below.
   virtual void         writeStormFile(const char * fileName, const Simbox * simbox, bool ascii = false, 
                                       bool padding = false, bool flat = false);//No mode/randomaccess
   virtual int          writeSegyFile(const char * fileName, const Simbox * simbox, float z0);   //No mode/randomaccess

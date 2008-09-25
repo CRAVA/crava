@@ -1310,15 +1310,15 @@ FFTGrid::consistentSize(int nx,int ny, int nz, int nxp, int nyp, int nzp)
 
 
 void 
-FFTGrid::writeFile(const char * fileName, const Simbox * simbox, bool writeSegy, float z0)
+FFTGrid::writeFile(const char * fileName, const Simbox * simbox, bool writeSegy, float z0, bool writeStorm)
 {
   if(formatFlag_ != NONE)
   {
-    if((formatFlag_ & STORMFORMAT) == STORMFORMAT)
+    if((formatFlag_ & STORMFORMAT) == STORMFORMAT && writeStorm ==1)
       writeStormFile(fileName, simbox);
     if((formatFlag_ & SEGYFORMAT) == SEGYFORMAT && writeSegy==1)
       writeSegyFile(fileName, simbox, z0);
-    if((formatFlag_ & STORMASCIIFORMAT) == STORMASCIIFORMAT)
+    if((formatFlag_ & STORMASCIIFORMAT) == STORMASCIIFORMAT && writeStorm==1)
       writeStormFile(fileName, simbox, true);
   }
 }

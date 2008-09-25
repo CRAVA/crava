@@ -113,11 +113,11 @@ Model::Model(char * fileName)
     char errText[MAX_STRING];
     sprintf(errText,"%c",'\0');
 
-    bool format;
-    if(modelSettings_->getFormatFlag()==4)
-      format = 1;
-    else
-      format = 0;
+    int format = 0;
+    if((modelSettings_->getFormatFlag() & FFTGrid::STORMASCIIFORMAT) == FFTGrid::STORMASCIIFORMAT)
+      format += 1;
+    if((modelSettings_->getFormatFlag() & FFTGrid::STORMFORMAT) == FFTGrid::STORMFORMAT)
+      format +=2;
 
     makeTimeSimbox(timeSimbox_, modelSettings_, modelFile, //Handles correlation direction too.
                    errText, failedSimbox, timeCutSimbox);

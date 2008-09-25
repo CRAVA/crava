@@ -2116,11 +2116,13 @@ void Crava::writeToFile(char * timeFileName, char * depthFileName, FFTGrid * gri
 
   if(!((outputFlag_ & ModelSettings::NOTIME)>0))
   {
-    if(model_->getTimeCutMapping()!=NULL && model_->getModelSettings()->getFormatFlag()!=2)
+    if(model_->getTimeCutMapping()!=NULL && 
+      ((model_->getModelSettings()->getFormatFlag() & FFTGrid::STORMASCIIFORMAT)>0 || (model_->getModelSettings()->getFormatFlag() & FFTGrid::STORMFORMAT)>0))
     {
-      //StormContGrid *mapping = model_->getTimeCutMapping()->getMapping();
-      bool ascii = model_->getTimeCutMapping()->getFormat();
-      writeResampledStormCube(grid, model_->getTimeCutMapping(), timeFileName, simbox_, ascii);
+      //bool ascii = model_->getTimeCutMapping()->getFormat();
+      writeResampledStormCube(grid, model_->getTimeCutMapping(), timeFileName, simbox_);
+      if(model_->getModelSettings()->getFormatFlag() & FFTGrid::SEGYFORMAT)
+        grid->writeFile(timeFileName,simbox_,1, model_->getModelSettings()->getSegyOffset(),0); // write only segy, not storm
     }
     else
       grid->writeFile(timeFileName,simbox_,1, model_->getModelSettings()->getSegyOffset());
@@ -2132,8 +2134,8 @@ void Crava::writeToFile(char * timeFileName, char * depthFileName, FFTGrid * gri
       StormContGrid *mapping = model_->getTimeDepthMapping()->getMapping();
       if(mapping!=NULL)
       {
-        bool ascii = model_->getTimeDepthMapping()->getFormat();
-        writeResampledStormCube(grid, model_->getTimeDepthMapping(), depthFileName, simbox_, ascii);
+        //bool ascii = model_->getTimeDepthMapping()->getFormat();
+        writeResampledStormCube(grid, model_->getTimeDepthMapping(), depthFileName, simbox_);
       }
       else // only top and bottom surfaces given, no velocity field
         grid->writeFile(depthFileName,model_->getTimeDepthMapping()->getSimbox(),0);
@@ -2141,7 +2143,6 @@ void Crava::writeToFile(char * timeFileName, char * depthFileName, FFTGrid * gri
     }
     else // get velocity from inversion
     {
-      StormContGrid *mapping; 
       if(model_->getTimeCutMapping()!=NULL)
       {
         bool failed = 0;
@@ -2165,10 +2166,9 @@ void Crava::writeToFile(char * timeFileName, char * depthFileName, FFTGrid * gri
         if(model_->getTimeDepthMapping()->getMapping()==0)
           model_->getTimeDepthMapping()->makeMapping(postAlpha_,simbox_);  
         delete [] errText;
-      }
-      mapping = model_->getTimeDepthMapping()->getMapping();
-      bool ascii = model_->getTimeDepthMapping()->getFormat();
-      writeResampledStormCube(grid, model_->getTimeDepthMapping(), depthFileName, simbox_, ascii);
+      }   
+      //bool ascii = model_->getTimeDepthMapping()->getFormat();
+      writeResampledStormCube(grid, model_->getTimeDepthMapping(), depthFileName, simbox_);
    
     }
   
@@ -2321,7 +2321,7 @@ void Crava::computeFaciesProb()
   }
 }
 void
-Crava::writeResampledStormCube(FFTGrid *grid, GridMapping *gridmapping, char * fileName, const Simbox *simbox, bool ascii)
+Crava::writeResampledStormCube(FFTGrid *grid, GridMapping *gridmapping, char * fileName, const Simbox *simbox)
 {
   // simbox is related to the cube we resample from. gridmapping contains simbox for the cube we resample to.
   int i,j,k;
@@ -2347,13 +2347,25 @@ Crava::writeResampledStormCube(FFTGrid *grid, GridMapping *gridmapping, char * f
       }
     }
   }
-  char * gfName;
-  if(ascii==1)
+  char * gfName = 0;
+  int format = gridmapping->getFormat();
+  char *header = 0;
+  if(format==1 || format==3)  // storm ascii
+  {
     gfName = ModelSettings::makeFullFileName(fileName, ".txt");
-  else
+    header = gridmapping->getSimbox()->getStormHeader(FFTGrid::PARAMETER,nx_,ny_,nz, 0, 1);
+    outgrid.SetFormat(StormContGrid::STORM_ASCII);
+    outgrid.WriteToFile(gfName,std::string(header));
+  }
+  if(format==2 || format==3) // storm binary
+  {
     gfName = ModelSettings::makeFullFileName(fileName, ".storm");
-  char * header = gridmapping->getSimbox()->getStormHeader(FFTGrid::PARAMETER,nx_,ny_,nz, 0, ascii);
-  outgrid.WriteToFile(gfName,std::string(header));
-  delete [] header;
-  delete [] gfName;
+    header = gridmapping->getSimbox()->getStormHeader(FFTGrid::PARAMETER,nx_,ny_,nz, 0, 0);
+    outgrid.SetFormat(StormContGrid::STORM_BINARY);
+    outgrid.WriteToFile(gfName,std::string(header));
+  }
+  if(header!=0)
+    delete [] header;
+  if(gfName!=0)
+    delete [] gfName;
 }
