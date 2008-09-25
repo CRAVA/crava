@@ -97,7 +97,7 @@ Wavelet3D::Wavelet3D(char          * fileName,
   }
 
   if (errCode == 0) {
-    float sf = 1.0; //Just preliminary in order to get not too small values
+    double norm2=0.0;
     int i,j,k;
     float x, y, z, value;
     for (k=0; k<=nzp_/2; k++) {
@@ -106,26 +106,30 @@ Wavelet3D::Wavelet3D(char          * fileName,
         y = j * dy_;
         for (i=0; i<=nxp_/2; i++) {
           x = i * dx_;
-          value = sf * sgri->getWaveletValue(x, y, z);
+          value = sgri->getWaveletValue(x, y, z);
           ampCube_.setRealValue(i, j, k, value, true);
+          norm2 += value * value;
         }
         for (i=(nxp_/2)+1; i<nxp_; i++) {
           x = (i-nxp_) * dx_;
-          value = sf * sgri->getWaveletValue(x, y, z);
+          value = sgri->getWaveletValue(x, y, z);
           ampCube_.setRealValue(i, j, k, value, true);
+          norm2 += value * value;
         }
       }
       for (j=(nyp_/2)+1; j<nyp_; j++) {
         y = (j-nyp_) * dy_;
         for (i=0; i<=nxp_/2; i++) {
           x = i * dx_;
-          value = sf * sgri->getWaveletValue(x, y, z);
+          value = sgri->getWaveletValue(x, y, z);
           ampCube_.setRealValue(i, j, k, value, true);
+          norm2 += value * value;
         }
         for (i=(nxp_/2)+1; i<nxp_; i++) {
           x = (i-nxp_) * dx_;
-          value = sf * sgri->getWaveletValue(x, y, z);
+          value = sgri->getWaveletValue(x, y, z);
           ampCube_.setRealValue(i, j, k, value, true);
+          norm2 += value * value;
         } 
       }
     }
@@ -135,36 +139,34 @@ Wavelet3D::Wavelet3D(char          * fileName,
         y = j * dy_;
         for (i=0; i<=nxp_/2; i++) {
           x = i * dx_;
-          value = sf * sgri->getWaveletValue(x, y, z);
+          value = sgri->getWaveletValue(x, y, z);
           ampCube_.setRealValue(i, j, k, value, true);
+          norm2 += value * value;
         }
         for (i=(nxp_/2)+1; i<nxp_; i++) {
           x = (i-nxp_) * dx_;
-          value = sf * sgri->getWaveletValue(x, y, z);
+          value = sgri->getWaveletValue(x, y, z);
           ampCube_.setRealValue(i, j, k, value, true);
+          norm2 += value * value;
         }
       }
       for (j=(nyp_/2)+1; j<nyp_; j++) {
         y = (j-nyp_) * dy_;
         for (i=0; i<=nxp_/2; i++) {
           x = i * dx_;
-          value = sf * sgri->getWaveletValue(x, y, z);
+          value = sgri->getWaveletValue(x, y, z);
           ampCube_.setRealValue(i, j, k, value, true);
+          norm2 += value * value;
         }
         for (i=(nxp_/2)+1; i<nxp_; i++) {
           x = (i-nxp_) * dx_;
-          value = sf * sgri->getWaveletValue(x, y, z);
+          value = sgri->getWaveletValue(x, y, z);
           ampCube_.setRealValue(i, j, k, value, true);
+          norm2 += value * value;
         } 
       }
     }
     waveletLength_ = getWaveletLengthF();
-
-    double norm2=0.0;
-    for(i=0; i < nxp_; i++ )
-      for (j=0; j < nyp_; j++)
-        for (k=0; k < nzp_; k++)
-          norm2 += getRAmp(k,j,i)*getRAmp(k,j,i);
     norm_= float( sqrt(norm2));
 
     //For debugging purposes, the shifted FFTGrid is written to file to compare to input sgri
