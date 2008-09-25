@@ -18,7 +18,7 @@
 #include "nrlib/stormgrid/stormcontgrid.hpp"
 
 
-GridMapping::GridMapping(const Simbox *simbox, ModelFile *modelFile, ModelSettings *modelSettings, bool depthmode, bool&failed,char *errText,int format, FFTGrid *velocity)
+GridMapping::GridMapping(const Simbox *simbox, ModelFile *modelFile, ModelSettings *modelSettings, bool depthmode, bool&failed,char *errText,bool format, FFTGrid *velocity)
 {
   depthmode_ = depthmode;
   format_ = format;

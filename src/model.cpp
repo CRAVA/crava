@@ -113,7 +113,7 @@ Model::Model(char * fileName)
     char errText[MAX_STRING];
     sprintf(errText,"%c",'\0');
 
-    int format;
+    bool format;
     if(modelSettings_->getFormatFlag()==4)
       format = 1;
     else
