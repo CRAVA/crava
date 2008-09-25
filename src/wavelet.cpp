@@ -769,7 +769,7 @@ Wavelet::findOptimalWaveletScale(fftw_real ** synt_seis_r,
     seisNorm[i] = 0.0f;
   }
 
-  float minSeisAmp = 1e-7;
+  float minSeisAmp = static_cast<float> (1e-7);
   int totCount=0;
 
   for(int i=0;i<nWells;i++)
