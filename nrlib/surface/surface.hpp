@@ -3,6 +3,8 @@
 #ifndef NRLIB_SURFACE_HPP
 #define NRLIB_SURFACE_HPP
 
+#include <limits>
+
 namespace NRLib2 {
   class Surface {
   public:
@@ -23,6 +25,11 @@ namespace NRLib2 {
 
     virtual double Min() const = 0;
     virtual double Max() const = 0;
+
+    virtual double GetXMin() const = 0;
+    virtual double GetYMin() const = 0;
+    virtual double GetXMax() const = 0;
+    virtual double GetYMax() const = 0;
   };
 
   class ConstantSurface : public Surface {
@@ -49,6 +56,11 @@ namespace NRLib2 {
 
     double Min() const {return(z_);}
     double Max() const {return(z_);}
+
+    double GetXMin() const {return(-std::numeric_limits<double>::infinity());}
+    double GetYMin() const {return(-std::numeric_limits<double>::infinity());}
+    double GetXMax() const {return(std::numeric_limits<double>::infinity());}
+    double GetYMax() const {return(std::numeric_limits<double>::infinity());}
 
   private:
     double z_;
