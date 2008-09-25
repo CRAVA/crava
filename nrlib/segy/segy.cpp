@@ -1490,7 +1490,7 @@ void SegyGeometry::writeGeometry() const
   if (geoangle < 0)
     geoangle += 360.0;
 
-  LogKit::LogFormatted(LogKit::HIGH,"\n                        x0           y0         dx      dy     azimuth\n");
-  LogKit::LogFormatted(LogKit::HIGH,"----------------------------------------------------------------------\n");
-  LogKit::LogFormatted(LogKit::HIGH,"Seismic area:  %11.2f  %11.2f    %7.2f %7.2f    %8.3f\n", x0_, y0_, dx_, dy_, geoangle);
+  LogKit::LogFormatted(LogKit::HIGH,"\n                        x0           y0            lx        ly         dx      dy     azimuth\n");
+  LogKit::LogFormatted(LogKit::HIGH,"----------------------------------------------------------------------------------------------\n");
+  LogKit::LogFormatted(LogKit::HIGH,"Seismic area:  %11.2f  %11.2f    %7.2f %7.2f    %8.3f\n", x0_, y0_, nx_*dx_, ny_*dy_, dx_, dy_, geoangle);
 }

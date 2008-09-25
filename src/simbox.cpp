@@ -276,10 +276,12 @@ Simbox::insideRectangle(const SegyGeometry *  geometry) const
     double areaAzimuth = (-1)*GetAngle()*(180/M_PI);
     if (seisAzimuth < 0) seisAzimuth += 360.0;
     if (areaAzimuth < 0) areaAzimuth += 360.0;
-    LogKit::LogFormatted(LogKit::LOW,"                        x0           y0         dx      dy     azimuth\n");
-    LogKit::LogFormatted(LogKit::LOW,"----------------------------------------------------------------------\n");
-    LogKit::LogFormatted(LogKit::LOW,"Model area:    %11.2f  %11.2f    %7.2f %7.2f    %8.3f\n", GetXMin(), GetYMin(), dx_, dy_, areaAzimuth);
-    LogKit::LogFormatted(LogKit::LOW,"Seismic area:  %11.2f  %11.2f    %7.2f %7.2f    %8.3f\n", xr, yr, dxr, dyr, seisAzimuth);
+    LogKit::LogFormatted(LogKit::LOW,"                        x0           y0            lx         ly         dx      dy     azimuth\n");
+    LogKit::LogFormatted(LogKit::LOW,"--------------------------------------------------------------------------------------------\n");
+    LogKit::LogFormatted(LogKit::LOW,"Model area:    %11.2f  %11.2f    %10.2f %10.2f    %7.2f %7.2f    %8.3f\n", 
+                         GetXMin(), GetYMin(), GetLX(), GetLY(), dx_, dy_, areaAzimuth);
+    LogKit::LogFormatted(LogKit::LOW,"Seismic area:  %11.2f  %11.2f    %10.2f %10.2f    %7.2f %7.2f    %8.3f\n", 
+                         xr, yr, lxr, lyr, dxr, dyr, seisAzimuth);
     
     LogKit::LogFormatted(LogKit::HIGH,"\nCorner     XY Area                    XY Seismic\n");
     LogKit::LogFormatted(LogKit::HIGH,"-----------------------------------------------------------\n");
@@ -438,7 +440,6 @@ Simbox::setArea(const SegyGeometry * geometry, char * errText)
   double rot = geometry->getAngle();
   double dx  = geometry->getDx();
   double dy  = geometry->getDy();
- 
 
   ILxflag_ = geometry->getILxflag();
   try
@@ -447,7 +448,7 @@ Simbox::setArea(const SegyGeometry * geometry, char * errText)
   }
   catch (NRLib2::Exception & e)
   {
-    sprintf(errText,"%s%s",errText,e.what());
+    sprintf(errText,"%s Could not set x0, y0, lx, and ly. %s",errText,e.what());
     return 1;
   }
   try
@@ -456,7 +457,7 @@ Simbox::setArea(const SegyGeometry * geometry, char * errText)
   }
   catch (NRLib2::Exception & e)
   {
-    sprintf(errText,"%s%s",errText,e.what());
+    sprintf(errText,"%s Could not set rotation angle. %s",errText,e.what());
     return 1;
   }
   cosrot_ = cos(rot);

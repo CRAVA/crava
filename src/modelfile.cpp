@@ -1888,7 +1888,7 @@ ModelFile::readCommandFaciesEstimationInterval(char ** params, int & pos, char *
     faciesEstIntFile_[1] = new char[strlen(params[pos+1])+1];
     strcpy(faciesEstIntFile_[0],params[pos]);
     strcpy(faciesEstIntFile_[1],params[pos+1]);
-    sprintf(errText,"Command %s is not active yet\n",params[pos-1]);
+    sprintf(errText,"Command %s has not been implemented yet.\n",params[pos-1]);
     error = 1;
   }
   pos += nPar+1;

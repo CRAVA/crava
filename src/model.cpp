@@ -465,16 +465,18 @@ Model::readSegyFiles(char          ** fNames,
         
         if (error == 0)
         {
-            const SegyGeometry *geometry;
-            geometry = segy->getGeometry();
-            geometry->writeGeometry();
-            geometries[i] = new SegyGeometry(geometry);
+          const SegyGeometry * geometry;
+          geometry = segy->getGeometry();
+          geometry->writeGeometry();
+          geometries[i] = new SegyGeometry(geometry);
           if(timeSimbox->status() == Simbox::NOAREA)
           {
             modelSettings->setAreaParameters(geometry);
             sbError = timeSimbox->setArea(geometry, tmpErr);
             if(sbError==1)
             {
+              std::string text(std::string("Seismic data"));
+              writeAreas(geometry,timeSimbox,text);
               sprintf(errText,"%s Could not define time simulation grid.",tmpErr);
               error++;
             }
@@ -633,6 +635,8 @@ Model::makeTimeSimbox(Simbox        *& timeSimbox,
       error = timeSimbox->setArea(areaParams, errText);
       if(error==1)
       {
+        std::string text(std::string("Model file"));
+        writeAreas(areaParams,timeSimbox,text);
         sprintf(errText,"%s The AREA specified in the model file extends outside the surface(s).\n",errText);
         failed = true;
       }
@@ -991,24 +995,27 @@ Model::processSeismic(FFTGrid      **& seisCube,
         }
       }
 
-      LogKit::LogFormatted(LogKit::LOW,"\nArea/resolution           x0           y0         dx      dy     azimuth\n");
-      LogKit::LogFormatted(LogKit::LOW,"------------------------------------------------------------------------\n");
+      LogKit::LogFormatted(LogKit::LOW,"\nArea/resolution           x0           y0            lx        ly          dx      dy     azimuth\n");
+      LogKit::LogFormatted(LogKit::LOW,"-------------------------------------------------------------------------------------------------\n");
       if (areaInModelFile) {
         double azimuth = (-1)*timeSimbox->getAngle()*(180.0/M_PI);
         if (azimuth < 0)
           azimuth += 360.0;
-        LogKit::LogFormatted(LogKit::LOW,"Model file       %11.2f  %11.2f    %7.2f %7.2f    %8.3f\n", 
-                             timeSimbox->getx0(), timeSimbox->gety0(), timeSimbox->getdx(), 
-                             timeSimbox->getdy(), azimuth);
+        LogKit::LogFormatted(LogKit::LOW,"Model file       %11.2f  %11.2f    %10.2f %10.2f    %7.2f %7.2f    %8.3f\n", 
+                             timeSimbox->getx0(), timeSimbox->gety0(), 
+                             timeSimbox->getlx(), timeSimbox->getly(), 
+                             timeSimbox->getdx(), timeSimbox->getdy(), azimuth);
       }
       for (int i = 0 ; i < nAngles ; i++)
         if (geometry[i] != NULL) {
           double geoAngle = (-1)*timeSimbox->getAngle()*(180/M_PI);
           if (geoAngle < 0)
             geoAngle += 360.0f;
-          LogKit::LogFormatted(LogKit::LOW,"Seismic data %d   %11.2f  %11.2f    %7.2f %7.2f    %8.3f\n",i,
-                               geometry[i]->getX0(), geometry[i]->getY0(), geometry[i]->getDx(), 
-                               geometry[i]->getDy(), geoAngle);
+          LogKit::LogFormatted(LogKit::LOW,"Seismic data %d   %11.2f  %11.2f    %10.2f %10.2f    %7.2f %7.2f    %8.3f\n",i,
+                               geometry[i]->getX0(), geometry[i]->getY0(), 
+                               geometry[i]->getlx(), geometry[i]->getly(), 
+                               geometry[i]->getDx(), geometry[i]->getDy(), 
+                               geoAngle);
           }
       LogKit::LogFormatted(LogKit::LOW,"\nTime simulation grids:\n");
       LogKit::LogFormatted(LogKit::LOW,"  Output grid         %4i * %4i * %4i   : %10i\n",
@@ -2584,3 +2591,36 @@ Model::processVelocity(FFTGrid      *& velocity,
   }
 }
 
+void 
+Model::writeAreas(const SegyGeometry * areaParams,
+                  Simbox             * timeSimbox,
+                  std::string        & text)
+{
+  double areaX0   = areaParams->getX0();
+  double areaY0   = areaParams->getY0();
+  double areaLx   = areaParams->getlx();
+  double areaLy   = areaParams->getly();
+  double areaRot  = areaParams->getAngle();
+  double areaXmin = areaX0 - areaLy*sin(areaRot);
+  double areaXmax = areaX0 + areaLx*cos(areaRot);
+  double areaYmin = areaY0;
+  double areaYmax = areaY0 + areaLx*sin(areaRot) + areaLy*cos(areaRot);
+  if (areaRot < 0) {
+    areaXmin = areaX0;
+    areaXmax = areaX0 + areaLx*cos(areaRot) - areaLy*sin(areaRot);
+    areaYmin = areaY0 + areaLx*sin(areaRot);
+    areaYmax = areaY0 + areaLy*cos(areaRot);
+  }
+  LogKit::LogFormatted(LogKit::LOW,"\nThe top and/or base time surfaces do not cover the area specified by the %s",text.c_str());
+  LogKit::LogFormatted(LogKit::LOW,"\nPlease extrapolate surfaces or specify a smaller AREA in the model file.\n\n");
+  LogKit::LogFormatted(LogKit::LOW,"Area                    xmin         xmax           ymin        ymax\n");
+  LogKit::LogFormatted(LogKit::LOW,"--------------------------------------------------------------------\n");
+  LogKit::LogFormatted(LogKit::LOW,"%-12s     %11.2f  %11.2f    %11.2f %11.2f\n", 
+                       text.c_str(),areaXmin, areaXmax, areaYmin, areaYmax);
+  const NRLib2::Surface & top  = timeSimbox->GetTopSurface();
+  const NRLib2::Surface & base = timeSimbox->GetBotSurface();
+  LogKit::LogFormatted(LogKit::LOW,"Top surface      %11.2f  %11.2f    %11.2f %11.2f\n", 
+                       top.GetXMin(), top.GetXMax(), top.GetYMin(), top.GetYMax()); 
+  LogKit::LogFormatted(LogKit::LOW,"Base surface     %11.2f  %11.2f    %11.2f %11.2f\n", 
+                       base.GetXMin(), base.GetXMax(), base.GetYMin(), base.GetYMax()); 
+}
