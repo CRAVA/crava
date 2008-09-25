@@ -1,4 +1,4 @@
-// $Id: surfaceio.hpp 44 2008-04-11 13:48:08Z perroe $
+// $Id: surfaceio.hpp 114 2008-06-30 11:33:43Z hauge $
 
 #ifndef NRLIB_SURFACEIO_HPP
 #define NRLIB_SURFACEIO_HPP
@@ -22,8 +22,8 @@ namespace NRLib2 {
 
   RegularSurface<double> ReadStormBinarySurf(const std::string& filename);
 
-  // void WriteIrapClassicAsciiSurf(const RegularSurface<double>& surf, 
-  //                               const std::string& filename);
+  void WriteIrapClassicAsciiSurf(const RegularSurface<double>& surf, 
+                                 const std::string& filename);
 
   void WriteStormBinarySurf(const RegularSurface<double>& surf, 
                             const std::string& filename);

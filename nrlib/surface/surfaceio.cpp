@@ -169,8 +169,25 @@ RegularSurface<double> NRLib2::ReadIrapClassicAsciiSurf(const std::string& filen
 }
 
 
-// void WriteIrapClassicAsciiSurf(const RegularSurface<double>& surf, 
-//                               const std::string& filename);
+void NRLib2::WriteIrapClassicAsciiSurf(const RegularSurface<double>& surf, 
+                                       const std::string& filename)
+{
+  /// \todo Replace with safe open function.
+  std::ofstream file(filename.c_str(), std::ios::out | std::ios::binary);
+  if (!file) {
+    throw new IOError("Error opening " + filename + " for writing.");
+  }
+
+  file << surf.GetNI() << " " << surf.GetNJ() << " " 
+       << surf.GetDX() << " " << surf.GetDY() << "\n"
+       << surf.GetXMin() << " " << surf.GetXMax() << " "
+       << surf.GetYMin() << " " << surf.GetYMax() << "\n";
+
+  int i;
+  for(i=0;i<surf.GetN();i++)
+    file << surf(i) << " ";
+  file.close();
+}
 
 void NRLib2::WriteStormBinarySurf(const RegularSurface<double>& surf, 
                                   const std::string& filename)
@@ -188,6 +205,7 @@ void NRLib2::WriteStormBinarySurf(const RegularSurface<double>& surf,
        << surf.GetYMin() << " " << surf.GetYMax() << "\n";
 
   WriteBinaryDoubleArray(file, surf.begin(), surf.end());
+  file.close();
 }
 
 //void WritePointAsciiSurf(const RegularSurface<double>& surf,
