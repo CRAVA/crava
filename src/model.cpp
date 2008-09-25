@@ -5,6 +5,8 @@
 #include <string.h>
 #include <time.h>
 #include <assert.h>
+#define _USE_MATH_DEFINES
+#include <cmath>
 
 #include "src/definitions.h"
 #include "src/model.h"
@@ -111,6 +113,12 @@ Model::Model(char * fileName)
     char errText[MAX_STRING];
     sprintf(errText,"%c",'\0');
 
+    int format;
+    if(modelSettings_->getFormatFlag()==4)
+      format = 1;
+    else
+      format = 0;
+
     makeTimeSimbox(timeSimbox_, modelSettings_, modelFile, //Handles correlation direction too.
                    errText, failedSimbox, timeCutSimbox);
 
@@ -154,7 +162,7 @@ Model::Model(char * fileName)
         {
           completeTimeCutSimbox(timeCutSimbox, modelSettings_, errText,failedSimbox);   // Copies area to timeCutSimbox if needed. 
           if(timeCutSimbox!=NULL)
-            timeCutMapping_ = new GridMapping(timeCutSimbox,modelFile, modelSettings_,0, failedSimbox, errText);
+            timeCutMapping_ = new GridMapping(timeCutSimbox,modelFile, modelSettings_,0, failedSimbox, errText, format);
           if(failedSimbox==false)
           {
             FFTGrid * velocity = NULL;
@@ -167,7 +175,7 @@ Model::Model(char * fileName)
                               modelSettings_, modelFile, 
                               errText, failedVelocity);
             if(!failedVelocity && modelFile->getDoDepthConversion()==1)
-              timeDepthMapping_ = new GridMapping(timeSimbox_, modelFile, modelSettings_, 1, failedSimbox, errText, velocity);
+              timeDepthMapping_ = new GridMapping(timeSimbox_, modelFile, modelSettings_, 1, failedSimbox, errText, format, velocity);
              if(velocity !=NULL)
               delete velocity;
            }

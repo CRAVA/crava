@@ -151,6 +151,7 @@ void StormContGrid::WriteToFile(const std::string& filename, const std::string& 
   else
     file << predefinedHeader;
   // Data
+  int n_data = 0;
   switch (file_format_) {
   case STORM_BINARY:
     WriteBinaryFloatArray(file, begin(), end());
@@ -158,6 +159,10 @@ void StormContGrid::WriteToFile(const std::string& filename, const std::string& 
   case STORM_ASCII:
     for (const_iterator it = begin(); it != end(); ++it) {
       file << *it << " ";
+      ++n_data;
+      if (n_data % 10 == 0) {
+        file << "\n";
+      }
     }
     break;
   default:

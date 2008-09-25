@@ -3,7 +3,8 @@
 #include <math.h>
 #include <string.h>
 #include <time.h>
-
+#define _USE_MATH_DEFINES
+#include <cmath>
 #include "lib/global_def.h"
 #include "lib/lib_misc.h"
 

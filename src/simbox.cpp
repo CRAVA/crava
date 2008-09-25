@@ -1,7 +1,8 @@
 #include <math.h>
 #include <assert.h>
 #include <algorithm>
-
+#define _USE_MATH_DEFINES
+#include <cmath>
 #include "nrlib/volume/volume.hpp"
 #include "nrlib/surface/surfaceio.hpp"
 

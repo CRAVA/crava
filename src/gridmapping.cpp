@@ -18,9 +18,10 @@
 #include "nrlib/stormgrid/stormcontgrid.hpp"
 
 
-GridMapping::GridMapping(const Simbox *simbox, ModelFile *modelFile, ModelSettings *modelSettings, bool depthmode, bool&failed,char *errText,FFTGrid *velocity)
+GridMapping::GridMapping(const Simbox *simbox, ModelFile *modelFile, ModelSettings *modelSettings, bool depthmode, bool&failed,char *errText,int format, FFTGrid *velocity)
 {
   depthmode_ = depthmode;
+  format_ = format;
   failed = false;
   if(depthmode_==1)
     simbox_ = NULL;
@@ -54,6 +55,13 @@ void GridMapping::makeMapping(FFTGrid *velocity, const Simbox *timeSimbox)
   int ny = simbox_->getny();
   int nz = simbox_->getnz();
   mapping_ = new StormContGrid(*simbox_, nx, ny, nz);
+  
+  if(format_==0)
+  {
+    mapping_->SetFormat(StormContGrid::STORM_BINARY);
+  }
+  else
+    mapping_->SetFormat(StormContGrid::STORM_ASCII);
   int i,j,k;
   if(velocity==NULL) // time-time mapping
   {

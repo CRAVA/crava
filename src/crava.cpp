@@ -2121,10 +2121,11 @@ void Crava::writeToFile(char * timeFileName, char * depthFileName, FFTGrid * gri
 
   if(!((outputFlag_ & ModelSettings::NOTIME)>0))
   {
-    if(model_->getTimeCutMapping()!=NULL)
+    if(model_->getTimeCutMapping()!=NULL && model_->getModelSettings()->getFormatFlag()!=2)
     {
       StormContGrid *mapping = model_->getTimeCutMapping()->getMapping();
-      writeResampledStormCube(grid, mapping, timeFileName, simbox_);
+      int ascii = model_->getTimeCutMapping()->getFormat();
+      writeResampledStormCube(grid, mapping, timeFileName, model_->getTimeCutMapping()->getSimbox(), ascii);
     }
     else
       grid->writeFile(timeFileName,simbox_,1, model_->getModelSettings()->getSegyOffset());
@@ -2135,7 +2136,10 @@ void Crava::writeToFile(char * timeFileName, char * depthFileName, FFTGrid * gri
     {
       StormContGrid *mapping = model_->getTimeDepthMapping()->getMapping();
       if(mapping!=NULL)
-        writeResampledStormCube(grid, mapping, depthFileName, simbox_);
+      {
+        int ascii = model_->getTimeDepthMapping()->getFormat();
+        writeResampledStormCube(grid, mapping, depthFileName, model_->getTimeDepthMapping()->getSimbox(), ascii);
+      }
       else // only top and bottom surfaces given, no velocity field
         grid->writeFile(depthFileName,model_->getTimeDepthMapping()->getSimbox(),0);
 
@@ -2146,14 +2150,13 @@ void Crava::writeToFile(char * timeFileName, char * depthFileName, FFTGrid * gri
       if(model_->getTimeCutMapping()!=NULL)
       {
         bool failed = 0;
-        char * errText = new char[MAX_STRING];
+        char * errText = new char[MAX_STRING];      
         if(model_->getTimeDepthMapping()->getSimbox()==NULL)
           model_->getTimeDepthMapping()->calculateSurfaceFromVelocity(postAlpha_, model_->getTimeCutMapping()->getSimbox(),model_->getModelSettings(),failed, errText);
         if(failed)
           LogKit::LogFormatted(LogKit::ERROR,"\nDepth conversion: Problems calculating surface from Vp. \n %s", errText);
         if(model_->getTimeDepthMapping()->getMapping()==0)
           model_->getTimeDepthMapping()->makeMapping(postAlpha_,model_->getTimeCutMapping()->getSimbox());
-        mapping = model_->getTimeDepthMapping()->getMapping();
         delete errText;
       }
       else
@@ -2165,11 +2168,12 @@ void Crava::writeToFile(char * timeFileName, char * depthFileName, FFTGrid * gri
         if(failed)
           LogKit::LogFormatted(LogKit::ERROR,"\nDepth conversion: Problems calculating surface from Vp. \n %s", errText);
         if(model_->getTimeDepthMapping()->getMapping()==0)
-          model_->getTimeDepthMapping()->makeMapping(postAlpha_,simbox_);
-        mapping = model_->getTimeDepthMapping()->getMapping();
+          model_->getTimeDepthMapping()->makeMapping(postAlpha_,simbox_);  
         delete [] errText;
       }
-      writeResampledStormCube(grid, mapping, depthFileName, simbox_);
+      mapping = model_->getTimeDepthMapping()->getMapping();
+      int ascii = model_->getTimeDepthMapping()->getFormat();
+      writeResampledStormCube(grid, mapping, depthFileName, model_->getTimeDepthMapping()->getSimbox(), ascii);
    
     }
   
@@ -2322,7 +2326,7 @@ void Crava::computeFaciesProb()
   }
 }
 void
-Crava::writeResampledStormCube(FFTGrid *grid, StormContGrid *mapping, char * fileName, const Simbox *simbox)
+Crava::writeResampledStormCube(FFTGrid *grid, StormContGrid *mapping, char * fileName, const Simbox *simbox, int ascii)
 {
   int i,j,k;
  // int nz = depthSimbox_->getnz();
@@ -2346,8 +2350,11 @@ Crava::writeResampledStormCube(FFTGrid *grid, StormContGrid *mapping, char * fil
     }
   }
   char * gfName;
-  gfName = ModelSettings::makeFullFileName(fileName, ".storm");
-  char * header = simbox->getStormHeader(FFTGrid::PARAMETER,nx_,ny_,nz);
+  if(ascii==1)
+    gfName = ModelSettings::makeFullFileName(fileName, ".txt");
+  else
+    gfName = ModelSettings::makeFullFileName(fileName, ".storm");
+  char * header = simbox->getStormHeader(FFTGrid::PARAMETER,nx_,ny_,nz, 0, ascii);
   outgrid.WriteToFile(gfName,std::string(header));
   delete [] header;
   delete [] gfName;
