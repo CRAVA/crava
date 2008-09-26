@@ -2119,7 +2119,6 @@ void Crava::writeToFile(char * timeFileName, char * depthFileName, FFTGrid * gri
     if(model_->getTimeCutMapping()!=NULL && 
       ((model_->getModelSettings()->getFormatFlag() & FFTGrid::STORMASCIIFORMAT)>0 || (model_->getModelSettings()->getFormatFlag() & FFTGrid::STORMFORMAT)>0))
     {
-      //bool ascii = model_->getTimeCutMapping()->getFormat();
       writeResampledStormCube(grid, model_->getTimeCutMapping(), timeFileName, simbox_);
       if(model_->getModelSettings()->getFormatFlag() & FFTGrid::SEGYFORMAT)
         grid->writeFile(timeFileName,simbox_,1, model_->getModelSettings()->getSegyOffset(),0); // write only segy, not storm
@@ -2134,7 +2133,6 @@ void Crava::writeToFile(char * timeFileName, char * depthFileName, FFTGrid * gri
       StormContGrid *mapping = model_->getTimeDepthMapping()->getMapping();
       if(mapping!=NULL)
       {
-        //bool ascii = model_->getTimeDepthMapping()->getFormat();
         writeResampledStormCube(grid, model_->getTimeDepthMapping(), depthFileName, simbox_);
       }
       else // only top and bottom surfaces given, no velocity field
@@ -2167,7 +2165,6 @@ void Crava::writeToFile(char * timeFileName, char * depthFileName, FFTGrid * gri
           model_->getTimeDepthMapping()->makeMapping(postAlpha_,simbox_);  
         delete [] errText;
       }   
-      //bool ascii = model_->getTimeDepthMapping()->getFormat();
       writeResampledStormCube(grid, model_->getTimeDepthMapping(), depthFileName, simbox_);
    
     }
@@ -2325,7 +2322,6 @@ Crava::writeResampledStormCube(FFTGrid *grid, GridMapping *gridmapping, char * f
 {
   // simbox is related to the cube we resample from. gridmapping contains simbox for the cube we resample to.
   int i,j,k;
- // int nz = depthSimbox_->getnz();
  
   float time, kindex;
   double x,y;

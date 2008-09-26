@@ -57,10 +57,6 @@ void GridMapping::makeMapping(FFTGrid *velocity, const Simbox *timeSimbox)
   int nz = simbox_->getnz();
   mapping_ = new StormContGrid(*simbox_, nx, ny, nz);
   
-  //if(format_==0)
-  //  mapping_->SetFormat(StormContGrid::STORM_BINARY);
- // else
- //   mapping_->SetFormat(StormContGrid::STORM_ASCII);
   int i,j,k;
   if(velocity==NULL) // time-time mapping
   {
@@ -142,10 +138,8 @@ void GridMapping::calculateSurfaceFromVelocity(FFTGrid *velocity, const Simbox *
         for(k=0;k<simbox->getnz();k++)          
           sum+=velocity->getRealValue(i,j,k)*dt;
         if(surfmissing_==2)
-        //  values[i*nx+j] = simbox_->GetTopSurface().GetZ(x,y)+ sum;
             values[i*nx+j] = z0Grid_->GetZ(x,y)+ sum;
         else if(surfmissing_==1)
-         // values[i*nx+j] = simbox_->GetBotSurface().GetZ(x,y)-sum;
              values[i*nx+j] = z1Grid_->GetZ(x,y)-sum;
       }
     }
@@ -157,15 +151,12 @@ void GridMapping::calculateSurfaceFromVelocity(FFTGrid *velocity, const Simbox *
         z1Grid_ = new Surface(z0Grid_->GetXMin(), z0Grid_->GetYMin(), 
                                      z0Grid_->GetLengthX(), z0Grid_->GetLengthY(), 
                                      z0Grid_->GetNI(),z0Grid_->GetNJ(), (*values));
-  
     }
     else
     {
-   
         z0Grid_ = new Surface(z1Grid_->GetXMin(), z1Grid_->GetYMin(), 
                                      z1Grid_->GetLengthX(), z1Grid_->GetLengthY(), 
                                      z1Grid_->GetNI(),z1Grid_->GetNJ(), (*values));
-    //  simbox_->setDepth(z0Grid_, z1Grid_, nz);
     }
     setSimbox(modelSettings, failed, errText,nz);
   }
@@ -207,7 +198,6 @@ void GridMapping::setSurfaces(ModelFile *modelFile, ModelSettings *modelSettings
       z1Grid_ = new Surface(tmpSurf);
     }
     catch (NRLib2::Exception & e) {
-   //   LogKit::LogFormatted(LogKit::ERROR,e.what());
     sprintf(errText,"%s%s",errText,e.what());
     failed = 1;
     }
@@ -218,12 +208,8 @@ void GridMapping::setSurfaces(ModelFile *modelFile, ModelSettings *modelSettings
 
   if(surfmissing_==0)
   {
-  //  simbox_->setDepth(z0Grid_, z1Grid_, nz);
     setSimbox(modelSettings,failed, errText, nz);
   }
- 
-
-
 
 }
 
@@ -231,8 +217,7 @@ void GridMapping::setSimbox(ModelSettings *modelSettings, bool &failed, char *er
 {
   simbox_ = new Simbox();
   simbox_->setDepth(z0Grid_, z1Grid_, nz);
-  //delete z0Grid_;
-  //delete z1Grid_;
+ 
   const char * topname = "topdepth.storm";
   const char * botname = "botdepth.storm";
   simbox_->writeTopBotGrids(topname, botname);
@@ -249,11 +234,9 @@ void GridMapping::setSimbox(ModelSettings *modelSettings, bool &failed, char *er
         else
         {
           error = simbox_->checkError(modelSettings->getLzLimit(),errText);
-
           if(error == Simbox::INTERNALERROR)
           {
             sprintf(errText," %s A problems was encountered for depth output grid\n", errText);
-            //LogKit::LogFormatted(LogKit::ERROR,"       %s\n",errText);
             failed = true;
           }
         }
@@ -275,11 +258,5 @@ void GridMapping::setSimbox(ModelSettings *modelSettings, bool &failed, char *er
                          simbox_->getdz(),
                          simbox_->getdz()*simbox_->getMinRelThick());
       }
-     // }
- //   else
- //   {
-  //    simbox_->externalFailure();
- //     failed = true;
- //   }
-   
+  
 }

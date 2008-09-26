@@ -29,8 +29,6 @@ public:
 
   ModelSettings  * getModelSettings()         const { return modelSettings_          ;}
   Simbox         * getTimeSimbox()            const { return timeSimbox_             ;}
-  //Simbox         * getDepthSimbox()           const { return depthSimbox_            ;}
-  //Simbox         * getTimeCutSimbox()         const { return timeCutSimbox_          ;}
   WellData      ** getWells()                 const { return wells_                  ;}
   FFTGrid        * getBackAlpha()             const { return background_->getAlpha() ;}
   FFTGrid        * getBackBeta()              const { return background_->getBeta()  ;}
@@ -59,7 +57,8 @@ private:
                                   bool           & failed,
                                   Simbox         * &timeCutSimbox);
   void             setupExtendedTimeSimbox(Simbox * timeSimbox, 
-                                           Surface * corrSurf, Simbox *& timeCutSimbox);
+                                           Surface * corrSurf, 
+                                           Simbox *& timeCutSimbox);
   void             completeTimeCutSimbox(Simbox       *& timeCutSimbox,
                                          ModelSettings * modelSettings,
                                          char            * errText,
@@ -213,8 +212,8 @@ private:
   double           gradY_;                 ///< Y-gradient of correlation rotation.
                                            ///< These are only used with correaltion surfaces.
 
-  bool             failed_;                ///< Indicates whether errors ocuured during construction. 
-  GridMapping    * timeDepthMapping_;      ///< Contains both simbox nad maping used for depth conversion
+  bool             failed_;                ///< Indicates whether errors occured during construction. 
+  GridMapping    * timeDepthMapping_;      ///< Contains both simbox and mapping used for depth conversion
   GridMapping    * timeCutMapping_;        ///< Simbox and mapping for timeCut
 
   bool             velocityFromInversion_;
