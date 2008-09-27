@@ -727,28 +727,56 @@ Model::setSimboxSurfaces(Simbox *& simbox,
                          int       nz,
                          int     & error)
 {
+  char * topName  = surfFile[0]; 
+  char * baseName = surfFile[1]; 
+
+  const double x0 = simbox->getx0();
+  const double y0 = simbox->gety0();
+  const double lx = simbox->getlx();
+  const double ly = simbox->getly();
+  const int    nx = simbox->getnx();
+  const int    ny = simbox->getny();
+  
   Surface * z0Grid = NULL;
   try {
-    Surface tmpSurf = NRLib2::ReadStormSurf(surfFile[0]);
-    z0Grid = new Surface(tmpSurf);
+    if (isNumber(topName)) {
+      z0Grid = new Surface(x0,
+                           y0,
+                           lx,
+                           ly,
+                           nx,
+                           ny,
+                           atof(topName));
+    LogKit::LogFormatted(LogKit::ERROR,"Konstant tidsflater virker ikke ennaa... Paal skal fikse det");
+    exit(1);
+    } 
+    else {
+      Surface tmpSurf = NRLib2::ReadStormSurf(topName);
+      z0Grid = new Surface(tmpSurf);
+    }
   }
   catch (NRLib2::Exception & e) {
     LogKit::LogFormatted(LogKit::ERROR,e.what());
     error = 1;
   }
-
-  if(error == 0)
-  {
-    if(parallelSurfaces) //Only one reference surface
-    {
+  
+  if(error == 0) {
+    if(parallelSurfaces) { //Only one reference surface
       simbox->setDepth(z0Grid, dTop, lz, dz);
     }
-    else
-    {
+    else {
       Surface * z1Grid = NULL;
       try {
-        Surface tmpSurf = NRLib2::ReadStormSurf(surfFile[1]);
-        z1Grid = new Surface(tmpSurf);
+        
+        if (isNumber(baseName)) {
+          z1Grid = new Surface(x0,y0,lx,ly,nx,ny,atof(baseName));
+          LogKit::LogFormatted(LogKit::ERROR,"Konstant tidsflater virker ikke ennaa... Paal skal fikse det");
+          exit(1);
+        }
+        else {
+          Surface tmpSurf = NRLib2::ReadStormSurf(baseName);
+          z1Grid = new Surface(tmpSurf);
+        }
       }
       catch (NRLib2::Exception & e) {
         LogKit::LogFormatted(LogKit::ERROR,e.what());
@@ -1186,8 +1214,12 @@ Model::processWells(WellData     **& wells,
             tot += static_cast<float>(faciesCount[i][f]);
           LogKit::LogFormatted(LogKit::LOW,"%-23s ",wells[i]->getWellname());
           for (int f = 0 ; f < nFacies ; f++) {
-            float faciesProb = static_cast<float>(faciesCount[i][f])/tot;
-            LogKit::LogFormatted(LogKit::LOW,"%12.4f ",faciesProb);
+            if (tot > 0) {
+              float faciesProb = static_cast<float>(faciesCount[i][f])/tot;
+              LogKit::LogFormatted(LogKit::LOW,"%12.4f ",faciesProb);
+            }
+            else
+              LogKit::LogFormatted(LogKit::LOW,"         -   ");
           }
           LogKit::LogFormatted(LogKit::LOW,"\n");
         } 
@@ -2015,9 +2047,10 @@ void Model::processPriorFaciesProb(float         *& priorFacies,
     delete [] vtFacies; 
 
     //
-    // Print facies count for each well
+    // Probabilities
     //
-    LogKit::LogFormatted(LogKit::LOW,"BlockedWell             ");
+    LogKit::LogFormatted(LogKit::LOW,"\nFacies distributions for each blocked well: \n");
+    LogKit::LogFormatted(LogKit::LOW,"\nBlockedWell              ");
     for (int i = 0 ; i < nFacies ; i++)
       LogKit::LogFormatted(LogKit::LOW,"%12s ",modelSettings->getFaciesName(i));
     LogKit::LogFormatted(LogKit::LOW,"\n");
@@ -2034,16 +2067,44 @@ void Model::processPriorFaciesProb(float         *& priorFacies,
         LogKit::LogFormatted(LogKit::LOW,"%-23s ",wells[w]->getWellname());
         for (int i = 0 ; i < nFacies ; i++) {
           float faciesProb = static_cast<float>(faciesCount[w][i])/tot;
-          LogKit::LogFormatted(LogKit::LOW," %d %12.4f ",faciesCount[w][i],faciesProb);
+          LogKit::LogFormatted(LogKit::LOW," %12.4f",faciesProb);
         }
         LogKit::LogFormatted(LogKit::LOW,"\n");
       }
     }
     LogKit::LogFormatted(LogKit::LOW,"\n");
+    //
+    // Counts
+    //
+    LogKit::LogFormatted(LogKit::MEDIUM,"\nFacies counts for each well: \n");
+
+    LogKit::LogFormatted(LogKit::MEDIUM,"\nBlockedWell              ");
+    for (int i = 0 ; i < nFacies ; i++)
+      LogKit::LogFormatted(LogKit::MEDIUM,"%12s ",modelSettings->getFaciesName(i));
+    LogKit::LogFormatted(LogKit::MEDIUM,"\n");
+    for (int i = 0 ; i < 24+13*nFacies ; i++)
+      LogKit::LogFormatted(LogKit::MEDIUM,"-");
+    LogKit::LogFormatted(LogKit::MEDIUM,"\n");
+    for (int w = 0 ; w < nWells ; w++)
+    {
+      if(wells[w]->getUseForFaciesProbabilities())
+      { 
+        float tot = 0.0;
+        for (int i = 0 ; i < nFacies ; i++)
+          tot += static_cast<float>(faciesCount[w][i]);
+        LogKit::LogFormatted(LogKit::MEDIUM,"%-23s ",wells[w]->getWellname());
+        for (int i = 0 ; i < nFacies ; i++) {
+          LogKit::LogFormatted(LogKit::MEDIUM,"%12d ",faciesCount[w][i]);
+        }
+        LogKit::LogFormatted(LogKit::MEDIUM,"\n");
+      }
+    }
+    LogKit::LogFormatted(LogKit::MEDIUM,"\n");
+    
     for (int w = 0 ; w < nWells ; w++)
       delete [] faciesCount[w];
     delete [] faciesCount;
-
+    
     //
     // Make prior facies probabilities
     //
@@ -2224,7 +2285,7 @@ Model::printSettings(ModelSettings * modelSettings,
   LogKit::LogFormatted(LogKit::LOW,"  Length                                   : %10s\n","m");
   LogKit::LogFormatted(LogKit::LOW,"  Velocities                               : %10s\n","m/s");
   LogKit::LogFormatted(LogKit::LOW,"  Density                                  : %10s\n","kg/dm3");
-  LogKit::LogFormatted(LogKit::LOW,"  Angle                                    : %10s\n","degrees");
+  LogKit::LogFormatted(LogKit::LOW,"  Angles                                   : %10s\n","degrees (clockwise relative to north)");
 
   TraceHeaderFormat * thf = modelSettings_->getTraceHeaderFormat(); 
   LogKit::LogFormatted(LogKit::LOW,"\nSegY trace header format:\n");
@@ -2247,7 +2308,7 @@ Model::printSettings(ModelSettings * modelSettings,
   LogKit::LogFormatted(LogKit::LOW,"  Threshold for merging log entries        : %10.2f ms\n",modelSettings->getMaxMergeDist());
   LogKit::LogFormatted(LogKit::LOW,"  Threshold for Vp-Vs rank correlation     : %10.2f\n",modelSettings->getMaxRankCorr());
   LogKit::LogFormatted(LogKit::LOW,"  Threshold for deviation angle            : %10.1f (=%.2fm/ms TWT)\n",
-                   modelSettings->getMaxDevAngle(),tan(modelSettings->getMaxDevAngle()*PI/180.0));
+                       modelSettings->getMaxDevAngle(),tan(modelSettings->getMaxDevAngle()*PI/180.0));
   LogKit::LogFormatted(LogKit::LOW,"  High cut for background modelling        : %10.1f\n",modelSettings->getMaxHzBackground());
   LogKit::LogFormatted(LogKit::LOW,"  High cut for seismic resolution          : %10.1f\n",modelSettings->getMaxHzSeismic());
   LogKit::LogFormatted(LogKit::LOW,"\nRange of allowed parameter values:\n");
@@ -2333,9 +2394,19 @@ Model::printSettings(ModelSettings * modelSettings,
   }
   else
   {
-    LogKit::LogFormatted(LogKit::LOW,"  Top surface                              : %s\n",     modelFile->getTimeSurfFile()[0]);
-    LogKit::LogFormatted(LogKit::LOW,"  Base surface                             : %s\n",     modelFile->getTimeSurfFile()[1]);
-    LogKit::LogFormatted(LogKit::LOW,"  Number of layers                         : %10d\n",   modelFile->getTimeNz());
+    char * topName  = modelFile->getTimeSurfFile()[0]; 
+    char * baseName = modelFile->getTimeSurfFile()[1]; 
+    if (isNumber(topName))
+      LogKit::LogFormatted(LogKit::LOW,"  Start time                               : %10.2f\n",atof(topName));
+    else
+      LogKit::LogFormatted(LogKit::LOW,"  Top surface                              : %s\n",    topName);
+
+    if (isNumber(baseName))
+      LogKit::LogFormatted(LogKit::LOW,"  Stop time                                : %10.2f\n",atof(baseName));
+    else
+      LogKit::LogFormatted(LogKit::LOW,"  Base surface                             : %s\n",     baseName);
+      LogKit::LogFormatted(LogKit::LOW,"  Number of layers                         : %10d\n",   modelFile->getTimeNz());
+
     LogKit::LogFormatted(LogKit::LOW,"  Minimum allowed value for lmin/lmax      : %10.2f\n", modelSettings->getLzLimit());
   }
   if (modelFile->getCorrDirFile() != NULL)
@@ -2401,7 +2472,7 @@ Model::printSettings(ModelSettings * modelSettings,
     if (vario->getAnisotropic()) 
     {
       LogKit::LogFormatted(LogKit::LOW,"    Subrange                               : %10.1f\n",vario->getSubRange());
-      LogKit::LogFormatted(LogKit::LOW,"    Angle                                  : %10.1f\n",vario->getAngle());
+      LogKit::LogFormatted(LogKit::LOW,"    Angle                                  : %10.1f\n",vario->getAngle()*(-1));
     }
     LogKit::LogFormatted(LogKit::LOW,"  High cut frequency for well logs         : %10.1f\n",modelSettings->getMaxHzBackground());
   }
@@ -2600,19 +2671,31 @@ Model::writeAreas(const SegyGeometry * areaParams,
   double areaY0   = areaParams->getY0();
   double areaLx   = areaParams->getlx();
   double areaLy   = areaParams->getly();
+  double areaDx   = areaParams->getDx();
+  double areaDy   = areaParams->getDy();
   double areaRot  = areaParams->getAngle();
   double areaXmin = areaX0 - areaLy*sin(areaRot);
   double areaXmax = areaX0 + areaLx*cos(areaRot);
   double areaYmin = areaY0;
   double areaYmax = areaY0 + areaLx*sin(areaRot) + areaLy*cos(areaRot);
+
   if (areaRot < 0) {
     areaXmin = areaX0;
     areaXmax = areaX0 + areaLx*cos(areaRot) - areaLy*sin(areaRot);
     areaYmin = areaY0 + areaLx*sin(areaRot);
     areaYmax = areaY0 + areaLy*cos(areaRot);
   }
+
   LogKit::LogFormatted(LogKit::LOW,"\nThe top and/or base time surfaces do not cover the area specified by the %s",text.c_str());
-  LogKit::LogFormatted(LogKit::LOW,"\nPlease extrapolate surfaces or specify a smaller AREA in the model file.\n\n");
+  LogKit::LogFormatted(LogKit::LOW,"\nPlease extrapolate surfaces or specify a smaller AREA in the model file.\n");
+  LogKit::LogFormatted(LogKit::LOW,"\nArea/resolution           x0           y0            lx        ly          dx      dy     azimuth\n");
+  LogKit::LogFormatted(LogKit::LOW,"-------------------------------------------------------------------------------------------------\n");
+  double azimuth = (-1)*areaRot*(180.0/M_PI);
+  if (azimuth < 0)
+    azimuth += 360.0;
+  LogKit::LogFormatted(LogKit::LOW,"Model file       %11.2f  %11.2f    %10.2f %10.2f    %7.2f %7.2f    %8.3f\n\n", 
+                       areaX0, areaY0, areaLx, areaLy, areaDx, areaDy, azimuth);
+
   LogKit::LogFormatted(LogKit::LOW,"Area                    xmin         xmax           ymin        ymax\n");
   LogKit::LogFormatted(LogKit::LOW,"--------------------------------------------------------------------\n");
   LogKit::LogFormatted(LogKit::LOW,"%-12s     %11.2f  %11.2f    %11.2f %11.2f\n", 

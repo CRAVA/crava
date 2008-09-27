@@ -947,6 +947,7 @@ ModelFile::readCommandArea(char ** params, int & pos, char * errText)
   int ny = static_cast<int>(ly/dy);
 
   SegyGeometry * geometry = new SegyGeometry(x0, y0, dx, dy, nx, ny, 0, 0, 1, 1, true, rot);
+
   modelSettings_->setAreaParameters(geometry);
   delete geometry;
 
@@ -964,41 +965,31 @@ ModelFile::readCommandTimeSurfaces(char ** params, int & pos, char * errText)
   timeSurfFile_[0] = new char[strlen(params[pos])+1];
   strcpy(timeSurfFile_[0],params[pos]);
 
-  if(isNumber(params[pos+1])) //Only one reference surface
+  if(nPar == 3)
   {
-    error = checkFileOpen(timeSurfFile_, 1, params[pos-1], errText);
-    timeSurfFile_[1] = NULL;
-    if(nPar == 4)
+    timeSurfFile_[1] = new char[strlen(params[pos+1])+1];
+    strcpy(timeSurfFile_[1],params[pos+1]);
+    if (!isNumber(timeSurfFile_[0]))
+      error = checkFileOpen((&timeSurfFile_[0]), 1, params[pos-1], errText);
+    if (!isNumber(timeSurfFile_[1]))
+      error = checkFileOpen((&timeSurfFile_[1]), 1, params[pos-1], errText);
+    time_nz_ = atoi(params[pos+2]);
+  }
+  else // nPar = 4
+  {
+    parallelTimeSurfaces_  = true;
+    if(isNumber(params[pos+1])) //Only one reference surface
     {
-      parallelTimeSurfaces_  = true;
+      error = checkFileOpen(timeSurfFile_, 1, params[pos-1], errText);
+      timeSurfFile_[1] = NULL;
       time_dTop_ = static_cast<double>(atof(params[pos+1]));
       time_lz_   = static_cast<double>(atof(params[pos+2]));
       time_dz_   = static_cast<double>(atof(params[pos+3]));
     }
-    else
-    {
-      sprintf(errText,"Command %s with only one grid takes %d arguments; %d given in file.\n", 
-              params[pos-1], 4, nPar);
-      error = 1;
-    }
+    sprintf(errText,"Command %s with 4 arguments must have a number as argument number 2.\n", 
+            params[pos-1]);
+    error = 1;
   }
-  else
-  {
-    if(nPar == 3)
-    {
-      timeSurfFile_[1] = new char[strlen(params[pos+1])+1];
-      strcpy(timeSurfFile_[1],params[pos+1]);
-      error = checkFileOpen(timeSurfFile_, 2, params[pos-1], errText);
-      time_nz_ = atoi(params[pos+2]);
-    }
-    else
-    {
-      sprintf(errText,"Command %s with two grids takes %d arguments; %d given in file.\n", 
-              params[pos-1], 3, nPar);
-      error = 1;
-    }
-  }
-  
   pos += nPar+1;
   return(error);
 }
@@ -1905,21 +1896,21 @@ ModelFile::readCommandLogLevel(char ** params, int & pos, char * errText)
     char * level = new char[MAX_STRING];
     strcpy(level,params[pos]);
     uppercase(level);
-    LogKit::MessageLevels logLevel = LogKit::ERROR;
+    int logLevel = LogKit::ERROR;
     if(strcmp(level,"ERROR") == 0)
-      logLevel = LogKit::ERROR;
+      logLevel = LogKit::L_ERROR;
     else if(strcmp(level,"WARNING") == 0)
-      logLevel = LogKit::WARNING;
+      logLevel = LogKit::L_WARNING;
     else if(strcmp(level,"LOW") == 0)
-      logLevel = LogKit::LOW;
+      logLevel = LogKit::L_LOW;
     else if(strcmp(level,"MEDIUM") == 0)
-      logLevel = LogKit::MEDIUM;
+      logLevel = LogKit::L_MEDIUM;
     else if(strcmp(level,"HIGH") == 0)
-      logLevel = LogKit::HIGH;
+      logLevel = LogKit::L_HIGH;
     else if(strcmp(level,"DEBUGLOW") == 0)
-      logLevel = LogKit::DEBUGLOW;
+      logLevel = LogKit::L_DEBUGLOW;
     else if(strcmp(level,"DEBUGHIGH") == 0)
-      logLevel = LogKit::DEBUGHIGH;
+      logLevel = LogKit::L_DEBUGHIGH;
     else {
       sprintf(errText,"Unknown log level %s in command %s\n",params[pos],params[pos-1]);
       sprintf(errText,"%sChoose from ERROR, WARNING, LOW, MEDIUM, and HIGH\n",errText);

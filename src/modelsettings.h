@@ -135,7 +135,7 @@ public:
   void                setDebugFlag(int debugFlag)                 { debugFlag_        = debugFlag        ;}
   void                setFileGrid(int fileGrid)                   { fileGrid_         = fileGrid         ;}
   void                setGenerateSeismic(bool generateSeismic)    { generateSeismic_  = generateSeismic  ;}
-  void                setLogLevel(LogKit::MessageLevels logLevel) { logLevel_         = logLevel         ;}
+  void                setLogLevel(int logLevel)                   { logLevel_         = logLevel         ;}
 
   enum                outputGrids{PREDICTION        = 1, 
                                   CORRELATION       = 2, 
