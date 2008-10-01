@@ -986,9 +986,11 @@ ModelFile::readCommandTimeSurfaces(char ** params, int & pos, char * errText)
       time_lz_   = static_cast<double>(atof(params[pos+2]));
       time_dz_   = static_cast<double>(atof(params[pos+3]));
     }
-    sprintf(errText,"Command %s with 4 arguments must have a number as argument number 2.\n", 
-            params[pos-1]);
-    error = 1;
+    else {
+      sprintf(errText,"Command %s with 4 arguments must have a number as argument number 2.\n", 
+        params[pos-1]);
+      error = 1;
+    }
   }
   pos += nPar+1;
   return(error);
