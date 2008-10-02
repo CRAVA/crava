@@ -40,6 +40,7 @@ Wavelet3D::Wavelet3D(char          * fileName,
   dy_ = static_cast<float>(simBox->getdy());
   dz_ = static_cast<float>(simBox->getdz());
   theta_ = theta;
+  norm_ = RMISSING;
 
   float xPad = modelSettings->getXpad();
   nxp_   =  findClosestFactorableNumber( static_cast<int>(ceil( nx_*(1.0f+xPad) )) );
@@ -54,6 +55,7 @@ Wavelet3D::Wavelet3D(char          * fileName,
   ampCube_.setAccessMode(FFTGrid::RANDOMACCESS);
   ampCube_.setOutputFormat(modelSettings->getFormatFlag());
 
+  inFFTorder_ = true;
   readtype_ = Wavelet::SGRI;
 	Sgri *sgri = new Sgri(fileName, errText, errCode);
   
@@ -97,7 +99,6 @@ Wavelet3D::Wavelet3D(char          * fileName,
   }
 
   if (errCode == 0) {
-    double norm2=0.0;
     int i,j,k;
     float x, y, z, value;
     for (k=0; k<=nzp_/2; k++) {
@@ -108,13 +109,11 @@ Wavelet3D::Wavelet3D(char          * fileName,
           x = i * dx_;
           value = sgri->getWaveletValue(x, y, z);
           ampCube_.setRealValue(i, j, k, value, true);
-          norm2 += value * value;
         }
         for (i=(nxp_/2)+1; i<nxp_; i++) {
           x = (i-nxp_) * dx_;
           value = sgri->getWaveletValue(x, y, z);
           ampCube_.setRealValue(i, j, k, value, true);
-          norm2 += value * value;
         }
       }
       for (j=(nyp_/2)+1; j<nyp_; j++) {
@@ -123,13 +122,11 @@ Wavelet3D::Wavelet3D(char          * fileName,
           x = i * dx_;
           value = sgri->getWaveletValue(x, y, z);
           ampCube_.setRealValue(i, j, k, value, true);
-          norm2 += value * value;
         }
         for (i=(nxp_/2)+1; i<nxp_; i++) {
           x = (i-nxp_) * dx_;
           value = sgri->getWaveletValue(x, y, z);
           ampCube_.setRealValue(i, j, k, value, true);
-          norm2 += value * value;
         } 
       }
     }
@@ -141,13 +138,11 @@ Wavelet3D::Wavelet3D(char          * fileName,
           x = i * dx_;
           value = sgri->getWaveletValue(x, y, z);
           ampCube_.setRealValue(i, j, k, value, true);
-          norm2 += value * value;
         }
         for (i=(nxp_/2)+1; i<nxp_; i++) {
           x = (i-nxp_) * dx_;
           value = sgri->getWaveletValue(x, y, z);
           ampCube_.setRealValue(i, j, k, value, true);
-          norm2 += value * value;
         }
       }
       for (j=(nyp_/2)+1; j<nyp_; j++) {
@@ -156,19 +151,16 @@ Wavelet3D::Wavelet3D(char          * fileName,
           x = i * dx_;
           value = sgri->getWaveletValue(x, y, z);
           ampCube_.setRealValue(i, j, k, value, true);
-          norm2 += value * value;
         }
         for (i=(nxp_/2)+1; i<nxp_; i++) {
           x = (i-nxp_) * dx_;
           value = sgri->getWaveletValue(x, y, z);
           ampCube_.setRealValue(i, j, k, value, true);
-          norm2 += value * value;
         } 
       }
     }
     waveletLength_ = getWaveletLengthF();
-    norm_= float( sqrt(norm2));
-
+    
     //For debugging purposes, the shifted FFTGrid is written to file to compare to input sgri
     FFTGrid *shiftAmp = new FFTGrid(nx_, ny_, nz_, nx_, ny_, nz_);
     shiftAmp->fillInConstant(0.0);
@@ -188,18 +180,42 @@ Wavelet3D::Wavelet3D(char          * fileName,
 Wavelet3D::Wavelet3D(Wavelet * wavelet)
   : Wavelet(wavelet, 3)
 {
+  assert(wavelet->getDim() == 3);
+  assert(wavelet->getIsReal());
+//  ampCube_ = FFTGrid(wavelet->getAmpCube());
+  nx_ = wavelet->getNx();
+  ny_ = wavelet->getNy();
+  nxp_ = wavelet->getNxp();
+  nyp_ = wavelet->getNyp();
+  dx_ = wavelet->getDx();
+  dy_ = wavelet->getDy();
+  ampCube_ = FFTGrid(nx_, ny_, nz_, nxp_, nyp_, nzp_);
+  ampCube_.createRealGrid();
+  ampCube_.setType(FFTGrid::COVARIANCE);
+  ampCube_.setAccessMode(FFTGrid::RANDOMACCESS);
+  for (int k=0; k<nzp_; k++) {
+    for (int j=0; j<nyp_; j++) {
+      for (int i=0; i<nxp_; i++) {
+        float rvalue = wavelet->getRAmp(k,j,i);
+        ampCube_.setRealValue(i,j,k,rvalue,true);
+      }
+    }
+  }
+
 }
 
 void           
 Wavelet3D::fft1DInPlace()
 {
   ampCube_.fftInPlace();
+  isReal_ = false;
 }
 
 void
 Wavelet3D::invFFT1DInPlace()
 {
   ampCube_.invFFTInPlace();
+  isReal_ = true;
 }
 
 bool           
@@ -246,6 +262,12 @@ Wavelet3D::setRAmp(float value, int k, int j, int i)
 }
 
 void
+Wavelet3D::setCAmp(fftw_complex value, int k, int j, int i)
+{
+  ampCube_.setComplexValue(i, j ,k, value, true);
+}
+
+void
 Wavelet3D::scale(float scale)
 {
   Wavelet::scale(scale);
@@ -263,6 +285,71 @@ Wavelet3D::scale(float scale)
     }
   }
 }
+
+void
+Wavelet3D::multiplyByR(float p)
+{
+  assert(!getIsReal());
+  float scale = static_cast<float> (1.0/(nxp_*nyp_*nzp_));
+  int cnxp = nxp_/2+1;
+  int i, j, k;
+  float kx, ky, kz;
+  float radius;
+  fftw_complex cValue;
+
+  for (k=0; k<=nzp_/2; k++) {
+    kz = static_cast<float> (k);
+    for (j=0; j<=nyp_/2; j++) {
+      ky = static_cast<float> (j);
+      for (i=0; i<cnxp; i++) {
+        kx = static_cast<float> (i);
+        radius = sqrt(kx*kx + ky*ky + kz*kz);
+        cValue = getCAmp(k,j,i);
+        cValue.re *= scale * pow(radius, p);
+        cValue.im *= scale * pow(radius, p);
+        setCAmp(cValue,k,j,i);
+      }
+    }
+    for (j=(nyp_/2)+1; j<nyp_; j++) {
+      ky = static_cast<float> (nyp_-j);
+      for (i=0; i<cnxp; i++) {
+        kx = static_cast<float> (i);
+        radius = sqrt(kx*kx + ky*ky + kz*kz);
+        cValue = getCAmp(k,j,i);
+        cValue.re *= scale * pow(radius, p);
+        cValue.im *= scale * pow(radius, p);
+        setCAmp(cValue,k,j,i);
+      }
+    }
+  }
+  for (k=(nzp_/2)+1; k<nzp_; k++) {
+    kz = static_cast<float> (nzp_-k);
+    for (j=0; j<=nyp_/2; j++) {
+      ky = static_cast<float> (j);
+      for (i=0; i<cnxp; i++) {
+        kx = static_cast<float> (i);
+        radius = sqrt(kx*kx + ky*ky + kz*kz);
+        cValue = getCAmp(k,j,i);
+        cValue.re *= scale * pow(radius, p);
+        cValue.im *= scale * pow(radius, p);
+        setCAmp(cValue,k,j,i);
+      }
+    }
+    for (j=(nyp_/2)+1; j<nyp_; j++) {
+      ky = static_cast<float> (nyp_-j);
+      for (i=0; i<cnxp; i++) {
+        kx = static_cast<float> (i);
+        radius = sqrt(kx*kx + ky*ky + kz*kz);
+        cValue = getCAmp(k,j,i);
+        cValue.re *= scale * pow(radius, p);
+        cValue.im *= scale * pow(radius, p);
+        setCAmp(cValue,k,j,i);
+      }
+    }
+  }
+}
+
+
 
 void
 Wavelet3D::printToFile(char* fileName, bool overrideDebug) 
