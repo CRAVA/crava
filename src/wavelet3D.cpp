@@ -182,7 +182,6 @@ Wavelet3D::Wavelet3D(Wavelet * wavelet)
 {
   assert(wavelet->getDim() == 3);
   assert(wavelet->getIsReal());
-//  ampCube_ = FFTGrid(wavelet->getAmpCube());
   nx_ = wavelet->getNx();
   ny_ = wavelet->getNy();
   nxp_ = wavelet->getNxp();
