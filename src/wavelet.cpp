@@ -75,45 +75,6 @@ Wavelet::Wavelet(Wavelet * wavelet, int dim)
   norm_      = wavelet->norm_;
 }
 
-// Makes error correlations 
-//
-//
-/*
-Wavelet::Wavelet(Wavelet * wavelet, int difftype, int dim)
-  : dim_(dim)
-{
-  gridNI_    = 0;   
-  gridNJ_    = 0;
-  shiftGrid_ = NULL;  
-  gainGrid_  = NULL; 
-  if(! wavelet->getIsReal() ) wavelet->invFFT1DInPlace();
-  theta_     = wavelet->theta_;
-  dz_        = wavelet->dz_;
-  nz_        = wavelet->nz_;
-  nzp_       = wavelet->nzp_;
-  cz_        = wavelet->cz_;
-  inFFTorder_= wavelet->inFFTorder_;
-  isReal_    = wavelet->isReal_;  
-  norm_      = wavelet->norm_;
-}
-
-Wavelet::Wavelet(int difftype, int nz, int nzp, int dim)
-  : dim_(dim)
-{
-  gridNI_     = 0;   
-  gridNJ_     = 0;
-  shiftGrid_  = NULL;  
-  gainGrid_   = NULL; 
-  theta_      = RMISSING;
-  dz_         = RMISSING;
-  nz_         = nz;
-  nzp_        = nzp;
-  cz_         = 0;
-  inFFTorder_ = true;
-  errCode_    = 0;
-}
-*/
-
 Wavelet::~Wavelet()
 {
   if(shiftGrid_!=NULL)

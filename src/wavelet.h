@@ -35,9 +35,18 @@ public:
   virtual fftw_complex  getCAmp(int k, float scale, int j=0, int i=0) const = 0;
   virtual void          setRAmp(float value, int k, int j=0, int i=0) = 0;
   float                 getNorm() const {return norm_;}
+  void                  setNorm(float norm) {norm_ = norm;}
   bool                  getIsReal() const {return(isReal_);} 
   virtual void          scale(float gain);
   int                   getDim() const {return dim_;}
+  virtual int           getNx() const {return 0;}
+  virtual int           getNy() const {return 0;}
+  virtual int           getNxp() const {return 0;}
+  virtual int           getNyp() const {return 0;}
+  virtual float         getDx() const {return 0.0;}
+  virtual float         getDy() const {return 0.0;}
+  virtual FFTGrid     * getAmpCube() {return NULL;}
+  virtual void          multiplyByR(float) {};
   
   //Note: Function below is mainly controlled by debugflag. Set overrideDebug = true to force.
   virtual void          printToFile(char* fileName, bool overrideDebug = false) = 0;
@@ -95,7 +104,7 @@ protected:
   bool                  inFFTorder_;            // is true if the wavelet is ordred with the central point at the start
                                          // false if the central point is in the middle
   bool                  isReal_;                // is true if the wavlet is real, false if it is fourier transformed 
-  float                 norm_;                  // The (vector) norm of the wavelet (not function norm that divides by dz) 
+  float                 norm_;                  // The (vector) norm of the wavelet (not function norm that divides by dz)
   float                 waveletLength_;         // Length of wavelet estimated as is amplitudes larger than 1/1000 * max amplitude
 
   float                 coeff_[3];              //Reflection coefficients.
