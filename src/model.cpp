@@ -119,8 +119,8 @@ Model::Model(char * fileName)
     if((modelSettings_->getFormatFlag() & FFTGrid::STORMFORMAT) == FFTGrid::STORMFORMAT)
       format +=2;
 
-    makeTimeSimbox(timeSimbox_, modelSettings_, modelFile, //Handles correlation direction too.
-                   errText, failedSimbox, timeCutSimbox);
+    makeTimeSimboxes(timeSimbox_, timeCutSimbox, modelSettings_, modelFile, //Handles correlation direction too.
+                     errText, failedSimbox);
 
     if(!failedSimbox)
     { 
@@ -160,7 +160,6 @@ Model::Model(char * fileName)
         
         if(failedSeismic==false)
         {
-          completeTimeCutSimbox(timeCutSimbox, modelSettings_, errText,failedSimbox);   // Copies area to timeCutSimbox if needed. 
           if(timeCutSimbox!=NULL)
             timeCutMapping_ = new GridMapping(timeCutSimbox,modelFile, modelSettings_,0, failedSimbox, errText, format);
           if(failedSimbox==false)
@@ -420,126 +419,78 @@ Model::checkAvailableMemory(Simbox        * timeSimbox,
   if(memchunk0 != NULL) delete[] memchunk0;
 }
 
-
-// readSegyFiles: reads SegY files form fNames table and stores in target table.
 int
-Model::readSegyFiles(char          ** fNames, 
-                     int              nFiles, 
-                     FFTGrid       ** target, 
-                     Simbox        *& timeSimbox, 
-                     SegyGeometry **& geometries,
-                     ModelSettings *& modelSettings, 
-                     char           * errText, 
-                     int              fileno)
+Model::readSegyFile(char                * fileName, 
+                    FFTGrid            *& target, 
+                    Simbox             *& timeSimbox, 
+                    ModelSettings      *& modelSettings, 
+                    char                * errText, 
+                    const SegyGeometry *& geometry,
+                    int                   gridType,
+                    int                   i)
 {
-  char tmpErr[MAX_STRING];
-  int error = 0;
-  int sbError = 0;
   strcpy(errText, "");
-  strcpy(tmpErr,"");
   SegY * segy = NULL;
-  // flag fileno used if only one of the files should be read from. Used in processBackground.
-  for(int i=0 ; i<nFiles ; i++)
+  int error = 0;
+  target = NULL;
+
+  try
   {
-    if(fileno==-1 || fileno==i)
-    {
-      target[i] = NULL;
-      if(error == 0)
-      {
-        try
-        {
-          segy = new SegY(fNames[i], 
-                          modelSettings->getSegyOffset(),
-                          *(modelSettings->getTraceHeaderFormat()));
-          bool onlyVolume = modelSettings->getAreaParameters() != NULL;;
-          segy->readAllTraces(timeSimbox, 
-                              modelSettings->getZpad(),
-                              onlyVolume);
-          segy->createRegularGrid();
-        }
-        catch (NRLib2::Exception & e)
-        {
-          sprintf(errText,"%s%s",errText,e.what());
-          error++;
-        }
-        
-        if (error == 0)
-        {
-          const SegyGeometry * geometry;
-          geometry = segy->getGeometry();
-          geometry->writeGeometry();
-          geometries[i] = new SegyGeometry(geometry);
-          if(timeSimbox->status() == Simbox::NOAREA)
-          {
-            modelSettings->setAreaParameters(geometry);
-            sbError = timeSimbox->setArea(geometry, tmpErr);
-            if(sbError==1)
-            {
-              std::string text(std::string("Seismic data"));
-              writeAreas(geometry,timeSimbox,text);
-              sprintf(errText,"%s Could not define time simulation grid.",tmpErr);
-              error++;
-            }
-            else
-            {
-              sbError = timeSimbox->checkError(modelSettings->getLzLimit(), tmpErr);
-
-              if(sbError == 0)
-              {
-                estimateXYPaddingSizes(timeSimbox, modelSettings);
-                //
-                // Check if CRAVA has enough memory to run calculation without buffering to disk
-                //
-                checkAvailableMemory(timeSimbox, modelSettings);
-              }
-              else if(sbError == Simbox::INTERNALERROR)
-              {
-                sprintf(errText,"%s%s", errText, tmpErr);
-                error++;
-              }
-            }
-          }
-          else
-          {
-            sbError = timeSimbox->insideRectangle(geometry);
-            if(sbError == 1)
-            {
-              sprintf(errText,"%sSpecified area in command AREA is larger than the seismic data from volume %s\n",
-                      errText,fNames[i]);
-              error++;
-            }
-          }
-          if(sbError == 0)
-          {
-            if(modelSettings->getFileGrid() == 1)
-              target[i] = new FFTFileGrid(timeSimbox->getnx(),
-              timeSimbox->getny(), 
-              timeSimbox->getnz(),
-              modelSettings->getNXpad(), 
-              modelSettings->getNYpad(), 
-              modelSettings->getNZpad());
-            else
-              target[i] = new FFTGrid(timeSimbox->getnx(), 
-              timeSimbox->getny(), 
-              timeSimbox->getnz(),
-              modelSettings->getNXpad(), 
-              modelSettings->getNYpad(), 
-              modelSettings->getNZpad());
-
-            target[i]->setType(FFTGrid::DATA);
-            target[i]->fillInFromSegY(segy, timeSimbox);
-            target[i]->setAngle(modelSettings->getAngle()[i]);
-          }
-        }
-        if (segy != NULL)
-          delete segy;
-      }
-    }
+    segy = new SegY(fileName, 
+                    modelSettings->getSegyOffset(),
+                    *(modelSettings->getTraceHeaderFormat()));
+    bool onlyVolume = modelSettings->getAreaParameters() != NULL; // This is now always true
+    segy->readAllTraces(timeSimbox, 
+                        modelSettings->getZpad(),
+                        onlyVolume);
+    segy->createRegularGrid();
   }
+  catch (NRLib2::Exception & e)
+  {
+    sprintf(errText,"%s%s",errText,e.what());
+    error++;
+  }
+  
+  if (error == 0)
+  {
+    const SegyGeometry * geo;
+    geo = segy->getGeometry();
+    geo->writeGeometry();
+    if (gridType == FFTGrid::DATA) 
+      geometry = new SegyGeometry(geo);
+    
+    error = timeSimbox->insideRectangle(geo);
+    if(error == 0)
+    {
+      if(modelSettings->getFileGrid() == 1)
+        target = new FFTFileGrid(timeSimbox->getnx(),
+                                 timeSimbox->getny(), 
+                                 timeSimbox->getnz(),
+                                 modelSettings->getNXpad(), 
+                                 modelSettings->getNYpad(), 
+                                 modelSettings->getNZpad());
+      else
+        target = new FFTGrid(timeSimbox->getnx(), 
+                             timeSimbox->getny(), 
+                             timeSimbox->getnz(),
+                             modelSettings->getNXpad(), 
+                             modelSettings->getNYpad(), 
+                             modelSettings->getNZpad());
+      
+      target->setType(gridType);
+      target->fillInFromSegY(segy, timeSimbox);
+      if (gridType == FFTGrid::DATA)
+        target->setAngle(modelSettings->getAngle()[i]);
+    }
+    else
+      sprintf(errText,"%sSpecified area in command AREA is larger than the data from SegY file %s\n",
+              errText,fileName);
+  }
+  if (segy != NULL)
+    delete segy;
+
   return(error);
 }
-
-
 
 //NBNB Following routine only to be used for parameters!
 int
@@ -600,14 +551,43 @@ Model::setPaddingSize(int nx, float px)
 }
 
 void 
-Model::makeTimeSimbox(Simbox        *& timeSimbox,
-                      ModelSettings *& modelSettings, 
-                      ModelFile      * modelFile,
-                      char           * errText,
-                      bool           & failed,
-                      Simbox         *& timeCutSimbox)
+Model::makeTimeSimboxes(Simbox        *& timeSimbox,
+                        Simbox        *& timeCutSimbox,
+                        ModelSettings *& modelSettings, 
+                        ModelFile      * modelFile,
+                        char           * errText,
+                        bool           & failed)
 {
-  int error = 0;
+  //
+  // Set AREA (Use SegY geometry from first seismic data volume if needed).
+  //
+  std::string areaType = "Model file";
+  if (modelSettings->getAreaParameters() == NULL)
+  {
+    LogKit::LogFormatted(LogKit::HIGH,"\nFinding inversion area from seismic data in file %s\n",
+                         modelFile->getSeismicFile()[0]);
+    areaType = "Seismic data";
+    const std::string seismicFile = modelFile->getSeismicFile()[0];
+    const TraceHeaderFormat thf = *(modelSettings->getTraceHeaderFormat());
+    SegyGeometry * geometry = SegY::findGridGeometry(seismicFile, thf);
+    modelSettings->setAreaParameters(geometry);
+    delete geometry;
+  }
+  
+  const SegyGeometry * areaParams = modelSettings->getAreaParameters(); 
+
+  int error = timeSimbox->setArea(areaParams, errText);
+  if(error==1)
+  {
+  writeAreas(areaParams,timeSimbox,areaType);
+  sprintf(errText,"%s The specified AREA extends outside the surface(s).\n",errText);
+  failed = true;
+  }
+
+  //
+  // Set SURFACES
+  //
+  error = 0;
   setSimboxSurfaces(timeSimbox, 
                     modelFile->getTimeSurfFile(), 
                     modelFile->getParallelTimeSurfaces(), 
@@ -616,7 +596,6 @@ Model::makeTimeSimbox(Simbox        *& timeSimbox,
                     modelFile->getTimeDz(), 
                     modelFile->getTimeNz(),
                     error);
-  const SegyGeometry * areaParams = NULL;
   if(error == 0)
   {
     sprintf(errText,"%c",'\0');
@@ -628,41 +607,27 @@ Model::makeTimeSimbox(Simbox        *& timeSimbox,
     if(modelFile->getNWaveletTransfArgs() > 0 && timeSimbox->getIsConstantThick() == true)
       LogKit::LogFormatted(LogKit::WARNING,"\nWarning: LOCALWAVELET is ignored when using constant thickness in DEPTH.\n");
 
-    areaParams = modelSettings->getAreaParameters(); 
     estimateZPaddingSize(timeSimbox, modelSettings);   
-    if (areaParams != NULL)
+
+    error = timeSimbox->checkError(modelSettings->getLzLimit(),errText);
+    
+    if(error == 0)
     {
-      error = timeSimbox->setArea(areaParams, errText);
-      if(error==1)
+      LogKit::LogFormatted(LogKit::LOW,"\nTime output interval:\n");
+      LogKit::LogFormatted(LogKit::LOW,"  Interval thickness    avg / min / max    : %6.1f /%6.1f /%6.1f\n", 
+                           timeSimbox->getlz()*timeSimbox->getAvgRelThick(),
+                           timeSimbox->getlz()*timeSimbox->getMinRelThick(),
+                           timeSimbox->getlz());
+      LogKit::LogFormatted(LogKit::LOW,"  Sampling density      avg / min / max    : %6.2f /%6.2f /%6.2f\n", 
+                           timeSimbox->getdz()*timeSimbox->getAvgRelThick(),
+                           timeSimbox->getdz(),
+                           timeSimbox->getdz()*timeSimbox->getMinRelThick());
+    }
+    else
       {
-        std::string text(std::string("Model file"));
-        writeAreas(areaParams,timeSimbox,text);
-        sprintf(errText,"%s The AREA specified in the model file extends outside the surface(s).\n",errText);
+        sprintf(errText,"%s. Could not make time simulation grid.\n",errText);
         failed = true;
       }
-      else
-      {
-        error = timeSimbox->checkError(modelSettings->getLzLimit(),errText);
-
-        if(error == 0)
-        {
-          LogKit::LogFormatted(LogKit::LOW,"\nTime output interval:\n");
-          LogKit::LogFormatted(LogKit::LOW,"  Interval thickness    avg / min / max    : %6.1f /%6.1f /%6.1f\n", 
-                         timeSimbox->getlz()*timeSimbox->getAvgRelThick(),
-                         timeSimbox->getlz()*timeSimbox->getMinRelThick(),
-                         timeSimbox->getlz());
-          LogKit::LogFormatted(LogKit::LOW,"  Sampling density      avg / min / max    : %6.2f /%6.2f /%6.2f\n", 
-                         timeSimbox->getdz()*timeSimbox->getAvgRelThick(),
-                         timeSimbox->getdz(),
-                         timeSimbox->getdz()*timeSimbox->getMinRelThick());
-        }
-        else
-        {
-          sprintf(errText,"%s. Could not make time simulation grid.\n",errText);
-          failed = true;
-        }
-      }
-    }
   }
   else
   {
@@ -670,6 +635,9 @@ Model::makeTimeSimbox(Simbox        *& timeSimbox,
     failed = true;
   }
 
+  //
+  // Make extended time simbox
+  //
   if(modelFile->getCorrDirFile() != NULL) {
     //
     // Get correlation direction
@@ -688,18 +656,15 @@ Model::makeTimeSimbox(Simbox        *& timeSimbox,
     error = timeSimbox->checkError(modelSettings->getLzLimit(),errText);
     if(error == 0)
     {
-      if(areaParams!=NULL)
-      {
-        LogKit::LogFormatted(LogKit::LOW,"\nTime inversion interval:\n");
-        LogKit::LogFormatted(LogKit::LOW,"  Interval thickness    avg / min / max    : %6.1f /%6.1f /%6.1f\n", 
-                       timeSimbox->getlz()*timeSimbox->getAvgRelThick(),
-                       timeSimbox->getlz()*timeSimbox->getMinRelThick(),
-                       timeSimbox->getlz());
-        LogKit::LogFormatted(LogKit::LOW,"  Sampling density      avg / min / max    : %6.2f /%6.2f /%6.2f\n", 
-                       timeSimbox->getdz()*timeSimbox->getAvgRelThick(),
-                       timeSimbox->getdz(),
-                       timeSimbox->getdz()*timeSimbox->getMinRelThick());
-      }
+      LogKit::LogFormatted(LogKit::LOW,"\nTime inversion interval:\n");
+      LogKit::LogFormatted(LogKit::LOW,"  Interval thickness    avg / min / max    : %6.1f /%6.1f /%6.1f\n", 
+                           timeSimbox->getlz()*timeSimbox->getAvgRelThick(),
+                           timeSimbox->getlz()*timeSimbox->getMinRelThick(),
+                           timeSimbox->getlz());
+      LogKit::LogFormatted(LogKit::LOW,"  Sampling density      avg / min / max    : %6.2f /%6.2f /%6.2f\n", 
+                           timeSimbox->getdz()*timeSimbox->getAvgRelThick(),
+                           timeSimbox->getdz(),
+                           timeSimbox->getdz()*timeSimbox->getMinRelThick());
     }
     else
     {
@@ -708,7 +673,7 @@ Model::makeTimeSimbox(Simbox        *& timeSimbox,
     }
   }
 
-  if(failed == false && areaParams!=NULL) {
+  if(failed == false) {
     estimateXYPaddingSizes(timeSimbox, modelSettings);
     //
     // Check if CRAVA has enough memory to run calculation without buffering to disk
@@ -767,7 +732,6 @@ Model::setSimboxSurfaces(Simbox *& simbox,
     else {
       Surface * z1Grid = NULL;
       try {
-        
         if (isNumber(baseName)) {
           z1Grid = new Surface(x0,y0,lx,ly,nx,ny,atof(baseName));
           LogKit::LogFormatted(LogKit::ERROR,"Konstant tidsflater virker ikke ennaa... Paal skal fikse det");
@@ -782,15 +746,25 @@ Model::setSimboxSurfaces(Simbox *& simbox,
         LogKit::LogFormatted(LogKit::ERROR,e.what());
         error = 1;
       }
-      if(error == 0)
-        simbox->setDepth(z0Grid, z1Grid, nz);
+      if(error == 0) {
+        try {
+          simbox->setDepth(z0Grid, z1Grid, nz);
+        }
+        catch (NRLib2::Exception & e) {
+          LogKit::LogFormatted(LogKit::ERROR,e.what());
+          std::string text(std::string("Seismic data"));
+          writeAreas(modelSettings_->getAreaParameters(),simbox,text);
+          error = 1;
+        }
+      }
     }
   }
 }
 
 void
-Model::setupExtendedTimeSimbox(Simbox  * timeSimbox, 
-                               Surface * corrSurf, Simbox *& timeCutSimbox)
+Model::setupExtendedTimeSimbox(Simbox   * timeSimbox, 
+                               Surface  * corrSurf, 
+                               Simbox  *& timeCutSimbox)
 {
   timeCutSimbox = new Simbox(timeSimbox);
 
@@ -962,28 +936,6 @@ Model::estimateZPaddingSize(Simbox         * timeSimbox,
   }
 }
 
-void 
-Model::completeTimeCutSimbox(Simbox        *& timeCutSimbox,
-                             ModelSettings  * modelSettings,
-                             char            * errText,
-                             bool            &failed)
-{
-  if(timeCutSimbox != NULL && timeCutSimbox->status() == Simbox::NOAREA)
-  {
-    const SegyGeometry * areaParams = modelSettings->getAreaParameters(); 
-    if (areaParams != NULL)
-    {
-      int error = timeCutSimbox->setArea(areaParams, errText);
-      if(error==1)
-      {
-        sprintf(errText,"%s Problem with definition of time cut simbox.",errText);
-        failed = true;
-      }
-
-    }
-  }
-}
-
 void
 Model::processSeismic(FFTGrid      **& seisCube,
                       Simbox        *& timeSimbox,
@@ -1000,14 +952,21 @@ Model::processSeismic(FFTGrid      **& seisCube,
     char tmpErrText[MAX_STRING];
     bool areaInModelFile = modelSettings->getAreaParameters() != NULL;
     int nAngles = modelSettings->getNumberOfAngles();
-    SegyGeometry ** geometry = new SegyGeometry * [nAngles];
-    for (int i =0 ; i < nAngles ; i++)
-      geometry[i] = NULL;
-
+    const SegyGeometry ** geometry = new const SegyGeometry * [nAngles];
     seisCube = new FFTGrid * [nAngles];
 
-    if(readSegyFiles(seismicFile, nAngles, seisCube, timeSimbox, 
-                     geometry, modelSettings, tmpErrText) == 0)
+    int error = 0;
+    int readerror = 0;
+    for (int i =0 ; i < nAngles ; i++) {
+      geometry[i] = NULL;
+      readerror = readSegyFile(seismicFile[i], seisCube[i],
+                               timeSimbox, modelSettings, 
+                               tmpErrText, geometry[i],
+                               FFTGrid::DATA, i);
+      error += readerror;
+    }
+
+    if(readerror == 0)
     {
       int formatFlag = modelSettings->getFormatFlag();
       if(formatFlag == 0)
@@ -1457,17 +1416,11 @@ Model::processBackground(Background   *& background,
             sprintf(tmpErrText,"%c",'\0');
             int readerror = 0;
             if(findFileType(backFile[i]) == SEGYFILE) {
-              int nAngles = modelSettings->getNumberOfAngles();
-              SegyGeometry ** geometry = new SegyGeometry * [nAngles];
-              for (int j =0 ; j < nAngles ; j++)
-                geometry[i] = NULL;
-              readerror = readSegyFiles(backFile, 3, backModel, timeSimbox, 
-                                        geometry, modelSettings,
-                                        tmpErrText, i);
-              for (int j =0 ; j < nAngles ; j++)
-                if (geometry[i] != NULL)
-                  delete geometry[i];
-              delete [] geometry;
+              const SegyGeometry * geometry = NULL;
+              readerror = readSegyFile(backFile[i], backModel[i], 
+                                       timeSimbox, modelSettings, 
+                                       tmpErrText, geometry, 
+                                       FFTGrid::PARAMETER);
             }
             else
               readerror = readStormFile(backFile[i], backModel[i], parName[i], 
@@ -2636,17 +2589,11 @@ Model::processVelocity(FFTGrid      *& velocity,
       sprintf(tmpErrText,"%c",'\0');
       int readerror = 0;
       if(findFileType(velocityField) == SEGYFILE) {
-        int nAngles = modelSettings->getNumberOfAngles();
-        SegyGeometry ** geometry = new SegyGeometry * [nAngles];
-        for (int i =0 ; i < nAngles ; i++)
-          geometry[i] = NULL;
-        readerror = readSegyFiles((&velocityField), 1,(&velocity),
-                                  timeSimbox, geometry, modelSettings,
-                                  tmpErrText,0);
-        for (int i =0 ; i < nAngles ; i++)
-          if (geometry[i] != NULL)
-            delete geometry[i];
-        delete [] geometry;
+        const SegyGeometry * geometry = NULL;
+        readerror = readSegyFile(velocityField, velocity,
+                                 timeSimbox, modelSettings, 
+                                 tmpErrText, geometry, 
+                                 FFTGrid::VELOCITY);
       }
       else
         readerror = readStormFile(velocityField, velocity, parName, 

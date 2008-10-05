@@ -80,7 +80,7 @@ public:
   float                getTheta() const {return(theta_);}  
   float                getScale() const {return(scale_);}
   bool                 getIsTransformed() const {return(istransformed_);}
-  enum                 gridTypes{CTMISSING,DATA,PARAMETER,COVARIANCE};
+  enum                 gridTypes{CTMISSING,DATA,PARAMETER,COVARIANCE,VELOCITY};
   enum                 accessMode{NONE,READ,WRITE,READANDWRITE,RANDOMACCESS};
   virtual void         multiplyByScalar(float scalar);      //No mode/randomaccess
   int                  getType() const {return(cubetype_);}

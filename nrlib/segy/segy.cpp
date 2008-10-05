@@ -88,9 +88,10 @@ SegY::~SegY()
   if(binaryHeader_!=NULL)
     delete binaryHeader_;
   binaryHeader_ = NULL;
-  int i;
-  for(i=0;i<nTraces_;i++)
-    delete traces_[i];
+  if (traces_.size() > 0) {
+    for(int i=0;i<nTraces_;i++)
+      delete traces_[i];
+  }
   file_.close();
 }
 
@@ -768,7 +769,7 @@ SegY::findGridGeometry(const std::string       & fileName,
 {
   float dummy_z0 = 0.0f;
   SegY segy(fileName, dummy_z0, traceHeaderFormat);
-  SegyGeometry * geometry = segy.findGridGeometry();
+  SegyGeometry * geometry = segy.findGridGeometry(); // returns a new SegyGeometry object
   return geometry;
 }
 

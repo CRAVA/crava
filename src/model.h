@@ -50,19 +50,15 @@ public:
   enum             backFileTypes{STORMFILE = -2, SEGYFILE = -1};
 
 private:
-  void             makeTimeSimbox(Simbox        *& timeSimbox,
-                                  ModelSettings *& modelSettings, 
-                                  ModelFile      * modelFile,
-                                  char           * errText,
-                                  bool           & failed,
-                                  Simbox         * &timeCutSimbox);
+  void             makeTimeSimboxes(Simbox        *& timeSimbox,
+                                    Simbox        *& timeCutSimbox,
+                                    ModelSettings *& modelSettings, 
+                                    ModelFile      * modelFile,
+                                    char           * errText,
+                                    bool           & failed);
   void             setupExtendedTimeSimbox(Simbox * timeSimbox, 
                                            Surface * corrSurf, 
                                            Simbox *& timeCutSimbox);
-  void             completeTimeCutSimbox(Simbox       *& timeCutSimbox,
-                                         ModelSettings * modelSettings,
-                                         char            * errText,
-                                         bool            &failed);
   void             processSeismic(FFTGrid      **& seisCube,
                                   Simbox        *& timeSimbox,
                                   ModelSettings *& modelSettings, 
@@ -133,15 +129,14 @@ private:
                                           ModelSettings *& modelSettings);
   void             estimateZPaddingSize(Simbox         * timeSimbox,
                                         ModelSettings *& modelSettings);
-  int              readSegyFiles(char          ** fNames, 
-                                 int              nFiles, 
-                                 FFTGrid       ** target, 
-                                 Simbox        *& timeSimbox, 
-                                 SegyGeometry **& geometry,
-                                 ModelSettings *& modelSettings,
-                                 char           * errText,
-                                 int              fileno = -1); 
- 
+  int              readSegyFile(char                * fileName, 
+                                FFTGrid            *& target, 
+                                Simbox             *& timeSimbox, 
+                                ModelSettings      *& modelSettings,
+                                char                * errText,
+                                const SegyGeometry *& geometry,
+                                int                   gridType,
+                                int                   i = IMISSING); 
   int              readStormFile(char           * fName, 
                                  FFTGrid       *& target, 
                                  const char     * parName,
