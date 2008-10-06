@@ -3,16 +3,17 @@
 #
 include Makeheader
 
-DIRS      = src lib nrlib/grid nrlib/iotools nrlib/surface nrlib/volume nrlib/segy nrlib/stormgrid fft/fftw fft/rfftw
+DIRS      = src lib nrlib fft/fftw fft/rfftw
 OBJDIR    = obj
 OBJSUBDIR = obj/fft
+OBJNRLIBDIR = obj/nrlib
 INCLUDE   = -I. -I./fft/include
 CPPFLAGS += $(INCLUDE) 
 
 all:	$(PROGRAM)
 
 $(PROGRAM): $(DIRS) main.o
-	$(PURIFY) $(CXX) $(LFLAGS) -o $@ $(OBJDIR)/*.o $(OBJSUBDIR)/*.o main.o
+	$(PURIFY) $(CXX) $(LFLAGS) -o $@ $(OBJDIR)/*.o $(OBJSUBDIR)/*.o $(OBJNRLIBDIR)/*/*.o main.o
 
 $(OBJDIR):
 	install -d $(OBJDIR)
@@ -32,6 +33,7 @@ clean:
 veryclean:
 	rm -f $(OBJDIR)/*.o
 	rm -f $(OBJSUBDIR)/*.o
+	rm -f $(OBJNRLIBDIR)/*/*.o
 	rm -f $(PROGRAM) main.o
 
 test:	$(PROGRAM) 
