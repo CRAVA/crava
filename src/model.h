@@ -124,6 +124,7 @@ private:
                                      double       lz, 
                                      double       dz, 
                                      int          nz, 
+                                     char       * errText,
                                      int        & error);
   void             estimateXYPaddingSizes(Simbox         * timeSimbox,
                                           ModelSettings *& modelSettings);
@@ -183,7 +184,15 @@ private:
   void             writeAreas(const SegyGeometry * areaParams,
                               Simbox             * timeSimbox,
                               std::string        & text);
-
+  void             findSmallestSurfaceGeometry(const double   x0, 
+                                               const double   y0, 
+                                               const double   lx, 
+                                               const double   ly, 
+                                               const double   rot,
+                                               double       & xMin,
+                                               double       & yMin,
+                                               double       & xMax,
+                                               double       & yMax);
 
   ModelSettings  * modelSettings_;
   Simbox         * timeSimbox_;            ///< Information about simulation area.

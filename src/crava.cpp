@@ -2226,7 +2226,6 @@ void Crava::computeFaciesProb()
 {
   if((outputFlag_ & ModelSettings::FACIESPROB) >0 || (outputFlag_ & ModelSettings::FACIESPROBRELATIVE)>0)
   {
-    LogKit::LogFormatted(LogKit::LOW,"Start computing facies probability cubes ...\n");
     int relative;
     if((outputFlag_ & ModelSettings::FACIESPROBRELATIVE)>0)
       relative = 1;

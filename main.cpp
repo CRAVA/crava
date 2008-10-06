@@ -108,7 +108,11 @@ int main(int argc, char** argv)
         LogKit::LogFormatted(LogKit::LOW,"\n             ... post prosess ended\n");
         
       }
+      LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************");
+      LogKit::LogFormatted(LogKit::LOW,"\n***                   Facies probability volumes                    ***"); 
+      LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************\n\n");
       crava->computeFaciesProb();
+
       delete [] warningText;
       delete crava;
     } //end doinversion 

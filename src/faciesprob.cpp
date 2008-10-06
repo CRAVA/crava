@@ -907,7 +907,7 @@ void FaciesProb::filterWellLogs(WellData **wells, int nWells,
   LogKit::LogFormatted(LogKit::MEDIUM,"  Wells available:\n");
   for (int w = 0 ; w < nWells ; w++)
     if(wells[w]->getUseForFaciesProbabilities())
-      LogKit::LogFormatted(LogKit::MEDIUM,"%s\n",wells[w]->getWellname());
+      LogKit::LogFormatted(LogKit::MEDIUM,"    %s\n",wells[w]->getWellname());
   
   float domega  = static_cast<float> (1000.0/(nzp_*simbox_->getdz()));  //dz in milliseconds
   int w, w1,i,j;

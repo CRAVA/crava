@@ -3,12 +3,12 @@
 #
 include Makeheader
 
-DIRS      = src lib nrlib fft/fftw fft/rfftw
-OBJDIR    = obj
-OBJSUBDIR = obj/fft
+DIRS        = src lib nrlib fft/fftw fft/rfftw
+OBJDIR      = obj
+OBJSUBDIR   = obj/fft
 OBJNRLIBDIR = obj/nrlib
-INCLUDE   = -I. -I./fft/include
-CPPFLAGS += $(INCLUDE) 
+INCLUDE     = -I. -I./fft/include
+CPPFLAGS   += $(INCLUDE) 
 
 all:	$(PROGRAM)
 

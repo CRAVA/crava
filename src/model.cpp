@@ -595,6 +595,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
                     modelFile->getTimeLz(), 
                     modelFile->getTimeDz(), 
                     modelFile->getTimeNz(),
+                    errText,
                     error);
   if(error == 0)
   {
@@ -690,30 +691,24 @@ Model::setSimboxSurfaces(Simbox *& simbox,
                          double    lz, 
                          double    dz, 
                          int       nz,
+                         char    * errText,
                          int     & error)
 {
   char * topName  = surfFile[0]; 
   char * baseName = surfFile[1]; 
 
-  const double x0 = simbox->getx0();
-  const double y0 = simbox->gety0();
-  const double lx = simbox->getlx();
-  const double ly = simbox->getly();
-  const int    nx = simbox->getnx();
-  const int    ny = simbox->getny();
-  
   Surface * z0Grid = NULL;
   try {
     if (isNumber(topName)) {
-      z0Grid = new Surface(x0,
-                           y0,
-                           lx,
-                           ly,
-                           nx,
-                           ny,
-                           atof(topName));
-    LogKit::LogFormatted(LogKit::ERROR,"Konstant tidsflater virker ikke ennaa... Paal skal fikse det");
-    exit(1);
+      // Find the smallest surface that covers the simbox. For simplicity 
+      // we use only four nodes (nx=ny=2).
+      double xMin, xMax;
+      double yMin, yMax;
+      findSmallestSurfaceGeometry(simbox->getx0(), simbox->gety0(),
+                                  simbox->getlx(), simbox->getly(),
+                                  simbox->getAngle(), 
+                                  xMin,yMin,xMax,yMax);
+      z0Grid = new Surface(xMin, yMin, xMax-xMin, yMax-yMin, 2, 2, atof(topName));
     } 
     else {
       Surface tmpSurf = NRLib2::ReadStormSurf(topName);
@@ -721,7 +716,7 @@ Model::setSimboxSurfaces(Simbox *& simbox,
     }
   }
   catch (NRLib2::Exception & e) {
-    LogKit::LogFormatted(LogKit::ERROR,e.what());
+    sprintf(errText,"%s%s",errText,e.what());
     error = 1;
   }
   
@@ -733,9 +728,15 @@ Model::setSimboxSurfaces(Simbox *& simbox,
       Surface * z1Grid = NULL;
       try {
         if (isNumber(baseName)) {
-          z1Grid = new Surface(x0,y0,lx,ly,nx,ny,atof(baseName));
-          LogKit::LogFormatted(LogKit::ERROR,"Konstant tidsflater virker ikke ennaa... Paal skal fikse det");
-          exit(1);
+          // Find the smallest surface that covers the simbox. For simplicity 
+          // we use only four nodes (nx=ny=2).
+          double xMin, xMax;
+          double yMin, yMax;
+          findSmallestSurfaceGeometry(simbox->getx0(), simbox->gety0(),
+                                      simbox->getlx(), simbox->getly(),
+                                      simbox->getAngle(), 
+                                      xMin,yMin,xMax,yMax);
+          z1Grid = new Surface(xMin, yMin, xMax-xMin, yMax-yMin, 2, 2, atof(baseName));
         }
         else {
           Surface tmpSurf = NRLib2::ReadStormSurf(baseName);
@@ -743,7 +744,7 @@ Model::setSimboxSurfaces(Simbox *& simbox,
         }
       }
       catch (NRLib2::Exception & e) {
-        LogKit::LogFormatted(LogKit::ERROR,e.what());
+        sprintf(errText,"%s%s",errText,e.what());
         error = 1;
       }
       if(error == 0) {
@@ -751,7 +752,7 @@ Model::setSimboxSurfaces(Simbox *& simbox,
           simbox->setDepth(z0Grid, z1Grid, nz);
         }
         catch (NRLib2::Exception & e) {
-          LogKit::LogFormatted(LogKit::ERROR,e.what());
+          sprintf(errText,"%s%s",errText,e.what());
           std::string text(std::string("Seismic data"));
           writeAreas(modelSettings_->getAreaParameters(),simbox,text);
           error = 1;
@@ -2486,7 +2487,7 @@ Model::printSettings(ModelSettings * modelSettings,
       if (corr->getAnisotropic())
       {
         LogKit::LogFormatted(LogKit::LOW,"    Subrange                               : %10.1f\n",corr->getSubRange());
-        LogKit::LogFormatted(LogKit::LOW,"    Angle                                  : %10.1f\n",corr->getAngle());
+        LogKit::LogFormatted(LogKit::LOW,"    Angle                                  : %10.1f\n",corr->getAngle()*(-1));
       }
     }
     //
@@ -2621,17 +2622,13 @@ Model::writeAreas(const SegyGeometry * areaParams,
   double areaDx   = areaParams->getDx();
   double areaDy   = areaParams->getDy();
   double areaRot  = areaParams->getAngle();
-  double areaXmin = areaX0 - areaLy*sin(areaRot);
-  double areaXmax = areaX0 + areaLx*cos(areaRot);
-  double areaYmin = areaY0;
-  double areaYmax = areaY0 + areaLx*sin(areaRot) + areaLy*cos(areaRot);
+  double areaXmin = RMISSING;
+  double areaXmax = RMISSING;
+  double areaYmin = RMISSING;
+  double areaYmax = RMISSING;
 
-  if (areaRot < 0) {
-    areaXmin = areaX0;
-    areaXmax = areaX0 + areaLx*cos(areaRot) - areaLy*sin(areaRot);
-    areaYmin = areaY0 + areaLx*sin(areaRot);
-    areaYmax = areaY0 + areaLy*cos(areaRot);
-  }
+  findSmallestSurfaceGeometry(areaX0, areaY0, areaLx, areaLy, areaRot,
+                              areaXmin, areaYmin, areaXmax, areaYmax);
 
   LogKit::LogFormatted(LogKit::LOW,"\nThe top and/or base time surfaces do not cover the area specified by the %s",text.c_str());
   LogKit::LogFormatted(LogKit::LOW,"\nPlease extrapolate surfaces or specify a smaller AREA in the model file.\n");
@@ -2640,7 +2637,7 @@ Model::writeAreas(const SegyGeometry * areaParams,
   double azimuth = (-1)*areaRot*(180.0/M_PI);
   if (azimuth < 0)
     azimuth += 360.0;
-  LogKit::LogFormatted(LogKit::LOW,"Model file       %11.2f  %11.2f    %10.2f %10.2f    %7.2f %7.2f    %8.3f\n\n", 
+  LogKit::LogFormatted(LogKit::LOW,"Model area       %11.2f  %11.2f    %10.2f %10.2f    %7.2f %7.2f    %8.3f\n\n", 
                        areaX0, areaY0, areaLx, areaLy, areaDx, areaDy, azimuth);
 
   LogKit::LogFormatted(LogKit::LOW,"Area                    xmin         xmax           ymin        ymax\n");
@@ -2654,3 +2651,27 @@ Model::writeAreas(const SegyGeometry * areaParams,
   LogKit::LogFormatted(LogKit::LOW,"Base surface     %11.2f  %11.2f    %11.2f %11.2f\n", 
                        base.GetXMin(), base.GetXMax(), base.GetYMin(), base.GetYMax()); 
 }
+
+void   
+Model::findSmallestSurfaceGeometry(const double   x0, 
+                                   const double   y0, 
+                                   const double   lx, 
+                                   const double   ly, 
+                                   const double   rot,
+                                   double       & xMin,
+                                   double       & yMin,
+                                   double       & xMax,
+                                   double       & yMax)
+{
+  xMin = x0 - ly*sin(rot);
+  xMax = x0 + lx*cos(rot);
+  yMin = y0;
+  yMax = y0 + lx*sin(rot) + ly*cos(rot);
+  if (rot < 0) {
+    xMin = x0;
+    xMax = x0 + lx*cos(rot) - ly*sin(rot);
+      yMin = y0 + lx*sin(rot);
+      yMax = y0 + ly*cos(rot);
+  }
+}
+
