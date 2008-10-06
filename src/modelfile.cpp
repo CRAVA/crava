@@ -1037,14 +1037,17 @@ ModelFile::readCommandDepthConversion(char ** params, int & pos, char * errText)
     while(subCom < nSubCommands && strcmp(params[pos+curPar], subCommand[subCom]) != 0)
       subCom++;
 
+    char *velocityFieldUC = new char[9];
     switch(subCom) 
     {
     case 0:
       delete [] velocityField_;
       velocityField_ = new char[strlen(params[pos+curPar+1])+1]; // Can be file name or command
       strcpy(velocityField_,params[pos+curPar+1]);
-      uppercase(velocityField_);
-      if (strcmp(velocityField_,"CONSTANT")!=0 && strcmp(velocityField_,"FROM_INVERSION")!=0)
+      velocityFieldUC = new char[strlen(velocityField_)+1];
+      strcpy(velocityFieldUC,velocityField_);
+      uppercase(velocityFieldUC);
+      if (strcmp(velocityFieldUC,"CONSTANT")!=0 && strcmp(velocityFieldUC,"FROM_INVERSION")!=0)
       {
         error = checkFileOpen(&(velocityField_), 1, params[pos-1], errText);
       }
