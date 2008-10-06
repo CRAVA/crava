@@ -583,12 +583,15 @@ SegY::writeTrace(float x, float y, std::vector<float> data, const Volume *volume
     header.setInline(IL);
     header.setCrossline(XL);
     header.write(file_);
-    double ztop = volume->GetTopSurface().GetZ(x,y);
+    double ztop = z0_;
+    int nData = static_cast<int>(data.size());
+    if(volume != NULL)
+      ztop = volume->GetTopSurface().GetZ(x,y);
 
     std::vector<float> trace;
     trace.resize(nz_);
     int k;
-    if(volume->GetTopSurface().IsMissing(ztop))
+    if(volume != NULL && volume->GetTopSurface().IsMissing(ztop))
     {
       for(k=0;k<nz_;k++)
         trace[k] = 0;
@@ -598,9 +601,9 @@ SegY::writeTrace(float x, float y, std::vector<float> data, const Volume *volume
       int firstData = static_cast<int>((ztop-z0_)/dz_);
       for(k=0;k<firstData;k++)
         trace[k] = topVal; //data[0];
-      for(k=firstData;k<(firstData+static_cast<int>(data.size()));k++)
+      for(;k<firstData+nData;k++)
         trace[k] = data[k-firstData];
-      for(k=(firstData+static_cast<int>(data.size()));k<nz_;k++)
+      for(;k<nz_;k++)
         trace[k] = baseVal; //data[simbox_->getnz()-1];
     }
     WriteBinaryIbmFloatArray(file_,trace.begin(),trace.end());
@@ -622,9 +625,11 @@ SegY::writeTrace(TraceHeader * traceHeader, std::vector<float> data,Volume *volu
     z = volume->GetTopSurface().GetZ(traceHeader->getUtmx(),traceHeader->getUtmy());
     nz = static_cast<int>(data.size());
   }
+
   std::vector<float> trace(nz_);
   int k;
-  if(volume->GetTopSurface().IsMissing(z))
+
+  if(volume != NULL && volume->GetTopSurface().IsMissing(z))
   {
     for(k=0;k<nz_;k++)
       trace[k] = 0;
