@@ -52,8 +52,8 @@ Model::Model(char * fileName)
   reflectionMatrix_       = NULL;
   randomGen_              = NULL;
   failed_                 = false;
-  gradX_                  = 0;
-  gradY_                  = 0;
+  gradX_                  = 0.0;
+  gradY_                  = 0.0;
  
   timeDepthMapping_       = NULL;
   timeCutMapping_         = NULL;
@@ -119,8 +119,11 @@ Model::Model(char * fileName)
     if((modelSettings_->getFormatFlag() & FFTGrid::STORMFORMAT) == FFTGrid::STORMFORMAT)
       format +=2;
 
-    makeTimeSimboxes(timeSimbox_, timeCutSimbox, modelSettings_, modelFile, //Handles correlation direction too.
-                     errText, failedSimbox);
+    makeTimeSimboxes(timeSimbox_, timeCutSimbox, correlationDirection_, //Handles correlation direction too.
+                     modelSettings_, modelFile, errText, failedSimbox);
+
+    //xxx
+    // modelSettings_->rotateVariograms(timeSimbox_->getAngle());
 
     if(!failedSimbox)
     { 
@@ -368,6 +371,9 @@ Model::checkAvailableMemory(Simbox        * timeSimbox,
   if (modelSettings->getFileGrid() > 0) // Disk buffering is turn on
     return;
 
+  //
+  // Find the size of one grid
+  //
   FFTGrid * dummyGrid = new FFTGrid(timeSimbox->getnx(), 
                                     timeSimbox->getny(), 
                                     timeSimbox->getnz(),
@@ -553,6 +559,7 @@ Model::setPaddingSize(int nx, float px)
 void 
 Model::makeTimeSimboxes(Simbox        *& timeSimbox,
                         Simbox        *& timeCutSimbox,
+                        Surface       *& correlationDirection,
                         ModelSettings *& modelSettings, 
                         ModelFile      * modelFile,
                         char           * errText,
@@ -573,7 +580,6 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
     modelSettings->setAreaParameters(geometry);
     delete geometry;
   }
-  
   const SegyGeometry * areaParams = modelSettings->getAreaParameters(); 
 
   int error = timeSimbox->setArea(areaParams, errText);
@@ -645,14 +651,14 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
     //
     try {
       Surface tmpSurf = NRLib2::ReadStormSurf(modelFile->getCorrDirFile());
-      correlationDirection_ = new Surface(tmpSurf);
+      correlationDirection = new Surface(tmpSurf);
     }
     catch (NRLib2::Exception & e) {
       sprintf(errText,"%s%s",errText,e.what());
       failed = true;
     }
     if(failed == false && modelSettings->getGenerateSeismic() == false)
-      setupExtendedTimeSimbox(timeSimbox, correlationDirection_, timeCutSimbox); 
+      setupExtendedTimeSimbox(timeSimbox, correlationDirection, timeCutSimbox); 
       //Extends timeSimbox for correlation coverage. Original stored in timeCutSimbox
     error = timeSimbox->checkError(modelSettings->getLzLimit(),errText);
     if(error == 0)
@@ -1510,7 +1516,7 @@ Model::processPriorCorrelations(Corr         *& priorCorrelations,
     if(modelSettings->getLateralCorr()==NULL) { // NBNB-PAL: this will never be true (default lateral corr)
       estimateCorrXYFromSeismic(CorrXY,
                                 seisCube_,
-                                modelSettings_->getNumberOfAngles());
+                                modelSettings->getNumberOfAngles());
       time(&timeend);
       LogKit::LogFormatted(LogKit::LOW,"\nEstimate parameter lateral correlation from seismic in %d seconds.\n",
                            static_cast<int>(timeend-timestart));
@@ -1573,6 +1579,7 @@ Model::findCorrXYGrid(void)
   ny = findClosestFactorableNumber(static_cast<int>(ceil(sny*(1.0f+modelSettings_->getYpad()))));
   npix = nx*ny;
   Surface * grid = new Surface(0, 0, dx*nx, dy*ny, nx, ny, RMISSING);
+
   if(modelSettings_->getLateralCorr()!=NULL) // NBNB-PAL: Denne her blir aldri null etter at jeg la inn en default lateral correlation i modelsettings.
   {
     for(j=0;j<ny;j++)
@@ -2556,8 +2563,8 @@ Model::getCorrGradIJ(float & corrGradI, float &corrGradJ) const
   double dx     = timeSimbox_->getdx();  
   double dy     = timeSimbox_->getdy();
 
-  double cI = dx*cosrot*gradX_+dy*sinrot*gradY_;
-  double cJ = -dx*sinrot*gradX_+dy*cosrot*gradY_;
+  double cI =  dx*cosrot*gradX_ + dy*sinrot*gradY_;
+  double cJ = -dx*sinrot*gradX_ + dy*cosrot*gradY_;
 
   corrGradI = float(cI/timeSimbox_->getdz());
   corrGradJ = float(cJ/timeSimbox_->getdz());

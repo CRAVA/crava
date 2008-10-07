@@ -139,6 +139,14 @@ ModelSettings::getDoInversion(void)
   return ((VP+VS+RHO+LAMELAMBDA+LAMEMU+POISSONRATIO+AI+SI+VPVSRATIO+MURHO+LAMBDARHO+FACIESPROB+CORRELATION+FACIESPROBRELATIVE & outputFlag_) > 0); 
 }
 
+void
+ModelSettings::rotateVariograms(float angle)
+{
+  lateralCorr_->rotateCounterClockwise(-angle);
+  backgroundVario_->rotateCounterClockwise(-angle);
+}
+
+
 void           
 ModelSettings::setAngularCorr(Vario * vario)               
 {

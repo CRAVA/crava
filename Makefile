@@ -37,4 +37,4 @@ veryclean:
 	rm -f $(PROGRAM) main.o
 
 test:	$(PROGRAM) 
-	cd test_suite; chmod +x TestScript.pl; perl -s ./TestScript.pl ../$(PROGRAM); cd ..
+	cd test_suite; chmod +x TestScript.pl; perl -s ./TestScript.pl ../$(PROGRAM) $(case); cd ..

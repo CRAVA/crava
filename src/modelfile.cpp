@@ -2177,7 +2177,7 @@ ModelFile::createVario(char ** param, int nPar, const char * command, char * err
     {
     case 0:
       if(nPar-1==varPar[i]) {
-        // Convert from azimuth (in degrees) to internal angle (in radians).
+        // Convert from azimuth to internal angle. Conversion to radians are later.
         float rot = static_cast<float>(90.0 - atof(param[3]));
         result = new SphericalVario(static_cast<float>(atof(param[1])), 
                                     static_cast<float>(atof(param[2])), 
@@ -2189,7 +2189,7 @@ ModelFile::createVario(char ** param, int nPar, const char * command, char * err
       break;
     case 1:
       if(nPar-1==varPar[i]) {
-        // Convert from azimuth (in degrees) to internal angle (in radians).
+        // Convert from azimuth to internal angle. Conversion to radians are later.
         float rot = static_cast<float>(90.0 - atof(param[4]));
         result = new GenExpVario(static_cast<float>(atof(param[1])), 
                                  static_cast<float>(atof(param[2])), 

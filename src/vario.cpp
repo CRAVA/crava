@@ -17,8 +17,8 @@ Vario::Vario(float range1, float range2, float angle)
   // It seems (from txx and tyy below) that all angles are mathematical angles, 
   // that is, angles relative to the x-axis in counterclockwise direction.
   //
-  //angle_  = static_cast<float>(angle*PI/180.0); // conversion to radians, but no change of reference points.
-  angle_  = angle;
+  angle_  = static_cast<float>(angle*M_PI/180.0); // conversion to radians, but no change of reference points.
+  //angle_  = angle;
 }
 
 Vario::~Vario()
@@ -30,9 +30,17 @@ float Vario::findDist(float deltaX, float deltaY) const
 {
   float dist; 
   float txx, txy, tyy;
-  txx = static_cast<float>(cos(angle_)*cos(angle_)/(range1_*range1_) + sin(angle_)*sin(angle_)/(range2_*range2_));
-  tyy = static_cast<float>(sin(angle_)*sin(angle_)/(range1_*range1_) + cos(angle_)*cos(angle_)/(range2_*range2_));
-  txy = static_cast<float>(2*cos(angle_)*sin(angle_)*(1.0/(range1_*range1_)-1.0/(range2_*range2_)));
+
+  float angleX = angle_*180/M_PI;
+  txx = static_cast<float>(cos(angleX)*cos(angleX)/(range1_*range1_) + sin(angleX)*sin(angleX)/(range2_*range2_));
+  tyy = static_cast<float>(sin(angleX)*sin(angleX)/(range1_*range1_) + cos(angleX)*cos(angleX)/(range2_*range2_));
+  txy = static_cast<float>(2*cos(angleX)*sin(angleX)*(1.0/(range1_*range1_)-1.0/(range2_*range2_)));
+
+  //txx = static_cast<float>(cos(angle_)*cos(angle_)/(range1_*range1_) + sin(angle_)*sin(angle_)/(range2_*range2_));
+  //tyy = static_cast<float>(sin(angle_)*sin(angle_)/(range1_*range1_) + cos(angle_)*cos(angle_)/(range2_*range2_));
+  //txy = static_cast<float>(2*cos(angle_)*sin(angle_)*(1.0/(range1_*range1_)-1.0/(range2_*range2_)));
+
+
   dist =static_cast<float>(sqrt(txx*deltaX*deltaX+tyy*deltaY*deltaY+txy*deltaX*deltaY));
   return(dist);
 }
@@ -43,6 +51,17 @@ Vario::convertRangesFromDegToRad()
   range1_ *= static_cast<float>(PI/180.0);
   range2_ *= static_cast<float>(PI/180.0);
 }
+
+void
+Vario::rotateCounterClockwise(float rotAngle)
+{
+  printf("angle_ = %f   rotAngle_ = %f\n",angle_,rotAngle);
+
+  angle_ += rotAngle;
+
+  printf("angle_ = %f\n",angle_);
+}
+
 
 SphericalVario::SphericalVario(float range1, float range2, float angle)
 : Vario(range1, range2, angle)

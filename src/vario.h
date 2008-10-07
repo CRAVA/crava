@@ -16,6 +16,7 @@ public:
   bool           getAnisotropic(void) const { return (fabs(range1_ - range2_) > 1.0f) ;}
   void           getParams(float& range1, float& range2, float& angle) const { range1 = range1_; range2 = range2_; angle = angle_;}
   void           convertRangesFromDegToRad();
+  void           rotateCounterClockwise(float rotAngle);
 
 protected:
   float findDist(float deltaX, float deltaY) const;

@@ -2118,7 +2118,7 @@ Crava::printEnergyToScreen()
   for(i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::LOW,"    %1.3e  ",errorVariance_[i]);
   LogKit::LogFormatted(LogKit::LOW,"\nWavelet scale          :");
   for(i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::LOW,"    %2.3e  ",seisWavelet_[i]->getScale());
-  LogKit::LogFormatted(LogKit::LOW,"\nGiven S/N              :");
+  LogKit::LogFormatted(LogKit::LOW,"\nEmpirical S/N          :");
   for(i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::LOW,"    %5.3f      ",empSNRatio_[i]);
   LogKit::LogFormatted(LogKit::LOW,"\nModelled S/N           :");
   for(i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::LOW,"    %5.3f      ",theoSNRatio_[i]);
@@ -2226,6 +2226,10 @@ void Crava::computeFaciesProb()
 {
   if((outputFlag_ & ModelSettings::FACIESPROB) >0 || (outputFlag_ & ModelSettings::FACIESPROBRELATIVE)>0)
   {
+    LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************");
+    LogKit::LogFormatted(LogKit::LOW,"\n***                   Facies probability volumes                    ***"); 
+    LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************\n\n");
+
     int relative;
     if((outputFlag_ & ModelSettings::FACIESPROBRELATIVE)>0)
       relative = 1;

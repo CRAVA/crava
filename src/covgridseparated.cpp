@@ -12,6 +12,8 @@
 
 CovGridSeparated::CovGridSeparated(const FFTGrid & grid)
 {
+  LogKit::LogFormatted(LogKit::LOW,"CONSTRUCTOR-1: rotAngle_ = %f\n",rotAngle_);
+
   nxp_ = grid.getNxp(); 
   nyp_ = grid.getNyp(); 
   nzp_ = grid.getNzp();
@@ -50,6 +52,8 @@ CovGridSeparated::CovGridSeparated(int nxp, int nyp, int nzp,
   nxp_(nxp), nyp_(nyp), nzp_(nzp), tabulateCorr_(tabulateCor),
   dx_(dx), dy_(dy), dz_(dz),
   rangeX_(rangeX), rangeY_(rangeY), rangeZ_(rangeZ), power_(power), rotAngle_(rotAngle) {
+
+  LogKit::LogFormatted(LogKit::LOW,"CONSTRUCTOR-2: rotAngle_ = %f\n",rotAngle_);
 
   InitRotMatrix();
   
@@ -122,12 +126,16 @@ CovGridSeparated::~CovGridSeparated(void)
 }
 
 void CovGridSeparated::InitRotMatrix() {
-  rotAngle_ *= 3.14159f/180.0f; 
+  //NBNB-PAL:
+  //rotAngle_ *= 3.14159f/180.0f; 
+
+  LogKit::LogFormatted(LogKit::LOW,"rotAngle_ = %f\n",rotAngle_);
+
   float cosA = float(cos(rotAngle_));
   float sinA = float(sin(rotAngle_));
-  rotMatrix_[0][0] = cosA; rotMatrix_[0][1] = sinA; rotMatrix_[0][2] = 0.0f;
+  rotMatrix_[0][0] =  cosA; rotMatrix_[0][1] = sinA; rotMatrix_[0][2] = 0.0f;
   rotMatrix_[1][0] = -sinA; rotMatrix_[1][1] = cosA; rotMatrix_[1][2] = 0.0f;
-  rotMatrix_[2][0] = 0.0f; rotMatrix_[2][1] = 0.0f; rotMatrix_[2][2] = 1.0f;
+  rotMatrix_[2][0] =  0.0f; rotMatrix_[2][1] = 0.0f; rotMatrix_[2][2] = 1.0f;
 }
 
 void CovGridSeparated::EstimateRanges(int& rangeX, int& rangeY, int& rangeZ) const {

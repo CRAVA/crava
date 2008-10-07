@@ -78,6 +78,7 @@ public:
   bool                getDoInversion(void);
   //NBNB Ragnar: Not active yet.
   Surface           * getCorrelationSurface()       const { return NULL              ;}
+  void                rotateVariograms(float angle);
 
   void                setAngularCorr(Vario * vario);    
   void                setLateralCorr(Vario * vario);    

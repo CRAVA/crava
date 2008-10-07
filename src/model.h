@@ -52,6 +52,7 @@ public:
 private:
   void             makeTimeSimboxes(Simbox        *& timeSimbox,
                                     Simbox        *& timeCutSimbox,
+                                    Surface       *& correlationDirection,
                                     ModelSettings *& modelSettings, 
                                     ModelFile      * modelFile,
                                     char           * errText,
