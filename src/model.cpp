@@ -122,7 +122,6 @@ Model::Model(char * fileName)
     makeTimeSimboxes(timeSimbox_, timeCutSimbox, correlationDirection_, //Handles correlation direction too.
                      modelSettings_, modelFile, errText, failedSimbox);
 
-    //xxx
     // modelSettings_->rotateVariograms(timeSimbox_->getAngle());
 
     if(!failedSimbox)

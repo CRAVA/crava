@@ -126,11 +126,6 @@ CovGridSeparated::~CovGridSeparated(void)
 }
 
 void CovGridSeparated::InitRotMatrix() {
-  //NBNB-PAL:
-  //rotAngle_ *= 3.14159f/180.0f; 
-
-  LogKit::LogFormatted(LogKit::LOW,"rotAngle_ = %f\n",rotAngle_);
-
   float cosA = float(cos(rotAngle_));
   float sinA = float(sin(rotAngle_));
   rotMatrix_[0][0] =  cosA; rotMatrix_[0][1] = sinA; rotMatrix_[0][2] = 0.0f;
