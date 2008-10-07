@@ -12,8 +12,6 @@
 
 CovGridSeparated::CovGridSeparated(const FFTGrid & grid)
 {
-  LogKit::LogFormatted(LogKit::LOW,"CONSTRUCTOR-1: rotAngle_ = %f\n",rotAngle_);
-
   nxp_ = grid.getNxp(); 
   nyp_ = grid.getNyp(); 
   nzp_ = grid.getNzp();
@@ -52,8 +50,6 @@ CovGridSeparated::CovGridSeparated(int nxp, int nyp, int nzp,
   nxp_(nxp), nyp_(nyp), nzp_(nzp), tabulateCorr_(tabulateCor),
   dx_(dx), dy_(dy), dz_(dz),
   rangeX_(rangeX), rangeY_(rangeY), rangeZ_(rangeZ), power_(power), rotAngle_(rotAngle) {
-
-  LogKit::LogFormatted(LogKit::LOW,"CONSTRUCTOR-2: rotAngle_ = %f\n",rotAngle_);
 
   InitRotMatrix();
   

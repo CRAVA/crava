@@ -122,8 +122,6 @@ Model::Model(char * fileName)
     makeTimeSimboxes(timeSimbox_, timeCutSimbox, correlationDirection_, //Handles correlation direction too.
                      modelSettings_, modelFile, errText, failedSimbox);
 
-    // modelSettings_->rotateVariograms(timeSimbox_->getAngle());
-
     if(!failedSimbox)
     { 
       //
@@ -588,6 +586,8 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
   sprintf(errText,"%s The specified AREA extends outside the surface(s).\n",errText);
   failed = true;
   }
+  // Rotate variograms relative to simbox
+  modelSettings_->rotateVariograms(timeSimbox_->getAngle());
 
   //
   // Set SURFACES
@@ -1381,6 +1381,10 @@ Model::processBackground(Background   *& background,
       (modelSettings->getOutputFlag() & ModelSettings::BACKGROUND) > 0 || 
       (modelSettings->getOutputFlag() & ModelSettings::WAVELETS)   > 0 )
   {
+    LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************");
+    LogKit::LogFormatted(LogKit::LOW,"\n***              Prior Expectations / Background Model              ***"); 
+    LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************\n");
+      
     FFTGrid * backModel[3];
     const int nx    = timeSimbox->getnx();
     const int ny    = timeSimbox->getny();
@@ -1390,10 +1394,6 @@ Model::processBackground(Background   *& background,
     const int nzPad = modelSettings->getNZpad();
     if (modelFile->getGenerateBackground()) 
     {
-      LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************");
-      LogKit::LogFormatted(LogKit::LOW,"\n***              Prior Expectations / Background Model              ***"); 
-      LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************\n");
-      
       if(modelSettings->getBackgroundVario() == NULL)
       {
         sprintf(errText,"%sDid not manage to make variogram for background modelling\n",errText);
