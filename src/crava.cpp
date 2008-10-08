@@ -597,7 +597,7 @@ Crava:: divideDataByScaleWavelet()
         sprintf(fName,"refl%d",l);
         seisData_[l]->writeFile(fName, simbox_);
       }
-      LogKit::LogFormatted(LogKit::LOW,"Interpolating reflections in cube %d: ",l);
+      LogKit::LogFormatted(LogKit::LOW,"Interpolating reflections in volume %d: ",l);
       seisData_[l]->interpolateSeismic(energyTreshold_);
       if(ModelSettings::getDebugLevel() > 0)
       {

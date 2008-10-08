@@ -29,6 +29,7 @@
 #include "lib/lib_misc.h"
 #include "lib/lib_matr.h"
 #include "lib/global_def.h"
+#include "nrlib/iotools/fileio.hpp"
 #include "nrlib/segy/segy.hpp"
 #include "nrlib/surface/surfaceio.hpp"
 #include "nrlib/iotools/logkit.hpp"
@@ -362,11 +363,19 @@ Model::readMatrix(char * fileName, int n1, int n2, const char * readReason, char
 }
 
 void
-Model::checkAvailableMemory(Simbox        * timeSimbox,
-                            ModelSettings * modelSettings)
+Model::checkAvailableMemory(Simbox            * timeSimbox,
+                            ModelSettings     * modelSettings,
+                            const std::string & seismicFile)                           
 {
   if (modelSettings->getFileGrid() > 0) // Disk buffering is turn on
     return;
+
+  //
+  // Find the size of first seismic volume
+  //
+  float memOneSeis = 0.0f;
+  if (!modelSettings_->getGenerateSeismic())
+    memOneSeis = NRLib2::FindFileSize(seismicFile);
 
   //
   // Find the size of one grid
@@ -389,21 +398,37 @@ Model::checkAvailableMemory(Simbox        * timeSimbox,
   }
   else
     nGrids = 12;
-  int workMem = 2500+int( 0.65*gridSize); //Size of memory used beyond grids.
 
-  char   * memchunk0 = new char[workMem];
-  float ** memchunk  = new float*[nGrids];
+  int   workSize    = 2500 + int( 0.65*gridSize ); //Size of memory used beyond grids.
 
-  float    megaBytes = static_cast<float>(4*nGrids)*static_cast<float>(gridSize)/(1024.f*1024.f);
-  float    gigaBytes = megaBytes/1024.f;
+  float memOneGrid  = 4.0f * static_cast<float>(gridSize);  
+  float mem0        = 4.0f * workSize;
+  float mem1        = static_cast<float>(nGrids)*memOneGrid;
+  float mem2        = static_cast<float>(modelSettings->getNumberOfAngles())*memOneGrid + memOneSeis;
+ 
+  float neededMem   = mem0 + std::max(mem1, mem2);
+
+  float megaBytes   = neededMem/(1024.f*1024.f);
+  float gigaBytes   = megaBytes/1024.f;
+
+  LogKit::LogFormatted(LogKit::DEBUGLOW,"\nMemory needed for reading seismic data   : %10.2f MB\n",mem2/(1024.f*1024.f));
+  LogKit::LogFormatted(LogKit::DEBUGLOW,"Memory needed for holding internal grids : %10.2f MB\n",mem1/(1024.f*1024.f));
+  LogKit::LogFormatted(LogKit::DEBUGLOW,"Memory needed for holding other entities : %10.2f MB\n",mem0/(1024.f*1024.f));
+
   if (gigaBytes < 0.01f)
     LogKit::LogFormatted(LogKit::LOW,"\nMemory needed by CRAVA:  %.2f megaBytes\n",megaBytes);
   else
     LogKit::LogFormatted(LogKit::LOW,"\nMemory needed by CRAVA:  %.2f gigaBytes\n",gigaBytes);
-  
-  int i;
-  for(i = 0 ; i < nGrids ; i++)
-    memchunk[i]  = new float[gridSize];
+
+
+  //
+  // Check if we can hold everything in memory.
+  //
+  char   * memchunk0 = new char[workSize];
+  float ** memchunk  = new float*[nGrids];
+
+  for(int i = 0 ; i < nGrids ; i++)
+    memchunk[i] = new float[gridSize];
 
   if(memchunk[nGrids-1] == NULL)  //Could not allocate memory
   {
@@ -415,7 +440,7 @@ Model::checkAvailableMemory(Simbox        * timeSimbox,
     modelSettings->setFileGrid(0);
   }
 
-  for(i = 0;i < nGrids ;i++)
+  for(int i=0 ; i<nGrids ; i++)
     if(memchunk[i] != NULL) delete [] memchunk[i];
   if(memchunk != NULL) delete [] memchunk;
 
@@ -566,12 +591,13 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
   // Set AREA (Use SegY geometry from first seismic data volume if needed).
   //
   std::string areaType = "Model file";
+  const std::string seismicFile = modelFile->getSeismicFile()[0];
+
   if (modelSettings->getAreaParameters() == NULL)
   {
     LogKit::LogFormatted(LogKit::HIGH,"\nFinding inversion area from seismic data in file %s\n",
                          modelFile->getSeismicFile()[0]);
     areaType = "Seismic data";
-    const std::string seismicFile = modelFile->getSeismicFile()[0];
     const TraceHeaderFormat thf = *(modelSettings->getTraceHeaderFormat());
     SegyGeometry * geometry = SegY::findGridGeometry(seismicFile, thf);
     modelSettings->setAreaParameters(geometry);
@@ -684,7 +710,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
     //
     // Check if CRAVA has enough memory to run calculation without buffering to disk
     //
-    checkAvailableMemory(timeSimbox, modelSettings); 
+    checkAvailableMemory(timeSimbox, modelSettings, seismicFile); 
   }
 }
 
@@ -2245,7 +2271,7 @@ Model::printSettings(ModelSettings * modelSettings,
   LogKit::LogFormatted(LogKit::LOW,"  Length                                   : %10s\n","m");
   LogKit::LogFormatted(LogKit::LOW,"  Velocities                               : %10s\n","m/s");
   LogKit::LogFormatted(LogKit::LOW,"  Density                                  : %10s\n","kg/dm3");
-  LogKit::LogFormatted(LogKit::LOW,"  Angles                                   : %10s\n","degrees (clockwise relative to north)");
+  LogKit::LogFormatted(LogKit::LOW,"  Angles                                   : %10s\n","   degrees (clockwise relative to north)");
 
   TraceHeaderFormat * thf = modelSettings_->getTraceHeaderFormat(); 
   LogKit::LogFormatted(LogKit::LOW,"\nSegY trace header format:\n");
@@ -2432,7 +2458,7 @@ Model::printSettings(ModelSettings * modelSettings,
     if (vario->getAnisotropic()) 
     {
       LogKit::LogFormatted(LogKit::LOW,"    Subrange                               : %10.1f\n",vario->getSubRange());
-      LogKit::LogFormatted(LogKit::LOW,"    Angle                                  : %10.1f\n",vario->getAngle()*(-1));
+      LogKit::LogFormatted(LogKit::LOW,"    Angle                                  : %10.1f\n",vario->getAngle()*(-1)*(180/M_PI));
     }
     LogKit::LogFormatted(LogKit::LOW,"  High cut frequency for well logs         : %10.1f\n",modelSettings->getMaxHzBackground());
   }
@@ -2465,7 +2491,7 @@ Model::printSettings(ModelSettings * modelSettings,
     for (int i = 0 ; i < modelSettings->getNumberOfAngles() ; i++)
     {
       LogKit::LogFormatted(LogKit::LOW,"\nSettings for AVO stack %d:\n",i+1);
-      LogKit::LogFormatted(LogKit::LOW,"  Angle                                    : %10.1f\n",(modelSettings->getAngle()[i]*180/PI));
+      LogKit::LogFormatted(LogKit::LOW,"  Angle                                    : %10.1f\n",(modelSettings->getAngle()[i]*180/M_PI));
       LogKit::LogFormatted(LogKit::LOW,"  Read wavelet from file                   : %s\n",modelFile->getWaveletFile()[i]);
     }
   }
@@ -2493,7 +2519,7 @@ Model::printSettings(ModelSettings * modelSettings,
       if (corr->getAnisotropic())
       {
         LogKit::LogFormatted(LogKit::LOW,"    Subrange                               : %10.1f\n",corr->getSubRange());
-        LogKit::LogFormatted(LogKit::LOW,"    Angle                                  : %10.1f\n",corr->getAngle()*(-1));
+        LogKit::LogFormatted(LogKit::LOW,"    Angle                                  : %10.1f\n",corr->getAngle()*(-1)*(180/M_PI));
       }
     }
     //
@@ -2591,7 +2617,7 @@ Model::processVelocity(FFTGrid      *& velocity,
     }
     else
     {
-      const char * parName = "Velocity";
+      const char * parName = "velocity field";
       char tmpErrText[MAX_STRING];
       sprintf(tmpErrText,"%c",'\0');
       int readerror = 0;

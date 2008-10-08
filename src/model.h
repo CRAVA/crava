@@ -167,8 +167,9 @@ private:
                                                 ModelSettings * modelSettings,
                                                 ModelFile     * modelFile);
   int              findFileType(char * fileName);
-  void             checkAvailableMemory(Simbox        * timeSimbox,
-                                        ModelSettings * modelSettings);
+  void             checkAvailableMemory(Simbox            * timeSimbox,
+                                        ModelSettings     * modelSettings,
+                                        const std::string & seismicFile);
   void             checkFaciesNames(WellData      ** wells,
                                     ModelSettings *& modelSettings,
                                     char           * tmpErrText,

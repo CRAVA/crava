@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "lib/utils.h"
+#include "lib/global_def.h"
 #include "src/definitions.h"
 
 #include "nrlib/iotools/logkit.hpp"
@@ -87,3 +88,4 @@ Utils::writeMatrix(double ** matrix,
     LogKit::LogFormatted(LogKit::LOW,"\n");
   }
 }
+

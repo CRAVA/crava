@@ -219,7 +219,7 @@ FFTGrid::fillInFromStorm(Simbox * actSimBox,
       meanvalue[i+j*nxp_] = static_cast<float>(val);
     }
 
-    LogKit::LogFormatted(LogKit::LOW,"Resampling %s into %dx%dx%d grid:\n",parName,nxp_,nyp_,nzp_);
+    LogKit::LogFormatted(LogKit::LOW,"\nResampling %s into %dx%dx%d grid:\n",parName,nxp_,nyp_,nzp_);
     setAccessMode(WRITE);
 
     int monitorSize = MAXIM(1,int(nyp_*nzp_*0.02));

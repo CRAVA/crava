@@ -440,18 +440,11 @@ WellData::writeRMSWell(void)
   float maxHz_background = modelSettings_->getMaxHzBackground();
   float maxHz_seismic    = modelSettings_->getMaxHzSeismic();
 
-  char * wellFileName;
-  char * tmpWellName1 = new char[MAX_STRING];
-  char * tmpWellName2 = new char[MAX_STRING];
-
-  for (int i=0 ; i<=static_cast<int>(strlen(wellname_)) ; i++){ // need to also copy ASCII null character
-    if (wellname_[i]==' ' || wellname_[i]=='/')
-      tmpWellName1[i] = '_';
-    else
-      tmpWellName1[i] = wellname_[i];
-  }
-  sprintf(tmpWellName2,"Well_%s",tmpWellName1);
-  wellFileName = ModelSettings::makeFullFileName(tmpWellName2,".rms");
+  std::string wellname(wellname_);
+  NRLib2::Substitute(wellname,"/","_");
+  NRLib2::Substitute(wellname," ","_");
+  wellname = "Well_" + wellname;
+  char * wellFileName = ModelSettings::makeFullFileName(wellname.c_str(),".rms");
 
   const char * params[]={"Vp","Vs","Rho"};
   
@@ -506,8 +499,6 @@ WellData::writeRMSWell(void)
 
   fclose(file);
 
-  delete [] tmpWellName1;
-  delete [] tmpWellName2;
   delete [] wellFileName;
 }
 
