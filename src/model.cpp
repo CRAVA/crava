@@ -833,11 +833,14 @@ Model::setupExtendedTimeSimbox(Simbox   * timeSimbox,
   botSurf->Subtract(&(timeSimbox->GetBotSurface()));
   double shiftBot = botSurf->Min();
   shiftBot *= -1.0;
+  double thick    = shiftBot-shiftTop;
+  double dz       = timeCutSimbox->getdz();
+  int    nz       = int(thick/dz);
+  double residual = thick - nz*dz;
+  shiftBot       += dz-residual;
+  nz++;
   botSurf->Add(shiftBot);
   botSurf->Add(&(timeSimbox->GetBotSurface()));
-
-  double thick = shiftBot-shiftTop;
-  int nz = int(0.5+thick/timeCutSimbox->getdz());//NBNB Ragnar: Rounding - is it ok?
 
   timeSimbox->setDepth(topSurf, botSurf, nz);
 
@@ -859,20 +862,24 @@ Model::findPlane(Surface * surf)
   }
 
   double x, y, z;
+  int nData = 0;
   for(i=0;i<surf->GetN();i++) {
     surf->GetXY(i, x, y);
     z = (*surf)(i);
-    A[0][1] += x;
-    A[0][2] += y;
-    A[1][1] += x*x;
-    A[1][2] += x*y;
-    A[2][2] += y*y;
-    b[0] += z;
-    b[1] += x*z;
-    b[2] += y*z;
+    if(!surf->IsMissing(z)) {
+      nData++;
+      A[0][1] += x;
+      A[0][2] += y;
+      A[1][1] += x*x;
+      A[1][2] += x*y;
+      A[2][2] += y*y;
+      b[0] += z;
+      b[1] += x*z;
+      b[2] += y*z;
+    }
   }
 
-  A[0][0] = surf->GetN();
+  A[0][0] = nData;
   A[1][0] = A[0][1];
   A[2][0] = A[0][2];
   A[2][1] = A[1][2];
