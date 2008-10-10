@@ -689,7 +689,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
     error = timeSimbox->checkError(modelSettings->getLzLimit(),errText);
     if(error == 0)
     {
-      LogKit::LogFormatted(LogKit::LOW,"\nTime inversion interval:\n");
+      LogKit::LogFormatted(LogKit::LOW,"\nInversion interval extended due to correlation.\nTime inversion interval:\n");
       LogKit::LogFormatted(LogKit::LOW,"  Interval thickness    avg / min / max    : %6.1f /%6.1f /%6.1f\n", 
                            timeSimbox->getlz()*timeSimbox->getAvgRelThick(),
                            timeSimbox->getlz()*timeSimbox->getMinRelThick(),
@@ -698,6 +698,10 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
                            timeSimbox->getdz()*timeSimbox->getAvgRelThick(),
                            timeSimbox->getdz(),
                            timeSimbox->getdz()*timeSimbox->getMinRelThick());
+      double zmin, zmax;
+      timeSimbox->getMinMaxZ(zmin,zmax);
+      LogKit::LogFormatted(LogKit::HIGH,"\nNew minimum time: %6.1f\n",zmin);
+      LogKit::LogFormatted(LogKit::HIGH,"\nNew maximum time: %6.1f\n",zmax);
     }
     else
     {
