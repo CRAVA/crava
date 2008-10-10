@@ -647,7 +647,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
       double zmin, zmax;
       timeSimbox->getMinMaxZ(zmin,zmax);
       LogKit::LogFormatted(LogKit::LOW,"\nTime output interval:\n");
-      LogKit::LogFormatted(LogKit::LOW,"  True vertical depth   avg / min / max    :     n/a /%7.1f /%7.1f\n",
+      LogKit::LogFormatted(LogKit::LOW,"  Two-way-time          avg / min / max    :     n/a /%7.1f /%7.1f\n",
                            zmin,zmax); 
       LogKit::LogFormatted(LogKit::LOW,"  Interval thickness    avg / min / max    : %7.1f /%7.1f /%7.1f\n", 
                            timeSimbox->getlz()*timeSimbox->getAvgRelThick(),
@@ -695,7 +695,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
       LogKit::LogFormatted(LogKit::LOW,"\nTime inversion interval (extended relative to output interval due to correlation):\n");
       double zmin, zmax;
       timeSimbox->getMinMaxZ(zmin,zmax);
-      LogKit::LogFormatted(LogKit::LOW,"  True vertical depth   avg / min / max    :     n/a /%7.1f /%7.1f\n",
+      LogKit::LogFormatted(LogKit::LOW,"  Two-way-time          avg / min / max    :     n/a /%7.1f /%7.1f\n",
                            zmin,zmax); 
       LogKit::LogFormatted(LogKit::LOW,"  Interval thickness    avg / min / max    : %7.1f /%7.1f /%7.1f\n", 
                            timeSimbox->getlz()*timeSimbox->getAvgRelThick(),
