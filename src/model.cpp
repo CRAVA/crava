@@ -644,12 +644,16 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
     
     if(error == 0)
     {
+      double zmin, zmax;
+      timeSimbox->getMinMaxZ(zmin,zmax);
       LogKit::LogFormatted(LogKit::LOW,"\nTime output interval:\n");
-      LogKit::LogFormatted(LogKit::LOW,"  Interval thickness    avg / min / max    : %6.1f /%6.1f /%6.1f\n", 
+      LogKit::LogFormatted(LogKit::LOW,"  True vertical depth   avg / min / max    :     n/a /%7.1f /%7.1f\n",
+                           zmin,zmax); 
+      LogKit::LogFormatted(LogKit::LOW,"  Interval thickness    avg / min / max    : %7.1f /%7.1f /%7.1f\n", 
                            timeSimbox->getlz()*timeSimbox->getAvgRelThick(),
                            timeSimbox->getlz()*timeSimbox->getMinRelThick(),
                            timeSimbox->getlz());
-      LogKit::LogFormatted(LogKit::LOW,"  Sampling density      avg / min / max    : %6.2f /%6.2f /%6.2f\n", 
+      LogKit::LogFormatted(LogKit::LOW,"  Sampling density      avg / min / max    : %7.2f /%7.2f /%7.2f\n", 
                            timeSimbox->getdz()*timeSimbox->getAvgRelThick(),
                            timeSimbox->getdz(),
                            timeSimbox->getdz()*timeSimbox->getMinRelThick());
@@ -688,19 +692,19 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
     error = timeSimbox->checkError(modelSettings->getLzLimit(),errText);
     if(error == 0)
     {
-      LogKit::LogFormatted(LogKit::LOW,"\nInversion interval extended due to correlation.\nTime inversion interval:\n");
-      LogKit::LogFormatted(LogKit::LOW,"  Interval thickness    avg / min / max    : %6.1f /%6.1f /%6.1f\n", 
+      LogKit::LogFormatted(LogKit::LOW,"\nTime inversion interval (extended relative to output interval due to correlation):\n");
+      double zmin, zmax;
+      timeSimbox->getMinMaxZ(zmin,zmax);
+      LogKit::LogFormatted(LogKit::LOW,"  True vertical depth   avg / min / max    :     n/a /%7.1f /%7.1f\n",
+                           zmin,zmax); 
+      LogKit::LogFormatted(LogKit::LOW,"  Interval thickness    avg / min / max    : %7.1f /%7.1f /%7.1f\n", 
                            timeSimbox->getlz()*timeSimbox->getAvgRelThick(),
                            timeSimbox->getlz()*timeSimbox->getMinRelThick(),
                            timeSimbox->getlz());
-      LogKit::LogFormatted(LogKit::LOW,"  Sampling density      avg / min / max    : %6.2f /%6.2f /%6.2f\n", 
+      LogKit::LogFormatted(LogKit::LOW,"  Sampling density      avg / min / max    : %7.2f /%7.2f /%7.2f\n", 
                            timeSimbox->getdz()*timeSimbox->getAvgRelThick(),
                            timeSimbox->getdz(),
                            timeSimbox->getdz()*timeSimbox->getMinRelThick());
-      double zmin, zmax;
-      timeSimbox->getMinMaxZ(zmin,zmax);
-      LogKit::LogFormatted(LogKit::HIGH,"\nNew minimum time: %6.1f\n",zmin);
-      LogKit::LogFormatted(LogKit::HIGH,"\nNew maximum time: %6.1f\n",zmax);
     }
     else
     {
