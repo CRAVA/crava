@@ -148,9 +148,9 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
         const double * xPos  = bl->getXpos();
         const double * yPos  = bl->getYpos();
         const double * zPos  = bl->getZpos();
-        const double   zTop  = estimInterval[0]->GetZ(xPos[k],yPos[k]);
-        const double   zBase = estimInterval[1]->GetZ(xPos[k],yPos[k]);
         for (k = 0 ; k < nz ; k++) {
+          const double zTop  = estimInterval[0]->GetZ(xPos[k],yPos[k]);
+          const double zBase = estimInterval[1]->GetZ(xPos[k],yPos[k]);
           if ( (zPos[k]-0.5*dz_) < zTop || (zPos[k]+0.5*dz_) > zBase)
             hasData[k] = false;
         }

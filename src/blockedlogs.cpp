@@ -1,4 +1,5 @@
 #include <iostream>
+#include <iomanip>
 #include <math.h>
 
 #include "lib/random.h"
@@ -36,7 +37,8 @@ BlockedLogs::BlockedLogs(WellData  * well,
     firstB_(IMISSING),
     lastB_(IMISSING),
     nBlocks_(0),
-    nLayers_(simbox->getnz())
+    nLayers_(simbox->getnz()),
+    nFacies_(0)
 {
   blockWell(well, simbox, random);
 }
@@ -509,6 +511,7 @@ BlockedLogs::getBlockedGrid(FFTGrid * grid,
                             float   * blockedLog) 
 {
   for (int m = 0 ; m < nBlocks_ ; m++) {
+    //LogKit::LogFormatted(LogKit::LOW,"m=%d  ipos_[m], jpos_[m], kpos_[m] = %d %d %d\n",m,ipos_[m], jpos_[m], kpos_[m]);
     blockedLog[m] = grid->getRealValue(ipos_[m], jpos_[m], kpos_[m]);
   }
 }
@@ -589,5 +592,99 @@ BlockedLogs::writeToFile(float dz,
 
   delete [] tmpWellName;
   delete [] filename;
+}
+
+void
+BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
+{
+  /// \todo Replace with safe open function.
+
+  float maxHz_background = modelSettings->getMaxHzBackground();
+  float maxHz_seismic    = modelSettings->getMaxHzSeismic();
+
+  std::string wellname(wellname_);
+  NRLib2::Substitute(wellname,"/","_");
+  NRLib2::Substitute(wellname," ","_");
+  wellname = "BW_" + wellname;
+  char * fileName = ModelSettings::makeFullFileName(wellname.c_str(),".rms");
+
+  std::ofstream file(fileName, std::ios::out | std::ios::binary);
+
+  if (!file) {
+    throw new NRLib2::IOError("Error opening " + std::string(fileName) + " for writing.");
+  }
+  delete fileName;
+
+  bool gotFaciesLog   = nFacies_ > 0;
+  bool gotSeisResLogs = false;
+  bool gotReflCoefs   = false;
+  bool gotSeismicLogs = false;
+
+  int nPars = 3*3;     // {Vp,Vs,Rho} x {raw,BGHz,seisHz} 
+  int nFaci = 0;      
+  if (gotFaciesLog)
+    nFaci = 1;
+  int nSeis = 0;
+  if (gotSeisResLogs)
+    nSeis = 3;
+  int nLogs = nPars + nFaci + nSeis; 
+
+  std::vector<std::string> params(3);
+  params[0] = "Vp";
+  params[1] = "Vs";
+  params[2] = "Rho";
+
+  file << std::fixed;
+  file << std::right;
+  file << std::setprecision(2);
+  //file << std::setw(15);
+
+  file << "1.0\n";
+  file << "CRAVA\n";
+  file << wellname_ << " " << xpos_[0] << " " << ypos_[0] << "\n";
+  file << nLogs << "\n";
+  for (int i =0 ; i<3 ; i++) {
+    file << params[i] << "   UNK lin\n";
+    file << params[i] << static_cast<int>(maxHz_background) << " UNK lin\n";
+    file << params[i] << static_cast<int>(maxHz_seismic)    << " UNK lin\n";
+    if (gotSeisResLogs)
+      file << params[i] << "_SeismicResolution UNK lin\n";
+  }
+
+  if (gotFaciesLog) {
+    file << "dummy   DISC ";
+  //  file << faciesLogName_ << "   DISC ";
+  //  for (int i =0 ; i < nFacies_ ; i++)
+  //    file << " " << faciesNumbers_[i] << " " << faciesNames_[i];
+    file << "\n";    
+  }
+
+  for (int i=0 ; i<nBlocks_ ; i++) {
+    file << std::setprecision(2);
+    file << xpos_[i] << " " << ypos_[i] << " " << zpos_[i] << " ";
+    file << (alpha_[i]==RMISSING                       ? WELLMISSING : exp(alpha_[i]))                        << " ";
+    file << (alpha_background_resolution_[i]==RMISSING ? WELLMISSING : exp(alpha_background_resolution_[i]))  << " ";
+    file << (alpha_seismic_resolution_[i]==RMISSING    ? WELLMISSING : exp(alpha_seismic_resolution_[i]))     << " ";
+    //if (gotSeisResLogs)
+    //file << (alpha_seismic_resolution_[i]==RMISSING    ? WELLMISSING : exp(alpha_seismic_resolution_[i])) << " ";
+    file << (beta_[i]==RMISSING                        ? WELLMISSING : exp(beta_[i]))                         << " ";
+    file << (beta_background_resolution_[i]==RMISSING  ? WELLMISSING : exp(beta_background_resolution_[i]))   << " ";
+    file << (beta_seismic_resolution_[i]==RMISSING     ? WELLMISSING : exp(beta_seismic_resolution_[i]))      << " ";
+    //if (gotSeisResLogs)
+    //file << (beta_seismic_resolution_[i]==RMISSING     ? WELLMISSING : exp(beta_seismic_resolution_[i]))  << " ";
+    file << std::setprecision(5);
+    file << (rho_[i]==RMISSING                         ? WELLMISSING : exp(rho_[i]))                          << " ";
+    file << (rho_background_resolution_[i]==RMISSING   ? WELLMISSING : exp(rho_background_resolution_[i]))    << " ";
+    file << (rho_seismic_resolution_[i]==RMISSING      ? WELLMISSING : exp(rho_seismic_resolution_[i]))       << " ";
+    //if (gotSeisResLogs)
+    //file << (rho_seismic_resolution_[i]==RMISSING      ? WELLMISSING : exp(rho_seismic_resolution_[i]))   << " ";
+    if (gotFaciesLog)
+      file << (facies_[i]==IMISSING                    ? static_cast<int>(WELLMISSING) : facies_[i])     << " ";
+    //if (gotReflCoefs)
+    // Skriv ut refleksjonscoefficientene.
+    file << "\n";
+  }
+
+  file.close();
 }
 

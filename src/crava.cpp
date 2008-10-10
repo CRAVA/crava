@@ -48,12 +48,10 @@ Crava::Crava(Model * model)
   nWells_         = model->getModelSettings()->getNumberOfWells();
   nSim_           = model->getModelSettings()->getNumberOfSimulations();
   wells_          = model->getWells();
-  simbox_         = model->getTimeSimbox();
-  
+  simbox_         = model->getTimeSimbox(); 
   meanAlpha_      = model->getBackAlpha(); 
   meanBeta_       = model->getBackBeta();
   meanRho_        = model->getBackRho();
-  
   Corr * corr     = model->getPriorCorrelations();
   corrprior_      = NULL;
   //meanAlpha_->writeAsciiFile("priorA_");
@@ -197,20 +195,14 @@ Crava::Crava(Model * model)
   if(!model->getModelSettings()->getGenerateSeismic())
   {
     computeVariances(corrT,model);
-
     scaleWarning_ = checkScale();  // fills in scaleWarningText_ if needed.
-
     fftw_free(corrT);
   }
-
-  
 
   if(!model->getModelSettings()->getGenerateSeismic())
   {
     if(simbox_->getIsConstantThick() == false)
-    {
       divideDataByScaleWavelet();
-    }
     parSpatialCorr_  ->fftInPlace();
     errCorrUnsmooth_ ->fftInPlace(); 
 
@@ -223,8 +215,11 @@ Crava::Crava(Model * model)
       seisData_[i]->endAccess();
     }
   }
-
- }
+  // NBNB-PAL: Temp writing of blocked logs. Shall include an if-check here later.
+  if(!model->getModelSettings()->getGenerateSeismic())
+    for (i=0 ; i<nWells_ ; i++)
+      wells_[i]->getBlockedLogsPropThick()->writeRMSWell(model->getModelSettings());
+}
 
 Crava::~Crava()
 {
@@ -2339,7 +2334,6 @@ Crava::writeResampledStormCube(FFTGrid *grid, GridMapping *gridmapping, char * f
         time = (*mapping)(i,j,k);
         kindex = float((time - simbox->getTop(x,y))/simbox->getdz());
         outgrid(i,j,k) = grid->getRealValueInterpolated(i,j,kindex);
-
       }
     }
   }

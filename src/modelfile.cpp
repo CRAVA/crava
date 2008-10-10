@@ -773,7 +773,7 @@ ModelFile::readCommandWells(char ** params, int & pos, char * errText)
     else
     {
       sprintf(tmpErrText, "Invalid INDICATOR type found for command %s.\n",commandName);
-      sprintf(tmpErrText, "Choose from BACKGROUNDTREND, WAVELET, and FACIES.\n");
+      sprintf(tmpErrText, "%sChoose from BACKGROUNDTREND, WAVELET, and FACIES.\n",tmpErrText);
       sprintf(errText,"%s%s",errText,tmpErrText);
       error = 1;
     }

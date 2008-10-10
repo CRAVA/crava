@@ -5,6 +5,7 @@
 #include <stdlib.h>
 
 
+class ModelSettings;
 class RandomGen;
 class FFTGrid;
 class WellData;
@@ -40,6 +41,7 @@ public:
   void           getVerticalTrend(const int * blockedLog,int * trend, RandomGen * random);
   void           getBlockedGrid(FFTGrid * grid, float * blockedLog);
   void           writeToFile(float dz, int type, bool exptrans) const;
+  void           writeRMSWell(ModelSettings * modelSettings);
 
 private:
   void           blockWell(WellData  * well, 
@@ -65,40 +67,40 @@ private:
                               const int * bInd);
   void           findBlockXYZ(Simbox * simbox);
 
-  char        * wellname_;                    //| Name of well   
+  char         * wellname_;                    //| Name of well   
 
-  double      * xpos_;                        //|
-  double      * ypos_;                        //| Simbox XYZ value for block
-  double      * zpos_;                        //|
+  double       * xpos_;                        //|
+  double       * ypos_;                        //| Simbox XYZ value for block
+  double       * zpos_;                        //|
 
-  int         * ipos_;                        //|
-  int         * jpos_;                        //| Simbox IJK value for block
-  int         * kpos_;                        //|
+  int          * ipos_;                        //|
+  int          * jpos_;                        //| Simbox IJK value for block
+  int          * kpos_;                        //|
 
-  float       * alpha_;                       //|
-  float       * beta_;                        //| Raw logs (log-domain)
-  float       * rho_;                         //|
-  int 	      * facies_;                      //| Facies numbers using *internal* numbering
+  float        * alpha_;                       //|
+  float        * beta_;                        //| Raw logs (log-domain)
+  float        * rho_;                         //|
+  int 	       * facies_;                      //| Facies numbers using *internal* numbering
 
-  float       * alpha_background_resolution_; //| 
-  float       * beta_background_resolution_;  //| Logs filtered to background resolution (log-domain)
-  float       * rho_background_resolution_;   //| 
+  float        * alpha_background_resolution_; //| 
+  float        * beta_background_resolution_;  //| Logs filtered to background resolution (log-domain)
+  float        * rho_background_resolution_;   //| 
 
-  float       * alpha_seismic_resolution_;    //| 
-  float       * beta_seismic_resolution_;     //| Logs filtered to seismic resolution (log-domain)
-  float       * rho_seismic_resolution_;      //| 
+  float        * alpha_seismic_resolution_;    //| 
+  float        * beta_seismic_resolution_;     //| Logs filtered to seismic resolution (log-domain)
+  float        * rho_seismic_resolution_;      //| 
 
-  int           firstM_;                      //| First well log entry contributing to blocked well
-  int           lastM_;                       //| Last well log entry contributing to blocked well
+  int            firstM_;                      //| First well log entry contributing to blocked well
+  int            lastM_;                       //| Last well log entry contributing to blocked well
 
-  int           firstB_;                      //| First block with contribution from well log
-  int           lastB_;                       //| Last block with contribution from well log
+  int            firstB_;                      //| First block with contribution from well log
+  int            lastB_;                       //| Last block with contribution from well log
 
-  int           nBlocks_;                     //| Number of blocks
-  int           nLayers_;                     //| Number of vertical layers (nz)
+  int            nBlocks_;                     //| Number of blocks
+  int            nLayers_;                     //| Number of vertical layers (nz)
 
-  const int   * faciesNumbers_;
-  int           nFacies_;
+  const int    * faciesNumbers_;
+  int            nFacies_;
 };
 
 #endif

@@ -133,7 +133,7 @@ FFTGrid::fillInFromSegY(SegY* segy, Simbox *simbox)
       }
   } // endif
 
-  LogKit::LogFormatted(LogKit::LOW,"\nResampling seismic data into %dx%dx%d grid:\n",nxp_,nyp_,nzp_);
+  LogKit::LogFormatted(LogKit::LOW,"\nResampling seismic data into %dx%dx%d grid:",nxp_,nyp_,nzp_);
   setAccessMode(WRITE);
 
   int monitorSize = MAXIM(1,int(nyp_*nzp_*0.02));
