@@ -17,6 +17,7 @@ class CKrigingAdmin;
 class CovGridSeparated;
 class FaciesProb;
 class GridMapping;
+class FilterWellLogs;
 
 class Crava {
 public:
@@ -68,8 +69,8 @@ public:
   // All grids are in normal domain, and on log scale.
   void               writePars(FFTGrid * alpha, FFTGrid * beta, FFTGrid * rho, int simNum); 
   void               printEnergyToScreen();
-  void               computeFaciesProb();
- 
+  void               computeFaciesProb(FilterWellLogs *filteredlogs);
+  void               filterLogs(FilterWellLogs *&filterlogs);
 private: 
   int                fileGrid_;        // is true if is storage is on file 
   const Simbox     * simbox_;          // the simbox
@@ -153,6 +154,7 @@ private:
   KrigingData3D    * kd_;        
   FaciesProb       * fprob_;
   Model            * model_;
+  float            * corrprior_;
   
 };
 #endif

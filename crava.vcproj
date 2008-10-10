@@ -386,6 +386,10 @@
 					</FileConfiguration>
 				</File>
 				<File
+					RelativePath=".\src\filterwelllogs.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\src\gridmapping.cpp"
 					>
 				</File>
@@ -3560,6 +3564,10 @@
 				</File>
 				<File
 					RelativePath="src\fftgrid.h"
+					>
+				</File>
+				<File
+					RelativePath=".\src\filterwelllogs.h"
 					>
 				</File>
 				<File

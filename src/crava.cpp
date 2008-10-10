@@ -16,6 +16,7 @@
 #include "src/faciesprob.h"
 #include "src/definitions.h"
 #include "src/gridmapping.h"
+#include "src/filterwelllogs.h"
 #include "lib/random.h"
 #include "lib/lib_matr.h"
 #include "nrlib/iotools/logkit.hpp"
@@ -54,7 +55,7 @@ Crava::Crava(Model * model)
   meanRho_        = model->getBackRho();
   
   Corr * corr     = model->getPriorCorrelations();
-
+  corrprior_      = NULL;
   //meanAlpha_->writeAsciiFile("priorA_");
   //meanBeta_->writeAsciiFile("priorB_");
   //meanRho_->writeAsciiFile("priorR_");
@@ -142,9 +143,8 @@ Crava::Crava(Model * model)
     meanRho2_ = copyFFTGrid(meanRho_);
   }
  
-  if((outputFlag_ & ModelSettings::FACIESPROB) >0 || (outputFlag_ & ModelSettings::FACIESPROBRELATIVE)>0)
-  {
-    float * corrprior = new float[nzp_];
+ 
+   corrprior_ = new float[nzp_];
     //   FILE *test = fopen("test.dat","w");
     int refk;
     for(i = 0 ; i < nzp_ ; i++ )
@@ -153,27 +153,31 @@ Crava::Crava(Model * model)
         refk = i;
       else
         refk = nzp_ - i;
-      if(refk < nz_)
-        corrprior[i] = parSpatialCorr_->getRealValue(0,0,refk);
+      if(refk < nz_ && parSpatialCorr_!=NULL)
+        corrprior_[i] = parSpatialCorr_->getRealValue(0,0,refk);
       else
-        corrprior[i] = 0.0;
+        corrprior_[i] = 0.0;
       
       //   fprintf(test,"%f\n",corrprior[i]);
     }
     //  fclose(test);
-
+ if((outputFlag_ & ModelSettings::FACIESPROB) >0 || (outputFlag_ & ModelSettings::FACIESPROBRELATIVE)>0)
+  {
     Simbox *regularSimbox = new Simbox(simbox_);
     assert(typeid(simbox_->GetTopSurface()) == typeid(Surface));
     Surface * tsurf = new Surface(dynamic_cast<const NRLib2::RegularSurface<double> &>
                                  (simbox_->GetTopSurface()));
 
     regularSimbox->setDepth(tsurf, 0, simbox_->getlz(), simbox_->getdz());
+
+   
+
     fprob_ = new FaciesProb(model->getModelSettings(),
-                            fileGrid_, parPointCov_,corrprior, regularSimbox, 
+                            fileGrid_, parPointCov_,corrprior_, regularSimbox, 
                             *static_cast<const Simbox*>(simbox_), 
                             nzp_, nz_, meanAlpha_, meanBeta_, meanRho_, random_, 
                             model->getModelSettings()->getPundef(), model->getPriorFacies());
-    delete [] corrprior;
+    //delete [] corrprior;
   }
 
   //meanAlpha_->writeAsciiRaw("alpha");
@@ -260,6 +264,8 @@ Crava::~Crava()
   if(postCrCovAlphaRho_!=NULL) delete  postCrCovAlphaRho_ ;
   if(postCrCovBetaRho_!=NULL)  delete  postCrCovBetaRho_;
   delete [] scaleWarningText_;
+  if(corrprior_!=NULL)
+    delete [] corrprior_;
 }
 
 
@@ -1384,6 +1390,20 @@ Crava::computePostCov()
   delete postCrCovBetaRho_;
   postCrCovBetaRho_=NULL;
 
+  LogKit::LogFormatted(LogKit::LOW,"\n");
+  LogKit::LogFormatted(LogKit::LOW,"                                ln Vp     ln Vs    ln Rho         \n");
+  LogKit::LogFormatted(LogKit::LOW,"--------------------------------------------------------------------\n");
+  LogKit::LogFormatted(LogKit::LOW,"Posterior parameter variances:   %.1e   %.1e   %.1e    \n",postCov[0][0],postCov[1][1],postCov[2][2]); 
+  LogKit::LogFormatted(LogKit::LOW,"\n");
+  LogKit::LogFormatted(LogKit::LOW,"Posterior parameter correlations:\n");
+  LogKit::LogFormatted(LogKit::LOW,"           ln Vp     ln Vs    ln Rho \n");
+  LogKit::LogFormatted(LogKit::LOW,"-------------------------------------\n");
+  LogKit::LogFormatted(LogKit::LOW,"ln Vp      %5.2f     %5.2f     %5.2f \n",1.0f, postCov[0][1], postCov[0][2]);
+  LogKit::LogFormatted(LogKit::LOW,"ln Vs                %5.2f     %5.2f \n",1.0f, postCov[1][2]);
+  LogKit::LogFormatted(LogKit::LOW,"ln Rho                         %5.2f \n",1.0f);
+
+
+
   char * fName = ModelSettings::makeFullFileName("PosteriorVar0",".dat");
   FILE* file=fopen(fName,"w");
   for(i=0;i<3;i++)
@@ -2222,7 +2242,7 @@ void Crava::writeToFile(char * timeFileName, char * depthFileName, FFTGrid * gri
   }
 }
 
-void Crava::computeFaciesProb()
+void Crava::computeFaciesProb(FilterWellLogs *filteredlogs)
 {
   if((outputFlag_ & ModelSettings::FACIESPROB) >0 || (outputFlag_ & ModelSettings::FACIESPROBRELATIVE)>0)
   {
@@ -2241,79 +2261,11 @@ void Crava::computeFaciesProb()
       LogKit::LogFormatted(LogKit::LOW,"         the number of layers must be increased.                                    \n");
     }
 
-    fftw_real *postcova, *postcovb, *postcovr, *postcrab, *postcrar, *postcrbr;
-
-    int rnzp = 2*(nzp_/2+1);
-    postcova = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp));
-    postcovb = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp));
-    postcovr = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp));
-    postcrab = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp));
-    postcrar = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp));
-    postcrbr = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp));
-    
-    if(postCovAlpha_->getIsTransformed()==true)
-      postCovAlpha_->invFFTInPlace();
-    
-    if(postCovBeta_->getIsTransformed()==true)
-      postCovBeta_->invFFTInPlace();
-    if(postCovRho_->getIsTransformed()==true)
-      postCovRho_->invFFTInPlace();
-
-    if(postCrCovAlphaBeta_->getIsTransformed()==true)
-      postCrCovAlphaBeta_->invFFTInPlace();
-    if(postCrCovAlphaRho_->getIsTransformed()==true)
-      postCrCovAlphaRho_->invFFTInPlace();
-    if(postCrCovBetaRho_->getIsTransformed()==true)
-      postCrCovBetaRho_->invFFTInPlace();
-
+ 
     int i;
-    for(i=0;i<nzp_;i++)
-    {
-      int refk;
-      if( i < nzp_/2+1)
-        refk = i;
-      else
-        refk = nzp_ - i;
-      if(refk < nz_)
-      {
-        postcova[i] = postCovAlpha_->getRealValue(0,0,refk);
-        postcovb[i] = postCovBeta_->getRealValue(0,0,refk);
-        postcovr[i] = postCovRho_->getRealValue(0,0,refk);
-        postcrab[i] = postCrCovAlphaBeta_->getRealValue(0,0,refk);
-        postcrar[i] = postCrCovAlphaRho_->getRealValue(0,0,refk);
-        postcrbr[i] = postCrCovBetaRho_->getRealValue(0,0,refk);
-      }
-      else
-      {
-        postcova[i] = 0.0;
-        postcovb[i] = 0.0;
-        postcovr[i] = 0.0;
-        postcrab[i] = 0.0;
-        postcrar[i] = 0.0;
-        postcrbr[i] = 0.0;
-      }
-    }
-    
-    WellData** ppWellData = static_cast<WellData**>(wells_);
-    fprob_->filterWellLogs(ppWellData,nWells_,
-                           postcova,postcovb,postcovr,
-                           postcrab,postcrar,postcrbr, 
-                           lowCut_, highCut_, relative);
-
-    if(postCovAlpha_->getIsTransformed()==false)
-      postCovAlpha_->fftInPlace();
-    if(postCovBeta_->getIsTransformed()==false)
-      postCovBeta_->fftInPlace();
-    if(postCovRho_->getIsTransformed()==false)
-      postCovRho_->fftInPlace();
-
-    if(postCrCovAlphaBeta_->getIsTransformed()==false)
-      postCrCovAlphaBeta_->fftInPlace();
-    if(postCrCovAlphaRho_->getIsTransformed()==false)
-      postCrCovAlphaRho_->fftInPlace();
-    if(postCrCovBetaRho_->getIsTransformed()==false)
-      postCrCovBetaRho_->fftInPlace();
-
+    fprob_->setFilteredLogs(filteredlogs);
+    fprob_->setSigmaPost(postCovAlpha_, postCovBeta_, postCovRho_, postCrCovAlphaBeta_,
+                               postCrCovAlphaRho_,postCrCovBetaRho_);
     int nfac = model_->getModelSettings()->getNumberOfFacies();
     if(relative==0)
       fprob_->makeFaciesProb(nfac,postAlpha_,postBeta_, postRho_);
@@ -2362,12 +2314,7 @@ void Crava::computeFaciesProb()
     }
 
 
-    fftw_free(postcova);
-    fftw_free(postcovb);
-    fftw_free(postcovr);
-    fftw_free(postcrab);
-    fftw_free(postcrar);
-    fftw_free(postcrbr);
+ 
   }
 }
 void
@@ -2417,4 +2364,32 @@ Crava::writeResampledStormCube(FFTGrid *grid, GridMapping *gridmapping, char * f
     delete [] header;
   if(gfName!=0)
     delete [] gfName;
+}
+
+void Crava::filterLogs(FilterWellLogs *&filterlogs)
+{
+ 
+  Simbox *regularSimbox = new Simbox(simbox_);
+  assert(typeid(simbox_->GetTopSurface()) == typeid(Surface));
+  Surface * tsurf = new Surface(dynamic_cast<const NRLib2::RegularSurface<double> &>
+    (simbox_->GetTopSurface()));
+
+  regularSimbox->setDepth(tsurf, 0, simbox_->getlz(), simbox_->getdz());
+
+  int relative;
+  if((outputFlag_ & ModelSettings::FACIESPROBRELATIVE)>0)
+    relative = 1;
+  else relative = 0;
+  bool faciesprob;
+  if((outputFlag_ & ModelSettings::FACIESPROB) >0 || (outputFlag_ & ModelSettings::FACIESPROBRELATIVE)>0)
+    faciesprob = true;
+  else
+    faciesprob = false;
+  filterlogs = new FilterWellLogs(postCovAlpha_, postCovBeta_, postCovRho_, postCrCovAlphaBeta_,
+    postCrCovAlphaRho_, postCrCovBetaRho_, nzp_, nz_, wells_, nWells_, 
+    lowCut_, highCut_, relative, regularSimbox, *static_cast<const Simbox*>(simbox_), random_, 
+    corrprior_, parPointCov_, faciesprob);
+ 
+  delete regularSimbox;
+
 }

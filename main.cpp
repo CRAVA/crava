@@ -16,7 +16,7 @@
 #include "src/crava.h"
 #include "src/fftgrid.h"
 #include "src/simbox.h"
-
+#include "src/filterwelllogs.h"
 //using namespace NRLib2;
 
 int main(int argc, char** argv)
@@ -99,7 +99,8 @@ int main(int argc, char** argv)
         LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************\n\n");
         crava->simulate(model->getRandomGen());
       }
-      
+      FilterWellLogs *filteredlogs = NULL;
+      crava->filterLogs(filteredlogs);
       // Posterior covariance
       if((model->getModelSettings()->getOutputFlag() & ModelSettings::CORRELATION) > 0)
       {
@@ -108,10 +109,12 @@ int main(int argc, char** argv)
         LogKit::LogFormatted(LogKit::LOW,"\n             ... post prosess ended\n");
         
       }
-      crava->computeFaciesProb();
+      
+      crava->computeFaciesProb(filteredlogs);
 
       delete [] warningText;
       delete crava;
+      delete filteredlogs;
     } //end doinversion 
   }
   else

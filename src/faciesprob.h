@@ -13,6 +13,7 @@ class RandomGen;
 class CKrigingAdmin;
 class KrigingData;
 class ModelSettings;
+class FilterWellLogs;
 
 class FaciesProb
 {
@@ -27,21 +28,20 @@ public:
   void            makeFaciesDens(int nfac);
   void            makeFaciesProb(int nfac, FFTGrid *postAlpha, FFTGrid *postBeta, FFTGrid *postRho);
   FFTGrid       * getFaciesProb(int i){return faciesProb_[i];};
-  void            filterWellLogs(WellData **wells, int nwells,
-                                 fftw_real *postcova,fftw_real *postcovb, fftw_real *postcovr,
-                                 fftw_real *postcrab,fftw_real *postcrar, fftw_real *postcrbr, 
-                                 float lowCut, float highCut, int relative);
+ 
   // FOR COMPARISION TO PCUBE
   float        ** makeFaciesHistAndSetPriorProb2(float* alpha, float* beta, float* rho,int* faciesL); // PCUBE
   void            makeFaciesDens2(int nfac);// PCUBE
 
   void            calculateConditionalFaciesProb(WellData **wells, int nwells);
-
+  void            setFilteredLogs(FilterWellLogs *filterlogs);
+  void            setSigmaPost(FFTGrid *postCovAlpha, FFTGrid *postCovBeta, FFTGrid *postCovRho, FFTGrid *postCrCovAlphaBeta,
+                               FFTGrid *postCrCovAlphaRho, FFTGrid *postCrCovBetaRho);
 private:
-  void            calcFilter(fftw_complex **sigmaK, fftw_complex **sigmaE, double **F);
+  
   void            getMinMax(float* alpha,float* beta,float* rho,int* facies);
   void            calculateVariances(float* alpha,float* beta,float* rho,int* facies);
-  void            extrapolate(float * log, int nz); 
+  
   float           findDensity(float alpha, float beta, float rho, int facies);
   void            calculateFaciesProb( FFTGrid *alphagrid, FFTGrid *betagrid, FFTGrid *rhogrid);
 

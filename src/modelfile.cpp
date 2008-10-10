@@ -1037,7 +1037,7 @@ ModelFile::readCommandDepthConversion(char ** params, int & pos, char * errText)
     while(subCom < nSubCommands && strcmp(params[pos+curPar], subCommand[subCom]) != 0)
       subCom++;
 
-    char *velocityFieldUC = new char[9];
+    char *velocityFieldUC; // = new char[9];
     switch(subCom) 
     {
     case 0:
@@ -1051,6 +1051,7 @@ ModelFile::readCommandDepthConversion(char ** params, int & pos, char * errText)
       {
         error = checkFileOpen(&(velocityField_), 1, params[pos-1], errText);
       }
+      delete [] velocityFieldUC;
       break;
 
     case 1:
