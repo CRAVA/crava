@@ -685,6 +685,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
     if(failed == false && modelSettings->getGenerateSeismic() == false)
       setupExtendedTimeSimbox(timeSimbox, correlationDirection, timeCutSimbox); 
       //Extends timeSimbox for correlation coverage. Original stored in timeCutSimbox
+    estimateZPaddingSize(timeSimbox, modelSettings);   
     error = timeSimbox->checkError(modelSettings->getLzLimit(),errText);
     if(error == 0)
     {
