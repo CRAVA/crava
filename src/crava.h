@@ -137,6 +137,7 @@ private:
   char             * scaleWarningText_;
 
   float              computeWDCorrMVar (Wavelet* WD, fftw_real* corrT);
+  float              computeWDCorrMVar (Wavelet* WD);
 
   int                outputFlag_; //See model.h for bit interpretation.
   void               divideDataByScaleWavelet();

@@ -108,7 +108,7 @@ Crava::Crava(Model * model)
   errThetaCov_      = new float*[ntheta_];  
   for(i=0;i<ntheta_;i++)
     errThetaCov_[i] = new float[ntheta_]; 
- 
+
   // reality check: all dimensions involved match
   assert(meanBeta_->consistentSize(nx_,ny_,nz_,nxp_,nyp_,nzp_));
   assert(meanRho_->consistentSize(nx_,ny_,nz_,nxp_,nyp_,nzp_));
@@ -140,41 +140,38 @@ Crava::Crava(Model * model)
     meanBeta2_ = copyFFTGrid(meanBeta_);
     meanRho2_ = copyFFTGrid(meanRho_);
   }
- 
- 
-   corrprior_ = new float[nzp_];
-    //   FILE *test = fopen("test.dat","w");
-    int refk;
-    for(i = 0 ; i < nzp_ ; i++ )
-    {
-      if( i < nzp_/2+1)
-        refk = i;
-      else
-        refk = nzp_ - i;
-      if(refk < nz_ && parSpatialCorr_!=NULL)
-        corrprior_[i] = parSpatialCorr_->getRealValue(0,0,refk);
-      else
-        corrprior_[i] = 0.0;
-      
-      //   fprintf(test,"%f\n",corrprior[i]);
-    }
-    //  fclose(test);
- if((outputFlag_ & ModelSettings::FACIESPROB) >0 || (outputFlag_ & ModelSettings::FACIESPROBRELATIVE)>0)
+
+  corrprior_ = new float[nzp_];
+  //   FILE *test = fopen("test.dat","w");
+  int refk;
+  for(i = 0 ; i < nzp_ ; i++ )
+  {
+    if( i < nzp_/2+1)
+      refk = i;
+    else
+      refk = nzp_ - i;
+    if(refk < nz_ && parSpatialCorr_!=NULL)
+      corrprior_[i] = parSpatialCorr_->getRealValue(0,0,refk);
+    else
+      corrprior_[i] = 0.0;
+
+    //   fprintf(test,"%f\n",corrprior[i]);
+  }
+  //  fclose(test);
+  if((outputFlag_ & ModelSettings::FACIESPROB) >0 || (outputFlag_ & ModelSettings::FACIESPROBRELATIVE)>0)
   {
     Simbox *regularSimbox = new Simbox(simbox_);
     assert(typeid(simbox_->GetTopSurface()) == typeid(Surface));
     Surface * tsurf = new Surface(dynamic_cast<const NRLib2::RegularSurface<double> &>
-                                 (simbox_->GetTopSurface()));
+      (simbox_->GetTopSurface()));
 
     regularSimbox->setDepth(tsurf, 0, simbox_->getlz(), simbox_->getdz());
 
-   
-
     fprob_ = new FaciesProb(model->getModelSettings(),
-                            fileGrid_, parPointCov_,corrprior_, regularSimbox, 
-                            *static_cast<const Simbox*>(simbox_), 
-                            nzp_, nz_, meanAlpha_, meanBeta_, meanRho_, random_, 
-                            model->getModelSettings()->getPundef(), model->getPriorFacies());
+      fileGrid_, parPointCov_,corrprior_, regularSimbox, 
+      *static_cast<const Simbox*>(simbox_), 
+      nzp_, nz_, meanAlpha_, meanBeta_, meanRho_, random_, 
+      model->getModelSettings()->getPundef(), model->getPriorFacies());
     //delete [] corrprior;
   }
 
@@ -194,16 +191,14 @@ Crava::Crava(Model * model)
 
   if(!model->getModelSettings()->getGenerateSeismic())
   {
+    parSpatialCorr_  ->fftInPlace();
     computeVariances(corrT,model);
     scaleWarning_ = checkScale();  // fills in scaleWarningText_ if needed.
-    fftw_free(corrT);
-  }
+    fftw_free(corrT);  
 
-  if(!model->getModelSettings()->getGenerateSeismic())
-  {
     if(simbox_->getIsConstantThick() == false)
       divideDataByScaleWavelet();
-    parSpatialCorr_  ->fftInPlace();
+
     errCorrUnsmooth_ ->fftInPlace(); 
 
     for(i = 0; i < ntheta_ ; i++)
@@ -352,9 +347,15 @@ Crava::computeVariances(fftw_real* corrT,
 
   for(int i=0 ; i < ntheta_ ; i++)
   {
-    errorSmooth[i] = new Wavelet1D(seisWavelet_[i],Wavelet::FIRSTORDERFORWARDDIFF);
-    sprintf(fileName,"Wavediff_%d.dat",i);
-    errorSmooth[i]->printToFile(fileName);
+    if (seisWavelet_[i]->getDim() == 1) {
+      errorSmooth[i] = new Wavelet1D(seisWavelet_[i],Wavelet::FIRSTORDERFORWARDDIFF);
+      sprintf(fileName,"Wavediff_%d.dat",i);
+      errorSmooth[i]->printToFile(fileName);
+    }
+    else {
+      errorSmooth[i] = new Wavelet3D(seisWavelet_[i],Wavelet::FIRSTORDERBACKWARDDIFF);
+      errorSmooth[i]->fft1DInPlace();
+    }
   }
 
   // Compute variation in parameters 
@@ -369,7 +370,10 @@ Crava::computeVariances(fftw_real* corrT,
   // Compute variation in wavelet
   for(int l=0 ; l < ntheta_ ; l++)
   {
-    WDCorrMVar[l] = computeWDCorrMVar(errorSmooth[l],corrT);
+    if (seisWavelet_[l]->getDim() == 1)
+      WDCorrMVar[l] = computeWDCorrMVar(errorSmooth[l],corrT);
+    else
+      WDCorrMVar[l] = computeWDCorrMVar(errorSmooth[l]);
   }
 
   // Compute signal and model variance and theoretical signal-to-noise-ratio
@@ -1925,6 +1929,45 @@ Crava::computeWDCorrMVar (Wavelet* WD ,fftw_real* corrT)
     return var;
 }
 
+float  
+Crava::computeWDCorrMVar (Wavelet* WD)
+{
+  float var = 0.0;
+  int cnxp = nxp_/2 + 1;
+  
+  int endX;
+  if (nxp_/2 == (nxp_+1)/2) //nxp_ even
+    endX = cnxp-1;
+  else 
+    endX = cnxp;
+  parSpatialCorr_->setAccessMode(FFTGrid::READANDWRITE); 
+  for(int k=0;k<nzp_;k++) {
+    for(int j=0;j<nyp_;j++) {
+      fftw_complex lambdaTmp = parSpatialCorr_->getNextComplex();
+      float ijkLambda = sqrt(lambdaTmp.re * lambdaTmp.re);
+      fftw_complex wdTmp = WD->getCAmp(k,j,0);
+      float ijkWD = (wdTmp.re * wdTmp.re) + (wdTmp.im * wdTmp.im);
+      var += ijkLambda * ijkWD;
+      for (int i=1;i<endX;i++) {
+        lambdaTmp = parSpatialCorr_->getNextComplex();
+        ijkLambda = sqrt(lambdaTmp.re * lambdaTmp.re);
+        wdTmp = WD->getCAmp(k,j,i);
+        ijkWD = (wdTmp.re * wdTmp.re) + (wdTmp.im * wdTmp.im);
+        var += 2.0f * ijkLambda * ijkWD;
+      }
+      if (endX == cnxp-1) { //nxp_ even, takes the last element once
+        lambdaTmp = parSpatialCorr_->getNextComplex();
+        ijkLambda = sqrt(lambdaTmp.re * lambdaTmp.re);
+        wdTmp = WD->getCAmp(k,j,cnxp-1);
+        ijkWD = (wdTmp.re * wdTmp.re) + (wdTmp.im * wdTmp.im);
+        var += ijkLambda * ijkWD;
+      }
+    }
+  }
+  var /= static_cast<float>(nxp_*nyp_*nzp_);
+  parSpatialCorr_->endAccess();
+  return var;
+}
 
 void
 Crava::fillkW(int k, fftw_complex* kW )
