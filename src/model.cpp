@@ -612,7 +612,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
   failed = true;
   }
   // Rotate variograms relative to simbox
-  modelSettings_->rotateVariograms(timeSimbox_->getAngle());
+  modelSettings_->rotateVariograms(static_cast<float> (timeSimbox_->getAngle()));
 
   //
   // Set SURFACES
