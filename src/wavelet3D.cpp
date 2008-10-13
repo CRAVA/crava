@@ -177,6 +177,43 @@ Wavelet3D::Wavelet3D(char          * fileName,
   delete sgri;
 }
 
+Wavelet3D::Wavelet3D(Wavelet * wavelet, int difftype)
+  : Wavelet(wavelet, 3)
+{
+  assert(wavelet->getDim() == 3);
+  assert(wavelet->getIsReal());
+  nx_ = wavelet->getNx();
+  ny_ = wavelet->getNy();
+  nxp_ = wavelet->getNxp();
+  nyp_ = wavelet->getNyp();
+  dx_ = wavelet->getDx();
+  dy_ = wavelet->getDy();
+  ampCube_ = FFTGrid(nx_, ny_, nz_, nxp_, nyp_, nzp_);
+  ampCube_.createRealGrid();
+  ampCube_.setType(FFTGrid::COVARIANCE);
+  ampCube_.setAccessMode(FFTGrid::RANDOMACCESS);
+  float rValue;
+  for (int i=0; i<nxp_; i++) {
+    for (int j=0; j<nyp_; j++) {
+      for (int k=0; k<nzp_; k++) {
+        if (difftype == FIRSTORDERFORWARDDIFF) {
+          if (k == nzp_-1) 
+            rValue = wavelet->getRAmp(0,j,i) - wavelet->getRAmp(k,j,i);
+          else
+            rValue = wavelet->getRAmp(k+1,j,i) - wavelet->getRAmp(k,j,i);
+        }
+        else { //(difftype == FIRSTORDERBACKWARDDIFF)
+          if (k == 0)
+            rValue = wavelet->getRAmp(k,j,i) - wavelet->getRAmp(nzp_-1,j,i);
+          else
+            rValue = wavelet->getRAmp(k,j,i) -wavelet->getRAmp(k-1,j,i);
+        }
+        ampCube_.setRealValue(i,j,k,rValue,true);
+      }
+    }
+  }
+}
+
 Wavelet3D::Wavelet3D(Wavelet * wavelet)
   : Wavelet(wavelet, 3)
 {
@@ -200,7 +237,6 @@ Wavelet3D::Wavelet3D(Wavelet * wavelet)
       }
     }
   }
-
 }
 
 void           

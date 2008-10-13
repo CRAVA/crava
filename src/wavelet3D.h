@@ -19,6 +19,7 @@ public:
             float         * reflCoef,  
             int           & errCode, 
             char          * errText);
+  Wavelet3D(Wavelet * wavelet, int difftype);
   Wavelet3D(Wavelet * wavelet);
   virtual ~Wavelet3D() {}
 
