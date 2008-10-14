@@ -20,7 +20,7 @@ class FaciesProb
 public:
   FaciesProb(ModelSettings * modelSettings,
              int filegrid, float ** sigma0, float *corrprior, 
-             Simbox *simbox, const Simbox& osimbox, int nzp, int nz, 
+             int nzp, int nz, 
              FFTGrid* bgAlpha, FFTGrid* bgBeta, FFTGrid* bgRho, 
              RandomGen *random, float p_undef, float *priorFacies);
   ~FaciesProb();
@@ -46,8 +46,7 @@ private:
   void            calculateFaciesProb( FFTGrid *alphagrid, FFTGrid *betagrid, FFTGrid *rhogrid);
 
   ModelSettings * modelSettings_;
-  Simbox        * simbox_;
-  const Simbox  & origSimbox_;
+  const Simbox  * simbox_;
   fftw_real     * corrprior_;
   float        ** sigma0_;
   int             nFacies_, nbins_, nbinsr_, nobs_;

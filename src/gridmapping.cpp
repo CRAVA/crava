@@ -248,12 +248,17 @@ void GridMapping::setSimbox(ModelSettings *modelSettings, bool &failed, char *er
       }
       if (simbox_->status() == Simbox::BOXOK)
       {
+        double zmin, zmax;
+        simbox_->getMinMaxZ(zmin,zmax);
         LogKit::LogFormatted(LogKit::LOW,"\nDepth output interval:\n");
-        LogKit::LogFormatted(LogKit::LOW,"  Interval thickness    avg / min / max    : %6.1f /%6.1f /%6.1f\n", 
+        LogKit::LogFormatted(LogKit::LOW,"  True vertical depth   avg / min / max    : %7.1f /%7.1f /%7.1f\n",
+                             zmin+simbox_->getlz()*simbox_->getAvgRelThick(),
+                             zmin, zmax); 
+        LogKit::LogFormatted(LogKit::LOW,"  Interval thickness    avg / min / max    : %7.1f /%7.1f /%7.1f\n", 
                          simbox_->getlz()*simbox_->getAvgRelThick(),
                          simbox_->getlz()*simbox_->getMinRelThick(),
                          simbox_->getlz());
-        LogKit::LogFormatted(LogKit::LOW,"  Sampling density      avg / min / max    : %6.2f /%6.2f /%6.2f\n", 
+        LogKit::LogFormatted(LogKit::LOW,"  Sampling density      avg / min / max    : %7.2f /%7.2f /%7.2f\n", 
                          simbox_->getdz()*simbox_->getAvgRelThick(),
                          simbox_->getdz(),
                          simbox_->getdz()*simbox_->getMinRelThick());

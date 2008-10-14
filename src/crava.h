@@ -41,7 +41,8 @@ public:
 
   void               printEnergyToScreen();
   void               computeFaciesProb(FilterWellLogs *filteredlogs);
-  void               filterLogs(FilterWellLogs *&filterlogs);
+  void               filterLogs(Simbox          * timeSimboxConstThick,
+                                FilterWellLogs *& filterlogs);
 
 private: 
   int                computeAcousticImpedance(FFTGrid * Alpha, FFTGrid * Rho, char * fileName, char * fileName2);

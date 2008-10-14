@@ -39,6 +39,7 @@ Model::Model(char * fileName)
 {
   modelSettings_          = NULL;
   timeSimbox_             = new Simbox();
+  timeSimboxConstThick_   = NULL;
   wells_                  = NULL;
   background_             = NULL;
   priorCorrelations_      = NULL;
@@ -239,7 +240,6 @@ Model::Model(char * fileName)
 }
 
 
-
 Model::~Model(void)
 {
   if(!modelSettings_->getGenerateSeismic()) 
@@ -304,6 +304,7 @@ Model::~Model(void)
   delete randomGen_;
   delete modelSettings_;
   delete timeSimbox_;
+  delete timeSimboxConstThick_;
 }
 
 void
@@ -647,7 +648,8 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
       double zmin, zmax;
       timeSimbox->getMinMaxZ(zmin,zmax);
       LogKit::LogFormatted(LogKit::LOW,"\nTime output interval:\n");
-      LogKit::LogFormatted(LogKit::LOW,"  Two-way-time          avg / min / max    :     n/a /%7.1f /%7.1f\n",
+      LogKit::LogFormatted(LogKit::LOW,"  Two-way-time          avg / min / max    : %7.1f /%7.1f /%7.1f\n",
+                           zmin+timeSimbox->getlz()*timeSimbox->getAvgRelThick(),
                            zmin,zmax); 
       LogKit::LogFormatted(LogKit::LOW,"  Interval thickness    avg / min / max    : %7.1f /%7.1f /%7.1f\n", 
                            timeSimbox->getlz()*timeSimbox->getAvgRelThick(),
@@ -695,7 +697,8 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
       LogKit::LogFormatted(LogKit::LOW,"\nTime inversion interval (extended relative to output interval due to correlation):\n");
       double zmin, zmax;
       timeSimbox->getMinMaxZ(zmin,zmax);
-      LogKit::LogFormatted(LogKit::LOW,"  Two-way-time          avg / min / max    :     n/a /%7.1f /%7.1f\n",
+      LogKit::LogFormatted(LogKit::LOW,"  Two-way-time          avg / min / max    : %7.1f /%7.1f /%7.1f\n",
+                           zmin+timeSimbox->getlz()*timeSimbox->getAvgRelThick(),
                            zmin,zmax); 
       LogKit::LogFormatted(LogKit::LOW,"  Interval thickness    avg / min / max    : %7.1f /%7.1f /%7.1f\n", 
                            timeSimbox->getlz()*timeSimbox->getAvgRelThick(),
@@ -720,6 +723,13 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
     //
     checkAvailableMemory(timeSimbox, modelSettings, seismicFile); 
   }
+
+  //
+  // Make time simbox with constant thicknesses (needed for log filtering and facies probabilities)
+  //
+  timeSimboxConstThick_ = new Simbox(timeSimbox);
+  Surface * tsurf = new Surface(dynamic_cast<const Surface &> (timeSimbox->GetTopSurface()));
+  timeSimboxConstThick_->setDepth(tsurf, 0, timeSimbox->getlz(), timeSimbox->getdz());
 }
 
 void 
@@ -1161,6 +1171,7 @@ Model::processWells(WellData     **& wells,
           wells[i]->lookForSyntheticVsLog(rankCorr[i]);
           wells[i]->calculateDeviation(devAngle[i], timeSimbox);
           wells[i]->setBlockedLogsPropThick( new BlockedLogs(wells[i], timeSimbox, randomGen) );
+          wells[i]->setBlockedLogsConstThick( new BlockedLogs(wells[i], timeSimboxConstThick_, randomGen) );
           if (nFacies > 0)
             wells[i]->countFacies(timeSimbox,faciesCount[i]);
           if((modelSettings->getOutputFlag() & ModelSettings::WELLS) > 0) 

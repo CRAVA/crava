@@ -29,6 +29,7 @@ public:
 
   ModelSettings  * getModelSettings()         const { return modelSettings_          ;}
   Simbox         * getTimeSimbox()            const { return timeSimbox_             ;}
+  Simbox         * getTimeSimboxConstThick()  const { return timeSimboxConstThick_   ;}
   WellData      ** getWells()                 const { return wells_                  ;}
   FFTGrid        * getBackAlpha()             const { return background_->getAlpha() ;}
   FFTGrid        * getBackBeta()              const { return background_->getBeta()  ;}
@@ -198,6 +199,7 @@ private:
 
   ModelSettings  * modelSettings_;
   Simbox         * timeSimbox_;            ///< Information about simulation area.
+  Simbox         * timeSimboxConstThick_;  ///< Simbox with constant thickness   
   
   WellData      ** wells_;                 ///< Well data
   Background     * background_;            ///< Holds the background model.

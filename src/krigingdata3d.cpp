@@ -57,11 +57,16 @@ KrigingData3D::KrigingData3D(WellData ** wells,
       rho   = bl->getRho();
     }
     else if (type == 2) {
-      alpha = bl->getAlphaBackgroundResolution();
-      beta  = bl->getBetaBackgroundResolution();
-      rho   = bl->getRhoBackgroundResolution();
+      alpha = bl->getAlphaHighCutBackground();
+      beta  = bl->getBetaHighCutBackground();
+      rho   = bl->getRhoHighCutBackground();
     }
     else if (type == 3) {
+      alpha = bl->getAlphaHighCutSeismic();
+      beta  = bl->getBetaHighCutSeismic();
+      rho   = bl->getRhoHighCutSeismic();
+    }
+    else if (type == 4) {
       alpha = bl->getAlphaSeismicResolution();
       beta  = bl->getBetaSeismicResolution();
       rho   = bl->getRhoSeismicResolution();

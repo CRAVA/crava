@@ -31,12 +31,18 @@ public:
   const float  * getBeta(void)                      const { return beta_ ;}
   const float  * getRho(void)                       const { return rho_ ;}
   const int    * getFacies(void)                    const { return facies_ ;}
-  const float  * getAlphaBackgroundResolution(void) const { return alpha_background_resolution_ ;} 
-  const float  * getBetaBackgroundResolution(void)  const { return beta_background_resolution_ ;}
-  const float  * getRhoBackgroundResolution(void)   const { return rho_background_resolution_ ;}
-  const float  * getAlphaSeismicResolution(void)    const { return alpha_seismic_resolution_ ;}
-  const float  * getBetaSeismicResolution(void)     const { return beta_seismic_resolution_ ;} 
-  const float  * getRhoSeismicResolution(void)      const { return rho_seismic_resolution_ ;}  
+  const float  * getAlphaHighCutBackground(void)    const { return alpha_highcut_background_ ;} 
+  const float  * getBetaHighCutBackground(void)     const { return beta_highcut_background_ ;}
+  const float  * getRhoHighCutBackground(void)      const { return rho_highcut_background_ ;}
+  const float  * getAlphaHighCutSeismic(void)       const { return alpha_highcut_seismic_ ;}
+  const float  * getBetaHighCutSeismic(void)        const { return beta_highcut_seismic_ ;} 
+  const float  * getRhoHighCutSeismic(void)         const { return rho_highcut_seismic_ ;}  
+  const float  * getAlphaSeismicResolution(void)    const { return alpha_highcut_seismic_ ;}
+  const float  * getBetaSeismicResolution(void)     const { return beta_highcut_seismic_ ;} 
+  const float  * getRhoSeismicResolution(void)      const { return rho_highcut_seismic_ ;}  
+  float       ** getRealSeismicData(void)           const { return real_seismic_data_; }
+  float       ** getSyntSeismicData(void)           const { return synt_seismic_data_; }
+  float       ** getCpp(void)                       const { return cpp_ ;}              
   void           getVerticalTrend(const float * blockedLog, float * trend);
   void           getVerticalTrend(const int * blockedLog,int * trend, RandomGen * random);
   void           getBlockedGrid(FFTGrid * grid, float * blockedLog);
@@ -67,37 +73,46 @@ private:
                               const int * bInd);
   void           findBlockXYZ(Simbox * simbox);
 
-  char         * wellname_;                    //| Name of well   
+  char         * wellname_;                 ///< Name of well   
 
-  double       * xpos_;                        //|
-  double       * ypos_;                        //| Simbox XYZ value for block
-  double       * zpos_;                        //|
+  double       * xpos_;                     ///<
+  double       * ypos_;                     ///< Simbox XYZ value for block
+  double       * zpos_;                     ///<
 
-  int          * ipos_;                        //|
-  int          * jpos_;                        //| Simbox IJK value for block
-  int          * kpos_;                        //|
+  int          * ipos_;                     ///<
+  int          * jpos_;                     ///< Simbox IJK value for block
+  int          * kpos_;                     ///<
 
-  float        * alpha_;                       //|
-  float        * beta_;                        //| Raw logs (log-domain)
-  float        * rho_;                         //|
-  int 	       * facies_;                      //| Facies numbers using *internal* numbering
+  float        * alpha_;                    ///<
+  float        * beta_;                     ///< Raw logs (log-domain)
+  float        * rho_;                      ///<
+  int 	       * facies_;                   ///< Facies numbers using *internal* numbering
 
-  float        * alpha_background_resolution_; //| 
-  float        * beta_background_resolution_;  //| Logs filtered to background resolution (log-domain)
-  float        * rho_background_resolution_;   //| 
+  float        * alpha_highcut_background_; ///< 
+  float        * beta_highcut_background_;  ///< Logs high-cut filtered to background resolution (log-domain)
+  float        * rho_highcut_background_;   ///< 
 
-  float        * alpha_seismic_resolution_;    //| 
-  float        * beta_seismic_resolution_;     //| Logs filtered to seismic resolution (log-domain)
-  float        * rho_seismic_resolution_;      //| 
+  float        * alpha_highcut_seismic_;    ///< 
+  float        * beta_highcut_seismic_;     ///< Logs high-cut filtered to approx. seismic resolution (log-domain)
+  float        * rho_highcut_seismic_;      ///< 
 
-  int            firstM_;                      //| First well log entry contributing to blocked well
-  int            lastM_;                       //| Last well log entry contributing to blocked well
+  float        * alpha_seismic_resolution_; ///< 
+  float        * beta_seismic_resolution_;  ///< Logs filtered to resolution of inversion result
+  float        * rho_seismic_resolution_;   ///< 
 
-  int            firstB_;                      //| First block with contribution from well log
-  int            lastB_;                       //| Last block with contribution from well log
+  float       ** real_seismic_data_;        ///< Seismic data
+  float       ** synt_seismic_data_;        ///< Forward modelled seismic data
+  float       ** cpp_;                      ///< Reflection coefficients
+  int            nAngles_;                  ///< Number of AVA stacks
 
-  int            nBlocks_;                     //| Number of blocks
-  int            nLayers_;                     //| Number of vertical layers (nz)
+  int            firstM_;                   ///< First well log entry contributing to blocked well
+  int            lastM_;                    ///< Last well log entry contributing to blocked well
+
+  int            firstB_;                   ///< First block with contribution from well log
+  int            lastB_;                    ///< Last block with contribution from well log
+
+  int            nBlocks_;                  ///< Number of blocks
+  int            nLayers_;                  ///< Number of vertical layers (nz)
 
   const int    * faciesNumbers_;
   int            nFacies_;

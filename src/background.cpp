@@ -165,9 +165,9 @@ Background::generateBackgroundModel(WellData      ** wells,
     BlockedLogs * bl = wells[w]->getBlockedLogsPropThick();
     const int nBlocks = bl->getNumberOfBlocks();
 
-    Utils::copyVector(bl->getAlphaBackgroundResolution(), blAlpha, nBlocks);
-    Utils::copyVector(bl->getBetaBackgroundResolution(), blBeta, nBlocks);
-    Utils::copyVector(bl->getRhoBackgroundResolution(), blRho, nBlocks);
+    Utils::copyVector(bl->getAlphaHighCutBackground(), blAlpha, nBlocks);
+    Utils::copyVector(bl->getBetaHighCutBackground(), blBeta, nBlocks);
+    Utils::copyVector(bl->getRhoHighCutBackground(), blRho, nBlocks);
     //
     // Extract a one-value-for-each-layer array of blocked logs
     //
@@ -749,11 +749,11 @@ Background::calculateDeviationFromVerticalTrend(WellData    ** wells,
   for (int w = 0 ; w < nWells ; w++) {
     BlockedLogs * bl = wells[w]->getBlockedLogsPropThick();
     if (strcmp(name,"Vp") == 0)
-      bl->getVerticalTrend(bl->getAlphaBackgroundResolution(), wellTrend);
+      bl->getVerticalTrend(bl->getAlphaHighCutBackground(), wellTrend);
     else if (strcmp(name,"Vs") == 0)
-      bl->getVerticalTrend(bl->getBetaBackgroundResolution(), wellTrend);
+      bl->getVerticalTrend(bl->getBetaHighCutBackground(), wellTrend);
     else if (strcmp(name,"Rho") == 0)
-      bl->getVerticalTrend(bl->getRhoBackgroundResolution(), wellTrend);
+      bl->getVerticalTrend(bl->getRhoHighCutBackground(), wellTrend);
     else {
       LogKit::LogFormatted(LogKit::LOW,"ERROR in Background::calculateVerticalTrend(): ");
       LogKit::LogFormatted(LogKit::LOW,"Log \'%s\' requested, but no such log exists.\n",name);

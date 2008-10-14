@@ -26,12 +26,19 @@ BlockedLogs::BlockedLogs(WellData  * well,
     beta_(NULL),
     rho_(NULL),
     facies_(NULL),
-    alpha_background_resolution_(NULL),
-    beta_background_resolution_(NULL),
-    rho_background_resolution_(NULL),
+    alpha_highcut_background_(NULL),
+    beta_highcut_background_(NULL),
+    rho_highcut_background_(NULL),
+    alpha_highcut_seismic_(NULL),
+    beta_highcut_seismic_(NULL),
+    rho_highcut_seismic_(NULL),
     alpha_seismic_resolution_(NULL),
     beta_seismic_resolution_(NULL),
     rho_seismic_resolution_(NULL),
+    real_seismic_data_(NULL),
+    synt_seismic_data_(NULL),
+    cpp_(NULL),
+    nAngles_(0),
     firstM_(IMISSING),
     lastM_(IMISSING),
     firstB_(IMISSING),
@@ -67,18 +74,39 @@ BlockedLogs::~BlockedLogs(void)
   if (rho_ != NULL)
     delete [] rho_;
   delete [] facies_;
-  if (alpha_background_resolution_ != NULL)
-    delete [] alpha_background_resolution_;
-  if (beta_background_resolution_ != NULL)
-    delete [] beta_background_resolution_;
-  if (rho_background_resolution_ != NULL)
-    delete [] rho_background_resolution_;
+  if (alpha_highcut_background_ != NULL)
+    delete [] alpha_highcut_background_;
+  if (beta_highcut_background_ != NULL)
+    delete [] beta_highcut_background_;
+  if (rho_highcut_background_ != NULL)
+    delete [] rho_highcut_background_;
+  if (alpha_highcut_seismic_ != NULL)
+    delete [] alpha_highcut_seismic_;
+  if (beta_highcut_seismic_ != NULL)
+    delete [] beta_highcut_seismic_;
+  if (rho_highcut_seismic_ != NULL)
+    delete [] rho_highcut_seismic_;
   if (alpha_seismic_resolution_ != NULL)
     delete [] alpha_seismic_resolution_;
   if (beta_seismic_resolution_ != NULL)
     delete [] beta_seismic_resolution_;
   if (rho_seismic_resolution_ != NULL)
     delete [] rho_seismic_resolution_;
+  if (real_seismic_data_ != NULL) {
+    for (int i=0 ; i<nAngles_ ; i++)
+      if (real_seismic_data_[i] != NULL)
+        delete real_seismic_data_[i];
+  }
+  if (synt_seismic_data_ != NULL) {
+    for (int i=0 ; i<nAngles_ ; i++)
+      if (synt_seismic_data_[i] != NULL)
+        delete synt_seismic_data_[i];
+  }
+  if (cpp_ != NULL) { 
+    for (int i=0 ; i<nAngles_ ; i++)
+      if (cpp_[i] != NULL)
+        delete cpp_[i];
+  }
 }
 
 //------------------------------------------------------------------------------
@@ -100,12 +128,12 @@ BlockedLogs::blockWell(WellData  * well,
   blockContinuousLog(bInd, well->getAlpha(dummy), alpha_);
   blockContinuousLog(bInd, well->getBeta(dummy), beta_);
   blockContinuousLog(bInd, well->getRho(dummy), rho_);
-  blockContinuousLog(bInd, well->getAlphaBackgroundResolution(dummy), alpha_background_resolution_);
-  blockContinuousLog(bInd, well->getBetaBackgroundResolution(dummy), beta_background_resolution_);
-  blockContinuousLog(bInd, well->getRhoBackgroundResolution(dummy), rho_background_resolution_);
-  blockContinuousLog(bInd, well->getAlphaSeismicResolution(dummy), alpha_seismic_resolution_);
-  blockContinuousLog(bInd, well->getBetaSeismicResolution(dummy), beta_seismic_resolution_);
-  blockContinuousLog(bInd, well->getRhoSeismicResolution(dummy), rho_seismic_resolution_);
+  blockContinuousLog(bInd, well->getAlphaBackgroundResolution(dummy), alpha_highcut_background_);
+  blockContinuousLog(bInd, well->getBetaBackgroundResolution(dummy), beta_highcut_background_);
+  blockContinuousLog(bInd, well->getRhoBackgroundResolution(dummy), rho_highcut_background_);
+  blockContinuousLog(bInd, well->getAlphaSeismicResolution(dummy), alpha_highcut_seismic_);
+  blockContinuousLog(bInd, well->getBetaSeismicResolution(dummy), beta_highcut_seismic_);
+  blockContinuousLog(bInd, well->getRhoSeismicResolution(dummy), rho_highcut_seismic_);
 
   if (well->isFaciesLogDefined())
     blockDiscreteLog(bInd, well->getFacies(dummy), well->getFaciesNr(), well->getNFacies(), facies_, random);
@@ -552,14 +580,14 @@ BlockedLogs::writeToFile(float dz,
       rho   = rho_[b];
     } 
     else if (type == 2) {
-      alpha = alpha_background_resolution_[b];
-      beta  = beta_background_resolution_[b];
-      rho   = rho_background_resolution_[b];
+      alpha = alpha_highcut_background_[b];
+      beta  = beta_highcut_background_[b];
+      rho   = rho_highcut_background_[b];
     }
     else {
-      alpha = alpha_seismic_resolution_[b];
-      beta  = beta_seismic_resolution_[b];
-      rho   = rho_seismic_resolution_[b];
+      alpha = alpha_highcut_seismic_[b];
+      beta  = beta_highcut_seismic_[b];
+      rho   = rho_highcut_seismic_[b];
     }
 
     if (alpha != RMISSING) { 
@@ -615,19 +643,23 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
   }
   delete fileName;
 
-  bool gotFaciesLog   = nFacies_ > 0;
-  bool gotSeisResLogs = false;
-  bool gotReflCoefs   = false;
-  bool gotSeismicLogs = false;
+  bool gotSeisResPar  = false;
+  bool gotFacies      = nFacies_ > 0;
+  bool gotRealSeismic = real_seismic_data_ != NULL;
+  bool gotSyntSeismic = synt_seismic_data_ != NULL;
+  bool gotCpp         = cpp_ != NULL;
 
-  int nPars = 3*3;     // {Vp,Vs,Rho} x {raw,BGHz,seisHz} 
-  int nFaci = 0;      
-  if (gotFaciesLog)
-    nFaci = 1;
-  int nSeis = 0;
-  if (gotSeisResLogs)
-    nSeis = 3;
-  int nLogs = nPars + nFaci + nSeis; 
+  int nLogs = 3*3;   // {Vp, Vs, Rho} x {raw, BgHz, seisHz} 
+  if (gotFacies)
+    nLogs += 1;
+  if (gotSeisResPar)
+    nLogs += 3;
+  if (gotRealSeismic)
+    nLogs += nAngles_;
+  if (gotSyntSeismic)
+    nLogs += nAngles_;
+  if (gotCpp)
+    nLogs += nAngles_;
 
   std::vector<std::string> params(3);
   params[0] = "Vp";
@@ -639,6 +671,9 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
   file << std::setprecision(2);
   //file << std::setw(15);
 
+  //
+  // Write HEADER
+  //
   file << "1.0\n";
   file << "CRAVA\n";
   file << wellname_ << " " << xpos_[0] << " " << ypos_[0] << "\n";
@@ -647,41 +682,63 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
     file << params[i] << "   UNK lin\n";
     file << params[i] << static_cast<int>(maxHz_background) << " UNK lin\n";
     file << params[i] << static_cast<int>(maxHz_seismic)    << " UNK lin\n";
-    if (gotSeisResLogs)
+    if (gotSeisResPar)
       file << params[i] << "_SeismicResolution UNK lin\n";
   }
-
-  if (gotFaciesLog) {
+  if (gotFacies) {
     file << "dummy   DISC ";
   //  file << faciesLogName_ << "   DISC ";
   //  for (int i =0 ; i < nFacies_ ; i++)
   //    file << " " << faciesNumbers_[i] << " " << faciesNames_[i];
     file << "\n";    
   }
+  if (gotRealSeismic) {
+    for (int i=0 ; i<nAngles_ ; i++)
+      file << "RealSeis" << i << " UNK lin\n";
+  }
+  if (gotSyntSeismic) {
+    for (int i=0 ; i<nAngles_ ; i++)
+      file << "SyntSeis" << i << " UNK lin\n";
+  }
+  if (gotCpp) {
+    for (int i=0 ; i<nAngles_ ; i++)
+      file << "ReflCoef" << i << " UNK lin\n";
+  }
 
+  //
+  // Write LOGS
+  //
   for (int i=0 ; i<nBlocks_ ; i++) {
     file << std::setprecision(2);
     file << xpos_[i] << " " << ypos_[i] << " " << zpos_[i] << " ";
-    file << (alpha_[i]==RMISSING                       ? WELLMISSING : exp(alpha_[i]))                        << " ";
-    file << (alpha_background_resolution_[i]==RMISSING ? WELLMISSING : exp(alpha_background_resolution_[i]))  << " ";
-    file << (alpha_seismic_resolution_[i]==RMISSING    ? WELLMISSING : exp(alpha_seismic_resolution_[i]))     << " ";
-    //if (gotSeisResLogs)
-    //file << (alpha_seismic_resolution_[i]==RMISSING    ? WELLMISSING : exp(alpha_seismic_resolution_[i])) << " ";
-    file << (beta_[i]==RMISSING                        ? WELLMISSING : exp(beta_[i]))                         << " ";
-    file << (beta_background_resolution_[i]==RMISSING  ? WELLMISSING : exp(beta_background_resolution_[i]))   << " ";
-    file << (beta_seismic_resolution_[i]==RMISSING     ? WELLMISSING : exp(beta_seismic_resolution_[i]))      << " ";
-    //if (gotSeisResLogs)
-    //file << (beta_seismic_resolution_[i]==RMISSING     ? WELLMISSING : exp(beta_seismic_resolution_[i]))  << " ";
+    file << (alpha_[i]==RMISSING                      ? WELLMISSING : exp(alpha_[i]))                     << " ";
+    file << (alpha_highcut_background_[i]==RMISSING   ? WELLMISSING : exp(alpha_highcut_background_[i]))  << " ";
+    file << (alpha_highcut_seismic_[i]==RMISSING      ? WELLMISSING : exp(alpha_highcut_seismic_[i]))     << " ";
+    if (gotSeisResPar)
+      file << (alpha_seismic_resolution_[i]==RMISSING ? WELLMISSING : exp(alpha_seismic_resolution_[i]))  << " ";
+    file << (beta_[i]==RMISSING                       ? WELLMISSING : exp(beta_[i]))                      << " ";
+    file << (beta_highcut_background_[i]==RMISSING    ? WELLMISSING : exp(beta_highcut_background_[i]))   << " ";
+    file << (beta_highcut_seismic_[i]==RMISSING       ? WELLMISSING : exp(beta_highcut_seismic_[i]))      << " ";
+    if (gotSeisResPar)
+      file << (beta_seismic_resolution_[i]==RMISSING  ? WELLMISSING : exp(beta_seismic_resolution_[i]))   << " ";
     file << std::setprecision(5);
-    file << (rho_[i]==RMISSING                         ? WELLMISSING : exp(rho_[i]))                          << " ";
-    file << (rho_background_resolution_[i]==RMISSING   ? WELLMISSING : exp(rho_background_resolution_[i]))    << " ";
-    file << (rho_seismic_resolution_[i]==RMISSING      ? WELLMISSING : exp(rho_seismic_resolution_[i]))       << " ";
-    //if (gotSeisResLogs)
-    //file << (rho_seismic_resolution_[i]==RMISSING      ? WELLMISSING : exp(rho_seismic_resolution_[i]))   << " ";
-    if (gotFaciesLog)
-      file << (facies_[i]==IMISSING                    ? static_cast<int>(WELLMISSING) : facies_[i])     << " ";
-    //if (gotReflCoefs)
-    // Skriv ut refleksjonscoefficientene.
+    file << (rho_[i]==RMISSING                        ? WELLMISSING : exp(rho_[i]))                       << " ";
+    file << (rho_highcut_background_[i]==RMISSING     ? WELLMISSING : exp(rho_highcut_background_[i]))    << " ";
+    file << (rho_highcut_seismic_[i]==RMISSING        ? WELLMISSING : exp(rho_highcut_seismic_[i]))       << " ";
+    if (gotSeisResPar)
+      file << (rho_seismic_resolution_[i]==RMISSING   ? WELLMISSING : exp(rho_seismic_resolution_[i]))    << " ";
+    if (gotFacies)
+      file << (facies_[i]==IMISSING                   ? static_cast<int>(WELLMISSING) : facies_[i])       << " ";
+    if (gotRealSeismic)
+      for (int a=0 ; a<nAngles_ ; a++)
+        file << (real_seismic_data_[a][i]==RMISSING   ? WELLMISSING : real_seismic_data_[a][i])           << " ";
+    if (gotSyntSeismic)
+      for (int a=0 ; a<nAngles_ ; a++)
+        file << (synt_seismic_data_[a][i]==RMISSING   ? WELLMISSING : synt_seismic_data_[a][i])           << " ";
+    if (gotCpp)
+      for (int a=0 ; a<nAngles_ ; a++)
+        file << (cpp_[a][i]==RMISSING                 ? WELLMISSING : cpp_[a][i])                         << " ";
+
     file << "\n";
   }
 
