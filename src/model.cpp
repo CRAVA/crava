@@ -851,6 +851,8 @@ Model::setupExtendedTimeSimbox(Simbox   * timeSimbox,
   botSurf->Add(&(timeSimbox->GetBotSurface()));
 
   timeSimbox->setDepth(topSurf, botSurf, nz);
+  NRLib2::WriteStormBinarySurf(*topSurf,"extendedTop.storm");
+  NRLib2::WriteStormBinarySurf(*botSurf,"extendedBot.storm");
 
   delete refPlane;
 }
