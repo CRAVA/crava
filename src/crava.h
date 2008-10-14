@@ -27,6 +27,23 @@ public:
   int                simulate( RandomGen * randomGen );
   int                computePostCov();
   int                computeSyntSeismic(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho);
+
+  FFTGrid          * getpostAlpha()           {return postAlpha_;}
+  FFTGrid          * getpostBeta()            {return postBeta_;}
+  FFTGrid          * getpostRho()             {return postRho_;}
+
+  const FFTGrid    * getpostAlpha()           const {return postAlpha_;}
+  const FFTGrid    * getpostBeta()            const {return postBeta_;}
+  const FFTGrid    * getpostRho()             const {return postRho_;}
+
+  int                getNTheta()              const {return ntheta_;}
+  int                getWarning(char* wText)  const {if(scaleWarning_>0) sprintf(wText,"%s",scaleWarningText_); return scaleWarning_;}
+
+  void               printEnergyToScreen();
+  void               computeFaciesProb(FilterWellLogs *filteredlogs);
+  void               filterLogs(FilterWellLogs *&filterlogs);
+
+private: 
   int                computeAcousticImpedance(FFTGrid * Alpha, FFTGrid * Rho, char * fileName, char * fileName2);
   int                computeShearImpedance(FFTGrid * Beta, FFTGrid * Rho, char * fileName, char * fileName2);
   int                computeVpVsRatio(FFTGrid * Alpha, FFTGrid * Beta, char * fileName, char * fileName2);
@@ -38,22 +55,12 @@ public:
   void               computeDataVariance(void);
   void               setupErrorCorrelation(Model * model);
   void               computeVariances(fftw_real* corrT, Model * model);
-  FFTGrid          * getpostAlpha()           {return postAlpha_;}
-  FFTGrid          * getpostBeta()            {return postBeta_;}
-  FFTGrid          * getpostRho()             {return postRho_;}
-
-  const FFTGrid    * getpostAlpha()           const {return postAlpha_;}
-  const FFTGrid    * getpostBeta()            const {return postBeta_;}
-  const FFTGrid    * getpostRho()             const {return postRho_;}
-
   const FFTGrid    * getpostCovAlpha()        const {return postCovAlpha_;}
   const FFTGrid    * getpostCovBeta()         const {return postCovBeta_;}       
   const FFTGrid    * getpostCovRho()          const {return postCovRho_;}        
   const FFTGrid    * getpostCrCovAlphaBeta()  const {return postCrCovAlphaBeta_;}
   const FFTGrid    * getpostCrCovAlphaRho()   const {return postCrCovAlphaRho_;}
   const FFTGrid    * getpostCrCovBetaRho()    const {return postCrCovBetaRho_;}
-
-  int                getNTheta()              const {return ntheta_;}
   float              getTheta(int l)          const {return theta_[l];}
   float              getEmpSNRatio(int l)     const {return empSNRatio_[l];}
   float              getTheoSNRatio(int l)    const {return theoSNRatio_[l];}
@@ -62,16 +69,28 @@ public:
   float              getDataVariance(int l)   const {return dataVariance_[l];}
   const Simbox     * getSimbox()              const {return(simbox_);}
   int                checkScale(void);
-  int                getWarning(char* wText)  const {if(scaleWarning_>0) sprintf(wText,"%s",scaleWarningText_); return scaleWarning_;}
-
-  //Conventions for writePars:
+    //Conventions for writePars:
   // simNum = -1 indicates prediction, otherwise filename ends with n+1.
   // All grids are in normal domain, and on log scale.
   void               writePars(FFTGrid * alpha, FFTGrid * beta, FFTGrid * rho, int simNum); 
-  void               printEnergyToScreen();
-  void               computeFaciesProb(FilterWellLogs *filteredlogs);
-  void               filterLogs(FilterWellLogs *&filterlogs);
-private: 
+
+  void               fillkW(int k, fftw_complex* kW );
+  void               fillInverseAbskWRobust(int k, fftw_complex* invkW );
+  void               fillkWNorm(int k, fftw_complex* kWNorm, Wavelet** wavelet);
+  FFTGrid          * createFFTGrid();
+  FFTGrid          * copyFFTGrid(FFTGrid * fftGridOld);
+  FFTFileGrid      * copyFFTGrid(FFTFileGrid * fftGridOld);
+
+  float              computeWDCorrMVar (Wavelet* WD, fftw_real* corrT);
+  float              computeWDCorrMVar (Wavelet* WD);
+
+  void               divideDataByScaleWavelet();
+  void               multiplyDataByScaleWaveletAndWriteToFile(const char* typeName);
+  void               dumpCorrT(float* corrT,float dt);
+  void               initPostKriging();          
+  void               writeToFile(char * timeFileName, char * depthFileName, FFTGrid * grid);
+  void               writeResampledStormCube(FFTGrid *grid, GridMapping *gridmapping, char * fileName, const Simbox *simbox);
+
   int                fileGrid_;        // is true if is storage is on file 
   const Simbox     * simbox_;          // the simbox
   //const Simbox     * depthSimbox_;     // simbox with depth surfaces
@@ -127,25 +146,12 @@ private:
   float            * krigingParams_;
   WellData        ** wells_;
   int                nWells_;
-  void               fillkW(int k, fftw_complex* kW );
-  void               fillInverseAbskWRobust(int k, fftw_complex* invkW );
-  void               fillkWNorm(int k, fftw_complex* kWNorm, Wavelet** wavelet);
-  FFTGrid          * createFFTGrid();
-  FFTGrid          * copyFFTGrid(FFTGrid * fftGridOld);
-  FFTFileGrid      * copyFFTGrid(FFTFileGrid * fftGridOld);
+  
   int                scaleWarning_;
   char             * scaleWarningText_;
 
-  float              computeWDCorrMVar (Wavelet* WD, fftw_real* corrT);
-  float              computeWDCorrMVar (Wavelet* WD);
-
   int                outputFlag_; //See model.h for bit interpretation.
-  void               divideDataByScaleWavelet();
-  void               multiplyDataByScaleWaveletAndWriteToFile(const char* typeName);
-  void               dumpCorrT(float* corrT,float dt);
-  void               initPostKriging();          
-  void               writeToFile(char * timeFileName, char * depthFileName, FFTGrid * grid);
-  void               writeResampledStormCube(FFTGrid *grid, GridMapping *gridmapping, char * fileName, const Simbox *simbox);
+  
   float              energyTreshold_; //If energy in reflection trace divided by mean energy
                                       //in reflection trace is lower than this, the reflections
                                       //will be interpolated. Default 0, set from model.
