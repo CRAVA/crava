@@ -142,7 +142,6 @@ Crava::Crava(Model * model)
   }
 
   corrprior_ = new float[nzp_];
-  //   FILE *test = fopen("test.dat","w");
   int refk;
   for(i = 0 ; i < nzp_ ; i++ )
   {
@@ -154,17 +153,17 @@ Crava::Crava(Model * model)
       corrprior_[i] = parSpatialCorr_->getRealValue(0,0,refk);
     else
       corrprior_[i] = 0.0;
-    //   fprintf(test,"%f\n",corrprior[i]);
   }
-  //  fclose(test);
 
   if((outputFlag_ & ModelSettings::FACIESPROB) >0 || (outputFlag_ & ModelSettings::FACIESPROBRELATIVE)>0)
   {    
-    fprob_ = new FaciesProb(model->getModelSettings(),
-                            fileGrid_, parPointCov_,corrprior_, 
-                            nzp_, nz_, meanAlpha_, meanBeta_, meanRho_, random_, 
+    fprob_ = new FaciesProb(model->getModelSettings(), fileGrid_, 
+                            parPointCov_,
+                            corrprior_, 
+                            nzp_, nz_, meanAlpha_, meanBeta_, meanRho_, 
                             model->getModelSettings()->getPundef(), 
-                            model->getPriorFacies());
+                            model->getPriorFacies(), 
+                            nWells_);
   }
 
   //meanAlpha_->writeAsciiRaw("alpha");
@@ -202,10 +201,6 @@ Crava::Crava(Model * model)
       seisData_[i]->endAccess();
     }
   }
-  // NBNB-PAL: Temp writing of blocked logs. Shall include an if-check here later.
-  if(!model->getModelSettings()->getGenerateSeismic())
-    for (i=0 ; i<nWells_ ; i++)
-      wells_[i]->getBlockedLogsPropThick()->writeRMSWell(model->getModelSettings());
 }
 
 Crava::~Crava()
@@ -2292,9 +2287,13 @@ void Crava::computeFaciesProb(FilterWellLogs *filteredlogs)
     }
 
     int i;
-    fprob_->setFilteredLogs(filteredlogs);
+    fprob_->setNeededLogs(filteredlogs,
+                          wells_,
+                          nWells_,
+                          nz_,
+                          random_);
     fprob_->setSigmaPost(postCovAlpha_, postCovBeta_, postCovRho_, postCrCovAlphaBeta_,
-                               postCrCovAlphaRho_,postCrCovBetaRho_);
+                         postCrCovAlphaRho_,postCrCovBetaRho_);
     int nfac = model_->getModelSettings()->getNumberOfFacies();
     if(relative==0)
       fprob_->makeFaciesProb(nfac,postAlpha_,postBeta_, postRho_);
@@ -2397,21 +2396,19 @@ void Crava::filterLogs(Simbox          * timeSimboxConstThick,
   int relative;
   if((outputFlag_ & ModelSettings::FACIESPROBRELATIVE)>0)
     relative = 1;
-  else relative = 0;
+  else 
+    relative = 0;
 
-  bool faciesprob;
-  if((outputFlag_ & ModelSettings::FACIESPROB) >0 || (outputFlag_ & ModelSettings::FACIESPROBRELATIVE)>0)
-    faciesprob = true;
-  else
-    faciesprob = false;
-
-  filterlogs = new FilterWellLogs(postCovAlpha_, postCovBeta_, postCovRho_, 
-                                  postCrCovAlphaBeta_, postCrCovAlphaRho_, postCrCovBetaRho_, 
-                                  nzp_, nz_, wells_, nWells_, lowCut_, highCut_, relative, 
-                                  timeSimboxConstThick, 
+  //
+  // NBNB-PAL: Det er ikke riktig at det er parPointCov som benyttes nedenfor. Det er Var0
+  //
+  filterlogs = new FilterWellLogs(timeSimboxConstThick, 
                                   simbox_, 
-                                  random_, 
-                                  corrprior_, 
-                                  parPointCov_, 
-                                  faciesprob);
+                                  postCovAlpha_, postCovBeta_, postCovRho_, 
+                                  postCrCovAlphaBeta_, postCrCovAlphaRho_, postCrCovBetaRho_, 
+                                  corrprior_, parPointCov_,
+                                  nzp_, nz_, 
+                                  wells_, nWells_, 
+                                  lowCut_, highCut_, 
+                                  relative);
 }

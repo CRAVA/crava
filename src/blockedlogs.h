@@ -3,6 +3,7 @@
 
 #include "nrlib/iotools/logkit.hpp"
 #include <stdlib.h>
+#include <string.h>
 
 
 class ModelSettings;
@@ -46,10 +47,15 @@ public:
   void           getVerticalTrend(const float * blockedLog, float * trend);
   void           getVerticalTrend(const int * blockedLog,int * trend, RandomGen * random);
   void           getBlockedGrid(FFTGrid * grid, float * blockedLog);
+
+  void           setLogFromVerticalTrend(float * vertical_trend, double z0, double dz, int nz, std::string type);
+
   void           writeToFile(float dz, int type, bool exptrans) const;
   void           writeRMSWell(ModelSettings * modelSettings);
 
 private:
+  void           setLogFromVerticalTrend(float *& log, double * zpos, int nBlocks, 
+                                         float * vertical_trend, double z0, double dz, int nz);
   void           blockWell(WellData  * well, 
                            Simbox    * simbox,
                            RandomGen * random);

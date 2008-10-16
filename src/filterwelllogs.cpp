@@ -5,7 +5,6 @@
 #include <assert.h>
 #include <stdio.h>
 #include "lib/lib_matr.h"
-#include "lib/random.h"
 #include "lib/kriging1d.h"
 #include "src/welldata.h"
 #include "src/filterwelllogs.h"
@@ -16,37 +15,69 @@
 #include "nrlib/iotools/logkit.hpp"
 
 
-FilterWellLogs::FilterWellLogs(FFTGrid      * postCovAlpha,
+FilterWellLogs::FilterWellLogs(const Simbox * timeSimboxConstThick, 
+                               const Simbox * timeSimboxPropThick, 
+                               FFTGrid      * postCovAlpha,
                                FFTGrid      * postCovBeta, 
                                FFTGrid      * postCovRho, 
                                FFTGrid      * postCrCovAlphaBeta,
                                FFTGrid      * postCrCovAlphaRho,
                                FFTGrid      * postCrCovBetaRho, 
+                               float        * corrprior, 
+                               float       ** sigma0,
                                int            nzp, 
                                int            nz, 
                                WellData    ** wells, 
                                int            nWells, 
                                float          lowCut, 
                                float          highCut, 
-                               int            relative, 
-                               const Simbox * timeSimboxConstThick, 
-                               const Simbox * timeSimboxPropThick, 
-                               RandomGen    * random, 
-                               float        * corrprior, 
-                               float       ** sigma0, 
-                               bool           faciesprob)
+                               int            relative)
+  : vtAlphaFiltered_(NULL),
+    vtBetaFiltered_(NULL),
+    vtRhoFiltered_(NULL),
+    vtAlpha_(NULL),
+    vtBeta_(NULL),
+    vtRho_(NULL),
+    nWells_(nWells)
 {
-  faciesprob_ = faciesprob;
-  fftw_real *postcova, *postcovb, *postcovr, *postcrab, *postcrar, *postcrbr;
-  
+  fftw_real * postcova, * postcovb, * postcovr;
+  fftw_real * postcrab, * postcrar, * postcrbr;
+  fftw_real * priorCorr;  
+
   int rnzp = 2*(nzp/2+1);
-  postcova = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp));
-  postcovb = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp));
-  postcovr = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp));
-  postcrab = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp));
-  postcrar = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp));
-  postcrbr = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp));
-  
+  postcova  = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp));
+  postcovb  = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp));
+  postcovr  = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp));
+  postcrab  = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp));
+  postcrar  = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp));
+  postcrbr  = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp));
+  priorCorr = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp));
+
+  vtAlphaFiltered_ = new float * [nWells];
+  vtBetaFiltered_  = new float * [nWells];
+  vtRhoFiltered_   = new float * [nWells];
+  vtAlpha_         = new float * [nWells];
+  vtBeta_          = new float * [nWells];
+  vtRho_           = new float * [nWells];
+
+  for (int w =0 ; w<nWells ; w++) {
+    vtAlphaFiltered_[w] = new float[nz];
+    vtBetaFiltered_[w]  = new float[nz];
+    vtRhoFiltered_[w]   = new float[nz];
+    vtAlpha_[w]         = new float[nz];
+    vtBeta_[w]          = new float[nz];
+    vtRho_[w]           = new float[nz];
+    for(int i=0 ; i<nz ; i++)
+    {
+      vtAlphaFiltered_[w][i] = RMISSING;
+      vtBetaFiltered_[w][i]  = RMISSING;
+      vtRhoFiltered_[w][i]   = RMISSING;
+      vtAlpha_[w][i]         = RMISSING;
+      vtBeta_[w][i]          = RMISSING;
+      vtRho_[w][i]           = RMISSING;
+    }
+  }
+
   if(postCovAlpha->getIsTransformed()==true)
     postCovAlpha->invFFTInPlace();
   if(postCovBeta->getIsTransformed()==true)
@@ -87,19 +118,17 @@ FilterWellLogs::FilterWellLogs(FFTGrid      * postCovAlpha,
     }
   }
 
-  corrprior_ = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp));
   for(int i=0;i<nzp;i++)
-    corrprior_[i] =corrprior[i];
-  
-  doFiltering(wells,nWells,
+    priorCorr[i] =corrprior[i];
+
+  doFiltering(timeSimboxConstThick, 
+              timeSimboxPropThick, 
+              wells,nWells, sigma0,
               postcova,postcovb,postcovr,
               postcrab,postcrar,postcrbr, 
-              lowCut, highCut, 
-              relative, nz, nzp, 
-              timeSimboxConstThick, 
-              timeSimboxPropThick, 
-              random, 
-              sigma0);
+              priorCorr, lowCut, highCut, 
+              relative, nz, nzp);
+
 
   postCovAlpha->fftInPlace();
   postCovBeta->fftInPlace();
@@ -108,6 +137,7 @@ FilterWellLogs::FilterWellLogs(FFTGrid      * postCovAlpha,
   postCrCovAlphaRho->fftInPlace();
   postCrCovBetaRho->fftInPlace();
   
+  fftw_free(priorCorr);
   fftw_free(postcova);
   fftw_free(postcovb);
   fftw_free(postcovr);
@@ -118,60 +148,43 @@ FilterWellLogs::FilterWellLogs(FFTGrid      * postCovAlpha,
 
 FilterWellLogs::~FilterWellLogs()
 {
-  fftw_free(corrprior_);
-  delete [] alphafiltered_;
-  delete [] betafiltered_;
-  delete [] rhofiltered_;
-  delete [] alphablock_;
-  delete [] betablock_;
-  delete [] rhoblock_;
-  delete [] facieslog_;
+  for (int w=0 ; w<nWells_ ; w++) {
+    delete [] vtAlphaFiltered_[w];
+    delete [] vtBetaFiltered_[w];
+    delete [] vtRhoFiltered_[w];
+    delete [] vtAlpha_[w];
+    delete [] vtBeta_[w];
+    delete [] vtRho_[w];
+  }
+  delete [] vtAlphaFiltered_;
+  delete [] vtBetaFiltered_;
+  delete [] vtRhoFiltered_;
+  delete [] vtAlpha_;
+  delete [] vtBeta_;
+  delete [] vtRho_;
 }
 
-void FilterWellLogs::doFiltering(WellData   ** wells, 
-                                 int           nWells,
-                                 fftw_real   * postcova, 
-                                 fftw_real   * postcovb, 
-                                 fftw_real   * postcovr,
-                                 fftw_real   * postcrab, 
-                                 fftw_real   * postcrar, 
-                                 fftw_real   * postcrbr, 
-                                 float         lowCut, 
-                                 float         highCut, 
-                                 int           relative, 
-                                 int           nz, 
-                                 int           nzp, 
-                                 const Simbox * timeSimboxConstThick, 
-                                 const Simbox * timeSimboxPropThick, 
-                                 RandomGen    * random, 
-                                 float       ** sigma0)
+void FilterWellLogs::doFiltering(const Simbox  * timeSimboxConstThick, 
+                                 const Simbox  * timeSimboxPropThick, 
+                                 WellData     ** wells, 
+                                 int             nWells, 
+                                 float        ** sigma0,
+                                 fftw_real     * postcova, 
+                                 fftw_real     * postcovb, 
+                                 fftw_real     * postcovr,
+                                 fftw_real     * postcrab, 
+                                 fftw_real     * postcrar, 
+                                 fftw_real     * postcrbr, 
+                                 fftw_real     * corrprior,
+                                 float           lowCut, 
+                                 float           highCut, 
+                                 int             relative, 
+                                 int             nz, 
+                                 int             nzp)
 {
   LogKit::LogFormatted(LogKit::LOW,"\nFiltering well logs\n");
-  LogKit::LogFormatted(LogKit::MEDIUM,"  Wells available:\n");
-  for (int w = 0 ; w < nWells ; w++)
-    if(wells[w]->getUseForFaciesProbabilities())
-      LogKit::LogFormatted(LogKit::MEDIUM,"    %s\n",wells[w]->getWellname());
   
-  float domega  = static_cast<float> (1000.0f/(nzp*timeSimboxConstThick->getdz()));  //dz in milliseconds
-  ndata_ = nWells*nz;
-  alphafiltered_ = new float[ndata_];
-  betafiltered_  = new float[ndata_];
-  rhofiltered_   = new float[ndata_];
-  alphablock_    = new float[ndata_];
-  betablock_     = new float[ndata_];
-  rhoblock_      = new float[ndata_];
-  facieslog_     = new int[ndata_];
-
-  for(int i=0;i<ndata_;i++)
-  {
-    alphafiltered_[i] = RMISSING;
-    betafiltered_[i] = RMISSING;
-    rhofiltered_[i] = RMISSING;
-    alphablock_[i] = RMISSING;
-    betablock_[i] = RMISSING;
-    rhoblock_[i] = RMISSING;
-    facieslog_[i] = IMISSING;
-  }
+  float domega = static_cast<float> (1000.0f/(nzp*timeSimboxConstThick->getdz()));  //dz in milliseconds
 
   // Do fourier transform of covariances
   rfftwnd_plan p1 = rfftwnd_create_plan(1, &nzp, FFTW_REAL_TO_COMPLEX, FFTW_ESTIMATE | FFTW_IN_PLACE);
@@ -182,9 +195,9 @@ void FilterWellLogs::doFiltering(WellData   ** wells,
   fftw_complex *postcovar_cAmp = reinterpret_cast<fftw_complex*>(postcrar);
   fftw_complex *postcovab_cAmp = reinterpret_cast<fftw_complex*>(postcrab);
   fftw_complex *postcovbr_cAmp = reinterpret_cast<fftw_complex*>(postcrbr);
-  fftw_complex *corrprior_cAmp = reinterpret_cast<fftw_complex*>(corrprior_);
+  fftw_complex *corrprior_cAmp = reinterpret_cast<fftw_complex*>(corrprior);
 
-  rfftwnd_one_real_to_complex(p1,corrprior_, corrprior_cAmp);
+  rfftwnd_one_real_to_complex(p1,corrprior, corrprior_cAmp);
   rfftwnd_one_real_to_complex(p1,postcova, postcova_cAmp);
   rfftwnd_one_real_to_complex(p1,postcovb, postcovb_cAmp);
   rfftwnd_one_real_to_complex(p1,postcovr, postcovr_cAmp);
@@ -200,248 +213,225 @@ void FilterWellLogs::doFiltering(WellData   ** wells,
   fftw_complex * beta_cAmp  = reinterpret_cast<fftw_complex*>(beta_rAmp);
   fftw_complex * rho_cAmp   = reinterpret_cast<fftw_complex*>(rho_rAmp);
 
-  int insideOrigSimbox;
-  double x,y,z;
-
-  float * vtAlpha = new float[nz];            // vt = vertical trend
-  float * vtBeta  = new float[nz];
-  float * vtRho   = new float[nz];
+  float * vtAlpha   = new float[nz];          // vt = vertical trend
+  float * vtBeta    = new float[nz];
+  float * vtRho     = new float[nz];
 
   float * vtAlphaBg = new float[nz];          // vt = vertical trend
   float * vtBetaBg  = new float[nz];
   float * vtRhoBg   = new float[nz];
-  int   * vtFacies  = new int[nz];
-
-  char * fileName     = new char[MAX_STRING];
-  char * fullFileName;
-
-  //
-  // NBNB-PAL: Vi kan ta bort disse filene når de nye BW-objektene skrives ut. 
-  //
-  sprintf(fileName,"BW_filteredlogs.dat");
-  fullFileName = ModelSettings::makeFullFileName(fileName);
-  FILE *file = fopen(fullFileName,"w");
-  delete [] fullFileName;
-
-  sprintf(fileName,"BW_originallogs.dat");
-  fullFileName = ModelSettings::makeFullFileName(fileName);
-  FILE *file2 = fopen(fullFileName,"w");
-  delete [] fullFileName;
-
-  sprintf(fileName,"BW_background.dat");
-  fullFileName = ModelSettings::makeFullFileName(fileName);
-  FILE *file3 = fopen(fullFileName,"w");
-  delete [] fullFileName;
-  delete [] fileName;
 
   for (int w1 = 0 ; w1 < nWells ; w1++)
   {
-    if(wells[w1]->getUseForFaciesProbabilities())
-    { 
-      BlockedLogs * bw = wells[w1]->getBlockedLogsConstThick();
-      //
-      // Extract a one-value-for-each-layer array of blocked logs
-      //
-      bw->getVerticalTrend(bw->getAlphaHighCutBackground(), vtAlphaBg); // might be missing data at end because of simbox 
-      bw->getVerticalTrend(bw->getBetaHighCutBackground(), vtBetaBg);
-      bw->getVerticalTrend(bw->getRhoHighCutBackground(), vtRhoBg);
-      
-      extrapolate(vtAlphaBg,nz);
-      extrapolate(vtBetaBg, nz);
-      extrapolate(vtRhoBg, nz);
-      
-      bw->getVerticalTrend(bw->getAlpha(),vtAlpha);
-      bw->getVerticalTrend(bw->getBeta(),vtBeta);
-      bw->getVerticalTrend(bw->getRho(),vtRho);
-      if(faciesprob_==true)
-        bw->getVerticalTrend(bw->getFacies(),vtFacies,random);
+    BlockedLogs * bw     = wells[w1]->getBlockedLogsConstThick();
+    BlockedLogs * bwOrig = wells[w1]->getBlockedLogsPropThick();
+    //
+    // Extract a one-value-for-each-layer array of blocked logs
+    //
+    bw->getVerticalTrend(bw->getAlphaHighCutBackground(), vtAlphaBg); // might be missing data at end because of simbox 
+    bw->getVerticalTrend(bw->getBetaHighCutBackground(), vtBetaBg);
+    bw->getVerticalTrend(bw->getRhoHighCutBackground(), vtRhoBg);
+    
+    extrapolate(vtAlphaBg,nz);
+    extrapolate(vtBetaBg,nz);
+    extrapolate(vtRhoBg,nz);
+    
+    bw->getVerticalTrend(bw->getAlpha(),vtAlpha);
+    bw->getVerticalTrend(bw->getBeta(),vtBeta);
+    bw->getVerticalTrend(bw->getRho(),vtRho);
+    
+    // Set logs MISSING if outside original simbox
+    const int * ipos = bw->getIpos();
+    const int * jpos = bw->getJpos();
+    const int * kpos = bw->getKpos();
+    
+    for(int i=0;i<nz;i++)
+    {
+      double x0,y0,z;
+      timeSimboxConstThick->getCoord(ipos[0],jpos[0],kpos[0]+i,x0,y0,z);
+      int insideOrigSimbox = timeSimboxPropThick->getIndex(x0,y0,z);
+      if(insideOrigSimbox == IMISSING) {
+        vtAlpha[i] = RMISSING;
+        vtBeta[i]  = RMISSING;
+        vtRho[i]   = RMISSING;
+      }
+    }
+    
+    float dz = static_cast<float> (timeSimboxConstThick->getdz()*timeSimboxConstThick->getRelThick(ipos[0],jpos[0]));
+    Kriging1D::krigVector(vtAlpha, vtAlphaBg, nz, dz);
+    Kriging1D::krigVector(vtBeta, vtBetaBg, nz, dz);
+    Kriging1D::krigVector(vtRho, vtRhoBg, nz, dz);
+    
+    for(int i=0;i<nz;i++)
+    {
+      alpha_rAmp[i] = vtAlpha[i] - vtAlphaBg[i];
+      beta_rAmp[i] = vtBeta[i] - vtBetaBg[i];
+      rho_rAmp[i] = vtRho[i] - vtRhoBg[i];
+    }
+    
+    int j = nz-1;
+    float diffa = (alpha_rAmp[0]-alpha_rAmp[j])/(nzp-j-1);
+    float diffb = (beta_rAmp[0]-beta_rAmp[j])/(nzp-j-1);
+    float diffr = (rho_rAmp[0]-rho_rAmp[j])/(nzp-j-1);
 
-      const int * ipos = bw->getIpos();
-      const int * jpos = bw->getJpos();
-      const int * kpos = bw->getKpos();
+    // Padding
+    for(int i=nz;i<nzp;i++)
+    {
+      alpha_rAmp[i] = alpha_rAmp[j]+(i-j)*diffa;
+      beta_rAmp[i] = beta_rAmp[j]+(i-j)*diffb;
+      rho_rAmp[i] = rho_rAmp[j]+(i-j)*diffr;
+    }
+
+    // Fourier transform of alphadiff,betadiff,rhodiff    
+    rfftwnd_one_real_to_complex(p1, alpha_rAmp, alpha_cAmp);
+    rfftwnd_one_real_to_complex(p1, beta_rAmp, beta_cAmp);
+    rfftwnd_one_real_to_complex(p1, rho_rAmp, rho_cAmp);
+    
+    //loop over frequencies, create 3*3 matrices, and the filter
+    fftw_complex **sigmaK = new fftw_complex*[3];
+    fftw_complex **sigmaE = new fftw_complex*[3];
+    fftw_complex *paramvec = new fftw_complex[3];
+    fftw_complex *help = new fftw_complex[3];
+    int ok;
+    double **F = new double*[3];
+    
+    for(int i=0;i<3;i++){
+      sigmaK[i] = new fftw_complex[3];
+      sigmaE[i] = new fftw_complex[3];
+      F[i] =new double[3];
+    }
+    
+    for(int w=0;w<nzp/2+1;w++)
+    {
+      //  if(corrprior_cAmp[w].re<delta)
+      //    corrprior_cAmp[w].re = 0.0;
+      sigmaK[0][0].re = corrprior_cAmp[w].re*sigma0[0][0];
+      //sigmaK[0][0].im = corrprior_cAmp[w].im*sigma0_[0][0];
+      sigmaK[0][0].im = 0.0;
+      sigmaK[1][1].re = corrprior_cAmp[w].re*sigma0[1][1];
+      //sigmaK[1][1].im = corrprior_cAmp[w].im*sigma0_[1][1];
+      sigmaK[1][1].im = 0.0;
+      sigmaK[2][2].re = corrprior_cAmp[w].re*sigma0[2][2];
+      //sigmaK[2][2].im = corrprior_cAmp[w].im*sigma0_[2][2];
+      sigmaK[2][2].im = 0.0;
+      sigmaK[1][0].re = corrprior_cAmp[w].re*sigma0[1][0];
+      //sigmaK[1][0].im = corrprior_cAmp[w].im*sigma0_[1][0];
+      sigmaK[1][0].im = 0.0;
+      sigmaK[0][1].re = corrprior_cAmp[w].re*sigma0[1][0];
+      //sigmaK[0][1].im = -corrprior_cAmp[w].im*sigma0_[1][0];
+      sigmaK[0][1].im = 0.0;
+      sigmaK[2][0].re = corrprior_cAmp[w].re*sigma0[2][0];
+      //sigmaK[2][0].im = corrprior_cAmp[w].im*sigma0_[2][0];
+      sigmaK[2][0].im = 0.0;
+      sigmaK[0][2].re = corrprior_cAmp[w].re*sigma0[2][0];
+      //sigmaK[0][2].im = -corrprior_cAmp[w].im*sigma0_[2][0];
+      sigmaK[0][2].im = 0.0;
+      sigmaK[1][2].re = corrprior_cAmp[w].re*sigma0[1][2];
+      //sigmaK[1][2].im = corrprior_cAmp[w].im*sigma0_[1][2];
+      sigmaK[1][2].im = 0.0;
+      sigmaK[2][1].re = corrprior_cAmp[w].re*sigma0[1][2];
+      //sigmaK[2][1].im = -corrprior_cAmp[w].im*sigma0_[1][2];
+      sigmaK[2][1].im = 0.0;
       
+      sigmaE[0][0].re = sigmaK[0][0].re - postcova_cAmp[w].re;
+      sigmaE[0][0].im = sigmaK[0][0].im - postcova_cAmp[w].im;
+      sigmaE[1][1].re = sigmaK[1][1].re - postcovb_cAmp[w].re;
+      sigmaE[1][1].im = sigmaK[1][1].im - postcovb_cAmp[w].im;
+      sigmaE[2][2].re = sigmaK[2][2].re - postcovr_cAmp[w].re;
+      sigmaE[2][2].im = sigmaK[2][2].im - postcovr_cAmp[w].im;
+      sigmaE[0][1].re = sigmaK[0][1].re - postcovab_cAmp[w].re;
+      sigmaE[0][1].im = sigmaK[0][1].im - postcovab_cAmp[w].im;
+      sigmaE[1][0].re = sigmaE[0][1].re;
+      sigmaE[1][0].im = -sigmaE[0][1].im;
+      sigmaE[0][2].re = sigmaK[0][2].re - postcovar_cAmp[w].re;
+      sigmaE[0][2].im = sigmaK[0][2].im - postcovar_cAmp[w].im;
+      sigmaE[2][0].re = sigmaE[0][2].re;
+      sigmaE[2][0].im = -sigmaE[0][2].im;
+      sigmaE[1][2].re = sigmaK[1][2].re - postcovbr_cAmp[w].re;
+      sigmaE[1][2].im = sigmaK[1][2].im - postcovbr_cAmp[w].im;
+      sigmaE[2][1].re = sigmaE[1][2].re;
+      sigmaE[2][1].im = -sigmaE[1][2].im;
+      
+      //Do cholesky of sigmaK
+      ok = lib_matrCholCpx(3,sigmaK);
+      if(ok==0 && (w*domega > lowCut && w*domega < highCut) )
+      {
+        calcFilter(sigmaK, sigmaE, F);
+        //apply filter on alpha, beta, rho
+        paramvec[0] = alpha_cAmp[w];
+        paramvec[1] = beta_cAmp[w];
+        paramvec[2] = rho_cAmp[w];
+        lib_matrProdMatRVecCpx(F, paramvec, 3,3, help);
+        alpha_cAmp[w] = help[0];
+        beta_cAmp[w] = help[1];
+        rho_cAmp[w] = help[2];
+      }
+      else
+      {
+        alpha_cAmp[w].re = 0.0;
+        beta_cAmp[w].re = 0.0;
+        rho_cAmp[w].re = 0.0;
+        alpha_cAmp[w].im = 0.0;
+        beta_cAmp[w].im = 0.0;
+        rho_cAmp[w].im = 0.0;
+      }
+    }   
+    
+    // do inverse fourier transform, and add background model
+    rfftwnd_plan p2 = rfftwnd_create_plan(1, &nzp, FFTW_COMPLEX_TO_REAL, FFTW_ESTIMATE | FFTW_IN_PLACE);
+    rfftwnd_one_complex_to_real(p2, alpha_cAmp, alpha_rAmp);
+    rfftwnd_one_complex_to_real(p2, beta_cAmp, beta_rAmp);
+    rfftwnd_one_complex_to_real(p2, rho_cAmp, rho_rAmp);
+
+    for(int i=0;i<nz;i++)
+    {
+      vtAlphaFiltered_[w1][i] = alpha_rAmp[i]/nzp + vtAlphaBg[i];
+      vtBetaFiltered_[w1][i]  = beta_rAmp[i]/nzp  + vtBetaBg[i];
+      vtRhoFiltered_[w1][i]   = rho_rAmp[i]/nzp   + vtRhoBg[i];
+      vtAlpha_[w1][i]         = vtAlpha[i];
+      vtBeta_[w1][i]          = vtBeta[i];
+      vtRho_[w1][i]           = vtRho[i];
+    }
+
+    // Set the filtered vertical trends as logs in original simbox
+    double x0,y0,z0;
+    timeSimboxConstThick->getCoord(ipos[0],jpos[0],kpos[0],x0,y0,z0);
+    bwOrig->setLogFromVerticalTrend(vtAlphaFiltered_[w1],z0,dz,nz,"ALPHA_SEISMIC_RESOLUTION");
+    bwOrig->setLogFromVerticalTrend(vtBetaFiltered_[w1],z0,dz,nz,"BETA_SEISMIC_RESOLUTION");
+    bwOrig->setLogFromVerticalTrend(vtRhoFiltered_[w1],z0,dz,nz,"RHO_SEISMIC_RESOLUTION");
+
+    //
+    //Subtract background model if the relative method is used.
+    //
+    if (relative == 1) 
+    {
       for(int i=0;i<nz;i++)
       {
-        timeSimboxConstThick->getCoord(ipos[0],jpos[0],kpos[0]+i,x,y,z);
-        insideOrigSimbox = timeSimboxPropThick->getIndex(x,y,z);
-        if(vtAlpha[i]!=RMISSING && vtBeta[i]!=RMISSING && vtRho[i]!=RMISSING && insideOrigSimbox!=IMISSING && faciesprob_==true)
-          facieslog_[i+w1*nz] = vtFacies[i];
-        else
-          facieslog_[i+w1*nz] = IMISSING;
+        vtAlphaFiltered_[w1][i] -= vtAlphaBg[i];
+        vtBetaFiltered_[w1][i]  -= vtBetaBg[i];
+        vtRhoFiltered_[w1][i]   -= vtRhoBg[i];
       }
-      
-      float dz = static_cast<float> (timeSimboxConstThick->getdz()*timeSimboxConstThick->getRelThick(ipos[0],jpos[0]));
-      Kriging1D::krigVector(vtAlpha, vtAlphaBg, nz, dz);
-      Kriging1D::krigVector(vtBeta, vtBetaBg, nz, dz);
-      Kriging1D::krigVector(vtRho, vtRhoBg, nz, dz);
-      timeSimboxConstThick->getCoord(ipos[0],jpos[0],kpos[0],x,y,z);
+    }
 
-      for(int i=0;i<nz;i++)
-      {
-        alpha_rAmp[i] = vtAlpha[i] - vtAlphaBg[i];
-        beta_rAmp[i] = vtBeta[i] - vtBetaBg[i];
-        rho_rAmp[i] = vtRho[i] - vtRhoBg[i];
-        
-        fprintf(file2,"%d %f %f %f %f %d\n",w1, z+i*dz,vtAlpha[i], vtBeta[i], vtRho[i],facieslog_[i+w1*nz]);
-        fprintf(file3,"%d %f %f %f %f %d\n",w1, z+i*dz,vtAlphaBg[i], vtBetaBg[i], vtRhoBg[i],facieslog_[i+w1*nz] );
-      }
-      
-      int j = nz-1;
-      float diffa = (alpha_rAmp[0]-alpha_rAmp[j])/(nzp-j-1);
-      float diffb = (beta_rAmp[0]-beta_rAmp[j])/(nzp-j-1);
-      float diffr = (rho_rAmp[0]-rho_rAmp[j])/(nzp-j-1);
-      //  for(i=sBW[w1]->GetNumberOfObs();i<nzp_;i++) // do padding
-      for(int i=nz;i<nzp;i++)
-      {
-        alpha_rAmp[i] = alpha_rAmp[j]+(i-j)*diffa;
-        beta_rAmp[i] = beta_rAmp[j]+(i-j)*diffb;
-        rho_rAmp[i] = rho_rAmp[j]+(i-j)*diffr;
-      }
-      // do fourier transform of alphadiff,betadiff,rhodiff
-      
-      rfftwnd_one_real_to_complex(p1, alpha_rAmp, alpha_cAmp);
-      rfftwnd_one_real_to_complex(p1, beta_rAmp, beta_cAmp);
-      rfftwnd_one_real_to_complex(p1, rho_rAmp, rho_cAmp);
-      
-      //loop over frequencies, create 3*3 matrices, and the filter
-      fftw_complex **sigmaK = new fftw_complex*[3];
-      fftw_complex **sigmaE = new fftw_complex*[3];
-      fftw_complex *paramvec = new fftw_complex[3];
-      fftw_complex *help = new fftw_complex[3];
-      int ok;
-      double **F = new double*[3];
-      
-      for(int i=0;i<3;i++){
-        sigmaK[i] = new fftw_complex[3];
-        sigmaE[i] = new fftw_complex[3];
-        F[i] =new double[3];
-      }
-
-      for(int w=0;w<nzp/2+1;w++)
-      {
-        //  if(corrprior_cAmp[w].re<delta)
-        //    corrprior_cAmp[w].re = 0.0;
-        sigmaK[0][0].re = corrprior_cAmp[w].re*sigma0[0][0];
-        //sigmaK[0][0].im = corrprior_cAmp[w].im*sigma0_[0][0];
-        sigmaK[0][0].im = 0.0;
-        sigmaK[1][1].re = corrprior_cAmp[w].re*sigma0[1][1];
-        //sigmaK[1][1].im = corrprior_cAmp[w].im*sigma0_[1][1];
-        sigmaK[1][1].im = 0.0;
-        sigmaK[2][2].re = corrprior_cAmp[w].re*sigma0[2][2];
-        //sigmaK[2][2].im = corrprior_cAmp[w].im*sigma0_[2][2];
-        sigmaK[2][2].im = 0.0;
-        sigmaK[1][0].re = corrprior_cAmp[w].re*sigma0[1][0];
-        //sigmaK[1][0].im = corrprior_cAmp[w].im*sigma0_[1][0];
-        sigmaK[1][0].im = 0.0;
-        sigmaK[0][1].re = corrprior_cAmp[w].re*sigma0[1][0];
-        //sigmaK[0][1].im = -corrprior_cAmp[w].im*sigma0_[1][0];
-        sigmaK[0][1].im = 0.0;
-        sigmaK[2][0].re = corrprior_cAmp[w].re*sigma0[2][0];
-        //sigmaK[2][0].im = corrprior_cAmp[w].im*sigma0_[2][0];
-        sigmaK[2][0].im = 0.0;
-        sigmaK[0][2].re = corrprior_cAmp[w].re*sigma0[2][0];
-        //sigmaK[0][2].im = -corrprior_cAmp[w].im*sigma0_[2][0];
-        sigmaK[0][2].im = 0.0;
-        sigmaK[1][2].re = corrprior_cAmp[w].re*sigma0[1][2];
-        //sigmaK[1][2].im = corrprior_cAmp[w].im*sigma0_[1][2];
-        sigmaK[1][2].im = 0.0;
-        sigmaK[2][1].re = corrprior_cAmp[w].re*sigma0[1][2];
-        //sigmaK[2][1].im = -corrprior_cAmp[w].im*sigma0_[1][2];
-        sigmaK[2][1].im = 0.0;
-
-        sigmaE[0][0].re = sigmaK[0][0].re - postcova_cAmp[w].re;
-        sigmaE[0][0].im = sigmaK[0][0].im - postcova_cAmp[w].im;
-        sigmaE[1][1].re = sigmaK[1][1].re - postcovb_cAmp[w].re;
-        sigmaE[1][1].im = sigmaK[1][1].im - postcovb_cAmp[w].im;
-        sigmaE[2][2].re = sigmaK[2][2].re - postcovr_cAmp[w].re;
-        sigmaE[2][2].im = sigmaK[2][2].im - postcovr_cAmp[w].im;
-        sigmaE[0][1].re = sigmaK[0][1].re - postcovab_cAmp[w].re;
-        sigmaE[0][1].im = sigmaK[0][1].im - postcovab_cAmp[w].im;
-        sigmaE[1][0].re = sigmaE[0][1].re;
-        sigmaE[1][0].im = -sigmaE[0][1].im;
-        sigmaE[0][2].re = sigmaK[0][2].re - postcovar_cAmp[w].re;
-        sigmaE[0][2].im = sigmaK[0][2].im - postcovar_cAmp[w].im;
-        sigmaE[2][0].re = sigmaE[0][2].re;
-        sigmaE[2][0].im = -sigmaE[0][2].im;
-        sigmaE[1][2].re = sigmaK[1][2].re - postcovbr_cAmp[w].re;
-        sigmaE[1][2].im = sigmaK[1][2].im - postcovbr_cAmp[w].im;
-        sigmaE[2][1].re = sigmaE[1][2].re;
-        sigmaE[2][1].im = -sigmaE[1][2].im;
-        
-        //Do cholesky of sigmaK
-        ok = lib_matrCholCpx(3,sigmaK);
-        if(ok==0 && (w*domega > lowCut && w*domega < highCut) )
-        {
-          calcFilter(sigmaK, sigmaE, F);
-          //apply filter on alpha, beta, rho
-          paramvec[0] = alpha_cAmp[w];
-          paramvec[1] = beta_cAmp[w];
-          paramvec[2] = rho_cAmp[w];
-          lib_matrProdMatRVecCpx(F, paramvec, 3,3, help);
-          alpha_cAmp[w] = help[0];
-          beta_cAmp[w] = help[1];
-          rho_cAmp[w] = help[2];
-        }
-        else
-        {
-          alpha_cAmp[w].re = 0.0;
-          beta_cAmp[w].re = 0.0;
-          rho_cAmp[w].re = 0.0;
-          alpha_cAmp[w].im = 0.0;
-          beta_cAmp[w].im = 0.0;
-          rho_cAmp[w].im = 0.0;
-        }
-      }   
-      
-      // do inverse fourier transform, and add background model
-      rfftwnd_plan p2 = rfftwnd_create_plan(1, &nzp, FFTW_COMPLEX_TO_REAL, FFTW_ESTIMATE | FFTW_IN_PLACE);
-      rfftwnd_one_complex_to_real(p2, alpha_cAmp, alpha_rAmp);
-      rfftwnd_one_complex_to_real(p2, beta_cAmp, beta_rAmp);
-      rfftwnd_one_complex_to_real(p2, rho_cAmp, rho_rAmp);
-      // Add background model to filtered data if not relative method is used.
-      
-      timeSimboxConstThick->getCoord(ipos[0],jpos[0],kpos[0],x,y,z);
-      
-      for(int i=0;i<nz;i++)
-      {
-        alphafiltered_[i+w1*nz] = alpha_rAmp[i]/nzp+(1-relative)*vtAlphaBg[i];
-        betafiltered_[i+w1*nz] = beta_rAmp[i]/nzp+(1-relative)*vtBetaBg[i];
-        rhofiltered_[i+w1*nz] = rho_rAmp[i]/nzp+(1-relative)*vtRhoBg[i];
-        alphablock_[i+w1*nz] = vtAlpha[i];
-        betablock_[i+w1*nz] = vtBeta[i];
-        rhoblock_[i+w1*nz] = vtRho[i];
-        fprintf(file,"%d %f %f %f %f %d \n",w1, z+dz*i,
-                alphafiltered_[i+w1*nz],
-                betafiltered_[i+w1*nz],
-                rhofiltered_[i+w1*nz],
-                facieslog_[i+w1*nz]);   
-      }
-      fftwnd_destroy_plan(p2);
-
-
-      for(int i=0;i<3;i++)
-      {
-        delete [] sigmaK[i];
-        delete [] sigmaE[i];
-        delete [] F[i];
-      }
-      delete [] sigmaK;
-      delete [] sigmaE;
-      delete [] F;
-      delete [] help;
-      delete [] paramvec;
-    } // end if
+    fftwnd_destroy_plan(p2);
+    for(int i=0;i<3;i++)
+    {
+      delete [] sigmaK[i];
+      delete [] sigmaE[i];
+      delete [] F[i];
+    }
+    delete [] sigmaK;
+    delete [] sigmaE;
+    delete [] F;
+    delete [] help;
+    delete [] paramvec;
   } //end for wells
-  // Calculate min and max
-  fclose(file);
-  fclose(file2);
-  fclose(file3);
+
   fftwnd_destroy_plan(p1);
 
   delete [] vtAlpha;            // vt = vertical trend
   delete [] vtBeta;
   delete [] vtRho;
-  delete [] vtFacies;
 
   delete [] vtAlphaBg;          // vt = vertical trend
   delete [] vtBetaBg;
@@ -453,28 +443,28 @@ void FilterWellLogs::doFiltering(WellData   ** wells,
 }
 
 void
-FilterWellLogs::extrapolate(float * log,
-                        int     nz) 
+FilterWellLogs::extrapolate(float * blockedLog,
+                            int     nz) 
 {
   //
-  // Extrapolate log[] in both ends if needed
+  // Extrapolate blockedLog[] in both ends if needed
   //  
   int i=0;
-  while (i<nz && log[i]==RMISSING)
+  while (i<nz && blockedLog[i]==RMISSING)
     i++;
   if (i < nz - 1) 
   { 
     int first_nonmissing = i;
     i = nz - 1;
-    while (i>0 && log[i]==RMISSING)
+    while (i>0 && blockedLog[i]==RMISSING)
       i--;
     int last_nonmissing = i;
     
     for(int i=0 ; i < first_nonmissing ; i++) { 
-      log[i] = log[first_nonmissing]; 
+      blockedLog[i] = blockedLog[first_nonmissing]; 
     }
     for(int i=last_nonmissing + 1 ; i < nz ; i++) { 
-      log[i] = log[last_nonmissing]; 
+      blockedLog[i] = blockedLog[last_nonmissing]; 
     }
    
   }

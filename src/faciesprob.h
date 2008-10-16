@@ -14,6 +14,7 @@ class CKrigingAdmin;
 class KrigingData;
 class ModelSettings;
 class FilterWellLogs;
+class WellData;
 
 class FaciesProb
 {
@@ -22,7 +23,8 @@ public:
              int filegrid, float ** sigma0, float *corrprior, 
              int nzp, int nz, 
              FFTGrid* bgAlpha, FFTGrid* bgBeta, FFTGrid* bgRho, 
-             RandomGen *random, float p_undef, float *priorFacies);
+             float p_undef, float *priorFacies,
+             int nWells);
   ~FaciesProb();
   float        ** makeFaciesHistAndSetPriorProb(float* alphafiltered_,float* betafiltered_,float* rhofiltered_,int* facieslog_);
   void            makeFaciesDens(int nfac);
@@ -34,11 +36,14 @@ public:
   void            makeFaciesDens2(int nfac);// PCUBE
 
   void            calculateConditionalFaciesProb(WellData **wells, int nwells);
-  void            setFilteredLogs(FilterWellLogs *filterlogs);
+  void            setNeededLogs(FilterWellLogs *filterlogs,
+                                WellData ** wells,
+                                int nWells,
+                                int nz,
+                                RandomGen * random);
   void            setSigmaPost(FFTGrid *postCovAlpha, FFTGrid *postCovBeta, FFTGrid *postCovRho, FFTGrid *postCrCovAlphaBeta,
                                FFTGrid *postCrCovAlphaRho, FFTGrid *postCrCovBetaRho);
 private:
-  
   void            getMinMax(float* alpha,float* beta,float* rho,int* facies);
   void            calculateVariances(float* alpha,float* beta,float* rho,int* facies);
   
@@ -80,8 +85,6 @@ private:
   float           meanA_;
   float           meanB_; 
   float           meanR_;   // means
-
-  RandomGen     * random_;
 
   float           p_undefined_;
   float         * priorFacies_;

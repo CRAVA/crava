@@ -26,13 +26,13 @@ FaciesProb::FaciesProb(ModelSettings * modelSettings,
                        int filegrid, float ** sigma0, float *corrprior, 
                        int nzp, int nz, 
                        FFTGrid* bgAlpha, FFTGrid* bgBeta, FFTGrid* bgRho, 
-                       RandomGen *random, float p_undef, float *priorFacies)
+                       float p_undef, float *priorFacies,
+                       int nWells)
 {
   modelSettings_ = modelSettings;
   fileGrid_      = filegrid;
   nzp_           = nzp;
   nz_            = nz;
-  random_        = random;
   p_undefined_   = p_undef;
   priorFacies_   = priorFacies;
 
@@ -59,6 +59,7 @@ FaciesProb::FaciesProb(ModelSettings * modelSettings,
   corrprior_ = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp));
   for(int i=0;i<nzp_;i++)
     corrprior_[i] =corrprior[i];
+
 }
 
 FaciesProb::~FaciesProb()
@@ -72,6 +73,7 @@ FaciesProb::~FaciesProb()
   delete [] sigmaPost_;
 
   delete [] priorFacies_;
+
   for(int i=0;i<nFacies_;i++)
   {
     delete density_[i]; 
@@ -84,6 +86,14 @@ FaciesProb::~FaciesProb()
   delete bgAlpha_;
   delete bgBeta_;
   delete bgRho_;
+
+  delete [] alphafiltered_;
+  delete [] betafiltered_;
+  delete [] rhofiltered_;
+  delete [] alphablock_;
+  delete [] betablock_;
+  delete [] rhoblock_;
+  delete [] facieslog_;
 
   fftw_free(corrprior_);
 }
@@ -948,47 +958,79 @@ void FaciesProb::calculateVariances(float* alpha,float* beta,float* rho,int* fac
   varAlpha_ /= nA-1;
   varBeta_ /= nB-1;
   varRho_ /= nR-1;
-
 }
 
 
-void FaciesProb::setFilteredLogs(FilterWellLogs *filterlogs)
+void FaciesProb::setNeededLogs(FilterWellLogs * filteredLogs,
+                               WellData      ** wells,
+                               int              nWells,
+                               int              nz,
+                               RandomGen      * random)
 {
-  alphafiltered_ = filterlogs->getAlphaFiltered();
-  betafiltered_ = filterlogs->getBetaFiltered(); 
-  rhofiltered_ = filterlogs->getRhoFiltered();
-  alphablock_ = filterlogs->getAlphaBlock();
-  betablock_ = filterlogs->getBetaBlock();
-  rhoblock_ = filterlogs->getRhoBlock();
-  facieslog_ = filterlogs->getFaciesLog();
-  ndata_ = filterlogs->getNdata();
+  float ** vtAlphaFiltered = filteredLogs->getVtAlphaFiltered(); 
+  float ** vtBetaFiltered  = filteredLogs->getVtBetaFiltered(); 
+  float ** vtRhoFiltered   = filteredLogs->getVtRhoFiltered(); 
 
-  //
-  // NBNB-PAL: Her må vi sample dataene i blokkene
-  //
-  /*
-  for (int w = 0 ; w < nWells ; w++)
+  float ** vtAlpha         = filteredLogs->getVtAlpha(); 
+  float ** vtBeta          = filteredLogs->getVtBeta(); 
+  float ** vtRho           = filteredLogs->getVtRho(); 
+
+  int    * vtFacies        = new int[nz];
+
+  ndata_ = nWells*nz;
+
+  alphafiltered_ = new float[ndata_];
+  betafiltered_  = new float[ndata_];
+  rhofiltered_   = new float[ndata_];
+  alphablock_    = new float[ndata_];
+  betablock_     = new float[ndata_];
+  rhoblock_      = new float[ndata_];
+  facieslog_     = new int[ndata_];
+
+  for(int i=0;i<ndata_;i++)
+  {
+    alphafiltered_[i] = RMISSING;
+    betafiltered_[i]  = RMISSING;
+    rhofiltered_[i]   = RMISSING;
+    alphablock_[i]    = RMISSING;
+    betablock_[i]     = RMISSING;
+    rhoblock_[i]      = RMISSING;
+    facieslog_[i]     = IMISSING;
+  }
+
+  for (int w=0 ; w<nWells ; w++)
   {
     if(wells[w]->getUseForFaciesProbabilities())
     { 
-      const int * ipos = bw->getIpos();
-      const int * jpos = bw->getJpos();
-      const int * kpos = bw->getKpos();
-      
-      for(int i=0;i<nz;i++)
+      BlockedLogs * bw = wells[w]->getBlockedLogsConstThick();
+      bw->getVerticalTrend(bw->getFacies(),vtFacies,random);
+
+      //
+      // Set facies log MISSING unless all parameters are defined
+      //
+      for(int i=0 ; i<nz ; i++)
+        if(vtAlpha[w][i] == RMISSING || vtBeta[w][i] == RMISSING || vtRho[w][i] == RMISSING)
+          vtFacies[i] = IMISSING;
+
+      //
+      // Fill block
+      //     
+      for(int i=0 ; i<nz ; i++)
       {
-        timeSimboxConstThick->getCoord(ipos[0],jpos[0],kpos[0]+i,x,y,z);
-        insideOrigSimbox = timeSimboxPropThick->getIndex(x,y,z);
-        if(vtAlpha[i]!=RMISSING && vtBeta[i]!=RMISSING && vtRho[i]!=RMISSING && insideOrigSimbox!=IMISSING && faciesprob_==true)
-          facieslog_[i+w1*nz] = vtFacies[i];
-        else
-          facieslog_[i+w1*nz] = IMISSING;
+        alphafiltered_[i+w*nz] = vtAlphaFiltered[w][i];
+        betafiltered_[i+w*nz]  = vtBetaFiltered[w][i];
+        rhofiltered_[i+w*nz]   = vtRhoFiltered[w][i];
+        alphablock_[i+w*nz]    = vtAlpha[w][i];
+        betablock_[i+w*nz]     = vtBeta[w][i];
+        rhoblock_[i+w*nz]      = vtRho[w][i];  
+        facieslog_[i+w*nz]     = vtFacies[i];
       }
     }
-  }      
-  */
-
+  } 
+  delete [] vtFacies;
 }
+
+
 void FaciesProb::setSigmaPost(FFTGrid *postCovAlpha, FFTGrid *postCovBeta, FFTGrid *postCovRho, FFTGrid *postCrCovAlphaBeta,
                                FFTGrid *postCrCovAlphaRho, FFTGrid *postCrCovBetaRho)
 {

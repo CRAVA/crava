@@ -16,6 +16,7 @@
 #include "src/crava.h"
 #include "src/fftgrid.h"
 #include "src/simbox.h"
+#include "src/welldata.h"
 #include "src/filterwelllogs.h"
 
 int main(int argc, char** argv)
@@ -112,6 +113,14 @@ int main(int argc, char** argv)
       }
       
       crava->computeFaciesProb(filteredlogs);
+
+      //
+      // Temprary placement.  crava.cpp needs a proper restructuring.
+      //
+      WellData ** wells = model->getWells();
+      for (int i=0 ; i<model->getModelSettings()->getNumberOfWells() ; i++)
+        wells[i]->getBlockedLogsPropThick()->writeRMSWell(model->getModelSettings());
+
 
       delete [] warningText;
       delete filteredlogs;

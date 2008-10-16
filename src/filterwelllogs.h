@@ -7,7 +7,6 @@
 
 class FFTGrid;
 class Simbox;
-class RandomGen;
 class ModelSettings;
 class CKrigingAdmin;
 class KrigingData;
@@ -15,53 +14,66 @@ class KrigingData;
 class FilterWellLogs
 {
 public:
-  FilterWellLogs(FFTGrid *postCovAlpha, FFTGrid *postCovBeta, FFTGrid *postCovRho, FFTGrid *postCrCovAlphaBeta,
-                 FFTGrid *postCrCovAlphaRho, FFTGrid *postCrCovBetaRho, int nzp, int nz, WellData ** wells, int nWells, 
-                 float lowCut, float highCut, int relative,
-                 const Simbox * timeSimboxConstThick, 
+  FilterWellLogs(const Simbox * timeSimboxConstThick, 
                  const Simbox * timeSimboxPropThick, 
-                 RandomGen *random, float *corrprior, float ** sigma0, bool faciesprob);
+                 FFTGrid      * postCovAlpha, 
+                 FFTGrid      * postCovBeta, 
+                 FFTGrid      * postCovRho, 
+                 FFTGrid      * postCrCovAlphaBeta,
+                 FFTGrid      * postCrCovAlphaRho, 
+                 FFTGrid      * postCrCovBetaRho, 
+                 float        * corrprior, 
+                 float       ** sigma0,
+                 int            nzp, 
+                 int            nz, 
+                 WellData    ** wells, 
+                 int            nWells, 
+                 float          lowCut, 
+                 float          highCut, 
+                 int            relative);
   ~FilterWellLogs();
 
-  float * getAlphaFiltered() { return alphafiltered_ ;}
-  float * getBetaFiltered()  { return betafiltered_  ;}
-  float * getRhoFiltered()   { return rhofiltered_   ;}
-  float * getAlphaBlock()    { return alphablock_    ;}
-  float * getBetaBlock()     { return betablock_     ;}
-  float * getRhoBlock()      { return rhoblock_      ;}
-  int   * getFaciesLog()     { return facieslog_     ;}
-  int     getNdata()         { return ndata_         ;} 
+  float       ** getVtAlphaFiltered() const { return vtAlphaFiltered_ ;}
+  float       ** getVtBetaFiltered()  const { return vtBetaFiltered_  ;}
+  float       ** getVtRhoFiltered()   const { return vtRhoFiltered_   ;}
+
+  float       ** getVtAlpha()         const { return vtAlpha_       ;}
+  float       ** getVtBeta()          const { return vtBeta_        ;}
+  float       ** getVtRho()           const { return vtRho_         ;}
 
 private:
-  void doFiltering(WellData **wells, int nWells,
-                   fftw_real *postcova, fftw_real *postcovb, fftw_real *postcovr,
-                   fftw_real *postcrab, fftw_real *postcrar, fftw_real *postcrbr, 
-                   float lowCut, float highCut, int relative, int nz, int nzp, 
-                   const Simbox * timeSimboxConstThick, 
-                   const Simbox * timeSimboxPropThick, 
-                   RandomGen *random, float ** sigma0);
-  void extrapolate(float * log,
-                   int     nz) ;
-  void calcFilter(fftw_complex **sigmaK, fftw_complex **sigmaE, double **F);
+  void           doFiltering(const Simbox    * timeSimboxConstThick, 
+                             const Simbox    * timeSimboxPropThick, 
+                             WellData       ** wells, 
+                             int               nWells,
+                             float          ** sigma0,
+                             fftw_real       * postcova, 
+                             fftw_real       * postcovb, 
+                             fftw_real       * postcovr,
+                             fftw_real       * postcrab, 
+                             fftw_real       * postcrar, 
+                             fftw_real       * postcrbr, 
+                             fftw_real       * corrprior,
+                             float             lowCut, 
+                             float             highCut, 
+                             int               relative, 
+                             int               nz, 
+                             int               nzp);
+  void           extrapolate(float * log,
+                             int     nz) ;
+  void           calcFilter(fftw_complex ** sigmaK, 
+                            fftw_complex ** sigmaE, 
+                            double       ** F);
 
+  float       ** vtAlphaFiltered_;
+  float       ** vtBetaFiltered_; 
+  float       ** vtRhoFiltered_;
 
-  //float         * vtAlphaFiltered_;
-  //float         * vtBetaFiltered_; 
-  //float         * vtRhoFiltered_;
+  float       ** vtAlpha_;
+  float       ** vtBeta_;
+  float       ** vtRho_; 
 
-  float         * alphafiltered_;
-  float         * betafiltered_; 
-  float         * rhofiltered_;
-
-  float         * alphablock_;
-  float         * betablock_;
-  float         * rhoblock_;
-
-  int           * facieslog_;
-  fftw_real     * corrprior_;
-  bool            faciesprob_;
-
-  int             ndata_;
+  const int      nWells_;
 };
 #endif
 

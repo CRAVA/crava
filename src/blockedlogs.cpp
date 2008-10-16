@@ -545,6 +545,88 @@ BlockedLogs::getBlockedGrid(FFTGrid * grid,
 }
 
 //------------------------------------------------------------------------------
+void           
+BlockedLogs::setLogFromVerticalTrend(float      * vertical_trend, 
+                                     double       z0,              // z-value of center in top layer
+                                     double       dz,              // dz in vertical trend
+                                     int          nz,              // layers in vertical trend
+                                     std::string  type)                  
+{
+
+  float * blockedLog = new float[nBlocks_];
+
+  setLogFromVerticalTrend(blockedLog, zpos_, nBlocks_, 
+                          vertical_trend, z0, dz, nz);
+
+
+  if (type == "ALPHA_SEISMIC_RESOLUTION")
+    alpha_seismic_resolution_ = blockedLog;
+  else if (type == "BETA_SEISMIC_RESOLUTION")
+    beta_seismic_resolution_ = blockedLog;
+  else if (type == "RHO_SEISMIC_RESOLUTION")
+    rho_seismic_resolution_ = blockedLog;
+  else {
+    LogKit::LogFormatted(LogKit::ERROR,"\nUnknown log type \"%s\" in BlockedLogs::setLogFromVerticalTrend()\n",
+                         type.c_str());
+    exit(1);
+  }
+}
+
+//------------------------------------------------------------------------------
+void           
+BlockedLogs::setLogFromVerticalTrend(float     *& blockedLog,
+                                     double     * zpos, 
+                                     int          nBlocks,
+                                     float      * vertical_trend, 
+                                     double       z0,
+                                     double       dzVt,
+                                     int          nz)
+{
+  //
+  // Initialise as undefined
+  //
+  for (int i=0 ; i<nBlocks ; i++)
+    blockedLog[i] = RMISSING;
+  
+  //
+  // Aritmethic mean of values in overlapping cells
+  //
+  for (int i=0 ; i<nBlocks ; i++) {
+    double dz;
+    if (i==nBlocks-1)
+      dz = zpos[i]-zpos[i-1];
+    else
+      dz = zpos[i+1]-zpos[i];
+    double zi = zpos[i]; 
+    double a  = zi - 0.5*dz;     // Top of blocked log cell
+    double b  = z0 + 0.5*dzVt;   // Base of first vertical trend cell
+    
+    int j=0;
+    while (b<a && j<nz) {
+      b += dzVt;
+      j++;
+    }
+    // Now 'j' is the first vertical trend cell overlapping blocked log cell 'i'
+
+    //
+    // The if below treat end-of-vertical-trend cases and cases where one
+    // single vertical-trend-cell covers a blocked log cell completely.
+    //
+    float value;
+    if (j==nz || b > a+dz) {
+      value = vertical_trend[j]; 
+    }
+    else {
+      double zj = b + 0.5*dzVt; // Center of vertical trend cell
+      value = vertical_trend[j]*(zj+dzVt-zi)/dzVt + vertical_trend[j]*(zi-zj)/dzVt;
+    }
+    blockedLog[i] = value;
+
+    //LogKit::LogFormatted(LogKit::ERROR,"i j  log[i]   %d %d  %7.3f\n",i,j,log[i]);
+  }
+}
+
+//------------------------------------------------------------------------------
 void 
 BlockedLogs::writeToFile(float dz,
                          int   type,
@@ -622,6 +704,7 @@ BlockedLogs::writeToFile(float dz,
   delete [] filename;
 }
 
+//------------------------------------------------------------------------------
 void
 BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
 {
@@ -643,7 +726,7 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
   }
   delete fileName;
 
-  bool gotSeisResPar  = false;
+  bool gotSeisResPar  = true;
   bool gotFacies      = nFacies_ > 0;
   bool gotRealSeismic = real_seismic_data_ != NULL;
   bool gotSyntSeismic = synt_seismic_data_ != NULL;
@@ -709,39 +792,38 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
   // Write LOGS
   //
   for (int i=0 ; i<nBlocks_ ; i++) {
+    file << std::right;
     file << std::setprecision(2);
-    file << xpos_[i] << " " << ypos_[i] << " " << zpos_[i] << " ";
-    file << (alpha_[i]==RMISSING                      ? WELLMISSING : exp(alpha_[i]))                     << " ";
-    file << (alpha_highcut_background_[i]==RMISSING   ? WELLMISSING : exp(alpha_highcut_background_[i]))  << " ";
-    file << (alpha_highcut_seismic_[i]==RMISSING      ? WELLMISSING : exp(alpha_highcut_seismic_[i]))     << " ";
-    if (gotSeisResPar)
-      file << (alpha_seismic_resolution_[i]==RMISSING ? WELLMISSING : exp(alpha_seismic_resolution_[i]))  << " ";
-    file << (beta_[i]==RMISSING                       ? WELLMISSING : exp(beta_[i]))                      << " ";
-    file << (beta_highcut_background_[i]==RMISSING    ? WELLMISSING : exp(beta_highcut_background_[i]))   << " ";
-    file << (beta_highcut_seismic_[i]==RMISSING       ? WELLMISSING : exp(beta_highcut_seismic_[i]))      << " ";
-    if (gotSeisResPar)
-      file << (beta_seismic_resolution_[i]==RMISSING  ? WELLMISSING : exp(beta_seismic_resolution_[i]))   << " ";
-    file << std::setprecision(5);
-    file << (rho_[i]==RMISSING                        ? WELLMISSING : exp(rho_[i]))                       << " ";
-    file << (rho_highcut_background_[i]==RMISSING     ? WELLMISSING : exp(rho_highcut_background_[i]))    << " ";
-    file << (rho_highcut_seismic_[i]==RMISSING        ? WELLMISSING : exp(rho_highcut_seismic_[i]))       << " ";
-    if (gotSeisResPar)
-      file << (rho_seismic_resolution_[i]==RMISSING   ? WELLMISSING : exp(rho_seismic_resolution_[i]))    << " ";
+    file << std::setw(9) << xpos_[i] << " " ;
+    file << std::setw(10)<< ypos_[i] << " ";
+    file << std::setw(7) << zpos_[i] << "  ";
+    file << std::setw(7) << (alpha_[i]==RMISSING                    ? WELLMISSING : exp(alpha_[i]))                    << " ";
+    file << std::setw(7) << (alpha_highcut_background_[i]==RMISSING ? WELLMISSING : exp(alpha_highcut_background_[i])) << " ";
+    file << std::setw(7) << (alpha_highcut_seismic_[i]==RMISSING    ? WELLMISSING : exp(alpha_highcut_seismic_[i]))    << " ";
+    file << std::setw(7) << (alpha_seismic_resolution_[i]==RMISSING ? WELLMISSING : exp(alpha_seismic_resolution_[i])) << "  ";
+    file << std::setw(7) << (beta_[i]==RMISSING                     ? WELLMISSING : exp(beta_[i]))                     << " ";
+    file << std::setw(7) << (beta_highcut_background_[i]==RMISSING  ? WELLMISSING : exp(beta_highcut_background_[i]))  << " ";
+    file << std::setw(7) << (beta_highcut_seismic_[i]==RMISSING     ? WELLMISSING : exp(beta_highcut_seismic_[i]))     << " ";
+    file << std::setw(7) << (beta_seismic_resolution_[i]==RMISSING  ? WELLMISSING : exp(beta_seismic_resolution_[i]))  << "  ";
+    file << std::setw(7) << std::setprecision(5);
+    file << std::setw(7) << (rho_[i]==RMISSING                      ? WELLMISSING : exp(rho_[i]))                      << " ";
+    file << std::setw(7) << (rho_highcut_background_[i]==RMISSING   ? WELLMISSING : exp(rho_highcut_background_[i]))   << " ";
+    file << std::setw(7) << (rho_highcut_seismic_[i]==RMISSING      ? WELLMISSING : exp(rho_highcut_seismic_[i]))      << " ";
+    file << std::setw(7) << (rho_seismic_resolution_[i]==RMISSING   ? WELLMISSING : exp(rho_seismic_resolution_[i]))   << "  ";
     if (gotFacies)
-      file << (facies_[i]==IMISSING                   ? static_cast<int>(WELLMISSING) : facies_[i])       << " ";
+      file << (facies_[i]==IMISSING                                 ? static_cast<int>(WELLMISSING) : facies_[i])      << " ";
     if (gotRealSeismic)
       for (int a=0 ; a<nAngles_ ; a++)
-        file << (real_seismic_data_[a][i]==RMISSING   ? WELLMISSING : real_seismic_data_[a][i])           << " ";
+        file << std::setw(7) << (real_seismic_data_[a][i]==RMISSING ? WELLMISSING : real_seismic_data_[a][i])          << " ";
     if (gotSyntSeismic)
       for (int a=0 ; a<nAngles_ ; a++)
-        file << (synt_seismic_data_[a][i]==RMISSING   ? WELLMISSING : synt_seismic_data_[a][i])           << " ";
+        file << std::setw(7) << (synt_seismic_data_[a][i]==RMISSING ? WELLMISSING : synt_seismic_data_[a][i])          << " ";
     if (gotCpp)
       for (int a=0 ; a<nAngles_ ; a++)
-        file << (cpp_[a][i]==RMISSING                 ? WELLMISSING : cpp_[a][i])                         << " ";
+        file << std::setw(7) << (cpp_[a][i]==RMISSING               ? WELLMISSING : cpp_[a][i])                        << " ";
 
     file << "\n";
   }
-
   file.close();
 }
 
