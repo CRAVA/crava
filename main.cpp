@@ -117,10 +117,11 @@ int main(int argc, char** argv)
       //
       // Temprary placement.  crava.cpp needs a proper restructuring.
       //
-      WellData ** wells = model->getWells();
-      for (int i=0 ; i<model->getModelSettings()->getNumberOfWells() ; i++)
-        wells[i]->getBlockedLogsPropThick()->writeRMSWell(model->getModelSettings());
-
+      if((model->getModelSettings()->getOutputFlag() & ModelSettings::WELLS) > 0) {
+        WellData ** wells = model->getWells();
+        for (int i=0 ; i<model->getModelSettings()->getNumberOfWells() ; i++)
+          wells[i]->getBlockedLogsPropThick()->writeRMSWell(model->getModelSettings());
+      }
 
       delete [] warningText;
       delete filteredlogs;

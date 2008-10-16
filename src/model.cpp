@@ -219,7 +219,7 @@ Model::Model(char * fileName)
           processPriorFaciesProb(priorFacies_,
                                  wells_,
                                  randomGen_,
-                                 modelFile->getTimeNz(),
+                                 timeSimbox_->getnz(),
                                  modelSettings_);
         }
       }
@@ -649,7 +649,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
       timeSimbox->getMinMaxZ(zmin,zmax);
       LogKit::LogFormatted(LogKit::LOW,"\nTime output interval:\n");
       LogKit::LogFormatted(LogKit::LOW,"  Two-way-time          avg / min / max    : %7.1f /%7.1f /%7.1f\n",
-                           zmin+timeSimbox->getlz()*timeSimbox->getAvgRelThick(),
+                           zmin+timeSimbox->getlz()*timeSimbox->getAvgRelThick()*0.5,
                            zmin,zmax); 
       LogKit::LogFormatted(LogKit::LOW,"  Interval thickness    avg / min / max    : %7.1f /%7.1f /%7.1f\n", 
                            timeSimbox->getlz()*timeSimbox->getAvgRelThick(),
@@ -698,7 +698,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
       double zmin, zmax;
       timeSimbox->getMinMaxZ(zmin,zmax);
       LogKit::LogFormatted(LogKit::LOW,"  Two-way-time          avg / min / max    : %7.1f /%7.1f /%7.1f\n",
-                           zmin+timeSimbox->getlz()*timeSimbox->getAvgRelThick(),
+                           zmin+timeSimbox->getlz()*timeSimbox->getAvgRelThick()*0.5,
                            zmin,zmax); 
       LogKit::LogFormatted(LogKit::LOW,"  Interval thickness    avg / min / max    : %7.1f /%7.1f /%7.1f\n", 
                            timeSimbox->getlz()*timeSimbox->getAvgRelThick(),
@@ -855,18 +855,22 @@ Model::setupExtendedTimeSimbox(Simbox   * timeSimbox,
   double dz       = timeCutSimbox->getdz();
   int    nz       = int(thick/dz);
   double residual = thick - nz*dz;
-  shiftBot       += dz-residual;
-  nz++;
+  if (residual > 0.0) {
+    shiftBot += dz-residual;
+    nz++;
+  }
+  if (nz != timeCutSimbox->getnz()) {
+    LogKit::LogFormatted(LogKit::HIGH,"\nNumber of layers in inversion increased from %d",timeCutSimbox->getnz());
+    LogKit::LogFormatted(LogKit::HIGH," to %d in grid created using correlation direction.\n",nz);
+  }
   botSurf->Add(shiftBot);
   botSurf->Add(&(timeSimbox->GetBotSurface()));
-
   timeSimbox->setDepth(topSurf, botSurf, nz);
   NRLib2::WriteStormBinarySurf(*topSurf,"extendedTop.storm");
   NRLib2::WriteStormBinarySurf(*botSurf,"extendedBot.storm");
 
   delete refPlane;
 }
-
 
 double *
 Model::findPlane(Surface * surf)
@@ -1326,7 +1330,6 @@ Model::processWells(WellData     **& wells,
                            timeSimbox->getx0(), timeSimbox->gety0(), 
                            timeSimbox->getlx(), timeSimbox->getly(), 
                            (timeSimbox->getAngle()*180)/PI);
-      LogKit::LogFormatted(LogKit::LOW,"\nAborting\n");
       error = 1;
     }
   }
