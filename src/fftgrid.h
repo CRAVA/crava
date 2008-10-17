@@ -2,6 +2,7 @@
 #define FFTGRID_H
 
 #include <assert.h>
+#include <string>
 
 #include "fft/include/fftw.h"
 #include "definitions.h"
@@ -12,7 +13,6 @@ class Wavelet;
 class Simbox;
 class RandomGen;
 class SegyGeometry;
-
 
 class FFTGrid{
 public:
@@ -86,16 +86,18 @@ public:
   int                  getType() const {return(cubetype_);}
   virtual void         setAccessMode(int mode){assert(mode>=0);}
   virtual void         endAccess(){}
-  virtual void         writeFile(const char * fileName, const Simbox * simbox, bool writeSegy = true, float z0 = 0.0, bool writeStorm = true); //Use this instead of the ones below.
+  virtual void         writeFile(const char * fileName, const Simbox * simbox, const std::string sgriLabel = "NO_LABEL", bool writeSegy = true, float z0 = 0.0, bool writeStorm = true); 
+  //Use this instead of the ones below.
   virtual void         writeStormFile(const char * fileName, const Simbox * simbox, bool ascii = false, 
                                       bool padding = false, bool flat = false);//No mode/randomaccess
   virtual int          writeSegyFile(const char * fileName, const Simbox * simbox, float z0);   //No mode/randomaccess
+  virtual int          writeSgriFile(const char * fileName, const Simbox * simbox, const std::string label);
   virtual void         writeAsciiFile(char * fileName);
   virtual void         writeAsciiRaw(char * fileName);
 
   virtual bool         isFile() {return(0);}    // indicates wether the grid is in memory or on disk  
 
-  enum                 outputFormat{NOOUTPUT = 0, STORMFORMAT = 1, SEGYFORMAT = 2, STORMASCIIFORMAT = 4};
+  enum                 outputFormat{NOOUTPUT = 0, STORMFORMAT = 1, SEGYFORMAT = 2, STORMASCIIFORMAT = 4, SGRIFORMAT = 8};
   void                 setOutputFormat(int format) {formatFlag_ = format;} 
 
   virtual void         createRealGrid();
@@ -146,9 +148,9 @@ protected:
   fftw_real*            invFFT1DzInPlace(fftw_complex* in);
 
   //Interpolation into SegY and sgri
-  float                 getRegularZInterpolatedRealValue(int i, int j, float z0Reg,
-                                                         float dzReg, int kReg,
-                                                         float z0Grid, float dzGrid);
+  float                 getRegularZInterpolatedRealValue(int i, int j, double z0Reg,
+                                                         double dzReg, int kReg,
+                                                         double z0Grid, double dzGrid);
 
   //Supporting functions for interpolateSeismic
   int                   interpolateTrace(int index, short int * flags, int i, int j);

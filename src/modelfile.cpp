@@ -1386,7 +1386,7 @@ ModelFile::readCommandOutput(char ** params, int & pos, char * errText)
     // WARNING: If nKeys becomes larger than 31, we get problems with 
     //          the 'int' data type and have to switch to 'long'
     //
-    int i, key, nKeys = 23;
+    int i, key, nKeys = 24;
     char ** keywords;
     keywords = new char*[nKeys];
     for(i=0;i<nKeys;i++)
@@ -1395,6 +1395,7 @@ ModelFile::readCommandOutput(char ** params, int & pos, char * errText)
     strcpy(keywords[i++],"STORM");
     strcpy(keywords[i++],"SEGY");
     strcpy(keywords[i++],"STORMASCII");
+    strcpy(keywords[i++],"SGRI");
     strcpy(keywords[i++],"CORRELATION");
     strcpy(keywords[i++],"RESIDUALS");
     strcpy(keywords[i++],"VP");
@@ -1435,10 +1436,10 @@ ModelFile::readCommandOutput(char ** params, int & pos, char * errText)
       for(key = 0;key < nKeys;key++)
         if(strcmp(flag,keywords[key]) == 0)
           break;
-      if(key < 3)   
+      if(key < 4)   
         formatFlag = (formatFlag | static_cast<int>(pow(2.0f,key)));
       else if(key < nKeys)
-        outputFlag = (outputFlag | static_cast<int>(pow(2.0f,(key-2))));
+        outputFlag = (outputFlag | static_cast<int>(pow(2.0f,(key-3))));
       else
       {
         error = 1;

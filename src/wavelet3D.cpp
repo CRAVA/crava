@@ -169,7 +169,12 @@ Wavelet3D::Wavelet3D(char          * fileName,
     shiftAmp->setOutputFormat(modelSettings->getFormatFlag());
 
     shiftFFTGrid(shiftAmp);
-    shiftAmp->writeFile("WL_as_shiftedFFTGrid", simBox);
+    char fName[200];
+    int thetaDeg = int ( theta/PI*180 + 0.5 );
+    sprintf(fName, "WL_as_shiftedFFTGrid_%d", thetaDeg);
+    std::string sgriLabel("3D Wavelet as shifted FFT-grid for incidence angle ");
+    sgriLabel += NRLib2::ToString(thetaDeg);
+    shiftAmp->writeFile(fName, simBox, sgriLabel);
     delete shiftAmp;
     //End for debugging purposes
   }
@@ -411,7 +416,7 @@ void
 Wavelet3D::writeWaveletToFile(char* fileName, float, Simbox *simbox)
 {
   LogKit::LogFormatted(LogKit::MEDIUM,"  Writing 3D-Wavelet to file. \n");
-  ampCube_.writeFile(fileName, simbox, false);
+  ampCube_.writeFile(fileName, simbox, "", false);
 }
 
 void

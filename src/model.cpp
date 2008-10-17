@@ -376,7 +376,7 @@ Model::checkAvailableMemory(Simbox            * timeSimbox,
   //
   float memOneSeis = 0.0f;
   if (seismicFile != "")
-    memOneSeis = NRLib2::FindFileSize(seismicFile);
+    memOneSeis = static_cast<float> (NRLib2::FindFileSize(seismicFile));
 
   //
   // Find the size of one grid
@@ -1038,10 +1038,13 @@ Model::processSeismic(FFTGrid      **& seisCube,
       if(modelSettings->getDebugFlag() == 1)
       {
         char sName[100];
+        float *angles = modelSettings->getAngle();
         for(int i=0 ; i<nAngles ; i++)
         {
           sprintf(sName, "origSeis%d",i);
-          seisCube[i]->writeFile(sName, timeSimbox);
+          std::string sgriLabel("Original seismic data for incidence angle ");
+          sgriLabel += NRLib2::ToString(angles[i]);
+          seisCube[i]->writeFile(sName, timeSimbox, sgriLabel);
         }
       }
 

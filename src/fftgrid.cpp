@@ -1,8 +1,11 @@
 #include <iostream>
+#include <fstream>
+using std::ofstream;
 #include <math.h>
 #include <time.h>
 #include <assert.h>
 #include <stdio.h>
+#include <string>
 
 #include "lib/global_def.h"
 #include "nrlib/segy/segy.hpp"
@@ -15,12 +18,15 @@
 #include "fft/include/f77_func.h"
 
 #include "nrlib/iotools/logkit.hpp"
+#include "nrlib/iotools/fileio.hpp"
+#include "nrlib/exception/exception.hpp"
 
 #include "src/fftgrid.h"
 #include "src/corr.h"
 #include "src/simbox.h"
 #include "src/model.h"
 #include "src/definitions.h"
+
 
 FFTGrid::FFTGrid(int nx, int ny, int nz, int nxp, int nyp, int nzp)
 {
@@ -1310,7 +1316,7 @@ FFTGrid::consistentSize(int nx,int ny, int nz, int nxp, int nyp, int nzp)
 
 
 void 
-FFTGrid::writeFile(const char * fileName, const Simbox * simbox, bool writeSegy, float z0, bool writeStorm)
+FFTGrid::writeFile(const char * fileName, const Simbox * simbox, const std::string sgriLabel, bool writeSegy, float z0, bool writeStorm)
 {
   if(formatFlag_ != NONE)
   {
@@ -1318,6 +1324,8 @@ FFTGrid::writeFile(const char * fileName, const Simbox * simbox, bool writeSegy,
       writeStormFile(fileName, simbox);
     if((formatFlag_ & SEGYFORMAT) == SEGYFORMAT && writeSegy==1)
       writeSegyFile(fileName, simbox, z0);
+    if((formatFlag_ & SGRIFORMAT) == SGRIFORMAT && writeSegy==1)
+      writeSgriFile(fileName, simbox, sgriLabel);
     if((formatFlag_ & STORMASCIIFORMAT) == STORMASCIIFORMAT && writeStorm==1)
       writeStormFile(fileName, simbox, true);
   }
@@ -1513,13 +1521,88 @@ FFTGrid::writeSegyFile(const char * fileName, const Simbox * simbox, float z0)
   return(0);
 }
 
-float
-FFTGrid::getRegularZInterpolatedRealValue(int i, int j, float z0Reg, 
-                                          float dzReg, int kReg, 
-                                          float z0Grid, float dzGrid)
+int
+FFTGrid::writeSgriFile(const char *fileName, const Simbox *simbox, const std::string label)
 {
-  float z     = z0Reg+dzReg*kReg;
-  float t     = (z-z0Grid)/dzGrid;
+  char * fName = ModelSettings::makeFullFileName(fileName, ".Sgrh");
+  ofstream  headerFile(fName);
+  if (!headerFile) {
+    throw new NRLib2::IOError("Error opening " + *fName);
+  }
+
+  LogKit::LogFormatted(LogKit::LOW,"\nWriting SGRI header file %s...",fName);
+  delete fName;
+
+  headerFile << "NORSAR General Grid Format v1.0\n";
+  headerFile << "3\n";
+  headerFile << "X (km)\n";
+  headerFile << "Y (km)\n";
+  headerFile << "Z (km)\n";
+  headerFile << "FFT-grid\n";
+  headerFile << "1\n";
+  headerFile << label << std::endl;
+  headerFile << "1 1 1\n";
+
+  double zMin, zMax;
+  simbox->getMinMaxZ(zMin, zMax);
+/*  float dz = static_cast<float> (floor(simbox->getdz()+0.5)); //To have the same sampling as in SegY
+  if (dz == 0.0)
+    dz = 1.0; */
+  float dz = static_cast<float> (simbox->getdz());
+  int nz = static_cast<int> (ceil((zMax - zMin)/dz));
+  int ny = simbox->getny();
+  int nx = simbox->getnx();
+  headerFile << nx << " " << ny << " " << nz << std::endl;
+  headerFile << simbox->getdx()*0.001 << " " << simbox->getdy()*0.001 << " " << dz*0.001 << std::endl;
+  double x0 = simbox->getx0() + 0.5 * simbox->getdx();
+  double y0 = simbox->gety0() + 0.5 * simbox->getdy();
+  double z0 = zMin + 0.5 * dz;
+  headerFile << x0 << " " << y0 << " " << z0 << std::endl;
+  headerFile << simbox->getAngle() << " 0\n";
+  headerFile << RMISSING << std::endl;
+  
+  fName = ModelSettings::makeFullFileName(fileName, ".Sgri");
+  headerFile << fName << std::endl;
+  headerFile << "0\n";
+
+  ofstream binFile(fName, std::ios::out | std::ios::binary);
+  if (!binFile) {
+    throw new NRLib2::IOError("Error opening " + *fName);
+  }
+  int i,j,k;
+  double x, y, z, zTop, zBot;
+  float value;
+  for (k=0; k<nz; k++) {
+    for (j=0; j<ny; j++) {
+      for (i=0; i<nx; i++) {
+        z = zMin + k*dz;
+        simbox->getXYCoord(i, j, x, y);
+        zTop = simbox->getTop(x, y);
+        zBot = simbox->getBot(x, y);
+        if (z < zTop || z > zBot)
+          value = RMISSING;
+        else {
+          int simboxK = static_cast<int> ((z - zTop) / (simbox->getdz()*simbox->getRelThick(i,j)) + 0.5);
+          value = getRealValue(i,j,simboxK);
+        }
+#ifndef BIGENDIAN
+        NRLib2::WriteBinaryFloat(binFile, value);
+#else
+        NRLib2::WriteBinaryFloat(binFile, value, END_LITTLE_ENDIAN);
+#endif
+      }
+    }
+  }
+  return(0);
+}
+
+float
+FFTGrid::getRegularZInterpolatedRealValue(int i, int j, double z0Reg, 
+                                          double dzReg, int kReg, 
+                                          double z0Grid, double dzGrid)
+{
+  float z     = static_cast<float> (z0Reg+dzReg*kReg);
+  float t     = static_cast<float> ((z-z0Grid)/dzGrid);
   int   kGrid = int(t);
 
   t -= kGrid;

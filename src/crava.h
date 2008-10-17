@@ -4,7 +4,6 @@
 #include "fft/include/fftw.h"
 #include "definitions.h"
 
-
 class Model;
 class FFTGrid;
 class FFTFileGrid;
@@ -89,7 +88,7 @@ private:
   void               multiplyDataByScaleWaveletAndWriteToFile(const char* typeName);
   void               dumpCorrT(float* corrT,float dt);
   void               initPostKriging();          
-  void               writeToFile(char * timeFileName, char * depthFileName, FFTGrid * grid);
+  void               writeToFile(char * timeFileName, char * depthFileName, FFTGrid * grid, std::string sgriLabel = "NO_LABEL");
   void               writeResampledStormCube(FFTGrid *grid, GridMapping *gridmapping, char * fileName, const Simbox *simbox);
 
   int                fileGrid_;        // is true if is storage is on file 

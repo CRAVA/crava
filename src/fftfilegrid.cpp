@@ -17,8 +17,6 @@
 #include "src/simbox.h"
 #include "src/model.h"
 
-
-
 FFTFileGrid::FFTFileGrid(int nx, int ny, int nz, int nxp, int nyp, int nzp) :
 FFTGrid(nx, ny, nz, nxp, nyp, nzp)
 {
@@ -434,7 +432,7 @@ FFTFileGrid::fillInComplexNoise(RandomGen * ranGen)
 }
 
 void 
-FFTFileGrid::writeFile(const char * fileName, const Simbox * simbox, bool writeSegy, float z0, bool writeStorm)
+FFTFileGrid::writeFile(const char * fileName, const Simbox * simbox, const std::string sgriLabel, bool writeSegy, float z0, bool writeStorm)
 {
   if(formatFlag_ != NONE)
   {
@@ -442,6 +440,8 @@ FFTFileGrid::writeFile(const char * fileName, const Simbox * simbox, bool writeS
       writeStormFile(fileName, simbox);
     if((formatFlag_ & SEGYFORMAT) == SEGYFORMAT && writeSegy==1)
       writeSegyFile(fileName, simbox, z0);
+    if((formatFlag_ & SGRIFORMAT) == SGRIFORMAT && writeSegy==1)
+      writeSgriFile(fileName, simbox, sgriLabel);
     if((formatFlag_ & STORMASCIIFORMAT) == STORMASCIIFORMAT && writeStorm==1)
       writeStormFile(fileName, simbox, true);
   }
@@ -471,6 +471,17 @@ FFTFileGrid::writeSegyFile(const char * fileName, const Simbox * simbox, float z
   return(ok);
 }
 
+int
+FFTFileGrid::writeSgriFile(const char * fileName, const Simbox * simbox, const std::string label)
+{
+  assert(accMode_ == NONE || accMode_ == RANDOMACCESS);
+  if(accMode_ != RANDOMACCESS)
+    load();
+  int ok = FFTGrid::writeSgriFile(fileName, simbox, label);
+  if(accMode_ != RANDOMACCESS)
+    save();
+  return(ok);
+}
 
 void 
 FFTFileGrid::load()

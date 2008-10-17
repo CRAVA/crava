@@ -162,8 +162,7 @@ Crava::Crava(Model * model)
                             corrprior_, 
                             nzp_, nz_, meanAlpha_, meanBeta_, meanRho_, 
                             model->getModelSettings()->getPundef(), 
-                            model->getPriorFacies(), 
-                            nWells_);
+                            model->getPriorFacies());
   }
 
   //meanAlpha_->writeAsciiRaw("alpha");
@@ -584,17 +583,22 @@ Crava:: divideDataByScaleWavelet()
         }
       }
       char fName[200];
+      int thetaDeg = int (getTheta(l)/PI*180 + 0.5 );;
       if(ModelSettings::getDebugLevel() > 0)
       {
         sprintf(fName,"refl%d",l);
-        seisData_[l]->writeFile(fName, simbox_);
+        std::string sgriLabel("Reflection coefficients for incidence angle ");
+        sgriLabel += NRLib2::ToString(thetaDeg);
+        seisData_[l]->writeFile(fName, simbox_, sgriLabel);
       }
       LogKit::LogFormatted(LogKit::LOW,"Interpolating reflections in volume %d: ",l);
       seisData_[l]->interpolateSeismic(energyTreshold_);
       if(ModelSettings::getDebugLevel() > 0)
       {
         sprintf(fName,"reflInterpolated%d",l);
-        seisData_[l]->writeFile(fName, simbox_);
+        std::string sgriLabel("Interpolated reflections for incidence angle ");
+        sgriLabel += NRLib2::ToString(thetaDeg);
+        seisData_[l]->writeFile(fName, simbox_, sgriLabel);
       }
       seisData_[l]->endAccess();
   }
@@ -628,6 +632,8 @@ Crava::multiplyDataByScaleWaveletAndWriteToFile(const char* typeName)
   plan2  = rfftwnd_create_plan(1,&nzp_,FFTW_COMPLEX_TO_REAL,flag);
 
   Wavelet* localWavelet;
+  int thetaDeg;
+  
 
   for(l=0 ; l< ntheta_ ; l++ )
   {
@@ -665,9 +671,11 @@ Crava::multiplyDataByScaleWaveletAndWriteToFile(const char* typeName)
 
       }
       char fName[200];
-      int thetaDeg = int ( theta_[l]/PI*180 + 0.5 );
+      thetaDeg = int ( theta_[l]/PI*180 + 0.5 );
       sprintf(fName,"%s_%d",typeName,thetaDeg);
-      seisData_[l]->writeFile(fName, simbox_);
+      std::string sgriLabel(typeName);
+      sgriLabel += " for incidence angle ";
+      seisData_[l]->writeFile(fName, simbox_, sgriLabel);
       seisData_[l]->endAccess();
   }
 
@@ -1063,11 +1071,13 @@ Crava::computePostMeanResidAndFFTCov()
     {
       for(l=0;l<ntheta_;l++)
       {
-        thetaDeg = int ( theta_[l]/PI*180 + 0.5 );
+        int thetaDeg = int ( theta_[l]/PI*180 + 0.5 );
         sprintf(fileNameS,"residuals_%i",thetaDeg);
+        std::string sgriLabel("Residuals for incidence angle");
+        sgriLabel += NRLib2::ToString(thetaDeg);
         seisData_[l]->setAccessMode(FFTGrid::RANDOMACCESS);
         seisData_[l]->invFFTInPlace();
-        seisData_[l]->writeFile(fileNameS,simbox_);
+        seisData_[l]->writeFile(fileNameS,simbox_, sgriLabel);
         seisData_[l]->endAccess();
       }
     }
@@ -1302,7 +1312,8 @@ Crava::computePostCov()
 
   postCov[0][0]=postCovAlpha_->getRealValue(0,0,0);
   if((outputFlag_ & ModelSettings::CORRELATION) > 0)
-    postCovAlpha_ ->writeFile("postCovVp",simbox_);
+    postCovAlpha_ ->writeFile("postCovVp",simbox_, "Posterior covariance for Vp");
+
   postCovAlpha_ ->endAccess();
   delete postCovAlpha_;
   postCovAlpha_=NULL;
@@ -1314,12 +1325,10 @@ Crava::computePostCov()
   float*  postCorBeta  = new float[nz_];
   c0 = postCovBeta_->getRealValue(0,0,0);
   for(k=0; k< nz_;k++)
-  {
     postCorBeta[k] = postCovBeta_->getRealValue(0,0,k)/c0;
-  }
 
   if((outputFlag_ & ModelSettings::CORRELATION) > 0)
-    postCovBeta_ ->writeFile("postCovVs",simbox_);
+    postCovBeta_ ->writeFile("postCovVs",simbox_, "Posterior covariance for Vs");
   postCov[1][1]=postCovBeta_->getRealValue(0,0,0);
   postCovBeta_ ->endAccess();
   delete postCovBeta_;
@@ -1337,7 +1346,7 @@ Crava::computePostCov()
   }
 
   if((outputFlag_ & ModelSettings::CORRELATION) > 0)
-    postCovRho_ ->writeFile("postCovD",simbox_);
+    postCovRho_ ->writeFile("postCovD",simbox_, "Posterior covariance for density");
   postCov[2][2]=postCovRho_->getRealValue(0,0,0);
   postCovRho_ ->endAccess();
   delete postCovRho_;
@@ -1347,7 +1356,7 @@ Crava::computePostCov()
   postCrCovAlphaBeta_ ->setAccessMode(FFTGrid::RANDOMACCESS);
   postCrCovAlphaBeta_ ->invFFTInPlace();
   if((outputFlag_ & ModelSettings::CORRELATION) > 0)
-    postCrCovAlphaBeta_ ->writeFile("postCrCovVpVs",simbox_);
+    postCrCovAlphaBeta_ ->writeFile("postCrCovVpVs",simbox_, "Posterior cross-covariance for (Vp,Vs)");
   postCov[0][1]=postCrCovAlphaBeta_->getRealValue(0,0,0);
   postCov[1][0]=postCrCovAlphaBeta_->getRealValue(0,0,0);
   postCrCovAlphaBeta_ ->endAccess();
@@ -1358,7 +1367,7 @@ Crava::computePostCov()
   postCrCovAlphaRho_ ->setAccessMode(FFTGrid::RANDOMACCESS);
   postCrCovAlphaRho_ ->invFFTInPlace();
   if((outputFlag_ & ModelSettings::CORRELATION) > 0)
-    postCrCovAlphaRho_->writeFile("postCrCovVpD",simbox_);
+    postCrCovAlphaRho_->writeFile("postCrCovVpD",simbox_, "Posterior cross-covariance for (Vp,density)");
   postCov[2][0]=postCrCovAlphaRho_->getRealValue(0,0,0);
   postCov[0][2]=postCrCovAlphaRho_->getRealValue(0,0,0);
   postCrCovAlphaRho_->endAccess();
@@ -1369,7 +1378,7 @@ Crava::computePostCov()
   postCrCovBetaRho_->setAccessMode(FFTGrid::RANDOMACCESS);
   postCrCovBetaRho_->invFFTInPlace();
   if((outputFlag_ & ModelSettings::CORRELATION) > 0)
-    postCrCovBetaRho_->writeFile("postCrCovVsD",simbox_);
+    postCrCovBetaRho_->writeFile("postCrCovVsD",simbox_, "Posterior cross-covariance for (Vs,density)");
   postCov[2][1]=postCrCovBetaRho_->getRealValue(0,0,0);
   postCov[1][2]=postCrCovBetaRho_->getRealValue(0,0,0);
   postCrCovBetaRho_->endAccess();
@@ -1551,7 +1560,9 @@ Crava::computeSyntSeismic(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho)
 
     thetaDeg = int (( theta_[l]/PI*180.0 + 0.5) );
     sprintf(fileNameS,"synt_seis_%i",thetaDeg);
-    seisData[l]->writeFile(fileNameS,simbox_);
+    std::string sgriLabel("Synthetic seismic for incidence angle ");
+    sgriLabel += NRLib2::ToString(thetaDeg);
+    seisData[l]->writeFile(fileNameS,simbox_,sgriLabel);
     delete seisData[l];
   }
 
@@ -1600,7 +1611,7 @@ Crava::computeAcousticImpedance(FFTGrid * Alpha, FFTGrid * Rho ,char * fileName,
 
   prImpedance->endAccess();
   // prImpedance->writeFile(fileName,simbox_);
-  writeToFile(fileName, fileName2, prImpedance);
+  writeToFile(fileName, fileName2, prImpedance, "Acoustic Impedance");
   delete prImpedance;
 
   return(0);
@@ -1638,7 +1649,7 @@ Crava::computeShearImpedance(FFTGrid * Beta, FFTGrid * Rho ,char * fileName, cha
 
   shImpedance->endAccess(); 
   //shImpedance->writeFile(fileName,simbox_);
-  writeToFile(fileName, fileName2, shImpedance);
+  writeToFile(fileName, fileName2, shImpedance, "Shear impedance");
   delete shImpedance;
 
   return(0);
@@ -1676,7 +1687,7 @@ Crava::computeVpVsRatio(FFTGrid * Alpha, FFTGrid * Beta,char * fileName, char * 
 
   ratioVpVs->endAccess();
   //ratioVpVs->writeFile(fileName,simbox_);
-  writeToFile(fileName, fileName2, ratioVpVs);
+  writeToFile(fileName, fileName2, ratioVpVs, "Vp-Vs ratio");
   delete ratioVpVs;
 
   return(0);
@@ -1715,7 +1726,7 @@ Crava::computePoissonRatio(FFTGrid * Alpha, FFTGrid * Beta,char * fileName, char
 
   poiRat->endAccess();
   //poiRat->writeFile(fileName,simbox_);
-  writeToFile(fileName, fileName2, poiRat);
+  writeToFile(fileName, fileName2, poiRat, "Poisson ratio");
   delete poiRat;
 
   return(0);
@@ -1755,7 +1766,7 @@ Crava::computeLameMu(FFTGrid * Beta, FFTGrid * Rho,char * fileName, char * fileN
 
   mu->endAccess();
   // mu->writeFile(fileName,simbox_);
-  writeToFile(fileName, fileName2, mu);
+  writeToFile(fileName, fileName2, mu, "Lame mu");
 
   delete mu;
 
@@ -1798,7 +1809,7 @@ Crava::computeLameLambda(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho ,char * 
 
   lambda->endAccess();
   //lambda->writeFile(fileName,simbox_);
-  writeToFile(fileName, fileName2, lambda);
+  writeToFile(fileName, fileName2, lambda, "Lame lambda");
 
   delete lambda;
 
@@ -1842,7 +1853,7 @@ Crava::computeLambdaRho(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho ,char * f
   lambdaRho->endAccess();
   //lambdaRho->writeFile(fileName,simbox_);
  
-  writeToFile(fileName, fileName2, lambdaRho);
+  writeToFile(fileName, fileName2, lambdaRho, "Lambda rho");
   delete lambdaRho;
 
   return(0);
@@ -1882,7 +1893,7 @@ Crava::computeMuRho(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho ,char * fileN
 
   muRho->endAccess();
   // muRho->writeFile(fileName,simbox_);
-  writeToFile(fileName, fileName2, muRho);
+  writeToFile(fileName, fileName2, muRho, "Mu rho");
 
   delete muRho;
 
@@ -2114,7 +2125,7 @@ Crava::writePars(FFTGrid * alpha, FFTGrid * beta, FFTGrid * rho, int simNum)
     alpha->setAccessMode(FFTGrid::RANDOMACCESS);
     alpha->expTransf();
     //alpha->writeFile(fileName,simbox_);
-    writeToFile(fileName,fileName2,alpha);
+    writeToFile(fileName,fileName2,alpha, "Inverted Vp");
     if(simNum<0) //prediction, need grid unharmed.
       alpha->logTransf();
     alpha->endAccess();
@@ -2126,7 +2137,7 @@ Crava::writePars(FFTGrid * alpha, FFTGrid * beta, FFTGrid * rho, int simNum)
     beta->setAccessMode(FFTGrid::RANDOMACCESS);
     beta->expTransf();
     //    beta->writeFile(fileName,simbox_);
-    writeToFile(fileName, fileName2, beta);
+    writeToFile(fileName, fileName2, beta, "Inverted Vs");
     if(simNum<0) //prediction, need grid unharmed.
       beta->logTransf();
     beta->endAccess();
@@ -2138,7 +2149,7 @@ Crava::writePars(FFTGrid * alpha, FFTGrid * beta, FFTGrid * rho, int simNum)
     rho->setAccessMode(FFTGrid::RANDOMACCESS);
     rho->expTransf();
     //rho->writeFile(fileName,simbox_);
-    writeToFile(fileName, fileName2, rho);
+    writeToFile(fileName, fileName2, rho, "Inverted density");
     if(simNum<0) //prediction, need grid unharmed.
       rho->logTransf();
     rho->endAccess();
@@ -2207,7 +2218,7 @@ void Crava::initPostKriging() {
                                 int(krigingParams_[0]));
 }
 
-void Crava::writeToFile(char * timeFileName, char * depthFileName, FFTGrid * grid) {
+void Crava::writeToFile(char * timeFileName, char * depthFileName, FFTGrid * grid, std::string sgriLabel) {
 
   if(!((outputFlag_ & ModelSettings::NOTIME)>0))
   {
@@ -2215,11 +2226,11 @@ void Crava::writeToFile(char * timeFileName, char * depthFileName, FFTGrid * gri
       ((model_->getModelSettings()->getFormatFlag() & FFTGrid::STORMASCIIFORMAT)>0 || (model_->getModelSettings()->getFormatFlag() & FFTGrid::STORMFORMAT)>0))
     {
       writeResampledStormCube(grid, model_->getTimeCutMapping(), timeFileName, simbox_);
-      if(model_->getModelSettings()->getFormatFlag() & FFTGrid::SEGYFORMAT)
-        grid->writeFile(timeFileName,simbox_,1, model_->getModelSettings()->getSegyOffset(),0); // write only segy, not storm
+      if((model_->getModelSettings()->getFormatFlag() & FFTGrid::SEGYFORMAT) || (model_->getModelSettings()->getFormatFlag() & FFTGrid::SGRIFORMAT))
+        grid->writeFile(timeFileName,simbox_, sgriLabel, 1, model_->getModelSettings()->getSegyOffset(),0); // write only segy and/or sgri, not storm
     }
     else
-      grid->writeFile(timeFileName,simbox_,1, model_->getModelSettings()->getSegyOffset());
+      grid->writeFile(timeFileName,simbox_, sgriLabel, 1, model_->getModelSettings()->getSegyOffset());
   }
   if(model_->getTimeDepthMapping()!=NULL)
   {
@@ -2231,7 +2242,7 @@ void Crava::writeToFile(char * timeFileName, char * depthFileName, FFTGrid * gri
         writeResampledStormCube(grid, model_->getTimeDepthMapping(), depthFileName, simbox_);
       }
       else // only top and bottom surfaces given, no velocity field
-        grid->writeFile(depthFileName,model_->getTimeDepthMapping()->getSimbox(),0);
+        grid->writeFile(depthFileName,model_->getTimeDepthMapping()->getSimbox(),"", 0);
 
     }
     else // get velocity from inversion
