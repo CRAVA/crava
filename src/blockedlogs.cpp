@@ -726,17 +726,14 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
   }
   delete fileName;
 
-  bool gotSeisResPar  = true;
   bool gotFacies      = nFacies_ > 0;
   bool gotRealSeismic = real_seismic_data_ != NULL;
   bool gotSyntSeismic = synt_seismic_data_ != NULL;
   bool gotCpp         = cpp_ != NULL;
 
-  int nLogs = 3*3;   // {Vp, Vs, Rho} x {raw, BgHz, seisHz} 
+  int nLogs = 3*4;   // {Vp, Vs, Rho} x {raw, BgHz, seisHz, seisRes} 
   if (gotFacies)
     nLogs += 1;
-  if (gotSeisResPar)
-    nLogs += 3;
   if (gotRealSeismic)
     nLogs += nAngles_;
   if (gotSyntSeismic)
@@ -750,10 +747,7 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
   params[2] = "Rho";
 
   file << std::fixed;
-  file << std::right;
   file << std::setprecision(2);
-  //file << std::setw(15);
-
   //
   // Write HEADER
   //
@@ -765,8 +759,7 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
     file << params[i] << "   UNK lin\n";
     file << params[i] << static_cast<int>(maxHz_background) << " UNK lin\n";
     file << params[i] << static_cast<int>(maxHz_seismic)    << " UNK lin\n";
-    if (gotSeisResPar)
-      file << params[i] << "_SeismicResolution UNK lin\n";
+    file << params[i] << "_SeismicResolution UNK lin\n";
   }
   if (gotFacies) {
     file << "dummy   DISC ";

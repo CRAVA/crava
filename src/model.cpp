@@ -375,7 +375,7 @@ Model::checkAvailableMemory(Simbox            * timeSimbox,
   // Find the size of first seismic volume
   //
   float memOneSeis = 0.0f;
-  if (!modelSettings_->getGenerateSeismic())
+  if (seismicFile != "")
     memOneSeis = NRLib2::FindFileSize(seismicFile);
 
   //
@@ -591,12 +591,13 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
   // Set AREA (Use SegY geometry from first seismic data volume if needed).
   //
   std::string areaType = "Model file";
-  const std::string seismicFile = modelFile->getSeismicFile()[0];
+  std::string seismicFile("");
 
   if (modelSettings->getAreaParameters() == NULL)
   {
-    LogKit::LogFormatted(LogKit::HIGH,"\nFinding inversion area from seismic data in file %s\n",
-                         modelFile->getSeismicFile()[0]);
+    seismicFile = std::string(modelFile->getSeismicFile()[0]);
+    LogKit::LogFormatted(LogKit::HIGH,"\nFinding inversion area from seismic data in file %s\n", 
+                         seismicFile.c_str());
     areaType = "Seismic data";
     const TraceHeaderFormat thf = *(modelSettings->getTraceHeaderFormat());
     SegyGeometry * geometry = SegY::findGridGeometry(seismicFile, thf);

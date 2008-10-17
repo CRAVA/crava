@@ -91,5 +91,3 @@ private:
   float        ** sigmaPost_; // for Pcube
 };
 #endif
-
-

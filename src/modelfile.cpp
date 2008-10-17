@@ -120,62 +120,55 @@ ModelFile::ModelFile(char * fileName)
     alternativeUsed[i] = 0;
   }
 
-  int neededCommands =  3; // The neededCommands first in the list are normally necessary.
+  int neededCommands =  2; // The neededCommands first in the list are normally necessary.
   //
   // Mandatory commands
   // 
   strcpy(commandList[0],"WELLS");
   strcpy(commandList[1],"DEPTH");                                       // ==> TIME_SURFACES eller TIME
   genNeed[1] = true;
-  strcpy(commandList[2],"SEISMIC");                                     // ==> PP_SEISMIC
-  genNeed[2] = true;
-
-  alternative[2] = new int[2];
-  alternative[2][0] = -1;                  //One alternative, non-exclusive.
-  alternative[2][1] = neededCommands+26;   //Number of alternative command. (PS_SEISMIC)
 
   //
   // Optional commands
   //
-  strcpy(commandList[neededCommands   ],"ANGULARCORRELATION");          // ==> ANGULAR_CORRELATION
-  strcpy(commandList[neededCommands+ 1],"SEED");
-  strcpy(commandList[neededCommands+ 2],"LATERALCORRELATION");          // ==> LATERAL_CORRELATION
-  strcpy(commandList[neededCommands+ 3],"NSIMULATIONS");
-  strcpy(commandList[neededCommands+ 4],"PREDICTION");             
-  strcpy(commandList[neededCommands+ 5],"PADDING");                     // ==> FFTGRID_PADDING
-  strcpy(commandList[neededCommands+ 6],"PREFIX");
-  strcpy(commandList[neededCommands+ 7],"AREA");
-  genNeed[neededCommands+7] = true;
-  strcpy(commandList[neededCommands+ 8],"WHITENOISE");
-  strcpy(commandList[neededCommands+ 9],"OUTPUT");
-  strcpy(commandList[neededCommands+10],"SEGYOFFSET");
-  strcpy(commandList[neededCommands+11],"FORCEFILE");
-  strcpy(commandList[neededCommands+12],"DEBUG");
-  strcpy(commandList[neededCommands+13],"KRIGING");
-  strcpy(commandList[neededCommands+14],"LOCALWAVELET");
-  strcpy(commandList[neededCommands+15],"ENERGYTRESHOLD");
-  strcpy(commandList[neededCommands+16],"PARAMETERCORRELATION");        // ==> PARAMETER_CORRELATION
-  strcpy(commandList[neededCommands+17],"REFLECTIONMATRIX");            // ==> REFLECTION_MATRIX
-  strcpy(commandList[neededCommands+18],"FREQUENCYBAND");
-  strcpy(commandList[neededCommands+19],"BACKGROUND");
-  genNeed[neededCommands+19] = true;
-  strcpy(commandList[neededCommands+20],"MAX_DEVIATION_ANGLE");
-  strcpy(commandList[neededCommands+21],"GIVESIGNALTONOISERATIO");
-  strcpy(commandList[neededCommands+22],"SEISMICRESOLUTION");           // ==> SEISMIC_RESOLUTION
-  strcpy(commandList[neededCommands+23],"WAVELETLENGTH");
-  strcpy(commandList[neededCommands+24],"DEPTH_CONVERSION");
-  strcpy(commandList[neededCommands+25],"PS_SEISMIC");
-  alternative[neededCommands+25]    = new int[2];
-  alternative[neededCommands+25][0] = -1;                  //One alternative, non-exclusive.
-  alternative[neededCommands+25][1] = 2;   //Number of alternative command. (SEISMIC)
-  strcpy(commandList[neededCommands+26],"PUNDEF");
-  strcpy(commandList[neededCommands+27],"ALLOWED_PARAMETER_VALUES");
-  strcpy(commandList[neededCommands+28],"ALLOWED_RESIDUAL_VARIANCES");
-  strcpy(commandList[neededCommands+29],"CORRELATION_DIRECTION");
-  strcpy(commandList[neededCommands+30],"WAVELET_ESTIMATION_INTERVAL");
-  strcpy(commandList[neededCommands+31],"FACIES_ESTIMATION_INTERVAL");
-  strcpy(commandList[neededCommands+32],"LOG_LEVEL");
-  strcpy(commandList[neededCommands+33],"TRACE_HEADER_FORMAT");
+  strcpy(commandList[neededCommands+ 0],"SEISMIC");                     // ==> PP_SEISMIC
+  genNeed[neededCommands+0] = true;
+  strcpy(commandList[neededCommands+ 1],"ANGULARCORRELATION");          // ==> ANGULAR_CORRELATION
+  strcpy(commandList[neededCommands+ 2],"SEED");
+  strcpy(commandList[neededCommands+ 3],"LATERALCORRELATION");          // ==> LATERAL_CORRELATION
+  strcpy(commandList[neededCommands+ 4],"NSIMULATIONS");
+  strcpy(commandList[neededCommands+ 5],"PREDICTION");             
+  strcpy(commandList[neededCommands+ 6],"PADDING");                     // ==> FFTGRID_PADDING
+  strcpy(commandList[neededCommands+ 7],"PREFIX");
+  strcpy(commandList[neededCommands+ 8],"AREA");
+  genNeed[neededCommands+8] = true;
+  strcpy(commandList[neededCommands+ 9],"WHITENOISE");
+  strcpy(commandList[neededCommands+10],"OUTPUT");
+  strcpy(commandList[neededCommands+11],"SEGYOFFSET");
+  strcpy(commandList[neededCommands+12],"FORCEFILE");
+  strcpy(commandList[neededCommands+13],"DEBUG");
+  strcpy(commandList[neededCommands+14],"KRIGING");
+  strcpy(commandList[neededCommands+15],"LOCALWAVELET");
+  strcpy(commandList[neededCommands+16],"ENERGYTRESHOLD");
+  strcpy(commandList[neededCommands+17],"PARAMETERCORRELATION");        // ==> PARAMETER_CORRELATION
+  strcpy(commandList[neededCommands+18],"REFLECTIONMATRIX");            // ==> REFLECTION_MATRIX
+  strcpy(commandList[neededCommands+19],"FREQUENCYBAND");
+  strcpy(commandList[neededCommands+20],"BACKGROUND");
+  genNeed[neededCommands+20] = true;
+  strcpy(commandList[neededCommands+21],"MAX_DEVIATION_ANGLE");
+  strcpy(commandList[neededCommands+22],"GIVESIGNALTONOISERATIO");
+  strcpy(commandList[neededCommands+23],"SEISMICRESOLUTION");           // ==> SEISMIC_RESOLUTION
+  strcpy(commandList[neededCommands+24],"WAVELETLENGTH");
+  strcpy(commandList[neededCommands+25],"DEPTH_CONVERSION");
+  strcpy(commandList[neededCommands+26],"PS_SEISMIC");
+  strcpy(commandList[neededCommands+27],"PUNDEF");
+  strcpy(commandList[neededCommands+28],"ALLOWED_PARAMETER_VALUES");
+  strcpy(commandList[neededCommands+29],"ALLOWED_RESIDUAL_VARIANCES");
+  strcpy(commandList[neededCommands+30],"CORRELATION_DIRECTION");
+  strcpy(commandList[neededCommands+31],"WAVELET_ESTIMATION_INTERVAL");
+  strcpy(commandList[neededCommands+32],"FACIES_ESTIMATION_INTERVAL");
+  strcpy(commandList[neededCommands+33],"LOG_LEVEL");
+  strcpy(commandList[neededCommands+34],"TRACE_HEADER_FORMAT");
 
   char errText[MAX_STRING];
   char ** errorList = new char*[nCommands];
@@ -425,15 +418,22 @@ ModelFile::ModelFile(char * fileName)
   }
   delete [] genNeed;
 
-  if((modelSettings_->getOutputFlag() & (ModelSettings::FACIESPROB + ModelSettings::FACIESPROBRELATIVE)) > 0 
-     && faciesLogGiven_==false)
+  if(modelSettings_->getDoInversion() && nSeisData_==0 > 0) 
   {
-    strcpy(errText,"Facies probabilities can not be generated. Please specify a facies log under WELLS.\n");
+    strcpy(errText,"An inversion run has been requested, but no seismic data are given.\nPlease specify seismic data using keywords PP_SEISMIC or PS_SEISMIC.\n");
     errorList[nErrors] = new char[strlen(errText)+1];
     strcpy(errorList[nErrors], errText);
     nErrors++;
   }
-  
+
+  if(modelSettings_->getAreaParameters()==NULL && nSeisData_==0 > 0) 
+  {
+    strcpy(errText,"Command AREA is required when no seismic data are given.\n");
+    errorList[nErrors] = new char[strlen(errText)+1];
+    strcpy(errorList[nErrors], errText);
+    nErrors++;
+  }
+
   if(modelSettings_->getGenerateSeismic() && generateBackground_)
   {
     strcpy(errText,"Background model and seismic cannot both be generated.\n");
@@ -1116,11 +1116,11 @@ ModelFile::readCommandSeismic(char ** params, int & pos, char * errText, int sei
     return(1);
   }
 
-  char  ** seisFile        = new char*[2*nSeisData];
-  char  ** waveFile        = new char*[nSeisData];  
-  float *  angle           = new float[nSeisData];
-  float *  noiseEnergy     = new float[nSeisData];
-  float *  waveScale       = new float[nSeisData];
+  char  ** seisFile    = new char*[2*nSeisData];
+  char  ** waveFile    = new char*[nSeisData];  
+  float *  angle       = new float[nSeisData];
+  float *  noiseEnergy = new float[nSeisData];
+  float *  waveScale   = new float[nSeisData];
 
   for(i=0;i<nSeisData;i++)
   {
@@ -1171,32 +1171,32 @@ ModelFile::readCommandSeismic(char ** params, int & pos, char * errText, int sei
 
   if(nSeisData_ == 0) 
   {
-    seismicFile_     = seisFile;
-    waveletFile_     = waveFile;
-    noiseEnergy_     = noiseEnergy;
-    waveScale_       = waveScale;
-    angle_           = angle;
-    nSeisData_       = nSeisData;
-    seisType_        = new int[nSeisData];
+    seismicFile_ = seisFile;
+    waveletFile_ = waveFile;
+    noiseEnergy_ = noiseEnergy;
+    waveScale_   = waveScale;
+    angle_       = angle;
+    nSeisData_   = nSeisData;
+    seisType_    = new int[nSeisData];
     for(i=0;i<nSeisData;i++)
       seisType_[i] = seisType;
   }
   else 
   {
-    char    ** seisFile2        = seismicFile_;
-    char    ** waveFile2        = waveletFile_;
-    float   *  noiseEnergy2     = noiseEnergy_;
-    float   *  waveScale2       = waveScale_;
-    float   *  angle2           = angle_;
-    int     *  seisType2        = seisType_;
+    char  ** seisFile2    = seismicFile_;
+    char  ** waveFile2    = waveletFile_;
+    float *  noiseEnergy2 = noiseEnergy_;
+    float *  waveScale2   = waveScale_;
+    float *  angle2       = angle_;
+    int   *  seisType2    = seisType_;
 
     int nTot = nSeisData + nSeisData_;
-    seismicFile_     = new char *[nTot];
-    waveletFile_     = new char *[nTot];
-    noiseEnergy_     = new float[nTot];
-    waveScale_       = new float[nTot];
-    angle_           = new float[nTot];
-    seisType_        = new int[nTot];
+    seismicFile_ = new char *[nTot];
+    waveletFile_ = new char *[nTot];
+    noiseEnergy_ = new float[nTot];
+    waveScale_   = new float[nTot];
+    angle_       = new float[nTot];
+    seisType_    = new int[nTot];
 
     //Copy old values.
     for(i=0;i<nSeisData_;i++)  // Note nSeisData_ not updated yet.
