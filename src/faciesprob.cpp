@@ -26,8 +26,7 @@ FaciesProb::FaciesProb(ModelSettings * modelSettings,
                        int filegrid, float ** sigma0, float *corrprior, 
                        int nzp, int nz, 
                        FFTGrid* bgAlpha, FFTGrid* bgBeta, FFTGrid* bgRho, 
-                       float p_undef, float *priorFacies,
-                       int nWells)
+                       float p_undef, float *priorFacies)
 {
   modelSettings_ = modelSettings;
   fileGrid_      = filegrid;

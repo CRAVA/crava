@@ -23,8 +23,7 @@ public:
              int filegrid, float ** sigma0, float *corrprior, 
              int nzp, int nz, 
              FFTGrid* bgAlpha, FFTGrid* bgBeta, FFTGrid* bgRho, 
-             float p_undef, float *priorFacies,
-             int nWells);
+             float p_undef, float *priorFacies);
   ~FaciesProb();
   float        ** makeFaciesHistAndSetPriorProb(float* alphafiltered_,float* betafiltered_,float* rhofiltered_,int* facieslog_);
   void            makeFaciesDens(int nfac);
