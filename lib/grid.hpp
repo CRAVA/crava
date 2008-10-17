@@ -1,4 +1,4 @@
-// $Id: grid.hpp 30 2008-04-04 12:39:42Z perroe $
+// $Id$
 
 #ifndef NRLIB_GRID_HPP
 #define NRLIB_GRID_HPP

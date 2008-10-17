@@ -1416,6 +1416,7 @@ FFTGrid::writeSegyFile(const char * fileName, const Simbox * simbox, float z0)
                                              simbox->getnx(), simbox->getny(),simbox->getIL0(),
                                              simbox->getXL0(), simbox->getILStep(), simbox->getXLStep(), simbox->getILxflag(), simbox->getAngle());
   segy->setGeometry(geometry);
+  delete geometry; //Call above takes a copy.
   LogKit::LogFormatted(LogKit::LOW,"\nWriting SEGY file %s...",gfName);
   //  LogKit::LogFormatted(LogKit::LOW,"%d x %d traces.\n",nx_, ny_);
   delete [] gfName;
@@ -1460,8 +1461,8 @@ FFTGrid::writeSegyFile(const char * fileName, const Simbox * simbox, float z0)
     ilend = il0+simbox->getILStep()*(simbox->getny()-1);
     xlend = xl0 + simbox->getXLStep()*(simbox->getnx()-1);
   }
-  //float * trace = new float[nz_];
-  std::vector<float> trace(nz_);
+
+  std::vector<float> trace(segynz);//Maximum amount of data needed.
   int k;
 
   for(IL=il0;IL<=ilend;IL++)
@@ -1482,30 +1483,25 @@ FFTGrid::writeSegyFile(const char * fileName, const Simbox * simbox, float z0)
       }
       else
       {
-        int firstData = int((z-z0)/dz);
-        //printf("Generating trace %d %d %d.\n", firstData, simbox_->getnz(),nz_);
-       // for(k=0;k<firstData;k++)
-      //    trace[k] = 0; //data[0];
-        // NBNB-PAL : change div div to mult
-        double fac = dz/(simbox->getdz()*simbox->getRelThick(i,j));
-        int endData = firstData + static_cast<int>(simbox->getnz()/fac);
+        double gdz       = simbox->getdz()*simbox->getRelThick(i,j);
+        int    firstData = static_cast<int>(floor((z-z0)/dz));
+        int    endData   = static_cast<int>(ceil(((z-z0)+simbox->getnz()*gdz)/dz));
 
         if(endData > segynz)
         {
           printf("Internal warning: SEGY-grid too small (%d, %d needed). Truncating data.\n", nz_, endData); 
           endData = nz_;
         }
-        for(k=0;k<nz_;k++)
-          trace[k] = this->getRealValue(i,j,static_cast<int>(k*fac+0.5));
+        for(k=0;k<firstData;k++)
+          trace[k] = 0;
+        for(;k<endData;k++)
+          trace[k] = this->getRegularZInterpolatedRealValue(i,j,z0,dz,k,z,gdz);
+        for(;k<segynz;k++)
+          trace[k] = 0;
 
-       // for(k=firstData;k<endData;k++)
-       //   trace[k] = this->getRealValue(i,j,static_cast<int>((k-firstData)*fac+0.5));
-       // for(k=endData;k<segynz;k++)
-       //   trace[k] = 0; //data[simbox_->getnz()-1];
-        //printf("Trace generated.\n");
         float xx = float(x);
         float yy = float(y);
-        segy->writeTrace(xx, yy, trace,simbox,0.0,0.0);
+        segy->writeTrace(xx, yy, trace, NULL);
       }
     }
   }
@@ -1515,6 +1511,40 @@ FFTGrid::writeSegyFile(const char * fileName, const Simbox * simbox, float z0)
   //  time(&timeend);
   //printf("\n Write SEGY was performed in %ld seconds.\n",timeend-timestart);
   return(0);
+}
+
+float
+FFTGrid::getRegularZInterpolatedRealValue(int i, int j, float z0Reg, 
+                                          float dzReg, int kReg, 
+                                          float z0Grid, float dzGrid)
+{
+  float z     = z0Reg+dzReg*kReg;
+  float t     = (z-z0Grid)/dzGrid;
+  int   kGrid = int(t);
+
+  t -= kGrid;
+
+  if(kGrid<0) {
+    if(kGrid<-1)
+      return(RMISSING);
+    else {
+      kGrid = 0;
+      t = 0;
+    }
+  }
+  else if(kGrid>nz_-2) {
+    if(kGrid > nz_-1)
+      return(RMISSING);
+    else {
+      kGrid = nz_-2;
+      t = 1;
+    }
+  }
+
+  float v1 = getRealValue(i,j,kGrid);
+  float v2 = getRealValue(i,j,kGrid+1);
+  float v  = (1-t)*v1+t*v2;
+  return(v);
 }
 
 void

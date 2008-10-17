@@ -145,6 +145,11 @@ protected:
   fftw_complex*         fft1DzInPlace(fftw_real*  in);
   fftw_real*            invFFT1DzInPlace(fftw_complex* in);
 
+  //Interpolation into SegY and sgri
+  float                 getRegularZInterpolatedRealValue(int i, int j, float z0Reg,
+                                                         float dzReg, int kReg,
+                                                         float z0Grid, float dzGrid);
+
   //Supporting functions for interpolateSeismic
   int                   interpolateTrace(int index, short int * flags, int i, int j);
   void                  extrapolateSeismic(int imin, int imax, int jmin, int jmax);
