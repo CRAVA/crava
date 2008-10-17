@@ -207,6 +207,14 @@ Simbox::getCoord(int xInd, int yInd, int zInd, double &x, double &y, double &z) 
   }
 }
 
+void  
+Simbox::getXYCoord(int xInd, int yInd, double &x, double &y) const
+{
+  double rx = (static_cast<double>(xInd) + 0.5)*dx_;
+  double ry = (static_cast<double>(yInd) + 0.5)*dy_;
+  x = rx*cosrot_-ry*sinrot_ + GetXMin();
+  y = rx*sinrot_+ry*cosrot_ + GetYMin();
+}
 
 void
 Simbox::getMinMaxZ(double &minZ, double &maxZ) const

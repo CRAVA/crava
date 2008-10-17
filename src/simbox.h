@@ -26,6 +26,7 @@ public:
   void           getZInterpolation(double x, double y, double z, 
                                    int & index1, int & index2, double & t) const;
   void           getCoord(int xInd, int yInd, int zInd, double &x, double &y, double &z) const;
+  void           getXYCoord(int xInd, int yInd, double &x, double &y) const;
   int            getnx()                         const { return nx_ ;}
   int            getny()                         const { return ny_ ;}
   int            getnz()                         const { return nz_ ;}
