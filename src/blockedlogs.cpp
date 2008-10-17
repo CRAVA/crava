@@ -618,7 +618,7 @@ BlockedLogs::setLogFromVerticalTrend(float     *& blockedLog,
     }
     else {
       double zj = b + 0.5*dzVt; // Center of vertical trend cell
-      value = vertical_trend[j]*(zj+dzVt-zi)/dzVt + vertical_trend[j]*(zi-zj)/dzVt;
+      value = vertical_trend[j]* static_cast<float>((zj+dzVt-zi)/dzVt) + vertical_trend[j]*static_cast<float>((zi-zj)/dzVt);
     }
     blockedLog[i] = value;
 
