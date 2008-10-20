@@ -41,8 +41,8 @@ public:
   float         ** getAMatrix()               const { return reflectionMatrix_       ;}
   RandomGen      * getRandomGen()             const { return randomGen_              ;} 
   bool             hasSignalToNoiseRatio()    const { return hasSignalToNoiseRatio_  ;}
-  GridMapping    * getTimeDepthMapping()      const { return timeDepthMapping_;}
-  GridMapping    * getTimeCutMapping()        const { return timeCutMapping_;}
+  GridMapping    * getTimeDepthMapping()      const { return timeDepthMapping_       ;}
+  GridMapping    * getTimeCutMapping()        const { return timeCutMapping_         ;}
   bool             getVelocityFromInversion() const { return velocityFromInversion_  ;}
   bool             getFailed()                const { return failed_                 ;}
   void             releaseGrids();                                        // Cuts connection to SeisCube_ and  backModel_

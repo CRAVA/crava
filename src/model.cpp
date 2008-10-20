@@ -163,7 +163,8 @@ Model::Model(char * fileName)
         if(failedSeismic==false)
         {
           if(timeCutSimbox!=NULL)
-            timeCutMapping_ = new GridMapping(timeCutSimbox,modelFile, modelSettings_,0, failedSimbox, errText, format);
+            timeCutMapping_ = new GridMapping(timeCutSimbox, modelFile, modelSettings_,0, failedSimbox, errText, format);
+
           if(failedSimbox==false)
           {
             FFTGrid * velocity = NULL;

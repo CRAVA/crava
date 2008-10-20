@@ -28,14 +28,13 @@
 Crava::Crava(Model * model)
 {	
   int   i;
-  model_ = model;
-  nx_   = model->getBackAlpha()->getNx();
-  ny_   = model->getBackAlpha()->getNy();
-  nz_   = model->getBackAlpha()->getNz(); 
-  nxp_  = model->getBackAlpha()->getNxp();
-  nyp_  = model->getBackAlpha()->getNyp();
-  nzp_  = model->getBackAlpha()->getNzp();
-
+  model_          = model;
+  nx_             = model->getBackAlpha()->getNx();
+  ny_             = model->getBackAlpha()->getNy();
+  nz_             = model->getBackAlpha()->getNz(); 
+  nxp_            = model->getBackAlpha()->getNxp();
+  nyp_            = model->getBackAlpha()->getNyp();
+  nzp_            = model->getBackAlpha()->getNzp();
   lowCut_         = model->getModelSettings()->getLowCut();
   highCut_        = model->getModelSettings()->getHighCut();
   wnc_            = model->getModelSettings()->getWNC();     // white noise component see crava.h
@@ -1264,7 +1263,7 @@ Crava::simulate( RandomGen * randomGen)
           seed2->add(postRho_);
           seed2->endAccess();
 
-          //NBNB Bjørn: Sett inn krigingkall for seed0, seed1, seed2 her
+          //NBNB BjÃ¸rn: Sett inn krigingkall for seed0, seed1, seed2 her
           if(krigingParams_ != 0) { 
             if (!pKriging_)
               initPostKriging();
@@ -2218,7 +2217,10 @@ void Crava::initPostKriging() {
                                 int(krigingParams_[0]));
 }
 
-void Crava::writeToFile(char * timeFileName, char * depthFileName, FFTGrid * grid, std::string sgriLabel) {
+void Crava::writeToFile(char        * timeFileName, 
+                        char        * depthFileName, 
+                        FFTGrid     * grid, 
+                        std::string   sgriLabel) {
 
   if(!((outputFlag_ & ModelSettings::NOTIME)>0))
   {
@@ -2232,49 +2234,54 @@ void Crava::writeToFile(char * timeFileName, char * depthFileName, FFTGrid * gri
     else
       grid->writeFile(timeFileName,simbox_, sgriLabel, 1, model_->getModelSettings()->getSegyOffset());
   }
-  if(model_->getTimeDepthMapping()!=NULL)
+
+  GridMapping * timeDepthMapping = model_->getTimeDepthMapping();
+
+  if(timeDepthMapping != NULL)
   {
     if(model_->getVelocityFromInversion()==false) // velocity from file or no velocity
     {
-      StormContGrid *mapping = model_->getTimeDepthMapping()->getMapping();
-      if(mapping!=NULL)
-      {
-        writeResampledStormCube(grid, model_->getTimeDepthMapping(), depthFileName, simbox_);
-      }
+      if(timeDepthMapping->getMapping()!=NULL)
+        writeResampledStormCube(grid, timeDepthMapping, depthFileName, simbox_);
       else // only top and bottom surfaces given, no velocity field
-        grid->writeFile(depthFileName,model_->getTimeDepthMapping()->getSimbox(),"", 0);
+        grid->writeFile(depthFileName,timeDepthMapping->getSimbox(),"", 0);
 
     }
     else // get velocity from inversion
     {
+      bool failed = 0;
+      char * errText = new char[MAX_STRING];      
+
+      const Simbox * timeSimbox = NULL;
       if(model_->getTimeCutMapping()!=NULL)
-      {
-        bool failed = 0;
-        char * errText = new char[MAX_STRING];      
-        if(model_->getTimeDepthMapping()->getSimbox()==NULL)
-          model_->getTimeDepthMapping()->calculateSurfaceFromVelocity(postAlpha_, model_->getTimeCutMapping()->getSimbox(),model_->getModelSettings(),failed, errText);
-        if(failed)
-          LogKit::LogFormatted(LogKit::ERROR,"\nDepth conversion: Problems calculating surface from Vp. \n %s", errText);
-        if(model_->getTimeDepthMapping()->getMapping()==0)
-          model_->getTimeDepthMapping()->makeMapping(postAlpha_,model_->getTimeCutMapping()->getSimbox());
-        delete errText;
-      }
+        timeSimbox = model_->getTimeCutMapping()->getSimbox();
       else
-      {
-        bool failed = 0;
-        char * errText = new char[MAX_STRING];
-        if(model_->getTimeDepthMapping()->getSimbox()==NULL)
-          model_->getTimeDepthMapping()->calculateSurfaceFromVelocity(postAlpha_, simbox_,model_->getModelSettings(),failed, errText);
-        if(failed)
-          LogKit::LogFormatted(LogKit::ERROR,"\nDepth conversion: Problems calculating surface from Vp. \n %s", errText);
-        if(model_->getTimeDepthMapping()->getMapping()==0)
-          model_->getTimeDepthMapping()->makeMapping(postAlpha_,simbox_);  
-        delete [] errText;
-      }   
-      writeResampledStormCube(grid, model_->getTimeDepthMapping(), depthFileName, simbox_);
-   
+        timeSimbox = simbox_;
+
+      if(timeDepthMapping->getSimbox()==NULL)
+        timeDepthMapping->calculateSurfaceFromVelocity(postAlpha_, 
+                                                       timeSimbox,
+                                                       model_->getModelSettings(),
+                                                       failed, 
+                                                       errText);
+      if(failed)
+        LogKit::LogFormatted(LogKit::ERROR,"\nDepth conversion: Problems calculating surface from Vp. \n %s", errText);
+      else
+        if(timeDepthMapping->getMapping()==0)
+          timeDepthMapping->makeTimeDepthMapping(timeSimbox, 
+                                                 postAlpha_);
+      
+      delete errText;
     }
+
+  if (timeDepthMapping->getMapping() == NULL)
+    printf("A mapping = NULL\n");
+  else
+    printf("A mapping = not NULL\n");
   
+
+
+    writeResampledStormCube(grid, timeDepthMapping, depthFileName, simbox_);
   }
 }
 
@@ -2354,15 +2361,22 @@ void Crava::computeFaciesProb(FilterWellLogs *filteredlogs)
   }
 }
 void
-Crava::writeResampledStormCube(FFTGrid *grid, GridMapping *gridmapping, char * fileName, const Simbox *simbox)
+Crava::writeResampledStormCube(FFTGrid      * grid, 
+                               GridMapping  * gridmapping, 
+                               char         * fileName, 
+                               const Simbox * simbox)
 {
   // simbox is related to the cube we resample from. gridmapping contains simbox for the cube we resample to.
   int i,j,k;
  
   float time, kindex;
-  double x,y;
   StormContGrid *mapping = gridmapping->getMapping();
   StormContGrid outgrid(*mapping);
+
+  //
+  // NBNB-PAL: Bruken av x og y her er neppe riktig. jfr. gridmapping
+  //
+  double x,y;
   int nz = mapping->GetNK();
   for(i=0;i<nx_;i++)
   {

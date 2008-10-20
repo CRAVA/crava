@@ -566,7 +566,7 @@ Background::smoothTrendWithLocalLinearRegression(float      * trend,
 
   if (error) {
     //
-    // NBNB-PAL: Her burde vi *kanskje* først forsøke global linear regresjon...
+    // NBNB-PAL: Here we should possibly first try a global linear regression...
     //
     LogKit::LogFormatted(LogKit::LOW,"\nWARNING : The calculation of the vertical trend for parameter %s using local linear\n",parName);
     LogKit::LogFormatted(LogKit::LOW,"          regression failed - trying global mean instead. Possible causes: \n");
