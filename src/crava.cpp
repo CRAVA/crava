@@ -1045,6 +1045,10 @@ Crava::computePostMeanResidAndFFTCov()
   assert(postRho_->getIsTransformed());
   postRho_->invFFTInPlace();
 
+  //
+  // NBNB-PAL: Sett opp tid-dyp-convertering her
+  //
+
   if((outputFlag_ & ModelSettings::PREDICTION) > 0)
   {
     if(krigingParams_ != 0) { 
@@ -2239,49 +2243,39 @@ void Crava::writeToFile(char        * timeFileName,
 
   if(timeDepthMapping != NULL)
   {
-    if(model_->getVelocityFromInversion()==false) // velocity from file or no velocity
+    if (!model_->getVelocityFromInversion() && timeDepthMapping->getMapping() == NULL) 
+      // No velocity, only top and base depth surfaces are given
+      grid->writeFile(depthFileName,timeDepthMapping->getSimbox(),"", 0);
+    else
     {
-      if(timeDepthMapping->getMapping()!=NULL)
-        writeResampledStormCube(grid, timeDepthMapping, depthFileName, simbox_);
-      else // only top and bottom surfaces given, no velocity field
-        grid->writeFile(depthFileName,timeDepthMapping->getSimbox(),"", 0);
-
+      if(model_->getVelocityFromInversion())
+      {
+        bool failed = 0;
+        char * errText = new char[MAX_STRING];      
+        
+        const Simbox * timeSimbox = NULL;
+        if(model_->getTimeCutMapping()!=NULL)
+          timeSimbox = model_->getTimeCutMapping()->getSimbox();
+        else
+          timeSimbox = simbox_;
+        
+        if(timeDepthMapping->getSimbox()==NULL)
+          timeDepthMapping->calculateSurfaceFromVelocity(postAlpha_, 
+                                                         timeSimbox,
+                                                         model_->getModelSettings(),
+                                                         failed, 
+                                                         errText);
+        if(failed)
+          LogKit::LogFormatted(LogKit::ERROR,"\nDepth conversion: Problems calculating surface from Vp. \n %s", errText);
+        else
+          if(timeDepthMapping->getMapping()==0)
+            timeDepthMapping->makeTimeDepthMapping(timeSimbox, 
+                                                   postAlpha_);
+        delete errText;
+        
+      }
+      writeResampledStormCube(grid, timeDepthMapping, depthFileName, simbox_);
     }
-    else // get velocity from inversion
-    {
-      bool failed = 0;
-      char * errText = new char[MAX_STRING];      
-
-      const Simbox * timeSimbox = NULL;
-      if(model_->getTimeCutMapping()!=NULL)
-        timeSimbox = model_->getTimeCutMapping()->getSimbox();
-      else
-        timeSimbox = simbox_;
-
-      if(timeDepthMapping->getSimbox()==NULL)
-        timeDepthMapping->calculateSurfaceFromVelocity(postAlpha_, 
-                                                       timeSimbox,
-                                                       model_->getModelSettings(),
-                                                       failed, 
-                                                       errText);
-      if(failed)
-        LogKit::LogFormatted(LogKit::ERROR,"\nDepth conversion: Problems calculating surface from Vp. \n %s", errText);
-      else
-        if(timeDepthMapping->getMapping()==0)
-          timeDepthMapping->makeTimeDepthMapping(timeSimbox, 
-                                                 postAlpha_);
-      
-      delete errText;
-    }
-
-  if (timeDepthMapping->getMapping() == NULL)
-    printf("A mapping = NULL\n");
-  else
-    printf("A mapping = not NULL\n");
-  
-
-
-    writeResampledStormCube(grid, timeDepthMapping, depthFileName, simbox_);
   }
 }
 

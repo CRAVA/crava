@@ -26,15 +26,22 @@ GridMapping::GridMapping(const Simbox  * simbox,
                          char          * errText,
                          int             format, 
                          FFTGrid       * velocity)
+  : mapping_(NULL),
+    simbox_(NULL),
+    z0Grid_(NULL),
+    z1Grid_(NULL),
+    format_(format),
+    surfmissing_(0)
 {
-  format_  = format;
-  failed   = false;
-  simbox_  = NULL;
-  mapping_ = NULL;
+  failed = false;
 
   if(depthmode==1) { // Time-depth mapping
     int nz = simbox->getnz();
-    setSurfaces(modelFile, modelSettings, failed, errText, nz); // If two surfaces are read from file, the simbox is completed in this routine.
+    setSurfaces(modelFile, 
+                modelSettings, 
+                failed, 
+                errText, 
+                nz); // If two surfaces are read from file, the simbox is completed in this routine.
     if(velocity!=NULL) {
       if(surfmissing_ > 0)
         calculateSurfaceFromVelocity(velocity,
@@ -65,13 +72,42 @@ GridMapping::~GridMapping()
   mapping_ = NULL;
 }
 
-void GridMapping::makeTimeTimeMapping(StormContGrid *& mapping,
-                                      const Simbox   * timeCutSimbox)
+/*
+void
+GridMapping::makeTimeDepthMapping(const Simbox  * simbox, 
+                                  ModelFile     * modelFile, 
+                                  ModelSettings * modelSettings, 
+                                  bool            depthmode, 
+                                  bool          & failed,
+                                  char          * errText,
+                                  int             format, 
+                                  FFTGrid       * velocity)
+{
+  int nz = simbox->getnz();
+  setSurfaces(modelFile, modelSettings, failed, errText, nz); // If two surfaces are read from file, the simbox is completed in this routine.
+  if(velocity!=NULL) {
+    if(surfmissing_ > 0)
+      calculateSurfaceFromVelocity(velocity,
+                                   simbox, 
+                                   modelSettings, 
+                                   failed, 
+                                   errText); // simbox is set in this routine
+    makeTimeDepthMapping(mapping_,
+                         simbox, 
+                         simbox_, 
+                         velocity);
+  }
+}
+*/
+
+void 
+GridMapping::makeTimeTimeMapping(StormContGrid *& mapping,
+                                 const Simbox   * timeCutSimbox)
 {
   int nx  = timeCutSimbox->getnx();
   int ny  = timeCutSimbox->getny();
   int nz  = timeCutSimbox->getnz();
-  mapping = new StormContGrid(*timeCutSimbox, nx, ny, nz); //NBNB-PAL: Her skjer det ingen resize. Det er vel feil?
+  mapping = new StormContGrid(*timeCutSimbox, nx, ny, nz); 
 
   for(int i=0;i<nx;i++)
   {
@@ -88,8 +124,9 @@ void GridMapping::makeTimeTimeMapping(StormContGrid *& mapping,
   }
 }
 
-void GridMapping::makeTimeDepthMapping(const Simbox * timeSimbox,
-                                       FFTGrid      * velocity) 
+void 
+GridMapping::makeTimeDepthMapping(const Simbox * timeSimbox,
+                                  FFTGrid      * velocity) 
 {
   makeTimeDepthMapping(mapping_,
                        timeSimbox, 
@@ -97,10 +134,11 @@ void GridMapping::makeTimeDepthMapping(const Simbox * timeSimbox,
                        velocity);
 }
 
-void GridMapping::makeTimeDepthMapping(StormContGrid *& mapping,
-                                       const Simbox   * timeSimbox,
-                                       const Simbox   * depthSimbox,
-                                       FFTGrid        * velocity)
+void 
+GridMapping::makeTimeDepthMapping(StormContGrid *& mapping,
+                                  const Simbox   * timeSimbox,
+                                  const Simbox   * depthSimbox,
+                                  FFTGrid        * velocity)
 {
   int nx  = depthSimbox->getnx();
   int ny  = depthSimbox->getny();
@@ -113,7 +151,6 @@ void GridMapping::makeTimeDepthMapping(StormContGrid *& mapping,
     {
       double x,y;
       depthSimbox->getXYCoord(i,j,x,y);
-
       double tTop   = timeSimbox->getTop(x,y);
       double tBase  = timeSimbox->getBot(x,y); 
       double zTop   = depthSimbox->getTop(x,y);
@@ -122,7 +159,7 @@ void GridMapping::makeTimeDepthMapping(StormContGrid *& mapping,
       double deltaZ = (zBase-zTop)/static_cast<double>(nz);    
       double sum    = 0.0;
       double sumz   = 0.0;    
-      for(int k=0;k<timeSimbox->getnz();k++)
+      for(int k=0 ; k<timeSimbox->getnz() ; k++)
         sumz +=deltaT*velocity->getRealValue(i,j,k);
       double c = (zBase-zTop)/sumz;
       (*mapping)(i,j,0) = static_cast<float>(tTop);
@@ -145,53 +182,64 @@ void GridMapping::makeTimeDepthMapping(StormContGrid *& mapping,
   }
 }
 
-void GridMapping::calculateSurfaceFromVelocity(FFTGrid *velocity, const Simbox *simbox, ModelSettings *modelSettings, bool &failed, char *errText)
+void 
+GridMapping::calculateSurfaceFromVelocity(FFTGrid       * velocity, 
+                                          const Simbox  * timeSimbox, 
+                                          ModelSettings * modelSettings, 
+                                          bool          & failed, 
+                                          char          * errText)
 {
-    
-  if(surfmissing_>0 && velocity!=NULL)
+  if(surfmissing_>0)
   {
     // calculate new surface
-    int nz = simbox->getnz();
-    int nx,ny;
-    nx = simbox->getnx();
-    ny = simbox->getny();
+    int nx = timeSimbox->getnx();
+    int ny = timeSimbox->getny();
+    int nz = timeSimbox->getnz();
     double * values = new double[nx*ny];
-    double dt, sum, x, y;
-    int i,j,k;
-    for(i=0;i<nx;i++)
+
+    for(int i=0 ; i<nx ; i++)
     {
-      x = simbox->getx0()+i*simbox->getdx();
-      for(j=0;j<ny;j++)
+      for(int j=0 ; j<ny ; j++)
       {
-        y = simbox->gety0()+j*simbox->getdy();
-        sum = 0;
-        dt = (simbox->getBot(x,y)-simbox->getTop(x,y))/(2000.0*simbox->getnz());
-        for(k=0;k<simbox->getnz();k++)          
+        double x, y;
+        timeSimbox->getXYCoord(i,j,x,y);
+        double sum = 0.0;
+        double dt  = (timeSimbox->getBot(x,y)-timeSimbox->getTop(x,y))/(2000.0*static_cast<double>(nz));
+        for(int k=0 ; k<nz ; k++)          
           sum+=velocity->getRealValue(i,j,k)*dt;
-        if(surfmissing_==2)
-          values[i*nx+j] = z0Grid_->GetZ(x,y)+ sum;
-        else if(surfmissing_==1)
-          values[i*nx+j] = z1Grid_->GetZ(x,y)-sum;
+        if(surfmissing_==1)
+          values[i*nx+j] = z1Grid_->GetZ(x,y) - sum;
+        else if(surfmissing_==2)
+          values[i*nx+j] = z0Grid_->GetZ(x,y) + sum;
       }
     }
-    if(surfmissing_==2)
-    {
-      z1Grid_ = new Surface(z0Grid_->GetXMin(), z0Grid_->GetYMin(), 
-                            z0Grid_->GetLengthX(), z0Grid_->GetLengthY(), 
-                            z0Grid_->GetNI(),z0Grid_->GetNJ(), (*values));
-    }
+    if(surfmissing_==1)
+      z0Grid_ = new Surface(z1Grid_->GetXMin(), 
+                            z1Grid_->GetYMin(), 
+                            z1Grid_->GetLengthX(), 
+                            z1Grid_->GetLengthY(), 
+                            z1Grid_->GetNI(),
+                            z1Grid_->GetNJ(), 
+                            (*values));
     else
-    {
-      z0Grid_ = new Surface(z1Grid_->GetXMin(), z1Grid_->GetYMin(), 
-                            z1Grid_->GetLengthX(), z1Grid_->GetLengthY(), 
-                            z1Grid_->GetNI(),z1Grid_->GetNJ(), (*values));
-    }
+      z1Grid_ = new Surface(z0Grid_->GetXMin(), 
+                            z0Grid_->GetYMin(), 
+                            z0Grid_->GetLengthX(), 
+                            z0Grid_->GetLengthY(), 
+                            z0Grid_->GetNI(),
+                            z0Grid_->GetNJ(), 
+                            (*values));
     setSimbox(modelSettings, failed, errText,nz);
   }
   surfmissing_ = 0;
 }
 
-void GridMapping::setSurfaces(ModelFile *modelFile, ModelSettings *modelSettings, bool &failed, char *errText, int nz)
+void 
+GridMapping::setSurfaces(ModelFile     * modelFile, 
+                         ModelSettings * modelSettings, 
+                         bool          & failed, 
+                         char          * errText, 
+                         int             nz)
 {
   surfmissing_ = 0;
   char **surfFile = modelFile->getDepthSurfFile();
