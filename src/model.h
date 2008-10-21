@@ -113,12 +113,19 @@ private:
                                           RandomGen     * randomGen,
                                           int             nz,
                                           ModelSettings * modelSettings);
-  void             processVelocity(FFTGrid      *& velocity,
-                                   Simbox        * timeSimbox,
-                                   ModelSettings * modelSettings, 
-                                   ModelFile     * modelFile, 
-                                   char          * errText,
-                                   bool          & failed);
+  void             processDepthConversion(Simbox        * timeCutSimbox, 
+                                          Simbox        * timeSimbox_,
+                                          ModelSettings * modelSettings_, 
+                                          ModelFile     * modelFile,
+                                          char          * errText, 
+                                          bool          & failedVelocity,
+                                          int             format);
+  void             loadVelocity(FFTGrid      *& velocity,
+                                Simbox        * timeSimbox,
+                                ModelSettings * modelSettings, 
+                                ModelFile     * modelFile, 
+                                char          * errText,
+                                bool          & failed);
   void             setSimboxSurfaces(Simbox    *& simbox, 
                                      char      ** surfFile, 
                                      bool         parallelSurfaces, 

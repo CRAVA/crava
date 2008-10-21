@@ -11,41 +11,41 @@
 
 class Simbox;
 class FFTGrid;
-class Model;
 class ModelSettings;
 class ModelFile;
-
-
+class Model;
 
 class GridMapping{
 public:
   GridMapping(const Simbox  * simbox, 
-              ModelFile     * modelFile, 
               ModelSettings * modelSettings, 
-              bool            depthmode, 
-              bool          & failed, 
               char          * errText,
               int             format, 
               FFTGrid       * velocity = NULL);
   ~GridMapping();
-  StormContGrid * getMapping()  const { return mapping_ ;}
-  Simbox        * getSimbox()   const { return simbox_  ;}
-  int             getFormat()         { return format_  ;}
-  void            makeTimeDepthMapping(const Simbox * timeSimbox,
-                                       FFTGrid      * velocity);
+  StormContGrid * getMapping(void)  const { return mapping_ ;}
+  Simbox        * getSimbox(void)   const { return simbox_  ;}
+  int             getFormat(void)         { return format_  ;}
+
+  void            setDepthSurfaces(ModelFile     * modelFile, 
+                                   ModelSettings * modelSettings, 
+                                   bool          & failed, 
+                                   char          * errText,
+                                   int             nz);
   void            calculateSurfaceFromVelocity(FFTGrid       * velocity, 
                                                const Simbox  * simbox, 
                                                ModelSettings * modelSettings, 
                                                bool          & failed, 
                                                char          * errText);
+  void            makeTimeDepthMapping(FFTGrid      * velocity,
+                                       const Simbox * timeSimbox);
+  void            makeTimeTimeMapping(const Simbox * timeCutSimbox);
+
 private:
-  void            makeTimeTimeMapping(StormContGrid *& mapping,
-                                      const Simbox   * simbox);
   void            makeTimeDepthMapping(StormContGrid *& mapping,
                                        const Simbox * timeSimbox,
                                        const Simbox * depthSimbox,
                                        FFTGrid      * velocity);
-  void            setSurfaces(ModelFile *modelFile, ModelSettings *modelSettings, bool &failed, char *errText,int surfmissing);
   void            setSimbox(ModelSettings *modelSettings, bool &failed, char *errText, int nz);
  
   StormContGrid * mapping_;

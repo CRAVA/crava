@@ -70,7 +70,7 @@ Model::Model(char * fileName)
   bool failedExtraSurf    = false;
   bool failedBackground   = false;
   bool failedPriorCorr    = false;
-  bool failedVelocity     = false;
+  bool failedDepthConv    = false;
   bool failedLoadingModel = false;
 
   ModelFile * modelFile   = new ModelFile(fileName);
@@ -162,28 +162,15 @@ Model::Model(char * fileName)
         
         if(failedSeismic==false)
         {
-          if(timeCutSimbox!=NULL)
-            timeCutMapping_ = new GridMapping(timeCutSimbox, modelFile, modelSettings_,0, failedSimbox, errText, format);
-
-          if(failedSimbox==false)
-          {
-            FFTGrid * velocity = NULL;
-            if(timeCutSimbox!=NULL)
-              processVelocity(velocity, timeCutSimbox,
-                              modelSettings_, modelFile, 
-                              errText, failedVelocity);
-            else
-              processVelocity(velocity,timeSimbox_,
-                              modelSettings_, modelFile, 
-                              errText, failedVelocity);
-            if(!failedVelocity && modelFile->getDoDepthConversion())
-              timeDepthMapping_ = new GridMapping(timeSimbox_, modelFile, modelSettings_, 1, failedSimbox, errText, format, velocity);
-             if(velocity !=NULL)
-              delete velocity;
-           }
-        }
-        if(!(failedSeismic || failedSimbox))
-        { 
+          if(timeCutSimbox!=NULL)  {
+            timeCutMapping_ = new GridMapping(timeCutSimbox, modelSettings_, errText, format);
+            timeCutMapping_->makeTimeTimeMapping(timeCutSimbox);
+          }
+          
+          processDepthConversion(timeCutSimbox, timeSimbox_,
+                                 modelSettings_, modelFile,
+                                 errText, failedDepthConv,
+                                 format);
           processWells(wells_, timeSimbox_, randomGen_, 
                        modelSettings_, modelFile, 
                        errText, failedWells);
@@ -226,9 +213,9 @@ Model::Model(char * fileName)
       }
     }
 
-    failedLoadingModel = failedSimbox  || failedSeismic  || failedPriorCorr  ||
-                         failedWells   || failedReflMat  || failedBackground ||
-                         failedWavelet || failedVelocity || failedExtraSurf;
+    failedLoadingModel = failedSimbox  || failedSeismic   || failedPriorCorr  ||
+                         failedWells   || failedReflMat   || failedBackground ||
+                         failedWavelet || failedDepthConv || failedExtraSurf;
 
     if (failedLoadingModel) 
       LogKit::LogFormatted(LogKit::ERROR,"\nERROR(s) while loading model. \n %s", errText);
@@ -2630,49 +2617,88 @@ Model::getCorrGradIJ(float & corrGradI, float &corrGradJ) const
   corrGradJ = float(cJ/timeSimbox_->getdz());
 }
 
+void
+Model::processDepthConversion(Simbox        * timeCutSimbox, 
+                              Simbox        * timeSimbox_,
+                              ModelSettings * modelSettings_, 
+                              ModelFile     * modelFile,
+                              char          * errText, 
+                              bool          & failed,
+                              int             format)
+{
+  if(modelFile->getDoDepthConversion()) 
+  {
+    FFTGrid * velocity = NULL;
+    if(timeCutSimbox != NULL)
+      loadVelocity(velocity, timeCutSimbox,
+                   modelSettings_, modelFile, 
+                   errText, failed);
+    else
+      loadVelocity(velocity, timeSimbox_,
+                   modelSettings_, modelFile, 
+                   errText, failed);
+
+    if(!failed) 
+    {
+      timeDepthMapping_ = new GridMapping(timeSimbox_, modelSettings_,
+                                          errText, format, velocity);
+      timeDepthMapping_->setDepthSurfaces(modelFile, modelSettings_, failed, 
+                                          errText, timeSimbox_->getnz());
+      if(velocity != NULL) 
+      {
+        timeDepthMapping_->calculateSurfaceFromVelocity(velocity,
+                                                        timeSimbox_, 
+                                                        modelSettings_, 
+                                                        failed, 
+                                                        errText); // simbox is set in this routine
+        timeDepthMapping_->makeTimeDepthMapping(velocity,
+                                                timeSimbox_);
+      }
+    }
+    if(velocity !=NULL)
+      delete velocity;
+  }
+}
 
 void 
-Model::processVelocity(FFTGrid      *& velocity,
-                       Simbox        * timeSimbox,
-                       ModelSettings * modelSettings, 
-                       ModelFile     * modelFile, 
-                       char          * errText,
-                       bool          & failed)
+Model::loadVelocity(FFTGrid      *& velocity,
+                    Simbox        * timeSimbox,
+                    ModelSettings * modelSettings, 
+                    ModelFile     * modelFile, 
+                    char          * errText,
+                    bool          & failed)
 {
-  if(modelFile->getDoDepthConversion() == true)
-  {
-    char * velocityField = modelFile->getVelocityField();
+  char * velocityField = modelFile->getVelocityField();
 
-    if(strcmp(velocityField,"CONSTANT") == 0)
-      velocity = NULL;
-    else if(strcmp(velocityField,"FROM_INVERSION")==0)
-    {
-      velocityFromInversion_ = true;
-      velocity = NULL;
+  if(strcmp(velocityField,"CONSTANT") == 0)
+    velocity = NULL;
+  else if(strcmp(velocityField,"FROM_INVERSION")==0)
+  {
+    velocityFromInversion_ = true;
+    velocity = NULL;
+  }
+  else
+  {
+    const char * parName = "velocity field";
+    char tmpErrText[MAX_STRING];
+    sprintf(tmpErrText,"%c",'\0');
+    int readerror = 0;
+    if(findFileType(velocityField) == SEGYFILE) {
+      const SegyGeometry * geometry = NULL;
+      readerror = readSegyFile(velocityField, velocity,
+                               timeSimbox, modelSettings, 
+                               tmpErrText, geometry, 
+                               FFTGrid::VELOCITY);
     }
     else
+      readerror = readStormFile(velocityField, velocity, parName, 
+                                timeSimbox, modelSettings,
+                                tmpErrText);
+    if(readerror != 0)
     {
-      const char * parName = "velocity field";
-      char tmpErrText[MAX_STRING];
-      sprintf(tmpErrText,"%c",'\0');
-      int readerror = 0;
-      if(findFileType(velocityField) == SEGYFILE) {
-        const SegyGeometry * geometry = NULL;
-        readerror = readSegyFile(velocityField, velocity,
-                                 timeSimbox, modelSettings, 
-                                 tmpErrText, geometry, 
-                                 FFTGrid::VELOCITY);
-      }
-      else
-        readerror = readStormFile(velocityField, velocity, parName, 
-                                  timeSimbox, modelSettings,
-                                  tmpErrText);
-      if(readerror != 0)
-      {
-        sprintf(errText,"%sReading of file \'%s\' for parameter \'%s\' failed\n%s\n", 
-                errText,velocityField,parName,tmpErrText);
-        failed = true;
-      }
+      sprintf(errText,"%sReading of file \'%s\' for parameter \'%s\' failed\n%s\n", 
+              errText,velocityField,parName,tmpErrText);
+      failed = true;
     }
   }
 }

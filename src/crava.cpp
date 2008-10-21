@@ -2269,8 +2269,8 @@ void Crava::writeToFile(char        * timeFileName,
           LogKit::LogFormatted(LogKit::ERROR,"\nDepth conversion: Problems calculating surface from Vp. \n %s", errText);
         else
           if(timeDepthMapping->getMapping()==0)
-            timeDepthMapping->makeTimeDepthMapping(timeSimbox, 
-                                                   postAlpha_);
+            timeDepthMapping->makeTimeDepthMapping(postAlpha_,
+                                                   timeSimbox);
         delete errText;
         
       }

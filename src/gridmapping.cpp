@@ -19,10 +19,7 @@
 
 
 GridMapping::GridMapping(const Simbox  * simbox, 
-                         ModelFile     * modelFile, 
                          ModelSettings * modelSettings, 
-                         bool            depthmode, 
-                         bool          & failed,
                          char          * errText,
                          int             format, 
                          FFTGrid       * velocity)
@@ -33,33 +30,6 @@ GridMapping::GridMapping(const Simbox  * simbox,
     format_(format),
     surfmissing_(0)
 {
-  failed = false;
-
-  if(depthmode==1) { // Time-depth mapping
-    int nz = simbox->getnz();
-    setSurfaces(modelFile, 
-                modelSettings, 
-                failed, 
-                errText, 
-                nz); // If two surfaces are read from file, the simbox is completed in this routine.
-    if(velocity!=NULL) {
-      if(surfmissing_ > 0)
-        calculateSurfaceFromVelocity(velocity,
-                                     simbox, 
-                                     modelSettings, 
-                                     failed, 
-                                     errText); // simbox is set in this routine
-      makeTimeDepthMapping(mapping_,
-                           simbox, 
-                           simbox_, 
-                           velocity);
-    }
-  } 
-  else {
-    simbox_ = new Simbox(simbox);
-    makeTimeTimeMapping(mapping_,
-                        simbox);
-  }
 }
 
 GridMapping::~GridMapping()
@@ -72,42 +42,14 @@ GridMapping::~GridMapping()
   mapping_ = NULL;
 }
 
-/*
-void
-GridMapping::makeTimeDepthMapping(const Simbox  * simbox, 
-                                  ModelFile     * modelFile, 
-                                  ModelSettings * modelSettings, 
-                                  bool            depthmode, 
-                                  bool          & failed,
-                                  char          * errText,
-                                  int             format, 
-                                  FFTGrid       * velocity)
-{
-  int nz = simbox->getnz();
-  setSurfaces(modelFile, modelSettings, failed, errText, nz); // If two surfaces are read from file, the simbox is completed in this routine.
-  if(velocity!=NULL) {
-    if(surfmissing_ > 0)
-      calculateSurfaceFromVelocity(velocity,
-                                   simbox, 
-                                   modelSettings, 
-                                   failed, 
-                                   errText); // simbox is set in this routine
-    makeTimeDepthMapping(mapping_,
-                         simbox, 
-                         simbox_, 
-                         velocity);
-  }
-}
-*/
-
 void 
-GridMapping::makeTimeTimeMapping(StormContGrid *& mapping,
-                                 const Simbox   * timeCutSimbox)
+GridMapping::makeTimeTimeMapping(const Simbox * timeCutSimbox)
 {
-  int nx  = timeCutSimbox->getnx();
-  int ny  = timeCutSimbox->getny();
-  int nz  = timeCutSimbox->getnz();
-  mapping = new StormContGrid(*timeCutSimbox, nx, ny, nz); 
+  int nx   = timeCutSimbox->getnx();
+  int ny   = timeCutSimbox->getny();
+  int nz   = timeCutSimbox->getnz();
+  mapping_ = new StormContGrid(*timeCutSimbox, nx, ny, nz); 
+  simbox_  = new Simbox(timeCutSimbox);
 
   for(int i=0;i<nx;i++)
   {
@@ -119,14 +61,14 @@ GridMapping::makeTimeTimeMapping(StormContGrid *& mapping,
       double tBase  = timeCutSimbox->getBot(x,y); 
       double deltaT = (tBase-tTop)/static_cast<double>(nz);    
       for(int k=0;k<nz;k++)      
-        (*mapping)(i,j,k) = static_cast<float>(tTop + static_cast<double>(k)*deltaT);
+        (*mapping_)(i,j,k) = static_cast<float>(tTop + static_cast<double>(k)*deltaT);
     }
   }
 }
 
 void 
-GridMapping::makeTimeDepthMapping(const Simbox * timeSimbox,
-                                  FFTGrid      * velocity) 
+GridMapping::makeTimeDepthMapping(FFTGrid      * velocity,
+                                  const Simbox * timeSimbox) 
 {
   makeTimeDepthMapping(mapping_,
                        timeSimbox, 
@@ -235,11 +177,11 @@ GridMapping::calculateSurfaceFromVelocity(FFTGrid       * velocity,
 }
 
 void 
-GridMapping::setSurfaces(ModelFile     * modelFile, 
-                         ModelSettings * modelSettings, 
-                         bool          & failed, 
-                         char          * errText, 
-                         int             nz)
+GridMapping::setDepthSurfaces(ModelFile     * modelFile, 
+                              ModelSettings * modelSettings, 
+                              bool          & failed, 
+                              char          * errText, 
+                              int             nz)
 {
   surfmissing_ = 0;
   char **surfFile = modelFile->getDepthSurfFile();
@@ -282,7 +224,7 @@ GridMapping::setSurfaces(ModelFile     * modelFile,
   if(surfmissing_==0)
   {
     setSimbox(modelSettings,failed, errText, nz);
-  }
+  } 
 }
 
 void GridMapping::setSimbox(ModelSettings *modelSettings, bool &failed, char *errText, int nz)
