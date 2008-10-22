@@ -6,7 +6,6 @@
 
 #include "fftgrid.h"
 
-class SegY;
 class Corr;
 class Wavelet;
 class Simbox;

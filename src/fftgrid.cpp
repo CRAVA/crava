@@ -1480,8 +1480,8 @@ FFTGrid::writeSegyFile(const char * fileName, const Simbox * simbox, float z0)
       simbox->findIJFromILXL(IL,XL,i,j);
       index = i+j*simbox->getnx();
 
-      // float * value = new float[nz_];
-      simbox->getCoord(i, j, 0, x, y, z); 
+      simbox->getCoord(i, j, 0, x, y, z);
+      z = simbox->getTop(x,y);
 
       if(z == RMISSING || z == WELLMISSING)
       {
@@ -1492,13 +1492,13 @@ FFTGrid::writeSegyFile(const char * fileName, const Simbox * simbox, float z0)
       else
       {
         double gdz       = simbox->getdz()*simbox->getRelThick(i,j);
-        int    firstData = static_cast<int>(floor((z-z0)/dz));
-        int    endData   = static_cast<int>(ceil(((z-z0)+simbox->getnz()*gdz)/dz));
+        int    firstData = static_cast<int>(floor(0.5+(z-z0)/dz));
+        int    endData   = static_cast<int>(floor(0.5+((z-z0)+nz_*gdz)/dz));
 
         if(endData > segynz)
         {
           printf("Internal warning: SEGY-grid too small (%d, %d needed). Truncating data.\n", nz_, endData); 
-          endData = nz_;
+          endData = segynz;
         }
         for(k=0;k<firstData;k++)
           trace[k] = 0;

@@ -6,10 +6,6 @@
 #include "nrlib/surface/regularsurface.hpp"
 #include "nrlib/segy/segy.hpp"
 
-struct irapgrid;
-
-class SegyGeometry;
-
 class Simbox : public NRLib2::Volume 
 {
 public:

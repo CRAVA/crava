@@ -7,12 +7,10 @@
 #include "fft/include/fftw.h"
 #include "definitions.h"
 
-class SegY;
 class Corr;
 class Wavelet;
 class Simbox;
 class RandomGen;
-class SegyGeometry;
 
 class FFTGrid{
 public:
