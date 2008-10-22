@@ -112,7 +112,7 @@ void
 GridMapping::calculateSurfaceFromVelocity(FFTGrid       * velocity, 
                                           const Simbox  * timeSimbox)
 {
-  if(z0Grid_==NULL || z1Grid_==NULL)
+ /* if(z0Grid_==NULL || z1Grid_==NULL)
   {
     // calculate new surface
     int nx = timeSimbox->getnx();
@@ -137,23 +137,64 @@ GridMapping::calculateSurfaceFromVelocity(FFTGrid       * velocity,
           values[i*nx+j] = z0Grid_->GetZ(x,y) + sum;
       }
     }
+    */
     if(z0Grid_==NULL)
+    {
       z0Grid_ = new Surface(z1Grid_->GetXMin(), 
                             z1Grid_->GetYMin(), 
                             z1Grid_->GetLengthX(), 
                             z1Grid_->GetLengthY(), 
                             z1Grid_->GetNI(),
                             z1Grid_->GetNJ(), 
-                            (*values));
-    else
+                            RMISSING);
+      for(int j=0 ; j<z1Grid_->GetNJ() ; j++)
+      {
+        for(int i=0 ; i<z1Grid_->GetNI() ; i++)
+        {
+          double x, y;
+          z1Grid_->GetXY(i,j,x,y);   
+       
+          //timeSimbox->getXYCoord(i,j,x,y);
+          double sum = 0.0;
+          int nz = timeSimbox->getnz();
+          double dt  = (timeSimbox->getBot(x,y)-timeSimbox->getTop(x,y))/(2000.0*static_cast<double>(nz));
+          int ii, jj,kk;
+          timeSimbox->getIndexes(x,y,0,ii,jj,kk);
+          for(int k=0 ; k<nz ; k++)          
+           sum+=velocity->getRealValue(ii,jj,k)*dt;
+          (*z0Grid_)(i,j) = z1Grid_->GetZ(x,y) - sum;
+        }
+      }
+    }
+    else if(z1Grid_==NULL)
+    {
       z1Grid_ = new Surface(z0Grid_->GetXMin(), 
                             z0Grid_->GetYMin(), 
                             z0Grid_->GetLengthX(), 
                             z0Grid_->GetLengthY(), 
                             z0Grid_->GetNI(),
                             z0Grid_->GetNJ(), 
-                            (*values));
-  }
+                            RMISSING);
+      for(int j=0 ; j<z0Grid_->GetNJ() ; j++)
+      {
+        for(int i=0 ; i<z0Grid_->GetNI() ; i++)
+        {
+          double x, y;
+          z0Grid_->GetXY(i,j,x,y);   
+          double sum = 0.0;
+          int nz = timeSimbox->getnz();
+          double dt  = (timeSimbox->getBot(x,y)-timeSimbox->getTop(x,y))/(2000.0*static_cast<double>(nz));
+          int ii, jj,kk;
+          timeSimbox->getIndexes(x,y,0,ii,jj,kk);
+          for(int k=0 ; k<nz ; k++)          
+           sum+=velocity->getRealValue(ii,jj,k)*dt;
+          (*z1Grid_)(i,j) = z0Grid_->GetZ(x,y) + sum;
+        }
+      }
+
+
+    }
+
 }
 
 void 

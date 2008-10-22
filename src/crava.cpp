@@ -2355,17 +2355,14 @@ Crava::writeResampledStormCube(FFTGrid      * grid,
   StormContGrid *mapping = gridmapping->getMapping();
   StormContGrid outgrid(*mapping);
 
-  //
-  // NBNB-PAL: Bruken av x og y her er neppe riktig. jfr. gridmapping
-  //
+ 
   double x,y;
   int nz = mapping->GetNK();
   for(i=0;i<nx_;i++)
   {
-    x = simbox->getx0()+i*simbox->getdx();
     for(j=0;j<ny_;j++)
     {
-      y = simbox->gety0()+j*simbox->getdy();
+      simbox->getXYCoord(i,j,x,y);
       for(k=0;k<nz;k++)
       {
         time = (*mapping)(i,j,k);
