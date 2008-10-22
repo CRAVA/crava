@@ -2250,29 +2250,17 @@ void Crava::writeToFile(char        * timeFileName,
     {
       if(model_->getVelocityFromInversion())
       {
-        bool failed = 0;
-        char * errText = new char[MAX_STRING];      
-        
         const Simbox * timeSimbox = NULL;
         if(model_->getTimeCutMapping()!=NULL)
           timeSimbox = model_->getTimeCutMapping()->getSimbox();
         else
           timeSimbox = simbox_;
         
-        if(timeDepthMapping->getSimbox()==NULL)
-          timeDepthMapping->calculateSurfaceFromVelocity(postAlpha_, 
-                                                         timeSimbox,
-                                                         model_->getModelSettings(),
-                                                         failed, 
-                                                         errText);
-        if(failed)
-          LogKit::LogFormatted(LogKit::ERROR,"\nDepth conversion: Problems calculating surface from Vp. \n %s", errText);
-        else
-          if(timeDepthMapping->getMapping()==0)
-            timeDepthMapping->makeTimeDepthMapping(postAlpha_,
-                                                   timeSimbox);
-        delete errText;
-        
+        if (timeDepthMapping->getSimbox()==NULL) {
+          timeDepthMapping->calculateSurfaceFromVelocity(postAlpha_, timeSimbox);
+          timeDepthMapping->setDepthSimbox(timeSimbox, timeSimbox->getnz());
+          timeDepthMapping->makeTimeDepthMapping(postAlpha_, timeSimbox);
+        }
       }
       writeResampledStormCube(grid, timeDepthMapping, depthFileName, simbox_);
     }

@@ -10,7 +10,6 @@
 #include "src/simbox.h"
 #include "src/fftgrid.h"
 #include "src/modelfile.h"
-#include "src/modelsettings.h"
 #include "lib/global_def.h"
 
 #include "nrlib/surface/surfaceio.hpp"
@@ -18,17 +17,12 @@
 #include "nrlib/stormgrid/stormcontgrid.hpp"
 
 
-GridMapping::GridMapping(const Simbox  * simbox, 
-                         ModelSettings * modelSettings, 
-                         char          * errText,
-                         int             format, 
-                         FFTGrid       * velocity)
+GridMapping::GridMapping(int format)
   : mapping_(NULL),
     simbox_(NULL),
     z0Grid_(NULL),
     z1Grid_(NULL),
-    format_(format),
-    surfmissing_(0)
+    format_(format)
 {
 }
 
@@ -68,24 +62,14 @@ GridMapping::makeTimeTimeMapping(const Simbox * timeCutSimbox)
 
 void 
 GridMapping::makeTimeDepthMapping(FFTGrid      * velocity,
-                                  const Simbox * timeSimbox) 
+                                  const Simbox * timeSimbox)
 {
-  makeTimeDepthMapping(mapping_,
-                       timeSimbox, 
-                       simbox_, 
-                       velocity);
-}
+  Simbox * depthSimbox = simbox_; // For readability
 
-void 
-GridMapping::makeTimeDepthMapping(StormContGrid *& mapping,
-                                  const Simbox   * timeSimbox,
-                                  const Simbox   * depthSimbox,
-                                  FFTGrid        * velocity)
-{
   int nx  = depthSimbox->getnx();
   int ny  = depthSimbox->getny();
   int nz  = depthSimbox->getnz();
-  mapping = new StormContGrid(*depthSimbox, nx, ny, nz);
+  mapping_ = new StormContGrid(*depthSimbox, nx, ny, nz);
 
   for(int i=0;i<nx;i++)
   {
@@ -104,7 +88,7 @@ GridMapping::makeTimeDepthMapping(StormContGrid *& mapping,
       for(int k=0 ; k<timeSimbox->getnz() ; k++)
         sumz +=deltaT*velocity->getRealValue(i,j,k);
       double c = (zBase-zTop)/sumz;
-      (*mapping)(i,j,0) = static_cast<float>(tTop);
+      (*mapping_)(i,j,0) = static_cast<float>(tTop);
       int kk = 0;
       for(int k=1;k<nz;k++)
       {
@@ -118,7 +102,7 @@ GridMapping::makeTimeDepthMapping(StormContGrid *& mapping,
         double z0  = tTop;
         double dz1 = 2000.0*static_cast<double>(kk-1)*deltaT;
         double dz2 = 2000.0*(z - sum + deltaT*c*v)/(c*v);
-        (*mapping)(i,j,k) = static_cast<float>(z0 + dz1 + dz2);
+        (*mapping_)(i,j,k) = static_cast<float>(z0 + dz1 + dz2);
       }
     }
   }
@@ -126,12 +110,9 @@ GridMapping::makeTimeDepthMapping(StormContGrid *& mapping,
 
 void 
 GridMapping::calculateSurfaceFromVelocity(FFTGrid       * velocity, 
-                                          const Simbox  * timeSimbox, 
-                                          ModelSettings * modelSettings, 
-                                          bool          & failed, 
-                                          char          * errText)
+                                          const Simbox  * timeSimbox)
 {
-  if(surfmissing_>0)
+  if(z0Grid_==NULL || z1Grid_==NULL)
   {
     // calculate new surface
     int nx = timeSimbox->getnx();
@@ -149,13 +130,14 @@ GridMapping::calculateSurfaceFromVelocity(FFTGrid       * velocity,
         double dt  = (timeSimbox->getBot(x,y)-timeSimbox->getTop(x,y))/(2000.0*static_cast<double>(nz));
         for(int k=0 ; k<nz ; k++)          
           sum+=velocity->getRealValue(i,j,k)*dt;
-        if(surfmissing_==1)
+
+        if(z0Grid_==NULL)
           values[i*nx+j] = z1Grid_->GetZ(x,y) - sum;
-        else if(surfmissing_==2)
+        else if(z1Grid_==NULL)
           values[i*nx+j] = z0Grid_->GetZ(x,y) + sum;
       }
     }
-    if(surfmissing_==1)
+    if(z0Grid_==NULL)
       z0Grid_ = new Surface(z1Grid_->GetXMin(), 
                             z1Grid_->GetYMin(), 
                             z1Grid_->GetLengthX(), 
@@ -171,28 +153,20 @@ GridMapping::calculateSurfaceFromVelocity(FFTGrid       * velocity,
                             z0Grid_->GetNI(),
                             z0Grid_->GetNJ(), 
                             (*values));
-    setSimbox(modelSettings, failed, errText,nz);
   }
-  surfmissing_ = 0;
 }
 
 void 
-GridMapping::setDepthSurfaces(ModelFile     * modelFile, 
-                              ModelSettings * modelSettings, 
-                              bool          & failed, 
-                              char          * errText, 
-                              int             nz)
+GridMapping::setDepthSurfaces(char ** surfFile, 
+                              bool  & failed, 
+                              char  * errText)
 {
-  surfmissing_ = 0;
-  char **surfFile = modelFile->getDepthSurfFile();
-  z0Grid_ = NULL;
-  if(surfFile[0]==0 && surfFile[1]==0)
+  if(surfFile[0]==NULL && surfFile[1]==NULL)
   {
     sprintf(errText,"%s Both top and base depth surfaces are missing.", errText);
     failed = 1;
   }
-
-  if(surfFile[0]!=NULL)
+  if(surfFile[0] != NULL)
   {
     try {
       Surface tmpSurf = NRLib2::ReadStormSurf(surfFile[0]);
@@ -203,11 +177,7 @@ GridMapping::setDepthSurfaces(ModelFile     * modelFile,
       failed = 1;
     }
   }
-  else
-    surfmissing_ = 1;
-
-  z1Grid_ = NULL;
-  if(surfFile[1]!=NULL)
+  if(surfFile[1] != NULL)
   {
     try {
       Surface tmpSurf = NRLib2::ReadStormSurf(surfFile[1]);
@@ -218,63 +188,44 @@ GridMapping::setDepthSurfaces(ModelFile     * modelFile,
     failed = 1;
     }
   }
-  else
-    surfmissing_ = 2;
-
-  if(surfmissing_==0)
-  {
-    setSimbox(modelSettings,failed, errText, nz);
-  } 
 }
 
-void GridMapping::setSimbox(ModelSettings *modelSettings, bool &failed, char *errText, int nz)
+void GridMapping::setDepthSimbox(const Simbox  * timeSimbox,
+                                 int             nz)
 {
-  simbox_ = new Simbox();
+  simbox_ = new Simbox(timeSimbox);
   simbox_->setDepth(z0Grid_, z1Grid_, nz);
- 
+
   const char * topname = "topdepth.storm";
   const char * botname = "botdepth.storm";
   simbox_->writeTopBotGrids(topname, botname);
-  int error = 0;
-  const SegyGeometry * areaParams = modelSettings->getAreaParameters(); 
-  if (areaParams != NULL)
-  {
-    simbox_->setArea(areaParams, errText);
-    if(error ==1)
+
+  bool failed = false;
+  char * errText = new char[MAX_STRING];
+  double dummyLzLimit = 0.0;
+  int error = simbox_->checkError(dummyLzLimit,errText);
+  if(error == Simbox::INTERNALERROR)
     {
-      sprintf(errText," %s Problems with definition of depth simbox.",errText);
-      failed = 1;
-    }
-    else
-    {
-      error = simbox_->checkError(modelSettings->getLzLimit(),errText);
-      if(error == Simbox::INTERNALERROR)
-      {
-        sprintf(errText," %s A problems was encountered for depth output grid\n", errText);
-        failed = true;
-      }
-    }
-  }
-  else
-  {
-    LogKit::LogFormatted(LogKit::ERROR," No area available for simbox\n");
+    sprintf(errText," %s A problems was encountered for depth output grid\n", errText);
     failed = true;
   }
-  if (simbox_->status() == Simbox::BOXOK)
-  {
-    double zmin, zmax;
-    simbox_->getMinMaxZ(zmin,zmax);
-    LogKit::LogFormatted(LogKit::LOW,"\nDepth output interval:\n");
-    LogKit::LogFormatted(LogKit::LOW,"  True vertical depth   avg / min / max    : %7.1f /%7.1f /%7.1f\n",
-                         zmin+simbox_->getlz()*simbox_->getAvgRelThick()*0.5,
-                         zmin, zmax); 
-    LogKit::LogFormatted(LogKit::LOW,"  Interval thickness    avg / min / max    : %7.1f /%7.1f /%7.1f\n", 
-                         simbox_->getlz()*simbox_->getAvgRelThick(),
-                         simbox_->getlz()*simbox_->getMinRelThick(),
-                         simbox_->getlz());
-    LogKit::LogFormatted(LogKit::LOW,"  Sampling density      avg / min / max    : %7.2f /%7.2f /%7.2f\n", 
-                         simbox_->getdz()*simbox_->getAvgRelThick(),
-                         simbox_->getdz(),
-                         simbox_->getdz()*simbox_->getMinRelThick());
+  delete [] errText;  
+  if (failed) {
+    LogKit::LogFormatted(LogKit::ERROR,"\n%s\n",errText);
   }
+
+  double zmin, zmax;
+  simbox_->getMinMaxZ(zmin,zmax);
+  LogKit::LogFormatted(LogKit::LOW,"\nDepth output interval:\n");
+  LogKit::LogFormatted(LogKit::LOW,"  True vertical depth   avg / min / max    : %7.1f /%7.1f /%7.1f\n",
+                       zmin+simbox_->getlz()*simbox_->getAvgRelThick()*0.5,
+                       zmin, zmax); 
+  LogKit::LogFormatted(LogKit::LOW,"  Interval thickness    avg / min / max    : %7.1f /%7.1f /%7.1f\n", 
+                       simbox_->getlz()*simbox_->getAvgRelThick(),
+                       simbox_->getlz()*simbox_->getMinRelThick(),
+                       simbox_->getlz());
+  LogKit::LogFormatted(LogKit::LOW,"  Sampling density      avg / min / max    : %7.2f /%7.2f /%7.2f\n", 
+                       simbox_->getdz()*simbox_->getAvgRelThick(),
+                       simbox_->getdz(),
+                       simbox_->getdz()*simbox_->getMinRelThick());
 }

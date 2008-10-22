@@ -163,7 +163,7 @@ Model::Model(char * fileName)
         if(failedSeismic==false)
         {
           if(timeCutSimbox!=NULL)  {
-            timeCutMapping_ = new GridMapping(timeCutSimbox, modelSettings_, errText, format);
+            timeCutMapping_ = new GridMapping(format);
             timeCutMapping_->makeTimeTimeMapping(timeCutSimbox);
           }
           
@@ -1036,27 +1036,26 @@ Model::processSeismic(FFTGrid      **& seisCube,
         }
       }
 
-      LogKit::LogFormatted(LogKit::LOW,"\nArea/resolution           x0           y0            lx        ly          dx      dy     azimuth\n");
+      LogKit::LogFormatted(LogKit::LOW,"\nArea/resolution           x0           y0            lx         ly     azimuth         dx      dy\n");
       LogKit::LogFormatted(LogKit::LOW,"-------------------------------------------------------------------------------------------------\n");
       if (areaInModelFile) {
         double azimuth = (-1)*timeSimbox->getAngle()*(180.0/M_PI);
         if (azimuth < 0)
           azimuth += 360.0;
-        LogKit::LogFormatted(LogKit::LOW,"Model file       %11.2f  %11.2f    %10.2f %10.2f    %7.2f %7.2f    %8.3f\n", 
+        LogKit::LogFormatted(LogKit::LOW,"Model file       %11.2f  %11.2f    %10.2f %10.2f    %8.3f    %7.2f %7.2f\n", 
                              timeSimbox->getx0(), timeSimbox->gety0(), 
-                             timeSimbox->getlx(), timeSimbox->getly(), 
-                             timeSimbox->getdx(), timeSimbox->getdy(), azimuth);
+                             timeSimbox->getlx(), timeSimbox->getly(), azimuth, 
+                             timeSimbox->getdx(), timeSimbox->getdy());
       }
       for (int i = 0 ; i < nAngles ; i++)
         if (geometry[i] != NULL) {
           double geoAngle = (-1)*timeSimbox->getAngle()*(180/M_PI);
           if (geoAngle < 0)
             geoAngle += 360.0f;
-          LogKit::LogFormatted(LogKit::LOW,"Seismic data %d   %11.2f  %11.2f    %10.2f %10.2f    %7.2f %7.2f    %8.3f\n",i,
+          LogKit::LogFormatted(LogKit::LOW,"Seismic data %d   %11.2f  %11.2f    %10.2f %10.2f    %8.3f    %7.2f %7.2f\n",i,
                                geometry[i]->getX0(), geometry[i]->getY0(), 
-                               geometry[i]->getlx(), geometry[i]->getly(), 
-                               geometry[i]->getDx(), geometry[i]->getDy(), 
-                               geoAngle);
+                               geometry[i]->getlx(), geometry[i]->getly(), geoAngle,
+                               geometry[i]->getDx(), geometry[i]->getDy());
           }
       LogKit::LogFormatted(LogKit::LOW,"\nTime simulation grids:\n");
       LogKit::LogFormatted(LogKit::LOW,"  Output grid         %4i * %4i * %4i   : %10i\n",
@@ -2640,19 +2639,13 @@ Model::processDepthConversion(Simbox        * timeCutSimbox,
 
     if(!failed) 
     {
-      timeDepthMapping_ = new GridMapping(timeSimbox_, modelSettings_,
-                                          errText, format, velocity);
-      timeDepthMapping_->setDepthSurfaces(modelFile, modelSettings_, failed, 
-                                          errText, timeSimbox_->getnz());
+      timeDepthMapping_ = new GridMapping(format);
+      timeDepthMapping_->setDepthSurfaces(modelFile->getDepthSurfFile(), failed, errText);
       if(velocity != NULL) 
       {
-        timeDepthMapping_->calculateSurfaceFromVelocity(velocity,
-                                                        timeSimbox_, 
-                                                        modelSettings_, 
-                                                        failed, 
-                                                        errText); // simbox is set in this routine
-        timeDepthMapping_->makeTimeDepthMapping(velocity,
-                                                timeSimbox_);
+        timeDepthMapping_->calculateSurfaceFromVelocity(velocity, timeSimbox_);
+        timeDepthMapping_->setDepthSimbox(timeSimbox_, timeSimbox_->getnz()); // NBNB-PAL: Er dettet riktig nz (timeCut vs time)? 
+        timeDepthMapping_->makeTimeDepthMapping(velocity, timeSimbox_);
       }
     }
     if(velocity !=NULL)
@@ -2725,12 +2718,12 @@ Model::writeAreas(const SegyGeometry * areaParams,
 
   LogKit::LogFormatted(LogKit::LOW,"\nThe top and/or base time surfaces do not cover the area specified by the %s",text.c_str());
   LogKit::LogFormatted(LogKit::LOW,"\nPlease extrapolate surfaces or specify a smaller AREA in the model file.\n");
-  LogKit::LogFormatted(LogKit::LOW,"\nArea/resolution           x0           y0            lx        ly          dx      dy     azimuth\n");
+  LogKit::LogFormatted(LogKit::LOW,"\nArea/resolution           x0           y0            lx        ly     azimuth          dx      dy\n");
   LogKit::LogFormatted(LogKit::LOW,"-------------------------------------------------------------------------------------------------\n");
   double azimuth = (-1)*areaRot*(180.0/M_PI);
   if (azimuth < 0)
     azimuth += 360.0;
-  LogKit::LogFormatted(LogKit::LOW,"Model area       %11.2f  %11.2f    %10.2f %10.2f    %7.2f %7.2f    %8.3f\n\n", 
+  LogKit::LogFormatted(LogKit::LOW,"Model area       %11.2f  %11.2f    %10.2f %10.2f    %8.3f    %7.2f %7.2f\n\n", 
                        areaX0, areaY0, areaLx, areaLy, areaDx, areaDy, azimuth);
 
   LogKit::LogFormatted(LogKit::LOW,"Area                    xmin         xmax           ymin        ymax\n");

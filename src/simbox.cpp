@@ -284,11 +284,11 @@ Simbox::insideRectangle(const SegyGeometry *  geometry) const
     double areaAzimuth = (-1)*GetAngle()*(180/M_PI);
     if (seisAzimuth < 0) seisAzimuth += 360.0;
     if (areaAzimuth < 0) areaAzimuth += 360.0;
-    LogKit::LogFormatted(LogKit::LOW,"                        x0           y0            lx         ly         dx      dy     azimuth\n");
+    LogKit::LogFormatted(LogKit::LOW,"                        x0            y0           lx         ly     azimuth         dx      dy\n");
     LogKit::LogFormatted(LogKit::LOW,"--------------------------------------------------------------------------------------------\n");
-    LogKit::LogFormatted(LogKit::LOW,"Model area:    %11.2f  %11.2f    %10.2f %10.2f    %7.2f %7.2f    %8.3f\n", 
+    LogKit::LogFormatted(LogKit::LOW,"Model area:    %11.2f  %11.2f    %11.2f %11.2f    %8.3f    %7.2f %7.2f\n", 
                          GetXMin(), GetYMin(), GetLX(), GetLY(), dx_, dy_, areaAzimuth);
-    LogKit::LogFormatted(LogKit::LOW,"Seismic area:  %11.2f  %11.2f    %10.2f %10.2f    %7.2f %7.2f    %8.3f\n", 
+    LogKit::LogFormatted(LogKit::LOW,"Seismic area:  %11.2f  %11.2f    %10.2f %10.2f    %8.3f    %7.2f %7.2f\n", 
                          xr, yr, lxr, lyr, dxr, dyr, seisAzimuth);
     
     LogKit::LogFormatted(LogKit::HIGH,"\nCorner     XY Area                    XY Seismic\n");
