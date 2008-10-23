@@ -25,7 +25,9 @@ public:
   void            calculateSurfaceFromVelocity(FFTGrid      * velocity, 
                                                const Simbox * simbox);
   void            setDepthSimbox(const Simbox * timeSimbox,
-                                 int            nz);
+                                 int            nz,
+                                 bool         & failed,
+                                 char         * errText);
   void            makeTimeDepthMapping(FFTGrid      * velocity,
                                        const Simbox * timeSimbox);
   void            makeTimeTimeMapping(const Simbox * timeCutSimbox);

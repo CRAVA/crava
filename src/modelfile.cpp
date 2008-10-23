@@ -1386,7 +1386,7 @@ ModelFile::readCommandOutput(char ** params, int & pos, char * errText)
     // WARNING: If nKeys becomes larger than 31, we get problems with 
     //          the 'int' data type and have to switch to 'long'
     //
-    int i, key, nKeys = 24;
+    int i, key, nKeys = 26;
     char ** keywords;
     keywords = new char*[nKeys];
     for(i=0;i<nKeys;i++)
@@ -1394,7 +1394,7 @@ ModelFile::readCommandOutput(char ** params, int & pos, char * errText)
     i = 0;
     strcpy(keywords[i++],"STORM");
     strcpy(keywords[i++],"SEGY");
-    strcpy(keywords[i++],"STORMASCII");
+    strcpy(keywords[i++],"STORMASCII"); // NBNB-PAL: Bytte ut denne med ASCII_IRAP_CLASSIC ?
     strcpy(keywords[i++],"SGRI");
     strcpy(keywords[i++],"CORRELATION");
     strcpy(keywords[i++],"RESIDUALS");
@@ -1416,6 +1416,8 @@ ModelFile::readCommandOutput(char ** params, int & pos, char * errText)
     strcpy(keywords[i++],"NOTIME");
     strcpy(keywords[i++],"FACIESPROB");
     strcpy(keywords[i++],"FACIESPROBRELATIVE");
+    strcpy(keywords[i++],"BLOCKED_WELLS");
+    strcpy(keywords[i++],"BLOCKED_LOGS");
 
     if (i != nKeys)
     { 

@@ -133,6 +133,20 @@ Simbox::getIndexes(double x, double y, double z, int & xInd, int & yInd, int & z
 }
 
 void 
+Simbox::getIndexes(double x, double y, int & xInd, int & yInd) const
+{
+  xInd = IMISSING;
+  yInd = IMISSING;
+  double rx =  (x-GetXMin())*cosrot_ + (y-GetYMin())*sinrot_;
+  double ry = -(x-GetXMin())*sinrot_ + (y-GetYMin())*cosrot_;
+  if(rx > 0 && rx < GetLX() && ry>0 && ry < GetLY())
+  {
+    xInd = static_cast<int>(floor(rx/dx_));
+    yInd = static_cast<int>(floor(ry/dy_));
+  }
+}
+
+void 
 Simbox::getIndexesFull(double x, double y, double z, int & xInd, int & yInd, int & zInd) const
 {
   double rx =  (x-GetXMin())*cosrot_ + (y-GetYMin())*sinrot_;

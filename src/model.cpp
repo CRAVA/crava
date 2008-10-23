@@ -2644,7 +2644,7 @@ Model::processDepthConversion(Simbox        * timeCutSimbox,
       if(velocity != NULL) 
       {
         timeDepthMapping_->calculateSurfaceFromVelocity(velocity, timeSimbox_);
-        timeDepthMapping_->setDepthSimbox(timeSimbox_, timeSimbox_->getnz()); // NBNB-PAL: Er dettet riktig nz (timeCut vs time)? 
+        timeDepthMapping_->setDepthSimbox(timeSimbox_, timeSimbox_->getnz(),failed, errText); // NBNB-PAL: Er dettet riktig nz (timeCut vs time)? 
         timeDepthMapping_->makeTimeDepthMapping(velocity, timeSimbox_);
       }
     }

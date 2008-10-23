@@ -17,6 +17,7 @@ public:
 
   int            getIndex(double x, double y, double z)   const;
   int            getClosestZIndex(double x, double y, double z);
+  void           getIndexes(double x, double y, int & xInd, int & yInd) const;
   void           getIndexes(double x, double y, double z, int & xInd, int & yInd, int & zInd) const;
   void           getIndexesFull(double x, double y, double z, int & xInd, int & yInd, int & zInd) const;
   void           getZInterpolation(double x, double y, double z, 

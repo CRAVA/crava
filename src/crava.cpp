@@ -2255,11 +2255,18 @@ void Crava::writeToFile(char        * timeFileName,
           timeSimbox = model_->getTimeCutMapping()->getSimbox();
         else
           timeSimbox = simbox_;
-        
         if (timeDepthMapping->getSimbox()==NULL) {
+          bool failed = false;
+          char * errText = new char[MAX_STRING];
+          sprintf(errText,"%c",'\0');
           timeDepthMapping->calculateSurfaceFromVelocity(postAlpha_, timeSimbox);
-          timeDepthMapping->setDepthSimbox(timeSimbox, timeSimbox->getnz());
+          timeDepthMapping->setDepthSimbox(timeSimbox, timeSimbox->getnz(),failed,errText);
           timeDepthMapping->makeTimeDepthMapping(postAlpha_, timeSimbox);
+          if (failed) {
+            LogKit::LogFormatted(LogKit::ERROR,"\n%s\n",errText);
+            exit(1);
+          }
+          delete [] errText;
         }
       }
       writeResampledStormCube(grid, timeDepthMapping, depthFileName, simbox_);

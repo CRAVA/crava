@@ -109,92 +109,53 @@ GridMapping::makeTimeDepthMapping(FFTGrid      * velocity,
 }
 
 void 
-GridMapping::calculateSurfaceFromVelocity(FFTGrid       * velocity, 
-                                          const Simbox  * timeSimbox)
+GridMapping::calculateSurfaceFromVelocity(FFTGrid      * velocity, 
+                                          const Simbox * timeSimbox)
 {
- /* if(z0Grid_==NULL || z1Grid_==NULL)
+  Surface * isochore;
+  if(z0Grid_==NULL)
+    isochore = new Surface(*z1Grid_);
+  else    
+    isochore = new Surface(*z0Grid_);
+   
+  for(int j=0 ; j<isochore->GetNJ() ; j++) 
   {
-    // calculate new surface
-    int nx = timeSimbox->getnx();
-    int ny = timeSimbox->getny();
-    int nz = timeSimbox->getnz();
-    double * values = new double[nx*ny];
-
-    for(int i=0 ; i<nx ; i++)
+    for(int i=0 ; i<isochore->GetNI() ; i++) 
     {
-      for(int j=0 ; j<ny ; j++)
+      double x, y;
+      isochore->GetXY(i,j,x,y);   
+      int    nz    = timeSimbox->getnz();
+      double tTop  = timeSimbox->getTop(x,y);
+      double tBase = timeSimbox->getBot(x,y);
+      double dt    = (tBase - tTop)/(2000.0*static_cast<double>(nz));
+      
+      int ii, jj;
+      timeSimbox->getIndexes(x,y,ii,jj);
+
+      if (ii==IMISSING || jj==IMISSING)
+        isochore->SetMissing(i,j);
+      else
       {
-        double x, y;
-        timeSimbox->getXYCoord(i,j,x,y);
         double sum = 0.0;
-        double dt  = (timeSimbox->getBot(x,y)-timeSimbox->getTop(x,y))/(2000.0*static_cast<double>(nz));
-        for(int k=0 ; k<nz ; k++)          
-          sum+=velocity->getRealValue(i,j,k)*dt;
-
-        if(z0Grid_==NULL)
-          values[i*nx+j] = z1Grid_->GetZ(x,y) - sum;
-        else if(z1Grid_==NULL)
-          values[i*nx+j] = z0Grid_->GetZ(x,y) + sum;
-      }
-    }
-    */
-    if(z0Grid_==NULL)
-    {
-      z0Grid_ = new Surface(z1Grid_->GetXMin(), 
-                            z1Grid_->GetYMin(), 
-                            z1Grid_->GetLengthX(), 
-                            z1Grid_->GetLengthY(), 
-                            z1Grid_->GetNI(),
-                            z1Grid_->GetNJ(), 
-                            RMISSING);
-      for(int j=0 ; j<z1Grid_->GetNJ() ; j++)
-      {
-        for(int i=0 ; i<z1Grid_->GetNI() ; i++)
-        {
-          double x, y;
-          z1Grid_->GetXY(i,j,x,y);   
-       
-          //timeSimbox->getXYCoord(i,j,x,y);
-          double sum = 0.0;
-          int nz = timeSimbox->getnz();
-          double dt  = (timeSimbox->getBot(x,y)-timeSimbox->getTop(x,y))/(2000.0*static_cast<double>(nz));
-          int ii, jj,kk;
-          timeSimbox->getIndexes(x,y,0,ii,jj,kk);
-          for(int k=0 ; k<nz ; k++)          
-           sum+=velocity->getRealValue(ii,jj,k)*dt;
-          (*z0Grid_)(i,j) = z1Grid_->GetZ(x,y) - sum;
+        for(int k=0 ; k<nz ; k++) {          
+          sum += velocity->getRealValue(ii,jj,k)*dt;
         }
+        (*isochore)(i,j) = sum;
       }
     }
-    else if(z1Grid_==NULL)
-    {
-      z1Grid_ = new Surface(z0Grid_->GetXMin(), 
-                            z0Grid_->GetYMin(), 
-                            z0Grid_->GetLengthX(), 
-                            z0Grid_->GetLengthY(), 
-                            z0Grid_->GetNI(),
-                            z0Grid_->GetNJ(), 
-                            RMISSING);
-      for(int j=0 ; j<z0Grid_->GetNJ() ; j++)
-      {
-        for(int i=0 ; i<z0Grid_->GetNI() ; i++)
-        {
-          double x, y;
-          z0Grid_->GetXY(i,j,x,y);   
-          double sum = 0.0;
-          int nz = timeSimbox->getnz();
-          double dt  = (timeSimbox->getBot(x,y)-timeSimbox->getTop(x,y))/(2000.0*static_cast<double>(nz));
-          int ii, jj,kk;
-          timeSimbox->getIndexes(x,y,0,ii,jj,kk);
-          for(int k=0 ; k<nz ; k++)          
-           sum+=velocity->getRealValue(ii,jj,k)*dt;
-          (*z1Grid_)(i,j) = z0Grid_->GetZ(x,y) + sum;
-        }
-      }
+  }
+  if(z0Grid_==NULL) 
+  {
+    z0Grid_ = new Surface(*z1Grid_);
+    z0Grid_->Subtract(isochore);
+  }
+  else 
+  {
+    z1Grid_ = new Surface(*z0Grid_);
+    z1Grid_->Add(isochore);
+  }
 
-
-    }
-
+  delete isochore;
 }
 
 void 
@@ -231,8 +192,10 @@ GridMapping::setDepthSurfaces(char ** surfFile,
   }
 }
 
-void GridMapping::setDepthSimbox(const Simbox  * timeSimbox,
-                                 int             nz)
+void GridMapping::setDepthSimbox(const Simbox * timeSimbox,
+                                 int            nz,
+                                 bool         & failed,
+                                 char         * errText)
 {
   simbox_ = new Simbox(timeSimbox);
   simbox_->setDepth(z0Grid_, z1Grid_, nz);
@@ -241,20 +204,13 @@ void GridMapping::setDepthSimbox(const Simbox  * timeSimbox,
   const char * botname = "botdepth.storm";
   simbox_->writeTopBotGrids(topname, botname);
 
-  bool failed = false;
-  char * errText = new char[MAX_STRING];
-  double dummyLzLimit = 0.0;
+  double dummyLzLimit = 0.0; // The other LzLimit is only for inversion, not depth conversion
   int error = simbox_->checkError(dummyLzLimit,errText);
   if(error == Simbox::INTERNALERROR)
     {
-    sprintf(errText," %s A problems was encountered for depth output grid\n", errText);
+    sprintf(errText,"%sA problems was encountered for depth output grid\n", errText);
     failed = true;
   }
-  delete [] errText;  
-  if (failed) {
-    LogKit::LogFormatted(LogKit::ERROR,"\n%s\n",errText);
-  }
-
   double zmin, zmax;
   simbox_->getMinMaxZ(zmin,zmax);
   LogKit::LogFormatted(LogKit::LOW,"\nDepth output interval:\n");
