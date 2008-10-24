@@ -2373,7 +2373,7 @@ Crava::writeResampledStormCube(FFTGrid      * grid,
       for(k=0;k<nz;k++)
       {
         time = (*mapping)(i,j,k);
-        kindex = float((time - simbox->getTop(x,y))/simbox->getdz());
+        kindex = float((time - static_cast<float>(simbox->getTop(x,y)))/simbox->getdz());
         outgrid(i,j,k) = grid->getRealValueInterpolated(i,j,kindex);
       }
     }
