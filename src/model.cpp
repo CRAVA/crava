@@ -116,7 +116,7 @@ Model::Model(char * fileName)
     sprintf(errText,"%c",'\0');
 
     int format = 0;
-    if((modelSettings_->getFormatFlag() & FFTGrid::STORMASCIIFORMAT) == FFTGrid::STORMASCIIFORMAT)
+    if((modelSettings_->getFormatFlag() & FFTGrid::ASCIIFORMAT) == FFTGrid::ASCIIFORMAT)
       format += 1;
     if((modelSettings_->getFormatFlag() & FFTGrid::STORMFORMAT) == FFTGrid::STORMFORMAT)
       format +=2;
@@ -620,10 +620,8 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
   if(error == 0)
   {
     sprintf(errText,"%c",'\0');
-    const char * topname = "toptime.storm";
-    const char * botname = "bottime.storm";
     if(!((modelSettings->getOutputFlag() & ModelSettings::NOTIME) > 0))
-      timeSimbox->writeTopBotGrids(topname, botname);
+      timeSimbox->writeTopBotGrids("toptime", "bottime", modelSettings->getFormatFlag());
 
     if(modelFile->getNWaveletTransfArgs() > 0 && timeSimbox->getIsConstantThick() == true)
       LogKit::LogFormatted(LogKit::WARNING,"\nWarning: LOCALWAVELET is ignored when using constant thickness in DEPTH.\n");
@@ -2644,7 +2642,9 @@ Model::processDepthConversion(Simbox        * timeCutSimbox,
       if(velocity != NULL) 
       {
         timeDepthMapping_->calculateSurfaceFromVelocity(velocity, timeSimbox_);
-        timeDepthMapping_->setDepthSimbox(timeSimbox_, timeSimbox_->getnz(),failed, errText); // NBNB-PAL: Er dettet riktig nz (timeCut vs time)? 
+        timeDepthMapping_->setDepthSimbox(timeSimbox_, timeSimbox_->getnz(), 
+                                          modelSettings_->getFormatFlag(),
+                                          failed, errText);            // NBNB-PAL: Er dettet riktig nz (timeCut vs time)? 
         timeDepthMapping_->makeTimeDepthMapping(velocity, timeSimbox_);
       }
     }

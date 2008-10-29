@@ -442,7 +442,7 @@ FFTFileGrid::writeFile(const char * fileName, const Simbox * simbox, const std::
       writeSegyFile(fileName, simbox, z0);
     if((formatFlag_ & SGRIFORMAT) == SGRIFORMAT && writeSegy==1)
       writeSgriFile(fileName, simbox, sgriLabel);
-    if((formatFlag_ & STORMASCIIFORMAT) == STORMASCIIFORMAT && writeStorm==1)
+    if((formatFlag_ & ASCIIFORMAT) == ASCIIFORMAT && writeStorm==1)
       writeStormFile(fileName, simbox, true);
   }
 }

@@ -1394,7 +1394,7 @@ ModelFile::readCommandOutput(char ** params, int & pos, char * errText)
     i = 0;
     strcpy(keywords[i++],"STORM");
     strcpy(keywords[i++],"SEGY");
-    strcpy(keywords[i++],"STORMASCII"); // NBNB-PAL: Bytte ut denne med ASCII_IRAP_CLASSIC ?
+    strcpy(keywords[i++],"ASCII");
     strcpy(keywords[i++],"SGRI");
     strcpy(keywords[i++],"CORRELATION");
     strcpy(keywords[i++],"RESIDUALS");
@@ -1459,7 +1459,6 @@ ModelFile::readCommandOutput(char ** params, int & pos, char * errText)
       outputFlag -=1048576;
       LogKit::LogFormatted(LogKit::LOW,"Warning: Both FACIESPROB and FACIESPROBRELATIVE are wanted as output. Only FACIESPROB is given.\n");
     }
-
     modelSettings_->setFormatFlag(formatFlag);
     modelSettings_->setOutputFlag(outputFlag);
   }

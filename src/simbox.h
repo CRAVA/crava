@@ -1,6 +1,7 @@
 #ifndef SIMBOX_H
 #define SIMBOX_H
 
+#include <string.h>
 #include "src/definitions.h"
 #include "nrlib/volume/volume.hpp"
 #include "nrlib/surface/regularsurface.hpp"
@@ -52,7 +53,7 @@ public:
   double         getTop(double x, double y) const;
   double         getBot(double x, double y) const;
   char         * getStormHeader(int cubetype, int nx, int ny, int nz, bool flat = false, bool ascii = false) const;
-  void           writeTopBotGrids(const char * topname, const char * botname);
+  void           writeTopBotGrids(std::string topname, std::string botname, int outputFormat);
   int            checkError(double lzLimit, char * errText);
   int            setArea(const SegyGeometry * geometry, char * errText);
   void           setSeisLines(int * lineParams);

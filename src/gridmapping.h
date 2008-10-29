@@ -26,6 +26,7 @@ public:
                                                const Simbox * simbox);
   void            setDepthSimbox(const Simbox * timeSimbox,
                                  int            nz,
+                                 int            outputFormat,
                                  bool         & failed,
                                  char         * errText);
   void            makeTimeDepthMapping(FFTGrid      * velocity,

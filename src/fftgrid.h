@@ -95,7 +95,7 @@ public:
 
   virtual bool         isFile() {return(0);}    // indicates wether the grid is in memory or on disk  
 
-  enum                 outputFormat{NOOUTPUT = 0, STORMFORMAT = 1, SEGYFORMAT = 2, STORMASCIIFORMAT = 4, SGRIFORMAT = 8};
+  enum                 outputFormat{NOOUTPUT = 0, STORMFORMAT = 1, SEGYFORMAT = 2, ASCIIFORMAT = 4, SGRIFORMAT = 8};
   void                 setOutputFormat(int format) {formatFlag_ = format;} 
 
   virtual void         createRealGrid();

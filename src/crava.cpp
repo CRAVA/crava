@@ -2226,13 +2226,14 @@ void Crava::writeToFile(char        * timeFileName,
                         FFTGrid     * grid, 
                         std::string   sgriLabel) {
 
+  const int format = model_->getModelSettings()->getFormatFlag(); 
   if(!((outputFlag_ & ModelSettings::NOTIME)>0))
   {
     if(model_->getTimeCutMapping()!=NULL && 
-      ((model_->getModelSettings()->getFormatFlag() & FFTGrid::STORMASCIIFORMAT)>0 || (model_->getModelSettings()->getFormatFlag() & FFTGrid::STORMFORMAT)>0))
+      ((format & FFTGrid::ASCIIFORMAT)>0 || (format & FFTGrid::STORMFORMAT)>0))
     {
       writeResampledStormCube(grid, model_->getTimeCutMapping(), timeFileName, simbox_);
-      if((model_->getModelSettings()->getFormatFlag() & FFTGrid::SEGYFORMAT) || (model_->getModelSettings()->getFormatFlag() & FFTGrid::SGRIFORMAT))
+      if((format & FFTGrid::SEGYFORMAT) || (format & FFTGrid::SGRIFORMAT))
         grid->writeFile(timeFileName,simbox_, sgriLabel, 1, model_->getModelSettings()->getSegyOffset(),0); // write only segy and/or sgri, not storm
     }
     else
@@ -2260,7 +2261,7 @@ void Crava::writeToFile(char        * timeFileName,
           char * errText = new char[MAX_STRING];
           sprintf(errText,"%c",'\0');
           timeDepthMapping->calculateSurfaceFromVelocity(postAlpha_, timeSimbox);
-          timeDepthMapping->setDepthSimbox(timeSimbox, timeSimbox->getnz(),failed,errText);
+          timeDepthMapping->setDepthSimbox(timeSimbox, timeSimbox->getnz(), format, failed, errText);
           timeDepthMapping->makeTimeDepthMapping(postAlpha_, timeSimbox);
           if (failed) {
             LogKit::LogFormatted(LogKit::ERROR,"\n%s\n",errText);

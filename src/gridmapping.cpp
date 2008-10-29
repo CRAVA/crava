@@ -243,15 +243,13 @@ GridMapping::setDepthSurfaces(char ** surfFile,
 
 void GridMapping::setDepthSimbox(const Simbox * timeSimbox,
                                  int            nz,
+                                 int            outputFormat,
                                  bool         & failed,
                                  char         * errText)
 {
   simbox_ = new Simbox(timeSimbox);
   simbox_->setDepth(z0Grid_, z1Grid_, nz);
-
-  const char * topname = "topdepth.storm";
-  const char * botname = "botdepth.storm";
-  simbox_->writeTopBotGrids(topname, botname);
+  simbox_->writeTopBotGrids("topdepth", "botdepth", outputFormat);
 
   double dummyLzLimit = 0.0; // The other LzLimit is only for inversion, not depth conversion
   int error = simbox_->checkError(dummyLzLimit,errText);

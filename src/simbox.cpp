@@ -8,6 +8,7 @@
 
 #include "nrlib/iotools/logkit.hpp"
 #include "src/simbox.h"
+#include "src/fftgrid.h"
 #include "src/model.h"
 #include "src/definitions.h"
 
@@ -370,22 +371,38 @@ Simbox::getStormHeader(int cubetype, int nx, int ny, int nz, bool flat, bool asc
 
 //NBNB Ragnar: Drep char * her ved bytte av logkit.
 void
-Simbox::writeTopBotGrids(const char * topname, const char * botname)
+Simbox::writeTopBotGrids(std::string topname, 
+                         std::string botname,
+                         int         outputFormat)
 {
-  char * tmpName;
+  if ((outputFormat & FFTGrid::ASCIIFORMAT) == FFTGrid::ASCIIFORMAT) {
+    topname += ".irap";
+    botname += ".irap";
+  }
+  else {
+    topname += ".storm";
+    botname += ".storm";
+  }
 
-  tmpName  = ModelSettings::makeFullFileName(topname);
+  char * tmpName;
+  tmpName  = ModelSettings::makeFullFileName(topname.c_str());
   topName_ = NRLib2::RemovePath(std::string(tmpName));
   assert(typeid(GetTopSurface()) == typeid(Surface));
   const Surface & wtsurf = dynamic_cast<const Surface &>(GetTopSurface());
-  NRLib2::WriteStormBinarySurf(wtsurf, std::string(tmpName));
+  if ((outputFormat & FFTGrid::ASCIIFORMAT) == FFTGrid::ASCIIFORMAT) 
+    NRLib2::WriteIrapClassicAsciiSurf(wtsurf, std::string(tmpName));
+  else
+    NRLib2::WriteStormBinarySurf(wtsurf, std::string(tmpName));
   delete [] tmpName;
 
-  tmpName  = ModelSettings::makeFullFileName(botname);
+  tmpName  = ModelSettings::makeFullFileName(botname.c_str());
   botName_ = NRLib2::RemovePath(std::string(tmpName));
   assert(typeid(GetBotSurface()) == typeid(Surface));
   const Surface & wbsurf = dynamic_cast<const Surface &>(GetBotSurface());
-  NRLib2::WriteStormBinarySurf(wbsurf, std::string(tmpName));
+  if ((outputFormat & FFTGrid::ASCIIFORMAT) == FFTGrid::ASCIIFORMAT) 
+    NRLib2::WriteIrapClassicAsciiSurf(wbsurf, std::string(tmpName));
+  else
+    NRLib2::WriteStormBinarySurf(wbsurf, std::string(tmpName));
   delete [] tmpName;
 }
 
