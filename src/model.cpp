@@ -621,7 +621,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
   {
     sprintf(errText,"%c",'\0');
     if(!((modelSettings->getOutputFlag() & ModelSettings::NOTIME) > 0))
-      timeSimbox->writeTopBotGrids("toptime", "bottime", modelSettings->getFormatFlag());
+      timeSimbox->writeTopBotGrids("topTime", "baseTime", modelSettings->getFormatFlag());
 
     if(modelFile->getNWaveletTransfArgs() > 0 && timeSimbox->getIsConstantThick() == true)
       LogKit::LogFormatted(LogKit::WARNING,"\nWarning: LOCALWAVELET is ignored when using constant thickness in DEPTH.\n");
