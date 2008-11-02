@@ -3,6 +3,7 @@
 #include "src/corr.h"
 #include "src/definitions.h"
 #include "src/model.h"
+#include "nrlib/surface/surfaceio.hpp"
 #include "nrlib/iotools/logkit.hpp"
 
 Corr::Corr(float **pointVar0, float **Var0, float *CorrT, int n, float dt, 
@@ -39,20 +40,16 @@ float * Corr::getCorrT(int &n, float &dt) const
 
 void Corr::dumpResult() const
 {
-  char * filename1= ModelSettings::makeFullFileName("PriorVar0",".dat");
-  char * filename2= ModelSettings::makeFullFileName("PriorCorrTUnFiltered",".dat");
-  char * filename3= ModelSettings::makeFullFileName("PriorCorrXY",".irap");
-  int i,j;
+  char * filename1= ModelSettings::makeFullFileName("Prior_Var0",".dat");
+  char * filename2= ModelSettings::makeFullFileName("Prior_CorrTUnFiltered",".dat");
+  char * filename3= ModelSettings::makeFullFileName("Prior_CorrXY",".irap");
+
   FILE *file1 = fopen(filename1, "w");
   FILE *file2 = fopen(filename2, "w");
-  FILE *file3 = fopen(filename3, "w");
 
-  //NBNB Snakk med Ragnar om du saknar dette veldig.
-  //irapgridWritept(file3,CorrXY_); 
-  fclose(file3);
-  for(i=0;i<3;i++)
+  for(int i=0;i<3;i++)
   {
-    for(j=0;j<3;j++)
+    for(int j=0;j<3;j++)
     {
       fprintf(file1,"%f ",Var0_[i][j]);
     }
@@ -60,11 +57,14 @@ void Corr::dumpResult() const
   }
   fclose(file1);
   fprintf(file2,"%f\n",dt_);
-  for(i=0;i<n_;i++)
+  for(int i=0;i<n_;i++)
   {
     fprintf(file2,"%f\n",CorrT_[i]);
   }
   fclose(file2);
+
+  NRLib2::WriteIrapClassicAsciiSurf(*CorrXY_, filename3);
+
   delete [] filename1;
   delete [] filename2;
   delete [] filename3;

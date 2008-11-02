@@ -184,7 +184,7 @@ KrigingData3D::writeToFile(const char * type)
   char * fileName;
   char * tmp = new char[MAX_STRING];
 
-  sprintf(tmp,"KrigingData_%s",type);
+  sprintf(tmp,"%s_KrigingData",type);
   fileName = ModelSettings::makeFullFileName(tmp,".dat");
 
   FILE * file = fopen(fileName, "w");

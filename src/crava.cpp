@@ -1315,7 +1315,7 @@ Crava::computePostCov()
 
   postCov[0][0]=postCovAlpha_->getRealValue(0,0,0);
   if((outputFlag_ & ModelSettings::CORRELATION) > 0)
-    postCovAlpha_ ->writeFile("postCovVp",simbox_, "Posterior covariance for Vp");
+    postCovAlpha_ ->writeFile("Posterior_CovVp",simbox_, "Posterior covariance for Vp");
 
   postCovAlpha_ ->endAccess();
   delete postCovAlpha_;
@@ -1331,7 +1331,7 @@ Crava::computePostCov()
     postCorBeta[k] = postCovBeta_->getRealValue(0,0,k)/c0;
 
   if((outputFlag_ & ModelSettings::CORRELATION) > 0)
-    postCovBeta_ ->writeFile("postCovVs",simbox_, "Posterior covariance for Vs");
+    postCovBeta_ ->writeFile("Posterior_CovVs",simbox_, "Posterior covariance for Vs");
   postCov[1][1]=postCovBeta_->getRealValue(0,0,0);
   postCovBeta_ ->endAccess();
   delete postCovBeta_;
@@ -1349,7 +1349,7 @@ Crava::computePostCov()
   }
 
   if((outputFlag_ & ModelSettings::CORRELATION) > 0)
-    postCovRho_ ->writeFile("postCovD",simbox_, "Posterior covariance for density");
+    postCovRho_ ->writeFile("Posterior_CovD",simbox_, "Posterior covariance for density");
   postCov[2][2]=postCovRho_->getRealValue(0,0,0);
   postCovRho_ ->endAccess();
   delete postCovRho_;
@@ -1359,7 +1359,7 @@ Crava::computePostCov()
   postCrCovAlphaBeta_ ->setAccessMode(FFTGrid::RANDOMACCESS);
   postCrCovAlphaBeta_ ->invFFTInPlace();
   if((outputFlag_ & ModelSettings::CORRELATION) > 0)
-    postCrCovAlphaBeta_ ->writeFile("postCrCovVpVs",simbox_, "Posterior cross-covariance for (Vp,Vs)");
+    postCrCovAlphaBeta_ ->writeFile("Posterior_CrCovVpVs",simbox_, "Posterior cross-covariance for (Vp,Vs)");
   postCov[0][1]=postCrCovAlphaBeta_->getRealValue(0,0,0);
   postCov[1][0]=postCrCovAlphaBeta_->getRealValue(0,0,0);
   postCrCovAlphaBeta_ ->endAccess();
@@ -1370,7 +1370,7 @@ Crava::computePostCov()
   postCrCovAlphaRho_ ->setAccessMode(FFTGrid::RANDOMACCESS);
   postCrCovAlphaRho_ ->invFFTInPlace();
   if((outputFlag_ & ModelSettings::CORRELATION) > 0)
-    postCrCovAlphaRho_->writeFile("postCrCovVpD",simbox_, "Posterior cross-covariance for (Vp,density)");
+    postCrCovAlphaRho_->writeFile("Posterior_CrCovVpD",simbox_, "Posterior cross-covariance for (Vp,density)");
   postCov[2][0]=postCrCovAlphaRho_->getRealValue(0,0,0);
   postCov[0][2]=postCrCovAlphaRho_->getRealValue(0,0,0);
   postCrCovAlphaRho_->endAccess();
@@ -1381,7 +1381,7 @@ Crava::computePostCov()
   postCrCovBetaRho_->setAccessMode(FFTGrid::RANDOMACCESS);
   postCrCovBetaRho_->invFFTInPlace();
   if((outputFlag_ & ModelSettings::CORRELATION) > 0)
-    postCrCovBetaRho_->writeFile("postCrCovVsD",simbox_, "Posterior cross-covariance for (Vs,density)");
+    postCrCovBetaRho_->writeFile("Posterior_CrCovVsD",simbox_, "Posterior cross-covariance for (Vs,density)");
   postCov[2][1]=postCrCovBetaRho_->getRealValue(0,0,0);
   postCov[1][2]=postCrCovBetaRho_->getRealValue(0,0,0);
   postCrCovBetaRho_->endAccess();
@@ -1402,7 +1402,7 @@ Crava::computePostCov()
 
 
 
-  char * fName = ModelSettings::makeFullFileName("PosteriorVar0",".dat");
+  char * fName = ModelSettings::makeFullFileName("Posterior_Var0",".dat");
   FILE* file=fopen(fName,"w");
   for(i=0;i<3;i++)
   {
@@ -1415,7 +1415,7 @@ Crava::computePostCov()
   fclose(file);
   delete [] fName;
 
-  fName = ModelSettings::makeFullFileName("PosteriorCorrTVp",".dat");
+  fName = ModelSettings::makeFullFileName("Posterior_CorrTVp",".dat");
   file=fopen(fName,"w");
   for(k=0;k<nz_;k++)
   {
@@ -1424,7 +1424,7 @@ Crava::computePostCov()
   fclose(file);
   delete [] fName;
 
-  fName = ModelSettings::makeFullFileName("PosteriorCorrTVs",".dat");
+  fName = ModelSettings::makeFullFileName("Posterior_CorrTVs",".dat");
   file=fopen(fName,"w");
   for(k=0;k<nz_;k++)
   {
@@ -1433,7 +1433,7 @@ Crava::computePostCov()
   fclose(file);
   delete [] fName;
 
-  fName = ModelSettings::makeFullFileName("PosteriorCorrTRho",".dat");
+  fName = ModelSettings::makeFullFileName("Posterior_CorrTRho",".dat");
   file=fopen(fName,"w");
   for(k=0;k<nz_;k++)
   {
@@ -2187,7 +2187,7 @@ Crava::printEnergyToScreen()
 void
 Crava::dumpCorrT(float* corrT,float dt)
 {
-  char * filename= ModelSettings::makeFullFileName("PriorCorrT",".dat");
+  char * filename= ModelSettings::makeFullFileName("Prior_CorrT",".dat");
   int i;
   FILE *file = fopen(filename, "w");
 

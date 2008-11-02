@@ -249,7 +249,7 @@ void GridMapping::setDepthSimbox(const Simbox * timeSimbox,
 {
   simbox_ = new Simbox(timeSimbox);
   simbox_->setDepth(z0Grid_, z1Grid_, nz);
-  simbox_->writeTopBotGrids("topDepth", "baseDepth", outputFormat);
+  simbox_->writeTopBotGrids("Surface_Top_Depth", "Surface_Base_Depth", outputFormat);
 
   double dummyLzLimit = 0.0; // The other LzLimit is only for inversion, not depth conversion
   int error = simbox_->checkError(dummyLzLimit,errText);
