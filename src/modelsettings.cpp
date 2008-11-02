@@ -17,7 +17,7 @@ ModelSettings::ModelSettings(void)
   traceHeaderFormat_     = new TraceHeaderFormat(0); // SeisWorks;
   krigingParams_         =     NULL;
   angle_                 =     NULL;
-  noiseEnergy_           =     NULL;
+  SNRatio_               =     NULL;
   matchEnergies_         =     NULL;
   indBGTrend_            =     NULL;
   indWavelet_            =     NULL;
@@ -110,8 +110,8 @@ ModelSettings::~ModelSettings(void)
   if (angle_ != NULL)
     delete [] angle_;
 
-  if (noiseEnergy_ != NULL)
-    delete [] noiseEnergy_;
+  if (SNRatio_ != NULL)
+    delete [] SNRatio_;
 
   if (matchEnergies_ != NULL)
     delete [] matchEnergies_;
@@ -205,13 +205,13 @@ ModelSettings::setAngle(float * angle, int nAngles)
 }
 
 void           
-ModelSettings::setNoiseEnergy(float * noiseEnergy, int nAngles)
+ModelSettings::setSNRatio(float * SNRatio, int nAngles)
 {
-  if (noiseEnergy_ != NULL)
-    delete [] noiseEnergy_;
-  noiseEnergy_ = new float[nAngles];
+  if (SNRatio_ != NULL)
+    delete [] SNRatio_;
+  SNRatio_ = new float[nAngles];
   for (int i=0 ; i<nAngles ; i++)
-    noiseEnergy_[i] = noiseEnergy[i];
+    SNRatio_[i] = SNRatio[i];
 }
 
 void           

@@ -36,7 +36,6 @@ public:
   double           getTimeLz(void)                const { return time_lz_               ;}
   double           getTimeDz(void)                const { return time_dz_               ;}
   int              getTimeNz(void)                const { return time_nz_               ;}
-  bool             getHasSignalToNoiseRatio(void) const { return hasSignalToNoiseRatio_ ;}
   bool             getFaciesLogGiven(void)        const { return faciesLogGiven_        ;}
   bool             getDoDepthConversion(void)     const { return doDepthConversion_     ;}
   bool             getGenerateBackground(void)    const { return generateBackground_    ;}
@@ -68,7 +67,6 @@ private:
   int              readCommandReflectionMatrix(char ** params, int & pos, char * errText);
   int              readCommandFrequencyBand(char ** params, int & pos, char * errText);
   int              readCommandBackgroundControl(char ** params, int & pos, char * errText);
-  int              readCommandGiveSignalToNoiseRatios(char ** params, int & pos, char * errText);
   int              readCommandSeismicResolution(char ** params, int & pos, char * errText);
   int              readCommandWaveletTaperingL(char ** params, int & pos, char * errText);
   int              readCommandPUndef(char ** params, int & pos, char * errText);
@@ -107,7 +105,7 @@ private:
   int              nSeisData_;             // Number of seismic cubes to condition on.
 
   float          * angle_;                 // Angle of cube.
-  float          * noiseEnergy_;           // Noise Variance.
+  float          * SNRatio_;               // Signal-to-noise ratio
   float          * waveScale_;             // wavelet scaling/gain
   int              nWaveletTransfArgs_;    // Number of parameters in wavelet transform. Should be equal to nSeisData_
 
@@ -128,7 +126,6 @@ private:
   bool             doDepthConversion_;     // Flag taking value 1 if depth surfaces are defined
   bool             parallelTimeSurfaces_;
   bool             generateBackground_;    // Generate background model from filtered wells.
-  bool             hasSignalToNoiseRatio_; // Use SN ratio instead of error variance in model file. 
 
   bool             failed_;                // Indicates whether errors ocuured during construction. 
 };

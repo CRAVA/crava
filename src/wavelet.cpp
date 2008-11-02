@@ -694,7 +694,7 @@ Wavelet::getNoiseStandardDeviation(Simbox * simbox, FFTGrid * seisCube, WellData
   delete [] wavelet_r;
   delete [] cor_seis_synt_r;
       
-  return errStd;
+  return empSNRatio;
 }
 
 float          

@@ -81,9 +81,6 @@ Model::Model(char * fileName)
   else
   {
     modelSettings_ = modelFile->getModelSettings();
-
-    hasSignalToNoiseRatio_ = modelFile->getHasSignalToNoiseRatio();     // NBNB-PAL: ==> UT
-
     LogKit::SetScreenLog(modelSettings_->getLogLevel());
 
     char * logFileName = ModelSettings::makeFullFileName("logFile.txt");
@@ -106,7 +103,7 @@ Model::Model(char * fileName)
     if(modelSettings_->getNumberOfSimulations() == 0)
       modelSettings_->setOutputFlag(ModelSettings::PREDICTION); //write predicted grids. 
     
-    printSettings(modelSettings_, modelFile, hasSignalToNoiseRatio_);
+    printSettings(modelSettings_, modelFile);
     
     LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************");
     LogKit::LogFormatted(LogKit::LOW,"\n***                       Reading input data                        ***"); 
@@ -143,8 +140,7 @@ Model::Model(char * fileName)
           {
             processWavelets(wavelet_, seisCube_, wells_, reflectionMatrix_,
                             timeSimbox_, waveletEstimInterval_, shiftGrids_, gainGrids_,
-                            modelSettings_, modelFile, hasSignalToNoiseRatio_,
-                            errText, failedWavelet);
+                            modelSettings_, modelFile, errText, failedWavelet);
           }              
         }
         if(modelSettings_->getFormatFlag() == 0)
@@ -196,8 +192,7 @@ Model::Model(char * fileName)
               {
                 processWavelets(wavelet_, seisCube_, wells_, reflectionMatrix_,
                                 timeSimbox_, waveletEstimInterval_, shiftGrids_, gainGrids_,
-                                modelSettings_, modelFile, hasSignalToNoiseRatio_, 
-                                errText, failedWavelet);
+                                modelSettings_, modelFile, errText, failedWavelet);
               }
             }
           }
@@ -1802,7 +1797,6 @@ Model::processWavelets(Wavelet     **& wavelet,
                        Surface      ** gainGrids,
                        ModelSettings * modelSettings, 
                        ModelFile     * modelFile,
-                       bool          & hasSignalToNoiseRatio,
                        char          * errText,
                        bool          & failed)
 {
@@ -1818,7 +1812,7 @@ Model::processWavelets(Wavelet     **& wavelet,
     for(int i=0 ; i < modelSettings->getNumberOfAngles() ; i++)
     {  
       estimateStuff = estimateStuff || (modelFile->getWaveletFile()[i][0] == '*'); 
-      estimateStuff = estimateStuff || (modelSettings->getNoiseEnergy()[i]==RMISSING); 
+      estimateStuff = estimateStuff || (modelSettings->getSNRatio()[i]==RMISSING); 
     }
     if (estimateStuff) 
     {
@@ -1830,7 +1824,7 @@ Model::processWavelets(Wavelet     **& wavelet,
     
     char ** waveletFile = modelFile->getWaveletFile();
     float * waveScale   = modelFile->getWaveletScale();
-    float * noiseEnergy = modelSettings->getNoiseEnergy();
+    float * SNRatio     = modelSettings->getSNRatio();
     
     for(int i=0 ; i < modelSettings->getNumberOfAngles() ; i++)
     {  
@@ -1889,29 +1883,25 @@ Model::processWavelets(Wavelet     **& wavelet,
           sprintf(errText, "%s Simbox must have constant thickness when 3D wavelet.\n", errText);
           error += 1;
         }
-        if (noiseEnergy[i] == RMISSING)
+        if (SNRatio[i] == RMISSING)
         {
-          if (wavelet[i]->getDim() == 3) { //Not possible to estimate noise variance when 3D wavelet
-            sprintf(errText, "%s Estimation of noise st. dev. is not possible for 3D wavelet.\n", errText);
-            sprintf(errText, "%s        Noise st.dev. or s/n ratio must be specified in modelfile\n", errText);
+          if (wavelet[i]->getDim() == 3) { //Not possible to estimate signal-to-noise ratio for 3D wavelets
+            sprintf(errText, "%s Estimation of signal-to-noise ratio is not possible for 3D wavelets.\n", errText);
+            sprintf(errText, "%s The s/n ratio must be specified in the model file\n", errText);
             error += 1;
           }
           else {
-            noiseEnergy[i] = wavelet[i]->getNoiseStandardDeviation(timeSimbox, seisCube[i], wells, modelSettings->getNumberOfWells(), 
-                                                                   errText, error);
-            if (hasSignalToNoiseRatio) 
-            {
-              //LogKit::LogFormatted(LogKit::LOW,"\n  Since seismic noise is estimated directly, keyword GIVESIGNALTONOISERATIO has no effect.\n");
-              hasSignalToNoiseRatio = false;
-            }
+            SNRatio[i] = wavelet[i]->getNoiseStandardDeviation(timeSimbox, seisCube[i], wells, 
+                                                               modelSettings->getNumberOfWells(), 
+                                                               errText, error);
           }
         }
         else
         {
-          if (hasSignalToNoiseRatio && (noiseEnergy[i] <= 1.0 || noiseEnergy[i] > 10.0))
+          if (SNRatio[i] <= 1.0 || SNRatio[i] > 10.0)
           {
-            sprintf(errText, "%s Illegal signal-to-noise ratio of %.3f for cube %d\n", errText, noiseEnergy[i],i);
-            sprintf(errText, "%s Ratio must be in interval 1.0 < SNratio < 10.0\n", errText);
+            sprintf(errText, "%s Illegal signal-to-noise ratio of %.3f for cube %d\n", errText, SNRatio[i],i);
+            sprintf(errText, "%s Ratio must be in interval 1.0 < S/N ratio < 10.0\n", errText);
             error += 1;
           }
         }
@@ -2270,8 +2260,7 @@ Model::findFileType(char * fileName)
 
 void
 Model::printSettings(ModelSettings * modelSettings,
-                     ModelFile     * modelFile,
-                     bool            hasSignalToNoiseRatio)
+                     ModelFile     * modelFile)
 {
   LogKit::LogFormatted(LogKit::LOW,"\nGeneral settings:\n");
   int logLevel = modelSettings->getLogLevel();
@@ -2586,7 +2575,7 @@ Model::printSettings(ModelSettings * modelSettings,
     }
     bool estimateNoise = false;
     for (int i = 0 ; i < modelSettings->getNumberOfAngles() ; i++) {
-      estimateNoise = estimateNoise || (modelSettings->getNoiseEnergy()[i]==RMISSING); 
+      estimateNoise = estimateNoise || (modelSettings->getSNRatio()[i]==RMISSING); 
     }
     LogKit::LogFormatted(LogKit::LOW,"\nGeneral settings for wavelet:\n");
     if (estimateNoise)
@@ -2605,15 +2594,12 @@ Model::printSettings(ModelSettings * modelSettings,
       else
         LogKit::LogFormatted(LogKit::LOW,"  Read wavelet from file                   : %s\n",modelFile->getWaveletFile()[i]);
       
-      float * noiseEnergy   = modelSettings->getNoiseEnergy();
+      float * SNRatio       = modelSettings->getSNRatio();
       bool  * matchEnergies = modelSettings->getMatchEnergies();
-      if (noiseEnergy[i] == RMISSING) 
+      if (SNRatio[i] == RMISSING) 
         LogKit::LogFormatted(LogKit::LOW,"  Estimate signal-to-noise ratio           : %10s\n", "yes");
       else
-        if (hasSignalToNoiseRatio)
-          LogKit::LogFormatted(LogKit::LOW,"  Signal-to-noise ratio                    : %10.1f\n",noiseEnergy[i]);
-        else
-          LogKit::LogFormatted(LogKit::LOW,"  Error std.dev. in seismic                : %10.2e\n",noiseEnergy[i]);
+        LogKit::LogFormatted(LogKit::LOW,"  Signal-to-noise ratio                    : %10.1f\n",SNRatio[i]);
       if (matchEnergies[i]) 
         LogKit::LogFormatted(LogKit::LOW,"  Match empirical and theoretical energies : %10s\n", "yes");
       else

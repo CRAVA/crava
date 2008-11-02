@@ -38,7 +38,7 @@ ModelFile::ModelFile(char * fileName)
   seisType_              = NULL;  
   waveScale_             = NULL;
   angle_                 = NULL; // Must be kept as class variable due to reuse of readCommandSeismic()
-  noiseEnergy_           = NULL; // Must be kept as class variable due to reuse of readCommandSeismic()
+  SNRatio_               = NULL; // Must be kept as class variable due to reuse of readCommandSeismic()
   constBack_             = NULL;
 
   nSeisData_             =  0;
@@ -51,7 +51,6 @@ ModelFile::ModelFile(char * fileName)
   time_nz_               = 0;
 
   faciesLogGiven_        = false;
-  hasSignalToNoiseRatio_ = false;
   doDepthConversion_     = false;
   parallelTimeSurfaces_  = false;
   generateBackground_    = true;
@@ -140,11 +139,11 @@ ModelFile::ModelFile(char * fileName)
   strcpy(commandList[neededCommands+ 5],"PREDICTION");             
   strcpy(commandList[neededCommands+ 6],"PADDING");                     // ==> FFTGRID_PADDING
   strcpy(commandList[neededCommands+ 7],"PREFIX");
-  strcpy(commandList[neededCommands+ 8],"AREA");
+  strcpy(commandList[neededCommands+ 8],"AREA");                        // ==> INVERSION_AREA
   genNeed[neededCommands+8] = true;
-  strcpy(commandList[neededCommands+ 9],"WHITENOISE");
+  strcpy(commandList[neededCommands+ 9],"WHITENOISE");                  // ==> WHITE_NOISE_COMPONENT
   strcpy(commandList[neededCommands+10],"OUTPUT");
-  strcpy(commandList[neededCommands+11],"SEGYOFFSET");
+  strcpy(commandList[neededCommands+11],"SEGYOFFSET");                  // ==> SEISMIC_START_TIME
   strcpy(commandList[neededCommands+12],"FORCEFILE");
   strcpy(commandList[neededCommands+13],"DEBUG");
   strcpy(commandList[neededCommands+14],"KRIGING");
@@ -156,7 +155,7 @@ ModelFile::ModelFile(char * fileName)
   strcpy(commandList[neededCommands+20],"BACKGROUND");
   genNeed[neededCommands+20] = true;
   strcpy(commandList[neededCommands+21],"MAX_DEVIATION_ANGLE");
-  strcpy(commandList[neededCommands+22],"GIVESIGNALTONOISERATIO");
+  strcpy(commandList[neededCommands+22],"empty_slot");
   strcpy(commandList[neededCommands+23],"SEISMICRESOLUTION");           // ==> SEISMIC_RESOLUTION
   strcpy(commandList[neededCommands+24],"WAVELETLENGTH");
   strcpy(commandList[neededCommands+25],"DEPTH_CONVERSION");
@@ -310,7 +309,7 @@ ModelFile::ModelFile(char * fileName)
           error = readCommandMaxDeviationAngle(params,curPos,errText);
           break;
         case 24:
-          error = readCommandGiveSignalToNoiseRatios(params, curPos, errText);
+          // empty slot
           break;
         case 25:
           error = readCommandSeismicResolution(params, curPos, errText);
@@ -477,7 +476,7 @@ ModelFile::ModelFile(char * fileName)
   if (wrongCommand)
   {
     LogKit::LogFormatted(LogKit::LOW,"\nValid commands are:\n\n");
-    LogKit::LogFormatted(LogKit::LOW,"General settings:\n");
+    LogKit::LogFormatted(LogKit::LOW,"\nGeneral settings:\n");
     LogKit::LogFormatted(LogKit::LOW,"  AREA\n");
     LogKit::LogFormatted(LogKit::LOW,"  DEBUG\n");
     LogKit::LogFormatted(LogKit::LOW,"  FORCEFILE\n");
@@ -489,22 +488,22 @@ ModelFile::ModelFile(char * fileName)
     LogKit::LogFormatted(LogKit::LOW,"  REFLECTIONMATRIX\n");
     LogKit::LogFormatted(LogKit::LOW,"  SEED\n");
     LogKit::LogFormatted(LogKit::LOW,"  LOG_LEVEL\n");
-    LogKit::LogFormatted(LogKit::LOW,"Modelling mode:\n");
+    LogKit::LogFormatted(LogKit::LOW,"\nModelling mode:\n");
     LogKit::LogFormatted(LogKit::LOW,"  KRIGING\n");
     LogKit::LogFormatted(LogKit::LOW,"  PREDICTION\n");
     LogKit::LogFormatted(LogKit::LOW,"  NSIMULATIONS\n");
-    LogKit::LogFormatted(LogKit::LOW,"Well data:\n");
+    LogKit::LogFormatted(LogKit::LOW,"\nWell data:\n");
     LogKit::LogFormatted(LogKit::LOW,"  WELLS\n");
     LogKit::LogFormatted(LogKit::LOW,"  ALLOWED_PARAMETER_VALUES\n");
     LogKit::LogFormatted(LogKit::LOW,"  MAX_DEVIATION_ANGLE\n");
     LogKit::LogFormatted(LogKit::LOW,"  SEISMICRESOLUTION\n");
-    LogKit::LogFormatted(LogKit::LOW,"Surface data:\n");
+    LogKit::LogFormatted(LogKit::LOW,"\nSurface data:\n");
     LogKit::LogFormatted(LogKit::LOW,"  DEPTH\n");
     LogKit::LogFormatted(LogKit::LOW,"  DEPTH_CONVERSION\n");
     LogKit::LogFormatted(LogKit::LOW,"  CORRELATION_DIRECTION      \n");
     LogKit::LogFormatted(LogKit::LOW,"  FACIES_ESTIMATION_INTERVAL \n");
     LogKit::LogFormatted(LogKit::LOW,"  WAVELET_ESTIMATION_INTERVAL\n");
-    LogKit::LogFormatted(LogKit::LOW,"Seismic data:\n");
+    LogKit::LogFormatted(LogKit::LOW,"\nSeismic data:\n");
     LogKit::LogFormatted(LogKit::LOW,"  SEISMIC\n");
     LogKit::LogFormatted(LogKit::LOW,"  PS_SEISMIC\n");
     LogKit::LogFormatted(LogKit::LOW,"  SEGYOFFSET\n");
@@ -512,14 +511,13 @@ ModelFile::ModelFile(char * fileName)
     LogKit::LogFormatted(LogKit::LOW,"  ENERGYTRESHOLD\n");
     LogKit::LogFormatted(LogKit::LOW,"  LOCALWAVELET\n");
     LogKit::LogFormatted(LogKit::LOW,"  WAVELETLENGTH\n");
-    LogKit::LogFormatted(LogKit::LOW,"Prior model:\n");
+    LogKit::LogFormatted(LogKit::LOW,"\nPrior model:\n");
     LogKit::LogFormatted(LogKit::LOW,"  BACKGROUND\n");
     LogKit::LogFormatted(LogKit::LOW,"  LATERALCORRELATION\n");
     LogKit::LogFormatted(LogKit::LOW,"  PARAMETERCORRELATION\n");
     LogKit::LogFormatted(LogKit::LOW,"  ALLOWED_RESIDUAL_VARIANCES\n");
-    LogKit::LogFormatted(LogKit::LOW,"Error model:\n");
+    LogKit::LogFormatted(LogKit::LOW,"\nError model:\n");
     LogKit::LogFormatted(LogKit::LOW,"  ANGULARCORRELATION\n");
-    LogKit::LogFormatted(LogKit::LOW,"  GIVESIGNALTONOISERATIO\n");
     LogKit::LogFormatted(LogKit::LOW,"  WHITENOISE\n");
   }
 
@@ -625,7 +623,7 @@ ModelFile::~ModelFile()
     delete [] corrDirFile_;
 
   delete [] angle_;
-  delete [] noiseEnergy_;
+  delete [] SNRatio_;
   delete [] waveScale_;
   delete [] seisType_;
 }
@@ -1116,11 +1114,11 @@ ModelFile::readCommandSeismic(char ** params, int & pos, char * errText, int sei
     return(1);
   }
 
-  char  ** seisFile    = new char*[2*nSeisData];
-  char  ** waveFile    = new char*[nSeisData];  
-  float *  angle       = new float[nSeisData];
-  float *  noiseEnergy = new float[nSeisData];
-  float *  waveScale   = new float[nSeisData];
+  char  ** seisFile  = new char*[2*nSeisData];
+  char  ** waveFile  = new char*[nSeisData];  
+  float *  angle     = new float[nSeisData];
+  float *  SNRatio   = new float[nSeisData];
+  float *  waveScale = new float[nSeisData];
 
   for(i=0;i<nSeisData;i++)
   {
@@ -1133,11 +1131,11 @@ ModelFile::readCommandSeismic(char ** params, int & pos, char * errText, int sei
     // 2. angle
     angle[i] = float(atof(params[pos+nCol*i+1])*PI/180.0);
 
-    // 3. noiseEnergy (possibly signalToNoiseRatio)
+    // 3. signal-to-noise ratio
     if (params[pos+nCol*i+2][0] == '*') 
-      noiseEnergy[i] = RMISSING;
+      SNRatio[i] = RMISSING;
     else
-      noiseEnergy[i] = float(atof(params[pos+nCol*i+2]));
+      SNRatio[i] = float(atof(params[pos+nCol*i+2]));
     
     // 4. file containing wavelet
     waveFile[i] = new char[strlen(params[pos+nCol*i+3])+1];   
@@ -1173,7 +1171,7 @@ ModelFile::readCommandSeismic(char ** params, int & pos, char * errText, int sei
   {
     seismicFile_ = seisFile;
     waveletFile_ = waveFile;
-    noiseEnergy_ = noiseEnergy;
+    SNRatio_     = SNRatio;
     waveScale_   = waveScale;
     angle_       = angle;
     nSeisData_   = nSeisData;
@@ -1183,17 +1181,17 @@ ModelFile::readCommandSeismic(char ** params, int & pos, char * errText, int sei
   }
   else 
   {
-    char  ** seisFile2    = seismicFile_;
-    char  ** waveFile2    = waveletFile_;
-    float *  noiseEnergy2 = noiseEnergy_;
-    float *  waveScale2   = waveScale_;
-    float *  angle2       = angle_;
-    int   *  seisType2    = seisType_;
+    char  ** seisFile2  = seismicFile_;
+    char  ** waveFile2  = waveletFile_;
+    float *  SNRatio2   = SNRatio_;
+    float *  waveScale2 = waveScale_;
+    float *  angle2     = angle_;
+    int   *  seisType2  = seisType_;
 
     int nTot = nSeisData + nSeisData_;
     seismicFile_ = new char *[nTot];
     waveletFile_ = new char *[nTot];
-    noiseEnergy_ = new float[nTot];
+    SNRatio_     = new float[nTot];
     waveScale_   = new float[nTot];
     angle_       = new float[nTot];
     seisType_    = new int[nTot];
@@ -1203,7 +1201,7 @@ ModelFile::readCommandSeismic(char ** params, int & pos, char * errText, int sei
     {
       seismicFile_[i] = seisFile2[i];
       waveletFile_[i] = waveFile2[i];
-      noiseEnergy_[i] = noiseEnergy2[i];
+      SNRatio_[i]     = SNRatio2[i];
       waveScale_[i]   = waveScale2[i];
       angle_[i]       = angle2[i];
       seisType_[i]    = seisType2[i];
@@ -1211,7 +1209,7 @@ ModelFile::readCommandSeismic(char ** params, int & pos, char * errText, int sei
     delete [] seisFile2;
     delete [] waveFile2;
     delete [] angle2;
-    delete [] noiseEnergy2;
+    delete [] SNRatio2;
     delete [] waveScale2;
     delete [] seisType2;
 
@@ -1220,7 +1218,7 @@ ModelFile::readCommandSeismic(char ** params, int & pos, char * errText, int sei
     {
       seismicFile_[i+nSeisData_] = seisFile[i];
       waveletFile_[i+nSeisData_] = waveFile[i];
-      noiseEnergy_[i+nSeisData_] = noiseEnergy[i];
+      SNRatio_[i+nSeisData_]     = SNRatio[i];
       waveScale_[i+nSeisData_]   = waveScale[i];
       angle_[i+nSeisData_]       = angle[i];
       seisType_[i+nSeisData_]    = seisType;
@@ -1228,7 +1226,7 @@ ModelFile::readCommandSeismic(char ** params, int & pos, char * errText, int sei
     delete [] seisFile;
     delete [] waveFile;
     delete [] angle;
-    delete [] noiseEnergy;
+    delete [] SNRatio;
     delete [] waveScale;
 
     nSeisData_ += nSeisData;
@@ -1236,7 +1234,7 @@ ModelFile::readCommandSeismic(char ** params, int & pos, char * errText, int sei
 
   modelSettings_->setNumberOfAngles(nSeisData_);
   modelSettings_->setAngle(angle_,nSeisData_);
-  modelSettings_->setNoiseEnergy(noiseEnergy_,nSeisData_);
+  modelSettings_->setSNRatio(SNRatio_,nSeisData_);
   modelSettings_->setMatchEnergies(waveScale_,nSeisData_);
 
   pos += nCol*nSeisData+1;
@@ -1723,19 +1721,6 @@ ModelFile::readCommandDebug(char ** params, int & pos, char * errText)
     if(nPar > 0)
       debugFlag = int(atoi(params[pos]));
     modelSettings_->setDebugFlag(debugFlag);
-  }
-  pos += nPar+1;
-  return(error);
-}
-
-int
-ModelFile::readCommandGiveSignalToNoiseRatios(char ** params, int & pos, char * errText)
-{
-  int error;
-  int nPar = getParNum(params, pos, error, errText, params[pos-1], 0);
-  if(error == 0)
-  {
-    hasSignalToNoiseRatio_ = true;
   }
   pos += nPar+1;
   return(error);

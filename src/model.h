@@ -40,7 +40,6 @@ public:
   Wavelet       ** getWavelets()              const { return wavelet_                ;}
   float         ** getAMatrix()               const { return reflectionMatrix_       ;}
   RandomGen      * getRandomGen()             const { return randomGen_              ;} 
-  bool             hasSignalToNoiseRatio()    const { return hasSignalToNoiseRatio_  ;}
   GridMapping    * getTimeDepthMapping()      const { return timeDepthMapping_       ;}
   GridMapping    * getTimeCutMapping()        const { return timeCutMapping_         ;}
   bool             getVelocityFromInversion() const { return velocityFromInversion_  ;}
@@ -105,7 +104,6 @@ private:
                                    Surface      ** gainGrids,
                                    ModelSettings * modelSettings, 
                                    ModelFile     * modelFile,
-                                   bool          & hasSignalToNoiseRatio,
                                    char          * errText,
                                    bool          & failed);
   void             processPriorFaciesProb(float        *& priorFacies,
@@ -183,8 +181,7 @@ private:
                                     char           * tmpErrText,
                                     int            & error);
   void             printSettings(ModelSettings * modelSettings,
-                                 ModelFile     * modelFile,
-                                 bool            hasSignalToNoiseRatio);
+                                 ModelFile     * modelFile);
   int              getWaveletFileFormat(char * fileName, 
                                         char * errText);
   //Compute correlation gradient in terms of i,j and k in grid.
@@ -232,8 +229,6 @@ private:
   GridMapping    * timeCutMapping_;        ///< Simbox and mapping for timeCut
 
   bool             velocityFromInversion_;
-
-  bool             hasSignalToNoiseRatio_; ///< Use SN ratio instead of error variance in model file. 
 };
 
 #endif

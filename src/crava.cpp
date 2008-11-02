@@ -287,20 +287,13 @@ Crava::setupErrorCorrelation(Model * model)
   //
   //  Setup error correlation matrix
   //
-  float * e = model->getModelSettings()->getNoiseEnergy() ;       
+  float * e = model->getModelSettings()->getSNRatio() ;       
 
   for(int l=0 ; l < ntheta_ ; l++)
   {
-    if (model->hasSignalToNoiseRatio()) 
-    {
-      empSNRatio_[l]    = e[l];
-      errorVariance_[l] = dataVariance_[l]/empSNRatio_[l];
-    }
-  else
-    {
-      errorVariance_[l] = e[l]*e[l];
-      empSNRatio_[l]    = float(dataVariance_[l]/errorVariance_[l]);
-    }
+    empSNRatio_[l]    = e[l];
+    errorVariance_[l] = dataVariance_[l]/empSNRatio_[l];
+
     if (empSNRatio_[l] < 1.1f) 
     {
       LogKit::LogFormatted(LogKit::LOW,"\nThe empirical signal-to-noise ratio for angle stack %d is %7.1e. Ratios smaller than\n",l+1,empSNRatio_[l]);
@@ -2178,9 +2171,9 @@ Crava::printEnergyToScreen()
   LogKit::LogFormatted(LogKit::LOW,"\nWavelet scale          :");
   for(i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::LOW,"    %2.3e  ",seisWavelet_[i]->getScale());
   LogKit::LogFormatted(LogKit::LOW,"\nEmpirical S/N          :");
-  for(i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::LOW,"    %5.3f      ",empSNRatio_[i]);
+  for(i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::LOW,"    %5.2f      ",empSNRatio_[i]);
   LogKit::LogFormatted(LogKit::LOW,"\nModelled S/N           :");
-  for(i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::LOW,"    %5.3f      ",theoSNRatio_[i]);
+  for(i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::LOW,"    %5.2f      ",theoSNRatio_[i]);
   LogKit::LogFormatted(LogKit::LOW,"\n");
 }
 

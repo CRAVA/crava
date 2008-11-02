@@ -26,7 +26,7 @@ public:
   float             * getKrigingParameters(void)    const { return krigingParams_    ;}
   float             * getAngle(void)                const { return angle_            ;}
   int                 getNumberOfAngles(void)       const { return nAngles_          ;} 
-  float             * getNoiseEnergy(void)          const { return noiseEnergy_      ;} 
+  float             * getSNRatio(void)              const { return SNRatio_          ;} 
   bool              * getMatchEnergies(void)        const { return matchEnergies_    ;} 
   char              * getFaciesName(int i)          const { return faciesNames_[i]   ;}
   int                 getIndicatorBGTrend(int i)    const { return indBGTrend_[i]    ;}
@@ -88,7 +88,7 @@ public:
   void                setKrigingParameters(float * krigingParams, int nParams);
   void                setAngle(float * angle, int nAngles);
   void                setNumberOfAngles(int nAngles)              { nAngles_          = nAngles          ;} 
-  void                setNoiseEnergy(float * noiseEnergy, int nAngles);
+  void                setSNRatio(float * SNRatio, int nAngles);
   void                setMatchEnergies(float * waveletScale, int nAngles);
   void                setAllIndicatorsTrue(int nWells);
   void                setIndicatorBGTrend(int * indBGTrend, int nWells);
@@ -179,7 +179,7 @@ private:
                    
   float             * angle_;                 // Angles
   int                 nAngles_;               //
-  float             * noiseEnergy_;           // Noise Variance .
+  float             * SNRatio_;               // Signal-to-noise ratio
   bool              * matchEnergies_;         // Let dataVariance_ = signalVariance_
                    
   int               * indBGTrend_;            // Use well to estimate background trend? (1=yes,0=no)
