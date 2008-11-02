@@ -853,9 +853,33 @@ Model::setupExtendedTimeSimbox(Simbox   * timeSimbox,
   botSurf->Add(shiftBot);
   botSurf->Add(&(timeSimbox->GetBotSurface()));
   timeSimbox->setDepth(topSurf, botSurf, nz);
-  NRLib2::WriteStormBinarySurf(*topSurf,"extendedTop.storm");
-  NRLib2::WriteStormBinarySurf(*botSurf,"extendedBot.storm");
 
+  std::string topname = "Surface_Top_Extended_Time";
+  std::string botname = "Surface_Base_Extended_Time";
+  if ((modelSettings_->getFormatFlag() & FFTGrid::ASCIIFORMAT) == FFTGrid::ASCIIFORMAT) {
+    topname += ".irap";
+    botname += ".irap";
+  }
+  else {
+    topname += ".storm";
+    botname += ".storm";
+  }
+
+  char * topFile;
+  char * botFile;
+  topFile = ModelSettings::makeFullFileName(topname.c_str());
+  botFile = ModelSettings::makeFullFileName(botname.c_str());
+
+  if ((modelSettings_->getFormatFlag() & FFTGrid::ASCIIFORMAT) == FFTGrid::ASCIIFORMAT) {
+    NRLib2::WriteIrapClassicAsciiSurf(*topSurf, std::string(topFile));
+    NRLib2::WriteIrapClassicAsciiSurf(*botSurf, std::string(botFile));
+  }
+  else {
+    NRLib2::WriteStormBinarySurf(*topSurf, std::string(topFile));
+    NRLib2::WriteStormBinarySurf(*botSurf, std::string(botFile));
+  }
+  delete [] topFile;
+  delete [] botFile;
   delete refPlane;
 }
 
