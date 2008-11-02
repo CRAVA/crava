@@ -112,12 +112,6 @@ Model::Model(char * fileName)
     char errText[MAX_STRING];
     sprintf(errText,"%c",'\0');
 
-    int format = 0;
-    if((modelSettings_->getFormatFlag() & FFTGrid::ASCIIFORMAT) == FFTGrid::ASCIIFORMAT)
-      format += 1;
-    if((modelSettings_->getFormatFlag() & FFTGrid::STORMFORMAT) == FFTGrid::STORMFORMAT)
-      format +=2;
-
     makeTimeSimboxes(timeSimbox_, timeCutSimbox, correlationDirection_, //Handles correlation direction too.
                      modelSettings_, modelFile, errText, failedSimbox);
 
@@ -159,14 +153,13 @@ Model::Model(char * fileName)
         if(failedSeismic==false)
         {
           if(timeCutSimbox!=NULL)  {
-            timeCutMapping_ = new GridMapping(format);
+            timeCutMapping_ = new GridMapping();
             timeCutMapping_->makeTimeTimeMapping(timeCutSimbox);
           }
           
           processDepthConversion(timeCutSimbox, timeSimbox_,
                                  modelSettings_, modelFile,
-                                 errText, failedDepthConv,
-                                 format);
+                                 errText, failedDepthConv);
           processWells(wells_, timeSimbox_, randomGen_, 
                        modelSettings_, modelFile, 
                        errText, failedWells);
@@ -2630,8 +2623,7 @@ Model::processDepthConversion(Simbox        * timeCutSimbox,
                               ModelSettings * modelSettings_, 
                               ModelFile     * modelFile,
                               char          * errText, 
-                              bool          & failed,
-                              int             format)
+                              bool          & failed)
 {
   if(modelFile->getDoDepthConversion()) 
   {
@@ -2647,7 +2639,7 @@ Model::processDepthConversion(Simbox        * timeCutSimbox,
 
     if(!failed) 
     {
-      timeDepthMapping_ = new GridMapping(format);
+      timeDepthMapping_ = new GridMapping();
       timeDepthMapping_->setDepthSurfaces(modelFile->getDepthSurfFile(), failed, errText);
       if(velocity != NULL) 
       {

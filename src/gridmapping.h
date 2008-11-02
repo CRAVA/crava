@@ -3,22 +3,21 @@
 
 #include <stdio.h>
 
-#include "nrlib/surface/regularsurface.hpp"
-#include "lib/global_def.h"
 #include "src/definitions.h"
+#include "lib/global_def.h"
+#include "nrlib/surface/regularsurface.hpp"
 #include "nrlib/stormgrid/stormcontgrid.hpp"
 
 class Simbox;
 class FFTGrid;
 
-class GridMapping{
+class GridMapping
+{
 public:
-  GridMapping(int format);
+  GridMapping();
   ~GridMapping(void);
   StormContGrid * getMapping(void)  const { return mapping_ ;}
   Simbox        * getSimbox(void)   const { return simbox_  ;}
-  int             getFormat(void)         { return format_  ;}
-
   void            setDepthSurfaces(char ** surfFile, 
                                    bool  & failed, 
                                    char  * errText);
@@ -36,8 +35,8 @@ public:
 private:
   StormContGrid * mapping_;
   Simbox        * simbox_;
+
   Surface       * z0Grid_;
   Surface       * z1Grid_;
-  int             format_;  // 3 = both, 2 = storm_binary, 1 = storm_ascii, 0 = nothing
 };
 #endif

@@ -116,8 +116,7 @@ private:
                                           ModelSettings * modelSettings_, 
                                           ModelFile     * modelFile,
                                           char          * errText, 
-                                          bool          & failedVelocity,
-                                          int             format);
+                                          bool          & failedVelocity);
   void             loadVelocity(FFTGrid      *& velocity,
                                 Simbox        * timeSimbox,
                                 ModelSettings * modelSettings, 

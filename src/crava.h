@@ -89,7 +89,8 @@ private:
   void               dumpCorrT(float* corrT,float dt);
   void               initPostKriging();          
   void               writeToFile(char * timeFileName, char * depthFileName, FFTGrid * grid, std::string sgriLabel = "NO_LABEL");
-  void               writeResampledStormCube(FFTGrid *grid, GridMapping *gridmapping, char * fileName, const Simbox *simbox);
+  void               writeResampledStormCube(FFTGrid *grid, GridMapping *gridmapping, char * fileName, 
+                                             const Simbox *simbox, const int format);
 
   int                fileGrid_;        // is true if is storage is on file 
   const Simbox     * simbox_;          // the simbox

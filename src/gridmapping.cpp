@@ -17,12 +17,11 @@
 #include "nrlib/stormgrid/stormcontgrid.hpp"
 
 
-GridMapping::GridMapping(int format)
+GridMapping::GridMapping()
   : mapping_(NULL),
     simbox_(NULL),
     z0Grid_(NULL),
-    z1Grid_(NULL),
-    format_(format)
+    z1Grid_(NULL)
 {
 }
 
@@ -143,13 +142,11 @@ GridMapping::calculateSurfaceFromVelocity(FFTGrid      * velocity,
       timeSimbox->getIndexes(x-dx, y-dy, i2, j2);
       timeSimbox->getIndexes(x+dx, y-dy, i3, j3);
       timeSimbox->getIndexes(x-dx, y+dy, i4, j4);
-      double w1, w2;
-      w1 = 0.5;
-      w2 = 0.125;
+      double w1 = 0.5;
+      double w2 = 0.125;
       int n = 0;
       if(ii==IMISSING || jj==IMISSING)
         n = 4;
-     
       if(i1==IMISSING || j1==IMISSING)
         n++;
       if(i2==IMISSING || j2==IMISSING)
