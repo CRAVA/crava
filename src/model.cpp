@@ -792,6 +792,11 @@ Model::setupExtendedTimeSimbox(Simbox   * timeSimbox,
                                Simbox  *& timeCutSimbox)
 {
   timeCutSimbox = new Simbox(timeSimbox);
+  std::string fileExt;
+  if ((modelSettings_->getFormatFlag() & FFTGrid::ASCIIFORMAT) == FFTGrid::ASCIIFORMAT)
+    fileExt = ".irap";
+  else
+    fileExt = ".storm";
 
   double * corrPlanePars = findPlane(corrSurf);
 
@@ -811,6 +816,7 @@ Model::setupExtendedTimeSimbox(Simbox   * timeSimbox,
   gradX_ = refPlanePars[1];
   gradY_ = refPlanePars[2];
   Surface * refPlane = createPlaneSurface(refPlanePars, corrSurf);
+
   refPlane->Add(corrSurf);
   delete [] corrPlanePars;
   delete [] refPlanePars;
@@ -821,6 +827,13 @@ Model::setupExtendedTimeSimbox(Simbox   * timeSimbox,
   shiftTop *= -1.0;
   topSurf->Add(shiftTop);
   topSurf->Add(&(timeSimbox->GetTopSurface()));
+  std::string planeName = "CorrelationRotationPlane"+fileExt;
+  char * planeFile = ModelSettings::makeFullFileName(planeName.c_str());
+  if((modelSettings_->getFormatFlag() & FFTGrid::ASCIIFORMAT) == FFTGrid::ASCIIFORMAT)
+    NRLib2::WriteIrapClassicAsciiSurf(*topSurf, std::string(planeFile));
+  else
+    NRLib2::WriteStormBinarySurf(*topSurf, std::string(planeFile));
+  delete [] planeFile;
 
   Surface * botSurf = new Surface(*refPlane);
   botSurf->Subtract(&(timeSimbox->GetBotSurface()));
@@ -840,23 +853,14 @@ Model::setupExtendedTimeSimbox(Simbox   * timeSimbox,
   }
   botSurf->Add(shiftBot);
   botSurf->Add(&(timeSimbox->GetBotSurface()));
+
   timeSimbox->setDepth(topSurf, botSurf, nz);
 
-  std::string topname = "Surface_Top_Extended_Time";
-  std::string botname = "Surface_Base_Extended_Time";
-  if ((modelSettings_->getFormatFlag() & FFTGrid::ASCIIFORMAT) == FFTGrid::ASCIIFORMAT) {
-    topname += ".irap";
-    botname += ".irap";
-  }
-  else {
-    topname += ".storm";
-    botname += ".storm";
-  }
+  std::string topname = "Surface_Top_Extended_Time"+fileExt;
+  std::string botname = "Surface_Base_Extended_Time"+fileExt;
 
-  char * topFile;
-  char * botFile;
-  topFile = ModelSettings::makeFullFileName(topname.c_str());
-  botFile = ModelSettings::makeFullFileName(botname.c_str());
+  char * topFile = ModelSettings::makeFullFileName(topname.c_str());
+  char * botFile = ModelSettings::makeFullFileName(botname.c_str());
 
   if ((modelSettings_->getFormatFlag() & FFTGrid::ASCIIFORMAT) == FFTGrid::ASCIIFORMAT) {
     NRLib2::WriteIrapClassicAsciiSurf(*topSurf, std::string(topFile));
@@ -866,6 +870,7 @@ Model::setupExtendedTimeSimbox(Simbox   * timeSimbox,
     NRLib2::WriteStormBinarySurf(*topSurf, std::string(topFile));
     NRLib2::WriteStormBinarySurf(*botSurf, std::string(botFile));
   }
+
   delete [] topFile;
   delete [] botFile;
   delete refPlane;
