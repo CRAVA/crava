@@ -2226,9 +2226,10 @@ void Crava::writeToFile(char        * timeFileName,
 
   if(!((outputFlag_ & ModelSettings::NOTIME)>0))
   {
-    if(timeCutMapping!=NULL && ((format & FFTGrid::ASCIIFORMAT)>0 || (format & FFTGrid::STORMFORMAT)>0))
+    if(timeCutMapping!=NULL)
     {
-      writeResampledStormCube(grid, timeCutMapping, timeFileName, simbox_, format);
+      if(((format & FFTGrid::ASCIIFORMAT)>0 || (format & FFTGrid::STORMFORMAT)>0))
+        writeResampledStormCube(grid, timeCutMapping, timeFileName, simbox_, format);
 
       if((format & FFTGrid::SEGYFORMAT) || (format & FFTGrid::SGRIFORMAT))
         grid->writeFile(timeFileName, simbox_, sgriLabel, 1, 

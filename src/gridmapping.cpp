@@ -111,6 +111,8 @@ void
 GridMapping::calculateSurfaceFromVelocity(FFTGrid      * velocity, 
                                           const Simbox * timeSimbox)
 {
+  if(z0Grid_==NULL || z1Grid_==NULL)
+  {
   Surface * isochore;
   if(z0Grid_==NULL)
   {
@@ -202,6 +204,7 @@ GridMapping::calculateSurfaceFromVelocity(FFTGrid      * velocity,
   }
 
   delete isochore;
+  }
 }
 
 void 
