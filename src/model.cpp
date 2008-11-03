@@ -856,8 +856,8 @@ Model::setupExtendedTimeSimbox(Simbox   * timeSimbox,
 
   timeSimbox->setDepth(topSurf, botSurf, nz);
 
-  std::string topname = "Surface_Top_Extended_Time"+fileExt;
-  std::string botname = "Surface_Base_Extended_Time"+fileExt;
+  std::string topname = "Surface_Top_Time_Extended"+fileExt;
+  std::string botname = "Surface_Base_Time_Extended"+fileExt;
 
   char * topFile = ModelSettings::makeFullFileName(topname.c_str());
   char * botFile = ModelSettings::makeFullFileName(botname.c_str());

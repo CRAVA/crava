@@ -115,94 +115,94 @@ GridMapping::calculateSurfaceFromVelocity(FFTGrid      * velocity,
   {
   Surface * isochore;
   if(z0Grid_==NULL)
-  {
     isochore = new Surface(*z1Grid_);
-    isochore->Resize(timeSimbox->getnx(), timeSimbox->getny());
-  }
   else    
-  {
     isochore = new Surface(*z0Grid_);
-    isochore->Resize(timeSimbox->getnx(), timeSimbox->getny());
-  }
+
+  //
+  // If a constant time surface has been used, it may have only four grid
+  // nodes. To handle this situation we use the grid resolution whenever
+  // this is larger than the surface resolution.
+  //  
+  int maxNx = std::max(timeSimbox->getnx(), isochore->GetNI());
+  int maxNy = std::max(timeSimbox->getny(), isochore->GetNJ()); 
+  isochore->Resize(maxNx, maxNy);
    
+  double dx = 0.5*isochore->GetDX();
+  double dy = 0.5*isochore->GetDY();
+
   for(int j=0 ; j<isochore->GetNJ() ; j++) 
   {
     for(int i=0 ; i<isochore->GetNI() ; i++) 
     {
       double x, y;
       isochore->GetXY(i,j,x,y);   
-      int    nz    = timeSimbox->getnz();
       double tTop  = timeSimbox->getTop(x,y);
       double tBase = timeSimbox->getBot(x,y);
+      int    nz    = timeSimbox->getnz();
       double dt    = (tBase - tTop)/(2000.0*static_cast<double>(nz));
       
-      int ii, jj, i1, i2, i3, i4, j1, j2, j3, j4;
+      int ii, jj;
       timeSimbox->getIndexes(x,y,ii,jj);
-      double dx = 0.5*isochore->GetDX();
-      double dy = 0.5*isochore->GetDY();
-      timeSimbox->getIndexes(x+dx, y+dy, i1, j1);
-      timeSimbox->getIndexes(x-dx, y-dy, i2, j2);
-      timeSimbox->getIndexes(x+dx, y-dy, i3, j3);
-      timeSimbox->getIndexes(x-dx, y+dy, i4, j4);
-      double w1 = 0.5;
-      double w2 = 0.125;
-      int n = 0;
-      if(ii==IMISSING || jj==IMISSING)
-        n = 4;
-      if(i1==IMISSING || j1==IMISSING)
-        n++;
-      if(i2==IMISSING || j2==IMISSING)
-        n++;
-      if(i3==IMISSING || j3==IMISSING)
-        n++;
-      if(i4==IMISSING || j4==IMISSING)
-        n++;
 
-      if(ii!=IMISSING &&jj!=IMISSING)
+      if(ii!=IMISSING && jj!=IMISSING)
       {
-        w1 = w1 +n*0.125*4.0/(8-n);
-        w2 = w2 +n*0.125/(8-n);
+        double sum = 0.0;
+        for(int k=0 ; k<nz ; k++)
+          sum += velocity->getRealValue(ii,jj,k)*dt;
+        (*isochore)(i,j) = sum;
       }
       else
       {
-        w2 = w2+n*0.125/(8-n);
-      }
-    
-     if (n==8)
-        isochore->SetMissing(i,j);
-     else
-      {
-        double sum = 0.0;
-        for(int k=0 ; k<nz ; k++) { 
-          if(ii!=IMISSING && jj!=IMISSING)
-            sum += w1*velocity->getRealValue(ii,jj,k)*dt;
-          if(i1!=IMISSING && j1!=IMISSING)
-            sum += w2*velocity->getRealValue(i1,j1,k)*dt;
-          if(i2!=IMISSING && j2!=IMISSING)
-            sum += w2*velocity->getRealValue(i2,j2,k)*dt;
-          if(i3!=IMISSING && j3!=IMISSING)
-            sum += w2*velocity->getRealValue(i3,j3,k)*dt;
-          if(i4!=IMISSING && j4!=IMISSING)
-            sum += w2*velocity->getRealValue(i4,j4,k)*dt;
-        }
-        if(z0Grid_==NULL)
-        {
-          (*isochore)(i,j) = -sum+z1Grid_->GetZ(x,y,false);
-        }
+        int i1, i2, i3, i4, j1, j2, j3, j4;
+        timeSimbox->getIndexes(x+dx, y+dy, i1, j1);
+        timeSimbox->getIndexes(x-dx, y-dy, i2, j2);
+        timeSimbox->getIndexes(x+dx, y-dy, i3, j3);
+        timeSimbox->getIndexes(x-dx, y+dy, i4, j4);
+        
+        int n = 0;
+        if(i1!=IMISSING && j1!=IMISSING)
+          n++;
+        if(i2!=IMISSING && j2!=IMISSING)
+          n++;
+        if(i3!=IMISSING && j3!=IMISSING)
+          n++;
+        if(i4!=IMISSING && j4!=IMISSING)
+          n++;
+        
+        if (n==0)
+          isochore->SetMissing(i,j);
         else
-          (*isochore)(i,j) = sum+z0Grid_->GetZ(x,y,false);
+        {
+          double w = 1.0/n;
+          double sum = 0.0;
+          for(int k=0 ; k<nz ; k++) { 
+            if(i1!=IMISSING && j1!=IMISSING)
+              sum += w*velocity->getRealValue(i1,j1,k)*dt;
+            if(i2!=IMISSING && j2!=IMISSING)
+              sum += w*velocity->getRealValue(i2,j2,k)*dt;
+            if(i3!=IMISSING && j3!=IMISSING)
+              sum += w*velocity->getRealValue(i3,j3,k)*dt;
+            if(i4!=IMISSING && j4!=IMISSING)
+              sum += w*velocity->getRealValue(i4,j4,k)*dt;
+          }
+          (*isochore)(i,j) = sum;
+        }
       }
     }
   }
+
   if(z0Grid_==NULL) 
   {
     z0Grid_ = new Surface(*isochore);
+    z0Grid_->Multiply(-1.0);
+    z0Grid_->Add(z1Grid_);
   }
   else 
   {
     z1Grid_ = new Surface(*isochore);
+    z1Grid_->Add(z0Grid_);
   }
-
   delete isochore;
   }
 }

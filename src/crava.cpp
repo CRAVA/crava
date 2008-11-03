@@ -2360,7 +2360,6 @@ Crava::writeResampledStormCube(FFTGrid      * grid,
   float time, kindex;
   StormContGrid *mapping = gridmapping->getMapping();
   StormContGrid outgrid(*mapping);
-
  
   double x,y;
   int nz = mapping->GetNK();
