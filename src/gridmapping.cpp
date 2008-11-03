@@ -149,8 +149,8 @@ GridMapping::calculateSurfaceFromVelocity(FFTGrid      * velocity,
       {
         double sum = 0.0;
         for(int k=0 ; k<nz ; k++)
-          sum += velocity->getRealValue(ii,jj,k)*dt;
-        (*isochore)(i,j) = sum;
+          sum += velocity->getRealValue(ii,jj,k);
+        (*isochore)(i,j) = sum*dt;
       }
       else
       {
@@ -174,19 +174,18 @@ GridMapping::calculateSurfaceFromVelocity(FFTGrid      * velocity,
           isochore->SetMissing(i,j);
         else
         {
-          double w = 1.0/n;
           double sum = 0.0;
           for(int k=0 ; k<nz ; k++) { 
             if(i1!=IMISSING && j1!=IMISSING)
-              sum += w*velocity->getRealValue(i1,j1,k)*dt;
+              sum += velocity->getRealValue(i1,j1,k);
             if(i2!=IMISSING && j2!=IMISSING)
-              sum += w*velocity->getRealValue(i2,j2,k)*dt;
+              sum += velocity->getRealValue(i2,j2,k);
             if(i3!=IMISSING && j3!=IMISSING)
-              sum += w*velocity->getRealValue(i3,j3,k)*dt;
+              sum += velocity->getRealValue(i3,j3,k);
             if(i4!=IMISSING && j4!=IMISSING)
-              sum += w*velocity->getRealValue(i4,j4,k)*dt;
+              sum += velocity->getRealValue(i4,j4,k);
           }
-          (*isochore)(i,j) = sum;
+          (*isochore)(i,j) = sum*dt/static_cast<double>(n);
         }
       }
     }
