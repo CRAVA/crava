@@ -429,7 +429,7 @@ Wavelet::getWaveletLengthF()
 }
 
 float         
-Wavelet::getNoiseStandardDeviation(Simbox * simbox, FFTGrid * seisCube, WellData ** wells, int nWells, char *errText, int &error)
+Wavelet::calculateSNRatio(Simbox * simbox, FFTGrid * seisCube, WellData ** wells, int nWells, char *errText, int &error)
 {
   LogKit::LogFormatted(LogKit::MEDIUM,"\n  Estimating noise from seismic data and (nonfiltered) blocked wells");
   float errStd  = 0.0f;

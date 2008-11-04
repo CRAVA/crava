@@ -304,5 +304,11 @@ ModelSettings::makeFullFileName(const char * name, const char * postfix)
   return(result);
 }
 
+std::string 
+ModelSettings::makeFullFileName(const std::string name, const std::string postfix)
+{
+  return (filePrefix_+name+postfix);
+}
+
 std::string ModelSettings::filePrefix_ = "CRAVA_";
 int         ModelSettings::debugFlag_  = 0;

@@ -73,8 +73,10 @@ Model::Model(char * fileName)
   bool failedDepthConv    = false;
   bool failedLoadingModel = false;
 
+  Simbox * timeCutSimbox  = NULL;
+  Simbox * timeBGSimbox   = NULL;
   ModelFile * modelFile   = new ModelFile(fileName);
-  Simbox * timeCutSimbox = NULL;
+
   if (modelFile->getParsingFailed()) {
     failedModelFile = true;
   }
@@ -83,15 +85,13 @@ Model::Model(char * fileName)
     modelSettings_ = modelFile->getModelSettings();
     LogKit::SetScreenLog(modelSettings_->getLogLevel());
 
-    char * logFileName = ModelSettings::makeFullFileName("logFile.txt");
+    std::string logFileName = ModelSettings::makeFullFileName("logFile.txt");
     LogKit::SetFileLog(logFileName,modelSettings_->getLogLevel());
-    delete [] logFileName;
 
     if(modelSettings_->getDebugFlag() > 0)
     {
-      char * fName = ModelSettings::makeFullFileName("debug",".txt");
-      LogKit::SetFileLog(std::string(fName), LogKit::DEBUGHIGH+LogKit::DEBUGLOW);
-      delete [] fName;
+      std::string fName = ModelSettings::makeFullFileName("debug.txt");
+      LogKit::SetFileLog(fName, LogKit::DEBUGHIGH+LogKit::DEBUGLOW);
     }
     LogKit::EndBuffering();
     
@@ -112,7 +112,7 @@ Model::Model(char * fileName)
     char errText[MAX_STRING];
     sprintf(errText,"%c",'\0');
 
-    makeTimeSimboxes(timeSimbox_, timeCutSimbox, correlationDirection_, //Handles correlation direction too.
+    makeTimeSimboxes(timeSimbox_, timeCutSimbox, timeBGSimbox, correlationDirection_, //Handles correlation direction too.
                      modelSettings_, modelFile, errText, failedSimbox);
 
     if(!failedSimbox)
@@ -557,6 +557,7 @@ Model::setPaddingSize(int nx, float px)
 void 
 Model::makeTimeSimboxes(Simbox        *& timeSimbox,
                         Simbox        *& timeCutSimbox,
+                        Simbox        *& timeBGSimbox,
                         Surface       *& correlationDirection,
                         ModelSettings *& modelSettings, 
                         ModelFile      * modelFile,
@@ -662,9 +663,11 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
       sprintf(errText,"%s%s",errText,e.what());
       failed = true;
     }
-    if(failed == false && modelSettings->getGenerateSeismic() == false)
-      setupExtendedTimeSimbox(timeSimbox, correlationDirection, timeCutSimbox); 
+    if(failed == false && modelSettings->getGenerateSeismic() == false) {
       //Extends timeSimbox for correlation coverage. Original stored in timeCutSimbox
+      setupExtendedTimeSimbox(timeSimbox, correlationDirection, timeCutSimbox); 
+      setupExtendedBackgroundSimbox(timeSimbox, correlationDirection, timeBGSimbox);
+    }
     estimateZPaddingSize(timeSimbox, modelSettings);   
     error = timeSimbox->checkError(modelSettings->getLzLimit(),errText);
     if(error == 0)
@@ -687,6 +690,29 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
     else
     {
       sprintf(errText,"%s Could not make the time simulation grid.\n",errText);
+      failed = true;
+    }
+    error = timeBGSimbox->checkError(modelSettings->getLzLimit(),errText);
+    if(error == 0)
+    {
+      LogKit::LogFormatted(LogKit::LOW,"\nTime interval used for background modelling:\n");
+      double zmin, zmax;
+      timeBGSimbox->getMinMaxZ(zmin,zmax);
+      LogKit::LogFormatted(LogKit::LOW,"  Two-way-time          avg / min / max    : %7.1f /%7.1f /%7.1f\n",
+                           zmin+timeBGSimbox->getlz()*timeBGSimbox->getAvgRelThick()*0.5,
+                           zmin,zmax); 
+      LogKit::LogFormatted(LogKit::LOW,"  Interval thickness    avg / min / max    : %7.1f /%7.1f /%7.1f\n", 
+                           timeBGSimbox->getlz()*timeBGSimbox->getAvgRelThick(),
+                           timeBGSimbox->getlz()*timeBGSimbox->getMinRelThick(),
+                           timeBGSimbox->getlz());
+      LogKit::LogFormatted(LogKit::LOW,"  Sampling density      avg / min / max    : %7.2f /%7.2f /%7.2f\n", 
+                           timeBGSimbox->getdz()*timeBGSimbox->getAvgRelThick(),
+                           timeBGSimbox->getdz(),
+                           timeBGSimbox->getdz()*timeBGSimbox->getMinRelThick());
+    }
+    else
+    {
+      sprintf(errText,"%s Could not make the grid for background model.\n",errText);
       failed = true;
     }
   }
@@ -792,14 +818,7 @@ Model::setupExtendedTimeSimbox(Simbox   * timeSimbox,
                                Simbox  *& timeCutSimbox)
 {
   timeCutSimbox = new Simbox(timeSimbox);
-  std::string fileExt;
-  if ((modelSettings_->getFormatFlag() & FFTGrid::ASCIIFORMAT) == FFTGrid::ASCIIFORMAT)
-    fileExt = ".irap";
-  else
-    fileExt = ".storm";
-
   double * corrPlanePars = findPlane(corrSurf);
-
   Surface * meanSurf = new Surface(*corrSurf);
   int i;
   for(i=0;i<meanSurf->GetN();i++)
@@ -816,13 +835,12 @@ Model::setupExtendedTimeSimbox(Simbox   * timeSimbox,
   gradX_ = refPlanePars[1];
   gradY_ = refPlanePars[2];
   Surface * refPlane = createPlaneSurface(refPlanePars, corrSurf);
-  std::string planeName = "CorrelationRotationPlane"+fileExt;
-  char * planeFile = ModelSettings::makeFullFileName(planeName.c_str());
+
+  std::string planeFile = ModelSettings::makeFullFileName("CorrelationRotationPlane");
   if((modelSettings_->getFormatFlag() & FFTGrid::ASCIIFORMAT) == FFTGrid::ASCIIFORMAT)
-    NRLib2::WriteIrapClassicAsciiSurf(*refPlane, std::string(planeFile));
+    NRLib2::WriteIrapClassicAsciiSurf(*refPlane, planeFile+".irap");
   else
-    NRLib2::WriteStormBinarySurf(*refPlane, std::string(planeFile));
-  delete [] planeFile;
+    NRLib2::WriteStormBinarySurf(*refPlane, planeFile+".storm");
 
   refPlane->Add(corrSurf);
   delete [] corrPlanePars;
@@ -856,24 +874,94 @@ Model::setupExtendedTimeSimbox(Simbox   * timeSimbox,
 
   timeSimbox->setDepth(topSurf, botSurf, nz);
 
-  std::string topname = "Surface_Top_Time_Extended"+fileExt;
-  std::string botname = "Surface_Base_Time_Extended"+fileExt;
-
-  char * topFile = ModelSettings::makeFullFileName(topname.c_str());
-  char * botFile = ModelSettings::makeFullFileName(botname.c_str());
+  std::string topFile = ModelSettings::makeFullFileName("Surface_Top_Time_Extended");
+  std::string botFile = ModelSettings::makeFullFileName("Surface_Base_Time_Extended");
 
   if ((modelSettings_->getFormatFlag() & FFTGrid::ASCIIFORMAT) == FFTGrid::ASCIIFORMAT) {
-    NRLib2::WriteIrapClassicAsciiSurf(*topSurf, std::string(topFile));
-    NRLib2::WriteIrapClassicAsciiSurf(*botSurf, std::string(botFile));
+    NRLib2::WriteIrapClassicAsciiSurf(*topSurf, topFile+".irap");
+    NRLib2::WriteIrapClassicAsciiSurf(*botSurf, botFile+".irap");
   }
   else {
-    NRLib2::WriteStormBinarySurf(*topSurf, std::string(topFile));
-    NRLib2::WriteStormBinarySurf(*botSurf, std::string(botFile));
+    NRLib2::WriteStormBinarySurf(*topSurf, topFile+".storm");
+    NRLib2::WriteStormBinarySurf(*botSurf, botFile+".storm");
   }
-
-  delete [] topFile;
-  delete [] botFile;
   delete refPlane;
+}
+
+void
+Model::setupExtendedBackgroundSimbox(Simbox   * timeSimbox, 
+                                     Surface  * corrSurf, 
+                                     Simbox  *& timeBGSimbox)
+{
+  //
+  // Move correlation surface for easier handling.
+  //
+  Surface * tmpSurf = new Surface(*corrSurf);
+  double avg = tmpSurf->Avg();
+  if (avg > 0)
+    tmpSurf->Subtract(avg);
+  else
+    tmpSurf->Add(avg); // This situation is not very likely, but ...
+
+  //
+  // Find top surface of background simbox. 
+  //
+  // The funny/strange dTop->Multiply(-1.0) is due to NRLIB's 
+  // unability to set dTop equal to Simbox top surface.
+  //
+  Surface * dTop = new Surface(*tmpSurf);
+  dTop->Subtract(&(timeSimbox->GetTopSurface()));
+  dTop->Multiply(-1.0);
+  double shiftTop = dTop->Min();
+  delete dTop;
+  Surface * topSurf = new Surface(*tmpSurf);
+  topSurf->Add(shiftTop);
+
+  //
+  // Find base surface of background simbox
+  //
+  Surface * dBot = new Surface(*tmpSurf);
+  dBot->Subtract(&(timeSimbox->GetBotSurface()));
+  dBot->Multiply(-1.0);
+  double shiftBot = dBot->Max();
+  delete dBot;
+  Surface * botSurf = new Surface(*tmpSurf);
+  botSurf->Add(shiftBot);
+
+  //
+  // Calculate number of layers of background simbox 
+  //
+  tmpSurf->Assign(0.0);
+  tmpSurf->Add(botSurf);
+  tmpSurf->Subtract(topSurf);
+  double dMax = tmpSurf->Max();
+  double dt = timeSimbox->getdz();
+  int nz;
+  if (dt < 10.0) {
+    LogKit::LogFormatted(LogKit::HIGH,"\nReducing sampling density for background",dt);
+    LogKit::LogFormatted(LogKit::HIGH," modelling from %.2fms to 10.0ms\n");
+    dt = 10.0;  // A sampling density of 10.0ms is good enough for BG model
+  }
+  nz = static_cast<int>(ceil(dMax/dt));
+  delete tmpSurf;
+
+  //
+  // Make new simbox
+  //
+  timeBGSimbox = new Simbox(timeSimbox);
+  timeBGSimbox->setDepth(topSurf, botSurf, nz);
+
+  std::string topFile = ModelSettings::makeFullFileName("Surface_Top_Time_BG");
+  std::string botFile = ModelSettings::makeFullFileName("Surface_Base_Time_BG");
+
+  if ((modelSettings_->getFormatFlag() & FFTGrid::ASCIIFORMAT) == FFTGrid::ASCIIFORMAT) {
+    NRLib2::WriteIrapClassicAsciiSurf(*topSurf, topFile+".irap");
+    NRLib2::WriteIrapClassicAsciiSurf(*botSurf, botFile+".irap");
+  }
+  else {
+    NRLib2::WriteStormBinarySurf(*topSurf, topFile+".storm");
+    NRLib2::WriteStormBinarySurf(*botSurf, botFile+".storm");
+  }
 }
 
 double *
@@ -1805,7 +1893,7 @@ Model::processWavelets(Wavelet     **& wavelet,
   {
     LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************");
     LogKit::LogFormatted(LogKit::LOW,"\n***                 Processing/generating wavelets                  ***"); 
-    LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************\n");
+    LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************");
     bool estimateStuff = false;
     for(int i=0 ; i < modelSettings->getNumberOfAngles() ; i++)
     {  
@@ -1814,9 +1902,9 @@ Model::processWavelets(Wavelet     **& wavelet,
     }
     if (estimateStuff) 
     {
-      LogKit::LogFormatted(LogKit::HIGH,"\nWells that cannot be used in wavelet generation or noise estimation:");
+      LogKit::LogFormatted(LogKit::HIGH,"\n\nWells that cannot be used in wavelet generation or noise estimation:");
       LogKit::LogFormatted(LogKit::HIGH,"\n  Deviated wells.");
-      LogKit::LogFormatted(LogKit::HIGH,"\n  Wells with too little data.\n");
+      LogKit::LogFormatted(LogKit::HIGH,"\n  Wells with too little data.");
     }
     wavelet = new Wavelet *[modelSettings->getNumberOfAngles()];
     
@@ -1826,11 +1914,11 @@ Model::processWavelets(Wavelet     **& wavelet,
     
     for(int i=0 ; i < modelSettings->getNumberOfAngles() ; i++)
     {  
-      LogKit::LogFormatted(LogKit::LOW,"\nAngle stack : %.1f deg\n",modelSettings->getAngle()[i]*180.0/PI);
+      LogKit::LogFormatted(LogKit::LOW,"\nAngle stack : %.1f deg",modelSettings->getAngle()[i]*180.0/PI);
       if (waveletFile[i][0] == '*') 
       {
         if (timeSimbox->getdz() > 4.01f) { // Require this density for wavelet estimation
-          LogKit::LogFormatted(LogKit::LOW,"\nWARNING: The minimum sampling density is lower than 4.0. The WAVELETS generated by \n");
+          LogKit::LogFormatted(LogKit::LOW,"\n\nWARNING: The minimum sampling density is lower than 4.0. The WAVELETS generated by \n");
           LogKit::LogFormatted(LogKit::LOW,"         CRAVA are not reliable and the output results should be treated accordingly.\n");
           LogKit::LogFormatted(LogKit::LOW,"         the number of layers must be increased.                                    \n");
         }
@@ -1889,9 +1977,9 @@ Model::processWavelets(Wavelet     **& wavelet,
             error += 1;
           }
           else {
-            SNRatio[i] = wavelet[i]->getNoiseStandardDeviation(timeSimbox, seisCube[i], wells, 
-                                                               modelSettings->getNumberOfWells(), 
-                                                               errText, error);
+            SNRatio[i] = wavelet[i]->calculateSNRatio(timeSimbox, seisCube[i], wells, 
+                                                      modelSettings->getNumberOfWells(), 
+                                                      errText, error);
           }
         }
         else

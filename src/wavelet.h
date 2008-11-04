@@ -56,12 +56,12 @@ public:
   float                 getScale() const {return scale_;}
   
   // for noise estimation
-  float                 getNoiseStandardDeviation(Simbox * simbox,
-                                                  FFTGrid * seisCube, 
-                                                  WellData ** wells, 
-                                                  int nWells, 
-                                                  char *errText, 
-                                                  int &error); 
+  float                 calculateSNRatio(Simbox * simbox,
+                                         FFTGrid * seisCube, 
+                                         WellData ** wells, 
+                                         int nWells, 
+                                         char *errText, 
+                                         int &error); 
   void                  printVecToFile(char* fileName, fftw_real* vec ,int nzp) const;
 
   virtual void          write1DWLas3DWL() {};

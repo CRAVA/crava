@@ -52,14 +52,19 @@ public:
 private:
   void             makeTimeSimboxes(Simbox        *& timeSimbox,
                                     Simbox        *& timeCutSimbox,
+                                    Simbox        *& timeBGSimbox,
                                     Surface       *& correlationDirection,
                                     ModelSettings *& modelSettings, 
                                     ModelFile      * modelFile,
                                     char           * errText,
                                     bool           & failed);
-  void             setupExtendedTimeSimbox(Simbox * timeSimbox, 
+  void             setupExtendedTimeSimbox(Simbox  * timeSimbox, 
                                            Surface * corrSurf, 
                                            Simbox *& timeCutSimbox);
+  void             setupExtendedBackgroundSimbox(Simbox   * timeSimbox, 
+                                                 Surface  * corrSurf, 
+                                                 Simbox  *& backgroundSimbox);
+
   void             processSeismic(FFTGrid      **& seisCube,
                                   Simbox        *& timeSimbox,
                                   ModelSettings *& modelSettings, 

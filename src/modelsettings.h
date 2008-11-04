@@ -3,6 +3,7 @@
 #define MODELSETTINGS_H
 
 #include <stdio.h>
+#include <string.h>
 
 #include "lib/global_def.h"
 #include "src/definitions.h"
@@ -166,6 +167,7 @@ public:
                    
   static void         setFilePrefix(char * filePrefix);
   static char       * makeFullFileName(const char * name, const char * postfix = NULL);
+  static std::string  makeFullFileName(const std::string name, const std::string postfix = "");
                    
 private:           
                    
