@@ -373,16 +373,13 @@ void CovGridSeparated::RotateVec(float& rx, float& ry, float& rz, const float ma
   rx = res[0]; ry = res[1]; rz = res[2];
 }
 
-void CovGridSeparated::writeXYGrid(const char * fName) const {
+void CovGridSeparated::writeXYGrid(const std::string fName) const {
   if (!tabulateCorr_) //NBNB fjellvoll add support for writing in this case also
     return;
-  char * ffn = ModelSettings::makeFullFileName(fName,".irap");
-  FILE * out = fopen(ffn,"w");
+  std::string ffn = ModelSettings::makeFullFileName(fName+".irap");
+  FILE * out = fopen(ffn.c_str(),"w");
   if(out == NULL)
-  {
-    delete [] ffn;
     return;
-  }
   int nx = nxp_;
   int ny = nyp_;
   fprintf(out, "%d %d 1.0 1.0", nx, ny);

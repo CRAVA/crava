@@ -22,7 +22,7 @@ public:
                        const int   * kpos,
                        const int     nd);
   void         divide(void);
-  void         writeToFile(const char * type);
+  void         writeToFile(const std::string type);
 
 private:
   int          gotBlock(int i, int j, int k) const;

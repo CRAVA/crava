@@ -85,12 +85,12 @@ Model::Model(char * fileName)
     modelSettings_ = modelFile->getModelSettings();
     LogKit::SetScreenLog(modelSettings_->getLogLevel());
 
-    std::string logFileName = ModelSettings::makeFullFileName("logFile.txt");
+    std::string logFileName = ModelSettings::makeFullFileName(std::string("logFile.txt"));
     LogKit::SetFileLog(logFileName,modelSettings_->getLogLevel());
 
     if(modelSettings_->getDebugFlag() > 0)
     {
-      std::string fName = ModelSettings::makeFullFileName("debug.txt");
+      std::string fName = ModelSettings::makeFullFileName(std::string("debug.txt"));
       LogKit::SetFileLog(fName, LogKit::DEBUGHIGH+LogKit::DEBUGLOW);
     }
     LogKit::EndBuffering();
@@ -836,7 +836,7 @@ Model::setupExtendedTimeSimbox(Simbox   * timeSimbox,
   gradY_ = refPlanePars[2];
   Surface * refPlane = createPlaneSurface(refPlanePars, corrSurf);
 
-  std::string planeFile = ModelSettings::makeFullFileName("CorrelationRotationPlane");
+  std::string planeFile = ModelSettings::makeFullFileName(std::string("CorrelationRotationPlane"));
   if((modelSettings_->getFormatFlag() & FFTGrid::ASCIIFORMAT) == FFTGrid::ASCIIFORMAT)
     NRLib2::WriteIrapClassicAsciiSurf(*refPlane, planeFile+".irap");
   else
@@ -874,8 +874,8 @@ Model::setupExtendedTimeSimbox(Simbox   * timeSimbox,
 
   timeSimbox->setDepth(topSurf, botSurf, nz);
 
-  std::string topFile = ModelSettings::makeFullFileName("Surface_Top_Time_Extended");
-  std::string botFile = ModelSettings::makeFullFileName("Surface_Base_Time_Extended");
+  std::string topFile = ModelSettings::makeFullFileName(std::string("Surface_Top_Time_Extended"));
+  std::string botFile = ModelSettings::makeFullFileName(std::string("Surface_Base_Time_Extended"));
 
   if ((modelSettings_->getFormatFlag() & FFTGrid::ASCIIFORMAT) == FFTGrid::ASCIIFORMAT) {
     NRLib2::WriteIrapClassicAsciiSurf(*topSurf, topFile+".irap");
@@ -951,8 +951,8 @@ Model::setupExtendedBackgroundSimbox(Simbox   * timeSimbox,
   timeBGSimbox = new Simbox(timeSimbox);
   timeBGSimbox->setDepth(topSurf, botSurf, nz);
 
-  std::string topFile = ModelSettings::makeFullFileName("Surface_Top_Time_BG");
-  std::string botFile = ModelSettings::makeFullFileName("Surface_Base_Time_BG");
+  std::string topFile = ModelSettings::makeFullFileName(std::string("Surface_Top_Time_BG"));
+  std::string botFile = ModelSettings::makeFullFileName(std::string("Surface_Base_Time_BG"));
 
   if ((modelSettings_->getFormatFlag() & FFTGrid::ASCIIFORMAT) == FFTGrid::ASCIIFORMAT) {
     NRLib2::WriteIrapClassicAsciiSurf(*topSurf, topFile+".irap");

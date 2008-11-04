@@ -155,18 +155,15 @@ Wavelet::setShiftGrid(Surface * grid, Simbox * simbox)
 }
 
 void
-Wavelet::printVecToFile(char* fileName,fftw_real* vec, int nzp) const
+Wavelet::printVecToFile(char * fileName,fftw_real* vec, int nzp) const
 {
   if( ModelSettings::getDebugLevel() > 0) { 
-      char * fName = ModelSettings::makeFullFileName(fileName, ".dat");
-      FILE *file = fopen(fName,"w");
-      int i;
-      for(i=0;i<nzp;i++)
-        fprintf(file,"%f\n",vec[i]);
-
-      fclose(file);
-      delete [] fName;
-    }  
+    std::string fName = ModelSettings::makeFullFileName(std::string(fileName)+".dat");
+    FILE *file = fopen(fName.c_str(),"w");
+    for(int i=0;i<nzp;i++)
+      fprintf(file,"%f\n",vec[i]);
+    fclose(file);
+  }  
 }
 
 void           
@@ -553,12 +550,11 @@ Wavelet::calculateSNRatio(Simbox * simbox, FFTGrid * seisCube, WellData ** wells
           sprintf(fileName,"synthetic_seismic_Well_%d_%d",w,int(floor(theta_/PI*180.0+0.5)));
           printVecToFile(fileName,synt_r[w], nzp);
           sprintf(fileName,"wellTime_Well_%d",w);
-          char * fName = ModelSettings::makeFullFileName(fileName, ".dat");
-          FILE *file = fopen(fName,"wb");
+          std::string fName = ModelSettings::makeFullFileName(std::string(fileName)+".dat");
+          FILE *file = fopen(fName.c_str(),"wb");
           //fprint(file,"%f %f  %f \n",,dz[w],);
           fclose(file);
           delete [] fileName;
-          delete fName;
         }
         for(i=start;i<start+length;i++)
         { 

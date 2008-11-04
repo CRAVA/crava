@@ -1393,10 +1393,9 @@ Crava::computePostCov()
   LogKit::LogFormatted(LogKit::LOW,"ln Vs                %5.2f     %5.2f \n",1.0f, postCov[1][2]);
   LogKit::LogFormatted(LogKit::LOW,"ln Rho                         %5.2f \n",1.0f);
 
-
-
-  char * fName = ModelSettings::makeFullFileName("Posterior_Var0",".dat");
-  FILE* file=fopen(fName,"w");
+  std::string fName;
+  fName = ModelSettings::makeFullFileName(std::string("Posterior_Var0.dat"));
+  FILE* file=fopen(fName.c_str(),"w");
   for(i=0;i<3;i++)
   {
     for(j=0;j<3;j++)
@@ -1406,34 +1405,30 @@ Crava::computePostCov()
     fprintf(file,"\n");
   }
   fclose(file);
-  delete [] fName;
 
-  fName = ModelSettings::makeFullFileName("Posterior_CorrTVp",".dat");
-  file=fopen(fName,"w");
+  fName = ModelSettings::makeFullFileName(std::string("Posterior_CorrTVp.dat"));
+  file=fopen(fName.c_str(),"w");
   for(k=0;k<nz_;k++)
   {
     fprintf(file,"%3e \n",postCorAlpha[k]);
   }
   fclose(file);
-  delete [] fName;
 
-  fName = ModelSettings::makeFullFileName("Posterior_CorrTVs",".dat");
-  file=fopen(fName,"w");
+  fName = ModelSettings::makeFullFileName(std::string("Posterior_CorrTVs.dat"));
+  file=fopen(fName.c_str(),"w");
   for(k=0;k<nz_;k++)
   {
     fprintf(file,"%3e \n",postCorBeta[k]);
   }
   fclose(file);
-  delete [] fName;
 
-  fName = ModelSettings::makeFullFileName("Posterior_CorrTRho",".dat");
-  file=fopen(fName,"w");
+  fName = ModelSettings::makeFullFileName(std::string("Posterior_CorrTRho.dat"));
+  file=fopen(fName.c_str(),"w");
   for(k=0;k<nz_;k++)
   {
     fprintf(file,"%3e \n",postCorRho[k]);
   }
   fclose(file);
-  delete [] fName;
 
   for(i=0;i<3;i++)
     delete[] postCov[i];
@@ -2180,17 +2175,15 @@ Crava::printEnergyToScreen()
 void
 Crava::dumpCorrT(float* corrT,float dt)
 {
-  char * filename= ModelSettings::makeFullFileName("Prior_CorrT",".dat");
-  int i;
-  FILE *file = fopen(filename, "w");
+  std::string filename= ModelSettings::makeFullFileName(std::string("Prior_CorrT.dat"));
+  FILE *file = fopen(filename.c_str(), "w");
 
   fprintf(file,"%f\n",dt);
-  for(i=0;i<nzp_;i++)
+  for(int i=0;i<nzp_;i++)
   {
     fprintf(file,"%f\n",corrT[i]);
   }
   fclose(file);
-  delete [] filename;
 
 }
 
@@ -2351,7 +2344,7 @@ void Crava::computeFaciesProb(FilterWellLogs *filteredlogs)
 void
 Crava::writeResampledStormCube(FFTGrid      * grid, 
                                GridMapping  * gridmapping, 
-                               char         * fileName, 
+                               std::string    fileName, 
                                const Simbox * simbox,
                                const int      format)
 {
@@ -2377,27 +2370,23 @@ Crava::writeResampledStormCube(FFTGrid      * grid,
     }
   }
 
-  char * gfName = 0;
-  char * header = 0;
+  std::string gfName;
+  std::string header;
   if ((format & FFTGrid::ASCIIFORMAT) == FFTGrid::ASCIIFORMAT) // ASCII
   {
-    gfName = ModelSettings::makeFullFileName(fileName, ".txt");
+    gfName = ModelSettings::makeFullFileName(fileName+".txt");
     header = gridmapping->getSimbox()->getStormHeader(FFTGrid::PARAMETER,nx_,ny_,nz, 0, 1);
     outgrid.SetFormat(StormContGrid::STORM_ASCII);
-    outgrid.WriteToFile(gfName,std::string(header));
+    outgrid.WriteToFile(gfName,header);
   }
 
   if ((format & FFTGrid::STORMFORMAT) == FFTGrid::STORMFORMAT)
   {
-    gfName = ModelSettings::makeFullFileName(fileName, ".storm");
+    gfName = ModelSettings::makeFullFileName(fileName+".storm");
     header = gridmapping->getSimbox()->getStormHeader(FFTGrid::PARAMETER,nx_,ny_,nz, 0, 0);
     outgrid.SetFormat(StormContGrid::STORM_BINARY);
-    outgrid.WriteToFile(gfName,std::string(header));
+    outgrid.WriteToFile(gfName,header);
   }
-  if(header!=0)
-    delete [] header;
-  if(gfName!=0)
-    delete [] gfName;
 }
 
 void Crava::filterLogs(Simbox          * timeSimboxConstThick,

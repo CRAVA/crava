@@ -632,24 +632,19 @@ BlockedLogs::writeToFile(float dz,
                          int   type,
                          bool  exptrans) const
 {
-  char * tmpWellName = new char[MAX_STRING];
-  char * filename    = new char[MAX_STRING];
-  for (int i=0 ; i<=static_cast<int>(strlen(wellname_)) ; i++) // need to also copy ASCII null character
-  {  
-    if (wellname_[i]==' ' || wellname_[i]=='/')
-      tmpWellName[i] = '_';
-    else
-      tmpWellName[i] = wellname_[i];
-  }
-
+  std::string wellname(wellname_);
+  NRLib2::Substitute(wellname,"/","_");
+  NRLib2::Substitute(wellname," ","_");
+  
+  std::string filename;
   if (exptrans)
-    sprintf(filename,"BW_%s",tmpWellName);
+    filename = "BW_"+wellname;
   else
-    sprintf(filename,"lnBW_%s",tmpWellName);
+    filename = "lnBW_"+wellname;
 
-  filename = ModelSettings::makeFullFileName(filename,".dat");
+  filename = ModelSettings::makeFullFileName(filename+".dat");
 
-  FILE * file = fopen(filename, "w");
+  FILE * file = fopen(filename.c_str(), "w");
 
   float alpha, beta, rho;
   float z0 = dz/2.0f;
@@ -699,9 +694,6 @@ BlockedLogs::writeToFile(float dz,
       fprintf(file,"%8.2f %8.5f %8.5f %8.5f\n",(z0 + kpos_[b]*dz),alpha,beta,rho);
   }
   fclose(file);
-
-  delete [] tmpWellName;
-  delete [] filename;
 }
 
 //------------------------------------------------------------------------------
@@ -716,15 +708,13 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
   std::string wellname(wellname_);
   NRLib2::Substitute(wellname,"/","_");
   NRLib2::Substitute(wellname," ","_");
-  wellname = "BW_" + wellname;
-  char * fileName = ModelSettings::makeFullFileName(wellname.c_str(),".rms");
+  std::string fileName = ModelSettings::makeFullFileName("BW_"+wellname+".rms");
 
-  std::ofstream file(fileName, std::ios::out | std::ios::binary);
+  std::ofstream file(fileName.c_str(), std::ios::out | std::ios::binary);
 
   if (!file) {
-    throw new NRLib2::IOError("Error opening " + std::string(fileName) + " for writing.");
+    throw new NRLib2::IOError("Error opening "+fileName+" for writing.");
   }
-  delete fileName;
 
   bool gotFacies      = nFacies_ > 0;
   bool gotRealSeismic = real_seismic_data_ != NULL;

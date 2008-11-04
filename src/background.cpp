@@ -718,21 +718,17 @@ void
 Background::writeVerticalTrend(float      * trend, 
                                float        dz,
                                int          nz,
-                               const char * name) 
+                               std::string  name) 
 {  
   float z0 = dz/2.0f;
-  char * filename;
-  char * tmp = new char[MAX_STRING];
-  sprintf(tmp,"BG_verticalTrend_%s",name);
-  filename = ModelSettings::makeFullFileName(tmp,".irap");
-  FILE * file = fopen(filename, "w");
+  std::string tmp = "BG_verticalTrend_"+name;
+  std::string filename = ModelSettings::makeFullFileName(tmp+".irap");
+  FILE * file = fopen(filename.c_str(), "w");
   for (int i=0 ; i<nz ; i++) {
     fprintf(file,"%8.2f %8.3f 0.00\n",(z0+i*dz),exp( trend[i] ));
   }
   fprintf(file,"999.00 999.00 999.00\n");
   fclose(file);
-  delete [] tmp;
-  delete [] filename;
 }
 
 //-------------------------------------------------------------------------------

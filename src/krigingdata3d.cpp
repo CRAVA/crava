@@ -179,15 +179,11 @@ KrigingData3D::divide(void)
 
 //---------------------------------------------------------------------
 void 
-KrigingData3D::writeToFile(const char * type)
+KrigingData3D::writeToFile(const std::string type)
 { 
-  char * fileName;
-  char * tmp = new char[MAX_STRING];
+  std::string fileName = ModelSettings::makeFullFileName(type+"_KrigingData"+".dat");
 
-  sprintf(tmp,"%s_KrigingData",type);
-  fileName = ModelSettings::makeFullFileName(tmp,".dat");
-
-  FILE * file = fopen(fileName, "w");
+  FILE * file = fopen(fileName.c_str(), "w");
 
   fprintf(file,"  i   j   k      alpha      beta       rho\n");
   fprintf(file,"------------------------------------------\n");
@@ -217,7 +213,5 @@ KrigingData3D::writeToFile(const char * type)
     fprintf(file,"%3d %3d %3d   %8.2f  %8.2f  %8.5f\n",i,j,k,alpha,beta,rho);
   }
   fclose(file);
-  delete [] fileName;
-  delete [] tmp;
 }
 

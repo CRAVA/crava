@@ -22,7 +22,7 @@ public:
   void    EstimateRanges(int& rangeX, int& rangeY, int& rangeZ) const;
   void    findTaperRanges(float & rangeX, float & rangeY, float & rangeZ) const;
   void    performTapering(float rangeX, float rangeY, float rangeZ);
-  void    writeXYGrid(const char * fName) const;
+  void    writeXYGrid(const std::string fName) const;
 
 private:
   int     Get2DIndex(int i, int j)        const { return i + j*nxp_;} 

@@ -35,7 +35,7 @@ public:
   fftw_complex   getCAmp(int k, float scale, int j=0, int i=0) const;
   void           setRAmp(float value, int k, int j=0, int i=0);
   void           scale(float gain);
-  void           printToFile(char* fileName, bool overrideDebug = false);
+  void           printToFile(std::string fileName, bool overrideDebug = false);
   void           writeWaveletToFile(char* fileName, float approxDz, Simbox *simbox = NULL);
   void           write1DWLas3DWL();
   void           write3DWLfrom1DWL();

@@ -40,7 +40,7 @@ public:
   void           multiplyByR(float p);
 
   void           writeWaveletToFile(char* fileName, float, Simbox *simbox);
-  void           printToFile(char* fileName, bool overrideDebug = false);
+  void           printToFile(std::string filename, bool overrideDebug = false);
   
 private:
   void           shiftFFTGrid(FFTGrid *shiftAmp);

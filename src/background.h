@@ -48,7 +48,7 @@ private:
   void         writeVerticalTrend(float      * trend, 
                                   float        dz,
                                   int          nz,
-                                  const char * name);
+                                  std::string  name);
   void         createTrendCube(Simbox      *  simbox,
                                FFTGrid     *& pFFTGrid, 
                                const float *  trend);

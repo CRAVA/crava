@@ -734,8 +734,8 @@ Analyzelog::estimateCorrTAndVar0(float  * CorrT,
     }
 
     if(ModelSettings::getDebugLevel() > 0) {
-      char * fName = ModelSettings::makeFullFileName("Autocorr.dat");
-      FILE *file = fopen(fName, "w");
+      std::string fName = ModelSettings::makeFullFileName(std::string("Autocorr.dat"));
+      FILE *file = fopen(fName.c_str(), "w");
       fprintf(file,"   i      nAA    corAA      nBB    corBB      nRR    corRR         nTT    corTT    CorrT\n");
       fprintf(file,"----------------------------------------------------------------------------------------\n");
       for(i=0;i<n+1;i++)
@@ -744,7 +744,6 @@ Analyzelog::estimateCorrTAndVar0(float  * CorrT,
           i,nAA[i],covAA[i],nBB[i],covBB[i],nRR[i],covRR[i],nTT[i],corTT[i],CorrT[i]);
       }
       fclose(file);
-      delete [] fName;
     }
   }
   //

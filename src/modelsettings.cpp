@@ -287,23 +287,6 @@ ModelSettings::setFilePrefix(char * filePrefix)
   filePrefix_ = std::string(filePrefix);
 }
 
-char *
-ModelSettings::makeFullFileName(const char * name, const char * postfix)
-{
-  char * result;
-  if(postfix != NULL)
-  {
-    result = new char[strlen(name)+strlen(filePrefix_.c_str())+strlen(postfix)+1];
-    sprintf(result,"%s%s%s",filePrefix_.c_str(), name, postfix);
-  }
-  else
-  {
-    result = new char[strlen(name)+strlen(filePrefix_.c_str())+1];
-    sprintf(result,"%s%s",filePrefix_.c_str(), name);
-  }
-  return(result);
-}
-
 std::string 
 ModelSettings::makeFullFileName(const std::string name, const std::string postfix)
 {

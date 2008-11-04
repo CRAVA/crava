@@ -1,4 +1,5 @@
 #include <iostream>
+#include <sstream>
 #include <math.h>
 #include <assert.h>
 #include <stdio.h>
@@ -535,12 +536,13 @@ FFTFileGrid::unload()
 void 
 FFTFileGrid::genFileName()
 {
-  fNameIn_ = NULL;
-  char * tmpName = new char[MAX_STRING];
-  sprintf(tmpName,"tmpgrid%d",gNum);
-  fNameOut_ = ModelSettings::makeFullFileName(tmpName);
+  fNameIn_  = NULL;
+  std::stringstream gNumStr;
+  gNumStr << gNum;
+  std::string fileName = ModelSettings::makeFullFileName("tmpgrid" + gNumStr.str());
+  fNameOut_ = new char[MAX_STRING];
+  strcpy(fNameOut_,fileName.c_str());
   gNum++;
-  delete [] tmpName;
 }
 
 int FFTFileGrid::gNum = 0; //Starting value

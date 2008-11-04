@@ -166,7 +166,6 @@ public:
   enum                sseismicTypes{STANDARDSEIS = 0, PSSEIS = 1};
                    
   static void         setFilePrefix(char * filePrefix);
-  static char       * makeFullFileName(const char * name, const char * postfix = NULL);
   static std::string  makeFullFileName(const std::string name, const std::string postfix = "");
                    
 private:           

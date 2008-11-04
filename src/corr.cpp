@@ -40,12 +40,12 @@ float * Corr::getCorrT(int &n, float &dt) const
 
 void Corr::dumpResult() const
 {
-  char * filename1= ModelSettings::makeFullFileName("Prior_Var0",".dat");
-  char * filename2= ModelSettings::makeFullFileName("Prior_CorrTUnFiltered",".dat");
-  char * filename3= ModelSettings::makeFullFileName("Prior_CorrXY",".irap");
+  std::string filename1= ModelSettings::makeFullFileName(std::string("Prior_Var0.dat"));
+  std::string filename2= ModelSettings::makeFullFileName(std::string("Prior_CorrTUnFiltered.dat"));
+  std::string filename3= ModelSettings::makeFullFileName(std::string("Prior_CorrXY.irap"));
 
-  FILE *file1 = fopen(filename1, "w");
-  FILE *file2 = fopen(filename2, "w");
+  FILE *file1 = fopen(filename1.c_str(), "w");
+  FILE *file2 = fopen(filename2.c_str(), "w");
 
   for(int i=0;i<3;i++)
   {
@@ -64,10 +64,6 @@ void Corr::dumpResult() const
   fclose(file2);
 
   NRLib2::WriteIrapClassicAsciiSurf(*CorrXY_, filename3);
-
-  delete [] filename1;
-  delete [] filename2;
-  delete [] filename3;
 }
 
 void

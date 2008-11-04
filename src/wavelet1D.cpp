@@ -1099,18 +1099,16 @@ void Wavelet1D::invFFT1DInPlace()
 
 
 void
-Wavelet1D::printToFile(char* fileName, bool overrideDebug)
+Wavelet1D::printToFile(std::string fileName, bool overrideDebug)
 {
   if(overrideDebug == true || ModelSettings::getDebugLevel() > 0) {
-      char * fName = ModelSettings::makeFullFileName(fileName, ".dat");
-      FILE *file = fopen(fName,"wb");
-      int i;
-      for(i=0;i<nzp_;i++)
-        fprintf(file,"%f\n",getRAmp(i));
-
-      fclose(file);
-      delete [] fName;
-    }
+    std::string fName = ModelSettings::makeFullFileName(fileName+".dat");
+    FILE *file = fopen(fName.c_str(),"wb");
+    int i;
+    for(i=0;i<nzp_;i++)
+      fprintf(file,"%f\n",getRAmp(i));
+    fclose(file);
+  }
 }
 
 void
@@ -1118,8 +1116,8 @@ Wavelet1D::writeWaveletToFile(char* fileName,float approxDzIn, Simbox *)
 {
    sprintf(fileName,"%s_%.1f_deg",fileName,theta_*180.0/PI);
   
-   char * fName = ModelSettings::makeFullFileName(fileName, ".asc");
-   LogKit::LogFormatted(LogKit::MEDIUM,"  Writing Wavelet to file \'%s\'\n", fName);
+   std::string fName = ModelSettings::makeFullFileName(std::string(fileName)+".asc");
+   LogKit::LogFormatted(LogKit::MEDIUM,"  Writing Wavelet to file \'"+fName+"\'\n");
    int i;
    float approxDz;
 
@@ -1164,7 +1162,7 @@ Wavelet1D::writeWaveletToFile(char* fileName,float approxDzIn, Simbox *)
    }
 
    float shift = -dznew*halfLength;
-   FILE * file = fopen(fName,"wb");
+   FILE * file = fopen(fName.c_str(),"wb");
 
    fprintf(file,"\"* Export format using Comma Separated Values\"\n");
    fprintf(file,"\"* Wavelet written from CRAVA\"\n");
@@ -1190,7 +1188,6 @@ Wavelet1D::writeWaveletToFile(char* fileName,float approxDzIn, Simbox *)
      fprintf(file,"%f\n", waveletNew_r[i]);
    
    fclose(file);
-   delete [] fName;
    delete [] waveletNew_r;
 }
 

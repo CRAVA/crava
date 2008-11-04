@@ -86,12 +86,12 @@ public:
   virtual void         endAccess(){}
   virtual void         writeFile(const char * fileName, const Simbox * simbox, const std::string sgriLabel = "NO_LABEL", bool writeSegy = true, float z0 = 0.0, bool writeStorm = true); 
   //Use this instead of the ones below.
-  virtual void         writeStormFile(const char * fileName, const Simbox * simbox, bool ascii = false, 
+  virtual void         writeStormFile(std::string fileName, const Simbox * simbox, bool ascii = false, 
                                       bool padding = false, bool flat = false);//No mode/randomaccess
-  virtual int          writeSegyFile(const char * fileName, const Simbox * simbox, float z0);   //No mode/randomaccess
-  virtual int          writeSgriFile(const char * fileName, const Simbox * simbox, const std::string label);
-  virtual void         writeAsciiFile(char * fileName);
-  virtual void         writeAsciiRaw(char * fileName);
+  virtual int          writeSegyFile(std::string fileName, const Simbox * simbox, float z0);   //No mode/randomaccess
+  virtual int          writeSgriFile(std::string fileName, const Simbox * simbox, const std::string label);
+  virtual void         writeAsciiFile(std::string fileName);
+  virtual void         writeAsciiRaw(std::string fileName);
 
   virtual bool         isFile() {return(0);}    // indicates wether the grid is in memory or on disk  
 

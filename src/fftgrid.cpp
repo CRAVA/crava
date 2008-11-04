@@ -1332,7 +1332,7 @@ FFTGrid::writeFile(const char * fileName, const Simbox * simbox, const std::stri
 }
 
 void
-FFTGrid::writeStormFile(const char * fileName, const Simbox * simbox, bool ascii, bool padding, bool flat)
+FFTGrid::writeStormFile(std::string fileName, const Simbox * simbox, bool ascii, bool padding, bool flat)
 {
   int nx, ny, nz;
   if(padding == true)
@@ -1348,17 +1348,17 @@ FFTGrid::writeStormFile(const char * fileName, const Simbox * simbox, bool ascii
     nz = nz_;
   }
 
-  char * gfName;
-  char * header = simbox->getStormHeader(cubetype_, nx, ny, nz, flat, ascii);
+  std::string gfName;
+  std::string header = simbox->getStormHeader(cubetype_, nx, ny, nz, flat, ascii);
   FILE * file;
   int i, j, k;
   float value;
 
   if(ascii == false) {
-    gfName = ModelSettings::makeFullFileName(fileName, ".storm");
-    file = fopen(gfName,"wb");
-    LogKit::LogFormatted(LogKit::LOW,"\nWriting STORM binary file %s...",gfName);
-    fwrite(header, 1, strlen(header), file);
+    gfName = ModelSettings::makeFullFileName(fileName+".storm");
+    file = fopen(gfName.c_str(),"wb");
+    LogKit::LogFormatted(LogKit::LOW,"\nWriting STORM binary file "+gfName+"...");
+    fwrite(header.c_str(), 1, header.length(), file);
     char * output = reinterpret_cast<char *>(&value);
     for(k=0;k<nz;k++)
       for(j=0;j<ny;j++)
@@ -1379,10 +1379,10 @@ FFTGrid::writeStormFile(const char * fileName, const Simbox * simbox, bool ascii
         fwrite(output, 2, 1, file);
   }
   else {
-    gfName = ModelSettings::makeFullFileName(fileName, ".txt");
-    file = fopen(gfName,"w");
-    LogKit::LogFormatted(LogKit::LOW,"\nWriting STORM ascii file %s...",gfName);
-    fprintf(file,"%s",header);
+    gfName = ModelSettings::makeFullFileName(fileName+".txt");
+    file = fopen(gfName.c_str(),"w");
+    LogKit::LogFormatted(LogKit::LOW,"\nWriting STORM ascii file "+gfName+"...");
+    fprintf(file,"%s",header.c_str());
     for(k=0;k<nz;k++)
       for(j=0;j<ny;j++) {
         for(i=0;i<nx;i++) {
@@ -1393,23 +1393,21 @@ FFTGrid::writeStormFile(const char * fileName, const Simbox * simbox, bool ascii
       }
       fprintf(file,"0\n");
   }
-  delete [] gfName;
 
   fclose(file);
   LogKit::LogFormatted(LogKit::LOW,"done\n");
   //  time(&timeend);
   //printf("\n Write Storm was performed in %ld seconds.\n",timeend-timestart);
-  delete [] header;
 }
 
 
 int
-FFTGrid::writeSegyFile(const char * fileName, const Simbox * simbox, float z0)
+FFTGrid::writeSegyFile(std::string fileName, const Simbox * simbox, float z0)
 {
   //  long int timestart, timeend;
   //  time(&timestart);
 
-  char * gfName = ModelSettings::makeFullFileName(fileName, ".segy");
+  std::string gfName = ModelSettings::makeFullFileName(fileName+".segy");
   //SegY * segy = new SegY(gfName, simbox);
   TextualHeader header = TextualHeader::standardHeader();
   float dz = float(floor(simbox->getdz()+0.5));
@@ -1419,15 +1417,14 @@ FFTGrid::writeSegyFile(const char * fileName, const Simbox * simbox, float z0)
   double zmin,zmax;
   simbox->getMinMaxZ(zmin,zmax);
   segynz = int(ceil((zmax-z0)/dz));
-  SegY *segy = new SegY(gfName,z0,segynz,dz,header);
+  SegY *segy = new SegY(gfName.c_str(),z0,segynz,dz,header);
   SegyGeometry * geometry = new SegyGeometry(simbox->getx0(), simbox->gety0(), simbox->getdx(), simbox->getdy(), 
                                              simbox->getnx(), simbox->getny(),simbox->getIL0(),
                                              simbox->getXL0(), simbox->getILStep(), simbox->getXLStep(), simbox->getILxflag(), simbox->getAngle());
   segy->setGeometry(geometry);
   delete geometry; //Call above takes a copy.
-  LogKit::LogFormatted(LogKit::LOW,"\nWriting SEGY file %s...",gfName);
+  LogKit::LogFormatted(LogKit::LOW,"\nWriting SEGY file "+gfName+"...");
   //  LogKit::LogFormatted(LogKit::LOW,"%d x %d traces.\n",nx_, ny_);
-  delete [] gfName;
   //  char errMsg[MAX_STRING];
   //NBNB //  if(segy->checkError(errMsg) > 0)
   // {
@@ -1522,16 +1519,15 @@ FFTGrid::writeSegyFile(const char * fileName, const Simbox * simbox, float z0)
 }
 
 int
-FFTGrid::writeSgriFile(const char *fileName, const Simbox *simbox, const std::string label)
+FFTGrid::writeSgriFile(std::string fileName, const Simbox *simbox, const std::string label)
 {
-  char * fName = ModelSettings::makeFullFileName(fileName, ".Sgrh");
-  ofstream  headerFile(fName);
+  std::string fName = ModelSettings::makeFullFileName(fileName+".Sgrh");
+  ofstream  headerFile(fName.c_str());
   if (!headerFile) {
-    throw new NRLib2::IOError("Error opening " + *fName);
+    throw new NRLib2::IOError("Error opening "+fName);
   }
 
-  LogKit::LogFormatted(LogKit::LOW,"\nWriting SGRI header file %s...",fName);
-  delete fName;
+  LogKit::LogFormatted(LogKit::LOW,"\nWriting SGRI header file "+fName+"...");
 
   headerFile << "NORSAR General Grid Format v1.0\n";
   headerFile << "3\n";
@@ -1561,13 +1557,13 @@ FFTGrid::writeSgriFile(const char *fileName, const Simbox *simbox, const std::st
   headerFile << simbox->getAngle() << " 0\n";
   headerFile << RMISSING << std::endl;
   
-  fName = ModelSettings::makeFullFileName(fileName, ".Sgri");
+  fName = ModelSettings::makeFullFileName(fileName+".Sgri");
   headerFile << fName << std::endl;
   headerFile << "0\n";
 
-  ofstream binFile(fName, std::ios::out | std::ios::binary);
+  ofstream binFile(fName.c_str(), std::ios::out | std::ios::binary);
   if (!binFile) {
-    throw new NRLib2::IOError("Error opening " + *fName);
+    throw new NRLib2::IOError("Error opening "+fName);
   }
   int i,j,k;
   double x, y, z, zTop, zBot;
@@ -1631,12 +1627,11 @@ FFTGrid::getRegularZInterpolatedRealValue(int i, int j, double z0Reg,
 }
 
 void
-FFTGrid::writeAsciiFile(char * fileName)
+FFTGrid::writeAsciiFile(std::string fileName)
 {
-  char * gfName = ModelSettings::makeFullFileName(fileName, ".ascii");
-  FILE *file = fopen(gfName,"wb");
-  LogKit::LogFormatted(LogKit::LOW,"\nWriting ASCII file %s...",gfName);
-  delete [] gfName;
+  std::string gfName = ModelSettings::makeFullFileName(fileName+".ascii");
+  FILE *file = fopen(gfName.c_str(),"wb");
+  LogKit::LogFormatted(LogKit::LOW,"\nWriting ASCII file "+gfName+"...");
   int i, j, k;
   float value;
   for(k=0;k<nzp_;k++)
@@ -1651,11 +1646,11 @@ FFTGrid::writeAsciiFile(char * fileName)
 }
 
 void
-FFTGrid::writeAsciiRaw(char * fileName)
+FFTGrid::writeAsciiRaw(std::string fileName)
 {
-  char * gfName = ModelSettings::makeFullFileName(fileName, ".ascii");
-  FILE *file = fopen(gfName,"wb");
-  LogKit::LogFormatted(LogKit::LOW,"\nWriting ASCII file %s...",fileName);
+  std::string gfName = ModelSettings::makeFullFileName(fileName+".ascii");
+  FILE *file = fopen(gfName.c_str(),"wb");
+  LogKit::LogFormatted(LogKit::LOW,"\nWriting ASCII file "+fileName+"...");
   int i, j, k;
   float value;
   for(k=0;k<nzp_;k++)

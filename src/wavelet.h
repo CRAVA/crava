@@ -49,7 +49,7 @@ public:
   virtual void          multiplyByR(float) {};
   
   //Note: Function below is mainly controlled by debugflag. Set overrideDebug = true to force.
-  virtual void          printToFile(char* fileName, bool overrideDebug = false) = 0;
+  virtual void          printToFile(std::string fileName, bool overrideDebug = false) = 0;
   virtual void          writeWaveletToFile(char*, float, Simbox * simbox = NULL) = 0;
   void                  setShiftGrid(Surface * grid, Simbox * simbox);
   void                  setGainGrid(Surface * grid, Simbox * simbox);
@@ -62,7 +62,7 @@ public:
                                          int nWells, 
                                          char *errText, 
                                          int &error); 
-  void                  printVecToFile(char* fileName, fftw_real* vec ,int nzp) const;
+  void                  printVecToFile(char * fileName, fftw_real* vec ,int nzp) const;
 
   virtual void          write1DWLas3DWL() {};
   virtual void          write3DWLfrom1DWL() {};

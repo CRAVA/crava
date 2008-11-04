@@ -392,12 +392,12 @@ Wavelet3D::multiplyByR(float p)
 
 
 void
-Wavelet3D::printToFile(char* fileName, bool overrideDebug) 
+Wavelet3D::printToFile(std::string fileName, bool overrideDebug) 
 {
   if(overrideDebug == true || ModelSettings::getDebugLevel() > 0) {
-    char * fName = ModelSettings::makeFullFileName(fileName, ".txt");
-    FILE *file = fopen(fName,"w");
-    LogKit::LogFormatted(LogKit::LOW,"\nWriting STORM ascii file %s...",fName);
+    std::string fName = ModelSettings::makeFullFileName(fileName+".txt");
+    FILE *file = fopen(fName.c_str(),"w");
+    LogKit::LogFormatted(LogKit::LOW,"\nWriting STORM ascii file "+fName+"...");
     int i,j,k;
     for(k=0;k<nzp_;k++)
       for(j=0;j<nyp_;j++) {
@@ -406,9 +406,8 @@ Wavelet3D::printToFile(char* fileName, bool overrideDebug)
         }
         fprintf(file,"\n");
       }
-      fprintf(file,"0\n");
-      fclose(file);
-      delete [] fName;
+    fprintf(file,"0\n");
+    fclose(file);
   }
 }
 

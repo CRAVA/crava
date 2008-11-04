@@ -444,11 +444,11 @@ WellData::writeRMSWell(void)
   NRLib2::Substitute(wellname,"/","_");
   NRLib2::Substitute(wellname," ","_");
   wellname = "Well_" + wellname;
-  char * wellFileName = ModelSettings::makeFullFileName(wellname.c_str(),".rms");
+  std::string wellFileName = ModelSettings::makeFullFileName(wellname+".rms");
 
   const char * params[]={"Vp","Vs","Rho"};
   
-  FILE *file = fopen(wellFileName, "w");
+  FILE *file = fopen(wellFileName.c_str(), "w");
   fprintf(file,"1.0\n");
   fprintf(file,"CRAVA\n");
   fprintf(file,"%s %.2f %.2f\n",wellname_,xpos0_,ypos0_);
@@ -498,8 +498,6 @@ WellData::writeRMSWell(void)
   }
 
   fclose(file);
-
-  delete [] wellFileName;
 }
 
 //----------------------------------------------------------------------------
