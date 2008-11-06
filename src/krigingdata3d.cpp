@@ -140,7 +140,7 @@ KrigingData3D::addData(const float * alpha,
       {
         data_[index]->AddLog(a, b, r);
         //
-        // This is not a problem, but normally two wells should not share the same
+        // This is not a problem for CRAVA, but normally two wells should not share the same
         // set of blocks (with the possible exception of side-tracks).
         //
         LogKit::LogFormatted(LogKit::LOW,"\nNOTE: Blocked log with indices i,j,k = %d,%d,%d has been referred to twice. This is not a problem\n",i,j,k);

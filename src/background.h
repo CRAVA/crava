@@ -8,6 +8,7 @@
 class WellData;
 class Simbox;
 class FFTGrid;
+class KrigingData3D;
 class ModelSettings;
 
 //Special note on the use of Background:
@@ -57,8 +58,15 @@ private:
                                   float        dz,
                                   int          nz,
                                   std::string  name);
-  void         fillInVerticalTrend(FFTGrid     * bgTrend, 
-                                   const float * trend);
+  void         setupKrigingData(KrigingData3D  & kd,
+                                WellData      ** wells,
+                                float          * trendAlpha,
+                                float          * trendBeta, 
+                                float          * trendRho , 
+                                const int        nWells,
+                                const int        maxBlocks,
+                                const int        nz,
+                                const float      dz);
   void         calculateDeviationFromVerticalTrend(WellData    ** wells,
                                                    const float  * trend, 
                                                    float        * avg_dev,
@@ -86,6 +94,8 @@ private:
                                                     float        min_value, 
                                                     float        max_value,
                                                     std::string  parName);
+  void         fillInVerticalTrend(FFTGrid     * bgTrend, 
+                                   const float * trend);
   void         extrapolateTrend(std::string  pName, 
                                 float      * log,
                                 int          nz);

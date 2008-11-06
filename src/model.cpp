@@ -1626,6 +1626,9 @@ Model::processBackground(Background   *& background,
       background = new Background(backModel);
     }
     if((modelSettings->getOutputFlag() & ModelSettings::BACKGROUND) > 0)
+      //
+      // NBNB-PAL: If timeBGSimbox!=NULL use timeBGSimbox.
+      //
       background->writeBackgrounds(timeSimbox); 
   }
 }

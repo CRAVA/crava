@@ -136,9 +136,9 @@ Background::generateBackgroundModel(FFTGrid      *& bgAlpha,
   //const double dz    = simbox->getdz();
   const int nWells = modelSettings->getNumberOfWells();
 
-  float * trendAlpha   = new float[nz];
-  float * trendBeta    = new float[nz];
-  float * trendRho     = new float[nz];
+  float * trendAlpha = new float[nz];
+  float * trendBeta  = new float[nz];
+  float * trendRho   = new float[nz];
 
   calculateVerticalTrend(wells, trendAlpha, 
                          modelSettings->getAlphaMin(), 
@@ -201,77 +201,9 @@ Background::generateBackgroundModel(FFTGrid      *& bgAlpha,
     if (nBlocks > maxBlocks)
       maxBlocks = nBlocks;
   }
+
   KrigingData3D kd(totBlocks); 
-
-  float * blAlpha = new float[maxBlocks];   // bl = blocked logs
-  float * blBeta  = new float[maxBlocks];
-  float * blRho   = new float[maxBlocks];
-
-  float * vtAlpha = new float[nz];          // vt = vertical trend
-  float * vtBeta  = new float[nz];
-  float * vtRho   = new float[nz];
-
-  for (int w = 0 ; w < nWells ; w++)
-  {
-    BlockedLogs * bl = wells[w]->getBlockedLogsExtendedBG();
-    const int nBlocks = bl->getNumberOfBlocks();
-
-    Utils::copyVector(bl->getAlphaHighCutBackground(), blAlpha, nBlocks);
-    Utils::copyVector(bl->getBetaHighCutBackground(), blBeta, nBlocks);
-    Utils::copyVector(bl->getRhoHighCutBackground(), blRho, nBlocks);
-    //
-    // Extract a one-value-for-each-layer array of blocked logs
-    //
-    bl->getVerticalTrend(blAlpha, vtAlpha);
-    bl->getVerticalTrend(blBeta, vtBeta);
-    bl->getVerticalTrend(blRho, vtRho);
-    //
-    // Kriging vertical trend (vt....) against global vertical trend (trend...)
-    //
-    Kriging1D::krigVector(vtAlpha, trendAlpha, nz, dz);
-    Kriging1D::krigVector(vtBeta, trendBeta, nz, dz);
-    Kriging1D::krigVector(vtRho, trendRho, nz, dz);
-    //
-    // Use kriged vertical trend where original log is not defined.
-    //
-    const int * ipos = bl->getIpos();
-    const int * jpos = bl->getJpos();
-    const int * kpos = bl->getKpos();
-
-    for (int m = 0 ; m < nBlocks ; m++) 
-    {
-      if (blAlpha[m] == RMISSING) 
-      {
-        blAlpha[m] = vtAlpha[kpos[m]];
-      }
-      if (blBeta[m] == RMISSING) 
-      {
-        blBeta[m] = vtBeta[kpos[m]];
-      }
-      if (blRho[m] == RMISSING) 
-      {
-        blRho[m] = vtRho[kpos[m]];
-      }
-    }
-
-    //
-    // Add to kriging data object
-    //
-    kd.addData(blAlpha, blBeta, blRho,
-               ipos, jpos, kpos,
-               nBlocks);
-
-  }
-  delete [] vtAlpha;
-  delete [] vtBeta;
-  delete [] vtRho;
-
-  delete [] blAlpha;
-  delete [] blBeta;
-  delete [] blRho;
-
-  kd.divide();
-  kd.writeToFile("BG");
+  setupKrigingData(kd,wells,trendAlpha,trendBeta,trendRho,nWells,maxBlocks,nz,dz);
 
   bgAlpha = new FFTGrid(nx, ny, nz, nx, ny, nz);
   bgBeta  = new FFTGrid(nx, ny, nz, nx, ny, nz);
@@ -341,6 +273,90 @@ Background::generateBackgroundModel(FFTGrid      *& bgAlpha,
 
   LogKit::LogFormatted(LogKit::LOW,"\nFill volumes using kriging:");
   kriging.KrigAll(*bgAlpha, *bgBeta, *bgRho,false);
+}
+
+//-------------------------------------------------------------------------------
+void
+Background::setupKrigingData(KrigingData3D  & kd,
+                             WellData      ** wells,
+                             float          * trendAlpha,
+                             float          * trendBeta, 
+                             float          * trendRho , 
+                             const int        nWells,
+                             const int        maxBlocks,
+                             const int        nz,
+                             const float      dz)
+{
+
+  float * blAlpha = new float[maxBlocks];   // bl = blocked logs
+  float * blBeta  = new float[maxBlocks];
+  float * blRho   = new float[maxBlocks];
+
+  float * vtAlpha = new float[nz];          // vt = vertical trend
+  float * vtBeta  = new float[nz];
+  float * vtRho   = new float[nz];
+
+  for (int w = 0 ; w < nWells ; w++)
+  {
+    BlockedLogs * bl = wells[w]->getBlockedLogsExtendedBG();
+    const int nBlocks = bl->getNumberOfBlocks();
+
+    Utils::copyVector(bl->getAlphaHighCutBackground(), blAlpha, nBlocks);
+    Utils::copyVector(bl->getBetaHighCutBackground(), blBeta, nBlocks);
+    Utils::copyVector(bl->getRhoHighCutBackground(), blRho, nBlocks);
+    //
+    // Extract a one-value-for-each-layer array of blocked logs
+    //
+    bl->getVerticalTrend(blAlpha, vtAlpha);
+    bl->getVerticalTrend(blBeta, vtBeta);
+    bl->getVerticalTrend(blRho, vtRho);
+    //
+    // Kriging vertical trend (vt....) against global vertical trend (trend...)
+    //
+    Kriging1D::krigVector(vtAlpha, trendAlpha, nz, dz);
+    Kriging1D::krigVector(vtBeta, trendBeta, nz, dz);
+    Kriging1D::krigVector(vtRho, trendRho, nz, dz);
+    //
+    // Use kriged vertical trend where original log is not defined.
+    //
+    const int * ipos = bl->getIpos();
+    const int * jpos = bl->getJpos();
+    const int * kpos = bl->getKpos();
+
+    for (int m = 0 ; m < nBlocks ; m++) 
+    {
+      if (blAlpha[m] == RMISSING) 
+      {
+        blAlpha[m] = vtAlpha[kpos[m]];
+      }
+      if (blBeta[m] == RMISSING) 
+      {
+        blBeta[m] = vtBeta[kpos[m]];
+      }
+      if (blRho[m] == RMISSING) 
+      {
+        blRho[m] = vtRho[kpos[m]];
+      }
+    }
+
+    //
+    // Add to kriging data object
+    //
+    kd.addData(blAlpha, blBeta, blRho,
+               ipos, jpos, kpos,
+               nBlocks);
+
+  }
+  kd.divide();
+  kd.writeToFile("BG");
+
+  delete [] vtAlpha;
+  delete [] vtBeta;
+  delete [] vtRho;
+
+  delete [] blAlpha;
+  delete [] blBeta;
+  delete [] blRho;
 }
 
 //-------------------------------------------------------------------------------
