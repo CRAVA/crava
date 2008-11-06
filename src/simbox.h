@@ -25,31 +25,33 @@ public:
                                    int & index1, int & index2, double & t) const;
   void           getCoord(int xInd, int yInd, int zInd, double &x, double &y, double &z) const;
   void           getXYCoord(int xInd, int yInd, double &x, double &y) const;
-  int            getnx()                         const { return nx_ ;}
-  int            getny()                         const { return ny_ ;}
-  int            getnz()                         const { return nz_ ;}
-  double         getdx()                         const { return dx_ ;}
-  double         getdy()                         const { return dy_ ;}
-  double         getdz()                         const { return dz_ ;} // Maximum dz (nz is constant).
-  double         getlx()                         const { return(GetLX());}
-  double         getly()                         const { return(GetLY());}
-  double         getlz()                         const { return(GetLZ());} // Maximum thickness
-  double         getx0()                         const { return(GetXMin());}
-  double         gety0()                         const { return(GetYMin());}
-  double         getAngle()                      const { return(GetAngle());}
-  int            getIL0()                        const { return inLine0_ ;}
-  int            getXL0()                        const { return crossLine0_ ;}
-  int            getILStep()                     const { return ilStep_  ;}
-  int            getXLStep()                     const { return xlStep_  ;}
-  bool           getIsConstantThick()            const { return constThick_;}
-  double         getMinRelThick()                const { return minRelThick_;} // Returns minimum relative thickness.
-  double         getRelThick(int i, int j)       const;                        // Local relative thickness.
-  double         getRelThick(double x, double y) const;                        // Local relative thickness.
+  int            getnx()                         const { return nx_          ;}
+  int            getny()                         const { return ny_          ;}
+  int            getnz()                         const { return nz_          ;}
+  double         getdx()                         const { return dx_          ;}
+  double         getdy()                         const { return dy_          ;}
+  double         getdz()                         const { return dz_          ;} // Maximum dz (nz is constant).
+  double         getdz(int i, int j)             const { return dz_*getRelThick(i,j) ;}
+  double         getlx()                         const { return GetLX()      ;}
+  double         getly()                         const { return GetLY()      ;}
+  double         getlz()                         const { return GetLZ()      ;} // Maximum thickness
+  double         getx0()                         const { return GetXMin()    ;}
+  double         gety0()                         const { return GetYMin()    ;}
+  double         getAngle()                      const { return GetAngle()   ;}
+  int            getIL0()                        const { return inLine0_     ;}
+  int            getXL0()                        const { return crossLine0_  ;}
+  int            getILStep()                     const { return ilStep_      ;}
+  int            getXLStep()                     const { return xlStep_      ;}
+  bool           getIsConstantThick()            const { return constThick_  ;}
+  double         getMinRelThick()                const { return minRelThick_ ;} // Returns minimum relative thickness.
+  double         getRelThick(int i, int j)       const;                         // Local relative thickness.
+  double         getRelThick(double x, double y) const;                         // Local relative thickness.
   double         getAvgRelThick(void)            const;
   void           getMinMaxZ(double & minZ, double & maxZ) const;
   bool           getILxflag()                    const {return(ILxflag_);}
   int            isInside(double x, double y) const;
   int            insideRectangle(const SegyGeometry *  geometry) const;
+  double         getTop(int i, int j) const;
   double         getTop(double x, double y) const;
   double         getBot(double x, double y) const;
   char         * getStormHeader(int cubetype, int nx, int ny, int nz, bool flat = false, bool ascii = false) const;

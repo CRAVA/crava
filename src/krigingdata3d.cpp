@@ -143,8 +143,8 @@ KrigingData3D::addData(const float * alpha,
         // This is not a problem, but normally two wells should not share the same
         // set of blocks (with the possible exception of side-tracks).
         //
-        LogKit::LogFormatted(LogKit::LOW,"\nNOTE: Blocked log with indices i,j,k = %d,%d,%d has been referred to twice\n",i,j,k);
-        LogKit::LogFormatted(LogKit::LOW,"\n      Is the grid too coarse, or do you have wells with side-tracks?\n");
+        LogKit::LogFormatted(LogKit::LOW,"\nNOTE: Blocked log with indices i,j,k = %d,%d,%d has been referred to twice. This is not a problem\n",i,j,k);
+        LogKit::LogFormatted(LogKit::LOW,"\n      but may indicate that the grid is too coarse, or that you have wells with side-tracks?\n");
       }
     }
   }

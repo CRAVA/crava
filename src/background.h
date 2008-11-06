@@ -18,7 +18,8 @@ class Background
 public:
   Background(FFTGrid       ** grids,
              WellData      ** wells,
-             Simbox         * simbox,
+             Simbox         * timeSimbox,
+             Simbox         * timeBGSimbox,
              ModelSettings  * modelSettings);
   Background(FFTGrid ** grids);
   ~Background(void);
@@ -33,9 +34,16 @@ public:
   void         writeBackgrounds(Simbox * simbox) const;
 
 private:
-  void         generateBackgroundModel(WellData      ** wells,
-                                       Simbox         * simbox,
-                                       ModelSettings  * modelSettings);
+  void         generateBackgroundModel(FFTGrid      *& bgAlpha,
+                                       FFTGrid      *& bgBeta,
+                                       FFTGrid      *& bgRho,
+                                       WellData     ** wells,
+                                       Simbox        * simbox,
+                                       ModelSettings * modelSettings);
+  void         resampleParameter(FFTGrid * parameterNew,
+                                 FFTGrid * parameterOld,
+                                 Simbox  * simboxNew,
+                                 Simbox  * simboxOld);
   void         calculateVerticalTrend(WellData   ** wells,
                                       float       * trend, 
                                       float         logMin,
@@ -44,20 +52,19 @@ private:
                                       int           nWells,
                                       int           nz,
                                       float         dz,
-                                      const char  * name);
+                                      std::string   name);
   void         writeVerticalTrend(float      * trend, 
                                   float        dz,
                                   int          nz,
                                   std::string  name);
-  void         createTrendCube(Simbox      *  simbox,
-                               FFTGrid     *& pFFTGrid, 
-                               const float *  trend);
+  void         fillInVerticalTrend(FFTGrid     * bgTrend, 
+                                   const float * trend);
   void         calculateDeviationFromVerticalTrend(WellData    ** wells,
                                                    const float  * trend, 
                                                    float        * avg_dev,
                                                    int            nWells,
                                                    int            nd,
-                                                   const char   * name);
+                                                   std::string    name);
   void         writeDeviationsFromVerticalTrend(WellData    ** wells,
                                                 const float *  avg_dev_alpha,
                                                 const float *  avg_dev_beta,
@@ -78,11 +85,12 @@ private:
                                                     float        dz,
                                                     float        min_value, 
                                                     float        max_value,
-                                                    const char * parName);
-  void         extrapolateTrend(const char * pName, 
+                                                    std::string  parName);
+  void         extrapolateTrend(std::string  pName, 
                                 float      * log,
                                 int          nz);
-  void         findMeanVsVp();
+  void         findMeanVsVp(FFTGrid * Vp,
+                            FFTGrid * Vs);
 
   FFTGrid    * backModel_[3];       // Cubes for background model files.
   int          DataTarget_;         // Number of data requested in a kriging block 

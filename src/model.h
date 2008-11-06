@@ -53,6 +53,7 @@ private:
   void             makeTimeSimboxes(Simbox        *& timeSimbox,
                                     Simbox        *& timeCutSimbox,
                                     Simbox        *& timeBGSimbox,
+                                    Simbox        *& timeSimboxConstThick,
                                     Surface       *& correlationDirection,
                                     ModelSettings *& modelSettings, 
                                     ModelFile      * modelFile,
@@ -63,8 +64,7 @@ private:
                                            Simbox *& timeCutSimbox);
   void             setupExtendedBackgroundSimbox(Simbox   * timeSimbox, 
                                                  Surface  * corrSurf, 
-                                                 Simbox  *& backgroundSimbox);
-
+                                                 Simbox  *& timeBGSimbox);
   void             processSeismic(FFTGrid      **& seisCube,
                                   Simbox        *& timeSimbox,
                                   ModelSettings *& modelSettings, 
@@ -73,6 +73,8 @@ private:
                                   bool           & failed);
   void             processWells(WellData     **& wells,
                                 Simbox         * timeSimbox,
+                                Simbox         * timeBGSimbox,
+                                Simbox         * timeSimboxConstThick,
                                 RandomGen      * randomGen,
                                 ModelSettings *& modelSettings, 
                                 ModelFile      * modelFile,
@@ -81,6 +83,7 @@ private:
   void             processBackground(Background   *& background, 
                                      WellData     ** wells,
                                      Simbox        * timeSimbox,
+                                     Simbox        * timeBGSimbox,
                                      ModelSettings * modelSettings, 
                                      ModelFile     * modelFile, 
                                      char          * errText,

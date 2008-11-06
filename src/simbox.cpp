@@ -325,6 +325,16 @@ Simbox::insideRectangle(const SegyGeometry *  geometry) const
   return error;
 }
 
+double
+Simbox::getTop(int i, int j) const
+{
+  double x, y;
+  getXYCoord(i,j,x,y);
+  double zTop = GetTopSurface().GetZ(x, y);
+  if(GetTopSurface().IsMissing(zTop))
+    zTop = RMISSING;
+  return(zTop);
+}
 
 double
 Simbox::getTop(double x, double y) const

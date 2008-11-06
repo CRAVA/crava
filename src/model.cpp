@@ -85,12 +85,13 @@ Model::Model(char * fileName)
     modelSettings_ = modelFile->getModelSettings();
     LogKit::SetScreenLog(modelSettings_->getLogLevel());
 
-    std::string logFileName = ModelSettings::makeFullFileName(std::string("logFile.txt"));
+    //std::string logFileName = ModelSettings::makeFullFileName(std::string("logFile.txt"));
+    std::string logFileName = ModelSettings::makeFullFileName("logFile.txt");
     LogKit::SetFileLog(logFileName,modelSettings_->getLogLevel());
 
     if(modelSettings_->getDebugFlag() > 0)
     {
-      std::string fName = ModelSettings::makeFullFileName(std::string("debug.txt"));
+      std::string fName = ModelSettings::makeFullFileName("debug.txt");
       LogKit::SetFileLog(fName, LogKit::DEBUGHIGH+LogKit::DEBUGLOW);
     }
     LogKit::EndBuffering();
@@ -112,8 +113,9 @@ Model::Model(char * fileName)
     char errText[MAX_STRING];
     sprintf(errText,"%c",'\0');
 
-    makeTimeSimboxes(timeSimbox_, timeCutSimbox, timeBGSimbox, correlationDirection_, //Handles correlation direction too.
-                     modelSettings_, modelFile, errText, failedSimbox);
+    makeTimeSimboxes(timeSimbox_, timeCutSimbox, timeBGSimbox, timeSimboxConstThick_,  //Handles correlation direction too.
+                     correlationDirection_, modelSettings_, modelFile,
+                     errText, failedSimbox);
 
     if(!failedSimbox)
     { 
@@ -122,7 +124,7 @@ Model::Model(char * fileName)
       //
       if (modelSettings_->getGenerateSeismic() == true)
       {
-        processBackground(background_, wells_, timeSimbox_, 
+        processBackground(background_, wells_, timeSimbox_, timeBGSimbox,
                           modelSettings_, modelFile,
                           errText, failedBackground);
         if (!failedBackground)
@@ -160,8 +162,8 @@ Model::Model(char * fileName)
           processDepthConversion(timeCutSimbox, timeSimbox_,
                                  modelSettings_, modelFile,
                                  errText, failedDepthConv);
-          processWells(wells_, timeSimbox_, randomGen_, 
-                       modelSettings_, modelFile, 
+          processWells(wells_, timeSimbox_, timeBGSimbox, timeSimboxConstThick_, 
+                       randomGen_, modelSettings_, modelFile, 
                        errText, failedWells);
           loadExtraSurfaces(waveletEstimInterval_, 
                             faciesEstimInterval_,
@@ -169,7 +171,7 @@ Model::Model(char * fileName)
                             errText, failedExtraSurf);
           if (!failedWells)
           {
-            processBackground(background_, wells_, timeSimbox_, 
+            processBackground(background_, wells_, timeSimbox_, timeBGSimbox,
                               modelSettings_, modelFile,
                               errText, failedBackground);
 
@@ -558,6 +560,7 @@ void
 Model::makeTimeSimboxes(Simbox        *& timeSimbox,
                         Simbox        *& timeCutSimbox,
                         Simbox        *& timeBGSimbox,
+                        Simbox        *& timeSimboxConstThick,
                         Surface       *& correlationDirection,
                         ModelSettings *& modelSettings, 
                         ModelFile      * modelFile,
@@ -728,9 +731,9 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
   //
   // Make time simbox with constant thicknesses (needed for log filtering and facies probabilities)
   //
-  timeSimboxConstThick_ = new Simbox(timeSimbox);
+  timeSimboxConstThick = new Simbox(timeSimbox);
   Surface * tsurf = new Surface(dynamic_cast<const Surface &> (timeSimbox->GetTopSurface()));
-  timeSimboxConstThick_->setDepth(tsurf, 0, timeSimbox->getlz(), timeSimbox->getdz());
+  timeSimboxConstThick->setDepth(tsurf, 0, timeSimbox->getlz(), timeSimbox->getdz());
 }
 
 void 
@@ -1184,6 +1187,8 @@ Model::processSeismic(FFTGrid      **& seisCube,
 void 
 Model::processWells(WellData     **& wells,
                     Simbox         * timeSimbox,
+                    Simbox         * timeBGSimbox,
+                    Simbox         * timeSimboxConstThick,
                     RandomGen      * randomGen,
                     ModelSettings *& modelSettings, 
                     ModelFile      * modelFile,
@@ -1270,6 +1275,10 @@ Model::processWells(WellData     **& wells,
           wells[i]->calculateDeviation(devAngle[i], timeSimbox);
           wells[i]->setBlockedLogsPropThick( new BlockedLogs(wells[i], timeSimbox, randomGen) );
           wells[i]->setBlockedLogsConstThick( new BlockedLogs(wells[i], timeSimboxConstThick_, randomGen) );
+          if (timeBGSimbox==NULL)
+            wells[i]->setBlockedLogsExtendedBG( new BlockedLogs(wells[i], timeSimbox, randomGen) ); // Need a copy constructor?
+          else
+            wells[i]->setBlockedLogsExtendedBG( new BlockedLogs(wells[i], timeBGSimbox, randomGen) );
           if (nFacies > 0)
             wells[i]->countFacies(timeSimbox,faciesCount[i]);
           if((modelSettings->getOutputFlag() & ModelSettings::WELLS) > 0) 
@@ -1520,6 +1529,7 @@ void
 Model::processBackground(Background   *& background,
                          WellData     ** wells,
                          Simbox        * timeSimbox,
+                         Simbox        * timeBGSimbox,
                          ModelSettings * modelSettings, 
                          ModelFile     * modelFile,
                          char          * errText,
@@ -1545,7 +1555,7 @@ Model::processBackground(Background   *& background,
     {
       if(modelSettings->getBackgroundVario() == NULL)
       {
-        sprintf(errText,"%sDid not manage to make variogram for background modelling\n",errText);
+        sprintf(errText,"%sThere is no variogram available for the background modelling\n",errText);
         failed = true;
       }
       for (int i=0 ; i<3 ; i++)
@@ -1553,7 +1563,7 @@ Model::processBackground(Background   *& background,
         backModel[i] = new FFTGrid(nx, ny, nz, nxPad, nyPad, nzPad);              
         backModel[i]->setType(FFTGrid::PARAMETER);
       }
-      background = new Background(backModel, wells, timeSimbox, modelSettings);
+      background = new Background(backModel, wells, timeSimbox, timeBGSimbox, modelSettings);
     }
     else 
     {

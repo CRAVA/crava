@@ -40,8 +40,9 @@ WellData::WellData(const char     * wellFileName,
     alpha_seismic_resolution_(NULL),
     beta_seismic_resolution_(NULL),
     rho_seismic_resolution_(NULL),
-    blockedLogsPropThick_(NULL),
+    blockedLogsOrigThick_(NULL),
     blockedLogsConstThick_(NULL),
+    blockedLogsExtendedBG_(NULL),
     useForFaciesProbabilities_(modelSettings->getIndicatorFacies(i)==1),
     useForWaveletEstimation_(modelSettings->getIndicatorWavelet(i)==1),  
     useForBackgroundTrend_(modelSettings->getIndicatorBGTrend(i)==1)
@@ -81,10 +82,12 @@ WellData::~WellData()
     delete [] beta_seismic_resolution_;
   if(rho_seismic_resolution_!=NULL)
     delete [] rho_seismic_resolution_;
-  if (blockedLogsPropThick_ != NULL)
-    delete blockedLogsPropThick_;
+  if (blockedLogsOrigThick_ != NULL)
+    delete blockedLogsOrigThick_;
   if (blockedLogsConstThick_ != NULL)
     delete blockedLogsConstThick_;
+  if (blockedLogsExtendedBG_ != NULL)
+    delete blockedLogsExtendedBG_;
   delete [] wellfilename_;
   delete [] wellname_;
 }

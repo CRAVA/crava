@@ -45,11 +45,13 @@ public:
   char          * getFaciesName(int i)               const { return faciesNames_[i]            ;}
   void            getMinMaxFnr(int &min, int &max) const;
 
-  BlockedLogs   * getBlockedLogsPropThick(void)  const { return blockedLogsPropThick_ ;}
-  BlockedLogs   * getBlockedLogsConstThick(void) const { return blockedLogsConstThick_ ;} 
+  BlockedLogs   * getBlockedLogsPropThick(void)      const { return blockedLogsOrigThick_ ;}
+  BlockedLogs   * getBlockedLogsConstThick(void)     const { return blockedLogsConstThick_ ;} 
+  BlockedLogs   * getBlockedLogsExtendedBG(void)     const { return blockedLogsExtendedBG_ ;} 
 
-  void            setBlockedLogsPropThick(BlockedLogs * bl)  { blockedLogsPropThick_  = bl ;}
+  void            setBlockedLogsPropThick(BlockedLogs * bl)  { blockedLogsOrigThick_  = bl ;}
   void            setBlockedLogsConstThick(BlockedLogs * bl) { blockedLogsConstThick_ = bl ;}
+  void            setBlockedLogsExtendedBG(BlockedLogs * bl) { blockedLogsExtendedBG_ = bl ;}
 
   int             getNd() const;
   int             checkError(char * errText);
@@ -105,8 +107,9 @@ private:
   float         * beta_seismic_resolution_;     // 
   float         * rho_seismic_resolution_;      // 
 
-  BlockedLogs   * blockedLogsPropThick_;
+  BlockedLogs   * blockedLogsOrigThick_;
   BlockedLogs   * blockedLogsConstThick_;
+  BlockedLogs   * blockedLogsExtendedBG_;
 
   bool            useForFaciesProbabilities_;
   bool            useForWaveletEstimation_;

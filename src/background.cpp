@@ -24,26 +24,67 @@
 
 Background::Background(FFTGrid       ** grids,
                        WellData      ** wells,
-                       Simbox         * simbox,
+                       Simbox         * timeSimbox,
+                       Simbox         * timeBGSimbox,
                        ModelSettings  * modelSettings)
+  : DataTarget_(250), // For kriging: Increase surrounding until 250 data points is aquired
+    vsvp_(RMISSING)
 {
   for(int i=0 ; i<3 ; i++)
     backModel_[i] = grids[i];
 
-  DataTarget_ = 250;
+  FFTGrid * bgAlpha;
+  FFTGrid * bgBeta;
+  FFTGrid * bgRho;
+  
+  if (timeBGSimbox == NULL)
+  {
+    generateBackgroundModel(bgAlpha,bgBeta,bgRho,wells,timeSimbox,modelSettings);
+    LogKit::LogFormatted(LogKit::LOW,"Moving background model into FFT grids with padding and making padding...\n");
+    backModel_[0]->fillInFromRealFFTGrid(*bgAlpha);
+    backModel_[1]->fillInFromRealFFTGrid(*bgBeta);
+    backModel_[2]->fillInFromRealFFTGrid(*bgRho);
+  }
+  else
+  {
+    generateBackgroundModel(bgAlpha,bgBeta,bgRho,wells,timeBGSimbox,modelSettings);
 
-  generateBackgroundModel(wells,
-                          simbox, 
-                          modelSettings);
-  findMeanVsVp();
+    FFTGrid * resBgAlpha = NULL;
+    FFTGrid * resBgBeta = NULL;
+    FFTGrid * resBgRho = NULL;
+
+    LogKit::LogFormatted(LogKit::LOW,"Resampling background model...\n");
+    resampleParameter(resBgAlpha,bgAlpha,timeSimbox,timeBGSimbox);
+    resampleParameter(resBgBeta ,bgBeta ,timeSimbox,timeBGSimbox);
+    resampleParameter(resBgRho  ,bgRho  ,timeSimbox,timeBGSimbox);
+    
+    LogKit::LogFormatted(LogKit::LOW,"Moving background model into FFT grids with padding and making padding...\n");
+    backModel_[0]->fillInFromRealFFTGrid(*resBgAlpha);
+    backModel_[1]->fillInFromRealFFTGrid(*resBgBeta);
+    backModel_[2]->fillInFromRealFFTGrid(*resBgRho);
+
+    delete resBgAlpha;
+    delete resBgBeta;
+    delete resBgRho;
+  }  
+
+  delete bgAlpha;
+  delete bgBeta;
+  delete bgRho;
+
+  findMeanVsVp(backModel_[0],
+               backModel_[1]);
 }
 
 //-------------------------------------------------------------------------------
 Background::Background(FFTGrid ** grids) 
+  : DataTarget_(RMISSING),
+    vsvp_(RMISSING)
 {
   for(int i=0 ; i<3 ; i++)
     backModel_[i] = grids[i];
-  findMeanVsVp();
+  findMeanVsVp(backModel_[0],
+               backModel_[1]);
 }
 
 //-------------------------------------------------------------------------------
@@ -68,6 +109,10 @@ Background::writeBackgrounds(Simbox * simbox) const
   backModel_[0]->writeFile("BG_Vp",  simbox);
   backModel_[1]->writeFile("BG_Vs",  simbox);
   backModel_[2]->writeFile("BG_Rho", simbox);
+  //backModel_[0]->writeStormFile("BG_Vp",  simbox, false, true, true); // To write padding
+  //backModel_[1]->writeStormFile("BG_Vs",  simbox, false, true, true);
+  //backModel_[2]->writeStormFile("BG_Rho", simbox, false, true, true);
+
   printf("\nBacktransforming cubes...\n");
   backModel_[0]->logTransf();
   backModel_[1]->logTransf();
@@ -76,11 +121,17 @@ Background::writeBackgrounds(Simbox * simbox) const
 
 //-------------------------------------------------------------------------------
 void
-Background::generateBackgroundModel(WellData      ** wells,
-                                    Simbox         * simbox,
-                                    ModelSettings  * modelSettings)
+Background::generateBackgroundModel(FFTGrid      *& bgAlpha,
+                                    FFTGrid      *& bgBeta,
+                                    FFTGrid      *& bgRho,
+                                    WellData     ** wells,
+                                    Simbox        * simbox,
+                                    ModelSettings * modelSettings)
 {
-  const int   nz = simbox->getnz();
+  const int nx = simbox->getnx();
+  const int ny = simbox->getny();
+  const int nz = simbox->getnz();
+
   const float dz = static_cast<float>(simbox->getdz()*simbox->getAvgRelThick());
   //const double dz    = simbox->getdz();
   const int nWells = modelSettings->getNumberOfWells();
@@ -145,7 +196,7 @@ Background::generateBackgroundModel(WellData      ** wells,
   int totBlocks = 0;
   int maxBlocks = 0;
   for (int w = 0 ; w < nWells ; w++) {
-    int nBlocks = wells[w]->getBlockedLogsPropThick()->getNumberOfBlocks();
+    int nBlocks = wells[w]->getBlockedLogsExtendedBG()->getNumberOfBlocks();
     totBlocks += nBlocks;
     if (nBlocks > maxBlocks)
       maxBlocks = nBlocks;
@@ -162,7 +213,7 @@ Background::generateBackgroundModel(WellData      ** wells,
 
   for (int w = 0 ; w < nWells ; w++)
   {
-    BlockedLogs * bl = wells[w]->getBlockedLogsPropThick();
+    BlockedLogs * bl = wells[w]->getBlockedLogsExtendedBG();
     const int nBlocks = bl->getNumberOfBlocks();
 
     Utils::copyVector(bl->getAlphaHighCutBackground(), blAlpha, nBlocks);
@@ -202,12 +253,14 @@ Background::generateBackgroundModel(WellData      ** wells,
         blRho[m] = vtRho[kpos[m]];
       }
     }
+
     //
     // Add to kriging data object
     //
     kd.addData(blAlpha, blBeta, blRho,
                ipos, jpos, kpos,
                nBlocks);
+
   }
   delete [] vtAlpha;
   delete [] vtBeta;
@@ -220,11 +273,13 @@ Background::generateBackgroundModel(WellData      ** wells,
   kd.divide();
   kd.writeToFile("BG");
 
+  bgAlpha = new FFTGrid(nx, ny, nz, nx, ny, nz);
+  bgBeta  = new FFTGrid(nx, ny, nz, nx, ny, nz);
+  bgRho   = new FFTGrid(nx, ny, nz, nx, ny, nz);
 
-  FFTGrid *trendCubeAlpha, *trendCubeBeta, *trendCubeRho;
-  createTrendCube(simbox, trendCubeAlpha, trendAlpha);
-  createTrendCube(simbox, trendCubeBeta, trendBeta);
-  createTrendCube(simbox, trendCubeRho, trendRho);
+  fillInVerticalTrend(bgAlpha, trendAlpha);
+  fillInVerticalTrend(bgBeta, trendBeta);
+  fillInVerticalTrend(bgRho, trendRho);
 
   delete [] trendAlpha;
   delete [] trendBeta;
@@ -233,16 +288,16 @@ Background::generateBackgroundModel(WellData      ** wells,
   if(modelSettings->getDebugFlag() == 1)
   {
     printf("\nExp-transforming cubes...\n");
-    trendCubeAlpha->expTransf();
-    trendCubeBeta->expTransf();
-    trendCubeRho->expTransf();
-    trendCubeAlpha->writeStormFile("BG_trendVp", simbox);
-    trendCubeBeta->writeStormFile("BG_trendVs", simbox);
-    trendCubeRho->writeStormFile("BG_trendRho", simbox);
+    bgAlpha->expTransf();
+    bgBeta->expTransf();
+    bgRho->expTransf();
+    bgAlpha->writeStormFile("BG_trendVp", simbox);
+    bgBeta->writeStormFile("BG_trendVs", simbox);
+    bgRho->writeStormFile("BG_trendRho", simbox);
     printf("\nBacktransforming cubes...\n");
-    trendCubeAlpha->logTransf();
-    trendCubeBeta->logTransf();
-    trendCubeRho->logTransf();
+    bgAlpha->logTransf();
+    bgBeta->logTransf();
+    bgRho->logTransf();
   }
 
   float power;
@@ -259,12 +314,10 @@ Background::generateBackgroundModel(WellData      ** wells,
   vario->getParams(rangeX, rangeY, rotAngle);
   float rangeZ = 0.00001f;  // Simulate 2D kriging using 3D algorithm
 
-  const int   nx = simbox->getnx();
-  const int   ny = simbox->getny();
   const float dx = static_cast<float>(simbox->getdx());
   const float dy = static_cast<float>(simbox->getdy());
 
-  CovGridSeparated covAlpha(nx, ny, nz, dx, dy, dz, rangeX, rangeY, rangeZ, power, rotAngle,false);
+  CovGridSeparated covAlpha(nx, ny, nz, dx, dy, dz, rangeX, rangeY, rangeZ, power, rotAngle, false);
   CovGridSeparated covBeta (nx, ny, nz, dx, dy, dz, rangeX, rangeY, rangeZ, power, rotAngle, false);
   CovGridSeparated covRho  (nx, ny, nz, dx, dy, dz, rangeX, rangeY, rangeZ, power, rotAngle, false);
 
@@ -287,22 +340,7 @@ Background::generateBackgroundModel(WellData      ** wells,
                         DataTarget_, true);
 
   LogKit::LogFormatted(LogKit::LOW,"\nFill volumes using kriging:");
-  kriging.KrigAll(*trendCubeAlpha, *trendCubeBeta, *trendCubeRho,false);
-
-  backModel_[0]->fillInFromRealFFTGrid(*trendCubeAlpha);
-  backModel_[1]->fillInFromRealFFTGrid(*trendCubeBeta);
-  backModel_[2]->fillInFromRealFFTGrid(*trendCubeRho);
-
-  //backModel_[0] = new FFTGrid(nx, ny, nz, nxPad, nyPad, nzPad);
-  //backModel_[0]->setType(FFTGrid::PARAMETER);
-  //backModel_[1] = new FFTGrid(nx, ny, nz, nxPad, nyPad, nzPad);
-  //backModel_[1]->setType(FFTGrid::PARAMETER);
-  //backModel_[2] = new FFTGrid(nx, ny, nz, nxPad, nyPad, nzPad);
-  //backModel_[2]->setType(FFTGrid::PARAMETER);
-
-  delete trendCubeAlpha; 
-  delete trendCubeBeta; 
-  delete trendCubeRho;
+  kriging.KrigAll(*bgAlpha, *bgBeta, *bgRho,false);
 }
 
 //-------------------------------------------------------------------------------
@@ -315,7 +353,7 @@ Background::calculateVerticalTrend(WellData  ** wells,
                                    int          nWells,
                                    int          nz,
                                    float        dz,
-                                   const char * name)
+                                   std::string  name)
 {  
   float * filtered_log = new float[nz]; 
   float * wellTrend    = filtered_log;   // Use same memory twice
@@ -336,16 +374,16 @@ Background::calculateVerticalTrend(WellData  ** wells,
   int iWells = 0;
   for (int w = 0 ; w < nWells ; w++) { 
     if (wells[w]->getUseForBackgroundTrend()) {
-      BlockedLogs * bl = wells[w]->getBlockedLogsPropThick();
-      if (strcmp(name,"Vp") == 0)
+      BlockedLogs * bl = wells[w]->getBlockedLogsExtendedBG();
+      if (name == "Vp")
         bl->getVerticalTrend(bl->getAlpha(), wellTrend);
-      else if (strcmp(name,"Vs") == 0)
+      else if (name == "Vs")
         bl->getVerticalTrend(bl->getBeta(), wellTrend);
-      else if (strcmp(name,"Rho") == 0)
+      else if (name == "Rho")
         bl->getVerticalTrend(bl->getRho(), wellTrend);
       else {
         LogKit::LogFormatted(LogKit::LOW,"ERROR in Background::calculateVerticalTrend(): ");
-        LogKit::LogFormatted(LogKit::LOW,"Log \'%s\' requested, but no such log exists.\n",name);
+        LogKit::LogFormatted(LogKit::LOW,"Log \'"+name+"\' requested, but no such log exists.\n");
         exit(1);
       }
       for (int k = 0 ; k < nz ; k++) {
@@ -413,7 +451,7 @@ Background::smoothTrendWithLocalLinearRegression(float      * trend,
                                                  float        dz,
                                                  float        min_value, 
                                                  float        max_value,
-                                                 const char * parName) 
+                                                 std::string  parName) 
 {
   bool debug = false;
   //
@@ -441,7 +479,7 @@ Background::smoothTrendWithLocalLinearRegression(float      * trend,
   // If the blocked wells do not contain any values for the lower layers of 
   // the simbox, the end part of the scatter plot needs special attention.
   //
-  // We need must possibly require a larger min_req_points to avoid an 
+  // We must possibly require a larger min_req_points to avoid an 
   // "arbitrary" end behaviour.
   //
 
@@ -568,7 +606,7 @@ Background::smoothTrendWithLocalLinearRegression(float      * trend,
     //
     // NBNB-PAL: Here we should possibly first try a global linear regression...
     //
-    LogKit::LogFormatted(LogKit::LOW,"\nWARNING : The calculation of the vertical trend for parameter %s using local linear\n",parName);
+    LogKit::LogFormatted(LogKit::LOW,"\nWARNING : The calculation of the vertical trend for parameter "+parName+" using local linear\n");
     LogKit::LogFormatted(LogKit::LOW,"          regression failed - trying global mean instead. Possible causes: \n");
     LogKit::LogFormatted(LogKit::LOW,"          1) Available logs cover too small a part of inversion grid giving extrapolation problems.\n");
     LogKit::LogFormatted(LogKit::LOW,"          2) There are too many layers in grid compared to well logs available.\n");
@@ -595,7 +633,7 @@ Background::smoothTrendWithLocalLinearRegression(float      * trend,
       if (debug) 
         LogKit::LogFormatted(LogKit::LOW,"   TREND: k = %d   trend[k] = %.2f\n",k,exp(trend[k]));
     }
-    LogKit::LogFormatted(LogKit::LOW,"\nGlobal mean for parameter %s = %.2f\n\n",parName,global_mean);
+    LogKit::LogFormatted(LogKit::LOW,"\nGlobal mean for parameter %s = %.2f\n\n",parName.c_str(),global_mean);
   }
   delete [] x;
   delete [] y;
@@ -673,7 +711,7 @@ Background::smoothTrendWithMovingAverage(float * trend,
 
 //-------------------------------------------------------------------------------
 void
-Background::extrapolateTrend(const char * pName, 
+Background::extrapolateTrend(std::string  pName, 
                              float      * log,
                              int          nz) 
 {
@@ -699,10 +737,10 @@ Background::extrapolateTrend(const char * pName,
     }
     if (first_nonmissing > 0)
       LogKit::LogFormatted(LogKit::LOW,"Vertical trend for %s extrapolated first %d cells.\n",
-                       pName, first_nonmissing + 1);
+                           pName.c_str(), first_nonmissing + 1);
     if (nz - 1 - last_nonmissing > 0)
       LogKit::LogFormatted(LogKit::LOW,"Vertical trend for %s extrapolated last %d cells.\n",
-                       pName, nz - 1 - last_nonmissing);
+                           pName.c_str(), nz - 1 - last_nonmissing);
     //for (int i=0 ; i<nz ; i++) {
     //  printf("i log[i]  %d %.3f\n",i,log[i]);
     //}
@@ -721,8 +759,7 @@ Background::writeVerticalTrend(float      * trend,
                                std::string  name) 
 {  
   float z0 = dz/2.0f;
-  std::string tmp = "BG_verticalTrend_"+name;
-  std::string filename = ModelSettings::makeFullFileName(tmp+".irap");
+  std::string filename = ModelSettings::makeFullFileName("BG_verticalTrend_"+name+".irap");
   FILE * file = fopen(filename.c_str(), "w");
   for (int i=0 ; i<nz ; i++) {
     fprintf(file,"%8.2f %8.3f 0.00\n",(z0+i*dz),exp( trend[i] ));
@@ -738,21 +775,21 @@ Background::calculateDeviationFromVerticalTrend(WellData    ** wells,
                                                 float        * avg_dev,
                                                 int            nWells,
                                                 int            nz,
-                                                const char   * name)
+                                                std::string    name)
 {
   float * wellTrend = new float[nz];
 
   for (int w = 0 ; w < nWells ; w++) {
-    BlockedLogs * bl = wells[w]->getBlockedLogsPropThick();
-    if (strcmp(name,"Vp") == 0)
+    BlockedLogs * bl = wells[w]->getBlockedLogsExtendedBG();
+    if (name == "Vp")
       bl->getVerticalTrend(bl->getAlphaHighCutBackground(), wellTrend);
-    else if (strcmp(name,"Vs") == 0)
+    else if (name == "Vs")
       bl->getVerticalTrend(bl->getBetaHighCutBackground(), wellTrend);
-    else if (strcmp(name,"Rho") == 0)
+    else if (name == "Rho")
       bl->getVerticalTrend(bl->getRhoHighCutBackground(), wellTrend);
     else {
       LogKit::LogFormatted(LogKit::LOW,"ERROR in Background::calculateVerticalTrend(): ");
-      LogKit::LogFormatted(LogKit::LOW,"Log \'%s\' requested, but no such log exists.\n",name);
+      LogKit::LogFormatted(LogKit::LOW,"Log \'"+name+"\' requested, but no such log exists.\n");
       exit(1);
     }
     float sum_dev = 0.0f;
@@ -855,58 +892,51 @@ Background::writeDeviationsFromVerticalTrend(WellData    ** wells,
 
 //-------------------------------------------------------------------------------
 void           
-Background::createTrendCube(Simbox      *  simbox,
-                            FFTGrid     *& pFFTGrid, 
-                            const float *  trend) 
+Background::fillInVerticalTrend(FFTGrid     * grid, 
+                                const float * trend) 
 {
-  const int nx = simbox->getnx();
-  const int ny = simbox->getny();
-  const int nz = simbox->getnz();
-  pFFTGrid = new FFTGrid(nx, ny, nz, nx, ny, nz);
-  
-  const int nzp = pFFTGrid->getNzp();
-  const int nyp = pFFTGrid->getNyp();
-  const int nxp = pFFTGrid->getNxp();
-  pFFTGrid->createRealGrid();
-  pFFTGrid->setAccessMode(FFTGrid::RANDOMACCESS);
+  const int nzp = grid->getNzp();
+  const int nyp = grid->getNyp();
+  const int nxp = grid->getNxp();
 
-  int i,j,k;
-  for (k = 0; k < nzp; k++) 
-    for (j = 0; j < nyp; j++)
-      for (i = 0; i < nxp; i++)
-        pFFTGrid->setRealValue(i, j, k, trend[k]);
+  grid->setAccessMode(FFTGrid::RANDOMACCESS);
+  grid->createRealGrid();
+
+  for (int k = 0; k < nzp; k++) 
+    for (int j = 0; j < nyp; j++)
+      for (int i = 0; i < nxp; i++)
+        grid->setRealValue(i, j, k, trend[k]);
         
-  pFFTGrid->endAccess();
+  grid->endAccess();
 }
 
 //-------------------------------------------------------------------------------
 void
-Background::findMeanVsVp()
+Background::findMeanVsVp(FFTGrid * Vp,
+                         FFTGrid * Vs)
 {
-  backModel_[0]->setAccessMode(FFTGrid::READ);
-  backModel_[1]->setAccessMode(FFTGrid::READ);
-  int i, j, k;
-  float v1,v2;
+  Vp->setAccessMode(FFTGrid::READ);
+  Vs->setAccessMode(FFTGrid::READ);
   double mean = 0;
-  int nxp = 2*(backModel_[0]->getNxp()/2+1);
-  int nyp = backModel_[0]->getNyp();
-  int nzp = backModel_[0]->getNzp();
-  int nx = backModel_[0]->getNx();
-  int ny = backModel_[0]->getNy();
-  int nz = backModel_[0]->getNz();
-  for(k=0;k<nzp;k++) 
-    for(j=0;j<nyp;j++)
-      for(i=0;i<nxp;i++) {
-        v1 = backModel_[0]->getNextReal();
-        v2 = backModel_[1]->getNextReal();
+  int nxp = 2*(Vp->getNxp()/2+1);
+  int nyp = Vp->getNyp();
+  int nzp = Vp->getNzp();
+  int nx  = Vp->getNx();
+  int ny  = Vp->getNy();
+  int nz  = Vp->getNz();
+  for(int k=0;k<nzp;k++) 
+    for(int j=0;j<nyp;j++)
+      for(int i=0;i<nxp;i++) {
+        float v1 = Vp->getNextReal();
+        float v2 = Vs->getNextReal();
         if(i < nx && j < ny && k < nz)
           mean += exp(v2-v1);
       }
   mean = mean/double(nx*ny*nz);
-
-  backModel_[0]->endAccess();
-  backModel_[1]->endAccess();
-
+  
+  Vp->endAccess();
+  Vs->endAccess();
+  
   vsvp_ = mean;
 }
         
@@ -922,4 +952,78 @@ Background::setClassicVsVp()
   float vs = backModel_[1]->getFirstComplexValue().re;
   vs = float(exp(vs/sqrt(float(nxp*nyp*nzp))));
   vsvp_ = vs/vp;
+}
+
+//-------------------------------------------------------------------------------
+void
+Background::resampleParameter(FFTGrid * pNew,       // Resample to 
+                              FFTGrid * pOld,       // Resample from 
+                              Simbox  * simboxNew,
+                              Simbox  * simboxOld)
+{
+  int nxp = (pOld->getNxp()/2+1)*2;  // Use same padding as for nonresampled cubes
+  int nyp =  pOld->getNyp();         // Use same padding as for nonresampled cubes
+  int nzp =  pOld->getNzp();         // Use same padding as for nonresampled cubes
+
+  int nx  = simboxNew->getnx();      // For this case: nx = nxp(-1) for even(odd) numbers
+  int ny  = simboxNew->getny();      // For this case: ny = nyp
+  int nz  = simboxNew->getnz();      // For this case: nz = nzp
+
+
+  printf("nx, nxp = %d %d\n",nx,nxp);
+  printf("ny, nyp = %d %d\n",ny,nyp);
+  printf("nz, nzp = %d %d\n",nz,nzp);
+  exit(1);
+
+  //
+  // Set up relation between old layer index and new layer index
+  //
+  double * a = new double[nx*ny];
+  double * b = new double[nx*ny];
+
+  int ij = 0;
+  for(int j=0;j<ny;j++) {
+    for(int i=0;i<nx;i++) {
+      double dzNew = simboxNew->getdz (i,j); 
+      double dzOld = simboxOld->getdz (i,j); 
+      double z0New = simboxNew->getTop(i,j); 
+      double z0Old = simboxOld->getTop(i,j); 
+      a[ij] = dzOld/dzNew;
+      b[ij] = (z0Old - z0New)/dzNew; 
+      ij++;
+    }
+  }
+  
+  //
+  // Resample parameter
+  //
+  pNew = new FFTGrid(nx,ny,nz,nxp,nyp,nzp);
+  pNew->createRealGrid();
+  pNew->setType(FFTGrid::PARAMETER);
+  pNew->setAccessMode(FFTGrid::WRITE);
+
+  pOld->setAccessMode(FFTGrid::RANDOMACCESS);
+
+  for(int k=0;k<nzp;k++) {
+    int ij=0;
+    for(int j=0;j<nyp;j++) {
+      for(int i=0;i<nxp;i++) {
+        float value;
+        if(i < nx && j < ny && k < nz) {
+          int kOld = static_cast<int>(static_cast<double>(k)*a[ij] + b[ij]); 
+          ij++;
+          value = pOld->getRealValue(i, j, kOld);
+        }
+        else {
+          value = RMISSING;
+        }
+        pNew->setNextReal(value);
+      }
+    }
+  }
+  pOld->endAccess();
+  pNew->endAccess();
+
+  delete [] a;
+  delete [] b;
 }
