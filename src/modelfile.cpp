@@ -16,6 +16,7 @@
 #include "src/model.h"
 #include "src/vario.h"
 #include "src/definitions.h"
+#include "src/fftgrid.h"
 
 ModelFile::ModelFile(char * fileName)
 {
@@ -1437,7 +1438,7 @@ ModelFile::readCommandOutput(char ** params, int & pos, char * errText)
         if(strcmp(flag,keywords[key]) == 0)
           break;
       if(key < 4)   
-        formatFlag = (formatFlag | static_cast<int>(pow(2.0f,key)));
+        formatFlag = (formatFlag | 2*static_cast<int>(pow(2.0f,key)));
       else if(key < nKeys)
         outputFlag = (outputFlag | static_cast<int>(pow(2.0f,(key-3))));
       else
@@ -1457,6 +1458,8 @@ ModelFile::readCommandOutput(char ** params, int & pos, char * errText)
       outputFlag -=1048576;
       LogKit::LogFormatted(LogKit::LOW,"Warning: Both FACIESPROB and FACIESPROBRELATIVE are wanted as output. Only FACIESPROB is given.\n");
     }
+    if((outputFlag & ModelSettings::NOTIME) > 0)
+      formatFlag = (formatFlag | FFTGrid::NOTIMEFORMAT);
     modelSettings_->setFormatFlag(formatFlag);
     modelSettings_->setOutputFlag(outputFlag);
   }

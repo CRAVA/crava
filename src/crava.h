@@ -44,14 +44,14 @@ public:
                                 FilterWellLogs *& filterlogs);
 
 private: 
-  int                computeAcousticImpedance(FFTGrid * Alpha, FFTGrid * Rho, char * fileName, char * fileName2);
-  int                computeShearImpedance(FFTGrid * Beta, FFTGrid * Rho, char * fileName, char * fileName2);
-  int                computeVpVsRatio(FFTGrid * Alpha, FFTGrid * Beta, char * fileName, char * fileName2);
-  int                computePoissonRatio(FFTGrid * Alpha, FFTGrid * Beta, char * fileName, char * fileName2);
-  int                computeLameMu(FFTGrid * Beta, FFTGrid * Rho , char * FileName, char * fileName2);
-  int                computeLameLambda(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho, char * fileName, char * fileName2);
-  int                computeMuRho(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho, char * fileName, char * fileName2);
-  int                computeLambdaRho(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho, char * fileName, char * fileName2);
+  int                computeAcousticImpedance(FFTGrid * Alpha, FFTGrid * Rho, char * fileName);
+  int                computeShearImpedance(FFTGrid * Beta, FFTGrid * Rho, char * fileName);
+  int                computeVpVsRatio(FFTGrid * Alpha, FFTGrid * Beta, char * fileName);
+  int                computePoissonRatio(FFTGrid * Alpha, FFTGrid * Beta, char * fileName);
+  int                computeLameMu(FFTGrid * Beta, FFTGrid * Rho , char * FileName);
+  int                computeLameLambda(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho, char * fileName);
+  int                computeMuRho(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho, char * fileName);
+  int                computeLambdaRho(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho, char * fileName);
   void               computeDataVariance(void);
   void               setupErrorCorrelation(Model * model);
   void               computeVariances(fftw_real* corrT, Model * model);
@@ -88,9 +88,7 @@ private:
   void               multiplyDataByScaleWaveletAndWriteToFile(const char* typeName);
   void               dumpCorrT(float* corrT,float dt);
   void               initPostKriging();          
-  void               writeToFile(char * timeFileName, char * depthFileName, FFTGrid * grid, std::string sgriLabel = "NO_LABEL");
-  void               writeResampledStormCube(FFTGrid *grid, GridMapping *gridmapping, std::string fileName, 
-                                             const Simbox *simbox, const int format);
+  void               writeToFile(char * fileName, FFTGrid * grid, std::string sgriLabel = "NO_LABEL");
 
   int                fileGrid_;        // is true if is storage is on file 
   const Simbox     * simbox_;          // the simbox

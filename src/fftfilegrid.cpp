@@ -195,17 +195,10 @@ FFTFileGrid::getRealValueInterpolated(int i, int j, float kindex)
   // i index in x direction 
   // j index in y direction 
   // k index in z direction, float, should interpolate
+  assert(istransformed_==false);
+  assert(accMode_ == RANDOMACCESS);
 
-  float value, val1, val2;
-
-  int k1 = int(floor(kindex));
-  val1 = getRealValue(i,j,k1);
- 
-  int k2 = k1+1;
-  val2 = getRealValue(i,j,k2);
-
-  value = float(1.0-kindex-k1)*val1+float(kindex-k1)*val2;
-  return(value);
+  return(FFTGrid::getRealValueInterpolated(i, j, kindex));
 }
 
 int        
@@ -216,18 +209,8 @@ FFTFileGrid::setRealValue(int i, int j, int k, float value)
   // k index in z direction 
   assert(istransformed_== false);
   assert(accMode_ == RANDOMACCESS);
-  bool  inSimbox   = ( (i < nx_) && (j < ny_) && (k < nz_));
-  bool  notMissing = ( (i > -1) && (j > -1) && (k > -1));
 
-
-  if( inSimbox && notMissing )
-  { // if index in simbox
-    int index=i+rnxp_*j+k*rnxp_*nyp_;
-    rvalue_[index] = value; 
-    return( 0 );
-  }
-  else
-    return(1);
+  return(FFTGrid::setRealValue(i, j, k, value));
 }
 
 
@@ -433,54 +416,51 @@ FFTFileGrid::fillInComplexNoise(RandomGen * ranGen)
 }
 
 void 
-FFTFileGrid::writeFile(const char * fileName, const Simbox * simbox, const std::string sgriLabel, bool writeSegy, float z0, bool writeStorm)
+FFTFileGrid::writeFile(const std::string & fileName, const Simbox * simbox, 
+                       const std::string sgriLabel, float z0, 
+                       GridMapping * depthMap, GridMapping * timeMap)
 {
-  if(formatFlag_ != NONE)
-  {
-    if((formatFlag_ & STORMFORMAT) == STORMFORMAT && writeStorm ==1)
-      writeStormFile(fileName, simbox);
-    if((formatFlag_ & SEGYFORMAT) == SEGYFORMAT && writeSegy==1)
-      writeSegyFile(fileName, simbox, z0);
-    if((formatFlag_ & SGRIFORMAT) == SGRIFORMAT && writeSegy==1)
-      writeSgriFile(fileName, simbox, sgriLabel);
-    if((formatFlag_ & ASCIIFORMAT) == ASCIIFORMAT && writeStorm==1)
-      writeStormFile(fileName, simbox, true);
-  }
+  assert(accMode_ == NONE || accMode_ == RANDOMACCESS);
+  if(accMode_ != RANDOMACCESS)
+    load();
+  FFTGrid::writeFile(fileName, simbox, sgriLabel, z0, depthMap, timeMap);
+  if(accMode_ != RANDOMACCESS)
+    unload();
 }
 
 void
-FFTFileGrid::writeStormFile(const char * fileName, const Simbox * simbox, bool ascii, bool padding, bool flat)
+FFTFileGrid::writeStormFile(const std::string & fileName, const Simbox * simbox, bool ascii, bool padding, bool flat)
 {
   assert(accMode_ == NONE || accMode_ == RANDOMACCESS);
   if(accMode_ != RANDOMACCESS)
     load();
   FFTGrid::writeStormFile(fileName, simbox, ascii, padding, flat);
   if(accMode_ != RANDOMACCESS)
-    save();
+    unload();
 }
 
 
 int
-FFTFileGrid::writeSegyFile(const char * fileName, const Simbox * simbox, float z0)
+FFTFileGrid::writeSegyFile(const std::string & fileName, const Simbox * simbox, float z0)
 {
   assert(accMode_ == NONE || accMode_ == RANDOMACCESS);
   if(accMode_ != RANDOMACCESS)
     load();
   int ok = FFTGrid::writeSegyFile(fileName, simbox, z0);
   if(accMode_ != RANDOMACCESS)
-    save();
+    unload();
   return(ok);
 }
 
 int
-FFTFileGrid::writeSgriFile(const char * fileName, const Simbox * simbox, const std::string label)
+FFTFileGrid::writeSgriFile(const std::string & fileName, const Simbox * simbox, const std::string label)
 {
   assert(accMode_ == NONE || accMode_ == RANDOMACCESS);
   if(accMode_ != RANDOMACCESS)
     load();
   int ok = FFTGrid::writeSgriFile(fileName, simbox, label);
   if(accMode_ != RANDOMACCESS)
-    save();
+    unload();
   return(ok);
 }
 
@@ -542,5 +522,20 @@ FFTFileGrid::genFileName()
   strcpy(fNameOut_,fileName.c_str());
   gNum++;
 }
+
+void
+FFTFileGrid::writeResampledStormCube(GridMapping  * gridmapping, 
+                                     const std::string & fileName, 
+                                     const Simbox * simbox,
+                                     const int      format)
+{
+  assert(accMode_ == NONE || accMode_ == RANDOMACCESS);
+  if(accMode_ != RANDOMACCESS)
+    load();
+  FFTGrid::writeResampledStormCube(gridmapping, fileName, simbox, format);
+  if(accMode_ != RANDOMACCESS)
+    unload();
+}
+  
 
 int FFTFileGrid::gNum = 0; //Starting value

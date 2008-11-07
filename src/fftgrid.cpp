@@ -26,6 +26,7 @@ using std::ofstream;
 #include "src/simbox.h"
 #include "src/model.h"
 #include "src/definitions.h"
+#include "src/gridmapping.h"
 
 
 FFTGrid::FFTGrid(int nx, int ny, int nz, int nxp, int nyp, int nzp)
@@ -1316,23 +1317,54 @@ FFTGrid::consistentSize(int nx,int ny, int nz, int nxp, int nyp, int nzp)
 
 
 void 
-FFTGrid::writeFile(const char * fileName, const Simbox * simbox, const std::string sgriLabel, bool writeSegy, float z0, bool writeStorm)
+FFTGrid::writeFile(const std::string & fileName, const Simbox * simbox, 
+                   const std::string sgriLabel, float z0, 
+                   GridMapping * depthMap, GridMapping * timeMap)
 {
-  if(formatFlag_ != NONE)
+  if(formatFlag_ != NOOUTPUT)
   {
-    if((formatFlag_ & STORMFORMAT) == STORMFORMAT && writeStorm ==1)
-      writeStormFile(fileName, simbox);
-    if((formatFlag_ & SEGYFORMAT) == SEGYFORMAT && writeSegy==1)
-      writeSegyFile(fileName, simbox, z0);
-    if((formatFlag_ & SGRIFORMAT) == SGRIFORMAT && writeSegy==1)
-      writeSgriFile(fileName, simbox, sgriLabel);
-    if((formatFlag_ & ASCIIFORMAT) == ASCIIFORMAT && writeStorm==1)
-      writeStormFile(fileName, simbox, true);
+    if((formatFlag_ & NOTIMEFORMAT) == 0) {
+      if(timeMap == NULL) { //No resampling of storm 
+        if((formatFlag_ & STORMFORMAT) == STORMFORMAT) 
+          FFTGrid::writeStormFile(fileName, simbox);
+        if((formatFlag_ & ASCIIFORMAT) == ASCIIFORMAT)
+          FFTGrid::writeStormFile(fileName, simbox, true);
+      }
+      else
+        FFTGrid::writeResampledStormCube(timeMap, fileName, simbox, formatFlag_);
+
+      //SEGY and SGRI are never resampled in time.
+      if((formatFlag_ & SEGYFORMAT) == SEGYFORMAT)
+        FFTGrid::writeSegyFile(fileName, simbox, z0);
+      if((formatFlag_ & SGRIFORMAT) == SGRIFORMAT)
+        FFTGrid::writeSgriFile(fileName, simbox, sgriLabel);
+    }
+    if(depthMap != NULL) { //Writing in depth. Currently, only stormfiles are written in depth.
+      std::string depthName = fileName+"_Depth";
+      if(depthMap->getMapping() == NULL) {
+        if(depthMap->getSimbox() == NULL) {
+          LogKit::LogFormatted(LogKit::WARNING,
+                               "Depth interval lacking when trying to write %s. Write cancelled.\n",depthName.c_str());
+          return;
+        }
+        if((formatFlag_ & STORMFORMAT) == STORMFORMAT) 
+          FFTGrid::writeStormFile(depthName, depthMap->getSimbox());
+        if((formatFlag_ & ASCIIFORMAT) == ASCIIFORMAT)
+          FFTGrid::writeStormFile(depthName, depthMap->getSimbox(), true);
+      }
+      else
+        if(depthMap->getSimbox() == NULL || depthMap->getMapping() == NULL) {
+          LogKit::LogFormatted(LogKit::WARNING,
+                               "Depth mapping incomplete when trying to write %s. Write cancelled.\n",depthName.c_str());
+          return;
+        }
+        FFTGrid::writeResampledStormCube(depthMap, depthName, simbox, formatFlag_);
+    }
   }
 }
 
 void
-FFTGrid::writeStormFile(std::string fileName, const Simbox * simbox, bool ascii, bool padding, bool flat)
+FFTGrid::writeStormFile(const std::string & fileName, const Simbox * simbox, bool ascii, bool padding, bool flat)
 {
   int nx, ny, nz;
   if(padding == true)
@@ -1402,7 +1434,7 @@ FFTGrid::writeStormFile(std::string fileName, const Simbox * simbox, bool ascii,
 
 
 int
-FFTGrid::writeSegyFile(std::string fileName, const Simbox * simbox, float z0)
+FFTGrid::writeSegyFile(const std::string & fileName, const Simbox * simbox, float z0)
 {
   //  long int timestart, timeend;
   //  time(&timestart);
@@ -1518,8 +1550,56 @@ FFTGrid::writeSegyFile(std::string fileName, const Simbox * simbox, float z0)
   return(0);
 }
 
+
+void
+FFTGrid::writeResampledStormCube(GridMapping  * gridmapping, 
+                                 const std::string & fileName, 
+                                 const Simbox * simbox,
+                                 const int      format)
+{
+  // simbox is related to the cube we resample from. gridmapping contains simbox for the cube we resample to.
+ 
+  float time, kindex;
+  StormContGrid *mapping = gridmapping->getMapping();
+  StormContGrid outgrid(*mapping);
+ 
+  double x,y;
+  int nz = mapping->GetNK();
+  for(int i=0;i<nx_;i++)
+  {
+    for(int j=0;j<ny_;j++)
+    {
+      simbox->getXYCoord(i,j,x,y);
+      for(int k=0;k<nz;k++)
+      {
+        time = (*mapping)(i,j,k);
+        kindex = float((time - static_cast<float>(simbox->getTop(x,y)))/simbox->getdz());
+        outgrid(i,j,k) = getRealValueInterpolated(i,j,kindex);
+      }
+    }
+  }
+
+  std::string gfName;
+  std::string header;
+  if ((format & FFTGrid::ASCIIFORMAT) == FFTGrid::ASCIIFORMAT) // ASCII
+  {
+    gfName = ModelSettings::makeFullFileName(fileName+".txt");
+    header = gridmapping->getSimbox()->getStormHeader(FFTGrid::PARAMETER,nx_,ny_,nz, 0, 1);
+    outgrid.SetFormat(StormContGrid::STORM_ASCII);
+    outgrid.WriteToFile(gfName,header);
+  }
+
+  if ((format & FFTGrid::STORMFORMAT) == FFTGrid::STORMFORMAT)
+  {
+    gfName = ModelSettings::makeFullFileName(fileName+".storm");
+    header = gridmapping->getSimbox()->getStormHeader(FFTGrid::PARAMETER,nx_,ny_,nz, 0, 0);
+    outgrid.SetFormat(StormContGrid::STORM_BINARY);
+    outgrid.WriteToFile(gfName,header);
+  }
+}
+
 int
-FFTGrid::writeSgriFile(std::string fileName, const Simbox *simbox, const std::string label)
+FFTGrid::writeSgriFile(const std::string & fileName, const Simbox *simbox, const std::string label)
 {
   std::string fName = ModelSettings::makeFullFileName(fileName+".Sgrh");
   ofstream  headerFile(fName.c_str());
@@ -1627,7 +1707,7 @@ FFTGrid::getRegularZInterpolatedRealValue(int i, int j, double z0Reg,
 }
 
 void
-FFTGrid::writeAsciiFile(std::string fileName)
+FFTGrid::writeAsciiFile(const std::string & fileName)
 {
   std::string gfName = ModelSettings::makeFullFileName(fileName+".ascii");
   FILE *file = fopen(gfName.c_str(),"wb");
@@ -1646,7 +1726,7 @@ FFTGrid::writeAsciiFile(std::string fileName)
 }
 
 void
-FFTGrid::writeAsciiRaw(std::string fileName)
+FFTGrid::writeAsciiRaw(const std::string & fileName)
 {
   std::string gfName = ModelSettings::makeFullFileName(fileName+".ascii");
   FILE *file = fopen(gfName.c_str(),"wb");
@@ -1834,6 +1914,8 @@ FFTGrid::extrapolateSeismic(int imin, int imax, int jmin, int jmax)
     }
   }
 }
+
+
 
 
 void

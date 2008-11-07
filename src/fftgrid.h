@@ -11,6 +11,7 @@ class Corr;
 class Wavelet;
 class Simbox;
 class RandomGen;
+class GridMapping;
 
 class FFTGrid{
 public:
@@ -84,19 +85,24 @@ public:
   int                  getType() const {return(cubetype_);}
   virtual void         setAccessMode(int mode){assert(mode>=0);}
   virtual void         endAccess(){}
-  virtual void         writeFile(const char * fileName, const Simbox * simbox, const std::string sgriLabel = "NO_LABEL", bool writeSegy = true, float z0 = 0.0, bool writeStorm = true); 
+  virtual void         writeFile(const std::string & fileName, const Simbox * simbox, 
+                                 const std::string sgriLabel = "NO_LABEL", float z0 = 0.0, 
+                                 GridMapping * depthMap = NULL, GridMapping * timeMap = NULL); 
   //Use this instead of the ones below.
-  virtual void         writeStormFile(std::string fileName, const Simbox * simbox, bool ascii = false, 
+  virtual void         writeStormFile(const std::string & fileName, const Simbox * simbox, bool ascii = false, 
                                       bool padding = false, bool flat = false);//No mode/randomaccess
-  virtual int          writeSegyFile(std::string fileName, const Simbox * simbox, float z0);   //No mode/randomaccess
-  virtual int          writeSgriFile(std::string fileName, const Simbox * simbox, const std::string label);
-  virtual void         writeAsciiFile(std::string fileName);
-  virtual void         writeAsciiRaw(std::string fileName);
+  virtual int          writeSegyFile(const std::string & fileName, const Simbox * simbox, float z0);   //No mode/randomaccess
+  virtual int          writeSgriFile(const std::string & fileName, const Simbox * simbox, const std::string label);
+  virtual void         writeAsciiFile(const std::string & fileName);
+  virtual void         writeAsciiRaw(const std::string & fileName);
+  virtual void         writeResampledStormCube(GridMapping *gridmapping, const std::string & fileName, 
+                                               const Simbox *simbox, const int format);
 
   virtual bool         isFile() {return(0);}    // indicates wether the grid is in memory or on disk  
 
-  enum                 outputFormat{NOOUTPUT = 0, STORMFORMAT = 1, SEGYFORMAT = 2, ASCIIFORMAT = 4, SGRIFORMAT = 8};
+  enum                 outputFormat{NOOUTPUT = 0, NOTIMEFORMAT = 1, STORMFORMAT = 2, SEGYFORMAT = 4, ASCIIFORMAT = 8, SGRIFORMAT = 16};
   void                 setOutputFormat(int format) {formatFlag_ = format;} 
+  int                  getOutputFormat() {return(formatFlag_);} 
 
   virtual void         createRealGrid();
   virtual void         createComplexGrid();

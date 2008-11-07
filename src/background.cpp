@@ -21,6 +21,7 @@
 #include "src/krigingadmin.h"
 #include "src/fftgrid.h"
 #include "src/fftfilegrid.h"
+#include "src/gridmapping.h"
 
 Background::Background(FFTGrid       ** grids,
                        WellData      ** wells,
@@ -100,15 +101,25 @@ Background::~Background(void)
 
 //-------------------------------------------------------------------------------
 void
-Background::writeBackgrounds(Simbox * simbox) const 
+Background::writeBackgrounds(Simbox * simbox, GridMapping * depthMapping, GridMapping * timeMapping) const 
 {
   printf("\nExp-transforming cubes...\n");
   backModel_[0]->expTransf();
   backModel_[1]->expTransf();
   backModel_[2]->expTransf();
-  backModel_[0]->writeFile("BG_Vp",  simbox);
-  backModel_[1]->writeFile("BG_Vs",  simbox);
-  backModel_[2]->writeFile("BG_Rho", simbox);
+
+  if(depthMapping != NULL && depthMapping->getSimbox() == NULL) {
+    const Simbox * timeSimbox = simbox;
+    if(timeMapping != NULL)
+      timeSimbox = timeMapping->getSimbox();
+    backModel_[0]->setAccessMode(FFTGrid::RANDOMACCESS);
+    depthMapping->setMappingFromVelocity(backModel_[0], timeSimbox);
+    backModel_[0]->endAccess();
+  }
+
+  backModel_[0]->writeFile("BG_Vp",  simbox, "NO_LABEL", 0, depthMapping, timeMapping);
+  backModel_[1]->writeFile("BG_Vs",  simbox, "NO_LABEL", 0, depthMapping, timeMapping);
+  backModel_[2]->writeFile("BG_Rho", simbox, "NO_LABEL", 0, depthMapping, timeMapping);
   //backModel_[0]->writeStormFile("BG_Vp",  simbox, false, true, true); // To write padding
   //backModel_[1]->writeStormFile("BG_Vs",  simbox, false, true, true);
   //backModel_[2]->writeStormFile("BG_Rho", simbox, false, true, true);

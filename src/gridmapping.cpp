@@ -107,6 +107,33 @@ GridMapping::makeTimeDepthMapping(FFTGrid      * velocity,
   }
 }
 
+
+void
+GridMapping::setMappingFromVelocity(FFTGrid * velocity, const Simbox * timeSimbox)
+{
+  if(simbox_!=NULL)  //Allow this to be called to override old mappings.
+    delete simbox_;
+  simbox_ = NULL;
+  if(mapping_!=NULL)
+    delete mapping_;
+  mapping_ = NULL;
+
+  int format = velocity->getOutputFormat();
+  bool failed = false;
+  char * errText = new char[MAX_STRING];
+  sprintf(errText,"%c",'\0');
+  calculateSurfaceFromVelocity(velocity, timeSimbox);
+  setDepthSimbox(timeSimbox, timeSimbox->getnz(), format, failed, errText);
+  makeTimeDepthMapping(velocity, timeSimbox);
+  if (failed) {
+    LogKit::LogFormatted(LogKit::ERROR,"\n%s\n",errText);
+    exit(1);
+  }
+  delete [] errText;
+}
+
+
+
 void 
 GridMapping::calculateSurfaceFromVelocity(FFTGrid      * velocity, 
                                           const Simbox * timeSimbox)

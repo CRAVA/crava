@@ -9,6 +9,7 @@
 class Corr;
 class Wavelet;
 class Simbox;
+class GridMapping;
 
 class FFTFileGrid : public FFTGrid
 { 
@@ -39,11 +40,15 @@ public:
 
   void         setAccessMode(int mode);
   void         endAccess();
-  void         writeFile(const char * fileName, const Simbox * simbox, const std::string sgriLabel = "NO_LABEL", bool writeSegy=true, float z0 = 0.0, bool writeStorm = true); //Use this instead of the ones below.
-  void         writeStormFile(const char * fileName, const Simbox * simbox, bool ascii = false,
+  void         writeFile(const std::string & fileName, const Simbox * simbox, 
+                         const std::string sgriLabel = "NO_LABEL", float z0 = 0.0, 
+                         GridMapping * depthMap = NULL, GridMapping * timeMap = NULL);  //Use this instead of the ones below.
+  void         writeStormFile(const std::string & fileName, const Simbox * simbox, bool ascii = false,
                               bool padding = false, bool flat = false);
-  int          writeSegyFile(const char * fileName, const Simbox * simbox, float z0);
-  int          writeSgriFile(const char *fileName, const Simbox *simbox, const std::string label);
+  int          writeSegyFile(const std::string & fileName, const Simbox * simbox, float z0);
+  int          writeSgriFile(const std::string & fileName, const Simbox *simbox, const std::string label);
+  void         writeResampledStormCube(GridMapping *gridmapping, const std::string & fileName, 
+                                       const Simbox *simbox, const int format);
 
   bool         isFile() {return(1);}
 

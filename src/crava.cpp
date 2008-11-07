@@ -1038,9 +1038,20 @@ Crava::computePostMeanResidAndFFTCov()
   assert(postRho_->getIsTransformed());
   postRho_->invFFTInPlace();
 
-  //
-  // NBNB-PAL: Sett opp tid-dyp-convertering her
-  //
+  if(model_->getVelocityFromInversion() == true) { //Conversion undefined until prediction ready. Complete it.
+    postAlpha_->setAccessMode(FFTGrid::RANDOMACCESS);
+    postAlpha_->expTransf();
+    GridMapping * tdMap = model_->getTimeDepthMapping();
+    const GridMapping * dcMap = model_->getTimeCutMapping();
+    const Simbox * timeSimbox = simbox_;
+    if(dcMap != NULL)
+      timeSimbox = dcMap->getSimbox();
+
+    tdMap->setMappingFromVelocity(postAlpha_, timeSimbox);
+    postAlpha_->logTransf();
+    postAlpha_->endAccess();
+  }
+    
 
   if((outputFlag_ & ModelSettings::PREDICTION) > 0)
   {
@@ -1572,7 +1583,7 @@ Crava::computeSyntSeismic(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho)
 }
 
 int 
-Crava::computeAcousticImpedance(FFTGrid * Alpha, FFTGrid * Rho ,char * fileName, char * fileName2)
+Crava::computeAcousticImpedance(FFTGrid * Alpha, FFTGrid * Rho ,char * fileName)
 {   
   if(Alpha->getIsTransformed()) Alpha->invFFTInPlace();
   if(Rho->getIsTransformed()) Rho->invFFTInPlace();
@@ -1602,14 +1613,14 @@ Crava::computeAcousticImpedance(FFTGrid * Alpha, FFTGrid * Rho ,char * fileName,
 
   prImpedance->endAccess();
   // prImpedance->writeFile(fileName,simbox_);
-  writeToFile(fileName, fileName2, prImpedance, "Acoustic Impedance");
+  writeToFile(fileName,  prImpedance, "Acoustic Impedance");
   delete prImpedance;
 
   return(0);
 }
 
 int 
-Crava::computeShearImpedance(FFTGrid * Beta, FFTGrid * Rho ,char * fileName, char * fileName2)
+Crava::computeShearImpedance(FFTGrid * Beta, FFTGrid * Rho ,char * fileName)
 {
 
   if(Beta->getIsTransformed()) Beta->invFFTInPlace();
@@ -1640,7 +1651,7 @@ Crava::computeShearImpedance(FFTGrid * Beta, FFTGrid * Rho ,char * fileName, cha
 
   shImpedance->endAccess(); 
   //shImpedance->writeFile(fileName,simbox_);
-  writeToFile(fileName, fileName2, shImpedance, "Shear impedance");
+  writeToFile(fileName,  shImpedance, "Shear impedance");
   delete shImpedance;
 
   return(0);
@@ -1648,7 +1659,7 @@ Crava::computeShearImpedance(FFTGrid * Beta, FFTGrid * Rho ,char * fileName, cha
 
 
 int  
-Crava::computeVpVsRatio(FFTGrid * Alpha, FFTGrid * Beta,char * fileName, char * fileName2)
+Crava::computeVpVsRatio(FFTGrid * Alpha, FFTGrid * Beta,char * fileName)
 {
   if(Alpha->getIsTransformed()) Alpha->invFFTInPlace(); 
   if(Beta->getIsTransformed())  Beta->invFFTInPlace();
@@ -1678,14 +1689,14 @@ Crava::computeVpVsRatio(FFTGrid * Alpha, FFTGrid * Beta,char * fileName, char * 
 
   ratioVpVs->endAccess();
   //ratioVpVs->writeFile(fileName,simbox_);
-  writeToFile(fileName, fileName2, ratioVpVs, "Vp-Vs ratio");
+  writeToFile(fileName,  ratioVpVs, "Vp-Vs ratio");
   delete ratioVpVs;
 
   return(0);
 }
 
 int 
-Crava::computePoissonRatio(FFTGrid * Alpha, FFTGrid * Beta,char * fileName, char * fileName2)
+Crava::computePoissonRatio(FFTGrid * Alpha, FFTGrid * Beta,char * fileName)
 {
   if(Alpha->getIsTransformed()) Alpha->invFFTInPlace();
   if(Beta->getIsTransformed()) Beta->invFFTInPlace();
@@ -1717,7 +1728,7 @@ Crava::computePoissonRatio(FFTGrid * Alpha, FFTGrid * Beta,char * fileName, char
 
   poiRat->endAccess();
   //poiRat->writeFile(fileName,simbox_);
-  writeToFile(fileName, fileName2, poiRat, "Poisson ratio");
+  writeToFile(fileName,  poiRat, "Poisson ratio");
   delete poiRat;
 
   return(0);
@@ -1725,7 +1736,7 @@ Crava::computePoissonRatio(FFTGrid * Alpha, FFTGrid * Beta,char * fileName, char
 
 
 int  
-Crava::computeLameMu(FFTGrid * Beta, FFTGrid * Rho,char * fileName, char * fileName2 )
+Crava::computeLameMu(FFTGrid * Beta, FFTGrid * Rho,char * fileName )
 {
 
   if(Beta->getIsTransformed()) Beta->invFFTInPlace();
@@ -1757,7 +1768,7 @@ Crava::computeLameMu(FFTGrid * Beta, FFTGrid * Rho,char * fileName, char * fileN
 
   mu->endAccess();
   // mu->writeFile(fileName,simbox_);
-  writeToFile(fileName, fileName2, mu, "Lame mu");
+  writeToFile(fileName,  mu, "Lame mu");
 
   delete mu;
 
@@ -1765,7 +1776,7 @@ Crava::computeLameMu(FFTGrid * Beta, FFTGrid * Rho,char * fileName, char * fileN
 }
 
 int  
-Crava::computeLameLambda(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho ,char * fileName, char * fileName2)
+Crava::computeLameLambda(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho ,char * fileName)
 {
   if(Alpha->getIsTransformed()) Alpha->invFFTInPlace();
   if(Beta->getIsTransformed()) Beta->invFFTInPlace();
@@ -1800,7 +1811,7 @@ Crava::computeLameLambda(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho ,char * 
 
   lambda->endAccess();
   //lambda->writeFile(fileName,simbox_);
-  writeToFile(fileName, fileName2, lambda, "Lame lambda");
+  writeToFile(fileName,  lambda, "Lame lambda");
 
   delete lambda;
 
@@ -1808,7 +1819,7 @@ Crava::computeLameLambda(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho ,char * 
 }
 
 int  
-Crava::computeLambdaRho(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho ,char * fileName, char * fileName2)
+Crava::computeLambdaRho(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho ,char * fileName)
 {
   if(Alpha->getIsTransformed()) Alpha->invFFTInPlace();
   if(Beta->getIsTransformed()) Beta->invFFTInPlace();
@@ -1844,7 +1855,7 @@ Crava::computeLambdaRho(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho ,char * f
   lambdaRho->endAccess();
   //lambdaRho->writeFile(fileName,simbox_);
  
-  writeToFile(fileName, fileName2, lambdaRho, "Lambda rho");
+  writeToFile(fileName,  lambdaRho, "Lambda rho");
   delete lambdaRho;
 
   return(0);
@@ -1852,7 +1863,7 @@ Crava::computeLambdaRho(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho ,char * f
 
 
 int  
-Crava::computeMuRho(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho ,char * fileName, char * fileName2)
+Crava::computeMuRho(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho ,char * fileName)
 {
   if(Beta->getIsTransformed()) Beta->invFFTInPlace();
   if(Rho->getIsTransformed()) Rho->invFFTInPlace();
@@ -1884,7 +1895,7 @@ Crava::computeMuRho(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho ,char * fileN
 
   muRho->endAccess();
   // muRho->writeFile(fileName,simbox_);
-  writeToFile(fileName, fileName2, muRho, "Mu rho");
+  writeToFile(fileName,  muRho, "Mu rho");
 
   delete muRho;
 
@@ -2059,64 +2070,54 @@ Crava::writePars(FFTGrid * alpha, FFTGrid * beta, FFTGrid * rho, int simNum)
     sprintf(postfix,"%c",'\0');
   }
   char fileName[MAX_STRING];
-  char fileName2[MAX_STRING];
 
   if((outputFlag_ & ModelSettings::MURHO) > 0)
   {
     sprintf(fileName,"%sMuRho%s",prefix, postfix);
-    sprintf(fileName2,"%sMuRho_Depth%s",prefix, postfix);
-    computeMuRho(alpha, beta, rho, fileName, fileName2);
+    computeMuRho(alpha, beta, rho, fileName);
   }
   if((outputFlag_ & ModelSettings::LAMBDARHO) > 0)
   {
     sprintf(fileName,"%sLambdaRho%s",prefix, postfix);
-    sprintf(fileName2,"%sLambdaRho_Depth%s",prefix, postfix);
-    computeLambdaRho(alpha, beta, rho, fileName, fileName2);
+    computeLambdaRho(alpha, beta, rho, fileName);
   }
   if((outputFlag_ & ModelSettings::LAMELAMBDA) > 0)
   {
     sprintf(fileName,"%sLameLambda%s",prefix, postfix);
-    sprintf(fileName2,"%sLameLambda_Depth%s",prefix, postfix);
-    computeLameLambda(alpha, beta, rho, fileName, fileName2);
+    computeLameLambda(alpha, beta, rho, fileName);
   }
   if((outputFlag_ & ModelSettings::LAMEMU) > 0)
   {
     sprintf(fileName,"%sLameMu%s",prefix, postfix);
-   sprintf(fileName2,"%sLameMu_Depth%s",prefix, postfix);
-   computeLameMu(beta, rho, fileName, fileName2);
+    computeLameMu(beta, rho, fileName);
   }
   if((outputFlag_ & ModelSettings::POISSONRATIO) > 0)
   {
     sprintf(fileName,"%sPoissonRatio%s",prefix, postfix);
-    sprintf(fileName2,"%sPoissonRatio_Depth%s",prefix, postfix);
-    computePoissonRatio(alpha, beta, fileName, fileName2);
+    computePoissonRatio(alpha, beta, fileName);
   }
   if((outputFlag_ & ModelSettings::AI) > 0)
   {
     sprintf(fileName,"%sAI%s",prefix, postfix);
-    sprintf(fileName2,"%sAI_Depth%s",prefix, postfix);
-    computeAcousticImpedance(alpha, rho, fileName, fileName2);
+    computeAcousticImpedance(alpha, rho, fileName);
   }
   if((outputFlag_ & ModelSettings::SI) > 0)
   {
     sprintf(fileName,"%sSI%s",prefix, postfix);
-    sprintf(fileName2,"%sSI_Depth%s",prefix, postfix);
-    computeShearImpedance(beta, rho, fileName, fileName2);
+    computeShearImpedance(beta, rho, fileName);
   }
   if((outputFlag_ & ModelSettings::VPVSRATIO) > 0)
   {
     sprintf(fileName,"%sVpVsRatio%s",prefix, postfix);
-    sprintf(fileName2,"%sVpVsRatio_Depth%s",prefix, postfix);
-    computeVpVsRatio(alpha, beta, fileName, fileName2);
+    computeVpVsRatio(alpha, beta, fileName);
   }
   if((outputFlag_ & ModelSettings::VP) > 0)
   {
     sprintf(fileName,"%sVp%s",prefix, postfix);
-    sprintf(fileName2,"%sVp_Depth%s",prefix, postfix);
     alpha->setAccessMode(FFTGrid::RANDOMACCESS);
     alpha->expTransf();
-    //alpha->writeFile(fileName,simbox_);
-    writeToFile(fileName,fileName2,alpha, "Inverted Vp");
+
+    writeToFile(fileName,alpha, "Inverted Vp");
     if(simNum<0) //prediction, need grid unharmed.
       alpha->logTransf();
     alpha->endAccess();
@@ -2124,11 +2125,10 @@ Crava::writePars(FFTGrid * alpha, FFTGrid * beta, FFTGrid * rho, int simNum)
   if((outputFlag_ & ModelSettings::VS) > 0)
   {
     sprintf(fileName,"%sVs%s",prefix, postfix);
-    sprintf(fileName2,"%sVs_Depth%s",prefix, postfix);
     beta->setAccessMode(FFTGrid::RANDOMACCESS);
     beta->expTransf();
-    //    beta->writeFile(fileName,simbox_);
-    writeToFile(fileName, fileName2, beta, "Inverted Vs");
+
+    writeToFile(fileName,  beta, "Inverted Vs");
     if(simNum<0) //prediction, need grid unharmed.
       beta->logTransf();
     beta->endAccess();
@@ -2136,11 +2136,10 @@ Crava::writePars(FFTGrid * alpha, FFTGrid * beta, FFTGrid * rho, int simNum)
   if((outputFlag_ & ModelSettings::RHO) > 0)
   {
     sprintf(fileName,"%sRho%s",prefix, postfix);
-   sprintf(fileName2,"%sRho_Depth%s",prefix, postfix);
     rho->setAccessMode(FFTGrid::RANDOMACCESS);
     rho->expTransf();
-    //rho->writeFile(fileName,simbox_);
-    writeToFile(fileName, fileName2, rho, "Inverted density");
+
+    writeToFile(fileName,  rho, "Inverted density");
     if(simNum<0) //prediction, need grid unharmed.
       rho->logTransf();
     rho->endAccess();
@@ -2207,64 +2206,17 @@ void Crava::initPostKriging() {
                                 int(krigingParams_[0]));
 }
 
-void Crava::writeToFile(char        * timeFileName, 
-                        char        * depthFileName, 
+void Crava::writeToFile(char        * fileName, 
                         FFTGrid     * grid, 
                         std::string   sgriLabel) {
 
   GridMapping * timeDepthMapping = model_->getTimeDepthMapping();
   GridMapping * timeCutMapping   = model_->getTimeCutMapping();
-  const int     format           = model_->getModelSettings()->getFormatFlag(); 
-  int           seismicStartTime = model_->getModelSettings()->getSegyOffset();
+  float         seismicStartTime = model_->getModelSettings()->getSegyOffset();
 
-  if(!((outputFlag_ & ModelSettings::NOTIME)>0))
-  {
-    if(timeCutMapping!=NULL)
-    {
-      if(((format & FFTGrid::ASCIIFORMAT)>0 || (format & FFTGrid::STORMFORMAT)>0))
-        writeResampledStormCube(grid, timeCutMapping, timeFileName, simbox_, format);
-
-      if((format & FFTGrid::SEGYFORMAT) || (format & FFTGrid::SGRIFORMAT))
-        grid->writeFile(timeFileName, simbox_, sgriLabel, 1, 
-                        seismicStartTime,
-                        0); // write only segy and/or sgri, not storm
-    }
-    else
-      grid->writeFile(timeFileName,simbox_, sgriLabel, 1, seismicStartTime);
-  }
-
-  if(timeDepthMapping != NULL)
-  {
-    if (!model_->getVelocityFromInversion() && timeDepthMapping->getMapping() == NULL) 
-      // No velocity, only top and base depth surfaces are given
-      grid->writeFile(depthFileName,timeDepthMapping->getSimbox(),"", 0);
-    else
-    {
-      if(model_->getVelocityFromInversion())
-      {
-        const Simbox * timeSimbox = NULL;
-        if(timeCutMapping!=NULL)
-          timeSimbox = timeCutMapping->getSimbox();
-        else
-          timeSimbox = simbox_;
-        if (timeDepthMapping->getSimbox()==NULL) {
-          bool failed = false;
-          char * errText = new char[MAX_STRING];
-          sprintf(errText,"%c",'\0');
-          timeDepthMapping->calculateSurfaceFromVelocity(postAlpha_, timeSimbox);
-          timeDepthMapping->setDepthSimbox(timeSimbox, timeSimbox->getnz(), format, failed, errText);
-          timeDepthMapping->makeTimeDepthMapping(postAlpha_, timeSimbox);
-          if (failed) {
-            LogKit::LogFormatted(LogKit::ERROR,"\n%s\n",errText);
-            exit(1);
-          }
-          delete [] errText;
-        }
-      }
-      writeResampledStormCube(grid, timeDepthMapping, depthFileName, simbox_, format);
-    }
-  }
+  grid->writeFile(fileName, simbox_, sgriLabel, seismicStartTime, timeDepthMapping, timeCutMapping);
 }
+
 
 void Crava::computeFaciesProb(FilterWellLogs *filteredlogs)
 {
@@ -2311,19 +2263,17 @@ void Crava::computeFaciesProb(FilterWellLogs *filteredlogs)
 
     FFTGrid *grid;
     char fileName[MAX_STRING];
-    char fileName2[MAX_STRING];
     char postfix[20];
     LogKit::LogFormatted(LogKit::LOW,"\nProbability cubes done\n");
     if(relative==0)
     {
-    for(i=0;i<nfac;i++)
-    {
-      grid = fprob_->getFaciesProb(i);
-      sprintf(postfix,"_%s",model_->getModelSettings()->getFaciesName(i));
-      sprintf(fileName,"FaciesProb%s",postfix);
-      sprintf(fileName2,"FaciesProb_Depth%s",postfix);
-      writeToFile(fileName,fileName2,grid);
-    }
+      for(i=0;i<nfac;i++)
+      {
+        grid = fprob_->getFaciesProb(i);
+        sprintf(postfix,"_%s",model_->getModelSettings()->getFaciesName(i));
+        sprintf(fileName,"FaciesProb%s",postfix);
+        writeToFile(fileName,grid);
+      }
     }
     else
     {
@@ -2332,60 +2282,12 @@ void Crava::computeFaciesProb(FilterWellLogs *filteredlogs)
       grid = fprob_->getFaciesProb(i);
       sprintf(postfix,"_%s",model_->getModelSettings()->getFaciesName(i));
       sprintf(fileName,"FaciesProbRelative%s",postfix);
-      sprintf(fileName2,"FaciesProbRelative_Depth%s",postfix);
-      writeToFile(fileName,fileName2,grid);
+      writeToFile(fileName,grid);
     }
     delete meanAlpha2_;
     delete meanBeta2_;
     delete meanRho2_;
     }
-  }
-}
-void
-Crava::writeResampledStormCube(FFTGrid      * grid, 
-                               GridMapping  * gridmapping, 
-                               std::string    fileName, 
-                               const Simbox * simbox,
-                               const int      format)
-{
-  // simbox is related to the cube we resample from. gridmapping contains simbox for the cube we resample to.
- 
-  float time, kindex;
-  StormContGrid *mapping = gridmapping->getMapping();
-  StormContGrid outgrid(*mapping);
- 
-  double x,y;
-  int nz = mapping->GetNK();
-  for(int i=0;i<nx_;i++)
-  {
-    for(int j=0;j<ny_;j++)
-    {
-      simbox->getXYCoord(i,j,x,y);
-      for(int k=0;k<nz;k++)
-      {
-        time = (*mapping)(i,j,k);
-        kindex = float((time - static_cast<float>(simbox->getTop(x,y)))/simbox->getdz());
-        outgrid(i,j,k) = grid->getRealValueInterpolated(i,j,kindex);
-      }
-    }
-  }
-
-  std::string gfName;
-  std::string header;
-  if ((format & FFTGrid::ASCIIFORMAT) == FFTGrid::ASCIIFORMAT) // ASCII
-  {
-    gfName = ModelSettings::makeFullFileName(fileName+".txt");
-    header = gridmapping->getSimbox()->getStormHeader(FFTGrid::PARAMETER,nx_,ny_,nz, 0, 1);
-    outgrid.SetFormat(StormContGrid::STORM_ASCII);
-    outgrid.WriteToFile(gfName,header);
-  }
-
-  if ((format & FFTGrid::STORMFORMAT) == FFTGrid::STORMFORMAT)
-  {
-    gfName = ModelSettings::makeFullFileName(fileName+".storm");
-    header = gridmapping->getSimbox()->getStormHeader(FFTGrid::PARAMETER,nx_,ny_,nz, 0, 0);
-    outgrid.SetFormat(StormContGrid::STORM_BINARY);
-    outgrid.WriteToFile(gfName,header);
   }
 }
 

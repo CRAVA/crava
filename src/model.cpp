@@ -140,7 +140,7 @@ Model::Model(char * fileName)
           }              
         }
         if(modelSettings_->getFormatFlag() == 0)
-          modelSettings_->setFormatFlag(1);  //Default, but not initialized due to possible double output.
+          modelSettings_->setFormatFlag(FFTGrid::STORMFORMAT);  //Default, but not initialized due to possible double output.
         background_->getAlpha()->setOutputFormat(modelSettings_->getFormatFlag()); //static, controls all grids.
       }
       else
@@ -1626,10 +1626,7 @@ Model::processBackground(Background   *& background,
       background = new Background(backModel);
     }
     if((modelSettings->getOutputFlag() & ModelSettings::BACKGROUND) > 0)
-      //
-      // NBNB-PAL: If timeBGSimbox!=NULL use timeBGSimbox.
-      //
-      background->writeBackgrounds(timeSimbox); 
+      background->writeBackgrounds(timeSimbox, timeDepthMapping_, timeCutMapping_); 
   }
 }
 

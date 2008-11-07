@@ -10,6 +10,7 @@ class Simbox;
 class FFTGrid;
 class KrigingData3D;
 class ModelSettings;
+class GridMapping;
 
 //Special note on the use of Background:
 //All pointers used here are also used externally, so no deletion happens. 
@@ -32,7 +33,7 @@ public:
   
   void         setClassicVsVp(); //For debugging purposes.
 
-  void         writeBackgrounds(Simbox * simbox) const;
+  void         writeBackgrounds(Simbox * simbox, GridMapping * depthMapping, GridMapping * timeMapping) const;
 
 private:
   void         generateBackgroundModel(FFTGrid      *& bgAlpha,
