@@ -1385,7 +1385,7 @@ ModelFile::readCommandOutput(char ** params, int & pos, char * errText)
     // WARNING: If nKeys becomes larger than 31, we get problems with 
     //          the 'int' data type and have to switch to 'long'
     //
-    int i, key, nKeys = 26;
+    int i, key, nKeys = 26;  // NBNB-PAL: Crashes in test 5 when this is increased to 27
     char ** keywords;
     keywords = new char*[nKeys];
     for(i=0;i<nKeys;i++)
@@ -1417,6 +1417,7 @@ ModelFile::readCommandOutput(char ** params, int & pos, char * errText)
     strcpy(keywords[i++],"FACIESPROBRELATIVE");
     strcpy(keywords[i++],"BLOCKED_WELLS");
     strcpy(keywords[i++],"BLOCKED_LOGS");
+    //strcpy(keywords[i++],"DEBUG_CUBES");
 
     if (i != nKeys)
     { 

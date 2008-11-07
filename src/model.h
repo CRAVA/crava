@@ -61,10 +61,14 @@ private:
                                     bool           & failed);
   void             setupExtendedTimeSimbox(Simbox  * timeSimbox, 
                                            Surface * corrSurf, 
-                                           Simbox *& timeCutSimbox);
+                                           Simbox *& timeCutSimbox,
+                                           int       outputFormat,
+                                           int       outputFlag);
   void             setupExtendedBackgroundSimbox(Simbox   * timeSimbox, 
                                                  Surface  * corrSurf, 
-                                                 Simbox  *& timeBGSimbox);
+                                                 Simbox  *& timeBGSimbox,
+                                                 int        outputFormat,
+                                                 int        outputFlag);
   void             processSeismic(FFTGrid      **& seisCube,
                                   Simbox        *& timeSimbox,
                                   ModelSettings *& modelSettings, 
@@ -138,6 +142,8 @@ private:
                                      double       lz, 
                                      double       dz, 
                                      int          nz, 
+                                     int          outputFlag,
+                                     int          outputFormat,
                                      char       * errText,
                                      int        & error);
   void             estimateXYPaddingSizes(Simbox         * timeSimbox,
@@ -194,7 +200,8 @@ private:
   //Compute correlation gradient in terms of i,j and k in grid.
   double *         findPlane(Surface * surf); //Finds plane l2-closest to surface.             
   //Create planar surface with same extent as template, p[0]+p[1]*x+p[2]*y
-  Surface *        createPlaneSurface(double * planeParams, Surface * templateSurf);
+  Surface *        createPlaneSurface(double  * planeParams, 
+                                      Surface * templateSurf);
   void             writeAreas(const SegyGeometry * areaParams,
                               Simbox             * timeSimbox,
                               std::string        & text);
@@ -207,7 +214,10 @@ private:
                                                double       & yMin,
                                                double       & xMax,
                                                double       & yMax);
-
+  void             writeSurfaceToFile(Surface    * surface,
+                                      std::string  name,
+                                      int          format);
+ 
   ModelSettings  * modelSettings_;
   Simbox         * timeSimbox_;            ///< Information about simulation area.
   Simbox         * timeSimboxConstThick_;  ///< Simbox with constant thickness   

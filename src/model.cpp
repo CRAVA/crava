@@ -85,7 +85,6 @@ Model::Model(char * fileName)
     modelSettings_ = modelFile->getModelSettings();
     LogKit::SetScreenLog(modelSettings_->getLogLevel());
 
-    //std::string logFileName = ModelSettings::makeFullFileName(std::string("logFile.txt"));
     std::string logFileName = ModelSettings::makeFullFileName("logFile.txt");
     LogKit::SetFileLog(logFileName,modelSettings_->getLogLevel());
 
@@ -353,8 +352,9 @@ Model::checkAvailableMemory(Simbox            * timeSimbox,
   // Find the size of first seismic volume
   //
   float memOneSeis = 0.0f;
-  if (seismicFile != "")
+  if (seismicFile != "") {
     memOneSeis = static_cast<float> (NRLib2::FindFileSize(seismicFile));
+  }
 
   //
   // Find the size of one grid
@@ -572,10 +572,11 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
   //
   std::string areaType = "Model file";
   std::string seismicFile("");
+  if (modelSettings_->getGenerateSeismic()==false && modelFile->getSeismicFile()!=NULL)
+    seismicFile = std::string(modelFile->getSeismicFile()[0]); // Also needed for checkAvailableMemory()
 
   if (modelSettings->getAreaParameters() == NULL)
   {
-    seismicFile = std::string(modelFile->getSeismicFile()[0]);
     LogKit::LogFormatted(LogKit::HIGH,"\nFinding inversion area from seismic data in file %s\n", 
                          seismicFile.c_str());
     areaType = "Seismic data";
@@ -599,6 +600,9 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
   //
   // Set SURFACES
   //
+  int outputFormat = modelSettings->getFormatFlag();
+  int outputFlag   = modelSettings->getOutputFlag();
+
   error = 0;
   setSimboxSurfaces(timeSimbox, 
                     modelFile->getTimeSurfFile(), 
@@ -607,19 +611,20 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
                     modelFile->getTimeLz(), 
                     modelFile->getTimeDz(), 
                     modelFile->getTimeNz(),
+                    outputFormat,
+                    outputFlag,
                     errText,
                     error);
+
+
   if(error == 0)
   {
-    sprintf(errText,"%c",'\0');
-    if(!((modelSettings->getOutputFlag() & ModelSettings::NOTIME) > 0))
-      timeSimbox->writeTopBotGrids("Surface_Top_Time", "Surface_Base_Time", modelSettings->getFormatFlag());
-
     if(modelFile->getNWaveletTransfArgs() > 0 && timeSimbox->getIsConstantThick() == true)
       LogKit::LogFormatted(LogKit::WARNING,"\nWarning: LOCALWAVELET is ignored when using constant thickness in DEPTH.\n");
 
     estimateZPaddingSize(timeSimbox, modelSettings);   
 
+    sprintf(errText,"%c",'\0');
     error = timeSimbox->checkError(modelSettings->getLzLimit(),errText);
     
     if(error == 0)
@@ -668,8 +673,8 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
     }
     if(failed == false && modelSettings->getGenerateSeismic() == false) {
       //Extends timeSimbox for correlation coverage. Original stored in timeCutSimbox
-      setupExtendedTimeSimbox(timeSimbox, correlationDirection, timeCutSimbox); 
-      setupExtendedBackgroundSimbox(timeSimbox, correlationDirection, timeBGSimbox);
+      setupExtendedTimeSimbox(timeSimbox, correlationDirection, timeCutSimbox, outputFormat, outputFlag); 
+      setupExtendedBackgroundSimbox(timeSimbox, correlationDirection, timeBGSimbox, outputFormat, outputFlag);
     }
     estimateZPaddingSize(timeSimbox, modelSettings);   
     error = timeSimbox->checkError(modelSettings->getLzLimit(),errText);
@@ -734,6 +739,12 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
   timeSimboxConstThick = new Simbox(timeSimbox);
   Surface * tsurf = new Surface(dynamic_cast<const Surface &> (timeSimbox->GetTopSurface()));
   timeSimboxConstThick->setDepth(tsurf, 0, timeSimbox->getlz(), timeSimbox->getdz());
+
+  //if((outputFlag & ModelSettings::NOTIME) == 0)
+  //  timeSimboxConstThick->writeTopBotGrids("Surface_Top_Time_ConstThick", 
+  //                                         "Surface_Base_Time_ConstThick", 
+  //                                         outputFormat);
+  
 }
 
 void 
@@ -744,6 +755,8 @@ Model::setSimboxSurfaces(Simbox *& simbox,
                          double    lz, 
                          double    dz, 
                          int       nz,
+                         int       outputFormat,
+                         int       outputFlag,
                          char    * errText,
                          int     & error)
 {
@@ -751,6 +764,7 @@ Model::setSimboxSurfaces(Simbox *& simbox,
   char * baseName = surfFile[1]; 
 
   Surface * z0Grid = NULL;
+  Surface * z1Grid = NULL;
   try {
     if (isNumber(topName)) {
       // Find the smallest surface that covers the simbox. For simplicity 
@@ -772,13 +786,12 @@ Model::setSimboxSurfaces(Simbox *& simbox,
     sprintf(errText,"%s%s",errText,e.what());
     error = 1;
   }
-  
+
   if(error == 0) {
     if(parallelSurfaces) { //Only one reference surface
       simbox->setDepth(z0Grid, dTop, lz, dz);
     }
     else {
-      Surface * z1Grid = NULL;
       try {
         if (isNumber(baseName)) {
           // Find the smallest surface that covers the simbox. For simplicity 
@@ -812,13 +825,21 @@ Model::setSimboxSurfaces(Simbox *& simbox,
         }
       }
     }
+    if (error == 0) {
+      if((outputFlag & ModelSettings::NOTIME) == 0)
+        simbox->writeTopBotGrids("Surface_Top_Time", 
+                                 "Surface_Base_Time", 
+                                 outputFormat);
+    }
   }
 }
 
 void
 Model::setupExtendedTimeSimbox(Simbox   * timeSimbox, 
                                Surface  * corrSurf, 
-                               Simbox  *& timeCutSimbox)
+                               Simbox  *& timeCutSimbox,
+                               int        outputFormat,
+                               int        outputFlag)
 {
   timeCutSimbox = new Simbox(timeSimbox);
   double * corrPlanePars = findPlane(corrSurf);
@@ -839,11 +860,7 @@ Model::setupExtendedTimeSimbox(Simbox   * timeSimbox,
   gradY_ = refPlanePars[2];
   Surface * refPlane = createPlaneSurface(refPlanePars, corrSurf);
 
-  std::string planeFile = ModelSettings::makeFullFileName(std::string("CorrelationRotationPlane"));
-  if((modelSettings_->getFormatFlag() & FFTGrid::ASCIIFORMAT) == FFTGrid::ASCIIFORMAT)
-    NRLib2::WriteIrapClassicAsciiSurf(*refPlane, planeFile+".irap");
-  else
-    NRLib2::WriteStormBinarySurf(*refPlane, planeFile+".storm");
+  writeSurfaceToFile(refPlane,"CorrelationRotationPlane",outputFormat);
 
   refPlane->Add(corrSurf);
   delete [] corrPlanePars;
@@ -876,25 +893,24 @@ Model::setupExtendedTimeSimbox(Simbox   * timeSimbox,
   botSurf->Add(&(timeSimbox->GetBotSurface()));
 
   timeSimbox->setDepth(topSurf, botSurf, nz);
+  
+  if((outputFlag & ModelSettings::NOTIME) == 0)
+    timeSimbox->writeTopBotGrids("Surface_Top_Time_Extended", 
+                                 "Surface_Base_Time_Extended", 
+                                 outputFormat);
 
-  std::string topFile = ModelSettings::makeFullFileName(std::string("Surface_Top_Time_Extended"));
-  std::string botFile = ModelSettings::makeFullFileName(std::string("Surface_Base_Time_Extended"));
+  //writeSurfaceToFile(topSurf,"Surface_Top_Time_Extended" ,outputFormat);
+  //writeSurfaceToFile(botSurf,"Surface_Base_Time_Extended",outputFormat);
 
-  if ((modelSettings_->getFormatFlag() & FFTGrid::ASCIIFORMAT) == FFTGrid::ASCIIFORMAT) {
-    NRLib2::WriteIrapClassicAsciiSurf(*topSurf, topFile+".irap");
-    NRLib2::WriteIrapClassicAsciiSurf(*botSurf, botFile+".irap");
-  }
-  else {
-    NRLib2::WriteStormBinarySurf(*topSurf, topFile+".storm");
-    NRLib2::WriteStormBinarySurf(*botSurf, botFile+".storm");
-  }
   delete refPlane;
 }
 
 void
 Model::setupExtendedBackgroundSimbox(Simbox   * timeSimbox, 
                                      Surface  * corrSurf, 
-                                     Simbox  *& timeBGSimbox)
+                                     Simbox  *& timeBGSimbox,
+                                     int        outputFormat,
+                                     int        outputFlag)
 {
   //
   // Move correlation surface for easier handling.
@@ -909,8 +925,8 @@ Model::setupExtendedBackgroundSimbox(Simbox   * timeSimbox,
   //
   // Find top surface of background simbox. 
   //
-  // The funny/strange dTop->Multiply(-1.0) is due to NRLIB's 
-  // unability to set dTop equal to Simbox top surface.
+  // The funny/strange dTop->Multiply(-1.0) is due to NRLIB's current
+  // inability to set dTop equal to Simbox top surface.
   //
   Surface * dTop = new Surface(*tmpSurf);
   dTop->Subtract(&(timeSimbox->GetTopSurface()));
@@ -954,17 +970,13 @@ Model::setupExtendedBackgroundSimbox(Simbox   * timeSimbox,
   timeBGSimbox = new Simbox(timeSimbox);
   timeBGSimbox->setDepth(topSurf, botSurf, nz);
 
-  std::string topFile = ModelSettings::makeFullFileName(std::string("Surface_Top_Time_BG"));
-  std::string botFile = ModelSettings::makeFullFileName(std::string("Surface_Base_Time_BG"));
+  if((outputFlag & ModelSettings::NOTIME) == 0)
+    timeSimbox->writeTopBotGrids("Surface_Top_Time_BG", 
+                                 "Surface_Base_Time_BG", 
+                                 outputFormat);
+  //writeSurfaceToFile(topSurf,"Surface_Top_Time_BG" ,outputFormat);
+  //writeSurfaceToFile(botSurf,"Surface_Base_Time_BG",outputFormat);
 
-  if ((modelSettings_->getFormatFlag() & FFTGrid::ASCIIFORMAT) == FFTGrid::ASCIIFORMAT) {
-    NRLib2::WriteIrapClassicAsciiSurf(*topSurf, topFile+".irap");
-    NRLib2::WriteIrapClassicAsciiSurf(*botSurf, botFile+".irap");
-  }
-  else {
-    NRLib2::WriteStormBinarySurf(*topSurf, topFile+".storm");
-    NRLib2::WriteStormBinarySurf(*botSurf, botFile+".storm");
-  }
 }
 
 double *
@@ -2285,7 +2297,7 @@ Model::loadExtraSurfaces(Surface  **& waveletEstimInterval,
       }
     }
     catch (NRLib2::Exception & e) {
-      sprintf(errText, "%s%s", errText,e.what());
+      sprintf(errText, "%s%s\n", errText,e.what());
       failed = true;
     }
     
@@ -2298,7 +2310,7 @@ Model::loadExtraSurfaces(Surface  **& waveletEstimInterval,
       }
     }
     catch (NRLib2::Exception & e) {
-      sprintf(errText, "%s%s", errText,e.what());
+      sprintf(errText, "%s%s\n", errText,e.what());
       failed = true;
     }
   }
@@ -2319,7 +2331,7 @@ Model::loadExtraSurfaces(Surface  **& waveletEstimInterval,
       }
     }
     catch (NRLib2::Exception & e) {
-      sprintf(errText, "%s%s", errText,e.what());
+      sprintf(errText, "%s%s\n", errText,e.what());
       failed = true;
     }
 
@@ -2332,7 +2344,7 @@ Model::loadExtraSurfaces(Surface  **& waveletEstimInterval,
       }
     }
     catch (NRLib2::Exception & e) {
-      sprintf(errText, "%s%s", errText,e.what());
+      sprintf(errText, "%s%s\n", errText,e.what());
       failed = true;
     }
   }
@@ -2866,3 +2878,15 @@ Model::findSmallestSurfaceGeometry(const double   x0,
   }
 }
 
+void   
+Model::writeSurfaceToFile(Surface     * surface,
+                          std::string   name,
+                          int           format)
+{
+  std::string fileName = ModelSettings::makeFullFileName(name);
+  
+  if((format & FFTGrid::ASCIIFORMAT) == FFTGrid::ASCIIFORMAT)
+    NRLib2::WriteIrapClassicAsciiSurf(*surface, fileName+".irap");
+  else  
+    NRLib2::WriteStormBinarySurf(*surface, fileName+".storm");
+}
