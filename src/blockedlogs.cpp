@@ -600,7 +600,7 @@ BlockedLogs::setLogFromVerticalTrend(float     *& blockedLog,
     double zi = zpos[i]; 
     double a  = zi - 0.5*dz;     // Top of blocked log cell
     double b  = z0 + 0.5*dzVt;   // Base of first vertical trend cell
-    
+
     int j=0;
     while (b<a && j<nz) {
       b += dzVt;
@@ -608,12 +608,13 @@ BlockedLogs::setLogFromVerticalTrend(float     *& blockedLog,
     }
     // Now 'j' is the first vertical trend cell overlapping blocked log cell 'i'
 
-    //
-    // The if below treat end-of-vertical-trend cases and cases where one
-    // single vertical-trend-cell covers a blocked log cell completely.
-    //
     float value;
-    if (j==nz || b > a+dz) {
+    if (j==nz) {
+      // We have come to the end of the end-of-vertical-trend 
+      value = vertical_trend[j-1]; 
+    }
+    else if (b >= a+dz) {
+      // One single vertical-trend-cell covers a blocked log cell completely.
       value = vertical_trend[j]; 
     }
     else {
@@ -622,7 +623,7 @@ BlockedLogs::setLogFromVerticalTrend(float     *& blockedLog,
     }
     blockedLog[i] = value;
 
-    //LogKit::LogFormatted(LogKit::ERROR,"i j  log[i]   %d %d  %7.3f\n",i,j,log[i]);
+    //LogKit::LogFormatted(LogKit::ERROR,"i j  blockedLog[i]   %d %d  %7.3f\n",i,j,blockedLog[i]);
   }
 }
 
@@ -700,8 +701,6 @@ BlockedLogs::writeToFile(float dz,
 void
 BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
 {
-  /// \todo Replace with safe open function.
-
   float maxHz_background = modelSettings->getMaxHzBackground();
   float maxHz_seismic    = modelSettings->getMaxHzSeismic();
 
@@ -710,6 +709,7 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
   NRLib2::Substitute(wellname," ","_");
   std::string fileName = ModelSettings::makeFullFileName("BW_"+wellname+".rms");
 
+  /// \todo Replace with safe open function.
   std::ofstream file(fileName.c_str(), std::ios::out | std::ios::binary);
 
   if (!file) {
@@ -774,12 +774,13 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
   //
   // Write LOGS
   //
-  for (int i=0 ; i<nBlocks_ ; i++) {
+  for (int i=0 ; i<lastB_ + 1 ; i++) {
     file << std::right;
     file << std::setprecision(2);
     file << std::setw(9) << xpos_[i] << " " ;
     file << std::setw(10)<< ypos_[i] << " ";
     file << std::setw(7) << zpos_[i] << "  ";
+    //file << std::setw(7) << time_[i] << "  "; // NBNB-PAL: include time here
     file << std::setw(7) << (alpha_[i]==RMISSING                    ? WELLMISSING : exp(alpha_[i]))                    << " ";
     file << std::setw(7) << (alpha_highcut_background_[i]==RMISSING ? WELLMISSING : exp(alpha_highcut_background_[i])) << " ";
     file << std::setw(7) << (alpha_highcut_seismic_[i]==RMISSING    ? WELLMISSING : exp(alpha_highcut_seismic_[i]))    << " ";
