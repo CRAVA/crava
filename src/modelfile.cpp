@@ -1047,7 +1047,7 @@ ModelFile::readCommandDepthConversion(char ** params, int & pos, char * errText)
       uppercase(velocityFieldUC);
       if (strcmp(velocityFieldUC,"CONSTANT")!=0 && strcmp(velocityFieldUC,"FROM_INVERSION")!=0)
       {
-        error = checkFileOpen(&(velocityField_), 1, params[pos-1], errText);
+        error += checkFileOpen(&(velocityField_), 1, params[pos-1], errText);
       }
       delete [] velocityFieldUC;
       break;
@@ -1055,13 +1055,13 @@ ModelFile::readCommandDepthConversion(char ** params, int & pos, char * errText)
     case 1:
       depthSurfFile_[0] = new char[strlen(params[pos+curPar+1])+1];
       strcpy(depthSurfFile_[0],params[pos+curPar+1]);
-      error = checkFileOpen(depthSurfFile_, 1, params[pos-1], errText);
+      error += checkFileOpen(depthSurfFile_, 1, params[pos-1], errText);
       break;
 
     case 2:
       depthSurfFile_[1] = new char[strlen(params[pos+curPar+1])+1];
       strcpy(depthSurfFile_[1],params[pos+curPar+1]);
-      error = checkFileOpen(depthSurfFile_, 2, params[pos-1], errText);
+      error += checkFileOpen(depthSurfFile_, 2, params[pos-1], errText);
       break;
 
     default: 
