@@ -968,9 +968,9 @@ ModelFile::readCommandTimeSurfaces(char ** params, int & pos, char * errText)
     timeSurfFile_[1] = new char[strlen(params[pos+1])+1];
     strcpy(timeSurfFile_[1],params[pos+1]);
     if (!isNumber(timeSurfFile_[0]))
-      error = checkFileOpen((&timeSurfFile_[0]), 1, params[pos-1], errText);
+      error += checkFileOpen((&timeSurfFile_[0]), 1, params[pos-1], errText);
     if (!isNumber(timeSurfFile_[1]))
-      error = checkFileOpen((&timeSurfFile_[1]), 1, params[pos-1], errText);
+      error += checkFileOpen((&timeSurfFile_[1]), 1, params[pos-1], errText);
     time_nz_ = atoi(params[pos+2]);
   }
   else // nPar = 4
@@ -1855,6 +1855,11 @@ ModelFile::readCommandWaveletEstimationInterval(char ** params, int & pos, char 
     waveletEstIntFile_[1] = new char[strlen(params[pos+1])+1];
     strcpy(waveletEstIntFile_[0],params[pos]);
     strcpy(waveletEstIntFile_[1],params[pos+1]);
+
+    if (!isNumber(waveletEstIntFile_[0])) 
+      error += checkFileOpen((&waveletEstIntFile_[0]), 1, params[pos-1], errText);
+    if (!isNumber(waveletEstIntFile_[1]))
+      error += checkFileOpen((&waveletEstIntFile_[1]), 1, params[pos-1], errText);
   }
   pos += nPar+1;
   return(error);
@@ -1872,6 +1877,11 @@ ModelFile::readCommandFaciesEstimationInterval(char ** params, int & pos, char *
     faciesEstIntFile_[1] = new char[strlen(params[pos+1])+1];
     strcpy(faciesEstIntFile_[0],params[pos]);
     strcpy(faciesEstIntFile_[1],params[pos+1]);
+
+    if (!isNumber(faciesEstIntFile_[0])) 
+      error += checkFileOpen((&faciesEstIntFile_[0]), 1, params[pos-1], errText);
+    if (!isNumber(faciesEstIntFile_[1]))
+      error += checkFileOpen((&faciesEstIntFile_[1]), 1, params[pos-1], errText);
     sprintf(errText,"Command %s has not been implemented yet.\n",params[pos-1]);
     error = 1;
   }
