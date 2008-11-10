@@ -21,7 +21,8 @@ GridMapping::GridMapping()
   : mapping_(NULL),
     simbox_(NULL),
     z0Grid_(NULL),
-    z1Grid_(NULL)
+    z1Grid_(NULL),
+    surfaceMode_(NONEGIVEN)
 {
 }
 
@@ -112,8 +113,23 @@ void
 GridMapping::setMappingFromVelocity(FFTGrid * velocity, const Simbox * timeSimbox)
 {
   if(simbox_!=NULL)  //Allow this to be called to override old mappings.
+  {
+    //z0Grid_, z1Grid_ points into simbox. Must copy the relevant before deleting.
+    if(surfaceMode_ == TOPGIVEN) {
+      z0Grid_ = new Surface(*z0Grid_);
+      z1Grid_ = NULL;
+    }
+    else if(surfaceMode_ == BOTTOMGIVEN) {
+      z0Grid_ = NULL;
+      z1Grid_ = new Surface(*z1Grid_);
+    }
+    else {
+      z0Grid_ = new Surface(*z0Grid_);
+      z1Grid_ = new Surface(*z1Grid_);
+    }
     delete simbox_;
-  simbox_ = NULL;
+    simbox_ = NULL;
+  }
   if(mapping_!=NULL)
     delete mapping_;
   mapping_ = NULL;
@@ -140,96 +156,96 @@ GridMapping::calculateSurfaceFromVelocity(FFTGrid      * velocity,
 {
   if(z0Grid_==NULL || z1Grid_==NULL)
   {
-  Surface * isochore;
-  if(z0Grid_==NULL)
-    isochore = new Surface(*z1Grid_);
-  else    
-    isochore = new Surface(*z0Grid_);
+    Surface * isochore;
+    if(z0Grid_==NULL)
+      isochore = new Surface(*z1Grid_);
+    else    
+      isochore = new Surface(*z0Grid_);
 
-  //
-  // If a constant time surface has been used, it may have only four grid
-  // nodes. To handle this situation we use the grid resolution whenever
-  // this is larger than the surface resolution.
-  //  
-  int maxNx = std::max(timeSimbox->getnx(), isochore->GetNI());
-  int maxNy = std::max(timeSimbox->getny(), isochore->GetNJ()); 
-  isochore->Resize(maxNx, maxNy);
-   
-  double dx = 0.5*isochore->GetDX();
-  double dy = 0.5*isochore->GetDY();
+    //
+    // If a constant time surface has been used, it may have only four grid
+    // nodes. To handle this situation we use the grid resolution whenever
+    // this is larger than the surface resolution.
+    //  
+    int maxNx = std::max(timeSimbox->getnx(), isochore->GetNI());
+    int maxNy = std::max(timeSimbox->getny(), isochore->GetNJ()); 
+    isochore->Resize(maxNx, maxNy);
 
-  for(int j=0 ; j<isochore->GetNJ() ; j++) 
-  {
-    for(int i=0 ; i<isochore->GetNI() ; i++) 
+    double dx = 0.5*isochore->GetDX();
+    double dy = 0.5*isochore->GetDY();
+
+    for(int j=0 ; j<isochore->GetNJ() ; j++) 
     {
-      double x, y;
-      isochore->GetXY(i,j,x,y);   
-      double tTop  = timeSimbox->getTop(x,y);
-      double tBase = timeSimbox->getBot(x,y);
-      int    nz    = timeSimbox->getnz();
-      double dt    = (tBase - tTop)/(2000.0*static_cast<double>(nz));
-      
-      int ii, jj;
-      timeSimbox->getIndexes(x,y,ii,jj);
+      for(int i=0 ; i<isochore->GetNI() ; i++) 
+      {
+        double x, y;
+        isochore->GetXY(i,j,x,y);   
+        double tTop  = timeSimbox->getTop(x,y);
+        double tBase = timeSimbox->getBot(x,y);
+        int    nz    = timeSimbox->getnz();
+        double dt    = (tBase - tTop)/(2000.0*static_cast<double>(nz));
 
-      if(ii!=IMISSING && jj!=IMISSING)
-      {
-        double sum = 0.0;
-        for(int k=0 ; k<nz ; k++)
-          sum += velocity->getRealValue(ii,jj,k);
-        (*isochore)(i,j) = sum*dt;
-      }
-      else
-      {
-        int i1, i2, i3, i4, j1, j2, j3, j4;
-        timeSimbox->getIndexes(x+dx, y+dy, i1, j1);
-        timeSimbox->getIndexes(x-dx, y-dy, i2, j2);
-        timeSimbox->getIndexes(x+dx, y-dy, i3, j3);
-        timeSimbox->getIndexes(x-dx, y+dy, i4, j4);
-        
-        int n = 0;
-        if(i1!=IMISSING && j1!=IMISSING)
-          n++;
-        if(i2!=IMISSING && j2!=IMISSING)
-          n++;
-        if(i3!=IMISSING && j3!=IMISSING)
-          n++;
-        if(i4!=IMISSING && j4!=IMISSING)
-          n++;
-        
-        if (n==0)
-          isochore->SetMissing(i,j);
-        else
+        int ii, jj;
+        timeSimbox->getIndexes(x,y,ii,jj);
+
+        if(ii!=IMISSING && jj!=IMISSING)
         {
           double sum = 0.0;
-          for(int k=0 ; k<nz ; k++) { 
-            if(i1!=IMISSING && j1!=IMISSING)
-              sum += velocity->getRealValue(i1,j1,k);
-            if(i2!=IMISSING && j2!=IMISSING)
-              sum += velocity->getRealValue(i2,j2,k);
-            if(i3!=IMISSING && j3!=IMISSING)
-              sum += velocity->getRealValue(i3,j3,k);
-            if(i4!=IMISSING && j4!=IMISSING)
-              sum += velocity->getRealValue(i4,j4,k);
+          for(int k=0 ; k<nz ; k++)
+            sum += velocity->getRealValue(ii,jj,k);
+          (*isochore)(i,j) = sum*dt;
+        }
+        else
+        {
+          int i1, i2, i3, i4, j1, j2, j3, j4;
+          timeSimbox->getIndexes(x+dx, y+dy, i1, j1);
+          timeSimbox->getIndexes(x-dx, y-dy, i2, j2);
+          timeSimbox->getIndexes(x+dx, y-dy, i3, j3);
+          timeSimbox->getIndexes(x-dx, y+dy, i4, j4);
+
+          int n = 0;
+          if(i1!=IMISSING && j1!=IMISSING)
+            n++;
+          if(i2!=IMISSING && j2!=IMISSING)
+            n++;
+          if(i3!=IMISSING && j3!=IMISSING)
+            n++;
+          if(i4!=IMISSING && j4!=IMISSING)
+            n++;
+
+          if (n==0)
+            isochore->SetMissing(i,j);
+          else
+          {
+            double sum = 0.0;
+            for(int k=0 ; k<nz ; k++) { 
+              if(i1!=IMISSING && j1!=IMISSING)
+                sum += velocity->getRealValue(i1,j1,k);
+              if(i2!=IMISSING && j2!=IMISSING)
+                sum += velocity->getRealValue(i2,j2,k);
+              if(i3!=IMISSING && j3!=IMISSING)
+                sum += velocity->getRealValue(i3,j3,k);
+              if(i4!=IMISSING && j4!=IMISSING)
+                sum += velocity->getRealValue(i4,j4,k);
+            }
+            (*isochore)(i,j) = sum*dt/static_cast<double>(n);
           }
-          (*isochore)(i,j) = sum*dt/static_cast<double>(n);
         }
       }
     }
-  }
 
-  if(z0Grid_==NULL) 
-  {
-    z0Grid_ = new Surface(*isochore);
-    z0Grid_->Multiply(-1.0);
-    z0Grid_->Add(z1Grid_);
-  }
-  else 
-  {
-    z1Grid_ = new Surface(*isochore);
-    z1Grid_->Add(z0Grid_);
-  }
-  delete isochore;
+    if(z0Grid_==NULL) 
+    {
+      z0Grid_ = new Surface(*isochore);
+      z0Grid_->Multiply(-1.0);
+      z0Grid_->Add(z1Grid_);
+    }
+    else 
+    {
+      z1Grid_ = new Surface(*isochore);
+      z1Grid_->Add(z0Grid_);
+    }
+    delete isochore;
   }
 }
 
@@ -248,6 +264,7 @@ GridMapping::setDepthSurfaces(char ** surfFile,
     try {
       Surface tmpSurf = NRLib2::ReadStormSurf(surfFile[0]);
       z0Grid_ = new Surface(tmpSurf);
+      surfaceMode_ = TOPGIVEN;
     }
     catch (NRLib2::Exception & e) {
       sprintf(errText,"%s%s",errText,e.what());
@@ -259,10 +276,14 @@ GridMapping::setDepthSurfaces(char ** surfFile,
     try {
       Surface tmpSurf = NRLib2::ReadStormSurf(surfFile[1]);
       z1Grid_ = new Surface(tmpSurf);
+      if(surfaceMode_ == TOPGIVEN)
+        surfaceMode_ = BOTHGIVEN;
+      else
+        surfaceMode_ = BOTTOMGIVEN;
     }
     catch (NRLib2::Exception & e) {
-    sprintf(errText,"%s%s",errText,e.what());
-    failed = 1;
+      sprintf(errText,"%s%s",errText,e.what());
+      failed = 1;
     }
   }
 }

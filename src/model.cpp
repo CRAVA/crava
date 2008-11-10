@@ -740,10 +740,10 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
   Surface * tsurf = new Surface(dynamic_cast<const Surface &> (timeSimbox->GetTopSurface()));
   timeSimboxConstThick->setDepth(tsurf, 0, timeSimbox->getlz(), timeSimbox->getdz());
 
-  //if((outputFlag & ModelSettings::NOTIME) == 0)
-  //  timeSimboxConstThick->writeTopBotGrids("Surface_Top_Time_ConstThick", 
-  //                                         "Surface_Base_Time_ConstThick", 
-  //                                         outputFormat);
+  if((outputFlag & ModelSettings::NOTIME) == 0)
+    timeSimboxConstThick->writeTopBotGrids("Surface_Top_Time_ConstThick", 
+                                           "Surface_Base_Time_ConstThick", 
+                                           outputFormat);
   
 }
 
