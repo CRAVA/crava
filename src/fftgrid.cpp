@@ -215,14 +215,14 @@ FFTGrid::fillInFromStorm(Simbox * actSimBox,
       refi   = getXSimboxIndex(i);
       refj   = getYSimboxIndex(j);
       actSimBox->getCoord(refi, refj, 0, x, y, z);
-      val=grid->getValueZInterpolated(x,y,z);
+      val=grid->GetValueZInterpolated(x,y,z);
       actSimBox->getCoord(refi, refj, nz_-1, x, y, z);
  
         if(val != RMISSING)
    
-          val = (grid->getValueZInterpolated(x,y,z)+val)/2.0;
+          val = (grid->GetValueZInterpolated(x,y,z)+val)/2.0;
         else     
-          val = grid->getValueZInterpolated(x,y,z);
+          val = grid->GetValueZInterpolated(x,y,z);
       meanvalue[i+j*nxp_] = static_cast<float>(val);
     }
 
@@ -251,7 +251,7 @@ FFTGrid::fillInFromStorm(Simbox * actSimBox,
           if(i<nxp_)  // computes the index reference from the cube puts it in value
           {
             actSimBox->getCoord(refi, refj, refk, x, y, z);
-            value = static_cast<fftw_real>(grid->getValueZInterpolated(x,y,z));
+            value = static_cast<fftw_real>(grid->GetValueZInterpolated(x,y,z));
             if(value==RMISSING)
               value = 0;
             value=static_cast<float>( ((mult*value+(1.0-mult)*meanvalue[i+j*nxp_])) );

@@ -3503,10 +3503,6 @@
 					>
 				</File>
 				<File
-					RelativePath=".\nrlib\surface\surface.cpp"
-					>
-				</File>
-				<File
 					RelativePath=".\nrlib\surface\surfaceio.cpp"
 					>
 				</File>
