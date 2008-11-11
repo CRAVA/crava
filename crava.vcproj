@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8,00"
+	Version="8.00"
 	Name="crava"
 	ProjectGUID="{7FF3AB5B-854B-46AB-99F6-B59958E1BE91}"
 	>
@@ -3487,6 +3487,14 @@
 					</FileConfiguration>
 				</File>
 				<File
+					RelativePath=".\nrlib\segy\segygeometry.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\nrlib\segy\segytrace.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\nrlib\stormgrid\stormcontgrid.cpp"
 					>
 				</File>
@@ -3717,6 +3725,14 @@
 				</File>
 				<File
 					RelativePath=".\nrlib\segy\segy.hpp"
+					>
+				</File>
+				<File
+					RelativePath=".\nrlib\segy\segygeometry.hpp"
+					>
+				</File>
+				<File
+					RelativePath=".\nrlib\segy\segytrace.hpp"
 					>
 				</File>
 				<File

@@ -447,10 +447,10 @@ Model::readSegyFile(char                * fileName,
                     modelSettings->getSegyOffset(),
                     *(modelSettings->getTraceHeaderFormat()));
     bool onlyVolume = modelSettings->getAreaParameters() != NULL; // This is now always true
-    segy->readAllTraces(timeSimbox, 
+    segy->ReadAllTraces(timeSimbox, 
                         modelSettings->getZpad(),
                         onlyVolume);
-    segy->createRegularGrid();
+    segy->CreateRegularGrid();
   }
   catch (NRLib2::Exception & e)
   {
@@ -461,8 +461,8 @@ Model::readSegyFile(char                * fileName,
   if (error == 0)
   {
     const SegyGeometry * geo;
-    geo = segy->getGeometry();
-    geo->writeGeometry();
+    geo = segy->GetGeometry();
+    geo->WriteGeometry();
     if (gridType == FFTGrid::DATA) 
       geometry = new SegyGeometry(geo);
     
@@ -581,7 +581,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
                          seismicFile.c_str());
     areaType = "Seismic data";
     const TraceHeaderFormat thf = *(modelSettings->getTraceHeaderFormat());
-    SegyGeometry * geometry = SegY::findGridGeometry(seismicFile, thf);
+    SegyGeometry * geometry = SegY::FindGridGeometry(seismicFile, thf);
     modelSettings->setAreaParameters(geometry);
     delete geometry;
   }
@@ -1171,9 +1171,9 @@ Model::processSeismic(FFTGrid      **& seisCube,
           if (geoAngle < 0)
             geoAngle += 360.0f;
           LogKit::LogFormatted(LogKit::LOW,"Seismic data %d   %11.2f  %11.2f    %10.2f %10.2f    %8.3f    %7.2f %7.2f\n",i,
-                               geometry[i]->getX0(), geometry[i]->getY0(), 
-                               geometry[i]->getlx(), geometry[i]->getly(), geoAngle,
-                               geometry[i]->getDx(), geometry[i]->getDy());
+                               geometry[i]->GetX0(), geometry[i]->GetY0(), 
+                               geometry[i]->Getlx(), geometry[i]->Getly(), geoAngle,
+                               geometry[i]->GetDx(), geometry[i]->GetDy());
           }
       LogKit::LogFormatted(LogKit::LOW,"\nTime simulation grids:\n");
       LogKit::LogFormatted(LogKit::LOW,"  Output grid         %4i * %4i * %4i   : %10i\n",
@@ -2415,17 +2415,17 @@ Model::printSettings(ModelSettings * modelSettings,
 
   TraceHeaderFormat * thf = modelSettings_->getTraceHeaderFormat(); 
   LogKit::LogFormatted(LogKit::LOW,"\nSegY trace header format:\n");
-  LogKit::LogFormatted(LogKit::LOW,"  Format name                              : %10s\n",thf->getFormatName().c_str());
-  if (thf->getBypassCoordScaling())
+  LogKit::LogFormatted(LogKit::LOW,"  Format name                              : %10s\n",thf->GetFormatName().c_str());
+  if (thf->GetBypassCoordScaling())
     LogKit::LogFormatted(LogKit::LOW,"  Bypass coordinate scaling                :        yes\n");
-  if (!thf->getStandardType()) 
+  if (!thf->GetStandardType()) 
   {
-    LogKit::LogFormatted(LogKit::LOW,"  Start pos coordinate scaling             : %10d\n",thf->getScalCoLoc());
-    LogKit::LogFormatted(LogKit::LOW,"  Start pos trace x coordinate             : %10d\n",thf->getUtmxLoc());
-    LogKit::LogFormatted(LogKit::LOW,"  Start pos trace y coordinate             : %10d\n",thf->getUtmyLoc());
-    LogKit::LogFormatted(LogKit::LOW,"  Start pos inline index                   : %10d\n",thf->getInlineLoc());
-    LogKit::LogFormatted(LogKit::LOW,"  Start pos crossline index                : %10d\n",thf->getCrosslineLoc());
-    LogKit::LogFormatted(LogKit::LOW,"  Coordinate system                        : %10s\n",thf->getCoordSys()==0 ? "UTM" : "ILXL" );
+    LogKit::LogFormatted(LogKit::LOW,"  Start pos coordinate scaling             : %10d\n",thf->GetScalCoLoc());
+    LogKit::LogFormatted(LogKit::LOW,"  Start pos trace x coordinate             : %10d\n",thf->GetUtmxLoc());
+    LogKit::LogFormatted(LogKit::LOW,"  Start pos trace y coordinate             : %10d\n",thf->GetUtmyLoc());
+    LogKit::LogFormatted(LogKit::LOW,"  Start pos inline index                   : %10d\n",thf->GetInlineLoc());
+    LogKit::LogFormatted(LogKit::LOW,"  Start pos crossline index                : %10d\n",thf->GetCrosslineLoc());
+    LogKit::LogFormatted(LogKit::LOW,"  Coordinate system                        : %10s\n",thf->GetCoordSys()==0 ? "UTM" : "ILXL" );
   }
   //
   // WELL PROCESSING
@@ -2818,13 +2818,13 @@ Model::writeAreas(const SegyGeometry * areaParams,
                   Simbox             * timeSimbox,
                   std::string        & text)
 {
-  double areaX0   = areaParams->getX0();
-  double areaY0   = areaParams->getY0();
-  double areaLx   = areaParams->getlx();
-  double areaLy   = areaParams->getly();
-  double areaDx   = areaParams->getDx();
-  double areaDy   = areaParams->getDy();
-  double areaRot  = areaParams->getAngle();
+  double areaX0   = areaParams->GetX0();
+  double areaY0   = areaParams->GetY0();
+  double areaLx   = areaParams->Getlx();
+  double areaLy   = areaParams->Getly();
+  double areaDx   = areaParams->GetDx();
+  double areaDy   = areaParams->GetDy();
+  double areaRot  = areaParams->GetAngle();
   double areaXmin = RMISSING;
   double areaXmax = RMISSING;
   double areaYmin = RMISSING;
@@ -2847,8 +2847,8 @@ Model::writeAreas(const SegyGeometry * areaParams,
   LogKit::LogFormatted(LogKit::LOW,"--------------------------------------------------------------------\n");
   LogKit::LogFormatted(LogKit::LOW,"%-12s     %11.2f  %11.2f    %11.2f %11.2f\n", 
                        text.c_str(),areaXmin, areaXmax, areaYmin, areaYmax);
-  const NRLib2::Surface & top  = timeSimbox->GetTopSurface();
-  const NRLib2::Surface & base = timeSimbox->GetBotSurface();
+  const NRLib2::Surface<double> & top  = timeSimbox->GetTopSurface();
+  const NRLib2::Surface<double> & base = timeSimbox->GetBotSurface();
   LogKit::LogFormatted(LogKit::LOW,"Top surface      %11.2f  %11.2f    %11.2f %11.2f\n", 
                        top.GetXMin(), top.GetXMax(), top.GetYMin(), top.GetYMax()); 
   LogKit::LogFormatted(LogKit::LOW,"Base surface     %11.2f  %11.2f    %11.2f %11.2f\n", 

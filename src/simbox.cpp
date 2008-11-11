@@ -252,13 +252,13 @@ Simbox::isInside(double x, double y) const
 int
 Simbox::insideRectangle(const SegyGeometry *  geometry) const
 {
-  double xr   = geometry->getX0();
-  double yr   = geometry->getY0();
-  double rotr = geometry->getAngle();
-  double lxr  = geometry->getlx();
-  double lyr  = geometry->getly();
-  double dxr  = geometry->getDx();
-  double dyr  = geometry->getDy();
+  double xr   = geometry->GetX0();
+  double yr   = geometry->GetY0();
+  double rotr = geometry->GetAngle();
+  double lxr  = geometry->Getlx();
+  double lyr  = geometry->Getly();
+  double dxr  = geometry->GetDx();
+  double dyr  = geometry->GetDy();
 
   // check that incoming rectangle is within simbox +-0.5 grid cells
   int allOk = 1;
@@ -478,15 +478,15 @@ Simbox::checkError(double lzLimit, char * errText)
 int
 Simbox::setArea(const SegyGeometry * geometry, char * errText)
 {
-  double x0  = geometry->getX0();
-  double y0  = geometry->getY0();
-  double lx  = geometry->getlx();
-  double ly  = geometry->getly();
-  double rot = geometry->getAngle();
-  double dx  = geometry->getDx();
-  double dy  = geometry->getDy();
+  double x0  = geometry->GetX0();
+  double y0  = geometry->GetY0();
+  double lx  = geometry->Getlx();
+  double ly  = geometry->Getly();
+  double rot = geometry->GetAngle();
+  double dx  = geometry->GetDx();
+  double dy  = geometry->GetDy();
 
-  ILxflag_ = geometry->getILxflag();
+  ILxflag_ = geometry->GetILxflag();
   try
   {
     SetDimensions(x0,y0,lx,ly);

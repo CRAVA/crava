@@ -132,10 +132,10 @@ FFTGrid::fillInFromSegY(SegY* segy, Simbox *simbox)
         refj = getYSimboxIndex(j);
         refk = 0;
         simbox->getCoord(refi,refj,refk,x,y,z);
-        val1 = segy->getValue(x,y,z, outMode);
+        val1 = segy->GetValue(x,y,z, outMode);
         refk = nz_-1;
         simbox->getCoord(refi,refj,refk,x,y,z);
-        val2 = segy->getValue(x,y,z, outMode);
+        val2 = segy->GetValue(x,y,z, outMode);
         meanvalue[i+j*nxp_] = static_cast<float>((val1+val2)/2.0);
       }
   } // endif
@@ -164,7 +164,7 @@ FFTGrid::fillInFromSegY(SegY* segy, Simbox *simbox)
           disty  = getDistToBoundary(j,ny_,nyp_);
           distz  = getDistToBoundary(k,nz_,nzp_);         
           mult   = float(pow(MAXIM(1.0-distx*distx-disty*disty-distz*distz,0.0),3));
-          value=segy->getValue(x,y,z, outMode );
+          value=segy->GetValue(x,y,z, outMode );
           if(isParameter)
             value=float ( ((mult*value+(1.0-mult)*meanvalue[i+j*nxp_])) );
           else
@@ -1453,7 +1453,7 @@ FFTGrid::writeSegyFile(const std::string & fileName, const Simbox * simbox, floa
   SegyGeometry * geometry = new SegyGeometry(simbox->getx0(), simbox->gety0(), simbox->getdx(), simbox->getdy(), 
                                              simbox->getnx(), simbox->getny(),simbox->getIL0(),
                                              simbox->getXL0(), simbox->getILStep(), simbox->getXLStep(), simbox->getILxflag(), simbox->getAngle());
-  segy->setGeometry(geometry);
+  segy->SetGeometry(geometry);
   delete geometry; //Call above takes a copy.
   LogKit::LogFormatted(LogKit::LOW,"\nWriting SEGY file "+gfName+"...");
   //  LogKit::LogFormatted(LogKit::LOW,"%d x %d traces.\n",nx_, ny_);
@@ -1538,7 +1538,7 @@ FFTGrid::writeSegyFile(const std::string & fileName, const Simbox * simbox, floa
 
         float xx = float(x);
         float yy = float(y);
-        segy->writeTrace(xx, yy, trace, NULL);
+        segy->WriteTrace(xx, yy, trace, NULL);
       }
     }
   }
