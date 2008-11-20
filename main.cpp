@@ -54,7 +54,7 @@ int main(int argc, char** argv)
   Model * model = new Model(argv[1]);
   if(model->getFailed())
   {
-    LogKit::LogFormatted(LogKit::LOW,"\nErrors detected in model file processing.\nAborting.\n");
+    LogKit::LogFormatted(LogKit::LOW,"\nErrors detected when loading data.\nAborting.\n");
     return(1);
   }
 
@@ -109,7 +109,6 @@ int main(int argc, char** argv)
         LogKit::LogFormatted(LogKit::LOW,"\nPost process ...\n"); 
         crava->computePostCov();
         LogKit::LogFormatted(LogKit::LOW,"\n             ... post prosess ended\n");
-        
       }
       
       crava->computeFaciesProb(filteredlogs);
@@ -117,10 +116,13 @@ int main(int argc, char** argv)
       //
       // Temprary placement.  crava.cpp needs a proper restructuring.
       //
-      if((model->getModelSettings()->getOutputFlag() & ModelSettings::WELLS) > 0) {
+      if((model->getModelSettings()->getOutputFlag() & ModelSettings::BLOCKED_WELLS) > 0) {
         WellData ** wells = model->getWells();
         for (int i=0 ; i<model->getModelSettings()->getNumberOfWells() ; i++)
           wells[i]->getBlockedLogsPropThick()->writeRMSWell(model->getModelSettings());
+      }
+      if((model->getModelSettings()->getOutputFlag() & ModelSettings::BLOCKED_LOGS) > 0) {
+        LogKit::LogFormatted(LogKit::LOW,"\nWARNING: Writing of BLOCKED_LOGS is not implemented yet.\n");
       }
 
       delete [] warningText;

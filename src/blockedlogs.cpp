@@ -745,17 +745,17 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
   file << "CRAVA\n";
   file << wellname_ << " " << xpos_[0] << " " << ypos_[0] << "\n";
   file << nLogs << "\n";
+
   for (int i =0 ; i<3 ; i++) {
-    file << params[i] << "   UNK lin\n";
-    file << params[i] << static_cast<int>(maxHz_background) << " UNK lin\n";
-    file << params[i] << static_cast<int>(maxHz_seismic)    << " UNK lin\n";
+    file << params[i] << "  UNK lin\n";
+    file << params[i] << static_cast<int>(maxHz_background) << "  UNK lin\n";
+    file << params[i] << static_cast<int>(maxHz_seismic)    << "  UNK lin\n";
     file << params[i] << "_SeismicResolution UNK lin\n";
   }
   if (gotFacies) {
-    file << "dummy   DISC ";
-  //  file << faciesLogName_ << "   DISC ";
-  //  for (int i =0 ; i < nFacies_ ; i++)
-  //    file << " " << faciesNumbers_[i] << " " << faciesNames_[i];
+    file << "FaciesLog  DISC ";
+    for (int i =0 ; i < modelSettings->getNumberOfFacies() ; i++)
+      file << " " << modelSettings->getFaciesLabel(i) << " " << modelSettings->getFaciesName(i);
     file << "\n";    
   }
   if (gotRealSeismic) {
@@ -777,10 +777,9 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
   for (int i=0 ; i<lastB_ + 1 ; i++) {
     file << std::right;
     file << std::setprecision(2);
-    file << std::setw(9) << xpos_[i] << " " ;
+    file << std::setw(9) << xpos_[i] << " ";
     file << std::setw(10)<< ypos_[i] << " ";
     file << std::setw(7) << zpos_[i] << "  ";
-    //file << std::setw(7) << time_[i] << "  "; // NBNB-PAL: include time here
     file << std::setw(7) << (alpha_[i]==RMISSING                    ? WELLMISSING : exp(alpha_[i]))                    << " ";
     file << std::setw(7) << (alpha_highcut_background_[i]==RMISSING ? WELLMISSING : exp(alpha_highcut_background_[i])) << " ";
     file << std::setw(7) << (alpha_highcut_seismic_[i]==RMISSING    ? WELLMISSING : exp(alpha_highcut_seismic_[i]))    << " ";
@@ -789,7 +788,7 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
     file << std::setw(7) << (beta_highcut_background_[i]==RMISSING  ? WELLMISSING : exp(beta_highcut_background_[i]))  << " ";
     file << std::setw(7) << (beta_highcut_seismic_[i]==RMISSING     ? WELLMISSING : exp(beta_highcut_seismic_[i]))     << " ";
     file << std::setw(7) << (beta_seismic_resolution_[i]==RMISSING  ? WELLMISSING : exp(beta_seismic_resolution_[i]))  << "  ";
-    file << std::setw(7) << std::setprecision(5);
+    file << std::setprecision(5);
     file << std::setw(7) << (rho_[i]==RMISSING                      ? WELLMISSING : exp(rho_[i]))                      << " ";
     file << std::setw(7) << (rho_highcut_background_[i]==RMISSING   ? WELLMISSING : exp(rho_highcut_background_[i]))   << " ";
     file << std::setw(7) << (rho_highcut_seismic_[i]==RMISSING      ? WELLMISSING : exp(rho_highcut_seismic_[i]))      << " ";
@@ -805,7 +804,6 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
     if (gotCpp)
       for (int a=0 ; a<nAngles_ ; a++)
         file << std::setw(7) << (cpp_[a][i]==RMISSING               ? WELLMISSING : cpp_[a][i])                        << " ";
-
     file << "\n";
   }
   file.close();

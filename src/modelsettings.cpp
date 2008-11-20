@@ -22,6 +22,7 @@ ModelSettings::ModelSettings(void)
   indBGTrend_            =     NULL;
   indWavelet_            =     NULL;
   indFacies_             =     NULL;
+  faciesLabels_          =     NULL;
   faciesNames_           =     NULL;
   nFacies_               =        0;
   nWells_                =        0;
@@ -124,6 +125,9 @@ ModelSettings::~ModelSettings(void)
 
   if (indFacies_ != NULL)
     delete [] indFacies_;
+
+  if (faciesLabels_ != NULL)
+    delete [] faciesLabels_;
 
   if (faciesNames_ != NULL)
   {
@@ -257,6 +261,15 @@ ModelSettings::setIndicatorFacies(int * indFacies, int nWells)
 {
   for (int i=0 ; i<nWells ; i++)
     indFacies_[i] = indFacies[i];
+}
+
+void           
+ModelSettings::setFaciesLabels(int * faciesLabels, int nFacies)
+{
+  faciesLabels_ = new int[nFacies];
+  for (int i=0 ; i<nFacies ; i++) {
+    faciesLabels_[i] = faciesLabels[i];
+  }
 }
 
 void           

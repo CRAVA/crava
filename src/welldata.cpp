@@ -456,9 +456,10 @@ WellData::writeRMSWell(void)
   fprintf(file,"CRAVA\n");
   fprintf(file,"%s %.2f %.2f\n",wellname_,xpos0_,ypos0_);
   if (nFacies_ > 0)
-    fprintf(file,"%d\n",3*3+1);
+    fprintf(file,"%d\n",1+3*3+1);
   else
-    fprintf(file,"%d\n",3*3);
+    fprintf(file,"%d\n",1+3*3);
+  fprintf(file,"Time  UNK lin\n");
   for (int i =0 ; i<3 ; i++) {
     fprintf(file,"%s   UNK lin\n",params[i]);
     fprintf(file,"%s%d UNK lin\n",params[i],int(maxHz_background));
@@ -472,8 +473,8 @@ WellData::writeRMSWell(void)
   }
   for (int i=0 ; i<nd_ ;i++) {
     if (nFacies_ > 0)
-      fprintf(file,"%.4f %.4f %.4f %.5f %.5f %.5f %.5f %.5f %.5f %.5f %.5f %.5f %d\n",
-              xpos_[i],ypos_[i],zpos_[i],
+      fprintf(file,"%.4f %.4f %.4f %.4f %.5f %.5f %.5f %.5f %.5f %.5f %.5f %.5f %.5f %d\n",
+              xpos_[i],ypos_[i],zpos_[i],zpos_[i],
               (alpha_[i]==RMISSING                       ? WELLMISSING : alpha_[i]), 
               (alpha_background_resolution_[i]==RMISSING ? WELLMISSING : alpha_background_resolution_[i]), 
               (alpha_seismic_resolution_[i]==RMISSING    ? WELLMISSING : alpha_seismic_resolution_[i]),
@@ -486,8 +487,8 @@ WellData::writeRMSWell(void)
               (facies_[i]==IMISSING                      ? int(WELLMISSING) : facies_[i])
               );
     else
-      fprintf(file,"%.4f %.4f %.4f %.5f %.5f %.5f %.5f %.5f %.5f %.5f %.5f %.5f\n",
-              xpos_[i],ypos_[i],zpos_[i],
+      fprintf(file,"%.4f %.4f %.4f %.4f %.5f %.5f %.5f %.5f %.5f %.5f %.5f %.5f %.5f\n",
+              xpos_[i],ypos_[i],zpos_[i],zpos_[i],
               (alpha_[i]==RMISSING                       ? WELLMISSING : alpha_[i]), 
               (alpha_background_resolution_[i]==RMISSING ? WELLMISSING : alpha_background_resolution_[i]), 
               (alpha_seismic_resolution_[i]==RMISSING    ? WELLMISSING : alpha_seismic_resolution_[i]),

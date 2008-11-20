@@ -700,28 +700,30 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
       sprintf(errText,"%s Could not make the time simulation grid.\n",errText);
       failed = true;
     }
-    error = timeBGSimbox->checkError(modelSettings->getLzLimit(),errText);
-    if(error == 0)
-    {
-      LogKit::LogFormatted(LogKit::LOW,"\nTime interval used for background modelling:\n");
-      double zmin, zmax;
-      timeBGSimbox->getMinMaxZ(zmin,zmax);
-      LogKit::LogFormatted(LogKit::LOW,"  Two-way-time          avg / min / max    : %7.1f /%7.1f /%7.1f\n",
-                           zmin+timeBGSimbox->getlz()*timeBGSimbox->getAvgRelThick()*0.5,
-                           zmin,zmax); 
-      LogKit::LogFormatted(LogKit::LOW,"  Interval thickness    avg / min / max    : %7.1f /%7.1f /%7.1f\n", 
-                           timeBGSimbox->getlz()*timeBGSimbox->getAvgRelThick(),
-                           timeBGSimbox->getlz()*timeBGSimbox->getMinRelThick(),
-                           timeBGSimbox->getlz());
-      LogKit::LogFormatted(LogKit::LOW,"  Sampling density      avg / min / max    : %7.2f /%7.2f /%7.2f\n", 
-                           timeBGSimbox->getdz()*timeBGSimbox->getAvgRelThick(),
-                           timeBGSimbox->getdz(),
-                           timeBGSimbox->getdz()*timeBGSimbox->getMinRelThick());
-    }
-    else
-    {
-      sprintf(errText,"%s Could not make the grid for background model.\n",errText);
-      failed = true;
+    if(modelSettings->getGenerateSeismic() == false) {
+      error = timeBGSimbox->checkError(modelSettings->getLzLimit(),errText);
+      if(error == 0)
+      {
+        LogKit::LogFormatted(LogKit::LOW,"\nTime interval used for background modelling:\n");
+        double zmin, zmax;
+        timeBGSimbox->getMinMaxZ(zmin,zmax);
+        LogKit::LogFormatted(LogKit::LOW,"  Two-way-time          avg / min / max    : %7.1f /%7.1f /%7.1f\n",
+                             zmin+timeBGSimbox->getlz()*timeBGSimbox->getAvgRelThick()*0.5,
+                             zmin,zmax); 
+        LogKit::LogFormatted(LogKit::LOW,"  Interval thickness    avg / min / max    : %7.1f /%7.1f /%7.1f\n", 
+                             timeBGSimbox->getlz()*timeBGSimbox->getAvgRelThick(),
+                             timeBGSimbox->getlz()*timeBGSimbox->getMinRelThick(),
+                             timeBGSimbox->getlz());
+        LogKit::LogFormatted(LogKit::LOW,"  Sampling density      avg / min / max    : %7.2f /%7.2f /%7.2f\n", 
+                             timeBGSimbox->getdz()*timeBGSimbox->getAvgRelThick(),
+                             timeBGSimbox->getdz(),
+                             timeBGSimbox->getdz()*timeBGSimbox->getMinRelThick());
+      }
+      else
+      {
+        sprintf(errText,"%s Could not make the grid for background model.\n",errText);
+        failed = true;
+      }
     }
   }
 
@@ -740,7 +742,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
   Surface * tsurf = new Surface(dynamic_cast<const Surface &> (timeSimbox->GetTopSurface()));
   timeSimboxConstThick->setDepth(tsurf, 0, timeSimbox->getlz(), timeSimbox->getdz());
 
-  if((outputFlag & ModelSettings::NOTIME) == 0)
+  if((outputFlag & ModelSettings::EXTRA_SURFACES) > 0 && (outputFlag & ModelSettings::NOTIME) == 0)
     timeSimboxConstThick->writeTopBotGrids("Surface_Top_Time_ConstThick", 
                                            "Surface_Base_Time_ConstThick", 
                                            outputFormat);
@@ -894,13 +896,10 @@ Model::setupExtendedTimeSimbox(Simbox   * timeSimbox,
 
   timeSimbox->setDepth(topSurf, botSurf, nz);
   
-  if((outputFlag & ModelSettings::NOTIME) == 0)
+  if((outputFlag & ModelSettings::EXTRA_SURFACES) > 0 && (outputFlag & ModelSettings::NOTIME) == 0)
     timeSimbox->writeTopBotGrids("Surface_Top_Time_Extended", 
                                  "Surface_Base_Time_Extended", 
                                  outputFormat);
-
-  //writeSurfaceToFile(topSurf,"Surface_Top_Time_Extended" ,outputFormat);
-  //writeSurfaceToFile(botSurf,"Surface_Base_Time_Extended",outputFormat);
 
   delete refPlane;
 }
@@ -970,13 +969,10 @@ Model::setupExtendedBackgroundSimbox(Simbox   * timeSimbox,
   timeBGSimbox = new Simbox(timeSimbox);
   timeBGSimbox->setDepth(topSurf, botSurf, nz);
 
-  if((outputFlag & ModelSettings::NOTIME) == 0)
+  if((outputFlag & ModelSettings::EXTRA_SURFACES) > 0 && (outputFlag & ModelSettings::NOTIME) == 0)
     timeSimbox->writeTopBotGrids("Surface_Top_Time_BG", 
                                  "Surface_Base_Time_BG", 
                                  outputFormat);
-  //writeSurfaceToFile(topSurf,"Surface_Top_Time_BG" ,outputFormat);
-  //writeSurfaceToFile(botSurf,"Surface_Base_Time_BG",outputFormat);
-
 }
 
 double *
@@ -1059,8 +1055,8 @@ Model::estimateXYPaddingSizes(Simbox         * timeSimbox,
     xPad          = factor * MAXIM(fabs(range1*cos(angle)),fabs(range2*sin(angle)));
     yPad          = factor * MAXIM(fabs(range1*sin(angle)),fabs(range2*cos(angle)));
 
-    xPadFac       = float(MINIM(1.0f, xPad / timeSimbox->getlx())); // A padding of more than 100% is insensible
-    yPadFac       = float(MINIM(1.0f, yPad / timeSimbox->getly()));
+    xPadFac       = static_cast<float>(MINIM(1.0f, xPad / timeSimbox->getlx())); // A padding of more than 100% is insensible
+    yPadFac       = static_cast<float>(MINIM(1.0f, yPad / timeSimbox->getly()));
 
     modelSettings->setXpad(xPadFac);
     modelSettings->setYpad(yPadFac);
@@ -1088,10 +1084,9 @@ Model::estimateZPaddingSize(Simbox         * timeSimbox,
   float zPadFac = 0.0f;
   if (modelSettings->getZpad() == 0.0f)
   {
-    float factor  = 1.0f;
-    float wLength = 300.0f;                  // Assume a wavelet is approx 300ms.
-    zPad          = factor * wLength / 2.0f; // Use one wavelet as padding
-    zPadFac       = float(MINIM(1.0f,zPad / (timeSimbox->getlz()*timeSimbox->getMinRelThick())));
+    float wLength = 300.0f;           // Assume a wavelet is approx 300ms.
+    zPad          = wLength / 2.0f;   // Use one wavelet as padding
+    zPadFac       = static_cast<float>(MINIM(1.0f,zPad / (timeSimbox->getlz()*timeSimbox->getMinRelThick())));
     
     modelSettings->setZpad(zPadFac);
     newPadding = true;
@@ -1480,8 +1475,8 @@ void Model::checkFaciesNames(WellData      ** wells,
     }
   }
 
-  int     nnames  = globalmax - globalmin + 1;
-  char ** names   = new char * [nnames];
+  int     nnames = globalmax - globalmin + 1;
+  char ** names  = new char * [nnames];
 
   for (int i =0 ; i < nnames ; i++) {
     names[i] = NULL;
@@ -1519,7 +1514,8 @@ void Model::checkFaciesNames(WellData      ** wells,
     if(names[i] != NULL) 
       nFacies++;
 
-  char ** faciesNames = new char * [nFacies];
+  char ** faciesNames  = new char * [nFacies];
+  int   * faciesLabels = new int [nFacies];
 
   int j = -1;
   for(int i=0 ; i<nnames ; i++)
@@ -1527,14 +1523,26 @@ void Model::checkFaciesNames(WellData      ** wells,
     if(names[i] != NULL)
     {
       j++;
-      faciesNames[j]   = names[i];
+      faciesNames[j]  = names[i];
+      faciesLabels[j] = globalmin + i;
     }
   }
   modelSettings->setNumberOfFacies(nFacies);
   modelSettings->setFaciesNames(faciesNames,nFacies);
+  modelSettings->setFaciesLabels(faciesLabels,nFacies);
 
+  delete [] faciesLabels;
   delete [] faciesNames;
   delete [] names;
+
+  // NBNB-PAL: Burde vi ikke deleted slik?
+  //for (int i = 0 ; i < nFacies ; i++)
+  //  delete [] faciesNames[i];
+  //delete [] faciesNames;
+  //for (int i = 0 ; i < nFacies ; i++)
+  //  delete [] names[i];
+  //delete [] names;
+
 }
 
 void 

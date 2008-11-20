@@ -30,6 +30,7 @@ public:
   float             * getSNRatio(void)              const { return SNRatio_          ;} 
   bool              * getMatchEnergies(void)        const { return matchEnergies_    ;} 
   char              * getFaciesName(int i)          const { return faciesNames_[i]   ;}
+  int                 getFaciesLabel(int i)         const { return faciesLabels_[i]  ;}
   int                 getIndicatorBGTrend(int i)    const { return indBGTrend_[i]    ;}
   int                 getIndicatorWavelet(int i)    const { return indWavelet_[i]    ;}
   int                 getIndicatorFacies(int i)     const { return indFacies_[i]     ;}
@@ -95,6 +96,7 @@ public:
   void                setIndicatorBGTrend(int * indBGTrend, int nWells);
   void                setIndicatorWavelet(int * indWavelet, int nWells);
   void                setIndicatorFacies(int * indFacies, int nWells);
+  void                setFaciesLabels(int * faciesLabels, int nFacies);
   void                setFaciesNames(char ** faciesNames, int nFacies);
   void                setNumberOfFacies(int nFacies)              { nFacies_          = nFacies          ;}
   void                setNumberOfWells(int nWells)                { nWells_           = nWells           ;} 
@@ -161,7 +163,9 @@ public:
                                   FACIESPROB         = 524288,
                                   FACIESPROBRELATIVE = 1048576,
                                   BLOCKED_WELLS      = 2097152,
-                                  BLOCKED_LOGS       = 4194304};
+                                  BLOCKED_LOGS       = 4194304,
+                                  EXTRA_SURFACES     = 8388608,
+                                  EXTRA_GRIDS        = 16777216};
                    
   enum                sseismicTypes{STANDARDSEIS = 0, PSSEIS = 1};
                    
@@ -188,6 +192,7 @@ private:
   int               * indFacies_;             // Use well to estimate facies? (1=yes,0=no)
                    
   char             ** faciesNames_;           // Facies names
+  int               * faciesLabels_;          // Facies labels
   int                 nFacies_;
                    
   int                 nWells_;

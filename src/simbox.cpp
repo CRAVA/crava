@@ -450,7 +450,7 @@ Simbox::checkError(double lzLimit, char * errText)
       }
       ry += dy_;
     }
-  
+
     if(lzMin < 0.0)
     {
       status_ = INTERNALERROR;
