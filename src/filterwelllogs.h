@@ -15,7 +15,7 @@ class FilterWellLogs
 {
 public:
   FilterWellLogs(const Simbox * timeSimboxConstThick, 
-                 const Simbox * timeSimboxPropThick, 
+                 const Simbox * timeSimboxOrigThick, 
                  FFTGrid      * postCovAlpha, 
                  FFTGrid      * postCovBeta, 
                  FFTGrid      * postCovRho, 
@@ -43,7 +43,7 @@ public:
 
 private:
   void           doFiltering(const Simbox    * timeSimboxConstThick, 
-                             const Simbox    * timeSimboxPropThick, 
+                             const Simbox    * timeSimboxOrigThick, 
                              WellData       ** wells, 
                              int               nWells,
                              float          ** sigma0,

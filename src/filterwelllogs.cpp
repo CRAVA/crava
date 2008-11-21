@@ -16,7 +16,7 @@
 
 
 FilterWellLogs::FilterWellLogs(const Simbox * timeSimboxConstThick, 
-                               const Simbox * timeSimboxPropThick, 
+                               const Simbox * timeSimboxOrigThick, 
                                FFTGrid      * postCovAlpha,
                                FFTGrid      * postCovBeta, 
                                FFTGrid      * postCovRho, 
@@ -122,7 +122,7 @@ FilterWellLogs::FilterWellLogs(const Simbox * timeSimboxConstThick,
     priorCorr[i] =corrprior[i];
 
   doFiltering(timeSimboxConstThick, 
-              timeSimboxPropThick, 
+              timeSimboxOrigThick, 
               wells,nWells, sigma0,
               postcova,postcovb,postcovr,
               postcrab,postcrar,postcrbr, 
@@ -165,7 +165,7 @@ FilterWellLogs::~FilterWellLogs()
 }
 
 void FilterWellLogs::doFiltering(const Simbox  * timeSimboxConstThick, 
-                                 const Simbox  * timeSimboxPropThick, 
+                                 const Simbox  * timeSimboxOrigThick, 
                                  WellData     ** wells, 
                                  int             nWells, 
                                  float        ** sigma0,
@@ -224,7 +224,7 @@ void FilterWellLogs::doFiltering(const Simbox  * timeSimboxConstThick,
   for (int w1 = 0 ; w1 < nWells ; w1++)
   {
     BlockedLogs * bw     = wells[w1]->getBlockedLogsConstThick();
-    BlockedLogs * bwOrig = wells[w1]->getBlockedLogsPropThick();
+    BlockedLogs * bwOrig = wells[w1]->getBlockedLogsOrigThick();
     //
     // Extract a one-value-for-each-layer array of blocked logs
     //
@@ -249,7 +249,7 @@ void FilterWellLogs::doFiltering(const Simbox  * timeSimboxConstThick,
     {
       double x0,y0,z;
       timeSimboxConstThick->getCoord(ipos[0],jpos[0],kpos[0]+i,x0,y0,z);
-      int insideOrigSimbox = timeSimboxPropThick->getIndex(x0,y0,z);
+      int insideOrigSimbox = timeSimboxOrigThick->getIndex(x0,y0,z);
       if(insideOrigSimbox == IMISSING) {
         vtAlpha[i] = RMISSING;
         vtBeta[i]  = RMISSING;
@@ -385,12 +385,21 @@ void FilterWellLogs::doFiltering(const Simbox  * timeSimboxConstThick,
 
     for(int i=0;i<nz;i++)
     {
-      vtAlphaFiltered_[w1][i] = alpha_rAmp[i]/nzp + vtAlphaBg[i];
-      vtBetaFiltered_[w1][i]  = beta_rAmp[i]/nzp  + vtBetaBg[i];
-      vtRhoFiltered_[w1][i]   = rho_rAmp[i]/nzp   + vtRhoBg[i];
-      vtAlpha_[w1][i]         = vtAlpha[i];
-      vtBeta_[w1][i]          = vtBeta[i];
-      vtRho_[w1][i]           = vtRho[i];
+      if (vtAlpha[i]==RMISSING || vtBeta[i]==RMISSING || vtRho[i]==RMISSING) 
+      {
+        vtAlphaFiltered_[w1][i] = RMISSING;
+        vtBetaFiltered_[w1][i]  = RMISSING;
+        vtRhoFiltered_[w1][i]   = RMISSING;
+      }
+      else // Filtered log is only meaningful where alpha+beta+rho are defined
+      {
+        vtAlphaFiltered_[w1][i] = alpha_rAmp[i]/nzp + vtAlphaBg[i];
+        vtBetaFiltered_[w1][i]  = beta_rAmp[i]/nzp  + vtBetaBg[i];
+        vtRhoFiltered_[w1][i]   = rho_rAmp[i]/nzp   + vtRhoBg[i];
+      }
+      vtAlpha_[w1][i] = vtAlpha[i];
+      vtBeta_[w1][i]  = vtBeta[i];
+      vtRho_[w1][i]   = vtRho[i];
     }
 
     // Set the filtered vertical trends as logs in original simbox

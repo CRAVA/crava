@@ -45,11 +45,11 @@ public:
   char          * getFaciesName(int i)               const { return faciesNames_[i]            ;}
   void            getMinMaxFnr(int &min, int &max) const;
 
-  BlockedLogs   * getBlockedLogsPropThick(void)      const { return blockedLogsOrigThick_ ;}
+  BlockedLogs   * getBlockedLogsOrigThick(void)      const { return blockedLogsOrigThick_ ;}
   BlockedLogs   * getBlockedLogsConstThick(void)     const { return blockedLogsConstThick_ ;} 
   BlockedLogs   * getBlockedLogsExtendedBG(void)     const { return blockedLogsExtendedBG_ ;} 
 
-  void            setBlockedLogsPropThick(BlockedLogs * bl)  { blockedLogsOrigThick_  = bl ;}
+  void            setBlockedLogsOrigThick(BlockedLogs * bl)  { blockedLogsOrigThick_  = bl ;}
   void            setBlockedLogsConstThick(BlockedLogs * bl) { blockedLogsConstThick_ = bl ;}
   void            setBlockedLogsExtendedBG(BlockedLogs * bl) { blockedLogsExtendedBG_ = bl ;}
 

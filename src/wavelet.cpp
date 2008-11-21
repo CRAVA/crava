@@ -488,10 +488,10 @@ Wavelet::calculateSNRatio(Simbox * simbox, FFTGrid * seisCube, WellData ** wells
     nActiveData[i]     = 0;
     errVarWell[i]      = 0.0f;
     dataVarWell[i]     = 0.0f;
-    const int * ipos   = wells[i]->getBlockedLogsPropThick()->getIpos();
-    const int * jpos   = wells[i]->getBlockedLogsPropThick()->getJpos();
+    const int * ipos   = wells[i]->getBlockedLogsOrigThick()->getIpos();
+    const int * jpos   = wells[i]->getBlockedLogsOrigThick()->getJpos();
     dz[i]              = static_cast<float>(simbox->getRelThick(ipos[0],jpos[0])*simbox->getdz());
-    int nBlocks        = wells[i]->getBlockedLogsPropThick()->getNumberOfBlocks();
+    int nBlocks        = wells[i]->getBlockedLogsOrigThick()->getNumberOfBlocks();
     if (nBlocks > maxBlocks)
       maxBlocks = nBlocks;
   }
@@ -504,7 +504,7 @@ Wavelet::calculateSNRatio(Simbox * simbox, FFTGrid * seisCube, WellData ** wells
   {
     if (wells[w]->getUseForWaveletEstimation())
     {
-      BlockedLogs * bl = wells[w]->getBlockedLogsPropThick();
+      BlockedLogs * bl = wells[w]->getBlockedLogsOrigThick();
       //
       // Block seismic data for this well
       //

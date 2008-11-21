@@ -1280,7 +1280,7 @@ Model::processWells(WellData     **& wells,
           wells[i]->filterLogs();
           wells[i]->lookForSyntheticVsLog(rankCorr[i]);
           wells[i]->calculateDeviation(devAngle[i], timeSimbox);
-          wells[i]->setBlockedLogsPropThick( new BlockedLogs(wells[i], timeSimbox, randomGen) );
+          wells[i]->setBlockedLogsOrigThick( new BlockedLogs(wells[i], timeSimbox, randomGen) );
           wells[i]->setBlockedLogsConstThick( new BlockedLogs(wells[i], timeSimboxConstThick_, randomGen) );
           if (timeBGSimbox==NULL)
             wells[i]->setBlockedLogsExtendedBG( new BlockedLogs(wells[i], timeSimbox, randomGen) ); // Need a copy constructor?
@@ -1291,7 +1291,7 @@ Model::processWells(WellData     **& wells,
           if((modelSettings->getOutputFlag() & ModelSettings::WELLS) > 0) 
             wells[i]->writeRMSWell();
           if(modelSettings->getDebugFlag() > 0)
-            wells[i]->getBlockedLogsPropThick()->writeToFile(static_cast<float>(timeSimbox->getdz()), 2, true); // 2 = BG logs
+            wells[i]->getBlockedLogsOrigThick()->writeToFile(static_cast<float>(timeSimbox->getdz()), 2, true); // 2 = BG logs
            
           validWells[count] = i;
           count++;      
@@ -1534,15 +1534,6 @@ void Model::checkFaciesNames(WellData      ** wells,
   delete [] faciesLabels;
   delete [] faciesNames;
   delete [] names;
-
-  // NBNB-PAL: Burde vi ikke deleted slik?
-  //for (int i = 0 ; i < nFacies ; i++)
-  //  delete [] faciesNames[i];
-  //delete [] faciesNames;
-  //for (int i = 0 ; i < nFacies ; i++)
-  //  delete [] names[i];
-  //delete [] names;
-
 }
 
 void 
@@ -2158,7 +2149,7 @@ void Model::processPriorFaciesProb(float         *& priorFacies,
         // will make the prior probabilities slightly different, but that
         // should not be a problem.
         //
-        BlockedLogs * bl = wells[w]->getBlockedLogsPropThick();
+        BlockedLogs * bl = wells[w]->getBlockedLogsOrigThick();
         bl->getVerticalTrend(bl->getAlpha(),vtAlpha);
         bl->getVerticalTrend(bl->getBeta(),vtBeta);
         bl->getVerticalTrend(bl->getRho(),vtRho);

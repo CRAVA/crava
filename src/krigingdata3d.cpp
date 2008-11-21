@@ -32,7 +32,7 @@ KrigingData3D::KrigingData3D(WellData ** wells,
   int ntot = 0;
   int maxBlocks = 0;
   for (int w = 0 ; w < nWells ; w++) {
-    int nBlocks = wells[w]->getBlockedLogsPropThick()->getNumberOfBlocks();
+    int nBlocks = wells[w]->getBlockedLogsOrigThick()->getNumberOfBlocks();
     ntot += nBlocks;
     if (nBlocks > maxBlocks)
       maxBlocks = nBlocks;
@@ -45,7 +45,7 @@ KrigingData3D::KrigingData3D(WellData ** wells,
   //
   for (int w = 0 ; w < nWells ; w++) {
 
-    BlockedLogs * bl = wells[w]->getBlockedLogsPropThick();
+    BlockedLogs * bl = wells[w]->getBlockedLogsOrigThick();
     const int nBlocks = bl->getNumberOfBlocks();
    
     const float * alpha;
