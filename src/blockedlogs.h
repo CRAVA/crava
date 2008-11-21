@@ -1,6 +1,7 @@
 #ifndef BLOCKEDLOGS_H
 #define BLOCKEDLOGS_H
 
+#include "lib/global_def.h"
 #include "nrlib/iotools/logkit.hpp"
 #include <stdlib.h>
 #include <string.h>
@@ -48,9 +49,10 @@ public:
   void           getVerticalTrend(const int * blockedLog,int * trend, RandomGen * random);
   void           getBlockedGrid(FFTGrid * grid, float * blockedLog);
 
-  void           setLogFromVerticalTrend(float * vertical_trend, double z0, double dz, int nz, std::string type);
+  void           setLogFromVerticalTrend(float * vertical_trend, double z0, double dz, 
+                                         int nz, std::string type, int iAngle = RMISSING);
+  void           setLogFromGrid(FFTGrid * grid, int iAngle, int nAngles, std::string type);
 
-  void           writeToFile(float dz, int type, bool exptrans) const;
   void           writeRMSWell(ModelSettings * modelSettings);
 
 private:

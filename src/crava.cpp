@@ -518,7 +518,7 @@ Crava:: divideDataByScaleWavelet()
 
           if(k > nz_)
           {
-            float dist      = seisData_[l]->getDistToBoundary( k, nz_, nzp_);  
+            float dist = seisData_[l]->getDistToBoundary( k, nz_, nzp_);  
             rData[k] *= MAXIM(1-dist*dist,0);
           }
 

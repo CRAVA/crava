@@ -16,7 +16,8 @@ public:
             WellData      ** wells, 
             Surface       ** estimInterval,
             ModelSettings  * modelSettings, 
-            float          * reflCoef);
+            float          * reflCoef,
+            int              iAngle);
   Wavelet1D(char          * fileName, 
             int             fileFormat, 
             ModelSettings * modelSettings, 

@@ -92,20 +92,24 @@ BlockedLogs::~BlockedLogs(void)
     delete [] beta_seismic_resolution_;
   if (rho_seismic_resolution_ != NULL)
     delete [] rho_seismic_resolution_;
+
   if (real_seismic_data_ != NULL) {
     for (int i=0 ; i<nAngles_ ; i++)
       if (real_seismic_data_[i] != NULL)
         delete real_seismic_data_[i];
+    delete [] real_seismic_data_;
   }
   if (synt_seismic_data_ != NULL) {
     for (int i=0 ; i<nAngles_ ; i++)
       if (synt_seismic_data_[i] != NULL)
         delete synt_seismic_data_[i];
+    delete [] synt_seismic_data_;
   }
   if (cpp_ != NULL) { 
     for (int i=0 ; i<nAngles_ ; i++)
       if (cpp_[i] != NULL)
         delete cpp_[i];
+    delete [] cpp_;
   }
 }
 
@@ -333,9 +337,9 @@ BlockedLogs::findSizeAndBlockPointers(WellData * well,
   bInd[firstM_] = firstK; // The first defined well log entry contributes to this block.
 
   // 
-  // Currently the well positions are given in float rather than double. Unfortunately, this 
-  // allows a well to oscillate between two or more cells, leading to a breakdown of the 
-  // algorithm below. To remedy for this we introduce array simboxInd which records the
+  // The well positions used to be given in float rather than double. Unfortunately, this 
+  // allowed a well to oscillate between two or more cells, leading to a breakdown of the 
+  // algorithm below. To remedy for this we introduced array simboxInd which records the
   // indices of the simbox cells that are already accounted for, so that these are not
   // enlisted more than one time.
   //
@@ -545,14 +549,47 @@ BlockedLogs::getBlockedGrid(FFTGrid * grid,
 }
 
 //------------------------------------------------------------------------------
+void 
+BlockedLogs::setLogFromGrid(FFTGrid    * grid, 
+                            int          iAngle,
+                            int          nAngles,
+                            std::string  type)
+{
+  float * blockedLog = new float[nBlocks_];
+
+  for (int m = 0 ; m < nBlocks_ ; m++) {
+    blockedLog[m] = grid->getRealValue(ipos_[m], jpos_[m], kpos_[m]);
+  }
+
+  if (nAngles_ == 0)
+    nAngles_ = nAngles;
+
+  if (type == "REFLECTION_COEFFICIENT") {
+    if (cpp_ == NULL) 
+      cpp_ = new float * [nAngles_];
+    cpp_[iAngle] = blockedLog;
+  }
+  else if (type == "SEISMIC_DATA") {
+    if (real_seismic_data_ == NULL)
+      real_seismic_data_ = new float * [nAngles_];
+    real_seismic_data_[iAngle] = blockedLog;
+  }
+  else {
+    LogKit::LogFormatted(LogKit::ERROR,"\nUnknown log type \""+type
+                         +"\" in BlockedLogs::setLogFromGrid()\n");
+    exit(1);
+  }
+}
+
+//------------------------------------------------------------------------------
 void           
 BlockedLogs::setLogFromVerticalTrend(float      * vertical_trend, 
                                      double       z0,              // z-value of center in top layer
                                      double       dz,              // dz in vertical trend
                                      int          nz,              // layers in vertical trend
-                                     std::string  type)                  
+                                     std::string  type,
+                                     int          iAngle)                  
 {
-
   float * blockedLog = new float[nBlocks_];
 
   setLogFromVerticalTrend(blockedLog, zpos_, nBlocks_, 
@@ -565,9 +602,14 @@ BlockedLogs::setLogFromVerticalTrend(float      * vertical_trend,
     beta_seismic_resolution_ = blockedLog;
   else if (type == "RHO_SEISMIC_RESOLUTION")
     rho_seismic_resolution_ = blockedLog;
+  else if (type == "SYNTHETIC_SEISMIC") {
+    if (synt_seismic_data_ == NULL)
+      synt_seismic_data_ = new float * [nAngles_]; // nAngles is set along with real_seismic_data_
+    synt_seismic_data_[iAngle] = blockedLog;
+  }
   else {
-    LogKit::LogFormatted(LogKit::ERROR,"\nUnknown log type \"%s\" in BlockedLogs::setLogFromVerticalTrend()\n",
-                         type.c_str());
+    LogKit::LogFormatted(LogKit::ERROR,"\nUnknown log type \""+type+
+                         "\" in BlockedLogs::setLogFromVerticalTrend()\n");
     exit(1);
   }
 }
@@ -625,76 +667,6 @@ BlockedLogs::setLogFromVerticalTrend(float     *& blockedLog,
 
     //LogKit::LogFormatted(LogKit::ERROR,"i j  blockedLog[i]   %d %d  %7.3f\n",i,j,blockedLog[i]);
   }
-}
-
-//------------------------------------------------------------------------------
-void 
-BlockedLogs::writeToFile(float dz,
-                         int   type,
-                         bool  exptrans) const
-{
-  std::string wellname(wellname_);
-  NRLib2::Substitute(wellname,"/","_");
-  NRLib2::Substitute(wellname," ","_");
-  
-  std::string filename;
-  if (exptrans)
-    filename = "BW_"+wellname;
-  else
-    filename = "lnBW_"+wellname;
-
-  filename = ModelSettings::makeFullFileName(filename+".dat");
-
-  FILE * file = fopen(filename.c_str(), "w");
-
-  float alpha, beta, rho;
-  float z0 = dz/2.0f;
-
-  for (int b = 0 ; b < nBlocks_ ; b++) 
-  {
-    if (type == 1) {
-      alpha = alpha_[b];
-      beta  = beta_[b];
-      rho   = rho_[b];
-    } 
-    else if (type == 2) {
-      alpha = alpha_highcut_background_[b];
-      beta  = beta_highcut_background_[b];
-      rho   = rho_highcut_background_[b];
-    }
-    else {
-      alpha = alpha_highcut_seismic_[b];
-      beta  = beta_highcut_seismic_[b];
-      rho   = rho_highcut_seismic_[b];
-    }
-
-    if (alpha != RMISSING) { 
-      if (exptrans) 
-        alpha = exp(alpha);
-    }
-    else
-      alpha = WELLMISSING;
-
-    if (beta != RMISSING) { 
-      if (exptrans) 
-        beta = exp(beta);
-    }
-    else
-      beta = WELLMISSING;
-    
-    if (rho != RMISSING) { 
-      if (exptrans) 
-        rho = exp(rho);
-    }
-    else
-      rho = WELLMISSING;
-    
-    if (exptrans)
-      fprintf(file,"%8.2f %8.2f %8.2f %8.5f\n",(z0 + kpos_[b]*dz),alpha,beta,rho);
-    else
-      fprintf(file,"%8.2f %8.5f %8.5f %8.5f\n",(z0 + kpos_[b]*dz),alpha,beta,rho);
-  }
-  fclose(file);
 }
 
 //------------------------------------------------------------------------------
@@ -776,6 +748,7 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
   //
   for (int i=0 ; i<lastB_ + 1 ; i++) {
     file << std::right;
+    file << std::fixed;
     file << std::setprecision(2);
     file << std::setw(9) << xpos_[i] << " ";
     file << std::setw(10)<< ypos_[i] << " ";
@@ -794,18 +767,22 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
     file << std::setw(7) << (rho_highcut_seismic_[i]==RMISSING      ? WELLMISSING : exp(rho_highcut_seismic_[i]))      << " ";
     file << std::setw(7) << (rho_seismic_resolution_[i]==RMISSING   ? WELLMISSING : exp(rho_seismic_resolution_[i]))   << "  ";
     if (gotFacies)
-      file << (facies_[i]==IMISSING                                 ? static_cast<int>(WELLMISSING) : facies_[i])      << " ";
-    if (gotRealSeismic)
+      file << (facies_[i]==IMISSING                                 ? static_cast<int>(WELLMISSING) : facies_[i])      << "  ";
+    file << std::scientific;
+    if (gotRealSeismic) {
       for (int a=0 ; a<nAngles_ ; a++)
-        file << std::setw(7) << (real_seismic_data_[a][i]==RMISSING ? WELLMISSING : real_seismic_data_[a][i])          << " ";
-    if (gotSyntSeismic)
+        file << std::setw(12) << (real_seismic_data_[a][i]==RMISSING ? WELLMISSING : real_seismic_data_[a][i])          << " ";
+      file << " ";
+    }
+    if (gotSyntSeismic) {
       for (int a=0 ; a<nAngles_ ; a++)
-        file << std::setw(7) << (synt_seismic_data_[a][i]==RMISSING ? WELLMISSING : synt_seismic_data_[a][i])          << " ";
+        file << std::setw(12) << (synt_seismic_data_[a][i]==RMISSING ? WELLMISSING : synt_seismic_data_[a][i])          << " ";
+      file << " ";
+    }
     if (gotCpp)
       for (int a=0 ; a<nAngles_ ; a++)
-        file << std::setw(7) << (cpp_[a][i]==RMISSING               ? WELLMISSING : cpp_[a][i])                        << " ";
+        file << std::setw(12) << (cpp_[a][i]==RMISSING               ? WELLMISSING : cpp_[a][i])                        << " ";
     file << "\n";
   }
   file.close();
 }
-

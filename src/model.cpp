@@ -162,7 +162,7 @@ Model::Model(char * fileName)
                                  modelSettings_, modelFile,
                                  errText, failedDepthConv);
           processWells(wells_, timeSimbox_, timeBGSimbox, timeSimboxConstThick_, 
-                       randomGen_, modelSettings_, modelFile, 
+                       seisCube_, randomGen_, modelSettings_, modelFile, 
                        errText, failedWells);
           loadExtraSurfaces(waveletEstimInterval_, 
                             faciesEstimInterval_,
@@ -1196,6 +1196,7 @@ Model::processWells(WellData     **& wells,
                     Simbox         * timeSimbox,
                     Simbox         * timeBGSimbox,
                     Simbox         * timeSimboxConstThick,
+                    FFTGrid       ** seisCube,
                     RandomGen      * randomGen,
                     ModelSettings *& modelSettings, 
                     ModelFile      * modelFile,
@@ -1282,6 +1283,9 @@ Model::processWells(WellData     **& wells,
           wells[i]->calculateDeviation(devAngle[i], timeSimbox);
           wells[i]->setBlockedLogsOrigThick( new BlockedLogs(wells[i], timeSimbox, randomGen) );
           wells[i]->setBlockedLogsConstThick( new BlockedLogs(wells[i], timeSimboxConstThick_, randomGen) );
+          int nAngles = modelSettings->getNumberOfAngles();
+          for (int iAngle = 0 ; iAngle < nAngles ; iAngle++) 
+            wells[i]->getBlockedLogsOrigThick()->setLogFromGrid(seisCube_[iAngle],iAngle,nAngles,"SEISMIC_DATA");
           if (timeBGSimbox==NULL)
             wells[i]->setBlockedLogsExtendedBG( new BlockedLogs(wells[i], timeSimbox, randomGen) ); // Need a copy constructor?
           else
@@ -1290,9 +1294,6 @@ Model::processWells(WellData     **& wells,
             wells[i]->countFacies(timeSimbox,faciesCount[i]);
           if((modelSettings->getOutputFlag() & ModelSettings::WELLS) > 0) 
             wells[i]->writeRMSWell();
-          if(modelSettings->getDebugFlag() > 0)
-            wells[i]->getBlockedLogsOrigThick()->writeToFile(static_cast<float>(timeSimbox->getdz()), 2, true); // 2 = BG logs
-           
           validWells[count] = i;
           count++;      
         }
@@ -1948,7 +1949,8 @@ Model::processWavelets(Wavelet     **& wavelet,
                                    wells, 
                                    waveletEstimInterval,                                   
                                    modelSettings, 
-                                   reflectionMatrix[i]);
+                                   reflectionMatrix[i],
+                                   i);
       }
       else
       {

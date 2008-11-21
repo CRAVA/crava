@@ -29,7 +29,8 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
                      WellData      ** wells,
                      Surface       ** estimInterval,
                      ModelSettings  * modelSettings,
-                     float          * reflCoef)
+                     float          * reflCoef,
+                     int              iAngle)
   : Wavelet(1,reflCoef)
 {
   LogKit::LogFormatted(LogKit::MEDIUM,"  Estimating 1D wavelet from seismic data and (nonfiltered) blocked wells\n");
@@ -57,6 +58,9 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
   float   waveletLength = modelSettings->getWaveletTaperingL();
   float * dz            = new float[nWells];
   float * wellWeight    = new float[nWells];
+  float * z0            = new float[nWells]; // Needed to block syntSeis
+  int   * sampleStart   = new int[nWells];   // Needed to block syntSeis
+  int   * sampleStop    = new int[nWells];   // Needed to block syntSeis
   int     nz            = simbox->getnz();                       // NBNB-PAL: Denne settes ovenfor også som nz_
   float   dz0           = static_cast<float>(simbox->getdz());   // NBNB-PAL: Denne settes ovenfor også som dz_
   int     nzp           = seisCube->getNzp();
@@ -105,6 +109,8 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
     ccor_seis_cpp_r[i] = new fftw_real[rnzp];
     wavelet_r[i]       = new fftw_real[rnzp];
     wellWeight[i]      = 0;
+    sampleStart[i]     = 0;
+    sampleStop[i]      = 0;
     const int * ipos   = wells[i]->getBlockedLogsOrigThick()->getIpos();
     const int * jpos   = wells[i]->getBlockedLogsOrigThick()->getJpos();
     dz[i]              = static_cast<float>(simbox->getRelThick(ipos[0],jpos[0])*simbox->getdz());
@@ -179,6 +185,9 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
         fftInv(seis_c[w],seis_r[w],nzp);
         wellWeight[w] = length*dz[w]*(cor_cpp_r[w][0]+cor_cpp_r[w][1]);// Gives most weight to long datasets with  
                                                                        // large reflection coefficients
+        z0[w] = bl->getZpos()[0];
+        sampleStart[w] = start;
+        sampleStop[w]  = start + length;
       }
     }
   }
@@ -193,6 +202,7 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
   rAmp_ = averageWavelets(wavelet_r,nWells,nzp,wellWeight,dz,dz0); // wavelet centered
   cAmp_ = reinterpret_cast<fftw_complex*>(rAmp_);
 
+  float * syntSeis = new float[nz];
   for(int w=0;w<nWells;w++) // gets syntetic seismic with estimated wavelet
   {
     fillInnWavelet(wavelet_r[w],nzp,dz[w]);
@@ -209,7 +219,18 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
     printVecToFile(fileName,synt_seis_r[w], nzp);
     sprintf(fileName,"seis");
     printVecToFile(fileName,seis_r[w], nzp);
+
+    if (wellWeight[w] > 0) 
+    {
+      for (int i = 0 ; i < nz ; i++)
+        syntSeis[i] = 0.0; // Do not use RMISSING (fails in setLogFromVerticalTrend())
+      for (int i = sampleStart[w] ; i < sampleStop[w] ; i++)
+        syntSeis[i] = synt_seis_r[w][i];
+      wells[w]->getBlockedLogsOrigThick()->setLogFromVerticalTrend(syntSeis,z0[w],dz[w],nz,
+                                                                   "SYNTHETIC_SEISMIC",iAngle);
+    }
   }
+  delete [] syntSeis;
   delete [] shiftWell;
 
   float * scaleOptWell    = new float[nWells];
@@ -284,7 +305,10 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
   delete [] seisData;
   delete [] hasData;
   delete [] dz;
+  delete [] z0;
   delete [] wellWeight;
+  delete [] sampleStart;
+  delete [] sampleStop;
   for(i=0;i<nWells;i++)
   {
     delete [] cpp_r[i]; 

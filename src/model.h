@@ -79,6 +79,7 @@ private:
                                 Simbox         * timeSimbox,
                                 Simbox         * timeBGSimbox,
                                 Simbox         * timeSimboxConstThick,
+                                FFTGrid       ** seisCube,
                                 RandomGen      * randomGen,
                                 ModelSettings *& modelSettings, 
                                 ModelFile      * modelFile,
