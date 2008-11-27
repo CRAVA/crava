@@ -42,10 +42,10 @@ private:
                                        WellData     ** wells,
                                        Simbox        * simbox,
                                        ModelSettings * modelSettings);
-  void         resampleParameter(FFTGrid * parameterNew,
-                                 FFTGrid * parameterOld,
-                                 Simbox  * simboxNew,
-                                 Simbox  * simboxOld);
+  void         resampleParameter(FFTGrid *& parameterNew,
+                                 FFTGrid  * parameterOld,
+                                 Simbox   * simboxNew,
+                                 Simbox   * simboxOld);
   void         calculateVerticalTrend(WellData   ** wells,
                                       float       * trend, 
                                       float         logMin,

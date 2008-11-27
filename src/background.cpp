@@ -41,7 +41,7 @@ Background::Background(FFTGrid       ** grids,
   if (timeBGSimbox == NULL)
   {
     generateBackgroundModel(bgAlpha,bgBeta,bgRho,wells,timeSimbox,modelSettings);
-    LogKit::LogFormatted(LogKit::LOW,"Moving background model into FFT grids with padding and making padding...\n");
+    LogKit::LogFormatted(LogKit::LOW,"Padding background model...\n");
     backModel_[0]->fillInFromRealFFTGrid(*bgAlpha);
     backModel_[1]->fillInFromRealFFTGrid(*bgBeta);
     backModel_[2]->fillInFromRealFFTGrid(*bgRho);
@@ -49,6 +49,12 @@ Background::Background(FFTGrid       ** grids,
   else
   {
     generateBackgroundModel(bgAlpha,bgBeta,bgRho,wells,timeBGSimbox,modelSettings);
+
+    if((modelSettings->getOutputFlag() & ModelSettings::EXTRA_GRIDS) > 0) {
+      bgAlpha->writeStormFile("lnBG_Vp_BGSimbox", timeBGSimbox);
+      bgBeta->writeStormFile("lnBG_Vs_BGSimbox", timeBGSimbox);
+      bgRho->writeStormFile("lnBG_Rho_BGSimbox", timeBGSimbox);
+    }
 
     FFTGrid * resBgAlpha = NULL;
     FFTGrid * resBgBeta = NULL;
@@ -59,7 +65,13 @@ Background::Background(FFTGrid       ** grids,
     resampleParameter(resBgBeta ,bgBeta ,timeSimbox,timeBGSimbox);
     resampleParameter(resBgRho  ,bgRho  ,timeSimbox,timeBGSimbox);
     
-    LogKit::LogFormatted(LogKit::LOW,"Moving background model into FFT grids with padding and making padding...\n");
+    if((modelSettings->getOutputFlag() & ModelSettings::EXTRA_GRIDS) > 0) {
+      resBgAlpha->writeStormFile("lnBG_Vp_ExtendedSimbox", timeSimbox);
+      resBgBeta->writeStormFile("lnBG_Vs_ExtendedSimbox", timeSimbox);
+      resBgRho->writeStormFile("lnBG_Rho_ExtendedSimbox", timeSimbox);
+    }
+
+    LogKit::LogFormatted(LogKit::LOW,"Padding background model...\n");
     backModel_[0]->fillInFromRealFFTGrid(*resBgAlpha);
     backModel_[1]->fillInFromRealFFTGrid(*resBgBeta);
     backModel_[2]->fillInFromRealFFTGrid(*resBgRho);
@@ -101,7 +113,9 @@ Background::~Background(void)
 
 //-------------------------------------------------------------------------------
 void
-Background::writeBackgrounds(Simbox * simbox, GridMapping * depthMapping, GridMapping * timeMapping) const 
+Background::writeBackgrounds(Simbox      * simbox, 
+                             GridMapping * depthMapping, 
+                             GridMapping * timeMapping) const 
 {
   printf("\nExp-transforming cubes...\n");
   backModel_[0]->expTransf();
@@ -120,7 +134,10 @@ Background::writeBackgrounds(Simbox * simbox, GridMapping * depthMapping, GridMa
   backModel_[0]->writeFile("BG_Vp",  simbox, "NO_LABEL", 0, depthMapping, timeMapping);
   backModel_[1]->writeFile("BG_Vs",  simbox, "NO_LABEL", 0, depthMapping, timeMapping);
   backModel_[2]->writeFile("BG_Rho", simbox, "NO_LABEL", 0, depthMapping, timeMapping);
-  //backModel_[0]->writeStormFile("BG_Vp",  simbox, false, true, true); // To write padding
+  //
+  // For debugging: write cubes not in ASCII, with padding, and with flat top.
+  //
+  //backModel_[0]->writeStormFile("BG_Vp",  simbox, false, true, true);
   //backModel_[1]->writeStormFile("BG_Vs",  simbox, false, true, true);
   //backModel_[2]->writeStormFile("BG_Rho", simbox, false, true, true);
 
@@ -283,7 +300,7 @@ Background::generateBackgroundModel(FFTGrid      *& bgAlpha,
                         DataTarget_, true);
 
   LogKit::LogFormatted(LogKit::LOW,"\nFill volumes using kriging:");
-  kriging.KrigAll(*bgAlpha, *bgBeta, *bgRho,false);
+  kriging.KrigAll(*bgAlpha, *bgBeta, *bgRho, false);
 }
 
 //-------------------------------------------------------------------------------
@@ -922,18 +939,20 @@ void
 Background::fillInVerticalTrend(FFTGrid     * grid, 
                                 const float * trend) 
 {
-  const int nzp = grid->getNzp();
-  const int nyp = grid->getNyp();
-  const int nxp = grid->getNxp();
+  const int nzp = grid->getNzp();  // = nx
+  const int nyp = grid->getNyp();  // = ny
+  const int nxp = grid->getNxp();  // = nz
 
-  grid->setAccessMode(FFTGrid::RANDOMACCESS);
   grid->createRealGrid();
+  grid->setType(FFTGrid::PARAMETER);
+  grid->setAccessMode(FFTGrid::WRITE);
 
+  int rnxp = 2*(nxp/2 + 1);
   for (int k = 0; k < nzp; k++) 
     for (int j = 0; j < nyp; j++)
-      for (int i = 0; i < nxp; i++)
-        grid->setRealValue(i, j, k, trend[k]);
-        
+      for (int i = 0; i < rnxp; i++)
+        grid->setNextReal(trend[k]);
+
   grid->endAccess();
 }
 
@@ -983,27 +1002,25 @@ Background::setClassicVsVp()
 
 //-------------------------------------------------------------------------------
 void
-Background::resampleParameter(FFTGrid * pNew,       // Resample to 
-                              FFTGrid * pOld,       // Resample from 
-                              Simbox  * simboxNew,
-                              Simbox  * simboxOld)
+Background::resampleParameter(FFTGrid *& pNew,        // Resample to 
+                              FFTGrid  * pOld,        // Resample from 
+                              Simbox   * simboxNew,
+                              Simbox   * simboxOld)
 {
-  int nxp = (pOld->getNxp()/2+1)*2;  // Use same padding as for nonresampled cubes
-  int nyp =  pOld->getNyp();         // Use same padding as for nonresampled cubes
-  int nzp =  pOld->getNzp();         // Use same padding as for nonresampled cubes
-
-  int nx  = simboxNew->getnx();      // For this case: nx = nxp(-1) for even(odd) numbers
-  int ny  = simboxNew->getny();      // For this case: ny = nyp
-  int nz  = simboxNew->getnz();      // For this case: nz = nzp
-
-
-  printf("nx, nxp = %d %d\n",nx,nxp);
-  printf("ny, nyp = %d %d\n",ny,nyp);
-  printf("nz, nzp = %d %d\n",nz,nzp);
-  exit(1);
+  int nx  = simboxNew->getnx();
+  int ny  = simboxNew->getny();
+  int nz  = simboxNew->getnz();
+  //
+  // Use same padding as for nonresampled cubes
+  //
+  int nxp = nx + (pOld->getNxp() - pOld->getNxp()); 
+  int nyp = ny + (pOld->getNyp() - pOld->getNyp());
+  int nzp = nz + (pOld->getNzp() - pOld->getNzp());
 
   //
-  // Set up relation between old layer index and new layer index
+  // Set up relation between old layer index and new layer index using
+  //
+  // k2 = dz1/dz2 * k1 + (z02 - z01)/dz2    (from dz2*k2 + z02 = dz1*k1 + z01) 
   //
   double * a = new double[nx*ny];
   double * b = new double[nx*ny];
@@ -1011,16 +1028,16 @@ Background::resampleParameter(FFTGrid * pNew,       // Resample to
   int ij = 0;
   for(int j=0;j<ny;j++) {
     for(int i=0;i<nx;i++) {
-      double dzNew = simboxNew->getdz (i,j); 
-      double dzOld = simboxOld->getdz (i,j); 
+      double dzNew = simboxNew->getdz(i,j); 
+      double dzOld = simboxOld->getdz(i,j); 
       double z0New = simboxNew->getTop(i,j); 
       double z0Old = simboxOld->getTop(i,j); 
-      a[ij] = dzOld/dzNew;
-      b[ij] = (z0Old - z0New)/dzNew; 
+        a[ij] = dzNew/dzOld;
+      b[ij] = (z0New - z0Old)/dzOld; 
       ij++;
     }
   }
-  
+
   //
   // Resample parameter
   //
@@ -1031,10 +1048,12 @@ Background::resampleParameter(FFTGrid * pNew,       // Resample to
 
   pOld->setAccessMode(FFTGrid::RANDOMACCESS);
 
-  for(int k=0;k<nzp;k++) {
+  int rnxp = 2*(nxp/2 + 1);
+
+  for(int k=0 ; k<nzp ; k++) {
     int ij=0;
-    for(int j=0;j<nyp;j++) {
-      for(int i=0;i<nxp;i++) {
+    for(int j=0 ; j<nyp ; j++) {
+      for(int i=0 ; i<rnxp ; i++) {
         float value;
         if(i < nx && j < ny && k < nz) {
           int kOld = static_cast<int>(static_cast<double>(k)*a[ij] + b[ij]); 

@@ -157,7 +157,6 @@ Model::Model(char * fileName)
             timeCutMapping_ = new GridMapping();
             timeCutMapping_->makeTimeTimeMapping(timeCutSimbox);
           }
-          
           processDepthConversion(timeCutSimbox, timeSimbox_,
                                  modelSettings_, modelFile,
                                  errText, failedDepthConv);
@@ -674,7 +673,6 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
     if(failed == false && modelSettings->getGenerateSeismic() == false) {
       //Extends timeSimbox for correlation coverage. Original stored in timeCutSimbox
       setupExtendedTimeSimbox(timeSimbox, correlationDirection, timeCutSimbox, outputFormat, outputFlag); 
-      setupExtendedBackgroundSimbox(timeSimbox, correlationDirection, timeBGSimbox, outputFormat, outputFlag);
     }
     estimateZPaddingSize(timeSimbox, modelSettings);   
     error = timeSimbox->checkError(modelSettings->getLzLimit(),errText);
@@ -701,6 +699,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
       failed = true;
     }
     if(modelSettings->getGenerateSeismic() == false) {
+      setupExtendedBackgroundSimbox(timeSimbox, correlationDirection, timeBGSimbox, outputFormat, outputFlag);
       error = timeBGSimbox->checkError(modelSettings->getLzLimit(),errText);
       if(error == 0)
       {
@@ -955,11 +954,14 @@ Model::setupExtendedBackgroundSimbox(Simbox   * timeSimbox,
   double dMax = tmpSurf->Max();
   double dt = timeSimbox->getdz();
   int nz;
-  if (dt < 10.0) {
-    LogKit::LogFormatted(LogKit::HIGH,"\nReducing sampling density for background",dt);
-    LogKit::LogFormatted(LogKit::HIGH," modelling from %.2fms to 10.0ms\n");
-    dt = 10.0;  // A sampling density of 10.0ms is good enough for BG model
-  }
+  //
+  // NBNB-PAL: I think it is a good idea to use a maximum dt of 10ms.
+  //
+  //if (dt < 10.0) {
+  //  LogKit::LogFormatted(LogKit::HIGH,"\nReducing sampling density for background",dt);
+  //  LogKit::LogFormatted(LogKit::HIGH," modelling from %.2fms to 10.0ms\n");
+  //  dt = 10.0;  // A sampling density of 10.0ms is good enough for BG model
+  // }
   nz = static_cast<int>(ceil(dMax/dt));
   delete tmpSurf;
 
@@ -970,9 +972,9 @@ Model::setupExtendedBackgroundSimbox(Simbox   * timeSimbox,
   timeBGSimbox->setDepth(topSurf, botSurf, nz);
 
   if((outputFlag & ModelSettings::EXTRA_SURFACES) > 0 && (outputFlag & ModelSettings::NOTIME) == 0)
-    timeSimbox->writeTopBotGrids("Surface_Top_Time_BG", 
-                                 "Surface_Base_Time_BG", 
-                                 outputFormat);
+    timeBGSimbox->writeTopBotGrids("Surface_Top_Time_BG", 
+                                   "Surface_Base_Time_BG", 
+                                   outputFormat);
 }
 
 double *
@@ -2752,7 +2754,7 @@ Model::processDepthConversion(Simbox        * timeCutSimbox,
       loadVelocity(velocity, timeSimbox_,
                    modelSettings_, modelFile, 
                    errText, failed);
-
+    
     if(!failed) 
     {
       timeDepthMapping_ = new GridMapping();
@@ -2766,7 +2768,7 @@ Model::processDepthConversion(Simbox        * timeCutSimbox,
         timeDepthMapping_->makeTimeDepthMapping(velocity, timeSimbox_);
       }
     }
-    if(velocity !=NULL)
+    if(velocity != NULL)
       delete velocity;
   }
 }
