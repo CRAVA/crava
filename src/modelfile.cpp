@@ -1082,8 +1082,14 @@ ModelFile::readCommandDepthConversion(char ** params, int & pos, char * errText)
 
   if (strcmp(velocityField_,"CONSTANT")==0 && (depthSurfFile_[0]==NULL || depthSurfFile_[1]==NULL)) 
   {
-    error = 1;
+    error++;
     sprintf(errText,"%sFor CONSTANT velocity fields both top and base depth surfaces must be given (Command %s).\n",
+            errText,params[pos-1]);
+  }
+  if (strcmp(velocityField_,"FROM_INVERSION")==0 && (depthSurfFile_[0]==NULL && depthSurfFile_[1]==NULL)) 
+  {
+    error++;
+    sprintf(errText,"%sWhen the velocity field is taken from inversion either a top depth or a base depth surface must be given (Command %s).\n",
             errText,params[pos-1]);
   }
 

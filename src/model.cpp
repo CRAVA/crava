@@ -167,7 +167,7 @@ Model::Model(char * fileName)
                             faciesEstimInterval_,
                             timeSimbox_, modelFile,
                             errText, failedExtraSurf);
-          if (!failedWells)
+          if (!failedWells && !failedDepthConv)
           {
             processBackground(background_, wells_, timeSimbox_, timeBGSimbox,
                               modelSettings_, modelFile,
