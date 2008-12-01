@@ -1,3 +1,4 @@
+#include <fstream>
 #include <iostream>
 #include <stdio.h>
 #include <math.h>
@@ -57,37 +58,9 @@ ModelFile::ModelFile(char * fileName)
   generateBackground_    = true;
   failed_                = false;
 
-  FILE* file = fopen(fileName,"r");
-  if(file == 0)
-  {
-    LogKit::LogFormatted(LogKit::LOW,"Error: Could not open file %s for reading.\n", fileName);
-    exit(1);
-  }
+  char ** params;
   int nParam = 0;
-  char tmpStr[MAX_STRING];
-  while(fscanf(file,"%s",tmpStr) != EOF)
-  {
-    if(tmpStr[0] != '!')
-      nParam++;
-    else
-      readToEOL(file);
-  }
-  fclose(file);
-
-  char ** params = new char *[nParam+1];
-  file = fopen(fileName,"r");
-  for(int i=0;i<nParam;i++)
-  {  
-    fscanf(file,"%s",tmpStr);
-    while(tmpStr[0] == '!')
-    {
-      readToEOL(file);
-      fscanf(file,"%s",tmpStr);
-    }
-    params[i] = new char[strlen(tmpStr)+1];
-    strcpy(params[i],tmpStr);
-  }
-  fclose(file);
+  parse(fileName,params,nParam);
 
   int nCommands = 37;
   bool * genNeed = new bool[nCommands]; //If run in generate mode, this list holds the necessity.
@@ -125,7 +98,7 @@ ModelFile::ModelFile(char * fileName)
   // Mandatory commands
   // 
   strcpy(commandList[0],"WELLS");
-  strcpy(commandList[1],"DEPTH");                                       // ==> TIME_SURFACES eller TIME
+  strcpy(commandList[1],"DEPTH");                                       // ==> TIME_OUTPUT_INTERVAL
   genNeed[1] = true;
 
   //
@@ -627,6 +600,162 @@ ModelFile::~ModelFile()
   delete [] SNRatio_;
   delete [] waveScale_;
   delete [] seisType_;
+}
+
+ void
+ ModelFile::parse_old(char * fileName, char **& params, int & nParam)
+ {
+   FILE* file = fopen(fileName,"r");
+   if(file == 0)
+   {
+     LogKit::LogFormatted(LogKit::LOW,"Error: Could not open file %s for reading.\n", fileName);
+     exit(1);
+   }
+
+  char tmpStr[MAX_STRING];
+  while(fscanf(file,"%s",tmpStr) != EOF)
+  {
+    if(tmpStr[0] != '!')
+      nParam++;
+    else
+      readToEOL(file);
+  }
+  fclose(file);
+
+  params = new char *[nParam+1];
+  file = fopen(fileName,"r");
+  for(int i=0;i<nParam;i++)
+  {  
+    fscanf(file,"%s",tmpStr);
+    while(tmpStr[0] == '!')
+    {
+      readToEOL(file);
+      fscanf(file,"%s",tmpStr);
+    }
+    params[i] = new char[strlen(tmpStr)+1];
+    strcpy(params[i],tmpStr);
+  }
+  fclose(file);
+ }
+
+ void
+ ModelFile::parse(char * fileName, char **& params, int & nParam)
+ {
+   std::ifstream file(fileName);
+
+   if (!file) {
+     LogKit::LogFormatted(LogKit::ERROR,"Error: Could not open file %s for reading.\n", fileName);
+     exit(1);
+   }
+
+   std::string text;
+   std::vector<std::string> entries;
+
+   while (std::getline(file,text))
+   { 
+     unsigned int iStart = entries.size();
+     trimString(text);              // Remove leading and trailing whitespaces
+     if (text.empty())              // Skip empty lines
+       continue;
+     if (text.substr(0,1) == "!")   // Skip comments
+       continue;
+     findApostropheEnclosedParts(text);
+     splitString(entries,text);
+     reintroduceBlanks(entries,iStart);
+   }
+
+   //
+   // Copy strings to old style char array params
+   //
+   nParam = entries.size();
+   params = new char *[nParam+1];
+   for(int i=0 ; i<nParam ; i++)
+   {  
+     params[i] = new char[entries[i].length() + 1];
+     strcpy(params[i],entries[i].c_str());
+   }
+ }
+
+
+void ModelFile::trimString(std::string & str)
+{
+  std::string whitespaces (" \t\f\v\n\r");
+  size_t startpos = str.find_first_not_of(whitespaces);
+  size_t endpos   = str.find_last_not_of(whitespaces);
+  if ( std::string::npos == startpos || std::string::npos == endpos)
+    str.clear();
+  else
+    str = str.substr(startpos,endpos-startpos+1);
+}
+
+void ModelFile::findApostropheEnclosedParts(std::string & str)
+{
+  // Treat strings enclosed by apostrophes (""). 
+  // 1. Replace the delimiting apostrophes by blanks. Then comes a trick:
+  // 2. Replace any blanks by the only character that cannot be present 
+  //    in the string ==> an apostrophe (").
+  //
+  std::string str_copy(str);
+  std::string apostrophe("\"");
+  std::string blank(" ");
+  size_t startpos = str.find_first_of(apostrophe);
+  size_t endpos;
+
+  while (startpos != std::string::npos) // Apostrophes present
+  {
+    endpos = str.find_first_of(apostrophe,startpos + 1);
+    if (endpos != std::string::npos)
+    {
+      std::string tmp = str.substr(startpos,endpos-startpos);
+      NRLib2::Substitute(tmp,blank,apostrophe);
+      str.replace(startpos,endpos-startpos,tmp);
+      str.replace(startpos, 1, blank);
+      str.replace(endpos, 1, blank);
+    }
+    else
+    {
+      std::cout << "ERROR: The following line in the model file contains an odd number of apostrophes (\")\n";
+      std::cout << str_copy << std::endl;
+      exit(1);
+    }
+    startpos = str.find_first_of(apostrophe,endpos + 1);
+  }
+}
+
+void ModelFile::splitString(std::vector<std::string> & entries,
+                            const std::string        & str)
+{
+  std::string blank(" ");
+  std::string semicolon(";");
+  size_t startpos = str.find_first_not_of(blank);
+  size_t endpos;
+  while (startpos != std::string::npos) // Entries present
+  {
+    endpos = str.find_first_of(blank,startpos + 1);
+    if (endpos == std::string::npos) // At the end of the string
+      endpos = str.size();
+    if (str.substr(endpos-1,1) == semicolon && (endpos > startpos + 1))
+    {
+      entries.push_back(str.substr(startpos,endpos-startpos-1));
+      entries.push_back(semicolon);
+    }
+    else
+      entries.push_back(str.substr(startpos,endpos-startpos));
+    startpos = str.find_first_not_of(blank,endpos + 1);
+  }
+}         
+
+void ModelFile::reintroduceBlanks(std::vector<std::string> & entries,
+                                  unsigned int iStart)
+{
+  // Apostrophes introduced in method findApostropheEnclosedParts() are 
+  // here replaced by blanks again.
+  std::string apostrophe("\"");
+  std::string blank(" ");
+  for (unsigned int i = iStart ; i < entries.size() ; i++)
+  {
+    NRLib2::Substitute(entries[i],apostrophe,blank);
+  }
 }
 
 int 
@@ -1893,6 +2022,7 @@ ModelFile::readCommandFaciesEstimationInterval(char ** params, int & pos, char *
       error += checkFileOpen((&faciesEstIntFile_[0]), 1, params[pos-1], errText);
     if (!isNumber(faciesEstIntFile_[1]))
       error += checkFileOpen((&faciesEstIntFile_[1]), 1, params[pos-1], errText);
+
     sprintf(errText,"Command %s has not been implemented yet.\n",params[pos-1]);
     error = 1;
   }

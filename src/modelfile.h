@@ -78,11 +78,17 @@ private:
   int              readCommandFaciesEstimationInterval(char ** params, int & pos, char * errText);
   int              readCommandLogLevel(char ** params, int & pos, char * errText);
   int              readCommandTraceHeaderFormat(char ** params, int & pos, char * errText);
+  void             parse_old(char * fileName, char **& params, int & nParam);
+  void             parse(char * fileName, char **& params, int & nParam);
   int              getParNum(char ** params, int pos, int & error, char * errText,
                              const char * command, int min, int max = 0);
   int              checkFileOpen(char ** fNames, int nFiles, const char * command, char * errText, int start = 0,
                                  bool details = true);
   Vario          * createVario(char ** param, int nPar, const char * command, char * errText);
+  void             trimString(std::string & str);
+  void             findApostropheEnclosedParts(std::string & str);
+  void             splitString(std::vector<std::string> & entries, const std::string & str);
+  void             reintroduceBlanks(std::vector<std::string> & entries, unsigned int iStart);
 
   ModelSettings  * modelSettings_;
 
