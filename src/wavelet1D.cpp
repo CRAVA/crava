@@ -185,7 +185,7 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
         fftInv(seis_c[w],seis_r[w],nzp);
         wellWeight[w] = length*dz[w]*(cor_cpp_r[w][0]+cor_cpp_r[w][1]);// Gives most weight to long datasets with  
                                                                        // large reflection coefficients
-        z0[w] = bl->getZpos()[0];
+        z0[w] = static_cast<float> (bl->getZpos()[0]);
         sampleStart[w] = start;
         sampleStop[w]  = start + length;
       }
@@ -1212,6 +1212,18 @@ Wavelet1D::writeWaveletToFile(char* fileName,float approxDzIn, Simbox *)
      fprintf(file,"%f\n", waveletNew_r[i]);
    
    fclose(file);
+
+   //Writing wavelet also in swav-format
+   fName = ModelSettings::makeFullFileName(std::string(fileName)+".Swav");
+   file = fopen(fName.c_str(),"w");
+   fprintf(file,"pulse file-1\n");
+   fprintf(file,"%d %d\n", wLength, static_cast<int> (dznew)); 
+   for(i=halfLength;i > 0;i--)
+     fprintf(file,"%f\n", waveletNew_r[nzpNew-i]);
+   for(i=0;i<=halfLength;i++)
+     fprintf(file,"%f\n", waveletNew_r[i]);
+   fclose(file);
+
    delete [] waveletNew_r;
 }
 
