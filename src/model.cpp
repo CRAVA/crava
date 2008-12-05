@@ -445,6 +445,9 @@ Model::readSegyFile(char                * fileName,
     segy = new SegY(fileName, 
                     modelSettings->getSegyOffset(),
                     *(modelSettings->getTraceHeaderFormat()));
+   // New segy constructor for unknown traceheaderformat
+     // segy = new SegY(fileName, 
+     //               modelSettings->getSegyOffset(), NULL);
     bool onlyVolume = modelSettings->getAreaParameters() != NULL; // This is now always true
     segy->ReadAllTraces(timeSimbox, 
                         modelSettings->getZpad(),
@@ -579,7 +582,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
     LogKit::LogFormatted(LogKit::HIGH,"\nFinding inversion area from seismic data in file %s\n", 
                          seismicFile.c_str());
     areaType = "Seismic data";
-    const TraceHeaderFormat thf = *(modelSettings->getTraceHeaderFormat());
+    const TraceHeaderFormat *thf = modelSettings->getTraceHeaderFormat();
     SegyGeometry * geometry = SegY::FindGridGeometry(seismicFile, thf);
     modelSettings->setAreaParameters(geometry);
     delete geometry;
