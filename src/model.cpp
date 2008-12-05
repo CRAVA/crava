@@ -628,127 +628,127 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
 
     sprintf(errText,"%c",'\0');
     error = timeSimbox->checkError(modelSettings->getLzLimit(),errText);
-    
+
     if(error == 0)
     {
       double zmin, zmax;
       timeSimbox->getMinMaxZ(zmin,zmax);
       LogKit::LogFormatted(LogKit::LOW,"\nTime output interval:\n");
       LogKit::LogFormatted(LogKit::LOW,"  Two-way-time          avg / min / max    : %7.1f /%7.1f /%7.1f\n",
-                           zmin+timeSimbox->getlz()*timeSimbox->getAvgRelThick()*0.5,
-                           zmin,zmax); 
+        zmin+timeSimbox->getlz()*timeSimbox->getAvgRelThick()*0.5,
+        zmin,zmax); 
       LogKit::LogFormatted(LogKit::LOW,"  Interval thickness    avg / min / max    : %7.1f /%7.1f /%7.1f\n", 
-                           timeSimbox->getlz()*timeSimbox->getAvgRelThick(),
-                           timeSimbox->getlz()*timeSimbox->getMinRelThick(),
-                           timeSimbox->getlz());
+        timeSimbox->getlz()*timeSimbox->getAvgRelThick(),
+        timeSimbox->getlz()*timeSimbox->getMinRelThick(),
+        timeSimbox->getlz());
       LogKit::LogFormatted(LogKit::LOW,"  Sampling density      avg / min / max    : %7.2f /%7.2f /%7.2f\n", 
-                           timeSimbox->getdz()*timeSimbox->getAvgRelThick(),
-                           timeSimbox->getdz(),
-                           timeSimbox->getdz()*timeSimbox->getMinRelThick());
+        timeSimbox->getdz()*timeSimbox->getAvgRelThick(),
+        timeSimbox->getdz(),
+        timeSimbox->getdz()*timeSimbox->getMinRelThick());
     }
     else
-      {
-        sprintf(errText,"%s. Could not make time simulation grid.\n",errText);
+    {
+      sprintf(errText,"%s. Could not make time simulation grid.\n",errText);
+      failed = true;
+    }
+
+
+    //
+    // Make extended time simbox
+    //
+    if(modelFile->getCorrDirFile() != NULL) {
+      //
+      // Get correlation direction
+      //
+      try {
+        Surface tmpSurf = NRLib2::ReadStormSurf(modelFile->getCorrDirFile());
+        correlationDirection = new Surface(tmpSurf);
+      }
+      catch (NRLib2::Exception & e) {
+        sprintf(errText,"%s%s",errText,e.what());
         failed = true;
       }
+      if(failed == false && modelSettings->getGenerateSeismic() == false) {
+        //Extends timeSimbox for correlation coverage. Original stored in timeCutSimbox
+        setupExtendedTimeSimbox(timeSimbox, correlationDirection, timeCutSimbox, outputFormat, outputFlag); 
+      }
+      estimateZPaddingSize(timeSimbox, modelSettings);   
+      error = timeSimbox->checkError(modelSettings->getLzLimit(),errText);
+      if(error == 0)
+      {
+        LogKit::LogFormatted(LogKit::LOW,"\nTime inversion interval (extended relative to output interval due to correlation):\n");
+        double zmin, zmax;
+        timeSimbox->getMinMaxZ(zmin,zmax);
+        LogKit::LogFormatted(LogKit::LOW,"  Two-way-time          avg / min / max    : %7.1f /%7.1f /%7.1f\n",
+          zmin+timeSimbox->getlz()*timeSimbox->getAvgRelThick()*0.5,
+          zmin,zmax); 
+        LogKit::LogFormatted(LogKit::LOW,"  Interval thickness    avg / min / max    : %7.1f /%7.1f /%7.1f\n", 
+          timeSimbox->getlz()*timeSimbox->getAvgRelThick(),
+          timeSimbox->getlz()*timeSimbox->getMinRelThick(),
+          timeSimbox->getlz());
+        LogKit::LogFormatted(LogKit::LOW,"  Sampling density      avg / min / max    : %7.2f /%7.2f /%7.2f\n", 
+          timeSimbox->getdz()*timeSimbox->getAvgRelThick(),
+          timeSimbox->getdz(),
+          timeSimbox->getdz()*timeSimbox->getMinRelThick());
+      }
+      else
+      {
+        sprintf(errText,"%s Could not make the time simulation grid.\n",errText);
+        failed = true;
+      }
+      if(modelSettings->getGenerateSeismic() == false) {
+        setupExtendedBackgroundSimbox(timeSimbox, correlationDirection, timeBGSimbox, outputFormat, outputFlag);
+        error = timeBGSimbox->checkError(modelSettings->getLzLimit(),errText);
+        if(error == 0)
+        {
+          LogKit::LogFormatted(LogKit::LOW,"\nTime interval used for background modelling:\n");
+          double zmin, zmax;
+          timeBGSimbox->getMinMaxZ(zmin,zmax);
+          LogKit::LogFormatted(LogKit::LOW,"  Two-way-time          avg / min / max    : %7.1f /%7.1f /%7.1f\n",
+            zmin+timeBGSimbox->getlz()*timeBGSimbox->getAvgRelThick()*0.5,
+            zmin,zmax); 
+          LogKit::LogFormatted(LogKit::LOW,"  Interval thickness    avg / min / max    : %7.1f /%7.1f /%7.1f\n", 
+            timeBGSimbox->getlz()*timeBGSimbox->getAvgRelThick(),
+            timeBGSimbox->getlz()*timeBGSimbox->getMinRelThick(),
+            timeBGSimbox->getlz());
+          LogKit::LogFormatted(LogKit::LOW,"  Sampling density      avg / min / max    : %7.2f /%7.2f /%7.2f\n", 
+            timeBGSimbox->getdz()*timeBGSimbox->getAvgRelThick(),
+            timeBGSimbox->getdz(),
+            timeBGSimbox->getdz()*timeBGSimbox->getMinRelThick());
+        }
+        else
+        {
+          sprintf(errText,"%s Could not make the grid for background model.\n",errText);
+          failed = true;
+        }
+      }
+    }
+
+    if(failed == false) {
+      estimateXYPaddingSizes(timeSimbox, modelSettings);
+      //
+      // Check if CRAVA has enough memory to run calculation without buffering to disk
+      //
+      checkAvailableMemory(timeSimbox, modelSettings, seismicFile); 
+    }
+
+    //
+    // Make time simbox with constant thicknesses (needed for log filtering and facies probabilities)
+    //
+    timeSimboxConstThick = new Simbox(timeSimbox);
+    Surface * tsurf = new Surface(dynamic_cast<const Surface &> (timeSimbox->GetTopSurface()));
+    timeSimboxConstThick->setDepth(tsurf, 0, timeSimbox->getlz(), timeSimbox->getdz());
+
+    if((outputFlag & ModelSettings::EXTRA_SURFACES) > 0 && (outputFlag & ModelSettings::NOTIME) == 0)
+      timeSimboxConstThick->writeTopBotGrids("Surface_Top_Time_ConstThick", 
+      "Surface_Base_Time_ConstThick", 
+      outputFormat);
   }
   else
   {
     timeSimbox->externalFailure();
     failed = true;
   }
-
-  //
-  // Make extended time simbox
-  //
-  if(modelFile->getCorrDirFile() != NULL) {
-    //
-    // Get correlation direction
-    //
-    try {
-      Surface tmpSurf = NRLib2::ReadStormSurf(modelFile->getCorrDirFile());
-      correlationDirection = new Surface(tmpSurf);
-    }
-    catch (NRLib2::Exception & e) {
-      sprintf(errText,"%s%s",errText,e.what());
-      failed = true;
-    }
-    if(failed == false && modelSettings->getGenerateSeismic() == false) {
-      //Extends timeSimbox for correlation coverage. Original stored in timeCutSimbox
-      setupExtendedTimeSimbox(timeSimbox, correlationDirection, timeCutSimbox, outputFormat, outputFlag); 
-    }
-    estimateZPaddingSize(timeSimbox, modelSettings);   
-    error = timeSimbox->checkError(modelSettings->getLzLimit(),errText);
-    if(error == 0)
-    {
-      LogKit::LogFormatted(LogKit::LOW,"\nTime inversion interval (extended relative to output interval due to correlation):\n");
-      double zmin, zmax;
-      timeSimbox->getMinMaxZ(zmin,zmax);
-      LogKit::LogFormatted(LogKit::LOW,"  Two-way-time          avg / min / max    : %7.1f /%7.1f /%7.1f\n",
-                           zmin+timeSimbox->getlz()*timeSimbox->getAvgRelThick()*0.5,
-                           zmin,zmax); 
-      LogKit::LogFormatted(LogKit::LOW,"  Interval thickness    avg / min / max    : %7.1f /%7.1f /%7.1f\n", 
-                           timeSimbox->getlz()*timeSimbox->getAvgRelThick(),
-                           timeSimbox->getlz()*timeSimbox->getMinRelThick(),
-                           timeSimbox->getlz());
-      LogKit::LogFormatted(LogKit::LOW,"  Sampling density      avg / min / max    : %7.2f /%7.2f /%7.2f\n", 
-                           timeSimbox->getdz()*timeSimbox->getAvgRelThick(),
-                           timeSimbox->getdz(),
-                           timeSimbox->getdz()*timeSimbox->getMinRelThick());
-    }
-    else
-    {
-      sprintf(errText,"%s Could not make the time simulation grid.\n",errText);
-      failed = true;
-    }
-    if(modelSettings->getGenerateSeismic() == false) {
-      setupExtendedBackgroundSimbox(timeSimbox, correlationDirection, timeBGSimbox, outputFormat, outputFlag);
-      error = timeBGSimbox->checkError(modelSettings->getLzLimit(),errText);
-      if(error == 0)
-      {
-        LogKit::LogFormatted(LogKit::LOW,"\nTime interval used for background modelling:\n");
-        double zmin, zmax;
-        timeBGSimbox->getMinMaxZ(zmin,zmax);
-        LogKit::LogFormatted(LogKit::LOW,"  Two-way-time          avg / min / max    : %7.1f /%7.1f /%7.1f\n",
-                             zmin+timeBGSimbox->getlz()*timeBGSimbox->getAvgRelThick()*0.5,
-                             zmin,zmax); 
-        LogKit::LogFormatted(LogKit::LOW,"  Interval thickness    avg / min / max    : %7.1f /%7.1f /%7.1f\n", 
-                             timeBGSimbox->getlz()*timeBGSimbox->getAvgRelThick(),
-                             timeBGSimbox->getlz()*timeBGSimbox->getMinRelThick(),
-                             timeBGSimbox->getlz());
-        LogKit::LogFormatted(LogKit::LOW,"  Sampling density      avg / min / max    : %7.2f /%7.2f /%7.2f\n", 
-                             timeBGSimbox->getdz()*timeBGSimbox->getAvgRelThick(),
-                             timeBGSimbox->getdz(),
-                             timeBGSimbox->getdz()*timeBGSimbox->getMinRelThick());
-      }
-      else
-      {
-        sprintf(errText,"%s Could not make the grid for background model.\n",errText);
-        failed = true;
-      }
-    }
-  }
-
-  if(failed == false) {
-    estimateXYPaddingSizes(timeSimbox, modelSettings);
-    //
-    // Check if CRAVA has enough memory to run calculation without buffering to disk
-    //
-    checkAvailableMemory(timeSimbox, modelSettings, seismicFile); 
-  }
-
-  //
-  // Make time simbox with constant thicknesses (needed for log filtering and facies probabilities)
-  //
-  timeSimboxConstThick = new Simbox(timeSimbox);
-  Surface * tsurf = new Surface(dynamic_cast<const Surface &> (timeSimbox->GetTopSurface()));
-  timeSimboxConstThick->setDepth(tsurf, 0, timeSimbox->getlz(), timeSimbox->getdz());
-
-  if((outputFlag & ModelSettings::EXTRA_SURFACES) > 0 && (outputFlag & ModelSettings::NOTIME) == 0)
-    timeSimboxConstThick->writeTopBotGrids("Surface_Top_Time_ConstThick", 
-                                           "Surface_Base_Time_ConstThick", 
-                                           outputFormat);
-  
 }
 
 void 
@@ -1287,10 +1287,10 @@ Model::processWells(WellData     **& wells,
           wells[i]->lookForSyntheticVsLog(rankCorr[i]);
           wells[i]->calculateDeviation(devAngle[i], timeSimbox);
           wells[i]->setBlockedLogsOrigThick( new BlockedLogs(wells[i], timeSimbox, randomGen) );
-          wells[i]->setBlockedLogsConstThick( new BlockedLogs(wells[i], timeSimboxConstThick_, randomGen) );
+          wells[i]->setBlockedLogsConstThick( new BlockedLogs(wells[i], timeSimboxConstThick, randomGen) );
           int nAngles = modelSettings->getNumberOfAngles();
           for (int iAngle = 0 ; iAngle < nAngles ; iAngle++) 
-            wells[i]->getBlockedLogsOrigThick()->setLogFromGrid(seisCube_[iAngle],iAngle,nAngles,"SEISMIC_DATA");
+            wells[i]->getBlockedLogsOrigThick()->setLogFromGrid(seisCube[iAngle],iAngle,nAngles,"SEISMIC_DATA");
           if (timeBGSimbox==NULL)
             wells[i]->setBlockedLogsExtendedBG( new BlockedLogs(wells[i], timeSimbox, randomGen) ); // Need a copy constructor?
           else
