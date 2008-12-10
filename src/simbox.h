@@ -48,6 +48,10 @@ public:
   double         getRelThick(double x, double y) const;                         // Local relative thickness.
   double         getAvgRelThick(void)            const;
   void           getMinMaxZ(double & minZ, double & maxZ) const;
+  double         getTopZMin() const {return(GetTopZMin(nx_,ny_));}
+  double         getTopZMax() const {return(GetTopZMax(nx_,ny_));}
+  double         getBotZMin() const {return(GetBotZMin(nx_,ny_));}
+  double         getBotZMax() const {return(GetBotZMax(nx_,ny_));}
   bool           getILxflag()                    const {return(ILxflag_);}
   int            isInside(double x, double y) const;
   int            insideRectangle(const SegyGeometry *  geometry) const;

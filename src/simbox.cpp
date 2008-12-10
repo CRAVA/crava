@@ -234,8 +234,8 @@ Simbox::getXYCoord(int xInd, int yInd, double &x, double &y) const
 void
 Simbox::getMinMaxZ(double &minZ, double &maxZ) const
 {
-  minZ = GetTopSurface().Min();
-  maxZ = GetBotSurface().Max();
+  minZ = GetZMin(nx_,ny_);
+  maxZ = GetZMax(nx_,ny_);
 }
 
 int
