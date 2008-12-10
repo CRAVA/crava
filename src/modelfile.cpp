@@ -436,6 +436,16 @@ ModelFile::ModelFile(char * fileName)
     }
   }
 
+  bool doFaciesProb         = (modelSettings_->getOutputFlag() & ModelSettings::FACIESPROB        ) > 0;
+  bool doFaciesProbRelative = (modelSettings_->getOutputFlag() & ModelSettings::FACIESPROBRELATIVE) > 0;
+  if((doFaciesProb || doFaciesProbRelative) && !faciesLogGiven_)
+  {
+    sprintf(errText,"You cannot calculate facies probabilities without specifying a facies log for subcommand HEADER of command WELLS.\n");
+      errorList[nErrors] = new char[strlen(errText)+1];
+    strcpy(errorList[nErrors], errText);
+    nErrors++;
+  }
+
   if(nErrors > 0)
   {
     LogKit::LogFormatted(LogKit::LOW,"\nThe following errors were found when parsing %s:\n", fileName);
@@ -1553,7 +1563,7 @@ ModelFile::readCommandOutput(char ** params, int & pos, char * errText)
     strcpy(keywords[i++],"BLOCKED_WELLS");
     strcpy(keywords[i++],"BLOCKED_LOGS");
     strcpy(keywords[i++],"EXTRA_SURFACES");
-    strcpy(keywords[i++],"EXTRA_CUBES");
+    strcpy(keywords[i++],"EXTRA_GRIDS");
 
     if (i != nKeys)
     { 
