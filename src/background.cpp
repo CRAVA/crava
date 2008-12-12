@@ -51,9 +51,9 @@ Background::Background(FFTGrid       ** grids,
     generateBackgroundModel(bgAlpha,bgBeta,bgRho,wells,timeBGSimbox,modelSettings);
 
     if((modelSettings->getOutputFlag() & ModelSettings::EXTRA_GRIDS) > 0) {
-      bgAlpha->writeStormFile("lnBG_Vp_BGSimbox", timeBGSimbox);
-      bgBeta->writeStormFile("lnBG_Vs_BGSimbox", timeBGSimbox);
-      bgRho->writeStormFile("lnBG_Rho_BGSimbox", timeBGSimbox);
+      bgAlpha->writeStormFile("lnBG_Vp_BackgroundGrid", timeBGSimbox);
+      bgBeta->writeStormFile("lnBG_Vs_BackgroundGrid", timeBGSimbox);
+      bgRho->writeStormFile("lnBG_Rho_BackgroundGrid", timeBGSimbox);
     }
 
     FFTGrid * resBgAlpha = NULL;
@@ -61,14 +61,14 @@ Background::Background(FFTGrid       ** grids,
     FFTGrid * resBgRho = NULL;
 
     LogKit::LogFormatted(LogKit::LOW,"Resampling background model...\n");
-    resampleParameter(resBgAlpha,bgAlpha,timeSimbox,timeBGSimbox);
-    resampleParameter(resBgBeta ,bgBeta ,timeSimbox,timeBGSimbox);
-    resampleParameter(resBgRho  ,bgRho  ,timeSimbox,timeBGSimbox);
+    resampleParameter(resBgAlpha,bgAlpha,timeSimbox, timeBGSimbox);
+    resampleParameter(resBgBeta ,bgBeta ,timeSimbox, timeBGSimbox);
+    resampleParameter(resBgRho  ,bgRho  ,timeSimbox, timeBGSimbox);
     
     if((modelSettings->getOutputFlag() & ModelSettings::EXTRA_GRIDS) > 0) {
-      resBgAlpha->writeStormFile("lnBG_Vp_ExtendedSimbox", timeSimbox);
-      resBgBeta->writeStormFile("lnBG_Vs_ExtendedSimbox", timeSimbox);
-      resBgRho->writeStormFile("lnBG_Rho_ExtendedSimbox", timeSimbox);
+      resBgAlpha->writeStormFile("lnBG_Vp_InversionGrid", timeSimbox);
+      resBgBeta->writeStormFile("lnBG_Vs_InversionGrid", timeSimbox);
+      resBgRho->writeStormFile("lnBG_Rho_InversionGrid", timeSimbox);
     }
 
     LogKit::LogFormatted(LogKit::LOW,"Padding background model...\n");

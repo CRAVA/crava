@@ -27,6 +27,9 @@
 
 Crava::Crava(Model * model)
 {	
+  LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************");
+  LogKit::LogFormatted(LogKit::LOW,"\n***                    Building Stochastic Model                     ***"); 
+  LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************\n\n");
   int   i;
   model_          = model;
   nx_             = model->getBackAlpha()->getNx();
@@ -84,7 +87,7 @@ Crava::Crava(Model * model)
   }
 
   if((outputFlag_ & (ModelSettings::PRIORCORRELATIONS + ModelSettings::CORRELATION)) > 0)
-    dumpCorrT(corrT,corr->getdt());
+    writeFilePriorCorrT(corrT,corr->getdt());
 
   fprob_            = NULL;
   pKriging_         = NULL;
@@ -681,6 +684,9 @@ Crava::multiplyDataByScaleWaveletAndWriteToFile(const char* typeName)
 int 
 Crava::computePostMeanResidAndFFTCov()
 {
+  LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************");
+  LogKit::LogFormatted(LogKit::LOW,"\n***             Posterior model / Performing Inversion              ***"); 
+  LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************\n\n");
   int i,j,k,l,m;
 
   fftw_complex * kW          = new fftw_complex[ntheta_];
@@ -1019,23 +1025,19 @@ Crava::computePostMeanResidAndFFTCov()
   parSpatialCorr_= NULL;   // the content is taken care of by  postCovAlpha_      
   errCorrUnsmooth_=NULL;   // the content is taken care of by  postCovBeta_
 
-  postAlpha_   ->endAccess();  //   
-  postBeta_    ->endAccess();  //   
-  postRho_     ->endAccess();  //
-  postCovAlpha_->endAccess();  //         
-  postCovBeta_ ->endAccess();  // 
-  postCovRho_        ->endAccess();
+  postAlpha_->endAccess();  //   
+  postBeta_->endAccess();  //   
+  postRho_->endAccess();  //
+
   postCrCovAlphaBeta_->endAccess();
-  postCrCovAlphaRho_ ->endAccess();
-  postCrCovBetaRho_  ->endAccess();  
+  postCrCovAlphaRho_->endAccess();
+  postCrCovBetaRho_->endAccess();  
+  postCovAlpha_->endAccess();  //         
+  postCovBeta_->endAccess();  // 
+  postCovRho_->endAccess();
 
-  assert(postAlpha_->getIsTransformed());
   postAlpha_->invFFTInPlace();
-
-  assert(postBeta_->getIsTransformed());
   postBeta_->invFFTInPlace();
-
-  assert(postRho_->getIsTransformed());
   postRho_->invFFTInPlace();
 
   if(model_->getVelocityFromInversion() == true) { //Conversion undefined until prediction ready. Complete it.
@@ -1140,6 +1142,9 @@ Crava::computePostMeanResidAndFFTCov()
 int
 Crava::simulate( RandomGen * randomGen)
 {   
+  LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************");
+  LogKit::LogFormatted(LogKit::LOW,"\n***                Simulating from posterior model                  ***"); 
+  LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************\n\n");
   if(nSim_>0)
   {
     assert( postCovAlpha_->getIsTransformed()  );
@@ -1233,7 +1238,6 @@ Crava::simulate( RandomGen * randomGen)
             seed2->setNextComplex(ijkSeed[2]);      
           }
 
-
           postCovAlpha_->endAccess();  //         
           postCovBeta_ ->endAccess();  // 
           postCovRho_        ->endAccess();
@@ -1299,156 +1303,157 @@ Crava::simulate( RandomGen * randomGen)
   return(0);
 }
 
-int
-Crava::computePostCov()
+//--------------------------------------------------------------------
+void
+Crava::getSigmaPost(void)
 {
-  assert(postCovAlpha_->getIsTransformed());
-  postCovAlpha_ ->setAccessMode(FFTGrid::RANDOMACCESS);
-  postCovAlpha_ ->invFFTInPlace();
-  int i,j,k;
-  float**  postCov  = new float*[3];
-  for(i = 0; i < 3; i++)
+  //
+  // sigmapost trengs for å filtere logger ==> klassevariabel?
+  //
+  float ** postCov = new float*[3];
+  for(int i = 0 ; i < 3 ; i++)
     postCov[i] = new float[3];
 
-  float*  postCorAlpha  = new float[nz_];
-  float c0 = postCovAlpha_->getRealValue(0,0,0);
-  for(k=0; k< nz_;k++)
-  {
-    postCorAlpha[k] = postCovAlpha_->getRealValue(0,0,k)/c0;
-  }
+  postCov[0][0] = getGridValueInOrigin(postCovAlpha_);
+  postCov[1][1] = getGridValueInOrigin(postCovBeta_);
+  postCov[2][2] = getGridValueInOrigin(postCovRho_);
+  postCov[0][1] = getGridValueInOrigin(postCrCovAlphaBeta_);
+  postCov[1][0] = postCov[0][1];
+  postCov[2][0] = getGridValueInOrigin(postCrCovAlphaRho_);
+  postCov[0][2] = postCov[2][0];
+  postCov[2][1] = getGridValueInOrigin(postCrCovBetaRho_);
+  postCov[1][2] = postCov[2][1];
 
-  postCov[0][0]=postCovAlpha_->getRealValue(0,0,0);
-  if((outputFlag_ & ModelSettings::CORRELATION) > 0)
-    postCovAlpha_ ->writeFile("Posterior_CovVp",simbox_, "Posterior covariance for Vp");
-
-  postCovAlpha_ ->endAccess();
-  delete postCovAlpha_;
-  postCovAlpha_=NULL;
-
-  assert(postCovBeta_->getIsTransformed());
-  postCovBeta_ ->setAccessMode(FFTGrid::RANDOMACCESS);
-  postCovBeta_ ->invFFTInPlace();
-
-  float*  postCorBeta  = new float[nz_];
-  c0 = postCovBeta_->getRealValue(0,0,0);
-  for(k=0; k< nz_;k++)
-    postCorBeta[k] = postCovBeta_->getRealValue(0,0,k)/c0;
-
-  if((outputFlag_ & ModelSettings::CORRELATION) > 0)
-    postCovBeta_ ->writeFile("Posterior_CovVs",simbox_, "Posterior covariance for Vs");
-  postCov[1][1]=postCovBeta_->getRealValue(0,0,0);
-  postCovBeta_ ->endAccess();
-  delete postCovBeta_;
-  postCovBeta_=NULL;
-
-  assert(postCovRho_->getIsTransformed());
-  postCovRho_ ->setAccessMode(FFTGrid::RANDOMACCESS);
-  postCovRho_ ->invFFTInPlace();
-
-  float*  postCorRho  = new float[nz_];
-  c0 = postCovRho_->getRealValue(0,0,0);
-  for(k=0; k< nz_;k++)
-  {
-    postCorRho[k] = postCovRho_->getRealValue(0,0,k)/c0;
-  }
-
-  if((outputFlag_ & ModelSettings::CORRELATION) > 0)
-    postCovRho_ ->writeFile("Posterior_CovD",simbox_, "Posterior covariance for density");
-  postCov[2][2]=postCovRho_->getRealValue(0,0,0);
-  postCovRho_ ->endAccess();
-  delete postCovRho_;
-  postCovRho_=NULL;
-
-  assert(postCrCovAlphaBeta_->getIsTransformed());
-  postCrCovAlphaBeta_ ->setAccessMode(FFTGrid::RANDOMACCESS);
-  postCrCovAlphaBeta_ ->invFFTInPlace();
-  if((outputFlag_ & ModelSettings::CORRELATION) > 0)
-    postCrCovAlphaBeta_ ->writeFile("Posterior_CrCovVpVs",simbox_, "Posterior cross-covariance for (Vp,Vs)");
-  postCov[0][1]=postCrCovAlphaBeta_->getRealValue(0,0,0);
-  postCov[1][0]=postCrCovAlphaBeta_->getRealValue(0,0,0);
-  postCrCovAlphaBeta_ ->endAccess();
-  delete postCrCovAlphaBeta_;
-  postCrCovAlphaBeta_=NULL;
-
-  assert(postCrCovAlphaRho_->getIsTransformed());
-  postCrCovAlphaRho_ ->setAccessMode(FFTGrid::RANDOMACCESS);
-  postCrCovAlphaRho_ ->invFFTInPlace();
-  if((outputFlag_ & ModelSettings::CORRELATION) > 0)
-    postCrCovAlphaRho_->writeFile("Posterior_CrCovVpD",simbox_, "Posterior cross-covariance for (Vp,density)");
-  postCov[2][0]=postCrCovAlphaRho_->getRealValue(0,0,0);
-  postCov[0][2]=postCrCovAlphaRho_->getRealValue(0,0,0);
-  postCrCovAlphaRho_->endAccess();
-  delete postCrCovAlphaRho_;
-  postCrCovAlphaRho_=NULL;
-
-  assert(postCrCovBetaRho_->getIsTransformed());
-  postCrCovBetaRho_->setAccessMode(FFTGrid::RANDOMACCESS);
-  postCrCovBetaRho_->invFFTInPlace();
-  if((outputFlag_ & ModelSettings::CORRELATION) > 0)
-    postCrCovBetaRho_->writeFile("Posterior_CrCovVsD",simbox_, "Posterior cross-covariance for (Vs,density)");
-  postCov[2][1]=postCrCovBetaRho_->getRealValue(0,0,0);
-  postCov[1][2]=postCrCovBetaRho_->getRealValue(0,0,0);
-  postCrCovBetaRho_->endAccess();
-  delete postCrCovBetaRho_;
-  postCrCovBetaRho_=NULL;
-
+  LogKit::LogFormatted(LogKit::LOW,"Variances and correlations for parameter residuals:\n");
   LogKit::LogFormatted(LogKit::LOW,"\n");
-  LogKit::LogFormatted(LogKit::LOW,"                                ln Vp     ln Vs    ln Rho         \n");
-  LogKit::LogFormatted(LogKit::LOW,"--------------------------------------------------------------------\n");
-  LogKit::LogFormatted(LogKit::LOW,"Posterior parameter variances:   %.1e   %.1e   %.1e    \n",postCov[0][0],postCov[1][1],postCov[2][2]); 
+  LogKit::LogFormatted(LogKit::LOW,"               ln Vp     ln Vs    ln Rho \n");
+  LogKit::LogFormatted(LogKit::LOW,"-----------------------------------------\n");
+  LogKit::LogFormatted(LogKit::LOW,"Variances:   %.1e   %.1e   %.1e    \n",postCov[0][0],postCov[1][1],postCov[2][2]); 
   LogKit::LogFormatted(LogKit::LOW,"\n");
-  LogKit::LogFormatted(LogKit::LOW,"Posterior parameter correlations:\n");
-  LogKit::LogFormatted(LogKit::LOW,"           ln Vp     ln Vs    ln Rho \n");
-  LogKit::LogFormatted(LogKit::LOW,"-------------------------------------\n");
-  LogKit::LogFormatted(LogKit::LOW,"ln Vp      %5.2f     %5.2f     %5.2f \n",1.0f, postCov[0][1], postCov[0][2]);
-  LogKit::LogFormatted(LogKit::LOW,"ln Vs                %5.2f     %5.2f \n",1.0f, postCov[1][2]);
-  LogKit::LogFormatted(LogKit::LOW,"ln Rho                         %5.2f \n",1.0f);
+  float corr01 = postCov[0][1]/(sqrt(postCov[0][0]*postCov[1][1]));
+  float corr02 = postCov[0][2]/(sqrt(postCov[0][0]*postCov[2][2]));
+  float corr12 = postCov[1][2]/(sqrt(postCov[1][1]*postCov[2][2]));
+  LogKit::LogFormatted(LogKit::LOW,"Corr   | ln Vp     ln Vs    ln Rho \n");
+  LogKit::LogFormatted(LogKit::LOW,"-------+---------------------------\n");
+  LogKit::LogFormatted(LogKit::LOW,"ln Vp  | %5.2f     %5.2f     %5.2f \n",1.0f, corr01, corr02);
+  LogKit::LogFormatted(LogKit::LOW,"ln Vs  |           %5.2f     %5.2f \n",1.0f, corr12);
+  LogKit::LogFormatted(LogKit::LOW,"ln Rho |                     %5.2f \n",1.0f);
 
-  std::string fName;
-  fName = ModelSettings::makeFullFileName(std::string("Posterior_Var0.dat"));
-  FILE* file=fopen(fName.c_str(),"w");
-  for(i=0;i<3;i++)
-  {
-    for(j=0;j<3;j++)
-    {
-      fprintf(file,"%3e ",postCov[i][j]);
+  if((model_->getModelSettings()->getOutputFlag() & ModelSettings::CORRELATION) > 0) {
+    std::string fName = ModelSettings::makeFullFileName(std::string("Posterior_Var0.dat"));
+    std::ofstream file(fName.c_str());
+    file << std::fixed;
+    file << std::right;
+    file << std::setprecision(6);
+    for(int i=0 ; i<3 ; i++) {
+      for(int j=0 ; j<3 ; j++) {
+        file << std::setw(10) << postCov[i][j] << " ";
+      }
+      file << "\n";
     }
-    fprintf(file,"\n");
+    file.close();
   }
-  fclose(file);
 
-  fName = ModelSettings::makeFullFileName(std::string("Posterior_CorrTVp.dat"));
-  file=fopen(fName.c_str(),"w");
-  for(k=0;k<nz_;k++)
-  {
-    fprintf(file,"%3e \n",postCorAlpha[k]);
-  }
-  fclose(file);
-
-  fName = ModelSettings::makeFullFileName(std::string("Posterior_CorrTVs.dat"));
-  file=fopen(fName.c_str(),"w");
-  for(k=0;k<nz_;k++)
-  {
-    fprintf(file,"%3e \n",postCorBeta[k]);
-  }
-  fclose(file);
-
-  fName = ModelSettings::makeFullFileName(std::string("Posterior_CorrTRho.dat"));
-  file=fopen(fName.c_str(),"w");
-  for(k=0;k<nz_;k++)
-  {
-    fprintf(file,"%3e \n",postCorRho[k]);
-  }
-  fclose(file);
-
-  for(i=0;i<3;i++)
+  for(int i=0 ; i<3 ; i++)
     delete[] postCov[i];
   delete [] postCov;
+}
 
-  delete [] postCorAlpha;
-  delete [] postCorBeta;
-  delete [] postCorRho;
-  return(0);
+//--------------------------------------------------------------------
+float 
+Crava::getGridValueInOrigin(FFTGrid * grid) const
+{
+  grid->setAccessMode(FFTGrid::RANDOMACCESS);
+  grid->invFFTInPlace();
+  float value = grid->getRealValue(0,0,0);
+  grid->endAccess();
+  return value;
+}
+
+//--------------------------------------------------------------------
+void
+Crava::writeFilePriorCorrT(float* corrT,float dt) const
+{
+  std::string fileName= ModelSettings::makeFullFileName(std::string("Prior_CorrT.dat"));
+  std::ofstream file(fileName.c_str());
+  file << std::fixed;
+  file << std::right;
+  file << std::setprecision(6);
+  file << dt << "\n";
+  for(int i=0 ; i<nzp_ ; i++) {
+    file << std::setw(9) << corrT[i] << "\n";
+  }
+  file.close();
+}
+
+//--------------------------------------------------------------------
+void
+Crava::writeFilePostCorrT(void) const
+{
+  writeFilePostCorrT(postCovAlpha_,std::string("Posterior_CorrT_Vp.dat"));
+  writeFilePostCorrT(postCovBeta_,std::string("Posterior_CorrT_Vs.dat"));
+  writeFilePostCorrT(postCovRho_,std::string("Posterior_CorrT_Rho.dat"));
+}
+
+//--------------------------------------------------------------------
+void
+Crava::writeFilePostCorrT(FFTGrid           * postCov, 
+                          const std::string & fileName) const
+{
+  std::string fName = ModelSettings::makeFullFileName(fileName);
+  std::ofstream file(fName.c_str());
+  file << std::fixed;
+  file << std::setprecision(6);
+  file << std::right;
+  postCov->setAccessMode(FFTGrid::RANDOMACCESS);
+  float c0 = 1.0f/postCov->getRealValue(0,0,0);
+  for(int k=0 ; k < nz_ ; k++)
+  {
+    file << std::setw(9) << postCov->getRealValue(0,0,k)*c0 << "\n";
+  }
+  postCov->endAccess();
+  file.close();
+}
+
+//--------------------------------------------------------------------
+void
+Crava::writeFilePostCovGrids(void) const
+{
+  postCovAlpha_ ->setAccessMode(FFTGrid::RANDOMACCESS);
+  postCovAlpha_ ->writeFile("Posterior_Cov_Vp",simbox_, "Posterior covariance for Vp");
+  postCovAlpha_ ->endAccess();
+
+  postCovBeta_ ->setAccessMode(FFTGrid::RANDOMACCESS);
+  postCovBeta_ ->writeFile("Posterior_Cov_Vs",simbox_, "Posterior covariance for Vs");
+  postCovBeta_ ->endAccess();
+
+  postCovRho_ ->setAccessMode(FFTGrid::RANDOMACCESS);
+  postCovRho_ ->writeFile("Posterior_Cov_Rho",simbox_, "Posterior covariance for density");
+  postCovRho_ ->endAccess();
+
+  postCrCovAlphaBeta_ ->setAccessMode(FFTGrid::RANDOMACCESS);
+  postCrCovAlphaBeta_ ->writeFile("Posterior_CrCov_VpVs",simbox_, "Posterior cross-covariance for (Vp,Vs)");
+  postCrCovAlphaBeta_ ->endAccess();
+
+  postCrCovAlphaRho_ ->setAccessMode(FFTGrid::RANDOMACCESS);
+  postCrCovAlphaRho_ ->writeFile("Posterior_CrCov_VpRho",simbox_, "Posterior cross-covariance for (Vp,density)");
+  postCrCovAlphaRho_ ->endAccess();
+
+  postCrCovBetaRho_ ->setAccessMode(FFTGrid::RANDOMACCESS);
+  postCrCovBetaRho_ ->writeFile("Posterior_CrCov_VsRho",simbox_, "Posterior cross-covariance for (Vs,density)");
+  postCrCovBetaRho_ ->endAccess();
+}
+
+
+void Crava::writeToFile(char        * fileName, 
+                        FFTGrid     * grid, 
+                        std::string   sgriLabel) {
+
+  GridMapping * timeDepthMapping = model_->getTimeDepthMapping();
+  GridMapping * timeCutMapping   = model_->getTimeCutMapping();
+  float         seismicStartTime = model_->getModelSettings()->getSegyOffset();
+
+  grid->writeFile(fileName, simbox_, sgriLabel, seismicStartTime, timeDepthMapping, timeCutMapping);
 }
 
 
@@ -1462,7 +1467,6 @@ Crava::computeSyntSeismic(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho)
 
   for(i=0;i<ntheta_;i++)
   {
-//    seisWavelet_[i]->flipUpDown();
     if(seisWavelet_[i]->getIsReal() == true)
       seisWavelet_[i]->fft1DInPlace();
   }
@@ -2171,21 +2175,6 @@ Crava::printEnergyToScreen()
   LogKit::LogFormatted(LogKit::LOW,"\n");
 }
 
-void
-Crava::dumpCorrT(float* corrT,float dt)
-{
-  std::string filename= ModelSettings::makeFullFileName(std::string("Prior_CorrT.dat"));
-  FILE *file = fopen(filename.c_str(), "w");
-
-  fprintf(file,"%f\n",dt);
-  for(int i=0;i<nzp_;i++)
-  {
-    fprintf(file,"%f\n",corrT[i]);
-  }
-  fclose(file);
-
-}
-
 void Crava::initPostKriging() {
   covAlpha_       = new CovGridSeparated(*getpostCovAlpha());
   covBeta_        = new CovGridSeparated(*getpostCovBeta());
@@ -2205,18 +2194,6 @@ void Crava::initPostKriging() {
                                 *covCrAlphaBeta_, *covCrAlphaRho_, *covCrBetaRho_, 
                                 int(krigingParams_[0]));
 }
-
-void Crava::writeToFile(char        * fileName, 
-                        FFTGrid     * grid, 
-                        std::string   sgriLabel) {
-
-  GridMapping * timeDepthMapping = model_->getTimeDepthMapping();
-  GridMapping * timeCutMapping   = model_->getTimeCutMapping();
-  float         seismicStartTime = model_->getModelSettings()->getSegyOffset();
-
-  grid->writeFile(fileName, simbox_, sgriLabel, seismicStartTime, timeDepthMapping, timeCutMapping);
-}
-
 
 void Crava::computeFaciesProb(FilterWellLogs *filteredlogs)
 {

@@ -80,20 +80,20 @@ Corr::setVar0(float ** var0)
 
 void Corr::printVariancesToScreen()
 {
+  LogKit::LogFormatted(LogKit::LOW,"Variances and correlations for parameter residuals:\n");
   LogKit::LogFormatted(LogKit::LOW,"\n");
-  LogKit::LogFormatted(LogKit::LOW,"                         ln Vp     ln Vs    ln Rho         \n");
-  LogKit::LogFormatted(LogKit::LOW,"--------------------------------------------------------------------\n");
-  LogKit::LogFormatted(LogKit::LOW,"Parameter variances:   %.1e   %.1e   %.1e (used by program)\n",Var0_[0][0],Var0_[1][1],Var0_[2][2]);
-  LogKit::LogFormatted(LogKit::LOW,"Well-log  variances:   %.1e   %.1e   %.1e                  \n",pointVar0_[0][0],pointVar0_[1][1],pointVar0_[2][2]);
+  LogKit::LogFormatted(LogKit::LOW,"Variances           ln Vp     ln Vs    ln Rho         \n");
+  LogKit::LogFormatted(LogKit::LOW,"---------------------------------------------------------------\n");
+  LogKit::LogFormatted(LogKit::LOW,"Inversion grid:   %.1e   %.1e   %.1e (used by program)\n",Var0_[0][0],Var0_[1][1],Var0_[2][2]);
+  LogKit::LogFormatted(LogKit::LOW,"Well logs     :   %.1e   %.1e   %.1e                  \n",pointVar0_[0][0],pointVar0_[1][1],pointVar0_[2][2]);
 
   float corr01 = Var0_[0][1]/(sqrt(Var0_[0][0]*Var0_[1][1]));
   float corr02 = Var0_[0][2]/(sqrt(Var0_[0][0]*Var0_[2][2]));
   float corr12 = Var0_[1][2]/(sqrt(Var0_[1][1]*Var0_[2][2]));
   LogKit::LogFormatted(LogKit::LOW,"\n");
-  LogKit::LogFormatted(LogKit::LOW,"Parameter correlations:\n");
-  LogKit::LogFormatted(LogKit::LOW,"           ln Vp     ln Vs    ln Rho \n");
-  LogKit::LogFormatted(LogKit::LOW,"-------------------------------------\n");
-  LogKit::LogFormatted(LogKit::LOW,"ln Vp      %5.2f     %5.2f     %5.2f \n",1.0f, corr01, corr02);
-  LogKit::LogFormatted(LogKit::LOW,"ln Vs                %5.2f     %5.2f \n",1.0f, corr12);
-  LogKit::LogFormatted(LogKit::LOW,"ln Rho                         %5.2f \n",1.0f);
+  LogKit::LogFormatted(LogKit::LOW,"Corr   | ln Vp     ln Vs    ln Rho \n");
+  LogKit::LogFormatted(LogKit::LOW,"-------+---------------------------\n");
+  LogKit::LogFormatted(LogKit::LOW,"ln Vp  | %5.2f     %5.2f     %5.2f \n",1.0f, corr01, corr02);
+  LogKit::LogFormatted(LogKit::LOW,"ln Vs  |           %5.2f     %5.2f \n",1.0f, corr12);
+  LogKit::LogFormatted(LogKit::LOW,"ln Rho |                     %5.2f \n",1.0f);
 }

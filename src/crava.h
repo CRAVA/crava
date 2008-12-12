@@ -24,7 +24,13 @@ public:
   ~Crava();
   int                computePostMeanResidAndFFTCov();
   int                simulate( RandomGen * randomGen );
-  int                computePostCov();
+
+  //START-Flytte til klassen corr?
+  void               getSigmaPost(void);
+  void               writeFilePostCorrT(void) const;
+  void               writeFilePostCovGrids(void) const;
+  //-Flytte til klassen corr?
+
   int                computeSyntSeismic(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho);
 
   FFTGrid          * getpostAlpha()           {return postAlpha_;}
@@ -35,7 +41,6 @@ public:
   const FFTGrid    * getpostBeta()            const {return postBeta_;}
   const FFTGrid    * getpostRho()             const {return postRho_;}
 
-  int                getNTheta()              const {return ntheta_;}
   int                getWarning(char* wText)  const {if(scaleWarning_>0) sprintf(wText,"%s",scaleWarningText_); return scaleWarning_;}
 
   void               printEnergyToScreen();
@@ -68,6 +73,7 @@ private:
   float              getErrorVariance(int l)  const {return errorVariance_[l];}
   float              getDataVariance(int l)   const {return dataVariance_[l];}
   const Simbox     * getSimbox()              const {return(simbox_);}
+  float              getGridValueInOrigin(FFTGrid * grid) const;
   int                checkScale(void);
     //Conventions for writePars:
   // simNum = -1 indicates prediction, otherwise filename ends with n+1.
@@ -86,8 +92,10 @@ private:
 
   void               divideDataByScaleWavelet();
   void               multiplyDataByScaleWaveletAndWriteToFile(const char* typeName);
-  void               dumpCorrT(float* corrT,float dt);
   void               initPostKriging();          
+
+  void               writeFilePriorCorrT(float* corrT,float dt) const;
+  void               writeFilePostCorrT(FFTGrid * postCov, const std::string & fileName) const;
   void               writeToFile(char * fileName, FFTGrid * grid, std::string sgriLabel = "NO_LABEL");
 
   int                fileGrid_;        // is true if is storage is on file 

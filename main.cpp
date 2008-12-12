@@ -66,14 +66,10 @@ int main(int argc, char** argv)
     {
       time_t timestart, timeend;
       time(&timestart);
-      
-      LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************");
-      LogKit::LogFormatted(LogKit::LOW,"\n***                    Building Stochastic Model                     ***"); 
-      LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************\n\n");
 
       crava = new Crava(model);
       
-      char * warningText = new char[12*MAX_STRING*crava->getNTheta()];
+      char * warningText = new char[12*MAX_STRING*model->getModelSettings()->getNumberOfAngles()];
       
       if(crava->getWarning( warningText ) != 0)
        {
@@ -85,33 +81,27 @@ int main(int argc, char** argv)
       
       time(&timeend);
       LogKit::LogFormatted(LogKit::DEBUGLOW,"\nTime elapsed :  %d\n",timeend-timestart);  
-      LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************");
-      LogKit::LogFormatted(LogKit::LOW,"\n***             Posterior model / Performing Inversion              ***"); 
-      LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************\n\n");
       crava->computePostMeanResidAndFFTCov();
       time(&timeend);
       LogKit::LogFormatted(LogKit::DEBUGLOW,"\nTime elapsed :  %d\n",timeend-timestart);  
-      
+
       if(model->getModelSettings()->getNumberOfSimulations() > 0)
       {
-        LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************");
-        LogKit::LogFormatted(LogKit::LOW,"\n***                Simulating from posterior model                  ***"); 
-        LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************\n\n");
         crava->simulate(model->getRandomGen());
       }
-      FilterWellLogs * filteredlogs = NULL;
-      crava->filterLogs(model->getTimeSimboxConstThick(),
-                        filteredlogs);
 
-      // Posterior covariance
+      crava->getSigmaPost();
       if((model->getModelSettings()->getOutputFlag() & ModelSettings::CORRELATION) > 0)
       {
-        LogKit::LogFormatted(LogKit::LOW,"\nPost process ...\n"); 
-        crava->computePostCov();
-        LogKit::LogFormatted(LogKit::LOW,"\n             ... post prosess ended\n");
+        crava->writeFilePostCorrT();
+        crava->writeFilePostCovGrids();
       }
-      
+
+      FilterWellLogs * filteredlogs = NULL;
+      crava->filterLogs(model->getTimeSimboxConstThick(),filteredlogs);
       crava->computeFaciesProb(filteredlogs);
+      delete filteredlogs;
+
 
       //
       // Temprary placement.  crava.cpp needs a proper restructuring.
@@ -126,7 +116,6 @@ int main(int argc, char** argv)
       }
 
       delete [] warningText;
-      delete filteredlogs;
       delete crava;
     } //end doinversion 
   }

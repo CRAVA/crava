@@ -582,8 +582,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
     LogKit::LogFormatted(LogKit::HIGH,"\nFinding inversion area from seismic data in file %s\n", 
                          seismicFile.c_str());
     areaType = "Seismic data";
-    const TraceHeaderFormat *thf = modelSettings->getTraceHeaderFormat();
-    SegyGeometry * geometry = SegY::FindGridGeometry(seismicFile, thf);
+    SegyGeometry * geometry = SegY::FindGridGeometry(seismicFile, modelSettings->getTraceHeaderFormat());
     modelSettings->setAreaParameters(geometry);
     delete geometry;
   }
