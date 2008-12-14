@@ -464,16 +464,16 @@ FFTGrid::fillInParamCorr(Corr* corr,int minIntFq, float gradI, float gradJ)
             value += subK*circCorrT[baseK+1];
           else
             value += subK*circCorrT[0];
-          value *= float( (*(corr->getCorrXY()))(i+nxp_*j));
+          value *= float( (*(corr->getPriorCorrXY()))(i+nxp_*j));
         }
         else
           value = RMISSING;        
-
+        
         setNextReal(value);
       } //for k,j,i
-
-      endAccess();
-      return circCorrT;//fftw_free(circCorrT);
+  
+  endAccess();
+  return circCorrT;//fftw_free(circCorrT);
 }
 
 
@@ -521,7 +521,7 @@ FFTGrid::fillInErrCorr(Corr* parCorr, float gradI, float gradJ)
               baseK = -1-baseK;
               subK  = 1-subK;
             }
-            value = (1-subK)* float( (*(parCorr->getCorrXY()))(i+nxp_*j) );
+            value = (1-subK)* float( (*(parCorr->getPriorCorrXY()))(i+nxp_*j) );
           }
           else
             value = 0;
@@ -1203,7 +1203,7 @@ FFTGrid::computeCircCorrT(Corr* corr,fftw_real* CircCorrT)
   float dummy;
   const float* CorrT;
 
-  CorrT =  corr->getCorrT(n,dummy);
+  CorrT = corr->getPriorCorrT(n,dummy);
 
   assert(CorrT[0] != 0);
 

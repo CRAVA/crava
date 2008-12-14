@@ -42,7 +42,7 @@ Model::Model(char * fileName)
   timeSimboxConstThick_   = NULL;
   wells_                  = NULL;
   background_             = NULL;
-  priorCorrelations_      = NULL;
+  correlations_           = NULL;
   priorFacies_            = NULL;
   seisCube_               = NULL;
   wavelet_                = NULL;
@@ -138,8 +138,6 @@ Model::Model(char * fileName)
                             modelSettings_, modelFile, errText, failedWavelet);
           }              
         }
-        if(modelSettings_->getFormatFlag() == 0)
-          modelSettings_->setFormatFlag(FFTGrid::STORMFORMAT);  //Default, but not initialized due to possible double output.
         background_->getAlpha()->setOutputFormat(modelSettings_->getFormatFlag()); //static, controls all grids.
       }
       else
@@ -175,7 +173,7 @@ Model::Model(char * fileName)
 
             if (!failedBackground)
             {
-              processPriorCorrelations(priorCorrelations_, background_, wells_, timeSimbox_,
+              processPriorCorrelations(correlations_, background_, wells_, timeSimbox_,
                                        modelSettings_,modelFile,
                                        errText, failedPriorCorr);
               processReflectionMatrix(reflectionMatrix_, background_, 
@@ -266,8 +264,8 @@ Model::~Model(void)
     delete [] faciesEstimInterval_;
   }
 
-  if (priorCorrelations_ != NULL)
-    delete priorCorrelations_;
+  if (correlations_ != NULL)
+    delete correlations_;
 
   if(timeDepthMapping_!=NULL)
     delete timeDepthMapping_;
@@ -1136,10 +1134,7 @@ Model::processSeismic(FFTGrid      **& seisCube,
 
     if(error == 0)
     {
-      int formatFlag = modelSettings->getFormatFlag();
-      if(formatFlag == 0)
-        formatFlag = 1;   //Default, but not initialized due to possible double output.
-      seisCube[0]->setOutputFormat(formatFlag); //static, controls all grids.
+      seisCube[0]->setOutputFormat(modelSettings->getFormatFlag()); //static, controls all grids.
       if(modelSettings->getDebugFlag() == 1)
       {
         char sName[100];
@@ -1647,7 +1642,7 @@ Model::processBackground(Background   *& background,
 }
 
 void 
-Model::processPriorCorrelations(Corr         *& priorCorrelations,
+Model::processPriorCorrelations(Corr         *& correlations,
                                 Background    * background,
                                 WellData     ** wells,
                                 Simbox        * timeSimbox,
@@ -1701,15 +1696,15 @@ Model::processPriorCorrelations(Corr         *& priorCorrelations,
                                           timeSimbox, 
                                           modelSettings);
 
-    priorCorrelations = new Corr(analyze->getPointVar0(), 
-                                 analyze->getVar0(), 
-                                 analyze->getCorrT(), 
-                                 analyze->getNumberOfLags(),
-                                 static_cast<float>(timeSimbox->getdz()), 
-                                 CorrXY);
+    correlations = new Corr(analyze->getPointVar0(), 
+                            analyze->getVar0(), 
+                            analyze->getCorrT(), 
+                            analyze->getNumberOfLags(),
+                            static_cast<float>(timeSimbox->getdz()), 
+                            CorrXY);
     delete analyze;
 
-    if(priorCorrelations == NULL)
+    if(correlations == NULL)
     {
       sprintf(errText,"%sCould not construct prior covariance. Unknown why...\n",errText);
       failed = true;
@@ -1726,12 +1721,12 @@ Model::processPriorCorrelations(Corr         *& priorCorrelations,
     //
     //
     if(paramCorr != NULL)
-      priorCorrelations->setVar0(paramCorr);
+      correlations->setPriorVar0(paramCorr);
 
     if(printResult)
-      priorCorrelations->dumpResult();
+      correlations->writeFilePriorVariances();
     
-    priorCorrelations->printVariancesToScreen();
+    correlations->printPriorVariances();
 
     time(&timeend);
     LogKit::LogFormatted(LogKit::DEBUGLOW,"\n\nTime elapsed :  %d\n",timeend-timestart);  

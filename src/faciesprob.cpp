@@ -15,6 +15,7 @@
 #include "src/faciesprob.h"
 #include "src/fftgrid.h"
 #include "src/fftfilegrid.h"
+#include "src/corr.h"
 #include "src/crava.h"
 #include "src/simbox.h"
 #include "src/blockedlogs.h"
@@ -22,16 +23,19 @@
 #include "src/definitions.h"
 #include "src/filterwelllogs.h"
 
-FaciesProb::FaciesProb(ModelSettings * modelSettings,
-                       int filegrid, float ** sigma0, float *corrprior, 
-                       int nzp, int nz, 
-                       FFTGrid* bgAlpha, FFTGrid* bgBeta, FFTGrid* bgRho, 
-                       float p_undef, float *priorFacies)
+FaciesProb::FaciesProb(Corr          * correlations, 
+                       ModelSettings * modelSettings,
+                       int             filegrid, 
+                       FFTGrid       * bgAlpha, 
+                       FFTGrid       * bgBeta, 
+                       FFTGrid       * bgRho, 
+                       float           p_undef, 
+                       float         * priorFacies)
 {
   modelSettings_ = modelSettings;
   fileGrid_      = filegrid;
-  nzp_           = nzp;
-  nz_            = nz;
+  nzp_           = bgAlpha->getNzp();
+  nz_            = bgAlpha->getNz();
   p_undefined_   = p_undef;
   priorFacies_   = priorFacies;
 
@@ -39,38 +43,12 @@ FaciesProb::FaciesProb(ModelSettings * modelSettings,
   bgBeta_        = new FFTGrid(bgBeta);
   bgRho_         = new FFTGrid(bgRho);
 
-  sigma0_ = new float*[3];
-  sigmaPost_= new float*[3];
-  for(int i=0;i<3;i++)
-  {
-    sigma0_[i] = new float[3];
-    sigmaPost_[i]=new float[3];
-  }
-
-  for(int i=0;i<3;i++)
-    for(int j=0;j<3;j++)
-    {
-      sigma0_[i][j] = sigma0[i][j];
-      sigmaPost_[i][j] = RMISSING;
-    }
-
-  int rnzp = 2*(nzp_/2+1);
-  corrprior_ = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp));
-  for(int i=0;i<nzp_;i++)
-    corrprior_[i] =corrprior[i];
-
+  sigma0_        = correlations->getPriorVar0();
+  sigmaPost_     = correlations->getPostVar0();
 }
 
 FaciesProb::~FaciesProb()
 {
-  for(int i=0;i<3;i++)
-  {
-    delete [] sigma0_[i];
-    delete [] sigmaPost_[i];
-  }
-  delete [] sigma0_;
-  delete [] sigmaPost_;
-
   delete [] priorFacies_;
 
   for(int i=0;i<nFacies_;i++)
@@ -93,9 +71,8 @@ FaciesProb::~FaciesProb()
   delete [] betablock_;
   delete [] rhoblock_;
   delete [] facieslog_;
-
-  fftw_free(corrprior_);
 }
+
 float**      
 FaciesProb::makeFaciesHistAndSetPriorProb(float* alpha, float* beta, float* rho,int* faciesL)
 {
@@ -298,9 +275,9 @@ FaciesProb::makeFaciesHistAndSetPriorProb2(float* alpha, float* beta, float* rho
     for(j=0;j<3;j++)
     {
       sigma0[i][j]=double(sigma0_[i][j]);
-      sigma0Inv[i][j]=0.0;
+      sigma0Inv[i][j] = 0.0;
     }
-     sigma0Inv[i][i]      = 1.0;
+     sigma0Inv[i][i] = 1.0;
   }
   
   sigma0[0][0] = MAXIM( sigma0[0][0],varAlpha_);
@@ -1027,66 +1004,4 @@ void FaciesProb::setNeededLogs(FilterWellLogs * filteredLogs,
     }
   } 
   delete [] vtFacies;
-}
-
-
-void FaciesProb::setSigmaPost(FFTGrid *postCovAlpha, FFTGrid *postCovBeta, FFTGrid *postCovRho, FFTGrid *postCrCovAlphaBeta,
-                               FFTGrid *postCrCovAlphaRho, FFTGrid *postCrCovBetaRho)
-{
-  fftw_real *postcova, *postcovb, *postcovr, *postcrab, *postcrar, *postcrbr;
-
-  //int rnzp = 2*(nzp_/2+1);
-  postcova = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*1));
-  postcovb = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*1));
-  postcovr = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*1));
-  postcrab = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*1));
-  postcrar = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*1));
-  postcrbr = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*1));
-  
-  if(postCovAlpha->getIsTransformed()==true)
-    postCovAlpha->invFFTInPlace();
-    if(postCovBeta->getIsTransformed()==true)
-      postCovBeta->invFFTInPlace();
-    if(postCovRho->getIsTransformed()==true)
-      postCovRho->invFFTInPlace();
-    if(postCrCovAlphaBeta->getIsTransformed()==true)
-      postCrCovAlphaBeta->invFFTInPlace();
-    if(postCrCovAlphaRho->getIsTransformed()==true)
-      postCrCovAlphaRho->invFFTInPlace();
-    if(postCrCovBetaRho->getIsTransformed()==true)
-      postCrCovBetaRho->invFFTInPlace();
-    
-    int i = 0;
-    int refk = 0;
-    
-    postcova[i] = postCovAlpha->getRealValue(0,0,refk);
-    postcovb[i] = postCovBeta->getRealValue(0,0,refk);
-    postcovr[i] = postCovRho->getRealValue(0,0,refk);
-    postcrab[i] = postCrCovAlphaBeta->getRealValue(0,0,refk);
-    postcrar[i] = postCrCovAlphaRho->getRealValue(0,0,refk);
-    postcrbr[i] = postCrCovBetaRho->getRealValue(0,0,refk);
-    
-    sigmaPost_[0][0]=postcova[0];
-    sigmaPost_[1][1]=postcovb[0];
-    sigmaPost_[2][2]=postcovr[0];
-    sigmaPost_[0][1]=postcrab[0];
-    sigmaPost_[1][0]=postcrab[0];
-    sigmaPost_[0][2]=postcrar[0];
-    sigmaPost_[2][0]=postcrar[0];
-    sigmaPost_[1][2]=postcrbr[0];
-    sigmaPost_[2][1]=postcrbr[0];
-    
-    postCovAlpha->fftInPlace();
-    postCovBeta->fftInPlace();
-    postCovRho->fftInPlace();
-    postCrCovAlphaBeta->fftInPlace();
-    postCrCovAlphaRho->fftInPlace();
-    postCrCovBetaRho->fftInPlace();
-    
-    fftw_free(postcova);
-    fftw_free(postcovb);
-    fftw_free(postcovr);
-    fftw_free(postcrab);
-    fftw_free(postcrar);
-    fftw_free(postcrbr);
 }

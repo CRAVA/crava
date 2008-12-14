@@ -34,7 +34,7 @@ public:
   FFTGrid        * getBackAlpha()             const { return background_->getAlpha() ;}
   FFTGrid        * getBackBeta()              const { return background_->getBeta()  ;}
   FFTGrid        * getBackRho()               const { return background_->getRho()   ;}
-  Corr           * getPriorCorrelations()     const { return priorCorrelations_      ;}
+  Corr           * getCorrelations()          const { return correlations_           ;}
   float          * getPriorFacies()           const { return priorFacies_            ;}  
   FFTGrid       ** getSeisCubes()             const { return seisCube_               ;}
   Wavelet       ** getWavelets()              const { return wavelet_                ;}
@@ -93,7 +93,7 @@ private:
                                      ModelFile     * modelFile, 
                                      char          * errText,
                                      bool          & failed);
-  void             processPriorCorrelations(Corr         *& priorCorrelations,
+  void             processPriorCorrelations(Corr         *& correlations,
                                             Background    * background,
                                             WellData     ** wells,
                                             Simbox        * timeSimbox,
@@ -225,7 +225,7 @@ private:
   
   WellData      ** wells_;                 ///< Well data
   Background     * background_;            ///< Holds the background model.
-  Corr           * priorCorrelations_;     ///<
+  Corr           * correlations_;          ///<
   FFTGrid       ** seisCube_;              ///< Seismic data cubes
   Wavelet       ** wavelet_;               ///< Wavelet for angle
   Surface       ** shiftGrids_;            ///< Grids containing shift data for wavelets

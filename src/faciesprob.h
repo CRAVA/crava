@@ -6,6 +6,7 @@
 #include "fft/include/fftw-int.h"
 #include "fft/include/f77_func.h"
 
+class Corr;
 class FFTGrid;
 class Crava;
 class Simbox;
@@ -19,11 +20,14 @@ class WellData;
 class FaciesProb
 {
 public:
-  FaciesProb(ModelSettings * modelSettings,
-             int filegrid, float ** sigma0, float *corrprior, 
-             int nzp, int nz, 
-             FFTGrid* bgAlpha, FFTGrid* bgBeta, FFTGrid* bgRho, 
-             float p_undef, float *priorFacies);
+  FaciesProb(Corr          * correlation, 
+             ModelSettings * modelSettings,
+             int             filegrid, 
+             FFTGrid       * bgAlpha, 
+             FFTGrid       * bgBeta, 
+             FFTGrid       * bgRho, 
+             float           p_undef, 
+             float         * priorFacies);
   ~FaciesProb();
   float        ** makeFaciesHistAndSetPriorProb(float* alphafiltered_,float* betafiltered_,float* rhofiltered_,int* facieslog_);
   void            makeFaciesDens(int nfac);
@@ -40,8 +44,7 @@ public:
                                 int nWells,
                                 int nz,
                                 RandomGen * random);
-  void            setSigmaPost(FFTGrid *postCovAlpha, FFTGrid *postCovBeta, FFTGrid *postCovRho, FFTGrid *postCrCovAlphaBeta,
-                               FFTGrid *postCrCovAlphaRho, FFTGrid *postCrCovBetaRho);
+
 private:
   void            getMinMax(float* alpha,float* beta,float* rho,int* facies);
   void            calculateVariances(float* alpha,float* beta,float* rho,int* facies);
@@ -51,8 +54,12 @@ private:
 
   ModelSettings * modelSettings_;
   const Simbox  * simbox_;
+
   fftw_real     * corrprior_;
+
   float        ** sigma0_;
+  float        ** sigmaPost_; // for Pcube
+
   int             nFacies_, nbins_, nbinsr_, nobs_;
   int           * nData_;
   FFTGrid      ** density_;  // Note: normalizes to the number of observations of facies type. 
@@ -87,6 +94,5 @@ private:
 
   float           p_undefined_;
   float         * priorFacies_;
-  float        ** sigmaPost_; // for Pcube
 };
 #endif

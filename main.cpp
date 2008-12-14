@@ -11,6 +11,7 @@
 #include "nrlib/iotools/logkit.hpp"
 
 #include "src/definitions.h"
+#include "src/corr.h"
 #include "src/model.h"
 #include "src/wavelet.h"
 #include "src/crava.h"
@@ -90,18 +91,20 @@ int main(int argc, char** argv)
         crava->simulate(model->getRandomGen());
       }
 
-      crava->getSigmaPost();
+      Corr * corr = model->getCorrelations();
+      corr->invFFT();
+      corr->getPostVariances();
+      corr->printPostVariances();
       if((model->getModelSettings()->getOutputFlag() & ModelSettings::CORRELATION) > 0)
       {
-        crava->writeFilePostCorrT();
-        crava->writeFilePostCovGrids();
-      }
+        corr->writeFilePostVariances();
+        corr->writeFilePostCovGrids(model->getTimeSimbox());
+      }       
 
       FilterWellLogs * filteredlogs = NULL;
       crava->filterLogs(model->getTimeSimboxConstThick(),filteredlogs);
       crava->computeFaciesProb(filteredlogs);
       delete filteredlogs;
-
 
       //
       // Temprary placement.  crava.cpp needs a proper restructuring.
@@ -127,7 +130,7 @@ int main(int argc, char** argv)
 
     // Computing synthetic seismic
     LogKit::LogFormatted(LogKit::LOW,"\nComputing synthetic seismic ..."); 
-    crava->computeSyntSeismic(crava->getpostAlpha(),crava->getpostBeta(),crava->getpostRho());
+    crava->computeSyntSeismic(crava->getPostAlpha(),crava->getPostBeta(),crava->getPostRho());
     LogKit::LogFormatted(LogKit::LOW,"                              ... synthetic seismic computed.\n");
 	
     delete crava;

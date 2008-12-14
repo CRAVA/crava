@@ -76,7 +76,7 @@ ModelSettings::ModelSettings(void)
   lzLimit_               =     0.47;   // NB! This is a double ==> do not use 'f'.
 
   outputFlag_            = VP+VS+RHO;  // Default output
-  formatFlag_            =        0;
+  formatFlag_            =        2;   // STORMFORMAT
   debugFlag_             =        0;
   fileGrid_              =       -1;
  

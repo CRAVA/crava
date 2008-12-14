@@ -1607,7 +1607,9 @@ ModelFile::readCommandOutput(char ** params, int & pos, char * errText)
     }
     if((outputFlag & ModelSettings::NOTIME) > 0)
       formatFlag = (formatFlag | FFTGrid::NOTIMEFORMAT);
-    modelSettings_->setFormatFlag(formatFlag);
+    if (formatFlag != 0)
+      modelSettings_->setFormatFlag(formatFlag);
+    if (outputFlag != 0)
     modelSettings_->setOutputFlag(outputFlag);
   }
   pos += nPar+1;

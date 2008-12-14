@@ -11,20 +11,14 @@
 #include "src/simbox.h"
 #include "src/fftgrid.h"
 #include "src/fftfilegrid.h"
+#include "src/corr.h"
 #include "src/model.h"
 #include "nrlib/iotools/logkit.hpp"
 
 
 FilterWellLogs::FilterWellLogs(const Simbox * timeSimboxConstThick, 
                                const Simbox * timeSimboxOrigThick, 
-                               FFTGrid      * postCovAlpha,
-                               FFTGrid      * postCovBeta, 
-                               FFTGrid      * postCovRho, 
-                               FFTGrid      * postCrCovAlphaBeta,
-                               FFTGrid      * postCrCovAlphaRho,
-                               FFTGrid      * postCrCovBetaRho, 
-                               float        * corrprior, 
-                               float       ** sigma0,
+                               const Corr   * correlations,
                                int            nzp, 
                                int            nz, 
                                WellData    ** wells, 
@@ -78,19 +72,6 @@ FilterWellLogs::FilterWellLogs(const Simbox * timeSimboxConstThick,
     }
   }
 
-  if(postCovAlpha->getIsTransformed()==true)
-    postCovAlpha->invFFTInPlace();
-  if(postCovBeta->getIsTransformed()==true)
-    postCovBeta->invFFTInPlace();
-  if(postCovRho->getIsTransformed()==true)
-    postCovRho->invFFTInPlace();
-  if(postCrCovAlphaBeta->getIsTransformed()==true)
-    postCrCovAlphaBeta->invFFTInPlace();
-  if(postCrCovAlphaRho->getIsTransformed()==true)
-    postCrCovAlphaRho->invFFTInPlace();
-  if(postCrCovBetaRho->getIsTransformed()==true)
-    postCrCovBetaRho->invFFTInPlace();
-  
   for(int i=0;i<nzp;i++)
   {
     int refk;
@@ -100,12 +81,12 @@ FilterWellLogs::FilterWellLogs(const Simbox * timeSimboxConstThick,
       refk = nzp - i;
     if(refk < nz)
     {
-      postcova[i] = postCovAlpha->getRealValue(0,0,refk);
-      postcovb[i] = postCovBeta->getRealValue(0,0,refk);
-      postcovr[i] = postCovRho->getRealValue(0,0,refk);
-      postcrab[i] = postCrCovAlphaBeta->getRealValue(0,0,refk);
-      postcrar[i] = postCrCovAlphaRho->getRealValue(0,0,refk);
-      postcrbr[i] = postCrCovBetaRho->getRealValue(0,0,refk);
+      postcova[i] = correlations->getPostCovAlpha00(refk);      
+      postcovb[i] = correlations->getPostCovBeta00(refk);       
+      postcovr[i] = correlations->getPostCovRho00(refk);        
+      postcrab[i] = correlations->getPostCrCovAlphaBeta00(refk);
+      postcrar[i] = correlations->getPostCrCovAlphaRho00(refk); 
+      postcrbr[i] = correlations->getPostCrCovBetaRho00(refk);  
     }
     else
     {
@@ -118,24 +99,19 @@ FilterWellLogs::FilterWellLogs(const Simbox * timeSimboxConstThick,
     }
   }
 
+  float * priorCorrTFiltered = correlations->getPriorCorrTFiltered();
+
   for(int i=0;i<nzp;i++)
-    priorCorr[i] =corrprior[i];
+    priorCorr[i] = priorCorrTFiltered[i];
 
   doFiltering(timeSimboxConstThick, 
               timeSimboxOrigThick, 
-              wells,nWells, sigma0,
+              wells,nWells, 
+              correlations->getPriorVar0(),
               postcova,postcovb,postcovr,
               postcrab,postcrar,postcrbr, 
               priorCorr, lowCut, highCut, 
               relative, nz, nzp);
-
-
-  postCovAlpha->fftInPlace();
-  postCovBeta->fftInPlace();
-  postCovRho->fftInPlace();
-  postCrCovAlphaBeta->fftInPlace();
-  postCrCovAlphaRho->fftInPlace();
-  postCrCovBetaRho->fftInPlace();
   
   fftw_free(priorCorr);
   fftw_free(postcova);

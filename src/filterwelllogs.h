@@ -5,25 +5,18 @@
 #include "fft/include/fftw-int.h"
 #include "fft/include/f77_func.h"
 
-class FFTGrid;
 class Simbox;
 class ModelSettings;
 class CKrigingAdmin;
 class KrigingData;
+class Corr;
 
 class FilterWellLogs
 {
 public:
   FilterWellLogs(const Simbox * timeSimboxConstThick, 
                  const Simbox * timeSimboxOrigThick, 
-                 FFTGrid      * postCovAlpha, 
-                 FFTGrid      * postCovBeta, 
-                 FFTGrid      * postCovRho, 
-                 FFTGrid      * postCrCovAlphaBeta,
-                 FFTGrid      * postCrCovAlphaRho, 
-                 FFTGrid      * postCrCovBetaRho, 
-                 float        * corrprior, 
-                 float       ** sigma0,
+                 const Corr   * correlations,
                  int            nzp, 
                  int            nz, 
                  WellData    ** wells, 

@@ -11,35 +11,26 @@ class Wavelet;
 class Simbox;
 class RandomGen;
 class WellData;
-class KrigingData3D;
 class CKrigingAdmin;
 class CovGridSeparated;
+class KrigingData3D;
 class FaciesProb;
 class GridMapping;
 class FilterWellLogs;
+class Corr;
 
-class Crava {
+class Crava 
+{
 public:
   Crava(Model * model);
   ~Crava();
   int                computePostMeanResidAndFFTCov();
   int                simulate( RandomGen * randomGen );
-
-  //START-Flytte til klassen corr?
-  void               getSigmaPost(void);
-  void               writeFilePostCorrT(void) const;
-  void               writeFilePostCovGrids(void) const;
-  //-Flytte til klassen corr?
-
   int                computeSyntSeismic(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho);
 
-  FFTGrid          * getpostAlpha()           {return postAlpha_;}
-  FFTGrid          * getpostBeta()            {return postBeta_;}
-  FFTGrid          * getpostRho()             {return postRho_;}
-
-  const FFTGrid    * getpostAlpha()           const {return postAlpha_;}
-  const FFTGrid    * getpostBeta()            const {return postBeta_;}
-  const FFTGrid    * getpostRho()             const {return postRho_;}
+  FFTGrid          * getPostAlpha()                 { return postAlpha_ ;}
+  FFTGrid          * getPostBeta()                  { return postBeta_  ;}
+  FFTGrid          * getPostRho()                   { return postRho_   ;}
 
   int                getWarning(char* wText)  const {if(scaleWarning_>0) sprintf(wText,"%s",scaleWarningText_); return scaleWarning_;}
 
@@ -60,22 +51,15 @@ private:
   void               computeDataVariance(void);
   void               setupErrorCorrelation(Model * model);
   void               computeVariances(fftw_real* corrT, Model * model);
-  const FFTGrid    * getpostCovAlpha()        const {return postCovAlpha_;}
-  const FFTGrid    * getpostCovBeta()         const {return postCovBeta_;}       
-  const FFTGrid    * getpostCovRho()          const {return postCovRho_;}        
-  const FFTGrid    * getpostCrCovAlphaBeta()  const {return postCrCovAlphaBeta_;}
-  const FFTGrid    * getpostCrCovAlphaRho()   const {return postCrCovAlphaRho_;}
-  const FFTGrid    * getpostCrCovBetaRho()    const {return postCrCovBetaRho_;}
-  float              getTheta(int l)          const {return theta_[l];}
   float              getEmpSNRatio(int l)     const {return empSNRatio_[l];}
   float              getTheoSNRatio(int l)    const {return theoSNRatio_[l];}
   float              getSignalVariance(int l) const {return signalVariance_[l];}
   float              getErrorVariance(int l)  const {return errorVariance_[l];}
   float              getDataVariance(int l)   const {return dataVariance_[l];}
   const Simbox     * getSimbox()              const {return(simbox_);}
-  float              getGridValueInOrigin(FFTGrid * grid) const;
   int                checkScale(void);
-    //Conventions for writePars:
+
+  //Conventions for writePars:
   // simNum = -1 indicates prediction, otherwise filename ends with n+1.
   // All grids are in normal domain, and on log scale.
   void               writePars(FFTGrid * alpha, FFTGrid * beta, FFTGrid * rho, int simNum); 
@@ -94,19 +78,18 @@ private:
   void               multiplyDataByScaleWaveletAndWriteToFile(const char* typeName);
   void               initPostKriging();          
 
-  void               writeFilePriorCorrT(float* corrT,float dt) const;
-  void               writeFilePostCorrT(FFTGrid * postCov, const std::string & fileName) const;
   void               writeToFile(char * fileName, FFTGrid * grid, std::string sgriLabel = "NO_LABEL");
 
   int                fileGrid_;        // is true if is storage is on file 
   const Simbox     * simbox_;          // the simbox
-  //const Simbox     * depthSimbox_;     // simbox with depth surfaces
   int                nx_;              // dimensions of the problem
   int                ny_;
   int                nz_;
   int                nxp_;             // padded dimensions
   int                nyp_;
   int                nzp_; 
+
+  Corr             * correlations_;    //
 
   int                ntheta_;          // number of seismic cubes and number of wavelets
   float              lowCut_;          // lowest frequency that is inverted
@@ -164,11 +147,10 @@ private:
                                       //will be interpolated. Default 0, set from model.
   RandomGen        * random_;
   CKrigingAdmin    * pKriging_;
-  CovGridSeparated * covAlpha_, *covBeta_, *covRho_, *covCrAlphaBeta_, *covCrAlphaRho_, *covCrBetaRho_;
+  CovGridSeparated * covGridAlpha_, *covGridBeta_, *covGridRho_, *covGridCrAlphaBeta_, *covGridCrAlphaRho_, *covGridCrBetaRho_;
   KrigingData3D    * kd_;        
+
   FaciesProb       * fprob_;
   Model            * model_;
-  float            * corrprior_;
-  
 };
 #endif

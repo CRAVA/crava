@@ -3,33 +3,104 @@
 
 #include "src/definitions.h"
 #include "nrlib/surface/regularsurface.hpp"
+#include "src/fftgrid.h"
 
-class Corr{
+class Simbox;
+
+class Corr
+{
 public:
   Corr(float   ** pointVar0,
-       float   ** Var0, 
-       float    * CorrT, 
+       float   ** priorVar0, 
+       float    * priorCorrT, 
        int        n, 
        float      dt, 
-       Surface  * CorrXY);
+       Surface  * priorCorrXY);
   ~Corr(void); 
-  float    * getCorrT(int &n, float &dt) const;
-  float   ** getVar0()                   const { return Var0_            ;}
-  Surface  * getCorrXY()                 const { return CorrXY_          ;}
-  int        getn()                      const { return n_               ;}
-  int        getnx()                     const { return CorrXY_->GetNI() ;} 
-  int        getny()                     const { return CorrXY_->GetNJ() ;} 
-  float      getdt()                     const { return dt_              ;}
-  void       dumpResult()                const;
-  void       setVar0(float ** var0);
-  void       printVariancesToScreen();
+  float   ** getPriorVar0(void)                const { return priorVar0_               ;}
+  float    * getPriorCorrT(int &n, float &dt)  const;
+  float    * getPriorCorrTFiltered(void)       const { return priorCorrTFiltered_      ;}
+  Surface  * getPriorCorrXY(void)              const { return priorCorrXY_             ;}
+  int        getnx(void)                       const { return priorCorrXY_->GetNI()    ;} 
+  int        getny(void)                       const { return priorCorrXY_->GetNJ()    ;} 
+  int        getn(void)                        const { return n_                       ;}
+  float      getdt(void)                       const { return dt_                      ;}
+ 
+  float   ** getPostVar0(void)                 const { return postVar0_                ;}
+
+  float      getPostCovAlpha00(int k)          const { return postCovAlpha00_[k]       ;}
+  float      getPostCovBeta00(int k)           const { return postCovBeta00_[k]        ;}       
+  float      getPostCovRho00(int k)            const { return postCovRho00_[k]         ;}        
+  float      getPostCrCovAlphaBeta00(int k)    const { return postCrCovAlphaBeta00_[k] ;}
+  float      getPostCrCovAlphaRho00(int k)     const { return postCrCovAlphaRho00_[k]  ;}
+  float      getPostCrCovBetaRho00(int k)      const { return postCrCovBetaRho00_[k]   ;}
+
+  FFTGrid *& getPostCovAlpha(void)                   { return postCovAlpha_            ;}
+  FFTGrid *& getPostCovBeta(void)                    { return postCovBeta_             ;}       
+  FFTGrid *& getPostCovRho(void)                     { return postCovRho_              ;}        
+  FFTGrid *& getPostCrCovAlphaBeta(void)             { return postCrCovAlphaBeta_      ;}
+  FFTGrid *& getPostCrCovAlphaRho(void)              { return postCrCovAlphaRho_       ;}
+  FFTGrid *& getPostCrCovBetaRho(void)               { return postCrCovBetaRho_        ;}
+
+  void       setPriorVar0(float ** priorVar0);
+  void       setPriorCorrTFiltered(float * corrT, int nz, int nzp);
+
+  //   --------------------------------- tmp -------------------------
+
+  void       setGridCopies(FFTGrid * postCovAlpha, 
+                           FFTGrid * postCovBeta,
+                           FFTGrid * postCovRho, 
+                           FFTGrid * postCrCovAlphaBeta,
+                           FFTGrid * postCrCovAlphaRho,
+                           FFTGrid * postCrCovBetaRho);
+  FFTGrid  * copyFFTGrid(FFTGrid * fftGridOld);
+
+  //   --------------------------------- tmp -------------------------
+
+  void       FFT(void);
+  void       invFFT(void);
+
+  void       printPriorVariances(void) const;
+  void       printPostVariances(void) const;
+
+  void       getPostVariances(void);
+
+  void       writeFilePriorCorrT(float* corrT, int nzp) const;
+
+  void       writeFilePriorVariances(void) const;
+  void       writeFilePostVariances(void) const;
+  void       writeFilePostCovGrids(Simbox * simbox) const;
+
 
 private:
-  float   ** Var0_;      // blocked variance this is used in the computations
-  float   ** pointVar0_;
-  float    * CorrT_;
-  int        n_;         // length of CorT
-  float      dt_;        // time step for CorT
-  Surface  * CorrXY_;
+  void       writeFilePostCorrT(float * postCov, int nz, const std::string & fileName) const;
+  float      getOrigin(FFTGrid * grid) const;
+  float    * getPostCov00(FFTGrid * postCov);
+
+  float   ** pointVar0_;     // Point variance calculated from using well log resolution
+
+  float   ** priorVar0_;     // Blocked variance this is used in the computations
+  Surface  * priorCorrXY_;
+  float    * priorCorrT_;
+  float    * priorCorrTFiltered_;
+
+  int        n_;             // priorCorrT - length
+  float      dt_;            // priorCorrT - time step
+
+  float   ** postVar0_;
+
+  float    * postCovAlpha00_;      // Posterior covariance in (i,j) = (0,0)
+  float    * postCovBeta00_;
+  float    * postCovRho00_;
+  float    * postCrCovAlphaBeta00_;
+  float    * postCrCovAlphaRho00_;
+  float    * postCrCovBetaRho00_;
+
+  FFTGrid  * postCovAlpha_;
+  FFTGrid  * postCovBeta_;
+  FFTGrid  * postCovRho_;
+  FFTGrid  * postCrCovAlphaBeta_;
+  FFTGrid  * postCrCovAlphaRho_;
+  FFTGrid  * postCrCovBetaRho_;
 };
 #endif
