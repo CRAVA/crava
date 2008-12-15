@@ -1325,6 +1325,7 @@ FFTGrid::writeFile(const std::string & fileName, const Simbox * simbox,
   {
     if((formatFlag_ & NOTIMEFORMAT) == 0) {
       if(timeMap == NULL) { //No resampling of storm 
+
         if((formatFlag_ & STORMFORMAT) == STORMFORMAT) 
           FFTGrid::writeStormFile(fileName, simbox);
         if((formatFlag_ & ASCIIFORMAT) == ASCIIFORMAT)
@@ -1351,14 +1352,19 @@ FFTGrid::writeFile(const std::string & fileName, const Simbox * simbox,
           FFTGrid::writeStormFile(depthName, depthMap->getSimbox());
         if((formatFlag_ & ASCIIFORMAT) == ASCIIFORMAT)
           FFTGrid::writeStormFile(depthName, depthMap->getSimbox(), true);
+        if((formatFlag_ & SEGYFORMAT) == SEGYFORMAT)
+          makeDepthCubeForSegy(depthMap->getSimbox(),depthName);
       }
       else
-        if(depthMap->getSimbox() == NULL || depthMap->getMapping() == NULL) {
+      {
+        if(depthMap->getSimbox() == NULL) {
           LogKit::LogFormatted(LogKit::WARNING,
                                "Depth mapping incomplete when trying to write %s. Write cancelled.\n",depthName.c_str());
           return;
         }
+        // Writes also segy in depth if required
         FFTGrid::writeResampledStormCube(depthMap, depthName, simbox, formatFlag_);
+      }
     }
   }
 }
@@ -1561,7 +1567,7 @@ FFTGrid::writeResampledStormCube(GridMapping  * gridmapping,
  
   float time, kindex;
   StormContGrid *mapping = gridmapping->getMapping();
-  StormContGrid outgrid(*mapping);
+  StormContGrid *outgrid = new StormContGrid(*mapping);
  
   double x,y;
   int nz = mapping->GetNK();
@@ -1574,7 +1580,7 @@ FFTGrid::writeResampledStormCube(GridMapping  * gridmapping,
       {
         time = (*mapping)(i,j,k);
         kindex = float((time - static_cast<float>(simbox->getTop(x,y)))/simbox->getdz());
-        outgrid(i,j,k) = getRealValueInterpolated(i,j,kindex);
+        (*outgrid)(i,j,k) = getRealValueInterpolated(i,j,kindex);
       }
     }
   }
@@ -1585,17 +1591,23 @@ FFTGrid::writeResampledStormCube(GridMapping  * gridmapping,
   {
     gfName = ModelSettings::makeFullFileName(fileName+".txt");
     header = gridmapping->getSimbox()->getStormHeader(FFTGrid::PARAMETER,nx_,ny_,nz, 0, 1);
-    outgrid.SetFormat(StormContGrid::STORM_ASCII);
-    outgrid.WriteToFile(gfName,header);
+    outgrid->SetFormat(StormContGrid::STORM_ASCII);
+    outgrid->WriteToFile(gfName,header);
   }
 
   if ((format & FFTGrid::STORMFORMAT) == FFTGrid::STORMFORMAT)
   {
     gfName = ModelSettings::makeFullFileName(fileName+".storm");
     header = gridmapping->getSimbox()->getStormHeader(FFTGrid::PARAMETER,nx_,ny_,nz, 0, 0);
-    outgrid.SetFormat(StormContGrid::STORM_BINARY);
-    outgrid.WriteToFile(gfName,header);
+    outgrid->SetFormat(StormContGrid::STORM_BINARY);
+    outgrid->WriteToFile(gfName,header);
   }
+  if((formatFlag_ & SEGYFORMAT) == SEGYFORMAT)
+  {
+    gfName = ModelSettings::makeFullFileName(fileName+".segy");
+    writeSegyFromStorm(outgrid,gfName);
+  }
+  delete outgrid;
 }
 
 int
@@ -1947,4 +1959,78 @@ FFTGrid::checkNaN()
 }
 
 int FFTGrid::formatFlag_ = FFTGrid::NOOUTPUT;
+
+void FFTGrid::writeSegyFromStorm(StormContGrid *data, std::string fileName)
+{
+
+  int i,k,j;
+  TextualHeader header = TextualHeader::standardHeader();
+  int nx = data->GetNI();
+  int ny = data->GetNJ();
+  const SegyGeometry *geometry = new SegyGeometry(data->GetXMin(),data->GetYMin(),data->GetDX(),data->GetDY(),
+               nx,ny,0,0,1,1,true,data->GetAngle());
+  float dz = float(floor((data->GetLZ()/data->GetNK())));
+  //int nz = int(data->GetZMax()/dz);
+  //float z0 = float(data->GetZMin());
+  float z0 = 0.0;
+  int nz = int(ceil((data->GetZMax())/dz));
+  SegY segyout(fileName,0,nz,dz,header);
+  segyout.SetGeometry(geometry);
+
+  std::vector<float> datavec;
+  datavec.resize(nz);
+  float x, y, xt, yt, z;
+  for(j=0;j<ny;j++)
+    for(i=0;i<nx;i++)
+    {
+      xt = float((i+0.5)*geometry->GetDx());
+      yt = float((j+0.5)*geometry->GetDy());
+      x = float(geometry->GetX0()+xt*geometry->GetCosRot()-yt*geometry->GetSinRot());
+      y = float(geometry->GetY0()+yt*geometry->GetCosRot()+xt*geometry->GetSinRot());
+  
+      double zbot= data->GetBotSurface().GetZ(x,y);
+      double ztop = data->GetTopSurface().GetZ(x,y);
+      int    firstData = static_cast<int>(floor((ztop)/dz));
+      int    endData   = static_cast<int>(floor((zbot)/dz));
+
+      if(endData > nz)
+      {
+        printf("Internal warning: SEGY-grid too small (%d, %d needed). Truncating data.\n", nz, endData); 
+        endData = nz;
+      }
+      for(k=0;k<firstData;k++)
+      {
+        datavec[k] = 0.0;
+      }
+
+      for(k=firstData;k<endData;k++)
+      {
+         z = z0+k*dz;
+        datavec[k] = float(data->GetValueZInterpolated(x,y,z));
+      }
+      for(k=endData;k<nz;k++)
+      {
+        datavec[k] = 0.0;
+      }
+      segyout.StoreTrace(x,y,datavec,NULL);
+    }
+  
+  segyout.WriteAllTracesToFile();
+
+}
+
+void FFTGrid::makeDepthCubeForSegy(Simbox *simbox,const std::string & fileName)
+{
+ StormContGrid * stormcube = new StormContGrid((*simbox),nx_,ny_,nz_);
+
+ int i,j,k;
+ for(k=0;k<nz_;k++)
+   for(j=0;j<ny_;j++)
+     for(i=0;i<nx_;i++)
+       (*stormcube)(i,j,k) = getRealValue(i,j,k,true);
+
+  std::string fullfileName =  ModelSettings::makeFullFileName(fileName+".segy");
+  FFTGrid::writeSegyFromStorm(stormcube,fullfileName);
+
+}
 

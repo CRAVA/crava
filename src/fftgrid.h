@@ -160,6 +160,9 @@ protected:
   int                   interpolateTrace(int index, short int * flags, int i, int j);
   void                  extrapolateSeismic(int imin, int imax, int jmin, int jmax);
 
+  /// Called from writeResampledStormCube
+  void writeSegyFromStorm(StormContGrid *data, std::string fileName);
+  void makeDepthCubeForSegy(Simbox *simbox,const std::string & fileName);
 
 };
 #endif
