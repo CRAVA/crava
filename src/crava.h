@@ -56,7 +56,6 @@ private:
   float              getSignalVariance(int l) const {return signalVariance_[l];}
   float              getErrorVariance(int l)  const {return errorVariance_[l];}
   float              getDataVariance(int l)   const {return dataVariance_[l];}
-  const Simbox     * getSimbox()              const {return(simbox_);}
   int                checkScale(void);
 
   //Conventions for writePars:
@@ -76,7 +75,7 @@ private:
 
   void               divideDataByScaleWavelet();
   void               multiplyDataByScaleWaveletAndWriteToFile(const char* typeName);
-  void               initPostKriging();          
+  void               doPostKriging(FFTGrid & postAlpha, FFTGrid & postBeta, FFTGrid & postRho);
 
   void               writeToFile(char * fileName, FFTGrid * grid, std::string sgriLabel = "NO_LABEL");
 
@@ -146,10 +145,6 @@ private:
                                       //in reflection trace is lower than this, the reflections
                                       //will be interpolated. Default 0, set from model.
   RandomGen        * random_;
-  CKrigingAdmin    * pKriging_;
-  CovGridSeparated * covGridAlpha_, *covGridBeta_, *covGridRho_, *covGridCrAlphaBeta_, *covGridCrAlphaRho_, *covGridCrBetaRho_;
-  KrigingData3D    * kd_;        
-
   FaciesProb       * fprob_;
   Model            * model_;
 };

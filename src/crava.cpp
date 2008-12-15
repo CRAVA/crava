@@ -91,14 +91,6 @@ Crava::Crava(Model * model)
     correlations_->writeFilePriorCorrT(corrT,nzp_);
 
   fprob_             = NULL;
-  pKriging_          = NULL;
-  covGridAlpha_      = NULL; 
-  covGridBeta_       = NULL;
-  covGridRho_        = NULL;
-  covGridCrAlphaBeta_= NULL;
-  covGridCrAlphaRho_ = NULL;
-  covGridCrBetaRho_  = NULL;
-  kd_                = NULL;  
   empSNRatio_        = new float[ntheta_];
   theoSNRatio_       = new float[ntheta_];
   modelVariance_     = new float[ntheta_];
@@ -213,15 +205,6 @@ Crava::~Crava()
     delete[] errThetaCov_[i];
   delete [] errThetaCov_; 
 
-  if(pKriging_ != NULL)        delete pKriging_;  
-  if(covGridAlpha_)            delete covGridAlpha_;
-  if(covGridBeta_)             delete covGridBeta_;
-  if(covGridRho_)              delete covGridRho_;
-  if(covGridCrAlphaBeta_)      delete covGridCrAlphaBeta_;
-  if(covGridCrAlphaRho_)       delete covGridCrAlphaRho_;
-  if(covGridCrBetaRho_)        delete covGridCrBetaRho_;
-  if(kd_)                      delete kd_;
-
   if(postAlpha_!=NULL)         delete  postAlpha_ ;
   if(postBeta_!=NULL)          delete  postBeta_;
   if(postRho_!=NULL)           delete  postRho_ ;
@@ -233,7 +216,6 @@ Crava::~Crava()
   if(postCrCovBetaRho_!=NULL)  delete  postCrCovBetaRho_;
   delete [] scaleWarningText_;
 }
-
 
 void
 Crava::computeDataVariance(void)
@@ -1054,17 +1036,9 @@ Crava::computePostMeanResidAndFFTCov()
     postAlpha_->endAccess();
   }
     
-
   if((outputFlag_ & ModelSettings::PREDICTION) > 0)
   {
-    if(krigingParams_ != 0) { 
-      if (!pKriging_)
-        initPostKriging();
-      LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************");
-      LogKit::LogFormatted(LogKit::LOW,"\n***                     Conditioning to wells                       ***"); 
-      LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************\n");
-      pKriging_->KrigAll(*postAlpha_, *postBeta_, *postRho_);
-    }
+    doPostKriging(*postAlpha_, *postBeta_, *postRho_); 
     writePars(postAlpha_, postBeta_, postRho_, -1);
   }
 
@@ -1274,15 +1248,7 @@ Crava::simulate( RandomGen * randomGen)
           seed2->add(postRho_);
           seed2->endAccess();
 
-          //NBNB Bjørn: Sett inn krigingkall for seed0, seed1, seed2 her
-          if(krigingParams_ != 0) { 
-            if (!pKriging_)
-              initPostKriging();
-            LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************");
-            LogKit::LogFormatted(LogKit::LOW,"\n***                     Conditioning to wells                       ***"); 
-            LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************\n");
-            pKriging_->KrigAll(*seed0, *seed1, *seed2);
-          }
+          doPostKriging(*seed0, *seed1, *seed2); 
           writePars(seed0, seed1, seed2, simNr);  
 
           // time(&timeend);
@@ -1300,6 +1266,38 @@ Crava::simulate( RandomGen * randomGen)
 
   }
   return(0);
+}
+
+void Crava::doPostKriging(FFTGrid & postAlpha, 
+                          FFTGrid & postBeta, 
+                          FFTGrid & postRho) 
+{
+  if(krigingParams_ != NULL) { 
+    LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************");
+    LogKit::LogFormatted(LogKit::LOW,"\n***                     Conditioning to wells                       ***"); 
+    LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************\n");
+
+    CovGridSeparated covGridAlpha      (*correlations_->getPostCovAlpha()      );
+    CovGridSeparated covGridBeta       (*correlations_->getPostCovBeta()       );
+    CovGridSeparated covGridRho        (*correlations_->getPostCovRho()        ); 
+    CovGridSeparated covGridCrAlphaBeta(*correlations_->getPostCrCovAlphaBeta());
+    CovGridSeparated covGridCrAlphaRho (*correlations_->getPostCrCovAlphaRho() );
+    CovGridSeparated covGridCrBetaRho  (*correlations_->getPostCrCovBetaRho()  );
+
+    KrigingData3D kd(wells_, nWells_, 1); // 1 = full resolution logs
+    kd.writeToFile("Raw");
+    
+    CKrigingAdmin pKriging(*simbox_, 
+                           kd.getData(), kd.getNumberOfData(),
+                           covGridAlpha, covGridBeta, covGridRho, 
+                           covGridCrAlphaBeta, covGridCrAlphaRho, covGridCrBetaRho, 
+                           int(krigingParams_[0]));
+
+    pKriging.KrigAll(postAlpha, postBeta, postRho);
+  } 
+  else {
+    LogKit::LogFormatted(LogKit::WARNING,"\nCannot do kriging. No kriging parameters have been set.\n"); 
+  }
 }
 
 void Crava::writeToFile(char        * fileName, 
@@ -2018,26 +2016,6 @@ Crava::printEnergyToScreen()
   LogKit::LogFormatted(LogKit::LOW,"\nModelled S/N           :");
   for(i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::LOW,"    %5.2f      ",theoSNRatio_[i]);
   LogKit::LogFormatted(LogKit::LOW,"\n");
-}
-
-void Crava::initPostKriging() {
-  covGridAlpha_       = new CovGridSeparated(*correlations_->getPostCovAlpha());
-  covGridBeta_        = new CovGridSeparated(*correlations_->getPostCovBeta());
-  covGridRho_         = new CovGridSeparated(*correlations_->getPostCovRho()); 
-  covGridCrAlphaBeta_ = new CovGridSeparated(*correlations_->getPostCrCovAlphaBeta());
-  covGridCrAlphaRho_  = new CovGridSeparated(*correlations_->getPostCrCovAlphaRho());
-  covGridCrBetaRho_   = new CovGridSeparated(*correlations_->getPostCrCovBetaRho());
-
-  int type = 1; // 1 = full resolution
-  kd_ = new KrigingData3D(wells_, nWells_, type);
-  kd_->writeToFile("Raw");
-
-  pKriging_ = new CKrigingAdmin(*getSimbox(), 
-                                kd_->getData(),
-                                kd_->getNumberOfData(),
-                                *covGridAlpha_, *covGridBeta_, *covGridRho_, 
-                                *covGridCrAlphaBeta_, *covGridCrAlphaRho_, *covGridCrBetaRho_, 
-                                int(krigingParams_[0]));
 }
 
 void Crava::computeFaciesProb(FilterWellLogs *filteredlogs)
