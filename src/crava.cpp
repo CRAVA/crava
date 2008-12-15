@@ -90,18 +90,25 @@ Crava::Crava(Model * model)
   if((outputFlag_ & (ModelSettings::PRIORCORRELATIONS + ModelSettings::CORRELATION)) > 0)
     correlations_->writeFilePriorCorrT(corrT,nzp_);
 
-  fprob_            = NULL;
-  pKriging_         = NULL;
-  empSNRatio_       = new float[ntheta_];
-  theoSNRatio_      = new float[ntheta_];
-  modelVariance_    = new float[ntheta_];
-  signalVariance_   = new float[ntheta_];
-  errorVariance_    = new float[ntheta_];
-  dataVariance_     = new float[ntheta_];
-  seisWavelet_      = model->getWavelets();
-  scaleWarning_     = 0;
-  scaleWarningText_ = new char[12*MAX_STRING*ntheta_]; 
-  errThetaCov_      = new float*[ntheta_];  
+  fprob_             = NULL;
+  pKriging_          = NULL;
+  covGridAlpha_      = NULL; 
+  covGridBeta_       = NULL;
+  covGridRho_        = NULL;
+  covGridCrAlphaBeta_= NULL;
+  covGridCrAlphaRho_ = NULL;
+  covGridCrBetaRho_  = NULL;
+  kd_                = NULL;  
+  empSNRatio_        = new float[ntheta_];
+  theoSNRatio_       = new float[ntheta_];
+  modelVariance_     = new float[ntheta_];
+  signalVariance_    = new float[ntheta_];
+  errorVariance_     = new float[ntheta_];
+  dataVariance_      = new float[ntheta_];
+  seisWavelet_       = model->getWavelets();
+  scaleWarning_      = 0;
+  scaleWarningText_  = new char[12*MAX_STRING*ntheta_]; 
+  errThetaCov_       = new float*[ntheta_];  
   for(i=0;i<ntheta_;i++)
     errThetaCov_[i] = new float[ntheta_]; 
 
