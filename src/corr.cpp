@@ -3,6 +3,8 @@
 #include "src/corr.h"
 #include "src/definitions.h"
 #include "src/model.h"
+#include "src/fftgrid.h"
+#include "src/fftfilegrid.h"
 #include "nrlib/surface/surfaceio.hpp"
 #include "nrlib/iotools/logkit.hpp"
 
@@ -12,21 +14,20 @@ Corr::Corr(float  ** pointVar0,
            int       n, 
            float     dt, 
            Surface * priorCorrXY)
-: 
-  priorCorrTFiltered_(NULL),
-  postVar0_(NULL),
-  postCovAlpha00_(NULL),
-  postCovBeta00_(NULL),
-  postCovRho00_(NULL),
-  postCrCovAlphaBeta00_(NULL),
-  postCrCovAlphaRho00_(NULL),
-  postCrCovBetaRho00_(NULL),
-  postCovAlpha_(NULL),
-  postCovBeta_(NULL),
-  postCovRho_(NULL),
-  postCrCovAlphaBeta_(NULL),
-  postCrCovAlphaRho_(NULL),
-  postCrCovBetaRho_(NULL)
+  : priorCorrTFiltered_(NULL),
+    postVar0_(NULL),
+    postCovAlpha00_(NULL),
+    postCovBeta00_(NULL),
+    postCovRho00_(NULL),
+    postCrCovAlphaBeta00_(NULL),
+    postCrCovAlphaRho00_(NULL),
+    postCrCovBetaRho00_(NULL),
+    postCovAlpha_(NULL),
+    postCovBeta_(NULL),
+    postCovRho_(NULL),
+    postCrCovAlphaBeta_(NULL),
+    postCrCovAlphaRho_(NULL),
+    postCrCovBetaRho_(NULL)
 {
   pointVar0_   = pointVar0;
   priorVar0_   = priorVar0;
@@ -38,7 +39,6 @@ Corr::Corr(float  ** pointVar0,
 
 Corr::~Corr(void)
 {
-
   for(int i=0;i<3;i++)
     delete [] pointVar0_[i];
   delete [] pointVar0_;
@@ -61,62 +61,77 @@ Corr::~Corr(void)
   }
 
   if(postCovAlpha00_!=NULL)      
-    delete  postCovAlpha00_ ;
+    delete postCovAlpha00_ ;
   if(postCovBeta00_!=NULL)       
-    delete  postCovBeta00_ ;
+    delete postCovBeta00_ ;
   if(postCovRho00_!=NULL)        
-    delete  postCovRho00_ ;
+    delete postCovRho00_ ;
   if(postCrCovAlphaBeta00_!=NULL)
-    delete  postCrCovAlphaBeta00_ ;
+    delete postCrCovAlphaBeta00_ ;
   if(postCrCovAlphaRho00_!=NULL) 
-    delete  postCrCovAlphaRho00_ ;
+    delete postCrCovAlphaRho00_ ;
   if(postCrCovBetaRho00_!=NULL)  
-    delete  postCrCovBetaRho00_;
+    delete postCrCovBetaRho00_;
 
   if(postCovAlpha_!=NULL)      
-    delete  postCovAlpha_ ;
+    delete postCovAlpha_ ;
   if(postCovBeta_!=NULL)       
-    delete  postCovBeta_ ;
+    delete postCovBeta_ ;
   if(postCovRho_!=NULL)        
-    delete  postCovRho_ ;
+    delete postCovRho_ ;
   if(postCrCovAlphaBeta_!=NULL)
-    delete  postCrCovAlphaBeta_ ;
+    delete postCrCovAlphaBeta_ ;
   if(postCrCovAlphaRho_!=NULL) 
-    delete  postCrCovAlphaRho_ ;
+    delete postCrCovAlphaRho_ ;
   if(postCrCovBetaRho_!=NULL)  
-    delete  postCrCovBetaRho_;
+    delete postCrCovBetaRho_;
 }
 
 //--------------------------------------------------------------------
 void
-Corr::setGridCopies(FFTGrid * postCovAlpha, 
-                    FFTGrid * postCovBeta,
-                    FFTGrid * postCovRho, 
-                    FFTGrid * postCrCovAlphaBeta,
-                    FFTGrid * postCrCovAlphaRho,
-                    FFTGrid * postCrCovBetaRho)
+Corr::createPostGrids(int nx,  int ny,  int nz,
+                      int nxp, int nyp, int nzp,
+                      bool fileGrid)
 {
-  postCovAlpha_       = copyFFTGrid(postCovAlpha      );
-  postCovBeta_        = copyFFTGrid(postCovBeta       );
-  postCovRho_         = copyFFTGrid(postCovRho        );
-  postCrCovAlphaBeta_ = copyFFTGrid(postCrCovAlphaBeta);
-  postCrCovAlphaRho_  = copyFFTGrid(postCrCovAlphaRho );
-  postCrCovBetaRho_   = copyFFTGrid(postCrCovBetaRho  );
+  postCovAlpha_       = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid);                     
+  postCovBeta_        = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid);    
+  postCovRho_         = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid);    
+  postCrCovAlphaBeta_ = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid); 
+  postCrCovAlphaRho_  = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid);                     
+  postCrCovBetaRho_   = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid);    
+
+  postCovAlpha_       ->setType(FFTGrid::COVARIANCE);
+  postCovBeta_        ->setType(FFTGrid::COVARIANCE);
+  postCovRho_         ->setType(FFTGrid::COVARIANCE);
+  postCrCovAlphaBeta_ ->setType(FFTGrid::COVARIANCE);
+  postCrCovAlphaRho_  ->setType(FFTGrid::COVARIANCE);
+  postCrCovBetaRho_   ->setType(FFTGrid::COVARIANCE);
+
+  postCovAlpha_       ->createRealGrid();     // First used in time domain
+  postCovBeta_        ->createRealGrid();     // First used in time domain
+  postCovRho_         ->createComplexGrid();  // First used in Fourier domain
+  postCrCovAlphaBeta_ ->createComplexGrid();  // First used in Fourier domain
+  postCrCovAlphaRho_  ->createComplexGrid();  // First used in Fourier domain
+  postCrCovBetaRho_   ->createComplexGrid();  // First used in Fourier domain
 }
 
 //--------------------------------------------------------------------
-FFTGrid *
-Corr::copyFFTGrid(FFTGrid * fftGridOld)
+FFTGrid*            
+Corr::createFFTGrid(int nx,  int ny,  int nz,
+                    int nxp, int nyp, int nzp,
+                    bool fileGrid)
 {
   FFTGrid * fftGrid;
-  fftGridOld->invFFTInPlace();
-  fftGrid = new FFTGrid(fftGridOld);  
-  fftGridOld->fftInPlace();
+  if(fileGrid)
+    fftGrid = new FFTFileGrid(nx, ny, nz, nxp, nyp, nzp);
+  else
+    fftGrid = new FFTGrid(nx, ny, nz, nxp, nyp, nzp);
   return(fftGrid);
 }
 
 //--------------------------------------------------------------------
-float * Corr::getPriorCorrT(int &n, float &dt) const
+float * 
+Corr::getPriorCorrT(int &n, float &dt) const
 {
   n = n_;
   dt = dt_;
@@ -139,6 +154,8 @@ Corr::setPriorVar0(float ** priorVar0)
 void
 Corr::setPriorCorrTFiltered(float * corrT, int nz, int nzp)
 {
+  // This is the cyclic and filtered version of CorrT which
+  // has one or more zeros in the middle
   priorCorrTFiltered_ = new float[nzp];
 
   int refk;
@@ -290,6 +307,7 @@ Corr::getPostCov00(FFTGrid * postCov)
 void
 Corr::writeFilePriorCorrT(float* corrT, int nzp) const
 {
+  // This is the cyclic and filtered version of CorrT
   std::string fileName= ModelSettings::makeFullFileName(std::string("Prior_CorrT.dat"));
   std::ofstream file(fileName.c_str());
   file << std::fixed 
@@ -404,4 +422,3 @@ Corr::writeFilePostCovGrids(Simbox * simbox) const
   postCrCovBetaRho_ ->writeFile("Posterior_CrCov_VsRho",simbox, "Posterior cross-covariance for (Vs,density)");
   postCrCovBetaRho_ ->endAccess();
 }
-

@@ -121,16 +121,10 @@ private:
   float            * signalVariance_;
   float            * errorVariance_;
   float            * dataVariance_;
+
   FFTGrid          * postAlpha_;     // posterior values 
   FFTGrid          * postBeta_;
   FFTGrid          * postRho_;
-
-  FFTGrid          * postCovAlpha_;
-  FFTGrid          * postCovBeta_;
-  FFTGrid          * postCovRho_;
-  FFTGrid          * postCrCovAlphaBeta_;
-  FFTGrid          * postCrCovAlphaRho_;
-  FFTGrid          * postCrCovBetaRho_;
 
   float            * krigingParams_;
   WellData        ** wells_;

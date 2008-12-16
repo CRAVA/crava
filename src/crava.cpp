@@ -30,54 +30,77 @@ Crava::Crava(Model * model)
   LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************");
   LogKit::LogFormatted(LogKit::LOW,"\n***                    Building Stochastic Model                     ***"); 
   LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************\n\n");
-  int   i;
-  model_          = model;
-  nx_             = model->getBackAlpha()->getNx();
-  ny_             = model->getBackAlpha()->getNy();
-  nz_             = model->getBackAlpha()->getNz(); 
-  nxp_            = model->getBackAlpha()->getNxp();
-  nyp_            = model->getBackAlpha()->getNyp();
-  nzp_            = model->getBackAlpha()->getNzp();
-  lowCut_         = model->getModelSettings()->getLowCut();
-  highCut_        = model->getModelSettings()->getHighCut();
-  wnc_            = model->getModelSettings()->getWNC();     // white noise component see crava.h
-  energyTreshold_ = model->getModelSettings()->getEnergyThreshold();
-  theta_          = model->getModelSettings()->getAngle();
-  ntheta_         = model->getModelSettings()->getNumberOfAngles();
-  fileGrid_       = model->getModelSettings()->getFileGrid();
-  outputFlag_     = model->getModelSettings()->getOutputFlag();
-  krigingParams_  = model->getModelSettings()->getKrigingParameters();
-  nWells_         = model->getModelSettings()->getNumberOfWells();
-  nSim_           = model->getModelSettings()->getNumberOfSimulations();
-  wells_          = model->getWells();
-  simbox_         = model->getTimeSimbox(); 
-  meanAlpha_      = model->getBackAlpha(); 
-  meanBeta_       = model->getBackBeta();
-  meanRho_        = model->getBackRho();
-  correlations_   = model->getCorrelations();
-  random_         = model->getRandomGen();
 
-  //meanAlpha_->writeAsciiFile("priorA_");
-  //meanBeta_->writeAsciiFile("priorB_");
-  //meanRho_->writeAsciiFile("priorR_");
+  model_             = model;
+  nx_                = model->getBackAlpha()->getNx();
+  ny_                = model->getBackAlpha()->getNy();
+  nz_                = model->getBackAlpha()->getNz(); 
+  nxp_               = model->getBackAlpha()->getNxp();
+  nyp_               = model->getBackAlpha()->getNyp();
+  nzp_               = model->getBackAlpha()->getNzp();
+  lowCut_            = model->getModelSettings()->getLowCut();
+  highCut_           = model->getModelSettings()->getHighCut();
+  wnc_               = model->getModelSettings()->getWNC();     // white noise component see crava.h
+  energyTreshold_    = model->getModelSettings()->getEnergyThreshold();
+  theta_             = model->getModelSettings()->getAngle();
+  ntheta_            = model->getModelSettings()->getNumberOfAngles();
+  fileGrid_          = model->getModelSettings()->getFileGrid();
+  outputFlag_        = model->getModelSettings()->getOutputFlag();
+  krigingParams_     = model->getModelSettings()->getKrigingParameters();
+  nWells_            = model->getModelSettings()->getNumberOfWells();
+  nSim_              = model->getModelSettings()->getNumberOfSimulations();
+  wells_             = model->getWells();
+  simbox_            = model->getTimeSimbox(); 
+  meanAlpha_         = model->getBackAlpha(); 
+  meanBeta_          = model->getBackBeta();
+  meanRho_           = model->getBackRho();
+  correlations_      = model->getCorrelations();
+  random_            = model->getRandomGen();
+  seisWavelet_       = model->getWavelets();
+  postAlpha_         = meanAlpha_;         // Write over the input to save memory
+  postBeta_          = meanBeta_;          // Write over the input to save memory
+  postRho_           = meanRho_;           // Write over the input to save memory
+  fprob_             = NULL;
+  empSNRatio_        = new float[ntheta_];
+  theoSNRatio_       = new float[ntheta_];
+  modelVariance_     = new float[ntheta_];
+  signalVariance_    = new float[ntheta_];
+  errorVariance_     = new float[ntheta_];
+  dataVariance_      = new float[ntheta_];
+  scaleWarning_      = 0;
+  scaleWarningText_  = new char[12*MAX_STRING*ntheta_]; 
+  errThetaCov_       = new float*[ntheta_];  
+  for(int i=0;i<ntheta_;i++)
+    errThetaCov_[i] = new float[ntheta_]; 
+
+  //meanAlpha_->writeAsciiRaw("alpha");
+  //meanBeta_->writeAsciiRaw("beta");
+  //meanRho_->writeAsciiRaw("rho");
 
   fftw_real * corrT; // =  fftw_malloc(2*(nzp_/2+1)*sizeof(fftw_real)); 
 
   if(!model->getModelSettings()->getGenerateSeismic())
   {
-    seisData_       = model->getSeisCubes();
+    seisData_        = model->getSeisCubes();
     model->releaseGrids(); 
-    parPointCov_    = correlations_->getPriorVar0(); 
-    parSpatialCorr_ = createFFTGrid();
+    correlations_->createPostGrids(nx_,ny_,nz_,nxp_,nyp_,nzp_,fileGrid_);
+    parPointCov_     = correlations_->getPriorVar0(); 
+    parSpatialCorr_  = correlations_->getPostCovAlpha();  // Double-use grids to save memory
+    errCorrUnsmooth_ = correlations_->getPostCovBeta();   // Double-use grids to save memory
     // NBNB   nzp_*0.001*corr->getdt() = T    lowCut = lowIntCut*domega = lowIntCut/T
     int lowIntCut = int(floor(lowCut_*(nzp_*0.001*correlations_->getdt()))); 
     // computes the integer whis corresponds to the low cut frequency.
     float corrGradI, corrGradJ;
     model->getCorrGradIJ(corrGradI, corrGradJ);
     corrT = parSpatialCorr_-> fillInParamCorr(correlations_,lowIntCut,corrGradI, corrGradJ);
-    correlations_->setPriorCorrTFiltered(corrT,nz_,nzp_);
-    errCorrUnsmooth_ = createFFTGrid();
+    correlations_->setPriorCorrTFiltered(corrT,nz_,nzp_); // Can has zeros in the middle
     errCorrUnsmooth_->fillInErrCorr(correlations_,corrGradI,corrGradJ); 
+    if((outputFlag_ & (ModelSettings::PRIORCORRELATIONS + ModelSettings::CORRELATION)) > 0)
+      correlations_->writeFilePriorCorrT(corrT,nzp_);     // No zeros in the middle
+    // parSpatialCorr_->writeFile("parSpatialCorr",simbox_);
+    // parSpatialCorr_->writeAsciiFile("SpatialCorr");         //for debug
+    // errCorrUnsmooth_->writeFile("errCorrUnsmooth",simbox_);
+    // errCorrUnsmooth_->writeAsciiFile("ErrCorr");            //for debug
   }
   else
   {
@@ -87,56 +110,22 @@ Crava::Crava(Model * model)
     errCorrUnsmooth_ = NULL;
   }
 
-  if((outputFlag_ & (ModelSettings::PRIORCORRELATIONS + ModelSettings::CORRELATION)) > 0)
-    correlations_->writeFilePriorCorrT(corrT,nzp_);
-
-  fprob_             = NULL;
-  empSNRatio_        = new float[ntheta_];
-  theoSNRatio_       = new float[ntheta_];
-  modelVariance_     = new float[ntheta_];
-  signalVariance_    = new float[ntheta_];
-  errorVariance_     = new float[ntheta_];
-  dataVariance_      = new float[ntheta_];
-  seisWavelet_       = model->getWavelets();
-  scaleWarning_      = 0;
-  scaleWarningText_  = new char[12*MAX_STRING*ntheta_]; 
-  errThetaCov_       = new float*[ntheta_];  
-  for(i=0;i<ntheta_;i++)
-    errThetaCov_[i] = new float[ntheta_]; 
-
   // reality check: all dimensions involved match
   assert(meanBeta_->consistentSize(nx_,ny_,nz_,nxp_,nyp_,nzp_));
   assert(meanRho_->consistentSize(nx_,ny_,nz_,nxp_,nyp_,nzp_));
 
-  for(i = 0; i< ntheta_; i++)
+  for(int i=0 ; i< ntheta_ ; i++)
   {	
     if(!model->getModelSettings()->getGenerateSeismic())
       assert(seisData_[i]->consistentSize(nx_,ny_,nz_,nxp_,nyp_,nzp_));  
     assert(seisWavelet_[i]->consistentSize(nzp_, nyp_, nxp_));
   }
 
-  // all  parameters to be estimated are created.
-  postAlpha_          = meanAlpha_;         //  The first five write over the input
-  postBeta_           = meanBeta_;          //  to save memory
-  postRho_            = meanRho_;           // 
-
-  postCovAlpha_       = parSpatialCorr_;    // 
-  postCovBeta_        = errCorrUnsmooth_;   // 
-  postCovRho_         = createFFTGrid();    // grid not allocated
-  postCrCovAlphaBeta_ = createFFTGrid();    // grid not allocate
-  postCrCovAlphaRho_  = createFFTGrid();    // grid not allocated
-  postCrCovBetaRho_   = createFFTGrid();    // grid not allocated
-  postCovRho_        -> setType(FFTGrid::COVARIANCE);
-  postCrCovAlphaBeta_-> setType(FFTGrid::COVARIANCE);
-  postCrCovAlphaRho_ -> setType(FFTGrid::COVARIANCE);
-  postCrCovBetaRho_  -> setType(FFTGrid::COVARIANCE);
-
-
   if((outputFlag_ & ModelSettings::FACIESPROBRELATIVE)>0)
   {
     meanAlpha2_ = copyFFTGrid(meanAlpha_);
-    meanBeta2_ = copyFFTGrid(meanBeta_);
-    meanRho2_ = copyFFTGrid(meanRho_);
+    meanBeta2_  = copyFFTGrid(meanBeta_);
+    meanRho2_   = copyFFTGrid(meanRho_);
   }
 
   if((outputFlag_ & ModelSettings::FACIESPROB) >0 || (outputFlag_ & ModelSettings::FACIESPROBRELATIVE)>0)
@@ -149,33 +138,22 @@ Crava::Crava(Model * model)
                             model->getPriorFacies());
   }
 
-  //meanAlpha_->writeAsciiRaw("alpha");
-  //meanBeta_->writeAsciiRaw("beta");
-  //meanRho_->writeAsciiRaw("rho");
   meanAlpha_ ->fftInPlace();
   meanBeta_  ->fftInPlace();
   meanRho_   ->fftInPlace();
-
-  // parSpatialCorr_->writeFile("parSpatialCorr",simbox_);
-  // parSpatialCorr_->writeAsciiFile("SpatialCorr");         //for debug
-  // errCorrUnsmooth_->writeFile("errCorrUnsmooth",simbox_);
-  // errCorrUnsmooth_->writeAsciiFile("ErrCorr");            //for debug
 
   A_ = model->getAMatrix();
 
   if(!model->getModelSettings()->getGenerateSeismic())
   {
-    parSpatialCorr_  ->fftInPlace();
+    parSpatialCorr_->fftInPlace();
     computeVariances(corrT,model);
     scaleWarning_ = checkScale();  // fills in scaleWarningText_ if needed.
     fftw_free(corrT);  
-
     if(simbox_->getIsConstantThick() == false)
       divideDataByScaleWavelet();
-
     errCorrUnsmooth_ ->fftInPlace(); 
-
-    for(i = 0; i < ntheta_ ; i++)
+    for(int i = 0 ; i < ntheta_ ; i++)
     {
       // sprintf(rawSName,"rawSeismic_divided_%i",int(seisData_[i]->getTheta()*180.0/PI+0.5));
       seisData_[i]->setAccessMode(FFTGrid::RANDOMACCESS);
@@ -208,12 +186,7 @@ Crava::~Crava()
   if(postAlpha_!=NULL)         delete  postAlpha_ ;
   if(postBeta_!=NULL)          delete  postBeta_;
   if(postRho_!=NULL)           delete  postRho_ ;
-  if(postCovAlpha_!=NULL)      delete  postCovAlpha_ ;
-  if(postCovBeta_!=NULL)       delete  postCovBeta_ ;
-  if(postCovRho_!=NULL)        delete  postCovRho_ ;
-  if(postCrCovAlphaBeta_!=NULL)delete  postCrCovAlphaBeta_ ;
-  if(postCrCovAlphaRho_!=NULL) delete  postCrCovAlphaRho_ ;
-  if(postCrCovBetaRho_!=NULL)  delete  postCrCovBetaRho_;
+
   delete [] scaleWarningText_;
 }
 
@@ -650,7 +623,6 @@ Crava::multiplyDataByScaleWaveletAndWriteToFile(const char* typeName)
 }
 
 
-
 int 
 Crava::computePostMeanResidAndFFTCov()
 {
@@ -804,15 +776,17 @@ Crava::computePostMeanResidAndFFTCov()
   parSpatialCorr_  ->setAccessMode(FFTGrid::READANDWRITE);  //   after the prosessing
   errCorrUnsmooth_ ->setAccessMode(FFTGrid::READANDWRITE);  // 
 
-  postCovRho_        ->createComplexGrid();
-  postCrCovAlphaBeta_->createComplexGrid();
-  postCrCovAlphaRho_ ->createComplexGrid();
-  postCrCovBetaRho_  ->createComplexGrid();
+  FFTGrid * postCovAlpha       = correlations_->getPostCovAlpha();
+  FFTGrid * postCovBeta        = correlations_->getPostCovBeta();
+  FFTGrid * postCovRho         = correlations_->getPostCovRho();
+  FFTGrid * postCrCovAlphaBeta = correlations_->getPostCrCovAlphaBeta();
+  FFTGrid * postCrCovAlphaRho  = correlations_->getPostCrCovAlphaRho();
+  FFTGrid * postCrCovBetaRho   = correlations_->getPostCrCovBetaRho();
 
-  postCovRho_        ->setAccessMode(FFTGrid::WRITE);  
-  postCrCovAlphaBeta_->setAccessMode(FFTGrid::WRITE);  
-  postCrCovAlphaRho_ ->setAccessMode(FFTGrid::WRITE);  
-  postCrCovBetaRho_  ->setAccessMode(FFTGrid::WRITE);  
+  postCovRho        ->setAccessMode(FFTGrid::WRITE);  
+  postCrCovAlphaBeta->setAccessMode(FFTGrid::WRITE);  
+  postCrCovAlphaRho ->setAccessMode(FFTGrid::WRITE);  
+  postCrCovBetaRho  ->setAccessMode(FFTGrid::WRITE);  
 
   // Computes the posterior mean first  below the covariance is computed 
   // To avoid to many grids in mind at the same time
@@ -971,12 +945,12 @@ Crava::computePostMeanResidAndFFTCov()
           postAlpha_->setNextComplex(ijkMean[0]);
           postBeta_ ->setNextComplex(ijkMean[1]);
           postRho_  ->setNextComplex(ijkMean[2]);
-          postCovAlpha_->setNextComplex(parVar[0][0]);
-          postCovBeta_ ->setNextComplex(parVar[1][1]);
-          postCovRho_  ->setNextComplex(parVar[2][2]);
-          postCrCovAlphaBeta_->setNextComplex(parVar[0][1]);
-          postCrCovAlphaRho_ ->setNextComplex(parVar[0][2]);
-          postCrCovBetaRho_  ->setNextComplex(parVar[1][2]); 
+          postCovAlpha->setNextComplex(parVar[0][0]);
+          postCovBeta ->setNextComplex(parVar[1][1]);
+          postCovRho  ->setNextComplex(parVar[2][2]);
+          postCrCovAlphaBeta->setNextComplex(parVar[0][1]);
+          postCrCovAlphaRho ->setNextComplex(parVar[0][2]);
+          postCrCovBetaRho  ->setNextComplex(parVar[1][2]); 
 
           for(l=0;l<ntheta_;l++)
             seisData_[l]->setNextComplex(ijkRes[l]);
@@ -984,39 +958,25 @@ Crava::computePostMeanResidAndFFTCov()
     }
   }
 
-  //postCovAlpha_->writeAsciiRaw("covalphadump.txt");
-
   //  time(&timeend);
   // LogKit::LogFormatted(LogKit::LOW,"\n Core inversion finished after %ld seconds ***\n",timeend-timestart);
   // these does not have the initial meaning
   meanAlpha_       = NULL; // the content is taken care of by  postAlpha_
   meanBeta_        = NULL; // the content is taken care of by  postBeta_
   meanRho_         = NULL; // the content is taken care of by  postRho_
-  parSpatialCorr_  = NULL; // the content is taken care of by  postCovAlpha_      
-  errCorrUnsmooth_ = NULL; // the content is taken care of by  postCovBeta_
+  parSpatialCorr_  = NULL; // the content is taken care of by  postCovAlpha      
+  errCorrUnsmooth_ = NULL; // the content is taken care of by  postCovBeta
 
   postAlpha_->endAccess();
   postBeta_->endAccess(); 
   postRho_->endAccess();  
 
-  postCovAlpha_->endAccess();
-  postCovBeta_->endAccess(); 
-  postCovRho_->endAccess();
-  postCrCovAlphaBeta_->endAccess();
-  postCrCovAlphaRho_->endAccess();
-  postCrCovBetaRho_->endAccess();  
-
-  
-  // ---------------------------------------------------------------------
-  // NBNB-PAL: Bytte ut med referanse tidligere...
-  //
-  model_->getCorrelations()->setGridCopies(postCovAlpha_,
-                                           postCovBeta_,
-                                           postCovRho_,
-                                           postCrCovAlphaBeta_,
-                                           postCrCovAlphaRho_,
-                                           postCrCovBetaRho_);
-  // ---------------------------------------------------------------------
+  postCovAlpha->endAccess();
+  postCovBeta->endAccess(); 
+  postCovRho->endAccess();
+  postCrCovAlphaBeta->endAccess();
+  postCrCovAlphaRho->endAccess();
+  postCrCovBetaRho->endAccess();  
 
   postAlpha_->invFFTInPlace();
   postBeta_->invFFTInPlace();
@@ -1121,12 +1081,19 @@ Crava::simulate( RandomGen * randomGen)
   LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************\n\n");
   if(nSim_>0)
   {
-    assert( postCovAlpha_->getIsTransformed() );
-    assert( postCovBeta_->getIsTransformed() );
-    assert( postCovRho_->getIsTransformed() );
-    assert( postCrCovAlphaBeta_->getIsTransformed() );
-    assert( postCrCovAlphaRho_->getIsTransformed() );
-    assert( postCrCovBetaRho_->getIsTransformed() );
+    FFTGrid * postCovAlpha       = correlations_->getPostCovAlpha();
+    FFTGrid * postCovBeta        = correlations_->getPostCovBeta();
+    FFTGrid * postCovRho         = correlations_->getPostCovRho();
+    FFTGrid * postCrCovAlphaBeta = correlations_->getPostCrCovAlphaBeta();
+    FFTGrid * postCrCovAlphaRho  = correlations_->getPostCrCovAlphaRho();
+    FFTGrid * postCrCovBetaRho   = correlations_->getPostCrCovBetaRho();
+
+    assert( postCovAlpha->getIsTransformed() );
+    assert( postCovBeta->getIsTransformed() );
+    assert( postCovRho->getIsTransformed() );
+    assert( postCrCovAlphaBeta->getIsTransformed() );
+    assert( postCrCovAlphaRho->getIsTransformed() );
+    assert( postCrCovBetaRho->getIsTransformed() );
 
     int             simNr,i,j,k,l;
     fftw_complex ** ijkPostCov;
@@ -1158,12 +1125,12 @@ Crava::simulate( RandomGen * randomGen)
       seed1->fillInComplexNoise(randomGen);      
       seed2->fillInComplexNoise(randomGen);
 
-      postCovAlpha_      ->setAccessMode(FFTGrid::READ);  
-      postCovBeta_       ->setAccessMode(FFTGrid::READ);  
-      postCovRho_        ->setAccessMode(FFTGrid::READ);  
-      postCrCovAlphaBeta_->setAccessMode(FFTGrid::READ);  
-      postCrCovAlphaRho_ ->setAccessMode(FFTGrid::READ);  
-      postCrCovBetaRho_  ->setAccessMode(FFTGrid::READ);  
+      postCovAlpha      ->setAccessMode(FFTGrid::READ);  
+      postCovBeta       ->setAccessMode(FFTGrid::READ);  
+      postCovRho        ->setAccessMode(FFTGrid::READ);  
+      postCrCovAlphaBeta->setAccessMode(FFTGrid::READ);  
+      postCrCovAlphaRho ->setAccessMode(FFTGrid::READ);  
+      postCrCovBetaRho  ->setAccessMode(FFTGrid::READ);  
       seed0 ->setAccessMode(FFTGrid::READANDWRITE); 
       seed1 ->setAccessMode(FFTGrid::READANDWRITE); 
       seed2 ->setAccessMode(FFTGrid::READANDWRITE); 
@@ -1174,12 +1141,12 @@ Crava::simulate( RandomGen * randomGen)
         for(j = 0; j < nyp_; j++)
           for(i = 0; i < cnxp; i++)
           {
-            ijkPostCov[0][0] = postCovAlpha_->getNextComplex();
-            ijkPostCov[1][1] = postCovBeta_ ->getNextComplex();
-            ijkPostCov[2][2] = postCovRho_  ->getNextComplex();
-            ijkPostCov[0][1] = postCrCovAlphaBeta_ ->getNextComplex();
-            ijkPostCov[0][2] = postCrCovAlphaRho_ ->getNextComplex(); 
-            ijkPostCov[1][2] = postCrCovBetaRho_ ->getNextComplex();
+            ijkPostCov[0][0] = postCovAlpha      ->getNextComplex();
+            ijkPostCov[1][1] = postCovBeta       ->getNextComplex();
+            ijkPostCov[2][2] = postCovRho        ->getNextComplex();
+            ijkPostCov[0][1] = postCrCovAlphaBeta->getNextComplex();
+            ijkPostCov[0][2] = postCrCovAlphaRho ->getNextComplex(); 
+            ijkPostCov[1][2] = postCrCovBetaRho  ->getNextComplex();
 
             ijkPostCov[1][0].re =  ijkPostCov[0][1].re;
             ijkPostCov[1][0].im = -ijkPostCov[0][1].im;
@@ -1211,12 +1178,12 @@ Crava::simulate( RandomGen * randomGen)
             seed2->setNextComplex(ijkSeed[2]);      
           }
 
-          postCovAlpha_->endAccess();  //         
-          postCovBeta_ ->endAccess();  // 
-          postCovRho_        ->endAccess();
-          postCrCovAlphaBeta_->endAccess();
-          postCrCovAlphaRho_ ->endAccess();
-          postCrCovBetaRho_  ->endAccess(); 
+          postCovAlpha->endAccess();  //         
+          postCovBeta->endAccess();   // 
+          postCovRho->endAccess();
+          postCrCovAlphaBeta->endAccess();
+          postCrCovAlphaRho->endAccess();
+          postCrCovBetaRho->endAccess(); 
           seed0->endAccess();
           seed1->endAccess();
           seed2->endAccess();

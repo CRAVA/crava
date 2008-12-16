@@ -427,9 +427,6 @@ FFTGrid::fillInParamCorr(Corr* corr,int minIntFq, float gradI, float gradJ)
   assert(corr->getnx() == nxp_);
   assert(corr->getny() == nyp_);
   assert(istransformed_== false);
-  cubetype_ = COVARIANCE;
-
-  createRealGrid();
 
   int i,j,k,baseK,cycleI,cycleJ;
   float value,subK;
@@ -488,9 +485,6 @@ FFTGrid::fillInErrCorr(Corr* parCorr, float gradI, float gradJ)
   assert(parCorr->getnx() == nxp_);
   assert(parCorr->getny() == nyp_);
   assert(istransformed_== false);
-  cubetype_ = COVARIANCE;
-
-  createRealGrid();
 
   int i,j,k,baseK,cycleI,cycleJ;
   float value,subK;
