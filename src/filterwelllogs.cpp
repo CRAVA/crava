@@ -99,7 +99,7 @@ FilterWellLogs::FilterWellLogs(const Simbox * timeSimboxConstThick,
     }
   }
 
-  float * priorCorrTFiltered = correlations->getPriorCorrTFiltered();
+  float * priorCorrTFiltered = correlations->getPriorCorrTFiltered(); // Frequency filtered
 
   for(int i=0;i<nzp;i++)
     priorCorr[i] = priorCorrTFiltered[i];

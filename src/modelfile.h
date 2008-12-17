@@ -15,6 +15,7 @@ public:
 
   char           * getSeedFile(void)              const { return seedFile_              ;}
   char          ** getBackFile(void)              const { return backFile_              ;}
+  char           * getBackVelFile(void)           const { return backVelFile_           ;}
   char          ** getWellFile(void)              const { return wellFile_              ;}
   char          ** getHeaderList(void)            const { return headerList_            ;}
   char          ** getTimeSurfFile(void)          const { return timeSurfFile_          ;}
@@ -78,6 +79,7 @@ private:
   int              readCommandFaciesEstimationInterval(char ** params, int & pos, char * errText);
   int              readCommandLogLevel(char ** params, int & pos, char * errText);
   int              readCommandTraceHeaderFormat(char ** params, int & pos, char * errText);
+  int              readCommandBackgroundVelocity(char ** params, int & pos, char * errText);
   void             parse_old(char * fileName, char **& params, int & nParam);
   void             parse(char * fileName, char **& params, int & nParam);
   int              getParNum(char ** params, int pos, int & error, char * errText,
@@ -95,6 +97,7 @@ private:
   char          ** headerList_;            // The keywords to look for for time, sonic, shear sonic and density
   char          ** wellFile_;              // File names: wells
   char          ** backFile_;              // File names (temporarily stored).
+  char           * backVelFile_;           // File names Vp-velocity for background modelling
   char          ** timeSurfFile_;          // File names: top and base time surfaces
   char          ** depthSurfFile_;         // File names: top and base depth surfaces
   char           * velocityField_;         // File names: velocity field, or command

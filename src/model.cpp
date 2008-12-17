@@ -1567,17 +1567,27 @@ Model::processBackground(Background   *& background,
     const int nzPad = modelSettings->getNZpad();
     if (modelFile->getGenerateBackground()) 
     {
-      if(modelSettings->getBackgroundVario() == NULL)
+      FFTGrid * velocity = NULL;
+      if (modelFile->getBackVelFile() != NULL)
+        loadVelocity(velocity, timeSimbox, modelSettings_, 
+                     modelFile->getBackVelFile(), 
+                     errText, failed);
+      if (!failed) 
       {
-        sprintf(errText,"%sThere is no variogram available for the background modelling\n",errText);
-        failed = true;
+        if(modelSettings->getBackgroundVario() == NULL)
+        {
+          sprintf(errText,"%sThere is no variogram available for the background modelling\n",errText);
+          failed = true;
+        }
+        for (int i=0 ; i<3 ; i++)
+        {
+          backModel[i] = new FFTGrid(nx, ny, nz, nxPad, nyPad, nzPad);              
+          backModel[i]->setType(FFTGrid::PARAMETER);
+        }
+        background = new Background(backModel, wells, velocity, timeSimbox, timeBGSimbox, modelSettings);
       }
-      for (int i=0 ; i<3 ; i++)
-      {
-        backModel[i] = new FFTGrid(nx, ny, nz, nxPad, nyPad, nzPad);              
-        backModel[i]->setType(FFTGrid::PARAMETER);
-      }
-      background = new Background(backModel, wells, timeSimbox, timeBGSimbox, modelSettings);
+      if(velocity != NULL)
+        delete velocity;
     }
     else 
     {
@@ -2591,6 +2601,7 @@ Model::printSettings(ModelSettings * modelSettings,
   if (modelFile->getGenerateBackground()) 
   {
     LogKit::LogFormatted(LogKit::LOW,"\nBackground model (estimated):\n");
+    LogKit::LogFormatted(LogKit::LOW,"  Trend for p-wave velocity                : %10s\n",modelFile->getBackVelFile());
     Vario       * vario  = modelSettings->getBackgroundVario();
     GenExpVario * pVario = dynamic_cast<GenExpVario*>(vario);
     LogKit::LogFormatted(LogKit::LOW,"  Variogram\n");
@@ -2747,12 +2758,12 @@ Model::processDepthConversion(Simbox        * timeCutSimbox,
   {
     FFTGrid * velocity = NULL;
     if(timeCutSimbox != NULL)
-      loadVelocity(velocity, timeCutSimbox,
-                   modelSettings_, modelFile, 
+      loadVelocity(velocity, timeCutSimbox, modelSettings_, 
+                   modelFile->getVelocityField(), 
                    errText, failed);
     else
-      loadVelocity(velocity, timeSimbox_,
-                   modelSettings_, modelFile, 
+      loadVelocity(velocity, timeSimbox_, modelSettings_, 
+                   modelFile->getVelocityField(), 
                    errText, failed);
     
     if(!failed) 
@@ -2777,12 +2788,10 @@ void
 Model::loadVelocity(FFTGrid      *& velocity,
                     Simbox        * timeSimbox,
                     ModelSettings * modelSettings, 
-                    ModelFile     * modelFile, 
+                    char          * velocityField, 
                     char          * errText,
                     bool          & failed)
 {
-  char * velocityField = modelFile->getVelocityField();
-
   if(strcmp(velocityField,"CONSTANT") == 0)
     velocity = NULL;
   else if(strcmp(velocityField,"FROM_INVERSION")==0)

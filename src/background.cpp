@@ -25,6 +25,7 @@
 
 Background::Background(FFTGrid       ** grids,
                        WellData      ** wells,
+                       FFTGrid       *& velocity,
                        Simbox         * timeSimbox,
                        Simbox         * timeBGSimbox,
                        ModelSettings  * modelSettings)
@@ -40,7 +41,10 @@ Background::Background(FFTGrid       ** grids,
   
   if (timeBGSimbox == NULL)
   {
-    generateBackgroundModel(bgAlpha,bgBeta,bgRho,wells,timeSimbox,modelSettings);
+    generateBackgroundModel(bgAlpha,bgBeta,bgRho,
+                            velocity,wells,
+                            timeSimbox,
+                            modelSettings);
     LogKit::LogFormatted(LogKit::LOW,"Padding background model...\n");
     backModel_[0]->fillInFromRealFFTGrid(*bgAlpha);
     backModel_[1]->fillInFromRealFFTGrid(*bgBeta);
@@ -48,7 +52,10 @@ Background::Background(FFTGrid       ** grids,
   }
   else
   {
-    generateBackgroundModel(bgAlpha,bgBeta,bgRho,wells,timeBGSimbox,modelSettings);
+    generateBackgroundModel(bgAlpha,bgBeta,bgRho,
+                            velocity,wells,
+                            timeBGSimbox,
+                            modelSettings);
 
     if((modelSettings->getOutputFlag() & ModelSettings::EXTRA_GRIDS) > 0) {
       bgAlpha->writeStormFile("lnBG_Vp_BackgroundGrid", timeBGSimbox);
@@ -80,7 +87,6 @@ Background::Background(FFTGrid       ** grids,
     delete resBgBeta;
     delete resBgRho;
   }  
-
   delete bgAlpha;
   delete bgBeta;
   delete bgRho;
@@ -117,7 +123,7 @@ Background::writeBackgrounds(Simbox      * simbox,
                              GridMapping * depthMapping, 
                              GridMapping * timeMapping) const 
 {
-  printf("\nExp-transforming cubes...\n");
+  LogKit::LogFormatted(LogKit::HIGH,"\nExp-transforming cubes...\n");
   backModel_[0]->expTransf();
   backModel_[1]->expTransf();
   backModel_[2]->expTransf();
@@ -141,7 +147,7 @@ Background::writeBackgrounds(Simbox      * simbox,
   //backModel_[1]->writeStormFile("BG_Vs",  simbox, false, true, true);
   //backModel_[2]->writeStormFile("BG_Rho", simbox, false, true, true);
 
-  printf("\nBacktransforming cubes...\n");
+  LogKit::LogFormatted(LogKit::HIGH,"\nBacktransforming cubes...\n");
   backModel_[0]->logTransf();
   backModel_[1]->logTransf();
   backModel_[2]->logTransf();
@@ -152,75 +158,252 @@ void
 Background::generateBackgroundModel(FFTGrid      *& bgAlpha,
                                     FFTGrid      *& bgBeta,
                                     FFTGrid      *& bgRho,
+                                    FFTGrid      *& velocity,
                                     WellData     ** wells,
                                     Simbox        * simbox,
                                     ModelSettings * modelSettings)
+{
+  const int nz = simbox->getnz();
+  float * trendAlpha = new float[nz];
+  float * trendBeta  = new float[nz];
+  float * trendRho   = new float[nz];
+  float * trendVel   = new float[nz]; // Allocate (for simplicity) although not always needed
+
+  const int nWells = modelSettings->getNumberOfWells();
+  float * avgDevAlpha = new float[nWells];
+  float * avgDevBeta  = new float[nWells];
+  float * avgDevRho   = new float[nWells];
+  float * avgDevVel   = new float[nWells]; // Allocate (for simplicity) although not always needed
+
+  bool hasVelocityTrend = velocity != NULL;
+  calculateBackgroundTrend(bgAlpha, wells, simbox, trendAlpha, avgDevAlpha,
+                           modelSettings->getAlphaMin(), 
+                           modelSettings->getAlphaMax(),
+                           modelSettings->getMaxHzBackground(), 
+                           modelSettings->getOutputFlag(),
+                           nWells, hasVelocityTrend,
+                           std::string("Vp"));
+  calculateBackgroundTrend(bgBeta, wells, simbox, trendBeta, avgDevBeta,
+                           modelSettings->getBetaMin(), 
+                           modelSettings->getBetaMax(),
+                           modelSettings->getMaxHzBackground(), 
+                           modelSettings->getOutputFlag(),
+                           nWells, hasVelocityTrend,
+                           std::string("Vs"));
+  calculateBackgroundTrend(bgRho, wells, simbox, trendRho, avgDevRho,
+                           modelSettings->getRhoMin(), 
+                           modelSettings->getRhoMax(),
+                           modelSettings->getMaxHzBackground(), 
+                           modelSettings->getOutputFlag(),
+                           nWells, hasVelocityTrend,
+                           std::string("Rho"));
+
+  if (velocity != NULL) {
+    //
+    // We still need calculateBackgroundTrend() for alpha above. This is 
+    // because this method calculates the interpolated alpha-in-well. Moreover, 
+    // by calculating avgDevAlpha we can also check that the bgAlpha calculated 
+    // from velocity is as good as or better than that calculated by crava.
+    //
+    processVelocity(velocity, wells, simbox, trendVel, avgDevVel, avgDevAlpha,
+                    modelSettings->getAlphaMin(), 
+                    modelSettings->getAlphaMax(),
+                    modelSettings->getOutputFlag(),
+                    nWells);
+    velocity->logTransf();
+    delete bgAlpha;
+    bgAlpha = velocity;
+    velocity = NULL;
+    writeDeviationsFromVerticalTrend(avgDevVel, avgDevBeta, avgDevRho, 
+                                     trendVel, trendBeta, trendRho, 
+                                     wells, nWells, nz);
+  }
+  else {
+    writeDeviationsFromVerticalTrend(avgDevAlpha, avgDevBeta, avgDevRho,
+                                     trendAlpha, trendBeta, trendRho,
+                                     wells, nWells, nz);
+  }
+
+  KrigingData3D * krigingData = NULL;
+  setupKrigingData(krigingData,wells,simbox,trendAlpha,trendBeta,trendRho,nWells);
+
+  interpolateBackgroundTrend(krigingData,
+                             bgAlpha, 
+                             bgBeta, 
+                             bgRho,
+                             simbox,
+                             modelSettings->getBackgroundVario(),
+                             modelSettings->getDebugFlag());
+  delete [] avgDevAlpha;
+  delete [] avgDevBeta;
+  delete [] avgDevRho;
+  delete [] avgDevVel;
+
+  delete [] trendAlpha;
+  delete [] trendBeta;
+  delete [] trendRho;
+  delete [] trendVel;
+
+  delete krigingData;
+}
+ 
+//---------------------------------------------------------------------------
+void
+Background::processVelocity(FFTGrid   * velocity,                           
+                            WellData ** wells,
+                            Simbox    * simbox,
+                            float     * trendVel,
+                            float     * avgDevVel,
+                            float     * avgDevAlpha,
+                            float       logMin, 
+                            float       logMax,
+                            int         outputFlag,
+                            int         nWells)
+{
+  const int nzp = velocity->getNzp();
+  const int nyp = velocity->getNyp();
+  const int nxp = velocity->getNxp();
+  
+  const int nz = simbox->getnz();
+  const int ny = simbox->getny();
+  const int nx = simbox->getnx();
+
+  //
+  // Check that the velocity grid is veldefined.
+  //
+  int tooLow  = 0; 
+  int tooHigh = 0; 
+  velocity->setAccessMode(FFTGrid::READ);
+  int rnxp = 2*(nxp/2 + 1);
+  for (int k = 0; k < nzp; k++) 
+    for (int j = 0; j < nyp; j++)
+      for (int i = 0; i < rnxp; i++) {
+        if(i < nx && j < ny && k < nz) {
+          float value = velocity->getNextReal();
+          if (value < logMin && value != RMISSING) {
+            tooLow++;
+          }
+          if (value > logMax && value != RMISSING)
+            tooHigh++;
+        }
+      }
+  velocity->endAccess();
+
+  if (tooLow+tooHigh > 0) {
+    std::string text;
+    text += "\nERROR: The velocity grid used as trend in the background model of Vp";
+    text += "\ncontains too small and/or too high velocities:";
+    text += "\n  Minimum Vp = "+NRLib2::ToString(logMin,2)+"    Number of too low values  : "+NRLib2::ToString(tooLow);
+    text += "\n  Maximum Vp = "+NRLib2::ToString(logMax,2)+"    Number of too high values : "+NRLib2::ToString(tooHigh);
+    text += "\nThe range of allowed values can changed using the ALLOWED_PARAMETER_VALUES keyword\n";
+    text += "\naborting...\n";
+    LogKit::LogFormatted(LogKit::ERROR,text);
+    exit(1);
+  } 
+
+  if((outputFlag & ModelSettings::BACKGROUND_TREND) > 0) {
+    std::string fileName = std::string("BG_trend_VpFromFile"); 
+    velocity->writeStormFile(fileName, simbox);
+  }
+    
+  //
+  // Calculate deviation between well data and trend
+  //
+  float * wellTrend     = new float[nz];
+  float * velocityTrend = new float[nz];
+  for (int w = 0 ; w < nWells ; w++) {
+    BlockedLogs * bl = wells[w]->getBlockedLogsExtendedBG();
+    bl->getVerticalTrend(bl->getAlphaHighCutBackground(), wellTrend);
+    bl->getBlockedGrid(velocity, velocityTrend);
+
+    float sumDev = 0.0f;
+    int count = 0;
+    for (int k = 0 ; k < nz ; k++) {
+      if (wellTrend[k] != RMISSING) {
+        float diff = exp(wellTrend[k]) - velocityTrend[k]; // Velocity trend is in exp-domain
+        sumDev += diff*diff;
+        count++;
+      }
+    }
+    if (count > 0) 
+      sumDev /= count;
+    avgDevVel[w] = sqrt(sumDev);
+  }
+  delete [] velocityTrend;
+  delete [] wellTrend;
+
+  LogKit::LogFormatted(LogKit::LOW,"\nAverage deviations of type well-log-Vp-minus-velocity-read-from-file and ");
+  LogKit::LogFormatted(LogKit::LOW,"\nwell-log-Vp-minus-estimated-Vp-trend (added for quality control):\n\n");
+  LogKit::LogFormatted(LogKit::LOW,"Well             TrendFromFile  TrendFromData\n");
+  LogKit::LogFormatted(LogKit::LOW,"---------------------------------------------\n");
+  for (int i=0 ; i<nWells ; i++)
+    LogKit::LogFormatted(LogKit::LOW,"%-24s %5.1f          %5.1f\n",
+                         wells[i]->getWellname(),avgDevVel[i],avgDevAlpha[i]);
+}
+
+//---------------------------------------------------------------------------
+void
+Background::calculateBackgroundTrend(FFTGrid          *& trendGrid,
+                                     WellData         ** wells,
+                                     Simbox            * simbox,
+                                     float             * trend,
+                                     float             * avgDev,
+                                     float               logMin, 
+                                     float               logMax,
+                                     float               maxHz, 
+                                     int                 outputFlag,
+                                     int                 nWells, 
+                                     bool                hasVelocityTrend,
+                                     const std::string & name)
 {
   const int nx = simbox->getnx();
   const int ny = simbox->getny();
   const int nz = simbox->getnz();
 
   const float dz = static_cast<float>(simbox->getdz()*simbox->getAvgRelThick());
-  //const double dz    = simbox->getdz();
-  const int nWells = modelSettings->getNumberOfWells();
 
-  float * trendAlpha = new float[nz];
-  float * trendBeta  = new float[nz];
-  float * trendRho   = new float[nz];
-
-  calculateVerticalTrend(wells, trendAlpha, 
-                         modelSettings->getAlphaMin(), 
-                         modelSettings->getAlphaMax(),
-                         modelSettings->getMaxHzBackground(), 
-                         nWells, nz, dz, "Vp");
-  calculateVerticalTrend(wells, trendBeta, 
-                         modelSettings->getBetaMin(), 
-                         modelSettings->getBetaMax(),
-                         modelSettings->getMaxHzBackground(), 
-                         nWells, nz, dz, "Vs");
-  calculateVerticalTrend(wells, trendRho, 
-                         modelSettings->getRhoMin(), 
-                         modelSettings->getRhoMax(),
-                         modelSettings->getMaxHzBackground(), 
-                         nWells, nz, dz, "Rho");
-
-  if((modelSettings->getOutputFlag() & ModelSettings::BACKGROUND) > 0) {
-    writeVerticalTrend(trendAlpha, dz, nz, "Vp");
-    writeVerticalTrend(trendBeta, dz, nz, "Vs");
-    writeVerticalTrend(trendRho, dz, nz, "Rho");
-  }
-
-  float * avgDevAlpha = new float[nWells];
-  float * avgDevBeta  = new float[nWells];
-  float * avgDevRho   = new float[nWells];
-
-  calculateDeviationFromVerticalTrend(wells, 
-                                      trendAlpha,
-                                      avgDevAlpha,
-                                      nWells,
-                                      nz,
-                                      "Vp");
-  calculateDeviationFromVerticalTrend(wells, 
-                                      trendBeta,
-                                      avgDevBeta,
-                                      nWells,
-                                      nz,
-                                      "Vs");
-  calculateDeviationFromVerticalTrend(wells, 
-                                      trendRho,
-                                      avgDevRho,
-                                      nWells,
-                                      nz,
-                                      "Rho");
+  calculateVerticalTrend(wells, trend, 
+                         logMin, logMax, 
+                         maxHz, nWells, 
+                         nz, dz, name);
   
-  writeDeviationsFromVerticalTrend(wells, 
-                                   avgDevAlpha, avgDevBeta, avgDevRho,
-                                   trendAlpha, trendBeta, trendRho,
-                                   nWells, nz);
-  delete [] avgDevAlpha;
-  delete [] avgDevBeta;
-  delete [] avgDevRho;
+  if((outputFlag & ModelSettings::BACKGROUND) > 0) {
+    writeVerticalTrend(trend, dz, nz, name);
+  }
+  
+  calculateDeviationFromVerticalTrend(wells, trend, avgDev,
+                                      nWells, nz, name);
+  
+  trendGrid = new FFTGrid(nx, ny, nz, nx, ny, nz);
+  
+  fillInVerticalTrend(trendGrid, trend);
+  
+  if((outputFlag & ModelSettings::BACKGROUND_TREND) > 0 && !(name=="Vp" && hasVelocityTrend))
+  {
+    LogKit::LogFormatted(LogKit::HIGH,"\nExp-transforming cubes...\n");
+    std::string fileName = std::string("BG_trend")+name; 
+    trendGrid->expTransf();
+    trendGrid->writeStormFile(fileName, simbox);
+    LogKit::LogFormatted(LogKit::HIGH,"\nBacktransforming cubes...\n");
+    trendGrid->logTransf();
+  }
+}
 
+//-------------------------------------------------------------------------------
+void
+Background::setupKrigingData(KrigingData3D *& krigingData,
+                             WellData      ** wells,
+                             Simbox         * simbox,
+                             float          * trendAlpha,
+                             float          * trendBeta, 
+                             float          * trendRho , 
+                             const int        nWells)
+{
+  //
+  // NBNB-PAL: Foreløpig setter vi opp krigingData for Vp, Vs og Rho samtidig.
+  // Dersom vi lager en 2D kriging, kan disse splittes opp. Pr. idag må vi
+  // imidlertid bruke KrigingData3D klassen.
+  //
   int totBlocks = 0;
   int maxBlocks = 0;
   for (int w = 0 ; w < nWells ; w++) {
@@ -228,93 +411,12 @@ Background::generateBackgroundModel(FFTGrid      *& bgAlpha,
     totBlocks += nBlocks;
     if (nBlocks > maxBlocks)
       maxBlocks = nBlocks;
-  }
+  }  
+  
+  krigingData = new KrigingData3D(totBlocks); 
 
-  KrigingData3D kd(totBlocks); 
-  setupKrigingData(kd,wells,trendAlpha,trendBeta,trendRho,nWells,maxBlocks,nz,dz);
-
-  bgAlpha = new FFTGrid(nx, ny, nz, nx, ny, nz);
-  bgBeta  = new FFTGrid(nx, ny, nz, nx, ny, nz);
-  bgRho   = new FFTGrid(nx, ny, nz, nx, ny, nz);
-
-  fillInVerticalTrend(bgAlpha, trendAlpha);
-  fillInVerticalTrend(bgBeta, trendBeta);
-  fillInVerticalTrend(bgRho, trendRho);
-
-  delete [] trendAlpha;
-  delete [] trendBeta;
-  delete [] trendRho;
-
-  if(modelSettings->getDebugFlag() == 1)
-  {
-    printf("\nExp-transforming cubes...\n");
-    bgAlpha->expTransf();
-    bgBeta->expTransf();
-    bgRho->expTransf();
-    bgAlpha->writeStormFile("BG_trendVp", simbox);
-    bgBeta->writeStormFile("BG_trendVs", simbox);
-    bgRho->writeStormFile("BG_trendRho", simbox);
-    printf("\nBacktransforming cubes...\n");
-    bgAlpha->logTransf();
-    bgBeta->logTransf();
-    bgRho->logTransf();
-  }
-
-  float power;
-  Vario      * vario  = modelSettings->getBackgroundVario();
-  GenExpVario* pVario = dynamic_cast<GenExpVario*>(vario);
-  if (pVario)
-    power = pVario->getPower();
-  else {
-    LogKit::LogFormatted(LogKit::LOW,"ERROR: Only the General Exponential Variogram type is supported when creating background model.\n");
-    exit(1);
-  }
-  float rangeX, rangeY;
-  float rotAngle;
-  vario->getParams(rangeX, rangeY, rotAngle);
-  float rangeZ = 0.00001f;  // Simulate 2D kriging using 3D algorithm
-
-  const float dx = static_cast<float>(simbox->getdx());
-  const float dy = static_cast<float>(simbox->getdy());
-
-  CovGridSeparated covAlpha(nx, ny, nz, dx, dy, dz, rangeX, rangeY, rangeZ, power, rotAngle, false);
-  CovGridSeparated covBeta (nx, ny, nz, dx, dy, dz, rangeX, rangeY, rangeZ, power, rotAngle, false);
-  CovGridSeparated covRho  (nx, ny, nz, dx, dy, dz, rangeX, rangeY, rangeZ, power, rotAngle, false);
-
-  if(modelSettings->getDebugFlag() == 1)
-  {
-    covAlpha.writeXYGrid("covAlpha");
-    covBeta.writeXYGrid("covBeta");
-    covRho.writeXYGrid("covRho");
-  }
-
-  CovGridSeparated covCrAlphaBeta(nx, ny, nz);
-  CovGridSeparated covCrAlphaRho(nx, ny, nz);
-  CovGridSeparated covCrBetaRho(nx, ny, nz);
-
-  CKrigingAdmin kriging(*simbox, 
-                        kd.getData(),
-                        kd.getNumberOfData(),
-                        covAlpha, covBeta, covRho, 
-                        covCrAlphaBeta, covCrAlphaRho, covCrBetaRho, 
-                        DataTarget_, true);
-
-  LogKit::LogFormatted(LogKit::LOW,"\nFill volumes using kriging:");
-  kriging.KrigAll(*bgAlpha, *bgBeta, *bgRho, false);
-}
-
-//-------------------------------------------------------------------------------
-void
-Background::setupKrigingData(KrigingData3D  & kd,
-                             WellData      ** wells,
-                             float          * trendAlpha,
-                             float          * trendBeta, 
-                             float          * trendRho , 
-                             const int        nWells,
-                             const int        maxBlocks,
-                             const int        nz,
-                             const float      dz)
-{
+  const int   nz = simbox->getnz();
+  const float dz = static_cast<float>(simbox->getdz()*simbox->getAvgRelThick());
 
   float * blAlpha = new float[maxBlocks];   // bl = blocked logs
   float * blBeta  = new float[maxBlocks];
@@ -370,13 +472,13 @@ Background::setupKrigingData(KrigingData3D  & kd,
     //
     // Add to kriging data object
     //
-    kd.addData(blAlpha, blBeta, blRho,
-               ipos, jpos, kpos,
-               nBlocks);
+    krigingData->addData(blAlpha, blBeta, blRho,
+                         ipos, jpos, kpos,
+                         nBlocks);
 
   }
-  kd.divide();
-  kd.writeToFile("BG");
+  krigingData->divide();
+  krigingData->writeToFile("BG");
 
   delete [] vtAlpha;
   delete [] vtBeta;
@@ -387,17 +489,73 @@ Background::setupKrigingData(KrigingData3D  & kd,
   delete [] blRho;
 }
 
+//---------------------------------------------------------------------------
+void
+Background::interpolateBackgroundTrend(KrigingData3D * krigingData,
+                                       FFTGrid       * bgAlpha,
+                                       FFTGrid       * bgBeta,
+                                       FFTGrid       * bgRho,
+                                       Simbox        * simbox,
+                                       Vario         * vario,
+                                       int             debugFlag)
+{
+  GenExpVario* pVario = dynamic_cast<GenExpVario*>(vario);
+  float power;
+  if (pVario)
+    power = pVario->getPower();
+  else {
+    LogKit::LogFormatted(LogKit::LOW,"ERROR: Only the General Exponential Variogram type is supported when creating background model.\n");
+    exit(1);
+  }
+  float rangeX, rangeY;
+  float rotAngle;
+  vario->getParams(rangeX, rangeY, rotAngle);
+  float rangeZ = 0.00001f;  // Simulate 2D kriging using 3D algorithm
+
+  const int nx = simbox->getnx();
+  const int ny = simbox->getny();
+  const int nz = simbox->getnz();
+  
+  const float dx = static_cast<float>(simbox->getdx());
+  const float dy = static_cast<float>(simbox->getdy());
+  const float dz = static_cast<float>(simbox->getdz()*simbox->getAvgRelThick());
+
+  CovGridSeparated covAlpha(nx, ny, nz, dx, dy, dz, rangeX, rangeY, rangeZ, power, rotAngle, false);
+  CovGridSeparated covBeta (nx, ny, nz, dx, dy, dz, rangeX, rangeY, rangeZ, power, rotAngle, false);
+  CovGridSeparated covRho  (nx, ny, nz, dx, dy, dz, rangeX, rangeY, rangeZ, power, rotAngle, false);
+  CovGridSeparated covCrAlphaBeta(nx, ny, nz);
+  CovGridSeparated covCrAlphaRho(nx, ny, nz);
+  CovGridSeparated covCrBetaRho(nx, ny, nz);
+
+  if(debugFlag == 1)
+  {
+    covAlpha.writeXYGrid("covAlpha");
+    covBeta.writeXYGrid("covBeta");
+    covRho.writeXYGrid("covRho");
+  }
+
+  CKrigingAdmin kriging(*simbox, 
+                        krigingData->getData(),
+                        krigingData->getNumberOfData(),
+                        covAlpha, covBeta, covRho, 
+                        covCrAlphaBeta, covCrAlphaRho, covCrBetaRho, 
+                       DataTarget_, true);
+
+  LogKit::LogFormatted(LogKit::LOW,"\nFill volumes using kriging:");
+  kriging.KrigAll(*bgAlpha, *bgBeta, *bgRho, false);
+}
+
 //-------------------------------------------------------------------------------
 void 
-Background::calculateVerticalTrend(WellData  ** wells,
-                                   float      * trend, 
-                                   float        logMin,
-                                   float        logMax,
-                                   float        maxHz,
-                                   int          nWells,
-                                   int          nz,
-                                   float        dz,
-                                   std::string  name)
+Background::calculateVerticalTrend(WellData         ** wells,
+                                   float             * trend, 
+                                   float               logMin,
+                                   float               logMax,
+                                   float               maxHz,
+                                   int                 nWells,
+                                   int                 nz,
+                                   float               dz,
+                                   const std::string & name)
 {  
   float * filtered_log = new float[nz]; 
   float * wellTrend    = filtered_log;   // Use same memory twice
@@ -854,13 +1012,13 @@ Background::calculateDeviationFromVerticalTrend(WellData    ** wells,
 
 //-------------------------------------------------------------------------------
 void
-Background::writeDeviationsFromVerticalTrend(WellData    ** wells,
-                                             const float *  avg_dev_alpha,
+Background::writeDeviationsFromVerticalTrend(const float *  avg_dev_alpha,
                                              const float *  avg_dev_beta,
                                              const float *  avg_dev_rho,
                                              const float *  trend_alpha,
                                              const float *  trend_beta,
                                              const float *  trend_rho,
+                                             WellData    ** wells,
                                              const int      nWells,
                                              const int      nz)
 {
@@ -927,8 +1085,8 @@ Background::writeDeviationsFromVerticalTrend(WellData    ** wells,
 
   if (nWells == 1)
   {
-    LogKit::LogFormatted(LogKit::MEDIUM,"\nNOTE: A deviation may be observed even with one well since the global trend is");
-    LogKit::LogFormatted(LogKit::MEDIUM,"\n      estimated from blocked logs rather than the full resolution raw logs.\n");
+    LogKit::LogFormatted(LogKit::HIGH,"\nNOTE: A deviation may be observed even with one well since the global trend is");
+    LogKit::LogFormatted(LogKit::HIGH,"\n      estimated from blocked logs rather than the full resolution raw logs.\n");
   }
   delete [] rel_avg_dev;
   delete [] index;
@@ -939,9 +1097,9 @@ void
 Background::fillInVerticalTrend(FFTGrid     * grid, 
                                 const float * trend) 
 {
-  const int nzp = grid->getNzp();  // = nx
-  const int nyp = grid->getNyp();  // = ny
-  const int nxp = grid->getNxp();  // = nz
+  const int nzp = grid->getNzp();  // equals nx
+  const int nyp = grid->getNyp();  // equals ny
+  const int nxp = grid->getNxp();  // equals nz
 
   grid->createRealGrid();
   grid->setType(FFTGrid::PARAMETER);

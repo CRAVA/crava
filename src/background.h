@@ -5,12 +5,13 @@
 
 #include "lib/global_def.h"
 
-class WellData;
+class Vario;
 class Simbox;
 class FFTGrid;
+class WellData;
+class GridMapping;
 class KrigingData3D;
 class ModelSettings;
-class GridMapping;
 
 //Special note on the use of Background:
 //All pointers used here are also used externally, so no deletion happens. 
@@ -20,6 +21,7 @@ class Background
 public:
   Background(FFTGrid       ** grids,
              WellData      ** wells,
+             FFTGrid       *& velocity,
              Simbox         * timeSimbox,
              Simbox         * timeBGSimbox,
              ModelSettings  * modelSettings);
@@ -39,48 +41,76 @@ private:
   void         generateBackgroundModel(FFTGrid      *& bgAlpha,
                                        FFTGrid      *& bgBeta,
                                        FFTGrid      *& bgRho,
+                                       FFTGrid      *& velocity,
                                        WellData     ** wells,
                                        Simbox        * simbox,
                                        ModelSettings * modelSettings);
+  void         calculateBackgroundTrend(FFTGrid          *& trendGrid,
+                                        WellData         ** wells,
+                                        Simbox            * simbox,
+                                        float             * trend,
+                                        float             * avgDev,
+                                        float               logMin, 
+                                        float               logMax,
+                                        float               maxHz, 
+                                        int                 outputFlag,
+                                        int                 nWells, 
+                                        bool                hasVelocityTrend,
+                                        const std::string & name);
+  void         setupKrigingData(KrigingData3D *& krigingData,
+                                WellData      ** wells,
+                                Simbox         * simbox,
+                                float          * trendAlpha,
+                                float          * trendBeta, 
+                                float          * trendRho , 
+                                const int        nWells);
+  void         interpolateBackgroundTrend(KrigingData3D * krigingData,
+                                          FFTGrid       * bgAlpha,
+                                          FFTGrid       * bgBeta,
+                                          FFTGrid       * bgRho,
+                                          Simbox        * simbox,
+                                          Vario         * vario,
+                                          int             debugFlag);
+  void         processVelocity(FFTGrid   * velocity,
+                               WellData ** wells,
+                               Simbox    * simbox,                               
+                               float     * trendVel,
+                               float     * avgDevVel,
+                               float     * avgDevAlpha,
+                               float       logMin, 
+                               float       logMax,
+                               int         outputFlag,
+                               int         nWells);
   void         resampleParameter(FFTGrid *& parameterNew,
                                  FFTGrid  * parameterOld,
                                  Simbox   * simboxNew,
                                  Simbox   * simboxOld);
-  void         calculateVerticalTrend(WellData   ** wells,
-                                      float       * trend, 
-                                      float         logMin,
-                                      float         logMax,
-                                      float         maxHz,
-                                      int           nWells,
-                                      int           nz,
-                                      float         dz,
-                                      std::string   name);
+  void         calculateVerticalTrend(WellData         ** wells,
+                                      float             * trend, 
+                                      float               logMin,
+                                      float               logMax,
+                                      float               maxHz,
+                                      int                 nWells,
+                                      int                 nz,
+                                      float               dz,
+                                      const std::string & name);
   void         writeVerticalTrend(float      * trend, 
                                   float        dz,
                                   int          nz,
                                   std::string  name);
-  void         setupKrigingData(KrigingData3D  & kd,
-                                WellData      ** wells,
-                                float          * trendAlpha,
-                                float          * trendBeta, 
-                                float          * trendRho , 
-                                const int        nWells,
-                                const int        maxBlocks,
-                                const int        nz,
-                                const float      dz);
   void         calculateDeviationFromVerticalTrend(WellData    ** wells,
                                                    const float  * trend, 
                                                    float        * avg_dev,
                                                    int            nWells,
                                                    int            nd,
                                                    std::string    name);
-  void         writeDeviationsFromVerticalTrend(WellData    ** wells,
-                                                const float *  avg_dev_alpha,
+  void         writeDeviationsFromVerticalTrend(const float *  avg_dev_alpha,
                                                 const float *  avg_dev_beta,
                                                 const float *  avg_dev_rho,
                                                 const float *  trend_alpha, 
                                                 const float *  trend_beta, 
                                                 const float *  trend_rho,
+                                                WellData    ** wells,
                                                 const int      nWells,
                                                 const int      nz);
   void         smoothTrendWithMovingAverage(float * trend, 

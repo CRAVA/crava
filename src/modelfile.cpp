@@ -25,6 +25,7 @@ ModelFile::ModelFile(char * fileName)
 
   seedFile_              = NULL;
   backFile_              = NULL;
+  backVelFile_           = NULL;
   wellFile_              = NULL;
   headerList_            = NULL;
   timeSurfFile_          = NULL;
@@ -62,7 +63,7 @@ ModelFile::ModelFile(char * fileName)
   int nParam = 0;
   parse(fileName,params,nParam);
 
-  int nCommands = 37;
+  int nCommands = 38;
   bool * genNeed = new bool[nCommands]; //If run in generate mode, this list holds the necessity.
 
   //The following variables controls the alternative command system.
@@ -142,6 +143,7 @@ ModelFile::ModelFile(char * fileName)
   strcpy(commandList[neededCommands+32],"FACIES_ESTIMATION_INTERVAL");
   strcpy(commandList[neededCommands+33],"LOG_LEVEL");
   strcpy(commandList[neededCommands+34],"TRACE_HEADER_FORMAT");
+  strcpy(commandList[neededCommands+35],"BACKGROUND_VELOCITY");
 
   char errText[MAX_STRING];
   char ** errorList = new char*[nCommands];
@@ -321,6 +323,9 @@ ModelFile::ModelFile(char * fileName)
         case 36:
           error = readCommandTraceHeaderFormat(params,curPos,errText);
           break;
+        case 37:
+          error = readCommandBackgroundVelocity(params,curPos,errText);
+          break;
         default:
           sprintf(errText, "Unknown command: %s\n",command);
           wrongCommand = true;
@@ -497,6 +502,7 @@ ModelFile::ModelFile(char * fileName)
     LogKit::LogFormatted(LogKit::LOW,"  WAVELETLENGTH\n");
     LogKit::LogFormatted(LogKit::LOW,"\nPrior model:\n");
     LogKit::LogFormatted(LogKit::LOW,"  BACKGROUND\n");
+    LogKit::LogFormatted(LogKit::LOW,"  BACKGROUND_VELOCITY\n");
     LogKit::LogFormatted(LogKit::LOW,"  LATERALCORRELATION\n");
     LogKit::LogFormatted(LogKit::LOW,"  PARAMETERCORRELATION\n");
     LogKit::LogFormatted(LogKit::LOW,"  ALLOWED_RESIDUAL_VARIANCES\n");
@@ -581,6 +587,9 @@ ModelFile::~ModelFile()
         delete [] backFile_[i];
     delete [] backFile_; 
   }
+
+  if(backVelFile_ != NULL)
+    delete [] backVelFile_; 
 
   if(waveletEstIntFile_ != NULL)
   {
@@ -1530,7 +1539,7 @@ ModelFile::readCommandOutput(char ** params, int & pos, char * errText)
     // WARNING: If nKeys becomes larger than 31, we get problems with 
     //          the 'int' data type and have to switch to 'long'
     //
-    int i, key, nKeys = 28;
+    int i, key, nKeys = 29;
     char ** keywords;
     keywords = new char*[nKeys];
     for(i=0;i<nKeys;i++)
@@ -1564,6 +1573,7 @@ ModelFile::readCommandOutput(char ** params, int & pos, char * errText)
     strcpy(keywords[i++],"BLOCKED_LOGS");
     strcpy(keywords[i++],"EXTRA_SURFACES");
     strcpy(keywords[i++],"EXTRA_GRIDS");
+    strcpy(keywords[i++],"BACKGROUND_TREND");
 
     if (i != nKeys)
     { 
@@ -1990,6 +2000,7 @@ ModelFile::readCommandCorrelationDirection(char ** params, int & pos, char * err
   {
     corrDirFile_ = new char[strlen(params[pos])+1];
     strcpy(corrDirFile_,params[pos]);
+    error += checkFileOpen(&corrDirFile_, 1, params[pos-1], errText);
   }
   pos += nPar+1;
   return(error);
@@ -2230,6 +2241,21 @@ ModelFile::readCommandTraceHeaderFormat(char ** params, int & pos, char * errTex
                         coordSysType);
   modelSettings_->setTraceHeaderFormat(thf);
 
+  pos += nPar+1;
+  return(error);
+}
+
+int
+ModelFile::readCommandBackgroundVelocity(char ** params, int & pos, char * errText)
+{
+  int error;
+  int nPar = getParNum(params, pos, error, errText, params[pos-1], 1);
+  if(error == 0)
+  {
+    backVelFile_ = new char[strlen(params[pos])+1];
+    strcpy(backVelFile_,params[pos]);
+    error += checkFileOpen(&backVelFile_, 1, params[pos-1], errText);
+  }
   pos += nPar+1;
   return(error);
 }

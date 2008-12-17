@@ -133,7 +133,7 @@ private:
   void             loadVelocity(FFTGrid      *& velocity,
                                 Simbox        * timeSimbox,
                                 ModelSettings * modelSettings, 
-                                ModelFile     * modelFile, 
+                                char          * velocityField, 
                                 char          * errText,
                                 bool          & failed);
   void             setSimboxSurfaces(Simbox    *& simbox, 

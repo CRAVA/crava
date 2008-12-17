@@ -1262,9 +1262,6 @@ void Crava::doPostKriging(FFTGrid & postAlpha,
 
     pKriging.KrigAll(postAlpha, postBeta, postRho);
   } 
-  else {
-    LogKit::LogFormatted(LogKit::WARNING,"\nCannot do kriging. No kriging parameters have been set.\n"); 
-  }
 }
 
 void Crava::writeToFile(char        * fileName, 

@@ -165,7 +165,8 @@ public:
                                   BLOCKED_WELLS      = 2097152,
                                   BLOCKED_LOGS       = 4194304,
                                   EXTRA_SURFACES     = 8388608,
-                                  EXTRA_GRIDS        = 16777216};
+                                  EXTRA_GRIDS        = 16777216,
+                                  BACKGROUND_TREND   = 33554432};
                    
   enum                sseismicTypes{STANDARDSEIS = 0, PSSEIS = 1};
                    
