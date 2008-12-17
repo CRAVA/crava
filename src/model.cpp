@@ -440,12 +440,15 @@ Model::readSegyFile(char                * fileName,
 
   try
   {
-    segy = new SegY(fileName, 
-                    modelSettings->getSegyOffset(),
-                    *(modelSettings->getTraceHeaderFormat()));
+   // segy = new SegY(fileName, 
+   //                 modelSettings->getSegyOffset(),
+   //                 *(modelSettings->getTraceHeaderFormat()));
+
    // New segy constructor for unknown traceheaderformat
-     // segy = new SegY(fileName, 
-     //               modelSettings->getSegyOffset(), NULL);
+    std::vector<TraceHeaderFormat*> *thf = TraceHeaderFormat::GetListOfStandardHeaders();
+    thf->insert(thf->end(),modelSettings->getTraceHeaderFormat());
+     segy = new SegY(fileName, 
+                    modelSettings->getSegyOffset(), thf);
     bool onlyVolume = modelSettings->getAreaParameters() != NULL; // This is now always true
     segy->ReadAllTraces(timeSimbox, 
                         modelSettings->getZpad(),
