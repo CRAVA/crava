@@ -205,11 +205,12 @@ Background::generateBackgroundModel(FFTGrid      *& bgAlpha,
     // by calculating avgDevAlpha we can also check that the bgAlpha calculated 
     // from velocity is as good as or better than that calculated by crava.
     //
-    processVelocity(velocity, wells, simbox, trendVel, avgDevVel, avgDevAlpha,
-                    modelSettings->getAlphaMin(), 
-                    modelSettings->getAlphaMax(),
-                    modelSettings->getOutputFlag(),
-                    nWells);
+    calculateVelocityDeviations(velocity, wells, simbox, 
+                                trendVel, avgDevVel, avgDevAlpha,
+                                modelSettings->getAlphaMin(), 
+                                modelSettings->getAlphaMax(),
+                                modelSettings->getOutputFlag(),
+                                nWells);
     velocity->logTransf();
     delete bgAlpha;
     bgAlpha = velocity;
@@ -249,58 +250,17 @@ Background::generateBackgroundModel(FFTGrid      *& bgAlpha,
  
 //---------------------------------------------------------------------------
 void
-Background::processVelocity(FFTGrid   * velocity,                           
-                            WellData ** wells,
-                            Simbox    * simbox,
-                            float     * trendVel,
-                            float     * avgDevVel,
-                            float     * avgDevAlpha,
-                            float       logMin, 
-                            float       logMax,
-                            int         outputFlag,
-                            int         nWells)
+Background::calculateVelocityDeviations(FFTGrid   * velocity,                           
+                                        WellData ** wells,
+                                        Simbox    * simbox,
+                                        float     * trendVel,
+                                        float     * avgDevVel,
+                                        float     * avgDevAlpha,
+                                        float       logMin, 
+                                        float       logMax,
+                                        int         outputFlag,
+                                        int         nWells)
 {
-  const int nzp = velocity->getNzp();
-  const int nyp = velocity->getNyp();
-  const int nxp = velocity->getNxp();
-  
-  const int nz = simbox->getnz();
-  const int ny = simbox->getny();
-  const int nx = simbox->getnx();
-
-  //
-  // Check that the velocity grid is veldefined.
-  //
-  int tooLow  = 0; 
-  int tooHigh = 0; 
-  velocity->setAccessMode(FFTGrid::READ);
-  int rnxp = 2*(nxp/2 + 1);
-  for (int k = 0; k < nzp; k++) 
-    for (int j = 0; j < nyp; j++)
-      for (int i = 0; i < rnxp; i++) {
-        if(i < nx && j < ny && k < nz) {
-          float value = velocity->getNextReal();
-          if (value < logMin && value != RMISSING) {
-            tooLow++;
-          }
-          if (value > logMax && value != RMISSING)
-            tooHigh++;
-        }
-      }
-  velocity->endAccess();
-
-  if (tooLow+tooHigh > 0) {
-    std::string text;
-    text += "\nERROR: The velocity grid used as trend in the background model of Vp";
-    text += "\ncontains too small and/or too high velocities:";
-    text += "\n  Minimum Vp = "+NRLib2::ToString(logMin,2)+"    Number of too low values  : "+NRLib2::ToString(tooLow);
-    text += "\n  Maximum Vp = "+NRLib2::ToString(logMax,2)+"    Number of too high values : "+NRLib2::ToString(tooHigh);
-    text += "\nThe range of allowed values can changed using the ALLOWED_PARAMETER_VALUES keyword\n";
-    text += "\naborting...\n";
-    LogKit::LogFormatted(LogKit::ERROR,text);
-    exit(1);
-  } 
-
   if((outputFlag & ModelSettings::BACKGROUND_TREND) > 0) {
     std::string fileName = std::string("BG_trend_VpFromFile"); 
     velocity->writeStormFile(fileName, simbox);
@@ -309,6 +269,7 @@ Background::processVelocity(FFTGrid   * velocity,
   //
   // Calculate deviation between well data and trend
   //
+  const int nz = simbox->getnz();
   float * wellTrend     = new float[nz];
   float * velocityTrend = new float[nz];
   for (int w = 0 ; w < nWells ; w++) {

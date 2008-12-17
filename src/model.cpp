@@ -2816,8 +2816,50 @@ Model::loadVelocity(FFTGrid      *& velocity,
       readerror = readStormFile(velocityField, velocity, parName, 
                                 timeSimbox, modelSettings,
                                 tmpErrText);
-    if(readerror != 0)
-    {
+    if (readerror==0) {
+      //
+      // Check that the velocity grid is veldefined.
+      //
+      float logMin = modelSettings->getAlphaMin();
+      float logMax = modelSettings->getAlphaMax();
+      const int nzp = velocity->getNzp();
+      const int nyp = velocity->getNyp();
+      const int nxp = velocity->getNxp();
+      const int nz = velocity->getNz();
+      const int ny = velocity->getNy();
+      const int nx = velocity->getNx();
+      int tooLow  = 0; 
+      int tooHigh = 0; 
+      velocity->setAccessMode(FFTGrid::READ);
+      int rnxp = 2*(nxp/2 + 1);
+      for (int k = 0; k < nzp; k++) 
+        for (int j = 0; j < nyp; j++)
+          for (int i = 0; i < rnxp; i++) {
+            if(i < nx && j < ny && k < nz) {
+              float value = velocity->getNextReal();
+              if (value < logMin && value != RMISSING) {
+                tooLow++;
+              }
+              if (value > logMax && value != RMISSING)
+                tooHigh++;
+            }
+          }
+      velocity->endAccess();
+      
+      if (tooLow+tooHigh > 0) {
+        std::string text;
+        text += "\nThe velocity grid used as trend in the background model of Vp";
+        text += "\ncontains too small and/or too high velocities:";
+        text += "\n  Minimum Vp = "+NRLib2::ToString(logMin,2)+"    Number of too low values  : "+NRLib2::ToString(tooLow);
+        text += "\n  Maximum Vp = "+NRLib2::ToString(logMax,2)+"    Number of too high values : "+NRLib2::ToString(tooHigh);
+        text += "\nThe range of allowed values can changed using the ALLOWED_PARAMETER_VALUES keyword\n";
+        text += "\naborting...\n";
+        sprintf(errText,"%sReading of file \'%s\' for parameter \'%s\' failed\n%s\n", 
+                errText,velocityField,parName,text.c_str());
+        failed = true;
+      } 
+    }
+    else {
       sprintf(errText,"%sReading of file \'%s\' for parameter \'%s\' failed\n%s\n", 
               errText,velocityField,parName,tmpErrText);
       failed = true;
