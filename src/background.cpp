@@ -200,15 +200,12 @@ Background::generateBackgroundModel(FFTGrid      *& bgAlpha,
 
   if (velocity != NULL) {
     //
-    // We still need calculateBackgroundTrend() for alpha above. This is 
-    // because this method calculates the interpolated alpha-in-well. Moreover, 
-    // by calculating avgDevAlpha we can also check that the bgAlpha calculated 
-    // from velocity is as good as or better than that calculated by crava.
+    // We still want calculateBackgroundTrend() for alpha above. By calculating
+    // avgDevAlpha we can check that the bgAlpha calculated from velocity is as 
+    // good as or better than that calculated by crava.
     //
     calculateVelocityDeviations(velocity, wells, simbox, 
                                 trendVel, avgDevVel, avgDevAlpha,
-                                modelSettings->getAlphaMin(), 
-                                modelSettings->getAlphaMax(),
                                 modelSettings->getOutputFlag(),
                                 nWells);
     velocity->logTransf();
@@ -253,11 +250,9 @@ void
 Background::calculateVelocityDeviations(FFTGrid   * velocity,                           
                                         WellData ** wells,
                                         Simbox    * simbox,
-                                        float     * trendVel,
-                                        float     * avgDevVel,
+                                        float    *& trendVel,
+                                        float    *& avgDevVel,
                                         float     * avgDevAlpha,
-                                        float       logMin, 
-                                        float       logMax,
                                         int         outputFlag,
                                         int         nWells)
 {
@@ -269,19 +264,33 @@ Background::calculateVelocityDeviations(FFTGrid   * velocity,
   //
   // Calculate deviation between well data and trend
   //
+  int maxBlocks = 0;
+  for (int w = 0 ; w < nWells ; w++) {
+    int nBlocks = wells[w]->getBlockedLogsOrigThick()->getNumberOfBlocks();
+    if (nBlocks > maxBlocks)
+      maxBlocks = nBlocks;
+  }
+  float * velocityLog = new float[maxBlocks];
+
   const int nz = simbox->getnz();
-  float * wellTrend     = new float[nz];
-  float * velocityTrend = new float[nz];
+  float * vtAlpha    = new float[nz];
+  float * vtVelocity = new float[nz];
+
+  for (int k=0 ; k<nz ; k++)
+    trendVel[k]=0.0;
+
   for (int w = 0 ; w < nWells ; w++) {
     BlockedLogs * bl = wells[w]->getBlockedLogsExtendedBG();
-    bl->getVerticalTrend(bl->getAlphaHighCutBackground(), wellTrend);
-    bl->getBlockedGrid(velocity, velocityTrend);
-
+    const float * alphaLog = bl->getAlphaHighCutBackground();
+    bl->getVerticalTrend(alphaLog, vtAlpha);
+    bl->getBlockedGrid(velocity, velocityLog);
+    bl->getVerticalTrend(velocityLog, vtVelocity);
     float sumDev = 0.0f;
     int count = 0;
     for (int k = 0 ; k < nz ; k++) {
-      if (wellTrend[k] != RMISSING) {
-        float diff = exp(wellTrend[k]) - velocityTrend[k]; // Velocity trend is in exp-domain
+      if (vtAlpha[k] != RMISSING) {
+        trendVel[k] += vtVelocity[k]; 
+        float diff = exp(vtAlpha[k]) - vtVelocity[k]; // Velocity trend is in exp-domain
         sumDev += diff*diff;
         count++;
       }
@@ -290,8 +299,12 @@ Background::calculateVelocityDeviations(FFTGrid   * velocity,
       sumDev /= count;
     avgDevVel[w] = sqrt(sumDev);
   }
-  delete [] velocityTrend;
-  delete [] wellTrend;
+  delete [] vtVelocity;
+  delete [] vtAlpha;
+  delete [] velocityLog;
+
+  for (int k=0 ; k<nz ; k++)
+    trendVel[k] /= nWells;
 
   LogKit::LogFormatted(LogKit::LOW,"\nAverage deviations of type well-log-Vp-minus-velocity-read-from-file and ");
   LogKit::LogFormatted(LogKit::LOW,"\nwell-log-Vp-minus-estimated-Vp-trend (added for quality control):\n\n");

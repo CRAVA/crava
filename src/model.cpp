@@ -24,8 +24,10 @@
 #include "src/fftgrid.h"
 #include "src/fftfilegrid.h"
 #include "src/gridmapping.h"
+#include "src/timings.h"
 
 #include "lib/random.h"
+#include "lib/timekit.hpp"
 #include "lib/lib_misc.h"
 #include "lib/lib_matr.h"
 #include "lib/global_def.h"
@@ -1114,6 +1116,9 @@ Model::processSeismic(FFTGrid      **& seisCube,
                       char           * errText,
                       bool           & failed)
 {
+  double wall=0.0, cpu=0.0;
+  TimeKit::getTime(wall,cpu);
+
   char ** seismicFile = modelFile->getSeismicFile();
   int error = 0;
 
@@ -1191,6 +1196,7 @@ Model::processSeismic(FFTGrid      **& seisCube,
     }
   }
   failed = error > 0;
+  Timings::setTimeSeismic(wall,cpu);
 }
 
 void 
@@ -1205,6 +1211,8 @@ Model::processWells(WellData     **& wells,
                     char           * errText,
                     bool           & failed)
 {
+  double wall=0.0, cpu=0.0;
+  TimeKit::getTime(wall,cpu);
   LogKit::LogFormatted(LogKit::LOW,"\nReading well data:\n");
 
   char ** wellFile       = modelFile->getWellFile();
@@ -1447,6 +1455,7 @@ Model::processWells(WellData     **& wells,
     }
   }
   failed = error > 0;
+  Timings::setTimeWells(wall,cpu);
 }
 
 void Model::checkFaciesNames(WellData      ** wells,
@@ -1554,6 +1563,8 @@ Model::processBackground(Background   *& background,
       (modelSettings->getOutputFlag() & ModelSettings::BACKGROUND) > 0 || 
       (modelSettings->getOutputFlag() & ModelSettings::WAVELETS)   > 0 )
   {
+    double wall=0.0, cpu=0.0;
+    TimeKit::getTime(wall,cpu);
     LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************");
     LogKit::LogFormatted(LogKit::LOW,"\n***              Prior Expectations / Background Model              ***"); 
     LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************\n");
@@ -1651,6 +1662,7 @@ Model::processBackground(Background   *& background,
     }
     if((modelSettings->getOutputFlag() & ModelSettings::BACKGROUND) > 0)
       background->writeBackgrounds(timeSimbox, timeDepthMapping_, timeCutMapping_); 
+    Timings::setTimePriorExpectation(wall,cpu);
   }
 }
 
@@ -1667,6 +1679,8 @@ Model::processPriorCorrelations(Corr         *& correlations,
   bool printResult = (modelSettings->getOutputFlag() & (ModelSettings::PRIORCORRELATIONS + ModelSettings::CORRELATION)) > 0;
   if (modelSettings->getDoInversion() || printResult)
   {
+    double wall=0.0, cpu=0.0;
+    TimeKit::getTime(wall,cpu);
     LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************");
     LogKit::LogFormatted(LogKit::LOW,"\n***                        Prior Covariance                         ***"); 
     LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************\n");
@@ -1743,6 +1757,7 @@ Model::processPriorCorrelations(Corr         *& correlations,
 
     time(&timeend);
     LogKit::LogFormatted(LogKit::DEBUGLOW,"\n\nTime elapsed :  %d\n",timeend-timestart);  
+    Timings::setTimePriorCorrelation(wall,cpu);
   }
 }
 
@@ -1925,6 +1940,8 @@ Model::processWavelets(Wavelet     **& wavelet,
       modelSettings->getGenerateSeismic() || 
       (modelSettings->getOutputFlag() & ModelSettings::WAVELETS) > 0 )
   {
+    double wall=0.0, cpu=0.0;
+    TimeKit::getTime(wall,cpu);
     LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************");
     LogKit::LogFormatted(LogKit::LOW,"\n***                 Processing/generating wavelets                  ***"); 
     LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************");
@@ -2040,6 +2057,7 @@ Model::processWavelets(Wavelet     **& wavelet,
         }
       }
     }
+    Timings::setTimeWavelets(wall,cpu);
   }
   failed = error > 0;
 }

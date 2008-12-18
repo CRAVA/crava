@@ -17,6 +17,8 @@
 #include "src/definitions.h"
 #include "src/gridmapping.h"
 #include "src/filterwelllogs.h"
+#include "src/timings.h"
+#include "lib/timekit.hpp"
 #include "lib/random.h"
 #include "lib/lib_matr.h"
 #include "nrlib/iotools/logkit.hpp"
@@ -626,6 +628,8 @@ Crava::multiplyDataByScaleWaveletAndWriteToFile(const char* typeName)
 int 
 Crava::computePostMeanResidAndFFTCov()
 {
+  double wall=0.0, cpu=0.0;
+  TimeKit::getTime(wall,cpu);
   LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************");
   LogKit::LogFormatted(LogKit::LOW,"\n***             Posterior model / Performing Inversion              ***"); 
   LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************\n\n");
@@ -1069,6 +1073,7 @@ Crava::computePostMeanResidAndFFTCov()
   delete[] parVar;  
   delete[] reduceVar;
 
+  Timings::setTimeInversion(wall,cpu);
   return(0);
 }
 
@@ -1076,6 +1081,8 @@ Crava::computePostMeanResidAndFFTCov()
 int
 Crava::simulate( RandomGen * randomGen)
 {   
+  double wall=0.0, cpu=0.0;
+  TimeKit::getTime(wall,cpu);
   LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************");
   LogKit::LogFormatted(LogKit::LOW,"\n***                Simulating from posterior model                  ***"); 
   LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************\n\n");
@@ -1232,6 +1239,7 @@ Crava::simulate( RandomGen * randomGen)
     delete [] ijkSeed;
 
   }
+  Timings::setTimeSimulation(wall,cpu);
   return(0);
 }
 
@@ -1240,6 +1248,8 @@ void Crava::doPostKriging(FFTGrid & postAlpha,
                           FFTGrid & postRho) 
 {
   if(krigingParams_ != NULL) { 
+    double wall=0.0, cpu=0.0;
+    TimeKit::getTime(wall,cpu);
     LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************");
     LogKit::LogFormatted(LogKit::LOW,"\n***                     Conditioning to wells                       ***"); 
     LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************\n");
@@ -1261,6 +1271,7 @@ void Crava::doPostKriging(FFTGrid & postAlpha,
                            int(krigingParams_[0]));
 
     pKriging.KrigAll(postAlpha, postBeta, postRho);
+    Timings::setTimeKriging(wall,cpu);
   } 
 }
 
@@ -1986,6 +1997,8 @@ void Crava::computeFaciesProb(FilterWellLogs *filteredlogs)
 {
   if((outputFlag_ & ModelSettings::FACIESPROB) >0 || (outputFlag_ & ModelSettings::FACIESPROBRELATIVE)>0)
   {
+    double wall=0.0, cpu=0.0;
+    TimeKit::getTime(wall,cpu);
     LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************");
     LogKit::LogFormatted(LogKit::LOW,"\n***                   Facies probability volumes                    ***"); 
     LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************\n\n");
@@ -2050,12 +2063,15 @@ void Crava::computeFaciesProb(FilterWellLogs *filteredlogs)
     delete meanBeta2_;
     delete meanRho2_;
     }
+    Timings::setTimeFaciesProb(wall,cpu);
   }
 }
 
 void Crava::filterLogs(Simbox          * timeSimboxConstThick,
                        FilterWellLogs *& filterlogs)
 {
+  double wall=0.0, cpu=0.0;
+  TimeKit::getTime(wall,cpu);
   int relative;
   if((outputFlag_ & ModelSettings::FACIESPROBRELATIVE)>0)
     relative = 1;
@@ -2069,4 +2085,5 @@ void Crava::filterLogs(Simbox          * timeSimboxConstThick,
                                   wells_, nWells_, 
                                   lowCut_, highCut_, 
                                   relative);
+  Timings::setTimeFiltering(wall,cpu);
 }

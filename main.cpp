@@ -19,6 +19,7 @@
 #include "src/simbox.h"
 #include "src/welldata.h"
 #include "src/filterwelllogs.h"
+#include "src/timings.h"
 
 int main(int argc, char** argv)
 {  
@@ -138,10 +139,10 @@ int main(int argc, char** argv)
   delete model;
 
   LogKit::LogFormatted(LogKit::LOW,"\n*** CRAVA closing  ***\n"); 
-  TimeKit::getTime(wall,cpu);
-  LogKit::LogFormatted(LogKit::LOW,"\nTotal CPU  time used in CRAVA: %6d seconds", static_cast<int>(cpu));
-  LogKit::LogFormatted(LogKit::LOW,"\nTotal Wall time used in CRAVA: %6d seconds\n", static_cast<int>(wall));
+  Timings::setTimeTotal(wall,cpu);
+  Timings::reportAll();
   LogKit::LogFormatted(LogKit::LOW,"\n*** CRAVA finished ***\n");
+
 
   LogKit::EndLog();
   return(0);

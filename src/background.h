@@ -74,11 +74,9 @@ private:
   void         calculateVelocityDeviations(FFTGrid   * velocity,
                                            WellData ** wells,
                                            Simbox    * simbox,                               
-                                           float     * trendVel,
-                                           float     * avgDevVel,
+                                           float    *& trendVel,
+                                           float    *& avgDevVel,
                                            float     * avgDevAlpha,
-                                           float       logMin, 
-                                           float       logMax,
                                            int         outputFlag,
                                            int         nWells);
   void         resampleParameter(FFTGrid *& parameterNew,

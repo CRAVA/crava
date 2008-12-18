@@ -237,6 +237,9 @@ void Corr::printPriorVariances(void) const
 void
 Corr::printPostVariances(void) const
 {
+  LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************");
+  LogKit::LogFormatted(LogKit::LOW,"\n***                     Posterior Covariance                        ***"); 
+  LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************\n");
   LogKit::LogFormatted(LogKit::LOW,"\nVariances and correlations for parameter residuals:\n");
   LogKit::LogFormatted(LogKit::LOW,"\n");
   LogKit::LogFormatted(LogKit::LOW,"               ln Vp     ln Vs    ln Rho \n");
