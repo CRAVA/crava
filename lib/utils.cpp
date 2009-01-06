@@ -12,7 +12,7 @@ Utils::writeHeader(const std::string & text, int width)
 {
   std::string ruler(width,'*');
   std::string stars("*****");
-  LogKit::LogFormatted(LogKit::LOW,ruler+"\n");
+  LogKit::LogFormatted(LogKit::LOW,"\n"+ruler+"\n");
   int starLength  = int(stars.length());
   int textLength  = int(text.length());
   int blankLength = width - textLength - 2*starLength;

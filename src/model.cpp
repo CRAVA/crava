@@ -26,6 +26,7 @@
 #include "src/gridmapping.h"
 #include "src/timings.h"
 
+#include "lib/utils.h"
 #include "lib/random.h"
 #include "lib/timekit.hpp"
 #include "lib/lib_misc.h"
@@ -107,9 +108,7 @@ Model::Model(char * fileName)
     
     printSettings(modelSettings_, modelFile);
     
-    LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************");
-    LogKit::LogFormatted(LogKit::LOW,"\n***                       Reading input data                        ***"); 
-    LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************\n");
+    Utils::writeHeader("Reading input data");
 
     char errText[MAX_STRING];
     sprintf(errText,"%c",'\0');
@@ -1245,9 +1244,8 @@ Model::processWells(WellData     **& wells,
       checkFaciesNames(wells, modelSettings, tmpErrText, error);
       nFacies = modelSettings->getNumberOfFacies(); // nFacies is set in checkFaciesNames()
     }
-    LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************");
-    LogKit::LogFormatted(LogKit::LOW,"\n***                       Processing Wells                          ***"); 
-    LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************\n\n");
+
+    Utils::writeHeader("Processing Wells");
     
     int   * validWells    = new int[nWells];
     bool  * validIndex    = new bool[nWells];
@@ -1269,6 +1267,7 @@ Model::processWells(WellData     **& wells,
     int nohit=0;
     int empty=0;
     int facieslognotok = 0;
+    LogKit::LogFormatted(LogKit::LOW,"\n");
     for (int i=0 ; i<nWells ; i++)
     {
       bool skip = false;
@@ -1569,11 +1568,10 @@ Model::processBackground(Background   *& background,
       (modelSettings->getOutputFlag() & ModelSettings::BACKGROUND) > 0 || 
       (modelSettings->getOutputFlag() & ModelSettings::WAVELETS)   > 0 )
   {
+    Utils::writeHeader("Prior Expectations / Background Model");
+
     double wall=0.0, cpu=0.0;
     TimeKit::getTime(wall,cpu);
-    LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************");
-    LogKit::LogFormatted(LogKit::LOW,"\n***              Prior Expectations / Background Model              ***"); 
-    LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************\n");
       
     FFTGrid * backModel[3];
     const int nx    = timeSimbox->getnx();
@@ -1685,14 +1683,10 @@ Model::processPriorCorrelations(Corr         *& correlations,
   bool printResult = (modelSettings->getOutputFlag() & (ModelSettings::PRIORCORRELATIONS + ModelSettings::CORRELATION)) > 0;
   if (modelSettings->getDoInversion() || printResult)
   {
+    Utils::writeHeader("Prior Covariance");
+
     double wall=0.0, cpu=0.0;
     TimeKit::getTime(wall,cpu);
-    LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************");
-    LogKit::LogFormatted(LogKit::LOW,"\n***                        Prior Covariance                         ***"); 
-    LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************\n");
-    time_t timestart, timeend;
-    time(&timestart);
-
     //
     // Parameter correlation can be set in model file.
     // Default NULL, indicating that estimate will be used.
@@ -1719,9 +1713,6 @@ Model::processPriorCorrelations(Corr         *& correlations,
       estimateCorrXYFromSeismic(CorrXY,
                                 seisCube_,
                                 modelSettings->getNumberOfAngles());
-      time(&timeend);
-      LogKit::LogFormatted(LogKit::LOW,"\nEstimate parameter lateral correlation from seismic in %d seconds.\n",
-                           static_cast<int>(timeend-timestart));
     }
 
     Analyzelog * analyze = new Analyzelog(wells, 
@@ -1761,8 +1752,6 @@ Model::processPriorCorrelations(Corr         *& correlations,
     
     correlations->printPriorVariances();
 
-    time(&timeend);
-    LogKit::LogFormatted(LogKit::DEBUGLOW,"\n\nTime elapsed :  %d\n",timeend-timestart);  
     Timings::setTimePriorCorrelation(wall,cpu);
   }
 }
@@ -1946,11 +1935,11 @@ Model::processWavelets(Wavelet     **& wavelet,
       modelSettings->getGenerateSeismic() || 
       (modelSettings->getOutputFlag() & ModelSettings::WAVELETS) > 0 )
   {
+    Utils::writeHeader("Processing/generating wavelets");
+
     double wall=0.0, cpu=0.0;
     TimeKit::getTime(wall,cpu);
-    LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************");
-    LogKit::LogFormatted(LogKit::LOW,"\n***                 Processing/generating wavelets                  ***"); 
-    LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************\n");
+
     bool estimateStuff = false;
     for(int i=0 ; i < modelSettings->getNumberOfAngles() ; i++)
     {  
@@ -2149,10 +2138,7 @@ void Model::processPriorFaciesProb(float         *& priorFacies,
   int nFacies    = modelSettings->getNumberOfFacies();
   if(nFacies > 0 && (outputFlag & (ModelSettings::FACIESPROB + ModelSettings::FACIESPROBRELATIVE)) > 0)
   {
-    LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************");
-    LogKit::LogFormatted(LogKit::LOW,"\n***                     Prior Facies Probabilities                  ***"); 
-    LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************\n\n");
-
+    Utils::writeHeader("Prior Facies Probabilities");
     //
     // NBNB-PAL: We should be able to read priorFacies from file. 
     //
@@ -2442,27 +2428,30 @@ Model::printSettings(ModelSettings * modelSettings,
   }
   LogKit::LogFormatted(LogKit::LOW,"  Kriging                                  : %10s\n",(modelSettings->getKrigingParameters()==NULL ? "no" : "yes"));
 
-  LogKit::LogFormatted(LogKit::LOW,"\nUnit settings/assumptions:\n");
-  LogKit::LogFormatted(LogKit::LOW,"  Time                                     : %10s\n","ms TWT");
-  LogKit::LogFormatted(LogKit::LOW,"  Frequency                                : %10s\n","Hz");
-  LogKit::LogFormatted(LogKit::LOW,"  Length                                   : %10s\n","m");
-  LogKit::LogFormatted(LogKit::LOW,"  Velocities                               : %10s\n","m/s");
-  LogKit::LogFormatted(LogKit::LOW,"  Density                                  : %10s\n","kg/dm3");
-  LogKit::LogFormatted(LogKit::LOW,"  Angles                                   : %10s\n","   degrees (clockwise relative to north)");
+  LogKit::LogFormatted(LogKit::HIGH,"\nUnit settings/assumptions:\n");
+  LogKit::LogFormatted(LogKit::HIGH,"  Time                                     : %10s\n","ms TWT");
+  LogKit::LogFormatted(LogKit::HIGH,"  Frequency                                : %10s\n","Hz");
+  LogKit::LogFormatted(LogKit::HIGH,"  Length                                   : %10s\n","m");
+  LogKit::LogFormatted(LogKit::HIGH,"  Velocities                               : %10s\n","m/s");
+  LogKit::LogFormatted(LogKit::HIGH,"  Density                                  : %10s\n","kg/dm3");
+  LogKit::LogFormatted(LogKit::HIGH,"  Angles                                   : %10s\n","   degrees (clockwise relative to north)");
 
   TraceHeaderFormat * thf = modelSettings_->getTraceHeaderFormat(); 
-  LogKit::LogFormatted(LogKit::LOW,"\nSegY trace header format:\n");
-  LogKit::LogFormatted(LogKit::LOW,"  Format name                              : %10s\n",thf->GetFormatName().c_str());
-  if (thf->GetBypassCoordScaling())
-    LogKit::LogFormatted(LogKit::LOW,"  Bypass coordinate scaling                :        yes\n");
-  if (!thf->GetStandardType()) 
+  if (thf != NULL) 
   {
-    LogKit::LogFormatted(LogKit::LOW,"  Start pos coordinate scaling             : %10d\n",thf->GetScalCoLoc());
-    LogKit::LogFormatted(LogKit::LOW,"  Start pos trace x coordinate             : %10d\n",thf->GetUtmxLoc());
-    LogKit::LogFormatted(LogKit::LOW,"  Start pos trace y coordinate             : %10d\n",thf->GetUtmyLoc());
-    LogKit::LogFormatted(LogKit::LOW,"  Start pos inline index                   : %10d\n",thf->GetInlineLoc());
-    LogKit::LogFormatted(LogKit::LOW,"  Start pos crossline index                : %10d\n",thf->GetCrosslineLoc());
-    LogKit::LogFormatted(LogKit::LOW,"  Coordinate system                        : %10s\n",thf->GetCoordSys()==0 ? "UTM" : "ILXL" );
+    LogKit::LogFormatted(LogKit::LOW,"\nSegY trace header format:\n");
+    LogKit::LogFormatted(LogKit::LOW,"  Format name                              : %10s\n",thf->GetFormatName().c_str());
+    if (thf->GetBypassCoordScaling())
+      LogKit::LogFormatted(LogKit::LOW,"  Bypass coordinate scaling                :        yes\n");
+    if (!thf->GetStandardType()) 
+    {
+      LogKit::LogFormatted(LogKit::LOW,"  Start pos coordinate scaling             : %10d\n",thf->GetScalCoLoc());
+      LogKit::LogFormatted(LogKit::LOW,"  Start pos trace x coordinate             : %10d\n",thf->GetUtmxLoc());
+      LogKit::LogFormatted(LogKit::LOW,"  Start pos trace y coordinate             : %10d\n",thf->GetUtmyLoc());
+      LogKit::LogFormatted(LogKit::LOW,"  Start pos inline index                   : %10d\n",thf->GetInlineLoc());
+      LogKit::LogFormatted(LogKit::LOW,"  Start pos crossline index                : %10d\n",thf->GetCrosslineLoc());
+      LogKit::LogFormatted(LogKit::LOW,"  Coordinate system                        : %10s\n",thf->GetCoordSys()==0 ? "UTM" : "ILXL" );
+    }
   }
   //
   // WELL PROCESSING

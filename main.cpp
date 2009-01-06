@@ -33,11 +33,11 @@ int main(int argc, char** argv)
 
   double wall=0.0, cpu=0.0;
   TimeKit::getTime(wall,cpu);
-  LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************");
-  LogKit::LogFormatted(LogKit::LOW,"\n***                                                                 ***"); 
-  LogKit::LogFormatted(LogKit::LOW,"\n***                        C  R  A  V  A                            ***"); 
-  LogKit::LogFormatted(LogKit::LOW,"\n***                                                                 ***"); 
-  LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************\n\n");
+  LogKit::LogFormatted(LogKit::LOW,"\n***************************************************************************************************");
+  LogKit::LogFormatted(LogKit::LOW,"\n*****                                                                                         *****"); 
+  LogKit::LogFormatted(LogKit::LOW,"\n*****                                    C  R  A  V  A                                        *****"); 
+  LogKit::LogFormatted(LogKit::LOW,"\n*****                                                                                         *****"); 
+  LogKit::LogFormatted(LogKit::LOW,"\n***************************************************************************************************\n\n");
 
   std::cout 
     << "Compiled: " << SystemCall::getDate() << "/" << SystemCall::getTime() << "\n"

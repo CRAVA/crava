@@ -6,6 +6,7 @@
 #include "nrlib/iotools/logkit.hpp"
 
 #include "lib/timekit.hpp"
+#include "lib/utils.h"
 
 #include "src/definitions.h"
 #include "src/timings.h"
@@ -13,9 +14,7 @@
 void 
 Timings::reportAll(void)
 {
-  LogKit::LogFormatted(LogKit::MEDIUM,"\n***********************************************************************");
-  LogKit::LogFormatted(LogKit::MEDIUM,"\n***                           Timings                               ***"); 
-  LogKit::LogFormatted(LogKit::MEDIUM,"\n***********************************************************************\n");
+  Utils::writeHeader("Timings");
 
   calculateRest();
 

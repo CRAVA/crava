@@ -20,6 +20,7 @@
 #include "src/timings.h"
 #include "lib/timekit.hpp"
 #include "lib/random.h"
+#include "lib/utils.h"
 #include "lib/lib_matr.h"
 #include "nrlib/iotools/logkit.hpp"
 #include "nrlib/stormgrid/stormcontgrid.hpp"
@@ -29,9 +30,7 @@
 
 Crava::Crava(Model * model)
 {	
-  LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************");
-  LogKit::LogFormatted(LogKit::LOW,"\n***                    Building Stochastic Model                     ***"); 
-  LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************\n\n");
+  Utils::writeHeader("Building Stochastic Model");
 
   model_             = model;
   nx_                = model->getBackAlpha()->getNx();
@@ -628,11 +627,10 @@ Crava::multiplyDataByScaleWaveletAndWriteToFile(const char* typeName)
 int 
 Crava::computePostMeanResidAndFFTCov()
 {
+  Utils::writeHeader("Posterior model / Performing Inversion");
+
   double wall=0.0, cpu=0.0;
   TimeKit::getTime(wall,cpu);
-  LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************");
-  LogKit::LogFormatted(LogKit::LOW,"\n***             Posterior model / Performing Inversion              ***"); 
-  LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************\n\n");
   int i,j,k,l,m;
 
   fftw_complex * kW          = new fftw_complex[ntheta_];
@@ -1081,11 +1079,11 @@ Crava::computePostMeanResidAndFFTCov()
 int
 Crava::simulate( RandomGen * randomGen)
 {   
+  Utils::writeHeader("Simulating from posterior model");
+
   double wall=0.0, cpu=0.0;
   TimeKit::getTime(wall,cpu);
-  LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************");
-  LogKit::LogFormatted(LogKit::LOW,"\n***                Simulating from posterior model                  ***"); 
-  LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************\n\n");
+
   if(nSim_>0)
   {
     FFTGrid * postCovAlpha       = correlations_->getPostCovAlpha();
@@ -1248,11 +1246,10 @@ void Crava::doPostKriging(FFTGrid & postAlpha,
                           FFTGrid & postRho) 
 {
   if(krigingParams_ != NULL) { 
+    Utils::writeHeader("Conditioning to wells");
+
     double wall=0.0, cpu=0.0;
     TimeKit::getTime(wall,cpu);
-    LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************");
-    LogKit::LogFormatted(LogKit::LOW,"\n***                     Conditioning to wells                       ***"); 
-    LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************\n");
 
     CovGridSeparated covGridAlpha      (*correlations_->getPostCovAlpha()      );
     CovGridSeparated covGridBeta       (*correlations_->getPostCovBeta()       );
@@ -1997,11 +1994,10 @@ void Crava::computeFaciesProb(FilterWellLogs *filteredlogs)
 {
   if((outputFlag_ & ModelSettings::FACIESPROB) >0 || (outputFlag_ & ModelSettings::FACIESPROBRELATIVE)>0)
   {
+    Utils::writeHeader("Facies probability volumes");
+
     double wall=0.0, cpu=0.0;
     TimeKit::getTime(wall,cpu);
-    LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************");
-    LogKit::LogFormatted(LogKit::LOW,"\n***                   Facies probability volumes                    ***"); 
-    LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************\n\n");
 
     int relative;
     if((outputFlag_ & ModelSettings::FACIESPROBRELATIVE)>0)
