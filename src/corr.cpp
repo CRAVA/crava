@@ -61,17 +61,17 @@ Corr::~Corr(void)
   }
 
   if(postCovAlpha00_!=NULL)      
-    delete postCovAlpha00_ ;
+    delete [] postCovAlpha00_ ;
   if(postCovBeta00_!=NULL)       
-    delete postCovBeta00_ ;
+    delete [] postCovBeta00_ ;
   if(postCovRho00_!=NULL)        
-    delete postCovRho00_ ;
+    delete [] postCovRho00_ ;
   if(postCrCovAlphaBeta00_!=NULL)
-    delete postCrCovAlphaBeta00_ ;
+    delete [] postCrCovAlphaBeta00_ ;
   if(postCrCovAlphaRho00_!=NULL) 
-    delete postCrCovAlphaRho00_ ;
+    delete [] postCrCovAlphaRho00_ ;
   if(postCrCovBetaRho00_!=NULL)  
-    delete postCrCovBetaRho00_;
+    delete [] postCrCovBetaRho00_;
 
   if(postCovAlpha_!=NULL)      
     delete postCovAlpha_ ;

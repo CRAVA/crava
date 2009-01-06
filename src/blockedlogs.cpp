@@ -96,19 +96,19 @@ BlockedLogs::~BlockedLogs(void)
   if (real_seismic_data_ != NULL) {
     for (int i=0 ; i<nAngles_ ; i++)
       if (real_seismic_data_[i] != NULL)
-        delete real_seismic_data_[i];
+        delete [] real_seismic_data_[i];
     delete [] real_seismic_data_;
   }
   if (synt_seismic_data_ != NULL) {
     for (int i=0 ; i<nAngles_ ; i++)
       if (synt_seismic_data_[i] != NULL)
-        delete synt_seismic_data_[i];
+        delete [] synt_seismic_data_[i];
     delete [] synt_seismic_data_;
   }
   if (cpp_ != NULL) { 
     for (int i=0 ; i<nAngles_ ; i++)
       if (cpp_[i] != NULL)
-        delete cpp_[i];
+        delete [] cpp_[i];
     delete [] cpp_;
   }
 }
@@ -594,7 +594,6 @@ BlockedLogs::setLogFromVerticalTrend(float      * vertical_trend,
 
   setLogFromVerticalTrend(blockedLog, zpos_, nBlocks_, 
                           vertical_trend, z0, dz, nz);
-
 
   if (type == "ALPHA_SEISMIC_RESOLUTION")
     alpha_seismic_resolution_ = blockedLog;

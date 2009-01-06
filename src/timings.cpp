@@ -13,13 +13,14 @@
 void 
 Timings::reportAll(void)
 {
-  LogKit::LogFormatted(LogKit::LOW,"\nTotal CPU  time used in CRAVA: %6d seconds",   static_cast<int>(c_total_));
-  LogKit::LogFormatted(LogKit::LOW,"\nTotal Wall time used in CRAVA: %6d seconds\n", static_cast<int>(w_total_));
+  LogKit::LogFormatted(LogKit::MEDIUM,"\n***********************************************************************");
+  LogKit::LogFormatted(LogKit::MEDIUM,"\n***                           Timings                               ***"); 
+  LogKit::LogFormatted(LogKit::MEDIUM,"\n***********************************************************************\n");
 
   calculateRest();
 
-  LogKit::LogFormatted(LogKit::LOW,"\nSection                              CPU time               Wall time");
-  LogKit::LogFormatted(LogKit::LOW,"\n---------------------------------------------------------------------\n");
+  LogKit::LogFormatted(LogKit::MEDIUM,"\nSection                              CPU time               Wall time");
+  LogKit::LogFormatted(LogKit::MEDIUM,"\n---------------------------------------------------------------------\n");
   reportOne("Seismic data             ", c_seismic_         , w_seismic_          , c_total_, w_total_);
   reportOne("Wells                    ", c_wells_           , w_wells_            , c_total_, w_total_);
   reportOne("Wavelets                 ", c_wavelets_        , w_wavelets_         , c_total_, w_total_);
@@ -31,8 +32,11 @@ Timings::reportAll(void)
   reportOne("Facies probabilities     ", c_facies_          , w_facies_           , c_total_, w_total_);
   reportOne("Kriging                  ", c_kriging_         , w_kriging_          , c_total_, w_total_);
   reportOne("Rest                     ", c_rest_            , w_rest_             , c_total_, w_total_);
-  LogKit::LogFormatted(LogKit::LOW,  "---------------------------------------------------------------------\n");
+  LogKit::LogFormatted(LogKit::MEDIUM,  "---------------------------------------------------------------------\n");
   reportOne("Total                    ", c_total_           , w_total_            , c_total_, w_total_);
+
+  LogKit::LogFormatted(LogKit::LOW,"\nTotal CPU  time used in CRAVA: %6d seconds",   static_cast<int>(c_total_));
+  LogKit::LogFormatted(LogKit::LOW,"\nTotal Wall time used in CRAVA: %6d seconds\n", static_cast<int>(w_total_));
 }
 
 void 
@@ -45,10 +49,10 @@ Timings::reportOne(const std::string & text, double cpuThis, double wallThis, do
   double percentWall = 100.0*wallThis/wallTot;
 
   if (cpuThis > 0.01 && percentCPU > 0.01) {
-    LogKit::LogFormatted(LogKit::LOW,"%s %9.2f  %6.2f ",text.c_str(),cpuThis,percentCPU);
-    LogKit::LogMessage(LogKit::LOW,"%   ");
-    LogKit::LogFormatted(LogKit::LOW,"  %9.2f  %6.2f ",wallThis,percentWall);
-    LogKit::LogMessage(LogKit::LOW,"%\n");
+    LogKit::LogFormatted(LogKit::MEDIUM,"%s %9.2f  %6.2f ",text.c_str(),cpuThis,percentCPU);
+    LogKit::LogMessage(LogKit::MEDIUM,"%   ");
+    LogKit::LogFormatted(LogKit::MEDIUM,"  %9.2f  %6.2f ",wallThis,percentWall);
+    LogKit::LogMessage(LogKit::MEDIUM,"%\n");
   }
 }
 

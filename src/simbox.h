@@ -58,7 +58,7 @@ public:
   double         getTop(int i, int j) const;
   double         getTop(double x, double y) const;
   double         getBot(double x, double y) const;
-  char         * getStormHeader(int cubetype, int nx, int ny, int nz, bool flat = false, bool ascii = false) const;
+  std::string    getStormHeader(int cubetype, int nx, int ny, int nz, bool flat = false, bool ascii = false) const;
   void           writeTopBotGrids(std::string topname, std::string botname, int outputFormat);
   int            checkError(double lzLimit, char * errText);
   int            setArea(const SegyGeometry * geometry, char * errText);

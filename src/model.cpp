@@ -442,15 +442,21 @@ Model::readSegyFile(char                * fileName,
 
   try
   {
-   // segy = new SegY(fileName, 
-   //                 modelSettings->getSegyOffset(),
-   //                 *(modelSettings->getTraceHeaderFormat()));
+    //
+    // Currently we have only one optional TraceHeaderFormat, but this can 
+    // be augmented to a list with several formats ...
+    //
+    std::vector<TraceHeaderFormat*> traceHeaderFormats(0);
+    if (modelSettings->getTraceHeaderFormat() != NULL)
+    {
+      traceHeaderFormats.push_back(modelSettings->getTraceHeaderFormat());
+    }
 
-   // New segy constructor for unknown traceheaderformat
-    std::vector<TraceHeaderFormat*> *thf = TraceHeaderFormat::GetListOfStandardHeaders();
-    thf->insert(thf->end(),modelSettings->getTraceHeaderFormat());
-     segy = new SegY(fileName, 
-                    modelSettings->getSegyOffset(), thf);
+    segy = new SegY(fileName, 
+                    modelSettings->getSegyOffset(), 
+                    traceHeaderFormats, 
+                    true); // Add standard formats to format search
+
     bool onlyVolume = modelSettings->getAreaParameters() != NULL; // This is now always true
     segy->ReadAllTraces(timeSimbox, 
                         modelSettings->getZpad(),
@@ -1944,7 +1950,7 @@ Model::processWavelets(Wavelet     **& wavelet,
     TimeKit::getTime(wall,cpu);
     LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************");
     LogKit::LogFormatted(LogKit::LOW,"\n***                 Processing/generating wavelets                  ***"); 
-    LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************");
+    LogKit::LogFormatted(LogKit::LOW,"\n***********************************************************************\n");
     bool estimateStuff = false;
     for(int i=0 ; i < modelSettings->getNumberOfAngles() ; i++)
     {  

@@ -354,7 +354,7 @@ Simbox::getBot(double x, double y) const
   return(zBot);
 }
 
-char *
+std::string
 Simbox::getStormHeader(int cubetype, int nx, int ny, int nz, bool flat, bool ascii) const
 {
   if(flat == false)
@@ -376,7 +376,9 @@ Simbox::getStormHeader(int cubetype, int nx, int ny, int nz, bool flat, bool asc
 
   sprintf(header,"%s%f %f\n\n", header, GetLZ(), GetAngle()*180/PI);
   sprintf(header,"%s%d %d %d\n", header, nx, ny, nz);
-  return(header);
+  std::string strHeader(header); 
+  delete [] header;
+  return(strHeader);
 }
 
 void

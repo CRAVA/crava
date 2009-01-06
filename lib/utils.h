@@ -5,6 +5,8 @@
 class Utils
 {
 public:
+
+  static void    writeHeader(const std::string & text, int width = 100);
   static void    writeTitler(const char * text);
 
   static void    copyVector(const float * from,

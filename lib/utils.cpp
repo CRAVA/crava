@@ -7,6 +7,26 @@
 #include "nrlib/iotools/logkit.hpp"
 
 //------------------------------------------------------------
+void
+Utils::writeHeader(const std::string & text, int width)
+{
+  std::string ruler(width,'*');
+  std::string stars("*****");
+  LogKit::LogFormatted(LogKit::LOW,ruler+"\n");
+  int starLength  = int(stars.length());
+  int textLength  = int(text.length());
+  int blankLength = width - textLength - 2*starLength;
+  std::string blanks(blankLength/2,' ');
+  std::string center;
+  if(blankLength % 2)
+    center = stars + blanks + text + blanks + " " + stars;
+  else
+    center = stars + blanks + text + blanks +stars;
+  LogKit::LogFormatted(LogKit::LOW,center+"\n");
+  LogKit::LogFormatted(LogKit::LOW,ruler+"\n");
+}
+
+//------------------------------------------------------------
 void    
 Utils::writeTitler(const char * text)
 {

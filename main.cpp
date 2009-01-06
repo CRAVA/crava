@@ -5,9 +5,10 @@
 
 #include "lib/systemcall.h"
 #include "lib/global_def.h"
-#include "nrlib/segy/segy.hpp"
 #include "lib/timekit.hpp"
+#include "lib/utils.h"
 
+#include "nrlib/segy/segy.hpp"
 #include "nrlib/iotools/logkit.hpp"
 
 #include "src/definitions.h"
@@ -138,12 +139,11 @@ int main(int argc, char** argv)
   } 
   delete model;
 
-  LogKit::LogFormatted(LogKit::LOW,"\n*** CRAVA closing  ***\n"); 
   Timings::setTimeTotal(wall,cpu);
   Timings::reportAll();
+
+  LogKit::LogFormatted(LogKit::LOW,"\n*** CRAVA closing  ***\n"); 
   LogKit::LogFormatted(LogKit::LOW,"\n*** CRAVA finished ***\n");
-
-
   LogKit::EndLog();
   return(0);
 }
