@@ -1,10 +1,13 @@
 #ifndef TIMINGS_H
 #define TIMINGS_H
 
+#include "src/definitions.h"
+#include "nrlib/iotools/logkit.hpp"
+
 class Timings 
 {
 public: 
-  static void    reportAll(void);
+  static void    reportAll(LogKit::MessageLevels logLevel);
 
   static void    setTimeTotal(double& wall, double& cpu);
   static void    setTimeSeismic(double& wall, double& cpu);
@@ -19,7 +22,8 @@ public:
   static void    setTimeKriging(double& wall, double& cpu);
 
 private:
-  static void    reportOne(const std::string & text, double cpuThis, double wallThis, double cpuTot, double wallTot);
+  static void    reportOne(const std::string & text, double cpuThis, double wallThis, 
+                           double cpuTot, double wallTot, LogKit::MessageLevels logLevel);
   static void    calculateRest(void);
 
   static double  w_total_;

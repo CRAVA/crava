@@ -210,8 +210,10 @@ Model::Model(char * fileName)
   failed_ = failedModelFile || failedLoadingModel;
   
   delete modelFile;
-  if(timeCutSimbox !=NULL)
+  if(timeCutSimbox != NULL)
     delete timeCutSimbox;
+  if(timeBGSimbox != NULL)
+    delete timeBGSimbox;
 }
 
 
@@ -659,7 +661,6 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
       failed = true;
     }
 
-
     //
     // Make extended time simbox
     //
@@ -678,8 +679,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
       if(failed == false && modelSettings->getGenerateSeismic() == false) {
         //Extends timeSimbox for correlation coverage. Original stored in timeCutSimbox
         setupExtendedTimeSimbox(timeSimbox, correlationDirection, timeCutSimbox, outputFormat, outputFlag); 
-      }
-      estimateZPaddingSize(timeSimbox, modelSettings);   
+      }      estimateZPaddingSize(timeSimbox, modelSettings);   
       error = timeSimbox->checkError(modelSettings->getLzLimit(),errText);
       if(error == 0)
       {

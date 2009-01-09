@@ -12,34 +12,35 @@
 #include "src/timings.h"
 
 void 
-Timings::reportAll(void)
+Timings::reportAll(LogKit::MessageLevels logLevel)
 {
-  Utils::writeHeader("Timings");
+  Utils::writeHeader("Timings summary", logLevel);
 
   calculateRest();
 
-  LogKit::LogFormatted(LogKit::MEDIUM,"\nSection                              CPU time               Wall time");
-  LogKit::LogFormatted(LogKit::MEDIUM,"\n---------------------------------------------------------------------\n");
-  reportOne("Seismic data             ", c_seismic_         , w_seismic_          , c_total_, w_total_);
-  reportOne("Wells                    ", c_wells_           , w_wells_            , c_total_, w_total_);
-  reportOne("Wavelets                 ", c_wavelets_        , w_wavelets_         , c_total_, w_total_);
-  reportOne("Prior expection          ", c_priorExpectation_, w_priorExpectation_ , c_total_, w_total_);
-  reportOne("Prior correlation        ", c_priorCorrelation_, w_priorCorrelation_ , c_total_, w_total_);
-  reportOne("Inversion                ", c_inversion_       , w_inversion_        , c_total_, w_total_);
-  reportOne("Simulation               ", c_simulation_      , w_simulation_       , c_total_, w_total_);
-  reportOne("Parameter filter         ", c_filtering_       , w_filtering_        , c_total_, w_total_);
-  reportOne("Facies probabilities     ", c_facies_          , w_facies_           , c_total_, w_total_);
-  reportOne("Kriging                  ", c_kriging_         , w_kriging_          , c_total_, w_total_);
-  reportOne("Rest                     ", c_rest_            , w_rest_             , c_total_, w_total_);
-  LogKit::LogFormatted(LogKit::MEDIUM,  "---------------------------------------------------------------------\n");
-  reportOne("Total                    ", c_total_           , w_total_            , c_total_, w_total_);
+  LogKit::LogFormatted(logLevel,"\nSection                              CPU time               Wall time");
+  LogKit::LogFormatted(logLevel,"\n---------------------------------------------------------------------\n");
+  reportOne("Seismic data             ", c_seismic_         , w_seismic_          , c_total_, w_total_,logLevel);
+  reportOne("Wells                    ", c_wells_           , w_wells_            , c_total_, w_total_,logLevel);
+  reportOne("Wavelets                 ", c_wavelets_        , w_wavelets_         , c_total_, w_total_,logLevel);
+  reportOne("Prior expection          ", c_priorExpectation_, w_priorExpectation_ , c_total_, w_total_,logLevel);
+  reportOne("Prior correlation        ", c_priorCorrelation_, w_priorCorrelation_ , c_total_, w_total_,logLevel);
+  reportOne("Inversion                ", c_inversion_       , w_inversion_        , c_total_, w_total_,logLevel);
+  reportOne("Simulation               ", c_simulation_      , w_simulation_       , c_total_, w_total_,logLevel);
+  reportOne("Parameter filter         ", c_filtering_       , w_filtering_        , c_total_, w_total_,logLevel);
+  reportOne("Facies probabilities     ", c_facies_          , w_facies_           , c_total_, w_total_,logLevel);
+  reportOne("Kriging                  ", c_kriging_         , w_kriging_          , c_total_, w_total_,logLevel);
+  reportOne("Rest                     ", c_rest_            , w_rest_             , c_total_, w_total_,logLevel);
+  LogKit::LogFormatted(logLevel,  "---------------------------------------------------------------------\n");
+  reportOne("Total                    ", c_total_           , w_total_            , c_total_, w_total_,logLevel);
 
   LogKit::LogFormatted(LogKit::LOW,"\nTotal CPU  time used in CRAVA: %6d seconds",   static_cast<int>(c_total_));
   LogKit::LogFormatted(LogKit::LOW,"\nTotal Wall time used in CRAVA: %6d seconds\n", static_cast<int>(w_total_));
 }
 
 void 
-Timings::reportOne(const std::string & text, double cpuThis, double wallThis, double cpuTot, double wallTot)
+Timings::reportOne(const std::string & text, double cpuThis, double wallThis, 
+                   double cpuTot, double wallTot, LogKit::MessageLevels logLevel)
 {
   if (wallThis < 0.00001) // To omit stupit zero-treatment in ToString()
     wallThis = 0.00001;
@@ -48,10 +49,10 @@ Timings::reportOne(const std::string & text, double cpuThis, double wallThis, do
   double percentWall = 100.0*wallThis/wallTot;
 
   if (cpuThis > 0.01 && percentCPU > 0.01) {
-    LogKit::LogFormatted(LogKit::MEDIUM,"%s %9.2f  %6.2f ",text.c_str(),cpuThis,percentCPU);
-    LogKit::LogMessage(LogKit::MEDIUM,"%   ");
-    LogKit::LogFormatted(LogKit::MEDIUM,"  %9.2f  %6.2f ",wallThis,percentWall);
-    LogKit::LogMessage(LogKit::MEDIUM,"%\n");
+    LogKit::LogFormatted(logLevel,"%s %9.2f  %6.2f ",text.c_str(),cpuThis,percentCPU);
+    LogKit::LogMessage(logLevel,"%   ");
+    LogKit::LogFormatted(logLevel,"  %9.2f  %6.2f ",wallThis,percentWall);
+    LogKit::LogMessage(logLevel,"%\n");
   }
 }
 

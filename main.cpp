@@ -140,7 +140,7 @@ int main(int argc, char** argv)
   delete model;
 
   Timings::setTimeTotal(wall,cpu);
-  Timings::reportAll();
+  Timings::reportAll(LogKit::MEDIUM);
 
   LogKit::LogFormatted(LogKit::LOW,"\n*** CRAVA closing  ***\n"); 
   LogKit::LogFormatted(LogKit::LOW,"\n*** CRAVA finished ***\n");

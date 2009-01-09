@@ -8,8 +8,9 @@
 
 //------------------------------------------------------------
 void
-Utils::writeHeader(const std::string & text, int width)
+Utils::writeHeader(const std::string & text, LogKit::MessageLevels logLevel)
 {
+  int width = 100; // Total width of header
   std::string ruler(width,'*');
   std::string stars("*****");
   LogKit::LogFormatted(LogKit::LOW,"\n"+ruler+"\n");

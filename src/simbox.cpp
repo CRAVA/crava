@@ -596,7 +596,6 @@ Simbox::getRelThick(double x, double y) const
 
 void Simbox::findIJFromILXL(int IL, int XL, int &i, int &j)const
 {
-
   if(ILxflag_==false)
   {
     i = (XL-crossLine0_)/xlStep_;

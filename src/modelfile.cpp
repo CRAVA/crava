@@ -554,7 +554,7 @@ ModelFile::~ModelFile()
   
   if(depthSurfFile_ != NULL) 
   {
-    if (depthSurfFile_[1] != NULL)
+    if (depthSurfFile_[0] != NULL)
       delete [] depthSurfFile_[0]; // top surface
     if (depthSurfFile_[1] != NULL)
       delete [] depthSurfFile_[1]; // base surface
