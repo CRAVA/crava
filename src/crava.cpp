@@ -17,6 +17,7 @@
 #include "src/definitions.h"
 #include "src/gridmapping.h"
 #include "src/filterwelllogs.h"
+#include "src/parameteroutput.h"
 #include "src/timings.h"
 #include "lib/timekit.hpp"
 #include "lib/random.h"
@@ -1001,7 +1002,8 @@ Crava::computePostMeanResidAndFFTCov()
   if((outputFlag_ & ModelSettings::PREDICTION) > 0)
   {
     doPostKriging(*postAlpha_, *postBeta_, *postRho_); 
-    writePars(postAlpha_, postBeta_, postRho_, -1);
+    ParameterOutput::writeParameters(simbox_, model_, postAlpha_, postBeta_, postRho_, 
+                                     outputFlag_, fileGrid_, -1);
   }
 
   char* fileNameS= new char[MAX_STRING];
@@ -1077,7 +1079,7 @@ Crava::computePostMeanResidAndFFTCov()
 
 
 int
-Crava::simulate( RandomGen * randomGen)
+Crava::simulate(RandomGen * randomGen)
 {   
   Utils::writeHeader("Simulating from posterior model");
 
@@ -1221,8 +1223,8 @@ Crava::simulate( RandomGen * randomGen)
           seed2->endAccess();
 
           doPostKriging(*seed0, *seed1, *seed2); 
-          writePars(seed0, seed1, seed2, simNr);  
-
+          ParameterOutput::writeParameters(simbox_, model_, seed0, seed1, seed2,
+                                           outputFlag_, fileGrid_, simNr);
           // time(&timeend);
           // printf("Back transform and write of simulation in %ld seconds \n",timeend-timestart);
     } 
@@ -1241,9 +1243,10 @@ Crava::simulate( RandomGen * randomGen)
   return(0);
 }
 
-void Crava::doPostKriging(FFTGrid & postAlpha, 
-                          FFTGrid & postBeta, 
-                          FFTGrid & postRho) 
+void 
+Crava::doPostKriging(FFTGrid & postAlpha, 
+                     FFTGrid & postBeta, 
+                     FFTGrid & postRho) 
 {
   if(krigingParams_ != NULL) { 
     Utils::writeHeader("Conditioning to wells");
@@ -1270,17 +1273,6 @@ void Crava::doPostKriging(FFTGrid & postAlpha,
     pKriging.KrigAll(postAlpha, postBeta, postRho);
     Timings::setTimeKriging(wall,cpu);
   } 
-}
-
-void Crava::writeToFile(char        * fileName, 
-                        FFTGrid     * grid, 
-                        std::string   sgriLabel) {
-
-  GridMapping * timeDepthMapping = model_->getTimeDepthMapping();
-  GridMapping * timeCutMapping   = model_->getTimeCutMapping();
-  float         seismicStartTime = model_->getModelSettings()->getSegyOffset();
-
-  grid->writeFile(fileName, simbox_, sgriLabel, seismicStartTime, timeDepthMapping, timeCutMapping);
 }
 
 int 
@@ -1411,327 +1403,6 @@ Crava::computeSyntSeismic(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho)
   delete [] fileNameS;
   return(0);
 }
-
-int 
-Crava::computeAcousticImpedance(FFTGrid * Alpha, FFTGrid * Rho ,char * fileName)
-{   
-  if(Alpha->getIsTransformed()) Alpha->invFFTInPlace();
-  if(Rho->getIsTransformed()) Rho->invFFTInPlace();
-
-  Alpha->setAccessMode(FFTGrid::READ);
-  Rho->setAccessMode(FFTGrid::READ);
-
-  FFTGrid* prImpedance; 
-  prImpedance  = createFFTGrid();
-  prImpedance->setType(FFTGrid::PARAMETER);
-  prImpedance->createRealGrid();
-  prImpedance->setAccessMode(FFTGrid::WRITE);
-
-  int i;
-  int rSize =  prImpedance->getrsize(); 
-  double ijkA, ijkR, compVal;
-  for(i=0; i  <  rSize; i++)
-  {
-    ijkA = Alpha->getNextReal();
-    ijkR = Rho->getNextReal();
-    compVal = exp(ijkA + ijkR);
-    prImpedance->setNextReal(float( compVal));
-  }
-
-  Alpha->endAccess();
-  Rho->endAccess();
-
-  prImpedance->endAccess();
-  // prImpedance->writeFile(fileName,simbox_);
-  writeToFile(fileName,  prImpedance, "Acoustic Impedance");
-  delete prImpedance;
-
-  return(0);
-}
-
-int 
-Crava::computeShearImpedance(FFTGrid * Beta, FFTGrid * Rho ,char * fileName)
-{
-
-  if(Beta->getIsTransformed()) Beta->invFFTInPlace();
-  if(Rho->getIsTransformed()) Rho->invFFTInPlace();
-
-  Beta->setAccessMode(FFTGrid::READ);
-  Rho->setAccessMode(FFTGrid::READ);
-
-
-  FFTGrid* shImpedance; 
-  shImpedance  = createFFTGrid();
-  shImpedance->setType(FFTGrid::PARAMETER);
-  shImpedance->createRealGrid();
-  shImpedance->setAccessMode(FFTGrid::WRITE);
-  int i;
-  int rSize =  shImpedance->getrsize(); 
-  double ijkB, ijkR, compVal;
-  for(i=0; i  <  rSize; i++)
-  {
-    ijkB = Beta->getNextReal();
-    ijkR = Rho->getNextReal();
-    compVal = exp(ijkB + ijkR);
-    shImpedance->setNextReal(float( compVal));
-  }
-
-  Beta->endAccess();
-  Rho->endAccess();
-
-  shImpedance->endAccess(); 
-  //shImpedance->writeFile(fileName,simbox_);
-  writeToFile(fileName,  shImpedance, "Shear impedance");
-  delete shImpedance;
-
-  return(0);
-}
-
-
-int  
-Crava::computeVpVsRatio(FFTGrid * Alpha, FFTGrid * Beta,char * fileName)
-{
-  if(Alpha->getIsTransformed()) Alpha->invFFTInPlace(); 
-  if(Beta->getIsTransformed())  Beta->invFFTInPlace();
-
-
-  Alpha->setAccessMode(FFTGrid::READ);
-  Beta->setAccessMode(FFTGrid::READ);
-
-  FFTGrid* ratioVpVs; 
-  ratioVpVs = createFFTGrid();
-  ratioVpVs->setType(FFTGrid::PARAMETER);
-  ratioVpVs->createRealGrid();
-  ratioVpVs->setAccessMode(FFTGrid::WRITE);
-  int i;
-  int rSize =  ratioVpVs->getrsize(); 
-  double ijkA, ijkB, compVal;
-  for(i=0; i  <  rSize; i++)
-  {
-    ijkA = Alpha->getNextReal();
-    ijkB = Beta->getNextReal();
-    compVal = exp(ijkA - ijkB);
-    ratioVpVs->setNextReal(float( compVal));
-  }
-
-  Alpha->endAccess();
-  Beta->endAccess();
-
-  ratioVpVs->endAccess();
-  //ratioVpVs->writeFile(fileName,simbox_);
-  writeToFile(fileName,  ratioVpVs, "Vp-Vs ratio");
-  delete ratioVpVs;
-
-  return(0);
-}
-
-int 
-Crava::computePoissonRatio(FFTGrid * Alpha, FFTGrid * Beta,char * fileName)
-{
-  if(Alpha->getIsTransformed()) Alpha->invFFTInPlace();
-  if(Beta->getIsTransformed()) Beta->invFFTInPlace();
-
-  Alpha->setAccessMode(FFTGrid::READ);
-  Beta->setAccessMode(FFTGrid::READ);
-
-
-  FFTGrid* poiRat; 
-  poiRat  = createFFTGrid();
-  poiRat->setType(FFTGrid::PARAMETER);
-  poiRat->createRealGrid();
-  poiRat->setAccessMode(FFTGrid::WRITE);
-
-  int i;
-  int rSize =  poiRat->getrsize(); 
-  double ijkA, ijkB, compVal, vRatioSq;
-  for(i=0; i  <  rSize; i++)
-  {
-    ijkA      = Alpha->getNextReal();
-    ijkB      = Beta->getNextReal();
-    vRatioSq  = exp(2*(ijkA-ijkB));
-    compVal   = 0.5*(vRatioSq - 2)/(vRatioSq - 1);
-    poiRat->setNextReal(float( compVal));
-  }
-
-  Alpha->endAccess();
-  Beta->endAccess();
-
-  poiRat->endAccess();
-  //poiRat->writeFile(fileName,simbox_);
-  writeToFile(fileName,  poiRat, "Poisson ratio");
-  delete poiRat;
-
-  return(0);
-}
-
-
-int  
-Crava::computeLameMu(FFTGrid * Beta, FFTGrid * Rho,char * fileName )
-{
-
-  if(Beta->getIsTransformed()) Beta->invFFTInPlace();
-  if(Rho->getIsTransformed()) Rho->invFFTInPlace();
-
-  Beta->setAccessMode(FFTGrid::READ);
-  Rho->setAccessMode(FFTGrid::READ);
-
-
-  FFTGrid* mu; 
-  mu  = createFFTGrid();
-  mu->setType(FFTGrid::PARAMETER);
-  mu->createRealGrid();
-  mu->setAccessMode(FFTGrid::WRITE);
-
-  int i;
-  int rSize =  mu->getrsize(); 
-  double ijkB, ijkR, compVal;
-  for(i=0; i  <  rSize; i++)
-  {
-    ijkB = Beta->getNextReal();
-    ijkR = Rho->getNextReal();
-    compVal = exp(ijkR+2*ijkB-13.81551); // -13.81551 in the exponent divides by 1 000 000
-    mu->setNextReal(float( compVal));
-  }
-
-  Beta->endAccess();
-  Rho->endAccess();
-
-  mu->endAccess();
-  // mu->writeFile(fileName,simbox_);
-  writeToFile(fileName,  mu, "Lame mu");
-
-  delete mu;
-
-  return(0);
-}
-
-int  
-Crava::computeLameLambda(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho ,char * fileName)
-{
-  if(Alpha->getIsTransformed()) Alpha->invFFTInPlace();
-  if(Beta->getIsTransformed()) Beta->invFFTInPlace();
-  if(Rho->getIsTransformed()) Rho->invFFTInPlace();
-
-  Alpha->setAccessMode(FFTGrid::READ);
-  Beta->setAccessMode(FFTGrid::READ);
-  Rho->setAccessMode(FFTGrid::READ);
-
-
-  FFTGrid* lambda; 
-  lambda  = createFFTGrid();
-  lambda->setType(FFTGrid::PARAMETER);
-  lambda->createRealGrid();
-  lambda->setAccessMode(FFTGrid::WRITE);
-
-  int i;
-  int rSize =  lambda->getrsize(); 
-  double ijkA, ijkB, ijkR, compVal;
-  for(i=0; i  <  rSize; i++)
-  {
-    ijkA = Alpha->getNextReal();
-    ijkB = Beta->getNextReal();
-    ijkR = Rho->getNextReal();
-    compVal = exp(ijkR)*(exp(2*ijkA-13.81551)-exp(2*ijkB-13.81551)); // -13.81551 in the exponent divides by 1 000 000
-    lambda->setNextReal(float( compVal));
-  }
-
-  Alpha->endAccess();
-  Beta->endAccess();
-  Rho->endAccess();
-
-  lambda->endAccess();
-  //lambda->writeFile(fileName,simbox_);
-  writeToFile(fileName,  lambda, "Lame lambda");
-
-  delete lambda;
-
-  return(0);
-}
-
-int  
-Crava::computeLambdaRho(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho ,char * fileName)
-{
-  if(Alpha->getIsTransformed()) Alpha->invFFTInPlace();
-  if(Beta->getIsTransformed()) Beta->invFFTInPlace();
-  if(Rho->getIsTransformed()) Rho->invFFTInPlace();
-
-  Alpha->setAccessMode(FFTGrid::READ);
-  Beta->setAccessMode(FFTGrid::READ);
-  Rho->setAccessMode(FFTGrid::READ);
-
-
-  FFTGrid* lambdaRho; 
-  lambdaRho  = createFFTGrid();
-  lambdaRho->setType(FFTGrid::PARAMETER);
-  lambdaRho->createRealGrid();
-  lambdaRho->setAccessMode(FFTGrid::WRITE);
-
-  int i;
-  int rSize =  lambdaRho->getrsize(); 
-  double ijkA, ijkB, ijkR, compVal;
-  for(i=0; i  <  rSize; i++)
-  {
-    ijkA = Alpha->getNextReal();
-    ijkB = Beta->getNextReal();
-    ijkR = Rho->getNextReal();
-    compVal = exp(2.0*(ijkA +ijkR)-13.81551)-2.0*exp(2.0*(ijkB +ijkR)-13.81551); // -13.81551 in the exponent divides by 1e6=(1 000 000)
-    lambdaRho->setNextReal(float( compVal));
-  }
-
-  Alpha->endAccess();
-  Beta->endAccess();
-  Rho->endAccess();
-
-  lambdaRho->endAccess();
-  //lambdaRho->writeFile(fileName,simbox_);
- 
-  writeToFile(fileName,  lambdaRho, "Lambda rho");
-  delete lambdaRho;
-
-  return(0);
-}
-
-
-int  
-Crava::computeMuRho(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho ,char * fileName)
-{
-  if(Beta->getIsTransformed()) Beta->invFFTInPlace();
-  if(Rho->getIsTransformed()) Rho->invFFTInPlace();
-
-  Beta->setAccessMode(FFTGrid::READ);
-  Rho->setAccessMode(FFTGrid::READ);
-
-
-  FFTGrid* muRho; 
-  muRho  = createFFTGrid();
-  muRho->setType(FFTGrid::PARAMETER);
-  muRho->createRealGrid();
-  muRho->setAccessMode(FFTGrid::WRITE);
-
-  int i;
-  int rSize =  muRho->getrsize(); 
-  double ijkB, ijkR, compVal;
-  for(i=0; i  <  rSize; i++)
-  {
-    ijkB = Beta->getNextReal();
-    ijkR = Rho->getNextReal();
-    compVal = exp(2.0*(ijkB +ijkR)-13.81551); // -13.81551 in the exponent divides by 1e6=(1 000 000)
-    muRho->setNextReal(float( compVal));
-  }
-
-  Alpha->endAccess();
-  Beta->endAccess();
-  Rho->endAccess();
-
-  muRho->endAccess();
-  // muRho->writeFile(fileName,simbox_);
-  writeToFile(fileName,  muRho, "Mu rho");
-
-  delete muRho;
-
-  return(0);
-}
-
 
 float  
 Crava::computeWDCorrMVar (Wavelet* WD ,fftw_real* corrT)
@@ -1872,99 +1543,6 @@ Crava::copyFFTGrid(FFTFileGrid * fftGridOld)
   return(fftGrid);
 }
 
-
-void
-Crava::writePars(FFTGrid * alpha, FFTGrid * beta, FFTGrid * rho, int simNum)
-{
-  char prefix[8];
-  char postfix[8];
-  if(simNum >= 0)
-  {
-    sprintf(prefix,"sim_");
-    sprintf(postfix,"_%i",simNum+1);
-  }
-  else
-  {
-    sprintf(prefix,"pred_");
-    sprintf(postfix,"%c",'\0');
-  }
-  char fileName[MAX_STRING];
-
-  if((outputFlag_ & ModelSettings::MURHO) > 0)
-  {
-    sprintf(fileName,"%sMuRho%s",prefix, postfix);
-    computeMuRho(alpha, beta, rho, fileName);
-  }
-  if((outputFlag_ & ModelSettings::LAMBDARHO) > 0)
-  {
-    sprintf(fileName,"%sLambdaRho%s",prefix, postfix);
-    computeLambdaRho(alpha, beta, rho, fileName);
-  }
-  if((outputFlag_ & ModelSettings::LAMELAMBDA) > 0)
-  {
-    sprintf(fileName,"%sLameLambda%s",prefix, postfix);
-    computeLameLambda(alpha, beta, rho, fileName);
-  }
-  if((outputFlag_ & ModelSettings::LAMEMU) > 0)
-  {
-    sprintf(fileName,"%sLameMu%s",prefix, postfix);
-    computeLameMu(beta, rho, fileName);
-  }
-  if((outputFlag_ & ModelSettings::POISSONRATIO) > 0)
-  {
-    sprintf(fileName,"%sPoissonRatio%s",prefix, postfix);
-    computePoissonRatio(alpha, beta, fileName);
-  }
-  if((outputFlag_ & ModelSettings::AI) > 0)
-  {
-    sprintf(fileName,"%sAI%s",prefix, postfix);
-    computeAcousticImpedance(alpha, rho, fileName);
-  }
-  if((outputFlag_ & ModelSettings::SI) > 0)
-  {
-    sprintf(fileName,"%sSI%s",prefix, postfix);
-    computeShearImpedance(beta, rho, fileName);
-  }
-  if((outputFlag_ & ModelSettings::VPVSRATIO) > 0)
-  {
-    sprintf(fileName,"%sVpVsRatio%s",prefix, postfix);
-    computeVpVsRatio(alpha, beta, fileName);
-  }
-  if((outputFlag_ & ModelSettings::VP) > 0)
-  {
-    sprintf(fileName,"%sVp%s",prefix, postfix);
-    alpha->setAccessMode(FFTGrid::RANDOMACCESS);
-    alpha->expTransf();
-
-    writeToFile(fileName,alpha, "Inverted Vp");
-    if(simNum<0) //prediction, need grid unharmed.
-      alpha->logTransf();
-    alpha->endAccess();
-  }
-  if((outputFlag_ & ModelSettings::VS) > 0)
-  {
-    sprintf(fileName,"%sVs%s",prefix, postfix);
-    beta->setAccessMode(FFTGrid::RANDOMACCESS);
-    beta->expTransf();
-
-    writeToFile(fileName,  beta, "Inverted Vs");
-    if(simNum<0) //prediction, need grid unharmed.
-      beta->logTransf();
-    beta->endAccess();
-  }
-  if((outputFlag_ & ModelSettings::RHO) > 0)
-  {
-    sprintf(fileName,"%sRho%s",prefix, postfix);
-    rho->setAccessMode(FFTGrid::RANDOMACCESS);
-    rho->expTransf();
-
-    writeToFile(fileName,  rho, "Inverted density");
-    if(simNum<0) //prediction, need grid unharmed.
-      rho->logTransf();
-    rho->endAccess();
-  }
-}
-
 void
 Crava::printEnergyToScreen()
 {
@@ -1990,7 +1568,8 @@ Crava::printEnergyToScreen()
   LogKit::LogFormatted(LogKit::LOW,"\n");
 }
 
-void Crava::computeFaciesProb(FilterWellLogs *filteredlogs)
+void 
+Crava::computeFaciesProb(FilterWellLogs *filteredlogs)
 {
   if((outputFlag_ & ModelSettings::FACIESPROB) >0 || (outputFlag_ & ModelSettings::FACIESPROBRELATIVE)>0)
   {
@@ -1998,11 +1577,6 @@ void Crava::computeFaciesProb(FilterWellLogs *filteredlogs)
 
     double wall=0.0, cpu=0.0;
     TimeKit::getTime(wall,cpu);
-
-    int relative;
-    if((outputFlag_ & ModelSettings::FACIESPROBRELATIVE)>0)
-      relative = 1;
-    else relative = 0;
 
     if (simbox_->getdz() > 4.0f) { // Require this density for estimation of facies probabilities
       LogKit::LogFormatted(LogKit::LOW,"\nWARNING: The minimum sampling density is lower than 4.0. The FACIES PROBABILITIES\n");
@@ -2017,9 +1591,8 @@ void Crava::computeFaciesProb(FilterWellLogs *filteredlogs)
                           random_);
 
     int nfac = model_->getModelSettings()->getNumberOfFacies();
-    if(relative==0)
-      fprob_->makeFaciesProb(nfac,postAlpha_,postBeta_, postRho_);
-    else
+
+    if((outputFlag_ & ModelSettings::FACIESPROBRELATIVE)>0)
     {
       meanAlpha2_->subtract(postAlpha_);
       meanAlpha2_->changeSign();
@@ -2028,43 +1601,37 @@ void Crava::computeFaciesProb(FilterWellLogs *filteredlogs)
       meanRho2_->subtract(postRho_);
       meanRho2_->changeSign();
       fprob_->makeFaciesProb(nfac,meanAlpha2_,meanBeta2_,meanRho2_);
-
-    }
-    fprob_->calculateConditionalFaciesProb(wells_, nWells_);
-
-    FFTGrid *grid;
-    char fileName[MAX_STRING];
-    char postfix[20];
-    LogKit::LogFormatted(LogKit::LOW,"\nProbability cubes done\n");
-    if(relative==0)
-    {
+      fprob_->calculateConditionalFaciesProb(wells_, nWells_);
+      LogKit::LogFormatted(LogKit::LOW,"\nProbability cubes done\n");
       for(int i=0;i<nfac;i++)
       {
-        grid = fprob_->getFaciesProb(i);
-        sprintf(postfix,"_%s",model_->getModelSettings()->getFaciesName(i));
-        sprintf(fileName,"FaciesProb%s",postfix);
-        writeToFile(fileName,grid);
+        FFTGrid * grid = fprob_->getFaciesProb(i);
+        std::string fileName = std::string("FaciesProbRelative_") + model_->getModelSettings()->getFaciesName(i);
+        ParameterOutput::writeToFile(simbox_,model_,grid,fileName,"");
       }
+      delete meanAlpha2_;
+      delete meanBeta2_;
+      delete meanRho2_;
     }
     else
     {
-    for(int i=0;i<nfac;i++)
-    {
-      grid = fprob_->getFaciesProb(i);
-      sprintf(postfix,"_%s",model_->getModelSettings()->getFaciesName(i));
-      sprintf(fileName,"FaciesProbRelative%s",postfix);
-      writeToFile(fileName,grid);
-    }
-    delete meanAlpha2_;
-    delete meanBeta2_;
-    delete meanRho2_;
+      fprob_->makeFaciesProb(nfac,postAlpha_,postBeta_, postRho_);
+      fprob_->calculateConditionalFaciesProb(wells_, nWells_);
+      LogKit::LogFormatted(LogKit::LOW,"\nProbability cubes done\n");
+      for(int i=0;i<nfac;i++)
+      {
+        FFTGrid * grid = fprob_->getFaciesProb(i);
+        std::string fileName = std::string("FaciesProb_") + model_->getModelSettings()->getFaciesName(i);
+        ParameterOutput::writeToFile(simbox_,model_,grid,fileName,"");
+      }
     }
     Timings::setTimeFaciesProb(wall,cpu);
   }
 }
 
-void Crava::filterLogs(Simbox          * timeSimboxConstThick,
-                       FilterWellLogs *& filterlogs)
+void 
+Crava::filterLogs(Simbox          * timeSimboxConstThick,
+                  FilterWellLogs *& filterlogs)
 {
   double wall=0.0, cpu=0.0;
   TimeKit::getTime(wall,cpu);

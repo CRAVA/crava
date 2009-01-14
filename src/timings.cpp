@@ -16,23 +16,27 @@ Timings::reportAll(LogKit::MessageLevels logLevel)
 {
   Utils::writeHeader("Timings summary", logLevel);
 
+  double c_loadingSeismic = c_seismic_ - c_resamplingSeismic_;
+  double w_loadingSeismic = w_seismic_ - w_resamplingSeismic_;
+
   calculateRest();
 
   LogKit::LogFormatted(logLevel,"\nSection                              CPU time               Wall time");
   LogKit::LogFormatted(logLevel,"\n---------------------------------------------------------------------\n");
-  reportOne("Seismic data             ", c_seismic_         , w_seismic_          , c_total_, w_total_,logLevel);
-  reportOne("Wells                    ", c_wells_           , w_wells_            , c_total_, w_total_,logLevel);
-  reportOne("Wavelets                 ", c_wavelets_        , w_wavelets_         , c_total_, w_total_,logLevel);
-  reportOne("Prior expection          ", c_priorExpectation_, w_priorExpectation_ , c_total_, w_total_,logLevel);
-  reportOne("Prior correlation        ", c_priorCorrelation_, w_priorCorrelation_ , c_total_, w_total_,logLevel);
-  reportOne("Inversion                ", c_inversion_       , w_inversion_        , c_total_, w_total_,logLevel);
-  reportOne("Simulation               ", c_simulation_      , w_simulation_       , c_total_, w_total_,logLevel);
-  reportOne("Parameter filter         ", c_filtering_       , w_filtering_        , c_total_, w_total_,logLevel);
-  reportOne("Facies probabilities     ", c_facies_          , w_facies_           , c_total_, w_total_,logLevel);
-  reportOne("Kriging                  ", c_kriging_         , w_kriging_          , c_total_, w_total_,logLevel);
-  reportOne("Rest                     ", c_rest_            , w_rest_             , c_total_, w_total_,logLevel);
+  reportOne("Loading seismic data     ", c_loadingSeismic    , w_loadingSeismic    , c_total_, w_total_,logLevel);
+  reportOne("Resampling seismic data  ", c_resamplingSeismic_, w_resamplingSeismic_, c_total_, w_total_,logLevel);
+  reportOne("Wells                    ", c_wells_            , w_wells_            , c_total_, w_total_,logLevel);
+  reportOne("Wavelets                 ", c_wavelets_         , w_wavelets_         , c_total_, w_total_,logLevel);
+  reportOne("Prior expection          ", c_priorExpectation_ , w_priorExpectation_ , c_total_, w_total_,logLevel);
+  reportOne("Prior correlation        ", c_priorCorrelation_ , w_priorCorrelation_ , c_total_, w_total_,logLevel);
+  reportOne("Inversion                ", c_inversion_        , w_inversion_        , c_total_, w_total_,logLevel);
+  reportOne("Simulation               ", c_simulation_       , w_simulation_       , c_total_, w_total_,logLevel);
+  reportOne("Parameter filter         ", c_filtering_        , w_filtering_        , c_total_, w_total_,logLevel);
+  reportOne("Facies probabilities     ", c_facies_           , w_facies_           , c_total_, w_total_,logLevel);
+  reportOne("Kriging                  ", c_kriging_          , w_kriging_          , c_total_, w_total_,logLevel);
+  reportOne("Rest                     ", c_rest_             , w_rest_             , c_total_, w_total_,logLevel);
   LogKit::LogFormatted(logLevel,  "---------------------------------------------------------------------\n");
-  reportOne("Total                    ", c_total_           , w_total_            , c_total_, w_total_,logLevel);
+  reportOne("Total                    ", c_total_            , w_total_            , c_total_, w_total_,logLevel);
 
   LogKit::LogFormatted(LogKit::LOW,"\nTotal CPU  time used in CRAVA: %6d seconds",   static_cast<int>(c_total_));
   LogKit::LogFormatted(LogKit::LOW,"\nTotal Wall time used in CRAVA: %6d seconds\n", static_cast<int>(w_total_));
@@ -121,6 +125,14 @@ Timings::setTimeSeismic(double& wall, double& cpu)
 }
 
 void    
+Timings::setTimeResamplingSeismic(double& wall, double& cpu)
+{
+  TimeKit::getTime(wall,cpu);
+  w_resamplingSeismic_ += wall; // Sum times used to resample each cube
+  c_resamplingSeismic_ += cpu;
+}
+
+void    
 Timings::setTimeWells(double& wall, double& cpu)
 {
   TimeKit::getTime(wall,cpu);
@@ -193,38 +205,41 @@ Timings::setTimeKriging(double& wall, double& cpu)
 }
 
 
-double Timings::w_total_            = 0.0;
-double Timings::c_total_            = 0.0;
+double Timings::w_total_             = 0.0;
+double Timings::c_total_             = 0.0;
 
-double Timings::w_rest_             = 0.0;
-double Timings::c_rest_             = 0.0;
+double Timings::w_rest_              = 0.0;
+double Timings::c_rest_              = 0.0;
 
-double Timings::w_seismic_          = 0.0;
-double Timings::c_seismic_          = 0.0;
+double Timings::w_seismic_           = 0.0;
+double Timings::c_seismic_           = 0.0;
 
-double  Timings::w_wavelets_        = 0.0;
-double  Timings::c_wavelets_        = 0.0;
+double Timings::w_resamplingSeismic_ = 0.0;
+double Timings::c_resamplingSeismic_ = 0.0;
 
-double Timings::w_wells_            = 0.0;
-double Timings::c_wells_            = 0.0;
+double  Timings::w_wavelets_         = 0.0;
+double  Timings::c_wavelets_         = 0.0;
 
-double Timings::w_priorExpectation_ = 0.0;
-double Timings::c_priorExpectation_ = 0.0;
+double Timings::w_wells_             = 0.0;
+double Timings::c_wells_             = 0.0;
 
-double Timings::w_priorCorrelation_ = 0.0;
-double Timings::c_priorCorrelation_ = 0.0;
+double Timings::w_priorExpectation_  = 0.0;
+double Timings::c_priorExpectation_  = 0.0;
 
-double Timings::w_inversion_        = 0.0;
-double Timings::c_inversion_        = 0.0;
+double Timings::w_priorCorrelation_  = 0.0;
+double Timings::c_priorCorrelation_  = 0.0;
 
-double Timings::w_simulation_       = 0.0;
-double Timings::c_simulation_       = 0.0;
+double Timings::w_inversion_         = 0.0;
+double Timings::c_inversion_         = 0.0;
 
-double Timings::w_filtering_        = 0.0;
-double Timings::c_filtering_        = 0.0;
+double Timings::w_simulation_        = 0.0;
+double Timings::c_simulation_        = 0.0;
+
+double Timings::w_filtering_         = 0.0;
+double Timings::c_filtering_         = 0.0;
                 
-double Timings::w_facies_           = 0.0;
-double Timings::c_facies_           = 0.0;
+double Timings::w_facies_            = 0.0;
+double Timings::c_facies_            = 0.0;
 
-double Timings::w_kriging_          = 0.0;
-double Timings::c_kriging_          = 0.0;
+double Timings::w_kriging_           = 0.0;
+double Timings::c_kriging_           = 0.0;

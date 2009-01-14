@@ -8,12 +8,13 @@
 
 //------------------------------------------------------------
 void
-Utils::writeHeader(const std::string & text, LogKit::MessageLevels logLevel)
+Utils::writeHeader(const std::string     & text, 
+                   LogKit::MessageLevels   logLevel)
 {
   int width = 100; // Total width of header
   std::string ruler(width,'*');
   std::string stars("*****");
-  LogKit::LogFormatted(LogKit::LOW,"\n"+ruler+"\n");
+  LogKit::LogFormatted(logLevel,"\n"+ruler+"\n");
   int starLength  = int(stars.length());
   int textLength  = int(text.length());
   int blankLength = width - textLength - 2*starLength;
@@ -23,8 +24,8 @@ Utils::writeHeader(const std::string & text, LogKit::MessageLevels logLevel)
     center = stars + blanks + text + blanks + " " + stars;
   else
     center = stars + blanks + text + blanks +stars;
-  LogKit::LogFormatted(LogKit::LOW,center+"\n");
-  LogKit::LogFormatted(LogKit::LOW,ruler+"\n");
+  LogKit::LogFormatted(logLevel,center+"\n");
+  LogKit::LogFormatted(logLevel,ruler+"\n");
 }
 
 //------------------------------------------------------------
