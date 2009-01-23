@@ -16,6 +16,7 @@ public:
   static void    setTimeWavelets(double& wall, double& cpu);
   static void    setTimePriorExpectation(double& wall, double& cpu);
   static void    setTimePriorCorrelation(double& wall, double& cpu);
+  static void    setTimeStochasticModel(double& wall, double& cpu);
   static void    setTimeInversion(double& wall, double& cpu);
   static void    setTimeSimulation(double& wall, double& cpu);
   static void    setTimeFiltering(double& wall, double& cpu);
@@ -50,6 +51,9 @@ private:
 
   static double  w_priorCorrelation_;
   static double  c_priorCorrelation_;
+
+  static double  w_stochasticModel_;
+  static double  c_stochasticModel_;
 
   static double  w_inversion_;
   static double  c_inversion_;

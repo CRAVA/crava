@@ -87,12 +87,12 @@ private:
   FFTGrid          * meanAlpha2_;       // copy of mean values, to be used for facies prob, new method 
   FFTGrid          * meanBeta2_;
   FFTGrid          * meanRho2_;
-  FFTGrid          * parSpatialCorr_;   // parameter correlation
+  //FFTGrid          * parSpatialCorr_;   // parameter correlation
   float           ** parPointCov_; 
 
   Wavelet         ** seisWavelet_;      // wavelet operator that define the forward map.
   FFTGrid         ** seisData_;         // Data
-  FFTGrid          * errCorrUnsmooth_;  // Error correlation
+  //FFTGrid          * errCorrUnsmooth_;  // Error correlation
   float           ** errThetaCov_;      //
   float              wnc_ ;             // if wnc=0.01 1% of the error wariance is white this has largest effect on
                                         // high frequency components. It makes everything run smoother we

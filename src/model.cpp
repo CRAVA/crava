@@ -267,6 +267,10 @@ Model::~Model(void)
     delete [] faciesEstimInterval_;
   }
 
+  for(int i = 0;i<modelSettings_->getNumberOfAngles();i++)
+    delete [] reflectionMatrix_[i] ;
+  delete [] reflectionMatrix_ ;
+
   if (correlations_ != NULL)
     delete correlations_;
 

@@ -11,6 +11,7 @@ using std::ofstream;
 #include "nrlib/segy/segy.hpp"
 #include "lib/lib_misc.h"
 #include "lib/random.h"
+#include "lib/timekit.hpp"
 
 #include "fft/include/fftw.h"
 #include "fft/include/rfftw.h"
@@ -25,6 +26,7 @@ using std::ofstream;
 #include "src/corr.h"
 #include "src/simbox.h"
 #include "src/model.h"
+#include "src/timings.h"
 #include "src/definitions.h"
 #include "src/gridmapping.h"
 
@@ -140,6 +142,9 @@ FFTGrid::fillInFromSegY(SegY* segy, Simbox *simbox)
       }
   } // endif
 
+  double wall=0.0, cpu=0.0;
+  TimeKit::getTime(wall,cpu);
+
   LogKit::LogFormatted(LogKit::LOW,"\nResampling seismic data into %dx%dx%d grid:",nxp_,nyp_,nzp_);
   setAccessMode(WRITE);
 
@@ -187,6 +192,7 @@ FFTGrid::fillInFromSegY(SegY* segy, Simbox *simbox)
   endAccess();
   if(isParameter) fftw_free(meanvalue);
 
+  Timings::setTimeResamplingSeismic(wall,cpu);
 }
 
 void

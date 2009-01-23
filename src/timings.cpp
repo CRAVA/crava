@@ -29,6 +29,7 @@ Timings::reportAll(LogKit::MessageLevels logLevel)
   reportOne("Wavelets                 ", c_wavelets_         , w_wavelets_         , c_total_, w_total_,logLevel);
   reportOne("Prior expection          ", c_priorExpectation_ , w_priorExpectation_ , c_total_, w_total_,logLevel);
   reportOne("Prior correlation        ", c_priorCorrelation_ , w_priorCorrelation_ , c_total_, w_total_,logLevel);
+  reportOne("Building stochas. model  ", c_stochasticModel_  , w_stochasticModel_  , c_total_, w_total_,logLevel);
   reportOne("Inversion                ", c_inversion_        , w_inversion_        , c_total_, w_total_,logLevel);
   reportOne("Simulation               ", c_simulation_       , w_simulation_       , c_total_, w_total_,logLevel);
   reportOne("Parameter filter         ", c_filtering_        , w_filtering_        , c_total_, w_total_,logLevel);
@@ -63,10 +64,10 @@ Timings::reportOne(const std::string & text, double cpuThis, double wallThis,
 void 
 Timings::calculateRest(void)
 {
-  w_rest_ = w_total_ - (w_seismic_ + w_wells_ + w_wavelets_ + w_priorExpectation_ + w_priorCorrelation_ 
-                        + w_inversion_ + w_simulation_ + w_filtering_ + w_facies_ + w_kriging_);
   c_rest_ = c_total_ - (c_seismic_ + c_wells_ + c_wavelets_ + c_priorExpectation_ + c_priorCorrelation_ 
-                        + c_inversion_ + c_simulation_ + w_filtering_ + w_facies_ + c_kriging_);
+                        + c_stochasticModel_ + c_inversion_ + c_simulation_ + c_filtering_ + c_facies_ + c_kriging_);
+  w_rest_ = w_total_ - (w_seismic_ + w_wells_ + w_wavelets_ + w_priorExpectation_ + w_priorCorrelation_ 
+                        + w_stochasticModel_ + w_inversion_ + w_simulation_ + w_filtering_ + w_facies_ + w_kriging_);
 }
 
 /*
@@ -165,6 +166,14 @@ Timings::setTimePriorCorrelation(double& wall, double& cpu)
 }
 
 void    
+Timings::setTimeStochasticModel(double& wall, double& cpu)
+{
+  TimeKit::getTime(wall,cpu);
+  w_stochasticModel_ = wall;
+  c_stochasticModel_ = cpu;
+}
+
+void    
 Timings::setTimeInversion(double& wall, double& cpu)
 {
   TimeKit::getTime(wall,cpu);
@@ -228,6 +237,9 @@ double Timings::c_priorExpectation_  = 0.0;
 
 double Timings::w_priorCorrelation_  = 0.0;
 double Timings::c_priorCorrelation_  = 0.0;
+
+double  Timings::w_stochasticModel_  = 0.0;
+double  Timings::c_stochasticModel_  = 0.0;
 
 double Timings::w_inversion_         = 0.0;
 double Timings::c_inversion_         = 0.0;
