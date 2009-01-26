@@ -457,10 +457,12 @@ Model::readSegyFile(char                * fileName,
       traceHeaderFormats.push_back(modelSettings->getTraceHeaderFormat());
     }
 
+
     segy = new SegY(fileName, 
                     modelSettings->getSegyOffset(), 
                     traceHeaderFormats, 
                     true); // Add standard formats to format search
+
 
     bool onlyVolume = modelSettings->getAreaParameters() != NULL; // This is now always true
     segy->ReadAllTraces(timeSimbox, 
@@ -1961,9 +1963,12 @@ Model::processWavelets(Wavelet     **& wavelet,
     char ** waveletFile = modelFile->getWaveletFile();
     float * waveScale   = modelFile->getWaveletScale();
     float * SNRatio     = modelSettings->getSNRatio();
-    
+    shiftGrids = new Surface*[modelSettings->getNumberOfAngles()];
+    gainGrids = new Surface*[modelSettings->getNumberOfAngles()];
     for(int i=0 ; i < modelSettings->getNumberOfAngles() ; i++)
     {  
+      shiftGrids[i] = NULL;
+      gainGrids[i] = NULL;
       LogKit::LogFormatted(LogKit::LOW,"\nAngle stack : %.1f deg",modelSettings->getAngle()[i]*180.0/PI);
       if (waveletFile[i][0] == '*') 
       {
@@ -2030,7 +2035,7 @@ Model::processWavelets(Wavelet     **& wavelet,
           else {
             SNRatio[i] = wavelet[i]->calculateSNRatio(timeSimbox, seisCube[i], wells, 
                                                       modelSettings->getNumberOfWells(), 
-                                                      errText, error);
+                                                      errText, error, shiftGrids[i], gainGrids[i]);
           }
         }
         else

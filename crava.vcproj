@@ -319,6 +319,10 @@
 					</FileConfiguration>
 				</File>
 				<File
+					RelativePath=".\src\covgrid2d.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\src\covgridseparated.cpp"
 					>
 				</File>
@@ -395,6 +399,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\src\kriging2d.cpp"
+					>
+				</File>
+				<File
 					RelativePath="src\krigingadmin.cpp"
 					>
 					<FileConfiguration
@@ -447,6 +455,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\src\parameteroutput.cpp"
+					>
+				</File>
+				<File
 					RelativePath="src\simbox.cpp"
 					>
 					<FileConfiguration
@@ -465,6 +477,10 @@
 							PreprocessorDefinitions=""
 						/>
 					</FileConfiguration>
+				</File>
+				<File
+					RelativePath=".\src\timings.cpp"
+					>
 				</File>
 				<File
 					RelativePath="src\vario.cpp"
@@ -3548,6 +3564,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\src\covgrid2d.h"
+					>
+				</File>
+				<File
 					RelativePath=".\src\covgridseparated.h"
 					>
 				</File>
@@ -3580,6 +3600,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\src\kriging2d.h"
+					>
+				</File>
+				<File
 					RelativePath="src\krigingAdmin.h"
 					>
 				</File>
@@ -3600,7 +3624,15 @@
 					>
 				</File>
 				<File
+					RelativePath=".\src\parameteroutput.h"
+					>
+				</File>
+				<File
 					RelativePath="src\simbox.h"
+					>
+				</File>
+				<File
+					RelativePath=".\src\timings.h"
 					>
 				</File>
 				<File

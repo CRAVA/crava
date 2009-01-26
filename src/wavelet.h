@@ -61,7 +61,7 @@ public:
                                          WellData ** wells, 
                                          int nWells, 
                                          char *errText, 
-                                         int &error); 
+                                         int &error,Surface *shift, Surface *gain, bool calclw = false); 
   void                  printVecToFile(char * fileName, fftw_real* vec ,int nzp) const;
 
   virtual void          write1DWLas3DWL() {};
@@ -92,6 +92,8 @@ protected:
   float                 getLocalGainFactor(int i, int j) const;
   int                   getWaveletLengthI();
   float                 getWaveletLengthF();
+
+  Surface* krigSurface(float *data, int nWells, WellData ** wells, Simbox *simbox, float trendval);
   
   float                 theta_;                 // the reflection angle that the wavelet correspond to
   int                   readtype_;              // how is wavelet obtained? read from file[OLD JASON SGRI] or ESTIMATE

@@ -27,6 +27,10 @@
 #include "src/fftgrid.h"
 #include "src/simbox.h"
 
+#include "src/kriging2d.h"
+#include "src/covgrid2d.h"
+#include "nrlib/grid/grid2d.hpp"
+
 Wavelet::Wavelet(int dim)
   : dim_(dim)
 {
@@ -426,7 +430,7 @@ Wavelet::getWaveletLengthF()
 }
 
 float         
-Wavelet::calculateSNRatio(Simbox * simbox, FFTGrid * seisCube, WellData ** wells, int nWells, char *errText, int &error)
+Wavelet::calculateSNRatio(Simbox * simbox, FFTGrid * seisCube, WellData ** wells, int nWells, char *errText, int &error, Surface *shift, Surface *gain, bool calclw)
 {
   LogKit::LogFormatted(LogKit::MEDIUM,"\n  Estimating noise from seismic data and (nonfiltered) blocked wells");
   float errStd  = 0.0f;
@@ -649,6 +653,33 @@ Wavelet::calculateSNRatio(Simbox * simbox, FFTGrid * seisCube, WellData ** wells
     }
   }  
 
+  if(calclw==true)
+  {
+    float *shiftdata = new float[nWells];
+    float *gaindata = new float[nWells];
+    int ndata = 0;
+    for(i=0;i<nWells;i++)
+    {
+      if(nActiveData[i]>0) 
+      {
+        shiftdata[ndata] = shiftWell[i];
+        gaindata[ndata] = scaleOptWell[i];
+        ndata++;
+      }
+    }
+
+    if(shift==NULL)
+      shift = krigSurface(shiftdata,ndata,wells,simbox, 0.0);
+    if(gain==NULL)
+      gain  = krigSurface(gaindata,ndata,wells,simbox, 1.0);
+
+    std::string fileName = ModelSettings::makeFullFileName("shift");
+
+    //  if((format & FFTGrid::ASCIIFORMAT) == FFTGrid::ASCIIFORMAT)
+    NRLib2::WriteIrapClassicAsciiSurf(*shift, fileName+".irap");
+    // else  
+    //    NRLib2::WriteStormBinarySurf(*shift, fileName+".storm");
+  }
   delete [] shiftWell;
   delete [] errVarWell;
   delete [] dataVarWell;
@@ -995,3 +1026,30 @@ Wavelet::flipVec(fftw_real* vec, int n)
   delete [] tmp;
 }
 */
+
+Surface* Wavelet::krigSurface(float *data, int nWells, WellData ** wells, Simbox *simbox, float trendval)
+{
+  int *indexi = new int[nWells];
+  int *indexj = new int[nWells];
+  const double *xvec, *yvec;
+  double x,y;
+  int i, n, xind, yind;
+  for(i=0;i<nWells;i++)
+  {
+    xvec = wells[i]->getXpos(n);
+    x = xvec[0];
+    yvec = wells[i]->getYpos(n);
+    y = yvec[0];
+    simbox->getIndexes(x,y,xind,yind);
+    indexi[i] = xind;
+    indexj[i] = yind;
+  }
+  GenExpVario *vario = new GenExpVario(1.6,3000, 1000, 25);
+  CovGrid2D *cov = new CovGrid2D(vario, simbox->getnx(), simbox->getny(), float(simbox->getdx()), float(simbox->getdy()));
+  cov->writeToFile();
+  Surface *krig = new Surface(simbox->getx0(), simbox->gety0(), simbox->getlx(), simbox->getly(), simbox->getnx(), simbox->getny(), trendval);
+  Kriging2D::krigSurface(krig,data,indexi, indexj, nWells, cov);
+
+  return krig;
+
+}
