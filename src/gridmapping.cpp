@@ -250,16 +250,16 @@ GridMapping::calculateSurfaceFromVelocity(FFTGrid      * velocity,
 }
 
 void 
-GridMapping::setDepthSurfaces(char ** surfFile, 
-                              bool  & failed, 
-                              char  * errText)
+GridMapping::setDepthSurfaces(const std::vector<std::string> & surfFile, 
+                              bool                           & failed, 
+                              char                           * errText)
 {
-  if(surfFile[0]==NULL && surfFile[1]==NULL)
+  if(surfFile[0]=="" && surfFile[1]=="")
   {
     sprintf(errText,"%s Both top and base depth surfaces are missing.", errText);
     failed = 1;
   }
-  if(surfFile[0] != NULL)
+  if(surfFile[0] != "")
   {
     try {
       Surface tmpSurf = NRLib2::ReadStormSurf(surfFile[0]);
@@ -271,7 +271,7 @@ GridMapping::setDepthSurfaces(char ** surfFile,
       failed = 1;
     }
   }
-  if(surfFile[1] != NULL)
+  if(surfFile[1] != "")
   {
     try {
       Surface tmpSurf = NRLib2::ReadStormSurf(surfFile[1]);

@@ -24,6 +24,7 @@
 #include "src/fftgrid.h"
 #include "src/fftfilegrid.h"
 #include "src/gridmapping.h"
+#include "src/inputfiles.h"
 #include "src/timings.h"
 
 #include "lib/utils.h"
@@ -33,6 +34,7 @@
 #include "lib/lib_matr.h"
 #include "lib/global_def.h"
 #include "nrlib/iotools/fileio.hpp"
+#include "nrlib/iotools/stringtools.hpp"
 #include "nrlib/segy/segy.hpp"
 #include "nrlib/surface/surfaceio.hpp"
 #include "nrlib/iotools/logkit.hpp"
@@ -78,14 +80,18 @@ Model::Model(char * fileName)
 
   Simbox * timeCutSimbox  = NULL;
   Simbox * timeBGSimbox   = NULL;
-  ModelFile * modelFile   = new ModelFile(fileName);
 
-  if (modelFile->getParsingFailed()) {
+  ModelFile modelFile(fileName);
+
+  if (modelFile.getParsingFailed()) {
     failedModelFile = true;
   }
   else
   {
-    modelSettings_ = modelFile->getModelSettings();
+    InputFiles * inputFiles;
+    inputFiles     = modelFile.getInputFiles();
+    modelSettings_ = modelFile.getModelSettings();
+    
     LogKit::SetScreenLog(modelSettings_->getLogLevel());
 
     std::string logFileName = ModelSettings::makeFullFileName("logFile.txt");
@@ -98,15 +104,18 @@ Model::Model(char * fileName)
     }
     LogKit::EndBuffering();
     
-    if(modelFile->getSeedFile()==NULL)
-      randomGen_ = new RandomGen(modelFile->getSeed());
+    if(modelSettings_->getLocalWaveletVario()==NULL) 
+      modelSettings_->copyBackgroundVarioToLocalWaveletVario();
+
+    if(inputFiles->getSeedFile() == "")
+      randomGen_ = new RandomGen(modelSettings_->getSeed());
     else
-      randomGen_ = new RandomGen(modelFile->getSeedFile());
+      randomGen_ = new RandomGen(inputFiles->getSeedFile().c_str());
 
     if(modelSettings_->getNumberOfSimulations() == 0)
       modelSettings_->setOutputFlag(ModelSettings::PREDICTION); //write predicted grids. 
     
-    printSettings(modelSettings_, modelFile);
+    printSettings(modelSettings_, inputFiles);
     
     Utils::writeHeader("Reading input data");
 
@@ -114,7 +123,7 @@ Model::Model(char * fileName)
     sprintf(errText,"%c",'\0');
 
     makeTimeSimboxes(timeSimbox_, timeCutSimbox, timeBGSimbox, timeSimboxConstThick_,  //Handles correlation direction too.
-                     correlationDirection_, modelSettings_, modelFile,
+                     correlationDirection_, modelSettings_, inputFiles, 
                      errText, failedSimbox);
 
     if(!failedSimbox)
@@ -125,18 +134,18 @@ Model::Model(char * fileName)
       if (modelSettings_->getGenerateSeismic() == true)
       {
         processBackground(background_, wells_, timeSimbox_, timeBGSimbox,
-                          modelSettings_, modelFile,
+                          modelSettings_, inputFiles,
                           errText, failedBackground);
         if (!failedBackground)
         {
           processReflectionMatrix(reflectionMatrix_, background_, 
-                                  modelSettings_, modelFile, 
+                                  modelSettings_, inputFiles,
                                   errText, failedReflMat);  
           if (!failedReflMat)
           {
             processWavelets(wavelet_, seisCube_, wells_, reflectionMatrix_,
                             timeSimbox_, waveletEstimInterval_, shiftGrids_, gainGrids_,
-                            modelSettings_, modelFile, errText, failedWavelet);
+                            modelSettings_, inputFiles, errText, failedWavelet);
           }              
         }
         background_->getAlpha()->setOutputFormat(modelSettings_->getFormatFlag()); //static, controls all grids.
@@ -147,7 +156,7 @@ Model::Model(char * fileName)
         // INVERSION
         //
         processSeismic(seisCube_, timeSimbox_, 
-                       modelSettings_, modelFile, 
+                       modelSettings_, inputFiles,
                        errText, failedSeismic);
         
         if(failedSeismic==false)
@@ -157,34 +166,34 @@ Model::Model(char * fileName)
             timeCutMapping_->makeTimeTimeMapping(timeCutSimbox);
           }
           processDepthConversion(timeCutSimbox, timeSimbox_,
-                                 modelSettings_, modelFile,
+                                 modelSettings_, inputFiles,
                                  errText, failedDepthConv);
           processWells(wells_, timeSimbox_, timeBGSimbox, timeSimboxConstThick_, 
-                       seisCube_, randomGen_, modelSettings_, modelFile, 
+                       seisCube_, randomGen_, modelSettings_, inputFiles,
                        errText, failedWells);
           loadExtraSurfaces(waveletEstimInterval_, 
                             faciesEstimInterval_,
-                            timeSimbox_, modelFile,
+                            timeSimbox_, inputFiles,
                             errText, failedExtraSurf);
           if (!failedWells && !failedDepthConv)
           {
             processBackground(background_, wells_, timeSimbox_, timeBGSimbox,
-                              modelSettings_, modelFile,
+                              modelSettings_, inputFiles,
                               errText, failedBackground);
 
             if (!failedBackground)
             {
               processPriorCorrelations(correlations_, background_, wells_, timeSimbox_,
-                                       modelSettings_,modelFile,
+                                       modelSettings_, inputFiles,
                                        errText, failedPriorCorr);
               processReflectionMatrix(reflectionMatrix_, background_, 
-                                      modelSettings_, modelFile, 
+                                      modelSettings_, inputFiles, 
                                       errText, failedReflMat);
               if (!failedReflMat && !failedExtraSurf)
               {
                 processWavelets(wavelet_, seisCube_, wells_, reflectionMatrix_,
                                 timeSimbox_, waveletEstimInterval_, shiftGrids_, gainGrids_,
-                                modelSettings_, modelFile, errText, failedWavelet);
+                                modelSettings_, inputFiles, errText, failedWavelet);
               }
             }
           }
@@ -209,7 +218,6 @@ Model::Model(char * fileName)
   }
   failed_ = failedModelFile || failedLoadingModel;
   
-  delete modelFile;
   if(timeCutSimbox != NULL)
     delete timeCutSimbox;
   if(timeBGSimbox != NULL)
@@ -296,11 +304,14 @@ Model::releaseGrids(void)
 }
 
 float **
-Model::readMatrix(char * fileName, int n1, int n2, const char * readReason, char * errText)
+Model::readMatrix(const std::string & fileName, int n1, int n2, 
+                  const std::string & readReason, 
+                  char * errText)
 {
   float * tmpRes = new float[n1*n2+1];
-  FILE * inFile = fopen(fileName,"r");
-  LogKit::LogFormatted(LogKit::LOW,"Reading %s from file %s .... ",readReason, fileName);
+  FILE * inFile = fopen(fileName.c_str(),"r");
+  std::string text = "Reading "+readReason+" from file "+fileName+" .... \n";
+  LogKit::LogFormatted(LogKit::LOW,text);
   char storage[MAX_STRING];
   int index = 0;
   int error = 0;
@@ -310,7 +321,7 @@ Model::readMatrix(char * fileName, int n1, int n2, const char * readReason, char
         tmpRes[index] = float(atof(storage));
       }
       else {
-        sprintf(errText,"Found '%s' in file %s, expected a number.\n", storage, fileName);
+        sprintf(errText,"Found '%s' in file %s, expected a number.\n", storage, fileName.c_str());
         error = 1;
       }
     }
@@ -320,7 +331,7 @@ Model::readMatrix(char * fileName, int n1, int n2, const char * readReason, char
     if(index != n1*n2) {
       error = 1;
       sprintf(errText,"Found %d elements in file %s, expected %d.\n",
-        index, fileName,n1*n2);
+              index, fileName.c_str(),n1*n2);
     }
   }
 
@@ -431,7 +442,7 @@ Model::checkAvailableMemory(Simbox            * timeSimbox,
 }
 
 int
-Model::readSegyFile(char                * fileName, 
+Model::readSegyFile(const std::string   & fileName, 
                     FFTGrid            *& target, 
                     Simbox             *& timeSimbox, 
                     ModelSettings      *& modelSettings, 
@@ -504,11 +515,11 @@ Model::readSegyFile(char                * fileName,
       target->setType(gridType);
       target->fillInFromSegY(segy, timeSimbox);
       if (gridType == FFTGrid::DATA)
-        target->setAngle(modelSettings->getAngle()[i]);
+        target->setAngle(modelSettings->getAngle(i));
     }
     else
       sprintf(errText,"%sSpecified area in command AREA is larger than the data from SegY file %s\n",
-              errText,fileName);
+              errText,fileName.c_str());
   }
   if (segy != NULL)
     delete segy;
@@ -518,12 +529,12 @@ Model::readSegyFile(char                * fileName,
 
 //NBNB Following routine only to be used for parameters!
 int
-Model::readStormFile(char           * fName, 
-                     FFTGrid       *& target, 
-                     const char     * parName, 
-                     Simbox         * timeSimbox, 
-                     ModelSettings *& modelSettings, 
-                     char           * errText)
+Model::readStormFile(const std::string  & fName, 
+                     FFTGrid           *& target, 
+                     const char         * parName, 
+                     Simbox             * timeSimbox, 
+                     ModelSettings     *& modelSettings, 
+                     char               * errText)
 {
   int error = 0;
   StormContGrid *stormgrid = NULL;
@@ -581,7 +592,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
                         Simbox        *& timeSimboxConstThick,
                         Surface       *& correlationDirection,
                         ModelSettings *& modelSettings, 
-                        ModelFile      * modelFile,
+                        InputFiles     * inputFiles,
                         char           * errText,
                         bool           & failed)
 {
@@ -590,8 +601,8 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
   //
   std::string areaType = "Model file";
   std::string seismicFile("");
-  if (modelSettings_->getGenerateSeismic()==false && modelFile->getSeismicFile()!=NULL)
-    seismicFile = std::string(modelFile->getSeismicFile()[0]); // Also needed for checkAvailableMemory()
+  if (modelSettings_->getGenerateSeismic()==false && inputFiles->getNumberOfSeismicFiles() > 0)
+    seismicFile = inputFiles->getSeismicFile(0); // Also needed for checkAvailableMemory()
 
   if (modelSettings->getAreaParameters() == NULL)
   {
@@ -622,12 +633,12 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
 
   error = 0;
   setSimboxSurfaces(timeSimbox, 
-                    modelFile->getTimeSurfFile(), 
-                    modelFile->getParallelTimeSurfaces(), 
-                    modelFile->getTimeDTop(), 
-                    modelFile->getTimeLz(), 
-                    modelFile->getTimeDz(), 
-                    modelFile->getTimeNz(),
+                    inputFiles->getTimeSurfFiles(), 
+                    modelSettings->getParallelTimeSurfaces(), 
+                    modelSettings->getTimeDTop(), 
+                    modelSettings->getTimeLz(), 
+                    modelSettings->getTimeDz(), 
+                    modelSettings->getTimeNz(),
                     outputFormat,
                     outputFlag,
                     errText,
@@ -636,7 +647,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
 
   if(error == 0)
   {
-    if(modelFile->getNWaveletTransfArgs() > 0 && timeSimbox->getIsConstantThick() == true)
+    if(modelSettings->getUseLocalWavelet() && timeSimbox->getIsConstantThick())
       LogKit::LogFormatted(LogKit::WARNING,"\nWarning: LOCALWAVELET is ignored when using constant thickness in DEPTH.\n");
 
     estimateZPaddingSize(timeSimbox, modelSettings);   
@@ -670,12 +681,12 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
     //
     // Make extended time simbox
     //
-    if(modelFile->getCorrDirFile() != NULL) {
+    if(inputFiles->getCorrDirFile() != "") {
       //
       // Get correlation direction
       //
       try {
-        Surface tmpSurf = NRLib2::ReadStormSurf(modelFile->getCorrDirFile());
+        Surface tmpSurf = NRLib2::ReadStormSurf(inputFiles->getCorrDirFile());
         correlationDirection = new Surface(tmpSurf);
       }
       catch (NRLib2::Exception & e) {
@@ -765,25 +776,25 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
 }
 
 void 
-Model::setSimboxSurfaces(Simbox *& simbox, 
-                         char   ** surfFile, 
-                         bool      parallelSurfaces, 
-                         double    dTop,
-                         double    lz, 
-                         double    dz, 
-                         int       nz,
-                         int       outputFormat,
-                         int       outputFlag,
-                         char    * errText,
-                         int     & error)
+Model::setSimboxSurfaces(Simbox                        *& simbox, 
+                         const std::vector<std::string> & surfFile, 
+                         bool                             parallelSurfaces, 
+                         double                           dTop,
+                         double                           lz, 
+                         double                           dz, 
+                         int                              nz,
+                         int                              outputFormat,
+                         int                              outputFlag,
+                         char                           * errText,
+                         int                            & error)
 {
-  char * topName  = surfFile[0]; 
-  char * baseName = surfFile[1]; 
+  const std::string & topName  = surfFile[0]; 
+  const std::string & baseName = surfFile[1]; 
 
   Surface * z0Grid = NULL;
   Surface * z1Grid = NULL;
   try {
-    if (isNumber(topName)) {
+    if (NRLib2::IsNumber(topName)) {
       // Find the smallest surface that covers the simbox. For simplicity 
       // we use only four nodes (nx=ny=2).
       double xMin, xMax;
@@ -792,7 +803,7 @@ Model::setSimboxSurfaces(Simbox *& simbox,
                                   simbox->getlx(), simbox->getly(),
                                   simbox->getAngle(), 
                                   xMin,yMin,xMax,yMax);
-      z0Grid = new Surface(xMin, yMin, xMax-xMin, yMax-yMin, 2, 2, atof(topName));
+      z0Grid = new Surface(xMin, yMin, xMax-xMin, yMax-yMin, 2, 2, atof(topName.c_str()));
     } 
     else {
       Surface tmpSurf = NRLib2::ReadStormSurf(topName);
@@ -810,7 +821,7 @@ Model::setSimboxSurfaces(Simbox *& simbox,
     }
     else {
       try {
-        if (isNumber(baseName)) {
+        if (NRLib2::IsNumber(baseName)) {
           // Find the smallest surface that covers the simbox. For simplicity 
           // we use only four nodes (nx=ny=2).
           double xMin, xMax;
@@ -819,7 +830,7 @@ Model::setSimboxSurfaces(Simbox *& simbox,
                                       simbox->getlx(), simbox->getly(),
                                       simbox->getAngle(), 
                                       xMin,yMin,xMax,yMax);
-          z1Grid = new Surface(xMin, yMin, xMax-xMin, yMax-yMin, 2, 2, atof(baseName));
+          z1Grid = new Surface(xMin, yMin, xMax-xMin, yMax-yMin, 2, 2, atof(baseName.c_str()));
         }
         else {
           Surface tmpSurf = NRLib2::ReadStormSurf(baseName);
@@ -1123,17 +1134,16 @@ void
 Model::processSeismic(FFTGrid      **& seisCube,
                       Simbox        *& timeSimbox,
                       ModelSettings *& modelSettings, 
-                      ModelFile      * modelFile,
+                      InputFiles     * inputFiles,
                       char           * errText,
                       bool           & failed)
 {
   double wall=0.0, cpu=0.0;
   TimeKit::getTime(wall,cpu);
 
-  char ** seismicFile = modelFile->getSeismicFile();
   int error = 0;
 
-  if(seismicFile != NULL)
+  if(inputFiles->getNumberOfSeismicFiles() > 0)
   {
     char tmpErrText[MAX_STRING];
     bool areaInModelFile = modelSettings->getAreaParameters() != NULL;
@@ -1144,7 +1154,8 @@ Model::processSeismic(FFTGrid      **& seisCube,
     int readerror = 0;
     for (int i =0 ; i < nAngles ; i++) {
       geometry[i] = NULL;
-      readerror = readSegyFile(seismicFile[i], seisCube[i],
+      
+      readerror = readSegyFile(inputFiles->getSeismicFile(i), seisCube[i],
                                timeSimbox, modelSettings, 
                                tmpErrText, geometry[i],
                                FFTGrid::DATA, i);
@@ -1157,12 +1168,11 @@ Model::processSeismic(FFTGrid      **& seisCube,
       if(modelSettings->getDebugFlag() == 1)
       {
         char sName[100];
-        float *angles = modelSettings->getAngle();
         for(int i=0 ; i<nAngles ; i++)
         {
           sprintf(sName, "origSeis%d",i);
           std::string sgriLabel("Original seismic data for incidence angle ");
-          sgriLabel += NRLib2::ToString(angles[i]);
+          sgriLabel += NRLib2::ToString(modelSettings->getAngle(i));
           seisCube[i]->writeFile(sName, timeSimbox, sgriLabel);
         }
       }
@@ -1218,7 +1228,7 @@ Model::processWells(WellData     **& wells,
                     FFTGrid       ** seisCube,
                     RandomGen      * randomGen,
                     ModelSettings *& modelSettings, 
-                    ModelFile      * modelFile,
+                    InputFiles     * inputFiles,
                     char           * errText,
                     bool           & failed)
 {
@@ -1226,9 +1236,7 @@ Model::processWells(WellData     **& wells,
   TimeKit::getTime(wall,cpu);
   LogKit::LogFormatted(LogKit::LOW,"\nReading well data:\n");
 
-  char ** wellFile       = modelFile->getWellFile();
-  char ** headerList     = modelFile->getHeaderList();
-  bool    faciesLogGiven = modelFile->getFaciesLogGiven();
+  bool    faciesLogGiven = modelSettings->getFaciesLogGiven();
   int     nWells         = modelSettings->getNumberOfWells();
   int     nFacies        = 0;
 
@@ -1238,7 +1246,13 @@ Model::processWells(WellData     **& wells,
   sprintf(tmpErrText,"%c",'\0');
   wells = new WellData *[nWells];
   for(int i=0 ; i<nWells ; i++) {
-    wells[i] = new WellData(wellFile[i], modelSettings, headerList, faciesLogGiven, i);
+    wells[i] = new WellData(inputFiles->getWellFile(i), 
+                            inputFiles->getLogNames(),
+                            modelSettings, 
+                            modelSettings->getIndicatorFacies(i),
+                            modelSettings->getIndicatorWavelet(i),
+                            modelSettings->getIndicatorBGTrend(i),
+                            faciesLogGiven);
     if(wells[i]->checkError(tmpErrText) != 0) {
       sprintf(errText,"%s%s", errText, tmpErrText);
       error = 1;
@@ -1246,7 +1260,7 @@ Model::processWells(WellData     **& wells,
   }
 
   if (error == 0) {
-    if(modelFile->getFaciesLogGiven()) { 
+    if(modelSettings->getFaciesLogGiven()) { 
       checkFaciesNames(wells, modelSettings, tmpErrText, error);
       nFacies = modelSettings->getNumberOfFacies(); // nFacies is set in checkFaciesNames()
     }
@@ -1565,7 +1579,7 @@ Model::processBackground(Background   *& background,
                          Simbox        * timeSimbox,
                          Simbox        * timeBGSimbox,
                          ModelSettings * modelSettings, 
-                         ModelFile     * modelFile,
+                         InputFiles    * inputFiles,
                          char          * errText,
                          bool          & failed)
 {
@@ -1586,13 +1600,13 @@ Model::processBackground(Background   *& background,
     const int nxPad = modelSettings->getNXpad();
     const int nyPad = modelSettings->getNYpad();
     const int nzPad = modelSettings->getNZpad();
-    if (modelFile->getGenerateBackground()) 
+    if (modelSettings->getGenerateBackground()) 
     {
       FFTGrid * velocity = NULL;
-      if (modelFile->getBackVelFile() != NULL)
+      std::string backVelFile = inputFiles->getBackVelFile();
+      if (backVelFile != "")
         loadVelocity(velocity, timeSimbox, modelSettings_, 
-                     modelFile->getBackVelFile(), 
-                     errText, failed);
+                     backVelFile, errText, failed);
       if (!failed) 
       {
         if(modelSettings->getBackgroundVario() == NULL)
@@ -1615,25 +1629,26 @@ Model::processBackground(Background   *& background,
       const char * parName[]={"Vp background","Vs background","Rho background"};
       for(int i=0 ; i<3 ; i++)
       {
-        float  * constBack = modelFile->getConstBack();
-        char  ** backFile  = modelFile->getBackFile();
+        float constBackValue = modelSettings->getConstBackValue(i);
 
-        if(constBack[i] < 0)
+        const std::string & backFile = inputFiles->getBackFile(i);
+
+        if(constBackValue < 0)
         {
-          if(backFile[i] != NULL)
+          if(backFile.size() > 0)
           {
             char tmpErrText[MAX_STRING];
             sprintf(tmpErrText,"%c",'\0');
             int readerror = 0;
-            if(findFileType(backFile[i]) == SEGYFILE) {
+            if(findFileType(backFile) == SEGYFILE) {
               const SegyGeometry * geometry = NULL;
-              readerror = readSegyFile(backFile[i], backModel[i], 
+              readerror = readSegyFile(backFile, backModel[i], 
                                        timeSimbox, modelSettings, 
                                        tmpErrText, geometry, 
                                        FFTGrid::PARAMETER);
             }
             else
-              readerror = readStormFile(backFile[i], backModel[i], parName[i], 
+              readerror = readStormFile(backFile, backModel[i], parName[i], 
                                         timeSimbox, modelSettings,
                                         tmpErrText);
             backModel[i]->logTransf();
@@ -1641,25 +1656,25 @@ Model::processBackground(Background   *& background,
             if(readerror != 0)
             {
               sprintf(errText,"%sReading of file \'%s\' for parameter \'%s\' failed\n",
-                      errText,backFile[i],parName[i]);
+                      errText,backFile.c_str(),parName[i]);
               failed = true;
             }
           }
           else
           {
-            sprintf(errText,"%sReading of file for parameter \'%s\' failed. File pointer is NULL\n",
+            sprintf(errText,"%sReading of file for parameter \'%s\' failed. No file name is given.\n",
                     errText,parName[i]);
             failed = true;
           }
         }
-        else if(constBack[i] > 0)
+        else if(constBackValue > 0)
         {
           if(modelSettings->getFileGrid() == 1)
             backModel[i] = new FFTFileGrid(nx, ny, nz, nxPad, nyPad, nzPad);
           else
             backModel[i] = new FFTGrid(nx, ny, nz, nxPad, nyPad, nzPad);              
           backModel[i]->setType(FFTGrid::PARAMETER);
-          backModel[i]->fillInConstant(float( log( constBack[i] )));
+          backModel[i]->fillInConstant(float( log( constBackValue )));
         }
         else
         {
@@ -1682,7 +1697,7 @@ Model::processPriorCorrelations(Corr         *& correlations,
                                 WellData     ** wells,
                                 Simbox        * timeSimbox,
                                 ModelSettings * modelSettings, 
-                                ModelFile     * modelFile,
+                                InputFiles    * inputFiles,
                                 char          * errText,
                                 bool          & failed)
 {
@@ -1698,16 +1713,17 @@ Model::processPriorCorrelations(Corr         *& correlations,
     // Default NULL, indicating that estimate will be used.
     //
     float ** paramCorr = NULL;
-    char   * paramCorrFile = modelFile->getParamCorrFile();
-    if(paramCorrFile != NULL) 
+    const std::string & paramCorrFile = inputFiles->getParamCorrFile();
+
+    if(paramCorrFile != "") 
     {
       char tmpErrText[MAX_STRING];
       sprintf(tmpErrText,"%c",'\0');
       paramCorr = readMatrix(paramCorrFile, 3, 3, "parameter correlation", tmpErrText);
-      if(paramCorrFile == NULL) 
+      if(paramCorr == NULL) 
       {
         sprintf(errText,"%sReading of file \'%s\' for parameter correlation matrix failed\n%s\n",
-                errText,paramCorrFile,tmpErrText);
+                errText,paramCorrFile.c_str(),tmpErrText);
         failed = true;
       }
       LogKit::LogFormatted(LogKit::LOW,"Parameter correlation read from file.\n\n");
@@ -1846,7 +1862,7 @@ void
 Model::processReflectionMatrix(float       **& reflectionMatrix,
                                Background    * background,
                                ModelSettings * modelSettings, 
-                               ModelFile     * modelFile,                  
+                               InputFiles    * inputFiles,
                                char          * errText,
                                bool          & failed)
 {
@@ -1858,12 +1874,12 @@ Model::processReflectionMatrix(float       **& reflectionMatrix,
       modelSettings->getGenerateSeismic() || 
       (modelSettings->getOutputFlag() & ModelSettings::WAVELETS)   > 0 )
   {
-    
-    char * reflMatrFile = modelFile->getReflMatrFile();
-    if(reflMatrFile != NULL) {
+    const std::string & reflMatrFile = inputFiles->getReflMatrFile();
+
+    if(reflMatrFile != "") {
       reflectionMatrix = readMatrix(reflMatrFile, modelSettings->getNumberOfAngles(), 3, "reflection matrix", errText);
       if(reflectionMatrix == NULL) {
-        sprintf(errText,"%sReading of file \'%s\' for reflection matrix failed\n",errText,reflMatrFile);
+        sprintf(errText,"%sReading of file \'%s\' for reflection matrix failed\n",errText,reflMatrFile.c_str());
         failed = true;
       }
       LogKit::LogFormatted(LogKit::LOW,"Reflection parameters read from file.\n\n");
@@ -1872,8 +1888,7 @@ Model::processReflectionMatrix(float       **& reflectionMatrix,
       if (background != NULL) {
         setupDefaultReflectionMatrix(reflectionMatrix,
                                      background,
-                                     modelSettings,
-                                     modelFile);
+                                     modelSettings);
       }
       else {
         sprintf(errText,"%s\nFailed to set up reflection matrix. Background model is empty.\n",errText);
@@ -1886,8 +1901,7 @@ Model::processReflectionMatrix(float       **& reflectionMatrix,
 void
 Model::setupDefaultReflectionMatrix(float       **& reflectionMatrix,
                                     Background    * background,
-                                    ModelSettings * modelSettings,
-                                    ModelFile     * modelFile)
+                                    ModelSettings * modelSettings)
 {
   int i;
   float ** A = new float * [modelSettings->getNumberOfAngles()];
@@ -1897,18 +1911,18 @@ Model::setupDefaultReflectionMatrix(float       **& reflectionMatrix,
   double vsvp2 = vsvp*vsvp;
   for(i = 0; i < modelSettings->getNumberOfAngles(); i++)
   {
-    double angle = static_cast<double>(modelSettings->getAngle()[i]);
+    double angle = static_cast<double>(modelSettings->getAngle(i));
     A[i] = new float[3];
     double sint  = sin(angle);
     double sint2 = sint*sint;
-    if(modelFile->getSeisType(i) == ModelSettings::STANDARDSEIS) {  //PP
+    if(modelSettings->getSeismicType(i) == ModelSettings::STANDARDSEIS) {  //PP
       double tan2t=tan(angle)*tan(angle);
 
       A[i][0] = float((1.0 +tan2t )/2.0) ; 
       A[i][1] = float( -4*vsvp2 * sint2 );
       A[i][2] = float( (1.0-4.0*vsvp2*sint2)/2.0);
     }
-    else if(modelFile->getSeisType(i) == ModelSettings::PSSEIS) {
+    else if(modelSettings->getSeismicType(i) == ModelSettings::PSSEIS) {
       double cost  = cos(angle);
       double cosp  = sqrt(1-vsvp2*sint2);
       double fac   = 0.5*sint/cosp;
@@ -1932,7 +1946,7 @@ Model::processWavelets(Wavelet     **& wavelet,
                        Surface      ** shiftGrids,
                        Surface      ** gainGrids,
                        ModelSettings * modelSettings, 
-                       ModelFile     * modelFile,
+                       InputFiles    * inputFiles,
                        char          * errText,
                        bool          & failed)
 {
@@ -1949,8 +1963,8 @@ Model::processWavelets(Wavelet     **& wavelet,
     bool estimateStuff = false;
     for(int i=0 ; i < modelSettings->getNumberOfAngles() ; i++)
     {  
-      estimateStuff = estimateStuff || (modelFile->getWaveletFile()[i][0] == '*'); 
-      estimateStuff = estimateStuff || (modelSettings->getSNRatio()[i]==RMISSING); 
+      estimateStuff = estimateStuff || modelSettings->getEstimateWavelet(i); 
+      estimateStuff = estimateStuff || modelSettings->getEstimateSNRatio(i); 
     }
     if (estimateStuff) 
     {
@@ -1958,19 +1972,17 @@ Model::processWavelets(Wavelet     **& wavelet,
       LogKit::LogFormatted(LogKit::HIGH,"\n  Deviated wells.");
       LogKit::LogFormatted(LogKit::HIGH,"\n  Wells with too little data.");
     }
-    wavelet = new Wavelet *[modelSettings->getNumberOfAngles()];
-    
-    char ** waveletFile = modelFile->getWaveletFile();
-    float * waveScale   = modelFile->getWaveletScale();
-    float * SNRatio     = modelSettings->getSNRatio();
-    shiftGrids = new Surface*[modelSettings->getNumberOfAngles()];
-    gainGrids = new Surface*[modelSettings->getNumberOfAngles()];
+    wavelet    = new Wavelet * [modelSettings->getNumberOfAngles()];
+    shiftGrids = new Surface * [modelSettings->getNumberOfAngles()];
+    gainGrids  = new Surface * [modelSettings->getNumberOfAngles()];
+
     for(int i=0 ; i < modelSettings->getNumberOfAngles() ; i++)
     {  
+      float angle = modelSettings->getAngle(i);
       shiftGrids[i] = NULL;
-      gainGrids[i] = NULL;
-      LogKit::LogFormatted(LogKit::LOW,"\nAngle stack : %.1f deg",modelSettings->getAngle()[i]*180.0/PI);
-      if (waveletFile[i][0] == '*') 
+      gainGrids[i]  = NULL;
+      LogKit::LogFormatted(LogKit::LOW,"\nAngle stack : %.1f deg",angle*180.0/PI);
+      if (modelSettings->getEstimateWavelet(i)) 
       {
         if (timeSimbox->getdz() > 4.01f) { // Require this density for wavelet estimation
           LogKit::LogFormatted(LogKit::LOW,"\n\nWARNING: The minimum sampling density is lower than 4.0. The WAVELETS generated by \n");
@@ -1987,23 +1999,25 @@ Model::processWavelets(Wavelet     **& wavelet,
       }
       else
       {
-        int fileFormat = getWaveletFileFormat(waveletFile[i],errText);
+        const std::string & waveletFile = inputFiles->getWaveletFile(i);
+
+        int fileFormat = getWaveletFileFormat(waveletFile,errText);
         if(fileFormat < 0)
         {
-          sprintf(errText, "%s Unknown file format of file  %s.\n", errText, waveletFile[i]);
+          sprintf(errText, "%s Unknown file format of file  %s.\n", errText, waveletFile.c_str());
           error += 1;
         }
         else {
           if (fileFormat == Wavelet::SGRI)
-            wavelet[i] = new Wavelet3D(waveletFile[i], 
+            wavelet[i] = new Wavelet3D(waveletFile, 
                                        modelSettings, 
                                        timeSimbox, 
-                                       modelSettings->getAngle()[i], 
+                                       angle, 
                                        reflectionMatrix[i],
                                        error, 
                                        errText);
           else {
-            wavelet[i] = new Wavelet1D(waveletFile[i], 
+            wavelet[i] = new Wavelet1D(waveletFile, 
                                        fileFormat, 
                                        modelSettings, 
                                        reflectionMatrix[i],
@@ -2013,19 +2027,19 @@ Model::processWavelets(Wavelet     **& wavelet,
               //wavelet[i]->write1DWLas3DWL(); //Frode: For debugging and testing
               //wavelet[i]->write3DWLfrom1DWL();
               wavelet[i]->resample(static_cast<float>(timeSimbox->getdz()), timeSimbox->getnz(), 
-                                   modelSettings->getZpad(), modelSettings->getAngle()[i]);
+                                   modelSettings->getZpad(), angle);
             }
           }
         }
       }
       if (error == 0) {
-        if (waveScale[i] != RMISSING)        // If RMISSING we will later scale wavelet to get EmpSN = TheoSN.
-          wavelet[i]->scale(waveScale[i]);
+        if (modelSettings->getMatchEnergies(i)) // If true we later scale wavelet to get EmpSN = TheoSN.
+          wavelet[i]->scale(modelSettings->getWaveletScale(i));
         if ((wavelet[i]->getDim() == 3) && !timeSimbox->getIsConstantThick()) {
           sprintf(errText, "%s Simbox must have constant thickness when 3D wavelet.\n", errText);
           error += 1;
         }
-        if (SNRatio[i] == RMISSING)
+        if (modelSettings->getEstimateSNRatio(i))
         {
           if (wavelet[i]->getDim() == 3) { //Not possible to estimate signal-to-noise ratio for 3D wavelets
             sprintf(errText, "%s Estimation of signal-to-noise ratio is not possible for 3D wavelets.\n", errText);
@@ -2033,16 +2047,18 @@ Model::processWavelets(Wavelet     **& wavelet,
             error += 1;
           }
           else {
-            SNRatio[i] = wavelet[i]->calculateSNRatio(timeSimbox, seisCube[i], wells, 
-                                                      modelSettings->getNumberOfWells(), 
-                                                      errText, error, shiftGrids[i], gainGrids[i]);
+            float SNRatio = wavelet[i]->calculateSNRatio(timeSimbox, seisCube[i], wells, 
+                                                         modelSettings->getNumberOfWells(), 
+                                                         errText, error, shiftGrids[i], gainGrids[i]);
+            modelSettings->setSNRatio(i,SNRatio);
           }
         }
         else
         {
-          if (SNRatio[i] <= 1.0 || SNRatio[i] > 10.0)
+          float SNRatio = modelSettings->getSNRatio(i);
+          if (SNRatio <= 1.0f || SNRatio > 10.f)
           {
-            sprintf(errText, "%s Illegal signal-to-noise ratio of %.3f for cube %d\n", errText, SNRatio[i],i);
+            sprintf(errText, "%s Illegal signal-to-noise ratio of %.3f for cube %d\n", errText, SNRatio,i);
             sprintf(errText, "%s Ratio must be in interval 1.0 < S/N ratio < 10.0\n", errText);
             error += 1;
           }
@@ -2067,17 +2083,17 @@ Model::processWavelets(Wavelet     **& wavelet,
 }
 
 int
-Model::getWaveletFileFormat(char * fileName, char * errText)
+Model::getWaveletFileFormat(const std::string & fileName, char * errText)
 {
   int fileformat = -1;
   char* dummyStr = new char[MAX_STRING];
   // test for old file format
-  FILE* file = fopen(fileName,"r");
+  FILE* file = fopen(fileName.c_str(),"r");
   for(int i = 0; i < 5; i++)
   {
     if(fscanf(file,"%s",dummyStr) == EOF)
     {
-      sprintf(errText,"%sEnd of wavelet file %s is premature\n",errText,fileName);
+      sprintf(errText,"%sEnd of wavelet file %s is premature\n",errText,fileName.c_str());
       return 0;
     } // endif
   }  // end for i
@@ -2091,10 +2107,10 @@ Model::getWaveletFileFormat(char * fileName, char * errText)
   if(fileformat<0) // not old format
   {
     // Test for Sgri format
-    file = fopen(fileName, "r");
+    file = fopen(fileName.c_str(), "r");
     if (fscanf(file, "%s", dummyStr) == EOF)
     {
-      sprintf(errText,"%sEnd of wavelet file %s is premature\n",errText,fileName);
+      sprintf(errText,"%sEnd of wavelet file %s is premature\n",errText,fileName.c_str());
       return 0;
     }
     strcpy(targetString, "NORSAR");
@@ -2106,14 +2122,14 @@ Model::getWaveletFileFormat(char * fileName, char * errText)
 
     if (fileformat != Wavelet::SGRI) {
       // test for jason file format
-      file = fopen(fileName,"r");
+      file = fopen(fileName.c_str(),"r");
       bool lineIsComment = true; 
       while( lineIsComment ==true)
       {
         if(fscanf(file,"%s",dummyStr) == EOF)
         {
           readToEOL(file);
-          sprintf(errText,"%sEnd of wavelet file %s is premature\n",errText,fileName);
+          sprintf(errText,"%sEnd of wavelet file %s is premature\n",errText,fileName.c_str());
           return 0;
         } // endif
         else
@@ -2301,7 +2317,7 @@ void
 Model::loadExtraSurfaces(Surface  **& waveletEstimInterval,
                          Surface  **& faciesEstimInterval,
                          Simbox     * timeSimbox,
-                         ModelFile  * modelFile,
+                         InputFiles * inputFiles,
                          char       * errText,
                          bool       & failed)
 {
@@ -2314,17 +2330,16 @@ Model::loadExtraSurfaces(Surface  **& waveletEstimInterval,
   //
   // Get wavelet estimation interval
   //
-  if (modelFile->getWaveletEstIntFile() != NULL) {  
+  const std::string & topWEI  = inputFiles->getWaveletEstIntFile(0);
+  const std::string & baseWEI = inputFiles->getWaveletEstIntFile(1);
+
+  if (topWEI != "" && baseWEI != "") {  
     waveletEstimInterval = new Surface*[2];
-
-    char * topName  = modelFile->getWaveletEstIntFile()[0]; 
-    char * baseName = modelFile->getWaveletEstIntFile()[1]; 
-
     try {
-      if (isNumber(topName)) 
-        waveletEstimInterval[0] = new Surface(x0,y0,lx,ly,nx,ny,atof(topName));
+      if (NRLib2::IsNumber(topWEI)) 
+        waveletEstimInterval[0] = new Surface(x0,y0,lx,ly,nx,ny,atof(topWEI.c_str()));
       else { 
-        Surface tmpSurf = NRLib2::ReadStormSurf(topName);
+        Surface tmpSurf = NRLib2::ReadStormSurf(topWEI);
         waveletEstimInterval[0] = new Surface(tmpSurf);
       }
     }
@@ -2334,10 +2349,10 @@ Model::loadExtraSurfaces(Surface  **& waveletEstimInterval,
     }
     
     try {
-      if (isNumber(baseName)) 
-        waveletEstimInterval[1] = new Surface(x0,y0,lx,ly,nx,ny,atof(baseName));
+      if (NRLib2::IsNumber(baseWEI)) 
+        waveletEstimInterval[1] = new Surface(x0,y0,lx,ly,nx,ny,atof(baseWEI.c_str()));
       else { 
-        Surface tmpSurf = NRLib2::ReadStormSurf(baseName);
+        Surface tmpSurf = NRLib2::ReadStormSurf(baseWEI);
         waveletEstimInterval[1] = new Surface(tmpSurf);
       }
     }
@@ -2349,16 +2364,16 @@ Model::loadExtraSurfaces(Surface  **& waveletEstimInterval,
   //
   // Get facies estimation interval
   //
-  if (modelFile->getFaciesEstIntFile() != NULL) {  
+  const std::string & topFEI  = inputFiles->getFaciesEstIntFile(0);
+  const std::string & baseFEI = inputFiles->getFaciesEstIntFile(1);
 
-    char * topName  = modelFile->getFaciesEstIntFile()[0]; 
-    char * baseName = modelFile->getFaciesEstIntFile()[1]; 
-
+  if (topFEI != "" && baseFEI != "") {  
+    faciesEstimInterval = new Surface*[2];
     try {
-      if (isNumber(topName)) 
-        faciesEstimInterval[0] = new Surface(x0,y0,lx,ly,nx,ny,atof(topName));
+      if (NRLib2::IsNumber(topFEI)) 
+        faciesEstimInterval[0] = new Surface(x0,y0,lx,ly,nx,ny,atof(topFEI.c_str()));
       else { 
-        Surface tmpSurf = NRLib2::ReadStormSurf(topName);
+        Surface tmpSurf = NRLib2::ReadStormSurf(topFEI);
         faciesEstimInterval[0] = new Surface(tmpSurf);
       }
     }
@@ -2368,10 +2383,10 @@ Model::loadExtraSurfaces(Surface  **& waveletEstimInterval,
     }
 
     try {
-      if (isNumber(baseName)) 
-        faciesEstimInterval[1] = new Surface(x0,y0,lx,ly,nx,ny,atof(baseName));
+      if (NRLib2::IsNumber(baseFEI)) 
+        faciesEstimInterval[1] = new Surface(x0,y0,lx,ly,nx,ny,atof(baseFEI.c_str()));
       else { 
-        Surface tmpSurf = NRLib2::ReadStormSurf(baseName);
+        Surface tmpSurf = NRLib2::ReadStormSurf(baseFEI);
         faciesEstimInterval[1] = new Surface(tmpSurf);
       }
     }
@@ -2385,9 +2400,9 @@ Model::loadExtraSurfaces(Surface  **& waveletEstimInterval,
 // NBNB The following routine is stupid, and assumes SEGY if file 
 // does not start with 'storm_petro_binary'
 int
-Model::findFileType(char * fileName)
+Model::findFileType(const std::string & fileName)
 {
-  FILE * file = fopen(fileName,"r");
+  FILE * file = fopen(fileName.c_str(),"r");
   char header[19];
   fread(header, 1, 18, file);
   fclose(file);
@@ -2400,7 +2415,7 @@ Model::findFileType(char * fileName)
 
 void
 Model::printSettings(ModelSettings * modelSettings,
-                     ModelFile     * modelFile)
+                     InputFiles    * inputFiles)
 {
   LogKit::LogFormatted(LogKit::LOW,"\nGeneral settings:\n");
   int logLevel = modelSettings->getLogLevel();
@@ -2425,14 +2440,16 @@ Model::printSettings(ModelSettings * modelSettings,
   else
   {
     LogKit::LogFormatted(LogKit::LOW,"  Modelling mode                           : simulation\n");
-    if(modelFile->getSeedFile()==NULL) {
-      if (modelFile->getSeed() == 0)
+    if(inputFiles->getSeedFile()=="") {
+      if (modelSettings->getSeed() == 0)
         LogKit::LogFormatted(LogKit::LOW,"  Seed                                     :          0 (default seed)\n");
       else
-        LogKit::LogFormatted(LogKit::LOW,"  Seed                                     : %10d\n",modelFile->getSeed());
+        LogKit::LogFormatted(LogKit::LOW,"  Seed                                     : %10d\n",modelSettings->getSeed());
     }
     else
-      LogKit::LogFormatted(LogKit::LOW,"  Seed read from file                    : %10s\n",modelFile->getSeedFile());
+      LogKit::LogFormatted(LogKit::LOW,"  Seed read from file                      : %10s\n",inputFiles->getSeedFile().c_str());
+
+
     LogKit::LogFormatted(LogKit::LOW,"  Number of realisations                   : %10d\n",modelSettings->getNumberOfSimulations());
   }
   LogKit::LogFormatted(LogKit::LOW,"  Kriging                                  : %10s\n",(modelSettings->getKrigingParameters()==NULL ? "no" : "yes"));
@@ -2486,23 +2503,24 @@ Model::printSettings(ModelSettings * modelSettings,
   if (modelSettings->getNumberOfWells() > 0)
   {
     LogKit::LogFormatted(LogKit::LOW,"\nWell logs:\n");
-    char ** headerList = modelFile->getHeaderList();
-    if (headerList != NULL)
+    const std::vector<std::string> & logNames = inputFiles->getLogNames();
+
+    if (logNames.size() > 0)
     {
-      LogKit::LogFormatted(LogKit::LOW,"  Time                                     : %10s\n",  headerList[0]);
-      if(strcmp(uppercase(headerList[1]),"VP"    )==0 ||
-         strcmp(uppercase(headerList[1]),"LFP_VP")==0)
-        LogKit::LogFormatted(LogKit::LOW,"  p-wave velocity                          : %10s\n",headerList[1]);
+      LogKit::LogFormatted(LogKit::LOW,"  Time                                     : %10s\n",  logNames[0].c_str());
+      if(NRLib2::Uppercase(logNames[1])=="VP" || 
+         NRLib2::Uppercase(logNames[1])=="LFP_VP")
+        LogKit::LogFormatted(LogKit::LOW,"  p-wave velocity                          : %10s\n",logNames[1].c_str());
       else
-        LogKit::LogFormatted(LogKit::LOW,"  Sonic                                    : %10s\n",headerList[1]);
-      if(strcmp(uppercase(headerList[3]),"VS"    )==0 || 
-         strcmp(uppercase(headerList[3]),"LFP_VS")==0)
-        LogKit::LogFormatted(LogKit::LOW,"  s-wave velocity                          : %10s\n",headerList[3]);
+        LogKit::LogFormatted(LogKit::LOW,"  Sonic                                    : %10s\n",logNames[1].c_str());
+      if(NRLib2::Uppercase(logNames[3])=="VS" || 
+         NRLib2::Uppercase(logNames[3])=="LFP_VS")
+        LogKit::LogFormatted(LogKit::LOW,"  s-wave velocity                          : %10s\n",logNames[3].c_str());
       else
-        LogKit::LogFormatted(LogKit::LOW,"  Shear sonic                              : %10s\n",headerList[3]);
-      LogKit::LogFormatted(LogKit::LOW,"  Density                                  : %10s\n",  headerList[2]);
-      if (modelFile->getFaciesLogGiven())
-        LogKit::LogFormatted(LogKit::LOW,"  Facies                                   : %10s\n",headerList[4]);
+        LogKit::LogFormatted(LogKit::LOW,"  Shear sonic                              : %10s\n",logNames[3].c_str());
+      LogKit::LogFormatted(LogKit::LOW,"  Density                                  : %10s\n",  logNames[2].c_str());
+      if (modelSettings->getFaciesLogGiven())
+        LogKit::LogFormatted(LogKit::LOW,"  Facies                                   : %10s\n",logNames[4].c_str());
     }
     else
     {
@@ -2515,13 +2533,13 @@ Model::printSettings(ModelSettings * modelSettings,
     LogKit::LogFormatted(LogKit::LOW,"\nWell files:\n");
     for (int i = 0 ; i < modelSettings->getNumberOfWells() ; i++) 
     {
-      LogKit::LogFormatted(LogKit::LOW,"  %-2d                                       : %s\n",i+1,modelFile->getWellFile()[i]);
+      LogKit::LogFormatted(LogKit::LOW,"  %-2d                                       : %s\n",i+1,inputFiles->getWellFile(i).c_str());
     }
-    bool generateBackground = modelFile->getGenerateBackground();
-    bool estimateFaciesProb = modelFile->getFaciesLogGiven();
+    bool generateBackground = modelSettings->getGenerateBackground();
+    bool estimateFaciesProb = modelSettings->getFaciesLogGiven();
     bool estimateWavelet    = false;
     for (int i = 0 ; i < modelSettings->getNumberOfAngles() ; i++)
-      estimateWavelet = estimateWavelet || modelFile->getWaveletFile()[i][0] == '*';
+      estimateWavelet = estimateWavelet || modelSettings->getEstimateWavelet(i);
     if (generateBackground || estimateFaciesProb || estimateWavelet) 
     {
       LogKit::LogFormatted(LogKit::LOW,"\nUse well in estimation of:                  ");
@@ -2545,85 +2563,89 @@ Model::printSettings(ModelSettings * modelSettings,
   // SURFACES
   // 
   LogKit::LogFormatted(LogKit::LOW,"\nTime surfaces:\n");
-  if (modelFile->getParallelTimeSurfaces())
+  if (modelSettings->getParallelTimeSurfaces())
   {
-    LogKit::LogFormatted(LogKit::LOW,"  Surface                                  : %s\n",     modelFile->getTimeSurfFile()[0]);
-    LogKit::LogFormatted(LogKit::LOW,"  Shift to top surface                     : %10.1f\n", modelFile->getTimeDTop());
-    LogKit::LogFormatted(LogKit::LOW,"  Time slice                               : %10.1f\n", modelFile->getTimeLz());
-    LogKit::LogFormatted(LogKit::LOW,"  Sampling density                         : %10.1f\n", modelFile->getTimeDz());
-    LogKit::LogFormatted(LogKit::LOW,"  Number of layers                         : %10d\n",   int(modelFile->getTimeLz()/modelFile->getTimeDz()+0.5));
+    LogKit::LogFormatted(LogKit::LOW,"  Surface                                  : %s\n",     inputFiles->getTimeSurfFile(1).c_str());
+    LogKit::LogFormatted(LogKit::LOW,"  Shift to top surface                     : %10.1f\n", modelSettings->getTimeDTop());
+    LogKit::LogFormatted(LogKit::LOW,"  Time slice                               : %10.1f\n", modelSettings->getTimeLz());
+    LogKit::LogFormatted(LogKit::LOW,"  Sampling density                         : %10.1f\n", modelSettings->getTimeDz());
+    LogKit::LogFormatted(LogKit::LOW,"  Number of layers                         : %10d\n",   int(modelSettings->getTimeLz()/modelSettings->getTimeDz()+0.5));
   }
   else
   {
-    char * topName  = modelFile->getTimeSurfFile()[0]; 
-    char * baseName = modelFile->getTimeSurfFile()[1]; 
-    if (isNumber(topName))
-      LogKit::LogFormatted(LogKit::LOW,"  Start time                               : %10.2f\n",atof(topName));
-    else
-      LogKit::LogFormatted(LogKit::LOW,"  Top surface                              : %s\n",    topName);
+    const std::string & topName  = inputFiles->getTimeSurfFile(0); 
+    const std::string & baseName = inputFiles->getTimeSurfFile(1); 
 
-    if (isNumber(baseName))
-      LogKit::LogFormatted(LogKit::LOW,"  Stop time                                : %10.2f\n",atof(baseName));
+    if (NRLib2::IsNumber(topName))
+      LogKit::LogFormatted(LogKit::LOW,"  Start time                               : %10.2f\n",atof(topName.c_str()));
     else
-      LogKit::LogFormatted(LogKit::LOW,"  Base surface                             : %s\n",     baseName);
-      LogKit::LogFormatted(LogKit::LOW,"  Number of layers                         : %10d\n",   modelFile->getTimeNz());
+      LogKit::LogFormatted(LogKit::LOW,"  Top surface                              : %s\n",    topName.c_str());
+
+    if (NRLib2::IsNumber(baseName))
+      LogKit::LogFormatted(LogKit::LOW,"  Stop time                                : %10.2f\n", atof(baseName.c_str()));
+    else
+      LogKit::LogFormatted(LogKit::LOW,"  Base surface                             : %s\n",   baseName.c_str());
+      LogKit::LogFormatted(LogKit::LOW,"  Number of layers                         : %10d\n", modelSettings->getTimeNz());
 
     LogKit::LogFormatted(LogKit::LOW,"  Minimum allowed value for lmin/lmax      : %10.2f\n", modelSettings->getLzLimit());
   }
-  if (modelFile->getCorrDirFile() != NULL)
-    LogKit::LogFormatted(LogKit::LOW,"\n  Correlation direction                    : %10s\n",   modelFile->getCorrDirFile());
+  if (inputFiles->getCorrDirFile() != "")
+    LogKit::LogFormatted(LogKit::LOW,"\n  Correlation direction                    : %10s\n", inputFiles->getCorrDirFile().c_str());
 
-  if (modelFile->getDoDepthConversion())
+  if (modelSettings->getDoDepthConversion())
   {
     LogKit::LogFormatted(LogKit::LOW,"\nDepth conversion:\n");
-    if (modelFile->getDepthSurfFile()[0] != NULL)
-      LogKit::LogFormatted(LogKit::LOW,"  Top depth surface                        : %s\n", modelFile->getDepthSurfFile()[0]);
+    if (inputFiles->getDepthSurfFile(0) != "")
+      LogKit::LogFormatted(LogKit::LOW,"  Top depth surface                        : %s\n", inputFiles->getDepthSurfFile(0).c_str());
     else
       LogKit::LogFormatted(LogKit::LOW,"  Top depth surface                        : %s\n", "Not given");
-    if (modelFile->getDepthSurfFile()[1] != NULL)
-      LogKit::LogFormatted(LogKit::LOW,"  Base depth surface                       : %s\n", modelFile->getDepthSurfFile()[1]);
+    if (inputFiles->getDepthSurfFile(1) != "")
+      LogKit::LogFormatted(LogKit::LOW,"  Base depth surface                       : %s\n", inputFiles->getDepthSurfFile(1).c_str());
     else
       LogKit::LogFormatted(LogKit::LOW,"  Base depth surface                       : %s\n", "Not given");
-    LogKit::LogFormatted(LogKit::LOW,"  Velocity field                           : %s\n", modelFile->getVelocityField());
+    LogKit::LogFormatted(LogKit::LOW,"  Velocity field                           : %s\n", inputFiles->getVelocityField().c_str());
   }
 
-  if (modelFile->getWaveletEstIntFile() != NULL) {
-    char * topName  = modelFile->getWaveletEstIntFile()[0]; 
-    char * baseName = modelFile->getWaveletEstIntFile()[1]; 
+  const std::string & topWEI  = inputFiles->getWaveletEstIntFile(0);
+  const std::string & baseWEI = inputFiles->getWaveletEstIntFile(1);
+
+  if (topWEI != "" || baseWEI != "") {
     LogKit::LogFormatted(LogKit::LOW,"\nWavelet estimation interval:\n");
-    if (isNumber(topName))
-      LogKit::LogFormatted(LogKit::LOW,"  Start time                               : %10.2f\n",atof(topName));
+    if (NRLib2::IsNumber(topWEI))
+      LogKit::LogFormatted(LogKit::LOW,"  Start time                               : %10.2f\n",atof(topWEI.c_str()));
     else
-      LogKit::LogFormatted(LogKit::LOW,"  Start time                               : %10s\n",topName);
+      LogKit::LogFormatted(LogKit::LOW,"  Start time                               : %10s\n",topWEI.c_str());
     
-    if (isNumber(baseName))
-      LogKit::LogFormatted(LogKit::LOW,"  Stop time                                : %10.2f\n",atof(baseName));
+    if (NRLib2::IsNumber(baseWEI))
+      LogKit::LogFormatted(LogKit::LOW,"  Stop time                                : %10.2f\n",atof(baseWEI.c_str()));
     else
-      LogKit::LogFormatted(LogKit::LOW,"  Stop time                                : %10s\n",baseName);
+      LogKit::LogFormatted(LogKit::LOW,"  Stop time                                : %10s\n",baseWEI.c_str());
   }
 
-  if (modelFile->getFaciesEstIntFile() != NULL) {
-    char * topName  = modelFile->getFaciesEstIntFile()[0]; 
-    char * baseName = modelFile->getFaciesEstIntFile()[1]; 
+  const std::string & topFEI  = inputFiles->getFaciesEstIntFile(0);
+  const std::string & baseFEI = inputFiles->getFaciesEstIntFile(1);
+
+  if (topFEI != "" || baseFEI != "") {
     LogKit::LogFormatted(LogKit::LOW,"\nFacies estimation interval:\n");
-    if (isNumber(topName))
-      LogKit::LogFormatted(LogKit::LOW,"  Start time                               : %10.2f\n",atof(topName));
+    if (NRLib2::IsNumber(topFEI))
+      LogKit::LogFormatted(LogKit::LOW,"  Start time                               : %10.2f\n",atof(topFEI.c_str()));
     else
-      LogKit::LogFormatted(LogKit::LOW,"  Start time                               : %10s\n",topName);
+      LogKit::LogFormatted(LogKit::LOW,"  Start time                               : %10s\n",topFEI.c_str());
     
-    if (isNumber(baseName))
-      LogKit::LogFormatted(LogKit::LOW,"  Stop time                                : %10.2f\n",atof(baseName));
+    if (NRLib2::IsNumber(baseFEI))
+      LogKit::LogFormatted(LogKit::LOW,"  Stop time                                : %10.2f\n",atof(baseFEI.c_str()));
     else
-      LogKit::LogFormatted(LogKit::LOW,"  Stop time                                : %10s\n",baseName);
+      LogKit::LogFormatted(LogKit::LOW,"  Stop time                                : %10s\n",baseFEI.c_str());
   }
 
   //
   // BACKGROUND
   //
-  if (modelFile->getGenerateBackground()) 
+  if (modelSettings->getGenerateBackground()) 
   {
     LogKit::LogFormatted(LogKit::LOW,"\nBackground model (estimated):\n");
-    LogKit::LogFormatted(LogKit::LOW,"  Trend for p-wave velocity                : %10s\n",modelFile->getBackVelFile());
+    if (inputFiles->getBackVelFile() != "")
+      LogKit::LogFormatted(LogKit::LOW,"  Trend for p-wave velocity                : %10s\n",inputFiles->getBackVelFile().c_str());
     Vario       * vario  = modelSettings->getBackgroundVario();
     GenExpVario * pVario = dynamic_cast<GenExpVario*>(vario);
     LogKit::LogFormatted(LogKit::LOW,"  Variogram\n");
@@ -2640,22 +2662,21 @@ Model::printSettings(ModelSettings * modelSettings,
   }
   else
   {
-    float * constBack = modelFile->getConstBack();
     LogKit::LogFormatted(LogKit::LOW,"\nBackground model:\n");
-    if (constBack[0] > 0)
-      LogKit::LogFormatted(LogKit::LOW,"  p-wave velocity                          : %10.1f\n",constBack[0]);
+    if (modelSettings->getConstBackValue(0) > 0)
+      LogKit::LogFormatted(LogKit::LOW,"  p-wave velocity                          : %10.1f\n",modelSettings->getConstBackValue(0));
     else
-      LogKit::LogFormatted(LogKit::LOW,"  p-wave velocity read from file           : %10s\n",modelFile->getBackFile()[0]);
+      LogKit::LogFormatted(LogKit::LOW,"  p-wave velocity read from file           : %10s\n",inputFiles->getBackFile(0).c_str());
     
-    if (constBack[1] > 0)
-      LogKit::LogFormatted(LogKit::LOW,"  s-wave velocity                          : %10.1f\n",constBack[1]);
+    if (modelSettings->getConstBackValue(1) > 0)
+      LogKit::LogFormatted(LogKit::LOW,"  s-wave velocity                          : %10.1f\n",modelSettings->getConstBackValue(1));
     else
-      LogKit::LogFormatted(LogKit::LOW,"  s-wave velocity read from file           : %10s\n",modelFile->getBackFile()[1]);
+      LogKit::LogFormatted(LogKit::LOW,"  s-wave velocity read from file           : %10s\n",inputFiles->getBackFile(1).c_str());
       
-    if (constBack[2] > 0)
-      LogKit::LogFormatted(LogKit::LOW,"  Density                                  : %10.1f\n",constBack[2]);
+    if (modelSettings->getConstBackValue(2) > 0)
+      LogKit::LogFormatted(LogKit::LOW,"  Density                                  : %10.1f\n",modelSettings->getConstBackValue(2));
     else
-      LogKit::LogFormatted(LogKit::LOW,"  Density read from file                   : %10s\n",modelFile->getBackFile()[2]);
+      LogKit::LogFormatted(LogKit::LOW,"  Density read from file                   : %10s\n",inputFiles->getBackFile(2).c_str());
   }
   if (modelSettings->getGenerateSeismic())
   {
@@ -2667,8 +2688,8 @@ Model::printSettings(ModelSettings * modelSettings,
     for (int i = 0 ; i < modelSettings->getNumberOfAngles() ; i++)
     {
       LogKit::LogFormatted(LogKit::LOW,"\nSettings for AVO stack %d:\n",i+1);
-      LogKit::LogFormatted(LogKit::LOW,"  Angle                                    : %10.1f\n",(modelSettings->getAngle()[i]*180/M_PI));
-      LogKit::LogFormatted(LogKit::LOW,"  Read wavelet from file                   : %s\n",modelFile->getWaveletFile()[i]);
+      LogKit::LogFormatted(LogKit::LOW,"  Angle                                    : %10.1f\n",(modelSettings->getAngle(i)*180/M_PI));
+      LogKit::LogFormatted(LogKit::LOW,"  Read wavelet from file                   : %s\n",inputFiles->getWaveletFile(i).c_str());
     }
   }
   else
@@ -2719,7 +2740,7 @@ Model::printSettings(ModelSettings * modelSettings,
     }
     bool estimateNoise = false;
     for (int i = 0 ; i < modelSettings->getNumberOfAngles() ; i++) {
-      estimateNoise = estimateNoise || (modelSettings->getSNRatio()[i]==RMISSING); 
+      estimateNoise = estimateNoise || modelSettings->getEstimateSNRatio(i); 
     }
     LogKit::LogFormatted(LogKit::LOW,"\nGeneral settings for wavelet:\n");
     if (estimateNoise)
@@ -2730,24 +2751,32 @@ Model::printSettings(ModelSettings * modelSettings,
     for (int i = 0 ; i < modelSettings->getNumberOfAngles() ; i++)
     {
       LogKit::LogFormatted(LogKit::LOW,"\nSettings for AVO stack %d:\n",i+1);
-      LogKit::LogFormatted(LogKit::LOW,"  Angle                                    : %10.1f\n",(modelSettings->getAngle()[i]*180/PI));
+      LogKit::LogFormatted(LogKit::LOW,"  Angle                                    : %10.1f\n",(modelSettings->getAngle(i)*180/PI));
       LogKit::LogFormatted(LogKit::LOW,"  Segy offset                              : %10.1f\n",modelSettings->getSegyOffset());
-      LogKit::LogFormatted(LogKit::LOW,"  Data                                     : %s\n",modelFile->getSeismicFile()[i]);
-      if (modelFile->getWaveletFile()[i][0] == '*')
+      LogKit::LogFormatted(LogKit::LOW,"  Data                                     : %s\n",inputFiles->getSeismicFile(i).c_str());
+      if (modelSettings->getEstimateWavelet(i))
         LogKit::LogFormatted(LogKit::LOW,"  Estimate wavelet                         : %10s\n", "yes");
       else
-        LogKit::LogFormatted(LogKit::LOW,"  Read wavelet from file                   : %s\n",modelFile->getWaveletFile()[i]);
-      
-      float * SNRatio       = modelSettings->getSNRatio();
-      bool  * matchEnergies = modelSettings->getMatchEnergies();
-      if (SNRatio[i] == RMISSING) 
+        LogKit::LogFormatted(LogKit::LOW,"  Read wavelet from file                   : %s\n",inputFiles->getWaveletFile(i).c_str());
+      if (modelSettings->getUseLocalWavelet()) {
+        bool estimateLocalWaveletData = true;
+        if (estimateLocalWaveletData) {
+          LogKit::LogFormatted(LogKit::LOW,"  Estimate local shift map                 : %10s\n", "yes");
+          LogKit::LogFormatted(LogKit::LOW,"  Estimate local gain map                  : %10s\n", "yes");
+        }
+        else {
+          LogKit::LogFormatted(LogKit::LOW,"  Local shift map                          : %10s\n", "filnavn1");
+          LogKit::LogFormatted(LogKit::LOW,"  Local gain map                           : %10s\n", "filnavn2");
+        }
+      }
+      if (modelSettings->getEstimateSNRatio(i)) 
         LogKit::LogFormatted(LogKit::LOW,"  Estimate signal-to-noise ratio           : %10s\n", "yes");
       else
-        LogKit::LogFormatted(LogKit::LOW,"  Signal-to-noise ratio                    : %10.1f\n",SNRatio[i]);
-      if (matchEnergies[i]) 
+        LogKit::LogFormatted(LogKit::LOW,"  Signal-to-noise ratio                    : %10.1f\n",modelSettings->getSNRatio(i));
+      if (modelSettings->getMatchEnergies(i)) 
         LogKit::LogFormatted(LogKit::LOW,"  Match empirical and theoretical energies : %10s\n", "yes");
       else
-        LogKit::LogFormatted(LogKit::LOW,"  Wavelet scale                            : %10.2e\n",modelFile->getWaveletScale()[i]);
+        LogKit::LogFormatted(LogKit::LOW,"  Wavelet scale                            : %10.2e\n",modelSettings->getWaveletScale(i));
     }
   }
 }
@@ -2770,35 +2799,35 @@ Model::getCorrGradIJ(float & corrGradI, float &corrGradJ) const
 
 void
 Model::processDepthConversion(Simbox        * timeCutSimbox, 
-                              Simbox        * timeSimbox_,
-                              ModelSettings * modelSettings_, 
-                              ModelFile     * modelFile,
+                              Simbox        * timeSimbox,
+                              ModelSettings * modelSettings, 
+                              InputFiles    * inputFiles,
                               char          * errText, 
                               bool          & failed)
 {
-  if(modelFile->getDoDepthConversion()) 
+  if(modelSettings->getDoDepthConversion()) 
   {
     FFTGrid * velocity = NULL;
     if(timeCutSimbox != NULL)
-      loadVelocity(velocity, timeCutSimbox, modelSettings_, 
-                   modelFile->getVelocityField(), 
+      loadVelocity(velocity, timeCutSimbox, modelSettings, 
+                   inputFiles->getVelocityField(), 
                    errText, failed);
     else
-      loadVelocity(velocity, timeSimbox_, modelSettings_, 
-                   modelFile->getVelocityField(), 
+      loadVelocity(velocity, timeSimbox, modelSettings, 
+                   inputFiles->getVelocityField(), 
                    errText, failed);
     
     if(!failed) 
     {
       timeDepthMapping_ = new GridMapping();
-      timeDepthMapping_->setDepthSurfaces(modelFile->getDepthSurfFile(), failed, errText);
+      timeDepthMapping_->setDepthSurfaces(inputFiles->getDepthSurfFiles(), failed, errText);
       if(velocity != NULL) 
       {
-        timeDepthMapping_->calculateSurfaceFromVelocity(velocity, timeSimbox_);
-        timeDepthMapping_->setDepthSimbox(timeSimbox_, timeSimbox_->getnz(), 
-                                          modelSettings_->getFormatFlag(),
+        timeDepthMapping_->calculateSurfaceFromVelocity(velocity, timeSimbox);
+        timeDepthMapping_->setDepthSimbox(timeSimbox, timeSimbox->getnz(), 
+                                          modelSettings->getFormatFlag(),
                                           failed, errText);            // NBNB-PAL: Er dettet riktig nz (timeCut vs time)? 
-        timeDepthMapping_->makeTimeDepthMapping(velocity, timeSimbox_);
+        timeDepthMapping_->makeTimeDepthMapping(velocity, timeSimbox);
       }
     }
     if(velocity != NULL)
@@ -2807,16 +2836,16 @@ Model::processDepthConversion(Simbox        * timeCutSimbox,
 }
 
 void 
-Model::loadVelocity(FFTGrid      *& velocity,
-                    Simbox        * timeSimbox,
-                    ModelSettings * modelSettings, 
-                    char          * velocityField, 
-                    char          * errText,
-                    bool          & failed)
+Model::loadVelocity(FFTGrid          *& velocity,
+                    Simbox            * timeSimbox,
+                    ModelSettings     * modelSettings, 
+                    const std::string & velocityField, 
+                    char              * errText,
+                    bool              & failed)
 {
-  if(strcmp(velocityField,"CONSTANT") == 0)
+  if(velocityField == "CONSTANT")
     velocity = NULL;
-  else if(strcmp(velocityField,"FROM_INVERSION")==0)
+  else if(velocityField == "FROM_INVERSION")
   {
     velocityFromInversion_ = true;
     velocity = NULL;
@@ -2827,6 +2856,7 @@ Model::loadVelocity(FFTGrid      *& velocity,
     char tmpErrText[MAX_STRING];
     sprintf(tmpErrText,"%c",'\0');
     int readerror = 0;
+
     if(findFileType(velocityField) == SEGYFILE) {
       const SegyGeometry * geometry = NULL;
       readerror = readSegyFile(velocityField, velocity,
@@ -2877,13 +2907,13 @@ Model::loadVelocity(FFTGrid      *& velocity,
         text += "\nThe range of allowed values can changed using the ALLOWED_PARAMETER_VALUES keyword\n";
         text += "\naborting...\n";
         sprintf(errText,"%sReading of file \'%s\' for parameter \'%s\' failed\n%s\n", 
-                errText,velocityField,parName,text.c_str());
+                errText,velocityField.c_str(),parName,text.c_str());
         failed = true;
       } 
     }
     else {
       sprintf(errText,"%sReading of file \'%s\' for parameter \'%s\' failed\n%s\n", 
-              errText,velocityField,parName,tmpErrText);
+              errText,velocityField.c_str(),parName,tmpErrText);
       failed = true;
     }
   }

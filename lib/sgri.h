@@ -7,14 +7,14 @@
 
 class Sgri : public NRLib2::Grid<float> {
 public:
-	Sgri(char * fileName, char *errText, int &errCode); //For reading
-	~Sgri();
+  Sgri(const std::string & fileName, char *errText, int &errCode); //For reading
+  ~Sgri();
 
   float              getWaveletValue(float x, float y, float z) const;
   int                sizeOk(float xLim, float yLim, float zLim);
 
 private:
-	bool				        readHeaderFile(char * fileName, char *errText, int &errCode);
+  bool				        readHeaderFile(const std::string & fileName, char *errText, int &errCode);
 	void				        readBinaryFile(int n, char *errText, int &errCode);
   void                write1DWL();
 

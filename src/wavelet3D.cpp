@@ -24,13 +24,13 @@
 #include "src/fftgrid.h"
 #include "src/simbox.h"
 
-Wavelet3D::Wavelet3D(char          * fileName, 
-                     ModelSettings * modelSettings, 
-                     Simbox        * simBox, 
-                     float           theta, 
-                     float         * reflCoef,  
-                     int           & errCode, 
-                     char          * errText)
+Wavelet3D::Wavelet3D(const std::string & fileName, 
+                     ModelSettings     * modelSettings, 
+                     Simbox            * simBox, 
+                     float               theta, 
+                     float             * reflCoef,  
+                     int               & errCode, 
+                     char              * errText)
 : Wavelet(modelSettings, 3, reflCoef)
 {
   nx_ = simBox->getnx();
@@ -57,7 +57,7 @@ Wavelet3D::Wavelet3D(char          * fileName,
 
   inFFTorder_ = true;
   readtype_ = Wavelet::SGRI;
-	Sgri *sgri = new Sgri(fileName, errText, errCode);
+  Sgri *sgri = new Sgri(fileName.c_str(), errText, errCode);
   
   if (errCode == 0) {
     float xLim = 0.5f * dx_ * nxp_;
@@ -65,35 +65,35 @@ Wavelet3D::Wavelet3D(char          * fileName,
     float zLim = 0.5f * dz_ * nzp_;
     int axisOk = sgri->sizeOk(xLim, yLim, zLim);
     if (axisOk == 1) {
-      sprintf(errText,"%s3-D wavelet read from file %s has too big size in x-direction compared to padded fft-grid.\n",errText,fileName); 
+      sprintf(errText,"%s3-D wavelet read from file %s has too big size in x-direction compared to padded fft-grid.\n",errText,fileName.c_str()); 
       errCode=1;
     }
     else if (axisOk == 2) {
-      sprintf(errText,"%s3-D wavelet read from file %s has too big size in y-direction compared to padded fft-grid.\n",errText,fileName); 
+      sprintf(errText,"%s3-D wavelet read from file %s has too big size in y-direction compared to padded fft-grid.\n",errText,fileName.c_str()); 
       errCode=1;
     }
     else if (axisOk == 3) {
-      sprintf(errText,"%s3-D wavelet read from file %s has too big size in x- and y-direction compared to padded fft-grid.\n",errText,fileName); 
+      sprintf(errText,"%s3-D wavelet read from file %s has too big size in x- and y-direction compared to padded fft-grid.\n",errText,fileName.c_str()); 
       errCode=1;
     }
     else if (axisOk == 4) {
-      sprintf(errText,"%s3-D wavelet read from file %s has too big size in z-direction compared to padded fft-grid.\n",errText,fileName); 
+      sprintf(errText,"%s3-D wavelet read from file %s has too big size in z-direction compared to padded fft-grid.\n",errText,fileName.c_str()); 
       errCode=1;
     }
     else if (axisOk == 5) {
-      sprintf(errText,"%s3-D wavelet read from file %s has too big size in x- and z-direction compared to padded fft-grid.\n",errText,fileName); 
+      sprintf(errText,"%s3-D wavelet read from file %s has too big size in x- and z-direction compared to padded fft-grid.\n",errText,fileName.c_str()); 
       errCode=1;
     }
     else if (axisOk == 6) {
-      sprintf(errText,"%s3-D wavelet read from file %s has too big size in y- and z-direction compared to padded fft-grid.\n",errText,fileName); 
+      sprintf(errText,"%s3-D wavelet read from file %s has too big size in y- and z-direction compared to padded fft-grid.\n",errText,fileName.c_str()); 
       errCode=1;
     }
     else if (axisOk == 7) {
-      sprintf(errText,"%s3-D wavelet read from file %s has too big size in x-, y- and z-direction compared to padded fft-grid.\n",errText,fileName); 
+      sprintf(errText,"%s3-D wavelet read from file %s has too big size in x-, y- and z-direction compared to padded fft-grid.\n",errText,fileName.c_str()); 
       errCode=1;
     }
     if (axisOk != 0) {
-      sprintf(errText,"%s\nToo big wavelet grid read from file  %s.\n",errText, fileName);
+      sprintf(errText,"%s\nToo big wavelet grid read from file  %s.\n",errText, fileName.c_str());
       errCode=1;
     }
   }

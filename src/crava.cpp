@@ -47,7 +47,6 @@ Crava::Crava(Model * model)
   highCut_           = model->getModelSettings()->getHighCut();
   wnc_               = model->getModelSettings()->getWNC();     // white noise component see crava.h
   energyTreshold_    = model->getModelSettings()->getEnergyThreshold();
-  theta_             = model->getModelSettings()->getAngle();
   ntheta_            = model->getModelSettings()->getNumberOfAngles();
   fileGrid_          = model->getModelSettings()->getFileGrid();
   outputFlag_        = model->getModelSettings()->getOutputFlag();
@@ -67,6 +66,7 @@ Crava::Crava(Model * model)
   postBeta_          = meanBeta_;          // Write over the input to save memory
   postRho_           = meanRho_;           // Write over the input to save memory
   fprob_             = NULL;
+  thetaDeg_          = new float[ntheta_];
   empSNRatio_        = new float[ntheta_];
   theoSNRatio_       = new float[ntheta_];
   modelVariance_     = new float[ntheta_];
@@ -78,7 +78,9 @@ Crava::Crava(Model * model)
   errThetaCov_       = new float*[ntheta_];  
   for(int i=0;i<ntheta_;i++)
     errThetaCov_[i] = new float[ntheta_]; 
-
+  for(int i=0;i<ntheta_;i++)
+    thetaDeg_[i] = static_cast<float>(model->getModelSettings()->getAngle(i)*180.0/M_PI); 
+  
   fftw_real * corrT = NULL; // =  fftw_malloc(2*(nzp_/2+1)*sizeof(fftw_real)); 
 
   // Double-use grids to save memory
@@ -127,7 +129,7 @@ Crava::Crava(Model * model)
   if(!model->getModelSettings()->getGenerateSeismic())
   {
     parSpatialCorr->fftInPlace();
-    computeVariances(corrT,model);
+    computeVariances(corrT,model->getModelSettings());
     scaleWarning_ = checkScale();  // fills in scaleWarningText_ if needed.
     fftw_free(corrT);  
     if(simbox_->getIsConstantThick() == false)
@@ -169,6 +171,7 @@ Crava::Crava(Model * model)
 
 Crava::~Crava()
 {
+  delete [] thetaDeg_;
   delete [] empSNRatio_;
   delete [] theoSNRatio_;
   delete [] modelVariance_;
@@ -226,16 +229,14 @@ Crava::computeDataVariance(void)
 }
 
 void
-Crava::setupErrorCorrelation(Model * model)
+Crava::setupErrorCorrelation(ModelSettings * modelSettings)
 {
   //
   //  Setup error correlation matrix
   //
-  float * e = model->getModelSettings()->getSNRatio() ;       
-
   for(int l=0 ; l < ntheta_ ; l++)
   {
-    empSNRatio_[l]    = e[l];
+    empSNRatio_[l]    = modelSettings->getSNRatio(l);
     errorVariance_[l] = dataVariance_[l]/empSNRatio_[l];
 
     if (empSNRatio_[l] < 1.1f) 
@@ -247,20 +248,28 @@ Crava::setupErrorCorrelation(Model * model)
     }
   }
 
-  Vario * angularCorr = model->getModelSettings()->getAngularCorr();
+  Vario * angularCorr = modelSettings->getAngularCorr();
+
   for(int i = 0; i < ntheta_; i++)
     for(int j = 0; j < ntheta_; j++) 
-      errThetaCov_[i][j] = float(sqrt(errorVariance_[i])*sqrt(errorVariance_[j])
-                                 *angularCorr->corr(theta_[i]-theta_[j],0));
+      {
+        float dTheta = modelSettings->getAngle(i) - modelSettings->getAngle(j);
+        errThetaCov_[i][j] = static_cast<float>(sqrt(errorVariance_[i])
+                                                *sqrt(errorVariance_[j])
+                                                *angularCorr->corr(dTheta,0));
+        //errThetaCov_[i][j] = static_cast<float>(sqrt(errorVariance_[i])*sqrt(errorVariance_[j])
+        //                                        *angularCorr->corr(theta_[i]-theta_[j],0));
+      }
+
 }
 
 void
-Crava::computeVariances(fftw_real * corrT,
-                        Model     * model)
+Crava::computeVariances(fftw_real     * corrT,
+                        ModelSettings * modelSettings)
 {
   computeDataVariance();
     
-  setupErrorCorrelation(model);
+  setupErrorCorrelation(modelSettings);
 
   char fileName[MAX_STRING];
   Wavelet ** errorSmooth = new Wavelet*[ntheta_];
@@ -307,7 +316,7 @@ Crava::computeVariances(fftw_real * corrT,
 
   for(int l=0 ; l < ntheta_ ; l++)
   {
-    if (model->getModelSettings()->getMatchEnergies()[l])
+    if (modelSettings->getMatchEnergies(l))
     {
       LogKit::LogFormatted(LogKit::LOW,"Matching syntethic and empirical energies:\n");
       float gain = sqrt((errorVariance_[l]/modelVariance_[l])*(empSNRatio_[l] - 1.0f));
@@ -357,13 +366,13 @@ Crava::checkScale(void)
       {
         isOk = 1;
         sprintf(scaleWarningText_,"Model inconsistency in angle %i for seismic data\n%s \n",
-          int(theta_[l]/PI*180.0+0.5),scaleWarning1);
+                int(thetaDeg_[l]+0.5),scaleWarning1);
       }
       else
       {
         isOk = 1;
         sprintf(scaleWarningText_,"%sModel inconsistency in angle %i for seismic data\n%s \n",
-          scaleWarningText_,int(theta_[l]/PI*180.0+0.5),scaleWarning1);
+                scaleWarningText_,int(thetaDeg_[l]+0.5),scaleWarning1);
       }
     }
     if( (dataVariance_[l] < 0.1 * signalVariance_[l]) && thisThetaIsOk) //1 var 0.1
@@ -373,45 +382,45 @@ Crava::checkScale(void)
       {
         isOk = 2;
         sprintf(scaleWarningText_,"Model inconsistency in angle %i for seismic data\n%s\n",
-          int(theta_[l]/PI*180.0+0.5),scaleWarning2);
+                int(thetaDeg_[l]+0.5),scaleWarning2);
       }
       else
       {
         isOk = 2;
         sprintf(scaleWarningText_,"%sModel inconsistency in angle %i for seismic data\n%s\n",
-          scaleWarningText_,int(theta_[l]/PI*180.0+0.5),scaleWarning2);
+                scaleWarningText_,int(thetaDeg_[l]+0.5),scaleWarning2);
       }
     }
     if( (modelVariance_[l] < 0.02 * errorVariance_[l]) && thisThetaIsOk)
     {
       thisThetaIsOk=false;
       if(isOk==0)
-      {
+        {
         isOk = 3;
         sprintf(scaleWarningText_,"%s for angle %i.\n",
-          scaleWarning3,int(theta_[l]/PI*180.0+0.5));
+                scaleWarning3,int(thetaDeg_[l]+0.5));
       }
       else
-      {
+        {
         isOk = 3;
         sprintf(scaleWarningText_,"%s%s for angle %i.\n",
-          scaleWarningText_,scaleWarning3,int(theta_[l]/PI*180.0+0.5));
+                scaleWarningText_,scaleWarning3,int(thetaDeg_[l]+0.5));
       }
     }
     if( (modelVariance_[l] > 50.0 * errorVariance_[l]) && thisThetaIsOk)
     {
       thisThetaIsOk=false;
       if(isOk==0)
-      {
+        {
         isOk = 4;
         sprintf(scaleWarningText_,"%s for angle %i.\n",
-          scaleWarning4,int(theta_[l]/PI*180.0+0.5) );
+                scaleWarning4,int(thetaDeg_[l]+0.5) );
       }
       else
       {
         isOk = 4;
         sprintf(scaleWarningText_,"%s%s for angle %i.\n",
-          scaleWarningText_,scaleWarning4,int(theta_[l]/PI*180.0+0.5)); 
+                scaleWarningText_,scaleWarning4,int(thetaDeg_[l]+0.5)); 
       }
     }
   }
@@ -519,12 +528,11 @@ Crava:: divideDataByScaleWavelet()
         }
       }
       char fName[200];
-      int thetaDeg = int (seisData_[l]->getTheta()/PI*180 + 0.5 );;
       if(ModelSettings::getDebugLevel() > 0)
       {
         sprintf(fName,"refl%d",l);
         std::string sgriLabel("Reflection coefficients for incidence angle ");
-        sgriLabel += NRLib2::ToString(thetaDeg);
+        sgriLabel += NRLib2::ToString(thetaDeg_[l]+0.5);
         seisData_[l]->writeFile(fName, simbox_, sgriLabel);
       }
       LogKit::LogFormatted(LogKit::LOW,"Interpolating reflections in volume %d: ",l);
@@ -533,7 +541,7 @@ Crava:: divideDataByScaleWavelet()
       {
         sprintf(fName,"reflInterpolated%d",l);
         std::string sgriLabel("Interpolated reflections for incidence angle ");
-        sgriLabel += NRLib2::ToString(thetaDeg);
+        sgriLabel += NRLib2::ToString(thetaDeg_[l]+0.5);
         seisData_[l]->writeFile(fName, simbox_, sgriLabel);
       }
       seisData_[l]->endAccess();
@@ -568,8 +576,6 @@ Crava::multiplyDataByScaleWaveletAndWriteToFile(const char* typeName)
   plan2  = rfftwnd_create_plan(1,&nzp_,FFTW_COMPLEX_TO_REAL,flag);
 
   Wavelet* localWavelet;
-  int thetaDeg;
-  
 
   for(l=0 ; l< ntheta_ ; l++ )
   {
@@ -607,8 +613,7 @@ Crava::multiplyDataByScaleWaveletAndWriteToFile(const char* typeName)
 
       }
       char fName[200];
-      thetaDeg = int ( theta_[l]/PI*180 + 0.5 );
-      sprintf(fName,"%s_%d",typeName,thetaDeg);
+      sprintf(fName,"%s_%d",typeName,int(thetaDeg_[l]+0.5));
       std::string sgriLabel(typeName);
       sgriLabel += " for incidence angle ";
       seisData_[l]->writeFile(fName, simbox_, sgriLabel);
@@ -688,25 +693,23 @@ Crava::computePostMeanResidAndFFTCov()
 
   char* fileName = new char[2400] ;
   char* fileNameW = new char[2400] ;
-  int thetaDeg;
   int cnxp  = nxp_/2+1;
 
   for(l = 0; l < ntheta_ ; l++)
   {
     seisData_[l]->setAccessMode(FFTGrid::READANDWRITE);
     if (seisWavelet_[0]->getDim() == 1) {
-      thetaDeg = int ( theta_[l]/PI*180 + 0.5 );
       errorSmooth[l]  = new Wavelet1D(seisWavelet_[l],Wavelet::FIRSTORDERFORWARDDIFF);
       errorSmooth2[l] = new Wavelet1D(errorSmooth[l], Wavelet::FIRSTORDERBACKWARDDIFF);
       errorSmooth3[l] = new Wavelet1D(errorSmooth2[l],Wavelet::FIRSTORDERCENTRALDIFF); 
-      sprintf(fileName,"ErrorSmooth_%i",thetaDeg);
+      sprintf(fileName,"ErrorSmooth_%i",int(thetaDeg_[l]+0.5));
       errorSmooth3[l]->printToFile(fileName);
       errorSmooth3[l]->fft1DInPlace();
 
-      sprintf(fileName,"Wavelet_%i",thetaDeg);
+      sprintf(fileName,"Wavelet_%i",int(thetaDeg_[l]+0.5));
       seisWavelet_[l]->printToFile(fileName);
       seisWavelet_[l]->fft1DInPlace();
-      sprintf(fileNameW,"FourierWavelet_%i",thetaDeg);
+      sprintf(fileNameW,"FourierWavelet_%i",int(thetaDeg_[l]+0.5));
       seisWavelet_[l]->printToFile(fileNameW);
       delete errorSmooth[l];
       delete errorSmooth2[l];
@@ -1017,10 +1020,9 @@ Crava::computePostMeanResidAndFFTCov()
     {
       for(l=0;l<ntheta_;l++)
       {
-        int thetaDeg = int ( theta_[l]/PI*180 + 0.5 );
-        sprintf(fileNameS,"residuals_%i",thetaDeg);
+        sprintf(fileNameS,"residuals_%i",int(thetaDeg_[l]+0.5));
         std::string sgriLabel("Residuals for incidence angle");
-        sgriLabel += NRLib2::ToString(thetaDeg);
+        sgriLabel += NRLib2::ToString(int(thetaDeg_[l]+0.5));
         seisData_[l]->setAccessMode(FFTGrid::RANDOMACCESS);
         seisData_[l]->invFFTInPlace();
         seisData_[l]->writeFile(fileNameS,simbox_, sgriLabel);
@@ -1374,17 +1376,15 @@ Crava::computeSyntSeismic(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho)
   Rho->endAccess();
 
   char* fileNameS= new char[MAX_STRING];
-  int  thetaDeg;
 
   for(l=0;l<ntheta_;l++)
   { 
     seisData[l]->endAccess();
     seisData[l]->invFFTInPlace();
 
-    thetaDeg = int (( theta_[l]/PI*180.0 + 0.5) );
-    sprintf(fileNameS,"synt_seis_%i",thetaDeg);
+    sprintf(fileNameS,"synt_seis_%i",int(thetaDeg_[l]+0.5));
     std::string sgriLabel("Synthetic seismic for incidence angle ");
-    sgriLabel += NRLib2::ToString(thetaDeg);
+    sgriLabel += NRLib2::ToString(int(thetaDeg_[l]+0.5));
     seisData[l]->writeFile(fileNameS,simbox_,sgriLabel);
     delete seisData[l];
   }
@@ -1549,15 +1549,13 @@ Crava::printEnergyToScreen()
 {
   int i;
   LogKit::LogFormatted(LogKit::LOW,"                       ");
-  for(i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::LOW,"  Seismic %4.1f ",theta_[i]/PI*180);
+  for(i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::LOW,"  Seismic %4.1f ",thetaDeg_[i]);
   LogKit::LogFormatted(LogKit::LOW,"\n----------------------");
   for(i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::LOW,"---------------");
   LogKit::LogFormatted(LogKit::LOW,"\nObserved data variance :");
   for(i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::LOW,"    %1.3e  ",dataVariance_[i]);
   LogKit::LogFormatted(LogKit::LOW,"\nModelled data variance :");
   for(i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::LOW,"    %1.3e  ",signalVariance_[i]);
-  //LogKit::LogFormatted(LogKit::LOW,"\nModel variance         :");
-  //for(i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::LOW,"    %1.3e  ",modelVariance_[i]);
   LogKit::LogFormatted(LogKit::LOW,"\nError variance         :");
   for(i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::LOW,"    %1.3e  ",errorVariance_[i]);
   LogKit::LogFormatted(LogKit::LOW,"\nWavelet scale          :");

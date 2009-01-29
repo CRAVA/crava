@@ -12,6 +12,7 @@
 #include "lib/lib_misc.h"
 
 #include "nrlib/iotools/logkit.hpp"
+#include "nrlib/iotools/stringtools.hpp"
 
 #include "src/definitions.h"
 #include "src/welldata.h"
@@ -19,11 +20,13 @@
 #include "src/model.h"
 
 //----------------------------------------------------------------------------
-WellData::WellData(const char     * wellFileName, 
-                   ModelSettings  * modelSettings,
-                   char          ** headerList,
-                   bool             faciesLogGiven,
-                   int              i)
+WellData::WellData(const std::string              & wellFileName, 
+                   const std::vector<std::string> & logNames,
+                   ModelSettings                  * modelSettings,
+                   int                              indicatorFacies,
+                   int                              indicatorWavelet,
+                   int                              indicatorBGTrend,
+                   bool                             faciesLogGiven)
   : modelSettings_(modelSettings),
     wellname_(NULL),
     wellfilename_(NULL),
@@ -43,11 +46,11 @@ WellData::WellData(const char     * wellFileName,
     blockedLogsOrigThick_(NULL),
     blockedLogsConstThick_(NULL),
     blockedLogsExtendedBG_(NULL),
-    useForFaciesProbabilities_(modelSettings->getIndicatorFacies(i)==1),
-    useForWaveletEstimation_(modelSettings->getIndicatorWavelet(i)==1),  
-    useForBackgroundTrend_(modelSettings->getIndicatorBGTrend(i)==1)
+    useForFaciesProbabilities_(indicatorFacies==1),
+    useForWaveletEstimation_(indicatorWavelet==1),  
+    useForBackgroundTrend_(indicatorBGTrend==1)
 {
-  readRMSWell(wellFileName, headerList, faciesLogGiven);
+  readRMSWell(wellFileName, logNames, faciesLogGiven);
 }
 
 //----------------------------------------------------------------------------
@@ -94,20 +97,22 @@ WellData::~WellData()
 
 //----------------------------------------------------------------------------
 void
-WellData::readRMSWell(const char * wellFileName, char **headerList, bool faciesLogGiven)
+WellData::readRMSWell(const std::string              & wellFileName, 
+                      const std::vector<std::string> & logNames, 
+                      bool                             faciesLogGiven)
 {
   error_ = 0;
-  FILE* file = fopen(wellFileName, "r");
+  FILE* file = fopen(wellFileName.c_str(), "r");
   int i,j, facies;
   double xpos, ypos, zpos, dummy;
   float alpha, beta, rho;
   sprintf(errTxt_,"%c",'\0');
   wellfilename_ = new char[MAX_STRING];
-  strcpy(wellfilename_,wellFileName);
+  strcpy(wellfilename_,wellFileName.c_str());
   if(file == 0)
   {
     error_ = 1;
-    sprintf(errTxt_,"Could not open file %s for reading.\n", wellFileName);
+    sprintf(errTxt_,"Could not open file %s for reading.\n", wellFileName.c_str());
     //NBNB Incomplete solution, but should never happen.
   }
   int nlog; // number of logs in file
@@ -127,25 +132,21 @@ WellData::readRMSWell(const char * wellFileName, char **headerList, bool faciesL
 
   int nVar = 5;       // z,alpha,beta,rho, and facies
 
-  char **parameterList;
-  int internalParamList = 0;
-  if(headerList!=NULL)
+  std::vector<std::string> parameterList;
+
+  if(logNames[0] != "") // Assume that all lognames are filled present if first is.
   {
-    parameterList = headerList; 
+    parameterList = logNames; 
     if (!faciesLogGiven)
       nVar = 4; 
   }
  else
   {
-    internalParamList = 1;
-    parameterList = new char*[nVar];
-    for(i=0;i<nVar;i++)
-      parameterList[i] = new char[20];
-    strcpy(parameterList[0],"TWT"); // Names are preliminary, to be changed
-    strcpy(parameterList[1],"DT");
-    strcpy(parameterList[2],"RHOB");
-    strcpy(parameterList[3],"DTS");
-    strcpy(parameterList[4],"FACIES");
+    parameterList[0] = "TWT"; // Names are preliminary, to be changed
+    parameterList[1] = "DT";
+    parameterList[2] = "RHOB";
+    parameterList[3] = "DTS";
+    parameterList[4] = "FACIES";
   }
   int * pos = new int[nVar];
   for(i=0;i<nVar;i++)
@@ -157,13 +158,13 @@ WellData::readRMSWell(const char * wellFileName, char **headerList, bool faciesL
     fscanf(file,"%s",tmpStr);
     for(j=0;j<nVar;j++)
     {
-      if(strcmp(uppercase(tmpStr),parameterList[j])==0)
+      if(strcmp(uppercase(tmpStr),parameterList[j].c_str())==0)
       {
         pos[j] = i + 4;
         if(j==4)
         {
           faciesLogName_ = new char[MAX_STRING];
-          strcpy(faciesLogName_,parameterList[4]);
+          strcpy(faciesLogName_,parameterList[4].c_str());
           // facies log - save names
           fscanf(file,"%s",tmpStr); // read code word DISC
           if(strcmp(tmpStr,"DISC")!=0)
@@ -199,7 +200,7 @@ WellData::readRMSWell(const char * wellFileName, char **headerList, bool faciesL
   {
     if(pos[i]==IMISSING)
     {
-      sprintf(missVar,"%s %s", missVar, parameterList[i]);
+      sprintf(missVar,"%s %s", missVar, parameterList[i].c_str());
       error_ = 1;
     }
   }
@@ -211,10 +212,10 @@ WellData::readRMSWell(const char * wellFileName, char **headerList, bool faciesL
   //
   bool vpLog = false;
   bool vsLog = false;
-  if(strcmp(uppercase(parameterList[1]),"VP"    )==0 || 
-     strcmp(uppercase(parameterList[1]),"LFP_VP")==0)  vpLog = true;
-  if(strcmp(uppercase(parameterList[3]),"VS"    )==0 || 
-     strcmp(uppercase(parameterList[3]),"LFP_VS")==0)  vsLog = true;
+  if(NRLib2::Uppercase(parameterList[1])=="VP" || NRLib2::Uppercase(parameterList[1])=="LFP_VP")  
+     vpLog = true;
+  if(NRLib2::Uppercase(parameterList[3])=="VS" || NRLib2::Uppercase(parameterList[3])=="LFP_VS")  
+     vsLog = true;
 
   if(pos[0]==IMISSING)
     timemissing_ = 1;
@@ -250,7 +251,7 @@ WellData::readRMSWell(const char * wellFileName, char **headerList, bool faciesL
   // A nicer and faster implementation for this is requested...
   //
   int logEntry = 0;
-  file = fopen(wellFileName,"r");
+  file = fopen(wellFileName.c_str(),"r");
   for(i=0;i<4+nlog;i++)
     readToEOL(file);
   while(fscanf(file,"%[^\n]\n",tmpStr) != EOF && error_ == 0)
@@ -291,11 +292,11 @@ WellData::readRMSWell(const char * wellFileName, char **headerList, bool faciesL
     }
   }
 
-  file = fopen(wellFileName,"r");
+  file = fopen(wellFileName.c_str(),"r");
   for(i=0;i<4+nlog;i++)
   {
     fscanf(file,"%s",tmpStr);
-    if(strcmp(uppercase(tmpStr),parameterList[4])==0)
+    if(strcmp(uppercase(tmpStr),parameterList[4].c_str())==0)
     {
      fscanf(file,"%s",tmpStr); // read code word DISC
       // facies types given here
@@ -425,13 +426,6 @@ WellData::readRMSWell(const char * wellFileName, char **headerList, bool faciesL
     LogKit::LogFormatted(LogKit::LOW,"ERROR: Well %s is corrupt. nd=%d log entries were expected, but only k=%d were read.\n",
                      wellfilename_,nd_,k);
     exit(1);
-  }
-
-  if(internalParamList==1)
-  {
-    for(i=0;i<nVar;i++)
-      delete [] parameterList[i];
-    delete [] parameterList;
   }
   delete [] pos;
 }

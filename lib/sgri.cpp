@@ -20,7 +20,7 @@ using std::ifstream;
 
 using namespace std;
 
-Sgri::Sgri(char * fileName, char *errText, int &errCode) :
+Sgri::Sgri(const std::string & fileName, char *errText, int &errCode) :
   NRLib2::Grid<float>(0,0,0),
   x0_(RMISSING),
   y0_(RMISSING),
@@ -63,9 +63,9 @@ Sgri::~Sgri()
 }
 
 bool
-Sgri::readHeaderFile(char * fileName, char *errText, int &errCode)
+Sgri::readHeaderFile(const std::string & fileName, char *errText, int &errCode)
 {
-  ifstream headerFile(fileName, ios::in); //checkFileOpen performed previously
+  ifstream headerFile(fileName.c_str(), ios::in); //checkFileOpen performed previously
   int i;
   bool retValue = true;
   string tmpStr;
@@ -75,7 +75,7 @@ Sgri::readHeaderFile(char * fileName, char *errText, int &errCode)
   //Reading record 2: Grid dimension
   headerFile >> dim_;
   if (dim_ < 1 || dim_ > 3) {
-    sprintf(errText,"%sError: Dimension of wavelet in file %s must be 1,2 or 3.\n", errText,fileName);
+    sprintf(errText,"%sError: Dimension of wavelet in file %s must be 1,2 or 3.\n", errText,fileName.c_str());
     errCode = 2;
     return (false);
   }
@@ -142,7 +142,7 @@ Sgri::readHeaderFile(char * fileName, char *errText, int &errCode)
   //Reading record 4+dim: Number of grids
   headerFile >> nGrid_;
   if (nGrid_ < 1) {
-    sprintf(errText,"%sError: Number of grids read from waveletfile %s must be > 0.\n", errText,fileName);
+    sprintf(errText,"%sError: Number of grids read from waveletfile %s must be > 0.\n", errText,fileName.c_str());
     errCode=2;
     return (false);
   }
@@ -232,32 +232,32 @@ Sgri::readHeaderFile(char * fileName, char *errText, int &errCode)
   }
   
   if (nX < 1) {
-    sprintf(errText,"%sError: Number of samples in X-dir in waveletfile %s must be >= 1.\n", errText,fileName);
+    sprintf(errText,"%sError: Number of samples in X-dir in waveletfile %s must be >= 1.\n", errText,fileName.c_str());
     errCode=2;
     retValue = false;
   }
   if (nY < 1) {
-    sprintf(errText,"%sError: Number of samples in Y-dir in waveletfile %s must be >= 1.\n", errText,fileName);
+    sprintf(errText,"%sError: Number of samples in Y-dir in waveletfile %s must be >= 1.\n", errText,fileName.c_str());
     errCode=2;
     retValue = false;
   }
   if (nZ < 1) {
-    sprintf(errText,"%sError: Number of samples in Z-dir in waveletfile %s must be >= 1.\n", errText,fileName);
+    sprintf(errText,"%sError: Number of samples in Z-dir in waveletfile %s must be >= 1.\n", errText,fileName.c_str());
     errCode=2;
     retValue = false;
   }
   if (xActive && (dX_ <= 0.0)) {
-    sprintf(errText,"%sError: Grid sampling in X-dir in waveletfile %s must be > 0.0.\n", errText,fileName);
+    sprintf(errText,"%sError: Grid sampling in X-dir in waveletfile %s must be > 0.0.\n", errText,fileName.c_str());
     errCode=2;
     retValue = false;
   }
   if (yActive && (dY_ <= 0.0)) {
-    sprintf(errText,"%sError: Grid sampling in Y-dir in waveletfile %s must be > 0.0.\n", errText,fileName);
+    sprintf(errText,"%sError: Grid sampling in Y-dir in waveletfile %s must be > 0.0.\n", errText,fileName.c_str());
     errCode=2;
     retValue = false;
   }  
   if (dZ_ <= 0.0) {
-    sprintf(errText,"%sError: Grid sampling in Z-dir in waveletfile %s must be > 0.0.\n", errText,fileName);
+    sprintf(errText,"%sError: Grid sampling in Z-dir in waveletfile %s must be > 0.0.\n", errText,fileName.c_str());
     errCode=2;
     retValue = false;
   }
@@ -286,7 +286,7 @@ Sgri::readHeaderFile(char * fileName, char *errText, int &errCode)
   //Reading record 12+dim+ngrid: Complex values
   headerFile >> hasComplex_;
   if (hasComplex_ != 0 && hasComplex_ != 1) {
-    sprintf(errText,"%sError: Code for complex grid in waveletfile %s must be 0 or 1.\n", errText,fileName);
+    sprintf(errText,"%sError: Code for complex grid in waveletfile %s must be 0 or 1.\n", errText,fileName.c_str());
     errCode=2;
     retValue = false;
   }

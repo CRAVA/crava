@@ -2,6 +2,7 @@
 #define RANDOM_H
 
 #include <string.h>
+#include <string>
 
 static const int MULTIPLIER = 69069;
 static const int SHIFT = 1;
@@ -12,17 +13,19 @@ static const double INVMOD = (static_cast<double>(1) / (static_cast<double>(MODU
 class RandomGen{
 public:
   RandomGen(unsigned int seed);
-  RandomGen(char *filename); //NB: Validity of filename must be externally checked
+  RandomGen(const std::string & filename); //NB: Validity of filename must be externally checked
   ~RandomGen();
+
+  int writeSeedFile(const std::string & filename) const;
+
   static double rnorm01();
-  int writeSeedFile(char *filename) const;
-static double unif01();
+  static double unif01();
 
 private:
   static double g(double x);
-  
+
   static unsigned int seed_;
-  char * seedfile_;
+  std::string         seedfile_;
 
 };
 #endif

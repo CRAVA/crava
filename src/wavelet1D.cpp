@@ -329,12 +329,12 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
   //flipUpDown(); //NB ODD temporary fix - FRODE
 }
 
-Wavelet1D::Wavelet1D(char          * fileName, 
-                     int             fileFormat, 
-                     ModelSettings * modelSettings, 
-                     float         * reflCoef,  
-                     int           & errCode, 
-                     char          * errText)
+Wavelet1D::Wavelet1D(const std::string & fileName, 
+                     int                 fileFormat, 
+                     ModelSettings     * modelSettings, 
+                     float             * reflCoef,  
+                     int               & errCode, 
+                     char              * errText)
   : Wavelet(modelSettings, 1, reflCoef)
 {
   switch (fileFormat)
@@ -526,10 +526,10 @@ Wavelet1D::~Wavelet1D()
 }
 
 void
-Wavelet1D::WaveletReadJason(char * fileName, int &errCode, char *errText)
+Wavelet1D::WaveletReadJason(const std::string & fileName, int &errCode, char *errText)
 {
   readtype_=JASON;
-  FILE* file = fopen(fileName,"r");
+  FILE* file = fopen(fileName.c_str(),"r");
   bool lineIsComment = true; 
   char* dummyStr= new char[MAX_STRING];
   while( lineIsComment ==true)
@@ -537,8 +537,10 @@ Wavelet1D::WaveletReadJason(char * fileName, int &errCode, char *errText)
     if(fscanf(file,"%s",dummyStr) == EOF)
     {
       readToEOL(file);
-      if (errCode == 0)  sprintf(errText,"Error: End of file %s premature.\n", fileName);
-      else sprintf(errText,"%sError: End of file %s premature.\n", errText,fileName);
+      if (errCode == 0)  
+        sprintf(errText,"Error: End of file %s premature.\n", fileName.c_str());
+      else 
+        sprintf(errText,"%sError: End of file %s premature.\n", errText,fileName.c_str());
       errCode=1; 
       return;
     } // endif
@@ -555,8 +557,10 @@ Wavelet1D::WaveletReadJason(char * fileName, int &errCode, char *errText)
   if(fscanf(file,"%s",dummyStr) == EOF)
   {
     readToEOL(file);
-    if (errCode == 0)  sprintf(errText,"Error: End of file %s premature.\n", fileName);
-    else sprintf(errText,"%sError: End of file %s premature.\n", errText,fileName);
+    if (errCode == 0)  
+      sprintf(errText,"Error: End of file %s premature.\n", fileName.c_str());
+    else 
+      sprintf(errText,"%sError: End of file %s premature.\n", errText,fileName.c_str());
     errCode=1; 
     return;
   } // endif
@@ -564,8 +568,10 @@ Wavelet1D::WaveletReadJason(char * fileName, int &errCode, char *errText)
   if(fscanf(file,"%s",dummyStr) == EOF)
   {
     readToEOL(file);
-    if (errCode == 0)  sprintf(errText,"Error: End of file %s premature.\n", fileName);
-    else sprintf(errText,"%sError: End of file %s premature.\n", errText,fileName);
+    if (errCode == 0)  
+      sprintf(errText,"Error: End of file %s premature.\n", fileName.c_str());
+    else 
+      sprintf(errText,"%sError: End of file %s premature.\n", errText,fileName.c_str());
     errCode=1; 
     return;
   } // endif
@@ -584,8 +590,10 @@ Wavelet1D::WaveletReadJason(char * fileName, int &errCode, char *errText)
     if(fscanf(file,"%s",dummyStr) == EOF)
     {
       readToEOL(file);
-      if (errCode == 0)  sprintf(errText,"Error: End of file %s premature.\n", fileName);
-      else sprintf(errText,"%sError: End of file %s premature.\n", errText,fileName);
+      if (errCode == 0)  
+        sprintf(errText,"Error: End of file %s premature.\n", fileName.c_str());
+      else 
+        sprintf(errText,"%sError: End of file %s premature.\n", errText,fileName.c_str());
       errCode=1; 
       return;
     } // endif
@@ -601,10 +609,10 @@ Wavelet1D::WaveletReadJason(char * fileName, int &errCode, char *errText)
 }
 
 void
-Wavelet1D::WaveletReadOld(char * fileName, int &errCode, char *errText)
+Wavelet1D::WaveletReadOld(const std::string & fileName, int & errCode, char *errText)
 {
   readtype_=OLD;
-  FILE* file = fopen(fileName,"r");
+  FILE* file = fopen(fileName.c_str(),"r");
  
   int  maxWaveletL=10000;
   
@@ -619,8 +627,10 @@ Wavelet1D::WaveletReadOld(char * fileName, int &errCode, char *errText)
   {
     if(fscanf(file,"%s",headStr) == EOF)
     {
-      if (errCode == 0)  sprintf(errText,"Error: End of file %s premature.\n", fileName);
-      else sprintf(errText,"%sError: End of file %s premature.\n", errText,fileName);
+      if (errCode == 0)  
+        sprintf(errText,"Error: End of file %s premature.\n", fileName.c_str());
+      else 
+        sprintf(errText,"%sError: End of file %s premature.\n", errText,fileName.c_str());
       errCode=1; 
     } // endif
   }  // end for i
@@ -630,8 +640,10 @@ Wavelet1D::WaveletReadOld(char * fileName, int &errCode, char *errText)
   pos = findEnd(headStr, 0, targetString);
   if(pos==-1) 
   {
-    if (errCode == 0)  sprintf(errText,"Error when reading wavelet amplitude from file  %s.\n", fileName);
-    else sprintf(errText,"%sError when reading wavelet amplitude from file  %s. \n", errText,fileName);
+    if (errCode == 0)  
+      sprintf(errText,"Error when reading wavelet amplitude from file  %s.\n", fileName.c_str());
+    else 
+      sprintf(errText,"%sError when reading wavelet amplitude from file  %s. \n", errText,fileName.c_str());
     errCode=1; 
     ampMult = RMISSING; // Dummy setting to avoid g++ warning 
   }
@@ -646,8 +658,10 @@ Wavelet1D::WaveletReadOld(char * fileName, int &errCode, char *errText)
   pos = findEnd(headStr, 0, targetString);
   if(pos==-1) 
   {
-    if (errCode == 0)  sprintf(errText,"Error when reading sampling interval from file  %s.\n", fileName);
-    else sprintf(errText,"%sError when reading sampling interval from file  %s.\n",errText,fileName);
+    if (errCode == 0)  
+      sprintf(errText,"Error when reading sampling interval from file  %s.\n", fileName.c_str());
+    else 
+      sprintf(errText,"%sError when reading sampling interval from file  %s.\n",errText,fileName.c_str());
     errCode=1; 
     dz = RMISSING; // Dummy setting to avoid g++ warning
   }
@@ -681,8 +695,10 @@ Wavelet1D::WaveletReadOld(char * fileName, int &errCode, char *errText)
     }
     else
     {
-      if (errCode == 0)  sprintf(errText,"Error in memory use when reading wavelet from file  %s.\n", fileName);
-      else  sprintf(errText,"%sError in memory use when reading wavelet from file  %s.\n",errText,fileName);
+      if (errCode == 0)  
+        sprintf(errText,"Error in memory use when reading wavelet from file  %s.\n", fileName.c_str());
+      else  
+        sprintf(errText,"%sError in memory use when reading wavelet from file  %s.\n",errText,fileName.c_str());
       errCode=1;
     }//endif
   }//endwhile
@@ -697,9 +713,9 @@ Wavelet1D::WaveletReadOld(char * fileName, int &errCode, char *errText)
     if(shift*2 == nSamples)
     {
       if (errCode == 0)  
-        sprintf(errText,"Error when reading wavelet shift from file  %s.\n    --> No SHIFT and even number of data.\n", fileName);
+        sprintf(errText,"Error when reading wavelet shift from file  %s.\n    --> No SHIFT and even number of data.\n", fileName.c_str());
       else  
-        sprintf(errText,"%sError when reading wavelet shift from file  %s.\n    --> No SHIFT and even number of data.\n",errText,fileName); 
+        sprintf(errText,"%sError when reading wavelet shift from file  %s.\n    --> No SHIFT and even number of data.\n",errText,fileName.c_str()); 
       errCode=1; 
     }
     //cz_ = shift;   // case no flip
@@ -745,7 +761,7 @@ Wavelet1D::WaveletReadOld(char * fileName, int &errCode, char *errText)
   }
 
   fftw_free(tempWave);
-  LogKit::LogFormatted(LogKit::MEDIUM,"\nReading wavelet file %s  ... done.\n",fileName);
+  LogKit::LogFormatted(LogKit::MEDIUM,"\nReading wavelet file %s  ... done.\n",fileName.c_str());
 
   //
   // Estimate wavelet length

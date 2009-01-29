@@ -12,6 +12,7 @@
 #include "nrlib/iotools/logkit.hpp"
 #include "nrlib/segy/segy.hpp"
 
+#include "src/inputfiles.h"
 #include "src/modelsettings.h"
 #include "src/modelfile.h"
 #include "src/model.h"
@@ -22,41 +23,7 @@
 ModelFile::ModelFile(char * fileName)
 {
   modelSettings_         = new ModelSettings();
-
-  seedFile_              = NULL;
-  backFile_              = NULL;
-  backVelFile_           = NULL;
-  wellFile_              = NULL;
-  headerList_            = NULL;
-  timeSurfFile_          = NULL;
-  depthSurfFile_         = NULL;
-  velocityField_         = NULL;
-  seismicFile_           = NULL;
-  waveletFile_           = NULL;
-  waveletEstIntFile_     = NULL;
-  faciesEstIntFile_      = NULL;
-  reflMatrFile_          = NULL;
-  paramCorrFile_         = NULL;
-  corrDirFile_           = NULL;
-  seisType_              = NULL;  
-  waveScale_             = NULL;
-  angle_                 = NULL; // Must be kept as class variable due to reuse of readCommandSeismic()
-  SNRatio_               = NULL; // Must be kept as class variable due to reuse of readCommandSeismic()
-  constBack_             = NULL;
-
-  nSeisData_             =  0;
-  nWaveletTransfArgs_    = -1;
-  seed_                  =  0;
-
-  time_dTop_             = 0.0; // doubles
-  time_lz_               = 0.0;
-  time_dz_               = 0.0;
-  time_nz_               = 0;
-
-  faciesLogGiven_        = false;
-  doDepthConversion_     = false;
-  parallelTimeSurfaces_  = false;
-  generateBackground_    = true;
+  inputFiles_            = new InputFiles();
   failed_                = false;
 
   char ** params;
@@ -396,7 +363,7 @@ ModelFile::ModelFile(char * fileName)
   }
   delete [] genNeed;
 
-  if(modelSettings_->getDoInversion() && nSeisData_==0 > 0) 
+  if(modelSettings_->getDoInversion() && modelSettings_->getNumberOfAngles()==0) 
   {
     strcpy(errText,"An inversion run has been requested, but no seismic data are given.\nPlease specify seismic data using keywords PP_SEISMIC or PS_SEISMIC.\n");
     errorList[nErrors] = new char[strlen(errText)+1];
@@ -404,7 +371,7 @@ ModelFile::ModelFile(char * fileName)
     nErrors++;
   }
 
-  if(modelSettings_->getAreaParameters()==NULL && nSeisData_==0 > 0) 
+  if(modelSettings_->getAreaParameters()==NULL && modelSettings_->getNumberOfAngles()==0) 
   {
     strcpy(errText,"Command AREA is required when no seismic data are given.\n");
     errorList[nErrors] = new char[strlen(errText)+1];
@@ -412,7 +379,7 @@ ModelFile::ModelFile(char * fileName)
     nErrors++;
   }
 
-  if(modelSettings_->getGenerateSeismic() && generateBackground_)
+  if(modelSettings_->getGenerateSeismic() && modelSettings_->getGenerateBackground())
   {
     strcpy(errText,"Background model and seismic cannot both be generated.\n");
     errorList[nErrors] = new char[strlen(errText)+1];
@@ -420,7 +387,7 @@ ModelFile::ModelFile(char * fileName)
     nErrors++;
   }
   
-  if(generateBackground_ && modelSettings_->getMaxHzBackground() < modelSettings_->getLowCut())
+  if(modelSettings_->getGenerateBackground() && modelSettings_->getMaxHzBackground() < modelSettings_->getLowCut())
   {
     sprintf(errText,"The frequency high cut for the background (%.1f) must be larger than the frequency low cut for the inversion (%.1f).\n",
             modelSettings_->getMaxHzBackground(),modelSettings_->getLowCut());
@@ -429,21 +396,21 @@ ModelFile::ModelFile(char * fileName)
     nErrors++;
   }
   
-  if(nWaveletTransfArgs_ > 0)
-  {
-    if(nWaveletTransfArgs_ != nSeisData_)
-    {
-      sprintf(errText,"The number of arguments in the wavelet transformations differ from the number of seismic grids (%d vs %d).\n",
-        nWaveletTransfArgs_, nSeisData_);
-      errorList[nErrors] = new char[strlen(errText)+1];
-      strcpy(errorList[nErrors], errText);
-      nErrors++;
-    }
-  }
+  //if(nWaveletTransfArgs_ > 0)
+  //{
+  //  if(nWaveletTransfArgs_ != modelSettings_->getNumberOfAngles())
+  //  {
+  //    sprintf(errText,"The number of arguments in the wavelet transformations differ from the number of seismic grids (%d vs %d).\n",
+  //      nWaveletTransfArgs_, modelSettings_->getNumberOfAngles());
+  //    errorList[nErrors] = new char[strlen(errText)+1];
+  //   strcpy(errorList[nErrors], errText);
+  //   nErrors++;
+  //  }
+  //}
 
   bool doFaciesProb         = (modelSettings_->getOutputFlag() & ModelSettings::FACIESPROB        ) > 0;
   bool doFaciesProbRelative = (modelSettings_->getOutputFlag() & ModelSettings::FACIESPROBRELATIVE) > 0;
-  if((doFaciesProb || doFaciesProbRelative) && !faciesLogGiven_)
+  if((doFaciesProb || doFaciesProbRelative) && !modelSettings_->getFaciesLogGiven())
   {
     sprintf(errText,"You cannot calculate facies probabilities without specifying a facies log for subcommand HEADER of command WELLS.\n");
       errorList[nErrors] = new char[strlen(errText)+1];
@@ -529,96 +496,7 @@ ModelFile::ModelFile(char * fileName)
 
 ModelFile::~ModelFile()
 {
-  if(wellFile_ != NULL) 
-  {
-    for(int i=0 ; i < modelSettings_->getNumberOfWells() ; i++)
-      delete [] wellFile_[i];
-    delete [] wellFile_;
-  }
-
-  if(headerList_ != NULL)
-  {
-    for(int i=0 ; i < 5 ; i++)
-      if (headerList_[i] != NULL)
-        delete [] headerList_[i];
-    delete [] headerList_;
-  }
-
-  if(timeSurfFile_ != NULL) 
-  {
-    delete [] timeSurfFile_[0];   // top surface
-    if (timeSurfFile_[1] != NULL)
-      delete [] timeSurfFile_[1]; // base surface
-    delete [] timeSurfFile_;
-  }
-  
-  if(depthSurfFile_ != NULL) 
-  {
-    if (depthSurfFile_[0] != NULL)
-      delete [] depthSurfFile_[0]; // top surface
-    if (depthSurfFile_[1] != NULL)
-      delete [] depthSurfFile_[1]; // base surface
-    delete [] depthSurfFile_;
-  }
-
-  if(velocityField_ != NULL) 
-    delete [] velocityField_;
-
-  if (seismicFile_ != NULL)
-  {
-    for(int i=0;i<nSeisData_;i++)
-      if(seismicFile_[i] != NULL)
-        delete [] seismicFile_[i];
-    delete [] seismicFile_;
-  }
-
-  if (waveletFile_ != NULL)
-  {
-    for(int i=0;i<nSeisData_;i++)
-      if(waveletFile_[i] != NULL)
-        delete [] waveletFile_[i];
-    delete [] waveletFile_;  
-  }
-
-  if(backFile_ != NULL)
-  {
-    for(int i=0;i<3;i++)
-      if(backFile_[i]!=NULL)
-        delete [] backFile_[i];
-    delete [] backFile_; 
-  }
-
-  if(backVelFile_ != NULL)
-    delete [] backVelFile_; 
-
-  if(waveletEstIntFile_ != NULL)
-  {
-    delete [] waveletEstIntFile_[0];
-    delete [] waveletEstIntFile_[1];
-  }
-
-  if(faciesEstIntFile_ != NULL)
-  {
-    delete [] faciesEstIntFile_[0];
-    delete [] faciesEstIntFile_[1];
-  }
-
-  if(seedFile_!=NULL)
-    delete seedFile_;
-
-  if (constBack_ != NULL)
-    delete [] constBack_;
-
-  if(paramCorrFile_ != NULL)
-    delete [] paramCorrFile_;
-
-  if(corrDirFile_ != NULL)
-    delete [] corrDirFile_;
-
-  delete [] angle_;
-  delete [] SNRatio_;
-  delete [] waveScale_;
-  delete [] seisType_;
+  delete inputFiles_;
 }
 
  void
@@ -802,21 +680,14 @@ ModelFile::readCommandWells(char ** params, int & pos, char * errText)
     {
       int nHeader = getParNum(params, pos+1, error, errText, "HEADERS in WELLS", 4,5);
       if(nHeader==5)// facies log present
-        faciesLogGiven_ = true;
+        modelSettings_->setFaciesLogGiven(true);
       // Read headers from model file
       if(error==0)
       { 
-        headerList_ = new char*[5]; // changed from 4 to allow for facies 
         for(int i=0 ; i<nHeader ; i++)
-        {
-          headerList_[i] = new char[MAX_STRING];
-          sprintf(headerList_[i],uppercase(params[pos+1+i])); 
-        } 
+          inputFiles_->setLogName(i,uppercase(params[pos+1+i]));
         if(nHeader<5)// no facies log, dummy name
-        {
-          headerList_[4] = new char[MAX_STRING]; 
-          strcpy(headerList_[4],"FACIES");
-        }
+          inputFiles_->setLogName(4,"FACIES");
       }
       pos+= nHeader+2;
     }
@@ -881,13 +752,14 @@ ModelFile::readCommandWells(char ** params, int & pos, char * errText)
   }
   
   bool invalidIndicator = false;
-  wellFile_ = new char*[nWells];
 
   for(int i=0 ; i<nWells ; i++)
   {
     int iw = pos+(nIndicators+1)*i;
-    wellFile_[i] = new char[strlen(params[iw])+1];
-    strcpy(wellFile_[i],params[iw]);
+
+    inputFiles_->addWellFile(params[iw]);
+    error += checkFileOpen(&(params[iw]), 1, commandName, errText, 0);
+
     for (int j=0 ; j<nIndicators ; j++)
     {
       int indicator = atoi(params[iw+j+1]); 
@@ -926,8 +798,6 @@ ModelFile::readCommandWells(char ** params, int & pos, char * errText)
     }
   }
 
-  error += checkFileOpen(wellFile_, nWells, commandName, errText, 0);
-
   pos += nElements + 1;
 
   if (nIndicators > 0) 
@@ -959,31 +829,26 @@ ModelFile::readCommandBackground(char ** params, int & pos, char * errText)
   //
   if (nPar == 3) 
   {
-    generateBackground_ = false;
-
-    backFile_  = new char *[3];
-    constBack_ = new float[3];
+    modelSettings_->setGenerateBackground(false);
 
     for(int i=0 ; i<3 ; i++)
     {
       if(isNumber(params[pos+i])) // constant background
       { 
-        constBack_[i] = static_cast<float>(atof(params[pos+i]));
-        backFile_[i] = NULL;
+        modelSettings_->setConstBackValue(i, static_cast<float>(atof(params[pos+i])));
       }
       else // not constant, read from file.
       {
-        backFile_[i] = new char[strlen(params[pos+i])+1];
-        strcpy(backFile_[i], params[pos+i]);
-        if(checkFileOpen(&(backFile_[i]), 1, params[pos-1], errText) > 0) 
+        inputFiles_->setBackFile(i,params[pos+i]);
+        
+        if(checkFileOpen(&(params[pos+i]), 1, params[pos-1], errText) > 0) 
         {
           error = 1;
-          delete [] backFile_[i];
-          backFile_[i]  = NULL; // Indicates problem with reading file.
-          constBack_[i] = RMISSING;
+          modelSettings_->setConstBackValue(i, RMISSING);
+
         }
         else
-          constBack_[i] = -1;   // Indicates that background is read from file
+          modelSettings_->setConstBackValue(i, -1); // Indicates that background is read from file
       }
     }
   }
@@ -993,7 +858,7 @@ ModelFile::readCommandBackground(char ** params, int & pos, char * errText)
     // Currently we have to generate all or none parameters. The reason
     // is that the kriging algorithm handles all parameters simulataneously.
     //
-    generateBackground_ = true;
+    modelSettings_->setGenerateBackground(true);
 
     int nSubCommands = 2;
     char ** subCommand = new char * [nSubCommands];
@@ -1108,30 +973,27 @@ ModelFile::readCommandTimeSurfaces(char ** params, int & pos, char * errText)
   int error = 0;
   int nPar  = getParNum(params, pos, error, errText, params[pos-1], 3, 4);
 
-  timeSurfFile_    = new char*[2]; // top and base surface
-  timeSurfFile_[0] = new char[strlen(params[pos])+1];
-  strcpy(timeSurfFile_[0],params[pos]);
+  inputFiles_->addTimeSurfFile(params[pos]);
 
   if(nPar == 3)
   {
-    timeSurfFile_[1] = new char[strlen(params[pos+1])+1];
-    strcpy(timeSurfFile_[1],params[pos+1]);
-    if (!isNumber(timeSurfFile_[0]))
-      error += checkFileOpen((&timeSurfFile_[0]), 1, params[pos-1], errText);
-    if (!isNumber(timeSurfFile_[1]))
-      error += checkFileOpen((&timeSurfFile_[1]), 1, params[pos-1], errText);
-    time_nz_ = atoi(params[pos+2]);
+    inputFiles_->addTimeSurfFile(params[pos+1]);
+    
+    if (!isNumber(params[pos]))
+      error += checkFileOpen((&(params[pos])), 1, params[pos-1], errText);
+    if (!isNumber(params[pos+1]))
+      error += checkFileOpen((&(params[pos+1])), 1, params[pos-1], errText);
+    modelSettings_->setTimeNz(atoi(params[pos+2]));
   }
   else // nPar = 4
   {
-    parallelTimeSurfaces_  = true;
+    modelSettings_->setParallelTimeSurfaces(true);
     if(isNumber(params[pos+1])) //Only one reference surface
     {
-      error = checkFileOpen(timeSurfFile_, 1, params[pos-1], errText);
-      timeSurfFile_[1] = NULL;
-      time_dTop_ = static_cast<double>(atof(params[pos+1]));
-      time_lz_   = static_cast<double>(atof(params[pos+2]));
-      time_dz_   = static_cast<double>(atof(params[pos+3]));
+      error = checkFileOpen(&(params[pos]), 1, params[pos-1], errText);
+      modelSettings_->setTimeDTop(static_cast<double>(atof(params[pos+1])));
+      modelSettings_->setTimeLz  (static_cast<double>(atof(params[pos+2])));
+      modelSettings_->setTimeDz  (static_cast<double>(atof(params[pos+3])));
     }
     else {
       sprintf(errText,"Command %s with 4 arguments must have a number as argument number 2.\n", 
@@ -1146,10 +1008,9 @@ ModelFile::readCommandTimeSurfaces(char ** params, int & pos, char * errText)
 int 
 ModelFile::readCommandDepthConversion(char ** params, int & pos, char * errText)
 {
-  doDepthConversion_ = true;
+  modelSettings_->setDoDepthConversion(true);
 
-  velocityField_ = new char[9];
-  sprintf(velocityField_,"CONSTANT"); // Default setting
+  inputFiles_->setVelocityField("CONSTANT");
 
   int error = 0;
   int nPar = getParNum(params, pos, error, errText, params[pos-1], 1, -1);
@@ -1161,10 +1022,6 @@ ModelFile::readCommandDepthConversion(char ** params, int & pos, char * errText)
     return(error);
   }
 
-  depthSurfFile_ = new char*[2];
-  depthSurfFile_[0] = NULL; // top surface
-  depthSurfFile_[1] = NULL; // base surface
-      
   int nSubCommands = 3;
   char ** subCommand = new char * [nSubCommands];
   for(int i=0 ; i<nSubCommands ; i++)
@@ -1184,33 +1041,25 @@ ModelFile::readCommandDepthConversion(char ** params, int & pos, char * errText)
     while(subCom < nSubCommands && strcmp(params[pos+curPar], subCommand[subCom]) != 0)
       subCom++;
 
-    char *velocityFieldUC; // = new char[9];
     switch(subCom) 
     {
     case 0:
-      delete [] velocityField_;
-      velocityField_ = new char[strlen(params[pos+curPar+1])+1]; // Can be file name or command
-      strcpy(velocityField_,params[pos+curPar+1]);
-      velocityFieldUC = new char[strlen(velocityField_)+1];
-      strcpy(velocityFieldUC,velocityField_);
-      uppercase(velocityFieldUC);
-      if (strcmp(velocityFieldUC,"CONSTANT")!=0 && strcmp(velocityFieldUC,"FROM_INVERSION")!=0)
-      {
-        error += checkFileOpen(&(velocityField_), 1, params[pos-1], errText);
+      inputFiles_->setVelocityField(params[pos+curPar+1]); // Can be file name or command
+      if (NRLib2::Uppercase(inputFiles_->getVelocityField()) != "CONSTANT" 
+          && NRLib2::Uppercase(inputFiles_->getVelocityField()) != "FROM_INVERSION")
+      { 
+        error += checkFileOpen(&(params[pos+curPar+1]), 1, params[pos-1], errText);
       }
-      delete [] velocityFieldUC;
       break;
 
     case 1:
-      depthSurfFile_[0] = new char[strlen(params[pos+curPar+1])+1];
-      strcpy(depthSurfFile_[0],params[pos+curPar+1]);
-      error += checkFileOpen(depthSurfFile_, 1, params[pos-1], errText);
+      inputFiles_->setDepthSurfFile(0, params[pos+curPar+1]);
+      error += checkFileOpen(&(params[pos+curPar+1]), 1, params[pos-1], errText);
       break;
 
     case 2:
-      depthSurfFile_[1] = new char[strlen(params[pos+curPar+1])+1];
-      strcpy(depthSurfFile_[1],params[pos+curPar+1]);
-      error += checkFileOpen(depthSurfFile_, 2, params[pos-1], errText);
+      inputFiles_->setDepthSurfFile(1, params[pos+curPar+1]);
+      error += checkFileOpen(&(params[pos+curPar+1]), 1, params[pos-1], errText);
       break;
 
     default: 
@@ -1228,13 +1077,17 @@ ModelFile::readCommandDepthConversion(char ** params, int & pos, char * errText)
     delete [] subCommand[i];
   delete [] subCommand;
 
-  if (strcmp(velocityField_,"CONSTANT")==0 && (depthSurfFile_[0]==NULL || depthSurfFile_[1]==NULL)) 
+  if (inputFiles_->getVelocityField()=="CONSTANT"
+      && (inputFiles_->getDepthSurfFile(0)=="" 
+          || inputFiles_->getDepthSurfFile(1)=="")) 
   {
     error++;
     sprintf(errText,"%sFor CONSTANT velocity fields both top and base depth surfaces must be given (Command %s).\n",
             errText,params[pos-1]);
   }
-  if (strcmp(velocityField_,"FROM_INVERSION")==0 && (depthSurfFile_[0]==NULL && depthSurfFile_[1]==NULL)) 
+  if (inputFiles_->getVelocityField()=="FROM_INVERSION"
+      && (inputFiles_->getDepthSurfFile(0)=="" 
+          && inputFiles_->getDepthSurfFile(1)=="")) 
   {
     error++;
     sprintf(errText,"%sWhen the velocity field is taken from inversion either a top depth or a base depth surface must be given (Command %s).\n",
@@ -1249,7 +1102,7 @@ int
 ModelFile::readCommandSeismic(char ** params, int & pos, char * errText, int seisType)
 {
   int nCol = 5;
-  int i, error;
+  int error = 0;
   int nSeisData = getParNum(params, pos, error, errText, params[pos-1], 2, -1);
 
   if(error == 0)
@@ -1269,128 +1122,60 @@ ModelFile::readCommandSeismic(char ** params, int & pos, char * errText, int sei
     return(1);
   }
 
-  char  ** seisFile  = new char*[2*nSeisData];
-  char  ** waveFile  = new char*[nSeisData];  
-  float *  angle     = new float[nSeisData];
-  float *  SNRatio   = new float[nSeisData];
-  float *  waveScale = new float[nSeisData];
-
-  for(i=0;i<nSeisData;i++)
+  for(int i=0;i<nSeisData;i++)
   {
     // 1. file containing seismic
-    seisFile[i] = new char[strlen(params[pos+nCol*i])+1];
-    strcpy(seisFile[i], params[pos+nCol*i]);
-    if(seisFile[i][0] == '?')
+    inputFiles_->addSeismicFile(params[pos+nCol*i]);
+    if(params[pos+nCol*i][0] == '?')
       modelSettings_->setGenerateSeismic(true);
+    else
+      error += checkFileOpen(&(params[pos+nCol*i]), 1, "SEISMIC", errText);
 
     // 2. angle
-    angle[i] = float(atof(params[pos+nCol*i+1])*PI/180.0);
+    modelSettings_->addAngle(float(atof(params[pos+nCol*i+1])*M_PI/180.0));
 
     // 3. signal-to-noise ratio
     if (params[pos+nCol*i+2][0] == '*') 
-      SNRatio[i] = RMISSING;
-    else
-      SNRatio[i] = float(atof(params[pos+nCol*i+2]));
-    
+    {
+      modelSettings_->addEstimateSNRatio(true);
+      modelSettings_->addSNRatio(RMISSING);
+    }
+    else 
+    {
+      modelSettings_->addEstimateSNRatio(false);
+      modelSettings_->addSNRatio(float(atof(params[pos+nCol*i+2])));
+    }
+
     // 4. file containing wavelet
-    waveFile[i] = new char[strlen(params[pos+nCol*i+3])+1];   
-    strcpy(waveFile[i], params[pos+nCol*i+3]);
+    inputFiles_->addWaveletFile(params[pos+nCol*i+3]);
+    if(params[pos+nCol*i+3][0] == '*')
+      modelSettings_->addEstimateWavelet(true);
+    else
+    {
+      modelSettings_->addEstimateWavelet(false);
+        error += checkFileOpen(&(params[pos+nCol*i+3]), 1, "WAVELET", errText);
+    }
 
     // 5. wavelet scale
     if (params[pos+nCol*i+4][0] == '*') 
-      waveScale[i] = RMISSING;
+    {
+      modelSettings_->addMatchEnergies(true);
+      modelSettings_->addWaveletScale(RMISSING);
+    }
     else
-      waveScale[i] = float(atof(params[pos+nCol*i+4]));
-  }
+    {
+      modelSettings_->addMatchEnergies(false);
+      modelSettings_->addWaveletScale(float(atof(params[pos+nCol*i+4])));
+    }
 
-  if(modelSettings_->getGenerateSeismic() == false) 
-    error = checkFileOpen(seisFile, nSeisData, "SEISMIC", errText);
+    // 6. Seismic type
+    modelSettings_->addSeismicType(seisType);
 
-  if(modelSettings_->getGenerateSeismic() || error == 0)
-    for(i=0;i<nSeisData;i++)
-      if (waveFile[i][0] != '*' || waveScale[i] == RMISSING)
+    // Consistency check
+    if(modelSettings_->getGenerateSeismic() || error == 0)
+      if (modelSettings_->getEstimateWavelet(i) || modelSettings_->getMatchEnergies(i))
         sprintf(errText, "For seismic data generation both wavelet and wavelet scale must be given\n");
-
-  if (error == 0)
-  {
-    int flag = int(pow(2.0f,nSeisData));
-    for(i=0;i<nSeisData;i++)
-    {
-      if((error & flag) == 0 && waveFile[i][0] != '*')
-        error = checkFileOpen(&(waveFile[i]), 1, "WAVELET", errText);
-      flag *= 2;
-    }
   }
-
-  if(nSeisData_ == 0) 
-  {
-    seismicFile_ = seisFile;
-    waveletFile_ = waveFile;
-    SNRatio_     = SNRatio;
-    waveScale_   = waveScale;
-    angle_       = angle;
-    nSeisData_   = nSeisData;
-    seisType_    = new int[nSeisData];
-    for(i=0;i<nSeisData;i++)
-      seisType_[i] = seisType;
-  }
-  else 
-  {
-    char  ** seisFile2  = seismicFile_;
-    char  ** waveFile2  = waveletFile_;
-    float *  SNRatio2   = SNRatio_;
-    float *  waveScale2 = waveScale_;
-    float *  angle2     = angle_;
-    int   *  seisType2  = seisType_;
-
-    int nTot = nSeisData + nSeisData_;
-    seismicFile_ = new char *[nTot];
-    waveletFile_ = new char *[nTot];
-    SNRatio_     = new float[nTot];
-    waveScale_   = new float[nTot];
-    angle_       = new float[nTot];
-    seisType_    = new int[nTot];
-
-    //Copy old values.
-    for(i=0;i<nSeisData_;i++)  // Note nSeisData_ not updated yet.
-    {
-      seismicFile_[i] = seisFile2[i];
-      waveletFile_[i] = waveFile2[i];
-      SNRatio_[i]     = SNRatio2[i];
-      waveScale_[i]   = waveScale2[i];
-      angle_[i]       = angle2[i];
-      seisType_[i]    = seisType2[i];
-    }
-    delete [] seisFile2;
-    delete [] waveFile2;
-    delete [] angle2;
-    delete [] SNRatio2;
-    delete [] waveScale2;
-    delete [] seisType2;
-
-    //Insert new values:
-    for(i=0;i<nSeisData;i++) 
-    {
-      seismicFile_[i+nSeisData_] = seisFile[i];
-      waveletFile_[i+nSeisData_] = waveFile[i];
-      SNRatio_[i+nSeisData_]     = SNRatio[i];
-      waveScale_[i+nSeisData_]   = waveScale[i];
-      angle_[i+nSeisData_]       = angle[i];
-      seisType_[i+nSeisData_]    = seisType;
-    }
-    delete [] seisFile;
-    delete [] waveFile;
-    delete [] angle;
-    delete [] SNRatio;
-    delete [] waveScale;
-
-    nSeisData_ += nSeisData;
-  }
-
-  modelSettings_->setNumberOfAngles(nSeisData_);
-  modelSettings_->setAngle(angle_,nSeisData_);
-  modelSettings_->setSNRatio(SNRatio_,nSeisData_);
-  modelSettings_->setMatchEnergies(waveScale_,nSeisData_);
 
   pos += nCol*nSeisData+1;
   return(error);
@@ -1501,14 +1286,13 @@ ModelFile::readCommandSeed(char ** params, int & pos, char * errText)
   if(error == 0)
   {
     if(isNumber(params[pos]))
-      seed_ = atoi(params[pos]);
+      modelSettings_->setSeed(atoi(params[pos]));
     else
     {
       error = checkFileOpen(&(params[pos]), 1, params[pos-1], errText);
       if(error == 0)
       {
-        seedFile_ = new char[MAX_STRING];
-        strcpy(seedFile_,params[pos]);
+        inputFiles_->setSeedFile(params[pos]);
       }
     }
   }
@@ -1704,6 +1488,7 @@ ModelFile::readCommandKriging(char ** params, int & pos, char * errText)
 int
 ModelFile::readCommandLocalWavelet(char ** params, int & pos, char * errText)
 {
+  modelSettings_->setUseLocalWavelet(true);
   int error;
   int nPar = getParNum(params, pos, error, errText, params[pos-1], 2, -1);
   if(error == 0)
@@ -1777,7 +1562,14 @@ ModelFile::readCommandLocalWavelet(char ** params, int & pos, char * errText)
       for(i=0;i<nKeys;i++)
         if(keyIndex[i] > -1)
         {
-          nWaveletTransfArgs_ = nArgs[i];
+          //
+          // This must be redesigned when local wavelet is reactivated in new XML-reader
+          //
+          // There must be one counter for gain maps and one for shift maps. Both
+          // counters must later be compared to number-of-angles which they must equal
+          //
+          //modelSettings_->setNumberOfLocalWaveletArgs(nArgs[i]);
+          //nWaveletTransfArgs_ = nArgs[i];
           int openError = checkFileOpen(&(params[pos+keyIndex[i]+1]), nArgs[i], params[pos-1], errText);
           if(openError != 0)
             error = 1;
@@ -1821,18 +1613,15 @@ ModelFile::readCommandParameterCorr(char ** params, int & pos, char * errText)
 {
   int error;
   int nPar = getParNum(params, pos, error, errText, params[pos-1], 1);
-  paramCorrFile_ = new char[MAX_STRING]; 
 
   if(error == 0)
   {
+    inputFiles_->setParamCorrFile(params[pos]);
     error = checkFileOpen(&(params[pos]), 1, params[pos-1], errText);
-    if(error == 0)
-      strcpy(paramCorrFile_,params[pos]);
   }
   pos += nPar+1;
   return(error);
 }
-
 
 int
 ModelFile::readCommandReflectionMatrix(char ** params, int & pos, char * errText)
@@ -1840,9 +1629,10 @@ ModelFile::readCommandReflectionMatrix(char ** params, int & pos, char * errText
   int error;
   int nPar = getParNum(params, pos, error, errText, params[pos-1], 1);
   if(error == 0)
+  {
+    inputFiles_->setReflMatrFile(params[pos]);
     error = checkFileOpen(&(params[pos]), 1, params[pos-1], errText);
-  if(error == 0)
-    strcpy(reflMatrFile_,params[pos]);
+  }
   pos += nPar+1;
   return(error);
 }
@@ -1998,9 +1788,8 @@ ModelFile::readCommandCorrelationDirection(char ** params, int & pos, char * err
   int nPar = getParNum(params, pos, error, errText, params[pos-1], 1);
   if(error == 0)
   {
-    corrDirFile_ = new char[strlen(params[pos])+1];
-    strcpy(corrDirFile_,params[pos]);
-    error += checkFileOpen(&corrDirFile_, 1, params[pos-1], errText);
+    inputFiles_->setCorrDirFile(params[pos]);
+    error += checkFileOpen(&(params[pos]), 1, params[pos-1], errText);
   }
   pos += nPar+1;
   return(error);
@@ -2013,16 +1802,13 @@ ModelFile::readCommandWaveletEstimationInterval(char ** params, int & pos, char 
   int nPar = getParNum(params, pos, error, errText, params[pos-1], 2);
   if(error == 0)
   {
-    waveletEstIntFile_    = new char*[2]; // top and base surface
-    waveletEstIntFile_[0] = new char[strlen(params[pos])+1];
-    waveletEstIntFile_[1] = new char[strlen(params[pos+1])+1];
-    strcpy(waveletEstIntFile_[0],params[pos]);
-    strcpy(waveletEstIntFile_[1],params[pos+1]);
+    inputFiles_->setWaveletEstIntFile(0,params[pos  ]);
+    inputFiles_->setWaveletEstIntFile(1,params[pos+1]);
 
-    if (!isNumber(waveletEstIntFile_[0])) 
-      error += checkFileOpen((&waveletEstIntFile_[0]), 1, params[pos-1], errText);
-    if (!isNumber(waveletEstIntFile_[1]))
-      error += checkFileOpen((&waveletEstIntFile_[1]), 1, params[pos-1], errText);
+    if (!isNumber(params[pos])) 
+      error += checkFileOpen(&(params[pos  ]), 1, params[pos-1], errText);
+    if (!isNumber(params[pos+1]))
+      error += checkFileOpen(&(params[pos+1]), 1, params[pos-1], errText);
   }
   pos += nPar+1;
   return(error);
@@ -2035,16 +1821,13 @@ ModelFile::readCommandFaciesEstimationInterval(char ** params, int & pos, char *
   int nPar = getParNum(params, pos, error, errText, params[pos-1], 2);
   if(error == 0)
   {
-    faciesEstIntFile_    = new char*[2]; // top and base surface
-    faciesEstIntFile_[0] = new char[strlen(params[pos])+1];
-    faciesEstIntFile_[1] = new char[strlen(params[pos+1])+1];
-    strcpy(faciesEstIntFile_[0],params[pos]);
-    strcpy(faciesEstIntFile_[1],params[pos+1]);
+    inputFiles_->setFaciesEstIntFile(0,params[pos  ]);
+    inputFiles_->setFaciesEstIntFile(1,params[pos+1]);
 
-    if (!isNumber(faciesEstIntFile_[0])) 
-      error += checkFileOpen((&faciesEstIntFile_[0]), 1, params[pos-1], errText);
-    if (!isNumber(faciesEstIntFile_[1]))
-      error += checkFileOpen((&faciesEstIntFile_[1]), 1, params[pos-1], errText);
+    if (!isNumber(params[pos])) 
+      error += checkFileOpen(&(params[pos  ]), 1, params[pos-1], errText);
+    if (!isNumber(params[pos+1]))
+      error += checkFileOpen(&(params[pos+1]), 1, params[pos-1], errText);
 
     sprintf(errText,"Command %s has not been implemented yet.\n",params[pos-1]);
     error = 1;
@@ -2252,9 +2035,8 @@ ModelFile::readCommandBackgroundVelocity(char ** params, int & pos, char * errTe
   int nPar = getParNum(params, pos, error, errText, params[pos-1], 1);
   if(error == 0)
   {
-    backVelFile_ = new char[strlen(params[pos])+1];
-    strcpy(backVelFile_,params[pos]);
-    error += checkFileOpen(&backVelFile_, 1, params[pos-1], errText);
+    inputFiles_->setBackVelFile(params[pos]);
+    error += checkFileOpen(&(params[pos]), 1, params[pos-1], errText);
   }
   pos += nPar+1;
   return(error);
@@ -2325,6 +2107,28 @@ ModelFile::checkFileOpen(char ** fNames, int nFiles, const char * command, char 
       if(details == true)
         flag *= 2;
     }
+  }
+  return(error);
+}
+
+// checkFileOpen: checks if the files in fNames table can be opened. Error message is
+//                given in errText if not, and error is binary coded numbering of failures.  
+int 
+ModelFile::checkFileOpen(const std::string & fName, 
+                         const char        * command, 
+                         char              * errText)
+{
+  int error = 0;
+  if(fName != "*" && fName != "?")
+  {
+    FILE * file = fopen(fName.c_str(),"r");
+    if(file == 0)
+    {
+      error = 1;
+      sprintf(errText,"%sCould not open file %s (command %s).\n",errText,fName.c_str(), command);
+    }
+    else
+      fclose(file);
   }
   return(error);
 }

@@ -12,7 +12,6 @@
 
 struct irapgrid;
 class Corr;
-class ModelFile;
 class Wavelet;
 class Vario;
 class Simbox;
@@ -20,6 +19,7 @@ class WellData;
 class FFTGrid;
 class RandomGen;
 class GridMapping;
+class InputFiles;
 
 class Model
 {
@@ -56,7 +56,7 @@ private:
                                     Simbox        *& timeSimboxConstThick,
                                     Surface       *& correlationDirection,
                                     ModelSettings *& modelSettings, 
-                                    ModelFile      * modelFile,
+                                    InputFiles     * inputFiles,
                                     char           * errText,
                                     bool           & failed);
   void             setupExtendedTimeSimbox(Simbox  * timeSimbox, 
@@ -72,7 +72,7 @@ private:
   void             processSeismic(FFTGrid      **& seisCube,
                                   Simbox        *& timeSimbox,
                                   ModelSettings *& modelSettings, 
-                                  ModelFile      * modelFile,
+                                  InputFiles     * inputFiles,
                                   char           * errText,
                                   bool           & failed);
   void             processWells(WellData     **& wells,
@@ -82,7 +82,7 @@ private:
                                 FFTGrid       ** seisCube,
                                 RandomGen      * randomGen,
                                 ModelSettings *& modelSettings, 
-                                ModelFile      * modelFile,
+                                InputFiles     * inputFiles,
                                 char           * errText,
                                 bool           & failed);
   void             processBackground(Background   *& background, 
@@ -90,7 +90,7 @@ private:
                                      Simbox        * timeSimbox,
                                      Simbox        * timeBGSimbox,
                                      ModelSettings * modelSettings, 
-                                     ModelFile     * modelFile, 
+                                     InputFiles    * inputFile,
                                      char          * errText,
                                      bool          & failed);
   void             processPriorCorrelations(Corr         *& correlations,
@@ -98,13 +98,13 @@ private:
                                             WellData     ** wells,
                                             Simbox        * timeSimbox,
                                             ModelSettings * modelSettings, 
-                                            ModelFile     * modelFile,
+                                            InputFiles    * inputFiles,
                                             char          * errText,
                                             bool          & failed);
   void             processReflectionMatrix(float       **& reflectionMatrix,
                                            Background    * background,
                                            ModelSettings * modelSettings, 
-                                           ModelFile     * modelFile,                  
+                                           InputFiles    * inputfiles,
                                            char          * errText,
                                            bool          & failed);
   void             processWavelets(Wavelet     **& wavelet,
@@ -116,7 +116,7 @@ private:
                                    Surface      ** shiftGrids,
                                    Surface      ** gainGrids,
                                    ModelSettings * modelSettings, 
-                                   ModelFile     * modelFile,
+                                   InputFiles    * inputFiles,
                                    char          * errText,
                                    bool          & failed);
   void             processPriorFaciesProb(float        *& priorFacies,
@@ -127,31 +127,31 @@ private:
   void             processDepthConversion(Simbox        * timeCutSimbox, 
                                           Simbox        * timeSimbox_,
                                           ModelSettings * modelSettings_, 
-                                          ModelFile     * modelFile,
+                                          InputFiles    * inputFiles,
                                           char          * errText, 
                                           bool          & failedVelocity);
-  void             loadVelocity(FFTGrid      *& velocity,
-                                Simbox        * timeSimbox,
-                                ModelSettings * modelSettings, 
-                                char          * velocityField, 
-                                char          * errText,
-                                bool          & failed);
-  void             setSimboxSurfaces(Simbox    *& simbox, 
-                                     char      ** surfFile, 
-                                     bool         parallelSurfaces, 
-                                     double       dTop, 
-                                     double       lz, 
-                                     double       dz, 
-                                     int          nz, 
-                                     int          outputFlag,
-                                     int          outputFormat,
-                                     char       * errText,
-                                     int        & error);
+  void             loadVelocity(FFTGrid           *& velocity,
+                                Simbox             * timeSimbox,
+                                ModelSettings      * modelSettings, 
+                                const std::string  & velocityField, 
+                                char               * errText,
+                                bool               & failed);
+  void             setSimboxSurfaces(Simbox                        *& simbox, 
+                                     const std::vector<std::string> & surfFile, 
+                                     bool                             parallelSurfaces, 
+                                     double                           dTop,
+                                     double                           lz, 
+                                     double                           dz, 
+                                     int                              nz,
+                                     int                              outputFormat,
+                                     int                              outputFlag,
+                                     char                           * errText,
+                                     int                            & error);
   void             estimateXYPaddingSizes(Simbox         * timeSimbox,
                                           ModelSettings *& modelSettings);
   void             estimateZPaddingSize(Simbox         * timeSimbox,
                                         ModelSettings *& modelSettings);
-  int              readSegyFile(char                * fileName, 
+  int              readSegyFile(const std::string   & fileName, 
                                 FFTGrid            *& target, 
                                 Simbox             *& timeSimbox, 
                                 ModelSettings      *& modelSettings,
@@ -159,12 +159,12 @@ private:
                                 const SegyGeometry *& geometry,
                                 int                   gridType,
                                 int                   i = IMISSING); 
-  int              readStormFile(char           * fName, 
-                                 FFTGrid       *& target, 
-                                 const char     * parName,
-                                 Simbox         * timeSimbox,
-                                 ModelSettings *& modelSettings, 
-                                 char           * errText);
+  int              readStormFile(const std::string  & fName, 
+                                 FFTGrid           *& target, 
+                                 const char         * parName,
+                                 Simbox             * timeSimbox,
+                                 ModelSettings     *& modelSettings, 
+                                 char               * errText);
   void             estimateCorrXYFromSeismic(Surface *& CorrXY,
                                              FFTGrid ** seisCube,
                                              int        nAngles);
@@ -174,19 +174,18 @@ private:
   void             loadExtraSurfaces(Surface  **& waveletEstimInterval,
                                      Surface  **& faciesEstimInterval,
                                      Simbox     * timeSimbox,
-                                     ModelFile  * modelFile,
+                                     InputFiles * inputFiles,
                                      char       * errText,
                                      bool       & failed);
-  float         ** readMatrix(char       * fileName, 
-                              int          n1, 
-                              int          n2, 
-                              const char * readReason, 
-                              char       * errText);
+  float         ** readMatrix(const std::string & fileName, 
+                              int                 n1, 
+                              int                 n2, 
+                              const std::string & readReason, 
+                              char              * errText);
   void             setupDefaultReflectionMatrix(float       **& reflectionMatrix,
                                                 Background    * background,
-                                                ModelSettings * modelSettings,
-                                                ModelFile     * modelFile);
-  int              findFileType(char * fileName);
+                                                ModelSettings * modelSettings);
+  int              findFileType(const std::string & fileName);
   void             checkAvailableMemory(Simbox            * timeSimbox,
                                         ModelSettings     * modelSettings,
                                         const std::string & seismicFile);
@@ -195,9 +194,9 @@ private:
                                     char           * tmpErrText,
                                     int            & error);
   void             printSettings(ModelSettings * modelSettings,
-                                 ModelFile     * modelFile);
-  int              getWaveletFileFormat(char * fileName, 
-                                        char * errText);
+                                 InputFiles    * inputFiles);
+  int              getWaveletFileFormat(const std::string & fileName, 
+                                        char              * errText);
   //Compute correlation gradient in terms of i,j and k in grid.
   double *         findPlane(Surface * surf); //Finds plane l2-closest to surface.             
   //Create planar surface with same extent as template, p[0]+p[1]*x+p[2]*y

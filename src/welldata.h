@@ -12,11 +12,13 @@ class ModelSettings;
 class WellData 
 {
 public:
-  WellData(const char     * wellFileName, 
-           ModelSettings  * modelSettings,
-           char          ** headerList,
-           bool             faciesLogGiven,
-           int              i);
+  WellData(const std::string              & wellFileName, 
+           const std::vector<std::string> & logNames,
+           ModelSettings                  * modelSettings,
+           int                              indicatorFacies,
+           int                              indicatorWavelet,
+           int                              indicatorBGTrend,
+           bool                             faciesLogGiven);
   ~WellData(void);
 
   const float   * getAlpha(int &nData) const;
@@ -69,7 +71,7 @@ public:
   static void     interpolateLog(float *log_interpolated, const float *log_raw, int nd);
   int             isFaciesOk(){return faciesok_;};
 private:
-  void            readRMSWell(const char * wellFileName, char **headerList, bool faciesLogGiven);
+  void            readRMSWell(const std::string & wellFileName, const std::vector<std::string> & logNames, bool faciesLogGiven);
   void            mergeCells(const char * name, double * log_resampled, double * log, 
                              int ii, int istart, int iend, bool debug);
   void            mergeCells(const char * name, float * log_resampled, float * log, 

@@ -18,9 +18,9 @@ public:
   ~GridMapping(void);
   StormContGrid * getMapping(void)  const { return mapping_ ;}
   Simbox        * getSimbox(void)   const { return simbox_  ;}
-  void            setDepthSurfaces(char ** surfFile, 
-                                   bool  & failed, 
-                                   char  * errText);
+  void            setDepthSurfaces(const std::vector<std::string> & surfFile, 
+                                   bool                           & failed, 
+                                   char                           * errText);
   void            calculateSurfaceFromVelocity(FFTGrid      * velocity, 
                                                const Simbox * simbox);
   void            setDepthSimbox(const Simbox * timeSimbox,

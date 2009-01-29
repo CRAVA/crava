@@ -17,6 +17,7 @@ class KrigingData3D;
 class FaciesProb;
 class GridMapping;
 class FilterWellLogs;
+class ModelSettings;
 class Corr;
 
 class Crava 
@@ -41,8 +42,8 @@ public:
 
 private: 
   void               computeDataVariance(void);
-  void               setupErrorCorrelation(Model * model);
-  void               computeVariances(fftw_real* corrT, Model * model);
+  void               setupErrorCorrelation(ModelSettings * modelSettings);
+  void               computeVariances(fftw_real* corrT, ModelSettings * modelSettings);
   float              getEmpSNRatio(int l)     const {return empSNRatio_[l];}
   float              getTheoSNRatio(int l)    const {return theoSNRatio_[l];}
   float              getSignalVariance(int l) const {return signalVariance_[l];}
@@ -79,7 +80,7 @@ private:
   float              highCut_;          // highest frequency that is inverted
 
   int                nSim_;             // number of simulations
-  float            * theta_;            // in radians
+  float            * thetaDeg_;         // in degrees
 
   FFTGrid          * meanAlpha_;        // mean values
   FFTGrid          * meanBeta_;
@@ -87,12 +88,10 @@ private:
   FFTGrid          * meanAlpha2_;       // copy of mean values, to be used for facies prob, new method 
   FFTGrid          * meanBeta2_;
   FFTGrid          * meanRho2_;
-  //FFTGrid          * parSpatialCorr_;   // parameter correlation
   float           ** parPointCov_; 
 
   Wavelet         ** seisWavelet_;      // wavelet operator that define the forward map.
   FFTGrid         ** seisData_;         // Data
-  //FFTGrid          * errCorrUnsmooth_;  // Error correlation
   float           ** errThetaCov_;      //
   float              wnc_ ;             // if wnc=0.01 1% of the error wariance is white this has largest effect on
                                         // high frequency components. It makes everything run smoother we

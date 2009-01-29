@@ -12,13 +12,13 @@ public:
   void           fft1DInPlace();
   void           invFFT1DInPlace();
   //Constructors and destructor
-  Wavelet3D(char          * fileName, 
-            ModelSettings * modelSettings, 
-            Simbox        * simBox, 
-            float           theta, 
-            float         * reflCoef,  
-            int           & errCode, 
-            char          * errText);
+  Wavelet3D(const std::string & fileName, 
+            ModelSettings     * modelSettings, 
+            Simbox            * simBox, 
+            float               theta, 
+            float             * reflCoef,  
+            int               & errCode, 
+            char              * errText);
   Wavelet3D(Wavelet * wavelet, int difftype);
   Wavelet3D(Wavelet * wavelet);
   virtual ~Wavelet3D() {}

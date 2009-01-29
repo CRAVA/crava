@@ -5,27 +5,23 @@
 
 RandomGen::RandomGen(unsigned int seed)
 {
-  seed_ = seed;
-  seedfile_ = NULL;
+  seed_     = seed;
+  seedfile_ = "";
 }
 
 
-RandomGen::RandomGen(char * filename)
+RandomGen::RandomGen(const std::string & filename)
 {
-  seedfile_ = new char[strlen(filename)+1];
-  strcpy(seedfile_, filename);
-  FILE * file = fopen(filename,"r");
+  seedfile_ = filename;
+  FILE * file = fopen(seedfile_.c_str(),"r");
   fscanf(file,"%u",&seed_);
   fclose(file);
 }
 
 RandomGen::~RandomGen()
 {
-  if(seedfile_ != NULL)
-  {
+  if(seedfile_ != "")
     writeSeedFile(seedfile_);
-    delete [] seedfile_;
-  }
 }
 
 //
@@ -114,11 +110,11 @@ double RandomGen::unif01()
   return x;
 }
 
-int RandomGen::writeSeedFile(char *filename) const
+int RandomGen::writeSeedFile(const std::string & filename) const
 {
   FILE *file;
   int error = 0;
-  file = fopen(filename,"w");
+  file = fopen(filename.c_str(),"w");
   if(file == NULL)
     error = 1;
   else

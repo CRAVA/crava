@@ -9,16 +9,22 @@
 #include "src/vario.h"
 
 ModelSettings::ModelSettings(void)
+  : seismicType_(0),
+    angle_(0), 
+    waveletScale_(0),
+    SNRatio_(0),
+    matchEnergies_(0),
+    estimateWavelet_(0),
+    estimateSNRatio_(0),
+    constBackValue_(3)
 {
   angularCorr_           = new GenExpVario(1, 10*static_cast<float>(PI/180.0)); // Power=1 range=10deg
   lateralCorr_           = new GenExpVario(1, 1000, 1000); 
   backgroundVario_       = new GenExpVario(1, 2000, 2000); 
+  localWaveletVario_     =     NULL; // Will be set equal to backgroundVario unless it is set separately
   geometry_              =     NULL;
   traceHeaderFormat_     = new TraceHeaderFormat(0); // SeisWorks;
   krigingParams_         =     NULL;
-  angle_                 =     NULL;
-  SNRatio_               =     NULL;
-  matchEnergies_         =     NULL;
   indBGTrend_            =     NULL;
   indWavelet_            =     NULL;
   indFacies_             =     NULL;
@@ -74,6 +80,10 @@ ModelSettings::ModelSettings(void)
   p_undef_               =    0.01f;
 
   lzLimit_               =     0.47;   // NB! This is a double ==> do not use 'f'.
+  time_dTop_             = RMISSING;
+  time_lz_               = RMISSING;
+  time_dz_               = RMISSING;
+  time_nz_               = IMISSING;
 
   outputFlag_            = VP+VS+RHO;  // Default output
   formatFlag_            =        2;   // STORMFORMAT
@@ -81,8 +91,15 @@ ModelSettings::ModelSettings(void)
   fileGrid_              =       -1;
  
   generateSeismic_       =    false;
+  generateBackground_    =    true;
+  faciesLogGiven_        =    false;
+  doDepthConversion_     =    false;
+  parallelTimeSurfaces_  =    false;
+  useLocalWavelet_       =    false;
 
   logLevel_              = LogKit::L_LOW;
+
+  seed_                  =        0;
 }
 
 ModelSettings::~ModelSettings(void)
@@ -96,6 +113,9 @@ ModelSettings::~ModelSettings(void)
   if (backgroundVario_ != NULL)
     delete backgroundVario_;
 
+  if (localWaveletVario_ != NULL)
+    delete localWaveletVario_;
+
   if(geometry_ != NULL)
     delete geometry_;
 
@@ -104,18 +124,6 @@ ModelSettings::~ModelSettings(void)
 
   if(krigingParams_ != NULL)
     delete [] krigingParams_;
-
-  //
-  // NBNB-PAL: Purify liker ikke denne deleten, men skjønner ikke hvorfor
-  //
-  if (angle_ != NULL)
-    delete [] angle_;
-
-  if (SNRatio_ != NULL)
-    delete [] SNRatio_;
-
-  if (matchEnergies_ != NULL)
-    delete [] matchEnergies_;
 
   if (indBGTrend_ != NULL)
     delete [] indBGTrend_;
@@ -148,8 +156,8 @@ ModelSettings::rotateVariograms(float angle)
 {
   lateralCorr_->rotateCounterClockwise(-angle);
   backgroundVario_->rotateCounterClockwise(-angle);
+  localWaveletVario_->rotateCounterClockwise(-angle);
 }
-
 
 void           
 ModelSettings::setAngularCorr(Vario * vario)               
@@ -176,6 +184,32 @@ ModelSettings::setBackgroundVario(Vario * vario)
 }
 
 void           
+ModelSettings::setLocalWaveletVario(Vario * vario)
+{
+  if (localWaveletVario_ != NULL)
+    delete localWaveletVario_;
+  localWaveletVario_ = vario;
+}
+
+void           
+ModelSettings::copyBackgroundVarioToLocalWaveletVario(void)
+{
+  float range1 = backgroundVario_->getRange();
+  float range2 = backgroundVario_->getSubRange();
+  float angle  = backgroundVario_->getAngle();
+  if (strcmp(backgroundVario_->getType(),"Spherical")==0)
+  {
+    localWaveletVario_ = new SphericalVario(range1, range2, angle);
+  }
+  else
+  {
+    GenExpVario * vario = dynamic_cast<GenExpVario *>(backgroundVario_);
+    float power = vario->getPower();  
+    localWaveletVario_ = new GenExpVario(power, range1, range2, angle); 
+  }
+}
+
+void           
 ModelSettings::setAreaParameters(const SegyGeometry * geometry)
 {
   if (geometry_ == NULL) 
@@ -196,36 +230,6 @@ ModelSettings::setTraceHeaderFormat(const TraceHeaderFormat & traceHeaderFormat)
   if (traceHeaderFormat_ != NULL)
     delete traceHeaderFormat_;
   traceHeaderFormat_ = new TraceHeaderFormat(traceHeaderFormat);
-}
-
-void           
-ModelSettings::setAngle(float * angle, int nAngles)
-{
-  if (angle_ != NULL)
-    delete [] angle_;
-  angle_ = new float[nAngles];
-  for (int i=0 ; i<nAngles ; i++)
-    angle_[i] = angle[i];
-}
-
-void           
-ModelSettings::setSNRatio(float * SNRatio, int nAngles)
-{
-  if (SNRatio_ != NULL)
-    delete [] SNRatio_;
-  SNRatio_ = new float[nAngles];
-  for (int i=0 ; i<nAngles ; i++)
-    SNRatio_[i] = SNRatio[i];
-}
-
-void           
-ModelSettings::setMatchEnergies(float * waveletScale, int nAngles)
-{
-  if (matchEnergies_ != NULL)
-    delete [] matchEnergies_;
-  matchEnergies_ = new bool[nAngles];
-  for (int i=0 ; i<nAngles ; i++)
-    matchEnergies_[i] = (waveletScale[i] == RMISSING);
 }
 
 void           
