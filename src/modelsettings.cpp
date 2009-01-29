@@ -16,7 +16,9 @@ ModelSettings::ModelSettings(void)
     matchEnergies_(0),
     estimateWavelet_(0),
     estimateSNRatio_(0),
-    constBackValue_(3)
+    constBackValue_(3),
+    faciesLabels_(0),
+    faciesNames_(0)
 {
   angularCorr_           = new GenExpVario(1, 10*static_cast<float>(PI/180.0)); // Power=1 range=10deg
   lateralCorr_           = new GenExpVario(1, 1000, 1000); 
@@ -28,9 +30,6 @@ ModelSettings::ModelSettings(void)
   indBGTrend_            =     NULL;
   indWavelet_            =     NULL;
   indFacies_             =     NULL;
-  faciesLabels_          =     NULL;
-  faciesNames_           =     NULL;
-  nFacies_               =        0;
   nWells_                =        0;
   nSimulations_          =        0;
   //
@@ -133,16 +132,6 @@ ModelSettings::~ModelSettings(void)
 
   if (indFacies_ != NULL)
     delete [] indFacies_;
-
-  if (faciesLabels_ != NULL)
-    delete [] faciesLabels_;
-
-  if (faciesNames_ != NULL)
-  {
-    for (int i = 0 ; i < nFacies_ ; i++)
-      delete [] faciesNames_[i];
-    delete [] faciesNames_;
-  }
 }
 
 bool 
@@ -267,25 +256,6 @@ ModelSettings::setIndicatorFacies(int * indFacies, int nWells)
     indFacies_[i] = indFacies[i];
 }
 
-void           
-ModelSettings::setFaciesLabels(int * faciesLabels, int nFacies)
-{
-  faciesLabels_ = new int[nFacies];
-  for (int i=0 ; i<nFacies ; i++) {
-    faciesLabels_[i] = faciesLabels[i];
-  }
-}
-
-void           
-ModelSettings::setFaciesNames(char ** faciesNames, int nFacies)
-{
-  faciesNames_ = new char * [nFacies];
-  for (int i=0 ; i<nFacies ; i++) {
-    faciesNames_[i] = new char [MAX_STRING];
-    strcpy(faciesNames_[i], faciesNames[i]);
-  }
-}
-
 void
 ModelSettings::setOutputFlag(int outputFlag)
 {
@@ -299,9 +269,9 @@ ModelSettings::setOutputFlag(int outputFlag)
 }
 
 void
-ModelSettings::setFilePrefix(char * filePrefix)               
+ModelSettings::setFilePrefix(const std::string & filePrefix)               
 {
-  filePrefix_ = std::string(filePrefix);
+  filePrefix_ = filePrefix;
 }
 
 std::string 

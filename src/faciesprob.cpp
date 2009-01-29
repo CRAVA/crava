@@ -715,14 +715,14 @@ void FaciesProb::calculateConditionalFaciesProb(WellData **wells, int nWells)
     LogKit::LogFormatted(LogKit::LOW,"\nWell: %s\n",bw[i]->getWellname());
     LogKit::LogFormatted(LogKit::LOW,"\nFacies      |");
     for(int f=0 ; f < nFacies_ ; f++)
-      LogKit::LogFormatted(LogKit::LOW," %11s",modelSettings_->getFaciesName(f));
+      LogKit::LogFormatted(LogKit::LOW," %11s",modelSettings_->getFaciesName(f).c_str());
     LogKit::LogFormatted(LogKit::LOW,"\n------------+");
     for(int f=0 ; f < nFacies_ ; f++)
       LogKit::LogFormatted(LogKit::LOW,"------------",f);
     LogKit::LogFormatted(LogKit::LOW,"\n");
     for(int f1=0 ; f1 < nFacies_ ; f1++)
     {
-      LogKit::LogFormatted(LogKit::LOW,"%-11s |",modelSettings_->getFaciesName(f1));
+      LogKit::LogFormatted(LogKit::LOW,"%-11s |",modelSettings_->getFaciesName(f1).c_str());
       for(int f2=0 ; f2 < nFacies_ ; f2++)
       {
         LogKit::LogFormatted(LogKit::LOW," %11.3f",condFaciesProb[f2][f1]);
@@ -780,14 +780,14 @@ void FaciesProb::calculateConditionalFaciesProb(WellData **wells, int nWells)
   LogKit::LogFormatted(LogKit::LOW,"\nFor all wells:\n");
   LogKit::LogFormatted(LogKit::LOW,"\nFacies      |");
   for(int f=0 ; f < nFacies_ ; f++)
-    LogKit::LogFormatted(LogKit::LOW," %11s",modelSettings_->getFaciesName(f));
+    LogKit::LogFormatted(LogKit::LOW," %11s",modelSettings_->getFaciesName(f).c_str());
   LogKit::LogFormatted(LogKit::LOW,"\n------------+");
   for(int f=0 ; f < nFacies_ ; f++)
     LogKit::LogFormatted(LogKit::LOW,"------------",f);
   LogKit::LogFormatted(LogKit::LOW,"\n");
   for(int f1=0 ; f1 < nFacies_ ; f1++)
   {
-    LogKit::LogFormatted(LogKit::LOW,"%-11s |",modelSettings_->getFaciesName(f1));
+    LogKit::LogFormatted(LogKit::LOW,"%-11s |",modelSettings_->getFaciesName(f1).c_str());
     for(int f2=0 ; f2 < nFacies_ ; f2++)
       LogKit::LogFormatted(LogKit::LOW," %11.3f",condFaciesProb[f2][f1]);
     LogKit::LogFormatted(LogKit::LOW,"\n");

@@ -1369,7 +1369,7 @@ Model::processWells(WellData     **& wells,
       LogKit::LogFormatted(LogKit::LOW,"\nFacies distributions for each well: \n");
       LogKit::LogFormatted(LogKit::LOW,"\nWell                    ");
       for (int i = 0 ; i < nFacies ; i++)
-        LogKit::LogFormatted(LogKit::LOW,"%12s ",modelSettings->getFaciesName(i));
+        LogKit::LogFormatted(LogKit::LOW,"%12s ",modelSettings->getFaciesName(i).c_str());
       LogKit::LogFormatted(LogKit::LOW,"\n");
       for (int i = 0 ; i < 24+13*nFacies ; i++)
         LogKit::LogFormatted(LogKit::LOW,"-");
@@ -1405,7 +1405,7 @@ Model::processWells(WellData     **& wells,
       LogKit::LogFormatted(LogKit::MEDIUM,"\nFacies counts for each well: \n");
       LogKit::LogFormatted(LogKit::MEDIUM,"\nWell                    ");
       for (int i = 0 ; i < nFacies ; i++)
-        LogKit::LogFormatted(LogKit::MEDIUM,"%12s ",modelSettings->getFaciesName(i));
+        LogKit::LogFormatted(LogKit::MEDIUM,"%12s ",modelSettings->getFaciesName(i).c_str());
       LogKit::LogFormatted(LogKit::MEDIUM,"\n");
       for (int i = 0 ; i < 24+13*nFacies ; i++)
         LogKit::LogFormatted(LogKit::MEDIUM,"-");
@@ -1512,12 +1512,8 @@ void Model::checkFaciesNames(WellData      ** wells,
     }
   }
 
-  int     nnames = globalmax - globalmin + 1;
-  char ** names  = new char * [nnames];
-
-  for (int i =0 ; i < nnames ; i++) {
-    names[i] = NULL;
-  }
+  int nnames = globalmax - globalmin + 1;
+  std::vector<std::string> names(nnames);
   
   for(int w=0 ; w<modelSettings->getNumberOfWells() ; w++)
   {
@@ -1525,13 +1521,13 @@ void Model::checkFaciesNames(WellData      ** wells,
     {
       for(int i=0 ; i < wells[w]->getNFacies() ; i++)
       {
-        char * name = wells[w]->getFaciesName(i);
-        int    fnr  = wells[w]->getFaciesNr(i) - globalmin;
+        std::string name = wells[w]->getFaciesName(i);
+        int         fnr  = wells[w]->getFaciesNr(i) - globalmin;
 
-        if(names[fnr] == NULL) {
-          names[fnr]   = name;
+        if(names[fnr] == "") {
+          names[fnr] = name;
         }
-        else if(strcmp(names[fnr],name) != 0)
+        else if(names[fnr] != name)
         {
           sprintf(tmpErrText,"Problem with facies logs. Facies names and numbers are not uniquely defined.\n");
           error++;
@@ -1539,38 +1535,26 @@ void Model::checkFaciesNames(WellData      ** wells,
       }
     }
   }
-
+  
   LogKit::LogFormatted(LogKit::LOW,"\nFaciesLabel      FaciesName           ");
   LogKit::LogFormatted(LogKit::LOW,"\n--------------------------------------\n");
   for(int i=0 ; i<nnames ; i++)
-    if(names[i] != NULL) 
-      LogKit::LogFormatted(LogKit::LOW,"    %2d           %-20s\n",i+globalmin,names[i]);
-
+    if(names[i] != "") 
+      LogKit::LogFormatted(LogKit::LOW,"    %2d           %-20s\n",i+globalmin,names[i].c_str());
+  
   int nFacies = 0;
   for(int i=0 ; i<nnames ; i++)
-    if(names[i] != NULL) 
+    if(names[i] != "") 
       nFacies++;
-
-  char ** faciesNames  = new char * [nFacies];
-  int   * faciesLabels = new int [nFacies];
-
-  int j = -1;
+  
   for(int i=0 ; i<nnames ; i++)
   {
-    if(names[i] != NULL)
+    if(names[i] != "")
     {
-      j++;
-      faciesNames[j]  = names[i];
-      faciesLabels[j] = globalmin + i;
+      modelSettings->addFaciesName(names[i]);
+      modelSettings->addFaciesLabel(globalmin + i);
     }
   }
-  modelSettings->setNumberOfFacies(nFacies);
-  modelSettings->setFaciesNames(faciesNames,nFacies);
-  modelSettings->setFaciesLabels(faciesLabels,nFacies);
-
-  delete [] faciesLabels;
-  delete [] faciesNames;
-  delete [] names;
 }
 
 void 
@@ -2227,7 +2211,7 @@ void Model::processPriorFaciesProb(float         *& priorFacies,
     LogKit::LogFormatted(LogKit::LOW,"\nFacies distributions for each blocked well: \n");
     LogKit::LogFormatted(LogKit::LOW,"\nBlockedWell              ");
     for (int i = 0 ; i < nFacies ; i++)
-      LogKit::LogFormatted(LogKit::LOW,"%12s ",modelSettings->getFaciesName(i));
+      LogKit::LogFormatted(LogKit::LOW,"%12s ",modelSettings->getFaciesName(i).c_str());
     LogKit::LogFormatted(LogKit::LOW,"\n");
     for (int i = 0 ; i < 24+13*nFacies ; i++)
       LogKit::LogFormatted(LogKit::LOW,"-");
@@ -2255,7 +2239,7 @@ void Model::processPriorFaciesProb(float         *& priorFacies,
 
     LogKit::LogFormatted(LogKit::MEDIUM,"\nBlockedWell              ");
     for (int i = 0 ; i < nFacies ; i++)
-      LogKit::LogFormatted(LogKit::MEDIUM,"%12s ",modelSettings->getFaciesName(i));
+      LogKit::LogFormatted(LogKit::MEDIUM,"%12s ",modelSettings->getFaciesName(i).c_str());
     LogKit::LogFormatted(LogKit::MEDIUM,"\n");
     for (int i = 0 ; i < 24+13*nFacies ; i++)
       LogKit::LogFormatted(LogKit::MEDIUM,"-");
@@ -2303,7 +2287,7 @@ void Model::processPriorFaciesProb(float         *& priorFacies,
       priorFacies = new float[nFacies];
       for(int i=0 ; i<nFacies ; i++) {
         priorFacies[i] = float(nData[i])/sum;
-        LogKit::LogFormatted(LogKit::LOW,"%-15s %10.4f\n",modelSettings->getFaciesName(i),priorFacies[i]);
+        LogKit::LogFormatted(LogKit::LOW,"%-15s %10.4f\n",modelSettings->getFaciesName(i).c_str(),priorFacies[i]);
       }
     }
     else { 

@@ -35,12 +35,12 @@ public:
   bool                getMatchEnergies(int i)       const { return matchEnergies_[i]    ;} 
   bool                getEstimateWavelet(int i)     const { return estimateWavelet_[i]  ;}
   bool                getEstimateSNRatio(int i)     const { return estimateSNRatio_[i]  ;}
-  char              * getFaciesName(int i)          const { return faciesNames_[i]      ;}
+  int                 getNumberOfFacies(void)       const { return faciesNames_.size()  ;}
+  const std::string & getFaciesName(int i)          const { return faciesNames_[i]      ;}
   int                 getFaciesLabel(int i)         const { return faciesLabels_[i]     ;}
   int                 getIndicatorBGTrend(int i)    const { return indBGTrend_[i]       ;}
   int                 getIndicatorWavelet(int i)    const { return indWavelet_[i]       ;}
   int                 getIndicatorFacies(int i)     const { return indFacies_[i]        ;}
-  int                 getNumberOfFacies(void)       const { return nFacies_             ;}
   int                 getNumberOfWells(void)        const { return nWells_              ;}
   int                 getNumberOfSimulations(void)  const { return nSimulations_        ;}
   float               getAlphaMin(void)             const { return alpha_min_           ;}
@@ -115,13 +115,12 @@ public:
   void                addMatchEnergies(bool matchEnergies)          { matchEnergies_.push_back(matchEnergies)     ;}
   void                addEstimateWavelet(bool estimateWavelet)      { estimateWavelet_.push_back(estimateWavelet) ;}
   void                addEstimateSNRatio(bool estimateSNRatio)      { estimateSNRatio_.push_back(estimateSNRatio) ;}
-  void                setAllIndicatorsTrue(int nWells);
-  void                setIndicatorBGTrend(int * indBGTrend, int nWells);
-  void                setIndicatorWavelet(int * indWavelet, int nWells);
-  void                setIndicatorFacies(int * indFacies, int nWells);
-  void                setFaciesLabels(int * faciesLabels, int nFacies);
-  void                setFaciesNames(char ** faciesNames, int nFacies);
-  void                setNumberOfFacies(int nFacies)                { nFacies_              = nFacies            ;}
+  void                setAllIndicatorsTrue(int nWells);                  
+  void                setIndicatorBGTrend(int * indBGTrend, int nWells); 
+  void                setIndicatorWavelet(int * indWavelet, int nWells); 
+  void                setIndicatorFacies(int * indFacies, int nWells);   
+  void                addFaciesLabel(int faciesLabel)               { faciesLabels_.push_back(faciesLabel)       ;}
+  void                addFaciesName(const std::string & faciesName) { faciesNames_.push_back(faciesName)         ;}
   void                setNumberOfWells(int nWells)                  { nWells_               = nWells             ;} 
   void                setNumberOfSimulations(int nSimulations)      { nSimulations_         = nSimulations       ;} 
   void                setAlphaMin(float alpha_min)                  { alpha_min_            = alpha_min          ;}
@@ -203,111 +202,109 @@ public:
                    
   enum                sseismicTypes{STANDARDSEIS = 0, PSSEIS = 1};
                    
-  static void         setFilePrefix(char * filePrefix);
+  static void         setFilePrefix(const std::string & filePrefix);
   static std::string  makeFullFileName(const std::string name, const std::string postfix = "");
                    
 private:           
                    
-  Vario             * angularCorr_;           // Variogram for lateral error correlation
-  Vario             * lateralCorr_;           // Variogram for lateral parameter correlation 
-  Vario             * backgroundVario_;       // Used for lateral background correlation.
-  Vario             * localWaveletVario_;     // Used for local wavelet (gain and shift) and local noise.
-                 
-  SegyGeometry      * geometry_;              // area parameters
-  TraceHeaderFormat * traceHeaderFormat_;     // 
-  float             * krigingParams_;   
+  Vario                   * angularCorr_;          // Variogram for lateral error correlation
+  Vario                   * lateralCorr_;          // Variogram for lateral parameter correlation 
+  Vario                   * backgroundVario_;      // Used for lateral background correlation.
+  Vario                   * localWaveletVario_;    // Used for local wavelet (gain and shift) and local noise.
+                          
+  SegyGeometry            * geometry_;             // area parameters
+  TraceHeaderFormat       * traceHeaderFormat_;    // 
+  float                   * krigingParams_;   
+                          
+  std::vector<int>          seismicType_;           // PP- or PS- seismic
+  std::vector<float>        angle_;                 // Angles
+  std::vector<float>        waveletScale_;          // Signal-to-noise ratio
+  std::vector<float>        SNRatio_;               // Signal-to-noise ratio
+  std::vector<bool>         matchEnergies_;         // Let dataVariance_ = signalVariance_
+  std::vector<bool>         estimateWavelet_;       // 
+  std::vector<bool>         estimateSNRatio_;       //
+                          
+  std::vector<float>        constBackValue_;        // Values set for constant background model
+                                                   // Negative value ==> read from file (actual value gives format).
+  int                     * indBGTrend_;           // Use well to estimate background trend? (1=yes,0=no)
+  int                     * indWavelet_;           // Use well to estimate wavelet? (1=yes,0=no)
+  int                     * indFacies_;            // Use well to estimate facies? (1=yes,0=no)
                    
-  std::vector<int>    seismicType_;           // PP- or PS- seismic
-  std::vector<float>  angle_;                 // Angles
-  std::vector<float>  waveletScale_;          // Signal-to-noise ratio
-  std::vector<float>  SNRatio_;               // Signal-to-noise ratio
-  std::vector<bool>   matchEnergies_;         // Let dataVariance_ = signalVariance_
-  std::vector<bool>   estimateWavelet_;       // 
-  std::vector<bool>   estimateSNRatio_;       //
-
-  std::vector<float>  constBackValue_;        // Values set for constant background model
-                                              // Negative value ==> read from file (actual value gives format).
-  int               * indBGTrend_;            // Use well to estimate background trend? (1=yes,0=no)
-  int               * indWavelet_;            // Use well to estimate wavelet? (1=yes,0=no)
-  int               * indFacies_;             // Use well to estimate facies? (1=yes,0=no)
+  std::vector<int>          faciesLabels_;         // Facies labels
+  std::vector<std::string>  faciesNames_;          // Facies names   (nFacies = faciesNames.size())
                    
-  char             ** faciesNames_;           // Facies names
-  int               * faciesLabels_;          // Facies labels
-  int                 nFacies_;
-                   
-  int                 nWells_;
-  int                 nSimulations_;
-                   
-  float               alpha_min_;             // Vp - smallest allowed value
-  float               alpha_max_;             // Vp - largest allowed value
-  float               beta_min_;              // Vs - smallest allowed value
-  float               beta_max_;              // Vs - largest allowed value
-  float               rho_min_;               // Rho - smallest allowed value
-  float               rho_max_;               // Rho - largest allowed value
-                      
-  float               var_alpha_min_;         //| These min and max values are used for consistency check. If  
-  float               var_alpha_max_;         //| variances are outside these ranges there is probably a
-  float               var_beta_min_;          //| problem with the logs.
-  float               var_beta_max_;          //| 
-  float               var_rho_min_;           //| The limits are for point variances. The minimum allowed variance 
-  float               var_rho_max_;           //| for parameters will be scaled with 1/dt*dt
-                      
-  float               maxHz_background_;      // Background resolution (high cut frequency)
-  float               maxHz_seismic_;         // Seismic resolution (high cut frequency)
-                      
-  float               maxRankCorr_;           // Vp-Vs correlation threshold for regarding Vs log synthetic
-  float               maxMergeDist_;          // log entries closer than this will be merged
-  float               maxDevAngle_;           // Wells with a local deviation larger than this is treated as deviated
-                      
-  float               lowCut_;                // lower limit for frequency to be inverted
-  float               highCut_;               // upper limit for frecuency to be inverted
-                      
-  float               wnc_;                   // White noise component, see crava.h  
-                      
-  float               energyThreshold_;       // If energy in reflection trace divided by mean energy
-                                              // in reflection traces is lower than this, the reflections
-                                              // will be interpolated. Default 0.
-                      
-  float               minRelWaveletAmp_;      // Minimum relative wavelet amplitude. Smaller amplitudes are disregarded.
-  float               maxWaveletShift_;       // Largest allowed shift when estimating wavelet
-  float               waveletTaperingL_;      // Til Odds waveletestimering
-  
-  float               xPad_;                  // Padding factor in x direction
-  float               yPad_;
-  float               zPad_; 
-                      
-  int                 nxPad_;                 // Number of cells to pad in x direction
-  int                 nyPad_;
-  int                 nzPad_; 
-                      
-  float               segyOffset_;            // Starttime for SegY cubes.
-                      
-  float               p_undef_;               // NBNB-PAL: Hva gjør denne?
-                      
-  double              lzLimit_;               // Minimum allowed value for (min interval thickness)/(max interval thickness)
-  double              time_dTop_;             // Used when top and base surfaces are parallel
-  double              time_lz_;               // Used when top and base surfaces are parallel
-  double              time_dz_;               // Used when top and base surfaces are parallel
-  int                 time_nz_;               // Used when top and base surfaces are parallel
-
-  int                 outputFlag_;            // Decides which grids to write (except simulation)
-  int                 formatFlag_;            // Decides output format, see fftgird.h
-  int                 fileGrid_;              // Indicator telling if grids are to be kept on file
-                      
-  bool                generateSeismic_;       // Forward modelling
-  bool                generateBackground_;    // Make background model
-  bool                faciesLogGiven_;
-  bool                doDepthConversion_;     // 
-  bool                parallelTimeSurfaces_;
-  bool                useLocalWavelet_;       // Wavelets are mul;tiplied with gain and shift maps
-
-  int                 logLevel_;      
-
-  int                 seed_;                  // Random seed.
-                      
-  static int          debugFlag_;
-  static std::string  filePrefix_;            // Prefix (including path) for all output files
-                      
+  int                       nWells_;
+  int                       nSimulations_;
+                           
+  float                     alpha_min_;             // Vp - smallest allowed value
+  float                     alpha_max_;             // Vp - largest allowed value
+  float                     beta_min_;              // Vs - smallest allowed value
+  float                     beta_max_;              // Vs - largest allowed value
+  float                     rho_min_;               // Rho - smallest allowed value
+  float                     rho_max_;               // Rho - largest allowed value
+                           
+  float                     var_alpha_min_;         //| These min and max values are used for consistency check. If  
+  float                     var_alpha_max_;         //| variances are outside these ranges there is probably a
+  float                     var_beta_min_;          //| problem with the logs.
+  float                     var_beta_max_;          //| 
+  float                     var_rho_min_;           //| The limits are for point variances. The minimum allowed variance 
+  float                     var_rho_max_;           //| for parameters will be scaled with 1/dt*dt
+                            
+  float                     maxHz_background_;      // Background resolution (high cut frequency)
+  float                     maxHz_seismic_;         // Seismic resolution (high cut frequency)
+                           
+  float                     maxRankCorr_;           // Vp-Vs correlation threshold for regarding Vs log synthetic
+  float                     maxMergeDist_;          // log entries closer than this will be merged
+  float                     maxDevAngle_;           // Wells with a local deviation larger than this is treated as deviated
+                           
+  float                     lowCut_;                // lower limit for frequency to be inverted
+  float                     highCut_;               // upper limit for frecuency to be inverted
+                           
+  float                     wnc_;                   // White noise component, see crava.h  
+                           
+  float                     energyThreshold_;       // If energy in reflection trace divided by mean energy
+                                                   // in reflection traces is lower than this, the reflections
+                                                   // will be interpolated. Default 0.
+                           
+  float                     minRelWaveletAmp_;      // Minimum relative wavelet amplitude. Smaller amplitudes are disregarded.
+  float                     maxWaveletShift_;       // Largest allowed shift when estimating wavelet
+  float                     waveletTaperingL_;      // Til Odds waveletestimering
+                           
+  float                     xPad_;                  // Padding factor in x direction
+  float                     yPad_;
+  float                     zPad_; 
+                           
+  int                       nxPad_;                 // Number of cells to pad in x direction
+  int                       nyPad_;
+  int                       nzPad_; 
+                           
+  float                     segyOffset_;            // Starttime for SegY cubes.
+                           
+  float                     p_undef_;               // NBNB-PAL: Hva gjør denne?
+                           
+  double                    lzLimit_;               // Minimum allowed value for (min interval thickness)/(max interval thickness)
+  double                    time_dTop_;             // Used when top and base surfaces are parallel
+  double                    time_lz_;               // Used when top and base surfaces are parallel
+  double                    time_dz_;               // Used when top and base surfaces are parallel
+  int                       time_nz_;               // Used when top and base surfaces are parallel
+                           
+  int                       outputFlag_;            // Decides which grids to write (except simulation)
+  int                       formatFlag_;            // Decides output format, see fftgird.h
+  int                       fileGrid_;              // Indicator telling if grids are to be kept on file
+                           
+  bool                      generateSeismic_;       // Forward modelling
+  bool                      generateBackground_;    // Make background model
+  bool                      faciesLogGiven_;
+  bool                      doDepthConversion_;     // 
+  bool                      parallelTimeSurfaces_;
+  bool                      useLocalWavelet_;       // Wavelets are mul;tiplied with gain and shift maps
+                           
+  int                       logLevel_;      
+                           
+  int                       seed_;                  // Random seed.
+                           
+  static int                debugFlag_;
+  static std::string        filePrefix_;            // Prefix (including path) for all output files
 };
 
 #endif
