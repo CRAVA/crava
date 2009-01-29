@@ -18,6 +18,7 @@
 
 #include "nrlib/surface/regularsurface.hpp"
 #include "nrlib/iotools/logkit.hpp"
+#include "nrlib/grid/grid2d.hpp"
 
 #include "src/modelsettings.h"
 #include "src/model.h"
@@ -26,10 +27,9 @@
 #include "src/definitions.h"
 #include "src/fftgrid.h"
 #include "src/simbox.h"
-
+#include "src/krigingdata2d.h"
 #include "src/kriging2d.h"
 #include "src/covgrid2d.h"
-#include "nrlib/grid/grid2d.hpp"
 
 Wavelet::Wavelet(int dim)
   : dim_(dim)
@@ -653,30 +653,38 @@ Wavelet::calculateSNRatio(Simbox * simbox, FFTGrid * seisCube, WellData ** wells
     }
   }  
 
-  if(calclw==true)
+  //calclw=true;
+  if(calclw)
   {
-    float *shiftdata = new float[nWells];
-    float *gaindata = new float[nWells];
-    int ndata = 0;
+    KrigingData2D shiftData;
+    KrigingData2D gainData;
+
     for(i=0;i<nWells;i++)
     {
       if(nActiveData[i]>0) 
       {
-        shiftdata[ndata] = shiftWell[i];
-        gaindata[ndata] = scaleOptWell[i];
-        ndata++;
+        int n;
+        const double * xvec = wells[i]->getXpos(n);
+        const double * yvec = wells[i]->getYpos(n);
+        int  xind, yind;
+        simbox->getIndexes(xvec[0],yvec[0],xind,yind);        
+        shiftData.addData(xind,yind,shiftWell[i]);
+        gainData.addData(xind,yind,scaleOptWell[i]);
       }
     }
+    shiftData.findMeanValues();
+    gainData.findMeanValues();
 
     if(shift==NULL)
-      shift = krigSurface(shiftdata,ndata,wells,simbox, 0.0);
+      shift = createKrigedSurface(shiftData ,simbox, 0.0);
     if(gain==NULL)
-      gain  = krigSurface(gaindata,ndata,wells,simbox, 1.0);
-
-    std::string fileName = ModelSettings::makeFullFileName("shift");
-
+      gain  = createKrigedSurface(gainData, simbox, 1.0);
+    
     //  if((format & FFTGrid::ASCIIFORMAT) == FFTGrid::ASCIIFORMAT)
+    std::string fileName = ModelSettings::makeFullFileName("shift");
     NRLib2::WriteIrapClassicAsciiSurf(*shift, fileName+".irap");
+    fileName = ModelSettings::makeFullFileName("gain");
+    NRLib2::WriteIrapClassicAsciiSurf(*gain, fileName+".irap");
     // else  
     //    NRLib2::WriteStormBinarySurf(*shift, fileName+".storm");
   }
@@ -993,21 +1001,20 @@ Wavelet::setGainGrid(Surface * grid, Simbox * simbox)
         if(gainGrid_[i+gridNI_*j] != WELLMISSING)
           gainGrid_[i+gridNI_*j] *= invGeoMean;
       }
-      float geoMean = 1/invGeoMean;
-      norm_ *= geoMean;
-      bool fftflag = isReal_;
-      if(fftflag == true)
-        invFFT1DInPlace();
-      for(int i=0;i<nzp_;i++) {
-        float rAmp = getRAmp(i);
-        rAmp *= geoMean;
-        setRAmp(rAmp,i);
-        //        rAmp_[i] *= geoMean;
-      }
-        if(fftflag == true)
-          fft1DInPlace();
+    float geoMean = 1/invGeoMean;
+    norm_ *= geoMean;
+    bool fftflag = isReal_;
+    if(fftflag == true)
+      invFFT1DInPlace();
+    for(int i=0;i<nzp_;i++) {
+      float rAmp = getRAmp(i);
+      rAmp *= geoMean;
+      setRAmp(rAmp,i);
+      //        rAmp_[i] *= geoMean;
+    }
+    if(fftflag == true)
+      fft1DInPlace();
 }
-
 
 /*void           
 Wavelet::flipVec(fftw_real* vec, int n)
@@ -1027,29 +1034,30 @@ Wavelet::flipVec(fftw_real* vec, int n)
 }
 */
 
-Surface* Wavelet::krigSurface(float *data, int nWells, WellData ** wells, Simbox *simbox, float trendval)
+Surface *
+Wavelet::createKrigedSurface(const KrigingData2D & krigingData, 
+                             Simbox              * simbox, 
+                             float                 trendval)
 {
-  int *indexi = new int[nWells];
-  int *indexj = new int[nWells];
-  const double *xvec, *yvec;
-  double x,y;
-  int i, n, xind, yind;
-  for(i=0;i<nWells;i++)
-  {
-    xvec = wells[i]->getXpos(n);
-    x = xvec[0];
-    yvec = wells[i]->getYpos(n);
-    y = yvec[0];
-    simbox->getIndexes(x,y,xind,yind);
-    indexi[i] = xind;
-    indexj[i] = yind;
-  }
+
   GenExpVario *vario = new GenExpVario(1.6,3000, 1000, 25);
-  CovGrid2D *cov = new CovGrid2D(vario, simbox->getnx(), simbox->getny(), float(simbox->getdx()), float(simbox->getdy()));
+
+  CovGrid2D *cov = new CovGrid2D(vario, 
+                                 simbox->getnx(),
+                                 simbox->getny(),
+                                 simbox->getdx(), 
+                                 simbox->getdy());
   cov->writeToFile();
-  Surface *krig = new Surface(simbox->getx0(), simbox->gety0(), simbox->getlx(), simbox->getly(), simbox->getnx(), simbox->getny(), trendval);
-  Kriging2D::krigSurface(krig,data,indexi, indexj, nWells, cov);
 
-  return krig;
+  Surface * surface = new Surface(simbox->getx0(), 
+                                  simbox->gety0(), 
+                                  simbox->getlx(), 
+                                  simbox->getly(),
+                                  simbox->getnx(), 
+                                  simbox->getny(), 
+                                  trendval);
+  
+  Kriging2D::krigSurface(surface, krigingData, cov);
 
+  return surface;
 }

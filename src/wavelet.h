@@ -10,6 +10,7 @@
 class Simbox;
 class FFTGrid;
 class WellData;
+class KrigingData2D;
 class ModelSettings;
 
 class Wavelet {
@@ -93,7 +94,7 @@ protected:
   int                   getWaveletLengthI();
   float                 getWaveletLengthF();
 
-  Surface* krigSurface(float *data, int nWells, WellData ** wells, Simbox *simbox, float trendval);
+  Surface             * createKrigedSurface(const KrigingData2D & krigingData, Simbox *simbox, float trendval);
   
   float                 theta_;                 // the reflection angle that the wavelet correspond to
   int                   readtype_;              // how is wavelet obtained? read from file[OLD JASON SGRI] or ESTIMATE

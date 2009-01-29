@@ -9,15 +9,24 @@
 #include "nrlib/iotools/logkit.hpp"
 
 
-void Kriging2D::krigSurface(NRLib2::Grid2D<double> *trend, float *data, int *indexi, int *indexj, int md, CovGrid2D *cov)
+void Kriging2D::krigSurface(NRLib2::Grid2D<double> * trend, 
+                            const KrigingData2D    & krigingData2D,
+                            CovGrid2D              * cov)
 {
- // int * indexi = new int[nx];
- // int * indexj = new int[ny];
- // int md;
-  int nx, ny;
-  nx = trend->GetNI();
-  ny = trend->GetNJ();
-//  locateValidData(data, indexi, nx, indexj, ny, md);
+  int md = krigingData2D.getNumberOfData();
+  int   * indexi = new int[md];
+  int   * indexj = new int[md];
+  float * data   = new float[md];
+  
+  for (int i = 0 ; i < md ; i++) 
+  {
+    indexi[i] = krigingData2D.getIndexI(i);
+    indexj[i] = krigingData2D.getIndexJ(i);
+    data[i]   = krigingData2D.getData(i);
+  }
+
+  int nx = trend->GetNI();
+  int ny = trend->GetNJ();
   if (md < nx*ny) {
     subtractTrend(data, trend, indexi, indexj, md);
 
@@ -28,53 +37,30 @@ void Kriging2D::krigSurface(NRLib2::Grid2D<double> *trend, float *data, int *ind
     allocateSpaceForMatrixEq(K, C, k, md);
     fillKrigingMatrix(K, indexi, indexj, md, cov);
     cholesky(K, C, md);
-    int i,j;
-    for (i = 0 ; i < nx ; i++) 
-      for(j=0;j<ny;j++)
+
+    for (int i = 0 ; i < nx ; i++) 
+      for (int j = 0 ; j < ny ; j++)
       {
-       // if (data[i][j] == RMISSING) {
         fillKrigingVector(k, indexi,indexj,md,i,j, cov);
         lib_matrAxeqbR(md, C, k); // solve kriging equation
-
-       
         for (int ii = 0 ; ii < md ; ii++) {
           (*trend)(i,j) += k[ii] * data[ii];
-     
+        }
       }
-      }
+
     deAllocateSpaceForMatrixEq(K, C, k, md);
-
-   // addTrend(data, trend, nx, ny);
-   
-
-
   }
+  delete [] indexi;
+  delete [] indexj;
+  delete [] data;
 }
-/*void
-Kriging2D::locateValidData(float **data, int *indexi, int nx, int *indexj, int ny, int &md)
-{
-  int count = 0;
-  for (int i = 0 ; i < nx ; i++)
-    for(int j = 0; j < ny ; j++){
-    if (data[i][j] != RMISSING) {
-      indexi[count] = i;
-      indexj[count] = j;
-      count++;
-    }
-  }
-  if (count == 0) {
-    LogKit::LogFormatted(LogKit::LOW,"\nWARNING in Kriging1D::locateDataIndices() : ");
-    LogKit::LogFormatted(LogKit::LOW,"Only missing values found in data vector.\n");
-  }
-  md = count;
 
-}*/
 void 
-Kriging2D::subtractTrend(float * data,
-                         NRLib2::Grid2D<double> *trend,
-                         int   * indexi,
-                         int   * indexj,
-                         int     md)
+Kriging2D::subtractTrend(float                  * data,
+                         NRLib2::Grid2D<double> * trend,
+                         int                    * indexi,
+                         int                    * indexj,
+                         int                      md)
 {  
   for (int i = 0 ; i < md ; i++) 
     data[i] -= float((*trend)(indexi[i],indexj[i]));
@@ -87,17 +73,6 @@ Kriging2D::subtractTrend(float * data,
     }
   }
 }
-
-/*void 
-Kriging2D::addTrend(float * data,
-                    Grid2D<float> *trend,
-                    int   * indexi,
-                         int   * indexj,
-                         int     md)
-{  
-  for (int i = 0 ; i < md ; i++) 
-    data[i] += *trend(indexi[i],indexj[i]);
-}*/
 
 void 
 Kriging2D::allocateSpaceForMatrixEq(double ** & K, 
@@ -136,14 +111,13 @@ Kriging2D::deAllocateSpaceForMatrixEq(double ** & K,
 void
 Kriging2D::fillKrigingMatrix(double **K, int *indexi, int *indexj, int md, CovGrid2D *cov)
 {
-    int i,j, deltai, deltaj;
-    for(i=0;i<md;i++)
-      for(j=0;j<md;j++)
-      {
-        deltai = indexi[i]-indexi[j];
-        deltaj = indexj[i]-indexj[j];
-        K[i][j] = cov->getCov(deltai,deltaj);
-      }
+  for(int i=0;i<md;i++)
+    for(int j=0;j<md;j++)
+    {
+      int deltai = indexi[i] - indexi[j];
+      int deltaj = indexj[i] - indexj[j];
+      K[i][j] = cov->getCov(deltai,deltaj);
+    }
 }
 
 void
@@ -184,5 +158,4 @@ Kriging2D::fillKrigingVector(double *k, int *indexi,int *indexj,int md,int i, in
     deltaj = indexj[ii]-j;
     k[ii] = cov->getCov(deltai,deltaj);
   }
-
 }

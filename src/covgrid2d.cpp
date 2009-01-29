@@ -5,26 +5,27 @@
 #include <iostream>
 #include <stdarg.h>
 #include <ostream>
+
+#include "nrlib/exception/exception.hpp"
 #include "src/covgrid2d.h"
 
-CovGrid2D::CovGrid2D(Vario *vario, int nx, int ny, float dx, float dy)
+CovGrid2D::CovGrid2D(Vario * vario, 
+                     int      nx, 
+                     int      ny, 
+                     double   dx, 
+                     double   dy)
+  : cov_(2*nx*ny),
+    nx_(nx),
+    ny_(ny),
+    dx_(dx),
+    dy_(dy)
 {
-  nx_ = nx;
-  ny_ = ny;
-  dx_ = dx;
-  dy_ = dy;
-  cov_.resize(2*nx_*ny_);
-  int index;
-  int i,j;
-  for(i=0;i<nx_;i++)
-    for(j=-ny_;j<ny_;j++)
+  for(int i=0;i<nx;i++)
+    for(int j=-ny;j<ny;j++)
     {
-      //index = i+(j+ny_)*nx_;
-      index = i*2*ny_+ny_+j;
-      cov_[index] = vario->corr(i*dx, j*dy);
+      int index = i*2*ny + ny + j;
+      cov_[index] = vario->corr(i*float(dx), j*float(dy));
     }
-
-
 }
 
 float
@@ -35,33 +36,35 @@ CovGrid2D::getCov(int deltai, int deltaj)
     deltai = -deltai;
     deltaj = -deltaj;
   }
-  int index = deltai*2*ny_+deltaj+ny_;
+  int index = deltai*2*ny_ + deltaj + ny_;
   return cov_[index];
-
 }
 
 void
-CovGrid2D::writeToFile()
+CovGrid2D::writeToFile(void)
 {
-  std::string filename = "correlation.storm";
-  std::ofstream file(filename.c_str(), std::ios::out | std::ios::binary);
-  //if (!file) {
-  //  throw new IOError("Error opening " + filename + " for writing.");
- // }
-
+  //
+  // Write grid using an ASCII Irap Classic surface format
+  //
+  std::string fileName = "correlation.storm";
+  std::ofstream file(fileName.c_str(), std::ios::out | std::ios::binary);
+  if (!file) {
+    throw new NRLib2::IOError("Error opening "+fileName+" for writing.");
+  }
   file.precision(14);
 
-  file << 2*nx_-1 << " " << 2*ny_-1 << " " 
-       << dx_ << " " << dy_ << "\n"
-       << -dx_*nx_ << " " << dx_*nx_ << " "
-       << -dy_*ny_ << " " << dy_*ny_ << "\n";
+  file << 2*nx_-1  << " " 
+       << 2*ny_-1  << " " 
+       << dx_      << " " 
+       << dy_      << "\n"
+       << -dx_*nx_ << " " 
+       <<  dx_*nx_ << " "
+       << -dy_*ny_ << " " 
+       <<  dy_*ny_ << "\n";
 
-  int i, j;
-  
-    for(j=-ny_+1;j<ny_;j++)
-for(i=-nx_+1;i<nx_;i++)
+  for(int j=-ny_+1;j<ny_;j++)
+    for(int i=-nx_+1;i<nx_;i++)
       file << getCov(i,j) << " ";
+  file << std::endl;
   file.close();
-
-
 }

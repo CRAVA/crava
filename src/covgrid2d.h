@@ -7,15 +7,21 @@
 class CovGrid2D
 {
 public:
-  CovGrid2D(Vario *vario, int nx, int ny, float dx, float dy);
-  float getCov(int deltai, int deltaj);
-  void writeToFile();
+  CovGrid2D(Vario * vario, 
+            int     nx, 
+            int     ny, 
+            double  dx, 
+            double  dy);
+  const std::vector<float> & getCov(void);
+  float                      getCov(int deltai, int deltaj);
+  void                       writeToFile(void);
 
 private:
-  std::vector<float> cov_;
-  int nx_, ny_;
-  float dx_, dy_;
-
+  std::vector<float>         cov_;
+  int                        nx_;
+  int                        ny_;
+  double                     dx_;
+  double                     dy_;
 };
 
 #endif
