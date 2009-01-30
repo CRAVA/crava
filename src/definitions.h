@@ -1,6 +1,8 @@
 #ifndef CRAVA_DEFINITIONS_H
 #define CRAVA_DEFINITIONS_H
 
+#include <typeinfo>
+
 #include "nrlib/surface/surfaceio.hpp"
 #include "nrlib/iotools/logkit.hpp"
 #include "nrlib/stormgrid/stormcontgrid.hpp"

@@ -1,4 +1,5 @@
 #include <iostream>
+#include <string.h>
 
 #include "lib/utils.h"
 #include "lib/global_def.h"
