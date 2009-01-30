@@ -9,11 +9,11 @@
 #include "src/modelsettings.h"
 
 
-KrigingData2D::KrigingData2D(void) 
-  : data_(0),
-    indexI_(0),
-    indexJ_(0),
-    count_(0)
+KrigingData2D::KrigingData2D(int nData) 
+  : data_(nData),
+    indexI_(nData),
+    indexJ_(nData),
+    count_(nData)
 {
 }
 

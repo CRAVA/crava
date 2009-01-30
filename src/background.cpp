@@ -17,6 +17,7 @@
 #include "src/welldata.h"
 #include "src/background.h"
 #include "src/krigingdata3d.h"
+#include "src/krigingdata2d.h"
 #include "src/covgridseparated.h"
 #include "src/krigingadmin.h"
 #include "src/fftgrid.h"
@@ -222,8 +223,14 @@ Background::generateBackgroundModel(FFTGrid      *& bgAlpha,
                                      wells, nWells, nz);
   }
 
+  KrigingData2D * krigingDataAlpha = NULL;
+  KrigingData2D * krigingDataBeta = NULL;
+  KrigingData2D * krigingDataRho = NULL;
+  //setupKrigingData2D(krigingDataAlpha,krigingDataBeta,krigingDataRho,
+  //                   wells,simbox,trendAlpha,trendBeta,trendRho,nWells);
+
   KrigingData3D * krigingData = NULL;
-  setupKrigingData(krigingData,wells,simbox,trendAlpha,trendBeta,trendRho,nWells);
+  setupKrigingData3D(krigingData,wells,simbox,trendAlpha,trendBeta,trendRho,nWells);
 
   interpolateBackgroundTrend(krigingData,
                              bgAlpha, 
@@ -365,13 +372,116 @@ Background::calculateBackgroundTrend(FFTGrid          *& trendGrid,
 
 //-------------------------------------------------------------------------------
 void
-Background::setupKrigingData(KrigingData3D *& krigingData,
-                             WellData      ** wells,
-                             Simbox         * simbox,
-                             float          * trendAlpha,
-                             float          * trendBeta, 
-                             float          * trendRho , 
-                             const int        nWells)
+Background::setupKrigingData2D(KrigingData2D *& krigingDataAlpha,
+                               KrigingData2D *& krigingDataBeta,
+                               KrigingData2D *& krigingDataRho,
+                               float          * trendAlpha,
+                               float          * trendBeta, 
+                               float          * trendRho , 
+                               WellData      ** wells,
+                               Simbox         * simbox,
+                               const int        nWells)
+{
+  //
+  // Although unnecessary, we have chosen to set up kriging data fro 
+  // Vp, Vs and Rho simultaneously. This gives code easier to read.
+  //
+  int totBlocks = 0;
+  int maxBlocks = 0;
+  for (int w = 0 ; w < nWells ; w++) {
+    int nBlocks = wells[w]->getBlockedLogsExtendedBG()->getNumberOfBlocks();
+    totBlocks += nBlocks;
+    if (nBlocks > maxBlocks)
+      maxBlocks = nBlocks;
+  }  
+  
+  krigingDataAlpha = new KrigingData2D(totBlocks); 
+  krigingDataBeta  = new KrigingData2D(totBlocks); 
+  krigingDataRho   = new KrigingData2D(totBlocks); 
+
+  const int   nz = simbox->getnz();
+  const float dz = static_cast<float>(simbox->getdz()*simbox->getAvgRelThick());
+
+  float * blAlpha = new float[maxBlocks];   // bl = blocked logs
+  float * blBeta  = new float[maxBlocks];
+  float * blRho   = new float[maxBlocks];
+
+  float * vtAlpha = new float[nz];          // vt = vertical trend
+  float * vtBeta  = new float[nz];
+  float * vtRho   = new float[nz];
+
+  for (int w = 0 ; w < nWells ; w++)
+  {
+    BlockedLogs * bl = wells[w]->getBlockedLogsExtendedBG();
+    const int nBlocks = bl->getNumberOfBlocks();
+
+    Utils::copyVector(bl->getAlphaHighCutBackground(), blAlpha, nBlocks);
+    Utils::copyVector(bl->getBetaHighCutBackground(), blBeta, nBlocks);
+    Utils::copyVector(bl->getRhoHighCutBackground(), blRho, nBlocks);
+    //
+    // Extract a one-value-for-each-layer array of blocked logs
+    //
+    bl->getVerticalTrend(blAlpha, vtAlpha);
+    bl->getVerticalTrend(blBeta, vtBeta);
+    bl->getVerticalTrend(blRho, vtRho);
+    //
+    // Kriging vertical trend (vt....) against global vertical trend (trend...)
+    //
+    Kriging1D::krigVector(vtAlpha, trendAlpha, nz, dz);
+    Kriging1D::krigVector(vtBeta, trendBeta, nz, dz);
+    Kriging1D::krigVector(vtRho, trendRho, nz, dz);
+    //
+    // Use kriged vertical trend where original log is not defined.
+    //
+    const int * ipos = bl->getIpos();
+    const int * jpos = bl->getJpos();
+    const int * kpos = bl->getKpos();
+
+    for (int m = 0 ; m < nBlocks ; m++) 
+    {
+      if (blAlpha[m] == RMISSING) 
+      {
+        blAlpha[m] = vtAlpha[kpos[m]];
+      }
+      if (blBeta[m] == RMISSING) 
+      {
+        blBeta[m] = vtBeta[kpos[m]];
+      }
+      if (blRho[m] == RMISSING) 
+      {
+        blRho[m] = vtRho[kpos[m]];
+      }
+      krigingDataAlpha->addData(blAlpha[m], ipos[m], jpos[m]);
+      krigingDataBeta->addData(blBeta[m], ipos[m], jpos[m]);
+      krigingDataRho->addData(blRho[m], ipos[m], jpos[m]);
+    }
+  }
+  krigingDataAlpha->findMeanValues();
+  krigingDataBeta->findMeanValues();
+  krigingDataRho->findMeanValues();
+
+  krigingDataAlpha->writeToFile("KrigingData2D_Alpha");
+  krigingDataBeta->writeToFile("KrigingData2D_Beta");
+  krigingDataRho->writeToFile("KrigingData2D_Rho");
+
+  delete [] vtAlpha;
+  delete [] vtBeta;
+  delete [] vtRho;
+
+  delete [] blAlpha;
+  delete [] blBeta;
+  delete [] blRho;
+}
+
+//-------------------------------------------------------------------------------
+void
+Background::setupKrigingData3D(KrigingData3D *& krigingData,
+                               WellData      ** wells,
+                               Simbox         * simbox,
+                               float          * trendAlpha,
+                               float          * trendBeta, 
+                               float          * trendRho , 
+                               const int        nWells)
 {
   //
   // NBNB-PAL: Foreløpig setter vi opp krigingData for Vp, Vs og Rho samtidig.

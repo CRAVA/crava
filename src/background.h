@@ -11,6 +11,7 @@ class FFTGrid;
 class WellData;
 class GridMapping;
 class KrigingData3D;
+class KrigingData2D;
 class ModelSettings;
 
 //Special note on the use of Background:
@@ -57,7 +58,16 @@ private:
                                         int                 nWells, 
                                         bool                hasVelocityTrend,
                                         const std::string & name);
-  void         setupKrigingData(KrigingData3D *& krigingData,
+  void         setupKrigingData2D(KrigingData2D *& krigingDataAlpha,
+                                  KrigingData2D *& krigingDataBeta,
+                                  KrigingData2D *& krigingDataRho,
+                                  float          * trendAlpha,
+                                  float          * trendBeta, 
+                                  float          * trendRho , 
+                                  WellData      ** wells,
+                                  Simbox         * simbox,
+                                  const int        nWells);
+  void         setupKrigingData3D(KrigingData3D *& krigingData,
                                 WellData      ** wells,
                                 Simbox         * simbox,
                                 float          * trendAlpha,

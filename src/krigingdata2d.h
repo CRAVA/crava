@@ -5,7 +5,7 @@
 class KrigingData2D
 {
 public:
-  KrigingData2D(void);
+  KrigingData2D(int nData = 0);
   ~KrigingData2D(void);
 
   void                       addData(int   i, 
