@@ -9,24 +9,22 @@
 #include "nrlib/iotools/logkit.hpp"
 
 
-void Kriging2D::krigSurface(NRLib2::Grid2D<double> * trend, 
-                            const KrigingData2D    & krigingData2D,
-                            CovGrid2D              * cov)
+void Kriging2D::krigSurface(Grid2D              & trend, 
+                            const KrigingData2D & krigingData,
+                            const CovGrid2D     & cov,
+                            bool                  getResiduals)
 {
-  int md = krigingData2D.getNumberOfData();
-  int   * indexi = new int[md];
-  int   * indexj = new int[md];
-  float * data   = new float[md];
-  
-  for (int i = 0 ; i < md ; i++) 
-  {
-    indexi[i] = krigingData2D.getIndexI(i);
-    indexj[i] = krigingData2D.getIndexJ(i);
-    data[i]   = krigingData2D.getData(i);
-  }
+  //
+  // This routine by default returns z(x) = m(x) + k(x)K^{-1}(d - m). If only
+  // residuals are wanted a copy of the inpuit trend 
+  //
+  int md = krigingData.getNumberOfData();
+  const std::vector<int> & indexi = krigingData.getIndexI();
+  const std::vector<int> & indexj = krigingData.getIndexJ();
+  std::vector<float>       data   = krigingData.getData();   // Take an editable copy
 
-  int nx = trend->GetNI();
-  int ny = trend->GetNJ();
+  int nx = trend.GetNI();
+  int ny = trend.GetNJ();
   if (md < nx*ny) {
     subtractTrend(data, trend, indexi, indexj, md);
 
@@ -35,35 +33,34 @@ void Kriging2D::krigSurface(NRLib2::Grid2D<double> * trend,
     double *  k;  // Kriging vector                     
 
     allocateSpaceForMatrixEq(K, C, k, md);
-    fillKrigingMatrix(K, indexi, indexj, md, cov);
+    fillKrigingMatrix(K, cov, indexi, indexj, md);
     cholesky(K, C, md);
 
     for (int i = 0 ; i < nx ; i++) 
       for (int j = 0 ; j < ny ; j++)
       {
-        fillKrigingVector(k, indexi,indexj,md,i,j, cov);
+        fillKrigingVector(k, cov, indexi, indexj, md, i, j);
         lib_matrAxeqbR(md, C, k); // solve kriging equation
-        for (int ii = 0 ; ii < md ; ii++) {
-          (*trend)(i,j) += k[ii] * data[ii];
-        }
+        if (getResiduals)
+          for (int ii = 0 ; ii < md ; ii++)
+            trend(i,j)  = k[ii] * data[ii];
+        else
+          for (int ii = 0 ; ii < md ; ii++)
+            trend(i,j) += k[ii] * data[ii];
       }
-
     deAllocateSpaceForMatrixEq(K, C, k, md);
   }
-  delete [] indexi;
-  delete [] indexj;
-  delete [] data;
 }
 
 void 
-Kriging2D::subtractTrend(float                  * data,
-                         NRLib2::Grid2D<double> * trend,
-                         int                    * indexi,
-                         int                    * indexj,
+Kriging2D::subtractTrend(std::vector<float>     & data,
+                         const Grid2D           & trend,
+                         const std::vector<int> & indexi,
+                         const std::vector<int> & indexj,
                          int                      md)
 {  
   for (int i = 0 ; i < md ; i++) 
-    data[i] -= float((*trend)(indexi[i],indexj[i]));
+    data[i] -= static_cast<float>(trend(indexi[i],indexj[i]));
   
   bool debug = false;
   if (debug) {
@@ -71,6 +68,37 @@ Kriging2D::subtractTrend(float                  * data,
     for (int i = 0 ; i < md ; i++) {
       LogKit::LogFormatted(LogKit::LOW," i indexi[i] indexj[i] data : %3d %3d %3d  %.5f\n",i,indexi[i],indexj[i],data[i]);
     }
+  }
+}
+
+void
+Kriging2D::fillKrigingMatrix(double                 ** K, 
+                             const CovGrid2D         & cov, 
+                             const std::vector<int>  & indexi, 
+                             const std::vector<int>  & indexj, 
+                             int                       md)
+{
+  for(int i=0;i<md;i++)
+    for(int j=0;j<md;j++)
+    {
+      int deltai = indexi[i] - indexi[j];
+      int deltaj = indexj[i] - indexj[j];
+      K[i][j] = static_cast<double>(cov.getCov(deltai,deltaj));
+    }
+}
+
+void 
+Kriging2D::fillKrigingVector(double                 * k,
+                             const CovGrid2D        & cov,
+                             const std::vector<int> & indexi,
+                             const std::vector<int> & indexj,
+                             int md, int i, int j)
+{
+  for(int ii=0;ii<md;ii++)
+  {
+    int deltai = indexi[ii]-i;
+    int deltaj = indexj[ii]-j;
+    k[ii] = static_cast<double>(cov.getCov(deltai,deltaj));
   }
 }
 
@@ -90,10 +118,10 @@ Kriging2D::allocateSpaceForMatrixEq(double ** & K,
 }
 
 void 
-Kriging2D::deAllocateSpaceForMatrixEq(double ** & K, 
-                                      double ** & C,
-                                      double  * & k,
-                                      int         md)
+Kriging2D::deAllocateSpaceForMatrixEq(double ** K, 
+                                      double ** C,
+                                      double  * k,
+                                      int       md)
 {
   for (int i = 0 ; i < md ; i++) {
     delete [] K[i];
@@ -105,19 +133,6 @@ Kriging2D::deAllocateSpaceForMatrixEq(double ** & K,
   K = NULL;
   C = NULL;
   k = NULL;
-}
-
-
-void
-Kriging2D::fillKrigingMatrix(double **K, int *indexi, int *indexj, int md, CovGrid2D *cov)
-{
-  for(int i=0;i<md;i++)
-    for(int j=0;j<md;j++)
-    {
-      int deltai = indexi[i] - indexi[j];
-      int deltaj = indexj[i] - indexj[j];
-      K[i][j] = cov->getCov(deltai,deltaj);
-    }
 }
 
 void
@@ -148,14 +163,3 @@ Kriging2D::copyMatrix(double ** in,
   return out;
 }
 
-void 
-Kriging2D::fillKrigingVector(double *k, int *indexi,int *indexj,int md,int i, int j, CovGrid2D *cov)
-{
-  int ii, deltai, deltaj;
-  for(ii=0;ii<md;ii++)
-  {
-    deltai = indexi[ii]-i;
-    deltaj = indexj[ii]-j;
-    k[ii] = cov->getCov(deltai,deltaj);
-  }
-}

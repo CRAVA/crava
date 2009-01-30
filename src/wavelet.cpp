@@ -653,7 +653,7 @@ Wavelet::calculateSNRatio(Simbox * simbox, FFTGrid * seisCube, WellData ** wells
     }
   }  
 
-  //calclw=true;
+  calclw=true;
   if(calclw)
   {
     KrigingData2D shiftData;
@@ -1042,12 +1042,12 @@ Wavelet::createKrigedSurface(const KrigingData2D & krigingData,
 
   GenExpVario *vario = new GenExpVario(1.6,3000, 1000, 25);
 
-  CovGrid2D *cov = new CovGrid2D(vario, 
-                                 simbox->getnx(),
-                                 simbox->getny(),
-                                 simbox->getdx(), 
-                                 simbox->getdy());
-  cov->writeToFile();
+  const CovGrid2D cov(vario, 
+                      simbox->getnx(),
+                      simbox->getny(),
+                      simbox->getdx(), 
+                      simbox->getdy());
+  cov.writeToFile();
 
   Surface * surface = new Surface(simbox->getx0(), 
                                   simbox->gety0(), 
@@ -1057,7 +1057,7 @@ Wavelet::createKrigedSurface(const KrigingData2D & krigingData,
                                   simbox->getny(), 
                                   trendval);
   
-  Kriging2D::krigSurface(surface, krigingData, cov);
+  Kriging2D::krigSurface(*surface, krigingData, cov);
 
   return surface;
 }

@@ -7,6 +7,7 @@
 #include "nrlib/segy/segy.hpp"
 
 typedef  NRLib2::RegularSurface<double>    Surface;
+typedef  NRLib2::Grid2D<double>            Grid2D;
 typedef  NRLib2::LogKit                    LogKit;
 typedef  NRLib2::StormContGrid             StormContGrid;
 typedef  NRLib2::SegY                      SegY;

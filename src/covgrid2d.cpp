@@ -29,7 +29,7 @@ CovGrid2D::CovGrid2D(Vario * vario,
 }
 
 float
-CovGrid2D::getCov(int deltai, int deltaj)
+CovGrid2D::getCov(int deltai, int deltaj) const
 {
   if(deltai<0)
   {
@@ -41,7 +41,7 @@ CovGrid2D::getCov(int deltai, int deltaj)
 }
 
 void
-CovGrid2D::writeToFile(void)
+CovGrid2D::writeToFile(void) const
 {
   //
   // Write grid using an ASCII Irap Classic surface format
