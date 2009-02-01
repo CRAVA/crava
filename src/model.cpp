@@ -1,4 +1,3 @@
-
 #include <iostream>
 #include <stdio.h>
 #include <math.h>
@@ -578,7 +577,7 @@ Model::readStormFile(const std::string  & fName,
 }
 
 int 
-Model::setPaddingSize(int nx, float px)
+Model::setPaddingSize(int nx, double px)
 {
   int leastint    =  static_cast<int>(ceil(nx*(1.0f+px)));
   int closestprod =  findClosestFactorableNumber(leastint);
@@ -1070,22 +1069,22 @@ Model::estimateXYPaddingSizes(Simbox         * timeSimbox,
                               ModelSettings *& modelSettings)
 {
   bool newPaddings = false;
-  float xPad    = 0.0f;
-  float yPad    = 0.0f;
-  float xPadFac = 0.0f;
-  float yPadFac = 0.0f;
-  if (modelSettings->getXpad() == 0.0f && modelSettings->getYpad() == 0.0f)
+  double xPad    = 0.0f;
+  double yPad    = 0.0f;
+  double xPadFac = 0.0f;
+  double yPadFac = 0.0f;
+  if (modelSettings->getXpad() == 0.0 && modelSettings->getYpad() == 0.0)
   {
     float range1  = modelSettings->getLateralCorr()->getRange();
     float range2  = modelSettings->getLateralCorr()->getSubRange();
     float angle   = modelSettings->getLateralCorr()->getAngle();
-    float factor  = 1.54f;  // At dist = 1.54*range, an exponential variogram is reduced to 0.01
+    double factor = 1.54;  // At dist = 1.54*range, an exponential variogram is reduced to 0.01
 
     xPad          = factor * MAXIM(fabs(range1*cos(angle)),fabs(range2*sin(angle)));
     yPad          = factor * MAXIM(fabs(range1*sin(angle)),fabs(range2*cos(angle)));
 
-    xPadFac       = static_cast<float>(MINIM(1.0f, xPad / timeSimbox->getlx())); // A padding of more than 100% is insensible
-    yPadFac       = static_cast<float>(MINIM(1.0f, yPad / timeSimbox->getly()));
+    xPadFac       = MINIM(1.0, xPad / timeSimbox->getlx()); // A padding of more than 100% is insensible
+    yPadFac       = MINIM(1.0, yPad / timeSimbox->getly());
 
     modelSettings->setXpad(xPadFac);
     modelSettings->setYpad(yPadFac);
@@ -1101,6 +1100,12 @@ Model::estimateXYPaddingSizes(Simbox         * timeSimbox,
     LogKit::LogFormatted(LogKit::LOW,"\nPadding sizes estimated from lateral correlation ranges:\n");
     LogKit::LogFormatted(LogKit::LOW,"  xPad, xPadFac, nxPad                     : %8.f, %6.2f, %6d\n", xPad, xPadFac, nxPad);
     LogKit::LogFormatted(LogKit::LOW,"  yPad, yPadFac, nyPad                     : %8.f, %6.2f, %6d\n", yPad, yPadFac, nyPad);
+  }
+  else
+  {
+    LogKit::LogFormatted(LogKit::HIGH,"\nPadding sizes estimated from lateral correlation ranges:\n");
+    LogKit::LogFormatted(LogKit::HIGH,"  xPad, xPadFac, nxPad                     : %8.f, %6.2f, %6d\n", xPad, xPadFac, nxPad);
+    LogKit::LogFormatted(LogKit::HIGH,"  yPad, yPadFac, nyPad                     : %8.f, %6.2f, %6d\n", yPad, yPadFac, nyPad);
   }
 }
 
@@ -1713,7 +1718,7 @@ Model::processPriorCorrelations(Corr         *& correlations,
       LogKit::LogFormatted(LogKit::LOW,"Parameter correlation read from file.\n\n");
     }
 
-    Surface * CorrXY = findCorrXYGrid();
+    Surface * CorrXY = findCorrXYGrid(modelSettings);
 
     if(modelSettings->getLateralCorr()==NULL) { // NBNB-PAL: this will never be true (default lateral corr)
       estimateCorrXYFromSeismic(CorrXY,
@@ -1763,26 +1768,22 @@ Model::processPriorCorrelations(Corr         *& correlations,
 }
 
 Surface * 
-Model::findCorrXYGrid(void)
+Model::findCorrXYGrid(ModelSettings * modelSettings)
 {
-  int npix, nx, ny;
-  int i,j,refi,refj;
-
   float dx  = static_cast<float>(timeSimbox_->getdx());
   float dy  = static_cast<float>(timeSimbox_->getdy());
-  float snx = static_cast<float>(timeSimbox_->getnx());
-  float sny = static_cast<float>(timeSimbox_->getny());
 
-  nx = findClosestFactorableNumber(static_cast<int>(ceil(snx*(1.0f+modelSettings_->getXpad())))); //Use padded grid
-  ny = findClosestFactorableNumber(static_cast<int>(ceil(sny*(1.0f+modelSettings_->getYpad()))));
-  npix = nx*ny;
+  int   nx  = modelSettings_->getNXpad();
+  int   ny  = modelSettings_->getNYpad();
+
   Surface * grid = new Surface(0, 0, dx*nx, dy*ny, nx, ny, RMISSING);
 
   if(modelSettings_->getLateralCorr()!=NULL) // NBNB-PAL: Denne her blir aldri null etter at jeg la inn en default lateral correlation i modelsettings.
   {
-    for(j=0;j<ny;j++)
+    int refi,refj;
+    for(int j=0;j<ny;j++)
     {
-      for(i=0;i<nx;i++)
+      for(int i=0;i<nx;i++)
       {
         if(i<(nx/2+1))
         {

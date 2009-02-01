@@ -67,9 +67,9 @@ public:
   float               getMinRelWaveletAmp(void)     const { return minRelWaveletAmp_    ;}
   float               getMaxWaveletShift(void)      const { return maxWaveletShift_     ;}
   float               getWaveletTaperingL(void)     const { return waveletTaperingL_    ;}
-  float               getXpad(void)                 const { return xPad_                ;}
-  float               getYpad(void)                 const { return yPad_                ;}
-  float               getZpad(void)                 const { return zPad_                ;}
+  double              getXpad(void)                 const { return xPad_                ;}
+  double              getYpad(void)                 const { return yPad_                ;}
+  double              getZpad(void)                 const { return zPad_                ;}
   int                 getNXpad(void)                const { return nxPad_               ;}
   int                 getNYpad(void)                const { return nyPad_               ;}
   int                 getNZpad(void)                const { return nzPad_               ;}
@@ -147,9 +147,9 @@ public:
   void                setinRelWaveletAmp(float minRelWaveletAmp)    { minRelWaveletAmp_     = minRelWaveletAmp   ;}
   void                setMaxWaveletShift(float maxWaveletShift)     { maxWaveletShift_      = maxWaveletShift    ;}
   void                setWaveletTaperingL(float waveletTaperingL)   { waveletTaperingL_     = waveletTaperingL   ;}
-  void                setXpad(float xPad)                           { xPad_                 = xPad               ;}
-  void                setYpad(float yPad)                           { yPad_                 = yPad               ;}
-  void                setZpad(float zPad)                           { zPad_                 = zPad               ;}
+  void                setXpad(double xPad)                          { xPad_                 = xPad               ;}
+  void                setYpad(double yPad)                          { yPad_                 = yPad               ;}
+  void                setZpad(double zPad)                          { zPad_                 = zPad               ;}
   void                setNXpad(int nxPad)                           { nxPad_                = nxPad              ;}
   void                setNYpad(int nyPad)                           { nyPad_                = nyPad              ;}
   void                setNZpad(int nzPad)                           { nzPad_                = nzPad              ;}
@@ -270,9 +270,9 @@ private:
   float                     maxWaveletShift_;       // Largest allowed shift when estimating wavelet
   float                     waveletTaperingL_;      // Til Odds waveletestimering
                            
-  float                     xPad_;                  // Padding factor in x direction
-  float                     yPad_;
-  float                     zPad_; 
+  double                    xPad_;                  // Padding factor in x direction
+  double                    yPad_;
+  double                    zPad_; 
                            
   int                       nxPad_;                 // Number of cells to pad in x direction
   int                       nyPad_;

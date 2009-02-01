@@ -168,9 +168,9 @@ private:
   void             estimateCorrXYFromSeismic(Surface *& CorrXY,
                                              FFTGrid ** seisCube,
                                              int        nAngles);
-  Surface        * findCorrXYGrid();
-  int              setPaddingSize(int   nx, 
-                                  float px);
+  Surface        * findCorrXYGrid(ModelSettings * modelSettings);
+  int              setPaddingSize(int    nx, 
+                                  double px);
   void             loadExtraSurfaces(Surface  **& waveletEstimInterval,
                                      Surface  **& faciesEstimInterval,
                                      Simbox     * timeSimbox,

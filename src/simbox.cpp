@@ -378,6 +378,35 @@ Simbox::getStormHeader(int cubetype, int nx, int ny, int nz, bool flat, bool asc
   sprintf(header,"%s%d %d %d\n", header, nx, ny, nz);
   std::string strHeader(header); 
   delete [] header;
+
+  /*
+    ==>
+    ==> Code to be used with g++ 4.3.2
+    ==>
+  std::string strHeader;
+  if(ascii == false)
+    strHeader += "storm_petro_binary\n";
+  else
+    strHeader += "storm_petro_ascii\n";
+
+  strHeader += "0 " + NRLib2::ToString(cubetype,6) + " " + NRLib2::ToString(RMISSING,6) + "\n";
+  strHeader += "FFTGrid\n";
+
+  if(flat == false)
+    strHeader += NRLib2::ToString(GetXMin(),6) + " " + NRLib2::ToString(GetLX(),6) + " "
+      + NRLib2::ToString(GetYMin(),6) + " " + NRLib2::ToString(GetLY(),6) + " "
+               + topName_ + " " 
+      + botName_ + " 0.0 0.0\n";
+  else
+    strHeader += NRLib2::ToString(GetXMin(),6) + " " + NRLib2::ToString(GetLX(),6) + " "
+      + NRLib2::ToString(GetYMin(),6) + " " + NRLib2::ToString(GetLY(),6) + " "
+               + "0.0 " 
+      + NRLib2::ToString(GetLZ(),6)+" 0.0 0.0\n";
+
+  strHeader += NRLib2::ToString(GetLZ(),6) + " " + NRLib2::ToString(GetAngle()*180/PI,6) + "\n\n";
+  strHeader += NRLib2::ToString(nx) + " " + NRLib2::ToString(ny) + " " + NRLib2::ToString(nz) + "\n";
+  */
+
   return(strHeader);
 }
 

@@ -1240,7 +1240,7 @@ ModelFile::readCommandPadding(char ** params, int & pos, char * errText)
   if(error == 0)
   {
     sprintf(errText,"%c",'\0');
-    float xPad = float(atof(params[pos]));
+    double xPad = atof(params[pos]);
     if(xPad > 1 || xPad < 0 || isNumber(params[pos]) == 0)
     {
       error = 1;
@@ -1250,7 +1250,7 @@ ModelFile::readCommandPadding(char ** params, int & pos, char * errText)
     {
       modelSettings_->setXpad(xPad);
     }
-    float yPad = float(atof(params[pos+1]));
+    double yPad = atof(params[pos+1]);
     if(yPad > 1 || yPad <= 0 || isNumber(params[pos+1]) == 0)
     {
       error = 1;
@@ -1261,7 +1261,7 @@ ModelFile::readCommandPadding(char ** params, int & pos, char * errText)
     {
       modelSettings_->setYpad(yPad);
     }
-    float zPad = float(atof(params[pos+2]));
+    double zPad = atof(params[pos+2]);
     if(zPad > 1 || zPad <= 0 || isNumber(params[pos+2]) == 0)
     {
       error = 1;
