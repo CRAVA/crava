@@ -67,9 +67,9 @@ ModelSettings::ModelSettings(void)
   maxWaveletShift_       =    11.0f;
   waveletTaperingL_      =   200.0f;
 
-  xPad_                  =      0.0;   // If the PADDING command is not called, proper paddings
-  yPad_                  =      0.0;   // will be estimated in the Models() constructor 
-  zPad_                  =      0.0;   //
+  xPadFac_               =      0.0;   // If the PADDING command is not called, proper paddings
+  yPadFac_               =      0.0;   // will be estimated in the Models() constructor 
+  zPadFac_               =      0.0;   //
 
   nxPad_                 = IMISSING;   
   nyPad_                 = IMISSING;   

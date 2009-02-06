@@ -8,6 +8,7 @@
 class Vario;
 class Simbox;
 class FFTGrid;
+class CovGrid2D;
 class WellData;
 class GridMapping;
 class KrigingData3D;
@@ -46,11 +47,19 @@ private:
                                        WellData     ** wells,
                                        Simbox        * simbox,
                                        ModelSettings * modelSettings);
-  void         calculateBackgroundTrend(FFTGrid          *& trendGrid,
+  void         resampleBackgroundModel(FFTGrid      *& bgAlpha,
+                                       FFTGrid      *& bgBeta,
+                                       FFTGrid      *& bgRho,
+                                       Simbox        * timeBGsimbox,
+                                       Simbox        * timeSimbox,
+                                       ModelSettings * modelSettings);
+  void         padAndSetBackgroundModel(FFTGrid * bgAlpha,
+                                        FFTGrid * bgBeta,
+                                        FFTGrid * bgRho);
+  void         calculateBackgroundTrend(float             * trend,
+                                        float             * avgDev,
                                         WellData         ** wells,
                                         Simbox            * simbox,
-                                        float             * trend,
-                                        float             * avgDev,
                                         float               logMin, 
                                         float               logMax,
                                         float               maxHz, 
@@ -58,15 +67,26 @@ private:
                                         int                 nWells, 
                                         bool                hasVelocityTrend,
                                         const std::string & name);
-  void         setupKrigingData2D(KrigingData2D *& krigingDataAlpha,
-                                  KrigingData2D *& krigingDataBeta,
-                                  KrigingData2D *& krigingDataRho,
-                                  float          * trendAlpha,
-                                  float          * trendBeta, 
-                                  float          * trendRho , 
-                                  WellData      ** wells,
-                                  Simbox         * simbox,
-                                  const int        nWells);
+  const CovGrid2D  & makeCovGrid2D(Simbox * simbox,
+                             Vario  * vario, 
+                             int      debugFlag);
+  void         setupKrigingData2D(std::vector<KrigingData2D> & krigingDataAlpha,
+                                  std::vector<KrigingData2D> & krigingDataBeta,
+                                  std::vector<KrigingData2D> & krigingDataRho,
+                                  float                      * trendAlpha,
+                                  float                      * trendBeta, 
+                                  float                      * trendRho ,
+                                  int                          debugFlag,
+                                  Simbox                     * simbox,
+                                  WellData                  ** wells,
+                                  const int                    nWells);
+  void         makeKrigedBackground(const std::vector<KrigingData2D> & krigingData,
+                                    FFTGrid                         *& bgGrid,
+                                    float                            * trend,
+                                    Simbox                           * simbox,
+                                    const CovGrid2D                  & covGrid2D,
+                                    const std::string                & type
+                                    );
   void         setupKrigingData3D(KrigingData3D *& krigingData,
                                 WellData      ** wells,
                                 Simbox         * simbox,

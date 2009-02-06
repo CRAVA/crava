@@ -1318,27 +1318,36 @@ FFTGrid::consistentSize(int nx,int ny, int nz, int nxp, int nyp, int nzp)
 
 void 
 FFTGrid::writeFile(const std::string & fileName, const Simbox * simbox, 
-                   const std::string sgriLabel, float z0, 
+                   const std::string label, float z0, 
                    GridMapping * depthMap, GridMapping * timeMap)
 {
   if(formatFlag_ != NOOUTPUT)
   {
+    bool expTrans = (label == "exptrans"); // use sgriLabel to active exponential transformations
     if((formatFlag_ & NOTIMEFORMAT) == 0) {
       if(timeMap == NULL) { //No resampling of storm 
-
-        if((formatFlag_ & STORMFORMAT) == STORMFORMAT) 
-          FFTGrid::writeStormFile(fileName, simbox);
-        if((formatFlag_ & ASCIIFORMAT) == ASCIIFORMAT)
-          FFTGrid::writeStormFile(fileName, simbox, true);
+        if(expTrans) {
+          if((formatFlag_ & STORMFORMAT) == STORMFORMAT) 
+            FFTGrid::writeStormFile(fileName, simbox, true, false);
+          if((formatFlag_ & ASCIIFORMAT) == ASCIIFORMAT)
+            FFTGrid::writeStormFile(fileName, simbox, true, true);
+        }
+        else {
+          if((formatFlag_ & STORMFORMAT) == STORMFORMAT) 
+            FFTGrid::writeStormFile(fileName, simbox, false, false);
+          if((formatFlag_ & ASCIIFORMAT) == ASCIIFORMAT)
+            FFTGrid::writeStormFile(fileName, simbox, false, true);
+        }
       }
-      else
-        FFTGrid::writeResampledStormCube(timeMap, fileName, simbox, formatFlag_);
+      else {
+        FFTGrid::writeResampledStormCube(timeMap, fileName, simbox, formatFlag_, expTrans);
+      }
 
       //SEGY and SGRI are never resampled in time.
       if((formatFlag_ & SEGYFORMAT) == SEGYFORMAT)
         FFTGrid::writeSegyFile(fileName, simbox, z0);
       if((formatFlag_ & SGRIFORMAT) == SGRIFORMAT)
-        FFTGrid::writeSgriFile(fileName, simbox, sgriLabel);
+        FFTGrid::writeSgriFile(fileName, simbox, label);
     }
     if(depthMap != NULL) { //Writing in depth. Currently, only stormfiles are written in depth.
       std::string depthName = fileName+"_Depth";
@@ -1348,10 +1357,19 @@ FFTGrid::writeFile(const std::string & fileName, const Simbox * simbox,
                                "Depth interval lacking when trying to write %s. Write cancelled.\n",depthName.c_str());
           return;
         }
-        if((formatFlag_ & STORMFORMAT) == STORMFORMAT) 
-          FFTGrid::writeStormFile(depthName, depthMap->getSimbox());
-        if((formatFlag_ & ASCIIFORMAT) == ASCIIFORMAT)
-          FFTGrid::writeStormFile(depthName, depthMap->getSimbox(), true);
+        if(expTrans) {
+          if((formatFlag_ & STORMFORMAT) == STORMFORMAT) 
+            FFTGrid::writeStormFile(depthName, depthMap->getSimbox(), true, false);
+          if((formatFlag_ & ASCIIFORMAT) == ASCIIFORMAT)
+            FFTGrid::writeStormFile(depthName, depthMap->getSimbox(), true, true);
+        }
+        else {
+          if((formatFlag_ & STORMFORMAT) == STORMFORMAT) 
+            FFTGrid::writeStormFile(depthName, depthMap->getSimbox(), false, false);
+          if((formatFlag_ & ASCIIFORMAT) == ASCIIFORMAT)
+            FFTGrid::writeStormFile(depthName, depthMap->getSimbox(), false, true);
+        }
+
         if((formatFlag_ & SEGYFORMAT) == SEGYFORMAT)
           makeDepthCubeForSegy(depthMap->getSimbox(),depthName);
       }
@@ -1363,14 +1381,14 @@ FFTGrid::writeFile(const std::string & fileName, const Simbox * simbox,
           return;
         }
         // Writes also segy in depth if required
-        FFTGrid::writeResampledStormCube(depthMap, depthName, simbox, formatFlag_);
+        FFTGrid::writeResampledStormCube(depthMap, depthName, simbox, formatFlag_, expTrans);
       }
     }
   }
 }
 
 void
-FFTGrid::writeStormFile(const std::string & fileName, const Simbox * simbox, bool ascii, bool padding, bool flat)
+FFTGrid::writeStormFile(const std::string & fileName, const Simbox * simbox, bool expTrans, bool ascii, bool padding, bool flat)
 {
   int nx, ny, nz;
   if(padding == true)
@@ -1402,7 +1420,10 @@ FFTGrid::writeStormFile(const std::string & fileName, const Simbox * simbox, boo
       for(j=0;j<ny;j++)
         for(i=0;i<nx;i++)
         {
-          value = getRealValue(i,j,k,true);
+          if (expTrans)
+            value = exp(getRealValue(i,j,k,true));
+          else
+            value = getRealValue(i,j,k,true);
 #ifndef BIGENDIAN
           fwrite(&(output[3]),1,1,file);
           fwrite(&(output[2]),1,1,file);
@@ -1425,7 +1446,10 @@ FFTGrid::writeStormFile(const std::string & fileName, const Simbox * simbox, boo
       for(j=0;j<ny;j++) {
         for(i=0;i<nx;i++) {
           value = getRealValue(i,j,k,true);
-          fprintf(file,"%f ", value);
+          if (expTrans)
+            fprintf(file,"%f ", exp(value));
+          else
+            fprintf(file,"%f ", value);
         }
         fprintf(file,"\n");
       }
@@ -1558,10 +1582,11 @@ FFTGrid::writeSegyFile(const std::string & fileName, const Simbox * simbox, floa
 
 
 void
-FFTGrid::writeResampledStormCube(GridMapping  * gridmapping, 
+FFTGrid::writeResampledStormCube(GridMapping       * gridmapping, 
                                  const std::string & fileName, 
-                                 const Simbox * simbox,
-                                 const int      format)
+                                 const Simbox      * simbox,
+                                 const int           format,
+                                 bool                expTrans)
 {
   // simbox is related to the cube we resample from. gridmapping contains simbox for the cube we resample to.
  
@@ -1580,7 +1605,11 @@ FFTGrid::writeResampledStormCube(GridMapping  * gridmapping,
       {
         time = (*mapping)(i,j,k);
         kindex = float((time - static_cast<float>(simbox->getTop(x,y)))/simbox->getdz());
-        (*outgrid)(i,j,k) = getRealValueInterpolated(i,j,kindex);
+        float value = getRealValueInterpolated(i,j,kindex);
+        if (expTrans)
+          (*outgrid)(i,j,k) = exp(value);
+        else
+          (*outgrid)(i,j,k) = value;
       }
     }
   }

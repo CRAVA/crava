@@ -1240,18 +1240,18 @@ ModelFile::readCommandPadding(char ** params, int & pos, char * errText)
   if(error == 0)
   {
     sprintf(errText,"%c",'\0');
-    double xPad = atof(params[pos]);
-    if(xPad > 1 || xPad < 0 || isNumber(params[pos]) == 0)
+    double xPadFac = atof(params[pos]);
+    if(xPadFac > 1 || xPadFac < 0 || isNumber(params[pos]) == 0)
     {
       error = 1;
       sprintf(errText,"Padding in x-direction must be a number between 0 and 1 (found %s)\n",params[pos]);
     }
     else
     {
-      modelSettings_->setXpad(xPad);
+      modelSettings_->setXPadFac(xPadFac);
     }
-    double yPad = atof(params[pos+1]);
-    if(yPad > 1 || yPad <= 0 || isNumber(params[pos+1]) == 0)
+    double yPadFac = atof(params[pos+1]);
+    if(yPadFac > 1 || yPadFac <= 0 || isNumber(params[pos+1]) == 0)
     {
       error = 1;
       sprintf(errText,"%sPadding in y-direction must be a number between 0 and 1 (found %s)\n",
@@ -1259,10 +1259,10 @@ ModelFile::readCommandPadding(char ** params, int & pos, char * errText)
     }
     else
     {
-      modelSettings_->setYpad(yPad);
+      modelSettings_->setYPadFac(yPadFac);
     }
-    double zPad = atof(params[pos+2]);
-    if(zPad > 1 || zPad <= 0 || isNumber(params[pos+2]) == 0)
+    double zPadFac = atof(params[pos+2]);
+    if(zPadFac > 1 || zPadFac <= 0 || isNumber(params[pos+2]) == 0)
     {
       error = 1;
       sprintf(errText,"%sPadding in z-direction must be a number between 0 and 1 (found %s)\n",
@@ -1270,7 +1270,7 @@ ModelFile::readCommandPadding(char ** params, int & pos, char * errText)
     }
     else
     {
-      modelSettings_->setZpad(zPad);
+      modelSettings_->setZPadFac(zPadFac);
     }
   } 
   pos += nPar+1;

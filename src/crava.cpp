@@ -535,7 +535,7 @@ Crava:: divideDataByScaleWavelet()
         sgriLabel += NRLib2::ToString(thetaDeg_[l]+0.5);
         seisData_[l]->writeFile(fName, simbox_, sgriLabel);
       }
-      LogKit::LogFormatted(LogKit::LOW,"Interpolating reflections in volume %d: ",l);
+      LogKit::LogFormatted(LogKit::MEDIUM,"Interpolating reflections in volume %d: ",l);
       seisData_[l]->interpolateSeismic(energyTreshold_);
       if(ModelSettings::getDebugLevel() > 0)
       {
@@ -802,6 +802,14 @@ Crava::computePostMeanResidAndFFTCov()
   //   time(&timestart);
   float realFrequency;
 
+  LogKit::LogFormatted(LogKit::LOW,"\nBuilding posterior distribution:");
+  float monitorSize = std::max(1.0f, static_cast<float>(nzp_)*0.02f);
+  float nextMonitor = monitorSize;
+  std::cout 
+    << "\n  0%       20%       40%       60%       80%      100%"
+    << "\n  |    |    |    |    |    |    |    |    |    |    |  "
+    << "\n  ^"; 
+
   for(k = 0; k < nzp_; k++)
   {  
     realFrequency = static_cast<float>((nz_*1000.0f)/(simbox_->getlz()*nzp_)*MINIM(k,nzp_-k)); // the physical frequency
@@ -961,7 +969,15 @@ Crava::computePostMeanResidAndFFTCov()
             seisData_[l]->setNextComplex(ijkRes[l]);
       }
     }
+    // Log progress
+    if (static_cast<float>(k+1) >= nextMonitor) 
+    { 
+      nextMonitor += monitorSize;
+      std::cout << "^";
+      fflush(stdout);
+    }
   }
+  std::cout << "\n";
 
   //  time(&timeend);
   // LogKit::LogFormatted(LogKit::LOW,"\n Core inversion finished after %ld seconds ***\n",timeend-timestart);

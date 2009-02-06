@@ -16,8 +16,10 @@
 #include "src/simbox.h"
 #include "src/welldata.h"
 #include "src/background.h"
-#include "src/krigingdata3d.h"
+#include "src/covgrid2d.h"
 #include "src/krigingdata2d.h"
+#include "src/kriging2d.h"
+#include "src/krigingdata3d.h"
 #include "src/covgridseparated.h"
 #include "src/krigingadmin.h"
 #include "src/fftgrid.h"
@@ -46,10 +48,6 @@ Background::Background(FFTGrid       ** grids,
                             velocity,wells,
                             timeSimbox,
                             modelSettings);
-    LogKit::LogFormatted(LogKit::LOW,"Padding background model...\n");
-    backModel_[0]->fillInFromRealFFTGrid(*bgAlpha);
-    backModel_[1]->fillInFromRealFFTGrid(*bgBeta);
-    backModel_[2]->fillInFromRealFFTGrid(*bgRho);
   }
   else
   {
@@ -57,37 +55,13 @@ Background::Background(FFTGrid       ** grids,
                             velocity,wells,
                             timeBGSimbox,
                             modelSettings);
-
-    if((modelSettings->getOutputFlag() & ModelSettings::EXTRA_GRIDS) > 0) {
-      bgAlpha->writeStormFile("lnBG_Vp_BackgroundGrid", timeBGSimbox);
-      bgBeta->writeStormFile("lnBG_Vs_BackgroundGrid", timeBGSimbox);
-      bgRho->writeStormFile("lnBG_Rho_BackgroundGrid", timeBGSimbox);
-    }
-
-    FFTGrid * resBgAlpha = NULL;
-    FFTGrid * resBgBeta = NULL;
-    FFTGrid * resBgRho = NULL;
-
-    LogKit::LogFormatted(LogKit::LOW,"Resampling background model...\n");
-    resampleParameter(resBgAlpha,bgAlpha,timeSimbox, timeBGSimbox);
-    resampleParameter(resBgBeta ,bgBeta ,timeSimbox, timeBGSimbox);
-    resampleParameter(resBgRho  ,bgRho  ,timeSimbox, timeBGSimbox);
-    
-    if((modelSettings->getOutputFlag() & ModelSettings::EXTRA_GRIDS) > 0) {
-      resBgAlpha->writeStormFile("lnBG_Vp_InversionGrid", timeSimbox);
-      resBgBeta->writeStormFile("lnBG_Vs_InversionGrid", timeSimbox);
-      resBgRho->writeStormFile("lnBG_Rho_InversionGrid", timeSimbox);
-    }
-
-    LogKit::LogFormatted(LogKit::LOW,"Padding background model...\n");
-    backModel_[0]->fillInFromRealFFTGrid(*resBgAlpha);
-    backModel_[1]->fillInFromRealFFTGrid(*resBgBeta);
-    backModel_[2]->fillInFromRealFFTGrid(*resBgRho);
-
-    delete resBgAlpha;
-    delete resBgBeta;
-    delete resBgRho;
+    resampleBackgroundModel(bgAlpha,bgBeta,bgRho,
+                            timeBGSimbox,
+                            timeSimbox,
+                            modelSettings);
   }  
+  padAndSetBackgroundModel(bgAlpha,bgBeta,bgRho);    
+
   delete bgAlpha;
   delete bgBeta;
   delete bgRho;
@@ -120,42 +94,6 @@ Background::~Background(void)
 
 //-------------------------------------------------------------------------------
 void
-Background::writeBackgrounds(Simbox      * simbox, 
-                             GridMapping * depthMapping, 
-                             GridMapping * timeMapping) const 
-{
-  LogKit::LogFormatted(LogKit::HIGH,"\nExp-transforming cubes...\n");
-  backModel_[0]->expTransf();
-  backModel_[1]->expTransf();
-  backModel_[2]->expTransf();
-
-  if(depthMapping != NULL && depthMapping->getSimbox() == NULL) {
-    const Simbox * timeSimbox = simbox;
-    if(timeMapping != NULL)
-      timeSimbox = timeMapping->getSimbox();
-    backModel_[0]->setAccessMode(FFTGrid::RANDOMACCESS);
-    depthMapping->setMappingFromVelocity(backModel_[0], timeSimbox);
-    backModel_[0]->endAccess();
-  }
-
-  backModel_[0]->writeFile("BG_Vp",  simbox, "NO_LABEL", 0, depthMapping, timeMapping);
-  backModel_[1]->writeFile("BG_Vs",  simbox, "NO_LABEL", 0, depthMapping, timeMapping);
-  backModel_[2]->writeFile("BG_Rho", simbox, "NO_LABEL", 0, depthMapping, timeMapping);
-  //
-  // For debugging: write cubes not in ASCII, with padding, and with flat top.
-  //
-  //backModel_[0]->writeStormFile("BG_Vp",  simbox, false, true, true);
-  //backModel_[1]->writeStormFile("BG_Vs",  simbox, false, true, true);
-  //backModel_[2]->writeStormFile("BG_Rho", simbox, false, true, true);
-
-  LogKit::LogFormatted(LogKit::HIGH,"\nBacktransforming cubes...\n");
-  backModel_[0]->logTransf();
-  backModel_[1]->logTransf();
-  backModel_[2]->logTransf();
-}
-
-//-------------------------------------------------------------------------------
-void
 Background::generateBackgroundModel(FFTGrid      *& bgAlpha,
                                     FFTGrid      *& bgBeta,
                                     FFTGrid      *& bgRho,
@@ -177,21 +115,24 @@ Background::generateBackgroundModel(FFTGrid      *& bgAlpha,
   float * avgDevVel   = new float[nWells]; // Allocate (for simplicity) although not always needed
 
   bool hasVelocityTrend = velocity != NULL;
-  calculateBackgroundTrend(bgAlpha, wells, simbox, trendAlpha, avgDevAlpha,
+  calculateBackgroundTrend(trendAlpha, avgDevAlpha,
+                           wells, simbox, 
                            modelSettings->getAlphaMin(), 
                            modelSettings->getAlphaMax(),
                            modelSettings->getMaxHzBackground(), 
                            modelSettings->getOutputFlag(),
                            nWells, hasVelocityTrend,
                            std::string("Vp"));
-  calculateBackgroundTrend(bgBeta, wells, simbox, trendBeta, avgDevBeta,
+  calculateBackgroundTrend(trendBeta, avgDevBeta, 
+                           wells, simbox, 
                            modelSettings->getBetaMin(), 
                            modelSettings->getBetaMax(),
                            modelSettings->getMaxHzBackground(), 
                            modelSettings->getOutputFlag(),
                            nWells, hasVelocityTrend,
                            std::string("Vs"));
-  calculateBackgroundTrend(bgRho, wells, simbox, trendRho, avgDevRho,
+  calculateBackgroundTrend(trendRho, avgDevRho,
+                           wells, simbox, 
                            modelSettings->getRhoMin(), 
                            modelSettings->getRhoMax(),
                            modelSettings->getMaxHzBackground(), 
@@ -223,22 +164,53 @@ Background::generateBackgroundModel(FFTGrid      *& bgAlpha,
                                      wells, nWells, nz);
   }
 
-  KrigingData2D * krigingDataAlpha = NULL;
-  KrigingData2D * krigingDataBeta = NULL;
-  KrigingData2D * krigingDataRho = NULL;
-  //setupKrigingData2D(krigingDataAlpha,krigingDataBeta,krigingDataRho,
-  //                   wells,simbox,trendAlpha,trendBeta,trendRho,nWells);
+  bool useNewAlgorithm = true;
+  if (useNewAlgorithm) 
+  {
+    std::vector<KrigingData2D> krigingDataAlpha(nz);
+    std::vector<KrigingData2D> krigingDataBeta(nz);
+    std::vector<KrigingData2D> krigingDataRho(nz);
+    
+    setupKrigingData2D(krigingDataAlpha,krigingDataBeta,krigingDataRho,
+                       trendAlpha,trendBeta,trendRho,
+                       modelSettings->getOutputFlag(),
+                       simbox,wells,nWells);
+    
+    const CovGrid2D & covGrid2D = makeCovGrid2D(simbox,
+                                                modelSettings->getBackgroundVario(),
+                                                modelSettings->getDebugFlag());
+    
+    makeKrigedBackground(krigingDataAlpha, bgAlpha, trendAlpha, simbox, covGrid2D, "Vp");
+    makeKrigedBackground(krigingDataBeta, bgBeta, trendBeta, simbox, covGrid2D, "Vs");
+    makeKrigedBackground(krigingDataRho, bgRho, trendRho, simbox, covGrid2D, "Rho");
+  }
+  else
+  {
+    //
+    // NBNB-PAL: Delete this code soon (2009.02.06) ...
+    //
+    KrigingData3D * krigingData = NULL;
+    setupKrigingData3D(krigingData,wells,simbox,trendAlpha,trendBeta,trendRho,nWells);
+    
+    const int nx = simbox->getnx();
+    const int ny = simbox->getny();
+    bgAlpha = new FFTGrid(nx, ny, nz, nx, ny, nz);
+    bgBeta  = new FFTGrid(nx, ny, nz, nx, ny, nz);
+    bgRho   = new FFTGrid(nx, ny, nz, nx, ny, nz);
+    fillInVerticalTrend(bgAlpha, trendAlpha);
+    fillInVerticalTrend(bgBeta, trendBeta);
+    fillInVerticalTrend(bgRho, trendRho);
+    
+    interpolateBackgroundTrend(krigingData,
+                               bgAlpha, 
+                               bgBeta, 
+                               bgRho,
+                               simbox,
+                               modelSettings->getBackgroundVario(),
+                               modelSettings->getDebugFlag());
+  delete krigingData;
+  }
 
-  KrigingData3D * krigingData = NULL;
-  setupKrigingData3D(krigingData,wells,simbox,trendAlpha,trendBeta,trendRho,nWells);
-
-  interpolateBackgroundTrend(krigingData,
-                             bgAlpha, 
-                             bgBeta, 
-                             bgRho,
-                             simbox,
-                             modelSettings->getBackgroundVario(),
-                             modelSettings->getDebugFlag());
   delete [] avgDevAlpha;
   delete [] avgDevBeta;
   delete [] avgDevRho;
@@ -248,8 +220,6 @@ Background::generateBackgroundModel(FFTGrid      *& bgAlpha,
   delete [] trendBeta;
   delete [] trendRho;
   delete [] trendVel;
-
-  delete krigingData;
 }
  
 //---------------------------------------------------------------------------
@@ -264,8 +234,7 @@ Background::calculateVelocityDeviations(FFTGrid   * velocity,
                                         int         nWells)
 {
   if((outputFlag & ModelSettings::BACKGROUND_TREND) > 0) {
-    std::string fileName = std::string("BG_trend_VpFromFile"); 
-    velocity->writeStormFile(fileName, simbox);
+    velocity->writeFile("BG_trend_VpFromFile", simbox, "NO_LABEL");
   }
     
   //
@@ -324,11 +293,10 @@ Background::calculateVelocityDeviations(FFTGrid   * velocity,
 
 //---------------------------------------------------------------------------
 void
-Background::calculateBackgroundTrend(FFTGrid          *& trendGrid,
+Background::calculateBackgroundTrend(float             * trend,
+                                     float             * avgDev,
                                      WellData         ** wells,
                                      Simbox            * simbox,
-                                     float             * trend,
-                                     float             * avgDev,
                                      float               logMin, 
                                      float               logMax,
                                      float               maxHz, 
@@ -337,10 +305,7 @@ Background::calculateBackgroundTrend(FFTGrid          *& trendGrid,
                                      bool                hasVelocityTrend,
                                      const std::string & name)
 {
-  const int nx = simbox->getnx();
-  const int ny = simbox->getny();
-  const int nz = simbox->getnz();
-
+  const int   nz = simbox->getnz();
   const float dz = static_cast<float>(simbox->getdz()*simbox->getAvgRelThick());
 
   calculateVerticalTrend(wells, trend, 
@@ -355,32 +320,29 @@ Background::calculateBackgroundTrend(FFTGrid          *& trendGrid,
   calculateDeviationFromVerticalTrend(wells, trend, avgDev,
                                       nWells, nz, name);
   
-  trendGrid = new FFTGrid(nx, ny, nz, nx, ny, nz);
-  
-  fillInVerticalTrend(trendGrid, trend);
-  
   if((outputFlag & ModelSettings::BACKGROUND_TREND) > 0 && !(name=="Vp" && hasVelocityTrend))
   {
-    LogKit::LogFormatted(LogKit::HIGH,"\nExp-transforming cubes...\n");
-    std::string fileName = std::string("BG_trend")+name; 
-    trendGrid->expTransf();
-    trendGrid->writeStormFile(fileName, simbox);
-    LogKit::LogFormatted(LogKit::HIGH,"\nBacktransforming cubes...\n");
-    trendGrid->logTransf();
+    const int nx = simbox->getnx();
+    const int ny = simbox->getny();
+    FFTGrid * trendGrid = new FFTGrid(nx, ny, nz, nx, ny, nz);
+    fillInVerticalTrend(trendGrid, trend);
+    trendGrid->writeFile("BG_trend"+name, simbox, "NO_LABEL");
+    delete trendGrid;
   }
 }
 
 //-------------------------------------------------------------------------------
 void
-Background::setupKrigingData2D(KrigingData2D *& krigingDataAlpha,
-                               KrigingData2D *& krigingDataBeta,
-                               KrigingData2D *& krigingDataRho,
-                               float          * trendAlpha,
-                               float          * trendBeta, 
-                               float          * trendRho , 
-                               WellData      ** wells,
-                               Simbox         * simbox,
-                               const int        nWells)
+Background::setupKrigingData2D(std::vector<KrigingData2D> & krigingDataAlpha,
+                               std::vector<KrigingData2D> & krigingDataBeta,
+                               std::vector<KrigingData2D> & krigingDataRho,
+                               float                      * trendAlpha,
+                               float                      * trendBeta, 
+                               float                      * trendRho , 
+                               int                          outputFlag,
+                               Simbox                     * simbox,
+                               WellData                  ** wells,
+                               const int                    nWells)
 {
   //
   // Although unnecessary, we have chosen to set up kriging data fro 
@@ -395,10 +357,8 @@ Background::setupKrigingData2D(KrigingData2D *& krigingDataAlpha,
       maxBlocks = nBlocks;
   }  
   
-  krigingDataAlpha = new KrigingData2D(totBlocks); 
-  krigingDataBeta  = new KrigingData2D(totBlocks); 
-  krigingDataRho   = new KrigingData2D(totBlocks); 
-
+  KrigingData3D forLogging(totBlocks); 
+  
   const int   nz = simbox->getnz();
   const float dz = static_cast<float>(simbox->getdz()*simbox->getAvgRelThick());
 
@@ -439,31 +399,44 @@ Background::setupKrigingData2D(KrigingData2D *& krigingDataAlpha,
 
     for (int m = 0 ; m < nBlocks ; m++) 
     {
+      int i = ipos[m];
+      int j = jpos[m];
+      int k = kpos[m];
+
       if (blAlpha[m] == RMISSING) 
       {
-        blAlpha[m] = vtAlpha[kpos[m]];
+        blAlpha[m] = vtAlpha[k];
       }
       if (blBeta[m] == RMISSING) 
       {
-        blBeta[m] = vtBeta[kpos[m]];
+        blBeta[m] = vtBeta[k];
       }
       if (blRho[m] == RMISSING) 
       {
-        blRho[m] = vtRho[kpos[m]];
+        blRho[m] = vtRho[k];
       }
-      krigingDataAlpha->addData(blAlpha[m], ipos[m], jpos[m]);
-      krigingDataBeta->addData(blBeta[m], ipos[m], jpos[m]);
-      krigingDataRho->addData(blRho[m], ipos[m], jpos[m]);
+      krigingDataAlpha[k].addData(i, j, blAlpha[m]);
+      krigingDataBeta[k].addData(i, j, blBeta[m]);
+      krigingDataRho[k].addData(i, j, blRho[m]);
     }
+
+    forLogging.addData(blAlpha, blBeta, blRho,
+                       ipos, jpos, kpos,
+                       nBlocks);
   }
-  krigingDataAlpha->findMeanValues();
-  krigingDataBeta->findMeanValues();
-  krigingDataRho->findMeanValues();
 
-  krigingDataAlpha->writeToFile("KrigingData2D_Alpha");
-  krigingDataBeta->writeToFile("KrigingData2D_Beta");
-  krigingDataRho->writeToFile("KrigingData2D_Rho");
+  for (int k=0 ; k<nz ; k++) 
+  {
+    krigingDataAlpha[k].findMeanValues();
+    krigingDataBeta[k].findMeanValues();
+    krigingDataRho[k].findMeanValues();
+  }
 
+  if((outputFlag & ModelSettings::BACKGROUND) > 0) {
+    forLogging.divide();
+    forLogging.writeToFile("BG");
+  }
+  
   delete [] vtAlpha;
   delete [] vtBeta;
   delete [] vtRho;
@@ -471,6 +444,98 @@ Background::setupKrigingData2D(KrigingData2D *& krigingDataAlpha,
   delete [] blAlpha;
   delete [] blBeta;
   delete [] blRho;
+}
+
+//---------------------------------------------------------------------------
+const CovGrid2D &
+Background::makeCovGrid2D(Simbox * simbox,
+                          Vario  * vario, 
+                          int      debugFlag)
+{
+  //
+  // Pretabulate all needed covariances
+  //
+  const int    nx = simbox->getnx();
+  const int    ny = simbox->getny();
+  
+  const float  dx = static_cast<float>(simbox->getdx());
+  const float  dy = static_cast<float>(simbox->getdy());
+  
+  CovGrid2D * cov = new CovGrid2D(vario, nx, ny, dx, dy);
+  
+  if(debugFlag == 1)
+    cov->writeToFile("BG_covGrid2D");
+  
+  return (*cov); 
+}
+
+//---------------------------------------------------------------------------
+void
+Background::makeKrigedBackground(const std::vector<KrigingData2D> & krigingData,
+                                 FFTGrid                         *& bgGrid,
+                                 float                            * trend,
+                                 Simbox                           * simbox,
+                                 const CovGrid2D                  & covGrid2D,
+                                 const std::string                & type)
+{
+  std::string text = "\nBuilding "+type+" background:";
+  LogKit::LogFormatted(LogKit::LOW,text);
+
+  const int     nx  = simbox->getnx();
+  const int     ny  = simbox->getny();
+  const int     nz  = simbox->getnz();
+
+  const int    nxp  = nx;
+  const int    nyp  = ny;
+  const int    nzp  = nz;
+  const int    rnxp = 2*(nxp/2 + 1);
+
+  const double  x0  = simbox->getx0();
+  const double  y0  = simbox->gety0();
+  const double  lx  = simbox->getlx();
+  const double  ly  = simbox->getly();
+
+  //
+  // Template surface to be kriged
+  //
+  Surface surface(x0, y0, lx, ly, nx, ny, RMISSING);
+
+  float monitorSize = std::max(1.0f, static_cast<float>(nz)*0.02f);
+  float nextMonitor = monitorSize;
+  std::cout 
+    << "\n  0%       20%       40%       60%       80%      100%"
+    << "\n  |    |    |    |    |    |    |    |    |    |    |  "
+    << "\n  ^"; 
+
+  bgGrid = new FFTGrid(nx, ny, nz, nxp, nyp, nzp);  
+  bgGrid->createRealGrid();
+  bgGrid->setType(FFTGrid::PARAMETER);
+  bgGrid->setAccessMode(FFTGrid::WRITE);
+
+  for (int k=0 ; k<nzp ; k++)
+  {
+    // Set trend for layer
+    surface.Assign(trend[k]);                                    
+
+    // Kriging of layer
+    Kriging2D::krigSurface(surface, krigingData[k], covGrid2D);  
+
+    // Set layer in background model from surface
+    for(int j=0 ; j<nyp ; j++) {        
+      for(int i=0 ; i<rnxp ; i++) {
+        bgGrid->setNextReal(surface(i,j));
+      }
+    }
+    
+    // Log progress
+    if (static_cast<float>(k+1) >= nextMonitor) 
+    { 
+      nextMonitor += monitorSize;
+      std::cout << "^";
+      fflush(stdout);
+    }
+  }
+  bgGrid->endAccess();
 }
 
 //-------------------------------------------------------------------------------
@@ -559,7 +624,6 @@ Background::setupKrigingData3D(KrigingData3D *& krigingData,
     krigingData->addData(blAlpha, blBeta, blRho,
                          ipos, jpos, kpos,
                          nBlocks);
-
   }
   krigingData->divide();
   krigingData->writeToFile("BG");
@@ -1244,6 +1308,45 @@ Background::setClassicVsVp()
 
 //-------------------------------------------------------------------------------
 void
+Background::resampleBackgroundModel(FFTGrid      *& bgAlpha,
+                                    FFTGrid      *& bgBeta,
+                                    FFTGrid      *& bgRho,
+                                    Simbox        * timeBGSimbox,
+                                    Simbox        * timeSimbox,
+                                    ModelSettings * modelSettings)
+{
+  if((modelSettings->getOutputFlag() & ModelSettings::EXTRA_GRIDS) > 0) {
+    bgAlpha->writeFile("BG_Vp_BackgroundGrid", timeBGSimbox, "exptrans");
+    bgBeta->writeFile("BG_Vs_BackgroundGrid", timeBGSimbox, "exptrans");
+    bgRho->writeFile("BG_Rho_BackgroundGrid", timeBGSimbox, "exptrans");
+  }
+
+  FFTGrid * resBgAlpha = NULL;
+  FFTGrid * resBgBeta = NULL;
+  FFTGrid * resBgRho = NULL;
+  
+  LogKit::LogFormatted(LogKit::LOW,"\nResampling background model...\n");
+  resampleParameter(resBgAlpha,bgAlpha,timeSimbox, timeBGSimbox);
+  resampleParameter(resBgBeta ,bgBeta ,timeSimbox, timeBGSimbox);
+  resampleParameter(resBgRho  ,bgRho  ,timeSimbox, timeBGSimbox);
+  
+  if((modelSettings->getOutputFlag() & ModelSettings::EXTRA_GRIDS) > 0) {
+    resBgAlpha->writeFile("BG_Vp_InversionGrid", timeSimbox, "exptrans");
+    resBgBeta->writeFile("BG_Vs_InversionGrid", timeSimbox, "exptrans");
+    resBgRho->writeFile("BG_Rho_InversionGrid", timeSimbox, "exptrans");
+  }
+  
+  delete bgAlpha;
+  delete bgBeta;
+  delete bgRho;
+  
+  bgAlpha = resBgAlpha;
+  bgBeta  = resBgBeta;
+  bgRho   = resBgRho;
+ }
+
+//-------------------------------------------------------------------------------
+void
 Background::resampleParameter(FFTGrid *& pNew,        // Resample to 
                               FFTGrid  * pOld,        // Resample from 
                               Simbox   * simboxNew,
@@ -1314,4 +1417,42 @@ Background::resampleParameter(FFTGrid *& pNew,        // Resample to
 
   delete [] a;
   delete [] b;
+}
+
+//-------------------------------------------------------------------------------
+void
+Background::padAndSetBackgroundModel(FFTGrid * bgAlpha,
+                                     FFTGrid * bgBeta,
+                                     FFTGrid * bgRho)
+{
+  LogKit::LogFormatted(LogKit::LOW,"\nPadding background model...\n");
+  backModel_[0]->fillInFromRealFFTGrid(*bgAlpha);
+  backModel_[1]->fillInFromRealFFTGrid(*bgBeta);
+  backModel_[2]->fillInFromRealFFTGrid(*bgRho);
+}
+
+//-------------------------------------------------------------------------------
+void
+Background::writeBackgrounds(Simbox      * simbox, 
+                             GridMapping * depthMapping, 
+                             GridMapping * timeMapping) const 
+{
+  if(depthMapping != NULL && depthMapping->getSimbox() == NULL) {
+    const Simbox * timeSimbox = simbox;
+    if(timeMapping != NULL)
+      timeSimbox = timeMapping->getSimbox();
+    backModel_[0]->setAccessMode(FFTGrid::RANDOMACCESS);
+    depthMapping->setMappingFromVelocity(backModel_[0], timeSimbox);
+    backModel_[0]->endAccess();
+  }
+
+  backModel_[0]->writeFile("BG_Vp",  simbox, "exptrans", 0, depthMapping, timeMapping);
+  backModel_[1]->writeFile("BG_Vs",  simbox, "exptrans", 0, depthMapping, timeMapping);
+  backModel_[2]->writeFile("BG_Rho", simbox, "exptrans", 0, depthMapping, timeMapping);
+  //
+  // For debugging: write cubes not in ASCII, with padding, and with flat top.
+  //
+  //backModel_[0]->writeStormFile("BG_Vp",  simbox, true, false, true, true);
+  //backModel_[1]->writeStormFile("BG_Vs",  simbox, true, false, true, true);
+  //backModel_[2]->writeStormFile("BG_Rho", simbox, true, false, true, true);
 }

@@ -10,11 +10,19 @@
 
 
 KrigingData2D::KrigingData2D(int nData) 
-  : data_(nData),
-    indexI_(nData),
-    indexJ_(nData),
-    count_(nData)
+  : data_(0),   // Do not reserve space here (gives trouble with .push_back())
+    indexI_(0),
+    indexJ_(0),
+    count_(0)
 {
+  //
+  // Using .reserve() we set aside space for vectors, but such that
+  // .push_back() used in addData() adds the 0'th element first.
+  //
+  data_.reserve(nData);   
+  indexI_.reserve(nData);
+  indexJ_.reserve(nData);
+  count_.reserve(nData);
 }
 
 //---------------------------------------------------------------------
@@ -31,7 +39,6 @@ KrigingData2D::addData(int   i,
   if (value != RMISSING) // Do not add missing values
   {
     int ij = gotBlock(i,j);
-  
     if (ij == -1) // Data in new location
     {
       indexI_.push_back(i);
@@ -54,7 +61,6 @@ KrigingData2D::gotBlock(int i, int j) const
   for (unsigned int k = 0 ; k < data_.size() ; k++)
     if (indexI_[k]==i && indexJ_[k]==j) // Do we already have data in block (i,j)?
       return int(k);
-
   return -1;
 }
 

@@ -429,12 +429,12 @@ FFTFileGrid::writeFile(const std::string & fileName, const Simbox * simbox,
 }
 
 void
-FFTFileGrid::writeStormFile(const std::string & fileName, const Simbox * simbox, bool ascii, bool padding, bool flat)
+FFTFileGrid::writeStormFile(const std::string & fileName, const Simbox * simbox, bool expTrans, bool ascii, bool padding, bool flat)
 {
   assert(accMode_ == NONE || accMode_ == RANDOMACCESS);
   if(accMode_ != RANDOMACCESS)
     load();
-  FFTGrid::writeStormFile(fileName, simbox, ascii, padding, flat);
+  FFTGrid::writeStormFile(fileName, simbox, expTrans, ascii, padding, flat);
   if(accMode_ != RANDOMACCESS)
     unload();
 }
@@ -524,15 +524,16 @@ FFTFileGrid::genFileName()
 }
 
 void
-FFTFileGrid::writeResampledStormCube(GridMapping  * gridmapping, 
+FFTFileGrid::writeResampledStormCube(GridMapping       * gridmapping, 
                                      const std::string & fileName, 
-                                     const Simbox * simbox,
-                                     const int      format)
+                                     const Simbox      * simbox,
+                                     const int           format,
+                                     bool                expTrans)
 {
   assert(accMode_ == NONE || accMode_ == RANDOMACCESS);
   if(accMode_ != RANDOMACCESS)
     load();
-  FFTGrid::writeResampledStormCube(gridmapping, fileName, simbox, format);
+  FFTGrid::writeResampledStormCube(gridmapping, fileName, simbox, format, expTrans);
   if(accMode_ != RANDOMACCESS)
     unload();
 }

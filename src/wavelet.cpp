@@ -27,6 +27,7 @@
 #include "src/definitions.h"
 #include "src/fftgrid.h"
 #include "src/simbox.h"
+#include "src/vario.h"
 #include "src/krigingdata2d.h"
 #include "src/kriging2d.h"
 #include "src/covgrid2d.h"
@@ -430,7 +431,14 @@ Wavelet::getWaveletLengthF()
 }
 
 float         
-Wavelet::calculateSNRatio(Simbox * simbox, FFTGrid * seisCube, WellData ** wells, int nWells, char *errText, int &error, Surface *shift, Surface *gain, bool calclw)
+Wavelet::calculateSNRatio(Simbox        * simbox, 
+                          FFTGrid       * seisCube, 
+                          WellData     ** wells, 
+                          Surface      *& shift, 
+                          Surface      *& gain, 
+                          ModelSettings * modelSettings,
+                          char          * errText, 
+                          int           & error)
 {
   LogKit::LogFormatted(LogKit::MEDIUM,"\n  Estimating noise from seismic data and (nonfiltered) blocked wells");
   float errStd  = 0.0f;
@@ -442,6 +450,12 @@ Wavelet::calculateSNRatio(Simbox * simbox, FFTGrid * seisCube, WellData ** wells
   shiftGrid_=NULL;  
   gainGrid_=NULL; 
   
+  Vario  * localWaveletVario = modelSettings->getLocalWaveletVario();
+  int      nWells            = modelSettings->getNumberOfWells();
+  bool     useLocalWavelet   = modelSettings->getUseLocalWavelet();
+  int      outputFormat      = modelSettings->getFormatFlag();
+  int      outputFlag        = modelSettings->getOutputFlag();
+
   float * dz = new float[nWells];
   int i, k, w;
 
@@ -458,20 +472,20 @@ Wavelet::calculateSNRatio(Simbox * simbox, FFTGrid * seisCube, WellData ** wells
   bool  * hasData  = new bool[nz];
 
   //Noise estimation
-  fftw_real**       cpp_r = new fftw_real*[nWells];
-  fftw_complex**    cpp_c = reinterpret_cast<fftw_complex**>(cpp_r);
+  fftw_real    ** cpp_r = new fftw_real*[nWells];
+  fftw_complex ** cpp_c = reinterpret_cast<fftw_complex**>(cpp_r);
   
-  fftw_real**       seis_r = new fftw_real*[nWells];
-  fftw_complex**    seis_c = reinterpret_cast<fftw_complex**>(seis_r); 
+  fftw_real    ** seis_r = new fftw_real*[nWells];
+  fftw_complex ** seis_c = reinterpret_cast<fftw_complex**>(seis_r); 
 
-  fftw_real**       synt_r = new fftw_real*[nWells];
-  fftw_complex**    synt_c = reinterpret_cast<fftw_complex**>(synt_r);
+  fftw_real    ** synt_r = new fftw_real*[nWells];
+  fftw_complex ** synt_c = reinterpret_cast<fftw_complex**>(synt_r);
 
-  fftw_real**       cor_seis_synt_r = new fftw_real*[nWells];
-  fftw_complex**    cor_seis_synt_c = reinterpret_cast<fftw_complex**>(cor_seis_synt_r); 
+  fftw_real    ** cor_seis_synt_r = new fftw_real*[nWells];
+  fftw_complex ** cor_seis_synt_c = reinterpret_cast<fftw_complex**>(cor_seis_synt_r); 
 
   //fftw_real**       err_r = new fftw_real*[nWells];
-//  fftw_complex**    err_c = (fftw_complex** ) err_r;  //Useful for debug
+  //fftw_complex**    err_c = (fftw_complex** ) err_r;  //Useful for debug
 
   fftw_real**      wavelet_r = new fftw_real*[nWells];
   fftw_complex**   wavelet_c = reinterpret_cast<fftw_complex**>(wavelet_r);
@@ -653,40 +667,11 @@ Wavelet::calculateSNRatio(Simbox * simbox, FFTGrid * seisCube, WellData ** wells
     }
   }  
 
-  calclw=true;
-  if(calclw)
+  if(useLocalWavelet && (shift==NULL || gain==NULL))
   {
-    KrigingData2D shiftData;
-    KrigingData2D gainData;
-
-    for(i=0;i<nWells;i++)
-    {
-      if(nActiveData[i]>0) 
-      {
-        int n;
-        const double * xvec = wells[i]->getXpos(n);
-        const double * yvec = wells[i]->getYpos(n);
-        int  xind, yind;
-        simbox->getIndexes(xvec[0],yvec[0],xind,yind);        
-        shiftData.addData(xind,yind,shiftWell[i]);
-        gainData.addData(xind,yind,scaleOptWell[i]);
-      }
-    }
-    shiftData.findMeanValues();
-    gainData.findMeanValues();
-
-    if(shift==NULL)
-      shift = createKrigedSurface(shiftData ,simbox, 0.0);
-    if(gain==NULL)
-      gain  = createKrigedSurface(gainData, simbox, 1.0);
-    
-    //  if((format & FFTGrid::ASCIIFORMAT) == FFTGrid::ASCIIFORMAT)
-    std::string fileName = ModelSettings::makeFullFileName("shift");
-    NRLib2::WriteIrapClassicAsciiSurf(*shift, fileName+".irap");
-    fileName = ModelSettings::makeFullFileName("gain");
-    NRLib2::WriteIrapClassicAsciiSurf(*gain, fileName+".irap");
-    // else  
-    //    NRLib2::WriteStormBinarySurf(*shift, fileName+".storm");
+    estimateLocalWavelets(shift, gain, shiftWell, scaleOptWell,
+                          localWaveletVario, nActiveData, simbox, 
+                          wells, nWells, outputFormat, outputFlag);
   }
   delete [] shiftWell;
   delete [] errVarWell;
@@ -1034,30 +1019,88 @@ Wavelet::flipVec(fftw_real* vec, int n)
 }
 */
 
-Surface *
-Wavelet::createKrigedSurface(const KrigingData2D & krigingData, 
-                             Simbox              * simbox, 
-                             float                 trendval)
+void
+Wavelet::estimateLocalWavelets(Surface  *& shift,
+                               Surface  *& gain,
+                               float     * shiftWell,
+                               float     * scaleOptWell,
+                               Vario     * localWaveletVario,
+                               int       * nActiveData,
+                               Simbox    * simbox,
+                               WellData ** wells,
+                               int         nWells,
+                               int         outputFormat,
+                               int         outputFlag)
 {
+  //
+  // NBNB-PAL: Since slightly deviated wells are accepted, we should
+  // eventually make gain- and shift-cubes rather than single maps.
+  //
 
-  GenExpVario *vario = new GenExpVario(1.6,3000, 1000, 25);
-
-  const CovGrid2D cov(vario, 
+  //
+  // Collect data for kriging
+  //
+  KrigingData2D shiftData;
+  KrigingData2D gainData;
+  
+  for(int i=0;i<nWells;i++)
+  {
+    if(nActiveData[i]>0) 
+    {
+      //
+      // Coordinates for data point must be chosed from blocked 
+      // logs and not from wells
+      //
+      BlockedLogs * bl = wells[i]->getBlockedLogsOrigThick();
+      const double * xPos = bl->getXpos(); 
+      const double * yPos = bl->getYpos();
+      int xInd, yInd;
+      simbox->getIndexes(xPos[0],yPos[0],xInd,yInd);        
+      shiftData.addData(xInd,yInd,shiftWell[i]);
+      gainData.addData(xInd,yInd,scaleOptWell[i]);
+    }
+  }
+  shiftData.findMeanValues();
+  gainData.findMeanValues();
+  
+  //
+  // Pretabulate correlations
+  //
+  const CovGrid2D cov(localWaveletVario, 
                       simbox->getnx(),
                       simbox->getny(),
                       simbox->getdx(), 
                       simbox->getdy());
-  cov.writeToFile();
+  cov.writeToFile("Local_Wavelet_Correlation");
 
-  Surface * surface = new Surface(simbox->getx0(), 
-                                  simbox->gety0(), 
-                                  simbox->getlx(), 
-                                  simbox->getly(),
-                                  simbox->getnx(), 
-                                  simbox->getny(), 
-                                  trendval);
-  
-  Kriging2D::krigSurface(*surface, krigingData, cov);
+  //
+  // Perform kriging
+  //
+  if(shift==NULL) {
+    shift = new Surface(simbox->getx0(), 
+                        simbox->gety0(), 
+                        simbox->getlx(), 
+                        simbox->getly(),
+                        simbox->getnx(), 
+                        simbox->getny(), 
+                        0.0f);
+    Kriging2D::krigSurface(*shift, shiftData, cov);
 
-  return surface;
+    if ((outputFlag && ModelSettings::EXTRA_SURFACES) > 0)
+      Model::writeSurfaceToFile(shift,"Local_Wavelet_Shift",outputFormat);
+  }
+  if(gain==NULL) {
+    gain = new Surface(simbox->getx0(), 
+                       simbox->gety0(), 
+                       simbox->getlx(), 
+                       simbox->getly(),
+                       simbox->getnx(), 
+                       simbox->getny(), 
+                       1.0f);
+    Kriging2D::krigSurface(*gain, gainData, cov);
+
+    if ((outputFlag && ModelSettings::EXTRA_SURFACES) > 0)
+      Model::writeSurfaceToFile(gain,"Local_Wavelet_Gain",outputFormat);
+  }
 }
+

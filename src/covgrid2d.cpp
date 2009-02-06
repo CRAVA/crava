@@ -41,12 +41,12 @@ CovGrid2D::getCov(int deltai, int deltaj) const
 }
 
 void
-CovGrid2D::writeToFile(void) const
+CovGrid2D::writeToFile(const std::string & name) const
 {
   //
   // Write grid using an ASCII Irap Classic surface format
   //
-  std::string fileName = "correlation.storm";
+  std::string fileName = name + ".irap";
   std::ofstream file(fileName.c_str(), std::ios::out | std::ios::binary);
   if (!file) {
     throw new NRLib2::IOError("Error opening "+fileName+" for writing.");

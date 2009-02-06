@@ -46,6 +46,9 @@ public:
   bool             getFailed()                const { return failed_                 ;}
   void             releaseGrids();                                        // Cuts connection to SeisCube_ and  backModel_
   void             getCorrGradIJ(float & corrGradI, float &corrGradJ) const;
+  static void      writeSurfaceToFile(Surface           * surface,
+                                      const std::string & name,
+                                      int                 format);
 
   enum             backFileTypes{STORMFILE = -2, SEGYFILE = -1};
 
@@ -213,11 +216,7 @@ private:
                                                double       & xMin,
                                                double       & yMin,
                                                double       & xMax,
-                                               double       & yMax);
-  void             writeSurfaceToFile(Surface    * surface,
-                                      std::string  name,
-                                      int          format);
- 
+                                               double       & yMax); 
   ModelSettings  * modelSettings_;
   Simbox         * timeSimbox_;            ///< Information about simulation area.
   Simbox         * timeSimboxConstThick_;  ///< Simbox with constant thickness   

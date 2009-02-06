@@ -7,6 +7,7 @@
 #include "lib/global_def.h"
 #include "src/definitions.h"
 
+class Vario;
 class Simbox;
 class FFTGrid;
 class WellData;
@@ -57,12 +58,14 @@ public:
   float                 getScale() const {return scale_;}
   
   // for noise estimation
-  float                 calculateSNRatio(Simbox * simbox,
-                                         FFTGrid * seisCube, 
-                                         WellData ** wells, 
-                                         int nWells, 
-                                         char *errText, 
-                                         int &error,Surface *shift, Surface *gain, bool calclw = false); 
+  float                 calculateSNRatio(Simbox        * simbox, 
+                                         FFTGrid       * seisCube, 
+                                         WellData     ** wells, 
+                                         Surface      *& shift, 
+                                         Surface      *& gain, 
+                                         ModelSettings * modelSettings,
+                                         char          * errText, 
+                                         int           & error); 
   void                  printVecToFile(char * fileName, fftw_real* vec ,int nzp) const;
 
   virtual void          write1DWLas3DWL() {};
@@ -85,6 +88,17 @@ protected:
   float                 findOptimalWaveletScale(fftw_real** synt_seis_r,fftw_real** seis_r,int nWells,int nzp,
                                                 float* wellWeight,float& err,float* errWell,float* scaleOptWell,
                                                 float* errWellOptScale) const;
+  void                  estimateLocalWavelets(Surface  *& shift,
+                                              Surface  *& gain,
+                                              float     * shiftWell,
+                                              float     * scaleOptWell,
+                                              Vario     * localWaveletVario,
+                                              int       * nAvtiveData,
+                                              Simbox    * simbox,
+                                              WellData ** wells,
+                                              int         nWells,
+                                              int         outputFormat,
+                                              int         outputFlag);
   //void                flipVec(fftw_real* vec, int n);
 
   void                  fillInnWavelet(fftw_real* wavelet_r,int nzp,float dz);
@@ -93,8 +107,6 @@ protected:
   float                 getLocalGainFactor(int i, int j) const;
   int                   getWaveletLengthI();
   float                 getWaveletLengthF();
-
-  Surface             * createKrigedSurface(const KrigingData2D & krigingData, Simbox *simbox, float trendval);
   
   float                 theta_;                 // the reflection angle that the wavelet correspond to
   int                   readtype_;              // how is wavelet obtained? read from file[OLD JASON SGRI] or ESTIMATE

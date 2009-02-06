@@ -13,7 +13,7 @@ public:
             double  dx, 
             double  dy);
   float              getCov(int deltai, int deltaj) const;
-  void               writeToFile(void)              const;
+  void               writeToFile(const std::string & name) const;
 
 private:
   std::vector<float> cov_;

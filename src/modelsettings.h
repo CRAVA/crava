@@ -67,9 +67,9 @@ public:
   float               getMinRelWaveletAmp(void)     const { return minRelWaveletAmp_    ;}
   float               getMaxWaveletShift(void)      const { return maxWaveletShift_     ;}
   float               getWaveletTaperingL(void)     const { return waveletTaperingL_    ;}
-  double              getXpad(void)                 const { return xPad_                ;}
-  double              getYpad(void)                 const { return yPad_                ;}
-  double              getZpad(void)                 const { return zPad_                ;}
+  double              getXPadFac(void)              const { return xPadFac_             ;}
+  double              getYPadFac(void)              const { return yPadFac_             ;}
+  double              getZPadFac(void)              const { return zPadFac_             ;}
   int                 getNXpad(void)                const { return nxPad_               ;}
   int                 getNYpad(void)                const { return nyPad_               ;}
   int                 getNZpad(void)                const { return nzPad_               ;}
@@ -147,9 +147,9 @@ public:
   void                setinRelWaveletAmp(float minRelWaveletAmp)    { minRelWaveletAmp_     = minRelWaveletAmp   ;}
   void                setMaxWaveletShift(float maxWaveletShift)     { maxWaveletShift_      = maxWaveletShift    ;}
   void                setWaveletTaperingL(float waveletTaperingL)   { waveletTaperingL_     = waveletTaperingL   ;}
-  void                setXpad(double xPad)                          { xPad_                 = xPad               ;}
-  void                setYpad(double yPad)                          { yPad_                 = yPad               ;}
-  void                setZpad(double zPad)                          { zPad_                 = zPad               ;}
+  void                setXPadFac(double xPadFac)                    { xPadFac_              = xPadFac            ;}
+  void                setYPadFac(double yPadFac)                    { yPadFac_              = yPadFac            ;}
+  void                setZPadFac(double zPadFac)                    { zPadFac_              = zPadFac            ;}
   void                setNXpad(int nxPad)                           { nxPad_                = nxPad              ;}
   void                setNYpad(int nyPad)                           { nyPad_                = nyPad              ;}
   void                setNZpad(int nzPad)                           { nzPad_                = nzPad              ;}
@@ -207,13 +207,13 @@ public:
                    
 private:           
                    
-  Vario                   * angularCorr_;          // Variogram for lateral error correlation
-  Vario                   * lateralCorr_;          // Variogram for lateral parameter correlation 
-  Vario                   * backgroundVario_;      // Used for lateral background correlation.
-  Vario                   * localWaveletVario_;    // Used for local wavelet (gain and shift) and local noise.
+  Vario                   * angularCorr_;           // Variogram for lateral error correlation
+  Vario                   * lateralCorr_;           // Variogram for lateral parameter correlation 
+  Vario                   * backgroundVario_;       // Used for lateral background correlation.
+  Vario                   * localWaveletVario_;     // Used for local wavelet (gain and shift) and local noise.
                           
-  SegyGeometry            * geometry_;             // area parameters
-  TraceHeaderFormat       * traceHeaderFormat_;    // 
+  SegyGeometry            * geometry_;              // area parameters
+  TraceHeaderFormat       * traceHeaderFormat_;     // 
   float                   * krigingParams_;   
                           
   std::vector<int>          seismicType_;           // PP- or PS- seismic
@@ -225,13 +225,13 @@ private:
   std::vector<bool>         estimateSNRatio_;       //
                           
   std::vector<float>        constBackValue_;        // Values set for constant background model
-                                                   // Negative value ==> read from file (actual value gives format).
-  int                     * indBGTrend_;           // Use well to estimate background trend? (1=yes,0=no)
-  int                     * indWavelet_;           // Use well to estimate wavelet? (1=yes,0=no)
-  int                     * indFacies_;            // Use well to estimate facies? (1=yes,0=no)
+                                                    // Negative value ==> read from file (actual value gives format).
+  int                     * indBGTrend_;            // Use well to estimate background trend? (1=yes,0=no)
+  int                     * indWavelet_;            // Use well to estimate wavelet? (1=yes,0=no)
+  int                     * indFacies_;             // Use well to estimate facies? (1=yes,0=no)
                    
-  std::vector<int>          faciesLabels_;         // Facies labels
-  std::vector<std::string>  faciesNames_;          // Facies names   (nFacies = faciesNames.size())
+  std::vector<int>          faciesLabels_;          // Facies labels
+  std::vector<std::string>  faciesNames_;           // Facies names   (nFacies = faciesNames.size())
                    
   int                       nWells_;
   int                       nSimulations_;
@@ -263,16 +263,16 @@ private:
   float                     wnc_;                   // White noise component, see crava.h  
                            
   float                     energyThreshold_;       // If energy in reflection trace divided by mean energy
-                                                   // in reflection traces is lower than this, the reflections
-                                                   // will be interpolated. Default 0.
+                                                    // in reflection traces is lower than this, the reflections
+                                                    // will be interpolated. Default 0.
                            
   float                     minRelWaveletAmp_;      // Minimum relative wavelet amplitude. Smaller amplitudes are disregarded.
   float                     maxWaveletShift_;       // Largest allowed shift when estimating wavelet
   float                     waveletTaperingL_;      // Til Odds waveletestimering
                            
-  double                    xPad_;                  // Padding factor in x direction
-  double                    yPad_;
-  double                    zPad_; 
+  double                    xPadFac_;               // Padding factor/fraction in x direction
+  double                    yPadFac_;               // Padding factor/fraction in y direction
+  double                    zPadFac_;               // Padding factor/fraction in z direction
                            
   int                       nxPad_;                 // Number of cells to pad in x direction
   int                       nyPad_;

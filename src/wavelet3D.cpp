@@ -42,13 +42,13 @@ Wavelet3D::Wavelet3D(const std::string & fileName,
   theta_ = theta;
   norm_ = RMISSING;
 
-  float xPad = modelSettings->getXpad();
-  nxp_   =  findClosestFactorableNumber( static_cast<int>(ceil( nx_*(1.0f+xPad) )) );
-  float yPad = modelSettings->getYpad();
-  nyp_   =  findClosestFactorableNumber( static_cast<int>(ceil( ny_*(1.0f+yPad) )) );
-  float zPad = modelSettings->getZpad();
-  nzp_   =  findClosestFactorableNumber( static_cast<int>(ceil( nz_*(1.0f+zPad) )) );
-
+  double xPadFac = modelSettings->getXPadFac();
+  nxp_   =  findClosestFactorableNumber( static_cast<int>(ceil( static_cast<double>(nx_)*(1.0+xPadFac) )) );
+  double yPadFac = modelSettings->getYPadFac();
+  nyp_   =  findClosestFactorableNumber( static_cast<int>(ceil( static_cast<double>(ny_)*(1.0+yPadFac) )) );
+  double zPadFac = modelSettings->getZPadFac();
+  nzp_   =  findClosestFactorableNumber( static_cast<int>(ceil( static_cast<double>(nz_)*(1.0+zPadFac) )) );
+  
   ampCube_ = FFTGrid(nx_, ny_, nz_, nxp_, nyp_, nzp_);
   ampCube_.createRealGrid();
   ampCube_.setType(FFTGrid::COVARIANCE);

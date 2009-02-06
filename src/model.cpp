@@ -476,7 +476,7 @@ Model::readSegyFile(const std::string   & fileName,
 
     bool onlyVolume = modelSettings->getAreaParameters() != NULL; // This is now always true
     segy->ReadAllTraces(timeSimbox, 
-                        modelSettings->getZpad(),
+                        modelSettings->getZPadFac(),
                         onlyVolume);
     segy->CreateRegularGrid();
   }
@@ -1069,11 +1069,13 @@ Model::estimateXYPaddingSizes(Simbox         * timeSimbox,
                               ModelSettings *& modelSettings)
 {
   bool newPaddings = false;
-  double xPad    = 0.0f;
-  double yPad    = 0.0f;
-  double xPadFac = 0.0f;
-  double yPadFac = 0.0f;
-  if (modelSettings->getXpad() == 0.0 && modelSettings->getYpad() == 0.0)
+
+  double xPadFac = modelSettings->getXPadFac();
+  double yPadFac = modelSettings->getYPadFac();
+  double xPad    = xPadFac*timeSimbox->getlx();
+  double yPad    = yPadFac*timeSimbox->getly();
+
+  if (xPadFac==0.0 && yPadFac==0.0)
   {
     float range1  = modelSettings->getLateralCorr()->getRange();
     float range2  = modelSettings->getLateralCorr()->getSubRange();
@@ -1086,27 +1088,24 @@ Model::estimateXYPaddingSizes(Simbox         * timeSimbox,
     xPadFac       = MINIM(1.0, xPad / timeSimbox->getlx()); // A padding of more than 100% is insensible
     yPadFac       = MINIM(1.0, yPad / timeSimbox->getly());
 
-    modelSettings->setXpad(xPadFac);
-    modelSettings->setYpad(yPadFac);
+    modelSettings->setXPadFac(xPadFac);
+    modelSettings->setYPadFac(yPadFac);
     newPaddings = true;
   }
-  int nxPad = setPaddingSize(timeSimbox->getnx(), modelSettings->getXpad());
-  int nyPad = setPaddingSize(timeSimbox->getny(), modelSettings->getYpad());
+  int nxPad = setPaddingSize(timeSimbox->getnx(), xPadFac);
+  int nyPad = setPaddingSize(timeSimbox->getny(), yPadFac);
   modelSettings->setNXpad(nxPad);
   modelSettings->setNYpad(nyPad);
 
+  int logLevel = LogKit::MEDIUM;
   if (newPaddings)
-  {
-    LogKit::LogFormatted(LogKit::LOW,"\nPadding sizes estimated from lateral correlation ranges:\n");
-    LogKit::LogFormatted(LogKit::LOW,"  xPad, xPadFac, nxPad                     : %8.f, %6.2f, %6d\n", xPad, xPadFac, nxPad);
-    LogKit::LogFormatted(LogKit::LOW,"  yPad, yPadFac, nyPad                     : %8.f, %6.2f, %6d\n", yPad, yPadFac, nyPad);
-  }
-  else
-  {
-    LogKit::LogFormatted(LogKit::HIGH,"\nPadding sizes estimated from lateral correlation ranges:\n");
-    LogKit::LogFormatted(LogKit::HIGH,"  xPad, xPadFac, nxPad                     : %8.f, %6.2f, %6d\n", xPad, xPadFac, nxPad);
-    LogKit::LogFormatted(LogKit::HIGH,"  yPad, yPadFac, nyPad                     : %8.f, %6.2f, %6d\n", yPad, yPadFac, nyPad);
-  }
+    logLevel = LogKit::LOW;
+  
+  LogKit::LogFormatted(logLevel,"\nPadding sizes estimated from lateral correlation ranges:\n");
+  LogKit::LogFormatted(logLevel,"  xPad, xPadFac, nx, nxPad                 : %6.fm, %4.2f, %5d, %4d\n", 
+                       xPad, xPadFac, timeSimbox->getnx(), nxPad);
+  LogKit::LogFormatted(logLevel,"  yPad, yPadFac, ny, nyPad                 : %6.fm, %4.2f, %5d, %4d\n", 
+                       yPad, yPadFac, timeSimbox->getny(), nyPad);
 }
 
 void
@@ -1114,25 +1113,29 @@ Model::estimateZPaddingSize(Simbox         * timeSimbox,
                             ModelSettings *& modelSettings)
 {
   bool newPadding = false;
-  float zPad    = 0.0f;
-  float zPadFac = 0.0f;
-  if (modelSettings->getZpad() == 0.0f)
+  double zPadFac = modelSettings->getZPadFac();
+  double zPad    = zPadFac*timeSimbox->getlz()*timeSimbox->getMinRelThick();
+
+  if (zPadFac == 0.0)
   {
-    float wLength = 300.0f;           // Assume a wavelet is approx 300ms.
-    zPad          = wLength / 2.0f;   // Use one wavelet as padding
-    zPadFac       = static_cast<float>(MINIM(1.0f,zPad / (timeSimbox->getlz()*timeSimbox->getMinRelThick())));
+    double wLength = 300.0;           // Assume a wavelet is approx 300ms.
+    zPad           = wLength / 2.0;   // Use half a wavelet as padding
+    zPadFac        = MINIM(1.0, zPad / (timeSimbox->getlz()*timeSimbox->getMinRelThick()));
     
-    modelSettings->setZpad(zPadFac);
+    modelSettings->setZPadFac(zPadFac);
     newPadding = true;
   }
-  int nzPad = setPaddingSize(timeSimbox->getnz(), modelSettings->getZpad());
+
+  int nzPad = setPaddingSize(timeSimbox->getnz(), zPadFac);
   modelSettings->setNZpad(nzPad);
 
+  int logLevel = LogKit::MEDIUM;
   if (newPadding)
-  {
-    LogKit::LogFormatted(LogKit::LOW,"\nPadding sizes estimated from an assumed wavelet length:\n");
-    LogKit::LogFormatted(LogKit::LOW,"  zPad, zPadFac, nzPad                     : %8.f, %6.2f, %6d\n", zPad, zPadFac, nzPad);
-  }
+    logLevel = LogKit::LOW;
+  
+  LogKit::LogFormatted(logLevel,"\nPadding sizes estimated from an assumed wavelet length:\n");
+  LogKit::LogFormatted(logLevel,"  zPad, zPadFac, nz, nzPad                 : %6.fs, %4.2f, %5d, %4d\n", 
+                       zPad, zPadFac, timeSimbox->getnz(), nzPad);
 }
 
 void
@@ -2012,7 +2015,7 @@ Model::processWavelets(Wavelet     **& wavelet,
               //wavelet[i]->write1DWLas3DWL(); //Frode: For debugging and testing
               //wavelet[i]->write3DWLfrom1DWL();
               wavelet[i]->resample(static_cast<float>(timeSimbox->getdz()), timeSimbox->getnz(), 
-                                   modelSettings->getZpad(), angle);
+                                   static_cast<float>(modelSettings->getZPadFac()), angle);
             }
           }
         }
@@ -2033,8 +2036,9 @@ Model::processWavelets(Wavelet     **& wavelet,
           }
           else {
             float SNRatio = wavelet[i]->calculateSNRatio(timeSimbox, seisCube[i], wells, 
-                                                         modelSettings->getNumberOfWells(), 
-                                                         errText, error, shiftGrids[i], gainGrids[i]);
+                                                         shiftGrids[i], gainGrids[i],
+                                                         modelSettings,
+                                                         errText, error);
             modelSettings->setSNRatio(i,SNRatio);
           }
         }
@@ -2970,9 +2974,9 @@ Model::findSmallestSurfaceGeometry(const double   x0,
 }
 
 void   
-Model::writeSurfaceToFile(Surface     * surface,
-                          std::string   name,
-                          int           format)
+Model::writeSurfaceToFile(Surface           * surface,
+                          const std::string & name,
+                          int                 format)
 {
   std::string fileName = ModelSettings::makeFullFileName(name);
   

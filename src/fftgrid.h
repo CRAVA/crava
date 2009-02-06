@@ -89,14 +89,14 @@ public:
                                  const std::string sgriLabel = "NO_LABEL", float z0 = 0.0, 
                                  GridMapping * depthMap = NULL, GridMapping * timeMap = NULL); 
   //Use this instead of the ones below.
-  virtual void         writeStormFile(const std::string & fileName, const Simbox * simbox, bool ascii = false, 
-                                      bool padding = false, bool flat = false);//No mode/randomaccess
+  virtual void         writeStormFile(const std::string & fileName, const Simbox * simbox, bool expTrans = false, 
+                                      bool ascii = false, bool padding = false, bool flat = false);//No mode/randomaccess
   virtual int          writeSegyFile(const std::string & fileName, const Simbox * simbox, float z0);   //No mode/randomaccess
   virtual int          writeSgriFile(const std::string & fileName, const Simbox * simbox, const std::string label);
   virtual void         writeAsciiFile(const std::string & fileName);
   virtual void         writeAsciiRaw(const std::string & fileName);
   virtual void         writeResampledStormCube(GridMapping *gridmapping, const std::string & fileName, 
-                                               const Simbox *simbox, const int format);
+                                               const Simbox *simbox, const int format, bool expTrans);
 
   virtual bool         isFile() {return(0);}    // indicates wether the grid is in memory or on disk  
 
