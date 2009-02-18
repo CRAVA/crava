@@ -1,7 +1,7 @@
 
 include ../Makeheader
 
-MODULES := grid iotools segy stormgrid surface volume 
+MODULES := grid iotools segy stormgrid surface volume tinyxml
 
 SRC := 
 

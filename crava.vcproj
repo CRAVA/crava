@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8.00"
+	Version="8,00"
 	Name="crava"
 	ProjectGUID="{7FF3AB5B-854B-46AB-99F6-B59958E1BE91}"
 	>
@@ -399,6 +399,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\src\inputfiles.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\src\kriging2d.cpp"
 					>
 				</File>
@@ -421,6 +425,10 @@
 							PreprocessorDefinitions=""
 						/>
 					</FileConfiguration>
+				</File>
+				<File
+					RelativePath=".\src\krigingdata2d.cpp"
+					>
 				</File>
 				<File
 					RelativePath=".\src\krigingdata3d.cpp"
@@ -549,6 +557,10 @@
 							PreprocessorDefinitions=""
 						/>
 					</FileConfiguration>
+				</File>
+				<File
+					RelativePath=".\src\xmlmodelfile.cpp"
+					>
 				</File>
 			</Filter>
 			<Filter
@@ -3523,6 +3535,18 @@
 					>
 				</File>
 				<File
+					RelativePath="..\..\nrlib2\head\tinyxml\tinyxml.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\nrlib2\head\tinyxml\tinyxmlerror.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\nrlib2\head\tinyxml\tinyxmlparser.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\nrlib\segy\traceheader.cpp"
 					>
 				</File>
@@ -3600,11 +3624,19 @@
 					>
 				</File>
 				<File
+					RelativePath=".\src\inputfiles.h"
+					>
+				</File>
+				<File
 					RelativePath=".\src\kriging2d.h"
 					>
 				</File>
 				<File
 					RelativePath="src\krigingAdmin.h"
+					>
+				</File>
+				<File
+					RelativePath=".\src\krigingdata2d.h"
 					>
 				</File>
 				<File
@@ -3653,6 +3685,10 @@
 				</File>
 				<File
 					RelativePath="src\welldata.h"
+					>
+				</File>
+				<File
+					RelativePath=".\src\xmlmodelfile.h"
 					>
 				</File>
 			</Filter>
@@ -3777,6 +3813,10 @@
 				</File>
 				<File
 					RelativePath=".\nrlib\surface\surfaceio.hpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\nrlib2\head\tinyxml\tinyxml.h"
 					>
 				</File>
 				<File

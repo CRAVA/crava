@@ -523,7 +523,10 @@ Background::makeKrigedBackground(const std::vector<KrigingData2D> & krigingData,
     // Set layer in background model from surface
     for(int j=0 ; j<nyp ; j++) {        
       for(int i=0 ; i<rnxp ; i++) {
-        bgGrid->setNextReal(surface(i,j));
+        if(i<nxp)
+          bgGrid->setNextReal(surface(i,j));
+        else
+          bgGrid->setNextReal(0);  //dummy in padding
       }
     }
     

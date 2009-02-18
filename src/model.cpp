@@ -10,6 +10,7 @@
 #include "src/definitions.h"
 #include "src/model.h"
 #include "src/modelfile.h"
+#include "src/xmlmodelfile.h"
 #include "src/modelsettings.h"
 #include "src/wavelet1D.h"
 #include "src/wavelet3D.h"
@@ -80,17 +81,30 @@ Model::Model(char * fileName)
   Simbox * timeCutSimbox  = NULL;
   Simbox * timeBGSimbox   = NULL;
 
-  ModelFile modelFile(fileName);
+  InputFiles * inputFiles;
 
-  if (modelFile.getParsingFailed()) {
-    failedModelFile = true;
-  }
-  else
-  {
-    InputFiles * inputFiles;
+  std::string check = std::string(fileName);
+  if(check.find(".xml",0) != std::string::npos) {
+    XmlModelFile modelFile(fileName);
     inputFiles     = modelFile.getInputFiles();
     modelSettings_ = modelFile.getModelSettings();
-    
+    exit(1); //Incomplete parser, so we would only get trouble.
+
+    if (modelFile.getParsingFailed()) 
+      failedModelFile = true;
+  }
+  else {
+    ModelFile modelFile(fileName);
+
+    inputFiles     = modelFile.getInputFiles();
+    modelSettings_ = modelFile.getModelSettings();
+
+    if (modelFile.getParsingFailed()) 
+      failedModelFile = true;
+  }
+
+  if(failedModelFile == false)
+  {
     LogKit::SetScreenLog(modelSettings_->getLogLevel());
 
     std::string logFileName = ModelSettings::makeFullFileName("logFile.txt");
@@ -214,6 +228,8 @@ Model::Model(char * fileName)
 
     if (failedLoadingModel) 
       LogKit::LogFormatted(LogKit::ERROR,"\nERROR(s) while loading model. \n %s", errText);
+
+    delete inputFiles;
   }
   failed_ = failedModelFile || failedLoadingModel;
   

@@ -26,6 +26,8 @@
 #include "nrlib/iotools/logkit.hpp"
 #include "nrlib/stormgrid/stormcontgrid.hpp"
 
+#define _USE_MATH_DEFINES
+#include <math.h>
 #include <assert.h>
 #include <time.h>
 

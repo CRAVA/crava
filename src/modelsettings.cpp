@@ -17,6 +17,9 @@ ModelSettings::ModelSettings(void)
     estimateWavelet_(0),
     estimateSNRatio_(0),
     constBackValue_(3),
+    indBGTrend_(0),
+    indWavelet_(0),
+    indFacies_(0),
     faciesLabels_(0),
     faciesNames_(0)
 {
@@ -27,9 +30,6 @@ ModelSettings::ModelSettings(void)
   geometry_              =     NULL;
   traceHeaderFormat_     = new TraceHeaderFormat(0); // SeisWorks;
   krigingParams_         =     NULL;
-  indBGTrend_            =     NULL;
-  indWavelet_            =     NULL;
-  indFacies_             =     NULL;
   nWells_                =        0;
   nSimulations_          =        0;
   //
@@ -123,15 +123,6 @@ ModelSettings::~ModelSettings(void)
 
   if(krigingParams_ != NULL)
     delete [] krigingParams_;
-
-  if (indBGTrend_ != NULL)
-    delete [] indBGTrend_;
-
-  if (indWavelet_ != NULL)
-    delete [] indWavelet_;
-
-  if (indFacies_ != NULL)
-    delete [] indFacies_;
 }
 
 bool 
@@ -224,9 +215,9 @@ ModelSettings::setTraceHeaderFormat(const TraceHeaderFormat & traceHeaderFormat)
 void           
 ModelSettings::setAllIndicatorsTrue(int nWells)
 {
-  indBGTrend_ = new int[nWells];
-  indWavelet_ = new int[nWells];
-  indFacies_  = new int[nWells];
+  indBGTrend_.resize(nWells);
+  indWavelet_.resize(nWells);
+  indFacies_.resize(nWells);
   for (int i=0 ; i<nWells ; i++)
   {
     indBGTrend_[i] = 1;

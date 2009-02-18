@@ -116,9 +116,12 @@ public:
   void                addEstimateWavelet(bool estimateWavelet)      { estimateWavelet_.push_back(estimateWavelet) ;}
   void                addEstimateSNRatio(bool estimateSNRatio)      { estimateSNRatio_.push_back(estimateSNRatio) ;}
   void                setAllIndicatorsTrue(int nWells);                  
-  void                setIndicatorBGTrend(int * indBGTrend, int nWells); 
-  void                setIndicatorWavelet(int * indWavelet, int nWells); 
-  void                setIndicatorFacies(int * indFacies, int nWells);   
+  void                setIndicatorBGTrend(int * indBGTrend, int nWells); //NBNB kill when xml-model ok.
+  void                setIndicatorWavelet(int * indWavelet, int nWells); //NBNB kill when xml-model ok. 
+  void                setIndicatorFacies(int * indFacies, int nWells);   //NBNB kill when xml-model ok.
+  void                addIndicatorBGTrend(int indicator)            { indBGTrend_.push_back(indicator)           ;}
+  void                addIndicatorWavelet(int indicator)            { indWavelet_.push_back(indicator)           ;}
+  void                addIndicatorFacies(int indicator)             { indFacies_.push_back(indicator)           ;}
   void                addFaciesLabel(int faciesLabel)               { faciesLabels_.push_back(faciesLabel)       ;}
   void                addFaciesName(const std::string & faciesName) { faciesNames_.push_back(faciesName)         ;}
   void                setNumberOfWells(int nWells)                  { nWells_               = nWells             ;} 
@@ -226,9 +229,9 @@ private:
                           
   std::vector<float>        constBackValue_;        // Values set for constant background model
                                                     // Negative value ==> read from file (actual value gives format).
-  int                     * indBGTrend_;            // Use well to estimate background trend? (1=yes,0=no)
-  int                     * indWavelet_;            // Use well to estimate wavelet? (1=yes,0=no)
-  int                     * indFacies_;             // Use well to estimate facies? (1=yes,0=no)
+  std::vector<int>          indBGTrend_;            // Use well to estimate background trend? (1=yes,0=no)
+  std::vector<int>          indWavelet_;            // Use well to estimate wavelet? (1=yes,0=no)
+  std::vector<int>          indFacies_;             // Use well to estimate facies? (1=yes,0=no)
                    
   std::vector<int>          faciesLabels_;          // Facies labels
   std::vector<std::string>  faciesNames_;           // Facies names   (nFacies = faciesNames.size())

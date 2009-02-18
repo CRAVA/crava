@@ -496,7 +496,7 @@ ModelFile::ModelFile(char * fileName)
 
 ModelFile::~ModelFile()
 {
-  delete inputFiles_;
+  //Both modelSettings and inputFiles are taken out and deleted outside.
 }
 
  void
