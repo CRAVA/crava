@@ -63,7 +63,8 @@ private:
                                         float               logMin, 
                                         float               logMax,
                                         float               maxHz, 
-                                        int                 outputFlag,
+                                        bool                write1D,
+                                        bool                write3D,
                                         int                 nWells, 
                                         bool                hasVelocityTrend,
                                         const std::string & name);

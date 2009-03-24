@@ -98,7 +98,7 @@ protected:
                                               WellData ** wells,
                                               int         nWells,
                                               int         outputFormat,
-                                              int         outputFlag);
+                                              int         otherOutput);
   //void                flipVec(fftw_real* vec, int n);
 
   void                  fillInnWavelet(fftw_real* wavelet_r,int nzp,float dz);

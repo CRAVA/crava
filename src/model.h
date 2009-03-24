@@ -66,12 +66,14 @@ private:
                                            Surface * corrSurf, 
                                            Simbox *& timeCutSimbox,
                                            int       outputFormat,
-                                           int       outputFlag);
+                                           int       outputDomain,
+                                           int       otherOutput);
   void             setupExtendedBackgroundSimbox(Simbox   * timeSimbox, 
                                                  Surface  * corrSurf, 
                                                  Simbox  *& timeBGSimbox,
                                                  int        outputFormat,
-                                                 int        outputFlag);
+                                                 int        outputDomain,
+                                                 int       otherOutput);
   void             processSeismic(FFTGrid      **& seisCube,
                                   Simbox        *& timeSimbox,
                                   ModelSettings *& modelSettings, 
@@ -147,20 +149,22 @@ private:
                                      double                           dz, 
                                      int                              nz,
                                      int                              outputFormat,
-                                     int                              outputFlag,
+                                     int                              outputDomain,
                                      char                           * errText,
                                      int                            & error);
   void             estimateXYPaddingSizes(Simbox         * timeSimbox,
                                           ModelSettings *& modelSettings);
   void             estimateZPaddingSize(Simbox         * timeSimbox,
                                         ModelSettings *& modelSettings);
-  int              readSegyFile(const std::string   & fileName, 
-                                FFTGrid            *& target, 
-                                Simbox             *& timeSimbox, 
-                                ModelSettings      *& modelSettings,
-                                char                * errText,
-                                const SegyGeometry *& geometry,
-                                int                   gridType,
+  int              readSegyFile(const std::string       & fileName, 
+                                FFTGrid                *& target, 
+                                Simbox                 *& timeSimbox, 
+                                ModelSettings          *& modelSettings,
+                                char                    * errText,
+                                const SegyGeometry     *& geometry,
+                                int                       gridType,
+                                float                     offset,
+                                const TraceHeaderFormat * format, 
                                 int                   i = IMISSING); 
   int              readStormFile(const std::string  & fName, 
                                  FFTGrid           *& target, 

@@ -109,15 +109,16 @@ private:
   FFTGrid          * postBeta_;
   FFTGrid          * postRho_;
 
-  float            * krigingParams_;
+  int                krigingParameter_;
   WellData        ** wells_;
   int                nWells_;
   
   int                scaleWarning_;
   char             * scaleWarningText_;
 
-  int                outputFlag_;       // See model.h for bit interpretation.
-  
+  int                outputFlag_;       // See modelsettings.h for bit interpretation.
+  bool               writePrediction_;  // Write prediction grids?
+
   float              energyTreshold_;   // If energy in reflection trace divided by mean energy
                                         // in reflection trace is lower than this, the reflections
                                         // will be interpolated. Default 0, set from model.

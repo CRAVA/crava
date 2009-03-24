@@ -88,7 +88,6 @@ Model::Model(char * fileName)
     XmlModelFile modelFile(fileName);
     inputFiles     = modelFile.getInputFiles();
     modelSettings_ = modelFile.getModelSettings();
-    exit(1); //Incomplete parser, so we would only get trouble.
 
     if (modelFile.getParsingFailed()) 
       failedModelFile = true;
@@ -126,7 +125,7 @@ Model::Model(char * fileName)
       randomGen_ = new RandomGen(inputFiles->getSeedFile().c_str());
 
     if(modelSettings_->getNumberOfSimulations() == 0)
-      modelSettings_->setOutputFlag(ModelSettings::PREDICTION); //write predicted grids. 
+      modelSettings_->setWritePrediction(true); //write predicted grids. 
     
     printSettings(modelSettings_, inputFiles);
     
@@ -161,7 +160,8 @@ Model::Model(char * fileName)
                             modelSettings_, inputFiles, errText, failedWavelet);
           }              
         }
-        background_->getAlpha()->setOutputFormat(modelSettings_->getFormatFlag()); //static, controls all grids.
+        background_->getAlpha()->setOutputFlags(modelSettings_->getOutputFormatFlag(),
+                                                modelSettings_->getOutputDomainFlag()); //static, controls all grids.
       }
       else
       {
@@ -399,7 +399,7 @@ Model::checkAvailableMemory(Simbox            * timeSimbox,
   delete dummyGrid;
 
   int nGrids;
-  if((modelSettings->getOutputFlag() & ModelSettings::PREDICTION) == 1)
+  if(modelSettings->getWritePrediction() == true)
   {
     nGrids = 10 + modelSettings->getNumberOfAngles();
     if(modelSettings->getNumberOfSimulations() > 0 && nGrids < 13)
@@ -457,14 +457,16 @@ Model::checkAvailableMemory(Simbox            * timeSimbox,
 }
 
 int
-Model::readSegyFile(const std::string   & fileName, 
-                    FFTGrid            *& target, 
-                    Simbox             *& timeSimbox, 
-                    ModelSettings      *& modelSettings, 
-                    char                * errText, 
-                    const SegyGeometry *& geometry,
-                    int                   gridType,
-                    int                   i)
+Model::readSegyFile(const std::string       & fileName, 
+                    FFTGrid                *& target, 
+                    Simbox                 *& timeSimbox, 
+                    ModelSettings          *& modelSettings, 
+                    char                    * errText, 
+                    const SegyGeometry     *& geometry,
+                    int                       gridType,
+                    float                     offset,
+                    const TraceHeaderFormat * format,
+                    int                       i)
 {
   strcpy(errText, "");
   SegY * segy = NULL;
@@ -477,18 +479,21 @@ Model::readSegyFile(const std::string   & fileName,
     // Currently we have only one optional TraceHeaderFormat, but this can 
     // be augmented to a list with several formats ...
     //
-    std::vector<TraceHeaderFormat*> traceHeaderFormats(0);
-    if (modelSettings->getTraceHeaderFormat() != NULL)
-    {
-      traceHeaderFormats.push_back(modelSettings->getTraceHeaderFormat());
+    if(format == NULL) { //Unknown format
+      std::vector<TraceHeaderFormat*> traceHeaderFormats(0);
+      if (modelSettings->getTraceHeaderFormat() != NULL)
+      {
+        traceHeaderFormats.push_back(modelSettings->getTraceHeaderFormat());
+      }
+
+
+      segy = new SegY(fileName, 
+                      offset, 
+                      traceHeaderFormats, 
+                      true); // Add standard formats to format search
     }
-
-
-    segy = new SegY(fileName, 
-                    modelSettings->getSegyOffset(), 
-                    traceHeaderFormats, 
-                    true); // Add standard formats to format search
-
+    else //Known format, read directly.
+      segy = new SegY(fileName, offset, *format);
 
     bool onlyVolume = modelSettings->getAreaParameters() != NULL; // This is now always true
     segy->ReadAllTraces(timeSimbox, 
@@ -643,8 +648,9 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
   //
   // Set SURFACES
   //
-  int outputFormat = modelSettings->getFormatFlag();
-  int outputFlag   = modelSettings->getOutputFlag();
+  int outputFormat = modelSettings->getOutputFormatFlag();
+  int outputDomain = modelSettings->getOutputDomainFlag();
+  int otherOutput  = modelSettings->getOutputDomainFlag();
 
   error = 0;
   setSimboxSurfaces(timeSimbox, 
@@ -655,7 +661,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
                     modelSettings->getTimeDz(), 
                     modelSettings->getTimeNz(),
                     outputFormat,
-                    outputFlag,
+                    outputDomain,
                     errText,
                     error);
 
@@ -710,7 +716,8 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
       }
       if(failed == false && modelSettings->getGenerateSeismic() == false) {
         //Extends timeSimbox for correlation coverage. Original stored in timeCutSimbox
-        setupExtendedTimeSimbox(timeSimbox, correlationDirection, timeCutSimbox, outputFormat, outputFlag); 
+        setupExtendedTimeSimbox(timeSimbox, correlationDirection, timeCutSimbox, 
+          outputFormat, outputDomain, modelSettings->getOtherOutputFlag()); 
       }      estimateZPaddingSize(timeSimbox, modelSettings);   
       error = timeSimbox->checkError(modelSettings->getLzLimit(),errText);
       if(error == 0)
@@ -736,7 +743,8 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
         failed = true;
       }
       if(modelSettings->getGenerateSeismic() == false) {
-        setupExtendedBackgroundSimbox(timeSimbox, correlationDirection, timeBGSimbox, outputFormat, outputFlag);
+        setupExtendedBackgroundSimbox(timeSimbox, correlationDirection, timeBGSimbox, 
+                                      outputFormat, outputDomain, modelSettings->getOtherOutputFlag());
         error = timeBGSimbox->checkError(modelSettings->getLzLimit(),errText);
         if(error == 0)
         {
@@ -778,7 +786,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
     Surface * tsurf = new Surface(dynamic_cast<const Surface &> (timeSimbox->GetTopSurface()));
     timeSimboxConstThick->setDepth(tsurf, 0, timeSimbox->getlz(), timeSimbox->getdz());
 
-    if((outputFlag & ModelSettings::EXTRA_SURFACES) > 0 && (outputFlag & ModelSettings::NOTIME) == 0)
+    if((otherOutput & ModelSettings::EXTRA_SURFACES) > 0 && (outputDomain & ModelSettings::TIMEDOMAIN) > 0)
       timeSimboxConstThick->writeTopBotGrids("Surface_Top_Time_ConstThick", 
       "Surface_Base_Time_ConstThick", 
       outputFormat);
@@ -799,7 +807,7 @@ Model::setSimboxSurfaces(Simbox                        *& simbox,
                          double                           dz, 
                          int                              nz,
                          int                              outputFormat,
-                         int                              outputFlag,
+                         int                              outputDomain,
                          char                           * errText,
                          int                            & error)
 {
@@ -869,7 +877,7 @@ Model::setSimboxSurfaces(Simbox                        *& simbox,
       }
     }
     if (error == 0) {
-      if((outputFlag & ModelSettings::NOTIME) == 0)
+      if((outputDomain & ModelSettings::TIMEDOMAIN) > 0)
         simbox->writeTopBotGrids("Surface_Top_Time", 
                                  "Surface_Base_Time", 
                                  outputFormat);
@@ -882,7 +890,8 @@ Model::setupExtendedTimeSimbox(Simbox   * timeSimbox,
                                Surface  * corrSurf, 
                                Simbox  *& timeCutSimbox,
                                int        outputFormat,
-                               int        outputFlag)
+                               int        outputDomain,
+                               int        otherOutput)
 {
   timeCutSimbox = new Simbox(timeSimbox);
   double * corrPlanePars = findPlane(corrSurf);
@@ -891,8 +900,8 @@ Model::setupExtendedTimeSimbox(Simbox   * timeSimbox,
   for(i=0;i<meanSurf->GetN();i++)
     (*meanSurf)(i) = 0;
 
-  meanSurf->Add(&(timeSimbox->GetTopSurface()));
-  meanSurf->Add(&(timeSimbox->GetBotSurface()));
+  meanSurf->AddNonConform(&(timeSimbox->GetTopSurface()));
+  meanSurf->AddNonConform(&(timeSimbox->GetBotSurface()));
   meanSurf->Multiply(0.5);
   double * refPlanePars = findPlane(meanSurf);
   delete meanSurf;
@@ -905,19 +914,19 @@ Model::setupExtendedTimeSimbox(Simbox   * timeSimbox,
 
   writeSurfaceToFile(refPlane,"CorrelationRotationPlane",outputFormat);
 
-  refPlane->Add(corrSurf);
+  refPlane->AddNonConform(corrSurf);
   delete [] corrPlanePars;
   delete [] refPlanePars;
 
   Surface * topSurf = new Surface(*refPlane);
-  topSurf->Subtract(&(timeSimbox->GetTopSurface()));
+  topSurf->SubtractNonConform(&(timeSimbox->GetTopSurface()));
   double shiftTop = topSurf->Max();
   shiftTop *= -1.0;
   topSurf->Add(shiftTop);
-  topSurf->Add(&(timeSimbox->GetTopSurface()));
+  topSurf->AddNonConform(&(timeSimbox->GetTopSurface()));
 
   Surface * botSurf = new Surface(*refPlane);
-  botSurf->Subtract(&(timeSimbox->GetBotSurface()));
+  botSurf->SubtractNonConform(&(timeSimbox->GetBotSurface()));
   double shiftBot = botSurf->Min();
   shiftBot *= -1.0;
   double thick    = shiftBot-shiftTop;
@@ -933,11 +942,11 @@ Model::setupExtendedTimeSimbox(Simbox   * timeSimbox,
     LogKit::LogFormatted(LogKit::HIGH," to %d in grid created using correlation direction.\n",nz);
   }
   botSurf->Add(shiftBot);
-  botSurf->Add(&(timeSimbox->GetBotSurface()));
+  botSurf->AddNonConform(&(timeSimbox->GetBotSurface()));
 
   timeSimbox->setDepth(topSurf, botSurf, nz);
   
-  if((outputFlag & ModelSettings::EXTRA_SURFACES) > 0 && (outputFlag & ModelSettings::NOTIME) == 0)
+  if((otherOutput & ModelSettings::EXTRA_SURFACES) > 0 && (outputDomain & ModelSettings::TIMEDOMAIN) > 0)
     timeSimbox->writeTopBotGrids("Surface_Top_Time_Extended", 
                                  "Surface_Base_Time_Extended", 
                                  outputFormat);
@@ -950,7 +959,8 @@ Model::setupExtendedBackgroundSimbox(Simbox   * timeSimbox,
                                      Surface  * corrSurf, 
                                      Simbox  *& timeBGSimbox,
                                      int        outputFormat,
-                                     int        outputFlag)
+                                     int        outputDomain,
+                                     int        otherOutput)
 {
   //
   // Move correlation surface for easier handling.
@@ -969,7 +979,7 @@ Model::setupExtendedBackgroundSimbox(Simbox   * timeSimbox,
   // inability to set dTop equal to Simbox top surface.
   //
   Surface * dTop = new Surface(*tmpSurf);
-  dTop->Subtract(&(timeSimbox->GetTopSurface()));
+  dTop->SubtractNonConform(&(timeSimbox->GetTopSurface()));
   dTop->Multiply(-1.0);
   double shiftTop = dTop->Min();
   delete dTop;
@@ -980,7 +990,7 @@ Model::setupExtendedBackgroundSimbox(Simbox   * timeSimbox,
   // Find base surface of background simbox
   //
   Surface * dBot = new Surface(*tmpSurf);
-  dBot->Subtract(&(timeSimbox->GetBotSurface()));
+  dBot->SubtractNonConform(&(timeSimbox->GetBotSurface()));
   dBot->Multiply(-1.0);
   double shiftBot = dBot->Max();
   delete dBot;
@@ -991,8 +1001,8 @@ Model::setupExtendedBackgroundSimbox(Simbox   * timeSimbox,
   // Calculate number of layers of background simbox 
   //
   tmpSurf->Assign(0.0);
-  tmpSurf->Add(botSurf);
-  tmpSurf->Subtract(topSurf);
+  tmpSurf->AddNonConform(botSurf);
+  tmpSurf->SubtractNonConform(topSurf);
   double dMax = tmpSurf->Max();
   double dt = timeSimbox->getdz();
   int nz;
@@ -1013,7 +1023,7 @@ Model::setupExtendedBackgroundSimbox(Simbox   * timeSimbox,
   timeBGSimbox = new Simbox(timeSimbox);
   timeBGSimbox->setDepth(topSurf, botSurf, nz);
 
-  if((outputFlag & ModelSettings::EXTRA_SURFACES) > 0 && (outputFlag & ModelSettings::NOTIME) == 0)
+  if((otherOutput & ModelSettings::EXTRA_SURFACES) > 0 && (outputDomain & ModelSettings::TIMEDOMAIN) > 0)
     timeBGSimbox->writeTopBotGrids("Surface_Top_Time_BG", 
                                    "Surface_Base_Time_BG", 
                                    outputFormat);
@@ -1178,17 +1188,21 @@ Model::processSeismic(FFTGrid      **& seisCube,
     int readerror = 0;
     for (int i =0 ; i < nAngles ; i++) {
       geometry[i] = NULL;
-      
+      float offset = modelSettings->getLocalSegyOffset(i);
+      if(offset < 0)
+        offset = modelSettings_->getSegyOffset();
       readerror = readSegyFile(inputFiles->getSeismicFile(i), seisCube[i],
                                timeSimbox, modelSettings, 
-                               tmpErrText, geometry[i],
-                               FFTGrid::DATA, i);
+                               tmpErrText, geometry[i], FFTGrid::DATA,
+                               offset, modelSettings->getTraceHeaderFormat(i),
+                               i);
       error += readerror;
     }
 
     if(error == 0)
     {
-      seisCube[0]->setOutputFormat(modelSettings->getFormatFlag()); //static, controls all grids.
+      seisCube[0]->setOutputFlags(modelSettings->getOutputFormatFlag(),
+                                  modelSettings->getOutputDomainFlag()); //static, controls all grids.
       if(modelSettings->getDebugFlag() == 1)
       {
         char sName[100];
@@ -1271,7 +1285,7 @@ Model::processWells(WellData     **& wells,
   wells = new WellData *[nWells];
   for(int i=0 ; i<nWells ; i++) {
     wells[i] = new WellData(inputFiles->getWellFile(i), 
-                            inputFiles->getLogNames(),
+                            modelSettings->getLogNames(),
                             modelSettings, 
                             modelSettings->getIndicatorFacies(i),
                             modelSettings->getIndicatorWavelet(i),
@@ -1351,7 +1365,7 @@ Model::processWells(WellData     **& wells,
             wells[i]->setBlockedLogsExtendedBG( new BlockedLogs(wells[i], timeBGSimbox, randomGen) );
           if (nFacies > 0)
             wells[i]->countFacies(timeSimbox,faciesCount[i]);
-          if((modelSettings->getOutputFlag() & ModelSettings::WELLS) > 0) 
+          if((modelSettings->getWellOutputFlag() & ModelSettings::WELLS) > 0) 
             wells[i]->writeRMSWell();
           validWells[count] = i;
           count++;      
@@ -1593,8 +1607,8 @@ Model::processBackground(Background   *& background,
 {
   if (modelSettings->getDoInversion() || 
       modelSettings->getGenerateSeismic() || 
-      (modelSettings->getOutputFlag() & ModelSettings::BACKGROUND) > 0 || 
-      (modelSettings->getOutputFlag() & ModelSettings::WAVELETS)   > 0 )
+      (modelSettings->getGridOutputFlag() & ModelSettings::BACKGROUND) > 0 || 
+      (modelSettings->getOtherOutputFlag() & ModelSettings::WAVELETS)   > 0 )
   {
     Utils::writeHeader("Prior Expectations / Background Model");
 
@@ -1650,10 +1664,12 @@ Model::processBackground(Background   *& background,
             int readerror = 0;
             if(findFileType(backFile) == SEGYFILE) {
               const SegyGeometry * geometry = NULL;
+              float offset = modelSettings->getSegyOffset();
               readerror = readSegyFile(backFile, backModel[i], 
                                        timeSimbox, modelSettings, 
                                        tmpErrText, geometry, 
-                                       FFTGrid::PARAMETER);
+                                       FFTGrid::PARAMETER, 
+                                       offset, NULL);
             }
             else
               readerror = readStormFile(backFile, backModel[i], parName[i], 
@@ -1693,7 +1709,7 @@ Model::processBackground(Background   *& background,
       }
       background = new Background(backModel);
     }
-    if((modelSettings->getOutputFlag() & ModelSettings::BACKGROUND) > 0)
+    if((modelSettings->getGridOutputFlag() & ModelSettings::BACKGROUND) > 0)
       background->writeBackgrounds(timeSimbox, timeDepthMapping_, timeCutMapping_); 
     Timings::setTimePriorExpectation(wall,cpu);
   }
@@ -1709,7 +1725,7 @@ Model::processPriorCorrelations(Corr         *& correlations,
                                 char          * errText,
                                 bool          & failed)
 {
-  bool printResult = (modelSettings->getOutputFlag() & (ModelSettings::PRIORCORRELATIONS + ModelSettings::CORRELATION)) > 0;
+  bool printResult = ((modelSettings->getOtherOutputFlag() & ModelSettings::PRIORCORRELATIONS) > 0);
   if (modelSettings->getDoInversion() || printResult)
   {
     Utils::writeHeader("Prior Covariance");
@@ -1876,7 +1892,7 @@ Model::processReflectionMatrix(float       **& reflectionMatrix,
   //
   if (modelSettings->getDoInversion() || 
       modelSettings->getGenerateSeismic() || 
-      (modelSettings->getOutputFlag() & ModelSettings::WAVELETS)   > 0 )
+      (modelSettings->getOtherOutputFlag() & ModelSettings::WAVELETS)   > 0 )
   {
     const std::string & reflMatrFile = inputFiles->getReflMatrFile();
 
@@ -1957,7 +1973,7 @@ Model::processWavelets(Wavelet     **& wavelet,
   int error = 0;
   if (modelSettings->getDoInversion() || 
       modelSettings->getGenerateSeismic() || 
-      (modelSettings->getOutputFlag() & ModelSettings::WAVELETS) > 0 )
+      (modelSettings->getOtherOutputFlag() & ModelSettings::WAVELETS) > 0 )
   {
     Utils::writeHeader("Processing/generating wavelets");
 
@@ -2069,7 +2085,7 @@ Model::processWavelets(Wavelet     **& wavelet,
           }
         }
         if (error == 0) {
-          if((modelSettings->getOutputFlag() & ModelSettings::WAVELETS) > 0) 
+          if((modelSettings->getOtherOutputFlag() & ModelSettings::WAVELETS) > 0) 
           {
             char fileName[MAX_STRING];
             sprintf(fileName,"Wavelet_Scaled");
@@ -2164,9 +2180,8 @@ void Model::processPriorFaciesProb(float         *& priorFacies,
                                    int              nz,
                                    ModelSettings  * modelSettings)
 {
-  int outputFlag = modelSettings->getOutputFlag();
   int nFacies    = modelSettings->getNumberOfFacies();
-  if(nFacies > 0 && (outputFlag & (ModelSettings::FACIESPROB + ModelSettings::FACIESPROBRELATIVE)) > 0)
+  if(nFacies > 0 && (modelSettings->getGridOutputFlag() & (ModelSettings::FACIESPROB + ModelSettings::FACIESPROBRELATIVE)) > 0)
   {
     Utils::writeHeader("Prior Facies Probabilities");
     //
@@ -2457,7 +2472,7 @@ Model::printSettings(ModelSettings * modelSettings,
 
     LogKit::LogFormatted(LogKit::LOW,"  Number of realisations                   : %10d\n",modelSettings->getNumberOfSimulations());
   }
-  LogKit::LogFormatted(LogKit::LOW,"  Kriging                                  : %10s\n",(modelSettings->getKrigingParameters()==NULL ? "no" : "yes"));
+  LogKit::LogFormatted(LogKit::LOW,"  Kriging                                  : %10s\n",(modelSettings->getKrigingParameter()> 0 ? "no" : "yes"));
 
   LogKit::LogFormatted(LogKit::HIGH,"\nUnit settings/assumptions:\n");
   LogKit::LogFormatted(LogKit::HIGH,"  Time                                     : %10s\n","ms TWT");
@@ -2508,7 +2523,7 @@ Model::printSettings(ModelSettings * modelSettings,
   if (modelSettings->getNumberOfWells() > 0)
   {
     LogKit::LogFormatted(LogKit::LOW,"\nWell logs:\n");
-    const std::vector<std::string> & logNames = inputFiles->getLogNames();
+    const std::vector<std::string> & logNames = modelSettings->getLogNames();
 
     if (logNames.size() > 0)
     {
@@ -2830,7 +2845,7 @@ Model::processDepthConversion(Simbox        * timeCutSimbox,
       {
         timeDepthMapping_->calculateSurfaceFromVelocity(velocity, timeSimbox);
         timeDepthMapping_->setDepthSimbox(timeSimbox, timeSimbox->getnz(), 
-                                          modelSettings->getFormatFlag(),
+                                          modelSettings->getOutputFormatFlag(),
                                           failed, errText);            // NBNB-PAL: Er dettet riktig nz (timeCut vs time)? 
         timeDepthMapping_->makeTimeDepthMapping(velocity, timeSimbox);
       }
@@ -2864,10 +2879,12 @@ Model::loadVelocity(FFTGrid          *& velocity,
 
     if(findFileType(velocityField) == SEGYFILE) {
       const SegyGeometry * geometry = NULL;
+      float offset = modelSettings->getSegyOffset();
       readerror = readSegyFile(velocityField, velocity,
                                timeSimbox, modelSettings, 
                                tmpErrText, geometry, 
-                               FFTGrid::VELOCITY);
+                               FFTGrid::VELOCITY, 
+                               offset, NULL);
     }
     else
       readerror = readStormFile(velocityField, velocity, parName, 
@@ -2996,7 +3013,7 @@ Model::writeSurfaceToFile(Surface           * surface,
 {
   std::string fileName = ModelSettings::makeFullFileName(name);
   
-  if((format & FFTGrid::ASCIIFORMAT) == FFTGrid::ASCIIFORMAT)
+  if((format & ModelSettings::ASCII) > 0)
     NRLib2::WriteIrapClassicAsciiSurf(*surface, fileName+".irap");
   else  
     NRLib2::WriteStormBinarySurf(*surface, fileName+".storm");

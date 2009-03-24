@@ -97,7 +97,7 @@ int main(int argc, char** argv)
       corr->invFFT();
       corr->getPostVariances();
       corr->printPostVariances();
-      if((model->getModelSettings()->getOutputFlag() & ModelSettings::CORRELATION) > 0)
+      if((model->getModelSettings()->getGridOutputFlag() & ModelSettings::CORRELATION) > 0)
       {
         corr->writeFilePostVariances();
         corr->writeFilePostCovGrids(model->getTimeSimbox());
@@ -111,12 +111,12 @@ int main(int argc, char** argv)
       //
       // Temprary placement.  crava.cpp needs a proper restructuring.
       //
-      if((model->getModelSettings()->getOutputFlag() & ModelSettings::BLOCKED_WELLS) > 0) {
+      if((model->getModelSettings()->getWellOutputFlag() & ModelSettings::BLOCKED_WELLS) > 0) {
         WellData ** wells = model->getWells();
         for (int i=0 ; i<model->getModelSettings()->getNumberOfWells() ; i++)
           wells[i]->getBlockedLogsOrigThick()->writeRMSWell(model->getModelSettings());
       }
-      if((model->getModelSettings()->getOutputFlag() & ModelSettings::BLOCKED_LOGS) > 0) {
+      if((model->getModelSettings()->getWellOutputFlag() & ModelSettings::BLOCKED_LOGS) > 0) {
         LogKit::LogFormatted(LogKit::LOW,"\nWARNING: Writing of BLOCKED_LOGS is not implemented yet.\n");
       }
 

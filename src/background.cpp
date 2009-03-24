@@ -72,7 +72,7 @@ Background::Background(FFTGrid       ** grids,
 
 //-------------------------------------------------------------------------------
 Background::Background(FFTGrid ** grids) 
-  : DataTarget_(RMISSING),
+  : DataTarget_(IMISSING),
     vsvp_(RMISSING)
 {
   for(int i=0 ; i<3 ; i++)
@@ -115,12 +115,14 @@ Background::generateBackgroundModel(FFTGrid      *& bgAlpha,
   float * avgDevVel   = new float[nWells]; // Allocate (for simplicity) although not always needed
 
   bool hasVelocityTrend = velocity != NULL;
+  bool write1D = ((modelSettings->getOtherOutputFlag()& ModelSettings::BACKGROUND_TREND_1D) > 0);
+  bool write3D = ((modelSettings->getGridOutputFlag()& ModelSettings::BACKGROUND_TREND) > 0);
   calculateBackgroundTrend(trendAlpha, avgDevAlpha,
                            wells, simbox, 
                            modelSettings->getAlphaMin(), 
                            modelSettings->getAlphaMax(),
                            modelSettings->getMaxHzBackground(), 
-                           modelSettings->getOutputFlag(),
+                           write1D, write3D,
                            nWells, hasVelocityTrend,
                            std::string("Vp"));
   calculateBackgroundTrend(trendBeta, avgDevBeta, 
@@ -128,7 +130,7 @@ Background::generateBackgroundModel(FFTGrid      *& bgAlpha,
                            modelSettings->getBetaMin(), 
                            modelSettings->getBetaMax(),
                            modelSettings->getMaxHzBackground(), 
-                           modelSettings->getOutputFlag(),
+                           write1D, write3D,
                            nWells, hasVelocityTrend,
                            std::string("Vs"));
   calculateBackgroundTrend(trendRho, avgDevRho,
@@ -136,7 +138,7 @@ Background::generateBackgroundModel(FFTGrid      *& bgAlpha,
                            modelSettings->getRhoMin(), 
                            modelSettings->getRhoMax(),
                            modelSettings->getMaxHzBackground(), 
-                           modelSettings->getOutputFlag(),
+                           write1D, write3D,
                            nWells, hasVelocityTrend,
                            std::string("Rho"));
 
@@ -148,7 +150,7 @@ Background::generateBackgroundModel(FFTGrid      *& bgAlpha,
     //
     calculateVelocityDeviations(velocity, wells, simbox, 
                                 trendVel, avgDevVel, avgDevAlpha,
-                                modelSettings->getOutputFlag(),
+                                modelSettings->getGridOutputFlag(),
                                 nWells);
     velocity->logTransf();
     delete bgAlpha;
@@ -173,7 +175,7 @@ Background::generateBackgroundModel(FFTGrid      *& bgAlpha,
     
     setupKrigingData2D(krigingDataAlpha,krigingDataBeta,krigingDataRho,
                        trendAlpha,trendBeta,trendRho,
-                       modelSettings->getOutputFlag(),
+                       modelSettings->getGridOutputFlag(),
                        simbox,wells,nWells);
     
     const CovGrid2D & covGrid2D = makeCovGrid2D(simbox,
@@ -300,7 +302,8 @@ Background::calculateBackgroundTrend(float             * trend,
                                      float               logMin, 
                                      float               logMax,
                                      float               maxHz, 
-                                     int                 outputFlag,
+                                     bool                write1D,
+                                     bool                write3D,
                                      int                 nWells, 
                                      bool                hasVelocityTrend,
                                      const std::string & name)
@@ -313,14 +316,14 @@ Background::calculateBackgroundTrend(float             * trend,
                          maxHz, nWells, 
                          nz, dz, name);
   
-  if((outputFlag & ModelSettings::BACKGROUND) > 0) {
+  if(write1D == true) {
     writeVerticalTrend(trend, dz, nz, name);
   }
   
   calculateDeviationFromVerticalTrend(wells, trend, avgDev,
                                       nWells, nz, name);
   
-  if((outputFlag & ModelSettings::BACKGROUND_TREND) > 0 && !(name=="Vp" && hasVelocityTrend))
+  if(write3D == true && !(name=="Vp" && hasVelocityTrend))
   {
     const int nx = simbox->getnx();
     const int ny = simbox->getny();
@@ -524,7 +527,7 @@ Background::makeKrigedBackground(const std::vector<KrigingData2D> & krigingData,
     for(int j=0 ; j<nyp ; j++) {        
       for(int i=0 ; i<rnxp ; i++) {
         if(i<nxp)
-          bgGrid->setNextReal(surface(i,j));
+          bgGrid->setNextReal(float(surface(i,j)));
         else
           bgGrid->setNextReal(0);  //dummy in padding
       }
@@ -1318,7 +1321,7 @@ Background::resampleBackgroundModel(FFTGrid      *& bgAlpha,
                                     Simbox        * timeSimbox,
                                     ModelSettings * modelSettings)
 {
-  if((modelSettings->getOutputFlag() & ModelSettings::EXTRA_GRIDS) > 0) {
+  if((modelSettings->getGridOutputFlag() & ModelSettings::EXTRA_GRIDS) > 0) {
     bgAlpha->writeFile("BG_Vp_BackgroundGrid", timeBGSimbox, "exptrans");
     bgBeta->writeFile("BG_Vs_BackgroundGrid", timeBGSimbox, "exptrans");
     bgRho->writeFile("BG_Rho_BackgroundGrid", timeBGSimbox, "exptrans");
@@ -1333,7 +1336,7 @@ Background::resampleBackgroundModel(FFTGrid      *& bgAlpha,
   resampleParameter(resBgBeta ,bgBeta ,timeSimbox, timeBGSimbox);
   resampleParameter(resBgRho  ,bgRho  ,timeSimbox, timeBGSimbox);
   
-  if((modelSettings->getOutputFlag() & ModelSettings::EXTRA_GRIDS) > 0) {
+  if((modelSettings->getGridOutputFlag() & ModelSettings::EXTRA_GRIDS) > 0) {
     resBgAlpha->writeFile("BG_Vp_InversionGrid", timeSimbox, "exptrans");
     resBgBeta->writeFile("BG_Vs_InversionGrid", timeSimbox, "exptrans");
     resBgRho->writeFile("BG_Rho_InversionGrid", timeSimbox, "exptrans");

@@ -453,8 +453,8 @@ Wavelet::calculateSNRatio(Simbox        * simbox,
   Vario  * localWaveletVario = modelSettings->getLocalWaveletVario();
   int      nWells            = modelSettings->getNumberOfWells();
   bool     useLocalWavelet   = modelSettings->getUseLocalWavelet();
-  int      outputFormat      = modelSettings->getFormatFlag();
-  int      outputFlag        = modelSettings->getOutputFlag();
+  int      outputFormat      = modelSettings->getOutputFormatFlag();
+  int      otherOutput       = modelSettings->getOtherOutputFlag();
 
   float * dz = new float[nWells];
   int i, k, w;
@@ -671,7 +671,7 @@ Wavelet::calculateSNRatio(Simbox        * simbox,
   {
     estimateLocalWavelets(shift, gain, shiftWell, scaleOptWell,
                           localWaveletVario, nActiveData, simbox, 
-                          wells, nWells, outputFormat, outputFlag);
+                          wells, nWells, outputFormat, otherOutput);
   }
   delete [] shiftWell;
   delete [] errVarWell;
@@ -1030,7 +1030,7 @@ Wavelet::estimateLocalWavelets(Surface  *& shift,
                                WellData ** wells,
                                int         nWells,
                                int         outputFormat,
-                               int         outputFlag)
+                               int         otherOutput)
 {
   //
   // NBNB-PAL: Since slightly deviated wells are accepted, we should
@@ -1086,7 +1086,7 @@ Wavelet::estimateLocalWavelets(Surface  *& shift,
                         0.0f);
     Kriging2D::krigSurface(*shift, shiftData, cov);
 
-    if ((outputFlag && ModelSettings::EXTRA_SURFACES) > 0)
+    if ((otherOutput & ModelSettings::EXTRA_SURFACES) > 0)
       Model::writeSurfaceToFile(shift,"Local_Wavelet_Shift",outputFormat);
   }
   if(gain==NULL) {
@@ -1099,7 +1099,7 @@ Wavelet::estimateLocalWavelets(Surface  *& shift,
                        1.0f);
     Kriging2D::krigSurface(*gain, gainData, cov);
 
-    if ((outputFlag && ModelSettings::EXTRA_SURFACES) > 0)
+    if ((otherOutput & ModelSettings::EXTRA_SURFACES) > 0)
       Model::writeSurfaceToFile(gain,"Local_Wavelet_Gain",outputFormat);
   }
 }

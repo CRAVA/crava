@@ -100,9 +100,11 @@ public:
 
   virtual bool         isFile() {return(0);}    // indicates wether the grid is in memory or on disk  
 
-  enum                 outputFormat{NOOUTPUT = 0, NOTIMEFORMAT = 1, STORMFORMAT = 2, SEGYFORMAT = 4, ASCIIFORMAT = 8, SGRIFORMAT = 16};
+  void                 setOutputFlags(int format, int domain) {formatFlag_ = format;domainFlag_=domain;};
   void                 setOutputFormat(int format) {formatFlag_ = format;} 
   int                  getOutputFormat() {return(formatFlag_);} 
+  void                 setOutputDomain(int domain) {domainFlag_ = domain;} 
+  int                  getOutputDomain() {return(domainFlag_);} 
 
   virtual void         createRealGrid();
   virtual void         createComplexGrid();
@@ -138,7 +140,8 @@ protected:
   fftw_complex* cvalue_;   // values of complex parameter in grid points
   fftw_real*    rvalue_;   // values of real parameter in grid points
 
-  static int  formatFlag_; // Decides format of output (see format types above).
+  static int  formatFlag_; // Decides format of output (see ModelSettings).
+  static int  domainFlag_; // Decides domain of output (see ModelSettings).
 
   //int                 setPaddingSize(int n, float p); 
   int                   getFillNumber(int i, int n, int np );

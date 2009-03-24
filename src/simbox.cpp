@@ -415,7 +415,7 @@ Simbox::writeTopBotGrids(std::string topname,
                          std::string botname,
                          int         outputFormat)
 {
-  if ((outputFormat & FFTGrid::ASCIIFORMAT) == FFTGrid::ASCIIFORMAT) {
+  if ((outputFormat & ModelSettings::ASCII) > 0) {
     topname += ".irap";
     botname += ".irap";
   }
@@ -428,7 +428,7 @@ Simbox::writeTopBotGrids(std::string topname,
   topName_ = NRLib2::RemovePath(tmpName);
   assert(typeid(GetTopSurface()) == typeid(Surface));
   const Surface & wtsurf = dynamic_cast<const Surface &>(GetTopSurface());
-  if ((outputFormat & FFTGrid::ASCIIFORMAT) == FFTGrid::ASCIIFORMAT) 
+  if ((outputFormat & ModelSettings::ASCII) > 0) 
     NRLib2::WriteIrapClassicAsciiSurf(wtsurf, tmpName);
   else
     NRLib2::WriteStormBinarySurf(wtsurf, tmpName);
@@ -437,7 +437,7 @@ Simbox::writeTopBotGrids(std::string topname,
   botName_ = NRLib2::RemovePath(tmpName);
   assert(typeid(GetBotSurface()) == typeid(Surface));
   const Surface & wbsurf = dynamic_cast<const Surface &>(GetBotSurface());
-  if ((outputFormat & FFTGrid::ASCIIFORMAT) == FFTGrid::ASCIIFORMAT) 
+  if ((outputFormat & ModelSettings::ASCII) > 0) 
     NRLib2::WriteIrapClassicAsciiSurf(wbsurf, tmpName);
   else
     NRLib2::WriteStormBinarySurf(wbsurf, tmpName);

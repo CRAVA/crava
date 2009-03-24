@@ -51,8 +51,9 @@ Crava::Crava(Model * model)
   energyTreshold_    = model->getModelSettings()->getEnergyThreshold();
   ntheta_            = model->getModelSettings()->getNumberOfAngles();
   fileGrid_          = model->getModelSettings()->getFileGrid();
-  outputFlag_        = model->getModelSettings()->getOutputFlag();
-  krigingParams_     = model->getModelSettings()->getKrigingParameters();
+  outputFlag_        = model->getModelSettings()->getGridOutputFlag();
+  writePrediction_   = model->getModelSettings()->getWritePrediction();
+  krigingParameter_  = model->getModelSettings()->getKrigingParameter();
   nWells_            = model->getModelSettings()->getNumberOfWells();
   nSim_              = model->getModelSettings()->getNumberOfSimulations();
   wells_             = model->getWells();
@@ -105,7 +106,7 @@ Crava::Crava(Model * model)
     corrT = parSpatialCorr->fillInParamCorr(correlations_,lowIntCut,corrGradI, corrGradJ);
     correlations_->setPriorCorrTFiltered(corrT,nz_,nzp_); // Can has zeros in the middle
     errCorrUnsmooth->fillInErrCorr(correlations_,corrGradI,corrGradJ); 
-    if((outputFlag_ & (ModelSettings::PRIORCORRELATIONS + ModelSettings::CORRELATION)) > 0)
+    if((model->getModelSettings()->getOtherOutputFlag() & ModelSettings::PRIORCORRELATIONS) > 0)
       correlations_->writeFilePriorCorrT(corrT,nzp_);     // No zeros in the middle
     // parSpatialCorr->writeFile("parSpatialCorr",simbox_);
     // parSpatialCorr->writeAsciiFile("SpatialCorr");         //for debug
@@ -323,7 +324,7 @@ Crava::computeVariances(fftw_real     * corrT,
       LogKit::LogFormatted(LogKit::LOW,"Matching syntethic and empirical energies:\n");
       float gain = sqrt((errorVariance_[l]/modelVariance_[l])*(empSNRatio_[l] - 1.0f));
       seisWavelet_[l]->scale(gain);
-      if((outputFlag_ & ModelSettings::WAVELETS) > 0) 
+      if((modelSettings->getOtherOutputFlag() & ModelSettings::WAVELETS) > 0) 
       {
         sprintf(fileName,"Wavelet_EnergyMatched");
         seisWavelet_[l]->writeWaveletToFile(fileName, 1.0); // dt_max = 1.0;
@@ -1019,7 +1020,7 @@ Crava::computePostMeanResidAndFFTCov()
     postAlpha_->endAccess();
   }
     
-  if((outputFlag_ & ModelSettings::PREDICTION) > 0)
+  if(writePrediction_ == true)
   {
     doPostKriging(*postAlpha_, *postBeta_, *postRho_); 
     ParameterOutput::writeParameters(simbox_, model_, postAlpha_, postBeta_, postRho_, 
@@ -1267,7 +1268,7 @@ Crava::doPostKriging(FFTGrid & postAlpha,
                      FFTGrid & postBeta, 
                      FFTGrid & postRho) 
 {
-  if(krigingParams_ != NULL) { 
+  if(krigingParameter_ > 0) { 
     Utils::writeHeader("Conditioning to wells");
 
     double wall=0.0, cpu=0.0;
@@ -1287,7 +1288,7 @@ Crava::doPostKriging(FFTGrid & postAlpha,
                            kd.getData(), kd.getNumberOfData(),
                            covGridAlpha, covGridBeta, covGridRho, 
                            covGridCrAlphaBeta, covGridCrAlphaRho, covGridCrBetaRho, 
-                           int(krigingParams_[0]));
+                           krigingParameter_);
 
     pKriging.KrigAll(postAlpha, postBeta, postRho);
     Timings::setTimeKriging(wall,cpu);

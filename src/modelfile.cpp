@@ -201,7 +201,7 @@ ModelFile::ModelFile(char * fileName)
           break;
         case 7:
           curPos += getParNum(params, curPos, error, errText, "PREDICTION", 0)+1;
-          modelSettings_->setOutputFlag(1);
+          modelSettings_->setWritePrediction(true);
           break;
         case 8:
           error = readCommandPadding(params, curPos, errText);
@@ -408,8 +408,8 @@ ModelFile::ModelFile(char * fileName)
   //  }
   //}
 
-  bool doFaciesProb         = (modelSettings_->getOutputFlag() & ModelSettings::FACIESPROB        ) > 0;
-  bool doFaciesProbRelative = (modelSettings_->getOutputFlag() & ModelSettings::FACIESPROBRELATIVE) > 0;
+  bool doFaciesProb         = (modelSettings_->getGridOutputFlag() & ModelSettings::FACIESPROB        ) > 0;
+  bool doFaciesProbRelative = (modelSettings_->getGridOutputFlag() & ModelSettings::FACIESPROBRELATIVE) > 0;
   if((doFaciesProb || doFaciesProbRelative) && !modelSettings_->getFaciesLogGiven())
   {
     sprintf(errText,"You cannot calculate facies probabilities without specifying a facies log for subcommand HEADER of command WELLS.\n");
@@ -685,9 +685,9 @@ ModelFile::readCommandWells(char ** params, int & pos, char * errText)
       if(error==0)
       { 
         for(int i=0 ; i<nHeader ; i++)
-          inputFiles_->setLogName(i,uppercase(params[pos+1+i]));
+          modelSettings_->setLogName(i,uppercase(params[pos+1+i]));
         if(nHeader<5)// no facies log, dummy name
-          inputFiles_->setLogName(4,"FACIES");
+          modelSettings_->setLogName(4,"FACIES");
       }
       pos+= nHeader+2;
     }
@@ -1008,7 +1008,7 @@ ModelFile::readCommandTimeSurfaces(char ** params, int & pos, char * errText)
 int 
 ModelFile::readCommandDepthConversion(char ** params, int & pos, char * errText)
 {
-  modelSettings_->setDoDepthConversion(true);
+  modelSettings_->setDepthDataOk(true);
 
   inputFiles_->setVelocityField("CONSTANT");
 
@@ -1021,6 +1021,10 @@ ModelFile::readCommandDepthConversion(char ** params, int & pos, char * errText)
             params[pos-1], nPar);
     return(error);
   }
+
+  int domain = modelSettings_->getOutputDomainFlag();
+  domain = (domain | ModelSettings::DEPTHDOMAIN);
+  modelSettings_->setOutputDomainFlag(domain);
 
   int nSubCommands = 3;
   char ** subCommand = new char * [nSubCommands];
@@ -1170,6 +1174,10 @@ ModelFile::readCommandSeismic(char ** params, int & pos, char * errText, int sei
 
     // 6. Seismic type
     modelSettings_->addSeismicType(seisType);
+
+    //Temporary
+    modelSettings_->addLocalSegyOffset(-1);
+    modelSettings_->addTraceHeaderFormat(NULL);
 
     // Consistency check
     if(modelSettings_->getGenerateSeismic() || error == 0)
@@ -1329,11 +1337,11 @@ ModelFile::readCommandOutput(char ** params, int & pos, char * errText)
     for(i=0;i<nKeys;i++)
       keywords[i] = new char[40];
     i = 0;
-    strcpy(keywords[i++],"STORM");
+    strcpy(keywords[i++],"STORM"); //0
     strcpy(keywords[i++],"SEGY");
     strcpy(keywords[i++],"ASCII");
     strcpy(keywords[i++],"SGRI");
-    strcpy(keywords[i++],"CORRELATION");
+    strcpy(keywords[i++],"CORRELATION"); //4
     strcpy(keywords[i++],"RESIDUALS");
     strcpy(keywords[i++],"VP");
     strcpy(keywords[i++],"VS");
@@ -1346,18 +1354,18 @@ ModelFile::readCommandOutput(char ** params, int & pos, char * errText)
     strcpy(keywords[i++],"VPVSRATIO");
     strcpy(keywords[i++],"MURHO");
     strcpy(keywords[i++],"LAMBDARHO");
-    strcpy(keywords[i++],"PRIORCORRELATIONS");
     strcpy(keywords[i++],"BACKGROUND");
-    strcpy(keywords[i++],"WELLS");
-    strcpy(keywords[i++],"WAVELETS");
-    strcpy(keywords[i++],"NOTIME");
+    strcpy(keywords[i++],"BACKGROUND_TREND");
     strcpy(keywords[i++],"FACIESPROB");
     strcpy(keywords[i++],"FACIESPROBRELATIVE");
+    strcpy(keywords[i++],"EXTRA_GRIDS");
+    strcpy(keywords[i++],"WELLS");        //22
     strcpy(keywords[i++],"BLOCKED_WELLS");
     strcpy(keywords[i++],"BLOCKED_LOGS");
+    strcpy(keywords[i++],"WAVELETS");     //25
     strcpy(keywords[i++],"EXTRA_SURFACES");
-    strcpy(keywords[i++],"EXTRA_GRIDS");
-    strcpy(keywords[i++],"BACKGROUND_TREND");
+    strcpy(keywords[i++],"PRIORCORRELATIONS");
+    strcpy(keywords[i++],"NOTIME");       //28
 
     if (i != nKeys)
     { 
@@ -1366,8 +1374,11 @@ ModelFile::readCommandOutput(char ** params, int & pos, char * errText)
       return(1);
     }
 
-    int outputFlag = 0;
+    int gridFlag = 0;
+    int wellFlag = 0;
+    int domainFlag = modelSettings_->getOutputDomainFlag();
     int formatFlag = 0;
+    int otherFlag = 0;
 
     char * flag;
     //sprintf(errText,"%c",'\0');
@@ -1379,9 +1390,15 @@ ModelFile::readCommandOutput(char ** params, int & pos, char * errText)
         if(strcmp(flag,keywords[key]) == 0)
           break;
       if(key < 4)   
-        formatFlag = (formatFlag | 2*static_cast<int>(pow(2.0f,key)));
-      else if(key < nKeys)
-        outputFlag = (outputFlag | static_cast<int>(pow(2.0f,(key-3))));
+        formatFlag = (formatFlag | static_cast<int>(pow(2.0f,key)));
+      else if(key < 22)
+        gridFlag = (gridFlag | static_cast<int>(pow(2.0f,(key-4))));
+      else if(key < 25)
+        wellFlag = (wellFlag | static_cast<int>(pow(2.0f,(key-22))));
+      else if(key < 28)
+        otherFlag = (otherFlag | static_cast<int>(pow(2.0f,(key-25))));
+      else if(key < 29)
+        domainFlag = (domainFlag & static_cast<int>(pow(2.0f,(key-28))));
       else
       {
         error = 1;
@@ -1394,17 +1411,27 @@ ModelFile::readCommandOutput(char ** params, int & pos, char * errText)
       delete [] keywords[i];
     delete [] keywords;
 
-    if((outputFlag & ModelSettings::FACIESPROB) >0 && (outputFlag & ModelSettings::FACIESPROBRELATIVE)>0)
+    if((gridFlag & ModelSettings::FACIESPROB) >0 && (gridFlag & ModelSettings::FACIESPROBRELATIVE)>0)
     {
-      outputFlag -=1048576;
+      gridFlag -= ModelSettings::FACIESPROBRELATIVE;
       LogKit::LogFormatted(LogKit::LOW,"Warning: Both FACIESPROB and FACIESPROBRELATIVE are wanted as output. Only FACIESPROB is given.\n");
     }
-    if((outputFlag & ModelSettings::NOTIME) > 0)
-      formatFlag = (formatFlag | FFTGrid::NOTIMEFORMAT);
+
+    //Some backward compatibility lines.
+    if((gridFlag & ModelSettings::BACKGROUND) > 0)
+      otherFlag += ModelSettings::BACKGROUND_TREND_1D;
+    if((gridFlag & ModelSettings::CORRELATION) > 0)
+      otherFlag = (otherFlag | ModelSettings::PRIORCORRELATIONS);
+
     if (formatFlag != 0)
-      modelSettings_->setFormatFlag(formatFlag);
-    if (outputFlag != 0)
-    modelSettings_->setOutputFlag(outputFlag);
+      modelSettings_->setOutputFormatFlag(formatFlag);
+    if (gridFlag != 0)
+      modelSettings_->setGridOutputFlag(gridFlag);
+    if (wellFlag != 0)
+      modelSettings_->setWellOutputFlag(wellFlag);
+    if (otherFlag != 0)
+      modelSettings_->setOtherOutputFlag(otherFlag);
+    modelSettings_->setOutputDomainFlag(domainFlag);
   }
   pos += nPar+1;
   return(error);
@@ -1477,7 +1504,7 @@ ModelFile::readCommandKriging(char ** params, int & pos, char * errText)
     float * krigingParams = new float[nPar];
     for(i=0;i<nPar;i++)
       krigingParams[i] = float(atof(params[pos+i]));
-    modelSettings_->setKrigingParameters(krigingParams,nPar);
+    modelSettings_->setKrigingParameter(int(krigingParams[0]));
     delete [] krigingParams;
   }
   pos += nPar+1;

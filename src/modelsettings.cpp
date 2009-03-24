@@ -21,7 +21,10 @@ ModelSettings::ModelSettings(void)
     indWavelet_(0),
     indFacies_(0),
     faciesLabels_(0),
-    faciesNames_(0)
+    faciesNames_(0),
+    localSegyOffset_(0),
+    localTHF_(0),
+    logNames_(5)
 {
   angularCorr_           = new GenExpVario(1, 10*static_cast<float>(PI/180.0)); // Power=1 range=10deg
   lateralCorr_           = new GenExpVario(1, 1000, 1000); 
@@ -29,7 +32,7 @@ ModelSettings::ModelSettings(void)
   localWaveletVario_     =     NULL; // Will be set equal to backgroundVario unless it is set separately
   geometry_              =     NULL;
   traceHeaderFormat_     = new TraceHeaderFormat(0); // SeisWorks;
-  krigingParams_         =     NULL;
+  krigingParameter_      =       -1; //Indicate no kriging.
   nWells_                =        0;
   nSimulations_          =        0;
   //
@@ -84,15 +87,20 @@ ModelSettings::ModelSettings(void)
   time_dz_               = RMISSING;
   time_nz_               = IMISSING;
 
-  outputFlag_            = VP+VS+RHO;  // Default output
-  formatFlag_            =        2;   // STORMFORMAT
-  debugFlag_             =        0;
-  fileGrid_              =       -1;
+  writePrediction_       =      false;  //Will be set to true if no simulations.
+  gridFlag_              =  VP+VS+RHO;  // Default output
+  formatFlag_            =      STORM;   
+  domainFlag_            = TIMEDOMAIN;   
+  wellFlag_              =          0;   
+  otherFlag_             =          0;   
+  debugFlag_             =          0;
+  fileGrid_              =         -1;
  
+  estimationMode_        =    false;
   generateSeismic_       =    false;
   generateBackground_    =    true;
   faciesLogGiven_        =    false;
-  doDepthConversion_     =    false;
+  depthDataOk_           =    false;
   parallelTimeSurfaces_  =    false;
   useLocalWavelet_       =    false;
 
@@ -120,17 +128,19 @@ ModelSettings::~ModelSettings(void)
 
   if(traceHeaderFormat_ != NULL)
     delete traceHeaderFormat_;
-
-  if(krigingParams_ != NULL)
-    delete [] krigingParams_;
 }
 
 bool 
 ModelSettings::getDoInversion(void)
 {
-  return ((VP+VS+RHO+LAMELAMBDA+LAMEMU+POISSONRATIO+AI+SI+VPVSRATIO+MURHO+LAMBDARHO+FACIESPROB+CORRELATION+FACIESPROBRELATIVE & outputFlag_) > 0); 
+  return ((VP+VS+RHO+LAMELAMBDA+LAMEMU+POISSONRATIO+AI+SI+VPVSRATIO+MURHO+LAMBDARHO+FACIESPROB+CORRELATION+FACIESPROBRELATIVE & gridFlag_) > 0); 
 }
 
+bool 
+ModelSettings::getDoDepthConversion(void) const
+{
+  return(depthDataOk_ & ((domainFlag_ & DEPTHDOMAIN) > 0));
+}
 void
 ModelSettings::rotateVariograms(float angle)
 {
@@ -197,19 +207,17 @@ ModelSettings::setAreaParameters(const SegyGeometry * geometry)
 }
 
 void           
-ModelSettings::setKrigingParameters(float * krigingParams, int nParams)
-{
-  krigingParams_ = new float[nParams];
-  for (int i=0 ; i<nParams ; i++)
-    krigingParams_[i] = krigingParams[i];
-}
-
-void           
 ModelSettings::setTraceHeaderFormat(const TraceHeaderFormat & traceHeaderFormat)
 {
   if (traceHeaderFormat_ != NULL)
     delete traceHeaderFormat_;
   traceHeaderFormat_ = new TraceHeaderFormat(traceHeaderFormat);
+}
+
+void           
+ModelSettings::addTraceHeaderFormat(const TraceHeaderFormat & traceHeaderFormat)
+{
+  localTHF_.push_back(new TraceHeaderFormat(traceHeaderFormat));
 }
 
 void           
@@ -245,18 +253,6 @@ ModelSettings::setIndicatorFacies(int * indFacies, int nWells)
 {
   for (int i=0 ; i<nWells ; i++)
     indFacies_[i] = indFacies[i];
-}
-
-void
-ModelSettings::setOutputFlag(int outputFlag)
-{
-  if (outputFlag == PREDICTION)
-    outputFlag_ = outputFlag_ | 1;
-  else
-    if ((outputFlag_ & PREDICTION) > 0)
-      outputFlag_ = outputFlag | PREDICTION;
-    else
-      outputFlag_ = outputFlag;
 }
 
 void

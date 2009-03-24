@@ -2,7 +2,6 @@
 
 InputFiles::InputFiles(void)
   : seedFile_(""),          
-    logNames_(5),         
     wellFiles_(0),           
     seismicFiles_(0),        
     waveletFiles_(0),        

@@ -25,16 +25,22 @@ public:
   Vario             * getLocalWaveletVario(void)    const { return localWaveletVario_   ;} 
   SegyGeometry      * getAreaParameters(void)       const { return geometry_            ;}    
   TraceHeaderFormat * getTraceHeaderFormat(void)    const { return traceHeaderFormat_   ;}
-  float             * getKrigingParameters(void)    const { return krigingParams_       ;}
+  TraceHeaderFormat * getTraceHeaderFormat(int i)   const { return localTHF_[i]         ;}
+  int                 getKrigingParameter()         const { return krigingParameter_    ;}
   float               getConstBackValue(int i)      const { return constBackValue_[i]   ;}
-  int                 getNumberOfAngles(void)       const { return angle_.size()        ;} 
-  int                 getSeismicType(int i)         const { return seismicType_[i]      ;}
-  float               getAngle(int i)               const { return angle_[i]            ;}
-  float               getWaveletScale(int i)        const { return waveletScale_[i]     ;} 
-  float               getSNRatio(int i)             const { return SNRatio_[i]          ;} 
-  bool                getMatchEnergies(int i)       const { return matchEnergies_[i]    ;} 
-  bool                getEstimateWavelet(int i)     const { return estimateWavelet_[i]  ;}
-  bool                getEstimateSNRatio(int i)     const { return estimateSNRatio_[i]  ;}
+
+  int                 getNumberOfAngles(void)       const { return angle_.size()          ;} 
+  int                 getSeismicType(int i)         const { return seismicType_[i]        ;}
+  float               getAngle(int i)               const { return angle_[i]              ;}
+  float               getWaveletScale(int i)        const { return waveletScale_[i]       ;} 
+  float               getSNRatio(int i)             const { return SNRatio_[i]            ;} 
+  bool                getMatchEnergies(int i)       const { return matchEnergies_[i]      ;} 
+  bool                getEstimateWavelet(int i)     const { return estimateWavelet_[i]    ;}
+  bool                getEstimateSNRatio(int i)     const { return estimateSNRatio_[i]    ;}
+  bool                getEstimateLocalShift(int i)  const { return estimateLocalShift_[i] ;}
+  bool                getEstimateLocalScale(int i)  const { return estimateLocalScale_[i] ;}
+
+  const std::vector<std::string> & getLogNames(void) const{ return logNames_            ;}
   int                 getNumberOfFacies(void)       const { return faciesNames_.size()  ;}
   const std::string & getFaciesName(int i)          const { return faciesNames_[i]      ;}
   int                 getFaciesLabel(int i)         const { return faciesLabels_[i]     ;}
@@ -74,27 +80,34 @@ public:
   int                 getNYpad(void)                const { return nyPad_               ;}
   int                 getNZpad(void)                const { return nzPad_               ;}
   float               getSegyOffset(void)           const { return segyOffset_          ;}
+  float               getLocalSegyOffset(int i)     const { return localSegyOffset_[i]  ;}
   float               getPundef(void)               const { return p_undef_             ;}
   double              getLzLimit(void)              const { return lzLimit_             ;}
   double              getTimeDTop(void)             const { return time_dTop_           ;}
   double              getTimeLz(void)               const { return time_lz_             ;}
   double              getTimeDz(void)               const { return time_dz_             ;}
   int                 getTimeNz(void)               const { return time_nz_             ;}
-  int                 getOutputFlag(void)           const { return outputFlag_          ;}
-  int                 getFormatFlag(void)           const { return formatFlag_          ;}
+  bool                getWritePrediction(void)      const { return writePrediction_     ;}
+  int                 getGridOutputFlag(void)       const { return gridFlag_            ;}
+  int                 getOutputFormatFlag(void)     const { return formatFlag_          ;}
+  int                 getOutputDomainFlag(void)     const { return domainFlag_          ;}
+  int                 getWellOutputFlag(void)       const { return wellFlag_            ;}
+  int                 getOtherOutputFlag(void)      const { return otherFlag_           ;}
   int                 getDebugFlag(void)            const { return debugFlag_           ;}
   static int          getDebugLevel(void)                 { return debugFlag_           ;}
   int                 getFileGrid(void)             const { return fileGrid_            ;}
+  bool                getEstimationMode(void)       const { return estimationMode_      ;}
   bool                getGenerateSeismic(void)      const { return generateSeismic_     ;}
   bool                getGenerateBackground(void)   const { return generateBackground_  ;}
   bool                getFaciesLogGiven(void)       const { return faciesLogGiven_      ;}
-  bool                getDoDepthConversion(void)    const { return doDepthConversion_   ;}
+  bool                getDepthDataOK(void)          const { return depthDataOk_         ;}
   bool                getParallelTimeSurfaces(void) const { return parallelTimeSurfaces_;}
   bool                getUseLocalWavelet(void)      const { return useLocalWavelet_     ;}
   int                 getLogLevel(void)             const { return logLevel_            ;}
   int                 getSeed(void)                 const { return seed_                ;}
   bool                getDoInversion(void);                                            
-  //NBNB Ragnar: Not active yet.                                                       
+  bool                getDoDepthConversion(void)    const;
+                                                  
   Surface           * getCorrelationSurface()       const { return NULL                 ;}
   void                rotateVariograms(float angle);
 
@@ -105,23 +118,27 @@ public:
   void                copyBackgroundVarioToLocalWaveletVario(void);
   void                setAreaParameters(const SegyGeometry * geometry);
   void                setTraceHeaderFormat(const TraceHeaderFormat & traceHeaderFormat);
-  void                setKrigingParameters(float * krigingParams, int nParams);
-  void                setConstBackValue(int i, float constBackValue){ constBackValue_[i]    = constBackValue      ;}
-  void                addSeismicType(int seismicType)               { seismicType_.push_back(seismicType)         ;}
-  void                addAngle(float angle)                         { angle_.push_back(angle)                     ;}
-  void                addWaveletScale(float waveletScale)           { waveletScale_.push_back(waveletScale)       ;}
-  void                setSNRatio(int i, float SNRatio)              { SNRatio_[i]           = SNRatio             ;}
-  void                addSNRatio(float SNRatio)                     { SNRatio_.push_back(SNRatio)                 ;}
-  void                addMatchEnergies(bool matchEnergies)          { matchEnergies_.push_back(matchEnergies)     ;}
-  void                addEstimateWavelet(bool estimateWavelet)      { estimateWavelet_.push_back(estimateWavelet) ;}
-  void                addEstimateSNRatio(bool estimateSNRatio)      { estimateSNRatio_.push_back(estimateSNRatio) ;}
+  void                addTraceHeaderFormat(const TraceHeaderFormat & traceHeaderFormat);
+  void                setKrigingParameter(int krigingParameter)     { krigingParameter_     = krigingParameter     ;}
+  void                setConstBackValue(int i, float constBackValue){ constBackValue_[i]    = constBackValue       ;}
+  void                addSeismicType(int seismicType)               { seismicType_.push_back(seismicType)          ;}
+  void                addAngle(float angle)                         { angle_.push_back(angle)                      ;}
+  void                addWaveletScale(float waveletScale)           { waveletScale_.push_back(waveletScale)        ;}
+  void                setSNRatio(int i, float SNRatio)              { SNRatio_[i]           = SNRatio              ;}
+  void                addSNRatio(float SNRatio)                     { SNRatio_.push_back(SNRatio)                  ;}
+  void                addMatchEnergies(bool matchEnergies)          { matchEnergies_.push_back(matchEnergies)      ;}
+  void                addEstimateWavelet(bool estimateWavelet)      { estimateWavelet_.push_back(estimateWavelet)  ;}
+  void                addEstimateSNRatio(bool estimateSNRatio)      { estimateSNRatio_.push_back(estimateSNRatio)  ;}
+  void                addEstimateLocalShift(bool estimateShift)     { estimateLocalShift_.push_back(estimateShift) ;}
+  void                addEstimateLocalScale(bool estimateScale)     { estimateLocalScale_.push_back(estimateScale) ;}
   void                setAllIndicatorsTrue(int nWells);                  
   void                setIndicatorBGTrend(int * indBGTrend, int nWells); //NBNB kill when xml-model ok.
   void                setIndicatorWavelet(int * indWavelet, int nWells); //NBNB kill when xml-model ok. 
   void                setIndicatorFacies(int * indFacies, int nWells);   //NBNB kill when xml-model ok.
   void                addIndicatorBGTrend(int indicator)            { indBGTrend_.push_back(indicator)           ;}
   void                addIndicatorWavelet(int indicator)            { indWavelet_.push_back(indicator)           ;}
-  void                addIndicatorFacies(int indicator)             { indFacies_.push_back(indicator)           ;}
+  void                addIndicatorFacies(int indicator)             { indFacies_.push_back(indicator)            ;}
+  void                setLogName(int i, const std::string & logName){ logNames_[i]          = logName            ;}
   void                addFaciesLabel(int faciesLabel)               { faciesLabels_.push_back(faciesLabel)       ;}
   void                addFaciesName(const std::string & faciesName) { faciesNames_.push_back(faciesName)         ;}
   void                setNumberOfWells(int nWells)                  { nWells_               = nWells             ;} 
@@ -147,7 +164,7 @@ public:
   void                setHighCut(float highCut)                     { highCut_              = highCut            ;}
   void                setWNC(float wnc)                             { wnc_                  = wnc                ;}
   void                setEnergyThreshold(float energyThreshold)     { energyThreshold_      = energyThreshold    ;}
-  void                setinRelWaveletAmp(float minRelWaveletAmp)    { minRelWaveletAmp_     = minRelWaveletAmp   ;}
+  void                setMinRelWaveletAmp(float minRelWaveletAmp)   { minRelWaveletAmp_     = minRelWaveletAmp   ;}
   void                setMaxWaveletShift(float maxWaveletShift)     { maxWaveletShift_      = maxWaveletShift    ;}
   void                setWaveletTaperingL(float waveletTaperingL)   { waveletTaperingL_     = waveletTaperingL   ;}
   void                setXPadFac(double xPadFac)                    { xPadFac_              = xPadFac            ;}
@@ -157,52 +174,63 @@ public:
   void                setNYpad(int nyPad)                           { nyPad_                = nyPad              ;}
   void                setNZpad(int nzPad)                           { nzPad_                = nzPad              ;}
   void                setSegyOffset(float segyOffset)               { segyOffset_           = segyOffset         ;}
+  void                addLocalSegyOffset(float segyOffset)          { localSegyOffset_.push_back(segyOffset)     ;}
   void                setPundef(float p_undef)                      { p_undef_              = p_undef            ;}
   void                setLzLimit(double lzLimit)                    { lzLimit_              = lzLimit            ;}
   void                setTimeDTop(double time_dTop)                 { time_dTop_            = time_dTop          ;}
   void                setTimeLz(double time_lz)                     { time_lz_              = time_lz            ;}
   void                setTimeDz(double time_dz)                     { time_dz_              = time_dz            ;}
   void                setTimeNz(int time_nz)                        { time_nz_              = time_nz            ;}
-  void                setOutputFlag(int outputFlag);                                        
-  void                setFormatFlag(int formatFlag)                 { formatFlag_           = formatFlag         ;}
+  void                setWritePrediction(bool write)                { writePrediction_      = write              ;}
+  void                setGridOutputFlag(int gridFlag)               { gridFlag_             = gridFlag           ;}
+  void                setOutputFormatFlag(int formatFlag)           { formatFlag_           = formatFlag         ;}
+  void                setOutputDomainFlag(int domainFlag)           { domainFlag_           = domainFlag         ;}
+  void                setWellOutputFlag(int wellFlag)               { wellFlag_             = wellFlag           ;}
+  void                setOtherOutputFlag(int otherFlag)             { otherFlag_            = otherFlag          ;}
   void                setDebugFlag(int debugFlag)                   { debugFlag_            = debugFlag          ;}
   void                setFileGrid(int fileGrid)                     { fileGrid_             = fileGrid           ;}
+  void                setEstimationMode(bool estimationMode)        { estimationMode_       = estimationMode     ;}
   void                setGenerateSeismic(bool generateSeismic)      { generateSeismic_      = generateSeismic    ;}
   void                setGenerateBackground(bool generateBackgr)    { generateBackground_   = generateBackgr     ;}
   void                setFaciesLogGiven(bool faciesLogGiven)        { faciesLogGiven_       = faciesLogGiven     ;}
-  void                setDoDepthConversion(bool doDepthConversion)  { doDepthConversion_    = doDepthConversion  ;}
+  void                setDepthDataOk(bool depthDataOk)              { depthDataOk_          = depthDataOk        ;}
   void                setParallelTimeSurfaces(bool pTimeSurfaces)   { parallelTimeSurfaces_ = pTimeSurfaces      ;}
   void                setUseLocalWavelet(bool useLocalWavelet)      { useLocalWavelet_      = useLocalWavelet    ;}
   void                setLogLevel(int logLevel)                     { logLevel_             = logLevel           ;}
   void                setSeed(int seed)                             { seed_                 = seed               ;}
 
-  enum                outputGrids{PREDICTION         = 1, 
-                                  CORRELATION        = 2, 
-                                  RESIDUAL           = 4, 
-                                  VP                 = 8, 
-                                  VS                 = 16,
-                                  RHO                = 32, 
-                                  LAMELAMBDA         = 64, 
-                                  LAMEMU             = 128, 
-                                  POISSONRATIO       = 256,
-                                  AI                 = 512, 
-                                  SI                 = 1024, 
-                                  VPVSRATIO          = 2048, 
-                                  MURHO              = 4096, 
-                                  LAMBDARHO          = 8192, 
-                                  PRIORCORRELATIONS  = 16384, 
-                                  BACKGROUND         = 32768, 
-                                  WELLS              = 65536, 
-                                  WAVELETS           = 131072, 
-                                  NOTIME             = 262144,
-                                  FACIESPROB         = 524288,
-                                  FACIESPROBRELATIVE = 1048576,
-                                  BLOCKED_WELLS      = 2097152,
-                                  BLOCKED_LOGS       = 4194304,
-                                  EXTRA_SURFACES     = 8388608,
-                                  EXTRA_GRIDS        = 16777216,
-                                  BACKGROUND_TREND   = 33554432};
-                   
+  enum                outputGrids{CORRELATION        = 1, 
+                                  RESIDUAL           = 2, 
+                                  VP                 = 4, 
+                                  VS                 = 8, 
+                                  RHO                = 16,
+                                  LAMELAMBDA         = 32, 
+                                  LAMEMU             = 64, 
+                                  POISSONRATIO       = 128, 
+                                  AI                 = 256,
+                                  SI                 = 512, 
+                                  VPVSRATIO          = 1024, 
+                                  MURHO              = 2048, 
+                                  LAMBDARHO          = 4096, 
+                                  BACKGROUND         = 8192, 
+                                  BACKGROUND_TREND   = 16384, 
+                                  FACIESPROB         = 32768, 
+                                  FACIESPROBRELATIVE = 65536, 
+                                  EXTRA_GRIDS        = 131072};
+
+  enum                outputWells{WELLS              = 1,
+                                  BLOCKED_WELLS      = 2,
+                                  BLOCKED_LOGS       = 4};
+
+  enum                outputOther{WAVELETS            = 1,
+                                  EXTRA_SURFACES      = 2,
+                                  PRIORCORRELATIONS   = 4,
+                                  BACKGROUND_TREND_1D = 8};
+
+  enum                domains{TIMEDOMAIN = 1, DEPTHDOMAIN = 2};
+
+  enum                gridFormats{SEGY = 1, STORM = 2, ASCII = 4, SGRI = 8};
+                  
   enum                sseismicTypes{STANDARDSEIS = 0, PSSEIS = 1};
                    
   static void         setFilePrefix(const std::string & filePrefix);
@@ -216,8 +244,12 @@ private:
   Vario                   * localWaveletVario_;     // Used for local wavelet (gain and shift) and local noise.
                           
   SegyGeometry            * geometry_;              // area parameters
-  TraceHeaderFormat       * traceHeaderFormat_;     // 
-  float                   * krigingParams_;   
+  float                     segyOffset_;            // Starttime for SegY cubes.
+  std::vector<float>        localSegyOffset_;       // Starttime for SegY cubes per angle.
+  TraceHeaderFormat       * traceHeaderFormat_;     // traceheader
+  std::vector<TraceHeaderFormat*> localTHF_;        // traceheader per angle
+
+  int                       krigingParameter_;   
                           
   std::vector<int>          seismicType_;           // PP- or PS- seismic
   std::vector<float>        angle_;                 // Angles
@@ -226,13 +258,17 @@ private:
   std::vector<bool>         matchEnergies_;         // Let dataVariance_ = signalVariance_
   std::vector<bool>         estimateWavelet_;       // 
   std::vector<bool>         estimateSNRatio_;       //
+  std::vector<bool>         estimateLocalShift_;    // Estimate local wavelet shift
+  std::vector<bool>         estimateLocalScale_;    // Estimate local wavelet scale
                           
   std::vector<float>        constBackValue_;        // Values set for constant background model
                                                     // Negative value ==> read from file (actual value gives format).
   std::vector<int>          indBGTrend_;            // Use well to estimate background trend? (1=yes,0=no)
   std::vector<int>          indWavelet_;            // Use well to estimate wavelet? (1=yes,0=no)
   std::vector<int>          indFacies_;             // Use well to estimate facies? (1=yes,0=no)
-                   
+
+  std::vector<std::string>  logNames_;              ///< The keywords to look for for time, sonic, shear sonic and density
+
   std::vector<int>          faciesLabels_;          // Facies labels
   std::vector<std::string>  faciesNames_;           // Facies names   (nFacies = faciesNames.size())
                    
@@ -281,8 +317,6 @@ private:
   int                       nyPad_;
   int                       nzPad_; 
                            
-  float                     segyOffset_;            // Starttime for SegY cubes.
-                           
   float                     p_undef_;               // NBNB-PAL: Hva gjør denne?
                            
   double                    lzLimit_;               // Minimum allowed value for (min interval thickness)/(max interval thickness)
@@ -291,16 +325,22 @@ private:
   double                    time_dz_;               // Used when top and base surfaces are parallel
   int                       time_nz_;               // Used when top and base surfaces are parallel
                            
-  int                       outputFlag_;            // Decides which grids to write (except simulation)
-  int                       formatFlag_;            // Decides output format, see fftgird.h
+  bool                      writePrediction_;       // Determines whether prediction is written.
+  int                       gridFlag_;              // Decides which grids to write (except simulation)
+  int                       domainFlag_;            // Decides writing in time and/or depth.
+  int                       formatFlag_;            // Decides output format, see above.
+  int                       wellFlag_;              // Decides well output.
+  int                       otherFlag_;             // Decides output beyond grids and wells.
   int                       fileGrid_;              // Indicator telling if grids are to be kept on file
                            
   bool                      generateSeismic_;       // Forward modelling
+  bool                      estimationMode_;        // Estimation
+
   bool                      generateBackground_;    // Make background model
   bool                      faciesLogGiven_;
-  bool                      doDepthConversion_;     // 
+  bool                      depthDataOk_;           // We have what we need to do depth conversion
   bool                      parallelTimeSurfaces_;
-  bool                      useLocalWavelet_;       // Wavelets are mul;tiplied with gain and shift maps
+  bool                      useLocalWavelet_;       // Wavelets are multiplied with gain and shift maps
                            
   int                       logLevel_;      
                            

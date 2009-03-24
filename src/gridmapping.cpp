@@ -238,12 +238,12 @@ GridMapping::calculateSurfaceFromVelocity(FFTGrid      * velocity,
     {
       z0Grid_ = new Surface(*isochore);
       z0Grid_->Multiply(-1.0);
-      z0Grid_->Add(z1Grid_);
+      z0Grid_->AddNonConform(z1Grid_);
     }
     else 
     {
       z1Grid_ = new Surface(*isochore);
-      z1Grid_->Add(z0Grid_);
+      z1Grid_->AddNonConform(z0Grid_);
     }
     delete isochore;
   }
