@@ -124,6 +124,7 @@ public:
   void                addSeismicType(int seismicType)               { seismicType_.push_back(seismicType)          ;}
   void                addAngle(float angle)                         { angle_.push_back(angle)                      ;}
   void                addWaveletScale(float waveletScale)           { waveletScale_.push_back(waveletScale)        ;}
+  void                setWaveletScale(int i, float waveletScale)    { waveletScale_[i] = waveletScale              ;} 
   void                setSNRatio(int i, float SNRatio)              { SNRatio_[i]           = SNRatio              ;}
   void                addSNRatio(float SNRatio)                     { SNRatio_.push_back(SNRatio)                  ;}
   void                addMatchEnergies(bool matchEnergies)          { matchEnergies_.push_back(matchEnergies)      ;}

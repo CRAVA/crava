@@ -1984,7 +1984,9 @@ Model::processWavelets(Wavelet     **& wavelet,
     for(int i=0 ; i < modelSettings->getNumberOfAngles() ; i++)
     {  
       estimateStuff = estimateStuff || modelSettings->getEstimateWavelet(i); 
-      estimateStuff = estimateStuff || modelSettings->getEstimateSNRatio(i); 
+      estimateStuff = estimateStuff || modelSettings->getEstimateSNRatio(i);
+      if(modelSettings->getEstimateWavelet(i) == true)
+        modelSettings->setWaveletScale(i,1.0);
     }
     if (estimateStuff) 
     {
@@ -2059,7 +2061,7 @@ Model::processWavelets(Wavelet     **& wavelet,
           sprintf(errText, "%s Simbox must have constant thickness when 3D wavelet.\n", errText);
           error += 1;
         }
-        if (modelSettings->getEstimateSNRatio(i))
+        if (modelSettings->getEstimateSNRatio(i) && modelSettings->getGenerateSeismic() == false)
         {
           if (wavelet[i]->getDim() == 3) { //Not possible to estimate signal-to-noise ratio for 3D wavelets
             sprintf(errText, "%s Estimation of signal-to-noise ratio is not possible for 3D wavelets.\n", errText);

@@ -41,6 +41,9 @@ XmlModelFile::XmlModelFile(const char * fileName)
 
   checkForJunk(&doc, errTxt);
 
+  checkConsistency(errTxt);
+
+
   if(errTxt != "") {
     LogKit::LogMessage(LogKit::ERROR, errTxt);
     failed_ = true;
@@ -304,8 +307,10 @@ XmlModelFile::parseSurvey(TiXmlNode * node, std::string & errTxt)
     return(false);
 
   Vario * vario = NULL;
-  if((parseVariogram(root, "angular-correlation", vario, errTxt) == true) && (vario != NULL))
+  if((parseVariogram(root, "angular-correlation", vario, errTxt) == true) && (vario != NULL)) {
+    vario->convertRangesFromDegToRad();
     modelSettings_->setAngularCorr(vario);
+  }
 
   float value;
   if(parseValue(root, "segy-start-time", value, errTxt) == true)
@@ -338,10 +343,7 @@ XmlModelFile::parseAngleGather(TiXmlNode * node, std::string & errTxt)
     errTxt = errTxt+"Error: Need offset angle for gather"+lineColumnText(root)+".\n";
   
   if(parseSeismicData(root, errTxt) == false) {
-    errTxt = errTxt+"Error: Command 'seismic-data' must be given for gather"+
-      lineColumnText(root)+".\n";
-    
-    //Following sequence is just to keep tables balanced.
+    //Go for defaults. Assume forward model (check later)
     inputFiles_->addSeismicFile("");
     modelSettings_->addSeismicType(ModelSettings::STANDARDSEIS);
   }
@@ -419,16 +421,20 @@ XmlModelFile::parseSeismicData(TiXmlNode * node, std::string & errTxt)
 bool
 XmlModelFile::parseWavelet(TiXmlNode * node, std::string & errTxt)
 {
-  TiXmlNode * root = node->FirstChildElement("angle-gather");
+  TiXmlNode * root = node->FirstChildElement("wavelet");
   if(root == 0)
     return(false);
 
   std::string value;
-  if(parseFileName(root, "file-name", value, errTxt) == true)
-    inputFiles_->addSeismicFile(value);
-  else
+  if(parseFileName(root, "file-name", value, errTxt) == true) {
+    inputFiles_->addWaveletFile(value);
+    modelSettings_->addEstimateWavelet(false);
+  }
+  else {
     inputFiles_->addSeismicFile(""); //Keeping tables balanced.
-  
+    modelSettings_->addEstimateWavelet(true);
+  }
+
   float scale;
   if(parseValue(root, "scale", scale, errTxt) == true)
     modelSettings_->addWaveletScale(scale);
@@ -553,16 +559,22 @@ XmlModelFile::parseBackground(TiXmlNode * node, std::string & errTxt)
 
   std::string filename;
   bool vp = parseFileName(root, "vp-file", filename, errTxt);
-  if(vp == true)
+  if(vp == true) {
     inputFiles_->setBackFile(0, filename);
+    modelSettings_->setConstBackValue(0, -1);
+  }
 
   bool vs = parseFileName(root, "vs-file", filename, errTxt);
-  if(vp == true)
+  if(vp == true) {
     inputFiles_->setBackFile(1, filename);
+    modelSettings_->setConstBackValue(1, -1);
+  }
 
   bool rho = parseFileName(root, "density-file", filename, errTxt);
-  if(vp == true)
+  if(vp == true) {
     inputFiles_->setBackFile(2, filename);
+    modelSettings_->setConstBackValue(2, -1);
+  }
 
   float value;
   if(parseValue(root, "vp-constant", value, errTxt) == true) {
@@ -611,7 +623,7 @@ XmlModelFile::parseBackground(TiXmlNode * node, std::string & errTxt)
     modelSettings_->setBackgroundVario(vario);
 
   if(parseValue(root, "high-cut-background-modelling", value, errTxt) == true)
-    modelSettings_->setHighCut(value);
+    modelSettings_->setMaxHzBackground(value);
 
   checkForJunk(root, errTxt);
   return(true);
@@ -1435,4 +1447,28 @@ XmlModelFile::lineColumnText(TiXmlNode * node)
 {
   std::string result = " on line "+NRLib2::ToString(node->Row())+", column "+NRLib2::ToString(node->Column());
   return(result);
+}
+
+
+void
+XmlModelFile::checkConsistency(std::string & errTxt) {
+  if(modelSettings_->getGenerateSeismic() == true)
+    checkForwardConsistency(errTxt);
+  else
+    checkEstimationInversionConsistency(errTxt);
+}
+
+
+void
+XmlModelFile::checkForwardConsistency(std::string & errTxt) {
+  //Mostly, we don't care here, but have to straighten some things.
+  int i;
+  for(i=0;i<modelSettings_->getNumberOfAngles();i++)
+    modelSettings_->setSNRatio(i,1.1f);
+}
+
+
+void
+XmlModelFile::checkEstimationInversionConsistency(std::string & errTxt) {
+  //Quite a few things to check here.
 }

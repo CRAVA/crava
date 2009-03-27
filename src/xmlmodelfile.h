@@ -75,6 +75,10 @@ private:
   bool checkFileOpen(const std::string & fName, TiXmlNode * node, std::string & errText);
   std::string lineColumnText(TiXmlNode * node);
 
+  void checkConsistency(std::string & errTxt);
+  void checkForwardConsistency(std::string & errTxt);
+  void checkEstimationInversionConsistency(std::string & errTxt);
+
   void setMissing(int & value) {value = IMISSING;}
   void setMissing(float & value) {value = RMISSING;}
   void setMissing(double & value) {value = RMISSING;}
