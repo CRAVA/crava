@@ -688,6 +688,14 @@ ModelFile::readCommandWells(char ** params, int & pos, char * errText)
           modelSettings_->setLogName(i,uppercase(params[pos+1+i]));
         if(nHeader<5)// no facies log, dummy name
           modelSettings_->setLogName(4,"FACIES");
+        if(NRLib2::Uppercase(params[pos+2]) =="VP" || NRLib2::Uppercase(params[pos+2])=="LFP_VP")  
+          modelSettings_->setInverseVelocity(0,false);
+        else
+          modelSettings_->setInverseVelocity(0,true);
+        if(NRLib2::Uppercase(params[pos+4]) =="VS" || NRLib2::Uppercase(params[pos+4])=="LFP_VS")  
+          modelSettings_->setInverseVelocity(1,false);
+        else
+          modelSettings_->setInverseVelocity(1,true);
       }
       pos+= nHeader+2;
     }

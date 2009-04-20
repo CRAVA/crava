@@ -207,12 +207,39 @@ XmlModelFile::parseLogNames(TiXmlNode * node, std::string & errTxt)
   std::string value;
   if(parseValue(root, "time-log-name", value, errTxt) == true)
     modelSettings_->setLogName(0, value);
-  if(parseValue(root, "vp-log-name", value, errTxt) == true)
+
+  bool vp = parseValue(root, "vp-log-name", value, errTxt);
+  if(vp == true) {
     modelSettings_->setLogName(1, value);
+    modelSettings_->setInverseVelocity(0, false);
+  }
+  if(parseValue(root, "dt-log-name", value, errTxt) == true) {
+    if(vp == true)
+      errTxt = errTxt+"Error: Both vp and dt given as logs in command '"
+        +root->ValueStr()+"'"+lineColumnText(root)+".\n";
+    else {
+      modelSettings_->setLogName(1, value);
+      modelSettings_->setInverseVelocity(0, true);
+    }
+  }
+
+  bool vs = parseValue(root, "vs-log-name", value, errTxt);
+  if(vp == true) {
+    modelSettings_->setLogName(3, value);
+    modelSettings_->setInverseVelocity(1, false);
+  }
+  if(parseValue(root, "dts-log-name", value, errTxt) == true) {
+    if(vs == true)
+      errTxt = errTxt+"Error: Both vs and dts given as logs in command '"
+        +root->ValueStr()+"'"+lineColumnText(root)+".\n";
+    else {
+      modelSettings_->setLogName(3, value);
+      modelSettings_->setInverseVelocity(1, true);
+    }
+  }
+
   if(parseValue(root, "density-log-name", value, errTxt) == true)
     modelSettings_->setLogName(2, value);
-  if(parseValue(root, "vs-log-name", value, errTxt) == true)
-    modelSettings_->setLogName(3, value);
   if(parseValue(root, "facies-log-name", value, errTxt) == true)
     modelSettings_->setLogName(4, value);
   
@@ -406,9 +433,8 @@ XmlModelFile::parseSeismicData(TiXmlNode * node, std::string & errTxt)
     modelSettings_->addLocalSegyOffset(-1);
 
   TraceHeaderFormat * thf = NULL;
-  if(parseTraceHeaderFormat(root, "segy-format", thf, errTxt) == true && thf != NULL) {
-    modelSettings_->addTraceHeaderFormat(*thf);
-    delete thf;
+  if(parseTraceHeaderFormat(root, "segy-format", thf, errTxt) == true) {
+    modelSettings_->addTraceHeaderFormat(thf);
   }
   else
     modelSettings_->addTraceHeaderFormat(NULL);
@@ -510,9 +536,9 @@ XmlModelFile::parseWaveletEstimationInterval(TiXmlNode * node, std::string & err
     return(false);
 
   std::string filename;
-  if(parseFileName(root, "top-surface", filename, errTxt) == true)
+  if(parseFileName(root, "top-surface-file", filename, errTxt) == true)
     inputFiles_->setWaveletEstIntFile(0, filename);
-  if(parseFileName(root, "base-surface", filename, errTxt) == true)
+  if(parseFileName(root, "base-surface-file", filename, errTxt) == true)
     inputFiles_->setWaveletEstIntFile(1, filename);
 
   checkForJunk(root, errTxt);
@@ -534,7 +560,7 @@ XmlModelFile::parsePriorModel(TiXmlNode * node, std::string & errTxt)
     modelSettings_->setLateralCorr(vario);
 
   std::string filename;
-  if(parseFileName(root, "temporal-correaltion", filename, errTxt) == true)
+  if(parseFileName(root, "temporal-correlation", filename, errTxt) == true)
     inputFiles_->setTempCorrFile(filename);
 
   if(parseFileName(root, "parameter-correlation", filename, errTxt) == true)
@@ -658,15 +684,15 @@ XmlModelFile::parseFaciesEstimationInterval(TiXmlNode * node, std::string & errT
     return(false);
 
   std::string filename;
-  if(parseFileName(root, "top-file", filename, errTxt) == true)
+  if(parseFileName(root, "top-file-name", filename, errTxt) == true)
     inputFiles_->setFaciesEstIntFile(0, filename);
   else
-    errTxt = errTxt+"Error: Must specify 'top-file' in command '"+root->ValueStr()+"'"+
+    errTxt = errTxt+"Error: Must specify 'top-file-name' in command '"+root->ValueStr()+"'"+
       lineColumnText(root)+".\n";
-  if(parseFileName(root, "base-file", filename, errTxt) == true)
+  if(parseFileName(root, "base-file-name", filename, errTxt) == true)
     inputFiles_->setFaciesEstIntFile(1, filename);
   else
-    errTxt = errTxt+"Error: Must specify 'base-file' in command '"+root->ValueStr()+"'"+
+    errTxt = errTxt+"Error: Must specify 'base-file-name' in command '"+root->ValueStr()+"'"+
       lineColumnText(root)+".\n";
 
   checkForJunk(root, errTxt);
@@ -868,12 +894,12 @@ XmlModelFile::parseArea(TiXmlNode * node, std::string & errTxt)
     return(false);
 
   double x0 = 0;
-  if(parseValue(root, "reference-x", x0, errTxt) == false)
+  if(parseValue(root, "reference-point-x", x0, errTxt) == false)
     errTxt = errTxt+"Error: Reference x-coordinat must be given in command '"+
       root->ValueStr()+"'"+lineColumnText(root)+".\n";
 
   double y0 = 0;
-  if(parseValue(root, "reference-y", y0, errTxt) == false)
+  if(parseValue(root, "reference-point-y", y0, errTxt) == false)
     errTxt = errTxt+"Error: Reference y-coordinat must be given in command '"+
       root->ValueStr()+"'"+lineColumnText(root)+".\n";
 
@@ -934,8 +960,6 @@ XmlModelFile::parseIOSettings(TiXmlNode * node, std::string & errTxt)
   int level;
   if(parseValue(root, "log-level", level, errTxt) == true)
     modelSettings_->setLogLevel(level);
-  if(parseValue(root, "debug-level", level, errTxt) == true)
-    modelSettings_->setDebugFlag(level);
 
   checkForJunk(root, errTxt);
   return(true);
@@ -1173,6 +1197,8 @@ XmlModelFile::parseAdvancedSettings(TiXmlNode * node, std::string & errTxt)
     if(modelSettings_->getKrigingParameter() >= 0)
       modelSettings_->setKrigingParameter(kLimit);
   }
+  if(parseValue(root, "debug-level", level, errTxt) == true)
+    modelSettings_->setDebugFlag(level);
 
   checkForJunk(root, errTxt);
   return(true);
@@ -1243,9 +1269,9 @@ XmlModelFile::parseTraceHeaderFormat(TiXmlNode * node, const std::string & keywo
 
   std::string stdFormat;
   if(parseValue(root, "standard-format", stdFormat, errTxt) == true) {
-    if(stdFormat == "SEISWORKS")
+    if(stdFormat == "seisworks")
       thf = new TraceHeaderFormat(TraceHeaderFormat::SEISWORKS);
-    else if(stdFormat == "IESX")
+    else if(stdFormat == "iesx")
       thf = new TraceHeaderFormat(TraceHeaderFormat::IESX);
     else {
       errTxt = errTxt+"Error: Unknown segy-format '"+stdFormat+"' found on line"+

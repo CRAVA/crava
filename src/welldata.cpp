@@ -22,6 +22,7 @@
 //----------------------------------------------------------------------------
 WellData::WellData(const std::string              & wellFileName, 
                    const std::vector<std::string> & logNames,
+                   const std::vector<bool>        & inverseVelocity,
                    ModelSettings                  * modelSettings,
                    int                              indicatorFacies,
                    int                              indicatorWavelet,
@@ -50,7 +51,7 @@ WellData::WellData(const std::string              & wellFileName,
     useForWaveletEstimation_(indicatorWavelet==1),  
     useForBackgroundTrend_(indicatorBGTrend==1)
 {
-  readRMSWell(wellFileName, logNames, faciesLogGiven);
+  readRMSWell(wellFileName, logNames, inverseVelocity, faciesLogGiven);
 }
 
 //----------------------------------------------------------------------------
@@ -99,6 +100,7 @@ WellData::~WellData()
 void
 WellData::readRMSWell(const std::string              & wellFileName, 
                       const std::vector<std::string> & logNames, 
+                      const std::vector<bool>        & inverseVelocity,
                       bool                             faciesLogGiven)
 {
   error_ = 0;
@@ -134,11 +136,16 @@ WellData::readRMSWell(const std::string              & wellFileName,
 
   std::vector<std::string> parameterList;
 
+  bool vpLog = false;
+  bool vsLog = false;
+
   if(logNames[0] != "") // Assume that all lognames are filled present if first is.
   {
     parameterList = logNames; 
     if (!faciesLogGiven)
       nVar = 4; 
+    vpLog = !inverseVelocity[0];
+    vsLog = !inverseVelocity[1];
   }
  else
   {
@@ -207,15 +214,6 @@ WellData::readRMSWell(const std::string              & wellFileName,
   if(error_ > 0)
     sprintf(errTxt_,"Cannot find log(s) %s in well file %s.\n",missVar,wellfilename_);
 
-  //
-  // Check whether DT+DTS or VP+VS are used as input.
-  //
-  bool vpLog = false;
-  bool vsLog = false;
-  if(NRLib2::Uppercase(parameterList[1])=="VP" || NRLib2::Uppercase(parameterList[1])=="LFP_VP")  
-     vpLog = true;
-  if(NRLib2::Uppercase(parameterList[3])=="VS" || NRLib2::Uppercase(parameterList[3])=="LFP_VS")  
-     vsLog = true;
 
   if(pos[0]==IMISSING)
     timemissing_ = 1;

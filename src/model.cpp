@@ -1286,6 +1286,7 @@ Model::processWells(WellData     **& wells,
   for(int i=0 ; i<nWells ; i++) {
     wells[i] = new WellData(inputFiles->getWellFile(i), 
                             modelSettings->getLogNames(),
+                            modelSettings->getInverseVelocity(),
                             modelSettings, 
                             modelSettings->getIndicatorFacies(i),
                             modelSettings->getIndicatorWavelet(i),

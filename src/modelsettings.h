@@ -41,6 +41,7 @@ public:
   bool                getEstimateLocalScale(int i)  const { return estimateLocalScale_[i] ;}
 
   const std::vector<std::string> & getLogNames(void) const{ return logNames_            ;}
+  const std::vector<bool> & getInverseVelocity(void) const{ return inverseVelocity_     ;}
   int                 getNumberOfFacies(void)       const { return faciesNames_.size()  ;}
   const std::string & getFaciesName(int i)          const { return faciesNames_[i]      ;}
   int                 getFaciesLabel(int i)         const { return faciesLabels_[i]     ;}
@@ -118,7 +119,7 @@ public:
   void                copyBackgroundVarioToLocalWaveletVario(void);
   void                setAreaParameters(const SegyGeometry * geometry);
   void                setTraceHeaderFormat(const TraceHeaderFormat & traceHeaderFormat);
-  void                addTraceHeaderFormat(const TraceHeaderFormat & traceHeaderFormat);
+  void                addTraceHeaderFormat(TraceHeaderFormat * traceHeaderFormat);
   void                setKrigingParameter(int krigingParameter)     { krigingParameter_     = krigingParameter     ;}
   void                setConstBackValue(int i, float constBackValue){ constBackValue_[i]    = constBackValue       ;}
   void                addSeismicType(int seismicType)               { seismicType_.push_back(seismicType)          ;}
@@ -140,6 +141,7 @@ public:
   void                addIndicatorWavelet(int indicator)            { indWavelet_.push_back(indicator)           ;}
   void                addIndicatorFacies(int indicator)             { indFacies_.push_back(indicator)            ;}
   void                setLogName(int i, const std::string & logName){ logNames_[i]          = logName            ;}
+  void                setInverseVelocity(int i, bool inverse)       { inverseVelocity_[i]          = inverse     ;}
   void                addFaciesLabel(int faciesLabel)               { faciesLabels_.push_back(faciesLabel)       ;}
   void                addFaciesName(const std::string & faciesName) { faciesNames_.push_back(faciesName)         ;}
   void                setNumberOfWells(int nWells)                  { nWells_               = nWells             ;} 
@@ -269,6 +271,7 @@ private:
   std::vector<int>          indFacies_;             // Use well to estimate facies? (1=yes,0=no)
 
   std::vector<std::string>  logNames_;              ///< The keywords to look for for time, sonic, shear sonic and density
+  std::vector<bool>         inverseVelocity_;       // If element 0 is true, vp comes from dt, if 1 is true, vs comes from dts in well.
 
   std::vector<int>          faciesLabels_;          // Facies labels
   std::vector<std::string>  faciesNames_;           // Facies names   (nFacies = faciesNames.size())

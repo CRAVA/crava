@@ -14,6 +14,7 @@ class WellData
 public:
   WellData(const std::string              & wellFileName, 
            const std::vector<std::string> & logNames,
+           const std::vector<bool>        & inverseVelocity,
            ModelSettings                  * modelSettings,
            int                              indicatorFacies,
            int                              indicatorWavelet,
@@ -71,7 +72,8 @@ public:
   static void     interpolateLog(float *log_interpolated, const float *log_raw, int nd);
   int             isFaciesOk(){return faciesok_;};
 private:
-  void            readRMSWell(const std::string & wellFileName, const std::vector<std::string> & logNames, bool faciesLogGiven);
+  void            readRMSWell(const std::string & wellFileName, const std::vector<std::string> & logNames, 
+                              const std::vector<bool>  & inverseVelocity, bool faciesLogGiven);
   void            mergeCells(const char * name, double * log_resampled, double * log, 
                              int ii, int istart, int iend, bool debug);
   void            mergeCells(const char * name, float * log_resampled, float * log, 

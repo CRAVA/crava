@@ -24,7 +24,8 @@ ModelSettings::ModelSettings(void)
     faciesNames_(0),
     localSegyOffset_(0),
     localTHF_(0),
-    logNames_(5)
+    logNames_(5),
+    inverseVelocity_(2)
 {
   angularCorr_           = new GenExpVario(1, 10*static_cast<float>(PI/180.0)); // Power=1 range=10deg
   lateralCorr_           = new GenExpVario(1, 1000, 1000); 
@@ -81,7 +82,7 @@ ModelSettings::ModelSettings(void)
   segyOffset_            =     0.0f;
   p_undef_               =    0.01f;
 
-  lzLimit_               =     0.47;   // NB! This is a double ==> do not use 'f'.
+  lzLimit_               =     0.41;   // NB! This is a double ==> do not use 'f'.
   time_dTop_             = RMISSING;
   time_lz_               = RMISSING;
   time_dz_               = RMISSING;
@@ -215,9 +216,9 @@ ModelSettings::setTraceHeaderFormat(const TraceHeaderFormat & traceHeaderFormat)
 }
 
 void           
-ModelSettings::addTraceHeaderFormat(const TraceHeaderFormat & traceHeaderFormat)
+ModelSettings::addTraceHeaderFormat(TraceHeaderFormat * traceHeaderFormat)
 {
-  localTHF_.push_back(new TraceHeaderFormat(traceHeaderFormat));
+  localTHF_.push_back(traceHeaderFormat);
 }
 
 void           
