@@ -33,7 +33,7 @@ ModelSettings::ModelSettings(void)
   localWaveletVario_     =     NULL; // Will be set equal to backgroundVario unless it is set separately
   geometry_              =     NULL;
   traceHeaderFormat_     = new TraceHeaderFormat(0); // SeisWorks;
-  krigingParameter_      =       -1; //Indicate no kriging.
+  krigingParameter_      =        0; //Indicate kriging not set.
   nWells_                =        0;
   nSimulations_          =        0;
   //
@@ -90,6 +90,7 @@ ModelSettings::ModelSettings(void)
 
   writePrediction_       =      false;  //Will be set to true if no simulations.
   gridFlag_              =  VP+VS+RHO;  // Default output
+  defaultGridOutput_     =       true;
   formatFlag_            =      STORM;   
   domainFlag_            = TIMEDOMAIN;   
   wellFlag_              =          0;   

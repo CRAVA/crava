@@ -7,13 +7,13 @@ DIRS        = src lib nrlib fft/fftw fft/rfftw
 OBJDIR      = obj
 OBJSUBDIR   = obj/fft
 OBJNRLIBDIR = obj/nrlib
-INCLUDE     = -I. -I./fft/include
+INCLUDE     = -I. -I./fft/include -I./nrlib
 CPPFLAGS   += $(INCLUDE) 
 
 all:	$(PROGRAM)
 
 $(PROGRAM): $(DIRS) main.o
-	$(PURIFY) $(CXX) $(CXXFLAGS) $(LFLAGS) -o $@ $(OBJDIR)/*.o $(OBJSUBDIR)/*.o $(OBJNRLIBDIR)/*/*.o main.o
+	$(PURIFY) $(CXX) $(CXXFLAGS) $(LFLAGS) -o $@ $(OBJDIR)/*.o $(OBJSUBDIR)/*.o $(OBJNRLIBDIR)/*/*.o $(OBJNRLIBDIR)/*/*/*.o main.o
 
 $(OBJDIR):
 	install -d $(OBJDIR)

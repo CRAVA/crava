@@ -44,7 +44,7 @@
 				Name="VCCLCompilerTool"
 				AdditionalOptions="/D &quot;_CRT_SECURE_NO_DEPRECATE&quot;  /wd4512 /wd4127 /w44263 /w44264 /w44062 /I &quot;.&quot; /I &quot;.\fft\include&quot; /D &quot;BYPASS_COORDINATE_SCALING&quot;"
 				Optimization="0"
-				AdditionalIncludeDirectories=""
+				AdditionalIncludeDirectories="K:\user\ragnar\crava\trunk\nrlib"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -3554,6 +3554,26 @@
 					RelativePath=".\nrlib\volume\volume.cpp"
 					>
 				</File>
+				<Filter
+					Name="boost"
+					>
+					<File
+						RelativePath=".\nrlib\boost\system\error_code.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\nrlib\boost\filesystem\operations.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\nrlib\boost\filesystem\path.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\nrlib\boost\filesystem\portability.cpp"
+						>
+					</File>
+				</Filter>
 			</Filter>
 		</Filter>
 		<Filter
@@ -3827,6 +3847,58 @@
 					RelativePath=".\nrlib\volume\volume.hpp"
 					>
 				</File>
+				<Filter
+					Name="boost"
+					>
+					<File
+						RelativePath=".\nrlib\boost\cerrno.hpp"
+						>
+					</File>
+					<File
+						RelativePath=".\nrlib\boost\filesystem\config.hpp"
+						>
+					</File>
+					<File
+						RelativePath=".\nrlib\boost\system\config.hpp"
+						>
+					</File>
+					<File
+						RelativePath=".\nrlib\boost\filesystem\convenience.hpp"
+						>
+					</File>
+					<File
+						RelativePath=".\nrlib\boost\system\cygwin_error.hpp"
+						>
+					</File>
+					<File
+						RelativePath=".\nrlib\boost\system\error_code.hpp"
+						>
+					</File>
+					<File
+						RelativePath=".\nrlib\boost\filesystem\fstream.hpp"
+						>
+					</File>
+					<File
+						RelativePath=".\nrlib\boost\system\linux_error.hpp"
+						>
+					</File>
+					<File
+						RelativePath=".\nrlib\boost\filesystem\operations.hpp"
+						>
+					</File>
+					<File
+						RelativePath=".\nrlib\boost\filesystem\path.hpp"
+						>
+					</File>
+					<File
+						RelativePath=".\nrlib\boost\system\system_error.hpp"
+						>
+					</File>
+					<File
+						RelativePath=".\nrlib\boost\system\windows_error.hpp"
+						>
+					</File>
+				</Filter>
 			</Filter>
 		</Filter>
 		<Filter

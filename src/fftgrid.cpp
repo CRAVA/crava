@@ -1349,7 +1349,7 @@ FFTGrid::writeFile(const std::string & fileName, const Simbox * simbox,
       if((formatFlag_ & ModelSettings::SGRI) >0)
         FFTGrid::writeSgriFile(fileName, simbox, label);
     }
-    if((domainFlag_ & ModelSettings::DEPTHDOMAIN) > NULL) { //Writing in depth. Currently, only stormfiles are written in depth.
+    if(depthMap != NULL && (domainFlag_ & ModelSettings::DEPTHDOMAIN) > NULL) { //Writing in depth. Currently, only stormfiles are written in depth.
       std::string depthName = fileName+"_Depth";
       if(depthMap->getMapping() == NULL) {
         if(depthMap->getSimbox() == NULL) {

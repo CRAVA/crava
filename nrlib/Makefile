@@ -1,20 +1,24 @@
 
 include ../Makeheader
 
-MODULES := grid iotools segy stormgrid surface volume tinyxml
+# NRLib directories where we want all files are given here. 
+FULLMODULES := grid iotools segy stormgrid  volume tinyxml boost
 
 SRC := 
 
 # Files with sources for each of the modules.
-include $(patsubst %, %/module.mk, $(MODULES))
+include $(patsubst %, %/module.mk, $(FULLMODULES))
+
+# This file contains the files we want from NRLib where we do not want entire directory.
+include submodulescrava.mk
 
 OBJDIR = ../obj/nrlib/
 
 OBJECTS := $(patsubst %.cpp, $(OBJDIR)%.o, $(filter %.cpp, $(SRC)))
 
-DIRS := $(addprefix $(OBJDIR), $(MODULES)) 
+DIRS := $(sort $(dir $(OBJECTS)))
 
-INCLUDE := 
+INCLUDE := -I./
 CPPFLAGS += $(INCLUDE)
 
 $(OBJDIR)%.o : %.cpp

@@ -90,6 +90,7 @@ public:
   int                 getTimeNz(void)               const { return time_nz_             ;}
   bool                getWritePrediction(void)      const { return writePrediction_     ;}
   int                 getGridOutputFlag(void)       const { return gridFlag_            ;}
+  bool                getDefaultGridOutputInd(void) const { return defaultGridOutput_   ;}
   int                 getOutputFormatFlag(void)     const { return formatFlag_          ;}
   int                 getOutputDomainFlag(void)     const { return domainFlag_          ;}
   int                 getWellOutputFlag(void)       const { return wellFlag_            ;}
@@ -186,6 +187,7 @@ public:
   void                setTimeNz(int time_nz)                        { time_nz_              = time_nz            ;}
   void                setWritePrediction(bool write)                { writePrediction_      = write              ;}
   void                setGridOutputFlag(int gridFlag)               { gridFlag_             = gridFlag           ;}
+  void                setDefaultGridOutputInd(bool ind)             { defaultGridOutput_    = ind                ;}
   void                setOutputFormatFlag(int formatFlag)           { formatFlag_           = formatFlag         ;}
   void                setOutputDomainFlag(int domainFlag)           { domainFlag_           = domainFlag         ;}
   void                setWellOutputFlag(int wellFlag)               { wellFlag_             = wellFlag           ;}
@@ -336,7 +338,8 @@ private:
   int                       wellFlag_;              // Decides well output.
   int                       otherFlag_;             // Decides output beyond grids and wells.
   int                       fileGrid_;              // Indicator telling if grids are to be kept on file
-                           
+  bool                      defaultGridOutput_;     // Indicator telling whether grid output has been actively controlled.
+
   bool                      generateSeismic_;       // Forward modelling
   bool                      estimationMode_;        // Estimation
 

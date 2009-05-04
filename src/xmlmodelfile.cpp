@@ -26,27 +26,46 @@ XmlModelFile::XmlModelFile(const char * fileName)
   inputFiles_            = new InputFiles();
   failed_                = false;
 
-  TiXmlDocument doc;
-	bool loadOkay = doc.LoadFile(fileName);
+  std::ifstream file(fileName);
 
-  if (loadOkay == false) {
-    LogKit::LogFormatted(LogKit::ERROR,"Error: Reading of xml-file %s failed. %s Line %d, column %d\n", 
-      fileName, doc.ErrorDesc(), doc.ErrorRow(), doc.ErrorCol());
+  if (!file) {
+    LogKit::LogFormatted(LogKit::ERROR,"Error: Could not open file %s for reading.\n", fileName);
     exit(1);
   }
 
-  std::string errTxt = "";
-  if(parseCrava(&doc, errTxt) == false)
-    errTxt = "Error: '"+std::string(fileName)+"' is not a crava model file (lacks the 'crava' keyword.\n";
+  //Remove all comments, since this convention is outside xml.
+  std::string line;
+  std::string active;
+  std::string clean;
+  while (std::getline(file,line))
+  {
+    active = line.substr(0, line.find_first_of("!"));
+    clean = clean+active+"\n";
+  }
+  file.close();
 
-  checkForJunk(&doc, errTxt);
+  TiXmlDocument doc;
+  doc.Parse(clean.c_str());
 
-  checkConsistency(errTxt);
-
-
-  if(errTxt != "") {
-    LogKit::LogMessage(LogKit::ERROR, errTxt);
+  if (doc.Error() == true) {
+    LogKit::LogFormatted(LogKit::ERROR,"Error: Reading of xml-file %s failed. %s Line %d, column %d\n", 
+      fileName, doc.ErrorDesc(), doc.ErrorRow(), doc.ErrorCol());
     failed_ = true;
+  }
+  else {
+    std::string errTxt = "";
+    if(parseCrava(&doc, errTxt) == false)
+      errTxt = "Error: '"+std::string(fileName)+"' is not a crava model file (lacks the 'crava' keyword.\n";
+
+    checkForJunk(&doc, errTxt);
+
+    checkConsistency(errTxt);
+
+
+    if(errTxt != "") {
+      LogKit::LogMessage(LogKit::ERROR, errTxt);
+      failed_ = true;
+    }
   }
 }
 
@@ -125,12 +144,17 @@ XmlModelFile::parseInversionSettings(TiXmlNode * node, std::string & errTxt)
 
   std::string facprob;
   if(parseValue(root, "facies-probabilities", facprob, errTxt) == true) {
-    int flag = modelSettings_->getGridOutputFlag();
+    int flag = 0;
+    if(modelSettings_->getDefaultGridOutputInd() == false)
+      flag = modelSettings_->getGridOutputFlag();
     if(facprob == "absolute")
       flag = (flag | ModelSettings::FACIESPROB);
     else if(facprob == "relative")
       flag = (flag | ModelSettings::FACIESPROBRELATIVE);
-    modelSettings_->setGridOutputFlag(flag);
+    if(flag != 0) {
+      modelSettings_->setGridOutputFlag(flag);
+      modelSettings_->setDefaultGridOutputInd(false);
+    }
   }
 
   checkForJunk(root, errTxt);
@@ -156,6 +180,10 @@ XmlModelFile::parseSimulation(TiXmlNode * node, std::string & errTxt)
       errTxt = errTxt+"Error: Both seed and seed file given in command '"+
         root->ValueStr()+"'"+lineColumnText(root)+".\n";
   }
+
+  int value = 1;
+  parseValue(root, "number-of-simulations", value, errTxt);
+  modelSettings_->setNumberOfSimulations(value);
 
   checkForJunk(root, errTxt);
   return(true);
@@ -205,15 +233,15 @@ XmlModelFile::parseLogNames(TiXmlNode * node, std::string & errTxt)
     return(false);
 
   std::string value;
-  if(parseValue(root, "time-log-name", value, errTxt) == true)
+  if(parseValue(root, "time", value, errTxt) == true)
     modelSettings_->setLogName(0, value);
 
-  bool vp = parseValue(root, "vp-log-name", value, errTxt);
+  bool vp = parseValue(root, "vp", value, errTxt);
   if(vp == true) {
     modelSettings_->setLogName(1, value);
     modelSettings_->setInverseVelocity(0, false);
   }
-  if(parseValue(root, "dt-log-name", value, errTxt) == true) {
+  if(parseValue(root, "dt", value, errTxt) == true) {
     if(vp == true)
       errTxt = errTxt+"Error: Both vp and dt given as logs in command '"
         +root->ValueStr()+"'"+lineColumnText(root)+".\n";
@@ -223,12 +251,12 @@ XmlModelFile::parseLogNames(TiXmlNode * node, std::string & errTxt)
     }
   }
 
-  bool vs = parseValue(root, "vs-log-name", value, errTxt);
+  bool vs = parseValue(root, "vs", value, errTxt);
   if(vp == true) {
     modelSettings_->setLogName(3, value);
     modelSettings_->setInverseVelocity(1, false);
   }
-  if(parseValue(root, "dts-log-name", value, errTxt) == true) {
+  if(parseValue(root, "dts", value, errTxt) == true) {
     if(vs == true)
       errTxt = errTxt+"Error: Both vs and dts given as logs in command '"
         +root->ValueStr()+"'"+lineColumnText(root)+".\n";
@@ -238,10 +266,12 @@ XmlModelFile::parseLogNames(TiXmlNode * node, std::string & errTxt)
     }
   }
 
-  if(parseValue(root, "density-log-name", value, errTxt) == true)
+  if(parseValue(root, "density", value, errTxt) == true)
     modelSettings_->setLogName(2, value);
-  if(parseValue(root, "facies-log-name", value, errTxt) == true)
+  if(parseValue(root, "facies", value, errTxt) == true) {
     modelSettings_->setLogName(4, value);
+    modelSettings_->setFaciesLogGiven(true);
+  }
   
   checkForJunk(root, errTxt);
   return(true);
@@ -257,7 +287,7 @@ XmlModelFile::parseWell(TiXmlNode * node, std::string & errTxt)
 
   std::string tmpErr = "";
   std::string value;
-  if(parseValue(root, "filename", value, tmpErr) == true) {
+  if(parseValue(root, "file-name", value, tmpErr) == true) {
     inputFiles_->addWellFile(value);
     if(tmpErr == "")
       checkFileOpen(value, root, tmpErr);
@@ -779,7 +809,23 @@ XmlModelFile::parseIntervalTwoSurfaces(TiXmlNode * node, std::string & errTxt)
     modelSettings_->setTimeNz(value);
 
   std::string filename;
-  if(parseFileName(root, "velocity-field", filename, errTxt) == false) {
+  bool externalField = parseFileName(root, "velocity-field", filename, errTxt);
+  if(externalField == true)
+    inputFiles_->setVelocityField(filename);
+
+  bool inversionField = false;
+  parseBool(root, "velocity-field-from-inversion", inversionField, errTxt);
+  
+
+  if(inversionField == true) {
+    inputFiles_->setVelocityField("FROM_INVERSION");
+    if(externalField == true)
+      errTxt = errTxt+
+        "Error: Both 'velcoity-field' and 'velocity-field-from-inversion' given in command '"+
+        root->ValueStr()+"'"+lineColumnText(root)+".\n";
+  }
+
+  if(externalField == false && inversionField == false) {
     if(topDepthGiven != baseDepthGiven)
       errTxt = errTxt+"Error: Only one depth surface given, and no velocity field in command '"+
         root->ValueStr()+"'"+lineColumnText(root)+".\n";
@@ -787,7 +833,6 @@ XmlModelFile::parseIntervalTwoSurfaces(TiXmlNode * node, std::string & errTxt)
       modelSettings_->setDepthDataOk(true);
   }
   else {
-    inputFiles_->setVelocityField(filename);
     if(topDepthGiven == false && baseDepthGiven == false) {
       errTxt = errTxt+"Error: Velocity field, but no depth surface given in command '"+
         root->ValueStr()+"'"+lineColumnText(root)+".\n";
@@ -809,9 +854,20 @@ XmlModelFile::parseTopSurface(TiXmlNode * node, std::string & errTxt)
     return(false);
 
   std::string filename;
-  if(parseFileName(root,"time-file", filename, errTxt) == true)
+  bool timeFile = parseFileName(root,"time-file", filename, errTxt);
+  if(timeFile == true)
     inputFiles_->addTimeSurfFile(filename);
-  else {
+
+  float value;
+  bool timeValue = parseValue(root,"time-value", value, errTxt);
+  if(timeValue == true) {
+    if(timeFile == false)
+      inputFiles_->addTimeSurfFile(NRLib2::ToString(value));
+    else
+      errTxt = errTxt+"Error: Both file and value given for top time in command'"+
+        root->ValueStr()+"'"+lineColumnText(root)+".\n";
+  }
+  else if(timeFile == false) {
     inputFiles_->addTimeSurfFile("");
     errTxt = errTxt+"Error: No time surface given in command '"+
       root->ValueStr()+"'"+lineColumnText(root)+".\n";
@@ -833,9 +889,20 @@ XmlModelFile::parseBaseSurface(TiXmlNode * node, std::string & errTxt)
     return(false);
 
   std::string filename;
-  if(parseFileName(root,"time-file", filename, errTxt) == true)
+  bool timeFile = parseFileName(root,"time-file", filename, errTxt);
+  if(timeFile == true)
     inputFiles_->addTimeSurfFile(filename);
-  else {
+
+  float value;
+  bool timeValue = parseValue(root,"time-value", value, errTxt);
+  if(timeValue == true) {
+    if(timeFile == false)
+      inputFiles_->addTimeSurfFile(NRLib2::ToString(value));
+    else
+      errTxt = errTxt+"Error: Both file and value given for base time in command'"+
+        root->ValueStr()+"'"+lineColumnText(root)+".\n";
+  }
+  else if(timeFile == false) {
     inputFiles_->addTimeSurfFile("");
     errTxt = errTxt+"Error: No time surface given in command '"+
       root->ValueStr()+"'"+lineColumnText(root)+".\n";
@@ -1070,39 +1137,44 @@ XmlModelFile::parseGridParameters(TiXmlNode * node, std::string & errTxt)
 
   bool value = false;
   int paramFlag = 0;
-  if(parseBool(root, "vp", value, errTxt) == true)
+  if(modelSettings_->getDefaultGridOutputInd() == false) //May have set faciesprobs.
+    paramFlag = modelSettings_->getGridOutputFlag();
+
+  if(parseBool(root, "vp", value, errTxt) == true && value == true)
     paramFlag += ModelSettings::VP;
-  if(parseBool(root, "vs", value, errTxt) == true)
+  if(parseBool(root, "vs", value, errTxt) == true && value == true)
     paramFlag += ModelSettings::VS;
-  if(parseBool(root, "density", value, errTxt) == true)
+  if(parseBool(root, "density", value, errTxt) == true && value == true)
     paramFlag += ModelSettings::RHO;
-  if(parseBool(root, "lame-lambda", value, errTxt) == true)
+  if(parseBool(root, "lame-lambda", value, errTxt) == true && value == true)
     paramFlag += ModelSettings::LAMELAMBDA;
-  if(parseBool(root, "lame-mu", value, errTxt) == true)
+  if(parseBool(root, "lame-mu", value, errTxt) == true && value == true)
     paramFlag += ModelSettings::LAMEMU;
-  if(parseBool(root, "poisson-ratio", value, errTxt) == true)
+  if(parseBool(root, "poisson-ratio", value, errTxt) == true && value == true)
     paramFlag += ModelSettings::POISSONRATIO;
-  if(parseBool(root, "ai", value, errTxt) == true)
+  if(parseBool(root, "ai", value, errTxt) == true && value == true)
     paramFlag += ModelSettings::AI;
-  if(parseBool(root, "si", value, errTxt) == true)
+  if(parseBool(root, "si", value, errTxt) == true && value == true)
     paramFlag += ModelSettings::SI;
-  if(parseBool(root, "vp-vs-ratio", value, errTxt) == true)
+  if(parseBool(root, "vp-vs-ratio", value, errTxt) == true && value == true)
     paramFlag += ModelSettings::VPVSRATIO;
-  if(parseBool(root, "murho", value, errTxt) == true)
+  if(parseBool(root, "murho", value, errTxt) == true && value == true)
     paramFlag += ModelSettings::MURHO;
-  if(parseBool(root, "lambdarho", value, errTxt) == true)
+  if(parseBool(root, "lambdarho", value, errTxt) == true && value == true)
     paramFlag += ModelSettings::LAMBDARHO;
-  if(parseBool(root, "correlations", value, errTxt) == true)
+  if(parseBool(root, "correlations", value, errTxt) == true && value == true)
     paramFlag += ModelSettings::CORRELATION;
-  if(parseBool(root, "residuals", value, errTxt) == true)
+  if(parseBool(root, "residuals", value, errTxt) == true && value == true)
     paramFlag += ModelSettings::RESIDUAL;
-  if(parseBool(root, "background", value, errTxt) == true)
+  if(parseBool(root, "background", value, errTxt) == true && value == true)
     paramFlag += ModelSettings::BACKGROUND;
-  if(parseBool(root, "extra-grids", value, errTxt) == true)
+  if(parseBool(root, "extra-grids", value, errTxt) == true && value == true)
     paramFlag += ModelSettings::EXTRA_GRIDS;
 
-  if(paramFlag > 0)
+  if(paramFlag > 0) {
+    modelSettings_->setDefaultGridOutputInd(false);
     modelSettings_->setGridOutputFlag(paramFlag);
+  }
 
   checkForJunk(root, errTxt);
   return(true);
@@ -1145,9 +1217,9 @@ XmlModelFile::parseOtherOutput(TiXmlNode * node, std::string & errTxt)
     otherFlag += ModelSettings::WAVELETS;
   if(parseBool(root, "extra-surfaces", value, errTxt) == true && value == true)
     otherFlag += ModelSettings::EXTRA_SURFACES;
-  if(parseBool(root, "prior-correlations", value, errTxt) == true)
+  if(parseBool(root, "prior-correlations", value, errTxt) == true && value == true)
     otherFlag += ModelSettings::PRIORCORRELATIONS;
-  if(parseBool(root, "background-trend-1d", value, errTxt) == true)
+  if(parseBool(root, "background-trend-1d", value, errTxt) == true && value == true)
     otherFlag += ModelSettings::BACKGROUND_TREND_1D;
 
   modelSettings_->setOtherOutputFlag(otherFlag);
@@ -1323,7 +1395,7 @@ XmlModelFile::parseVariogram(TiXmlNode * node, const std::string & keyword, Vari
   if(parseValue(root,"subrange", value, errTxt) == true)
     subrange = value;
   if(parseValue(root,"angle", value, errTxt) == true)
-    angle = value;
+    angle = 90.0f-value; //From geological to mathematical.
   bool power = parseValue(root,"power", value, errTxt);
   if(power == true)
     expo = value;
@@ -1439,10 +1511,10 @@ XmlModelFile::checkForJunk(TiXmlNode * root, std::string & errTxt, bool allowDup
         while(root != NULL) {
           n++;
           parent->RemoveChild(root);
-          root = parent->FirstChildElement(root->Value());
+          root = parent->FirstChildElement(cmd);
         }
         errTxt = errTxt +"Error: Found "+NRLib2::ToString(n)+" extra occurences of command '"+cmd+"' under command '"+parent->Value()+
-          " on line "+NRLib2::ToString(parent->Row())+", column "+NRLib2::ToString(parent->Column())+".\n";
+          "' on line "+NRLib2::ToString(parent->Row())+", column "+NRLib2::ToString(parent->Column())+".\n";
       }
     }
   }
@@ -1488,9 +1560,12 @@ XmlModelFile::checkConsistency(std::string & errTxt) {
 void
 XmlModelFile::checkForwardConsistency(std::string & errTxt) {
   //Mostly, we don't care here, but have to straighten some things.
-  int i;
-  for(i=0;i<modelSettings_->getNumberOfAngles();i++)
-    modelSettings_->setSNRatio(i,1.1f);
+  if(modelSettings_->getGenerateSeismic() == true) {
+    //Set dummy values
+    int i;
+    for(i=0;i<modelSettings_->getNumberOfAngles();i++)
+      modelSettings_->setSNRatio(i,1.1f);
+  }
 }
 
 
