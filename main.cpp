@@ -3,7 +3,6 @@
 #include <time.h>
 #include <assert.h>
 
-#include "lib/systemcall.h"
 #include "lib/global_def.h"
 #include "lib/timekit.hpp"
 #include "lib/utils.h"
@@ -11,6 +10,7 @@
 #include "nrlib/segy/segy.hpp"
 #include "nrlib/iotools/logkit.hpp"
 
+#include "src/program.h"
 #include "src/definitions.h"
 #include "src/corr.h"
 #include "src/model.h"
@@ -31,27 +31,13 @@ int main(int argc, char** argv)
   LogKit::SetScreenLog(LogKit::L_LOW);
   LogKit::StartBuffering();
 
+  Program program( 0,     // Major version
+                   9,     // Minor version 
+                   0,     // Patch number 
+                  1);    // Validity of licence in days (-1 = infinite)
+
   double wall=0.0, cpu=0.0;
   TimeKit::getTime(wall,cpu);
-  LogKit::LogFormatted(LogKit::LOW,"\n***************************************************************************************************");
-  LogKit::LogFormatted(LogKit::LOW,"\n*****                                                                                         *****"); 
-  LogKit::LogFormatted(LogKit::LOW,"\n*****                                    C  R  A  V  A                                        *****"); 
-  LogKit::LogFormatted(LogKit::LOW,"\n*****                                                                                         *****"); 
-  LogKit::LogFormatted(LogKit::LOW,"\n***************************************************************************************************\n\n");
-
-  std::cout 
-    << "Compiled: " << SystemCall::getDate() << "/" << SystemCall::getTime() << "\n"
-    << std::endl;
-
-  const char * userName    = SystemCall::getUserName();
-  const char * dateAndTime = SystemCall::getCurrentTime();
-  const char * hostName    = SystemCall::getHostName();
-  LogKit::LogFormatted(LogKit::LOW,"Log written by                             : %s\n",userName);
-  LogKit::LogFormatted(LogKit::LOW,"Date and time                              : %s"  ,dateAndTime);
-  LogKit::LogFormatted(LogKit::LOW,"Host                                       : %s\n",hostName);
-  delete [] userName;
-  delete [] dateAndTime;
-  delete [] hostName;
 
   // Parsing modelfile and reading files
   Model * model = new Model(argv[1]);

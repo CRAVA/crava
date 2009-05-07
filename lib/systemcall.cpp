@@ -13,8 +13,7 @@
 #include <ctime>
 #include <string.h>
 
-
-const char *
+const std::string
 SystemCall::getUserName()
 {
   char * userName = new char[MAX_STRING]; 
@@ -41,10 +40,10 @@ SystemCall::getUserName()
     sprintf(userName,pw->pw_name); 
     delete [] buffer;
 #endif
-    return userName;
+    return std::string(userName);
 }
 
-const char *
+const std::string
 SystemCall::getHostName()
 {
   char * hostname = new char[MAX_STRING];
@@ -63,10 +62,10 @@ SystemCall::getHostName()
   if ( err != 0 ) {
     sprintf(hostname,"*Not set*");
   }
-  return hostname;
+  return std::string(hostname);
 }
 
-const char *
+const std::string
 SystemCall::getCurrentTime(void) 
 { 
   time_t raw; 
@@ -80,5 +79,5 @@ SystemCall::getCurrentTime(void)
 #else
   sprintf(buffer,ctime(&raw));
 #endif
-  return buffer;
+  return std::string(buffer);
 } 
