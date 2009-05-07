@@ -12,8 +12,8 @@ InputFiles::InputFiles(void)
     velocityField_(""),     
     backFile_(3),           
     backVelFile_(""),       
-    corrDirFile_(""),       
     reflMatrFile_(""),      
+    corrDirFile_(""),       
     paramCorrFile_("")
 {
 }
@@ -21,4 +21,3 @@ InputFiles::InputFiles(void)
 InputFiles::~InputFiles(void)
 {
 }
-

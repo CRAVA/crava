@@ -34,7 +34,7 @@ int main(int argc, char** argv)
   Program program( 0,     // Major version
                    9,     // Minor version 
                    0,     // Patch number 
-                  1);    // Validity of licence in days (-1 = infinite)
+                  -1);    // Validity of licence in days (-1 = infinite)
 
   double wall=0.0, cpu=0.0;
   TimeKit::getTime(wall,cpu);

@@ -9,7 +9,9 @@
 #include "src/vario.h"
 
 ModelSettings::ModelSettings(void)
-  : seismicType_(0),
+  : localSegyOffset_(0),
+    localTHF_(0),
+    seismicType_(0),
     angle_(0), 
     waveletScale_(0),
     SNRatio_(0),
@@ -20,12 +22,10 @@ ModelSettings::ModelSettings(void)
     indBGTrend_(0),
     indWavelet_(0),
     indFacies_(0),
-    faciesLabels_(0),
-    faciesNames_(0),
-    localSegyOffset_(0),
-    localTHF_(0),
     logNames_(5),
-    inverseVelocity_(2)
+    inverseVelocity_(2),
+    faciesLabels_(0),
+    faciesNames_(0)
 {
   angularCorr_           = new GenExpVario(1, 10*static_cast<float>(PI/180.0)); // Power=1 range=10deg
   lateralCorr_           = new GenExpVario(1, 1000, 1000); 
