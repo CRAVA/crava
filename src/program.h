@@ -15,10 +15,11 @@ class Program
 {
 
 public:
-  Program(unsigned int major,
-          unsigned int minor,
-          unsigned int patch,
-          int          licence_days);
+  Program(const unsigned int  major,
+          const unsigned int  minor,
+          const unsigned int  patch,
+          const int           licence_days,
+          const std::string & licensed_to);
   
   ~Program(void); 
 
@@ -26,15 +27,18 @@ public:
   const unsigned int   GetMinor(void)        const { return minor_        ;} 
   const unsigned int   GetPatch(void)        const { return patch_        ;}
   const int            GetLicenceDays(void)  const { return licence_days_ ;}
+  const std::string  & GetLicencedTo(void)   const { return licensed_to_  ;}
   
 private:      
-  void                 CheckForLicenceExpiration(int licence_days) const;
+  void                 CheckForLicenceExpiration(const int           licence_days,
+                                                 const std::string & licensed_to) const;
   time_t               TimeOfCompilation(void) const;
 
   const unsigned int   major_;           ///< Major version number  
   const unsigned int   minor_;           ///< Minor version number
   const unsigned int   patch_;           ///< Patch number
   const int            licence_days_;    ///< Program validity in days (-1 = infinity)
+  const std::string  & licensed_to_;     ///< Who is the executable licensed to
 };
 
 #ifndef DOXYGEN_SKIP 

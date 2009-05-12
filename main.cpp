@@ -31,10 +31,11 @@ int main(int argc, char** argv)
   LogKit::SetScreenLog(LogKit::L_LOW);
   LogKit::StartBuffering();
 
-  Program program( 0,     // Major version
-                   9,     // Minor version 
-                   0,     // Patch number 
-                  -1);    // Validity of licence in days (-1 = infinite)
+  Program program( 0,                    // Major version
+                   9,                    // Minor version 
+                   0,                    // Patch number 
+                   -1,                   // Validity of licence in days (-1 = infinite)
+                  "Norsk Regnesentral"); // Who this copy of CRAVA is licensed to
 
   double wall=0.0, cpu=0.0;
   TimeKit::getTime(wall,cpu);

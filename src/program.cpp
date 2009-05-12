@@ -5,24 +5,27 @@
 
 #include "nrlib/iotools/logkit.hpp"
 
-Program::Program(unsigned int major,
-                 unsigned int minor,
-                 unsigned int patch,
-                 int          licence_days)
+Program::Program(const unsigned int  major,
+                 const unsigned int  minor,
+                 const unsigned int  patch,
+                 const int           licence_days,
+                 const std::string & licensed_to)
   : major_(major),
     minor_(minor),
     patch_(patch),
-    licence_days_(licence_days)    
+    licence_days_(licence_days),
+    licensed_to_(licensed_to)
 {
   LogKit::LogFormatted(LogKit::LOW,"\n***************************************************************************************************");
   LogKit::LogFormatted(LogKit::LOW,"\n*****                                                                                         *****"); 
   LogKit::LogFormatted(LogKit::LOW,"\n*****                                   C R A V A  -  %d.%d.%d                                   *****",major_,minor_,patch_); 
   LogKit::LogFormatted(LogKit::LOW,"\n*****                                                                                         *****"); 
-  LogKit::LogFormatted(LogKit::LOW,"\n*****                        Copyright (c) 2003 by Norsk Regnesentral                         *****"); 
+  LogKit::LogFormatted(LogKit::LOW,"\n*****                  Copyright (c) 2003 by Norsk Regnesentral/StatoilHydro                  *****"); 
   LogKit::LogFormatted(LogKit::LOW,"\n*****                                                                                         *****"); 
   LogKit::LogFormatted(LogKit::LOW,"\n***************************************************************************************************\n\n");
 
-  CheckForLicenceExpiration(licence_days_);
+  CheckForLicenceExpiration(licence_days_,
+                            licensed_to_);
 
   LogKit::LogFormatted(LogKit::LOW,"Log written by                             : %s\n",SystemCall::getUserName().c_str());
   LogKit::LogFormatted(LogKit::LOW,"Date and time                              : %s"  ,SystemCall::getCurrentTime().c_str());
@@ -34,7 +37,8 @@ Program::~Program(void)
 }
 
 void
-Program::CheckForLicenceExpiration(int licence_days) const
+Program::CheckForLicenceExpiration(const int           licence_days,
+                                   const std::string & licensed_to) const
 {
   if (licence_days >= 0) {
     time_t now = time(0);
@@ -51,7 +55,8 @@ Program::CheckForLicenceExpiration(int licence_days) const
     }
     else {
       int days_left_of_licence = licence_days - days_since_compilation;
-      LogKit::LogFormatted(LogKit::ERROR,"License expires in                         : %d days\n\n",days_left_of_licence);
+      LogKit::LogFormatted(LogKit::ERROR,"License expires in                         : %d days\n",days_left_of_licence);
+      LogKit::LogFormatted(LogKit::ERROR,"Licensed to                                : %s\n\n",licensed_to.c_str());
     }
   }
   else
