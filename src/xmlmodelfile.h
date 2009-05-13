@@ -90,7 +90,7 @@ private:
 
   ModelSettings  * modelSettings_;
   InputFiles     * inputFiles_;
-
+  
   bool             failed_;                // Indicates whether errors ocuured during construction. 
 
 

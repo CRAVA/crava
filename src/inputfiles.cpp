@@ -1,4 +1,8 @@
+#include <fstream>
+
 #include "src/inputfiles.h"
+#include "nrlib/iotools/fileio.hpp"
+#include "nrlib/exception/exception.hpp"
 
 InputFiles::InputFiles(void)
   : seedFile_(""),          
@@ -20,4 +24,53 @@ InputFiles::InputFiles(void)
 
 InputFiles::~InputFiles(void)
 {
+}
+
+std::string 
+InputFiles::addInputPathAndCheckFiles()
+{
+  unsigned int i;
+  std::string errTxt = addPathAndCheck(seedFile_);
+  for(i=0;i<wellFiles_.size();i++)
+    errTxt += addPathAndCheck(wellFiles_[i]);
+  for(i=0;i<seismicFiles_.size();i++)
+    errTxt += addPathAndCheck(seismicFiles_[i]);
+  for(i=0;i<waveletFiles_.size();i++)
+    errTxt += addPathAndCheck(waveletFiles_[i]);
+  for(i=0;i<waveletEstIntFile_.size();i++)
+    errTxt += addPathAndCheck(waveletEstIntFile_[i]);
+  for(i=0;i<faciesEstIntFile_.size();i++)
+    errTxt += addPathAndCheck(faciesEstIntFile_[i]);
+  for(i=0;i<timeSurfFiles_.size();i++)
+    errTxt += addPathAndCheck(timeSurfFiles_[i], true);
+  for(i=0;i<depthSurfFiles_.size();i++)
+    errTxt += addPathAndCheck(depthSurfFiles_[i]);
+  errTxt += addPathAndCheck(velocityField_);
+  for(i=0;i<backFile_.size();i++)
+    errTxt += addPathAndCheck(backFile_[i]);
+  errTxt += addPathAndCheck(backVelFile_);
+  errTxt += addPathAndCheck(corrDirFile_);
+  errTxt += addPathAndCheck(reflMatrFile_);
+  errTxt += addPathAndCheck(paramCorrFile_);
+  return(errTxt);
+}
+
+
+std::string
+InputFiles::addPathAndCheck(std::string & fileName, bool possiblyNumber)
+{
+  std::string error = "";
+  if(fileName != "" && (possiblyNumber == false || NRLib2::IsNumber(fileName) == false)) {
+    fileName = inputDirectory_+fileName;
+    std::ifstream infile;
+    try {
+      NRLib2::OpenRead(infile, fileName);
+      infile.close();
+    }
+    catch (NRLib2::Exception e) {
+      error = e.what();
+      error += "\n";
+    }
+  }
+  return(error);
 }

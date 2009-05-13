@@ -88,6 +88,7 @@ public:
   double              getTimeLz(void)               const { return time_lz_             ;}
   double              getTimeDz(void)               const { return time_dz_             ;}
   int                 getTimeNz(void)               const { return time_nz_             ;}
+  bool                getVelocityFromInversion()    const { return velocityFromInv_     ;}
   bool                getWritePrediction(void)      const { return writePrediction_     ;}
   int                 getGridOutputFlag(void)       const { return gridFlag_            ;}
   bool                getDefaultGridOutputInd(void) const { return defaultGridOutput_   ;}
@@ -185,6 +186,7 @@ public:
   void                setTimeLz(double time_lz)                     { time_lz_              = time_lz            ;}
   void                setTimeDz(double time_dz)                     { time_dz_              = time_dz            ;}
   void                setTimeNz(int time_nz)                        { time_nz_              = time_nz            ;}
+  void                setVelocityFromInversion(bool fromInversion)  { velocityFromInv_      = fromInversion      ;}
   void                setWritePrediction(bool write)                { writePrediction_      = write              ;}
   void                setGridOutputFlag(int gridFlag)               { gridFlag_             = gridFlag           ;}
   void                setDefaultGridOutputInd(bool ind)             { defaultGridOutput_    = ind                ;}
@@ -237,8 +239,12 @@ public:
   enum                gridFormats{SEGY = 1, STORM = 2, ASCII = 4, SGRI = 8};
                   
   enum                sseismicTypes{STANDARDSEIS = 0, PSSEIS = 1};
-                   
+
+  //Note: By convention, input path is added to input file names at end of parsing.
+  //      Output path and prefix is added to output file name by call to makeFullFileName
+  //      just before writing.
   static void         setFilePrefix(const std::string & filePrefix);
+  static void         setOutputPath(const std::string & outputPath);
   static std::string  makeFullFileName(const std::string name, const std::string postfix = "");
                    
 private:           
@@ -330,6 +336,7 @@ private:
   double                    time_lz_;               // Used when top and base surfaces are parallel
   double                    time_dz_;               // Used when top and base surfaces are parallel
   int                       time_nz_;               // Used when top and base surfaces are parallel
+  bool                      velocityFromInv_;       // Velocity for time depth from inverted Vs.
                            
   bool                      writePrediction_;       // Determines whether prediction is written.
   int                       gridFlag_;              // Decides which grids to write (except simulation)
@@ -348,13 +355,15 @@ private:
   bool                      depthDataOk_;           // We have what we need to do depth conversion
   bool                      parallelTimeSurfaces_;
   bool                      useLocalWavelet_;       // Wavelets are multiplied with gain and shift maps
-                           
+
   int                       logLevel_;      
                            
   int                       seed_;                  // Random seed.
                            
   static int                debugFlag_;
-  static std::string        filePrefix_;            // Prefix (including path) for all output files
+
+  static std::string        outputPath_;            // Path for all output files.
+  static std::string        filePrefix_;            // Prefix for all output files
 };
 
 #endif

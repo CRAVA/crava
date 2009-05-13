@@ -1,3 +1,5 @@
+#include <time.h>
+
 #include "src/definitions.h"
 #include "src/program.h"
 

@@ -87,6 +87,7 @@ ModelSettings::ModelSettings(void)
   time_lz_               = RMISSING;
   time_dz_               = RMISSING;
   time_nz_               = IMISSING;
+  velocityFromInv_       = false;
 
   writePrediction_       =      false;  //Will be set to true if no simulations.
   gridFlag_              =  VP+VS+RHO;  // Default output
@@ -258,6 +259,12 @@ ModelSettings::setIndicatorFacies(int * indFacies, int nWells)
 }
 
 void
+ModelSettings::setOutputPath(const std::string & outputPath) 
+{
+  outputPath_ = outputPath;
+}
+
+void
 ModelSettings::setFilePrefix(const std::string & filePrefix)               
 {
   filePrefix_ = filePrefix;
@@ -266,8 +273,9 @@ ModelSettings::setFilePrefix(const std::string & filePrefix)
 std::string 
 ModelSettings::makeFullFileName(const std::string name, const std::string postfix)
 {
-  return (filePrefix_+name+postfix);
+  return (outputPath_+filePrefix_+name+postfix);
 }
 
+std::string ModelSettings::outputPath_ = "";
 std::string ModelSettings::filePrefix_ = "CRAVA_";
 int         ModelSettings::debugFlag_  = 0;

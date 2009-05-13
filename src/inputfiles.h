@@ -48,8 +48,14 @@ public:
   void setCorrDirFile(const std::string & corrDirFile)                    { corrDirFile_          = corrDirFile       ;}
   void setParamCorrFile(const std::string & paramCorrFile)                { paramCorrFile_        = paramCorrFile     ;}
   void setTempCorrFile(const std::string & tempCorrFile)                  { tempCorrFile_         = tempCorrFile      ;}
-  
+
+  void setInputDirectory(std::string inputDirectory)                      { inputDirectory_       = inputDirectory    ;}
+
+  std::string addInputPathAndCheckFiles();
+
 private:
+  std::string addPathAndCheck(std::string & fileName, bool possiblyNumber = false);
+
   std::string                seedFile_;              ///< File specifying the seed
   std::vector<std::string>   wellFiles_;             ///< File names: wells
   std::vector<std::string>   seismicFiles_;          ///< File names: seismic data
@@ -67,6 +73,8 @@ private:
   std::string                corrDirFile_;           ///< File name for correlation direction
   std::string                paramCorrFile_;         ///< File name for correlation between parameters.
   std::string                tempCorrFile_;          ///< File name for temporal parameter correlations.
+
+  std::string                inputDirectory_;        ///< Base directory for input files.
 };
 
 #endif

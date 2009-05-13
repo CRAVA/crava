@@ -289,8 +289,6 @@ XmlModelFile::parseWell(TiXmlNode * node, std::string & errTxt)
   std::string value;
   if(parseValue(root, "file-name", value, tmpErr) == true) {
     inputFiles_->addWellFile(value);
-    if(tmpErr == "")
-      checkFileOpen(value, root, tmpErr);
   }
   else
     inputFiles_->addWellFile(""); //Dummy to keep tables balanced.
@@ -406,7 +404,7 @@ XmlModelFile::parseAngleGather(TiXmlNode * node, std::string & errTxt)
   }
 
   if(parseWavelet(root, errTxt) == false) {
-    inputFiles_->addWaveletFile("*");
+    inputFiles_->addWaveletFile("");
     modelSettings_->addEstimateWavelet(true);
     modelSettings_->addWaveletScale(RMISSING);
   }
@@ -818,7 +816,7 @@ XmlModelFile::parseIntervalTwoSurfaces(TiXmlNode * node, std::string & errTxt)
   
 
   if(inversionField == true) {
-    inputFiles_->setVelocityField("FROM_INVERSION");
+    modelSettings_->setVelocityFromInversion(true);
     if(externalField == true)
       errTxt = errTxt+
         "Error: Both 'velcoity-field' and 'velocity-field-from-inversion' given in command '"+
@@ -1014,19 +1012,39 @@ XmlModelFile::parseIOSettings(TiXmlNode * node, std::string & errTxt)
   if(root == 0)
     return(false);
 
-  std::string value;
-  if(parseValue(root, "top-directory", value, errTxt) == true); //NBNB Not ready yet.
-  if(parseValue(root, "input-directory", value, errTxt) == true); //NBNB Not ready yet.
-  if(parseValue(root, "output-directory", value, errTxt) == true); //NBNB Not ready yet.
+  std::string topDir;
+  parseValue(root, "top-directory", topDir, errTxt);
+
+  std::string inputDir;
+  parseValue(root, "input-directory", inputDir, errTxt);
+  inputDir = topDir+inputDir;
+  inputFiles_->setInputDirectory(inputDir);
+  
+  std::string outputDir;
+  parseValue(root, "output-directory", outputDir, errTxt);
+  outputDir = topDir+outputDir;
+  ModelSettings::setOutputPath(outputDir);
 
   parseOutputTypes(root, errTxt);
 
+  std::string value;
   if(parseValue(root, "file-output-prefix", value, errTxt) == true)
     ModelSettings::setFilePrefix(value);
 
   int level;
   if(parseValue(root, "log-level", level, errTxt) == true)
     modelSettings_->setLogLevel(level);
+
+  //Test-open log file, to check valid path.
+  std::string logFileName = ModelSettings::makeFullFileName("logFile.txt");
+  std::ofstream file;
+  try {
+    NRLib2::OpenWrite(file, logFileName);
+  }
+  catch(NRLib2::Exception & e) {
+    errTxt = errTxt + "Error when trying top open '" + logFileName +"' : " + e.what()+"\n";
+  }
+  file.close();
 
   checkForJunk(root, errTxt);
   return(true);
@@ -1463,8 +1481,6 @@ XmlModelFile::parseFileName(TiXmlNode * node, const std::string & keyword, std::
     return(false);
   
   filename = value;
-  if(tmpErr == "")
-    checkFileOpen(value, node, tmpErr);
 
   //No junk-clearing, done in parseValue
   errTxt += tmpErr;
@@ -1550,6 +1566,7 @@ XmlModelFile::lineColumnText(TiXmlNode * node)
 
 void
 XmlModelFile::checkConsistency(std::string & errTxt) {
+  errTxt += inputFiles_->addInputPathAndCheckFiles();
   if(modelSettings_->getGenerateSeismic() == true)
     checkForwardConsistency(errTxt);
   else

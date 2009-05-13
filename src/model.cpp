@@ -2868,7 +2868,7 @@ Model::loadVelocity(FFTGrid          *& velocity,
 {
   if(velocityField == "CONSTANT")
     velocity = NULL;
-  else if(velocityField == "FROM_INVERSION")
+  else if(modelSettings->getVelocityFromInversion() == true)
   {
     velocityFromInversion_ = true;
     velocity = NULL;
