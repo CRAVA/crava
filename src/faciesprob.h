@@ -16,6 +16,7 @@ class KrigingData;
 class ModelSettings;
 class FilterWellLogs;
 class WellData;
+class SpatialWellFilter;
 
 class FaciesProb
 {
@@ -44,6 +45,9 @@ public:
                                 int nWells,
                                 int nz,
                                 RandomGen * random);
+  void            setNeededLogsSpatial(SpatialWellFilter * filteredLogs,
+                                       WellData      ** wells,
+                                       int              nWells);
 
 private:
   void            getMinMax(float* alpha,float* beta,float* rho,int* facies);
@@ -51,7 +55,7 @@ private:
   
   float           findDensity(float alpha, float beta, float rho, int facies);
   void            calculateFaciesProb( FFTGrid *alphagrid, FFTGrid *betagrid, FFTGrid *rhogrid);
-
+  void            invertSigmae();
   ModelSettings * modelSettings_;
   const Simbox  * simbox_;
 
@@ -94,5 +98,7 @@ private:
 
   float           p_undefined_;
   float         * priorFacies_;
+
+  double        **sigmae_;
 };
 #endif

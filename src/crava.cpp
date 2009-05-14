@@ -19,6 +19,7 @@
 #include "src/filterwelllogs.h"
 #include "src/parameteroutput.h"
 #include "src/timings.h"
+#include "src/spatialwellfilter.h"
 #include "lib/timekit.hpp"
 #include "lib/random.h"
 #include "lib/utils.h"
@@ -26,12 +27,13 @@
 #include "nrlib/iotools/logkit.hpp"
 #include "nrlib/stormgrid/stormcontgrid.hpp"
 
+
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include <assert.h>
 #include <time.h>
 
-Crava::Crava(Model * model)
+Crava::Crava(Model * model, SpatialWellFilter *spatwellfilter)
 {	
   Utils::writeHeader("Building Stochastic Model");
 
@@ -104,6 +106,11 @@ Crava::Crava(Model * model)
     float corrGradI, corrGradJ;
     model->getCorrGradIJ(corrGradI, corrGradJ);
     corrT = parSpatialCorr->fillInParamCorr(correlations_,lowIntCut,corrGradI, corrGradJ);
+    if(spatwellfilter!=NULL)
+    {
+      for(int i=0;i<nWells_;i++)
+        spatwellfilter->setPriorSpatialCorr(parSpatialCorr, wells_[i], i);
+    }
     correlations_->setPriorCorrTFiltered(corrT,nz_,nzp_); // Can has zeros in the middle
     errCorrUnsmooth->fillInErrCorr(correlations_,corrGradI,corrGradJ); 
     if((model->getModelSettings()->getOtherOutputFlag() & ModelSettings::PRIORCORRELATIONS) > 0)
@@ -1586,8 +1593,9 @@ Crava::printEnergyToScreen()
   LogKit::LogFormatted(LogKit::LOW,"\n");
 }
 
+//Crava::computeFaciesProb(FilterWellLogs *filteredlogs)
 void 
-Crava::computeFaciesProb(FilterWellLogs *filteredlogs)
+Crava::computeFaciesProb(SpatialWellFilter *filteredlogs)
 {
   if((outputFlag_ & ModelSettings::FACIESPROB) >0 || (outputFlag_ & ModelSettings::FACIESPROBRELATIVE)>0)
   {
@@ -1602,11 +1610,14 @@ Crava::computeFaciesProb(FilterWellLogs *filteredlogs)
       LogKit::LogFormatted(LogKit::LOW,"         the number of layers must be increased.                                    \n");
     }
 
-    fprob_->setNeededLogs(filteredlogs,
-                          wells_,
-                          nWells_,
-                          nz_,
-                          random_);
+   // fprob_->setNeededLogs(filteredlogs,
+   //                       wells_,
+   //                       nWells_,
+   //                       nz_,
+   //                       random_);
+    fprob_->setNeededLogsSpatial(filteredlogs,
+                                 wells_,
+                                 nWells_);
 
     int nfac = model_->getModelSettings()->getNumberOfFacies();
 
@@ -1667,4 +1678,14 @@ Crava::filterLogs(Simbox          * timeSimboxConstThick,
                                   lowCut_, highCut_, 
                                   relative);
   Timings::setTimeFiltering(wall,cpu);
+}
+int Crava::getRelative()
+{
+int relative;
+  if((outputFlag_ & ModelSettings::FACIESPROBRELATIVE)>0)
+    relative = 1;
+  else 
+    relative = 0;
+
+  return relative;
 }

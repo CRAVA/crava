@@ -21,6 +21,7 @@
 #include "src/welldata.h"
 #include "src/filterwelllogs.h"
 #include "src/timings.h"
+#include "src/spatialwellfilter.h"
 
 int main(int argc, char** argv)
 {  
@@ -57,7 +58,9 @@ int main(int argc, char** argv)
       time_t timestart, timeend;
       time(&timestart);
 
-      crava = new Crava(model);
+      int nwells = model->getModelSettings()->getNumberOfWells();
+      SpatialWellFilter *spatwellfilter = new SpatialWellFilter(nwells);
+      crava = new Crava(model, spatwellfilter);
       
       char * warningText = new char[12*MAX_STRING*model->getModelSettings()->getNumberOfAngles()];
       
@@ -90,10 +93,14 @@ int main(int argc, char** argv)
         corr->writeFilePostCovGrids(model->getTimeSimbox());
       }       
 
-      FilterWellLogs * filteredlogs = NULL;
-      crava->filterLogs(model->getTimeSimboxConstThick(),filteredlogs);
-      crava->computeFaciesProb(filteredlogs);
-      delete filteredlogs;
+      int relative = crava->getRelative();
+
+      spatwellfilter->doFiltering(corr,model->getWells(), model->getModelSettings()->getNumberOfWells(), relative);
+
+     // FilterWellLogs * filteredlogs = NULL;
+      //crava->filterLogs(model->getTimeSimboxConstThick(),filteredlogs);
+      crava->computeFaciesProb(spatwellfilter);
+      delete spatwellfilter;
 
       //
       // Temprary placement.  crava.cpp needs a proper restructuring.
@@ -114,7 +121,7 @@ int main(int argc, char** argv)
   else
   {
     LogKit::LogFormatted(LogKit::LOW,"\nBuilding model ...\n");
-    crava = new Crava(model);
+    crava = new Crava(model, 0);
     LogKit::LogFormatted(LogKit::LOW,"\n               ... model built\n");
 
     // Computing synthetic seismic

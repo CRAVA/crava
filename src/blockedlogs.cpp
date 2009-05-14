@@ -785,3 +785,25 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
   }
   file.close();
 }
+
+void BlockedLogs::setSpatialFilteredLogs(float * filteredlog, int start, int end, std::string type, const float *bg)
+{
+  float * blockedLog = new float[nBlocks_];
+  assert(nBlocks_ == end-start);
+  int i,j;
+  j = 0;
+  for(i=start;i<end;i++)
+  {
+    blockedLog[j] = filteredlog[i]+bg[j];
+    j++;
+  }
+
+  if (type == "ALPHA_SEISMIC_RESOLUTION")
+    alpha_seismic_resolution_ = blockedLog;
+  else if (type == "BETA_SEISMIC_RESOLUTION")
+    beta_seismic_resolution_ = blockedLog;
+  else if (type == "RHO_SEISMIC_RESOLUTION")
+    rho_seismic_resolution_ = blockedLog;
+
+
+}

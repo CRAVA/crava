@@ -84,6 +84,7 @@ Model::Model(char * fileName)
   InputFiles * inputFiles;
 
   std::string check = std::string(fileName);
+  
   if(check.find(".xml",0) != std::string::npos) {
     XmlModelFile modelFile(fileName);
     inputFiles     = modelFile.getInputFiles();

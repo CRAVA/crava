@@ -54,6 +54,7 @@ public:
   void           setLogFromGrid(FFTGrid * grid, int iAngle, int nAngles, std::string type);
 
   void           writeRMSWell(ModelSettings * modelSettings);
+  void           setSpatialFilteredLogs(float * filteredlog, int start, int end, std::string type, const float *bg);
 
 private:
   void           setLogFromVerticalTrend(float *& log, double * zpos, int nBlocks, 

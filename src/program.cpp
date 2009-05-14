@@ -2,7 +2,7 @@
 
 #include "src/definitions.h"
 #include "src/program.h"
-
+#include <time.h>
 #include "lib/systemcall.h"
 
 #include "nrlib/iotools/logkit.hpp"

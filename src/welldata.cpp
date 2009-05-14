@@ -1181,11 +1181,13 @@ WellData::lookForSyntheticVsLog(float & rank_correlation)
     {
       LogKit::LogFormatted(LogKit::LOW,"   Vp-Vs rank correlation is %5.3f. Treating Vs log as synthetic.\n",rank_correlation);
       syntheticVsLog_ = true;
+      useForFaciesProbabilities_ = false;
     } 
     else
     {
       LogKit::LogFormatted(LogKit::LOW,"   Vp-Vs rank correlation in well is %5.3f.\n",rank_correlation);
       syntheticVsLog_ = false;
+
     } 
   }
 
@@ -1262,7 +1264,7 @@ WellData::calculateDeviation(float  & devAngle,
 
   if (max_deviation > thr_deviation) 
   {
-    useForFaciesProbabilities_ = false;
+  //  useForFaciesProbabilities_ = false;
     useForWaveletEstimation_   = false;    
     isDeviated_ = true;
     LogKit::LogFormatted(LogKit::LOW," Well is treated as deviated.\n");

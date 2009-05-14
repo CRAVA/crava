@@ -22,6 +22,7 @@
 #include "src/model.h"
 #include "src/definitions.h"
 #include "src/filterwelllogs.h"
+#include "src/spatialwellfilter.h"
 
 FaciesProb::FaciesProb(Corr          * correlations, 
                        ModelSettings * modelSettings,
@@ -71,6 +72,10 @@ FaciesProb::~FaciesProb()
   delete [] betablock_;
   delete [] rhoblock_;
   delete [] facieslog_;
+
+  for(int i=0;i<3;i++)
+    delete [] sigmae_[i];
+  delete [] sigmae_;
 }
 
 float**      
@@ -165,6 +170,27 @@ FaciesProb::makeFaciesDens(int nfac)
   kstdb = hopt*sqrt(varBeta_);
   kstdr = hopt*sqrt(varRho_);
 
+ 
+  if(sigmae_[0][0]<kstda*kstda)
+    sigmae_[0][0] = kstda*kstda;
+  if(sigmae_[1][1]<kstdb*kstdb)
+    sigmae_[1][1] = kstdb*kstdb;
+  if(sigmae_[2][2]<kstdr*kstdr)
+    sigmae_[2][2] = kstdr*kstdr;
+
+  // invert sigmae_
+  double **sigmaeinv = new double *[3];
+  for(i=0;i<3;i++)
+    sigmaeinv[i] = new double [3];
+
+  for(i=0;i<3;i++)
+      for(j=0;j<3;j++)
+        if(i==j)
+          sigmaeinv[i][j] = 1.0;
+        else
+          sigmaeinv[i][j] = 0.0;
+  lib_matrCholR(3, sigmae_);
+  lib_matrAXeqBMatR(3, sigmae_, sigmaeinv, 3);
 
 
   getMinMax(alphafiltered_,betafiltered_,rhofiltered_,facieslog_);// sets alpamin_etc....
@@ -214,7 +240,9 @@ FaciesProb::makeFaciesDens(int nfac)
           jj = -(j-jjj);
           jjj+=2;
         }
-        smooth[j+k*nbins_+l*nbins_*nbins_] = exp(-0.5f*(jj*dalpha_*jj*dalpha_/(kstda*kstda)+kk*dbeta_*kk*dbeta_/(kstdb*kstdb)+ll*drho_*ll*drho_/(kstdr*kstdr)));
+       // smooth[j+k*nbins_+l*nbins_*nbins_] = exp(-0.5f*(jj*dalpha_*jj*dalpha_/(kstda*kstda)+kk*dbeta_*kk*dbeta_/(kstdb*kstdb)+ll*drho_*ll*drho_/(kstdr*kstdr)));
+        smooth[j+k*nbins_+l*nbins_*nbins_] = float(exp(-0.5f*(jj*dalpha_*jj*dalpha_*sigmaeinv[0][0]+kk*dbeta_*kk*dbeta_*sigmaeinv[1][1]+ll*drho_*ll*drho_*sigmaeinv[2][2]+
+                                                        2*jj*dalpha_*kk*dbeta_*sigmaeinv[1][0]+2*jj*dalpha_*ll*drho_*sigmaeinv[2][0]+2*kk*dbeta_*ll*drho_*sigmaeinv[2][1])));
         sum = sum+smooth[j+k*nbins_+l*nbins_*nbins_];
       }
     }
@@ -259,6 +287,9 @@ FaciesProb::makeFaciesDens(int nfac)
   for (int i = 0 ; i < nFacies_ ; i++)
     delete [] hist[i];
   delete [] hist;
+  for(i=0;i<3;i++)
+    delete [] sigmaeinv[i];
+  delete [] sigmaeinv;
 }
 
 float**      
@@ -1005,3 +1036,96 @@ void FaciesProb::setNeededLogs(FilterWellLogs * filteredLogs,
   } 
   delete [] vtFacies;
 }
+void FaciesProb::setNeededLogsSpatial(SpatialWellFilter * filteredLogs,
+                               WellData      ** wells,
+                               int              nWells)
+{
+  int ndata = filteredLogs->getNdata();
+  float *alphafiltered = new float[ndata];
+  float *betafiltered  = new float[ndata];
+  float *rhofiltered   = new float[ndata];
+  float *alphablock    = new float[ndata];
+  float *betablock     = new float[ndata];
+  float *rhoblock      = new float[ndata];
+  int *facieslog    = new int[ndata];
+
+  for(int i=0;i<ndata;i++)
+  {
+    alphafiltered[i] = RMISSING;
+    betafiltered[i]  = RMISSING;
+    rhofiltered[i]   = RMISSING;
+    alphablock[i]    = RMISSING;
+    betablock[i]     = RMISSING;
+    rhoblock[i]      = RMISSING;
+    facieslog[i]     = IMISSING;
+  }
+ int n, lastn;
+ lastn = 0;
+  for (int w=0 ; w<nWells ; w++)
+  {
+    if(wells[w]->getUseForFaciesProbabilities())
+    { 
+      BlockedLogs * bw = wells[w]->getBlockedLogsOrigThick();
+      n = bw->getNumberOfBlocks();
+      for(int i=0;i<n;i++)
+      {
+        alphablock[i+lastn] = bw->getAlpha()[i];
+        betablock[i+lastn] = bw->getBeta()[i];
+        rhoblock[i+lastn] = bw->getRho()[i];
+        if(alphablock[i+lastn]==RMISSING || betablock[i+lastn]==RMISSING || rhoblock[i+lastn]==RMISSING)
+          facieslog[i+lastn] = IMISSING;
+        else
+          facieslog[i+lastn] = bw->getFacies()[i];
+      }
+      lastn += n;
+    }
+  }
+  ndata_ = lastn;
+  alphafiltered_ = new float[ndata_];
+  betafiltered_  = new float[ndata_];
+  rhofiltered_   = new float[ndata_];
+  alphablock_    = new float[ndata_];
+  betablock_     = new float[ndata_];
+  rhoblock_      = new float[ndata_];
+  facieslog_     = new int[ndata_];
+
+  for(int i=0;i<ndata_;i++)
+  {
+    alphafiltered_[i] = RMISSING;
+    betafiltered_[i]  = RMISSING;
+    rhofiltered_[i]   = RMISSING;
+    alphablock_[i]    = RMISSING;
+    betablock_[i]     = RMISSING;
+    rhoblock_[i]      = RMISSING;
+    facieslog_[i]     = IMISSING;
+  }
+
+  for(int i=0;i<ndata_;i++)
+  {
+    alphablock_[i] = alphablock[i];
+    betablock_[i] = betablock[i];
+    rhoblock_[i] = rhoblock[i];
+    facieslog_[i] = facieslog[i];
+    alphafiltered_[i] = filteredLogs->getAlphaFiltered()[i];
+    betafiltered_[i] = filteredLogs->getBetaFiltered()[i];
+    rhofiltered_[i] = filteredLogs->getRhoFiltered()[i];
+  }
+  delete [] alphafiltered;
+  delete [] betafiltered;
+  delete [] rhofiltered;
+  delete [] alphablock;
+  delete [] betablock;
+  delete [] rhoblock;
+  delete [] facieslog;
+
+  // For use in smoother
+  sigmae_ = new double *[3];
+  for(int i=0;i<3;i++)
+    sigmae_[i] = new double[3];
+
+  for(int i=0;i<3;i++)
+    for(int j=0;j<3;j++)
+      sigmae_[i][j] = filteredLogs->getSigmae()[i][j];
+
+}
+

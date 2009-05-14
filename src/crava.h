@@ -19,11 +19,12 @@ class GridMapping;
 class FilterWellLogs;
 class ModelSettings;
 class Corr;
+class SpatialWellFilter;
 
 class Crava 
 {
 public:
-  Crava(Model * model);
+  Crava(Model * model, SpatialWellFilter *spatwellfilter);
   ~Crava();
   int                computePostMeanResidAndFFTCov();
   int                simulate( RandomGen * randomGen );
@@ -36,9 +37,11 @@ public:
   int                getWarning(char* wText)  const {if(scaleWarning_>0) sprintf(wText,"%s",scaleWarningText_); return scaleWarning_;}
 
   void               printEnergyToScreen();
-  void               computeFaciesProb(FilterWellLogs *filteredlogs);
+ // void               computeFaciesProb(FilterWellLogs *filteredlogs);
+  void               computeFaciesProb(SpatialWellFilter *filteredlogs);
   void               filterLogs(Simbox          * timeSimboxConstThick,
                                 FilterWellLogs *& filterlogs);
+  int                getRelative();
 
 private: 
   void               computeDataVariance(void);

@@ -780,6 +780,31 @@ FFTGrid::getRealValue(int i, int j, int k, bool extSimbox)
 }
 
 float        
+FFTGrid::getRealValueCyclic(int i, int j, int k)
+{
+  float value;
+  if(i<0) 
+    i = nxp_+i;
+  if(j<0)
+    j = nyp_+j;
+  if(k<0)
+    k = nzp_+k;
+  
+  if(i<nxp_ && j<nyp_ && k<nzp_)
+  {
+    int index=i+rnxp_*j+k*rnxp_*nyp_;
+    value = static_cast<float>(rvalue_[index]); 
+  }
+  else
+  {
+    value = RMISSING;
+  }
+
+  return( value );
+
+}
+
+float        
 FFTGrid::getRealValueInterpolated(int i, int j, float kindex, bool extSimbox)
 { 
   // when index is in simbox (or the extended simbox if extSimbox is true) it returns the grid value  
