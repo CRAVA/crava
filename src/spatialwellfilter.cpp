@@ -349,8 +349,8 @@ void SpatialWellFilter::calculateFilteredLogs(double **Aw, BlockedLogs *blockedl
     delete [] filterval[i];
   }
 
-  delete filterval;
-  delete log;
+  delete [] filterval;
+  delete [] log;
 }
 
 // The variances used for smootihng in faciesprob might be very small. 
