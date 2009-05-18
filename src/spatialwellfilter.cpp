@@ -229,106 +229,24 @@ void SpatialWellFilter::calculateFilteredLogs(double **Aw, BlockedLogs *blockedl
   for(i=0;i<3*n;i++)
   filterval[i] = new double[1];
   
-  double **log;
-  log = new double * [3*n];
+  double **residuals;
+  residuals = new double * [3*n];
   for(i=0;i<3*n;i++)
-    log[i] = new double[1];
- 
+    residuals[i] = new double[1];
+
   const float * alpha   = blockedlogs->getAlpha();
   const float * bgAlpha = blockedlogs->getAlphaHighCutBackground();
+  const float * beta    = blockedlogs->getBeta();
+  const float * bgBeta  = blockedlogs->getBetaHighCutBackground();
+  const float * rho     = blockedlogs->getRho();
+  const float * bgRho   = blockedlogs->getRhoHighCutBackground();
 
-  int nmiss = 0;
+  MakeInterpolatedResiduals(alpha, bgAlpha, n, 0  , residuals);
+  MakeInterpolatedResiduals(beta , bgBeta , n, n  , residuals);
+  MakeInterpolatedResiduals(rho  , bgRho  , n, 2*n, residuals);
 
-  for(i=0 ; i<n ; i++)
-  {
-    if(alpha[i] != RMISSING)
-    {
-      log[i][0] = double(alpha[i] - bgAlpha[i]);
-      if(nmiss>0)
-      {
-        for(int j=1 ; j<=nmiss ; j++)
-        {
-          log[i - j][0] *= double(j*1.0/(nmiss + 1));
-          log[i - j][0] += double(alpha[i]- bgAlpha[i])*(nmiss + 1 - j)/(nmiss + 1);
-        }
-      }
-      nmiss = 0;
-    }
-    else if(i - nmiss>=0)
-    {
-      nmiss++;
-      log[i][0] = double(alpha[i-nmiss] - bgAlpha[i-nmiss]);
-    }
-    else
-    {
-      nmiss++;
-      log[i][0] = 0.0;
-    }
-  }
+  lib_matr_prod(Aw, residuals, 3*n, 3*n, 1, filterval);
 
-  const float * beta   = blockedlogs->getBeta();
-  const float * bgBeta = blockedlogs->getBetaHighCutBackground();
-
-  nmiss = 0;
-  for(i=0 ; i<n ; i++)
-  {
-    if(beta[i] != RMISSING)
-    {
-      log[i+n][0] = double(beta[i] - bgBeta[i]);
-      if(nmiss>0)
-      {
-        for(int j=1 ; j<=nmiss ; j++)
-        {
-          log[i + n - j][0] *= double(j*1.0/(nmiss + 1));
-          log[i + n - j][0] += double(beta[i] - bgBeta[i])*(nmiss + 1 - j)/(nmiss + 1);
-        }
-      }
-      nmiss = 0;
-    }
-    else if(i-nmiss>=0)
-    {
-      nmiss++;
-      log[i+n][0] = double(beta[i - nmiss] - bgBeta[i - nmiss]);
-    }
-    else
-    {
-      nmiss++;
-      log[i+n][0] = 0.0;
-    }
-  }
-
-  const float * rho   = blockedlogs->getRho();
-  const float * bgRho = blockedlogs->getRhoHighCutBackground();
-
-  nmiss = 0;
-  for(i=0 ; i<n ; i++)
-  {
-    if(rho[i] != RMISSING)
-    {
-      log[i+2*n][0] = double(rho[i] - bgRho[i]);
-      if(nmiss>0)
-      {
-        for(int j=1 ; j<=nmiss ; j++)
-        {
-          log[i +2*n - j][0] *= double(j*1.0/(nmiss + 1));
-          log[i +2*n - j][0] += double(rho[i] - bgRho[i])*(nmiss + 1 - j)/(nmiss + 1);
-        }
-      }
-      nmiss = 0;
-    }
-    else if (i - nmiss>=0)
-    {
-      nmiss++;
-      log[i + 2*n][0] = double(rho[i - nmiss] - bgRho[i - nmiss]);
-    }
-    else
-    {
-      nmiss++;
-      log[i + 2*n][0] = 0.0;
-    }
-  }
-
-  lib_matr_prod(Aw,log,3*n,3*n,1,filterval);
   for(i=0;i<n;i++)
   {
     if(alpha[i] == RMISSING)
@@ -346,6 +264,7 @@ void SpatialWellFilter::calculateFilteredLogs(double **Aw, BlockedLogs *blockedl
     else
       rhoFiltered_[i + lastn] = float(filterval[i + 2*n][0]);
   }
+
   blockedlogs->setSpatialFilteredLogs(alphaFiltered_, lastn, n + lastn, "ALPHA_SEISMIC_RESOLUTION",bgAlpha);
   blockedlogs->setSpatialFilteredLogs(betaFiltered_ , lastn, n + lastn, "BETA_SEISMIC_RESOLUTION" ,bgBeta);
   blockedlogs->setSpatialFilteredLogs(rhoFiltered_  , lastn, n + lastn, "RHO_SEISMIC_RESOLUTION"  ,bgRho);
@@ -362,13 +281,69 @@ void SpatialWellFilter::calculateFilteredLogs(double **Aw, BlockedLogs *blockedl
  
   for(i=0;i<3*n;i++)
   {
-    delete [] log[i];
+    delete [] residuals[i];
     delete [] filterval[i];
   }
 
   delete [] filterval;
-  delete [] log;
+  delete [] residuals;
 }
+
+
+void SpatialWellFilter::MakeInterpolatedResiduals(const float * bwLog, 
+                                                  const float * bwLogBG,
+                                                  const int     n,
+                                                  const int     offset,
+                                                  double     ** residuals)
+{
+  //
+  // When the log starts with a missing value
+  //
+  int first_nonmissing = 0;
+
+  if (bwLog[0] == RMISSING) 
+  {
+    int i = 1;
+    while (bwLog[i] == RMISSING)
+      i++;
+    
+    first_nonmissing = i;     
+    double first_residual = static_cast<double>(bwLog[i] - bwLogBG[i]);
+    
+    for (i = 0 ; i < first_nonmissing ; i++)
+      residuals[offset + i][0] = first_residual;
+  }
+  
+  //
+  // The general case (also handles logs ending with missing values) 
+  //
+  int nmiss = 0;
+  for(int i=first_nonmissing ; i<n ; i++)
+  {
+    if(bwLog[i] != RMISSING)
+    {
+      double res_i = double(bwLog[i] - bwLogBG[i]);
+      residuals[offset + i][0] = res_i;
+      
+      if(nmiss>0)
+      {
+        for(int j=1 ; j<=nmiss ; j++)
+        {
+          double w = static_cast<double>(j)/static_cast<double>(nmiss + 1);
+          residuals[offset + i - j][0] *= w;
+          residuals[offset + i - j][0] += (1.0 - w)*res_i;
+        }
+      }
+      nmiss = 0;
+    }
+    else
+    {
+      nmiss++;
+      residuals[offset + i][0] = residuals[offset + i - 1][0];
+    }
+  }
+}
+
 
 // The variances used for smootihng in faciesprob might be very small. 
 // Therefore eigenvalues are adjusted in order to be able to invert matrix.

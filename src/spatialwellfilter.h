@@ -21,6 +21,7 @@ public:
 private:
   void             adjustDiagSigmae();
   void             calculateFilteredLogs(double **Aw, BlockedLogs *blockedlogs, int n, int lastn, int relative);
+  void             MakeInterpolatedResiduals(const float * bwLog, const float * bwLogBG, const int n, const int offset, double ** residuals);
   double       *** priorSpatialCorr_;
   float          * alphaFiltered_;
   float          * betaFiltered_; 
