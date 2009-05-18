@@ -185,6 +185,7 @@ Background::generateBackgroundModel(FFTGrid      *& bgAlpha,
     makeKrigedBackground(krigingDataAlpha, bgAlpha, trendAlpha, simbox, covGrid2D, "Vp");
     makeKrigedBackground(krigingDataBeta, bgBeta, trendBeta, simbox, covGrid2D, "Vs");
     makeKrigedBackground(krigingDataRho, bgRho, trendRho, simbox, covGrid2D, "Rho");
+    delete &covGrid2D;
   }
   else
   {

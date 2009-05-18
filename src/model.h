@@ -60,6 +60,7 @@ private:
                                     Surface       *& correlationDirection,
                                     ModelSettings *& modelSettings, 
                                     InputFiles     * inputFiles,
+                                    bool             areaFromModelFile,
                                     char           * errText,
                                     bool           & failed);
   void             setupExtendedTimeSimbox(Simbox  * timeSimbox, 
@@ -78,6 +79,7 @@ private:
                                   Simbox        *& timeSimbox,
                                   ModelSettings *& modelSettings, 
                                   InputFiles     * inputFiles,
+                                  bool             areaFromModelFile,
                                   char           * errText,
                                   bool           & failed);
   void             processWells(WellData     **& wells,
@@ -112,18 +114,18 @@ private:
                                            InputFiles    * inputfiles,
                                            char          * errText,
                                            bool          & failed);
-  void             processWavelets(Wavelet     **& wavelet,
-                                   FFTGrid      ** seisCube,
-                                   WellData     ** wells,
-                                   float        ** reflectionMatrix,
-                                   Simbox        * timeSimbox,
-                                   Surface      ** waveletEstimInterval,
-                                   Surface      ** shiftGrids,
-                                   Surface      ** gainGrids,
-                                   ModelSettings * modelSettings, 
-                                   InputFiles    * inputFiles,
-                                   char          * errText,
-                                   bool          & failed);
+  void             processWavelets(Wavelet      **& wavelet,
+                                   FFTGrid       ** seisCube,
+                                   WellData      ** wells,
+                                   float         ** reflectionMatrix,
+                                   Simbox         * timeSimbox,
+                                   Surface       ** waveletEstimInterval,
+                                   Surface      **& shiftGrids,
+                                   Surface      **& gainGrids,
+                                   ModelSettings  * modelSettings, 
+                                   InputFiles     * inputFiles,
+                                   char           * errText,
+                                   bool           & failed);
   void             processPriorFaciesProb(float        *& priorFacies,
                                           WellData     ** wells,
                                           RandomGen     * randomGen,
@@ -201,7 +203,8 @@ private:
                                     char           * tmpErrText,
                                     int            & error);
   void             printSettings(ModelSettings * modelSettings,
-                                 InputFiles    * inputFiles);
+                                 InputFiles    * inputFiles,
+                                 bool            areaFromModelFile);
   int              getWaveletFileFormat(const std::string & fileName, 
                                         char              * errText);
   //Compute correlation gradient in terms of i,j and k in grid.

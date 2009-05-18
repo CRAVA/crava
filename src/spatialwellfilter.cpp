@@ -24,6 +24,7 @@ SpatialWellFilter::SpatialWellFilter(int nwells)
       sigmae_[i][j] = 0.0;
 }
 
+
 SpatialWellFilter::~SpatialWellFilter()
 {
   delete [] alphaFiltered_;
@@ -41,17 +42,16 @@ SpatialWellFilter::~SpatialWellFilter()
   delete [] sigmae_;
   delete [] priorSpatialCorr_;
   delete [] n_;
-
-
 }
+
+
 void SpatialWellFilter::setPriorSpatialCorr(FFTGrid *parSpatialCorr, WellData *well, int wellnr)
 {
   int n = well->getBlockedLogsOrigThick()->getNumberOfBlocks();
   priorSpatialCorr_[wellnr] = new double *[n];
-  int i;
-  for(i=0;i<n;i++)
+  for(int i=0;i<n;i++)
     priorSpatialCorr_[wellnr][i] = new double[n];
-
+  
   int i1,j1,k1,l1, i2,j2,k2,l2;
   const int *ipos = well->getBlockedLogsOrigThick()->getIpos();
   const int *jpos = well->getBlockedLogsOrigThick()->getJpos();
@@ -75,13 +75,12 @@ void SpatialWellFilter::setPriorSpatialCorr(FFTGrid *parSpatialCorr, WellData *w
 void SpatialWellFilter::doFiltering(Corr *corr, WellData **wells, int nWells, int relative)
 {
   n_ = new int[nWells];
-  double **sigmapost;
-  double **sigmapri;
-  int w1, n;
-  double **imat;
-  double **Aw;
+  double ** sigmapost;
+  double ** sigmapri;
+  double ** imat;
+  double ** Aw;
   nData_ = 0;
-  for(w1=0;w1<nWells;w1++)
+  for(int w1=0;w1<nWells;w1++)
     nData_ += wells[w1]->getBlockedLogsOrigThick()->getNumberOfBlocks();
 
   alphaFiltered_ = new float[nData_];
@@ -89,10 +88,11 @@ void SpatialWellFilter::doFiltering(Corr *corr, WellData **wells, int nWells, in
   rhoFiltered_ = new float[nData_];
   
   int lastn = 0;
-  n = 0;
-  for(w1=0;w1<nWells;w1++)
+  int n = 0;
+  for(int w1=0;w1<nWells;w1++)
   {   
     n = wells[w1]->getBlockedLogsOrigThick()->getNumberOfBlocks();
+
     sigmapost = new double * [3*n];
     for(int i=0;i<3*n;i++)
       sigmapost[i] = new double[3*n];
@@ -127,36 +127,35 @@ void SpatialWellFilter::doFiltering(Corr *corr, WellData **wells, int nWells, in
         i2 = ipos[l2];
         j2 = jpos[l2];
         k2 = kpos[l2];
-        sigmapost[l1][l2] = corr->getPostCovAlpha()->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
-        sigmapost[n+l1][n+l2] = corr->getPostCovBeta()->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
-        sigmapost[2*n+l1][2*n+l2] = corr->getPostCovRho()->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
-        sigmapost[l1][n+l2] = corr->getPostCrCovAlphaBeta()->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
-        sigmapost[n+l2][l1] = sigmapost[l1][n+l2];
-        sigmapost[l1][2*n+l2] = corr->getPostCrCovAlphaRho()->getRealValueCyclic(i1-i2,j1-j2,k1-k2);       
-        sigmapost[2*n+l2][l1] = sigmapost[l1][2*n+l2];
-        sigmapost[2*n+l1][n+l2] = corr->getPostCrCovBetaRho()->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
-        sigmapost[n+l2][2*n+l1] = sigmapost[2*n+l1][n+l2];
-        sigmapri[l1][l2] = corr->getPriorVar0()[0][0]*priorSpatialCorr_[w1][l1][l2];
-        sigmapri[n+l1][n+l2] = corr->getPriorVar0()[1][1]*priorSpatialCorr_[w1][l1][l2];
-        sigmapri[2*n+l1][2*n+l2] = corr->getPriorVar0()[2][2]*priorSpatialCorr_[w1][l1][l2];
+        sigmapost[l1      ][l2      ] = corr->getPostCovAlpha()->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
+        sigmapost[l1 + n  ][l2 + n  ] = corr->getPostCovBeta()->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
+        sigmapost[l1 + 2*n][l2 + 2*n] = corr->getPostCovRho()->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
+        sigmapost[l1      ][l2 + n  ] = corr->getPostCrCovAlphaBeta()->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
+        sigmapost[l2 + n  ][l1      ] = sigmapost[l1][n+l2];
+        sigmapost[l1      ][l2 + 2*n] = corr->getPostCrCovAlphaRho()->getRealValueCyclic(i1-i2,j1-j2,k1-k2);       
+        sigmapost[l2 + 2*n][l1      ] = sigmapost[l1][2*n+l2];
+        sigmapost[l1 + 2*n][l2 + n  ] = corr->getPostCrCovBetaRho()->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
+        sigmapost[l2 + n  ][l1 + 2*n] = sigmapost[2*n+l1][n+l2];
+        sigmapri [l1      ][l2      ] = corr->getPriorVar0()[0][0]*priorSpatialCorr_[w1][l1][l2];
+        sigmapri [l1 + n  ][l2 + n  ] = corr->getPriorVar0()[1][1]*priorSpatialCorr_[w1][l1][l2];
+        sigmapri [l1 + 2*n][l2 + 2*n] = corr->getPriorVar0()[2][2]*priorSpatialCorr_[w1][l1][l2];
         if(l1==l2)
         {
-          sigmapost[l1][l2]+=regularization*sigmapost[l1][l2]/sigmapri[l1][l2];
-          sigmapost[n+l1][n+l2]+=regularization*sigmapost[n+l1][n+l2]/sigmapri[n+l1][n+l2];
-          sigmapost[2*n+l1][2*n+l2]+=regularization*sigmapost[2*n+l1][2*n+l2]/sigmapri[2*n+l1][2*n+l2];
-          sigmapri[l1][l2]+=regularization;
-          sigmapri[n+l1][n+l2]+=regularization;
-          sigmapri[2*n+l1][2*n+l2]+=regularization;
+          sigmapost[l1      ][l2      ] += regularization*sigmapost[l1][l2]/sigmapri[l1][l2];
+          sigmapost[l1 + n  ][l2 + n  ] += regularization*sigmapost[n+l1][n+l2]/sigmapri[n+l1][n+l2];
+          sigmapost[l1 + 2*n][l2 + 2*n] += regularization*sigmapost[2*n+l1][2*n+l2]/sigmapri[2*n+l1][2*n+l2];
+          sigmapri [l1      ][l2      ] += regularization;
+          sigmapri [l1 + n  ][l2 + n  ] += regularization;
+          sigmapri [l1 + 2*n][l2 + 2*n] += regularization;
         }
-        sigmapri[n+l1][l2] = corr->getPriorVar0()[1][0]*priorSpatialCorr_[w1][l1][l2];
-        sigmapri[l2][n+l1] = corr->getPriorVar0()[1][0]*priorSpatialCorr_[w1][l1][l2];
-        sigmapri[2*n+l1][l2] = corr->getPriorVar0()[2][0]*priorSpatialCorr_[w1][l1][l2];
-        sigmapri[l2][2*n+l1] = corr->getPriorVar0()[2][0]*priorSpatialCorr_[w1][l1][l2];
-        sigmapri[n+l1][2*n+l2] = corr->getPriorVar0()[2][1]*priorSpatialCorr_[w1][l1][l2];
-        sigmapri[2*n+l2][n+l1] = corr->getPriorVar0()[2][1]*priorSpatialCorr_[w1][l1][l2];
+        sigmapri[l1 + n  ][l2      ] = corr->getPriorVar0()[1][0]*priorSpatialCorr_[w1][l1][l2];
+        sigmapri[l2      ][l1 + n  ] = corr->getPriorVar0()[1][0]*priorSpatialCorr_[w1][l1][l2];
+        sigmapri[l1 + 2*n][l2      ] = corr->getPriorVar0()[2][0]*priorSpatialCorr_[w1][l1][l2];
+        sigmapri[l2      ][l1 + 2*n] = corr->getPriorVar0()[2][0]*priorSpatialCorr_[w1][l1][l2];
+        sigmapri[l1 + n  ][l2 + 2*n] = corr->getPriorVar0()[2][1]*priorSpatialCorr_[w1][l1][l2];
+        sigmapri[l2 + 2*n][l1 + n  ] = corr->getPriorVar0()[2][1]*priorSpatialCorr_[w1][l1][l2];
       }
     }
-
 
     double **test;
     test = new double * [3*n];
@@ -170,7 +169,7 @@ void SpatialWellFilter::doFiltering(Corr *corr, WellData **wells, int nWells, in
     lib_matr_prod(sigmapost,imat,3*n,3*n,3*n,Aw);
     for(int i=0;i<3*n;i++)
       for(int j=0;j<3*n;j++)
-      {
+        {
         Aw[i][j] *=-1.0;
         if(i==j)
           Aw[i][j]+=1.0;
@@ -179,18 +178,22 @@ void SpatialWellFilter::doFiltering(Corr *corr, WellData **wells, int nWells, in
     lib_matr_prod(Aw,sigmapost,3*n,3*n,3*n,test);
     for(int i=0;i<n;i++)
     {
-      sigmae_[0][0] += test[i][i];
-      sigmae_[1][0] += test[i+n][i];
-      sigmae_[2][0] += test[i+2*n][i];
-      sigmae_[1][1] += test[i+n][i+n];
-      sigmae_[2][1] += test[i+2*n][i+n];
-      sigmae_[2][2] += test[i+2*n][i+2*n];
+      sigmae_[0][0] += test[i      ][i     ];
+      sigmae_[1][0] += test[i +   n][i     ];
+      sigmae_[2][0] += test[i + 2*n][i     ];
+      sigmae_[1][1] += test[i +   n][i +  n];
+      sigmae_[2][1] += test[i + 2*n][i +  n];
+      sigmae_[2][2] += test[i + 2*n][i + 2*n];
     }
+
+    for(int i=0;i<3*n;i++)
+      delete [] test[i];
+    delete [] test;
     
-    calculateFilteredLogs(Aw,wells[w1]->getBlockedLogsOrigThick(), n, lastn, relative);
+    calculateFilteredLogs(Aw, wells[w1]->getBlockedLogsOrigThick(), n, lastn, relative);
     
     n_[w1] = n;
-    lastn = n;
+    lastn  = n;
     for(int i=0;i<3*n;i++)
     {
       delete [] Aw[i];
@@ -203,23 +206,23 @@ void SpatialWellFilter::doFiltering(Corr *corr, WellData **wells, int nWells, in
     delete [] sigmapost;
     delete [] imat;  
   }
-  sigmae_[0][0]/=(n+lastn);
-  sigmae_[1][0]/=(n+lastn);
-  sigmae_[1][1]/=(n+lastn);
-  sigmae_[2][0]/=(n+lastn);
-  sigmae_[2][1]/=(n+lastn);
-  sigmae_[2][2]/=(n+lastn);
-  sigmae_[0][1] = sigmae_[1][0];
-  sigmae_[0][2] = sigmae_[2][0];
-  sigmae_[1][2] = sigmae_[2][1];
+  sigmae_[0][0] /= (n+lastn);
+  sigmae_[1][0] /= (n+lastn);
+  sigmae_[1][1] /= (n+lastn);
+  sigmae_[2][0] /= (n+lastn);
+  sigmae_[2][1] /= (n+lastn);
+  sigmae_[2][2] /= (n+lastn);
+  sigmae_[0][1]  = sigmae_[1][0];
+  sigmae_[0][2]  = sigmae_[2][0];
+  sigmae_[1][2]  = sigmae_[2][1];
     
   adjustDiagSigmae();
 
 }
 
+
 void SpatialWellFilter::calculateFilteredLogs(double **Aw, BlockedLogs *blockedlogs, int n, int lastn, int relative)
 {
-
   double **filterval;
   filterval = new double *[3*n];
   int i;
@@ -231,28 +234,30 @@ void SpatialWellFilter::calculateFilteredLogs(double **Aw, BlockedLogs *blockedl
   for(i=0;i<3*n;i++)
     log[i] = new double[1];
  
+  const float * alpha   = blockedlogs->getAlpha();
+  const float * bgAlpha = blockedlogs->getAlphaHighCutBackground();
 
   int nmiss = 0;
 
-  for(i=0;i<n;i++)
+  for(i=0 ; i<n ; i++)
   {
-    if(blockedlogs->getAlpha()[i]!=RMISSING)
+    if(alpha[i] != RMISSING)
     {
-      log[i][0] = double(blockedlogs->getAlpha()[i]-blockedlogs->getAlphaHighCutBackground()[i]);
+      log[i][0] = double(alpha[i] - bgAlpha[i]);
       if(nmiss>0)
       {
-        for(int j=1;j<=nmiss;j++)
+        for(int j=1 ; j<=nmiss ; j++)
         {
-          log[i-j][0]*=double(j*1.0/(nmiss+1));
-          log[i-j][0]+=double(blockedlogs->getAlpha()[i]-blockedlogs->getAlphaHighCutBackground()[i])*(nmiss+1-j)/(nmiss+1);
+          log[i - j][0] *= double(j*1.0/(nmiss + 1));
+          log[i - j][0] += double(alpha[i]- bgAlpha[i])*(nmiss + 1 - j)/(nmiss + 1);
         }
       }
       nmiss = 0;
     }
-    else if(i-nmiss>=0)
+    else if(i - nmiss>=0)
     {
       nmiss++;
-      log[i][0] = double(blockedlogs->getAlpha()[i-nmiss]-blockedlogs->getAlphaHighCutBackground()[i-nmiss]);
+      log[i][0] = double(alpha[i-nmiss] - bgAlpha[i-nmiss]);
     }
     else
     {
@@ -260,18 +265,22 @@ void SpatialWellFilter::calculateFilteredLogs(double **Aw, BlockedLogs *blockedl
       log[i][0] = 0.0;
     }
   }
+
+  const float * beta   = blockedlogs->getBeta();
+  const float * bgBeta = blockedlogs->getBetaHighCutBackground();
+
   nmiss = 0;
-  for(i=0;i<n;i++)
+  for(i=0 ; i<n ; i++)
   {
-    if(blockedlogs->getBeta()[i]!=RMISSING)
+    if(beta[i] != RMISSING)
     {
-      log[i+n][0] = double(blockedlogs->getBeta()[i]-blockedlogs->getBetaHighCutBackground()[i]);
+      log[i+n][0] = double(beta[i] - bgBeta[i]);
       if(nmiss>0)
       {
-        for(int j=1;j<=nmiss;j++)
+        for(int j=1 ; j<=nmiss ; j++)
         {
-          log[i+n-j][0]*=double(j*1.0/(nmiss+1));
-          log[i+n-j][0]+=double(blockedlogs->getBeta()[i]-blockedlogs->getBetaHighCutBackground()[i])*(nmiss+1-j)/(nmiss+1);
+          log[i + n - j][0] *= double(j*1.0/(nmiss + 1));
+          log[i + n - j][0] += double(beta[i] - bgBeta[i])*(nmiss + 1 - j)/(nmiss + 1);
         }
       }
       nmiss = 0;
@@ -279,7 +288,7 @@ void SpatialWellFilter::calculateFilteredLogs(double **Aw, BlockedLogs *blockedl
     else if(i-nmiss>=0)
     {
       nmiss++;
-      log[i+n][0] = double(blockedlogs->getBeta()[i-nmiss]-blockedlogs->getBetaHighCutBackground()[i-nmiss]);
+      log[i+n][0] = double(beta[i - nmiss] - bgBeta[i - nmiss]);
     }
     else
     {
@@ -287,61 +296,69 @@ void SpatialWellFilter::calculateFilteredLogs(double **Aw, BlockedLogs *blockedl
       log[i+n][0] = 0.0;
     }
   }
+
+  const float * rho   = blockedlogs->getRho();
+  const float * bgRho = blockedlogs->getRhoHighCutBackground();
+
   nmiss = 0;
-  for(i=0;i<n;i++)
+  for(i=0 ; i<n ; i++)
   {
-    if(blockedlogs->getRho()[i]!=RMISSING)
+    if(rho[i] != RMISSING)
     {
-      log[i+2*n][0] = double(blockedlogs->getRho()[i]-blockedlogs->getRhoHighCutBackground()[i]);
+      log[i+2*n][0] = double(rho[i] - bgRho[i]);
       if(nmiss>0)
       {
-        for(int j=1;j<=nmiss;j++)
+        for(int j=1 ; j<=nmiss ; j++)
         {
-          log[i+2*n-j][0]*=double(j*1.0/(nmiss+1));
-          log[i+2*n-j][0]+=double(blockedlogs->getRho()[i]-blockedlogs->getRhoHighCutBackground()[i])*(nmiss+1-j)/(nmiss+1);
+          log[i +2*n - j][0] *= double(j*1.0/(nmiss + 1));
+          log[i +2*n - j][0] += double(rho[i] - bgRho[i])*(nmiss + 1 - j)/(nmiss + 1);
         }
       }
       nmiss = 0;
     }
-    else if(i-nmiss>=0)
+    else if (i - nmiss>=0)
     {
       nmiss++;
-      log[i+2*n][0] = double(blockedlogs->getRho()[i-nmiss]-blockedlogs->getRhoHighCutBackground()[i-nmiss]);
+      log[i + 2*n][0] = double(rho[i - nmiss] - bgRho[i - nmiss]);
     }
     else
     {
       nmiss++;
-      log[i+2*n][0] = 0.0;
+      log[i + 2*n][0] = 0.0;
     }
   }
+
   lib_matr_prod(Aw,log,3*n,3*n,1,filterval);
   for(i=0;i<n;i++)
   {
-    if(blockedlogs->getAlpha()[i]==RMISSING)
-      alphaFiltered_[i+lastn] = 0.0;
+    if(alpha[i] == RMISSING)
+      alphaFiltered_[i + lastn] = 0.0;
     else
-      alphaFiltered_[i+lastn] = float(filterval[i][0]);
-    if(blockedlogs->getBeta()[i]==RMISSING)
-      betaFiltered_[i+lastn] = 0.0;
+      alphaFiltered_[i + lastn] = float(filterval[i][0]);
+
+    if(beta[i] == RMISSING)
+      betaFiltered_[i + lastn] = 0.0;
     else
-      betaFiltered_[i+lastn] = float(filterval[i+n][0]);
-    if(blockedlogs->getRho()[i]==RMISSING)
-      rhoFiltered_[i+lastn] = 0.0;
+      betaFiltered_[i + lastn] = float(filterval[i + n][0]);
+
+    if(rho[i] == RMISSING)
+      rhoFiltered_[i + lastn] = 0.0;
     else
-      rhoFiltered_[i+lastn] = float(filterval[i+2*n][0]);
+      rhoFiltered_[i + lastn] = float(filterval[i + 2*n][0]);
   }
-   blockedlogs->setSpatialFilteredLogs(alphaFiltered_,lastn,n+lastn,"ALPHA_SEISMIC_RESOLUTION",blockedlogs->getAlphaHighCutBackground());
-   blockedlogs->setSpatialFilteredLogs(betaFiltered_,lastn,n+lastn,"BETA_SEISMIC_RESOLUTION",blockedlogs->getBetaHighCutBackground());
-   blockedlogs->setSpatialFilteredLogs(rhoFiltered_,lastn,n+lastn,"RHO_SEISMIC_RESOLUTION",blockedlogs->getRhoHighCutBackground());
+  blockedlogs->setSpatialFilteredLogs(alphaFiltered_, lastn, n + lastn, "ALPHA_SEISMIC_RESOLUTION",bgAlpha);
+  blockedlogs->setSpatialFilteredLogs(betaFiltered_ , lastn, n + lastn, "BETA_SEISMIC_RESOLUTION" ,bgBeta);
+  blockedlogs->setSpatialFilteredLogs(rhoFiltered_  , lastn, n + lastn, "RHO_SEISMIC_RESOLUTION"  ,bgRho);
+
   if(relative==0)
+  {
+    for(i=0;i<n;i++)
     {
-      for(i=0;i<n;i++)
-      {
-        alphaFiltered_[i+lastn]+=blockedlogs->getAlphaHighCutBackground()[i];
-        betaFiltered_[i+lastn]+=blockedlogs->getBetaHighCutBackground()[i];
-        rhoFiltered_[i+lastn]+=blockedlogs->getRhoHighCutBackground()[i];
-      }
+      alphaFiltered_[i+lastn] += bgAlpha[i];
+      betaFiltered_[i+lastn] += bgBeta[i];
+      rhoFiltered_[i+lastn] += bgRho[i];
     }
+  }
  
   for(i=0;i<3*n;i++)
   {
@@ -357,30 +374,33 @@ void SpatialWellFilter::calculateFilteredLogs(double **Aw, BlockedLogs *blockedl
 // Therefore eigenvalues are adjusted in order to be able to invert matrix.
 void SpatialWellFilter::adjustDiagSigmae()
 {
-  int n = 3;
-  double **eigvec = new double *[3];
-  int i,j;
-  for(i=0;i<3;i++)
+  int       n      = 3;
+  double    eps    = 0.0001;
+  double  * eigval = new double[3];
+  int     * error  = new int[1];
+  double ** eigvec = new double *[3];
+  for(int i=0;i<3;i++)
     eigvec[i] = new double[3];
-  double *eigval = new double[3];
-  int *error =new int[1];
-  double eps = 0.0001;
+
   lib_matr_eigen(sigmae_,n,eigvec,eigval,error);
+  delete [] error;
+
   if(eigval[1]/eigval[0]<eps)
     eigval[1]=eps*eigval[0];
   if(eigval[2]/eigval[0]<eps)
     eigval[2]=eps*eigval[0];
-  double **help = new double *[3];
-  double  **eigvalmat = new double *[3];
-  double **eigvectrans = new double *[3];
-  for(i=0;i<3;i++)
+
+  double ** help        = new double *[3];
+  double ** eigvalmat   = new double *[3];
+  double ** eigvectrans = new double *[3];
+  for(int i=0;i<3;i++)
   {
-    help[i] = new double[3];
-    eigvalmat[i] = new double[3];
+    help[i]        = new double[3];
+    eigvalmat[i]   = new double[3];
     eigvectrans[i] = new double [3];
   }
-  for(i=0;i<3;i++)
-    for(j=0;j<3;j++)
+  for(int i=0;i<3;i++)
+    for(int j=0;j<3;j++)
       if(i==j) 
         eigvalmat[i][j] = eigval[i];
       else
@@ -388,8 +408,8 @@ void SpatialWellFilter::adjustDiagSigmae()
   lib_matr_prod(eigvec,eigvalmat,3,3,3,help);
   lib_matrTranspose(eigvec,3,3,eigvectrans);
   lib_matr_prod(help,eigvectrans,3,3,3,sigmae_);
-
-  for(i=0;i<3;i++)
+  
+  for(int i=0;i<3;i++)
   {
     delete [] eigvec[i];
     delete [] help[i];

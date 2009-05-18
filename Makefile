@@ -43,3 +43,24 @@ cleanall:
 
 test:	$(PROGRAM) 
 	cd test_suite; chmod +x TestScript.pl; perl -s ./TestScript.pl ../$(PROGRAM) $(case); cd ..
+
+help:
+	@echo ''
+	@echo 'Usage:  make type [mode=...] [case=...]'
+	@echo ''
+	@echo 'types'
+	@echo '  clean     : Remove object files generated from  src'
+	@echo '  cleanlib  : Remove object files generated from  src + NRLib'
+	@echo '  cleanall  : Remove object files generated from  src + NRLib + fft'
+	@echo '  test      : Run CRAVA in test suite'
+	@echo '  all       : Make CRAVA'
+	@echo ''
+	@echo ''
+	@echo 'modes'
+	@echo '  debug     : Compile and link with -g -O0'
+	@echo '  profile   : Compile and link with -g -pg'
+	@echo '  purify    : Compile and link with -g -p0 and link with purify. Executable becomes cravarun.purify'
+	@echo ''
+	@echo 'cases'
+	@echo '  n         : The number given first in the test case directory name'
+	@echo ''

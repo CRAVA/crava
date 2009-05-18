@@ -128,7 +128,9 @@ Model::Model(char * fileName)
     if(modelSettings_->getNumberOfSimulations() == 0)
       modelSettings_->setWritePrediction(true); //write predicted grids. 
     
-    printSettings(modelSettings_, inputFiles);
+    bool areaFromModelFile  = modelSettings_->getAreaParameters() != NULL;
+
+    printSettings(modelSettings_, inputFiles, areaFromModelFile);
     
     Utils::writeHeader("Reading input data");
 
@@ -136,7 +138,7 @@ Model::Model(char * fileName)
     sprintf(errText,"%c",'\0');
 
     makeTimeSimboxes(timeSimbox_, timeCutSimbox, timeBGSimbox, timeSimboxConstThick_,  //Handles correlation direction too.
-                     correlationDirection_, modelSettings_, inputFiles, 
+                     correlationDirection_, modelSettings_, inputFiles, areaFromModelFile, 
                      errText, failedSimbox);
 
     if(!failedSimbox)
@@ -169,9 +171,8 @@ Model::Model(char * fileName)
         //
         // INVERSION
         //
-        processSeismic(seisCube_, timeSimbox_, 
-                       modelSettings_, inputFiles,
-                       errText, failedSeismic);
+        processSeismic(seisCube_, timeSimbox_, modelSettings_, inputFiles,
+                       areaFromModelFile, errText, failedSeismic);
         
         if(failedSeismic==false)
         {
@@ -264,6 +265,7 @@ Model::~Model(void)
     for(int i=0;i<modelSettings_->getNumberOfAngles();i++)
       if(shiftGrids_[i] != NULL)
         delete shiftGrids_[i];
+    delete [] shiftGrids_;
   }
 
   if(gainGrids_ != NULL)
@@ -271,6 +273,7 @@ Model::~Model(void)
     for(int i=0;i<modelSettings_->getNumberOfAngles();i++)
       if(gainGrids_[i] != NULL)
         delete gainGrids_[i];
+    delete [] gainGrids_;
   }
 
   if (waveletEstimInterval_ != NULL) 
@@ -614,6 +617,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
                         Surface       *& correlationDirection,
                         ModelSettings *& modelSettings, 
                         InputFiles     * inputFiles,
+                        bool             areaFromModelFile,
                         char           * errText,
                         bool           & failed)
 {
@@ -625,7 +629,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
   if (modelSettings_->getGenerateSeismic()==false && inputFiles->getNumberOfSeismicFiles() > 0)
     seismicFile = inputFiles->getSeismicFile(0); // Also needed for checkAvailableMemory()
 
-  if (modelSettings->getAreaParameters() == NULL)
+  if (!areaFromModelFile)
   {
     LogKit::LogFormatted(LogKit::HIGH,"\nFinding inversion area from seismic data in file %s\n", 
                          seismicFile.c_str());
@@ -1170,6 +1174,7 @@ Model::processSeismic(FFTGrid      **& seisCube,
                       Simbox        *& timeSimbox,
                       ModelSettings *& modelSettings, 
                       InputFiles     * inputFiles,
+                      bool             areaFromModelFile,
                       char           * errText,
                       bool           & failed)
 {
@@ -1181,7 +1186,6 @@ Model::processSeismic(FFTGrid      **& seisCube,
   if(inputFiles->getNumberOfSeismicFiles() > 0)
   {
     char tmpErrText[MAX_STRING];
-    bool areaInModelFile = modelSettings->getAreaParameters() != NULL;
     int nAngles = modelSettings->getNumberOfAngles();
     const SegyGeometry ** geometry = new const SegyGeometry * [nAngles];
     seisCube = new FFTGrid * [nAngles];
@@ -1200,6 +1204,35 @@ Model::processSeismic(FFTGrid      **& seisCube,
       error += readerror;
     }
 
+    LogKit::LogFormatted(LogKit::LOW,"\nArea/resolution           x0           y0            lx         ly     azimuth         dx      dy\n");
+    LogKit::LogFormatted(LogKit::LOW,"-------------------------------------------------------------------------------------------------\n");
+    if (areaFromModelFile) {
+      double azimuth = (-1)*timeSimbox->getAngle()*(180.0/M_PI);
+      if (azimuth < 0)
+        azimuth += 360.0;
+      LogKit::LogFormatted(LogKit::LOW,"Model file       %11.2f  %11.2f    %10.2f %10.2f    %8.3f    %7.2f %7.2f\n", 
+                           timeSimbox->getx0(), timeSimbox->gety0(), 
+                           timeSimbox->getlx(), timeSimbox->getly(), azimuth, 
+                           timeSimbox->getdx(), timeSimbox->getdy());
+    }
+    for (int i = 0 ; i < nAngles ; i++)
+      if (geometry[i] != NULL) {
+        double geoAngle = (-1)*timeSimbox->getAngle()*(180/M_PI);
+        if (geoAngle < 0)
+          geoAngle += 360.0f;
+        LogKit::LogFormatted(LogKit::LOW,"Seismic data %d   %11.2f  %11.2f    %10.2f %10.2f    %8.3f    %7.2f %7.2f\n",i,
+                             geometry[i]->GetX0(), geometry[i]->GetY0(), 
+                             geometry[i]->Getlx(), geometry[i]->Getly(), geoAngle,
+                             geometry[i]->GetDx(), geometry[i]->GetDy());
+      }
+    LogKit::LogFormatted(LogKit::LOW,"\nTime simulation grids:\n");
+    LogKit::LogFormatted(LogKit::LOW,"  Output grid         %4i * %4i * %4i   : %10i\n",
+                         timeSimbox->getnx(),timeSimbox->getny(),timeSimbox->getnz(),
+                         timeSimbox->getnx()*timeSimbox->getny()*timeSimbox->getnz()); 
+    LogKit::LogFormatted(LogKit::LOW,"  FFT grid            %4i * %4i * %4i   : %10i\n",
+                         modelSettings->getNXpad(),modelSettings->getNYpad(),modelSettings->getNZpad(),
+                         modelSettings->getNXpad()*modelSettings->getNYpad()*modelSettings->getNZpad());
+    
     if(error == 0)
     {
       seisCube[0]->setOutputFlags(modelSettings->getOutputFormatFlag(),
@@ -1215,35 +1248,6 @@ Model::processSeismic(FFTGrid      **& seisCube,
           seisCube[i]->writeFile(sName, timeSimbox, sgriLabel);
         }
       }
-
-      LogKit::LogFormatted(LogKit::LOW,"\nArea/resolution           x0           y0            lx         ly     azimuth         dx      dy\n");
-      LogKit::LogFormatted(LogKit::LOW,"-------------------------------------------------------------------------------------------------\n");
-      if (areaInModelFile) {
-        double azimuth = (-1)*timeSimbox->getAngle()*(180.0/M_PI);
-        if (azimuth < 0)
-          azimuth += 360.0;
-        LogKit::LogFormatted(LogKit::LOW,"Model file       %11.2f  %11.2f    %10.2f %10.2f    %8.3f    %7.2f %7.2f\n", 
-                             timeSimbox->getx0(), timeSimbox->gety0(), 
-                             timeSimbox->getlx(), timeSimbox->getly(), azimuth, 
-                             timeSimbox->getdx(), timeSimbox->getdy());
-      }
-      for (int i = 0 ; i < nAngles ; i++)
-        if (geometry[i] != NULL) {
-          double geoAngle = (-1)*timeSimbox->getAngle()*(180/M_PI);
-          if (geoAngle < 0)
-            geoAngle += 360.0f;
-          LogKit::LogFormatted(LogKit::LOW,"Seismic data %d   %11.2f  %11.2f    %10.2f %10.2f    %8.3f    %7.2f %7.2f\n",i,
-                               geometry[i]->GetX0(), geometry[i]->GetY0(), 
-                               geometry[i]->Getlx(), geometry[i]->Getly(), geoAngle,
-                               geometry[i]->GetDx(), geometry[i]->GetDy());
-          }
-      LogKit::LogFormatted(LogKit::LOW,"\nTime simulation grids:\n");
-      LogKit::LogFormatted(LogKit::LOW,"  Output grid         %4i * %4i * %4i   : %10i\n",
-                           timeSimbox->getnx(),timeSimbox->getny(),timeSimbox->getnz(),
-                           timeSimbox->getnx()*timeSimbox->getny()*timeSimbox->getnz()); 
-      LogKit::LogFormatted(LogKit::LOW,"  FFT grid            %4i * %4i * %4i   : %10i\n",
-                           modelSettings->getNXpad(),modelSettings->getNYpad(),modelSettings->getNZpad(),
-                           modelSettings->getNXpad()*modelSettings->getNYpad()*modelSettings->getNZpad());
 
       for (int i =0 ; i < nAngles ; i++)
         if (geometry[i] != NULL)
@@ -1959,18 +1963,18 @@ Model::setupDefaultReflectionMatrix(float       **& reflectionMatrix,
 }
 
 void
-Model::processWavelets(Wavelet     **& wavelet,
-                       FFTGrid      ** seisCube,
-                       WellData     ** wells,
-                       float        ** reflectionMatrix,
-                       Simbox        * timeSimbox,
-                       Surface      ** waveletEstimInterval,
-                       Surface      ** shiftGrids,
-                       Surface      ** gainGrids,
-                       ModelSettings * modelSettings, 
-                       InputFiles    * inputFiles,
-                       char          * errText,
-                       bool          & failed)
+Model::processWavelets(Wavelet      **& wavelet,
+                       FFTGrid       ** seisCube,
+                       WellData      ** wells,
+                       float         ** reflectionMatrix,
+                       Simbox         * timeSimbox,
+                       Surface       ** waveletEstimInterval,
+                       Surface      **& shiftGrids,
+                       Surface      **& gainGrids,
+                       ModelSettings  * modelSettings, 
+                       InputFiles     * inputFiles,
+                       char           * errText,
+                       bool           & failed)
 {
   int error = 0;
   if (modelSettings->getDoInversion() || 
@@ -2439,7 +2443,8 @@ Model::findFileType(const std::string & fileName)
 
 void
 Model::printSettings(ModelSettings * modelSettings,
-                     InputFiles    * inputFiles)
+                     InputFiles    * inputFiles,
+                     bool            areaFromModelFile)
 {
   LogKit::LogFormatted(LogKit::LOW,"\nGeneral settings:\n");
   int logLevel = modelSettings->getLogLevel();
@@ -2483,7 +2488,7 @@ Model::printSettings(ModelSettings * modelSettings,
   LogKit::LogFormatted(LogKit::HIGH,"  Frequency                                : %10s\n","Hz");
   LogKit::LogFormatted(LogKit::HIGH,"  Length                                   : %10s\n","m");
   LogKit::LogFormatted(LogKit::HIGH,"  Velocities                               : %10s\n","m/s");
-  LogKit::LogFormatted(LogKit::HIGH,"  Density                                  : %10s\n","kg/dm3");
+  LogKit::LogFormatted(LogKit::HIGH,"  Density                                  : %10s\n","g/cm3");
   LogKit::LogFormatted(LogKit::HIGH,"  Angles                                   : %10s\n","   degrees (clockwise relative to north)");
 
   TraceHeaderFormat * thf = modelSettings_->getTraceHeaderFormat(); 
@@ -2566,7 +2571,7 @@ Model::printSettings(ModelSettings * modelSettings,
       estimateWavelet = estimateWavelet || modelSettings->getEstimateWavelet(i);
     if (generateBackground || estimateFaciesProb || estimateWavelet) 
     {
-      LogKit::LogFormatted(LogKit::LOW,"\nUse well in estimation of:                  ");
+      LogKit::LogFormatted(LogKit::LOW,"\nUse (when possible) well in estimation of:  ");
       if (generateBackground) LogKit::LogFormatted(LogKit::LOW,"  BGTrend");
       if (estimateWavelet)    LogKit::LogFormatted(LogKit::LOW,"  Wavelet");
       if (estimateFaciesProb) LogKit::LogFormatted(LogKit::LOW,"  Facies");
@@ -2583,6 +2588,15 @@ Model::printSettings(ModelSettings * modelSettings,
     }
   }
 
+  //
+  // AREA
+  // 
+  LogKit::LogFormatted(LogKit::LOW,"\nInversion area:\n");
+  if (areaFromModelFile)
+    LogKit::LogFormatted(LogKit::LOW,"  Taken from                               : Model file\n");
+  else
+    LogKit::LogFormatted(LogKit::LOW,"  Taken from                               : First seismic volume\n");
+  
   //
   // SURFACES
   // 
