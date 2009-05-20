@@ -62,6 +62,9 @@ private:
   void           blockWell(WellData  * well, 
                            Simbox    * simbox,
                            RandomGen * random);
+  void           blockCoordinateLog(const int    *  bInd,
+                                    const double *  coord,
+                                    double       *& blockedCoord);
   void           blockContinuousLog(const int   *  bInd,
                                     const float *  wellLog,
                                     float       *& blockedLog);

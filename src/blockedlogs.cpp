@@ -126,7 +126,17 @@ BlockedLogs::blockWell(WellData  * well,
 
   findSizeAndBlockPointers(well, simbox, bInd);  
   findBlockIJK(well, simbox, bInd);
-  findBlockXYZ(simbox);
+  if (false) 
+  {
+    findBlockXYZ(simbox);
+  }
+  else
+  {
+    int dummy;
+    blockCoordinateLog(bInd, well->getXpos(dummy), xpos_);
+    blockCoordinateLog(bInd, well->getYpos(dummy), ypos_);
+    blockCoordinateLog(bInd, well->getZpos(dummy), zpos_);
+  }
 
   int dummy;
   blockContinuousLog(bInd, well->getAlpha(dummy), alpha_);
@@ -143,6 +153,40 @@ BlockedLogs::blockWell(WellData  * well,
     blockDiscreteLog(bInd, well->getFacies(dummy), well->getFaciesNr(), well->getNFacies(), facies_, random);
 
   delete [] bInd;
+}
+
+//------------------------------------------------------------------------------
+void 
+BlockedLogs::blockCoordinateLog(const int    *  bInd,
+                                const double *  coord,
+                                double       *& blockedCoord)
+{
+  if (coord != NULL) {
+    blockedCoord  = new double[nBlocks_];
+    int * count   = new int[nBlocks_];
+    //
+    // Initialise arrays
+    //
+    for (int l = 0 ; l < nBlocks_ ; l++) {
+      blockedCoord[l] = 0.0f;
+      count[l] = 0;
+    }
+    //
+    // Block log
+    //
+    for (int m = firstM_ ; m < lastM_ + 1 ; m++) {
+      blockedCoord[bInd[m]] += coord[m];
+      count[bInd[m]]++;
+    }
+    for (int l = 0 ; l < nBlocks_ ; l++) {
+      if (count[l] > 0) {
+        blockedCoord[l] /= count[l];
+      }
+      else
+        blockedCoord[l] = RMISSING;
+    }
+    delete [] count;
+  }
 }
 
 //------------------------------------------------------------------------------
@@ -448,7 +492,9 @@ BlockedLogs::findBlockIJK(WellData  * well,
 
   bool debug = false;
   if (debug) {
-    LogKit::LogFormatted(LogKit::LOW,"firstB_, lastB_      = %d, %d    \n",firstB_,lastB_);
+    LogKit::LogFormatted(LogKit::LOW,"firstB_, lastB_        = %d, %d    \n",firstB_,lastB_);
+    LogKit::LogFormatted(LogKit::LOW,"firstI, firstJ, firstK = %d, %d, %d\n",firstI, firstJ, firstK);
+    LogKit::LogFormatted(LogKit::LOW,"lastI,  lastJ,  lastK  = %d, %d, %d\n",lastI, lastJ, lastK);
     for (int b = 0 ; b < nBlocks_ ; b++)
       LogKit::LogFormatted(LogKit::LOW,"b=%d   i,j,k=%d,%d,%d\n",b,ipos_[b],jpos_[b],kpos_[b]);
   }
@@ -463,6 +509,13 @@ BlockedLogs::findBlockXYZ(Simbox * simbox)
   zpos_ = new double[nBlocks_];
   for (int l = 0 ; l < nBlocks_ ; l++) {
     simbox->getCoord(ipos_[l],jpos_[l],kpos_[l],xpos_[l],ypos_[l],zpos_[l]);
+  }
+
+  bool debug = true;
+  if (debug) {
+    for (int b = 0 ; b < nBlocks_ ; b++)
+      LogKit::LogFormatted(LogKit::LOW,"b=%d   i,j,k=%d,%d,%d   x,y,z=%.2f, %.2f, %.2f\n",
+                           b,ipos_[b],jpos_[b],kpos_[b],xpos_[b],ypos_[b],zpos_[b]);
   }
 }
 
@@ -487,7 +540,7 @@ BlockedLogs::getVerticalTrend(const float * blockedLog,
       if (count[k] > 0)
         trend[k] = trend[k]/count[k];     
       else
-      trend[k] = RMISSING;
+        trend[k] = RMISSING;
     }
     delete [] count;
   }
@@ -707,16 +760,16 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
   params[1] = "Vs";
   params[2] = "Rho";
 
-  file << std::fixed;
-  file << std::setprecision(2);
+  file << std::fixed
+       << std::setprecision(2);
   //
   // Write HEADER
   //
-  file << "1.0\n";
-  file << "CRAVA\n";
-  file << wellname_ << " " << xpos_[0] << " " << ypos_[0] << "\n";
-  file << nLogs << "\n";
-
+  file << "1.0\n"
+       << "CRAVA\n"
+       << wellname_ << " " << xpos_[0] << " " << ypos_[0] << "\n"
+       << nLogs << "\n";
+  
   for (int i =0 ; i<3 ; i++) {
     file << params[i] << "  UNK lin\n";
     file << params[i] << static_cast<int>(maxHz_background) << "  UNK lin\n";
@@ -746,25 +799,27 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
   // Write LOGS
   //
   for (int i=0 ; i<lastB_ + 1 ; i++) {
-    file << std::right;
-    file << std::fixed;
-    file << std::setprecision(2);
-    file << std::setw(9) << xpos_[i] << " ";
-    file << std::setw(10)<< ypos_[i] << " ";
-    file << std::setw(7) << zpos_[i] << "  ";
-    file << std::setw(7) << (alpha_[i]==RMISSING                    ? WELLMISSING : exp(alpha_[i]))                    << " ";
-    file << std::setw(7) << (alpha_highcut_background_[i]==RMISSING ? WELLMISSING : exp(alpha_highcut_background_[i])) << " ";
-    file << std::setw(7) << (alpha_highcut_seismic_[i]==RMISSING    ? WELLMISSING : exp(alpha_highcut_seismic_[i]))    << " ";
-    file << std::setw(7) << (alpha_seismic_resolution_[i]==RMISSING ? WELLMISSING : exp(alpha_seismic_resolution_[i])) << "  ";
-    file << std::setw(7) << (beta_[i]==RMISSING                     ? WELLMISSING : exp(beta_[i]))                     << " ";
-    file << std::setw(7) << (beta_highcut_background_[i]==RMISSING  ? WELLMISSING : exp(beta_highcut_background_[i]))  << " ";
-    file << std::setw(7) << (beta_highcut_seismic_[i]==RMISSING     ? WELLMISSING : exp(beta_highcut_seismic_[i]))     << " ";
-    file << std::setw(7) << (beta_seismic_resolution_[i]==RMISSING  ? WELLMISSING : exp(beta_seismic_resolution_[i]))  << "  ";
-    file << std::setprecision(5);
-    file << std::setw(7) << (rho_[i]==RMISSING                      ? WELLMISSING : exp(rho_[i]))                      << " ";
-    file << std::setw(7) << (rho_highcut_background_[i]==RMISSING   ? WELLMISSING : exp(rho_highcut_background_[i]))   << " ";
-    file << std::setw(7) << (rho_highcut_seismic_[i]==RMISSING      ? WELLMISSING : exp(rho_highcut_seismic_[i]))      << " ";
-    file << std::setw(7) << (rho_seismic_resolution_[i]==RMISSING   ? WELLMISSING : exp(rho_seismic_resolution_[i]))   << "  ";
+  if (xpos_[i]!=RMISSING && ypos_[i]!=RMISSING && zpos_[i]!=RMISSING)
+  {
+    file << std::right
+         << std::fixed
+         << std::setprecision(2)
+         << std::setw(9) << xpos_[i] << " "
+         << std::setw(10)<< ypos_[i] << " "
+         << std::setw(7) << zpos_[i] << "  "
+         << std::setw(7) << (alpha_[i]==RMISSING                    ? WELLMISSING : exp(alpha_[i]))                    << " "
+         << std::setw(7) << (alpha_highcut_background_[i]==RMISSING ? WELLMISSING : exp(alpha_highcut_background_[i])) << " "
+         << std::setw(7) << (alpha_highcut_seismic_[i]==RMISSING    ? WELLMISSING : exp(alpha_highcut_seismic_[i]))    << " "
+         << std::setw(7) << (alpha_seismic_resolution_[i]==RMISSING ? WELLMISSING : exp(alpha_seismic_resolution_[i])) << "  "
+         << std::setw(7) << (beta_[i]==RMISSING                     ? WELLMISSING : exp(beta_[i]))                     << " "
+         << std::setw(7) << (beta_highcut_background_[i]==RMISSING  ? WELLMISSING : exp(beta_highcut_background_[i]))  << " "
+         << std::setw(7) << (beta_highcut_seismic_[i]==RMISSING     ? WELLMISSING : exp(beta_highcut_seismic_[i]))     << " "
+         << std::setw(7) << (beta_seismic_resolution_[i]==RMISSING  ? WELLMISSING : exp(beta_seismic_resolution_[i]))  << "  "
+         << std::setprecision(5)
+         << std::setw(7) << (rho_[i]==RMISSING                      ? WELLMISSING : exp(rho_[i]))                      << " "
+         << std::setw(7) << (rho_highcut_background_[i]==RMISSING   ? WELLMISSING : exp(rho_highcut_background_[i]))   << " "
+         << std::setw(7) << (rho_highcut_seismic_[i]==RMISSING      ? WELLMISSING : exp(rho_highcut_seismic_[i]))      << " "
+         << std::setw(7) << (rho_seismic_resolution_[i]==RMISSING   ? WELLMISSING : exp(rho_seismic_resolution_[i]))   << "  ";
     if (gotFacies)
       file << (facies_[i]==IMISSING                                 ? static_cast<int>(WELLMISSING) : facies_[i])      << "  ";
     file << std::scientific;
@@ -782,6 +837,7 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
       for (int a=0 ; a<nAngles_ ; a++)
         file << std::setw(12) << (cpp_[a][i]==RMISSING               ? WELLMISSING : cpp_[a][i])                        << " ";
     file << "\n";
+  }
   }
   file.close();
 }
