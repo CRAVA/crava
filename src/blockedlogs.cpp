@@ -126,19 +126,15 @@ BlockedLogs::blockWell(WellData  * well,
 
   findSizeAndBlockPointers(well, simbox, bInd);  
   findBlockIJK(well, simbox, bInd);
-  if (false) 
-  {
-    findBlockXYZ(simbox);
-  }
-  else
-  {
-    int dummy;
-    blockCoordinateLog(bInd, well->getXpos(dummy), xpos_);
-    blockCoordinateLog(bInd, well->getYpos(dummy), ypos_);
-    blockCoordinateLog(bInd, well->getZpos(dummy), zpos_);
-  }
+  //We do not use block centre to represent BW position any more, due to ugly visualisation
+  //findBlockXYZ(simbox);
 
   int dummy;
+  blockCoordinateLog(bInd, well->getXpos(dummy), xpos_);
+  blockCoordinateLog(bInd, well->getYpos(dummy), ypos_);
+  blockCoordinateLog(bInd, well->getZpos(dummy), zpos_);
+  findXYZforVirtualPart(simbox);
+
   blockContinuousLog(bInd, well->getAlpha(dummy), alpha_);
   blockContinuousLog(bInd, well->getBeta(dummy), beta_);
   blockContinuousLog(bInd, well->getRho(dummy), rho_);
@@ -179,13 +175,39 @@ BlockedLogs::blockCoordinateLog(const int    *  bInd,
       count[bInd[m]]++;
     }
     for (int l = 0 ; l < nBlocks_ ; l++) {
-      if (count[l] > 0) {
+      if (count[l] > 0)
         blockedCoord[l] /= count[l];
-      }
       else
-        blockedCoord[l] = RMISSING;
+        blockedCoord[l]  = RMISSING;
     }
     delete [] count;
+  }
+}
+
+//------------------------------------------------------------------------------
+void 
+BlockedLogs::findXYZforVirtualPart(Simbox * simbox)
+{
+  //
+  // If the ends have undefined coordinates we use the nearest defined 
+  // coordinate for x and y and the block cell centre for z
+  //
+  for (int b = 0 ; b < firstB_ ; b++)
+  {
+    double x,y,z;
+    simbox->getCoord(ipos_[b], jpos_[b], kpos_[b], x, y, z);
+    xpos_[b] = xpos_[firstB_];
+    ypos_[b] = ypos_[firstB_];
+    zpos_[b] = z;
+  }
+
+  for (int b = lastB_ + 1 ; b < nBlocks_ ; b++)
+  {
+    double x,y,z;
+    simbox->getCoord(ipos_[b], jpos_[b], kpos_[b], x, y, z);
+    xpos_[b] = xpos_[lastB_];
+    ypos_[b] = ypos_[lastB_];
+    zpos_[b] = z;
   }
 }
 
@@ -418,6 +440,18 @@ BlockedLogs::findSizeAndBlockPointers(WellData * well,
     bInd[m] = firstK + nDefinedBlocks;
   }
   nDefinedBlocks++;
+  //
+  // Why we cannot use nBlocks_ = nDefined:
+  //
+  // When we calculate the background model for each parameter we first
+  // estimate a vertical trend in the total volume, anf then we interpolate
+  // the blocked log intop this trend volume. To avoid sharp contrast we
+  // ensure that the blocked log is defined from top to base of the volume.
+  // In regions where the log is undefined we generate it by kriging from 
+  // the rest of the log. Likewise, in regions where there is no blocked
+  // log at all because the well was too short, we have to make a virtual
+  // well.
+  //
   nBlocks_ = firstK + nDefinedBlocks + (nLayers_ - lastK - 1);
   
   bool debug = false;
@@ -767,7 +801,7 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
   //
   file << "1.0\n"
        << "CRAVA\n"
-       << wellname_ << " " << xpos_[0] << " " << ypos_[0] << "\n"
+       << wellname_ << " " << xpos_[firstB_] << " " << ypos_[firstB_] << "\n"
        << nLogs << "\n";
   
   for (int i =0 ; i<3 ; i++) {
@@ -798,9 +832,7 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
   //
   // Write LOGS
   //
-  for (int i=0 ; i<lastB_ + 1 ; i++) {
-  if (xpos_[i]!=RMISSING && ypos_[i]!=RMISSING && zpos_[i]!=RMISSING)
-  {
+  for (int i=firstB_ ; i<lastB_ + 1 ; i++) {
     file << std::right
          << std::fixed
          << std::setprecision(2)
@@ -838,7 +870,6 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
         file << std::setw(12) << (cpp_[a][i]==RMISSING               ? WELLMISSING : cpp_[a][i])                        << " ";
     file << "\n";
   }
-  }
   file.close();
 }
 
@@ -846,9 +877,8 @@ void BlockedLogs::setSpatialFilteredLogs(float * filteredlog, int start, int end
 {
   float * blockedLog = new float[nBlocks_];
   assert(nBlocks_ == end-start);
-  int i,j;
-  j = 0;
-  for(i=start;i<end;i++)
+  int j = 0;
+  for(int i=start;i<end;i++)
   {
     blockedLog[j] = filteredlog[i]+bg[j];
     j++;
@@ -860,6 +890,4 @@ void BlockedLogs::setSpatialFilteredLogs(float * filteredlog, int start, int end
     beta_seismic_resolution_ = blockedLog;
   else if (type == "RHO_SEISMIC_RESOLUTION")
     rho_seismic_resolution_ = blockedLog;
-
-
 }

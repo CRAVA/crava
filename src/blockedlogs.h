@@ -84,6 +84,7 @@ private:
                               Simbox    * simbox,
                               const int * bInd);
   void           findBlockXYZ(Simbox * simbox);
+  void           findXYZforVirtualPart(Simbox * simbox);
 
   char         * wellname_;                 ///< Name of well   
 
