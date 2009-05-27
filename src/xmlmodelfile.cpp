@@ -156,6 +156,7 @@ XmlModelFile::parseInversionSettings(TiXmlNode * node, std::string & errTxt)
     if(flag != 0) {
       modelSettings_->setGridOutputFlag(flag);
       modelSettings_->setDefaultGridOutputInd(false);
+      modelSettings_->setEstimateFaciesProb(true);
     }
   }
 
@@ -1100,7 +1101,6 @@ XmlModelFile::parseOutputTypes(TiXmlNode * node, std::string & errTxt)
   parseWellOutput(root, errTxt);
   parseDirectOutput(root, errTxt);
   parseOtherOutput(root, errTxt);
-
 
   checkForJunk(root, errTxt);
   return(true);

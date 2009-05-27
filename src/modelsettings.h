@@ -112,6 +112,7 @@ public:
   bool                getEstimationMode(void)       const { return estimationMode_      ;}
   bool                getGenerateSeismic(void)      const { return generateSeismic_     ;}
   bool                getGenerateBackground(void)   const { return generateBackground_  ;}
+  bool                getEstimateFaciesProb(void)   const { return estimateFaciesProb_  ;}
   bool                getFaciesLogGiven(void)       const { return faciesLogGiven_      ;}
   bool                getDepthDataOK(void)          const { return depthDataOk_         ;}
   bool                getParallelTimeSurfaces(void) const { return parallelTimeSurfaces_;}
@@ -220,6 +221,7 @@ public:
   void                setEstimationMode(bool estimationMode)        { estimationMode_       = estimationMode     ;}
   void                setGenerateSeismic(bool generateSeismic)      { generateSeismic_      = generateSeismic    ;}
   void                setGenerateBackground(bool generateBackgr)    { generateBackground_   = generateBackgr     ;}
+  void                setEstimateFaciesProb(bool estFaciesProb)     { estimateFaciesProb_   = estFaciesProb      ;}
   void                setFaciesLogGiven(bool faciesLogGiven)        { faciesLogGiven_       = faciesLogGiven     ;}
   void                setDepthDataOk(bool depthDataOk)              { depthDataOk_          = depthDataOk        ;}
   void                setParallelTimeSurfaces(bool pTimeSurfaces)   { parallelTimeSurfaces_ = pTimeSurfaces      ;}
@@ -383,6 +385,7 @@ private:
   bool                      estimationMode_;        // Estimation
 
   bool                      generateBackground_;    // Make background model
+  bool                      estimateFaciesProb_;    // Shall facies probabilites be estimated?
   bool                      faciesLogGiven_;
   bool                      depthDataOk_;           // We have what we need to do depth conversion
   bool                      parallelTimeSurfaces_;

@@ -96,10 +96,12 @@ int main(int argc, char** argv)
       int relative = crava->getRelative();
 
       spatwellfilter->doFiltering(corr,model->getWells(), model->getModelSettings()->getNumberOfWells(), relative);
-
-     // FilterWellLogs * filteredlogs = NULL;
+      
+      // FilterWellLogs * filteredlogs = NULL;
       //crava->filterLogs(model->getTimeSimboxConstThick(),filteredlogs);
-      crava->computeFaciesProb(spatwellfilter);
+
+      if (model->getModelSettings()->getEstimateFaciesProb())
+        crava->computeFaciesProb(spatwellfilter);
       delete spatwellfilter;
 
       //

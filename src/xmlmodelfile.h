@@ -24,46 +24,46 @@ private:
   bool parseCrava(TiXmlNode * node, std::string & errTxt);
 
   bool parseActions(TiXmlNode * node, std::string & errTxt);
-    bool parseInversionSettings(TiXmlNode * node, std::string & errTxt);
-      bool parseSimulation(TiXmlNode * node, std::string & errTxt);
-    bool parseEstimationSettings(TiXmlNode * node, std::string & errTxt);
+  bool   parseInversionSettings(TiXmlNode * node, std::string & errTxt);
+  bool     parseSimulation(TiXmlNode * node, std::string & errTxt);
+  bool   parseEstimationSettings(TiXmlNode * node, std::string & errTxt);
 
   bool parseWellData(TiXmlNode * node, std::string & errTxt);
-    bool parseLogNames(TiXmlNode * node, std::string & errTxt);
-    bool parseWell(TiXmlNode * node, std::string & errTxt);
-    bool parseAllowedParameterValues(TiXmlNode * node, std::string & errTxt);
+  bool   parseLogNames(TiXmlNode * node, std::string & errTxt);
+  bool   parseWell(TiXmlNode * node, std::string & errTxt);
+  bool   parseAllowedParameterValues(TiXmlNode * node, std::string & errTxt);
 
   bool parseSurvey(TiXmlNode * node, std::string & errTxt);
-    bool parseAngleGather(TiXmlNode * node, std::string & errTxt);
-      bool parseSeismicData(TiXmlNode * node, std::string & errTxt);
-      bool parseWavelet(TiXmlNode * node, std::string & errTxt);
-        bool parseLocalWavelet(TiXmlNode * node, std::string & errTxt);
-        bool parseWaveletEstimationInterval(TiXmlNode * node, std::string & errTxt);
+  bool   parseAngleGather(TiXmlNode * node, std::string & errTxt);
+  bool     parseSeismicData(TiXmlNode * node, std::string & errTxt);
+  bool     parseWavelet(TiXmlNode * node, std::string & errTxt);
+  bool       parseLocalWavelet(TiXmlNode * node, std::string & errTxt);
+  bool       parseWaveletEstimationInterval(TiXmlNode * node, std::string & errTxt);
 
   bool parsePriorModel(TiXmlNode * node, std::string & errTxt);
-    bool parseBackground(TiXmlNode * node, std::string & errTxt);
-    bool parseFaciesProbabilities(TiXmlNode * node, std::string & errTxt);
-    bool parseFaciesEstimationInterval(TiXmlNode * node, std::string & errTxt);
+  bool   parseBackground(TiXmlNode * node, std::string & errTxt);
+  bool   parseFaciesProbabilities(TiXmlNode * node, std::string & errTxt);
+  bool   parseFaciesEstimationInterval(TiXmlNode * node, std::string & errTxt);
 
   bool parseProjectSettings(TiXmlNode * node, std::string & errTxt);
-    bool parseOutputVolume(TiXmlNode * node, std::string & errTxt);
-      bool parseIntervalTwoSurfaces(TiXmlNode * node, std::string & errTxt);
-        bool parseTopSurface(TiXmlNode * node, std::string & errTxt);
-        bool parseBaseSurface(TiXmlNode * node, std::string & errTxt);
-      bool parseIntervalOneSurface(TiXmlNode * node, std::string & errTxt);
-      bool parseArea(TiXmlNode * node, std::string & errTxt);
-    bool parseIOSettings(TiXmlNode * node, std::string & errTxt);
-      bool parseOutputTypes(TiXmlNode * node, std::string & errTxt);
-        bool parseGridOutput(TiXmlNode * node, std::string & errTxt);
-          bool parseGridDomains(TiXmlNode * node, std::string & errTxt);
-          bool parseGridFormats(TiXmlNode * node, std::string & errTxt);
-          bool parseGridParameters(TiXmlNode * node, std::string & errTxt);
-        bool parseWellOutput(TiXmlNode * node, std::string & errTxt);
-        bool parseDirectOutput(TiXmlNode * node, std::string & errTxt);
-        bool parseOtherOutput(TiXmlNode * node, std::string & errTxt);
-    bool parseAdvancedSettings(TiXmlNode * node, std::string & errTxt);
-      bool parseFFTGridPadding(TiXmlNode * node, std::string & errTxt);
-      bool parseFrequencyBand(TiXmlNode * node, std::string & errTxt);
+  bool   parseOutputVolume(TiXmlNode * node, std::string & errTxt);
+  bool     parseIntervalTwoSurfaces(TiXmlNode * node, std::string & errTxt);
+  bool       parseTopSurface(TiXmlNode * node, std::string & errTxt);
+  bool       parseBaseSurface(TiXmlNode * node, std::string & errTxt);
+  bool     parseIntervalOneSurface(TiXmlNode * node, std::string & errTxt);
+  bool     parseArea(TiXmlNode * node, std::string & errTxt);
+  bool   parseIOSettings(TiXmlNode * node, std::string & errTxt);
+  bool     parseOutputTypes(TiXmlNode * node, std::string & errTxt);
+  bool       parseGridOutput(TiXmlNode * node, std::string & errTxt);
+  bool         parseGridDomains(TiXmlNode * node, std::string & errTxt);
+  bool         parseGridFormats(TiXmlNode * node, std::string & errTxt);
+  bool         parseGridParameters(TiXmlNode * node, std::string & errTxt);
+  bool       parseWellOutput(TiXmlNode * node, std::string & errTxt);
+  bool       parseDirectOutput(TiXmlNode * node, std::string & errTxt);
+  bool       parseOtherOutput(TiXmlNode * node, std::string & errTxt);
+  bool   parseAdvancedSettings(TiXmlNode * node, std::string & errTxt);
+  bool     parseFFTGridPadding(TiXmlNode * node, std::string & errTxt);
+  bool     parseFrequencyBand(TiXmlNode * node, std::string & errTxt);
 
   template <typename T>
   bool parseValue(TiXmlNode * node, const std::string & keyword, T & value, std::string & errTxt, bool allowDuplicates = false);
@@ -94,8 +94,6 @@ private:
   InputFiles     * inputFiles_;
   
   bool             failed_;                // Indicates whether errors ocuured during construction. 
-
-
 };
 
 template <typename T>
@@ -131,6 +129,4 @@ XmlModelFile::parseValue(TiXmlNode * node, const std::string & keyword, T & valu
   errTxt += tmpErr;
   return(true);
 }
-
-
 #endif

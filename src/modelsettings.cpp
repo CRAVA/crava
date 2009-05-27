@@ -107,6 +107,7 @@ ModelSettings::ModelSettings(void)
   estimationMode_        =    false;
   generateSeismic_       =    false;
   generateBackground_    =    true;
+  estimateFaciesProb_    =    false;
   faciesLogGiven_        =    false;
   depthDataOk_           =    false;
   parallelTimeSurfaces_  =    false;

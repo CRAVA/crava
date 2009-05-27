@@ -155,15 +155,14 @@ Crava::Crava(Model * model, SpatialWellFilter *spatwellfilter)
     }
   }
 
-  if((outputFlag_ & ModelSettings::FACIESPROBRELATIVE)>0)
+  if(model->getModelSettings()->getEstimateFaciesProb()) 
   {
-    meanAlpha2_ = copyFFTGrid(meanAlpha_);
-    meanBeta2_  = copyFFTGrid(meanBeta_);
-    meanRho2_   = copyFFTGrid(meanRho_);
-  }
-
-  if((outputFlag_ & ModelSettings::FACIESPROB) >0 || (outputFlag_ & ModelSettings::FACIESPROBRELATIVE)>0)
-  {    
+    if ((outputFlag_ & ModelSettings::FACIESPROBRELATIVE) > 0)
+    {
+      meanAlpha2_ = copyFFTGrid(meanAlpha_);
+      meanBeta2_  = copyFFTGrid(meanBeta_);
+      meanRho2_   = copyFFTGrid(meanRho_);
+    }
     fprob_ = new FaciesProb(correlations_,
                             model->getModelSettings(), 
                             fileGrid_, 
@@ -172,9 +171,9 @@ Crava::Crava(Model * model, SpatialWellFilter *spatwellfilter)
                             model->getPriorFacies());
   }
 
-  meanAlpha_ ->fftInPlace();
-  meanBeta_  ->fftInPlace();
-  meanRho_   ->fftInPlace();
+  meanAlpha_->fftInPlace();
+  meanBeta_ ->fftInPlace();
+  meanRho_  ->fftInPlace();
 
   Timings::setTimeStochasticModel(wall,cpu);
 }
@@ -1574,7 +1573,7 @@ void
 Crava::printEnergyToScreen()
 {
   int i;
-  LogKit::LogFormatted(LogKit::LOW,"                       ");
+  LogKit::LogFormatted(LogKit::LOW,"\n\n                       ");
   for(i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::LOW,"  Seismic %4.1f ",thetaDeg_[i]);
   LogKit::LogFormatted(LogKit::LOW,"\n----------------------");
   for(i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::LOW,"---------------");

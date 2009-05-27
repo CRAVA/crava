@@ -79,7 +79,6 @@ private:
                                   Simbox        *& timeSimbox,
                                   ModelSettings *& modelSettings, 
                                   InputFiles     * inputFiles,
-                                  bool             areaFromModelFile,
                                   char           * errText,
                                   bool           & failed);
   void             processWells(WellData     **& wells,

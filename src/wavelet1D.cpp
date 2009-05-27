@@ -604,7 +604,7 @@ Wavelet1D::WaveletReadJason(const std::string & fileName, int &errCode, char *er
   }
   fclose(file);
   waveletLength_ = getWaveletLengthF();
-  LogKit::LogFormatted(LogKit::LOW,"\n  Estimated wavelet length:  %.1fms.",waveletLength_);
+  LogKit::LogFormatted(LogKit::LOW,"\n  Estimated wavelet length:  %.1fms.\n",waveletLength_);
   delete [] dummyStr;
 }
 
