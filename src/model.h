@@ -86,12 +86,14 @@ private:
                                 Simbox         * timeSimbox,
                                 Simbox         * timeBGSimbox,
                                 Simbox         * timeSimboxConstThick,
-                                FFTGrid       ** seisCube,
                                 RandomGen      * randomGen,
                                 ModelSettings *& modelSettings, 
                                 InputFiles     * inputFiles,
                                 char           * errText,
                                 bool           & failed);
+  void             addSeismicLogsAndWriteWells(WellData ** wells, FFTGrid ** seisCube, 
+                                               ModelSettings * modelSettings);
+
   void             processBackground(Background   *& background, 
                                      WellData     ** wells,
                                      Simbox        * timeSimbox,

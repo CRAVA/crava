@@ -464,6 +464,32 @@ FFTFileGrid::writeSgriFile(const std::string & fileName, const Simbox * simbox, 
   return(ok);
 }
 
+void
+FFTFileGrid::writeDirectFile(const std::string & fileName)
+{
+  assert(accMode_ == NONE || accMode_ == RANDOMACCESS);
+  if(accMode_ != RANDOMACCESS)
+    load();
+  FFTGrid::writeDirectFile(fileName);
+  if(accMode_ != RANDOMACCESS)
+    unload();
+}
+
+
+std::string
+FFTFileGrid::readDirectFile(const std::string & fileName)
+{
+  assert(accMode_ == NONE || accMode_ == RANDOMACCESS);
+  if(accMode_ != RANDOMACCESS)
+    load();
+  std::string error = FFTGrid::readDirectFile(fileName);
+  if(accMode_ != RANDOMACCESS)
+    save();
+  return(error);
+}
+
+
+
 void 
 FFTFileGrid::load()
 {

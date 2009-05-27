@@ -52,6 +52,7 @@ InputFiles::addInputPathAndCheckFiles()
   errTxt += addPathAndCheck(corrDirFile_);
   errTxt += addPathAndCheck(reflMatrFile_);
   errTxt += addPathAndCheck(paramCorrFile_);
+  errTxt += addPathAndCheck(tempCorrFile_);
   return(errTxt);
 }
 

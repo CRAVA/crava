@@ -26,6 +26,7 @@ private:
   bool parseActions(TiXmlNode * node, std::string & errTxt);
     bool parseInversionSettings(TiXmlNode * node, std::string & errTxt);
       bool parseSimulation(TiXmlNode * node, std::string & errTxt);
+    bool parseEstimationSettings(TiXmlNode * node, std::string & errTxt);
 
   bool parseWellData(TiXmlNode * node, std::string & errTxt);
     bool parseLogNames(TiXmlNode * node, std::string & errTxt);
@@ -58,6 +59,7 @@ private:
           bool parseGridFormats(TiXmlNode * node, std::string & errTxt);
           bool parseGridParameters(TiXmlNode * node, std::string & errTxt);
         bool parseWellOutput(TiXmlNode * node, std::string & errTxt);
+        bool parseDirectOutput(TiXmlNode * node, std::string & errTxt);
         bool parseOtherOutput(TiXmlNode * node, std::string & errTxt);
     bool parseAdvancedSettings(TiXmlNode * node, std::string & errTxt);
       bool parseFFTGridPadding(TiXmlNode * node, std::string & errTxt);

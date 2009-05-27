@@ -98,13 +98,15 @@ public:
   virtual void         writeAsciiRaw(const std::string & fileName);
   virtual void         writeResampledStormCube(GridMapping *gridmapping, const std::string & fileName, 
                                                const Simbox *simbox, const int format, bool expTrans);
+  virtual void         writeDirectFile(const std::string & fileName);
+  virtual std::string  readDirectFile(const std::string & fileName);
 
   virtual bool         isFile() {return(0);}    // indicates wether the grid is in memory or on disk  
 
-  void                 setOutputFlags(int format, int domain) {formatFlag_ = format;domainFlag_=domain;};
-  void                 setOutputFormat(int format) {formatFlag_ = format;} 
+  static void          setOutputFlags(int format, int domain) {formatFlag_ = format;domainFlag_=domain;};
+  static void          setOutputFormat(int format) {formatFlag_ = format;} 
   int                  getOutputFormat() {return(formatFlag_);} 
-  void                 setOutputDomain(int domain) {domainFlag_ = domain;} 
+  static void          setOutputDomain(int domain) {domainFlag_ = domain;} 
   int                  getOutputDomain() {return(domainFlag_);} 
 
   virtual void         createRealGrid();

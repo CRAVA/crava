@@ -417,7 +417,7 @@ int Wavelet::getWaveletLengthI()
       break;
     }
   }
-  wLength =MINIM(wLength,2*(nzp_/2)-1); // allways even number
+  wLength =MINIM(wLength,2*((nzp_+1)/2) - 1); // always odd number
   if(trans==true)
     fft1DInPlace();
 

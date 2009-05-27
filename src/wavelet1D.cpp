@@ -1164,6 +1164,18 @@ Wavelet1D::writeWaveletToFile(char* fileName,float approxDzIn, Simbox *)
    approxDz = MINIM(approxDzIn,floor(dz_*10)/10);
    approxDz = MINIM(approxDzIn,dz_);
 
+   //Trick: Written wavelet may be shorter than the actual.
+   //This gives inconsistency if a wavelet is read and written.
+   //Make consistent by truncating wavelet to writing range before interpolation.
+   int activeCells = int(floor(waveletLength_/2/dz_));
+   float * remember = new float[nzp_];
+   for(i=activeCells+1;i<=nz_;i++) {
+     remember[i] = rAmp_[i];
+     rAmp_[i] = 0;
+     remember[nzp_+1-i] = rAmp_[nzp_+1-i];
+     rAmp_[nzp_+1-i] = 0;
+   }
+
    float T = nzp_*dz_;
    int nzpNew  = int(ceil(T/approxDz - 0.5));  
    float dznew   = T/float(nzpNew);
@@ -1190,6 +1202,12 @@ Wavelet1D::writeWaveletToFile(char* fileName,float approxDzIn, Simbox *)
      }
    }
    invFFT1DInPlace();
+   for(i=activeCells+1;i<=nz_;i++) {
+     rAmp_[i] = remember[i];
+     rAmp_[nzp_+1-i] = remember[nzp_+1-i];
+   }
+   delete [] remember;
+   
    fftInv(waveletNew_c,waveletNew_r,nzpNew );// note might be n^2 algorithm for some nzpNew
 
    int wLength = int(floor(waveletLength_/dznew+0.5));

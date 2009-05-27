@@ -1738,6 +1738,62 @@ FFTGrid::writeSgriFile(const std::string & fileName, const Simbox *simbox, const
   return(0);
 }
 
+
+void
+FFTGrid::writeDirectFile(const std::string & fileName)
+{
+  try {
+    ofstream binFile;
+    NRLib2::OpenWrite(binFile, fileName, std::ios::out | std::ios::binary);
+    NRLib2::WriteBinaryInt(binFile, rnxp_);
+    NRLib2::WriteBinaryInt(binFile, nyp_);
+    NRLib2::WriteBinaryInt(binFile, nzp_);
+    int i;
+    for(i=0;i<rsize_;i++)
+      NRLib2::WriteBinaryFloat(binFile, rvalue_[i]);
+
+    binFile.close();
+  }
+  catch (NRLib2::Exception & e) {
+    std::string message = "Error: "+std::string(e.what())+"\n";
+    LogKit::LogMessage(LogKit::ERROR, message);
+  }
+}
+
+
+std::string
+FFTGrid::readDirectFile(const std::string & fileName) 
+{
+  std::string error;
+  try {
+    std::ifstream binFile;
+    NRLib2::OpenRead(binFile, fileName, std::ios::in | std::ios::binary);
+
+    std::string token;
+    int line = 0;
+    int nx = NRLib2::ReadBinaryInt(binFile);
+    int ny = NRLib2::ReadBinaryInt(binFile);
+    int nz = NRLib2::ReadBinaryInt(binFile);
+    if(nx != rnxp_ || ny != nyp_ || nz != nzp_) {
+      std::string message = "Grid dimension is wrong for direct read of file '"+
+        fileName+"'.";
+      binFile.close();
+      throw(NRLib2::Exception(message));
+    }
+    createRealGrid();
+    int i;
+    for(i=0;i<rsize_;i++)
+      rvalue_[i] = NRLib2::ReadBinaryFloat(binFile);
+    
+    binFile.close();
+  }
+  catch (NRLib2::Exception & e) {
+    error = "Error: "+std::string(e.what())+"\n";
+  }
+  return(error);
+}
+
+
 float
 FFTGrid::getRegularZInterpolatedRealValue(int i, int j, double z0Reg, 
                                           double dzReg, int kReg, 

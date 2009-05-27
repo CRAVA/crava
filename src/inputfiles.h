@@ -28,6 +28,7 @@ public:
   const std::string              & getCorrDirFile(void)          const { return corrDirFile_          ;}
   const std::string              & getReflMatrFile(void)         const { return reflMatrFile_         ;}
   const std::string              & getParamCorrFile(void)        const { return paramCorrFile_        ;}
+  const std::string              & getTempCorrFile(void)         const { return tempCorrFile_         ;}
 
   const int                        getNumberOfSeismicFiles(void) const { return seismicFiles_.size()  ;}
 

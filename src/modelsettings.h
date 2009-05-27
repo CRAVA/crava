@@ -39,6 +39,10 @@ public:
   bool                getEstimateSNRatio(int i)     const { return estimateSNRatio_[i]    ;}
   bool                getEstimateLocalShift(int i)  const { return estimateLocalShift_[i] ;}
   bool                getEstimateLocalScale(int i)  const { return estimateLocalScale_[i] ;}
+  
+  bool                getEstimateBackground()       const { return estimateBackground_    ;}
+  bool                getEstimateCorrelations()     const { return estimateCorrelations_  ;}
+  bool                getEstimateWaveletNoise()     const { return estimateWaveletNoise_  ;}
 
   const std::vector<std::string> & getLogNames(void) const{ return logNames_            ;}
   const std::vector<bool> & getInverseVelocity(void) const{ return inverseVelocity_     ;}
@@ -96,6 +100,12 @@ public:
   int                 getOutputDomainFlag(void)     const { return domainFlag_          ;}
   int                 getWellOutputFlag(void)       const { return wellFlag_            ;}
   int                 getOtherOutputFlag(void)      const { return otherFlag_           ;}
+  bool                getDirectBGOutput(void)       const { return directBGOutput_      ;}
+  bool                getDirectSeisOutput(void)     const { return directSeisOutput_    ;}
+  bool                getDirectVelOutput(void)      const { return directVelOutput_     ;}
+  bool                getDirectBGInput(void)        const { return directBGInput_       ;}
+  bool                getDirectSeisInput(void)      const { return directSeisInput_     ;}
+  bool                getDirectVelInput(void)       const { return directVelInput_      ;}
   int                 getDebugFlag(void)            const { return debugFlag_           ;}
   static int          getDebugLevel(void)                 { return debugFlag_           ;}
   int                 getFileGrid(void)             const { return fileGrid_            ;}
@@ -135,6 +145,11 @@ public:
   void                addEstimateSNRatio(bool estimateSNRatio)      { estimateSNRatio_.push_back(estimateSNRatio)  ;}
   void                addEstimateLocalShift(bool estimateShift)     { estimateLocalShift_.push_back(estimateShift) ;}
   void                addEstimateLocalScale(bool estimateScale)     { estimateLocalScale_.push_back(estimateScale) ;}
+
+  void                setEstimateBackground(bool estimateBackground)     { estimateBackground_   = estimateBackground   ;}
+  void                setEstimateCorrelations(bool estimateCorrelations) { estimateCorrelations_ = estimateCorrelations ;}
+  void                setEstimateWaveletNoise(bool estimateWaveletNoise) { estimateWaveletNoise_ = estimateWaveletNoise ;}
+
   void                setAllIndicatorsTrue(int nWells);                  
   void                setIndicatorBGTrend(int * indBGTrend, int nWells); //NBNB kill when xml-model ok.
   void                setIndicatorWavelet(int * indWavelet, int nWells); //NBNB kill when xml-model ok. 
@@ -194,6 +209,12 @@ public:
   void                setOutputDomainFlag(int domainFlag)           { domainFlag_           = domainFlag         ;}
   void                setWellOutputFlag(int wellFlag)               { wellFlag_             = wellFlag           ;}
   void                setOtherOutputFlag(int otherFlag)             { otherFlag_            = otherFlag          ;}
+  void                setDirectBGOutput(bool directBGOutput)        { directBGOutput_       = directBGOutput     ;}
+  void                setDirectSeisOutput(bool directSeisOutput)    { directSeisOutput_     = directSeisOutput   ;}
+  void                setDirectVelOutput(bool directVelOutput)      { directVelOutput_      = directVelOutput    ;}
+  void                setDirectBGInput(bool directBGInput)          { directBGInput_        = directBGInput      ;}
+  void                setDirectSeisInput(bool directSeisInput)      { directSeisInput_      = directSeisInput    ;}
+  void                setDirectVelInput(bool directVelInput)        { directVelInput_       = directVelInput    ;}
   void                setDebugFlag(int debugFlag)                   { debugFlag_            = debugFlag          ;}
   void                setFileGrid(int fileGrid)                     { fileGrid_             = fileGrid           ;}
   void                setEstimationMode(bool estimationMode)        { estimationMode_       = estimationMode     ;}
@@ -272,6 +293,10 @@ private:
   std::vector<bool>         estimateLocalShift_;    // Estimate local wavelet shift
   std::vector<bool>         estimateLocalScale_;    // Estimate local wavelet scale
                           
+  bool                      estimateBackground_;    // In estimation mode, skip estimation of background if false
+  bool                      estimateCorrelations_;  // As above, but correlations.
+  bool                      estimateWaveletNoise_;  // As above, but for wavelet and noise parameters.
+
   std::vector<float>        constBackValue_;        // Values set for constant background model
                                                     // Negative value ==> read from file (actual value gives format).
   std::vector<int>          indBGTrend_;            // Use well to estimate background trend? (1=yes,0=no)
@@ -346,6 +371,13 @@ private:
   int                       otherFlag_;             // Decides output beyond grids and wells.
   int                       fileGrid_;              // Indicator telling if grids are to be kept on file
   bool                      defaultGridOutput_;     // Indicator telling whether grid output has been actively controlled.
+  
+  bool                      directBGOutput_;        // Write raw background, can be read without resampling.
+  bool                      directSeisOutput_;      // Write raw seismic, can be read without resampling.
+  bool                      directVelOutput_;       // Write raw time-to-depth velocity, can be read without resampling.
+  bool                      directBGInput_;         // Read raw background into grid without resampling.
+  bool                      directSeisInput_;       // Read raw seismic into grid without resampling.
+  bool                      directVelInput_;        // Read raw time-to-depth velocity into grid without resampling.
 
   bool                      generateSeismic_;       // Forward modelling
   bool                      estimationMode_;        // Estimation

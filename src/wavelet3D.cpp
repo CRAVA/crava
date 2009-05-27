@@ -53,7 +53,6 @@ Wavelet3D::Wavelet3D(const std::string & fileName,
   ampCube_.createRealGrid();
   ampCube_.setType(FFTGrid::COVARIANCE);
   ampCube_.setAccessMode(FFTGrid::RANDOMACCESS);
-  ampCube_.setOutputFlags(modelSettings->getOutputFormatFlag(),modelSettings->getOutputDomainFlag());
 
   inFFTorder_ = true;
   readtype_ = Wavelet::SGRI;
@@ -166,7 +165,6 @@ Wavelet3D::Wavelet3D(const std::string & fileName,
     shiftAmp->fillInConstant(0.0);
     shiftAmp->setType(FFTGrid::DATA);
     shiftAmp->setAccessMode(FFTGrid::RANDOMACCESS);
-    shiftAmp->setOutputFlags(modelSettings->getOutputFormatFlag(),modelSettings->getOutputDomainFlag());
 
     shiftFFTGrid(shiftAmp);
     char fName[200];

@@ -99,6 +99,11 @@ ModelSettings::ModelSettings(void)
   debugFlag_             =          0;
   fileGrid_              =         -1;
  
+  directBGOutput_        =    false;
+  directSeisOutput_      =    false;
+  directBGInput_         =    false;
+  directSeisInput_       =    false;
+
   estimationMode_        =    false;
   generateSeismic_       =    false;
   generateBackground_    =    true;
@@ -106,6 +111,10 @@ ModelSettings::ModelSettings(void)
   depthDataOk_           =    false;
   parallelTimeSurfaces_  =    false;
   useLocalWavelet_       =    false;
+
+  estimateBackground_    = true;
+  estimateCorrelations_  = true;
+  estimateWaveletNoise_  = true;
 
   logLevel_              = LogKit::L_LOW;
 
@@ -136,7 +145,8 @@ ModelSettings::~ModelSettings(void)
 bool 
 ModelSettings::getDoInversion(void)
 {
-  return ((VP+VS+RHO+LAMELAMBDA+LAMEMU+POISSONRATIO+AI+SI+VPVSRATIO+MURHO+LAMBDARHO+FACIESPROB+CORRELATION+FACIESPROBRELATIVE & gridFlag_) > 0); 
+  return (((VP+VS+RHO+LAMELAMBDA+LAMEMU+POISSONRATIO+AI+SI+VPVSRATIO+MURHO+LAMBDARHO+FACIESPROB+CORRELATION+FACIESPROBRELATIVE & gridFlag_) > 0) &&
+           estimationMode_ == false); 
 }
 
 bool 

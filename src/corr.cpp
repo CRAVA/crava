@@ -40,9 +40,11 @@ Corr::Corr(float  ** pointVar0,
 
 Corr::~Corr(void)
 {
-  for(int i=0;i<3;i++)
-    delete [] pointVar0_[i];
-  delete [] pointVar0_;
+  if(pointVar0_ != NULL) {
+    for(int i=0;i<3;i++)
+      delete [] pointVar0_[i];
+    delete [] pointVar0_;
+  }
 
   for(int i=0;i<3;i++)
     delete [] priorVar0_[i];
@@ -221,7 +223,8 @@ void Corr::printPriorVariances(void) const
   LogKit::LogFormatted(LogKit::LOW,"Variances           ln Vp     ln Vs    ln Rho         \n");
   LogKit::LogFormatted(LogKit::LOW,"---------------------------------------------------------------\n");
   LogKit::LogFormatted(LogKit::LOW,"Inversion grid:   %.1e   %.1e   %.1e (used by program)\n",priorVar0_[0][0],priorVar0_[1][1],priorVar0_[2][2]);
-  LogKit::LogFormatted(LogKit::LOW,"Well logs     :   %.1e   %.1e   %.1e                  \n",pointVar0_[0][0],pointVar0_[1][1],pointVar0_[2][2]);
+  if(pointVar0_ != NULL)
+    LogKit::LogFormatted(LogKit::LOW,"Well logs     :   %.1e   %.1e   %.1e                  \n",pointVar0_[0][0],pointVar0_[1][1],pointVar0_[2][2]);
 
   float corr01 = priorVar0_[0][1]/(sqrt(priorVar0_[0][0]*priorVar0_[1][1]));
   float corr02 = priorVar0_[0][2]/(sqrt(priorVar0_[0][0]*priorVar0_[2][2]));

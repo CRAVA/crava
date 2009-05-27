@@ -114,6 +114,8 @@ XmlModelFile::parseActions(TiXmlNode * node, std::string & errTxt)
   }
 
   parseInversionSettings(root, errTxt);
+
+  parseEstimationSettings(root, errTxt);
   
   checkForJunk(root, errTxt);
   return(true);
@@ -184,6 +186,30 @@ XmlModelFile::parseSimulation(TiXmlNode * node, std::string & errTxt)
   int value = 1;
   parseValue(root, "number-of-simulations", value, errTxt);
   modelSettings_->setNumberOfSimulations(value);
+
+  checkForJunk(root, errTxt);
+  return(true);
+}
+
+
+bool
+XmlModelFile::parseEstimationSettings(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("estimation-settings");
+  if(root == 0)
+    return(false);
+
+  bool estimateBG = true;
+  parseBool(root,"estimate-background", estimateBG, errTxt);
+  modelSettings_->setEstimateBackground(estimateBG);
+
+  bool estimateCorr = true;
+  parseBool(root,"estimate-correlations", estimateCorr, errTxt);
+  modelSettings_->setEstimateCorrelations(estimateCorr);
+
+  bool estimateWN = true;
+  parseBool(root,"estimate-wavelet-or-noise", estimateWN, errTxt);
+  modelSettings_->setEstimateWaveletNoise(estimateWN);
 
   checkForJunk(root, errTxt);
   return(true);
@@ -371,6 +397,10 @@ XmlModelFile::parseSurvey(TiXmlNode * node, std::string & errTxt)
   if(parseValue(root, "segy-start-time", value, errTxt) == true)
     modelSettings_->setSegyOffset(value);
 
+  bool direct = false;
+  parseBool(root, "direct-files", direct, errTxt);
+  modelSettings_->setDirectSeisInput(direct);
+
   while(parseAngleGather(root, errTxt) == true);
 
   if(modelSettings_->getNumberOfAngles() == 0)
@@ -436,7 +466,7 @@ XmlModelFile::parseSeismicData(TiXmlNode * node, std::string & errTxt)
   if(root == 0)
     return(false);
 
-  std::string value = "";
+  std::string value;
   if(parseFileName(root, "file-name", value, errTxt) == true)
     inputFiles_->addSeismicFile(value);
   else
@@ -610,6 +640,10 @@ XmlModelFile::parseBackground(TiXmlNode * node, std::string & errTxt)
   TiXmlNode * root = node->FirstChildElement("background");
   if(root == 0)
     return(false);
+
+  bool direct = false;
+  parseBool(root, "direct-files", direct, errTxt);
+  modelSettings_->setDirectBGInput(direct);
 
   std::string filename;
   bool vp = parseFileName(root, "vp-file", filename, errTxt);
@@ -805,6 +839,10 @@ XmlModelFile::parseIntervalTwoSurfaces(TiXmlNode * node, std::string & errTxt)
       root->ValueStr()+"'"+lineColumnText(root)+".\n";
   else
     modelSettings_->setTimeNz(value);
+
+  bool directVel = false;
+  parseBool(root,"direct-file", directVel, errTxt);
+  modelSettings_->setDirectVelInput(directVel);
 
   std::string filename;
   bool externalField = parseFileName(root, "velocity-field", filename, errTxt);
@@ -1060,6 +1098,7 @@ XmlModelFile::parseOutputTypes(TiXmlNode * node, std::string & errTxt)
 
   parseGridOutput(root, errTxt);
   parseWellOutput(root, errTxt);
+  parseDirectOutput(root, errTxt);
   parseOtherOutput(root, errTxt);
 
 
@@ -1078,6 +1117,10 @@ XmlModelFile::parseGridOutput(TiXmlNode * node, std::string & errTxt)
   parseGridFormats(root, errTxt);
   parseGridDomains(root, errTxt);
   parseGridParameters(root, errTxt);
+
+  //Set output for all FFTGrids.
+  FFTGrid::setOutputFlags(modelSettings_->getOutputFormatFlag(), 
+                          modelSettings_->getOutputDomainFlag());
 
   checkForJunk(root, errTxt);
   return(true);
@@ -1216,6 +1259,30 @@ XmlModelFile::parseWellOutput(TiXmlNode * node, std::string & errTxt)
     wellFlag += ModelSettings::BLOCKED_LOGS;
 
   modelSettings_->setWellOutputFlag(wellFlag);
+
+  checkForJunk(root, errTxt);
+  return(true);
+}
+
+
+bool
+XmlModelFile::parseDirectOutput(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("direct-output");
+  if(root == 0)
+    return(false);
+
+  bool value = false;
+  parseBool(root, "background", value, errTxt);
+  modelSettings_->setDirectBGOutput(value);
+
+  value = false;
+  parseBool(root, "seismic", value, errTxt);
+  modelSettings_->setDirectSeisOutput(value);
+
+  value = false;
+  parseBool(root, "time-to-depth-velocity", value, errTxt);
+  modelSettings_->setDirectVelOutput(value);
 
   checkForJunk(root, errTxt);
   return(true);

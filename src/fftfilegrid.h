@@ -49,6 +49,8 @@ public:
   int          writeSgriFile(const std::string & fileName, const Simbox *simbox, const std::string label);
   void         writeResampledStormCube(GridMapping *gridmapping, const std::string & fileName, 
                                        const Simbox *simbox, const int format, bool expTrans);
+  void         writeDirectFile(const std::string & fileName);
+  std::string  readDirectFile(const std::string & fileName);
 
   bool         isFile() {return(1);}
 
