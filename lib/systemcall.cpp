@@ -23,11 +23,11 @@ SystemCall::getUserName()
   if (GetUserName(userName, &nUserName)) 
   {
     if (userName == NULL) 
-      strUserName("Empty user name found");
+      strUserName = std::string("Empty user name found");
   }
   else 
   {
-    strUserName("User name not found");
+    strUserName = std::string("User name not found");
   }
   delete [] userName;
 #else
