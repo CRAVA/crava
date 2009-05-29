@@ -410,6 +410,11 @@ ModelFile::ModelFile(char * fileName)
 
   bool doFaciesProb         = (modelSettings_->getGridOutputFlag() & ModelSettings::FACIESPROB        ) > 0;
   bool doFaciesProbRelative = (modelSettings_->getGridOutputFlag() & ModelSettings::FACIESPROBRELATIVE) > 0;
+
+  if(doFaciesProb || doFaciesProbRelative) {
+    modelSettings_->setEstimateFaciesProb(true);
+  }
+
   if((doFaciesProb || doFaciesProbRelative) && !modelSettings_->getFaciesLogGiven())
   {
     sprintf(errText,"You cannot calculate facies probabilities without specifying a facies log for subcommand HEADER of command WELLS.\n");
