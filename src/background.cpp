@@ -116,7 +116,7 @@ Background::generateBackgroundModel(FFTGrid      *& bgAlpha,
 
   bool hasVelocityTrend = velocity != NULL;
   bool write1D = ((modelSettings->getOtherOutputFlag()& ModelSettings::BACKGROUND_TREND_1D) > 0);
-  bool write3D = ((modelSettings->getGridOutputFlag()& ModelSettings::BACKGROUND_TREND) > 0);
+  bool write3D = ((modelSettings->getGridOutputFlag() & ModelSettings::BACKGROUND_TREND) > 0);
   calculateBackgroundTrend(trendAlpha, avgDevAlpha,
                            wells, simbox, 
                            modelSettings->getAlphaMin(), 

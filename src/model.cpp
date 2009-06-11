@@ -506,7 +506,6 @@ Model::readSegyFile(const std::string       & fileName,
         traceHeaderFormats.push_back(modelSettings->getTraceHeaderFormat());
       }
 
-
       segy = new SegY(fileName, 
                       offset, 
                       traceHeaderFormats, 
@@ -2619,6 +2618,7 @@ Model::printSettings(ModelSettings * modelSettings,
 {
   LogKit::LogFormatted(LogKit::LOW,"\nGeneral settings:\n");
   int logLevel = modelSettings->getLogLevel();
+
   std::string logText("*NONE*");
   if (logLevel == LogKit::L_ERROR)
     logText = "ERROR";
@@ -2652,7 +2652,7 @@ Model::printSettings(ModelSettings * modelSettings,
 
     LogKit::LogFormatted(LogKit::LOW,"  Number of realisations                   : %10d\n",modelSettings->getNumberOfSimulations());
   }
-  LogKit::LogFormatted(LogKit::LOW,"  Kriging                                  : %10s\n",(modelSettings->getKrigingParameter()> 0 ? "no" : "yes"));
+  LogKit::LogFormatted(LogKit::LOW,"  Kriging                                  : %10s\n",(modelSettings->getKrigingParameter()>0 ? "yes" : "no"));
   LogKit::LogFormatted(LogKit::LOW,"  Estimate facies probabilities            : %10s\n",(modelSettings->getEstimateFaciesProb() ? "yes" : "no" ));
 
   LogKit::LogFormatted(LogKit::HIGH,"\nUnit settings/assumptions:\n");
@@ -2663,23 +2663,6 @@ Model::printSettings(ModelSettings * modelSettings,
   LogKit::LogFormatted(LogKit::HIGH,"  Density                                  : %10s\n","g/cm3");
   LogKit::LogFormatted(LogKit::HIGH,"  Angles                                   : %10s\n","   degrees (clockwise relative to north)");
 
-  TraceHeaderFormat * thf = modelSettings_->getTraceHeaderFormat(); 
-  if (thf != NULL) 
-  {
-    LogKit::LogFormatted(LogKit::LOW,"\nSegY trace header format:\n");
-    LogKit::LogFormatted(LogKit::LOW,"  Format name                              : %10s\n",thf->GetFormatName().c_str());
-    if (thf->GetBypassCoordScaling())
-      LogKit::LogFormatted(LogKit::LOW,"  Bypass coordinate scaling                :        yes\n");
-    if (!thf->GetStandardType()) 
-    {
-      LogKit::LogFormatted(LogKit::LOW,"  Start pos coordinate scaling             : %10d\n",thf->GetScalCoLoc());
-      LogKit::LogFormatted(LogKit::LOW,"  Start pos trace x coordinate             : %10d\n",thf->GetUtmxLoc());
-      LogKit::LogFormatted(LogKit::LOW,"  Start pos trace y coordinate             : %10d\n",thf->GetUtmyLoc());
-      LogKit::LogFormatted(LogKit::LOW,"  Start pos inline index                   : %10d\n",thf->GetInlineLoc());
-      LogKit::LogFormatted(LogKit::LOW,"  Start pos crossline index                : %10d\n",thf->GetCrosslineLoc());
-      LogKit::LogFormatted(LogKit::LOW,"  Coordinate system                        : %10s\n",thf->GetCoordSys()==0 ? "UTM" : "ILXL" );
-    }
-  }
   //
   // WELL PROCESSING
   //
@@ -2888,6 +2871,27 @@ Model::printSettings(ModelSettings * modelSettings,
     else
       LogKit::LogFormatted(LogKit::LOW,"  Density read from file                   : %10s\n",inputFiles->getBackFile(2).c_str());
   }
+
+  TraceHeaderFormat * thf_old = modelSettings_->getTraceHeaderFormat();
+  if (thf_old != NULL) 
+  {
+    LogKit::LogFormatted(LogKit::LOW,"\nAdditional SegY trace header format:\n");
+    if (thf_old != NULL) {
+      LogKit::LogFormatted(LogKit::LOW,"  Format name                              : %10s\n",thf_old->GetFormatName().c_str());
+      if (thf_old->GetBypassCoordScaling())
+        LogKit::LogFormatted(LogKit::LOW,"  Bypass coordinate scaling                :        yes\n");
+      if (!thf_old->GetStandardType()) 
+      {
+        LogKit::LogFormatted(LogKit::LOW,"  Start pos coordinate scaling             : %10d\n",thf_old->GetScalCoLoc());
+        LogKit::LogFormatted(LogKit::LOW,"  Start pos trace x coordinate             : %10d\n",thf_old->GetUtmxLoc());
+        LogKit::LogFormatted(LogKit::LOW,"  Start pos trace y coordinate             : %10d\n",thf_old->GetUtmyLoc());
+        LogKit::LogFormatted(LogKit::LOW,"  Start pos inline index                   : %10d\n",thf_old->GetInlineLoc());
+        LogKit::LogFormatted(LogKit::LOW,"  Start pos crossline index                : %10d\n",thf_old->GetCrosslineLoc());
+        LogKit::LogFormatted(LogKit::LOW,"  Coordinate system                        : %10s\n",thf_old->GetCoordSys()==0 ? "UTM" : "ILXL" );
+      }
+    }
+  }
+
   if (modelSettings->getGenerateSeismic())
   {
     //
@@ -2962,7 +2966,24 @@ Model::printSettings(ModelSettings * modelSettings,
     {
       LogKit::LogFormatted(LogKit::LOW,"\nSettings for AVO stack %d:\n",i+1);
       LogKit::LogFormatted(LogKit::LOW,"  Angle                                    : %10.1f\n",(modelSettings->getAngle(i)*180/PI));
-      LogKit::LogFormatted(LogKit::LOW,"  Segy offset                              : %10.1f\n",modelSettings->getSegyOffset());
+      LogKit::LogFormatted(LogKit::LOW,"  SegY start time                          : %10.1f\n",modelSettings->getSegyOffset());
+      TraceHeaderFormat * thf = modelSettings_->getTraceHeaderFormat(i);
+      if (thf != NULL) 
+      {
+        LogKit::LogFormatted(LogKit::LOW,"  SegY trace header format:\n");
+        LogKit::LogFormatted(LogKit::LOW,"    Format name                            : %10s\n",thf->GetFormatName().c_str());
+        if (thf->GetBypassCoordScaling())
+          LogKit::LogFormatted(LogKit::LOW,"    Bypass coordinate scaling              :        yes\n");
+        if (!thf->GetStandardType()) 
+        {
+          LogKit::LogFormatted(LogKit::LOW,"    Start pos coordinate scaling           : %10d\n",thf->GetScalCoLoc());
+          LogKit::LogFormatted(LogKit::LOW,"    Start pos trace x coordinate           : %10d\n",thf->GetUtmxLoc());
+          LogKit::LogFormatted(LogKit::LOW,"    Start pos trace y coordinate           : %10d\n",thf->GetUtmyLoc());
+          LogKit::LogFormatted(LogKit::LOW,"    Start pos inline index                 : %10d\n",thf->GetInlineLoc());
+          LogKit::LogFormatted(LogKit::LOW,"    Start pos crossline index              : %10d\n",thf->GetCrosslineLoc());
+          LogKit::LogFormatted(LogKit::LOW,"    Coordinate system                      : %10s\n",thf->GetCoordSys()==0 ? "UTM" : "ILXL" );
+        }
+      }
       LogKit::LogFormatted(LogKit::LOW,"  Data                                     : %s\n",inputFiles->getSeismicFile(i).c_str());
       if (modelSettings->getEstimateWavelet(i))
         LogKit::LogFormatted(LogKit::LOW,"  Estimate wavelet                         : %10s\n", "yes");

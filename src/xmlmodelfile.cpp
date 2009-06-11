@@ -19,12 +19,13 @@
 #include "src/definitions.h"
 #include "src/fftgrid.h"
 #include "src/vario.h"
+#include "lib/utils.h"
 
 XmlModelFile::XmlModelFile(const char * fileName)
 {
-  modelSettings_         = new ModelSettings();
-  inputFiles_            = new InputFiles();
-  failed_                = false;
+  modelSettings_ = new ModelSettings();
+  inputFiles_    = new InputFiles();
+  failed_        = false;
 
   std::ifstream file(fileName);
 
@@ -39,7 +40,7 @@ XmlModelFile::XmlModelFile(const char * fileName)
   std::string clean;
   while (std::getline(file,line))
   {
-    active = line.substr(0, line.find_first_of("!"));
+    active = line.substr(0, line.find_first_of("#"));
     clean = clean+active+"\n";
   }
   file.close();
@@ -55,7 +56,7 @@ XmlModelFile::XmlModelFile(const char * fileName)
   else {
     std::string errTxt = "";
     if(parseCrava(&doc, errTxt) == false)
-      errTxt = "Error: '"+std::string(fileName)+"' is not a crava model file (lacks the 'crava' keyword.\n";
+      errTxt = "'"+std::string(fileName)+"' is not a crava model file (lacks the <crava> keyword.\n";
 
     checkForJunk(&doc, errTxt);
 
@@ -63,7 +64,8 @@ XmlModelFile::XmlModelFile(const char * fileName)
 
 
     if(errTxt != "") {
-      LogKit::LogMessage(LogKit::ERROR, errTxt);
+      Utils::writeHeader("Error(s) detected when parsing model file");
+      LogKit::LogMessage(LogKit::ERROR, "\n"+errTxt);
       failed_ = true;
     }
   }
@@ -101,16 +103,16 @@ XmlModelFile::parseActions(TiXmlNode * node, std::string & errTxt)
   
   std::string mode;
   if(parseValue(root, "mode", mode, errTxt) == false)
-    errTxt = errTxt+"Error: Command 'mode' must be given under command '"+
-      root->ValueStr()+"'"+lineColumnText(root)+".\n";
+    errTxt += "Command <mode> must be given under command <"+
+      root->ValueStr()+">"+lineColumnText(root)+".\n";
   else {
     if(mode == "forward")
       modelSettings_->setGenerateSeismic(true);
     else if(mode == "estimation")
       modelSettings_->setEstimationMode(true);
     else if(mode != "inversion")
-      errTxt = errTxt+"Error: String after 'mode' must be either 'inversion', 'estimation' or 'forward', found'"+
-        mode+"' under command '"+root->ValueStr()+"'"+lineColumnText(root)+".\n";
+      errTxt += "String after <mode> must be either <inversion>, <estimation> or <forward>, found <"+
+        mode+"> under command <"+root->ValueStr()+">"+lineColumnText(root)+".\n";
   }
 
   parseInversionSettings(root, errTxt);
@@ -180,8 +182,8 @@ XmlModelFile::parseSimulation(TiXmlNode * node, std::string & errTxt)
   std::string filename;
   if(parseFileName(root, "seed-file", filename, errTxt) == true) {
     if(seedGiven == true)
-      errTxt = errTxt+"Error: Both seed and seed file given in command '"+
-        root->ValueStr()+"'"+lineColumnText(root)+".\n";
+      errTxt += "Both seed and seed file given in command <"+
+        root->ValueStr()+"> "+lineColumnText(root)+".\n";
   }
 
   int value = 1;
@@ -270,8 +272,8 @@ XmlModelFile::parseLogNames(TiXmlNode * node, std::string & errTxt)
   }
   if(parseValue(root, "dt", value, errTxt) == true) {
     if(vp == true)
-      errTxt = errTxt+"Error: Both vp and dt given as logs in command '"
-        +root->ValueStr()+"'"+lineColumnText(root)+".\n";
+      errTxt += "Both vp and dt given as logs in command <"
+        +root->ValueStr()+"> "+lineColumnText(root)+".\n";
     else {
       modelSettings_->setLogName(1, value);
       modelSettings_->setInverseVelocity(0, true);
@@ -285,8 +287,8 @@ XmlModelFile::parseLogNames(TiXmlNode * node, std::string & errTxt)
   }
   if(parseValue(root, "dts", value, errTxt) == true) {
     if(vs == true)
-      errTxt = errTxt+"Error: Both vs and dts given as logs in command '"
-        +root->ValueStr()+"'"+lineColumnText(root)+".\n";
+      errTxt += "Both vs and dts given as logs in command <"
+        +root->ValueStr()+"> "+lineColumnText(root)+".\n";
     else {
       modelSettings_->setLogName(3, value);
       modelSettings_->setInverseVelocity(1, true);
@@ -321,17 +323,17 @@ XmlModelFile::parseWell(TiXmlNode * node, std::string & errTxt)
     inputFiles_->addWellFile(""); //Dummy to keep tables balanced.
 
   bool use;
-  if(parseBool(root, "use-in-estimate-of-wavelet", use, tmpErr) == true && use == false)
+  if(parseBool(root, "use-for-wavelet-estimation", use, tmpErr) == true && use == false)
     modelSettings_->addIndicatorWavelet(0);
   else
     modelSettings_->addIndicatorWavelet(1);
 
-  if(parseBool(root, "use-in-estimate-of-background-trend", use, tmpErr) == true && use == false)
+  if(parseBool(root, "use-for-background-trend", use, tmpErr) == true && use == false)
     modelSettings_->addIndicatorBGTrend(0);
   else
     modelSettings_->addIndicatorBGTrend(1);
 
-  if(parseBool(root, "use-in-estimate-of-facies-probabilities", use, tmpErr) == true && use == false)
+  if(parseBool(root, "use-for-facies-probabilities", use, tmpErr) == true && use == false)
     modelSettings_->addIndicatorFacies(0);
   else
     modelSettings_->addIndicatorFacies(1);
@@ -389,9 +391,11 @@ XmlModelFile::parseSurvey(TiXmlNode * node, std::string & errTxt)
     return(false);
 
   Vario * vario = NULL;
-  if((parseVariogram(root, "angular-correlation", vario, errTxt) == true) && (vario != NULL)) {
-    vario->convertRangesFromDegToRad();
-    modelSettings_->setAngularCorr(vario);
+  if(parseVariogram(root, "angular-correlation", vario, errTxt) == true) {
+    if (vario != NULL) {
+      vario->convertRangesFromDegToRad();
+      modelSettings_->setAngularCorr(vario);
+    }
   }
 
   float value;
@@ -405,7 +409,7 @@ XmlModelFile::parseSurvey(TiXmlNode * node, std::string & errTxt)
   while(parseAngleGather(root, errTxt) == true);
 
   if(modelSettings_->getNumberOfAngles() == 0)
-    errTxt = errTxt + "Error: Need at least one angle gather in command '"+root->ValueStr()+"'"+
+    errTxt +=  "Need at least one angle gather in command <"+root->ValueStr()+">"+
     lineColumnText(root)+".\n";
 
   parseWaveletEstimationInterval(root, errTxt);
@@ -426,7 +430,7 @@ XmlModelFile::parseAngleGather(TiXmlNode * node, std::string & errTxt)
   if(parseValue(root, "offset-angle", value, errTxt) == true)
     modelSettings_->addAngle(value*float(M_PI/180));
   else
-    errTxt = errTxt+"Error: Need offset angle for gather"+lineColumnText(root)+".\n";
+    errTxt += "Need offset angle for gather"+lineColumnText(root)+".\n";
   
   if(parseSeismicData(root, errTxt) == false) {
     //Go for defaults. Assume forward model (check later)
@@ -479,8 +483,8 @@ XmlModelFile::parseSeismicData(TiXmlNode * node, std::string & errTxt)
     else if(value == "ps")
       modelSettings_->addSeismicType(ModelSettings::PSSEIS);
     else
-      errTxt = errTxt+"Error: Only 'pp' and 'ps' are valid seismic types, found '"+value+
-        "' on line "+NRLib2::ToString(root->Row())+", column "+NRLib2::ToString(root->Column())+".\n";
+      errTxt += "Only 'pp' and 'ps' are valid seismic types, found '"+value+"' on line "
+        +NRLib2::ToString(root->Row())+", column "+NRLib2::ToString(root->Column())+".\n";
   }
   else
     modelSettings_->addSeismicType(ModelSettings::STANDARDSEIS);
@@ -561,7 +565,7 @@ XmlModelFile::parseLocalWavelet(TiXmlNode * node, std::string & errTxt)
   }
   else 
     if(estimate == true && shiftGiven == true) {
-      errTxt = errTxt +"Error: Can not give both file and ask for estimation of local wavelet shift"+
+      errTxt += "Can not give both file and ask for estimation of local wavelet shift"+
         lineColumnText(node);
       modelSettings_->addEstimateLocalShift(false);
     }
@@ -575,7 +579,7 @@ XmlModelFile::parseLocalWavelet(TiXmlNode * node, std::string & errTxt)
   }
   else 
     if(estimate == true && scaleGiven == true) {
-      errTxt = errTxt +"Error: Can not give both file and ask for estimation of local wavelet scale"+
+      errTxt += "Can not give both file and ask for estimation of local wavelet scale"+
         lineColumnText(node);
       modelSettings_->addEstimateLocalScale(false);
     }
@@ -615,8 +619,11 @@ XmlModelFile::parsePriorModel(TiXmlNode * node, std::string & errTxt)
   parseBackground(root, errTxt);
 
   Vario* vario = NULL;
-  if(parseVariogram(root, "lateral-correlation", vario, errTxt) == true)
-    modelSettings_->setLateralCorr(vario);
+  if(parseVariogram(root, "lateral-correlation", vario, errTxt) == true) {
+    if (vario != NULL) {
+      modelSettings_->setLateralCorr(vario);
+    }
+  }
 
   std::string filename;
   if(parseFileName(root, "temporal-correlation", filename, errTxt) == true)
@@ -668,7 +675,7 @@ XmlModelFile::parseBackground(TiXmlNode * node, std::string & errTxt)
   float value;
   if(parseValue(root, "vp-constant", value, errTxt) == true) {
     if(vp == true)
-      errTxt = errTxt +"Error: Both file and constant given for vp in command '"+root->ValueStr()+"'"+
+      errTxt += "Both file and constant given for vp in command <"+root->ValueStr()+"> "+
         lineColumnText(root)+".\n";
     else {
       vp = true;
@@ -678,7 +685,7 @@ XmlModelFile::parseBackground(TiXmlNode * node, std::string & errTxt)
 
   if(parseValue(root, "vs-constant", value, errTxt) == true) {
     if(vs == true)
-      errTxt = errTxt +"Error: Both file and constant given for vs in command '"+root->ValueStr()+"'"+
+      errTxt += "Both file and constant given for vs in command <"+root->ValueStr()+"> "+
         lineColumnText(root)+".\n";
     else {
       vs = true;
@@ -688,7 +695,7 @@ XmlModelFile::parseBackground(TiXmlNode * node, std::string & errTxt)
 
   if(parseValue(root, "density-constant", value, errTxt) == true) {
     if(rho == true)
-      errTxt = errTxt +"Error: Both file and constant given for density in command '"+root->ValueStr()+"'"+
+      errTxt += "Both file and constant given for density in command <"+root->ValueStr()+"> "+
         lineColumnText(root)+".\n";
     else {
       rho = true;
@@ -700,7 +707,7 @@ XmlModelFile::parseBackground(TiXmlNode * node, std::string & errTxt)
   bool estimate = !(vp | vs | rho);
   modelSettings_->setGenerateBackground(estimate);
   if((bgGiven | estimate) == false) {
-    errTxt = errTxt + "Error: Either all or no background parameters must be given in command '"+root->ValueStr()+"'"+
+    errTxt +=  "Either all or no background parameters must be given in command <"+root->ValueStr()+"> "+
         lineColumnText(root)+".\n";
   }
 
@@ -708,8 +715,11 @@ XmlModelFile::parseBackground(TiXmlNode * node, std::string & errTxt)
     inputFiles_->setBackVelFile(filename);
   
   Vario * vario = NULL;
-  if(parseVariogram(root, "lateral-correlation", vario, errTxt) == true)
-    modelSettings_->setBackgroundVario(vario);
+  if(parseVariogram(root, "lateral-correlation", vario, errTxt) == true) {
+    if (vario != NULL) {
+      modelSettings_->setBackgroundVario(vario);
+    }
+  }
 
   if(parseValue(root, "high-cut-background-modelling", value, errTxt) == true)
     modelSettings_->setMaxHzBackground(value);
@@ -750,12 +760,12 @@ XmlModelFile::parseFaciesEstimationInterval(TiXmlNode * node, std::string & errT
   if(parseFileName(root, "top-file-name", filename, errTxt) == true)
     inputFiles_->setFaciesEstIntFile(0, filename);
   else
-    errTxt = errTxt+"Error: Must specify 'top-file-name' in command '"+root->ValueStr()+"'"+
+    errTxt += "Must specify <top-file-name> in command <"+root->ValueStr()+"> "+
       lineColumnText(root)+".\n";
   if(parseFileName(root, "base-file-name", filename, errTxt) == true)
     inputFiles_->setFaciesEstIntFile(1, filename);
   else
-    errTxt = errTxt+"Error: Must specify 'base-file-name' in command '"+root->ValueStr()+"'"+
+    errTxt += "Must specify <base-file-name> in command <"+root->ValueStr()+">"+
       lineColumnText(root)+".\n";
 
   checkForJunk(root, errTxt);
@@ -771,8 +781,8 @@ XmlModelFile::parseProjectSettings(TiXmlNode * node, std::string & errTxt)
     return(false);
 
   if(parseOutputVolume(root, errTxt) == false)
-    errTxt = errTxt+"Error: Command 'output-volume' is needed in command '"+
-      root->ValueStr()+"'"+lineColumnText(root)+".\n";
+    errTxt += "Command <output-volume> is needed in command <"+
+      root->ValueStr()+">"+lineColumnText(root)+".\n";
 
   parseIOSettings(root, errTxt);
   parseAdvancedSettings(root, errTxt);
@@ -793,11 +803,11 @@ XmlModelFile::parseOutputVolume(TiXmlNode * node, std::string & errTxt)
   
   if(parseIntervalOneSurface(root, errTxt) == interval) { //Either both or none given
     if(interval == true)
-      errTxt = errTxt+"Error: Time interval specified in more than one way in command '"+
-        root->ValueStr()+"'"+lineColumnText(root)+".\n";
+      errTxt += "Time interval specified in more than one way in command <"+root->ValueStr()+"> "
+        +lineColumnText(root)+".\n";
     else
-      errTxt = errTxt+"Error: No time interval specified in command '"+
-        root->ValueStr()+"'"+lineColumnText(root)+".\n";
+      errTxt += "No time interval specified in command <"+root->ValueStr()+"> "
+        +lineColumnText(root)+".\n";
   }
 
   parseArea(root, errTxt);
@@ -817,8 +827,8 @@ XmlModelFile::parseIntervalTwoSurfaces(TiXmlNode * node, std::string & errTxt)
   modelSettings_->setParallelTimeSurfaces(false);
 
   if(parseTopSurface(root, errTxt) == false)
-    errTxt = errTxt+"Error: Top surface not specified in command '"+
-      root->ValueStr()+"'"+lineColumnText(root)+".\n";
+    errTxt += "Top surface not specified in command <"+root->ValueStr()+"> "
+      +lineColumnText(root)+".\n";
   bool topDepthGiven;
   if(inputFiles_->getDepthSurfFile(0) == "")
     topDepthGiven = false;
@@ -826,8 +836,8 @@ XmlModelFile::parseIntervalTwoSurfaces(TiXmlNode * node, std::string & errTxt)
     topDepthGiven = true;
 
   if(parseBaseSurface(root, errTxt) == false)
-    errTxt = errTxt+"Error: Base surface not specified in command '"+
-      root->ValueStr()+"'"+lineColumnText(root)+".\n";
+    errTxt += "Base surface not specified in command <"+root->ValueStr()+"> "
+      +lineColumnText(root)+".\n";
   bool baseDepthGiven;
   if(inputFiles_->getDepthSurfFile(1) == "")
     baseDepthGiven = false;
@@ -836,8 +846,8 @@ XmlModelFile::parseIntervalTwoSurfaces(TiXmlNode * node, std::string & errTxt)
 
   int value = 0;
   if(parseValue(root, "number-of-layers", value, errTxt) == false)
-    errTxt = errTxt+"Error: Number of layers not specified in command '"+
-      root->ValueStr()+"'"+lineColumnText(root)+".\n";
+    errTxt += "Number of layers not specified in command <"+root->ValueStr()+">"
+      +lineColumnText(root)+".\n";
   else
     modelSettings_->setTimeNz(value);
 
@@ -857,22 +867,21 @@ XmlModelFile::parseIntervalTwoSurfaces(TiXmlNode * node, std::string & errTxt)
   if(inversionField == true) {
     modelSettings_->setVelocityFromInversion(true);
     if(externalField == true)
-      errTxt = errTxt+
-        "Error: Both 'velcoity-field' and 'velocity-field-from-inversion' given in command '"+
-        root->ValueStr()+"'"+lineColumnText(root)+".\n";
+      errTxt += "Both <velcoity-field> and <velocity-field-from-inversion> given in command <"
+        +root->ValueStr()+">"+lineColumnText(root)+".\n";
   }
 
   if(externalField == false && inversionField == false) {
     if(topDepthGiven != baseDepthGiven)
-      errTxt = errTxt+"Error: Only one depth surface given, and no velocity field in command '"+
-        root->ValueStr()+"'"+lineColumnText(root)+".\n";
+      errTxt += "Only one depth surface given, and no velocity field in command <"
+        +root->ValueStr()+"> "+lineColumnText(root)+".\n";
     else if(topDepthGiven == true) // Both top and bottom given.
       modelSettings_->setDepthDataOk(true);
   }
   else {
     if(topDepthGiven == false && baseDepthGiven == false) {
-      errTxt = errTxt+"Error: Velocity field, but no depth surface given in command '"+
-        root->ValueStr()+"'"+lineColumnText(root)+".\n";
+      errTxt += "Velocity field, but no depth surface given in command <"
+        +root->ValueStr()+"> "+lineColumnText(root)+".\n";
     }
     else
       modelSettings_->setDepthDataOk(true); //One or two surfaces, and velocity field.
@@ -901,13 +910,13 @@ XmlModelFile::parseTopSurface(TiXmlNode * node, std::string & errTxt)
     if(timeFile == false)
       inputFiles_->addTimeSurfFile(NRLib2::ToString(value));
     else
-      errTxt = errTxt+"Error: Both file and value given for top time in command'"+
-        root->ValueStr()+"'"+lineColumnText(root)+".\n";
+      errTxt += "Both file and value given for top time in command <"
+        +root->ValueStr()+"> "+lineColumnText(root)+".\n";
   }
   else if(timeFile == false) {
     inputFiles_->addTimeSurfFile("");
-    errTxt = errTxt+"Error: No time surface given in command '"+
-      root->ValueStr()+"'"+lineColumnText(root)+".\n";
+    errTxt += "No time surface given in command <"+root->ValueStr()+"> "
+      +lineColumnText(root)+".\n";
   }
 
   if(parseFileName(root,"depth-file", filename, errTxt) == true)
@@ -936,13 +945,13 @@ XmlModelFile::parseBaseSurface(TiXmlNode * node, std::string & errTxt)
     if(timeFile == false)
       inputFiles_->addTimeSurfFile(NRLib2::ToString(value));
     else
-      errTxt = errTxt+"Error: Both file and value given for base time in command'"+
-        root->ValueStr()+"'"+lineColumnText(root)+".\n";
+      errTxt += "Both file and value given for base time in command <"+
+        root->ValueStr()+"> "+lineColumnText(root)+".\n";
   }
   else if(timeFile == false) {
     inputFiles_->addTimeSurfFile("");
-    errTxt = errTxt+"Error: No time surface given in command '"+
-      root->ValueStr()+"'"+lineColumnText(root)+".\n";
+    errTxt += "No time surface given in command <"+root->ValueStr()+"> "
+      +lineColumnText(root)+".\n";
   }
 
   if(parseFileName(root,"depth-file", filename, errTxt) == true)
@@ -966,8 +975,8 @@ XmlModelFile::parseIntervalOneSurface(TiXmlNode * node, std::string & errTxt)
   if(parseFileName(root, "reference-surface", filename, errTxt) == true)
     inputFiles_->addTimeSurfFile(filename);
   else
-    errTxt = errTxt+"Error: No reference surface given in command '"+
-      root->ValueStr()+"'"+lineColumnText(root)+".\n";
+    errTxt += "No reference surface given in command <"+
+      root->ValueStr()+"> "+lineColumnText(root)+".\n";
 
   double value;
   if(parseValue(root, "shift-to-interval-top", value, errTxt) == true)
@@ -976,14 +985,14 @@ XmlModelFile::parseIntervalOneSurface(TiXmlNode * node, std::string & errTxt)
   if(parseValue(root, "thickness", value, errTxt) == true)
     modelSettings_->setTimeLz(value);
   else
-    errTxt = errTxt+"Error: No thickness given in command '"+
-      root->ValueStr()+"'"+lineColumnText(root)+".\n";
+    errTxt += "No thickness given in command <"+
+      root->ValueStr()+"> "+lineColumnText(root)+".\n";
 
   if(parseValue(root, "sample-density", value, errTxt) == true)
     modelSettings_->setTimeDz(value);
   else
-    errTxt = errTxt+"Error: No sample density given in command '"+
-      root->ValueStr()+"'"+lineColumnText(root)+".\n";
+    errTxt += "No sample density given in command <"+
+      root->ValueStr()+"> "+lineColumnText(root)+".\n";
 
   checkForJunk(root, errTxt);
   return(true);
@@ -999,38 +1008,38 @@ XmlModelFile::parseArea(TiXmlNode * node, std::string & errTxt)
 
   double x0 = 0;
   if(parseValue(root, "reference-point-x", x0, errTxt) == false)
-    errTxt = errTxt+"Error: Reference x-coordinat must be given in command '"+
-      root->ValueStr()+"'"+lineColumnText(root)+".\n";
+    errTxt += "Reference x-coordinat must be given in command <"+
+      root->ValueStr()+"> "+lineColumnText(root)+".\n";
 
   double y0 = 0;
   if(parseValue(root, "reference-point-y", y0, errTxt) == false)
-    errTxt = errTxt+"Error: Reference y-coordinat must be given in command '"+
-      root->ValueStr()+"'"+lineColumnText(root)+".\n";
+    errTxt += "Reference y-coordinat must be given in command <"+
+      root->ValueStr()+"> "+lineColumnText(root)+".\n";
 
   double lx = 0;
   if(parseValue(root, "length-x", lx, errTxt) == false)
-    errTxt = errTxt+"Error: X-length must be given in command '"+
-      root->ValueStr()+"'"+lineColumnText(root)+".\n";
+    errTxt += "X-length must be given in command <"+
+      root->ValueStr()+"> "+lineColumnText(root)+".\n";
 
   double ly = 0;
   if(parseValue(root, "length-y", ly, errTxt) == false)
-    errTxt = errTxt+"Error: Y-length must be given in command '"+
-      root->ValueStr()+"'"+lineColumnText(root)+".\n";
+    errTxt += "Y-length must be given in command <"+
+      root->ValueStr()+"> "+lineColumnText(root)+".\n";
 
   double dx = 0;
   if(parseValue(root, "sample-density-x", dx, errTxt) == false)
-    errTxt = errTxt+"Error: Sample density for x must be given in command '"+
-      root->ValueStr()+"'"+lineColumnText(root)+".\n";
+    errTxt += "Sample density for x must be given in command <"+
+      root->ValueStr()+"> "+lineColumnText(root)+".\n";
 
   double dy = 0;
   if(parseValue(root, "sample-density-y", dy, errTxt) == false)
-    errTxt = errTxt+"Error: Sample density for y must be given in command '"+
-      root->ValueStr()+"'"+lineColumnText(root)+".\n";
+    errTxt += "Sample density for y must be given in command <"+
+      root->ValueStr()+"> "+lineColumnText(root)+".\n";
 
   double angle = 0;
   if(parseValue(root, "angle", angle, errTxt) == false)
-    errTxt = errTxt+"Error: Rotation angle must be given in command '"+
-      root->ValueStr()+"'"+lineColumnText(root)+".\n";
+    errTxt += "Rotation angle must be given in command <"+
+      root->ValueStr()+"> "+lineColumnText(root)+".\n";
 
   double rot = (-1)*angle*(M_PI/180.0);
   int nx = static_cast<int>(lx/dx);
@@ -1070,9 +1079,30 @@ XmlModelFile::parseIOSettings(TiXmlNode * node, std::string & errTxt)
   if(parseValue(root, "file-output-prefix", value, errTxt) == true)
     ModelSettings::setFilePrefix(value);
 
-  int level;
-  if(parseValue(root, "log-level", level, errTxt) == true)
-    modelSettings_->setLogLevel(level);
+  std::string level;
+  if(parseValue(root, "log-level", level, errTxt) == true) {
+    int logLevel = LogKit::ERROR;
+    if(level=="error")
+      logLevel = LogKit::L_ERROR;
+    else if(level=="warning")
+      logLevel = LogKit::L_WARNING;
+    else if(level=="low")
+      logLevel = LogKit::L_LOW;
+    else if(level=="medium")
+      logLevel = LogKit::L_MEDIUM;
+    else if(level=="high")
+      logLevel = LogKit::L_HIGH;
+    else if(level=="debuglow")
+      logLevel = LogKit::L_DEBUGLOW;
+    else if(level=="debughigh")
+      logLevel = LogKit::L_DEBUGHIGH;
+    else {
+      errTxt += "Unknown log level " + level + " in command <log-level>. ";
+      errTxt += "Choose from: error, warning, low, medium, and high\n";
+      return(false);
+    }
+    modelSettings_->setLogLevel(logLevel);
+  }
 
   //Test-open log file, to check valid path.
   std::string logFileName = ModelSettings::makeFullFileName("logFile.txt");
@@ -1081,7 +1111,7 @@ XmlModelFile::parseIOSettings(TiXmlNode * node, std::string & errTxt)
     NRLib2::OpenWrite(file, logFileName);
   }
   catch(NRLib2::Exception & e) {
-    errTxt = errTxt + "Error when trying top open '" + logFileName +"' : " + e.what()+"\n";
+    errTxt +=  "Cannot open file '" + logFileName +"' : " + e.what()+"\n";
   }
   file.close();
 
@@ -1152,8 +1182,8 @@ XmlModelFile::parseGridDomains(TiXmlNode * node, std::string & errTxt)
   modelSettings_->setOutputDomainFlag(domainFlag);
 
   if(domainFlag == 0)
-    errTxt = errTxt+"Error: Both time and depth domain output turned off after command '"
-      +root->ValueStr()+"'"+lineColumnText(root)+".\n";
+    errTxt += "Both time and depth domain output turned off after command <"
+      +root->ValueStr()+"> "+lineColumnText(root)+".\n";
 
   checkForJunk(root, errTxt);
   return(true);
@@ -1229,6 +1259,8 @@ XmlModelFile::parseGridParameters(TiXmlNode * node, std::string & errTxt)
     paramFlag += ModelSettings::RESIDUAL;
   if(parseBool(root, "background", value, errTxt) == true && value == true)
     paramFlag += ModelSettings::BACKGROUND;
+  if(parseBool(root, "background-trend", value, errTxt) == true && value == true)
+    paramFlag += ModelSettings::BACKGROUND_TREND;
   if(parseBool(root, "extra-grids", value, errTxt) == true && value == true)
     paramFlag += ModelSettings::EXTRA_GRIDS;
 
@@ -1411,13 +1443,11 @@ XmlModelFile::parse(TiXmlNode * node, std::string & errTxt)
   checkForJunk(root, errTxt);
   return(true);
 }
-
-
 */
 
 
 bool
-XmlModelFile::parseTraceHeaderFormat(TiXmlNode * node, const std::string & keyword, TraceHeaderFormat * thf, std::string & errTxt)
+XmlModelFile::parseTraceHeaderFormat(TiXmlNode * node, const std::string & keyword, TraceHeaderFormat *& thf, std::string & errTxt)
 {
   thf = NULL;
   TiXmlNode * root = node->FirstChildElement(keyword);
@@ -1431,7 +1461,7 @@ XmlModelFile::parseTraceHeaderFormat(TiXmlNode * node, const std::string & keywo
     else if(stdFormat == "iesx")
       thf = new TraceHeaderFormat(TraceHeaderFormat::IESX);
     else {
-      errTxt = errTxt+"Error: Unknown segy-format '"+stdFormat+"' found on line"+
+      errTxt += "Unknown segy-format '"+stdFormat+"' found on line"+
         NRLib2::ToString(root->Row())+", column "+NRLib2::ToString(root->Column())+".\n";
       thf = new TraceHeaderFormat(TraceHeaderFormat::SEISWORKS);
     }
@@ -1452,7 +1482,7 @@ XmlModelFile::parseTraceHeaderFormat(TiXmlNode * node, const std::string & keywo
     thf->SetScaleCoLoc(value);
 
   bool bypass;
-  if(parseBool(root,"bypass-corrdinate-scaling", bypass, errTxt) == true)
+  if(parseBool(root,"bypass-coordinate-scaling", bypass, errTxt) == true)
     if(bypass == true)
       thf->SetScaleCoLoc(-1);
 
@@ -1475,8 +1505,8 @@ XmlModelFile::parseVariogram(TiXmlNode * node, const std::string & keyword, Vari
   if(parseValue(root,"range", value, errTxt) == true)
     range = value;
   else
-    errTxt = errTxt+"Error: Keyword 'range' is lacking for variogram under command '"+keyword+
-      "', line "+NRLib2::ToString(root->Row())+", column "+NRLib2::ToString(root->Column())+".\n";
+    errTxt += "Keyword <range> is lacking for variogram under command <"+keyword+
+      ">, line "+NRLib2::ToString(root->Row())+", column "+NRLib2::ToString(root->Column())+".\n";
   if(parseValue(root,"subrange", value, errTxt) == true)
     subrange = value;
   if(parseValue(root,"angle", value, errTxt) == true)
@@ -1485,23 +1515,30 @@ XmlModelFile::parseVariogram(TiXmlNode * node, const std::string & keyword, Vari
   if(power == true)
     expo = value;
 
+  if (range==0.0) {
+    errTxt += "The value of <range> given for command <"+keyword+"> must be greater than zero.\n";
+  }
+  if (subrange==0.0) {
+    errTxt += "The value of <subrange> given for command <"+keyword+"> must be greater than zero.\n";
+  }
+
   std::string vType;
   vario = NULL;
   if(parseValue(root,"variogram-type", vType, errTxt) == false)
-    errTxt = errTxt+"Error: Keyword 'variogram-type' is lacking for variogram under command '"+keyword+
-      "', line "+NRLib2::ToString(root->Row())+", column "+NRLib2::ToString(root->Column())+".\n";
+    errTxt += "Keyword <variogram-type> is lacking for variogram under command <"+keyword+
+      ">, line "+NRLib2::ToString(root->Row())+", column "+NRLib2::ToString(root->Column())+".\n";
   else {
     if(vType == "genexp") {
       if(power == false) {
-        errTxt = errTxt+"Error: Keyword 'power' is lacking for gen. exp. variogram under command '"+keyword+
-          "', line "+NRLib2::ToString(root->Row())+", column "+NRLib2::ToString(root->Column())+".\n";
+        errTxt += "Keyword <power> is lacking for gen. exp. variogram under command <"+keyword+
+          ">, line "+NRLib2::ToString(root->Row())+", column "+NRLib2::ToString(root->Column())+".\n";
       }
       vario = new GenExpVario(expo, range, subrange, angle);
     }
     else if(vType == "spherical") {
       if(power == true) {
-        errTxt = errTxt+"Error: Keyword 'power' is given for spherical variogram under command '"+keyword+
-          "', line "+NRLib2::ToString(root->Row())+", column "+NRLib2::ToString(root->Column())+".\n";
+        errTxt += "Keyword <power> is given for spherical variogram under command <"+keyword+
+          ">, line "+NRLib2::ToString(root->Row())+", column "+NRLib2::ToString(root->Column())+".\n";
       }
       vario = new SphericalVario(range, subrange, angle);
     }
@@ -1527,8 +1564,8 @@ XmlModelFile::parseBool(TiXmlNode * node, const std::string & keyword, bool & va
     else if(tmpVal == "no")
       value = false;
     else {
-      tmpErr = "Error: Found '"+tmpVal+"' under keyword '"+keyword+"', expected 'yes' or 'no'. This happened in command '"+
-        node->ValueStr()+"' on line "+NRLib2::ToString(node->Row())+", column "+NRLib2::ToString(node->Column())+".\n";
+      tmpErr = "Found '"+tmpVal+"' under keyword '"+keyword+"', expected 'yes' or 'no'. This happened in command <"+
+        node->ValueStr()+"> on line "+NRLib2::ToString(node->Row())+", column "+NRLib2::ToString(node->Column())+".\n";
     }
   }
 
@@ -1565,16 +1602,16 @@ XmlModelFile::checkForJunk(TiXmlNode * root, std::string & errTxt, bool allowDup
       case TiXmlNode::DECLARATION :
         break;
       case TiXmlNode::TEXT :
-        errTxt = errTxt + "Error: Unexpected value '"+child->Value()+"' is not part of command '"+root->Value()+
-          "' on line "+NRLib2::ToString(child->Row())+", column "+NRLib2::ToString(child->Column())+".\n";
+        errTxt = errTxt + "Unexpected value '"+child->Value()+"' is not part of command <"+root->Value()+
+          "> on line "+NRLib2::ToString(child->Row())+", column "+NRLib2::ToString(child->Column())+".\n";
         break;
       case TiXmlNode::ELEMENT :
-        errTxt = errTxt + "Error: Unexpected command '"+child->Value()+"' is not part of command '"+root->Value()+
-          "' on line "+NRLib2::ToString(child->Row())+", column "+NRLib2::ToString(child->Column())+".\n";
+        errTxt = errTxt + "Unexpected command <"+child->Value()+"> is not part of command <"+root->Value()+
+          "> on line "+NRLib2::ToString(child->Row())+", column "+NRLib2::ToString(child->Column())+".\n";
         break;
       default :
-        errTxt = errTxt + "Error: Unexpected text '"+child->Value()+"' is not part of command '"+root->Value()+
-          "' on line "+NRLib2::ToString(child->Row())+", column "+NRLib2::ToString(child->Column())+".\n";
+        errTxt = errTxt + "Unexpected text '"+child->Value()+"' is not part of command <"+root->Value()+
+          "> on line "+NRLib2::ToString(child->Row())+", column "+NRLib2::ToString(child->Column())+".\n";
         break;
     }
     root->RemoveChild(child);
@@ -1596,15 +1633,15 @@ XmlModelFile::checkForJunk(TiXmlNode * root, std::string & errTxt, bool allowDup
           parent->RemoveChild(root);
           root = parent->FirstChildElement(cmd);
         }
-        errTxt = errTxt +"Error: Found "+NRLib2::ToString(n)+" extra occurences of command '"+cmd+"' under command '"+parent->Value()+
-          "' on line "+NRLib2::ToString(parent->Row())+", column "+NRLib2::ToString(parent->Column())+".\n";
+        errTxt += "Found "+NRLib2::ToString(n)+" extra occurences of command <"+cmd+"> under command <"+parent->Value()+
+          "> on line "+NRLib2::ToString(parent->Row())+", column "+NRLib2::ToString(parent->Column())+".\n";
       }
     }
   }
 }
 
 bool 
-XmlModelFile::checkFileOpen(const std::string & fName, TiXmlNode * node, std::string & errText)
+XmlModelFile::checkFileOpen(const std::string & fName, TiXmlNode * node, std::string & errTxt)
 {
   bool error = false;
   if(fName != "*" && fName != "?")
@@ -1613,8 +1650,8 @@ XmlModelFile::checkFileOpen(const std::string & fName, TiXmlNode * node, std::st
     if(file == 0)
     {
       error = true;
-      errText = errText +"Error: Failed to open file '"+fName+"' in command '"+node->ValueStr()+
-        "' on line "+NRLib2::ToString(node->Row())+", column "+NRLib2::ToString(node->Column())+".\n";
+      errTxt += "Failed to open file '"+fName+"' in command <"+node->ValueStr()+
+        "> on line "+NRLib2::ToString(node->Row())+", column "+NRLib2::ToString(node->Column())+".\n";
     }
     else
       fclose(file);

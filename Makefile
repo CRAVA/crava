@@ -62,5 +62,5 @@ help:
 	@echo '  purify    : Compile and link with -g -p0 and link with purify. Executable becomes cravarun.purify'
 	@echo ''
 	@echo 'cases'
-	@echo '  n         : The number given first in the test case directory name'
+	@echo '  n         : Test case number (number given first in the test case directory name)'
 	@echo ''

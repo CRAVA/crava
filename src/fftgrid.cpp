@@ -1770,7 +1770,7 @@ FFTGrid::readDirectFile(const std::string & fileName)
     NRLib2::OpenRead(binFile, fileName, std::ios::in | std::ios::binary);
 
     std::string token;
-    int line = 0;
+    //int line = 0;
     int nx = NRLib2::ReadBinaryInt(binFile);
     int ny = NRLib2::ReadBinaryInt(binFile);
     int nz = NRLib2::ReadBinaryInt(binFile);

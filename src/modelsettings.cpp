@@ -32,7 +32,7 @@ ModelSettings::ModelSettings(void)
   backgroundVario_       = new GenExpVario(1, 2000, 2000); 
   localWaveletVario_     =     NULL; // Will be set equal to backgroundVario unless it is set separately
   geometry_              =     NULL;
-  traceHeaderFormat_     = new TraceHeaderFormat(0); // SeisWorks;
+  traceHeaderFormat_     = NULL; //new TraceHeaderFormat(0); // SeisWorks;
   krigingParameter_      =        0; //Indicate kriging not set.
   nWells_                =        0;
   nSimulations_          =        0;

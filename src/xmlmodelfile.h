@@ -69,12 +69,12 @@ private:
   bool parseValue(TiXmlNode * node, const std::string & keyword, T & value, std::string & errTxt, bool allowDuplicates = false);
   bool parseBool(TiXmlNode * node, const std::string & keyword, bool & value, std::string & errTxt, bool allowDuplicates = false);
   bool parseVariogram(TiXmlNode * node, const std::string & keyword, Vario * & vario, std::string & errTxt);
-  bool parseTraceHeaderFormat(TiXmlNode * node, const std::string & keyword, TraceHeaderFormat * thf, std::string & errTxt);
+  bool parseTraceHeaderFormat(TiXmlNode * node, const std::string & keyword, TraceHeaderFormat *& thf, std::string & errTxt);
   bool parseFileName(TiXmlNode * node, const std::string & keyword, std::string & filename, std::string & errTxt, bool allowDuplicates = false);
 
 
   void checkForJunk(TiXmlNode * root, std::string & errTxt, bool allowDuplicates = false);
-  bool checkFileOpen(const std::string & fName, TiXmlNode * node, std::string & errText);
+  bool checkFileOpen(const std::string & fName, TiXmlNode * node, std::string & errTxt);
   std::string lineColumnText(TiXmlNode * node);
 
   void checkConsistency(std::string & errTxt);
@@ -85,8 +85,6 @@ private:
   void setMissing(float & value) {value = RMISSING;}
   void setMissing(double & value) {value = RMISSING;}
   void setMissing(std::string & value) {value = "";}
-
-
 
 //  Vario          * createVario(TiXmlNode * root, const std::string & command, std::string & errText);
 
