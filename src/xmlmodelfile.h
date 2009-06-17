@@ -15,10 +15,9 @@ public:
   XmlModelFile(const char * fileName);
     ~XmlModelFile(void);
 
-  ModelSettings  * getModelSettings(void)         const { return modelSettings_ ;}
-  InputFiles     * getInputFiles(void)            const { return inputFiles_    ;}
-
-  bool             getParsingFailed(void)         const { return failed_        ;}
+  ModelSettings  * getModelSettings(void)  const { return modelSettings_ ;}
+  InputFiles     * getInputFiles(void)     const { return inputFiles_    ;}
+  bool             getParsingFailed(void)  const { return failed_        ;}
 
 private:  
   bool parseCrava(TiXmlNode * node, std::string & errTxt);
@@ -72,21 +71,20 @@ private:
   bool parseTraceHeaderFormat(TiXmlNode * node, const std::string & keyword, TraceHeaderFormat *& thf, std::string & errTxt);
   bool parseFileName(TiXmlNode * node, const std::string & keyword, std::string & filename, std::string & errTxt, bool allowDuplicates = false);
 
-
+  void ensureTrailingSlash(std::string & directory);
   void checkForJunk(TiXmlNode * root, std::string & errTxt, bool allowDuplicates = false);
-  bool checkFileOpen(const std::string & fName, TiXmlNode * node, std::string & errTxt);
   std::string lineColumnText(TiXmlNode * node);
 
   void checkConsistency(std::string & errTxt);
   void checkForwardConsistency(std::string & errTxt);
   void checkEstimationInversionConsistency(std::string & errTxt);
 
-  void setMissing(int & value) {value = IMISSING;}
-  void setMissing(float & value) {value = RMISSING;}
-  void setMissing(double & value) {value = RMISSING;}
-  void setMissing(std::string & value) {value = "";}
+  void setMissing(int & value)         { value = IMISSING ;}
+  void setMissing(float & value)       { value = RMISSING ;}
+  void setMissing(double & value)      { value = RMISSING ;}
+  void setMissing(std::string & value) { value = ""       ;}
 
-//  Vario          * createVario(TiXmlNode * root, const std::string & command, std::string & errText);
+private:
 
   ModelSettings  * modelSettings_;
   InputFiles     * inputFiles_;

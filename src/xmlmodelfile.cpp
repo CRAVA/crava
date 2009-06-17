@@ -431,7 +431,7 @@ XmlModelFile::parseAngleGather(TiXmlNode * node, std::string & errTxt)
     modelSettings_->addAngle(value*float(M_PI/180));
   else
     errTxt += "Need offset angle for gather"+lineColumnText(root)+".\n";
-  
+
   if(parseSeismicData(root, errTxt) == false) {
     //Go for defaults. Assume forward model (check later)
     inputFiles_->addSeismicFile("");
@@ -520,7 +520,7 @@ XmlModelFile::parseWavelet(TiXmlNode * node, std::string & errTxt)
     modelSettings_->addEstimateWavelet(false);
   }
   else {
-    inputFiles_->addSeismicFile(""); //Keeping tables balanced.
+    inputFiles_->addWaveletFile(""); //Keeping tables balanced.
     modelSettings_->addEstimateWavelet(true);
   }
 
@@ -915,6 +915,7 @@ XmlModelFile::parseTopSurface(TiXmlNode * node, std::string & errTxt)
   }
   else if(timeFile == false) {
     inputFiles_->addTimeSurfFile("");
+
     errTxt += "No time surface given in command <"+root->ValueStr()+"> "
       +lineColumnText(root)+".\n";
   }
@@ -1062,15 +1063,18 @@ XmlModelFile::parseIOSettings(TiXmlNode * node, std::string & errTxt)
 
   std::string topDir;
   parseValue(root, "top-directory", topDir, errTxt);
+  ensureTrailingSlash(topDir);
 
   std::string inputDir;
   parseValue(root, "input-directory", inputDir, errTxt);
   inputDir = topDir+inputDir;
+  ensureTrailingSlash(inputDir);
   inputFiles_->setInputDirectory(inputDir);
   
   std::string outputDir;
   parseValue(root, "output-directory", outputDir, errTxt);
   outputDir = topDir+outputDir;
+  ensureTrailingSlash(outputDir);
   ModelSettings::setOutputPath(outputDir);
 
   parseOutputTypes(root, errTxt);
@@ -1117,6 +1121,16 @@ XmlModelFile::parseIOSettings(TiXmlNode * node, std::string & errTxt)
 
   checkForJunk(root, errTxt);
   return(true);
+}
+
+
+void
+XmlModelFile::ensureTrailingSlash(std::string & directory)
+{
+  std::string slash("/");
+
+  if (directory.find_last_of(slash) != directory.length() - 1) // There are no slashes present
+    directory += slash;
 }
 
 
@@ -1638,25 +1652,6 @@ XmlModelFile::checkForJunk(TiXmlNode * root, std::string & errTxt, bool allowDup
       }
     }
   }
-}
-
-bool 
-XmlModelFile::checkFileOpen(const std::string & fName, TiXmlNode * node, std::string & errTxt)
-{
-  bool error = false;
-  if(fName != "*" && fName != "?")
-  {
-    FILE * file = fopen(fName.c_str(),"r");
-    if(file == 0)
-    {
-      error = true;
-      errTxt += "Failed to open file '"+fName+"' in command <"+node->ValueStr()+
-        "> on line "+NRLib2::ToString(node->Row())+", column "+NRLib2::ToString(node->Column())+".\n";
-    }
-    else
-      fclose(file);
-  }
-  return(error);
 }
 
 

@@ -105,6 +105,7 @@ public:
   bool                             getDirectVelInput(void)             const { return directVelInput_        ;}
   int                              getDebugFlag(void)                  const { return debugFlag_             ;}
   static int                       getDebugLevel(void)                       { return debugFlag_             ;}
+  static std::string               getOutputPath(void)                       { return outputPath_            ;}
   int                              getFileGrid(void)                   const { return fileGrid_              ;}
   bool                             getEstimationMode(void)             const { return estimationMode_        ;}
   bool                             getGenerateSeismic(void)            const { return generateSeismic_       ;}

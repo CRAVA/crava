@@ -29,6 +29,7 @@ public:
   const std::string              & getReflMatrFile(void)         const { return reflMatrFile_         ;}
   const std::string              & getParamCorrFile(void)        const { return paramCorrFile_        ;}
   const std::string              & getTempCorrFile(void)         const { return tempCorrFile_         ;}
+  const std::string              & getInputDirectory(void)       const { return inputDirectory_       ;}
 
   const int                        getNumberOfSeismicFiles(void) const { return seismicFiles_.size()  ;}
 
@@ -49,13 +50,12 @@ public:
   void setCorrDirFile(const std::string & corrDirFile)                    { corrDirFile_          = corrDirFile       ;}
   void setParamCorrFile(const std::string & paramCorrFile)                { paramCorrFile_        = paramCorrFile     ;}
   void setTempCorrFile(const std::string & tempCorrFile)                  { tempCorrFile_         = tempCorrFile      ;}
-
   void setInputDirectory(std::string inputDirectory)                      { inputDirectory_       = inputDirectory    ;}
 
   std::string addInputPathAndCheckFiles();
 
 private:
-  std::string addPathAndCheck(std::string & fileName, bool possiblyNumber = false);
+  std::string addPathAndCheck(std::string & fileName, const bool possiblyNumber = false);
 
   std::string                seedFile_;              ///< File specifying the seed
   std::vector<std::string>   wellFiles_;             ///< File names: wells

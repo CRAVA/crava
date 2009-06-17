@@ -13,12 +13,13 @@ InputFiles::InputFiles(void)
     faciesEstIntFile_(2),   
     timeSurfFiles_(0),       
     depthSurfFiles_(2),      
-    velocityField_(""),     
+    velocityField_(""),
     backFile_(3),           
     backVelFile_(""),       
-    reflMatrFile_(""),      
-    corrDirFile_(""),       
-    paramCorrFile_("")
+    reflMatrFile_(""),
+    corrDirFile_(""),
+    paramCorrFile_(""),
+    tempCorrFile_("")
 {
 }
 
@@ -58,7 +59,7 @@ InputFiles::addInputPathAndCheckFiles()
 
 
 std::string
-InputFiles::addPathAndCheck(std::string & fileName, bool possiblyNumber)
+InputFiles::addPathAndCheck(std::string & fileName, const bool possiblyNumber)
 {
   std::string error = "";
   if(fileName != "" && (possiblyNumber == false || NRLib2::IsNumber(fileName) == false)) {
