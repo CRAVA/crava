@@ -13,6 +13,7 @@
 
 #include "nrlib/iotools/logkit.hpp"
 #include "nrlib/iotools/stringtools.hpp"
+#include "nrlib/well/norsarwell.hpp"
 
 #include "src/definitions.h"
 #include "src/welldata.h"
@@ -51,7 +52,11 @@ WellData::WellData(const std::string              & wellFileName,
     useForWaveletEstimation_(indicatorWavelet==1),  
     useForBackgroundTrend_(indicatorBGTrend==1)
 {
-  readRMSWell(wellFileName, logNames, inverseVelocity, faciesLogGiven);
+  sprintf(errTxt_,"%c",'\0');
+  if(wellFileName.find(".nwh",0) != std::string::npos)
+    readNorsarWell(wellFileName, logNames, inverseVelocity, faciesLogGiven);
+  else
+    readRMSWell(wellFileName, logNames, inverseVelocity, faciesLogGiven);
 }
 
 //----------------------------------------------------------------------------
@@ -108,9 +113,9 @@ WellData::readRMSWell(const std::string              & wellFileName,
   int i,j, facies;
   double xpos, ypos, zpos, dummy;
   float alpha, beta, rho;
-  sprintf(errTxt_,"%c",'\0');
   wellfilename_ = new char[MAX_STRING];
   strcpy(wellfilename_,wellFileName.c_str());
+  sprintf(errTxt_,"%c",'\0');
   if(file == 0)
   {
     error_ = 1;
@@ -428,7 +433,132 @@ WellData::readRMSWell(const std::string              & wellFileName,
   delete [] pos;
 }
 
+
+void
+WellData::readNorsarWell(const std::string              & wellFileName, 
+                         const std::vector<std::string> & logNames, 
+                         const std::vector<bool>        & inverseVelocity,
+                         bool                             faciesLogGiven)
+{
+  error_ = 0;
+  wellfilename_ = new char[MAX_STRING];
+  strcpy(wellfilename_,wellFileName.c_str());
+  wellname_ = new char[MAX_STRING];
+  std::string name = NRLib2::RemovePath(wellFileName);
+  name = NRLib2::ReplaceExtension(name, "");
+  strcpy(wellname_, name.c_str());
+  
+  try 
+  {
+    NRLib2::NorsarWell well(wellFileName);
+
+    int nVar = 5;       // z,alpha,beta,rho, and facies
+
+    std::vector<std::string> parameterList;
+
+    bool vpLog = false;
+    bool vsLog = false;
+
+    if(logNames[0] != "") // Assume that all lognames are filled present if first is.
+    {
+      parameterList = logNames; 
+      if (!faciesLogGiven)
+        nVar = 4; 
+      vpLog = !inverseVelocity[0];
+      vsLog = !inverseVelocity[1];
+    }
+   else
+    {
+      parameterList[0] = "TWT"; // Names are preliminary, to be changed
+      parameterList[1] = "DT";
+      parameterList[2] = "RHOB";
+      parameterList[3] = "DTS";
+      parameterList[4] = "FACIES";
+    }
+
+    int nLogs = 2+nVar;
+    std::vector<std::vector<double> *> logs(nLogs, NULL);
+    logs[0] = well.GetContLog("UTMX");
+    if(logs[0] == NULL) {
+      error_ = 1;
+      sprintf(errTxt_,"%sError: Could not find log 'UTMX' in well file '%s'.\n", errTxt_, 
+        wellFileName.c_str());
+    }
+    logs[1] = well.GetContLog("UTMY");
+    if(logs[1] == NULL) {
+      error_ = 1;
+      sprintf(errTxt_,"%sError: Could not find log 'UTMY' in well file '%s'.\n", 
+        errTxt_, wellFileName.c_str());
+    }
+    for(int i=0;i<nVar;i++) {
+      logs[2+i] = well.GetContLog(parameterList[i]);
+      if(logs[2+i] == NULL) {
+        if(i != 4 || logNames[0] != "") {
+          error_ = 1;
+          sprintf(errTxt_,"%sError: Could not find log '%s' in well file '%s'.\n", 
+            errTxt_, parameterList[i].c_str(), wellFileName.c_str());
+        }
+        else if(i==4)
+          nLogs = nLogs-1;
+      }
+    }
+
+    if(error_ == 0) {
+      faciesok_ = 1;
+      std::vector<int> facCodes;
+      nd_       = static_cast<int>(logs[0]->size());
+      xpos_     = new double[nd_];
+      ypos_     = new double[nd_];
+      zpos_     = new double[nd_];
+      alpha_    = new float[nd_];
+      beta_     = new float[nd_];
+      rho_      = new float[nd_];
+      facies_   = new int[nd_];   // Always allocate a facies log (for code simplicity)
+      for(int i=0;i<nd_;i++) {
+        xpos_[i]  = (*logs[0])[i];
+        ypos_[i]  = (*logs[1])[i];
+        zpos_[i]  = (*logs[2])[i];
+        if(!well.IsMissing((*logs[3])[i]))
+          alpha_[i] = static_cast<float>((*logs[3])[i]);
+        else 
+          alpha_[i] = RMISSING;
+        if(!well.IsMissing((*logs[5])[i]))
+          beta_[i]  = static_cast<float>((*logs[5])[i]);
+        else 
+          beta_[i] = RMISSING;
+        if(!well.IsMissing((*logs[4])[i]))
+          rho_[i]   = static_cast<float>((*logs[4])[i]);
+        else 
+          rho_[i] = RMISSING;
+        if(nLogs > 6 && logs[6] != NULL && 
+          !well.IsMissing((*logs[4])[i])) {
+          facies_[i]  = static_cast<int>((*logs[6])[i]);
+          if(find(facCodes.begin(), facCodes.end(), facies_[i]) == facCodes.end())
+            facCodes.push_back(facies_[i]);
+        }
+        else
+          facies_[i] = IMISSING;
+      }
+      nFacies_ = facCodes.size();
+    }
+  }
+  catch (NRLib2::Exception & e) {
+    sprintf(errTxt_,"Error: %s\n",e.what());
+    error_ = 1;
+  }
+}
+
+
 //----------------------------------------------------------------------------
+void
+WellData::writeWell(int wellFormat)
+{
+  if((wellFormat & ModelSettings::RMSWELL) > 0)
+    writeRMSWell();
+  if((wellFormat & ModelSettings::NORSARWELL) > 0)
+    writeNorsarWell();
+}
+
 void
 WellData::writeRMSWell(void)
 {
@@ -495,6 +625,134 @@ WellData::writeRMSWell(void)
 
   fclose(file);
 }
+
+
+void
+WellData::writeNorsarWell()
+{
+  float maxHz_background = modelSettings_->getMaxHzBackground();
+  float maxHz_seismic    = modelSettings_->getMaxHzSeismic();
+
+  std::string wellname(wellname_);
+  NRLib2::Substitute(wellname,"/","_");
+  NRLib2::Substitute(wellname," ","_");
+
+  //Handle main file.
+  std::string fileName = ModelSettings::makeFullFileName("Well_"+wellname+".nwh");
+  std::ofstream mainFile;
+  NRLib2::OpenWrite(mainFile, fileName.c_str());
+  mainFile << std::fixed
+           << std::setprecision(2);
+
+  std::vector<double> md(nd_,0);
+  double dmax = 0;
+  double dmin = 1e+30;
+  for(int i=1;i<nd_;i++) {
+    double dx = xpos_[i]-xpos_[i-1];
+    double dy = ypos_[i]-ypos_[i-1];
+    double dz = zpos_[i]-zpos_[i-1];
+    double d  = sqrt(dx*dx+dy*dy+dz*dz);
+    if(d > dmax)
+      dmax = d;
+    else if(d<dmin)
+      dmin = d;
+    md[i] = md[i-1] + d;
+  }
+  mainFile << "[Version information]\nVERSION 1000\nFORMAT ASCII\n\n";
+  mainFile << "[Well information]\n";
+  mainFile << "MDMIN      m       " << 0.0f << "\n";
+  mainFile << "MDMAX      m       " << md[nd_-1] << "\n";
+  mainFile << "MDMINSTEP  m       " << dmin << "\n";
+  mainFile << "MDMAXSTEP  m       " << dmax << "\n";
+  mainFile << "UTMX       m       " << xpos_[0] << "\n";
+  mainFile << "UTMY       m       " << ypos_[0] << "\n";
+  mainFile << "EKB        m       " << 0.0f << "\n";
+  mainFile << "UNDEFVAL   no_unit " << WELLMISSING << "\n\n";
+
+
+  mainFile << "[Well track data information]\n";
+  mainFile << "NUMMD  " << nd_ << "\n";
+  mainFile << "NUMPAR 4\n";
+  mainFile << "MD      m\n";
+  mainFile << "TWT     s\n";
+  mainFile << "UTMX    m\n";
+  mainFile << "UTMY    m\n\n";
+  
+
+  std::string logFileName = ModelSettings::makeFullFileName("Well_"+wellname+".n00");
+  std::string onlyName = NRLib2::RemovePath(logFileName);
+
+  bool gotFacies      = nFacies_ > 0;
+
+  int nLogs = 3*3;   // {Vp, Vs, Rho} x {raw, BgHz, seisHz} 
+  if (gotFacies)
+    nLogs += 1;
+
+  std::vector<std::string> params(3);
+  params[0] = "VP";
+  params[1] = "VS";
+  params[2] = "Rho";
+
+  std::vector<std::string> unit(3);
+  unit[0] = "m/s";
+  unit[1] = "m/s";
+  unit[2] = "g/cm^3";
+
+  mainFile << "[Well log data information]\n";
+  mainFile << "LOGNAME log\n";
+  mainFile << "IN_FILE " << onlyName << "\n";
+  mainFile << "NUMPAR " << nLogs+1 << "\n"; //Also count md.
+  mainFile << "NUMLINES " << nd_ << "\n";
+  mainFile << "MD      m\n";
+  for (int i =0 ; i<3 ; i++) {
+    mainFile << params[i] << " " << unit[i] << "\n";
+    mainFile << params[i] << static_cast<int>(maxHz_background) << " " << unit[i] << "\n";
+    mainFile << params[i] << static_cast<int>(maxHz_seismic)    << " " << unit[i] << "\n";
+  }
+
+  if (gotFacies)
+    mainFile << "FACIES no_unit\n";
+  mainFile.close();
+  
+
+  //Write the two other files.
+  std::string trackFileName = ModelSettings::makeFullFileName("Well_"+wellname+".nwt");
+  std::ofstream trackFile;
+  NRLib2::OpenWrite(trackFile, trackFileName.c_str());
+  trackFile << std::right
+            << std::fixed
+            << std::setprecision(2)
+            << "[NORSAR Well Track]\n";
+    
+  //Note: logFileName created above, needed in mainFile.
+  std::ofstream logFile;
+  NRLib2::OpenWrite(logFile, logFileName.c_str());
+  logFile << "[NORSAR Well Log]\n";
+
+  for(int i = 0;i<nd_;i++) {
+    trackFile << std::setw(7) << md[i] << " " << std::setw(7) << zpos_[i] 
+              << " " << std::setw(10)<< xpos_[i] << " " << std::setw(10)<< ypos_[i] << "\n";
+
+    logFile   << std::right << std::fixed << std::setprecision(2)
+              << std::setw(7) << md[i] << " "
+              << std::setw(7) << (alpha_[i]==RMISSING                       ? WELLMISSING : alpha_[i])                       << " "
+              << std::setw(7) << (alpha_background_resolution_[i]==RMISSING ? WELLMISSING : alpha_background_resolution_[i]) << " "
+              << std::setw(7) << (alpha_seismic_resolution_[i]==RMISSING    ? WELLMISSING : alpha_seismic_resolution_[i])    << " "
+              << std::setw(7) << (beta_[i]==RMISSING                        ? WELLMISSING : beta_[i])                        << " "
+              << std::setw(7) << (beta_background_resolution_[i]==RMISSING  ? WELLMISSING : beta_background_resolution_[i])  << " "
+              << std::setw(7) << (beta_seismic_resolution_[i]==RMISSING     ? WELLMISSING : beta_seismic_resolution_[i])     << " "
+              << std::setprecision(5)
+              << std::setw(7) << (rho_[i]==RMISSING                         ? WELLMISSING : rho_[i])                         << " "
+              << std::setw(7) << (rho_background_resolution_[i]==RMISSING   ? WELLMISSING : rho_background_resolution_[i])   << " "
+              << std::setw(7) << (rho_seismic_resolution_[i]==RMISSING      ? WELLMISSING : rho_seismic_resolution_[i])      << " ";
+    if (gotFacies)
+      logFile << (facies_[i]==IMISSING                                 ? static_cast<int>(WELLMISSING) : facies_[i])      << "  ";
+    logFile << "\n";
+  }
+  trackFile.close();
+  logFile.close();
+}
+
 
 //----------------------------------------------------------------------------
 int WellData::checkError(char *errText)

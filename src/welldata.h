@@ -66,7 +66,9 @@ public:
   void            calculateDeviation(float  & devAngle,
                                      Simbox * timeSimbox);
   void            countFacies(Simbox *simbox, int * faciesCount);
+  void            writeWell(int wellFormat);
   void            writeRMSWell(void);
+  void            writeNorsarWell(void);
 
   static void     applyFilter(float *log_filtered, float *log_interpolated, int nt, double dt_milliseconds, float maxHz);
   static void     interpolateLog(float *log_interpolated, const float *log_raw, int nd);
@@ -74,6 +76,8 @@ public:
 private:
   void            readRMSWell(const std::string & wellFileName, const std::vector<std::string> & logNames, 
                               const std::vector<bool>  & inverseVelocity, bool faciesLogGiven);
+  void            readNorsarWell(const std::string & wellFileName, const std::vector<std::string> & logNames, 
+                                 const std::vector<bool>  & inverseVelocity, bool faciesLogGiven);
   void            mergeCells(const char * name, double * log_resampled, double * log, 
                              int ii, int istart, int iend, bool debug);
   void            mergeCells(const char * name, float * log_resampled, float * log, 

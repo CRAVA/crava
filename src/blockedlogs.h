@@ -53,7 +53,10 @@ public:
                                          int nz, std::string type, int iAngle = RMISSING);
   void           setLogFromGrid(FFTGrid * grid, int iAngle, int nAngles, std::string type);
 
+  void           writeWell(ModelSettings * modelSettings);       //Use this, will handle formats automatically.
   void           writeRMSWell(ModelSettings * modelSettings);
+  void           writeNorsarWell(ModelSettings * modelSettings);
+
   void           setSpatialFilteredLogs(float * filteredlog, int start, int end, std::string type, const float *bg);
 
 private:

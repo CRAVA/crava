@@ -33,11 +33,11 @@ public:
   float                            getAngle(int i)                     const { return angle_[i]              ;}
   float                            getWaveletScale(int i)              const { return waveletScale_[i]       ;} 
   float                            getSNRatio(int i)                   const { return SNRatio_[i]            ;} 
-  bool                             getMatchEnergies(int i)             const { return bool(matchEnergies_[i])      ;} 
-  bool                             getEstimateWavelet(int i)           const { return bool(estimateWavelet_[i])    ;}
-  bool                             getEstimateSNRatio(int i)           const { return bool(estimateSNRatio_[i])    ;}
-  bool                             getEstimateLocalShift(int i)        const { return bool(estimateLocalShift_[i]) ;}
-  bool                             getEstimateLocalScale(int i)        const { return bool(estimateLocalScale_[i]) ;}
+  bool                             getMatchEnergies(int i)             const { return(matchEnergies_[i]==1)      ;} 
+  bool                             getEstimateWavelet(int i)           const { return(estimateWavelet_[i]==1)    ;}
+  bool                             getEstimateSNRatio(int i)           const { return(estimateSNRatio_[i]==1)    ;}
+  bool                             getEstimateLocalShift(int i)        const { return(estimateLocalShift_[i]==1) ;}
+  bool                             getEstimateLocalScale(int i)        const { return(estimateLocalScale_[i]==1) ;}
   bool                             getEstimateBackground()             const { return estimateBackground_    ;}
   bool                             getEstimateCorrelations()           const { return estimateCorrelations_  ;}
   bool                             getEstimateWaveletNoise()           const { return estimateWaveletNoise_  ;}
@@ -96,6 +96,7 @@ public:
   int                              getOutputFormatFlag(void)           const { return formatFlag_            ;}
   int                              getOutputDomainFlag(void)           const { return domainFlag_            ;}
   int                              getWellOutputFlag(void)             const { return wellFlag_              ;}
+  int                              getWellFormatFlag(void)             const { return wellFormatFlag_          ;}
   int                              getOtherOutputFlag(void)            const { return otherFlag_             ;}
   bool                             getDirectBGOutput(void)             const { return directBGOutput_        ;}
   bool                             getDirectSeisOutput(void)           const { return directSeisOutput_      ;}
@@ -208,6 +209,7 @@ public:
   void                             setOutputFormatFlag(int formatFlag)           { formatFlag_           = formatFlag         ;}
   void                             setOutputDomainFlag(int domainFlag)           { domainFlag_           = domainFlag         ;}
   void                             setWellOutputFlag(int wellFlag)               { wellFlag_             = wellFlag           ;}
+  void                             setWellFormatFlag(int formatFlag)             { wellFormatFlag_       = formatFlag         ;}
   void                             setOtherOutputFlag(int otherFlag)             { otherFlag_            = otherFlag          ;}
   void                             setDirectBGOutput(bool directBGOutput)        { directBGOutput_       = directBGOutput     ;}
   void                             setDirectSeisOutput(bool directSeisOutput)    { directSeisOutput_     = directSeisOutput   ;}
@@ -260,6 +262,8 @@ public:
                                    
   enum                             gridFormats{SEGY = 1, STORM = 2, ASCII = 4, SGRI = 8};
                                    
+  enum                             wellFormats{RMSWELL = 1, NORSARWELL = 2};
+
   enum                             sseismicTypes{STANDARDSEIS = 0, PSSEIS = 1};
                                      
   //Note: By convention, input path is added to input file names at end of parsing.
@@ -371,6 +375,7 @@ private:
   int                              domainFlag_;            ///< Decides writing in time and/or depth.
   int                              formatFlag_;            ///< Decides output format, see above.
   int                              wellFlag_;              ///< Decides well output.
+  int                              wellFormatFlag_;        ///< Decides well output format.
   int                              otherFlag_;             ///< Decides output beyond grids and wells.
   int                              fileGrid_;              ///< Indicator telling if grids are to be kept on file
   bool                             defaultGridOutput_;     ///< Indicator telling whether grid output has been actively controlled.

@@ -95,10 +95,11 @@ ModelSettings::ModelSettings(void)
   formatFlag_            =      STORM;   
   domainFlag_            = TIMEDOMAIN;   
   wellFlag_              =          0;   
+  wellFormatFlag_        =    RMSWELL;
   otherFlag_             =          0;   
   debugFlag_             =          0;
   fileGrid_              =         -1;
- 
+
   directBGOutput_        =    false;
   directSeisOutput_      =    false;
   directBGInput_         =    false;

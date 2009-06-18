@@ -1,6 +1,8 @@
 #include <string.h>
 #include <assert.h>
 #include <math.h>
+#define _USE_MATH_DEFINES
+#include <cmath>
 
 #include "wavelet.h"
 #include "wavelet1D.h"

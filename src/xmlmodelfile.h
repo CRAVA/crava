@@ -58,6 +58,7 @@ private:
   bool         parseGridFormats(TiXmlNode * node, std::string & errTxt);
   bool         parseGridParameters(TiXmlNode * node, std::string & errTxt);
   bool       parseWellOutput(TiXmlNode * node, std::string & errTxt);
+  bool         parseWellFormats(TiXmlNode * node, std::string & errTxt);
   bool       parseDirectOutput(TiXmlNode * node, std::string & errTxt);
   bool       parseOtherOutput(TiXmlNode * node, std::string & errTxt);
   bool   parseAdvancedSettings(TiXmlNode * node, std::string & errTxt);

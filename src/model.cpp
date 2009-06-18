@@ -1586,7 +1586,7 @@ void Model::addSeismicLogsAndWriteWells(WellData ** wells, FFTGrid ** seisCube,
     for (int iAngle = 0 ; iAngle < nAngles ; iAngle++)
       wells[i]->getBlockedLogsOrigThick()->setLogFromGrid(seisCube[iAngle],iAngle,nAngles,"SEISMIC_DATA");
     if((modelSettings->getWellOutputFlag() & ModelSettings::WELLS) > 0) 
-      wells[i]->writeRMSWell();
+      wells[i]->writeWell(modelSettings->getWellFormatFlag());
   }
 }
 

@@ -1216,9 +1216,10 @@ XmlModelFile::parseGridFormats(TiXmlNode * node, std::string & errTxt)
   bool stormSpecified = false;  //Default format, error if turned off and no others turned on.
   if(parseBool(root, "segy", useFormat, errTxt) == true && useFormat == true)
     formatFlag += ModelSettings::SEGY;
-  if(parseBool(root, "storm", useFormat, errTxt) == true && useFormat == true) {
+  if(parseBool(root, "storm", useFormat, errTxt) == true) {
     stormSpecified = true;
-    formatFlag += ModelSettings::STORM;
+    if(useFormat == true)
+      formatFlag += ModelSettings::STORM;
   }
   if(parseBool(root, "ascii", useFormat, errTxt) == true && useFormat == true)
     formatFlag += ModelSettings::ASCII;
@@ -1295,6 +1296,8 @@ XmlModelFile::parseWellOutput(TiXmlNode * node, std::string & errTxt)
   if(root == 0)
     return(false);
 
+  parseWellFormats(root, errTxt);
+
   bool value;
   int wellFlag = 0;
   if(parseBool(root, "wells", value, errTxt) == true && value == true)
@@ -1305,6 +1308,32 @@ XmlModelFile::parseWellOutput(TiXmlNode * node, std::string & errTxt)
     wellFlag += ModelSettings::BLOCKED_LOGS;
 
   modelSettings_->setWellOutputFlag(wellFlag);
+
+  checkForJunk(root, errTxt);
+  return(true);
+}
+
+
+bool
+XmlModelFile::parseWellFormats(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("format");
+  if(root == 0)
+    return(false);
+
+  bool useFormat = false;
+  int formatFlag = 0;
+  bool rmsSpecified = false;  //Default format, check if turned off.
+  if(parseBool(root, "storm", useFormat, errTxt) == true) {
+    rmsSpecified = true;
+    if(useFormat == true)
+      formatFlag += ModelSettings::RMSWELL;
+  }
+  if(parseBool(root, "norsar", useFormat, errTxt) == true && useFormat == true)
+    formatFlag += ModelSettings::NORSARWELL;
+
+  if(formatFlag > 0 || rmsSpecified == true)
+    modelSettings_->setWellFormatFlag(formatFlag);
 
   checkForJunk(root, errTxt);
   return(true);

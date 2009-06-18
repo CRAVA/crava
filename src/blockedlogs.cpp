@@ -757,6 +757,17 @@ BlockedLogs::setLogFromVerticalTrend(float     *& blockedLog,
 
 //------------------------------------------------------------------------------
 void
+BlockedLogs::writeWell(ModelSettings * modelSettings)
+{
+  int formats = modelSettings->getWellFormatFlag();
+  if((formats & ModelSettings::RMSWELL) > 0)
+    writeRMSWell(modelSettings);
+  if((formats & ModelSettings::NORSARWELL) > 0)
+    writeNorsarWell(modelSettings);
+}
+
+
+void
 BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
 {
   float maxHz_background = modelSettings->getMaxHzBackground();
@@ -872,6 +883,173 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
   }
   file.close();
 }
+
+void
+BlockedLogs::writeNorsarWell(ModelSettings * modelSettings)
+{
+  float maxHz_background = modelSettings->getMaxHzBackground();
+  float maxHz_seismic    = modelSettings->getMaxHzSeismic();
+
+  std::string wellname(wellname_);
+  NRLib2::Substitute(wellname,"/","_");
+  NRLib2::Substitute(wellname," ","_");
+
+  //Handle main file.
+  std::string fileName = ModelSettings::makeFullFileName("BW_"+wellname+".nwh");
+  std::ofstream mainFile;
+  NRLib2::OpenWrite(mainFile, fileName.c_str());
+  mainFile << std::fixed
+           << std::setprecision(2);
+
+  int nData = lastB_ - firstB_ + 1;
+  std::vector<double> md(nData,0);
+  double dmax = 0;
+  double dmin = 1e+30;
+  for(int i=firstB_+1;i<=lastB_;i++) {
+    double dx = xpos_[i]-xpos_[i-1];
+    double dy = ypos_[i]-ypos_[i-1];
+    double dz = zpos_[i]-zpos_[i-1];
+    double d  = sqrt(dx*dx+dy*dy+dz*dz);
+    if(d > dmax)
+      dmax = d;
+    else if(d<dmin)
+      dmin = d;
+    md[i-firstB_] = md[i-firstB_-1] + d;
+  }
+  mainFile << "[Version information]\nVERSION 1000\nFORMAT ASCCI\n\n";
+  mainFile << "[Well information]\n";
+  mainFile << "MDMIN      m       " << 0.0f << "\n";
+  mainFile << "MDMAX      m       " << md[nData-1] << "\n";
+  mainFile << "MDMINSTEP  m       " << dmin << "\n";
+  mainFile << "MDMAXSTEP  m       " << dmax << "\n";
+  mainFile << "UTMX       m       " << xpos_[0] << "\n";
+  mainFile << "UTMY       m       " << ypos_[0] << "\n";
+  mainFile << "EKB        m       " << 0.0f << "\n";
+  mainFile << "UNDEFVAL   no_unit " << WELLMISSING << "\n\n";
+
+
+  mainFile << "[Well track data information]\n";
+  mainFile << "NUMMD  " << nData << "\n";
+  mainFile << "NUMPAR 4\n";
+  mainFile << "MD      m\n";
+  mainFile << "TWT     s\n";
+  mainFile << "UTMX    m\n";
+  mainFile << "UTMY    m\n\n";
+  
+
+  std::string logFileName = ModelSettings::makeFullFileName("BW_"+wellname+".n00");
+  std::string onlyName = NRLib2::RemovePath(logFileName);
+
+  bool gotFacies      = nFacies_ > 0;
+  bool gotRealSeismic = real_seismic_data_ != NULL;
+  bool gotSyntSeismic = synt_seismic_data_ != NULL;
+  bool gotCpp         = cpp_ != NULL;
+
+  int nLogs = 3*4;   // {Vp, Vs, Rho} x {raw, BgHz, seisHz, seisRes} 
+  if (gotFacies)
+    nLogs += 1;
+  if (gotRealSeismic)
+    nLogs += nAngles_;
+  if (gotSyntSeismic)
+    nLogs += nAngles_;
+  if (gotCpp)
+    nLogs += nAngles_;
+
+  std::vector<std::string> params(3);
+  params[0] = "VP";
+  params[1] = "VS";
+  params[2] = "Rho";
+
+  std::vector<std::string> unit(3);
+  unit[0] = "m/s";
+  unit[1] = "m/s";
+  unit[2] = "g/cm^3";
+
+  mainFile << "[Well log data information]\n";
+  mainFile << "LOGNAME log\n";
+  mainFile << "IN_FILE " << onlyName << "\n";
+  mainFile << "NUMPAR " << nLogs+1 << "\n"; //Also count md.
+  mainFile << "NUMLINES " << nData << "\n";
+  mainFile << "MD      m\n";
+  for (int i =0 ; i<3 ; i++) {
+    mainFile << params[i] << " " << unit[i] << "\n";
+    mainFile << params[i] << static_cast<int>(maxHz_background) << " " << unit[i] << "\n";
+    mainFile << params[i] << static_cast<int>(maxHz_seismic)    << " " << unit[i] << "\n";
+    mainFile << params[i] << "_SEISMIC_RESOLUTION " << unit[i] << "\n";
+  }
+
+  if (gotFacies)
+    mainFile << "FACIES no_unit\n";
+  if (gotRealSeismic) {
+    for (int i=0 ; i<nAngles_ ; i++)
+      mainFile << "REALSEIS" << i << " no_unit\n";
+  }
+  if (gotSyntSeismic) {
+    for (int i=0 ; i<nAngles_ ; i++)
+      mainFile << "SYNTSEIS" << i << " no_unit\n";
+  }
+  if (gotCpp) {
+    for (int i=0 ; i<nAngles_ ; i++)
+      mainFile << "REFLCOEF" << i << " no_unit\n";
+  }
+  mainFile.close();
+  
+
+  //Write the two other files.
+  std::string trackFileName = ModelSettings::makeFullFileName("BW_"+wellname+".nwt");
+  std::ofstream trackFile;
+  NRLib2::OpenWrite(trackFile, trackFileName.c_str());
+  trackFile << std::right
+            << std::fixed
+            << std::setprecision(2)
+            << "[NORSAR Well Track]\n";
+    
+  //Note: logFileName created above, needed in mainFile.
+  std::ofstream logFile;
+  NRLib2::OpenWrite(logFile, logFileName.c_str());
+  logFile << "[NORSAR Well Log]\n";
+
+  for(int i = firstB_;i<=lastB_;i++) {
+    trackFile << std::setw(7) << md[i] << " " << std::setw(7) << zpos_[i] 
+              << " " << std::setw(10)<< xpos_[i] << " " << std::setw(10)<< ypos_[i] << "\n";
+
+    logFile   << std::right << std::fixed << std::setprecision(2)
+              << std::setw(7) << md[i] << " "
+              << std::setw(7) << (alpha_[i]==RMISSING                    ? WELLMISSING : exp(alpha_[i]))                    << " "
+              << std::setw(7) << (alpha_highcut_background_[i]==RMISSING ? WELLMISSING : exp(alpha_highcut_background_[i])) << " "
+              << std::setw(7) << (alpha_highcut_seismic_[i]==RMISSING    ? WELLMISSING : exp(alpha_highcut_seismic_[i]))    << " "
+              << std::setw(7) << (alpha_seismic_resolution_[i]==RMISSING ? WELLMISSING : exp(alpha_seismic_resolution_[i])) << "  "
+              << std::setw(7) << (beta_[i]==RMISSING                     ? WELLMISSING : exp(beta_[i]))                     << " "
+              << std::setw(7) << (beta_highcut_background_[i]==RMISSING  ? WELLMISSING : exp(beta_highcut_background_[i]))  << " "
+              << std::setw(7) << (beta_highcut_seismic_[i]==RMISSING     ? WELLMISSING : exp(beta_highcut_seismic_[i]))     << " "
+              << std::setw(7) << (beta_seismic_resolution_[i]==RMISSING  ? WELLMISSING : exp(beta_seismic_resolution_[i]))  << "  "
+              << std::setprecision(5)
+              << std::setw(7) << (rho_[i]==RMISSING                      ? WELLMISSING : exp(rho_[i]))                      << " "
+              << std::setw(7) << (rho_highcut_background_[i]==RMISSING   ? WELLMISSING : exp(rho_highcut_background_[i]))   << " "
+              << std::setw(7) << (rho_highcut_seismic_[i]==RMISSING      ? WELLMISSING : exp(rho_highcut_seismic_[i]))      << " "
+              << std::setw(7) << (rho_seismic_resolution_[i]==RMISSING   ? WELLMISSING : exp(rho_seismic_resolution_[i]))   << "  ";
+    if (gotFacies)
+      logFile << (facies_[i]==IMISSING                                 ? static_cast<int>(WELLMISSING) : facies_[i])      << "  ";
+    logFile << std::scientific;
+    if (gotRealSeismic) {
+      for (int a=0 ; a<nAngles_ ; a++)
+        logFile << std::setw(12) << (real_seismic_data_[a][i]==RMISSING ? WELLMISSING : real_seismic_data_[a][i])          << " ";
+      logFile << " ";
+    }
+    if (gotSyntSeismic) {
+      for (int a=0 ; a<nAngles_ ; a++)
+        logFile << std::setw(12) << (synt_seismic_data_[a][i]==RMISSING ? WELLMISSING : synt_seismic_data_[a][i])          << " ";
+      logFile << " ";
+    }
+    if (gotCpp)
+      for (int a=0 ; a<nAngles_ ; a++)
+        logFile << std::setw(12) << (cpp_[a][i]==RMISSING               ? WELLMISSING : cpp_[a][i])                        << " ";
+    logFile << "\n";
+  }
+  trackFile.close();
+  logFile.close();
+}
+  
 
 void BlockedLogs::setSpatialFilteredLogs(float * filteredlog, int start, int end, std::string type, const float *bg)
 {

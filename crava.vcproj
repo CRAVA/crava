@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8.00"
+	Version="8,00"
 	Name="crava"
 	ProjectGUID="{7FF3AB5B-854B-46AB-99F6-B59958E1BE91}"
 	>
@@ -3501,6 +3501,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\nrlib\well\norsarwell.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\nrlib\segy\segy.cpp"
 					>
 					<FileConfiguration
@@ -3560,6 +3564,10 @@
 				</File>
 				<File
 					RelativePath=".\nrlib\volume\volume.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\nrlib\well\well.cpp"
 					>
 				</File>
 				<Filter
@@ -3820,6 +3828,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\nrlib\well\norsarwell.hpp"
+					>
+				</File>
+				<File
 					RelativePath=".\nrlib\surface\regularsurface.hpp"
 					>
 				</File>
@@ -3863,6 +3875,10 @@
 					RelativePath=".\nrlib\volume\volume.hpp"
 					>
 				</File>
+				<File
+					RelativePath=".\nrlib\well\well.hpp"
+					>
+				</File>
 				<Filter
 					Name="boost"
 					>
@@ -3871,11 +3887,11 @@
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\system\config.hpp"
+						RelativePath=".\nrlib\boost\filesystem\config.hpp"
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\filesystem\config.hpp"
+						RelativePath=".\nrlib\boost\system\config.hpp"
 						>
 					</File>
 					<File

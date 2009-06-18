@@ -110,7 +110,7 @@ int main(int argc, char** argv)
       if((model->getModelSettings()->getWellOutputFlag() & ModelSettings::BLOCKED_WELLS) > 0) {
         WellData ** wells = model->getWells();
         for (int i=0 ; i<model->getModelSettings()->getNumberOfWells() ; i++)
-          wells[i]->getBlockedLogsOrigThick()->writeRMSWell(model->getModelSettings());
+          wells[i]->getBlockedLogsOrigThick()->writeWell(model->getModelSettings());
       }
       if((model->getModelSettings()->getWellOutputFlag() & ModelSettings::BLOCKED_LOGS) > 0) {
         LogKit::LogFormatted(LogKit::LOW,"\nWARNING: Writing of BLOCKED_LOGS is not implemented yet.\n");
