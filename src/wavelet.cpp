@@ -58,8 +58,7 @@ Wavelet::Wavelet(ModelSettings * modelSettings, int dim, float * reflCoef)
   isReal_         = true;
   inFFTorder_     = false;
   scale_          = 1; 
-  gridNI_         = 0;   
-  gridNJ_         = 0;
+ 
   shiftGrid_      = NULL;  
   gainGrid_       = NULL; 
 }
@@ -67,8 +66,6 @@ Wavelet::Wavelet(ModelSettings * modelSettings, int dim, float * reflCoef)
 Wavelet::Wavelet(Wavelet * wavelet, int dim)
   : dim_(dim)
 {
-  gridNI_    = 0;   
-  gridNJ_    = 0;
   shiftGrid_ = NULL;  
   gainGrid_  = NULL; 
   if(! wavelet->getIsReal() ) wavelet->invFFT1DInPlace();
@@ -110,12 +107,11 @@ float  Wavelet::getLocalTimeshift(int i, int j) const
 {
   float shift = 0.0f;
 
-  int ind;
-  if(shiftGrid_ != NULL && i < gridNI_ &&  i>=0 && j < gridNJ_ &&  j>=0)
+  if(shiftGrid_ != NULL && i < shiftGrid_->GetNI() &&  i>=0 && j < shiftGrid_->GetNJ() &&  j>=0)
   {
-    ind = gridNI_*j + i;
-    if(shiftGrid_[ind] != WELLMISSING)
-      shift = shiftGrid_[ind];
+   // ind = gridNI_*j + i;
+    if((*shiftGrid_)(i,j) != WELLMISSING)
+      shift = float((*shiftGrid_)(i,j));
   }
 
 
@@ -125,12 +121,12 @@ float  Wavelet::getLocalTimeshift(int i, int j) const
 float  Wavelet::getLocalGainFactor(int i, int j) const
 {
   float gain = 1.0f;
-  int ind;
-  if(gainGrid_ != NULL && i < gridNI_ &&  i>=0 && j < gridNJ_ &&  j>=0)
+  
+  if(gainGrid_ != NULL && i < gainGrid_->GetNI() &&  i>=0 && j < gainGrid_->GetNJ() &&  j>=0)
   {
-    ind = gridNI_*j + i;
-    if(gainGrid_[ind] != WELLMISSING)
-      gain = gainGrid_[ind];
+    //ind = gridNI_*j + i;
+    if((*gainGrid_)(i,j) != WELLMISSING)
+      gain = float((*gainGrid_)(i,j));
   }
 
   return(gain);
@@ -145,20 +141,13 @@ Wavelet::scale(float scale)
 }
 
 void 
-Wavelet::setShiftGrid(Surface * grid, Simbox * simbox)
+Wavelet::setShiftGrid(Grid2D *grid)
 {
-  gridNI_ = simbox->getnx();
-  gridNJ_ = simbox->getny();
+  
   if(shiftGrid_ != NULL)
     delete [] shiftGrid_;
-  shiftGrid_ = new float[gridNI_*gridNJ_];
-  for(int j=0;j<gridNJ_;j++)
-    for(int i=0;i<gridNI_;i++)
-    {
-      double x, y, z;
-      simbox->getCoord(i, j, 0, x, y, z);
-      shiftGrid_[i+gridNI_*j] = static_cast<float>(grid->GetZ(x,y));
-    }
+  shiftGrid_ = grid;
+  
 }
 
 void
@@ -433,30 +422,34 @@ Wavelet::getWaveletLengthF()
 }
 
 float         
-Wavelet::calculateSNRatio(Simbox        * simbox, 
+Wavelet::calculateSNRatioAndLocalWavelet(Simbox        * simbox, 
                           FFTGrid       * seisCube, 
                           WellData     ** wells, 
-                          Surface      *& shift, 
-                          Surface      *& gain, 
+                          Grid2D       *& shift, 
+                          Grid2D       *& gain, 
                           ModelSettings * modelSettings,
                           char          * errText, 
-                          int           & error)
+                          int           & error, Grid2D *&noiseScaled, int number, float globalScale)
 {
   LogKit::LogFormatted(LogKit::MEDIUM,"\n  Estimating noise from seismic data and (nonfiltered) blocked wells");
   float errStd  = 0.0f;
   float dataVar = 0.0f;
   // initialization
-  scale_=1; 
-  gridNI_=0;   
-  gridNJ_=0;
+ // scale_=1; 
+  
   shiftGrid_=NULL;  
   gainGrid_=NULL; 
   
   Vario  * localWaveletVario = modelSettings->getLocalWaveletVario();
   int      nWells            = modelSettings->getNumberOfWells();
-  bool     useLocalWavelet   = modelSettings->getUseLocalWavelet();
-  int      outputFormat      = modelSettings->getOutputFormatFlag();
-  int      otherOutput       = modelSettings->getOtherOutputFlag();
+ // bool     useLocalWavelet   = modelSettings->getUseLocalWavelet();
+ // int      outputFormat      = modelSettings->getOutputFormatFlag();
+ // int      otherOutput       = modelSettings->getOtherOutputFlag();
+  bool     doEstimateLocalShift = modelSettings->getEstimateLocalShift(number);
+  bool     doEstimateLocalScale = modelSettings->getEstimateLocalScale(number);
+  bool     doEstimateLocalNoise = modelSettings->getEstimateLocalNoise(number);
+  bool     doEstimateGlobalScale = modelSettings->getEstimateGlobalWaveletScale(number);
+// bool     estimationMode = modelSettings->getEstimationMode();
 
   float * dz = new float[nWells];
   int i, k, w;
@@ -556,6 +549,7 @@ Wavelet::calculateSNRatio(Simbox        * simbox,
         fft(seis_r[w],seis_c[w],nzp);
         estimateCor(synt_c[w],seis_c[w],cor_seis_synt_c[w],cnzp);
         fftInv(cor_seis_synt_c[w],cor_seis_synt_r[w],nzp);
+        //Estimate shift. Do not run if shift given, use given shift.        
         float shift=findBulkShift(cor_seis_synt_r[w],dz[w], nzp);
         shift = floor(shift*10.0f+0.5f)/10.0f;//rounds to nearest 0.1 ms (don't have more accuracy)
         shiftWell[w]=shift;
@@ -596,9 +590,40 @@ Wavelet::calculateSNRatio(Simbox        * simbox,
   float * errWellOptScale = new float[nWells];
   float * errWell         = new float[nWells];
 
-  float errOptScale;
-  float optScale = findOptimalWaveletScale(synt_r,seis_r,nWells,nzp,dataVarWell,
+  float errOptScale = 1.0;
+  //Estimate global scale, local scale and error.
+  //If global scale given, do not use return value. Do kriging with global scale as mean.
+  //If local scale given, run separate routine to find local noise if wanted.
+  float optScale;
+  if(doEstimateLocalScale==true || doEstimateGlobalScale==true)
+  {
+    optScale = findOptimalWaveletScale(synt_r,seis_r,nWells,nzp,dataVarWell,
                                            errOptScale,errWell,scaleOptWell,errWellOptScale);
+    
+
+    if(doEstimateGlobalScale==false)
+      optScale = globalScale;
+    else
+    {
+      scale(optScale);
+      for(i=0;i<nWells;i++)
+        scaleOptWell[i]/=optScale;
+
+    }
+  }
+  // local scale given means gain !=NULL
+  else if(doEstimateLocalNoise==true && gain!=NULL)
+  {
+    optScale = globalScale; // Global scale must be given if local scale is given
+    findLocalNoiseWithGainGiven(synt_r,seis_r,nWells,nzp,dataVarWell, errOptScale, errWell, errWellOptScale, scaleOptWell,gain, wells, simbox);
+   // for(i=0;i<nWells;i++)
+   //   scaleOptWell[i]/=optScale;
+  }
+  else
+    optScale = globalScale;
+    
+
+
   delete [] seisLog;
   delete [] dz;
   delete [] hasData;
@@ -669,12 +694,38 @@ Wavelet::calculateSNRatio(Simbox        * simbox,
     }
   }  
 
-  if(useLocalWavelet && (shift==NULL || gain==NULL))
+ // if(useLocalWavelet && (shift==NULL || gain==NULL))
+ // {
+ //   estimateLocalWavelets(shift, gain, shiftWell, scaleOptWell,
+ //                         localWaveletVario, nActiveData, simbox, 
+ //                         wells, nWells, outputFormat, otherOutput);
+  if(doEstimateLocalScale==true)
   {
-    estimateLocalWavelets(shift, gain, shiftWell, scaleOptWell,
-                          localWaveletVario, nActiveData, simbox, 
-                          wells, nWells, outputFormat, otherOutput);
+// Estimate global noise with local waveletscale
+    dataVar = 0.0;
+    errStd = 0.0;
+    for(i=0;i<nWells;i++)
+    {
+      dataVar+=(dataVarWell[i]*nActiveData[i]);
+      errStd+=(errWellOptScale[i]*errWellOptScale[i]*nActiveData[i]);
+    }
+    dataVar/=nData;
+    errStd/=nData;
+    errStd = sqrt(errStd);
   }
+  else if(doEstimateGlobalScale==true)
+   errStd = errOptScale;
+ //   
+ // }
+  if(doEstimateLocalShift)
+    estimateLocalShift(shift,shiftWell,localWaveletVario, nActiveData, simbox,wells, nWells);
+
+  if(doEstimateLocalScale)
+    estimateLocalGain(gain,scaleOptWell,1.0,localWaveletVario, nActiveData, simbox,wells, nWells);
+
+  if(doEstimateLocalNoise) 
+    estimateLocalNoise(noiseScaled,errStd, errWellOptScale,localWaveletVario, nActiveData, simbox,wells, nWells); 
+
   delete [] shiftWell;
   delete [] errVarWell;
   delete [] dataVarWell;
@@ -780,8 +831,9 @@ Wavelet::findOptimalWaveletScale(fftw_real ** synt_seis_r,
             float      foo = scales[j]*synt_seis_r[i][k] - seis_r[i][k];
             resNorm[i][j] += foo*foo;
           }
-          error[j]+=resNorm[i][j];
         }
+        error[j]+=resNorm[i][j];
+        
       }
     }//if
   }
@@ -838,6 +890,97 @@ Wavelet::findOptimalWaveletScale(fftw_real ** synt_seis_r,
     delete [] scales;
 
     return optScale;
+}
+
+void Wavelet::
+findLocalNoiseWithGainGiven(fftw_real ** synt_seis_r,
+                            fftw_real ** seis_r,
+                            int nWells,
+                            int nzp,
+                            float * wellWeight,
+                            float & err,
+                            float * errWell,
+                            float      * scaleOptWell,
+                            float * errWellOptScale, 
+                            Grid2D * gain, 
+                            WellData **wells, Simbox *simbox) const
+{
+  double *scale = new double[nWells];   
+  float error = 0.0; 
+
+  int    * counter  = new int[nWells];
+  float  * seisNorm = new float[nWells];
+  float * resNorm  = new float[nWells];
+
+  for(int i=0;i<nWells;i++)
+  {
+    resNorm[i]  = 0.0f;
+    seisNorm[i] = 0.0f;
+  }
+
+  float minSeisAmp = static_cast<float> (1e-7);
+  int totCount=0;
+  const double *x, *y;
+  int nData;
+  for(int i=0;i<nWells;i++)
+  {
+    x = wells[i]->getXpos(nData);
+    y = wells[i]->getYpos(nData);
+    int ix, iy;
+    simbox->getIndexes(x[0],y[0],ix,iy);
+    //scale[i] = gain->GetZ(x[0],y[0]);
+    scale[i] = (*gain)(ix,iy);
+    counter[i]=0;
+    if(wellWeight[i]>0)
+    {
+      // Count number of layers with seismic data
+      for(int k=0;k<nzp;k++)
+        if(fabs(seis_r[i][k]) > minSeisAmp)
+          counter[i]++;
+      totCount+=counter[i];
+      for(int k=0;k<nzp;k++)
+      {
+        if(fabs(seis_r[i][k]) > minSeisAmp)
+        {
+          seisNorm[i]   += seis_r[i][k] * seis_r[i][k];
+          float      foo = float(scale[i]*synt_seis_r[i][k] - seis_r[i][k]);
+          resNorm[i] += foo*foo;
+        }
+        error+=resNorm[i];
+      }
+    }//if
+  }
+
+  float optValue=error;
+  err = sqrt(optValue/static_cast<float>(totCount));
+  for(int i=0;i<nWells;i++)
+  {
+    if(counter[i]>0)
+      errWell[i] = sqrt(resNorm[i]/counter[i]);
+    else
+      errWell[i] = 0.0f;
+  }
+
+  for(int i=0;i<nWells;i++)
+  {
+    if(wellWeight[i]>0)
+    {
+      optValue = resNorm[i];
+
+      scaleOptWell[i]    = float(scale[i]);
+      errWellOptScale[i] = sqrt(optValue/float(counter[i]));
+    }
+    else
+    {
+      scaleOptWell[i]    = 0.0f;
+      errWellOptScale[i] = 0.0f;
+    }
+  }
+
+  delete [] resNorm;
+  delete [] seisNorm;
+  delete [] counter;
+  delete [] scale;
 }
 
 float
@@ -962,16 +1105,21 @@ Wavelet::fillInnWavelet(fftw_real* wavelet_r,int nzp,float dz)
 
 
 void 
-Wavelet::setGainGrid(Surface * grid, Simbox * simbox)
+Wavelet::setGainGrid(Grid2D * grid)
 {
   double sum = 0.0;
   int nData = 0;
-  gridNI_ = simbox->getnx();
-  gridNJ_ = simbox->getny();
+  
   if(gainGrid_ != NULL)
     delete [] gainGrid_;
-  gainGrid_ = new float[gridNI_*gridNJ_];
-  for(int j=0;j<gridNJ_;j++)
+  gainGrid_ = grid;
+  for(int j=0;j<gainGrid_->GetNJ();j++)
+    for(int i=0;i<gainGrid_->GetNI();i++)
+    {
+      sum+=log((*gainGrid_)(i,j));
+      nData++;
+    }
+ /* for(int j=0;j<gridNJ_;j++)
     for(int i=0;i<gridNI_;i++)
     {
       double x, y, z;
@@ -983,13 +1131,14 @@ Wavelet::setGainGrid(Surface * grid, Simbox * simbox)
         sum += log(value);
         nData++;
       }
-    }
+    }*/
+
     float invGeoMean = float(exp(-sum/static_cast<double>(nData)));
-    for(int j=0;j<gridNJ_;j++)
-      for(int i=0;i<gridNI_;i++)
+    for(int j=0;j<gainGrid_->GetNJ();j++)
+      for(int i=0;i<gainGrid_->GetNI();i++)
       {
-        if(gainGrid_[i+gridNI_*j] != WELLMISSING)
-          gainGrid_[i+gridNI_*j] *= invGeoMean;
+        if((*gainGrid_)(i,j) != WELLMISSING)
+          (*gainGrid_)(i,j) *= invGeoMean;
       }
     float geoMean = 1/invGeoMean;
     norm_ *= geoMean;
@@ -1024,18 +1173,19 @@ Wavelet::flipVec(fftw_real* vec, int n)
 }
 */
 
+
 void
-Wavelet::estimateLocalWavelets(Surface  *& shift,
-                               Surface  *& gain,
+Wavelet::estimateLocalShift(Grid2D  *& shift,
                                float     * shiftWell,
-                               float     * scaleOptWell,
                                Vario     * localWaveletVario,
                                int       * nActiveData,
                                Simbox    * simbox,
                                WellData ** wells,
-                               int         nWells,
-                               int         outputFormat,
-                               int         otherOutput)
+                               int         nWells)
+                              // int         outputFormat
+                               //int         otherOutput, 
+                              // int         angleNr,
+                              // bool        estimationMode)
 {
   //
   // NBNB-PAL: Since slightly deviated wells are accepted, we should
@@ -1046,7 +1196,7 @@ Wavelet::estimateLocalWavelets(Surface  *& shift,
   // Collect data for kriging
   //
   KrigingData2D shiftData;
-  KrigingData2D gainData;
+ 
   
   for(int i=0;i<nWells;i++)
   {
@@ -1062,10 +1212,84 @@ Wavelet::estimateLocalWavelets(Surface  *& shift,
       int xInd, yInd;
       simbox->getIndexes(xPos[0],yPos[0],xInd,yInd);        
       shiftData.addData(xInd,yInd,shiftWell[i]);
-      gainData.addData(xInd,yInd,scaleOptWell[i]);
     }
   }
   shiftData.findMeanValues();
+ 
+  
+  //
+  // Pretabulate correlations
+  //
+  const CovGrid2D cov(localWaveletVario, 
+                      simbox->getnx(),
+                      simbox->getny(),
+                      simbox->getdx(), 
+                      simbox->getdy());
+  std::string name("Local_Wavelet_Correlation");
+  std::string fileName = ModelSettings::makeFullFileName(name);
+  cov.writeToFile(fileName);
+
+  //
+  // Perform kriging
+  //
+  if(shift==NULL) {
+    shift = new Grid2D(simbox->getnx(), 
+                        simbox->getny(), 
+                        0.0f);
+    Kriging2D::krigSurface(*shift, shiftData, cov);
+
+ //   if ((otherOutput & ModelSettings::EXTRA_SURFACES) > 0 || estimationMode==true)
+ //   {
+ //     char * fileName = new char[MAX_STRING];
+ //     sprintf(fileName,"Local_Wavelet_Shift_%i",angleNr);
+ //     Model::writeSurfaceToFile(shift,fileName,outputFormat);
+ //     delete [] fileName;
+ //   }
+  }
+ 
+}
+
+void
+Wavelet::estimateLocalGain(Grid2D  *& gain,
+                               float     * scaleOptWell,
+                               float       globalScale, 
+                               Vario     * localWaveletVario,
+                               int       * nActiveData,
+                               Simbox    * simbox,
+                               WellData ** wells,
+                               int         nWells)
+                             //  int         outputFormat
+                              // int         otherOutput, 
+                              // int         angleNr,
+                              // bool        estimationMode)
+{
+  //
+  // NBNB-PAL: Since slightly deviated wells are accepted, we should
+  // eventually make gain- and shift-cubes rather than single maps.
+  //
+
+  //
+  // Collect data for kriging
+  //
+ 
+  KrigingData2D gainData;
+  
+  for(int i=0;i<nWells;i++)
+  {
+    if(nActiveData[i]>0) 
+    {
+      //
+      // Coordinates for data point must be chosed from blocked 
+      // logs and not from wells
+      //
+      BlockedLogs * bl = wells[i]->getBlockedLogsOrigThick();
+      const double * xPos = bl->getXpos(); 
+      const double * yPos = bl->getYpos();
+      int xInd, yInd;
+      simbox->getIndexes(xPos[0],yPos[0],xInd,yInd);        
+      gainData.addData(xInd,yInd,scaleOptWell[i]);
+    }
+  }
   gainData.findMeanValues();
   
   //
@@ -1076,36 +1300,100 @@ Wavelet::estimateLocalWavelets(Surface  *& shift,
                       simbox->getny(),
                       simbox->getdx(), 
                       simbox->getdy());
-  cov.writeToFile("Local_Wavelet_Correlation");
+std::string name("Local_Wavelet_Correlation");
+  std::string fileName = ModelSettings::makeFullFileName(name);
+  cov.writeToFile(fileName);
+
+  //cov.writeToFile("Local_Wavelet_Correlation");
 
   //
   // Perform kriging
   //
-  if(shift==NULL) {
-    shift = new Surface(simbox->getx0(), 
-                        simbox->gety0(), 
-                        simbox->getlx(), 
-                        simbox->getly(),
-                        simbox->getnx(), 
-                        simbox->getny(), 
-                        0.0f);
-    Kriging2D::krigSurface(*shift, shiftData, cov);
-
-    if ((otherOutput & ModelSettings::EXTRA_SURFACES) > 0)
-      Model::writeSurfaceToFile(shift,"Local_Wavelet_Shift",outputFormat);
-  }
   if(gain==NULL) {
-    gain = new Surface(simbox->getx0(), 
-                       simbox->gety0(), 
-                       simbox->getlx(), 
-                       simbox->getly(),
-                       simbox->getnx(), 
+    gain = new Grid2D(simbox->getnx(), 
                        simbox->getny(), 
-                       1.0f);
+                       globalScale);
     Kriging2D::krigSurface(*gain, gainData, cov);
 
-    if ((otherOutput & ModelSettings::EXTRA_SURFACES) > 0)
-      Model::writeSurfaceToFile(gain,"Local_Wavelet_Gain",outputFormat);
+  //  if ((otherOutput & ModelSettings::EXTRA_SURFACES) > 0 || estimationMode==true)
+  //  {
+  //    char * fileName= new char[MAX_STRING];
+  //    sprintf(fileName,"Local_Wavelet_Gain_%i",angleNr);
+ //     Model::writeSurfaceToFile(gain,fileName,outputFormat);
+  //    delete [] fileName;
+  //  }
   }
 }
 
+// Estimate local scaled noise
+void
+Wavelet::estimateLocalNoise(Grid2D  *& noiseScaled,
+                               float       globalNoise,
+                               float     * errWellOptScale,
+                               Vario     * localWaveletVario,
+                               int       * nActiveData,
+                               Simbox    * simbox,
+                               WellData ** wells,
+                               int         nWells)
+                              // int         outputFormat)
+                              // int         otherOutput, 
+                             //  int         angleNr, 
+                             //  bool        estimationMode)
+{
+ 
+  //
+  // Collect data for kriging
+  //
+ 
+  KrigingData2D noiseData;
+  
+  for(int i=0;i<nWells;i++)
+  {
+    if(nActiveData[i]>0) 
+    {
+      //
+      // Coordinates for data point must be chosed from blocked 
+      // logs and not from wells
+      //
+      BlockedLogs * bl = wells[i]->getBlockedLogsOrigThick();
+      const double * xPos = bl->getXpos(); 
+      const double * yPos = bl->getYpos();
+      int xInd, yInd;
+      simbox->getIndexes(xPos[0],yPos[0],xInd,yInd);        
+      noiseData.addData(xInd,yInd,errWellOptScale[i]/globalNoise);
+    }
+  }
+  noiseData.findMeanValues();
+  
+  //
+  // Pretabulate correlations
+  //
+  const CovGrid2D cov(localWaveletVario, 
+                      simbox->getnx(),
+                      simbox->getny(),
+                      simbox->getdx(), 
+                      simbox->getdy());
+std::string name("Local_Wavelet_Correlation");
+  std::string fileName = ModelSettings::makeFullFileName(name);
+  cov.writeToFile(fileName);
+
+  //cov.writeToFile("Local_Wavelet_Correlation");
+
+  //
+  // Perform kriging
+  //
+  if(noiseScaled==NULL) {
+    noiseScaled = new Grid2D(simbox->getnx(), 
+                             simbox->getny(), 
+                             1.0);
+    Kriging2D::krigSurface(*noiseScaled, noiseData, cov);
+
+   // if ((otherOutput & ModelSettings::EXTRA_SURFACES) > 0 || estimationMode==true)
+   // {
+    //  char * fileName= new char[MAX_STRING];
+    //  sprintf(fileName,"Local_Wavelet_Noise_%i",angleNr);
+//      Model::writeSurfaceToFile(noiseScaled,fileName,outputFormat);
+    //  delete [] fileName;
+   // }
+  }
+}

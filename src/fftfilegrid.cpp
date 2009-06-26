@@ -563,6 +563,33 @@ FFTFileGrid::writeResampledStormCube(GridMapping       * gridmapping,
   if(accMode_ != RANDOMACCESS)
     unload();
 }
-  
+ 
+float *
+FFTFileGrid::getRealTrace(int i, int j)
+{
+  assert(accMode_ == NONE || accMode_ == RANDOMACCESS);
+  if(accMode_ != RANDOMACCESS)
+    load();
+  else
+    modified_ = 1;
+  float * value = FFTGrid::getRealTrace(i,j);
+  if(accMode_ != RANDOMACCESS)
+    save();
+  return(value);  
+}
+int
+FFTFileGrid::setRealTrace(int i, int j, float *value)
+{
+  assert(accMode_ == NONE || accMode_ == RANDOMACCESS);
+  if(accMode_ != RANDOMACCESS)
+    load();
+  else
+    modified_ = 1;
+  int notok = FFTGrid::setRealTrace(i,j, value);
+  if(accMode_ != RANDOMACCESS)
+    save();
+  return(notok);  
+}
+
 
 int FFTFileGrid::gNum = 0; //Starting value

@@ -115,18 +115,18 @@ private:
                                            InputFiles    * inputfiles,
                                            char          * errText,
                                            bool          & failed);
-  void             processWavelets(Wavelet      **& wavelet,
-                                   FFTGrid       ** seisCube,
-                                   WellData      ** wells,
-                                   float         ** reflectionMatrix,
-                                   Simbox         * timeSimbox,
-                                   Surface       ** waveletEstimInterval,
-                                   Surface      **& shiftGrids,
-                                   Surface      **& gainGrids,
-                                   ModelSettings  * modelSettings, 
-                                   InputFiles     * inputFiles,
-                                   char           * errText,
-                                   bool           & failed);
+
+  void             processWavelets(Wavelet     **& wavelet,
+                                   FFTGrid      ** seisCube,
+                                   WellData     ** wells,
+                                   float        ** reflectionMatrix,
+                                   Simbox        * timeSimbox,
+                                   Surface      ** waveletEstimInterval,
+                                   ModelSettings * modelSettings, 
+                                   InputFiles    * inputFiles,
+                                   char          * errText,
+                                   bool          & failed);
+
   void             processPriorFaciesProb(float        *& priorFacies,
                                           WellData     ** wells,
                                           RandomGen     * randomGen,
@@ -225,6 +225,14 @@ private:
                                                double       & yMin,
                                                double       & xMax,
                                                double       & yMax); 
+  void             resampleGridAndWriteToFile(Grid2D *grid,
+                                              Simbox *simbox, 
+                                              char *fileName, 
+                                              int format);
+  
+  void             resampleGrid(Surface *surf,
+                                Simbox * simbox, 
+                                Grid2D *outgrid);
   ModelSettings  * modelSettings_;
   Simbox         * timeSimbox_;            ///< Information about simulation area.
   Simbox         * timeSimboxConstThick_;  ///< Simbox with constant thickness   
@@ -234,8 +242,7 @@ private:
   Corr           * correlations_;          ///<
   FFTGrid       ** seisCube_;              ///< Seismic data cubes
   Wavelet       ** wavelet_;               ///< Wavelet for angle
-  Surface       ** shiftGrids_;            ///< Grids containing shift data for wavelets
-  Surface       ** gainGrids_;             ///< Grids containing gain data for wavelets.
+  
   Surface       ** waveletEstimInterval_;  ///< Grids giving the wavelet estimation interval.
   Surface       ** faciesEstimInterval_;   ///< Grids giving the facies estimation intervals.
   Surface        * correlationDirection_;  ///< Grid giving the correlation direction.
@@ -251,7 +258,7 @@ private:
   bool             failed_;                ///< Indicates whether errors occured during construction. 
   GridMapping    * timeDepthMapping_;      ///< Contains both simbox and mapping used for depth conversion
   GridMapping    * timeCutMapping_;        ///< Simbox and mapping for timeCut
-
+ float               * noiseGrid_;             // 2D grid for local noise scaling
   bool             velocityFromInversion_;
 };
 

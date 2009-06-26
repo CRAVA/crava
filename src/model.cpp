@@ -37,8 +37,11 @@
 #include "nrlib/iotools/stringtools.hpp"
 #include "nrlib/segy/segy.hpp"
 #include "nrlib/surface/surfaceio.hpp"
+#include "nrlib/surface/surface.hpp"
+#include "nrlib/surface/regularsurface.hpp"
 #include "nrlib/iotools/logkit.hpp"
 #include "nrlib/stormgrid/stormcontgrid.hpp"
+
 
 Model::Model(char * fileName)
 {
@@ -51,8 +54,7 @@ Model::Model(char * fileName)
   priorFacies_            = NULL;
   seisCube_               = NULL;
   wavelet_                = NULL;
-  shiftGrids_             = NULL;
-  gainGrids_              = NULL;
+ 
   waveletEstimInterval_   = NULL;
   faciesEstimInterval_    = NULL; 
   correlationDirection_   = NULL;     
@@ -61,6 +63,7 @@ Model::Model(char * fileName)
   failed_                 = false;
   gradX_                  = 0.0;
   gradY_                  = 0.0;
+  
  
   timeDepthMapping_       = NULL;
   timeCutMapping_         = NULL;
@@ -117,8 +120,6 @@ Model::Model(char * fileName)
     }
     LogKit::EndBuffering();
     
-    if(modelSettings_->getLocalWaveletVario()==NULL) 
-      modelSettings_->copyBackgroundVarioToLocalWaveletVario();
 
     if(inputFiles->getSeedFile() == "")
       randomGen_ = new RandomGen(modelSettings_->getSeed());
@@ -159,7 +160,7 @@ Model::Model(char * fileName)
           if (!failedReflMat)
           {
             processWavelets(wavelet_, seisCube_, wells_, reflectionMatrix_,
-                            timeSimbox_, waveletEstimInterval_, shiftGrids_, gainGrids_,
+                            timeSimbox_, waveletEstimInterval_, 
                             modelSettings_, inputFiles, errText, failedWavelet);
           }              
         }
@@ -196,6 +197,7 @@ Model::Model(char * fileName)
             backgroundDone = true;
           }
 
+
           if (failedBackground == false && backgroundDone == true && 
               (estimate == false || modelSettings_->getEstimateCorrelations() == true ||
                modelSettings_->getEstimateWaveletNoise() == true))
@@ -206,6 +208,7 @@ Model::Model(char * fileName)
             processReflectionMatrix(reflectionMatrix_, background_, 
                                     modelSettings_, inputFiles, 
                                     errText, failedReflMat);
+
           }
 
           if (failedReflMat == false && failedExtraSurf == false &&
@@ -219,7 +222,7 @@ Model::Model(char * fileName)
             addSeismicLogsAndWriteWells(wells_, seisCube_, modelSettings_);
 
             processWavelets(wavelet_, seisCube_, wells_, reflectionMatrix_,
-                            timeSimbox_, waveletEstimInterval_, shiftGrids_, gainGrids_,
+                            timeSimbox_, waveletEstimInterval_,
                             modelSettings_, inputFiles, errText, failedWavelet);
           }
         }
@@ -276,21 +279,7 @@ Model::~Model(void)
     delete [] wavelet_;
   }
 
-  if(shiftGrids_ != NULL)
-  {
-    for(int i=0;i<modelSettings_->getNumberOfAngles();i++)
-      if(shiftGrids_[i] != NULL)
-        delete shiftGrids_[i];
-    delete [] shiftGrids_;
-  }
-
-  if(gainGrids_ != NULL)
-  {
-    for(int i=0;i<modelSettings_->getNumberOfAngles();i++)
-      if(gainGrids_[i] != NULL)
-        delete gainGrids_[i];
-    delete [] gainGrids_;
-  }
+  
 
   if (waveletEstimInterval_ != NULL) 
   {
@@ -331,6 +320,7 @@ Model::~Model(void)
   delete modelSettings_;
   delete timeSimbox_;
   delete timeSimboxConstThick_;
+
 }
 
 void
@@ -429,6 +419,8 @@ Model::checkAvailableMemory(Simbox            * timeSimbox,
   }
   else
     nGrids = 12;
+
+  //NBNB Anne Randi: nGrids+=3 if local noise
 
   int   workSize    = 2500 + int( 0.65*gridSize ); //Size of memory used beyond grids.
 
@@ -1962,7 +1954,7 @@ Model::findCorrXYGrid(ModelSettings * modelSettings)
 
   Surface * grid = new Surface(0, 0, dx*nx, dy*ny, nx, ny, RMISSING);
 
-  if(modelSettings_->getLateralCorr()!=NULL) // NBNB-PAL: Denne her blir aldri null etter at jeg la inn en default lateral correlation i modelsettings.
+  if(modelSettings->getLateralCorr()!=NULL) // NBNB-PAL: Denne her blir aldri null etter at jeg la inn en default lateral correlation i modelsettings.
   {
     int refi,refj;
     for(int j=0;j<ny;j++)
@@ -1985,7 +1977,7 @@ Model::findCorrXYGrid(ModelSettings * modelSettings)
         {
           refj = j-ny;
         }
-        (*grid)(j*nx+i) = modelSettings_->getLateralCorr()->corr(refi*dx, refj*dy);
+        (*grid)(j*nx+i) = modelSettings->getLateralCorr()->corr(refi*dx, refj*dy);
       }
     }
   }
@@ -2101,18 +2093,16 @@ Model::setupDefaultReflectionMatrix(float       **& reflectionMatrix,
 }
 
 void
-Model::processWavelets(Wavelet      **& wavelet,
-                       FFTGrid       ** seisCube,
-                       WellData      ** wells,
-                       float         ** reflectionMatrix,
-                       Simbox         * timeSimbox,
-                       Surface       ** waveletEstimInterval,
-                       Surface      **& shiftGrids,
-                       Surface      **& gainGrids,
-                       ModelSettings  * modelSettings, 
-                       InputFiles     * inputFiles,
-                       char           * errText,
-                       bool           & failed)
+Model::processWavelets(Wavelet     **& wavelet,
+                       FFTGrid      ** seisCube,
+                       WellData     ** wells,
+                       float        ** reflectionMatrix,
+                       Simbox        * timeSimbox,
+                       Surface      ** waveletEstimInterval,    
+                       ModelSettings * modelSettings, 
+                       InputFiles    * inputFiles,
+                       char          * errText,
+                       bool          & failed)
 {
   int error = 0;
   Utils::writeHeader("Processing/generating wavelets");
@@ -2121,6 +2111,7 @@ Model::processWavelets(Wavelet      **& wavelet,
   TimeKit::getTime(wall,cpu);
 
   bool estimateStuff = false;
+  int  outputFormat = modelSettings->getOutputFormatFlag();
   for(int i=0 ; i < modelSettings->getNumberOfAngles() ; i++)
   {  
     estimateStuff = estimateStuff || modelSettings->getEstimateWavelet(i); 
@@ -2134,15 +2125,85 @@ Model::processWavelets(Wavelet      **& wavelet,
     LogKit::LogFormatted(LogKit::HIGH,"\n  Deviated wells.");
     LogKit::LogFormatted(LogKit::HIGH,"\n  Wells with too little data.\n");
   }
+
   wavelet    = new Wavelet * [modelSettings->getNumberOfAngles()];
-  shiftGrids = new Surface * [modelSettings->getNumberOfAngles()];
-  gainGrids  = new Surface * [modelSettings->getNumberOfAngles()];
+  Grid2D ** shiftGrids;
+  Grid2D ** gainGrids;
+  if(modelSettings->getUseLocalWavelet()==true)
+  {
+    shiftGrids = new Grid2D * [modelSettings->getNumberOfAngles()];
+    gainGrids = new Grid2D * [modelSettings->getNumberOfAngles()];
+  }
+  else
+  {
+    shiftGrids = 0;
+    gainGrids = 0;
+  }
+
+  
+  std::vector<Grid2D *> noiseScaled; //= new Grid2D * [modelSettings->getNumberOfAngles()];
+  Surface *help;
+  float globalScale = 1.0;
 
   for(int i=0 ; i < modelSettings->getNumberOfAngles() ; i++)
   {  
     float angle = modelSettings->getAngle(i);
-    shiftGrids[i] = NULL;
-    gainGrids[i]  = NULL;
+    if(modelSettings->getUseLocalWavelet()==true)
+    {
+      if(inputFiles->getShiftFile(i)!="") // resampling maa til, Grid2D
+      {
+        help = new NRLib2::RegularSurface<double>(NRLib2::ReadStormSurf(inputFiles->getShiftFile(i)));
+        shiftGrids[i] =new Grid2D(timeSimbox->getnx(),timeSimbox->getny(), 0.0);
+        resampleGrid(help,timeSimbox, shiftGrids[i]);
+        if ((modelSettings->getOtherOutputFlag() & ModelSettings::EXTRA_SURFACES) > 0)
+        {
+          char * fileName= new char[MAX_STRING];
+          sprintf(fileName,"Local_Wavelet_Shift_%i",i);
+          Model::writeSurfaceToFile(help,fileName,outputFormat);
+          delete [] fileName;
+        }
+        delete help;
+      }
+      else
+        shiftGrids[i] = NULL;
+
+      if(inputFiles->getScaleFile(i)!="")
+      {
+        help = new NRLib2::RegularSurface<double>(NRLib2::ReadStormSurf(inputFiles->getScaleFile(i)));
+        gainGrids[i] =new Grid2D(timeSimbox->getnx(),timeSimbox->getny(), 0.0);
+        resampleGrid(help,timeSimbox, gainGrids[i]);
+        if ((modelSettings->getOtherOutputFlag() & ModelSettings::EXTRA_SURFACES) > 0)
+        {
+          char * fileName= new char[MAX_STRING];
+          sprintf(fileName,"Local_Wavelet_Gain_%i",i);
+          Model::writeSurfaceToFile(help,fileName,outputFormat);
+          delete [] fileName;
+        }
+        delete help;
+      }
+      else
+        gainGrids[i] = NULL;
+    }
+    if( inputFiles->getLocalNoiseFile(i)!="")
+    {
+      help = new NRLib2::RegularSurface<double>(NRLib2::ReadStormSurf(inputFiles->getLocalNoiseFile(i)));
+      noiseScaled[i] =new Grid2D(timeSimbox->getnx(),timeSimbox->getny(), 0.0);
+      resampleGrid(help,timeSimbox, noiseScaled[i]);
+      if ((modelSettings->getOtherOutputFlag() & ModelSettings::EXTRA_SURFACES) > 0)
+      {
+        char * fileName= new char[MAX_STRING];
+        sprintf(fileName,"Local_Noise_%i",i);
+        Model::writeSurfaceToFile(help,fileName,outputFormat);
+        delete [] fileName;
+      }
+      delete help;
+    }
+    else
+      noiseScaled.push_back(NULL);
+
+    
+    globalScale = modelSettings->getWaveletScale(i);
+    
     LogKit::LogFormatted(LogKit::LOW,"\nAngle stack : %.1f deg",angle*180.0/PI);
     if (modelSettings->getEstimateWavelet(i)) 
     {
@@ -2158,12 +2219,12 @@ Model::processWavelets(Wavelet      **& wavelet,
       }
 
       wavelet[i] = new Wavelet1D(timeSimbox, 
-                                 seisCube[i], 
-                                 wells, 
-                                 waveletEstimInterval,                                   
-                                 modelSettings, 
-                                 reflectionMatrix[i],
-                                 i);
+        seisCube[i], 
+        wells, 
+        waveletEstimInterval,                                   
+        modelSettings, 
+        reflectionMatrix[i],
+        i);
     }
     else
     {
@@ -2178,36 +2239,39 @@ Model::processWavelets(Wavelet      **& wavelet,
       else {
         if (fileFormat == Wavelet::SGRI)
           wavelet[i] = new Wavelet3D(waveletFile, 
-                                     modelSettings, 
-                                     timeSimbox, 
-                                     angle, 
-                                     reflectionMatrix[i],
-                                     error, 
-                                     errText);
+          modelSettings, 
+          timeSimbox, 
+          angle, 
+          reflectionMatrix[i],
+          error, 
+          errText);
         else {
           wavelet[i] = new Wavelet1D(waveletFile, 
-                                     fileFormat, 
-                                     modelSettings, 
-                                     reflectionMatrix[i],
-                                     error, 
-                                     errText);
+            fileFormat, 
+            modelSettings, 
+            reflectionMatrix[i],
+            error, 
+            errText);
           if (error == 0) {
             //wavelet[i]->write1DWLas3DWL(); //Frode: For debugging and testing
             //wavelet[i]->write3DWLfrom1DWL();
             wavelet[i]->resample(static_cast<float>(timeSimbox->getdz()), timeSimbox->getnz(), 
-                                 static_cast<float>(modelSettings->getZPadFac()), angle);
+              static_cast<float>(modelSettings->getZPadFac()), angle);
           }
         }
       }
     }
     if (error == 0) {
-      if (modelSettings->getMatchEnergies(i)) // If true we later scale wavelet to get EmpSN = TheoSN.
+   //   if (modelSettings->getMatchEnergies(i)) // If true we later scale wavelet to get EmpSN = TheoSN.
         wavelet[i]->scale(modelSettings->getWaveletScale(i));
       if ((wavelet[i]->getDim() == 3) && !timeSimbox->getIsConstantThick()) {
         sprintf(errText, "%s Simbox must have constant thickness when 3D wavelet.\n", errText);
         error += 1;
       }
-      if (modelSettings->getEstimateSNRatio(i) && modelSettings->getGenerateSeismic() == false)
+      bool localEst = (modelSettings->getEstimateLocalScale(i) || modelSettings->getEstimateLocalShift(i) ||
+                       modelSettings->getEstimateLocalNoise(i) || modelSettings->getEstimateGlobalWaveletScale(i));
+
+      if ((modelSettings->getEstimateSNRatio(i) || localEst) && modelSettings->getGenerateSeismic() == false)
       {
         if (wavelet[i]->getDim() == 3) { //Not possible to estimate signal-to-noise ratio for 3D wavelets
           sprintf(errText, "%s Estimation of signal-to-noise ratio is not possible for 3D wavelets.\n", errText);
@@ -2215,11 +2279,23 @@ Model::processWavelets(Wavelet      **& wavelet,
           error += 1;
         }
         else {
-          float SNRatio = wavelet[i]->calculateSNRatio(timeSimbox, seisCube[i], wells, 
-                                                       shiftGrids[i], gainGrids[i],
-                                                       modelSettings,
-                                                       errText, error);
-          modelSettings->setSNRatio(i,SNRatio);
+
+          float SNRatio = wavelet[i]->calculateSNRatioAndLocalWavelet(timeSimbox, seisCube[i], wells, 
+                                                                      shiftGrids[i], gainGrids[i],
+                                                                      modelSettings,
+                                                                      errText, error, noiseScaled[i], i, globalScale);
+          if(modelSettings->getEstimateSNRatio(i))
+            modelSettings->setSNRatio(i,SNRatio);
+          else
+          {
+            float SNRatio = modelSettings->getSNRatio(i);
+            if (SNRatio <= 1.0f || SNRatio > 10.f)
+            {
+              sprintf(errText, "%s Illegal signal-to-noise ratio of %.3f for cube %d\n", errText, SNRatio,i);
+              sprintf(errText, "%s Ratio must be in interval 1.0 < S/N ratio < 10.0\n", errText);
+              error += 1;
+            }
+          }
         }
       }
       else
@@ -2232,24 +2308,58 @@ Model::processWavelets(Wavelet      **& wavelet,
           error += 1;
         }
       }
+
       if (error == 0) {
+        // if((modelSettings->getOtherOutputFlag() & ModelSettings::WAVELETS) > 0) 
         if((modelSettings->getOtherOutputFlag() & ModelSettings::WAVELETS) > 0 ||
-           (modelSettings->getEstimationMode() == true && 
-            modelSettings->getEstimateWavelet(i) == true))
+          (modelSettings->getEstimationMode() == true && 
+          modelSettings->getEstimateWavelet(i) == true))
         {
           char fileName[MAX_STRING];
           sprintf(fileName,"Wavelet_Scaled");
           wavelet[i]->writeWaveletToFile(fileName, 1.0, timeSimbox); // dt_max = 1.0;
         }
-        if(shiftGrids != NULL && shiftGrids[i] != NULL)
-          wavelet[i]->setShiftGrid(shiftGrids[i], timeSimbox);
+        if(shiftGrids != NULL && shiftGrids[i] != 0) //NBNB husk utskrift av grid. Resample til surface
+        {
+          if(modelSettings->getEstimateLocalShift(i)==true)
+          {
+            char * fileName= new char[MAX_STRING];
+            sprintf(fileName,"Local_Wavelet_Shift_%i",i);
+            resampleGridAndWriteToFile(shiftGrids[i],timeSimbox,fileName, outputFormat);
+            delete [] fileName;
+          }
+          wavelet[i]->setShiftGrid(shiftGrids[i]);
+        }
         if(gainGrids != NULL && gainGrids[i] != NULL)
-          wavelet[i]->setGainGrid(gainGrids[i], timeSimbox);
+        {
+          if(modelSettings->getEstimateLocalScale(i)==true)
+          {
+            char * fileName= new char[MAX_STRING];
+            sprintf(fileName,"Local_Wavelet_Gain_%i",i);
+            resampleGridAndWriteToFile(gainGrids[i],timeSimbox,fileName, outputFormat);
+            delete [] fileName;
+          }
+
+          wavelet[i]->setGainGrid(gainGrids[i]);
+        }
+        if(noiseScaled[i]!=NULL)
+        {
+          if(modelSettings->getEstimateLocalNoise(i)==true)
+          {
+            char * fileName= new char[MAX_STRING];
+            sprintf(fileName,"Local_Noise_%i",i);
+            resampleGridAndWriteToFile(noiseScaled[i],timeSimbox,fileName, outputFormat);
+            delete [] fileName;
+          }     
+        }
+          modelSettings->setNoiseScaled(noiseScaled[i]);
+         
       }
+
     }
   }
-  Timings::setTimeWavelets(wall,cpu);
 
+  Timings::setTimeWavelets(wall,cpu);
   failed = error > 0;
 }
 
@@ -3251,4 +3361,58 @@ Model::writeSurfaceToFile(Surface           * surface,
     NRLib2::WriteIrapClassicAsciiSurf(*surface, fileName+".irap");
   else  
     NRLib2::WriteStormBinarySurf(*surface, fileName+".storm");
+}
+
+
+
+void Model::resampleGrid(Surface *surf,Simbox * simbox, Grid2D *outgrid)
+{
+  for(int i=0;i<simbox->getnx();i++)
+    for(int j=0;j<simbox->getny();j++)
+    {
+      double x, y, z;
+      simbox->getCoord(i, j, 0, x, y, z);
+      (*outgrid)(i,j) = static_cast<float>(surf->GetZ(x,y));
+    }
+
+}
+
+void Model::resampleGridAndWriteToFile(Grid2D *grid,Simbox *simbox, char *fileName, int format)
+{
+  double xmin,xmax,ymin,ymax;
+  simbox->getMinAndMaxXY(xmin,xmax,ymin,ymax);
+  int nx,ny;
+  double angle = simbox->getAngle()*180.0/M_PI;
+  if(angle > -45 || angle < 45)
+  {
+    nx = static_cast<int>(floor(simbox->getnx()*1.0/std::cos(simbox->getAngle())+0.5));
+    ny = static_cast<int>(floor(simbox->getny()*1.0/std::cos(simbox->getAngle())+0.5));
+  }
+  else
+  {
+    nx = static_cast<int>(floor(simbox->getnx()*1.0/std::sin(simbox->getAngle())+0.5));
+    ny = static_cast<int>(floor(simbox->getny()*1.0/std::sin(simbox->getAngle())+0.5));
+  }
+  Surface *outsurf = new Surface(xmin,ymin,xmax-xmin,ymax-ymin,nx,ny,0.0);
+  double x,y;
+  int i1,j1;
+  for(int i=0;i<nx;i++)
+    for(int j=0;j<ny;j++)
+    {
+      outsurf->GetXY(i,j,x,y);
+      simbox->getIndexes(x,y,i1,j1);
+      if(i1==IMISSING || j1== IMISSING)
+      {
+        if((format & ModelSettings::ASCII) > 0)
+        (*outsurf)(i,j) = 9999900.0; //=IRAP_MISSING
+        else
+        (*outsurf)(i,j) = -999.0; //STORM_MISSING
+      }
+      else
+      (*outsurf)(i,j) = (*grid)(i1,j1);
+    }
+    Model::writeSurfaceToFile(outsurf,fileName, format);
+    delete outsurf;
+
+
 }

@@ -7,6 +7,7 @@
 #include "src/definitions.h"
 #include "src/modelsettings.h"
 #include "src/vario.h"
+#include "src/simbox.h"
 
 ModelSettings::ModelSettings(void)
   : localSegyOffset_(0),
@@ -104,6 +105,7 @@ ModelSettings::ModelSettings(void)
   directSeisOutput_      =    false;
   directBGInput_         =    false;
   directSeisInput_       =    false;
+  directVelOutput_       =    false;
 
   estimationMode_        =    false;
   generateSeismic_       =    false;
@@ -286,6 +288,63 @@ std::string
 ModelSettings::makeFullFileName(const std::string name, const std::string postfix)
 {
   return (outputPath_+filePrefix_+name+postfix);
+}
+
+
+void
+ModelSettings::setNoiseScaled(Grid2D *ns)
+{ 
+  if(ns==NULL)
+    noiseScaled_.push_back(NULL);
+  else
+  {
+  /*  float *noiseScaled = new float[nxNoiseScaled_*nyNoiseScaled_];
+
+    for(i=0;i<nxNoiseScaled_*nyNoiseScaled_;i++)
+      noiseScaled[i] = 0.0;
+
+    for(i=0;i<nxNoiseScaled_;i++)
+      for(j=0;j<nyNoiseScaled_;j++)
+      {
+        double x, y, z;
+        simbox->getCoord(i, j, 0, x, y, z);
+        noiseScaled[i+nxNoiseScaled_*j] += static_cast<float>(ns->GetZ(x,y));
+      }
+*/
+      noiseScaled_.push_back(ns);
+  }
+}
+
+double ModelSettings::getMinimumNoiseScaled(int i)
+{
+  if(noiseScaled_[i]!=NULL)
+  {
+   double minimum = (*noiseScaled_[i])(0,0);
+   int l,j;
+   for(l=0;l<noiseScaled_[i]->GetNI();l++)
+    for(j=0;j<noiseScaled_[i]->GetNJ();j++)
+     if((*noiseScaled_[i])(l,j)<minimum)
+       minimum = (*noiseScaled_[i])(l,j);
+
+   return minimum;
+  }
+  else
+    return 1.0;
+}
+
+bool ModelSettings::noiseIsScaled()
+{
+  if(noiseScaled_.size()>0)
+  {
+    for(int i=0;i<noiseScaled_.size();i++)
+    {
+      if(noiseScaled_[i]!=NULL)
+        return true;
+    }
+    return false;
+  }
+  else
+    return false;
 }
 
 std::string ModelSettings::outputPath_ = "";

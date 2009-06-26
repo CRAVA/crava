@@ -778,6 +778,17 @@ FFTGrid::getRealValue(int i, int j, int k, bool extSimbox)
 
   return( value );
 }
+float *
+FFTGrid::getRealTrace(int i, int j)
+{
+  float *value = new float[nz_];
+  for(int k=0;k<nz_;k++)
+    value[k] = getRealValue(i,j,k);
+
+  return value;
+
+}
+
 
 float        
 FFTGrid::getRealValueCyclic(int i, int j, int k)
@@ -929,6 +940,19 @@ FFTGrid::setRealValue(int i, int j ,int k, float  value, bool extSimbox)
     return(1);
 }
 
+int FFTGrid::setRealTrace(int i, int j, float *value)
+{
+  int notok;
+  for(int k=0;k<nz_;k++)
+  {
+    notok = setRealValue(i,j,k,value[k]);
+    if(notok==1)
+      return(1);
+  }
+  return(0);
+
+
+}
 int   
 FFTGrid::setComplexValue(int i, int j ,int k, fftw_complex value, bool extSimbox)
 {    

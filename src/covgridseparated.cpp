@@ -32,9 +32,19 @@ CovGridSeparated::CovGridSeparated(const FFTGrid & grid)
       gammaXY_[index] = gridTmp.getRealValue(i, j, 0, true);
     } 
   } 
+  float maxval = fabs(gridTmp.getRealValue(0, 0, 0, true));
+  int i = 1;
+  float value = fabs(gridTmp.getRealValue(0, 0, i, true));
+  while(value>maxval)
+  {
+    maxval = fabs(gridTmp.getRealValue(0, 0, i, true));
+    i++;
+    value = fabs(gridTmp.getRealValue(0, 0, i, true));
+  }
+  maxval = gridTmp.getRealValue(0, 0, i-1, true);
 
   for (int k = 0; k < nzp_; k++) {
-    gammaZ_[k] = gridTmp.getRealValue(0, 0, k, true) / gridTmp.getRealValue(0, 0, 0, true);
+    gammaZ_[k] = gridTmp.getRealValue(0, 0, k, true) / maxval;
   }
 
   if (isTrans)

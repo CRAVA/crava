@@ -21,6 +21,7 @@ class ModelSettings;
 class Corr;
 class SpatialWellFilter;
 
+
 class Crava 
 {
 public:
@@ -42,6 +43,7 @@ public:
   void               filterLogs(Simbox          * timeSimboxConstThick,
                                 FilterWellLogs *& filterlogs);
   int                getRelative();
+  
 
 private: 
   void               computeDataVariance(void);
@@ -67,6 +69,9 @@ private:
   void               multiplyDataByScaleWaveletAndWriteToFile(const char* typeName);
   void               doPostKriging(FFTGrid & postAlpha, FFTGrid & postBeta, FFTGrid & postRho);
 
+  void               computeG(double **G); // 
+  void               newPosteriorCovPointwise(double ** sigmanew, double **G, int igrid, int jgrid, ModelSettings *modelSettings, double **sigmamdnew);
+  void               correctAlphaBetaRho(ModelSettings *modelSettings);
   int                fileGrid_;         // is true if is storage is on file 
   const Simbox     * simbox_;           // the simbox
   int                nx_;               // dimensions of the problem
@@ -95,7 +100,7 @@ private:
 
   Wavelet         ** seisWavelet_;      // wavelet operator that define the forward map.
   FFTGrid         ** seisData_;         // Data
-  float           ** errThetaCov_;      //
+  double           ** errThetaCov_;      //
   float              wnc_ ;             // if wnc=0.01 1% of the error wariance is white this has largest effect on
                                         // high frequency components. It makes everything run smoother we
                                         // avoid ill posed problems.
@@ -128,5 +133,6 @@ private:
   RandomGen        * random_;
   FaciesProb       * fprob_;
   Model            * model_;
+  NRLib2::Grid2D<double **>           *sigmamdnew_;
 };
 #endif

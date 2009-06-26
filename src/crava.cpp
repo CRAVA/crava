@@ -26,6 +26,7 @@
 #include "lib/lib_matr.h"
 #include "nrlib/iotools/logkit.hpp"
 #include "nrlib/stormgrid/stormcontgrid.hpp"
+#include "nrlib/grid/grid2d.hpp"
 
 
 #define _USE_MATH_DEFINES
@@ -80,9 +81,10 @@ Crava::Crava(Model * model, SpatialWellFilter *spatwellfilter)
   dataVariance_      = new float[ntheta_];
   scaleWarning_      = 0;
   scaleWarningText_  = new char[12*MAX_STRING*ntheta_]; 
-  errThetaCov_       = new float*[ntheta_];  
+  errThetaCov_       = new double*[ntheta_]; 
+  sigmamdnew_        = NULL;
   for(int i=0;i<ntheta_;i++)
-    errThetaCov_[i] = new float[ntheta_]; 
+    errThetaCov_[i] = new double[ntheta_]; 
   for(int i=0;i<ntheta_;i++)
     thetaDeg_[i] = static_cast<float>(model->getModelSettings()->getAngle(i)*180.0/M_PI); 
   
@@ -155,21 +157,21 @@ Crava::Crava(Model * model, SpatialWellFilter *spatwellfilter)
     }
   }
 
-  if(model->getModelSettings()->getEstimateFaciesProb()) 
+
+  if ((outputFlag_ & ModelSettings::FACIESPROBRELATIVE) > 0 || model->getModelSettings()->noiseIsScaled()==true)
   {
-    if ((outputFlag_ & ModelSettings::FACIESPROBRELATIVE) > 0)
-    {
-      meanAlpha2_ = copyFFTGrid(meanAlpha_);
-      meanBeta2_  = copyFFTGrid(meanBeta_);
-      meanRho2_   = copyFFTGrid(meanRho_);
-    }
-    fprob_ = new FaciesProb(correlations_,
-                            model->getModelSettings(), 
-                            fileGrid_, 
-                            meanAlpha_, meanBeta_, meanRho_, 
-                            model->getModelSettings()->getPundef(), 
-                            model->getPriorFacies());
+    meanAlpha2_ = copyFFTGrid(meanAlpha_);
+    meanBeta2_  = copyFFTGrid(meanBeta_);
+    meanRho2_   = copyFFTGrid(meanRho_);
   }
+  if(model->getModelSettings()->getEstimateFaciesProb()) 
+    fprob_ = new FaciesProb(correlations_,
+    model->getModelSettings(), 
+    fileGrid_, 
+    meanAlpha_, meanBeta_, meanRho_, 
+    model->getModelSettings()->getPundef(), 
+    model->getPriorFacies());
+
 
   meanAlpha_->fftInPlace();
   meanBeta_ ->fftInPlace();
@@ -198,6 +200,23 @@ Crava::~Crava()
   if(postRho_!=NULL)   delete  postRho_ ;
 
   delete [] scaleWarningText_;
+  if(sigmamdnew_!=NULL)
+  {
+    for(int i=0;i<nx_;i++)
+    {
+      for(int j=0;j<ny_;j++)
+      {
+        if((*sigmamdnew_)(i,j)!=NULL)
+        {
+          for(int ii=0;ii<3;ii++)
+            delete [] (*sigmamdnew_)(i,j)[ii];
+          delete [] (*sigmamdnew_)(i,j);
+        }
+      }
+    }
+     delete sigmamdnew_;
+
+  }
 }
 
 void
@@ -246,7 +265,10 @@ Crava::setupErrorCorrelation(ModelSettings * modelSettings)
   for(int l=0 ; l < ntheta_ ; l++)
   {
     empSNRatio_[l]    = modelSettings->getSNRatio(l);
-    errorVariance_[l] = dataVariance_[l]/empSNRatio_[l];
+    if(modelSettings->noiseIsScaled()==true)
+      errorVariance_[l] = float(dataVariance_[l]*modelSettings->getMinimumNoiseScaled(l)/empSNRatio_[l]);//NBNB Anne Randi: Sett denne lik minste ved lokal skalering.
+    else
+      errorVariance_[l] = dataVariance_[l]/empSNRatio_[l];
 
     if (empSNRatio_[l] < 1.1f) 
     {
@@ -1025,7 +1047,15 @@ Crava::computePostMeanResidAndFFTCov()
     postAlpha_->logTransf();
     postAlpha_->endAccess();
   }
-    
+
+  //NBNB Anne Randi: Skaler traser ihht notat fra Hugo
+  if(model_->getModelSettings()->noiseIsScaled()==true)
+  {
+  
+  correctAlphaBetaRho(model_->getModelSettings());
+  
+  }
+
   if(writePrediction_ == true)
   {
     doPostKriging(*postAlpha_, *postBeta_, *postRho_); 
@@ -1235,18 +1265,43 @@ Crava::simulate(RandomGen * randomGen)
 
           seed0->setAccessMode(FFTGrid::RANDOMACCESS);
           seed0->invFFTInPlace();
-          seed0->add(postAlpha_);
-          seed0->endAccess();
-
+         
           seed1->setAccessMode(FFTGrid::RANDOMACCESS);
           seed1->invFFTInPlace(); 
-          seed1->add(postBeta_);
-          seed1->endAccess();
+         
 
           seed2->setAccessMode(FFTGrid::RANDOMACCESS);
-          seed2->invFFTInPlace();   
+          seed2->invFFTInPlace(); 
+
+          if(model_->getModelSettings()->noiseIsScaled()==true)
+          {
+            float alpha,beta, rho;
+            float alphanew, betanew, rhonew;
+
+            for(j=0;j<ny_;j++)
+              for(i=0;i<nx_;i++)
+                for(k=0;k<nz_;k++)
+                {
+                  alpha = seed0->getRealValue(i,j,k);
+                  beta = seed1->getRealValue(i,j,k);
+                  rho = seed2->getRealValue(i,j,k);
+                  alphanew = float((*sigmamdnew_)(i,j)[0][0]*alpha+ (*sigmamdnew_)(i,j)[0][1]*beta+(*sigmamdnew_)(i,j)[0][2]*rho);
+                  betanew = float((*sigmamdnew_)(i,j)[1][0]*alpha+ (*sigmamdnew_)(i,j)[1][1]*beta+(*sigmamdnew_)(i,j)[1][2]*rho);
+                  rhonew = float((*sigmamdnew_)(i,j)[2][0]*alpha+ (*sigmamdnew_)(i,j)[2][1]*beta+(*sigmamdnew_)(i,j)[2][2]*rho);
+                  seed0->setRealValue(i,j,k,alphanew);
+                  seed1->setRealValue(i,j,k,betanew);
+                  seed2->setRealValue(i,j,k,rhonew);
+                }
+          }
+
+          seed0->add(postAlpha_);
+          seed0->endAccess();
+          seed1->add(postBeta_);
+          seed1->endAccess();
           seed2->add(postRho_);
           seed2->endAccess();
+
+
 
           doPostKriging(*seed0, *seed1, *seed2); 
           ParameterOutput::writeParameters(simbox_, model_, seed0, seed1, seed2,
@@ -1698,4 +1753,487 @@ int relative;
     relative = 0;
 
   return relative;
+}
+
+void Crava::computeG(double **G)
+{
+  correlations_->invFFT();
+  correlations_->getPostVariances();
+  correlations_->FFT();
+ // correlations_->writeFilePostVariances();
+ // correlations_->writeFilePriorVariances();
+  double **sigmam = new double*[3];
+  int i,j;
+  for(i=0;i<3;i++)
+  {
+    sigmam[i] = new double[3];
+    for(j=0;j<3;j++)
+      sigmam[i][j] = double(correlations_->getPriorVar0()[i][j]);
+  }
+  float **sigmamd = correlations_->getPostVar0();
+  double **sigmadelta = new double*[3];
+  for(i=0;i<3;i++)
+    sigmadelta[i] = new double[3];
+  for(i=0;i<3;i++)
+    for(j=0;j<3;j++)
+      sigmadelta[i][j] = double(sigmam[i][j]-sigmamd[i][j]);
+ 
+  double  * eigval = new double[3];
+  int     * error  = new int[1];
+  double ** eigvec = new double *[3];
+  double ** eigvalmat   = new double *[3];
+  double ** help        = new double *[3];
+  double ** eigvectrans = new double *[3];
+  for(i=0;i<3;i++)
+  {
+    eigvec[i] = new double[3];
+    eigvalmat[i]   = new double[3];
+    help[i]        = new double[3];
+    eigvectrans[i] = new double [3];
+  }
+
+  lib_matr_eigen(sigmadelta,3,eigvec,eigval,error);
+  for(i=0;i<3;i++)
+    for(j=0;j<3;j++)
+      if(i==j && eigval[i]>0.0)
+        eigvalmat[i][j] = eigval[i];
+      else
+        eigvalmat[i][j] = 0.0;
+  lib_matr_prod(eigvec,eigvalmat,3,3,3,help);
+  lib_matrTranspose(eigvec,3,3,eigvectrans);
+  lib_matr_prod(help,eigvectrans,3,3,3,sigmadelta);
+
+
+  lib_matr_eigen(sigmam,3,eigvec,eigval,error);
+  
+  double ** sigmaminv   = new double *[3];
+  double ** A           = new double *[3];
+ 
+  for(i=0;i<3;i++)
+  { 
+    sigmaminv[i]   = new double[3];
+    A[i]           = new double[3]; 
+  }
+  for(i=0;i<3;i++)
+    for(j=0;j<3;j++)
+      if(i==j && eigval[i]>0.0000001)
+        eigvalmat[i][j] = 1.0/sqrt(eigval[i]);
+      else
+        eigvalmat[i][j] = 0.0;
+  lib_matr_prod(eigvec,eigvalmat,3,3,3,help);
+  lib_matrTranspose(eigvec,3,3,eigvectrans);
+  lib_matr_prod(help,eigvectrans,3,3,3,sigmaminv);
+  lib_matr_prod(sigmaminv,sigmadelta,3,3,3,help);
+  lib_matr_prod(help,sigmaminv,3,3,3,A);
+
+  lib_matr_eigen(A,3,eigvec,eigval,error);
+  lib_matr_sort3x3(eigval,eigvec);
+  lib_matrTranspose(eigvec,3,3,eigvectrans);// V_A transponert
+
+  double ** lambdag = new double*[ntheta_];
+  for(i=0;i<ntheta_;i++)
+    lambdag[i] = new double[3];
+ 
+    for(i=0;i<ntheta_;i++)
+      for(j=0;j<3;j++)
+        if(i==j)
+          lambdag[i][j] = sqrt(eigval[j]/(1.0-eigval[j]));
+        else
+          lambdag[i][j] = 0.0;
+ 
+
+  double  * eigvale       = new double[ntheta_];
+  double ** eigvece       = new double *[ntheta_];
+  double ** eigvalmate    = new double*[ntheta_];
+  double ** eigvecetrans  = new double *[ntheta_];
+  double ** helpe         = new double *[ntheta_];
+  
+
+  for(i=0;i<ntheta_;i++)
+  {
+    eigvece[i] = new double[ntheta_];
+    eigvalmate[i] = new double[ntheta_];
+    eigvecetrans[i] = new double[ntheta_];
+    helpe[i]        = new double[ntheta_];
+  }
+  lib_matr_eigen(errThetaCov_,ntheta_,eigvece,eigvale,error);
+  for(i=0;i<ntheta_;i++)
+    for(j=0;j<ntheta_;j++)
+      if(i==j && eigvale[i]>0.0)
+        eigvalmate[i][j] = sqrt(eigvale[i]);
+      else
+        eigvalmate[i][j] = 0.0;
+  
+  lib_matrTranspose(eigvece,ntheta_,ntheta_,eigvecetrans);
+  lib_matr_prod(eigvece,eigvalmate,ntheta_,ntheta_,ntheta_,helpe);
+  lib_matr_prod(helpe,eigvecetrans,ntheta_,ntheta_,ntheta_,eigvece);
+  double **help1= new double*[ntheta_];
+  double **help2 = new double*[ntheta_];
+  
+  for(i=0;i<ntheta_;i++)
+  {
+    help1[i] = new double[3];
+    help2[i] =new double[3];
+  }
+  lib_matr_prod(eigvece,lambdag,ntheta_,ntheta_,3,help1);
+  lib_matr_prod(help1,eigvectrans,ntheta_,3,3,help2); //
+  lib_matr_prod(help2,sigmaminv,ntheta_,3,3,G);
+  
+  for(i=0;i<3;i++)
+  {
+    delete [] eigvec[i];
+    delete [] help[i];
+    delete [] eigvectrans[i];
+    delete [] eigvalmat[i];
+    delete [] A[i];
+    delete [] sigmadelta[i];
+    delete [] sigmaminv[i];
+  }
+  delete [] eigval;
+  delete [] eigvec;
+  delete [] help;
+  delete [] eigvectrans;
+  delete [] eigvalmat;
+  delete [] A;
+  delete [] sigmadelta;
+  delete [] sigmaminv;
+
+  for(i=0;i<ntheta_;i++)
+  {
+    delete [] help1[i];
+    delete [] help2[i];
+    delete [] helpe[i];
+    delete [] eigvecetrans[i];
+    delete [] eigvece[i];
+    delete [] eigvalmate[i];
+  }
+
+  delete [] eigvale;
+  delete [] help1;
+  delete [] help2;
+  delete [] helpe;
+  delete [] eigvecetrans;
+  delete [] eigvece;
+  delete [] eigvalmate;
+  delete [] error;
+  
+}
+void Crava::newPosteriorCovPointwise(double ** sigmanew, double **G, int igrid, int jgrid, ModelSettings *modelSettings, double **sigmamdnew)
+{
+  double **sigmaenew = new double*[ntheta_];
+  double **D         = new double*[ntheta_];
+  double **help      = new double*[ntheta_];
+  int i,j;
+  for(i=0;i<ntheta_;i++)
+  {
+    sigmaenew[i] = new double[ntheta_];
+    D[i]         = new double[ntheta_];
+    help[i]      = new double[ntheta_];
+  }
+  
+  for(i=0;i<ntheta_;i++)
+    for(j=0;j<ntheta_;j++)
+      if(i==j)
+        D[i][j] = sqrt(modelSettings->getNoiseScaled(i,igrid,jgrid)/modelSettings->getMinimumNoiseScaled(i));
+      else
+        D[i][j] = 0.0;
+
+  lib_matr_prod(D,errThetaCov_,ntheta_,ntheta_,ntheta_,help);
+  lib_matr_prod(help,D,ntheta_,ntheta_,ntheta_,sigmaenew);
+
+  double **GT    = new double *[3];
+  double **help1 = new double *[ntheta_];
+  double **help2 = new double *[3];
+  double **help4 = new double *[3];
+  for(i=0;i<3;i++)
+  {
+    GT[i] = new double[ntheta_];
+    help2[i] = new double[ntheta_];
+    help4[i] = new double[ntheta_];
+  }
+  for(i=0;i<ntheta_;i++)
+    help1[i] = new double[3];
+  lib_matrTranspose(G,ntheta_,3,GT);
+  double **sigmam = new double*[3];
+  for(i=0;i<3;i++)
+  {
+    sigmam[i] = new double[3];
+    for(j=0;j<3;j++)
+      sigmam[i][j] = double(correlations_->getPriorVar0()[i][j]);
+  }
+  lib_matr_prod(G,sigmam,ntheta_,3,3,help1);
+  lib_matr_prod(help1,GT,ntheta_,3,ntheta_,help);
+  for(i=0;i<ntheta_;i++)
+    for(j=0;j<ntheta_;j++)
+      help[i][j]+=sigmaenew[i][j];
+
+
+  int     * error         = new int[1];
+  double  * eigvale       = new double[ntheta_];
+  double ** eigvece       = new double *[ntheta_];
+  double ** eigvalmate    = new double*[ntheta_];
+  double ** eigvecetrans  = new double *[ntheta_];
+  
+  for(i=0;i<ntheta_;i++)
+  {
+    eigvece[i] = new double[ntheta_];
+    eigvalmate[i] = new double[ntheta_];
+    eigvecetrans[i] = new double[ntheta_];  
+  }
+  lib_matr_eigen(help,ntheta_,eigvece,eigvale,error);
+  for(i=0;i<ntheta_;i++)
+    for(j=0;j<ntheta_;j++)
+      if(i==j && eigvale[i]>0.00000001)
+        eigvalmate[i][j] = 1.0/eigvale[i];
+      else
+        eigvalmate[i][j] = 0.0;
+
+  lib_matrTranspose(eigvece,ntheta_,ntheta_,eigvecetrans);
+  lib_matr_prod(eigvece,eigvalmate,ntheta_,ntheta_,ntheta_,help);
+  lib_matr_prod(help,eigvecetrans,ntheta_,ntheta_,ntheta_,eigvece); // eigvece er inversmatrisen
+
+  double ** help3 = new double *[3];
+  for(i=0;i<3;i++)
+    help3[i] = new double[3];
+  double **deltanew = new double *[3];
+  for(i=0;i<3;i++)
+    deltanew[i] = new double[3];
+  lib_matr_prod(sigmam,GT,3,3,ntheta_,help4);
+  lib_matr_prod(help4,eigvece,3,ntheta_,ntheta_,help2);
+  lib_matr_prod(help2,G,3,ntheta_,3,help3);
+  lib_matr_prod(help3,sigmam,3,3,3,deltanew);
+
+  for(i=0;i<3;i++)
+    for(j=0;j<3;j++)
+    {
+      sigmamdnew[i][j] = -deltanew[i][j];
+      sigmamdnew[i][j]+=sigmam[i][j];
+    }
+
+  double  * eigval = new double[3];
+  double     **eigvalmat  = new double*[3];
+  double ** eigvec = new double *[3];
+  double ** eigvectrans = new double *[3];
+  for(i=0;i<3;i++)
+  {
+    eigvec[i] = new double[3];
+    eigvalmat[i] = new double[3];
+    eigvectrans[i] = new double[3];
+  }
+
+  lib_matr_eigen(sigmamdnew,3,eigvec,eigval,error); // take square root of sigmamdnew, because this is what is needed to save for later use in simulation.
+  for(i=0;i<3;i++)
+    for(j=0;j<3;j++)
+      if(i==j && eigval[i]>0.0)
+        eigvalmat[i][j]=sqrt(eigval[i]);
+      else
+        eigvalmat[i][j] = 0.0;
+  lib_matr_prod(eigvec,eigvalmat,3,3,3,help3);
+  lib_matrTranspose(eigvec,3,3,eigvectrans);
+  lib_matr_prod(help3,eigvectrans,3,3,3,sigmamdnew);
+
+  lib_matr_eigen(deltanew,3,eigvec,eigval,error);
+  for(i=0;i<3;i++)
+    for(j=0;j<3;j++)
+      if(i==j && eigval[i]>0.0)
+        eigvalmat[i][j]=sqrt(eigval[i]);
+      else
+        eigvalmat[i][j] = 0.0;
+  lib_matr_prod(eigvec,eigvalmat,3,3,3,help3);
+  lib_matrTranspose(eigvec,3,3,eigvectrans);
+  lib_matr_prod(help3,eigvectrans,3,3,3,deltanew);
+
+  float **sigmamd = correlations_->getPostVar0();
+  double **sigmadelta = new double*[3];
+  
+  for(i=0;i<3;i++)
+    sigmadelta[i] = new double[3];
+  for(i=0;i<3;i++)
+    for(j=0;j<3;j++)
+      sigmadelta[i][j] = double(sigmam[i][j]-sigmamd[i][j]);
+
+  lib_matr_eigen(sigmadelta,3,eigvec,eigval,error);
+  for(i=0;i<3;i++)
+    for(j=0;j<3;j++)
+      if(i==j&& eigval[i]>0.0000001)
+        eigvalmat[i][j]=1.0/sqrt(eigval[i]);
+      else
+        eigvalmat[i][j] = 0.0;
+  lib_matr_prod(eigvec,eigvalmat,3,3,3,help3);
+  lib_matrTranspose(eigvec,3,3,eigvectrans);
+  lib_matr_prod(help3,eigvectrans,3,3,3,sigmadelta);
+
+  lib_matr_prod(deltanew,sigmadelta,3,3,3,sigmanew);
+
+  for(i=0;i<ntheta_;i++)
+  {
+    delete [] D[i];
+    delete [] sigmaenew[i];
+    delete [] help[i];
+    delete [] eigvece[i];
+    delete [] eigvalmate[i];
+    delete [] eigvecetrans[i];
+    delete [] help1[i];
+    
+  }
+  delete [] help;
+  delete [] D;
+  delete [] sigmaenew;
+  delete [] eigvece;
+  delete [] eigvalmate;
+  delete [] eigvecetrans;
+  delete [] help1;
+
+  for(i=0;i<3;i++)
+  {
+    delete [] eigvalmat[i];
+    delete [] eigvectrans[i];
+    delete [] sigmadelta[i];
+    delete [] sigmam[i];
+    delete [] eigvec[i];
+    delete [] help3[i];
+    delete [] GT[i];
+    delete [] help2[i];
+    delete [] help4[i];
+    
+  }
+  delete [] eigvalmat;
+  delete [] eigvectrans;
+  delete [] sigmadelta;
+  delete [] sigmam;
+  delete [] eigvec;
+  delete [] help3;
+  delete [] GT;
+  delete [] help2;
+  delete [] help4;
+  delete [] error;
+
+
+}
+
+void Crava::correctAlphaBetaRho(ModelSettings *modelSettings)
+{
+  int i,j,k;
+  double **G = new double*[ntheta_];
+  for(i=0;i<ntheta_;i++)
+    G[i] = new double[3];
+  computeG(G);
+ 
+  double **sigmanew = new double *[3];
+  double **sigmamd = new double *[3];
+  for(i=0;i<3;i++)
+  {
+    sigmanew[i] = new double[3];
+    sigmamd[i] = new double[3];
+  }
+  double **sigmamdold = new double*[3];
+  
+  for(i=0;i<3;i++)
+    sigmamdold[i] = new double[3];
+  for(i=0;i<3;i++)
+    for(j=0;j<3;j++)
+      sigmamdold[i][j] = correlations_->getPostVar0()[i][j];
+
+  double  * eigval       = new double[3];
+  double ** eigvalmat    = new double*[3];
+  double ** eigvec       = new double *[3];
+  double ** eigvectrans  = new double *[3];
+  int     * error        = new int[1];
+  double ** help         = new double*[3];
+  for(i=0;i<3;i++)
+  {
+    eigvec[i] = new double[3];
+    eigvalmat[i] = new double[3];
+    eigvectrans[i] = new double[3];
+    help[i] = new double[3];
+  }
+
+  lib_matr_eigen(sigmamdold,3,eigvec,eigval,error); 
+  for(i=0;i<3;i++)
+    for(j=0;j<3;j++)
+      if(i==j && eigval[i]>0.0)
+        eigvalmat[i][j]=1.0/sqrt(eigval[i]);
+      else
+        eigvalmat[i][j] = 0.0;
+  lib_matr_prod(eigvec,eigvalmat,3,3,3,help);
+  lib_matrTranspose(eigvec,3,3,eigvectrans);
+  lib_matr_prod(help,eigvectrans,3,3,3,sigmamdold);
+
+  
+
+
+  float *alpha = NULL;
+  float *beta = NULL;
+  float *rho = NULL;
+  float *meanalpha = NULL;
+  float *meanbeta = NULL;
+  float *meanrho = NULL;
+  float alphadiff, betadiff, rhodiff;
+
+  if(modelSettings->getNumberOfSimulations()>0)
+    sigmamdnew_ = new NRLib2::Grid2D<double **>(nx_,ny_,NULL);
+  else
+    sigmamdnew_ = NULL;
+  for(i=0;i<nx_;i++)
+    for(j=0;j<ny_;j++)
+    {
+      newPosteriorCovPointwise(sigmanew,G, i, j, modelSettings, sigmamd);
+      lib_matr_prod(sigmamd,sigmamdold,3,3,3,eigvec); // store product in eigvec
+      if(sigmamdnew_!=NULL)
+      {
+        (*sigmamdnew_)(i,j) = new double*[3];
+        for(int ii=0;ii<3;ii++)
+        {
+          (*sigmamdnew_)(i,j)[ii] =new double[3];
+          for(int jj=0;jj<3;jj++)
+            (*sigmamdnew_)(i,j)[ii][jj] = eigvec[ii][jj];
+        }
+
+      }
+      alpha = postAlpha_->getRealTrace(i,j);
+      beta = postBeta_->getRealTrace(i,j);
+      rho = postRho_->getRealTrace(i,j);
+      meanalpha = meanAlpha2_->getRealTrace(i,j);
+      meanbeta = meanBeta2_->getRealTrace(i,j);
+      meanrho = meanRho2_->getRealTrace(i,j);
+      for(k=0;k<nz_;k++)
+      {
+        alphadiff = alpha[k]-meanalpha[k];
+        betadiff = beta[k]-meanbeta[k];
+        rhodiff = rho[k]-meanrho[k];
+        alpha[k] = float(meanalpha[k]+sigmanew[0][0]*alphadiff+sigmanew[0][1]*betadiff+sigmanew[0][2]*rhodiff);
+        beta[k] = float(meanbeta[k]+sigmanew[1][0]*alphadiff+sigmanew[1][1]*betadiff+sigmanew[1][2]*rhodiff);
+        rho[k] = float(meanrho[k]+sigmanew[2][0]*alphadiff+sigmanew[2][1]*betadiff+sigmanew[2][2]*rhodiff);
+      }
+      postAlpha_->setRealTrace(i,j, alpha);
+      postBeta_->setRealTrace(i,j,alpha);
+      postRho_->setRealTrace(i,j,alpha);
+
+    }
+    for(i=0;i<ntheta_;i++)
+      delete [] G[i];
+
+    for(i=0;i<3;i++)
+    {
+      delete [] eigvalmat[i];
+      delete [] eigvectrans[i];
+      delete [] eigvec[i];
+      delete [] sigmamdold[i];
+      delete [] help[i];
+    }
+    delete [] eigval;
+    delete [] eigvalmat;
+    delete [] eigvec;
+    delete [] sigmamdold;
+    delete [] error;
+    delete [] help;
+
+    delete [] G;
+    delete [] alpha;
+    delete [] beta;
+    delete [] rho;
+    delete [] meanalpha;
+    delete [] meanbeta;
+    delete [] meanrho;
+
 }

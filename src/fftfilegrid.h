@@ -53,7 +53,8 @@ public:
   std::string  readDirectFile(const std::string & fileName);
 
   bool         isFile() {return(1);}
-
+  float      * getRealTrace(int i, int j);
+  int          setRealTrace(int i, int j, float *value);
 private:
   int accMode_;
   int modified_;   //Tells if grid is modified during RANDOMACCESS.

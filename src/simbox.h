@@ -68,6 +68,7 @@ public:
   int            status() const {return(status_);}
   void           externalFailure() {status_ = EXTERNALERROR;}
   void           findIJFromILXL(int IL, int XL, int &i, int &j) const;
+  void           getMinAndMaxXY(double &xmin, double &xmax, double &ymin, double &ymax) const;
   enum           simboxstatus{BOXOK, INTERNALERROR, EXTERNALERROR, EMPTY, NOAREA, NODEPTH};
 
 private:

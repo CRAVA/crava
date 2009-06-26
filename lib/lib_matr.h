@@ -49,6 +49,7 @@ extern "C"
   extern void lib_matr_prod(double **i_mat1, double **i_mat2,int i_n1,int i_n2,int i_n3,double **o_mat);
   extern void lib_matrTranspose(double **mat, int n1, int n2, double **outmat);
   extern void lib_matrLtXeqBR(int i_dim, double **i_mat, double **x_mat, int n);
+  extern void lib_matr_sort3x3(double *eigenval, double **eigenvec);
 
 #ifdef __cplusplus
 }

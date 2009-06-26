@@ -11,6 +11,7 @@
 #include "src/fftgrid.h"
 #include "src/model.h"
 #include "src/definitions.h"
+#include "lib/global_def.h"
 
 Simbox::Simbox(void) 
   : Volume()
@@ -635,4 +636,25 @@ void Simbox::findIJFromILXL(int IL, int XL, int &i, int &j)const
     i = (IL-inLine0_)/ilStep_;
     j = (XL-crossLine0_)/xlStep_;
   }
+}
+
+void Simbox::getMinAndMaxXY(double &xmin, double &xmax, double &ymin, double &ymax)const
+{
+  xmin = MINIM(GetXMin()+GetLX()*cosrot_, GetXMin());
+  xmin = MINIM(xmin,GetXMin()-GetLY()*sinrot_);
+  xmin = MINIM(xmin,GetXMin()+GetLX()*cosrot_-GetLY()*sinrot_);
+
+  xmax = MAXIM(GetXMin()+GetLX()*cosrot_, GetXMin());
+  xmax = MAXIM(xmax,GetXMin()-GetLY()*sinrot_);
+  xmax = MAXIM(xmax,GetXMin()+GetLX()*cosrot_-GetLY()*sinrot_);
+
+  ymin = MINIM(GetYMin()+GetLX()*sinrot_, GetYMin());
+  ymin = MINIM(ymin,GetYMin()+GetLY()*cosrot_);
+  ymin = MINIM(ymin,GetYMin()+GetLX()*sinrot_+GetLY()*cosrot_);
+
+  ymax = MAXIM(GetYMin(),GetYMin()+GetLX()*sinrot_);
+  ymax = MAXIM(ymax,GetYMin()+GetLY()*cosrot_);
+  ymax = MAXIM(ymax,GetYMin()+GetLX()*sinrot_+GetLY()*cosrot_);
+
+
 }

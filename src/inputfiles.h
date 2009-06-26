@@ -28,8 +28,10 @@ public:
   const std::string              & getCorrDirFile(void)          const { return corrDirFile_          ;}
   const std::string              & getReflMatrFile(void)         const { return reflMatrFile_         ;}
   const std::string              & getParamCorrFile(void)        const { return paramCorrFile_        ;}
+  const std::string              & getLocalNoiseFile(int i)      const { return localNoiseFiles_[i]    ;}
   const std::string              & getTempCorrFile(void)         const { return tempCorrFile_         ;}
   const std::string              & getInputDirectory(void)       const { return inputDirectory_       ;}
+
 
   const int                        getNumberOfSeismicFiles(void) const { return seismicFiles_.size()  ;}
 
@@ -39,6 +41,7 @@ public:
   void addWaveletFile(const std::string & waveletFile)                    { waveletFiles_.push_back(waveletFile)      ;}
   void addShiftFile(const std::string & shiftFile)                        { waveletShiftFiles_.push_back(shiftFile)   ;}
   void addScaleFile(const std::string & scaleFile)                        { waveletScaleFiles_.push_back(scaleFile)   ;}
+  void addNoiseFile(const std::string &noiseFile)                         { localNoiseFiles_.push_back(noiseFile)     ;}
   void setWaveletEstIntFile(int i, const std::string & waveletEstIntFile) { waveletEstIntFile_[i] = waveletEstIntFile ;}
   void setFaciesEstIntFile(int i, const std::string & faciesEstIntFile)   { faciesEstIntFile_[i]  = faciesEstIntFile  ;}
   void addTimeSurfFile(const std::string & timeSurfFile)                  { timeSurfFiles_.push_back(timeSurfFile)    ;}
@@ -76,6 +79,7 @@ private:
   std::string                tempCorrFile_;          ///< File name for temporal parameter correlations.
 
   std::string                inputDirectory_;        ///< Base directory for input files.
+  std::vector<std::string>   localNoiseFiles_;       ///< File names: local noise
 };
 
 #endif

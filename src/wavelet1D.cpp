@@ -45,8 +45,7 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
   cnzp_                 = nzp_/2+1;
   rnzp_	                = 2*cnzp_;
   scale_                = 1.0f; 
-  gridNI_               = 0;   
-  gridNJ_               = 0;
+  
   cz_                   = 0;
   shiftGrid_            = NULL;  
   gainGrid_             = NULL; 
@@ -430,8 +429,7 @@ Wavelet1D::Wavelet1D(Wavelet * wavelet, int difftype)
 Wavelet1D::Wavelet1D(int difftype, int nz, int nzp)
   : Wavelet(1)
 {
-  gridNI_     = 0;   
-  gridNJ_     = 0;
+  
   shiftGrid_  = NULL;  
   gainGrid_   = NULL; 
   theta_      = RMISSING;

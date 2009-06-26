@@ -23,7 +23,8 @@ SystemCall::getUserName()
   if (GetUserName(userName, &nUserName)) 
   {
     if (userName == NULL) 
-      strUserName = std::string("Empty user name found");
+      strUserName= std::string("Empty user name found");
+
   }
   else 
   {

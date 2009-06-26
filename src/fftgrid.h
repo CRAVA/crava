@@ -118,7 +118,8 @@ public:
 
   void                 checkNaN(); //NBNB Ragnar: For debug purpose. Negative number = OK.
   float                getDistToBoundary(int i, int n , int np); 
-
+  float               *getRealTrace(int i, int j);
+  int                  setRealTrace(int i, int j, float *value);
 protected:
   int    cubetype_;        // see enum gridtypes above
   float  theta_;           // angle in angle gather (case of data)

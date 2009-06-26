@@ -53,19 +53,22 @@ public:
   //Note: Function below is mainly controlled by debugflag. Set overrideDebug = true to force.
   virtual void          printToFile(std::string fileName, bool overrideDebug = false) = 0;
   virtual void          writeWaveletToFile(char*, float, Simbox * simbox = NULL) = 0;
-  void                  setShiftGrid(Surface * grid, Simbox * simbox);
-  void                  setGainGrid(Surface * grid, Simbox * simbox);
+  void                  setShiftGrid(Grid2D * grid);
+  void                  setGainGrid(Grid2D * grid);
   float                 getScale() const {return scale_;}
   
   // for noise estimation
-  float                 calculateSNRatio(Simbox        * simbox, 
+  float                 calculateSNRatioAndLocalWavelet(Simbox        * simbox, 
                                          FFTGrid       * seisCube, 
                                          WellData     ** wells, 
-                                         Surface      *& shift, 
-                                         Surface      *& gain, 
+                                         Grid2D      *& shift, 
+                                         Grid2D      *& gain, 
                                          ModelSettings * modelSettings,
                                          char          * errText, 
-                                         int           & error); 
+                                         int           & error,
+                                         Grid2D      *&noiseScaled, 
+                                         int            number, 
+                                         float          globalScale); 
   void                  printVecToFile(char * fileName, fftw_real* vec ,int nzp) const;
 
   virtual void          write1DWLas3DWL() {};
@@ -88,17 +91,44 @@ protected:
   float                 findOptimalWaveletScale(fftw_real** synt_seis_r,fftw_real** seis_r,int nWells,int nzp,
                                                 float* wellWeight,float& err,float* errWell,float* scaleOptWell,
                                                 float* errWellOptScale) const;
-  void                  estimateLocalWavelets(Surface  *& shift,
-                                              Surface  *& gain,
-                                              float     * shiftWell,
-                                              float     * scaleOptWell,
-                                              Vario     * localWaveletVario,
-                                              int       * nAvtiveData,
-                                              Simbox    * simbox,
-                                              WellData ** wells,
-                                              int         nWells,
-                                              int         outputFormat,
-                                              int         otherOutput);
+void                    findLocalNoiseWithGainGiven(fftw_real ** synt_r,
+                                                    fftw_real ** seis_r,
+                                                    int nWells,
+                                                    int nzp,
+                                                    float * wellWeight,
+                                                    float & err,
+                                                    float * errWell, 
+                                                    float * errWellOptScale,
+                                                    float * scaleOptWell,
+                                                    Grid2D * gain, 
+                                                    WellData **wells, Simbox *simbox) const;
+  void                  estimateLocalGain(Grid2D  *& gain,
+                                          float     * scaleOptWell,
+                                          float       globalScale,
+                                          Vario     * localWaveletVario,
+                                          int       * nActiveData,
+                                          Simbox    * simbox,
+                                          WellData ** wells,
+                                          int         nWells);
+                                          
+  void                  estimateLocalShift(Grid2D  *& shift,
+                                           float     * shiftWell,
+                                           Vario     * localWaveletVario,
+                                           int       * nActiveData,
+                                           Simbox    * simbox,
+                                           WellData ** wells,
+                                           int         nWells);
+                                          
+  void                  estimateLocalNoise(Grid2D  *& noiseScaled,
+                                           float       globalNoise,
+                                           float     * errWellOptScale,
+                                           Vario     * localWaveletVario,
+                                           int       * nActiveData,
+                                           Simbox    * simbox,
+                                           WellData ** wells,
+                                           int         nWells);
+                                          
+
   //void                flipVec(fftw_real* vec, int n);
 
   void                  fillInnWavelet(fftw_real* wavelet_r,int nzp,float dz);
@@ -128,11 +158,11 @@ protected:
   float                 minRelativeAmp_;
 
   //NBNB The following parameters are NOT copied in copy constructor.
-  int                   gridNI_;                // number of elements for  i in shiftGrid_ and gainGrid_;
-  int                   gridNJ_;
+  
   float                 scale_;
-  float               * shiftGrid_;             // 2D grid of shift
-  float               * gainGrid_;              // 2D grid of gain factors.
+  Grid2D               * shiftGrid_;             // 2D grid of shift
+  Grid2D               * gainGrid_;              // 2D grid of gain factors.
+ 
   const int             dim_;
 };
 

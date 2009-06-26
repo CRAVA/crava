@@ -1238,3 +1238,44 @@ void lib_matrLtXeqBR(
   }
   }
 }
+
+void lib_matr_sort3x3(double *eigenval, double **eigenvec)
+{
+  double *help1;
+  int i,j,k;
+  int *index;
+  double **help2;
+  double max;
+  help1 = malloc(sizeof(double)*3);
+  help2 = malloc(sizeof(double)*3);
+  for(i=0;i<3;i++)
+    help2[i]= malloc(sizeof(double)*3);
+  index = malloc(sizeof(int)*3);
+  
+  for(j=0;j<3;j++)
+  {
+    max = -100000.0;
+    for(i=0;i<3;i++)
+    {
+      if(j==0 ||(j==1 && i!=index[0]) ||(j==2 && i!=index[0] && i!=index[1]))
+      {
+        if(eigenval[i]>max)
+        {
+          max = eigenval[i];
+          index[j] = i;
+        }
+      }
+    }
+  help1[j] = max;
+  for(k=0;k<3;k++)
+    help2[k][j] = eigenvec[k][index[j]];
+  }
+ 
+  for(i=0;i<3;i++)
+  {
+    eigenval[i] = help1[i];
+    for(j=0;j<3;j++)
+      eigenvec[i][j] = help2[i][j];
+  }
+ 
+}

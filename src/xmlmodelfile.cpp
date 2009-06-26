@@ -442,6 +442,11 @@ XmlModelFile::parseAngleGather(TiXmlNode * node, std::string & errTxt)
     inputFiles_->addWaveletFile("");
     modelSettings_->addEstimateWavelet(true);
     modelSettings_->addWaveletScale(RMISSING);
+    modelSettings_->addEstimateGlobalWaveletScale(false); 
+    inputFiles_->addShiftFile("");
+    inputFiles_->addScaleFile("");
+    modelSettings_->addEstimateLocalShift(false);
+    modelSettings_->addEstimateLocalScale(false);
   }
 
   bool bVal = false;
@@ -458,7 +463,28 @@ XmlModelFile::parseAngleGather(TiXmlNode * node, std::string & errTxt)
     modelSettings_->addEstimateSNRatio(true);
     modelSettings_->addSNRatio(RMISSING);
   }
-    
+   std::string fileName; 
+  bool localNoiseGiven = parseFileName(root, "local-noise-scaled", fileName, errTxt);
+  if(localNoiseGiven)
+    inputFiles_->addNoiseFile(fileName);
+  else
+    inputFiles_->addNoiseFile("");
+
+  bool estimate;
+  std::string tmpErr;
+  if(parseBool(root, "estimate-local-noise",estimate,tmpErr) == false || tmpErr != "") {
+    modelSettings_->addEstimateLocalNoise(false);
+    errTxt += tmpErr;
+  }
+  else 
+    if(estimate == true && localNoiseGiven == true) {
+      errTxt = errTxt +"Error: Can not give both file and ask for estimation of local noise"+
+        lineColumnText(node);
+      modelSettings_->addEstimateLocalNoise(false);
+    }
+    else
+      modelSettings_->addEstimateLocalNoise(estimate);
+
   checkForJunk(root, errTxt, true);
   return(true);
 }
@@ -512,7 +538,9 @@ XmlModelFile::parseWavelet(TiXmlNode * node, std::string & errTxt)
 {
   TiXmlNode * root = node->FirstChildElement("wavelet");
   if(root == 0)
+  {
     return(false);
+  }
 
   std::string value;
   if(parseFileName(root, "file-name", value, errTxt) == true) {
@@ -523,14 +551,51 @@ XmlModelFile::parseWavelet(TiXmlNode * node, std::string & errTxt)
     inputFiles_->addWaveletFile(""); //Keeping tables balanced.
     modelSettings_->addEstimateWavelet(true);
   }
-
+  
   float scale;
+  bool scaleGiven = false;
   if(parseValue(root, "scale", scale, errTxt) == true)
+  {
+    scaleGiven = true;
     modelSettings_->addWaveletScale(scale);
-  else
+    modelSettings_->addEstimateGlobalWaveletScale(false);
+  }
+  bool estimate;
+  std::string tmpErr;
+ 
+  if(parseBool(root, "estimate-scale",estimate,tmpErr) == false || tmpErr != "") {
+   if(scaleGiven==false) // no commands given
+   {
     modelSettings_->addWaveletScale(1);
+    modelSettings_->addEstimateGlobalWaveletScale(false);
+   }
+    errTxt += tmpErr;
+  }
+  else 
+    if(estimate == true && scaleGiven == true) {
+      errTxt = errTxt +"Error: Can not give both value and ask for estimation of global wavelet scale"+
+        lineColumnText(node);
+     // modelSettings_->addEstimateGlobalWaveletScale(false);
+    }
+    else if(estimate==true && scaleGiven==false)// estimate==true eller false, scaleGiven==false
+    {
+      modelSettings_->addEstimateGlobalWaveletScale(true);
+      modelSettings_->addWaveletScale(1);
+    } 
+    else if(estimate==false && scaleGiven==false)// estimate given as no, no scale command given
+    {
+      modelSettings_->addWaveletScale(1);
+      modelSettings_->addEstimateGlobalWaveletScale(false);
+    }
 
-  parseLocalWavelet(root, errTxt);
+
+  if(parseLocalWavelet(root, errTxt)==false)
+  {
+    inputFiles_->addShiftFile("");
+    inputFiles_->addScaleFile("");
+    modelSettings_->addEstimateLocalShift(false);
+    modelSettings_->addEstimateLocalScale(false);   
+  }
 
   checkForJunk(root, errTxt);
   return(true);
@@ -542,8 +607,10 @@ XmlModelFile::parseLocalWavelet(TiXmlNode * node, std::string & errTxt)
 {
   TiXmlNode * root = node->FirstChildElement("local-wavelet");
   if(root == 0)
+  {  
     return(false);
-
+  }
+  modelSettings_->setUseLocalWavelet(true);
   std::string filename;
   bool shiftGiven = parseFileName(root, "shift-file", filename, errTxt);
   if(shiftGiven)
@@ -1699,6 +1766,8 @@ XmlModelFile::checkConsistency(std::string & errTxt) {
     checkForwardConsistency(errTxt);
   else
     checkEstimationInversionConsistency(errTxt);
+  if(modelSettings_->getLocalWaveletVario()==NULL) 
+      modelSettings_->copyBackgroundVarioToLocalWaveletVario();
 }
 
 
