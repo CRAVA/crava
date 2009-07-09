@@ -35,11 +35,11 @@ public:
   float							               getWaveletScale(int i)        const { return waveletScale_[i]       ;} 
   float							               getSNRatio(int i)             const { return SNRatio_[i]            ;} 
 
-  int							                 getMatchEnergies(int i)       const { return matchEnergies_[i]      ;} 
-  int							                 getEstimateWavelet(int i)     const { return estimateWavelet_[i]    ;}
-  int							                 getEstimateSNRatio(int i)     const { return estimateSNRatio_[i]    ;}
-  int							                 getEstimateLocalShift(int i)  const { return estimateLocalShift_[i] ;}
-  int							                 getEstimateLocalScale(int i)  const { return estimateLocalScale_[i] ;}
+  bool                             getMatchEnergies(int i)       const { return(matchEnergies_[i]==1)      ;} 
+  bool                             getEstimateWavelet(int i)     const { return(estimateWavelet_[i]==1)    ;}
+  bool                             getEstimateSNRatio(int i)     const { return(estimateSNRatio_[i]==1)    ;}
+  bool                             getEstimateLocalShift(int i)  const { return(estimateLocalShift_[i]==1) ;}
+  bool                             getEstimateLocalScale(int i)  const { return(estimateLocalScale_[i]==1) ;}
   bool							               getEstimateBackground()       const { return estimateBackground_    ;}
   bool							               getEstimateCorrelations()     const { return estimateCorrelations_  ;}
   bool							               getEstimateWaveletNoise()     const { return estimateWaveletNoise_  ;}

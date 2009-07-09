@@ -258,7 +258,7 @@ private:
   bool             failed_;                ///< Indicates whether errors occured during construction. 
   GridMapping    * timeDepthMapping_;      ///< Contains both simbox and mapping used for depth conversion
   GridMapping    * timeCutMapping_;        ///< Simbox and mapping for timeCut
- float               * noiseGrid_;             // 2D grid for local noise scaling
+  float          * noiseGrid_;             ///< 2D grid for local noise scaling
   bool             velocityFromInversion_;
 };
 

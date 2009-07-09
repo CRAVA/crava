@@ -639,22 +639,27 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
     seismicFile = inputFiles->getSeismicFile(0); // Also needed for checkAvailableMemory()
 
   if (!areaFromModelFile)
-  {
     LogKit::LogFormatted(LogKit::HIGH,"\nFinding inversion area from seismic data in file %s\n", 
                          seismicFile.c_str());
-    areaType = "Seismic data";
-    SegyGeometry * geometry = SegY::FindGridGeometry(seismicFile, modelSettings->getTraceHeaderFormat(0));
+  else
+    LogKit::LogFormatted(LogKit::HIGH,"\nFinding IL/XL information from seismic data in file %s\n", 
+                         seismicFile.c_str());
+
+  SegyGeometry * geometry = NULL;
+  if(seismicFile != "") //May change the condition here, but need geometry if we want to set XL/IL
+    geometry = SegY::FindGridGeometry(seismicFile, modelSettings->getTraceHeaderFormat(0));
+
+  if(!areaFromModelFile)
     modelSettings->setAreaParameters(geometry);
-    delete geometry;
-  }
+
   const SegyGeometry * areaParams = modelSettings->getAreaParameters(); 
 
   int error = timeSimbox->setArea(areaParams, errText);
   if(error==1)
   {
-  writeAreas(areaParams,timeSimbox,areaType);
-  sprintf(errText,"%s The specified AREA extends outside the surface(s).\n",errText);
-  failed = true;
+    writeAreas(areaParams,timeSimbox,areaType);
+    sprintf(errText,"%s The specified AREA extends outside the surface(s).\n",errText);
+    failed = true;
   }
   else
   {
@@ -670,6 +675,12 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
                          timeSimbox->getdx(), timeSimbox->getdy());
   }
   
+  if(geometry != NULL) {
+    if(timeSimbox->isAligned(geometry))
+      timeSimbox->setILXL(geometry);
+    delete geometry;
+  }
+
   // Rotate variograms relative to simbox
   modelSettings_->rotateVariograms(static_cast<float> (timeSimbox_->getAngle()));
 
@@ -3188,9 +3199,9 @@ Model::loadVelocity(FFTGrid          *& velocity,
                     char              * errText,
                     bool              & failed)
 {
-  if(velocityField == "CONSTANT")
+  if((velocityField == "CONSTANT") || (velocityField == ""))
     velocity = NULL;
-  else if(modelSettings->getVelocityFromInversion() == true)
+  if(modelSettings->getVelocityFromInversion() == true)
   {
     velocityFromInversion_ = true;
     velocity = NULL;

@@ -19,13 +19,15 @@ Simbox::Simbox(void)
   status_      = EMPTY;
   topName_     = "";
   botName_     = "";
-  inLine0_     = 0;
-  crossLine0_  = 0;
-  ilStep_      = 1;
-  xlStep_      = 1;
   constThick_  = true;
   minRelThick_ = 1.0;
   dz_          = 0;
+  inLine0_     = -0.5;
+  crossLine0_  = -0.5;
+  xlStepX_     = 1;
+  xlStepY_     = 0;
+  ilStepX_     = 0;
+  ilStepY_     = 1;
 }
 
 Simbox::Simbox(double x0, double y0, Surface * z0, double lx, 
@@ -50,10 +52,15 @@ Simbox::Simbox(double x0, double y0, Surface * z0, double lx,
   nx_          = int(0.5+lx/dx_);
   ny_          = int(0.5+ly/dy_);
   nz_          = int(0.5+lz/dz_);
-  inLine0_     = 0;
-  crossLine0_  = 0;
   constThick_  = true;
   minRelThick_ = 1.0;
+
+  inLine0_     = -0.5;
+  crossLine0_  = -0.5;
+  xlStepX_ = cosrot_/dx_;
+  xlStepY_ = sinrot_/dx_;
+  ilStepX_ = -sinrot_/dy_;
+  ilStepY_ = cosrot_/dy_;
 }
 
 Simbox::Simbox(const Simbox *simbox) : 
@@ -70,6 +77,10 @@ Simbox::Simbox(const Simbox *simbox) :
   nz_          = simbox->nz_;
   inLine0_     = simbox->inLine0_;
   crossLine0_  = simbox->crossLine0_;
+  ilStepX_     = simbox->ilStepX_;
+  ilStepY_     = simbox->ilStepY_;
+  xlStepX_     = simbox->xlStepX_;
+  xlStepY_     = simbox->xlStepY_;
   constThick_  = simbox->constThick_;
   minRelThick_ = simbox->minRelThick_;
   topName_     = simbox->topName_;
@@ -518,7 +529,6 @@ Simbox::setArea(const SegyGeometry * geometry, char * errText)
   double dx  = geometry->GetDx();
   double dy  = geometry->GetDy();
 
-  ILxflag_ = geometry->GetILxflag();
   try
   {
     SetDimensions(x0,y0,lx,ly);
@@ -543,21 +553,20 @@ Simbox::setArea(const SegyGeometry * geometry, char * errText)
   dy_     = dy;
   nx_     = int(0.5+lx/dx_);
   ny_     = int(0.5+ly/dy_);
+
+  inLine0_     = -0.5;
+  crossLine0_  = -0.5;
+  ilStepX_     = cosrot_/dx_;
+  ilStepY_     = sinrot_/dx_;
+  xlStepX_     = -sinrot_/dy_;
+  xlStepY_     = cosrot_/dy_;
+
   if(status_ == EMPTY)
     status_ = NODEPTH;
   else if(status_ == NOAREA)
     status_ = BOXOK;
 
   return 0;
-}
-
-void
-Simbox::setSeisLines(int * lineParams)
-{
-  inLine0_    = lineParams[0];
-  crossLine0_ = lineParams[1];
-  ilStep_     = lineParams[2];
-  xlStep_     = lineParams[3];
 }
 
 void
@@ -587,6 +596,63 @@ Simbox::setDepth(Surface * z0, Surface * z1, int nz)
     status_ = BOXOK;
 
   constThick_ = false;
+}
+
+void
+Simbox::setILXL(const SegyGeometry * geometry)
+{
+  xlStepX_ = geometry->GetXLStepX();
+  xlStepY_ = geometry->GetXLStepY();
+  ilStepX_ = geometry->GetILStepX();
+  ilStepY_ = geometry->GetILStepY();
+  
+  float x0 = static_cast<float>(GetXMin());
+  float y0 = static_cast<float>(GetYMin());
+  geometry->FindContILXL(x0, y0, inLine0_, crossLine0_); //Sets IL0 ,XL0
+}
+
+bool
+Simbox::isAligned(const SegyGeometry * geometry) const
+{
+  double x,y;
+  getXYCoord(0, 0, x, y);
+  int IL0, XL0;
+  geometry->FindILXL(static_cast<float>(x), static_cast<float>(y), IL0, XL0);
+  getXYCoord(1, 0, x, y);
+  int ILx1, XLx1;
+  geometry->FindILXL(static_cast<float>(x), static_cast<float>(y), ILx1, XLx1);
+  getXYCoord(0, 1, x, y);
+  int ILy1, XLy1;
+  geometry->FindILXL(static_cast<float>(x), static_cast<float>(y), ILy1, XLy1);
+  getXYCoord(nx_-1, 0, x, y);
+  int IL1, XL1;
+  geometry->FindILXL(static_cast<float>(x), static_cast<float>(y), IL1, XL1);
+  getXYCoord(0, ny_-1, x, y);
+  int IL2, XL2;
+  geometry->FindILXL(static_cast<float>(x), static_cast<float>(y), IL2, XL2);
+  getXYCoord(nx_-1, ny_-1, x, y);
+  int IL3, XL3;
+  geometry->FindILXL(static_cast<float>(x), static_cast<float>(y), IL3, XL3);
+  
+  int XLdx = XLx1 - XL0;
+  int XLdy = XLy1 - XL0;
+  int ILdx = ILx1 - IL0;
+  int ILdy = ILy1 - IL0;
+  if(abs(XLdx*XLdy) > 0 || abs(ILdx*ILdy) > 0)
+    return(false); //Moving along one axis lead to change in both il and xl
+
+  int XLndx = XL1 - XL0;
+  int XLndy = XL2 - XL0;
+  int ILndx = IL1 - IL0;
+  int ILndy = IL2 - IL0;
+  if(XLndx != (nx_-1)*XLdx || XLndy != (ny_-1)*XLdy || 
+     ILndx != (nx_-1)*ILdx || ILndy != (ny_-1)*ILdy)
+    return(false); //XL or IL difference at corners not multiple of one-step difference
+
+  if(XL3-XL0 != (nx_-1)*XLdx+(ny_-1)*XLdy || IL3-IL0 != (nx_-1)*ILdx+(ny_-1)*ILdy)
+    return(false); //Check final corner, changes failed to match one-step.
+
+  return(true);
 }
 
 double
@@ -624,20 +690,6 @@ Simbox::getRelThick(double x, double y) const
   return(relThick);
 }
 
-void Simbox::findIJFromILXL(int IL, int XL, int &i, int &j)const
-{
-  if(ILxflag_==false)
-  {
-    i = (XL-crossLine0_)/xlStep_;
-    j = (IL-inLine0_)/ilStep_;
-  }
-  else
-  {
-    i = (IL-inLine0_)/ilStep_;
-    j = (XL-crossLine0_)/xlStep_;
-  }
-}
-
 void Simbox::getMinAndMaxXY(double &xmin, double &xmax, double &ymin, double &ymax)const
 {
   xmin = MINIM(GetXMin()+GetLX()*cosrot_, GetXMin());
@@ -655,6 +707,4 @@ void Simbox::getMinAndMaxXY(double &xmin, double &xmax, double &ymin, double &ym
   ymax = MAXIM(GetYMin(),GetYMin()+GetLX()*sinrot_);
   ymax = MAXIM(ymax,GetYMin()+GetLY()*cosrot_);
   ymax = MAXIM(ymax,GetYMin()+GetLX()*sinrot_+GetLY()*cosrot_);
-
-
 }

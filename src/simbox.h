@@ -38,10 +38,12 @@ public:
   double         getx0()                         const { return GetXMin()    ;}
   double         gety0()                         const { return GetYMin()    ;}
   double         getAngle()                      const { return GetAngle()   ;}
-  int            getIL0()                        const { return inLine0_     ;}
-  int            getXL0()                        const { return crossLine0_  ;}
-  int            getILStep()                     const { return ilStep_      ;}
-  int            getXLStep()                     const { return xlStep_      ;}
+  double         getIL0()                        const { return inLine0_     ;}
+  double         getXL0()                        const { return crossLine0_  ;}
+  double         getILStepX()                    const { return ilStepX_     ;}
+  double         getILStepY()                    const { return ilStepY_     ;}
+  double         getXLStepX()                    const { return xlStepX_     ;}
+  double         getXLStepY()                    const { return xlStepY_     ;}
   bool           getIsConstantThick()            const { return constThick_  ;}
   double         getMinRelThick()                const { return minRelThick_ ;} // Returns minimum relative thickness.
   double         getRelThick(int i, int j)       const;                         // Local relative thickness.
@@ -52,7 +54,6 @@ public:
   double         getTopZMax() const {return(GetTopZMax(nx_,ny_));}
   double         getBotZMin() const {return(GetBotZMin(nx_,ny_));}
   double         getBotZMax() const {return(GetBotZMax(nx_,ny_));}
-  bool           getILxflag()                    const {return(ILxflag_);}
   int            isInside(double x, double y) const;
   int            insideRectangle(const SegyGeometry *  geometry) const;
   double         getTop(int i, int j) const;
@@ -62,12 +63,12 @@ public:
   void           writeTopBotGrids(std::string topname, std::string botname, int outputFormat);
   int            checkError(double lzLimit, char * errText);
   int            setArea(const SegyGeometry * geometry, char * errText);
-  void           setSeisLines(int * lineParams);
+  void           setILXL(const SegyGeometry * geometry);
+  bool           isAligned(const SegyGeometry * geometry) const; //Checks if IL/XL form geometry maps nicely.
   void           setDepth(Surface * zref, double zShift, double lz, double dz);
   void           setDepth(Surface * z0, Surface * z1, int nz);
   int            status() const {return(status_);}
   void           externalFailure() {status_ = EXTERNALERROR;}
-  void           findIJFromILXL(int IL, int XL, int &i, int &j) const;
   void           getMinAndMaxXY(double &xmin, double &xmax, double &ymin, double &ymax) const;
   enum           simboxstatus{BOXOK, INTERNALERROR, EXTERNALERROR, EMPTY, NOAREA, NODEPTH};
 
@@ -76,12 +77,15 @@ private:
   int            nx_, ny_, nz_;            // Number of cells in each direction.
   int            status_;                  // Since Simbox may be incomplete or with error
   double         cosrot_, sinrot_;         // Saving time in transformations.
-  int            inLine0_, crossLine0_;
-  int            ilStep_, xlStep_;
   std::string    topName_;
   std::string    botName_;
+
+  //Note: IL/XL information is just carried passively by this class.
+  double         inLine0_, crossLine0_;    // XL, IL at origin, not necessarily int. 
+  double         ilStepX_, ilStepY_;       // Change in XL when moving along x and y
+  double         xlStepX_, xlStepY_;       // Change in XL when moving along x and y  
+
   bool           constThick_;
   double         minRelThick_;
-  bool           ILxflag_;
 };
 #endif

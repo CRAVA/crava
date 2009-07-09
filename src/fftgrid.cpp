@@ -1530,64 +1530,20 @@ FFTGrid::writeSegyFile(const std::string & fileName, const Simbox * simbox, floa
   segynz = int(ceil((zmax-z0)/dz));
   SegY *segy = new SegY(gfName.c_str(),z0,segynz,dz,header);
   SegyGeometry * geometry = new SegyGeometry(simbox->getx0(), simbox->gety0(), simbox->getdx(), simbox->getdy(), 
-                                             simbox->getnx(), simbox->getny(),simbox->getIL0(),
-                                             simbox->getXL0(), simbox->getILStep(), simbox->getXLStep(), simbox->getILxflag(), simbox->getAngle());
+                                             simbox->getnx(), simbox->getny(),simbox->getIL0(), simbox->getXL0(), 
+                                             simbox->getILStepX(), simbox->getILStepY(), simbox->getXLStepX(), simbox->getXLStepY(),
+                                             simbox->getAngle());
   segy->SetGeometry(geometry);
   delete geometry; //Call above takes a copy.
   LogKit::LogFormatted(LogKit::LOW,"\nWriting SEGY file "+gfName+"...");
-  //  LogKit::LogFormatted(LogKit::LOW,"%d x %d traces.\n",nx_, ny_);
-  //  char errMsg[MAX_STRING];
-  //NBNB //  if(segy->checkError(errMsg) > 0)
-  // {
-  //   LogKit::LogFormatted(LogKit::LOW,"failed\n");
-  //   return(1);
-  // }
-  int i, j;
-  int IL,XL;
-  int il0,xl0;
-  int nxl,nil, index;
+
+  int i,j,k;
   double x,y,z;
-
-  if(simbox->getILxflag()==true)
-  {
-    nxl = simbox->getny();
-    nil = simbox->getnx();
-  }
-  else
-  {
-    nxl = simbox->getnx();
-    nil = simbox->getny();
-  }
-  if(simbox->getXLStep()>0)
-    xl0 = simbox->getXL0();
-  else
-    xl0 = simbox->getXL0()+(nxl-1)*simbox->getXLStep();
-  if(simbox->getILStep()>0)
-    il0 = simbox->getIL0();
-  else
-    il0 = simbox->getIL0()+(nil-1)*simbox->getILStep();
-  int ilend, xlend;
-  if(simbox->getILxflag()==true)
-  {
-    ilend = il0+simbox->getILStep()*(simbox->getnx()-1);
-    xlend = xl0 + simbox->getXLStep()*(simbox->getny()-1);
-  }
-  else
-  {
-    ilend = il0+simbox->getILStep()*(simbox->getny()-1);
-    xlend = xl0 + simbox->getXLStep()*(simbox->getnx()-1);
-  }
-
   std::vector<float> trace(segynz);//Maximum amount of data needed.
-  int k;
-
-  for(IL=il0;IL<=ilend;IL++)
+  for(j=0;j<simbox->getnx();j++)
   {
-    for(XL=xl0;XL<=xlend;XL++)
+    for(i=0;i<simbox->getny();i++)
     {
-      simbox->findIJFromILXL(IL,XL,i,j);
-      index = i+j*simbox->getnx();
-
       simbox->getCoord(i, j, 0, x, y, z);
       z = simbox->getTop(x,y);
 
@@ -1617,10 +1573,13 @@ FFTGrid::writeSegyFile(const std::string & fileName, const Simbox * simbox, floa
 
         float xx = float(x);
         float yy = float(y);
-        segy->WriteTrace(xx, yy, trace, NULL);
+        segy->StoreTrace(xx, yy, trace, NULL);
       }
     }
   }
+
+  segy->WriteAllTracesToFile();
+
   delete segy; //Closes file.
   // delete [] value;
   LogKit::LogFormatted(LogKit::LOW,"done\n");
@@ -2103,7 +2062,7 @@ void FFTGrid::writeSegyFromStorm(StormContGrid *data, std::string fileName)
   int nx = data->GetNI();
   int ny = data->GetNJ();
   const SegyGeometry *geometry = new SegyGeometry(data->GetXMin(),data->GetYMin(),data->GetDX(),data->GetDY(),
-               nx,ny,0,0,1,1,true,data->GetAngle());
+               nx,ny,data->GetAngle());
   float dz = float(floor((data->GetLZ()/data->GetNK())));
   //int nz = int(data->GetZMax()/dz);
   //float z0 = float(data->GetZMin());

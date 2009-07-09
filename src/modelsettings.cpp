@@ -336,7 +336,7 @@ bool ModelSettings::noiseIsScaled()
 {
   if(noiseScaled_.size()>0)
   {
-    for(int i=0;i<noiseScaled_.size();i++)
+    for(int i=0;i<static_cast<int>(noiseScaled_.size());i++)
     {
       if(noiseScaled_[i]!=NULL)
         return true;

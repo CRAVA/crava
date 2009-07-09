@@ -971,7 +971,7 @@ ModelFile::readCommandArea(char ** params, int & pos, char * errText)
   int nx = static_cast<int>(lx/dx);
   int ny = static_cast<int>(ly/dy);
 
-  SegyGeometry * geometry = new SegyGeometry(x0, y0, dx, dy, nx, ny, 0, 0, 1, 1, true, rot);
+  SegyGeometry * geometry = new SegyGeometry(x0, y0, dx, dy, nx, ny, rot);
 
   modelSettings_->setAreaParameters(geometry);
   delete geometry;
