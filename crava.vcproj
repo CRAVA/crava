@@ -3547,15 +3547,15 @@
 					>
 				</File>
 				<File
-					RelativePath="..\..\nrlib2\head\tinyxml\tinyxml.cpp"
+					RelativePath=".\nrlib\tinyxml\tinyxml.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\nrlib2\head\tinyxml\tinyxmlerror.cpp"
+					RelativePath=".\nrlib\tinyxml\tinyxmlerror.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\nrlib2\head\tinyxml\tinyxmlparser.cpp"
+					RelativePath=".\nrlib\tinyxml\tinyxmlparser.cpp"
 					>
 				</File>
 				<File
@@ -3864,10 +3864,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\..\nrlib2\head\tinyxml\tinyxml.h"
-					>
-				</File>
-				<File
 					RelativePath=".\nrlib\segy\traceheader.hpp"
 					>
 				</File>
@@ -3924,6 +3920,10 @@
 					</File>
 					<File
 						RelativePath=".\nrlib\boost\system\system_error.hpp"
+						>
+					</File>
+					<File
+						RelativePath=".\nrlib\tinyxml\tinyxml.h"
 						>
 					</File>
 					<File
