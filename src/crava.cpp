@@ -170,7 +170,7 @@ Crava::Crava(Model * model, SpatialWellFilter *spatwellfilter)
     fileGrid_, 
     meanAlpha_, meanBeta_, meanRho_, 
     model->getModelSettings()->getPundef(), 
-    model->getPriorFacies());
+    model->getPriorFacies(), model->getPriorFaciesCubes());
 
 
   meanAlpha_->fftInPlace();

@@ -42,7 +42,8 @@ private:
   bool parsePriorModel(TiXmlNode * node, std::string & errTxt);
   bool   parseBackground(TiXmlNode * node, std::string & errTxt);
   bool   parseFaciesProbabilities(TiXmlNode * node, std::string & errTxt);
-  bool   parseFaciesEstimationInterval(TiXmlNode * node, std::string & errTxt);
+  bool   parsePriorFaciesProbabilities(TiXmlNode * node, std::string & errTxt);
+  bool   parseFaciesEstimationInterval(TiXmlNode * node, std::string & errTxt);  
 
   bool parseProjectSettings(TiXmlNode * node, std::string & errTxt);
   bool   parseOutputVolume(TiXmlNode * node, std::string & errTxt);

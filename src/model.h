@@ -35,7 +35,8 @@ public:
   FFTGrid        * getBackBeta()              const { return background_->getBeta()  ;}
   FFTGrid        * getBackRho()               const { return background_->getRho()   ;}
   Corr           * getCorrelations()          const { return correlations_           ;}
-  float          * getPriorFacies()           const { return priorFacies_            ;}  
+  float          * getPriorFacies()           const { return priorFacies_            ;} 
+  FFTGrid       ** getPriorFaciesCubes()      const { return priorFaciesProbCubes_       ;}
   FFTGrid       ** getSeisCubes()             const { return seisCube_               ;}
   Wavelet       ** getWavelets()              const { return wavelet_                ;}
   float         ** getAMatrix()               const { return reflectionMatrix_       ;}
@@ -132,6 +133,12 @@ private:
                                           RandomGen     * randomGen,
                                           int             nz,
                                           ModelSettings * modelSettings);
+  void             processPriorFaciesProbCubes(InputFiles     * inputFiles, 
+                                               ModelSettings  * modelSettings, 
+                                               FFTGrid       **& priorFaciesProbCubes_,
+                                               Simbox         * timeSimbox,
+                                               char           * errTxt,
+                                               bool           & failed);
   void             processDepthConversion(Simbox        * timeCutSimbox, 
                                           Simbox        * timeSimbox_,
                                           ModelSettings * modelSettings_, 
@@ -260,6 +267,7 @@ private:
   GridMapping    * timeCutMapping_;        ///< Simbox and mapping for timeCut
   float          * noiseGrid_;             ///< 2D grid for local noise scaling
   bool             velocityFromInversion_;
+  FFTGrid       ** priorFaciesProbCubes_;   ///< Cubes for prior facies probabilities
 };
 
 #endif

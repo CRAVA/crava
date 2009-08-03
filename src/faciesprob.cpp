@@ -31,7 +31,8 @@ FaciesProb::FaciesProb(Corr          * correlations,
                        FFTGrid       * bgBeta, 
                        FFTGrid       * bgRho, 
                        float           p_undef, 
-                       float         * priorFacies)
+                       float         * priorFacies,
+                       FFTGrid       **priorFaciesCubes)
 {
   modelSettings_ = modelSettings;
   fileGrid_      = filegrid;
@@ -39,6 +40,8 @@ FaciesProb::FaciesProb(Corr          * correlations,
   nz_            = bgAlpha->getNz();
   p_undefined_   = p_undef;
   priorFacies_   = priorFacies;
+  priorFaciesCubes_ = priorFaciesCubes;
+  
 
   bgAlpha_       = new FFTGrid(bgAlpha);
   bgBeta_        = new FFTGrid(bgBeta);
@@ -558,6 +561,8 @@ FaciesProb::makeFaciesDens2(int nfac)
 void FaciesProb::makeFaciesProb(int nfac, FFTGrid *postAlpha, FFTGrid *postBeta, FFTGrid *postRho)
 {
   makeFaciesDens(nfac);
+  if(priorFaciesCubes_!=NULL)
+    normalizeCubes(priorFaciesCubes_);
   calculateFaciesProb(postAlpha, postBeta, postRho);
 }
 
@@ -884,7 +889,10 @@ void FaciesProb::calculateFaciesProb(FFTGrid *alphagrid, FFTGrid *betagrid, FFTG
           sum = p_undefined_/(nbins_*nbins_*nbinsr_);
           for(l=0;l<nFacies_;l++)
           {
-            value[l] = priorFacies_[l]*findDensity(alpha, beta, rho, l); 
+            if(priorFaciesCubes_!=NULL)
+              value[l] = priorFaciesCubes_[l]->getRealValue(k,j,i)*findDensity(alpha, beta, rho, l);
+            else
+              value[l] = priorFacies_[l]*findDensity(alpha, beta, rho, l); 
             sum = sum+value[l];
           }
           for(l=0;l<nFacies_;l++)
@@ -1129,3 +1137,42 @@ void FaciesProb::setNeededLogsSpatial(SpatialWellFilter * filteredLogs,
 
 }
 
+void FaciesProb::normalizeCubes(FFTGrid **priorFaciesCubes)
+{
+  int i,j,k,l;
+  int rnxp = priorFaciesCubes[0]->getRNxp();
+  int nyp  = priorFaciesCubes[0]->getNyp();
+  int nzp  = priorFaciesCubes[0]->getNzp();
+  float sum, value;
+  int negative = 0;
+  for(i=0;i<nzp;i++)
+  {
+    for(j=0;j<nyp;j++)
+      for(k=0;k<rnxp;k++)
+      {
+        sum = 0.0;
+        for(l=0;l<nFacies_;l++)
+        {
+          value = priorFaciesCubes[l]->getNextReal();
+          if(value<0.0)
+          {
+            value = 0.0;
+            if(negative==0)
+            {
+              LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: Alt least one negative prior facies probability detected. The value is set to 0.0.\n");
+              negative = 1;
+            }
+          }
+          sum+= value;
+        }
+        if(sum>0.0)
+        {
+          for(l=0;l<nFacies_;l++)
+          { 
+            value =priorFaciesCubes[l]->getRealValue(k,j,i)/sum; 
+            priorFaciesCubes[l]->setRealValue(k,j,i,value);
+          }
+        }
+      }
+  }
+}

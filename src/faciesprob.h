@@ -28,7 +28,8 @@ public:
              FFTGrid       * bgBeta, 
              FFTGrid       * bgRho, 
              float           p_undef, 
-             float         * priorFacies);
+             float         * priorFacies,
+             FFTGrid       **priorFaciesCubes);
   ~FaciesProb();
   float        ** makeFaciesHistAndSetPriorProb(float* alphafiltered_,float* betafiltered_,float* rhofiltered_,int* facieslog_);
   void            makeFaciesDens(int nfac);
@@ -56,6 +57,7 @@ private:
   float           findDensity(float alpha, float beta, float rho, int facies);
   void            calculateFaciesProb( FFTGrid *alphagrid, FFTGrid *betagrid, FFTGrid *rhogrid);
   void            invertSigmae();
+  void            normalizeCubes(FFTGrid **priorFaciesCubes);
   ModelSettings * modelSettings_;
   const Simbox  * simbox_;
 
@@ -98,7 +100,7 @@ private:
 
   float           p_undefined_;
   float         * priorFacies_;
-
+  FFTGrid       **priorFaciesCubes_;
   double        **sigmae_;
 };
 #endif

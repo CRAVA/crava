@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <string.h>
-
+#include <map>
 #include "lib/global_def.h"
 #include "nrlib/iotools/logkit.hpp"
 
@@ -115,6 +115,7 @@ ModelSettings::ModelSettings(void)
   depthDataOk_           =    false;
   parallelTimeSurfaces_  =    false;
   useLocalWavelet_       =    false;
+  priorFaciesProbGiven_  =    0;
 
   estimateBackground_    = true;
   estimateCorrelations_  = true;

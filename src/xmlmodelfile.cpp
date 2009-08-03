@@ -10,6 +10,7 @@
 #include "lib/lib_misc.h"
 
 #include "nrlib/iotools/logkit.hpp"
+#include "nrlib/iotools/stringtools.hpp"
 #include "nrlib/segy/segy.hpp"
 
 #include "src/inputfiles.h"
@@ -805,7 +806,7 @@ XmlModelFile::parseFaciesProbabilities(TiXmlNode * node, std::string & errTxt)
 
   parseFaciesEstimationInterval(root, errTxt);
 
-  //parsePriorFaciesProbabilities
+  parsePriorFaciesProbabilities(root, errTxt);
 
   float value;
   if(parseValue(root, "facies-probability-undefined-value", value, errTxt) == true)
@@ -839,7 +840,54 @@ XmlModelFile::parseFaciesEstimationInterval(TiXmlNode * node, std::string & errT
   return(true);
 }
 
+bool
+XmlModelFile::parsePriorFaciesProbabilities(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("prior-facies-probabilities");
+  if(root == 0)
+    return(false);
 
+  
+  std::string faciesname;
+  std::string filename;
+  float sum, value;
+  int status = 0;
+  sum = 0.0;
+ 
+  std::map<std::string,float> pp;
+  std::map<std::string, std::string> pp2;
+  while(parseValue(root, "facies-name", faciesname,errTxt, true)==true)
+  {
+    if(parseValue(root,"prob",value,errTxt,true)==true)
+    {
+      pp[faciesname] = value;
+      if(status==2)
+        errTxt+= " Prior facies probability must be given in the same way for all facies.\n";
+      status = 1;
+    }
+    else if(parseValue(root,"probcube",filename,errTxt,true)==true)
+    {
+      pp2[faciesname] = filename;
+      if(status==1)
+        errTxt+= " Prior facies probability must be given in the same way for all facies.\n";
+      status = 2;
+    }
+    sum+=value;
+  }
+  if(status==1)
+    modelSettings_->addPriorFaciesProb(pp);
+  else if(status==2)
+    inputFiles_->setPriorFaciesProb(pp2);
+  modelSettings_->setPriorFaciesProbGiven(status);
+
+  if(status==1 && sum!=1.0)
+  {
+    errTxt+="Prior facies probabilities must sum to 1.0. They sum to "+ NRLib2::ToString(sum) +".\n";
+  }
+ checkForJunk(root, errTxt);
+  return(true);
+
+}
 bool
 XmlModelFile::parseProjectSettings(TiXmlNode * node, std::string & errTxt)
 {

@@ -64,6 +64,7 @@ Model::Model(char * fileName)
   gradX_                  = 0.0;
   gradY_                  = 0.0;
   
+  priorFaciesProbCubes_ = NULL;
  
   timeDepthMapping_       = NULL;
   timeCutMapping_         = NULL;
@@ -80,6 +81,7 @@ Model::Model(char * fileName)
   bool failedPriorCorr    = false;
   bool failedDepthConv    = false;
   bool failedLoadingModel = false;
+  bool failedPriorFacies  = false;
 
   Simbox * timeCutSimbox  = NULL;
   Simbox * timeBGSimbox   = NULL;
@@ -232,18 +234,29 @@ Model::Model(char * fileName)
                                  modelSettings_, inputFiles,
                                  errText, failedDepthConv);
         if (estimate == false && !failedWells && !failedExtraSurf)
+        {
           processPriorFaciesProb(priorFacies_,
                                  wells_,
                                  randomGen_,
                                  timeSimbox_->getnz(),
                                  modelSettings_);
+          if(modelSettings_->getIsPriorFaciesProbGiven()==2) // prior facies prob given on file
+            processPriorFaciesProbCubes(inputFiles, 
+                                        modelSettings_, 
+                                        priorFaciesProbCubes_,
+                                        timeSimbox_,
+                                        errText,
+                                        failedPriorFacies);
+            
+        }
+
       
       }
     }
 
     failedLoadingModel = failedSimbox  || failedSeismic   || failedPriorCorr  ||
                          failedWells   || failedReflMat   || failedBackground ||
-                         failedWavelet || failedDepthConv || failedExtraSurf;
+                         failedWavelet || failedDepthConv || failedExtraSurf  || failedPriorFacies;
 
     if (failedLoadingModel) {
       Utils::writeHeader("Error(s) while loading model");
@@ -2459,174 +2472,255 @@ void Model::processPriorFaciesProb(float         *& priorFacies,
     //
     // NBNB-PAL: We should be able to read priorFacies from file. 
     //
-    if (nFacies > 0) 
+    if(modelSettings->getIsPriorFaciesProbGiven()==1)
     {
-      int nWells  = modelSettings->getNumberOfWells();
-      int nFacies = modelSettings->getNumberOfFacies();
-      int ndata   = nWells*nz;
+      priorFacies = new float[nFacies];
+      typedef std::map<std::string,float> mapType;
+      mapType myMap = modelSettings->getPriorFaciesProb();
       
-      int ** faciesCount = new int * [nWells]; 
-      for (int w = 0 ; w < nWells ; w++)
-        faciesCount[w] = new int[nFacies];
-      
-      for (int w = 0 ; w < nWells ; w++)
-        for (int i = 0 ; i < nFacies ; i++)
-          faciesCount[w][i] = 0;
-      
-      int * faciesLog = new int[ndata];   // NB! *internal* log numbering (0, 1, 2, ...)
-      for (int i = 0 ; i < ndata ; i++)
-        faciesLog[i] = IMISSING;
-      
-      float * vtAlpha   = new float[nz];  // vt = vertical trend
-      float * vtBeta    = new float[nz];
-      float * vtRho     = new float[nz];
-      int   * vtFacies  = new int[nz];
-
-      int nUsedWells = 0;
-      
-      for (int w = 0 ; w < nWells ; w++)
+      for(int i=0;i<nFacies;i++)
       {
-        if(wells[w]->getNFacies() > 0) // Well has facies log
-        { 
-          //
-          // Note that we use timeSimbox to calculate prior facies probabilities
-          // instead of the simbox with parallel top and base surfaces. This
-          // will make the prior probabilities slightly different, but that
-          // should not be a problem.
-          //
-          BlockedLogs * bl = wells[w]->getBlockedLogsOrigThick();
-          bl->getVerticalTrend(bl->getAlpha(),vtAlpha);
-          bl->getVerticalTrend(bl->getBeta(),vtBeta);
-          bl->getVerticalTrend(bl->getRho(),vtRho);
-          bl->getVerticalTrend(bl->getFacies(),vtFacies,randomGen);
-          for(int i=0 ; i<nz ; i++)
-          {
-            if(vtAlpha[i] != RMISSING && vtBeta[i] != RMISSING && vtRho[i] != RMISSING) {
-              if (vtFacies[i] != IMISSING)
-                faciesCount[w][vtFacies[i]]++;
-              faciesLog[w*nz + i] = vtFacies[i];
-            }
-            else
-              faciesLog[w*nz + i] = IMISSING;
-          }
-          nUsedWells++;
+        mapType::iterator iter = myMap.find(modelSettings->getFaciesName(i));
+        if(iter!=myMap.end())
+          priorFacies[i] = iter->second;
+        else
+        {
+          LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: No prior facies probability found for facies %12s\n",modelSettings->getFaciesName(i).c_str());
+            modelSettings->setEstimateFaciesProb(false);
         }
       }
-      delete [] vtAlpha;
-      delete [] vtBeta; 
-      delete [] vtRho;  
-      delete [] vtFacies; 
-      
-      if (nUsedWells > 0) {
-        //
-        // Probabilities
-        //
-        LogKit::LogFormatted(LogKit::LOW,"\nFacies distributions for each blocked well: \n");
-        LogKit::LogFormatted(LogKit::LOW,"\nBlockedWell              ");
-        for (int i = 0 ; i < nFacies ; i++)
-          LogKit::LogFormatted(LogKit::LOW,"%12s ",modelSettings->getFaciesName(i).c_str());
-        LogKit::LogFormatted(LogKit::LOW,"\n");
-        for (int i = 0 ; i < 24+13*nFacies ; i++)
-          LogKit::LogFormatted(LogKit::LOW,"-");
-        LogKit::LogFormatted(LogKit::LOW,"\n");
+    }
+    else if(modelSettings->getIsPriorFaciesProbGiven()==0)
+    {
+      if (nFacies > 0) 
+      {
+        int nWells  = modelSettings->getNumberOfWells();
+        int nFacies = modelSettings->getNumberOfFacies();
+        int ndata   = nWells*nz;
+
+        int ** faciesCount = new int * [nWells]; 
+        for (int w = 0 ; w < nWells ; w++)
+          faciesCount[w] = new int[nFacies];
+
+        for (int w = 0 ; w < nWells ; w++)
+          for (int i = 0 ; i < nFacies ; i++)
+            faciesCount[w][i] = 0;
+
+        int * faciesLog = new int[ndata];   // NB! *internal* log numbering (0, 1, 2, ...)
+        for (int i = 0 ; i < ndata ; i++)
+          faciesLog[i] = IMISSING;
+
+        float * vtAlpha   = new float[nz];  // vt = vertical trend
+        float * vtBeta    = new float[nz];
+        float * vtRho     = new float[nz];
+        int   * vtFacies  = new int[nz];
+
+        int nUsedWells = 0;
+
         for (int w = 0 ; w < nWells ; w++)
         {
           if(wells[w]->getNFacies() > 0) // Well has facies log
           { 
-            float tot = 0.0;
-            for (int i = 0 ; i < nFacies ; i++)
-              tot += static_cast<float>(faciesCount[w][i]);
-            LogKit::LogFormatted(LogKit::LOW,"%-23s ",wells[w]->getWellname());
-            for (int i = 0 ; i < nFacies ; i++) {
-              float faciesProb = static_cast<float>(faciesCount[w][i])/tot;
-              LogKit::LogFormatted(LogKit::LOW," %12.4f",faciesProb);
+            //
+            // Note that we use timeSimbox to calculate prior facies probabilities
+            // instead of the simbox with parallel top and base surfaces. This
+            // will make the prior probabilities slightly different, but that
+            // should not be a problem.
+            //
+            BlockedLogs * bl = wells[w]->getBlockedLogsOrigThick();
+            bl->getVerticalTrend(bl->getAlpha(),vtAlpha);
+            bl->getVerticalTrend(bl->getBeta(),vtBeta);
+            bl->getVerticalTrend(bl->getRho(),vtRho);
+            bl->getVerticalTrend(bl->getFacies(),vtFacies,randomGen);
+            for(int i=0 ; i<nz ; i++)
+            {
+              if(vtAlpha[i] != RMISSING && vtBeta[i] != RMISSING && vtRho[i] != RMISSING) {
+                if (vtFacies[i] != IMISSING)
+                  faciesCount[w][vtFacies[i]]++;
+                faciesLog[w*nz + i] = vtFacies[i];
+              }
+              else
+                faciesLog[w*nz + i] = IMISSING;
             }
-            LogKit::LogFormatted(LogKit::LOW,"\n");
+            nUsedWells++;
           }
         }
-        LogKit::LogFormatted(LogKit::LOW,"\n");
-        //
-        // Counts
-        //
-        LogKit::LogFormatted(LogKit::MEDIUM,"\nFacies counts for each well: \n");
-        
-        LogKit::LogFormatted(LogKit::MEDIUM,"\nBlockedWell              ");
-        for (int i = 0 ; i < nFacies ; i++)
-          LogKit::LogFormatted(LogKit::MEDIUM,"%12s ",modelSettings->getFaciesName(i).c_str());
-        LogKit::LogFormatted(LogKit::MEDIUM,"\n");
-        for (int i = 0 ; i < 24+13*nFacies ; i++)
-          LogKit::LogFormatted(LogKit::MEDIUM,"-");
-        LogKit::LogFormatted(LogKit::MEDIUM,"\n");
-        for (int w = 0 ; w < nWells ; w++)
-        {
-          if(wells[w]->getUseForFaciesProbabilities())
-          { 
-            float tot = 0.0;
-            for (int i = 0 ; i < nFacies ; i++)
-              tot += static_cast<float>(faciesCount[w][i]);
-            LogKit::LogFormatted(LogKit::MEDIUM,"%-23s ",wells[w]->getWellname());
-            for (int i = 0 ; i < nFacies ; i++) {
-              LogKit::LogFormatted(LogKit::MEDIUM,"%12d ",faciesCount[w][i]);
-            }
-            LogKit::LogFormatted(LogKit::MEDIUM,"\n");
-          }
-        }
-        LogKit::LogFormatted(LogKit::MEDIUM,"\n");
-        
-        for (int w = 0 ; w < nWells ; w++)
-          delete [] faciesCount[w];
-        delete [] faciesCount;
-        
-        //
-        // Make prior facies probabilities
-        //
-        float sum = 0.0f;
-        int * nData = new int[nFacies];
-        for(int i=0 ; i<nFacies ; i++)
-          nData[i] = 0;
-        
-        for(int i=0 ; i<ndata ; i++) {
-          if(faciesLog[i] != IMISSING)
-            nData[faciesLog[i]]++;
-        }
-        delete [] faciesLog;
-        
-        for(int i=0 ; i<nFacies ; i++)
-          sum += nData[i];
-        
-        if (sum > 0) {
-          LogKit::LogFormatted(LogKit::LOW,"Facies         Probability\n");
-          LogKit::LogFormatted(LogKit::LOW,"--------------------------\n");
-          priorFacies = new float[nFacies];
-          for(int i=0 ; i<nFacies ; i++) {
-            priorFacies[i] = float(nData[i])/sum;
-            LogKit::LogFormatted(LogKit::LOW,"%-15s %10.4f\n",modelSettings->getFaciesName(i).c_str(),priorFacies[i]);
-          }
-        }
-        else { 
-          LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: No valid facies log entries have been found\n");
-          modelSettings->setEstimateFaciesProb(false);
-        }
-        delete [] nData;
-      }
-      else
-      {
-        LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: Estimation of facies probabilites have been requested, but there");
-        LogKit::LogFormatted(LogKit::WARNING,"\n         are no wells with facies available and CRAVA will therefore not");
-        LogKit::LogFormatted(LogKit::WARNING,"\n         be able to estimate these probabilities...\n");
-        modelSettings->setEstimateFaciesProb(false);
+        delete [] vtAlpha;
+        delete [] vtBeta; 
+        delete [] vtRho;  
+        delete [] vtFacies; 
 
+        if (nUsedWells > 0) {
+          //
+          // Probabilities
+          //
+          LogKit::LogFormatted(LogKit::LOW,"\nFacies distributions for each blocked well: \n");
+          LogKit::LogFormatted(LogKit::LOW,"\nBlockedWell              ");
+          for (int i = 0 ; i < nFacies ; i++)
+            LogKit::LogFormatted(LogKit::LOW,"%12s ",modelSettings->getFaciesName(i).c_str());
+          LogKit::LogFormatted(LogKit::LOW,"\n");
+          for (int i = 0 ; i < 24+13*nFacies ; i++)
+            LogKit::LogFormatted(LogKit::LOW,"-");
+          LogKit::LogFormatted(LogKit::LOW,"\n");
+          for (int w = 0 ; w < nWells ; w++)
+          {
+            if(wells[w]->getNFacies() > 0) // Well has facies log
+            { 
+              float tot = 0.0;
+              for (int i = 0 ; i < nFacies ; i++)
+                tot += static_cast<float>(faciesCount[w][i]);
+              LogKit::LogFormatted(LogKit::LOW,"%-23s ",wells[w]->getWellname());
+              for (int i = 0 ; i < nFacies ; i++) {
+                float faciesProb = static_cast<float>(faciesCount[w][i])/tot;
+                LogKit::LogFormatted(LogKit::LOW," %12.4f",faciesProb);
+              }
+              LogKit::LogFormatted(LogKit::LOW,"\n");
+            }
+          }
+          LogKit::LogFormatted(LogKit::LOW,"\n");
+          //
+          // Counts
+          //
+          LogKit::LogFormatted(LogKit::MEDIUM,"\nFacies counts for each well: \n");
+
+          LogKit::LogFormatted(LogKit::MEDIUM,"\nBlockedWell              ");
+          for (int i = 0 ; i < nFacies ; i++)
+            LogKit::LogFormatted(LogKit::MEDIUM,"%12s ",modelSettings->getFaciesName(i).c_str());
+          LogKit::LogFormatted(LogKit::MEDIUM,"\n");
+          for (int i = 0 ; i < 24+13*nFacies ; i++)
+            LogKit::LogFormatted(LogKit::MEDIUM,"-");
+          LogKit::LogFormatted(LogKit::MEDIUM,"\n");
+          for (int w = 0 ; w < nWells ; w++)
+          {
+            if(wells[w]->getUseForFaciesProbabilities())
+            { 
+              float tot = 0.0;
+              for (int i = 0 ; i < nFacies ; i++)
+                tot += static_cast<float>(faciesCount[w][i]);
+              LogKit::LogFormatted(LogKit::MEDIUM,"%-23s ",wells[w]->getWellname());
+              for (int i = 0 ; i < nFacies ; i++) {
+                LogKit::LogFormatted(LogKit::MEDIUM,"%12d ",faciesCount[w][i]);
+              }
+              LogKit::LogFormatted(LogKit::MEDIUM,"\n");
+            }
+          }
+          LogKit::LogFormatted(LogKit::MEDIUM,"\n");
+
+          for (int w = 0 ; w < nWells ; w++)
+            delete [] faciesCount[w];
+          delete [] faciesCount;
+
+          //
+          // Make prior facies probabilities
+          //
+          float sum = 0.0f;
+          int * nData = new int[nFacies];
+          for(int i=0 ; i<nFacies ; i++)
+            nData[i] = 0;
+
+          for(int i=0 ; i<ndata ; i++) {
+            if(faciesLog[i] != IMISSING)
+              nData[faciesLog[i]]++;
+          }
+          delete [] faciesLog;
+
+          for(int i=0 ; i<nFacies ; i++)
+            sum += nData[i];
+
+          if (sum > 0) {
+            LogKit::LogFormatted(LogKit::LOW,"Facies         Probability\n");
+            LogKit::LogFormatted(LogKit::LOW,"--------------------------\n");
+            priorFacies = new float[nFacies];
+            for(int i=0 ; i<nFacies ; i++) {
+              priorFacies[i] = float(nData[i])/sum;
+              LogKit::LogFormatted(LogKit::LOW,"%-15s %10.4f\n",modelSettings->getFaciesName(i).c_str(),priorFacies[i]);
+            }
+          }
+          else { 
+            LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: No valid facies log entries have been found\n");
+            modelSettings->setEstimateFaciesProb(false);
+          }
+          delete [] nData;
+        }
+        else
+        {
+          LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: Estimation of facies probabilites have been requested, but there");
+          LogKit::LogFormatted(LogKit::WARNING,"\n         are no wells with facies available and CRAVA will therefore not");
+          LogKit::LogFormatted(LogKit::WARNING,"\n         be able to estimate these probabilities...\n");
+          modelSettings->setEstimateFaciesProb(false);
+
+        }
       }
-    }
-    else 
-    {
-      LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: Estimation of facies probabilites have been requested, but no facies");
-      LogKit::LogFormatted(LogKit::WARNING,"\n         have been found and CRAVA will therefore not be able to estimate");
-      LogKit::LogFormatted(LogKit::WARNING,"\n         these probabilities...\n");
-      modelSettings->setEstimateFaciesProb(false);
+      else 
+      {
+        LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: Estimation of facies probabilites have been requested, but no facies");
+        LogKit::LogFormatted(LogKit::WARNING,"\n         have been found and CRAVA will therefore not be able to estimate");
+        LogKit::LogFormatted(LogKit::WARNING,"\n         these probabilities...\n");
+        modelSettings->setEstimateFaciesProb(false);
+      }
     }
   }
 }
+
+void Model::processPriorFaciesProbCubes(InputFiles     * inputFiles, 
+                                        ModelSettings  * modelSettings, 
+                                        FFTGrid       **& priorFaciesProbCubes_,
+                                        Simbox         * timeSimbox,
+                                        char           * errTxt,
+                                        bool           & failed)
+{
+  int i;
+  int nFacies = modelSettings->getNumberOfFacies();
+  priorFaciesProbCubes_ = new FFTGrid*[nFacies];
+
+  typedef std::map<std::string,std::string> mapType;
+  mapType myMap = inputFiles->getPriorFaciesProbFile();
+  const char * parname = "priorfaciesprob";
+  for(i=0;i<nFacies;i++)
+  {
+    char tmpErrText[MAX_STRING];
+    sprintf(tmpErrText,"%c",'\0');
+    int readerror = 0;
+    mapType::iterator iter = myMap.find(modelSettings->getFaciesName(i));
+    
+    if(iter!=myMap.end())
+    {
+      const std::string & faciesProbFile = iter->second;
+      if(findFileType(faciesProbFile) == SEGYFILE) {
+        const SegyGeometry * geometry = NULL;
+        float offset = modelSettings->getSegyOffset();
+        readerror = readSegyFile(faciesProbFile, priorFaciesProbCubes_[i], 
+          timeSimbox, modelSettings, 
+          tmpErrText, geometry, 
+          FFTGrid::PARAMETER, 
+          offset, NULL);
+      }
+      else{
+        readerror = readStormFile(faciesProbFile, priorFaciesProbCubes_[i], parname, 
+          timeSimbox, modelSettings,
+          tmpErrText);
+      }
+
+
+      if(readerror != 0)
+      {
+        sprintf(errTxt,"%sReading of file \'%s\' for prior facies probability for facies \'%s\' failed\n",
+          errTxt,faciesProbFile.c_str(),modelSettings->getFaciesName(i).c_str());
+        failed = true;
+      }
+
+    }
+    else
+    {
+      LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: No prior facies probability found for facies %12s\n",modelSettings->getFaciesName(i).c_str());
+      modelSettings->setEstimateFaciesProb(false);
+      break;
+    }  
+
+  }
+}
+
+
 
 void
 Model::loadExtraSurfaces(Surface  **& waveletEstimInterval,

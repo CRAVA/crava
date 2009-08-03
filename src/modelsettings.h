@@ -4,7 +4,7 @@
 
 #include <stdio.h>
 #include <string.h>
-
+#include <map>
 #include "lib/global_def.h"
 #include "src/definitions.h"
 #include "nrlib/iotools/logkit.hpp"
@@ -124,6 +124,8 @@ public:
   int							                 getLogLevel(void)             const { return logLevel_              ;}
   int							                 getSeed(void)                 const { return seed_                  ;}
 
+  std::map<std::string,float>      getPriorFaciesProb()          const { return priorFaciesProb_       ;} 
+  int                              getIsPriorFaciesProbGiven()   const { return priorFaciesProbGiven_  ;}
   bool							               getDoInversion(void);                                            
   bool							               getDoDepthConversion(void)    const;
   double						               getNoiseScaled(int i,int j, int k)   const { if(noiseScaled_[i]!=NULL) return (*noiseScaled_[i])(j,k);
@@ -242,7 +244,9 @@ public:
   void							               setUseLocalWavelet(bool useLocalWavelet)      { useLocalWavelet_      = useLocalWavelet    ;}
   void							               setLogLevel(int logLevel)                     { logLevel_             = logLevel           ;}
   void							               setSeed(int seed)                             { seed_                 = seed               ;}
- 
+ // void                             setPriorFaciesProb(int i, float value)        { priorFaciesProb_[i]   = value              ;}
+  void                             addPriorFaciesProb(std::map<std::string, float> pp)   { priorFaciesProb_ = pp         ;}
+  void                             setPriorFaciesProbGiven(int fpg)              { priorFaciesProbGiven_ = fpg                ;}
 
   void							               setNoiseScaled(Grid2D *ns);
   bool							               noiseIsScaled();
@@ -335,9 +339,10 @@ private:
 
   std::vector<int>				         faciesLabels_;          // Facies labels
   std::vector<std::string>		     faciesNames_;           // Facies names   (nFacies = faciesNames.size())
-
+ // std::vector<float>               priorFaciesProb_;
+  int                              priorFaciesProbGiven_;
   std::vector<Grid2D *>			       noiseScaled_;
-  
+  std::map<std::string, float>     priorFaciesProb_;
                    
   int							                 nWells_;
   int							                 nSimulations_;

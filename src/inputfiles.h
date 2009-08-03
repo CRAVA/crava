@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <map>
 
 class InputFiles
 {
@@ -31,7 +32,7 @@ public:
   const std::string              & getLocalNoiseFile(int i)      const { return localNoiseFiles_[i]    ;}
   const std::string              & getTempCorrFile(void)         const { return tempCorrFile_         ;}
   const std::string              & getInputDirectory(void)       const { return inputDirectory_       ;}
-
+  const std::map<std::string,std::string> & getPriorFaciesProbFile(void)   const {return priorFaciesProb_ ;}
 
   const int                        getNumberOfSeismicFiles(void) const { return seismicFiles_.size()  ;}
 
@@ -54,7 +55,7 @@ public:
   void setParamCorrFile(const std::string & paramCorrFile)                { paramCorrFile_        = paramCorrFile     ;}
   void setTempCorrFile(const std::string & tempCorrFile)                  { tempCorrFile_         = tempCorrFile      ;}
   void setInputDirectory(std::string inputDirectory)                      { inputDirectory_       = inputDirectory    ;}
-
+  void setPriorFaciesProb(std::map<std::string,std::string> pp)           { priorFaciesProb_      = pp                ;}
   std::string addInputPathAndCheckFiles();
 
 private:
@@ -80,6 +81,7 @@ private:
 
   std::string                inputDirectory_;        ///< Base directory for input files.
   std::vector<std::string>   localNoiseFiles_;       ///< File names: local noise
+  std::map<std::string, std::string> priorFaciesProb_; ///< File names for locally varying prior facies probability
 };
 
 #endif
