@@ -2,16 +2,50 @@
 \label{sec:userguide}
 \index{CRAVA!userguide}
 
-In this chapter, we describe how to build a \crava model file. The model file mainly follows the XML-format, but we also use the character '\#' for commenting, meaning that the rest of the line after such a character is read as comment. All model files start with \kw{crava}, and end with \texttt{<\\crava>}.
+In this chapter, we describe how to build a \crava model file. The model file mainly follows the XML-format, but we also use the character '\#' for commenting, meaning that the rest of the line after such a character is read as comment. XML/files are built with start- and endtags, encapsulating toher tags or values. All model files start with \texttt{<crava>}, and end with \texttt{<\\crava>}. An example of a model file is given in NBNB.
 
 \section{Basic inversion}
 \label{sec:basicinv}
 \index{inversion!basic}
-A primary ability for \crava is to run simple first-pass inversions. In this section, we describe how to build a model file for a simple inversion.  
+A primary ability for \crava is to run simple first-pass inversions. In this section, we describe how to build a model file for a simple inversion. We focus on how to get the key information into the program, whereas more detailed controls are discussed later, in \autoref{sec:advinv}. The key information elements for a \crava inversion run is:
+\begin{itemize}
+\item \hyperref[sec:basicseis]{Seismic data}.
+\item \hyperref[sec:basicwave]{Wavelet}.
+\item \hyperref[sec:basicnoise]{Signal/noise ratio}.
+\item \hyperref[sec:basicvol]{Inversion volume}.
+\item \hyperref[sec:basicbg]{Background model}.
+\item \hyperref[sec:basiccorr]{Correlation structures}.
+\end{itemize}.
+Since \crava is designed to estimate any information that is not given, well data must also commonly be included.
+
 \subsection{Survey information}
+All information regarding the seismic data is gathered under the \kw{survey} tag. This includes location of seismic data files, wavelet information and signal-to-noise ratio for each angle gather. As an example, it may look like this:
+\begin{example}
+<survey>
+  <segy-start-time>  2500.0 </segy-start-time>
+
+  <angle-gather>
+    <offset-angle>     16.0 </offset-angle>
+    <seismic-data>
+      <file-name> ../input/seismic/Cube16.segy </file-name>
+    </seismic-data>
+  </angle-gather>
+
+  <angle-gather>
+    <offset-angle>     28.0 </offset-angle>
+    <seismic-data>
+      <file-name> ../input/seismic/Cube28.segy </file-name>
+    </seismic-data>
+  </angle-gather>
+</survey>
+\end{example}
+
+The seismic data should be on SegY-format, with a common offset time, given with \kw{segy-start-time} if different from 0. The first value is used to represent the interval from start-time to start-time + time-step, so with a start-time of 100ms, and 4ms sampling, the first value is used in the grid cell covering the interval 100-104ms. 
+
+For each available angle, the rest of the information is gathered under an \kw{angle-gather} tag, one for each offset. The actual angle is given by \kw{offset-angle}.
 \subsubsection{Seismic data}
 \subsubsection{Wavelet}
-\subsubsection{Noise}
+\subsubsection{Signal/nois ratio}
 \subsection{Inversion volume}
 \subsubsection{Top and bottom surfaces}
 \subsubsection{Lateral extent}
