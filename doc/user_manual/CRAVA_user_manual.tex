@@ -1,4 +1,5 @@
-\documentclass[screen,citenumeric,long,10pt]{nrdoc}
+%\documentclass[screen,citenumeric,long,10pt]{nrdoc}
+\documentclass[screen,note,long,backref,indentpar]{nrdoc}
 %\documentclass[twoside,citenumeric,long,10pt]{nrdoc_060418}
 \usepackage{citesort}     % Virker ikke...
 \usepackage{multicol}
@@ -8,6 +9,10 @@
 %\usepackage{showlabels}
 %\usepackage{floatflt}
 %\usepackage{wrapfig}
+
+
+
+
 
 % -------------------------------------------------
 \title{CRAVA User Manual}
@@ -64,6 +69,51 @@
 
 \newcommand{\kw}[1]{\hyperref[#1]{\texttt{<#1>}}}
 \newcommand{\rkw}[2]{\hyperref[#2]{\texttt{<#1>}}}
+\newcommand{\newkw}[1]{\label{#1}\kwindex{#1}}
+\newcommand{\kwindex}[1]{\index{#1@\texttt{<#1>}}\index{element!\texttt{<#1>}}}
+\newcommand{\necessary}{\small{ (necessary)}}
+\newcommand{\hbracket}[1]{\texttt{<#1>}}
+\newcommand{\Description}{\makebox[\rrr][l]{\textit{Description:}\xspace}}
+\newcommand{\Argument}{\makebox[\rrr][l]{\textit{Argument:}\xspace}}
+\newcommand{\Default}{\makebox[\rrr][l]{\textit{Default:}\xspace}}
+\newlength{\rrr}
+\settowidth{\rrr}{\textit{Description:}}
+
+
+\newcommand{\slist}{\begin{itemize}}
+\newcommand{\elist}{\end{itemize}}
+    \setlength{\parindent}{0mm}
+    \setlength{\parskip}{1ex}
+    \renewcommand{\slist}{
+    \begin{list}{}
+    {
+        \setlength{\itemsep}{0pt}      \setlength{\parsep}{0pt}
+        \setlength{\topsep}{0pt}       \setlength{\partopsep}{0pt}
+        \setlength{\itemindent}{-2em}
+    }
+}
+\renewcommand{\elist}{\end{list}}
+\setcounter{secnumdepth}{10}
+\setcounter{tocdepth}{10}
+
+\newcounter{subsubparagraph}[subparagraph]
+\makeatletter
+\newcommand{\subsubparagraph}{\@startsection{subsubparagraph}{6}{0ex}%
+   {-3.25ex plus -1ex minus -0.2ex}%
+   {1.5ex plus 0.2ex}%
+   {\normalfont\normalsize\bfseries}}
+
+%\newcounter {paragraph}[paragraph]
+%\newcommand\subsubparagraph{\@startsection{subsubparagraph}{6}{\z@}%
+%                                       {3.25ex \@plus1ex \@minus .2ex}%
+%                                       {-1em}%
+%                                      {\normalfont\normalsize\bfseries}}
+%\makeatother
+%\stepcounter{secnumdepth}
+%\stepcounter{secnumdepth}
+%\stepcounter{tocdepth}
+
+
 
 %\renewcommand\floatpagefraction{.80}
 
@@ -80,6 +130,14 @@ The CRAVA user manual
 \tableofcontents
 \clearemptydoublepage
 
+\chapter{Chapter}
+\section{Section}
+\subsection{Subsection}
+\subsubsection{Subsubsection}
+%\paragraph{Paragraph}
+%\subparagraph{Subparagraph}
+%\subsubparagraph{Subsubparagraph}
+
 \input{theory}
 %
 % The \newpage forces all text to appear in the left column only
@@ -89,8 +147,9 @@ The CRAVA user manual
 \input{implementation}
 \newpage
 \input{userguide}
-\chapter{Reference manual}
+\newpage
 \end{multicols}
+\input{referencemanual}
 
 %-----------------------------------------------------------------------------
 %                                 APPENDIX
