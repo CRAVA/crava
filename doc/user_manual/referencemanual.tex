@@ -46,7 +46,7 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Default
  \elist
 
-\paragraph{cs}
+
 
 \paragraph{\hbracket{seed}}  \newkw{seed}
  \slist
@@ -140,9 +140,23 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Default
  \elist
 
-\paragraph{\hbracket{time-file}\necessary} \newkw{time-file}
+\subparagraph{\hbracket{time-file}\necessary} \newkw{time-file}
  \slist
-   \item \Description
+   \item \Description File name for storm grid file giving top surface in time.
+   \item \Argument
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{time-value}\necessary} \newkw{time-value}
+ \slist
+   \item \Description Value giving the top time for the inversion interval.
+   \item \Argument
+   \item \Default
+ \elist
+
+ \subparagraph{\hbracket{depth-file}\necessary} \newkw{depth-file}
+ \slist
+   \item \Description File name for storm grid file giving top surface in depth.
    \item \Argument
    \item \Default
  \elist
@@ -154,10 +168,53 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Default
  \elist
 
+\subparagraph{\hbracket{time-file}\necessary} \newkw{time-file}
+\slist
+   \item \Description This or \kw{time-value} must be given. File name for storm grid file giving base surface in time.
+   \item \Argument
+   \item \Default
+\elist
+
+\subparagraph{\hbracket{time-value}\necessary} \newkw{time-value}
+\slist
+   \item \Description This or \kw{time-file} must be given. Value giving the base time for the inversion interval.
+   \item \Argument
+   \item \Default
+\elist
+
+\subparagraph{\hbracket{depth-file}\necessary} \newkw{depth-file}
+\slist
+   \item \Description File name for storm grid file giving base surface in depth.
+   \item \Argument
+   \item \Default
+\elist
+
+
 \paragraph{\hbracket{number-of-layers}} \newkw{number-of-layers}
  \slist
    \item \Description Integer value giving how many layers to use between top and base surface.
    \item \Argument Integer
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{direct-file}} \newkw{direct-file}
+ \slist
+   \item \Description Indicates whether the velocity field is a direct file.
+   \item \Argument 'yes' or 'no'
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{velocity-field}} \newkw{velocity-field}
+ \slist
+   \item \Description File name for storm grid file. Gives more detailed depth conversion information. Without this, constant velocity per trace is used. If only one depth surface is given, this is used to compute the other. Otherwise, the depth interval will always match both surfaces, but the velocity field is scaled and used for internal depth computations. Can not be used with \kw{velocity-field-from-inversion}.
+   \item \Argument 
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{velocity-field-from-inversion}} \newkw{velocity-field-from-inversion}
+ \slist
+   \item \Description If given, velocity field from inversion is used for depth conversion. See \kw{velocity-field} for details on how this is done. Can not be used with \kw{velocity-field}.
+   \item \Argument 'yes' or 'no'
    \item \Default
  \elist
 
@@ -168,9 +225,135 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Default
  \elist
 
+\paragraph{\hbracket{reference-surface}} \newkw{reference-surface}
+ \slist
+   \item \Description File name for storm surface file. The top and base surfaces for the inversion interval will be parallel to this.
+   \item \Argument 
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{shift-to-interval-top}} \newkw{shift-to-interval-top}
+ \slist
+   \item \Description Value giving the distance from reference surface to top surface. This value is added to the reference surface to create the top surface.
+   \item \Argument
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{thickness}}\newkw{thickness}
+ \slist
+   \item \Description Value giving the thickness of the inversion interval. This value is added to the top surface to create the base surface.
+   \item \Argument
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{sample-density}}\newkw{sample-density}
+ \slist
+   \item \Description Value giving the thickness of a layer in the inversion interval. The thickness should be divisible by this value.
+   \item \Argument
+   \item \Default
+ \elist
+
+\subsubsection{\hbracket{area}}\newkw{area}
+ \slist
+   \item \Description This command holds the parameters defining the lateral extent of the inversion volume. If this command is not given, the information is taken from the first seismic data file. 
+   \item \Argument
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{reference-point-x}}\newkw{reference-point-x}
+ \slist
+   \item \Description Value giving the x-coordinate of a corner of the area.
+   \item \Argument
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{reference-point-y}}\newkw{reference-point-y}
+ \slist
+   \item \Description Value giving the y-coordinate of a corner of the area.
+   \item \Argument
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{length-x}}\newkw{length-x}
+ \slist
+   \item \Description Value giving the area length along the rotated x-axis.
+   \item \Argument
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{length-y}}\newkw{length-y}
+ \slist
+   \item \Description Value giving the area length along the rotated y-axis.
+   \item \Argument
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{sample-density-x}}\newkw{sample-density-x}
+ \slist
+   \item \Description Cell size along the rotated x-axis.
+   \item \Argument
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{sample-density-y}}\newkw{sample-density-y}
+ \slist
+   \item \Description Cell size along the rotated y-axis.
+   \item \Argument
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{angle}}\newkw{angle}
+ \slist
+   \item \Description Orientation of the local x-axis.
+   \item \Argument
+   \item \Default
+ \elist
+
 \subsection{\hbracket{io-settings}} \newkw{io-settings}
  \slist
    \item \Description Holds commands that deal with what output to give and where, and where to find input.
+   \item \Argument
+   \item \Default
+ \elist
+
+\subsubsection{\hbracket{top-directory}} \newkw{top-directory}
+ \slist
+   \item \Description Directory name giving the working directory for the model file. Must end with directory separator.
+   \item \Argument
+   \item \Default
+ \elist
+
+\subsubsection{\hbracket{input-directory}} \newkw{input-directory}
+ \slist
+   \item \Description Directory name, relative to \kw{top-directory}, for root directory for input files. Must end with directory separator.
+   \item \Argument
+   \item \Default
+ \elist
+
+\subsubsection{\hbracket{output-directory}} \newkw{output-directory}
+ \slist
+   \item \Description Directory name, relative to \kw{top-directory}, for root directory for output files. Must end with directory separator.
+   \item \Argument
+   \item \Default
+ \elist
+
+\subsubsection{\hbracket{output-types}}\newkw{output-types}
+ \slist
+   \item \Description All commands directly controlling actual result output are gathered here.
+   \item \Argument
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{grid-output}}\newkw{grid-output}
+ \slist
+   \item \Description All commands related to output given as grids are gathered here.
+   \item \Argument
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{domain}}\newkw{domain}
+ \slist
+   \item \Description Commands controlling which domain output should be in.
    \item \Argument
    \item \Default
  \elist
