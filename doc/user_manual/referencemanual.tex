@@ -207,7 +207,7 @@ Estimation: Checks input data and performs estimation of lacking information for
 \paragraph{\hbracket{velocity-field}} \newkw{velocity-field}
  \slist
    \item \Description File name for storm grid file. Gives more detailed depth conversion information. Without this, constant velocity per trace is used. If only one depth surface is given, this is used to compute the other. Otherwise, the depth interval will always match both surfaces, but the velocity field is scaled and used for internal depth computations. Can not be used with \kw{velocity-field-from-inversion}.
-   \item \Argument 
+   \item \Argument
    \item \Default
  \elist
 
@@ -228,7 +228,7 @@ Estimation: Checks input data and performs estimation of lacking information for
 \paragraph{\hbracket{reference-surface}} \newkw{reference-surface}
  \slist
    \item \Description File name for storm surface file. The top and base surfaces for the inversion interval will be parallel to this.
-   \item \Argument 
+   \item \Argument
    \item \Default
  \elist
 
@@ -255,7 +255,7 @@ Estimation: Checks input data and performs estimation of lacking information for
 
 \subsubsection{\hbracket{area}}\newkw{area}
  \slist
-   \item \Description This command holds the parameters defining the lateral extent of the inversion volume. If this command is not given, the information is taken from the first seismic data file. 
+   \item \Description This command holds the parameters defining the lateral extent of the inversion volume. If this command is not given, the information is taken from the first seismic data file.
    \item \Argument
    \item \Default
  \elist
@@ -358,9 +358,420 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Default
  \elist
 
+\subsubparagraph{\hbracket{depth}}\newkw{depth}
+ \slist
+   \item \Description Should output come in depth domain? Requires information under \kw{interval-two-surfaces}.
+   \item \Argument 'yes' or 'no'
+   \item \Default 'no'
+ \elist
+
+\subsubparagraph{\hbracket{time}}\newkw{time}
+ \slist
+   \item \Description Should output come in time domain?
+   \item \Argument 'yes' or 'no'
+   \item \Default 'yes'
+ \elist
+
+\subparagraph{\hbracket{format}}\newkw{format}
+ \slist
+   \item \Description Control of the format of output grids.
+   \item \Argument
+   \item \Default
+ \elist
+
+\subsubparagraph{\hbracket{segy}}\newkw{segy}
+ \slist
+   \item \Description Should grid output come as segy?
+   \item \Argument 'yes' or 'no'
+   \item \Default
+ \elist
+
+\subsubparagraph{\hbracket{storm}}\newkw{storm}
+ \slist
+   \item \Description Should grid output come as storm?
+   \item \Argument 'yes' or 'no'
+   \item \Default 'yes' if \kw{format} command is not given.
+ \elist
+
+\subsubparagraph{\hbracket{ascii}}\newkw{ascii}
+ \slist
+   \item \Description Should grid output come as storm ascii?
+   \item \Argument 'yes' or 'no'
+   \item \Default
+ \elist
+
+\subsubparagraph{\hbracket{sgri}}\newkw{sgri}
+ \slist
+   \item \Description Should grid output come as storm sgri?
+   \item \Argument 'yes' or 'no'
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{parameters}}\newkw{parameters}
+ \slist
+   \item \Description Controls which grid parameters to output.
+   \item \Argument All are 'yes' or 'no'
+   \item \Default If this command is not given, vp, vs and density are written.
+ \elist
+
+\subsubparagraph{\hbracket{vp}}\newkw{vp}
+ \slist
+   \item \Description
+   \item \Argument 'yes' or 'no'
+   \item \Default
+ \elist
+
+\subsubparagraph{\hbracket{vs}}\newkw{vs}
+ \slist
+   \item \Description
+   \item \Argument 'yes' or 'no'
+   \item \Default
+ \elist
+
+\subsubparagraph{\hbracket{density}}\newkw{density}
+ \slist
+   \item \Description
+   \item \Argument 'yes' or 'no'
+   \item \Default
+ \elist
+
+\subsubparagraph{\hbracket{lame-lambda}}\newkw{lame-lambda}
+ \slist
+   \item \Description
+   \item \Argument 'yes' or 'no'
+   \item \Default
+ \elist
+
+
+\subsubparagraph{\hbracket{lame-mu}}\newkw{lame-mu}
+ \slist
+   \item \Description
+   \item \Argument 'yes' or 'no'
+   \item \Default
+ \elist
+
+\subsubparagraph{\hbracket{poisson-ratio}}\newkw{poisson-ratio}
+ \slist
+   \item \Description
+   \item \Argument 'yes' or 'no'
+   \item \Default
+ \elist
+
+\subsubparagraph{\hbracket{ai}}\newkw{ai}
+ \slist
+   \item \Description
+   \item \Argument 'yes' or 'no'
+   \item \Default
+ \elist
+
+\subsubparagraph{\hbracket{si}}\newkw{si}
+ \slist
+   \item \Description
+   \item \Argument 'yes' or 'no'
+   \item \Default
+ \elist
+
+\subsubparagraph{\hbracket{vp-vs-ratio}}\newkw{vp-vs-ratio}
+ \slist
+   \item \Description
+   \item \Argument 'yes' or 'no'
+   \item \Default
+ \elist
+
+\subsubparagraph{\hbracket{murho}}\newkw{murho}
+\slist
+  \item \Description
+  \item \Argument 'yes' or 'no'
+  \item \Default
+\elist
+
+\subsubparagraph{\hbracket{lambdarho}}\newkw{lambdarho}
+ \slist
+   \item \Description
+   \item \Argument 'yes' or 'no'
+   \item \Default
+\elist
+
+\subsubparagraph{\hbracket{lambdarho}}\newkw{lambdarho}
+ \slist
+   \item \Description
+   \item \Argument 'yes' or 'no'
+   \item \Default
+\elist
+
+\subsubparagraph{\hbracket{correlations}}\newkw{correlations}
+ \slist
+   \item \Description These are the posterior correlations between vp, vs and density after inversion.
+   \item \Argument 'yes' or 'no'
+   \item \Default
+\elist
+
+\subsubparagraph{\hbracket{residuals}}\newkw{residuals}
+ \slist
+   \item \Description
+   \item \Argument 'yes' or 'no'
+   \item \Default
+\elist
+
+\subsubparagraph{\hbracket{background}}\newkw{background}
+ \slist
+   \item \Description
+   \item \Argument 'yes' or 'no'
+   \item \Default
+\elist
+
+\subsubparagraph{\hbracket{background-trend}}\newkw{background-trend}
+ \slist
+   \item \Description
+   \item \Argument 'yes' or 'no'
+   \item \Default
+\elist
+
+\subsubparagraph{\hbracket{extra-grids}}\newkw{extra-grids}
+ \slist
+   \item \Description Temporary, will be replaced. Currently triggers writing of
+   \begin{itemize}
+   \item Estimated background files in extended versions (go above and below inversion volume).
+   \item Estimated background files in standard volume.
+   \end{itemize}
+   \item \Argument 'yes' or 'no'
+   \item \Default
+\elist
+
+\paragraph{\hbracket{well-output}}\newkw{well-output}
+ \slist
+   \item \Description Collects all output that can be given in well format. Wells contain logs for vp, vs and density, each of these in four versions: Raw, filtered to background frequency, filtered to seismic frequency and seismic resolution. In addition, the facies log is written if found.
+   \item \Argument
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{format}}\newkw{format}
+ \slist
+   \item \Description Controls well formats used for output. Default is RMS.
+   \item \Argument
+   \item \Default
+ \elist
+
+\subsubparagraph{\hbracket{rms}}\newkw{rms}
+ \slist
+   \item \Description Controls if wells are written on RMS format.
+   \item \Argument 'yes' or 'no'
+   \item \Default
+ \elist
+
+ \subsubparagraph{\hbracket{norsar}}\newkw{norsar}
+ \slist
+   \item \Description Controls if wells are written on NORSAR format.
+   \item \Argument 'yes' or 'no'
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{wells}}\newkw{wells}
+ \slist
+   \item \Description Writes wells following original sampling density.
+   \item \Argument 'yes' or 'no'
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{blocked-wells}}\newkw{blocked-wells}
+ \slist
+   \item \Description Writes wells sampled to internal grid resolution.
+   \item \Argument 'yes' or 'no'
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{blocked-logs}}\newkw{blocked-logs}
+ \slist
+   \item \Description Not currently active.
+   \item \Argument
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{direct-output}}\newkw{direct-output}
+ \slist
+   \item \Description Controls output of files intended to be read as direct-files on input.
+   \item \Argument
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{background}}\newkw{background}
+ \slist
+   \item \Description Write direct files for background parameters.
+   \item \Argument 'yes' or 'no'
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{seismic}}\newkw{seismic}
+ \slist
+   \item \Description Write direct files for seismic data.
+   \item \Argument 'yes' or 'no'
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{time-to-depth-velocity}}\newkw{time-to-depth-velocity}
+ \slist
+   \item \Description Write direct files for time-to-depth-velocity.
+   \item \Argument 'yes' or 'no'
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{other-output}}\newkw{other-output}
+ \slist
+   \item \Description Controls output that is neither standard grid nor well.
+   \item \Argument
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{wavelets}}\newkw{wavelets}
+ \slist
+   \item \Description Write wavelet to file. Mainly for use with wavelet estimation.
+   \item \Argument 'yes' or 'no'
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{extra-surfaces}}\newkw{extra-surfaces}
+ \slist
+   \item \Description Temporary, will be replaced. Currently writes
+   \begin{itemize}
+   \item Top and base surface for constant thickness interval used for log filtering and facies probabilities.
+   \item Top and base surface for extended inversion interval computed from correlation surface.
+   \item Top and base surface for background estimation interval (larger than inversion interval).
+   \item Estimated local wavelet shift.
+   \item Estimated local wavelet scale.
+   \end{itemize}
+   \item \Argument 'yes' or 'no'
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{prior-correlations}}\newkw{prior-correlations}
+ \slist
+   \item \Description Write prior correlation files.
+   \item \Argument 'yes' or 'no'
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{background-trend-1d}}\newkw{background-trend-1d}
+ \slist
+   \item \Description Write the background trend as 1D curve.
+   \item \Argument 'yes' or 'no'
+   \item \Default
+ \elist
+
+\subsubsection{\hbracket{file-output-prefix}}\newkw{file-output-prefix}
+ \slist
+   \item \Description Common prefix added to all files written in the run. Identifies the run.
+   \item \Argument String
+   \item \Default
+ \elist
+
+\subsubsection{\hbracket{log-level}}\newkw{log-level}
+ \slist
+   \item \Description Not very useful, as very little additional output is given.
+   \item \Argument Integer
+   \item \Default Default is 1, may be increased to get more details.
+ \elist
+
 \subsection{\hbracket{advanced-settings}} \newkw{advanced-settings}
  \slist
    \item \Description A collection of different commands that control advanced aspects of the program control.
    \item \Argument
    \item \Default
  \elist
+
+\subsubsection{\hbracket{fft-grid-padding}}\newkw{fft-grid-padding}
+ \slist
+   \item \Description Controls the padding size, can be used to optimize memory or improve visual results. Padding should be at least one range laterally, and a wavelet length vertically to avoid edge effects.
+   \item \Argument
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{x-fraction}}\newkw{x-fraction}
+ \slist
+   \item \Description Value telling how large the padding in the x-direction should be relative to the x-length.
+   \item \Argument
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{y-fraction}}\newkw{y-fraction}
+ \slist
+   \item \Description Value telling how large the padding in the x-direction should be relative to the y-length.
+   \item \Argument
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{z-fraction}}\newkw{z-fraction}
+ \slist
+   \item \Description Value telling how large the padding in the x-direction should be relative to the thickness.
+   \item \Argument
+   \item \Default
+ \elist
+
+\subsubsection{\hbracket{use-intermediate-disk-storage}} \newkw{use-intermediate-disk-storage}
+ \slist
+   \item \Description When running under windows with less memory than the program requires, this activates a built-in smart swap that increases performance. Linux/unix swap is so efficient that this option has no effect there.
+   \item \Argument 'yes' or 'no'
+   \item \Default
+ \elist
+
+\subsubsection{\hbracket{maximum-relative-thickness-difference}}\newkw{maximum-relative-thickness-difference}
+ \slist
+   \item \Description Value giving the limit of how small the minimum interval thickness can be relative to maximum. If this gets too low, the transformation to stationarity for the FFT-algorithm gives strange results.
+   \item \Argument
+   \item \Default Default is 0.5, which is ok. Slightly smaller seems to work as well.
+ \elist
+
+\subsubsection{\hbracket{frequency-band}}\newkw{frequency-band}
+ \slist
+   \item \Description This command controls the frequency band of the inversion, so high and/or low frequencies can be filtered away. This ought to be done by the wavelet, but can be done here.
+   \item \Argument
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{low-cut}}\newkw{low-cut}
+ \slist
+   \item \Description Value setting the minimum frequency affected by the inversion.
+   \item \Argument
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{high-cut}}\newkw{high-cut}
+ \slist
+   \item \Description Value setting the maximum frequency affected by the inversion.
+   \item \Argument
+   \item \Default
+ \elist
+
+\subsubsection{\hbracket{energy-threshold}}\newkw{energy-threshold}
+ \slist
+   \item \Description If the energy in a trace falls below this threshold relative to the average, the trace is interpolated from neighbors.
+   \item \Argument Value
+   \item \Default
+ \elist
+
+\subsubsection{\hbracket{wavelet-tapering-length}}\newkw{wavelet-tapering-length}
+ \slist
+   \item \Description Value giving the length of the wavelet to be estimated in ms.
+   \item \Argument
+   \item \Default
+ \elist
+
+\subsubsection{\hbracket{minimum-relative-wavelet-amplitude}}\newkw{minimum-relative-wavelet-amplitude}
+ \slist
+   \item \Description Value giving the ratio between the smallest relevant amplitude and the largest amplitude of peaks on an estimated wavelet. Edge peaks below this ratio are removed.
+   \item \Argument
+   \item \Default
+ \elist
+
+\subsubsection{\hbracket{maximum-wavelet-shift}}\newkw{maximum-wavelet-shift}
+ \slist
+   \item \Description Value controlling how much the wavelet is allowed to be shifted when doing estimation of wavelet or noise.
+   \item \Argument
+   \item \Default
+ \elist
+
+ \subsubsection{\hbracket{white-noise-component}}\newkw{white-noise-component}
+ \slist
+   \item \Description In order to stabilize the inversion, we need to interpret some of the noise as white. This value controls the fraction. 
+   \item \Argument Value between 0 and 1.
+   \item \Default 0.1
+ \elist   
