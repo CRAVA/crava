@@ -96,12 +96,33 @@
 \setcounter{secnumdepth}{10}
 \setcounter{tocdepth}{10}
 
-\newcounter{subsubparagraph}[subparagraph]
-\makeatletter
-\newcommand{\subsubparagraph}{\@startsection{subsubparagraph}{6}{0ex}%
-   {-3.25ex plus -1ex minus -0.2ex}%
-   {1.5ex plus 0.2ex}%
-   {\normalfont\normalsize\bfseries}}
+
+%\setcounter{secnumdepth}{6} %Nummerer nivå 0-6
+%\setcounter{tocdepth}{6}    %Ta nivå 0-6 med i toc
+\newcounter {subsubparagraph}[subparagraph] %Lag teljar for subsubparagraph
+\makeatletter                               %Tolkinga av @-teiknet i dei neste linjene er ustandard.
+\renewcommand\thesubsubparagraph{\thesubparagraph.\@arabic\c@subsubparagraph} %Fiksar utskrift av nummereringa.
+\let\subsubparagraphmark\@gobble                  %Hindrar dobbelutskrift av tittel.
+\renewcommand\subparagraph{\@startsection         %Redefinerer subparagraph for å unngå indentering.
+ {subparagraph}{5}{0mm}%name, level, indent
+ {3.25ex \@plus1ex \@minus .2ex}%                 Rom før tekst.
+ {-1em}%                                          Rom etter tekst.
+ {\normalfont\normalsize\bfseries}}% style        Dropp \bfseries for ikkje å få bold.
+\newcommand\subsubparagraph{\@startsection        %Parallelt med subparagraph.
+ {subsubparagraph}{6}{0mm}%name, level, indent
+ {3.25ex \@plus1ex \@minus .2ex}%
+ {-1em}%
+ {\normalfont\normalsize\bfseries}}% style
+\def\toclevel@subsubparagraph{6}                  %Får hypertex til å oppføra seg fint mot nykommaren.
+\makeatother                                      %Set tolking av @ tilbake til normal.
+
+
+%\newcounter{subsubparagraph}[subparagraph]
+%\makeatletter
+%\newcommand{\subsubparagraph}{\@startsection{subsubparagraph}{6}{0ex}%
+%   {-3.25ex plus -1ex minus -0.2ex}%
+%   {1.5ex plus 0.2ex}%
+%   {\normalfont\normalsize\bfseries}}
 
 %\newcounter {paragraph}[paragraph]
 %\newcommand\subsubparagraph{\@startsection{subsubparagraph}{6}{\z@}%
