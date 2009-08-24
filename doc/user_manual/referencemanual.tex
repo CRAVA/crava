@@ -775,3 +775,368 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Argument Value between 0 and 1.
    \item \Default 0.1
  \elist   
+ 
+\subsubsection{\hbracket{reflection-matrix}}\newkw{reflection-matrix}
+\slist
+   \item \Description The file should be a 3 by  number of seismic data cubes ascii matrix. The first column is the factor used for vp for each cube setting (angle and ps/pp) when computing the reflection coefficients. The second and third are for vs and density.
+   \item \Argument File name.
+   \item \Default Linearized Aki-Richards.
+ \elist   
+ 
+\subsubsection{\hbracket{kriging-data-limit}}\newkw{kriging-data-limit}
+ \slist
+   \item \Description Integer value giving the limit for the amount of well data used to krige each point. A high value gives a smoother and more exact field, but takes more time.
+   \item \Argument Integer
+   \item \Default 300
+ \elist 
+ 
+\subsubsection{\hbracket{debug-level}}\newkw{debug-level}
+ \slist
+   \item \Description Gives debug messages and output. Not intended for use except on request by NR. 
+   \item \Argument Integer value, 0, 1 or 2.
+   \item \Default 0
+ \elist
+ 
+ \section{\hbracket{survey}\necessary} \newkw{survey}
+ \slist
+   \item \Description All information about the seismic data is collected here.
+   \item \Argument
+   \item \Default
+ \elist  
+ 
+ \subsection{\hbracket{angular-correlation}}\newkw{angular-correlation}
+ \slist
+   \item \Description 1D variogram. Gives the noise correlation between survey angles.
+   \item \Argument
+   \item \Default
+ \elist   
+ 
+ \subsection{\hbracket{segy-start-time}}\newkw{segy-start-time}
+ \slist
+   \item \Description Global start time for segy cubes. This is used if no individual time is given for a segy-cube.
+   \item \Argument Value
+   \item \Default
+ \elist  
+ 
+\subsection{\hbracket{direct-files}}\newkw{direct-files}
+ \slist
+   \item \Description If 'yes', it will be assumed that file names for seismic data are direct files.
+   \item \Argument 'yes' or 'no'
+   \item \Default
+ \elist  
+ 
+\subsection{\hbracket{angle-gather}\necessary}\newkw{angle-gather}
+ \slist
+   \item \Description Repeatable command, one for each seismic data cube.
+   \item \Argument
+   \item \Default
+ \elist   
+ 
+\subsubsection{\hbracket{offset-angle}\necessary}\newkw{offset-angle}
+ \slist
+   \item \Description This is the angle for the seismic data cube.
+   \item \Argument Value
+   \item \Default
+ \elist    
+ 
+\subsubsection{\hbracket{seismic-data}\necessary}\newkw{seismic-data}
+ \slist
+   \item \Description Information about the seismic data cube.
+   \item \Argument 
+   \item \Default
+ \elist     
+ 
+\paragraph{\hbracket{file-name}\necessary}\newkw{file-name}
+ \slist
+   \item \Description File name for the seismic data cube. This should be a segy file, or a direct file when the \kw{direct-file} option above is used. 
+   \item \Argument
+   \item \Default
+ \elist   
+ 
+\paragraph{\hbracket{start-time}}\newkw{start-time}
+ \slist
+   \item \Description Value giving the start time for this segy file.
+   \item \Argument
+   \item \Default
+ \elist    
+ 
+\paragraph{\hbracket{segy-format}}\newkw{segy-format}
+ \slist
+   \item \Description Information about the segy format. By default, CRAVA recognizes SeisWork and IESX.
+   \item \Argument
+   \item \Default
+ \elist     
+ 
+\subparagraph{\hbracket{standard-format}}\newkw{standard-format}
+ \slist
+   \item \Description Giving the standard format for modifications.
+   \item \Argument 'seisworks' or 'iesx'
+   \item \Default 'seisworks'
+ \elist      
+ 
+\subparagraph{\hbracket{location-x}}\newkw{location-x}
+ \slist
+   \item \Description The byte location for the x-coordinate in the trace header.
+   \item \Argument Integer 
+   \item \Default 
+ \elist       
+
+\subparagraph{\hbracket{location-y}}\newkw{location-y}
+ \slist
+   \item \Description The byte location for the y-coordinate in the trace header.
+   \item \Argument Integer
+   \item \Default
+ \elist     
+ 
+\subparagraph{\hbracket{location-il}}\newkw{location-il}
+ \slist
+   \item \Description The byte location for the inline in the trace header.
+   \item \Argument Integer
+   \item \Default
+ \elist     
+ 
+\subparagraph{\hbracket{location-xl}}\newkw{location-xl}
+ \slist
+   \item \Description The byte location for the crossline in the trace header.
+   \item \Argument Integer
+   \item \Default
+ \elist     
+ 
+\subparagraph{\hbracket{bypass-coordinate-scaling}}\newkw{bypass-coordinate-scaling}
+ \slist
+   \item \Description Indicated whether coordinate scaling information should be used.
+   \item \Argument 'yes' or 'no'
+   \item \Default
+ \elist     
+ 
+\paragraph{\hbracket{type}}\newkw{type}
+ \slist
+   \item \Description Indicating the type of seismic data. Note that if both pp and ps cubes are used, these must be aligned. 
+   \item \Argument 'pp' or 'ps'
+   \item \Default 'pp'
+ \elist  
+ 
+\subsubsection{\hbracket{wavelet}}\newkw{wavelet}
+ \slist
+   \item \Description Information about the wavelet for this angle and seismic type. If not given, the wavelet will be estimated.
+   \item \Argument 
+   \item \Default 
+ \elist   
+ 
+\paragraph{\hbracket{file-name}}\newkw{file-name}
+ \slist
+   \item \Description File name for wavelet file. If not given, wavelet is estimated.
+   \item \Argument 
+   \item \Default 
+ \elist   
+ 
+\paragraph{\hbracket{scale}}\newkw{scale}
+ \slist
+   \item \Description Wavelet read from file is multiplied by this. Has no meaning when wavelet is estimated.
+   \item \Argument
+   \item \Default
+ \elist   
+ 
+\paragraph{\hbracket{estimate-scale}}\newkw{estimate-scale}
+ \slist
+   \item \Description Should global scale be estimated?
+   \item \Argument 'yes' or 'no'
+   \item \Default
+ \elist    
+ 
+\paragraph{\hbracket{local-wavelet}}\newkw{local-wavelet}
+ \slist
+   \item \Description The amplitude and shift of the wavelet may be modified locally by 2D fields for shift and scale values. This is handled here.
+   \item \Argument 
+   \item \Default
+ \elist     
+ 
+\subparagraph{\hbracket{shift-file}}\newkw{shift-file}
+ \slist
+   \item \Description File name for storm surface file giving the local shift for the wavelet. Not allowed when wavelet is estimated.
+   \item \Argument 
+   \item \Default
+ \elist
+  
+\subparagraph{\hbracket{scale-file}}\newkw{scale-file}
+ \slist
+   \item \Description File name for storm surface file giving local scale for the wavelet. Not allowed when wavelet is estimated.
+   \item \Argument
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{estimate-shift}}\newkw{estimate-shift}
+ \slist
+   \item \Description Should a local shift be estimated? Not allowed with \kw{shift-file}, but can be used both with given and estimated wavelet.
+   \item \Argument 'yes' or 'no'
+   \item \Default
+ \elist
+    
+\subparagraph{\hbracket{estimate-scale}}\newkw{estimate-scale}
+ \slist
+   \item \Description Should a local scale be estimated? Not allowed with \kw{scale-file}, but can be used both with given and estimated wavelet.
+   \item \Argument 'yes' or 'no'
+   \item \Default
+ \elist
+ 
+\paragraph{\hbracket{estimation-interval}}\newkw{estimation-interval}
+ \slist
+   \item \Description Controls the time interval used for wavelet estimation by a top and base surface. By default, estimation is done from all available seismic and well data.
+   \item \Argument 
+   \item \Default
+ \elist
+ 
+\subparagraph{\hbracket{top-surface-file}}\newkw{top-surface-file}
+ \slist
+   \item \Description File name for storm surface file giving the top of the time interval used for wavelet estimation. 
+   \item \Argument
+   \item \Default
+ \elist
+ 
+\subparagraph{\hbracket{base-surface-file}}\newkw{base-surface-file}
+ \slist
+   \item \Description File name for storm surface file giving the base of the time interval used for wavelet estimation.
+   \item \Argument
+   \item \Default
+ \elist
+ 
+\subsubsection{\hbracket{match-energies}}\newkw{match-energies}
+ \slist
+   \item \Description If 'yes', signal to noise ratio and wavelet scaling will be set to match model values with empirical values. Not a common estimator.
+   \item \Argument 'yes' or 'no'
+   \item \Default
+ \elist
+ 
+\subsubsection{\hbracket{signal-to-noise-ratio}}\newkw{signal-to-noise-ratio}
+ \slist
+   \item \Description Value for the signal to noise value. If not given, this will be estimated.
+   \item \Argument 
+   \item \Default
+ \elist
+ 
+\subsubsection{\hbracket{local-noise-scaled}}\newkw{local-noise-scaled}
+ \slist
+   \item \Description Name of file with local noise.
+   \item \Argument 
+   \item \Default
+ \elist
+ 
+\subsubsection{\hbracket{estimate-local-noise}}\newkw{estimate-local-noise}
+ \slist
+   \item \Description Can not say 'yes' here if \kw{local-noise-scaled} is given.
+   \item \Argument 'yes' or 'no'
+   \item \Default
+ \elist
+ 
+\section{\hbracket{well-data}} \newkw{well-data}
+ \slist
+   \item \Description All information about the well data is collected here.
+   \item \Argument
+   \item \Default
+ \elist  
+ 
+\subsection{\hbracket{log-names}} \newkw{log-names}
+ \slist
+   \item \Description CRAVA needs to find the time, vp, vs, density and possibly facies logs. The name of these logs in the well files are given here. 
+   \item \Argument
+   \item \Default
+ \elist  
+ 
+\subsubsection{\hbracket{time}} \newkw{time}
+ \slist
+   \item \Description Name of the TWT log
+   \item \Argument String
+   \item \Default 'TWT'
+ \elist  
+ 
+\subsubsection{\hbracket{vp}}\newkw{vp}
+ \slist
+   \item \Description Name of the vp log. May not be given in \kw{dt} is given.
+   \item \Argument String
+   \item \Default 
+ \elist  
+ 
+\subsubsection{\hbracket{dt}}\newkw{dt}
+ \slist
+   \item \Description Name of the inverse vp log. May not be given in \kw{vp} is given. 
+   \item \Argument String
+   \item \Default 'DT'
+ \elist  
+ 
+\subsubsection{\hbracket{vs}}\newkw{vs}
+ \slist
+   \item \Description Name of the vs log. May not be given in \kw{dts} is given.
+   \item \Argument String
+   \item \Default 
+ \elist  
+ 
+\subsubsection{\hbracket{dts}}\newkw{dts}
+ \slist
+   \item \Description Name of the inverse vs log. May not be given in \kw{vs} is given.
+   \item \Argument String
+   \item \Default 'DTS'
+ \elist  
+ 
+\subsubsection{\hbracket{density}}\newkw{density}
+ \slist
+   \item \Description Name of the density log. 
+   \item \Argument String
+   \item \Default 'RHOB'
+ \elist
+
+\subsubsection{\hbracket{facies}}\newkw{facies}
+ \slist
+   \item \Description Name of the facies log.
+   \item \Argument String
+   \item \Default 'FACIES'
+ \elist
+
+\subsection{\hbracket{well}}\newkw{well}
+ \slist
+   \item \Description Repeatable command, one for each well. Contains information about the wells. 
+   \item \Argument
+   \item \Default
+ \elist  
+ 
+\subsubsection{\hbracket{file-name}}\newkw{file-name}
+ \slist
+   \item \Description File name for a well file. RMS or Norsar format.
+   \item \Argument
+   \item \Default
+ \elist
+ 
+\subsubsection{\hbracket{use-for-wavelet}}\newkw{use-for-wavelet}
+ \slist
+   \item \Description Should this well be used for wavelet estimation?
+   \item \Argument 'yes' or 'no'
+   \item \Default
+ \elist
+ 
+\subsubsection{\hbracket{use-for-background-trend}}\newkw{use-for-background-trend}
+ \slist
+   \item \Description Should this well be used for background trend estimation?
+   \item \Argument 'yes' or 'no'
+   \item \Default
+ \elist
+ 
+\subsubsection{\hbracket{use-for-facies-probabilities}}\newkw{use-for-facies-probabilities}
+ \slist
+   \item \Description Should this well be used for facies probability estimation?
+   \item \Argument 'yes' or 'no'
+   \item \Default
+ \elist
+ 
+\subsection{\hbracket{high-cut-seismic-resolution}}\newkw{high-cut-seismic-resolution}
+ \slist
+   \item \Description This frequency is used to filter wells down to seismic resolution. Only used to generate output logs for QC.
+   \item \Argument Value
+   \item \Default
+ \elist
+ 
+\subsection{\hbracket{allowed-log-values}}\newkw{allowed-log-values}
+ \slist
+   \item \Description Sometimes there are faulty values in well logs. Here, trigger values for error detection can be controlled. These fall in two categories: Actual log values that are wrong, or logs that have extremely low or high variance when the background model is subtracted. 
+   \item \Argument 
+   \item \Default
+ \elist
+
