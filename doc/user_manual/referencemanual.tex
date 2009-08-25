@@ -1139,4 +1139,284 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Argument 
    \item \Default
  \elist
+ 
+\subsubsection{\hbracket{minimum-vp}}\newkw{minimum-vp}
+ \slist
+   \item \Description Value for the smallest legal vp value. 
+   \item \Argument 
+   \item \Default 1300 m/s
+ \elist
 
+\subsubsection{\hbracket{maximum-vp}}\newkw{maximum-vp}
+ \slist
+   \item \Description Value for the largest legal vp value.
+   \item \Argument 
+   \item \Default 7000 m/s
+ \elist
+
+\subsubsection{\hbracket{minimum-vs}}\newkw{minimum-vs}
+ \slist
+   \item \Description Value for the smallest legal vs value.
+   \item \Argument 
+   \item \Default 200 m/s
+ \elist
+
+\subsubsection{\hbracket{maximum-vs}}\newkw{maximum-vp}
+ \slist
+   \item \Description Value for the largest legal vs value.
+   \item \Argument 
+   \item \Default 4200 m/s
+ \elist
+
+\subsubsection{\hbracket{minimum-density}}\newkw{minimum-density}
+ \slist
+   \item \Description Value for the smallest legal density value.
+   \item \Argument 
+   \item \Default 1.4 g/cm$^3$  
+\elist
+
+\subsubsection{\hbracket{maximum-density}}\newkw{maximum-density}
+ \slist
+   \item \Description Value for the largest legal density value.
+   \item \Argument 'yes' or 'no'
+   \item \Default 3.3 g/cm$^3$  
+ \elist
+
+\subsubsection{\hbracket{minimum-variance-vp}}\newkw{minimum-variance-vp}
+ \slist
+   \item \Description Value for the smallest legal variance in the vp log after the background is subtracted and logarithm is taken.
+   \item \Argument
+   \item \Default 
+ \elist
+ 
+\subsubsection{\hbracket{maximum-variance-vp}}\newkw{maximum-variance-vp}
+ \slist
+   \item \Description Value for the largest legal variance in the vp log after the background is subtracted and logarithm is taken.
+   \item \Argument
+   \item \Default
+ \elist
+ 
+\subsubsection{\hbracket{minimum-variance-vs}}\newkw{minimum-variance-vs}
+ \slist
+   \item \Description Value for the smallest legal variance in the vs log after the background is subtracted and logarithm is taken.
+   \item \Argument
+   \item \Default
+ \elist
+
+\subsubsection{\hbracket{maximum-variance-vs}}\newkw{maximum-variance-vs}
+ \slist
+   \item \Description Value for the largest legal variance in the vs log after the background is subtracted and logarithm is taken.
+   \item \Argument
+   \item \Default
+ \elist
+ 
+\subsubsection{\hbracket{minimum-variance-density}}\newkw{minimum-variance-density}
+ \slist
+   \item \Description Value for the smallest legal variance in the density log after the background is subtracted and logarithm is taken.
+   \item \Argument
+   \item \Default
+ \elist
+
+\subsubsection{\hbracket{maximum-variance-density}}\newkw{maximum-variance-density}
+ \slist
+   \item \Description Value for the largest legal variance in the density log after the background is subtracted and logarithm is taken.
+   \item \Argument
+   \item \Default
+ \elist
+
+\subsection{\hbracket{maximum-deviation-angle}}\newkw{maximum-deviation-angle}
+ \slist
+   \item \Description Value for the maximum deviation angle of a well before it is excluded from estimation based on vertical wells (such as wavelet and signal to noise).
+   \item \Argument
+   \item \Default
+ \elist
+ 
+\subsection{\hbracket{maximum-rank-correlation}}\newkw{maximum-rank-correlation}
+ \slist
+   \item \Description If the correlation between vp and vs logs exceed this value, the vs log is considered to be synthetic, and not counted as additional data in estimation. 
+   \item \Argument Value close to, but less than 1.
+   \item \Default
+ \elist
+
+\subsection{\hbracket{maximum-marge-distance}}\newkw{maximum-merge-distance}
+ \slist
+   \item \Description Value giving the minimum distance in time between well log entries before they are merged to one observation. 
+   \item \Argument
+   \item \Default
+ \elist  
+ 
+\section{\hbracket{prior-model}}\newkw{prior-model}
+ \slist
+   \item \Description This command defines the prior model for elastic parameters and possibly also facies.
+   \item \Argument
+   \item \Default
+ \elist  
+ 
+\subsection{\hbracket{background}}\newkw{background}
+ \slist
+   \item \Description Contains information about the background model or how to estimate it. Note that either all parameters must be given, or all must be estimated. 
+   \item \Argument
+   \item \Default
+ \elist   
+ 
+\subsubsection{\hbracket{direct-file}}\newkw{direct-file}
+ \slist
+   \item \Description If 'yes', input files for background are assumed to be direct files.
+   \item \Argument 'yes' or 'no'
+   \item \Default
+ \elist   
+ 
+\subsubsection{\hbracket{vp-file}}\newkw{vp-file}
+ \slist
+   \item \Description File name for storm or segy grid file, or direct file, giving background vp. Can not be given together with \kw{vp-constant}.
+   \item \Argument
+   \item \Default
+ \elist   
+ 
+\subsubsection{\hbracket{vs-file}}\newkw{vs-file}
+ \slist
+   \item \Description File name for storm or segy grid file, or direct file, giving background vs. Can not be given together with \kw{vs-constant}.
+   \item \Argument
+   \item \Default
+ \elist
+
+\subsubsection{\hbracket{density-file}}\newkw{density-file}
+ \slist
+   \item \Description File name for storm or segy grid file, or direct file, giving background density. Can not be given together with \kw{density-constant}.
+   \item \Argument
+   \item \Default
+ \elist
+
+\subsubsection{\hbracket{vp-constant}}\newkw{vp-constant}
+ \slist
+   \item \Description Value, used for constant vp background. Can not be given together with \kw{vp-file}.
+   \item \Argument 
+   \item \Default
+ \elist
+
+\subsubsection{\hbracket{vs-constant}}\newkw{vs-constant}
+ \slist
+   \item \Description Value, used for constant vs background. Can not be given together with \kw{vs-file}.
+   \item \Argument
+   \item \Default
+ \elist
+
+\subsubsection{\hbracket{density-constant}}\newkw{density-constant}
+ \slist
+   \item \Description Value, used for constant density background. Can not be given together with \kw{density-file}.
+   \item \Argument
+   \item \Default
+ \elist
+
+\subsubsection{\hbracket{velocity-field}}\newkw{velocity-field}
+ \slist
+   \item \Description File name for storm grid bile giving a velocity field used as base for vp in background estimation. Can not be used if the background parameters \kw{vp-file} or \kw{vp-constant} are given. 
+   \item \Argument
+   \item \Default
+ \elist
+
+\subsubsection{\hbracket{lateral-correlation}}\newkw{lateral-correlation}
+ \slist
+   \item \Description 2D variogram for the lateral correlation in the elastic parameters in the estimated background model, used for kriging of wells. Can not be used if the background parameters are given. 
+   \item \Argument
+   \item \Default
+ \elist
+
+\subsubsection{\hbracket{high-cut-background-modeling}}\newkw{high-cut-background-modeling}
+ \slist
+   \item \Description Value giving the maximum frequency in the estimated background model. Can not be used if the background parameters are given.
+   \item \Argument
+   \item \Default
+ \elist
+
+\subsection{\hbracket{lateral-correlation}}\newkw{lateral-correlation}
+ \slist
+   \item \Description 2D variogram for the lateral correlation in the elastic parameters.
+   \item \Argument
+   \item \Default
+ \elist
+
+\subsection{\hbracket{temporal-correlation}}\newkw{temporal-correlation}
+ \slist
+   \item \Description Name file for the temporal correlation file.
+   \item \Argument
+   \item \Default
+ \elist
+
+\subsection{\hbracket{parameter-correlation}}\newkw{parameter-correlation}
+ \slist
+   \item \Description Name file for the parameter correlation file.
+   \item \Argument
+   \item \Default
+ \elist
+
+\subsection{\hbracket{correlation-direction}}\newkw{correlation-direction}
+ \slist
+   \item \Description Name file for the storm surface file giving the correlation direction for the inversion.
+   \item \Argument
+   \item \Default
+ \elist
+
+\subsection{\hbracket{facies-probabilities}}\newkw{facies-probabilities}
+ \slist
+   \item \Description Command controlling the generating of facies probabilities.
+   \item \Argument
+   \item \Default
+ \elist
+
+\subsubsection{\hbracket{facies-estimation-interval}}\newkw{facies-estimation-interval}
+ \slist
+   \item \Description Defines an interval for estimation of facies probability given elastic parameters. 
+   \item \Argument
+   \item \Default Everywhere facies and elastic logs are present. 
+ \elist
+
+\paragraph{\hbracket{top-surface-file}}\newkw{top-surface-file}
+ \slist
+   \item \Description File name for storm surface file giving the top of the estimation interval. 
+   \item \Argument
+   \item \Default 
+ \elist
+
+\paragraph{\hbracket{base-surface-file}}\newkw{base-surface-file}
+ \slist
+   \item \Description File name for storm surface file giving the base of the estimation interval.
+   \item \Argument
+   \item \Default
+ \elist
+
+\subsubsection{\hbracket{prior-facies-probabilities}}\newkw{prior-facies-probabilities}
+ \slist
+   \item \Description Prior facies probabilities are given for all facies. Priors can be given as constant numbers or storm cubes. If this command is not given, prior distribution is estimated from wells. 
+   \item \Argument
+   \item \Default 
+ \elist
+
+\paragraph{\hbracket{facies-name}}\newkw{facies-name}
+ \slist
+   \item \Description Name of facies. All facies present in well logs must be given. 
+   \item \Argument
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{prob}}\newkw{prob}
+ \slist
+   \item \Description Probability for facies given above. Real numbers between 0 and 1. Numbers for all facies must sum to one. Either this command or \kw{probcube} is given, same for all facies.
+   \item \Argument 
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{probcube}}\newkw{probcube}
+ \slist
+   \item \Description File name for file containing prior facies probability for facies with name given above. Either this command or \kw{prob} is given, same for all facies. 
+   \item \Argument
+   \item \Default
+ \elist
+
+
+\subsubsection{\hbracket{facies-probability-undefined-value}}\newkw{facies-probability-undefined-value}
+ \slist
+   \item \Description Value defining how large the undefined probability will be when facies probabilities are computed. This value is scaled and used as likelihood for undefined when facies probabilities are computed.
+   \item \Argument
+   \item \Default 0.01
+ \elist
