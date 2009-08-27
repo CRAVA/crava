@@ -220,7 +220,7 @@ Estimation: Checks input data and performs estimation of lacking information for
 
 \subsubsection{\hbracket{interval-one-surface}} \newkw{interval-one-surface}
  \slist
-   \item \Description Using this command gives parallel top and base of inversion interval. This or \kw{interval-two-surfaces} must be given. 
+   \item \Description Using this command gives parallel top and base of inversion interval. This or \kw{interval-two-surfaces} must be given.
    \item \Argument Elements for parallel top and base inversion interval
    \item \Default
  \elist
@@ -326,14 +326,14 @@ Estimation: Checks input data and performs estimation of lacking information for
 \subsubsection{\hbracket{input-directory}} \newkw{input-directory}
  \slist
    \item \Description Directory name, relative to \kw{top-directory}, for root directory for input files. Must end with directory separator.
-   \item \Argument Directory name 
+   \item \Argument Directory name
    \item \Default
  \elist
 
 \subsubsection{\hbracket{output-directory}} \newkw{output-directory}
  \slist
    \item \Description Directory name, relative to \kw{top-directory}, for root directory for output files. Must end with directory separator.
-   \item \Argument Directory name 
+   \item \Argument Directory name
    \item \Default
  \elist
 
@@ -409,7 +409,7 @@ Estimation: Checks input data and performs estimation of lacking information for
 
 \subparagraph{\hbracket{parameters}}\newkw{parameters}
  \slist
-   \item \Description Controls which grid parameters to output. All are 'yes' or 'no'
+   \item \Description Controls which grid parameters to output. All are 'yes' or 'no'.
    \item \Argument Elements controlling which grid parameters to output
    \item \Default If this command is not given, vp, vs and density are written.
  \elist
@@ -940,7 +940,7 @@ Estimation: Checks input data and performs estimation of lacking information for
 \paragraph{\hbracket{local-wavelet}}\newkw{local-wavelet}
  \slist
    \item \Description The amplitude and shift of the wavelet may be modified locally by 2D fields for shift and scale values. This is handled here.
-   \item \Argument Elements modifying the amplitude and shift of the wavelet 
+   \item \Argument Elements modifying the amplitude and shift of the wavelet
    \item \Default
  \elist
 
@@ -974,7 +974,7 @@ Estimation: Checks input data and performs estimation of lacking information for
 
 \paragraph{\hbracket{estimation-interval}}\newkw{estimation-interval}
  \slist
-   \item \Description Controls the time interval used for wavelet estimation by a top and base surface. 
+   \item \Description Controls the time interval used for wavelet estimation by a top and base surface.
    \item \Argument Elements controlling the time interval used for wavelet estimation
    \item \Default By default, estimation is done from all available seismic and well data.
  \elist
@@ -1231,7 +1231,7 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Default
  \elist
 
-\subsection{\hbracket{maximum-marge-distance}}\newkw{maximum-merge-distance}
+\subsection{\hbracket{maximum-merge-distance}}\newkw{maximum-merge-distance}
  \slist
    \item \Description Value giving the minimum distance in time between well log entries before they are merged to one observation.
    \item \Argument Value
@@ -1248,7 +1248,7 @@ Estimation: Checks input data and performs estimation of lacking information for
 \subsection{\hbracket{background}}\newkw{background}
  \slist
    \item \Description Contains information about the background model or how to estimate it. Note that either all parameters must be given, or all must be estimated.
-   \item \Argument Elements containing information about the background model 
+   \item \Argument Elements containing information about the background model
    \item \Default
  \elist
 
@@ -1360,7 +1360,7 @@ Estimation: Checks input data and performs estimation of lacking information for
 \subsubsection{\hbracket{facies-estimation-interval}}\newkw{facies-estimation-interval}
  \slist
    \item \Description Defines an interval for estimation of facies probability given elastic parameters.
-   \item \Argument Elements defining interval of estimation
+   \item \Argument Elements defining estimation interval
    \item \Default Everywhere facies and elastic logs are present.
  \elist
 
@@ -1413,42 +1413,42 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Argument Value
    \item \Default 0.01
  \elist
- 
+
 \section{\hbracket{variogram-keyword}}\newkw{variogram-keyword}
  \slist
    \item \Description Variograms are given on the following form
    \item \Argument
    \item \Default
  \elist
- 
+
 \subsection{\hbracket{variogram-type}}\newkw{variogram-type}
  \slist
    \item \Description Either 'genexp' or 'spherical' for general exponential or spherical variogram.
    \item \Argument
    \item \Default
  \elist
- 
+
 \subsection{\hbracket{angle}}\newkw{angle}
  \slist
    \item \Description Value for the azimuth direction.
    \item \Argument
    \item \Default
  \elist
- 
+
 \subsection{\hbracket{range}}\newkw{range}
  \slist
    \item \Description Value for the range in the azimuth direction.
    \item \Argument
    \item \Default
  \elist
- 
+
 \subsection{\hbracket{subrange}}\newkw{subrange}
  \slist
    \item \Description Value for the range normal to the azimuth direction.
    \item \Argument
    \item \Default
  \elist
- 
+
 \subsection{\hbracket{power}}\newkw{power}
  \slist
    \item \Description Value between 1 and 2 for the power of the general exponential variogram. Not allowed for spherical variogram.
