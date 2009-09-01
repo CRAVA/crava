@@ -139,7 +139,7 @@ WellData::readRMSWell(const std::string              & wellFileName,
 
   int nVar = 5;       // z,alpha,beta,rho, and facies
 
-  std::vector<std::string> parameterList;
+  std::vector<std::string> parameterList(5);
 
   bool vpLog = false;
   bool vsLog = false;

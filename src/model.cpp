@@ -221,11 +221,13 @@ Model::Model(char * fileName)
             processSeismic(seisCube_, timeSimbox_, 
                            modelSettings_, inputFiles,
                            errText, failedSeismic);
-            addSeismicLogsAndWriteWells(wells_, seisCube_, modelSettings_);
+            if(failedSeismic == false) {
+              addSeismicLogsAndWriteWells(wells_, seisCube_, modelSettings_);
 
-            processWavelets(wavelet_, seisCube_, wells_, reflectionMatrix_,
-                            timeSimbox_, waveletEstimInterval_,
-                            modelSettings_, inputFiles, errText, failedWavelet);
+              processWavelets(wavelet_, seisCube_, wells_, reflectionMatrix_,
+                              timeSimbox_, waveletEstimInterval_,
+                              modelSettings_, inputFiles, errText, failedWavelet);
+            }
           }
         }
         if((estimate == false && modelSettings_->getDoDepthConversion() == true) ||
@@ -2345,7 +2347,9 @@ Model::processWavelets(Wavelet     **& wavelet,
         }
         if(shiftGrids != NULL && shiftGrids[i] != 0) //NBNB husk utskrift av grid. Resample til surface
         {
-          if(modelSettings->getEstimateLocalShift(i)==true)
+          if(modelSettings->getEstimateLocalShift(i)==true && 
+             ((modelSettings->getOtherOutputFlag() & ModelSettings::EXTRA_SURFACES) > 0 ||
+              modelSettings->getEstimationMode() == true))
           {
             char * fileName= new char[MAX_STRING];
             sprintf(fileName,"Local_Wavelet_Shift_%i",i);
@@ -2356,8 +2360,10 @@ Model::processWavelets(Wavelet     **& wavelet,
         }
         if(gainGrids != NULL && gainGrids[i] != NULL)
         {
-          if(modelSettings->getEstimateLocalScale(i)==true)
-          {
+          if(modelSettings->getEstimateLocalScale(i)==true &&
+             ((modelSettings->getOtherOutputFlag() & ModelSettings::EXTRA_SURFACES) > 0 ||
+              modelSettings->getEstimationMode() == true))
+         {
             char * fileName= new char[MAX_STRING];
             sprintf(fileName,"Local_Wavelet_Gain_%i",i);
             resampleGridAndWriteToFile(gainGrids[i],timeSimbox,fileName, outputFormat);
@@ -2368,7 +2374,9 @@ Model::processWavelets(Wavelet     **& wavelet,
         }
         if(noiseScaled[i]!=NULL)
         {
-          if(modelSettings->getEstimateLocalNoise(i)==true)
+          if(modelSettings->getEstimateLocalNoise(i)==true &&
+            ((modelSettings->getOtherOutputFlag() & ModelSettings::EXTRA_SURFACES) > 0 ||
+              modelSettings->getEstimationMode() == true))
           {
             char * fileName= new char[MAX_STRING];
             sprintf(fileName,"Local_Noise_%i",i);

@@ -1540,9 +1540,9 @@ FFTGrid::writeSegyFile(const std::string & fileName, const Simbox * simbox, floa
   int i,j,k;
   double x,y,z;
   std::vector<float> trace(segynz);//Maximum amount of data needed.
-  for(j=0;j<simbox->getnx();j++)
+  for(j=0;j<simbox->getny();j++)
   {
-    for(i=0;i<simbox->getny();i++)
+    for(i=0;i<simbox->getnx();i++)
     {
       simbox->getCoord(i, j, 0, x, y, z);
       z = simbox->getTop(x,y);
