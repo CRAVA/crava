@@ -241,15 +241,10 @@ Model::Model(char * fileName)
                                  wells_,
                                  randomGen_,
                                  timeSimbox_->getnz(),
-                                 modelSettings_);
-          if(modelSettings_->getIsPriorFaciesProbGiven()==2) // prior facies prob given on file
-            processPriorFaciesProbCubes(inputFiles, 
-                                        modelSettings_, 
-                                        priorFaciesProbCubes_,
-                                        timeSimbox_,
-                                        errText,
-                                        failedPriorFacies);
-            
+                                 modelSettings_,
+                                 failedPriorFacies,
+                                 errText,
+                                 inputFiles);
         }
 
       
@@ -2470,7 +2465,11 @@ void Model::processPriorFaciesProb(float         *& priorFacies,
                                    WellData      ** wells,
                                    RandomGen      * randomGen,
                                    int              nz,
-                                   ModelSettings  * modelSettings)
+                                   ModelSettings  * modelSettings,
+                                   bool           & failed,
+                                   char           * errTxt,
+                                   InputFiles     * inputFiles
+                                   )
 {
   if (modelSettings->getEstimateFaciesProb())
   {
@@ -2667,12 +2666,22 @@ void Model::processPriorFaciesProb(float         *& priorFacies,
         modelSettings->setEstimateFaciesProb(false);
       }
     }
+    else if(modelSettings->getIsPriorFaciesProbGiven()==2)
+    {
+       processPriorFaciesProbCubes(inputFiles, 
+                                   modelSettings_, 
+                                   priorFaciesProbCubes_,
+                                   timeSimbox_,
+                                   errTxt,
+                                   failed);
+
+      }
   }
 }
 
 void Model::processPriorFaciesProbCubes(InputFiles     * inputFiles, 
                                         ModelSettings  * modelSettings, 
-                                        FFTGrid       **& priorFaciesProbCubes_,
+                                        FFTGrid       **& priorFaciesProbCubes,
                                         Simbox         * timeSimbox,
                                         char           * errTxt,
                                         bool           & failed)
@@ -2697,14 +2706,14 @@ void Model::processPriorFaciesProbCubes(InputFiles     * inputFiles,
       if(findFileType(faciesProbFile) == SEGYFILE) {
         const SegyGeometry * geometry = NULL;
         float offset = modelSettings->getSegyOffset();
-        readerror = readSegyFile(faciesProbFile, priorFaciesProbCubes_[i], 
-          timeSimbox, modelSettings, 
+        readerror = readSegyFile(faciesProbFile, priorFaciesProbCubes[i], 
+          timeSimbox, modelSettings,
           tmpErrText, geometry, 
           FFTGrid::PARAMETER, 
           offset, NULL);
       }
       else{
-        readerror = readStormFile(faciesProbFile, priorFaciesProbCubes_[i], parname, 
+        readerror = readStormFile(faciesProbFile, priorFaciesProbCubes[i], parname, 
           timeSimbox, modelSettings,
           tmpErrText);
       }

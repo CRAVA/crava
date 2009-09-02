@@ -848,44 +848,70 @@ XmlModelFile::parsePriorFaciesProbabilities(TiXmlNode * node, std::string & errT
     return(false);
 
   
-  std::string faciesname;
-  std::string filename;
-  float sum, value;
+  
+  float sum;
   int status = 0;
   sum = 0.0;
+  int oldStatus = 0;
  
-  std::map<std::string,float> pp;
-  std::map<std::string, std::string> pp2;
-  while(parseValue(root, "facies-name", faciesname,errTxt, true)==true)
+ // std::map<std::string,float> pp;
+ // std::map<std::string, std::string> pp2;
+  modelSettings_->setPriorFaciesProbGiven(0);
+  while(parseFacies(root,errTxt)==true)
   {
-    if(parseValue(root,"prob",value,errTxt,true)==true)
-    {
-      pp[faciesname] = value;
-      if(status==2)
-        errTxt+= " Prior facies probability must be given in the same way for all facies.\n";
-      status = 1;
-    }
-    else if(parseValue(root,"probcube",filename,errTxt,true)==true)
-    {
-      pp2[faciesname] = filename;
-      if(status==1)
-        errTxt+= " Prior facies probability must be given in the same way for all facies.\n";
-      status = 2;
-    }
-    sum+=value;
+    status = modelSettings_->getIsPriorFaciesProbGiven();
+    if(oldStatus!=0 &&oldStatus!=status)
+      errTxt+= " Prior facies probability must be given in the same way for all facies.\n";
+   
+    oldStatus = status;
+   
   }
   if(status==1)
-    modelSettings_->addPriorFaciesProb(pp);
-  else if(status==2)
-    inputFiles_->setPriorFaciesProb(pp2);
-  modelSettings_->setPriorFaciesProbGiven(status);
-
-  if(status==1 && sum!=1.0)
+  {
+    typedef std::map<std::string,float> mapType;
+    mapType myMap = modelSettings_->getPriorFaciesProb();
+    for(mapType::const_iterator it=myMap.begin();it!=myMap.end();++it)
+    {
+      sum+=(*it).second;
+    }
+  if(sum!=1.0)
   {
     errTxt+="Prior facies probabilities must sum to 1.0. They sum to "+ NRLib2::ToString(sum) +".\n";
   }
- checkForJunk(root, errTxt);
+ 
+  }
+checkForJunk(root, errTxt);
   return(true);
+}
+
+bool 
+XmlModelFile::parseFacies(TiXmlNode * node, std::string & errTxt)
+{
+TiXmlNode * root = node->FirstChildElement("facies");
+  if(root == 0)
+    return(false);
+
+  std::string faciesname;
+  std::string filename;
+  float value;
+ parseValue(root, "name", faciesname,errTxt, true);
+  
+    if(parseValue(root,"probability",value,errTxt,true)==true)
+    {
+     modelSettings_->setPriorFaciesProbGiven(1);
+     modelSettings_->addPriorFaciesProb(faciesname,value);
+     // status = 1;
+    }
+    else if(parseValue(root,"probabilitycube",filename,errTxt,true)==true)
+    {
+     modelSettings_->setPriorFaciesProbGiven(2);
+     inputFiles_->setPriorFaciesProb(faciesname,filename);
+     // status = 2;
+    }
+ 
+ checkForJunk(root, errTxt, true); //allow duplicates
+  return(true);
+
 
 }
 bool

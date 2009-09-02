@@ -245,7 +245,7 @@ public:
   void							               setLogLevel(int logLevel)                     { logLevel_             = logLevel           ;}
   void							               setSeed(int seed)                             { seed_                 = seed               ;}
  // void                             setPriorFaciesProb(int i, float value)        { priorFaciesProb_[i]   = value              ;}
-  void                             addPriorFaciesProb(std::map<std::string, float> pp)   { priorFaciesProb_ = pp         ;}
+  void                             addPriorFaciesProb(std::string name, float value)   { priorFaciesProb_[name] = value         ;}
   void                             setPriorFaciesProbGiven(int fpg)              { priorFaciesProbGiven_ = fpg                ;}
 
   void							               setNoiseScaled(Grid2D *ns);

@@ -55,7 +55,7 @@ public:
   void setParamCorrFile(const std::string & paramCorrFile)                { paramCorrFile_        = paramCorrFile     ;}
   void setTempCorrFile(const std::string & tempCorrFile)                  { tempCorrFile_         = tempCorrFile      ;}
   void setInputDirectory(std::string inputDirectory)                      { inputDirectory_       = inputDirectory    ;}
-  void setPriorFaciesProb(std::map<std::string,std::string> pp)           { priorFaciesProb_      = pp                ;}
+  void setPriorFaciesProb(std::string name,std::string file)           { priorFaciesProb_[name] = file                ;}
   std::string addInputPathAndCheckFiles();
 
 private:

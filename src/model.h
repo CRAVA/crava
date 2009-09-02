@@ -132,16 +132,19 @@ private:
                                           WellData     ** wells,
                                           RandomGen     * randomGen,
                                           int             nz,
-                                          ModelSettings * modelSettings);
+                                          ModelSettings * modelSettings,
+                                          bool           & failed,
+                                          char           * errTxt,
+                                          InputFiles     * inputFiles);
   void             processPriorFaciesProbCubes(InputFiles     * inputFiles, 
                                                ModelSettings  * modelSettings, 
-                                               FFTGrid       **& priorFaciesProbCubes_,
+                                               FFTGrid       **& priorFaciesProbCubes,
                                                Simbox         * timeSimbox,
                                                char           * errTxt,
                                                bool           & failed);
   void             processDepthConversion(Simbox        * timeCutSimbox, 
-                                          Simbox        * timeSimbox_,
-                                          ModelSettings * modelSettings_, 
+                                          Simbox        * timeSimbox,
+                                          ModelSettings * modelSettings, 
                                           InputFiles    * inputFiles,
                                           char          * errText, 
                                           bool          & failedVelocity);
