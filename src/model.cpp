@@ -2392,6 +2392,8 @@ Model::processWavelets(Wavelet     **& wavelet,
 
   Timings::setTimeWavelets(wall,cpu);
   failed = error > 0;
+  delete [] shiftGrids;
+  delete [] gainGrids;
 }
 
 int
