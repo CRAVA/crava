@@ -82,9 +82,9 @@ Wavelet::Wavelet(Wavelet * wavelet, int dim)
 Wavelet::~Wavelet()
 {
   if(shiftGrid_!=NULL)
-    delete [] shiftGrid_;
+    delete shiftGrid_;
   if(gainGrid_!=NULL)
-    delete [] gainGrid_; 
+    delete gainGrid_; 
 }
 
 Wavelet*  Wavelet::getLocalWavelet(int i, int j)
