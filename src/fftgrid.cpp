@@ -1723,11 +1723,28 @@ FFTGrid::writeSgriFile(const std::string & fileName, const Simbox *simbox, const
 
 
 void
-FFTGrid::writeDirectFile(const std::string & fileName)
+FFTGrid::writeDirectFile(const std::string & fileName, const Simbox * simbox)
 {
   try {
     ofstream binFile;
     NRLib2::OpenWrite(binFile, fileName, std::ios::out | std::ios::binary);
+
+    // Marit mellom disse strekene
+    NRLib2::WriteBinaryDouble(binFile, simbox->getx0());
+    NRLib2::WriteBinaryDouble(binFile, simbox->gety0());
+    NRLib2::WriteBinaryDouble(binFile, simbox->getdx());
+    NRLib2::WriteBinaryDouble(binFile, simbox->getdy());
+    NRLib2::WriteBinaryInt(binFile, simbox->getnx());
+    NRLib2::WriteBinaryInt(binFile, simbox->getny());
+    NRLib2::WriteBinaryDouble(binFile, simbox->getIL0());
+    NRLib2::WriteBinaryDouble(binFile, simbox->getXL0());
+    NRLib2::WriteBinaryDouble(binFile, simbox->getILStepX());
+    NRLib2::WriteBinaryDouble(binFile, simbox->getILStepY());
+    NRLib2::WriteBinaryDouble(binFile, simbox->getXLStepX());
+    NRLib2::WriteBinaryDouble(binFile, simbox->getXLStepY());
+    NRLib2::WriteBinaryDouble(binFile, simbox->getAngle());
+    // Marit mellom disse strekene
+
     NRLib2::WriteBinaryInt(binFile, rnxp_);
     NRLib2::WriteBinaryInt(binFile, nyp_);
     NRLib2::WriteBinaryInt(binFile, nzp_);
@@ -1754,6 +1771,20 @@ FFTGrid::readDirectFile(const std::string & fileName)
 
     std::string token;
     //int line = 0;
+
+    double dummy = NRLib2::ReadBinaryDouble(binFile);
+    dummy = NRLib2::ReadBinaryDouble(binFile);
+    dummy = NRLib2::ReadBinaryDouble(binFile);
+    dummy = NRLib2::ReadBinaryDouble(binFile);
+    dummy = NRLib2::ReadBinaryInt(binFile);
+    dummy = NRLib2::ReadBinaryInt(binFile);
+    dummy = NRLib2::ReadBinaryDouble(binFile);
+    dummy = NRLib2::ReadBinaryDouble(binFile);
+    dummy = NRLib2::ReadBinaryDouble(binFile);
+    dummy = NRLib2::ReadBinaryDouble(binFile);
+    dummy = NRLib2::ReadBinaryDouble(binFile);
+    dummy = NRLib2::ReadBinaryDouble(binFile);
+    dummy = NRLib2::ReadBinaryDouble(binFile);
     int nx = NRLib2::ReadBinaryInt(binFile);
     int ny = NRLib2::ReadBinaryInt(binFile);
     int nz = NRLib2::ReadBinaryInt(binFile);

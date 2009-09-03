@@ -657,7 +657,11 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
 
   SegyGeometry * geometry = NULL;
   if(seismicFile != "") //May change the condition here, but need geometry if we want to set XL/IL
-    geometry = SegY::FindGridGeometry(seismicFile, modelSettings->getTraceHeaderFormat(0));
+    if(modelSettings->getDirectSeisInput() == false)
+      geometry = SegY::FindGridGeometry(seismicFile, modelSettings->getTraceHeaderFormat(0));
+    else {
+      geometry = geometryFromDirectFile(seismicFile);
+    }
 
   if(!areaFromModelFile)
     modelSettings->setAreaParameters(geometry);
@@ -1304,7 +1308,7 @@ Model::processSeismic(FFTGrid      **& seisCube,
         for(int i=0;i<nAngles;i++) {
           std::string fileName = "Seis_Direct_"+NRLib2::ToString(int(0.5+modelSettings->getAngle(i)*(180/M_PI)));
           fileName = ModelSettings::makeFullFileName(fileName,".bin");
-          seisCube[i]->writeDirectFile(fileName);
+          seisCube[i]->writeDirectFile(fileName, timeSimbox);
         }
       }
       if(modelSettings->getDebugFlag() == 1)
@@ -1821,7 +1825,7 @@ Model::processBackground(Background   *& background,
     for(int i=0;i<3;i++) {
       backModel[i]->setAccessMode(FFTGrid::RANDOMACCESS);
       backModel[i]->expTransf();
-      backModel[i]->writeDirectFile(fileName[i]);
+      backModel[i]->writeDirectFile(fileName[i], timeSimbox);
       backModel[i]->logTransf();
       backModel[i]->endAccess();
     }
@@ -3294,7 +3298,7 @@ Model::processDepthConversion(Simbox        * timeCutSimbox,
       timeDepthMapping_->makeTimeDepthMapping(velocity, timeSimbox);
       if(modelSettings->getDirectVelOutput() == true) {
         std::string fName = ModelSettings::makeFullFileName("Velocity_Direct.bin");
-        velocity->writeDirectFile(fName);
+        velocity->writeDirectFile(fName, timeSimbox); //Marit
       }
     }
   }
@@ -3537,4 +3541,33 @@ void Model::resampleGridAndWriteToFile(Grid2D *grid,Simbox *simbox, char *fileNa
     delete outsurf;
 
 
+}
+
+
+SegyGeometry *
+Model::geometryFromDirectFile(const std::string & fileName) //Marit
+{
+  std::ifstream binFile;
+    NRLib2::OpenRead(binFile, fileName, std::ios::in | std::ios::binary);
+
+  
+    double x0 = NRLib2::ReadBinaryDouble(binFile);
+    double y0 = NRLib2::ReadBinaryDouble(binFile);
+    double dx = NRLib2::ReadBinaryDouble(binFile);
+    double dy = NRLib2::ReadBinaryDouble(binFile);
+    int nx = NRLib2::ReadBinaryInt(binFile);
+    int ny = NRLib2::ReadBinaryInt(binFile);
+    double IL0 = NRLib2::ReadBinaryDouble(binFile);
+    double XL0 = NRLib2::ReadBinaryDouble(binFile);
+    double ilStepX = NRLib2::ReadBinaryDouble(binFile);
+    double ilStepY = NRLib2::ReadBinaryDouble(binFile);
+    double xlStepX = NRLib2::ReadBinaryDouble(binFile);
+    double xlStepY = NRLib2::ReadBinaryDouble(binFile);
+    double rot = NRLib2::ReadBinaryDouble(binFile);
+
+  binFile.close();
+  
+  SegyGeometry * geometry = new SegyGeometry(x0, y0, dx, dy, nx, ny, ///< When XL, IL is available.
+               IL0, XL0, ilStepX, ilStepY, xlStepX, xlStepY, rot);
+  return(geometry);
 }

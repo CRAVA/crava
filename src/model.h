@@ -243,6 +243,10 @@ private:
   void             resampleGrid(Surface *surf,
                                 Simbox * simbox, 
                                 Grid2D *outgrid);
+
+  SegyGeometry   * geometryFromDirectFile(const std::string & fileName); // Marit har lagd dette
+
+
   ModelSettings  * modelSettings_;
   Simbox         * timeSimbox_;            ///< Information about simulation area.
   Simbox         * timeSimboxConstThick_;  ///< Simbox with constant thickness   

@@ -465,12 +465,12 @@ FFTFileGrid::writeSgriFile(const std::string & fileName, const Simbox * simbox, 
 }
 
 void
-FFTFileGrid::writeDirectFile(const std::string & fileName)
+FFTFileGrid::writeDirectFile(const std::string & fileName, const Simbox * simbox)
 {
   assert(accMode_ == NONE || accMode_ == RANDOMACCESS);
   if(accMode_ != RANDOMACCESS)
     load();
-  FFTGrid::writeDirectFile(fileName);
+  FFTGrid::writeDirectFile(fileName,simbox);
   if(accMode_ != RANDOMACCESS)
     unload();
 }
