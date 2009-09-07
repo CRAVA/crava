@@ -330,7 +330,8 @@ Background::calculateBackgroundTrend(float             * trend,
     const int ny = simbox->getny();
     FFTGrid * trendGrid = new FFTGrid(nx, ny, nz, nx, ny, nz);
     fillInVerticalTrend(trendGrid, trend);
-    trendGrid->writeFile("BG_trend"+name, simbox, "NO_LABEL");
+    trendGrid->writeFile("BG_trend"+name, simbox, "exptrans");
+    //    trendGrid->writeFile("BG_trend"+name, simbox, "NO_LABEL");
     delete trendGrid;
   }
 }
