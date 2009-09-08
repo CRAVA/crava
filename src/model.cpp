@@ -405,7 +405,7 @@ Model::checkAvailableMemory(Simbox            * timeSimbox,
   //
   float memOneSeis = 0.0f;
   if (seismicFile != "") {
-    memOneSeis = static_cast<float> (NRLib2::FindFileSize(seismicFile));
+    memOneSeis = static_cast<float> (NRLib::FindFileSize(seismicFile));
   }
 
   //
@@ -524,7 +524,7 @@ Model::readSegyFile(const std::string       & fileName,
                         onlyVolume);
     segy->CreateRegularGrid();
   }
-  catch (NRLib2::Exception & e)
+  catch (NRLib::Exception & e)
   {
     sprintf(errText,"%s%s",errText,e.what());
     error++;
@@ -588,7 +588,7 @@ Model::readStormFile(const std::string  & fName,
     stormgrid->ReadFromFile(fName);
     stormgrid->SetMissingCode(RMISSING);
   }
-  catch (NRLib2::Exception & e) 
+  catch (NRLib::Exception & e) 
   {
     sprintf(errText,"%s%s",errText,e.what());
     error = 1;
@@ -760,10 +760,10 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
       // Get correlation direction
       //
       try {
-        Surface tmpSurf = NRLib2::ReadStormSurf(inputFiles->getCorrDirFile());
+        Surface tmpSurf = NRLib::ReadStormSurf(inputFiles->getCorrDirFile());
         correlationDirection = new Surface(tmpSurf);
       }
-      catch (NRLib2::Exception & e) {
+      catch (NRLib::Exception & e) {
         sprintf(errText,"%s%s",errText,e.what());
         failed = true;
       }
@@ -879,7 +879,7 @@ Model::setSimboxSurfaces(Simbox                        *& simbox,
   Surface * z0Grid = NULL;
   Surface * z1Grid = NULL;
   try {
-    if (NRLib2::IsNumber(topName)) {
+    if (NRLib::IsNumber(topName)) {
       // Find the smallest surface that covers the simbox. For simplicity 
       // we use only four nodes (nx=ny=2).
       double xMin, xMax;
@@ -891,11 +891,11 @@ Model::setSimboxSurfaces(Simbox                        *& simbox,
       z0Grid = new Surface(xMin, yMin, xMax-xMin, yMax-yMin, 2, 2, atof(topName.c_str()));
     } 
     else {
-      Surface tmpSurf = NRLib2::ReadStormSurf(topName);
+      Surface tmpSurf = NRLib::ReadStormSurf(topName);
       z0Grid = new Surface(tmpSurf);
     }
   }
-  catch (NRLib2::Exception & e) {
+  catch (NRLib::Exception & e) {
     sprintf(errText,"%s%s",errText,e.what());
     error = 1;
   }
@@ -906,7 +906,7 @@ Model::setSimboxSurfaces(Simbox                        *& simbox,
     }
     else {
       try {
-        if (NRLib2::IsNumber(baseName)) {
+        if (NRLib::IsNumber(baseName)) {
           // Find the smallest surface that covers the simbox. For simplicity 
           // we use only four nodes (nx=ny=2).
           double xMin, xMax;
@@ -918,11 +918,11 @@ Model::setSimboxSurfaces(Simbox                        *& simbox,
           z1Grid = new Surface(xMin, yMin, xMax-xMin, yMax-yMin, 2, 2, atof(baseName.c_str()));
         }
         else {
-          Surface tmpSurf = NRLib2::ReadStormSurf(baseName);
+          Surface tmpSurf = NRLib::ReadStormSurf(baseName);
           z1Grid = new Surface(tmpSurf);
         }
       }
-      catch (NRLib2::Exception & e) {
+      catch (NRLib::Exception & e) {
         sprintf(errText,"%s%s",errText,e.what());
         error = 1;
       }
@@ -930,7 +930,7 @@ Model::setSimboxSurfaces(Simbox                        *& simbox,
         try {
           simbox->setDepth(z0Grid, z1Grid, nz);
         }
-        catch (NRLib2::Exception & e) {
+        catch (NRLib::Exception & e) {
           sprintf(errText,"%s%s",errText,e.what());
           std::string text(std::string("Seismic data"));
           writeAreas(modelSettings_->getAreaParameters(),simbox,text);
@@ -959,7 +959,7 @@ Model::setupExtendedTimeSimbox(Simbox   * timeSimbox,
   double * corrPlanePars = findPlane(corrSurf);
   Surface * meanSurf = new Surface(*corrSurf);
   int i;
-  for(i=0;i<meanSurf->GetN();i++)
+  for(i=0;i<static_cast<int>(meanSurf->GetN());i++)
     (*meanSurf)(i) = 0;
 
   meanSurf->AddNonConform(&(timeSimbox->GetTopSurface()));
@@ -1106,7 +1106,7 @@ Model::findPlane(Surface * surf)
 
   double x, y, z;
   int nData = 0;
-  for(i=0;i<surf->GetN();i++) {
+  for(i=0;i<static_cast<int>(surf->GetN());i++) {
     surf->GetXY(i, x, y);
     z = (*surf)(i);
     if(!surf->IsMissing(z)) {
@@ -1144,7 +1144,7 @@ Model::createPlaneSurface(double * planeParams, Surface * templateSurf)
   Surface * result = new Surface(*templateSurf);
   double x,y;
   int i;
-  for(i=0;i<result->GetN();i++) {
+  for(i=0;i<static_cast<int>(result->GetN());i++) {
     result->GetXY(i,x,y);
     (*result)(i) = planeParams[0]+planeParams[1]*x+planeParams[2]*y;
   }
@@ -1306,7 +1306,7 @@ Model::processSeismic(FFTGrid      **& seisCube,
     {
       if(modelSettings->getDirectSeisOutput() == true) {
         for(int i=0;i<nAngles;i++) {
-          std::string fileName = "Seis_Direct_"+NRLib2::ToString(int(0.5+modelSettings->getAngle(i)*(180/M_PI)));
+          std::string fileName = "Seis_Direct_"+NRLib::ToString(int(0.5+modelSettings->getAngle(i)*(180/M_PI)));
           fileName = ModelSettings::makeFullFileName(fileName,".bin");
           seisCube[i]->writeDirectFile(fileName, timeSimbox);
         }
@@ -1318,7 +1318,7 @@ Model::processSeismic(FFTGrid      **& seisCube,
         {
           sprintf(sName, "origSeis%d",i);
           std::string sgriLabel("Original seismic data for incidence angle ");
-          sgriLabel += NRLib2::ToString(modelSettings->getAngle(i));
+          sgriLabel += NRLib::ToString(modelSettings->getAngle(i));
           seisCube[i]->writeFile(sName, timeSimbox, sgriLabel);
         }
       }
@@ -2109,7 +2109,7 @@ Model::setupDefaultReflectionMatrix(float       **& reflectionMatrix,
       double fac   = 0.5*sint/cosp;
 
       A[i][0] = 0;
-      A[i][1] = float(4.0*fac*(vsvp2*sint2+vsvp*cost*cosp));
+      A[i][1] = float(4.0*fac*(vsvp2*sint2-vsvp*cost*cosp));
       A[i][2] = float(fac*(-1.0+2*vsvp2*sint2+2*vsvp*cost*cosp));
     }
   }
@@ -2177,7 +2177,7 @@ Model::processWavelets(Wavelet     **& wavelet,
     {
       if(inputFiles->getShiftFile(i)!="") // resampling maa til, Grid2D
       {
-        help = new NRLib2::RegularSurface<double>(NRLib2::ReadStormSurf(inputFiles->getShiftFile(i)));
+        help = new NRLib::RegularSurface<double>(NRLib::ReadStormSurf(inputFiles->getShiftFile(i)));
         shiftGrids[i] =new Grid2D(timeSimbox->getnx(),timeSimbox->getny(), 0.0);
         resampleGrid(help,timeSimbox, shiftGrids[i]);
         if ((modelSettings->getOtherOutputFlag() & ModelSettings::EXTRA_SURFACES) > 0)
@@ -2194,7 +2194,7 @@ Model::processWavelets(Wavelet     **& wavelet,
 
       if(inputFiles->getScaleFile(i)!="")
       {
-        help = new NRLib2::RegularSurface<double>(NRLib2::ReadStormSurf(inputFiles->getScaleFile(i)));
+        help = new NRLib::RegularSurface<double>(NRLib::ReadStormSurf(inputFiles->getScaleFile(i)));
         gainGrids[i] =new Grid2D(timeSimbox->getnx(),timeSimbox->getny(), 0.0);
         resampleGrid(help,timeSimbox, gainGrids[i]);
         if ((modelSettings->getOtherOutputFlag() & ModelSettings::EXTRA_SURFACES) > 0)
@@ -2211,7 +2211,7 @@ Model::processWavelets(Wavelet     **& wavelet,
     }
     if( inputFiles->getLocalNoiseFile(i)!="")
     {
-      help = new NRLib2::RegularSurface<double>(NRLib2::ReadStormSurf(inputFiles->getLocalNoiseFile(i)));
+      help = new NRLib::RegularSurface<double>(NRLib::ReadStormSurf(inputFiles->getLocalNoiseFile(i)));
       noiseScaled[i] =new Grid2D(timeSimbox->getnx(),timeSimbox->getny(), 0.0);
       resampleGrid(help,timeSimbox, noiseScaled[i]);
       if ((modelSettings->getOtherOutputFlag() & ModelSettings::EXTRA_SURFACES) > 0)
@@ -2239,7 +2239,7 @@ Model::processWavelets(Wavelet     **& wavelet,
       }
       if (modelSettings->getWaveletScale(i) > 0) {
         LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: The wavelet scale specified in the model file ("
-                             +NRLib2::ToString(modelSettings->getWaveletScale(i),2)
+                             +NRLib::ToString(modelSettings->getWaveletScale(i),2)
                              +") has no effect when the wavelet\n         is estimated and not read from file\n\n");
       }
 
@@ -2768,27 +2768,27 @@ Model::loadExtraSurfaces(Surface  **& waveletEstimInterval,
   if (topWEI != "" && baseWEI != "") {  
     waveletEstimInterval = new Surface*[2];
     try {
-      if (NRLib2::IsNumber(topWEI)) 
+      if (NRLib::IsNumber(topWEI)) 
         waveletEstimInterval[0] = new Surface(x0,y0,lx,ly,nx,ny,atof(topWEI.c_str()));
       else { 
-        Surface tmpSurf = NRLib2::ReadStormSurf(topWEI);
+        Surface tmpSurf = NRLib::ReadStormSurf(topWEI);
         waveletEstimInterval[0] = new Surface(tmpSurf);
       }
     }
-    catch (NRLib2::Exception & e) {
+    catch (NRLib::Exception & e) {
       sprintf(errText, "%s%s\n", errText,e.what());
       failed = true;
     }
     
     try {
-      if (NRLib2::IsNumber(baseWEI)) 
+      if (NRLib::IsNumber(baseWEI)) 
         waveletEstimInterval[1] = new Surface(x0,y0,lx,ly,nx,ny,atof(baseWEI.c_str()));
       else { 
-        Surface tmpSurf = NRLib2::ReadStormSurf(baseWEI);
+        Surface tmpSurf = NRLib::ReadStormSurf(baseWEI);
         waveletEstimInterval[1] = new Surface(tmpSurf);
       }
     }
-    catch (NRLib2::Exception & e) {
+    catch (NRLib::Exception & e) {
       sprintf(errText, "%s%s\n", errText,e.what());
       failed = true;
     }
@@ -2802,27 +2802,27 @@ Model::loadExtraSurfaces(Surface  **& waveletEstimInterval,
   if (topFEI != "" && baseFEI != "") {  
     faciesEstimInterval = new Surface*[2];
     try {
-      if (NRLib2::IsNumber(topFEI)) 
+      if (NRLib::IsNumber(topFEI)) 
         faciesEstimInterval[0] = new Surface(x0,y0,lx,ly,nx,ny,atof(topFEI.c_str()));
       else { 
-        Surface tmpSurf = NRLib2::ReadStormSurf(topFEI);
+        Surface tmpSurf = NRLib::ReadStormSurf(topFEI);
         faciesEstimInterval[0] = new Surface(tmpSurf);
       }
     }
-    catch (NRLib2::Exception & e) {
+    catch (NRLib::Exception & e) {
       sprintf(errText, "%s%s\n", errText,e.what());
       failed = true;
     }
 
     try {
-      if (NRLib2::IsNumber(baseFEI)) 
+      if (NRLib::IsNumber(baseFEI)) 
         faciesEstimInterval[1] = new Surface(x0,y0,lx,ly,nx,ny,atof(baseFEI.c_str()));
       else { 
-        Surface tmpSurf = NRLib2::ReadStormSurf(baseFEI);
+        Surface tmpSurf = NRLib::ReadStormSurf(baseFEI);
         faciesEstimInterval[1] = new Surface(tmpSurf);
       }
     }
-    catch (NRLib2::Exception & e) {
+    catch (NRLib::Exception & e) {
       sprintf(errText, "%s%s\n", errText,e.what());
       failed = true;
     }
@@ -2931,13 +2931,13 @@ Model::printSettings(ModelSettings * modelSettings,
     if (logNames.size() > 0)
     {
       LogKit::LogFormatted(LogKit::LOW,"  Time                                     : %10s\n",  logNames[0].c_str());
-      if(NRLib2::Uppercase(logNames[1])=="VP" || 
-         NRLib2::Uppercase(logNames[1])=="LFP_VP")
+      if(NRLib::Uppercase(logNames[1])=="VP" || 
+         NRLib::Uppercase(logNames[1])=="LFP_VP")
         LogKit::LogFormatted(LogKit::LOW,"  p-wave velocity                          : %10s\n",logNames[1].c_str());
       else
         LogKit::LogFormatted(LogKit::LOW,"  Sonic                                    : %10s\n",logNames[1].c_str());
-      if(NRLib2::Uppercase(logNames[3])=="VS" || 
-         NRLib2::Uppercase(logNames[3])=="LFP_VS")
+      if(NRLib::Uppercase(logNames[3])=="VS" || 
+         NRLib::Uppercase(logNames[3])=="LFP_VS")
         LogKit::LogFormatted(LogKit::LOW,"  s-wave velocity                          : %10s\n",logNames[3].c_str());
       else
         LogKit::LogFormatted(LogKit::LOW,"  Shear sonic                              : %10s\n",logNames[3].c_str());
@@ -3008,12 +3008,12 @@ Model::printSettings(ModelSettings * modelSettings,
     const std::string & topName  = inputFiles->getTimeSurfFile(0); 
     const std::string & baseName = inputFiles->getTimeSurfFile(1); 
 
-    if (NRLib2::IsNumber(topName))
+    if (NRLib::IsNumber(topName))
       LogKit::LogFormatted(LogKit::LOW,"  Start time                               : %10.2f\n",atof(topName.c_str()));
     else
       LogKit::LogFormatted(LogKit::LOW,"  Top surface                              : %s\n",    topName.c_str());
 
-    if (NRLib2::IsNumber(baseName))
+    if (NRLib::IsNumber(baseName))
       LogKit::LogFormatted(LogKit::LOW,"  Stop time                                : %10.2f\n", atof(baseName.c_str()));
     else
       LogKit::LogFormatted(LogKit::LOW,"  Base surface                             : %s\n",   baseName.c_str());
@@ -3043,12 +3043,12 @@ Model::printSettings(ModelSettings * modelSettings,
 
   if (topWEI != "" || baseWEI != "") {
     LogKit::LogFormatted(LogKit::LOW,"\nWavelet estimation interval:\n");
-    if (NRLib2::IsNumber(topWEI))
+    if (NRLib::IsNumber(topWEI))
       LogKit::LogFormatted(LogKit::LOW,"  Start time                               : %10.2f\n",atof(topWEI.c_str()));
     else
       LogKit::LogFormatted(LogKit::LOW,"  Start time                               : %10s\n",topWEI.c_str());
     
-    if (NRLib2::IsNumber(baseWEI))
+    if (NRLib::IsNumber(baseWEI))
       LogKit::LogFormatted(LogKit::LOW,"  Stop time                                : %10.2f\n",atof(baseWEI.c_str()));
     else
       LogKit::LogFormatted(LogKit::LOW,"  Stop time                                : %10s\n",baseWEI.c_str());
@@ -3059,12 +3059,12 @@ Model::printSettings(ModelSettings * modelSettings,
 
   if (topFEI != "" || baseFEI != "") {
     LogKit::LogFormatted(LogKit::LOW,"\nFacies estimation interval:\n");
-    if (NRLib2::IsNumber(topFEI))
+    if (NRLib::IsNumber(topFEI))
       LogKit::LogFormatted(LogKit::LOW,"  Start time                               : %10.2f\n",atof(topFEI.c_str()));
     else
       LogKit::LogFormatted(LogKit::LOW,"  Start time                               : %10s\n",topFEI.c_str());
     
-    if (NRLib2::IsNumber(baseFEI))
+    if (NRLib::IsNumber(baseFEI))
       LogKit::LogFormatted(LogKit::LOW,"  Stop time                                : %10.2f\n",atof(baseFEI.c_str()));
     else
       LogKit::LogFormatted(LogKit::LOW,"  Stop time                                : %10s\n",baseFEI.c_str());
@@ -3396,8 +3396,8 @@ Model::loadVelocity(FFTGrid          *& velocity,
         std::string text;
         text += "\nThe velocity grid used as trend in the background model of Vp";
         text += "\ncontains too small and/or too high velocities:";
-        text += "\n  Minimum Vp = "+NRLib2::ToString(logMin,2)+"    Number of too low values  : "+NRLib2::ToString(tooLow);
-        text += "\n  Maximum Vp = "+NRLib2::ToString(logMax,2)+"    Number of too high values : "+NRLib2::ToString(tooHigh);
+        text += "\n  Minimum Vp = "+NRLib::ToString(logMin,2)+"    Number of too low values  : "+NRLib::ToString(tooLow);
+        text += "\n  Maximum Vp = "+NRLib::ToString(logMax,2)+"    Number of too high values : "+NRLib::ToString(tooHigh);
         text += "\nThe range of allowed values can changed using the ALLOWED_PARAMETER_VALUES keyword\n";
         text += "\naborting...\n";
         sprintf(errText,"%sReading of file \'%s\' for parameter \'%s\' failed\n%s\n", 
@@ -3447,8 +3447,8 @@ Model::writeAreas(const SegyGeometry * areaParams,
   LogKit::LogFormatted(LogKit::LOW,"--------------------------------------------------------------------\n");
   LogKit::LogFormatted(LogKit::LOW,"%-12s     %11.2f  %11.2f    %11.2f %11.2f\n", 
                        text.c_str(),areaXmin, areaXmax, areaYmin, areaYmax);
-  const NRLib2::Surface<double> & top  = timeSimbox->GetTopSurface();
-  const NRLib2::Surface<double> & base = timeSimbox->GetBotSurface();
+  const NRLib::Surface<double> & top  = timeSimbox->GetTopSurface();
+  const NRLib::Surface<double> & base = timeSimbox->GetBotSurface();
   LogKit::LogFormatted(LogKit::LOW,"Top surface      %11.2f  %11.2f    %11.2f %11.2f\n", 
                        top.GetXMin(), top.GetXMax(), top.GetYMin(), top.GetYMax()); 
   LogKit::LogFormatted(LogKit::LOW,"Base surface     %11.2f  %11.2f    %11.2f %11.2f\n", 
@@ -3486,9 +3486,9 @@ Model::writeSurfaceToFile(Surface           * surface,
   std::string fileName = ModelSettings::makeFullFileName(name);
   
   if((format & ModelSettings::ASCII) > 0)
-    NRLib2::WriteIrapClassicAsciiSurf(*surface, fileName+".irap");
+    NRLib::WriteIrapClassicAsciiSurf(*surface, fileName+".irap");
   else  
-    NRLib2::WriteStormBinarySurf(*surface, fileName+".storm");
+    NRLib::WriteStormBinarySurf(*surface, fileName+".storm");
 }
 
 
@@ -3550,22 +3550,22 @@ SegyGeometry *
 Model::geometryFromDirectFile(const std::string & fileName) //Marit
 {
   std::ifstream binFile;
-    NRLib2::OpenRead(binFile, fileName, std::ios::in | std::ios::binary);
+    NRLib::OpenRead(binFile, fileName, std::ios::in | std::ios::binary);
 
   
-    double x0 = NRLib2::ReadBinaryDouble(binFile);
-    double y0 = NRLib2::ReadBinaryDouble(binFile);
-    double dx = NRLib2::ReadBinaryDouble(binFile);
-    double dy = NRLib2::ReadBinaryDouble(binFile);
-    int nx = NRLib2::ReadBinaryInt(binFile);
-    int ny = NRLib2::ReadBinaryInt(binFile);
-    double IL0 = NRLib2::ReadBinaryDouble(binFile);
-    double XL0 = NRLib2::ReadBinaryDouble(binFile);
-    double ilStepX = NRLib2::ReadBinaryDouble(binFile);
-    double ilStepY = NRLib2::ReadBinaryDouble(binFile);
-    double xlStepX = NRLib2::ReadBinaryDouble(binFile);
-    double xlStepY = NRLib2::ReadBinaryDouble(binFile);
-    double rot = NRLib2::ReadBinaryDouble(binFile);
+    double x0 = NRLib::ReadBinaryDouble(binFile);
+    double y0 = NRLib::ReadBinaryDouble(binFile);
+    double dx = NRLib::ReadBinaryDouble(binFile);
+    double dy = NRLib::ReadBinaryDouble(binFile);
+    int nx = NRLib::ReadBinaryInt(binFile);
+    int ny = NRLib::ReadBinaryInt(binFile);
+    double IL0 = NRLib::ReadBinaryDouble(binFile);
+    double XL0 = NRLib::ReadBinaryDouble(binFile);
+    double ilStepX = NRLib::ReadBinaryDouble(binFile);
+    double ilStepY = NRLib::ReadBinaryDouble(binFile);
+    double xlStepX = NRLib::ReadBinaryDouble(binFile);
+    double xlStepY = NRLib::ReadBinaryDouble(binFile);
+    double rot = NRLib::ReadBinaryDouble(binFile);
 
   binFile.close();
   

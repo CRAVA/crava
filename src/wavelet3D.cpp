@@ -171,7 +171,7 @@ Wavelet3D::Wavelet3D(const std::string & fileName,
     int thetaDeg = int ( theta/PI*180 + 0.5 );
     sprintf(fName, "WL_as_shiftedFFTGrid_%d", thetaDeg);
     std::string sgriLabel("3D Wavelet as shifted FFT-grid for incidence angle ");
-    sgriLabel += NRLib2::ToString(thetaDeg);
+    sgriLabel += NRLib::ToString(thetaDeg);
     shiftAmp->writeFile(fName, simBox, sgriLabel);
     delete shiftAmp;
     //End for debugging purposes

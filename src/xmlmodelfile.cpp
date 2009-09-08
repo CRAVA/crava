@@ -511,7 +511,7 @@ XmlModelFile::parseSeismicData(TiXmlNode * node, std::string & errTxt)
       modelSettings_->addSeismicType(ModelSettings::PSSEIS);
     else
       errTxt += "Only 'pp' and 'ps' are valid seismic types, found '"+value+"' on line "
-        +NRLib2::ToString(root->Row())+", column "+NRLib2::ToString(root->Column())+".\n";
+        +NRLib::ToString(root->Row())+", column "+NRLib::ToString(root->Column())+".\n";
   }
   else
     modelSettings_->addSeismicType(ModelSettings::STANDARDSEIS);
@@ -876,7 +876,7 @@ XmlModelFile::parsePriorFaciesProbabilities(TiXmlNode * node, std::string & errT
     }
   if(sum!=1.0)
   {
-    errTxt+="Prior facies probabilities must sum to 1.0. They sum to "+ NRLib2::ToString(sum) +".\n";
+    errTxt+="Prior facies probabilities must sum to 1.0. They sum to "+ NRLib::ToString(sum) +".\n";
   }
  
   }
@@ -1049,7 +1049,7 @@ XmlModelFile::parseTopSurface(TiXmlNode * node, std::string & errTxt)
   bool timeValue = parseValue(root,"time-value", value, errTxt);
   if(timeValue == true) {
     if(timeFile == false)
-      inputFiles_->addTimeSurfFile(NRLib2::ToString(value));
+      inputFiles_->addTimeSurfFile(NRLib::ToString(value));
     else
       errTxt += "Both file and value given for top time in command <"
         +root->ValueStr()+"> "+lineColumnText(root)+".\n";
@@ -1085,7 +1085,7 @@ XmlModelFile::parseBaseSurface(TiXmlNode * node, std::string & errTxt)
   bool timeValue = parseValue(root,"time-value", value, errTxt);
   if(timeValue == true) {
     if(timeFile == false)
-      inputFiles_->addTimeSurfFile(NRLib2::ToString(value));
+      inputFiles_->addTimeSurfFile(NRLib::ToString(value));
     else
       errTxt += "Both file and value given for base time in command <"+
         root->ValueStr()+"> "+lineColumnText(root)+".\n";
@@ -1253,9 +1253,9 @@ XmlModelFile::parseIOSettings(TiXmlNode * node, std::string & errTxt)
   std::string logFileName = ModelSettings::makeFullFileName("logFile.txt");
   std::ofstream file;
   try {
-    NRLib2::OpenWrite(file, logFileName);
+    NRLib::OpenWrite(file, logFileName);
   }
-  catch(NRLib2::Exception & e) {
+  catch(NRLib::Exception & e) {
     errTxt +=  "Cannot open file '" + logFileName +"' : " + e.what()+"\n";
   }
   file.close();
@@ -1646,7 +1646,7 @@ XmlModelFile::parseTraceHeaderFormat(TiXmlNode * node, const std::string & keywo
       thf = new TraceHeaderFormat(TraceHeaderFormat::IESX);
     else {
       errTxt += "Unknown segy-format '"+stdFormat+"' found on line"+
-        NRLib2::ToString(root->Row())+", column "+NRLib2::ToString(root->Column())+".\n";
+        NRLib::ToString(root->Row())+", column "+NRLib::ToString(root->Column())+".\n";
       thf = new TraceHeaderFormat(TraceHeaderFormat::SEISWORKS);
     }
   }
@@ -1690,7 +1690,7 @@ XmlModelFile::parseVariogram(TiXmlNode * node, const std::string & keyword, Vari
     range = value;
   else
     errTxt += "Keyword <range> is lacking for variogram under command <"+keyword+
-      ">, line "+NRLib2::ToString(root->Row())+", column "+NRLib2::ToString(root->Column())+".\n";
+      ">, line "+NRLib::ToString(root->Row())+", column "+NRLib::ToString(root->Column())+".\n";
   if(parseValue(root,"subrange", value, errTxt) == true)
     subrange = value;
   if(parseValue(root,"angle", value, errTxt) == true)
@@ -1710,19 +1710,19 @@ XmlModelFile::parseVariogram(TiXmlNode * node, const std::string & keyword, Vari
   vario = NULL;
   if(parseValue(root,"variogram-type", vType, errTxt) == false)
     errTxt += "Keyword <variogram-type> is lacking for variogram under command <"+keyword+
-      ">, line "+NRLib2::ToString(root->Row())+", column "+NRLib2::ToString(root->Column())+".\n";
+      ">, line "+NRLib::ToString(root->Row())+", column "+NRLib::ToString(root->Column())+".\n";
   else {
     if(vType == "genexp") {
       if(power == false) {
         errTxt += "Keyword <power> is lacking for gen. exp. variogram under command <"+keyword+
-          ">, line "+NRLib2::ToString(root->Row())+", column "+NRLib2::ToString(root->Column())+".\n";
+          ">, line "+NRLib::ToString(root->Row())+", column "+NRLib::ToString(root->Column())+".\n";
       }
       vario = new GenExpVario(expo, range, subrange, angle);
     }
     else if(vType == "spherical") {
       if(power == true) {
         errTxt += "Keyword <power> is given for spherical variogram under command <"+keyword+
-          ">, line "+NRLib2::ToString(root->Row())+", column "+NRLib2::ToString(root->Column())+".\n";
+          ">, line "+NRLib::ToString(root->Row())+", column "+NRLib::ToString(root->Column())+".\n";
       }
       vario = new SphericalVario(range, subrange, angle);
     }
@@ -1749,7 +1749,7 @@ XmlModelFile::parseBool(TiXmlNode * node, const std::string & keyword, bool & va
       value = false;
     else {
       tmpErr = "Found '"+tmpVal+"' under keyword '"+keyword+"', expected 'yes' or 'no'. This happened in command <"+
-        node->ValueStr()+"> on line "+NRLib2::ToString(node->Row())+", column "+NRLib2::ToString(node->Column())+".\n";
+        node->ValueStr()+"> on line "+NRLib::ToString(node->Row())+", column "+NRLib::ToString(node->Column())+".\n";
     }
   }
 
@@ -1787,15 +1787,15 @@ XmlModelFile::checkForJunk(TiXmlNode * root, std::string & errTxt, bool allowDup
         break;
       case TiXmlNode::TEXT :
         errTxt = errTxt + "Unexpected value '"+child->Value()+"' is not part of command <"+root->Value()+
-          "> on line "+NRLib2::ToString(child->Row())+", column "+NRLib2::ToString(child->Column())+".\n";
+          "> on line "+NRLib::ToString(child->Row())+", column "+NRLib::ToString(child->Column())+".\n";
         break;
       case TiXmlNode::ELEMENT :
         errTxt = errTxt + "Unexpected command <"+child->Value()+"> is not part of command <"+root->Value()+
-          "> on line "+NRLib2::ToString(child->Row())+", column "+NRLib2::ToString(child->Column())+".\n";
+          "> on line "+NRLib::ToString(child->Row())+", column "+NRLib::ToString(child->Column())+".\n";
         break;
       default :
         errTxt = errTxt + "Unexpected text '"+child->Value()+"' is not part of command <"+root->Value()+
-          "> on line "+NRLib2::ToString(child->Row())+", column "+NRLib2::ToString(child->Column())+".\n";
+          "> on line "+NRLib::ToString(child->Row())+", column "+NRLib::ToString(child->Column())+".\n";
         break;
     }
     root->RemoveChild(child);
@@ -1817,8 +1817,8 @@ XmlModelFile::checkForJunk(TiXmlNode * root, std::string & errTxt, bool allowDup
           parent->RemoveChild(root);
           root = parent->FirstChildElement(cmd);
         }
-        errTxt += "Found "+NRLib2::ToString(n)+" extra occurences of command <"+cmd+"> under command <"+parent->Value()+
-          "> on line "+NRLib2::ToString(parent->Row())+", column "+NRLib2::ToString(parent->Column())+".\n";
+        errTxt += "Found "+NRLib::ToString(n)+" extra occurences of command <"+cmd+"> under command <"+parent->Value()+
+          "> on line "+NRLib::ToString(parent->Row())+", column "+NRLib::ToString(parent->Column())+".\n";
       }
     }
   }
@@ -1828,7 +1828,7 @@ XmlModelFile::checkForJunk(TiXmlNode * root, std::string & errTxt, bool allowDup
 std::string
 XmlModelFile::lineColumnText(TiXmlNode * node)
 {
-  std::string result = " on line "+NRLib2::ToString(node->Row())+", column "+NRLib2::ToString(node->Column());
+  std::string result = " on line "+NRLib::ToString(node->Row())+", column "+NRLib::ToString(node->Column());
   return(result);
 }
 

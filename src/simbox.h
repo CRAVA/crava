@@ -7,7 +7,7 @@
 #include "nrlib/surface/regularsurface.hpp"
 #include "nrlib/segy/segy.hpp"
 
-class Simbox : public NRLib2::Volume 
+class Simbox : public NRLib::Volume 
 {
 public:
   Simbox(void);

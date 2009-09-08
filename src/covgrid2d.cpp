@@ -49,7 +49,7 @@ CovGrid2D::writeToFile(const std::string & name) const
   std::string fileName = name + ".irap";
   std::ofstream file(fileName.c_str(), std::ios::out | std::ios::binary);
   if (!file) {
-    throw new NRLib2::IOError("Error opening "+fileName+" for writing.");
+    throw new NRLib::IOError("Error opening "+fileName+" for writing.");
   }
   file.precision(14);
 

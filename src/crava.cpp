@@ -98,7 +98,8 @@ Crava::Crava(Model * model, SpatialWellFilter *spatwellfilter)
   {
     seisData_       = model->getSeisCubes();
     model->releaseGrids(); 
-    correlations_->createPostGrids(nx_,ny_,nz_,nxp_,nyp_,nzp_,fileGrid_);
+    bool useFileGrid = (fileGrid_ == 1);
+    correlations_->createPostGrids(nx_,ny_,nz_,nxp_,nyp_,nzp_,useFileGrid);
     parPointCov_    = correlations_->getPriorVar0(); 
     parSpatialCorr  = correlations_->getPostCovAlpha();  // Double-use grids to save memory
     errCorrUnsmooth = correlations_->getPostCovBeta();   // Double-use grids to save memory
@@ -563,7 +564,7 @@ Crava:: divideDataByScaleWavelet()
       {
         sprintf(fName,"refl%d",l);
         std::string sgriLabel("Reflection coefficients for incidence angle ");
-        sgriLabel += NRLib2::ToString(thetaDeg_[l]+0.5);
+        sgriLabel += NRLib::ToString(thetaDeg_[l]+0.5);
         seisData_[l]->writeFile(fName, simbox_, sgriLabel);
       }
       LogKit::LogFormatted(LogKit::MEDIUM,"Interpolating reflections in volume %d: ",l);
@@ -572,7 +573,7 @@ Crava:: divideDataByScaleWavelet()
       {
         sprintf(fName,"reflInterpolated%d",l);
         std::string sgriLabel("Interpolated reflections for incidence angle ");
-        sgriLabel += NRLib2::ToString(thetaDeg_[l]+0.5);
+        sgriLabel += NRLib::ToString(thetaDeg_[l]+0.5);
         seisData_[l]->writeFile(fName, simbox_, sgriLabel);
       }
       seisData_[l]->endAccess();
@@ -1077,7 +1078,7 @@ Crava::computePostMeanResidAndFFTCov()
       {
         sprintf(fileNameS,"residuals_%i",int(thetaDeg_[l]+0.5));
         std::string sgriLabel("Residuals for incidence angle");
-        sgriLabel += NRLib2::ToString(int(thetaDeg_[l]+0.5));
+        sgriLabel += NRLib::ToString(int(thetaDeg_[l]+0.5));
         seisData_[l]->setAccessMode(FFTGrid::RANDOMACCESS);
         seisData_[l]->invFFTInPlace();
         seisData_[l]->writeFile(fileNameS,simbox_, sgriLabel);
@@ -1464,7 +1465,7 @@ Crava::computeSyntSeismic(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho)
 
     sprintf(fileNameS,"synt_seis_%i",int(thetaDeg_[l]+0.5));
     std::string sgriLabel("Synthetic seismic for incidence angle ");
-    sgriLabel += NRLib2::ToString(int(thetaDeg_[l]+0.5));
+    sgriLabel += NRLib::ToString(int(thetaDeg_[l]+0.5));
     seisData[l]->writeFile(fileNameS,simbox_,sgriLabel);
     delete seisData[l];
   }
@@ -2171,7 +2172,7 @@ void Crava::correctAlphaBetaRho(ModelSettings *modelSettings)
   float alphadiff, betadiff, rhodiff;
 
   if(modelSettings->getNumberOfSimulations()>0)
-    sigmamdnew_ = new NRLib2::Grid2D<double **>(nx_,ny_,NULL);
+    sigmamdnew_ = new NRLib::Grid2D<double **>(nx_,ny_,NULL);
   else
     sigmamdnew_ = NULL;
   for(i=0;i<nx_;i++)

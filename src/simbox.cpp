@@ -401,22 +401,22 @@ Simbox::getStormHeader(int cubetype, int nx, int ny, int nz, bool flat, bool asc
   else
     strHeader += "storm_petro_ascii\n";
 
-  strHeader += "0 " + NRLib2::ToString(cubetype,6) + " " + NRLib2::ToString(RMISSING,6) + "\n";
+  strHeader += "0 " + NRLib::ToString(cubetype,6) + " " + NRLib::ToString(RMISSING,6) + "\n";
   strHeader += "FFTGrid\n";
 
   if(flat == false)
-    strHeader += NRLib2::ToString(GetXMin(),6) + " " + NRLib2::ToString(GetLX(),6) + " "
-      + NRLib2::ToString(GetYMin(),6) + " " + NRLib2::ToString(GetLY(),6) + " "
+    strHeader += NRLib::ToString(GetXMin(),6) + " " + NRLib::ToString(GetLX(),6) + " "
+      + NRLib::ToString(GetYMin(),6) + " " + NRLib::ToString(GetLY(),6) + " "
                + topName_ + " " 
       + botName_ + " 0.0 0.0\n";
   else
-    strHeader += NRLib2::ToString(GetXMin(),6) + " " + NRLib2::ToString(GetLX(),6) + " "
-      + NRLib2::ToString(GetYMin(),6) + " " + NRLib2::ToString(GetLY(),6) + " "
+    strHeader += NRLib::ToString(GetXMin(),6) + " " + NRLib::ToString(GetLX(),6) + " "
+      + NRLib::ToString(GetYMin(),6) + " " + NRLib::ToString(GetLY(),6) + " "
                + "0.0 " 
-      + NRLib2::ToString(GetLZ(),6)+" 0.0 0.0\n";
+      + NRLib::ToString(GetLZ(),6)+" 0.0 0.0\n";
 
-  strHeader += NRLib2::ToString(GetLZ(),6) + " " + NRLib2::ToString(GetAngle()*180/PI,6) + "\n\n";
-  strHeader += NRLib2::ToString(nx) + " " + NRLib2::ToString(ny) + " " + NRLib2::ToString(nz) + "\n";
+  strHeader += NRLib::ToString(GetLZ(),6) + " " + NRLib::ToString(GetAngle()*180/PI,6) + "\n\n";
+  strHeader += NRLib::ToString(nx) + " " + NRLib::ToString(ny) + " " + NRLib::ToString(nz) + "\n";
   */
 
   return(strHeader);
@@ -437,22 +437,22 @@ Simbox::writeTopBotGrids(std::string topname,
   }
 
   std::string tmpName = ModelSettings::makeFullFileName(topname);
-  topName_ = NRLib2::RemovePath(tmpName);
+  topName_ = NRLib::RemovePath(tmpName);
   assert(typeid(GetTopSurface()) == typeid(Surface));
   const Surface & wtsurf = dynamic_cast<const Surface &>(GetTopSurface());
   if ((outputFormat & ModelSettings::ASCII) > 0) 
-    NRLib2::WriteIrapClassicAsciiSurf(wtsurf, tmpName);
+    NRLib::WriteIrapClassicAsciiSurf(wtsurf, tmpName);
   else
-    NRLib2::WriteStormBinarySurf(wtsurf, tmpName);
+    NRLib::WriteStormBinarySurf(wtsurf, tmpName);
 
   tmpName  = ModelSettings::makeFullFileName(botname);
-  botName_ = NRLib2::RemovePath(tmpName);
+  botName_ = NRLib::RemovePath(tmpName);
   assert(typeid(GetBotSurface()) == typeid(Surface));
   const Surface & wbsurf = dynamic_cast<const Surface &>(GetBotSurface());
   if ((outputFormat & ModelSettings::ASCII) > 0) 
-    NRLib2::WriteIrapClassicAsciiSurf(wbsurf, tmpName);
+    NRLib::WriteIrapClassicAsciiSurf(wbsurf, tmpName);
   else
-    NRLib2::WriteStormBinarySurf(wbsurf, tmpName);
+    NRLib::WriteStormBinarySurf(wbsurf, tmpName);
 }
 
 int
@@ -533,7 +533,7 @@ Simbox::setArea(const SegyGeometry * geometry, char * errText)
   {
     SetDimensions(x0,y0,lx,ly);
   }
-  catch (NRLib2::Exception & e)
+  catch (NRLib::Exception & e)
   {
     sprintf(errText,"%s Could not set x0, y0, lx, and ly. %s",errText,e.what());
     return 1;
@@ -542,7 +542,7 @@ Simbox::setArea(const SegyGeometry * geometry, char * errText)
   {
     SetAngle(rot);
   }
-  catch (NRLib2::Exception & e)
+  catch (NRLib::Exception & e)
   {
     sprintf(errText,"%s Could not set rotation angle. %s",errText,e.what());
     return 1;

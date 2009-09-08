@@ -354,7 +354,7 @@ void Corr::writeFilePriorVariances(void) const
     file << std::setw(9) << priorCorrT_[i] << "\n";
   }
 
-  NRLib2::WriteIrapClassicAsciiSurf(*priorCorrXY_, filename3);
+  NRLib::WriteIrapClassicAsciiSurf(*priorCorrXY_, filename3);
 }
 
 //--------------------------------------------------------------------

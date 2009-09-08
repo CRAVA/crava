@@ -322,8 +322,8 @@ double ModelSettings::getMinimumNoiseScaled(int i)
   {
    double minimum = (*noiseScaled_[i])(0,0);
    int l,j;
-   for(l=0;l<noiseScaled_[i]->GetNI();l++)
-    for(j=0;j<noiseScaled_[i]->GetNJ();j++)
+   for(l=0;l<static_cast<int>(noiseScaled_[i]->GetNI());l++)
+    for(j=0;j<static_cast<int>(noiseScaled_[i]->GetNJ());j++)
      if((*noiseScaled_[i])(l,j)<minimum)
        minimum = (*noiseScaled_[i])(l,j);
 

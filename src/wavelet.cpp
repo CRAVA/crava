@@ -107,7 +107,8 @@ float  Wavelet::getLocalTimeshift(int i, int j) const
 {
   float shift = 0.0f;
 
-  if(shiftGrid_ != NULL && i < shiftGrid_->GetNI() &&  i>=0 && j < shiftGrid_->GetNJ() &&  j>=0)
+  if(shiftGrid_ != NULL && i < static_cast<int>(shiftGrid_->GetNI()) && i>=0 && 
+     j < static_cast<int>(shiftGrid_->GetNJ()) &&  j>=0)
   {
    // ind = gridNI_*j + i;
     if((*shiftGrid_)(i,j) != WELLMISSING)
@@ -122,7 +123,8 @@ float  Wavelet::getLocalGainFactor(int i, int j) const
 {
   float gain = 1.0f;
   
-  if(gainGrid_ != NULL && i < gainGrid_->GetNI() &&  i>=0 && j < gainGrid_->GetNJ() &&  j>=0)
+  if(gainGrid_ != NULL && i < static_cast<int>(gainGrid_->GetNI()) &&  i>=0 && 
+    j < static_cast<int>(gainGrid_->GetNJ()) &&  j>=0)
   {
     //ind = gridNI_*j + i;
     if((*gainGrid_)(i,j) != WELLMISSING)
@@ -1117,8 +1119,8 @@ Wavelet::setGainGrid(Grid2D * grid)
   if(gainGrid_ != NULL)
     delete [] gainGrid_;
   gainGrid_ = grid;
-  for(int j=0;j<gainGrid_->GetNJ();j++)
-    for(int i=0;i<gainGrid_->GetNI();i++)
+  for(int j=0;j<static_cast<int>(gainGrid_->GetNJ());j++)
+    for(int i=0;i<static_cast<int>(gainGrid_->GetNI());i++)
     {
       sum+=log((*gainGrid_)(i,j));
       nData++;
@@ -1138,8 +1140,8 @@ Wavelet::setGainGrid(Grid2D * grid)
     }*/
 
     float invGeoMean = float(exp(-sum/static_cast<double>(nData)));
-    for(int j=0;j<gainGrid_->GetNJ();j++)
-      for(int i=0;i<gainGrid_->GetNI();i++)
+    for(int j=0;j<static_cast<int>(gainGrid_->GetNJ());j++)
+      for(int i=0;i<static_cast<int>(gainGrid_->GetNI());i++)
       {
         if((*gainGrid_)(i,j) != WELLMISSING)
           (*gainGrid_)(i,j) *= invGeoMean;

@@ -133,6 +133,6 @@ private:
   RandomGen        * random_;
   FaciesProb       * fprob_;
   Model            * model_;
-  NRLib2::Grid2D<double **>           *sigmamdnew_;
+  NRLib::Grid2D<double **>           *sigmamdnew_;
 };
 #endif

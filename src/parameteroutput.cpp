@@ -22,7 +22,7 @@ ParameterOutput::writeParameters(const Simbox  * simbox,
   if(simNum >= 0)
   {
     prefix = "sim_";
-    suffix = "_"+NRLib2::ToString(simNum+1);
+    suffix = "_"+NRLib::ToString(simNum+1);
   }
   else
   {

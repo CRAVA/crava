@@ -44,7 +44,7 @@ Program::CheckForLicenceExpiration(const int           licence_days,
 {
   if (licence_days >= 0) {
     time_t now = time(0);
-    int days_since_compilation = (now - TimeOfCompilation()) / 86400;
+    int days_since_compilation = static_cast<int>((now - TimeOfCompilation()) / 86400);
 
     if (days_since_compilation > licence_days) {
       LogKit::LogFormatted(LogKit::ERROR,"The COHIBA licence have expired. Please contact the Norwegian Computing Center to obtain a new one.\n");

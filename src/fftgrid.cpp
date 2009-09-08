@@ -1653,7 +1653,7 @@ FFTGrid::writeSgriFile(const std::string & fileName, const Simbox *simbox, const
   std::string fName = ModelSettings::makeFullFileName(fileName+".Sgrh");
   ofstream  headerFile(fName.c_str());
   if (!headerFile) {
-    throw new NRLib2::IOError("Error opening "+fName);
+    throw new NRLib::IOError("Error opening "+fName);
   }
 
   LogKit::LogFormatted(LogKit::LOW,"\nWriting SGRI header file "+fName+"...");
@@ -1692,7 +1692,7 @@ FFTGrid::writeSgriFile(const std::string & fileName, const Simbox *simbox, const
 
   ofstream binFile(fName.c_str(), std::ios::out | std::ios::binary);
   if (!binFile) {
-    throw new NRLib2::IOError("Error opening "+fName);
+    throw new NRLib::IOError("Error opening "+fName);
   }
   int i,j,k;
   double x, y, z, zTop, zBot;
@@ -1711,9 +1711,9 @@ FFTGrid::writeSgriFile(const std::string & fileName, const Simbox *simbox, const
           value = getRealValue(i,j,simboxK);
         }
 #ifndef BIGENDIAN
-        NRLib2::WriteBinaryFloat(binFile, value);
+        NRLib::WriteBinaryFloat(binFile, value);
 #else
-        NRLib2::WriteBinaryFloat(binFile, value, END_LITTLE_ENDIAN);
+        NRLib::WriteBinaryFloat(binFile, value, END_LITTLE_ENDIAN);
 #endif
       }
     }
@@ -1727,34 +1727,34 @@ FFTGrid::writeDirectFile(const std::string & fileName, const Simbox * simbox)
 {
   try {
     ofstream binFile;
-    NRLib2::OpenWrite(binFile, fileName, std::ios::out | std::ios::binary);
+    NRLib::OpenWrite(binFile, fileName, std::ios::out | std::ios::binary);
 
     // Marit mellom disse strekene
-    NRLib2::WriteBinaryDouble(binFile, simbox->getx0());
-    NRLib2::WriteBinaryDouble(binFile, simbox->gety0());
-    NRLib2::WriteBinaryDouble(binFile, simbox->getdx());
-    NRLib2::WriteBinaryDouble(binFile, simbox->getdy());
-    NRLib2::WriteBinaryInt(binFile, simbox->getnx());
-    NRLib2::WriteBinaryInt(binFile, simbox->getny());
-    NRLib2::WriteBinaryDouble(binFile, simbox->getIL0());
-    NRLib2::WriteBinaryDouble(binFile, simbox->getXL0());
-    NRLib2::WriteBinaryDouble(binFile, simbox->getILStepX());
-    NRLib2::WriteBinaryDouble(binFile, simbox->getILStepY());
-    NRLib2::WriteBinaryDouble(binFile, simbox->getXLStepX());
-    NRLib2::WriteBinaryDouble(binFile, simbox->getXLStepY());
-    NRLib2::WriteBinaryDouble(binFile, simbox->getAngle());
+    NRLib::WriteBinaryDouble(binFile, simbox->getx0());
+    NRLib::WriteBinaryDouble(binFile, simbox->gety0());
+    NRLib::WriteBinaryDouble(binFile, simbox->getdx());
+    NRLib::WriteBinaryDouble(binFile, simbox->getdy());
+    NRLib::WriteBinaryInt(binFile, simbox->getnx());
+    NRLib::WriteBinaryInt(binFile, simbox->getny());
+    NRLib::WriteBinaryDouble(binFile, simbox->getIL0());
+    NRLib::WriteBinaryDouble(binFile, simbox->getXL0());
+    NRLib::WriteBinaryDouble(binFile, simbox->getILStepX());
+    NRLib::WriteBinaryDouble(binFile, simbox->getILStepY());
+    NRLib::WriteBinaryDouble(binFile, simbox->getXLStepX());
+    NRLib::WriteBinaryDouble(binFile, simbox->getXLStepY());
+    NRLib::WriteBinaryDouble(binFile, simbox->getAngle());
     // Marit mellom disse strekene
 
-    NRLib2::WriteBinaryInt(binFile, rnxp_);
-    NRLib2::WriteBinaryInt(binFile, nyp_);
-    NRLib2::WriteBinaryInt(binFile, nzp_);
+    NRLib::WriteBinaryInt(binFile, rnxp_);
+    NRLib::WriteBinaryInt(binFile, nyp_);
+    NRLib::WriteBinaryInt(binFile, nzp_);
     int i;
     for(i=0;i<rsize_;i++)
-      NRLib2::WriteBinaryFloat(binFile, rvalue_[i]);
+      NRLib::WriteBinaryFloat(binFile, rvalue_[i]);
 
     binFile.close();
   }
-  catch (NRLib2::Exception & e) {
+  catch (NRLib::Exception & e) {
     std::string message = "Error: "+std::string(e.what())+"\n";
     LogKit::LogMessage(LogKit::ERROR, message);
   }
@@ -1767,41 +1767,41 @@ FFTGrid::readDirectFile(const std::string & fileName)
   std::string error;
   try {
     std::ifstream binFile;
-    NRLib2::OpenRead(binFile, fileName, std::ios::in | std::ios::binary);
+    NRLib::OpenRead(binFile, fileName, std::ios::in | std::ios::binary);
 
     std::string token;
     //int line = 0;
 
-    double dummy = NRLib2::ReadBinaryDouble(binFile);
-    dummy = NRLib2::ReadBinaryDouble(binFile);
-    dummy = NRLib2::ReadBinaryDouble(binFile);
-    dummy = NRLib2::ReadBinaryDouble(binFile);
-    dummy = NRLib2::ReadBinaryInt(binFile);
-    dummy = NRLib2::ReadBinaryInt(binFile);
-    dummy = NRLib2::ReadBinaryDouble(binFile);
-    dummy = NRLib2::ReadBinaryDouble(binFile);
-    dummy = NRLib2::ReadBinaryDouble(binFile);
-    dummy = NRLib2::ReadBinaryDouble(binFile);
-    dummy = NRLib2::ReadBinaryDouble(binFile);
-    dummy = NRLib2::ReadBinaryDouble(binFile);
-    dummy = NRLib2::ReadBinaryDouble(binFile);
-    int nx = NRLib2::ReadBinaryInt(binFile);
-    int ny = NRLib2::ReadBinaryInt(binFile);
-    int nz = NRLib2::ReadBinaryInt(binFile);
+    double dummy = NRLib::ReadBinaryDouble(binFile);
+    dummy = NRLib::ReadBinaryDouble(binFile);
+    dummy = NRLib::ReadBinaryDouble(binFile);
+    dummy = NRLib::ReadBinaryDouble(binFile);
+    dummy = NRLib::ReadBinaryInt(binFile);
+    dummy = NRLib::ReadBinaryInt(binFile);
+    dummy = NRLib::ReadBinaryDouble(binFile);
+    dummy = NRLib::ReadBinaryDouble(binFile);
+    dummy = NRLib::ReadBinaryDouble(binFile);
+    dummy = NRLib::ReadBinaryDouble(binFile);
+    dummy = NRLib::ReadBinaryDouble(binFile);
+    dummy = NRLib::ReadBinaryDouble(binFile);
+    dummy = NRLib::ReadBinaryDouble(binFile);
+    int nx = NRLib::ReadBinaryInt(binFile);
+    int ny = NRLib::ReadBinaryInt(binFile);
+    int nz = NRLib::ReadBinaryInt(binFile);
     if(nx != rnxp_ || ny != nyp_ || nz != nzp_) {
       std::string message = "Grid dimension is wrong for direct read of file '"+
         fileName+"'.";
       binFile.close();
-      throw(NRLib2::Exception(message));
+      throw(NRLib::Exception(message));
     }
     createRealGrid();
     int i;
     for(i=0;i<rsize_;i++)
-      rvalue_[i] = NRLib2::ReadBinaryFloat(binFile);
+      rvalue_[i] = NRLib::ReadBinaryFloat(binFile);
     
     binFile.close();
   }
-  catch (NRLib2::Exception & e) {
+  catch (NRLib::Exception & e) {
     error = "Error: "+std::string(e.what())+"\n";
   }
   return(error);

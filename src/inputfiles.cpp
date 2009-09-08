@@ -62,14 +62,14 @@ std::string
 InputFiles::addPathAndCheck(std::string & fileName, const bool possiblyNumber)
 {
   std::string error = "";
-  if(fileName != "" && (possiblyNumber == false || NRLib2::IsNumber(fileName) == false)) {
+  if(fileName != "" && (possiblyNumber == false || NRLib::IsNumber(fileName) == false)) {
     fileName = inputDirectory_+fileName;
     std::ifstream infile;
     try {
-      NRLib2::OpenRead(infile, fileName);
+      NRLib::OpenRead(infile, fileName);
       infile.close();
     }
-    catch (NRLib2::Exception e) {
+    catch (NRLib::Exception e) {
       error = e.what();
       error += "\n";
     }

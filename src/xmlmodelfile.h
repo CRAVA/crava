@@ -110,14 +110,14 @@ XmlModelFile::parseValue(TiXmlNode * node, const std::string & keyword, T & valu
   std::string tmpErr = "";
   if(valNode == NULL)
     tmpErr = "Error: No value found under keyword '"+keyword+
-      " on line "+NRLib2::ToString(root->Row())+", column "+NRLib2::ToString(root->Column())+".\n";
+      " on line "+NRLib::ToString(root->Row())+", column "+NRLib::ToString(root->Column())+".\n";
   else {
     try {
-      value = NRLib2::ParseType<T>(valNode->ValueStr());
+      value = NRLib::ParseType<T>(valNode->ValueStr());
     }
-    catch(NRLib2::Exception & e) {
+    catch(NRLib::Exception & e) {
       setMissing(value);
-      tmpErr = "Error: "+std::string(e.what())+" on line "+NRLib2::ToString(valNode->Row())+", column "+NRLib2::ToString(valNode->Column())+".\n";
+      tmpErr = "Error: "+std::string(e.what())+" on line "+NRLib::ToString(valNode->Row())+", column "+NRLib::ToString(valNode->Column())+".\n";
     }
     root->RemoveChild(valNode);
   }

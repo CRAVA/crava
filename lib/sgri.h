@@ -5,7 +5,7 @@
 #include <vector>
 #include "nrlib/grid/grid.hpp"
 
-class Sgri : public NRLib2::Grid<float> {
+class Sgri : public NRLib::Grid<float> {
 public:
   Sgri(const std::string & fileName, char *errText, int &errCode); //For reading
   ~Sgri();

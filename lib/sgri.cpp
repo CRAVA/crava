@@ -21,7 +21,7 @@ using std::ifstream;
 using namespace std;
 
 Sgri::Sgri(const std::string & fileName, char *errText, int &errCode) :
-  NRLib2::Grid<float>(0,0,0),
+  NRLib::Grid<float>(0,0,0),
   x0_(RMISSING),
   y0_(RMISSING),
   z0_(RMISSING),
@@ -312,9 +312,9 @@ Sgri::readBinaryFile(int n, char *errText, int &errCode)
   }
   
   try {
-    NRLib2::ReadBinaryFloatArray(binFile, begin(), n);
+    NRLib::ReadBinaryFloatArray(binFile, begin(), n);
   }
-  catch (NRLib2::Exception& e) {
+  catch (NRLib::Exception& e) {
     sprintf(errText, "%sError: Reading from binary waveletfile %s. %s\n", errText, binFileName_, e.what());
     errCode=2;
   }
@@ -330,17 +330,17 @@ Sgri::getWaveletValue(float x, float y, float z) const
 
   int i0, i1, j0, j1, k0, k1;
   i0 = static_cast<int> ((x-x0_) / dX_);
-  if (i0 + 1 == GetNI())
+  if (i0 + 1 == static_cast<int>(GetNI()))
     i1 = i0;
   else
     i1 = i0 + 1;
   j0 = static_cast<int> ((y-y0_) / dY_);
-  if (j0 + 1 == GetNJ())
+  if (j0 + 1 == static_cast<int>(GetNJ()))
     j1 = j0;
   else
     j1 = j0 + 1;
   k0 = static_cast<int> ((z-z0_) / dZ_);
-  if (k0 + 1 == GetNK())
+  if (k0 + 1 == static_cast<int>(GetNK()))
     k1 = k0;
   else
     k1 = k0 + 1;
@@ -395,7 +395,7 @@ Sgri::write1DWL()
   sprintf(fileName,"../../Output/Debug/3Das1D.txt");
   FILE *wlFile = fopen(fileName, "w");
 
-  for (int k=0; k<GetNK(); k++)
+  for (int k=0; k<static_cast<int>(GetNK()); k++)
     fprintf(wlFile, "%f\n", (*this)(0,0,k));
 
   fclose(wlFile);

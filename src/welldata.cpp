@@ -444,13 +444,13 @@ WellData::readNorsarWell(const std::string              & wellFileName,
   wellfilename_ = new char[MAX_STRING];
   strcpy(wellfilename_,wellFileName.c_str());
   wellname_ = new char[MAX_STRING];
-  std::string name = NRLib2::RemovePath(wellFileName);
-  name = NRLib2::ReplaceExtension(name, "");
+  std::string name = NRLib::RemovePath(wellFileName);
+  name = NRLib::ReplaceExtension(name, "");
   strcpy(wellname_, name.c_str());
   
   try 
   {
-    NRLib2::NorsarWell well(wellFileName);
+    NRLib::NorsarWell well(wellFileName);
 
     int nVar = 5;       // z,alpha,beta,rho, and facies
 
@@ -542,7 +542,7 @@ WellData::readNorsarWell(const std::string              & wellFileName,
       nFacies_ = facCodes.size();
     }
   }
-  catch (NRLib2::Exception & e) {
+  catch (NRLib::Exception & e) {
     sprintf(errTxt_,"Error: %s\n",e.what());
     error_ = 1;
   }
@@ -566,8 +566,8 @@ WellData::writeRMSWell(void)
   float maxHz_seismic    = modelSettings_->getMaxHzSeismic();
 
   std::string wellname(wellname_);
-  NRLib2::Substitute(wellname,"/","_");
-  NRLib2::Substitute(wellname," ","_");
+  NRLib::Substitute(wellname,"/","_");
+  NRLib::Substitute(wellname," ","_");
   wellname = "Well_" + wellname;
   std::string wellFileName = ModelSettings::makeFullFileName(wellname+".rms");
 
@@ -634,13 +634,13 @@ WellData::writeNorsarWell()
   float maxHz_seismic    = modelSettings_->getMaxHzSeismic();
 
   std::string wellname(wellname_);
-  NRLib2::Substitute(wellname,"/","_");
-  NRLib2::Substitute(wellname," ","_");
+  NRLib::Substitute(wellname,"/","_");
+  NRLib::Substitute(wellname," ","_");
 
   //Handle main file.
   std::string fileName = ModelSettings::makeFullFileName("Well_"+wellname+".nwh");
   std::ofstream mainFile;
-  NRLib2::OpenWrite(mainFile, fileName.c_str());
+  NRLib::OpenWrite(mainFile, fileName.c_str());
   mainFile << std::fixed
            << std::setprecision(2);
 
@@ -680,7 +680,7 @@ WellData::writeNorsarWell()
   
 
   std::string logFileName = ModelSettings::makeFullFileName("Well_"+wellname+".n00");
-  std::string onlyName = NRLib2::RemovePath(logFileName);
+  std::string onlyName = NRLib::RemovePath(logFileName);
 
   bool gotFacies      = nFacies_ > 0;
 
@@ -718,7 +718,7 @@ WellData::writeNorsarWell()
   //Write the two other files.
   std::string trackFileName = ModelSettings::makeFullFileName("Well_"+wellname+".nwt");
   std::ofstream trackFile;
-  NRLib2::OpenWrite(trackFile, trackFileName.c_str());
+  NRLib::OpenWrite(trackFile, trackFileName.c_str());
   trackFile << std::right
             << std::fixed
             << std::setprecision(2)
@@ -726,7 +726,7 @@ WellData::writeNorsarWell()
     
   //Note: logFileName created above, needed in mainFile.
   std::ofstream logFile;
-  NRLib2::OpenWrite(logFile, logFileName.c_str());
+  NRLib::OpenWrite(logFile, logFileName.c_str());
   logFile << "[NORSAR Well Log]\n";
 
   for(int i = 0;i<nd_;i++) {

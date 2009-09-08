@@ -543,7 +543,7 @@ void
 FFTFileGrid::genFileName()
 {
   fNameIn_  = NULL;
-  std::string fileName = ModelSettings::makeFullFileName("tmpgrid" + NRLib2::ToString(gNum));
+  std::string fileName = ModelSettings::makeFullFileName("tmpgrid" + NRLib::ToString(gNum));
   fNameOut_ = new char[MAX_STRING];
   strcpy(fNameOut_,fileName.c_str());
   gNum++;

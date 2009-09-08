@@ -774,15 +774,15 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
   float maxHz_seismic    = modelSettings->getMaxHzSeismic();
 
   std::string wellname(wellname_);
-  NRLib2::Substitute(wellname,"/","_");
-  NRLib2::Substitute(wellname," ","_");
+  NRLib::Substitute(wellname,"/","_");
+  NRLib::Substitute(wellname," ","_");
   std::string fileName = ModelSettings::makeFullFileName("BW_"+wellname+".rms");
 
   /// \todo Replace with safe open function.
   std::ofstream file(fileName.c_str(), std::ios::out | std::ios::binary);
 
   if (!file) {
-    throw new NRLib2::IOError("Error opening "+fileName+" for writing.");
+    throw new NRLib::IOError("Error opening "+fileName+" for writing.");
   }
 
   bool gotFacies      = nFacies_ > 0;
@@ -891,13 +891,13 @@ BlockedLogs::writeNorsarWell(ModelSettings * modelSettings)
   float maxHz_seismic    = modelSettings->getMaxHzSeismic();
 
   std::string wellname(wellname_);
-  NRLib2::Substitute(wellname,"/","_");
-  NRLib2::Substitute(wellname," ","_");
+  NRLib::Substitute(wellname,"/","_");
+  NRLib::Substitute(wellname," ","_");
 
   //Handle main file.
   std::string fileName = ModelSettings::makeFullFileName("BW_"+wellname+".nwh");
   std::ofstream mainFile;
-  NRLib2::OpenWrite(mainFile, fileName.c_str());
+  NRLib::OpenWrite(mainFile, fileName.c_str());
   mainFile << std::fixed
            << std::setprecision(2);
 
@@ -938,7 +938,7 @@ BlockedLogs::writeNorsarWell(ModelSettings * modelSettings)
   
 
   std::string logFileName = ModelSettings::makeFullFileName("BW_"+wellname+".n00");
-  std::string onlyName = NRLib2::RemovePath(logFileName);
+  std::string onlyName = NRLib::RemovePath(logFileName);
 
   bool gotFacies      = nFacies_ > 0;
   bool gotRealSeismic = real_seismic_data_ != NULL;
@@ -998,7 +998,7 @@ BlockedLogs::writeNorsarWell(ModelSettings * modelSettings)
   //Write the two other files.
   std::string trackFileName = ModelSettings::makeFullFileName("BW_"+wellname+".nwt");
   std::ofstream trackFile;
-  NRLib2::OpenWrite(trackFile, trackFileName.c_str());
+  NRLib::OpenWrite(trackFile, trackFileName.c_str());
   trackFile << std::right
             << std::fixed
             << std::setprecision(2)
@@ -1006,7 +1006,7 @@ BlockedLogs::writeNorsarWell(ModelSettings * modelSettings)
     
   //Note: logFileName created above, needed in mainFile.
   std::ofstream logFile;
-  NRLib2::OpenWrite(logFile, logFileName.c_str());
+  NRLib::OpenWrite(logFile, logFileName.c_str());
   logFile << "[NORSAR Well Log]\n";
 
   for(int i = firstB_;i<=lastB_;i++) {

@@ -34,6 +34,7 @@ cleanlib:
 	rm -f $(OBJDIR)/*.o
 	rm -f $(PROGRAM) main.o
 	rm -f $(OBJNRLIBDIR)/*/*.o
+	rm -f $(OBJNRLIBDIR)/*/*/*.o
 
 cleanall:
 	rm -f $(OBJDIR)/*.o

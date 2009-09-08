@@ -609,7 +609,7 @@ void ModelFile::findApostropheEnclosedParts(std::string & str)
     if (endpos != std::string::npos)
     {
       std::string tmp = str.substr(startpos,endpos-startpos);
-      NRLib2::Substitute(tmp,blank,apostrophe);
+      NRLib::Substitute(tmp,blank,apostrophe);
       str.replace(startpos,endpos-startpos,tmp);
       str.replace(startpos, 1, blank);
       str.replace(endpos, 1, blank);
@@ -656,7 +656,7 @@ void ModelFile::reintroduceBlanks(std::vector<std::string> & entries,
   std::string blank(" ");
   for (unsigned int i = iStart ; i < entries.size() ; i++)
   {
-    NRLib2::Substitute(entries[i],apostrophe,blank);
+    NRLib::Substitute(entries[i],apostrophe,blank);
   }
 }
 
@@ -693,11 +693,11 @@ ModelFile::readCommandWells(char ** params, int & pos, char * errText)
           modelSettings_->setLogName(i,uppercase(params[pos+1+i]));
         if(nHeader<5)// no facies log, dummy name
           modelSettings_->setLogName(4,"FACIES");
-        if(NRLib2::Uppercase(params[pos+2]) =="VP" || NRLib2::Uppercase(params[pos+2])=="LFP_VP")  
+        if(NRLib::Uppercase(params[pos+2]) =="VP" || NRLib::Uppercase(params[pos+2])=="LFP_VP")  
           modelSettings_->setInverseVelocity(0,false);
         else
           modelSettings_->setInverseVelocity(0,true);
-        if(NRLib2::Uppercase(params[pos+4]) =="VS" || NRLib2::Uppercase(params[pos+4])=="LFP_VS")  
+        if(NRLib::Uppercase(params[pos+4]) =="VS" || NRLib::Uppercase(params[pos+4])=="LFP_VS")  
           modelSettings_->setInverseVelocity(1,false);
         else
           modelSettings_->setInverseVelocity(1,true);
@@ -1062,8 +1062,8 @@ ModelFile::readCommandDepthConversion(char ** params, int & pos, char * errText)
     {
     case 0:
       inputFiles_->setVelocityField(params[pos+curPar+1]); // Can be file name or command
-      if (NRLib2::Uppercase(inputFiles_->getVelocityField()) != "CONSTANT" 
-          && NRLib2::Uppercase(inputFiles_->getVelocityField()) != "FROM_INVERSION")
+      if (NRLib::Uppercase(inputFiles_->getVelocityField()) != "CONSTANT" 
+          && NRLib::Uppercase(inputFiles_->getVelocityField()) != "FROM_INVERSION")
       { 
         error += checkFileOpen(&(params[pos+curPar+1]), 1, params[pos-1], errText);
       }

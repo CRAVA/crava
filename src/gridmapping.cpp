@@ -167,16 +167,16 @@ GridMapping::calculateSurfaceFromVelocity(FFTGrid      * velocity,
     // nodes. To handle this situation we use the grid resolution whenever
     // this is larger than the surface resolution.
     //  
-    int maxNx = std::max(timeSimbox->getnx(), isochore->GetNI());
-    int maxNy = std::max(timeSimbox->getny(), isochore->GetNJ()); 
+    int maxNx = std::max(timeSimbox->getnx(), static_cast<int>(isochore->GetNI()));
+    int maxNy = std::max(timeSimbox->getny(), static_cast<int>(isochore->GetNJ())); 
     isochore->Resize(maxNx, maxNy);
 
     double dx = 0.5*isochore->GetDX();
     double dy = 0.5*isochore->GetDY();
 
-    for(int j=0 ; j<isochore->GetNJ() ; j++) 
+    for(int j=0 ; j<static_cast<int>(isochore->GetNJ()) ; j++) 
     {
-      for(int i=0 ; i<isochore->GetNI() ; i++) 
+      for(int i=0 ; i<static_cast<int>(isochore->GetNI()) ; i++) 
       {
         double x, y;
         isochore->GetXY(i,j,x,y);   
@@ -262,11 +262,11 @@ GridMapping::setDepthSurfaces(const std::vector<std::string> & surfFile,
   if(surfFile[0] != "")
   {
     try {
-      Surface tmpSurf = NRLib2::ReadStormSurf(surfFile[0]);
+      Surface tmpSurf = NRLib::ReadStormSurf(surfFile[0]);
       z0Grid_ = new Surface(tmpSurf);
       surfaceMode_ = TOPGIVEN;
     }
-    catch (NRLib2::Exception & e) {
+    catch (NRLib::Exception & e) {
       sprintf(errText,"%s%s",errText,e.what());
       failed = 1;
     }
@@ -274,14 +274,14 @@ GridMapping::setDepthSurfaces(const std::vector<std::string> & surfFile,
   if(surfFile[1] != "")
   {
     try {
-      Surface tmpSurf = NRLib2::ReadStormSurf(surfFile[1]);
+      Surface tmpSurf = NRLib::ReadStormSurf(surfFile[1]);
       z1Grid_ = new Surface(tmpSurf);
       if(surfaceMode_ == TOPGIVEN)
         surfaceMode_ = BOTHGIVEN;
       else
         surfaceMode_ = BOTTOMGIVEN;
     }
-    catch (NRLib2::Exception & e) {
+    catch (NRLib::Exception & e) {
       sprintf(errText,"%s%s",errText,e.what());
       failed = 1;
     }
