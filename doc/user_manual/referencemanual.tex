@@ -52,7 +52,7 @@ Estimation: Checks input data and performs estimation of lacking information for
  \slist
    \item \Description A number used to initialize the random generator. Running a model file with a given seed will give the same simulation results each time.
    \item \Argument Integer
-   \item \Default
+   \item \Default 0.0
  \elist
 
 \paragraph{\hbracket{seed-file}}  \newkw{seed-file}
@@ -66,7 +66,7 @@ Estimation: Checks input data and performs estimation of lacking information for
  \slist
    \item \Description Integer value giving the number of stochastic realizations to generate.
    \item \Argument Integer
-   \item \Default
+   \item \Default 0
  \elist
 
 \subsubsection{\hbracket{conditioning-to-wells}}  \newkw{conditioning-to-wells}
@@ -95,21 +95,21 @@ Estimation: Checks input data and performs estimation of lacking information for
  \slist
    \item \Description If 'no', background will not be estimated unless needed for other estimation.
    \item \Argument 'yes' or 'no'
-   \item \Default
+   \item \Default 'yes'
  \elist
 
 \subsubsection{\hbracket{estimate-correlations}}  \newkw{estimate-correlations}
  \slist
    \item \Description If 'no', correlations will not be estimated unless needed for other estimation.
    \item \Argument 'yes' or 'no'
-   \item \Default
+   \item \Default 'yes'
  \elist
 
 \subsubsection{\hbracket{estimate-wavelet-or-noise}}  \newkw{estimate-wavelet-or-noise}
  \slist
    \item \Description If 'no', wavelets and/or noise will not be estimated unless needed for other estimation.
    \item \Argument 'yes' or 'no'
-   \item \Default
+   \item \Default 'yes'
  \elist
 
  \section{\hbracket{project-settings}\necessary} \newkw{project-settings}
@@ -168,21 +168,21 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Default
  \elist
 
-\subparagraph{\hbracket{time-file}} \newkw{time-file}
+\subparagraph{\hbracket{time-file}} \rnewkw{time-file}{time-file2}
 \slist
-   \item \Description File name for storm grid file giving base surface in time. This or \kw{time-value} must be given.
+   \item \Description File name for storm grid file giving base surface in time. This or \rkw{time-value}{time-value2} must be given.
    \item \Argument File name
    \item \Default
 \elist
 
-\subparagraph{\hbracket{time-value}} \newkw{time-value}
+\subparagraph{\hbracket{time-value}} \rnewkw{time-value}{time-value2}
 \slist
-   \item \Description Value giving the base time for the inversion interval. This or \kw{time-file} must be given.
+   \item \Description Value giving the base time for the inversion interval. This or \rkw{time-file}{time-file2} must be given.
    \item \Argument Value
    \item \Default
 \elist
 
-\subparagraph{\hbracket{depth-file}} \newkw{depth-file}
+\subparagraph{\hbracket{depth-file}} \rnewkw{depth-file}{depth-file2}
 \slist
    \item \Description File name for storm grid file giving base surface in depth.
    \item \Argument File name
@@ -538,7 +538,7 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Default
  \elist
 
-\subparagraph{\hbracket{format}}\newkw{format}
+\subparagraph{\hbracket{format}}\rnewkw{format}{format2}
  \slist
    \item \Description Controls well formats used for output. Default is RMS.
    \item \Argument Elements controlling the formats used for output
@@ -587,7 +587,7 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Default
  \elist
 
-\subparagraph{\hbracket{background}}\newkw{background}
+\subparagraph{\hbracket{background}}\rnewkw{background}{background2}
  \slist
    \item \Description Write direct files for background parameters.
    \item \Argument 'yes' or 'no'
@@ -680,23 +680,23 @@ Estimation: Checks input data and performs estimation of lacking information for
 
 \paragraph{\hbracket{x-fraction}}\newkw{x-fraction}
  \slist
-   \item \Description Value telling how large the padding in the x-direction should be relative to the x-length.
+   \item \Description Value telling how large the padding in the x-direction should be relative to the x-length. %If the padding command is not called, proper padding will be estimated.
    \item \Argument Value
-   \item \Default
+   \item \Default 0.0
  \elist
 
 \paragraph{\hbracket{y-fraction}}\newkw{y-fraction}
  \slist
    \item \Description Value telling how large the padding in the x-direction should be relative to the y-length.
    \item \Argument Value
-   \item \Default
+   \item \Default 0.0
  \elist
 
 \paragraph{\hbracket{z-fraction}}\newkw{z-fraction}
  \slist
    \item \Description Value telling how large the padding in the x-direction should be relative to the thickness.
    \item \Argument Value
-   \item \Default
+   \item \Default 0.0
  \elist
 
 \subsubsection{\hbracket{use-intermediate-disk-storage}} \newkw{use-intermediate-disk-storage}
@@ -724,42 +724,42 @@ Estimation: Checks input data and performs estimation of lacking information for
  \slist
    \item \Description Value setting the minimum frequency affected by the inversion.
    \item \Argument Value
-   \item \Default
+   \item \Default 5.0
  \elist
 
 \paragraph{\hbracket{high-cut}}\newkw{high-cut}
  \slist
    \item \Description Value setting the maximum frequency affected by the inversion.
    \item \Argument Value
-   \item \Default
+   \item \Default 55.0
  \elist
 
 \subsubsection{\hbracket{energy-threshold}}\newkw{energy-threshold}
  \slist
    \item \Description If the energy in a trace falls below this threshold relative to the average, the trace is interpolated from neighbors.
    \item \Argument Value
-   \item \Default
+   \item \Default 0.0
  \elist
 
 \subsubsection{\hbracket{wavelet-tapering-length}}\newkw{wavelet-tapering-length}
  \slist
    \item \Description Value giving the length of the wavelet to be estimated in ms.
    \item \Argument Value
-   \item \Default
+   \item \Default 200.0
  \elist
 
 \subsubsection{\hbracket{minimum-relative-wavelet-amplitude}}\newkw{minimum-relative-wavelet-amplitude}
  \slist
    \item \Description Value giving the ratio between the smallest relevant amplitude and the largest amplitude of peaks on an estimated wavelet. Edge peaks below this ratio are removed.
    \item \Argument Value
-   \item \Default
+   \item \Default 0.05
  \elist
 
 \subsubsection{\hbracket{maximum-wavelet-shift}}\newkw{maximum-wavelet-shift}
  \slist
    \item \Description Value controlling how much the wavelet is allowed to be shifted when doing estimation of wavelet or noise.
    \item \Argument Value
-   \item \Default
+   \item \Default 11.0
  \elist
 
  \subsubsection{\hbracket{white-noise-component}}\newkw{white-noise-component}
@@ -916,7 +916,7 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Default
  \elist
 
-\paragraph{\hbracket{file-name}}\newkw{file-name}
+\paragraph{\hbracket{file-name}}\rnewkw{file-name}{file-name2}
  \slist
    \item \Description File name for wavelet file. If not given, wavelet is estimated.
    \item \Argument File name
@@ -965,7 +965,7 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Default
  \elist
 
-\subparagraph{\hbracket{estimate-scale}}\newkw{estimate-scale}
+\subparagraph{\hbracket{estimate-scale}}\rnewkw{estimate-scale}{estimate-scale2}
  \slist
    \item \Description Should a local scale be estimated? Not allowed with \kw{scale-file}, but can be used both with given and estimated wavelet.
    \item \Argument 'yes' or 'no'
@@ -1035,14 +1035,14 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Default
  \elist
 
-\subsubsection{\hbracket{time}} \newkw{time}
+\subsubsection{\hbracket{time}} \rnewkw{time}{time2}
  \slist
    \item \Description Name of the TWT log
    \item \Argument String
-   \item \Default 'TWT'
+   \item \Default %'TWT'
  \elist
 
-\subsubsection{\hbracket{vp}}\newkw{vp}
+\subsubsection{\hbracket{vp}}\rnewkw{vp}{vp2}
  \slist
    \item \Description Name of the vp log. May not be given if \kw{dt} is given.
    \item \Argument String
@@ -1051,12 +1051,12 @@ Estimation: Checks input data and performs estimation of lacking information for
 
 \subsubsection{\hbracket{dt}}\newkw{dt}
  \slist
-   \item \Description Name of the inverse vp log. May not be given if \kw{vp} is given.
+   \item \Description Name of the inverse vp log. May not be given if \rkw{vp}{vp2} is given.
    \item \Argument String
-   \item \Default 'DT'
+   \item \Default %'DT'
  \elist
 
-\subsubsection{\hbracket{vs}}\newkw{vs}
+\subsubsection{\hbracket{vs}}\rnewkw{vs}{vs2}
  \slist
    \item \Description Name of the vs log. May not be given if \kw{dts} is given.
    \item \Argument String
@@ -1065,23 +1065,23 @@ Estimation: Checks input data and performs estimation of lacking information for
 
 \subsubsection{\hbracket{dts}}\newkw{dts}
  \slist
-   \item \Description Name of the inverse vs log. May not be given if \kw{vs} is given.
+   \item \Description Name of the inverse vs log. May not be given if \rkw{vs}{vs2} is given.
    \item \Argument String
-   \item \Default 'DTS'
+   \item \Default %'DTS'
  \elist
 
-\subsubsection{\hbracket{density}}\newkw{density}
+\subsubsection{\hbracket{density}}\rnewkw{density}{density2}
  \slist
    \item \Description Name of the density log.
    \item \Argument String
-   \item \Default 'RHOB'
+   \item \Default %'RHOB'
  \elist
 
 \subsubsection{\hbracket{facies}}\newkw{facies}
  \slist
    \item \Description Name of the facies log.
    \item \Argument String
-   \item \Default 'FACIES'
+   \item \Default %'FACIES'
  \elist
 
 \subsection{\hbracket{well}}\newkw{well}
@@ -1091,7 +1091,7 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Default
  \elist
 
-\subsubsection{\hbracket{file-name}}\newkw{file-name}
+\subsubsection{\hbracket{file-name}}\rrnewkw{file-name}{file-name2}{file-name3}
  \slist
    \item \Description File name for a well file. RMS or Norsar format.
    \item \Argument File name
@@ -1154,7 +1154,7 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Default 200 m/s
  \elist
 
-\subsubsection{\hbracket{maximum-vs}}\newkw{maximum-vp}
+\subsubsection{\hbracket{maximum-vs}}\rnewkw{maximum-vp}{maximum-vp2}
  \slist
    \item \Description Value for the largest legal vs value.
    \item \Argument Value
@@ -1179,63 +1179,63 @@ Estimation: Checks input data and performs estimation of lacking information for
  \slist
    \item \Description Value for the smallest legal variance in the vp log after the background is subtracted and logarithm is taken.
    \item \Argument Value
-   \item \Default
+   \item \Default 0.0005
  \elist
 
 \subsubsection{\hbracket{maximum-variance-vp}}\newkw{maximum-variance-vp}
  \slist
    \item \Description Value for the largest legal variance in the vp log after the background is subtracted and logarithm is taken.
    \item \Argument Value
-   \item \Default
+   \item \Default 0.0250
  \elist
 
 \subsubsection{\hbracket{minimum-variance-vs}}\newkw{minimum-variance-vs}
  \slist
    \item \Description Value for the smallest legal variance in the vs log after the background is subtracted and logarithm is taken.
    \item \Argument Value
-   \item \Default
+   \item \Default 0.0010
  \elist
 
 \subsubsection{\hbracket{maximum-variance-vs}}\newkw{maximum-variance-vs}
  \slist
    \item \Description Value for the largest legal variance in the vs log after the background is subtracted and logarithm is taken.
    \item \Argument Value
-   \item \Default
+   \item \Default 0.0500
  \elist
 
 \subsubsection{\hbracket{minimum-variance-density}}\newkw{minimum-variance-density}
  \slist
    \item \Description Value for the smallest legal variance in the density log after the background is subtracted and logarithm is taken.
    \item \Argument Value
-   \item \Default
+   \item \Default 0.0002
  \elist
 
 \subsubsection{\hbracket{maximum-variance-density}}\newkw{maximum-variance-density}
  \slist
    \item \Description Value for the largest legal variance in the density log after the background is subtracted and logarithm is taken.
    \item \Argument Value
-   \item \Default
+   \item \Default 0.0100
  \elist
 
 \subsection{\hbracket{maximum-deviation-angle}}\newkw{maximum-deviation-angle}
  \slist
    \item \Description Value for the maximum deviation angle of a well before it is excluded from estimation based on vertical wells (such as wavelet and signal to noise).
    \item \Argument Value
-   \item \Default
+   \item \Default 15
  \elist
 
 \subsection{\hbracket{maximum-rank-correlation}}\newkw{maximum-rank-correlation}
  \slist
    \item \Description If the correlation between vp and vs logs exceed this value, the vs log is considered to be synthetic, and not counted as additional data in estimation.
    \item \Argument Value close to, but less than 1.
-   \item \Default
+   \item \Default 0.99
  \elist
 
 \subsection{\hbracket{maximum-merge-distance}}\newkw{maximum-merge-distance}
  \slist
    \item \Description Value giving the minimum distance in time between well log entries before they are merged to one observation.
    \item \Argument Value
-   \item \Default
+   \item \Default 0.01
  \elist
 
 \section{\hbracket{prior-model}}\newkw{prior-model}
@@ -1245,14 +1245,14 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Default
  \elist
 
-\subsection{\hbracket{background}}\newkw{background}
+\subsection{\hbracket{background}}\rrnewkw{background}{background2}{background3}
  \slist
    \item \Description Contains information about the background model or how to estimate it. Note that either all parameters must be given, or all must be estimated.
    \item \Argument Elements containing information about the background model
    \item \Default
  \elist
 
-\subsubsection{\hbracket{direct-files}}\newkw{direct-files}
+\subsubsection{\hbracket{direct-files}}\rnewkw{direct-files}{direct-files2}
  \slist
    \item \Description If 'yes', input files for background are assumed to be direct files.
    \item \Argument 'yes' or 'no'
@@ -1301,7 +1301,7 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Default
  \elist
 
-\subsubsection{\hbracket{velocity-field}}\newkw{velocity-field}
+\subsubsection{\hbracket{velocity-field}}\rnewkw{velocity-field}{velocity-field2}
  \slist
    \item \Description File name for storm grid bile giving a velocity field used as base for vp in background estimation. Can not be used if the background parameters are given.
    \item \Argument File name
@@ -1322,7 +1322,7 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Default
  \elist
 
-\subsection{\hbracket{lateral-correlation}}\newkw{lateral-correlation}
+\subsection{\hbracket{lateral-correlation}}\rnewkw{lateral-correlation}{lateral-correlation2}
  \slist
    \item \Description 2D variogram for the lateral correlation in the elastic parameters.
    \item \Argument 2D variogram
@@ -1350,7 +1350,7 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Default
  \elist
 
-\subsection{\hbracket{facies-probabilities}}\newkw{facies-probabilities}
+\subsection{\hbracket{facies-probabilities}}\rnewkw{facies-probabilities}{facies-probabilities2}
  \slist
    \item \Description Commands controlling the generating of facies probabilities.
    \item \Argument Elements controlling facies probabilities
@@ -1364,14 +1364,14 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Default Everywhere facies and elastic logs are present.
  \elist
 
-\paragraph{\hbracket{top-surface-file}}\newkw{top-surface-file}
+\paragraph{\hbracket{top-surface-file}}\rnewkw{top-surface-file}{top-surface-file2}
  \slist
    \item \Description File name for storm surface file giving the top of the estimation interval.
    \item \Argument File name
    \item \Default
  \elist
 
-\paragraph{\hbracket{base-surface-file}}\newkw{base-surface-file}
+\paragraph{\hbracket{base-surface-file}}\rnewkw{base-surface-file}{base-surface-file2}
  \slist
    \item \Description File name for storm surface file giving the base of the estimation interval.
    \item \Argument File name
@@ -1428,7 +1428,7 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Default
  \elist
 
-\subsection{\hbracket{angle}}\newkw{angle}
+\subsection{\hbracket{angle}}\rnewkw{angle}{angle2}
  \slist
    \item \Description Value for the azimuth direction.
    \item \Argument
