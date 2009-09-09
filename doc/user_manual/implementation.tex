@@ -23,9 +23,41 @@ In \crava this is done in two ways. First, we set an upper and lower cutoff freq
 
 \subsection{Local noise}
 \label{sec:localnoiseimp}
-Local noise is implemented by first finding the solution using the minimum noise level, to fulfill the stationarity requirements of the FFT algorithm. We then interpolate the values for each trace between the prior and this minimum noise posterior. When doing this interpolation, we ignore correlation between traces. This is not a problem as long as the noise varies slowly and smoothly.
+Local noise is implemented by first finding the solution using the minimum noise level, to fulfill the stationarity requirements of the FFT algorithm. We then interpolate the values for each locations between the prior and this minimum noise posterior. When doing this interpolation, we ignore correlation between locations. This is not a problem as long as the noise varies slowly and smoothly.
 
-The interpolation coefficients are given by NBNB Anne Randi/Odd
+
+For each location $\vect{x}$ the adjusted estimate $\tilde{\bmu}_{m|d_{obs}}(\vect{x})$, is found 
+from the inversion result $\bmu_{m|d_{obs}}(\vect{x})$ by a linear relation,
+\begin{equation} \label{eq:LocalAdjustment}
+\tilde{\bmu}_{m|d_{obs}}(\vect{x}) = \bmu_{m}(\vect{x}) +\vect{H_x}\left(\bmu_{m|d_{obs}}(\vect{x})-\bmu_{m}(\vect{x})\right),
+\end{equation}
+The matrix $\vect{H_x}$ is a shrinkage matrix, i.e. the adjusted estimate
+is always closer to the prior mean than the inversion result. The matrix 
+$\vect{H_x}$ depends on the local error variance
+ $\Sigma_{e}^x$ and error variance used in the inversion $\Sigma_{e}^0$. 
+ 
+NBNB Ragnar: optional 
+
+To find the shrinkage matrix we first identify a matrix $\vect{G}_0$
+which is such that it maps the local prior distribution to the local posterior distribution
+when it is observed with the noise $\Sigma_{e}^0$, i.e.
+$$ \vect{d}(\vect{x}) = \vect{G}_0\vect{m}(\vect{x})+\vect{e}_0,$$
+where $\vect{e}_0\sim N\left( \vect{0},\Sigma_{e}^0\right)$.
+The inversion of this expression is a linear relation
+ \begin{equation} \label{eq:PSigmae}
+\bmu_{m|d_{obs}} =\bmu_{m} +\vect{P}(\Sigma_{e}^0)\left(\vect{d}_{obs}-\bmu_{d}\right)
+\end{equation}
+where  $\vect{P}(\Sigma_{e}^0)=\bSigma_{m}\vect{G}_0^T \left( \vect{G}_0\bSigma_{m}\vect{G_0}^T+\bSigma_{e}^0\right)^{-1}$.
+
+We then define the shrinkage matrix to be:
+\begin{equation}\label{eq:H}
+\vect{H_x}(\Sigma_{e}^\vect{x},\Sigma_{e}^0) = \vect{P}(\Sigma_{e}^\vect{x})\vect{P}(\Sigma_{e}^0)^{-1}.
+\end{equation}
+By this we mean that we remove the effect of the standard inversion and add the effect of 
+the locally adapted inversion. The matrix $\vect{P}(\Sigma_{e}^0)$ is however not invertible,
+but since the local noise always is larger than the noise in the inversion the product in
+expression $\ref{eq:H}$ is always well defined.
+ 
 
 \section{Estimation of parameters}
 \label{sec:estimateimp}
