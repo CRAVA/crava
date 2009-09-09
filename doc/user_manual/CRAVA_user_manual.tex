@@ -97,6 +97,9 @@
 }
 \renewcommand{\elist}{\end{list}}
 
+\newcommand{\svex}[1]{\begin{example}\label{#1}\begin{verbatim}}
+
+
 
 \setcounter{secnumdepth}{6}
 \setcounter{tocdepth}{6}
@@ -129,36 +132,25 @@
 
 \addtolength{\abovecaptionskip}{-0.4em}
 
+
 \begin{document}
 
 \maketitle
 
 \begin{abstract}
-The CRAVA user manual
+CRAVA is a simple inversion tool, particularly suited for quick generation of first pass inversions and facies probabilities for use in geological modeling. This manual describes the theory behind, the main implementation structure, and the actual use of this program.
 \end{abstract}
 
 \tableofcontents
 \clearemptydoublepage
 
-\chapter{Chapter}
-\section{Section}
-\subsection{Subsection}
-\subsubsection{Subsubsection}
-%\paragraph{Paragraph}
-%\subparagraph{Subparagraph}
-%\subsubparagraph{Subsubparagraph}
 
 \input{theory}
-%
-% The \newpage forces all text to appear in the left column only
-% rather than a 50-50 split  between left and right columns...
-%
 \newpage
 \input{implementation}
 \newpage
 \input{userguide}
 \newpage
-\end{multicols}
 \input{referencemanual}
 
 %-----------------------------------------------------------------------------
@@ -177,48 +169,160 @@ The CRAVA user manual
 
 \begin{small}
 \begin{Verbatim}[numbers=left]
-PREFIX CRAVA_;
+<crava>
+<actions>
+  <mode> inversion </mode>
+  <inversion-settings>
+    <prediction> yes </prediction>
+    <condition-to-wells> yes </condition-to-wells>
+  </inversion-settings>
+</actions>
 
-WELLS
-HEADERS TWT DT RHOB DTS ;
-/nr/project/sand/cravaruns/inputdata/logs/Well_1.rms
-/nr/project/sand/cravaruns/inputdata/logs/Well_2.rms;
 
-DEPTH
-/nr/project/sand/cravaruns/inputdata/horizons/topsurface.storm
-/nr/project/sand/cravaruns/inputdata/horizons/basesurface.storm
-300;
+<survey>
+  <angular-correlation>
+    <variogram-type> genexp </variogram-type>
+    <range> 10 </range>
+    <power> 1 </power>
+  </angular-correlation>
+  <segy-start-time> 2500 </segy-start-time>
+  <angle-gather>
+    <offset-angle> 16 </offset-angle>
+    <seismic-data>
+      <file-name> ../../5_two_cubes_four_wells_pred_nokrig/input/seismic/Cube16.segy </file-name>
+    </seismic-data>
+    <wavelet>
+      <file-name>
+        ../../5_two_cubes_four_wells_pred_nokrig/input/wavelets/CRAVA_Wavelet_Scaled_16.0_deg.asc
+      </file-name>
+    </wavelet>
+    <signal-to-noise-ratio> 4 </signal-to-noise-ratio>
+  </angle-gather>
+  <angle-gather>
+    <offset-angle> 28 </offset-angle>
+    <seismic-data>
+      <file-name> ../../5_two_cubes_four_wells_pred_nokrig/input/seismic/Cube28.segy </file-name>
+    </seismic-data>
+    <wavelet>
+      <file-name>
+        ../../5_two_cubes_four_wells_pred_nokrig/input/wavelets/CRAVA_Wavelet_Scaled_28.0_deg.asc
+      </file-name>
+    </wavelet>
+    <signal-to-noise-ratio> 3 </signal-to-noise-ratio>
+  </angle-gather>
+</survey>
 
-BACKGROUND
-/nr/project/sand/cravaruns/inputdata/background/BG_Vp.storm
-/nr/project/sand/cravaruns/inputdata/background/BG_Vs.storm
-/nr/project/sand/cravaruns/inputdata/background/BG_RHOB.storm;
+<well-data>
+  <log-names>
+    <time>    TWT  </time>
+    <dt>      DT   </dt>
+    <dts>     DTS  </dts>
+    <density> RHOB </density>
+  </log-names>
+  <well>
+    <file-name> ../../5_two_cubes_four_wells_pred_nokrig/input/logs/ed6406_3-3_cut.rms    </file-name>
+  </well>
+  <well>
+    <file-name> ../../5_two_cubes_four_wells_pred_nokrig/input/logs/ed6506_12-3_cut.rms   </file-name>
+  </well>
+  <well>
+    <file-name> ../../5_two_cubes_four_wells_pred_nokrig/input/logs/ed6506_12-8_cut.rms   </file-name>
+  </well>
+  <well>
+    <file-name> ../../5_two_cubes_four_wells_pred_nokrig/input/logs/ed6506_12-S4H_cut.rms </file-name>
+  </well>
+</well-data>
 
-SEISMIC
-/nr/project/sand/cravaruns/inputdata/seismic/near.sgy                  15 .35
-/nr/project/sand/cravaruns/inputdata/wavelets/wavelet_near_crava.txt             -0.80
-/nr/project/sand/cravaruns/inputdata/seismic/far.sgy                   40 .39
-/nr/project/sand/cravaruns/inputdata/wavelets/wavelet_far_crava.txt              -0.90;
+<prior-model>
+  <background>
+    <vp-file>
+      ../../5_two_cubes_four_wells_pred_nokrig/input/background/CRAVA_BG_Vp.storm
+    </vp-file>
+    <vs-file>
+      ../../5_two_cubes_four_wells_pred_nokrig/input/background/CRAVA_BG_Vs.storm
+    </vs-file>
+    <density-file>
+      ../../5_two_cubes_four_wells_pred_nokrig/input/background/CRAVA_BG_Rho.storm
+    </density-file>
+  </background>
+  <lateral-correlation>
+    <variogram-type> genexp </variogram-type>
+    <range> 1000 </range>
+    <subrange> 500 </subrange>
+    <angle> 70 </angle>
+    <power> 1  </power>
+  </lateral-correlation>
+</prior-model>
 
-FREQUENCYBAND   5 75;
+<project-settings>
+  <output-volume>
+    <area>
+      <reference-point-x>  398500 </reference-point-x>
+      <reference-point-y> 7210300 </reference-point-y>
+      <length-x> 4500 </length-x>
+      <length-y> 4500 </length-y>
+      <angle> 23.627 </angle>
+      <sample-density-x> 50 </sample-density-x>
+      <sample-density-y> 50 </sample-density-y>
+    </area>
+    <interval-two-surfaces>
+      <top-surface>
+        <time-file>
+          ../../5_two_cubes_four_wells_pred_nokrig/input/horizons/TopTime_avg3100ms.storm
+        </time-file>
+      </top-surface>
+      <base-surface>
+        <time-file>
+          ../../5_two_cubes_four_wells_pred_nokrig/input/horizons/BaseTime_avg3600ms.storm
+        </time-file>
+      </base-surface>
+      <number-of-layers>
+        125
+      </number-of-layers>
+    </interval-two-surfaces>
+  </output-volume>
+  <io-settings>
+    <file-output-prefix> CRAVA_ </file-output-prefix>
+    <output-types>
+      <grid-output>
+        <format>
+          <ascii> yes </ascii>
+        </format>
+        <domain>
+          <time>  yes </time>
+          <depth> no </depth>
+        </domain>
+        <parameters>
+          <vp> yes </vp>
+          <vs> yes </vs>
+          <density> yes </density>
+          <background> no </background>
+        </parameters>
+      </grid-output>
+      <well-output>
+        <wells> no </wells>
+        <blocked-wells> no </blocked-wells>
+      </well-output>
+      <other-output>
+        <wavelets>            no </wavelets>
+        <prior-correlations>  no </prior-correlations>
+        <background-trend-1d> no </background-trend-1d>
+      </other-output>
+    </output-types>
+  </io-settings>
+  <advanced-settings>
+    <fft-grid-padding>
+      <x-fraction> 0.200001 </x-fraction>
+      <y-fraction> 0.200001 </y-fraction>
+      <z-fraction> 1.000000 </z-fraction>
+    </fft-grid-padding>
+    <white-noise-component>
+      0.1
+    </white-noise-component>
+  </advanced-settings>
+</project-settings>
+</crava>
 
-ENERGYTRESHOLD  0.01;
-
-SEGYOFFSET 2500;
-
-PADDING 0.3 0.3 0.6;
-
-LATERALCORRELATION  genexp 1 1500 500 0;
-ANGULARCORRELATION  genexp 1 10;
-
-WHITENOISE 0.1;
-
-SEED 54667;
-
-PREDICTION;
-
-OUTPUT
-AI RHO MURHO;
 \end{Verbatim}
 \end{small}
 
