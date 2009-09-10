@@ -26,17 +26,15 @@ In \crava this is done in two ways. First, we set an upper and lower cutoff freq
 Local noise is implemented by first finding the solution using the minimum noise level, to fulfill the stationarity requirements of the FFT algorithm. We then interpolate the values for each locations between the prior and this minimum noise posterior. When doing this interpolation, we ignore correlation between locations. This is not a problem as long as the noise varies slowly and smoothly.
 
 
-For each location $\vect{x}$ the adjusted estimate $\tilde{\bmu}_{m|d_{obs}}(\vect{x})$, is found 
+For each location $\vect{x}$ the adjusted estimate $\tilde{\bmu}_{m|d_{obs}}(\vect{x})$, is found
 from the inversion result $\bmu_{m|d_{obs}}(\vect{x})$ by a linear relation,
 \begin{equation} \label{eq:LocalAdjustment}
 \tilde{\bmu}_{m|d_{obs}}(\vect{x}) = \bmu_{m}(\vect{x}) +\vect{H_x}\left(\bmu_{m|d_{obs}}(\vect{x})-\bmu_{m}(\vect{x})\right),
 \end{equation}
 The matrix $\vect{H_x}$ is a shrinkage matrix, i.e. the adjusted estimate
-is always closer to the prior mean than the inversion result. The matrix 
+is always closer to the prior mean than the inversion result. The matrix
 $\vect{H_x}$ depends on the local error variance
- $\Sigma_{e}^x$ and error variance used in the inversion $\Sigma_{e}^0$. 
- 
-NBNB Ragnar: optional 
+ $\Sigma_{e}^x$ and error variance used in the inversion $\Sigma_{e}^0$.
 
 To find the shrinkage matrix we first identify a matrix $\vect{G}_0$
 which is such that it maps the local prior distribution to the local posterior distribution
@@ -53,11 +51,11 @@ We then define the shrinkage matrix to be:
 \begin{equation}\label{eq:H}
 \vect{H_x}(\Sigma_{e}^\vect{x},\Sigma_{e}^0) = \vect{P}(\Sigma_{e}^\vect{x})\vect{P}(\Sigma_{e}^0)^{-1}.
 \end{equation}
-By this we mean that we remove the effect of the standard inversion and add the effect of 
-the locally adapted inversion. The matrix $\vect{P}(\Sigma_{e}^0)$ is however not invertible,
+By this we mean that we remove the effect of the standard inversion and add the effect of
+the locally adapted inversion. The matrix $\vect{P}(\Sigma_{e}^0)$ is not invertible,
 but since the local noise always is larger than the noise in the inversion the product in
 expression $\ref{eq:H}$ is always well defined.
- 
+
 
 \section{Estimation of parameters}
 \label{sec:estimateimp}

@@ -399,7 +399,7 @@ The background model is estimated as a low frequency vertical trend. The trend i
 
 The background estimation can be controlled by some commands under \kw{background}\kwindex{background}. These are:
 \begin{itemize}
-\item \kw{velocity-field} takes an external velocity field, typically from migration, and uses to generate the Vp background. NBNB Pål.
+\item \kw{velocity-field} takes an external velocity field, typically from migration, and uses as Vp background, kriged to low frequency Vp well logs.
 \item \kw{lateral-correlation} gives a variogram for the kriging. Larger ranges extends well data further away from wells.
 \item \kw{high-cut} allows specification of a maximum frequency for the background model.
 \end{itemize}
