@@ -1168,7 +1168,7 @@ Model::estimateXYPaddingSizes(Simbox         * timeSimbox,
     float range1  = modelSettings->getLateralCorr()->getRange();
     float range2  = modelSettings->getLateralCorr()->getSubRange();
     float angle   = modelSettings->getLateralCorr()->getAngle();
-    double factor = 1.54;  // At dist = 1.54*range, an exponential variogram is reduced to 0.01
+    double factor = 0.5;  // Lateral correlation is not very important. Half a range is probably more than enough
 
     xPad          = factor * MAXIM(fabs(range1*cos(angle)),fabs(range2*sin(angle)));
     yPad          = factor * MAXIM(fabs(range1*sin(angle)),fabs(range2*cos(angle)));
@@ -1189,7 +1189,7 @@ Model::estimateXYPaddingSizes(Simbox         * timeSimbox,
   if (newPaddings)
     logLevel = LogKit::LOW;
   
-  LogKit::LogFormatted(logLevel,"\nPadding sizes estimated from lateral correlation ranges:\n");
+  LogKit::LogFormatted(logLevel,"\nPadding sizes estimated from lateral correlation ranges in internal grid:\n");
   LogKit::LogFormatted(logLevel,"  xPad, xPadFac, nx, nxPad                 : %6.fm, %4.2f, %5d, %4d\n", 
                        xPad, xPadFac, timeSimbox->getnx(), nxPad);
   LogKit::LogFormatted(logLevel,"  yPad, yPadFac, ny, nyPad                 : %6.fm, %4.2f, %5d, %4d\n", 
@@ -1206,7 +1206,7 @@ Model::estimateZPaddingSize(Simbox         * timeSimbox,
 
   if (zPadFac == 0.0)
   {
-    double wLength = 300.0;           // Assume a wavelet is approx 300ms.
+    double wLength = 200.0;           // Assume a wavelet is approx 200ms.
     zPad           = wLength / 2.0;   // Use half a wavelet as padding
     zPadFac        = MINIM(1.0, zPad / (timeSimbox->getlz()*timeSimbox->getMinRelThick()));
     
@@ -2900,7 +2900,7 @@ Model::printSettings(ModelSettings * modelSettings,
   LogKit::LogFormatted(LogKit::HIGH,"  Length                                   : %10s\n","m");
   LogKit::LogFormatted(LogKit::HIGH,"  Velocities                               : %10s\n","m/s");
   LogKit::LogFormatted(LogKit::HIGH,"  Density                                  : %10s\n","g/cm3");
-  LogKit::LogFormatted(LogKit::HIGH,"  Angles                                   : %10s\n","   degrees (clockwise relative to north)");
+  LogKit::LogFormatted(LogKit::HIGH,"  Angles                                   : %10s\n","   degrees (clockwise relative to north when applicable)");
 
   //
   // WELL PROCESSING
@@ -3088,7 +3088,7 @@ Model::printSettings(ModelSettings * modelSettings,
     if (vario->getAnisotropic()) 
     {
       LogKit::LogFormatted(LogKit::LOW,"    Subrange                               : %10.1f\n",vario->getSubRange());
-      LogKit::LogFormatted(LogKit::LOW,"    Angle                                  : %10.1f\n",vario->getAngle()*(-1)*(180/M_PI));
+      LogKit::LogFormatted(LogKit::LOW,"    Azimuth                                : %10.1f\n",90.0 - vario->getAngle()*(180/M_PI));
     }
     LogKit::LogFormatted(LogKit::LOW,"  High cut frequency for well logs         : %10.1f\n",modelSettings->getMaxHzBackground());
   }
@@ -3169,7 +3169,7 @@ Model::printSettings(ModelSettings * modelSettings,
       if (corr->getAnisotropic())
       {
         LogKit::LogFormatted(LogKit::LOW,"    Subrange                               : %10.1f\n",corr->getSubRange());
-        LogKit::LogFormatted(LogKit::LOW,"    Angle                                  : %10.1f\n",corr->getAngle()*(-1)*(180/M_PI));
+        LogKit::LogFormatted(LogKit::LOW,"    Azimuth                                : %10.1f\n",90.0 - corr->getAngle()*(180/M_PI));
       }
     }
     //
