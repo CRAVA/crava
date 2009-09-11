@@ -589,6 +589,8 @@ Wavelet::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
   }
 
   float * scaleOptWell    = new float[nWells];
+  for(i=0;i<nWells;i++)
+    scaleOptWell[i] = -1.0;
   float * errWellOptScale = new float[nWells];
   float * errWell         = new float[nWells];
  bool writelog = false;
@@ -623,7 +625,12 @@ Wavelet::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
     writelog = true;
   }
   else
+  {
     optScale = globalScale;
+    // only for loging
+    findOptimalWaveletScale(synt_r,seis_r,nWells,nzp,dataVarWell,
+                                           errOptScale,errWell,scaleOptWell,errWellOptScale);
+  }
     
 
 
@@ -653,8 +660,7 @@ Wavelet::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
   errStd  /= float(nData);
   errStd   = sqrt(errStd);
   
-if(writelog==true)
-  {
+
     LogKit::LogFormatted(LogKit::MEDIUM,"\n  Reporting errors (as standard deviations) estimated in different ways:\n\n");
 
     if (readtype_ == ESTIMATE)
@@ -665,10 +671,12 @@ if(writelog==true)
       LogKit::LogFormatted(LogKit::LOW,"  ----------------------------------------------------------------------------------\n");
       for(i=0;i<nWells;i++)
       {
-        if(nActiveData[i]>0) {
-          float SNOptimalGlobal = dataVarWell[i]/(errWell[i]*errWell[i]);
-          float SNOptimalLocal  = dataVarWell[i]/(errWellOptScale[i]*errWellOptScale[i]);
-          LogKit::LogFormatted(LogKit::LOW,"  %-20s   %6.2f     %9.2e      %6.2f %6.2f      %6.2f %6.2f\n", 
+        if(nActiveData[i]>0)
+         {
+           float SNOptimalGlobal, SNOptimalLocal;    
+            SNOptimalGlobal = dataVarWell[i]/(errWell[i]*errWell[i]);
+            SNOptimalLocal  = dataVarWell[i]/(errWellOptScale[i]*errWellOptScale[i]);   
+            LogKit::LogFormatted(LogKit::LOW,"  %-20s   %6.2f     %9.2e      %6.2f %6.2f      %6.2f %6.2f\n", 
             wells[i]->getWellname(),shiftWell[i],sqrt(dataVarWell[i]),
             optScale,SNOptimalGlobal,scaleOptWell[i],SNOptimalLocal);
         }
@@ -687,8 +695,10 @@ if(writelog==true)
       {
         if(nActiveData[i]>0) {
           float SNActuallyUsed  = dataVarWell[i]/errVarWell[i];
-          float SNOptimalGlobal = dataVarWell[i]/(errWell[i]*errWell[i]);
-          float SNOptimalLocal  = dataVarWell[i]/(errWellOptScale[i]*errWellOptScale[i]);
+          float SNOptimalGlobal, SNOptimalLocal;
+          SNOptimalGlobal = dataVarWell[i]/(errWell[i]*errWell[i]);
+          SNOptimalLocal  = dataVarWell[i]/(errWellOptScale[i]*errWellOptScale[i]);
+       
           LogKit::LogFormatted(LogKit::LOW,"  %-20s   %6.2f     %9.2e        1.00 %7.2f     %6.2f %7.2f     %6.2f %7.2f\n", 
             wells[i]->getWellname(),shiftWell[i],sqrt(dataVarWell[i]),
             SNActuallyUsed,optScale,SNOptimalGlobal,scaleOptWell[i],SNOptimalLocal);
@@ -697,8 +707,8 @@ if(writelog==true)
           LogKit::LogFormatted(LogKit::LOW,"  %-20s      -            -             -      -           -      -           -      -   \n",
           wells[i]->getWellname()); 
       }
-    } 
-  }
+    }
+//  }
 
  // if(useLocalWavelet && (shift==NULL || gain==NULL))
  // {
