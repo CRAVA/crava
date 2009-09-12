@@ -338,10 +338,14 @@ float CovGridSeparated::GetGamma2(int i1, int j1, int k1, int i2, int j2, int k2
     //LogKit::LogFormatted(LogKit::DEBUGHIGH,"PAL: abs(deltai),abs(deltaj),abs(deltak) : nxp_/2 nyp_/2 nzp_/2  =  %d %d %d : %d %d %d\n",
     //                      abs(deltai),abs(deltaj),abs(deltak),nxp_/2,nyp_/2,nzp_/2);
     //
-    //NBNB-PAL: Dette må inn igjen....
+    //NBNB-PAL: The variogram covers only half the grid in x- and y-directions. This explains 
+    //          the if below. This, however, is problematic if the grid is small and the ranges 
+    //          large. Probably the variogram should be defined in a grid twice as large (area) 
+    //          as the modelling grid, so that we can estimate the correct covariance between
+    //          any pair of points in the grid.
     //
-    //  if (abs(deltai) >= nxp_/2 || abs(deltaj) >= nyp_/2 || abs(deltak) >= nzp_/2)
-    //    return 0.0f;
+    if (abs(deltai) >= nxp_/2 || abs(deltaj) >= nyp_/2 || abs(deltak) >= nzp_/2)
+      return 0.0f;
 
     deltai = (deltai >= 0 ? deltai : nxp_ + deltai);
     deltaj = (deltaj >= 0 ? deltaj : nyp_ + deltaj);
