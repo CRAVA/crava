@@ -6,14 +6,14 @@
 Seismic inversion has traditionally been treated as a deterministic
 problem. However, there are several uncertain aspects: There is noise
 in the seismic amplitude data, and the frequency resolution is
-limited, so neither high nor low frequencies can be resolved from the
-seismic data alone. Using a geostatistical approach to the problem of
+limited. This means that neither high nor low frequencies can be resolved from the
+seismic amplitude data alone. Using a geostatistical approach to the problem of
 seismic inversion, the uncertainty may be treated in a consistent and
 robust way.
 
 The \crava program uses the Bayesian linearised AVO
-inversion method of Buland {\it et. al}~\cite{geo68ab2} to take
-the uncertainty in seismic data into account. The seismic data are
+inversion method of \cite{geo68ab2} to take
+the uncertainty in seismic amplitude data into account. Since we only use amplitude data, we will from here on use the term seismic data for these. The seismic data are
 described using multi-normal distributions, and modelled as the seismic
 response of the earth model plus an error term. The earth model and
 error term are modelled as multi-normal distributions in which spatial
@@ -69,11 +69,10 @@ described by the three material parameters $\{\vp(\vect{x},t),
 gives the lateral position (x,y), and $t$ is the vertical seismic
 travel time.
 
-The weak contrast approximation by Aki and Richards~\cite{aki80},
+The weak contrast approximation by \cite{aki80},
 relates the seismic reflection coefficients $c(\vect{x},t,\theta)$
 to the elastic medium, and is a linearisation of the Zoeppritz
-equations (see Ref.\cite{aki80}). A continuous version of this
-approximation is given by Stolt and Weglein~\cite{stolt85}:
+equations. A continuous version of this approximation is given by \cite{stolt85}:
 %
 \begin{equation}
 \begin{split}
@@ -119,20 +118,20 @@ The seismic data are represented by the convolutional model
 \end{equation}
 %
 where $w$ is the wavelet, and $e$ is an angle and location dependent
-error term. The wavelet can be angle dependent, but independent of the
+error term. The part before the error term is the synthetic seismic. The wavelet can be angle dependent, but independent of the
 lateral position $\vect{x}$. The wavelet is assumed to be stationary
 within a limited target window.
 
-The signal-to-noise ratio is defined as the ratio of the energy in the
-two terms in expression~(\ref{timeconv}), that is,
+The signal-to-noise ratio is defined as the ratio of the energy of the data to the energy of the noise in 
+\autoref{timeconv}, that is,
 \index{signal-to-noise ratio}
 %
 \begin{equation} \label{SNR}
-   S/N =  \| w * c\|^2 / \| e\|^2,
+   S/N =  \left(\| w * c\|^2+\| e\|^2\right) / \| e\|^2,
 \end{equation}
 %
 \noindent
-where the operator * denotes the convolution.
+where the operator * denotes the convolution. Since the error is independent of the synthetic seismic, the energy form the synthetic seismic and the noise can simply be added. Note that this is the definition of the S/N ratio we use here, another version does not include the noise energy in the enumerator.
 
 \section{Statistical model}
 \label{sec:statmodthe}
@@ -249,7 +248,7 @@ theory for Gaussian distributions:
 where $\bmu_{d}$ is the expected observation, that is, the
 seismic response of $\bmu_m$, and $\bSigma_{d,m}$ is the
 covariance matrix between logarithmic parameters and
-observations. See Ref.~\cite{geo68ab1} for a detailed description on
+observations. See \cite{geo68ab1} for a detailed description on
 how to compute these.
 
 The computations given in equations~\eqref{eq:mupost}
@@ -258,12 +257,12 @@ inversion volume with $n$ cells, this matrix has $n_\theta^2n^2$
 elements, and for any reasonably sized volumes, inverting this matrix
 is forbiddingly time consuming. However, the covariance function for a
 homogeneously correlated spatial variable is diagonalised by a 3D
-Fourier transform~\cite{christakos92}, and in this domain the inversion
+Fourier transform (\cite{christakos92}), and in this domain the inversion
 problem can be solved independently for each frequency component. This
 reduces the complexity of the computations dramatically, and the
 calculation time becomes $\mathcal{O}(n\log n)$. This is illustrated
 in Figure~\ref{fig:FFT-flowdiagram}. Details can be found in
-Ref.~\cite{geo68ab2}
+\cite{geo68ab2}
 \index{FFT}
 \begin{figure}[H]
   \includegraphics[width=.99\linewidth]{images/FFT_flowdiagram}
@@ -275,28 +274,28 @@ Ref.~\cite{geo68ab2}
 \end{figure}
 
 
-This seems to require that $\vect{d}$ is stationary, which would imply that the wavelet must be the same everywhere. However, we can easily divide out the wavelet from \autoref{eq:WADm} to obtain
+This seems to require that $\vect{d}$ is stationary, which would imply that the wavelet must be the same everywhere. However, we can divide out the wavelet from \autoref{eq:WADm} to obtain
 \begin{equation}
 \label{eq:ADm}
 \vect{d^\prime} = \vect{A}\vect{D}\vect{m} + \vect{e^\prime},
 \end{equation}
-where $\vect{d^\prime}$ is the data divided by the wavelet, and $\vect{e^\prime}$ is the error divided by the wavelet. Note that we now assume that the noise after division, $e^\prime$ is stationary. Since we assume that a seismic trace only depends on the reflections in that trace, this division can be done trace by trace. This assumption relies on a rather smooth seismic response, so the lateral variations in the wavelet should be smooth. We have chosen to restrict the local wavelet changes to only allow local temporal shift and amplitude scaling.
+where $\vect{d^\prime}$ is the data divided by the wavelet, and $\vect{e^\prime}$ is the error divided by the wavelet. The details of how we do this division is given in \autoref{sec:divwavimp}. Note that we now assume that the noise after division, $e^\prime$ is stationary. Since we assume that a seismic trace only depends on the reflections in that trace, this division can be done trace by trace. This assumption relies on a rather smooth seismic response, so the lateral variations in the wavelet should be smooth. We have chosen to restrict the local wavelet changes to only allow local temporal shift and amplitude scaling.
 
 We can also work around the stationary noise assumption, and allow $e^\prime$ to vary laterally. This is done by utilizing the nature of a Bayesian solution, which always is a tradeoff between the prior and the posterior with noisefree data. By finding the posterior for a minimal noise, we can then interpolate between this solution and the prior to find an appropriate solution for the local noise level. When doing this, we ignore correlations between the adjusted area and other values, so we require constant noise level in each trace, since the conditional correlations inside a trace are much stronger than between traces. See \autoref{sec:localnoiseimp} for details.
 
 \subsection{Facies probabilities}
 \label{sec:facprobthe}
-Facies probabilities are here found by first establishing the link between facies and inversion result, $p(f_i|\bmu_{m|d,i})$, where $f_i$ is the facies at location $i$ and $\bmu_{m|d,i})$ is the inversion result at the same location. The first step is to establish the link between the well logs $\vect{m}$ and the expected seismic observations $\hat{\vect{m}}$. We get this by combining \autoref{eq:mupost} and \autoref{eq:Gm}:
+Facies probabilities are here found by first establishing the link between facies and inversion result, $p(f_i|\bmu_{m|d,i})$, where $f_i$ is the facies at location $i$ and $\bmu_{m|d,i}$ is the inversion result at the same location. The first step is to establish the link between the well logs $\vect{m}$ and the expected seismic observations $\hat{\vect{m}}$. We get this by combining \autoref{eq:mupost} and \autoref{eq:Gm}:
 \begin{eqnarray}
 \bmu_{m|d_{obs}} &=&\bmu_{m} +\bSigma_{m}\vect{G}^T \bSigma_{d}^{-1}
                            (\vect{d}_{obs}-\bmu_{d}) \nonumber \\
 & = & \bmu_{m} +\bSigma_{m}\vect{G}^T \bSigma_{d}^{-1}
                            (\vect{G}\vect{m}+\vect{e}-\vect{G}\bmu_m) \nonumber\\
-& = & \bmu_m + \vect{A}(\vect{m}-\bmu_m)+\vect{e}^*,
+& = & \bmu_m + \vect{F}(\vect{m}-\bmu_m)+\vect{e}^*,
 \end{eqnarray}
 where
 \begin{eqnarray}
-A & = &\bSigma_{m}\vect{G}^T \bSigma_{d}^{-1}\vect{G} \\
+\vect{F} & = &\bSigma_{m}\vect{G}^T \bSigma_{d}^{-1}\vect{G} \\
 \vect{e}^* & \sim & \text{N}(0,\bSigma_{e^*}) \\
 \bSigma_{e^*} & = & \bSigma_{m}\vect{G}^T \bSigma_{d}^{-1}\bSigma_e\bSigma_{d}^{-1}\vect{G}\bSigma_m.
 \end{eqnarray}
@@ -304,6 +303,7 @@ We use this to filter the well logs and obtain the expected inversion values. Fo
 
 Finally we find the facies probability:
 \begin{equation}
-p(f=j|\bmu_{m|d_{obs}}) = \frac{p(\bmu_{m|d_{obs}}|f=j)}{\sum_i p(\bmu_{m|d_{obs}}|f=i)}.
-\end{equation}.
+p(f=j|\bmu_{m|d_{obs}}) = \frac{p(\bmu_{m|d_{obs}}|f=j)p(f=j)}{\sum_i p(\bmu_{m|d_{obs}}|f=i)p(f=i)},
+\end{equation}
+where $p(f=i)$ is the prior probability of facies $i$.
 This probability is then computed for each facies and each cell in the grid, with $\bmu_{m|d_{obs}}$ given by the inversion results. 

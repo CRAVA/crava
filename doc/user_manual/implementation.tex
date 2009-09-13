@@ -10,13 +10,14 @@ As previously stated, \autoref{eq:WADm} separates when transformed into the Four
 \label{eq:fourierinv}
 \vect{\tilde{d}}(\omega,\vect{k}) = \vect{G}(\omega)\vect{\tilde{m}}(\omega,\vect{k}) + \vect{\tilde{e}}(\omega,\vect{k}))
 \end{equation}
-The $\tilde{ }$ denotes the 3D fourier transform, with temporal frequency $\omega$, and lateral frequency vector $\vect{k} = (k_x,k_y)$. Due to the separation, we now have a set of $n$ small equations, where $n$ is the number of grid cells in the inversion volume. Everything is still normally distributed, so the solution to this equation follows the pattern from \autoref{eq:mupost} and \autoref{eq:sigmapost}. We still must invert a data covariance matrix, but whereas this matrix had dimension $n\times n_\theta$ before the Fourier-transform, the matrix we must invert here is reduced to dimension $n_\theta$, where $n_\theta$ is the number of angle stacks. Since the time for a matrix inversion is almost cubic in size, it is much faster to invert $n$ of these small matrixes than the one large. After solving for $\vect{\tilde{m}}(\omega,\vect{k})$, we do the inverse transform of this to obtain the distribution for $\vect{m}$. The same does of course hold when we are using local wavelets that are divided out in advance, \autoref{eq:ADm}. For full details, see \cite{geo68ab2}.
+The $\tilde{ }$ denotes the 3D fourier transform, with temporal frequency $\omega$, and lateral frequency vector $\vect{k} = (k_x,k_y)$. Due to the separation, we now have a set of $n$ small equations, where $n$ is the number of grid cells in the inversion volume. Everything is still normally distributed, so the solution to this equation follows the pattern from \autoref{eq:mupost} and \autoref{eq:sigmapost}. We still must invert a data covariance matrix, but whereas this matrix had dimension $(n\cdot n_\theta)^2$ before the Fourier-transform, the matrix we must invert here is reduced to dimension $n_\theta^2$, where $n_\theta$ is the number of angle stacks. Since the time for a matrix inversion is almost cubic in size, it is much faster to invert $n$ of these small matrixes than the one large. After solving for $\vect{\tilde{m}}(\omega,\vect{k})$, we do the inverse transform of this to obtain the distribution for $\vect{m}$. The same does of course hold when we are using local wavelets that are divided out in advance, \autoref{eq:ADm}. For full details, see \cite{geo68ab2}.
 
 \section{Local wavelet and noise}
 \label{sec:nonstationaryimp}
 As shown, even though the use of FFT-transform requires stationarity, we are able to work around this. Wavelets can be made local since these can be divided out before solving the problem, and locally higher noise levels can be approximated by interpolating the low-noise solution and the prior distribution.
 
 \subsection{Dividing out the wavelet}
+\label{sec:divwavimp}
 A simple division of data by wavelet can easily be done in the Fourier domain, since the convolusion there is reduced to a multiplication, and the division can be done one frequency at a time. However, this is very unstable for frequencies where the wavelet is very weak or not present, so some stabilizing is needed.
 
 In \crava this is done in two ways. First, we set an upper and lower cutoff frequency for the wavelet, default set to 5 and 55 Hz. Furthermore, for frequencies that fall below 10\% of the average amplitude, we set the amplitude to 10\% of average before doing the division.
@@ -34,7 +35,7 @@ from the inversion result $\bmu_{m|d_{obs}}(\vect{x})$ by a linear relation,
 The matrix $\vect{H_x}$ is a shrinkage matrix, i.e. the adjusted estimate
 is always closer to the prior mean than the inversion result. The matrix
 $\vect{H_x}$ depends on the local error variance
- $\Sigma_{e}^x$ and error variance used in the inversion $\Sigma_{e}^0$.
+ $\bSigma_{e}^x$ and error variance used in the inversion $\bSigma_{e}^0$.
 
 To find the shrinkage matrix we first identify a matrix $\vect{G}_0$
 which is such that it maps the local prior distribution to the local posterior distribution
@@ -59,10 +60,10 @@ expression $\ref{eq:H}$ is always well defined.
 
 \section{Estimation of parameters}
 \label{sec:estimateimp}
-The estimation routines implemented in \crava are based on straightforward and commonly used techniques. This gives fast and robust estimation, although we may run into problems if the
+The estimation routines implemented in \crava are based on straightforward and commonly used techniques. This gives fast and robust estimation, although we may run into problems if the number of data points is too small, or the data quality is too low. The quality of an estimation result is never better than the quality of the data it is based on.
 \subsection{Estimating wavelet and noise}
 \label{sec:waveestimp}
-Wavelets are estimated at well locations, where we obtain the reflection coefficients from well logs. We then use the relation
+The wavelet estimation in \crava is based on \cite{White84}. Wavelets are estimated at well locations, where we obtain the reflection coefficients from well logs. We then use the relation
 \begin{equation}
 \vect{d} = \vect{w}*\vect{c}+\vect{e}
 \end{equation}
@@ -72,7 +73,7 @@ d(\omega)\bar{c}(\omega) = w(\omega)|c(\omega)|^2
 \end{equation}
 Note that the convolution has disappeared, and the equation can be solved for each frequency $\omega$. However, solving this directly in the frequency domain is unstable, so we need to do a frequency smoothing. This is done by transforming $d(\omega)\bar{c}(\omega)$ and $|c(\omega)|^2$ back to time domain, multiplying with a Papoulis taper, and transforming them back to the frequency domain. This is the same as applying a local smoothing in the frequency domain. After this, we divide out $w(\omega)$, and transform back to time domain.
 
-We find the optimal vertical shift for each well. The global wavelet is then found by taking the arithmetic average of the zero-phase wavelets, weighted by the number of sample sused from each well. The noise estimate is found by generating synthetic seismic using the averaged wavelet optimally shifted in each well, and subtracting this from the seismic data. The remaining part is assumed to be noise, and we measure the noise energy from this.
+We find the optimal vertical shift for each well. The global wavelet is then found by taking the arithmetic average of the zero-phase wavelets, weighted by the number of samples used from each well. The noise estimate is found by generating synthetic seismic using the averaged wavelet optimally shifted in each well, and subtracting this from the seismic data. The remaining part is assumed to be noise, and we measure the noise energy from this.
 
 When using local wavelets, we find the optimal shift and/or scale of the global wavelet at each well location. Optimal here means minimizing the noise energy. We then use kriging to interpolate this between wells, with a shift of 0 and a scale of 1 as the mean level outside the well control area.
 
@@ -84,7 +85,7 @@ We estimate correlations by first blocking the wells into the grid, and then do 
 \begin{equation}
 \text{Cov}(X,Y) = \text{E}(XY)-E(X)E(Y).
 \end{equation}
-Since we model the covariance structure as separable, we have to collapse the full time dependent covariances between parameters into one parameter covariance matrix and a temporal correlation vector. This is done simply by using the covariances at time lag 0 as our covariance matrix, and averaging the remaining time correlation vectors (there are 6 of these, one for each parameter, and one for each pair of parameters).
+Since we model the covariance structure as separable, we have to collapse the full time dependent covariances between parameters into one parameter covariance matrix and a temporal correlation vector. This is done simply by using the covariances at time lag 0 as our covariance matrix, and averaging the remaining time correlation vectors for the parameters.
 
 \subsection{Estimating background model}
 As with the correlation estimation, the first step is to block the wells into the modeling grid. We then filter away everything above a cutoff frequency (default 6Hz) from the well logs. The next step is to take the average of all log data in each grid layer, giving a vertical trend. This trend is then smoothed using a moving average smoother, and finally filtered with the cutoff frequency. We then use kriging of the well logs with this vertical trend as expectation to create the final background model.

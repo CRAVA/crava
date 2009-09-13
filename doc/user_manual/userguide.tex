@@ -19,7 +19,7 @@ A primary ability for \crava is to run simple first-pass inversions. In this sec
 Since \crava is designed to estimate any information that is not given, well data must also commonly be included.
 
 \subsection{Survey information}
-All information regarding the seismic data is gathered under the \kw{survey}\kwindex{survey} tag. This includes location of seismic data files, wavelet information and signal-to-noise ratio for each angle gather. As an example, it may look like this:
+All information regarding the seismic data is gathered under the \kw{survey}\kwindex{survey} tag. This includes the file names for seismic data files, wavelet information and signal-to-noise ratio for each angle gather. As an example, it may look like this:
 \svex{ex:survey}
 <crava>
 <survey>
@@ -123,7 +123,7 @@ Note that if the grid has the same rotation as the input SegY cubes with seismic
 The area command may be skipped altogether. The area will then be taken from the first input seismic data file, and defined as the smallest rectangle that covers all present traces.
 
 \subsubsection{Top and bottom surfaces}
-The vertical extent is normally given by a top and a base surface in time, under the command \kw{interval-two-surfaces}\kwindex{interval-two-surfaces}, as shown in \autoref{ex:volume}. The file name for the top surface is given under command \kw{top-surface}\kwindex{top-surface}, \kw{time-file}, and the base surface is given similarly under \kw{top-surface}\kwindex{base-surface}, \kw{time-file}. The file format is binary storm or ASCII irap.
+The vertical extent is normally given by a top and a base surface in time, under the command \kw{interval-two-surfaces}\kwindex{interval-two-surfaces}, as shown in \autoref{ex:volume}. The file name for the top surface is given under command \kw{top-surface}\kwindex{top-surface}, \kw{time-file}, and the base surface is given similarly under \kw{base-surface}\kwindex{base-surface}, \kw{time-file}. The file format is binary storm or ASCII irap.
 
 These surfaces also define the default lateral correlation direction for the elastic parameters, with the correlation being parallel to the top surface at the top, and base surface at the base. Between this, we create a top- and base-conform grid, so that the number of grid cells in each trace is constant, although the interval thickness may vary. This is shown in \autoref{fig:conformgrid}. The inversion may be unstable if the resolution varies too much in different traces, so we recommend that no trace interval is larger than twice the shortest interval.
 \begin{figure}[H]
@@ -346,7 +346,7 @@ Instead of using the default reflection approximation, the user may supply the p
 \label{eq:linrefl}
 \end{split}
 \end{equation}
-The coefficients $a_{V\!p}$, $a_{V\!s}$ and $a_\rho$ can be read from file, using the \kw{reflection-matrix}\kwindex{reflection-matrix} command under \kw{advanced-settings}. This file should have one line for each seismic data file, and each line should have the three coefficients suitable for the corresponding file.
+The coefficients $a_{V\!p}$, $a_{V\!s}$ and $a_\rho$ can be read from file, using the \kw{reflection-matrix}\kwindex{reflection-matrix} command under \kw{advanced-settings}. This file should have one line for each seismic data file, and each line should have the three coefficients for one set of seismic input data. The order of the lines should be the same as the order of the seismic data in the \kw{survey} command.
 
 \subsection{Well quality checks}
 Well logs are often faulty, and \crava has some safety mechanisms to detect this. The primary mechanism is to detect extreme values, and set these missing. The default upper and lower bounds are shown in \autoref{tab:logminmax}. These can be overridden using the command \kw{allowed-log-values}\kwindex{allowed-log-values} under \kw{well-data}. Here, \kw{minimum-vp}, \kw{minimum-vs}, \kw{minimum-density} and the corresponding maximum values can be given.
@@ -390,7 +390,7 @@ By default, the wavelet and noise are estimated in the region between the top an
 Some wavelet estimation options are also found under \kw{advanced-settings} under \kw{project-settings}. These are
 \begin{itemize}
 \item \kw{wavelet-tapering-length} which controls the length of the wavelet (in ms).
-\item \kw{minimum-relative-wavelet-amplitude} which sets the cutoff size for edge peaks relative to center peak.
+\item \kw{minimum-relative-wavelet-amplitude} which finds the wavelet length, by setting the cutoff size for edge peaks relative to center peak.
 \item \kw{maximum-wavelet-shift} which controls how far the wavelet can be shifted locally, see \autoref{sec:waveestimp}.
 \end{itemize}
 
