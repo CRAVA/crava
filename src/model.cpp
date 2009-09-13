@@ -222,7 +222,7 @@ Model::Model(char * fileName)
                            modelSettings_, inputFiles,
                            errText, failedSeismic);
             if(failedSeismic == false) {
-              addSeismicLogsAndWriteWells(wells_, seisCube_, modelSettings_);
+              addSeismicLogs(wells_, seisCube_, modelSettings_);
 
               processWavelets(wavelet_, seisCube_, wells_, reflectionMatrix_,
                               timeSimbox_, waveletEstimInterval_,
@@ -246,8 +246,9 @@ Model::Model(char * fileName)
                                  errText,
                                  inputFiles);
         }
-
-      
+        if(((modelSettings_->getWellOutputFlag() & ModelSettings::WELLS) > 0) ||
+           (estimate == true && modelSettings_->getEstimateBackground() == true))
+           writeWells(wells_, modelSettings_);
       }
     }
 
@@ -888,7 +889,7 @@ Model::setSimboxSurfaces(Simbox                        *& simbox,
                                   simbox->getlx(), simbox->getly(),
                                   simbox->getAngle(), 
                                   xMin,yMin,xMax,yMax);
-      z0Grid = new Surface(xMin, yMin, xMax-xMin, yMax-yMin, 2, 2, atof(topName.c_str()));
+      z0Grid = new Surface(xMin-100, yMin-100, xMax-xMin+200, yMax-yMin+200, 2, 2, atof(topName.c_str()));
     } 
     else {
       Surface tmpSurf = NRLib::ReadStormSurf(topName);
@@ -915,7 +916,7 @@ Model::setSimboxSurfaces(Simbox                        *& simbox,
                                       simbox->getlx(), simbox->getly(),
                                       simbox->getAngle(), 
                                       xMin,yMin,xMax,yMax);
-          z1Grid = new Surface(xMin, yMin, xMax-xMin, yMax-yMin, 2, 2, atof(baseName.c_str()));
+          z1Grid = new Surface(xMin-100, yMin-100, xMax-xMin+200, yMax-yMin+200, 2, 2, atof(baseName.c_str()));
         }
         else {
           Surface tmpSurf = NRLib::ReadStormSurf(baseName);
@@ -1594,19 +1595,23 @@ Model::processWells(WellData     **& wells,
 }
 
 
-void Model::addSeismicLogsAndWriteWells(WellData ** wells, FFTGrid ** seisCube, 
-                                        ModelSettings * modelSettings)
+void Model::addSeismicLogs(WellData ** wells, FFTGrid ** seisCube, 
+                           ModelSettings * modelSettings)
 {
   int nWells  = modelSettings->getNumberOfWells();
   int nAngles = modelSettings->getNumberOfAngles();
   for(int i=0;i<nWells;i++) {
     for (int iAngle = 0 ; iAngle < nAngles ; iAngle++)
       wells[i]->getBlockedLogsOrigThick()->setLogFromGrid(seisCube[iAngle],iAngle,nAngles,"SEISMIC_DATA");
-    if((modelSettings->getWellOutputFlag() & ModelSettings::WELLS) > 0) 
-      wells[i]->writeWell(modelSettings->getWellFormatFlag());
   }
 }
 
+void Model::writeWells(WellData ** wells, ModelSettings * modelSettings)
+{
+  int nWells  = modelSettings->getNumberOfWells();
+  for(int i=0;i<nWells;i++)
+    wells[i]->writeWell(modelSettings->getWellFormatFlag());
+}
 
 void Model::checkFaciesNames(WellData      ** wells,
                              ModelSettings *& modelSettings,
@@ -2392,6 +2397,11 @@ Model::processWavelets(Wavelet     **& wavelet,
 
   Timings::setTimeWavelets(wall,cpu);
   failed = error > 0;
+  if(estimateStuff == true && modelSettings->getEstimationMode() == true) {
+    WellData ** wells = getWells();
+    for (int i=0 ; i<modelSettings->getNumberOfWells() ; i++)
+      wells[i]->getBlockedLogsOrigThick()->writeWell(modelSettings);
+  }
   delete [] shiftGrids;
   delete [] gainGrids;
 }

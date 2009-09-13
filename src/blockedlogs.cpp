@@ -789,8 +789,10 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
   bool gotRealSeismic = real_seismic_data_ != NULL;
   bool gotSyntSeismic = synt_seismic_data_ != NULL;
   bool gotCpp         = cpp_ != NULL;
-
-  int nLogs = 3*4;   // {Vp, Vs, Rho} x {raw, BgHz, seisHz, seisRes} 
+  bool gotFilteredLog = alpha_seismic_resolution_ != NULL;
+  int nLogs = 3*3;   // {Vp, Vs, Rho} x {raw, BgHz, seisHz} 
+  if(gotFilteredLog)
+    nLogs += 3;
   if (gotFacies)
     nLogs += 1;
   if (gotRealSeismic)
@@ -819,7 +821,10 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
     file << params[i] << "  UNK lin\n";
     file << params[i] << static_cast<int>(maxHz_background) << "  UNK lin\n";
     file << params[i] << static_cast<int>(maxHz_seismic)    << "  UNK lin\n";
-    file << params[i] << "_SeismicResolution UNK lin\n";
+  }
+  if(gotFilteredLog) {
+    for(int i=0;i<3;i++)
+      file << params[i] << "_SeismicResolution UNK lin\n";
   }
   if (gotFacies) {
     file << "FaciesLog  DISC ";
@@ -853,16 +858,18 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
          << std::setw(7) << (alpha_[i]==RMISSING                    ? WELLMISSING : exp(alpha_[i]))                    << " "
          << std::setw(7) << (alpha_highcut_background_[i]==RMISSING ? WELLMISSING : exp(alpha_highcut_background_[i])) << " "
          << std::setw(7) << (alpha_highcut_seismic_[i]==RMISSING    ? WELLMISSING : exp(alpha_highcut_seismic_[i]))    << " "
-         << std::setw(7) << (alpha_seismic_resolution_[i]==RMISSING ? WELLMISSING : exp(alpha_seismic_resolution_[i])) << "  "
          << std::setw(7) << (beta_[i]==RMISSING                     ? WELLMISSING : exp(beta_[i]))                     << " "
          << std::setw(7) << (beta_highcut_background_[i]==RMISSING  ? WELLMISSING : exp(beta_highcut_background_[i]))  << " "
          << std::setw(7) << (beta_highcut_seismic_[i]==RMISSING     ? WELLMISSING : exp(beta_highcut_seismic_[i]))     << " "
-         << std::setw(7) << (beta_seismic_resolution_[i]==RMISSING  ? WELLMISSING : exp(beta_seismic_resolution_[i]))  << "  "
          << std::setprecision(5)
          << std::setw(7) << (rho_[i]==RMISSING                      ? WELLMISSING : exp(rho_[i]))                      << " "
          << std::setw(7) << (rho_highcut_background_[i]==RMISSING   ? WELLMISSING : exp(rho_highcut_background_[i]))   << " "
-         << std::setw(7) << (rho_highcut_seismic_[i]==RMISSING      ? WELLMISSING : exp(rho_highcut_seismic_[i]))      << " "
-         << std::setw(7) << (rho_seismic_resolution_[i]==RMISSING   ? WELLMISSING : exp(rho_seismic_resolution_[i]))   << "  ";
+         << std::setw(7) << (rho_highcut_seismic_[i]==RMISSING      ? WELLMISSING : exp(rho_highcut_seismic_[i]))      << " ";
+    if(gotFilteredLog == true) {
+      file << std::setw(7) << (alpha_seismic_resolution_[i]==RMISSING ? WELLMISSING : exp(alpha_seismic_resolution_[i])) << "  "
+           << std::setw(7) << (beta_seismic_resolution_[i]==RMISSING  ? WELLMISSING : exp(beta_seismic_resolution_[i]))  << "  "
+           << std::setw(7) << (rho_seismic_resolution_[i]==RMISSING   ? WELLMISSING : exp(rho_seismic_resolution_[i]))   << "  ";
+    }
     if (gotFacies)
       file << (facies_[i]==IMISSING                                 ? static_cast<int>(WELLMISSING) : facies_[i])      << "  ";
     file << std::scientific;

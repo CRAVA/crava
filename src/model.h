@@ -91,8 +91,10 @@ private:
                                 InputFiles     * inputFiles,
                                 char           * errText,
                                 bool           & failed);
-  void             addSeismicLogsAndWriteWells(WellData ** wells, FFTGrid ** seisCube, 
-                                               ModelSettings * modelSettings);
+  void             addSeismicLogs(WellData ** wells, FFTGrid ** seisCube, 
+                                  ModelSettings * modelSettings);
+  void             writeWells(WellData ** wells, ModelSettings * modelSettings);
+
 
   void             processBackground(Background   *& background, 
                                      WellData     ** wells,
