@@ -136,11 +136,10 @@ These surfaces also define the default lateral correlation direction for the ela
   \includegraphics[width=.49\linewidth]{images/B_correlation_proportional}\\
   \includegraphics[width=.49\linewidth]{images/C_correlation_parallel_timecut}
   \includegraphics[width=.49\linewidth]{images/D_correlation_proportional_timecut}
-  \caption{The layer structure of a (A) top- and base-conform grid,
-    (B) compaction ... (C) (D)}
+  \caption{The layer structure of a (A) parallel top and base,
+    (B) top- and base-conform compaction grid (C) Uniform correlation structure in a cut grid (D) Compactional correlation structure in a cut grid.}
   \label{fig:inversion-interval-types}
 \end{figure}
-
 By specifying a correlation surface, the correlation direction can be independent of the interval surfaces, see \autoref{sec:basiccorr}. If this is done, there are no restrictions on the differences in interval thickness.
 
 If only one surface is known, the command \kw{interval-one-surface} can be used to invert an interval with top and base parallel to this surface. See \autoref{interval-one-surface} in the reference guide for more details. Note that depth conversion and correlation surfaces will not be available in this mode, so the lateral correlation will be parallel to this surface.
@@ -170,7 +169,7 @@ Reference surfaces in depth are given with \kw{depth-file}\kwindex{depth-file} u
 \end{verbatim}
 \end{example}
 
-\subsection{Background model and covariances}
+\subsection{Prior model}
 Since seismic data only contain information about relative elastic parameters, the absolute level needs to be set with a background model. In a Bayesian inversion setting, the background model is the prior expectation. We also need the prior covariance, which is given by the covariance of the parameters, the lateral correlation and the temporal correlation, as described in \autoref{sec:statmodthe}. In the model file, all this is gathered under the \kw{prior-model}\kwindex{prior-model} command, which may look something like this:
 \svex{ex:priormodel}
 <crava>
@@ -302,7 +301,7 @@ Some versions of filtered elastic parameters (Vp, Vs and density) in wells can b
 \end{itemize}
 The wells can either be written with original sampling density, using \kw{wells}, or matching the internal grid resolution, using \kw{blocked-wells}.
 
-\subsection{Tasks}
+\subsection{Actions}
 The final information that is needed for a \crava run is what the run is supposed to do. This is controlled by \kw{actions}\kwindex{actions}. The \kw{mode} keyword defines the purpose of this run. and should be set to "inversion" when doing inversion. Other options are "estimation", see \autoref{sec:estimateusr} and "forward", see \autoref{sec:forwardusr}. When inversion is chosen, \kw{inversion-settings}\kwindex{inversion-settings} can be used to control basic aspects of the inversion. It may look something like this:
 \svex{ex:action}
 <crava>

@@ -1,4 +1,4 @@
-\chapter{The \crava model}
+\chapter{Model}
 \label{sec:theory}
 \index{Bayesian inversion}
 
@@ -279,13 +279,13 @@ This seems to require that $\vect{d}$ is stationary, which would imply that the 
 \label{eq:ADm}
 \vect{d^\prime} = \vect{A}\vect{D}\vect{m} + \vect{e^\prime},
 \end{equation}
-where $\vect{d^\prime}$ is the data divided by the wavelet, and $\vect{e^\prime}$ is the error divided by the wavelet. The details of how we do this division is given in \autoref{sec:divwavimp}. Note that we now assume that the noise after division, $e^\prime$ is stationary. Since we assume that a seismic trace only depends on the reflections in that trace, this division can be done trace by trace. This assumption relies on a rather smooth seismic response, so the lateral variations in the wavelet should be smooth. We have chosen to restrict the local wavelet changes to only allow local temporal shift and amplitude scaling.
+where $\vect{d^\prime}$ is the data divided by the wavelet, and $\vect{e^\prime}$ is the error divided by the wavelet. The details of how we do this division is given in \autoref{sec:divwavimp}. Note that we now assume that the noise after division, $\vect{e^\prime}$ is stationary. Since we assume that a seismic response only depends on the reflections in that trace, this division can be done trace by trace. This assumption relies on a rather smooth seismic response, so the lateral variations in the wavelet should be smooth. We have chosen to restrict the local wavelet changes to only allow local temporal shift and amplitude scaling.
 
-We can also work around the stationary noise assumption, and allow $e^\prime$ to vary laterally. This is done by utilizing the nature of a Bayesian solution, which always is a tradeoff between the prior and the posterior with noisefree data. By finding the posterior for a minimal noise, we can then interpolate between this solution and the prior to find an appropriate solution for the local noise level. When doing this, we ignore correlations between the adjusted area and other values, so we require constant noise level in each trace, since the conditional correlations inside a trace are much stronger than between traces. See \autoref{sec:localnoiseimp} for details.
+We can also work around the stationary noise assumption, and allow $\vect{e^\prime}$ to vary laterally. This is done by utilizing the nature of a Bayesian solution, which always is a tradeoff between the prior and the posterior with noisefree data. By finding the posterior for a minimal noise, we can then interpolate between this solution and the prior to find an appropriate solution for the local noise level. When doing this, we ignore correlations between the adjusted area and other values, so we require constant noise level in each trace, since the conditional correlations inside a trace are much stronger than between traces. See \autoref{sec:localnoiseimp} for details.
 
 \subsection{Facies probabilities}
 \label{sec:facprobthe}
-Facies probabilities are here found by first establishing the link between facies and inversion result, $p(f_i|\bmu_{m|d,i})$, where $f_i$ is the facies at location $i$ and $\bmu_{m|d,i}$ is the inversion result at the same location. The first step is to establish the link between the well logs $\vect{m}$ and the expected seismic observations $\hat{\vect{m}}$. We get this by combining \autoref{eq:mupost} and \autoref{eq:Gm}:
+Facies probabilities are here found by first establishing the link between facies and inversion result, $p(f_i|\bmu_{m|d,i})$, where $f_i$ is the facies at location $i$ and $\bmu_{m|d,i}$ is the inversion result at the same location. The first step is to establish the link between the well logs $\vect{m}$ and the expectation given seismic observations $\bmu_{m|d_{obs}}$. We get this by combining \autoref{eq:Gm} and \autoref{eq:mupost}:
 \begin{eqnarray}
 \bmu_{m|d_{obs}} &=&\bmu_{m} +\bSigma_{m}\vect{G}^T \bSigma_{d}^{-1}
                            (\vect{d}_{obs}-\bmu_{d}) \nonumber \\
@@ -299,7 +299,7 @@ where
 \vect{e}^* & \sim & \text{N}(0,\bSigma_{e^*}) \\
 \bSigma_{e^*} & = & \bSigma_{m}\vect{G}^T \bSigma_{d}^{-1}\bSigma_e\bSigma_{d}^{-1}\vect{G}\bSigma_m.
 \end{eqnarray}
-We use this to filter the well logs and obtain the expected inversion values. For each facies, we then do a density estimation of $p(\bmu_{m|d_{obs}}|f)$ for each possible facies value $f$. This density estimation is done using a kernel smoothing approach, and by using the distribution of $\vect{e}^*$ as our kernel, we get an unbiased estimate of this distribution.
+The operator $\vect{F}$ is used to filter the well logs and obtain the expected inversion values. For each facies, we then do a density estimation of $p(\bmu_{m|d_{obs}}|f)$ for each possible facies value $f$. This density estimation is done using a kernel smoothing approach, and by using the distribution of $\vect{e}^*$ as our kernel, we get an unbiased estimate of this distribution.
 
 Finally we find the facies probability:
 \begin{equation}
