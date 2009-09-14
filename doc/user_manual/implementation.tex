@@ -16,6 +16,12 @@ The $\tilde{ }$ denotes the 3D fourier transform, with temporal frequency $\omeg
 \label{sec:nonstationaryimp}
 As shown, even though the use of FFT-transform requires stationarity, we are able to work around this. Wavelets can be made local since these can be divided out before solving the problem, and locally higher noise levels can be approximated by interpolating the low-noise solution and the prior distribution.
 
+\begin{figure}
+  \includegraphics[width=.99\linewidth]{images/local-wavelet}
+  \caption{The local gain and shift maps involved when using local wavelets}
+  \label{fig:local-wavelet}
+\end{figure}
+
 \subsection{Dividing out the wavelet}
 \label{sec:divwavimp}
 A simple division of data by wavelet can easily be done in the Fourier domain, since the convolusion there is reduced to a multiplication, and the division can be done one frequency at a time. However, this is very unstable for frequencies where the wavelet is very weak or not present, so some stabilizing is needed.
