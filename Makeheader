@@ -3,8 +3,8 @@
 #    -DBIGENDIAN                  (needed for IRIX,SUNOS, etc...)  
 #
 CDIR       = 
-#CXX        = g++
-CXX        = g++-4.2
+CXX        = g++
+#CXX        = g++-4.2
 CC         = gcc
 GCCWARNING = -Wall -pedantic -Wno-long-long
 GXXWARNING = -Wall -pedantic -Woverloaded-virtual -Wno-long-long -Wold-style-cast
