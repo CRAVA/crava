@@ -74,7 +74,8 @@ private:
   bool parseFileName(TiXmlNode * node, const std::string & keyword, std::string & filename, std::string & errTxt, bool allowDuplicates = false);
 
   void ensureTrailingSlash(std::string & directory);
-  void checkForJunk(TiXmlNode * root, std::string & errTxt, bool allowDuplicates = false);
+  void checkForJunk(TiXmlNode * root, std::string & errTxt, const std::vector<std::string> & legalCommands,
+                    bool allowDuplicates = false);
   std::string lineColumnText(TiXmlNode * node);
 
   void checkConsistency(std::string & errTxt);
@@ -103,6 +104,8 @@ XmlModelFile::parseValue(TiXmlNode * node, const std::string & keyword, T & valu
   if(root == NULL)
     return(false);
 
+  std::vector<std::string> legalCommands(1);
+
   TiXmlNode * valNode = root->FirstChild();
   while(valNode != NULL && valNode->Type() != TiXmlNode::TEXT)
     valNode = valNode->NextSibling();
@@ -122,7 +125,7 @@ XmlModelFile::parseValue(TiXmlNode * node, const std::string & keyword, T & valu
     root->RemoveChild(valNode);
   }
 
-  checkForJunk(root, tmpErr, allowDuplicates);
+  checkForJunk(root, tmpErr, legalCommands, allowDuplicates);
 
   errTxt += tmpErr;
   return(true);
