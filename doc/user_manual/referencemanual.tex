@@ -69,7 +69,7 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Default 0
  \elist
 
-\subsubsection{\hbracket{conditioning-to-wells}}  \newkw{conditioning-to-wells}
+\subsubsection{\hbracket{condition-to-wells}}  \newkw{condition-to-wells}
  \slist
    \item \Description Should the realizations be kriged to well data?
    \item \Argument 'yes' or 'no'
@@ -972,26 +972,6 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Default
  \elist
 
-\paragraph{\hbracket{estimation-interval}}\newkw{estimation-interval}
- \slist
-   \item \Description Controls the time interval used for wavelet estimation by a top and base surface.
-   \item \Argument Elements controlling the time interval used for wavelet estimation
-   \item \Default By default, estimation is done from all available seismic and well data.
- \elist
-
-\subparagraph{\hbracket{top-surface-file}}\newkw{top-surface-file}
- \slist
-   \item \Description File name for storm surface file giving the top of the time interval used for wavelet estimation.
-   \item \Argument File name
-   \item \Default
- \elist
-
-\subparagraph{\hbracket{base-surface-file}}\newkw{base-surface-file}
- \slist
-   \item \Description File name for storm surface file giving the base of the time interval used for wavelet estimation.
-   \item \Argument File name
-   \item \Default
- \elist
 
 \subsubsection{\hbracket{match-energies}}\newkw{match-energies}
  \slist
@@ -1018,6 +998,27 @@ Estimation: Checks input data and performs estimation of lacking information for
  \slist
    \item \Description Can not say 'yes' here if \kw{local-noise-scaled} is given.
    \item \Argument 'yes' or 'no'
+   \item \Default
+ \elist
+
+\subsection{\hbracket{wavelet-estimation-interval}}\newkw{wavelet-estimation-interval}
+ \slist
+   \item \Description Controls the time interval used for wavelet estimation by a top and base surface.
+   \item \Argument Elements controlling the time interval used for wavelet estimation
+   \item \Default By default, estimation is done from all available seismic and well data.
+ \elist
+
+\subsubsection{\hbracket{top-surface-file}}\newkw{top-surface-file}
+ \slist
+   \item \Description File name for storm surface file giving the top of the time interval used for wavelet estimation.
+   \item \Argument File name
+   \item \Default
+ \elist
+
+\subsubsection{\hbracket{base-surface-file}}\newkw{base-surface-file}
+ \slist
+   \item \Description File name for storm surface file giving the base of the time interval used for wavelet estimation.
+   \item \Argument File name
    \item \Default
  \elist
 
@@ -1098,6 +1099,7 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Default
  \elist
 
+
 \subsubsection{\hbracket{use-for-wavelet-estimation}}\newkw{use-for-wavelet-estimation}
  \slist
    \item \Description Should this well be used for wavelet estimation?
@@ -1126,7 +1128,7 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Default
  \elist
 
-\subsection{\hbracket{allowed-log-values}}\newkw{allowed-log-values}
+\subsection{\hbracket{allowed-parameter-values}}\newkw{allowed-parameter-values}
  \slist
    \item \Description Sometimes there are faulty values in well logs. Here, trigger values for error detection can be controlled. These fall in two categories: Actual log values that are wrong, or logs that have extremely low or high variance when the background model is subtracted.
    \item \Argument Elements controlling trigger values for error detection
@@ -1154,7 +1156,7 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Default 200 m/s
  \elist
 
-\subsubsection{\hbracket{maximum-vs}}\rnewkw{maximum-vp}{maximum-vp2}
+\subsubsection{\hbracket{maximum-vs}}\rnewkw{maximum-vs}{maximum-vs2}
  \slist
    \item \Description Value for the largest legal vs value.
    \item \Argument Value
@@ -1315,7 +1317,7 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Default
  \elist
 
-\subsubsection{\hbracket{high-cut-background-modeling}}\newkw{high-cut-background-modeling}
+\subsubsection{\hbracket{high-cut-background-modelling}}\newkw{high-cut-background-modelling}
  \slist
    \item \Description Value giving the maximum frequency in the estimated background model. Can not be used if the background parameters are given.
    \item \Argument Value
@@ -1364,14 +1366,14 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Default Everywhere facies and elastic logs are present.
  \elist
 
-\paragraph{\hbracket{top-surface-file}}\rnewkw{top-surface-file}{top-surface-file2}
+\paragraph{\hbracket{top-file-name}}\newkw{top-file-name}
  \slist
    \item \Description File name for storm surface file giving the top of the estimation interval.
    \item \Argument File name
    \item \Default
  \elist
 
-\paragraph{\hbracket{base-surface-file}}\rnewkw{base-surface-file}{base-surface-file2}
+\paragraph{\hbracket{base-file-name}}\newkw{base-file-name}
  \slist
    \item \Description File name for storm surface file giving the base of the estimation interval.
    \item \Argument File name
@@ -1387,29 +1389,34 @@ Estimation: Checks input data and performs estimation of lacking information for
 
 \paragraph{\hbracket{facies}}\rnewkw{facies}{facies2}
  \slist
-   \item \Description This is used once for each facies in the wells used for facies probabilities.
-   \item \Argument Elements defining a prior facies probability.
+   \item \Description Name of facies. All facies present in well logs must be given.
+   \item \Argument Facies name
+   \item \Description Repeatable command, one for each facies. All facies present in well logs must be given.
+   \item \Argument Elements containing information about the facies
    \item \Default
  \elist
 
 \subparagraph{\hbracket{name}}\newkw{name}
  \slist
+   \item \Description Probability for facies given above. Either this command or \kw{probabilitycube} is given, same for all facies.
    \item \Description Name of facies.
-   \item \Argument String.
+   \item \Argument Facies name
    \item \Default
  \elist
 
 \subparagraph{\hbracket{probability}}\newkw{probability}
  \slist
-   \item \Description Probability for facies given above. Either this command or \kw{probability-cube} is given, same for all facies.
+   \item \Description Probability for the facies given above. Either this command or \kw{probabilitycube} is given, same for all facies.
    \item \Argument Real numbers between 0 and 1. Numbers for all facies must sum to one.
    \item \Default
  \elist
 
-\subparagraph{\hbracket{probability-cube}}\newkw{probability-cube}
+\subparagraph{\hbracket{probabilitycube}}\newkw{probabilitycube}
  \slist
    \item \Description File name for file containing prior facies probability for facies with name given above. Either this command or \kw{probability} is given, same for all facies.
-   \item \Argument String
+   \item \Argument File name
+   \item \Description File name for file containing prior facies probability for facies with name given above. Either this command or \kw{probability} is given, same for all facies.
+   \item \Argument File name
    \item \Default
  \elist
 
