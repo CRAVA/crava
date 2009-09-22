@@ -981,10 +981,8 @@ XmlModelFile::parsePriorFaciesProbabilities(TiXmlNode * node, std::string & errT
   if(root == 0)
     return(false);
 
-  std::vector<std::string> legalCommands(3);
+  std::vector<std::string> legalCommands(1);
   legalCommands[0]="facies";
-  legalCommands[1]="prob";
-  legalCommands[2]="probcube";
   
   float sum;
   int status = 0;
@@ -1827,9 +1825,6 @@ XmlModelFile::parseAdvancedSettings(TiXmlNode * node, std::string & errTxt)
     modelSettings_->setMaxWaveletShift(value);
   if(parseValue(root, "white-noise-component", value, errTxt) == true)
     modelSettings_->setWNC(value);
-  int level = 0;
-  if(parseValue(root, "debug-level", level, errTxt) == true)
-    modelSettings_->setDebugFlag(level);
   std::string filename;
   if(parseFileName(root, "reflection-matrix", filename, errTxt) == true)
     inputFiles_->setReflMatrFile(filename);
@@ -1838,6 +1833,7 @@ XmlModelFile::parseAdvancedSettings(TiXmlNode * node, std::string & errTxt)
     if(modelSettings_->getKrigingParameter() >= 0)
       modelSettings_->setKrigingParameter(kLimit);
   }
+  int level = 0;
   if(parseValue(root, "debug-level", level, errTxt) == true)
     modelSettings_->setDebugFlag(level);
 
