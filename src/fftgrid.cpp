@@ -1729,7 +1729,6 @@ FFTGrid::writeDirectFile(const std::string & fileName, const Simbox * simbox)
     ofstream binFile;
     NRLib::OpenWrite(binFile, fileName, std::ios::out | std::ios::binary);
 
-    // Marit mellom disse strekene
     NRLib::WriteBinaryDouble(binFile, simbox->getx0());
     NRLib::WriteBinaryDouble(binFile, simbox->gety0());
     NRLib::WriteBinaryDouble(binFile, simbox->getdx());
@@ -1743,8 +1742,6 @@ FFTGrid::writeDirectFile(const std::string & fileName, const Simbox * simbox)
     NRLib::WriteBinaryDouble(binFile, simbox->getXLStepX());
     NRLib::WriteBinaryDouble(binFile, simbox->getXLStepY());
     NRLib::WriteBinaryDouble(binFile, simbox->getAngle());
-    // Marit mellom disse strekene
-
     NRLib::WriteBinaryInt(binFile, rnxp_);
     NRLib::WriteBinaryInt(binFile, nyp_);
     NRLib::WriteBinaryInt(binFile, nzp_);

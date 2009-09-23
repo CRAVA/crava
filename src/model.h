@@ -246,7 +246,7 @@ private:
                                 Simbox * simbox, 
                                 Grid2D *outgrid);
 
-  SegyGeometry   * geometryFromDirectFile(const std::string & fileName); // Marit har lagd dette
+  SegyGeometry   * geometryFromDirectFile(const std::string & fileName); 
 
 
   ModelSettings  * modelSettings_;
