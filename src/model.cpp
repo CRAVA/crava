@@ -191,7 +191,8 @@ Model::Model(char * fileName)
           bool backgroundDone = false;
           if(estimate == false || modelSettings_->getEstimateBackground() == true ||
             modelSettings_->getEstimateCorrelations() == true || 
-            modelSettings_->getDirectBGOutput() == true)
+            modelSettings_->getDirectBGOutput() == true ||
+            modelSettings_->getEstimateWaveletNoise() == true) 
           {
             processBackground(background_, wells_, timeSimbox_, timeBGSimbox,
                               modelSettings_, inputFiles,
@@ -201,16 +202,11 @@ Model::Model(char * fileName)
 
 
           if (failedBackground == false && backgroundDone == true && 
-              (estimate == false || modelSettings_->getEstimateCorrelations() == true ||
-               modelSettings_->getEstimateWaveletNoise() == true))
+              (estimate == false || modelSettings_->getEstimateCorrelations() == true))
           {
-            processPriorCorrelations(correlations_, background_, wells_, timeSimbox_,
+            processPriorCorrelations(correlations_, background_, wells_, timeSimbox_, 
                                      modelSettings_, inputFiles,
                                      errText, failedPriorCorr);
-            processReflectionMatrix(reflectionMatrix_, background_, 
-                                    modelSettings_, inputFiles, 
-                                    errText, failedReflMat);
-
           }
 
           if (failedReflMat == false && failedExtraSurf == false &&
@@ -223,6 +219,10 @@ Model::Model(char * fileName)
                            errText, failedSeismic);
             if(failedSeismic == false) {
               addSeismicLogs(wells_, seisCube_, modelSettings_);
+  
+              processReflectionMatrix(reflectionMatrix_, background_, 
+                                      modelSettings_, inputFiles, 
+                                      errText, failedReflMat);
 
               processWavelets(wavelet_, seisCube_, wells_, reflectionMatrix_,
                               timeSimbox_, waveletEstimInterval_,
@@ -646,27 +646,28 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
   //
   std::string areaType = "Model file";
   std::string seismicFile("");
+  SegyGeometry * geometry = NULL;
   if (modelSettings_->getGenerateSeismic()==false && inputFiles->getNumberOfSeismicFiles() > 0)
     seismicFile = inputFiles->getSeismicFile(0); // Also needed for checkAvailableMemory()
-
-  if (!areaFromModelFile)
-    LogKit::LogFormatted(LogKit::HIGH,"\nFinding inversion area from seismic data in file %s\n", 
-                         seismicFile.c_str());
-  else
-    LogKit::LogFormatted(LogKit::HIGH,"\nFinding IL/XL information from seismic data in file %s\n", 
-                         seismicFile.c_str());
-
-  SegyGeometry * geometry = NULL;
-  if(seismicFile != "") //May change the condition here, but need geometry if we want to set XL/IL
-    if(modelSettings->getDirectSeisInput() == false)
-      geometry = SegY::FindGridGeometry(seismicFile, modelSettings->getTraceHeaderFormat(0));
-    else {
-      geometry = geometryFromDirectFile(seismicFile);
+  if (!(areaFromModelFile && modelSettings_->getEstimationMode()==true)) 
+  {  
+    if (!areaFromModelFile)
+      LogKit::LogFormatted(LogKit::HIGH,"\nFinding inversion area from seismic data in file %s\n", 
+      seismicFile.c_str());
+    else
+      LogKit::LogFormatted(LogKit::HIGH,"\nFinding IL/XL information from seismic data in file %s\n", 
+      seismicFile.c_str());
+  
+    if(seismicFile != "") {//May change the condition here, but need geometry if we want to set XL/IL
+      if(modelSettings->getDirectSeisInput() == false)
+        geometry = SegY::FindGridGeometry(seismicFile, modelSettings->getTraceHeaderFormat(0));
+      else {
+        geometry = geometryFromDirectFile(seismicFile);
+      }
     }
-
-  if(!areaFromModelFile)
-    modelSettings->setAreaParameters(geometry);
-
+    if(!areaFromModelFile)
+     modelSettings->setAreaParameters(geometry);
+  }
   const SegyGeometry * areaParams = modelSettings->getAreaParameters(); 
 
   int error = timeSimbox->setArea(areaParams, errText);
@@ -3310,7 +3311,7 @@ Model::processDepthConversion(Simbox        * timeCutSimbox,
       timeDepthMapping_->makeTimeDepthMapping(velocity, timeSimbox);
       if(modelSettings->getDirectVelOutput() == true) {
         std::string fName = ModelSettings::makeFullFileName("Velocity_Direct.bin");
-        velocity->writeDirectFile(fName, timeSimbox); //Marit
+        velocity->writeDirectFile(fName, timeSimbox); 
       }
     }
   }
@@ -3557,7 +3558,7 @@ void Model::resampleGridAndWriteToFile(Grid2D *grid,Simbox *simbox, char *fileNa
 
 
 SegyGeometry *
-Model::geometryFromDirectFile(const std::string & fileName) //Marit
+Model::geometryFromDirectFile(const std::string & fileName) 
 {
   std::ifstream binFile;
     NRLib::OpenRead(binFile, fileName, std::ios::in | std::ios::binary);
