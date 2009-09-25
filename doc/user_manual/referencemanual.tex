@@ -1389,8 +1389,6 @@ Estimation: Checks input data and performs estimation of lacking information for
 
 \paragraph{\hbracket{facies}}\rnewkw{facies}{facies2}
  \slist
-   \item \Description Name of facies. All facies present in well logs must be given.
-   \item \Argument Facies name
    \item \Description Repeatable command, one for each facies. All facies present in well logs must be given.
    \item \Argument Elements containing information about the facies
    \item \Default
@@ -1398,7 +1396,6 @@ Estimation: Checks input data and performs estimation of lacking information for
 
 \subparagraph{\hbracket{name}}\newkw{name}
  \slist
-   \item \Description Probability for facies given above. Either this command or \kw{probabilitycube} is given, same for all facies.
    \item \Description Name of facies.
    \item \Argument Facies name
    \item \Default
@@ -1406,15 +1403,13 @@ Estimation: Checks input data and performs estimation of lacking information for
 
 \subparagraph{\hbracket{probability}}\newkw{probability}
  \slist
-   \item \Description Probability for the facies given above. Either this command or \kw{probabilitycube} is given, same for all facies.
+   \item \Description Probability for the facies given above. Either this command or \kw{probability-cube} is given, same for all facies.
    \item \Argument Real numbers between 0 and 1. Numbers for all facies must sum to one.
    \item \Default
  \elist
 
-\subparagraph{\hbracket{probabilitycube}}\newkw{probabilitycube}
+\subparagraph{\hbracket{probabilitycube}}\newkw{probability-cube}
  \slist
-   \item \Description File name for file containing prior facies probability for facies with name given above. Either this command or \kw{probability} is given, same for all facies.
-   \item \Argument File name
    \item \Description File name for file containing prior facies probability for facies with name given above. Either this command or \kw{probability} is given, same for all facies.
    \item \Argument File name
    \item \Default

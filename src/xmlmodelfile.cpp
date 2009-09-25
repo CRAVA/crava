@@ -1029,7 +1029,7 @@ TiXmlNode * root = node->FirstChildElement("facies");
   std::vector<std::string> legalCommands(3);
   legalCommands[0]="name";
   legalCommands[1]="probability";
-  legalCommands[2]="probabilitycube";
+  legalCommands[2]="probability-cube";
 
   std::string faciesname;
   std::string filename;
@@ -1042,7 +1042,7 @@ TiXmlNode * root = node->FirstChildElement("facies");
      modelSettings_->addPriorFaciesProb(faciesname,value);
      // status = 1;
     }
-    else if(parseValue(root,"probabilitycube",filename,errTxt,true)==true)
+    else if(parseValue(root,"probability-cube",filename,errTxt,true)==true)
     {
      modelSettings_->setPriorFaciesProbGiven(2);
      inputFiles_->setPriorFaciesProb(faciesname,filename);

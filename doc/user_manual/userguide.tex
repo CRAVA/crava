@@ -357,7 +357,7 @@ Instead of using the default reflection approximation, the user may supply the p
 The coefficients $a_{V\!p}$, $a_{V\!s}$ and $a_\rho$ can be read from file, using the \kw{reflection-matrix}\kwindex{reflection-matrix} command under \kw{advanced-settings}. This file should have one line for each seismic data file, and each line should have the three coefficients for one set of seismic input data. The order of the lines should be the same as the order of the seismic data in the \kw{survey} command.
 
 \subsection{Well quality checks}
-Well logs are often faulty, and \crava has some safety mechanisms to detect this. The primary mechanism is to detect extreme values, and set these missing. The default upper and lower bounds are shown in \autoref{tab:logminmax}. These can be overridden using the command \kw{allowed-log-values}\kwindex{allowed-log-values} under \kw{well-data}. Here, \kw{minimum-vp}, \kw{minimum-vs}, \kw{minimum-density} and the corresponding maximum values can be given.
+Well logs are often faulty, and \crava has some safety mechanisms to detect this. The primary mechanism is to detect extreme values, and set these missing. The default upper and lower bounds are shown in \autoref{tab:logminmax}. These can be overridden using the command \kw{allowed-parameter-values}\kwindex{allowed-parameter-values} under \kw{well-data}. Here, \kw{minimum-vp}, \kw{minimum-vs}, \kw{minimum-density} and the corresponding maximum values can be given.
 \begin{table}
 \begin{tabular}{|lrr|}
 \hline
@@ -371,7 +371,7 @@ Density & 1.4 & 3.3
 \end{table}
 
 
-Some logs may stay within reasonable values, but have too much or too little variation, also indicating that something is wrong. For each log, the variance of the logarithm of the log minus the background is computed, and if it is outside reasonable bounds, this triggers an error. The default bounds are shown in \autoref{tab:logvarminmax}. These can also be overridden with \kw{allowed-log-values}, using \kw{minimum-variance-vp} and so on.
+Some logs may stay within reasonable values, but have too much or too little variation, also indicating that something is wrong. For each log, the variance of the logarithm of the log minus the background is computed, and if it is outside reasonable bounds, this triggers an error. The default bounds are shown in \autoref{tab:logvarminmax}. These can also be overridden with \kw{allowed-parameter-values}, using \kw{minimum-variance-vp} and so on.
 \begin{table}
 \begin{tabular}{|lrr|}
 \hline
@@ -393,7 +393,7 @@ If you only want to do the estimation, in order to check the quality of the esti
 \subsection{Wavelet and noise estimation}
 Wavelets and noise are estimated together. These parameters will only be estimated from wells that are vertical or close to vertical, since this allows comparing synthetic seismic from well logs with one or a couple of traces, and thus reduces alignment issues. The angle limit can be controlled by the \kw{maximum-deviation-angle}\kwindex{maximum-deviation-angle} command under \kw{well-data}. In addition, wells can be excluded individually, by setting \kw{use-for-wavelet-estimation} to "no" under \kw{well}.
 
-By default, the wavelet and noise are estimated in the region between the top and bottom surface for the inversion area. This may be further limited using the \kw{estimation-interval} command under \kw{wavelet}, where a separate set of restricting surfaces are given with \kw{top-surface-file} and \kw{base-surface-file}. Since these are under \kw{wavelet}, they can be different for each angle.
+By default, the wavelet and noise are estimated in the region between the top and bottom surface for the inversion area. This may be further limited using the \kw{wavelet-estimation-interval} command under \kw{survey}, where a separate set of restricting surfaces are given with \kw{top-surface-file} and \kw{base-surface-file}. Since these are under \kw{wavelet}, they can be different for each angle.
 
 Some wavelet estimation options are also found under \kw{advanced-settings} under \kw{project-settings}. These are
 \begin{itemize}
