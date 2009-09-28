@@ -198,6 +198,14 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
   multiplyPapolouis(cor_cpp_r,dz,nWells,nzp, waveletLength, wellWeight);
   getWavelet(ccor_seis_cpp_r,cor_cpp_r,wavelet_r,wellWeight, nWells, nzp);
 
+  // Save estimated wavelet for each well, write to file later
+  std::vector<std::vector<fftw_real> > wellWavelets(nWells);
+  for(int w=0; w<nWells; w++){
+    wellWavelets[w].resize(nzp);
+    for(int i=0;i<nzp;i++)
+      wellWavelets[w][i] = wavelet_r[w][i];
+  }
+
   rAmp_ = averageWavelets(wavelet_r,nWells,nzp,wellWeight,dz,dz0); // wavelet centered
   cAmp_ = reinterpret_cast<fftw_complex*>(rAmp_);
 
@@ -262,6 +270,23 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
   for(i=0; i < nzp_; i++ )
       norm2 += rAmp_[i]*rAmp_[i];
   norm_= float( sqrt(norm2));
+
+  //Writing well wavelets to file. Using writeWaveletToFile, so manipulating rAmp_
+  fftw_real * trueAmp = rAmp_;
+  rAmp_               = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));
+  cAmp_               = reinterpret_cast<fftw_complex *>(rAmp_);
+
+  for(int w=0; w<nWells; w++){
+    for(int i=0;i<nzp;i++)
+      rAmp_[i] = wellWavelets[w][i];
+    sprintf(fileName,"Wavelet");
+    sprintf(fileName,"%s_%s",fileName,wells[w]->getWellname());
+    float dzOut = 1.0; 
+    writeWaveletToFile(fileName, dzOut);
+  }
+  delete [] rAmp_;
+  rAmp_ = trueAmp;
+  cAmp_ = reinterpret_cast<fftw_complex *>(rAmp_);
 
   if(ModelSettings::getDebugLevel() > 1) {
     sprintf(fileName,"estimated_wavelet_full_%d.txt",int(ceil((theta_*180/PI)-0.5)) );
@@ -1153,8 +1178,8 @@ void
 Wavelet1D::writeWaveletToFile(char* fileName,float approxDzIn, Simbox *)
 {
    sprintf(fileName,"%s_%.1f_deg",fileName,theta_*180.0/PI);
-  
-   std::string fName = ModelSettings::makeFullFileName(std::string(fileName)+".asc");
+
+   std::string fName = ModelSettings::makeFullFileName(std::string(fileName)+".wlt");
    LogKit::LogFormatted(LogKit::MEDIUM,"  Writing Wavelet to file \'"+fName+"\'\n");
    int i;
    float approxDz;
@@ -1165,22 +1190,22 @@ Wavelet1D::writeWaveletToFile(char* fileName,float approxDzIn, Simbox *)
    //Trick: Written wavelet may be shorter than the actual.
    //This gives inconsistency if a wavelet is read and written.
    //Make consistent by truncating wavelet to writing range before interpolation.
-   int activeCells = int(floor(waveletLength_/2/dz_));
-   float * remember = new float[nzp_];
+   int     activeCells = int(floor(waveletLength_/2/dz_));
+   float * remember    = new float[nzp_];
    for(i=activeCells+1;i<=nz_;i++) {
-     remember[i] = rAmp_[i];
-     rAmp_[i] = 0;
+     remember[i]        = rAmp_[i];
+     rAmp_[i]           = 0;
      remember[nzp_+1-i] = rAmp_[nzp_+1-i];
-     rAmp_[nzp_+1-i] = 0;
+     rAmp_[nzp_+1-i]    = 0;
    }
 
-   float T = nzp_*dz_;
-   int nzpNew  = int(ceil(T/approxDz - 0.5));  
+   float T       = nzp_*dz_;
+   int   nzpNew  = int(ceil(T/approxDz - 0.5));  
    float dznew   = T/float(nzpNew);
-   int cnzpNew = (nzpNew/2)+1;
+   int   cnzpNew = (nzpNew/2)+1;
 
-   fftw_real*     waveletNew_r = new fftw_real[2*cnzpNew];
-   fftw_complex*  waveletNew_c =reinterpret_cast<fftw_complex*>(waveletNew_r);
+   fftw_real*     waveletNew_r =  new fftw_real[2*cnzpNew];
+   fftw_complex*  waveletNew_c =  reinterpret_cast<fftw_complex*>(waveletNew_r);
    fft1DInPlace();
    double multiplyer = static_cast<double>(nzpNew)/static_cast<double>(nzp_);
 
