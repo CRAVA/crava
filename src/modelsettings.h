@@ -224,7 +224,7 @@ public:
   void							               setOutputFormatFlag(int formatFlag)           { formatFlag_           = formatFlag         ;}
   void							               setOutputDomainFlag(int domainFlag)           { domainFlag_           = domainFlag         ;}
   void							               setWellOutputFlag(int wellFlag)               { wellFlag_             = wellFlag           ;}
-  void                             setWellFormatFlag(int formatFlag)             { formatFlag_           = formatFlag         ;}
+  void                             setWellFormatFlag(int formatFlag)             { wellFormatFlag_       = formatFlag         ;}
   void							               setOtherOutputFlag(int otherFlag)             { otherFlag_            = otherFlag          ;}
   void							               setDirectBGOutput(bool directBGOutput)        { directBGOutput_       = directBGOutput     ;}
   void							               setDirectSeisOutput(bool directSeisOutput)    { directSeisOutput_     = directSeisOutput   ;}
