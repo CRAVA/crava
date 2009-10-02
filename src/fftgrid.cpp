@@ -1678,7 +1678,7 @@ FFTGrid::writeSgriFile(const std::string & fileName, const Simbox *simbox, const
   int ny = simbox->getny();
   int nx = simbox->getnx();
   headerFile << nx << " " << ny << " " << nz << std::endl;
-  headerFile << simbox->getdx()*0.001 << " " << simbox->getdy()*0.001 << " " << dz*0.001 << std::endl;
+  headerFile << simbox->getdx() << " " << simbox->getdy() << " " << dz << std::endl;
   double x0 = simbox->getx0() + 0.5 * simbox->getdx();
   double y0 = simbox->gety0() + 0.5 * simbox->getdy();
   double z0 = zMin + 0.5 * dz;
