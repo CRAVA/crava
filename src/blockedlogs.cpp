@@ -925,16 +925,14 @@ BlockedLogs::writeNorsarWell(ModelSettings * modelSettings)
     md[i-firstB_] = md[i-firstB_-1] + d;
   }
   
-  double s = 1e-3;
-
   mainFile << "[Version information]\nVERSION 1000\nFORMAT ASCCI\n\n";
   mainFile << "[Well information]\n";
   mainFile << "MDMIN      km       " << 0.0f << "\n";
-  mainFile << "MDMAX      km       " << md[nData-1]*s << "\n";
-  mainFile << "MDMINSTEP  km       " << dmin*s << "\n";
-  mainFile << "MDMAXSTEP  km       " << dmax*s << "\n";
-  mainFile << "UTMX       km       " << xpos_[0]*s << "\n";
-  mainFile << "UTMY       km       " << ypos_[0]*s << "\n";
+  mainFile << "MDMAX      km       " << md[nData-1] << "\n";
+  mainFile << "MDMINSTEP  km       " << dmin << "\n";
+  mainFile << "MDMAXSTEP  km       " << dmax << "\n";
+  mainFile << "UTMX       km       " << xpos_[0] << "\n";
+  mainFile << "UTMY       km       " << ypos_[0] << "\n";
   mainFile << "EKB        km       " << 0.0f << "\n";
   mainFile << "UNDEFVAL   no_unit " << WELLMISSING << "\n\n";
 
