@@ -48,9 +48,9 @@ WellData::WellData(const std::string              & wellFileName,
     blockedLogsOrigThick_(NULL),
     blockedLogsConstThick_(NULL),
     blockedLogsExtendedBG_(NULL),
-    useForFaciesProbabilities_(indicatorFacies==1),
-    useForWaveletEstimation_(indicatorWavelet==1),  
-    useForBackgroundTrend_(indicatorBGTrend==1)
+    useForFaciesProbabilities_(indicatorFacies),
+    useForWaveletEstimation_(indicatorWavelet),  
+    useForBackgroundTrend_(indicatorBGTrend)
 {
   sprintf(errTxt_,"%c",'\0');
   if(wellFileName.find(".nwh",0) != std::string::npos)
@@ -1439,7 +1439,8 @@ WellData::lookForSyntheticVsLog(float & rank_correlation)
     {
       LogKit::LogFormatted(LogKit::LOW,"   Vp-Vs rank correlation is %5.3f. Treating Vs log as synthetic.\n",rank_correlation);
       syntheticVsLog_ = true;
-      useForFaciesProbabilities_ = false;
+      if(useForFaciesProbabilities_ == ModelSettings::NOTSET)
+        useForFaciesProbabilities_ = ModelSettings::NO;
     } 
     else
     {
@@ -1522,8 +1523,8 @@ WellData::calculateDeviation(float  & devAngle,
 
   if (max_deviation > thr_deviation) 
   {
-  //  useForFaciesProbabilities_ = false;
-    useForWaveletEstimation_   = false;    
+    if(useForWaveletEstimation_ == ModelSettings::NOTSET)   
+      useForWaveletEstimation_ = ModelSettings::NO;    
     isDeviated_ = true;
     LogKit::LogFormatted(LogKit::LOW," Well is treated as deviated.\n");
   }

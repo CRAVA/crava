@@ -286,6 +286,8 @@ public:
 
   enum							               sseismicTypes{STANDARDSEIS = 0, PSSEIS = 1};
 
+  enum                             indicators{NO = 0, YES = 1, NOTSET = 2};
+
   //Note: By convention, input path is added to input file names at end of parsing.
   //      Output path and prefix is added to output file name by call to makeFullFileName
   //      just before writing.

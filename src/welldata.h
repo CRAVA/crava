@@ -35,12 +35,12 @@ public:
   const double  * getXpos(int &nData) const;
   const double  * getYpos(int &nData) const;
   const double  * getZpos(int &nData) const;
-  const char    * getWellname(void)                  const { return wellname_                  ;} 
-  const bool      hasSyntheticVsLog(void)            const { return syntheticVsLog_            ;}
-  const bool      isDeviated(void)                   const { return isDeviated_                ;}
-  const bool      getUseForFaciesProbabilities(void) const { return useForFaciesProbabilities_ ;}
-  const bool      getUseForWaveletEstimation(void)   const { return useForWaveletEstimation_   ;}
-  const bool      getUseForBackgroundTrend(void)     const { return useForBackgroundTrend_     ;}
+  const char    * getWellname(void)                  const { return wellname_                      ;} 
+  const bool      hasSyntheticVsLog(void)            const { return syntheticVsLog_                ;}
+  const bool      isDeviated(void)                   const { return isDeviated_                    ;}
+  const bool      getUseForFaciesProbabilities(void) const { return useForFaciesProbabilities_ > 0 ;}
+  const bool      getUseForWaveletEstimation(void)   const { return useForWaveletEstimation_ > 0   ;}
+  const bool      getUseForBackgroundTrend(void)     const { return useForBackgroundTrend_ > 0     ;}
   bool            isFaciesLogDefined(void) const;
   int             getNFacies(void)                   const { return nFacies_                   ;}
   int           * getFaciesNr(void)                  const { return faciesNr_                  ;}
@@ -119,9 +119,9 @@ private:
   BlockedLogs   * blockedLogsConstThick_;
   BlockedLogs   * blockedLogsExtendedBG_;
 
-  bool            useForFaciesProbabilities_;
-  bool            useForWaveletEstimation_;
-  bool            useForBackgroundTrend_;
+  int             useForFaciesProbabilities_;
+  int             useForWaveletEstimation_;
+  int             useForBackgroundTrend_;
 
   char            errTxt_[MAX_STRING];
   int             error_;

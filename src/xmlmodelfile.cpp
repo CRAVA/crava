@@ -376,20 +376,33 @@ XmlModelFile::parseWell(TiXmlNode * node, std::string & errTxt)
     inputFiles_->addWellFile(""); //Dummy to keep tables balanced.
 
   bool use;
-  if(parseBool(root, "use-for-wavelet-estimation", use, tmpErr) == true && use == false)
-    modelSettings_->addIndicatorWavelet(0);
+  if(parseBool(root, "use-for-wavelet-estimation", use, tmpErr) == true) {
+    if(use == false)
+      modelSettings_->addIndicatorWavelet(ModelSettings::NO);
+    else
+      modelSettings_->addIndicatorWavelet(ModelSettings::YES);
+  }
   else
-    modelSettings_->addIndicatorWavelet(1);
+    modelSettings_->addIndicatorWavelet(ModelSettings::NOTSET);
 
-  if(parseBool(root, "use-for-background-trend", use, tmpErr) == true && use == false)
-    modelSettings_->addIndicatorBGTrend(0);
-  else
-    modelSettings_->addIndicatorBGTrend(1);
 
-  if(parseBool(root, "use-for-facies-probabilities", use, tmpErr) == true && use == false)
-    modelSettings_->addIndicatorFacies(0);
+  if(parseBool(root, "use-for-background-trend", use, tmpErr) == true) {
+    if(use == false)
+      modelSettings_->addIndicatorBGTrend(ModelSettings::NO);
+    else
+      modelSettings_->addIndicatorBGTrend(ModelSettings::YES);
+  }
   else
-    modelSettings_->addIndicatorFacies(1);
+    modelSettings_->addIndicatorBGTrend(ModelSettings::NOTSET);
+
+  if(parseBool(root, "use-for-facies-probabilities", use, tmpErr) == true) {
+    if(use == false)
+      modelSettings_->addIndicatorFacies(ModelSettings::NO);
+    else
+      modelSettings_->addIndicatorFacies(ModelSettings::YES);
+  }
+  else
+    modelSettings_->addIndicatorFacies(ModelSettings::NOTSET);
 
   checkForJunk(root, errTxt, legalCommands, true); //Allow duplicates
 
