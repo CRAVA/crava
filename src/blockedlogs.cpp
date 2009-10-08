@@ -911,6 +911,7 @@ BlockedLogs::writeNorsarWell(ModelSettings * modelSettings)
 
   int nData = lastB_ - firstB_ + 1;
   std::vector<double> md(nData,0);
+  md[0] = zpos_[firstB_];
   double dmax = 0;
   double dmin = 1e+30;
   for(int i=firstB_+1;i<=lastB_;i++) {
@@ -927,20 +928,22 @@ BlockedLogs::writeNorsarWell(ModelSettings * modelSettings)
   
   mainFile << "[Version information]\nVERSION 1000\nFORMAT ASCCI\n\n";
   mainFile << "[Well information]\n";
-  mainFile << "MDMIN      km       " << 0.0f << "\n";
-  mainFile << "MDMAX      km       " << md[nData-1] << "\n";
-  mainFile << "MDMINSTEP  km       " << dmin << "\n";
-  mainFile << "MDMAXSTEP  km       " << dmax << "\n";
-  mainFile << "UTMX       km       " << xpos_[0] << "\n";
-  mainFile << "UTMY       km       " << ypos_[0] << "\n";
-  mainFile << "EKB        km       " << 0.0f << "\n";
-  mainFile << "UNDEFVAL   no_unit " << WELLMISSING << "\n\n";
+  mainFile << std::setprecision(5);
+  mainFile << "MDMIN      km       " << md[0]*0.001       << "\n";
+  mainFile << "MDMAX      km       " << md[nData-1]*0.001 << "\n";
+  mainFile << "MDMINSTEP  km       " << dmin*0.001        << "\n";
+  mainFile << "MDMAXSTEP  km       " << dmax*0.001        << "\n";
+  mainFile << "UTMX       km       " << xpos_[0]*0.001    << "\n";
+  mainFile << "UTMY       km       " << ypos_[0]*0.001    << "\n";
+  mainFile << "EKB        km       " << 0.0f              << "\n";
+  mainFile << "UNDEFVAL   no_unit " << WELLMISSING        << "\n\n";
 
 
   mainFile << "[Well track data information]\n";
   mainFile << "NUMMD  " << nData << "\n";
-  mainFile << "NUMPAR 4\n";
+  mainFile << "NUMPAR 5\n";
   mainFile << "MD      km\n";
+  mainFile << "TVD     km\n";
   mainFile << "TWT     s\n";
   mainFile << "UTMX    km\n";
   mainFile << "UTMY    km\n";
@@ -1021,27 +1024,28 @@ BlockedLogs::writeNorsarWell(ModelSettings * modelSettings)
   }
   
   for(int i = firstB_;i<=lastB_;i++) {
-    trackFile << std::setw(7) << md[i] << " " << std::setw(7) << zpos_[i] 
-              << " " << std::setw(10)<< xpos_[i] << " " << std::setw(10)<< ypos_[i] << "\n";
+    trackFile << std::setprecision(5) << std::setw(7) 
+              << md[i]*0.001 << " " << std::setw(7) << zpos_[i]*0.001 << " " << zpos_[i]*0.001
+              << " " << std::setw(10)<< xpos_[i]*0.001 << " " << std::setw(10)<< ypos_[i]*0.001 << "\n";
 
     *(logFiles[0]) << std::right   << std::fixed << std::setprecision(5)
-                   << std::setw(7) << md[i] << " "
+                   << std::setw(7) << md[i]*0.001 << " "
                    << std::setw(7) << (alpha_[i]==RMISSING                    ? WELLMISSING : exp(alpha_[i]))                    << " "
                    << std::setw(7) << (beta_[i]==RMISSING                     ? WELLMISSING : exp(beta_[i]))                     << " "
                    << std::setw(7) << (rho_[i]==RMISSING                      ? WELLMISSING : exp(rho_[i]))                      << "\n";
     *(logFiles[1]) << std::right   << std::fixed << std::setprecision(5)
-                   << std::setw(7) << md[i] << " "
+                   << std::setw(7) << md[i]*0.001 << " "
                    << std::setw(7) << (alpha_highcut_background_[i]==RMISSING ? WELLMISSING : exp(alpha_highcut_background_[i])) << " "
                    << std::setw(7) << (beta_highcut_background_[i]==RMISSING  ? WELLMISSING : exp(beta_highcut_background_[i]))  << " "
                    << std::setw(7) << (rho_highcut_background_[i]==RMISSING   ? WELLMISSING : exp(rho_highcut_background_[i]))     << "\n";
     *(logFiles[2]) << std::right   << std::fixed << std::setprecision(5)
-                   << std::setw(7) << md[i] << " "
+                   << std::setw(7) << md[i]*0.001 << " "
                    << std::setw(7) << (alpha_highcut_seismic_[i]==RMISSING    ? WELLMISSING : exp(alpha_highcut_seismic_[i]))    << " "
                    << std::setw(7) << (beta_highcut_seismic_[i]==RMISSING     ? WELLMISSING : exp(beta_highcut_seismic_[i]))     << " "
                    << std::setw(7) << (rho_highcut_seismic_[i]==RMISSING      ? WELLMISSING : exp(rho_highcut_seismic_[i]))      << "\n";
     if(gotFilteredLog) {
       *(logFiles[3]) << std::right   << std::fixed << std::setprecision(5)
-                     << std::setw(7) << md[i] << " "
+                     << std::setw(7) << md[i]*0.001 << " "
                      << std::setw(7) << (alpha_seismic_resolution_[i]==RMISSING ? WELLMISSING : exp(alpha_seismic_resolution_[i])) << " "
                      << std::setw(7) << (beta_seismic_resolution_[i]==RMISSING  ? WELLMISSING : exp(beta_seismic_resolution_[i]))  << " "
                      << std::setw(7) << (rho_seismic_resolution_[i]==RMISSING   ? WELLMISSING : exp(rho_seismic_resolution_[i]))   << "\n";
