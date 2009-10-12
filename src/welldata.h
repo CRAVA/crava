@@ -19,6 +19,7 @@ public:
            int                              indicatorFacies,
            int                              indicatorWavelet,
            int                              indicatorBGTrend,
+           int                              indicatorRealVs,
            bool                             faciesLogGiven);
   ~WellData(void);
 
@@ -36,11 +37,11 @@ public:
   const double  * getYpos(int &nData) const;
   const double  * getZpos(int &nData) const;
   const char    * getWellname(void)                  const { return wellname_                      ;} 
-  const bool      hasSyntheticVsLog(void)            const { return syntheticVsLog_                ;}
+  const bool      hasSyntheticVsLog(void)            const { return(realVsLog_ == 0)               ;}
   const bool      isDeviated(void)                   const { return isDeviated_                    ;}
-  const bool      getUseForFaciesProbabilities(void) const { return useForFaciesProbabilities_ > 0 ;}
-  const bool      getUseForWaveletEstimation(void)   const { return useForWaveletEstimation_ > 0   ;}
-  const bool      getUseForBackgroundTrend(void)     const { return useForBackgroundTrend_ > 0     ;}
+  const bool      getUseForFaciesProbabilities(void) const { return(useForFaciesProbabilities_ > 0);}
+  const bool      getUseForWaveletEstimation(void)   const { return(useForWaveletEstimation_ > 0)  ;}
+  const bool      getUseForBackgroundTrend(void)     const { return(useForBackgroundTrend_ > 0)    ;}
   bool            isFaciesLogDefined(void) const;
   int             getNFacies(void)                   const { return nFacies_                   ;}
   int           * getFaciesNr(void)                  const { return faciesNr_                  ;}
@@ -119,14 +120,14 @@ private:
   BlockedLogs   * blockedLogsConstThick_;
   BlockedLogs   * blockedLogsExtendedBG_;
 
-  int             useForFaciesProbabilities_;
-  int             useForWaveletEstimation_;
-  int             useForBackgroundTrend_;
+  int             useForFaciesProbabilities_;   //Uses the indicator enum from Modelsettings.
+  int             useForWaveletEstimation_;     //Uses the indicator enum from Modelsettings.
+  int             useForBackgroundTrend_;       //Uses the indicator enum from Modelsettings.
 
   char            errTxt_[MAX_STRING];
   int             error_;
   int             timemissing_;
-  bool            syntheticVsLog_;
+  int             realVsLog_;                   //Uses the indicator enum from Modelsettings.
   bool            isDeviated_;
   int             nFacies_;
   char          * faciesLogName_;

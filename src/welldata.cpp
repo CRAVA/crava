@@ -28,6 +28,7 @@ WellData::WellData(const std::string              & wellFileName,
                    int                              indicatorFacies,
                    int                              indicatorWavelet,
                    int                              indicatorBGTrend,
+                   int                              indicatorRealVs,
                    bool                             faciesLogGiven)
   : modelSettings_(modelSettings),
     wellname_(NULL),
@@ -50,7 +51,8 @@ WellData::WellData(const std::string              & wellFileName,
     blockedLogsExtendedBG_(NULL),
     useForFaciesProbabilities_(indicatorFacies),
     useForWaveletEstimation_(indicatorWavelet),  
-    useForBackgroundTrend_(indicatorBGTrend)
+    useForBackgroundTrend_(indicatorBGTrend),
+    realVsLog_(indicatorRealVs)
 {
   sprintf(errTxt_,"%c",'\0');
   if(wellFileName.find(".nwh",0) != std::string::npos)
@@ -1437,23 +1439,38 @@ WellData::lookForSyntheticVsLog(float & rank_correlation)
     
     if (rank_correlation > corr_threshold) 
     {
-      LogKit::LogFormatted(LogKit::LOW,"   Vp-Vs rank correlation is %5.3f. Treating Vs log as synthetic.\n",rank_correlation);
-      syntheticVsLog_ = true;
-      if(useForFaciesProbabilities_ == ModelSettings::NOTSET)
-        useForFaciesProbabilities_ = ModelSettings::NO;
-    } 
+      if(realVsLog_ == ModelSettings::NOTSET) {
+        LogKit::LogFormatted(LogKit::LOW,"   Vp-Vs rank correlation is %5.3f. Treating Vs log as synthetic.\n",rank_correlation);
+        realVsLog_ = ModelSettings::NO;
+      }
+      else {
+        if(realVsLog_ == ModelSettings::YES)
+          LogKit::LogFormatted(LogKit::LOW,"   Vp-Vs rank correlation is %5.3f, but well log is defined as real.\n",rank_correlation);
+        else
+          LogKit::LogFormatted(LogKit::LOW,"   Vp-Vs rank correlation is %5.3f. (Well log is defined as synthetic.)\n",rank_correlation);
+      }
+    }
     else
     {
-      LogKit::LogFormatted(LogKit::LOW,"   Vp-Vs rank correlation in well is %5.3f.\n",rank_correlation);
-      syntheticVsLog_ = false;
-
-    } 
+      switch(realVsLog_) {
+        case ModelSettings::YES :
+          LogKit::LogFormatted(LogKit::LOW,"   Vp-Vs rank correlation is %5.3f. (Well log is defined as real.)\n",rank_correlation);
+          break;
+        case ModelSettings::NO :
+          LogKit::LogFormatted(LogKit::LOW,"   Vp-Vs rank correlation is %5.3f. (Well log is defined as synthetic.)\n",rank_correlation);
+          break;
+        default :
+          LogKit::LogFormatted(LogKit::LOW,"   Vp-Vs rank correlation is %5.3f. (Well log is treated as real.)\n",rank_correlation);
+          break;
+      }
+    }
   }
-
   else 
   {
     LogKit::LogFormatted(LogKit::LOW,"   Cannot calculate Vp-Vs rank correlation. One or both logs are empty.\n");
   }
+  if(realVsLog_ == ModelSettings::NO && useForFaciesProbabilities_ == ModelSettings::NOTSET)
+    useForFaciesProbabilities_ = ModelSettings::NO;
 
   delete [] sorted_alpha;
   delete [] sorted_beta;

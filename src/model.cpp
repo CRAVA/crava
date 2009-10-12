@@ -1372,6 +1372,7 @@ Model::processWells(WellData     **& wells,
                             modelSettings->getIndicatorFacies(i),
                             modelSettings->getIndicatorWavelet(i),
                             modelSettings->getIndicatorBGTrend(i),
+                            modelSettings->getIndicatorRealVs(i),
                             faciesLogGiven);
     if(wells[i]->checkError(tmpErrText) != 0) {
       sprintf(errText,"%s%s", errText, tmpErrText);
@@ -1462,7 +1463,7 @@ Model::processWells(WellData     **& wells,
                              nInvalidAlpha[i], 
                              nInvalidBeta[i], 
                              nInvalidRho[i],
-                             (rankCorr[i] > modelSettings->getMaxRankCorr() ? "yes" : " no"),
+                             (wells[i]->hasSyntheticVsLog() ? "yes" : " no"),
                              rankCorr[i],
                              (devAngle[i] > modelSettings->getMaxDevAngle() ? "yes" : " no"),
                              devAngle[i]);

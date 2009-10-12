@@ -361,11 +361,13 @@ XmlModelFile::parseWell(TiXmlNode * node, std::string & errTxt)
   if(root == 0)
     return(false);
 
-  std::vector<std::string> legalCommands(4);
+  std::vector<std::string> legalCommands(5);
   legalCommands[0]="file-name";
   legalCommands[1]="use-for-wavelet-estimation";
   legalCommands[2]="use-for-background-trend";
   legalCommands[3]="use-for-facies-probabilities";
+  legalCommands[4]="synthetic-vs-log";
+
 
   std::string tmpErr = "";
   std::string value;
@@ -403,6 +405,16 @@ XmlModelFile::parseWell(TiXmlNode * node, std::string & errTxt)
   }
   else
     modelSettings_->addIndicatorFacies(ModelSettings::NOTSET);
+
+  bool synth = false;
+  if(parseBool(root, "synthetic-vs-log", synth, tmpErr) == true) {
+    if(synth == false)
+      modelSettings_->addIndicatorRealVs(ModelSettings::YES); //Note the inversion. The keyword is most logical this way,
+    else                                                      //but the default should be that the log is real.
+      modelSettings_->addIndicatorRealVs(ModelSettings::NO);
+  }
+  else
+    modelSettings_->addIndicatorRealVs(ModelSettings::NOTSET);
 
   checkForJunk(root, errTxt, legalCommands, true); //Allow duplicates
 

@@ -54,6 +54,7 @@ public:
   int							                 getIndicatorBGTrend(int i)    const { return indBGTrend_[i]         ;}
   int							                 getIndicatorWavelet(int i)    const { return indWavelet_[i]         ;}
   int							                 getIndicatorFacies(int i)     const { return indFacies_[i]          ;}
+  int							                 getIndicatorRealVs(int i)     const { return indRealVs_[i]          ;}
   int							                 getNumberOfWells(void)        const { return nWells_                ;}
   int							                 getNumberOfSimulations(void)  const { return nSimulations_          ;}
   float							               getAlphaMin(void)             const { return alpha_min_             ;}
@@ -173,6 +174,7 @@ public:
   void							               addIndicatorBGTrend(int indicator)            { indBGTrend_.push_back(indicator)           ;}
   void							               addIndicatorWavelet(int indicator)            { indWavelet_.push_back(indicator)           ;}
   void							               addIndicatorFacies(int indicator)             { indFacies_.push_back(indicator)            ;}
+  void							               addIndicatorRealVs(int indicator)             { indRealVs_.push_back(indicator)            ;}
   void							               setLogName(int i, const std::string & logName){ logNames_[i]          = logName            ;}
   void							               setInverseVelocity(int i, bool inverse)       { inverseVelocity_[i]          = inverse     ;}
   void							               addFaciesLabel(int faciesLabel)               { faciesLabels_.push_back(faciesLabel)       ;}
@@ -331,10 +333,13 @@ private:
   bool							               localWavelet_;
 
   std::vector<float>			         constBackValue_;        // Values set for constant background model
-                                                    // Negative value ==> read from file (actual value gives format).
-  std::vector<int>				         indBGTrend_;            // Use well to estimate background trend? (1=yes,0=no)
-  std::vector<int>				         indWavelet_;            // Use well to estimate wavelet? (1=yes,0=no)
-  std::vector<int>				         indFacies_;             // Use well to estimate facies? (1=yes,0=no)
+                                                           // Negative value ==> read from file (actual value gives format).
+
+  //The following indicators use the indicators enum above. (2 = yes, but may override in QC, 1=yes, 0=no)
+  std::vector<int>				         indBGTrend_;            // Use well to estimate background trend?
+  std::vector<int>				         indWavelet_;            // Use well to estimate wavelet? 
+  std::vector<int>				         indFacies_;             // Use well to estimate facies? 
+  std::vector<int>				         indRealVs_;             // Treat Vs log as real? 
 
   std::vector<std::string>		     logNames_;              ///< The keywords to look for for time, sonic, shear sonic and density
   std::vector<bool>				         inverseVelocity_;       // If element 0 is true, vp comes from dt, if 1 is true, vs comes from dts in well.
