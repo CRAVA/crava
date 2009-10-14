@@ -7,6 +7,8 @@
 #include "src/fftgrid.h"
 #include "lib/sgri.h"
 
+class Wavelet1D;
+
 class Wavelet3D : public Wavelet {
 public:
   void           fft1DInPlace();
@@ -18,6 +20,10 @@ public:
             float               theta, 
             float             * reflCoef,  
             int               & errCode, 
+            char              * errText);
+  Wavelet3D(const Wavelet1D   & wavelet1d,
+            const std::string & filterFileName,
+            int               & errCode,
             char              * errText);
   Wavelet3D(Wavelet * wavelet, int difftype);
   Wavelet3D(Wavelet * wavelet);

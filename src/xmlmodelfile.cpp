@@ -525,14 +525,15 @@ XmlModelFile::parseAngleGather(TiXmlNode * node, std::string & errTxt)
   if(root == 0)
     return(false);
 
-  std::vector<std::string> legalCommands(7);
+  std::vector<std::string> legalCommands(8);
   legalCommands[0]="offset-angle";
   legalCommands[1]="seismic-data";
   legalCommands[2]="wavelet";
-  legalCommands[3]="match-energies";
-  legalCommands[4]="signal-to-noise-ratio";
-  legalCommands[5]="local-noise-scaled";
-  legalCommands[6]="estimate-local-noise";
+  legalCommands[3]="wavelet-3d";
+  legalCommands[4]="match-energies";
+  legalCommands[5]="signal-to-noise-ratio";
+  legalCommands[6]="local-noise-scaled";
+  legalCommands[7]="estimate-local-noise";
 
   float value;
   if(parseValue(root, "offset-angle", value, errTxt) == true)
@@ -546,9 +547,8 @@ XmlModelFile::parseAngleGather(TiXmlNode * node, std::string & errTxt)
     modelSettings_->addSeismicType(ModelSettings::STANDARDSEIS);
   }
 
+  bool oneDwavelet(false);
   if(parseWavelet(root, errTxt) == false) {
-    inputFiles_->addWaveletFile("");
-    modelSettings_->addEstimateWavelet(true);
     modelSettings_->addWaveletScale(RMISSING);
     modelSettings_->addEstimateGlobalWaveletScale(false); 
     inputFiles_->addShiftFile("");
@@ -556,6 +556,21 @@ XmlModelFile::parseAngleGather(TiXmlNode * node, std::string & errTxt)
     modelSettings_->addEstimateLocalShift(false);
     modelSettings_->addEstimateLocalScale(false);
   }
+  else //1D-wavelet is given
+    oneDwavelet = true;
+
+  if(parseWavelet3D(root, errTxt) == false) {
+    inputFiles_->addWaveletFilterFile("");
+    modelSettings_->addWaveletDim(ModelSettings::ONE_D);
+    if (oneDwavelet == false) { //Neither 1D-wavelet nor 3D-wavelet are given
+      inputFiles_->addWaveletFile("");
+      modelSettings_->addEstimateWavelet(true);
+    }
+  }
+  else //3D-wavelet is given
+    if (oneDwavelet) //1D-wavelet is also given. Arrays might be unbalanced
+      errTxt += "Both wavelet and wavelet-3d given in command <"+
+        root->ValueStr()+"> "+lineColumnText(root)+".\n";
 
   bool bVal = false;
   if(parseBool(root, "match-energies", bVal, errTxt) == true)
@@ -801,6 +816,47 @@ XmlModelFile::parseWaveletEstimationInterval(TiXmlNode * node, std::string & err
     inputFiles_->setWaveletEstIntFile(0, filename);
   if(parseFileName(root, "base-surface-file", filename, errTxt) == true)
     inputFiles_->setWaveletEstIntFile(1, filename);
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+
+bool
+XmlModelFile::parseWavelet3D(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("wavelet-3d");
+  if(root == 0)
+  {
+    return(false);
+  }
+
+  std::vector<std::string> legalCommands(2);
+  legalCommands[0]="file-name";
+  legalCommands[1]="filter-file-name";
+
+  std::string value;
+  bool estimate = false;
+  if(parseFileName(root, "file-name", value, errTxt) == true) {
+    inputFiles_->addWaveletFile(value);
+    modelSettings_->addEstimateWavelet(false);
+  }
+  else {
+    inputFiles_->addWaveletFile(""); //Keeping tables balanced.
+    modelSettings_->addEstimateWavelet(true);
+    estimate = true;
+  }
+  
+  if(parseFileName(root, "filter-file-name", value, errTxt) == true)
+    inputFiles_->addWaveletFilterFile(value);
+  else {
+    inputFiles_->addWaveletFilterFile(""); //Keeping tables balanced.
+    if (estimate)
+      errTxt += "No 3D-wavelet file and no filter file for estimating a 3D-wavelet is given in<"
+                +root->ValueStr()+"> "+ lineColumnText(root)+".\n";
+  }
+
+  modelSettings_->addWaveletDim(ModelSettings::THREE_D);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);

@@ -180,6 +180,16 @@ Wavelet3D::Wavelet3D(const std::string & fileName,
   delete sgri;
 }
 
+Wavelet3D::Wavelet3D(const Wavelet1D   & wavelet1d,
+                     const std::string & filterFileName,
+                     int               & errCode,
+                     char              * errText)
+  : Wavelet(3)
+{
+  sprintf(errText,"%sConstructing 3D-Wavelet from 1D-wavelet and filter is not implemented yet\n",errText); 
+  errCode=1;
+}
+
 Wavelet3D::Wavelet3D(Wavelet * wavelet, int difftype)
   : Wavelet(wavelet, 3)
 {

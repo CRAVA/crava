@@ -18,6 +18,7 @@ public:
   const std::string              & getShiftFile(int i)           const { return waveletShiftFiles_[i] ;}
   const std::string              & getScaleFile(int i)           const { return waveletScaleFiles_[i] ;}
   const std::string              & getWaveletEstIntFile(int i)   const { return waveletEstIntFile_[i] ;}
+  const std::string              & getWaveletFilterFile(int i)   const { return waveletFilterFile_[i] ;}
   const std::string              & getFaciesEstIntFile(int i)    const { return faciesEstIntFile_[i]  ;}     
   const std::vector<std::string> & getTimeSurfFiles(void)        const { return timeSurfFiles_        ;}
   const std::string              & getTimeSurfFile(int i)        const { return timeSurfFiles_[i]     ;}
@@ -44,6 +45,7 @@ public:
   void addScaleFile(const std::string & scaleFile)                        { waveletScaleFiles_.push_back(scaleFile)   ;}
   void addNoiseFile(const std::string &noiseFile)                         { localNoiseFiles_.push_back(noiseFile)     ;}
   void setWaveletEstIntFile(int i, const std::string & waveletEstIntFile) { waveletEstIntFile_[i] = waveletEstIntFile ;}
+  void addWaveletFilterFile(const std::string & filterFile)               { waveletFilterFile_.push_back(filterFile)  ;} 
   void setFaciesEstIntFile(int i, const std::string & faciesEstIntFile)   { faciesEstIntFile_[i]  = faciesEstIntFile  ;}
   void addTimeSurfFile(const std::string & timeSurfFile)                  { timeSurfFiles_.push_back(timeSurfFile)    ;}
   void setDepthSurfFile(int i, const std::string & depthSurfFile)         { depthSurfFiles_[i]    = depthSurfFile     ;}
@@ -55,7 +57,7 @@ public:
   void setParamCorrFile(const std::string & paramCorrFile)                { paramCorrFile_        = paramCorrFile     ;}
   void setTempCorrFile(const std::string & tempCorrFile)                  { tempCorrFile_         = tempCorrFile      ;}
   void setInputDirectory(std::string inputDirectory)                      { inputDirectory_       = inputDirectory    ;}
-  void setPriorFaciesProb(std::string name,std::string file)           { priorFaciesProb_[name] = file                ;}
+  void setPriorFaciesProb(std::string name,std::string file)              { priorFaciesProb_[name] = file                ;}
   std::string addInputPathAndCheckFiles();
 
 private:
@@ -68,6 +70,7 @@ private:
   std::vector<std::string>   waveletShiftFiles_;     ///< File names: wavelets
   std::vector<std::string>   waveletScaleFiles_;     ///< File names: wavelets
   std::vector<std::string>   waveletEstIntFile_;     ///< File names: Wavelet estimation interval
+  std::vector<std::string>   waveletFilterFile_;     ///< File names: Filter files for 3D wavelets
   std::vector<std::string>   faciesEstIntFile_;      ///< File names: Facies estimation interval
   std::vector<std::string>   timeSurfFiles_;         ///< File names: top and base time surfaces
   std::vector<std::string>   depthSurfFiles_;        ///< File names: top and base depth surfaces

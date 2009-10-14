@@ -972,6 +972,26 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Default
  \elist
 
+\subsubsection{\hbracket{wavelet-3d}}\newkw{wavelet-3d}
+ \slist
+   \item \Description Information about the 3D-wavelet for this angle and seismic type. If not given, a 1D-wavelet is assumed.
+   \item \Argument Elements containing information about the 3D-wavelet
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{file-name}}\rnewkw{file-name}{file-name3}
+ \slist
+   \item \Description File name for 3D-wavelet file. This can be a 3D-grid on Sgri-format or a 1D-wavelet which will define the 3D-wavelet in combination with a filter given in \kw{filter-file-name}. If not given, the 3D-wavelet is estimated.
+   \item \Argument File name
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{filter-file-name}}\newkw{filter-file-name}
+ \slist
+   \item \Description File name for 3D-wavelet filter file. In case a Sgri file is given in \kw{file-name3} this filter is obsolete. In case a 1D-wavelet is given in \kw{file-name3} a 3D-wavelet is defined by the 1D-wavelet and the filter. If the 3d_wavelet is estimated, this filter file must be given.
+   \item \Argument File name for the wavenumber filter
+   \item \Default
+ \elist
 
 \subsubsection{\hbracket{match-energies}}\newkw{match-energies}
  \slist
