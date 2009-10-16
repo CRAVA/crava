@@ -176,6 +176,24 @@ Simbox::getIndexesFull(double x, double y, double z, int & xInd, int & yInd, int
   }
 }
 
+void 
+Simbox::getInterpolationIndexes(double x, double y, double z, 
+                                double & xInd, double & yInd, double & zInd) const
+{
+  double rx =  (x-GetXMin())*cosrot_ + (y-GetYMin())*sinrot_;
+  double ry = -(x-GetXMin())*sinrot_ + (y-GetYMin())*cosrot_;
+  xInd = rx/dx_-0.5;
+  yInd = ry/dy_-0.5;
+  zInd = RMISSING;
+  double zBot, zTop = GetTopSurface().GetZ(x,y);
+  if(GetTopSurface().IsMissing(zTop) == false)
+  {
+    zBot = GetBotSurface().GetZ(x,y);
+    if(GetBotSurface().IsMissing(zBot) == false)
+      zInd = static_cast<double>(nz_)*(z-zTop)/(zBot-zTop)-0.5;
+  }
+}
+
 void
 Simbox::getZInterpolation(double x, double y, double z, 
                           int & index1, int & index2, double & t) const

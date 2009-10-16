@@ -23,6 +23,8 @@ public:
   void           getIndexesFull(double x, double y, double z, int & xInd, int & yInd, int & zInd) const;
   void           getZInterpolation(double x, double y, double z, 
                                    int & index1, int & index2, double & t) const;
+  void           getInterpolationIndexes(double x, double y, double z, 
+                                         double & xInd, double & yInd, double & zInd) const;
   void           getCoord(int xInd, int yInd, int zInd, double &x, double &y, double &z) const;
   void           getXYCoord(int xInd, int yInd, double &x, double &y) const;
   int            getnx()                         const { return nx_          ;}

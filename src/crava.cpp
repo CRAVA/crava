@@ -34,7 +34,7 @@
 #include <assert.h>
 #include <time.h>
 
-Crava::Crava(Model * model, SpatialWellFilter *spatwellfilter)
+Crava::Crava(Model * model, SpatialWellFilter * spatwellfilter)
 {	
   Utils::writeHeader("Building Stochastic Model");
 
@@ -165,14 +165,6 @@ Crava::Crava(Model * model, SpatialWellFilter *spatwellfilter)
     meanBeta2_  = copyFFTGrid(meanBeta_);
     meanRho2_   = copyFFTGrid(meanRho_);
   }
-  if(model->getModelSettings()->getEstimateFaciesProb()) 
-    fprob_ = new FaciesProb(correlations_,
-    model->getModelSettings(), 
-    fileGrid_, 
-    meanAlpha_, meanBeta_, meanRho_, 
-    model->getModelSettings()->getPundef(), 
-    model->getPriorFacies(), model->getPriorFaciesCubes());
-
 
   meanAlpha_->fftInPlace();
   meanBeta_ ->fftInPlace();
@@ -1648,7 +1640,7 @@ Crava::printEnergyToScreen()
   LogKit::LogFormatted(LogKit::LOW,"\n");
 }
 
-//Crava::computeFaciesProb(FilterWellLogs *filteredlogs)
+
 void 
 Crava::computeFaciesProb(SpatialWellFilter *filteredlogs)
 {
@@ -1676,17 +1668,9 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs)
                            ( wells_[i]->isDeviated()                   ? "yes" : " no" ));
     }
 
-  // fprob_->setNeededLogs(filteredlogs,
-   //                       wells_,
-   //                       nWells_,
-   //                       nz_,
-   //                       random_);
-    fprob_->setNeededLogsSpatial(filteredlogs,
-                                 wells_,
-                                 nWells_);
-
     int nfac = model_->getModelSettings()->getNumberOfFacies();
 
+    std::string baseName;
     if((outputFlag_ & ModelSettings::FACIESPROBRELATIVE)>0)
     {
       meanAlpha2_->subtract(postAlpha_);
@@ -1695,30 +1679,45 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs)
       meanBeta2_->changeSign();
       meanRho2_->subtract(postRho_);
       meanRho2_->changeSign();
-      fprob_->makeFaciesProb(nfac,meanAlpha2_,meanBeta2_,meanRho2_);
-      fprob_->calculateConditionalFaciesProb(wells_, nWells_);
-      LogKit::LogFormatted(LogKit::LOW,"\nProbability cubes done\n");
-      for(int i=0;i<nfac;i++)
-      {
-        FFTGrid * grid = fprob_->getFaciesProb(i);
-        std::string fileName = std::string("FaciesProbRelative_") + model_->getModelSettings()->getFaciesName(i);
-        ParameterOutput::writeToFile(simbox_,model_,grid,fileName,"");
-      }
+      fprob_ = new FaciesProb(meanAlpha2_,
+                              meanBeta2_,
+                              meanRho2_,
+                              nfac,
+                              model_->getModelSettings()->getPundef(), 
+                              model_->getPriorFacies(), 
+                              model_->getPriorFaciesCubes(),
+                              const_cast<const double **>(filteredlogs->getSigmae()),
+                              const_cast<const WellData **>(wells_), 
+                              nWells_,
+                              true);
       delete meanAlpha2_;
       delete meanBeta2_;
       delete meanRho2_;
+
+      baseName = "FaciesProbRelative_";
     }
     else
     {
-      fprob_->makeFaciesProb(nfac,postAlpha_,postBeta_, postRho_);
-      fprob_->calculateConditionalFaciesProb(wells_, nWells_);
-      LogKit::LogFormatted(LogKit::LOW,"\nProbability cubes done\n");
-      for(int i=0;i<nfac;i++)
-      {
-        FFTGrid * grid = fprob_->getFaciesProb(i);
-        std::string fileName = std::string("FaciesProb_") + model_->getModelSettings()->getFaciesName(i);
-        ParameterOutput::writeToFile(simbox_,model_,grid,fileName,"");
-      }
+      fprob_ = new FaciesProb(postAlpha_,
+                              postBeta_,
+                              postRho_,
+                              nfac,
+                              model_->getModelSettings()->getPundef(), 
+                              model_->getPriorFacies(), 
+                              model_->getPriorFaciesCubes(),
+                              const_cast<const double **>(filteredlogs->getSigmae()),
+                              const_cast<const WellData **>(wells_), 
+                              nWells_,
+                              false);
+      baseName = "FaciesProb_";
+    }
+    fprob_->calculateConditionalFaciesProb(wells_, nWells_, model_->getModelSettings());
+    LogKit::LogFormatted(LogKit::LOW,"\nProbability cubes done\n");
+    for(int i=0;i<nfac;i++)
+    {
+      FFTGrid * grid = fprob_->getFaciesProb(i);
+      std::string fileName = baseName + model_->getModelSettings()->getFaciesName(i);
+      ParameterOutput::writeToFile(simbox_,model_,grid,fileName,"");
     }
     Timings::setTimeFaciesProb(wall,cpu);
   }

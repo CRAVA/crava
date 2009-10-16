@@ -22,28 +22,28 @@ public:
   ~BlockedLogs(void);
 
   const char   * getWellname(void)                  const { return wellname_ ;} 
-  const int      getNumberOfBlocks(void)            const { return nBlocks_ ;}  
-  const double * getXpos(void)                      const { return xpos_ ;}
-  const double * getYpos(void)                      const { return ypos_ ;}
-  const double * getZpos(void)                      const { return zpos_ ;}
-  const int    * getIpos(void)                      const { return ipos_ ;}
-  const int    * getJpos(void)                      const { return jpos_ ;}
-  const int    * getKpos(void)                      const { return kpos_ ;}
-  const float  * getAlpha(void)                     const { return alpha_ ;}
-  const float  * getBeta(void)                      const { return beta_ ;}
-  const float  * getRho(void)                       const { return rho_ ;}
-  const int    * getFacies(void)                    const { return facies_ ;}
+  const int      getNumberOfBlocks(void)            const { return nBlocks_  ;}  
+  const double * getXpos(void)                      const { return xpos_     ;}
+  const double * getYpos(void)                      const { return ypos_     ;}
+  const double * getZpos(void)                      const { return zpos_     ;}
+  const int    * getIpos(void)                      const { return ipos_     ;}
+  const int    * getJpos(void)                      const { return jpos_     ;}
+  const int    * getKpos(void)                      const { return kpos_     ;}
+  const float  * getAlpha(void)                     const { return alpha_    ;}
+  const float  * getBeta(void)                      const { return beta_     ;}
+  const float  * getRho(void)                       const { return rho_      ;}
+  const int    * getFacies(void)                    const { return facies_   ;}
   const float  * getAlphaHighCutBackground(void)    const { return alpha_highcut_background_ ;} 
-  const float  * getBetaHighCutBackground(void)     const { return beta_highcut_background_ ;}
-  const float  * getRhoHighCutBackground(void)      const { return rho_highcut_background_ ;}
-  const float  * getAlphaHighCutSeismic(void)       const { return alpha_highcut_seismic_ ;}
-  const float  * getBetaHighCutSeismic(void)        const { return beta_highcut_seismic_ ;} 
-  const float  * getRhoHighCutSeismic(void)         const { return rho_highcut_seismic_ ;}  
-  const float  * getAlphaSeismicResolution(void)    const { return alpha_highcut_seismic_ ;}
-  const float  * getBetaSeismicResolution(void)     const { return beta_highcut_seismic_ ;} 
-  const float  * getRhoSeismicResolution(void)      const { return rho_highcut_seismic_ ;}  
-  float       ** getRealSeismicData(void)           const { return real_seismic_data_; }
-  float       ** getSyntSeismicData(void)           const { return synt_seismic_data_; }
+  const float  * getBetaHighCutBackground(void)     const { return beta_highcut_background_  ;}
+  const float  * getRhoHighCutBackground(void)      const { return rho_highcut_background_   ;}
+  const float  * getAlphaHighCutSeismic(void)       const { return alpha_highcut_seismic_    ;}
+  const float  * getBetaHighCutSeismic(void)        const { return beta_highcut_seismic_     ;} 
+  const float  * getRhoHighCutSeismic(void)         const { return rho_highcut_seismic_      ;}  
+  const float  * getAlphaSeismicResolution(void)    const { return alpha_seismic_resolution_ ;}
+  const float  * getBetaSeismicResolution(void)     const { return beta_seismic_resolution_  ;} 
+  const float  * getRhoSeismicResolution(void)      const { return rho_seismic_resolution_   ;}  
+  float       ** getRealSeismicData(void)           const { return real_seismic_data_        ;}
+  float       ** getSyntSeismicData(void)           const { return synt_seismic_data_        ;}
   float       ** getCpp(void)                       const { return cpp_ ;}              
   void           getVerticalTrend(const float * blockedLog, float * trend);
   void           getVerticalTrend(const int * blockedLog,int * trend, RandomGen * random);

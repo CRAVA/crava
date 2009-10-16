@@ -21,86 +21,80 @@ class SpatialWellFilter;
 class FaciesProb
 {
 public:
-  FaciesProb(Corr          * correlation, 
-             ModelSettings * modelSettings,
-             int             filegrid, 
-             FFTGrid       * bgAlpha, 
-             FFTGrid       * bgBeta, 
-             FFTGrid       * bgRho, 
-             float           p_undef, 
-             float         * priorFacies,
-             FFTGrid       **priorFaciesCubes);
+  FaciesProb(FFTGrid           * alpha,
+             FFTGrid           * beta,
+             FFTGrid           * rho,
+             int                 nFac,
+             float               p_undef, 
+             const float       * priorFacies,
+             FFTGrid          ** priorFaciesCubes,
+             const double     ** sigmaEOrig,
+             const WellData   ** wells,
+             int                 nWells,
+             bool                relative);
   ~FaciesProb();
-  float        ** makeFaciesHistAndSetPriorProb(float* alphafiltered_,float* betafiltered_,float* rhofiltered_,int* facieslog_);
-  void            makeFaciesDens(int nfac);
-  void            makeFaciesProb(int nfac, FFTGrid *postAlpha, FFTGrid *postBeta, FFTGrid *postRho);
-  FFTGrid       * getFaciesProb(int i){return faciesProb_[i];};
- 
-  // FOR COMPARISION TO PCUBE
-  float        ** makeFaciesHistAndSetPriorProb2(float* alpha, float* beta, float* rho,int* faciesL); // PCUBE
-  void            makeFaciesDens2(int nfac);// PCUBE
 
-  void            calculateConditionalFaciesProb(WellData **wells, int nwells);
-  void            setNeededLogs(FilterWellLogs *filterlogs,
-                                WellData ** wells,
-                                int nWells,
-                                int nz,
-                                RandomGen * random);
-  void            setNeededLogsSpatial(SpatialWellFilter * filteredLogs,
-                                       WellData      ** wells,
-                                       int              nWells);
+  FFTGrid       * getFaciesProb(int i){return faciesProb_[i];};
+
+  void            calculateConditionalFaciesProb(WellData **wells, int nwells, const ModelSettings * modelSettings);
 
 private:
-  void            getMinMax(float* alpha,float* beta,float* rho,int* facies);
-  void            calculateVariances(float* alpha,float* beta,float* rho,int* facies);
-  
-  float           findDensity(float alpha, float beta, float rho, int facies);
-  void            calculateFaciesProb( FFTGrid *alphagrid, FFTGrid *betagrid, FFTGrid *rhogrid);
-  void            invertSigmae();
-  void            normalizeCubes(FFTGrid **priorFaciesCubes);
-  ModelSettings * modelSettings_;
-  const Simbox  * simbox_;
-
-  fftw_real     * corrprior_;
-
-  float        ** sigma0_;
-  float        ** sigmaPost_; // for Pcube
-
-  int             nFacies_, nbins_, nbinsr_, nobs_;
-  int           * nData_;
-  FFTGrid      ** density_;  // Note: normalizes to the number of observations of facies type. 
+  int             nFacies_;
   FFTGrid      ** faciesProb_;
-  float           dalpha_, dbeta_, drho_;
-  float           alphamin_, betamin_, rhomin_;
-  float           alphamax_, betamax_, rhomax_;
-  int             nzp_, nz_, ndata_;
-  int             fileGrid_;
 
-  FFTGrid       * bgAlpha_;
-  FFTGrid       * bgBeta_;
-  FFTGrid       * bgRho_;
+  void            makeFaciesProb(int               nfac, 
+                                 FFTGrid         * postAlpha, 
+                                 FFTGrid         * postBeta, 
+                                 FFTGrid         * postRho,
+                                 const double   ** sigmaEOrig, 
+                                 const WellData ** wells, 
+                                 int               nWells,
+                                 bool              relative,
+                                 float             p_undef,
+                                 const float     * priorFacies,
+                                 FFTGrid        ** priorFaciesCubes);
 
-  float         * alphafiltered_;
-  float         * betafiltered_; 
-  float         * rhofiltered_;
+  std::vector<FFTGrid *> makeFaciesHistAndSetPriorProb(const std::vector<float> & alpha,
+                                                       const std::vector<float> & beta,
+                                                       const std::vector<float> & rho,
+                                                       const std::vector<int>   & facies,
+                                                       const Simbox             * volume);
 
-  float         * alphablock_;
-  float         * betablock_;
-  float         * rhoblock_;
+  void                                  makeFaciesDens(int nfac, const double ** sigmaEOrig,
+                                                       const std::vector<float> & alphaFiltered,
+                                                       const std::vector<float> & betaFiltered,
+                                                       const std::vector<float> & rhoFiltered,
+                                                       const std::vector<int>   & faciesLog,
+                                                       std::vector<FFTGrid *>   & density,
+                                                       Simbox                  ** volume);
 
-  int           * facieslog_;
+  void                            setNeededLogsSpatial(const WellData    ** wells,
+                                                       int                  nWells,
+                                                       bool                 relative,
+                                                       std::vector<float> & alphaFiltered,
+                                                       std::vector<float> & betaFiltered,
+                                                       std::vector<float> & rhoFiltered,
+                                                       std::vector<int>   & faciesLog);
 
-  float           varAlpha_;
-  float           varBeta_;
-  float           varRho_;  // variances
+  void                              calculateVariances(const std::vector<float> & alpha,
+                                                       const std::vector<float> & beta,
+                                                       const std::vector<float> & rho,
+                                                       const std::vector<int>   & facies,
+                                                       float                    & varAlpha,
+                                                       float                    & varBeta,
+                                                       float                    & varRho);
+                    
+  float           findDensity(float alpha, float beta, float rho, FFTGrid * density, const Simbox * volume);
+  void            calculateFaciesProb(FFTGrid *alphagrid, 
+                                      FFTGrid *betagrid, 
+                                      FFTGrid *rhogrid,
+                                      const std::vector<FFTGrid *> & density, 
+                                      const Simbox * volume,
+                                      float             p_undef,
+                                      const float     * priorFacies,
+                                      FFTGrid        ** priorFaciesCubes);
 
-  float           meanA_;
-  float           meanB_; 
-  float           meanR_;   // means
+  void            normalizeCubes(FFTGrid **priorFaciesCubes);
 
-  float           p_undefined_;
-  float         * priorFacies_;
-  FFTGrid       **priorFaciesCubes_;
-  double        **sigmae_;
 };
 #endif
