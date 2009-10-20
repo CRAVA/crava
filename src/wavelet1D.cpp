@@ -280,7 +280,11 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
     for(int i=0;i<nzp;i++)
       rAmp_[i] = wellWavelets[w][i];
     sprintf(fileName,"Wavelet");
-    sprintf(fileName,"%s_%s",fileName,wells[w]->getWellname());
+    std::string wellname(wells[w]->getWellname());
+    NRLib::Substitute(wellname,"/","_");
+    NRLib::Substitute(wellname," ","_");
+
+    sprintf(fileName,"%s_%s",fileName,wellname.c_str());
     float dzOut = 1.0; 
     writeWaveletToFile(fileName, dzOut);
   }
