@@ -57,7 +57,7 @@ public:
   void           writeRMSWell(ModelSettings * modelSettings);
   void           writeNorsarWell(ModelSettings * modelSettings);
 
-  void           setSpatialFilteredLogs(float * filteredlog, int start, int end, std::string type, const float *bg);
+  void           setSpatialFilteredLogs(float * filteredlog, int nData, std::string type, const float *bg);
 
 private:
   void           setLogFromVerticalTrend(float *& log, double * zpos, int nBlocks, 

@@ -11,7 +11,7 @@ public:
   ~SpatialWellFilter();
   
   void             setPriorSpatialCorr(FFTGrid *parSpatialCorr, WellData *well, int wellnr);
-  void             doFiltering(Corr *corr, WellData **wells, int nWells, int relative);
+  void             doFiltering(Corr *corr, WellData **wells, int nWells);
   const float    * getAlphaFiltered(void) const {return alphaFiltered_;}
   const float    * getBetaFiltered(void) const {return betaFiltered_;}
   const float    * getRhoFiltered(void) const {return rhoFiltered_;}
@@ -19,8 +19,8 @@ public:
   double        ** getSigmae(void) {return sigmae_;}
   
 private:
-  void             adjustDiagSigmae();
-  void             calculateFilteredLogs(double **Aw, BlockedLogs *blockedlogs, int n, int lastn, int relative);
+  void             adjustDiagSigma(double ** sigmae, int n);
+  void             calculateFilteredLogs(double **Aw, BlockedLogs *blockedlogs, int n);
   void             MakeInterpolatedResiduals(const float * bwLog, const float * bwLogBG, const int n, const int offset, double ** residuals);
   double       *** priorSpatialCorr_;
   float          * alphaFiltered_;

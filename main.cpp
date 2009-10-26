@@ -93,9 +93,7 @@ int main(int argc, char** argv)
         corr->writeFilePostCovGrids(model->getTimeSimbox());
       }       
 
-      int relative = crava->getRelative();
-
-      spatwellfilter->doFiltering(corr,model->getWells(), model->getModelSettings()->getNumberOfWells(), relative);
+      spatwellfilter->doFiltering(corr,model->getWells(), model->getModelSettings()->getNumberOfWells());
       
       // FilterWellLogs * filteredlogs = NULL;
       //crava->filterLogs(model->getTimeSimboxConstThick(),filteredlogs);

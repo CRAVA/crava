@@ -1057,16 +1057,12 @@ BlockedLogs::writeNorsarWell(ModelSettings * modelSettings)
 }
   
 
-void BlockedLogs::setSpatialFilteredLogs(float * filteredlog, int start, int end, std::string type, const float *bg)
+void BlockedLogs::setSpatialFilteredLogs(float * filteredlog, int nData, std::string type, const float *bg)
 {
   float * blockedLog = new float[nBlocks_];
-  assert(nBlocks_ == end-start);
-  int j = 0;
-  for(int i=start;i<end;i++)
-  {
-    blockedLog[j] = filteredlog[i]+bg[j];
-    j++;
-  }
+  assert(nBlocks_ == nData);
+  for(int i=0;i<nData;i++)
+    blockedLog[i] = filteredlog[i]+bg[i];
 
   if (type == "ALPHA_SEISMIC_RESOLUTION")
     alpha_seismic_resolution_ = blockedLog;

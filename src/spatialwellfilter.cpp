@@ -27,9 +27,6 @@ SpatialWellFilter::SpatialWellFilter(int nwells)
 
 SpatialWellFilter::~SpatialWellFilter()
 {
-  delete [] alphaFiltered_;
-  delete [] betaFiltered_;
-  delete [] rhoFiltered_;
   int i,j;
   for(i=0;i<nWells_;i++)
   {
@@ -72,7 +69,7 @@ void SpatialWellFilter::setPriorSpatialCorr(FFTGrid *parSpatialCorr, WellData *w
   }
 }
 
-void SpatialWellFilter::doFiltering(Corr *corr, WellData **wells, int nWells, int relative)
+void SpatialWellFilter::doFiltering(Corr *corr, WellData **wells, int nWells)
 {
   n_ = new int[nWells];
   double ** sigmapost;
@@ -83,10 +80,6 @@ void SpatialWellFilter::doFiltering(Corr *corr, WellData **wells, int nWells, in
   for(int w1=0;w1<nWells;w1++)
     nData_ += wells[w1]->getBlockedLogsOrigThick()->getNumberOfBlocks();
 
-  alphaFiltered_ = new float[nData_];
-  betaFiltered_ = new float[nData_];
-  rhoFiltered_ = new float[nData_];
-  
   int lastn = 0;
   int n = 0;
   for(int w1=0;w1<nWells;w1++)
@@ -190,10 +183,10 @@ void SpatialWellFilter::doFiltering(Corr *corr, WellData **wells, int nWells, in
       delete [] test[i];
     delete [] test;
     
-    calculateFilteredLogs(Aw, wells[w1]->getBlockedLogsOrigThick(), n, lastn, relative);
-    
+    calculateFilteredLogs(Aw, wells[w1]->getBlockedLogsOrigThick(), n);
+
     n_[w1] = n;
-    lastn  = n;
+    lastn += n;
     for(int i=0;i<3*n;i++)
     {
       delete [] Aw[i];
@@ -206,22 +199,22 @@ void SpatialWellFilter::doFiltering(Corr *corr, WellData **wells, int nWells, in
     delete [] sigmapost;
     delete [] imat;  
   }
-  sigmae_[0][0] /= (n+lastn);
-  sigmae_[1][0] /= (n+lastn);
-  sigmae_[1][1] /= (n+lastn);
-  sigmae_[2][0] /= (n+lastn);
-  sigmae_[2][1] /= (n+lastn);
-  sigmae_[2][2] /= (n+lastn);
+  sigmae_[0][0] /= lastn;
+  sigmae_[1][0] /= lastn;
+  sigmae_[1][1] /= lastn;
+  sigmae_[2][0] /= lastn;
+  sigmae_[2][1] /= lastn;
+  sigmae_[2][2] /= lastn;
   sigmae_[0][1]  = sigmae_[1][0];
   sigmae_[0][2]  = sigmae_[2][0];
   sigmae_[1][2]  = sigmae_[2][1];
     
-  adjustDiagSigmae();
+  adjustDiagSigma(sigmae_, 3);
 
 }
 
 
-void SpatialWellFilter::calculateFilteredLogs(double **Aw, BlockedLogs *blockedlogs, int n, int lastn, int relative)
+void SpatialWellFilter::calculateFilteredLogs(double **Aw, BlockedLogs *blockedlogs, int n)
 {
   double **filterval;
   filterval = new double *[3*n];
@@ -247,38 +240,36 @@ void SpatialWellFilter::calculateFilteredLogs(double **Aw, BlockedLogs *blockedl
 
   lib_matr_prod(Aw, residuals, 3*n, 3*n, 1, filterval);
 
+  float * alphaFiltered = new float[n];
+  float * betaFiltered  = new float[n];
+  float * rhoFiltered   = new float[n];
+
   for(i=0;i<n;i++)
   {
     if(alpha[i] == RMISSING)
-      alphaFiltered_[i + lastn] = 0.0;
+      alphaFiltered[i] = 0.0;
     else
-      alphaFiltered_[i + lastn] = float(filterval[i][0]);
+      alphaFiltered[i] = float(filterval[i][0]);
 
     if(beta[i] == RMISSING)
-      betaFiltered_[i + lastn] = 0.0;
+      betaFiltered[i] = 0.0;
     else
-      betaFiltered_[i + lastn] = float(filterval[i + n][0]);
+      betaFiltered[i] = float(filterval[i + n][0]);
 
     if(rho[i] == RMISSING)
-      rhoFiltered_[i + lastn] = 0.0;
+      rhoFiltered[i] = 0.0;
     else
-      rhoFiltered_[i + lastn] = float(filterval[i + 2*n][0]);
+      rhoFiltered[i] = float(filterval[i + 2*n][0]);
   }
 
-  blockedlogs->setSpatialFilteredLogs(alphaFiltered_, lastn, n + lastn, "ALPHA_SEISMIC_RESOLUTION",bgAlpha);
-  blockedlogs->setSpatialFilteredLogs(betaFiltered_ , lastn, n + lastn, "BETA_SEISMIC_RESOLUTION" ,bgBeta);
-  blockedlogs->setSpatialFilteredLogs(rhoFiltered_  , lastn, n + lastn, "RHO_SEISMIC_RESOLUTION"  ,bgRho);
+  blockedlogs->setSpatialFilteredLogs(alphaFiltered, n, "ALPHA_SEISMIC_RESOLUTION",bgAlpha);
+  blockedlogs->setSpatialFilteredLogs(betaFiltered , n, "BETA_SEISMIC_RESOLUTION" ,bgBeta);
+  blockedlogs->setSpatialFilteredLogs(rhoFiltered  , n, "RHO_SEISMIC_RESOLUTION"  ,bgRho);
 
-  if(relative==0)
-  {
-    for(i=0;i<n;i++)
-    {
-      alphaFiltered_[i+lastn] += bgAlpha[i];
-      betaFiltered_[i+lastn] += bgBeta[i];
-      rhoFiltered_[i+lastn] += bgRho[i];
-    }
-  }
- 
+  delete [] alphaFiltered;
+  delete [] betaFiltered;
+  delete [] rhoFiltered;
+
   for(i=0;i<3*n;i++)
   {
     delete [] residuals[i];
@@ -347,44 +338,42 @@ void SpatialWellFilter::MakeInterpolatedResiduals(const float * bwLog,
 
 // The variances used for smootihng in faciesprob might be very small. 
 // Therefore eigenvalues are adjusted in order to be able to invert matrix.
-void SpatialWellFilter::adjustDiagSigmae()
+void SpatialWellFilter::adjustDiagSigma(double ** sigmae, int n)
 {
-  int       n      = 3;
   double    eps    = 0.0001;
-  double  * eigval = new double[3];
+  double  * eigval = new double[n];
   int     * error  = new int[1];
-  double ** eigvec = new double *[3];
-  for(int i=0;i<3;i++)
-    eigvec[i] = new double[3];
+  double ** eigvec = new double *[n];
+  for(int i=0;i<n;i++)
+    eigvec[i] = new double[n];
 
-  lib_matr_eigen(sigmae_,n,eigvec,eigval,error);
+  lib_matr_eigen(sigmae,n,eigvec,eigval,error);
   delete [] error;
 
-  if(eigval[1]/eigval[0]<eps)
-    eigval[1]=eps*eigval[0];
-  if(eigval[2]/eigval[0]<eps)
-    eigval[2]=eps*eigval[0];
+  for(int i=1;i<n;i++)
+    if(eigval[i]/eigval[0]<eps)
+      eigval[i]=eps*eigval[0];
 
-  double ** help        = new double *[3];
-  double ** eigvalmat   = new double *[3];
-  double ** eigvectrans = new double *[3];
-  for(int i=0;i<3;i++)
+  double ** help        = new double *[n];
+  double ** eigvalmat   = new double *[n];
+  double ** eigvectrans = new double *[n];
+  for(int i=0;i<n;i++)
   {
-    help[i]        = new double[3];
-    eigvalmat[i]   = new double[3];
-    eigvectrans[i] = new double [3];
+    help[i]        = new double[n];
+    eigvalmat[i]   = new double[n];
+    eigvectrans[i] = new double[n];
   }
-  for(int i=0;i<3;i++)
-    for(int j=0;j<3;j++)
+  for(int i=0;i<n;i++)
+    for(int j=0;j<n;j++)
       if(i==j) 
         eigvalmat[i][j] = eigval[i];
       else
         eigvalmat[i][j] = 0.0;
-  lib_matr_prod(eigvec,eigvalmat,3,3,3,help);
-  lib_matrTranspose(eigvec,3,3,eigvectrans);
-  lib_matr_prod(help,eigvectrans,3,3,3,sigmae_);
+  lib_matr_prod(eigvec,eigvalmat,n,n,n,help);
+  lib_matrTranspose(eigvec,n,n,eigvectrans);
+  lib_matr_prod(help,eigvectrans,n,n,n,sigmae_);
   
-  for(int i=0;i<3;i++)
+  for(int i=0;i<n;i++)
   {
     delete [] eigvec[i];
     delete [] help[i];
