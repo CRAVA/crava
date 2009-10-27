@@ -102,7 +102,7 @@ private:
   float        * alpha_;                    ///<
   float        * beta_;                     ///< Raw logs (log-domain)
   float        * rho_;                      ///<
-  int 	       * facies_;                   ///< Facies numbers using *internal* numbering
+  int          * facies_;                   ///< Facies numbers using *internal* numbering
 
   float        * alpha_highcut_background_; ///< 
   float        * beta_highcut_background_;  ///< Logs high-cut filtered to background resolution (log-domain)

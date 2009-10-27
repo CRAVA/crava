@@ -74,13 +74,13 @@ CovGridSeparated::CovGridSeparated(int nxp, int nyp, int nzp,
   const int uppernxp2 = (nxp % 2 == 0 ? nxp2 : nxp2 + 1);
   const int uppernyp2 = (nyp % 2 == 0 ? nyp2 : nyp2 + 1);
   const int uppernzp2 = (nzp % 2 == 0 ? nzp2 : nzp2 + 1);  
-	//LogKit::LogFormatted(LogKit::DEBUGLOW,": %d %d %d %d\n",nxp,nxp2,nyp,nyp2);
+  //LogKit::LogFormatted(LogKit::DEBUGLOW,": %d %d %d %d\n",nxp,nxp2,nyp,nyp2);
   int i, j;
   int countxy = 0;
   for (j = -nyp2; j < uppernyp2; j++) {
-      int j1 = (j < 0 ? nyp + j : j);						
+      int j1 = (j < 0 ? nyp + j : j);
       for (i = -nxp2; i < uppernxp2; i++) {
-        int i1 = (i < 0 ? nxp + i : i);				
+        int i1 = (i < 0 ? nxp + i : i);
         float deltaX = i*dx;
         float deltaY = j*dy;
         float deltaZ = 0.f; 
@@ -162,7 +162,7 @@ void CovGridSeparated::EstimateRangeX(int& rangeX) const {
       if(absGamma >= sillXY) {
         rangeX = i;
         LogKit::LogFormatted(LogKit::DEBUGHIGH,": %d\n",i);
-        return;			
+        return;
       }
     } // end backward j
 
@@ -173,7 +173,7 @@ void CovGridSeparated::EstimateRangeX(int& rangeX) const {
       if(absGamma >= sillXY) {
         rangeX = i;
         LogKit::LogFormatted(LogKit::DEBUGHIGH,": %d\n", i);
-        return;			
+        return;
       }
     } // end forward j
   } // end i  
@@ -191,7 +191,7 @@ void CovGridSeparated::EstimateRangeY(int& rangeY) const {
       int index = Get2DIndex(i, j);
       float absGamma = float(fabs(gammaXY_[index]));
       if (absGamma >= sillXY) {
-        rangeY = j; return;			
+        rangeY = j; return;
       }
     } // end backward i
 
@@ -199,7 +199,7 @@ void CovGridSeparated::EstimateRangeY(int& rangeY) const {
       int index = Get2DIndex(i, j);
       float absGamma = float(fabs(gammaXY_[index]));
       if (absGamma >= sillXY) {
-        rangeY = j; return;			
+        rangeY = j; return;
       }
     } // end forward i
   } // end j

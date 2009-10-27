@@ -54,8 +54,8 @@ private:
   float          getArrayValueOrZero(int i ,float * Wavelet, int nz) const;
 //  void           fillInnWavelet(fftw_real* wavelet_r,int nzp,float dz);
   
-  int	         cnzp_;	                 // size in z direction for storage inplace algorithm (complex grid) nzp_/2+1
-  int	         rnzp_;                  // expansion in z direction for storage inplace algorithm (real grid) 2*(nzp_/2+1)
+  int            cnzp_;                  // size in z direction for storage inplace algorithm (complex grid) nzp_/2+1
+  int            rnzp_;                  // expansion in z direction for storage inplace algorithm (real grid) 2*(nzp_/2+1)
   fftw_real*     rAmp_;                  // The amplitude of the wavelet  
   fftw_complex*  cAmp_;                  // The amplitude of the wavelet complex (if fourier transformed )
 };

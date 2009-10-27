@@ -80,7 +80,7 @@ Analyzelog::estimate(ModelSettings * modelSettings,
   int maxnd;
   calculateNumberOfLags(numberOfLags_,maxnd);
 
-  CorrT_ = new float[numberOfLags_+1];	
+  CorrT_ = new float[numberOfLags_+1];
   float dt = static_cast<float>(simbox_->getdz()); 
 
   estimateCorrTAndVar0(CorrT_, Var0_, 
@@ -288,8 +288,8 @@ Analyzelog::estimatePointVar0(float ** Var0,
       {
         sum2 += lnDataBeta[i][j]*lnDataBeta[i][j];
         tell2++;
-      }	
-    }	
+      }
+    }
 
     for(j=0;j<nd;j++)
     {
@@ -316,7 +316,7 @@ Analyzelog::estimatePointVar0(float ** Var0,
         sum5 += lnDataAlpha[i][j]*lnDataRho[i][j];
         tell5++;
       }
-    }	
+    }
 
     for(j=0;j<nd;j++)
     {
@@ -483,7 +483,7 @@ Analyzelog::estimateCorrTAndVar0(float  * CorrT,
     for(j=0;j<na;j++)
     {
       for(k=j;k<na;k++) // indA points to nonmissing entries of dLnAlpha[]
-      {	
+      {
         h = static_cast<int>(floor(z[indA[k]]-z[indA[j]]+0.5));
         covAA[h] += dLnAlpha[indA[j]]*dLnAlpha[indA[k]];
         varAj[h] += dLnAlpha[indA[j]]*dLnAlpha[indA[j]];
@@ -496,7 +496,7 @@ Analyzelog::estimateCorrTAndVar0(float  * CorrT,
       for(j=0;j<nb;j++)
       {
         for(k=j;k<nb;k++) // indB points to nonmissing entries of dLnBeta[]
-        {	
+        {
           h = static_cast<int>(floor(z[indB[k]]-z[indB[j]]+0.5));
           covBB[h] += dLnBeta[indB[j]]*dLnBeta[indB[k]];
           varBj[h] += dLnBeta[indB[j]]*dLnBeta[indB[j]];
@@ -508,7 +508,7 @@ Analyzelog::estimateCorrTAndVar0(float  * CorrT,
     for(j=0;j<nr;j++)
     {
       for(k=j;k<nr;k++) // indR points to nonmissing entries of dLnRho[]
-      {	
+      {
         h = static_cast<int>(floor(z[indR[k]]-z[indR[j]]+0.5));
         covRR[h] += dLnRho[indR[j]]*dLnRho[indR[k]];
         varRj[h] += dLnRho[indR[j]]*dLnRho[indR[j]];
@@ -527,7 +527,7 @@ Analyzelog::estimateCorrTAndVar0(float  * CorrT,
     for(j=0;j<nd;j++)
     {
       for(k=j;k<nd;k++)
-      {	
+      {
         h = static_cast<int>(floor(z[k]-z[j]+0.5));
         if (h==0)
         {

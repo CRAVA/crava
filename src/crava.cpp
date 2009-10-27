@@ -35,7 +35,7 @@
 #include <time.h>
 
 Crava::Crava(Model * model, SpatialWellFilter * spatwellfilter)
-{	
+{
   Utils::writeHeader("Building Stochastic Model");
 
   double wall=0.0, cpu=0.0;
@@ -133,7 +133,7 @@ Crava::Crava(Model * model, SpatialWellFilter * spatwellfilter)
   assert(meanRho_->consistentSize(nx_,ny_,nz_,nxp_,nyp_,nzp_));
 
   for(int i=0 ; i< ntheta_ ; i++)
-  {	
+  {
     if(!model->getModelSettings()->getGenerateSeismic())
       assert(seisData_[i]->consistentSize(nx_,ny_,nz_,nxp_,nyp_,nzp_));  
     assert(seisWavelet_[i]->consistentSize(nzp_, nyp_, nxp_));

@@ -170,7 +170,7 @@ void CKrigingAdmin::Init() {
 }
 
 void CKrigingAdmin::KrigAll(Gamma gamma) {
-  // basic set of neighbourhoods	
+  // basic set of neighbourhoods
   noCholeskyDecomp_ = noSolvedMatrixEq_ = 0;
   noRMissing_ = 0;
   const int nxBlock = NBlocks(dxBlock_, simbox_.getnx());
@@ -242,7 +242,7 @@ void CKrigingAdmin::KrigAll(FFTGrid& trendAlpha, FFTGrid& trendBeta, FFTGrid& tr
   KrigAll(RHO_KRIG);
   WriteDebugOutput2();
   LogKit::LogFormatted(LogKit::DEBUGHIGH,"End CKrigingAdminKrigAll: Rho\n");
-  trendRho_->endAccess();	
+  trendRho_->endAccess();
 
   printf("\n");
   LogKit::LogFormatted(LogKit::DEBUGHIGH,"KrigAll finished\n");
@@ -301,7 +301,7 @@ void CKrigingAdmin::KrigBlock(Gamma gamma) {
 FFTGrid* CKrigingAdmin::CreateValidGrid() const 
 {
   FFTGrid* pGrid = new FFTGrid(simbox_.getnx(), simbox_.getny(), simbox_.getnz(),
-			       simbox_.getnx(), simbox_.getny(), simbox_.getnz());
+                               simbox_.getnx(), simbox_.getny(), simbox_.getnz());
   
   pGrid->fillInConstant(-1.0f);
   pGrid->setAccessMode(FFTGrid::RANDOMACCESS);
@@ -313,7 +313,7 @@ FFTGrid* CKrigingAdmin::CreateValidGrid() const
       int i1, j1, k1; 
       pBWellPt_[i]->GetIJK(i1, j1, k1);
       pGrid->setRealValue(i1, j1, k1, 1.0f);
-    }	
+    }
   }
   pGrid->endAccess();
   return pGrid;
@@ -381,7 +381,7 @@ CKrigingAdmin::FindDataInDataBlock(Gamma gamma, const CBox & dataBox) {
 
           if (validR && ++totalNoDataInCurrKrigBlock_)
             pIndexRho_[sizeRho_++] = i;
-        }												
+        }
         break;
 
       case BETA_KRIG :
@@ -393,7 +393,7 @@ CKrigingAdmin::FindDataInDataBlock(Gamma gamma, const CBox & dataBox) {
 
           if (validR && ++totalNoDataInCurrKrigBlock_)
             pIndexRho_[sizeRho_++] = i;
-        }												
+        }
         break;
       case RHO_KRIG :
         if (validR && ++totalNoDataInCurrKrigBlock_)
@@ -478,7 +478,7 @@ void CKrigingAdmin::FindDataInDataBlockLoop(Gamma gamma) {
     } // end switch
     counter++;
     //if (currDataBoxSize != startDataboxSize || counter++ >= maxDataBlockLoopCounter_ || prevDataBox == currDataBox_)
-    //		if (currDataBoxSize != startDataboxSize || prevDataBox == currDataBox_)
+    //if (currDataBoxSize != startDataboxSize || prevDataBox == currDataBox_)
     if(currDataBox_ == maxDataBox || currDataBox_ == minDataBox)
       break;
 
@@ -495,7 +495,7 @@ int CKrigingAdmin::NBlocks(int dBlocks, int lSBox) const {
   if (lSBox % dBlocks == 0)
     return lSBox/dBlocks;
 
-  return lSBox/dBlocks + 1; 	
+  return lSBox/dBlocks + 1; 
 }
 
 void CKrigingAdmin::AllocateSpaceForMatrixEq() {
@@ -641,15 +641,15 @@ void CKrigingAdmin::SetMatrix(Gamma gamma) {
 //const int maxData = sizeAlpha_ + sizeBeta_ + sizeRho_;
 //int i,j;
 //for(i=0;i<maxData;i++){
-//	for(j=0;j<maxData;j++)
-//	LogKit::LogFormatted(LogKit::DEBUGLOW,"%f ",krigMatrix_[i][j]);
+//for(j=0;j<maxData;j++)
+//LogKit::LogFormatted(LogKit::DEBUGLOW,"%f ",krigMatrix_[i][j]);
 //LogKit::LogFormatted(LogKit::DEBUGLOW,"\n");
 //}
 
   // Also calulates the kriging data vector
   for (a = 0; a < sizeAlpha_; a++) {
     int indexA = pIndexAlpha_[a]; 
-    krigDataVector_[a] = pBWellPt_[indexA]->GetAlpha(); 			
+    krigDataVector_[a] = pBWellPt_[indexA]->GetAlpha(); 
   } // end a 
 
   for (b = 0; b < sizeBeta_; b++) {
@@ -838,7 +838,7 @@ void CKrigingAdmin::EstimateSizeOfBlock() {
   float tMin = CalcCPUTime(1, static_cast<float>(dyBlockExt), nd, rapidInc);
   float ndT = nd;
   for (dxBlock = 2; dxBlock <= simbox_.getnx(); dxBlock += 1) {
-    float t1 = CalcCPUTime(static_cast<float>(dxBlock),static_cast<float>(dyBlockExt), nd, rapidInc); 			
+    float t1 = CalcCPUTime(static_cast<float>(dxBlock),static_cast<float>(dyBlockExt), nd, rapidInc); 
     if (t1 < tMin) {
       tMin = t1;
       dxBlockT = dxBlock;
@@ -993,15 +993,15 @@ CKrigingAdmin::CreateAndFillFFTGridWithCov(int i1) {
     float deltaZ = static_cast<float>(k*simbox_.getdz());
 
     for (j = -nyp2; j < nyp2; j++) {
-      int j1 = (j < 0 ? nyp + j : j);			
+      int j1 = (j < 0 ? nyp + j : j);
       float deltaY = static_cast<float>(j*simbox_.getdy());
 
-      for (i = -nxp2; i < nxp2; i++) {						
-        int i1 = (i < 0 ? nxp + i : i);				
+      for (i = -nxp2; i < nxp2; i++) {
+        int i1 = (i < 0 ? nxp + i : i);
         float deltaX = static_cast<float>(i*simbox_.getdx());
         const float h = float(sqrt(deltaX*deltaX/(rangeX*rangeX) + deltaY*deltaY/(rangeY*rangeY) + 
           deltaZ*deltaZ/(rangeZ*rangeZ))); 
-        const float gamma = float(exp(-pow(h,power)));	
+        const float gamma = float(exp(-pow(h,power)));
 
         pGrid->setRealValue(i1, j1, k1, gamma);
 
@@ -1063,12 +1063,12 @@ CKrigingAdmin::CreateAndFillFFTGridWithCovRot(int i1) {
   rotMatrix[2][0] = 0.0f; rotMatrix[2][1] = 0.0f; rotMatrix[2][2] = 1.0f;
 
   for (k = -nzp2; k < nzp2; k++) {
-    int k1 = (k < 0 ? nzp + k : k);			
+    int k1 = (k < 0 ? nzp + k : k);
 
     for (j = -nyp2; j < nyp2; j++) {
-      int j1 = (j < 0 ? nyp + j : j);						
+      int j1 = (j < 0 ? nyp + j : j);
       for (i = -nxp2; i < nxp2; i++) {
-        int i1 = (i < 0 ? nxp + i : i);				
+        int i1 = (i < 0 ? nxp + i : i);
         float deltaX = static_cast<float>(i*simbox_.getdx());
         float deltaY = static_cast<float>(j*simbox_.getdy());
         float deltaZ = static_cast<float>(k*simbox_.getdz());
@@ -1104,16 +1104,16 @@ const FFTGrid& CKrigingAdmin::CreateAndFillFFTGridWithCrCov() {
 
   for (k = -nzp2; k < nzp2; k++) {
     int k1 = (k < 0 ? nzp + k : k);
-    //float deltaZ = k*simbox_.getdz();	
+    //float deltaZ = k*simbox_.getdz();
 
     for (j = -nyp2; j < nyp2; j++) {
-      int j1 = (j < 0 ? nyp + j : j);			
-      //float deltaY = j*simbox_.getdy();			
+      int j1 = (j < 0 ? nyp + j : j);
+      //float deltaY = j*simbox_.getdy();
 
       for (i = -nxp2; i < nxp2; i++) {
-        int i1 = (i < 0 ? nxp + i : i);				
-        //float deltaX = i*simbox_.getdx();				
-        const float gamma2 = 0.0f;//exp(-pow(h,power));	
+        int i1 = (i < 0 ? nxp + i : i);
+        //float deltaX = i*simbox_.getdx();
+        const float gamma2 = 0.0f;//exp(-pow(h,power));
 
         pGrid->setRealValue(i1, j1, k1, gamma2);
 
@@ -1261,7 +1261,7 @@ void CKrigingAdmin::CalcSmoothWeights(Gamma gamma, int direction) {
       // noise
       if (a == b && a > 0 && a < size - 1)
         ppMatrix[a][a] *= 1.2;
-    } // end b	
+    } // end b
   } // end a
 
   int counter = 0;
@@ -1350,17 +1350,17 @@ void CKrigingAdmin::SmoothKrigedResult(Gamma gamma) {
                 if (result != RMISSING) {
                   const float trend = result;
                   int c;
-                  for (c = i2Start - 1; c < c2EndX; c++) {				
+                  for (c = i2Start - 1; c < c2EndX; c++) {
                     const int c2 = (c >= simbox_.getnx() ? 2*simbox_.getnx() - c - 1 : c); 
                     result += static_cast<float>(ppKrigSmoothWeightsX_[i2-i2Start][c - i2Start + 1]) 
-                      * (pGrid->getRealValue(c2, j2, k2) - trend);	
+                      * (pGrid->getRealValue(c2, j2, k2) - trend);
                   } // end c
                   if (pGrid->setRealValue(i2, j2, k2, result))
                     //if (pGrid->setRealValue(i2, j2, k2, 1.0f))
                     Require(false, "pGrid->setRealValue failed"); // something is serious wrong...
                 }
               } // end i2
-            } // end if							
+            } // end if
           } // end j2
         } // end k2
 
@@ -1386,17 +1386,17 @@ void CKrigingAdmin::SmoothKrigedResult(Gamma gamma) {
                 if (result != RMISSING) {
                   const float trend = result;
                   int c;
-                  for (c = j2Start - 1; c < c2EndY; c++) {									
+                  for (c = j2Start - 1; c < c2EndY; c++) {
                     const int c2 = (c >= simbox_.getny() ? 2*simbox_.getny() - c - 1 : c);
                     result += static_cast<float>(ppKrigSmoothWeightsY_[j2 - j2Start][c - j2Start + 1])
-                      * (pGrid->getRealValue(i2, c2, k2) - trend);	
+                      * (pGrid->getRealValue(i2, c2, k2) - trend);
                   } // end c
                   if (pGrid->setRealValue(i2, j2, k2, result))
                     //if (pGrid->setRealValue(i2, j2, k2, 1.0f))
                     Require(false, "pGrid->setRealValue failed"); // something is serious wrong...
                 }
               } // end j2
-            } // end if							
+            } // end if
           } // end i2
         } // end k2
 
@@ -1404,7 +1404,7 @@ void CKrigingAdmin::SmoothKrigedResult(Gamma gamma) {
         // smooth in z direction
         const int k2Start = k1 + dzBlock_ - dzSmoothBlock_; 
         const int k2End = MINIM(k1 + dzBlock_ + dzSmoothBlock_, simbox_.getnz());
-        const int c2EndZ = k2End;													
+        const int c2EndZ = k2End;
         for (j2 = j1; j2 < j2Max; j2++) {
           for (i2 = i1; i2 < i2Max; i2++) {
             // check for well obs
@@ -1422,17 +1422,17 @@ void CKrigingAdmin::SmoothKrigedResult(Gamma gamma) {
                 if (result != RMISSING) {
                   const float trend = result;
                   int c;
-                  for (c = k2Start - 1; c < c2EndZ; c++) {									
+                  for (c = k2Start - 1; c < c2EndZ; c++) {
                     const int c2 = (c >= simbox_.getnz() ? 2*simbox_.getnz() - c - 1 : c);
                     result += static_cast<float>(ppKrigSmoothWeightsZ_[k2 - k2Start][c - k2Start + 1])
-                      * (pGrid->getRealValue(i2, j2, c2) - trend);	
+                      * (pGrid->getRealValue(i2, j2, c2) - trend);
                   } // end c
                   if (pGrid->setRealValue(i2, j2, k2, result))
                     //if (pGrid->setRealValue(i2, j2, k2, 1.0f))
                     Require(false, "pGrid->setRealValue failed"); // something is serious wrong...
                 }
               } // end k2
-            } // end if							
+            } // end if
           } // end i2
         } // end j2
 

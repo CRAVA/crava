@@ -33,7 +33,7 @@ public:
   void         add(FFTGrid* fftGrid);
   void         multiply(FFTGrid* fftGrid);              // pointwise multiplication! 
   void         fillInComplexNoise(RandomGen * ranGen);
-  void         fftInPlace();	
+  void         fftInPlace();
   void         invFFTInPlace();
   void         createRealGrid();
   void         createComplexGrid();

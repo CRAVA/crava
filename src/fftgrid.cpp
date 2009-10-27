@@ -44,13 +44,13 @@ FFTGrid::FFTGrid(int nx, int ny, int nz, int nxp, int nyp, int nzp)
   scale_          = 1.0;
 
   cnxp_           = nxp_/2+1;
-  rnxp_	          = 2*(cnxp_);	   
+  rnxp_           = 2*(cnxp_);   
 
   csize_          = cnxp_*nyp_*nzp_;
   rsize_          = rnxp_*nyp_*nzp_;
   counterForGet_  = 0; 
   counterForSet_  = 0;
-  istransformed_  = false;	
+  istransformed_  = false;
   rvalue_ = NULL;
   // index= i+rnxp_*j+k*rnxp_*nyp_;
   // i index in x direction 
@@ -75,13 +75,13 @@ FFTGrid::FFTGrid(FFTGrid  * fftGrid)
   scale_          = fftGrid->scale_;
 
   cnxp_           = nxp_/2+1;
-  rnxp_	          = 2*(cnxp_);	   
+  rnxp_           = 2*(cnxp_);   
 
   csize_          = cnxp_*nyp_*nzp_;
   rsize_          = rnxp_*nyp_*nzp_;
   counterForGet_  = fftGrid->getCounterForGet(); 
   counterForSet_  = fftGrid->getCounterForSet();
-  istransformed_  = false;		
+  istransformed_  = false;
   createRealGrid();
   for(k=0;k<nzp_;k++)
     for(j=0;j<nyp_;j++)

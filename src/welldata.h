@@ -106,7 +106,7 @@ private:
   float         * alpha_; 
   float         * beta_;
   float         * rho_;
-  int 	        * facies_;
+  int           * facies_;
 
   float         * alpha_background_resolution_; // Vp  - filtered to background resolution 
   float         * beta_background_resolution_;  // 

@@ -57,7 +57,7 @@ public:
   virtual int          logTransf();                             // No mode/randomaccess
   virtual void         realAbs();
   virtual int          collapseAndAdd(float* grid);             // No mode/randomaccess
-  virtual void         fftInPlace();	                        // No mode/randomaccess
+  virtual void         fftInPlace();                            // No mode/randomaccess
   virtual void         invFFTInPlace();                         // No mode/randomaccess
 
 
@@ -131,7 +131,7 @@ protected:
   int    nyp_;             // size of padded FFT grid in lateral x direction 
   int    nzp_;             // size of padded FFT grid in lateral y direction
 
-  int    cnxp_;	           // size in x direction for storage inplace algorithm (complex grid) nxp_/2+1
+  int    cnxp_;            // size in x direction for storage inplace algorithm (complex grid) nxp_/2+1
   int    rnxp_;            // expansion in x direction for storage inplace algorithm (real grid) 2*(nxp_/2+1)
 
   int    csize_;           // size of complex grid, cnxp_*nyp_*nzp_

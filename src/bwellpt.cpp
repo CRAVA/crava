@@ -41,14 +41,14 @@ void CBWellPt::SubtractOnly(Gamma type, float gamma) {
     return;
 
   switch (type) {
-  case ALPHA :	
-    alpha_ = alphaOrig_ - gamma;		
+  case ALPHA :
+    alpha_ = alphaOrig_ - gamma;
     break;
   case BETA :
-    beta_ = betaOrig_ - gamma;		
+    beta_ = betaOrig_ - gamma;
     break;
   case RHO :
-    rho_ = rhoOrig_ - gamma;		
+    rho_ = rhoOrig_ - gamma;
     break;
   default :
     assert(1 == 0);

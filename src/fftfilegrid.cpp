@@ -42,13 +42,13 @@ FFTGrid()
   nzp_            = fftGrid->nzp_;
 
   cnxp_           = nxp_/2+1;
-  rnxp_	          = 2*(cnxp_);	   
+  rnxp_           = 2*(cnxp_);   
 
   csize_          = cnxp_*nyp_*nzp_;
   rsize_          = rnxp_*nyp_*nzp_;
   counterForGet_  = 0; 
   counterForSet_  = 0;
-  istransformed_  = false;		
+  istransformed_  = false;
   createRealGrid();
   accMode_=NONE;
 

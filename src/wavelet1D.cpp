@@ -43,7 +43,7 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
   theta_                = seisCube->getTheta();
   nzp_                  = seisCube->getNzp();
   cnzp_                 = nzp_/2+1;
-  rnzp_	                = 2*cnzp_;
+  rnzp_                 = 2*cnzp_;
   scale_                = 1.0f; 
   
   cz_                   = 0;
@@ -469,7 +469,7 @@ Wavelet1D::Wavelet1D(int difftype, int nz, int nzp)
   inFFTorder_ = true;
 
   cnzp_       = nzp_/2+1;
-  rnzp_	      = 2*cnzp_;
+  rnzp_       = 2*cnzp_;
   rAmp_       = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));  
   cAmp_       = reinterpret_cast<fftw_complex*>(rAmp_);
   norm_       = RMISSING;
@@ -530,7 +530,7 @@ Wavelet1D::Wavelet1D(Wavelet * wavelet)
   : Wavelet(wavelet, 1)
 {
   cnzp_ = nzp_/2+1;
-  rnzp_	= 2*cnzp_;
+  rnzp_ = 2*cnzp_;
   rAmp_ = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));  
   cAmp_ = reinterpret_cast<fftw_complex*>(rAmp_);
 

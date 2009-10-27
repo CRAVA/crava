@@ -16,21 +16,21 @@ CBox::CBox(int iMin, int jMin, int kMin, int iMax, int jMax, int kMax, const Sim
 
 void CBox::CheckMinMax(int iMin, int jMin, int kMin, int iMax, int jMax, int kMax) {
   if (iMax >= iMin) {
-    iMax_ = iMax; iMin_ = iMin;	
+    iMax_ = iMax; iMin_ = iMin;
   }
   else {
     iMin_ = iMax; iMax_ = iMin;
   }
 
   if (jMax >= jMin) {
-    jMax_ = jMax; jMin_ = jMin;	
+    jMax_ = jMax; jMin_ = jMin;
   }
   else {
     jMin_ = jMax; jMax_ = jMin;
   }
 
   if (kMax >= kMin) {
-    kMax_ = kMax; kMin_ = kMin;	
+    kMax_ = kMax; kMin_ = kMin;
   }
   else {
     kMin_ = kMax; kMax_ = kMin;

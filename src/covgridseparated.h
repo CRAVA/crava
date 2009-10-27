@@ -39,7 +39,7 @@ private:
   int     nyp_;
   int     nzp_;
   float * gammaXY_;
-  float * gammaZ_;	
+  float * gammaZ_;
   float   rotMatrix_[3][3];
   bool    tabulateCorr_; 
   // these next variables are only init if tabulateCorr_ is false
