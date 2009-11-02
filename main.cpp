@@ -43,12 +43,10 @@ int main(int argc, char** argv)
 
   // Parsing modelfile and reading files
   Model * model = new Model(argv[1]);
-  if(model->getFailed())
-  {
-    LogKit::LogFormatted(LogKit::LOW,"\nErrors detected when loading data.\nAborting.\n");
-    return(1);
-  }
 
+  if(model->getFailed())
+    return(1);
+  
   Crava * crava;
 
   if(model->getModelSettings()->getGenerateSeismic() == false)

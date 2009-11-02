@@ -36,7 +36,7 @@ public:
   FFTGrid        * getBackRho()               const { return background_->getRho()   ;}
   Corr           * getCorrelations()          const { return correlations_           ;}
   float          * getPriorFacies()           const { return priorFacies_            ;} 
-  FFTGrid       ** getPriorFaciesCubes()      const { return priorFaciesProbCubes_       ;}
+  FFTGrid       ** getPriorFaciesCubes()      const { return priorFaciesProbCubes_   ;}
   FFTGrid       ** getSeisCubes()             const { return seisCube_               ;}
   Wavelet       ** getWavelets()              const { return wavelet_                ;}
   float         ** getAMatrix()               const { return reflectionMatrix_       ;}
@@ -248,7 +248,6 @@ private:
 
   SegyGeometry   * geometryFromDirectFile(const std::string & fileName); 
 
-
   ModelSettings  * modelSettings_;
   Simbox         * timeSimbox_;            ///< Information about simulation area.
   Simbox         * timeSimboxConstThick_;  ///< Simbox with constant thickness   
@@ -270,14 +269,13 @@ private:
   double           gradX_;                 ///< X-gradient of correlation rotation. 
   double           gradY_;                 ///< Y-gradient of correlation rotation.
                                            ///< These are only used with correaltion surfaces.
-
-  bool             failed_;                ///< Indicates whether errors occured during construction. 
   GridMapping    * timeDepthMapping_;      ///< Contains both simbox and mapping used for depth conversion
   GridMapping    * timeCutMapping_;        ///< Simbox and mapping for timeCut
   float          * noiseGrid_;             ///< 2D grid for local noise scaling
   bool             velocityFromInversion_;
   FFTGrid       ** priorFaciesProbCubes_;   ///< Cubes for prior facies probabilities
+
+  bool             failed_;                ///< Indicates whether errors occured during construction. 
 };
 
 #endif
-

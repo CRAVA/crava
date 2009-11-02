@@ -31,7 +31,7 @@ XmlModelFile::XmlModelFile(const char * fileName)
   std::ifstream file(fileName);
 
   if (!file) {
-    LogKit::LogFormatted(LogKit::ERROR,"Error: Could not open file %s for reading.\n", fileName);
+    LogKit::LogFormatted(LogKit::ERROR,"\nERROR: Could not open file %s for reading.\n\n", fileName);
     exit(1);
   }
 
@@ -50,8 +50,13 @@ XmlModelFile::XmlModelFile(const char * fileName)
   doc.Parse(clean.c_str());
 
   if (doc.Error() == true) {
-    LogKit::LogFormatted(LogKit::ERROR,"Error: Reading of xml-file %s failed. %s Line %d, column %d\n", 
-      fileName, doc.ErrorDesc(), doc.ErrorRow(), doc.ErrorCol());
+    Utils::writeHeader("Invalid XML file");
+    LogKit::LogFormatted(LogKit::ERROR,"\n%s is not a valid XML file. %s In line %d, column %d.", 
+                         fileName, doc.ErrorDesc(), doc.ErrorRow(), doc.ErrorCol());
+    if (doc.ErrorId() == 9) { // Not very robust check, but a start 
+      LogKit::LogFormatted(LogKit::ERROR,"\nPossible cause: Mis-spelled or forgotten end tag.");
+    }
+    LogKit::LogFormatted(LogKit::ERROR,"\nAborting\n");
     failed_ = true;
   }
   else {
@@ -64,10 +69,11 @@ XmlModelFile::XmlModelFile(const char * fileName)
 
     checkConsistency(errTxt);
 
-
     if(errTxt != "") {
-      Utils::writeHeader("Error(s) detected when parsing model file");
-      LogKit::LogMessage(LogKit::ERROR, "\n"+errTxt);
+      Utils::writeHeader("Invalid model file");
+      LogKit::LogFormatted(LogKit::ERROR,"\n%s is not a valid model file:\n",fileName);
+      LogKit::LogMessage(LogKit::ERROR, errTxt);
+      LogKit::LogFormatted(LogKit::ERROR,"\nAborting\n");
       failed_ = true;
     }
   }
@@ -2178,7 +2184,7 @@ XmlModelFile::checkForJunk(TiXmlNode * root, std::string & errTxt, const std::ve
   if(startLength<errTxt.size()){
     errTxt = errTxt + "Legal commands are:\n";
     for(unsigned int i=0;i<legalCommands.size();i++)
-      errTxt = errTxt +"<"+legalCommands[i]+">\n";
+      errTxt = errTxt +"  <"+legalCommands[i]+">\n";
   }
 
   TiXmlNode * parent = root->Parent();
@@ -2214,7 +2220,6 @@ XmlModelFile::lineColumnText(TiXmlNode * node)
 
 void
 XmlModelFile::checkConsistency(std::string & errTxt) {
-  errTxt += inputFiles_->addInputPathAndCheckFiles();
   if(modelSettings_->getGenerateSeismic() == true)
     checkForwardConsistency(errTxt);
   else
@@ -2234,7 +2239,6 @@ XmlModelFile::checkForwardConsistency(std::string & errTxt) {
       modelSettings_->setSNRatio(i,1.1f);
   }
 }
-
 
 void
 XmlModelFile::checkEstimationInversionConsistency(std::string & errTxt) {

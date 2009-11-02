@@ -64,13 +64,12 @@ Model::Model(char * fileName)
   gradX_                  = 0.0;
   gradY_                  = 0.0;
   
-  priorFaciesProbCubes_ = NULL;
+  priorFaciesProbCubes_   = NULL;
  
   timeDepthMapping_       = NULL;
   timeCutMapping_         = NULL;
   velocityFromInversion_  = false;
 
-  bool failedModelFile    = false;
   bool failedWavelet      = false;
   bool failedSeismic      = false;
   bool failedSimbox       = false;
@@ -80,8 +79,11 @@ Model::Model(char * fileName)
   bool failedBackground   = false;
   bool failedPriorCorr    = false;
   bool failedDepthConv    = false;
-  bool failedLoadingModel = false;
   bool failedPriorFacies  = false;
+
+  bool failedModelFile    = false;
+  bool failedInputFiles   = false;
+  bool failedLoadingModel = false;
 
   Simbox * timeCutSimbox  = NULL;
   Simbox * timeBGSimbox   = NULL;
@@ -95,20 +97,30 @@ Model::Model(char * fileName)
     inputFiles     = modelFile.getInputFiles();
     modelSettings_ = modelFile.getModelSettings();
 
-    if (modelFile.getParsingFailed()) 
+    if (modelFile.getParsingFailed()) {
       failedModelFile = true;
+    }
   }
   else {
     ModelFile modelFile(fileName);
 
     inputFiles     = modelFile.getInputFiles();
     modelSettings_ = modelFile.getModelSettings();
-
-    if (modelFile.getParsingFailed()) 
+    
+    if (modelFile.getParsingFailed()) {
       failedModelFile = true;
+    }
   }
 
-  if(failedModelFile == false)
+  std::string errTxt = inputFiles->addInputPathAndCheckFiles();
+  if(errTxt != "") {
+    Utils::writeHeader("Error opening files");
+    LogKit::LogMessage(LogKit::ERROR, "\n"+errTxt);
+    LogKit::LogFormatted(LogKit::ERROR,"\nAborting\n");
+    failedInputFiles = true;
+  }
+
+  if(!failedModelFile && !failedInputFiles)
   {
     LogKit::SetScreenLog(modelSettings_->getLogLevel());
 
@@ -257,14 +269,16 @@ Model::Model(char * fileName)
                          failedWavelet || failedDepthConv || failedExtraSurf  || failedPriorFacies;
 
     if (failedLoadingModel) {
-      Utils::writeHeader("Error(s) while loading model");
+      Utils::writeHeader("Error(s) while loading data");
       LogKit::LogFormatted(LogKit::ERROR,"\n%s", errText);
+      LogKit::LogFormatted(LogKit::ERROR,"\nAborting\n");
     }
 
     delete inputFiles;
   }
-  failed_ = failedModelFile || failedLoadingModel;
   
+  failed_ = failedModelFile || failedInputFiles || failedLoadingModel;
+
   if(timeCutSimbox != NULL)
     delete timeCutSimbox;
   if(timeBGSimbox != NULL)
@@ -1164,6 +1178,8 @@ Model::estimateXYPaddingSizes(Simbox         * timeSimbox,
   double yPadFac = modelSettings->getYPadFac();
   double xPad    = xPadFac*timeSimbox->getlx();
   double yPad    = yPadFac*timeSimbox->getly();
+  double dx      = timeSimbox->getdx();
+  double dy      = timeSimbox->getdy();
 
   if (xPadFac==0.0 && yPadFac==0.0)
   {
@@ -1172,8 +1188,10 @@ Model::estimateXYPaddingSizes(Simbox         * timeSimbox,
     float angle   = modelSettings->getLateralCorr()->getAngle();
     double factor = 0.5;  // Lateral correlation is not very important. Half a range is probably more than enough
 
-    xPad          = factor * MAXIM(fabs(range1*cos(angle)),fabs(range2*sin(angle)));
-    yPad          = factor * MAXIM(fabs(range1*sin(angle)),fabs(range2*cos(angle)));
+    xPad          = factor * std::max(fabs(range1*cos(angle)),fabs(range2*sin(angle)));
+    yPad          = factor * std::max(fabs(range1*sin(angle)),fabs(range2*cos(angle)));
+    xPad          = std::max(xPad, dx); // Always require
+    yPad          = std::max(xPad, dy); // Always require
 
     xPadFac       = MINIM(1.0, xPad / timeSimbox->getlx()); // A padding of more than 100% is insensible
     yPadFac       = MINIM(1.0, yPad / timeSimbox->getly());
