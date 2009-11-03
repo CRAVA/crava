@@ -17,6 +17,7 @@
 
 #include "src/definitions.h"
 #include "src/welldata.h"
+#include "src/iodefaults.h"
 #include "src/modelsettings.h"
 #include "src/model.h"
 
@@ -571,7 +572,7 @@ WellData::writeRMSWell(void)
   NRLib::Substitute(wellname,"/","_");
   NRLib::Substitute(wellname," ","_");
   wellname = "Well_" + wellname;
-  std::string wellFileName = ModelSettings::makeFullFileName(wellname+".rms");
+  std::string wellFileName = ModelSettings::makeFullFileName(wellname+IODefaults::SuffixForRmsWells());
 
   const char * params[]={"Vp","Vs","Rho"};
   

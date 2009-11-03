@@ -4,7 +4,7 @@
 
 #include "lib/random.h"
 #include "nrlib/iotools/logkit.hpp"
-
+#include "src/iodefaults.h"
 #include "src/definitions.h"
 #include "src/blockedlogs.h"
 #include "src/welldata.h"
@@ -776,7 +776,7 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
   std::string wellname(wellname_);
   NRLib::Substitute(wellname,"/","_");
   NRLib::Substitute(wellname," ","_");
-  std::string fileName = ModelSettings::makeFullFileName("BW_"+wellname+".rms");
+  std::string fileName = ModelSettings::makeFullFileName("BW_"+wellname+IODefaults::SuffixForRmsWells());
 
   /// \todo Replace with safe open function.
   std::ofstream file(fileName.c_str(), std::ios::out | std::ios::binary);
