@@ -373,17 +373,19 @@ Wavelet1D::Wavelet1D(const std::string & fileName,
     break;
   }
   
-  for(int i=0; i < rnzp_ ;i++)
-  {  
-    if(i < nzp_)
-    {
-      rAmp_[i]*=scale_;
-    }
-    else
-    {
-      rAmp_[i]=RMISSING;
-    }// endif
-  }//end for i
+  if(errCode == 0) {
+    for(int i=0; i < rnzp_ ;i++)
+    {  
+      if(i < nzp_)
+      {
+        rAmp_[i]*=scale_;
+      }
+      else
+      {
+        rAmp_[i]=RMISSING;
+      }// endif
+    }//end for i
+  }
 }
 
 Wavelet1D::Wavelet1D(Wavelet * wavelet, int difftype)
@@ -785,16 +787,16 @@ Wavelet1D::WaveletReadOld(const std::string & fileName, int & errCode, char *err
         rAmp_[i]=RMISSING;
       }// endif
     }//end for i 
+    LogKit::LogFormatted(LogKit::MEDIUM,"\nReading wavelet file %s  ... done.\n",fileName.c_str());
+
+    //
+    // Estimate wavelet length
+    //
+    waveletLength_ = getWaveletLengthF();
+    LogKit::LogFormatted(LogKit::LOW,"\n  Estimated wavelet length:  %.1fms.\n",waveletLength_);
   }
 
   fftw_free(tempWave);
-  LogKit::LogFormatted(LogKit::MEDIUM,"\nReading wavelet file %s  ... done.\n",fileName.c_str());
-
-  //
-  // Estimate wavelet length
-  //
-  waveletLength_ = getWaveletLengthF();
-  LogKit::LogFormatted(LogKit::LOW,"\n  Estimated wavelet length:  %.1fms.\n",waveletLength_);
 }
 
 void
