@@ -215,6 +215,7 @@ XmlModelFile::parseSimulation(TiXmlNode * node, std::string & errTxt)
     if(seedGiven == true)
       errTxt += "Both seed and seed file given in command <"+
         root->ValueStr()+"> "+lineColumnText(root)+".\n";
+    inputFiles_->setSeedFile(filename);
   }
 
   int value = 1;
@@ -1016,10 +1017,11 @@ XmlModelFile::parseFaciesProbabilities(TiXmlNode * node, std::string & errTxt)
   if(root == 0)
     return(false);
 
-  std::vector<std::string> legalCommands(3);
+  std::vector<std::string> legalCommands(4);
   legalCommands[0]="facies-estimation-interval";
   legalCommands[1]="prior-facies-probabilities";
   legalCommands[2]="facies-probability-undefined-value";
+  legalCommands[3]="use-vs-for-facies-probabilities";
 
   parseFaciesEstimationInterval(root, errTxt);
 
@@ -1028,6 +1030,10 @@ XmlModelFile::parseFaciesProbabilities(TiXmlNode * node, std::string & errTxt)
   float value;
   if(parseValue(root, "facies-probability-undefined-value", value, errTxt) == true)
     modelSettings_->setPundef(value);
+
+  bool useVs = true;
+  if(parseBool(root, "use-vs-for-facies-probabilities", useVs, errTxt) == true && useVs == false)
+    modelSettings_->setNoVsFaciesProb(true);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);

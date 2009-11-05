@@ -35,6 +35,8 @@ BlockedLogs::BlockedLogs(WellData  * well,
     alpha_seismic_resolution_(NULL),
     beta_seismic_resolution_(NULL),
     rho_seismic_resolution_(NULL),
+    alpha_for_facies_(NULL),
+    rho_for_facies_(NULL),
     real_seismic_data_(NULL),
     synt_seismic_data_(NULL),
     cpp_(NULL),
@@ -92,6 +94,10 @@ BlockedLogs::~BlockedLogs(void)
     delete [] beta_seismic_resolution_;
   if (rho_seismic_resolution_ != NULL)
     delete [] rho_seismic_resolution_;
+  if (alpha_for_facies_ != NULL)
+    delete [] alpha_for_facies_;
+  if (rho_for_facies_ != NULL)
+    delete [] rho_for_facies_;
 
   if (real_seismic_data_ != NULL) {
     for (int i=0 ; i<nAngles_ ; i++)
@@ -785,14 +791,17 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
     throw new NRLib::IOError("Error opening "+fileName+" for writing.");
   }
 
-  bool gotFacies      = nFacies_ > 0;
-  bool gotRealSeismic = real_seismic_data_ != NULL;
-  bool gotSyntSeismic = synt_seismic_data_ != NULL;
-  bool gotCpp         = cpp_ != NULL;
-  bool gotFilteredLog = alpha_seismic_resolution_ != NULL;
+  bool gotFacies      = (nFacies_ > 0);
+  bool gotRealSeismic = (real_seismic_data_ != NULL);
+  bool gotSyntSeismic = (synt_seismic_data_ != NULL);
+  bool gotCpp         = (cpp_ != NULL);
+  bool gotFilteredLog = (alpha_seismic_resolution_ != NULL);
+  bool gotVpRhoFacLog = (alpha_for_facies_ != NULL);
   int nLogs = 3*3;   // {Vp, Vs, Rho} x {raw, BgHz, seisHz} 
   if(gotFilteredLog)
     nLogs += 3;
+  if(gotVpRhoFacLog)
+    nLogs += 2;
   if (gotFacies)
     nLogs += 1;
   if (gotRealSeismic)
@@ -825,6 +834,10 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
   if(gotFilteredLog) {
     for(int i=0;i<3;i++)
       file << params[i] << "_SeismicResolution UNK lin\n";
+  }
+  if(gotVpRhoFacLog) {
+    file << params[0] << "_ForFacies UNK lin\n";
+    file << params[2] << "_ForFacies UNK lin\n";
   }
   if (gotFacies) {
     file << "FaciesLog  DISC ";
@@ -869,6 +882,10 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
       file << std::setw(7) << (alpha_seismic_resolution_[i]==RMISSING ? WELLMISSING : exp(alpha_seismic_resolution_[i])) << "  "
            << std::setw(7) << (beta_seismic_resolution_[i]==RMISSING  ? WELLMISSING : exp(beta_seismic_resolution_[i]))  << "  "
            << std::setw(7) << (rho_seismic_resolution_[i]==RMISSING   ? WELLMISSING : exp(rho_seismic_resolution_[i]))   << "  ";
+    }
+    if(gotVpRhoFacLog == true) {
+      file << std::setw(7) << (alpha_for_facies_[i]==RMISSING ? WELLMISSING : exp(alpha_for_facies_[i])) << "  "
+           << std::setw(7) << (rho_for_facies_[i]==RMISSING   ? WELLMISSING : exp(rho_for_facies_[i]))   << "  ";
     }
     if (gotFacies)
       file << (facies_[i]==IMISSING                                 ? static_cast<int>(WELLMISSING) : facies_[i])      << "  ";
@@ -952,11 +969,12 @@ BlockedLogs::writeNorsarWell(ModelSettings * modelSettings)
   std::string logFileName = ModelSettings::makeFullFileName("BW_"+wellname+".n0");
   std::string onlyName = NRLib::RemovePath(logFileName);
   
-  bool gotFacies      = nFacies_ > 0;
-  bool gotRealSeismic = real_seismic_data_ != NULL;
-  bool gotSyntSeismic = synt_seismic_data_ != NULL;
-  bool gotCpp         = cpp_ != NULL;
-  bool gotFilteredLog = alpha_seismic_resolution_ != NULL;
+  bool gotFacies      = (nFacies_ > 0);
+  bool gotRealSeismic = (real_seismic_data_ != NULL);
+  bool gotSyntSeismic = (synt_seismic_data_ != NULL);
+  bool gotCpp         = (cpp_ != NULL);
+  bool gotFilteredLog = (alpha_seismic_resolution_ != NULL);
+  bool gotVpRhoFacLog = (alpha_for_facies_ != NULL);
 
   int nLogs = 3*3;   // {Vp, Vs, Rho} x {raw, BgHz, seisHz, seisRes} 
   if(gotFilteredLog)
@@ -983,12 +1001,15 @@ BlockedLogs::writeNorsarWell(ModelSettings * modelSettings)
   int nFiles = 3;
   if(gotFilteredLog)
     nFiles += 1;
+  if(gotVpRhoFacLog)
+    nFiles += 1;
 
-  std::vector<std::string> postfix(4);
+  std::vector<std::string> postfix(5);
   postfix[0] = "orig";
   postfix[1] = NRLib::ToString(maxHz_background)+"Hz";
   postfix[2] = NRLib::ToString(maxHz_seismic)+"Hz";
   postfix[3] = "filtered";
+  postfix[4] = "forFacies";
 
   for(int f=0;f<nFiles;f++) {
     mainFile << "\n[Well log data information]\n";
@@ -1050,6 +1071,12 @@ BlockedLogs::writeNorsarWell(ModelSettings * modelSettings)
                      << std::setw(7) << (beta_seismic_resolution_[i]==RMISSING  ? WELLMISSING : exp(beta_seismic_resolution_[i]))  << " "
                      << std::setw(7) << (rho_seismic_resolution_[i]==RMISSING   ? WELLMISSING : exp(rho_seismic_resolution_[i]))   << "\n";
     }
+    if(gotVpRhoFacLog) {
+      *(logFiles[3]) << std::right   << std::fixed << std::setprecision(5)
+                     << std::setw(7) << md[i]*0.001 << " "
+                     << std::setw(7) << (alpha_for_facies_[i]==RMISSING ? WELLMISSING : exp(alpha_for_facies_[i])) << " "
+                     << std::setw(7) << (rho_for_facies_[i]==RMISSING   ? WELLMISSING : exp(rho_for_facies_[i]))   << "\n";
+    }
   }
   trackFile.close();
   for(int f=0;f<nFiles;f++)
@@ -1070,4 +1097,8 @@ void BlockedLogs::setSpatialFilteredLogs(float * filteredlog, int nData, std::st
     beta_seismic_resolution_ = blockedLog;
   else if (type == "RHO_SEISMIC_RESOLUTION")
     rho_seismic_resolution_ = blockedLog;
+  else if (type == "ALPHA_FOR_FACIES")
+    alpha_for_facies_ = blockedLog;
+  else if (type == "RHO_FOR_FACIES")
+    rho_for_facies_ = blockedLog;
 }

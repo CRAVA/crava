@@ -31,7 +31,8 @@ public:
              const double     ** sigmaEOrig,
              const WellData   ** wells,
              int                 nWells,
-             bool                relative);
+             bool                relative,
+             bool                noVs);
   ~FaciesProb();
 
   FFTGrid       * getFaciesProb(int i){return faciesProb_[i];};
@@ -50,6 +51,7 @@ private:
                                  const WellData ** wells, 
                                  int               nWells,
                                  bool              relative,
+                                 bool              noVs,
                                  float             p_undef,
                                  const float     * priorFacies,
                                  FFTGrid        ** priorFaciesCubes);
@@ -60,7 +62,8 @@ private:
                                                        const std::vector<int>   & facies,
                                                        const Simbox             * volume);
 
-  void                                  makeFaciesDens(int nfac, const double ** sigmaEOrig,
+  void                                  makeFaciesDens(int nfac, const double  ** sigmaEOrig,
+                                                       bool                       noVs,  
                                                        const std::vector<float> & alphaFiltered,
                                                        const std::vector<float> & betaFiltered,
                                                        const std::vector<float> & rhoFiltered,
@@ -71,6 +74,7 @@ private:
   void                            setNeededLogsSpatial(const WellData    ** wells,
                                                        int                  nWells,
                                                        bool                 relative,
+                                                       bool                 noVs,
                                                        std::vector<float> & alphaFiltered,
                                                        std::vector<float> & betaFiltered,
                                                        std::vector<float> & rhoFiltered,

@@ -1689,7 +1689,8 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs)
                               const_cast<const double **>(filteredlogs->getSigmae()),
                               const_cast<const WellData **>(wells_), 
                               nWells_,
-                              true);
+                              true,
+                              model_->getModelSettings()->getNoVsFaciesProb());
       delete meanAlpha2_;
       delete meanBeta2_;
       delete meanRho2_;
@@ -1708,7 +1709,8 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs)
                               const_cast<const double **>(filteredlogs->getSigmae()),
                               const_cast<const WellData **>(wells_), 
                               nWells_,
-                              false);
+                              false,
+                              model_->getModelSettings()->getNoVsFaciesProb());
       baseName = "FaciesProb_";
     }
     fprob_->calculateConditionalFaciesProb(wells_, nWells_, model_->getModelSettings());

@@ -42,6 +42,8 @@ public:
   const float  * getAlphaSeismicResolution(void)    const { return alpha_seismic_resolution_ ;}
   const float  * getBetaSeismicResolution(void)     const { return beta_seismic_resolution_  ;} 
   const float  * getRhoSeismicResolution(void)      const { return rho_seismic_resolution_   ;}  
+  const float  * getAlphaForFacies(void)            const { return alpha_for_facies_         ;}
+  const float  * getRhoForFacies(void)              const { return rho_for_facies_           ;}  
   float       ** getRealSeismicData(void)           const { return real_seismic_data_        ;}
   float       ** getSyntSeismicData(void)           const { return synt_seismic_data_        ;}
   float       ** getCpp(void)                       const { return cpp_ ;}              
@@ -115,6 +117,9 @@ private:
   float        * alpha_seismic_resolution_; ///< 
   float        * beta_seismic_resolution_;  ///< Logs filtered to resolution of inversion result
   float        * rho_seismic_resolution_;   ///< 
+
+  float        * alpha_for_facies_;         ///< As above, but omit Vs from filter. Used for facies probabilities.
+  float        * rho_for_facies_;           ///< 
 
   float       ** real_seismic_data_;        ///< Seismic data
   float       ** synt_seismic_data_;        ///< Forward modelled seismic data

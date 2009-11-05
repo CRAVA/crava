@@ -91,7 +91,9 @@ int main(int argc, char** argv)
         corr->writeFilePostCovGrids(model->getTimeSimbox());
       }       
 
-      spatwellfilter->doFiltering(corr,model->getWells(), model->getModelSettings()->getNumberOfWells());
+      spatwellfilter->doFiltering(corr,model->getWells(), 
+                                  model->getModelSettings()->getNumberOfWells(), 
+                                  model->getModelSettings()->getNoVsFaciesProb());
       
       // FilterWellLogs * filteredlogs = NULL;
       //crava->filterLogs(model->getTimeSimboxConstThick(),filteredlogs);

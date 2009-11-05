@@ -35,9 +35,10 @@ FaciesProb::FaciesProb(FFTGrid           * alpha,
                        const double     ** sigmaEOrig,
                        const WellData   ** wells,
                        int                 nWells,
-                       bool                relative)
+                       bool                relative,
+                       bool                noVs)
 {
-  makeFaciesProb(nFac, alpha, beta, rho, sigmaEOrig, wells, nWells, relative, 
+  makeFaciesProb(nFac, alpha, beta, rho, sigmaEOrig, wells, nWells, relative, noVs,
                  p_undef, priorFacies, priorFaciesCubes);
 }
 
@@ -110,7 +111,8 @@ FaciesProb::makeFaciesHistAndSetPriorProb(const std::vector<float> & alpha,
 
 void       
 FaciesProb::makeFaciesDens(int nfac, 
-                           const double ** sigmaEOrig,
+                           const double            ** sigmaEOrig,
+                           bool                       noVs,
                            const std::vector<float> & alphaFiltered,
                            const std::vector<float> & betaFiltered,
                            const std::vector<float> & rhoFiltered,
@@ -118,13 +120,19 @@ FaciesProb::makeFaciesDens(int nfac,
                            std::vector<FFTGrid *>   & density,
                            Simbox                  ** volume)
 { 
+  //Note: If noVs is true, the beta dimension is mainly dummy. Due to the lookup mechanism that maps 
+  //      values outside the denisty table to the edge, any values should do in this dimension.
+  //      Still, we prefer to create reasonable values.
   int i,j,k,l;
   nFacies_ = nfac;
 
   float kstda, kstdb, kstdr, hopt;
   int nbinsa = 100;
   int nbinsb = 100;
+  if(noVs == true)
+    nbinsb = 1; //Ignore what happens for Vs.
   int nbinsr = 50;
+
 
   int nobs   = 0;
   float *smooth = new float[nbinsa*nbinsb*nbinsr];
@@ -138,16 +146,34 @@ FaciesProb::makeFaciesDens(int nfac,
   float varAlpha = 0.0f, varBeta = 0.0f, varRho = 0.0f;
   calculateVariances(alphaFiltered, betaFiltered, rhoFiltered, faciesLog,
                      varAlpha, varBeta, varRho);//sets varAlpha etc....
+  if(noVs == true)
+    varBeta = 5*varAlpha; //Must be large enough to make surface span possible beta values.
+
   hopt  = static_cast<float>(pow(4.0/7,1.0/7)*pow(static_cast<double>(nobs),-1.0/7));
   kstda = hopt*sqrt(varAlpha);
   kstdb = hopt*sqrt(varBeta);
   kstdr = hopt*sqrt(varRho);
 
   double ** sigmae = new double *[3];
-  for(i=0;i<3;i++) {
+  for(i=0;i<3;i++)
     sigmae[i] = new double[3];
-    for(j=0;j<3;j++)
-      sigmae[i][j] = sigmaEOrig[i][j];
+
+  if(noVs == false) {
+    for(i=0;i<3;i++) {
+      for(j=0;j<3;j++)
+        sigmae[i][j] = sigmaEOrig[i][j];
+    }
+  }
+  else {
+    sigmae[0][0] = sigmaEOrig[0][0];
+    sigmae[0][1] = 0.0;
+    sigmae[0][2] = sigmaEOrig[0][1];
+    sigmae[1][0] = 0.0;
+    sigmae[1][1] = 0.0; //Will be overruled by reasonable value.
+    sigmae[1][2] = 0.0;
+    sigmae[2][0] = sigmaEOrig[1][0];
+    sigmae[2][1] = 0.0;
+    sigmae[2][2] = sigmaEOrig[1][1];
   }
 
   if(sigmae[0][0]<kstda*kstda)
@@ -274,6 +300,7 @@ void FaciesProb::makeFaciesProb(int nfac,
                                 const WellData ** wells, 
                                 int               nWells,
                                 bool              relative,
+                                bool              noVs,
                                 float             p_undef,
                                 const float     * priorFacies,
                                 FFTGrid        ** priorFaciesCubes)
@@ -282,12 +309,12 @@ void FaciesProb::makeFaciesProb(int nfac,
   std::vector<float> betaFiltered;
   std::vector<float> rhoFiltered;
   std::vector<int>   faciesLog;
-  setNeededLogsSpatial(wells, nWells, relative,
+  setNeededLogsSpatial(wells, nWells, relative, noVs,
                        alphaFiltered, betaFiltered, rhoFiltered, faciesLog); //Generate these logs.
 
   std::vector<FFTGrid *> density;
   Simbox   * volume  = NULL;
-  makeFaciesDens(nfac, sigmaEOrig, alphaFiltered, betaFiltered, rhoFiltered, faciesLog, density, &volume);
+  makeFaciesDens(nfac, sigmaEOrig, noVs, alphaFiltered, betaFiltered, rhoFiltered, faciesLog, density, &volume);
 
   if(priorFaciesCubes != NULL)
     normalizeCubes(priorFaciesCubes);
@@ -717,6 +744,7 @@ void FaciesProb::calculateVariances(const std::vector<float> & alpha,
 void FaciesProb::setNeededLogsSpatial(const WellData    ** wells,
                                       int                  nWells,
                                       bool                 relative,
+                                      bool                 noVs,
                                       std::vector<float> & alphaFiltered,
                                       std::vector<float> & betaFiltered,
                                       std::vector<float> & rhoFiltered,
@@ -740,9 +768,17 @@ void FaciesProb::setNeededLogsSpatial(const WellData    ** wells,
       int n = bw->getNumberOfBlocks();
       for(int i=0;i<n;i++)
       {
-        alphaFiltered[index] = bw->getAlphaSeismicResolution()[i];
-        betaFiltered[index]  = bw->getBetaSeismicResolution()[i];
-        rhoFiltered[index]   = bw->getRhoSeismicResolution()[i];
+        if(noVs == false) {
+          alphaFiltered[index] = bw->getAlphaSeismicResolution()[i];
+          betaFiltered[index]  = bw->getBetaSeismicResolution()[i];
+          rhoFiltered[index]   = bw->getRhoSeismicResolution()[i];
+        }
+        else {
+          alphaFiltered[index] = bw->getAlphaForFacies()[i];
+          //Beta log here is mainly dummy, but must be at correct level.
+          betaFiltered[index]  = bw->getBetaHighCutBackground()[i];
+          rhoFiltered[index]   = bw->getRhoForFacies()[i];
+        }
         if(relative == true) {
           alphaFiltered[index] -= bw->getAlphaHighCutBackground()[i];
           betaFiltered[index]  -= bw->getBetaHighCutBackground()[i];

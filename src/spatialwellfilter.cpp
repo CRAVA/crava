@@ -22,8 +22,15 @@ SpatialWellFilter::SpatialWellFilter(int nwells)
   for(int i=0;i<3;i++)
     for(int j=0;j<3;j++)
       sigmae_[i][j] = 0.0;
-}
 
+  sigmaeVpRho_       = new double *[2];
+  sigmaeVpRho_[0]    = new double[2];
+  sigmaeVpRho_[1]    = new double[2];
+  sigmaeVpRho_[0][0] = 0.0;
+  sigmaeVpRho_[0][1] = 0.0;
+  sigmaeVpRho_[1][0] = 0.0;
+  sigmaeVpRho_[1][1] = 0.0;
+}
 
 SpatialWellFilter::~SpatialWellFilter()
 {
@@ -69,7 +76,7 @@ void SpatialWellFilter::setPriorSpatialCorr(FFTGrid *parSpatialCorr, WellData *w
   }
 }
 
-void SpatialWellFilter::doFiltering(Corr *corr, WellData **wells, int nWells)
+void SpatialWellFilter::doFiltering(Corr *corr, WellData **wells, int nWells, bool useVpRhoFilter)
 {
   n_ = new int[nWells];
   double ** sigmapost;
@@ -156,7 +163,13 @@ void SpatialWellFilter::doFiltering(Corr *corr, WellData **wells, int nWells)
     {
       test[i] = new double[3*n];
     }
-   
+
+    if(useVpRhoFilter == true) //Only additional
+      doVpRhoFiltering(const_cast<const double **>(sigmapri), 
+                       const_cast<const double **>(sigmapost), 
+                       n, 
+                       wells[w1]->getBlockedLogsOrigThick()); //Must do before Cholesky of sigmapri.
+
     lib_matrCholR(3*n, sigmapri);
     lib_matrAXeqBMatR(3*n, sigmapri, imat, 3*n);
     lib_matr_prod(sigmapost,imat,3*n,3*n,3*n,Aw);
@@ -183,8 +196,8 @@ void SpatialWellFilter::doFiltering(Corr *corr, WellData **wells, int nWells)
       delete [] test[i];
     delete [] test;
     
-    calculateFilteredLogs(Aw, wells[w1]->getBlockedLogsOrigThick(), n);
-
+    calculateFilteredLogs(Aw, wells[w1]->getBlockedLogsOrigThick(), n, true);
+    
     n_[w1] = n;
     lastn += n;
     for(int i=0;i<3*n;i++)
@@ -210,35 +223,133 @@ void SpatialWellFilter::doFiltering(Corr *corr, WellData **wells, int nWells)
   sigmae_[1][2]  = sigmae_[2][1];
     
   adjustDiagSigma(sigmae_, 3);
+  if(useVpRhoFilter == true) {
+    sigmaeVpRho_[0][0] /= lastn;
+    sigmaeVpRho_[1][0] /= lastn;
+    sigmaeVpRho_[1][1] /= lastn;
+    sigmaeVpRho_[0][1]  = sigmae_[1][0];
 
+    adjustDiagSigma(sigmaeVpRho_,2);
+  }
 }
 
 
-void SpatialWellFilter::calculateFilteredLogs(double **Aw, BlockedLogs *blockedlogs, int n)
+void
+SpatialWellFilter::doVpRhoFiltering(const double ** sigmapri, const double ** sigmapost, int n, 
+                                    BlockedLogs * blockedLogs)
 {
+  double ** sigmapri2  = new double *[2*n];
+  double ** sigmapost2 = new double *[2*n];
+  double ** imat       = new double *[2*n];
+  double ** sigma      = new double *[2*n];
+  double ** Aw         = new double *[2*n];
+
+  for(int i=0;i<2*n;i++) {
+    sigmapri2[i]  = new double[2*n];
+    sigmapost2[i] = new double[2*n];
+    imat[i]       = new double[2*n];
+    sigma[i]      = new double[2*n];
+    Aw[i]         = new double[2*n];
+  }
+
+  for(int i=0;i<n;i++) {
+    for(int j=0;j<n;j++) {
+      sigmapri2[i][j]      = sigmapri[i][j];
+      sigmapost2[i][j]     = sigmapost[i][j];
+
+      sigmapri2[i+n][j]    = sigmapri[i+2*n][j];
+      sigmapost2[i+n][j]   = sigmapost[i+2*n][j];
+
+      sigmapri2[i][j+n]    = sigmapri[i][j+2*n];
+      sigmapost2[i][j+n]   = sigmapost[i][j+2*n];
+
+      sigmapri2[i+n][j+n]  = sigmapri[i+2*n][j+2*n];
+      sigmapost2[i+n][j+n] = sigmapost[i+2*n][j+2*n];
+
+      imat[i][j]     = 0.0;
+      imat[i+n][j]   = 0.0;
+      imat[i][j+n]   = 0.0;
+      imat[i+n][j+n] = 0.0;
+    }
+    imat[i][i]     = 1.0;
+    imat[i+n][i+n] = 1.0;
+  }
+  lib_matrCholR(2*n, sigmapri2);
+  lib_matrAXeqBMatR(2*n, sigmapri2, imat, 2*n);
+  lib_matr_prod(sigmapost2,imat,2*n,2*n,2*n,Aw);
+  for(int i=0;i<2*n;i++)
+    for(int j=0;j<2*n;j++)
+    {
+      Aw[i][j] *=-1.0;
+      if(i==j)
+        Aw[i][j]+=1.0;
+    }
+
+  lib_matr_prod(Aw,sigmapost2,2*n,2*n,2*n,sigma);
+
+  for(int i=0;i<n;i++)
+  {
+    sigmaeVpRho_[0][0] += sigma[i      ][i     ];
+    sigmaeVpRho_[1][0] += sigma[i +   n][i     ];
+    sigmaeVpRho_[1][1] += sigma[i +   n][i +  n];
+  }
+
+  
+  calculateFilteredLogs(Aw, blockedLogs, n, false);
+  
+  for(int i=0;i<2*n;i++)
+  {
+    delete [] Aw[i];
+    delete [] sigmapri2[i];
+    delete [] sigmapost2[i];
+    delete [] imat[i];
+    delete [] sigma[i];
+  }
+  delete [] Aw;
+  delete [] sigmapri2;
+  delete [] sigmapost2;
+  delete [] imat;  
+  delete [] sigma;
+}
+
+
+
+
+void SpatialWellFilter::calculateFilteredLogs(double **Aw, BlockedLogs *blockedlogs, int n, bool useVs)
+{
+  int nLogs = 2;
+  if(useVs == true)
+    nLogs++;
+
   double **filterval;
-  filterval = new double *[3*n];
+  filterval = new double *[nLogs*n];
   int i;
-  for(i=0;i<3*n;i++)
-  filterval[i] = new double[1];
+  for(i=0;i<nLogs*n;i++)
+    filterval[i] = new double[1];
   
   double **residuals;
-  residuals = new double * [3*n];
-  for(i=0;i<3*n;i++)
+  residuals = new double * [nLogs*n];
+  for(i=0;i<nLogs*n;i++)
     residuals[i] = new double[1];
 
-  const float * alpha   = blockedlogs->getAlpha();
-  const float * bgAlpha = blockedlogs->getAlphaHighCutBackground();
-  const float * beta    = blockedlogs->getBeta();
-  const float * bgBeta  = blockedlogs->getBetaHighCutBackground();
-  const float * rho     = blockedlogs->getRho();
-  const float * bgRho   = blockedlogs->getRhoHighCutBackground();
+  int currentEnd = 0;
 
-  MakeInterpolatedResiduals(alpha, bgAlpha, n, 0  , residuals);
-  MakeInterpolatedResiduals(beta , bgBeta , n, n  , residuals);
-  MakeInterpolatedResiduals(rho  , bgRho  , n, 2*n, residuals);
+  const float * alpha    = blockedlogs->getAlpha();
+  const float * bgAlpha  = blockedlogs->getAlphaHighCutBackground();
+  MakeInterpolatedResiduals(alpha, bgAlpha, n, currentEnd  , residuals);
+  currentEnd += n;
+  
+  const float * beta   = blockedlogs->getBeta();
+  const float * bgBeta = blockedlogs->getBetaHighCutBackground();
+  if(useVs == true) {
+    MakeInterpolatedResiduals(beta, bgBeta, n, currentEnd, residuals);
+    currentEnd += n;
+  }
+  const float * rho      = blockedlogs->getRho();
+  const float * bgRho    = blockedlogs->getRhoHighCutBackground();
+  MakeInterpolatedResiduals(rho, bgRho, n, currentEnd, residuals);
 
-  lib_matr_prod(Aw, residuals, 3*n, 3*n, 1, filterval);
+  lib_matr_prod(Aw, residuals, nLogs*n, nLogs*n, 1, filterval);
 
   float * alphaFiltered = new float[n];
   float * betaFiltered  = new float[n];
@@ -246,31 +357,42 @@ void SpatialWellFilter::calculateFilteredLogs(double **Aw, BlockedLogs *blockedl
 
   for(i=0;i<n;i++)
   {
+    int offset = 0;
     if(alpha[i] == RMISSING)
       alphaFiltered[i] = 0.0;
     else
-      alphaFiltered[i] = float(filterval[i][0]);
+      alphaFiltered[i] = float(filterval[i+offset][0]);
+    offset += n;
 
-    if(beta[i] == RMISSING)
-      betaFiltered[i] = 0.0;
-    else
-      betaFiltered[i] = float(filterval[i + n][0]);
+    if(useVs == true) {
+      if(beta[i] == RMISSING)
+        betaFiltered[i] = 0.0;
+      else
+        betaFiltered[i] = float(filterval[i + offset][0]);
+      offset += n;
+    }
 
     if(rho[i] == RMISSING)
       rhoFiltered[i] = 0.0;
     else
-      rhoFiltered[i] = float(filterval[i + 2*n][0]);
+      rhoFiltered[i] = float(filterval[i + offset][0]);
   }
 
-  blockedlogs->setSpatialFilteredLogs(alphaFiltered, n, "ALPHA_SEISMIC_RESOLUTION",bgAlpha);
-  blockedlogs->setSpatialFilteredLogs(betaFiltered , n, "BETA_SEISMIC_RESOLUTION" ,bgBeta);
-  blockedlogs->setSpatialFilteredLogs(rhoFiltered  , n, "RHO_SEISMIC_RESOLUTION"  ,bgRho);
+  if(useVs == true) {
+    blockedlogs->setSpatialFilteredLogs(alphaFiltered, n, "ALPHA_SEISMIC_RESOLUTION",bgAlpha);
+    blockedlogs->setSpatialFilteredLogs(betaFiltered , n, "BETA_SEISMIC_RESOLUTION" ,bgBeta);
+    blockedlogs->setSpatialFilteredLogs(rhoFiltered  , n, "RHO_SEISMIC_RESOLUTION"  ,bgRho);
+  }
+  else {
+    blockedlogs->setSpatialFilteredLogs(alphaFiltered, n, "ALPHA_FOR_FACIES",bgAlpha);
+    blockedlogs->setSpatialFilteredLogs(rhoFiltered  , n, "RHO_FOR_FACIES"  ,bgRho);
+  }
 
   delete [] alphaFiltered;
   delete [] betaFiltered;
   delete [] rhoFiltered;
 
-  for(i=0;i<3*n;i++)
+  for(i=0;i<nLogs*n;i++)
   {
     delete [] residuals[i];
     delete [] filterval[i];

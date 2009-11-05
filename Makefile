@@ -40,6 +40,7 @@ cleanall:
 	rm -f $(OBJDIR)/*.o
 	rm -f $(OBJSUBDIR)/*.o
 	rm -f $(OBJNRLIBDIR)/*/*.o
+	rm -f $(OBJNRLIBDIR)/*/*/*.o
 	rm -f $(PROGRAM) main.o
 
 test:	$(PROGRAM) 

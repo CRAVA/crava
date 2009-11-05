@@ -119,6 +119,7 @@ public:
   bool                             getGenerateSeismic(void)      const { return generateSeismic_       ;}
   bool                             getGenerateBackground(void)   const { return generateBackground_    ;}
   bool                             getEstimateFaciesProb(void)   const { return estimateFaciesProb_    ;}
+  bool                             getNoVsFaciesProb(void)       const { return noVsFaciesProb_        ;}
   bool                             getFaciesLogGiven(void)       const { return faciesLogGiven_        ;}
   bool                             getDepthDataOK(void)          const { return depthDataOk_           ;}
   bool                             getParallelTimeSurfaces(void) const { return parallelTimeSurfaces_  ;}
@@ -244,6 +245,7 @@ public:
   void setGenerateSeismic(bool generateSeismic)          { generateSeismic_      = generateSeismic    ;}
   void setGenerateBackground(bool generateBackgr)        { generateBackground_   = generateBackgr     ;}
   void setEstimateFaciesProb(bool estFaciesProb)         { estimateFaciesProb_   = estFaciesProb      ;}
+  void setNoVsFaciesProb(bool noVsFaciesProb)            { noVsFaciesProb_       = noVsFaciesProb     ;}
   void setFaciesLogGiven(bool faciesLogGiven)            { faciesLogGiven_       = faciesLogGiven     ;}
   void setDepthDataOk(bool depthDataOk)                  { depthDataOk_          = depthDataOk        ;}
   void setParallelTimeSurfaces(bool pTimeSurfaces)       { parallelTimeSurfaces_ = pTimeSurfaces      ;}
@@ -432,6 +434,7 @@ private:
 
   bool                             generateBackground_;    // Make background model
   bool                             estimateFaciesProb_;    // Shall facies probabilites be estimated?
+  bool                             noVsFaciesProb_;        // Do not use Vs for faciesprob.
   bool                             faciesLogGiven_;
   bool                             depthDataOk_;           // We have what we need to do depth conversion
   bool                             parallelTimeSurfaces_;
