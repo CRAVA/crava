@@ -547,6 +547,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\nrlib\well\well.cpp"
+					>
+				</File>
+				<File
 					RelativePath="src\welldata.cpp"
 					>
 					<FileConfiguration
@@ -3566,10 +3570,6 @@
 					RelativePath=".\nrlib\volume\volume.cpp"
 					>
 				</File>
-				<File
-					RelativePath=".\nrlib\well\well.cpp"
-					>
-				</File>
 				<Filter
 					Name="boost"
 					>
@@ -3661,6 +3661,10 @@
 				</File>
 				<File
 					RelativePath=".\src\inputfiles.h"
+					>
+				</File>
+				<File
+					RelativePath=".\src\io.h"
 					>
 				</File>
 				<File
