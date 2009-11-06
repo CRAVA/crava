@@ -7,6 +7,56 @@
 #include <algorithm>
 #include <vector>
 
+std::string 
+FindPreceedingString(const std::string & file, std::string::size_type end)
+{
+  std::string::size_type start = end-1;
+  while(start >= 0 && file[start] != ' ')
+    start--;
+  
+  std::string name = file.substr(start+1,end-start);
+  return(name);
+}
+
+void
+CheckInputFiles(std::string & errTxt)
+{
+  std::ifstream infile;
+  NRLib::OpenRead(infile,"src/inputfiles.cpp");
+  std::string file1;
+  std::string line;
+  while(!infile.eof()) {
+    getline(infile, line);
+    file1 = file1+"\n"+line;
+  }
+  infile.close();
+
+  infile.clear();
+  std::string file2;
+  NRLib::OpenRead(infile,"src/inputfiles.h");
+  while(!infile.eof()) {
+    getline(infile, line);
+    file2 = file2+"\n"+line;
+  }
+  infile.close();
+
+  std::string::size_type comStart = file1.find("addPathAndCheck");
+  std::string::size_type comEnd   = file1.find("InputFiles::", comStart);
+    
+  std::string::size_type base = file2.find("private:");
+  std::string::size_type end  = file2.find("_", base);
+  
+  while(end < file2.size()) {
+    std::string variable = FindPreceedingString(file2, end);
+    if(variable != "inputDirectory_") {
+      if(file1.find(variable, comStart) > comEnd)
+        errTxt = errTxt + "Error: Class variable "+variable+" is not checked for being an existing file in inputfiles.cpp\n";
+    }
+    end  = file2.find("_", end+1);
+  }
+}
+
+
 std::string
 GetPath(const TiXmlNode * node)
 {
@@ -159,6 +209,11 @@ bool CompareTrees(const TiXmlDocument & code, const TiXmlDocument & doc, std::st
 
 int main()
 {
+  std::string errTxt;
+  CheckInputFiles(errTxt);
+  if(errTxt == "")
+    std::cout << "All files are checked for existence.\n";
+  
   std::ifstream infile;
   NRLib::OpenRead(infile,"doc/user_manual/referencemanual.tex");
   std::string file;
@@ -189,7 +244,7 @@ int main()
     file = file+"\n"+line;
   }
   infile.close();
-  std::string errTxt;
+
   root = ProcessCodeLevel(file, "::parseCrava(", errTxt);
   std::ofstream outfile;
   if(errTxt.size() > 0) {

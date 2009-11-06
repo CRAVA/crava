@@ -36,8 +36,16 @@ InputFiles::addInputPathAndCheckFiles()
     errTxt += addPathAndCheck(wellFiles_[i]);
   for(i=0;i<seismicFiles_.size();i++)
     errTxt += addPathAndCheck(seismicFiles_[i]);
+  for(i=0;i<localNoiseFiles_.size();i++)
+    errTxt += addPathAndCheck(localNoiseFiles_[i]);
   for(i=0;i<waveletFiles_.size();i++)
     errTxt += addPathAndCheck(waveletFiles_[i]);
+  for(i=0;i<waveletShiftFiles_.size(); i++)
+    errTxt += addPathAndCheck(waveletShiftFiles_[i]);
+  for(i=0;i<waveletScaleFiles_.size(); i++)
+    errTxt += addPathAndCheck(waveletScaleFiles_[i]);
+  for(i=0;i<waveletFilterFile_.size(); i++)
+    errTxt += addPathAndCheck(waveletFilterFile_[i]);
   for(i=0;i<waveletEstIntFile_.size();i++)
     errTxt += addPathAndCheck(waveletEstIntFile_[i]);
   for(i=0;i<faciesEstIntFile_.size();i++)
@@ -54,6 +62,11 @@ InputFiles::addInputPathAndCheckFiles()
   errTxt += addPathAndCheck(reflMatrFile_);
   errTxt += addPathAndCheck(paramCorrFile_);
   errTxt += addPathAndCheck(tempCorrFile_);
+  std::map<std::string, std::string>::iterator j;
+  for(j=priorFaciesProb_.begin();j != priorFaciesProb_.end();j++) {
+    errTxt += addPathAndCheck(j->second);
+  }
+
   return(errTxt);
 }
 
