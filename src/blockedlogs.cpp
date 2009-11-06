@@ -4,13 +4,13 @@
 
 #include "lib/random.h"
 #include "nrlib/iotools/logkit.hpp"
-#include "src/iodefaults.h"
 #include "src/definitions.h"
 #include "src/blockedlogs.h"
 #include "src/welldata.h"
 #include "src/fftgrid.h"
 #include "src/simbox.h"
 #include "src/model.h"
+#include "src/io.h"
 
 BlockedLogs::BlockedLogs(WellData  * well, 
                          Simbox    * simbox,
@@ -782,13 +782,15 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
   std::string wellname(wellname_);
   NRLib::Substitute(wellname,"/","_");
   NRLib::Substitute(wellname," ","_");
-  std::string fileName = ModelSettings::makeFullFileName("BW_"+wellname+IODefaults::SuffixForRmsWells());
+  std::string baseName = IO::PrefixBlockedWells() + wellname + IO::SuffixRmsWells();
+  std::string fileName = ModelSettings::makeFullFileName2(IO::PathToWells(), baseName);
 
-  /// \todo Replace with safe open function.
-  std::ofstream file(fileName.c_str(), std::ios::out | std::ios::binary);
+  std::ofstream file;
+  NRLib::OpenWrite(file, fileName);
 
   if (!file) {
-    throw new NRLib::IOError("Error opening "+fileName+" for writing.");
+    LogKit::LogMessage(LogKit::ERROR,"Error opening "+fileName+" for writing.");
+    std::exit(1);
   }
 
   bool gotFacies      = (nFacies_ > 0);
@@ -920,9 +922,10 @@ BlockedLogs::writeNorsarWell(ModelSettings * modelSettings)
   NRLib::Substitute(wellname," ","_");
 
   //Handle main file.
-  std::string fileName = ModelSettings::makeFullFileName("BW_"+wellname+".nwh");
+  std::string baseName = IO::PrefixBlockedWells() + wellname + IO::SuffixNorsarWells();
+  std::string fileName = ModelSettings::makeFullFileName2(IO::PathToWells(), baseName);
   std::ofstream mainFile;
-  NRLib::OpenWrite(mainFile, fileName.c_str());
+  NRLib::OpenWrite(mainFile, fileName);
   mainFile << std::fixed
            << std::setprecision(2);
 
@@ -965,8 +968,8 @@ BlockedLogs::writeNorsarWell(ModelSettings * modelSettings)
   mainFile << "UTMX    km\n";
   mainFile << "UTMY    km\n";
   
-
-  std::string logFileName = ModelSettings::makeFullFileName("BW_"+wellname+".n0");
+  std::string logBaseName = IO::PrefixBlockedWells() + wellname + IO::SuffixNorsarLog();
+  std::string logFileName = ModelSettings::makeFullFileName2(IO::PathToWells(), logBaseName);
   std::string onlyName = NRLib::RemovePath(logFileName);
   
   bool gotFacies      = (nFacies_ > 0);
@@ -1022,10 +1025,10 @@ BlockedLogs::writeNorsarWell(ModelSettings * modelSettings)
       mainFile << params[i] << " " << unit[i] << "\n";
   }
   mainFile.close();
-  
 
   //Write the track file.
-  std::string trackFileName = ModelSettings::makeFullFileName("BW_"+wellname+".nwt");
+  std::string trackBaseName = IO::PrefixBlockedWells() + wellname + IO::SuffixNorsarTrack();
+  std::string trackFileName = ModelSettings::makeFullFileName2(IO::PathToWells(), trackBaseName);
   std::ofstream trackFile;
   NRLib::OpenWrite(trackFile, trackFileName.c_str());
   trackFile << std::right

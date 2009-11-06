@@ -1,4 +1,5 @@
-#include "wavelet3D.h"
+#include <iostream>
+#include <fstream>
 
 #include <string.h>
 #include <assert.h>
@@ -17,12 +18,14 @@
 #include "nrlib/iotools/logkit.hpp"
 
 #include "src/modelsettings.h"
-#include "src/model.h"
 #include "src/blockedlogs.h"
-#include "src/welldata.h"
 #include "src/definitions.h"
+#include "src/wavelet3D.h"
+#include "src/welldata.h"
 #include "src/fftgrid.h"
 #include "src/simbox.h"
+#include "src/model.h"
+#include "src/io.h"
 
 Wavelet3D::Wavelet3D(const std::string & fileName, 
                      ModelSettings     * modelSettings, 
@@ -403,19 +406,20 @@ void
 Wavelet3D::printToFile(std::string fileName, bool overrideDebug) 
 {
   if(overrideDebug == true || ModelSettings::getDebugLevel() > 0) {
-    std::string fName = ModelSettings::makeFullFileName(fileName+".txt");
-    FILE *file = fopen(fName.c_str(),"w");
+    std::string fName = fileName + IO::SuffixGeneralData();
+    fName = ModelSettings::makeFullFileName2(IO::PathToWavelets(), fName);
+    std::ofstream file;
+    NRLib::OpenWrite(file, fName);
     LogKit::LogFormatted(LogKit::LOW,"\nWriting STORM ascii file "+fName+"...");
-    int i,j,k;
-    for(k=0;k<nzp_;k++)
-      for(j=0;j<nyp_;j++) {
-        for(i=0;i<nxp_;i++) {
-          fprintf(file,"%f ", getRAmp(k,j,i));
+    for(int k=0;k<nzp_;k++)
+      for(int j=0;j<nyp_;j++) {
+        for(int i=0;i<nxp_;i++) {
+          file << getRAmp(k,j,i);
         }
-        fprintf(file,"\n");
+        file << "\n";
       }
-    fprintf(file,"0\n");
-    fclose(file);
+    file << "0\n";
+    file.close();
   }
 }
 

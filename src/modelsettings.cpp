@@ -151,8 +151,8 @@ ModelSettings::~ModelSettings(void)
 bool 
 ModelSettings::getDoInversion(void)
 {
-  return (((VP+VS+RHO+LAMELAMBDA+LAMEMU+POISSONRATIO+AI+SI+VPVSRATIO+MURHO+LAMBDARHO+FACIESPROB+CORRELATION+FACIESPROBRELATIVE & gridFlag_) > 0) &&
-           estimationMode_ == false); 
+  return ((((VP+VS+RHO+LAMELAMBDA+LAMEMU+POISSONRATIO+AI+SI+VPVSRATIO+MURHO+LAMBDARHO+FACIESPROB+CORRELATION+FACIESPROBRELATIVE) & gridFlag_) > 0) &&
+          estimationMode_ == false); 
 }
 
 bool 
@@ -290,6 +290,12 @@ std::string
 ModelSettings::makeFullFileName(const std::string name, const std::string postfix)
 {
   return (outputPath_+filePrefix_+name+postfix);
+}
+
+std::string 
+ModelSettings::makeFullFileName2(const std::string subDir, const std::string fileName)
+{
+  return (outputPath_ + subDir + filePrefix_ + fileName);
 }
 
 

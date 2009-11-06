@@ -1,6 +1,9 @@
+#include <iostream>
+#include <fstream>
 #include <math.h>
 #include <stdio.h>
 
+#include "nrlib/iotools/fileio.hpp"
 #include "lib/random.h"
 
 RandomGen::RandomGen(unsigned int seed)
@@ -13,9 +16,10 @@ RandomGen::RandomGen(unsigned int seed)
 RandomGen::RandomGen(const std::string & filename)
 {
   seedfile_ = filename;
-  FILE * file = fopen(seedfile_.c_str(),"r");
-  fscanf(file,"%u",&seed_);
-  fclose(file);
+  std::ifstream file;
+  NRLib::OpenRead(file, seedfile_);
+  file >> seed_;
+  file.close();
 }
 
 RandomGen::~RandomGen()

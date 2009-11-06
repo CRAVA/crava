@@ -101,7 +101,6 @@ int main(int argc, char** argv)
       if (model->getModelSettings()->getEstimateFaciesProb())
         crava->computeFaciesProb(spatwellfilter);
       delete spatwellfilter;
-
       //
       // Temprary placement.  crava.cpp needs a proper restructuring.
       //

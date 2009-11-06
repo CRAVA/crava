@@ -9,18 +9,18 @@
 #include "lib/global_def.h"
 #include "lib/lib_misc.h"
 
-#include "nrlib/iotools/logkit.hpp"
 #include "nrlib/iotools/stringtools.hpp"
+#include "nrlib/iotools/logkit.hpp"
 #include "nrlib/segy/segy.hpp"
 
-#include "src/inputfiles.h"
 #include "src/modelsettings.h"
 #include "src/xmlmodelfile.h"
-#include "src/vario.h"
 #include "src/definitions.h"
+#include "src/inputfiles.h"
 #include "src/fftgrid.h"
 #include "src/vario.h"
 #include "lib/utils.h"
+#include "src/io.h"
 
 XmlModelFile::XmlModelFile(const char * fileName)
 {
@@ -1486,17 +1486,17 @@ XmlModelFile::parseIOSettings(TiXmlNode * node, std::string & errTxt)
   legalCommands[4]="file-output-prefix";
   legalCommands[5]="log-level";
 
-  std::string topDir;
+  std::string topDir = IO::TopDirectory();
   parseValue(root, "top-directory", topDir, errTxt);
   ensureTrailingSlash(topDir);
 
-  std::string inputDir;
+  std::string inputDir = IO::InputDirectory();
   parseValue(root, "input-directory", inputDir, errTxt);
   inputDir = topDir+inputDir;
   ensureTrailingSlash(inputDir);
   inputFiles_->setInputDirectory(inputDir);
   
-  std::string outputDir;
+  std::string outputDir = IO::OutputDirectory();
   parseValue(root, "output-directory", outputDir, errTxt);
   outputDir = topDir+outputDir;
   ensureTrailingSlash(outputDir);
@@ -1534,7 +1534,7 @@ XmlModelFile::parseIOSettings(TiXmlNode * node, std::string & errTxt)
   }
 
   //Test-open log file, to check valid path.
-  std::string logFileName = ModelSettings::makeFullFileName("logFile.txt");
+  std::string logFileName = ModelSettings::makeFullFileName2("",IO::FileLog());
   std::ofstream file;
   try {
     NRLib::OpenWrite(file, logFileName);

@@ -20,6 +20,7 @@
 #include "src/parameteroutput.h"
 #include "src/timings.h"
 #include "src/spatialwellfilter.h"
+#include "src/io.h"
 #include "lib/timekit.hpp"
 #include "lib/random.h"
 #include "lib/utils.h"
@@ -1336,7 +1337,10 @@ Crava::doPostKriging(FFTGrid & postAlpha,
     CovGridSeparated covGridCrBetaRho  (*correlations_->getPostCrCovBetaRho()  );
 
     KrigingData3D kd(wells_, nWells_, 1); // 1 = full resolution logs
-    kd.writeToFile("Raw");
+
+    std::string baseName = "Raw_" + IO::PrefixKrigingData() + IO::SuffixGeneralData();
+    std::string fileName = ModelSettings::makeFullFileName2(IO::PathToInversionResult(), baseName);
+    kd.writeToFile(fileName);
     
     CKrigingAdmin pKriging(*simbox_, 
                            kd.getData(), kd.getNumberOfData(),

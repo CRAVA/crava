@@ -62,7 +62,7 @@ public:
 
 private:
   FFTGrid  * createFFTGrid(int nx, int ny, int nz, int nxp, int nyp, int nzp, bool fileGrid);
-  void       writeFilePostCorrT(float * postCov, int nz, const std::string & fileName) const;
+  void       writeFilePostCorrT(float * postCov, int nz, const std::string & subDir, const std::string & fileName) const;
   float      getOrigin(FFTGrid * grid) const;
   float    * getPostCov00(FFTGrid * postCov);
 

@@ -10,6 +10,7 @@
 class Vario;
 class Simbox;
 class FFTGrid;
+class CovGrid2D;
 class WellData;
 class KrigingData2D;
 class ModelSettings;
@@ -69,7 +70,7 @@ public:
                                          Grid2D      *&noiseScaled, 
                                          int            number, 
                                          float          globalScale); 
-  void                  printVecToFile(char * fileName, fftw_real* vec ,int nzp) const;
+  void                  printVecToFile(const std::string & fileName, fftw_real* vec ,int nzp) const;
 
   virtual void          write1DWLas3DWL() {};
   virtual void          write3DWLfrom1DWL() {};
@@ -102,32 +103,31 @@ void                    findLocalNoiseWithGainGiven(fftw_real ** synt_r,
                                                     float * scaleOptWell,
                                                     Grid2D * gain, 
                                                     WellData **wells, Simbox *simbox) const;
-  void                  estimateLocalGain(Grid2D  *& gain,
-                                          float     * scaleOptWell,
-                                          float       globalScale,
-                                          Vario     * localWaveletVario,
-                                          int       * nActiveData,
-                                          Simbox    * simbox,
-                                          WellData ** wells,
-                                          int         nWells);
-                                          
-  void                  estimateLocalShift(Grid2D  *& shift,
-                                           float     * shiftWell,
-                                           Vario     * localWaveletVario,
-                                           int       * nActiveData,
-                                           Simbox    * simbox,
-                                           WellData ** wells,
-                                           int         nWells);
-                                          
-  void                  estimateLocalNoise(Grid2D  *& noiseScaled,
-                                           float       globalNoise,
-                                           float     * errWellOptScale,
-                                           Vario     * localWaveletVario,
-                                           int       * nActiveData,
-                                           Simbox    * simbox,
-                                           WellData ** wells,
-                                           int         nWells);
-                                          
+  void                  estimateLocalGain(const CovGrid2D & cov,
+                                          Grid2D         *& gain,
+                                          float           * scaleOptWell,
+                                          float             globalScale,
+                                          int             * nActiveData,
+                                          Simbox          * simbox,
+                                          WellData       ** wells,
+                                          int               nWells);
+  
+  void                  estimateLocalShift(const CovGrid2D & cov,
+                                           Grid2D         *& shift,
+                                           float           * shiftWell,
+                                           int             * nActiveData,
+                                           Simbox          * simbox,
+                                           WellData       ** wells,
+                                           int               nWells);
+  
+  void                  estimateLocalNoise(const CovGrid2D & cov,
+                                           Grid2D         *& noiseScaled,
+                                           float             globalNoise,
+                                           float           * errWellOptScale,
+                                           int             * nActiveData,
+                                           Simbox          * simbox,
+                                           WellData       ** wells,
+                                           int               nWells);
 
   //void                flipVec(fftw_real* vec, int n);
 

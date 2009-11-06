@@ -16,6 +16,7 @@
 #include "src/welldata.h"
 #include "src/background.h"
 #include "src/simbox.h"
+#include "src/io.h"
 
 Analyzelog::Analyzelog(WellData      ** wells,
                        Background     * background,
@@ -734,7 +735,7 @@ Analyzelog::estimateCorrTAndVar0(float  * CorrT,
     }
 
     if(ModelSettings::getDebugLevel() > 0) {
-      std::string fName = ModelSettings::makeFullFileName(std::string("Autocorr.dat"));
+      std::string fName = ModelSettings::makeFullFileName2(IO::PathToCorrelations(), std::string("Autocorr.dat"));
       FILE *file = fopen(fName.c_str(), "w");
       fprintf(file,"   i      nAA    corAA      nBB    corBB      nRR    corRR         nTT    corTT    CorrT\n");
       fprintf(file,"----------------------------------------------------------------------------------------\n");

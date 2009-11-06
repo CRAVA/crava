@@ -26,6 +26,7 @@
 #include "src/gridmapping.h"
 #include "src/inputfiles.h"
 #include "src/timings.h"
+#include "src/io.h"
 
 #include "lib/utils.h"
 #include "lib/random.h"
@@ -124,12 +125,12 @@ Model::Model(char * fileName)
   {
     LogKit::SetScreenLog(modelSettings_->getLogLevel());
 
-    std::string logFileName = ModelSettings::makeFullFileName("logFile.txt");
+    std::string logFileName = ModelSettings::makeFullFileName2("",IO::FileLog());
     LogKit::SetFileLog(logFileName,modelSettings_->getLogLevel());
 
     if(modelSettings_->getDebugFlag() > 0)
     {
-      std::string fName = ModelSettings::makeFullFileName("debug.txt");
+      std::string fName = ModelSettings::makeFullFileName2("",IO::FileDebug());
       LogKit::SetFileLog(fName, LogKit::DEBUGHIGH+LogKit::DEBUGLOW);
     }
     LogKit::EndBuffering();
@@ -1326,8 +1327,9 @@ Model::processSeismic(FFTGrid      **& seisCube,
     {
       if(modelSettings->getDirectSeisOutput() == true) {
         for(int i=0;i<nAngles;i++) {
-          std::string fileName = "Seis_Direct_"+NRLib::ToString(int(0.5+modelSettings->getAngle(i)*(180/M_PI)));
-          fileName = ModelSettings::makeFullFileName(fileName,".bin");
+          std::string angle    = NRLib::ToString(modelSettings->getAngle(i)*(180/M_PI), 1);
+          std::string baseName = IO::PrefixSeismic() + IO::PrefixDirect() + angle + IO::SuffixDirectData();
+          std::string fileName = ModelSettings::makeFullFileName2(IO::PathToSeismicData(), baseName);
           seisCube[i]->writeDirectFile(fileName, timeSimbox);
         }
       }
@@ -1844,9 +1846,15 @@ Model::processBackground(Background   *& background,
     background->writeBackgrounds(timeSimbox, timeDepthMapping_, timeCutMapping_); 
   if(modelSettings_->getDirectBGOutput() == true) {
     std::string fileName[3];
-    fileName[0] = ModelSettings::makeFullFileName("BG_Vp_Direct.bin");
-    fileName[1] = ModelSettings::makeFullFileName("BG_Vs_Direct.bin");
-    fileName[2] = ModelSettings::makeFullFileName("BG_Rho_Direct.bin");
+
+    std::string baseName1 = IO::PrefixBackground() + "Vp"  + IO::PrefixDirect() + IO::SuffixDirectData();
+    std::string baseName2 = IO::PrefixBackground() + "Vs"  + IO::PrefixDirect() + IO::SuffixDirectData();
+    std::string baseName3 = IO::PrefixBackground() + "Rho" + IO::PrefixDirect() + IO::SuffixDirectData();
+
+    fileName[0] = ModelSettings::makeFullFileName2(IO::PathToBackground(), baseName1);
+    fileName[1] = ModelSettings::makeFullFileName2(IO::PathToBackground(), baseName2);
+    fileName[2] = ModelSettings::makeFullFileName2(IO::PathToBackground(), baseName3);
+
     for(int i=0;i<3;i++) {
       backModel[i]->setAccessMode(FFTGrid::RANDOMACCESS);
       backModel[i]->expTransf();
@@ -2209,7 +2217,7 @@ Model::processWavelets(Wavelet     **& wavelet,
         {
           char * fileName= new char[MAX_STRING];
           sprintf(fileName,"Local_Wavelet_Shift_%i",i);
-          Model::writeSurfaceToFile(help,fileName,outputFormat);
+          writeSurfaceToFile(help,fileName,outputFormat);
           delete [] fileName;
         }
         delete help;
@@ -2226,7 +2234,7 @@ Model::processWavelets(Wavelet     **& wavelet,
         {
           char * fileName= new char[MAX_STRING];
           sprintf(fileName,"Local_Wavelet_Gain_%i",i);
-          Model::writeSurfaceToFile(help,fileName,outputFormat);
+          writeSurfaceToFile(help,fileName,outputFormat);
           delete [] fileName;
         }
         delete help;
@@ -2243,7 +2251,7 @@ Model::processWavelets(Wavelet     **& wavelet,
       {
         char * fileName= new char[MAX_STRING];
         sprintf(fileName,"Local_Noise_%i",i);
-        Model::writeSurfaceToFile(help,fileName,outputFormat);
+        writeSurfaceToFile(help,fileName,outputFormat);
         delete [] fileName;
       }
       delete help;
@@ -2901,12 +2909,13 @@ Model::loadExtraSurfaces(Surface  **& waveletEstimInterval,
 int
 Model::findFileType(const std::string & fileName)
 {
-  FILE * file = fopen(fileName.c_str(),"r");
-  char header[19];
-  fread(header, 1, 18, file);
-  fclose(file);
-  header[18] = 0;
-  if(strcmp(header,"storm_petro_binary") == 0)
+  std::ifstream file;
+  NRLib::OpenRead(file, fileName);
+  std::string line;
+  getline(file,line);         
+  file.close();
+  std::string label = line.substr(0,18);
+  if (label.compare("storm_petro_binary") == 0)
     return(STORMFILE);
   else
     return(SEGYFILE);
@@ -3366,8 +3375,9 @@ Model::processDepthConversion(Simbox        * timeCutSimbox,
                                         failed, errText);            // NBNB-PAL: Er dettet riktig nz (timeCut vs time)? 
       timeDepthMapping_->makeTimeDepthMapping(velocity, timeSimbox);
       if(modelSettings->getDirectVelOutput() == true) {
-        std::string fName = ModelSettings::makeFullFileName("Velocity_Direct.bin");
-        velocity->writeDirectFile(fName, timeSimbox); 
+        std::string baseName = IO::PrefixVelocity() + IO::PrefixDirect() + IO::SuffixDirectData();
+        std::string fileName = ModelSettings::makeFullFileName2(IO::PathToVelocity(), baseName);
+        velocity->writeDirectFile(fileName, timeSimbox); 
       }
     }
   }
@@ -3540,8 +3550,8 @@ Model::findSmallestSurfaceGeometry(const double   x0,
   if (rot < 0) {
     xMin = x0;
     xMax = x0 + lx*cos(rot) - ly*sin(rot);
-      yMin = y0 + lx*sin(rot);
-      yMax = y0 + ly*cos(rot);
+    yMin = y0 + lx*sin(rot);
+    yMax = y0 + ly*cos(rot);
   }
 }
 
@@ -3550,14 +3560,13 @@ Model::writeSurfaceToFile(Surface           * surface,
                           const std::string & name,
                           int                 format)
 {
-  std::string fileName = ModelSettings::makeFullFileName(name);
+  std::string fileName = ModelSettings::makeFullFileName2(IO::PathToSurfaces(), name);
   
   if((format & ModelSettings::ASCII) > 0)
-    NRLib::WriteIrapClassicAsciiSurf(*surface, fileName+".irap");
+    NRLib::WriteIrapClassicAsciiSurf(*surface, fileName + IO::SuffixAsciiIrapClassic());
   else  
-    NRLib::WriteStormBinarySurf(*surface, fileName+".storm");
+    NRLib::WriteStormBinarySurf(*surface, fileName + IO::SuffixStormBinary());
 }
-
 
 
 void Model::resampleGrid(Surface *surf,Simbox * simbox, Grid2D *outgrid)
@@ -3612,28 +3621,27 @@ void Model::resampleGridAndWriteToFile(Grid2D *grid,Simbox *simbox, char *fileNa
 
 }
 
-
 SegyGeometry *
 Model::geometryFromDirectFile(const std::string & fileName) 
 {
   std::ifstream binFile;
-    NRLib::OpenRead(binFile, fileName, std::ios::in | std::ios::binary);
-
+  NRLib::OpenRead(binFile, fileName, std::ios::in | std::ios::binary);
   
-    double x0 = NRLib::ReadBinaryDouble(binFile);
-    double y0 = NRLib::ReadBinaryDouble(binFile);
-    double dx = NRLib::ReadBinaryDouble(binFile);
-    double dy = NRLib::ReadBinaryDouble(binFile);
-    int nx = NRLib::ReadBinaryInt(binFile);
-    int ny = NRLib::ReadBinaryInt(binFile);
-    double IL0 = NRLib::ReadBinaryDouble(binFile);
-    double XL0 = NRLib::ReadBinaryDouble(binFile);
-    double ilStepX = NRLib::ReadBinaryDouble(binFile);
-    double ilStepY = NRLib::ReadBinaryDouble(binFile);
-    double xlStepX = NRLib::ReadBinaryDouble(binFile);
-    double xlStepY = NRLib::ReadBinaryDouble(binFile);
-    double rot = NRLib::ReadBinaryDouble(binFile);
-
+  
+  double x0 = NRLib::ReadBinaryDouble(binFile);
+  double y0 = NRLib::ReadBinaryDouble(binFile);
+  double dx = NRLib::ReadBinaryDouble(binFile);
+  double dy = NRLib::ReadBinaryDouble(binFile);
+  int nx = NRLib::ReadBinaryInt(binFile);
+  int ny = NRLib::ReadBinaryInt(binFile);
+  double IL0 = NRLib::ReadBinaryDouble(binFile);
+  double XL0 = NRLib::ReadBinaryDouble(binFile);
+  double ilStepX = NRLib::ReadBinaryDouble(binFile);
+  double ilStepY = NRLib::ReadBinaryDouble(binFile);
+  double xlStepX = NRLib::ReadBinaryDouble(binFile);
+  double xlStepY = NRLib::ReadBinaryDouble(binFile);
+  double rot = NRLib::ReadBinaryDouble(binFile);
+  
   binFile.close();
   
   SegyGeometry * geometry = new SegyGeometry(x0, y0, dx, dy, nx, ny, ///< When XL, IL is available.

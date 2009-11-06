@@ -20,20 +20,20 @@ public:
   ModelSettings(void);
   ~ModelSettings(void); 
 
-  Vario             * getAngularCorr(void)          const { return angularCorr_           ;} 
-  Vario             * getLateralCorr(void)          const { return lateralCorr_           ;}
-  Vario             * getBackgroundVario(void)      const { return backgroundVario_       ;} 
-  Vario             * getLocalWaveletVario(void)    const { return localWaveletVario_     ;} 
-  SegyGeometry      * getAreaParameters(void)       const { return geometry_              ;}    
-  TraceHeaderFormat * getTraceHeaderFormat(void)    const { return traceHeaderFormat_     ;}
-  TraceHeaderFormat * getTraceHeaderFormat(int i)   const { return localTHF_[i]           ;}
-  int                 getKrigingParameter(void)     const { return krigingParameter_      ;}
-  float               getConstBackValue(int i)      const { return constBackValue_[i]     ;}
-  int                 getNumberOfAngles(void)       const { return angle_.size()          ;} 
-  int                 getSeismicType(int i)         const { return seismicType_[i]        ;}
-  float               getAngle(int i)               const { return angle_[i]              ;}
-  float               getWaveletScale(int i)        const { return waveletScale_[i]       ;} 
-  float               getSNRatio(int i)             const { return SNRatio_[i]            ;} 
+  Vario                          * getAngularCorr(void)          const { return angularCorr_           ;} 
+  Vario                          * getLateralCorr(void)          const { return lateralCorr_           ;}
+  Vario                          * getBackgroundVario(void)      const { return backgroundVario_       ;} 
+  Vario                          * getLocalWaveletVario(void)    const { return localWaveletVario_     ;} 
+  SegyGeometry                   * getAreaParameters(void)       const { return geometry_              ;}    
+  TraceHeaderFormat              * getTraceHeaderFormat(void)    const { return traceHeaderFormat_     ;}
+  TraceHeaderFormat              * getTraceHeaderFormat(int i)   const { return localTHF_[i]           ;}
+  int                              getKrigingParameter(void)     const { return krigingParameter_      ;}
+  float                            getConstBackValue(int i)      const { return constBackValue_[i]     ;}
+  int                              getNumberOfAngles(void)       const { return angle_.size()          ;} 
+  int                              getSeismicType(int i)         const { return seismicType_[i]        ;}
+  float                            getAngle(int i)               const { return angle_[i]              ;}
+  float                            getWaveletScale(int i)        const { return waveletScale_[i]       ;} 
+  float                            getSNRatio(int i)             const { return SNRatio_[i]            ;} 
 
   bool                             getMatchEnergies(int i)       const { return(matchEnergies_[i]==1)      ;} 
   bool                             getEstimateWavelet(int i)     const { return(estimateWavelet_[i]==1)    ;}
@@ -303,6 +303,7 @@ public:
   static void setFilePrefix(const std::string & filePrefix);
   static void setOutputPath(const std::string & outputPath);
   static std::string      makeFullFileName(const std::string name, const std::string postfix = "");
+  static std::string      makeFullFileName2(const std::string subDir, const std::string fileName);
                    
 private:           
                    

@@ -7,6 +7,7 @@
 #include <ostream>
 
 #include "nrlib/exception/exception.hpp"
+#include "nrlib/iotools/fileio.hpp"
 #include "src/covgrid2d.h"
 
 CovGrid2D::CovGrid2D(Vario * vario, 
@@ -46,13 +47,9 @@ CovGrid2D::writeToFile(const std::string & name) const
   //
   // Write grid using an ASCII Irap Classic surface format
   //
-  std::string fileName = name + ".irap";
-  std::ofstream file(fileName.c_str(), std::ios::out | std::ios::binary);
-  if (!file) {
-    throw new NRLib::IOError("Error opening "+fileName+" for writing.");
-  }
+  std::ofstream file;
+  NRLib::OpenWrite(file, name);
   file.precision(14);
-
   file << 2*nx_-1  << " " 
        << 2*ny_-1  << " " 
        << dx_      << " " 

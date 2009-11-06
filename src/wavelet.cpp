@@ -1,12 +1,10 @@
+#include <iostream>
+#include <fstream>
 #include <string.h>
 #include <assert.h>
 #include <math.h>
 #define _USE_MATH_DEFINES
 #include <cmath>
-
-#include "wavelet.h"
-#include "wavelet1D.h"
-#include "wavelet3D.h"
 
 #include "fft/include/fftw.h"
 #include "fft/include/rfftw.h"
@@ -22,6 +20,9 @@
 #include "nrlib/iotools/logkit.hpp"
 #include "nrlib/grid/grid2d.hpp"
 
+#include "src/wavelet.h"
+#include "src/wavelet1D.h"
+#include "src/wavelet3D.h"
 #include "src/modelsettings.h"
 #include "src/model.h"
 #include "src/blockedlogs.h"
@@ -33,6 +34,7 @@
 #include "src/krigingdata2d.h"
 #include "src/kriging2d.h"
 #include "src/covgrid2d.h"
+#include "src/io.h"
 
 Wavelet::Wavelet(int dim)
   : dim_(dim)
@@ -153,14 +155,16 @@ Wavelet::setShiftGrid(Grid2D *grid)
 }
 
 void
-Wavelet::printVecToFile(char * fileName,fftw_real* vec, int nzp) const
+Wavelet::printVecToFile(const std::string & fileName, fftw_real* vec, int nzp) const
 {
   if( ModelSettings::getDebugLevel() > 0) { 
-    std::string fName = ModelSettings::makeFullFileName(std::string(fileName)+".dat");
-    FILE *file = fopen(fName.c_str(),"w");
+    std::string fName = fileName + IO::SuffixGeneralData();
+    fName = ModelSettings::makeFullFileName2(IO::PathToWavelets(), fName);
+    std::ofstream file;
+    NRLib::OpenWrite(file,fName);
     for(int i=0;i<nzp;i++)
-      fprintf(file,"%f\n",vec[i]);
-    fclose(file);
+      file << vec[i] << "\n";
+    file.close();
   }  
 }
 
@@ -560,17 +564,12 @@ Wavelet::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
         fillInSeismic(seisData,start, length,seis_r[w],nzp);
         if(ModelSettings::getDebugLevel() > 0)
         {
-          char* fileName = new char[MAX_STRING];
-          sprintf(fileName,"seismic_Well_%d_%d",w,int(floor(theta_/PI*180.0+0.5)));
+          std::string angle = NRLib::ToString(theta_/(M_PI*180.0),1);
+          std::string fileName;
+          fileName = "seismic_Well_" + NRLib::ToString(w) + "_" + angle;
           printVecToFile(fileName,seis_r[w], nzp);
-          sprintf(fileName,"synthetic_seismic_Well_%d_%d",w,int(floor(theta_/PI*180.0+0.5)));
+          fileName = "synthetic_seismic_Well_" + NRLib::ToString(w) + "_" + angle;
           printVecToFile(fileName,synt_r[w], nzp);
-          sprintf(fileName,"wellTime_Well_%d",w);
-          std::string fName = ModelSettings::makeFullFileName(std::string(fileName)+".dat");
-          FILE *file = fopen(fName.c_str(),"wb");
-          //fprint(file,"%f %f  %f \n",,dz[w],);
-          fclose(file);
-          delete [] fileName;
         }
         for(i=start;i<start+length;i++)
         { 
@@ -583,7 +582,7 @@ Wavelet::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
       else
       {
         LogKit::LogFormatted(LogKit::LOW,"\n  Not using vertical well %s for error estimation (length=%.1fms  required length=%.1fms).",
-                         wells[w]->getWellname(),length*dz0,waveletLength_);
+                             wells[w]->getWellname(),length*dz0,waveletLength_);
       }
     }
   }
@@ -733,14 +732,33 @@ Wavelet::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
    errStd = errOptScale;
  //   
  // }
-  if(doEstimateLocalShift)
-    estimateLocalShift(shift,shiftWell,localWaveletVario, nActiveData, simbox,wells, nWells);
 
-  if(doEstimateLocalScale)
-    estimateLocalGain(gain,scaleOptWell,1.0,localWaveletVario, nActiveData, simbox,wells, nWells);
+  if(doEstimateLocalShift || doEstimateLocalScale || doEstimateLocalNoise) 
+  {
+    //
+    // Pretabulate correlations
+    //
+    const CovGrid2D cov(localWaveletVario, 
+                        simbox->getnx(),
+                        simbox->getny(),
+                        simbox->getdx(), 
+                        simbox->getdy());
+    
+    if (ModelSettings::getDebugLevel() > 0) {
+      std::string baseName = std::string("Local_Wavelet_Correlation") + IO::SuffixAsciiIrapClassic();
+      std::string fileName = ModelSettings::makeFullFileName2(IO::PathToWavelets(), baseName);
+      cov.writeToFile(fileName);
+    }
 
-  if(doEstimateLocalNoise) 
-    estimateLocalNoise(noiseScaled,errStd, errWellOptScale,localWaveletVario, nActiveData, simbox,wells, nWells); 
+    if(doEstimateLocalShift)
+      estimateLocalShift(cov, shift,shiftWell, nActiveData, simbox,wells, nWells);
+    
+    if(doEstimateLocalScale)
+      estimateLocalGain(cov, gain,scaleOptWell, 1.0, nActiveData, simbox,wells, nWells);
+    
+    if(doEstimateLocalNoise) 
+      estimateLocalNoise(cov, noiseScaled, errStd, errWellOptScale, nActiveData, simbox,wells, nWells); 
+  }
 
   delete [] shiftWell;
   delete [] errVarWell;
@@ -1135,19 +1153,6 @@ Wavelet::setGainGrid(Grid2D * grid)
       sum+=log((*gainGrid_)(i,j));
       nData++;
     }
- /* for(int j=0;j<gridNJ_;j++)
-    for(int i=0;i<gridNI_;i++)
-    {
-      double x, y, z;
-      simbox->getCoord(i, j, 0, x, y, z);
-      double value = grid->GetZ(x,y);
-      gainGrid_[i+gridNI_*j] = static_cast<float>(value);
-      if(value != WELLMISSING)
-      {
-        sum += log(value);
-        nData++;
-      }
-    }*/
 
     float invGeoMean = float(exp(-sum/static_cast<double>(nData)));
     for(int j=0;j<static_cast<int>(gainGrid_->GetNJ());j++)
@@ -1171,37 +1176,14 @@ Wavelet::setGainGrid(Grid2D * grid)
       fft1DInPlace();
 }
 
-/*void           
-Wavelet::flipVec(fftw_real* vec, int n)
-{
-  int i;
-  fftw_real* tmp= new fftw_real[n];
-  for(i=1;i<n;i++)
-  {
-    tmp[i]=vec[i];
-  }
-  
-  for(i=1;i<n;i++)
-  {
-    vec[i]=tmp[n-i];
-  }
-  delete [] tmp;
-}
-*/
-
-
 void
-Wavelet::estimateLocalShift(Grid2D  *& shift,
-                               float     * shiftWell,
-                               Vario     * localWaveletVario,
-                               int       * nActiveData,
-                               Simbox    * simbox,
-                               WellData ** wells,
-                               int         nWells)
-                              // int         outputFormat
-                               //int         otherOutput, 
-                              // int         angleNr,
-                              // bool        estimationMode)
+Wavelet::estimateLocalShift(const CovGrid2D  & cov,
+                            Grid2D          *& shift,
+                            float            * shiftWell,
+                            int              * nActiveData,
+                            Simbox           * simbox,
+                            WellData        ** wells,
+                            int                nWells)
 {
   //
   // NBNB-PAL: Since slightly deviated wells are accepted, we should
@@ -1212,7 +1194,6 @@ Wavelet::estimateLocalShift(Grid2D  *& shift,
   // Collect data for kriging
   //
   KrigingData2D shiftData;
- 
   
   for(int i=0;i<nWells;i++)
   {
@@ -1232,62 +1213,31 @@ Wavelet::estimateLocalShift(Grid2D  *& shift,
   }
   shiftData.findMeanValues();
  
-  
-  //
-  // Pretabulate correlations
-  //
-  const CovGrid2D cov(localWaveletVario, 
-                      simbox->getnx(),
-                      simbox->getny(),
-                      simbox->getdx(), 
-                      simbox->getdy());
-  std::string name("Local_Wavelet_Correlation");
-  std::string fileName = ModelSettings::makeFullFileName(name);
-  cov.writeToFile(fileName);
-
   //
   // Perform kriging
   //
   if(shift==NULL) {
     shift = new Grid2D(simbox->getnx(), 
-                        simbox->getny(), 
-                        0.0f);
+                       simbox->getny(), 
+                       0.0f);
     Kriging2D::krigSurface(*shift, shiftData, cov);
-
- //   if ((otherOutput & ModelSettings::EXTRA_SURFACES) > 0 || estimationMode==true)
- //   {
- //     char * fileName = new char[MAX_STRING];
- //     sprintf(fileName,"Local_Wavelet_Shift_%i",angleNr);
- //     Model::writeSurfaceToFile(shift,fileName,outputFormat);
- //     delete [] fileName;
- //   }
   }
  
 }
 
 void
-Wavelet::estimateLocalGain(Grid2D  *& gain,
-                               float     * scaleOptWell,
-                               float       globalScale, 
-                               Vario     * localWaveletVario,
-                               int       * nActiveData,
-                               Simbox    * simbox,
-                               WellData ** wells,
-                               int         nWells)
-                             //  int         outputFormat
-                              // int         otherOutput, 
-                              // int         angleNr,
-                              // bool        estimationMode)
+Wavelet::estimateLocalGain(const CovGrid2D  & cov,
+                           Grid2D          *& gain,
+                           float            * scaleOptWell,
+                           float              globalScale, 
+                           int              * nActiveData,
+                           Simbox           * simbox,
+                           WellData        ** wells,
+                           int                nWells)
 {
-  //
-  // NBNB-PAL: Since slightly deviated wells are accepted, we should
-  // eventually make gain- and shift-cubes rather than single maps.
-  //
-
   //
   // Collect data for kriging
   //
- 
   KrigingData2D gainData;
   
   for(int i=0;i<nWells;i++)
@@ -1309,20 +1259,6 @@ Wavelet::estimateLocalGain(Grid2D  *& gain,
   gainData.findMeanValues();
   
   //
-  // Pretabulate correlations
-  //
-  const CovGrid2D cov(localWaveletVario, 
-                      simbox->getnx(),
-                      simbox->getny(),
-                      simbox->getdx(), 
-                      simbox->getdy());
-std::string name("Local_Wavelet_Correlation");
-  std::string fileName = ModelSettings::makeFullFileName(name);
-  cov.writeToFile(fileName);
-
-  //cov.writeToFile("Local_Wavelet_Correlation");
-
-  //
   // Perform kriging
   //
   if(gain==NULL) {
@@ -1330,37 +1266,23 @@ std::string name("Local_Wavelet_Correlation");
                        simbox->getny(), 
                        globalScale);
     Kriging2D::krigSurface(*gain, gainData, cov);
-
-  //  if ((otherOutput & ModelSettings::EXTRA_SURFACES) > 0 || estimationMode==true)
-  //  {
-  //    char * fileName= new char[MAX_STRING];
-  //    sprintf(fileName,"Local_Wavelet_Gain_%i",angleNr);
- //     Model::writeSurfaceToFile(gain,fileName,outputFormat);
-  //    delete [] fileName;
-  //  }
   }
 }
 
 // Estimate local scaled noise
 void
-Wavelet::estimateLocalNoise(Grid2D  *& noiseScaled,
-                               float       globalNoise,
-                               float     * errWellOptScale,
-                               Vario     * localWaveletVario,
-                               int       * nActiveData,
-                               Simbox    * simbox,
-                               WellData ** wells,
-                               int         nWells)
-                              // int         outputFormat)
-                              // int         otherOutput, 
-                             //  int         angleNr, 
-                             //  bool        estimationMode)
+Wavelet::estimateLocalNoise(const CovGrid2D  & cov,
+                            Grid2D          *& noiseScaled,
+                            float              globalNoise,
+                            float            * errWellOptScale,
+                            int              * nActiveData,
+                            Simbox           * simbox,
+                            WellData        ** wells,
+                            int                nWells)
 {
- 
   //
   // Collect data for kriging
   //
- 
   KrigingData2D noiseData;
   
   for(int i=0;i<nWells;i++)
@@ -1382,20 +1304,6 @@ Wavelet::estimateLocalNoise(Grid2D  *& noiseScaled,
   noiseData.findMeanValues();
   
   //
-  // Pretabulate correlations
-  //
-  const CovGrid2D cov(localWaveletVario, 
-                      simbox->getnx(),
-                      simbox->getny(),
-                      simbox->getdx(), 
-                      simbox->getdy());
-std::string name("Local_Wavelet_Correlation");
-  std::string fileName = ModelSettings::makeFullFileName(name);
-  cov.writeToFile(fileName);
-
-  //cov.writeToFile("Local_Wavelet_Correlation");
-
-  //
   // Perform kriging
   //
   if(noiseScaled==NULL) {
@@ -1403,13 +1311,5 @@ std::string name("Local_Wavelet_Correlation");
                              simbox->getny(), 
                              1.0);
     Kriging2D::krigSurface(*noiseScaled, noiseData, cov);
-
-   // if ((otherOutput & ModelSettings::EXTRA_SURFACES) > 0 || estimationMode==true)
-   // {
-    //  char * fileName= new char[MAX_STRING];
-    //  sprintf(fileName,"Local_Wavelet_Noise_%i",angleNr);
-//      Model::writeSurfaceToFile(noiseScaled,fileName,outputFormat);
-    //  delete [] fileName;
-   // }
   }
 }

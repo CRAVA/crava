@@ -25,6 +25,7 @@
 #include "src/fftgrid.h"
 #include "src/fftfilegrid.h"
 #include "src/gridmapping.h"
+#include "src/io.h"
 
 Background::Background(FFTGrid       ** grids,
                        WellData      ** wells,
@@ -439,7 +440,9 @@ Background::setupKrigingData2D(std::vector<KrigingData2D> & krigingDataAlpha,
 
   if((outputFlag & ModelSettings::BACKGROUND) > 0) {
     forLogging.divide();
-    forLogging.writeToFile("BG");
+    std::string baseName = IO::PrefixBackground() + IO::PrefixKrigingData() + IO::SuffixGeneralData();
+    std::string fileName = ModelSettings::makeFullFileName2(IO::PathToBackground(), baseName);
+    forLogging.writeToFile(fileName);
   }
   
   delete [] vtAlpha;
@@ -468,9 +471,11 @@ Background::makeCovGrid2D(Simbox * simbox,
   
   CovGrid2D * cov = new CovGrid2D(vario, nx, ny, dx, dy);
   
-  if(debugFlag == 1)
-    cov->writeToFile("BG_covGrid2D");
-  
+  if(debugFlag == 1) {
+    std::string baseName = IO::PrefixBackground() + "covGrid2D" + IO::SuffixAsciiIrapClassic();
+    std::string fileName = ModelSettings::makeFullFileName2(IO::PathToBackground(), baseName);
+    cov->writeToFile(fileName);
+  }
   return (*cov); 
 }
 
@@ -634,7 +639,10 @@ Background::setupKrigingData3D(KrigingData3D *& krigingData,
                          nBlocks);
   }
   krigingData->divide();
-  krigingData->writeToFile("BG");
+
+  std::string baseName = IO::PrefixBackground() + IO::PrefixKrigingData() + IO::SuffixGeneralData();
+  std::string fileName = ModelSettings::makeFullFileName2(IO::PathToBackground(), baseName);
+  krigingData->writeToFile(fileName);
 
   delete [] vtAlpha;
   delete [] vtBeta;
@@ -1117,13 +1125,20 @@ Background::writeVerticalTrend(float      * trend,
                                std::string  name) 
 {  
   float z0 = dz/2.0f;
-  std::string filename = ModelSettings::makeFullFileName("BG_verticalTrend_"+name+".irap");
-  FILE * file = fopen(filename.c_str(), "w");
+  std::string baseName = IO::PrefixBackgroundTrends() + name + IO::SuffixAsciiIrapClassic();
+  std::string fileName = ModelSettings::makeFullFileName2(IO::PathToBackground(), baseName);
+  std::ofstream file;
+  NRLib::OpenWrite(file, fileName);
   for (int i=0 ; i<nz ; i++) {
-    fprintf(file,"%8.2f %8.3f 0.00\n",(z0+i*dz),exp( trend[i] ));
+    file << std::fixed 
+         << std::setprecision(2)
+         << std::setw(8) << (z0 + i*dz)     << " "
+         << std::setprecision(3)
+         << std::setw(8) << exp( trend[i] ) << " "
+         << "0.00\n";
   }
-  fprintf(file,"999.00 999.00 999.00\n");
-  fclose(file);
+  file << "999.00 999.00 999.00" << std::endl;
+  file.close();
 }
 
 //-------------------------------------------------------------------------------

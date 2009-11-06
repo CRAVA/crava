@@ -74,12 +74,11 @@ KrigingData2D::findMeanValues(void)
 
 //---------------------------------------------------------------------
 void 
-KrigingData2D::writeToFile(const std::string & fName)
+KrigingData2D::writeToFile(const std::string & fileName)
 { 
-  std::string fileName = ModelSettings::makeFullFileName(fName);
+  std::ofstream file;
+  NRLib::OpenWrite(file, fileName);
 
-  /// \todo Replace with safe open function.
-  std::ofstream file(fileName.c_str());
   file << "    i     j     value\n";
   file << "---------------------\n";
   for (unsigned int k = 0 ; k < data_.size() ; k++) 

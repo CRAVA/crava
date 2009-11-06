@@ -9,6 +9,7 @@
 #include "src/fftgrid.h"
 #include "src/model.h"
 #include "src/definitions.h"
+#include "src/io.h"
 
 CovGridSeparated::CovGridSeparated(const FFTGrid & grid)
 {
@@ -390,18 +391,22 @@ void CovGridSeparated::RotateVec(float& rx, float& ry, float& rz, const float ma
 void CovGridSeparated::writeXYGrid(const std::string fName) const {
   if (!tabulateCorr_) //NBNB fjellvoll add support for writing in this case also
     return;
-  std::string ffn = ModelSettings::makeFullFileName(fName+".irap");
-  FILE * out = fopen(ffn.c_str(),"w");
-  if(out == NULL)
-    return;
+
   int nx = nxp_;
   int ny = nyp_;
-  fprintf(out, "%d %d 1.0 1.0", nx, ny);
-  fprintf(out, "0.0 %f 0.0 %f", float(nx-1), float(ny-1));
-  int i,j;
-  for(j=0;j<ny;j++)
-    for(i=0;i<nx;i++)
-      fprintf(out, "%f ",gammaXY_[i+j*nx]);
-  fclose(out);
-}
 
+  std::string baseName = fName + IO::SuffixAsciiIrapClassic();
+  std::string fileName = ModelSettings::makeFullFileName2(IO::PathToCorrelations(), baseName);
+
+  std::ofstream file;
+  NRLib::OpenWrite(file, fileName);
+  file << std::fixed 
+       << nx << " " << ny << " 1.0 1.0\n"
+       << std::setprecision(2)
+       << "0.0 " << static_cast<float>(nx-1) << " " 
+       << "0.0 " << static_cast<float>(ny-1) << "\n";
+  for(int j=0 ; j < ny ; j++)
+    for(int i=0 ; i < nx ; i++)
+      file << gammaXY_[i+j*nx] << "\n";
+  file.close();
+}

@@ -1,4 +1,5 @@
-#include "wavelet1D.h"
+#include <iostream>
+#include <fstream>
 
 #include <string.h>
 #include <assert.h>
@@ -17,12 +18,14 @@
 #include "nrlib/iotools/logkit.hpp"
 
 #include "src/modelsettings.h"
-#include "src/model.h"
 #include "src/blockedlogs.h"
 #include "src/definitions.h"
+#include "src/wavelet1D.h"
 #include "src/welldata.h"
 #include "src/fftgrid.h"
 #include "src/simbox.h"
+#include "src/model.h"
+#include "src/io.h"
 
 Wavelet1D::Wavelet1D(Simbox         * simbox,
                      FFTGrid        * seisCube,
@@ -1171,22 +1174,19 @@ void
 Wavelet1D::printToFile(std::string fileName, bool overrideDebug)
 {
   if(overrideDebug == true || ModelSettings::getDebugLevel() > 0) {
-    std::string fName = ModelSettings::makeFullFileName(fileName+".dat");
-    FILE *file = fopen(fName.c_str(),"wb");
-    int i;
-    for(i=0;i<nzp_;i++)
-      fprintf(file,"%f\n",getRAmp(i));
-    fclose(file);
+    std::string baseName = fileName + IO::SuffixGeneralData();
+    std::string fileName = ModelSettings::makeFullFileName2(IO::PathToWavelets(), fileName);
+    std::ofstream file;
+    NRLib::OpenWrite(file, fileName);
+    for(int i=0;i<nzp_;i++)
+      file << getRAmp(i) << "\n";
+    file.close();
   }
 }
 
 void
 Wavelet1D::writeWaveletToFile(char* fileName,float approxDzIn, Simbox *)
 {
-   sprintf(fileName,"%s_%.1f_deg",fileName,theta_*180.0/PI);
-
-   std::string fName = ModelSettings::makeFullFileName(std::string(fileName)+".wlt");
-   LogKit::LogFormatted(LogKit::MEDIUM,"  Writing Wavelet to file \'"+fName+"\'\n");
    int i;
    float approxDz;
 
@@ -1249,43 +1249,54 @@ Wavelet1D::writeWaveletToFile(char* fileName,float approxDzIn, Simbox *)
    }
 
    float shift = -dznew*halfLength;
-   FILE * file = fopen(fName.c_str(),"wb");
-
-   fprintf(file,"\"* Export format using Comma Separated Values\"\n");
-   fprintf(file,"\"* Wavelet written from CRAVA\"\n");
-   fprintf(file,"\"* Generated \"\n");
-   fprintf(file,"\"*\"\n");
-   fprintf(file,"\"* File format: \"\n");
-   fprintf(file,"\"* - N lines starting with * are comment (such as this line)\"\n");
-   fprintf(file,"\"* - 1 line with four fields (data type, data unit, depth type, depth unit) \"\n");
-   fprintf(file,"\"* - 1 line with start time  \"\n");
-   fprintf(file,"\"* - 1 line with sample interval \"\n");
-   fprintf(file,"\"* - 1 line with number of data lines \"\n");
-   fprintf(file,"\"* - N lines with trace data \"\n");
-   fprintf(file,"\"* Data values are represented as floating point numbers,\"\n");
-   fprintf(file,"\"* \"\n");
-   fprintf(file,"\"wavelet\",\"none\",\"time\",\"ms\"\n");
-   fprintf(file,"%1.0f\n",shift);
-   fprintf(file,"%1.2f\n",dznew);
-   fprintf(file,"%d\n", wLength);  
-
-   for(i=halfLength;i > 0;i--)
-     fprintf(file,"%f\n", waveletNew_r[nzpNew-i]);
-   for(i=0;i<=halfLength;i++)
-     fprintf(file,"%f\n", waveletNew_r[i]);
    
-   fclose(file);
+   std::string fName;
+   fName = std::string(fileName) + "_" + NRLib::ToString(theta_*(180/M_PI), 1) + "_deg" + IO::SuffixJasonWavelet();
+   fName = ModelSettings::makeFullFileName2(IO::PathToWavelets(), fName);
+   
+   LogKit::LogFormatted(LogKit::MEDIUM,"  Writing Wavelet to file \'"+fName+"\'\n");
+
+   std::ofstream file;
+   NRLib::OpenWrite(file, fName);
+
+   file << "\"* Export format using Comma Separated Values\"\n"
+        << "\"* Wavelet written from CRAVA\"\n"
+        << "\"* Generated \"\n"
+        << "\"*\"\n"
+        << "\"* File format: \"\n"
+        << "\"* - N lines starting with * are comment (such as this line)\"\n"
+        << "\"* - 1 line with four fields (data type, data unit, depth type, depth unit) \"\n"
+        << "\"* - 1 line with start time  \"\n"
+        << "\"* - 1 line with sample interval \"\n"
+        << "\"* - 1 line with number of data lines \"\n"
+        << "\"* - N lines with trace data \"\n"
+        << "\"* Data values are represented as floating point numbers,\"\n"
+        << "\"* \"\n"
+        << "\"wavelet\",\"none\",\"time\",\"ms\"\n"
+        << std::fixed 
+        << std::setprecision(0)
+        << shift   << "\n"
+        << std::setprecision(2)
+        << dznew   << "\n"
+        << wLength << "\n";
+     
+   for(i=halfLength ; i > 0 ; i--)
+     file << waveletNew_r[nzpNew-i] << "\n";
+   for(i=0;i<=halfLength;i++)
+     file << waveletNew_r[i] << "\n";
+   file.close();
 
    //Writing wavelet also in swav-format
-   fName = ModelSettings::makeFullFileName(std::string(fileName)+".Swav");
-   file = fopen(fName.c_str(),"w");
-   fprintf(file,"pulse file-1\n");
-   fprintf(file,"%d %d\n", wLength, static_cast<int> (dznew)); 
-   for(i=halfLength;i > 0;i--)
-     fprintf(file,"%f\n", waveletNew_r[nzpNew-i]);
-   for(i=0;i<=halfLength;i++)
-     fprintf(file,"%f\n", waveletNew_r[i]);
-   fclose(file);
+   fName = ModelSettings::makeFullFileName2(IO::PathToWavelets(), std::string(fileName)+IO::SuffixNorsarWavelet());
+
+   NRLib::OpenWrite(file, fName);
+   file << "pulse file-1\n"
+        << wLength << " "  << static_cast<int>(dznew) << "\n";
+   for(i=halfLength ; i > 0 ; i--)
+     file << waveletNew_r[nzpNew-i] << "\n";
+   for(i=0 ; i<=halfLength ; i++)
+     file << waveletNew_r[i] << "\n";
+   file.close();
 
    delete [] waveletNew_r;
 }

@@ -1,3 +1,5 @@
+#include <iostream>
+#include <fstream>
 #include <stdlib.h>
 #include <math.h>
 
@@ -179,14 +181,13 @@ KrigingData3D::divide(void)
 
 //---------------------------------------------------------------------
 void 
-KrigingData3D::writeToFile(const std::string type)
+KrigingData3D::writeToFile(const std::string fileName)
 { 
-  std::string fileName = ModelSettings::makeFullFileName(type+"_KrigingData"+".dat");
+  std::ofstream file;
+  NRLib::OpenWrite(file, fileName);
 
-  FILE * file = fopen(fileName.c_str(), "w");
-
-  fprintf(file,"  i   j   k      alpha      beta       rho\n");
-  fprintf(file,"------------------------------------------\n");
+  file << "  i   j   k      alpha      beta       rho\n"
+       << "------------------------------------------\n";
 
   for (int m = 0 ; m < nd_ ; m++) 
   {
@@ -210,8 +211,16 @@ KrigingData3D::writeToFile(const std::string type)
     else
       rho = WELLMISSING;
 
-    fprintf(file,"%3d %3d %3d   %8.2f  %8.2f  %8.5f\n",i,j,k,alpha,beta,rho);
+    file << std::fixed
+         << std::setw(3) << i << " "
+         << std::setw(3) << j << " "
+         << std::setw(3) << k << "   "
+         << std::setprecision(2)
+         << std::setw(8) << alpha << "  "
+         << std::setw(8) << beta  << "  "
+         << std::setprecision(5)
+         << std::setw(8) << rho   << "\n";
   }
-  fclose(file);
+  file.close();
 }
 
