@@ -3,6 +3,7 @@
 
 #include <string.h>
 #include <assert.h>
+#define _USE_MATH_DEFINES
 #include <math.h>
 
 #include "fft/include/fftw.h"

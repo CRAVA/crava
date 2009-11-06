@@ -1853,7 +1853,7 @@ FFTGrid::writeAsciiFile(const std::string & fileName)
       for(i=0;i<rnxp_;i++)
       {
         value = getNextReal(); 
-        fprintf(file,"%f\n",value);
+        fprintf(file,"%g\n",value);
       }
       fclose(file);
       LogKit::LogFormatted(LogKit::LOW,"done.\n");
