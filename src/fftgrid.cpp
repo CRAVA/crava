@@ -1,6 +1,5 @@
 #include <iostream>
 #include <fstream>
-using std::ofstream;
 #include <math.h>
 #include <time.h>
 #include <assert.h>
@@ -29,6 +28,7 @@ using std::ofstream;
 #include "src/timings.h"
 #include "src/definitions.h"
 #include "src/gridmapping.h"
+#include "src/io.h"
 
 
 FFTGrid::FFTGrid(int nx, int ny, int nz, int nxp, int nyp, int nzp)
@@ -1366,10 +1366,16 @@ FFTGrid::consistentSize(int nx,int ny, int nz, int nxp, int nyp, int nzp)
 
 
 void 
-FFTGrid::writeFile(const std::string & fileName, const Simbox * simbox, 
-                   const std::string label, float z0, 
-                   GridMapping * depthMap, GridMapping * timeMap)
+FFTGrid::writeFile(const std::string & fName, 
+                   const std::string & subDir, 
+                   const Simbox      * simbox, 
+                   const std::string   label, 
+                   const float         z0, 
+                   GridMapping       * depthMap, 
+                   GridMapping       * timeMap)
 {
+  std::string fileName = IO::makeFullFileName(subDir, fName);      
+
   if(formatFlag_ > 0) //Output format specified.
   {
     bool expTrans = (label == "exptrans"); // use sgriLabel to active exponential transformations
@@ -1455,16 +1461,15 @@ FFTGrid::writeStormFile(const std::string & fileName, const Simbox * simbox, boo
 
   std::string gfName;
   std::string header = simbox->getStormHeader(cubetype_, nx, ny, nz, flat, ascii);
-  FILE * file;
   int i, j, k;
   float value;
 
   if(ascii == false) {
-    gfName = ModelSettings::makeFullFileName(fileName+".storm");
-    file = fopen(gfName.c_str(),"wb");
+    gfName = fileName + IO::SuffixStormBinary();
     LogKit::LogFormatted(LogKit::LOW,"\nWriting STORM binary file "+gfName+"...");
-    fwrite(header.c_str(), 1, header.length(), file);
-    char * output = reinterpret_cast<char *>(&value);
+    std::ofstream binFile;
+    NRLib::OpenWrite(binFile, gfName, std::ios::out | std::ios::binary);
+    binFile << header;
     for(k=0;k<nz;k++)
       for(j=0;j<ny;j++)
         for(i=0;i<nx;i++)
@@ -1472,43 +1477,34 @@ FFTGrid::writeStormFile(const std::string & fileName, const Simbox * simbox, boo
           if (expTrans)
             value = exp(getRealValue(i,j,k,true));
           else
-            value = getRealValue(i,j,k,true);
-#ifndef BIGENDIAN
-          fwrite(&(output[3]),1,1,file);
-          fwrite(&(output[2]),1,1,file);
-          fwrite(&(output[1]),1,1,file);
-          fwrite(&(output[0]),1,1,file);
-#else
-          fwrite(output, 1, 4, file);
-#endif
+            value = getRealValue(i,j,k,true);          
+          NRLib::WriteBinaryFloat(binFile, value);
         }
-        output[0] = '0';
-        output[1] = '\n';
-        fwrite(output, 2, 1, file);
+    NRLib::WriteBinaryInt(binFile, 0);
+    binFile.close();
   }
   else {
-    gfName = ModelSettings::makeFullFileName(fileName+".txt");
-    file = fopen(gfName.c_str(),"w");
+    gfName = fileName + IO::SuffixTextFiles();
+    std::ofstream file;
+    NRLib::OpenWrite(file, gfName);
     LogKit::LogFormatted(LogKit::LOW,"\nWriting STORM ascii file "+gfName+"...");
-    fprintf(file,"%s",header.c_str());
+    file << header;
+    file << std::fixed << std::setw(11) << std::setprecision(6);
     for(k=0;k<nz;k++)
       for(j=0;j<ny;j++) {
         for(i=0;i<nx;i++) {
           value = getRealValue(i,j,k,true);
           if (expTrans)
-            fprintf(file,"%f ", exp(value));
+            file << exp(value) << " ";
           else
-            fprintf(file,"%f ", value);
+            file << value << " ";
         }
-        fprintf(file,"\n");
+        file << "\n";
       }
-      fprintf(file,"0\n");
+    file << "0\n";
   }
 
-  fclose(file);
   LogKit::LogFormatted(LogKit::LOW,"done\n");
-  //  time(&timeend);
-  //printf("\n Write Storm was performed in %ld seconds.\n",timeend-timestart);
 }
 
 
@@ -1518,7 +1514,7 @@ FFTGrid::writeSegyFile(const std::string & fileName, const Simbox * simbox, floa
   //  long int timestart, timeend;
   //  time(&timestart);
 
-  std::string gfName = ModelSettings::makeFullFileName(fileName+".segy");
+  std::string gfName = fileName + IO::SuffixSegy();
   //SegY * segy = new SegY(gfName, simbox);
   TextualHeader header = TextualHeader::standardHeader();
   float dz = float(floor(simbox->getdz()+0.5));
@@ -1531,7 +1527,8 @@ FFTGrid::writeSegyFile(const std::string & fileName, const Simbox * simbox, floa
   SegY *segy = new SegY(gfName.c_str(),z0,segynz,dz,header);
   SegyGeometry * geometry = new SegyGeometry(simbox->getx0(), simbox->gety0(), simbox->getdx(), simbox->getdy(), 
                                              simbox->getnx(), simbox->getny(),simbox->getIL0(), simbox->getXL0(), 
-                                             simbox->getILStepX(), simbox->getILStepY(), simbox->getXLStepX(), simbox->getXLStepY(),
+                                             simbox->getILStepX(), simbox->getILStepY(), 
+                                             simbox->getXLStepX(), simbox->getXLStepY(),  
                                              simbox->getAngle());
   segy->SetGeometry(geometry);
   delete geometry; //Call above takes a copy.
@@ -1626,7 +1623,7 @@ FFTGrid::writeResampledStormCube(GridMapping       * gridmapping,
   std::string header;
   if ((format & ModelSettings::ASCII) > 0) // ASCII
   {
-    gfName = ModelSettings::makeFullFileName(fileName+".txt");
+    gfName = fileName + IO::SuffixTextFiles();
     header = gridmapping->getSimbox()->getStormHeader(FFTGrid::PARAMETER,nx_,ny_,nz, 0, 1);
     outgrid->SetFormat(StormContGrid::STORM_ASCII);
     outgrid->WriteToFile(gfName,header);
@@ -1634,14 +1631,14 @@ FFTGrid::writeResampledStormCube(GridMapping       * gridmapping,
 
   if ((format & ModelSettings::STORM) > 0)
   {
-    gfName = ModelSettings::makeFullFileName(fileName+".storm");
+    gfName =  fileName + IO::SuffixStormBinary();
     header = gridmapping->getSimbox()->getStormHeader(FFTGrid::PARAMETER,nx_,ny_,nz, 0, 0);
     outgrid->SetFormat(StormContGrid::STORM_BINARY);
     outgrid->WriteToFile(gfName,header);
   }
   if((formatFlag_ & ModelSettings::SEGY) > 0)
   {
-    gfName = ModelSettings::makeFullFileName(fileName+".segy");
+    gfName =  fileName + IO::SuffixSegy();
     writeSegyFromStorm(outgrid,gfName);
   }
   delete outgrid;
@@ -1650,11 +1647,10 @@ FFTGrid::writeResampledStormCube(GridMapping       * gridmapping,
 int
 FFTGrid::writeSgriFile(const std::string & fileName, const Simbox *simbox, const std::string label)
 {
-  std::string fName = ModelSettings::makeFullFileName(fileName+".Sgrh");
-  ofstream  headerFile(fName.c_str());
-  if (!headerFile) {
-    throw new NRLib::IOError("Error opening "+fName);
-  }
+  std::string fName = fileName + IO::SuffixSgriHeader();
+
+  std::ofstream headerFile;
+  NRLib::OpenWrite(headerFile, fName);
 
   LogKit::LogFormatted(LogKit::LOW,"\nWriting SGRI header file "+fName+"...");
 
@@ -1687,14 +1683,13 @@ FFTGrid::writeSgriFile(const std::string & fileName, const Simbox *simbox, const
   headerFile << simbox->getAngle() << " 0\n";
   headerFile << RMISSING << std::endl;
   
-  fName = ModelSettings::makeFullFileName(fileName+".Sgri");
+  fName = fileName + IO::SuffixSgri();
   headerFile << fName << std::endl;
   headerFile << "0\n";
 
-  ofstream binFile(fName.c_str(), std::ios::out | std::ios::binary);
-  if (!binFile) {
-    throw new NRLib::IOError("Error opening "+fName);
-  }
+  std::ofstream binFile;
+  NRLib::OpenWrite(binFile, fName, std::ios::out | std::ios::binary);
+
   int i,j,k;
   double x, y, z, zTop, zBot;
   float value;
@@ -1727,7 +1722,7 @@ void
 FFTGrid::writeDirectFile(const std::string & fileName, const Simbox * simbox)
 {
   try {
-    ofstream binFile;
+    std::ofstream binFile;
     NRLib::OpenWrite(binFile, fileName, std::ios::out | std::ios::binary);
 
     NRLib::WriteBinaryDouble(binFile, simbox->getx0());
@@ -1843,27 +1838,8 @@ FFTGrid::getRegularZInterpolatedRealValue(int i, int j, double z0Reg,
 void
 FFTGrid::writeAsciiFile(const std::string & fileName)
 {
-  std::string gfName = ModelSettings::makeFullFileName(fileName+".ascii");
-  FILE *file = fopen(gfName.c_str(),"wb");
-  LogKit::LogFormatted(LogKit::LOW,"\nWriting ASCII file "+gfName+"...");
-  int i, j, k;
-  float value;
-  for(k=0;k<nzp_;k++)
-    for(j=0;j<nyp_;j++)
-      for(i=0;i<rnxp_;i++)
-      {
-        value = getNextReal(); 
-        fprintf(file,"%g\n",value);
-      }
-      fclose(file);
-      LogKit::LogFormatted(LogKit::LOW,"done.\n");
-}
-
-void
-FFTGrid::writeAsciiRaw(const std::string & fileName)
-{
-  std::string gfName = ModelSettings::makeFullFileName(fileName+".ascii");
-  FILE *file = fopen(gfName.c_str(),"wb");
+  std::ofstream file;
+  NRLib::OpenWrite(file, fileName);
   LogKit::LogFormatted(LogKit::LOW,"\nWriting ASCII file "+fileName+"...");
   int i, j, k;
   float value;
@@ -1872,10 +1848,29 @@ FFTGrid::writeAsciiRaw(const std::string & fileName)
       for(i=0;i<rnxp_;i++)
       {
         value = getNextReal(); 
-        fprintf(file,"%d %d %d %f\n",i, j, k, value);
+        file << value << "\n";
       }
-      fclose(file);
-      LogKit::LogFormatted(LogKit::LOW,"done.\n");
+  file.close();
+  LogKit::LogFormatted(LogKit::LOW,"done.\n");
+}
+
+void
+FFTGrid::writeAsciiRaw(const std::string & fileName)
+{
+  std::ofstream file;
+  NRLib::OpenWrite(file, fileName);
+  LogKit::LogFormatted(LogKit::LOW,"\nWriting ASCII file "+fileName+"...");
+  int i, j, k;
+  float value;
+  for(k=0;k<nzp_;k++)
+    for(j=0;j<nyp_;j++)
+      for(i=0;i<rnxp_;i++)
+      {
+        value = getNextReal(); 
+        file << i << " " << j << " " << k << " " << value;
+      }
+  file.close();
+  LogKit::LogFormatted(LogKit::LOW,"done.\n");
 }
 
 
@@ -2141,17 +2136,16 @@ void FFTGrid::writeSegyFromStorm(StormContGrid *data, std::string fileName)
 
 void FFTGrid::makeDepthCubeForSegy(Simbox *simbox,const std::string & fileName)
 {
- StormContGrid * stormcube = new StormContGrid((*simbox),nx_,ny_,nz_);
-
- int i,j,k;
- for(k=0;k<nz_;k++)
-   for(j=0;j<ny_;j++)
-     for(i=0;i<nx_;i++)
-       (*stormcube)(i,j,k) = getRealValue(i,j,k,true);
-
-  std::string fullfileName =  ModelSettings::makeFullFileName(fileName+".segy");
-  FFTGrid::writeSegyFromStorm(stormcube,fullfileName);
-
+  StormContGrid * stormcube = new StormContGrid((*simbox),nx_,ny_,nz_);
+  
+  int i,j,k;
+  for(k=0;k<nz_;k++)
+    for(j=0;j<ny_;j++)
+      for(i=0;i<nx_;i++)
+        (*stormcube)(i,j,k) = getRealValue(i,j,k,true);
+  
+  std::string fullFileName = fileName + IO::SuffixSegy();
+  FFTGrid::writeSegyFromStorm(stormcube, fullFileName);
 }
 
 int FFTGrid::formatFlag_ = 0;

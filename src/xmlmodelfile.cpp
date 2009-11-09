@@ -1500,13 +1500,14 @@ XmlModelFile::parseIOSettings(TiXmlNode * node, std::string & errTxt)
   parseValue(root, "output-directory", outputDir, errTxt);
   outputDir = topDir+outputDir;
   ensureTrailingSlash(outputDir);
-  ModelSettings::setOutputPath(outputDir);
+  IO::setOutputPath(outputDir);
 
   parseOutputTypes(root, errTxt);
 
   std::string value;
-  if(parseValue(root, "file-output-prefix", value, errTxt) == true)
-    ModelSettings::setFilePrefix(value);
+  if(parseValue(root, "file-output-prefix", value, errTxt) == true) {
+    IO::setFilePrefix(value);
+  }
 
   std::string level;
   if(parseValue(root, "log-level", level, errTxt) == true) {
@@ -1534,7 +1535,7 @@ XmlModelFile::parseIOSettings(TiXmlNode * node, std::string & errTxt)
   }
 
   //Test-open log file, to check valid path.
-  std::string logFileName = ModelSettings::makeFullFileName2("",IO::FileLog());
+  std::string logFileName = IO::makeFullFileName("",IO::FileLog()+IO::SuffixTextFiles());
   std::ofstream file;
   try {
     NRLib::OpenWrite(file, logFileName);

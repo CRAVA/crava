@@ -1172,13 +1172,12 @@ void Wavelet1D::invFFT1DInPlace()
 
 
 void
-Wavelet1D::printToFile(std::string fileName, bool overrideDebug)
+Wavelet1D::printToFile(const std::string & fileName, bool overrideDebug)
 {
   if(overrideDebug == true || ModelSettings::getDebugLevel() > 0) {
-    std::string baseName = fileName + IO::SuffixGeneralData();
-    std::string fileName = ModelSettings::makeFullFileName2(IO::PathToWavelets(), fileName);
+    std::string fName = IO::makeFullFileName(IO::PathToWavelets(), fileName + IO::SuffixGeneralData());
     std::ofstream file;
-    NRLib::OpenWrite(file, fileName);
+    NRLib::OpenWrite(file, fName);
     for(int i=0;i<nzp_;i++)
       file << getRAmp(i) << "\n";
     file.close();
@@ -1186,120 +1185,120 @@ Wavelet1D::printToFile(std::string fileName, bool overrideDebug)
 }
 
 void
-Wavelet1D::writeWaveletToFile(char* fileName,float approxDzIn, Simbox *)
+Wavelet1D::writeWaveletToFile(const std::string & fileName, float approxDzIn, Simbox *)
 {
-   int i;
-   float approxDz;
+  int i;
+  float approxDz;
+  
+  approxDz = MINIM(approxDzIn,floor(dz_*10)/10);
+  approxDz = MINIM(approxDzIn,dz_);
+  
+  //Trick: Written wavelet may be shorter than the actual.
+  //This gives inconsistency if a wavelet is read and written.
+  //Make consistent by truncating wavelet to writing range before interpolation.
+  int     activeCells = int(floor(waveletLength_/2/dz_));
+  float * remember    = new float[nzp_];
+  for(i=activeCells+1;i<=nz_;i++) {
+    remember[i]        = rAmp_[i];
+    rAmp_[i]           = 0;
+    remember[nzp_+1-i] = rAmp_[nzp_+1-i];
+    rAmp_[nzp_+1-i]    = 0;
+  }
+  
+  float T       = nzp_*dz_;
+  int   nzpNew  = int(ceil(T/approxDz - 0.5));  
+  float dznew   = T/float(nzpNew);
+  int   cnzpNew = (nzpNew/2)+1;
+  
+  fftw_real*     waveletNew_r =  new fftw_real[2*cnzpNew];
+  fftw_complex*  waveletNew_c =  reinterpret_cast<fftw_complex*>(waveletNew_r);
+  fft1DInPlace();
+  double multiplyer = static_cast<double>(nzpNew)/static_cast<double>(nzp_);
+  
+  for(i=0;i<cnzpNew;i++)
+  {
+    if(i < cnzp_)
+    {
+      waveletNew_c[i].re = static_cast<fftw_real>(cAmp_[i].re*multiplyer);
+      waveletNew_c[i].im = static_cast<fftw_real>(cAmp_[i].im*multiplyer);
+      if((i==(cnzp_-1)) & (2*((cnzp_-1)/2) != cnzp_-1)) //boundary effect in fft domain
+        waveletNew_c[i].re*=0.5;
+    }
+    else
+    { 
+      waveletNew_c[i].re = 0;
+      waveletNew_c[i].im = 0;
+    }
+  }
+  invFFT1DInPlace();
+  for(i=activeCells+1;i<=nz_;i++) {
+    rAmp_[i] = remember[i];
+    rAmp_[nzp_+1-i] = remember[nzp_+1-i];
+  }
+  delete [] remember;
+  
+  fftInv(waveletNew_c,waveletNew_r,nzpNew );// note might be n^2 algorithm for some nzpNew
+  
+  int wLength = int(floor(waveletLength_/dznew+0.5));
+  int halfLength = wLength/2; // integer division
+  wLength =  halfLength*2+1;// allways odd
+  if( wLength>nzpNew)
+  {  
+    wLength=2*(nzpNew/2)-1;// allways odd
+    halfLength=wLength/2;
+  }
+  
+  float shift = -dznew*halfLength;
+  
+  std::string fName;
+  fName = std::string(fileName) + "_" + NRLib::ToString(theta_*(180/M_PI), 1) + "_deg" + IO::SuffixJasonWavelet();
+  fName = IO::makeFullFileName(IO::PathToWavelets(), fName);
+  
+  LogKit::LogFormatted(LogKit::MEDIUM,"  Writing Wavelet to file \'"+fName+"\'\n");
+  
+  std::ofstream file;
+  NRLib::OpenWrite(file, fName);
+  
+  file << "\"* Export format using Comma Separated Values\"\n"
+       << "\"* Wavelet written from CRAVA\"\n"
+       << "\"* Generated \"\n"
+       << "\"*\"\n"
+       << "\"* File format: \"\n"
+       << "\"* - N lines starting with * are comment (such as this line)\"\n"
+       << "\"* - 1 line with four fields (data type, data unit, depth type, depth unit) \"\n"
+       << "\"* - 1 line with start time  \"\n"
+       << "\"* - 1 line with sample interval \"\n"
+       << "\"* - 1 line with number of data lines \"\n"
+       << "\"* - N lines with trace data \"\n"
+       << "\"* Data values are represented as floating point numbers,\"\n"
+       << "\"* \"\n"
+       << "\"wavelet\",\"none\",\"time\",\"ms\"\n"
+       << std::fixed 
+       << std::setprecision(0)
+       << shift   << "\n"
+       << std::setprecision(2)
+       << dznew   << "\n"
+       << wLength << "\n";
+  
+  for(i=halfLength ; i > 0 ; i--)
+    file << waveletNew_r[nzpNew-i] << "\n";
+  for(i=0;i<=halfLength;i++)
+    file << waveletNew_r[i] << "\n";
+  file.close();
 
-   approxDz = MINIM(approxDzIn,floor(dz_*10)/10);
-   approxDz = MINIM(approxDzIn,dz_);
-
-   //Trick: Written wavelet may be shorter than the actual.
-   //This gives inconsistency if a wavelet is read and written.
-   //Make consistent by truncating wavelet to writing range before interpolation.
-   int     activeCells = int(floor(waveletLength_/2/dz_));
-   float * remember    = new float[nzp_];
-   for(i=activeCells+1;i<=nz_;i++) {
-     remember[i]        = rAmp_[i];
-     rAmp_[i]           = 0;
-     remember[nzp_+1-i] = rAmp_[nzp_+1-i];
-     rAmp_[nzp_+1-i]    = 0;
-   }
-
-   float T       = nzp_*dz_;
-   int   nzpNew  = int(ceil(T/approxDz - 0.5));  
-   float dznew   = T/float(nzpNew);
-   int   cnzpNew = (nzpNew/2)+1;
-
-   fftw_real*     waveletNew_r =  new fftw_real[2*cnzpNew];
-   fftw_complex*  waveletNew_c =  reinterpret_cast<fftw_complex*>(waveletNew_r);
-   fft1DInPlace();
-   double multiplyer = static_cast<double>(nzpNew)/static_cast<double>(nzp_);
-
-   for(i=0;i<cnzpNew;i++)
-   {
-     if(i < cnzp_)
-     {
-       waveletNew_c[i].re = static_cast<fftw_real>(cAmp_[i].re*multiplyer);
-       waveletNew_c[i].im = static_cast<fftw_real>(cAmp_[i].im*multiplyer);
-       if((i==(cnzp_-1)) & (2*((cnzp_-1)/2) != cnzp_-1)) //boundary effect in fft domain
-         waveletNew_c[i].re*=0.5;
-     }
-     else
-     { 
-        waveletNew_c[i].re = 0;
-        waveletNew_c[i].im = 0;
-     }
-   }
-   invFFT1DInPlace();
-   for(i=activeCells+1;i<=nz_;i++) {
-     rAmp_[i] = remember[i];
-     rAmp_[nzp_+1-i] = remember[nzp_+1-i];
-   }
-   delete [] remember;
-   
-   fftInv(waveletNew_c,waveletNew_r,nzpNew );// note might be n^2 algorithm for some nzpNew
-
-   int wLength = int(floor(waveletLength_/dznew+0.5));
-   int halfLength = wLength/2; // integer division
-   wLength =  halfLength*2+1;// allways odd
-   if( wLength>nzpNew)
-   {  
-     wLength=2*(nzpNew/2)-1;// allways odd
-     halfLength=wLength/2;
-   }
-
-   float shift = -dznew*halfLength;
-   
-   std::string fName;
-   fName = std::string(fileName) + "_" + NRLib::ToString(theta_*(180/M_PI), 1) + "_deg" + IO::SuffixJasonWavelet();
-   fName = ModelSettings::makeFullFileName2(IO::PathToWavelets(), fName);
-   
-   LogKit::LogFormatted(LogKit::MEDIUM,"  Writing Wavelet to file \'"+fName+"\'\n");
-
-   std::ofstream file;
-   NRLib::OpenWrite(file, fName);
-
-   file << "\"* Export format using Comma Separated Values\"\n"
-        << "\"* Wavelet written from CRAVA\"\n"
-        << "\"* Generated \"\n"
-        << "\"*\"\n"
-        << "\"* File format: \"\n"
-        << "\"* - N lines starting with * are comment (such as this line)\"\n"
-        << "\"* - 1 line with four fields (data type, data unit, depth type, depth unit) \"\n"
-        << "\"* - 1 line with start time  \"\n"
-        << "\"* - 1 line with sample interval \"\n"
-        << "\"* - 1 line with number of data lines \"\n"
-        << "\"* - N lines with trace data \"\n"
-        << "\"* Data values are represented as floating point numbers,\"\n"
-        << "\"* \"\n"
-        << "\"wavelet\",\"none\",\"time\",\"ms\"\n"
-        << std::fixed 
-        << std::setprecision(0)
-        << shift   << "\n"
-        << std::setprecision(2)
-        << dznew   << "\n"
-        << wLength << "\n";
-     
-   for(i=halfLength ; i > 0 ; i--)
-     file << waveletNew_r[nzpNew-i] << "\n";
-   for(i=0;i<=halfLength;i++)
-     file << waveletNew_r[i] << "\n";
-   file.close();
-
-   //Writing wavelet also in swav-format
-   fName = ModelSettings::makeFullFileName2(IO::PathToWavelets(), std::string(fileName)+IO::SuffixNorsarWavelet());
-
-   NRLib::OpenWrite(file, fName);
-   file << "pulse file-1\n"
-        << wLength << " "  << static_cast<int>(dznew) << "\n";
-   for(i=halfLength ; i > 0 ; i--)
-     file << waveletNew_r[nzpNew-i] << "\n";
-   for(i=0 ; i<=halfLength ; i++)
-     file << waveletNew_r[i] << "\n";
-   file.close();
-
-   delete [] waveletNew_r;
+  //Writing wavelet also in swav-format
+  fName = IO::makeFullFileName(IO::PathToWavelets(), std::string(fileName)+IO::SuffixNorsarWavelet());
+  
+  NRLib::OpenWrite(file, fName);
+  file << "pulse file-1\n"
+       << wLength << " "  << static_cast<int>(dznew) << "\n";
+  for(i=halfLength ; i > 0 ; i--)
+    file << waveletNew_r[nzpNew-i] << "\n";
+  for(i=0 ; i<=halfLength ; i++)
+    file << waveletNew_r[i] << "\n";
+  file.close();
+  
+  delete [] waveletNew_r;
 }
 
 float

@@ -19,6 +19,7 @@
 #include "src/vario.h"
 #include "src/definitions.h"
 #include "src/fftgrid.h"
+#include "src/io.h"
 
 ModelFile::ModelFile(char * fileName)
 {
@@ -1328,7 +1329,7 @@ ModelFile::readCommandPrefix(char ** params, int & pos, char * errText)
   int error;
   int nPar = getParNum(params, pos, error, errText, params[pos-1], 1);
   if(error == 0)
-    ModelSettings::setFilePrefix(std::string(params[pos]));
+    IO::setFilePrefix(std::string(params[pos]));
   pos += nPar+1;
   return(error);
 }

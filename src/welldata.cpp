@@ -572,7 +572,7 @@ WellData::writeRMSWell(void)
   NRLib::Substitute(wellname,"/","_");
   NRLib::Substitute(wellname," ","_");
   std::string baseName     = IO::PrefixWells() + wellname + IO::SuffixRmsWells();
-  std::string wellFileName = ModelSettings::makeFullFileName2(IO::PathToWells(), baseName);
+  std::string wellFileName = IO::makeFullFileName(IO::PathToWells(), baseName);
 
   std::ofstream file;
   NRLib::OpenWrite(file, wellFileName);
@@ -653,7 +653,7 @@ WellData::writeNorsarWell()
 
   //Handle main file.
   std::string baseName = IO::PrefixWells() + wellname + IO::SuffixNorsarWells();
-  std::string fileName = ModelSettings::makeFullFileName2(IO::PathToWells(), baseName);
+  std::string fileName = IO::makeFullFileName(IO::PathToWells(), baseName);
 
   std::ofstream mainFile;
   NRLib::OpenWrite(mainFile, fileName);
@@ -694,7 +694,7 @@ WellData::writeNorsarWell()
   mainFile << "UTMY    m\n\n";
   
   std::string logBaseName = IO::PrefixWells() + wellname + IO::SuffixNorsarLog();
-  std::string logFileName = ModelSettings::makeFullFileName2(IO::PathToWells(), logBaseName);
+  std::string logFileName = IO::makeFullFileName(IO::PathToWells(), logBaseName);
   std::string onlyName    = NRLib::RemovePath(logFileName);
 
   bool gotFacies = nFacies_ > 0;
@@ -732,7 +732,7 @@ WellData::writeNorsarWell()
 
   //Write the two other files.
   std::string baseTrackName = IO::PrefixWells() + wellname + IO::SuffixNorsarTrack();
-  std::string trackFileName = ModelSettings::makeFullFileName2(IO::PathToWells(), baseTrackName);
+  std::string trackFileName = IO::makeFullFileName(IO::PathToWells(), baseTrackName);
   std::ofstream trackFile;
   NRLib::OpenWrite(trackFile, trackFileName);
   trackFile << std::right

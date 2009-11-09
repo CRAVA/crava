@@ -24,6 +24,7 @@
 #include "src/filterwelllogs.h"
 #include "src/spatialwellfilter.h"
 #include "src/simbox.h"
+#include "src/io.h"
 
 FaciesProb::FaciesProb(FFTGrid           * alpha,
                        FFTGrid           * beta,
@@ -251,8 +252,12 @@ FaciesProb::makeFaciesDens(int nfac,
           jj = -(j-jjj);
           jjj+=2;
         }
-        smooth[j+k*nbinsa+l*nbinsa*nbinsb] = float(exp(-0.5f*(jj*dAlpha*jj*dAlpha*sigmaeinv[0][0]+kk*dBeta*kk*dBeta*sigmaeinv[1][1]+ll*dRho*ll*dRho*sigmaeinv[2][2]+
-                                                        2*jj*dAlpha*kk*dBeta*sigmaeinv[1][0]+2*jj*dAlpha*ll*dRho*sigmaeinv[2][0]+2*kk*dBeta*ll*dRho*sigmaeinv[2][1])));
+        smooth[j+k*nbinsa+l*nbinsa*nbinsb] = float(exp(-0.5f*(jj*dAlpha*jj*dAlpha*sigmaeinv[0][0]
+                                                             +kk*dBeta *kk*dBeta *sigmaeinv[1][1]
+                                                             +ll*dRho  *ll*dRho  *sigmaeinv[2][2]
+                                                           +2*jj*dAlpha*kk*dBeta *sigmaeinv[1][0]
+                                                           +2*jj*dAlpha*ll*dRho  *sigmaeinv[2][0]
+                                                           +2*kk*dBeta *ll*dRho  *sigmaeinv[2][1])));
         sum = sum+smooth[j+k*nbinsa+l*nbinsa*nbinsb];
       }
     }
@@ -266,7 +271,9 @@ FaciesProb::makeFaciesDens(int nfac,
   FFTGrid *smoother;
   smoother = new FFTGrid(nbinsa, nbinsb ,nbinsr ,nbinsa ,nbinsb ,nbinsr);
   smoother->fillInFromArray(smooth);
- // smoother->writeAsciiRaw("smooth");
+
+  //std::string fileName = IO::makeFullFileName(IO::PathToDebug(), "smooth" + IO::SuffixAsciiFiles();
+  //smoother->writeAsciiRaw(fileName);
   smoother->fftInPlace();
 
   for(i=0;i<nFacies_;i++)
@@ -275,12 +282,11 @@ FaciesProb::makeFaciesDens(int nfac,
     density[i]->multiply(smoother);
     density[i]->invFFTInPlace();
     density[i]->multiplyByScalar(float(sqrt(double(nbinsa*nbinsb*nbinsr))));
-    if(ModelSettings::getDebugLevel()>=1)
+    if(ModelSettings::getDebugLevel() >= 1)
     {
-      char* fN1=new char[MAX_STRING];
-      sprintf(fN1,"Dens_%d",i);
-      density[i]->writeAsciiRaw(fN1);
-      delete [] fN1;
+      std::string baseName = "Dens_" + NRLib::ToString(i) + IO::SuffixAsciiFiles();
+      std::string fileName = IO::makeFullFileName(IO::PathToDebug(), fileName);
+      density[i]->writeAsciiRaw(fileName);
     }
   }
 

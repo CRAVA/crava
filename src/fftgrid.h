@@ -86,9 +86,13 @@ public:
   int                  getType() const {return(cubetype_);}
   virtual void         setAccessMode(int mode){assert(mode>=0);}
   virtual void         endAccess(){}
-  virtual void         writeFile(const std::string & fileName, const Simbox * simbox, 
-                                 const std::string sgriLabel = "NO_LABEL", float z0 = 0.0, 
-                                 GridMapping * depthMap = NULL, GridMapping * timeMap = NULL); 
+  virtual void         writeFile(const std::string & fileName, 
+                                 const std::string & subDir, 
+                                 const Simbox      * simbox, 
+                                 const std::string   sgriLabel = "NO_LABEL", 
+                                 const float         z0        = 0.0, 
+                                 GridMapping       * depthMap  = NULL, 
+                                 GridMapping       * timeMap   = NULL); 
   //Use this instead of the ones below.
   virtual void         writeStormFile(const std::string & fileName, const Simbox * simbox, bool expTrans = false, 
                                       bool ascii = false, bool padding = false, bool flat = false);//No mode/randomaccess

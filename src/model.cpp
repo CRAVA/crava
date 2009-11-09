@@ -125,12 +125,12 @@ Model::Model(char * fileName)
   {
     LogKit::SetScreenLog(modelSettings_->getLogLevel());
 
-    std::string logFileName = ModelSettings::makeFullFileName2("",IO::FileLog());
+    std::string logFileName = IO::makeFullFileName("",IO::FileLog()+IO::SuffixTextFiles());
     LogKit::SetFileLog(logFileName,modelSettings_->getLogLevel());
 
     if(modelSettings_->getDebugFlag() > 0)
     {
-      std::string fName = ModelSettings::makeFullFileName2("",IO::FileDebug());
+      std::string fName = IO::makeFullFileName("",IO::FileDebug()+IO::SuffixTextFiles());
       LogKit::SetFileLog(fName, LogKit::DEBUGHIGH+LogKit::DEBUGLOW);
     }
     LogKit::EndBuffering();
@@ -720,7 +720,8 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
   //
   int outputFormat = modelSettings->getOutputFormatFlag();
   int outputDomain = modelSettings->getOutputDomainFlag();
-  int otherOutput  = modelSettings->getOutputDomainFlag();
+  int otherOutput  = modelSettings->getOtherOutputFlag();
+  int outputFlag   = modelSettings->getGridOutputFlag();
 
   error = 0;
   setSimboxSurfaces(timeSimbox, 
@@ -732,6 +733,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
                     modelSettings->getTimeNz(),
                     outputFormat,
                     outputDomain,
+                    outputFlag,
                     errText,
                     error);
 
@@ -787,8 +789,9 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
       if(failed == false && modelSettings->getGenerateSeismic() == false) {
         //Extends timeSimbox for correlation coverage. Original stored in timeCutSimbox
         setupExtendedTimeSimbox(timeSimbox, correlationDirection, timeCutSimbox, 
-          outputFormat, outputDomain, modelSettings->getOtherOutputFlag()); 
-      }      estimateZPaddingSize(timeSimbox, modelSettings);   
+                                outputFormat, outputDomain, modelSettings->getOtherOutputFlag()); 
+      }      
+      estimateZPaddingSize(timeSimbox, modelSettings);   
       error = timeSimbox->checkError(modelSettings->getLzLimit(),errText);
       if(error == 0)
       {
@@ -865,10 +868,14 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
     Surface * tsurf = new Surface(dynamic_cast<const Surface &> (timeSimbox->GetTopSurface()));
     timeSimboxConstThick->setDepth(tsurf, 0, timeSimbox->getlz(), timeSimbox->getdz());
 
-    if((otherOutput & ModelSettings::EXTRA_SURFACES) > 0 && (outputDomain & ModelSettings::TIMEDOMAIN) > 0)
-      timeSimboxConstThick->writeTopBotGrids("Surface_Top_Time_ConstThick", 
-      "Surface_Base_Time_ConstThick", 
-      outputFormat);
+    if((otherOutput & ModelSettings::EXTRA_SURFACES) > 0 && (outputDomain & ModelSettings::TIMEDOMAIN) > 0) {
+      std::string topSurf  = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixTime() + "_ConstThick";
+      std::string baseSurf = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime() + "_ConstThick";
+      timeSimboxConstThick->writeTopBotGrids(topSurf, 
+                                             baseSurf,
+                                             IO::PathToInversionResults(),
+                                             outputFormat);
+    }
   }
   else
   {
@@ -887,6 +894,7 @@ Model::setSimboxSurfaces(Simbox                        *& simbox,
                          int                              nz,
                          int                              outputFormat,
                          int                              outputDomain,
+                         int                              outputFlag,
                          char                           * errText,
                          int                            & error)
 {
@@ -956,10 +964,20 @@ Model::setSimboxSurfaces(Simbox                        *& simbox,
       }
     }
     if (error == 0) {
-      if((outputDomain & ModelSettings::TIMEDOMAIN) > 0)
-        simbox->writeTopBotGrids("Surface_Top_Time", 
-                                 "Surface_Base_Time", 
+      if((outputDomain & ModelSettings::TIMEDOMAIN) > 0) {
+        std::string topSurf  = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixTime();
+        std::string baseSurf = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime();
+        simbox->writeTopBotGrids(topSurf, 
+                                 baseSurf,
+                                 IO::PathToInversionResults(),
                                  outputFormat);
+        if ((outputFlag & ModelSettings::BACKGROUND_TREND) > 0 || (outputFlag & ModelSettings::BACKGROUND_TREND) > 0) {
+          simbox->writeTopBotGrids(topSurf, 
+                                   baseSurf,
+                                   IO::PathToBackground(),
+                                   outputFormat);
+        }
+      }
     }
   }
 }
@@ -989,9 +1007,11 @@ Model::setupExtendedTimeSimbox(Simbox   * timeSimbox,
     refPlanePars[i] -= corrPlanePars[i];
   gradX_ = refPlanePars[1];
   gradY_ = refPlanePars[2];
+
   Surface * refPlane = createPlaneSurface(refPlanePars, corrSurf);
 
-  writeSurfaceToFile(refPlane,"CorrelationRotationPlane",outputFormat);
+  std::string fileName = IO::makeFullFileName(IO::PathToCorrelations(), "CorrelationRotationPlane");
+  writeSurfaceToFile(*refPlane,fileName,outputFormat);
 
   refPlane->AddNonConform(corrSurf);
   delete [] corrPlanePars;
@@ -1025,10 +1045,14 @@ Model::setupExtendedTimeSimbox(Simbox   * timeSimbox,
 
   timeSimbox->setDepth(topSurf, botSurf, nz);
   
-  if((otherOutput & ModelSettings::EXTRA_SURFACES) > 0 && (outputDomain & ModelSettings::TIMEDOMAIN) > 0)
-    timeSimbox->writeTopBotGrids("Surface_Top_Time_Extended", 
-                                 "Surface_Base_Time_Extended", 
+  if((otherOutput & ModelSettings::EXTRA_SURFACES) > 0 && (outputDomain & ModelSettings::TIMEDOMAIN) > 0) {
+    std::string topSurf  = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixTime() + "_Extended";
+    std::string baseSurf = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime() + "_Extended";
+    timeSimbox->writeTopBotGrids(topSurf, 
+                                 baseSurf,
+                                 IO::PathToInversionResults(),
                                  outputFormat);
+  }
 
   delete refPlane;
 }
@@ -1102,10 +1126,14 @@ Model::setupExtendedBackgroundSimbox(Simbox   * timeSimbox,
   timeBGSimbox = new Simbox(timeSimbox);
   timeBGSimbox->setDepth(topSurf, botSurf, nz);
 
-  if((otherOutput & ModelSettings::EXTRA_SURFACES) > 0 && (outputDomain & ModelSettings::TIMEDOMAIN) > 0)
-    timeBGSimbox->writeTopBotGrids("Surface_Top_Time_BG", 
-                                   "Surface_Base_Time_BG", 
+  if((otherOutput & ModelSettings::EXTRA_SURFACES) > 0 && (outputDomain & ModelSettings::TIMEDOMAIN) > 0) {
+    std::string topSurf  = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixTime() + IO::PrefixBackground();
+    std::string baseSurf = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime() + IO::PrefixBackground();
+    timeBGSimbox->writeTopBotGrids(topSurf,
+                                   baseSurf,
+                                   IO::PathToBackground(),
                                    outputFormat);
+  }
 }
 
 double *
@@ -1329,19 +1357,18 @@ Model::processSeismic(FFTGrid      **& seisCube,
         for(int i=0;i<nAngles;i++) {
           std::string angle    = NRLib::ToString(modelSettings->getAngle(i)*(180/M_PI), 1);
           std::string baseName = IO::PrefixSeismic() + IO::PrefixDirect() + angle + IO::SuffixDirectData();
-          std::string fileName = ModelSettings::makeFullFileName2(IO::PathToSeismicData(), baseName);
+          std::string fileName = IO::makeFullFileName(IO::PathToSeismicData(), baseName);
           seisCube[i]->writeDirectFile(fileName, timeSimbox);
         }
       }
       if(modelSettings->getDebugFlag() == 1)
       {
-        char sName[100];
         for(int i=0 ; i<nAngles ; i++)
         {
-          sprintf(sName, "origSeis%d",i);
-          std::string sgriLabel("Original seismic data for incidence angle ");
-          sgriLabel += NRLib::ToString(modelSettings->getAngle(i));
-          seisCube[i]->writeFile(sName, timeSimbox, sgriLabel);
+          std::string angle     = NRLib::ToString(modelSettings->getAngle(i)*(180/M_PI), 1);
+          std::string sgriLabel = "Original seismic data for incidence angle " + angle;
+          std::string fileName  = IO::PrefixOriginalSeismic() + angle;
+          seisCube[i]->writeFile(fileName, IO::PathToSeismicData(), timeSimbox, sgriLabel);
         }
       }
 
@@ -1842,8 +1869,10 @@ Model::processBackground(Background   *& background,
     }
     background = new Background(backModel);
   }
-  if((modelSettings->getGridOutputFlag() & ModelSettings::BACKGROUND) > 0)
+  if((modelSettings->getGridOutputFlag() & ModelSettings::BACKGROUND) > 0) {
     background->writeBackgrounds(timeSimbox, timeDepthMapping_, timeCutMapping_); 
+  }
+
   if(modelSettings_->getDirectBGOutput() == true) {
     std::string fileName[3];
 
@@ -1851,9 +1880,9 @@ Model::processBackground(Background   *& background,
     std::string baseName2 = IO::PrefixBackground() + "Vs"  + IO::PrefixDirect() + IO::SuffixDirectData();
     std::string baseName3 = IO::PrefixBackground() + "Rho" + IO::PrefixDirect() + IO::SuffixDirectData();
 
-    fileName[0] = ModelSettings::makeFullFileName2(IO::PathToBackground(), baseName1);
-    fileName[1] = ModelSettings::makeFullFileName2(IO::PathToBackground(), baseName2);
-    fileName[2] = ModelSettings::makeFullFileName2(IO::PathToBackground(), baseName3);
+    fileName[0] = IO::makeFullFileName(IO::PathToBackground(), baseName1);
+    fileName[1] = IO::makeFullFileName(IO::PathToBackground(), baseName2);
+    fileName[2] = IO::makeFullFileName(IO::PathToBackground(), baseName3);
 
     for(int i=0;i<3;i++) {
       backModel[i]->setAccessMode(FFTGrid::RANDOMACCESS);
@@ -2200,7 +2229,6 @@ Model::processWavelets(Wavelet     **& wavelet,
 
   
   std::vector<Grid2D *> noiseScaled; //= new Grid2D * [modelSettings->getNumberOfAngles()];
-  Surface *help;
   float globalScale = 1.0;
 
   for(int i=0 ; i < modelSettings->getNumberOfAngles() ; i++)
@@ -2210,55 +2238,48 @@ Model::processWavelets(Wavelet     **& wavelet,
     {
       if(inputFiles->getShiftFile(i)!="") // resampling maa til, Grid2D
       {
-        help = new NRLib::RegularSurface<double>(NRLib::ReadStormSurf(inputFiles->getShiftFile(i)));
-        shiftGrids[i] =new Grid2D(timeSimbox->getnx(),timeSimbox->getny(), 0.0);
+        Surface help(NRLib::ReadStormSurf(inputFiles->getShiftFile(i)));
+        shiftGrids[i] = new Grid2D(timeSimbox->getnx(),timeSimbox->getny(), 0.0);
         resampleGrid(help,timeSimbox, shiftGrids[i]);
         if ((modelSettings->getOtherOutputFlag() & ModelSettings::EXTRA_SURFACES) > 0)
         {
-          char * fileName= new char[MAX_STRING];
-          sprintf(fileName,"Local_Wavelet_Shift_%i",i);
+          std::string baseName = IO::PrefixLocalWaveletShift() + NRLib::ToString(angle,1);
+          std::string fileName = IO::makeFullFileName(IO::PathToWavelets(), baseName);
           writeSurfaceToFile(help,fileName,outputFormat);
-          delete [] fileName;
         }
-        delete help;
       }
       else
         shiftGrids[i] = NULL;
 
       if(inputFiles->getScaleFile(i)!="")
       {
-        help = new NRLib::RegularSurface<double>(NRLib::ReadStormSurf(inputFiles->getScaleFile(i)));
-        gainGrids[i] =new Grid2D(timeSimbox->getnx(),timeSimbox->getny(), 0.0);
+        Surface help(NRLib::ReadStormSurf(inputFiles->getScaleFile(i)));
+        gainGrids[i] = new Grid2D(timeSimbox->getnx(),timeSimbox->getny(), 0.0);
         resampleGrid(help,timeSimbox, gainGrids[i]);
         if ((modelSettings->getOtherOutputFlag() & ModelSettings::EXTRA_SURFACES) > 0)
         {
-          char * fileName= new char[MAX_STRING];
-          sprintf(fileName,"Local_Wavelet_Gain_%i",i);
+          std::string baseName = IO::PrefixLocalWaveletGain() + NRLib::ToString(angle,1);
+          std::string fileName = IO::makeFullFileName(IO::PathToWavelets(), baseName);
           writeSurfaceToFile(help,fileName,outputFormat);
-          delete [] fileName;
         }
-        delete help;
       }
       else
         gainGrids[i] = NULL;
     }
     if( inputFiles->getLocalNoiseFile(i)!="")
     {
-      help = new NRLib::RegularSurface<double>(NRLib::ReadStormSurf(inputFiles->getLocalNoiseFile(i)));
-      noiseScaled[i] =new Grid2D(timeSimbox->getnx(),timeSimbox->getny(), 0.0);
-      resampleGrid(help,timeSimbox, noiseScaled[i]);
+      Surface help(NRLib::ReadStormSurf(inputFiles->getLocalNoiseFile(i)));
+      noiseScaled[i] = new Grid2D(timeSimbox->getnx(),timeSimbox->getny(), 0.0);
+      resampleGrid(help, timeSimbox, noiseScaled[i]);
       if ((modelSettings->getOtherOutputFlag() & ModelSettings::EXTRA_SURFACES) > 0)
       {
-        char * fileName= new char[MAX_STRING];
-        sprintf(fileName,"Local_Noise_%i",i);
+        std::string baseName = IO::PrefixLocalNoise() + NRLib::ToString(angle,1);
+        std::string fileName = IO::makeFullFileName(IO::PathToWavelets(), baseName);
         writeSurfaceToFile(help,fileName,outputFormat);
-        delete [] fileName;
       }
-      delete help;
     }
     else
       noiseScaled.push_back(NULL);
-
     
     globalScale = modelSettings->getWaveletScale(i);
     
@@ -2288,7 +2309,7 @@ Model::processWavelets(Wavelet     **& wavelet,
         error += 1;
       }
     }
-    else //Not estiamtion modus
+    else //Not estimation modus
     {
       const std::string & waveletFile = inputFiles->getWaveletFile(i);
 
@@ -2405,7 +2426,6 @@ Model::processWavelets(Wavelet     **& wavelet,
       }
 
       if (error == 0) {
-        // if((modelSettings->getOtherOutputFlag() & ModelSettings::WAVELETS) > 0) 
         if((modelSettings->getOtherOutputFlag() & ModelSettings::WAVELETS) > 0 ||
           (modelSettings->getEstimationMode() == true && 
           modelSettings->getEstimateWavelet(i) == true))
@@ -2414,49 +2434,46 @@ Model::processWavelets(Wavelet     **& wavelet,
           sprintf(fileName,"Wavelet_Scaled");
           wavelet[i]->writeWaveletToFile(fileName, 1.0, timeSimbox); // dt_max = 1.0;
         }
+
         if(shiftGrids != NULL && shiftGrids[i] != 0) //NBNB husk utskrift av grid. Resample til surface
         {
           if(modelSettings->getEstimateLocalShift(i)==true && 
              ((modelSettings->getOtherOutputFlag() & ModelSettings::EXTRA_SURFACES) > 0 ||
               modelSettings->getEstimationMode() == true))
           {
-            char * fileName= new char[MAX_STRING];
-            sprintf(fileName,"Local_Wavelet_Shift_%i",i);
-            resampleGridAndWriteToFile(shiftGrids[i],timeSimbox,fileName, outputFormat);
-            delete [] fileName;
+            std::string baseName = IO::PrefixLocalWaveletShift() + NRLib::ToString(angle,1);
+            std::string fileName = IO::makeFullFileName(IO::PathToWavelets(), baseName);
+            resampleGridAndWriteToFile(fileName, shiftGrids[i], timeSimbox, outputFormat);
           }
           wavelet[i]->setShiftGrid(shiftGrids[i]);
         }
+
         if(gainGrids != NULL && gainGrids[i] != NULL)
         {
           if(modelSettings->getEstimateLocalScale(i)==true &&
              ((modelSettings->getOtherOutputFlag() & ModelSettings::EXTRA_SURFACES) > 0 ||
               modelSettings->getEstimationMode() == true))
          {
-            char * fileName= new char[MAX_STRING];
-            sprintf(fileName,"Local_Wavelet_Gain_%i",i);
-            resampleGridAndWriteToFile(gainGrids[i],timeSimbox,fileName, outputFormat);
-            delete [] fileName;
+           std::string baseName = IO::PrefixLocalWaveletGain() + NRLib::ToString(angle,1);
+            std::string fileName = IO::makeFullFileName(IO::PathToWavelets(), baseName);
+            resampleGridAndWriteToFile(fileName, gainGrids[i], timeSimbox, outputFormat);
           }
-
           wavelet[i]->setGainGrid(gainGrids[i]);
         }
+
         if(noiseScaled[i]!=NULL)
         {
           if(modelSettings->getEstimateLocalNoise(i)==true &&
             ((modelSettings->getOtherOutputFlag() & ModelSettings::EXTRA_SURFACES) > 0 ||
               modelSettings->getEstimationMode() == true))
           {
-            char * fileName= new char[MAX_STRING];
-            sprintf(fileName,"Local_Noise_%i",i);
-            resampleGridAndWriteToFile(noiseScaled[i],timeSimbox,fileName, outputFormat);
-            delete [] fileName;
+            std::string baseName = IO::PrefixLocalNoise() + NRLib::ToString(angle,1);
+            std::string fileName = IO::makeFullFileName(IO::PathToWavelets(), baseName);
+            resampleGridAndWriteToFile(fileName, noiseScaled[i], timeSimbox, outputFormat);
           }     
         }
-          modelSettings->setNoiseScaled(noiseScaled[i]);
-         
+        modelSettings->setNoiseScaled(noiseScaled[i]);
       }
-
     }
   }
 
@@ -2549,8 +2566,7 @@ void Model::processPriorFaciesProb(float         *& priorFacies,
                                    ModelSettings  * modelSettings,
                                    bool           & failed,
                                    char           * errTxt,
-                                   InputFiles     * inputFiles
-                                   )
+                                   InputFiles     * inputFiles)
 {
   if (modelSettings->getEstimateFaciesProb())
   {
@@ -2968,7 +2984,7 @@ Model::printSettings(ModelSettings * modelSettings,
   LogKit::LogFormatted(LogKit::HIGH,"\nInput/output directories:\n");
   //LogKit::LogFormatted(LogKit::HIGH,"  Project directory                        : %10s\n",modelSettings->getProjectDirectory());
   LogKit::LogFormatted(LogKit::HIGH,"  Input directory                          : %10s\n",inputFiles->getInputDirectory().c_str());
-  LogKit::LogFormatted(LogKit::HIGH,"  Output directory                         : %10s\n",modelSettings->getOutputPath().c_str());
+  LogKit::LogFormatted(LogKit::HIGH,"  Output directory                         : %10s\n",IO::getOutputPath().c_str());
 
   LogKit::LogFormatted(LogKit::HIGH,"\nUnit settings/assumptions:\n");
   LogKit::LogFormatted(LogKit::HIGH,"  Time                                     : %10s\n","ms TWT");
@@ -3376,7 +3392,7 @@ Model::processDepthConversion(Simbox        * timeCutSimbox,
       timeDepthMapping_->makeTimeDepthMapping(velocity, timeSimbox);
       if(modelSettings->getDirectVelOutput() == true) {
         std::string baseName = IO::PrefixVelocity() + IO::PrefixDirect() + IO::SuffixDirectData();
-        std::string fileName = ModelSettings::makeFullFileName2(IO::PathToVelocity(), baseName);
+        std::string fileName = IO::makeFullFileName(IO::PathToVelocity(), baseName);
         velocity->writeDirectFile(fileName, timeSimbox); 
       }
     }
@@ -3556,32 +3572,32 @@ Model::findSmallestSurfaceGeometry(const double   x0,
 }
 
 void   
-Model::writeSurfaceToFile(Surface           * surface,
-                          const std::string & name,
+Model::writeSurfaceToFile(const Surface     & surface,
+                          const std::string & fileName,
                           int                 format)
 {
-  std::string fileName = ModelSettings::makeFullFileName2(IO::PathToSurfaces(), name);
-  
   if((format & ModelSettings::ASCII) > 0)
-    NRLib::WriteIrapClassicAsciiSurf(*surface, fileName + IO::SuffixAsciiIrapClassic());
+    NRLib::WriteIrapClassicAsciiSurf(surface, fileName + IO::SuffixAsciiIrapClassic());
   else  
-    NRLib::WriteStormBinarySurf(*surface, fileName + IO::SuffixStormBinary());
+    NRLib::WriteStormBinarySurf(surface, fileName + IO::SuffixStormBinary());
 }
 
 
-void Model::resampleGrid(Surface *surf,Simbox * simbox, Grid2D *outgrid)
+void Model::resampleGrid(Surface & surf, Simbox * simbox, Grid2D *outgrid)
 {
   for(int i=0;i<simbox->getnx();i++)
     for(int j=0;j<simbox->getny();j++)
     {
       double x, y, z;
       simbox->getCoord(i, j, 0, x, y, z);
-      (*outgrid)(i,j) = static_cast<float>(surf->GetZ(x,y));
+      (*outgrid)(i,j) = static_cast<float>(surf.GetZ(x,y));
     }
-
 }
 
-void Model::resampleGridAndWriteToFile(Grid2D *grid,Simbox *simbox, char *fileName, int format)
+void Model::resampleGridAndWriteToFile(const std::string & fileName, 
+                                       Grid2D            * grid,
+                                       Simbox            * simbox, 
+                                       int                 format)
 {
   double xmin,xmax,ymin,ymax;
   simbox->getMinAndMaxXY(xmin,xmax,ymin,ymax);
@@ -3597,28 +3613,25 @@ void Model::resampleGridAndWriteToFile(Grid2D *grid,Simbox *simbox, char *fileNa
     nx = static_cast<int>(floor(simbox->getnx()*1.0/std::sin(simbox->getAngle())+0.5));
     ny = static_cast<int>(floor(simbox->getny()*1.0/std::sin(simbox->getAngle())+0.5));
   }
-  Surface *outsurf = new Surface(xmin,ymin,xmax-xmin,ymax-ymin,nx,ny,0.0);
+  Surface outsurf(xmin,ymin,xmax-xmin,ymax-ymin,nx,ny,0.0);
   double x,y;
   int i1,j1;
   for(int i=0;i<nx;i++)
     for(int j=0;j<ny;j++)
     {
-      outsurf->GetXY(i,j,x,y);
+      outsurf.GetXY(i,j,x,y);
       simbox->getIndexes(x,y,i1,j1);
       if(i1==IMISSING || j1== IMISSING)
       {
         if((format & ModelSettings::ASCII) > 0)
-        (*outsurf)(i,j) = 9999900.0; //=IRAP_MISSING
+          outsurf(i,j) = Definitions::AsciiIrapClassicUndefValue();
         else
-        (*outsurf)(i,j) = -999.0; //STORM_MISSING
+          outsurf(i,j) = Definitions::StormBinaryUndefValue();
       }
       else
-      (*outsurf)(i,j) = (*grid)(i1,j1);
+        outsurf(i,j) = (*grid)(i1,j1);
     }
-    Model::writeSurfaceToFile(outsurf,fileName, format);
-    delete outsurf;
-
-
+  writeSurfaceToFile(outsurf, fileName, format);
 }
 
 SegyGeometry *
@@ -3627,15 +3640,14 @@ Model::geometryFromDirectFile(const std::string & fileName)
   std::ifstream binFile;
   NRLib::OpenRead(binFile, fileName, std::ios::in | std::ios::binary);
   
-  
-  double x0 = NRLib::ReadBinaryDouble(binFile);
-  double y0 = NRLib::ReadBinaryDouble(binFile);
-  double dx = NRLib::ReadBinaryDouble(binFile);
-  double dy = NRLib::ReadBinaryDouble(binFile);
-  int nx = NRLib::ReadBinaryInt(binFile);
-  int ny = NRLib::ReadBinaryInt(binFile);
-  double IL0 = NRLib::ReadBinaryDouble(binFile);
-  double XL0 = NRLib::ReadBinaryDouble(binFile);
+  double x0      = NRLib::ReadBinaryDouble(binFile);
+  double y0      = NRLib::ReadBinaryDouble(binFile);
+  double dx      = NRLib::ReadBinaryDouble(binFile);
+  double dy      = NRLib::ReadBinaryDouble(binFile);
+  int    nx      = NRLib::ReadBinaryInt(binFile);
+  int    ny      = NRLib::ReadBinaryInt(binFile);
+  double IL0     = NRLib::ReadBinaryDouble(binFile);
+  double XL0     = NRLib::ReadBinaryDouble(binFile);
   double ilStepX = NRLib::ReadBinaryDouble(binFile);
   double ilStepY = NRLib::ReadBinaryDouble(binFile);
   double xlStepX = NRLib::ReadBinaryDouble(binFile);

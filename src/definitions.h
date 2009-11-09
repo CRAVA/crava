@@ -20,15 +20,10 @@ typedef  NRLib::TextualHeader             TextualHeader;
    Class to hold definitions and constants used by CRAVA. (to replace global_def.h?)
 */    
 
-//class Definitions 
-//{
-//public:
-//
-//  Example of use from Cohiba:
-//  
-//  inline static std::string LogFileDir(void)  { return "logfiles"; } /// Output directory for log files.
-//  inline static double CholeskyEpsilon(void)                   { return 1e-32    ;} ///< Tolerance in Cholesky decomposition.
-//  inline static double CholeskyOffDiagRepairFactor(void)       { return 0.999    ;} ///< Factor to multiply off-diagonal elements with.
-//}
+namespace Definitions 
+{
+  inline static double AsciiIrapClassicUndefValue(void)  { return 9999900.0 ;}
+  inline static double StormBinaryUndefValue(void)       { return    -999.0 ;}
+}
 
 #endif

@@ -275,31 +275,6 @@ ModelSettings::setIndicatorFacies(int * indFacies, int nWells)
 }
 
 void
-ModelSettings::setOutputPath(const std::string & outputPath) 
-{
-  outputPath_ = outputPath;
-}
-
-void
-ModelSettings::setFilePrefix(const std::string & filePrefix)               
-{
-  filePrefix_ = filePrefix;
-}
-
-std::string 
-ModelSettings::makeFullFileName(const std::string name, const std::string postfix)
-{
-  return (outputPath_+filePrefix_+name+postfix);
-}
-
-std::string 
-ModelSettings::makeFullFileName2(const std::string subDir, const std::string fileName)
-{
-  return (outputPath_ + subDir + filePrefix_ + fileName);
-}
-
-
-void
 ModelSettings::setNoiseScaled(Grid2D *ns)
 { 
   if(ns==NULL)
@@ -355,6 +330,4 @@ bool ModelSettings::noiseIsScaled()
     return false;
 }
 
-std::string ModelSettings::outputPath_ = "";
-std::string ModelSettings::filePrefix_ = "CRAVA_";
-int         ModelSettings::debugFlag_  = 0;
+int  ModelSettings::debugFlag_  = 0;

@@ -175,7 +175,7 @@ Wavelet3D::Wavelet3D(const std::string & fileName,
     sprintf(fName, "WL_as_shiftedFFTGrid_%d", thetaDeg);
     std::string sgriLabel("3D Wavelet as shifted FFT-grid for incidence angle ");
     sgriLabel += NRLib::ToString(thetaDeg);
-    shiftAmp->writeFile(fName, simBox, sgriLabel);
+    shiftAmp->writeFile(fName, IO::PathToWavelets(), simBox, sgriLabel);
     delete shiftAmp;
     //End for debugging purposes
   }
@@ -403,11 +403,11 @@ Wavelet3D::multiplyByR(float p)
 
 
 void
-Wavelet3D::printToFile(std::string fileName, bool overrideDebug) 
+Wavelet3D::printToFile(const std::string & fileName, bool overrideDebug) 
 {
   if(overrideDebug == true || ModelSettings::getDebugLevel() > 0) {
     std::string fName = fileName + IO::SuffixGeneralData();
-    fName = ModelSettings::makeFullFileName2(IO::PathToWavelets(), fName);
+    fName = IO::makeFullFileName(IO::PathToWavelets(), fName);
     std::ofstream file;
     NRLib::OpenWrite(file, fName);
     LogKit::LogFormatted(LogKit::LOW,"\nWriting STORM ascii file "+fName+"...");
@@ -424,10 +424,10 @@ Wavelet3D::printToFile(std::string fileName, bool overrideDebug)
 }
 
 void
-Wavelet3D::writeWaveletToFile(char* fileName, float, Simbox *simbox)
+Wavelet3D::writeWaveletToFile(const std::string & fileName, float, Simbox *simbox)
 {
   LogKit::LogFormatted(LogKit::MEDIUM,"  Writing 3D-Wavelet to file. \n");
-  ampCube_.writeFile(fileName, simbox, "", false);
+  ampCube_.writeFile(fileName, IO::PathToWavelets(), simbox, "", false);
 }
 
 void

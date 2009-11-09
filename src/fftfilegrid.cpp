@@ -10,13 +10,15 @@
 #include "fft/include/fftw-int.h"
 #include "fft/include/f77_func.h"
 
-#include "lib/global_def.h"
 #include "nrlib/iotools/logkit.hpp"
+
+#include "lib/global_def.h"
 #include "lib/lib_misc.h"
 
 #include "src/fftfilegrid.h"
 #include "src/simbox.h"
 #include "src/model.h"
+#include "src/io.h"
 
 FFTFileGrid::FFTFileGrid(int nx, int ny, int nz, int nxp, int nyp, int nzp) :
 FFTGrid(nx, ny, nz, nxp, nyp, nzp)
@@ -156,7 +158,8 @@ FFTFileGrid::getNextComplex()
   assert(istransformed_==true);
   assert(accMode_ == READ || accMode_ == READANDWRITE);
   fftw_complex cVal;
-  fread(&cVal, sizeof(fftw_complex), 1, inFile_);
+  int ok = 0;
+  ok = fread(&cVal, sizeof(fftw_complex), 1, inFile_);
   return(cVal);
 }
 
@@ -167,8 +170,9 @@ FFTFileGrid::getNextReal()
 {
   assert(istransformed_ == false);
   assert(accMode_ == READ || accMode_ == READANDWRITE);
+  int ok = 0;
   float rVal;
-  fread(&rVal, sizeof(float), 1, inFile_);
+  ok = fread(&rVal, sizeof(float), 1, inFile_);
   return float(rVal);
 } 
 
@@ -416,14 +420,18 @@ FFTFileGrid::fillInComplexNoise(RandomGen * ranGen)
 }
 
 void 
-FFTFileGrid::writeFile(const std::string & fileName, const Simbox * simbox, 
-                       const std::string sgriLabel, float z0, 
-                       GridMapping * depthMap, GridMapping * timeMap)
+FFTFileGrid::writeFile(const std::string & fileName, 
+                       const std::string & subDir, 
+                       const Simbox      * simbox, 
+                       const std::string   sgriLabel, 
+                       const float         z0, 
+                       GridMapping       * depthMap, 
+                       GridMapping       * timeMap)
 {
   assert(accMode_ == NONE || accMode_ == RANDOMACCESS);
   if(accMode_ != RANDOMACCESS)
     load();
-  FFTGrid::writeFile(fileName, simbox, sgriLabel, z0, depthMap, timeMap);
+  FFTGrid::writeFile(fileName, subDir, simbox, sgriLabel, z0, depthMap, timeMap);
   if(accMode_ != RANDOMACCESS)
     unload();
 }
@@ -543,7 +551,9 @@ void
 FFTFileGrid::genFileName()
 {
   fNameIn_  = NULL;
-  std::string fileName = ModelSettings::makeFullFileName("tmpgrid" + NRLib::ToString(gNum));
+  // Store tmp file in top directory.
+  std::string baseName = IO::PrefixTmpGrids() + NRLib::ToString(gNum);
+  std::string fileName = IO::makeFullFileName(IO::PathToTmpFiles(), baseName);
   fNameOut_ = new char[MAX_STRING];
   strcpy(fNameOut_,fileName.c_str());
   gNum++;

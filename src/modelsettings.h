@@ -113,7 +113,6 @@ public:
   bool                             getDirectVelInput(void)       const { return directVelInput_        ;}
   int                              getDebugFlag(void)            const { return debugFlag_             ;}
   static int                       getDebugLevel(void)                 { return debugFlag_             ;}
-  static std::string               getOutputPath(void)                 { return outputPath_            ;}
   int                              getFileGrid(void)             const { return fileGrid_              ;}
   bool                             getEstimationMode(void)       const { return estimationMode_        ;}
   bool                             getGenerateSeismic(void)      const { return generateSeismic_       ;}
@@ -296,14 +295,6 @@ public:
   enum          indicators{NO = 0, YES = 1, NOTSET = 2};
 
   enum          waveletDims{ONE_D = 0, THREE_D = 1};
-
-  //Note: By convention, input path is added to input file names at end of parsing.
-  //      Output path and prefix is added to output file name by call to makeFullFileName
-  //      just before writing.
-  static void setFilePrefix(const std::string & filePrefix);
-  static void setOutputPath(const std::string & outputPath);
-  static std::string      makeFullFileName(const std::string name, const std::string postfix = "");
-  static std::string      makeFullFileName2(const std::string subDir, const std::string fileName);
                    
 private:           
                    
@@ -446,9 +437,6 @@ private:
   int                              seed_;                  // Random seed.
                            
   static int                       debugFlag_;
-
-  static std::string               outputPath_;            // Path for all output files.
-  static std::string               filePrefix_;            // Prefix for all output files
 };
 
 #endif

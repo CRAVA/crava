@@ -783,7 +783,7 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
   NRLib::Substitute(wellname,"/","_");
   NRLib::Substitute(wellname," ","_");
   std::string baseName = IO::PrefixBlockedWells() + wellname + IO::SuffixRmsWells();
-  std::string fileName = ModelSettings::makeFullFileName2(IO::PathToWells(), baseName);
+  std::string fileName = IO::makeFullFileName(IO::PathToWells(), baseName);
 
   std::ofstream file;
   NRLib::OpenWrite(file, fileName);
@@ -923,7 +923,7 @@ BlockedLogs::writeNorsarWell(ModelSettings * modelSettings)
 
   //Handle main file.
   std::string baseName = IO::PrefixBlockedWells() + wellname + IO::SuffixNorsarWells();
-  std::string fileName = ModelSettings::makeFullFileName2(IO::PathToWells(), baseName);
+  std::string fileName = IO::makeFullFileName(IO::PathToWells(), baseName);
   std::ofstream mainFile;
   NRLib::OpenWrite(mainFile, fileName);
   mainFile << std::fixed
@@ -969,8 +969,8 @@ BlockedLogs::writeNorsarWell(ModelSettings * modelSettings)
   mainFile << "UTMY    km\n";
   
   std::string logBaseName = IO::PrefixBlockedWells() + wellname + IO::SuffixNorsarLog();
-  std::string logFileName = ModelSettings::makeFullFileName2(IO::PathToWells(), logBaseName);
-  std::string onlyName = NRLib::RemovePath(logFileName);
+  std::string logFileName = IO::makeFullFileName(IO::PathToWells(), logBaseName);
+  std::string onlyName    = NRLib::RemovePath(logFileName);
   
   bool gotFacies      = (nFacies_ > 0);
   bool gotRealSeismic = (real_seismic_data_ != NULL);
@@ -1028,7 +1028,7 @@ BlockedLogs::writeNorsarWell(ModelSettings * modelSettings)
 
   //Write the track file.
   std::string trackBaseName = IO::PrefixBlockedWells() + wellname + IO::SuffixNorsarTrack();
-  std::string trackFileName = ModelSettings::makeFullFileName2(IO::PathToWells(), trackBaseName);
+  std::string trackFileName = IO::makeFullFileName(IO::PathToWells(), trackBaseName);
   std::ofstream trackFile;
   NRLib::OpenWrite(trackFile, trackFileName.c_str());
   trackFile << std::right

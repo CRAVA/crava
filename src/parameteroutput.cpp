@@ -4,6 +4,7 @@
 #include "src/modelsettings.h"
 #include "src/simbox.h"
 #include "src/model.h"
+#include "src/io.h"
 
 void
 ParameterOutput::writeParameters(const Simbox  * simbox,
@@ -426,5 +427,6 @@ ParameterOutput::writeToFile(const Simbox      * simbox,
   GridMapping * timeCutMapping   = model->getTimeCutMapping();
   float         seismicStartTime = model->getModelSettings()->getSegyOffset();
 
-  grid->writeFile(fileName, simbox, sgriLabel, seismicStartTime, timeDepthMapping, timeCutMapping);
+  grid->writeFile(fileName, IO::PathToInversionResults(), simbox, sgriLabel, 
+                  seismicStartTime, timeDepthMapping, timeCutMapping);
 }

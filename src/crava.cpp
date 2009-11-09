@@ -119,10 +119,6 @@ Crava::Crava(Model * model, SpatialWellFilter * spatwellfilter)
     errCorrUnsmooth->fillInErrCorr(correlations_,corrGradI,corrGradJ); 
     if((model->getModelSettings()->getOtherOutputFlag() & ModelSettings::PRIORCORRELATIONS) > 0)
       correlations_->writeFilePriorCorrT(corrT,nzp_);     // No zeros in the middle
-    // parSpatialCorr->writeFile("parSpatialCorr",simbox_);
-    // parSpatialCorr->writeAsciiFile("SpatialCorr");         //for debug
-    // errCorrUnsmooth->writeFile("errCorrUnsmooth",simbox_);
-    // errCorrUnsmooth->writeAsciiFile("ErrCorr");            //for debug
   }
   else
   {
@@ -151,9 +147,7 @@ Crava::Crava(Model * model, SpatialWellFilter * spatwellfilter)
     errCorrUnsmooth->fftInPlace(); 
     for(int i = 0 ; i < ntheta_ ; i++)
     {
-      // sprintf(rawSName,"rawSeismic_divided_%i",int(seisData_[i]->getTheta()*180.0/PI+0.5));
       seisData_[i]->setAccessMode(FFTGrid::RANDOMACCESS);
-      // seisData_[i]->writeFile(rawSName,simbox_);
       seisData_[i]->fftInPlace();
       seisData_[i]->endAccess();
     }
@@ -296,7 +290,6 @@ Crava::computeVariances(fftw_real     * corrT,
     
   setupErrorCorrelation(modelSettings);
 
-  char fileName[MAX_STRING];
   Wavelet ** errorSmooth = new Wavelet*[ntheta_];
   float    * paramVar    = new float[ntheta_] ;
   float    * WDCorrMVar  = new float[ntheta_];
@@ -305,7 +298,8 @@ Crava::computeVariances(fftw_real     * corrT,
   {
     if (seisWavelet_[i]->getDim() == 1) {
       errorSmooth[i] = new Wavelet1D(seisWavelet_[i],Wavelet::FIRSTORDERFORWARDDIFF);
-      sprintf(fileName,"Wavediff_%d.dat",i);
+      std::string angle    = NRLib::ToString(thetaDeg_[i], 1);
+      std::string fileName = IO::PrefixWavelet() + std::string("Diff_") + angle + IO::SuffixGeneralData();
       errorSmooth[i]->printToFile(fileName);
     }
     else {
@@ -348,7 +342,8 @@ Crava::computeVariances(fftw_real     * corrT,
       seisWavelet_[l]->scale(gain);
       if((modelSettings->getOtherOutputFlag() & ModelSettings::WAVELETS) > 0) 
       {
-        sprintf(fileName,"Wavelet_EnergyMatched");
+        std::string angle    = NRLib::ToString(thetaDeg_[l], 1);
+        std::string fileName = IO::PrefixWavelet() + std::string("EnergyMatched_") + angle;
         seisWavelet_[l]->writeWaveletToFile(fileName, 1.0); // dt_max = 1.0;
       }
       modelVariance_[l] *= gain*gain;
@@ -469,15 +464,10 @@ Crava:: divideDataByScaleWavelet()
   cData  = reinterpret_cast<fftw_complex*>(rData);
   Wavelet* localWavelet ;
 
-
   flag   = FFTW_ESTIMATE | FFTW_IN_PLACE;
   plan1  = rfftwnd_create_plan(1,&nzp_,FFTW_REAL_TO_COMPLEX,flag);
   plan2  = rfftwnd_create_plan(1,&nzp_,FFTW_COMPLEX_TO_REAL,flag);
 
-  // FILE * file1 = fopen("wavedumporig.txt","w");
-  // FILE * file2 = fopen("wavedumpadj.txt","w");
-  // FILE * file3 = fopen("seisdump.txt","w");
-  // FILE * file4 = fopen("refldump.txt","w");
   for(l=0 ; l< ntheta_ ; l++ )
   {
     seisWavelet_[l]->fft1DInPlace();
@@ -499,28 +489,23 @@ Crava:: divideDataByScaleWavelet()
             float dist = seisData_[l]->getDistToBoundary( k, nz_, nzp_);  
             rData[k] *= MAXIM(1-dist*dist,0);
           }
-
-          // if(i == 0 && l == 0)
-          // fprintf(file3,"%f ",rData[k]);
         }
 
         rfftwnd_one_real_to_complex(plan1,rData ,cData);
 
         double sf     = simbox_->getRelThick(i,j);
         double deltaF = static_cast<double>(nz_)*1000.0/(sf*simbox_->getlz()*static_cast<double>(nzp_));
-        //double deltaF= double( nz_*1000.0)/ double(simbox_->getlz()*nzp_);
 
         for(k=0;k < (nzp_/2 +1);k++) // all complex values
         {
           scaleWVal =  localWavelet->getCAmp(k,static_cast<float>(sf));
           modScaleW =  scaleWVal.re * scaleWVal.re + scaleWVal.im * scaleWVal.im;
-          /*         // note scaleWVal is acctually the value of the complex conjugate
+          // note scaleWVal is acctually the value of the complex conjugate
           // (see definition of getCAmp)         
-          wVal         =  seisWavelet_[l]->getCAmp(k);
-          modW           =  wVal.re * wVal.re + wVal.im * wVal.im;
+          // wVal      =  seisWavelet_[l]->getCAmp(k);
+          // modW      =  wVal.re * wVal.re + wVal.im * wVal.im;
           //  Here we need only the modulus
           // ( see definition of getCAmp)         
-          */
           if((modW > 0) && (deltaF*k < highCut_ ) && (deltaF*k > lowCut_ )) //NBNB frequency cleaning
           {
             float tolFac= 0.10f;
@@ -533,11 +518,6 @@ Crava:: divideDataByScaleWavelet()
             cData[k].im   = cData[k].im * (scaleWVal.re/modScaleW) 
               +cData[k].re * (scaleWVal.im/modScaleW);
             cData[k].re   = tmp;
-            //   if(i==0 && l ==0)
-            //   {
-            //     fprintf(file1,"%f ",scaleWVal.re);
-            //    fprintf(file2,"%f ",sqrt(modScaleW));
-            //  }
           }
           else
           {
@@ -552,29 +532,27 @@ Crava:: divideDataByScaleWavelet()
           seisData_[l]->setRealValue(i,j,k,rData[k]/static_cast<float>(sqrt(static_cast<float>(nzp_))),true);
         }
       }
-      char fName[200];
+
+      std::string angle = NRLib::ToString(thetaDeg_[l], 1);
+
       if(ModelSettings::getDebugLevel() > 0)
       {
-        sprintf(fName,"refl%d",l);
-        std::string sgriLabel("Reflection coefficients for incidence angle ");
-        sgriLabel += NRLib::ToString(thetaDeg_[l]+0.5);
-        seisData_[l]->writeFile(fName, simbox_, sgriLabel);
+        std::string sgriLabel = "Reflection coefficients for incidence angle " + angle;
+        std::string fileName  = IO::PrefixReflectionCoefficients() + angle;
+        seisData_[l]->writeFile(fileName, IO::PathToDebug(), simbox_, sgriLabel);
       }
-      LogKit::LogFormatted(LogKit::MEDIUM,"Interpolating reflections in volume %d: ",l);
+
+      LogKit::LogFormatted(LogKit::MEDIUM,"Interpolating reflections for angle stack "+angle);
       seisData_[l]->interpolateSeismic(energyTreshold_);
+
       if(ModelSettings::getDebugLevel() > 0)
       {
-        sprintf(fName,"reflInterpolated%d",l);
-        std::string sgriLabel("Interpolated reflections for incidence angle ");
-        sgriLabel += NRLib::ToString(thetaDeg_[l]+0.5);
-        seisData_[l]->writeFile(fName, simbox_, sgriLabel);
+        std::string sgriLabel = "Interpolated reflections for incidence angle "+angle;
+        std::string fileName  = IO::PrefixReflectionCoefficients() + "Interpolated_" + angle;
+        seisData_[l]->writeFile(fileName, IO::PathToDebug(), simbox_, sgriLabel);
       }
       seisData_[l]->endAccess();
   }
-  //fclose(file1);
-  //fclose(file2);
-  //fclose(file3);
-  //fclose(file4);
 
   fftw_free(rData);
   fftwnd_destroy_plan(plan1); 
@@ -583,7 +561,7 @@ Crava:: divideDataByScaleWavelet()
 
 
 void
-Crava::multiplyDataByScaleWaveletAndWriteToFile(const char* typeName)
+Crava::multiplyDataByScaleWaveletAndWriteToFile(const std::string & typeName)
 {
   int i,j,k,l,flag;
 
@@ -637,11 +615,10 @@ Crava::multiplyDataByScaleWaveletAndWriteToFile(const char* typeName)
         }
 
       }
-      char fName[200];
-      sprintf(fName,"%s_%d",typeName,int(thetaDeg_[l]+0.5));
-      std::string sgriLabel(typeName);
-      sgriLabel += " for incidence angle ";
-      seisData_[l]->writeFile(fName, simbox_, sgriLabel);
+      std::string angle     = NRLib::ToString(thetaDeg_[l],1);
+      std::string sgriLabel = typeName + " for incidence angle "+angle;
+      std::string fileName  = typeName + "_" + angle;
+      seisData_[l]->writeFile(fileName, IO::PathToInversionResults(), simbox_, sgriLabel);
       seisData_[l]->endAccess();
   }
 
@@ -716,26 +693,27 @@ Crava::computePostMeanResidAndFFTCov()
   Wavelet ** errorSmooth2 = new Wavelet*[ntheta_];
   Wavelet ** errorSmooth3 = new Wavelet*[ntheta_];
 
-  char* fileName = new char[2400] ;
-  char* fileNameW = new char[2400] ;
   int cnxp  = nxp_/2+1;
 
   for(l = 0; l < ntheta_ ; l++)
   {
+    std::string angle = NRLib::ToString(thetaDeg_[l], 1);
+    std::string fileName;
     seisData_[l]->setAccessMode(FFTGrid::READANDWRITE);
     if (seisWavelet_[0]->getDim() == 1) {
       errorSmooth[l]  = new Wavelet1D(seisWavelet_[l],Wavelet::FIRSTORDERFORWARDDIFF);
       errorSmooth2[l] = new Wavelet1D(errorSmooth[l], Wavelet::FIRSTORDERBACKWARDDIFF);
       errorSmooth3[l] = new Wavelet1D(errorSmooth2[l],Wavelet::FIRSTORDERCENTRALDIFF); 
-      sprintf(fileName,"ErrorSmooth_%i",int(thetaDeg_[l]+0.5));
+      fileName = std::string("ErrorSmooth_") + angle + IO::SuffixGeneralData();
       errorSmooth3[l]->printToFile(fileName);
       errorSmooth3[l]->fft1DInPlace();
 
-      sprintf(fileName,"Wavelet_%i",int(thetaDeg_[l]+0.5));
+      fileName = IO::PrefixWavelet() + angle + IO::SuffixGeneralData();
       seisWavelet_[l]->printToFile(fileName);
       seisWavelet_[l]->fft1DInPlace();
-      sprintf(fileNameW,"FourierWavelet_%i",int(thetaDeg_[l]+0.5));
-      seisWavelet_[l]->printToFile(fileNameW);
+
+      fileName = std::string("FourierWavelet_") + angle + IO::SuffixGeneralData();
+      seisWavelet_[l]->printToFile(fileName);
       delete errorSmooth[l];
       delete errorSmooth2[l];
     }
@@ -796,8 +774,6 @@ Crava::computePostMeanResidAndFFTCov()
   }
   delete[] errorSmooth;
   delete[] errorSmooth2;
-  delete [] fileName;
-  delete [] fileNameW;
 
   meanAlpha_->setAccessMode(FFTGrid::READANDWRITE);  //   Note
   meanBeta_ ->setAccessMode(FFTGrid::READANDWRITE);  //   the top five are over written
@@ -1045,9 +1021,7 @@ Crava::computePostMeanResidAndFFTCov()
   //NBNB Anne Randi: Skaler traser ihht notat fra Hugo
   if(model_->getModelSettings()->noiseIsScaled()==true)
   {
-  
-  correctAlphaBetaRho(model_->getModelSettings());
-  
+    correctAlphaBetaRho(model_->getModelSettings());
   }
 
   if(writePrediction_ == true)
@@ -1057,7 +1031,6 @@ Crava::computePostMeanResidAndFFTCov()
                                      outputFlag_, fileGrid_, -1);
   }
 
-  char* fileNameS= new char[MAX_STRING];
   for(l=0;l<ntheta_;l++)
     seisData_[l]->endAccess();
 
@@ -1069,20 +1042,18 @@ Crava::computePostMeanResidAndFFTCov()
     {
       for(l=0;l<ntheta_;l++)
       {
-        sprintf(fileNameS,"residuals_%i",int(thetaDeg_[l]+0.5));
-        std::string sgriLabel("Residuals for incidence angle");
-        sgriLabel += NRLib::ToString(int(thetaDeg_[l]+0.5));
+        std::string angle     = NRLib::ToString(thetaDeg_[l],1);
+        std::string sgriLabel = " Residuals for incidence angle "+angle;
+        std::string fileName  = IO::PrefixResiduals() + angle;
         seisData_[l]->setAccessMode(FFTGrid::RANDOMACCESS);
         seisData_[l]->invFFTInPlace();
-        seisData_[l]->writeFile(fileNameS,simbox_, sgriLabel);
+        seisData_[l]->writeFile(fileName, IO::PathToInversionResults(), simbox_, sgriLabel);
         seisData_[l]->endAccess();
       }
     }
   }
   for(l=0;l<ntheta_;l++)
     delete seisData_[l];
-
-  delete [] fileNameS;
 
   delete [] seisData_;
 
@@ -1111,7 +1082,6 @@ Crava::computePostMeanResidAndFFTCov()
   delete[] margVar;
   delete[] errVar  ;
   delete[] errorSmooth3;
-
 
   for(i = 0; i < 3; i++)
   {
@@ -1249,14 +1219,6 @@ Crava::simulate(RandomGen * randomGen)
           // printf("Simulation in FFT domain in %ld seconds \n",timeend-timestart);
           // time(&timestart);
 
-          /*    char* alphaName= new char[MAX_STRING];
-          char* betaName = new char[MAX_STRING];
-          char* rhoName  = new char[MAX_STRING];
-          sprintf(alphaName,"sim_Vp_%i",simNr+1);
-          sprintf(betaName,"sim_Vs_%i",simNr+1);
-          sprintf(rhoName,"sim_D_%i",simNr+1);  
-          */
-
           seed0->setAccessMode(FFTGrid::RANDOMACCESS);
           seed0->invFFTInPlace();
          
@@ -1339,7 +1301,7 @@ Crava::doPostKriging(FFTGrid & postAlpha,
     KrigingData3D kd(wells_, nWells_, 1); // 1 = full resolution logs
 
     std::string baseName = "Raw_" + IO::PrefixKrigingData() + IO::SuffixGeneralData();
-    std::string fileName = ModelSettings::makeFullFileName2(IO::PathToInversionResult(), baseName);
+    std::string fileName = IO::makeFullFileName(IO::PathToInversionResults(), baseName);
     kd.writeToFile(fileName);
     
     CKrigingAdmin pKriging(*simbox_, 
@@ -1452,17 +1414,14 @@ Crava::computeSyntSeismic(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho)
   Beta->endAccess();
   Rho->endAccess();
 
-  char* fileNameS= new char[MAX_STRING];
-
   for(l=0;l<ntheta_;l++)
   { 
     seisData[l]->endAccess();
     seisData[l]->invFFTInPlace();
-
-    sprintf(fileNameS,"synt_seis_%i",int(thetaDeg_[l]+0.5));
-    std::string sgriLabel("Synthetic seismic for incidence angle ");
-    sgriLabel += NRLib::ToString(int(thetaDeg_[l]+0.5));
-    seisData[l]->writeFile(fileNameS,simbox_,sgriLabel);
+    std::string angle     = NRLib::ToString(thetaDeg_[l],1);
+    std::string sgriLabel = " Synthetic seismic for incidence angle "+angle;
+    std::string fileName  = IO::PrefixSyntheticSeismic() + angle;
+    seisData[l]->writeFile(fileName, IO::PathToSeismicData(), simbox_,sgriLabel);
     delete seisData[l];
   }
 
@@ -1476,7 +1435,6 @@ Crava::computeSyntSeismic(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho)
     delete [] WDA[i];
   delete [] WDA;
 
-  delete [] fileNameS;
   return(0);
 }
 
@@ -1766,8 +1724,6 @@ void Crava::computeG(double **G)
   correlations_->invFFT();
   correlations_->getPostVariances();
   correlations_->FFT();
- // correlations_->writeFilePostVariances();
- // correlations_->writeFilePriorVariances();
   double **sigmam = new double*[3];
   int i,j;
   for(i=0;i<3;i++)

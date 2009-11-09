@@ -47,7 +47,7 @@ public:
   bool             getFailed()                const { return failed_                 ;}
   void             releaseGrids();                                        // Cuts connection to SeisCube_ and  backModel_
   void             getCorrGradIJ(float & corrGradI, float &corrGradJ) const;
-  static void      writeSurfaceToFile(Surface           * surface,
+  static void      writeSurfaceToFile(const Surface     & surface,
                                       const std::string & name,
                                       int                 format);
 
@@ -165,6 +165,7 @@ private:
                                      int                              nz,
                                      int                              outputFormat,
                                      int                              outputDomain,
+                                     int                              outputFlag,
                                      char                           * errText,
                                      int                            & error);
   void             estimateXYPaddingSizes(Simbox         * timeSimbox,
@@ -237,14 +238,13 @@ private:
                                                double       & yMin,
                                                double       & xMax,
                                                double       & yMax); 
-  void             resampleGridAndWriteToFile(Grid2D *grid,
-                                              Simbox *simbox, 
-                                              char *fileName, 
-                                              int format);
-  
-  void             resampleGrid(Surface *surf,
-                                Simbox * simbox, 
-                                Grid2D *outgrid);
+  void             resampleGridAndWriteToFile(const std::string & fileName, 
+                                              Grid2D            * grid,
+                                              Simbox            * simbox, 
+                                              int                 format);  
+  void             resampleGrid(Surface & surf,
+                                Simbox  * simbox, 
+                                Grid2D  * outgrid);
 
   SegyGeometry   * geometryFromDirectFile(const std::string & fileName); 
 

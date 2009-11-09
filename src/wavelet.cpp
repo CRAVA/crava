@@ -159,7 +159,7 @@ Wavelet::printVecToFile(const std::string & fileName, fftw_real* vec, int nzp) c
 {
   if( ModelSettings::getDebugLevel() > 0) { 
     std::string fName = fileName + IO::SuffixGeneralData();
-    fName = ModelSettings::makeFullFileName2(IO::PathToWavelets(), fName);
+    fName = IO::makeFullFileName(IO::PathToWavelets(), fName);
     std::ofstream file;
     NRLib::OpenWrite(file,fName);
     for(int i=0;i<nzp;i++)
@@ -746,7 +746,7 @@ Wavelet::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
     
     if (ModelSettings::getDebugLevel() > 0) {
       std::string baseName = std::string("Local_Wavelet_Correlation") + IO::SuffixAsciiIrapClassic();
-      std::string fileName = ModelSettings::makeFullFileName2(IO::PathToWavelets(), baseName);
+      std::string fileName = IO::makeFullFileName(IO::PathToWavelets(), baseName);
       cov.writeToFile(fileName);
     }
 

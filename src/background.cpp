@@ -238,7 +238,8 @@ Background::calculateVelocityDeviations(FFTGrid   * velocity,
                                         int         nWells)
 {
   if((outputFlag & ModelSettings::BACKGROUND_TREND) > 0) {
-    velocity->writeFile("BG_trend_VpFromFile", simbox, "NO_LABEL");
+    std::string fileName = IO::PrefixBackground() + IO::PrefixTrend() + "VpFromFile";
+    velocity->writeFile(fileName, IO::PathToBackground(), simbox, "NO_LABEL");
   }
     
   //
@@ -331,8 +332,10 @@ Background::calculateBackgroundTrend(float             * trend,
     const int ny = simbox->getny();
     FFTGrid * trendGrid = new FFTGrid(nx, ny, nz, nx, ny, nz);
     fillInVerticalTrend(trendGrid, trend);
-    trendGrid->writeFile("BG_trend"+name, simbox, "exptrans");
-    //    trendGrid->writeFile("BG_trend"+name, simbox, "NO_LABEL");
+
+    std::string fileName = IO::PrefixBackground() + IO::PrefixTrend() + name;
+    trendGrid->writeFile(fileName, IO::PathToBackground(), simbox, "exptrans");
+    //trendGrid->writeFile(fileName, IO::PathToBackground(), simbox, "NO_LABEL");
     delete trendGrid;
   }
 }
@@ -441,7 +444,7 @@ Background::setupKrigingData2D(std::vector<KrigingData2D> & krigingDataAlpha,
   if((outputFlag & ModelSettings::BACKGROUND) > 0) {
     forLogging.divide();
     std::string baseName = IO::PrefixBackground() + IO::PrefixKrigingData() + IO::SuffixGeneralData();
-    std::string fileName = ModelSettings::makeFullFileName2(IO::PathToBackground(), baseName);
+    std::string fileName = IO::makeFullFileName(IO::PathToBackground(), baseName);
     forLogging.writeToFile(fileName);
   }
   
@@ -473,7 +476,7 @@ Background::makeCovGrid2D(Simbox * simbox,
   
   if(debugFlag == 1) {
     std::string baseName = IO::PrefixBackground() + "covGrid2D" + IO::SuffixAsciiIrapClassic();
-    std::string fileName = ModelSettings::makeFullFileName2(IO::PathToBackground(), baseName);
+    std::string fileName = IO::makeFullFileName(IO::PathToBackground(), baseName);
     cov->writeToFile(fileName);
   }
   return (*cov); 
@@ -641,7 +644,7 @@ Background::setupKrigingData3D(KrigingData3D *& krigingData,
   krigingData->divide();
 
   std::string baseName = IO::PrefixBackground() + IO::PrefixKrigingData() + IO::SuffixGeneralData();
-  std::string fileName = ModelSettings::makeFullFileName2(IO::PathToBackground(), baseName);
+  std::string fileName = IO::makeFullFileName(IO::PathToBackground(), baseName);
   krigingData->writeToFile(fileName);
 
   delete [] vtAlpha;
@@ -1125,8 +1128,8 @@ Background::writeVerticalTrend(float      * trend,
                                std::string  name) 
 {  
   float z0 = dz/2.0f;
-  std::string baseName = IO::PrefixBackgroundTrends() + name + IO::SuffixAsciiIrapClassic();
-  std::string fileName = ModelSettings::makeFullFileName2(IO::PathToBackground(), baseName);
+  std::string baseName = IO::PrefixBackground() + IO::PrefixTrend() + name + IO::SuffixAsciiIrapClassic();
+  std::string fileName = IO::makeFullFileName(IO::PathToBackground(), baseName);
   std::ofstream file;
   NRLib::OpenWrite(file, fileName);
   for (int i=0 ; i<nz ; i++) {
@@ -1339,9 +1342,12 @@ Background::resampleBackgroundModel(FFTGrid      *& bgAlpha,
                                     ModelSettings * modelSettings)
 {
   if((modelSettings->getGridOutputFlag() & ModelSettings::EXTRA_GRIDS) > 0) {
-    bgAlpha->writeFile("BG_Vp_BackgroundGrid", timeBGSimbox, "exptrans");
-    bgBeta->writeFile("BG_Vs_BackgroundGrid", timeBGSimbox, "exptrans");
-    bgRho->writeFile("BG_Rho_BackgroundGrid", timeBGSimbox, "exptrans");
+    std::string fileName1 = IO::PrefixBackground() + "Vp_BackgroundGrid";
+    std::string fileName2 = IO::PrefixBackground() + "Vs_BackgroundGrid";
+    std::string fileName3 = IO::PrefixBackground() + "Rho_BackgroundGrid";
+    bgAlpha->writeFile(fileName1, IO::PathToBackground(), timeBGSimbox, "exptrans");
+    bgBeta->writeFile(fileName2, IO::PathToBackground(), timeBGSimbox, "exptrans");
+    bgRho->writeFile(fileName3, IO::PathToBackground(), timeBGSimbox, "exptrans");
   }
 
   FFTGrid * resBgAlpha = NULL;
@@ -1354,9 +1360,12 @@ Background::resampleBackgroundModel(FFTGrid      *& bgAlpha,
   resampleParameter(resBgRho  ,bgRho  ,timeSimbox, timeBGSimbox);
   
   if((modelSettings->getGridOutputFlag() & ModelSettings::EXTRA_GRIDS) > 0) {
-    resBgAlpha->writeFile("BG_Vp_InversionGrid", timeSimbox, "exptrans");
-    resBgBeta->writeFile("BG_Vs_InversionGrid", timeSimbox, "exptrans");
-    resBgRho->writeFile("BG_Rho_InversionGrid", timeSimbox, "exptrans");
+    std::string fileName1 = IO::PrefixBackground() + "Vp_InversionGrid";
+    std::string fileName2 = IO::PrefixBackground() + "Vs_InversionGrid";
+    std::string fileName3 = IO::PrefixBackground() + "Rho_InversionGrid";
+    resBgAlpha->writeFile(fileName1, IO::PathToBackground(), timeSimbox, "exptrans");
+    resBgBeta->writeFile(fileName2, IO::PathToBackground(), timeSimbox, "exptrans");
+    resBgRho->writeFile(fileName3, IO::PathToBackground(), timeSimbox, "exptrans");
   }
   
   delete bgAlpha;
@@ -1469,13 +1478,16 @@ Background::writeBackgrounds(Simbox      * simbox,
     backModel_[0]->endAccess();
   }
 
-  backModel_[0]->writeFile("BG_Vp",  simbox, "exptrans", 0, depthMapping, timeMapping);
-  backModel_[1]->writeFile("BG_Vs",  simbox, "exptrans", 0, depthMapping, timeMapping);
-  backModel_[2]->writeFile("BG_Rho", simbox, "exptrans", 0, depthMapping, timeMapping);
+  std::string fileName1 = IO::PrefixBackground() + "Vp" ;
+  std::string fileName2 = IO::PrefixBackground() + "Vs" ;
+  std::string fileName3 = IO::PrefixBackground() + "Rho";
+  backModel_[0]->writeFile(fileName1, IO::PathToBackground(), simbox, "exptrans", 0, depthMapping, timeMapping);
+  backModel_[1]->writeFile(fileName2, IO::PathToBackground(), simbox, "exptrans", 0, depthMapping, timeMapping);
+  backModel_[2]->writeFile(fileName3, IO::PathToBackground(), simbox, "exptrans", 0, depthMapping, timeMapping);
   //
   // For debugging: write cubes not in ASCII, with padding, and with flat top.
   //
-  //backModel_[0]->writeStormFile("BG_Vp",  simbox, true, false, true, true);
-  //backModel_[1]->writeStormFile("BG_Vs",  simbox, true, false, true, true);
-  //backModel_[2]->writeStormFile("BG_Rho", simbox, true, false, true, true);
+  //backModel_[0]->writeStormFile(fileName1, IO::PathToBackground(), simbox, true, false, true, true);
+  //backModel_[1]->writeStormFile(fileName2, IO::PathToBackground(), simbox, true, false, true, true);
+  //backModel_[2]->writeStormFile(fileName3, IO::PathToBackground(), simbox, true, false, true, true);
 }

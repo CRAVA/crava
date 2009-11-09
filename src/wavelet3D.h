@@ -45,8 +45,8 @@ public:
   FFTGrid      * getAmpCube() {return &ampCube_;}
   void           multiplyByR(float p);
 
-  void           writeWaveletToFile(char* fileName, float, Simbox *simbox);
-  void           printToFile(std::string filename, bool overrideDebug = false);
+  void           writeWaveletToFile(const std::string & fileName, float, Simbox *simbox);
+  void           printToFile(const std::string & filename, bool overrideDebug = false);
   
 private:
   void           shiftFFTGrid(FFTGrid *shiftAmp);

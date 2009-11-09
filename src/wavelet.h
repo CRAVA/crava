@@ -52,8 +52,8 @@ public:
   virtual void          multiplyByR(float) {};
   
   //Note: Function below is mainly controlled by debugflag. Set overrideDebug = true to force.
-  virtual void          printToFile(std::string fileName, bool overrideDebug = false) = 0;
-  virtual void          writeWaveletToFile(char*, float, Simbox * simbox = NULL) = 0;
+  virtual void          printToFile(const std::string & fileName, bool overrideDebug = false) = 0;
+  virtual void          writeWaveletToFile(const std::string & fileName, float, Simbox * simbox = NULL) = 0;
   void                  setShiftGrid(Grid2D * grid);
   void                  setGainGrid(Grid2D * grid);
   float                 getScale() const {return scale_;}

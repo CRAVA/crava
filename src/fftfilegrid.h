@@ -40,9 +40,13 @@ public:
 
   void         setAccessMode(int mode);
   void         endAccess();
-  void         writeFile(const std::string & fileName, const Simbox * simbox, 
-                         const std::string sgriLabel = "NO_LABEL", float z0 = 0.0, 
-                         GridMapping * depthMap = NULL, GridMapping * timeMap = NULL);  //Use this instead of the ones below.
+  void         writeFile(const std::string & fileName, 
+                         const std::string & subDir, 
+                         const Simbox      * simbox, 
+                         const std::string   sgriLabel = "NO_LABEL", 
+                         const float         z0        = 0.0, 
+                         GridMapping       * depthMap  = NULL, 
+                         GridMapping       * timeMap   = NULL);  //Use this instead of the ones below.
   void         writeStormFile(const std::string & fileName, const Simbox * simbox, bool expTrans = false,
                               bool ascii = false, bool padding = false, bool flat = false);
   int          writeSegyFile(const std::string & fileName, const Simbox * simbox, float z0);

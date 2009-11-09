@@ -316,8 +316,8 @@ void
 Corr::writeFilePriorCorrT(float* corrT, int nzp) const
 {
   // This is the cyclic and filtered version of CorrT
-  std::string baseName = IO::FilePriorTemporalCorr() + IO::SuffixGeneralData();
-  std::string fileName = ModelSettings::makeFullFileName2(IO::PathToCorrelations(), baseName);
+  std::string baseName = IO::PrefixPrior() + IO::FileTemporalCorr() + IO::SuffixGeneralData();
+  std::string fileName = IO::makeFullFileName(IO::PathToCorrelations(), baseName);
   std::ofstream file;
   NRLib::OpenWrite(file, fileName);
   file << std::fixed 
@@ -333,12 +333,12 @@ Corr::writeFilePriorCorrT(float* corrT, int nzp) const
 //--------------------------------------------------------------------
 void Corr::writeFilePriorVariances(void) const
 {
-  std::string baseName1 = IO::FilePriorParameterCov()           + IO::SuffixGeneralData();
-  std::string baseName2 = IO::FilePriorTemporalCorrUnfiltered() + IO::SuffixGeneralData();
-  std::string baseName3 = IO::FilePriorLateralCorr()            + IO::SuffixGeneralData();
-  std::string fileName1 = ModelSettings::makeFullFileName2(IO::PathToCorrelations(), baseName1);
-  std::string fileName2 = ModelSettings::makeFullFileName2(IO::PathToCorrelations(), baseName2);
-  std::string fileName3 = ModelSettings::makeFullFileName2(IO::PathToCorrelations(), baseName3);
+  std::string baseName1 = IO::PrefixPrior() + IO::FileParameterCov()           + IO::SuffixGeneralData();
+  std::string baseName2 = IO::PrefixPrior() + IO::FileTemporalCorrUnfiltered() + IO::SuffixGeneralData();
+  std::string baseName3 = IO::PrefixPrior() + IO::FileLateralCorr()            + IO::SuffixGeneralData();
+  std::string fileName1 = IO::makeFullFileName(IO::PathToCorrelations(), baseName1);
+  std::string fileName2 = IO::makeFullFileName(IO::PathToCorrelations(), baseName2);
+  std::string fileName3 = IO::makeFullFileName(IO::PathToCorrelations(), baseName3);
 
   std::ofstream file;
   NRLib::OpenWrite(file, fileName1);
@@ -370,8 +370,8 @@ void Corr::writeFilePriorVariances(void) const
 void
 Corr::writeFilePostVariances(void) const
 {
-  std::string baseName = IO::FilePosteriorParameterCov() + IO::SuffixGeneralData();
-  std::string fileName = ModelSettings::makeFullFileName2(IO::PathToCorrelations(), baseName);
+  std::string baseName = IO::PrefixPosterior() + IO::FileParameterCov() + IO::SuffixGeneralData();
+  std::string fileName = IO::makeFullFileName(IO::PathToCorrelations(), baseName);
 
   std::ofstream file;
   NRLib::OpenWrite(file, fileName);
@@ -387,9 +387,9 @@ Corr::writeFilePostVariances(void) const
   file.close();
 
   int nz = postCovAlpha_->getNz();
-  std::string baseName1 = IO::PrefixPosteriorTemporalCorr()+"Vp" +IO::SuffixGeneralData();
-  std::string baseName2 = IO::PrefixPosteriorTemporalCorr()+"Vs" +IO::SuffixGeneralData();
-  std::string baseName3 = IO::PrefixPosteriorTemporalCorr()+"Rho"+IO::SuffixGeneralData();
+  std::string baseName1 = IO::PrefixPosterior() + IO::PrefixTemporalCorr()+"Vp" +IO::SuffixGeneralData();
+  std::string baseName2 = IO::PrefixPosterior() + IO::PrefixTemporalCorr()+"Vs" +IO::SuffixGeneralData();
+  std::string baseName3 = IO::PrefixPosterior() + IO::PrefixTemporalCorr()+"Rho"+IO::SuffixGeneralData();
   writeFilePostCorrT(postCovAlpha00_, nz, IO::PathToCorrelations(), baseName1);
   writeFilePostCorrT(postCovBeta00_ , nz, IO::PathToCorrelations(), baseName2);
   writeFilePostCorrT(postCovRho00_  , nz, IO::PathToCorrelations(), baseName3);
@@ -402,7 +402,7 @@ Corr::writeFilePostCorrT(float             * postCov,
                          const std::string & subDir,   
                          const std::string & baseName) const
 {
-  std::string fileName = ModelSettings::makeFullFileName2(subDir,baseName);
+  std::string fileName = IO::makeFullFileName(subDir,baseName);
   std::ofstream file;
   NRLib::OpenWrite(file, fileName);
   file << std::fixed;
@@ -421,33 +421,33 @@ void
 Corr::writeFilePostCovGrids(Simbox * simbox) const
 {
   std::string fileName;
-  fileName = ModelSettings::makeFullFileName2(IO::PathToCorrelations(), IO::PrefixPosteriorCov()+"Vp");
+  fileName = IO::PrefixPosterior() + IO::PrefixCovariance() + "Vp";
   postCovAlpha_ ->setAccessMode(FFTGrid::RANDOMACCESS);
-  postCovAlpha_ ->writeFile(IO::PrefixPosteriorCov()+"Vp",simbox, "Posterior covariance for Vp");
+  postCovAlpha_ ->writeFile(fileName, IO::PathToCorrelations(), simbox, "Posterior covariance for Vp");
   postCovAlpha_ ->endAccess();
-
-  fileName = ModelSettings::makeFullFileName2(IO::PathToCorrelations(), IO::PrefixPosteriorCov()+"Vs");
+  
+  fileName = IO::PrefixPosterior() + IO::PrefixCovariance() + "Vs";
   postCovBeta_ ->setAccessMode(FFTGrid::RANDOMACCESS);
-  postCovBeta_ ->writeFile(IO::PrefixPosteriorCov()+"Vs",simbox, "Posterior covariance for Vs");
+  postCovBeta_ ->writeFile(fileName, IO::PathToCorrelations(), simbox, "Posterior covariance for Vs");
   postCovBeta_ ->endAccess();
-
-  fileName = ModelSettings::makeFullFileName2(IO::PathToCorrelations(), IO::PrefixPosteriorCov()+"Rho");
+  
+  fileName = IO::PrefixPosterior() + IO::PrefixCovariance() + "Rho";
   postCovRho_ ->setAccessMode(FFTGrid::RANDOMACCESS);
-  postCovRho_ ->writeFile(IO::PrefixPosteriorCov()+"Rho",simbox, "Posterior covariance for density");
+  postCovRho_ ->writeFile(fileName, IO::PathToCorrelations(), simbox, "Posterior covariance for density");
   postCovRho_ ->endAccess();
-
-  fileName = ModelSettings::makeFullFileName2(IO::PathToCorrelations(), IO::PrefixPosteriorCrCov()+"VpVs");
+  
+  fileName = IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VpVs";
   postCrCovAlphaBeta_ ->setAccessMode(FFTGrid::RANDOMACCESS);
-  postCrCovAlphaBeta_ ->writeFile(IO::PrefixPosteriorCrCov()+"VpVs",simbox, "Posterior cross-covariance for (Vp,Vs)");
+  postCrCovAlphaBeta_ ->writeFile(fileName, IO::PathToCorrelations(), simbox, "Posterior cross-covariance for (Vp,Vs)");
   postCrCovAlphaBeta_ ->endAccess();
-
-  fileName = ModelSettings::makeFullFileName2(IO::PathToCorrelations(), IO::PrefixPosteriorCrCov()+"VpRho");
+  
+  fileName = IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VpRho";
   postCrCovAlphaRho_ ->setAccessMode(FFTGrid::RANDOMACCESS);
-  postCrCovAlphaRho_ ->writeFile(IO::PrefixPosteriorCrCov()+"VpRho",simbox, "Posterior cross-covariance for (Vp,density)");
+  postCrCovAlphaRho_ ->writeFile(fileName, IO::PathToCorrelations(), simbox, "Posterior cross-covariance for (Vp,density)");
   postCrCovAlphaRho_ ->endAccess();
-
-  fileName = ModelSettings::makeFullFileName2(IO::PathToCorrelations(), IO::PrefixPosteriorCrCov()+"VsRho");
+  
+  fileName = IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VsRho";
   postCrCovBetaRho_ ->setAccessMode(FFTGrid::RANDOMACCESS);
-  postCrCovBetaRho_ ->writeFile(IO::PrefixPosteriorCrCov()+"VsRho",simbox, "Posterior cross-covariance for (Vs,density)");
+  postCrCovBetaRho_ ->writeFile(fileName, IO::PathToCorrelations(), simbox, "Posterior cross-covariance for (Vs,density)");
   postCrCovBetaRho_ ->endAccess();
 }

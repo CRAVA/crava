@@ -441,36 +441,39 @@ Simbox::getStormHeader(int cubetype, int nx, int ny, int nz, bool flat, bool asc
 }
 
 void
-Simbox::writeTopBotGrids(std::string topname, 
-                         std::string botname,
-                         int         outputFormat)
+Simbox::writeTopBotGrids(const std::string & topname, 
+                         const std::string & botname,
+                         const std::string & subdir,
+                         int                 outputFormat)
 {
+  std::string fileNameTopSurf  = IO::makeFullFileName(subdir, topname);
+  std::string fileNameBaseSurf = IO::makeFullFileName(subdir, botname);
+
   if ((outputFormat & ModelSettings::ASCII) > 0) {
-    topname += ".irap";
-    botname += ".irap";
+    fileNameTopSurf  += IO::SuffixAsciiIrapClassic();
+    fileNameBaseSurf += IO::SuffixAsciiIrapClassic();
   }
   else {
-    topname += ".storm";
-    botname += ".storm";
+    fileNameTopSurf  += IO::SuffixStormBinary();
+    fileNameBaseSurf += IO::SuffixStormBinary();
   }
+  topName_ = NRLib::RemovePath(fileNameTopSurf);
+  botName_ = NRLib::RemovePath(fileNameBaseSurf);
 
-  std::string tmpName = ModelSettings::makeFullFileName(topname);
-  topName_ = NRLib::RemovePath(tmpName);
   assert(typeid(GetTopSurface()) == typeid(Surface));
-  const Surface & wtsurf = dynamic_cast<const Surface &>(GetTopSurface());
-  if ((outputFormat & ModelSettings::ASCII) > 0) 
-    NRLib::WriteIrapClassicAsciiSurf(wtsurf, tmpName);
-  else
-    NRLib::WriteStormBinarySurf(wtsurf, tmpName);
-
-  tmpName  = ModelSettings::makeFullFileName(botname);
-  botName_ = NRLib::RemovePath(tmpName);
   assert(typeid(GetBotSurface()) == typeid(Surface));
+
+  const Surface & wtsurf = dynamic_cast<const Surface &>(GetTopSurface());
   const Surface & wbsurf = dynamic_cast<const Surface &>(GetBotSurface());
-  if ((outputFormat & ModelSettings::ASCII) > 0) 
-    NRLib::WriteIrapClassicAsciiSurf(wbsurf, tmpName);
-  else
-    NRLib::WriteStormBinarySurf(wbsurf, tmpName);
+
+  if ((outputFormat & ModelSettings::ASCII) > 0) { 
+    NRLib::WriteIrapClassicAsciiSurf(wtsurf, fileNameTopSurf);
+    NRLib::WriteIrapClassicAsciiSurf(wbsurf, fileNameBaseSurf);
+  }
+  else {
+    NRLib::WriteStormBinarySurf(wtsurf, fileNameTopSurf);
+    NRLib::WriteStormBinarySurf(wbsurf, fileNameBaseSurf);
+  }
 }
 
 int

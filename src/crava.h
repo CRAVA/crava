@@ -66,7 +66,7 @@ private:
   float              computeWDCorrMVar (Wavelet* WD);
 
   void               divideDataByScaleWavelet();
-  void               multiplyDataByScaleWaveletAndWriteToFile(const char* typeName);
+  void               multiplyDataByScaleWaveletAndWriteToFile(const std::string & typeName);
   void               doPostKriging(FFTGrid & postAlpha, FFTGrid & postBeta, FFTGrid & postRho);
 
   void               computeG(double **G); // 

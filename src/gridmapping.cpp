@@ -10,6 +10,8 @@
 #include "src/simbox.h"
 #include "src/fftgrid.h"
 #include "src/modelfile.h"
+#include "src/io.h"
+
 #include "lib/global_def.h"
 
 #include "nrlib/surface/surfaceio.hpp"
@@ -296,7 +298,10 @@ void GridMapping::setDepthSimbox(const Simbox * timeSimbox,
 {
   simbox_ = new Simbox(timeSimbox);
   simbox_->setDepth(z0Grid_, z1Grid_, nz);
-  simbox_->writeTopBotGrids("Surface_Top_Depth", "Surface_Base_Depth", outputFormat);
+
+  std::string topSurf  = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixDepth();
+  std::string baseSurf = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixDepth();
+  simbox_->writeTopBotGrids(topSurf, baseSurf, IO::PathToInversionResults(), outputFormat);
 
   double dummyLzLimit = 0.0; // The other LzLimit is only for inversion, not depth conversion
   int error = simbox_->checkError(dummyLzLimit,errText);

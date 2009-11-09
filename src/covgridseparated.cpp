@@ -396,7 +396,7 @@ void CovGridSeparated::writeXYGrid(const std::string fName) const {
   int ny = nyp_;
 
   std::string baseName = fName + IO::SuffixAsciiIrapClassic();
-  std::string fileName = ModelSettings::makeFullFileName2(IO::PathToCorrelations(), baseName);
+  std::string fileName = IO::makeFullFileName(IO::PathToCorrelations(), baseName);
 
   std::ofstream file;
   NRLib::OpenWrite(file, fileName);
