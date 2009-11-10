@@ -2168,8 +2168,8 @@ void Crava::correctAlphaBetaRho(ModelSettings *modelSettings)
         rho[k] = float(meanrho[k]+sigmanew[2][0]*alphadiff+sigmanew[2][1]*betadiff+sigmanew[2][2]*rhodiff);
       }
       postAlpha_->setRealTrace(i,j, alpha);
-      postBeta_->setRealTrace(i,j,alpha);
-      postRho_->setRealTrace(i,j,alpha);
+      postBeta_->setRealTrace(i,j,beta);
+      postRho_->setRealTrace(i,j,rho);
 
     }
     for(i=0;i<ntheta_;i++)
