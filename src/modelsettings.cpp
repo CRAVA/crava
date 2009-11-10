@@ -68,6 +68,9 @@ ModelSettings::ModelSettings(void)
 
   energyThreshold_       =     0.0f;
 
+  maxWellShift_          =    11.0f;
+  maxWellOffset_         =       10;
+
   minRelWaveletAmp_      =    0.05f;
   maxWaveletShift_       =    11.0f;
   waveletTaperingL_      =   200.0f;
@@ -116,6 +119,7 @@ ModelSettings::ModelSettings(void)
   depthDataOk_           =    false;
   parallelTimeSurfaces_  =    false;
   useLocalWavelet_       =    false;
+  optimizeWellLocation_  =    false;
   priorFaciesProbGiven_  =    0;
 
   estimateBackground_    = true;

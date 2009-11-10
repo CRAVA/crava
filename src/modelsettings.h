@@ -20,20 +20,23 @@ public:
   ModelSettings(void);
   ~ModelSettings(void); 
 
-  Vario                          * getAngularCorr(void)          const { return angularCorr_           ;} 
-  Vario                          * getLateralCorr(void)          const { return lateralCorr_           ;}
-  Vario                          * getBackgroundVario(void)      const { return backgroundVario_       ;} 
-  Vario                          * getLocalWaveletVario(void)    const { return localWaveletVario_     ;} 
-  SegyGeometry                   * getAreaParameters(void)       const { return geometry_              ;}    
-  TraceHeaderFormat              * getTraceHeaderFormat(void)    const { return traceHeaderFormat_     ;}
-  TraceHeaderFormat              * getTraceHeaderFormat(int i)   const { return localTHF_[i]           ;}
-  int                              getKrigingParameter(void)     const { return krigingParameter_      ;}
-  float                            getConstBackValue(int i)      const { return constBackValue_[i]     ;}
-  int                              getNumberOfAngles(void)       const { return angle_.size()          ;} 
-  int                              getSeismicType(int i)         const { return seismicType_[i]        ;}
-  float                            getAngle(int i)               const { return angle_[i]              ;}
-  float                            getWaveletScale(int i)        const { return waveletScale_[i]       ;} 
-  float                            getSNRatio(int i)             const { return SNRatio_[i]            ;} 
+  Vario                          * getAngularCorr(void)          const { return angularCorr_            ;} 
+  Vario                          * getLateralCorr(void)          const { return lateralCorr_            ;}
+  Vario                          * getBackgroundVario(void)      const { return backgroundVario_        ;} 
+  Vario                          * getLocalWaveletVario(void)    const { return localWaveletVario_      ;} 
+  SegyGeometry                   * getAreaParameters(void)       const { return geometry_               ;}    
+  TraceHeaderFormat              * getTraceHeaderFormat(void)    const { return traceHeaderFormat_      ;}
+  TraceHeaderFormat              * getTraceHeaderFormat(int i)   const { return localTHF_[i]            ;}
+  int                              getKrigingParameter(void)     const { return krigingParameter_       ;}
+  float                            getConstBackValue(int i)      const { return constBackValue_[i]      ;}
+  int                              getNumberOfAngles(void)       const { return angle_.size()           ;} 
+  int                              getSeismicType(int i)         const { return seismicType_[i]         ;}
+  float                            getAngle(int i)               const { return angle_[i]               ;}
+  float                            getWaveletScale(int i)        const { return waveletScale_[i]        ;} 
+  float                            getSNRatio(int i)             const { return SNRatio_[i]             ;} 
+  float                            getWellMoveAngle(int i,int j) const { return wellMoveAngle_[i][j]    ;}
+  float                            getWellMoveWeight(int i,int j)const { return wellMoveWeight_[i][j]   ;}
+  int                              getNumberOfWellAngles(int i)  const { return wellMoveAngle_[i].size();} 
 
   bool                             getMatchEnergies(int i)       const { return(matchEnergies_[i]==1)      ;} 
   bool                             getEstimateWavelet(int i)     const { return(estimateWavelet_[i]==1)    ;}
@@ -79,6 +82,8 @@ public:
   float                            getHighCut(void)              const { return highCut_               ;}
   float                            getWNC(void)                  const { return wnc_                   ;}
   float                            getEnergyThreshold(void)      const { return energyThreshold_       ;}
+  int                              getMaxWellOffset(void)        const { return maxWellOffset_         ;}
+  float                            getMaxWellShift(void)         const { return maxWellShift_          ;}
   float                            getMinRelWaveletAmp(void)     const { return minRelWaveletAmp_      ;}
   float                            getMaxWaveletShift(void)      const { return maxWaveletShift_       ;}
   float                            getWaveletTaperingL(void)     const { return waveletTaperingL_      ;}
@@ -123,6 +128,8 @@ public:
   bool                             getDepthDataOK(void)          const { return depthDataOk_           ;}
   bool                             getParallelTimeSurfaces(void) const { return parallelTimeSurfaces_  ;}
   bool                             getUseLocalWavelet(void)      const { return useLocalWavelet_       ;}
+  bool                             getOptimizeWellLocation(void) const { return optimizeWellLocation_  ;}
+
   int                              getLogLevel(void)             const { return logLevel_              ;}
   int                              getSeed(void)                 const { return seed_                  ;}
 
@@ -171,6 +178,12 @@ public:
   void addEstimateLocalNoise(bool estimateNoise)     { estimateLocalNoise_.push_back(estimateNoise) ;}
   void addEstimateGlobalWaveletScale(bool estimateScale) { estimateGlobalWaveletScale_.push_back(estimateScale) ;}
 
+  void addMoveAngle(float moveAngle)                       { moveAngle_.push_back(moveAngle)        ;} //Local temporary variable
+  void addMoveWeight(float moveWeight)                     { moveWeight_.push_back(moveWeight)      ;} //Local temporary variable
+  void addMoveWell(void)                                   { wellMoveAngle_.push_back(moveAngle_)   ;
+                                                             wellMoveWeight_.push_back(moveWeight_) ;}                                         
+  void clearMoveWell(void)                                 { moveAngle_.clear();
+                                                             moveWeight_.clear()                    ;}
   void setAllIndicatorsTrue(int nWells);                  
   void setIndicatorBGTrend(int * indBGTrend, int nWells); //NBNB kill when xml-model ok.
   void setIndicatorWavelet(int * indWavelet, int nWells); //NBNB kill when xml-model ok. 
@@ -249,6 +262,7 @@ public:
   void setDepthDataOk(bool depthDataOk)                  { depthDataOk_          = depthDataOk        ;}
   void setParallelTimeSurfaces(bool pTimeSurfaces)       { parallelTimeSurfaces_ = pTimeSurfaces      ;}
   void setUseLocalWavelet(bool useLocalWavelet)          { useLocalWavelet_      = useLocalWavelet    ;}
+  void setOptimizeWellLocation(bool optimizeWellLocation){ optimizeWellLocation_ = optimizeWellLocation;}
   void setLogLevel(int logLevel)                         { logLevel_             = logLevel           ;}
   void setSeed(int seed)                                 { seed_                 = seed               ;}
   void addPriorFaciesProb(std::string name, float value) { priorFaciesProb_[name] = value             ;}
@@ -316,6 +330,11 @@ private:
   std::vector<float>                waveletScale_;          // Signal-to-noise ratio
   std::vector<float>                SNRatio_;               // Signal-to-noise ratio
 
+  std::vector<float>                moveAngle_;              // Angles for moving wells, local temporary variable
+  std::vector<float>                moveWeight_;             // Angle weights for moving wells, local temporary variable
+  std::vector<std::vector<float> >  wellMoveAngle_;          // moveAngle_ collected for all wells
+  std::vector<std::vector<float> >  wellMoveWeight_;         // moveWeight_ collected for all wells
+
   // NBNB-PAL: I have temporarily converted the five arrays below from bool ==> int to avoid annoying UMRs in Purify
   std::vector<int>                  matchEnergies_;         // Let dataVariance_ = signalVariance_
   std::vector<int>                  estimateWavelet_;       // 
@@ -382,7 +401,9 @@ private:
   float                             energyThreshold_;       // If energy in reflection trace divided by mean energy
                                                     // in reflection traces is lower than this, the reflections
                                                     // will be interpolated. Default 0.
-                           
+  int                               maxWellOffset_;         // Maximum offset for moving of wells
+  float                             maxWellShift_;          // Maximum vertical shift for moving of wells
+
   float                             minRelWaveletAmp_;      // Minimum relative wavelet amplitude. Smaller amplitudes are disregarded.
   float                             maxWaveletShift_;       // Largest allowed shift when estimating wavelet
   float                             waveletTaperingL_;      // Til Odds waveletestimering
@@ -431,6 +452,7 @@ private:
   bool                             depthDataOk_;           // We have what we need to do depth conversion
   bool                             parallelTimeSurfaces_;
   bool                             useLocalWavelet_;       // Wavelets are multiplied with gain and shift maps
+  bool                             optimizeWellLocation_;  // True if at least one well is to be moved
 
   int                              logLevel_;      
                            

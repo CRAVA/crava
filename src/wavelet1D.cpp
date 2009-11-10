@@ -169,23 +169,23 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
       // Find continuous part of data
       //
       int start,length;
-      findContiniousPartOfData(hasData,nz,start,length);
+      bl->findContiniousPartOfData(hasData,nz,start,length);
       if(length*dz0 > waveletLength  ) // must have enough data
       {
-        fillInCpp(alpha,beta,rho,start,length,cpp_r[w],nzp);
+        bl->fillInCpp(coeff_,start,length,cpp_r[w],nzp); 
         sprintf(fileName,"cpp_1");               // Debug
         printVecToFile(fileName,cpp_r[w], nzp);  // Debug
-        fft(cpp_r[w],cpp_c[w],nzp);
-        fillInSeismic(seisData,start,length,seis_r[w],nzp);
+        Utils::fft(cpp_r[w],cpp_c[w],nzp);
+        bl->fillInSeismic(seisData,start,length,seis_r[w],nzp);
         sprintf(fileName,"seis_1");              // Debug
         printVecToFile(fileName,seis_r[w], nzp); // Debug
-        fft(seis_r[w],seis_c[w],nzp);
-        estimateCor(cpp_c[w],cpp_c[w],cor_cpp_c[w],cnzp);
-        fftInv(cor_cpp_c[w],cor_cpp_r[w],nzp);
-        estimateCor(cpp_c[w],seis_c[w],ccor_seis_cpp_c[w],cnzp);
-        fftInv(ccor_seis_cpp_c[w],ccor_seis_cpp_r[w],nzp);
-        fftInv(cpp_c[w],cpp_r[w],nzp);
-        fftInv(seis_c[w],seis_r[w],nzp);
+        Utils::fft(seis_r[w],seis_c[w],nzp);
+        bl->estimateCor(cpp_c[w],cpp_c[w],cor_cpp_c[w],cnzp);
+        Utils::fftInv(cor_cpp_c[w],cor_cpp_r[w],nzp);
+        bl->estimateCor(cpp_c[w],seis_c[w],ccor_seis_cpp_c[w],cnzp);
+        Utils::fftInv(ccor_seis_cpp_c[w],ccor_seis_cpp_r[w],nzp);
+        Utils::fftInv(cpp_c[w],cpp_r[w],nzp);
+        Utils::fftInv(seis_c[w],seis_r[w],nzp);
         wellWeight[w] = length*dz[w]*(cor_cpp_r[w][0]+cor_cpp_r[w][1]);// Gives most weight to long datasets with  
                                                                        // large reflection coefficients
         z0[w] = static_cast<float> (bl->getZpos()[0]);
@@ -220,16 +220,18 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
     shiftReal(shiftWell[w]/dz[w],wavelet_r[w],nzp);
     sprintf(fileName,"waveletShift");
     printVecToFile(fileName,wavelet_r[w], nzp);
-    fft(wavelet_r[w],wavelet_c[w],nzp);
+    Utils::fft(wavelet_r[w],wavelet_c[w],nzp);
     sprintf(fileName,"cpp");
     printVecToFile(fileName,cpp_r[w], nzp);
-    fft(cpp_r[w],cpp_c[w],nzp);
+    Utils::fft(cpp_r[w],cpp_c[w],nzp);
     convolve(cpp_c[w],wavelet_c[w],synt_seis_c[w],cnzp);
-    fftInv(synt_seis_c[w],synt_seis_r[w],nzp); // 
+    Utils::fftInv(synt_seis_c[w],synt_seis_r[w],nzp); // 
     sprintf(fileName,"syntSeis");
     printVecToFile(fileName,synt_seis_r[w], nzp);
     sprintf(fileName,"seis");
     printVecToFile(fileName,seis_r[w], nzp);
+   
+
 
     if (wellWeight[w] > 0) 
     {
@@ -1237,7 +1239,8 @@ Wavelet1D::writeWaveletToFile(const std::string & fileName, float approxDzIn, Si
   }
   delete [] remember;
   
-  fftInv(waveletNew_c,waveletNew_r,nzpNew );// note might be n^2 algorithm for some nzpNew
+  
+  Utils::fftInv(waveletNew_c,waveletNew_r,nzpNew );// note might be n^2 algorithm for some nzpNew
   
   int wLength = int(floor(waveletLength_/dznew+0.5));
   int halfLength = wLength/2; // integer division
@@ -1439,9 +1442,9 @@ Wavelet1D::getWavelet(fftw_real** ccor_seis_cpp_r,fftw_real** cor_cpp_r,fftw_rea
     if(wellWeight[w] > 0)
     {
       c_sc   = reinterpret_cast<fftw_complex*>(ccor_seis_cpp_r[w]);
-      fft(ccor_seis_cpp_r[w],c_sc,nt);
+      Utils::fft(ccor_seis_cpp_r[w],c_sc,nt);
       c_cc   = reinterpret_cast<fftw_complex*>(cor_cpp_r[w]);
-      fft(cor_cpp_r[w],c_cc,nt);
+      Utils::fft(cor_cpp_r[w],c_cc,nt);
       wav    = reinterpret_cast<fftw_complex*>(wavelet_r[w]);
 
       for(int i=0;i<cnzp;i++)
@@ -1449,9 +1452,9 @@ Wavelet1D::getWavelet(fftw_real** ccor_seis_cpp_r,fftw_real** cor_cpp_r,fftw_rea
         wav[i].re=c_sc[i].re/c_cc[i].re;//note c_cc[i].im =0
         wav[i].im=c_sc[i].im/c_cc[i].re;
       }
-      fftInv(c_sc,ccor_seis_cpp_r[w],nt);
-      fftInv(c_cc,cor_cpp_r[w],nt);
-      fftInv(wav,wavelet_r[w],nt);
+      Utils::fftInv(c_sc,ccor_seis_cpp_r[w],nt);
+      Utils::fftInv(c_cc,cor_cpp_r[w],nt);
+      Utils::fftInv(wav,wavelet_r[w],nt);
     }
   }
 }

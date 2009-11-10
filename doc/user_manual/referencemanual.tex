@@ -988,7 +988,7 @@ Estimation: Checks input data and performs estimation of lacking information for
 
 \paragraph{\hbracket{filter-file-name}}\newkw{filter-file-name}
  \slist
-   \item \Description File name for 3D-wavelet filter file. In case a Sgri file is given in \kw{file-name3} this filter is obsolete. In case a 1D-wavelet is given in \kw{file-name3} a 3D-wavelet is defined by the 1D-wavelet and the filter. If the 3d_wavelet is estimated, this filter file must be given.
+   \item \Description File name for 3D-wavelet filter file. In case a Sgri file is given in \kw{file-name3} this filter is obsolete. In case a 1D-wavelet is given in \kw{file-name3} a 3D-wavelet is defined by the 1D-wavelet and the filter. If the 3d-wavelet is estimated, this filter file must be given.
    \item \Argument File name for the wavenumber filter
    \item \Default
  \elist
@@ -1146,6 +1146,27 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Description Is the Vs log in this well synthetic? Will be detected from Vp correlation if not specified here.
    \item \Argument 'yes' or 'no'
    \item \Default
+ \elist
+
+\subsubsection{\hbracket{optimize-location-to}}\newkw{optimize-location-to}
+ \slist
+   \item \Description Repeatable command, one for each offset angle used for estimating optimized well location for this well.
+   \item \Argument Elements controlling optimization of well location
+   \item \Default
+ \elist
+ 
+\paragraph{\hbracket{angle}}\rrnewkw{angle}{angle2}{angle3}
+ \slist
+    \item \Description Offset angle used for estimating optimized well location
+    \item \Argument Value
+    \item \Default 
+ \elist
+ 
+\paragraph{\hbracket{weight}}\newkw{weight}
+ \slist
+    \item \Description Weight of the offset angle given in \rrkw{angle}{angle2}{angle3}
+    \item \Argument Value
+    \item \Default 1 
  \elist
 
 \subsection{\hbracket{high-cut-seismic-resolution}}\newkw{high-cut-seismic-resolution}

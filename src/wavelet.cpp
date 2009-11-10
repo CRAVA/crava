@@ -168,30 +168,11 @@ Wavelet::printVecToFile(const std::string & fileName, fftw_real* vec, int nzp) c
   }  
 }
 
-void           
-Wavelet::fftInv(fftw_complex* cAmp,fftw_real* rAmp,int nt)
-{
-  rfftwnd_plan p2 = rfftwnd_create_plan(1, &nt, FFTW_COMPLEX_TO_REAL, FFTW_ESTIMATE | FFTW_IN_PLACE);
-  rfftwnd_one_complex_to_real(p2, cAmp, rAmp);
-  fftwnd_destroy_plan(p2);
-  double sf = 1.0/double(nt);
-  for(int i=0;i<nt;i++)
-    rAmp[i]*=fftw_real(sf);
-}
-
-void
-Wavelet::fft(fftw_real* rAmp,fftw_complex* cAmp,int nt)
-{
-  rfftwnd_plan p1 = rfftwnd_create_plan(1, &nt, FFTW_REAL_TO_COMPLEX, FFTW_ESTIMATE | FFTW_IN_PLACE);
-  rfftwnd_one_real_to_complex(p1, rAmp, cAmp);
-  fftwnd_destroy_plan(p1);
-}
-
 void 
 Wavelet::shiftReal(float shift, fftw_real* rAmp,int nt)
 {
   fftw_complex* cAmp = reinterpret_cast<fftw_complex*>(rAmp);
-  fft(rAmp,cAmp, nt);
+  Utils::fft(rAmp,cAmp, nt);
   int cnzp= nt/2+1;
   float expo;
   fftw_complex tmp,mult;
@@ -204,76 +185,7 @@ Wavelet::shiftReal(float shift, fftw_real* rAmp,int nt)
     cAmp[i].re = tmp.re*mult.re-tmp.im*mult.im;
     cAmp[i].im = tmp.re*mult.im+tmp.im*mult.re;
   }
-  fftInv(cAmp,rAmp, nt);
-}
-
-/*void 
-Wavelet::shiftReal(int shift, fftw_real* rAmp,int nt)
-{
-  float* tmp=new float[nt];
-  int i,index;
-  for(i=0;i<nt;i++)
-    tmp[i]=rAmp[i];
-  
-  for(i=0;i<nt;i++)
-  {
-    index = i-shift;
-    if(index<0)
-      index+=nt;
-    if(index>=nt)
-      index-=nt;
-
-    rAmp[i] = tmp[index];
-  }
-  delete [] tmp;
-}
-*/
-void
-Wavelet::fillInCpp(float* alpha,float* beta,float* rho,int start,int length,fftw_real* cpp_r,int nzp)
-{
-  int i;
-
-  for(i=0;i<nzp;i++)
-    cpp_r[i]=0;
-
-  for(i=start;i < start+length-1;i++)
-  {
-    float ei1 = computeElasticImpedance(alpha[i],beta[i],rho[i]);
-    float ei2 = computeElasticImpedance(alpha[i+1],beta[i+1],rho[i+1]);
-    cpp_r[i] =  ei2-ei1;
-  } 
-}
-
-
-void
-Wavelet::fillInSeismic(float* seisData,int start, int length,fftw_real* seis_r,int nzp) const
-{ 
-  int i;
-  for(i=0; i<nzp; i++)
-    seis_r[i] = 0.0;
-
-  for(i=start; i<start+length; i++)
-  {
-    seis_r[i] = seisData[i];
-  }
-/*
-  int lTregion = 3;
-  int* modify  = getIndexPrior(start,lTregion,nzp);
-  int* conditionto = getIndexPost(start-1,lTregion,nzp);
-  //NBNB Odd: interpolate endpoints?
-*/
-
-}
-
-void
-Wavelet::estimateCor(fftw_complex* var1_c ,fftw_complex* var2_c, fftw_complex* ccor_1_2_c,int cnzp) const
-{
-  for(int i=0;i<cnzp;i++)
-  {
-    ccor_1_2_c[i].re = var1_c[i].re*var2_c[i].re+var1_c[i].im*var2_c[i].im;
-    ccor_1_2_c[i].im = -var1_c[i].re*var2_c[i].im + var1_c[i].im*var2_c[i].re;
-  }
-
+  Utils::fftInv(cAmp,rAmp, nt);
 }
 
 void
@@ -287,63 +199,6 @@ Wavelet::convolve(fftw_complex* var1_c ,fftw_complex* var2_c, fftw_complex* out_
 
 }
 
-float
-Wavelet::computeElasticImpedance(float vp, float vs, float rho) const
-{
-  // vp, vs, rho are logtransformed
-  float angImp;
-
-  angImp = float(coeff_[0]*vp+coeff_[1]*vs+coeff_[2]*rho );
-  
-  return(angImp); 
-}
-
-
-void
-Wavelet::findContiniousPartOfData(bool* hasData,int nz,int &start, int &length) const
-{ 
-  int i;
-  int lPice=0;
-  int lengthMaxPice=-1;
-  int startLongestPice=0;
-  bool previousHadData = false;
-
-  for(i = 0; i < nz ;i++)
-  {
-    if(hasData[i])
-    {
-      if(! previousHadData)
-        lPice=1;
-      else
-        lPice++;
-      previousHadData = true;
-    }
-    else
-    {
-      if(previousHadData)
-      {
-        if(lengthMaxPice < lPice)
-        {
-          lengthMaxPice  = lPice;
-          startLongestPice = i-lPice;
-        }
-      }
-      previousHadData=false;
-    }
-  }
-
-  if(previousHadData)
-  {
-    if(lengthMaxPice < lPice)
-    {
-      lengthMaxPice  = lPice;
-      startLongestPice = i-lPice;
-    }
-  }
-
-  start  = startLongestPice;
-  length = lengthMaxPice; 
-}
 
 /*
 int* 
@@ -541,27 +396,27 @@ Wavelet::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
       }
 
       int start,length;
-      findContiniousPartOfData(hasData,nz,start,length);
+      bl->findContiniousPartOfData(hasData,nz,start,length);
 
       if(length*dz0 > waveletLength_) // must have enough data
       {
-        fillInCpp(alpha,beta,rho,start,length,cpp_r[w],nzp);  // fills in reflection coefficients
-        fft(cpp_r[w],cpp_c[w],nzp);
+        bl->fillInCpp(coeff_,start,length,cpp_r[w],nzp);  // fills in reflection coefficients
+        Utils::fft(cpp_r[w],cpp_c[w],nzp);
         fillInnWavelet(wavelet_r[w],nzp,dz[w]); // fills inn wavelet
         //flipVec(wavelet_r[w],nzp);
-        fft(wavelet_r[w],wavelet_c[w],nzp);
+        Utils::fft(wavelet_r[w],wavelet_c[w],nzp);
         convolve(cpp_c[w],wavelet_c[w],synt_c[w],cnzp);
-        fillInSeismic(seisData,start, length,seis_r[w],nzp);
-        fft(seis_r[w],seis_c[w],nzp);
-        estimateCor(synt_c[w],seis_c[w],cor_seis_synt_c[w],cnzp);
-        fftInv(cor_seis_synt_c[w],cor_seis_synt_r[w],nzp);
+        bl->fillInSeismic(seisData,start,length,seis_r[w],nzp);
+        Utils::fft(seis_r[w],seis_c[w],nzp);
+        bl->estimateCor(synt_c[w],seis_c[w],cor_seis_synt_c[w],cnzp);
+        Utils::fftInv(cor_seis_synt_c[w],cor_seis_synt_r[w],nzp);
         //Estimate shift. Do not run if shift given, use given shift.        
         float shift=findBulkShift(cor_seis_synt_r[w],dz[w], nzp);
         shift = floor(shift*10.0f+0.5f)/10.0f;//rounds to nearest 0.1 ms (don't have more accuracy)
         shiftWell[w]=shift;
-        fftInv(synt_c[w],synt_r[w],nzp);
+        Utils::fftInv(synt_c[w],synt_r[w],nzp);
         shiftReal(-shift/dz[w],synt_r[w],nzp);
-        fillInSeismic(seisData,start, length,seis_r[w],nzp);
+        bl->fillInSeismic(seisData,start,length,seis_r[w],nzp);
         if(ModelSettings::getDebugLevel() > 0)
         {
           std::string angle = NRLib::ToString(theta_/(M_PI*180.0),1);
@@ -592,7 +447,7 @@ Wavelet::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
     scaleOptWell[i] = -1.0;
   float * errWellOptScale = new float[nWells];
   float * errWell         = new float[nWells];
- bool writelog = false;
+  bool writelog = false;
   float errOptScale = 1.0;
   //Estimate global scale, local scale and error.
   //If global scale given, do not use return value. Do kriging with global scale as mean.

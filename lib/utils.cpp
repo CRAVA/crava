@@ -5,6 +5,11 @@
 #include "lib/global_def.h"
 #include "src/definitions.h"
 
+#include "fft/include/fftw.h"
+#include "fft/include/rfftw.h"
+#include "fft/include/fftw-int.h"
+#include "fft/include/f77_func.h"
+
 #include "nrlib/iotools/logkit.hpp"
 
 //------------------------------------------------------------
@@ -112,3 +117,23 @@ Utils::writeMatrix(double ** matrix,
   }
 }
 
+//------------------------------------------------------------
+void
+Utils::fft(fftw_real* rAmp,fftw_complex* cAmp,int nt)
+{
+  rfftwnd_plan p1 = rfftwnd_create_plan(1, &nt, FFTW_REAL_TO_COMPLEX, FFTW_ESTIMATE | FFTW_IN_PLACE);
+  rfftwnd_one_real_to_complex(p1, rAmp, cAmp);
+  fftwnd_destroy_plan(p1);
+}
+
+//------------------------------------------------------------
+void           
+Utils::fftInv(fftw_complex* cAmp,fftw_real* rAmp,int nt)
+{
+  rfftwnd_plan p2 = rfftwnd_create_plan(1, &nt, FFTW_COMPLEX_TO_REAL, FFTW_ESTIMATE | FFTW_IN_PLACE);
+  rfftwnd_one_complex_to_real(p2, cAmp, rAmp);
+  fftwnd_destroy_plan(p2);
+  double sf = 1.0/double(nt);
+  for(int i=0;i<nt;i++)
+    rAmp[i]*=fftw_real(sf);
+}

@@ -231,11 +231,15 @@ Model::Model(char * fileName)
                            modelSettings_, inputFiles,
                            errText, failedSeismic);
             if(failedSeismic == false) {
-              addSeismicLogs(wells_, seisCube_, modelSettings_);
-  
               processReflectionMatrix(reflectionMatrix_, background_, 
                                       modelSettings_, inputFiles, 
                                       errText, failedReflMat);
+
+              if(modelSettings_->getOptimizeWellLocation() == true)
+                processWellLocation(seisCube_, wells_, reflectionMatrix_,
+                                    timeSimbox_, modelSettings_, randomGen_);
+
+              addSeismicLogs(wells_, seisCube_, modelSettings_);
 
               processWavelets(wavelet_, seisCube_, wells_, reflectionMatrix_,
                               timeSimbox_, waveletEstimInterval_,
@@ -2185,6 +2189,65 @@ Model::setupDefaultReflectionMatrix(float       **& reflectionMatrix,
   LogKit::LogFormatted(LogKit::LOW,"\nMaking reflection parameters using a Vp/Vs ratio of %4.2f\n",1.0f/vsvp);
 }
 
+
+
+void
+Model::processWellLocation(FFTGrid      ** seisCube, 
+                           WellData     ** wells, 
+                           float        ** reflectionMatrix,
+                           Simbox        * timeSimbox,
+                           ModelSettings * modelSettings,
+                           RandomGen     * randomGen)
+{
+
+  Utils::writeHeader("Estimating optimized well locations");
+  
+  float   kMove;
+  int     iMove;
+  int     jMove;
+  int     i,j,w;
+  int     nWells      = modelSettings->getNumberOfWells();
+  int     nAngles     = modelSettings->getNumberOfAngles();
+  int     maxOffset   = modelSettings->getMaxWellOffset();
+  float   maxShift    = modelSettings->getMaxWellShift();
+  int     nMoveAngles;
+  std::vector<float> angleWeight(nAngles); 
+  float angle;
+
+  for (w = 0 ; w < nWells ; w++) {
+    if( wells[w]->isDeviated()==true )
+      continue;
+
+    BlockedLogs * bl = wells[w]->getBlockedLogsOrigThick();
+    nMoveAngles = modelSettings->getNumberOfWellAngles(w);
+    
+    if( nMoveAngles==0 )
+      continue;
+    
+    for( i=0; i<nAngles; i++ ){
+      angleWeight[i] = 0;
+    }
+    for( i=0; i<nMoveAngles; i++ ){
+      angle   = modelSettings->getWellMoveAngle(w,i);
+
+      for( j=0; j<nAngles; j++ ){
+        if( angle==modelSettings->getAngle(j)){
+          angleWeight[j] = modelSettings->getWellMoveWeight(w,i);
+          break;
+        }
+      }
+    }
+    bl->findOptimalWellLocation(seisCube,timeSimbox,reflectionMatrix,nAngles,angleWeight,maxShift,maxOffset,iMove,jMove,kMove);
+    wells[w]->moveWell(timeSimbox,iMove,jMove,kMove);
+    wells[w]->setBlockedLogsOrigThick( new BlockedLogs(wells[w], timeSimbox, randomGen) );
+
+    LogKit::LogFormatted(LogKit::LOW,"  Well :   %s\n",wells[w]->getWellname());
+    LogKit::LogFormatted(LogKit::LOW,"  Move i:  %i\n",iMove);
+    LogKit::LogFormatted(LogKit::LOW,"  Move j:  %i\n",jMove);
+    LogKit::LogFormatted(LogKit::LOW,"  Move k:  %f\n",kMove);
+  }
+}
+
 void
 Model::processWavelets(Wavelet     **& wavelet,
                        FFTGrid      ** seisCube,
@@ -2493,7 +2556,6 @@ Model::processWavelets(Wavelet     **& wavelet,
   delete [] shiftGrids;
   delete [] gainGrids;
 }
-
 int
 Model::getWaveletFileFormat(const std::string & fileName, char * errText)
 {

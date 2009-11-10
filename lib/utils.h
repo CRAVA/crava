@@ -4,6 +4,8 @@
 
 #include "src/definitions.h"
 #include "nrlib/iotools/logkit.hpp"
+#include "fft/include/fftw.h"
+
 
 class Utils
 {
@@ -29,7 +31,17 @@ public:
                              int      ndim2);  
   static void    writeMatrix(double ** matrix,
                              int       ndim1,
-                             int       ndim2);  
+                             int       ndim2); 
+
+  static void    fft(fftw_real    * rAmp,
+                     fftw_complex * cAmp,
+                     int            nt);   
+  
+  static void    fftInv(fftw_complex * cAmp,
+                        fftw_real    * rAmp,
+                        int            nt);    
+
+
 };
 
 #endif

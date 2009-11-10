@@ -5,7 +5,8 @@
 #include "nrlib/iotools/logkit.hpp"
 #include <stdlib.h>
 #include <string.h>
-
+#include "fft/include/fftw.h"
+#include "lib/utils.h"
 
 class ModelSettings;
 class RandomGen;
@@ -49,7 +50,7 @@ public:
   float       ** getCpp(void)                       const { return cpp_ ;}              
   void           getVerticalTrend(const float * blockedLog, float * trend);
   void           getVerticalTrend(const int * blockedLog,int * trend, RandomGen * random);
-  void           getBlockedGrid(FFTGrid * grid, float * blockedLog);
+  void           getBlockedGrid(FFTGrid * grid, float * blockedLog, int iOffset = 0, int jOffset = 0);
 
   void           setLogFromVerticalTrend(float * vertical_trend, double z0, double dz, 
                                          int nz, std::string type, int iAngle = RMISSING);
@@ -60,6 +61,22 @@ public:
   void           writeNorsarWell(ModelSettings * modelSettings);
 
   void           setSpatialFilteredLogs(float * filteredlog, int nData, std::string type, const float *bg);
+
+  void           fillInCpp(const float * coeff,int start,int length,fftw_real* cpp_r,int nzp);
+  void           fillInSeismic(float* seismicData,int start,int length,fftw_real* seis_r,int nzp) const;
+  void           estimateCor(fftw_complex* var1_c,fftw_complex* var2_c,fftw_complex* ccor_1_2_c,int cnzp) const;
+  void           findContiniousPartOfData(bool* hasData,int nz,int &start,int &length) const;
+  void           findOptimalWellLocation(FFTGrid                 ** seisCube,
+                                         Simbox                   * timeSimbox,
+                                         float                   ** reflCoef,  
+                                         int                        nAngles,
+                                         const std::vector<float> & angleWeight,
+                                         float                      maxShift,
+                                         int                        maxOffset,
+                                         int                      & iMove,
+                                         int                      & jMove,
+                                         float                    & kMove);
+
 
 private:
   void           setLogFromVerticalTrend(float *& log, double * zpos, int nBlocks, 
@@ -90,6 +107,11 @@ private:
                               const int * bInd);
   void           findBlockXYZ(Simbox * simbox);
   void           findXYZforVirtualPart(Simbox * simbox);
+
+  float          computeElasticImpedance(float         vp, 
+                                         float         vs, 
+                                         float         rho, 
+                                         const float * coeff) const;
 
   char         * wellname_;                 ///< Name of well   
 

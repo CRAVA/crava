@@ -6,6 +6,7 @@
 #include "fft/include/fftw.h"
 #include "lib/global_def.h"
 #include "src/definitions.h"
+#include "lib/utils.h"
 
 class Vario;
 class Simbox;
@@ -80,19 +81,12 @@ protected:
   virtual void          shiftAndScale(float, float) {};
 
   // for wavelet estimation
-  void                  fft(fftw_real* rAmp,fftw_complex* cAmp,int nt);     
-  void                  fftInv(fftw_complex* cAmp,fftw_real* rAmp,int nt);    
   void                  shiftReal(float shift, fftw_real* rAmp,int nt);
-  void                  fillInCpp(float* alpha,float* beta,float* rho,int start,int length,fftw_real* cpp_r,int nzp);
-  void                  fillInSeismic(float* seismicData,int start,int length,fftw_real* seis_r,int nzp) const;
-  void                  estimateCor(fftw_complex* var1_c,fftw_complex* var2_c,fftw_complex* ccor_1_2_c,int cnzp) const;
   void                  convolve(fftw_complex* var1_c ,fftw_complex* var2_c, fftw_complex* out_c,int cnzp) const;
-  float                 computeElasticImpedance(float vp, float vs, float rho) const;
-  void                  findContiniousPartOfData(bool* hasData,int nz,int &start,int &length) const;
   float                 findOptimalWaveletScale(fftw_real** synt_seis_r,fftw_real** seis_r,int nWells,int nzp,
                                                 float* wellWeight,float& err,float* errWell,float* scaleOptWell,
                                                 float* errWellOptScale) const;
-void                    findLocalNoiseWithGainGiven(fftw_real ** synt_r,
+  void                  findLocalNoiseWithGainGiven(fftw_real ** synt_r,
                                                     fftw_real ** seis_r,
                                                     int nWells,
                                                     int nzp,

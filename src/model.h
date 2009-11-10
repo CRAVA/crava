@@ -119,6 +119,13 @@ private:
                                            char          * errText,
                                            bool          & failed);
 
+  void             processWellLocation(FFTGrid       ** seisCube,
+                                       WellData      ** wells, 
+                                       float         ** reflectionMatrix,
+                                       Simbox         * timeSimbox,
+                                       ModelSettings  * modelSettings,
+                                       RandomGen      * randomGen); 
+
   void             processWavelets(Wavelet     **& wavelet,
                                    FFTGrid      ** seisCube,
                                    WellData     ** wells,

@@ -22,6 +22,7 @@
 #include "lib/utils.h"
 #include "src/io.h"
 
+
 XmlModelFile::XmlModelFile(const char * fileName)
 {
   modelSettings_ = new ModelSettings();
@@ -368,13 +369,13 @@ XmlModelFile::parseWell(TiXmlNode * node, std::string & errTxt)
   if(root == 0)
     return(false);
 
-  std::vector<std::string> legalCommands(5);
+  std::vector<std::string> legalCommands(6);
   legalCommands[0]="file-name";
   legalCommands[1]="use-for-wavelet-estimation";
   legalCommands[2]="use-for-background-trend";
   legalCommands[3]="use-for-facies-probabilities";
   legalCommands[4]="synthetic-vs-log";
-
+  legalCommands[5]="optimize-location-to";
 
   std::string tmpErr = "";
   std::string value;
@@ -423,11 +424,45 @@ XmlModelFile::parseWell(TiXmlNode * node, std::string & errTxt)
   else
     modelSettings_->addIndicatorRealVs(ModelSettings::NOTSET);
 
+  modelSettings_->clearMoveWell();
+  while(parseOptimizeLocation(root, tmpErr) == true);
+  modelSettings_->addMoveWell();
+
   checkForJunk(root, errTxt, legalCommands, true); //Allow duplicates
 
   errTxt += tmpErr;
   return(true);
 }
+
+bool
+XmlModelFile::parseOptimizeLocation(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("optimize-location-to");
+  if(root == 0)
+    return(false);
+
+  modelSettings_->setOptimizeWellLocation(true);
+
+  std::vector<std::string> legalCommands(2);
+  legalCommands[0]="angle";
+  legalCommands[1]="weight";
+
+  float value;
+  if(parseValue(root, "angle", value, errTxt) == true)
+    modelSettings_->addMoveAngle(value*float(M_PI/180));
+  else
+    modelSettings_->addMoveAngle(RMISSING);
+
+  if(parseValue(root, "weight", value, errTxt) == true)
+    modelSettings_->addMoveWeight(value);
+  else
+    modelSettings_->addMoveWeight(1); // Default 
+
+  checkForJunk(root, errTxt, legalCommands, true); 
+
+  return(true);
+}
+
 
 bool
 XmlModelFile::parseAllowedParameterValues(TiXmlNode * node, std::string & errTxt)
@@ -2233,6 +2268,8 @@ XmlModelFile::checkConsistency(std::string & errTxt) {
     checkEstimationInversionConsistency(errTxt);
   if(modelSettings_->getLocalWaveletVario()==NULL) 
       modelSettings_->copyBackgroundVarioToLocalWaveletVario();
+  if(modelSettings_->getOptimizeWellLocation()==true)
+    checkAngleConsistency(errTxt);
 }
 
 
@@ -2250,4 +2287,35 @@ XmlModelFile::checkForwardConsistency(std::string & errTxt) {
 void
 XmlModelFile::checkEstimationInversionConsistency(std::string & errTxt) {
   //Quite a few things to check here.
+}
+
+void
+XmlModelFile::checkAngleConsistency(std::string & errTxt) {
+
+  float angle;
+  int   i,j,w;
+  int   nMoveAngles;
+  int   nSeismicAngles = modelSettings_->getNumberOfAngles();
+  int   nWells         = modelSettings_->getNumberOfWells();
+
+  for(w=0; w<nWells; w++){
+    nMoveAngles = modelSettings_->getNumberOfWellAngles(w); 
+    std::vector<bool> compare(nMoveAngles);
+
+    for( i=0; i<nMoveAngles; i++ ){
+      compare[i] = false;
+      angle   = modelSettings_->getWellMoveAngle(w,i);
+
+      for( j=0; j<nSeismicAngles; j++ ){
+        if( angle==modelSettings_->getAngle(j)){
+          compare[i] = true;
+          break;
+        }
+      }
+
+      if( compare[i]==false ){
+        errTxt += "Unexpected angle "+NRLib::ToString(angle/float(M_PI/180))+" in <optimize-location-to> is not equal to any of seismic offset-angles"+".\n";
+      }
+    }
+  }
 }

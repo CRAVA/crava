@@ -30,6 +30,8 @@ private:
   bool parseWellData(TiXmlNode * node, std::string & errTxt);
   bool   parseLogNames(TiXmlNode * node, std::string & errTxt);
   bool   parseWell(TiXmlNode * node, std::string & errTxt);
+  bool   parseOptimizeLocation(TiXmlNode * node, std::string & errTxt);
+
   bool   parseAllowedParameterValues(TiXmlNode * node, std::string & errTxt);
 
   bool parseSurvey(TiXmlNode * node, std::string & errTxt);
@@ -73,6 +75,7 @@ private:
   bool parseVariogram(TiXmlNode * node, const std::string & keyword, Vario * & vario, std::string & errTxt);
   bool parseTraceHeaderFormat(TiXmlNode * node, const std::string & keyword, TraceHeaderFormat *& thf, std::string & errTxt);
   bool parseFileName(TiXmlNode * node, const std::string & keyword, std::string & filename, std::string & errTxt, bool allowDuplicates = false);
+  void checkAngleConsistency(std::string & errTxt);
 
   void ensureTrailingSlash(std::string & directory);
   void checkForJunk(TiXmlNode * root, std::string & errTxt, const std::vector<std::string> & legalCommands,

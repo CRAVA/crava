@@ -4,6 +4,11 @@
 
 #include "lib/random.h"
 #include "nrlib/iotools/logkit.hpp"
+#include "fft/include/fftw.h"
+#include "fft/include/rfftw.h"
+#include "fft/include/fftw-int.h"
+#include "fft/include/f77_func.h"
+
 #include "src/definitions.h"
 #include "src/blockedlogs.h"
 #include "src/welldata.h"
@@ -633,14 +638,17 @@ BlockedLogs::getVerticalTrend(const int * blockedLog,
 //------------------------------------------------------------------------------
 void 
 BlockedLogs::getBlockedGrid(FFTGrid * grid,
-                            float   * blockedLog) 
+                            float   * blockedLog,
+                            int       iOffset,
+                            int       jOffset) 
 {
   for (int m = 0 ; m < nBlocks_ ; m++) {
     //LogKit::LogFormatted(LogKit::LOW,"m=%d  ipos_[m], jpos_[m], kpos_[m] = %d %d %d\n",m,ipos_[m], jpos_[m], kpos_[m]);
-    blockedLog[m] = grid->getRealValue(ipos_[m], jpos_[m], kpos_[m]);
+    blockedLog[m] = grid->getRealValue(ipos_[m]+iOffset, jpos_[m]+jOffset, kpos_[m]);
+
   }
 }
-
+ 
 //------------------------------------------------------------------------------
 void 
 BlockedLogs::setLogFromGrid(FFTGrid    * grid, 
@@ -1104,4 +1112,370 @@ void BlockedLogs::setSpatialFilteredLogs(float * filteredlog, int nData, std::st
     alpha_for_facies_ = blockedLog;
   else if (type == "RHO_FOR_FACIES")
     rho_for_facies_ = blockedLog;
+}
+
+void BlockedLogs::fillInCpp(const float * coeff,
+                            int           start,
+                            int           length,
+                            fftw_real   * cpp_r,
+                            int           nzp)
+{
+  int i;
+
+  for(i=0;i<nzp;i++)
+    cpp_r[i]=0;
+
+  float * alphaVert = new float[nLayers_];
+  float * betaVert  = new float[nLayers_];
+  float * rhoVert   = new float[nLayers_];
+
+  getVerticalTrend(alpha_, alphaVert);
+  getVerticalTrend(beta_, betaVert);
+  getVerticalTrend(rho_, rhoVert);
+
+  for(i=start;i < start+length-1;i++)
+  {
+    float ei1 = computeElasticImpedance(alphaVert[i],betaVert[i],rhoVert[i],coeff);
+    float ei2 = computeElasticImpedance(alphaVert[i+1],betaVert[i+1],rhoVert[i+1],coeff);
+    cpp_r[i] =  ei2-ei1;
+  } 
+  delete [] alphaVert;
+  delete [] betaVert;
+  delete [] rhoVert;
+
+}
+
+float BlockedLogs::computeElasticImpedance(float         alpha, 
+                                           float         beta, 
+                                           float         rho, 
+                                           const float * coeff) const
+{
+  // vp, vs, rho are logtransformed
+  float angImp;
+
+  angImp = float(coeff[0]*alpha+coeff[1]*beta+coeff[2]*rho );
+  
+  return(angImp); 
+}
+
+void BlockedLogs::fillInSeismic(float     * seismicData, 
+                                int         start, 
+                                int         length,
+                                fftw_real * seis_r,
+                                int         nzp) const
+{ 
+  int i;
+  for(i=0; i<nzp; i++)
+    seis_r[i] = 0.0;
+
+  for(i=start; i<start+length; i++)
+    seis_r[i] = seismicData[i];
+/*
+  int lTregion = 3;
+  int* modify  = getIndexPrior(start,lTregion,nzp);
+  int* conditionto = getIndexPost(start-1,lTregion,nzp);
+  //NBNB Odd: interpolate endpoints?
+*/
+
+}
+
+void BlockedLogs::estimateCor(fftw_complex * var1_c,
+                              fftw_complex * var2_c, 
+                              fftw_complex * ccor_1_2_c,
+                              int            cnzp) const
+{
+  for(int i=0;i<cnzp;i++){
+    ccor_1_2_c[i].re =  var1_c[i].re*var2_c[i].re + var1_c[i].im*var2_c[i].im;
+    ccor_1_2_c[i].im = -var1_c[i].re*var2_c[i].im + var1_c[i].im*var2_c[i].re;
+  }
+}
+
+
+
+
+
+
+void BlockedLogs::findContiniousPartOfData(bool* hasData,int nz,int &start, int &length) const
+{ 
+  int  i;
+  int  lPice=0;
+  int  lengthMaxPice=-1;
+  int  startLongestPice=0;
+  bool previousHadData = false;
+
+  for(i = 0; i < nz ;i++){
+    if(hasData[i]){
+      if(! previousHadData)
+        lPice=1;
+      else
+        lPice++;
+      previousHadData = true;
+    }
+    else{
+      if(previousHadData){
+        if(lengthMaxPice < lPice){
+          lengthMaxPice  = lPice;
+          startLongestPice = i-lPice;
+        }
+      }
+      previousHadData=false;
+    }
+  }
+
+  if(previousHadData){
+    if(lengthMaxPice < lPice){
+      lengthMaxPice  = lPice;
+      startLongestPice = i-lPice;
+    }
+  }
+
+  start  = startLongestPice;
+  length = lengthMaxPice; 
+}
+
+
+void BlockedLogs::findOptimalWellLocation(FFTGrid                 ** seisCube,
+                                          Simbox                   * timeSimbox,
+                                          float                   ** reflCoef,
+                                          int                        nAngles,
+                                          const std::vector<float> & angleWeight,
+                                          float                      maxShift,
+                                          int                        maxOffset,
+                                          int                      & iMove,
+                                          int                      & jMove,
+                                          float                    & kMove)
+{   
+  int   polarity;
+  int   i,j,k,l,m;
+  int   start,length;
+  float sum;
+  float shiftF;
+  float maxTot;
+  float f1,f2,f3; 
+
+  int nx            = seisCube[0]->getNx();
+  int ny            = seisCube[0]->getNy();
+  int nzp           = seisCube[0]->getNzp(); 
+  int cnzp          = nzp/2+1;
+  int rnzp          = 2*cnzp;
+  int iMaxOffset    = maxOffset;
+  int jMaxOffset    = maxOffset;
+  int iTotOffset    = 2*iMaxOffset+1;
+  int jTotOffset    = 2*jMaxOffset+1; //May be removed, but makes it possible to include non-symmetric shifts
+  int polarityMax   = 0;
+  float shift       = 0.0f;
+  float maxValueTot = 0;
+  float totalWeight = 0;
+  float dz          = static_cast<float>(timeSimbox->getdz());
+
+  float ** seisData  = new float*[nAngles]; 
+  float ** seisLog   = new float*[nAngles]; 
+  float  * alphaVert = new float[nLayers_]; 
+  float  * betaVert  = new float[nLayers_]; 
+  float  * rhoVert   = new float[nLayers_]; 
+  bool   * hasData   = new bool[nLayers_]; 
+   
+  std::vector<int>   iOffset(iTotOffset);
+  std::vector<int>   jOffset(jTotOffset);
+  std::vector<int>   shiftI(nAngles);
+  std::vector<int>   shiftIMax(nAngles);
+  std::vector<float> maxValue(nAngles);
+  std::vector<float> maxValueMax(nAngles);
+
+  fftw_real    ** cpp_r               = new fftw_real*[nAngles]; 
+  fftw_complex ** cpp_c               = reinterpret_cast<fftw_complex**>(cpp_r);
+
+  fftw_real    ** cor_cpp_r           = new fftw_real*[nAngles]; 
+  fftw_complex ** cor_cpp_c           = reinterpret_cast<fftw_complex**>(cor_cpp_r);
+ 
+  fftw_real    ** seis_r              = new fftw_real*[nAngles]; 
+  fftw_complex ** seis_c              = reinterpret_cast<fftw_complex**>(seis_r);
+
+  fftw_real    ** ccor_seis_cpp_r     = new fftw_real*[nAngles]; 
+  fftw_complex ** ccor_seis_cpp_c     = reinterpret_cast<fftw_complex**>(ccor_seis_cpp_r);
+
+  fftw_real    ** ccor_seis_cpp_Max_r = new fftw_real*[nAngles]; 
+
+  for( i=0; i<nAngles; i++ ){
+    maxValueMax[i] = 0.0f;
+    shiftIMax[i]   = 0;
+  }
+
+  // make offset vectors
+  for(i=-iMaxOffset; i<iMaxOffset+1; i++){ 
+    iOffset[i+iMaxOffset]=i;
+  }
+  for(j=-jMaxOffset; j<jMaxOffset+1; j++){ 
+    jOffset[j+jMaxOffset]=j;
+  }
+
+  getVerticalTrend(alpha_, alphaVert);
+  getVerticalTrend(beta_, betaVert);
+  getVerticalTrend(rho_, rhoVert);
+    
+  for(i = 0 ; i < nLayers_ ; i++) {
+    hasData[i] = alphaVert[i] != RMISSING && betaVert[i] != RMISSING && rhoVert[i] != RMISSING;
+  }
+  findContiniousPartOfData(hasData,nLayers_,start,length);
+
+  for( j=0; j<nAngles; j++ ){
+    seis_r[j]              = new fftw_real[rnzp];
+    cpp_r[j]               = new fftw_real[rnzp];
+    cor_cpp_r[j]           = new fftw_real[rnzp];
+    ccor_seis_cpp_r[j]     = new fftw_real[rnzp];
+    ccor_seis_cpp_Max_r[j] = new fftw_real[rnzp];
+    seisData[j]            = new float[nLayers_];
+    seisLog[j]             = new float[nBlocks_]; 
+  }
+
+  // Calculate reflection coefficients
+  for( j=0; j<nAngles; j++ ){
+    for(i=0; i<rnzp; i++){
+      cpp_r[j][i] = 0;
+    }
+    fillInCpp(reflCoef[j],start,length,cpp_r[j],nzp); 
+    Utils::fft(cpp_r[j],cpp_c[j],nzp);
+    estimateCor(cpp_c[j],cpp_c[j],cor_cpp_c[j],cnzp);
+    Utils::fftInv(cor_cpp_c[j],cor_cpp_r[j],nzp);
+  }
+
+  // Loop through possible well locations
+  for(k=0; k<iTotOffset; k++){
+    if(ipos_[0]+iOffset[k]<0 || ipos_[0]+iOffset[k]>nx-1) //Check if position is within seismic range
+      continue;
+
+    for(l=0; l<jTotOffset; l++){
+      if(jpos_[0]+jOffset[l]<0 || jpos_[0]+jOffset[l]>ny-1) //Check if position is within seismic range
+        continue;
+      
+      for( j=0; j<nAngles; j++ ){
+        getBlockedGrid(seisCube[j],seisLog[j],iOffset[k],jOffset[l]); 
+        getVerticalTrend(seisLog[j], seisData[j]);
+        fillInSeismic(seisData[j],start,length,seis_r[j],nzp);
+
+        Utils::fft(seis_r[j],seis_c[j],nzp);
+        estimateCor(cpp_c[j],seis_c[j],ccor_seis_cpp_c[j],cnzp);
+        Utils::fftInv(ccor_seis_cpp_c[j],ccor_seis_cpp_r[j],nzp);
+      }
+
+      // if the sum from -maxShift to maxShift ms is 
+      // positive then polarity is positive
+      dz = static_cast<float>(timeSimbox->getRelThick(ipos_[0]+iOffset[k],jpos_[0]+jOffset[l])*timeSimbox->getdz());
+      sum = 0;
+      for( j=0; j<nAngles; j++ ){
+        if(angleWeight[j] > 0){
+          for(i=0;i<ceil(maxShift/dz);i++)//zero included
+            sum+=ccor_seis_cpp_r[j][i];
+          for(i=0;i<floor(maxShift/dz);i++)
+            sum+=ccor_seis_cpp_r[j][nzp-i-1];
+        }
+      }
+      polarity=-1;
+      if(sum > 0)
+        polarity=1;
+      
+      // Find maximum correlation and corresponding shift for each angle
+      maxTot = 0.0;
+      for( j=0; j<nAngles; j++ ){
+        if(angleWeight[j]>0){
+          maxValue[j] = 0.0f;
+          shiftI[j]=0;
+          for(i=0;i<ceil(maxShift/dz);i++){
+            if(ccor_seis_cpp_r[j][i]*polarity > maxValue[j]){
+              maxValue[j] = ccor_seis_cpp_r[j][i]*polarity;
+              shiftI[j] = i;
+            }
+          }
+          for(i=0;i<floor(maxShift/dz);i++){
+            if(ccor_seis_cpp_r[j][nzp-1-i]*polarity > maxValue[j]){
+              maxValue[j] = ccor_seis_cpp_r[j][nzp-1-i]*polarity;
+              shiftI[j] = -1-i;
+            }
+          }
+          maxTot += angleWeight[j]*maxValue[j]; //Find weighted total maximum correlation
+        }
+      }
+
+      if(maxTot > maxValueTot){
+        maxValueTot = maxTot;
+        polarityMax = polarity;
+        iMove       = iOffset[k];
+        jMove       = jOffset[l];
+        for(m=0; m<nAngles; m++){
+          shiftIMax[m]   = shiftI[m];
+          maxValueMax[m] = maxValue[m];
+          for(i=0;i<rnzp;i++)
+            ccor_seis_cpp_Max_r[m][i] = ccor_seis_cpp_r[m][i];
+        }
+      }
+    }
+  }
+ 
+  for(i=0; i<nAngles; i++){
+    shiftI[i] = shiftIMax[i];
+    maxValue[i] = maxValueMax[i];
+    for(j=0;j<rnzp;j++)
+      ccor_seis_cpp_r[i][j] = ccor_seis_cpp_Max_r[i][j];
+  }
+  polarity = polarityMax;
+
+  // Find kMove in optimal location
+  for(j=0; j<nAngles; j++){
+    if(angleWeight[j]>0){
+      if(shiftI[j] < 0){
+        if(ccor_seis_cpp_r[j][nzp+shiftI[j]-1]*polarity < maxValue[j]) //then local max
+        {
+          f1 = ccor_seis_cpp_r[j][nzp+shiftI[j]-1];
+          f2 = ccor_seis_cpp_r[j][nzp+shiftI[j]];
+          int ind3;
+          if(shiftI[j]==-1)
+            ind3 = 0;
+          else
+            ind3=nzp+shiftI[j]+1;
+          f3 = ccor_seis_cpp_r[j][ind3];
+          float x0=(f1-f3)/(2*(f1+f3-2*f2));
+          shiftF=shiftI[j]+x0;
+        }
+        else  // do as good as we can
+          shiftF=float(shiftI[j]);
+      }
+      else //positive or zero shift
+      {
+        if(ccor_seis_cpp_r[j][shiftI[j]+1]*polarity < maxValue[j]) //then local max
+        {
+          f3 = ccor_seis_cpp_r[j][shiftI[j]+1];
+          f2 = ccor_seis_cpp_r[j][shiftI[j]];
+          int ind1;
+          if(shiftI[j]==0)
+            ind1 = nzp-1;
+          else
+            ind1=shiftI[j]-1;
+          f1 = ccor_seis_cpp_r[j][ind1];
+          float x0=(f1-f3)/(2*(f1+f3-2*f2));
+          shiftF=shiftI[j]+x0;
+        }
+        else  // do as good as we can
+          shiftF=float(shiftI[j]);
+      }
+      shift += angleWeight[j]*shiftF*dz;//weigthing shift according to wellWeight
+      totalWeight += angleWeight[j];
+    }
+  }
+
+  shift/=totalWeight;
+  kMove = shift;  
+
+  for( j=0; j<nAngles; j++ ){
+    delete [] seis_r[j];
+    delete [] cpp_r[j];
+    delete [] cor_cpp_r[j];
+    delete [] ccor_seis_cpp_r[j];
+    delete [] seisData[j];
+    delete [] seisLog[j]; 
+  }
+  delete [] alphaVert;
+  delete [] betaVert;
+  delete [] rhoVert;
+  delete [] hasData;
+  delete [] ccor_seis_cpp_Max_r;
 }
