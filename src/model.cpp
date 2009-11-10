@@ -977,6 +977,12 @@ Model::setSimboxSurfaces(Simbox                        *& simbox,
                                    IO::PathToBackground(),
                                    outputFormat);
         }
+        if ((outputFlag & ModelSettings::CORRELATION) > 0) {
+          simbox->writeTopBotGrids(topSurf, 
+                                   baseSurf,
+                                   IO::PathToCorrelations(),
+                                   outputFormat);
+        }
       }
     }
   }
