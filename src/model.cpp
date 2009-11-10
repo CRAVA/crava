@@ -1137,8 +1137,8 @@ Model::setupExtendedBackgroundSimbox(Simbox   * timeSimbox,
   timeBGSimbox->setDepth(topSurf, botSurf, nz);
 
   if((otherOutput & ModelSettings::EXTRA_SURFACES) > 0 && (outputDomain & ModelSettings::TIMEDOMAIN) > 0) {
-    std::string topSurf  = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixTime() + IO::PrefixBackground();
-    std::string baseSurf = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime() + IO::PrefixBackground();
+    std::string topSurf  = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixTime() + "_BG";
+    std::string baseSurf = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime() + "_BG";
     timeBGSimbox->writeTopBotGrids(topSurf,
                                    baseSurf,
                                    IO::PathToBackground(),
