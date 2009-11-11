@@ -36,7 +36,6 @@ public:
 
   // Prefixes
 
-  inline static  std::string    PrefixDirect(void)                 { return std::string("Direct_")             ;}
   inline static  std::string    PrefixSeismic(void)                { return std::string("Seis_")               ;}
   inline static  std::string    PrefixWells(void)                  { return std::string("Well_")               ;}
   inline static  std::string    PrefixVelocity(void)               { return std::string("Velocity_")           ;}
@@ -66,7 +65,7 @@ public:
 
   // Suffixes
 
-  inline static  std::string    SuffixDirectData(void)             { return std::string(".bin")                ;}
+  inline static  std::string    SuffixDirectData(void)             { return std::string(".direct")             ;}
   inline static  std::string    SuffixGeneralData(void)            { return std::string(".dat")                ;}
   inline static  std::string    SuffixTextFiles(void)              { return std::string(".txt")                ;}
   inline static  std::string    SuffixAsciiFiles(void)             { return std::string(".ascii")              ;}

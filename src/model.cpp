@@ -1366,7 +1366,7 @@ Model::processSeismic(FFTGrid      **& seisCube,
       if(modelSettings->getDirectSeisOutput() == true) {
         for(int i=0;i<nAngles;i++) {
           std::string angle    = NRLib::ToString(modelSettings->getAngle(i)*(180/M_PI), 1);
-          std::string baseName = IO::PrefixSeismic() + IO::PrefixDirect() + angle + IO::SuffixDirectData();
+          std::string baseName = IO::PrefixSeismic() + angle + IO::SuffixDirectData();
           std::string fileName = IO::makeFullFileName(IO::PathToSeismicData(), baseName);
           seisCube[i]->writeDirectFile(fileName, timeSimbox);
         }
@@ -1886,9 +1886,9 @@ Model::processBackground(Background   *& background,
   if(modelSettings_->getDirectBGOutput() == true) {
     std::string fileName[3];
 
-    std::string baseName1 = IO::PrefixBackground() + "Vp"  + IO::PrefixDirect() + IO::SuffixDirectData();
-    std::string baseName2 = IO::PrefixBackground() + "Vs"  + IO::PrefixDirect() + IO::SuffixDirectData();
-    std::string baseName3 = IO::PrefixBackground() + "Rho" + IO::PrefixDirect() + IO::SuffixDirectData();
+    std::string baseName1 = IO::PrefixBackground() + "Vp"  + IO::SuffixDirectData();
+    std::string baseName2 = IO::PrefixBackground() + "Vs"  + IO::SuffixDirectData();
+    std::string baseName3 = IO::PrefixBackground() + "Rho" + IO::SuffixDirectData();
 
     fileName[0] = IO::makeFullFileName(IO::PathToBackground(), baseName1);
     fileName[1] = IO::makeFullFileName(IO::PathToBackground(), baseName2);
@@ -3459,7 +3459,7 @@ Model::processDepthConversion(Simbox        * timeCutSimbox,
                                         failed, errText);            // NBNB-PAL: Er dettet riktig nz (timeCut vs time)? 
       timeDepthMapping_->makeTimeDepthMapping(velocity, timeSimbox);
       if(modelSettings->getDirectVelOutput() == true) {
-        std::string baseName = IO::PrefixVelocity() + IO::PrefixDirect() + IO::SuffixDirectData();
+        std::string baseName = IO::PrefixVelocity() + IO::SuffixDirectData();
         std::string fileName = IO::makeFullFileName(IO::PathToVelocity(), baseName);
         velocity->writeDirectFile(fileName, timeSimbox); 
       }
