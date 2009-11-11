@@ -81,6 +81,10 @@ public:
   inline static  std::string    SuffixSgriHeader(void)             { return std::string(".Sgrh")               ;}
   inline static  std::string    SuffixSgri(void)                   { return std::string(".Sgri")               ;}
 
+  enum           volumeTypes{UNKNOWN = 0, SEGYFILE = 1, STORMFILE = 2, DIRECTFILE = 3};
+
+  static         int            findGridFileType(const std::string & fileName);
+
   //Note: By convention, input path is added to input file names at end of parsing.
   //      Output path and prefix is added to output file name by call to makeFullFileName
   //      just before writing.
@@ -90,6 +94,14 @@ public:
 
   static         std::string    makeFullFileName(const std::string & subDir, 
                                                  const std::string & fileName);
+
+  static         void           writeSurfaceToFile(const Surface     & surface,
+                                                   const std::string & name,
+                                                   int                 format);
+
+private:
+  static         bool           IsCravaBinaryFile(const std::string & fileName);
+  static         bool           IsStormBinaryFile(const std::string & fileName);
 
   static         std::string    outputPath_;   // Path for all output files.
   static         std::string    filePrefix_;   // Prefix for all output files

@@ -196,8 +196,9 @@ FFTGrid::fillInFromSegY(SegY* segy, Simbox *simbox)
 }
 
 void
-FFTGrid::fillInFromStorm(Simbox * actSimBox,
-                         StormContGrid * grid, const char * parName)
+FFTGrid::fillInFromStorm(Simbox            * actSimBox,
+                         StormContGrid     * grid, 
+                         const std::string & parName)
 {
   assert(cubetype_ != CTMISSING);
   createRealGrid();
@@ -232,51 +233,51 @@ FFTGrid::fillInFromStorm(Simbox * actSimBox,
       meanvalue[i+j*nxp_] = static_cast<float>(val);
     }
 
-    LogKit::LogFormatted(LogKit::LOW,"\nResampling %s into %dx%dx%d grid:\n",parName,nxp_,nyp_,nzp_);
-    setAccessMode(WRITE);
-
-    int monitorSize = MAXIM(1,int(nyp_*nzp_*0.02));
-    printf("\n  0%%       20%%       40%%       60%%       80%%      100%%");
-    printf("\n  |    |    |    |    |    |    |    |    |    |    |  ");
-    printf("\n  ^");
-
-    for( k = 0; k < nzp_; k++)
+  LogKit::LogFormatted(LogKit::LOW,"\nResampling %s into %dx%dx%d grid:\n",parName.c_str(),nxp_,nyp_,nzp_);
+  setAccessMode(WRITE);
+  
+  int monitorSize = MAXIM(1,int(nyp_*nzp_*0.02));
+  printf("\n  0%%       20%%       40%%       60%%       80%%      100%%");
+  printf("\n  |    |    |    |    |    |    |    |    |    |    |  ");
+  printf("\n  ^");
+  
+  for( k = 0; k < nzp_; k++)
+  {
+    for( j = 0; j < nyp_; j++)
     {
-      for( j = 0; j < nyp_; j++)
+      for( i = 0; i < rnxp_; i++)   
       {
-        for( i = 0; i < rnxp_; i++)   
+        refi   = getXSimboxIndex(i);
+        refj   = getYSimboxIndex(j);
+        refk   = getZSimboxIndex(k);
+        distx  = getDistToBoundary(i,nx_,nxp_);
+        disty  = getDistToBoundary(j,ny_,nyp_);
+        distz  = getDistToBoundary(k,nz_,nzp_);         
+        mult   = float(pow(MAXIM(1.0-distx*distx-disty*disty-distz*distz,0.0),3));
+        
+        if(i<nxp_)  // computes the index reference from the cube puts it in value
         {
-          refi   = getXSimboxIndex(i);
-          refj   = getYSimboxIndex(j);
-          refk   = getZSimboxIndex(k);
-          distx  = getDistToBoundary(i,nx_,nxp_);
-          disty  = getDistToBoundary(j,ny_,nyp_);
-          distz  = getDistToBoundary(k,nz_,nzp_);         
-          mult   = float(pow(MAXIM(1.0-distx*distx-disty*disty-distz*distz,0.0),3));
-
-          if(i<nxp_)  // computes the index reference from the cube puts it in value
-          {
-            actSimBox->getCoord(refi, refj, refk, x, y, z);
-            value = static_cast<fftw_real>(grid->GetValueZInterpolated(x,y,z));
-            if(value==RMISSING)
-              value = 0;
-            value=static_cast<float>( ((mult*value+(1.0-mult)*meanvalue[i+j*nxp_])) );
-          }
-          else
-            value=RMISSING;        
-
-          setNextReal(value);
-        } //for k,j,i
-        if ((nyp_*k+j+1)%monitorSize == 0) 
-        { 
-          printf("^");
-          fflush(stdout);
+          actSimBox->getCoord(refi, refj, refk, x, y, z);
+          value = static_cast<fftw_real>(grid->GetValueZInterpolated(x,y,z));
+          if(value==RMISSING)
+            value = 0;
+          value=static_cast<float>( ((mult*value+(1.0-mult)*meanvalue[i+j*nxp_])) );
         }
+        else
+          value=RMISSING;        
+        
+        setNextReal(value);
+      } //for k,j,i
+      if ((nyp_*k+j+1)%monitorSize == 0) 
+      { 
+        printf("^");
+        fflush(stdout);
       }
     }
-    LogKit::LogFormatted(LogKit::LOW,"\n");
-    endAccess();
-    fftw_free(meanvalue);
+  }
+  LogKit::LogFormatted(LogKit::LOW,"\n");
+  endAccess();
+  fftw_free(meanvalue);
 }
 
 void
@@ -1725,6 +1726,9 @@ FFTGrid::writeDirectFile(const std::string & fileName, const Simbox * simbox)
     std::ofstream binFile;
     NRLib::OpenWrite(binFile, fileName, std::ios::out | std::ios::binary);
 
+    std::string fileType = "crava_fftgrid_binary";
+    binFile << fileType << "\n";
+
     NRLib::WriteBinaryDouble(binFile, simbox->getx0());
     NRLib::WriteBinaryDouble(binFile, simbox->gety0());
     NRLib::WriteBinaryDouble(binFile, simbox->getdx());
@@ -1754,16 +1758,16 @@ FFTGrid::writeDirectFile(const std::string & fileName, const Simbox * simbox)
 }
 
 
-std::string
-FFTGrid::readDirectFile(const std::string & fileName) 
+void
+FFTGrid::readDirectFile(const std::string & fileName, std::string & errText) 
 {
   std::string error;
   try {
     std::ifstream binFile;
     NRLib::OpenRead(binFile, fileName, std::ios::in | std::ios::binary);
 
-    std::string token;
-    //int line = 0;
+    std::string fileType;
+    getline(binFile,fileType);
 
     double dummy = NRLib::ReadBinaryDouble(binFile);
     dummy = NRLib::ReadBinaryDouble(binFile);
@@ -1781,6 +1785,7 @@ FFTGrid::readDirectFile(const std::string & fileName)
     int nx = NRLib::ReadBinaryInt(binFile);
     int ny = NRLib::ReadBinaryInt(binFile);
     int nz = NRLib::ReadBinaryInt(binFile);
+
     if(nx != rnxp_ || ny != nyp_ || nz != nzp_) {
       std::string message = "Grid dimension is wrong for direct read of file '"+
         fileName+"'.";
@@ -1795,9 +1800,9 @@ FFTGrid::readDirectFile(const std::string & fileName)
     binFile.close();
   }
   catch (NRLib::Exception & e) {
-    error = "Error: "+std::string(e.what())+"\n";
+    error = std::string("Error: ") + e.what() + "\n";
   }
-  return(error);
+  errText += error;
 }
 
 

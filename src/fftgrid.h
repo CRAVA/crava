@@ -27,9 +27,9 @@ public:
 
   void                 fillInFromSegY(SegY * segy, Simbox *simbox );            // No mode
 
-  void                 fillInFromStorm(Simbox     * actSimBox,
-                                       StormContGrid      * grid,
-                                       const char * parName);    // No mode
+  void                 fillInFromStorm(Simbox            * actSimBox,
+                                       StormContGrid     * grid,
+                                       const std::string & parName);    // No mode
   void                 fillInFromRealFFTGrid(FFTGrid& fftGrid);  // No mode
   void                 fillInConstant(float value);              // No mode
   fftw_real*           fillInParamCorr(Corr* corr,int minIntFq,
@@ -103,7 +103,7 @@ public:
   virtual void         writeResampledStormCube(GridMapping *gridmapping, const std::string & fileName, 
                                                const Simbox *simbox, const int format, bool expTrans);
   virtual void         writeDirectFile(const std::string & fileName, const Simbox * simbox);
-  virtual std::string  readDirectFile(const std::string & fileName);
+  virtual void         readDirectFile(const std::string & fileName, std::string & errText);
 
   virtual bool         isFile() {return(0);}    // indicates wether the grid is in memory or on disk  
 

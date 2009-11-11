@@ -47,11 +47,6 @@ public:
   bool             getFailed()                const { return failed_                 ;}
   void             releaseGrids();                                        // Cuts connection to SeisCube_ and  backModel_
   void             getCorrGradIJ(float & corrGradI, float &corrGradJ) const;
-  static void      writeSurfaceToFile(const Surface     & surface,
-                                      const std::string & name,
-                                      int                 format);
-
-  enum             backFileTypes{STORMFILE = -2, SEGYFILE = -1};
 
 private:
   void             makeTimeSimboxes(Simbox        *& timeSimbox,
@@ -179,22 +174,32 @@ private:
                                           ModelSettings *& modelSettings);
   void             estimateZPaddingSize(Simbox         * timeSimbox,
                                         ModelSettings *& modelSettings);
-  int              readSegyFile(const std::string       & fileName, 
+  void             readGridFromFile(const std::string       & fileName,
+                                    const std::string       & parName,
+                                    const float               offset,
+                                    FFTGrid                *& grid,
+                                    const SegyGeometry     *& geometry,
+                                    const TraceHeaderFormat * format,
+                                    int                       gridType,
+                                    Simbox                  * timeSimbox,
+                                    ModelSettings           * modelSettings, 
+                                    std::string             & errorText);
+  void             readSegyFile(const std::string       & fileName, 
                                 FFTGrid                *& target, 
                                 Simbox                 *& timeSimbox, 
                                 ModelSettings          *& modelSettings,
-                                char                    * errText,
                                 const SegyGeometry     *& geometry,
                                 int                       gridType,
                                 float                     offset,
-                                const TraceHeaderFormat * format, 
-                                int                   i = IMISSING); 
-  int              readStormFile(const std::string  & fName, 
+                                const TraceHeaderFormat * format,
+                                std::string             & errText); 
+  void             readStormFile(const std::string  & fileName, 
                                  FFTGrid           *& target, 
-                                 const char         * parName,
+                                 const int            gridType,
+                                 const std::string  & parName, 
                                  Simbox             * timeSimbox,
                                  ModelSettings     *& modelSettings, 
-                                 char               * errText);
+                                 std::string        & errText);
   void             estimateCorrXYFromSeismic(Surface *& CorrXY,
                                              FFTGrid ** seisCube,
                                              int        nAngles);
@@ -215,7 +220,6 @@ private:
   void             setupDefaultReflectionMatrix(float       **& reflectionMatrix,
                                                 Background    * background,
                                                 ModelSettings * modelSettings);
-  int              findFileType(const std::string & fileName);
   void             checkAvailableMemory(Simbox            * timeSimbox,
                                         ModelSettings     * modelSettings,
                                         const std::string & seismicFile);

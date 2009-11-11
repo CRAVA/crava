@@ -54,7 +54,7 @@ public:
   void         writeResampledStormCube(GridMapping *gridmapping, const std::string & fileName, 
                                        const Simbox *simbox, const int format, bool expTrans);
   void         writeDirectFile(const std::string & fileName, const Simbox * simbox);
-  std::string  readDirectFile(const std::string & fileName);
+  void         readDirectFile(const std::string & fileName, std::string & error);
 
   bool         isFile() {return(1);}
   float      * getRealTrace(int i, int j);

@@ -500,21 +500,19 @@ Model::checkAvailableMemory(Simbox            * timeSimbox,
   if(memchunk0 != NULL) delete[] memchunk0;
 }
 
-int
+void
 Model::readSegyFile(const std::string       & fileName, 
                     FFTGrid                *& target, 
                     Simbox                 *& timeSimbox, 
                     ModelSettings          *& modelSettings, 
-                    char                    * errText, 
                     const SegyGeometry     *& geometry,
                     int                       gridType,
                     float                     offset,
                     const TraceHeaderFormat * format,
-                    int                       i)
+                    std::string             & errText)
 {
-  strcpy(errText, "");
   SegY * segy = NULL;
-  int error = 0;
+  bool failed = false;
   target = NULL;
 
   try
@@ -546,11 +544,11 @@ Model::readSegyFile(const std::string       & fileName,
   }
   catch (NRLib::Exception & e)
   {
-    sprintf(errText,"%s%s",errText,e.what());
-    error++;
+    errText += e.what();
+    failed = true;
   }
   
-  if (error == 0)
+  if (failed == false)
   {
     const SegyGeometry * geo;
     geo = segy->GetGeometry();
@@ -558,7 +556,7 @@ Model::readSegyFile(const std::string       & fileName,
     if (gridType == FFTGrid::DATA) 
       geometry = new SegyGeometry(geo);
     
-    error = timeSimbox->insideRectangle(geo);
+    int error = timeSimbox->insideRectangle(geo);
     if(error == 0)
     {
       if(modelSettings->getFileGrid() == 1)
@@ -577,31 +575,30 @@ Model::readSegyFile(const std::string       & fileName,
                              modelSettings->getNZpad());
       target->setType(gridType);
       target->fillInFromSegY(segy, timeSimbox);
-      if (gridType == FFTGrid::DATA)
-        target->setAngle(modelSettings->getAngle(i));
     }
-    else
-      sprintf(errText,"%sSpecified area in command AREA is larger than the data from SegY file %s\n",
-              errText,fileName.c_str());
+    else 
+    {
+      errText += "Specified area in command AREA is larger than the data from SegY file "+fileName+"\n";
+      failed = true;
+    }
   }
   if (segy != NULL)
     delete segy;
-
-  return(error);
 }
 
-//NBNB Following routine only to be used for parameters!
-int
+
+void
 Model::readStormFile(const std::string  & fName, 
                      FFTGrid           *& target, 
-                     const char         * parName, 
+                     const int            gridType,
+                     const std::string  & parName, 
                      Simbox             * timeSimbox, 
                      ModelSettings     *& modelSettings, 
-                     char               * errText)
+                     std::string        & errText)
 {
-  int error = 0;
-  StormContGrid *stormgrid = NULL;
-  
+  StormContGrid * stormgrid = NULL;
+  bool failed = false;
+
   try
   {   
     stormgrid = new StormContGrid(0,0,0);
@@ -610,11 +607,11 @@ Model::readStormFile(const std::string  & fName,
   }
   catch (NRLib::Exception & e) 
   {
-    sprintf(errText,"%s%s",errText,e.what());
-    error = 1;
+    errText += e.what();
+    failed = true;
   }
 
-  if(error==0)
+  if(failed == false)
   {
     if(modelSettings->getFileGrid() == 1)
       target = new FFTFileGrid(timeSimbox->getnx(), 
@@ -630,14 +627,12 @@ Model::readStormFile(const std::string  & fName,
                            modelSettings->getNXpad(), 
                            modelSettings->getNYpad(), 
                            modelSettings->getNZpad());
-    target->setType(FFTGrid::PARAMETER);
+    target->setType(gridType);
     target->fillInFromStorm(timeSimbox,stormgrid, parName);
   }  
 
   if (stormgrid != NULL)
     delete stormgrid;
-  
-  return(error);
 }
 
 int 
@@ -666,9 +661,9 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
   std::string areaType = "Model file";
   std::string seismicFile("");
   SegyGeometry * geometry = NULL;
-  if (modelSettings_->getGenerateSeismic()==false && inputFiles->getNumberOfSeismicFiles() > 0)
+  if (modelSettings->getGenerateSeismic()==false && inputFiles->getNumberOfSeismicFiles() > 0)
     seismicFile = inputFiles->getSeismicFile(0); // Also needed for checkAvailableMemory()
-  if (!(areaFromModelFile && modelSettings_->getEstimationMode()==true)) 
+  if (!(areaFromModelFile && modelSettings->getEstimationMode()==true)) 
   {  
     if (!areaFromModelFile)
       LogKit::LogFormatted(LogKit::HIGH,"\nFinding inversion area from seismic data in file %s\n", 
@@ -717,7 +712,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
   }
 
   // Rotate variograms relative to simbox
-  modelSettings_->rotateVariograms(static_cast<float> (timeSimbox_->getAngle()));
+  modelSettings->rotateVariograms(static_cast<float> (timeSimbox_->getAngle()));
 
   //
   // Set SURFACES
@@ -1021,7 +1016,7 @@ Model::setupExtendedTimeSimbox(Simbox   * timeSimbox,
   Surface * refPlane = createPlaneSurface(refPlanePars, corrSurf);
 
   std::string fileName = IO::makeFullFileName(IO::PathToCorrelations(), "CorrelationRotationPlane");
-  writeSurfaceToFile(*refPlane,fileName,outputFormat);
+  IO::writeSurfaceToFile(*refPlane,fileName,outputFormat);
 
   refPlane->AddNonConform(corrSurf);
   delete [] corrPlanePars;
@@ -1296,73 +1291,60 @@ Model::processSeismic(FFTGrid      **& seisCube,
   double wall=0.0, cpu=0.0;
   TimeKit::getTime(wall,cpu);
 
-  int error = 0;
-
   if(inputFiles->getNumberOfSeismicFiles() > 0)
   {
     Utils::writeHeader("Reading seismic data");
 
-    char tmpErrText[MAX_STRING];
     int nAngles = modelSettings->getNumberOfAngles();
     const SegyGeometry ** geometry = new const SegyGeometry * [nAngles];
     seisCube = new FFTGrid * [nAngles];
 
-    int readerror = 0;
-    for (int i =0 ; i < nAngles ; i++) {
+    for (int i = 0 ; i < nAngles ; i++) {
       geometry[i] = NULL;
-      if(modelSettings_->getDirectSeisInput() == false) {
-        float offset = modelSettings->getLocalSegyOffset(i);
-        if(offset < 0)
-          offset = modelSettings_->getSegyOffset();
-        readerror = readSegyFile(inputFiles->getSeismicFile(i), seisCube[i],
-                                 timeSimbox, modelSettings, 
-                                 tmpErrText, geometry[i], FFTGrid::DATA,
-                                 offset, modelSettings->getTraceHeaderFormat(i),
-                                 i);
-        error += readerror;
-      }
-      else {
-        if(modelSettings->getFileGrid() == 1)
-          seisCube[i] = new FFTFileGrid(timeSimbox->getnx(),
-                                        timeSimbox->getny(), 
-                                        timeSimbox->getnz(),
-                                        modelSettings->getNXpad(), 
-                                        modelSettings->getNYpad(), 
-                                        modelSettings->getNZpad());
-        else
-          seisCube[i] = new FFTGrid(timeSimbox->getnx(), 
-                                    timeSimbox->getny(), 
-                                    timeSimbox->getnz(),
-                                    modelSettings->getNXpad(), 
-                                    modelSettings->getNYpad(), 
-                                    modelSettings->getNZpad());
-        seisCube[i]->setType(FFTGrid::DATA);
+      std::string tmpErrText;
+      std::string fileName = inputFiles->getSeismicFile(i);
+      std::string dataName = "Seismic data angle stack"+NRLib::ToString(i);
+      float       offset = modelSettings->getLocalSegyOffset(i);
+      if(offset < 0)
+        offset = modelSettings->getSegyOffset();
+      readGridFromFile(fileName,
+                       dataName,
+                       offset,
+                       seisCube[i],
+                       geometry[i],
+                       modelSettings->getTraceHeaderFormat(i),
+                       FFTGrid::DATA,
+                       timeSimbox,
+                       modelSettings,
+                       tmpErrText);
+      if(tmpErrText != "")
+      {
+        tmpErrText += "Reading of file \'"+fileName+"\' for "+dataName+" failed\n";
+        sprintf(errText,"%s%s",errText,tmpErrText.c_str());
+        failed = true;
+      } 
+      else { 
         seisCube[i]->setAngle(modelSettings->getAngle(i));
-        std::string readErr = seisCube[i]->readDirectFile(inputFiles->getSeismicFile(i));
-        if(readErr != "") {
-          error++;
-          sprintf(tmpErrText,"%s%s",tmpErrText, readErr.c_str());
-        }
-      }
-    }
-
-    LogKit::LogFormatted(LogKit::LOW,"\nArea/resolution           x0           y0            lx         ly     azimuth         dx      dy\n");
-    LogKit::LogFormatted(LogKit::LOW,"-------------------------------------------------------------------------------------------------\n");
-    for (int i = 0 ; i < nAngles ; i++)
-    {   
-      if (geometry[i] != NULL) {
-        double geoAngle = (-1)*timeSimbox->getAngle()*(180/M_PI);
-        if (geoAngle < 0)
-          geoAngle += 360.0f;
-        LogKit::LogFormatted(LogKit::LOW,"Seismic data %d   %11.2f  %11.2f    %10.2f %10.2f    %8.3f    %7.2f %7.2f\n",i,
-                             geometry[i]->GetX0(), geometry[i]->GetY0(), 
-                             geometry[i]->Getlx(), geometry[i]->Getly(), geoAngle,
-                             geometry[i]->GetDx(), geometry[i]->GetDy());
       }
     }
     
-    if(error == 0)
+    if(failed == false)
     {
+      LogKit::LogFormatted(LogKit::LOW,"\nArea/resolution           x0           y0            lx         ly     azimuth         dx      dy\n");
+      LogKit::LogFormatted(LogKit::LOW,"-------------------------------------------------------------------------------------------------\n");
+      for (int i = 0 ; i < nAngles ; i++)
+      {   
+        if (geometry[i] != NULL) {
+          double geoAngle = (-1)*timeSimbox->getAngle()*(180/M_PI);
+          if (geoAngle < 0)
+            geoAngle += 360.0f;
+          LogKit::LogFormatted(LogKit::LOW,"Seismic data %d   %11.2f  %11.2f    %10.2f %10.2f    %8.3f    %7.2f %7.2f\n",i,
+                               geometry[i]->GetX0(), geometry[i]->GetY0(), 
+                               geometry[i]->Getlx(), geometry[i]->Getly(), geoAngle,
+                               geometry[i]->GetDx(), geometry[i]->GetDy());
+        }
+      }
+
       if(modelSettings->getDirectSeisOutput() == true) {
         for(int i=0;i<nAngles;i++) {
           std::string angle    = NRLib::ToString(modelSettings->getAngle(i)*(180/M_PI), 1);
@@ -1387,12 +1369,7 @@ Model::processSeismic(FFTGrid      **& seisCube,
           delete geometry[i];
       delete [] geometry;
     }
-    else
-    {
-      sprintf(errText, "%sReading of seismic data failed:\n %s\n", errText, tmpErrText);
-    }
   }
-  failed = error > 0;
   Timings::setTimeSeismic(wall,cpu);
 }
 
@@ -1773,8 +1750,7 @@ Model::processBackground(Background   *& background,
     FFTGrid * velocity = NULL;
     std::string backVelFile = inputFiles->getBackVelFile();
     if (backVelFile != "")
-      loadVelocity(velocity, timeSimbox, modelSettings_, 
-                   backVelFile, errText, failed);
+      loadVelocity(velocity, timeSimbox, modelSettings, backVelFile, errText, failed);
     if (!failed) 
     {
       if(modelSettings->getBackgroundVario() == NULL)
@@ -1794,7 +1770,11 @@ Model::processBackground(Background   *& background,
   }
   else 
   {
-    const char * parName[]={"Vp background","Vs background","Rho background"};
+    std::vector<std::string> parName;
+    parName.push_back("Vp background");
+    parName.push_back("Vs background");
+    parName.push_back("Rho background");
+
     for(int i=0 ; i<3 ; i++)
     {
       float constBackValue = modelSettings->getConstBackValue(i);
@@ -1805,59 +1785,34 @@ Model::processBackground(Background   *& background,
       {
         if(backFile.size() > 0)
         {
-          char tmpErrText[MAX_STRING];
-          sprintf(tmpErrText,"%c",'\0');
-          int readerror = 0;
-
-          if(modelSettings->getDirectBGInput() == false) {
-            if(findFileType(backFile) == SEGYFILE) {
-              const SegyGeometry * geometry = NULL;
-              float offset = modelSettings->getSegyOffset();
-              readerror = readSegyFile(backFile, backModel[i], 
-                                       timeSimbox, modelSettings, 
-                                       tmpErrText, geometry, 
-                                       FFTGrid::PARAMETER, 
-                                       offset, NULL);
-            }
-            else
-              readerror = readStormFile(backFile, backModel[i], parName[i], 
-                                        timeSimbox, modelSettings,
-                                        tmpErrText);
-          }
-          else {
-            if(modelSettings->getFileGrid() == 1)
-              backModel[i] = new FFTFileGrid(timeSimbox->getnx(),
-                                             timeSimbox->getny(), 
-                                             timeSimbox->getnz(),
-                                             modelSettings->getNXpad(), 
-                                             modelSettings->getNYpad(), 
-                                             modelSettings->getNZpad());
-            else
-              backModel[i] = new FFTGrid(timeSimbox->getnx(), 
-                                         timeSimbox->getny(), 
-                                         timeSimbox->getnz(),
-                                         modelSettings->getNXpad(), 
-                                         modelSettings->getNYpad(), 
-                                         modelSettings->getNZpad());
-            backModel[i]->setType(FFTGrid::PARAMETER);
-            std::string readErr = backModel[i]->readDirectFile(backFile);
-            if(readErr != "")
-              readerror = 1;
-          }
-          
-          backModel[i]->logTransf();
-          
-          if(readerror != 0)
+          const SegyGeometry      * dummy1 = NULL;
+          const TraceHeaderFormat * dummy2 = NULL;
+          const float               offset = modelSettings->getSegyOffset();
+          std::string errorText;
+          readGridFromFile(backFile,
+                           parName[i],
+                           offset,
+                           backModel[i],
+                           dummy1,
+                           dummy2,
+                           FFTGrid::PARAMETER,
+                           timeSimbox,
+                           modelSettings,
+                           errorText);
+          if(errorText != "")
           {
-            sprintf(errText,"%sReading of file \'%s\' for parameter \'%s\' failed\n",
-                    errText,backFile.c_str(),parName[i]);
+            errorText += "Reading of file \'"+backFile+"\' for parameter \'"+parName[i]+"\' failed\n";
+            sprintf(errText,"%s%s", errText,errorText.c_str());
             failed = true;
+          } 
+          else {
+            backModel[i]->logTransf();
           }
         }
         else
         {
           sprintf(errText,"%sReading of file for parameter \'%s\' failed. No file name is given.\n",
-                  errText,parName[i]);
+                  errText,parName[i].c_str());
           failed = true;
         }
       }
@@ -1873,38 +1828,94 @@ Model::processBackground(Background   *& background,
       else
       {
         sprintf(errText,"%sTrying to set background model to 0 for parameter %s\n\n",
-                errText,parName[i]);
+                errText,parName[i].c_str());
         failed = true;
       }
     }
-    background = new Background(backModel);
+    if (failed == false) {
+      background = new Background(backModel);
+    }
   }
-  if((modelSettings->getGridOutputFlag() & ModelSettings::BACKGROUND) > 0) {
-    background->writeBackgrounds(timeSimbox, timeDepthMapping_, timeCutMapping_); 
-  }
 
-  if(modelSettings_->getDirectBGOutput() == true) {
-    std::string fileName[3];
-
-    std::string baseName1 = IO::PrefixBackground() + "Vp"  + IO::SuffixDirectData();
-    std::string baseName2 = IO::PrefixBackground() + "Vs"  + IO::SuffixDirectData();
-    std::string baseName3 = IO::PrefixBackground() + "Rho" + IO::SuffixDirectData();
-
-    fileName[0] = IO::makeFullFileName(IO::PathToBackground(), baseName1);
-    fileName[1] = IO::makeFullFileName(IO::PathToBackground(), baseName2);
-    fileName[2] = IO::makeFullFileName(IO::PathToBackground(), baseName3);
-
-    for(int i=0;i<3;i++) {
-      backModel[i]->setAccessMode(FFTGrid::RANDOMACCESS);
-      backModel[i]->expTransf();
-      backModel[i]->writeDirectFile(fileName[i], timeSimbox);
-      backModel[i]->logTransf();
-      backModel[i]->endAccess();
+  
+  if (failed == false) {
+    if((modelSettings->getGridOutputFlag() & ModelSettings::BACKGROUND) > 0) {
+      background->writeBackgrounds(timeSimbox, timeDepthMapping_, timeCutMapping_); 
+    }
+    
+    if(modelSettings->getDirectBGOutput() == true) {
+      std::string fileName[3];
+      
+      std::string baseName1 = IO::PrefixBackground() + "Vp"  + IO::SuffixDirectData();
+      std::string baseName2 = IO::PrefixBackground() + "Vs"  + IO::SuffixDirectData();
+      std::string baseName3 = IO::PrefixBackground() + "Rho" + IO::SuffixDirectData();
+      
+      fileName[0] = IO::makeFullFileName(IO::PathToBackground(), baseName1);
+      fileName[1] = IO::makeFullFileName(IO::PathToBackground(), baseName2);
+      fileName[2] = IO::makeFullFileName(IO::PathToBackground(), baseName3);
+      
+      for(int i=0;i<3;i++) {
+        backModel[i]->setAccessMode(FFTGrid::RANDOMACCESS);
+        backModel[i]->expTransf();
+        backModel[i]->writeDirectFile(fileName[i], timeSimbox);
+        backModel[i]->logTransf();
+        backModel[i]->endAccess();
+      }
     }
   }
     
   Timings::setTimePriorExpectation(wall,cpu);
 }
+
+void
+Model::readGridFromFile(const std::string       & fileName,
+                        const std::string       & parName,
+                        const float               offset,
+                        FFTGrid                *& grid,
+                        const SegyGeometry     *& geometry,   
+                        const TraceHeaderFormat * format,
+                        int                       gridType,
+                        Simbox                  * timeSimbox,
+                        ModelSettings           * modelSettings,
+                        std::string             & errText)
+{
+  int gridFileType = IO::findGridFileType(fileName);
+
+  if(gridFileType == IO::DIRECTFILE) 
+  {
+    if(modelSettings->getFileGrid() == 1)
+      grid = new FFTFileGrid(timeSimbox->getnx(),
+                             timeSimbox->getny(), 
+                             timeSimbox->getnz(),
+                             modelSettings->getNXpad(), 
+                             modelSettings->getNYpad(), 
+                             modelSettings->getNZpad());
+    else
+      grid = new FFTGrid(timeSimbox->getnx(), 
+                         timeSimbox->getny(), 
+                         timeSimbox->getnz(),
+                         modelSettings->getNXpad(), 
+                         modelSettings->getNYpad(), 
+                         modelSettings->getNZpad());
+    grid->setType(gridType);
+    grid->readDirectFile(fileName, errText);
+  }
+  else if(gridFileType == IO::SEGYFILE) 
+  {
+    readSegyFile(fileName, grid, timeSimbox, modelSettings, geometry, 
+                 gridType, offset, format, errText);
+  }
+  else if(gridFileType == IO::STORMFILE) 
+  {
+    readStormFile(fileName, grid, gridType, parName, timeSimbox, modelSettings, errText);
+  }
+  else 
+  {
+    errText += "Reading of file \'"+fileName+"\' for grid type \'"
+               +parName+"\'failed. File type not recognized.\n";
+  }
+}
+
 
 void 
 Model::processPriorCorrelations(Corr         *& correlations,
@@ -2046,8 +2057,8 @@ Model::findCorrXYGrid(ModelSettings * modelSettings)
   float dx  = static_cast<float>(timeSimbox_->getdx());
   float dy  = static_cast<float>(timeSimbox_->getdy());
 
-  int   nx  = modelSettings_->getNXpad();
-  int   ny  = modelSettings_->getNYpad();
+  int   nx  = modelSettings->getNXpad();
+  int   ny  = modelSettings->getNYpad();
 
   Surface * grid = new Surface(0, 0, dx*nx, dy*ny, nx, ny, RMISSING);
 
@@ -2314,7 +2325,7 @@ Model::processWavelets(Wavelet     **& wavelet,
         {
           std::string baseName = IO::PrefixLocalWaveletShift() + NRLib::ToString(angle,1);
           std::string fileName = IO::makeFullFileName(IO::PathToWavelets(), baseName);
-          writeSurfaceToFile(help,fileName,outputFormat);
+          IO::writeSurfaceToFile(help,fileName,outputFormat);
         }
       }
       else
@@ -2329,7 +2340,7 @@ Model::processWavelets(Wavelet     **& wavelet,
         {
           std::string baseName = IO::PrefixLocalWaveletGain() + NRLib::ToString(angle,1);
           std::string fileName = IO::makeFullFileName(IO::PathToWavelets(), baseName);
-          writeSurfaceToFile(help,fileName,outputFormat);
+          IO::writeSurfaceToFile(help,fileName,outputFormat);
         }
       }
       else
@@ -2344,7 +2355,7 @@ Model::processWavelets(Wavelet     **& wavelet,
       {
         std::string baseName = IO::PrefixLocalNoise() + NRLib::ToString(angle,1);
         std::string fileName = IO::makeFullFileName(IO::PathToWavelets(), baseName);
-        writeSurfaceToFile(help,fileName,outputFormat);
+        IO::writeSurfaceToFile(help,fileName,outputFormat);
       }
     }
     else
@@ -2834,7 +2845,7 @@ void Model::processPriorFaciesProb(float         *& priorFacies,
     else if(modelSettings->getIsPriorFaciesProbGiven()==2)
     {
        processPriorFaciesProbCubes(inputFiles, 
-                                   modelSettings_, 
+                                   modelSettings, 
                                    priorFaciesProbCubes_,
                                    timeSimbox_,
                                    errTxt,
@@ -2857,51 +2868,46 @@ void Model::processPriorFaciesProbCubes(InputFiles     * inputFiles,
 
   typedef std::map<std::string,std::string> mapType;
   mapType myMap = inputFiles->getPriorFaciesProbFile();
-  const char * parname = "priorfaciesprob";
   for(i=0;i<nFacies;i++)
   {
     char tmpErrText[MAX_STRING];
     sprintf(tmpErrText,"%c",'\0');
-    int readerror = 0;
     mapType::iterator iter = myMap.find(modelSettings->getFaciesName(i));
     
     if(iter!=myMap.end())
     {
       const std::string & faciesProbFile = iter->second;
-      if(findFileType(faciesProbFile) == SEGYFILE) {
-        const SegyGeometry * geometry = NULL;
-        float offset = modelSettings->getSegyOffset();
-        readerror = readSegyFile(faciesProbFile, priorFaciesProbCubes[i], 
-          timeSimbox, modelSettings,
-          tmpErrText, geometry, 
-          FFTGrid::PARAMETER, 
-          offset, NULL);
-      }
-      else{
-        readerror = readStormFile(faciesProbFile, priorFaciesProbCubes[i], parname, 
-          timeSimbox, modelSettings,
-          tmpErrText);
-      }
-
-
-      if(readerror != 0)
+      const SegyGeometry      * dummy1 = NULL;
+      const TraceHeaderFormat * dummy2 = NULL;
+      const float               offset = modelSettings->getSegyOffset();
+      std::string errorText;
+      readGridFromFile(faciesProbFile,
+                       "priorfaciesprob",
+                       offset,
+                       priorFaciesProbCubes[i],
+                       dummy1,
+                       dummy2,
+                       FFTGrid::PARAMETER,
+                       timeSimbox,
+                       modelSettings,
+                       errorText);
+      if(errorText != "")
       {
-        sprintf(errTxt,"%sReading of file \'%s\' for prior facies probability for facies \'%s\' failed\n",
-          errTxt,faciesProbFile.c_str(),modelSettings->getFaciesName(i).c_str());
+        errorText += "Reading of file \'"+faciesProbFile+"\' for prior facies probability for facies \'"
+                     +modelSettings->getFaciesName(i)+"\' failed\n";
+        sprintf(tmpErrText,"%s%s", tmpErrText, errorText.c_str());
         failed = true;
-      }
-
+      } 
     }
     else
     {
-      LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: No prior facies probability found for facies %12s\n",modelSettings->getFaciesName(i).c_str());
+      LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: No prior facies probability found for facies %12s\n",
+                           modelSettings->getFaciesName(i).c_str());
       modelSettings->setEstimateFaciesProb(false);
       break;
     }  
-
   }
 }
-
 
 
 void
@@ -2986,23 +2992,6 @@ Model::loadExtraSurfaces(Surface  **& waveletEstimInterval,
       failed = true;
     }
   }
-}
-
-// NBNB The following routine is stupid, and assumes SEGY if file 
-// does not start with 'storm_petro_binary'
-int
-Model::findFileType(const std::string & fileName)
-{
-  std::ifstream file;
-  NRLib::OpenRead(file, fileName);
-  std::string line;
-  getline(file,line);         
-  file.close();
-  std::string label = line.substr(0,18);
-  if (label.compare("storm_petro_binary") == 0)
-    return(STORMFILE);
-  else
-    return(SEGYFILE);
 }
 
 void
@@ -3271,7 +3260,7 @@ Model::printSettings(ModelSettings * modelSettings,
       LogKit::LogFormatted(LogKit::LOW,"  Density read from file                   : %10s\n",inputFiles->getBackFile(2).c_str());
   }
 
-  TraceHeaderFormat * thf_old = modelSettings_->getTraceHeaderFormat();
+  TraceHeaderFormat * thf_old = modelSettings->getTraceHeaderFormat();
   if (thf_old != NULL) 
   {
     LogKit::LogFormatted(LogKit::LOW,"\nAdditional SegY trace header format:\n");
@@ -3366,7 +3355,7 @@ Model::printSettings(ModelSettings * modelSettings,
       LogKit::LogFormatted(LogKit::LOW,"\nSettings for AVO stack %d:\n",i+1);
       LogKit::LogFormatted(LogKit::LOW,"  Angle                                    : %10.1f\n",(modelSettings->getAngle(i)*180/PI));
       LogKit::LogFormatted(LogKit::LOW,"  SegY start time                          : %10.1f\n",modelSettings->getSegyOffset());
-      TraceHeaderFormat * thf = modelSettings_->getTraceHeaderFormat(i);
+      TraceHeaderFormat * thf = modelSettings->getTraceHeaderFormat(i);
       if (thf != NULL) 
       {
         LogKit::LogFormatted(LogKit::LOW,"  SegY trace header format:\n");
@@ -3486,44 +3475,22 @@ Model::loadVelocity(FFTGrid          *& velocity,
   }
   else
   {
-    const char * parName = "velocity field";
-    char tmpErrText[MAX_STRING];
-    sprintf(tmpErrText,"%c",'\0');
-    int readerror = 0;
-
-    if(modelSettings->getDirectVelInput() == false) {
-      if(findFileType(velocityField) == SEGYFILE) {
-        const SegyGeometry * geometry = NULL;
-        float offset = modelSettings->getSegyOffset();
-        readerror = readSegyFile(velocityField, velocity,
-                                 timeSimbox, modelSettings, 
-                                 tmpErrText, geometry, 
-                                 FFTGrid::VELOCITY, 
-                                 offset, NULL);
-      }
-      else
-        readerror = readStormFile(velocityField, velocity, parName, 
-                                  timeSimbox, modelSettings,
-                                  tmpErrText);
-    }
-    else {
-      if(modelSettings->getFileGrid() == 1)
-        velocity = new FFTFileGrid(timeSimbox->getnx(),
-                                   timeSimbox->getny(), 
-                                   timeSimbox->getnz(),
-                                   modelSettings->getNXpad(), 
-                                   modelSettings->getNYpad(), 
-                                   modelSettings->getNZpad());
-      else
-        velocity = new FFTGrid(timeSimbox->getnx(), 
-                               timeSimbox->getny(), 
-                               timeSimbox->getnz(),
-                               modelSettings->getNXpad(), 
-                               modelSettings->getNYpad(), 
-                               modelSettings->getNZpad());
-      velocity->setType(FFTGrid::VELOCITY);
-    }
-    if (readerror==0) {
+    const SegyGeometry      * dummy1 = NULL;
+    const TraceHeaderFormat * dummy2 = NULL;
+    const float               offset = modelSettings->getSegyOffset();
+    std::string errorText;
+    readGridFromFile(velocityField,
+                     "velocity field",
+                     offset,
+                     velocity,
+                     dummy1,
+                     dummy2,
+                     FFTGrid::PARAMETER,
+                     timeSimbox,
+                     modelSettings,
+                     errorText);
+    
+    if (errorText == "") { // No errors
       //
       // Check that the velocity grid is veldefined.
       //
@@ -3561,14 +3528,14 @@ Model::loadVelocity(FFTGrid          *& velocity,
         text += "\n  Maximum Vp = "+NRLib::ToString(logMax,2)+"    Number of too high values : "+NRLib::ToString(tooHigh);
         text += "\nThe range of allowed values can changed using the ALLOWED_PARAMETER_VALUES keyword\n";
         text += "\naborting...\n";
-        sprintf(errText,"%sReading of file \'%s\' for parameter \'%s\' failed\n%s\n", 
-                errText,velocityField.c_str(),parName,text.c_str());
+        sprintf(errText,"%sReading of file \'%s\' for background velocity field failed\n%s\n", 
+                errText,velocityField.c_str(),text.c_str());
         failed = true;
       } 
     }
     else {
-      sprintf(errText,"%sReading of file \'%s\' for parameter \'%s\' failed\n%s\n", 
-              errText,velocityField.c_str(),parName,tmpErrText);
+      errorText += "Reading of file \'"+velocityField+"\' for background velocity field failed\n";
+      sprintf(errText,"%s%s", errText,errorText.c_str());
       failed = true;
     }
   }
@@ -3639,19 +3606,8 @@ Model::findSmallestSurfaceGeometry(const double   x0,
   }
 }
 
-void   
-Model::writeSurfaceToFile(const Surface     & surface,
-                          const std::string & fileName,
-                          int                 format)
-{
-  if((format & ModelSettings::ASCII) > 0)
-    NRLib::WriteIrapClassicAsciiSurf(surface, fileName + IO::SuffixAsciiIrapClassic());
-  else  
-    NRLib::WriteStormBinarySurf(surface, fileName + IO::SuffixStormBinary());
-}
-
-
-void Model::resampleGrid(Surface & surf, Simbox * simbox, Grid2D *outgrid)
+void 
+Model::resampleGrid(Surface & surf, Simbox * simbox, Grid2D *outgrid)
 {
   for(int i=0;i<simbox->getnx();i++)
     for(int j=0;j<simbox->getny();j++)
@@ -3662,7 +3618,8 @@ void Model::resampleGrid(Surface & surf, Simbox * simbox, Grid2D *outgrid)
     }
 }
 
-void Model::resampleGridAndWriteToFile(const std::string & fileName, 
+void 
+Model::resampleGridAndWriteToFile(const std::string & fileName, 
                                        Grid2D            * grid,
                                        Simbox            * simbox, 
                                        int                 format)
@@ -3699,7 +3656,7 @@ void Model::resampleGridAndWriteToFile(const std::string & fileName,
       else
         outsurf(i,j) = (*grid)(i1,j1);
     }
-  writeSurfaceToFile(outsurf, fileName, format);
+  IO::writeSurfaceToFile(outsurf, fileName, format);
 }
 
 SegyGeometry *

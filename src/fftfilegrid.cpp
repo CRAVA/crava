@@ -484,16 +484,15 @@ FFTFileGrid::writeDirectFile(const std::string & fileName, const Simbox * simbox
 }
 
 
-std::string
-FFTFileGrid::readDirectFile(const std::string & fileName)
+void
+FFTFileGrid::readDirectFile(const std::string & fileName, std::string & error)
 {
   assert(accMode_ == NONE || accMode_ == RANDOMACCESS);
   if(accMode_ != RANDOMACCESS)
     load();
-  std::string error = FFTGrid::readDirectFile(fileName);
+  FFTGrid::readDirectFile(fileName, error);
   if(accMode_ != RANDOMACCESS)
     save();
-  return(error);
 }
 
 
