@@ -92,12 +92,12 @@ XmlModelFile::parseCrava(TiXmlNode * node, std::string & errTxt)
   if(root == 0)
     return(false);
 
-  std::vector<std::string> legalCommands(5);
-  legalCommands[0] = "actions";
-  legalCommands[1] = "project-settings";
-  legalCommands[2] = "survey";
-  legalCommands[3] = "well-data";
-  legalCommands[4] = "prior-model";
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("actions");
+  legalCommands.push_back("project-settings");
+  legalCommands.push_back("survey");
+  legalCommands.push_back("well-data");
+  legalCommands.push_back("prior-model");
 
   parseWellData(root, errTxt);
   parseSurvey(root, errTxt);
@@ -117,10 +117,10 @@ XmlModelFile::parseActions(TiXmlNode * node, std::string & errTxt)
   if(root == 0)
     return(false);
   
-  std::vector<std::string> legalCommands(3);
-  legalCommands[0]="mode";
-  legalCommands[1]="inversion-settings";
-  legalCommands[2]="estimation-settings";
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("mode");
+  legalCommands.push_back("inversion-settings");
+  legalCommands.push_back("estimation-settings");
 
   std::string mode;
   if(parseValue(root, "mode", mode, errTxt) == false)
@@ -152,11 +152,11 @@ XmlModelFile::parseInversionSettings(TiXmlNode * node, std::string & errTxt)
   if(root == 0)
     return(false);
 
-  std::vector<std::string> legalCommands(4);
-  legalCommands[0]="prediction";
-  legalCommands[1]="simulation";
-  legalCommands[2]="condition-to-wells";
-  legalCommands[3]="facies-probabilities";
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("prediction");
+  legalCommands.push_back("simulation");
+  legalCommands.push_back("condition-to-wells");
+  legalCommands.push_back("facies-probabilities");
 
   bool value;
   if(parseBool(root, "prediction", value, errTxt) == true)
@@ -201,10 +201,10 @@ XmlModelFile::parseSimulation(TiXmlNode * node, std::string & errTxt)
   if(root == 0)
     return(false);
 
-  std::vector<std::string> legalCommands(3);
-  legalCommands[0]="seed";
-  legalCommands[1]="seed-file";
-  legalCommands[2]="number-of-simulations";
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("seed");
+  legalCommands.push_back("seed-file");
+  legalCommands.push_back("number-of-simulations");
 
   int seed;
   bool seedGiven = parseValue(root, "seed", seed, errTxt);
@@ -235,10 +235,10 @@ XmlModelFile::parseEstimationSettings(TiXmlNode * node, std::string & errTxt)
   if(root == 0)
     return(false);
 
-  std::vector<std::string> legalCommands(3);
-  legalCommands[0]="estimate-background";
-  legalCommands[1]="estimate-correlations";
-  legalCommands[2]="estimate-wavelet-or-noise";
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("estimate-background");
+  legalCommands.push_back("estimate-correlations");
+  legalCommands.push_back("estimate-wavelet-or-noise");
 
   bool estimateBG = true;
   parseBool(root,"estimate-background", estimateBG, errTxt);
@@ -264,14 +264,14 @@ XmlModelFile::parseWellData(TiXmlNode * node, std::string & errTxt)
   if(root == 0)
     return(false);
   
-  std::vector<std::string> legalCommands(7);
-  legalCommands[0]="log-names";
-  legalCommands[1]="well";
-  legalCommands[2]="high-cut-seismic-resolution";
-  legalCommands[3]="allowed-parameter-values";
-  legalCommands[4]="maximum-deviation-angle";
-  legalCommands[5]="maximum-rank-correlation";
-  legalCommands[6]="maximum-merge-distance";
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("log-names");
+  legalCommands.push_back("well");
+  legalCommands.push_back("high-cut-seismic-resolution");
+  legalCommands.push_back("allowed-parameter-values");
+  legalCommands.push_back("maximum-deviation-angle");
+  legalCommands.push_back("maximum-rank-correlation");
+  legalCommands.push_back("maximum-merge-distance");
 
   parseLogNames(root, errTxt);
 
@@ -307,14 +307,14 @@ XmlModelFile::parseLogNames(TiXmlNode * node, std::string & errTxt)
   if(root == 0)
     return(false);
 
-  std::vector<std::string> legalCommands(7);
-  legalCommands[0]="time";
-  legalCommands[1]="vp";
-  legalCommands[2]="dt";
-  legalCommands[3]="vs";
-  legalCommands[4]="dts";
-  legalCommands[5]="density";
-  legalCommands[6]="facies";
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("time");
+  legalCommands.push_back("vp");
+  legalCommands.push_back("dt");
+  legalCommands.push_back("vs");
+  legalCommands.push_back("dts");
+  legalCommands.push_back("density");
+  legalCommands.push_back("facies");
 
   std::string value;
   if(parseValue(root, "time", value, errTxt) == true)
@@ -369,13 +369,13 @@ XmlModelFile::parseWell(TiXmlNode * node, std::string & errTxt)
   if(root == 0)
     return(false);
 
-  std::vector<std::string> legalCommands(6);
-  legalCommands[0]="file-name";
-  legalCommands[1]="use-for-wavelet-estimation";
-  legalCommands[2]="use-for-background-trend";
-  legalCommands[3]="use-for-facies-probabilities";
-  legalCommands[4]="synthetic-vs-log";
-  legalCommands[5]="optimize-location-to";
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("file-name");
+  legalCommands.push_back("use-for-wavelet-estimation");
+  legalCommands.push_back("use-for-background-trend");
+  legalCommands.push_back("use-for-facies-probabilities");
+  legalCommands.push_back("synthetic-vs-log");
+  legalCommands.push_back("optimize-location-to");
 
   std::string tmpErr = "";
   std::string value;
@@ -443,9 +443,9 @@ XmlModelFile::parseOptimizeLocation(TiXmlNode * node, std::string & errTxt)
 
   modelSettings_->setOptimizeWellLocation(true);
 
-  std::vector<std::string> legalCommands(2);
-  legalCommands[0]="angle";
-  legalCommands[1]="weight";
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("angle");
+  legalCommands.push_back("weight");
 
   float value;
   if(parseValue(root, "angle", value, errTxt) == true)
@@ -471,19 +471,19 @@ XmlModelFile::parseAllowedParameterValues(TiXmlNode * node, std::string & errTxt
   if(root == 0)
     return(false);
 
-  std::vector<std::string> legalCommands(12);
-  legalCommands[0]="minimum-vp";
-  legalCommands[1]="maximum-vp";
-  legalCommands[2]="minimum-vs";
-  legalCommands[3]="maximum-vs";
-  legalCommands[4]="minimum-density";
-  legalCommands[5]="maximum-density";
-  legalCommands[6]="minimum-variance-vp";
-  legalCommands[7]="maximum-variance-vp";
-  legalCommands[8]="minimum-variance-vs";
-  legalCommands[9]="maximum-variance-vs";
-  legalCommands[10]="minimum-variance-density";
-  legalCommands[11]="maximum-variance-density";
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("minimum-vp");
+  legalCommands.push_back("maximum-vp");
+  legalCommands.push_back("minimum-vs");
+  legalCommands.push_back("maximum-vs");
+  legalCommands.push_back("minimum-density");
+  legalCommands.push_back("maximum-density");
+  legalCommands.push_back("minimum-variance-vp");
+  legalCommands.push_back("maximum-variance-vp");
+  legalCommands.push_back("minimum-variance-vs");
+  legalCommands.push_back("maximum-variance-vs");
+  legalCommands.push_back("minimum-variance-density");
+  legalCommands.push_back("maximum-variance-density");
 
   float value;
   if(parseValue(root, "minimum-vp", value, errTxt) == true)
@@ -524,11 +524,11 @@ XmlModelFile::parseSurvey(TiXmlNode * node, std::string & errTxt)
   if(root == 0)
     return(false);
 
-  std::vector<std::string> legalCommands(4);
-  legalCommands[0]="angular-correlation";
-  legalCommands[1]="segy-start-time";
-  legalCommands[2]="angle-gather";
-  legalCommands[3]="wavelet-estimation-interval";
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("angular-correlation");
+  legalCommands.push_back("segy-start-time");
+  legalCommands.push_back("angle-gather");
+  legalCommands.push_back("wavelet-estimation-interval");
 
   Vario * vario = NULL;
   if(parseVariogram(root, "angular-correlation", vario, errTxt) == true) {
@@ -562,15 +562,15 @@ XmlModelFile::parseAngleGather(TiXmlNode * node, std::string & errTxt)
   if(root == 0)
     return(false);
 
-  std::vector<std::string> legalCommands(8);
-  legalCommands[0]="offset-angle";
-  legalCommands[1]="seismic-data";
-  legalCommands[2]="wavelet";
-  legalCommands[3]="wavelet-3d";
-  legalCommands[4]="match-energies";
-  legalCommands[5]="signal-to-noise-ratio";
-  legalCommands[6]="local-noise-scaled";
-  legalCommands[7]="estimate-local-noise";
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("offset-angle");
+  legalCommands.push_back("seismic-data");
+  legalCommands.push_back("wavelet");
+  legalCommands.push_back("wavelet-3d");
+  legalCommands.push_back("match-energies");
+  legalCommands.push_back("signal-to-noise-ratio");
+  legalCommands.push_back("local-noise-scaled");
+  legalCommands.push_back("estimate-local-noise");
 
   float value;
   if(parseValue(root, "offset-angle", value, errTxt) == true)
@@ -657,11 +657,11 @@ XmlModelFile::parseSeismicData(TiXmlNode * node, std::string & errTxt)
   if(root == 0)
     return(false);
   
-  std::vector<std::string> legalCommands(4);
-  legalCommands[0]="file-name";
-  legalCommands[1]="start-time";
-  legalCommands[2]="segy-format";
-  legalCommands[3]="type";
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("file-name");
+  legalCommands.push_back("start-time");
+  legalCommands.push_back("segy-format");
+  legalCommands.push_back("type");
 
   std::string value;
   if(parseFileName(root, "file-name", value, errTxt) == true)
@@ -708,11 +708,11 @@ XmlModelFile::parseWavelet(TiXmlNode * node, std::string & errTxt)
     return(false);
   }
 
-  std::vector<std::string> legalCommands(4);
-  legalCommands[0]="file-name";
-  legalCommands[1]="scale";
-  legalCommands[2]="estimate-scale";
-  legalCommands[3]="local-wavelet";
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("file-name");
+  legalCommands.push_back("scale");
+  legalCommands.push_back("estimate-scale");
+  legalCommands.push_back("local-wavelet");
 
   std::string value;
   if(parseFileName(root, "file-name", value, errTxt) == true) {
@@ -783,11 +783,11 @@ XmlModelFile::parseLocalWavelet(TiXmlNode * node, std::string & errTxt)
     return(false);
   }
 
-  std::vector<std::string> legalCommands(4);
-  legalCommands[0]="shift-file";
-  legalCommands[1]="scale-file";
-  legalCommands[2]="estimate-shift";
-  legalCommands[3]="estimate-scale";
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("shift-file");
+  legalCommands.push_back("scale-file");
+  legalCommands.push_back("estimate-shift");
+  legalCommands.push_back("estimate-scale");
 
   modelSettings_->setUseLocalWavelet(true);
   std::string filename;
@@ -844,9 +844,9 @@ XmlModelFile::parseWaveletEstimationInterval(TiXmlNode * node, std::string & err
   if(root == 0)
     return(false);
 
-  std::vector<std::string> legalCommands(2);
-  legalCommands[0]="top-surface-file";
-  legalCommands[1]="base-surface-file";
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("top-surface-file");
+  legalCommands.push_back("base-surface-file");
 
   std::string filename;
   if(parseFileName(root, "top-surface-file", filename, errTxt) == true)
@@ -868,9 +868,9 @@ XmlModelFile::parseWavelet3D(TiXmlNode * node, std::string & errTxt)
     return(false);
   }
 
-  std::vector<std::string> legalCommands(2);
-  legalCommands[0]="file-name";
-  legalCommands[1]="filter-file-name";
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("file-name");
+  legalCommands.push_back("filter-file-name");
 
   std::string value;
   bool estimate = false;
@@ -907,13 +907,13 @@ XmlModelFile::parsePriorModel(TiXmlNode * node, std::string & errTxt)
   if(root == 0)
     return(false);
 
-  std::vector<std::string> legalCommands(6);
-  legalCommands[0]="background";
-  legalCommands[1]="lateral-correlation";
-  legalCommands[2]="temporal-correlation";
-  legalCommands[3]="parameter-correlation";
-  legalCommands[4]="correlation-direction";
-  legalCommands[5]="facies-probabilities";
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("background");
+  legalCommands.push_back("lateral-correlation");
+  legalCommands.push_back("temporal-correlation");
+  legalCommands.push_back("parameter-correlation");
+  legalCommands.push_back("correlation-direction");
+  legalCommands.push_back("facies-probabilities");
 
   parseBackground(root, errTxt);
 
@@ -948,16 +948,16 @@ XmlModelFile::parseBackground(TiXmlNode * node, std::string & errTxt)
   if(root == 0)
     return(false);
 
-  std::vector<std::string> legalCommands(9);
-  legalCommands[0]="vp-file";
-  legalCommands[1]="vs-file";
-  legalCommands[2]="density-file";
-  legalCommands[3]="vp-constant";
-  legalCommands[4]="vs-constant";
-  legalCommands[5]="density-constant";
-  legalCommands[6]="velocity-field";
-  legalCommands[7]="lateral-correlation";
-  legalCommands[8]="high-cut-background-modelling";
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("vp-file");
+  legalCommands.push_back("vs-file");
+  legalCommands.push_back("density-file");
+  legalCommands.push_back("vp-constant");
+  legalCommands.push_back("vs-constant");
+  legalCommands.push_back("density-constant");
+  legalCommands.push_back("velocity-field");
+  legalCommands.push_back("lateral-correlation");
+  legalCommands.push_back("high-cut-background-modelling");
 
   std::string filename;
   bool vp = parseFileName(root, "vp-file", filename, errTxt);
@@ -1042,11 +1042,11 @@ XmlModelFile::parseFaciesProbabilities(TiXmlNode * node, std::string & errTxt)
   if(root == 0)
     return(false);
 
-  std::vector<std::string> legalCommands(4);
-  legalCommands[0]="facies-estimation-interval";
-  legalCommands[1]="prior-facies-probabilities";
-  legalCommands[2]="facies-probability-undefined-value";
-  legalCommands[3]="use-vs-for-facies-probabilities";
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("facies-estimation-interval");
+  legalCommands.push_back("prior-facies-probabilities");
+  legalCommands.push_back("facies-probability-undefined-value");
+  legalCommands.push_back("use-vs-for-facies-probabilities");
 
   parseFaciesEstimationInterval(root, errTxt);
 
@@ -1072,9 +1072,9 @@ XmlModelFile::parseFaciesEstimationInterval(TiXmlNode * node, std::string & errT
   if(root == 0)
     return(false);
 
-  std::vector<std::string> legalCommands(2);
-  legalCommands[0]="top-file-name";
-  legalCommands[1]="base-file-name";
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("top-file-name");
+  legalCommands.push_back("base-file-name");
 
   std::string filename;
   if(parseFileName(root, "top-file-name", filename, errTxt) == true)
@@ -1099,8 +1099,8 @@ XmlModelFile::parsePriorFaciesProbabilities(TiXmlNode * node, std::string & errT
   if(root == 0)
     return(false);
 
-  std::vector<std::string> legalCommands(1);
-  legalCommands[0]="facies";
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("facies");
   
   float sum;
   int status = 0;
@@ -1144,10 +1144,10 @@ TiXmlNode * root = node->FirstChildElement("facies");
   if(root == 0)
     return(false);
 
-  std::vector<std::string> legalCommands(3);
-  legalCommands[0]="name";
-  legalCommands[1]="probability";
-  legalCommands[2]="probability-cube";
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("name");
+  legalCommands.push_back("probability");
+  legalCommands.push_back("probability-cube");
 
   std::string faciesname;
   std::string filename;
@@ -1179,10 +1179,10 @@ XmlModelFile::parseProjectSettings(TiXmlNode * node, std::string & errTxt)
   if(root == 0)
     return(false);
   
-  std::vector<std::string> legalCommands(3);
-  legalCommands[0] = "output-volume";
-  legalCommands[1] = "io-settings";
-  legalCommands[2] = "advanced-settings";
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("output-volume");
+  legalCommands.push_back("io-settings");
+  legalCommands.push_back("advanced-settings");
 
   if(parseOutputVolume(root, errTxt) == false)
     errTxt += "Command <output-volume> is needed in command <"+
@@ -1203,10 +1203,10 @@ XmlModelFile::parseOutputVolume(TiXmlNode * node, std::string & errTxt)
   if(root == 0)
     return(false);
 
-  std::vector<std::string> legalCommands(3);
-  legalCommands[0] = "interval-two-surfaces";
-  legalCommands[1] = "interval-one-surface";
-  legalCommands[2] = "area";
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("interval-two-surfaces");
+  legalCommands.push_back("interval-one-surface");
+  legalCommands.push_back("area");
 
   bool interval = parseIntervalTwoSurfaces(root, errTxt);
   
@@ -1233,12 +1233,12 @@ XmlModelFile::parseIntervalTwoSurfaces(TiXmlNode * node, std::string & errTxt)
   if(root == 0)
     return(false);
 
-  std::vector<std::string> legalCommands(6);
-  legalCommands[0] = "top-surface";
-  legalCommands[1] = "base-surface";
-  legalCommands[2] = "number-of-layers";
-  legalCommands[3] = "velocity-field";
-  legalCommands[5] = "velocity-field-from-inversion";
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("top-surface");
+  legalCommands.push_back("base-surface");
+  legalCommands.push_back("number-of-layers");
+  legalCommands.push_back("velocity-field");
+  legalCommands.push_back("velocity-field-from-inversion");
 
   modelSettings_->setParallelTimeSurfaces(false);
 
@@ -1311,10 +1311,10 @@ XmlModelFile::parseTopSurface(TiXmlNode * node, std::string & errTxt)
   if(root == 0)
     return(false);
 
-  std::vector<std::string> legalCommands(3);
-  legalCommands[0] = "time-file";
-  legalCommands[1] = "time-value";
-  legalCommands[2] = "depth-file";
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("time-file");
+  legalCommands.push_back("time-value");
+  legalCommands.push_back("depth-file");
 
   std::string filename;
   bool timeFile = parseFileName(root,"time-file", filename, errTxt);
@@ -1352,10 +1352,10 @@ XmlModelFile::parseBaseSurface(TiXmlNode * node, std::string & errTxt)
   if(root == 0)
     return(false);
   
-  std::vector<std::string> legalCommands(3);
-  legalCommands[0] = "time-file";
-  legalCommands[1] = "time-value";
-  legalCommands[2] = "depth-file";
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("time-file");
+  legalCommands.push_back("time-value");
+  legalCommands.push_back("depth-file");
 
   std::string filename;
   bool timeFile = parseFileName(root,"time-file", filename, errTxt);
@@ -1392,11 +1392,11 @@ XmlModelFile::parseIntervalOneSurface(TiXmlNode * node, std::string & errTxt)
   if(root == 0)
     return(false);
 
-  std::vector<std::string> legalCommands(4);
-  legalCommands[0] = "reference-surface";
-  legalCommands[1] = "shift-to-interval-top";
-  legalCommands[2] = "thickness";
-  legalCommands[3] = "sample-density";
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("reference-surface");
+  legalCommands.push_back("shift-to-interval-top");
+  legalCommands.push_back("thickness");
+  legalCommands.push_back("sample-density");
 
   modelSettings_->setParallelTimeSurfaces(true);
 
@@ -1435,14 +1435,14 @@ XmlModelFile::parseArea(TiXmlNode * node, std::string & errTxt)
   if(root == 0)
     return(false);
   
-  std::vector<std::string> legalCommands(7);
-  legalCommands[0] = "reference-point-x";
-  legalCommands[1] = "reference-point-y";
-  legalCommands[2] = "length-x";
-  legalCommands[3] = "length-y";
-  legalCommands[4] = "sample-density-x";
-  legalCommands[5] = "sample-density-y";
-  legalCommands[6] = "angle";
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("reference-point-x");
+  legalCommands.push_back("reference-point-y");
+  legalCommands.push_back("length-x");
+  legalCommands.push_back("length-y");
+  legalCommands.push_back("sample-density-x");
+  legalCommands.push_back("sample-density-y");
+  legalCommands.push_back("angle");
   
   double x0 = 0;
   if(parseValue(root, "reference-point-x", x0, errTxt) == false)
@@ -1498,13 +1498,13 @@ XmlModelFile::parseIOSettings(TiXmlNode * node, std::string & errTxt)
   if(root == 0)
     return(false);
 
-  std::vector<std::string> legalCommands(6);
-  legalCommands[0]="top-directory";
-  legalCommands[1]="input-directory";
-  legalCommands[2]="output-directory";
-  legalCommands[3]="output-types";
-  legalCommands[4]="file-output-prefix";
-  legalCommands[5]="log-level";
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("top-directory");
+  legalCommands.push_back("input-directory");
+  legalCommands.push_back("output-directory");
+  legalCommands.push_back("output-types");
+  legalCommands.push_back("file-output-prefix");
+  legalCommands.push_back("log-level");
 
   std::string topDir = IO::TopDirectory();
   parseValue(root, "top-directory", topDir, errTxt);
@@ -1587,11 +1587,11 @@ XmlModelFile::parseOutputTypes(TiXmlNode * node, std::string & errTxt)
   if(root == 0)
     return(false);
 
-  std::vector<std::string> legalCommands(4);
-  legalCommands[0]="grid-output";
-  legalCommands[1]="well-output";
-  legalCommands[2]="direct-output";
-  legalCommands[3]="other-output";
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("grid-output");
+  legalCommands.push_back("well-output");
+  legalCommands.push_back("direct-output");
+  legalCommands.push_back("other-output");
 
   parseGridOutput(root, errTxt);
   parseWellOutput(root, errTxt);
@@ -1610,10 +1610,10 @@ XmlModelFile::parseGridOutput(TiXmlNode * node, std::string & errTxt)
   if(root == 0)
     return(false);
 
-  std::vector<std::string> legalCommands(3);
-  legalCommands[0]="domain";
-  legalCommands[1]="format";
-  legalCommands[2]="parameters";
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("domain");
+  legalCommands.push_back("format");
+  legalCommands.push_back("parameters");
   
   parseGridFormats(root, errTxt);
   parseGridDomains(root, errTxt);
@@ -1635,9 +1635,9 @@ XmlModelFile::parseGridDomains(TiXmlNode * node, std::string & errTxt)
   if(root == 0)
     return(false);
 
-  std::vector<std::string> legalCommands(2);
-  legalCommands[0]="depth";
-  legalCommands[1]="time";
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("depth");
+  legalCommands.push_back("time");
 
   bool useDomain = false;
   int domainFlag = modelSettings_->getOutputDomainFlag();
@@ -1672,11 +1672,11 @@ XmlModelFile::parseGridFormats(TiXmlNode * node, std::string & errTxt)
   if(root == 0)
     return(false);
 
-  std::vector<std::string> legalCommands(4);
-  legalCommands[0]="segy";
-  legalCommands[1]="storm";
-  legalCommands[2]="ascii";
-  legalCommands[3]="sgri";
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("segy");
+  legalCommands.push_back("storm");
+  legalCommands.push_back("ascii");
+  legalCommands.push_back("sgri");
 
 
   bool useFormat = false;
@@ -1709,23 +1709,23 @@ XmlModelFile::parseGridParameters(TiXmlNode * node, std::string & errTxt)
   if(root == 0)
     return(false);
 
-  std::vector<std::string> legalCommands(16);
-  legalCommands[0]="vp";
-  legalCommands[1]="vs";
-  legalCommands[2]="density";
-  legalCommands[3]="lame-lambda";
-  legalCommands[4]="lame-mu";
-  legalCommands[5]="poisson-ratio";
-  legalCommands[6]="ai";
-  legalCommands[7]="si";
-  legalCommands[8]="vp-vs-ratio";
-  legalCommands[9]="murho";
-  legalCommands[10]="lambdarho";
-  legalCommands[11]="correlations";
-  legalCommands[12]="residuals";
-  legalCommands[13]="background";
-  legalCommands[14]="background-trend";
-  legalCommands[15]="extra-grids";
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("vp");
+  legalCommands.push_back("vs");
+  legalCommands.push_back("density");
+  legalCommands.push_back("lame-lambda");
+  legalCommands.push_back("lame-mu");
+  legalCommands.push_back("poisson-ratio");
+  legalCommands.push_back("ai");
+  legalCommands.push_back("si");
+  legalCommands.push_back("vp-vs-ratio");
+  legalCommands.push_back("murho");
+  legalCommands.push_back("lambdarho");
+  legalCommands.push_back("correlations");
+  legalCommands.push_back("residuals");
+  legalCommands.push_back("background");
+  legalCommands.push_back("background-trend");
+  legalCommands.push_back("extra-grids");
 
   bool value = false;
   int paramFlag = 0;
@@ -1782,11 +1782,11 @@ XmlModelFile::parseWellOutput(TiXmlNode * node, std::string & errTxt)
   if(root == 0)
     return(false);
 
-  std::vector<std::string> legalCommands(4);
-  legalCommands[0]="format";
-  legalCommands[1]="wells";
-  legalCommands[2]="blocked-wells";
-  legalCommands[3]="blocked-logs";
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("format");
+  legalCommands.push_back("wells");
+  legalCommands.push_back("blocked-wells");
+  legalCommands.push_back("blocked-logs");
 
   parseWellFormats(root, errTxt);
 
@@ -1813,9 +1813,9 @@ XmlModelFile::parseWellFormats(TiXmlNode * node, std::string & errTxt)
   if(root == 0)
     return(false);
 
-  std::vector<std::string> legalCommands(2);
-  legalCommands[0]="rms";
-  legalCommands[1]="norsar";
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("rms");
+  legalCommands.push_back("norsar");
 
   bool useFormat = false;
   int formatFlag = 0;
@@ -1843,10 +1843,10 @@ XmlModelFile::parseDirectOutput(TiXmlNode * node, std::string & errTxt)
   if(root == 0)
     return(false);
   
-  std::vector<std::string> legalCommands(3);
-  legalCommands[0]="background";
-  legalCommands[1]="seismic";
-  legalCommands[2]="time-to-depth-velocity";
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("background");
+  legalCommands.push_back("seismic");
+  legalCommands.push_back("time-to-depth-velocity");
 
   bool value = false;
   parseBool(root, "background", value, errTxt);
@@ -1872,11 +1872,11 @@ XmlModelFile::parseOtherOutput(TiXmlNode * node, std::string & errTxt)
   if(root == 0)
     return(false);
 
-  std::vector<std::string> legalCommands(4);
-  legalCommands[0]="wavelets";
-  legalCommands[1]="extra-surfaces";
-  legalCommands[2]="prior-correlations";
-  legalCommands[3]="background-trend-1d";
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("wavelets");
+  legalCommands.push_back("extra-surfaces");
+  legalCommands.push_back("prior-correlations");
+  legalCommands.push_back("background-trend-1d");
 
   bool value;
   int otherFlag = 0;
@@ -1903,19 +1903,19 @@ XmlModelFile::parseAdvancedSettings(TiXmlNode * node, std::string & errTxt)
   if(root == 0)
     return(false);
 
-  std::vector<std::string> legalCommands(12);
-  legalCommands[0]="fft-grid-padding";
-  legalCommands[1]="use-intermediate-disk-storage";
-  legalCommands[2]="maximum-relative-thickness-difference";
-  legalCommands[3]="frequency-band";
-  legalCommands[4]="energy-threshold";
-  legalCommands[5]="wavelet-tapering-length";
-  legalCommands[6]="minimum-relative-wavelet-amplitude";
-  legalCommands[7]="maximum-wavelet-shift";
-  legalCommands[8]="white-noise-component";
-  legalCommands[9]="reflection-matrix";
-  legalCommands[10]="kriging-data-limit";
-  legalCommands[11]="debug-level";
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("fft-grid-padding");
+  legalCommands.push_back("use-intermediate-disk-storage");
+  legalCommands.push_back("maximum-relative-thickness-difference");
+  legalCommands.push_back("frequency-band");
+  legalCommands.push_back("energy-threshold");
+  legalCommands.push_back("wavelet-tapering-length");
+  legalCommands.push_back("minimum-relative-wavelet-amplitude");
+  legalCommands.push_back("maximum-wavelet-shift");
+  legalCommands.push_back("white-noise-component");
+  legalCommands.push_back("reflection-matrix");
+  legalCommands.push_back("kriging-data-limit");
+  legalCommands.push_back("debug-level");
 
   parseFFTGridPadding(root, errTxt);
 
@@ -1963,10 +1963,10 @@ XmlModelFile::parseFFTGridPadding(TiXmlNode * node, std::string & errTxt)
   if(root == 0)
     return(false);
 
-  std::vector<std::string> legalCommands(3);
-  legalCommands[0]="x-fraction";
-  legalCommands[1]="y-fraction";
-  legalCommands[2]="z-fraction";
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("x-fraction");
+  legalCommands.push_back("y-fraction");
+  legalCommands.push_back("z-fraction");
 
   double padding;
   if(parseValue(root, "x-fraction", padding, errTxt) == true)
@@ -1988,9 +1988,9 @@ XmlModelFile::parseFrequencyBand(TiXmlNode * node, std::string & errTxt)
   if(root == 0)
     return(false);
   
-  std::vector<std::string> legalCommands(2);
-  legalCommands[0]="low-cut";
-  legalCommands[1]="high-cut";
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("low-cut");
+  legalCommands.push_back("high-cut");
 
   float value;
   if(parseValue(root, "low-cut", value, errTxt) == true)
@@ -2025,14 +2025,14 @@ XmlModelFile::parseTraceHeaderFormat(TiXmlNode * node, const std::string & keywo
   if(root == 0)
     return(false);
 
-  std::vector<std::string> legalCommands(7);
-  legalCommands[0]="standard-format";
-  legalCommands[1]="location-x";
-  legalCommands[2]="location-y";
-  legalCommands[3]="location-il";
-  legalCommands[4]="location-xl";
-  legalCommands[5]="location-scaling-coefficient";
-  legalCommands[6]="bypass-coordinate-scaling";
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("standard-format");
+  legalCommands.push_back("location-x");
+  legalCommands.push_back("location-y");
+  legalCommands.push_back("location-il");
+  legalCommands.push_back("location-xl");
+  legalCommands.push_back("location-scaling-coefficient");
+  legalCommands.push_back("bypass-coordinate-scaling");
 
   std::string stdFormat;
   if(parseValue(root, "standard-format", stdFormat, errTxt) == true) {
@@ -2078,12 +2078,12 @@ XmlModelFile::parseVariogram(TiXmlNode * node, const std::string & keyword, Vari
   if(root == 0)
     return(false);
 
-  std::vector<std::string> legalCommands(5);
-  legalCommands[0]="range";
-  legalCommands[1]="subrange";
-  legalCommands[2]="angle";
-  legalCommands[3]="power";
-  legalCommands[4]="variogram-type";
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("range");
+  legalCommands.push_back("subrange");
+  legalCommands.push_back("angle");
+  legalCommands.push_back("power");
+  legalCommands.push_back("variogram-type");
 
   float value, range = 1;
   float subrange=1;
