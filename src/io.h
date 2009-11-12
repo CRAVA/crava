@@ -65,7 +65,7 @@ public:
 
   // Suffixes
 
-  inline static  std::string    SuffixDirectData(void)             { return std::string(".direct")             ;}
+  inline static  std::string    SuffixDirectData(void)             { return std::string(".crava")              ;}
   inline static  std::string    SuffixGeneralData(void)            { return std::string(".dat")                ;}
   inline static  std::string    SuffixTextFiles(void)              { return std::string(".txt")                ;}
   inline static  std::string    SuffixAsciiFiles(void)             { return std::string(".ascii")              ;}

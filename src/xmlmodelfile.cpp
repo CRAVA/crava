@@ -524,12 +524,11 @@ XmlModelFile::parseSurvey(TiXmlNode * node, std::string & errTxt)
   if(root == 0)
     return(false);
 
-  std::vector<std::string> legalCommands(5);
+  std::vector<std::string> legalCommands(4);
   legalCommands[0]="angular-correlation";
   legalCommands[1]="segy-start-time";
-  legalCommands[2]="direct-files";
-  legalCommands[3]="angle-gather";
-  legalCommands[4]="wavelet-estimation-interval";
+  legalCommands[2]="angle-gather";
+  legalCommands[3]="wavelet-estimation-interval";
 
   Vario * vario = NULL;
   if(parseVariogram(root, "angular-correlation", vario, errTxt) == true) {
@@ -542,10 +541,6 @@ XmlModelFile::parseSurvey(TiXmlNode * node, std::string & errTxt)
   float value;
   if(parseValue(root, "segy-start-time", value, errTxt) == true)
     modelSettings_->setSegyOffset(value);
-
-  bool direct = false;
-  parseBool(root, "direct-files", direct, errTxt);
-  modelSettings_->setDirectSeisInput(direct);
 
   while(parseAngleGather(root, errTxt) == true);
 
@@ -953,21 +948,16 @@ XmlModelFile::parseBackground(TiXmlNode * node, std::string & errTxt)
   if(root == 0)
     return(false);
 
-  std::vector<std::string> legalCommands(10);
-  legalCommands[0]="direct-files";
-  legalCommands[1]="vp-file";
-  legalCommands[2]="vs-file";
-  legalCommands[3]="density-file";
-  legalCommands[4]="vp-constant";
-  legalCommands[5]="vs-constant";
-  legalCommands[6]="density-constant";
-  legalCommands[7]="velocity-field";
-  legalCommands[8]="lateral-correlation";
-  legalCommands[9]="high-cut-background-modelling";
-
-  bool direct = false;
-  parseBool(root, "direct-files", direct, errTxt);
-  modelSettings_->setDirectBGInput(direct);
+  std::vector<std::string> legalCommands(9);
+  legalCommands[0]="vp-file";
+  legalCommands[1]="vs-file";
+  legalCommands[2]="density-file";
+  legalCommands[3]="vp-constant";
+  legalCommands[4]="vs-constant";
+  legalCommands[5]="density-constant";
+  legalCommands[6]="velocity-field";
+  legalCommands[7]="lateral-correlation";
+  legalCommands[8]="high-cut-background-modelling";
 
   std::string filename;
   bool vp = parseFileName(root, "vp-file", filename, errTxt);
@@ -1247,8 +1237,7 @@ XmlModelFile::parseIntervalTwoSurfaces(TiXmlNode * node, std::string & errTxt)
   legalCommands[0] = "top-surface";
   legalCommands[1] = "base-surface";
   legalCommands[2] = "number-of-layers";
-  legalCommands[3] = "direct-file";
-  legalCommands[4] = "velocity-field";
+  legalCommands[3] = "velocity-field";
   legalCommands[5] = "velocity-field-from-inversion";
 
   modelSettings_->setParallelTimeSurfaces(false);
@@ -1277,10 +1266,6 @@ XmlModelFile::parseIntervalTwoSurfaces(TiXmlNode * node, std::string & errTxt)
       +lineColumnText(root)+".\n";
   else
     modelSettings_->setTimeNz(value);
-
-  bool directVel = false;
-  parseBool(root,"direct-file", directVel, errTxt);
-  modelSettings_->setDirectVelInput(directVel);
 
   std::string filename;
   bool externalField = parseFileName(root, "velocity-field", filename, errTxt);

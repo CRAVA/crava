@@ -113,9 +113,6 @@ public:
   bool                             getDirectBGOutput(void)       const { return directBGOutput_        ;}
   bool                             getDirectSeisOutput(void)     const { return directSeisOutput_      ;}
   bool                             getDirectVelOutput(void)      const { return directVelOutput_       ;}
-  bool                             getDirectBGInput(void)        const { return directBGInput_         ;}
-  bool                             getDirectSeisInput(void)      const { return directSeisInput_       ;}
-  bool                             getDirectVelInput(void)       const { return directVelInput_        ;}
   int                              getDebugFlag(void)            const { return debugFlag_             ;}
   static int                       getDebugLevel(void)                 { return debugFlag_             ;}
   int                              getFileGrid(void)             const { return fileGrid_              ;}
@@ -155,35 +152,35 @@ public:
   void setAreaParameters(const SegyGeometry * geometry);
   void setTraceHeaderFormat(const TraceHeaderFormat & traceHeaderFormat);
   void addTraceHeaderFormat(TraceHeaderFormat * traceHeaderFormat);
-  void setKrigingParameter(int krigingParameter)      { krigingParameter_     = krigingParameter     ;}
-  void setConstBackValue(int i, float constBackValue) { constBackValue_[i]    = constBackValue       ;}
-  void addSeismicType(int seismicType)                { seismicType_.push_back(seismicType)  ;}
-  void addAngle(float angle)                          { angle_.push_back(angle)                      ;}
-  void addWaveletScale(float waveletScale)           { waveletScale_.push_back(waveletScale)        ;}
-  void setWaveletScale(int i, float waveletScale)    { waveletScale_[i] = waveletScale              ;} 
-  void setSNRatio(int i, float SNRatio)              { SNRatio_[i]           = SNRatio              ;}
-  void addSNRatio(float SNRatio)                     { SNRatio_.push_back(SNRatio)                  ;}
+  void setKrigingParameter(int krigingParameter)         { krigingParameter_     = krigingParameter     ;}
+  void setConstBackValue(int i, float constBackValue)    { constBackValue_[i]    = constBackValue       ;}
+  void addSeismicType(int seismicType)                   { seismicType_.push_back(seismicType)          ;}
+  void addAngle(float angle)                             { angle_.push_back(angle)                      ;}
+  void addWaveletScale(float waveletScale)               { waveletScale_.push_back(waveletScale)        ;}
+  void setWaveletScale(int i, float waveletScale)        { waveletScale_[i]      = waveletScale         ;} 
+  void setSNRatio(int i, float SNRatio)                  { SNRatio_[i]           = SNRatio              ;}
+  void addSNRatio(float SNRatio)                         { SNRatio_.push_back(SNRatio)                  ;}
 
-  void addMatchEnergies(int matchEnergies)           { matchEnergies_.push_back(matchEnergies)      ;}
-  void addEstimateWavelet(int estimateWavelet)       { estimateWavelet_.push_back(estimateWavelet)  ;}
-  void addEstimateSNRatio(int estimateSNRatio)       { estimateSNRatio_.push_back(estimateSNRatio)  ;}
-  void addEstimateLocalShift(int estimateShift)      { estimateLocalShift_.push_back(estimateShift) ;}
-  void addEstimateLocalScale(int estimateScale)      { estimateLocalScale_.push_back(estimateScale) ;}
-  void addWaveletDim(int waveletDim)                 { waveletDim_.push_back(waveletDim)            ;}
+  void addMatchEnergies(int matchEnergies)               { matchEnergies_.push_back(matchEnergies)      ;}
+  void addEstimateWavelet(int estimateWavelet)           { estimateWavelet_.push_back(estimateWavelet)  ;}
+  void addEstimateSNRatio(int estimateSNRatio)           { estimateSNRatio_.push_back(estimateSNRatio)  ;}
+  void addEstimateLocalShift(int estimateShift)          { estimateLocalShift_.push_back(estimateShift) ;}
+  void addEstimateLocalScale(int estimateScale)          { estimateLocalScale_.push_back(estimateScale) ;}
+  void addWaveletDim(int waveletDim)                     { waveletDim_.push_back(waveletDim)            ;}
 
-  void setEstimateBackground(bool estimateBackground)     { estimateBackground_   = estimateBackground   ;}
-  void setEstimateCorrelations(bool estimateCorrelations) { estimateCorrelations_ = estimateCorrelations ;}
-  void setEstimateWaveletNoise(bool estimateWaveletNoise) { estimateWaveletNoise_ = estimateWaveletNoise ;}
+  void setEstimateBackground(bool estimateBackground)    { estimateBackground_   = estimateBackground   ;}
+  void setEstimateCorrelations(bool estimateCorrelations){ estimateCorrelations_ = estimateCorrelations ;}
+  void setEstimateWaveletNoise(bool estimateWaveletNoise){ estimateWaveletNoise_ = estimateWaveletNoise ;}
 
-  void addEstimateLocalNoise(bool estimateNoise)     { estimateLocalNoise_.push_back(estimateNoise) ;}
+  void addEstimateLocalNoise(bool estimateNoise)         { estimateLocalNoise_.push_back(estimateNoise) ;}
   void addEstimateGlobalWaveletScale(bool estimateScale) { estimateGlobalWaveletScale_.push_back(estimateScale) ;}
 
-  void addMoveAngle(float moveAngle)                       { moveAngle_.push_back(moveAngle)        ;} //Local temporary variable
-  void addMoveWeight(float moveWeight)                     { moveWeight_.push_back(moveWeight)      ;} //Local temporary variable
-  void addMoveWell(void)                                   { wellMoveAngle_.push_back(moveAngle_)   ;
-                                                             wellMoveWeight_.push_back(moveWeight_) ;}                                         
-  void clearMoveWell(void)                                 { moveAngle_.clear();
-                                                             moveWeight_.clear()                    ;}
+  void addMoveAngle(float moveAngle)                     { moveAngle_.push_back(moveAngle)        ;} //Local temporary variable
+  void addMoveWeight(float moveWeight)                   { moveWeight_.push_back(moveWeight)      ;} //Local temporary variable
+  void addMoveWell(void)                                 { wellMoveAngle_.push_back(moveAngle_)   ;
+                                                           wellMoveWeight_.push_back(moveWeight_) ;}                                         
+  void clearMoveWell(void)                               { moveAngle_.clear();
+                                                           moveWeight_.clear()                    ;}
   void setAllIndicatorsTrue(int nWells);                  
   void setIndicatorBGTrend(int * indBGTrend, int nWells); //NBNB kill when xml-model ok.
   void setIndicatorWavelet(int * indWavelet, int nWells); //NBNB kill when xml-model ok. 
@@ -248,9 +245,6 @@ public:
   void setDirectBGOutput(bool directBGOutput)            { directBGOutput_       = directBGOutput     ;}
   void setDirectSeisOutput(bool directSeisOutput)        { directSeisOutput_     = directSeisOutput   ;}
   void setDirectVelOutput(bool directVelOutput)          { directVelOutput_      = directVelOutput    ;}
-  void setDirectBGInput(bool directBGInput)              { directBGInput_        = directBGInput      ;}
-  void setDirectSeisInput(bool directSeisInput)          { directSeisInput_      = directSeisInput    ;}
-  void setDirectVelInput(bool directVelInput)            { directVelInput_       = directVelInput     ;}
   void setDebugFlag(int debugFlag)                       { debugFlag_            = debugFlag          ;}
   void setFileGrid(int fileGrid)                         { fileGrid_             = fileGrid           ;}
   void setEstimationMode(bool estimationMode)            { estimationMode_       = estimationMode     ;}
@@ -262,7 +256,7 @@ public:
   void setDepthDataOk(bool depthDataOk)                  { depthDataOk_          = depthDataOk        ;}
   void setParallelTimeSurfaces(bool pTimeSurfaces)       { parallelTimeSurfaces_ = pTimeSurfaces      ;}
   void setUseLocalWavelet(bool useLocalWavelet)          { useLocalWavelet_      = useLocalWavelet    ;}
-  void setOptimizeWellLocation(bool optimizeWellLocation){ optimizeWellLocation_ = optimizeWellLocation;}
+  void setOptimizeWellLocation(bool optimizeWellLoc)     { optimizeWellLocation_ = optimizeWellLoc    ;}
   void setLogLevel(int logLevel)                         { logLevel_             = logLevel           ;}
   void setSeed(int seed)                                 { seed_                 = seed               ;}
   void addPriorFaciesProb(std::string name, float value) { priorFaciesProb_[name] = value             ;}
@@ -438,9 +432,6 @@ private:
   bool                             directBGOutput_;        // Write raw background, can be read without resampling.
   bool                             directSeisOutput_;      // Write raw seismic, can be read without resampling.
   bool                             directVelOutput_;       // Write raw time-to-depth velocity, can be read without resampling.
-  bool                             directBGInput_;         // Read raw background into grid without resampling.
-  bool                             directSeisInput_;       // Read raw seismic into grid without resampling.
-  bool                             directVelInput_;        // Read raw time-to-depth velocity into grid without resampling.
 
   bool                             generateSeismic_;       // Forward modelling
   bool                             estimationMode_;        // Estimation

@@ -197,13 +197,6 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Default
  \elist
 
-\paragraph{\hbracket{direct-file}} \newkw{direct-file}
- \slist
-   \item \Description Indicates whether the velocity field is a direct file.
-   \item \Argument 'yes' or 'no'
-   \item \Default
- \elist
-
 \paragraph{\hbracket{velocity-field}} \newkw{velocity-field}
  \slist
    \item \Description File name for storm grid file. Gives more detailed depth conversion information. Without this, constant velocity per trace is used. If only one depth surface is given, this is used to compute the other. Otherwise, the depth interval will always match both surfaces, but the velocity field is scaled and used for internal depth computations. Can not be used with \kw{velocity-field-from-inversion}.
@@ -582,28 +575,30 @@ Estimation: Checks input data and performs estimation of lacking information for
 
 \paragraph{\hbracket{direct-output}}\newkw{direct-output}
  \slist
-   \item \Description Controls output of files intended to be read as direct-files on input.
+   \item \Description Controls output of files intended to be read as
+     direct files on input. These files are written in a binary format
+     specific to crava. 
    \item \Argument Elements controlling output of files
    \item \Default
  \elist
 
 \subparagraph{\hbracket{background}}\rnewkw{background}{background2}
  \slist
-   \item \Description Write direct files for background parameters.
+   \item \Description Write files for background parameters in the crava binary format.
    \item \Argument 'yes' or 'no'
    \item \Default
  \elist
 
 \subparagraph{\hbracket{seismic}}\newkw{seismic}
  \slist
-   \item \Description Write direct files for seismic data.
+   \item \Description Write files for seismic data in the crava binary format.
    \item \Argument 'yes' or 'no'
    \item \Default
  \elist
 
 \subparagraph{\hbracket{time-to-depth-velocity}}\newkw{time-to-depth-velocity}
  \slist
-   \item \Description Write direct files for time-to-depth-velocity.
+   \item \Description Write files for time-to-depth velocity in the crava binary format.
    \item \Argument 'yes' or 'no'
    \item \Default
  \elist
@@ -811,13 +806,6 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Default
  \elist
 
-\subsection{\hbracket{direct-files}}\newkw{direct-files}
- \slist
-   \item \Description If 'yes', it will be assumed that file names for seismic data are direct files.
-   \item \Argument 'yes' or 'no'
-   \item \Default
- \elist
-
 \subsection{\hbracket{angle-gather}\necessary}\newkw{angle-gather}
  \slist
    \item \Description Repeatable command, one for each seismic data cube.
@@ -841,7 +829,9 @@ Estimation: Checks input data and performs estimation of lacking information for
 
 \paragraph{\hbracket{file-name}\necessary}\newkw{file-name}
  \slist
-   \item \Description File name for the seismic data cube. This should be a segy file, or a direct file when the \kw{direct-file} option above is used.
+   \item \Description File name for the seismic data cube. This can be
+     a segy file, a storm binary file or a crava binary file. The file
+     type will be automatically detected.
    \item \Argument File name
    \item \Default
  \elist
@@ -1302,30 +1292,23 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Default
  \elist
 
-\subsubsection{\hbracket{direct-files}}\rnewkw{direct-files}{direct-files2}
- \slist
-   \item \Description If 'yes', input files for background are assumed to be direct files.
-   \item \Argument 'yes' or 'no'
-   \item \Default
- \elist
-
 \subsubsection{\hbracket{vp-file}}\newkw{vp-file}
  \slist
-   \item \Description File name for storm or segy grid file, or direct file, giving background vp. Can not be given together with \kw{vp-constant}.
+   \item \Description File name for storm, segy, or crava grid file, giving background vp. Can not be given together with \kw{vp-constant}.
    \item \Argument File name
    \item \Default
  \elist
 
 \subsubsection{\hbracket{vs-file}}\newkw{vs-file}
  \slist
-   \item \Description File name for storm or segy grid file, or direct file, giving background vs. Can not be given together with \kw{vs-constant}.
+   \item \Description File name for storm, segy, or crava grid file, giving background vs. Can not be given together with \kw{vs-constant}.
    \item \Argument File name
    \item \Default
  \elist
 
 \subsubsection{\hbracket{density-file}}\newkw{density-file}
  \slist
-   \item \Description File name for storm or segy grid file, or direct file, giving background density. Can not be given together with \kw{density-constant}.
+   \item \Description File name for storm, segy, or crava grid file,giving background density. Can not be given together with \kw{density-constant}.
    \item \Argument File name
    \item \Default
  \elist

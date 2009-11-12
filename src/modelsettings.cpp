@@ -106,8 +106,6 @@ ModelSettings::ModelSettings(void)
 
   directBGOutput_        =    false;
   directSeisOutput_      =    false;
-  directBGInput_         =    false;
-  directSeisInput_       =    false;
   directVelOutput_       =    false;
 
   estimationMode_        =    false;

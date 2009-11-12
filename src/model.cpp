@@ -673,10 +673,10 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
       seismicFile.c_str());
   
     if(seismicFile != "") {//May change the condition here, but need geometry if we want to set XL/IL
-      if(modelSettings->getDirectSeisInput() == false)
-        geometry = SegY::FindGridGeometry(seismicFile, modelSettings->getTraceHeaderFormat(0));
-      else {
+      if(IO::findGridFileType(seismicFile) == IO::DIRECTFILE)
         geometry = geometryFromDirectFile(seismicFile);
+      else {
+        geometry = SegY::FindGridGeometry(seismicFile, modelSettings->getTraceHeaderFormat(0));
       }
     }
     if(!areaFromModelFile)
