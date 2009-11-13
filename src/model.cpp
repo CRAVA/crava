@@ -2042,8 +2042,7 @@ Model::processPriorCorrelations(Corr         *& correlations,
     }
 
     if(printResult)
-      correlations->writeFilePriorVariances();
-
+      correlations->writeFilePriorVariances(modelSettings);
     
     correlations->printPriorVariances();
 

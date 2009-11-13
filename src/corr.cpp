@@ -5,6 +5,7 @@
 
 #include "lib/utils.h"
 
+#include "src/modelsettings.h"
 #include "src/definitions.h"
 #include "src/fftfilegrid.h"
 #include "src/fftgrid.h"
@@ -331,11 +332,11 @@ Corr::writeFilePriorCorrT(float* corrT, int nzp) const
 }
 
 //--------------------------------------------------------------------
-void Corr::writeFilePriorVariances(void) const
+void Corr::writeFilePriorVariances(ModelSettings * modelSettings) const
 {
   std::string baseName1 = IO::PrefixPrior() + IO::FileParameterCov()           + IO::SuffixGeneralData();
   std::string baseName2 = IO::PrefixPrior() + IO::FileTemporalCorrUnfiltered() + IO::SuffixGeneralData();
-  std::string baseName3 = IO::PrefixPrior() + IO::FileLateralCorr()            + IO::SuffixGeneralData();
+  std::string baseName3 = IO::PrefixPrior() + IO::FileLateralCorr();
   std::string fileName1 = IO::makeFullFileName(IO::PathToCorrelations(), baseName1);
   std::string fileName2 = IO::makeFullFileName(IO::PathToCorrelations(), baseName2);
   std::string fileName3 = IO::makeFullFileName(IO::PathToCorrelations(), baseName3);
@@ -364,6 +365,8 @@ void Corr::writeFilePriorVariances(void) const
   file.close();
 
   NRLib::WriteIrapClassicAsciiSurf(*priorCorrXY_, fileName3);
+
+  IO::writeSurfaceToFile(*priorCorrXY_, fileName3, modelSettings->getOutputFormatFlag());
 }
 
 //--------------------------------------------------------------------

@@ -5,6 +5,7 @@
 #include "nrlib/surface/regularsurface.hpp"
 #include "src/fftgrid.h"
 
+class ModelSettings;
 class Simbox;
 
 class Corr
@@ -56,7 +57,7 @@ public:
   void       printPostVariances(void) const;
 
   void       writeFilePriorCorrT(float* corrT, int nzp) const;
-  void       writeFilePriorVariances(void) const;
+  void       writeFilePriorVariances(ModelSettings * modelSettings) const;
   void       writeFilePostVariances(void) const;
   void       writeFilePostCovGrids(Simbox * simbox) const;
 
