@@ -1765,10 +1765,8 @@ XmlModelFile::parseGridParameters(TiXmlNode * node, std::string & errTxt)
   if(parseBool(root, "extra-grids", value, errTxt) == true && value == true)
     paramFlag += ModelSettings::EXTRA_GRIDS;
 
-  if(paramFlag > 0) {
-    modelSettings_->setDefaultGridOutputInd(false);
-    modelSettings_->setGridOutputFlag(paramFlag);
-  }
+  modelSettings_->setDefaultGridOutputInd(false);
+  modelSettings_->setGridOutputFlag(paramFlag);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
