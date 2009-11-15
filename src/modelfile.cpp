@@ -409,8 +409,8 @@ ModelFile::ModelFile(char * fileName)
   //  }
   //}
 
-  bool doFaciesProb         = (modelSettings_->getGridOutputFlag() & ModelSettings::FACIESPROB        ) > 0;
-  bool doFaciesProbRelative = (modelSettings_->getGridOutputFlag() & ModelSettings::FACIESPROBRELATIVE) > 0;
+  bool doFaciesProb         = (modelSettings_->getGridOutputFlag() & IO::FACIESPROB        ) > 0;
+  bool doFaciesProbRelative = (modelSettings_->getGridOutputFlag() & IO::FACIESPROBRELATIVE) > 0;
 
   if(doFaciesProb || doFaciesProbRelative) {
     modelSettings_->setEstimateFaciesProb(true);
@@ -1036,9 +1036,9 @@ ModelFile::readCommandDepthConversion(char ** params, int & pos, char * errText)
     return(error);
   }
 
-  int domain = modelSettings_->getOutputDomainFlag();
-  domain = (domain | ModelSettings::DEPTHDOMAIN);
-  modelSettings_->setOutputDomainFlag(domain);
+  int domain = modelSettings_->getGridOutputDomain();
+  domain = (domain | IO::DEPTHDOMAIN);
+  modelSettings_->setGridOutputDomain(domain);
 
   int nSubCommands = 3;
   char ** subCommand = new char * [nSubCommands];
@@ -1390,7 +1390,7 @@ ModelFile::readCommandOutput(char ** params, int & pos, char * errText)
 
     int gridFlag = 0;
     int wellFlag = 0;
-    int domainFlag = modelSettings_->getOutputDomainFlag();
+    int domainFlag = modelSettings_->getGridOutputDomain();
     int formatFlag = 0;
     int otherFlag = 0;
 
@@ -1425,27 +1425,27 @@ ModelFile::readCommandOutput(char ** params, int & pos, char * errText)
       delete [] keywords[i];
     delete [] keywords;
 
-    if((gridFlag & ModelSettings::FACIESPROB) >0 && (gridFlag & ModelSettings::FACIESPROBRELATIVE)>0)
+    if((gridFlag & IO::FACIESPROB) >0 && (gridFlag & IO::FACIESPROBRELATIVE)>0)
     {
-      gridFlag -= ModelSettings::FACIESPROBRELATIVE;
+      gridFlag -= IO::FACIESPROBRELATIVE;
       LogKit::LogFormatted(LogKit::LOW,"Warning: Both FACIESPROB and FACIESPROBRELATIVE are wanted as output. Only FACIESPROB is given.\n");
     }
 
     //Some backward compatibility lines.
-    if((gridFlag & ModelSettings::BACKGROUND) > 0)
-      otherFlag += ModelSettings::BACKGROUND_TREND_1D;
-    if((gridFlag & ModelSettings::CORRELATION) > 0)
-      otherFlag = (otherFlag | ModelSettings::PRIORCORRELATIONS);
+    if((gridFlag & IO::BACKGROUND) > 0)
+      otherFlag += IO::BACKGROUND_TREND_1D;
+    if((gridFlag & IO::CORRELATION) > 0)
+      otherFlag = (otherFlag | IO::PRIORCORRELATIONS);
 
     if (formatFlag != 0)
-      modelSettings_->setOutputFormatFlag(formatFlag);
+      modelSettings_->setGridOutputFormat(formatFlag);
     if (gridFlag != 0)
       modelSettings_->setGridOutputFlag(gridFlag);
     if (wellFlag != 0)
       modelSettings_->setWellOutputFlag(wellFlag);
     if (otherFlag != 0)
       modelSettings_->setOtherOutputFlag(otherFlag);
-    modelSettings_->setOutputDomainFlag(domainFlag);
+    modelSettings_->setGridOutputDomain(domainFlag);
   }
   pos += nPar+1;
   return(error);

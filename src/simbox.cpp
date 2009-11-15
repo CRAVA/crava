@@ -449,7 +449,8 @@ Simbox::writeTopBotGrids(const std::string & topname,
   std::string fileNameTopSurf  = IO::makeFullFileName(subdir, topname);
   std::string fileNameBaseSurf = IO::makeFullFileName(subdir, botname);
 
-  if ((outputFormat & ModelSettings::ASCII) > 0) {
+  /*
+  if ((outputFormat & IO::ASCII) > 0) {
     fileNameTopSurf  += IO::SuffixAsciiIrapClassic();
     fileNameBaseSurf += IO::SuffixAsciiIrapClassic();
   }
@@ -457,8 +458,15 @@ Simbox::writeTopBotGrids(const std::string & topname,
     fileNameTopSurf  += IO::SuffixStormBinary();
     fileNameBaseSurf += IO::SuffixStormBinary();
   }
-  topName_ = NRLib::RemovePath(fileNameTopSurf);
-  botName_ = NRLib::RemovePath(fileNameBaseSurf);
+  */
+  std::string suffix;
+  if ((outputFormat & IO::ASCII) > 0)
+    suffix = IO::SuffixAsciiIrapClassic();
+  else
+    suffix = IO::SuffixStormBinary();
+
+  topName_ = NRLib::RemovePath(fileNameTopSurf+suffix);
+  botName_ = NRLib::RemovePath(fileNameBaseSurf+suffix);
 
   assert(typeid(GetTopSurface()) == typeid(Surface));
   assert(typeid(GetBotSurface()) == typeid(Surface));
@@ -466,7 +474,11 @@ Simbox::writeTopBotGrids(const std::string & topname,
   const Surface & wtsurf = dynamic_cast<const Surface &>(GetTopSurface());
   const Surface & wbsurf = dynamic_cast<const Surface &>(GetBotSurface());
 
-  if ((outputFormat & ModelSettings::ASCII) > 0) { 
+  IO::writeSurfaceToFile(wtsurf, fileNameTopSurf,  outputFormat);
+  IO::writeSurfaceToFile(wbsurf, fileNameBaseSurf, outputFormat);
+
+  /*
+  if ((outputFormat & IO::ASCII) > 0) { 
     NRLib::WriteIrapClassicAsciiSurf(wtsurf, fileNameTopSurf);
     NRLib::WriteIrapClassicAsciiSurf(wbsurf, fileNameBaseSurf);
   }
@@ -474,6 +486,7 @@ Simbox::writeTopBotGrids(const std::string & topname,
     NRLib::WriteStormBinarySurf(wtsurf, fileNameTopSurf);
     NRLib::WriteStormBinarySurf(wbsurf, fileNameBaseSurf);
   }
+  */
 }
 
 int

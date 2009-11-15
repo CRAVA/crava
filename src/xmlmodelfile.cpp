@@ -17,6 +17,7 @@
 #include "src/xmlmodelfile.h"
 #include "src/definitions.h"
 #include "src/inputfiles.h"
+#include "src/wavelet.h"
 #include "src/fftgrid.h"
 #include "src/vario.h"
 #include "lib/utils.h"
@@ -179,9 +180,9 @@ XmlModelFile::parseInversionSettings(TiXmlNode * node, std::string & errTxt)
     if(modelSettings_->getDefaultGridOutputInd() == false)
       flag = modelSettings_->getGridOutputFlag();
     if(facprob == "absolute")
-      flag = (flag | ModelSettings::FACIESPROB);
+      flag = (flag | IO::FACIESPROB);
     else if(facprob == "relative")
-      flag = (flag | ModelSettings::FACIESPROBRELATIVE);
+      flag = (flag | IO::FACIESPROBRELATIVE);
     if(flag != 0) {
       modelSettings_->setGridOutputFlag(flag);
       modelSettings_->setDefaultGridOutputInd(false);
@@ -598,7 +599,7 @@ XmlModelFile::parseAngleGather(TiXmlNode * node, std::string & errTxt)
 
   if(parseWavelet3D(root, errTxt) == false) {
     inputFiles_->addWaveletFilterFile("");
-    modelSettings_->addWaveletDim(ModelSettings::ONE_D);
+    modelSettings_->addWaveletDim(Wavelet::ONE_D);
     if (oneDwavelet == false) { //Neither 1D-wavelet nor 3D-wavelet are given
       inputFiles_->addWaveletFile("");
       modelSettings_->addEstimateWavelet(true);
@@ -893,7 +894,7 @@ XmlModelFile::parseWavelet3D(TiXmlNode * node, std::string & errTxt)
                 +root->ValueStr()+"> "+ lineColumnText(root)+".\n";
   }
 
-  modelSettings_->addWaveletDim(ModelSettings::THREE_D);
+  modelSettings_->addWaveletDim(Wavelet::THREE_D);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -1595,7 +1596,6 @@ XmlModelFile::parseOutputTypes(TiXmlNode * node, std::string & errTxt)
 
   parseGridOutput(root, errTxt);
   parseWellOutput(root, errTxt);
-  parseDirectOutput(root, errTxt);
   parseOtherOutput(root, errTxt);
 
   checkForJunk(root, errTxt, legalCommands);
@@ -1620,8 +1620,8 @@ XmlModelFile::parseGridOutput(TiXmlNode * node, std::string & errTxt)
   parseGridParameters(root, errTxt);
 
   //Set output for all FFTGrids.
-  FFTGrid::setOutputFlags(modelSettings_->getOutputFormatFlag(), 
-                          modelSettings_->getOutputDomainFlag());
+  FFTGrid::setOutputFlags(modelSettings_->getGridOutputFormat(), 
+                          modelSettings_->getGridOutputDomain());
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -1640,21 +1640,21 @@ XmlModelFile::parseGridDomains(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("time");
 
   bool useDomain = false;
-  int domainFlag = modelSettings_->getOutputDomainFlag();
+  int domainFlag = modelSettings_->getGridOutputDomain();
   if(parseBool(root, "time", useDomain, errTxt) == true) {
     if(useDomain == true)
-      domainFlag = (domainFlag | ModelSettings::TIMEDOMAIN);
-    else if((domainFlag & ModelSettings::TIMEDOMAIN) > 0)
-      domainFlag -= ModelSettings::TIMEDOMAIN;
+      domainFlag = (domainFlag | IO::TIMEDOMAIN);
+    else if((domainFlag & IO::TIMEDOMAIN) > 0)
+      domainFlag -= IO::TIMEDOMAIN;
   }
   if(parseBool(root, "depth", useDomain, errTxt) == true) {
     if(useDomain == true) {
-      domainFlag = (domainFlag | ModelSettings::DEPTHDOMAIN);
+      domainFlag = (domainFlag | IO::DEPTHDOMAIN);
     }
-    else if((domainFlag & ModelSettings::DEPTHDOMAIN) > 0)
-      domainFlag -= ModelSettings::DEPTHDOMAIN;
+    else if((domainFlag & IO::DEPTHDOMAIN) > 0)
+      domainFlag -= IO::DEPTHDOMAIN;
   }
-  modelSettings_->setOutputDomainFlag(domainFlag);
+  modelSettings_->setGridOutputDomain(domainFlag);
 
   if(domainFlag == 0)
     errTxt += "Both time and depth domain output turned off after command <"
@@ -1677,25 +1677,28 @@ XmlModelFile::parseGridFormats(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("storm");
   legalCommands.push_back("ascii");
   legalCommands.push_back("sgri");
+  legalCommands.push_back("crava");
 
 
   bool useFormat = false;
   int formatFlag = 0;
   bool stormSpecified = false;  //Default format, error if turned off and no others turned on.
   if(parseBool(root, "segy", useFormat, errTxt) == true && useFormat == true)
-    formatFlag += ModelSettings::SEGY;
+    formatFlag += IO::SEGY;
   if(parseBool(root, "storm", useFormat, errTxt) == true) {
     stormSpecified = true;
     if(useFormat == true)
-      formatFlag += ModelSettings::STORM;
+      formatFlag += IO::STORM;
   }
   if(parseBool(root, "ascii", useFormat, errTxt) == true && useFormat == true)
-    formatFlag += ModelSettings::ASCII;
+    formatFlag += IO::ASCII;
   if(parseBool(root, "sgri", useFormat, errTxt) == true && useFormat == true)
-    formatFlag += ModelSettings::SGRI;
+    formatFlag += IO::SGRI;
+  if(parseBool(root, "crava", useFormat, errTxt) == true && useFormat == true)
+    formatFlag += IO::CRAVA;
 
   if(formatFlag > 0 || stormSpecified == true)
-    modelSettings_->setOutputFormatFlag(formatFlag);
+    modelSettings_->setGridOutputFormat(formatFlag);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -1726,6 +1729,8 @@ XmlModelFile::parseGridParameters(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("background");
   legalCommands.push_back("background-trend");
   legalCommands.push_back("extra-grids");
+  legalCommands.push_back("seismic-data");
+  legalCommands.push_back("time-to-depth-velocity");
 
   bool value = false;
   int paramFlag = 0;
@@ -1733,37 +1738,41 @@ XmlModelFile::parseGridParameters(TiXmlNode * node, std::string & errTxt)
     paramFlag = modelSettings_->getGridOutputFlag();
 
   if(parseBool(root, "vp", value, errTxt) == true && value == true)
-    paramFlag += ModelSettings::VP;
+    paramFlag += IO::VP;
   if(parseBool(root, "vs", value, errTxt) == true && value == true)
-    paramFlag += ModelSettings::VS;
+    paramFlag += IO::VS;
   if(parseBool(root, "density", value, errTxt) == true && value == true)
-    paramFlag += ModelSettings::RHO;
+    paramFlag += IO::RHO;
   if(parseBool(root, "lame-lambda", value, errTxt) == true && value == true)
-    paramFlag += ModelSettings::LAMELAMBDA;
+    paramFlag += IO::LAMELAMBDA;
   if(parseBool(root, "lame-mu", value, errTxt) == true && value == true)
-    paramFlag += ModelSettings::LAMEMU;
+    paramFlag += IO::LAMEMU;
   if(parseBool(root, "poisson-ratio", value, errTxt) == true && value == true)
-    paramFlag += ModelSettings::POISSONRATIO;
+    paramFlag += IO::POISSONRATIO;
   if(parseBool(root, "ai", value, errTxt) == true && value == true)
-    paramFlag += ModelSettings::AI;
+    paramFlag += IO::AI;
   if(parseBool(root, "si", value, errTxt) == true && value == true)
-    paramFlag += ModelSettings::SI;
+    paramFlag += IO::SI;
   if(parseBool(root, "vp-vs-ratio", value, errTxt) == true && value == true)
-    paramFlag += ModelSettings::VPVSRATIO;
+    paramFlag += IO::VPVSRATIO;
   if(parseBool(root, "murho", value, errTxt) == true && value == true)
-    paramFlag += ModelSettings::MURHO;
+    paramFlag += IO::MURHO;
   if(parseBool(root, "lambdarho", value, errTxt) == true && value == true)
-    paramFlag += ModelSettings::LAMBDARHO;
+    paramFlag += IO::LAMBDARHO;
   if(parseBool(root, "correlations", value, errTxt) == true && value == true)
-    paramFlag += ModelSettings::CORRELATION;
+    paramFlag += IO::CORRELATION;
   if(parseBool(root, "residuals", value, errTxt) == true && value == true)
-    paramFlag += ModelSettings::RESIDUAL;
+    paramFlag += IO::RESIDUAL;
   if(parseBool(root, "background", value, errTxt) == true && value == true)
-    paramFlag += ModelSettings::BACKGROUND;
+    paramFlag += IO::BACKGROUND;
   if(parseBool(root, "background-trend", value, errTxt) == true && value == true)
-    paramFlag += ModelSettings::BACKGROUND_TREND;
+    paramFlag += IO::BACKGROUND_TREND;
   if(parseBool(root, "extra-grids", value, errTxt) == true && value == true)
-    paramFlag += ModelSettings::EXTRA_GRIDS;
+    paramFlag += IO::EXTRA_GRIDS;
+  if(parseBool(root, "seismic-data", value, errTxt) == true && value == true)
+    paramFlag += IO::SEISMIC_DATA;
+  if(parseBool(root, "time-to-depth-velocity", value, errTxt) == true && value == true)
+    paramFlag += IO::TIME_TO_DEPTH_VELOCITY;
 
   modelSettings_->setDefaultGridOutputInd(false);
   modelSettings_->setGridOutputFlag(paramFlag);
@@ -1791,11 +1800,11 @@ XmlModelFile::parseWellOutput(TiXmlNode * node, std::string & errTxt)
   bool value;
   int wellFlag = 0;
   if(parseBool(root, "wells", value, errTxt) == true && value == true)
-    wellFlag += ModelSettings::WELLS;
+    wellFlag += IO::WELLS;
   if(parseBool(root, "blocked-wells", value, errTxt) == true && value == true)
-    wellFlag += ModelSettings::BLOCKED_WELLS;
+    wellFlag += IO::BLOCKED_WELLS;
   if(parseBool(root, "blocked-logs", value, errTxt) == true && value == true)
-    wellFlag += ModelSettings::BLOCKED_LOGS;
+    wellFlag += IO::BLOCKED_LOGS;
 
   modelSettings_->setWellOutputFlag(wellFlag);
 
@@ -1821,10 +1830,10 @@ XmlModelFile::parseWellFormats(TiXmlNode * node, std::string & errTxt)
   if(parseBool(root, "rms", useFormat, errTxt) == true) {
     rmsSpecified = true;
     if(useFormat == true)
-      formatFlag += ModelSettings::RMSWELL;
+      formatFlag += IO::RMSWELL;
   }
   if(parseBool(root, "norsar", useFormat, errTxt) == true && useFormat == true)
-    formatFlag += ModelSettings::NORSARWELL;
+    formatFlag += IO::NORSARWELL;
 
   if(formatFlag > 0 || rmsSpecified == true)
     modelSettings_->setWellFormatFlag(formatFlag);
@@ -1832,36 +1841,6 @@ XmlModelFile::parseWellFormats(TiXmlNode * node, std::string & errTxt)
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
-
-
-bool
-XmlModelFile::parseDirectOutput(TiXmlNode * node, std::string & errTxt)
-{
-  TiXmlNode * root = node->FirstChildElement("direct-output");
-  if(root == 0)
-    return(false);
-  
-  std::vector<std::string> legalCommands;
-  legalCommands.push_back("background");
-  legalCommands.push_back("seismic");
-  legalCommands.push_back("time-to-depth-velocity");
-
-  bool value = false;
-  parseBool(root, "background", value, errTxt);
-  modelSettings_->setDirectBGOutput(value);
-
-  value = false;
-  parseBool(root, "seismic", value, errTxt);
-  modelSettings_->setDirectSeisOutput(value);
-
-  value = false;
-  parseBool(root, "time-to-depth-velocity", value, errTxt);
-  modelSettings_->setDirectVelOutput(value);
-
-  checkForJunk(root, errTxt, legalCommands);
-  return(true);
-}
-
 
 bool
 XmlModelFile::parseOtherOutput(TiXmlNode * node, std::string & errTxt)
@@ -1879,13 +1858,13 @@ XmlModelFile::parseOtherOutput(TiXmlNode * node, std::string & errTxt)
   bool value;
   int otherFlag = 0;
   if(parseBool(root, "wavelets", value, errTxt) == true && value == true)
-    otherFlag += ModelSettings::WAVELETS;
+    otherFlag += IO::WAVELETS;
   if(parseBool(root, "extra-surfaces", value, errTxt) == true && value == true)
-    otherFlag += ModelSettings::EXTRA_SURFACES;
+    otherFlag += IO::EXTRA_SURFACES;
   if(parseBool(root, "prior-correlations", value, errTxt) == true && value == true)
-    otherFlag += ModelSettings::PRIORCORRELATIONS;
+    otherFlag += IO::PRIORCORRELATIONS;
   if(parseBool(root, "background-trend-1d", value, errTxt) == true && value == true)
-    otherFlag += ModelSettings::BACKGROUND_TREND_1D;
+    otherFlag += IO::BACKGROUND_TREND_1D;
 
   modelSettings_->setOtherOutputFlag(otherFlag);
 

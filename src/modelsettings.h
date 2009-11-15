@@ -105,14 +105,11 @@ public:
   bool                             getWritePrediction(void)      const { return writePrediction_       ;}
   int                              getGridOutputFlag(void)       const { return gridFlag_              ;}
   bool                             getDefaultGridOutputInd(void) const { return defaultGridOutput_     ;}
-  int                              getOutputFormatFlag(void)     const { return formatFlag_            ;}
-  int                              getOutputDomainFlag(void)     const { return domainFlag_            ;}
+  int                              getGridOutputFormat(void)     const { return formatFlag_            ;}
+  int                              getGridOutputDomain(void)     const { return domainFlag_            ;}
   int                              getWellOutputFlag(void)       const { return wellFlag_              ;}
   int                              getWellFormatFlag(void)       const { return wellFormatFlag_        ;}
   int                              getOtherOutputFlag(void)      const { return otherFlag_             ;}
-  bool                             getDirectBGOutput(void)       const { return directBGOutput_        ;}
-  bool                             getDirectSeisOutput(void)     const { return directSeisOutput_      ;}
-  bool                             getDirectVelOutput(void)      const { return directVelOutput_       ;}
   int                              getDebugFlag(void)            const { return debugFlag_             ;}
   static int                       getDebugLevel(void)                 { return debugFlag_             ;}
   int                              getFileGrid(void)             const { return fileGrid_              ;}
@@ -235,16 +232,13 @@ public:
   void setTimeNz(int time_nz)                            { time_nz_              = time_nz            ;}
   void setVelocityFromInversion(bool fromInversion)      { velocityFromInv_      = fromInversion      ;}
   void setWritePrediction(bool write)                    { writePrediction_      = write              ;}
-  void setGridOutputFlag(int gridFlag)                   { gridFlag_             = gridFlag           ;}
   void setDefaultGridOutputInd(bool ind)                 { defaultGridOutput_    = ind                ;}
-  void setOutputFormatFlag(int formatFlag)               { formatFlag_           = formatFlag         ;}
-  void setOutputDomainFlag(int domainFlag)               { domainFlag_           = domainFlag         ;}
+  void setGridOutputFlag(int gridFlag)                   { gridFlag_             = gridFlag           ;}
+  void setGridOutputFormat(int formatFlag)               { formatFlag_           = formatFlag         ;}
+  void setGridOutputDomain(int domainFlag)               { domainFlag_           = domainFlag         ;}
   void setWellOutputFlag(int wellFlag)                   { wellFlag_             = wellFlag           ;}
   void setWellFormatFlag(int formatFlag)                 { wellFormatFlag_       = formatFlag         ;}
   void setOtherOutputFlag(int otherFlag)                 { otherFlag_            = otherFlag          ;}
-  void setDirectBGOutput(bool directBGOutput)            { directBGOutput_       = directBGOutput     ;}
-  void setDirectSeisOutput(bool directSeisOutput)        { directSeisOutput_     = directSeisOutput   ;}
-  void setDirectVelOutput(bool directVelOutput)          { directVelOutput_      = directVelOutput    ;}
   void setDebugFlag(int debugFlag)                       { debugFlag_            = debugFlag          ;}
   void setFileGrid(int fileGrid)                         { fileGrid_             = fileGrid           ;}
   void setEstimationMode(bool estimationMode)            { estimationMode_       = estimationMode     ;}
@@ -265,44 +259,9 @@ public:
   void setNoiseScaled(Grid2D *ns);
   bool noiseIsScaled();
 
-  enum           outputGrids{CORRELATION        = 1, 
-                             RESIDUAL           = 2, 
-                             VP                 = 4, 
-                             VS                 = 8, 
-                             RHO                = 16,
-                             LAMELAMBDA         = 32, 
-                             LAMEMU             = 64, 
-                             POISSONRATIO       = 128, 
-                             AI                 = 256,
-                             SI                 = 512, 
-                             VPVSRATIO          = 1024, 
-                             MURHO              = 2048, 
-                             LAMBDARHO          = 4096, 
-                             BACKGROUND         = 8192, 
-                             BACKGROUND_TREND   = 16384, 
-                             FACIESPROB         = 32768, 
-                             FACIESPROBRELATIVE = 65536, 
-                             EXTRA_GRIDS        = 131072};
-
-  enum          outputWells{WELLS              = 1,
-                            BLOCKED_WELLS      = 2,
-                            BLOCKED_LOGS       = 4};
-      
-  enum          outputOther{WAVELETS            = 1,
-                            EXTRA_SURFACES      = 2,
-                            PRIORCORRELATIONS   = 4,
-                            BACKGROUND_TREND_1D = 8};
-  enum          domains{TIMEDOMAIN = 1, DEPTHDOMAIN = 2};
-
-  enum          gridFormats{SEGY = 1, STORM = 2, ASCII = 4, SGRI = 8};
-      
-  enum          wellFormats{RMSWELL = 1, NORSARWELL = 2};
-
   enum          sseismicTypes{STANDARDSEIS = 0, PSSEIS = 1};
 
   enum          indicators{NO = 0, YES = 1, NOTSET = 2};
-
-  enum          waveletDims{ONE_D = 0, THREE_D = 1};
                    
 private:           
                    
@@ -429,10 +388,6 @@ private:
   int                              fileGrid_;              // Indicator telling if grids are to be kept on file
   bool                             defaultGridOutput_;     // Indicator telling whether grid output has been actively controlled.
   
-  bool                             directBGOutput_;        // Write raw background, can be read without resampling.
-  bool                             directSeisOutput_;      // Write raw seismic, can be read without resampling.
-  bool                             directVelOutput_;       // Write raw time-to-depth velocity, can be read without resampling.
-
   bool                             generateSeismic_;       // Forward modelling
   bool                             estimationMode_;        // Estimation
 

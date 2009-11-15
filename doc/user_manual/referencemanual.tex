@@ -386,9 +386,10 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Default 'yes' if \kw{format} command is not given.
  \elist
 
-\subsubparagraph{\hbracket{ascii}}\newkw{ascii}
+
+\subsubparagraph{\hbracket{crava}}\newkw{crava}
  \slist
-   \item \Description Should grid output come as storm ascii?
+   \item \Description Should grid output come in crava binary format?
    \item \Argument 'yes' or 'no'
    \item \Default
  \elist
@@ -396,6 +397,13 @@ Estimation: Checks input data and performs estimation of lacking information for
 \subsubparagraph{\hbracket{sgri}}\newkw{sgri}
  \slist
    \item \Description Should grid output come as storm sgri?
+   \item \Argument 'yes' or 'no'
+   \item \Default
+ \elist
+
+\subsubparagraph{\hbracket{ascii}}\newkw{ascii}
+ \slist
+   \item \Description Should grid output come as storm ascii?
    \item \Argument 'yes' or 'no'
    \item \Default
  \elist
@@ -513,6 +521,20 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Default
 \elist
 
+\subsubparagraph{\hbracket{seismic}}\newkw{seismic}
+ \slist
+   \item \Description Write original seismic data to file.
+   \item \Argument 'yes' or 'no'
+   \item \Default
+ \elist
+
+\subsubparagraph{\hbracket{time-to-depth-velocity}}\newkw{time-to-depth-velocity}
+ \slist
+   \item \Description Write time-to-depth velocity to file.
+   \item \Argument 'yes' or 'no'
+   \item \Default
+ \elist
+
 \subsubparagraph{\hbracket{extra-grids}}\newkw{extra-grids}
  \slist
    \item \Description Temporary, will be replaced. Currently triggers writing of
@@ -523,6 +545,7 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Argument 'yes' or 'no'
    \item \Default
 \elist
+
 
 \paragraph{\hbracket{well-output}}\newkw{well-output}
  \slist
@@ -570,36 +593,6 @@ Estimation: Checks input data and performs estimation of lacking information for
  \slist
    \item \Description Not currently active.
    \item \Argument
-   \item \Default
- \elist
-
-\paragraph{\hbracket{direct-output}}\newkw{direct-output}
- \slist
-   \item \Description Controls output of files intended to be read as
-     direct files on input. These files are written in a binary format
-     specific to crava. 
-   \item \Argument Elements controlling output of files
-   \item \Default
- \elist
-
-\subparagraph{\hbracket{background}}\rnewkw{background}{background2}
- \slist
-   \item \Description Write files for background parameters in the crava binary format.
-   \item \Argument 'yes' or 'no'
-   \item \Default
- \elist
-
-\subparagraph{\hbracket{seismic}}\newkw{seismic}
- \slist
-   \item \Description Write files for seismic data in the crava binary format.
-   \item \Argument 'yes' or 'no'
-   \item \Default
- \elist
-
-\subparagraph{\hbracket{time-to-depth-velocity}}\newkw{time-to-depth-velocity}
- \slist
-   \item \Description Write files for time-to-depth velocity in the crava binary format.
-   \item \Argument 'yes' or 'no'
    \item \Default
  \elist
 

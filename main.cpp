@@ -34,7 +34,7 @@ int main(int argc, char** argv)
 
   Program program( 0,                    // Major version
                    9,                    // Minor version 
-                   4,                    // Patch number 
+                   5,                    // Patch number 
                    -1,                   // Validity of licence in days (-1 = infinite)
                   "Norsk Regnesentral"); // Who this copy of CRAVA is licensed to
 
@@ -85,7 +85,7 @@ int main(int argc, char** argv)
       corr->invFFT();
       corr->getPostVariances();
       corr->printPostVariances();
-      if((model->getModelSettings()->getGridOutputFlag() & ModelSettings::CORRELATION) > 0)
+      if((model->getModelSettings()->getGridOutputFlag() & IO::CORRELATION) > 0)
       {
         corr->writeFilePostVariances();
         corr->writeFilePostCovGrids(model->getTimeSimbox());
@@ -104,12 +104,12 @@ int main(int argc, char** argv)
       //
       // Temprary placement.  crava.cpp needs a proper restructuring.
       //
-      if((model->getModelSettings()->getWellOutputFlag() & ModelSettings::BLOCKED_WELLS) > 0) {
+      if((model->getModelSettings()->getWellOutputFlag() & IO::BLOCKED_WELLS) > 0) {
         WellData ** wells = model->getWells();
         for (int i=0 ; i<model->getModelSettings()->getNumberOfWells() ; i++)
           wells[i]->getBlockedLogsOrigThick()->writeWell(model->getModelSettings());
       }
-      if((model->getModelSettings()->getWellOutputFlag() & ModelSettings::BLOCKED_LOGS) > 0) {
+      if((model->getModelSettings()->getWellOutputFlag() & IO::BLOCKED_LOGS) > 0) {
         LogKit::LogFormatted(LogKit::LOW,"\nWARNING: Writing of BLOCKED_LOGS is not implemented yet.\n");
       }
 

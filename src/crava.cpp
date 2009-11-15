@@ -117,7 +117,7 @@ Crava::Crava(Model * model, SpatialWellFilter * spatwellfilter)
     }
     correlations_->setPriorCorrTFiltered(corrT,nz_,nzp_); // Can has zeros in the middle
     errCorrUnsmooth->fillInErrCorr(correlations_,corrGradI,corrGradJ); 
-    if((model->getModelSettings()->getOtherOutputFlag() & ModelSettings::PRIORCORRELATIONS) > 0)
+    if((model->getModelSettings()->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0)
       correlations_->writeFilePriorCorrT(corrT,nzp_);     // No zeros in the middle
   }
   else
@@ -154,7 +154,7 @@ Crava::Crava(Model * model, SpatialWellFilter * spatwellfilter)
   }
 
 
-  if ((outputFlag_ & ModelSettings::FACIESPROBRELATIVE) > 0 || model->getModelSettings()->noiseIsScaled()==true)
+  if ((outputFlag_ & IO::FACIESPROBRELATIVE) > 0 || model->getModelSettings()->noiseIsScaled()==true)
   {
     meanAlpha2_ = copyFFTGrid(meanAlpha_);
     meanBeta2_  = copyFFTGrid(meanBeta_);
@@ -340,7 +340,7 @@ Crava::computeVariances(fftw_real     * corrT,
       LogKit::LogFormatted(LogKit::LOW,"Matching syntethic and empirical energies:\n");
       float gain = sqrt((errorVariance_[l]/modelVariance_[l])*(empSNRatio_[l] - 1.0f));
       seisWavelet_[l]->scale(gain);
-      if((modelSettings->getOtherOutputFlag() & ModelSettings::WAVELETS) > 0) 
+      if((modelSettings->getOtherOutputFlag() & IO::WAVELETS) > 0) 
       {
         std::string angle    = NRLib::ToString(thetaDeg_[l], 1);
         std::string fileName = IO::PrefixWavelet() + std::string("EnergyMatched_") + angle;
@@ -1034,7 +1034,7 @@ Crava::computePostMeanResidAndFFTCov()
   for(l=0;l<ntheta_;l++)
     seisData_[l]->endAccess();
 
-  if((outputFlag_ & ModelSettings::RESIDUAL) > 0)
+  if((outputFlag_ & IO::RESIDUAL) > 0)
   {
     if(simbox_->getIsConstantThick() != true)
       multiplyDataByScaleWaveletAndWriteToFile("residuals");
@@ -1606,7 +1606,7 @@ Crava::printEnergyToScreen()
 void 
 Crava::computeFaciesProb(SpatialWellFilter *filteredlogs)
 {
-  if((outputFlag_ & ModelSettings::FACIESPROB) >0 || (outputFlag_ & ModelSettings::FACIESPROBRELATIVE)>0)
+  if((outputFlag_ & IO::FACIESPROB) >0 || (outputFlag_ & IO::FACIESPROBRELATIVE)>0)
   {
     Utils::writeHeader("Facies probability volumes");
 
@@ -1633,7 +1633,7 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs)
     int nfac = model_->getModelSettings()->getNumberOfFacies();
 
     std::string baseName;
-    if((outputFlag_ & ModelSettings::FACIESPROBRELATIVE)>0)
+    if((outputFlag_ & IO::FACIESPROBRELATIVE)>0)
     {
       meanAlpha2_->subtract(postAlpha_);
       meanAlpha2_->changeSign();
@@ -1694,7 +1694,7 @@ Crava::filterLogs(Simbox          * timeSimboxConstThick,
   double wall=0.0, cpu=0.0;
   TimeKit::getTime(wall,cpu);
   int relative;
-  if((outputFlag_ & ModelSettings::FACIESPROBRELATIVE)>0)
+  if((outputFlag_ & IO::FACIESPROBRELATIVE)>0)
     relative = 1;
   else 
     relative = 0;
@@ -1711,7 +1711,7 @@ Crava::filterLogs(Simbox          * timeSimboxConstThick,
 int Crava::getRelative()
 {
 int relative;
-  if((outputFlag_ & ModelSettings::FACIESPROBRELATIVE)>0)
+  if((outputFlag_ & IO::FACIESPROBRELATIVE)>0)
     relative = 1;
   else 
     relative = 0;

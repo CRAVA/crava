@@ -33,12 +33,12 @@ public:
   inline static  std::string    FileLateralCorr(void)              { return std::string("CorrXY")              ;}
   inline static  std::string    FileTemporalCorr(void)             { return std::string("CorrT")               ;}
   inline static  std::string    FileTemporalCorrUnfiltered(void)   { return std::string("CorrT_Unfiltered")    ;}
+  inline static  std::string    FileTimeToDepthVelocity(void)      { return std::string("Time-To-Depth_Velocity");}
 
   // Prefixes
 
   inline static  std::string    PrefixSeismic(void)                { return std::string("Seis_")               ;}
   inline static  std::string    PrefixWells(void)                  { return std::string("Well_")               ;}
-  inline static  std::string    PrefixVelocity(void)               { return std::string("Velocity_")           ;}
   inline static  std::string    PrefixBlockedWells(void)           { return std::string("BW_")                 ;}
   inline static  std::string    PrefixBackground(void)             { return std::string("BG_")                 ;}
   inline static  std::string    PrefixTrend(void)                  { return std::string("Trend_")              ;}
@@ -65,9 +65,9 @@ public:
 
   // Suffixes
 
-  inline static  std::string    SuffixDirectData(void)             { return std::string(".crava")              ;}
   inline static  std::string    SuffixGeneralData(void)            { return std::string(".dat")                ;}
   inline static  std::string    SuffixTextFiles(void)              { return std::string(".txt")                ;}
+  inline static  std::string    SuffixCrava(void)                  { return std::string(".crava")              ;}
   inline static  std::string    SuffixAsciiFiles(void)             { return std::string(".ascii")              ;}
   inline static  std::string    SuffixAsciiIrapClassic(void)       { return std::string(".irap")               ;}
   inline static  std::string    SuffixStormBinary(void)            { return std::string(".storm")              ;}
@@ -81,9 +81,7 @@ public:
   inline static  std::string    SuffixSgriHeader(void)             { return std::string(".Sgrh")               ;}
   inline static  std::string    SuffixSgri(void)                   { return std::string(".Sgri")               ;}
 
-  enum           volumeTypes{UNKNOWN = 0, SEGYFILE = 1, STORMFILE = 2, DIRECTFILE = 3};
-
-  static         int            findGridFileType(const std::string & fileName);
+  static         int            findGridType(const std::string & fileName);
 
   //Note: By convention, input path is added to input file names at end of parsing.
   //      Output path and prefix is added to output file name by call to makeFullFileName
@@ -98,6 +96,54 @@ public:
   static         void           writeSurfaceToFile(const Surface     & surface,
                                                    const std::string & name,
                                                    int                 format);
+
+  enum           domains{TIMEDOMAIN  = 1, 
+                         DEPTHDOMAIN = 2};
+
+  enum           gridFormats{UNKNOWNX =  0,
+                             SEGY    =  1, 
+                             STORM   =  2, 
+                             ASCII   =  4, 
+                             SGRI    =  8,
+                             CRAVA   = 16};
+
+  enum           volumeTypes{UNKNOWN    = 0,  // Disse skal utgaa til fordel for gridFormats
+                             SEGYFILE   = 1, 
+                             STORMFILE  = 2, 
+                             DIRECTFILE = 3};
+
+  enum           wellFormats{RMSWELL    = 1, 
+                             NORSARWELL = 2};
+
+  enum           outputGrids{CORRELATION            = 1, 
+                             RESIDUAL               = 2, 
+                             VP                     = 4, 
+                             VS                     = 8, 
+                             RHO                    = 16,
+                             LAMELAMBDA             = 32, 
+                             LAMEMU                 = 64, 
+                             POISSONRATIO           = 128, 
+                             AI                     = 256,
+                             SI                     = 512, 
+                             VPVSRATIO              = 1024, 
+                             MURHO                  = 2048, 
+                             LAMBDARHO              = 4096, 
+                             BACKGROUND             = 8192, 
+                             BACKGROUND_TREND       = 16384, 
+                             FACIESPROB             = 32768, 
+                             FACIESPROBRELATIVE     = 65536, 
+                             EXTRA_GRIDS            = 131072,
+                             SEISMIC_DATA           = 262144,
+                             TIME_TO_DEPTH_VELOCITY = 524288};
+
+  enum           outputWells{WELLS              = 1,
+                             BLOCKED_WELLS      = 2,
+                             BLOCKED_LOGS       = 4};
+
+  enum           outputOther{WAVELETS            = 1,
+                             EXTRA_SURFACES      = 2,
+                             PRIORCORRELATIONS   = 4,
+                             BACKGROUND_TREND_1D = 8};
 
 private:
   static         bool           IsCravaBinaryFile(const std::string & fileName);

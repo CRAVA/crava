@@ -31,47 +31,47 @@ ParameterOutput::writeParameters(const Simbox  * simbox,
     suffix = "";
   }
 
-  if((outputFlag & ModelSettings::MURHO) > 0)
+  if((outputFlag & IO::MURHO) > 0)
   {
     fileName = prefix+"MuRho"+suffix;
     computeMuRho(simbox, model, alpha, beta, rho, fileGrid, fileName);
   }
-  if((outputFlag & ModelSettings::LAMBDARHO) > 0)
+  if((outputFlag & IO::LAMBDARHO) > 0)
   {
     fileName = prefix+"LambdaRho"+suffix;
     computeLambdaRho(simbox, model, alpha, beta, rho, fileGrid, fileName);
   }
-  if((outputFlag & ModelSettings::LAMELAMBDA) > 0)
+  if((outputFlag & IO::LAMELAMBDA) > 0)
   {
     fileName = prefix+"LameLambda"+suffix;
     computeLameLambda(simbox, model, alpha, beta, rho, fileGrid, fileName);
   }
-  if((outputFlag & ModelSettings::LAMEMU) > 0)
+  if((outputFlag & IO::LAMEMU) > 0)
   {
     fileName = prefix+"LameMu"+suffix;
     computeLameMu(simbox, model,  beta, rho, fileGrid, fileName);
   }
-  if((outputFlag & ModelSettings::POISSONRATIO) > 0)
+  if((outputFlag & IO::POISSONRATIO) > 0)
   {
     fileName = prefix+"PoissonRatio"+suffix;
     computePoissonRatio(simbox, model, alpha, beta, fileGrid, fileName);
   }
-  if((outputFlag & ModelSettings::AI) > 0)
+  if((outputFlag & IO::AI) > 0)
   {
     fileName = prefix+"AI"+suffix;
     computeAcousticImpedance(simbox, model, alpha, rho, fileGrid, fileName);
   }
-  if((outputFlag & ModelSettings::SI) > 0)
+  if((outputFlag & IO::SI) > 0)
   {
     fileName = prefix+"SI"+suffix;
     computeShearImpedance(simbox, model, beta, rho, fileGrid, fileName);
   }
-  if((outputFlag & ModelSettings::VPVSRATIO) > 0)
+  if((outputFlag & IO::VPVSRATIO) > 0)
   {
     fileName = prefix+"VpVsRatio"+suffix;
     computeVpVsRatio(simbox, model, alpha, beta, fileGrid, fileName);
   }
-  if((outputFlag & ModelSettings::VP) > 0)
+  if((outputFlag & IO::VP) > 0)
   {
     fileName = prefix+"Vp"+suffix;
     alpha->setAccessMode(FFTGrid::RANDOMACCESS);
@@ -81,7 +81,7 @@ ParameterOutput::writeParameters(const Simbox  * simbox,
       alpha->logTransf();
     alpha->endAccess();
   }
-  if((outputFlag & ModelSettings::VS) > 0)
+  if((outputFlag & IO::VS) > 0)
   {
     fileName = prefix+"Vs"+suffix;
     beta->setAccessMode(FFTGrid::RANDOMACCESS);
@@ -91,7 +91,7 @@ ParameterOutput::writeParameters(const Simbox  * simbox,
       beta->logTransf();
     beta->endAccess();
   }
-  if((outputFlag & ModelSettings::RHO) > 0)
+  if((outputFlag & IO::RHO) > 0)
   {
     fileName = prefix+"Rho"+suffix;
     rho->setAccessMode(FFTGrid::RANDOMACCESS);

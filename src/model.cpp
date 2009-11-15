@@ -185,7 +185,9 @@ Model::Model(char * fileName)
         //
         // INVERSION/ESTIMATION
         //
-        bool estimate = modelSettings_->getEstimationMode();
+        bool estimate   = modelSettings_->getEstimationMode();
+        int  gridOutput = modelSettings_->getGridOutputFlag();
+        int  gridFormat = modelSettings_->getGridOutputFormat();
 
         if(timeCutSimbox!=NULL)  {
           timeCutMapping_ = new GridMapping();
@@ -199,20 +201,25 @@ Model::Model(char * fileName)
                           faciesEstimInterval_,
                           timeSimbox_, inputFiles,
                           errText, failedExtraSurf);
+
+        bool writeBackgroundInCravaFormat = (gridFormat & IO::CRAVA) > 0 && (gridOutput & IO::BACKGROUND) > 0;
+        bool writeSeismicInCravaFormat    = (gridFormat & IO::CRAVA) > 0 && (gridOutput & IO::SEISMIC_DATA) > 0;
+        bool writeVelocityInCravaFormat   = (gridFormat & IO::CRAVA) > 0 && (gridOutput & IO::TIME_TO_DEPTH_VELOCITY) > 0;
+
         if (!failedWells && !failedDepthConv)
         {
           bool backgroundDone = false;
-          if(estimate == false || modelSettings_->getEstimateBackground() == true ||
-            modelSettings_->getEstimateCorrelations() == true || 
-            modelSettings_->getDirectBGOutput() == true ||
-            modelSettings_->getEstimateWaveletNoise() == true) 
+          if(estimate == false || 
+             modelSettings_->getEstimateBackground() == true ||
+             modelSettings_->getEstimateCorrelations() == true || 
+             modelSettings_->getEstimateWaveletNoise() == true ||
+             writeBackgroundInCravaFormat) 
           {
             processBackground(background_, wells_, timeSimbox_, timeBGSimbox,
                               modelSettings_, inputFiles,
                               errText, failedBackground);
             backgroundDone = true;
           }
-
 
           if (failedBackground == false && backgroundDone == true && 
               (estimate == false || modelSettings_->getEstimateCorrelations() == true))
@@ -224,8 +231,7 @@ Model::Model(char * fileName)
 
           if (failedReflMat == false && failedExtraSurf == false &&
               failedBackground == false && backgroundDone == true &&
-              (estimate == false || modelSettings_->getEstimateWaveletNoise() ||
-               modelSettings_->getDirectSeisOutput() == true))
+              (estimate == false || modelSettings_->getEstimateWaveletNoise() || writeSeismicInCravaFormat))
           {
             processSeismic(seisCube_, timeSimbox_, 
                            modelSettings_, inputFiles,
@@ -247,8 +253,7 @@ Model::Model(char * fileName)
             }
           }
         }
-        if((estimate == false && modelSettings_->getDoDepthConversion() == true) ||
-            modelSettings_->getDirectVelOutput() == true)
+        if((estimate == false && modelSettings_->getDoDepthConversion() == true) || writeVelocityInCravaFormat)
           processDepthConversion(timeCutSimbox, timeSimbox_,
                                  modelSettings_, inputFiles,
                                  errText, failedDepthConv);
@@ -263,7 +268,7 @@ Model::Model(char * fileName)
                                  errText,
                                  inputFiles);
         }
-        if(((modelSettings_->getWellOutputFlag() & ModelSettings::WELLS) > 0) ||
+        if(((modelSettings_->getWellOutputFlag() & IO::WELLS) > 0) ||
            (estimate == true && modelSettings_->getEstimateBackground() == true))
            writeWells(wells_, modelSettings_);
       }
@@ -673,10 +678,17 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
       seismicFile.c_str());
   
     if(seismicFile != "") {//May change the condition here, but need geometry if we want to set XL/IL
-      if(IO::findGridFileType(seismicFile) == IO::DIRECTFILE)
+      int fileType = IO::findGridType(seismicFile);
+      if(fileType == IO::CRAVA) {
         geometry = geometryFromDirectFile(seismicFile);
-      else {
+      }
+      else if(fileType == IO::SEGY) {
         geometry = SegY::FindGridGeometry(seismicFile, modelSettings->getTraceHeaderFormat(0));
+      }
+      else {
+        // NBNB-PAL: Lage STORM grid opsjon for dette.
+        sprintf(errText,"%s Grid dimension can currently only be read from Segy and CRAVA grid files.\n",errText);
+        failed = true;
       }
     }
     if(!areaFromModelFile)
@@ -717,10 +729,10 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
   //
   // Set SURFACES
   //
-  int outputFormat = modelSettings->getOutputFormatFlag();
-  int outputDomain = modelSettings->getOutputDomainFlag();
-  int otherOutput  = modelSettings->getOtherOutputFlag();
+  int outputFormat = modelSettings->getGridOutputFormat();
+  int outputDomain = modelSettings->getGridOutputDomain();
   int outputFlag   = modelSettings->getGridOutputFlag();
+  int otherOutput  = modelSettings->getOtherOutputFlag();
 
   error = 0;
   setSimboxSurfaces(timeSimbox, 
@@ -867,7 +879,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
     Surface * tsurf = new Surface(dynamic_cast<const Surface &> (timeSimbox->GetTopSurface()));
     timeSimboxConstThick->setDepth(tsurf, 0, timeSimbox->getlz(), timeSimbox->getdz());
 
-    if((otherOutput & ModelSettings::EXTRA_SURFACES) > 0 && (outputDomain & ModelSettings::TIMEDOMAIN) > 0) {
+    if((otherOutput & IO::EXTRA_SURFACES) > 0 && (outputDomain & IO::TIMEDOMAIN) > 0) {
       std::string topSurf  = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixTime() + "_ConstThick";
       std::string baseSurf = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime() + "_ConstThick";
       timeSimboxConstThick->writeTopBotGrids(topSurf, 
@@ -963,23 +975,35 @@ Model::setSimboxSurfaces(Simbox                        *& simbox,
       }
     }
     if (error == 0) {
-      if((outputDomain & ModelSettings::TIMEDOMAIN) > 0) {
+      if((outputDomain & IO::TIMEDOMAIN) > 0) {
         std::string topSurf  = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixTime();
         std::string baseSurf = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime();
         simbox->writeTopBotGrids(topSurf, 
                                  baseSurf,
                                  IO::PathToInversionResults(),
                                  outputFormat);
-        if ((outputFlag & ModelSettings::BACKGROUND_TREND) > 0 || (outputFlag & ModelSettings::BACKGROUND_TREND) > 0) {
+        if ((outputFlag & IO::BACKGROUND_TREND) > 0 || (outputFlag & IO::BACKGROUND_TREND) > 0) {
           simbox->writeTopBotGrids(topSurf, 
                                    baseSurf,
                                    IO::PathToBackground(),
                                    outputFormat);
         }
-        if ((outputFlag & ModelSettings::CORRELATION) > 0) {
+        if ((outputFlag & IO::CORRELATION) > 0) {
           simbox->writeTopBotGrids(topSurf, 
                                    baseSurf,
                                    IO::PathToCorrelations(),
+                                   outputFormat);
+        }
+        if ((outputFlag & IO::SEISMIC_DATA) > 0) {
+          simbox->writeTopBotGrids(topSurf, 
+                                   baseSurf,
+                                   IO::PathToSeismicData(),
+                                   outputFormat);
+        }
+        if ((outputFlag & IO::TIME_TO_DEPTH_VELOCITY) > 0) {
+          simbox->writeTopBotGrids(topSurf, 
+                                   baseSurf,
+                                   IO::PathToVelocity(),
                                    outputFormat);
         }
       }
@@ -1050,7 +1074,7 @@ Model::setupExtendedTimeSimbox(Simbox   * timeSimbox,
 
   timeSimbox->setDepth(topSurf, botSurf, nz);
   
-  if((otherOutput & ModelSettings::EXTRA_SURFACES) > 0 && (outputDomain & ModelSettings::TIMEDOMAIN) > 0) {
+  if((otherOutput & IO::EXTRA_SURFACES) > 0 && (outputDomain & IO::TIMEDOMAIN) > 0) {
     std::string topSurf  = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixTime() + "_Extended";
     std::string baseSurf = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime() + "_Extended";
     timeSimbox->writeTopBotGrids(topSurf, 
@@ -1131,7 +1155,7 @@ Model::setupExtendedBackgroundSimbox(Simbox   * timeSimbox,
   timeBGSimbox = new Simbox(timeSimbox);
   timeBGSimbox->setDepth(topSurf, botSurf, nz);
 
-  if((otherOutput & ModelSettings::EXTRA_SURFACES) > 0 && (outputDomain & ModelSettings::TIMEDOMAIN) > 0) {
+  if((otherOutput & IO::EXTRA_SURFACES) > 0 && (outputDomain & IO::TIMEDOMAIN) > 0) {
     std::string topSurf  = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixTime() + "_BG";
     std::string baseSurf = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime() + "_BG";
     timeBGSimbox->writeTopBotGrids(topSurf,
@@ -1345,22 +1369,22 @@ Model::processSeismic(FFTGrid      **& seisCube,
         }
       }
 
-      if(modelSettings->getDirectSeisOutput() == true) {
+      if((modelSettings->getGridOutputFlag() & IO::SEISMIC_DATA) > 0) {
         for(int i=0;i<nAngles;i++) {
           std::string angle    = NRLib::ToString(modelSettings->getAngle(i)*(180/M_PI), 1);
-          std::string baseName = IO::PrefixSeismic() + angle + IO::SuffixDirectData();
-          std::string fileName = IO::makeFullFileName(IO::PathToSeismicData(), baseName);
-          seisCube[i]->writeDirectFile(fileName, timeSimbox);
-        }
-      }
-      if(modelSettings->getDebugFlag() == 1)
-      {
-        for(int i=0 ; i<nAngles ; i++)
-        {
-          std::string angle     = NRLib::ToString(modelSettings->getAngle(i)*(180/M_PI), 1);
-          std::string sgriLabel = "Original seismic data for incidence angle " + angle;
-          std::string fileName  = IO::PrefixOriginalSeismic() + angle;
-          seisCube[i]->writeFile(fileName, IO::PathToSeismicData(), timeSimbox, sgriLabel);
+          std::string baseName = IO::PrefixOriginalSeismic() + angle;
+          std::string sgriLabel = std::string("Original seismic data for angle stack ") + angle;
+          float       offset = modelSettings->getLocalSegyOffset(i);
+          if(offset < 0)
+            offset = modelSettings->getSegyOffset();
+          seisCube[i]->writeFile(baseName, 
+                                 IO::PathToSeismicData(), 
+                                 timeSimbox, 
+                                 sgriLabel, 
+                                 offset,
+                                 timeDepthMapping_, 
+                                 timeCutMapping_);
+
         }
       }
 
@@ -1837,30 +1861,9 @@ Model::processBackground(Background   *& background,
     }
   }
 
-  
   if (failed == false) {
-    if((modelSettings->getGridOutputFlag() & ModelSettings::BACKGROUND) > 0) {
+    if((modelSettings->getGridOutputFlag() & IO::BACKGROUND) > 0) {
       background->writeBackgrounds(timeSimbox, timeDepthMapping_, timeCutMapping_); 
-    }
-    
-    if(modelSettings->getDirectBGOutput() == true) {
-      std::string fileName[3];
-      
-      std::string baseName1 = IO::PrefixBackground() + "Vp"  + IO::SuffixDirectData();
-      std::string baseName2 = IO::PrefixBackground() + "Vs"  + IO::SuffixDirectData();
-      std::string baseName3 = IO::PrefixBackground() + "Rho" + IO::SuffixDirectData();
-      
-      fileName[0] = IO::makeFullFileName(IO::PathToBackground(), baseName1);
-      fileName[1] = IO::makeFullFileName(IO::PathToBackground(), baseName2);
-      fileName[2] = IO::makeFullFileName(IO::PathToBackground(), baseName3);
-      
-      for(int i=0;i<3;i++) {
-        backModel[i]->setAccessMode(FFTGrid::RANDOMACCESS);
-        backModel[i]->expTransf();
-        backModel[i]->writeDirectFile(fileName[i], timeSimbox);
-        backModel[i]->logTransf();
-        backModel[i]->endAccess();
-      }
     }
   }
     
@@ -1879,9 +1882,9 @@ Model::readGridFromFile(const std::string       & fileName,
                         ModelSettings           * modelSettings,
                         std::string             & errText)
 {
-  int gridFileType = IO::findGridFileType(fileName);
+  int fileType = IO::findGridType(fileName);
 
-  if(gridFileType == IO::DIRECTFILE) 
+  if(fileType == IO::CRAVA) 
   {
     if(modelSettings->getFileGrid() == 1)
       grid = new FFTFileGrid(timeSimbox->getnx(),
@@ -1900,12 +1903,12 @@ Model::readGridFromFile(const std::string       & fileName,
     grid->setType(gridType);
     grid->readDirectFile(fileName, errText);
   }
-  else if(gridFileType == IO::SEGYFILE) 
+  else if(fileType == IO::SEGY) 
   {
     readSegyFile(fileName, grid, timeSimbox, modelSettings, geometry, 
                  gridType, offset, format, errText);
   }
-  else if(gridFileType == IO::STORMFILE) 
+  else if(fileType == IO::STORM) 
   {
     readStormFile(fileName, grid, gridType, parName, timeSimbox, modelSettings, errText);
   }
@@ -1927,7 +1930,7 @@ Model::processPriorCorrelations(Corr         *& correlations,
                                 char          * errText,
                                 bool          & failed)
 {
-  bool printResult = ((modelSettings->getOtherOutputFlag() & ModelSettings::PRIORCORRELATIONS) > 0 ||
+  bool printResult = ((modelSettings->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0 ||
                       modelSettings->getEstimationMode() == true);
   if (modelSettings->getDoInversion() || printResult)
   {
@@ -2277,7 +2280,7 @@ Model::processWavelets(Wavelet     **& wavelet,
   TimeKit::getTime(wall,cpu);
 
   bool estimateStuff = false;
-  int  outputFormat = modelSettings->getOutputFormatFlag();
+  int  outputFormat = modelSettings->getGridOutputFormat();
   for(int i=0 ; i < modelSettings->getNumberOfAngles() ; i++)
   {  
     estimateStuff = estimateStuff || modelSettings->getEstimateWavelet(i); 
@@ -2320,7 +2323,7 @@ Model::processWavelets(Wavelet     **& wavelet,
         Surface help(NRLib::ReadStormSurf(inputFiles->getShiftFile(i)));
         shiftGrids[i] = new Grid2D(timeSimbox->getnx(),timeSimbox->getny(), 0.0);
         resampleGrid(help,timeSimbox, shiftGrids[i]);
-        if ((modelSettings->getOtherOutputFlag() & ModelSettings::EXTRA_SURFACES) > 0)
+        if ((modelSettings->getOtherOutputFlag() & IO::EXTRA_SURFACES) > 0)
         {
           std::string baseName = IO::PrefixLocalWaveletShift() + NRLib::ToString(angle,1);
           std::string fileName = IO::makeFullFileName(IO::PathToWavelets(), baseName);
@@ -2335,7 +2338,7 @@ Model::processWavelets(Wavelet     **& wavelet,
         Surface help(NRLib::ReadStormSurf(inputFiles->getScaleFile(i)));
         gainGrids[i] = new Grid2D(timeSimbox->getnx(),timeSimbox->getny(), 0.0);
         resampleGrid(help,timeSimbox, gainGrids[i]);
-        if ((modelSettings->getOtherOutputFlag() & ModelSettings::EXTRA_SURFACES) > 0)
+        if ((modelSettings->getOtherOutputFlag() & IO::EXTRA_SURFACES) > 0)
         {
           std::string baseName = IO::PrefixLocalWaveletGain() + NRLib::ToString(angle,1);
           std::string fileName = IO::makeFullFileName(IO::PathToWavelets(), baseName);
@@ -2350,7 +2353,7 @@ Model::processWavelets(Wavelet     **& wavelet,
       Surface help(NRLib::ReadStormSurf(inputFiles->getLocalNoiseFile(i)));
       noiseScaled[i] = new Grid2D(timeSimbox->getnx(),timeSimbox->getny(), 0.0);
       resampleGrid(help, timeSimbox, noiseScaled[i]);
-      if ((modelSettings->getOtherOutputFlag() & ModelSettings::EXTRA_SURFACES) > 0)
+      if ((modelSettings->getOtherOutputFlag() & IO::EXTRA_SURFACES) > 0)
       {
         std::string baseName = IO::PrefixLocalNoise() + NRLib::ToString(angle,1);
         std::string fileName = IO::makeFullFileName(IO::PathToWavelets(), baseName);
@@ -2375,7 +2378,7 @@ Model::processWavelets(Wavelet     **& wavelet,
                              +NRLib::ToString(modelSettings->getWaveletScale(i),2)
                              +") has no effect when the wavelet\n         is estimated and not read from file\n\n");
       }
-      if (modelSettings->getWaveletDim(i) == ModelSettings::ONE_D)
+      if (modelSettings->getWaveletDim(i) == Wavelet::ONE_D)
         wavelet[i] = new Wavelet1D(timeSimbox, 
                                    seisCube[i], 
                                    wells, 
@@ -2400,7 +2403,7 @@ Model::processWavelets(Wavelet     **& wavelet,
       }
       else {
         if (fileFormat == Wavelet::SGRI) {
-          if (modelSettings->getWaveletDim(i) == ModelSettings::THREE_D) {
+          if (modelSettings->getWaveletDim(i) == Wavelet::THREE_D) {
             const std::string & filterFile = inputFiles->getWaveletFilterFile(i);
             if (strcmp(filterFile.c_str(), "") != 0) {
               LogKit::LogFormatted(LogKit::LOW,"\n\nWARNING: The filter file for wavelet-3d is not used \n");
@@ -2420,7 +2423,7 @@ Model::processWavelets(Wavelet     **& wavelet,
           }
         }
         else {
-          if (modelSettings->getWaveletDim(i) == ModelSettings::ONE_D) {
+          if (modelSettings->getWaveletDim(i) == Wavelet::ONE_D) {
             wavelet[i] = new Wavelet1D(waveletFile, 
                                        fileFormat, 
                                        modelSettings, 
@@ -2505,7 +2508,7 @@ Model::processWavelets(Wavelet     **& wavelet,
       }
 
       if (error == 0) {
-        if((modelSettings->getOtherOutputFlag() & ModelSettings::WAVELETS) > 0 ||
+        if((modelSettings->getOtherOutputFlag() & IO::WAVELETS) > 0 ||
           (modelSettings->getEstimationMode() == true && 
           modelSettings->getEstimateWavelet(i) == true))
         {
@@ -2517,7 +2520,7 @@ Model::processWavelets(Wavelet     **& wavelet,
         if(shiftGrids != NULL && shiftGrids[i] != 0) //NBNB husk utskrift av grid. Resample til surface
         {
           if(modelSettings->getEstimateLocalShift(i)==true && 
-             ((modelSettings->getOtherOutputFlag() & ModelSettings::EXTRA_SURFACES) > 0 ||
+             ((modelSettings->getOtherOutputFlag() & IO::EXTRA_SURFACES) > 0 ||
               modelSettings->getEstimationMode() == true))
           {
             std::string baseName = IO::PrefixLocalWaveletShift() + NRLib::ToString(angle,1);
@@ -2530,7 +2533,7 @@ Model::processWavelets(Wavelet     **& wavelet,
         if(gainGrids != NULL && gainGrids[i] != NULL)
         {
           if(modelSettings->getEstimateLocalScale(i)==true &&
-             ((modelSettings->getOtherOutputFlag() & ModelSettings::EXTRA_SURFACES) > 0 ||
+             ((modelSettings->getOtherOutputFlag() & IO::EXTRA_SURFACES) > 0 ||
               modelSettings->getEstimationMode() == true))
          {
            std::string baseName = IO::PrefixLocalWaveletGain() + NRLib::ToString(angle,1);
@@ -2543,7 +2546,7 @@ Model::processWavelets(Wavelet     **& wavelet,
         if(noiseScaled[i]!=NULL)
         {
           if(modelSettings->getEstimateLocalNoise(i)==true &&
-            ((modelSettings->getOtherOutputFlag() & ModelSettings::EXTRA_SURFACES) > 0 ||
+            ((modelSettings->getOtherOutputFlag() & IO::EXTRA_SURFACES) > 0 ||
               modelSettings->getEstimationMode() == true))
           {
             std::string baseName = IO::PrefixLocalNoise() + NRLib::ToString(angle,1);
@@ -3443,13 +3446,21 @@ Model::processDepthConversion(Simbox        * timeCutSimbox,
     {
       timeDepthMapping_->calculateSurfaceFromVelocity(velocity, timeSimbox);
       timeDepthMapping_->setDepthSimbox(timeSimbox, timeSimbox->getnz(), 
-                                        modelSettings->getOutputFormatFlag(),
+                                        modelSettings->getGridOutputFormat(),
                                         failed, errText);            // NBNB-PAL: Er dettet riktig nz (timeCut vs time)? 
       timeDepthMapping_->makeTimeDepthMapping(velocity, timeSimbox);
-      if(modelSettings->getDirectVelOutput() == true) {
-        std::string baseName = IO::PrefixVelocity() + IO::SuffixDirectData();
-        std::string fileName = IO::makeFullFileName(IO::PathToVelocity(), baseName);
-        velocity->writeDirectFile(fileName, timeSimbox); 
+
+      if((modelSettings->getGridOutputFlag() & IO::TIME_TO_DEPTH_VELOCITY) > 0) {
+        std::string baseName  = IO::FileTimeToDepthVelocity();
+        std::string sgriLabel = std::string("Time-to-depth velocity");
+        float       offset    = modelSettings->getSegyOffset();
+        velocity->writeFile(baseName, 
+                            IO::PathToVelocity(), 
+                            timeSimbox, 
+                            sgriLabel, 
+                            offset,
+                            timeDepthMapping_, 
+                            timeCutMapping_);
       }
     }
   }
@@ -3647,7 +3658,7 @@ Model::resampleGridAndWriteToFile(const std::string & fileName,
       simbox->getIndexes(x,y,i1,j1);
       if(i1==IMISSING || j1== IMISSING)
       {
-        if((format & ModelSettings::ASCII) > 0)
+        if((format & IO::ASCII) > 0)
           outsurf(i,j) = Definitions::AsciiIrapClassicUndefValue();
         else
           outsurf(i,j) = Definitions::StormBinaryUndefValue();

@@ -39,7 +39,7 @@ IO::writeSurfaceToFile(const Surface     & surface,
                        const std::string & fileName,
                        int                 format)
 {
-  if((format & ModelSettings::ASCII) > 0)
+  if((format & ASCII) > 0)
     NRLib::WriteIrapClassicAsciiSurf(surface, fileName + SuffixAsciiIrapClassic());
   else  
     NRLib::WriteStormBinarySurf(surface, fileName + SuffixStormBinary());
@@ -47,16 +47,16 @@ IO::writeSurfaceToFile(const Surface     & surface,
 
 
 int
-IO::findGridFileType(const std::string & fileName)
+IO::findGridType(const std::string & fileName)
 {
   if (IsCravaBinaryFile(fileName))
-    return(DIRECTFILE);
+    return(CRAVA);
   else if (IsStormBinaryFile(fileName))
-    return(STORMFILE);
+    return(STORM);
   else
-    return(SEGYFILE);
+    return(SEGY);
   //  else if (NRLib::IsSegyFile(fileName))
-  //    return(SEGYFILE);
+  //    return(SEGY);
   //  else
   //    return(UNKNOWN)
 }

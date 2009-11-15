@@ -19,6 +19,7 @@ class ModelSettings;
 class Wavelet {
 public:
   enum           difftypes{FIRSTORDERFORWARDDIFF, FIRSTORDERCENTRALDIFF, FIRSTORDERBACKWARDDIFF, FOURIER};
+  enum           waveletDims{ONE_D = 0, THREE_D = 1};
   enum           waveletreadtypes{OLD, JASON, ESTIMATE, SGRI};
   
   virtual void   fft1DInPlace() = 0;

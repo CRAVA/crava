@@ -1376,22 +1376,22 @@ FFTGrid::writeFile(const std::string & fName,
                    GridMapping       * timeMap)
 {
   std::string fileName = IO::makeFullFileName(subDir, fName);      
-
+  
   if(formatFlag_ > 0) //Output format specified.
   {
     bool expTrans = (label == "exptrans"); // use sgriLabel to active exponential transformations
-    if((domainFlag_ & ModelSettings::TIMEDOMAIN) > 0) {
+    if((domainFlag_ & IO::TIMEDOMAIN) > 0) {
       if(timeMap == NULL) { //No resampling of storm 
         if(expTrans) {
-          if((formatFlag_ & ModelSettings::STORM) > 0) 
+          if((formatFlag_ & IO::STORM) > 0) 
             FFTGrid::writeStormFile(fileName, simbox, true, false);
-          if((formatFlag_ & ModelSettings::ASCII) > 0)
+          if((formatFlag_ & IO::ASCII) > 0)
             FFTGrid::writeStormFile(fileName, simbox, true, true);
         }
         else {
-          if((formatFlag_ & ModelSettings::STORM) > 0) 
+          if((formatFlag_ & IO::STORM) > 0) 
             FFTGrid::writeStormFile(fileName, simbox, false, false);
-          if((formatFlag_ & ModelSettings::ASCII) > 0)
+          if((formatFlag_ & IO::ASCII) > 0)
             FFTGrid::writeStormFile(fileName, simbox, false, true);
         }
       }
@@ -1399,13 +1399,16 @@ FFTGrid::writeFile(const std::string & fName,
         FFTGrid::writeResampledStormCube(timeMap, fileName, simbox, formatFlag_, expTrans);
       }
 
-      //SEGY and SGRI are never resampled in time.
-      if((formatFlag_ & ModelSettings::SEGY) >0)
+      //SEGY, SGRI, and CRAVA are never resampled in time.
+      if((formatFlag_ & IO::SEGY) >0)
         FFTGrid::writeSegyFile(fileName, simbox, z0);
-      if((formatFlag_ & ModelSettings::SGRI) >0)
+      if((formatFlag_ & IO::SGRI) >0)
         FFTGrid::writeSgriFile(fileName, simbox, label);
+      if((formatFlag_ & IO::CRAVA) >0)
+        FFTGrid::writeDirectFile(fileName, simbox);
     }
-    if(depthMap != NULL && (domainFlag_ & ModelSettings::DEPTHDOMAIN) > 0) { //Writing in depth. Currently, only stormfiles are written in depth.
+
+    if(depthMap != NULL && (domainFlag_ & IO::DEPTHDOMAIN) > 0) { //Writing in depth. Currently, only stormfiles are written in depth.
       std::string depthName = fileName+"_Depth";
       if(depthMap->getMapping() == NULL) {
         if(depthMap->getSimbox() == NULL) {
@@ -1414,19 +1417,19 @@ FFTGrid::writeFile(const std::string & fName,
           return;
         }
         if(expTrans) {
-          if((formatFlag_ & ModelSettings::STORM) > 0) 
+          if((formatFlag_ & IO::STORM) > 0) 
             FFTGrid::writeStormFile(depthName, depthMap->getSimbox(), true, false);
-          if((formatFlag_ & ModelSettings::ASCII) > 0)
+          if((formatFlag_ & IO::ASCII) > 0)
             FFTGrid::writeStormFile(depthName, depthMap->getSimbox(), true, true);
         }
         else {
-          if((formatFlag_ & ModelSettings::STORM) >0) 
+          if((formatFlag_ & IO::STORM) >0) 
             FFTGrid::writeStormFile(depthName, depthMap->getSimbox(), false, false);
-          if((formatFlag_ & ModelSettings::ASCII) >0)
+          if((formatFlag_ & IO::ASCII) >0)
             FFTGrid::writeStormFile(depthName, depthMap->getSimbox(), false, true);
         }
 
-        if((formatFlag_ & ModelSettings::SEGY) >0)
+        if((formatFlag_ & IO::SEGY) >0)
           makeDepthCubeForSegy(depthMap->getSimbox(),depthName);
       }
       else
@@ -1622,7 +1625,7 @@ FFTGrid::writeResampledStormCube(GridMapping       * gridmapping,
 
   std::string gfName;
   std::string header;
-  if ((format & ModelSettings::ASCII) > 0) // ASCII
+  if ((format & IO::ASCII) > 0) // ASCII
   {
     gfName = fileName + IO::SuffixTextFiles();
     header = gridmapping->getSimbox()->getStormHeader(FFTGrid::PARAMETER,nx_,ny_,nz, 0, 1);
@@ -1630,14 +1633,14 @@ FFTGrid::writeResampledStormCube(GridMapping       * gridmapping,
     outgrid->WriteToFile(gfName,header);
   }
 
-  if ((format & ModelSettings::STORM) > 0)
+  if ((format & IO::STORM) > 0)
   {
     gfName =  fileName + IO::SuffixStormBinary();
     header = gridmapping->getSimbox()->getStormHeader(FFTGrid::PARAMETER,nx_,ny_,nz, 0, 0);
     outgrid->SetFormat(StormContGrid::STORM_BINARY);
     outgrid->WriteToFile(gfName,header);
   }
-  if((formatFlag_ & ModelSettings::SEGY) > 0)
+  if((formatFlag_ & IO::SEGY) > 0)
   {
     gfName =  fileName + IO::SuffixSegy();
     writeSegyFromStorm(outgrid,gfName);
@@ -1724,7 +1727,8 @@ FFTGrid::writeDirectFile(const std::string & fileName, const Simbox * simbox)
 {
   try {
     std::ofstream binFile;
-    NRLib::OpenWrite(binFile, fileName, std::ios::out | std::ios::binary);
+    std::string fName = fileName + IO::SuffixCrava();
+    NRLib::OpenWrite(binFile, fName, std::ios::out | std::ios::binary);
 
     std::string fileType = "crava_fftgrid_binary";
     binFile << fileType << "\n";
@@ -2154,4 +2158,4 @@ void FFTGrid::makeDepthCubeForSegy(Simbox *simbox,const std::string & fileName)
 }
 
 int FFTGrid::formatFlag_ = 0;
-int FFTGrid::domainFlag_ = ModelSettings::TIMEDOMAIN;
+int FFTGrid::domainFlag_ = IO::TIMEDOMAIN;

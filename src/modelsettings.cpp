@@ -94,23 +94,19 @@ ModelSettings::ModelSettings(void)
   velocityFromInv_       = false;
 
   writePrediction_       =      false;  //Will be set to true if no simulations.
-  gridFlag_              =  VP+VS+RHO;  // Default output
+  gridFlag_              = IO::VP + IO::VS + IO::RHO;  // Default output
   defaultGridOutput_     =       true;
-  formatFlag_            =      STORM;   
-  domainFlag_            = TIMEDOMAIN;   
+  formatFlag_            = IO::STORM;   
+  domainFlag_            = IO::TIMEDOMAIN;   
   wellFlag_              =          0;   
-  wellFormatFlag_        =    RMSWELL;
+  wellFormatFlag_        = IO::RMSWELL;
   otherFlag_             =          0;   
   debugFlag_             =          0;
   fileGrid_              =         -1;
 
-  directBGOutput_        =    false;
-  directSeisOutput_      =    false;
-  directVelOutput_       =    false;
-
   estimationMode_        =    false;
   generateSeismic_       =    false;
-  generateBackground_    =    true;
+  generateBackground_    =     true;
   estimateFaciesProb_    =    false;
   noVsFaciesProb_        =    false;
   faciesLogGiven_        =    false;
@@ -118,11 +114,11 @@ ModelSettings::ModelSettings(void)
   parallelTimeSurfaces_  =    false;
   useLocalWavelet_       =    false;
   optimizeWellLocation_  =    false;
-  priorFaciesProbGiven_  =    0;
+  priorFaciesProbGiven_  =        0;
 
-  estimateBackground_    = true;
-  estimateCorrelations_  = true;
-  estimateWaveletNoise_  = true;
+  estimateBackground_    =     true;
+  estimateCorrelations_  =     true;
+  estimateWaveletNoise_  =     true;
 
   logLevel_              = LogKit::L_LOW;
 
@@ -153,14 +149,27 @@ ModelSettings::~ModelSettings(void)
 bool 
 ModelSettings::getDoInversion(void)
 {
-  return ((((VP+VS+RHO+LAMELAMBDA+LAMEMU+POISSONRATIO+AI+SI+VPVSRATIO+MURHO+LAMBDARHO+FACIESPROB+CORRELATION+FACIESPROBRELATIVE) & gridFlag_) > 0) &&
-          estimationMode_ == false); 
+  int flag = IO::VP 
+    + IO::VS 
+    + IO::RHO 
+    + IO::LAMELAMBDA 
+    + IO::LAMEMU 
+    + IO::POISSONRATIO
+    + IO::AI 
+    + IO::SI
+    + IO::VPVSRATIO 
+    + IO::MURHO 
+    + IO::LAMBDARHO 
+    + IO::FACIESPROB
+    + IO::CORRELATION 
+    + IO::FACIESPROBRELATIVE;
+  return ((flag & gridFlag_) > 0 && estimationMode_ == false); 
 }
 
 bool 
 ModelSettings::getDoDepthConversion(void) const
 {
-  return(depthDataOk_ & ((domainFlag_ & DEPTHDOMAIN) > 0));
+  return(depthDataOk_ & ((domainFlag_ & IO::DEPTHDOMAIN) > 0));
 }
 void
 ModelSettings::rotateVariograms(float angle)

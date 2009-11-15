@@ -774,9 +774,9 @@ void
 BlockedLogs::writeWell(ModelSettings * modelSettings)
 {
   int formats = modelSettings->getWellFormatFlag();
-  if((formats & ModelSettings::RMSWELL) > 0)
+  if((formats & IO::RMSWELL) > 0)
     writeRMSWell(modelSettings);
-  if((formats & ModelSettings::NORSARWELL) > 0)
+  if((formats & IO::NORSARWELL) > 0)
     writeNorsarWell(modelSettings);
 }
 

@@ -556,9 +556,9 @@ WellData::readNorsarWell(const std::string              & wellFileName,
 void
 WellData::writeWell(int wellFormat)
 {
-  if((wellFormat & ModelSettings::RMSWELL) > 0)
+  if((wellFormat & IO::RMSWELL) > 0)
     writeRMSWell();
-  if((wellFormat & ModelSettings::NORSARWELL) > 0)
+  if((wellFormat & IO::NORSARWELL) > 0)
     writeNorsarWell();
 }
 

@@ -366,7 +366,7 @@ void Corr::writeFilePriorVariances(ModelSettings * modelSettings) const
 
   NRLib::WriteIrapClassicAsciiSurf(*priorCorrXY_, fileName3);
 
-  IO::writeSurfaceToFile(*priorCorrXY_, fileName3, modelSettings->getOutputFormatFlag());
+  IO::writeSurfaceToFile(*priorCorrXY_, fileName3, modelSettings->getGridOutputFormat());
 }
 
 //--------------------------------------------------------------------
