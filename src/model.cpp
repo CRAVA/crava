@@ -988,29 +988,31 @@ Model::setSimboxSurfaces(Simbox                        *& simbox,
                                  baseSurf,
                                  IO::PathToInversionResults(),
                                  outputFormat);
-        if ((outputFlag & IO::BACKGROUND_TREND) > 0 || (outputFlag & IO::BACKGROUND_TREND) > 0) {
-          simbox->writeTopBotGrids(topSurf, 
-                                   baseSurf,
-                                   IO::PathToBackground(),
-                                   outputFormat);
-        }
-        if ((outputFlag & IO::CORRELATION) > 0) {
-          simbox->writeTopBotGrids(topSurf, 
-                                   baseSurf,
-                                   IO::PathToCorrelations(),
-                                   outputFormat);
-        }
-        if ((outputFlag & IO::SEISMIC_DATA) > 0) {
-          simbox->writeTopBotGrids(topSurf, 
-                                   baseSurf,
-                                   IO::PathToSeismicData(),
-                                   outputFormat);
-        }
-        if ((outputFlag & IO::TIME_TO_DEPTH_VELOCITY) > 0) {
-          simbox->writeTopBotGrids(topSurf, 
-                                   baseSurf,
-                                   IO::PathToVelocity(),
-                                   outputFormat);
+        if((outputFormat & IO::STORM) > 0) { // These copies are only needed with the STORM format
+          if ((outputFlag & IO::BACKGROUND_TREND) > 0 || (outputFlag & IO::BACKGROUND_TREND) > 0) {
+            simbox->writeTopBotGrids(topSurf, 
+                                     baseSurf,
+                                     IO::PathToBackground(),
+                                     outputFormat);
+          }
+          if ((outputFlag & IO::CORRELATION) > 0) {
+            simbox->writeTopBotGrids(topSurf, 
+                                     baseSurf,
+                                     IO::PathToCorrelations(),
+                                     outputFormat);
+          }
+          if ((outputFlag & IO::SEISMIC_DATA) > 0) {
+            simbox->writeTopBotGrids(topSurf, 
+                                     baseSurf,
+                                     IO::PathToSeismicData(),
+                                     outputFormat);
+          }
+          if ((outputFlag & IO::TIME_TO_DEPTH_VELOCITY) > 0) {
+            simbox->writeTopBotGrids(topSurf, 
+                                     baseSurf,
+                                     IO::PathToVelocity(),
+                                     outputFormat);          
+          }
         }
       }
     }
