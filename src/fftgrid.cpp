@@ -206,10 +206,9 @@ FFTGrid::fillInFromStorm(Simbox            * actSimBox,
   float distx,disty,distz,mult;
   float* meanvalue;
 
-  assert(cubetype_==PARAMETER);
+  //assert(cubetype_==PARAMETER);
 
   fftw_real value  = 0.0;
-
   
   double x,y,z;
   double val;
@@ -1405,7 +1404,7 @@ FFTGrid::writeFile(const std::string & fName,
       if((formatFlag_ & IO::SGRI) >0)
         FFTGrid::writeSgriFile(fileName, simbox, label);
       if((formatFlag_ & IO::CRAVA) >0)
-        FFTGrid::writeDirectFile(fileName, simbox);
+        FFTGrid::writeCravaFile(fileName, simbox);
     }
 
     if(depthMap != NULL && (domainFlag_ & IO::DEPTHDOMAIN) > 0) { //Writing in depth. Currently, only stormfiles are written in depth.
@@ -1484,7 +1483,8 @@ FFTGrid::writeStormFile(const std::string & fileName, const Simbox * simbox, boo
             value = getRealValue(i,j,k,true);          
           NRLib::WriteBinaryFloat(binFile, value);
         }
-    NRLib::WriteBinaryInt(binFile, 0);
+    //NRLib::WriteBinaryInt(binFile, 0);
+    binFile << "0\n";
     binFile.close();
   }
   else {
@@ -1723,7 +1723,7 @@ FFTGrid::writeSgriFile(const std::string & fileName, const Simbox *simbox, const
 
 
 void
-FFTGrid::writeDirectFile(const std::string & fileName, const Simbox * simbox)
+FFTGrid::writeCravaFile(const std::string & fileName, const Simbox * simbox)
 {
   try {
     std::ofstream binFile;
@@ -1763,7 +1763,7 @@ FFTGrid::writeDirectFile(const std::string & fileName, const Simbox * simbox)
 
 
 void
-FFTGrid::readDirectFile(const std::string & fileName, std::string & errText) 
+FFTGrid::readCravaFile(const std::string & fileName, std::string & errText) 
 {
   std::string error;
   try {
@@ -1791,7 +1791,7 @@ FFTGrid::readDirectFile(const std::string & fileName, std::string & errText)
     int nz = NRLib::ReadBinaryInt(binFile);
 
     if(nx != rnxp_ || ny != nyp_ || nz != nzp_) {
-      std::string message = "Grid dimension is wrong for direct read of file '"+
+      std::string message = "Grid dimension is wrong for file read from the direct crava format '"+
         fileName+"'.";
       binFile.close();
       throw(NRLib::Exception(message));

@@ -1591,7 +1591,6 @@ XmlModelFile::parseOutputTypes(TiXmlNode * node, std::string & errTxt)
   std::vector<std::string> legalCommands;
   legalCommands.push_back("grid-output");
   legalCommands.push_back("well-output");
-  legalCommands.push_back("direct-output");
   legalCommands.push_back("other-output");
 
   parseGridOutput(root, errTxt);

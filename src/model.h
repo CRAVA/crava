@@ -257,7 +257,8 @@ private:
                                 Simbox  * simbox, 
                                 Grid2D  * outgrid);
 
-  SegyGeometry   * geometryFromDirectFile(const std::string & fileName); 
+  SegyGeometry   * geometryFromCravaFile(const std::string & fileName); 
+  SegyGeometry   * geometryFromStormFile(const std::string & fileName, char * errText); 
 
   ModelSettings  * modelSettings_;
   Simbox         * timeSimbox_;            ///< Information about simulation area.

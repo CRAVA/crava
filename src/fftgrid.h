@@ -102,8 +102,8 @@ public:
   virtual void         writeAsciiRaw(const std::string & fileName);
   virtual void         writeResampledStormCube(GridMapping *gridmapping, const std::string & fileName, 
                                                const Simbox *simbox, const int format, bool expTrans);
-  virtual void         writeDirectFile(const std::string & fileName, const Simbox * simbox);
-  virtual void         readDirectFile(const std::string & fileName, std::string & errText);
+  virtual void         writeCravaFile(const std::string & fileName, const Simbox * simbox);
+  virtual void         readCravaFile(const std::string & fileName, std::string & errText);
 
   virtual bool         isFile() {return(0);}    // indicates wether the grid is in memory or on disk  
 

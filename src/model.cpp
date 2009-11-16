@@ -664,30 +664,36 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
   // Set AREA (Use SegY geometry from first seismic data volume if needed).
   //
   std::string areaType = "Model file";
+
   std::string seismicFile("");
   SegyGeometry * geometry = NULL;
   if (modelSettings->getGenerateSeismic()==false && inputFiles->getNumberOfSeismicFiles() > 0)
     seismicFile = inputFiles->getSeismicFile(0); // Also needed for checkAvailableMemory()
+
   if (!(areaFromModelFile && modelSettings->getEstimationMode()==true)) 
   {  
-    if (!areaFromModelFile)
+    if (!areaFromModelFile) {
+      areaType = "Seismic data";
       LogKit::LogFormatted(LogKit::HIGH,"\nFinding inversion area from seismic data in file %s\n", 
       seismicFile.c_str());
-    else
+    }
+    else {
       LogKit::LogFormatted(LogKit::HIGH,"\nFinding IL/XL information from seismic data in file %s\n", 
       seismicFile.c_str());
-  
+    }  
     if(seismicFile != "") {//May change the condition here, but need geometry if we want to set XL/IL
       int fileType = IO::findGridType(seismicFile);
       if(fileType == IO::CRAVA) {
-        geometry = geometryFromDirectFile(seismicFile);
+        geometry = geometryFromCravaFile(seismicFile);
       }
       else if(fileType == IO::SEGY) {
         geometry = SegY::FindGridGeometry(seismicFile, modelSettings->getTraceHeaderFormat(0));
       }
+      else if(fileType == IO::STORM) {
+        geometry = geometryFromStormFile(seismicFile, errText);
+      }
       else {
-        // NBNB-PAL: Lage STORM grid opsjon for dette.
-        sprintf(errText,"%s Grid dimension can currently only be read from Segy and CRAVA grid files.\n",errText);
+        sprintf(errText,"%sTrying to read grid dimensions from unknown file format.\n",errText);
         failed = true;
       }
     }
@@ -710,7 +716,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
     double azimuth = (-1)*timeSimbox->getAngle()*(180.0/M_PI);
     if (azimuth < 0)
       azimuth += 360.0;
-    LogKit::LogFormatted(LogKit::LOW,"%12s     %11.2f  %11.2f    %10.2f %10.2f    %8.3f    %7.2f %7.2f\n", 
+    LogKit::LogFormatted(LogKit::LOW,"%-12s     %11.2f  %11.2f    %10.2f %10.2f    %8.3f    %7.2f %7.2f\n", 
                          areaType.c_str(),
                          timeSimbox->getx0(), timeSimbox->gety0(), 
                          timeSimbox->getlx(), timeSimbox->getly(), azimuth, 
@@ -1354,18 +1360,27 @@ Model::processSeismic(FFTGrid      **& seisCube,
     
     if(failed == false)
     {
-      LogKit::LogFormatted(LogKit::LOW,"\nArea/resolution           x0           y0            lx         ly     azimuth         dx      dy\n");
-      LogKit::LogFormatted(LogKit::LOW,"-------------------------------------------------------------------------------------------------\n");
-      for (int i = 0 ; i < nAngles ; i++)
-      {   
-        if (geometry[i] != NULL) {
-          double geoAngle = (-1)*timeSimbox->getAngle()*(180/M_PI);
-          if (geoAngle < 0)
-            geoAngle += 360.0f;
-          LogKit::LogFormatted(LogKit::LOW,"Seismic data %d   %11.2f  %11.2f    %10.2f %10.2f    %8.3f    %7.2f %7.2f\n",i,
-                               geometry[i]->GetX0(), geometry[i]->GetY0(), 
-                               geometry[i]->Getlx(), geometry[i]->Getly(), geoAngle,
-                               geometry[i]->GetDx(), geometry[i]->GetDy());
+      bool segyVolumesRead = false;
+      for (int i = 0 ; i < nAngles ; i++) 
+      {
+        if (geometry[i] != NULL)
+          segyVolumesRead = true;
+      }
+      if (segyVolumesRead) 
+      {
+        LogKit::LogFormatted(LogKit::LOW,"\nArea/resolution           x0           y0            lx         ly     azimuth         dx      dy\n");
+        LogKit::LogFormatted(LogKit::LOW,"-------------------------------------------------------------------------------------------------\n");
+        for (int i = 0 ; i < nAngles ; i++)
+        {   
+          if (geometry[i] != NULL) {
+            double geoAngle = (-1)*timeSimbox->getAngle()*(180/M_PI);
+            if (geoAngle < 0)
+              geoAngle += 360.0f;
+            LogKit::LogFormatted(LogKit::LOW,"Seismic data %d   %11.2f  %11.2f    %10.2f %10.2f    %8.3f    %7.2f %7.2f\n",i,
+                                 geometry[i]->GetX0(), geometry[i]->GetY0(), 
+                                 geometry[i]->Getlx(), geometry[i]->Getly(), geoAngle,
+                                 geometry[i]->GetDx(), geometry[i]->GetDy());
+          }
         }
       }
 
@@ -1886,6 +1901,7 @@ Model::readGridFromFile(const std::string       & fileName,
 
   if(fileType == IO::CRAVA) 
   {
+    LogKit::LogFormatted(LogKit::LOW,"Reading grid \'"+parName+"\' from file "+fileName+"\n");
     if(modelSettings->getFileGrid() == 1)
       grid = new FFTFileGrid(timeSimbox->getnx(),
                              timeSimbox->getny(), 
@@ -1901,7 +1917,7 @@ Model::readGridFromFile(const std::string       & fileName,
                          modelSettings->getNYpad(), 
                          modelSettings->getNZpad());
     grid->setType(gridType);
-    grid->readDirectFile(fileName, errText);
+    grid->readCravaFile(fileName, errText);
   }
   else if(fileType == IO::SEGY) 
   {
@@ -1914,7 +1930,7 @@ Model::readGridFromFile(const std::string       & fileName,
   }
   else 
   {
-    errText += "Reading of file \'"+fileName+"\' for grid type \'"
+    errText += "\nReading of file \'"+fileName+"\' for grid type \'"
                +parName+"\'failed. File type not recognized.\n";
   }
 }
@@ -3676,7 +3692,7 @@ Model::resampleGridAndWriteToFile(const std::string & fileName,
 }
 
 SegyGeometry *
-Model::geometryFromDirectFile(const std::string & fileName) 
+Model::geometryFromCravaFile(const std::string & fileName) 
 {
   std::ifstream binFile;
   NRLib::OpenRead(binFile, fileName, std::ios::in | std::ios::binary);
@@ -3693,11 +3709,59 @@ Model::geometryFromDirectFile(const std::string & fileName)
   double ilStepY = NRLib::ReadBinaryDouble(binFile);
   double xlStepX = NRLib::ReadBinaryDouble(binFile);
   double xlStepY = NRLib::ReadBinaryDouble(binFile);
-  double rot = NRLib::ReadBinaryDouble(binFile);
-  
+  double rot     = NRLib::ReadBinaryDouble(binFile);
+
   binFile.close();
   
   SegyGeometry * geometry = new SegyGeometry(x0, y0, dx, dy, nx, ny, ///< When XL, IL is available.
-               IL0, XL0, ilStepX, ilStepY, xlStepX, xlStepY, rot);
+                                             IL0, XL0, ilStepX, ilStepY, 
+                                             xlStepX, xlStepY, rot);
+  return(geometry);
+}
+
+SegyGeometry *
+Model::geometryFromStormFile(const std::string & fileName,
+                             char              * errText) 
+{
+  SegyGeometry  * geometry  = NULL;
+  StormContGrid * stormgrid = NULL;
+  std::string     tmpErrText;
+
+  try
+  {   
+    stormgrid = new StormContGrid(0,0,0);
+    stormgrid->ReadFromFile(fileName);
+    stormgrid->SetMissingCode(RMISSING);
+  }
+  catch (NRLib::Exception & e) 
+  {
+    tmpErrText = e.what();
+  }
+
+  if (tmpErrText == "") {
+    double x0      = stormgrid->GetXMin();
+    double y0      = stormgrid->GetYMin();
+    double dx      = stormgrid->GetDX();
+    double dy      = stormgrid->GetDY();
+    int    nx      = stormgrid->GetNI();
+    int    ny      = stormgrid->GetNJ();
+    double rot     = stormgrid->GetAngle();
+    double IL0     = 0.0;  ///< Dummy value since information is not contained in format
+    double XL0     = 0.0;  ///< Dummy value since information is not contained in format
+    double ilStepX =   1;  ///< Dummy value since information is not contained in format
+    double ilStepY =   1;  ///< Dummy value since information is not contained in format
+    double xlStepX =   1;  ///< Dummy value since information is not contained in format
+    double xlStepY =   1;  ///< Dummy value since information is not contained in format
+    geometry = new SegyGeometry(x0, y0, dx, dy, nx, ny, ///< When XL, IL is available.
+                                IL0, XL0, ilStepX, ilStepY, 
+                                xlStepX, xlStepY, rot);
+  }
+  else {
+    sprintf(errText,"%s%s", errText, tmpErrText.c_str());
+  }
+
+  if (stormgrid != NULL)
+    delete stormgrid;
+  
   return(geometry);
 }

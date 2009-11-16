@@ -100,17 +100,12 @@ public:
   enum           domains{TIMEDOMAIN  = 1, 
                          DEPTHDOMAIN = 2};
 
-  enum           gridFormats{UNKNOWNX =  0,
+  enum           gridFormats{UNKNOWN =  0,
                              SEGY    =  1, 
                              STORM   =  2, 
                              ASCII   =  4, 
                              SGRI    =  8,
                              CRAVA   = 16};
-
-  enum           volumeTypes{UNKNOWN    = 0,  // Disse skal utgaa til fordel for gridFormats
-                             SEGYFILE   = 1, 
-                             STORMFILE  = 2, 
-                             DIRECTFILE = 3};
 
   enum           wellFormats{RMSWELL    = 1, 
                              NORSARWELL = 2};
