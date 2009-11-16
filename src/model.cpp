@@ -3697,6 +3697,9 @@ Model::geometryFromCravaFile(const std::string & fileName)
   std::ifstream binFile;
   NRLib::OpenRead(binFile, fileName, std::ios::in | std::ios::binary);
   
+  std::string fileType;
+  getline(binFile,fileType);         
+
   double x0      = NRLib::ReadBinaryDouble(binFile);
   double y0      = NRLib::ReadBinaryDouble(binFile);
   double dx      = NRLib::ReadBinaryDouble(binFile);
