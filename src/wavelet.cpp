@@ -616,7 +616,7 @@ Wavelet::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
 
     if(doEstimateLocalNoise)
     {
-      double errStdLN;
+      float errStdLN;
       if(doEstimateSNRatio==true)
         errStdLN = errStd;
       else //SNRatio given in model file
