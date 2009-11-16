@@ -310,6 +310,7 @@ Wavelet::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
   bool     doEstimateLocalScale = modelSettings->getEstimateLocalScale(number);
   bool     doEstimateLocalNoise = modelSettings->getEstimateLocalNoise(number);
   bool     doEstimateGlobalScale = modelSettings->getEstimateGlobalWaveletScale(number);
+  bool     doEstimateSNRatio = modelSettings->getEstimateSNRatio(number);
 // bool     estimationMode = modelSettings->getEstimationMode();
 
   float * dz = new float[nWells];
@@ -587,6 +588,7 @@ Wavelet::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
    errStd = errOptScale;
  //   
  // }
+  
 
   if(doEstimateLocalShift || doEstimateLocalScale || doEstimateLocalNoise) 
   {
@@ -611,8 +613,27 @@ Wavelet::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
     if(doEstimateLocalScale)
       estimateLocalGain(cov, gain,scaleOptWell, 1.0, nActiveData, simbox,wells, nWells);
     
-    if(doEstimateLocalNoise) 
-      estimateLocalNoise(cov, noiseScaled, errStd, errWellOptScale, nActiveData, simbox,wells, nWells); 
+
+    if(doEstimateLocalNoise)
+    {
+      double errStdLN;
+      if(doEstimateSNRatio==true)
+        errStdLN = errStd;
+      else //SNRatio given in model file
+        errStdLN = sqrt(dataVar/modelSettings->getSNRatio(number));
+      if(gain==NULL && doEstimateLocalScale==false && doEstimateGlobalScale==false) // No local wavelet scale
+      {
+        for(i=0;i<nWells;i++)
+        {
+          errVarWell[i] = sqrt(errVarWell[i]);
+        }
+        estimateLocalNoise(cov, noiseScaled, errStdLN, errVarWell, nActiveData, simbox,wells, nWells); 
+      }
+      else if(doEstimateGlobalScale==true && doEstimateLocalScale==false) // global wavelet scale
+        estimateLocalNoise(cov, noiseScaled, errStdLN,errWell, nActiveData, simbox,wells, nWells); 
+      else
+        estimateLocalNoise(cov, noiseScaled, errStdLN, errWellOptScale, nActiveData, simbox,wells, nWells); 
+    }
   }
 
   delete [] shiftWell;

@@ -2298,16 +2298,16 @@ Model::processWavelets(Wavelet     **& wavelet,
   wavelet    = new Wavelet * [modelSettings->getNumberOfAngles()];
   Grid2D ** shiftGrids;
   Grid2D ** gainGrids;
-  if(modelSettings->getUseLocalWavelet()==true)
-  {
+//  if(modelSettings->getUseLocalWavelet()==true)
+//  {
     shiftGrids = new Grid2D * [modelSettings->getNumberOfAngles()];
     gainGrids = new Grid2D * [modelSettings->getNumberOfAngles()];
-  }
-  else
-  {
-    shiftGrids = 0;
-    gainGrids = 0;
-  }
+//  }
+ // else
+ // {
+ //   shiftGrids = 0;
+ //   gainGrids = 0;
+//  }
 
   
   std::vector<Grid2D *> noiseScaled; //= new Grid2D * [modelSettings->getNumberOfAngles()];
@@ -2347,6 +2347,12 @@ Model::processWavelets(Wavelet     **& wavelet,
       }
       else
         gainGrids[i] = NULL;
+    }
+    else
+    {
+      shiftGrids[i] = NULL;
+      gainGrids[i] = NULL;
+
     }
     if( inputFiles->getLocalNoiseFile(i)!="")
     {

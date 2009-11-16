@@ -26,7 +26,8 @@ ModelSettings::ModelSettings(void)
     logNames_(5),
     inverseVelocity_(2),
     faciesLabels_(0),
-    faciesNames_(0)
+    faciesNames_(0),
+    estimateLocalNoise_(0)
 {
   angularCorr_           = new GenExpVario(1, 10*static_cast<float>(PI/180.0)); // Power=1 range=10deg
   lateralCorr_           = new GenExpVario(1, 1000, 1000); 
