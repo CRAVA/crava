@@ -90,4 +90,4 @@ bool IO::IsStormBinaryFile(const std::string & fileName)
 }
 
 std::string IO::outputPath_ = "";
-std::string IO::filePrefix_ = "CRAVA_";
+std::string IO::filePrefix_ = "";
