@@ -1047,7 +1047,7 @@ Model::setupExtendedTimeSimbox(Simbox   * timeSimbox,
 
   Surface * refPlane = createPlaneSurface(refPlanePars, corrSurf);
 
-  std::string fileName = IO::makeFullFileName(IO::PathToCorrelations(), "CorrelationRotationPlane");
+  std::string fileName = IO::makeFullFileName(IO::PathToCorrelations(), "Correlation_Rotation_Plane");
   IO::writeSurfaceToFile(*refPlane,fileName,outputFormat);
 
   refPlane->AddNonConform(corrSurf);
@@ -2333,7 +2333,7 @@ Model::processWavelets(Wavelet     **& wavelet,
 
   for(int i=0 ; i < modelSettings->getNumberOfAngles() ; i++)
   {  
-    float angle = modelSettings->getAngle(i);
+    float angle = modelSettings->getAngle(i)*180.0/M_PI;
     if(modelSettings->getUseLocalWavelet()==true)
     {
       if(inputFiles->getShiftFile(i)!="") // resampling maa til, Grid2D
@@ -2379,7 +2379,7 @@ Model::processWavelets(Wavelet     **& wavelet,
       resampleGrid(help, timeSimbox, noiseScaled[i]);
       if ((modelSettings->getOtherOutputFlag() & IO::EXTRA_SURFACES) > 0)
       {
-        std::string baseName = IO::PrefixLocalNoise() + NRLib::ToString(angle,1);
+        std::string baseName = IO::PrefixLocalNoiseGain() + NRLib::ToString(angle,1);
         std::string fileName = IO::makeFullFileName(IO::PathToWavelets(), baseName);
         IO::writeSurfaceToFile(help,fileName,outputFormat);
       }
@@ -2573,7 +2573,7 @@ Model::processWavelets(Wavelet     **& wavelet,
             ((modelSettings->getOtherOutputFlag() & IO::EXTRA_SURFACES) > 0 ||
               modelSettings->getEstimationMode() == true))
           {
-            std::string baseName = IO::PrefixLocalNoise() + NRLib::ToString(angle,1);
+            std::string baseName = IO::PrefixLocalNoiseGain() + NRLib::ToString(angle,1);
             std::string fileName = IO::makeFullFileName(IO::PathToWavelets(), baseName);
             resampleGridAndWriteToFile(fileName, noiseScaled[i], timeSimbox, outputFormat);
           }     
@@ -3654,9 +3654,9 @@ Model::resampleGrid(Surface & surf, Simbox * simbox, Grid2D *outgrid)
 
 void 
 Model::resampleGridAndWriteToFile(const std::string & fileName, 
-                                       Grid2D            * grid,
-                                       Simbox            * simbox, 
-                                       int                 format)
+                                  Grid2D            * grid,
+                                  Simbox            * simbox, 
+                                  int                 format)
 {
   double xmin,xmax,ymin,ymax;
   simbox->getMinAndMaxXY(xmin,xmax,ymin,ymax);
