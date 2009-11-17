@@ -743,6 +743,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
   error = 0;
   setSimboxSurfaces(timeSimbox, 
                     inputFiles->getTimeSurfFiles(), 
+                    modelSettings->getGenerateSeismic(),
                     modelSettings->getParallelTimeSurfaces(), 
                     modelSettings->getTimeDTop(), 
                     modelSettings->getTimeLz(), 
@@ -753,7 +754,6 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
                     outputFlag,
                     errText,
                     error);
-
 
   if(error == 0)
   {
@@ -904,6 +904,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
 void 
 Model::setSimboxSurfaces(Simbox                        *& simbox, 
                          const std::vector<std::string> & surfFile, 
+                         bool                             generateSeismic,
                          bool                             parallelSurfaces, 
                          double                           dTop,
                          double                           lz, 
@@ -984,10 +985,18 @@ Model::setSimboxSurfaces(Simbox                        *& simbox,
       if((outputDomain & IO::TIMEDOMAIN) > 0) {
         std::string topSurf  = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixTime();
         std::string baseSurf = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime();
-        simbox->writeTopBotGrids(topSurf, 
-                                 baseSurf,
-                                 IO::PathToInversionResults(),
-                                 outputFormat);
+        if (generateSeismic) {
+          simbox->writeTopBotGrids(topSurf, 
+                                   baseSurf,
+                                   IO::PathToSeismicData(),
+                                   outputFormat);
+        }
+        else {
+          simbox->writeTopBotGrids(topSurf, 
+                                   baseSurf,
+                                   IO::PathToInversionResults(),
+                                   outputFormat);
+        }
         if((outputFormat & IO::STORM) > 0) { // These copies are only needed with the STORM format
           if ((outputFlag & IO::BACKGROUND_TREND) > 0 || (outputFlag & IO::BACKGROUND_TREND) > 0) {
             simbox->writeTopBotGrids(topSurf, 

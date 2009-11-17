@@ -160,6 +160,7 @@ private:
                                 bool               & failed);
   void             setSimboxSurfaces(Simbox                        *& simbox, 
                                      const std::vector<std::string> & surfFile, 
+                                     bool                             generateSeismic,
                                      bool                             parallelSurfaces, 
                                      double                           dTop,
                                      double                           lz, 
