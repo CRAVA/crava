@@ -2341,20 +2341,11 @@ Model::processWavelets(Wavelet     **& wavelet,
     LogKit::LogFormatted(LogKit::HIGH,"\n  Wells with too little data.\n");
   }
 
-  wavelet    = new Wavelet * [modelSettings->getNumberOfAngles()];
   Grid2D ** shiftGrids;
   Grid2D ** gainGrids;
-//  if(modelSettings->getUseLocalWavelet()==true)
-//  {
-    shiftGrids = new Grid2D * [modelSettings->getNumberOfAngles()];
-    gainGrids = new Grid2D * [modelSettings->getNumberOfAngles()];
-//  }
- // else
- // {
- //   shiftGrids = 0;
- //   gainGrids = 0;
-//  }
-
+  shiftGrids = new Grid2D  * [modelSettings->getNumberOfAngles()];
+  gainGrids  = new Grid2D  * [modelSettings->getNumberOfAngles()];
+  wavelet    = new Wavelet * [modelSettings->getNumberOfAngles()];
   
   std::vector<Grid2D *> noiseScaled; //= new Grid2D * [modelSettings->getNumberOfAngles()];
   float globalScale = 1.0;
@@ -2397,8 +2388,7 @@ Model::processWavelets(Wavelet     **& wavelet,
     else
     {
       shiftGrids[i] = NULL;
-      gainGrids[i] = NULL;
-
+      gainGrids[i]  = NULL;
     }
     if( inputFiles->getLocalNoiseFile(i)!="")
     {
@@ -2462,12 +2452,12 @@ Model::processWavelets(Wavelet     **& wavelet,
               LogKit::LogFormatted(LogKit::LOW,"         since a complete 3D-wavelet is given in " + waveletFile+ "\n");
             }
             wavelet[i] = new Wavelet3D(waveletFile, 
-              modelSettings, 
-              timeSimbox, 
-              angle, 
-              reflectionMatrix[i],
-              error, 
-              errText);
+                                       modelSettings, 
+                                       timeSimbox, 
+                                       angle, 
+                                       reflectionMatrix[i],
+                                       error, 
+                                       errText);
           }
           else {
             sprintf(errText, "%s File format Sgri used in file %s when command <wavelet-3d> is not given.\n", errText, waveletFile.c_str());
@@ -2483,8 +2473,6 @@ Model::processWavelets(Wavelet     **& wavelet,
                                        error, 
                                        errText);
             if (error == 0) {
-              //wavelet[i]->write1DWLas3DWL(); //Frode: For debugging and testing
-              //wavelet[i]->write3DWLfrom1DWL();
               wavelet[i]->resample(static_cast<float>(timeSimbox->getdz()), timeSimbox->getnz(), 
                 static_cast<float>(modelSettings->getZPadFac()), angle);
             }
@@ -2589,8 +2577,8 @@ Model::processWavelets(Wavelet     **& wavelet,
               modelSettings->getEstimationMode() == true))
          {
            std::string baseName = IO::PrefixLocalWaveletGain() + NRLib::ToString(angle,1);
-            std::string fileName = IO::makeFullFileName(IO::PathToWavelets(), baseName);
-            resampleGridAndWriteToFile(fileName, gainGrids[i], timeSimbox, outputFormat);
+           std::string fileName = IO::makeFullFileName(IO::PathToWavelets(), baseName);
+           resampleGridAndWriteToFile(fileName, gainGrids[i], timeSimbox, outputFormat);
           }
           wavelet[i]->setGainGrid(gainGrids[i]);
         }
@@ -2621,6 +2609,7 @@ Model::processWavelets(Wavelet     **& wavelet,
   delete [] shiftGrids;
   delete [] gainGrids;
 }
+
 int
 Model::getWaveletFileFormat(const std::string & fileName, char * errText)
 {

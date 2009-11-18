@@ -178,21 +178,21 @@ Sgri::readHeaderFile(const std::string & fileName, char *errText, int &errCode)
   bool yActive = false;
   if (dim_ == 3) {
     scaleX_ = dValues1[0];
-    nX		  = iValues[0];
-    dX_		  = dValues2[0];
+    nX      = iValues[0];
+    dX_     = dValues2[0];
     scaleY_ = dValues1[1];
-    nY		  = iValues[1];
-    dY_		  = dValues2[1];
+    nY      = iValues[1];
+    dY_     = dValues2[1];
     scaleZ_ = dValues1[2];
-    nZ		  = iValues[2];
-    dZ_		  = dValues2[2];
+    nZ      = iValues[2];
+    dZ_     = dValues2[2];
   }
   else if (dim_ == 2) { 
     if (config == XZ) {
       xActive = true;
       scaleX_ = dValues1[0];
-      nX		  = iValues[0];
-      dX_		  = dValues2[0];
+      nX      = iValues[0];
+      dX_     = dValues2[0];
       scaleZ_ = dValues1[1];
       nZ      = iValues[1];
       dZ_     = dValues2[1];
@@ -200,8 +200,8 @@ Sgri::readHeaderFile(const std::string & fileName, char *errText, int &errCode)
     if (config == ZX) {
       xActive = true;
       scaleZ_ = dValues1[0];
-      nZ		  = iValues[0];
-      dZ_		  = dValues2[0];
+      nZ      = iValues[0];
+      dZ_     = dValues2[0];
       scaleX_ = dValues1[1];
       nX      = iValues[1];
       dX_     = dValues2[1];
@@ -209,8 +209,8 @@ Sgri::readHeaderFile(const std::string & fileName, char *errText, int &errCode)
     if (config == YZ) {
       yActive = true;
       scaleY_ = dValues1[0];
-      nY		  = iValues[0];
-      dY_		  = dValues2[0];
+      nY      = iValues[0];
+      dY_     = dValues2[0];
       scaleZ_ = dValues1[1];
       nZ      = iValues[1];
       dZ_     = dValues2[1];
@@ -218,8 +218,8 @@ Sgri::readHeaderFile(const std::string & fileName, char *errText, int &errCode)
     if (config == ZY) {
       yActive = true;
       scaleZ_ = dValues1[0];
-      nZ		  = iValues[0];
-      dZ_		  = dValues2[0];
+      nZ      = iValues[0];
+      dZ_     = dValues2[0];
       scaleY_ = dValues1[1];
       nY      = iValues[1];
       dY_     = dValues2[1];
@@ -227,8 +227,8 @@ Sgri::readHeaderFile(const std::string & fileName, char *errText, int &errCode)
   }
   else { //dim_ = 1 - currently not an active option
     scaleZ_ = dValues1[0];
-    nZ		= iValues[0];
-    dZ_		= dValues2[0];
+    nZ      = iValues[0];
+    dZ_     = dValues2[0];
   }
   
   if (nX < 1) {
