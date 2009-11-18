@@ -106,7 +106,7 @@ ModelSettings::ModelSettings(void)
   fileGrid_              =         -1;
 
   estimationMode_        =    false;
-  generateSeismic_       =    false;
+  forwardModeling_       =    false;
   generateBackground_    =     true;
   estimateFaciesProb_    =    false;
   noVsFaciesProb_        =    false;

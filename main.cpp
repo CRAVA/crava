@@ -47,9 +47,9 @@ int main(int argc, char** argv)
   if(model->getFailed())
     return(1);
   
-  Crava * crava;
+  Crava * crava = NULL;
 
-  if(model->getModelSettings()->getGenerateSeismic() == false)
+  if(model->getModelSettings()->getForwardModeling() == false)
   {
     if (model->getModelSettings()->getDoInversion())
     {
@@ -79,6 +79,13 @@ int main(int argc, char** argv)
       if(model->getModelSettings()->getNumberOfSimulations() > 0)
       {
         crava->simulate(model->getRandomGen());
+      }
+      if(model->getModelSettings()->getGenerateSeismicAfterInversion() == true)
+      {
+       // Computing synthetic seismic
+        LogKit::LogFormatted(LogKit::LOW,"\nComputing synthetic seismic ..."); 
+        crava->computeSyntSeismic(crava->getPostAlpha(),crava->getPostBeta(),crava->getPostRho());
+        LogKit::LogFormatted(LogKit::LOW,"                              ... synthetic seismic computed.\n");
       }
 
       Corr * corr = model->getCorrelations();
@@ -117,12 +124,12 @@ int main(int argc, char** argv)
       delete crava;
     } //end doinversion 
   }
-  else
+  else // do forward modeling
   {
     LogKit::LogFormatted(LogKit::LOW,"\nBuilding model ...\n");
     crava = new Crava(model, 0);
     LogKit::LogFormatted(LogKit::LOW,"\n               ... model built\n");
-
+  
     // Computing synthetic seismic
     LogKit::LogFormatted(LogKit::LOW,"\nComputing synthetic seismic ..."); 
     crava->computeSyntSeismic(crava->getPostAlpha(),crava->getPostBeta(),crava->getPostRho());

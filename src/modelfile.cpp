@@ -329,7 +329,7 @@ ModelFile::ModelFile(char * fileName)
   //
   // Check model file validity 
   //
-  if(!modelSettings_->getGenerateSeismic()) 
+  if(!modelSettings_->getForwardModeling()) 
   {
     for(int i=0;i<neededCommands;i++)
     {
@@ -380,7 +380,7 @@ ModelFile::ModelFile(char * fileName)
     nErrors++;
   }
 
-  if(modelSettings_->getGenerateSeismic() && modelSettings_->getGenerateBackground())
+  if(modelSettings_->getForwardModeling() && modelSettings_->getGenerateBackground())
   {
     strcpy(errText,"Background model and seismic cannot both be generated.\n");
     errorList[nErrors] = new char[strlen(errText)+1];
@@ -1145,7 +1145,7 @@ ModelFile::readCommandSeismic(char ** params, int & pos, char * errText, int sei
     // 1. file containing seismic
     inputFiles_->addSeismicFile(params[pos+nCol*i]);
     if(params[pos+nCol*i][0] == '?')
-      modelSettings_->setGenerateSeismic(true);
+      modelSettings_->setForwardModeling(true);
     else
       error += checkFileOpen(&(params[pos+nCol*i]), 1, "SEISMIC", errText);
 
@@ -1194,7 +1194,7 @@ ModelFile::readCommandSeismic(char ** params, int & pos, char * errText, int sei
     modelSettings_->addTraceHeaderFormat(NULL);
 
     // Consistency check
-    if(modelSettings_->getGenerateSeismic() || error == 0)
+    if(modelSettings_->getForwardModeling() || error == 0)
       if (modelSettings_->getEstimateWavelet(i) || modelSettings_->getMatchEnergies(i))
         sprintf(errText, "For seismic data generation both wavelet and wavelet scale must be given\n");
   }

@@ -95,7 +95,7 @@ Crava::Crava(Model * model, SpatialWellFilter * spatwellfilter)
   FFTGrid * parSpatialCorr  = NULL;  // Parameter correlation
   FFTGrid * errCorrUnsmooth = NULL;  // Error correlation
 
-  if(!model->getModelSettings()->getGenerateSeismic())
+  if(!model->getModelSettings()->getForwardModeling())
   {
     seisData_       = model->getSeisCubes();
     model->releaseGrids(); 
@@ -131,12 +131,12 @@ Crava::Crava(Model * model, SpatialWellFilter * spatwellfilter)
 
   for(int i=0 ; i< ntheta_ ; i++)
   {
-    if(!model->getModelSettings()->getGenerateSeismic())
+    if(!model->getModelSettings()->getForwardModeling())
       assert(seisData_[i]->consistentSize(nx_,ny_,nz_,nxp_,nyp_,nzp_));  
     assert(seisWavelet_[i]->consistentSize(nzp_, nyp_, nxp_));
   }
 
-  if(!model->getModelSettings()->getGenerateSeismic())
+  if(!model->getModelSettings()->getForwardModeling())
   {
     parSpatialCorr->fftInPlace();
     computeVariances(corrT,model->getModelSettings());
@@ -1413,7 +1413,9 @@ Crava::computeSyntSeismic(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho)
   Alpha->endAccess();
   Beta->endAccess();
   Rho->endAccess();
-
+  if(Alpha->getIsTransformed()) Alpha->invFFTInPlace();
+  if(Beta->getIsTransformed()) Beta->invFFTInPlace();
+  if(Rho->getIsTransformed()) Rho->invFFTInPlace();
   for(l=0;l<ntheta_;l++)
   { 
     seisData[l]->endAccess();

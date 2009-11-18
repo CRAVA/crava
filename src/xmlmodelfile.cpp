@@ -129,7 +129,7 @@ XmlModelFile::parseActions(TiXmlNode * node, std::string & errTxt)
       root->ValueStr()+">"+lineColumnText(root)+".\n";
   else {
     if(mode == "forward")
-      modelSettings_->setGenerateSeismic(true);
+      modelSettings_->setForwardModeling(true);
     else if(mode == "estimation")
       modelSettings_->setEstimationMode(true);
     else if(mode != "inversion")
@@ -158,6 +158,7 @@ XmlModelFile::parseInversionSettings(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("simulation");
   legalCommands.push_back("condition-to-wells");
   legalCommands.push_back("facies-probabilities");
+  legalCommands.push_back("synthetic-seismic");
 
   bool value;
   if(parseBool(root, "prediction", value, errTxt) == true)
@@ -190,6 +191,9 @@ XmlModelFile::parseInversionSettings(TiXmlNode * node, std::string & errTxt)
     }
   }
 
+  if(parseBool(root, "synthetic-seismic", value, errTxt) == true) { 
+    modelSettings_->setGenerateSeismicAfterInversion(value);
+  }
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
@@ -2231,7 +2235,7 @@ XmlModelFile::lineColumnText(TiXmlNode * node)
 
 void
 XmlModelFile::checkConsistency(std::string & errTxt) {
-  if(modelSettings_->getGenerateSeismic() == true)
+  if(modelSettings_->getForwardModeling() == true)
     checkForwardConsistency(errTxt);
   else
     checkEstimationInversionConsistency(errTxt);
@@ -2245,7 +2249,7 @@ XmlModelFile::checkConsistency(std::string & errTxt) {
 void
 XmlModelFile::checkForwardConsistency(std::string & errTxt) {
   //Mostly, we don't care here, but have to straighten some things.
-  if(modelSettings_->getGenerateSeismic() == true) {
+  if(modelSettings_->getForwardModeling() == true) {
     //Set dummy values
     int i;
     for(i=0;i<modelSettings_->getNumberOfAngles();i++)

@@ -162,7 +162,7 @@ Model::Model(char * fileName)
       //
       // FORWARD MODELLING
       //
-      if (modelSettings_->getGenerateSeismic() == true)
+      if (modelSettings_->getForwardModeling() == true)
       {
         processBackground(background_, wells_, timeSimbox_, timeBGSimbox,
                           modelSettings_, inputFiles,
@@ -298,7 +298,7 @@ Model::Model(char * fileName)
 
 Model::~Model(void)
 {
-  if(!modelSettings_->getGenerateSeismic()) 
+  if(!modelSettings_->getForwardModeling()) 
   {
     for(int i=0 ; i<modelSettings_->getNumberOfWells() ; i++)
       if(wells_[i] != NULL)
@@ -667,7 +667,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
 
   std::string seismicFile("");
   SegyGeometry * geometry = NULL;
-  if (modelSettings->getGenerateSeismic()==false && inputFiles->getNumberOfSeismicFiles() > 0)
+  if (modelSettings->getForwardModeling()==false && inputFiles->getNumberOfSeismicFiles() > 0)
     seismicFile = inputFiles->getSeismicFile(0); // Also needed for checkAvailableMemory()
 
   if (!(areaFromModelFile && modelSettings->getEstimationMode()==true)) 
@@ -743,7 +743,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
   error = 0;
   setSimboxSurfaces(timeSimbox, 
                     inputFiles->getTimeSurfFiles(), 
-                    modelSettings->getGenerateSeismic(),
+                    modelSettings->getForwardModeling(),
                     modelSettings->getParallelTimeSurfaces(), 
                     modelSettings->getTimeDTop(), 
                     modelSettings->getTimeLz(), 
@@ -803,7 +803,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
         sprintf(errText,"%s%s",errText,e.what());
         failed = true;
       }
-      if(failed == false && modelSettings->getGenerateSeismic() == false) {
+      if(failed == false && modelSettings->getForwardModeling() == false) {
         //Extends timeSimbox for correlation coverage. Original stored in timeCutSimbox
         setupExtendedTimeSimbox(timeSimbox, correlationDirection, timeCutSimbox, 
                                 outputFormat, outputDomain, modelSettings->getOtherOutputFlag()); 
@@ -832,7 +832,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
         sprintf(errText,"%s Could not make the time simulation grid.\n",errText);
         failed = true;
       }
-      if(modelSettings->getGenerateSeismic() == false) {
+      if(modelSettings->getForwardModeling() == false) {
         setupExtendedBackgroundSimbox(timeSimbox, correlationDirection, timeBGSimbox, 
                                       outputFormat, outputDomain, modelSettings->getOtherOutputFlag());
         error = timeBGSimbox->checkError(modelSettings->getLzLimit(),errText);
@@ -2346,13 +2346,14 @@ Model::processWavelets(Wavelet     **& wavelet,
   shiftGrids = new Grid2D  * [modelSettings->getNumberOfAngles()];
   gainGrids  = new Grid2D  * [modelSettings->getNumberOfAngles()];
   wavelet    = new Wavelet * [modelSettings->getNumberOfAngles()];
+ 
   
   std::vector<Grid2D *> noiseScaled; //= new Grid2D * [modelSettings->getNumberOfAngles()];
   float globalScale = 1.0;
 
   for(int i=0 ; i < modelSettings->getNumberOfAngles() ; i++)
   {  
-    float angle = modelSettings->getAngle(i)*180.0/M_PI;
+    float angle = float(modelSettings->getAngle(i)*180.0/M_PI);
     if(modelSettings->getUseLocalWavelet()==true)
     {
       if(inputFiles->getShiftFile(i)!="") // resampling maa til, Grid2D
@@ -2509,7 +2510,7 @@ Model::processWavelets(Wavelet     **& wavelet,
       bool localEst = (modelSettings->getEstimateLocalScale(i) || modelSettings->getEstimateLocalShift(i) ||
                        modelSettings->getEstimateLocalNoise(i) || modelSettings->getEstimateGlobalWaveletScale(i));
 
-      if ((modelSettings->getEstimateSNRatio(i) || localEst) && modelSettings->getGenerateSeismic() == false)
+      if ((modelSettings->getEstimateSNRatio(i) || localEst) && modelSettings->getForwardModeling() == false)
       {
         if (wavelet[i]->getDim() == 3) { //Not possible to estimate signal-to-noise ratio for 3D wavelets
           sprintf(errText, "%s Estimation of signal-to-noise ratio is not possible for 3D wavelets.\n", errText);
@@ -3323,7 +3324,7 @@ Model::printSettings(ModelSettings * modelSettings,
     }
   }
 
-  if (modelSettings->getGenerateSeismic())
+  if (modelSettings->getForwardModeling())
   {
     //
     // SEISMIC

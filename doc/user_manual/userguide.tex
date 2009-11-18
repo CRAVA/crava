@@ -2,7 +2,7 @@
 \label{sec:userguide}
 \index{CRAVA!userguide}
 
-In this chapter, we describe how to build a \crava model file. The model file mainly follows the XML-format, but we also use the character '\#' for commenting, meaning that the rest of the line after such a character is read as comment. XML/files are built with start- and endtags, encapsulating toher tags or values. All model files start with \texttt{<crava>}, and end with \texttt{<\\crava>}. An example of a model file is given in \autoref{sec:crava-model-file}.
+In this chapter, we describe how to build a \crava model file. The model file mainly follows the XML-format, but we also use the character '\#' for commenting, meaning that the rest of the line after such a character is read as comment. XML/files are built with start- and endtags, encapsulating toher tags or values. All model files start with \texttt{<crava>}, and end with \texttt{<crava>}. An example of a model file is given in \autoref{sec:crava-model-file}.
 
 \section{Basic inversion}
 \label{sec:basicinv}
@@ -15,7 +15,7 @@ A primary ability for \crava is to run simple first-pass inversions. In this sec
 \item \hyperref[sec:basicvol]{Inversion volume}.
 \item \hyperref[sec:basicbg]{Background model}.
 \item \hyperref[sec:basiccorr]{Correlation structures}.
-\end{itemize}.
+\end{itemize}
 Since \crava is designed to estimate any information that is not given, well data must also commonly be included.
 
 \subsection{Survey information}
@@ -412,6 +412,9 @@ Var(ln(Density)) & $2*10^{-4}$ & $100*10^{-4}$ \\
 \end{tabular}
 \caption{Default intervals for valid log variances.\label{tab:logvarminmax}}
 \end{table}
+
+\subsection{Generate synthetic seismic from inversion data}
+It is possible to generate synthetic seismic by a forward modeling with the Vp, Vs and density resulting from the inversion. This is done by the command  \kw{synthetic-seismic} under \kw{inversion-settings} in command \kw{actions}.
 
 \section{Estimation}
 \label{sec:estimateusr}

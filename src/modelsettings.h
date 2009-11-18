@@ -114,7 +114,8 @@ public:
   static int                       getDebugLevel(void)                 { return debugFlag_             ;}
   int                              getFileGrid(void)             const { return fileGrid_              ;}
   bool                             getEstimationMode(void)       const { return estimationMode_        ;}
-  bool                             getGenerateSeismic(void)      const { return generateSeismic_       ;}
+  bool                             getForwardModeling(void)      const { return forwardModeling_       ;}
+  bool                             getGenerateSeismicAfterInversion(void) const { return generateSeismicAfterInversion_ ;}
   bool                             getGenerateBackground(void)   const { return generateBackground_    ;}
   bool                             getEstimateFaciesProb(void)   const { return estimateFaciesProb_    ;}
   bool                             getNoVsFaciesProb(void)       const { return noVsFaciesProb_        ;}
@@ -244,7 +245,8 @@ public:
   void setDebugFlag(int debugFlag)                       { debugFlag_            = debugFlag          ;}
   void setFileGrid(int fileGrid)                         { fileGrid_             = fileGrid           ;}
   void setEstimationMode(bool estimationMode)            { estimationMode_       = estimationMode     ;}
-  void setGenerateSeismic(bool generateSeismic)          { generateSeismic_      = generateSeismic    ;}
+  void setForwardModeling(bool forwardModeling)          { forwardModeling_      = forwardModeling    ;}
+  void setGenerateSeismicAfterInversion( bool generateSeismic) { generateSeismicAfterInversion_ = generateSeismic ;}
   void setGenerateBackground(bool generateBackgr)        { generateBackground_   = generateBackgr     ;}
   void setEstimateFaciesProb(bool estFaciesProb)         { estimateFaciesProb_   = estFaciesProb      ;}
   void setNoVsFaciesProb(bool noVsFaciesProb)            { noVsFaciesProb_       = noVsFaciesProb     ;}
@@ -390,8 +392,9 @@ private:
   int                              fileGrid_;              // Indicator telling if grids are to be kept on file
   bool                             defaultGridOutput_;     // Indicator telling whether grid output has been actively controlled.
   
-  bool                             generateSeismic_;       // Forward modelling
+  bool                             forwardModeling_;       // Forward modelling
   bool                             estimationMode_;        // Estimation
+  bool                             generateSeismicAfterInversion_; // Synthetic seismic from inversion result
 
   bool                             generateBackground_;    // Make background model
   bool                             estimateFaciesProb_;    // Shall facies probabilites be estimated?

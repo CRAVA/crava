@@ -645,7 +645,8 @@ Wavelet::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
   delete [] errWell;
 
   float empSNRatio = dataVar/(errStd*errStd);
-  LogKit::LogFormatted(LogKit::LOW,"\n  Signal to noise ratio used for this angle stack is: %6.2f\n", empSNRatio);
+  if(doEstimateSNRatio==true)
+    LogKit::LogFormatted(LogKit::LOW,"\n  Signal to noise ratio used for this angle stack is: %6.2f\n", empSNRatio);
 
   if (empSNRatio < 1.1f) 
   {
