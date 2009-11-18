@@ -1137,19 +1137,19 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Argument Elements controlling optimization of well location
    \item \Default
  \elist
- 
+
 \paragraph{\hbracket{angle}}\rrnewkw{angle}{angle2}{angle3}
  \slist
     \item \Description Offset angle used for estimating optimized well location
     \item \Argument Value
-    \item \Default 
+    \item \Default
  \elist
- 
+
 \paragraph{\hbracket{weight}}\newkw{weight}
  \slist
     \item \Description Weight of the offset angle given in \rrkw{angle}{angle2}{angle3}
     \item \Argument Value
-    \item \Default 1 
+    \item \Default 1
  \elist
 
 \subsection{\hbracket{high-cut-seismic-resolution}}\newkw{high-cut-seismic-resolution}
@@ -1269,6 +1269,20 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Description Value giving the minimum distance in time between well log entries before they are merged to one observation.
    \item \Argument Value
    \item \Default 0.01
+ \elist
+
+\subsection{\hbracket{maximum-offset}}\newkw{maximum-offset}
+ \slist
+   \item \Description Value giving the maximum allowed offset for moving wells.
+   \item \Argument Integer value
+   \item \Default 5
+ \elist
+
+\subsection{\hbracket{maximum-shift}}\newkw{maximum-shift}
+ \slist
+   \item \Description Value giving the maximum allowed vertical shift for moving wells.
+   \item \Argument Value
+   \item \Default 11.0
  \elist
 
 \section{\hbracket{prior-model}}\newkw{prior-model}
@@ -1496,4 +1510,4 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Default
  \elist
 
-All angles are given as mathematical angles in degrees. 
+All angles are given as mathematical angles in degrees.

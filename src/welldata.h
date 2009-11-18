@@ -70,7 +70,7 @@ public:
   void            writeWell(int wellFormat);
   void            writeRMSWell(void);
   void            writeNorsarWell(void);
-  void            moveWell(Simbox*timeSimbox,int iMove, int jMove, float kMove);
+  void            moveWell(Simbox*timeSimbox, double deltaX, double deltaY, float kMove);
 
   static void     applyFilter(float *log_filtered, float *log_interpolated, int nt, double dt_milliseconds, float maxHz);
   static void     interpolateLog(float *log_interpolated, const float *log_raw, int nd);

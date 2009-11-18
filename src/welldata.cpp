@@ -1618,20 +1618,14 @@ void WellData::getMinMaxFnr(int &min, int&max) const
   }
 }
 
-void WellData::moveWell(Simbox * timeSimbox, int iMove, int jMove, float kMove)
+void WellData::moveWell(Simbox * timeSimbox, double deltaX, double deltaY, float kMove)
 {
-  double angle = timeSimbox->getAngle();
-  double dx    = timeSimbox->getdx();
-  double dy    = timeSimbox->getdx();
 
   int    i;
-  double deltaX, deltaY, deltaZ;
+  double deltaZ;
   double topOld, topNew; 
 
   topOld = timeSimbox->getTop(xpos_[0], ypos_[0]);
-
-  deltaX = iMove*dx*cos(angle) - jMove*dy*sin(angle);
-  deltaY = iMove*dx*sin(angle) + jMove*dy*cos(angle);
 
   for(i=0; i<nd_; i++){
     xpos_[i] = xpos_[i]+deltaX;

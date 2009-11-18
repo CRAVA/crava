@@ -2240,19 +2240,30 @@ Model::processWellLocation(FFTGrid      ** seisCube,
                            RandomGen     * randomGen)
 {
 
-  Utils::writeHeader("Estimating optimized well locations");
+  Utils::writeHeader("Estimating optimized well location");
   
+
+
+  double  deltaX, deltaY;
+  float   sum;
   float   kMove;
+  float   moveAngle;
   int     iMove;
   int     jMove;
   int     i,j,w;
+  int     nMoveAngles;
   int     nWells      = modelSettings->getNumberOfWells();
   int     nAngles     = modelSettings->getNumberOfAngles();
   int     maxOffset   = modelSettings->getMaxWellOffset();
   float   maxShift    = modelSettings->getMaxWellShift();
-  int     nMoveAngles;
+  double  angle       = timeSimbox->getAngle();
+  double  dx          = timeSimbox->getdx();
+  double  dy          = timeSimbox->getdx();
+
   std::vector<float> angleWeight(nAngles); 
-  float angle;
+  LogKit::LogFormatted(LogKit::LOW,"\n");
+  LogKit::LogFormatted(LogKit::LOW,"  Well                  Shift[ms]       Move x[m]       Move y[m] \n");
+  LogKit::LogFormatted(LogKit::LOW,"  ----------------------------------------------------------------------------------\n");
 
   for (w = 0 ; w < nWells ; w++) {
     if( wells[w]->isDeviated()==true )
@@ -2268,23 +2279,31 @@ Model::processWellLocation(FFTGrid      ** seisCube,
       angleWeight[i] = 0;
     }
     for( i=0; i<nMoveAngles; i++ ){
-      angle   = modelSettings->getWellMoveAngle(w,i);
+      moveAngle   = modelSettings->getWellMoveAngle(w,i);
 
       for( j=0; j<nAngles; j++ ){
-        if( angle==modelSettings->getAngle(j)){
+        if( moveAngle==modelSettings->getAngle(j)){
           angleWeight[j] = modelSettings->getWellMoveWeight(w,i);
           break;
         }
       }
     }
+
+    sum = 0;
+    for( i=0; i<nMoveAngles; i++ )
+      sum += angleWeight[i];
+    if( sum == 0 )
+      continue;
+
     bl->findOptimalWellLocation(seisCube,timeSimbox,reflectionMatrix,nAngles,angleWeight,maxShift,maxOffset,iMove,jMove,kMove);
-    wells[w]->moveWell(timeSimbox,iMove,jMove,kMove);
+
+    deltaX = iMove*dx*cos(angle) - jMove*dy*sin(angle);
+    deltaY = iMove*dx*sin(angle) + jMove*dy*cos(angle);
+    wells[w]->moveWell(timeSimbox,deltaX,deltaY,kMove);
     wells[w]->setBlockedLogsOrigThick( new BlockedLogs(wells[w], timeSimbox, randomGen) );
 
-    LogKit::LogFormatted(LogKit::LOW,"  Well :   %s\n",wells[w]->getWellname());
-    LogKit::LogFormatted(LogKit::LOW,"  Move i:  %i\n",iMove);
-    LogKit::LogFormatted(LogKit::LOW,"  Move j:  %i\n",jMove);
-    LogKit::LogFormatted(LogKit::LOW,"  Move k:  %f\n",kMove);
+    LogKit::LogFormatted(LogKit::LOW,"  %-20s   %6.2f    %12.2f    %12.2f \n", 
+    wells[w]->getWellname(), kMove, deltaX, deltaY);
   }
 }
 

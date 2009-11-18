@@ -215,6 +215,8 @@ public:
   void setEnergyThreshold(float energyThreshold)         { energyThreshold_      = energyThreshold    ;}
   void setMinRelWaveletAmp(float minRelWaveletAmp)       { minRelWaveletAmp_     = minRelWaveletAmp   ;}
   void setMaxWaveletShift(float maxWaveletShift)         { maxWaveletShift_      = maxWaveletShift    ;}
+  void setMaxWellOffset(int maxWellOffset)               { maxWellOffset_        = maxWellOffset      ;}
+  void setMaxWellShift(float maxWellShift)               { maxWellShift_         = maxWellShift       ;}
   void setWaveletTaperingL(float waveletTaperingL)       { waveletTaperingL_     = waveletTaperingL   ;}
   void setXPadFac(double xPadFac)                        { xPadFac_              = xPadFac            ;}
   void setYPadFac(double yPadFac)                        { yPadFac_              = yPadFac            ;}

@@ -273,6 +273,8 @@ XmlModelFile::parseWellData(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("maximum-deviation-angle");
   legalCommands.push_back("maximum-rank-correlation");
   legalCommands.push_back("maximum-merge-distance");
+  legalCommands.push_back("maximum-offset");
+  legalCommands.push_back("maximum-shift");
 
   parseLogNames(root, errTxt);
 
@@ -295,6 +297,12 @@ XmlModelFile::parseWellData(TiXmlNode * node, std::string & errTxt)
 
   if(parseValue(root, "maximum-merge-distance", value, errTxt) == true)
     modelSettings_->setMaxMergeDist(value);
+
+  if(parseValue(root, "maximum-offset", value, errTxt) == true)
+    modelSettings_->setMaxWellOffset(value);
+
+  if(parseValue(root, "maximum-shift", value, errTxt) == true)
+    modelSettings_->setMaxWellShift(value);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);

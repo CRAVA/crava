@@ -1354,7 +1354,7 @@ void BlockedLogs::findOptimalWellLocation(FFTGrid                 ** seisCube,
         fillInSeismic(seisData[j],start,length,seis_r[j],nzp);
 
         Utils::fft(seis_r[j],seis_c[j],nzp);
-        estimateCor(cpp_c[j],seis_c[j],ccor_seis_cpp_c[j],cnzp);
+        estimateCor(seis_c[j],cpp_c[j],ccor_seis_cpp_c[j],cnzp);
         Utils::fftInv(ccor_seis_cpp_c[j],ccor_seis_cpp_r[j],nzp);
       }
 
@@ -1395,7 +1395,6 @@ void BlockedLogs::findOptimalWellLocation(FFTGrid                 ** seisCube,
           maxTot += angleWeight[j]*maxValue[j]; //Find weighted total maximum correlation
         }
       }
-
       if(maxTot > maxValueTot){
         maxValueTot = maxTot;
         polarityMax = polarity;
