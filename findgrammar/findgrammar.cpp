@@ -19,10 +19,11 @@ FindPreceedingString(const std::string & file, std::string::size_type end)
 }
 
 void
-CheckInputFiles(std::string & errTxt)
+CheckInputFiles(const std::string & topDir,
+                std::string       & errTxt)
 {
   std::ifstream infile;
-  NRLib::OpenRead(infile,"src/inputfiles.cpp");
+  NRLib::OpenRead(infile,topDir+"src/inputfiles.cpp");
   std::string file1;
   std::string line;
   while(!infile.eof()) {
@@ -33,7 +34,7 @@ CheckInputFiles(std::string & errTxt)
 
   infile.clear();
   std::string file2;
-  NRLib::OpenRead(infile,"src/inputfiles.h");
+  NRLib::OpenRead(infile,topDir+"src/inputfiles.h");
   while(!infile.eof()) {
     getline(infile, line);
     file2 = file2+"\n"+line;
@@ -90,8 +91,6 @@ ProcessCodeLevel(const std::string & file, const std::string & command, std::str
     cList.push_back(name);
     lStart = file.find("legalCommands", end+1);
   }
-
-  bool stop = true;
 
   while(start < term) {
     end = file.find("(",start);
@@ -207,15 +206,22 @@ bool CompareTrees(const TiXmlDocument & code, const TiXmlDocument & doc, std::st
   return(errTxt == "");
 }
 
-int main()
+int main(int argc, char** argv)
 {
+  std::string topDir;
+  bool fileOutput = true;
+  if (argc == 3) {
+    topDir     = std::string(argv[1]);
+    fileOutput = atoi(argv[2]);
+  }
+
   std::string errTxt;
-  CheckInputFiles(errTxt);
+  CheckInputFiles(topDir, errTxt);
   if(errTxt == "")
     std::cout << "All files are checked for existence.\n";
   
   std::ifstream infile;
-  NRLib::OpenRead(infile,"doc/user_manual/referencemanual.tex");
+  NRLib::OpenRead(infile,topDir+"doc/user_manual/referencemanual.tex");
   std::string file;
   std::string line;
   while(!infile.eof()) {
@@ -234,10 +240,11 @@ int main()
   TiXmlElement * root = ProcessDocLevel(file,0,secTab,0,file.size()+1);
   TiXmlDocument doc;
   doc.LinkEndChild(root);
-  doc.SaveFile("docgrammar.txt");
-
+  if (fileOutput) {
+    doc.SaveFile("docgrammar.txt");
+  }
   infile.clear();
-  NRLib::OpenRead(infile,"src/xmlmodelfile.cpp");
+  NRLib::OpenRead(infile,topDir+"src/xmlmodelfile.cpp");
   file = "";
   while(!infile.eof()) {
     getline(infile, line);
@@ -246,11 +253,13 @@ int main()
   infile.close();
 
   root = ProcessCodeLevel(file, "::parseCrava(", errTxt);
-  std::ofstream outfile;
   if(errTxt.size() > 0) {
-    NRLib::OpenWrite(outfile, "legalerrors.txt");
-    outfile << errTxt;
-    outfile.close();
+    if (fileOutput) {
+      std::ofstream outfile;
+      NRLib::OpenWrite(outfile, "legalerrors.txt");
+      outfile << errTxt;
+      outfile.close();
+    }
     std::cout << errTxt;
   }
   else
@@ -258,17 +267,19 @@ int main()
 
   TiXmlDocument code;
   code.LinkEndChild(root);
-  code.SaveFile("codegrammar.txt");
+  if (fileOutput) {
+    code.SaveFile("codegrammar.txt");
+  }
   errTxt = "";
   if(CompareTrees(doc, code, errTxt) == false) {
-    std::ofstream outfile("Grammarerrors.txt");
-    outfile << errTxt;
-    outfile.close();
+    if (fileOutput) {
+      std::ofstream outfile;
+      NRLib::OpenWrite(outfile, "Grammarerrors.txt");
+      outfile << errTxt;
+      outfile.close();
+    }
     std::cout << errTxt;
   }
   else
     std::cout << "Code and documentation are consistent.\n";
 }
-
-
-

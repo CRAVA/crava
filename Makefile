@@ -7,6 +7,14 @@ DIRS        = src lib nrlib fft/fftw fft/rfftw
 OBJDIR      = obj
 OBJSUBDIR   = obj/fft
 OBJNRLIBDIR = obj/nrlib
+OBJGRAMMAR  = obj/nrlib/iotools/fileio.o               \
+              obj/nrlib/tinyxml/tinyxml.o              \
+              obj/nrlib/tinyxml/tinyxmlerror.o         \
+              obj/nrlib/tinyxml/tinyxmlparser.o        \
+              obj/nrlib/boost/system/error_code.o      \
+              obj/nrlib/boost/filesystem/path.o        \
+              obj/nrlib/boost/filesystem/operations.o  \
+              obj/nrlib/boost/filesystem/portability.o
 INCLUDE     = -I. -I./fft/include -I./nrlib
 CPPFLAGS   += $(INCLUDE) 
 
@@ -14,6 +22,9 @@ all:	$(PROGRAM)
 
 $(PROGRAM): $(DIRS) main.o
 	$(PURIFY) $(CXX) $(CXXFLAGS) $(LFLAGS) -o $@ $(OBJDIR)/*.o $(OBJSUBDIR)/*.o $(OBJNRLIBDIR)/*/*.o $(OBJNRLIBDIR)/*/*/*.o main.o
+
+$(GRAMMAR): findgrammar/findgrammar.o
+	$(PURIFY) $(CXX) $(CXXFLAGS) $(LFLAGS) -o $@ $(OBJGRAMMAR) findgrammar/findgrammar.o
 
 $(OBJDIR):
 	install -d $(OBJDIR)
@@ -43,7 +54,7 @@ cleanall:
 	rm -f $(OBJNRLIBDIR)/*/*/*.o
 	rm -f $(PROGRAM) main.o
 
-test:	$(PROGRAM) 
+test:	$(PROGRAM) $(GRAMMAR)
 	cd test_suite; chmod +x TestScript.pl; perl -s ./TestScript.pl ../$(PROGRAM) $(case); cd ..
 
 help:
