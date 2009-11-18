@@ -302,8 +302,9 @@ XmlModelFile::parseWellData(TiXmlNode * node, std::string & errTxt)
   if(parseValue(root, "maximum-merge-distance", value, errTxt) == true)
     modelSettings_->setMaxMergeDist(value);
 
-  if(parseValue(root, "maximum-offset", value, errTxt) == true)
-    modelSettings_->setMaxWellOffset(value);
+  int offset;
+  if(parseValue(root, "maximum-offset", offset, errTxt) == true)
+    modelSettings_->setMaxWellOffset(offset);
 
   if(parseValue(root, "maximum-shift", value, errTxt) == true)
     modelSettings_->setMaxWellShift(value);
