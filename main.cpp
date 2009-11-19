@@ -82,10 +82,7 @@ int main(int argc, char** argv)
       }
       if(model->getModelSettings()->getGenerateSeismicAfterInversion() == true)
       {
-       // Computing synthetic seismic
-        LogKit::LogFormatted(LogKit::LOW,"\nComputing synthetic seismic ..."); 
         crava->computeSyntSeismic(crava->getPostAlpha(),crava->getPostBeta(),crava->getPostRho());
-        LogKit::LogFormatted(LogKit::LOW,"                              ... synthetic seismic computed.\n");
       }
 
       Corr * corr = model->getCorrelations();
@@ -109,7 +106,7 @@ int main(int argc, char** argv)
         crava->computeFaciesProb(spatwellfilter);
       delete spatwellfilter;
       //
-      // Temprary placement.  crava.cpp needs a proper restructuring.
+      // Temporary placement.  crava.cpp needs a proper restructuring.
       //
       if((model->getModelSettings()->getWellOutputFlag() & IO::BLOCKED_WELLS) > 0) {
         WellData ** wells = model->getWells();

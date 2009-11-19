@@ -250,13 +250,19 @@ private:
                                                double       & yMin,
                                                double       & xMax,
                                                double       & yMax); 
-  void             resampleGridAndWriteToFile(const std::string & fileName, 
-                                              Grid2D            * grid,
-                                              Simbox            * simbox, 
-                                              int                 format);  
-  void             resampleGrid(Surface & surf,
-                                Simbox  * simbox, 
-                                Grid2D  * outgrid);
+  void             writeLocalGridsToFile(const std::string   & fileName,
+                                         const std::string   & type,
+                                         const float           scaleFactor,
+                                         const ModelSettings * modelSettings,
+                                         const unsigned int    i,
+                                         Simbox              * timeSimbox,
+                                         Grid2D             *& grid);
+  void             resampleSurfaceToGrid2D(const Simbox  * simbox, 
+                                           const Surface * surface, 
+                                           Grid2D        * outgrid);
+  void             resampleGrid2DToSurface(const Simbox  * simbox, 
+                                           const Grid2D  * grid,
+                                           Surface      *& surface);
 
   SegyGeometry   * geometryFromCravaFile(const std::string & fileName); 
   SegyGeometry   * geometryFromStormFile(const std::string & fileName, char * errText); 

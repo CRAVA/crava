@@ -1318,6 +1318,8 @@ Crava::doPostKriging(FFTGrid & postAlpha,
 int 
 Crava::computeSyntSeismic(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho)
 {
+  Utils::writeHeader("Compute Synthetic Seismic");
+
   if(!Alpha->getIsTransformed()) Alpha->fftInPlace();
   if(!Beta->getIsTransformed()) Beta->fftInPlace();
   if(!Rho->getIsTransformed()) Rho->fftInPlace();

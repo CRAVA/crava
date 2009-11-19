@@ -36,9 +36,12 @@ IO::makeFullFileName(const std::string & subDir,
 
 void   
 IO::writeSurfaceToFile(const Surface     & surface,
-                       const std::string & fileName,
+                       const std::string & baseName,
+                       const std::string & path,
                        int                 format)
 {
+  std::string fileName = IO::makeFullFileName(path, baseName);
+
   if((format & ASCII) > 0)
     NRLib::WriteIrapClassicAsciiSurf(surface, fileName + SuffixAsciiIrapClassic());
   else  

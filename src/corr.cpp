@@ -339,7 +339,6 @@ void Corr::writeFilePriorVariances(ModelSettings * modelSettings) const
   std::string baseName3 = IO::PrefixPrior() + IO::FileLateralCorr();
   std::string fileName1 = IO::makeFullFileName(IO::PathToCorrelations(), baseName1);
   std::string fileName2 = IO::makeFullFileName(IO::PathToCorrelations(), baseName2);
-  std::string fileName3 = IO::makeFullFileName(IO::PathToCorrelations(), baseName3);
 
   std::ofstream file;
   NRLib::OpenWrite(file, fileName1);
@@ -364,9 +363,7 @@ void Corr::writeFilePriorVariances(ModelSettings * modelSettings) const
   }
   file.close();
 
-  NRLib::WriteIrapClassicAsciiSurf(*priorCorrXY_, fileName3);
-
-  IO::writeSurfaceToFile(*priorCorrXY_, fileName3, modelSettings->getGridOutputFormat());
+  IO::writeSurfaceToFile(*priorCorrXY_, baseName3, IO::PathToCorrelations(), modelSettings->getGridOutputFormat());
 }
 
 //--------------------------------------------------------------------
