@@ -667,6 +667,32 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
 
   std::string seismicFile("");
   SegyGeometry * geometry = NULL;
+  if(modelSettings->getForwardModeling()==true)
+  {
+    if(!areaFromModelFile)
+    {
+      seismicFile = inputFiles->getBackFile(0);
+      if(seismicFile != "") {//May change the condition here, but need geometry if we want to set XL/IL
+        int fileType = IO::findGridType(seismicFile);
+        if(fileType == IO::CRAVA) {
+          geometry = geometryFromCravaFile(seismicFile);
+        }
+        else if(fileType == IO::SEGY) {
+          geometry = SegY::FindGridGeometry(seismicFile, modelSettings->getTraceHeaderFormat(0));
+        }
+        else if(fileType == IO::STORM) {
+          geometry = geometryFromStormFile(seismicFile, errText);
+        }
+        else {
+          sprintf(errText,"%sTrying to read grid dimensions from unknown file format.\n",errText);
+          failed = true;
+        }
+      }
+      modelSettings->setAreaParameters(geometry);
+    }
+  }
+  else
+  {
   if (modelSettings->getForwardModeling()==false && inputFiles->getNumberOfSeismicFiles() > 0)
     seismicFile = inputFiles->getSeismicFile(0); // Also needed for checkAvailableMemory()
 
@@ -700,6 +726,8 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
     if(!areaFromModelFile)
      modelSettings->setAreaParameters(geometry);
   }
+  }
+
   const SegyGeometry * areaParams = modelSettings->getAreaParameters(); 
 
   int error = timeSimbox->setArea(areaParams, errText);
@@ -3062,8 +3090,10 @@ Model::printSettings(ModelSettings * modelSettings,
   else if (logLevel == LogKit::L_DEBUGHIGH)
     logText = "DEBUGHIGH";
   LogKit::LogFormatted(LogKit::LOW,"  Log level                                : %10s\n",logText.c_str());
-  if (modelSettings->getNumberOfSimulations() == 0)
-    LogKit::LogFormatted(LogKit::LOW,"  Modelling mode                           : prediction\n");
+  if(modelSettings->getForwardModeling()==true)
+    LogKit::LogFormatted(LogKit::LOW,"  Modelling mode                           : forward\n");
+  else if (modelSettings->getNumberOfSimulations() == 0)
+    LogKit::LogFormatted(LogKit::LOW,"  Modelling mode                           : prediction\n"); 
   else
   {
     LogKit::LogFormatted(LogKit::LOW,"  Modelling mode                           : simulation\n");
@@ -3079,9 +3109,12 @@ Model::printSettings(ModelSettings * modelSettings,
 
     LogKit::LogFormatted(LogKit::LOW,"  Number of realisations                   : %10d\n",modelSettings->getNumberOfSimulations());
   }
-  LogKit::LogFormatted(LogKit::LOW,"  Kriging                                  : %10s\n",(modelSettings->getKrigingParameter()>0 ? "yes" : "no"));
-  LogKit::LogFormatted(LogKit::LOW,"  Estimate facies probabilities            : %10s\n",(modelSettings->getEstimateFaciesProb() ? "yes" : "no" ));
-
+  if(modelSettings->getForwardModeling()==false)
+  {
+    LogKit::LogFormatted(LogKit::LOW,"  Kriging                                  : %10s\n",(modelSettings->getKrigingParameter()>0 ? "yes" : "no"));
+    LogKit::LogFormatted(LogKit::LOW,"  Estimate facies probabilities            : %10s\n",(modelSettings->getEstimateFaciesProb() ? "yes" : "no" ));
+    LogKit::LogFormatted(LogKit::LOW,"  Synthetic seismic                        : %10s\n",(modelSettings->getGenerateSeismicAfterInversion() ? "yes" : "no" ));
+  }
   LogKit::LogFormatted(LogKit::HIGH,"\nInput/output directories:\n");
   //LogKit::LogFormatted(LogKit::HIGH,"  Project directory                        : %10s\n",modelSettings->getProjectDirectory());
   LogKit::LogFormatted(LogKit::HIGH,"  Input directory                          : %10s\n",inputFiles->getInputDirectory().c_str());
@@ -3178,12 +3211,22 @@ Model::printSettings(ModelSettings * modelSettings,
   //
   // AREA
   // 
-  LogKit::LogFormatted(LogKit::LOW,"\nInversion area:\n");
-  if (areaFromModelFile)
-    LogKit::LogFormatted(LogKit::LOW,"  Taken from                               : Model file\n");
+  if(modelSettings->getForwardModeling()==true)
+  {
+    LogKit::LogFormatted(LogKit::LOW,"\nSeismic area:\n");
+    if (areaFromModelFile)
+      LogKit::LogFormatted(LogKit::LOW,"  Taken from                               : Model file\n");
+    else
+      LogKit::LogFormatted(LogKit::LOW,"  Taken from                               : Vp\n");
+  }
   else
-    LogKit::LogFormatted(LogKit::LOW,"  Taken from                               : First seismic volume\n");
-  
+  {
+    LogKit::LogFormatted(LogKit::LOW,"\nInversion area:\n");
+    if (areaFromModelFile)
+      LogKit::LogFormatted(LogKit::LOW,"  Taken from                               : Model file\n");
+    else
+      LogKit::LogFormatted(LogKit::LOW,"  Taken from                               : First seismic volume\n");
+  }
   //
   // SURFACES
   // 
@@ -3287,7 +3330,10 @@ Model::printSettings(ModelSettings * modelSettings,
   }
   else
   {
-    LogKit::LogFormatted(LogKit::LOW,"\nBackground model:\n");
+    if(modelSettings->getForwardModeling()==true)
+      LogKit::LogFormatted(LogKit::LOW,"\nElastic parameters:\n");
+    else
+      LogKit::LogFormatted(LogKit::LOW,"\nBackground model:\n");
     if (modelSettings->getConstBackValue(0) > 0)
       LogKit::LogFormatted(LogKit::LOW,"  p-wave velocity                          : %10.1f\n",modelSettings->getConstBackValue(0));
     else

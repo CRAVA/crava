@@ -2254,7 +2254,12 @@ XmlModelFile::checkForwardConsistency(std::string & errTxt) {
     //Set dummy values
     int i;
     for(i=0;i<modelSettings_->getNumberOfAngles();i++)
+    {
       modelSettings_->setSNRatio(i,1.1f);
+      if(modelSettings_->getEstimateWavelet(i)==true)
+        errTxt+="Wavelet must be given when doing forward modeling. Wavelet is not given for angle no. " +NRLib::ToString(i)+"\n";
+
+    }
   }
 }
 

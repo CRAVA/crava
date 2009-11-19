@@ -117,6 +117,7 @@ ModelSettings::ModelSettings(void)
   optimizeWellLocation_  =    false;
   priorFaciesProbGiven_  =        0;
 
+  generateSeismicAfterInversion_ = false;
   estimateBackground_    =     true;
   estimateCorrelations_  =     true;
   estimateWaveletNoise_  =     true;
