@@ -1651,6 +1651,7 @@ FFTGrid::writeResampledStormCube(GridMapping       * gridmapping,
 int
 FFTGrid::writeSgriFile(const std::string & fileName, const Simbox *simbox, const std::string label)
 {
+  double vertScale = 0.001;
   std::string fName = fileName + IO::SuffixSgriHeader();
 
   std::ofstream headerFile;
@@ -1662,7 +1663,7 @@ FFTGrid::writeSgriFile(const std::string & fileName, const Simbox *simbox, const
   headerFile << "3\n";
   headerFile << "X (km)\n";
   headerFile << "Y (km)\n";
-  headerFile << "Z (km)\n";
+  headerFile << "Z (s)\n";
   headerFile << "FFT-grid\n";
   headerFile << "1\n";
   headerFile << label << std::endl;
@@ -1679,11 +1680,11 @@ FFTGrid::writeSgriFile(const std::string & fileName, const Simbox *simbox, const
   int nx = simbox->getnx();
   headerFile << nx << " " << ny << " " << nz << std::endl;
   headerFile << std::setprecision(10);
-  headerFile << simbox->getdx()*0.001 << " " << simbox->getdy()*0.001 << " " << dz*0.001 << std::endl;
+  headerFile << simbox->getdx() << " " << simbox->getdy() << " " << dz*vertScale << std::endl;
   double x0 = simbox->getx0() + 0.5 * simbox->getdx();
   double y0 = simbox->gety0() + 0.5 * simbox->getdy();
   double z0 = zMin + 0.5 * dz;
-  headerFile << x0*0.001 << " " << y0*0.001 << " " << z0*0.001 << std::endl;
+  headerFile << x0 << " " << y0 << " " << z0*vertScale << std::endl;
   headerFile << simbox->getAngle() << " 0\n";
   headerFile << RMISSING << std::endl;
   

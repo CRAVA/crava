@@ -520,7 +520,7 @@ WellData::readNorsarWell(const std::string              & wellFileName,
       for(int i=0;i<nd_;i++) {
         xpos_[i]  = (*logs[0])[i];
         ypos_[i]  = (*logs[1])[i];
-        zpos_[i]  = (*logs[2])[i];
+        zpos_[i]  = (*logs[2])[i]*1000;
         if(!well.IsMissing((*logs[3])[i]))
           alpha_[i] = static_cast<float>((*logs[3])[i]);
         else 

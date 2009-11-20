@@ -921,6 +921,9 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
 void
 BlockedLogs::writeNorsarWell(ModelSettings * modelSettings)
 {
+  double vertScale = 0.001;
+  double horScale  = 1.0;
+
   //Note: At current, only write Vp, Vs and Rho, as others are not supported.
   float maxHz_background = modelSettings->getMaxHzBackground();
   float maxHz_seismic    = modelSettings->getMaxHzSeismic();
@@ -954,17 +957,17 @@ BlockedLogs::writeNorsarWell(ModelSettings * modelSettings)
     md[i-firstB_] = md[i-firstB_-1] + d;
   }
   
-  mainFile << "[Version information]\nVERSION 1000\nFORMAT ASCCI\n\n";
+  mainFile << "[Version information]\nVERSION 1000\nFORMAT ASCII\n\n";
   mainFile << "[Well information]\n";
   mainFile << std::setprecision(5);
-  mainFile << "MDMIN      km       " << md[0]*0.001       << "\n";
-  mainFile << "MDMAX      km       " << md[nData-1]*0.001 << "\n";
-  mainFile << "MDMINSTEP  km       " << dmin*0.001        << "\n";
-  mainFile << "MDMAXSTEP  km       " << dmax*0.001        << "\n";
-  mainFile << "UTMX       km       " << xpos_[0]*0.001    << "\n";
-  mainFile << "UTMY       km       " << ypos_[0]*0.001    << "\n";
-  mainFile << "EKB        km       " << 0.0f              << "\n";
-  mainFile << "UNDEFVAL   no_unit " << WELLMISSING        << "\n\n";
+  mainFile << "MDMIN      km       " << md[0]*vertScale       << "\n";
+  mainFile << "MDMAX      km       " << md[nData-1]*vertScale << "\n";
+  mainFile << "MDMINSTEP  km       " << dmin*vertScale        << "\n";
+  mainFile << "MDMAXSTEP  km       " << dmax*vertScale        << "\n";
+  mainFile << "UTMX       km       " << xpos_[0]*horScale     << "\n";
+  mainFile << "UTMY       km       " << ypos_[0]*horScale     << "\n";
+  mainFile << "EKB        km       " << 0.0f                  << "\n";
+  mainFile << "UNDEFVAL   no_unit " << WELLMISSING            << "\n\n";
 
 
   mainFile << "[Well track data information]\n";
@@ -1057,16 +1060,16 @@ BlockedLogs::writeNorsarWell(ModelSettings * modelSettings)
   
   for(int i = firstB_;i<=lastB_;i++) {
     trackFile << std::setprecision(5) << std::setw(7) 
-              << md[i]*0.001 << " " << std::setw(7) << zpos_[i]*0.001 << " " << zpos_[i]*0.001
-              << " " << std::setw(10)<< xpos_[i]*0.001 << " " << std::setw(10)<< ypos_[i]*0.001 << "\n";
+              << md[i]*vertScale << " " << std::setw(7) << zpos_[i]*vertScale << " " << zpos_[i]*vertScale
+              << " " << std::setw(10)<< xpos_[i]*horScale << " " << std::setw(10)<< ypos_[i]*horScale << "\n";
 
     *(logFiles[0]) << std::right   << std::fixed << std::setprecision(5)
-                   << std::setw(7) << md[i]*0.001 << " "
+                   << std::setw(7) << md[i]*vertScale << " "
                    << std::setw(7) << (alpha_[i]==RMISSING                    ? WELLMISSING : exp(alpha_[i]))                    << " "
                    << std::setw(7) << (beta_[i]==RMISSING                     ? WELLMISSING : exp(beta_[i]))                     << " "
                    << std::setw(7) << (rho_[i]==RMISSING                      ? WELLMISSING : exp(rho_[i]))                      << "\n";
     *(logFiles[1]) << std::right   << std::fixed << std::setprecision(5)
-                   << std::setw(7) << md[i]*0.001 << " "
+                   << std::setw(7) << md[i]*vertScale << " "
                    << std::setw(7) << (alpha_highcut_background_[i]==RMISSING ? WELLMISSING : exp(alpha_highcut_background_[i])) << " "
                    << std::setw(7) << (beta_highcut_background_[i]==RMISSING  ? WELLMISSING : exp(beta_highcut_background_[i]))  << " "
                    << std::setw(7) << (rho_highcut_background_[i]==RMISSING   ? WELLMISSING : exp(rho_highcut_background_[i]))     << "\n";
