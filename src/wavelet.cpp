@@ -140,7 +140,7 @@ void
 Wavelet::scale(float scale)
 {
   if (scale != 1.0f)
-    LogKit::LogFormatted(LogKit::LOW,"  Scaling wavelet with gain factor         : %.3e\n",scale);
+    LogKit::LogFormatted(LogKit::LOW,"  Scaling wavelet with factor         : %.3e\n",scale);
   scale_ = scale;
 }
 
@@ -284,13 +284,16 @@ Wavelet::getWaveletLengthF()
 
 float         
 Wavelet::calculateSNRatioAndLocalWavelet(Simbox        * simbox, 
-                          FFTGrid       * seisCube, 
-                          WellData     ** wells, 
-                          Grid2D       *& shift, 
-                          Grid2D       *& gain, 
-                          ModelSettings * modelSettings,
-                          char          * errText, 
-                          int           & error, Grid2D *&noiseScaled, int number, float globalScale)
+                                         FFTGrid       * seisCube, 
+                                         WellData     ** wells, 
+                                         Grid2D       *& shift, 
+                                         Grid2D       *& gain, 
+                                         ModelSettings * modelSettings,
+                                         char          * errText, 
+                                         int           & error, 
+                                         Grid2D       *& noiseScaled, 
+                                         int             number, 
+                                         float           globalScale)
 {
   LogKit::LogFormatted(LogKit::MEDIUM,"\n  Estimating noise from seismic data and (nonfiltered) blocked wells");
   float errStd  = 0.0f;
@@ -467,7 +470,6 @@ Wavelet::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
       scale(optScale);
       for(i=0;i<nWells;i++)
         scaleOptWell[i]/=optScale;
-
     }
   }
   // local scale given means gain !=NULL
@@ -486,9 +488,6 @@ Wavelet::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
     findOptimalWaveletScale(synt_r,seis_r,nWells,nzp,dataVarWell,
                                            errOptScale,errWell,scaleOptWell,errWellOptScale);
   }
-    
-
-
   delete [] seisLog;
   delete [] dz;
   delete [] hasData;

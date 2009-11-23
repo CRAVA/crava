@@ -286,6 +286,7 @@ Model::Model(char * fileName)
           }
 
           if(failedSeismic == false && 
+             failedBackground == false && 
             (estimate == false || modelSettings_->getEstimateWaveletNoise()))
           {
             addSeismicLogs(wells_, seisCube_, modelSettings_); 
@@ -3528,13 +3529,14 @@ Model::printSettings(ModelSettings * modelSettings,
         else
           LogKit::LogFormatted(LogKit::LOW,"  Local scale map                          : %10s\n", inputFiles->getScaleFile(i).c_str());
       }        
-          
       if (modelSettings->getMatchEnergies(i)) 
         LogKit::LogFormatted(LogKit::LOW,"  Match empirical and theoretical energies : %10s\n", "yes");
-
-      if (!modelSettings->getEstimateWavelet(i) && !modelSettings->getMatchEnergies(i))
-        LogKit::LogFormatted(LogKit::LOW,"  Wavelet scale                            : %10.2e\n",modelSettings->getWaveletScale(i));
-
+      if (!modelSettings->getEstimateWavelet(i) && !modelSettings->getMatchEnergies(i)) {
+        if (modelSettings->getEstimateGlobalWaveletScale(i))
+          LogKit::LogFormatted(LogKit::LOW,"  Estimate global wavelet scale            : %10s\n","yes");
+        else
+          LogKit::LogFormatted(LogKit::LOW,"  Global wavelet scale                     : %10.2e\n",modelSettings->getWaveletScale(i));
+      }
       if (modelSettings->getEstimateSNRatio(i)) 
         LogKit::LogFormatted(LogKit::LOW,"  Estimate signal-to-noise ratio           : %10s\n", "yes");
       else

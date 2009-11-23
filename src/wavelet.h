@@ -62,16 +62,16 @@ public:
   
   // for noise estimation
   float                 calculateSNRatioAndLocalWavelet(Simbox        * simbox, 
-                                         FFTGrid       * seisCube, 
-                                         WellData     ** wells, 
-                                         Grid2D      *& shift, 
-                                         Grid2D      *& gain, 
-                                         ModelSettings * modelSettings,
-                                         char          * errText, 
-                                         int           & error,
-                                         Grid2D      *&noiseScaled, 
-                                         int            number, 
-                                         float          globalScale); 
+                                                        FFTGrid       * seisCube, 
+                                                        WellData     ** wells, 
+                                                        Grid2D       *& shift, 
+                                                        Grid2D       *& gain, 
+                                                        ModelSettings * modelSettings,
+                                                        char          * errText, 
+                                                        int           & error,
+                                                        Grid2D       *& noiseScaled, 
+                                                        int             number, 
+                                                        float           globalScale); 
   void                  printVecToFile(const std::string & fileName, fftw_real* vec ,int nzp) const;
 
   virtual void          write1DWLas3DWL() {};
