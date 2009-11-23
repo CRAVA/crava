@@ -52,16 +52,21 @@ IO::writeSurfaceToFile(const Surface     & surface,
 int
 IO::findGridType(const std::string & fileName)
 {
+  //This conversion may seem strange, but we need our internal formatflags, so we convert
+  //from NRLib flags here.
   if (IsCravaBinaryFile(fileName))
     return(CRAVA);
-  else if (IsStormBinaryFile(fileName))
-    return(STORM);
-  else
-    return(SEGY);
-  //  else if (NRLib::IsSegyFile(fileName))
-  //    return(SEGY);
-  //  else
-  //    return(UNKNOWN)
+  else {
+    int fType = NRLib::FindFileType(fileName);
+    if (fType == NRLib::STORM_PETRO_BINARY)
+      return(STORM);
+    else if (fType == NRLib::SEGY)
+      return(SEGY);
+    else if (fType == NRLib::SGRI)
+      return(SGRI);
+    else
+      return(UNKNOWN);
+  }
 }
 
 bool IO::IsCravaBinaryFile(const std::string & fileName)
