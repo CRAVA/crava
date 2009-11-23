@@ -48,6 +48,7 @@ public:
   int             getFaciesNr(int i)                 const { return faciesNr_[i]               ;}
   char          * getFaciesName(int i)               const { return faciesNames_[i]            ;}
   void            getMinMaxFnr(int &min, int &max) const;
+  void            getMeanVsVp(float & muA, float & muB);
 
   BlockedLogs   * getBlockedLogsOrigThick(void)      const { return blockedLogsOrigThick_ ;}
   BlockedLogs   * getBlockedLogsConstThick(void)     const { return blockedLogsConstThick_ ;} 

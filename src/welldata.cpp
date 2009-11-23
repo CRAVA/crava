@@ -1627,7 +1627,8 @@ void WellData::moveWell(Simbox * timeSimbox, double deltaX, double deltaY, float
 
   topOld = timeSimbox->getTop(xpos_[0], ypos_[0]);
 
-  for(i=0; i<nd_; i++){
+  for(i=0; i<nd_; i++)
+  {
     xpos_[i] = xpos_[i]+deltaX;
     ypos_[i] = ypos_[i]+deltaY;
   }
@@ -1636,8 +1637,28 @@ void WellData::moveWell(Simbox * timeSimbox, double deltaX, double deltaY, float
 
   deltaZ = topNew - topOld + kMove;
   
-  for(i=0; i<nd_; i++){
+  for(i=0; i<nd_; i++)
     zpos_[i] = zpos_[i]+deltaZ;
-  }
 
+}
+
+void WellData::getMeanVsVp(float & muA, float & muB)
+{
+  int i;
+  int n = 0;
+
+  muA = 0;
+  muB = 0;
+
+  for( i=0; i<nd_; i++ )
+  {
+    if (alpha_background_resolution_[i] != RMISSING && beta_background_resolution_[i] != RMISSING )
+    {
+      muA += alpha_background_resolution_[i];
+      muB += beta_background_resolution_[i];
+      n += 1;
+    }
+  }
+  muA /= n;
+  muB /= n;
 }

@@ -107,12 +107,20 @@ private:
                                             InputFiles    * inputFiles,
                                             char          * errText,
                                             bool          & failed);
-  void             processReflectionMatrix(float       **& reflectionMatrix,
-                                           Background    * background,
-                                           ModelSettings * modelSettings, 
-                                           InputFiles    * inputfiles,
-                                           char          * errText,
-                                           bool          & failed);
+
+  void             processReflectionMatrixFromWells(float       **& reflectionMatrix,
+                                                    WellData     ** wells,
+                                                    ModelSettings * modelSettings, 
+                                                    InputFiles    * inputfiles,
+                                                    char          * errText,
+                                                    bool          & failed);
+
+  void             processReflectionMatrixFromBackground(float       **& reflectionMatrix,
+                                                         Background    * background,
+                                                         ModelSettings * modelSettings, 
+                                                         InputFiles    * inputFiles,
+                                                         char          * errText,
+                                                         bool          & failed);
 
   void             processWellLocation(FFTGrid       ** seisCube,
                                        WellData      ** wells, 
@@ -219,7 +227,7 @@ private:
                               const std::string & readReason, 
                               char              * errText);
   void             setupDefaultReflectionMatrix(float       **& reflectionMatrix,
-                                                Background    * background,
+                                                double          vsvp,
                                                 ModelSettings * modelSettings);
   void             checkAvailableMemory(Simbox            * timeSimbox,
                                         ModelSettings     * modelSettings,
@@ -238,6 +246,9 @@ private:
   //Create planar surface with same extent as template, p[0]+p[1]*x+p[2]*y
   Surface *        createPlaneSurface(double  * planeParams, 
                                       Surface * templateSurf);
+  double           vsvpFromWells(WellData     ** wells,
+                                 ModelSettings * modelSettings);
+
   void             writeAreas(const SegyGeometry * areaParams,
                               Simbox             * timeSimbox,
                               std::string        & text);

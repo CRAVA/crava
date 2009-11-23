@@ -169,9 +169,9 @@ Model::Model(char * fileName)
                           errText, failedBackground);
         if (!failedBackground)
         {
-          processReflectionMatrix(reflectionMatrix_, background_, 
-                                  modelSettings_, inputFiles,
-                                  errText, failedReflMat);  
+          processReflectionMatrixFromBackground(reflectionMatrix_, background_, 
+                                                modelSettings_, inputFiles,
+                                                errText, failedReflMat);  
           if (!failedReflMat)
           {
             processWavelets(wavelet_, seisCube_, wells_, reflectionMatrix_,
@@ -195,12 +195,9 @@ Model::Model(char * fileName)
         }
 
         processWells(wells_, timeSimbox_, timeBGSimbox, timeSimboxConstThick_, 
-                     randomGen_, modelSettings_, inputFiles,
-                     errText, failedWells);
-        loadExtraSurfaces(waveletEstimInterval_, 
-                          faciesEstimInterval_,
-                          timeSimbox_, inputFiles,
-                          errText, failedExtraSurf);
+                     randomGen_, modelSettings_, inputFiles, errText, failedWells);
+        loadExtraSurfaces(waveletEstimInterval_, faciesEstimInterval_, timeSimbox_, 
+                          inputFiles, errText, failedExtraSurf);
 
         bool writeBackgroundInCravaFormat = (gridFormat & IO::CRAVA) > 0 && (gridOutput & IO::BACKGROUND) > 0;
         bool writeSeismicInCravaFormat    = (gridFormat & IO::CRAVA) > 0 && (gridOutput & IO::SEISMIC_DATA) > 0;
@@ -209,54 +206,105 @@ Model::Model(char * fileName)
         if (!failedWells && !failedDepthConv)
         {
           bool backgroundDone = false;
-          if(estimate == false || 
-             modelSettings_->getEstimateBackground() == true ||
-             modelSettings_->getEstimateCorrelations() == true || 
-             modelSettings_->getEstimateWaveletNoise() == true ||
-             writeBackgroundInCravaFormat) 
-          {
-            processBackground(background_, wells_, timeSimbox_, timeBGSimbox,
-                              modelSettings_, inputFiles,
-                              errText, failedBackground);
-            backgroundDone = true;
-          }
 
-          if (failedBackground == false && backgroundDone == true && 
-              (estimate == false || modelSettings_->getEstimateCorrelations() == true))
-          {
-            processPriorCorrelations(correlations_, background_, wells_, timeSimbox_, 
-                                     modelSettings_, inputFiles,
-                                     errText, failedPriorCorr);
-          }
+          if(!(modelSettings_->getOptimizeWellLocation() == true &&
+               modelSettings_->getGenerateBackground() == true)) 
+          { 
+            if(estimate == false || 
+               modelSettings_->getEstimateBackground() == true ||
+               modelSettings_->getEstimateCorrelations() == true || 
+               modelSettings_->getEstimateWaveletNoise() == true ||
+               modelSettings_->getOptimizeWellLocation() == true ||
+               writeBackgroundInCravaFormat) 
+            {
+              processBackground(background_, wells_, timeSimbox_, timeBGSimbox,
+                                modelSettings_, inputFiles,
+                                errText, failedBackground);
+              backgroundDone = true;
+            }
 
-          if (failedReflMat == false && failedExtraSurf == false &&
-              failedBackground == false && backgroundDone == true &&
-              (estimate == false || modelSettings_->getEstimateWaveletNoise() || writeSeismicInCravaFormat))
-          {
-            processSeismic(seisCube_, timeSimbox_, 
-                           modelSettings_, inputFiles,
-                           errText, failedSeismic);
-            if(failedSeismic == false) {
-              processReflectionMatrix(reflectionMatrix_, background_, 
-                                      modelSettings_, inputFiles, 
-                                      errText, failedReflMat);
+            if(failedBackground == false && backgroundDone == true &&
+              (estimate == false || modelSettings_->getEstimateWaveletNoise() || 
+               modelSettings_->getOptimizeWellLocation() == true))
+            {
+              processReflectionMatrixFromBackground(reflectionMatrix_, background_, modelSettings_, 
+                                                    inputFiles, errText, failedReflMat);
+            }
 
-              if(modelSettings_->getOptimizeWellLocation() == true)
+            if(failedBackground == false && backgroundDone == true && 
+               failedReflMat == false && failedExtraSurf == false &&
+               (estimate == false || modelSettings_->getEstimateWaveletNoise() || 
+               modelSettings_->getOptimizeWellLocation() == true || writeSeismicInCravaFormat ))
+            {
+              processSeismic(seisCube_, timeSimbox_, modelSettings_, 
+                             inputFiles, errText, failedSeismic);
+
+              if(failedSeismic == false && modelSettings_->getOptimizeWellLocation() == true)
+              {
                 processWellLocation(seisCube_, wells_, reflectionMatrix_,
                                     timeSimbox_, modelSettings_, randomGen_);
+              }
+            }
+          }
+          else 
+            //
+            // When well locations are to be optimized, the reflection matrix is estimated from the wells instead of the background
+            // as the background is dependent of the well locations. Need to alternate the order of the process-functions, as the 
+            // well locations need to be estimated before the background model is processed.
+            //
+          {
+           processReflectionMatrixFromWells(reflectionMatrix_, wells_, modelSettings_, 
+                                             inputFiles, errText, failedReflMat);
+            if (failedReflMat == false && failedExtraSurf == false)
+            {
+              processSeismic(seisCube_, timeSimbox_, modelSettings_, 
+                             inputFiles, errText, failedSeismic);
+              if(failedSeismic == false) 
+              {
+                processWellLocation(seisCube_, wells_, reflectionMatrix_,
+                                    timeSimbox_, modelSettings_, randomGen_);       
+              }
+            }
+            if(estimate == false || 
+               modelSettings_->getEstimateBackground() == true ||
+               modelSettings_->getEstimateCorrelations() == true || 
+               modelSettings_->getEstimateWaveletNoise() == true ||
+               writeBackgroundInCravaFormat) 
+            {
+              processBackground(background_, wells_, timeSimbox_, timeBGSimbox, 
+                                modelSettings_, inputFiles, errText, failedBackground);
+              backgroundDone = true;
+            }
+          }
 
-              addSeismicLogs(wells_, seisCube_, modelSettings_);
+          if(failedBackground == false && backgroundDone == true && 
+             failedSeismic == false && failedReflMat == false &&
+             (estimate == false || modelSettings_->getEstimateCorrelations() == true))
+          {
+            processPriorCorrelations(correlations_, background_, wells_, timeSimbox_, modelSettings_, 
+                                     inputFiles, errText, failedPriorCorr);
+          }
 
+          if(failedSeismic == false && 
+            (estimate == false || modelSettings_->getEstimateWaveletNoise()))
+          {
+            addSeismicLogs(wells_, seisCube_, modelSettings_); 
+            
+            if(failedReflMat == false && failedExtraSurf == false) 
+            {
               processWavelets(wavelet_, seisCube_, wells_, reflectionMatrix_,
                               timeSimbox_, waveletEstimInterval_,
                               modelSettings_, inputFiles, errText, failedWavelet);
             }
           }
         }
+
         if((estimate == false && modelSettings_->getDoDepthConversion() == true) || writeVelocityInCravaFormat)
-          processDepthConversion(timeCutSimbox, timeSimbox_,
-                                 modelSettings_, inputFiles,
-                                 errText, failedDepthConv);
+        {
+          processDepthConversion(timeCutSimbox, timeSimbox_, modelSettings_, 
+                                 inputFiles, errText, failedDepthConv);
+        }
+
         if (estimate == false && !failedWells && !failedExtraSurf)
         {
           processPriorFaciesProb(priorFacies_,
@@ -268,9 +316,12 @@ Model::Model(char * fileName)
                                  errText,
                                  inputFiles);
         }
+
         if(((modelSettings_->getWellOutputFlag() & IO::WELLS) > 0) ||
            (estimate == true && modelSettings_->getEstimateBackground() == true))
+        {
            writeWells(wells_, modelSettings_);
+        }
       }
     }
 
@@ -2185,16 +2236,16 @@ Model::estimateCorrXYFromSeismic(Surface *& corrXY,
 }
 
 void 
-Model::processReflectionMatrix(float       **& reflectionMatrix,
-                               Background    * background,
-                               ModelSettings * modelSettings, 
-                               InputFiles    * inputFiles,
-                               char          * errText,
-                               bool          & failed)
+Model::processReflectionMatrixFromWells(float       **& reflectionMatrix,
+                                        WellData     ** wells,
+                                        ModelSettings * modelSettings, 
+                                        InputFiles    * inputFiles,
+                                        char          * errText,
+                                        bool          & failed)
 {
   //
   // About to process wavelets and energy information. Needs the a-matrix, so create
-  // if not already made. A-matrix may need Vp/Vs-ratio from background model.
+  // if not already made. A-matrix may need Vp/Vs-ratio from wells.
   //
   const std::string & reflMatrFile = inputFiles->getReflMatrFile();
 
@@ -2207,10 +2258,41 @@ Model::processReflectionMatrix(float       **& reflectionMatrix,
     LogKit::LogFormatted(LogKit::LOW,"Reflection parameters read from file.\n\n");
   }
   else {
+
+    double vsvp = vsvpFromWells(wells, modelSettings);
+
+    setupDefaultReflectionMatrix(reflectionMatrix, vsvp, modelSettings);
+  }
+}
+
+void 
+Model::processReflectionMatrixFromBackground(float       **& reflectionMatrix,
+                                             Background    * background,
+                                             ModelSettings * modelSettings, 
+                                             InputFiles    * inputFiles,
+                                             char          * errText,
+                                             bool          & failed)
+{
+  //
+  // About to process wavelets and energy information. Needs the a-matrix, so create
+  // if not already made. A-matrix may need Vp/Vs-ratio from background model.
+  //
+  const std::string & reflMatrFile = inputFiles->getReflMatrFile();
+
+  if(reflMatrFile != "") {
+
+    reflectionMatrix = readMatrix(reflMatrFile, modelSettings->getNumberOfAngles(), 3, "reflection matrix", errText);
+    if(reflectionMatrix == NULL) {
+      sprintf(errText,"%sReading of file \'%s\' for reflection matrix failed\n",errText,reflMatrFile.c_str());
+      failed = true;
+    }
+    LogKit::LogFormatted(LogKit::LOW,"Reflection parameters read from file.\n\n");
+  }
+  else {
+
     if (background != NULL) {
-      setupDefaultReflectionMatrix(reflectionMatrix,
-                                   background,
-                                   modelSettings);
+      double vsvp  = background->getMeanVsVp(); 
+      setupDefaultReflectionMatrix(reflectionMatrix, vsvp, modelSettings);
     }
     else {
       sprintf(errText,"%s\nFailed to set up reflection matrix. Background model is empty.\n",errText);
@@ -2221,14 +2303,15 @@ Model::processReflectionMatrix(float       **& reflectionMatrix,
 
 void
 Model::setupDefaultReflectionMatrix(float       **& reflectionMatrix,
-                                    Background    * background,
+                                    double          vsvp,
                                     ModelSettings * modelSettings)
 {
-  int i;
-  float ** A = new float * [modelSettings->getNumberOfAngles()];
+  int      i;
+  float ** A      = new float * [modelSettings->getNumberOfAngles()];
+
   // For debugging
   //background->setClassicVsVp();
-  double vsvp  = background->getMeanVsVp();
+
   double vsvp2 = vsvp*vsvp;
   for(i = 0; i < modelSettings->getNumberOfAngles(); i++)
   {
@@ -2239,9 +2322,9 @@ Model::setupDefaultReflectionMatrix(float       **& reflectionMatrix,
     if(modelSettings->getSeismicType(i) == ModelSettings::STANDARDSEIS) {  //PP
       double tan2t=tan(angle)*tan(angle);
 
-      A[i][0] = float((1.0 +tan2t )/2.0) ; 
+      A[i][0] = float( (1.0 +tan2t )/2.0 ) ; 
       A[i][1] = float( -4*vsvp2 * sint2 );
-      A[i][2] = float( (1.0-4.0*vsvp2*sint2)/2.0);
+      A[i][2] = float( (1.0-4.0*vsvp2*sint2)/2.0 );
     }
     else if(modelSettings->getSeismicType(i) == ModelSettings::PSSEIS) {
       double cost  = cos(angle);
@@ -2257,6 +2340,28 @@ Model::setupDefaultReflectionMatrix(float       **& reflectionMatrix,
   LogKit::LogFormatted(LogKit::LOW,"\nMaking reflection parameters using a Vp/Vs ratio of %4.2f\n",1.0f/vsvp);
 }
 
+double Model::vsvpFromWells(WellData     ** wells,
+                            ModelSettings * modelSettings)
+{
+  int    i;
+  int    nWells = modelSettings->getNumberOfWells();
+  double vsvp;
+  float  muA;
+  float  muB;
+  float  vp = 0;
+  float  vs = 0;
+  
+  for( i=0; i<nWells; i++ )
+  {
+    wells[i]->getMeanVsVp(muA, muB);
+    vp += muA;
+    vs += muB;
+  }
+
+  vsvp = vs/vp;
+  return vsvp;
+}
+
 
 
 void
@@ -2270,8 +2375,6 @@ Model::processWellLocation(FFTGrid      ** seisCube,
 
   Utils::writeHeader("Estimating optimized well location");
   
-
-
   double  deltaX, deltaY;
   float   sum;
   float   kMove;
