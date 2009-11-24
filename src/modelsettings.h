@@ -48,7 +48,8 @@ public:
   bool                             getEstimateWaveletNoise()     const { return estimateWaveletNoise_  ;}
   bool                             getEstimateLocalNoise(int i)  const { return estimateLocalNoise_[i] ;}
   bool                             getEstimateGlobalWaveletScale(int i) const {return estimateGlobalWaveletScale_[i] ;}
-  int                              getWaveletDim(int i)          const { return waveletDim_[i]         ;} 
+  int                              getWaveletDim(int i)          const { return waveletDim_[i]         ;}
+  float                            getStretchFactor(int i)       const { return stretchFactor_[i]      ;}
 
   const std::vector<std::string> & getLogNames(void)             const { return logNames_              ;}
   const std::vector<bool>        & getInverseVelocity(void)      const { return inverseVelocity_       ;}
@@ -73,6 +74,8 @@ public:
   float                            getVarBetaMax(void)           const { return var_beta_max_          ;}
   float                            getVarRhoMin(void)            const { return var_rho_min_           ;}
   float                            getVarRhoMax(void)            const { return var_rho_max_           ;}
+  float                            getRefDepth(void)             const { return ref_depth_             ;}
+  float                            getAverageVelocity(void)      const { return average_velocity_      ;}
   float                            getMaxHzBackground(void)      const { return maxHz_background_      ;}
   float                            getMaxHzSeismic(void)         const { return maxHz_seismic_         ;}
   float                            getMaxRankCorr(void)          const { return maxRankCorr_           ;}
@@ -165,6 +168,7 @@ public:
   void addEstimateLocalShift(int estimateShift)          { estimateLocalShift_.push_back(estimateShift) ;}
   void addEstimateLocalScale(int estimateScale)          { estimateLocalScale_.push_back(estimateScale) ;}
   void addWaveletDim(int waveletDim)                     { waveletDim_.push_back(waveletDim)            ;}
+  void addStretchFactor(float stretchFactor)             { stretchFactor_.push_back(stretchFactor)      ;}
 
   void setEstimateBackground(bool estimateBackground)    { estimateBackground_   = estimateBackground   ;}
   void setEstimateCorrelations(bool estimateCorrelations){ estimateCorrelations_ = estimateCorrelations ;}
@@ -205,6 +209,8 @@ public:
   void setVarBetaMax(float var_beta_max)                 { var_beta_max_         = var_beta_max       ;}
   void setVarRhoMin(float var_rho_min)                   { var_rho_min_          = var_rho_min        ;}
   void setVarRhoMax(float var_rho_max)                   { var_rho_max_          = var_rho_max        ;}
+  void setRefDepth(float ref_depth)                      { ref_depth_            = ref_depth          ;}
+  void setAverageVelocity(float average_velocity)        { average_velocity_     = average_velocity   ;}
   void setMaxHzBackground(float maxHz_background)        { maxHz_background_     = maxHz_background   ;}
   void setMaxHzSeismic(float maxHz_seismic)              { maxHz_seismic_        = maxHz_seismic      ;}
   void setMaxRankCorr(float maxRankCorr)                 { maxRankCorr_          = maxRankCorr        ;}
@@ -300,7 +306,9 @@ private:
   std::vector<int>                  estimateLocalScale_;    // Estimate local wavelet scale
   std::vector<bool>                 estimateLocalNoise_;    // Estimate local noise 
   std::vector<bool>                 estimateGlobalWaveletScale_; 
+
   std::vector<int>                  waveletDim_;            // Holds if 1D-wavelet (=0) or 3D-wavelet (=1)
+  std::vector<float>                stretchFactor_;         // Stretch factor for pulse in 3D-wavelet
 
   bool                              estimateBackground_;    // In estimation mode, skip estimation of background if false
   bool                              estimateCorrelations_;  // As above, but correlations.
@@ -342,6 +350,9 @@ private:
   float                             var_beta_max_;          //| 
   float                             var_rho_min_;           //| The limits are for point variances. The minimum allowed variance 
   float                             var_rho_max_;           //| for parameters will be scaled with 1/dt*dt
+
+  float                             ref_depth_;             // z0 - reference depth for target area
+  float                             average_velocity_;      // v0 - average velocity in target area
                             
   float                             maxHz_background_;      // Background resolution (high cut frequency)
   float                             maxHz_seismic_;         // Seismic resolution (high cut frequency)

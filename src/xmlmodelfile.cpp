@@ -616,6 +616,7 @@ XmlModelFile::parseAngleGather(TiXmlNode * node, std::string & errTxt)
     if (oneDwavelet == false) { //Neither 1D-wavelet nor 3D-wavelet are given
       inputFiles_->addWaveletFile("");
       modelSettings_->addEstimateWavelet(true);
+      modelSettings_->addStretchFactor(1.0);
     }
   }
   else //3D-wavelet is given
@@ -728,6 +729,7 @@ XmlModelFile::parseWavelet(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("estimate-scale");
   legalCommands.push_back("local-wavelet");
 
+  modelSettings_->addStretchFactor(1.0);
   std::string value;
   if(parseFileName(root, "file-name", value, errTxt) == true) {
     inputFiles_->addWaveletFile(value);
@@ -885,6 +887,7 @@ XmlModelFile::parseWavelet3D(TiXmlNode * node, std::string & errTxt)
   std::vector<std::string> legalCommands;
   legalCommands.push_back("file-name");
   legalCommands.push_back("filter-file-name");
+  legalCommands.push_back("stretch-factor");
 
   std::string value;
   bool estimate = false;
@@ -902,10 +905,15 @@ XmlModelFile::parseWavelet3D(TiXmlNode * node, std::string & errTxt)
     inputFiles_->addWaveletFilterFile(value);
   else {
     inputFiles_->addWaveletFilterFile(""); //Keeping tables balanced.
-    if (estimate)
-      errTxt += "No 3D-wavelet file and no filter file for estimating a 3D-wavelet is given in<"
-                +root->ValueStr()+"> "+ lineColumnText(root)+".\n";
+    errTxt += "No filter file for 3D-wavelet is given in<"
+              +root->ValueStr()+"> "+ lineColumnText(root)+".\n";
   }
+
+  float stretch;
+  if(parseValue(root, "stretch-factor", stretch, errTxt) == true)
+    modelSettings_->addStretchFactor(stretch);
+  else
+    modelSettings_->addStretchFactor(1.0);
 
   modelSettings_->addWaveletDim(Wavelet::THREE_D);
 
@@ -1195,6 +1203,7 @@ XmlModelFile::parseProjectSettings(TiXmlNode * node, std::string & errTxt)
   
   std::vector<std::string> legalCommands;
   legalCommands.push_back("output-volume");
+  legalCommands.push_back("time-3D-mapping");
   legalCommands.push_back("io-settings");
   legalCommands.push_back("advanced-settings");
 
@@ -1202,6 +1211,7 @@ XmlModelFile::parseProjectSettings(TiXmlNode * node, std::string & errTxt)
     errTxt += "Command <output-volume> is needed in command <"+
       root->ValueStr()+">"+lineColumnText(root)+".\n";
 
+  parseTime3DMapping(root, errTxt);
   parseIOSettings(root, errTxt);
   parseAdvancedSettings(root, errTxt);
 
@@ -1499,6 +1509,43 @@ XmlModelFile::parseArea(TiXmlNode * node, std::string & errTxt)
   SegyGeometry * geometry = new SegyGeometry(x0, y0, dx, dy, nx, ny, rot);
   modelSettings_->setAreaParameters(geometry);
   delete geometry;
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseTime3DMapping(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("time-3D-mapping");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands(3);
+  legalCommands[0]="reference-depth";
+  legalCommands[1]="average-velocity";
+  legalCommands[2]="reference-time-surface";
+
+  float value;
+  if (parseValue(root, "reference-depth", value, errTxt) == false)
+    errTxt += "Reference depth must be given in command <"+
+      root->ValueStr()+"> "+lineColumnText(root)+".\n";
+  else
+    modelSettings_->setRefDepth(value);
+
+  if (parseValue(root, "average-velocity", value, errTxt) == false) 
+    errTxt += "Average velocity must be given in command <"+
+      root->ValueStr()+"> "+lineColumnText(root)+".\n";
+  else
+    modelSettings_->setAverageVelocity(value);
+
+  std::string filename;
+
+  if (parseFileName(root, "reference-time-surface", filename, errTxt) == false)
+    errTxt += "Reference time surface must be given in command <"+
+      root->ValueStr()+"> "+lineColumnText(root)+".\n";
+  else
+    inputFiles_->setRefSurfaceFile(filename);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);

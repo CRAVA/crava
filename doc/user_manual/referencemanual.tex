@@ -310,6 +310,34 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Default
  \elist
 
+\subsection{\hbracket{time-3D-mapping}} \newkw{time-3D-mapping}
+ \slist
+   \item \Description Defines the mapping between pseudo depth and local time in the target area for 3D wavelet.
+   \item \Argument Reference depth, velocity and time surface for mapping
+   \item \Default
+ \elist
+
+\subsubsection{\hbracket{reference-depth}} \newkw{reference-depth}
+ \slist
+   \item \Description Holds the z-value for the reference depth for target area
+   \item \Argument Depth in meter
+   \item \Default
+\elist
+
+\subsubsection{\hbracket{average-velocity}} \newkw{average-velocity}
+ \slist
+   \item \Description Holds the average velocity in the target area
+   \item \Argument Velocity in meter/second
+   \item \Default
+\elist
+
+\subsubsection{\hbracket{reference-time-surface}} \newkw{reference-time-surface}
+ \slist
+   \item \Description Filename for the time surface corresponding to the reference depth. 
+   \item \Argument File name
+   \item \Default
+\elist
+
 \subsection{\hbracket{io-settings}} \newkw{io-settings}
  \slist
    \item \Description Holds commands that deal with what output to give and where, and where to find input.
@@ -972,17 +1000,24 @@ Estimation: Checks input data and performs estimation of lacking information for
 
 \paragraph{\hbracket{file-name}}\rnewkw{file-name}{file-name3}
  \slist
-   \item \Description File name for 3D-wavelet file. This can be a 3D-grid on Sgri-format or a 1D-wavelet which will define the 3D-wavelet in combination with a filter given in \kw{filter-file-name}. If not given, the 3D-wavelet is estimated.
+   \item \Description File name for the 1D-wavelet file. This 1D-wavelet will define the 3D-wavelet in combination with the filter given in \kw{filter-file-name}. If not given, the 1D-wavelet is estimated.
    \item \Argument File name
    \item \Default
  \elist
 
 \paragraph{\hbracket{filter-file-name}}\newkw{filter-file-name}
  \slist
-   \item \Description File name for 3D-wavelet filter file. In case a Sgri file is given in \kw{file-name3} this filter is obsolete. In case a 1D-wavelet is given in \kw{file-name3} a 3D-wavelet is defined by the 1D-wavelet and the filter. If the 3d-wavelet is estimated, this filter file must be given.
-   \item \Argument File name for the wavenumber filter
+   \item \Description File name for 3D-wavelet filter file. The 3D-wavelet is defined by the 1D-wavelet and the filter. The 1D-wavelet is either given in \kw{file-name3} or estimated. In either case this filter file must be given.
+   \item \Argument File name for the amplitude scalings in the wavenumber filter.
    \item \Default
  \elist
+
+\paragraph{\hbracket{stretch-factor}}\newkw{stretch-factor}
+ \slist
+   \item \Description Stretch factor for 3D-wavelet. The pulse is stretch with this factor.
+   \item \Argument Value > 0.0
+   \item \Default 1.0
+\elist
 
 \subsubsection{\hbracket{match-energies}}\newkw{match-energies}
  \slist

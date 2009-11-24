@@ -2,12 +2,15 @@
 #define WAVELET3D_H
 
 #include "fft/include/fftw.h"
+
 #include "lib/global_def.h"
-#include "src/wavelet.h"
-#include "src/fftgrid.h"
 #include "lib/sgri.h"
 
+#include "src/wavelet.h"
+#include "src/fftgrid.h"
+
 class Wavelet1D;
+class WaveletFilter;
 
 class Wavelet3D : public Wavelet {
 public:
@@ -21,13 +24,22 @@ public:
             float             * reflCoef,  
             int               & errCode, 
             char              * errText);
-  Wavelet3D(const Wavelet1D   & wavelet1d,
-            const std::string & filterFileName,
-            int               & errCode,
-            char              * errText);
+  Wavelet3D(const Wavelet1D     & wavelet1d,
+            const WaveletFilter & filter,
+            ModelSettings       * modelSettings,
+            int                   angle_index,
+            Simbox              * simBox,
+            float                 theta,
+            int                 & errCode,
+            char                * errText);
   Wavelet3D(Wavelet * wavelet, int difftype);
   Wavelet3D(Wavelet * wavelet);
   virtual ~Wavelet3D() {}
+
+  double         findPhi(float kx, float ky) const;
+  double         findPsi(float radius, float kz) const;
+  fftw_complex   findWLvalue(const Wavelet1D & wavelet1d,
+                             float             omega) const;
 
   bool           consistentSize(int nzp, int nyp, int nxp) const; 
   fftw_complex   getCAmp(int k, int j, int i) const;

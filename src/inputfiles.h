@@ -18,7 +18,7 @@ public:
   const std::string              & getShiftFile(int i)           const { return waveletShiftFiles_[i] ;}
   const std::string              & getScaleFile(int i)           const { return waveletScaleFiles_[i] ;}
   const std::string              & getWaveletEstIntFile(int i)   const { return waveletEstIntFile_[i] ;}
-  const std::string              & getWaveletFilterFile(int i)   const { return waveletFilterFile_[i] ;}
+  const std::string              & getWaveletFilterFile(int i)   const { return waveletFilterFiles_[i];}
   const std::string              & getFaciesEstIntFile(int i)    const { return faciesEstIntFile_[i]  ;}     
   const std::vector<std::string> & getTimeSurfFiles(void)        const { return timeSurfFiles_        ;}
   const std::string              & getTimeSurfFile(int i)        const { return timeSurfFiles_[i]     ;}
@@ -30,8 +30,9 @@ public:
   const std::string              & getCorrDirFile(void)          const { return corrDirFile_          ;}
   const std::string              & getReflMatrFile(void)         const { return reflMatrFile_         ;}
   const std::string              & getParamCorrFile(void)        const { return paramCorrFile_        ;}
-  const std::string              & getLocalNoiseFile(int i)      const { return localNoiseFiles_[i]    ;}
+  const std::string              & getLocalNoiseFile(int i)      const { return localNoiseFiles_[i]   ;}
   const std::string              & getTempCorrFile(void)         const { return tempCorrFile_         ;}
+  const std::string              & getRefSurfaceFile(void)       const { return refSurfaceFile_       ;}
   const std::string              & getInputDirectory(void)       const { return inputDirectory_       ;}
   const std::map<std::string,std::string> & getPriorFaciesProbFile(void)   const {return priorFaciesProb_ ;}
 
@@ -45,7 +46,7 @@ public:
   void addScaleFile(const std::string & scaleFile)                        { waveletScaleFiles_.push_back(scaleFile)   ;}
   void addNoiseFile(const std::string &noiseFile)                         { localNoiseFiles_.push_back(noiseFile)     ;}
   void setWaveletEstIntFile(int i, const std::string & waveletEstIntFile) { waveletEstIntFile_[i] = waveletEstIntFile ;}
-  void addWaveletFilterFile(const std::string & filterFile)               { waveletFilterFile_.push_back(filterFile)  ;} 
+  void addWaveletFilterFile(const std::string & filterFile)               { waveletFilterFiles_.push_back(filterFile) ;} 
   void setFaciesEstIntFile(int i, const std::string & faciesEstIntFile)   { faciesEstIntFile_[i]  = faciesEstIntFile  ;}
   void addTimeSurfFile(const std::string & timeSurfFile)                  { timeSurfFiles_.push_back(timeSurfFile)    ;}
   void setDepthSurfFile(int i, const std::string & depthSurfFile)         { depthSurfFiles_[i]    = depthSurfFile     ;}
@@ -56,6 +57,7 @@ public:
   void setCorrDirFile(const std::string & corrDirFile)                    { corrDirFile_          = corrDirFile       ;}
   void setParamCorrFile(const std::string & paramCorrFile)                { paramCorrFile_        = paramCorrFile     ;}
   void setTempCorrFile(const std::string & tempCorrFile)                  { tempCorrFile_         = tempCorrFile      ;}
+  void setRefSurfaceFile(const std::string & refSurfaceFile)              { refSurfaceFile_       = refSurfaceFile    ;}
   void setInputDirectory(std::string inputDirectory)                      { inputDirectory_       = inputDirectory    ;}
   void setPriorFaciesProb(std::string name,std::string file)              { priorFaciesProb_[name] = file                ;}
   std::string addInputPathAndCheckFiles();
@@ -70,7 +72,7 @@ private:
   std::vector<std::string>   waveletShiftFiles_;     ///< File names: wavelets
   std::vector<std::string>   waveletScaleFiles_;     ///< File names: wavelets
   std::vector<std::string>   waveletEstIntFile_;     ///< File names: Wavelet estimation interval
-  std::vector<std::string>   waveletFilterFile_;     ///< File names: Filter files for 3D wavelets
+  std::vector<std::string>   waveletFilterFiles_;    ///< File names: Filter files for 3D wavelets
   std::vector<std::string>   faciesEstIntFile_;      ///< File names: Facies estimation interval
   std::vector<std::string>   timeSurfFiles_;         ///< File names: top and base time surfaces
   std::vector<std::string>   depthSurfFiles_;        ///< File names: top and base depth surfaces
@@ -81,6 +83,7 @@ private:
   std::string                corrDirFile_;           ///< File name for correlation direction
   std::string                paramCorrFile_;         ///< File name for correlation between parameters.
   std::string                tempCorrFile_;          ///< File name for temporal parameter correlations.
+  std::string                refSurfaceFile_;        ///< File name for reference time surface corresponding to z0.
 
   std::string                inputDirectory_;        ///< Base directory for input files.
   std::vector<std::string>   localNoiseFiles_;       ///< File names: local noise

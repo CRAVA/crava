@@ -27,6 +27,7 @@
 #include "src/inputfiles.h"
 #include "src/timings.h"
 #include "src/io.h"
+#include "src/waveletfilter.h"
 
 #include "lib/utils.h"
 #include "lib/random.h"
@@ -2526,6 +2527,7 @@ Model::processWavelets(Wavelet     **& wavelet,
                                    reflectionMatrix[i],
                                    i);
       else {
+        //Must read the reference time surface here
         sprintf(errText, "%s Estimation of 3D Wavelet is not implemented yet.\n", errText);
         error++;
       }
@@ -2541,7 +2543,7 @@ Model::processWavelets(Wavelet     **& wavelet,
         error++;
       }
       else {
-        if (fileFormat == Wavelet::SGRI) {
+/*        if (fileFormat == Wavelet::SGRI) {
           if (modelSettings->getWaveletDim(i) == Wavelet::THREE_D) {
             const std::string & filterFile = inputFiles->getWaveletFilterFile(i);
             if (strcmp(filterFile.c_str(), "") != 0) {
@@ -2561,8 +2563,8 @@ Model::processWavelets(Wavelet     **& wavelet,
                     errText, waveletFile.c_str());
             error++;
           }
-        }
-        else {
+        } //Not SGRI-format
+        else { */
           if (modelSettings->getWaveletDim(i) == Wavelet::ONE_D) {
             wavelet[i] = new Wavelet1D(waveletFile, 
                                        fileFormat, 
@@ -2575,19 +2577,33 @@ Model::processWavelets(Wavelet     **& wavelet,
                                    static_cast<float>(modelSettings->getZPadFac()), angle);
             }
           }
-          else { //3D-wavelet
+          else { //3D-wavelet constructed by 1D wavelet and filter
             const std::string & filterFile = inputFiles->getWaveletFilterFile(i);
             if (strcmp(filterFile.c_str(), "") != 0) {
+              WaveletFilter filter(filterFile,
+                                   error,
+                                   errText);
               Wavelet1D waveletFromFile = Wavelet1D(waveletFile, 
                                                     fileFormat, 
                                                     modelSettings, 
                                                     reflectionMatrix[i],
                                                     error, 
                                                     errText);
-              wavelet[i] = new Wavelet3D(waveletFromFile,
-                                         filterFile,
-                                         error,
-                                         errText);
+              if (error == 0) {
+                waveletFromFile.resample(static_cast<float>(timeSimbox->getdz()), 
+                                         timeSimbox->getnz(), 
+                                         static_cast<float>(modelSettings->getZPadFac()), 
+                                         angle);
+                waveletFromFile.fft1DInPlace();
+                wavelet[i] = new Wavelet3D(waveletFromFile,
+                                           filter,
+                                           modelSettings,
+                                           i,
+                                           timeSimbox,
+                                           angle,
+                                           error,
+                                           errText);
+              }
             }
             else {
               sprintf(errText, "%s A 1D-Wavelet given in file %s in command <wavelet-3d>, but no filter-file-name given.\n", 
@@ -2595,7 +2611,7 @@ Model::processWavelets(Wavelet     **& wavelet,
               error++;
             }
           }
-        }
+//      }
       }
     }
 
@@ -2635,8 +2651,7 @@ Model::processWavelets(Wavelet     **& wavelet,
         }
         
         float SNRatio = modelSettings->getSNRatio(i);
-        if (SNRatio <= 1.0f || SNRatio > 10.f)
-        {
+        if (SNRatio <= 1.0f || SNRatio > 10.f) {
           sprintf(errText, "%s Illegal signal-to-noise ratio of %.3f for cube %d\n", errText, SNRatio,i);
           sprintf(errText, "%s Ratio must be in interval 1.0 < S/N ratio < 10.0\n", errText);
           error++;
@@ -2716,7 +2731,7 @@ Model::getWaveletFileFormat(const std::string & fileName, char * errText)
   if(fileformat<0) // not old format
   {
     // Test for Sgri format
-    file = fopen(fileName.c_str(), "r");
+ /*   file = fopen(fileName.c_str(), "r");
     if (fscanf(file, "%s", dummyStr) == EOF)
     {
       sprintf(errText,"%sEnd of wavelet file %s is premature\n",errText,fileName.c_str());
@@ -2729,7 +2744,7 @@ Model::getWaveletFileFormat(const std::string & fileName, char * errText)
       fileformat = Wavelet::SGRI;
     fclose(file);
 
-    if (fileformat != Wavelet::SGRI) {
+    if (fileformat != Wavelet::SGRI) {*/
       // test for jason file format
       file = fopen(fileName.c_str(),"r");
       bool lineIsComment = true; 
@@ -2755,7 +2770,7 @@ Model::getWaveletFileFormat(const std::string & fileName, char * errText)
       {
         fileformat= Wavelet::JASON;
       }
-    }
+//    }
   }
   delete[] dummyStr;
   delete [] targetString;

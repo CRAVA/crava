@@ -552,6 +552,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\src\waveletfilter.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\nrlib\well\well.cpp"
 					>
 				</File>
@@ -3734,6 +3738,10 @@
 				</File>
 				<File
 					RelativePath=".\src\wavelet3D.h"
+					>
+				</File>
+				<File
+					RelativePath=".\src\waveletfilter.h"
 					>
 				</File>
 				<File

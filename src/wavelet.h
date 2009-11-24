@@ -44,6 +44,8 @@ public:
   bool                  getIsReal() const {return(isReal_);} 
   virtual void          scale(float gain);
   int                   getDim() const {return dim_;}
+  int                   getNz() const {return nz_;}
+  float                 getDz() const {return dz_;}
   virtual int           getNx() const {return 0;}
   virtual int           getNy() const {return 0;}
   virtual int           getNxp() const {return 0;}

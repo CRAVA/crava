@@ -21,11 +21,13 @@
 #include "src/blockedlogs.h"
 #include "src/definitions.h"
 #include "src/wavelet3D.h"
+#include "src/wavelet1D.h"
 #include "src/welldata.h"
 #include "src/fftgrid.h"
 #include "src/simbox.h"
 #include "src/model.h"
 #include "src/io.h"
+#include "src/waveletfilter.h"
 
 Wavelet3D::Wavelet3D(const std::string & fileName, 
                      ModelSettings     * modelSettings, 
@@ -183,14 +185,118 @@ Wavelet3D::Wavelet3D(const std::string & fileName,
   delete sgri;
 }
 
-Wavelet3D::Wavelet3D(const Wavelet1D   & wavelet1d,
-                     const std::string & filterFileName,
-                     int               & errCode,
-                     char              * errText)
+Wavelet3D::Wavelet3D(const Wavelet1D     & wavelet1d,
+                     const WaveletFilter & filter,
+                     ModelSettings       * modelSettings,
+                     int                   angle_index,
+                     Simbox              * simBox,
+                     float                 theta,
+                     int                 & errCode,
+                     char                * errText)
   : Wavelet(3)
 {
-  sprintf(errText,"%sConstructing 3D-Wavelet from 1D-wavelet and filter is not implemented yet\n",errText); 
-  errCode=1;
+  float v0 = modelSettings->getAverageVelocity();
+  nx_ = simBox->getnx();
+  ny_ = simBox->getny();
+  nz_ = simBox->getnz();
+  dx_ = static_cast<float>(simBox->getdx());
+  dy_ = static_cast<float>(simBox->getdy());
+  dz_ = static_cast<float>(simBox->getdz() * 0.5f * v0 * 0.001f);
+  theta_ = theta;
+  norm_ = RMISSING;
+
+  double xPadFac = modelSettings->getXPadFac();
+  nxp_   =  findClosestFactorableNumber( static_cast<int>(ceil( static_cast<double>(nx_)*(1.0+xPadFac) )) );
+  double yPadFac = modelSettings->getYPadFac();
+  nyp_   =  findClosestFactorableNumber( static_cast<int>(ceil( static_cast<double>(ny_)*(1.0+yPadFac) )) );
+  double zPadFac = modelSettings->getZPadFac();
+  nzp_   =  findClosestFactorableNumber( static_cast<int>(ceil( static_cast<double>(nz_)*(1.0+zPadFac) )) );
+  
+  ampCube_ = FFTGrid(nx_, ny_, nz_, nxp_, nyp_, nzp_);
+  ampCube_.createComplexGrid();
+  ampCube_.setType(FFTGrid::COVARIANCE);
+  ampCube_.setAccessMode(FFTGrid::RANDOMACCESS);
+
+  int cnxp = nxp_/2+1;
+  int i, j, k;
+  float kx, ky, kz;
+  float radius, alpha1, hAlpha, alpha2, omega;
+  double phi, psi;
+  fftw_complex cValue;
+  
+  float stretch = modelSettings->getStretchFactor(angle_index);
+  float minus2pi = static_cast<float> (-2.0 * PI);
+
+  for (k=0; k<=nzp_/2; k++) {
+    kz = static_cast<float> (k / dz_);
+    for (j=0; j<=nyp_/2; j++) {
+      ky = static_cast<float> (j / dy_);
+      for (i=0; i<cnxp; i++) {
+        kx = static_cast<float> (i / dx_);
+        radius = sqrt(kx*kx + ky*ky + kz*kz);
+        phi = findPhi(kx, ky);
+        psi = findPsi(radius, kz);
+        alpha1 = static_cast<float> (filter.getAlpha1(phi, psi));
+        hAlpha = static_cast<float> (filter.getHalpha(phi, psi));
+        omega = (0.5f * v0 * radius) / stretch;
+        cValue = findWLvalue(wavelet1d, omega);
+        alpha2 = exp(minus2pi * omega * hAlpha);
+        cValue.re *= static_cast<fftw_real> (alpha1 * alpha2);
+        setCAmp(cValue,k,j,i);
+      }
+    }
+    for (j=(nyp_/2)+1; j<nyp_; j++) {
+      ky = static_cast<float> ((j-nyp_) / dy_);
+      for (i=0; i<cnxp; i++) {
+        kx = static_cast<float> (i / dx_);
+        radius = sqrt(kx*kx + ky*ky + kz*kz);
+        phi = findPhi(kx, ky);
+        psi = findPsi(radius, kz);
+        alpha1 = static_cast<float> (filter.getAlpha1(phi, psi));
+        hAlpha = static_cast<float> (filter.getHalpha(phi, psi));
+        omega = (0.5f * v0 * radius) / stretch;
+        cValue = findWLvalue(wavelet1d, omega);
+        alpha2 = exp(minus2pi * omega * hAlpha);
+        cValue.re *= static_cast<fftw_real> (alpha1 * alpha2);
+        setCAmp(cValue,k,j,i);
+      }
+    }
+  }
+  for (k=(nzp_/2)+1; k<nzp_; k++) {
+    kz = static_cast<float> ((nzp_-k) / dz_);
+    for (j=0; j<=nyp_/2; j++) {
+      ky = static_cast<float> (j / dy_);
+      for (i=0; i<cnxp; i++) {
+        kx = static_cast<float> (i / dx_);
+        radius = sqrt(kx*kx + ky*ky + kz*kz);
+        phi = findPhi(kx, ky);
+        psi = findPsi(radius, kz);
+        alpha1 = static_cast<float> (filter.getAlpha1(phi, psi));
+        hAlpha = static_cast<float> (filter.getHalpha(phi, psi));
+        omega = (0.5f * v0 * radius) / stretch;
+        cValue = findWLvalue(wavelet1d, omega);
+        alpha2 = exp(minus2pi * omega * hAlpha);
+        cValue.re *= static_cast<fftw_real> (alpha1 * alpha2);
+        setCAmp(cValue,k,j,i);
+      }
+    }
+    for (j=(nyp_/2)+1; j<nyp_; j++) {
+      ky = static_cast<float> ((nyp_-j) / dy_);
+      for (i=0; i<cnxp; i++) {
+        kx = static_cast<float> (i / dx_);
+        radius = sqrt(kx*kx + ky*ky + kz*kz);
+        phi = findPhi(kx, ky);
+        psi = findPsi(radius, kz);
+        alpha1 = static_cast<float> (filter.getAlpha1(phi, psi));
+        hAlpha = static_cast<float> (filter.getHalpha(phi, psi));
+        omega = (0.5f * v0 * radius) / stretch;
+        cValue = findWLvalue(wavelet1d, omega);
+        alpha2 = exp(minus2pi * omega * hAlpha);
+        cValue.re *= static_cast<fftw_real> (alpha1 * alpha2);
+        setCAmp(cValue,k,j,i);
+      }
+    }
+  }
 }
 
 Wavelet3D::Wavelet3D(Wavelet * wavelet, int difftype)
@@ -254,6 +360,69 @@ Wavelet3D::Wavelet3D(Wavelet * wavelet)
     }
   }
 }
+
+double Wavelet3D::findPhi(float kx, float ky) const
+//Return value should be between 0 and 2*PI
+{
+  double phi;
+  double epsilon = 0.000001;
+  if (kx > epsilon && ky >= 0.0) //1. quadrant 
+    phi = atan(ky/kx);
+  else if (kx > epsilon && ky < 0.0) //4. quadrant
+    phi = 2*PI + atan(ky/kx);
+  else if (kx < - epsilon && ky >= 0.0) //2. quadrant
+    phi = PI + atan(ky/kx);
+  else if (kx < - epsilon && ky < 0.0) //3. quadrant
+    phi = PI + atan(ky/kx);
+  else if (ky  >= 0.0) //kx very small
+    phi = 0.5 * PI;
+  else //kx very small
+    phi = 1.5 * PI;
+
+  return(phi);
+}
+
+double Wavelet3D::findPsi(float radius, float kz) const
+//Return value should be between 0 and 0.5*PI
+{
+  double epsilon = 0.000001;
+  double psi = 0.0;
+  if (kz < 0.0)
+    kz = -kz;
+  if (radius > epsilon)
+    psi = acos(kz/radius);
+
+  return(psi);
+}
+
+fftw_complex Wavelet3D::findWLvalue(const Wavelet1D & wavelet1d,
+                                    float             omega) const
+{
+  int lowindex = static_cast<int> (omega / wavelet1d.getDz());
+  fftw_complex c_low, c_high;
+  if (lowindex >= wavelet1d.getNz()) {
+    c_low.re = 0.0; 
+    c_low.im = 0.0;
+    c_high.re = 0.0;
+    c_high.im = 0.0;
+  }
+  else if (lowindex == wavelet1d.getNz()-1) {
+    c_high.re = 0.0;
+    c_high.im = 0.0;
+    c_low = wavelet1d.getCAmp(lowindex);
+  }
+  else {
+    c_low = wavelet1d.getCAmp(lowindex);
+    c_high = wavelet1d.getCAmp(lowindex + 1);
+  }
+  float fac = omega - lowindex * wavelet1d.getDz();
+  fftw_complex cValue;
+  cValue.re = (1-fac) * c_low.re + fac * c_high.re;
+  cValue.im = (1-fac) * c_low.im + fac * c_high.im;
+
+  return cValue;
+}
+
 
 void           
 Wavelet3D::fft1DInPlace()
