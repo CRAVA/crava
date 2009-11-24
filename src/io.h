@@ -18,7 +18,7 @@ public:
   inline static  std::string    PathToWells(void)                  { return std::string("wells/")              ;}
   inline static  std::string    PathToBackground(void)             { return std::string("background/")         ;}
   inline static  std::string    PathToWavelets(void)               { return std::string("wavelets/")           ;}
-  inline static  std::string    PathToSeismicData(void)            { return std::string("seismic/")            ;}
+  inline static  std::string    PathToSeismicData(void)            { return std::string("seismicdata/")        ;}
   inline static  std::string    PathToVelocity(void)               { return std::string("velocity/")           ;}
   inline static  std::string    PathToCorrelations(void)           { return std::string("correlations/")       ;}
   inline static  std::string    PathToInversionResults(void)       { return std::string("inversionresults/")   ;}
@@ -37,7 +37,8 @@ public:
 
   // Prefixes
 
-  inline static  std::string    PrefixSeismic(void)                { return std::string("Seis_")               ;}
+  inline static  std::string    PrefixPredicted(void)              { return std::string("Predicted_")          ;}
+  inline static  std::string    PrefixSimulated(void)              { return std::string("Simulated_")          ;}
   inline static  std::string    PrefixWells(void)                  { return std::string("Well_")               ;}
   inline static  std::string    PrefixBlockedWells(void)           { return std::string("BW_")                 ;}
   inline static  std::string    PrefixBackground(void)             { return std::string("BG_")                 ;}
