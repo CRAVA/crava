@@ -425,7 +425,7 @@ Model::readMatrix(const std::string & fileName, int n1, int n2,
 {
   float * tmpRes = new float[n1*n2+1];
   FILE * inFile = fopen(fileName.c_str(),"r");
-  std::string text = "Reading "+readReason+" from file "+fileName+" .... \n";
+  std::string text = "Reading "+readReason+" from file "+fileName+" ... ";
   LogKit::LogFormatted(LogKit::LOW,text);
   char storage[MAX_STRING];
   int index = 0;
@@ -2046,14 +2046,19 @@ Model::processPriorCorrelations(Corr         *& correlations,
 
     double wall=0.0, cpu=0.0;
     TimeKit::getTime(wall,cpu);
+
+    const std::string & paramCorrFile = inputFiles->getParamCorrFile();
+    const std::string & corrTFile     = inputFiles->getTempCorrFile();
+
+    bool estimateParamCorr = paramCorrFile == "";
+    bool estimateTempCorr  = corrTFile     == "";
+
     //
-    // Parameter correlation can be set in model file.
-    // Default NULL, indicating that estimate will be used.
+    // Read parameter correlation (Var0) from file 
     //
     float ** paramCorr = NULL;
-    const std::string & paramCorrFile = inputFiles->getParamCorrFile();
-
-    if(paramCorrFile != "") 
+    bool failedParamCorr = false;
+    if(!estimateParamCorr) 
     {
       char tmpErrText[MAX_STRING];
       sprintf(tmpErrText,"%c",'\0');
@@ -2062,14 +2067,17 @@ Model::processPriorCorrelations(Corr         *& correlations,
       {
         sprintf(errText,"%sReading of file \'%s\' for parameter correlation matrix failed\n%s\n",
                 errText,paramCorrFile.c_str(),tmpErrText);
-        failed = true;
+        failedParamCorr = true;
       }
-      LogKit::LogFormatted(LogKit::LOW,"Parameter correlation read from file.\n\n");
     }
 
+    //
+    // Estimate lateral correlation from seismic data
+    //
     Surface * CorrXY = findCorrXYGrid(modelSettings);
 
-    if(modelSettings->getLateralCorr()==NULL) { // NBNB-PAL: this will never be true (default lateral corr)
+    if(modelSettings->getLateralCorr()==NULL) // NBNB-PAL: this will never be true (default lateral corr)
+    {
       estimateCorrXYFromSeismic(CorrXY,
                                 seisCube_,
                                 modelSettings->getNumberOfAngles());
@@ -2082,35 +2090,37 @@ Model::processPriorCorrelations(Corr         *& correlations,
       nCorrT = nCorrT/2+1;
     float * corrT = NULL;
 
-    bool corrTEstimated = false;
-    const std::string & corrTFile = inputFiles->getTempCorrFile();
-    if(corrTFile != "") {
+    bool failedTempCorr = false;
+    if(!estimateTempCorr) 
+    {
       char tmpErrText[MAX_STRING];
       sprintf(tmpErrText,"%c",'\0');
       float ** corrMat = readMatrix(corrTFile, 1, nCorrT+1, "temporal correlation", tmpErrText);
       if(corrMat == NULL) 
       {
         sprintf(errText,"%sReading of file \'%s\' for temporal correlation failed\n%s\n",
-                errText,paramCorrFile.c_str(),tmpErrText);
-        failed = true;
+                errText,corrTFile.c_str(),tmpErrText);
+        failedTempCorr = true;
       }
-      LogKit::LogFormatted(LogKit::LOW,"Temporal correlation read from file.\n\n");
-      int i;
       corrT = new float[nCorrT];
-      for(i=0;i<nCorrT;i++)
-        corrT[i] = corrMat[0][i+1];
-      delete [] corrMat[0];
-      delete [] corrMat;
+      if (!failedTempCorr) 
+      {
+        for(int i=0;i<nCorrT;i++)
+          corrT[i] = corrMat[0][i+1];
+        delete [] corrMat[0];
+        delete [] corrMat;
+      }
     }
-        
+
     float ** pointVar0 = NULL;
-    if(paramCorr == NULL || corrT == NULL) { //Need well estimation
+    if (estimateParamCorr || estimateTempCorr) //Need well estimation
+    {
       Analyzelog * analyze = new Analyzelog(wells, 
                                             background,
                                             timeSimbox, 
                                             modelSettings);
 
-      if(paramCorr == NULL)
+      if(estimateParamCorr)
         paramCorr = analyze->getVar0();
       else
         delete [] analyze->getVar0();
@@ -2118,7 +2128,7 @@ Model::processPriorCorrelations(Corr         *& correlations,
       pointVar0 = analyze->getPointVar0();
 
       float * estCorrT = analyze->getCorrT();
-      if(corrT == NULL) {
+      if(estimateTempCorr) {
         corrT = new float[nCorrT];
         int nEst = analyze->getNumberOfLags();
         int i, max = nEst;
@@ -2132,30 +2142,32 @@ Model::processPriorCorrelations(Corr         *& correlations,
           for(;i<nCorrT;i++)
             corrT[i] = 0.0f;
         }
-        corrTEstimated = true;
       }
       delete [] estCorrT;
 
       delete analyze;
     }
 
-    correlations = new Corr(pointVar0, 
-                            paramCorr, 
-                            corrT, 
-                            nCorrT,
-                            static_cast<float>(timeSimbox->getdz()), 
-                            CorrXY);
+    if (failedParamCorr || failedTempCorr)
+      failed = true;
+        
+    if (!failed) {
+      correlations = new Corr(pointVar0, 
+                              paramCorr, 
+                              corrT, 
+                              nCorrT,
+                              static_cast<float>(timeSimbox->getdz()), 
+                              CorrXY);
+      if(printResult)
+        correlations->writeFilePriorVariances(modelSettings);
+      correlations->printPriorVariances();
+    }
 
-    if(correlations == NULL)
+    if(failedTempCorr == false && failedParamCorr == false && correlations == NULL)
     {
       sprintf(errText,"%sCould not construct prior covariance. Unknown why...\n",errText);
       failed = true;
     }
-
-    if(printResult)
-      correlations->writeFilePriorVariances(modelSettings);
-    
-    correlations->printPriorVariances();
 
     Timings::setTimePriorCorrelation(wall,cpu);
   }
