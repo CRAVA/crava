@@ -477,8 +477,6 @@ Wavelet::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
   {
     optScale = globalScale; // Global scale must be given if local scale is given
     findLocalNoiseWithGainGiven(synt_r,seis_r,nWells,nzp,dataVarWell, errOptScale, errWell, errWellOptScale, scaleOptWell,gain, wells, simbox);
-   // for(i=0;i<nWells;i++)
-   //   scaleOptWell[i]/=optScale;
     writelog = true;
   }
   else
@@ -517,8 +515,8 @@ Wavelet::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
 
     LogKit::LogFormatted(LogKit::MEDIUM,"\n  Reporting errors (as standard deviations) estimated in different ways:\n\n");
 
-    if (readtype_ == ESTIMATE)
-    {
+   // if (readtype_ == ESTIMATE)
+  //  {
       LogKit::LogFormatted(LogKit::LOW,"\n");
       LogKit::LogFormatted(LogKit::LOW,"                                     SeisData       OptimalGlobal      OptimalLocal\n");
       LogKit::LogFormatted(LogKit::LOW,"  Well                  shift[ms]     StdDev         Gain   S/N         Gain   S/N \n");
@@ -538,8 +536,8 @@ Wavelet::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
           LogKit::LogFormatted(LogKit::LOW,"  %-20s      -            -             -      -           -      -\n",
           wells[i]->getWellname()); 
       }
-    }
-    else
+ //   }
+  /*  else //commented out because Actually used is wrong.
     {
       LogKit::LogFormatted(LogKit::LOW,"\n");
       LogKit::LogFormatted(LogKit::LOW,"                                     SeisData        ActuallyUsed       OptimalGlobal      OptimalLocal\n");
@@ -561,7 +559,7 @@ Wavelet::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
           LogKit::LogFormatted(LogKit::LOW,"  %-20s      -            -             -      -           -      -           -      -   \n",
           wells[i]->getWellname()); 
       }
-    }
+    }*/
 //  }
 
  // if(useLocalWavelet && (shift==NULL || gain==NULL))
