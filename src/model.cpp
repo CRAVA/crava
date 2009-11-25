@@ -309,10 +309,12 @@ Model::Model(char * fileName)
 
         if (estimate == false && !failedWells && !failedExtraSurf)
         {
-          processPriorFaciesProb(priorFacies_,
+          processPriorFaciesProb(faciesEstimInterval_,
+                                 priorFacies_,
                                  wells_,
                                  randomGen_,
                                  timeSimbox_->getnz(),
+                                 timeSimbox_->getdz(),
                                  modelSettings_,
                                  failedPriorFacies,
                                  errText,
@@ -2792,10 +2794,12 @@ Model::getWaveletFileFormat(const std::string & fileName, char * errText)
   return fileformat;
 }
 
-void Model::processPriorFaciesProb(float         *& priorFacies,
+void Model::processPriorFaciesProb(Surface      **& faciesEstimInterval,
+                                   float         *& priorFacies,
                                    WellData      ** wells,
                                    RandomGen      * randomGen,
                                    int              nz,
+                                   float            dz,
                                    ModelSettings  * modelSettings,
                                    bool           & failed,
                                    char           * errTxt,
@@ -2806,28 +2810,7 @@ void Model::processPriorFaciesProb(float         *& priorFacies,
     Utils::writeHeader("Prior Facies Probabilities");
     int nFacies = modelSettings->getNumberOfFacies();
 
-    //
-    // NBNB-PAL: We should be able to read priorFacies from file. 
-    //
-    if(modelSettings->getIsPriorFaciesProbGiven()==1)
-    {
-      priorFacies = new float[nFacies];
-      typedef std::map<std::string,float> mapType;
-      mapType myMap = modelSettings->getPriorFaciesProb();
-      
-      for(int i=0;i<nFacies;i++)
-      {
-        mapType::iterator iter = myMap.find(modelSettings->getFaciesName(i));
-        if(iter!=myMap.end())
-          priorFacies[i] = iter->second;
-        else
-        {
-          LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: No prior facies probability found for facies %12s\n",modelSettings->getFaciesName(i).c_str());
-            modelSettings->setEstimateFaciesProb(false);
-        }
-      }
-    }
-    else if(modelSettings->getIsPriorFaciesProbGiven()==0)
+    if(modelSettings->getIsPriorFaciesProbGiven()==0)
     {
       if (nFacies > 0) 
       {
@@ -2869,15 +2852,36 @@ void Model::processPriorFaciesProb(float         *& priorFacies,
             bl->getVerticalTrend(bl->getBeta(),vtBeta);
             bl->getVerticalTrend(bl->getRho(),vtRho);
             bl->getVerticalTrend(bl->getFacies(),vtFacies,randomGen);
+
+            std::vector<int> tmpFaciesLog(nz);
             for(int i=0 ; i<nz ; i++)
             {
-              if(vtAlpha[i] != RMISSING && vtBeta[i] != RMISSING && vtRho[i] != RMISSING) {
-                if (vtFacies[i] != IMISSING)
-                  faciesCount[w][vtFacies[i]]++;
-                faciesLog[w*nz + i] = vtFacies[i];
-              }
+              if(vtAlpha[i] != RMISSING && vtBeta[i] != RMISSING && vtRho[i] != RMISSING)
+                tmpFaciesLog[i] = vtFacies[i];
               else
-                faciesLog[w*nz + i] = IMISSING;
+                tmpFaciesLog[i] = IMISSING;
+            }
+
+            //
+            // Set facies data outside facies estimation interval IMISSING
+            //
+            if (faciesEstimInterval != NULL) {
+              const double * xPos  = bl->getXpos();
+              const double * yPos  = bl->getYpos();
+              const double * zPos  = bl->getZpos();
+              for (int i = 0 ; i < nz ; i++) {
+                const double zTop  = faciesEstimInterval[0]->GetZ(xPos[i],yPos[i]);
+                const double zBase = faciesEstimInterval[1]->GetZ(xPos[i],yPos[i]);
+                if ( (zPos[i]-0.5*dz) < zTop || (zPos[i]+0.5*dz) > zBase)
+                  tmpFaciesLog[i] = IMISSING;
+              }
+            }
+
+            for(int i=0 ; i<nz ; i++)
+            {
+              faciesLog[w*nz + i] = tmpFaciesLog[i];
+              if(vtFacies[i] != IMISSING)
+                faciesCount[w][tmpFaciesLog[i]]++;
             }
             nUsedWells++;
           }
@@ -2996,33 +3000,50 @@ void Model::processPriorFaciesProb(float         *& priorFacies,
         modelSettings->setEstimateFaciesProb(false);
       }
     }
+    else if(modelSettings->getIsPriorFaciesProbGiven()==1)
+    {
+      priorFacies = new float[nFacies];
+      typedef std::map<std::string,float> mapType;
+      mapType myMap = modelSettings->getPriorFaciesProb();
+      
+      for(int i=0;i<nFacies;i++)
+      {
+        mapType::iterator iter = myMap.find(modelSettings->getFaciesName(i));
+        if(iter!=myMap.end())
+          priorFacies[i] = iter->second;
+        else
+        {
+          LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: No prior facies probability found for facies %12s\n",modelSettings->getFaciesName(i).c_str());
+            modelSettings->setEstimateFaciesProb(false);
+        }
+      }
+    }
     else if(modelSettings->getIsPriorFaciesProbGiven()==2)
     {
-       processPriorFaciesProbCubes(inputFiles, 
-                                   modelSettings, 
-                                   priorFaciesProbCubes_,
-                                   timeSimbox_,
-                                   errTxt,
-                                   failed);
+       readPriorFaciesProbCubes(inputFiles, 
+                                modelSettings, 
+                                priorFaciesProbCubes_,
+                                timeSimbox_,
+                                errTxt,
+                                failed);
 
       }
   }
 }
 
-void Model::processPriorFaciesProbCubes(InputFiles     * inputFiles, 
-                                        ModelSettings  * modelSettings, 
-                                        FFTGrid       **& priorFaciesProbCubes,
-                                        Simbox         * timeSimbox,
-                                        char           * errTxt,
-                                        bool           & failed)
+void Model::readPriorFaciesProbCubes(InputFiles      * inputFiles, 
+                                     ModelSettings   * modelSettings, 
+                                     FFTGrid       **& priorFaciesProbCubes,
+                                     Simbox          * timeSimbox,
+                                     char            * errTxt,
+                                     bool            & failed)
 {
-  int i;
   int nFacies = modelSettings->getNumberOfFacies();
   priorFaciesProbCubes_ = new FFTGrid*[nFacies];
 
   typedef std::map<std::string,std::string> mapType;
   mapType myMap = inputFiles->getPriorFaciesProbFile();
-  for(i=0;i<nFacies;i++)
+  for(int i=0;i<nFacies;i++)
   {
     char tmpErrText[MAX_STRING];
     sprintf(tmpErrText,"%c",'\0');

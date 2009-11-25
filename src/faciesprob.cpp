@@ -36,10 +36,13 @@ FaciesProb::FaciesProb(FFTGrid           * alpha,
                        const double     ** sigmaEOrig,
                        const WellData   ** wells,
                        int                 nWells,
+                       Surface          ** faciesEstimInterval,
+                       const double        dz,
                        bool                relative,
                        bool                noVs)
 {
-  makeFaciesProb(nFac, alpha, beta, rho, sigmaEOrig, wells, nWells, relative, noVs,
+  makeFaciesProb(nFac, alpha, beta, rho, sigmaEOrig, wells, nWells, 
+                 faciesEstimInterval, dz, relative, noVs,
                  p_undef, priorFacies, priorFaciesCubes);
 }
 
@@ -305,6 +308,8 @@ void FaciesProb::makeFaciesProb(int nfac,
                                 const double   ** sigmaEOrig, 
                                 const WellData ** wells, 
                                 int               nWells,
+                                Surface        ** faciesEstimInterval,
+                                const double      dz,
                                 bool              relative,
                                 bool              noVs,
                                 float             p_undef,
@@ -315,7 +320,8 @@ void FaciesProb::makeFaciesProb(int nfac,
   std::vector<float> betaFiltered;
   std::vector<float> rhoFiltered;
   std::vector<int>   faciesLog;
-  setNeededLogsSpatial(wells, nWells, relative, noVs,
+
+  setNeededLogsSpatial(wells, nWells, faciesEstimInterval, dz, relative, noVs,
                        alphaFiltered, betaFiltered, rhoFiltered, faciesLog); //Generate these logs.
 
   std::vector<FFTGrid *> density;
@@ -410,8 +416,11 @@ float FaciesProb::findDensity(float alpha, float beta, float rho,
     return 0.0;
 }
 
-void FaciesProb::calculateConditionalFaciesProb(WellData **wells, int nWells, 
-                                                const ModelSettings * modelSettings)
+void FaciesProb::calculateConditionalFaciesProb(WellData           ** wells, 
+                                                int                   nWells, 
+                                                Surface            ** faciesEstimInterval,
+                                                const ModelSettings * modelSettings,
+                                                const double          dz)
 {
   //
   // Get the needed blocked logs
@@ -440,10 +449,27 @@ void FaciesProb::calculateConditionalFaciesProb(WellData **wells, int nWells,
     const int   nBlocks    = bw[i]->getNumberOfBlocks();
     const int * BWfacies_i = bw[i]->getFacies();
     BWfacies[i] = new int[nBlocks]; 
-    for (int b = 0 ; b < nBlocks ; b++)
-    {
-      BWfacies[i][b] = BWfacies_i[b];
-      //LogKit::LogFormatted(LogKit::LOW,"ib, BWfacies[i][b] = %d %d\n",ib,BWfacies[ib]);
+
+    if (faciesEstimInterval != NULL) {
+      const double * xPos  = bw[i]->getXpos();
+      const double * yPos  = bw[i]->getYpos();
+      const double * zPos  = bw[i]->getZpos();
+
+      for (int b = 0 ; b < nBlocks ; b++) {
+        const double zTop  = faciesEstimInterval[0]->GetZ(xPos[b],yPos[b]);
+        const double zBase = faciesEstimInterval[1]->GetZ(xPos[b],yPos[b]);
+        if ( (zPos[b]-0.5*dz) < zTop || (zPos[b]+0.5*dz) > zBase)
+          BWfacies[i][b] = IMISSING;
+        else
+          BWfacies[i][b] = BWfacies_i[b];
+        //LogKit::LogFormatted(LogKit::LOW,"ib, BWfacies[i][b] = %d %d\n",ib,BWfacies[ib]);
+      }
+    }
+    else {
+      for (int b = 0 ; b < nBlocks ; b++) {
+        BWfacies[i][b] = BWfacies_i[b];
+        //LogKit::LogFormatted(LogKit::LOW,"ib, BWfacies[i][b] = %d %d\n",ib,BWfacies[ib]);
+      }
     }
   }
    
@@ -749,6 +775,8 @@ void FaciesProb::calculateVariances(const std::vector<float> & alpha,
 
 void FaciesProb::setNeededLogsSpatial(const WellData    ** wells,
                                       int                  nWells,
+                                      Surface           ** faciesEstimInterval,
+                                      const double         dz,
                                       bool                 relative,
                                       bool                 noVs,
                                       std::vector<float> & alphaFiltered,
@@ -794,6 +822,16 @@ void FaciesProb::setNeededLogsSpatial(const WellData    ** wells,
           faciesLog[index] = IMISSING;
         else
           faciesLog[index] = bw->getFacies()[i];
+
+        if (faciesEstimInterval != NULL) {
+          const double * xPos  = bw->getXpos();
+          const double * yPos  = bw->getYpos();
+          const double * zPos  = bw->getZpos();
+          const double   zTop  = faciesEstimInterval[0]->GetZ(xPos[i],yPos[i]);
+          const double   zBase = faciesEstimInterval[1]->GetZ(xPos[i],yPos[i]);
+          if ( (zPos[i]-0.5*dz) < zTop || (zPos[i]+0.5*dz) > zBase)
+            faciesLog[index] = IMISSING;
+        }
         index++;
       }
     }

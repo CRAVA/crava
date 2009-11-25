@@ -1655,6 +1655,8 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs)
                               const_cast<const double **>(filteredlogs->getSigmae()),
                               const_cast<const WellData **>(wells_), 
                               nWells_,
+                              model_->getFaciesEstimInterval(),
+                              simbox_->getdz(),
                               true,
                               model_->getModelSettings()->getNoVsFaciesProb());
       delete meanAlpha2_;
@@ -1675,11 +1677,17 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs)
                               const_cast<const double **>(filteredlogs->getSigmae()),
                               const_cast<const WellData **>(wells_), 
                               nWells_,
+                              model_->getFaciesEstimInterval(),
+                              simbox_->getdz(),
                               false,
                               model_->getModelSettings()->getNoVsFaciesProb());
       baseName = "FaciesProb_";
     }
-    fprob_->calculateConditionalFaciesProb(wells_, nWells_, model_->getModelSettings());
+    fprob_->calculateConditionalFaciesProb(wells_, 
+                                           nWells_, 
+                                           model_->getFaciesEstimInterval(),
+                                           model_->getModelSettings(),
+                                           simbox_->getdz());
     LogKit::LogFormatted(LogKit::LOW,"\nProbability cubes done\n");
     for(int i=0;i<nfac;i++)
     {

@@ -39,6 +39,7 @@ public:
   FFTGrid       ** getPriorFaciesCubes()      const { return priorFaciesProbCubes_   ;}
   FFTGrid       ** getSeisCubes()             const { return seisCube_               ;}
   Wavelet       ** getWavelets()              const { return wavelet_                ;}
+  Surface       ** getFaciesEstimInterval()   const { return faciesEstimInterval_    ;}
   float         ** getAMatrix()               const { return reflectionMatrix_       ;}
   RandomGen      * getRandomGen()             const { return randomGen_              ;} 
   GridMapping    * getTimeDepthMapping()      const { return timeDepthMapping_       ;}
@@ -140,20 +141,22 @@ private:
                                    char          * errText,
                                    bool          & failed);
 
-  void             processPriorFaciesProb(float        *& priorFacies,
-                                          WellData     ** wells,
-                                          RandomGen     * randomGen,
-                                          int             nz,
-                                          ModelSettings * modelSettings,
+  void             processPriorFaciesProb(Surface      **& faciesEstimInterval,
+                                          float         *& priorFacies,
+                                          WellData      ** wells,
+                                          RandomGen      * randomGen,
+                                          int              nz,
+                                          float            dz,
+                                          ModelSettings  * modelSettings,
                                           bool           & failed,
                                           char           * errTxt,
                                           InputFiles     * inputFiles);
-  void             processPriorFaciesProbCubes(InputFiles     * inputFiles, 
-                                               ModelSettings  * modelSettings, 
-                                               FFTGrid       **& priorFaciesProbCubes,
-                                               Simbox         * timeSimbox,
-                                               char           * errTxt,
-                                               bool           & failed);
+  void             readPriorFaciesProbCubes(InputFiles      * inputFiles, 
+                                            ModelSettings   * modelSettings, 
+                                            FFTGrid       **& priorFaciesProbCubes,
+                                            Simbox          * timeSimbox,
+                                            char            * errTxt,
+                                            bool            & failed);
   void             processDepthConversion(Simbox        * timeCutSimbox, 
                                           Simbox        * timeSimbox,
                                           ModelSettings * modelSettings, 
