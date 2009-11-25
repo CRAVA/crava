@@ -887,7 +887,10 @@ XmlModelFile::parseWavelet3D(TiXmlNode * node, std::string & errTxt)
   std::vector<std::string> legalCommands;
   legalCommands.push_back("file-name");
   legalCommands.push_back("filter-file-name");
+  legalCommands.push_back("corrfactor-file-name");
   legalCommands.push_back("stretch-factor");
+  legalCommands.push_back("est-range-x");
+  legalCommands.push_back("est-range-y");
 
   std::string value;
   bool estimate = false;
@@ -909,11 +912,27 @@ XmlModelFile::parseWavelet3D(TiXmlNode * node, std::string & errTxt)
               +root->ValueStr()+"> "+ lineColumnText(root)+".\n";
   }
 
+  if(parseFileName(root, "corrfactor-file-name", value, errTxt) == true)
+    inputFiles_->addWaveletCorrFile(value);
+  else 
+    inputFiles_->addWaveletCorrFile(""); //Keeping tables balanced.
+    
   float stretch;
   if(parseValue(root, "stretch-factor", stretch, errTxt) == true)
     modelSettings_->addStretchFactor(stretch);
   else
     modelSettings_->addStretchFactor(1.0);
+
+  float range;
+  if(parseValue(root, "est-range-x", range, errTxt) == true)
+    modelSettings_->addEstRangeX(range);
+  else
+    modelSettings_->addEstRangeX(0.0);
+
+  if(parseValue(root, "est-range-y", range, errTxt) == true)
+    modelSettings_->addEstRangeY(range);
+  else
+    modelSettings_->addEstRangeY(0.0);
 
   modelSettings_->addWaveletDim(Wavelet::THREE_D);
 

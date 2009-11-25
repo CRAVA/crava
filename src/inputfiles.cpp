@@ -46,6 +46,8 @@ InputFiles::addInputPathAndCheckFiles()
     errTxt += addPathAndCheck(waveletScaleFiles_[i]);
   for(i=0;i<waveletFilterFiles_.size(); i++)
     errTxt += addPathAndCheck(waveletFilterFiles_[i]);
+  for(i=0;i<waveletCorrFiles_.size(); i++)
+    errTxt += addPathAndCheck(waveletCorrFiles_[i]);
   for(i=0;i<waveletEstIntFile_.size();i++)
     errTxt += addPathAndCheck(waveletEstIntFile_[i]);
   for(i=0;i<faciesEstIntFile_.size();i++)

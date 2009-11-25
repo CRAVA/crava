@@ -50,6 +50,8 @@ public:
   bool                             getEstimateGlobalWaveletScale(int i) const {return estimateGlobalWaveletScale_[i] ;}
   int                              getWaveletDim(int i)          const { return waveletDim_[i]         ;}
   float                            getStretchFactor(int i)       const { return stretchFactor_[i]      ;}
+  float                            getEstRangeX(int i)           const { return estRangeX_[i]          ;}
+  float                            getEstRangeY(int i)           const { return estRangeY_[i]          ;}
 
   const std::vector<std::string> & getLogNames(void)             const { return logNames_              ;}
   const std::vector<bool>        & getInverseVelocity(void)      const { return inverseVelocity_       ;}
@@ -169,6 +171,8 @@ public:
   void addEstimateLocalScale(int estimateScale)          { estimateLocalScale_.push_back(estimateScale) ;}
   void addWaveletDim(int waveletDim)                     { waveletDim_.push_back(waveletDim)            ;}
   void addStretchFactor(float stretchFactor)             { stretchFactor_.push_back(stretchFactor)      ;}
+  void addEstRangeX(float estRangeX)                     { estRangeX_.push_back(estRangeX)              ;}
+  void addEstRangeY(float estRangeY)                     { estRangeY_.push_back(estRangeY)              ;}
 
   void setEstimateBackground(bool estimateBackground)    { estimateBackground_   = estimateBackground   ;}
   void setEstimateCorrelations(bool estimateCorrelations){ estimateCorrelations_ = estimateCorrelations ;}
@@ -309,6 +313,8 @@ private:
 
   std::vector<int>                  waveletDim_;            // Holds if 1D-wavelet (=0) or 3D-wavelet (=1)
   std::vector<float>                stretchFactor_;         // Stretch factor for pulse in 3D-wavelet
+  std::vector<float>                estRangeX_;             // Estimation range in x-direction for 3D-wavelet 
+  std::vector<float>                estRangeY_;             // Estimation range in y-direction for 3D-wavelet 
 
   bool                              estimateBackground_;    // In estimation mode, skip estimation of background if false
   bool                              estimateCorrelations_;  // As above, but correlations.

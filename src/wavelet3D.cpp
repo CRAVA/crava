@@ -297,7 +297,54 @@ Wavelet3D::Wavelet3D(const Wavelet1D     & wavelet1d,
       }
     }
   }
+
+  FFTGrid *shiftAmp = new FFTGrid(nx_, ny_, nz_, nx_, ny_, nz_);
+  shiftAmp->fillInConstant(0.0);
+  shiftAmp->setType(FFTGrid::DATA);
+  shiftAmp->setAccessMode(FFTGrid::RANDOMACCESS);
+
+  shiftFFTGrid(shiftAmp);
+
+  std::ofstream headerFile;
+  NRLib::OpenWrite(headerFile, "WL_as_shiftedFFTGrid.Sgrh");
+
+  headerFile << "NORSAR General Grid Format v1.0\n";
+  headerFile << "3\n";
+  headerFile << "kx (1/m)\n";
+  headerFile << "ky (1/m)\n";
+  headerFile << "kz (1/m)\n";
+  headerFile << "FFT-grid\n";
+  headerFile << "1\n";
+  headerFile << "3D-wavelet" << std::endl;
+  headerFile << "1 1 1\n";
+  headerFile << nx_ << " " << ny_ << " " << nz_ << std::endl;
+  headerFile << std::setprecision(10);
+  headerFile << 1/dx_ << " " << 1/dy_ << " " << 1/dz_ << std::endl;
+//  double x0 = simbox->getx0() + 0.5 * simbox->getdx();
+//  double y0 = simbox->gety0() + 0.5 * simbox->getdy();
+//  double z0 = zMin + 0.5 * dz;
+  headerFile << "0.0 0.0 0.0\n";
+  headerFile << "0.0\n";
+  headerFile << RMISSING << std::endl;
+  headerFile << "WL_as_shiftedFFTGrid.Sgri\n";
+  headerFile.close();
+
+  std::ofstream binFile;
+  NRLib::OpenWrite(binFile, "WL_as_shiftedFFTGrid.Sgri" , std::ios::out | std::ios::binary);
+  float value;
+  for (k=0; k<nz_; k++)
+    for (j=0; j<ny_; j++)
+      for (i=0; i<nx_; i++) {
+          value = shiftAmp->getRealValue(i,j,k);
+#ifndef BIGENDIAN
+        NRLib::WriteBinaryFloat(binFile, value);
+#else
+        NRLib::WriteBinaryFloat(binFile, value, END_LITTLE_ENDIAN);
+#endif
+      }
+  binFile.close();
 }
+
 
 Wavelet3D::Wavelet3D(Wavelet * wavelet, int difftype)
   : Wavelet(wavelet, 3)

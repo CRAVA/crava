@@ -1007,8 +1007,15 @@ Estimation: Checks input data and performs estimation of lacking information for
 
 \paragraph{\hbracket{filter-file-name}}\newkw{filter-file-name}
  \slist
-   \item \Description File name for 3D-wavelet filter file. The 3D-wavelet is defined by the 1D-wavelet and the filter. The 1D-wavelet is either given in \kw{file-name3} or estimated. In either case this filter file must be given.
+   \item \Description File name for 3D-wavelet damping factor filter file. The 3D-wavelet is defined by the 1D-wavelet and the filter. The 1D-wavelet is either given in \kw{file-name3} or estimated. In either case this filter file must be given.
    \item \Argument File name for the amplitude scalings in the wavenumber filter.
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{corrfactor-file-name}}\newkw{corrfactor-file-name}
+ \slist
+   \item \Description File name for 3D-wavelet correction filter filter file. This is used to set up the noise model for the 3D-wavelet.
+   \item \Argument File name for the correction factors in the wavenumber filter.
    \item \Default
  \elist
 
@@ -1017,6 +1024,20 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Description Stretch factor for 3D-wavelet. The pulse is stretch with this factor.
    \item \Argument Value > 0.0
    \item \Default 1.0
+\elist
+
+\paragraph{\hbracket{est-range-x}}\newkw{est-range-x}
+ \slist
+   \item \Description Range for area around the well in x-direction where data are used in 3D wavelet estimation. 
+   \item \Argument Value >= 0.0
+   \item \Default 0.0
+\elist
+
+\paragraph{\hbracket{est-range-y}}\newkw{est-range-y}
+ \slist
+   \item \Description Range for area around the well in y-direction where data are used in 3D wavelet estimation. 
+   \item \Argument Value >= 0.0
+   \item \Default 0.0
 \elist
 
 \subsubsection{\hbracket{match-energies}}\newkw{match-energies}
