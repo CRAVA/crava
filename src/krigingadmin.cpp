@@ -93,7 +93,6 @@ void CKrigingAdmin::Init() {
   } 
   noValid_ = noValidAlpha_ + noValidBeta_ + noValidRho_;
 
-
   noKrigedCells_ = noKrigedVariables_ = totalNoDataInCurrKrigBlock_= noEmptyDataBlocks_ = 0;
   sizeAlpha_ = sizeBeta_ = sizeRho_ = 0;
   rangeAlphaX_ = rangeAlphaY_ = rangeAlphaZ_ = 0;
@@ -208,9 +207,10 @@ void CKrigingAdmin::KrigAll(Gamma gamma) {
 
 void CKrigingAdmin::KrigAll(FFTGrid& trendAlpha, FFTGrid& trendBeta, FFTGrid& trendRho,
                             bool trendsAlreadySubtracted) {
-  Require(!trendAlpha.getIsTransformed() && !trendBeta.getIsTransformed()
-    && !trendRho.getIsTransformed(), 
-    "!trendAlpha.getIsTransformed() && !trendBeta.getIsTransformed() && !trendRho.getIsTransformed()");
+  Require(!trendAlpha.getIsTransformed() 
+          && !trendBeta.getIsTransformed()
+          && !trendRho.getIsTransformed(), 
+          "!trendAlpha.getIsTransformed() && !trendBeta.getIsTransformed() && !trendRho.getIsTransformed()");
 
   if (!trendsAlreadySubtracted)
     SubtractTrends(trendAlpha, trendBeta, trendRho);
@@ -439,6 +439,8 @@ void CKrigingAdmin::FindDataInDataBlockLoop(Gamma gamma) {
     iMax+int(rangeX_),jMax+int(rangeY_),kMax+int(rangeZ_));
 
   switch (currDataBoxSize) {
+  case DBS_RIGHT:
+    // NBNB-PAL: Nothing to do here? I put in this switch option to avoid a crash (CRA-75)
   case DBS_TOO_SMALL:
     testDataBoxSize = FindDataInDataBlock(gamma, maxDataBox);
     if(testDataBoxSize != DBS_TOO_BIG)

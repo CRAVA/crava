@@ -21,7 +21,8 @@ public:
   static void    setTimeSimulation(double& wall, double& cpu);
   static void    setTimeFiltering(double& wall, double& cpu);
   static void    setTimeFaciesProb(double& wall, double& cpu);
-  static void    setTimeKriging(double& wall, double& cpu);
+  static void    setTimeKrigingPred(double& wall, double& cpu);
+  static void    addToTimeKrigingSim(double& wall, double& cpu);
 
 private:
   static void    reportOne(const std::string & text, double cpuThis, double wallThis, 
@@ -67,8 +68,11 @@ private:
   static double  w_facies_;
   static double  c_facies_;
 
-  static double  w_kriging_;
-  static double  c_kriging_;
+  static double  w_kriging_pred_;
+  static double  c_kriging_pred_;
+
+  static double  w_kriging_sim_;
+  static double  c_kriging_sim_;
 };
 
 #endif

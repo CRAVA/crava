@@ -281,40 +281,40 @@ private:
                                            const Grid2D  * grid,
                                            Surface      *& surface);
 
-  SegyGeometry   * geometryFromCravaFile(const std::string & fileName); 
-  SegyGeometry   * geometryFromStormFile(const std::string & fileName, char * errText); 
+  SegyGeometry            * geometryFromCravaFile(const std::string & fileName); 
+  SegyGeometry            * geometryFromStormFile(const std::string & fileName, char * errText); 
 
-  ModelSettings  * modelSettings_;
-  Simbox         * timeSimbox_;            ///< Information about simulation area.
-  Simbox         * timeSimboxConstThick_;  ///< Simbox with constant thickness   
+  ModelSettings           * modelSettings_;
+  Simbox                  * timeSimbox_;            ///< Information about simulation area.
+  Simbox                  * timeSimboxConstThick_;  ///< Simbox with constant thickness   
   
-  WellData      ** wells_;                 ///< Well data
-  Background     * background_;            ///< Holds the background model.
-  Corr           * correlations_;          ///<
-  FFTGrid       ** seisCube_;              ///< Seismic data cubes
-  Wavelet       ** wavelet_;               ///< Wavelet for angle
+  WellData               ** wells_;                 ///< Well data
+  Background              * background_;            ///< Holds the background model.
+  Corr                    * correlations_;          ///<
+  FFTGrid                ** seisCube_;              ///< Seismic data cubes
+  Wavelet                ** wavelet_;               ///< Wavelet for angle
   
-  std::vector<Surface *> waveletEstimInterval_;  ///< Grids giving the wavelet estimation interval.
-  std::vector<Surface *> faciesEstimInterval_;   ///< Grids giving the facies estimation intervals.
-  std::vector<Surface *> wellMoveInterval_;      ///< Grids giving the facies estimation intervals.
+  std::vector<Surface *>    waveletEstimInterval_;  ///< Grids giving the wavelet estimation interval.
+  std::vector<Surface *>    faciesEstimInterval_;   ///< Grids giving the facies estimation intervals.
+  std::vector<Surface *>    wellMoveInterval_;      ///< Grids giving the facies estimation intervals.
 
 
-  Surface        * correlationDirection_;  ///< Grid giving the correlation direction.
-  RandomGen      * randomGen_;             ///< Random generator.
-  float          * priorFacies_;
-  float         ** reflectionMatrix_;      ///< May specify own Zoeppritz-approximation. Default NULL,
-                                           ///< indicating that standard approximation will be used.
+  Surface                 * correlationDirection_;  ///< Grid giving the correlation direction.
+  RandomGen               * randomGen_;             ///< Random generator.
+  float                   * priorFacies_;
+  float                  ** reflectionMatrix_;      ///< May specify own Zoeppritz-approximation. Default NULL,
+                                                    ///< indicating that standard approximation will be used.
 
-  double           gradX_;                 ///< X-gradient of correlation rotation. 
-  double           gradY_;                 ///< Y-gradient of correlation rotation.
-                                           ///< These are only used with correaltion surfaces.
-  GridMapping    * timeDepthMapping_;      ///< Contains both simbox and mapping used for depth conversion
-  GridMapping    * timeCutMapping_;        ///< Simbox and mapping for timeCut
-  float          * noiseGrid_;             ///< 2D grid for local noise scaling
-  bool             velocityFromInversion_;
-  FFTGrid       ** priorFaciesProbCubes_;   ///< Cubes for prior facies probabilities
+  double                    gradX_;                 ///< X-gradient of correlation rotation. 
+  double                    gradY_;                 ///< Y-gradient of correlation rotation.
+                                                    ///< These are only used with correlation surfaces.
+  GridMapping             * timeDepthMapping_;      ///< Contains both simbox and mapping used for depth conversion
+  GridMapping             * timeCutMapping_;        ///< Simbox and mapping for timeCut
+  float                   * noiseGrid_;             ///< 2D grid for local noise scaling
+  bool                      velocityFromInversion_;
+  FFTGrid                ** priorFaciesProbCubes_;  ///< Cubes for prior facies probabilities
 
-  bool             failed_;                ///< Indicates whether errors occured during construction. 
+  bool                      failed_;                ///< Indicates whether errors occured during construction. 
 };
 
 #endif

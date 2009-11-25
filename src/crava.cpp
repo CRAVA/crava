@@ -1026,7 +1026,10 @@ Crava::computePostMeanResidAndFFTCov()
 
   if(writePrediction_ == true)
   {
+    double wall2=0.0, cpu2=0.0;
+    TimeKit::getTime(wall2,cpu2);
     doPostKriging(*postAlpha_, *postBeta_, *postRho_); 
+    Timings::setTimeKrigingPred(wall2,cpu2);
     ParameterOutput::writeParameters(simbox_, model_, postAlpha_, postBeta_, postRho_, 
                                      outputFlag_, fileGrid_, -1);
   }
@@ -1257,9 +1260,10 @@ Crava::simulate(RandomGen * randomGen)
           seed2->add(postRho_);
           seed2->endAccess();
 
-
-
+          double wall2=0.0, cpu2=0.0;
+          TimeKit::getTime(wall2,cpu2);
           doPostKriging(*seed0, *seed1, *seed2); 
+          Timings::addToTimeKrigingSim(wall2,cpu2);
           ParameterOutput::writeParameters(simbox_, model_, seed0, seed1, seed2,
                                            outputFlag_, fileGrid_, simNr);
           // time(&timeend);
@@ -1288,9 +1292,6 @@ Crava::doPostKriging(FFTGrid & postAlpha,
   if(krigingParameter_ > 0) { 
     Utils::writeHeader("Conditioning to wells");
 
-    double wall=0.0, cpu=0.0;
-    TimeKit::getTime(wall,cpu);
-
     CovGridSeparated covGridAlpha      (*correlations_->getPostCovAlpha()      );
     CovGridSeparated covGridBeta       (*correlations_->getPostCovBeta()       );
     CovGridSeparated covGridRho        (*correlations_->getPostCovRho()        ); 
@@ -1311,7 +1312,6 @@ Crava::doPostKriging(FFTGrid & postAlpha,
                            krigingParameter_);
 
     pKriging.KrigAll(postAlpha, postBeta, postRho);
-    Timings::setTimeKriging(wall,cpu);
   } 
 }
 

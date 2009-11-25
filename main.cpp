@@ -95,7 +95,8 @@ int main(int argc, char** argv)
         corr->writeFilePostCovGrids(model->getTimeSimbox());
       }       
 
-      spatwellfilter->doFiltering(corr,model->getWells(), 
+      spatwellfilter->doFiltering(corr,
+                                  model->getWells(), 
                                   model->getModelSettings()->getNumberOfWells(), 
                                   model->getModelSettings()->getNoVsFaciesProb());
       
@@ -127,11 +128,7 @@ int main(int argc, char** argv)
     crava = new Crava(model, 0);
     LogKit::LogFormatted(LogKit::LOW,"\n               ... model built\n");
   
-    // Computing synthetic seismic
-    LogKit::LogFormatted(LogKit::LOW,"\nComputing synthetic seismic ..."); 
     crava->computeSyntSeismic(crava->getPostAlpha(),crava->getPostBeta(),crava->getPostRho());
-    LogKit::LogFormatted(LogKit::LOW,"                              ... synthetic seismic computed.\n");
-	
     delete crava;
   } 
   delete model;

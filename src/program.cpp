@@ -22,7 +22,7 @@ Program::Program(const unsigned int  major,
   LogKit::LogFormatted(LogKit::LOW,"\n*****                                                                                         *****"); 
   LogKit::LogFormatted(LogKit::LOW,"\n*****                                   C R A V A  -  %d.%d.%d                                   *****",major_,minor_,patch_); 
   LogKit::LogFormatted(LogKit::LOW,"\n*****                                                                                         *****"); 
-  LogKit::LogFormatted(LogKit::LOW,"\n*****                  Copyright (c) 2003 by Norsk Regnesentral/StatoilHydro                  *****"); 
+  LogKit::LogFormatted(LogKit::LOW,"\n*****                     Copyright (c) 2003 by Norsk Regnesentral/Statoil                    *****"); 
   LogKit::LogFormatted(LogKit::LOW,"\n*****                                                                                         *****"); 
   LogKit::LogFormatted(LogKit::LOW,"\n***************************************************************************************************\n\n");
 
@@ -47,11 +47,11 @@ Program::CheckForLicenceExpiration(const int           licence_days,
     int days_since_compilation = static_cast<int>((now - TimeOfCompilation()) / 86400);
 
     if (days_since_compilation > licence_days) {
-      LogKit::LogFormatted(LogKit::ERROR,"The COHIBA licence have expired. Please contact the Norwegian Computing Center to obtain a new one.\n");
+      LogKit::LogFormatted(LogKit::ERROR,"The CRAVA licence have expired. Please contact the Norwegian Computing Center to obtain a new one.\n");
       std::exit(EXIT_FAILURE);
     }
     else if (days_since_compilation < 0) {
-      LogKit::LogFormatted(LogKit::ERROR,"The COHIBA licence is not valid yet. Are you tampering with the system clock?\n");
+      LogKit::LogFormatted(LogKit::ERROR,"The CRAVA licence is not valid yet. Are you tampering with the system clock?\n");
       LogKit::LogFormatted(LogKit::ERROR,"Please contact the Norwegian Computing Center to obtain a new one.\n");
       std::exit(EXIT_FAILURE);
     }

@@ -54,7 +54,7 @@ public:
   void           getBlockedGrid(FFTGrid * grid, float * blockedLog, int iOffset = 0, int jOffset = 0);
 
   void           setLogFromVerticalTrend(float * vertical_trend, double z0, double dz, 
-                                         int nz, std::string type, int iAngle = RMISSING);
+                                         int nz, std::string type, int iAngle = IMISSING);
   void           setLogFromGrid(FFTGrid * grid, int iAngle, int nAngles, std::string type);
 
   void           writeWell(ModelSettings * modelSettings);       //Use this, will handle formats automatically.

@@ -4,13 +4,18 @@
 #include <time.h>
 #include <assert.h>
 #include <stdio.h>
-#include "lib/lib_matr.h"
+
+#include "lib/timekit.hpp"
 #include "lib/kriging1d.h"
-#include "src/welldata.h"
-#include "src/spatialwellfilter.h"
-#include "src/corr.h"
-#include "src/model.h"
+#include "lib/lib_matr.h"
+
 #include "nrlib/iotools/logkit.hpp"
+
+#include "src/spatialwellfilter.h"
+#include "src/welldata.h"
+#include "src/timings.h"
+#include "src/model.h"
+#include "src/corr.h"
 
 SpatialWellFilter::SpatialWellFilter(int nwells)
 {
@@ -78,6 +83,11 @@ void SpatialWellFilter::setPriorSpatialCorr(FFTGrid *parSpatialCorr, WellData *w
 
 void SpatialWellFilter::doFiltering(Corr *corr, WellData **wells, int nWells, bool useVpRhoFilter)
 {
+ Utils::writeHeader("Creating spatial multi-parameter filter");
+
+  double wall=0.0, cpu=0.0;
+  TimeKit::getTime(wall,cpu);
+
   n_ = new int[nWells];
   double ** sigmapost;
   double ** sigmapri;
@@ -116,7 +126,7 @@ void SpatialWellFilter::doFiltering(Corr *corr, WellData **wells, int nWells, bo
     const int *ipos = wells[w1]->getBlockedLogsOrigThick()->getIpos();
     const int *jpos = wells[w1]->getBlockedLogsOrigThick()->getJpos();
     const int *kpos = wells[w1]->getBlockedLogsOrigThick()->getKpos();
-    float regularization = float(0.0001);
+    float regularization = Definitions::SpatialFilterRegularisationValue();
     for(l1=0;l1<n;l1++)
     {
       i1 = ipos[l1];
@@ -171,8 +181,12 @@ void SpatialWellFilter::doFiltering(Corr *corr, WellData **wells, int nWells, bo
                        wells[w1]->getBlockedLogsOrigThick()); //Must do before Cholesky of sigmapri.
 
     lib_matrCholR(3*n, sigmapri);
+    //
+    // NBNB-PAL: Det ser ut til at de ti lib_mat... kallene nedenfor bruker kjempelang tid i test case 9
+    //
     lib_matrAXeqBMatR(3*n, sigmapri, imat, 3*n);
     lib_matr_prod(sigmapost,imat,3*n,3*n,3*n,Aw);
+
     for(int i=0;i<3*n;i++)
       for(int j=0;j<3*n;j++)
         {
@@ -182,6 +196,7 @@ void SpatialWellFilter::doFiltering(Corr *corr, WellData **wells, int nWells, bo
       }
 
     lib_matr_prod(Aw,sigmapost,3*n,3*n,3*n,test);
+
     for(int i=0;i<n;i++)
     {
       sigmae_[0][0] += test[i      ][i     ];
@@ -197,7 +212,7 @@ void SpatialWellFilter::doFiltering(Corr *corr, WellData **wells, int nWells, bo
     delete [] test;
     
     calculateFilteredLogs(Aw, wells[w1]->getBlockedLogsOrigThick(), n, true);
-    
+
     n_[w1] = n;
     lastn += n;
     for(int i=0;i<3*n;i++)
@@ -231,6 +246,8 @@ void SpatialWellFilter::doFiltering(Corr *corr, WellData **wells, int nWells, bo
 
     adjustDiagSigma(sigmaeVpRho_,2);
   }
+
+  Timings::setTimeFiltering(wall,cpu);
 }
 
 
@@ -311,9 +328,6 @@ SpatialWellFilter::doVpRhoFiltering(const double ** sigmapri, const double ** si
   delete [] imat;  
   delete [] sigma;
 }
-
-
-
 
 void SpatialWellFilter::calculateFilteredLogs(double **Aw, BlockedLogs *blockedlogs, int n, bool useVs)
 {
