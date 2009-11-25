@@ -198,10 +198,22 @@ FFTGrid::fillInFromSegY(SegY* segy, Simbox *simbox)
 void
 FFTGrid::fillInFromStorm(Simbox            * actSimBox,
                          StormContGrid     * grid, 
-                         const std::string & parName)
+                         const std::string & parName, bool isStorm)
 {
   assert(cubetype_ != CTMISSING);
   createRealGrid();
+  float scalevert, scalehor;
+  if(isStorm==true)
+  {
+    scalevert = 1.0;
+    scalehor = 1.0;
+  }
+  else //from sgri file
+  {
+    LogKit::LogFormatted(LogKit::LOW,"Sgri file read. Rescaling z axis from s to ms. \n");
+    scalevert = float(0.001);
+    scalehor = 1.0;
+  }
   int i,j,k,refi,refj,refk;
   float distx,disty,distz,mult;
   float* meanvalue;
@@ -221,14 +233,14 @@ FFTGrid::fillInFromStorm(Simbox            * actSimBox,
       refi   = getXSimboxIndex(i);
       refj   = getYSimboxIndex(j);
       actSimBox->getCoord(refi, refj, 0, x, y, z);
-      val=grid->GetValueZInterpolated(x,y,z);
+      val=grid->GetValueZInterpolated(x*scalehor,y*scalehor,z*scalevert);
       actSimBox->getCoord(refi, refj, nz_-1, x, y, z);
  
         if(val != RMISSING)
    
-          val = (grid->GetValueZInterpolated(x,y,z)+val)/2.0;
+          val = (grid->GetValueZInterpolated(x*scalehor,y*scalehor,z*scalevert)+val)/2.0;
         else     
-          val = grid->GetValueZInterpolated(x,y,z);
+          val = grid->GetValueZInterpolated(x*scalehor,y*scalehor,z*scalevert);
       meanvalue[i+j*nxp_] = static_cast<float>(val);
     }
 
@@ -257,7 +269,7 @@ FFTGrid::fillInFromStorm(Simbox            * actSimBox,
         if(i<nxp_)  // computes the index reference from the cube puts it in value
         {
           actSimBox->getCoord(refi, refj, refk, x, y, z);
-          value = static_cast<fftw_real>(grid->GetValueZInterpolated(x,y,z));
+          value = static_cast<fftw_real>(grid->GetValueZInterpolated(x*scalehor,y*scalehor,z*scalevert));
           if(value==RMISSING)
             value = 0;
           value=static_cast<float>( ((mult*value+(1.0-mult)*meanvalue[i+j*nxp_])) );

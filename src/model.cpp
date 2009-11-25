@@ -652,7 +652,8 @@ Model::readStormFile(const std::string  & fName,
                      const std::string  & parName, 
                      Simbox             * timeSimbox, 
                      ModelSettings     *& modelSettings, 
-                     std::string        & errText)
+                     std::string        & errText,
+                     bool                 isStorm)
 {
   StormContGrid * stormgrid = NULL;
   bool failed = false;
@@ -686,7 +687,7 @@ Model::readStormFile(const std::string  & fName,
                            modelSettings->getNYpad(), 
                            modelSettings->getNZpad());
     target->setType(gridType);
-    target->fillInFromStorm(timeSimbox,stormgrid, parName);
+    target->fillInFromStorm(timeSimbox,stormgrid, parName, isStorm);
   }  
 
   if (stormgrid != NULL)
@@ -733,7 +734,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
         else if(fileType == IO::SEGY) {
           geometry = SegY::FindGridGeometry(seismicFile, modelSettings->getTraceHeaderFormat(0));
         }
-        else if(fileType == IO::STORM) {
+        else if(fileType == IO::STORM || fileType == IO::SGRI) {
           geometry = geometryFromStormFile(seismicFile, errText);
         }
         else {
@@ -768,7 +769,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
       else if(fileType == IO::SEGY) {
         geometry = SegY::FindGridGeometry(seismicFile, modelSettings->getTraceHeaderFormat(0));
       }
-      else if(fileType == IO::STORM) {
+      else if(fileType == IO::STORM || fileType==IO::SGRI) {
         geometry = geometryFromStormFile(seismicFile, errText);
       }
       else {
@@ -2020,6 +2021,8 @@ Model::readGridFromFile(const std::string       & fileName,
   {
     readStormFile(fileName, grid, gridType, parName, timeSimbox, modelSettings, errText);
   }
+  else if(fileType == IO::SGRI)
+    readStormFile(fileName, grid, gridType, parName, timeSimbox, modelSettings, errText, false);
   else 
   {
     errText += "\nReading of file \'"+fileName+"\' for grid type \'"
@@ -3806,7 +3809,7 @@ Model::writeLocalGridsToFile(const std::string   & fileName,
   int    outputFormat     = modelSettings->getGridOutputFormat();
   double angle            = modelSettings->getAngle(i)*180.0/M_PI;
 
-  Surface * help; 
+  Surface * help = NULL; 
 
   if(fileName != "") {
     help = new Surface(NRLib::ReadStormSurf(fileName));

@@ -208,7 +208,8 @@ private:
                                  const std::string  & parName, 
                                  Simbox             * timeSimbox,
                                  ModelSettings     *& modelSettings, 
-                                 std::string        & errText);
+                                 std::string        & errText,
+                                 bool                 isStrom  = true);
   void             estimateCorrXYFromSeismic(Surface *& CorrXY,
                                              FFTGrid ** seisCube,
                                              int        nAngles);

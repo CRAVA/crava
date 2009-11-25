@@ -256,7 +256,7 @@ Estimation: Checks input data and performs estimation of lacking information for
 
 \subsubsection{\hbracket{area}}\newkw{area}
  \slist
-   \item \Description This command holds the parameters defining the lateral extent of the inversion volume. If this command is not given, the information is taken from the first seismic data file.
+   \item \Description This command holds the parameters defining the lateral extent of the inversion volume. If this command is not given, the information is taken from the first seismic data file, or from Vp if we do forward modeling(mode set to forward).
    \item \Argument Elements defining lateral extent of inversion volume
    \item \Default
  \elist
@@ -305,7 +305,7 @@ Estimation: Checks input data and performs estimation of lacking information for
 
 \paragraph{\hbracket{angle}}\newkw{angle}
  \slist
-   \item \Description Orientation of the local x-axis.
+   \item \Description Orientation of the azimuth.
    \item \Argument
    \item \Default
  \elist
