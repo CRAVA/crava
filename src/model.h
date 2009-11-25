@@ -27,27 +27,27 @@ public:
   Model(char * fileName);
   ~Model();
 
-  ModelSettings  * getModelSettings()         const { return modelSettings_          ;}
-  Simbox         * getTimeSimbox()            const { return timeSimbox_             ;}
-  Simbox         * getTimeSimboxConstThick()  const { return timeSimboxConstThick_   ;}
-  WellData      ** getWells()                 const { return wells_                  ;}
-  FFTGrid        * getBackAlpha()             const { return background_->getAlpha() ;}
-  FFTGrid        * getBackBeta()              const { return background_->getBeta()  ;}
-  FFTGrid        * getBackRho()               const { return background_->getRho()   ;}
-  Corr           * getCorrelations()          const { return correlations_           ;}
-  float          * getPriorFacies()           const { return priorFacies_            ;} 
-  FFTGrid       ** getPriorFaciesCubes()      const { return priorFaciesProbCubes_   ;}
-  FFTGrid       ** getSeisCubes()             const { return seisCube_               ;}
-  Wavelet       ** getWavelets()              const { return wavelet_                ;}
-  Surface       ** getFaciesEstimInterval()   const { return faciesEstimInterval_    ;}
-  float         ** getAMatrix()               const { return reflectionMatrix_       ;}
-  RandomGen      * getRandomGen()             const { return randomGen_              ;} 
-  GridMapping    * getTimeDepthMapping()      const { return timeDepthMapping_       ;}
-  GridMapping    * getTimeCutMapping()        const { return timeCutMapping_         ;}
-  bool             getVelocityFromInversion() const { return velocityFromInversion_  ;}
-  bool             getFailed()                const { return failed_                 ;}
-  void             releaseGrids();                                        // Cuts connection to SeisCube_ and  backModel_
-  void             getCorrGradIJ(float & corrGradI, float &corrGradJ) const;
+  ModelSettings               * getModelSettings()         const { return modelSettings_          ;}
+  Simbox                      * getTimeSimbox()            const { return timeSimbox_             ;}
+  Simbox                      * getTimeSimboxConstThick()  const { return timeSimboxConstThick_   ;}
+  WellData                   ** getWells()                 const { return wells_                  ;}
+  FFTGrid                     * getBackAlpha()             const { return background_->getAlpha() ;}
+  FFTGrid                     * getBackBeta()              const { return background_->getBeta()  ;}
+  FFTGrid                     * getBackRho()               const { return background_->getRho()   ;}
+  Corr                        * getCorrelations()          const { return correlations_           ;}
+  float                       * getPriorFacies()           const { return priorFacies_            ;} 
+  FFTGrid                    ** getPriorFaciesCubes()      const { return priorFaciesProbCubes_   ;}
+  FFTGrid                    ** getSeisCubes()             const { return seisCube_               ;}
+  Wavelet                    ** getWavelets()              const { return wavelet_                ;}
+  const std::vector<Surface*> & getFaciesEstimInterval()   const { return faciesEstimInterval_    ;}
+  float                      ** getAMatrix()               const { return reflectionMatrix_       ;}
+  RandomGen                   * getRandomGen()             const { return randomGen_              ;} 
+  GridMapping                 * getTimeDepthMapping()      const { return timeDepthMapping_       ;}
+  GridMapping                 * getTimeCutMapping()        const { return timeCutMapping_         ;}
+  bool                          getVelocityFromInversion() const { return velocityFromInversion_  ;}
+  bool                          getFailed()                const { return failed_                 ;}
+  void                          releaseGrids();                                        // Cuts connection to SeisCube_ and  backModel_
+  void                          getCorrGradIJ(float & corrGradI, float &corrGradJ) const;
 
 private:
   void             makeTimeSimboxes(Simbox        *& timeSimbox,
@@ -123,34 +123,35 @@ private:
                                                          char          * errText,
                                                          bool          & failed);
 
-  void             processWellLocation(FFTGrid       ** seisCube,
-                                       WellData      ** wells, 
-                                       float         ** reflectionMatrix,
-                                       Simbox         * timeSimbox,
-                                       ModelSettings  * modelSettings,
-                                       RandomGen      * randomGen); 
+  void             processWellLocation(FFTGrid                     ** seisCube, 
+                                       WellData                    ** wells, 
+                                       float                       ** reflectionMatrix,
+                                       Simbox                       * timeSimbox,
+                                       ModelSettings                * modelSettings,
+                                       const std::vector<Surface *> & interval, 
+                                       RandomGen                    * randomGen); 
 
-  void             processWavelets(Wavelet     **& wavelet,
-                                   FFTGrid      ** seisCube,
-                                   WellData     ** wells,
-                                   float        ** reflectionMatrix,
-                                   Simbox        * timeSimbox,
-                                   Surface      ** waveletEstimInterval,
-                                   ModelSettings * modelSettings, 
-                                   InputFiles    * inputFiles,
-                                   char          * errText,
-                                   bool          & failed);
+  void             processWavelets(Wavelet                    **& wavelet,
+                                   FFTGrid                     ** seisCube,
+                                   WellData                    ** wells,
+                                   float                       ** reflectionMatrix,
+                                   Simbox                       * timeSimbox,
+                                   const std::vector<Surface *> & waveletEstimInterval,    
+                                   ModelSettings                * modelSettings, 
+                                   InputFiles                   * inputFiles,
+                                   char                         * errText,
+                                   bool                         & failed);
 
-  void             processPriorFaciesProb(Surface      **& faciesEstimInterval,
-                                          float         *& priorFacies,
-                                          WellData      ** wells,
-                                          RandomGen      * randomGen,
-                                          int              nz,
-                                          float            dz,
-                                          ModelSettings  * modelSettings,
-                                          bool           & failed,
-                                          char           * errTxt,
-                                          InputFiles     * inputFiles);
+  void             processPriorFaciesProb(const std::vector<Surface *> & faciesEstimInterval,
+                                          float                       *& priorFacies,
+                                          WellData                    ** wells,
+                                          RandomGen                    * randomGen,
+                                          int                            nz,
+                                          float                          dz,
+                                          ModelSettings                * modelSettings,
+                                          bool                         & failed,
+                                          char                         * errTxt,
+                                          InputFiles                   * inputFiles);
   void             readPriorFaciesProbCubes(InputFiles      * inputFiles, 
                                             ModelSettings   * modelSettings, 
                                             FFTGrid       **& priorFaciesProbCubes,
@@ -219,8 +220,9 @@ private:
   Surface        * findCorrXYGrid(ModelSettings * modelSettings);
   int              setPaddingSize(int    nx, 
                                   double px);
-  void             loadExtraSurfaces(Surface  **& waveletEstimInterval,
-                                     Surface  **& faciesEstimInterval,
+  void             loadExtraSurfaces(std::vector<Surface *> & waveletEstimInterval,
+                                     std::vector<Surface *> & faciesEstimInterval,
+                                     std::vector<Surface *> & wellMoveInterval,
                                      Simbox     * timeSimbox,
                                      InputFiles * inputFiles,
                                      char       * errText,
@@ -292,8 +294,11 @@ private:
   FFTGrid       ** seisCube_;              ///< Seismic data cubes
   Wavelet       ** wavelet_;               ///< Wavelet for angle
   
-  Surface       ** waveletEstimInterval_;  ///< Grids giving the wavelet estimation interval.
-  Surface       ** faciesEstimInterval_;   ///< Grids giving the facies estimation intervals.
+  std::vector<Surface *> waveletEstimInterval_;  ///< Grids giving the wavelet estimation interval.
+  std::vector<Surface *> faciesEstimInterval_;   ///< Grids giving the facies estimation intervals.
+  std::vector<Surface *> wellMoveInterval_;      ///< Grids giving the facies estimation intervals.
+
+
   Surface        * correlationDirection_;  ///< Grid giving the correlation direction.
   RandomGen      * randomGen_;             ///< Random generator.
   float          * priorFacies_;

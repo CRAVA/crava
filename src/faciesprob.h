@@ -21,48 +21,48 @@ class SpatialWellFilter;
 class FaciesProb
 {
 public:
-  FaciesProb(FFTGrid           * alpha,
-             FFTGrid           * beta,
-             FFTGrid           * rho,
-             int                 nFac,
-             float               p_undef, 
-             const float       * priorFacies,
-             FFTGrid          ** priorFaciesCubes,
-             const double     ** sigmaEOrig,
-             const WellData   ** wells,
-             int                 nWells,
-             Surface          ** faciesEstimInterval,
-             const double        dz,
-             bool                relative,
-             bool                noVs);
+  FaciesProb(FFTGrid                      * alpha,
+             FFTGrid                      * beta,
+             FFTGrid                      * rho,
+             int                            nFac,
+             float                          p_undef, 
+             const float                  * priorFacies,
+             FFTGrid                     ** priorFaciesCubes,
+             const double                ** sigmaEOrig,
+             const WellData              ** wells,
+             int                            nWells,
+             const std::vector<Surface *> & faciesEstimInterval,
+             const double                   dz,
+             bool                           relative,
+             bool                           noVs);
   ~FaciesProb();
 
   FFTGrid              * getFaciesProb(int i){return faciesProb_[i];};
 
-  void                   calculateConditionalFaciesProb(WellData           ** wells, 
-                                                        int                   nwells, 
-                                                        Surface            ** faciesEstimInterval,
-                                                        const ModelSettings * modelSettings,
-                                                        const double          dz);
+  void                   calculateConditionalFaciesProb(WellData                    ** wells, 
+                                                        int                            nwells, 
+                                                        const std::vector<Surface *> & faciesEstimInterval,
+                                                        const ModelSettings          * modelSettings,
+                                                        const double                   dz);
 
 private:
   int             nFacies_;
   FFTGrid      ** faciesProb_;
 
-  void                   makeFaciesProb(int               nfac, 
-                                        FFTGrid         * postAlpha, 
-                                        FFTGrid         * postBeta, 
-                                        FFTGrid         * postRho,
-                                        const double   ** sigmaEOrig, 
-                                        const WellData ** wells, 
-                                        int               nWells,
-                                        Surface        ** faciesEstimInterval,
-                                        const double      dz,
-                                        bool              relative,
-                                        bool              noVs,
-                                        float             p_undef,
-                                        const float     * priorFacies,
-                                        FFTGrid        ** priorFaciesCubes);
+  void                   makeFaciesProb(int                            nfac, 
+                                        FFTGrid                      * postAlpha, 
+                                        FFTGrid                      * postBeta, 
+                                        FFTGrid                      * postRho,
+                                        const double                ** sigmaEOrig, 
+                                        const WellData              ** wells, 
+                                        int                            nWells,
+                                        const std::vector<Surface *> & faciesEstimInterval,
+                                        const double                   dz,
+                                        bool                           relative,
+                                        bool                           noVs,
+                                        float                          p_undef,
+                                        const float                  * priorFacies,
+                                        FFTGrid                     ** priorFaciesCubes);
 
   std::vector<FFTGrid *> makeFaciesHistAndSetPriorProb(const std::vector<float> & alpha,
                                                        const std::vector<float> & beta,
@@ -79,16 +79,16 @@ private:
                                         std::vector<FFTGrid *>   & density,
                                         Simbox                  ** volume);
 
-  void                   setNeededLogsSpatial(const WellData    ** wells,
-                                              int                  nWells,
-                                              Surface           ** faciesEstimInterval,
-                                              const double         dz,
-                                              bool                 relative,
-                                              bool                 noVs,
-                                              std::vector<float> & alphaFiltered,
-                                              std::vector<float> & betaFiltered,
-                                              std::vector<float> & rhoFiltered,
-                                              std::vector<int>   & faciesLog);
+  void                   setNeededLogsSpatial(const WellData              ** wells,
+                                              int                            nWells,
+                                              const std::vector<Surface *> & faciesEstimInterval,
+                                              const double                   dz,
+                                              bool                           relative,
+                                              bool                           noVs,
+                                              std::vector<float>           & alphaFiltered,
+                                              std::vector<float>           & betaFiltered,
+                                              std::vector<float>           & rhoFiltered,
+                                              std::vector<int>             & faciesLog);
   
   void                   calculateVariances(const std::vector<float> & alpha,
                                             const std::vector<float> & beta,

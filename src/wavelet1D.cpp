@@ -28,13 +28,13 @@
 #include "src/model.h"
 #include "src/io.h"
 
-Wavelet1D::Wavelet1D(Simbox         * simbox,
-                     FFTGrid        * seisCube,
-                     WellData      ** wells,
-                     Surface       ** estimInterval,
-                     ModelSettings  * modelSettings,
-                     float          * reflCoef,
-                     int              iAngle)
+Wavelet1D::Wavelet1D(Simbox                       * simbox,
+                     FFTGrid                      * seisCube,
+                     WellData                    ** wells,
+                     const std::vector<Surface *> & estimInterval,
+                     ModelSettings                * modelSettings,
+                     float                        * reflCoef,
+                     int                            iAngle)
   : Wavelet(1,reflCoef)
 {
   LogKit::LogFormatted(LogKit::MEDIUM,"  Estimating 1D wavelet from seismic data and (nonfiltered) blocked wells\n");
@@ -153,7 +153,7 @@ Wavelet1D::Wavelet1D(Simbox         * simbox,
       //
       // Check that data are within wavelet estimation interval
       //
-      if (estimInterval != NULL) {
+      if (estimInterval.size() > 0) {
         const double * xPos  = bl->getXpos();
         const double * yPos  = bl->getYpos();
         const double * zPos  = bl->getZpos();

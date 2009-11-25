@@ -566,8 +566,8 @@ BlockedLogs::findBlockXYZ(Simbox * simbox)
 
 //------------------------------------------------------------------------------
 void
-BlockedLogs::getVerticalTrend(const float * blockedLog,
-                              float       * trend)
+BlockedLogs::getVerticalTrend(const float   * blockedLog,
+                              float         * trend)
 {
   if (blockedLog != NULL && trend != NULL) {
     int * count = new int[nLayers_];
@@ -594,6 +594,45 @@ BlockedLogs::getVerticalTrend(const float * blockedLog,
       LogKit::LogFormatted(LogKit::LOW,"ERROR in BlockedLogs::getVerticalTrend(): Trying to use an undefined blocked log (NULL pointer)\n");
     if (trend == NULL)
       LogKit::LogFormatted(LogKit::LOW,"ERROR in BlockedLogs::getVerticalTrend(): Trying to use an undefined trend (NULL pointer)\n");
+    exit(1);
+  }    
+}
+
+
+void
+BlockedLogs::getVerticalTrendLimited(const float                  * blockedLog,
+                                     float                        * trend,
+                                     const std::vector<Surface *> & limits)
+{
+  if (blockedLog != NULL && trend != NULL) {
+    int * count = new int[nLayers_];
+    for (int k = 0 ; k < nLayers_ ; k++) {
+      trend[k] = 0.0f;
+      count[k] = 0;
+    }
+    for (int m = 0 ; m < nBlocks_ ; m++) {
+      if (blockedLog[m] != RMISSING) {
+        if(limits.size() == 0 || 
+           (limits[0]->GetZ(xpos_[m],ypos_[m]) <= zpos_[m] &&
+            limits[1]->GetZ(xpos_[m],ypos_[m]) >= zpos_[m])) {
+          trend[kpos_[m]] += blockedLog[m];
+          count[kpos_[m]]++;
+        }
+      }
+    }
+    for (int k = 0 ; k < nLayers_ ; k++) {
+      if (count[k] > 0)
+        trend[k] = trend[k]/count[k];     
+      else
+        trend[k] = RMISSING;
+    }
+    delete [] count;
+  }
+  else {
+    if (blockedLog == NULL)
+      LogKit::LogFormatted(LogKit::LOW,"ERROR in BlockedLogs::getVerticalTrendLimited(): Trying to use an undefined blocked log (NULL pointer)\n");
+    if (trend == NULL)
+      LogKit::LogFormatted(LogKit::LOW,"ERROR in BlockedLogs::getVerticalTrendLimited(): Trying to use an undefined trend (NULL pointer)\n");
     exit(1);
   }    
 }
@@ -1237,16 +1276,17 @@ void BlockedLogs::findContiniousPartOfData(bool* hasData,int nz,int &start, int 
 }
 
 
-void BlockedLogs::findOptimalWellLocation(FFTGrid                 ** seisCube,
-                                          Simbox                   * timeSimbox,
-                                          float                   ** reflCoef,
-                                          int                        nAngles,
-                                          const std::vector<float> & angleWeight,
-                                          float                      maxShift,
-                                          int                        maxOffset,
-                                          int                      & iMove,
-                                          int                      & jMove,
-                                          float                    & kMove)
+void BlockedLogs::findOptimalWellLocation(FFTGrid                   ** seisCube,
+                                          Simbox                     * timeSimbox,
+                                          float                     ** reflCoef,
+                                          int                          nAngles,
+                                          const std::vector<float>   & angleWeight,
+                                          float                        maxShift,
+                                          int                          maxOffset,
+                                          const std::vector<Surface *> limits,
+                                          int                        & iMove,
+                                          int                        & jMove,
+                                          float                      & kMove)
 {   
   int   polarity;
   int   i,j,k,l,m;
@@ -1312,9 +1352,9 @@ void BlockedLogs::findOptimalWellLocation(FFTGrid                 ** seisCube,
     jOffset[j+jMaxOffset]=j;
   }
 
-  getVerticalTrend(alpha_, alphaVert);
-  getVerticalTrend(beta_, betaVert);
-  getVerticalTrend(rho_, rhoVert);
+  getVerticalTrendLimited(alpha_, alphaVert, limits);
+  getVerticalTrendLimited(beta_, betaVert, limits);
+  getVerticalTrendLimited(rho_, rhoVert, limits);
     
   for(i = 0 ; i < nLayers_ ; i++) {
     hasData[i] = alphaVert[i] != RMISSING && betaVert[i] != RMISSING && rhoVert[i] != RMISSING;

@@ -49,6 +49,7 @@ public:
   float       ** getSyntSeismicData(void)           const { return synt_seismic_data_        ;}
   float       ** getCpp(void)                       const { return cpp_ ;}              
   void           getVerticalTrend(const float * blockedLog, float * trend);
+  void           getVerticalTrendLimited(const float * blockedLog, float * trend, const std::vector<Surface *> & limits);
   void           getVerticalTrend(const int * blockedLog,int * trend, RandomGen * random);
   void           getBlockedGrid(FFTGrid * grid, float * blockedLog, int iOffset = 0, int jOffset = 0);
 
@@ -66,17 +67,17 @@ public:
   void           fillInSeismic(float* seismicData,int start,int length,fftw_real* seis_r,int nzp) const;
   void           estimateCor(fftw_complex* var1_c,fftw_complex* var2_c,fftw_complex* ccor_1_2_c,int cnzp) const;
   void           findContiniousPartOfData(bool* hasData,int nz,int &start,int &length) const;
-  void           findOptimalWellLocation(FFTGrid                 ** seisCube,
-                                         Simbox                   * timeSimbox,
-                                         float                   ** reflCoef,  
-                                         int                        nAngles,
-                                         const std::vector<float> & angleWeight,
-                                         float                      maxShift,
-                                         int                        maxOffset,
-                                         int                      & iMove,
-                                         int                      & jMove,
-                                         float                    & kMove);
-
+  void           findOptimalWellLocation(FFTGrid                   ** seisCube,
+                                         Simbox                     * timeSimbox,
+                                         float                     ** reflCoef,
+                                         int                          nAngles,
+                                         const std::vector<float>   & angleWeight,
+                                         float                        maxShift,
+                                         int                          maxOffset,
+                                         const std::vector<Surface *> limits,
+                                         int                        & iMove,
+                                         int                        & jMove,
+                                         float                      & kMove);
 
 private:
   void           setLogFromVerticalTrend(float *& log, double * zpos, int nBlocks, 

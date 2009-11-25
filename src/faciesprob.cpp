@@ -26,20 +26,20 @@
 #include "src/simbox.h"
 #include "src/io.h"
 
-FaciesProb::FaciesProb(FFTGrid           * alpha,
-                       FFTGrid           * beta,
-                       FFTGrid           * rho,
-                       int                 nFac,
-                       float               p_undef, 
-                       const float       * priorFacies,
-                       FFTGrid          ** priorFaciesCubes,
-                       const double     ** sigmaEOrig,
-                       const WellData   ** wells,
-                       int                 nWells,
-                       Surface          ** faciesEstimInterval,
-                       const double        dz,
-                       bool                relative,
-                       bool                noVs)
+FaciesProb::FaciesProb(FFTGrid                      * alpha,
+                       FFTGrid                      * beta,
+                       FFTGrid                      * rho,
+                       int                            nFac,
+                       float                          p_undef, 
+                       const float                  * priorFacies,
+                       FFTGrid                     ** priorFaciesCubes,
+                       const double                ** sigmaEOrig,
+                       const WellData              ** wells,
+                       int                            nWells,
+                       const std::vector<Surface *> & faciesEstimInterval,
+                       const double                   dz,
+                       bool                           relative,
+                       bool                           noVs)
 {
   makeFaciesProb(nFac, alpha, beta, rho, sigmaEOrig, wells, nWells, 
                  faciesEstimInterval, dz, relative, noVs,
@@ -275,8 +275,12 @@ FaciesProb::makeFaciesDens(int nfac,
   smoother = new FFTGrid(nbinsa, nbinsb ,nbinsr ,nbinsa ,nbinsb ,nbinsr);
   smoother->fillInFromArray(smooth);
 
-  //std::string fileName = IO::makeFullFileName(IO::PathToDebug(), "smooth" + IO::SuffixAsciiFiles();
-  //smoother->writeAsciiRaw(fileName);
+  if(ModelSettings::getDebugLevel() >= 1) {
+    std::string baseName = "Smoother" + IO::SuffixAsciiFiles();
+    std::string fileName = IO::makeFullFileName(IO::PathToDebug(), baseName);
+    smoother->writeAsciiFile(fileName);
+  }
+
   smoother->fftInPlace();
 
   for(i=0;i<nFacies_;i++)
@@ -288,8 +292,8 @@ FaciesProb::makeFaciesDens(int nfac,
     if(ModelSettings::getDebugLevel() >= 1)
     {
       std::string baseName = "Dens_" + NRLib::ToString(i) + IO::SuffixAsciiFiles();
-      std::string fileName = IO::makeFullFileName(IO::PathToDebug(), fileName);
-      density[i]->writeAsciiRaw(fileName);
+      std::string fileName = IO::makeFullFileName(IO::PathToDebug(), baseName);
+      density[i]->writeAsciiFile(fileName);
     }
   }
 
@@ -301,20 +305,20 @@ FaciesProb::makeFaciesDens(int nfac,
 }
 
 
-void FaciesProb::makeFaciesProb(int nfac, 
-                                FFTGrid         * postAlpha, 
-                                FFTGrid         * postBeta, 
-                                FFTGrid         * postRho, 
-                                const double   ** sigmaEOrig, 
-                                const WellData ** wells, 
-                                int               nWells,
-                                Surface        ** faciesEstimInterval,
-                                const double      dz,
-                                bool              relative,
-                                bool              noVs,
-                                float             p_undef,
-                                const float     * priorFacies,
-                                FFTGrid        ** priorFaciesCubes)
+void FaciesProb::makeFaciesProb(int                            nfac, 
+                                FFTGrid                      * postAlpha, 
+                                FFTGrid                      * postBeta, 
+                                FFTGrid                      * postRho,
+                                const double                ** sigmaEOrig, 
+                                const WellData              ** wells, 
+                                int                            nWells,
+                                const std::vector<Surface *> & faciesEstimInterval,
+                                const double                   dz,
+                                bool                           relative,
+                                bool                           noVs,
+                                float                          p_undef,
+                                const float                  * priorFacies,
+                                FFTGrid                     ** priorFaciesCubes)
 {
   std::vector<float> alphaFiltered;
   std::vector<float> betaFiltered;
@@ -416,11 +420,11 @@ float FaciesProb::findDensity(float alpha, float beta, float rho,
     return 0.0;
 }
 
-void FaciesProb::calculateConditionalFaciesProb(WellData           ** wells, 
-                                                int                   nWells, 
-                                                Surface            ** faciesEstimInterval,
-                                                const ModelSettings * modelSettings,
-                                                const double          dz)
+void FaciesProb::calculateConditionalFaciesProb(WellData                    ** wells, 
+                                                int                            nWells, 
+                                                const std::vector<Surface *> & faciesEstimInterval,
+                                                const ModelSettings          * modelSettings,
+                                                const double                   dz)
 {
   //
   // Get the needed blocked logs
@@ -450,7 +454,7 @@ void FaciesProb::calculateConditionalFaciesProb(WellData           ** wells,
     const int * BWfacies_i = bw[i]->getFacies();
     BWfacies[i] = new int[nBlocks]; 
 
-    if (faciesEstimInterval != NULL) {
+    if (faciesEstimInterval.size() > 0) {
       const double * xPos  = bw[i]->getXpos();
       const double * yPos  = bw[i]->getYpos();
       const double * zPos  = bw[i]->getZpos();
@@ -773,16 +777,16 @@ void FaciesProb::calculateVariances(const std::vector<float> & alpha,
 }
 
 
-void FaciesProb::setNeededLogsSpatial(const WellData    ** wells,
-                                      int                  nWells,
-                                      Surface           ** faciesEstimInterval,
-                                      const double         dz,
-                                      bool                 relative,
-                                      bool                 noVs,
-                                      std::vector<float> & alphaFiltered,
-                                      std::vector<float> & betaFiltered,
-                                      std::vector<float> & rhoFiltered,
-                                      std::vector<int>   & faciesLog)
+void FaciesProb::setNeededLogsSpatial(const WellData              ** wells,
+                                      int                            nWells,
+                                      const std::vector<Surface *> & faciesEstimInterval,
+                                      const double                   dz,
+                                      bool                           relative,
+                                      bool                           noVs,
+                                      std::vector<float>           & alphaFiltered,
+                                      std::vector<float>           & betaFiltered,
+                                      std::vector<float>           & rhoFiltered,
+                                      std::vector<int>             & faciesLog)
 {
   int nData = 0;
   for(int w=0;w<nWells;w++)
@@ -823,7 +827,7 @@ void FaciesProb::setNeededLogsSpatial(const WellData    ** wells,
         else
           faciesLog[index] = bw->getFacies()[i];
 
-        if (faciesEstimInterval != NULL) {
+        if (faciesEstimInterval.size() > 0) {
           const double * xPos  = bw->getXpos();
           const double * yPos  = bw->getYpos();
           const double * zPos  = bw->getZpos();

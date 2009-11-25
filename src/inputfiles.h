@@ -20,6 +20,7 @@ public:
   const std::string              & getWaveletEstIntFile(int i)   const { return waveletEstIntFile_[i] ;}
   const std::string              & getWaveletFilterFile(int i)   const { return waveletFilterFiles_[i];}
   const std::string              & getWaveletCorrFile(int i)     const { return waveletCorrFiles_[i]  ;}
+  const std::string              & getWellMoveIntFile(int i)     const { return wellMoveIntFile_[i]   ;}
   const std::string              & getFaciesEstIntFile(int i)    const { return faciesEstIntFile_[i]  ;}     
   const std::vector<std::string> & getTimeSurfFiles(void)        const { return timeSurfFiles_        ;}
   const std::string              & getTimeSurfFile(int i)        const { return timeSurfFiles_[i]     ;}
@@ -49,6 +50,7 @@ public:
   void setWaveletEstIntFile(int i, const std::string & waveletEstIntFile) { waveletEstIntFile_[i] = waveletEstIntFile ;}
   void addWaveletFilterFile(const std::string & filterFile)               { waveletFilterFiles_.push_back(filterFile) ;} 
   void addWaveletCorrFile(const std::string & corrFile)                   { waveletCorrFiles_.push_back(corrFile)     ;} 
+  void setWellMoveIntFile(int i, const std::string & wellMoveIntFile)     { wellMoveIntFile_[i]   = wellMoveIntFile   ;}
   void setFaciesEstIntFile(int i, const std::string & faciesEstIntFile)   { faciesEstIntFile_[i]  = faciesEstIntFile  ;}
   void addTimeSurfFile(const std::string & timeSurfFile)                  { timeSurfFiles_.push_back(timeSurfFile)    ;}
   void setDepthSurfFile(int i, const std::string & depthSurfFile)         { depthSurfFiles_[i]    = depthSurfFile     ;}
@@ -76,6 +78,7 @@ private:
   std::vector<std::string>   waveletEstIntFile_;     ///< File names: Wavelet estimation interval
   std::vector<std::string>   waveletFilterFiles_;    ///< File names: Filter files for 3D wavelets
   std::vector<std::string>   waveletCorrFiles_;      ///< File names: Filter with correction factors for 3D wavelets
+  std::vector<std::string>   wellMoveIntFile_;       ///< File names: Well move interval
   std::vector<std::string>   faciesEstIntFile_;      ///< File names: Facies estimation interval
   std::vector<std::string>   timeSurfFiles_;         ///< File names: top and base time surfaces
   std::vector<std::string>   depthSurfFiles_;        ///< File names: top and base depth surfaces

@@ -11,13 +11,13 @@ public:
   void           invFFT1DInPlace();
 
   //Constructors and destructor
-  Wavelet1D(Simbox         * simbox, 
-            FFTGrid        * seisCube, 
-            WellData      ** wells, 
-            Surface       ** estimInterval,
-            ModelSettings  * modelSettings, 
-            float          * reflCoef,
-            int              iAngle);
+  Wavelet1D(Simbox                       * simbox,
+            FFTGrid                      * seisCube,
+            WellData                    ** wells,
+            const std::vector<Surface *> & estimInterval,
+            ModelSettings                * modelSettings,
+            float                        * reflCoef,
+            int                            iAngle);
   Wavelet1D(const std::string & fileName, 
             int                 fileFormat, 
             ModelSettings     * modelSettings, 

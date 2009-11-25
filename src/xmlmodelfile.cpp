@@ -279,6 +279,7 @@ XmlModelFile::parseWellData(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("maximum-merge-distance");
   legalCommands.push_back("maximum-offset");
   legalCommands.push_back("maximum-shift");
+  legalCommands.push_back("well-move-data-interval");
 
   parseLogNames(root, errTxt);
 
@@ -308,6 +309,8 @@ XmlModelFile::parseWellData(TiXmlNode * node, std::string & errTxt)
 
   if(parseValue(root, "maximum-shift", value, errTxt) == true)
     modelSettings_->setMaxWellShift(value);
+
+  parseWellMoveDataInterval(root, errTxt);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -530,6 +533,26 @@ XmlModelFile::parseAllowedParameterValues(TiXmlNode * node, std::string & errTxt
   return(true);
 }
 
+bool
+XmlModelFile::parseWellMoveDataInterval(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("well-move-data-interval");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("top-surface-file");
+  legalCommands.push_back("base-surface-file");
+
+  std::string filename;
+  if(parseFileName(root, "top-surface-file", filename, errTxt) == true)
+    inputFiles_->setWellMoveIntFile(0, filename);
+  if(parseFileName(root, "base-surface-file", filename, errTxt) == true)
+    inputFiles_->setWellMoveIntFile(1, filename);
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
 
 bool
 XmlModelFile::parseSurvey(TiXmlNode * node, std::string & errTxt)

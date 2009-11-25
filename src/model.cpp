@@ -57,8 +57,6 @@ Model::Model(char * fileName)
   seisCube_               = NULL;
   wavelet_                = NULL;
  
-  waveletEstimInterval_   = NULL;
-  faciesEstimInterval_    = NULL; 
   correlationDirection_   = NULL;     
   reflectionMatrix_       = NULL;
   randomGen_              = NULL;
@@ -197,8 +195,8 @@ Model::Model(char * fileName)
 
         processWells(wells_, timeSimbox_, timeBGSimbox, timeSimboxConstThick_, 
                      randomGen_, modelSettings_, inputFiles, errText, failedWells);
-        loadExtraSurfaces(waveletEstimInterval_, faciesEstimInterval_, timeSimbox_, 
-                          inputFiles, errText, failedExtraSurf);
+        loadExtraSurfaces(waveletEstimInterval_, faciesEstimInterval_, wellMoveInterval_, 
+                          timeSimbox_, inputFiles, errText, failedExtraSurf);
 
         bool writeBackgroundInCravaFormat = (gridFormat & IO::CRAVA) > 0 && (gridOutput & IO::BACKGROUND) > 0;
         bool writeSeismicInCravaFormat    = (gridFormat & IO::CRAVA) > 0 && (gridOutput & IO::SEISMIC_DATA) > 0;
@@ -243,7 +241,7 @@ Model::Model(char * fileName)
               if(failedSeismic == false && modelSettings_->getOptimizeWellLocation() == true)
               {
                 processWellLocation(seisCube_, wells_, reflectionMatrix_,
-                                    timeSimbox_, modelSettings_, randomGen_);
+                                    timeSimbox_, modelSettings_, wellMoveInterval_, randomGen_);
               }
             }
           }
@@ -254,7 +252,7 @@ Model::Model(char * fileName)
             // well locations need to be estimated before the background model is processed.
             //
           {
-           processReflectionMatrixFromWells(reflectionMatrix_, wells_, modelSettings_, 
+            processReflectionMatrixFromWells(reflectionMatrix_, wells_, modelSettings_, 
                                              inputFiles, errText, failedReflMat);
             if (failedReflMat == false && failedExtraSurf == false)
             {
@@ -263,7 +261,7 @@ Model::Model(char * fileName)
               if(failedSeismic == false) 
               {
                 processWellLocation(seisCube_, wells_, reflectionMatrix_,
-                                    timeSimbox_, modelSettings_, randomGen_);       
+                                    timeSimbox_, modelSettings_, wellMoveInterval_, randomGen_);       
               }
             }
             if(estimate == false || 
@@ -370,23 +368,25 @@ Model::~Model(void)
   }
 
   
-
-  if (waveletEstimInterval_ != NULL) 
-  {
+  if(waveletEstimInterval_.size() == 2) {
     if (waveletEstimInterval_[0] != NULL)
       delete waveletEstimInterval_[0];
     if (waveletEstimInterval_[1] != NULL)
       delete waveletEstimInterval_[1];
-    delete [] waveletEstimInterval_;
   }
 
-  if (faciesEstimInterval_ != NULL) 
-  {
+  if(faciesEstimInterval_.size() == 2) {
     if (faciesEstimInterval_[0] != NULL)
       delete faciesEstimInterval_[0];
     if (faciesEstimInterval_[1] != NULL)
       delete faciesEstimInterval_[1];
-    delete [] faciesEstimInterval_;
+  }
+
+  if(wellMoveInterval_.size() == 2) {
+    if (wellMoveInterval_[0] != NULL)
+      delete wellMoveInterval_[0];
+    if (wellMoveInterval_[1] != NULL)
+      delete wellMoveInterval_[1];
   }
 
   if(reflectionMatrix_ != NULL) {
@@ -2384,12 +2384,13 @@ double Model::vsvpFromWells(WellData     ** wells,
 
 
 void
-Model::processWellLocation(FFTGrid      ** seisCube, 
-                           WellData     ** wells, 
-                           float        ** reflectionMatrix,
-                           Simbox        * timeSimbox,
-                           ModelSettings * modelSettings,
-                           RandomGen     * randomGen)
+Model::processWellLocation(FFTGrid                     ** seisCube, 
+                           WellData                    ** wells, 
+                           float                       ** reflectionMatrix,
+                           Simbox                       * timeSimbox,
+                           ModelSettings                * modelSettings,
+                           const std::vector<Surface *> & interval, 
+                           RandomGen                    * randomGen)
 {
 
   Utils::writeHeader("Estimating optimized well location");
@@ -2445,7 +2446,7 @@ Model::processWellLocation(FFTGrid      ** seisCube,
     if( sum == 0 )
       continue;
 
-    bl->findOptimalWellLocation(seisCube,timeSimbox,reflectionMatrix,nAngles,angleWeight,maxShift,maxOffset,iMove,jMove,kMove);
+    bl->findOptimalWellLocation(seisCube,timeSimbox,reflectionMatrix,nAngles,angleWeight,maxShift,maxOffset,interval,iMove,jMove,kMove);
 
     deltaX = iMove*dx*cos(angle) - jMove*dy*sin(angle);
     deltaY = iMove*dx*sin(angle) + jMove*dy*cos(angle);
@@ -2458,16 +2459,16 @@ Model::processWellLocation(FFTGrid      ** seisCube,
 }
 
 void
-Model::processWavelets(Wavelet     **& wavelet,
-                       FFTGrid      ** seisCube,
-                       WellData     ** wells,
-                       float        ** reflectionMatrix,
-                       Simbox        * timeSimbox,
-                       Surface      ** waveletEstimInterval,    
-                       ModelSettings * modelSettings, 
-                       InputFiles    * inputFiles,
-                       char          * errText,
-                       bool          & failed)
+Model::processWavelets(Wavelet                    **& wavelet,
+                       FFTGrid                     ** seisCube,
+                       WellData                    ** wells,
+                       float                       ** reflectionMatrix,
+                       Simbox                       * timeSimbox,
+                       const std::vector<Surface *> & waveletEstimInterval,    
+                       ModelSettings                * modelSettings, 
+                       InputFiles                   * inputFiles,
+                       char                         * errText,
+                       bool                         & failed)
 {
   int error = 0;
   Utils::writeHeader("Processing/generating wavelets");
@@ -2794,16 +2795,16 @@ Model::getWaveletFileFormat(const std::string & fileName, char * errText)
   return fileformat;
 }
 
-void Model::processPriorFaciesProb(Surface      **& faciesEstimInterval,
-                                   float         *& priorFacies,
-                                   WellData      ** wells,
-                                   RandomGen      * randomGen,
-                                   int              nz,
-                                   float            dz,
-                                   ModelSettings  * modelSettings,
-                                   bool           & failed,
-                                   char           * errTxt,
-                                   InputFiles     * inputFiles)
+void Model::processPriorFaciesProb(const std::vector<Surface *> & faciesEstimInterval,
+                                   float                       *& priorFacies,
+                                   WellData                    ** wells,
+                                   RandomGen                    * randomGen,
+                                   int                            nz,
+                                   float                          dz,
+                                   ModelSettings                * modelSettings,
+                                   bool                         & failed,
+                                   char                         * errTxt,
+                                   InputFiles                   * inputFiles)
 {
   if (modelSettings->getEstimateFaciesProb())
   {
@@ -2865,7 +2866,7 @@ void Model::processPriorFaciesProb(Surface      **& faciesEstimInterval,
             //
             // Set facies data outside facies estimation interval IMISSING
             //
-            if (faciesEstimInterval != NULL) {
+            if (faciesEstimInterval.size() > 0) {
               const double * xPos  = bl->getXpos();
               const double * yPos  = bl->getYpos();
               const double * zPos  = bl->getZpos();
@@ -3086,8 +3087,9 @@ void Model::readPriorFaciesProbCubes(InputFiles      * inputFiles,
 
 
 void
-Model::loadExtraSurfaces(Surface  **& waveletEstimInterval,
-                         Surface  **& faciesEstimInterval,
+Model::loadExtraSurfaces(std::vector<Surface *> & waveletEstimInterval,
+                         std::vector<Surface *> & faciesEstimInterval,
+                         std::vector<Surface *> & wellMoveInterval,
                          Simbox     * timeSimbox,
                          InputFiles * inputFiles,
                          char       * errText,
@@ -3106,7 +3108,7 @@ Model::loadExtraSurfaces(Surface  **& waveletEstimInterval,
   const std::string & baseWEI = inputFiles->getWaveletEstIntFile(1);
 
   if (topWEI != "" && baseWEI != "") {  
-    waveletEstimInterval = new Surface*[2];
+    waveletEstimInterval.resize(2);
     try {
       if (NRLib::IsNumber(topWEI)) 
         waveletEstimInterval[0] = new Surface(x0,y0,lx,ly,nx,ny,atof(topWEI.c_str()));
@@ -3140,7 +3142,7 @@ Model::loadExtraSurfaces(Surface  **& waveletEstimInterval,
   const std::string & baseFEI = inputFiles->getFaciesEstIntFile(1);
 
   if (topFEI != "" && baseFEI != "") {  
-    faciesEstimInterval = new Surface*[2];
+    faciesEstimInterval.resize(2);
     try {
       if (NRLib::IsNumber(topFEI)) 
         faciesEstimInterval[0] = new Surface(x0,y0,lx,ly,nx,ny,atof(topFEI.c_str()));
@@ -3160,6 +3162,40 @@ Model::loadExtraSurfaces(Surface  **& waveletEstimInterval,
       else { 
         Surface tmpSurf = NRLib::ReadStormSurf(baseFEI);
         faciesEstimInterval[1] = new Surface(tmpSurf);
+      }
+    }
+    catch (NRLib::Exception & e) {
+      sprintf(errText, "%s%s\n", errText,e.what());
+      failed = true;
+    }
+  }
+  //
+  // Get well move interval
+  //
+  const std::string & topWMI  = inputFiles->getWellMoveIntFile(0);
+  const std::string & baseWMI = inputFiles->getWellMoveIntFile(1);
+
+  if (topWMI != "" && baseWMI != "") {  
+    wellMoveInterval.resize(2);
+    try {
+      if (NRLib::IsNumber(topWMI)) 
+        wellMoveInterval[0] = new Surface(x0,y0,lx,ly,nx,ny,atof(topWMI.c_str()));
+      else { 
+        Surface tmpSurf = NRLib::ReadStormSurf(topWMI);
+        wellMoveInterval[0] = new Surface(tmpSurf);
+      }
+    }
+    catch (NRLib::Exception & e) {
+      sprintf(errText, "%s%s\n", errText,e.what());
+      failed = true;
+    }
+
+    try {
+      if (NRLib::IsNumber(baseWMI)) 
+        wellMoveInterval[1] = new Surface(x0,y0,lx,ly,nx,ny,atof(baseWMI.c_str()));
+      else { 
+        Surface tmpSurf = NRLib::ReadStormSurf(baseWMI);
+        wellMoveInterval[1] = new Surface(tmpSurf);
       }
     }
     catch (NRLib::Exception & e) {

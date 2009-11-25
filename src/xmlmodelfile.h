@@ -31,8 +31,8 @@ private:
   bool   parseLogNames(TiXmlNode * node, std::string & errTxt);
   bool   parseWell(TiXmlNode * node, std::string & errTxt);
   bool   parseOptimizeLocation(TiXmlNode * node, std::string & errTxt);
-
   bool   parseAllowedParameterValues(TiXmlNode * node, std::string & errTxt);
+  bool   parseWellMoveDataInterval(TiXmlNode * node, std::string & errTxt);
 
   bool parseSurvey(TiXmlNode * node, std::string & errTxt);
   bool   parseAngleGather(TiXmlNode * node, std::string & errTxt);

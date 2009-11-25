@@ -11,6 +11,7 @@ InputFiles::InputFiles(void)
     waveletFiles_(0),        
     waveletEstIntFile_(2),  
     faciesEstIntFile_(2),   
+    wellMoveIntFile_(2),   
     timeSurfFiles_(0),       
     depthSurfFiles_(2),      
     velocityField_(""),
@@ -52,6 +53,8 @@ InputFiles::addInputPathAndCheckFiles()
     errTxt += addPathAndCheck(waveletEstIntFile_[i]);
   for(i=0;i<faciesEstIntFile_.size();i++)
     errTxt += addPathAndCheck(faciesEstIntFile_[i]);
+  for(i=0;i<wellMoveIntFile_.size();i++)
+    errTxt += addPathAndCheck(wellMoveIntFile_[i], true);
   for(i=0;i<timeSurfFiles_.size();i++)
     errTxt += addPathAndCheck(timeSurfFiles_[i], true);
   for(i=0;i<depthSurfFiles_.size();i++)

@@ -87,7 +87,7 @@ Estimation: Checks input data and performs estimation of lacking information for
  \slist
    \item \Description Should we generate synthetic seismic from the inverted data?
    \item \Argument 'yes' or 'no'
-   \item \Default 
+   \item \Default
  \elist
 
 
@@ -333,7 +333,7 @@ Estimation: Checks input data and performs estimation of lacking information for
 
 \subsubsection{\hbracket{reference-time-surface}} \newkw{reference-time-surface}
  \slist
-   \item \Description Filename for the time surface corresponding to the reference depth. 
+   \item \Description Filename for the time surface corresponding to the reference depth.
    \item \Argument File name
    \item \Default
 \elist
@@ -1348,6 +1348,29 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Argument Value
    \item \Default 11.0
  \elist
+
+\subsection{\hbracket{well-move-data-interval}}\newkw{well-move-data-interval}
+ \slist
+   \item \Description Defines an interval for estimation of facies probability given elastic parameters.
+   \item \Argument Elements defining estimation interval
+   \item \Default Everywhere facies and elastic logs are present.
+ \elist
+
+\subsubsection{\hbracket{top-surface-file}}\rnewkw{top-surface-file}{top-surface-file2}
+ \slist
+   \item \Description File name for storm surface file giving the top of the estimation interval.
+   \item \Argument File name
+   \item \Default
+ \elist
+
+\subsubsection{\hbracket{base-surface-file}}\rnewkw{base-surface-file}{base-surface-file2}
+ \slist
+   \item \Description File name for storm surface file giving the base of the estimation interval.
+   \item \Argument File name
+   \item \Default
+ \elist
+
+
 
 \section{\hbracket{prior-model}}\newkw{prior-model}
  \slist
