@@ -319,12 +319,15 @@ Model::Model(char * fileName)
                                  inputFiles);
         }
 
-        if(((modelSettings_->getWellOutputFlag() & IO::WELLS) > 0) ||
-           (estimate == true && modelSettings_->getEstimateBackground() == true))
+        if (!failedWells)
         {
-           writeWells(wells_, modelSettings_);
+          if(((modelSettings_->getWellOutputFlag() & IO::WELLS) > 0) ||
+             (estimate == true && modelSettings_->getEstimateBackground() == true))
+          {
+            writeWells(wells_, modelSettings_);
+          }
         }
-      }
+    }
     }
 
     failedLoadingModel = failedSimbox  || failedSeismic   || failedPriorCorr  ||
