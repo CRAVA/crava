@@ -13,9 +13,9 @@
 #include "lib/global_def.h"
 #include "lib/lib_misc.h"
 #include "lib/lib_matr.h"
-#include "lib/sgri.h"
 
 #include "nrlib/iotools/logkit.hpp"
+#include "nrlib/surface/surfaceio.hpp"
 
 #include "src/modelsettings.h"
 #include "src/blockedlogs.h"
@@ -29,171 +29,43 @@
 #include "src/io.h"
 #include "src/waveletfilter.h"
 
-Wavelet3D::Wavelet3D(const std::string & fileName, 
-                     ModelSettings     * modelSettings, 
-                     Simbox            * simBox, 
-                     float               theta, 
-                     float             * reflCoef,  
-                     int               & errCode, 
-                     char              * errText)
-: Wavelet(modelSettings, 3, reflCoef)
+Wavelet3D::Wavelet3D(const std::string   & filterFile,
+                     const std::string   & refTimeFile,
+                     ModelSettings       * /*modelSettings*/,
+                     WellData           ** /*wells*/,
+                     int                   /*angle_index*/,
+                     Simbox              * simBox,
+                     float                 theta,
+                     int                 & errCode,
+                     char                * errText)
+  : Wavelet(3),
+    wavelet1D_(NULL),
+    filter_(filterFile, errCode, errText)
 {
-  nx_ = simBox->getnx();
-  ny_ = simBox->getny();
-  nz_ = simBox->getnz();
-  dx_ = static_cast<float>(simBox->getdx());
-  dy_ = static_cast<float>(simBox->getdy());
-  dz_ = static_cast<float>(simBox->getdz());
+//  float v0 = modelSettings->getAverageVelocity();
   theta_ = theta;
   norm_ = RMISSING;
 
-  double xPadFac = modelSettings->getXPadFac();
-  nxp_   =  findClosestFactorableNumber( static_cast<int>(ceil( static_cast<double>(nx_)*(1.0+xPadFac) )) );
-  double yPadFac = modelSettings->getYPadFac();
-  nyp_   =  findClosestFactorableNumber( static_cast<int>(ceil( static_cast<double>(ny_)*(1.0+yPadFac) )) );
-  double zPadFac = modelSettings->getZPadFac();
-  nzp_   =  findClosestFactorableNumber( static_cast<int>(ceil( static_cast<double>(nz_)*(1.0+zPadFac) )) );
-  
-  ampCube_ = FFTGrid(nx_, ny_, nz_, nxp_, nyp_, nzp_);
-  ampCube_.createRealGrid();
-  ampCube_.setType(FFTGrid::COVARIANCE);
-  ampCube_.setAccessMode(FFTGrid::RANDOMACCESS);
+  NRLib::RegularSurfaceRotated<double> t0surface = NRLib::ReadSgriSurf(refTimeFile);
 
-  inFFTorder_ = true;
-  readtype_ = Wavelet::SGRI;
-  Sgri *sgri = new Sgri(fileName.c_str(), errText, errCode);
-  
-  if (errCode == 0) {
-    float xLim = 0.5f * dx_ * nxp_;
-    float yLim = 0.5f * dy_ * nyp_;
-    float zLim = 0.5f * dz_ * nzp_;
-    int axisOk = sgri->sizeOk(xLim, yLim, zLim);
-    if (axisOk == 1) {
-      sprintf(errText,"%s3-D wavelet read from file %s has too big size in x-direction compared to padded fft-grid.\n",errText,fileName.c_str()); 
-      errCode=1;
-    }
-    else if (axisOk == 2) {
-      sprintf(errText,"%s3-D wavelet read from file %s has too big size in y-direction compared to padded fft-grid.\n",errText,fileName.c_str()); 
-      errCode=1;
-    }
-    else if (axisOk == 3) {
-      sprintf(errText,"%s3-D wavelet read from file %s has too big size in x- and y-direction compared to padded fft-grid.\n",errText,fileName.c_str()); 
-      errCode=1;
-    }
-    else if (axisOk == 4) {
-      sprintf(errText,"%s3-D wavelet read from file %s has too big size in z-direction compared to padded fft-grid.\n",errText,fileName.c_str()); 
-      errCode=1;
-    }
-    else if (axisOk == 5) {
-      sprintf(errText,"%s3-D wavelet read from file %s has too big size in x- and z-direction compared to padded fft-grid.\n",errText,fileName.c_str()); 
-      errCode=1;
-    }
-    else if (axisOk == 6) {
-      sprintf(errText,"%s3-D wavelet read from file %s has too big size in y- and z-direction compared to padded fft-grid.\n",errText,fileName.c_str()); 
-      errCode=1;
-    }
-    else if (axisOk == 7) {
-      sprintf(errText,"%s3-D wavelet read from file %s has too big size in x-, y- and z-direction compared to padded fft-grid.\n",errText,fileName.c_str()); 
-      errCode=1;
-    }
-    if (axisOk != 0) {
-      sprintf(errText,"%s\nToo big wavelet grid read from file  %s.\n",errText, fileName.c_str());
-      errCode=1;
-    }
-  }
-
-  if (errCode == 0) {
-    int i,j,k;
-    float x, y, z, value;
-    for (k=0; k<=nzp_/2; k++) {
-      z = k * dz_;
-      for (j=0; j<=nyp_/2; j++) {
-        y = j * dy_;
-        for (i=0; i<=nxp_/2; i++) {
-          x = i * dx_;
-          value = sgri->getWaveletValue(x, y, z);
-          ampCube_.setRealValue(i, j, k, value, true);
-        }
-        for (i=(nxp_/2)+1; i<nxp_; i++) {
-          x = (i-nxp_) * dx_;
-          value = sgri->getWaveletValue(x, y, z);
-          ampCube_.setRealValue(i, j, k, value, true);
-        }
-      }
-      for (j=(nyp_/2)+1; j<nyp_; j++) {
-        y = (j-nyp_) * dy_;
-        for (i=0; i<=nxp_/2; i++) {
-          x = i * dx_;
-          value = sgri->getWaveletValue(x, y, z);
-          ampCube_.setRealValue(i, j, k, value, true);
-        }
-        for (i=(nxp_/2)+1; i<nxp_; i++) {
-          x = (i-nxp_) * dx_;
-          value = sgri->getWaveletValue(x, y, z);
-          ampCube_.setRealValue(i, j, k, value, true);
-        } 
-      }
-    }
-    for (k=(nzp_/2)+1; k<nzp_; k++) {
-      z = (k-nzp_) * dz_;
-      for (j=0; j<=nyp_/2; j++) {
-        y = j * dy_;
-        for (i=0; i<=nxp_/2; i++) {
-          x = i * dx_;
-          value = sgri->getWaveletValue(x, y, z);
-          ampCube_.setRealValue(i, j, k, value, true);
-        }
-        for (i=(nxp_/2)+1; i<nxp_; i++) {
-          x = (i-nxp_) * dx_;
-          value = sgri->getWaveletValue(x, y, z);
-          ampCube_.setRealValue(i, j, k, value, true);
-        }
-      }
-      for (j=(nyp_/2)+1; j<nyp_; j++) {
-        y = (j-nyp_) * dy_;
-        for (i=0; i<=nxp_/2; i++) {
-          x = i * dx_;
-          value = sgri->getWaveletValue(x, y, z);
-          ampCube_.setRealValue(i, j, k, value, true);
-        }
-        for (i=(nxp_/2)+1; i<nxp_; i++) {
-          x = (i-nxp_) * dx_;
-          value = sgri->getWaveletValue(x, y, z);
-          ampCube_.setRealValue(i, j, k, value, true);
-        } 
-      }
-    }
-    waveletLength_ = getWaveletLengthF();
-    
-    //For debugging purposes, the shifted FFTGrid is written to file to compare to input sgri
-    FFTGrid *shiftAmp = new FFTGrid(nx_, ny_, nz_, nx_, ny_, nz_);
-    shiftAmp->fillInConstant(0.0);
-    shiftAmp->setType(FFTGrid::DATA);
-    shiftAmp->setAccessMode(FFTGrid::RANDOMACCESS);
-
-    shiftFFTGrid(shiftAmp);
-    char fName[200];
-    int thetaDeg = int ( theta/PI*180 + 0.5 );
-    sprintf(fName, "WL_as_shiftedFFTGrid_%d", thetaDeg);
-    std::string sgriLabel("3D Wavelet as shifted FFT-grid for incidence angle ");
-    sgriLabel += NRLib::ToString(thetaDeg);
-    shiftAmp->writeFile(fName, IO::PathToWavelets(), simBox, sgriLabel);
-    delete shiftAmp;
-    //End for debugging purposes
-  }
-
-  delete sgri;
+  findTimeGradientSurface(t0surface,
+                          simBox,
+                          errCode,
+                          errText);
 }
 
-Wavelet3D::Wavelet3D(const Wavelet1D     & wavelet1d,
-                     const WaveletFilter & filter,
+
+Wavelet3D::Wavelet3D(Wavelet1D           * wavelet1D,
+                     const std::string   & filterFile,
                      ModelSettings       * modelSettings,
                      int                   angle_index,
                      Simbox              * simBox,
                      float                 theta,
                      int                 & errCode,
                      char                * errText)
-  : Wavelet(3)
+  : Wavelet(3),
+    wavelet1D_(wavelet1D),
+    filter_(filterFile, errCode, errText)
 {
   float v0 = modelSettings->getAverageVelocity();
   nx_ = simBox->getnx();
@@ -202,8 +74,6 @@ Wavelet3D::Wavelet3D(const Wavelet1D     & wavelet1d,
   dx_ = static_cast<float>(simBox->getdx());
   dy_ = static_cast<float>(simBox->getdy());
   dz_ = static_cast<float>(simBox->getdz() * 0.5f * v0 * 0.001f);
-  theta_ = theta;
-  norm_ = RMISSING;
 
   double xPadFac = modelSettings->getXPadFac();
   nxp_   =  findClosestFactorableNumber( static_cast<int>(ceil( static_cast<double>(nx_)*(1.0+xPadFac) )) );
@@ -212,6 +82,15 @@ Wavelet3D::Wavelet3D(const Wavelet1D     & wavelet1d,
   double zPadFac = modelSettings->getZPadFac();
   nzp_   =  findClosestFactorableNumber( static_cast<int>(ceil( static_cast<double>(nz_)*(1.0+zPadFac) )) );
   
+  theta_ = theta;
+  norm_ = RMISSING;
+
+  wavelet1D_->resample(static_cast<float>(simBox->getdz()), 
+                      nz_, 
+                      static_cast<float> (zPadFac), 
+                      theta);
+  wavelet1D_->fft1DInPlace();
+    
   ampCube_ = FFTGrid(nx_, ny_, nz_, nxp_, nyp_, nzp_);
   ampCube_.createComplexGrid();
   ampCube_.setType(FFTGrid::COVARIANCE);
@@ -236,10 +115,10 @@ Wavelet3D::Wavelet3D(const Wavelet1D     & wavelet1d,
         radius = sqrt(kx*kx + ky*ky + kz*kz);
         phi = findPhi(kx, ky);
         psi = findPsi(radius, kz);
-        alpha1 = static_cast<float> (filter.getAlpha1(phi, psi));
-        hAlpha = static_cast<float> (filter.getHalpha(phi, psi));
+        alpha1 = static_cast<float> (filter_.getAlpha1(phi, psi));
+        hAlpha = static_cast<float> (filter_.getHalpha(phi, psi));
         omega = (0.5f * v0 * radius) / stretch;
-        cValue = findWLvalue(wavelet1d, omega);
+        cValue = findWLvalue(wavelet1D_, omega);
         alpha2 = exp(minus2pi * omega * hAlpha);
         cValue.re *= static_cast<fftw_real> (alpha1 * alpha2);
         setCAmp(cValue,k,j,i);
@@ -252,10 +131,10 @@ Wavelet3D::Wavelet3D(const Wavelet1D     & wavelet1d,
         radius = sqrt(kx*kx + ky*ky + kz*kz);
         phi = findPhi(kx, ky);
         psi = findPsi(radius, kz);
-        alpha1 = static_cast<float> (filter.getAlpha1(phi, psi));
-        hAlpha = static_cast<float> (filter.getHalpha(phi, psi));
+        alpha1 = static_cast<float> (filter_.getAlpha1(phi, psi));
+        hAlpha = static_cast<float> (filter_.getHalpha(phi, psi));
         omega = (0.5f * v0 * radius) / stretch;
-        cValue = findWLvalue(wavelet1d, omega);
+        cValue = findWLvalue(wavelet1D_, omega);
         alpha2 = exp(minus2pi * omega * hAlpha);
         cValue.re *= static_cast<fftw_real> (alpha1 * alpha2);
         setCAmp(cValue,k,j,i);
@@ -271,10 +150,10 @@ Wavelet3D::Wavelet3D(const Wavelet1D     & wavelet1d,
         radius = sqrt(kx*kx + ky*ky + kz*kz);
         phi = findPhi(kx, ky);
         psi = findPsi(radius, kz);
-        alpha1 = static_cast<float> (filter.getAlpha1(phi, psi));
-        hAlpha = static_cast<float> (filter.getHalpha(phi, psi));
+        alpha1 = static_cast<float> (filter_.getAlpha1(phi, psi));
+        hAlpha = static_cast<float> (filter_.getHalpha(phi, psi));
         omega = (0.5f * v0 * radius) / stretch;
-        cValue = findWLvalue(wavelet1d, omega);
+        cValue = findWLvalue(wavelet1D_, omega);
         alpha2 = exp(minus2pi * omega * hAlpha);
         cValue.re *= static_cast<fftw_real> (alpha1 * alpha2);
         setCAmp(cValue,k,j,i);
@@ -287,10 +166,10 @@ Wavelet3D::Wavelet3D(const Wavelet1D     & wavelet1d,
         radius = sqrt(kx*kx + ky*ky + kz*kz);
         phi = findPhi(kx, ky);
         psi = findPsi(radius, kz);
-        alpha1 = static_cast<float> (filter.getAlpha1(phi, psi));
-        hAlpha = static_cast<float> (filter.getHalpha(phi, psi));
+        alpha1 = static_cast<float> (filter_.getAlpha1(phi, psi));
+        hAlpha = static_cast<float> (filter_.getHalpha(phi, psi));
         omega = (0.5f * v0 * radius) / stretch;
-        cValue = findWLvalue(wavelet1d, omega);
+        cValue = findWLvalue(wavelet1D_, omega);
         alpha2 = exp(minus2pi * omega * hAlpha);
         cValue.re *= static_cast<fftw_real> (alpha1 * alpha2);
         setCAmp(cValue,k,j,i);
@@ -388,12 +267,13 @@ Wavelet3D::Wavelet3D(Wavelet * wavelet)
 {
   assert(wavelet->getDim() == 3);
   assert(wavelet->getIsReal());
-  nx_ = wavelet->getNx();
-  ny_ = wavelet->getNy();
-  nxp_ = wavelet->getNxp();
-  nyp_ = wavelet->getNyp();
-  dx_ = wavelet->getDx();
-  dy_ = wavelet->getDy();
+  nx_         = wavelet->getNx();
+  ny_         = wavelet->getNy();
+  nxp_        = wavelet->getNxp();
+  nyp_        = wavelet->getNyp();
+  dx_         = wavelet->getDx();
+  dy_         = wavelet->getDy();
+
   ampCube_ = FFTGrid(nx_, ny_, nz_, nxp_, nyp_, nzp_);
   ampCube_.createRealGrid();
   ampCube_.setType(FFTGrid::COVARIANCE);
@@ -406,6 +286,34 @@ Wavelet3D::Wavelet3D(Wavelet * wavelet)
       }
     }
   }
+}
+
+Wavelet3D::Wavelet3D(Wavelet3D *wavelet)
+  : Wavelet(wavelet, 3),
+    wavelet1D_(wavelet->getWavelet1D())
+{
+  assert(wavelet->getDim() == 3);
+  assert(wavelet->getIsReal());
+  nx_         = wavelet->getNx();
+  ny_         = wavelet->getNy();
+  nxp_        = wavelet->getNxp();
+  nyp_        = wavelet->getNyp();
+  dx_         = wavelet->getDx();
+  dy_         = wavelet->getDy();
+
+  ampCube_ = FFTGrid(nx_, ny_, nz_, nxp_, nyp_, nzp_);
+  ampCube_.createRealGrid();
+  ampCube_.setType(FFTGrid::COVARIANCE);
+  ampCube_.setAccessMode(FFTGrid::RANDOMACCESS);
+  for (int k=0; k<nzp_; k++) {
+    for (int j=0; j<nyp_; j++) {
+      for (int i=0; i<nxp_; i++) {
+        float rvalue = wavelet->getRAmp(k,j,i);
+        ampCube_.setRealValue(i,j,k,rvalue,true);
+      }
+    }
+  }
+  filter_     = wavelet->getFilter();
 }
 
 double Wavelet3D::findPhi(float kx, float ky) const
@@ -442,27 +350,27 @@ double Wavelet3D::findPsi(float radius, float kz) const
   return(psi);
 }
 
-fftw_complex Wavelet3D::findWLvalue(const Wavelet1D & wavelet1d,
+fftw_complex Wavelet3D::findWLvalue(Wavelet1D       * wavelet1d,
                                     float             omega) const
 {
-  int lowindex = static_cast<int> (omega / wavelet1d.getDz());
+  int lowindex = static_cast<int> (omega / wavelet1d->getDz());
   fftw_complex c_low, c_high;
-  if (lowindex >= wavelet1d.getNz()) {
+  if (lowindex >= wavelet1d->getNz()) {
     c_low.re = 0.0; 
     c_low.im = 0.0;
     c_high.re = 0.0;
     c_high.im = 0.0;
   }
-  else if (lowindex == wavelet1d.getNz()-1) {
+  else if (lowindex == wavelet1d->getNz()-1) {
     c_high.re = 0.0;
     c_high.im = 0.0;
-    c_low = wavelet1d.getCAmp(lowindex);
+    c_low = wavelet1d->getCAmp(lowindex);
   }
   else {
-    c_low = wavelet1d.getCAmp(lowindex);
-    c_high = wavelet1d.getCAmp(lowindex + 1);
+    c_low = wavelet1d->getCAmp(lowindex);
+    c_high = wavelet1d->getCAmp(lowindex + 1);
   }
-  float fac = omega - lowindex * wavelet1d.getDz();
+  float fac = omega - lowindex * wavelet1d->getDz();
   fftw_complex cValue;
   cValue.re = (1-fac) * c_low.re + fac * c_high.re;
   cValue.im = (1-fac) * c_low.im + fac * c_high.im;
@@ -470,6 +378,69 @@ fftw_complex Wavelet3D::findWLvalue(const Wavelet1D & wavelet1d,
   return cValue;
 }
 
+
+bool 
+Wavelet3D::findTimeGradientSurface(const NRLib::RegularSurfaceRotated<double>   & rot_surface,
+                                   Simbox                                       * simbox,
+                                   int                                          & errCode,
+                                   char                                         * errText)
+{
+  double x, y;
+  bool inside = true;
+  unsigned int nx = static_cast<unsigned int> (simbox->getnx());
+  unsigned int ny = static_cast<unsigned int> (simbox->getny());
+  double dx = simbox->getdx();
+  double dy = simbox->getdy();
+
+  simbox->getXYCoord(0,0,x,y);
+  if (rot_surface.IsInsideSurface(x,y)) {
+    simbox->getXYCoord(0,ny-1,x,y);
+    if (rot_surface.IsInsideSurface(x,y)) {
+      simbox->getXYCoord(nx-1,0,x,y);
+      if (rot_surface.IsInsideSurface(x,y)) {
+        simbox->getXYCoord(nx-1,ny-1,x,y);
+        if (!rot_surface.IsInsideSurface(x,y))
+          inside = false;
+      }
+      else
+        inside = false;
+    }
+    else
+      inside = false;
+  }
+  else
+    inside = false;
+
+  if (inside) {
+    x_gradient_.Resize(nx, ny, RMISSING);
+    y_gradient_.Resize(nx, ny, RMISSING);
+    for (unsigned int i = nx-1; i >= 0; i++) {
+      for (unsigned int j = ny-1; j >= 0; j++) {
+        simbox->getXYCoord(i,j,x,y);
+        double z_high = rot_surface.GetZInside(x,y);
+        simbox->getXYCoord(i,j-1,x,y); //XYCoord is ok even if j = -1, but point is outside simbox
+        double z_low = rot_surface.GetZInside(x,y);
+        if (!rot_surface.IsMissing(z_low))
+          y_gradient_(i,j) = (z_high - z_low) / dy;
+        else
+          y_gradient_(i,j) = y_gradient_(i,j+1);
+
+        simbox->getXYCoord(i-1,j,x,y); //XYCoord is ok even if j = -1, but point is outside simbox
+        z_low = rot_surface.GetZInside(x,y);
+        if (!rot_surface.IsMissing(z_low))
+          x_gradient_(i,j) = (z_high - z_low) / dx;
+        else
+          x_gradient_(i,j) = x_gradient_(i+1,j);
+      }
+    }
+  }
+  else {
+    sprintf(errText, "%sSimbox is not completely inside reference time surface in (x,y).\n", errText);
+    errCode = 1;
+  }
+
+  return(inside);
+}
 
 void           
 Wavelet3D::fft1DInPlace()

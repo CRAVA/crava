@@ -312,7 +312,7 @@ Model::Model(char * fileName)
                                  wells_,
                                  randomGen_,
                                  timeSimbox_->getnz(),
-                                 timeSimbox_->getdz(),
+                                 static_cast<float> (timeSimbox_->getdz()),
                                  modelSettings_,
                                  failedPriorFacies,
                                  errText,
@@ -2548,96 +2548,61 @@ Model::processWavelets(Wavelet                    **& wavelet,
                                    reflectionMatrix[i],
                                    i);
       else {
-        //Must read the reference time surface here
-        sprintf(errText, "%s Estimation of 3D Wavelet is not implemented yet.\n", errText);
-        error++;
+        wavelet[i] = new Wavelet3D(inputFiles->getWaveletFilterFile(i),
+                                   inputFiles->getRefSurfaceFile(),
+                                   modelSettings,
+                                   wells,
+                                   i,
+                                   timeSimbox,
+                                   angle,
+                                   error,
+                                   errText);
       }
     }
-    else //Not estimation modus
-    {
+    else { //Not estimation modus
       const std::string & waveletFile = inputFiles->getWaveletFile(i);
-
       int fileFormat = getWaveletFileFormat(waveletFile,errText);
-      if(fileFormat < 0)
-      {
+      if(fileFormat < 0) {
         sprintf(errText, "%s Unknown file format of file  %s.\n", errText, waveletFile.c_str());
         error++;
       }
       else {
-/*        if (fileFormat == Wavelet::SGRI) {
-          if (modelSettings->getWaveletDim(i) == Wavelet::THREE_D) {
-            const std::string & filterFile = inputFiles->getWaveletFilterFile(i);
-            if (strcmp(filterFile.c_str(), "") != 0) {
-              LogKit::LogFormatted(LogKit::LOW,"\n\nWARNING: The filter file for wavelet-3d is not used \n");
-              LogKit::LogFormatted(LogKit::LOW,"         since a complete 3D-wavelet is given in " + waveletFile+ "\n");
-            }
-            wavelet[i] = new Wavelet3D(waveletFile, 
-                                       modelSettings, 
-                                       timeSimbox, 
-                                       angle, 
-                                       reflectionMatrix[i],
-                                       error, 
+        if (modelSettings->getWaveletDim(i) == Wavelet::ONE_D) {
+          wavelet[i] = new Wavelet1D(waveletFile, 
+                                     fileFormat, 
+                                     modelSettings, 
+                                     reflectionMatrix[i],
+                                     error, 
+                                     errText);
+          if (error == 0) {
+            wavelet[i]->resample(static_cast<float>(timeSimbox->getdz()), 
+                                 timeSimbox->getnz(), 
+                                 static_cast<float>(modelSettings->getZPadFac()), 
+                                 angle);
+          }
+        }
+        else { //3D-wavelet constructed by 1D wavelet and filter
+          Wavelet1D *waveletFromFile = new Wavelet1D(waveletFile, 
+                                                     fileFormat, 
+                                                     modelSettings, 
+                                                     reflectionMatrix[i],
+                                                     error, 
+                                                     errText);
+          if (error == 0) 
+            wavelet[i] = new Wavelet3D(waveletFromFile,
+                                       inputFiles->getWaveletFilterFile(i),
+                                       modelSettings,
+                                       i,
+                                       timeSimbox,
+                                       angle,
+                                       error,
                                        errText);
-          }
-          else {
-            sprintf(errText, "%s File format Sgri used in file %s when command <wavelet-3d> is not given.\n", 
-                    errText, waveletFile.c_str());
-            error++;
-          }
-        } //Not SGRI-format
-        else { */
-          if (modelSettings->getWaveletDim(i) == Wavelet::ONE_D) {
-            wavelet[i] = new Wavelet1D(waveletFile, 
-                                       fileFormat, 
-                                       modelSettings, 
-                                       reflectionMatrix[i],
-                                       error, 
-                                       errText);
-            if (error == 0) {
-              wavelet[i]->resample(static_cast<float>(timeSimbox->getdz()), timeSimbox->getnz(), 
-                                   static_cast<float>(modelSettings->getZPadFac()), angle);
-            }
-          }
-          else { //3D-wavelet constructed by 1D wavelet and filter
-            const std::string & filterFile = inputFiles->getWaveletFilterFile(i);
-            if (strcmp(filterFile.c_str(), "") != 0) {
-              WaveletFilter filter(filterFile,
-                                   error,
-                                   errText);
-              Wavelet1D waveletFromFile = Wavelet1D(waveletFile, 
-                                                    fileFormat, 
-                                                    modelSettings, 
-                                                    reflectionMatrix[i],
-                                                    error, 
-                                                    errText);
-              if (error == 0) {
-                waveletFromFile.resample(static_cast<float>(timeSimbox->getdz()), 
-                                         timeSimbox->getnz(), 
-                                         static_cast<float>(modelSettings->getZPadFac()), 
-                                         angle);
-                waveletFromFile.fft1DInPlace();
-                wavelet[i] = new Wavelet3D(waveletFromFile,
-                                           filter,
-                                           modelSettings,
-                                           i,
-                                           timeSimbox,
-                                           angle,
-                                           error,
-                                           errText);
-              }
-            }
-            else {
-              sprintf(errText, "%s A 1D-Wavelet given in file %s in command <wavelet-3d>, but no filter-file-name given.\n", 
-                      errText, waveletFile.c_str());
-              error++;
-            }
-          }
-//      }
+        }
       }
     }
 
-    if ((wavelet[i]->getDim() == 3) && !timeSimbox->getIsConstantThick()) {
-      sprintf(errText, "%s Simbox must have constant thickness when 3D wavelet.\n", errText);
+    if ((modelSettings->getEstimationMode() == false) && (wavelet[i]->getDim() == 3) && !timeSimbox->getIsConstantThick()) {
+      sprintf(errText, "%s Simbox must have constant thickness if forward modelling or inversion when 3D wavelet.\n", errText);
       error++;
     }
 
@@ -3039,7 +3004,7 @@ void Model::readPriorFaciesProbCubes(InputFiles      * inputFiles,
                                      ModelSettings   * modelSettings, 
                                      FFTGrid       **& priorFaciesProbCubes,
                                      Simbox          * timeSimbox,
-                                     char            * errTxt,
+                                     char            * /*errTxt*/,
                                      bool            & failed)
 {
   int nFacies = modelSettings->getNumberOfFacies();

@@ -24,7 +24,7 @@ namespace Definitions
 {
   inline static double AsciiIrapClassicUndefValue(void)       { return 9999900.0 ;}
   inline static double StormBinaryUndefValue(void)            { return    -999.0 ;}
-  inline static float  SpatialFilterRegularisationValue(void) { return    0.0001 ;}
+  inline static float  SpatialFilterRegularisationValue(void) { return    0.0001f;}
 }
 
 #endif

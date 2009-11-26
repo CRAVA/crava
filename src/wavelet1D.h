@@ -27,6 +27,7 @@ public:
   Wavelet1D(Wavelet * wavelet);
   Wavelet1D(Wavelet * wavelet,int difftype);
   Wavelet1D(int difftype, int nz, int nzp);
+  Wavelet1D();
   virtual ~Wavelet1D();
 
   void           resample(float dz, int nz, float pz,float theta);

@@ -2353,7 +2353,7 @@ XmlModelFile::checkForwardConsistency(std::string & errTxt) {
 }
 
 void
-XmlModelFile::checkEstimationInversionConsistency(std::string & errTxt) {
+XmlModelFile::checkEstimationInversionConsistency(std::string & /*errTxt*/) {
   //Quite a few things to check here.
 }
 

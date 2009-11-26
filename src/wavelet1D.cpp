@@ -14,7 +14,6 @@
 #include "lib/global_def.h"
 #include "lib/lib_misc.h"
 #include "lib/lib_matr.h"
-#include "lib/sgri.h"
 
 #include "nrlib/iotools/logkit.hpp"
 
@@ -553,6 +552,11 @@ Wavelet1D::Wavelet1D(Wavelet * wavelet)
       cAmp_[i].re = wavelet->getCAmp(i).re; 
       cAmp_[i].im = wavelet->getCAmp(i).im; 
     }
+}
+
+Wavelet1D::Wavelet1D()
+  :Wavelet(1)
+{
 }
 
 Wavelet1D::~Wavelet1D()

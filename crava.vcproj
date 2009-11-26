@@ -3464,10 +3464,6 @@
 					</FileConfiguration>
 				</File>
 				<File
-					RelativePath=".\lib\sgri.cpp"
-					>
-				</File>
-				<File
 					RelativePath=".\lib\systemcall.cpp"
 					>
 				</File>
@@ -3801,10 +3797,6 @@
 					>
 				</File>
 				<File
-					RelativePath=".\lib\sgri.h"
-					>
-				</File>
-				<File
 					RelativePath=".\lib\systemcall.h"
 					>
 				</File>
@@ -3904,11 +3896,11 @@
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\system\config.hpp"
+						RelativePath=".\nrlib\boost\filesystem\config.hpp"
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\filesystem\config.hpp"
+						RelativePath=".\nrlib\boost\system\config.hpp"
 						>
 					</File>
 					<File

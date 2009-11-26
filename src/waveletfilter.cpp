@@ -7,11 +7,9 @@
 
 #include "src/waveletfilter.h"
 
-using namespace NRLib;
-
-WaveletFilter::WaveletFilter(const std::string & fileName,
-                             int               & errCode,
-                             char              * errText)
+WaveletFilter::WaveletFilter(const std::string & /*fileName*/,
+                             int               & /*errCode*/,
+                             char              * /*errText*/)
 {
 //  readFile(fileName, errCode, errText);
 }
@@ -25,14 +23,15 @@ bool WaveletFilter::readFile(const std::string & fileName,
                              int               & errCode,
                              char              * errText)
 {
-  RegularSurfaceRotated<double> rot_surface = ReadSgriSurf(fileName);
-  double angle = rot_surface.GetAngle();
-  if (angle != 0.0) {
+  std::vector<NRLib::RegularSurfaceRotated<double> > rot_surfaces = NRLib::ReadMultipleSgriSurf(fileName);
+  if (rot_surfaces[0].GetAngle() != 0.0) {
     sprintf(errText, "%sGrid for wavelet filter in file %s is rotated. Must have rotation angle = 0.0.\n", errText, fileName.c_str());
     errCode = 1;
   }
   else {
-    alpha1_ = rot_surface.GetSurface();
+    alpha1_ = rot_surfaces[0].GetSurface();
+    if (rot_surfaces.size() > 1)
+      Halpha_ = rot_surfaces[1].GetSurface();
   }
 
   return(true);

@@ -14,7 +14,6 @@
 #include "lib/global_def.h"
 #include "lib/lib_misc.h"
 #include "lib/lib_matr.h"
-#include "lib/sgri.h"
 
 #include "nrlib/surface/regularsurface.hpp"
 #include "nrlib/iotools/logkit.hpp"

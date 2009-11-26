@@ -4,28 +4,30 @@
 #include "fft/include/fftw.h"
 
 #include "lib/global_def.h"
-#include "lib/sgri.h"
+
+#include "nrlib/surface/regularsurfacerotated.hpp"
 
 #include "src/wavelet.h"
+#include "src/wavelet1D.h"
+#include "src/waveletfilter.h"
 #include "src/fftgrid.h"
-
-class Wavelet1D;
-class WaveletFilter;
 
 class Wavelet3D : public Wavelet {
 public:
   void           fft1DInPlace();
   void           invFFT1DInPlace();
   //Constructors and destructor
-  Wavelet3D(const std::string & fileName, 
-            ModelSettings     * modelSettings, 
-            Simbox            * simBox, 
-            float               theta, 
-            float             * reflCoef,  
-            int               & errCode, 
-            char              * errText);
-  Wavelet3D(const Wavelet1D     & wavelet1d,
-            const WaveletFilter & filter,
+  Wavelet3D(const std::string   & filterFile,
+            const std::string   & refTimeFile,
+            ModelSettings       * modelSettings,
+            WellData           ** wells,
+            int                   angle_index,
+            Simbox              * simBox,
+            float                 theta,
+            int                 & errCode,
+            char                * errText);
+  Wavelet3D(Wavelet1D           * wavelet1d,
+            const std::string   & filterfile,
             ModelSettings       * modelSettings,
             int                   angle_index,
             Simbox              * simBox,
@@ -34,27 +36,34 @@ public:
             char                * errText);
   Wavelet3D(Wavelet * wavelet, int difftype);
   Wavelet3D(Wavelet * wavelet);
-  virtual ~Wavelet3D() {}
+  Wavelet3D(Wavelet3D *wavelet);
+  virtual ~Wavelet3D() {delete wavelet1D_;}
 
-  double         findPhi(float kx, float ky) const;
-  double         findPsi(float radius, float kz) const;
-  fftw_complex   findWLvalue(const Wavelet1D & wavelet1d,
-                             float             omega) const;
+  double         findPhi(float kx, float ky)                        const;
+  double         findPsi(float radius, float kz)                    const;
+  fftw_complex   findWLvalue(Wavelet1D       * wavelet1d,
+                             float             omega)               const;
+  bool           findTimeGradientSurface(const NRLib::RegularSurfaceRotated<double>   & rot_surface,
+                                         Simbox                                       * simbox,
+                                         int                                          & errCode,
+                                         char                                         * errText);
 
-  bool           consistentSize(int nzp, int nyp, int nxp) const; 
-  fftw_complex   getCAmp(int k, int j, int i) const;
+  bool           consistentSize(int nzp, int nyp, int nxp)          const; 
+  fftw_complex   getCAmp(int k, int j, int i)                       const;
   fftw_real      getRAmp(int k, int j, int i);
-  fftw_complex   getCAmp(int k, float scale, int j, int i) const;
+  fftw_complex   getCAmp(int k, float scale, int j, int i)          const;
   void           setRAmp(float value, int k, int j, int i);
   void           setCAmp(fftw_complex value, int k, int j, int i);
   void           scale(float gain);
-  int            getNx() const {return nx_;}
-  int            getNy() const {return ny_;}
-  int            getNxp() const {return nxp_;}
-  int            getNyp() const {return nyp_;}
-  float          getDx() const {return dx_;}
-  float          getDy() const {return dy_;}
-  FFTGrid      * getAmpCube() {return &ampCube_;}
+  int            getNx()                                            const {return nx_;}
+  int            getNy()                                            const {return ny_;}
+  int            getNxp()                                           const {return nxp_;}
+  int            getNyp()                                           const {return nyp_;}
+  float          getDx()                                            const {return dx_;}
+  float          getDy()                                            const {return dy_;}
+  Wavelet1D    * getWavelet1D()                                     const {return wavelet1D_;}
+  WaveletFilter  getFilter()                                        const {return filter_;}
+  FFTGrid      * getAmpCube()                                             {return &ampCube_;}
   void           multiplyByR(float p);
 
   void           writeWaveletToFile(const std::string & fileName, float, Simbox *simbox);
@@ -67,6 +76,10 @@ private:
   float          dy_, dx_;
   int            ny_, nx_;
   int            nyp_, nxp_;
+  Wavelet1D    * wavelet1D_;
+  WaveletFilter  filter_;
+  Grid2D         x_gradient_;
+  Grid2D         y_gradient_;
 };
 
 #endif
