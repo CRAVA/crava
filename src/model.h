@@ -48,6 +48,8 @@ public:
   bool                          getFailed()                const { return failed_                 ;}
   void                          releaseGrids();                                        // Cuts connection to SeisCube_ and  backModel_
   void                          getCorrGradIJ(float & corrGradI, float &corrGradJ) const;
+  const Grid2D                & getRefTimeGradX()          const { return refTimeGradX_           ;}
+  const Grid2D                & getRefTimeGradY()          const { return refTimeGradY_           ;}
 
 private:
   void             makeTimeSimboxes(Simbox        *& timeSimbox,
@@ -280,6 +282,8 @@ private:
   void             resampleGrid2DToSurface(const Simbox  * simbox, 
                                            const Grid2D  * grid,
                                            Surface      *& surface);
+  bool             findTimeGradientSurface(const std::string     & refTimeFile,
+                                           Simbox                * simbox);
 
   SegyGeometry            * geometryFromCravaFile(const std::string & fileName); 
   SegyGeometry            * geometryFromStormFile(const std::string & fileName, char * errText); 
@@ -308,6 +312,10 @@ private:
   double                    gradX_;                 ///< X-gradient of correlation rotation. 
   double                    gradY_;                 ///< Y-gradient of correlation rotation.
                                                     ///< These are only used with correlation surfaces.
+
+  Grid2D                    refTimeGradX_;          ///< Time gradient in x-direction for reference time surface (t0)
+  Grid2D                    refTimeGradY_;          ///< Time gradient in x-direction for reference time surface (t0)
+
   GridMapping             * timeDepthMapping_;      ///< Contains both simbox and mapping used for depth conversion
   GridMapping             * timeCutMapping_;        ///< Simbox and mapping for timeCut
   float                   * noiseGrid_;             ///< 2D grid for local noise scaling

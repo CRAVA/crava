@@ -29,29 +29,145 @@
 #include "src/io.h"
 #include "src/waveletfilter.h"
 
-Wavelet3D::Wavelet3D(const std::string   & filterFile,
-                     const std::string   & refTimeFile,
-                     ModelSettings       * /*modelSettings*/,
-                     WellData           ** /*wells*/,
-                     int                   /*angle_index*/,
-                     Simbox              * simBox,
-                     float                 theta,
-                     int                 & errCode,
-                     char                * errText)
-  : Wavelet(3),
+Wavelet3D::Wavelet3D(const std::string            & filterFile,
+                     const std::vector<Surface *> & estimInterval,
+                     const Grid2D                 & refTimeGradX,
+                     const Grid2D                 & refTimeGradY,
+                     FFTGrid                      * seisCube,
+                     ModelSettings                * modelSettings,
+                     WellData                    ** wells,
+                     Simbox                       * simBox,
+                     float                        * reflCoef,
+                     int                            angle_index,
+                     float                          theta,
+                     int                          & errCode,
+                     char                         * errText)
+  : Wavelet(3, reflCoef),
     wavelet1D_(NULL),
     filter_(filterFile, errCode, errText)
 {
-//  float v0 = modelSettings->getAverageVelocity();
+  LogKit::LogFormatted(LogKit::MEDIUM,"  Estimating 3D wavelet pulse from seismic data and (nonfiltered) blocked wells\n");
+  readtype_     = ESTIMATE;
+
   theta_ = theta;
   norm_ = RMISSING;
 
-  NRLib::RegularSurfaceRotated<double> t0surface = NRLib::ReadSgriSurf(refTimeFile);
+  nx_             = simBox->getnx();
+  ny_             = simBox->getny();
+  nz_             = simBox->getnz();
+  dx_             = static_cast<float>(simBox->getdx());
+  dy_             = static_cast<float>(simBox->getdy());
+  dz_             = static_cast<float>(simBox->getdz());
+  nzp_            = seisCube->getNzp();
 
-  findTimeGradientSurface(t0surface,
-                          simBox,
-                          errCode,
-                          errText);
+  unsigned int nWells = modelSettings->getNumberOfWells();
+  float v0            = modelSettings->getAverageVelocity();
+  float stretch       = modelSettings->getStretchFactor(angle_index);
+  bool hasHalpha      = filter_.hasHalpha();
+  
+  float **wlest       = new float*[nWells];
+
+  for (unsigned int w=0; w<nWells; w++) {
+    if (wells[w]->getUseForWaveletEstimation()) {
+      LogKit::LogFormatted(LogKit::MEDIUM, "  Well :  %s\n", wells[w]->getWellname());
+
+      BlockedLogs *bl = wells[w]->getBlockedLogsOrigThick();  
+ 
+      int nBlocks      = bl->getNumberOfBlocks();
+      float *seisLog     = new float[nBlocks];
+      bl->getBlockedGrid(seisCube, seisLog);
+      float *seisData    = new float[nz_];
+      bl->getVerticalTrend(seisLog, seisData);
+
+      float *alpha       = new float[nz_];
+      float *beta        = new float[nz_];
+      float *rho         = new float[nz_];
+      bl->getVerticalTrend(bl->getAlpha(), alpha);
+      bl->getVerticalTrend(bl->getBeta(), beta);
+      bl->getVerticalTrend(bl->getRho(), rho);
+
+      std::vector<float> tGradX;
+      std::vector<float> tGradY;
+
+//    NBNB-Frode: Fyll gradX og gradY for alle nzp_ ved hjelp av kall til
+/*      bl->findSeismicGradient(seisCube,
+                              simBox,
+                              tgradX,
+                              tgradY);*/
+      //Den forrige funksjonen fyller inn for alle nBlocks, må lage en som fyller fra start til length
+      const int * iPos = bl->getIpos();
+      const int * jPos = bl->getJpos();
+      
+      std::vector<float> t0GradX(nBlocks);
+      std::vector<float> t0GradY(nBlocks);
+      for (int b = 0; b<nBlocks; b++) {
+        t0GradX[b] = static_cast<float> (refTimeGradX(iPos[b], jPos[b]));
+        t0GradY[b] = static_cast<float> (refTimeGradY(iPos[b], jPos[b]));
+      }
+      float * zGradX = new float[nBlocks];
+      float * zGradY = new float[nBlocks];
+      for (int b = 0; b<nBlocks; b++) {
+        zGradX[b] = 0.5f * v0 * (tGradX[b] - t0GradX[b]);
+        zGradY[b] = 0.5f * v0 * (tGradY[b] - t0GradY[b]);
+      }
+      float * az = new float[nz_]; 
+      bl->getVerticalTrend(zGradX, az);
+      delete [] zGradX;
+      float * bz = new float[nz_];
+      bl->getVerticalTrend(zGradY, bz);
+      delete [] zGradY;
+
+      bool  *hasWellData = new bool[nz_];
+      for (int k=0; k<nz_; k++) 
+        hasWellData[k] = (alpha[k] != RMISSING && beta[k] != RMISSING && rho[k] != RMISSING && az[k] != RMISSING && bz[k] != RMISSING && seisData[k] != RMISSING);
+      delete [] alpha;
+      delete [] beta;
+      delete [] rho;
+      delete [] seisData;
+
+      //Check that data are within wavelet estimation interval
+      if (estimInterval.size() > 0) {
+        const double *xPos = bl->getXpos();
+        const double *yPos = bl->getYpos();
+        const double *zPos = bl->getZpos();
+        for (int k=0; k<nz_; k++) {
+          const double zTop  = estimInterval[0]->GetZ(xPos[k],yPos[k]);
+          const double zBase = estimInterval[1]->GetZ(xPos[k],yPos[k]);
+          if ((zPos[k]-0.5*dz_) < zTop || (zPos[k]+0.5*dz_) > zBase)
+            hasWellData[k] = false;
+        }
+      }
+
+      int start, length;
+      bl->findContiniousPartOfData(hasWellData, nz_, start, length);
+      float *cpp         = new float[nz_];
+      bl->fillInCpp(coeff_,start,length,cpp,nzp_);
+      
+      std::vector<float> alpha1(nzp_,0.0);
+      std::vector<float> f(nzp_,0.0);
+      std::vector<float> alpha2;
+      if (hasHalpha)
+        alpha2.resize(nzp_,0.0);
+
+      for (int i=start; i < start+length-1; i++) {
+        double phi = atan(bz[i] / az[i]);
+        double r   = sqrt(az[i]*az[i] + bz[i]*bz[i] + 1);
+        double psi = acos(1 / r);
+        alpha1[i]  = static_cast<float> (filter_.getAlpha1(phi, psi));
+        f[i]       = static_cast<float> (-1.0 * r / stretch);
+      }
+
+      delete [] az;
+      delete [] bz;
+
+      delete [] hasWellData;
+      delete [] cpp;
+    }
+  }
+
+  for(unsigned int w=0; w<nWells; w++)
+    delete [] wlest[w];
+  delete [] wlest;
 }
 
 
@@ -287,7 +403,7 @@ Wavelet3D::Wavelet3D(Wavelet * wavelet)
     }
   }
 }
-
+/*
 Wavelet3D::Wavelet3D(Wavelet3D *wavelet)
   : Wavelet(wavelet, 3),
     wavelet1D_(wavelet->getWavelet1D())
@@ -315,7 +431,7 @@ Wavelet3D::Wavelet3D(Wavelet3D *wavelet)
   }
   filter_     = wavelet->getFilter();
 }
-
+*/
 double Wavelet3D::findPhi(float kx, float ky) const
 //Return value should be between 0 and 2*PI
 {
@@ -378,69 +494,6 @@ fftw_complex Wavelet3D::findWLvalue(Wavelet1D       * wavelet1d,
   return cValue;
 }
 
-
-bool 
-Wavelet3D::findTimeGradientSurface(const NRLib::RegularSurfaceRotated<double>   & rot_surface,
-                                   Simbox                                       * simbox,
-                                   int                                          & errCode,
-                                   char                                         * errText)
-{
-  double x, y;
-  bool inside = true;
-  unsigned int nx = static_cast<unsigned int> (simbox->getnx());
-  unsigned int ny = static_cast<unsigned int> (simbox->getny());
-  double dx = simbox->getdx();
-  double dy = simbox->getdy();
-
-  simbox->getXYCoord(0,0,x,y);
-  if (rot_surface.IsInsideSurface(x,y)) {
-    simbox->getXYCoord(0,ny-1,x,y);
-    if (rot_surface.IsInsideSurface(x,y)) {
-      simbox->getXYCoord(nx-1,0,x,y);
-      if (rot_surface.IsInsideSurface(x,y)) {
-        simbox->getXYCoord(nx-1,ny-1,x,y);
-        if (!rot_surface.IsInsideSurface(x,y))
-          inside = false;
-      }
-      else
-        inside = false;
-    }
-    else
-      inside = false;
-  }
-  else
-    inside = false;
-
-  if (inside) {
-    x_gradient_.Resize(nx, ny, RMISSING);
-    y_gradient_.Resize(nx, ny, RMISSING);
-    for (unsigned int i = nx-1; i >= 0; i++) {
-      for (unsigned int j = ny-1; j >= 0; j++) {
-        simbox->getXYCoord(i,j,x,y);
-        double z_high = rot_surface.GetZInside(x,y);
-        simbox->getXYCoord(i,j-1,x,y); //XYCoord is ok even if j = -1, but point is outside simbox
-        double z_low = rot_surface.GetZInside(x,y);
-        if (!rot_surface.IsMissing(z_low))
-          y_gradient_(i,j) = (z_high - z_low) / dy;
-        else
-          y_gradient_(i,j) = y_gradient_(i,j+1);
-
-        simbox->getXYCoord(i-1,j,x,y); //XYCoord is ok even if j = -1, but point is outside simbox
-        z_low = rot_surface.GetZInside(x,y);
-        if (!rot_surface.IsMissing(z_low))
-          x_gradient_(i,j) = (z_high - z_low) / dx;
-        else
-          x_gradient_(i,j) = x_gradient_(i+1,j);
-      }
-    }
-  }
-  else {
-    sprintf(errText, "%sSimbox is not completely inside reference time surface in (x,y).\n", errText);
-    errCode = 1;
-  }
-
-  return(inside);
-}
 
 void           
 Wavelet3D::fft1DInPlace()

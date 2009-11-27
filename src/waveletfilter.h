@@ -22,6 +22,7 @@ public:
   const double            getHalpha(double, double) const {return (0.0) ;}
   const double            getBeta1(double phi, double psi)  const {return beta1_.GetZ(phi,psi)   ;}
   const double            getHbeta(double phi, double psi)  const {return Hbeta_.GetZ(phi,psi)   ;}
+  const bool              hasHalpha() const {return hasHalpha_;}  
 
 private:
   
@@ -29,6 +30,8 @@ private:
   Surface                 Halpha_;
   Surface                 beta1_;
   Surface                 Hbeta_;
+
+  bool                    hasHalpha_;
 
 };
 

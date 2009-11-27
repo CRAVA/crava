@@ -17,13 +17,17 @@ public:
   void           fft1DInPlace();
   void           invFFT1DInPlace();
   //Constructors and destructor
-  Wavelet3D(const std::string   & filterFile,
-            const std::string   & refTimeFile,
-            ModelSettings       * modelSettings,
-            WellData           ** wells,
-            int                   angle_index,
-            Simbox              * simBox,
-            float                 theta,
+  Wavelet3D(const std::string            & filterFile,
+            const std::vector<Surface *> & estimInterval,
+            const Grid2D                 & refTimeGradX,
+            const Grid2D                 & refTimeGradY,
+            FFTGrid                      * seisCube,
+            ModelSettings                * modelSettings,
+            WellData                    ** wells,
+            Simbox                       * simBox,
+            float                        * reflCoef,
+            int                            angle_index,
+            float                          theta,
             int                 & errCode,
             char                * errText);
   Wavelet3D(Wavelet1D           * wavelet1d,
@@ -36,18 +40,13 @@ public:
             char                * errText);
   Wavelet3D(Wavelet * wavelet, int difftype);
   Wavelet3D(Wavelet * wavelet);
-  Wavelet3D(Wavelet3D *wavelet);
+//  Wavelet3D(Wavelet3D *wavelet);
   virtual ~Wavelet3D() {delete wavelet1D_;}
 
   double         findPhi(float kx, float ky)                        const;
   double         findPsi(float radius, float kz)                    const;
   fftw_complex   findWLvalue(Wavelet1D       * wavelet1d,
                              float             omega)               const;
-  bool           findTimeGradientSurface(const NRLib::RegularSurfaceRotated<double>   & rot_surface,
-                                         Simbox                                       * simbox,
-                                         int                                          & errCode,
-                                         char                                         * errText);
-
   bool           consistentSize(int nzp, int nyp, int nxp)          const; 
   fftw_complex   getCAmp(int k, int j, int i)                       const;
   fftw_real      getRAmp(int k, int j, int i);
@@ -78,8 +77,7 @@ private:
   int            nyp_, nxp_;
   Wavelet1D    * wavelet1D_;
   WaveletFilter  filter_;
-  Grid2D         x_gradient_;
-  Grid2D         y_gradient_;
+
 };
 
 #endif

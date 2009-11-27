@@ -2511,12 +2511,16 @@ Model::processWavelets(Wavelet                    **& wavelet,
   
   float globalScale = 1.0;
 
-  for(unsigned int i=0 ; i < nAngles ; i++)
-  {  
-    if(modelSettings->getUseLocalWavelet()==true)
-    {
-      if(inputFiles->getScaleFile(i)!="")
-      {
+  if (inputFiles->getRefSurfaceFile() != "") {
+    if (findTimeGradientSurface(inputFiles->getRefSurfaceFile(), timeSimbox) == false) {
+      sprintf(errText, "%sSimbox is not completely inside reference time surface in (x,y).\n", errText);
+      error = 1;
+    }
+  }
+
+  for(unsigned int i=0 ; i < nAngles ; i++) {  
+    if(modelSettings->getUseLocalWavelet()==true) {
+      if(inputFiles->getScaleFile(i)!="") {
         Surface help(NRLib::ReadStormSurf(inputFiles->getScaleFile(i)));
         gainGrids[i] = new Grid2D(timeSimbox->getnx(),timeSimbox->getny(), 0.0);
         resampleSurfaceToGrid2D(timeSimbox, &help, gainGrids[i]);
@@ -2549,11 +2553,15 @@ Model::processWavelets(Wavelet                    **& wavelet,
                                    i);
       else {
         wavelet[i] = new Wavelet3D(inputFiles->getWaveletFilterFile(i),
-                                   inputFiles->getRefSurfaceFile(),
+                                   waveletEstimInterval,
+                                   refTimeGradX_,
+                                   refTimeGradY_,
+                                   seisCube[i],
                                    modelSettings,
                                    wells,
-                                   i,
                                    timeSimbox,
+                                   reflectionMatrix[i],
+                                   i,
                                    angle,
                                    error,
                                    errText);
@@ -3921,6 +3929,65 @@ Model::resampleGrid2DToSurface(const Simbox   * simbox,
         (*surface)(i,j) = (*grid)(i1,j1);
     }
   }
+}
+
+bool 
+Model::findTimeGradientSurface(const std::string   & refTimeFile,
+                               Simbox              * simbox)
+{
+  double x, y;
+  bool inside = true;
+  unsigned int nx = static_cast<unsigned int> (simbox->getnx());
+  unsigned int ny = static_cast<unsigned int> (simbox->getny());
+  double dx = simbox->getdx();
+  double dy = simbox->getdy();
+
+  NRLib::RegularSurfaceRotated<double> t0surface = NRLib::ReadSgriSurf(refTimeFile);
+
+  simbox->getXYCoord(0,0,x,y);
+  if (t0surface.IsInsideSurface(x,y)) {
+    simbox->getXYCoord(0,ny-1,x,y);
+    if (t0surface.IsInsideSurface(x,y)) {
+      simbox->getXYCoord(nx-1,0,x,y);
+      if(t0surface.IsInsideSurface(x,y)) {
+        simbox->getXYCoord(nx-1,ny-1,x,y);
+        if (!t0surface.IsInsideSurface(x,y))
+          inside = false;
+      }
+      else
+        inside = false;
+    }
+    else
+      inside = false;
+  }
+  else
+    inside = false;
+
+  if (inside) {
+    refTimeGradX_.Resize(nx, ny, RMISSING);
+    refTimeGradY_.Resize(nx, ny, RMISSING);
+    for (unsigned int i = nx-1; i >= 0; i++) {
+      for (unsigned int j = ny-1; j >= 0; j++) {
+        simbox->getXYCoord(i,j,x,y);
+        double z_high = t0surface.GetZInside(x,y);
+        simbox->getXYCoord(i,j-1,x,y); //XYCoord is ok even if j = -1, but point is outside simbox
+        double z_low = t0surface.GetZInside(x,y);
+        if (!t0surface.IsMissing(z_low))
+          refTimeGradY_(i,j) = (z_high - z_low) / dy;
+        else
+          refTimeGradY_(i,j) = refTimeGradY_(i,j+1);
+
+        simbox->getXYCoord(i-1,j,x,y); //XYCoord is ok even if j = -1, but point is outside simbox
+        z_low = t0surface.GetZInside(x,y);
+        if (!t0surface.IsMissing(z_low))
+          refTimeGradX_(i,j) = (z_high - z_low) / dx;
+        else
+          refTimeGradX_(i,j) = refTimeGradX_(i+1,j);
+      }
+    }
+  }
+
+  return(inside);
 }
 
 SegyGeometry *

@@ -10,6 +10,7 @@
 WaveletFilter::WaveletFilter(const std::string & /*fileName*/,
                              int               & /*errCode*/,
                              char              * /*errText*/)
+ : hasHalpha_(false)
 {
 //  readFile(fileName, errCode, errText);
 }
@@ -30,8 +31,10 @@ bool WaveletFilter::readFile(const std::string & fileName,
   }
   else {
     alpha1_ = rot_surfaces[0].GetSurface();
-    if (rot_surfaces.size() > 1)
+    if (rot_surfaces.size() > 1) {
       Halpha_ = rot_surfaces[1].GetSurface();
+      hasHalpha_ = true;
+    }
   }
 
   return(true);
