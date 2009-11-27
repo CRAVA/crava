@@ -137,6 +137,22 @@ Wavelet1D::Wavelet1D(Simbox                       * simbox,
       // Block seismic data for this well
       //
       bl->getBlockedGrid(seisCube,seisLog);
+
+      //
+      // Check seismic data outside estimation interval missing
+      //
+      if (estimInterval.size() > 0) {
+        const double * xPos  = bl->getXpos();
+        const double * yPos  = bl->getYpos();
+        const double * zPos  = bl->getZpos();
+        for (k = 0 ; k < bl->getNumberOfBlocks() ; k++) {
+          const double zTop  = estimInterval[0]->GetZ(xPos[k],yPos[k]);
+          const double zBase = estimInterval[1]->GetZ(xPos[k],yPos[k]);
+          if ( (zPos[k] - 0.5*dz_) < zTop || (zPos[k] + 0.5*dz_) > zBase)
+            seisLog[k] = RMISSING;
+        }
+      }
+
       //
       // Extract a one-value-for-each-layer array of blocked logs
       //
@@ -149,21 +165,6 @@ Wavelet1D::Wavelet1D(Simbox                       * simbox,
         hasData[k] = seisData[k] != RMISSING && alpha[k] != RMISSING && beta[k] != RMISSING && rho[k] != RMISSING;
       }
       
-      //
-      // Check that data are within wavelet estimation interval
-      //
-      if (estimInterval.size() > 0) {
-        const double * xPos  = bl->getXpos();
-        const double * yPos  = bl->getYpos();
-        const double * zPos  = bl->getZpos();
-        for (k = 0 ; k < nz ; k++) {
-          const double zTop  = estimInterval[0]->GetZ(xPos[k],yPos[k]);
-          const double zBase = estimInterval[1]->GetZ(xPos[k],yPos[k]);
-          if ( (zPos[k]-0.5*dz_) < zTop || (zPos[k]+0.5*dz_) > zBase)
-            hasData[k] = false;
-        }
-      }
-
       //
       // Find continuous part of data
       //

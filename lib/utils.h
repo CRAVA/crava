@@ -13,6 +13,9 @@ public:
   static void    writeHeader(const std::string & text, LogKit::MessageLevels logLevel = LogKit::LOW);
   static void    writeTitler(const char * text);
 
+  static void    copyVector(const int * from,
+                            int       * to,
+                            int         ndim);
   static void    copyVector(const float * from,
                             float       * to,
                             int           ndim);

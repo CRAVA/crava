@@ -2817,40 +2817,43 @@ void Model::processPriorFaciesProb(const std::vector<Surface *> & faciesEstimInt
             // should not be a problem.
             //
             BlockedLogs * bl = wells[w]->getBlockedLogsOrigThick();
-            bl->getVerticalTrend(bl->getAlpha(),vtAlpha);
-            bl->getVerticalTrend(bl->getBeta(),vtBeta);
-            bl->getVerticalTrend(bl->getRho(),vtRho);
-            bl->getVerticalTrend(bl->getFacies(),vtFacies,randomGen);
-
-            std::vector<int> tmpFaciesLog(nz);
-            for(int i=0 ; i<nz ; i++)
-            {
-              if(vtAlpha[i] != RMISSING && vtBeta[i] != RMISSING && vtRho[i] != RMISSING)
-                tmpFaciesLog[i] = vtFacies[i];
-              else
-                tmpFaciesLog[i] = IMISSING;
-            }
-
+            int nBlocks = bl->getNumberOfBlocks();
             //
             // Set facies data outside facies estimation interval IMISSING
             //
+            int * blFaciesLog = new int[nBlocks];
+            Utils::copyVector(bl->getFacies(), blFaciesLog, nBlocks);
+
             if (faciesEstimInterval.size() > 0) {
               const double * xPos  = bl->getXpos();
               const double * yPos  = bl->getYpos();
               const double * zPos  = bl->getZpos();
-              for (int i = 0 ; i < nz ; i++) {
+              for (int i = 0 ; i < nBlocks ; i++) {
                 const double zTop  = faciesEstimInterval[0]->GetZ(xPos[i],yPos[i]);
                 const double zBase = faciesEstimInterval[1]->GetZ(xPos[i],yPos[i]);
-                if ( (zPos[i]-0.5*dz) < zTop || (zPos[i]+0.5*dz) > zBase)
-                  tmpFaciesLog[i] = IMISSING;
+                if ( (zPos[i] - 0.5*dz) < zTop || (zPos[i] + 0.5*dz) > zBase)
+                  blFaciesLog[i] = IMISSING;
               }
             }
 
+            bl->getVerticalTrend(bl->getAlpha(),vtAlpha);
+            bl->getVerticalTrend(bl->getBeta(),vtBeta);
+            bl->getVerticalTrend(bl->getRho(),vtRho);
+            bl->getVerticalTrend(blFaciesLog,vtFacies,randomGen);
+            delete [] blFaciesLog;
+
             for(int i=0 ; i<nz ; i++)
             {
-              faciesLog[w*nz + i] = tmpFaciesLog[i];
-              if(vtFacies[i] != IMISSING)
-                faciesCount[w][tmpFaciesLog[i]]++;
+              int facies;
+              if(vtAlpha[i] != RMISSING && vtBeta[i] != RMISSING && vtRho[i] != RMISSING)
+                facies = vtFacies[i];
+              else
+                facies = IMISSING;
+
+              faciesLog[w*nz + i] = facies;
+
+              if(facies != IMISSING)
+                faciesCount[w][facies]++;
             }
             nUsedWells++;
           }

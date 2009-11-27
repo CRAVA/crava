@@ -47,6 +47,16 @@ Utils::writeTitler(const char * text)
 
 //------------------------------------------------------------
 void
+Utils::copyVector(const int * from,
+                  int       * to,
+                  int         ndim)
+{
+  for (int i = 0 ; i < ndim ; i++)
+    to[i] = from[i];
+}
+
+//------------------------------------------------------------
+void
 Utils::copyVector(const float * from,
                   float       * to,
                   int           ndim)
