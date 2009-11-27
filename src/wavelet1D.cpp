@@ -378,6 +378,8 @@ Wavelet1D::Wavelet1D(const std::string & fileName,
   case JASON: WaveletReadJason(fileName, errCode, errText);
     break;
   }
+
+ 
   
   if(errCode == 0) {
     for(int i=0; i < rnzp_ ;i++)
@@ -1672,3 +1674,18 @@ Wavelet1D::write3DWLfrom1DWL()
   return;
 }
 
+void Wavelet1D::multiplyRAmpByConstant(float c)
+{
+  for(int i=0; i < rnzp_ ;i++)
+  {  
+    if(i < nzp_)
+    {
+      rAmp_[i]*=c;
+    }
+    else
+    {
+      rAmp_[i]=RMISSING;
+    }// endif
+  }//end for i
+
+}

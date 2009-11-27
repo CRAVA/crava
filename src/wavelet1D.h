@@ -41,6 +41,7 @@ public:
   void           writeWaveletToFile(const std::string & fileName, float approxDz, Simbox *simbox = NULL);
   void           write1DWLas3DWL();
   void           write3DWLfrom1DWL();
+  void           multiplyRAmpByConstant(float c);
 
 private:
   void           flipUpDown();
@@ -53,6 +54,7 @@ private:
   void           getWavelet(fftw_real** ccor_seis_cpp_r,fftw_real** cor_cpp_r,fftw_real** wavelet_r,float* wellWeight,int nWells,int nt);
   fftw_real*     averageWavelets(fftw_real** wavelet_r,int nWells,int nzp,float* wellWeight,float* dz,float dzOut) const;
   float          getArrayValueOrZero(int i ,float * Wavelet, int nz) const;
+  
 //  void           fillInnWavelet(fftw_real* wavelet_r,int nzp,float dz);
   
   int            cnzp_;                  // size in z direction for storage inplace algorithm (complex grid) nzp_/2+1

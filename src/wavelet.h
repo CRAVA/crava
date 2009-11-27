@@ -54,7 +54,8 @@ public:
   virtual float         getDy() const {return 0.0;}
   virtual FFTGrid     * getAmpCube() {return NULL;}
   virtual void          multiplyByR(float) {};
-  
+  float                 findGlobalScaleForGivenWavelet(ModelSettings *modelSettings, Simbox *simbox, FFTGrid * seisCube, WellData ** wells);
+  virtual void          multiplyRAmpByConstant(float ) {};
   //Note: Function below is mainly controlled by debugflag. Set overrideDebug = true to force.
   virtual void          printToFile(const std::string & fileName, bool overrideDebug = false) = 0;
   virtual void          writeWaveletToFile(const std::string & fileName, float, Simbox * simbox = NULL) = 0;

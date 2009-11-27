@@ -535,6 +535,14 @@ Wavelet::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
           LogKit::LogFormatted(LogKit::LOW,"  %-20s      -            -             -      -           -      -\n",
           wells[i]->getWellname()); 
       }
+      for(i=0;i<nWells;i++)
+      {
+        if(scaleOptWell[i]>=3.0 || scaleOptWell[i]<=0.3334)
+        {
+          LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: The well %-20s has a optimal local gain value indicating that this well should not be used for wavelet estimation\n",
+          wells[i]->getWellname());
+        }
+      }
  //   }
   /*  else //commented out because Actually used is wrong.
     {
@@ -1186,3 +1194,97 @@ Wavelet::estimateLocalNoise(const CovGrid2D  & cov,
     Kriging2D::krigSurface(*noiseScaled, noiseData, cov);
   }
 }
+
+float Wavelet::findGlobalScaleForGivenWavelet(ModelSettings *modelSettings, 
+                                                Simbox *simbox,
+                                                FFTGrid        * seisCube, 
+                                                WellData ** wells)
+{
+  int i,j,k;
+  int nWells        = modelSettings->getNumberOfWells();
+  int     nz            = simbox->getnz();                     
+  int     nzp           = seisCube->getNzp();
+  int     rnzp          = 2*(nzp/2+1);
+  fftw_real    ** cpp_r = new fftw_real*[nWells];
+  fftw_real    ** seis_r = new fftw_real*[nWells];
+  float *seisData = new float[nz];
+  bool *hasData = new bool[nz];
+  int maxBlocks  = 0;
+  for(i=0;i<nWells;i++)
+  {
+    cpp_r[i]      = new fftw_real[rnzp];
+    seis_r[i]     = new fftw_real[rnzp];
+    for(j=0;j<rnzp;j++)
+    {
+      cpp_r[i][j] = 0;
+      seis_r[i][j] = 0;
+    }
+    int nBlocks        = wells[i]->getBlockedLogsOrigThick()->getNumberOfBlocks();
+    if (nBlocks > maxBlocks)
+      maxBlocks = nBlocks;
+  }
+  float * seisLog = new float[maxBlocks];
+  float maxSeis = 0.0;
+  float maxCpp = 0.0;
+  //
+  // Loop over wells and create a blocked well and blocked seismic
+  //
+  for (int w = 0 ; w < nWells ; w++) 
+  {
+    if (wells[w]->getUseForWaveletEstimation())
+    {
+      BlockedLogs * bl = wells[w]->getBlockedLogsOrigThick();
+      //
+      // Block seismic data for this well
+      //
+      bl->getBlockedGrid(seisCube,seisLog);
+      //
+      // Extract a one-value-for-each-layer array of blocked logs
+      //
+      
+      bl->getVerticalTrend(seisLog, seisData);
+
+      for (k = 0 ; k < nz ; k++) {
+        hasData[k] = seisData[k] != RMISSING;
+      }
+      int start,length;
+      bl->findContiniousPartOfData(hasData,nz,start,length);
+      
+      bl->fillInCpp(coeff_,start,length,cpp_r[w],nzp); 
+      bl->fillInSeismic(seisData,start,length,seis_r[w],nzp);
+
+      for(i=0;i<nzp;i++)
+      {
+        if(cpp_r[w][i]>maxCpp)
+          maxCpp = cpp_r[w][i];
+        if(seis_r[w][i]>maxSeis)
+          maxSeis = seis_r[w][i];
+      }
+
+    }
+  }
+  delete [] seisLog;
+  delete [] seisData;
+  delete [] hasData;
+  for(i=0;i<nWells;i++)
+  {
+    delete [] cpp_r[i]; 
+    delete [] seis_r[i] ;
+  }
+  delete [] cpp_r;
+  delete [] seis_r;
+
+  float kk = maxSeis/maxCpp;
+
+
+  float maxwavelet = 0.0;
+  for(int i=0;i<nzp_;i++)
+   if(getRAmp(i)> maxwavelet)
+     maxwavelet = getRAmp(i);
+
+  float scale1 = kk/maxwavelet;
+ 
+  return scale1;
+}
+
+

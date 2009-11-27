@@ -49,6 +49,9 @@ SpatialWellFilter::~SpatialWellFilter()
   for(i=0;i<3;i++)
     delete [] sigmae_[i];
   delete [] sigmae_;
+  for(i=0;i<2;i++)
+    delete [] sigmaeVpRho_[i];
+  delete [] sigmaeVpRho_;
   delete [] priorSpatialCorr_;
   delete [] n_;
 }

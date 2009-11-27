@@ -2569,16 +2569,30 @@ Model::processWavelets(Wavelet                    **& wavelet,
       else {
         if (modelSettings->getWaveletDim(i) == Wavelet::ONE_D) {
           wavelet[i] = new Wavelet1D(waveletFile, 
-                                     fileFormat, 
-                                     modelSettings, 
-                                     reflectionMatrix[i],
-                                     error, 
-                                     errText);
+            fileFormat, 
+            modelSettings, 
+            reflectionMatrix[i],
+            error, 
+            errText);
+          // Calculate a preliminary scale factor to see if wavelet is in the same size order as the data. A large or small value might cause problems.
+          if(seisCube!=NULL) // If forward modeling, we have no seismic, can not prescale wavelet.
+          {
+            float prescale = wavelet[i]->findGlobalScaleForGivenWavelet(modelSettings, timeSimbox, seisCube[i], wells);
+            if(!modelSettings->getEstimateGlobalWaveletScale(i) && modelSettings->getWaveletScale(i)!=1.0 && modelSettings->getEstimateLocalScale(i) && (prescale>3.0 || prescale<0.333))
+            {
+              sprintf(errText, "%s The wavelet given for angle no %d is badly scaled. Ask Crava to estimate global wavelet scale.\n", errText, i);
+              error++;
+            }
+            else if(!modelSettings->getEstimateGlobalWaveletScale(i) && modelSettings->getWaveletScale(i)!=1.0 && (prescale>3.0 || prescale<0.333))
+              LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: The wavelet given for angle no "+ NRLib::ToString(i) +"is badly scaled. Ask Crava to estimate global wavelet scale.\n");
+            else if(modelSettings->getEstimateGlobalWaveletScale(i)) // prescale, then we have correct size order, and later scale estimation will be ok.
+              wavelet[i]->multiplyRAmpByConstant(prescale);
+          }
           if (error == 0) {
             wavelet[i]->resample(static_cast<float>(timeSimbox->getdz()), 
-                                 timeSimbox->getnz(), 
-                                 static_cast<float>(modelSettings->getZPadFac()), 
-                                 angle);
+              timeSimbox->getnz(), 
+              static_cast<float>(modelSettings->getZPadFac()), 
+              angle);
           }
         }
         else { //3D-wavelet constructed by 1D wavelet and filter
@@ -2597,6 +2611,7 @@ Model::processWavelets(Wavelet                    **& wavelet,
                                        angle,
                                        error,
                                        errText);
+  
         }
       }
     }
@@ -2650,7 +2665,7 @@ Model::processWavelets(Wavelet                    **& wavelet,
         if (useLocalNoise) {
           writeLocalGridsToFile(inputFiles->getLocalNoiseFile(i),                              
                                 IO::PrefixLocalNoise(),
-                                modelSettings->getSNRatio(i),
+                                1.0,
                                 modelSettings,
                                 i,
                                 timeSimbox,
@@ -3007,7 +3022,7 @@ void Model::readPriorFaciesProbCubes(InputFiles      * inputFiles,
                                      ModelSettings   * modelSettings, 
                                      FFTGrid       **& priorFaciesProbCubes,
                                      Simbox          * timeSimbox,
-                                     char            * /*errTxt*/,
+                                     char            * errTxt,
                                      bool            & failed)
 {
   int nFacies = modelSettings->getNumberOfFacies();
@@ -3017,8 +3032,8 @@ void Model::readPriorFaciesProbCubes(InputFiles      * inputFiles,
   mapType myMap = inputFiles->getPriorFaciesProbFile();
   for(int i=0;i<nFacies;i++)
   {
-    char tmpErrText[MAX_STRING];
-    sprintf(tmpErrText,"%c",'\0');
+    //char tmpErrText[MAX_STRING];
+    //sprintf(tmpErrTxt,"%c",'\0');
     mapType::iterator iter = myMap.find(modelSettings->getFaciesName(i));
     
     if(iter!=myMap.end())
@@ -3042,7 +3057,7 @@ void Model::readPriorFaciesProbCubes(InputFiles      * inputFiles,
       {
         errorText += "Reading of file \'"+faciesProbFile+"\' for prior facies probability for facies \'"
                      +modelSettings->getFaciesName(i)+"\' failed\n";
-        sprintf(tmpErrText,"%s%s", tmpErrText, errorText.c_str());
+        sprintf(errTxt,"%s%s", errTxt, errorText.c_str());
         failed = true;
       } 
     }

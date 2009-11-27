@@ -56,7 +56,7 @@ public:
   inline static  std::string    PrefixWavelet(void)                { return std::string("Wavelet_")            ;}
   inline static  std::string    PrefixLocalWaveletGain(void)       { return std::string("Local_Wavelet_Scale_");}
   inline static  std::string    PrefixLocalWaveletShift(void)      { return std::string("Local_Wavelet_Shift_");}
-  inline static  std::string    PrefixLocalNoise(void)             { return std::string("Local_SNratio_")      ;}
+  inline static  std::string    PrefixLocalNoise(void)             { return std::string("Local_Noise_Scaled_")      ;}
   inline static  std::string    PrefixSurface(void)                { return std::string("Surface_")            ;}
   inline static  std::string    PrefixTop(void)                    { return std::string("Top_")                ;}
   inline static  std::string    PrefixBase(void)                   { return std::string("Base_")               ;}

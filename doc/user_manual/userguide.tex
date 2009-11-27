@@ -41,15 +41,18 @@ All information regarding the seismic data is gathered under the \kw{survey}\kwi
 \end{verbatim}
 \end{example}
 
-The seismic data should be on SegY-format, with a common offset time, given with \kw{segy-start-time}\kwindex{segy-start-time} if different from 0. The first value is used to represent the interval from start-time to start-time + time-step, so with a start-time of 100ms, and 4ms sampling, the first value is used in the grid cell covering the interval 100-104ms.
+The seismic data can be on SegY-format, with a common offset time, given with \kw{segy-start-time}\kwindex{segy-start-time} if different from 0. The first value is used to represent the interval from start-time to start-time + time-step, so with a start-time of 100ms, and 4ms sampling, the first value is used in the grid cell covering the interval 100-104ms. Other file formats recognized by \crava is storm, Sgri and crava. 
 
 For each available angle, the rest of the information is gathered under an \kw{angle-gather} tag, one for each offset. The actual angle is given by \kw{offset-angle}\kwindex{offset-angle}.
 
 \subsubsection{Seismic data}
 \label{sec:basicseis}
-The seismic data is given as SegY-files. By default, \crava recognizes the Seisworks, Charisma and IESX formats, but you are also allowed to define your own format using the \kw{segy-format}\kwindex{segy-format} command. For information on how to use this, see \kw{segy-format} in the reference manual chapter.
+The seismic data can be given as SegY-files. By default, \crava recognizes the Seisworks, Charisma and IESX formats, but you are also allowed to define your own format using the \kw{segy-format}\kwindex{segy-format} command. For information on how to use this, see \kw{segy-format} in the reference manual chapter.
 
 The name of the SegY file is given with \kw{file-name}, as seen in \autoref{ex:survey}. Naturally, seismic data is always required when running an inversion.
+
+Other file formats recognized by \crava are storm, Sgri and crava. 
+
 
 \subsubsection{Wavelet}
 \label{sec:basicwave}
@@ -199,7 +202,7 @@ Since seismic data only contain information about relative elastic parameters, t
 
 \subsubsection{Background model}
 \label{sec:basicbg}
-The background model is given under the \kw{background}\kwindex{background} command. It can be given from file, using \kw{vp-file}\kwindex{vp-file}, \kw{vs-file}\kwindex{vs-file} and \kw{density-file}\kwindex{density-file}. These files should either be on Storm or SegY format. Alternatively, constant values can be used for background model, specified with \kw{vp-constant}\kwindex{vp-constant}, \kw{vs-constant}\kwindex{vs-constant} and \kw{density-constant}\kwindex{density-constant}. Any combinations of files and constants are also ok. If none of these are given, the background model will be estimated.
+The background model is given under the \kw{background}\kwindex{background} command. It can be given from file, using \kw{vp-file}\kwindex{vp-file}, \kw{vs-file}\kwindex{vs-file} and \kw{density-file}\kwindex{density-file}. These files should either be on Storm, crava, Sgri or SegY format. Alternatively, constant values can be used for background model, specified with \kw{vp-constant}\kwindex{vp-constant}, \kw{vs-constant}\kwindex{vs-constant} and \kw{density-constant}\kwindex{density-constant}. Any combinations of files and constants are also ok. If none of these are given, the background model will be estimated.
 \subsubsection{Covariances}
 \label{sec:basiccorr}
 As shown in \autoref{sec:statmodthe} the prior covariance structure for the elastic parameters consists of three parts:
@@ -315,7 +318,7 @@ something like this:
 \subsubsection{Grid output}\kwindex{grid-output}
 Different elastic parameters can be given as grid output. In addition, estimated background model and posterior correlation may be written as grids. This is controlled by the \kw{parameters}\kwindex{parameters} command under \kw{grid-output}. See \autoref{parameters} for a full list of possible grids. If this command is not used, Vp, Vs and density will be written.
 
-The grid format may be controlled using \kw{format}\kwindex{format}. Here the yes/no parameters \kw{storm}, \kw{segy} and \kw{ascii} can be used to decide if grids should be written on storm- (RMS), segy- or ascci-format. You may choose several formats for one run; all grids will be written on all selected formats. Note that correlation grids make sense only in storm format. Default output format i storm.
+The grid format may be controlled using \kw{format}\kwindex{format}. Here the yes/no parameters \kw{storm}, \kw{segy}, \kw{sgri}, \kw{crava} and \kw{ascii} can be used to decide if grids should be written on storm- (RMS), segy-, Sgri-, crava- or ascii-format. You may choose several formats for one run; all grids will be written on all selected formats. Note that correlation grids make sense only in storm format. Default output format is storm. The crava format is a binary format only to be used with Crava. It can be read and written from \crava, and is useful if the output from a \crava run should be used as input to another \crava run because the format is fast to read.
 
 By using the \kw{domain}\kwindex{domain} option, output may be written in time domain (\kw{time}) or depth domain (\kw{depth}, requires parameters set under \kw{output-volume}, see \autoref{sec:depthconvusr}), or both. Again, correlation grids only make sense in time domain, which is default.
 
