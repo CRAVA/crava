@@ -1500,7 +1500,7 @@ FFTGrid::writeStormFile(const std::string & fileName, const Simbox * simbox, boo
     binFile.close();
   }
   else {
-    gfName = fileName + IO::SuffixTextFiles();
+    gfName = fileName + IO::SuffixGeneralData();
     std::ofstream file;
     NRLib::OpenWrite(file, gfName);
     LogKit::LogFormatted(LogKit::LOW,"\nWriting STORM ascii file "+gfName+"...");
@@ -1639,7 +1639,7 @@ FFTGrid::writeResampledStormCube(GridMapping       * gridmapping,
   std::string header;
   if ((format & IO::ASCII) > 0) // ASCII
   {
-    gfName = fileName + IO::SuffixTextFiles();
+    gfName = fileName + IO::SuffixGeneralData();
     header = gridmapping->getSimbox()->getStormHeader(FFTGrid::PARAMETER,nx_,ny_,nz, 0, 1);
     outgrid->SetFormat(StormContGrid::STORM_ASCII);
     outgrid->WriteToFile(gfName,header);

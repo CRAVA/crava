@@ -22,12 +22,12 @@ ParameterOutput::writeParameters(const Simbox  * simbox,
 
   if(simNum >= 0)
   {
-    prefix = "sim_";
+    prefix = IO::PrefixSimulations();
     suffix = "_"+NRLib::ToString(simNum+1);
   }
   else
   {
-    prefix = "pred_";
+    prefix = IO::PrefixPredictions();
     suffix = "";
   }
 

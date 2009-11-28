@@ -1636,7 +1636,7 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs)
 
     int nfac = model_->getModelSettings()->getNumberOfFacies();
 
-    std::string baseName;
+    std::string baseName = IO::PrefixFaciesProbability();
     if((outputFlag_ & IO::FACIESPROBRELATIVE)>0)
     {
       meanAlpha2_->subtract(postAlpha_);
@@ -1663,7 +1663,7 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs)
       delete meanBeta2_;
       delete meanRho2_;
 
-      baseName = "FaciesProbRelative_";
+      baseName += "Relative_";
     }
     else
     {
@@ -1681,7 +1681,6 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs)
                               simbox_->getdz(),
                               false,
                               model_->getModelSettings()->getNoVsFaciesProb());
-      baseName = "FaciesProb_";
     }
     fprob_->calculateConditionalFaciesProb(wells_, 
                                            nWells_, 

@@ -1455,7 +1455,8 @@ Model::processSeismic(FFTGrid      **& seisCube,
         seisCube[i]->setAngle(modelSettings->getAngle(i));
       }
     }
-    
+    LogKit::LogFormatted(LogKit::LOW,"\n");
+
     if(failed == false)
     {
       bool segyVolumesRead = false;
@@ -1999,7 +2000,7 @@ Model::readGridFromFile(const std::string       & fileName,
 
   if(fileType == IO::CRAVA) 
   {
-    LogKit::LogFormatted(LogKit::LOW,"Reading grid \'"+parName+"\' from file "+fileName+"\n");
+    LogKit::LogFormatted(LogKit::LOW,"\nReading grid \'"+parName+"\' from file "+fileName);
     if(modelSettings->getFileGrid() == 1)
       grid = new FFTFileGrid(timeSimbox->getnx(),
                              timeSimbox->getny(), 

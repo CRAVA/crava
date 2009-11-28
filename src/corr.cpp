@@ -334,8 +334,8 @@ Corr::writeFilePriorCorrT(float* corrT, int nzp) const
 //--------------------------------------------------------------------
 void Corr::writeFilePriorVariances(ModelSettings * modelSettings) const
 {
-  std::string baseName1 = IO::PrefixPrior() + IO::FileParameterCov()           + IO::SuffixGeneralData();
-  std::string baseName2 = IO::PrefixPrior() + IO::FileTemporalCorrUnfiltered() + IO::SuffixGeneralData();
+  std::string baseName1 = IO::PrefixPrior() + IO::FileParameterCov() + IO::SuffixCrava();
+  std::string baseName2 = IO::PrefixPrior() + IO::FileTemporalCorr() + IO::SuffixCrava();
   std::string baseName3 = IO::PrefixPrior() + IO::FileLateralCorr();
   std::string fileName1 = IO::makeFullFileName(IO::PathToCorrelations(), baseName1);
   std::string fileName2 = IO::makeFullFileName(IO::PathToCorrelations(), baseName2);
@@ -344,10 +344,10 @@ void Corr::writeFilePriorVariances(ModelSettings * modelSettings) const
   NRLib::OpenWrite(file, fileName1);
   file << std::fixed
        << std::right
-       << std::setprecision(6);
+       << std::setprecision(10);
   for(int i=0 ; i<3 ; i++) {
     for(int j=0 ; j<3 ; j++) {
-      file << std::setw(10) << priorVar0_[i][j] << " ";
+      file << std::setw(13) << priorVar0_[i][j] << " ";
     }
     file << "\n";
   }
@@ -356,10 +356,10 @@ void Corr::writeFilePriorVariances(ModelSettings * modelSettings) const
   NRLib::OpenWrite(file, fileName2);
   file << std::fixed 
        << std::right  
-       << std::setprecision(6)
+       << std::setprecision(8)
        << dt_ << "\n";
   for(int i=0 ; i<n_ ; i++) {
-    file << std::setw(9) << priorCorrT_[i] << "\n";
+    file << std::setw(11) << priorCorrT_[i] << "\n";
   }
   file.close();
 
