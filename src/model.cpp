@@ -1404,7 +1404,7 @@ Model::estimateZPaddingSize(Simbox         * timeSimbox,
     logLevel = LogKit::LOW;
   
   LogKit::LogFormatted(logLevel,"\nPadding sizes estimated from an assumed wavelet length:\n");
-  LogKit::LogFormatted(logLevel,"  zPad, zPadFac, nz, nzPad                 : %6.fs, %4.2f, %5d, %4d\n", 
+  LogKit::LogFormatted(logLevel,"  zPad, zPadFac, nz, nzPad                 : %6.fms, %4.2f, %5d, %4d\n", 
                        zPad, zPadFac, timeSimbox->getnz(), nzPad);
 }
 
