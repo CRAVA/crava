@@ -91,6 +91,14 @@ private:
                                 bool           & failed);
   void             addSeismicLogs(WellData ** wells, FFTGrid ** seisCube, 
                                   ModelSettings * modelSettings);
+
+  void             getSyntheticSeismic(Wavelet      ** wavelet,
+                                       WellData     ** wells,
+                                       float        ** reflectionMatrix,
+                                       Simbox        * timeSimbox,
+                                       ModelSettings * modelSettings,
+                                       FFTGrid      ** seisCube) const;
+
   void             writeWells(WellData ** wells, ModelSettings * modelSettings);
 
 

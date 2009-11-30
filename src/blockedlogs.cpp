@@ -12,6 +12,7 @@
 #include "src/definitions.h"
 #include "src/blockedlogs.h"
 #include "src/welldata.h"
+#include "src/wavelet.h"
 #include "src/fftgrid.h"
 #include "src/simbox.h"
 #include "src/model.h"
@@ -43,7 +44,8 @@ BlockedLogs::BlockedLogs(WellData  * well,
     alpha_for_facies_(NULL),
     rho_for_facies_(NULL),
     real_seismic_data_(NULL),
-    synt_seismic_data_(NULL),
+    actual_synt_seismic_data_(NULL),
+    well_synt_seismic_data_(NULL),
     cpp_(NULL),
     nAngles_(0),
     firstM_(IMISSING),
@@ -110,11 +112,17 @@ BlockedLogs::~BlockedLogs(void)
         delete [] real_seismic_data_[i];
     delete [] real_seismic_data_;
   }
-  if (synt_seismic_data_ != NULL) {
+  if (actual_synt_seismic_data_ != NULL) {
     for (int i=0 ; i<nAngles_ ; i++)
-      if (synt_seismic_data_[i] != NULL)
-        delete [] synt_seismic_data_[i];
-    delete [] synt_seismic_data_;
+      if (actual_synt_seismic_data_[i] != NULL)
+        delete [] actual_synt_seismic_data_[i];
+    delete [] actual_synt_seismic_data_;
+  }
+  if (well_synt_seismic_data_ != NULL) {
+    for (int i=0 ; i<nAngles_ ; i++)
+      if (well_synt_seismic_data_[i] != NULL)
+        delete [] well_synt_seismic_data_[i];
+    delete [] well_synt_seismic_data_;
   }
   if (cpp_ != NULL) { 
     for (int i=0 ; i<nAngles_ ; i++)
@@ -741,10 +749,15 @@ BlockedLogs::setLogFromVerticalTrend(float      * vertical_trend,
     beta_seismic_resolution_ = blockedLog;
   else if (type == "RHO_SEISMIC_RESOLUTION")
     rho_seismic_resolution_ = blockedLog;
-  else if (type == "SYNTHETIC_SEISMIC") {
-    if (synt_seismic_data_ == NULL)
-      synt_seismic_data_ = new float * [nAngles_]; // nAngles is set along with real_seismic_data_
-    synt_seismic_data_[iAngle] = blockedLog;
+  else if (type == "ACTUAL_SYNTHETIC_SEISMIC") {
+    if (actual_synt_seismic_data_ == NULL)
+      actual_synt_seismic_data_ = new float * [nAngles_]; // nAngles is set along with real_seismic_data_
+    actual_synt_seismic_data_[iAngle] = blockedLog;
+  }
+  else if (type == "WELL_SYNTHETIC_SEISMIC") {
+    if (well_synt_seismic_data_ == NULL)
+      well_synt_seismic_data_ = new float * [nAngles_]; // nAngles is set along with real_seismic_data_
+    well_synt_seismic_data_[iAngle] = blockedLog;
   }
   else {
     LogKit::LogFormatted(LogKit::ERROR,"\nUnknown log type \""+type+
@@ -840,12 +853,13 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
     std::exit(1);
   }
 
-  bool gotFacies      = (nFacies_ > 0);
-  bool gotRealSeismic = (real_seismic_data_ != NULL);
-  bool gotSyntSeismic = (synt_seismic_data_ != NULL);
-  bool gotCpp         = (cpp_ != NULL);
-  bool gotFilteredLog = (alpha_seismic_resolution_ != NULL);
-  bool gotVpRhoFacLog = (alpha_for_facies_ != NULL);
+  bool gotFacies            = (nFacies_ > 0);
+  bool gotRealSeismic       = (real_seismic_data_ != NULL);
+  bool gotActualSyntSeismic = (actual_synt_seismic_data_ != NULL);
+  bool gotWellSyntSeismic   = (well_synt_seismic_data_ != NULL);
+  bool gotCpp               = (cpp_ != NULL);
+  bool gotFilteredLog       = (alpha_seismic_resolution_ != NULL);
+  bool gotVpRhoFacLog       = (alpha_for_facies_ != NULL);
   int nLogs = 3*3;   // {Vp, Vs, Rho} x {raw, BgHz, seisHz} 
   if(gotFilteredLog)
     nLogs += 3;
@@ -855,7 +869,9 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
     nLogs += 1;
   if (gotRealSeismic)
     nLogs += nAngles_;
-  if (gotSyntSeismic)
+  if (gotActualSyntSeismic)
+    nLogs += nAngles_;
+  if (gotWellSyntSeismic)
     nLogs += nAngles_;
   if (gotCpp)
     nLogs += nAngles_;
@@ -898,9 +914,13 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
     for (int i=0 ; i<nAngles_ ; i++)
       file << "RealSeis" << i << " UNK lin\n";
   }
-  if (gotSyntSeismic) {
+  if (gotActualSyntSeismic) {
     for (int i=0 ; i<nAngles_ ; i++)
-      file << "SyntSeis" << i << " UNK lin\n";
+      file << "ActualSyntSeis" << i << " UNK lin\n";
+  }
+  if (gotWellSyntSeismic) {
+    for (int i=0 ; i<nAngles_ ; i++)
+      file << "WellOptimizedSyntSeis" << i << " UNK lin\n";
   }
   if (gotCpp) {
     for (int i=0 ; i<nAngles_ ; i++)
@@ -944,9 +964,14 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
         file << std::setw(12) << (real_seismic_data_[a][i]==RMISSING ? WELLMISSING : real_seismic_data_[a][i])          << " ";
       file << " ";
     }
-    if (gotSyntSeismic) {
+    if (gotActualSyntSeismic) {
       for (int a=0 ; a<nAngles_ ; a++)
-        file << std::setw(12) << (synt_seismic_data_[a][i]==RMISSING ? WELLMISSING : synt_seismic_data_[a][i])          << " ";
+        file << std::setw(12) << (actual_synt_seismic_data_[a][i]==RMISSING ? WELLMISSING : actual_synt_seismic_data_[a][i])          << " ";
+      file << " ";
+    }
+    if (gotWellSyntSeismic) {
+      for (int a=0 ; a<nAngles_ ; a++)
+        file << std::setw(12) << (well_synt_seismic_data_[a][i]==RMISSING ? WELLMISSING : well_synt_seismic_data_[a][i])          << " ";
       file << " ";
     }
     if (gotCpp)
@@ -1022,12 +1047,13 @@ BlockedLogs::writeNorsarWell(ModelSettings * modelSettings)
   std::string logFileName = IO::makeFullFileName(IO::PathToWells(), logBaseName);
   std::string onlyName    = NRLib::RemovePath(logFileName);
   
-  bool gotFacies      = (nFacies_ > 0);
-  bool gotRealSeismic = (real_seismic_data_ != NULL);
-  bool gotSyntSeismic = (synt_seismic_data_ != NULL);
-  bool gotCpp         = (cpp_ != NULL);
-  bool gotFilteredLog = (alpha_seismic_resolution_ != NULL);
-  bool gotVpRhoFacLog = (alpha_for_facies_ != NULL);
+  bool gotFacies            = (nFacies_ > 0);
+  bool gotRealSeismic       = (real_seismic_data_ != NULL);
+  bool gotActualSyntSeismic = (actual_synt_seismic_data_ != NULL);
+  bool gotWellSyntSeismic   = (well_synt_seismic_data_ != NULL);
+  bool gotCpp               = (cpp_ != NULL);
+  bool gotFilteredLog       = (alpha_seismic_resolution_ != NULL);
+  bool gotVpRhoFacLog       = (alpha_for_facies_ != NULL);
 
   int nLogs = 3*3;   // {Vp, Vs, Rho} x {raw, BgHz, seisHz, seisRes} 
   if(gotFilteredLog)
@@ -1036,7 +1062,9 @@ BlockedLogs::writeNorsarWell(ModelSettings * modelSettings)
     nLogs += 1;
   if (gotRealSeismic)
     nLogs += nAngles_;
-  if (gotSyntSeismic)
+  if (gotActualSyntSeismic)
+    nLogs += nAngles_;
+  if (gotWellSyntSeismic)
     nLogs += nAngles_;
   if (gotCpp)
     nLogs += nAngles_;
@@ -1438,6 +1466,7 @@ void BlockedLogs::findOptimalWellLocation(FFTGrid                   ** seisCube,
           maxTot += angleWeight[j]*maxValue[j]; //Find weighted total maximum correlation
         }
       }
+
       if(maxTot > maxValueTot){
         maxValueTot = maxTot;
         polarityMax = polarity;
@@ -1452,7 +1481,7 @@ void BlockedLogs::findOptimalWellLocation(FFTGrid                   ** seisCube,
       }
     }
   }
- 
+
   for(i=0; i<nAngles; i++){
     shiftI[i] = shiftIMax[i];
     maxValue[i] = maxValueMax[i];
@@ -1520,4 +1549,83 @@ void BlockedLogs::findOptimalWellLocation(FFTGrid                   ** seisCube,
   delete [] rhoVert;
   delete [] hasData;
   delete [] ccor_seis_cpp_Max_r;
+}
+
+
+void BlockedLogs::generateSyntheticSeismic(float   ** reflCoef,
+                                           int        nAngles,
+                                           Wavelet ** wavelet,
+                                           Simbox   * timeSimbox,
+                                           int        nzp)
+{ 
+  int          i,j;
+  int          start,length;
+  
+  fftw_complex   cAmp; 
+  Wavelet      * localWavelet;
+
+  int    cnzp = nzp/2+1;
+  int    rnzp = 2*cnzp;
+  int    nz   = timeSimbox->getnz();
+  double dz   = static_cast<float>(timeSimbox->getRelThick(ipos_[0],jpos_[0])*timeSimbox->getdz());
+
+  float  * syntSeis  = new float[nz];
+  float  * alphaVert = new float[nLayers_]; 
+  float  * betaVert  = new float[nLayers_]; 
+  float  * rhoVert   = new float[nLayers_]; 
+  bool   * hasData   = new bool[nLayers_]; 
+   
+  fftw_real    * cpp_r       = new fftw_real[rnzp]; 
+  fftw_complex * cpp_c       = reinterpret_cast<fftw_complex*>(cpp_r); 
+  fftw_real    * synt_seis_r = new fftw_real[rnzp]; 
+  fftw_complex * synt_seis_c = reinterpret_cast<fftw_complex*>(synt_seis_r);
+
+  getVerticalTrend(alpha_, alphaVert);
+  getVerticalTrend(beta_, betaVert);
+  getVerticalTrend(rho_, rhoVert);
+    
+  for( i=0 ; i<nLayers_; i++ )
+    hasData[i] = alphaVert[i] != RMISSING && betaVert[i] != RMISSING && rhoVert[i] != RMISSING;
+
+  findContiniousPartOfData(hasData,nLayers_,start,length);
+
+  for( i=0; i<nAngles; i++ )
+  {
+    for(j=0; j<rnzp; j++)
+    {
+      cpp_r[j] = 0;
+      synt_seis_r[j] = 0;
+    }
+    fillInCpp(reflCoef[i],start,length,cpp_r,nzp); 
+    Utils::fft(cpp_r,cpp_c,nzp);
+    
+    localWavelet = wavelet[i]->getLocalWavelet(ipos_[0],jpos_[0]);
+    localWavelet->fft1DInPlace();
+
+    for( j=0; j<cnzp; j++ )
+    {
+      cAmp =  localWavelet->getCAmp(j);
+      synt_seis_c[j].re = cpp_c[j].re*cAmp.re + cpp_c[j].im*cAmp.im; 
+      synt_seis_c[j].im = cpp_c[j].im*cAmp.re - cpp_c[j].re*cAmp.im;
+    }
+
+    Utils::fftInv(synt_seis_c,synt_seis_r,nzp);
+
+    for ( j=0 ; j<nz ; j++ )
+      syntSeis[j] = 0.0; // Do not use RMISSING (fails in setLogFromVerticalTrend())
+
+    for ( j=start; j<start+length; j++ )
+      syntSeis[j] = synt_seis_r[j];
+    
+    setLogFromVerticalTrend(syntSeis,zpos_[0],dz,nz,"ACTUAL_SYNTHETIC_SEISMIC",i);
+    
+    localWavelet->fft1DInPlace();
+    delete localWavelet;
+  }
+
+  delete [] syntSeis;
+  delete [] alphaVert; 
+  delete [] betaVert; 
+  delete [] rhoVert; 
+  delete [] hasData; 
 }

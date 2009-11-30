@@ -230,7 +230,6 @@ Wavelet1D::Wavelet1D(Simbox                       * simbox,
     printVecToFile(fileName,synt_seis_r[w], nzp);
     sprintf(fileName,"seis");
     printVecToFile(fileName,seis_r[w], nzp);
-   
 
 
     if (wellWeight[w] > 0) 
@@ -240,7 +239,7 @@ Wavelet1D::Wavelet1D(Simbox                       * simbox,
       for (int i = sampleStart[w] ; i < sampleStop[w] ; i++)
         syntSeis[i] = synt_seis_r[w][i];
       wells[w]->getBlockedLogsOrigThick()->setLogFromVerticalTrend(syntSeis,z0[w],dz[w],nz,
-                                                                   "SYNTHETIC_SEISMIC",iAngle);
+                                                                   "WELL_SYNTHETIC_SEISMIC",iAngle);
     }
   }
   delete [] syntSeis;

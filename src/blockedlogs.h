@@ -13,6 +13,7 @@ class RandomGen;
 class FFTGrid;
 class WellData;
 class Simbox;
+class Wavelet;
 
 class BlockedLogs
 {
@@ -46,7 +47,7 @@ public:
   const float  * getAlphaForFacies(void)            const { return alpha_for_facies_         ;}
   const float  * getRhoForFacies(void)              const { return rho_for_facies_           ;}  
   float       ** getRealSeismicData(void)           const { return real_seismic_data_        ;}
-  float       ** getSyntSeismicData(void)           const { return synt_seismic_data_        ;}
+  float       ** getSyntSeismicData(void)           const { return actual_synt_seismic_data_        ;}
   float       ** getCpp(void)                       const { return cpp_ ;}              
   void           getVerticalTrend(const float * blockedLog, float * trend);
   void           getVerticalTrendLimited(const float * blockedLog, float * trend, const std::vector<Surface *> & limits);
@@ -78,6 +79,7 @@ public:
                                          int                        & iMove,
                                          int                        & jMove,
                                          float                      & kMove);
+  void           generateSyntheticSeismic(float ** reflCoef, int nAngles, Wavelet ** wavelet, Simbox * timeSimbox, int nzp);
 
 private:
   void           setLogFromVerticalTrend(float *& log, double * zpos, int nBlocks, 
@@ -145,7 +147,8 @@ private:
   float        * rho_for_facies_;           ///< 
 
   float       ** real_seismic_data_;        ///< Seismic data
-  float       ** synt_seismic_data_;        ///< Forward modelled seismic data
+  float       ** actual_synt_seismic_data_; ///< Forward modelled seismic data using local wavelet
+  float       ** well_synt_seismic_data_;   ///< Forward modelled seismic data using wavelet estimated in well
   float       ** cpp_;                      ///< Reflection coefficients
   int            nAngles_;                  ///< Number of AVA stacks
 

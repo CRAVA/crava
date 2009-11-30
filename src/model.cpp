@@ -297,6 +297,12 @@ Model::Model(char * fileName)
                               modelSettings_, inputFiles, errText, failedWavelet);
             }
           }
+          if(failedWavelet == false && failedReflMat == false &&
+            (modelSettings_->getOptimizeWellLocation() || modelSettings_->getEstimateWaveletNoise() ))
+          {
+            getSyntheticSeismic(wavelet_, wells_, reflectionMatrix_,
+                                timeSimbox_, modelSettings_, seisCube_);
+          }
         }
 
         if((estimate == false && modelSettings_->getDoDepthConversion() == true) || writeVelocityInCravaFormat)
@@ -1779,6 +1785,26 @@ void Model::addSeismicLogs(WellData ** wells, FFTGrid ** seisCube,
       wells[i]->getBlockedLogsOrigThick()->setLogFromGrid(seisCube[iAngle],iAngle,nAngles,"SEISMIC_DATA");
   }
 }
+   
+void Model::getSyntheticSeismic(Wavelet      ** wavelet,
+                                WellData     ** wells,
+                                float        ** reflectionMatrix,
+                                Simbox        * timeSimbox,
+                                ModelSettings * modelSettings,
+                                FFTGrid      ** seisCube) const
+{
+  int nWells  = modelSettings->getNumberOfWells();
+  int nAngles = modelSettings->getNumberOfAngles();
+  int nzp     = seisCube[0]->getNzp(); 
+  int i;
+
+  for( i=0; i<nWells; i++ )
+  {
+    if( wells[i]->isDeviated() == true )
+      continue;
+    wells[i]->getBlockedLogsOrigThick()->generateSyntheticSeismic(reflectionMatrix,nAngles,wavelet,timeSimbox,nzp);
+  }
+}
 
 void Model::writeWells(WellData ** wells, ModelSettings * modelSettings)
 {
@@ -2417,7 +2443,7 @@ Model::processWellLocation(FFTGrid                     ** seisCube,
 
   std::vector<float> angleWeight(nAngles); 
   LogKit::LogFormatted(LogKit::LOW,"\n");
-  LogKit::LogFormatted(LogKit::LOW,"  Well                  Shift[ms]       Move x[m]       Move y[m] \n");
+  LogKit::LogFormatted(LogKit::LOW,"  Well             Shift[ms]       DeltaI   DeltaX[m]   DeltaJ   DeltaY[m] \n");
   LogKit::LogFormatted(LogKit::LOW,"  ----------------------------------------------------------------------------------\n");
 
   for (w = 0 ; w < nWells ; w++) {
@@ -2457,8 +2483,8 @@ Model::processWellLocation(FFTGrid                     ** seisCube,
     wells[w]->moveWell(timeSimbox,deltaX,deltaY,kMove);
     wells[w]->setBlockedLogsOrigThick( new BlockedLogs(wells[w], timeSimbox, randomGen) );
 
-    LogKit::LogFormatted(LogKit::LOW,"  %-20s   %6.2f    %12.2f    %12.2f \n", 
-    wells[w]->getWellname(), kMove, deltaX, deltaY);
+    LogKit::LogFormatted(LogKit::LOW,"  %-20s   %1.2f    %8d  %10.2f  %8d  %10.2f \n", 
+    wells[w]->getWellname(), kMove, iMove, deltaX, jMove, deltaY);
   }
 }
 
