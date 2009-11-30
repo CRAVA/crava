@@ -38,6 +38,7 @@ public:
   ~FaciesProb();
 
   FFTGrid              * getFaciesProb(int i){return faciesProb_[i];};
+  FFTGrid              * getFaciesProbGeomodel(int i){return faciesProbGeomodel_[i];};
 
   void                   calculateConditionalFaciesProb(WellData                    ** wells, 
                                                         int                            nwells, 
@@ -48,6 +49,7 @@ public:
 private:
   int             nFacies_;
   FFTGrid      ** faciesProb_;
+  FFTGrid      ** faciesProbGeomodel_;
 
   void                   makeFaciesProb(int                            nfac, 
                                         FFTGrid                      * postAlpha, 

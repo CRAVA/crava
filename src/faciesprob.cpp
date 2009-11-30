@@ -51,8 +51,10 @@ FaciesProb::~FaciesProb()
   for(int i=0;i<nFacies_;i++)
   {
     delete faciesProb_[i];
+    delete faciesProbGeomodel_[i];
   }
   delete [] faciesProb_;
+  delete [] faciesProbGeomodel_;
 }
 
 std::vector<FFTGrid *>
@@ -678,20 +680,29 @@ void FaciesProb::calculateFaciesProb(FFTGrid                      * alphagrid,
   ny   = alphagrid->getNy();
   nz   = alphagrid->getNz();
   faciesProb_ = new FFTGrid*[nFacies_]; 
+  faciesProbGeomodel_ = new FFTGrid*[nFacies_];
   alphagrid->setAccessMode(FFTGrid::READ);
   betagrid->setAccessMode(FFTGrid::READ);
   rhogrid->setAccessMode(FFTGrid::READ);
   for(i=0;i<nFacies_;i++)
   {
     if(alphagrid->isFile()==1)
+    {
       faciesProb_[i] = new FFTFileGrid(nx, ny, nz, nx, ny, nz);
+      faciesProbGeomodel_[i] = new FFTFileGrid(nx, ny, nz, nx, ny, nz);
+    }
     else
+    {
       faciesProb_[i] = new FFTGrid(nx, ny, nz, nx, ny, nz);
+      faciesProbGeomodel_[i] = new FFTGrid(nx, ny, nz, nx, ny, nz);
+    }
     faciesProb_[i]->setAccessMode(FFTGrid::WRITE);
     faciesProb_[i]->createRealGrid();
+    faciesProbGeomodel_[i]->setAccessMode(FFTGrid::WRITE);
+    faciesProbGeomodel_[i]->createRealGrid();
   }
   smallrnxp = faciesProb_[0]->getRNxp();
-  float help;
+  float help, help2;
   float undefSum = p_undefined/(volume->getnx()*volume->getny()*volume->getnz());
   for(i=0;i<nzp;i++)
   {
@@ -716,11 +727,21 @@ void FaciesProb::calculateFaciesProb(FFTGrid                      * alphagrid,
           for(l=0;l<nFacies_;l++)
           {
             help = value[l]/sum;
+            if(priorFaciesCubes!=NULL)
+              help2 = help + priorFaciesCubes[l]->getRealValue(k,j,i)*undefSum/sum;
+            else
+              help2 = help + priorFacies[l]*undefSum/sum;
             //faciesProb_[l]->setRealValue(k,j,i,help);
             if(k<nx)
+            {
               faciesProb_[l]->setNextReal(help);
+              faciesProbGeomodel_[l]->setNextReal(help2);
+            }
             else
+            {
               faciesProb_[l]->setNextReal(RMISSING);
+              faciesProbGeomodel_[l]->setNextReal(RMISSING);
+            }
           }
         }
       }
