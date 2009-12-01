@@ -441,6 +441,7 @@ void CKrigingAdmin::FindDataInDataBlockLoop(Gamma gamma) {
   switch (currDataBoxSize) {
   case DBS_RIGHT:
     // NBNB-PAL: Nothing to do here? I put in this switch option to avoid a crash (CRA-75)
+    break;
   case DBS_TOO_SMALL:
     testDataBoxSize = FindDataInDataBlock(gamma, maxDataBox);
     if(testDataBoxSize != DBS_TOO_BIG)
@@ -693,7 +694,7 @@ void CKrigingAdmin::SetKrigVector(Gamma gamma) {
   // set krig vector
   // for alpha kriging
 
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"\n");
+  //LogKit::LogFormatted(LogKit::DEBUGHIGH,"\n");
 
   // k_a
   int a2;
