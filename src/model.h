@@ -292,9 +292,14 @@ private:
                                            Surface      *& surface);
   bool             findTimeGradientSurface(const std::string     & refTimeFile,
                                            Simbox                * simbox);
+  void             getGeometry(const std::string         seismicFile,
+                               const TraceHeaderFormat * thf,
+                               SegyGeometry           *& geometry,
+                               std::string             & errText,
+                               bool                    & failed);
+  SegyGeometry   * geometryFromCravaFile(const std::string & fileName); 
+  SegyGeometry   * geometryFromStormFile(const std::string & fileName, std::string & errText); 
 
-  SegyGeometry            * geometryFromCravaFile(const std::string & fileName); 
-  SegyGeometry            * geometryFromStormFile(const std::string & fileName, char * errText); 
 
   ModelSettings           * modelSettings_;
   Simbox                  * timeSimbox_;            ///< Information about simulation area.

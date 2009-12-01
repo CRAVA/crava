@@ -247,9 +247,10 @@ Model::Model(char * fileName)
           }
           else 
             //
-            // When well locations are to be optimized, the reflection matrix is estimated from the wells instead of the background
-            // as the background is dependent of the well locations. Need to alternate the order of the process-functions, as the 
-            // well locations need to be estimated before the background model is processed.
+            // When well locations are to be optimized, the reflection matrix is estimated from 
+            // the wells instead of the background as the background is dependent of the well 
+            // locations. Need to alternate the order of the process-functions, as the well 
+            // locations need to be estimated before the background model is processed.
             //
           {
             processReflectionMatrixFromWells(reflectionMatrix_, wells_, modelSettings_, 
@@ -732,67 +733,47 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
 
   std::string seismicFile("");
   SegyGeometry * geometry = NULL;
-  if(modelSettings->getForwardModeling()==true)
+  if(modelSettings->getForwardModeling() == true)
   {
     if(!areaFromModelFile)
     {
-      seismicFile = inputFiles->getBackFile(0);
-      if(seismicFile != "") {//May change the condition here, but need geometry if we want to set XL/IL
-        int fileType = IO::findGridType(seismicFile);
-        if(fileType == IO::CRAVA) {
-          geometry = geometryFromCravaFile(seismicFile);
-        }
-        else if(fileType == IO::SEGY) {
-          geometry = SegY::FindGridGeometry(seismicFile, modelSettings->getTraceHeaderFormat(0));
-        }
-        else if(fileType == IO::STORM || fileType == IO::SGRI) {
-          geometry = geometryFromStormFile(seismicFile, errText);
-        }
-        else {
-          sprintf(errText,"%sTrying to read grid dimensions from unknown file format.\n",errText);
-          failed = true;
-        }
-      }
+      std::string tmpErrText;
+      getGeometry(inputFiles->getBackFile(0),
+                  modelSettings->getTraceHeaderFormat(0),
+                  geometry,
+                  tmpErrText,
+                  failed);
+      sprintf(errText,"%s%s",errText,tmpErrText.c_str());
       modelSettings->setAreaParameters(geometry);
     }
   }
   else
   {
-  if (modelSettings->getForwardModeling()==false && inputFiles->getNumberOfSeismicFiles() > 0)
-    seismicFile = inputFiles->getSeismicFile(0); // Also needed for checkAvailableMemory()
+    if (inputFiles->getNumberOfSeismicFiles() > 0)
+      seismicFile = inputFiles->getSeismicFile(0); // Also needed for checkAvailableMemory()
 
-  if (!(areaFromModelFile && modelSettings->getEstimationMode()==true)) 
-  {  
-    if (!areaFromModelFile) {
-      areaType = "Seismic data";
-      LogKit::LogFormatted(LogKit::HIGH,"\nFinding inversion area from seismic data in file %s\n", 
-      seismicFile.c_str());
-    }
-    else {
-      LogKit::LogFormatted(LogKit::HIGH,"\nFinding IL/XL information from seismic data in file %s\n", 
-      seismicFile.c_str());
-    }  
-    if(seismicFile != "") {//May change the condition here, but need geometry if we want to set XL/IL
-      int fileType = IO::findGridType(seismicFile);
-      if(fileType == IO::CRAVA) {
-        geometry = geometryFromCravaFile(seismicFile);
-      }
-      else if(fileType == IO::SEGY) {
-        geometry = SegY::FindGridGeometry(seismicFile, modelSettings->getTraceHeaderFormat(0));
-      }
-      else if(fileType == IO::STORM || fileType==IO::SGRI) {
-        geometry = geometryFromStormFile(seismicFile, errText);
+    if (!(areaFromModelFile && modelSettings->getEstimationMode()==true)) 
+    {  
+      if (!areaFromModelFile) {
+        areaType = "Seismic data";
+        LogKit::LogFormatted(LogKit::HIGH,"\nFinding inversion area from seismic data in file %s\n", seismicFile.c_str());
       }
       else {
-        sprintf(errText,"%sTrying to read grid dimensions from unknown file format.\n",errText);
-        failed = true;
-      }
+        LogKit::LogFormatted(LogKit::HIGH,"\nFinding IL/XL information from seismic data in file %s\n", seismicFile.c_str());
+      }  
+      std::string tmpErrText;
+      getGeometry(seismicFile,
+                  modelSettings->getTraceHeaderFormat(0),
+                  geometry,
+                  tmpErrText,
+                  failed);
+      sprintf(errText,"%s%s",errText, tmpErrText.c_str());
+      
+      if(!areaFromModelFile)
+        modelSettings->setAreaParameters(geometry);
     }
-    if(!areaFromModelFile)
-     modelSettings->setAreaParameters(geometry);
   }
-  }
-
+  
   const SegyGeometry * areaParams = modelSettings->getAreaParameters(); 
 
   int error = timeSimbox->setArea(areaParams, errText);
@@ -4043,6 +4024,31 @@ Model::findTimeGradientSurface(const std::string   & refTimeFile,
   return(inside);
 }
 
+void
+Model::getGeometry(const std::string         seismicFile,
+                   const TraceHeaderFormat * thf,
+                   SegyGeometry           *& geometry,
+                   std::string             & errText,
+                   bool                    & failed)
+{
+  if(seismicFile != "") { //May change the condition here, but need geometry if we want to set XL/IL
+    int fileType = IO::findGridType(seismicFile);
+    if(fileType == IO::CRAVA) {
+      geometry = geometryFromCravaFile(seismicFile);
+    }
+    else if(fileType == IO::SEGY) {
+      geometry = SegY::FindGridGeometry(seismicFile, thf);
+    }
+    else if(fileType == IO::STORM || fileType==IO::SGRI) {
+      geometry = geometryFromStormFile(seismicFile, errText);
+    }
+    else {
+      errText += "Trying to read grid dimensions from unknown file format.\n";
+      failed = true;
+    }
+  }
+}
+
 SegyGeometry *
 Model::geometryFromCravaFile(const std::string & fileName) 
 {
@@ -4076,7 +4082,7 @@ Model::geometryFromCravaFile(const std::string & fileName)
 
 SegyGeometry *
 Model::geometryFromStormFile(const std::string & fileName,
-                             char              * errText) 
+                             std::string       & errText) 
 {
   SegyGeometry  * geometry  = NULL;
   StormContGrid * stormgrid = NULL;
@@ -4112,7 +4118,7 @@ Model::geometryFromStormFile(const std::string & fileName,
                                 xlStepX, xlStepY, rot);
   }
   else {
-    sprintf(errText,"%s%s", errText, tmpErrText.c_str());
+    errText += tmpErrText;
   }
 
   if (stormgrid != NULL)
