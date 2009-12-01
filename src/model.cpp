@@ -2432,7 +2432,7 @@ Model::processWellLocation(FFTGrid                     ** seisCube,
   int     iMove;
   int     jMove;
   int     i,j,w;
-  int     nMoveAngles;
+  int     nMoveAngles = 0;
   int     nWells      = modelSettings->getNumberOfWells();
   int     nAngles     = modelSettings->getNumberOfAngles();
   int     maxOffset   = modelSettings->getMaxWellOffset();
@@ -2455,10 +2455,10 @@ Model::processWellLocation(FFTGrid                     ** seisCube,
     
     if( nMoveAngles==0 )
       continue;
-    
-    for( i=0; i<nAngles; i++ ){
+
+    for( i=0; i<nAngles; i++ )
       angleWeight[i] = 0;
-    }
+
     for( i=0; i<nMoveAngles; i++ ){
       moveAngle   = modelSettings->getWellMoveAngle(w,i);
 
@@ -2482,10 +2482,17 @@ Model::processWellLocation(FFTGrid                     ** seisCube,
     deltaY = iMove*dx*sin(angle) + jMove*dy*cos(angle);
     wells[w]->moveWell(timeSimbox,deltaX,deltaY,kMove);
     wells[w]->setBlockedLogsOrigThick( new BlockedLogs(wells[w], timeSimbox, randomGen) );
-
-    LogKit::LogFormatted(LogKit::LOW,"  %-20s   %1.2f    %8d  %10.2f  %8d  %10.2f \n", 
+    LogKit::LogFormatted(LogKit::LOW,"  %-13s %11.2f %12d %11.2f %8d %11.2f \n", 
     wells[w]->getWellname(), kMove, iMove, deltaX, jMove, deltaY);
   }
+
+   for (w = 0 ; w < nWells ; w++){
+     nMoveAngles = modelSettings->getNumberOfWellAngles(w);
+
+    if( wells[w]->isDeviated()==true && nMoveAngles > 0 )
+      LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: Well %7s is treated as deviated and can not be moved.\n",
+          wells[w]->getWellname());
+   }
 }
 
 void
@@ -3366,6 +3373,21 @@ Model::printSettings(ModelSettings * modelSettings,
         LogKit::LogFormatted(LogKit::LOW,"\n");
       }
     }
+    if ( modelSettings->getOptimizeWellLocation() ) 
+    {
+      LogKit::LogFormatted(LogKit::LOW,"\nFor well, optimize location to             : Angle with Weight\n");
+      for (int i = 0 ; i < modelSettings->getNumberOfWells() ; i++) 
+      {
+        int nMoveAngles = modelSettings->getNumberOfWellAngles(i);
+        if( nMoveAngles > 0 )
+        {
+          LogKit::LogFormatted(LogKit::LOW," %2d %46.1f %10.1f\n",i+1,(modelSettings->getWellMoveAngle(i,0)*180/PI),modelSettings->getWellMoveWeight(i,0));
+          for (int j=1; j<nMoveAngles; j++)
+            LogKit::LogFormatted(LogKit::LOW," %49.1f %10.1f\n",(modelSettings->getWellMoveAngle(i,j)*180/PI),modelSettings->getWellMoveWeight(i,j));
+        }
+        LogKit::LogFormatted(LogKit::LOW,"\n");
+      }
+    }
   }
 
   //
@@ -3599,7 +3621,11 @@ Model::printSettings(ModelSettings * modelSettings,
       LogKit::LogFormatted(LogKit::LOW,"  Maximum shift in noise estimation        : %10.1f\n",modelSettings->getMaxWaveletShift());
     LogKit::LogFormatted(LogKit::LOW,"  Minimum relative amplitude               : %10.3f\n",modelSettings->getMinRelWaveletAmp());
     LogKit::LogFormatted(LogKit::LOW,"  Wavelet tapering length                  : %10.1f\n",modelSettings->getWaveletTaperingL());
-    
+    if (modelSettings->getOptimizeWellLocation()) {
+      LogKit::LogFormatted(LogKit::LOW,"\nGeneral settings for well locations:\n");
+      LogKit::LogFormatted(LogKit::LOW,"  Maximum offset                           : %10.0d\n",modelSettings->getMaxWellOffset());
+      LogKit::LogFormatted(LogKit::LOW,"  Maximum vertical shift                   : %10.1f\n",modelSettings->getMaxWellShift());
+    }
     for (int i = 0 ; i < modelSettings->getNumberOfAngles() ; i++)
     {
       LogKit::LogFormatted(LogKit::LOW,"\nSettings for AVO stack %d:\n",i+1);
