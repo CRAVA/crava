@@ -59,21 +59,23 @@ Wavelet3D::Wavelet3D(const std::string            & filterFile,
   dy_             = static_cast<float>(simBox->getdy());
   dz_             = static_cast<float>(simBox->getdz());
   nzp_            = seisCube->getNzp();
+//  int cnzp        = (nzp_/2+1);
+//  int rnzp        = 2*cnzp;
 
   unsigned int nWells = modelSettings->getNumberOfWells();
   float v0            = modelSettings->getAverageVelocity();
   float stretch       = modelSettings->getStretchFactor(angle_index);
   bool hasHalpha      = filter_.hasHalpha();
   
-  float **wlest       = new float*[nWells];
+  double **wlest      = new double*[nWells];
 
   for (unsigned int w=0; w<nWells; w++) {
     if (wells[w]->getUseForWaveletEstimation()) {
       LogKit::LogFormatted(LogKit::MEDIUM, "  Well :  %s\n", wells[w]->getWellname());
 
-      BlockedLogs *bl = wells[w]->getBlockedLogsOrigThick();  
+      BlockedLogs *bl    = wells[w]->getBlockedLogsOrigThick();  
  
-      int nBlocks      = bl->getNumberOfBlocks();
+      int nBlocks        = bl->getNumberOfBlocks();
       float *seisLog     = new float[nBlocks];
       bl->getBlockedGrid(seisCube, seisLog);
       float *seisData    = new float[nz_];
@@ -94,7 +96,6 @@ Wavelet3D::Wavelet3D(const std::string            & filterFile,
                               simBox,
                               tgradX,
                               tgradY);*/
-      //Den forrige funksjonen fyller inn for alle nBlocks, må lage en som fyller fra start til length
       const int * iPos = bl->getIpos();
       const int * jPos = bl->getJpos();
       
@@ -140,22 +141,124 @@ Wavelet3D::Wavelet3D(const std::string            & filterFile,
 
       int start, length;
       bl->findContiniousPartOfData(hasWellData, nz_, start, length);
-      float *cpp         = new float[nz_];
+      float *cpp         = new float[nzp_];
       bl->fillInCpp(coeff_,start,length,cpp,nzp_);
-      
-      std::vector<float> alpha1(nzp_,0.0);
-      std::vector<float> f(nzp_,0.0);
-      std::vector<float> alpha2;
+
+      std::vector<float> kVec(nzp_, 0.0);
+      std::vector<float> Halpha;
       if (hasHalpha)
-        alpha2.resize(nzp_,0.0);
+        Halpha.resize(nzp_,0.0);
 
       for (int i=start; i < start+length-1; i++) {
-        double phi = atan(bz[i] / az[i]);
-        double r   = sqrt(az[i]*az[i] + bz[i]*bz[i] + 1);
-        double psi = acos(1 / r);
-        alpha1[i]  = static_cast<float> (filter_.getAlpha1(phi, psi));
-        f[i]       = static_cast<float> (-1.0 * r / stretch);
+        double phi    = atan(bz[i] / az[i]);
+        double r      = sqrt(az[i]*az[i] + bz[i]*bz[i] + 1);
+        double psi    = acos(1 / r);
+        float alpha1  = static_cast<float> (filter_.getAlpha1(phi, psi));
+        float f       = static_cast<float> (-1.0 * r / stretch);
+        kVec[i]       = cpp[i] * alpha1 / f;
+        if (hasHalpha)
+          Halpha[i]   = static_cast<float> (filter_.getHalpha(phi, psi));
       }
+
+      int nTracesX    = static_cast<int> (modelSettings->getEstRangeX(angle_index) / dx_);
+      int nTracesY    = static_cast<int> (modelSettings->getEstRangeY(angle_index) / dy_);
+      int nTotal      = (2*nTracesX +1) * (2*nTracesY +1) * length;
+      int nhalfWl     = static_cast<int> (modelSettings->getWaveletTaperingL() / dz_);
+      int nWl         = 2 * nhalfWl + 1;
+      double **gMat   = new double *[nTotal];
+      for (int i=0; i<nTotal; i++)
+        gMat[i]       = new double[nWl];
+      double *dVec    = new double[nTotal];
+      
+
+      int obsIndex    = 0;
+
+      for (int xTr = -nTracesX; xTr <= nTracesX; xTr++) {
+        for (int yTr = -nTracesY; yTr <= nTracesY; yTr++) {
+          int nBlocks     = bl->getNumberOfBlocks();
+          float * seisLog = new float[nBlocks];
+          bl->getBlockedGrid(seisCube, seisLog, xTr, yTr);
+          float *seisData = new float[nz_];
+          bl->getVerticalTrend(seisLog, seisData);
+          for (int t=start; t < start+length-1; t++) {
+            double **lambda = new double *[length];
+            for (int i=0; i<length; i++) {
+              lambda[i]     = new double[nWl];
+              for (int j=0; j<nWl; j++)
+                lambda[i][j] = 0.0;
+            }
+            int xIndex      = iPos[t] + xTr;
+            int yIndex      = jPos[t] + yTr;
+            double zTop     = simBox->getTop(xIndex, yIndex);
+            double zVal     = zTop + t * simBox->getRelThick(xIndex, yIndex) * dz_;
+            dVec[obsIndex]  = seisData[t];
+            for (int tau = start; tau < start+length-1; tau++) {
+              float u = static_cast<float> (zVal - tau - az[tau]*(xTr*dx_) - bz[tau]*(yTr*dy_));
+              if (hasHalpha) {
+                for (int i=0; i<nWl; i++) {
+                  float v = u - static_cast<float>(i - nhalfWl);
+                  lambda[tau][i] = Halpha[tau] / (PI *(Halpha[tau]*Halpha[tau]+ v*v));
+                }
+              }
+              else {
+                int tLow  = static_cast<int> (u / dz_);
+                float lambdaValue = u - static_cast<float> (tLow * dz_);
+                int tHigh = tLow + 1;
+                //Må sjekke at tLow og tHigh er innenfor wavelet lengden
+                lambda[tau][tLow]   = 1 -lambdaValue;
+                lambda[tau][tHigh]  = lambdaValue; 
+              }
+            }
+            for (int i=0; i<nWl; i++) {
+              double g = 0.0;
+              for (int j=0; j<length; j++)
+                g += kVec[j+start] * lambda[j][i];
+              gMat[obsIndex][i] = g;
+            }
+            obsIndex++;
+            for (int i=0; i<length; i++)
+              delete [] lambda[i];
+            delete [] lambda; 
+          }
+          delete [] seisLog;
+        }
+      }
+      double **gMatT = new double *[nWl];
+      for (int i=0; i<nWl; i++)
+        gMatT[i]       = new double[nTotal];
+      lib_matrTranspose(gMat,nTotal,nWl,gMatT);
+
+      double **gTrg = new double *[nWl];
+      for (int i=0; i<nWl; i++)
+        gTrg[i]     = new double[nWl];
+      lib_matr_prod(gMatT, gMat, nWl, nTotal, nWl, gTrg);
+
+      for (int i=0; i<nTotal; i++)
+        delete [] gMat[i];
+      delete [] gMat;
+
+      double *gTrd = new double[nWl];
+      for (int i=0; i<nWl; i++) {
+        gTrd[i] = 0.0;
+        for (int j=0; j<nTotal; j++)
+          gTrd[i] += gMatT[i][j] * dVec[j];
+      }
+      
+      wlest[w] = new double[nWl];
+      lib_matrCholR(nWl, gTrg);
+      lib_matrAxeqbR(nWl, gTrg, wlest[w]);
+      
+      delete [] gTrd;
+
+      for (int i=0; i<nWl; i++)
+        delete [] gTrg[i];
+      delete [] gTrg;
+
+      for (int i=0; i<nWl; i++)
+        delete [] gMatT[i];
+      delete [] gMatT;
+
+      delete [] dVec;
 
       delete [] az;
       delete [] bz;
