@@ -849,7 +849,7 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Default
  \elist
 
-\subsubsection{\hbracket{seismic-data}\necessary}\newkw{seismic-data}
+\subsubsection{\hbracket{seismic-data}\necessary}\rnewkw{seismic-data}{seismic-data2}
  \slist
    \item \Description Information about the seismic data cube.
    \item \Argument Elements containing information about the seismic data cube
@@ -998,7 +998,7 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Default
  \elist
 
-\paragraph{\hbracket{file-name}}\rnewkw{file-name}{file-name3}
+\paragraph{\hbracket{file-name}}\rnewkw{file-name}{file-name4}
  \slist
    \item \Description File name for the 1D-wavelet file. This 1D-wavelet will define the 3D-wavelet in combination with the filter given in \kw{filter-file-name}. If not given, the 1D-wavelet is estimated.
    \item \Argument File name
@@ -1446,6 +1446,49 @@ Estimation: Checks input data and performs estimation of lacking information for
  \slist
    \item \Description Value giving the maximum frequency in the estimated background model. Can not be used if the background parameters are given.
    \item \Argument Value
+   \item \Default
+ \elist
+
+
+\subsection{\hbracket{earth-model}}\newkw{earth-model}
+ \slist
+   \item \Description Contains inverted seismic data used for forward modeling.
+   \item \Argument Vp, vs and rho used for forward modeling.
+   \item \Default
+ \elist
+
+\subsubsection{\hbracket{vp-file}}\rnewkw{vp-file}{vp-file2}
+ \slist
+   \item \Description File name for storm, segy, Sgri or crava grid file, giving vp.
+   \item \Argument File name
+   \item \Default
+ \elist
+
+\subsubsection{\hbracket{vs-file}}\rnewkw{vs-file}{vs-file2}
+ \slist
+   \item \Description File name for storm, segy, Sgri or crava grid file, giving vs. 
+   \item \Argument File name
+   \item \Default
+ \elist
+
+\subsubsection{\hbracket{density-file}}\rnewkw{density-file}{density-file2}
+ \slist
+   \item \Description File name for storm, segy, Sgri or crava grid file, giving density.
+   \item \Argument File name
+   \item \Default
+ \elist
+
+\subsection{\hbracket{local-wavelet}}\rrnewkw{local-wavelet}{local-wavelet2}{local-wavelet3}{local-wavelet4}
+ \slist
+   \item \Description Contains prior information for local wavelet modeling.
+   \item \Argument Elements containing prior information for local wavelet estimation.
+   \item \Default
+ \elist
+
+\subsubsection{\hbracket{lateral-correlation}}\rrnewkw{lateral-correlation}{lateral-correlation2}{lateral-correlation3}
+ \slist
+   \item \Description 2D variogram for the lateral correlation in local wavelet  modeling.
+   \item \Argument 2D variogram
    \item \Default
  \elist
 

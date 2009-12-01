@@ -978,8 +978,12 @@ XmlModelFile::parsePriorModel(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("parameter-correlation");
   legalCommands.push_back("correlation-direction");
   legalCommands.push_back("facies-probabilities");
+  legalCommands.push_back("earth-model");
+  legalCommands.push_back("local-wavelet");
 
   parseBackground(root, errTxt);
+  parseEarthModel(root,errTxt);
+  parsePriorLocalWavelet(root, errTxt);
 
   Vario* vario = NULL;
   if(parseVariogram(root, "lateral-correlation", vario, errTxt) == true) {
@@ -1004,6 +1008,66 @@ XmlModelFile::parsePriorModel(TiXmlNode * node, std::string & errTxt)
   return(true);
 }
 
+bool
+XmlModelFile::parsePriorLocalWavelet(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("local-wavelet");
+  if(root == 0)
+    return(false);
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("lateral-correlation");
+  Vario* vario = NULL;
+  if(parseVariogram(root, "lateral-correlation", vario, errTxt) == true) {
+    if (vario != NULL) {
+      modelSettings_->setLocalWaveletVario(vario);
+    }
+  }
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseEarthModel(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("earth-model");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("vp-file");
+  legalCommands.push_back("vs-file");
+  legalCommands.push_back("density-file");
+  
+
+  std::string filename;
+  bool vp = parseFileName(root, "vp-file", filename, errTxt);
+  if(vp == true) {
+    inputFiles_->setBackFile(0, filename);
+    modelSettings_->setConstBackValue(0, -1);
+  }
+  else
+    errTxt += "Vp is not given in command earth-model.";
+
+  bool vs = parseFileName(root, "vs-file", filename, errTxt);
+  if(vs == true) {
+    inputFiles_->setBackFile(1, filename);
+    modelSettings_->setConstBackValue(1, -1);
+  }
+  else
+    errTxt += "Vs is not given in command earth-model.";
+
+  bool rho = parseFileName(root, "density-file", filename, errTxt);
+  if(rho == true) {
+    inputFiles_->setBackFile(2, filename);
+    modelSettings_->setConstBackValue(2, -1);
+  }
+  else
+    errTxt += "Density is not given in command earth-model.";
+
+  modelSettings_->setGenerateBackground(false); 
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
 
 bool
 XmlModelFile::parseBackground(TiXmlNode * node, std::string & errTxt)
@@ -1031,13 +1095,13 @@ XmlModelFile::parseBackground(TiXmlNode * node, std::string & errTxt)
   }
 
   bool vs = parseFileName(root, "vs-file", filename, errTxt);
-  if(vp == true) {
+  if(vs == true) {
     inputFiles_->setBackFile(1, filename);
     modelSettings_->setConstBackValue(1, -1);
   }
 
   bool rho = parseFileName(root, "density-file", filename, errTxt);
-  if(vp == true) {
+  if(rho == true) {
     inputFiles_->setBackFile(2, filename);
     modelSettings_->setConstBackValue(2, -1);
   }

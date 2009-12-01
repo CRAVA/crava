@@ -537,9 +537,9 @@ Wavelet::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
       }
       for(i=0;i<nWells;i++)
       {
-        if(scaleOptWell[i]>=3.0 || scaleOptWell[i]<=0.3334)
+        if((scaleOptWell[i]>=3.0 || scaleOptWell[i]<=0.3334) && nActiveData[i]>0)
         {
-          LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: The well %-20s has a optimal local gain value indicating that this well should not be used for wavelet estimation\n",
+          LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: The well %s has a optimal local gain value indicating that this well should not be used for wavelet estimation\n",
           wells[i]->getWellname());
         }
       }
