@@ -1716,6 +1716,7 @@ XmlModelFile::parseIOSettings(TiXmlNode * node, std::string & errTxt)
     else {
       errTxt += "Unknown log level " + level + " in command <log-level>. ";
       errTxt += "Choose from: error, warning, low, medium, and high\n";
+      checkForJunk(root, errTxt, legalCommands);
       return(false);
     }
     modelSettings_->setLogLevel(logLevel);
