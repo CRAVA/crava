@@ -12,6 +12,8 @@
 #include "src/waveletfilter.h"
 #include "src/fftgrid.h"
 
+class BlockedLogs;
+
 class Wavelet3D : public Wavelet {
 public:
   void           fft1DInPlace();
@@ -43,10 +45,6 @@ public:
 //  Wavelet3D(Wavelet3D *wavelet);
   virtual ~Wavelet3D() {delete wavelet1D_;}
 
-  double         findPhi(float kx, float ky)                        const;
-  double         findPsi(float radius, float kz)                    const;
-  fftw_complex   findWLvalue(Wavelet1D       * wavelet1d,
-                             float             omega)               const;
   bool           consistentSize(int nzp, int nyp, int nxp)          const; 
   fftw_complex   getCAmp(int k, int j, int i)                       const;
   fftw_real      getRAmp(int k, int j, int i);
@@ -70,6 +68,16 @@ public:
   
 private:
   void           shiftFFTGrid(FFTGrid *shiftAmp);
+  void           findLayersWithData(const std::vector<Surface *> & estimInterval,
+                                    BlockedLogs                  * bl,
+                                    FFTGrid                      * seisCube,
+                                    float                        * az,
+                                    float                        * bz,
+                                    bool                         * hasWellData) const;
+  double         findPhi(float a, float b)                                    const;
+  double         findPsi(float radius, float kz)                                const;
+  fftw_complex   findWLvalue(Wavelet1D       * wavelet1d,
+                             float             omega)                           const;
 
   FFTGrid        ampCube_;
   float          dy_, dx_;

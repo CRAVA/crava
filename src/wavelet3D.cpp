@@ -75,19 +75,6 @@ Wavelet3D::Wavelet3D(const std::string            & filterFile,
 
       BlockedLogs *bl    = wells[w]->getBlockedLogsOrigThick();  
  
-      int nBlocks        = bl->getNumberOfBlocks();
-      float *seisLog     = new float[nBlocks];
-      bl->getBlockedGrid(seisCube, seisLog);
-      float *seisData    = new float[nz_];
-      bl->getVerticalTrend(seisLog, seisData);
-
-      float *alpha       = new float[nz_];
-      float *beta        = new float[nz_];
-      float *rho         = new float[nz_];
-      bl->getVerticalTrend(bl->getAlpha(), alpha);
-      bl->getVerticalTrend(bl->getBeta(), beta);
-      bl->getVerticalTrend(bl->getRho(), rho);
-
       std::vector<float> tGradX;
       std::vector<float> tGradY;
 
@@ -99,18 +86,16 @@ Wavelet3D::Wavelet3D(const std::string            & filterFile,
       const int * iPos = bl->getIpos();
       const int * jPos = bl->getJpos();
       
-      std::vector<float> t0GradX(nBlocks);
-      std::vector<float> t0GradY(nBlocks);
-      for (int b = 0; b<nBlocks; b++) {
-        t0GradX[b] = static_cast<float> (refTimeGradX(iPos[b], jPos[b]));
-        t0GradY[b] = static_cast<float> (refTimeGradY(iPos[b], jPos[b]));
-      }
+      unsigned int nBlocks = bl->getNumberOfBlocks();
       float * zGradX = new float[nBlocks];
       float * zGradY = new float[nBlocks];
-      for (int b = 0; b<nBlocks; b++) {
-        zGradX[b] = 0.5f * v0 * (tGradX[b] - t0GradX[b]);
-        zGradY[b] = 0.5f * v0 * (tGradY[b] - t0GradY[b]);
+      for (unsigned int b = 0; b<nBlocks; b++) {
+        float t0GradX = static_cast<float> (refTimeGradX(iPos[b], jPos[b]));
+        zGradX[b]     = 0.5f * v0 * (tGradX[b] - t0GradX);
+        float t0GradY = static_cast<float> (refTimeGradY(iPos[b], jPos[b]));
+        zGradY[b]     = 0.5f * v0 * (tGradY[b] - t0GradY);
       }
+
       float * az = new float[nz_]; 
       bl->getVerticalTrend(zGradX, az);
       delete [] zGradX;
@@ -119,152 +104,162 @@ Wavelet3D::Wavelet3D(const std::string            & filterFile,
       delete [] zGradY;
 
       bool  *hasWellData = new bool[nz_];
-      for (int k=0; k<nz_; k++) 
-        hasWellData[k] = (alpha[k] != RMISSING && beta[k] != RMISSING && rho[k] != RMISSING && az[k] != RMISSING && bz[k] != RMISSING && seisData[k] != RMISSING);
-      delete [] alpha;
-      delete [] beta;
-      delete [] rho;
-      delete [] seisData;
-
-      //Check that data are within wavelet estimation interval
-      if (estimInterval.size() > 0) {
-        const double *xPos = bl->getXpos();
-        const double *yPos = bl->getYpos();
-        const double *zPos = bl->getZpos();
-        for (int k=0; k<nz_; k++) {
-          const double zTop  = estimInterval[0]->GetZ(xPos[k],yPos[k]);
-          const double zBase = estimInterval[1]->GetZ(xPos[k],yPos[k]);
-          if ((zPos[k]-0.5*dz_) < zTop || (zPos[k]+0.5*dz_) > zBase)
-            hasWellData[k] = false;
-        }
-      }
+      findLayersWithData(estimInterval, 
+                         bl, 
+                         seisCube, 
+                         az, 
+                         bz, 
+                         hasWellData);
 
       int start, length;
       bl->findContiniousPartOfData(hasWellData, nz_, start, length);
-      float *cpp         = new float[nzp_];
-      bl->fillInCpp(coeff_,start,length,cpp,nzp_);
+      if (length > 0) {
+        float *cpp         = new float[nzp_];
+        bl->fillInCpp(coeff_,start,length,cpp,nzp_);
 
-      std::vector<float> kVec(nzp_, 0.0);
-      std::vector<float> Halpha;
-      if (hasHalpha)
-        Halpha.resize(nzp_,0.0);
-
-      for (int i=start; i < start+length-1; i++) {
-        double phi    = atan(bz[i] / az[i]);
-        double r      = sqrt(az[i]*az[i] + bz[i]*bz[i] + 1);
-        double psi    = acos(1 / r);
-        float alpha1  = static_cast<float> (filter_.getAlpha1(phi, psi));
-        float f       = static_cast<float> (-1.0 * r / stretch);
-        kVec[i]       = cpp[i] * alpha1 / f;
+        std::vector<float> cppAdj(length, 0.0);
+        std::vector<float> Halpha;
         if (hasHalpha)
-          Halpha[i]   = static_cast<float> (filter_.getHalpha(phi, psi));
-      }
+          Halpha.resize(length,0.0);
 
-      int nTracesX    = static_cast<int> (modelSettings->getEstRangeX(angle_index) / dx_);
-      int nTracesY    = static_cast<int> (modelSettings->getEstRangeY(angle_index) / dy_);
-      int nTotal      = (2*nTracesX +1) * (2*nTracesY +1) * length;
-      int nhalfWl     = static_cast<int> (modelSettings->getWaveletTaperingL() / dz_);
-      int nWl         = 2 * nhalfWl + 1;
-      double **gMat   = new double *[nTotal];
-      for (int i=0; i<nTotal; i++)
-        gMat[i]       = new double[nWl];
-      double *dVec    = new double[nTotal];
-      
-
-      int obsIndex    = 0;
-
-      for (int xTr = -nTracesX; xTr <= nTracesX; xTr++) {
-        for (int yTr = -nTracesY; yTr <= nTracesY; yTr++) {
-          int nBlocks     = bl->getNumberOfBlocks();
-          float * seisLog = new float[nBlocks];
-          bl->getBlockedGrid(seisCube, seisLog, xTr, yTr);
-          float *seisData = new float[nz_];
-          bl->getVerticalTrend(seisLog, seisData);
-          for (int t=start; t < start+length-1; t++) {
-            double **lambda = new double *[length];
-            for (int i=0; i<length; i++) {
-              lambda[i]     = new double[nWl];
-              for (int j=0; j<nWl; j++)
-                lambda[i][j] = 0.0;
-            }
-            int xIndex      = iPos[t] + xTr;
-            int yIndex      = jPos[t] + yTr;
-            double zTop     = simBox->getTop(xIndex, yIndex);
-            double zVal     = zTop + t * simBox->getRelThick(xIndex, yIndex) * dz_;
-            dVec[obsIndex]  = seisData[t];
-            for (int tau = start; tau < start+length-1; tau++) {
-              float u = static_cast<float> (zVal - tau - az[tau]*(xTr*dx_) - bz[tau]*(yTr*dy_));
-              if (hasHalpha) {
-                for (int i=0; i<nWl; i++) {
-                  float v = u - static_cast<float>(i - nhalfWl);
-                  lambda[tau][i] = Halpha[tau] / (PI *(Halpha[tau]*Halpha[tau]+ v*v));
-                }
-              }
-              else {
-                int tLow  = static_cast<int> (u / dz_);
-                float lambdaValue = u - static_cast<float> (tLow * dz_);
-                int tHigh = tLow + 1;
-                //Må sjekke at tLow og tHigh er innenfor wavelet lengden
-                lambda[tau][tLow]   = 1 -lambdaValue;
-                lambda[tau][tHigh]  = lambdaValue; 
-              }
-            }
-            for (int i=0; i<nWl; i++) {
-              double g = 0.0;
-              for (int j=0; j<length; j++)
-                g += kVec[j+start] * lambda[j][i];
-              gMat[obsIndex][i] = g;
-            }
-            obsIndex++;
-            for (int i=0; i<length; i++)
-              delete [] lambda[i];
-            delete [] lambda; 
-          }
-          delete [] seisLog;
+        for (int i=start; i < start+length-1; i++) {
+          double phi    = findPhi(az[i], bz[i]);
+          double r      = sqrt(az[i]*az[i] + bz[i]*bz[i] + 1);
+          double psi    = acos(1.0 / r);
+          float alpha1  = static_cast<float> (filter_.getAlpha1(phi, psi));
+          float f       = static_cast<float> (-1.0 * r / stretch);
+          cppAdj[i-length]     = cpp[i] * alpha1 / f;
+          if (hasHalpha)
+            Halpha[i-length]   = static_cast<float> (filter_.getHalpha(phi, psi));
         }
+        delete [] cpp;
+
+        float *zLog = new float[nBlocks];
+        for (unsigned int b=0; b<nBlocks; b++) {
+          double zTop     = simBox->getTop(iPos[b], jPos[b]);
+          zLog[b]         = static_cast<float> (zTop + b * simBox->getRelThick(iPos[b], jPos[b]) * dz_);
+        }
+        float * zPosWell = new float[nz_];
+        bl->getVerticalTrend(zLog, zPosWell);
+        delete zLog;
+
+        int nTracesX    = static_cast<int> (modelSettings->getEstRangeX(angle_index) / dx_);
+        int nTracesY    = static_cast<int> (modelSettings->getEstRangeY(angle_index) / dy_);
+
+        std::vector<std::vector<float> > gMat;
+        int nhalfWl     = static_cast<int> (modelSettings->getWaveletTaperingL() / dz_);
+        int nWl         = 2 * nhalfWl + 1;
+        std::vector<float> dVec;
+        int nPoints = 0;
+        for (int xTr = -nTracesX; xTr <= nTracesX; xTr++) {
+          for (int yTr = -nTracesY; yTr <= nTracesY; yTr++) {
+            float * seisLog = new float[nBlocks];
+            bl->getBlockedGrid(seisCube, seisLog, xTr, yTr);
+            float *seisData = new float[nz_];
+            bl->getVerticalTrend(seisLog, seisData);
+            delete [] seisLog;
+            float *zLog = new float[nBlocks];
+            for (unsigned int b=0; b<nBlocks; b++) {
+              int xIndex      = iPos[b] + xTr;
+              int yIndex      = jPos[b] + yTr;
+              double zTop     = simBox->getTop(xIndex, yIndex);
+              zLog[b]         = static_cast<float> (zTop + b * simBox->getRelThick(xIndex, yIndex) * dz_);
+            }
+            float * zPosTrace = new float[nz_];
+            bl->getVerticalTrend(zLog, zPosTrace);
+            delete zLog;
+            for (int t=start; t < start+length-1; t++) {
+              if (seisData[t] != RMISSING) {
+                dVec.push_back(seisData[t]);
+                float **lambda = new float *[length];
+                for (int i=0; i<length; i++) {
+                  lambda[i]     = new float[nWl];
+                  for (int j=0; j<nWl; j++)
+                    lambda[i][j] = 0.0;
+                }
+                for (int tau = start; tau < start+length-1; tau++) {
+                  //Hva gjør vi hvis zData[t] er RMISSING. Kan det skje?
+                  float u = static_cast<float> (zPosTrace[t] - zPosWell[tau] - az[tau]*(xTr*dx_) - bz[tau]*(yTr*dy_));
+                  if (hasHalpha) {
+                    for (int i=0; i<nWl; i++) {
+                      float v = u - static_cast<float>(i - nhalfWl);
+                      float h = Halpha[tau-length];
+                      lambda[tau-length][i] = static_cast<float> (h / (PI *(h*h + v*v)));
+                    }
+                  }
+                  else {
+                    if (u >= 0.0 && u < static_cast<float> (nhalfWl)) { 
+                      int tLow  = static_cast<int> (floor(u / dz_));
+                      int tHigh = tLow + 1;
+                      float lambdaValue = u - static_cast<float> (tLow * dz_);
+                      lambda[tau-length][tLow]   = 1 -lambdaValue;
+                      lambda[tau-length][tHigh]  = lambdaValue; 
+                    }
+                    else if (u < 0.0 && -u < static_cast<float> (nhalfWl)) {
+                      int tLow  = static_cast<int> (floor(u / dz_));
+                      int tHigh = tLow + 1;
+                      float lambdaValue = u - static_cast<float> (tLow * dz_);
+                      lambda[tau-length][tLow+nWl] = 1 -lambdaValue;
+                      if (tHigh < 0)
+                        lambda[tau-length][tHigh+nWl] = lambdaValue;
+                      else
+                        lambda[tau-length][0] = lambdaValue;
+                    }
+                  }
+                }
+                std::vector<float> gVec(nWl);
+                for (int i=0; i<nWl; i++) {
+                  gVec[i] = 0.0f;
+                  for (int j=0; j<length; j++)
+                    gVec[i] += cppAdj[j] * lambda[j][i];
+                }
+                gMat.push_back(gVec);
+                nPoints++;
+                for (int i=0; i<length; i++)
+                  delete [] lambda[i];
+                delete [] lambda;
+              } //if (seisData[t] != RMISSING)
+            }
+          }
+        }
+
+        double **gTrg = new double *[nWl];
+        for (int i=0; i<nWl; i++) {
+          gTrg[i]     = new double[nWl];
+          for (int j=0; j<nWl; j++) {
+            gTrg[i][j] = 0.0;
+            for (int k=0; k<nPoints; k++)
+              gTrg[i][j] += gMat[k][i]*gMat[k][j];
+          }
+        }
+
+        double *gTrd = new double[nWl];
+        for (int i=0; i<nWl; i++) {
+          gTrd[i] = 0.0;
+          for (int j=0; j<nPoints; j++)
+            gTrd[i] += gMat[j][i] * dVec[j];
+        }
+
+        wlest[w] = new double[nWl];
+        lib_matrCholR(nWl, gTrg);
+        lib_matrAxeqbR(nWl, gTrg, gTrd);
+        //Sett welest[w] = gTrd
+
+        delete [] gTrd;
+
+        for (int i=0; i<nWl; i++)
+          delete [] gTrg[i];
+        delete [] gTrg;
+
+        delete [] az;
+        delete [] bz;
+
+        delete [] hasWellData;
+
       }
-      double **gMatT = new double *[nWl];
-      for (int i=0; i<nWl; i++)
-        gMatT[i]       = new double[nTotal];
-      lib_matrTranspose(gMat,nTotal,nWl,gMatT);
-
-      double **gTrg = new double *[nWl];
-      for (int i=0; i<nWl; i++)
-        gTrg[i]     = new double[nWl];
-      lib_matr_prod(gMatT, gMat, nWl, nTotal, nWl, gTrg);
-
-      for (int i=0; i<nTotal; i++)
-        delete [] gMat[i];
-      delete [] gMat;
-
-      double *gTrd = new double[nWl];
-      for (int i=0; i<nWl; i++) {
-        gTrd[i] = 0.0;
-        for (int j=0; j<nTotal; j++)
-          gTrd[i] += gMatT[i][j] * dVec[j];
+      else {
+        LogKit::LogFormatted(LogKit::MEDIUM,"     No data for well %s\n", wells[w]->getWellname());
       }
-      
-      wlest[w] = new double[nWl];
-      lib_matrCholR(nWl, gTrg);
-      lib_matrAxeqbR(nWl, gTrg, wlest[w]);
-      
-      delete [] gTrd;
-
-      for (int i=0; i<nWl; i++)
-        delete [] gTrg[i];
-      delete [] gTrg;
-
-      for (int i=0; i<nWl; i++)
-        delete [] gMatT[i];
-      delete [] gMatT;
-
-      delete [] dVec;
-
-      delete [] az;
-      delete [] bz;
-
-      delete [] hasWellData;
-      delete [] cpp;
     }
   }
 
@@ -535,20 +530,64 @@ Wavelet3D::Wavelet3D(Wavelet3D *wavelet)
   filter_     = wavelet->getFilter();
 }
 */
-double Wavelet3D::findPhi(float kx, float ky) const
+
+void
+Wavelet3D::findLayersWithData(const std::vector<Surface *> & estimInterval,
+                              BlockedLogs                  * bl,
+                              FFTGrid                      * seisCube,
+                              float                        * az,
+                              float                        * bz,
+                              bool                         * hasWellData) const
+{
+  float *seisLog     = new float[bl->getNumberOfBlocks()];
+  bl->getBlockedGrid(seisCube, seisLog);
+  delete [] seisLog;
+  float *seisData    = new float[nz_];
+  bl->getVerticalTrend(seisLog, seisData);
+
+  float *alpha       = new float[nz_];
+  float *beta        = new float[nz_];
+  float *rho         = new float[nz_];
+  bl->getVerticalTrend(bl->getAlpha(), alpha);
+  bl->getVerticalTrend(bl->getBeta(), beta);
+  bl->getVerticalTrend(bl->getRho(), rho);
+
+  for (int k=0; k<nz_; k++) 
+    hasWellData[k] = (alpha[k] != RMISSING && beta[k] != RMISSING && rho[k] != RMISSING && az[k] != RMISSING && bz[k] != RMISSING && seisData[k] != RMISSING);
+  delete [] alpha;
+  delete [] beta;
+  delete [] rho;
+  delete [] seisData;
+
+  //Check that data are within wavelet estimation interval
+  if (estimInterval.size() > 0) {
+    const double *xPos = bl->getXpos();
+    const double *yPos = bl->getYpos();
+    const double *zPos = bl->getZpos();
+    for (int k=0; k<nz_; k++) {
+      const double zTop  = estimInterval[0]->GetZ(xPos[k],yPos[k]);
+      const double zBase = estimInterval[1]->GetZ(xPos[k],yPos[k]);
+      if ((zPos[k]-0.5*dz_) < zTop || (zPos[k]+0.5*dz_) > zBase)
+        hasWellData[k] = false;
+    }
+  }
+}
+
+double 
+Wavelet3D::findPhi(float a, float b) const
 //Return value should be between 0 and 2*PI
 {
   double phi;
   double epsilon = 0.000001;
-  if (kx > epsilon && ky >= 0.0) //1. quadrant 
-    phi = atan(ky/kx);
-  else if (kx > epsilon && ky < 0.0) //4. quadrant
-    phi = 2*PI + atan(ky/kx);
-  else if (kx < - epsilon && ky >= 0.0) //2. quadrant
-    phi = PI + atan(ky/kx);
-  else if (kx < - epsilon && ky < 0.0) //3. quadrant
-    phi = PI + atan(ky/kx);
-  else if (ky  >= 0.0) //kx very small
+  if (a > epsilon && b >= 0.0) //1. quadrant 
+    phi = atan(b/a);
+  else if (a > epsilon && b < 0.0) //4. quadrant
+    phi = 2*PI + atan(b/a);
+  else if (a < - epsilon && b >= 0.0) //2. quadrant
+    phi = PI + atan(b/a);
+  else if (a < - epsilon && b < 0.0) //3. quadrant
+    phi = PI + atan(b/a);
+  else if (b  >= 0.0) //kx very small
     phi = 0.5 * PI;
   else //kx very small
     phi = 1.5 * PI;
@@ -556,7 +595,8 @@ double Wavelet3D::findPhi(float kx, float ky) const
   return(phi);
 }
 
-double Wavelet3D::findPsi(float radius, float kz) const
+double 
+Wavelet3D::findPsi(float radius, float kz) const
 //Return value should be between 0 and 0.5*PI
 {
   double epsilon = 0.000001;
@@ -569,7 +609,8 @@ double Wavelet3D::findPsi(float radius, float kz) const
   return(psi);
 }
 
-fftw_complex Wavelet3D::findWLvalue(Wavelet1D       * wavelet1d,
+fftw_complex 
+Wavelet3D::findWLvalue(Wavelet1D       * wavelet1d,
                                     float             omega) const
 {
   int lowindex = static_cast<int> (omega / wavelet1d->getDz());
