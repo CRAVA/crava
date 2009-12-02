@@ -13,7 +13,7 @@ ParameterOutput::writeParameters(const Simbox  * simbox,
                                  FFTGrid       * beta, 
                                  FFTGrid       * rho,
                                  int             outputFlag,
-                                 int             fileGrid,
+                                 bool            fileGrid,
                                  int             simNum)
 {
   std::string prefix;
@@ -105,7 +105,7 @@ ParameterOutput::writeParameters(const Simbox  * simbox,
 
 void 
 ParameterOutput::computeAcousticImpedance(const Simbox * simbox, Model * model, FFTGrid * Alpha, FFTGrid * Rho , 
-                                          int fileGrid, const std::string & fileName)
+                                          bool fileGrid, const std::string & fileName)
 {   
   if(Alpha->getIsTransformed()) Alpha->invFFTInPlace();
   if(Rho->getIsTransformed()) Rho->invFFTInPlace();
@@ -140,7 +140,7 @@ ParameterOutput::computeAcousticImpedance(const Simbox * simbox, Model * model, 
 
 void
 ParameterOutput::computeShearImpedance(const Simbox * simbox, Model * model, FFTGrid * Beta, FFTGrid * Rho,
-                                       int fileGrid, const std::string & fileName)
+                                       bool fileGrid, const std::string & fileName)
 {
 
   if(Beta->getIsTransformed()) Beta->invFFTInPlace();
@@ -176,7 +176,7 @@ ParameterOutput::computeShearImpedance(const Simbox * simbox, Model * model, FFT
 
 void
 ParameterOutput::computeVpVsRatio(const Simbox * simbox, Model * model, FFTGrid * Alpha, FFTGrid * Beta,
-                                  int fileGrid, const std::string & fileName)
+                                  bool fileGrid, const std::string & fileName)
 {
   if(Alpha->getIsTransformed()) Alpha->invFFTInPlace(); 
   if(Beta->getIsTransformed())  Beta->invFFTInPlace();
@@ -210,7 +210,7 @@ ParameterOutput::computeVpVsRatio(const Simbox * simbox, Model * model, FFTGrid 
 
 void
 ParameterOutput::computePoissonRatio(const Simbox * simbox, Model * model, FFTGrid * Alpha, FFTGrid * Beta,
-                                     int fileGrid, const std::string & fileName)
+                                     bool fileGrid, const std::string & fileName)
 {
   if(Alpha->getIsTransformed()) Alpha->invFFTInPlace();
   if(Beta->getIsTransformed()) Beta->invFFTInPlace();
@@ -246,7 +246,7 @@ ParameterOutput::computePoissonRatio(const Simbox * simbox, Model * model, FFTGr
 
 void 
 ParameterOutput::computeLameMu(const Simbox * simbox, Model * model, FFTGrid * Beta, FFTGrid * Rho,
-                               int fileGrid, const std::string & fileName )
+                               bool fileGrid, const std::string & fileName )
 {
   if(Beta->getIsTransformed()) Beta->invFFTInPlace();
   if(Rho->getIsTransformed()) Rho->invFFTInPlace();
@@ -281,7 +281,7 @@ ParameterOutput::computeLameMu(const Simbox * simbox, Model * model, FFTGrid * B
 
 void
 ParameterOutput::computeLameLambda(const Simbox * simbox, Model * model, FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho,
-                                   int fileGrid, const std::string & fileName)
+                                   bool fileGrid, const std::string & fileName)
 {
   if(Alpha->getIsTransformed()) Alpha->invFFTInPlace();
   if(Beta->getIsTransformed()) Beta->invFFTInPlace();
@@ -321,7 +321,7 @@ ParameterOutput::computeLameLambda(const Simbox * simbox, Model * model, FFTGrid
 
 void
 ParameterOutput::computeLambdaRho(const Simbox * simbox, Model * model, FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho,
-                                  int fileGrid, const std::string & fileName)
+                                  bool fileGrid, const std::string & fileName)
 {
   if(Alpha->getIsTransformed()) Alpha->invFFTInPlace();
   if(Beta->getIsTransformed()) Beta->invFFTInPlace();
@@ -361,7 +361,7 @@ ParameterOutput::computeLambdaRho(const Simbox * simbox, Model * model, FFTGrid 
 
 void
 ParameterOutput::computeMuRho(const Simbox * simbox, Model * model, FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho,
-                              int fileGrid, const std::string & fileName)
+                              bool fileGrid, const std::string & fileName)
 {
   if(Beta->getIsTransformed()) Beta->invFFTInPlace();
   if(Rho->getIsTransformed()) Rho->invFFTInPlace();
@@ -397,7 +397,7 @@ ParameterOutput::computeMuRho(const Simbox * simbox, Model * model, FFTGrid * Al
 }
 
 FFTGrid*            
-ParameterOutput::createFFTGrid(FFTGrid * referenceGrid, int fileGrid)
+ParameterOutput::createFFTGrid(FFTGrid * referenceGrid, bool fileGrid)
 {
   int nx  = referenceGrid->getNx();
   int ny  = referenceGrid->getNy();

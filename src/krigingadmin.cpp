@@ -811,7 +811,7 @@ void CKrigingAdmin::EstimateSizeOfBlock() {
   rangeZ_ = static_cast<float>(MAXIM(rangeAlphaZ_, rangeBetaZ_));
   rangeZ_ = static_cast<float>(MAXIM(rangeRhoZ_, rangeZ_));
   
-  LogKit::LogFormatted(LogKit::LOW,"Estimated ranges(m) from covariance cubes:\n");
+  LogKit::LogFormatted(LogKit::LOW,"Estimated ranges(grid cells) from covariance cubes:\n");
   LogKit::LogFormatted(LogKit::LOW,"             rangeX     rangeY     rangeZ\n");
   LogKit::LogFormatted(LogKit::LOW,"-----------------------------------------\n");
   LogKit::LogFormatted(LogKit::LOW,"Vp   :     %8d   %8d   %8d\n", rangeAlphaX_, rangeAlphaY_, rangeAlphaZ_);

@@ -24,7 +24,6 @@ public:
   void setType(int cubeType) {cubetype_ = cubeType;}
   void setAngle(float angle) {theta_ = angle;}
 
-
   void                 fillInFromSegY(SegY * segy, Simbox *simbox );            // No mode
 
   void                 fillInFromStorm(Simbox            * actSimBox,
@@ -113,6 +112,9 @@ public:
   int                  getOutputFormat() {return(formatFlag_);} 
   static void          setOutputDomain(int domain) {domainFlag_ = domain;} 
   int                  getOutputDomain() {return(domainFlag_);} 
+  static void          setMaxAllowedGrids(int maxAllowedGrids) {maxAllowedGrids_ = maxAllowedGrids ;}
+  static int           getMaxAllowedGrids()   { return maxAllowedGrids_   ;}
+  static int           getMaxAllocatedGrids() { return maxAllocatedGrids_ ;}
 
   virtual void         createRealGrid();
   virtual void         createComplexGrid();
@@ -126,55 +128,58 @@ public:
   float               *getRealTrace(int i, int j);
   int                  setRealTrace(int i, int j, float *value);
 protected:
-  int    cubetype_;        // see enum gridtypes above
-  float  theta_;           // angle in angle gather (case of data)
-  float  scale_;           // To keep track of the scalings after fourier transforms
-  int    nx_;              // size of original grid in depth (time)
-  int    ny_;              // size of original grid in lateral x direction 
-  int    nz_;              // size of original grid in lateral y direction
-  int    nxp_;             // size of padded FFT grid in depth (time) 
-  int    nyp_;             // size of padded FFT grid in lateral x direction 
-  int    nzp_;             // size of padded FFT grid in lateral y direction
+  //int                setPaddingSize(int n, float p); 
+  int                  getFillNumber(int i, int n, int np );
 
-  int    cnxp_;            // size in x direction for storage inplace algorithm (complex grid) nxp_/2+1
-  int    rnxp_;            // expansion in x direction for storage inplace algorithm (real grid) 2*(nxp_/2+1)
-
-  int    csize_;           // size of complex grid, cnxp_*nyp_*nzp_
-  int    rsize_;           // size of real grid rnxp_*nyp_*nzp_
-  int    counterForGet_;   // active cell in grid
-  int    counterForSet_;   // active cell in grid
-
-  bool   istransformed_;   // true if the grid contain Fourier values (i.e complex variables)
-
-  fftw_complex* cvalue_;   // values of complex parameter in grid points
-  fftw_real*    rvalue_;   // values of real parameter in grid points
-
-  static int  formatFlag_; // Decides format of output (see ModelSettings).
-  static int  domainFlag_; // Decides domain of output (see ModelSettings).
-
-  //int                 setPaddingSize(int n, float p); 
-  int                   getFillNumber(int i, int n, int np );
-
-  int                   getXSimboxIndex(int i){return(getFillNumber(i, nx_, nxp_ ));}
-  int                   getYSimboxIndex(int j){return(getFillNumber(j, ny_, nyp_ ));}
-  int                   getZSimboxIndex(int k);
-  void                  computeCircCorrT(Corr* corr,fftw_real* CircCorrT);
-  void                  makeCircCorrTPosDef(fftw_real* CircularCorrT,int minIntFq);
-  fftw_complex*         fft1DzInPlace(fftw_real*  in);
-  fftw_real*            invFFT1DzInPlace(fftw_complex* in);
+  int                  getXSimboxIndex(int i){return(getFillNumber(i, nx_, nxp_ ));}
+  int                  getYSimboxIndex(int j){return(getFillNumber(j, ny_, nyp_ ));}
+  int                  getZSimboxIndex(int k);
+  void                 computeCircCorrT(Corr* corr,fftw_real* CircCorrT);
+  void                 makeCircCorrTPosDef(fftw_real* CircularCorrT,int minIntFq);
+  fftw_complex*        fft1DzInPlace(fftw_real*  in);
+  fftw_real*           invFFT1DzInPlace(fftw_complex* in);
 
   //Interpolation into SegY and sgri
-  float                 getRegularZInterpolatedRealValue(int i, int j, double z0Reg,
+  float                getRegularZInterpolatedRealValue(int i, int j, double z0Reg,
                                                          double dzReg, int kReg,
                                                          double z0Grid, double dzGrid);
 
   //Supporting functions for interpolateSeismic
-  int                   interpolateTrace(int index, short int * flags, int i, int j);
-  void                  extrapolateSeismic(int imin, int imax, int jmin, int jmax);
+  int                  interpolateTrace(int index, short int * flags, int i, int j);
+  void                 extrapolateSeismic(int imin, int imax, int jmin, int jmax);
 
   /// Called from writeResampledStormCube
-  void writeSegyFromStorm(StormContGrid *data, std::string fileName);
-  void makeDepthCubeForSegy(Simbox *simbox,const std::string & fileName);
+  void                 writeSegyFromStorm(StormContGrid *data, std::string fileName);
+  void                 makeDepthCubeForSegy(Simbox *simbox,const std::string & fileName);
 
+  int                  cubetype_;          // see enum gridtypes above
+  float                theta_;             // angle in angle gather (case of data)
+  float                scale_;             // To keep track of the scalings after fourier transforms
+  int                  nx_;                // size of original grid in depth (time)
+  int                  ny_;                // size of original grid in lateral x direction 
+  int                  nz_;                // size of original grid in lateral y direction
+  int                  nxp_;               // size of padded FFT grid in depth (time) 
+  int                  nyp_;               // size of padded FFT grid in lateral x direction 
+  int                  nzp_;               // size of padded FFT grid in lateral y direction
+                                           
+  int                  cnxp_;              // size in x direction for storage inplace algorithm (complex grid) nxp_/2+1
+  int                  rnxp_;              // expansion in x direction for storage inplace algorithm (real grid) 2*(nxp_/2+1)
+                                           
+  int                  csize_;             // size of complex grid, cnxp_*nyp_*nzp_
+  int                  rsize_;             // size of real grid rnxp_*nyp_*nzp_
+  int                  counterForGet_;     // active cell in grid
+  int                  counterForSet_;     // active cell in grid
+                                           
+  bool                 istransformed_;     // true if the grid contain Fourier values (i.e complex variables)
+                                           
+  fftw_complex       * cvalue_;            // values of complex parameter in grid points
+  fftw_real          * rvalue_;            // values of real parameter in grid points
+                                           
+  static int           formatFlag_;        // Decides format of output (see ModelSettings).
+  static int           domainFlag_;        // Decides domain of output (see ModelSettings).
+  
+  static int           maxAllowedGrids_;   // The maximum number of grids we are allowed to allocate.
+  static int           maxAllocatedGrids_; // The maximum number of grids that has actually been allocated.
+  static int           nGrids_;            // The actually number of grids allocated (varies as crava runs).  
 };
 #endif

@@ -18,7 +18,7 @@ public:
                                    FFTGrid       * postBeta, 
                                    FFTGrid       * postRho, 
                                    int             outputFlag,
-                                   int             fileGrid,
+                                   bool            fileGrid,
                                    int             simNum); 
   static void      writeToFile(const Simbox      * simbox, 
                                Model             * model, 
@@ -29,29 +29,29 @@ public:
 private: 
   static void      computeAcousticImpedance(const Simbox * simbox, Model * model, 
                                             FFTGrid * Alpha, FFTGrid * Rho, 
-                                            int fileGrid, const std::string & fileName);
+                                            bool fileGrid, const std::string & fileName);
   static void      computeShearImpedance(const Simbox * simbox, Model * model,
                                          FFTGrid * Beta, FFTGrid * Rho, 
-                                         int fileGrid, const std::string & fileName);
+                                         bool fileGrid, const std::string & fileName);
   static void      computeVpVsRatio(const Simbox * simbox, Model * model,
                                     FFTGrid * Alpha, FFTGrid * Beta, 
-                                    int fileGrid, const std::string & fileName);
+                                    bool fileGrid, const std::string & fileName);
   static void      computePoissonRatio(const Simbox * simbox, Model * model,
                                        FFTGrid * Alpha, FFTGrid * Beta, 
-                                       int fileGrid, const std::string & fileName);
+                                       bool fileGrid, const std::string & fileName);
   static void      computeLameMu(const Simbox * simbox, Model * model,
                                  FFTGrid * Beta, FFTGrid * Rho, 
-                                 int fileGrid, const std::string & FileName);
+                                 bool fileGrid, const std::string & FileName);
   static void      computeLameLambda(const Simbox * simbox,Model * model,
                                      FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho, 
-                                     int fileGrid, const std::string & fileName);
+                                     bool fileGrid, const std::string & fileName);
   static void      computeMuRho(const Simbox * simbox, Model * model,
                                 FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho, 
-                                int fileGrid, const std::string & fileName);
+                                bool fileGrid, const std::string & fileName);
   static void      computeLambdaRho(const Simbox * simbox, Model * model, 
                                     FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho, 
-                                    int fileGrid, const std::string & fileName);
+                                    bool fileGrid, const std::string & fileName);
   
-  static FFTGrid * createFFTGrid(FFTGrid * referenceGrid, int fileGrid);
+  static FFTGrid * createFFTGrid(FFTGrid * referenceGrid, bool fileGrid);
 };
 #endif

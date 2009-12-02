@@ -72,7 +72,7 @@ private:
   void               computeG(double **G); // 
   void               newPosteriorCovPointwise(double ** sigmanew, double **G, int igrid, int jgrid, ModelSettings *modelSettings, double **sigmamdnew);
   void               correctAlphaBetaRho(ModelSettings *modelSettings);
-  int                fileGrid_;         // is true if is storage is on file 
+  bool               fileGrid_;         // is true if is storage is on file 
   const Simbox     * simbox_;           // the simbox
   int                nx_;               // dimensions of the problem
   int                ny_;

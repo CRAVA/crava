@@ -92,18 +92,18 @@ ModelSettings::ModelSettings(void)
   time_lz_               = RMISSING;
   time_dz_               = RMISSING;
   time_nz_               = IMISSING;
-  velocityFromInv_       = false;
+  velocityFromInv_       =    false;
 
-  writePrediction_       =      false;  //Will be set to true if no simulations.
+  writePrediction_       =    false;  //Will be set to true if no simulations.
   gridFlag_              = IO::VP + IO::VS + IO::RHO;  // Default output
-  defaultGridOutput_     =       true;
+  defaultGridOutput_     =     true;
   formatFlag_            = IO::STORM;   
   domainFlag_            = IO::TIMEDOMAIN;   
-  wellFlag_              =          0;   
+  wellFlag_              =        0;   
   wellFormatFlag_        = IO::RMSWELL;
-  otherFlag_             =          0;   
-  debugFlag_             =          0;
-  fileGrid_              =         -1;
+  otherFlag_             =        0;   
+  debugFlag_             =        0;
+  fileGrid_              =    false;
 
   estimationMode_        =    false;
   forwardModeling_       =    false;
@@ -114,6 +114,7 @@ ModelSettings::ModelSettings(void)
   depthDataOk_           =    false;
   parallelTimeSurfaces_  =    false;
   useLocalWavelet_       =    false;
+  useLocalNoise_         =    false;
   optimizeWellLocation_  =    false;
   priorFaciesProbGiven_  =        0;
 
@@ -293,22 +294,7 @@ ModelSettings::setNoiseScaled(Grid2D *ns)
   if(ns==NULL)
     noiseScaled_.push_back(NULL);
   else
-  {
-  /*  float *noiseScaled = new float[nxNoiseScaled_*nyNoiseScaled_];
-
-    for(i=0;i<nxNoiseScaled_*nyNoiseScaled_;i++)
-      noiseScaled[i] = 0.0;
-
-    for(i=0;i<nxNoiseScaled_;i++)
-      for(j=0;j<nyNoiseScaled_;j++)
-      {
-        double x, y, z;
-        simbox->getCoord(i, j, 0, x, y, z);
-        noiseScaled[i+nxNoiseScaled_*j] += static_cast<float>(ns->GetZ(x,y));
-      }
-*/
-      noiseScaled_.push_back(ns);
-  }
+    noiseScaled_.push_back(ns);
 }
 
 double ModelSettings::getMinimumNoiseScaled(int i)

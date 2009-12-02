@@ -99,8 +99,7 @@ Crava::Crava(Model * model, SpatialWellFilter * spatwellfilter)
   {
     seisData_       = model->getSeisCubes();
     model->releaseGrids(); 
-    bool useFileGrid = (fileGrid_ == 1);
-    correlations_->createPostGrids(nx_,ny_,nz_,nxp_,nyp_,nzp_,useFileGrid);
+    correlations_->createPostGrids(nx_,ny_,nz_,nxp_,nyp_,nzp_,fileGrid_);
     parPointCov_    = correlations_->getPriorVar0(); 
     parSpatialCorr  = correlations_->getPostCovAlpha();  // Double-use grids to save memory
     errCorrUnsmooth = correlations_->getPostCovBeta();   // Double-use grids to save memory
@@ -153,8 +152,7 @@ Crava::Crava(Model * model, SpatialWellFilter * spatwellfilter)
     }
   }
 
-
-  if ((outputFlag_ & IO::FACIESPROBRELATIVE) > 0 || model->getModelSettings()->noiseIsScaled()==true)
+  if ((outputFlag_ & IO::FACIESPROBRELATIVE) > 0 || model->getModelSettings()->getUseLocalNoise())
   {
     meanAlpha2_ = copyFFTGrid(meanAlpha_);
     meanBeta2_  = copyFFTGrid(meanBeta_);
@@ -1058,8 +1056,8 @@ Crava::computePostMeanResidAndFFTCov()
   for(l=0;l<ntheta_;l++)
     delete seisData_[l];
 
+  LogKit::LogFormatted(LogKit::DEBUGLOW,"\nDEALLOCATING: Seismic data\n");
   delete [] seisData_;
-
   delete [] kW;
   delete [] errMult1;
   delete [] errMult2;

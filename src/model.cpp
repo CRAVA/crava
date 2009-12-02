@@ -237,7 +237,6 @@ Model::Model(char * fileName)
             {
               processSeismic(seisCube_, timeSimbox_, modelSettings_, 
                              inputFiles, errText, failedSeismic);
-
               if(failedSeismic == false && modelSettings_->getOptimizeWellLocation() == true)
               {
                 processWellLocation(seisCube_, wells_, reflectionMatrix_,
@@ -290,7 +289,6 @@ Model::Model(char * fileName)
             (estimate == false || modelSettings_->getEstimateWaveletNoise()))
           {
             addSeismicLogs(wells_, seisCube_, modelSettings_); 
-            
             if(failedReflMat == false && failedExtraSurf == false) 
             {
               processWavelets(wavelet_, seisCube_, wells_, reflectionMatrix_,
@@ -334,9 +332,8 @@ Model::Model(char * fileName)
             writeWells(wells_, modelSettings_);
           }
         }
+      }
     }
-    }
-
     failedLoadingModel = failedSimbox  || failedSeismic   || failedPriorCorr  ||
                          failedWells   || failedReflMat   || failedBackground ||
                          failedWavelet || failedDepthConv || failedExtraSurf  || failedPriorFacies;
@@ -487,9 +484,6 @@ Model::checkAvailableMemory(Simbox            * timeSimbox,
                             ModelSettings     * modelSettings,
                             const std::string & seismicFile)                           
 {
-  if (modelSettings->getFileGrid() > 0) // Disk buffering is turn on
-    return;
-
   //
   // Find the size of first seismic volume
   //
@@ -510,17 +504,36 @@ Model::checkAvailableMemory(Simbox            * timeSimbox,
   int gridSize = dummyGrid->getrsize();
   delete dummyGrid;
 
-  int nGrids;
-  if(modelSettings->getWritePrediction() == true)
-  {
-    nGrids = 10 + modelSettings->getNumberOfAngles();
-    if(modelSettings->getNumberOfSimulations() > 0 && nGrids < 13)
-      nGrids = 13;
-  }
-  else
-    nGrids = 12;
+  int nGridPar = 3;                                      // Vp + Vs + Rho
+  int nGridCor = 6;                                      // Covariances
+  int nGridAng = modelSettings->getNumberOfAngles();     // One for each angle stack
+  int nGridFac = modelSettings->getNumberOfFacies() + 1; // One for each facies + one for undef  
+  int nGridKrg = 1;                                      // One grid for kriging
+  int nGridFil = 1;                                      // One grid for intermediate file storage
 
-  //NBNB Anne Randi: nGrids+=3 if local noise
+  int nGrids;
+  if(modelSettings->getForwardModeling() == true) {
+    nGrids = nGridPar + nGridAng;
+  }
+  else {
+    if (modelSettings->getFileGrid()) { // Use disk buffering
+      nGrids = nGridFil;  
+    }
+    else {
+      if(modelSettings->getNumberOfSimulations() > 0) 
+        nGrids = nGridPar + nGridCor + std::max(nGridAng, nGridPar);
+      else
+        nGrids = nGridPar + nGridCor + nGridAng;
+    }
+    if(modelSettings->getKrigingParameter() > 0) {
+      nGrids += nGridKrg;
+    }
+    // Need background for facies probabilities and local noise.
+    if(modelSettings->getEstimateFaciesProb() || modelSettings->getUseLocalNoise()) {
+      nGrids = nGrids + nGridPar + std::max(0, nGridFac - nGridAng);  // Deallocate seismic data
+    }
+  }
+  FFTGrid::setMaxAllowedGrids(nGrids);
 
   int   workSize    = 2500 + int( 0.65*gridSize ); //Size of memory used beyond grids.
 
@@ -543,31 +556,32 @@ Model::checkAvailableMemory(Simbox            * timeSimbox,
   else
     LogKit::LogFormatted(LogKit::LOW,"\nMemory needed by CRAVA:  %.2f gigaBytes\n",gigaBytes);
 
+  if (!modelSettings->getFileGrid()) {
+    //
+    // Check if we can hold everything in memory.
+    //
+    char   * memchunk0 = new char[workSize];
+    float ** memchunk  = new float*[nGrids];
 
-  //
-  // Check if we can hold everything in memory.
-  //
-  char   * memchunk0 = new char[workSize];
-  float ** memchunk  = new float*[nGrids];
+    for(int i = 0 ; i < nGrids ; i++)
+      memchunk[i] = new float[gridSize];
 
-  for(int i = 0 ; i < nGrids ; i++)
-    memchunk[i] = new float[gridSize];
-
-  if(memchunk[nGrids-1] == NULL)  //Could not allocate memory
-  {
-    modelSettings->setFileGrid(1);
-    LogKit::LogFormatted(LogKit::LOW,"Not enough memory to hold all grids. Using file storage.\n");
+    if(memchunk[nGrids-1] == NULL)  //Could not allocate memory
+    {
+      modelSettings->setFileGrid(1);
+      LogKit::LogFormatted(LogKit::LOW,"Not enough memory to hold all grids. Using file storage.\n");
+    }
+    else
+    {
+      modelSettings->setFileGrid(0);
+    }
+    
+    for(int i=0 ; i<nGrids ; i++)
+      if(memchunk[i] != NULL) delete [] memchunk[i];
+    if(memchunk != NULL) delete [] memchunk;
+    
+    if(memchunk0 != NULL) delete[] memchunk0;
   }
-  else
-  {
-    modelSettings->setFileGrid(0);
-  }
-
-  for(int i=0 ; i<nGrids ; i++)
-    if(memchunk[i] != NULL) delete [] memchunk[i];
-  if(memchunk != NULL) delete [] memchunk;
-
-  if(memchunk0 != NULL) delete[] memchunk0;
 }
 
 void
@@ -629,7 +643,7 @@ Model::readSegyFile(const std::string       & fileName,
     int error = timeSimbox->insideRectangle(geo);
     if(error == 0)
     {
-      if(modelSettings->getFileGrid() == 1)
+      if(modelSettings->getFileGrid())
         target = new FFTFileGrid(timeSimbox->getnx(),
                                  timeSimbox->getny(), 
                                  timeSimbox->getnz(),
@@ -684,7 +698,7 @@ Model::readStormFile(const std::string  & fName,
 
   if(failed == false)
   {
-    if(modelSettings->getFileGrid() == 1)
+    if(modelSettings->getFileGrid())
       target = new FFTFileGrid(timeSimbox->getnx(), 
                                timeSimbox->getny(), 
                                timeSimbox->getnz(), 
@@ -773,7 +787,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
         modelSettings->setAreaParameters(geometry);
     }
   }
-  
+
   const SegyGeometry * areaParams = modelSettings->getAreaParameters(); 
 
   int error = timeSimbox->setArea(areaParams, errText);
@@ -1422,6 +1436,7 @@ Model::processSeismic(FFTGrid      **& seisCube,
       float       offset = modelSettings->getLocalSegyOffset(i);
       if(offset < 0)
         offset = modelSettings->getSegyOffset();
+
       readGridFromFile(fileName,
                        dataName,
                        offset,
@@ -1756,7 +1771,8 @@ Model::processWells(WellData     **& wells,
 }
 
 
-void Model::addSeismicLogs(WellData ** wells, FFTGrid ** seisCube, 
+void Model::addSeismicLogs(WellData     ** wells, 
+                           FFTGrid      ** seisCube, 
                            ModelSettings * modelSettings)
 {
   int nWells  = modelSettings->getNumberOfWells();
@@ -1963,7 +1979,7 @@ Model::processBackground(Background   *& background,
       }
       else if(constBackValue > 0)
       {
-        if(modelSettings->getFileGrid() == 1)
+        if(modelSettings->getFileGrid())
           backModel[i] = new FFTFileGrid(nx, ny, nz, nxPad, nyPad, nzPad);
         else
           backModel[i] = new FFTGrid(nx, ny, nz, nxPad, nyPad, nzPad);              
@@ -2008,7 +2024,7 @@ Model::readGridFromFile(const std::string       & fileName,
   if(fileType == IO::CRAVA) 
   {
     LogKit::LogFormatted(LogKit::LOW,"\nReading grid \'"+parName+"\' from file "+fileName);
-    if(modelSettings->getFileGrid() == 1)
+    if(modelSettings->getFileGrid())
       grid = new FFTFileGrid(timeSimbox->getnx(),
                              timeSimbox->getny(), 
                              timeSimbox->getnz(),
@@ -3220,24 +3236,6 @@ Model::printSettings(ModelSettings * modelSettings,
                      bool            areaFromModelFile)
 {
   LogKit::LogFormatted(LogKit::LOW,"\nGeneral settings:\n");
-  int logLevel = modelSettings->getLogLevel();
-
-  std::string logText("*NONE*");
-  if (logLevel == LogKit::L_ERROR)
-    logText = "ERROR";
-  else if (logLevel == LogKit::L_WARNING)
-    logText = "WARNING";
-  else if (logLevel == LogKit::L_LOW)
-    logText = "LOW";
-  else if (logLevel == LogKit::L_MEDIUM)
-    logText = "MEDIUM";
-  else if (logLevel == LogKit::L_HIGH)
-    logText = "HIGH";
-  else if (logLevel == LogKit::L_DEBUGLOW)
-     logText = "DEBUGLOW";
-  else if (logLevel == LogKit::L_DEBUGHIGH)
-    logText = "DEBUGHIGH";
-  LogKit::LogFormatted(LogKit::LOW,"  Log level                                : %10s\n",logText.c_str());
   if(modelSettings->getForwardModeling()==true)
     LogKit::LogFormatted(LogKit::LOW,"  Modelling mode                           : forward\n");
   else if (modelSettings->getNumberOfSimulations() == 0)
@@ -3263,10 +3261,34 @@ Model::printSettings(ModelSettings * modelSettings,
     LogKit::LogFormatted(LogKit::LOW,"  Estimate facies probabilities            : %10s\n",(modelSettings->getEstimateFaciesProb() ? "yes" : "no" ));
     LogKit::LogFormatted(LogKit::LOW,"  Synthetic seismic                        : %10s\n",(modelSettings->getGenerateSeismicAfterInversion() ? "yes" : "no" ));
   }
-  LogKit::LogFormatted(LogKit::HIGH,"\nInput/output directories:\n");
+
+  LogKit::LogFormatted(LogKit::LOW,"\nInput/Output settings:\n");
+  std::string logText("*NONE*");
+  int logLevel = modelSettings->getLogLevel();
+  if (logLevel == LogKit::L_ERROR)
+    logText = "ERROR";
+  else if (logLevel == LogKit::L_WARNING)
+    logText = "WARNING";
+  else if (logLevel == LogKit::L_LOW)
+    logText = "LOW";
+  else if (logLevel == LogKit::L_MEDIUM)
+    logText = "MEDIUM";
+  else if (logLevel == LogKit::L_HIGH)
+    logText = "HIGH";
+  else if (logLevel == LogKit::L_DEBUGLOW)
+     logText = "DEBUGLOW";
+  else if (logLevel == LogKit::L_DEBUGHIGH)
+    logText = "DEBUGHIGH";
+  LogKit::LogFormatted(LogKit::LOW, "  Log level                                : %10s\n",logText.c_str());
   //LogKit::LogFormatted(LogKit::HIGH,"  Project directory                        : %10s\n",modelSettings->getProjectDirectory());
   LogKit::LogFormatted(LogKit::HIGH,"  Input directory                          : %10s\n",inputFiles->getInputDirectory().c_str());
   LogKit::LogFormatted(LogKit::HIGH,"  Output directory                         : %10s\n",IO::getOutputPath().c_str());
+
+  // NBNB-PAL: Vi får raffinere testen nednefor etter hvert...
+  if (modelSettings->getFileGrid()) {
+    LogKit::LogFormatted(LogKit::LOW,"\nAdvanced settings:\n");
+    LogKit::LogFormatted(LogKit::LOW, "  Use intermediate disk storage for grids  : %10s\n","yes");
+  }
 
   LogKit::LogFormatted(LogKit::HIGH,"\nUnit settings/assumptions:\n");
   LogKit::LogFormatted(LogKit::HIGH,"  Time                                     : %10s\n","ms TWT");

@@ -117,7 +117,7 @@ public:
   int                              getOtherOutputFlag(void)      const { return otherFlag_             ;}
   int                              getDebugFlag(void)            const { return debugFlag_             ;}
   static int                       getDebugLevel(void)                 { return debugFlag_             ;}
-  int                              getFileGrid(void)             const { return fileGrid_              ;}
+  bool                             getFileGrid(void)             const { return fileGrid_              ;}
   bool                             getEstimationMode(void)       const { return estimationMode_        ;}
   bool                             getForwardModeling(void)      const { return forwardModeling_       ;}
   bool                             getGenerateSeismicAfterInversion(void) const { return generateSeismicAfterInversion_ ;}
@@ -128,6 +128,7 @@ public:
   bool                             getDepthDataOK(void)          const { return depthDataOk_           ;}
   bool                             getParallelTimeSurfaces(void) const { return parallelTimeSurfaces_  ;}
   bool                             getUseLocalWavelet(void)      const { return useLocalWavelet_       ;}
+  bool                             getUseLocalNoise(void)        const { return useLocalNoise_         ;}
   bool                             getOptimizeWellLocation(void) const { return optimizeWellLocation_  ;}
 
   int                              getLogLevel(void)             const { return logLevel_              ;}
@@ -264,6 +265,7 @@ public:
   void setDepthDataOk(bool depthDataOk)                  { depthDataOk_          = depthDataOk        ;}
   void setParallelTimeSurfaces(bool pTimeSurfaces)       { parallelTimeSurfaces_ = pTimeSurfaces      ;}
   void setUseLocalWavelet(bool useLocalWavelet)          { useLocalWavelet_      = useLocalWavelet    ;}
+  void setUseLocalNoise(bool useLocalNoise)              { useLocalNoise_        = useLocalNoise      ;}
   void setOptimizeWellLocation(bool optimizeWellLoc)     { optimizeWellLocation_ = optimizeWellLoc    ;}
   void setLogLevel(int logLevel)                         { logLevel_             = logLevel           ;}
   void setSeed(int seed)                                 { seed_                 = seed               ;}
@@ -406,7 +408,7 @@ private:
   int                              wellFlag_;              // Decides well output.
   int                              wellFormatFlag_;        // Decides well output format.
   int                              otherFlag_;             // Decides output beyond grids and wells.
-  int                              fileGrid_;              // Indicator telling if grids are to be kept on file
+  bool                             fileGrid_;              // Indicator telling if grids are to be kept on file
   bool                             defaultGridOutput_;     // Indicator telling whether grid output has been actively controlled.
   
   bool                             forwardModeling_;       // Forward modelling
@@ -420,6 +422,7 @@ private:
   bool                             depthDataOk_;           // We have what we need to do depth conversion
   bool                             parallelTimeSurfaces_;
   bool                             useLocalWavelet_;       // Wavelets are multiplied with gain and shift maps
+  bool                             useLocalNoise_;         // Signal-to-noise is multiplied with gain and shift maps
   bool                             optimizeWellLocation_;  // True if at least one well is to be moved
 
   int                              logLevel_;      

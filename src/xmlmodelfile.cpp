@@ -663,26 +663,30 @@ XmlModelFile::parseAngleGather(TiXmlNode * node, std::string & errTxt)
   }
    std::string fileName; 
   bool localNoiseGiven = parseFileName(root, "local-noise-scaled", fileName, errTxt);
-  if(localNoiseGiven)
+  if(localNoiseGiven) {
     inputFiles_->addNoiseFile(fileName);
-  else
+    modelSettings_->setUseLocalNoise(true);
+  }
+  else {
     inputFiles_->addNoiseFile("");
-
+  }
   bool estimate;
   std::string tmpErr;
   if(parseBool(root, "estimate-local-noise",estimate,tmpErr) == false || tmpErr != "") {
     modelSettings_->addEstimateLocalNoise(false);
     errTxt += tmpErr;
   }
-  else 
+  else { 
     if(estimate == true && localNoiseGiven == true) {
       errTxt = errTxt +"Error: Can not give both file and ask for estimation of local noise"+
         lineColumnText(node);
       modelSettings_->addEstimateLocalNoise(false);
     }
-    else
+    else {
+      modelSettings_->setUseLocalNoise(true);
       modelSettings_->addEstimateLocalNoise(estimate);
-
+    }
+  }
   checkForJunk(root, errTxt, legalCommands, true);
   return(true);
 }
@@ -2062,9 +2066,10 @@ XmlModelFile::parseAdvancedSettings(TiXmlNode * node, std::string & errTxt)
 
   parseFFTGridPadding(root, errTxt);
 
-  int fileGrid;
-  if(parseValue(root, "use-intermediate-disk-storage", fileGrid, errTxt) == true)
+  bool fileGrid;
+  if(parseBool(root, "use-intermediate-disk-storage", fileGrid, errTxt) == true)
     modelSettings_->setFileGrid(fileGrid);
+
   double limit;
   if(parseValue(root,"maximum-relative-thickness-difference", limit, errTxt) == true)
     modelSettings_->setLzLimit(limit);
@@ -2294,7 +2299,7 @@ XmlModelFile::parseBool(TiXmlNode * node, const std::string & keyword, bool & va
     else if(tmpVal == "no")
       value = false;
     else {
-      tmpErr = "Found '"+tmpVal+"' under keyword '"+keyword+"', expected 'yes' or 'no'. This happened in command <"+
+      tmpErr = "Found '"+tmpVal+"' under keyword <"+keyword+">, expected 'yes' or 'no'. This happened in command <"+
         node->ValueStr()+"> on line "+NRLib::ToString(node->Row())+", column "+NRLib::ToString(node->Column())+".\n";
     }
   }

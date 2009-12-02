@@ -51,19 +51,29 @@ FFTGrid::FFTGrid(int nx, int ny, int nz, int nxp, int nyp, int nzp)
   counterForGet_  = 0; 
   counterForSet_  = 0;
   istransformed_  = false;
-  rvalue_ = NULL;
+  rvalue_         = NULL;
+  nGrids_        += 1;
   // index= i+rnxp_*j+k*rnxp_*nyp_;
   // i index in x direction 
   // j index in y direction 
   // k index in z direction 
+
+  LogKit::LogFormatted(LogKit::ERROR,"\nFFTGrid Constructor: nGrids = %d    maxGrids = %d\n",nGrids_,maxAllowedGrids_);
+
+  if (nGrids_ > maxAllowedGrids_) {
+    std::string text;
+    text += "\n\nERROR in FFTGrid constructor. You have allocated to many FFTGrids. The fix is";
+    text += "\nto increase the nGrids variable calculated in Model::checkAvailableMemory().\n";
+    text += "\nDo you REALLY need to allocate more grids?\n";
+    text += "\nAre there no grids that can be released?\n";
+    LogKit::LogFormatted(LogKit::ERROR, text);
+    exit(1);
+  }    
+  maxAllocatedGrids_ = std::max(nGrids_, maxAllocatedGrids_);
 }
 
 FFTGrid::FFTGrid(FFTGrid  * fftGrid)
 {
-  float value;
-  int   i,j,k;
-
-
   cubetype_       = fftGrid->cubetype_;
   theta_          = fftGrid->theta_;
   nx_             = fftGrid->nx_;
@@ -82,22 +92,36 @@ FFTGrid::FFTGrid(FFTGrid  * fftGrid)
   counterForGet_  = fftGrid->getCounterForGet(); 
   counterForSet_  = fftGrid->getCounterForSet();
   istransformed_  = false;
+  nGrids_        += 1;
+
   createRealGrid();
-  for(k=0;k<nzp_;k++)
-    for(j=0;j<nyp_;j++)
-      for(i=0;i<rnxp_;i++)   
+  for(int k=0;k<nzp_;k++)
+    for(int j=0;j<nyp_;j++)
+      for(int i=0;i<rnxp_;i++)   
       {
-        value=fftGrid->getNextReal();
+        float value = fftGrid->getNextReal();
         setNextReal(value);
       }// k,j,i
+
+  LogKit::LogFormatted(LogKit::ERROR,"\nFFTGrid Copy Constructor : nGrids = %d    maxGrids = %d\n",nGrids_,maxAllowedGrids_);
+  if (nGrids_ > maxAllowedGrids_) {
+    std::string text;
+    text += "\n\nERROR in FFTGrid copy constructor. You have allocated to many FFTGrids. The fix";
+    text += "\nis to increase the nGrids variable calculated in Model::checkAvailableMemory().\n";
+    text += "\nDo you REALLY need to allocate more grids?\n";
+    text += "\nAre there no grids that can be released?\n";
+    LogKit::LogFormatted(LogKit::ERROR, text);
+    exit(1);
+  }    
+  maxAllocatedGrids_ = std::max(nGrids_, maxAllocatedGrids_);
 }
-
-
 
 FFTGrid::~FFTGrid()
 {
+  nGrids_ = nGrids_ - 1;
   if (rvalue_!=NULL)
     fftw_free(rvalue_);
+  LogKit::LogFormatted(LogKit::ERROR,"\nFFTGrid Destructor: nGrids_ = %d",nGrids_);
 }
 
 void
@@ -2170,5 +2194,8 @@ void FFTGrid::makeDepthCubeForSegy(Simbox *simbox,const std::string & fileName)
   FFTGrid::writeSegyFromStorm(stormcube, fullFileName);
 }
 
-int FFTGrid::formatFlag_ = 0;
-int FFTGrid::domainFlag_ = IO::TIMEDOMAIN;
+int FFTGrid::formatFlag_        = 0;
+int FFTGrid::domainFlag_        = IO::TIMEDOMAIN;
+int FFTGrid::maxAllowedGrids_   = 1;   // One grid is allocated and deallocated before memory check.
+int FFTGrid::maxAllocatedGrids_ = 0; 
+int FFTGrid::nGrids_            = 0;
