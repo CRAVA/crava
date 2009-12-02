@@ -70,7 +70,7 @@ ModelSettings::ModelSettings(void)
   energyThreshold_       =     0.0f;
 
   maxWellShift_          =    11.0f;
-  maxWellOffset_         =        5;
+  maxWellOffset_         =   250.0f;
 
   minRelWaveletAmp_      =    0.05f;
   maxWaveletShift_       =    11.0f;

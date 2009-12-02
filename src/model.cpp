@@ -2429,11 +2429,13 @@ Model::processWellLocation(FFTGrid                     ** seisCube,
   int     iMove;
   int     jMove;
   int     i,j,w;
+  int     iMaxOffset;
+  int     jMaxOffset;
   int     nMoveAngles = 0;
   int     nWells      = modelSettings->getNumberOfWells();
   int     nAngles     = modelSettings->getNumberOfAngles();
-  int     maxOffset   = modelSettings->getMaxWellOffset();
   float   maxShift    = modelSettings->getMaxWellShift();
+  float   maxOffset   = modelSettings->getMaxWellOffset();
   double  angle       = timeSimbox->getAngle();
   double  dx          = timeSimbox->getdx();
   double  dy          = timeSimbox->getdx();
@@ -2473,7 +2475,10 @@ Model::processWellLocation(FFTGrid                     ** seisCube,
     if( sum == 0 )
       continue;
 
-    bl->findOptimalWellLocation(seisCube,timeSimbox,reflectionMatrix,nAngles,angleWeight,maxShift,maxOffset,interval,iMove,jMove,kMove);
+    iMaxOffset = static_cast<int>(std::ceil(maxOffset/dx));
+    jMaxOffset = static_cast<int>(std::ceil(maxOffset/dy));
+
+    bl->findOptimalWellLocation(seisCube,timeSimbox,reflectionMatrix,nAngles,angleWeight,maxShift,iMaxOffset,jMaxOffset,interval,iMove,jMove,kMove);
 
     deltaX = iMove*dx*cos(angle) - jMove*dy*sin(angle);
     deltaY = iMove*dx*sin(angle) + jMove*dy*cos(angle);
@@ -3626,7 +3631,7 @@ Model::printSettings(ModelSettings * modelSettings,
     LogKit::LogFormatted(LogKit::LOW,"  Wavelet tapering length                  : %10.1f\n",modelSettings->getWaveletTaperingL());
     if (modelSettings->getOptimizeWellLocation()) {
       LogKit::LogFormatted(LogKit::LOW,"\nGeneral settings for well locations:\n");
-      LogKit::LogFormatted(LogKit::LOW,"  Maximum offset                           : %10.0d\n",modelSettings->getMaxWellOffset());
+      LogKit::LogFormatted(LogKit::LOW,"  Maximum offset                           : %10.1f\n",modelSettings->getMaxWellOffset());
       LogKit::LogFormatted(LogKit::LOW,"  Maximum vertical shift                   : %10.1f\n",modelSettings->getMaxWellShift());
     }
     for (int i = 0 ; i < modelSettings->getNumberOfAngles() ; i++)

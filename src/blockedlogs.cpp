@@ -1310,7 +1310,8 @@ void BlockedLogs::findOptimalWellLocation(FFTGrid                   ** seisCube,
                                           int                          nAngles,
                                           const std::vector<float>   & angleWeight,
                                           float                        maxShift,
-                                          int                          maxOffset,
+                                          int                          iMaxOffset,
+                                          int                          jMaxOffset,
                                           const std::vector<Surface *> limits,
                                           int                        & iMove,
                                           int                        & jMove,
@@ -1329,10 +1330,8 @@ void BlockedLogs::findOptimalWellLocation(FFTGrid                   ** seisCube,
   int nzp           = seisCube[0]->getNzp(); 
   int cnzp          = nzp/2+1;
   int rnzp          = 2*cnzp;
-  int iMaxOffset    = maxOffset;
-  int jMaxOffset    = maxOffset;
   int iTotOffset    = 2*iMaxOffset+1;
-  int jTotOffset    = 2*jMaxOffset+1; //May be removed, but makes it possible to include non-symmetric shifts
+  int jTotOffset    = 2*jMaxOffset+1; 
   int polarityMax   = 0;
   float shift       = 0.0f;
   float maxValueTot = 0;

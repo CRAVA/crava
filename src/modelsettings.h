@@ -87,7 +87,7 @@ public:
   float                            getHighCut(void)              const { return highCut_               ;}
   float                            getWNC(void)                  const { return wnc_                   ;}
   float                            getEnergyThreshold(void)      const { return energyThreshold_       ;}
-  int                              getMaxWellOffset(void)        const { return maxWellOffset_         ;}
+  float                            getMaxWellOffset(void)        const { return maxWellOffset_         ;}
   float                            getMaxWellShift(void)         const { return maxWellShift_          ;}
   float                            getMinRelWaveletAmp(void)     const { return minRelWaveletAmp_      ;}
   float                            getMaxWaveletShift(void)      const { return maxWaveletShift_       ;}
@@ -228,7 +228,7 @@ public:
   void setEnergyThreshold(float energyThreshold)         { energyThreshold_      = energyThreshold    ;}
   void setMinRelWaveletAmp(float minRelWaveletAmp)       { minRelWaveletAmp_     = minRelWaveletAmp   ;}
   void setMaxWaveletShift(float maxWaveletShift)         { maxWaveletShift_      = maxWaveletShift    ;}
-  void setMaxWellOffset(int maxWellOffset)               { maxWellOffset_        = maxWellOffset      ;}
+  void setMaxWellOffset(float maxWellOffset)             { maxWellOffset_        = maxWellOffset      ;}
   void setMaxWellShift(float maxWellShift)               { maxWellShift_         = maxWellShift       ;}
   void setWaveletTaperingL(float waveletTaperingL)       { waveletTaperingL_     = waveletTaperingL   ;}
   void setXPadFac(double xPadFac)                        { xPadFac_              = xPadFac            ;}
@@ -378,7 +378,7 @@ private:
   float                             energyThreshold_;       // If energy in reflection trace divided by mean energy
                                                     // in reflection traces is lower than this, the reflections
                                                     // will be interpolated. Default 0.
-  int                               maxWellOffset_;         // Maximum offset for moving of wells
+  float                             maxWellOffset_;         // Maximum offset for moving of wells
   float                             maxWellShift_;          // Maximum vertical shift for moving of wells
 
   float                             minRelWaveletAmp_;      // Minimum relative wavelet amplitude. Smaller amplitudes are disregarded.
