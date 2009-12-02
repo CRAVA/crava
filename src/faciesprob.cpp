@@ -53,7 +53,7 @@ FaciesProb::~FaciesProb()
     delete faciesProb_[i];
   }
   delete [] faciesProb_;
-  delete [] faciesProbUndef_;
+  delete faciesProbUndef_;
 }
 
 std::vector<FFTGrid *>

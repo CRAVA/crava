@@ -2415,10 +2415,17 @@ XmlModelFile::checkForwardConsistency(std::string & errTxt) {
     for(i=0;i<modelSettings_->getNumberOfAngles();i++)
     {
       modelSettings_->setSNRatio(i,1.1f);
+      modelSettings_->setEstimateSNRatio(i,false);
       if(modelSettings_->getEstimateWavelet(i)==true)
         errTxt+="Wavelet must be given when doing forward modeling. Wavelet is not given for angle no. " +NRLib::ToString(i)+"\n";
 
+    if(inputFiles_->getSeismicFile(i)!="")
+      errTxt+="Seismic data should not be given when doing forward modeling.\n";
     }
+   
+
+    if(modelSettings_->getUseLocalWavelet()==true)
+      errTxt+="Local wavelet can not be used in forward modeling.\n";
   }
 }
 

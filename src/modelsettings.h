@@ -168,6 +168,7 @@ public:
   void addMatchEnergies(int matchEnergies)               { matchEnergies_.push_back(matchEnergies)      ;}
   void addEstimateWavelet(int estimateWavelet)           { estimateWavelet_.push_back(estimateWavelet)  ;}
   void addEstimateSNRatio(int estimateSNRatio)           { estimateSNRatio_.push_back(estimateSNRatio)  ;}
+  void setEstimateSNRatio(int i, int estimateSNRatio)    { estimateSNRatio_[i] = estimateSNRatio        ;}
   void addEstimateLocalShift(int estimateShift)          { estimateLocalShift_.push_back(estimateShift) ;}
   void addEstimateLocalScale(int estimateScale)          { estimateLocalScale_.push_back(estimateScale) ;}
   void addWaveletDim(int waveletDim)                     { waveletDim_.push_back(waveletDim)            ;}
@@ -254,7 +255,7 @@ public:
   void setWellFormatFlag(int formatFlag)                 { wellFormatFlag_       = formatFlag         ;}
   void setOtherOutputFlag(int otherFlag)                 { otherFlag_            = otherFlag          ;}
   void setDebugFlag(int debugFlag)                       { debugFlag_            = debugFlag          ;}
-  void setFileGrid(int fileGrid)                         { fileGrid_             = fileGrid           ;}
+  void setFileGrid(bool fileGrid)                        { fileGrid_             = fileGrid           ;}
   void setEstimationMode(bool estimationMode)            { estimationMode_       = estimationMode     ;}
   void setForwardModeling(bool forwardModeling)          { forwardModeling_      = forwardModeling    ;}
   void setGenerateSeismicAfterInversion( bool generateSeismic) { generateSeismicAfterInversion_ = generateSeismic ;}
