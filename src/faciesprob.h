@@ -38,18 +38,19 @@ public:
   ~FaciesProb();
 
   FFTGrid              * getFaciesProb(int i){return faciesProb_[i];};
-  FFTGrid              * getFaciesProbGeomodel(int i){return faciesProbGeomodel_[i];};
 
   void                   calculateConditionalFaciesProb(WellData                    ** wells, 
                                                         int                            nwells, 
                                                         const std::vector<Surface *> & faciesEstimInterval,
                                                         const ModelSettings          * modelSettings,
                                                         const double                   dz);
+  void calculateFaciesProbGeomodel(const float *                  priorFacies,
+                                             FFTGrid                    ** priorFaciesCubes);
 
 private:
   int             nFacies_;
   FFTGrid      ** faciesProb_;
-  FFTGrid      ** faciesProbGeomodel_;
+  FFTGrid      *  faciesProbUndef_;
 
   void                   makeFaciesProb(int                            nfac, 
                                         FFTGrid                      * postAlpha, 

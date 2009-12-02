@@ -51,10 +51,9 @@ FaciesProb::~FaciesProb()
   for(int i=0;i<nFacies_;i++)
   {
     delete faciesProb_[i];
-    delete faciesProbGeomodel_[i];
   }
   delete [] faciesProb_;
-  delete [] faciesProbGeomodel_;
+  delete [] faciesProbUndef_;
 }
 
 std::vector<FFTGrid *>
@@ -680,7 +679,10 @@ void FaciesProb::calculateFaciesProb(FFTGrid                      * alphagrid,
   ny   = alphagrid->getNy();
   nz   = alphagrid->getNz();
   faciesProb_ = new FFTGrid*[nFacies_]; 
-  faciesProbGeomodel_ = new FFTGrid*[nFacies_];
+  if(alphagrid->isFile()==1)
+    faciesProbUndef_ = new FFTFileGrid(nx, ny, nz, nx, ny, nz);
+  else
+    faciesProbUndef_ = new FFTGrid(nx, ny, nz, nx, ny, nz);
   alphagrid->setAccessMode(FFTGrid::READ);
   betagrid->setAccessMode(FFTGrid::READ);
   rhogrid->setAccessMode(FFTGrid::READ);
@@ -689,20 +691,18 @@ void FaciesProb::calculateFaciesProb(FFTGrid                      * alphagrid,
     if(alphagrid->isFile()==1)
     {
       faciesProb_[i] = new FFTFileGrid(nx, ny, nz, nx, ny, nz);
-      faciesProbGeomodel_[i] = new FFTFileGrid(nx, ny, nz, nx, ny, nz);
     }
     else
     {
       faciesProb_[i] = new FFTGrid(nx, ny, nz, nx, ny, nz);
-      faciesProbGeomodel_[i] = new FFTGrid(nx, ny, nz, nx, ny, nz);
     }
     faciesProb_[i]->setAccessMode(FFTGrid::WRITE);
     faciesProb_[i]->createRealGrid();
-    faciesProbGeomodel_[i]->setAccessMode(FFTGrid::WRITE);
-    faciesProbGeomodel_[i]->createRealGrid();
   }
+  faciesProbUndef_->setAccessMode(FFTGrid::WRITE);
+  faciesProbUndef_->createRealGrid();
   smallrnxp = faciesProb_[0]->getRNxp();
-  float help, help2;
+  float help;
   float undefSum = p_undefined/(volume->getnx()*volume->getny()*volume->getnz());
   for(i=0;i<nzp;i++)
   {
@@ -714,7 +714,7 @@ void FaciesProb::calculateFaciesProb(FFTGrid                      * alphagrid,
         rho = rhogrid->getNextReal();
         if(k<smallrnxp && j<ny && i<nz)
         {
-          
+
           sum = undefSum;
           for(l=0;l<nFacies_;l++)
           {
@@ -727,28 +727,57 @@ void FaciesProb::calculateFaciesProb(FFTGrid                      * alphagrid,
           for(l=0;l<nFacies_;l++)
           {
             help = value[l]/sum;
-            if(priorFaciesCubes!=NULL)
-              help2 = help + priorFaciesCubes[l]->getRealValue(k,j,i)*undefSum/sum;
-            else
-              help2 = help + priorFacies[l]*undefSum/sum;
-            //faciesProb_[l]->setRealValue(k,j,i,help);
             if(k<nx)
             {
-              faciesProb_[l]->setNextReal(help);
-              faciesProbGeomodel_[l]->setNextReal(help2);
+              faciesProb_[l]->setNextReal(help);         
             }
             else
             {
-              faciesProb_[l]->setNextReal(RMISSING);
-              faciesProbGeomodel_[l]->setNextReal(RMISSING);
+              faciesProb_[l]->setNextReal(RMISSING);             
             }
           }
+          if(k<nx)
+            faciesProbUndef_->setNextReal(undefSum/sum);
+          else
+            faciesProbUndef_->setNextReal(RMISSING);
+
         }
       }
   }
   delete [] value;
 }
 
+void FaciesProb::calculateFaciesProbGeomodel(const float *                  priorFacies,
+                                             FFTGrid                    ** priorFaciesCubes)
+{
+  int i,j,k,l;
+  int nx, ny, nz;
+  float value;
+  nx   = faciesProb_[0]->getNx();
+  ny   = faciesProb_[0]->getNy();
+  nz   = faciesProb_[0]->getNz();
+  float undef;
+
+  for(i=0;i<nz;i++)
+  {
+    for(j=0;j<ny;j++)
+      for(k=0;k<nx;k++)
+      {
+        undef = faciesProbUndef_->getRealValue(k,j,i);
+        for(l=0;l<nFacies_;l++)
+        {
+          if(priorFaciesCubes!=NULL)
+            value = priorFaciesCubes[l]->getRealValue(k,j,i)*undef+faciesProb_[l]->getRealValue(k,j,i);
+          else
+            value = priorFacies[l]*undef+faciesProb_[l]->getRealValue(k,j,i); 
+          faciesProb_[l]->setRealValue(k,j,i,value);
+
+        }
+
+
+      }
+  }
+}
 
 void FaciesProb::calculateVariances(const std::vector<float> & alpha,
                                     const std::vector<float> & beta,

@@ -1695,9 +1695,11 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs)
       ParameterOutput::writeToFile(simbox_,model_,grid,fileName,"");
     }
     baseName +="Geomodel_";
+    fprob_->calculateFaciesProbGeomodel(model_->getPriorFacies(),
+                                       model_->getPriorFaciesCubes());
     for(int i=0;i<nfac;i++)
     {
-      FFTGrid * grid = fprob_->getFaciesProbGeomodel(i);
+      FFTGrid * grid = fprob_->getFaciesProb(i);
       std::string fileName = baseName + model_->getModelSettings()->getFaciesName(i);
       ParameterOutput::writeToFile(simbox_,model_,grid,fileName,"");
     }
