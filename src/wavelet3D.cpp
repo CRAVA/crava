@@ -42,8 +42,8 @@ Wavelet3D::Wavelet3D(const std::string            & filterFile,
                      float                          theta,
                      int                          & errCode,
                      char                         * errText)
-  : Wavelet(3, reflCoef),
-    wavelet1D_(NULL),
+  : Wavelet(modelSettings, 3, reflCoef),
+//    wavelet1D_(NULL),
     filter_(filterFile, errCode, errText)
 {
   LogKit::LogFormatted(LogKit::MEDIUM,"  Estimating 3D wavelet pulse from seismic data and (nonfiltered) blocked wells\n");
@@ -59,24 +59,25 @@ Wavelet3D::Wavelet3D(const std::string            & filterFile,
   dy_             = static_cast<float>(simBox->getdy());
   dz_             = static_cast<float>(simBox->getdz());
   nzp_            = seisCube->getNzp();
-//  int cnzp        = (nzp_/2+1);
-//  int rnzp        = 2*cnzp;
 
   unsigned int nWells = modelSettings->getNumberOfWells();
   float v0            = modelSettings->getAverageVelocity();
   float stretch       = modelSettings->getStretchFactor(angle_index);
   bool hasHalpha      = filter_.hasHalpha();
   
-  double **wlest      = new double*[nWells];
+  int nhalfWl         = static_cast<int> (0.5 * modelSettings->getWaveletTaperingL() / dz_);
+  int nWl             = 2 * nhalfWl + 1;
+  std::vector<std::vector<float> > wlestWell(nWells, std::vector<float>(nWl, 0.0));
 
+  int nActiveWells = 0;
   for (unsigned int w=0; w<nWells; w++) {
     if (wells[w]->getUseForWaveletEstimation()) {
       LogKit::LogFormatted(LogKit::MEDIUM, "  Well :  %s\n", wells[w]->getWellname());
 
       BlockedLogs *bl    = wells[w]->getBlockedLogsOrigThick();  
  
-      std::vector<float> tGradX;
-      std::vector<float> tGradY;
+      std::vector<float> tGradX(bl->getNumberOfBlocks(),0.0);
+      std::vector<float> tGradY(bl->getNumberOfBlocks(),0.0);
 
 //    NBNB-Frode: Fyll gradX og gradY for alle nzp_ ved hjelp av kall til
 /*      bl->findSeismicGradient(seisCube,
@@ -112,8 +113,12 @@ Wavelet3D::Wavelet3D(const std::string            & filterFile,
                          hasWellData);
 
       int start, length;
-      bl->findContiniousPartOfData(hasWellData, nz_, start, length);
-      if (length > 0) {
+      bl->findContiniousPartOfData(hasWellData, 
+                                   nz_, 
+                                   start, 
+                                   length);
+      if (length > nWl) {
+        nActiveWells++;
         float *cpp         = new float[nzp_];
         bl->fillInCpp(coeff_,start,length,cpp,nzp_);
 
@@ -128,9 +133,9 @@ Wavelet3D::Wavelet3D(const std::string            & filterFile,
           double psi    = acos(1.0 / r);
           float alpha1  = static_cast<float> (filter_.getAlpha1(phi, psi));
           float f       = static_cast<float> (-1.0 * r / stretch);
-          cppAdj[i-length]     = cpp[i] * alpha1 / f;
+          cppAdj[i-start]     = cpp[i] * alpha1 / f;
           if (hasHalpha)
-            Halpha[i-length]   = static_cast<float> (filter_.getHalpha(phi, psi));
+            Halpha[i-start]   = static_cast<float> (filter_.getHalpha(phi, psi));
         }
         delete [] cpp;
 
@@ -147,8 +152,7 @@ Wavelet3D::Wavelet3D(const std::string            & filterFile,
         int nTracesY    = static_cast<int> (modelSettings->getEstRangeY(angle_index) / dy_);
 
         std::vector<std::vector<float> > gMat;
-        int nhalfWl     = static_cast<int> (modelSettings->getWaveletTaperingL() / dz_);
-        int nWl         = 2 * nhalfWl + 1;
+
         std::vector<float> dVec;
         int nPoints = 0;
         for (int xTr = -nTracesX; xTr <= nTracesX; xTr++) {
@@ -183,8 +187,8 @@ Wavelet3D::Wavelet3D(const std::string            & filterFile,
                   if (hasHalpha) {
                     for (int i=0; i<nWl; i++) {
                       float v = u - static_cast<float>(i - nhalfWl);
-                      float h = Halpha[tau-length];
-                      lambda[tau-length][i] = static_cast<float> (h / (PI *(h*h + v*v)));
+                      float h = Halpha[tau-start];
+                      lambda[tau-start][i] = static_cast<float> (h / (PI *(h*h + v*v)));
                     }
                   }
                   else {
@@ -192,18 +196,18 @@ Wavelet3D::Wavelet3D(const std::string            & filterFile,
                       int tLow  = static_cast<int> (floor(u / dz_));
                       int tHigh = tLow + 1;
                       float lambdaValue = u - static_cast<float> (tLow * dz_);
-                      lambda[tau-length][tLow]   = 1 -lambdaValue;
-                      lambda[tau-length][tHigh]  = lambdaValue; 
+                      lambda[tau-start][tLow]   = 1 -lambdaValue;
+                      lambda[tau-start][tHigh]  = lambdaValue; 
                     }
                     else if (u < 0.0 && -u < static_cast<float> (nhalfWl)) {
                       int tLow  = static_cast<int> (floor(u / dz_));
                       int tHigh = tLow + 1;
                       float lambdaValue = u - static_cast<float> (tLow * dz_);
-                      lambda[tau-length][tLow+nWl] = 1 -lambdaValue;
+                      lambda[tau-start][tLow+nWl] = 1 -lambdaValue;
                       if (tHigh < 0)
-                        lambda[tau-length][tHigh+nWl] = lambdaValue;
+                        lambda[tau-start][tHigh+nWl] = lambdaValue;
                       else
-                        lambda[tau-length][0] = lambdaValue;
+                        lambda[tau-start][0] = lambdaValue;
                     }
                   }
                 }
@@ -240,10 +244,10 @@ Wavelet3D::Wavelet3D(const std::string            & filterFile,
             gTrd[i] += gMat[j][i] * dVec[j];
         }
 
-        wlest[w] = new double[nWl];
         lib_matrCholR(nWl, gTrg);
         lib_matrAxeqbR(nWl, gTrg, gTrd);
-        //Sett welest[w] = gTrd
+        for (int i=0; i<nWl; i++)
+          wlestWell[w][i] = static_cast<float> (gTrd[i]);
 
         delete [] gTrd;
 
@@ -258,14 +262,19 @@ Wavelet3D::Wavelet3D(const std::string            & filterFile,
 
       }
       else {
-        LogKit::LogFormatted(LogKit::MEDIUM,"     No data for well %s\n", wells[w]->getWellname());
+        LogKit::LogFormatted(LogKit::MEDIUM,"     No enough data for 3D wavelet estimation in well %s\n", wells[w]->getWellname());
       }
     }
   }
 
-  for(unsigned int w=0; w<nWells; w++)
-    delete [] wlest[w];
-  delete [] wlest;
+  std::vector<float> wlest(nWl,0.0);
+  for (int j=0; j<nWl; j++) {
+    for(unsigned int w=0; w<nWells; w++)
+      wlest[j] += wlestWell[w][j];
+    wlest[j] = wlest[j] / static_cast<float>(nActiveWells);
+  }
+
+  wavelet1D_ = new Wavelet1D(static_cast<Wavelet *> (this), modelSettings, reflCoef, wlest);
 }
 
 
@@ -501,35 +510,6 @@ Wavelet3D::Wavelet3D(Wavelet * wavelet)
     }
   }
 }
-/*
-Wavelet3D::Wavelet3D(Wavelet3D *wavelet)
-  : Wavelet(wavelet, 3),
-    wavelet1D_(wavelet->getWavelet1D())
-{
-  assert(wavelet->getDim() == 3);
-  assert(wavelet->getIsReal());
-  nx_         = wavelet->getNx();
-  ny_         = wavelet->getNy();
-  nxp_        = wavelet->getNxp();
-  nyp_        = wavelet->getNyp();
-  dx_         = wavelet->getDx();
-  dy_         = wavelet->getDy();
-
-  ampCube_ = FFTGrid(nx_, ny_, nz_, nxp_, nyp_, nzp_);
-  ampCube_.createRealGrid();
-  ampCube_.setType(FFTGrid::COVARIANCE);
-  ampCube_.setAccessMode(FFTGrid::RANDOMACCESS);
-  for (int k=0; k<nzp_; k++) {
-    for (int j=0; j<nyp_; j++) {
-      for (int i=0; i<nxp_; i++) {
-        float rvalue = wavelet->getRAmp(k,j,i);
-        ampCube_.setRealValue(i,j,k,rvalue,true);
-      }
-    }
-  }
-  filter_     = wavelet->getFilter();
-}
-*/
 
 void
 Wavelet3D::findLayersWithData(const std::vector<Surface *> & estimInterval,
@@ -541,9 +521,9 @@ Wavelet3D::findLayersWithData(const std::vector<Surface *> & estimInterval,
 {
   float *seisLog     = new float[bl->getNumberOfBlocks()];
   bl->getBlockedGrid(seisCube, seisLog);
-  delete [] seisLog;
   float *seisData    = new float[nz_];
   bl->getVerticalTrend(seisLog, seisData);
+  delete [] seisLog;
 
   float *alpha       = new float[nz_];
   float *beta        = new float[nz_];

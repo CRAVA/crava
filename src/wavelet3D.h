@@ -30,19 +30,23 @@ public:
             float                        * reflCoef,
             int                            angle_index,
             float                          theta,
-            int                 & errCode,
-            char                * errText);
-  Wavelet3D(Wavelet1D           * wavelet1d,
-            const std::string   & filterfile,
-            ModelSettings       * modelSettings,
-            int                   angle_index,
-            Simbox              * simBox,
-            float                 theta,
-            int                 & errCode,
-            char                * errText);
-  Wavelet3D(Wavelet * wavelet, int difftype);
-  Wavelet3D(Wavelet * wavelet);
-//  Wavelet3D(Wavelet3D *wavelet);
+            int                          & errCode,
+            char                         * errText);
+  
+  Wavelet3D(Wavelet1D                    * wavelet1d,
+            const std::string            & filterfile,
+            ModelSettings                * modelSettings,
+            int                            angle_index,
+            Simbox                       * simBox,
+            float                          theta,
+            int                          & errCode,
+            char                         * errText);
+
+  Wavelet3D(Wavelet                      * wavelet, 
+            int                            difftype);
+
+  Wavelet3D(Wavelet *                      wavelet);
+
   virtual ~Wavelet3D() {delete wavelet1D_;}
 
   bool           consistentSize(int nzp, int nyp, int nxp)          const; 

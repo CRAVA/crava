@@ -464,6 +464,33 @@ Wavelet1D::Wavelet1D(Wavelet * wavelet, int difftype)
   }
 }
 
+Wavelet1D::Wavelet1D(Wavelet                  * wavelet, 
+                     ModelSettings            * modelSettings, 
+                     float                    * reflCoef, 
+                     const std::vector<float> & wlest)
+  : Wavelet(modelSettings, 1, reflCoef)
+{
+  inFFTorder_ = true;
+  theta_      = wavelet->getTheta();
+  readtype_   = wavelet->getReadtype();
+  dz_         = wavelet->getDz();
+  nz_         = wavelet->getNz();
+  nzp_        = wavelet->getNzp();
+  cz_         = wavelet->getCz();
+  norm_       = wavelet->getNorm();
+
+  cnzp_ = nzp_/2+1;
+  rnzp_ = 2*cnzp_;
+  rAmp_ = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));  
+  cAmp_ = reinterpret_cast<fftw_complex*>(rAmp_);
+
+  unsigned int nWl = wlest.size();
+  for (unsigned int i=0; i<nWl; i++)
+    rAmp_[i] = wlest[i];
+  for (int i=nWl; i<nzp_; i++)
+    rAmp_[i] = 0.0;
+}
+
 Wavelet1D::Wavelet1D(int difftype, int nz, int nzp)
   : Wavelet(1)
 {

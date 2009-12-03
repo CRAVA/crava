@@ -4003,16 +4003,20 @@ Model::findTimeGradientSurface(const std::string   & refTimeFile,
   double dx = simbox->getdx();
   double dy = simbox->getdy();
 
-  NRLib::RegularSurfaceRotated<double> t0surface = NRLib::ReadSgriSurf(refTimeFile);
+  if (!NRLib::IsNumber(refTimeFile)) {
+    NRLib::RegularSurfaceRotated<double> t0surface = NRLib::ReadSgriSurf(refTimeFile);
 
-  simbox->getXYCoord(0,0,x,y);
-  if (t0surface.IsInsideSurface(x,y)) {
-    simbox->getXYCoord(0,ny-1,x,y);
+    simbox->getXYCoord(0,0,x,y);
     if (t0surface.IsInsideSurface(x,y)) {
-      simbox->getXYCoord(nx-1,0,x,y);
-      if(t0surface.IsInsideSurface(x,y)) {
-        simbox->getXYCoord(nx-1,ny-1,x,y);
-        if (!t0surface.IsInsideSurface(x,y))
+      simbox->getXYCoord(0,ny-1,x,y);
+      if (t0surface.IsInsideSurface(x,y)) {
+        simbox->getXYCoord(nx-1,0,x,y);
+        if(t0surface.IsInsideSurface(x,y)) {
+          simbox->getXYCoord(nx-1,ny-1,x,y);
+          if (!t0surface.IsInsideSurface(x,y))
+            inside = false;
+        }
+        else
           inside = false;
       }
       else
@@ -4020,32 +4024,34 @@ Model::findTimeGradientSurface(const std::string   & refTimeFile,
     }
     else
       inside = false;
-  }
-  else
-    inside = false;
 
-  if (inside) {
-    refTimeGradX_.Resize(nx, ny, RMISSING);
-    refTimeGradY_.Resize(nx, ny, RMISSING);
-    for (unsigned int i = nx-1; i >= 0; i++) {
-      for (unsigned int j = ny-1; j >= 0; j++) {
-        simbox->getXYCoord(i,j,x,y);
-        double z_high = t0surface.GetZInside(x,y);
-        simbox->getXYCoord(i,j-1,x,y); //XYCoord is ok even if j = -1, but point is outside simbox
-        double z_low = t0surface.GetZInside(x,y);
-        if (!t0surface.IsMissing(z_low))
-          refTimeGradY_(i,j) = (z_high - z_low) / dy;
-        else
-          refTimeGradY_(i,j) = refTimeGradY_(i,j+1);
+    if (inside) {
+      refTimeGradX_.Resize(nx, ny, RMISSING);
+      refTimeGradY_.Resize(nx, ny, RMISSING);
+      for (unsigned int i = nx-1; i >= 0; i++) {
+        for (unsigned int j = ny-1; j >= 0; j++) {
+          simbox->getXYCoord(i,j,x,y);
+          double z_high = t0surface.GetZInside(x,y);
+          simbox->getXYCoord(i,j-1,x,y); //XYCoord is ok even if j = -1, but point is outside simbox
+          double z_low = t0surface.GetZInside(x,y);
+          if (!t0surface.IsMissing(z_low))
+            refTimeGradY_(i,j) = (z_high - z_low) / dy;
+          else
+            refTimeGradY_(i,j) = refTimeGradY_(i,j+1);
 
-        simbox->getXYCoord(i-1,j,x,y); //XYCoord is ok even if j = -1, but point is outside simbox
-        z_low = t0surface.GetZInside(x,y);
-        if (!t0surface.IsMissing(z_low))
-          refTimeGradX_(i,j) = (z_high - z_low) / dx;
-        else
-          refTimeGradX_(i,j) = refTimeGradX_(i+1,j);
+          simbox->getXYCoord(i-1,j,x,y); //XYCoord is ok even if j = -1, but point is outside simbox
+          z_low = t0surface.GetZInside(x,y);
+          if (!t0surface.IsMissing(z_low))
+            refTimeGradX_(i,j) = (z_high - z_low) / dx;
+          else
+            refTimeGradX_(i,j) = refTimeGradX_(i+1,j);
+        }
       }
     }
+  }
+  else {
+    refTimeGradX_.Resize(nx, ny, 0.0);
+    refTimeGradY_.Resize(nx, ny, 0.0);
   }
 
   return(inside);

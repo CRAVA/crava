@@ -25,6 +25,10 @@ public:
             int               & errCode, 
             char              * errText);
   Wavelet1D(Wavelet * wavelet);
+  Wavelet1D(Wavelet                  * wavelet, 
+            ModelSettings            * modelSettings, 
+            float                    * reflCoef, 
+            const std::vector<float> & wlest);
   Wavelet1D(Wavelet * wavelet,int difftype);
   Wavelet1D(int difftype, int nz, int nzp);
   Wavelet1D();
