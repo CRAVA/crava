@@ -612,11 +612,10 @@ Wavelet::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
     }
 
     if(doEstimateLocalShift)
-      estimateLocalShift(cov, shift,shiftWell, nActiveData, simbox,wells, nWells);
+      estimateLocalShift(cov, shift, shiftWell, nActiveData, simbox,wells, nWells);
     
     if(doEstimateLocalScale)
-      estimateLocalGain(cov, gain,scaleOptWell, 1.0, nActiveData, simbox,wells, nWells);
-    
+      estimateLocalGain(cov, gain, scaleOptWell, 1.0, nActiveData, simbox,wells, nWells);
 
     if(doEstimateLocalNoise)
     {

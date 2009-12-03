@@ -185,7 +185,7 @@ void SpatialWellFilter::doFiltering(Corr *corr, WellData **wells, int nWells, bo
 
     lib_matrCholR(3*n, sigmapri);
     //
-    // NBNB-PAL: Det ser ut til at de ti lib_mat... kallene nedenfor bruker kjempelang tid i test case 9
+    // NBNB-PAL: Det ser ut til at de to lib_mat... kallene nedenfor bruker kjempelang tid i test case 9
     //
     lib_matrAXeqBMatR(3*n, sigmapri, imat, 3*n);
     lib_matr_prod(sigmapost,imat,3*n,3*n,3*n,Aw);

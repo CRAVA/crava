@@ -251,10 +251,13 @@ Crava::setupErrorCorrelation(ModelSettings * modelSettings)
   for(int l=0 ; l < ntheta_ ; l++)
   {
     empSNRatio_[l]    = modelSettings->getSNRatio(l);
-    if(modelSettings->noiseIsScaled()==true)
-      errorVariance_[l] = float(dataVariance_[l]*modelSettings->getMinimumNoiseScaled(l)/empSNRatio_[l]);//NBNB Anne Randi: Sett denne lik minste ved lokal skalering.
-    else
-      errorVariance_[l] = dataVariance_[l]/empSNRatio_[l];
+    errorVariance_[l] = dataVariance_[l]/empSNRatio_[l];
+
+    if(modelSettings->getUseLocalNoise()) {
+      Grid2D * localNoiseScale = model_->getLocalNoiseScale(l);
+      if(localNoiseScale != NULL)
+        errorVariance_[l] *= static_cast<float>(localNoiseScale->Min(RMISSING));
+    }
 
     if (empSNRatio_[l] < 1.1f) 
     {
@@ -274,8 +277,6 @@ Crava::setupErrorCorrelation(ModelSettings * modelSettings)
         errThetaCov_[i][j] = static_cast<float>(sqrt(errorVariance_[i])
                                                 *sqrt(errorVariance_[j])
                                                 *angularCorr->corr(dTheta,0));
-        //errThetaCov_[i][j] = static_cast<float>(sqrt(errorVariance_[i])*sqrt(errorVariance_[j])
-        //                                        *angularCorr->corr(theta_[i]-theta_[j],0));
       }
 
 }
@@ -1017,7 +1018,7 @@ Crava::computePostMeanResidAndFFTCov()
   }
 
   //NBNB Anne Randi: Skaler traser ihht notat fra Hugo
-  if(model_->getModelSettings()->noiseIsScaled()==true)
+  if(model_->getModelSettings()->getUseLocalNoise())
   {
     correctAlphaBetaRho(model_->getModelSettings());
   }
@@ -1230,7 +1231,7 @@ Crava::simulate(RandomGen * randomGen)
           seed2->setAccessMode(FFTGrid::RANDOMACCESS);
           seed2->invFFTInPlace(); 
 
-          if(model_->getModelSettings()->noiseIsScaled()==true)
+          if(model_->getModelSettings()->getUseLocalNoise())
           {
             float alpha,beta, rho;
             float alphanew, betanew, rhonew;
@@ -1910,13 +1911,21 @@ void Crava::newPosteriorCovPointwise(double ** sigmanew, double **G, int igrid, 
     D[i]         = new double[ntheta_];
     help[i]      = new double[ntheta_];
   }
-  
+
   for(i=0;i<ntheta_;i++)
     for(j=0;j<ntheta_;j++)
       if(i==j)
-        D[i][j] = sqrt(modelSettings->getNoiseScaled(i,igrid,jgrid)/modelSettings->getMinimumNoiseScaled(i));
+        D[i][j] = 1.0;
       else
         D[i][j] = 0.0;
+
+  if(modelSettings->getUseLocalNoise()) {
+    for(i=0;i<ntheta_;i++) {
+      Grid2D * localNoiseScale = model_->getLocalNoiseScale(i);
+      double minLocalNoiseScale = localNoiseScale->Min(RMISSING);
+      D[i][i] = sqrt((*localNoiseScale)(igrid,jgrid)/minLocalNoiseScale);      
+    }
+  }
 
   lib_matr_prod(D,errThetaCov_,ntheta_,ntheta_,ntheta_,help);
   lib_matr_prod(help,D,ntheta_,ntheta_,ntheta_,sigmaenew);

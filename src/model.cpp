@@ -504,33 +504,34 @@ Model::checkAvailableMemory(Simbox            * timeSimbox,
   int gridSize = dummyGrid->getrsize();
   delete dummyGrid;
 
-  int nGridPar = 3;                                      // Vp + Vs + Rho
-  int nGridCor = 6;                                      // Covariances
-  int nGridAng = modelSettings->getNumberOfAngles();     // One for each angle stack
-  int nGridFac = modelSettings->getNumberOfFacies() + 1; // One for each facies + one for undef  
-  int nGridKrg = 1;                                      // One grid for kriging
-  int nGridFil = 1;                                      // One grid for intermediate file storage
+  int nGridParameters  = 3;                                      // Vp + Vs + Rho
+  int nGridBackground  = 3;                                      // Vp + Vs + Rho
+  int nGridCovariances = 6;                                      // Covariances
+  int nGridSeismicData = modelSettings->getNumberOfAngles();     // One for each angle stack
+  int nGridFacies      = modelSettings->getNumberOfFacies() + 1; // One for each facies + one for undef  
+  int nGridKriging     = 1;                                      // One grid for kriging
+  int nGridFileMode    = 1;                                      // One grid for intermediate file storage
 
   int nGrids;
   if(modelSettings->getForwardModeling() == true) {
-    nGrids = nGridPar + nGridAng;
+    nGrids = nGridParameters + nGridSeismicData;
   }
   else {
     if (modelSettings->getFileGrid()) { // Use disk buffering
-      nGrids = nGridFil;  
+      nGrids = nGridFileMode;  
     }
     else {
       if(modelSettings->getNumberOfSimulations() > 0) 
-        nGrids = nGridPar + nGridCor + std::max(nGridAng, nGridPar);
+        nGrids = nGridParameters + nGridCovariances + std::max(nGridSeismicData, nGridParameters);
       else
-        nGrids = nGridPar + nGridCor + nGridAng;
+        nGrids = nGridParameters + nGridCovariances + nGridSeismicData;
     }
     if(modelSettings->getKrigingParameter() > 0) {
-      nGrids += nGridKrg;
+      nGrids += nGridKriging;
     }
     // Need background for facies probabilities and local noise.
     if(modelSettings->getEstimateFaciesProb() || modelSettings->getUseLocalNoise()) {
-      nGrids = nGrids + nGridPar + std::max(0, nGridFac - nGridAng);  // Deallocate seismic data
+      nGrids = nGrids + nGridBackground + std::max(0, nGridFacies - nGridSeismicData);  // Deallocate seismic data
     }
   }
   FFTGrid::setMaxAllowedGrids(nGrids);
@@ -2534,15 +2535,15 @@ Model::processWavelets(Wavelet                    **& wavelet,
 
   wavelet = new Wavelet * [nAngles];
 
-  std::vector<Grid2D *> noiseScaled(nAngles);
   std::vector<Grid2D *> shiftGrids(nAngles);
   std::vector<Grid2D *> gainGrids(nAngles);
+  localNoiseScale_.resize(nAngles);
 
   for(unsigned int i=0 ; i < nAngles ; i++)
   {
-    noiseScaled[i] = NULL;
-    shiftGrids[i]  = NULL;
-    gainGrids[i]   = NULL;
+    localNoiseScale_[i] = NULL;
+    shiftGrids[i]       = NULL;
+    gainGrids[i]        = NULL;
   } 
   
   float globalScale = 1.0;
@@ -2681,7 +2682,7 @@ Model::processWavelets(Wavelet                    **& wavelet,
           float SNRatio = wavelet[i]->calculateSNRatioAndLocalWavelet(timeSimbox, seisCube[i], wells, 
                                                                       shiftGrids[i], gainGrids[i],
                                                                       modelSettings, errText, error, 
-                                                                      noiseScaled[i], i, globalScale);
+                                                                      localNoiseScale_[i], i, globalScale);
           if(modelSettings->getEstimateSNRatio(i))
             modelSettings->setSNRatio(i,SNRatio);
         }
@@ -2709,12 +2710,11 @@ Model::processWavelets(Wavelet                    **& wavelet,
         if (useLocalNoise) {
           writeLocalGridsToFile(inputFiles->getLocalNoiseFile(i),                              
                                 IO::PrefixLocalNoise(),
-                                1.0,
+                                1.0,  // Scale map with this factor before writing to disk
                                 modelSettings,
                                 i,
                                 timeSimbox,
-                                noiseScaled[i]);
-          modelSettings->setNoiseScaled(noiseScaled[i]);
+                                localNoiseScale_[i]);
         }
 
         if (useLocalShift) {

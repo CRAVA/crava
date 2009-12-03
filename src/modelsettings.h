@@ -41,13 +41,13 @@ public:
   bool                             getMatchEnergies(int i)       const { return(matchEnergies_[i]==1)      ;} 
   bool                             getEstimateWavelet(int i)     const { return(estimateWavelet_[i]==1)    ;}
   bool                             getEstimateSNRatio(int i)     const { return(estimateSNRatio_[i]==1)    ;}
-  bool                             getEstimateLocalShift(int i)  const { return(estimateLocalShift_[i]==1) ;}
+  bool                             getEstimateGlobalWaveletScale(int i) const {return estimateGlobalWaveletScale_[i] ;}
   bool                             getEstimateLocalScale(int i)  const { return(estimateLocalScale_[i]==1) ;}
+  bool                             getEstimateLocalShift(int i)  const { return(estimateLocalShift_[i]==1) ;}
   bool                             getEstimateBackground()       const { return estimateBackground_    ;}
   bool                             getEstimateCorrelations()     const { return estimateCorrelations_  ;}
   bool                             getEstimateWaveletNoise()     const { return estimateWaveletNoise_  ;}
   bool                             getEstimateLocalNoise(int i)  const { return estimateLocalNoise_[i] ;}
-  bool                             getEstimateGlobalWaveletScale(int i) const {return estimateGlobalWaveletScale_[i] ;}
   int                              getWaveletDim(int i)          const { return waveletDim_[i]         ;}
   float                            getStretchFactor(int i)       const { return stretchFactor_[i]      ;}
   float                            getEstRangeX(int i)           const { return estRangeX_[i]          ;}
@@ -138,12 +138,6 @@ public:
   int                              getIsPriorFaciesProbGiven()   const { return priorFaciesProbGiven_  ;}
   bool                             getDoInversion(void);                                            
   bool                             getDoDepthConversion(void)    const;
-  double                           getNoiseScaled(int i,int j, int k)   const { if(noiseScaled_[i]!=NULL) return (*noiseScaled_[i])(j,k);
-                                                                                else return 1.0;} // i is angle number  
- 
-  double                           getMinimumNoiseScaled(int i);
-
-  Surface                        * getCorrelationSurface()       const { return NULL                   ;}
 
 
   void rotateVariograms(float angle);
@@ -273,9 +267,6 @@ public:
   void addPriorFaciesProb(std::string name, float value) { priorFaciesProb_[name] = value             ;}
   void setPriorFaciesProbGiven(int fpg)                  { priorFaciesProbGiven_ = fpg                ;}
 
-  void setNoiseScaled(Grid2D *ns);
-  bool noiseIsScaled();
-
   enum          sseismicTypes{STANDARDSEIS = 0, PSSEIS = 1};
 
   enum          indicators{NO = 0, YES = 1, NOTSET = 2};
@@ -323,8 +314,6 @@ private:
   bool                              estimateCorrelations_;  // As above, but correlations.
   bool                              estimateWaveletNoise_;  // As above, but for wavelet and noise parameters.
 
-  bool                              localWavelet_;
-
   std::vector<float>                constBackValue_;        // Values set for constant background model
                                                             // Negative value ==> read from file (actual value gives format).
 
@@ -340,7 +329,6 @@ private:
   std::vector<int>                  faciesLabels_;          // Facies labels
   std::vector<std::string>          faciesNames_;           // Facies names   (nFacies = faciesNames.size())
   int                               priorFaciesProbGiven_;
-  std::vector<Grid2D *>             noiseScaled_;
   std::map<std::string, float>      priorFaciesProb_;
                    
   int                               nWells_;

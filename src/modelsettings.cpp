@@ -288,45 +288,4 @@ ModelSettings::setIndicatorFacies(int * indFacies, int nWells)
     indFacies_[i] = indFacies[i];
 }
 
-void
-ModelSettings::setNoiseScaled(Grid2D *ns)
-{ 
-  if(ns==NULL)
-    noiseScaled_.push_back(NULL);
-  else
-    noiseScaled_.push_back(ns);
-}
-
-double ModelSettings::getMinimumNoiseScaled(int i)
-{
-  if(noiseScaled_[i]!=NULL)
-  {
-   double minimum = (*noiseScaled_[i])(0,0);
-   int l,j;
-   for(l=0;l<static_cast<int>(noiseScaled_[i]->GetNI());l++)
-    for(j=0;j<static_cast<int>(noiseScaled_[i]->GetNJ());j++)
-     if((*noiseScaled_[i])(l,j)<minimum)
-       minimum = (*noiseScaled_[i])(l,j);
-
-   return minimum;
-  }
-  else
-    return 1.0;
-}
-
-bool ModelSettings::noiseIsScaled()
-{
-  if(noiseScaled_.size()>0)
-  {
-    for(int i=0;i<static_cast<int>(noiseScaled_.size());i++)
-    {
-      if(noiseScaled_[i]!=NULL)
-        return true;
-    }
-    return false;
-  }
-  else
-    return false;
-}
-
 int  ModelSettings::debugFlag_  = 0;

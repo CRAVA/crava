@@ -44,12 +44,15 @@ public:
   RandomGen                   * getRandomGen()             const { return randomGen_              ;} 
   GridMapping                 * getTimeDepthMapping()      const { return timeDepthMapping_       ;}
   GridMapping                 * getTimeCutMapping()        const { return timeCutMapping_         ;}
-  bool                          getVelocityFromInversion() const { return velocityFromInversion_  ;}
-  bool                          getFailed()                const { return failed_                 ;}
-  void                          releaseGrids();                                        // Cuts connection to SeisCube_ and  backModel_
-  void                          getCorrGradIJ(float & corrGradI, float &corrGradJ) const;
   const Grid2D                & getRefTimeGradX()          const { return refTimeGradX_           ;}
   const Grid2D                & getRefTimeGradY()          const { return refTimeGradY_           ;}
+  Grid2D                      * getLocalNoiseScale(int i)  const { return localNoiseScale_[i]     ;}
+
+  bool                          getVelocityFromInversion() const { return velocityFromInversion_  ;}
+  bool                          getFailed()                const { return failed_                 ;}
+
+  void                          getCorrGradIJ(float & corrGradI, float &corrGradJ) const;
+  void                          releaseGrids();                        // Cuts connection to SeisCube_ and  backModel_
 
 private:
   void             makeTimeSimboxes(Simbox        *& timeSimbox,
@@ -331,9 +334,13 @@ private:
 
   GridMapping             * timeDepthMapping_;      ///< Contains both simbox and mapping used for depth conversion
   GridMapping             * timeCutMapping_;        ///< Simbox and mapping for timeCut
-  float                   * noiseGrid_;             ///< 2D grid for local noise scaling
+
+  std::vector<Grid2D *>     localNoiseScale_;       ///< Scale factors for local noise
+
   bool                      velocityFromInversion_;
   FFTGrid                ** priorFaciesProbCubes_;  ///< Cubes for prior facies probabilities
+
+
 
   bool                      failed_;                ///< Indicates whether errors occured during construction. 
 };
