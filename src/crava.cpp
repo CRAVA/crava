@@ -152,7 +152,8 @@ Crava::Crava(Model * model, SpatialWellFilter * spatwellfilter)
     }
   }
 
-  if ((outputFlag_ & IO::FACIESPROBRELATIVE) > 0 || model->getModelSettings()->getUseLocalNoise())
+  if ((model->getModelSettings()->getEstimateFaciesProb() && model->getModelSettings()->getFaciesProbRelative()) 
+      || model->getModelSettings()->getUseLocalNoise())
   {
     meanAlpha2_ = copyFFTGrid(meanAlpha_);
     meanBeta2_  = copyFFTGrid(meanBeta_);
@@ -1617,7 +1618,7 @@ Crava::printEnergyToScreen()
 void 
 Crava::computeFaciesProb(SpatialWellFilter *filteredlogs)
 {
-  if((outputFlag_ & IO::FACIESPROB) >0 || (outputFlag_ & IO::FACIESPROBRELATIVE)>0)
+  if(model_->getModelSettings()->getEstimateFaciesProb())
   {
     Utils::writeHeader("Facies probability volumes");
 
@@ -1644,7 +1645,8 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs)
     int nfac = model_->getModelSettings()->getNumberOfFacies();
 
     std::string baseName = IO::PrefixFaciesProbability();
-    if((outputFlag_ & IO::FACIESPROBRELATIVE)>0)
+
+    if(model_->getModelSettings()->getFaciesProbRelative())
     {
       meanAlpha2_->subtract(postAlpha_);
       meanAlpha2_->changeSign();
@@ -1714,6 +1716,7 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs)
   }
 }
 
+
 void 
 Crava::filterLogs(Simbox          * timeSimboxConstThick,
                   FilterWellLogs *& filterlogs)
@@ -1721,7 +1724,7 @@ Crava::filterLogs(Simbox          * timeSimboxConstThick,
   double wall=0.0, cpu=0.0;
   TimeKit::getTime(wall,cpu);
   int relative;
-  if((outputFlag_ & IO::FACIESPROBRELATIVE)>0)
+  if(model_->getModelSettings()->getEstimateFaciesProb())
     relative = 1;
   else 
     relative = 0;
@@ -1735,16 +1738,7 @@ Crava::filterLogs(Simbox          * timeSimboxConstThick,
                                   relative);
   Timings::setTimeFiltering(wall,cpu);
 }
-int Crava::getRelative()
-{
-int relative;
-  if((outputFlag_ & IO::FACIESPROBRELATIVE)>0)
-    relative = 1;
-  else 
-    relative = 0;
 
-  return relative;
-}
 
 void Crava::computeG(double **G)
 {
@@ -1896,7 +1890,6 @@ void Crava::computeG(double **G)
     delete [] eigvece[i];
     delete [] eigvalmate[i];
   }
-
   delete [] eigvale;
   delete [] help1;
   delete [] help2;
@@ -1904,9 +1897,10 @@ void Crava::computeG(double **G)
   delete [] eigvecetrans;
   delete [] eigvece;
   delete [] eigvalmate;
-  delete [] error;
-  
+  delete [] error;  
 }
+
+
 void Crava::newPosteriorCovPointwise(double ** sigmanew, double **G, int igrid, int jgrid, ModelSettings *modelSettings, double **sigmamdnew)
 {
   double **sigmaenew = new double*[ntheta_];
@@ -2104,9 +2098,8 @@ void Crava::newPosteriorCovPointwise(double ** sigmanew, double **G, int igrid, 
   delete [] help2;
   delete [] help4;
   delete [] error;
-
-
 }
+
 
 void Crava::correctAlphaBetaRho(ModelSettings *modelSettings)
 {
@@ -2155,9 +2148,6 @@ void Crava::correctAlphaBetaRho(ModelSettings *modelSettings)
   lib_matr_prod(eigvec,eigvalmat,3,3,3,help);
   lib_matrTranspose(eigvec,3,3,eigvectrans);
   lib_matr_prod(help,eigvectrans,3,3,3,sigmamdold);
-
-  
-
 
   float *alpha = NULL;
   float *beta = NULL;

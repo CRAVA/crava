@@ -109,6 +109,7 @@ ModelSettings::ModelSettings(void)
   forwardModeling_       =    false;
   generateBackground_    =     true;
   estimateFaciesProb_    =    false;
+  faciesProbRelative_    =    false;
   noVsFaciesProb_        =    false;
   faciesLogGiven_        =    false;
   depthDataOk_           =    false;

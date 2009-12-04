@@ -248,9 +248,9 @@ private:
   void             setupDefaultReflectionMatrix(float       **& reflectionMatrix,
                                                 double          vsvp,
                                                 ModelSettings * modelSettings);
-  void             checkAvailableMemory(Simbox            * timeSimbox,
-                                        ModelSettings     * modelSettings,
-                                        const std::string & seismicFile);
+  void             checkAvailableMemory(Simbox        * timeSimbox,
+                                        ModelSettings * modelSettings,
+                                        InputFiles    * inputFiles);
   void             checkFaciesNames(WellData      ** wells,
                                     ModelSettings *& modelSettings,
                                     char           * tmpErrText,

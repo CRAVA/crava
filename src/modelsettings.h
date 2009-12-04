@@ -123,8 +123,11 @@ public:
   bool                             getGenerateSeismicAfterInversion(void) const { return generateSeismicAfterInversion_ ;}
   bool                             getGenerateBackground(void)   const { return generateBackground_    ;}
   bool                             getEstimateFaciesProb(void)   const { return estimateFaciesProb_    ;}
+  bool                             getFaciesProbRelative(void)   const { return faciesProbRelative_    ;}
   bool                             getNoVsFaciesProb(void)       const { return noVsFaciesProb_        ;}
   bool                             getFaciesLogGiven(void)       const { return faciesLogGiven_        ;}
+  std::map<std::string,float>      getPriorFaciesProb()          const { return priorFaciesProb_       ;} 
+  int                              getIsPriorFaciesProbGiven()   const { return priorFaciesProbGiven_  ;}
   bool                             getDepthDataOK(void)          const { return depthDataOk_           ;}
   bool                             getParallelTimeSurfaces(void) const { return parallelTimeSurfaces_  ;}
   bool                             getUseLocalWavelet(void)      const { return useLocalWavelet_       ;}
@@ -134,8 +137,6 @@ public:
   int                              getLogLevel(void)             const { return logLevel_              ;}
   int                              getSeed(void)                 const { return seed_                  ;}
 
-  std::map<std::string,float>      getPriorFaciesProb()          const { return priorFaciesProb_       ;} 
-  int                              getIsPriorFaciesProbGiven()   const { return priorFaciesProbGiven_  ;}
   bool                             getDoInversion(void);                                            
   bool                             getDoDepthConversion(void)    const;
 
@@ -255,8 +256,11 @@ public:
   void setGenerateSeismicAfterInversion( bool generateSeismic) { generateSeismicAfterInversion_ = generateSeismic ;}
   void setGenerateBackground(bool generateBackgr)        { generateBackground_   = generateBackgr     ;}
   void setEstimateFaciesProb(bool estFaciesProb)         { estimateFaciesProb_   = estFaciesProb      ;}
+  void setFaciesProbRelative(bool faciesProbRel)         { faciesProbRelative_   = faciesProbRel      ;}
   void setNoVsFaciesProb(bool noVsFaciesProb)            { noVsFaciesProb_       = noVsFaciesProb     ;}
   void setFaciesLogGiven(bool faciesLogGiven)            { faciesLogGiven_       = faciesLogGiven     ;}
+  void addPriorFaciesProb(std::string name, float value) { priorFaciesProb_[name] = value             ;}
+  void setPriorFaciesProbGiven(int fpg)                  { priorFaciesProbGiven_ = fpg                ;}
   void setDepthDataOk(bool depthDataOk)                  { depthDataOk_          = depthDataOk        ;}
   void setParallelTimeSurfaces(bool pTimeSurfaces)       { parallelTimeSurfaces_ = pTimeSurfaces      ;}
   void setUseLocalWavelet(bool useLocalWavelet)          { useLocalWavelet_      = useLocalWavelet    ;}
@@ -264,8 +268,6 @@ public:
   void setOptimizeWellLocation(bool optimizeWellLoc)     { optimizeWellLocation_ = optimizeWellLoc    ;}
   void setLogLevel(int logLevel)                         { logLevel_             = logLevel           ;}
   void setSeed(int seed)                                 { seed_                 = seed               ;}
-  void addPriorFaciesProb(std::string name, float value) { priorFaciesProb_[name] = value             ;}
-  void setPriorFaciesProbGiven(int fpg)                  { priorFaciesProbGiven_ = fpg                ;}
 
   enum          sseismicTypes{STANDARDSEIS = 0, PSSEIS = 1};
 
@@ -406,6 +408,7 @@ private:
 
   bool                             generateBackground_;    // Make background model
   bool                             estimateFaciesProb_;    // Shall facies probabilites be estimated?
+  bool                             faciesProbRelative_;    // Use relative elastic parameters for facies prob estimation?
   bool                             noVsFaciesProb_;        // Do not use Vs for faciesprob.
   bool                             faciesLogGiven_;
   bool                             depthDataOk_;           // We have what we need to do depth conversion

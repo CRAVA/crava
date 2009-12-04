@@ -163,6 +163,7 @@ Model::Model(char * fileName)
       //
       if (modelSettings_->getForwardModeling() == true)
       {
+        checkAvailableMemory(timeSimbox_, modelSettings_, inputFiles); 
         processBackground(background_, wells_, timeSimbox_, timeBGSimbox,
                           modelSettings_, inputFiles,
                           errText, failedBackground);
@@ -195,6 +196,9 @@ Model::Model(char * fileName)
 
         processWells(wells_, timeSimbox_, timeBGSimbox, timeSimboxConstThick_, 
                      randomGen_, modelSettings_, inputFiles, errText, failedWells);
+
+        checkAvailableMemory(timeSimbox_, modelSettings_, inputFiles); 
+
         loadExtraSurfaces(waveletEstimInterval_, faciesEstimInterval_, wellMoveInterval_, 
                           timeSimbox_, inputFiles, errText, failedExtraSurf);
 
@@ -480,16 +484,17 @@ Model::readMatrix(const std::string & fileName, int n1, int n2,
 }
 
 void
-Model::checkAvailableMemory(Simbox            * timeSimbox,
-                            ModelSettings     * modelSettings,
-                            const std::string & seismicFile)                           
+Model::checkAvailableMemory(Simbox        * timeSimbox,
+                            ModelSettings * modelSettings,
+                            InputFiles    * inputFiles)
 {
+  Utils::writeHeader("Estimating amount of memory needed");
   //
   // Find the size of first seismic volume
   //
   float memOneSeis = 0.0f;
-  if (seismicFile != "") {
-    memOneSeis = static_cast<float> (NRLib::FindFileSize(seismicFile));
+  if (inputFiles->getNumberOfSeismicFiles() > 0 && inputFiles->getSeismicFile(0) != "") {
+    memOneSeis = static_cast<float> (NRLib::FindFileSize(inputFiles->getSeismicFile(0)));
   }
 
   //
@@ -509,6 +514,7 @@ Model::checkAvailableMemory(Simbox            * timeSimbox,
   int nGridCovariances = 6;                                      // Covariances
   int nGridSeismicData = modelSettings->getNumberOfAngles();     // One for each angle stack
   int nGridFacies      = modelSettings->getNumberOfFacies() + 1; // One for each facies + one for undef  
+  int nGridHistograms  = modelSettings->getNumberOfFacies();     // One histogram for each facies
   int nGridKriging     = 1;                                      // One grid for kriging
   int nGridFileMode    = 1;                                      // One grid for intermediate file storage
 
@@ -521,7 +527,7 @@ Model::checkAvailableMemory(Simbox            * timeSimbox,
       nGrids = nGridFileMode;  
     }
     else {
-      if(modelSettings->getNumberOfSimulations() > 0) 
+      if(modelSettings->getNumberOfSimulations() > 0)
         nGrids = nGridParameters + nGridCovariances + std::max(nGridSeismicData, nGridParameters);
       else
         nGrids = nGridParameters + nGridCovariances + nGridSeismicData;
@@ -530,13 +536,21 @@ Model::checkAvailableMemory(Simbox            * timeSimbox,
       nGrids += nGridKriging;
     }
     // Need background for facies probabilities and local noise.
-    if(modelSettings->getEstimateFaciesProb() || modelSettings->getUseLocalNoise()) {
-      nGrids = nGrids + nGridBackground + std::max(0, nGridFacies - nGridSeismicData);  // Deallocate seismic data
+
+    if(modelSettings->getUseLocalNoise()) {
+      nGrids = nGrids + nGridBackground;
+    }
+    if(modelSettings->getEstimateFaciesProb()) { // Seismic data is dealloctaed before new allocations are done
+      if (modelSettings->getFaciesProbRelative())
+        nGrids += nGridBackground + std::max(0, nGridHistograms + nGridFacies - nGridSeismicData);  
+      else {
+        nGrids += std::max(0, nGridHistograms + nGridFacies - nGridSeismicData);
+      }
     }
   }
   FFTGrid::setMaxAllowedGrids(nGrids);
 
-  int   workSize    = 2500 + int( 0.65*gridSize ); //Size of memory used beyond grids.
+  int   workSize    = 2500 + static_cast<int>( 0.65*gridSize ); //Size of memory used beyond grids.
 
   float memOneGrid  = 4.0f * static_cast<float>(gridSize);  
   float mem0        = 4.0f * workSize;
@@ -569,12 +583,12 @@ Model::checkAvailableMemory(Simbox            * timeSimbox,
 
     if(memchunk[nGrids-1] == NULL)  //Could not allocate memory
     {
-      modelSettings->setFileGrid(1);
+      modelSettings->setFileGrid(true);
       LogKit::LogFormatted(LogKit::LOW,"Not enough memory to hold all grids. Using file storage.\n");
     }
     else
     {
-      modelSettings->setFileGrid(0);
+      modelSettings->setFileGrid(false);
     }
     
     for(int i=0 ; i<nGrids ; i++)
@@ -960,11 +974,6 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
       LogKit::LogFormatted(LogKit::LOW,"  FFT grid            %4i * %4i * %4i   : %10i\n",
                            modelSettings->getNXpad(),modelSettings->getNYpad(),modelSettings->getNZpad(),
                            modelSettings->getNXpad()*modelSettings->getNYpad()*modelSettings->getNZpad());
-
-      //
-      // Check if CRAVA has enough memory to run calculation without buffering to disk
-      //
-      checkAvailableMemory(timeSimbox, modelSettings, seismicFile); 
     }
 
     //
@@ -2290,6 +2299,7 @@ Model::processReflectionMatrixFromWells(float       **& reflectionMatrix,
                                         char          * errText,
                                         bool          & failed)
 {
+  Utils::writeHeader("Making reflection matrix from well information");  
   //
   // About to process wavelets and energy information. Needs the a-matrix, so create
   // if not already made. A-matrix may need Vp/Vs-ratio from wells.
@@ -2320,6 +2330,7 @@ Model::processReflectionMatrixFromBackground(float       **& reflectionMatrix,
                                              char          * errText,
                                              bool          & failed)
 {
+  Utils::writeHeader("Making reflection matrix from background model");  
   //
   // About to process wavelets and energy information. Needs the a-matrix, so create
   // if not already made. A-matrix may need Vp/Vs-ratio from background model.
@@ -2420,7 +2431,6 @@ Model::processWellLocation(FFTGrid                     ** seisCube,
                            const std::vector<Surface *> & interval, 
                            RandomGen                    * randomGen)
 {
-
   Utils::writeHeader("Estimating optimized well location");
   
   double  deltaX, deltaY;
@@ -3263,7 +3273,12 @@ Model::printSettings(ModelSettings * modelSettings,
   if(modelSettings->getForwardModeling()==false)
   {
     LogKit::LogFormatted(LogKit::LOW,"  Kriging                                  : %10s\n",(modelSettings->getKrigingParameter()>0 ? "yes" : "no"));
-    LogKit::LogFormatted(LogKit::LOW,"  Estimate facies probabilities            : %10s\n",(modelSettings->getEstimateFaciesProb() ? "yes" : "no" ));
+    if (modelSettings->getEstimateFaciesProb()) {
+      if (modelSettings->getFaciesProbRelative())
+        LogKit::LogFormatted(LogKit::LOW,"  Facies probabilities                     : %10s\n","relative");
+      else
+        LogKit::LogFormatted(LogKit::LOW,"  Facies probabilities                     : %10s\n","absolute");
+    }
     LogKit::LogFormatted(LogKit::LOW,"  Synthetic seismic                        : %10s\n",(modelSettings->getGenerateSeismicAfterInversion() ? "yes" : "no" ));
   }
 

@@ -42,8 +42,6 @@ public:
   void               computeFaciesProb(SpatialWellFilter *filteredlogs);
   void               filterLogs(Simbox          * timeSimboxConstThick,
                                 FilterWellLogs *& filterlogs);
-  int                getRelative();
-  
 
 private: 
   void               computeDataVariance(void);

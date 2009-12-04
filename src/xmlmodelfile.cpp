@@ -180,10 +180,18 @@ XmlModelFile::parseInversionSettings(TiXmlNode * node, std::string & errTxt)
     int flag = 0;
     if(modelSettings_->getDefaultGridOutputInd() == false)
       flag = modelSettings_->getGridOutputFlag();
-    if(facprob == "absolute")
+    if(facprob == "absolute") {
       flag = (flag | IO::FACIESPROB);
-    else if(facprob == "relative")
+      modelSettings_->setFaciesProbRelative(false);
+    }
+    else if(facprob == "relative") {
       flag = (flag | IO::FACIESPROBRELATIVE);
+      modelSettings_->setFaciesProbRelative(true);
+    }
+    else
+      errTxt += "Illegal type \'"+facprob+"\' specified for keyword <facies-probabilities>."
+        +" Choose from \'absolute\' and \'relative\'\n";
+
     if(flag != 0) {
       modelSettings_->setGridOutputFlag(flag);
       modelSettings_->setDefaultGridOutputInd(false);

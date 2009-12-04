@@ -61,7 +61,7 @@ FaciesProb::makeFaciesHistAndSetPriorProb(const std::vector<float> & alpha,
                                           const std::vector<float> & beta,
                                           const std::vector<float> & rho,
                                           const std::vector<int>   & faciesLog,
-                                          const Simbox * volume)
+                                          const Simbox             * volume)
 {
   std::vector<FFTGrid *> hist;
   hist.resize(nFacies_, NULL);
@@ -146,7 +146,7 @@ FaciesProb::makeFaciesDens(int nfac,
     if(faciesLog[i]!=IMISSING)
       nobs++;
   }
- 
+
   // Make bins.
   float varAlpha = 0.0f, varBeta = 0.0f, varRho = 0.0f;
   calculateVariances(alphaFiltered, betaFiltered, rhoFiltered, faciesLog,
@@ -205,7 +205,6 @@ FaciesProb::makeFaciesDens(int nfac,
   for(int i=0;i<3;i++)
     delete [] sigmae[i];
   delete [] sigmae;
-
 
   float alphaMin = *min_element(alphaFiltered.begin(), alphaFiltered.end()) - 5.0f*kstda;
   float alphaMax = *max_element(alphaFiltered.begin(), alphaFiltered.end()) + 5.0f*kstda;
@@ -297,7 +296,6 @@ FaciesProb::makeFaciesDens(int nfac,
       density[i]->writeAsciiFile(fileName);
     }
   }
-
   delete smoother;
   delete [] smooth;
   for(i=0;i<3;i++)
@@ -331,6 +329,7 @@ void FaciesProb::makeFaciesProb(int                            nfac,
 
   std::vector<FFTGrid *> density;
   Simbox   * volume  = NULL;
+
   makeFaciesDens(nfac, sigmaEOrig, noVs, alphaFiltered, betaFiltered, rhoFiltered, faciesLog, density, &volume);
 
   if(priorFaciesCubes != NULL)
@@ -701,7 +700,9 @@ void FaciesProb::calculateFaciesProb(FFTGrid                      * alphagrid,
   }
   faciesProbUndef_->setAccessMode(FFTGrid::WRITE);
   faciesProbUndef_->createRealGrid();
+
   smallrnxp = faciesProb_[0]->getRNxp();
+
   float help;
   float undefSum = p_undefined/(volume->getnx()*volume->getny()*volume->getnz());
   for(i=0;i<nzp;i++)
