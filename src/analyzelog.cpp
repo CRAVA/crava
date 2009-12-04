@@ -735,16 +735,29 @@ Analyzelog::estimateCorrTAndVar0(float  * CorrT,
     }
 
     if(ModelSettings::getDebugLevel() > 0) {
-      std::string fName = IO::makeFullFileName(IO::PathToCorrelations(), std::string("Autocorr.dat"));
-      FILE *file = fopen(fName.c_str(), "w");
-      fprintf(file,"   i      nAA    corAA      nBB    corBB      nRR    corRR         nTT    corTT    CorrT\n");
-      fprintf(file,"----------------------------------------------------------------------------------------\n");
+      std::string fileName = IO::makeFullFileName(IO::PathToCorrelations(), std::string("Autocorr.dat"));
+      std::ofstream file;
+      NRLib::OpenWrite(file, fileName);
+      file << "   i      nAA    corAA      nBB    corBB      nRR    corRR         nTT    corTT    CorrT\n"
+           << "----------------------------------------------------------------------------------------\n";
       for(i=0;i<n+1;i++)
       {
-        fprintf(file,"%4d %8d%9.3f %8d%9.3f %8d%9.3f    %8d%9.3f%9.3f\n",
-          i,nAA[i],covAA[i],nBB[i],covBB[i],nRR[i],covRR[i],nTT[i],corTT[i],CorrT[i]);
+        file << std::fixed 
+             << std::right
+             << std::setprecision(3) 
+             << std::setw(4) << i        << " "
+             << std::setw(8) << nAA[i]   << " "
+             << std::setw(8) << covAA[i] << " "
+             << std::setw(8) << nBB[i]   << " "
+             << std::setw(8) << covBB[i] << " "
+             << std::setw(8) << nRR[i]   << " "
+             << std::setw(8) << covRR[i] << "    "
+             << std::setw(8) << nTT[i]   << " "
+             << std::setw(8) << corTT[i] << " "
+             << std::setw(8) << CorrT[i]
+             << std::endl;
       }
-      fclose(file);
+      file.close();
     }
   }
   //

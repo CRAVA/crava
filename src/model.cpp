@@ -1489,7 +1489,7 @@ Model::processSeismic(FFTGrid      **& seisCube,
       if((modelSettings->getGridOutputFlag() & IO::SEISMIC_DATA) > 0) {
         for(int i=0;i<nAngles;i++) {
           std::string angle    = NRLib::ToString(modelSettings->getAngle(i)*(180/M_PI), 1);
-          std::string baseName = IO::PrefixOriginalSeismic() + angle;
+          std::string baseName = IO::PrefixOriginalSeismicData() + angle;
           std::string sgriLabel = std::string("Original seismic data for angle stack ") + angle;
           float       offset = modelSettings->getLocalSegyOffset(i);
           if(offset < 0)

@@ -1487,7 +1487,7 @@ Background::writeBackgrounds(Simbox      * simbox,
   //
   // For debugging: write cubes not in ASCII, with padding, and with flat top.
   //
-  //backModel_[0]->writeStormFile(fileName1, IO::PathToBackground(), simbox, true, false, true, true);
-  //backModel_[1]->writeStormFile(fileName2, IO::PathToBackground(), simbox, true, false, true, true);
-  //backModel_[2]->writeStormFile(fileName3, IO::PathToBackground(), simbox, true, false, true, true);
+  //backModel_[0]->writeStormFile(fileName1, simbox, true, false, true, true);
+  //backModel_[1]->writeStormFile(fileName2, simbox, true, false, true, true);
+  //backModel_[2]->writeStormFile(fileName3, simbox, true, false, true, true);
 }
