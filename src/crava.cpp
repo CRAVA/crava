@@ -84,11 +84,11 @@ Crava::Crava(Model * model, SpatialWellFilter * spatwellfilter)
   scaleWarningText_  = new char[12*MAX_STRING*ntheta_]; 
   errThetaCov_       = new double*[ntheta_]; 
   sigmamdnew_        = NULL;
-  for(int i=0;i<ntheta_;i++)
-    errThetaCov_[i] = new double[ntheta_]; 
-  for(int i=0;i<ntheta_;i++)
-    thetaDeg_[i] = static_cast<float>(model->getModelSettings()->getAngle(i)*180.0/M_PI); 
-  
+  for(int i=0;i<ntheta_;i++) {
+    errThetaCov_[i]  = new double[ntheta_]; 
+    thetaDeg_[i]     = static_cast<float>(model->getModelSettings()->getAngle(i)*180.0/M_PI); 
+  }
+
   fftw_real * corrT = NULL; // =  fftw_malloc(2*(nzp_/2+1)*sizeof(fftw_real)); 
 
   // Double-use grids to save memory
@@ -244,21 +244,21 @@ Crava::computeDataVariance(void)
 }
 
 void
-Crava::setupErrorCorrelation(ModelSettings * modelSettings)
+Crava::setupErrorCorrelation(ModelSettings * modelSettings, 
+                             const std::vector<Grid2D *> & noiseScale)
 {
   //
   //  Setup error correlation matrix
   //
   for(int l=0 ; l < ntheta_ ; l++)
   {
-    empSNRatio_[l]    = modelSettings->getSNRatio(l);
-    errorVariance_[l] = dataVariance_[l]/empSNRatio_[l];
-
-    if(modelSettings->getUseLocalNoise()) {
-      Grid2D * localNoiseScale = model_->getLocalNoiseScale(l);
-      if(localNoiseScale != NULL)
-        errorVariance_[l] *= static_cast<float>(localNoiseScale->Min(RMISSING));
+    empSNRatio_[l] = modelSettings->getSNRatio(l);
+    if(modelSettings->getUseLocalNoise() == true) {
+      double minScale = noiseScale[l]->FindMin(RMISSING);
+      errorVariance_[l] = float(dataVariance_[l]*minScale/empSNRatio_[l]);
     }
+    else
+      errorVariance_[l] = dataVariance_[l]/empSNRatio_[l];
 
     if (empSNRatio_[l] < 1.1f) 
     {
@@ -288,7 +288,7 @@ Crava::computeVariances(fftw_real     * corrT,
 {
   computeDataVariance();
     
-  setupErrorCorrelation(modelSettings);
+  setupErrorCorrelation(modelSettings, model_->getLocalNoiseScales());
 
   Wavelet ** errorSmooth = new Wavelet*[ntheta_];
   float    * paramVar    = new float[ntheta_] ;
@@ -1027,7 +1027,7 @@ Crava::computePostMeanResidAndFFTCov()
   }
 
   //NBNB Anne Randi: Skaler traser ihht notat fra Hugo
-  if(model_->getModelSettings()->getUseLocalNoise())
+  if(model_->getModelSettings()->getUseLocalNoise()==true)
   {
     correctAlphaBetaRho(model_->getModelSettings());
   }
@@ -1240,7 +1240,7 @@ Crava::simulate(RandomGen * randomGen)
           seed2->setAccessMode(FFTGrid::RANDOMACCESS);
           seed2->invFFTInPlace(); 
 
-          if(model_->getModelSettings()->getUseLocalNoise())
+          if(model_->getModelSettings()->getUseLocalNoise()==true)
           {
             float alpha,beta, rho;
             float alphanew, betanew, rhonew;
@@ -1661,7 +1661,7 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs)
                               model_->getModelSettings()->getPundef(), 
                               model_->getPriorFacies(), 
                               model_->getPriorFaciesCubes(),
-                              const_cast<const double **>(filteredlogs->getSigmae()),
+                              filteredlogs->getSigmae(),
                               const_cast<const WellData **>(wells_), 
                               nWells_,
                               model_->getFaciesEstimInterval(),
@@ -1683,7 +1683,7 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs)
                               model_->getModelSettings()->getPundef(), 
                               model_->getPriorFacies(), 
                               model_->getPriorFaciesCubes(),
-                              const_cast<const double **>(filteredlogs->getSigmae()),
+                              filteredlogs->getSigmae(),
                               const_cast<const WellData **>(wells_), 
                               nWells_,
                               model_->getFaciesEstimInterval(),
@@ -1740,7 +1740,7 @@ Crava::filterLogs(Simbox          * timeSimboxConstThick,
 }
 
 
-void Crava::computeG(double **G)
+void Crava::computeG(double **G) const
 {
   correlations_->invFFT();
   correlations_->getPostVariances();
@@ -1899,9 +1899,8 @@ void Crava::computeG(double **G)
   delete [] eigvalmate;
   delete [] error;  
 }
-
-
-void Crava::newPosteriorCovPointwise(double ** sigmanew, double **G, int igrid, int jgrid, ModelSettings *modelSettings, double **sigmamdnew)
+void Crava::newPosteriorCovPointwise(double ** sigmanew, double **G, const std::vector<double> & scales, 
+                                     double ** sigmamdnew) const
 {
   double **sigmaenew = new double*[ntheta_];
   double **D         = new double*[ntheta_];
@@ -1913,21 +1912,13 @@ void Crava::newPosteriorCovPointwise(double ** sigmanew, double **G, int igrid, 
     D[i]         = new double[ntheta_];
     help[i]      = new double[ntheta_];
   }
-
+  
   for(i=0;i<ntheta_;i++)
     for(j=0;j<ntheta_;j++)
       if(i==j)
-        D[i][j] = 1.0;
+        D[i][j] = sqrt(scales[i]);
       else
         D[i][j] = 0.0;
-
-  if(modelSettings->getUseLocalNoise()) {
-    for(i=0;i<ntheta_;i++) {
-      Grid2D * localNoiseScale = model_->getLocalNoiseScale(i);
-      double minLocalNoiseScale = localNoiseScale->Min(RMISSING);
-      D[i][i] = sqrt((*localNoiseScale)(igrid,jgrid)/minLocalNoiseScale);      
-    }
-  }
 
   lib_matr_prod(D,errThetaCov_,ntheta_,ntheta_,ntheta_,help);
   lib_matr_prod(help,D,ntheta_,ntheta_,ntheta_,sigmaenew);
@@ -2002,7 +1993,7 @@ void Crava::newPosteriorCovPointwise(double ** sigmanew, double **G, int igrid, 
     }
 
   double  * eigval = new double[3];
-  double     **eigvalmat  = new double*[3];
+  double ** eigvalmat  = new double*[3];
   double ** eigvec = new double *[3];
   double ** eigvectrans = new double *[3];
   for(i=0;i<3;i++)
@@ -2030,6 +2021,7 @@ void Crava::newPosteriorCovPointwise(double ** sigmanew, double **G, int igrid, 
         eigvalmat[i][j]=sqrt(eigval[i]);
       else
         eigvalmat[i][j] = 0.0;
+
   lib_matr_prod(eigvec,eigvalmat,3,3,3,help3);
   lib_matrTranspose(eigvec,3,3,eigvectrans);
   lib_matr_prod(help3,eigvectrans,3,3,3,deltanew);
@@ -2161,10 +2153,17 @@ void Crava::correctAlphaBetaRho(ModelSettings *modelSettings)
     sigmamdnew_ = new NRLib::Grid2D<double **>(nx_,ny_,NULL);
   else
     sigmamdnew_ = NULL;
+  std::vector<double> minScale(modelSettings->getNumberOfAngles());
+  for(int angle=0;angle<modelSettings->getNumberOfAngles();angle++)
+    minScale[angle] = model_->getLocalNoiseScale(angle)->FindMin(RMISSING);
+
   for(i=0;i<nx_;i++)
     for(j=0;j<ny_;j++)
     {
-      newPosteriorCovPointwise(sigmanew,G, i, j, modelSettings, sigmamd);
+      std::vector<double> scales(modelSettings->getNumberOfAngles());
+      for(int angle=0;angle<modelSettings->getNumberOfAngles();angle++)
+        scales[angle] = (*(model_->getLocalNoiseScale(angle)))(i, j)/minScale[angle];
+      newPosteriorCovPointwise(sigmanew,G, scales, sigmamd);
       lib_matr_prod(sigmamd,sigmamdold,3,3,3,eigvec); // store product in eigvec
       if(sigmamdnew_!=NULL)
       {

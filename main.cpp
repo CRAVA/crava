@@ -95,10 +95,13 @@ int main(int argc, char** argv)
         corr->writeFilePostCovGrids(model->getTimeSimbox());
       }       
 
-      spatwellfilter->doFiltering(corr,
-                                  model->getWells(), 
+      int activeAngles = 0; //How many dimensions for local noise interpolation? Turn off for now.
+      //if(model->getModelSettings()->noiseIsScaled()==true)
+      //  activeAngles = model->getModelSettings()->getNumberOfAngles();
+      spatwellfilter->doFiltering(corr,model->getWells(), 
                                   model->getModelSettings()->getNumberOfWells(), 
-                                  model->getModelSettings()->getNoVsFaciesProb());
+                                  model->getModelSettings()->getNoVsFaciesProb(),
+                                  activeAngles, crava, model->getLocalNoiseScales());
       
       // FilterWellLogs * filteredlogs = NULL;
       //crava->filterLogs(model->getTimeSimboxConstThick(),filteredlogs);

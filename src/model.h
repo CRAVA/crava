@@ -47,6 +47,7 @@ public:
   const Grid2D                & getRefTimeGradX()          const { return refTimeGradX_           ;}
   const Grid2D                & getRefTimeGradY()          const { return refTimeGradY_           ;}
   Grid2D                      * getLocalNoiseScale(int i)  const { return localNoiseScale_[i]     ;}
+  const std::vector<Grid2D *> & getLocalNoiseScales()      const { return localNoiseScale_        ;}
 
   bool                          getVelocityFromInversion() const { return velocityFromInversion_  ;}
   bool                          getFailed()                const { return failed_                 ;}

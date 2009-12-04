@@ -28,7 +28,7 @@ public:
              float                          p_undef, 
              const float                  * priorFacies,
              FFTGrid                     ** priorFaciesCubes,
-             const double                ** sigmaEOrig,
+             const std::vector<double **> & sigmaEOrig,
              const WellData              ** wells,
              int                            nWells,
              const std::vector<Surface *> & faciesEstimInterval,
@@ -56,7 +56,7 @@ private:
                                         FFTGrid                      * postAlpha, 
                                         FFTGrid                      * postBeta, 
                                         FFTGrid                      * postRho,
-                                        const double                ** sigmaEOrig, 
+                                        const std::vector<double **> & sigmaEOrig, 
                                         const WellData              ** wells, 
                                         int                            nWells,
                                         const std::vector<Surface *> & faciesEstimInterval,
@@ -73,14 +73,15 @@ private:
                                                        const std::vector<int>   & facies,
                                                        const Simbox             * volume);
 
-  void                   makeFaciesDens(int nfac, const double  ** sigmaEOrig,
-                                        bool                       noVs,  
-                                        const std::vector<float> & alphaFiltered,
-                                        const std::vector<float> & betaFiltered,
-                                        const std::vector<float> & rhoFiltered,
-                                        const std::vector<int>   & faciesLog,
-                                        std::vector<FFTGrid *>   & density,
-                                        Simbox                  ** volume);
+  void                   makeFaciesDens(int nfac, 
+                                        const std::vector<double **> & sigmaEOrig,
+                                        bool                           noVs,  
+                                        const std::vector<float>     & alphaFiltered,
+                                        const std::vector<float>     & betaFiltered,
+                                        const std::vector<float>     & rhoFiltered,
+                                        const std::vector<int>       & faciesLog,
+                                        std::vector<FFTGrid *>       & density,
+                                        Simbox                      ** volume);
 
   void                   setNeededLogsSpatial(const WellData              ** wells,
                                               int                            nWells,

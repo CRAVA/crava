@@ -42,10 +42,16 @@ public:
   void               computeFaciesProb(SpatialWellFilter *filteredlogs);
   void               filterLogs(Simbox          * timeSimboxConstThick,
                                 FilterWellLogs *& filterlogs);
+  int                getRelative();
+
+  void               computeG(double **G) const;
+  void               newPosteriorCovPointwise(double ** sigmanew, double **G, 
+                                              const std::vector<double> & scales, double **sigmamdnew) const;
+
 
 private: 
   void               computeDataVariance(void);
-  void               setupErrorCorrelation(ModelSettings * modelSettings);
+  void               setupErrorCorrelation(ModelSettings * modelSttings, const std::vector<Grid2D *> & noiseScale);
   void               computeVariances(fftw_real* corrT, ModelSettings * modelSettings);
   float              getEmpSNRatio(int l)     const {return empSNRatio_[l];}
   float              getTheoSNRatio(int l)    const {return theoSNRatio_[l];}
@@ -67,8 +73,6 @@ private:
   void               multiplyDataByScaleWaveletAndWriteToFile(const std::string & typeName);
   void               doPostKriging(FFTGrid & postAlpha, FFTGrid & postBeta, FFTGrid & postRho);
 
-  void               computeG(double **G); // 
-  void               newPosteriorCovPointwise(double ** sigmanew, double **G, int igrid, int jgrid, ModelSettings *modelSettings, double **sigmamdnew);
   void               correctAlphaBetaRho(ModelSettings *modelSettings);
   bool               fileGrid_;         // is true if is storage is on file 
   const Simbox     * simbox_;           // the simbox

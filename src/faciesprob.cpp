@@ -33,7 +33,7 @@ FaciesProb::FaciesProb(FFTGrid                      * alpha,
                        float                          p_undef, 
                        const float                  * priorFacies,
                        FFTGrid                     ** priorFaciesCubes,
-                       const double                ** sigmaEOrig,
+                       const std::vector<double **> & sigmaEOrig,
                        const WellData              ** wells,
                        int                            nWells,
                        const std::vector<Surface *> & faciesEstimInterval,
@@ -116,14 +116,14 @@ FaciesProb::makeFaciesHistAndSetPriorProb(const std::vector<float> & alpha,
 
 void       
 FaciesProb::makeFaciesDens(int nfac, 
-                           const double            ** sigmaEOrig,
-                           bool                       noVs,
-                           const std::vector<float> & alphaFiltered,
-                           const std::vector<float> & betaFiltered,
-                           const std::vector<float> & rhoFiltered,
-                           const std::vector<int>   & faciesLog,
-                           std::vector<FFTGrid *>   & density,
-                           Simbox                  ** volume)
+                           const std::vector<double **> & sigmaEOrig,
+                           bool                           noVs,
+                           const std::vector<float>     & alphaFiltered,
+                           const std::vector<float>     & betaFiltered,
+                           const std::vector<float>     & rhoFiltered,
+                           const std::vector<int>       & faciesLog,
+                           std::vector<FFTGrid *>       & density,
+                           Simbox                      ** volume)
 { 
   //Note: If noVs is true, the beta dimension is mainly dummy. Due to the lookup mechanism that maps 
   //      values outside the denisty table to the edge, any values should do in this dimension.
@@ -166,19 +166,19 @@ FaciesProb::makeFaciesDens(int nfac,
   if(noVs == false) {
     for(i=0;i<3;i++) {
       for(j=0;j<3;j++)
-        sigmae[i][j] = sigmaEOrig[i][j];
+        sigmae[i][j] = sigmaEOrig[0][i][j];
     }
   }
   else {
-    sigmae[0][0] = sigmaEOrig[0][0];
+    sigmae[0][0] = sigmaEOrig[0][0][0];
     sigmae[0][1] = 0.0;
-    sigmae[0][2] = sigmaEOrig[0][1];
+    sigmae[0][2] = sigmaEOrig[0][0][1];
     sigmae[1][0] = 0.0;
     sigmae[1][1] = 0.0; //Will be overruled by reasonable value.
     sigmae[1][2] = 0.0;
-    sigmae[2][0] = sigmaEOrig[1][0];
+    sigmae[2][0] = sigmaEOrig[0][1][0];
     sigmae[2][1] = 0.0;
-    sigmae[2][2] = sigmaEOrig[1][1];
+    sigmae[2][2] = sigmaEOrig[0][1][1];
   }
 
   if(sigmae[0][0]<kstda*kstda)
@@ -308,7 +308,7 @@ void FaciesProb::makeFaciesProb(int                            nfac,
                                 FFTGrid                      * postAlpha, 
                                 FFTGrid                      * postBeta, 
                                 FFTGrid                      * postRho,
-                                const double                ** sigmaEOrig, 
+                                const std::vector<double **> & sigmaEOrig, 
                                 const WellData              ** wells, 
                                 int                            nWells,
                                 const std::vector<Surface *> & faciesEstimInterval,
@@ -774,8 +774,6 @@ void FaciesProb::calculateFaciesProbGeomodel(const float *                  prio
           faciesProb_[l]->setRealValue(k,j,i,value);
 
         }
-
-
       }
   }
 }

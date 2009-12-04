@@ -40,6 +40,10 @@ extern "C"
   extern void lib_matrConj(fftw_complex **mat, int n1, int n2, fftw_complex **outmat);
   extern void lib_matrCopyCpx(fftw_complex **mat, int n1, int n2, fftw_complex **outmat);
 
+  extern void lib_matrAddMat(double **x, int n1, int n2, double **y);
+  extern void lib_matrSubtMat(double **x, int n1, int n2, double **y);
+  extern void lib_matrCopy(double **mat, int n1, int n2, double **outmat);
+
   extern void lib_matrFillOnesVecCpx(fftw_complex* v1, int n1);
   extern void lib_matrFillValueVecCpx(fftw_complex value,fftw_complex* v1, int n1); 
 
@@ -51,6 +55,7 @@ extern "C"
   extern void lib_matrLtXeqBR(int i_dim, double **i_mat, double **x_mat, int n);
   extern void lib_matr_sort3x3(double *eigenval, double **eigenvec);
 
+  extern void lib_matrDump(const char * fName, double ** mat, int n1, int n2);
 #ifdef __cplusplus
 }
 #endif

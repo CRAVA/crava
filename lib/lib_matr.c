@@ -843,6 +843,37 @@ void lib_matrFillValueVecCpx(fftw_complex value,fftw_complex* v1, int n1)
   }
 }
 
+
+/*
+Addition of two matrices x and y. Result returned in y.
+*/
+
+void lib_matrAddMat(double **x, int n1, int n2, double **y)
+{
+  int i, j;
+  for(i=0;i<n1;i++)
+    for(j=0;j<n2;j++)
+      y[i][j] +=x[i][j];
+}
+
+void lib_matrSubtMat(double **x, int n1, int n2, double **y)
+{
+  int i, j;
+  for(i=0;i<n1;i++)
+    for(j=0;j<n2;j++)
+      y[i][j] -=x[i][j];
+}
+
+void lib_matrCopy(double **mat, int n1, int n2, double **outmat)
+{
+  int i, j;
+  for(i=0;i<n1;i++)
+    for(j=0;j<n2;j++)
+      outmat[i][j] = mat[i][j];
+
+}
+
+
 void lib_matrPrintR(float ** mat, int n1, int n2)
 {
   int i, j;
@@ -1277,5 +1308,19 @@ void lib_matr_sort3x3(double *eigenval, double **eigenvec)
     for(j=0;j<3;j++)
       eigenvec[i][j] = help2[i][j];
   }
- 
 }
+
+void lib_matrDump(const char * fName, double ** mat, int n1, int n2) 
+{
+  int i,j;
+  FILE * dump = fopen(fName,"w");
+  if(dump != NULL) {
+    for(i=0;i<n1;i++) {
+      for(j=0;j<n2;j++)
+        fprintf(dump, "%lf ", mat[i][j]);
+      fprintf(dump,"\n");
+    }
+    fclose(dump);
+  }
+}
+
