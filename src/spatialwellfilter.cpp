@@ -97,6 +97,29 @@ void SpatialWellFilter::doFiltering(Corr *corr, WellData **wells, int nWells, bo
 
   int lastn = 0;
   int n = 0;
+  int nDim = 1;
+  for(int i=0;i<nAngles;i++)
+    nDim *= 2;
+  if(sigmae_.size() == 0) {
+    sigmae_.resize(nDim);
+    double ** sigmae = new double * [3];
+    for(int i=0;i<3;i++) {
+      sigmae[i] = new double[3];
+      for(int j=0;j<3;j++)
+        sigmae[i][j] = 0;
+    }
+    sigmae_[0] = sigmae;
+    
+    for(int k=1;k<nDim;k++) {
+      sigmae = new double * [3];
+      for(int i=0;i<3;i++) {
+        sigmae[i] = new double[3];
+        for(int j=0;j<3;j++)
+          sigmae[i][j] = 0;
+      }
+      sigmae_[k] = sigmae;
+    }
+  }
   for(int w1=0;w1<nWells;w1++)
   {   
     n = wells[w1]->getBlockedLogsOrigThick()->getNumberOfBlocks();
@@ -174,9 +197,6 @@ void SpatialWellFilter::doFiltering(Corr *corr, WellData **wells, int nWells, bo
                        noiseScale); //Must do before Cholesky of sigmapri.
 
     double ** sigmapriKeep = NULL;
-    int nDim = 1;
-    for(int i=0;i<nAngles;i++)
-      nDim *= 2;
     if(nDim > 1) {
       sigmapriKeep = new double * [3*n];
       for(int i=0;i<3*n;i++)
@@ -200,7 +220,7 @@ void SpatialWellFilter::doFiltering(Corr *corr, WellData **wells, int nWells, bo
       }
 
     if(useVpRhoFilter == false) //Save time, since below is not needed then.
-      updateSigmaE(Aw, sigmapriKeep, sigmapost, nDim, n, cravaResult, noiseScale);
+      updateSigmaE(Aw, sigmapriKeep, sigmapost, n, cravaResult, noiseScale);
 
     calculateFilteredLogs(Aw, wells[w1]->getBlockedLogsOrigThick(), n, true);
 
@@ -232,29 +252,8 @@ void SpatialWellFilter::doFiltering(Corr *corr, WellData **wells, int nWells, bo
 
 void
 SpatialWellFilter::updateSigmaE(double ** filter, double ** priCov, double ** postCov, 
-                                int nDim, int n, const Crava * cravaResult, const std::vector<Grid2D *> & noiseScale)
+                                int n, const Crava * cravaResult, const std::vector<Grid2D *> & noiseScale)
 {
-  if(sigmae_.size() == 0) {
-    sigmae_.resize(nDim);
-    double ** sigmae = new double * [3];
-    for(int i=0;i<3;i++) {
-      sigmae[i] = new double[3];
-      for(int j=0;j<3;j++)
-        sigmae[i][j] = 0;
-    }
-    sigmae_[0] = sigmae;
-    
-    for(int k=1;k<nDim;k++) {
-      sigmae = new double * [3];
-      for(int i=0;i<3;i++) {
-        sigmae[i] = new double[3];
-        for(int j=0;j<3;j++)
-          sigmae[i][j] = 0;
-      }
-      sigmae_[k] = sigmae;
-    }
-  }
-
   double **sigmaeW;
   sigmaeW = new double * [3*n];
   for(int i=0;i<3*n;i++)

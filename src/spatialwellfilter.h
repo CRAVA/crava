@@ -32,7 +32,7 @@ private:
   void doVpRhoFiltering(const double ** sigmapri, const double ** sigmapost, int n, 
                         BlockedLogs * blockedlogs, const Crava * cravaResult,
                         const std::vector<Grid2D *> & noiseScale);
-  void updateSigmaE(double ** filter, double ** priCov, double ** postCov, int nDim, int n, 
+  void updateSigmaE(double ** filter, double ** priCov, double ** postCov, int n, 
                     const Crava * cravaResult, const std::vector<Grid2D *> & noiseScale);
   void completeSigmaE(int lastn);
   void updateSigmaEVpRho(double ** filter, 
