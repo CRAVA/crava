@@ -990,12 +990,7 @@ Wavelet1D::getCAmp(int k, float scale, int, int) const
 
       dOmega     = omega - float(omL);
       value.re =  cAmp_[omL].re * ( 1.0f - dOmega ) + cAmp_[omU].re * dOmega;
-      value.im =  cAmp_[omL].im * ( 1.0f - dOmega ) - cAmp_[omU].im * dOmega;
-      if(k < 0) //NBNB Ragnar
-      {
-        value.re = float(exp(log(cAmp_[omL].re) * ( 1.0f - dOmega ) + log(cAmp_[omU].re) * dOmega));
-        value.re = float(exp(log(cAmp_[omL].im) * ( 1.0f - dOmega ) + log(cAmp_[omU].im) * dOmega));
-      }
+      value.im =  (cAmp_[omL].im * ( 1.0f - dOmega ) + cAmp_[omU].im * dOmega);
     }
   }
   else
@@ -1016,7 +1011,7 @@ Wavelet1D::getCAmp(int k, float scale, int, int) const
         omU -= 1;
       dOmega     = omega - float(omL);
       value.re =  cAmp_[omL].re * ( 1.0f - dOmega ) + cAmp_[omU].re * dOmega;
-      value.im =  - cAmp_[omL].im * ( 1.0f - dOmega ) + cAmp_[omU].im * dOmega;
+      value.im =  (- cAmp_[omL].im * ( 1.0f - dOmega ) - cAmp_[omU].im * dOmega);
     }
   }
   return value;
