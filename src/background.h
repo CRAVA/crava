@@ -67,7 +67,8 @@ private:
                                         bool                write3D,
                                         int                 nWells, 
                                         bool                hasVelocityTrend,
-                                        const std::string & name);
+                                        const std::string & name,
+                                        bool                isFile);
   const CovGrid2D  & makeCovGrid2D(Simbox * simbox,
                              Vario  * vario, 
                              int      debugFlag);
@@ -86,8 +87,8 @@ private:
                                     float                            * trend,
                                     Simbox                           * simbox,
                                     const CovGrid2D                  & covGrid2D,
-                                    const std::string                & type
-                                    );
+                                    const std::string                & type,
+                                    bool                               isFile);
   void         setupKrigingData3D(KrigingData3D *& krigingData,
                                 WellData      ** wells,
                                 Simbox         * simbox,
@@ -113,7 +114,8 @@ private:
   void         resampleParameter(FFTGrid *& parameterNew,
                                  FFTGrid  * parameterOld,
                                  Simbox   * simboxNew,
-                                 Simbox   * simboxOld);
+                                 Simbox   * simboxOld,
+                                 bool       isFile);
   void         calculateVerticalTrend(WellData         ** wells,
                                       float             * trend, 
                                       float               logMin,

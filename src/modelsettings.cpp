@@ -166,7 +166,8 @@ ModelSettings::getDoInversion(void)
     + IO::LAMBDARHO 
     + IO::FACIESPROB
     + IO::CORRELATION 
-    + IO::FACIESPROBRELATIVE;
+    + IO::FACIESPROBRELATIVE
+    + IO::SYNTHETIC_SEISMIC_DATA;
   return ((flag & gridFlag_) > 0 && estimationMode_ == false); 
 }
 

@@ -54,7 +54,13 @@ public:
 
   void                          getCorrGradIJ(float & corrGradI, float &corrGradJ) const;
   void                          releaseGrids();                        // Cuts connection to SeisCube_ and  backModel_
-
+  static FFTGrid*               createFFTGrid(int nx, 
+                                              int ny, 
+                                              int nz, 
+                                              int nxp, 
+                                              int nyp, 
+                                              int nzp, 
+                                              bool fileGrid);
 private:
   void             makeTimeSimboxes(Simbox        *& timeSimbox,
                                     Simbox        *& timeCutSimbox,
@@ -210,7 +216,8 @@ private:
                                     int                       gridType,
                                     Simbox                  * timeSimbox,
                                     ModelSettings           * modelSettings, 
-                                    std::string             & errorText);
+                                    std::string             & errorText,
+                                    bool                      nopadding = false);
   void             readSegyFile(const std::string       & fileName, 
                                 FFTGrid                *& target, 
                                 Simbox                 *& timeSimbox, 
@@ -219,7 +226,8 @@ private:
                                 int                       gridType,
                                 float                     offset,
                                 const TraceHeaderFormat * format,
-                                std::string             & errText); 
+                                std::string             & errText,
+                                bool                      nopadding = false); 
   void             readStormFile(const std::string  & fileName, 
                                  FFTGrid           *& target, 
                                  const int            gridType,
@@ -227,7 +235,8 @@ private:
                                  Simbox             * timeSimbox,
                                  ModelSettings     *& modelSettings, 
                                  std::string        & errText,
-                                 bool                 isStrom  = true);
+                                 bool                 isStorm  = true,
+                                 bool                 nopadding = true);
   void             estimateCorrXYFromSeismic(Surface *& CorrXY,
                                              FFTGrid ** seisCube,
                                              int        nAngles);
@@ -303,7 +312,7 @@ private:
                                bool                    & failed);
   SegyGeometry   * geometryFromCravaFile(const std::string & fileName); 
   SegyGeometry   * geometryFromStormFile(const std::string & fileName, std::string & errText); 
-
+ 
 
   ModelSettings           * modelSettings_;
   Simbox                  * timeSimbox_;            ///< Information about simulation area.

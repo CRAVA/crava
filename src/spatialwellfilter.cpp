@@ -148,6 +148,13 @@ void SpatialWellFilter::doFiltering(Corr *corr, WellData **wells, int nWells, bo
     const int *jpos = wells[w1]->getBlockedLogsOrigThick()->getJpos();
     const int *kpos = wells[w1]->getBlockedLogsOrigThick()->getKpos();
     float regularization = Definitions::SpatialFilterRegularisationValue();
+    fillValuesInSigmapost(sigmapost, ipos, jpos, kpos, corr->getPostCovAlpha(), n, 0, 0);
+    fillValuesInSigmapost(sigmapost, ipos, jpos, kpos, corr->getPostCovBeta(), n, n, n);
+    fillValuesInSigmapost(sigmapost, ipos, jpos, kpos, corr->getPostCovRho(), n, 2*n, 2*n);
+    fillValuesInSigmapost(sigmapost, ipos, jpos, kpos, corr->getPostCrCovAlphaBeta(), n, 0, n);
+    fillValuesInSigmapost(sigmapost, ipos, jpos, kpos, corr->getPostCrCovAlphaRho(), n, 0, 2*n);
+    fillValuesInSigmapost(sigmapost, ipos, jpos, kpos, corr->getPostCrCovBetaRho(), n, 2*n, n);
+
     for(l1=0;l1<n;l1++)
     {
       i1 = ipos[l1];
@@ -158,14 +165,14 @@ void SpatialWellFilter::doFiltering(Corr *corr, WellData **wells, int nWells, bo
         i2 = ipos[l2];
         j2 = jpos[l2];
         k2 = kpos[l2];
-        sigmapost[l1      ][l2      ] = corr->getPostCovAlpha()->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
-        sigmapost[l1 + n  ][l2 + n  ] = corr->getPostCovBeta()->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
-        sigmapost[l1 + 2*n][l2 + 2*n] = corr->getPostCovRho()->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
-        sigmapost[l1      ][l2 + n  ] = corr->getPostCrCovAlphaBeta()->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
+     //   sigmapost[l1      ][l2      ] = corr->getPostCovAlpha()->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
+     //   sigmapost[l1 + n  ][l2 + n  ] = corr->getPostCovBeta()->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
+     //   sigmapost[l1 + 2*n][l2 + 2*n] = corr->getPostCovRho()->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
+     //   sigmapost[l1      ][l2 + n  ] = corr->getPostCrCovAlphaBeta()->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
         sigmapost[l2 + n  ][l1      ] = sigmapost[l1][n+l2];
-        sigmapost[l1      ][l2 + 2*n] = corr->getPostCrCovAlphaRho()->getRealValueCyclic(i1-i2,j1-j2,k1-k2);       
+     //   sigmapost[l1      ][l2 + 2*n] = corr->getPostCrCovAlphaRho()->getRealValueCyclic(i1-i2,j1-j2,k1-k2);       
         sigmapost[l2 + 2*n][l1      ] = sigmapost[l1][2*n+l2];
-        sigmapost[l1 + 2*n][l2 + n  ] = corr->getPostCrCovBetaRho()->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
+      //  sigmapost[l1 + 2*n][l2 + n  ] = corr->getPostCrCovBetaRho()->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
         sigmapost[l2 + n  ][l1 + 2*n] = sigmapost[2*n+l1][n+l2];
         sigmapri [l1      ][l2      ] = corr->getPriorVar0()[0][0]*priorSpatialCorr_[w1][l1][l2];
         sigmapri [l1 + n  ][l2 + n  ] = corr->getPriorVar0()[1][1]*priorSpatialCorr_[w1][l1][l2];
@@ -248,6 +255,29 @@ void SpatialWellFilter::doFiltering(Corr *corr, WellData **wells, int nWells, bo
     completeSigmaEVpRho(lastn);
 
   Timings::setTimeFiltering(wall,cpu);
+}
+
+void
+SpatialWellFilter::fillValuesInSigmapost(double **sigmapost, const int *ipos, const int *jpos, const int *kpos, FFTGrid *covgrid, int n, int ni, int nj)
+{
+  covgrid->setAccessMode(FFTGrid::RANDOMACCESS);
+  int i1, j1, k1, l1, i2, j2, k2, l2;
+  for(l1=0;l1<n;l1++)
+    {
+      i1 = ipos[l1];
+      j1 = jpos[l1];
+      k1 = kpos[l1];
+      for(l2=0;l2<n;l2++)
+      {
+        i2 = ipos[l2];
+        j2 = jpos[l2];
+        k2 = kpos[l2];
+        sigmapost[l1+ni][l2+nj] = covgrid->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
+      }
+  }
+  covgrid->endAccess();
+
+
 }
 
 void

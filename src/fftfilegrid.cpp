@@ -140,7 +140,7 @@ FFTFileGrid::endAccess()
 }
 
 void
-FFTFileGrid::createRealGrid()
+FFTFileGrid::createRealGrid(bool add)
 {
   istransformed_ = false;
 }
@@ -473,7 +473,7 @@ FFTFileGrid::writeSgriFile(const std::string & fileName, const Simbox * simbox, 
 }
 
 void
-FFTFileGrid::writeDirectFile(const std::string & fileName, const Simbox * simbox)
+FFTFileGrid::writeCravaFile(const std::string & fileName, const Simbox * simbox)
 {
   assert(accMode_ == NONE || accMode_ == RANDOMACCESS);
   if(accMode_ != RANDOMACCESS)
@@ -485,7 +485,7 @@ FFTFileGrid::writeDirectFile(const std::string & fileName, const Simbox * simbox
 
 
 void
-FFTFileGrid::readDirectFile(const std::string & fileName, std::string & error)
+FFTFileGrid::readCravaFile(const std::string & fileName, std::string & error)
 {
   assert(accMode_ == NONE || accMode_ == RANDOMACCESS);
   if(accMode_ != RANDOMACCESS)
@@ -542,6 +542,8 @@ void
 FFTFileGrid::unload()
 {
   fftw_free(rvalue_); // changed
+  nGrids_ = nGrids_ - 1;
+ LogKit::LogFormatted(LogKit::ERROR,"\nFFTFileGrid unload: nGrids_ = %d\n",nGrids_);
   rvalue_ = NULL;
   cvalue_ = NULL;
 }
@@ -584,6 +586,7 @@ FFTFileGrid::getRealTrace(int i, int j)
   float * value = FFTGrid::getRealTrace(i,j);
   if(accMode_ != RANDOMACCESS)
     save();
+
   return(value);  
 }
 int
@@ -602,3 +605,61 @@ FFTFileGrid::setRealTrace(int i, int j, float *value)
 
 
 int FFTFileGrid::gNum = 0; //Starting value
+
+void
+FFTFileGrid::fillInFromRealFFTGrid(FFTGrid& fftGrid)
+{
+  assert(cubetype_  !=  CTMISSING);
+  createRealGrid();
+  int i,j,k,refi,refj,refk;
+  float distx,disty,distz,mult;
+  float* meanvalue;
+
+  assert(cubetype_==PARAMETER);
+
+  fftw_real value  = 0.0;
+
+  meanvalue= static_cast<float*>(fftw_malloc(sizeof(float)*nyp_*nxp_));
+  fftGrid.setAccessMode(RANDOMACCESS);
+  for(j=0;j<nyp_;j++)
+    for(i=0;i<nxp_;i++)   
+    {
+      refi   = getXSimboxIndex(i);
+      refj   = getYSimboxIndex(j);
+      float val = fftGrid.getRealValue(refi, refj, 0);
+      float val2 = fftGrid.getRealValue(refi, refj, nz_-1);
+      meanvalue[i+j*nxp_] = (val == RMISSING || val2 == RMISSING ? 0.f : (val+val2)*0.5f);
+    }
+   
+    setAccessMode(WRITE);
+    for( k = 0; k < nzp_; k++)
+    {
+      for( j = 0; j < nyp_; j++)
+        for( i = 0; i < rnxp_; i++)   
+        {
+          refi   = getXSimboxIndex(i);
+          refj   = getYSimboxIndex(j);
+          refk   = k<nz_ ? k : k<(nz_+nzp_)/2 ? nz_-1 : 0;
+          distx  = getDistToBoundary(i,nx_,nxp_);
+          disty  = getDistToBoundary(j,ny_,nyp_);
+          distz  = getDistToBoundary(k,nz_,nzp_);         
+          mult   = float(pow(MAXIM(1.0-distx*distx-disty*disty-distz*distz,0.0),3));
+
+          if(i<nxp_)  // computes the index reference from the cube puts it in value
+          {
+            float te = fftGrid.getRealValue(refi, refj, refk);
+            value = te; 
+            value=float ( ((mult*value+(1.0-mult)*meanvalue[i+j*nxp_])) );
+            te = 0;
+          }
+          else
+            value=RMISSING;        
+
+          setNextReal(value);
+        } //for k,j,i
+    }
+    fftGrid.endAccess();
+    endAccess();
+    fftw_free(meanvalue);
+
+}

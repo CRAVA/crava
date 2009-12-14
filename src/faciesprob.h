@@ -34,7 +34,9 @@ public:
              const std::vector<Surface *> & faciesEstimInterval,
              const double                   dz,
              bool                           relative,
-             bool                           noVs);
+             bool                           noVs,
+             Crava                         *cravaResult,
+             const std::vector<Grid2D *>   & noiseScale);
   ~FaciesProb();
 
   FFTGrid              * getFaciesProb(int i){return faciesProb_[i];};
@@ -45,7 +47,7 @@ public:
                                                         const ModelSettings          * modelSettings,
                                                         const double                   dz);
   void calculateFaciesProbGeomodel(const float *                  priorFacies,
-                                             FFTGrid                    ** priorFaciesCubes);
+                                    FFTGrid                    ** priorFaciesCubes);
 
 private:
   int             nFacies_;
@@ -65,7 +67,9 @@ private:
                                         bool                           noVs,
                                         float                          p_undef,
                                         const float                  * priorFacies,
-                                        FFTGrid                     ** priorFaciesCubes);
+                                        FFTGrid                     ** priorFaciesCubes,
+                                        Crava                         * cravaResult,
+                                        const std::vector<Grid2D *>   & noiseScale);
 
   std::vector<FFTGrid *> makeFaciesHistAndSetPriorProb(const std::vector<float> & alpha,
                                                        const std::vector<float> & beta,
@@ -81,7 +85,11 @@ private:
                                         const std::vector<float>     & rhoFiltered,
                                         const std::vector<int>       & faciesLog,
                                         std::vector<FFTGrid *>       & density,
-                                        Simbox                      ** volume);
+                                        Simbox                      ** volume,
+                                        int                            index, 
+                                        double                       **G,
+                                        Crava                         *cravaResult,
+                                        const std::vector<Grid2D *>   & noiseScale);
 
   void                   setNeededLogsSpatial(const WellData              ** wells,
                                               int                            nWells,
@@ -105,17 +113,21 @@ private:
   float                  findDensity(float          alpha, 
                                      float          beta, 
                                      float          rho, 
-                                     FFTGrid      * density, 
-                                     const Simbox * volume);
+                                     std::vector<std::vector<FFTGrid*> >       density, 
+                                     int facies,
+                                     const std::vector<Simbox *> volume,
+                                      std::vector<float> t, 
+                                      int nAng);
 
   void                   calculateFaciesProb(FFTGrid                      * alphagrid, 
                                              FFTGrid                      * betagrid, 
                                              FFTGrid                      * rhogrid,
-                                             const std::vector<FFTGrid *> & density, 
-                                             const Simbox                 * volume,
+                                             const std::vector<std::vector<FFTGrid *> > & density, 
+                                             const std::vector<Simbox *>    volume,
                                              float                          p_undef,
                                              const float                  * priorFacies,
-                                             FFTGrid                     ** priorFaciesCubes);
+                                             FFTGrid                     ** priorFaciesCubes,
+                                             const std::vector<Grid2D *>   & noiseScale);
 
   void                   normalizeCubes(FFTGrid **priorFaciesCubes);
 

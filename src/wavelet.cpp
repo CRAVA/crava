@@ -377,6 +377,7 @@ Wavelet::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
   //
   // Loop over wells and create a blocked well and blocked seismic
   //
+ // seisCube->setAccessMode(FFTGrid::RANDOMACCESS);
   for (w = 0 ; w < nWells ; w++) 
   {
     if (wells[w]->getUseForWaveletEstimation())
@@ -683,7 +684,7 @@ Wavelet::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
   delete [] synt_r;
   delete [] wavelet_r;
   delete [] cor_seis_synt_r;
-      
+ // seisCube->endAccess();    
   return empSNRatio;
 }
 
@@ -1236,7 +1237,9 @@ float Wavelet::findGlobalScaleForGivenWavelet(ModelSettings *modelSettings,
       //
       // Block seismic data for this well
       //
+      seisCube->setAccessMode(FFTGrid::RANDOMACCESS);
       bl->getBlockedGrid(seisCube,seisLog);
+      seisCube->endAccess();
       //
       // Extract a one-value-for-each-layer array of blocked logs
       //

@@ -25,7 +25,7 @@ CKrigingAdmin::CKrigingAdmin(const Simbox      & simbox,
                              CovGridSeparated  & covCrAlphaBeta, 
                              CovGridSeparated  & covCrAlphaRho, 
                              CovGridSeparated  & covCrBetaRho,
-                             int                 dataTarget, 
+                             int                 dataTarget,    
                              bool                backgroundModel) :
   simbox_(simbox), 
   trendAlpha_(0), 
@@ -300,9 +300,10 @@ void CKrigingAdmin::KrigBlock(Gamma gamma) {
 
 FFTGrid* CKrigingAdmin::CreateValidGrid() const 
 {
-  FFTGrid* pGrid = new FFTGrid(simbox_.getnx(), simbox_.getny(), simbox_.getnz(),
-                               simbox_.getnx(), simbox_.getny(), simbox_.getnz());
-  
+  //FFTGrid* pGrid = new FFTGrid(simbox_.getnx(), simbox_.getny(), simbox_.getnz(),
+  //                             simbox_.getnx(), simbox_.getny(), simbox_.getnz());
+  FFTGrid* pGrid = Model::createFFTGrid(simbox_.getnx(), simbox_.getny(), simbox_.getnz(),
+                                simbox_.getnx(), simbox_.getny(), simbox_.getnz(), false);
   pGrid->fillInConstant(-1.0f);
   pGrid->setAccessMode(FFTGrid::RANDOMACCESS);
   int i;

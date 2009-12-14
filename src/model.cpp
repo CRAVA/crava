@@ -203,7 +203,7 @@ Model::Model(char * fileName)
                           timeSimbox_, inputFiles, errText, failedExtraSurf);
 
         bool writeBackgroundInCravaFormat = (gridFormat & IO::CRAVA) > 0 && (gridOutput & IO::BACKGROUND) > 0;
-        bool writeSeismicInCravaFormat    = (gridFormat & IO::CRAVA) > 0 && (gridOutput & IO::SEISMIC_DATA) > 0;
+        bool writeSeismicInCravaFormat    = (gridFormat & IO::CRAVA) > 0 && (gridOutput & IO::ORIGINAL_SEISMIC_DATA) > 0;
         bool writeVelocityInCravaFormat   = (gridFormat & IO::CRAVA) > 0 && (gridOutput & IO::TIME_TO_DEPTH_VELOCITY) > 0;
 
         if (!failedWells && !failedDepthConv)
@@ -243,8 +243,12 @@ Model::Model(char * fileName)
                              inputFiles, errText, failedSeismic);
               if(failedSeismic == false && modelSettings_->getOptimizeWellLocation() == true)
               {
+                for(int i=0;i<modelSettings_->getNumberOfAngles();i++)
+                  seisCube_[i]->setAccessMode(FFTGrid::RANDOMACCESS);
                 processWellLocation(seisCube_, wells_, reflectionMatrix_,
                                     timeSimbox_, modelSettings_, wellMoveInterval_, randomGen_);
+                for(int i=0;i<modelSettings_->getNumberOfAngles();i++)
+                  seisCube_[i]->endAccess();
               }
             }
           }
@@ -514,7 +518,8 @@ Model::checkAvailableMemory(Simbox        * timeSimbox,
   int nGridCovariances = 6;                                      // Covariances
   int nGridSeismicData = modelSettings->getNumberOfAngles();     // One for each angle stack
   int nGridFacies      = modelSettings->getNumberOfFacies() + 1; // One for each facies + one for undef  
-  int nGridHistograms  = modelSettings->getNumberOfFacies();     // One histogram for each facies
+ // int nGridHistograms  = modelSettings->getNumberOfFacies();     // One histogram for each facies
+  int nGridHistograms = 0; // Should be counted in another way
   int nGridKriging     = 1;                                      // One grid for kriging
   int nGridFileMode    = 1;                                      // One grid for intermediate file storage
 
@@ -524,14 +529,17 @@ Model::checkAvailableMemory(Simbox        * timeSimbox,
   }
   else {
     if (modelSettings->getFileGrid()) { // Use disk buffering
-      nGrids = nGridFileMode;  
+      nGrids = nGridFileMode;
+      if(modelSettings->getKrigingParameter() > 0) {
+        nGrids += nGridKriging;
+    }
     }
     else {
       if(modelSettings->getNumberOfSimulations() > 0)
         nGrids = nGridParameters + nGridCovariances + std::max(nGridSeismicData, nGridParameters);
       else
         nGrids = nGridParameters + nGridCovariances + nGridSeismicData;
-    }
+    
     if(modelSettings->getKrigingParameter() > 0) {
       nGrids += nGridKriging;
     }
@@ -541,11 +549,12 @@ Model::checkAvailableMemory(Simbox        * timeSimbox,
       nGrids = nGrids + nGridBackground;
     }
     if(modelSettings->getEstimateFaciesProb()) { // Seismic data is dealloctaed before new allocations are done
-      if (modelSettings->getFaciesProbRelative())
+      if (modelSettings->getFaciesProbRelative() && !modelSettings->getUseLocalNoise())
         nGrids += nGridBackground + std::max(0, nGridHistograms + nGridFacies - nGridSeismicData);  
       else {
         nGrids += std::max(0, nGridHistograms + nGridFacies - nGridSeismicData);
       }
+    }
     }
   }
   FFTGrid::setMaxAllowedGrids(nGrids);
@@ -608,7 +617,8 @@ Model::readSegyFile(const std::string       & fileName,
                     int                       gridType,
                     float                     offset,
                     const TraceHeaderFormat * format,
-                    std::string             & errText)
+                    std::string             & errText,
+                    bool                      nopadding)
 {
   SegY * segy = NULL;
   bool failed = false;
@@ -656,22 +666,42 @@ Model::readSegyFile(const std::string       & fileName,
       geometry = new SegyGeometry(geo);
     
     int error = timeSimbox->insideRectangle(geo);
+    int xpad, ypad, zpad;
+    if(nopadding==false)
+    {
+      xpad = modelSettings->getNXpad();
+      ypad = modelSettings->getNYpad();
+      zpad = modelSettings->getNZpad();
+    }
+    else
+    {
+      xpad = timeSimbox->getnx();
+      ypad = timeSimbox->getny();
+      zpad = timeSimbox->getnz();
+    }
     if(error == 0)
     {
-      if(modelSettings->getFileGrid())
+      target = createFFTGrid(timeSimbox->getnx(), 
+                             timeSimbox->getny(), 
+                             timeSimbox->getnz(), 
+                             xpad, 
+                             ypad, 
+                             zpad, 
+                             modelSettings->getFileGrid());
+     /* if(modelSettings->getFileGrid())
         target = new FFTFileGrid(timeSimbox->getnx(),
                                  timeSimbox->getny(), 
                                  timeSimbox->getnz(),
-                                 modelSettings->getNXpad(), 
-                                 modelSettings->getNYpad(), 
-                                 modelSettings->getNZpad());
+                                 xpad, 
+                                 ypad, 
+                                 zpad);
       else
         target = new FFTGrid(timeSimbox->getnx(), 
                              timeSimbox->getny(), 
                              timeSimbox->getnz(),
-                             modelSettings->getNXpad(), 
-                             modelSettings->getNYpad(), 
-                             modelSettings->getNZpad());
+                             xpad, 
+                             ypad, 
+                             zpad);*/
       target->setType(gridType);
       target->fillInFromSegY(segy, timeSimbox);
     }
@@ -694,7 +724,8 @@ Model::readStormFile(const std::string  & fName,
                      Simbox             * timeSimbox, 
                      ModelSettings     *& modelSettings, 
                      std::string        & errText,
-                     bool                 isStorm)
+                     bool                 isStorm,
+                     bool                nopadding)
 {
   StormContGrid * stormgrid = NULL;
   bool failed = false;
@@ -710,10 +741,29 @@ Model::readStormFile(const std::string  & fName,
     errText += e.what();
     failed = true;
   }
-
+  int xpad, ypad, zpad;
+  if(nopadding==false)
+    {
+      xpad = modelSettings->getNXpad();
+      ypad = modelSettings->getNYpad();
+      zpad = modelSettings->getNZpad();
+    }
+    else
+    {
+      xpad = timeSimbox->getnx();
+      ypad = timeSimbox->getny();
+      zpad = timeSimbox->getnz();
+    }
   if(failed == false)
   {
-    if(modelSettings->getFileGrid())
+    target = createFFTGrid(timeSimbox->getnx(), 
+                               timeSimbox->getny(), 
+                               timeSimbox->getnz(), 
+                               modelSettings->getNXpad(), 
+                               modelSettings->getNYpad(), 
+                               modelSettings->getNZpad(),
+                               modelSettings->getFileGrid());
+   /* if(modelSettings->getFileGrid())
       target = new FFTFileGrid(timeSimbox->getnx(), 
                                timeSimbox->getny(), 
                                timeSimbox->getnz(), 
@@ -726,7 +776,7 @@ Model::readStormFile(const std::string  & fName,
                            timeSimbox->getnz(), 
                            modelSettings->getNXpad(), 
                            modelSettings->getNYpad(), 
-                           modelSettings->getNZpad());
+                           modelSettings->getNZpad());*/
     target->setType(gridType);
     target->fillInFromStorm(timeSimbox,stormgrid, parName, isStorm);
   }  
@@ -1108,7 +1158,7 @@ Model::setSimboxSurfaces(Simbox                        *& simbox,
                                      IO::PathToCorrelations(),
                                      outputFormat);
           }
-          if ((outputFlag & IO::SEISMIC_DATA) > 0) {
+          if ((outputFlag & (IO::ORIGINAL_SEISMIC_DATA | IO::SYNTHETIC_SEISMIC_DATA)) > 0) {
             simbox->writeTopBotGrids(topSurf, 
                                      baseSurf,
                                      IO::PathToSeismicData(),
@@ -1495,7 +1545,7 @@ Model::processSeismic(FFTGrid      **& seisCube,
         }
       }
 
-      if((modelSettings->getGridOutputFlag() & IO::SEISMIC_DATA) > 0) {
+      if((modelSettings->getGridOutputFlag() & IO::ORIGINAL_SEISMIC_DATA) > 0) {
         for(int i=0;i<nAngles;i++) {
           std::string angle    = NRLib::ToString(modelSettings->getAngle(i)*(180/M_PI), 1);
           std::string baseName = IO::PrefixOriginalSeismicData() + angle;
@@ -1787,9 +1837,13 @@ void Model::addSeismicLogs(WellData     ** wells,
 {
   int nWells  = modelSettings->getNumberOfWells();
   int nAngles = modelSettings->getNumberOfAngles();
-  for(int i=0;i<nWells;i++) {
+  
     for (int iAngle = 0 ; iAngle < nAngles ; iAngle++)
-      wells[i]->getBlockedLogsOrigThick()->setLogFromGrid(seisCube[iAngle],iAngle,nAngles,"SEISMIC_DATA");
+    {
+      seisCube[iAngle]->setAccessMode(FFTGrid::RANDOMACCESS);
+      for(int i=0;i<nWells;i++) 
+        wells[i]->getBlockedLogsOrigThick()->setLogFromGrid(seisCube[iAngle],iAngle,nAngles,"SEISMIC_DATA");
+      seisCube[iAngle]->endAccess();
   }
 }
    
@@ -1931,7 +1985,8 @@ Model::processBackground(Background   *& background,
       }
       for (int i=0 ; i<3 ; i++)
       {
-        backModel[i] = new FFTGrid(nx, ny, nz, nxPad, nyPad, nzPad);              
+        //backModel[i] = new FFTGrid(nx, ny, nz, nxPad, nyPad, nzPad);    
+        backModel[i] = createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, modelSettings->getFileGrid());
         backModel[i]->setType(FFTGrid::PARAMETER);
       }
       background = new Background(backModel, wells, velocity, timeSimbox, timeBGSimbox, modelSettings);
@@ -1989,10 +2044,7 @@ Model::processBackground(Background   *& background,
       }
       else if(constBackValue > 0)
       {
-        if(modelSettings->getFileGrid())
-          backModel[i] = new FFTFileGrid(nx, ny, nz, nxPad, nyPad, nzPad);
-        else
-          backModel[i] = new FFTGrid(nx, ny, nz, nxPad, nyPad, nzPad);              
+        backModel[i] = createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, modelSettings->getFileGrid());            
         backModel[i]->setType(FFTGrid::PARAMETER);
         backModel[i]->fillInConstant(float( log( constBackValue )));
       }
@@ -2027,41 +2079,49 @@ Model::readGridFromFile(const std::string       & fileName,
                         int                       gridType,
                         Simbox                  * timeSimbox,
                         ModelSettings           * modelSettings,
-                        std::string             & errText)
+                        std::string             & errText,
+                        bool                      nopadding)
 {
   int fileType = IO::findGridType(fileName);
 
   if(fileType == IO::CRAVA) 
   {
+    int xpad, ypad, zpad;
+  if(nopadding==false)
+    {
+      xpad = modelSettings->getNXpad();
+      ypad = modelSettings->getNYpad();
+      zpad = modelSettings->getNZpad();
+    }
+    else
+    {
+      xpad = timeSimbox->getnx();
+      ypad = timeSimbox->getny();
+      zpad = timeSimbox->getnz();
+    }
     LogKit::LogFormatted(LogKit::LOW,"\nReading grid \'"+parName+"\' from file "+fileName);
-    if(modelSettings->getFileGrid())
-      grid = new FFTFileGrid(timeSimbox->getnx(),
+    grid = createFFTGrid(timeSimbox->getnx(),
                              timeSimbox->getny(), 
                              timeSimbox->getnz(),
-                             modelSettings->getNXpad(), 
-                             modelSettings->getNYpad(), 
-                             modelSettings->getNZpad());
-    else
-      grid = new FFTGrid(timeSimbox->getnx(), 
-                         timeSimbox->getny(), 
-                         timeSimbox->getnz(),
-                         modelSettings->getNXpad(), 
-                         modelSettings->getNYpad(), 
-                         modelSettings->getNZpad());
+                             xpad, 
+                             ypad, 
+                             zpad,
+                             modelSettings->getFileGrid());
+    
     grid->setType(gridType);
     grid->readCravaFile(fileName, errText);
   }
   else if(fileType == IO::SEGY) 
   {
     readSegyFile(fileName, grid, timeSimbox, modelSettings, geometry, 
-                 gridType, offset, format, errText);
+                 gridType, offset, format, errText, nopadding);
   }
   else if(fileType == IO::STORM) 
   {
-    readStormFile(fileName, grid, gridType, parName, timeSimbox, modelSettings, errText);
+    readStormFile(fileName, grid, gridType, parName, timeSimbox, modelSettings, errText, true, nopadding);
   }
   else if(fileType == IO::SGRI)
-    readStormFile(fileName, grid, gridType, parName, timeSimbox, modelSettings, errText, false);
+    readStormFile(fileName, grid, gridType, parName, timeSimbox, modelSettings, errText, false, nopadding);
   else 
   {
     errText += "\nReading of file \'"+fileName+"\' for grid type \'"
@@ -2565,7 +2625,9 @@ Model::processWavelets(Wavelet                    **& wavelet,
     }
   }
 
-  for(unsigned int i=0 ; i < nAngles ; i++) {  
+  for(unsigned int i=0 ; i < nAngles ; i++) { 
+    if(modelSettings_->getForwardModeling()==false)
+      seisCube[i]->setAccessMode(FFTGrid::RANDOMACCESS);
     if(modelSettings->getUseLocalWavelet()==true) {
       if(inputFiles->getScaleFile(i)!="") {
         Surface help(NRLib::ReadStormSurf(inputFiles->getScaleFile(i)));
@@ -2750,7 +2812,9 @@ Model::processWavelets(Wavelet                    **& wavelet,
         }
       }
     }
-  }
+    if(modelSettings_->getForwardModeling()==false) // else, no seismic data
+      seisCube[i]->endAccess();
+  } // end i (angles)
 
   Timings::setTimeWavelets(wall,cpu);
   failed = error > 0;
@@ -3106,7 +3170,7 @@ void Model::readPriorFaciesProbCubes(InputFiles      * inputFiles,
                        FFTGrid::PARAMETER,
                        timeSimbox,
                        modelSettings,
-                       errorText);
+                       errorText, true);
       if(errorText != "")
       {
         errorText += "Reading of file \'"+faciesProbFile+"\' for prior facies probability for facies \'"
@@ -4174,3 +4238,17 @@ Model::geometryFromStormFile(const std::string & fileName,
   
   return(geometry);
 }
+
+FFTGrid*            
+Model::createFFTGrid(int nx, int ny, int nz, int nxp, int nyp, int nzp, bool fileGrid)
+{
+  FFTGrid* fftGrid;
+
+  if(fileGrid)
+    fftGrid =  new FFTFileGrid(nx, ny, nz, nxp, nyp, nzp);
+  else
+    fftGrid =  new FFTGrid(nx, ny, nz, nxp, nyp, nzp);
+
+  return(fftGrid);
+}
+

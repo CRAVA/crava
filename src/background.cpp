@@ -125,7 +125,7 @@ Background::generateBackgroundModel(FFTGrid      *& bgAlpha,
                            modelSettings->getMaxHzBackground(), 
                            write1D, write3D,
                            nWells, hasVelocityTrend,
-                           std::string("Vp"));
+                           std::string("Vp"), modelSettings->getFileGrid());
   calculateBackgroundTrend(trendBeta, avgDevBeta, 
                            wells, simbox, 
                            modelSettings->getBetaMin(), 
@@ -133,7 +133,7 @@ Background::generateBackgroundModel(FFTGrid      *& bgAlpha,
                            modelSettings->getMaxHzBackground(), 
                            write1D, write3D,
                            nWells, hasVelocityTrend,
-                           std::string("Vs"));
+                           std::string("Vs"),modelSettings->getFileGrid());
   calculateBackgroundTrend(trendRho, avgDevRho,
                            wells, simbox, 
                            modelSettings->getRhoMin(), 
@@ -141,7 +141,7 @@ Background::generateBackgroundModel(FFTGrid      *& bgAlpha,
                            modelSettings->getMaxHzBackground(), 
                            write1D, write3D,
                            nWells, hasVelocityTrend,
-                           std::string("Rho"));
+                           std::string("Rho"), modelSettings->getFileGrid());
 
   if (velocity != NULL) {
     //
@@ -183,9 +183,9 @@ Background::generateBackgroundModel(FFTGrid      *& bgAlpha,
                                                 modelSettings->getBackgroundVario(),
                                                 modelSettings->getDebugFlag());
     
-    makeKrigedBackground(krigingDataAlpha, bgAlpha, trendAlpha, simbox, covGrid2D, "Vp");
-    makeKrigedBackground(krigingDataBeta, bgBeta, trendBeta, simbox, covGrid2D, "Vs");
-    makeKrigedBackground(krigingDataRho, bgRho, trendRho, simbox, covGrid2D, "Rho");
+    makeKrigedBackground(krigingDataAlpha, bgAlpha, trendAlpha, simbox, covGrid2D, "Vp",modelSettings->getFileGrid());
+    makeKrigedBackground(krigingDataBeta, bgBeta, trendBeta, simbox, covGrid2D, "Vs", modelSettings->getFileGrid());
+    makeKrigedBackground(krigingDataRho, bgRho, trendRho, simbox, covGrid2D, "Rho", modelSettings->getFileGrid());
     delete &covGrid2D;
   }
   else
@@ -198,9 +198,12 @@ Background::generateBackgroundModel(FFTGrid      *& bgAlpha,
     
     const int nx = simbox->getnx();
     const int ny = simbox->getny();
-    bgAlpha = new FFTGrid(nx, ny, nz, nx, ny, nz);
-    bgBeta  = new FFTGrid(nx, ny, nz, nx, ny, nz);
-    bgRho   = new FFTGrid(nx, ny, nz, nx, ny, nz);
+    bgAlpha = Model::createFFTGrid(nx, ny, nz, nx, ny, nz, modelSettings->getFileGrid());
+    bgBeta = Model::createFFTGrid(nx, ny, nz, nx, ny, nz, modelSettings->getFileGrid());
+    bgRho = Model::createFFTGrid(nx, ny, nz, nx, ny, nz, modelSettings->getFileGrid());
+    // bgAlpha = new FFTGrid(nx, ny, nz, nx, ny, nz);
+   // bgBeta  = new FFTGrid(nx, ny, nz, nx, ny, nz);
+   // bgRho   = new FFTGrid(nx, ny, nz, nx, ny, nz);
     fillInVerticalTrend(bgAlpha, trendAlpha);
     fillInVerticalTrend(bgBeta, trendBeta);
     fillInVerticalTrend(bgRho, trendRho);
@@ -309,7 +312,8 @@ Background::calculateBackgroundTrend(float             * trend,
                                      bool                write3D,
                                      int                 nWells, 
                                      bool                hasVelocityTrend,
-                                     const std::string & name)
+                                     const std::string & name,
+                                     bool                isFile)
 {
   const int   nz = simbox->getnz();
   const float dz = static_cast<float>(simbox->getdz()*simbox->getAvgRelThick());
@@ -330,7 +334,8 @@ Background::calculateBackgroundTrend(float             * trend,
   {
     const int nx = simbox->getnx();
     const int ny = simbox->getny();
-    FFTGrid * trendGrid = new FFTGrid(nx, ny, nz, nx, ny, nz);
+    //FFTGrid * trendGrid = new FFTGrid(nx, ny, nz, nx, ny, nz);
+    FFTGrid * trendGrid = Model::createFFTGrid(nx, ny, nz, nx, ny, nz, isFile);
     fillInVerticalTrend(trendGrid, trend);
 
     std::string fileName = IO::PrefixBackground() + IO::PrefixTrend() + name;
@@ -489,7 +494,8 @@ Background::makeKrigedBackground(const std::vector<KrigingData2D> & krigingData,
                                  float                            * trend,
                                  Simbox                           * simbox,
                                  const CovGrid2D                  & covGrid2D,
-                                 const std::string                & type)
+                                 const std::string                & type,
+                                 bool                               isFile)
 {
   std::string text = "\nBuilding "+type+" background:";
   LogKit::LogFormatted(LogKit::LOW,text);
@@ -520,7 +526,8 @@ Background::makeKrigedBackground(const std::vector<KrigingData2D> & krigingData,
     << "\n  |    |    |    |    |    |    |    |    |    |    |  "
     << "\n  ^"; 
 
-  bgGrid = new FFTGrid(nx, ny, nz, nxp, nyp, nzp);  
+  //bgGrid = new FFTGrid(nx, ny, nz, nxp, nyp, nzp); 
+  bgGrid = Model::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, isFile);
   bgGrid->createRealGrid();
   bgGrid->setType(FFTGrid::PARAMETER);
   bgGrid->setAccessMode(FFTGrid::WRITE);
@@ -706,7 +713,7 @@ Background::interpolateBackgroundTrend(KrigingData3D * krigingData,
                         krigingData->getNumberOfData(),
                         covAlpha, covBeta, covRho, 
                         covCrAlphaBeta, covCrAlphaRho, covCrBetaRho, 
-                       DataTarget_, true);
+                        DataTarget_, true);
 
   LogKit::LogFormatted(LogKit::LOW,"\nFill volumes using kriging:");
   kriging.KrigAll(*bgAlpha, *bgBeta, *bgRho, false);
@@ -1355,9 +1362,9 @@ Background::resampleBackgroundModel(FFTGrid      *& bgAlpha,
   FFTGrid * resBgRho = NULL;
   
   LogKit::LogFormatted(LogKit::LOW,"\nResampling background model...\n");
-  resampleParameter(resBgAlpha,bgAlpha,timeSimbox, timeBGSimbox);
-  resampleParameter(resBgBeta ,bgBeta ,timeSimbox, timeBGSimbox);
-  resampleParameter(resBgRho  ,bgRho  ,timeSimbox, timeBGSimbox);
+  resampleParameter(resBgAlpha,bgAlpha,timeSimbox, timeBGSimbox, modelSettings->getFileGrid());
+  resampleParameter(resBgBeta ,bgBeta ,timeSimbox, timeBGSimbox, modelSettings->getFileGrid());
+  resampleParameter(resBgRho  ,bgRho  ,timeSimbox, timeBGSimbox, modelSettings->getFileGrid());
   
   if((modelSettings->getGridOutputFlag() & IO::EXTRA_GRIDS) > 0) {
     std::string fileName1 = IO::PrefixBackground() + "Vp_InversionGrid";
@@ -1382,7 +1389,8 @@ void
 Background::resampleParameter(FFTGrid *& pNew,        // Resample to 
                               FFTGrid  * pOld,        // Resample from 
                               Simbox   * simboxNew,
-                              Simbox   * simboxOld)
+                              Simbox   * simboxOld,
+                              bool       isFile)
 {
   int nx  = simboxNew->getnx();
   int ny  = simboxNew->getny();
@@ -1418,7 +1426,8 @@ Background::resampleParameter(FFTGrid *& pNew,        // Resample to
   //
   // Resample parameter
   //
-  pNew = new FFTGrid(nx,ny,nz,nxp,nyp,nzp);
+  //pNew = new FFTGrid(nx,ny,nz,nxp,nyp,nzp);
+  pNew = Model::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, isFile);
   pNew->createRealGrid();
   pNew->setType(FFTGrid::PARAMETER);
   pNew->setAccessMode(FFTGrid::WRITE);

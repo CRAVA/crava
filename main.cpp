@@ -96,8 +96,8 @@ int main(int argc, char** argv)
       }       
 
       int activeAngles = 0; //How many dimensions for local noise interpolation? Turn off for now.
-      //if(model->getModelSettings()->noiseIsScaled()==true)
-      //  activeAngles = model->getModelSettings()->getNumberOfAngles();
+      if(model->getModelSettings()->getUseLocalNoise()==true)
+        activeAngles = model->getModelSettings()->getNumberOfAngles();
       spatwellfilter->doFiltering(corr,model->getWells(), 
                                   model->getModelSettings()->getNumberOfWells(), 
                                   model->getModelSettings()->getNoVsFaciesProb(),

@@ -83,12 +83,6 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Default
  \elist
 
-\subsubsection{\hbracket{synthetic-seismic}}  \newkw{synthetic-seismic}
- \slist
-   \item \Description Should we generate synthetic seismic from the inverted data?
-   \item \Argument 'yes' or 'no'
-   \item \Default
- \elist
 
 
 
@@ -557,12 +551,20 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Default
 \elist
 
-\subsubparagraph{\hbracket{seismic-data}}\newkw{seismic-data}
+\subsubparagraph{\hbracket{original-seismic-data}}\newkw{original-seismic-data}
  \slist
    \item \Description Write original seismic data to file.
    \item \Argument 'yes' or 'no'
    \item \Default
  \elist
+
+\subsubparagraph{\hbracket{synthetic-seismic-data}}  \newkw{synthetic-seismic-data}
+ \slist
+   \item \Description Generate synthetic seismic from the inverted data.
+   \item \Argument 'yes' or 'no'
+   \item \Default
+ \elist
+
 
 \subsubparagraph{\hbracket{time-to-depth-velocity}}\newkw{time-to-depth-velocity}
  \slist
@@ -725,7 +727,7 @@ Estimation: Checks input data and performs estimation of lacking information for
 
 \subsubsection{\hbracket{use-intermediate-disk-storage}} \newkw{use-intermediate-disk-storage}
  \slist
-   \item \Description When running under windows with less memory than the program requires, this activates a built-in smart swap that increases performance. Linux/unix swap is so efficient that this option has no effect there.
+   \item \Description When running under windows with less physical memory than the program requires, this activates a built-in smart-swap. It is more efficient to use this smart-swapping than the built-in windows paging system. Linux/unix swap is so efficient that this option has little effect there. If you run \Crava on a machine that you share with other users, it can be wise ut use this if you know that \Crava will need most of the memory.
    \item \Argument 'yes' or 'no'
    \item \Default
  \elist
@@ -1159,7 +1161,7 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Default
  \elist
 
-\subsubsection{\hbracket{file-name}}\rrnewkw{file-name}{file-name2}{file-name3}
+\subsubsection{\hbracket{file-name}}\rnewkw{file-name}{file-name3}
  \slist
    \item \Description File name for a well file. RMS or Norsar format.
    \item \Argument File name
@@ -1202,7 +1204,7 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Default
  \elist
 
-\paragraph{\hbracket{angle}}\rrnewkw{angle}{angle2}{angle3}
+\paragraph{\hbracket{angle}}\rnewkw{angle}{angle3}
  \slist
     \item \Description Offset angle used for estimating optimized well location
     \item \Argument Value
@@ -1379,7 +1381,7 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Default
  \elist
 
-\subsection{\hbracket{background}}\rrnewkw{background}{background2}{background3}
+\subsection{\hbracket{background}}\rnewkw{background}{background3}
  \slist
    \item \Description Contains information about the background model or how to estimate it. Note that either all parameters must be given, or all must be estimated.
    \item \Argument Elements containing information about the background model
@@ -1478,14 +1480,14 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Default
  \elist
 
-\subsection{\hbracket{local-wavelet}}\rrnewkw{local-wavelet}{local-wavelet2}{local-wavelet3}{local-wavelet4}
+\subsection{\hbracket{local-wavelet}}\rnewkw{local-wavelet}{local-wavelet4}
  \slist
    \item \Description Contains prior information for local wavelet modeling.
    \item \Argument Elements containing prior information for local wavelet estimation.
    \item \Default
  \elist
 
-\subsubsection{\hbracket{lateral-correlation}}\rrnewkw{lateral-correlation}{lateral-correlation2}{lateral-correlation3}
+\subsubsection{\hbracket{lateral-correlation}}\rnewkw{lateral-correlation}{lateral-correlation3}
  \slist
    \item \Description 2D variogram for the lateral correlation in local wavelet  modeling.
    \item \Argument 2D variogram

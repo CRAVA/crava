@@ -20,7 +20,7 @@ public:
                 CovGridSeparated& covCrAlphaBeta, 
                 CovGridSeparated& covCrAlphaRho, 
                 CovGridSeparated& covCrBetaRho,
-                int  dataTarget = 200, 
+                int  dataTarget = 200,
                 bool backgroundModel = false);
   ~CKrigingAdmin(void);
   enum Gamma {ALPHA_KRIG, BETA_KRIG, RHO_KRIG};

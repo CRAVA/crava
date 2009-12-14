@@ -111,8 +111,10 @@ Crava::Crava(Model * model, SpatialWellFilter * spatwellfilter)
     corrT = parSpatialCorr->fillInParamCorr(correlations_,lowIntCut,corrGradI, corrGradJ);
     if(spatwellfilter!=NULL)
     {
+      parSpatialCorr->setAccessMode(FFTGrid::RANDOMACCESS);
       for(int i=0;i<nWells_;i++)
         spatwellfilter->setPriorSpatialCorr(parSpatialCorr, wells_[i], i);
+      parSpatialCorr->endAccess();
     }
     correlations_->setPriorCorrTFiltered(corrT,nz_,nzp_); // Can has zeros in the middle
     errCorrUnsmooth->fillInErrCorr(correlations_,corrGradI,corrGradJ); 
@@ -155,7 +157,12 @@ Crava::Crava(Model * model, SpatialWellFilter * spatwellfilter)
   if ((model->getModelSettings()->getEstimateFaciesProb() && model->getModelSettings()->getFaciesProbRelative()) 
       || model->getModelSettings()->getUseLocalNoise())
   {
+  //  meanAlpha_->setAccessMode(FFTGrid::READ);
     meanAlpha2_ = copyFFTGrid(meanAlpha_);
+  //  meanAlpha2_->endAccess();
+   // meanBeta_->setAccessMode(FFTGrid::READ);
+  //  meanRho_->setAccessMode(FFTGrid::READ);
+    
     meanBeta2_  = copyFFTGrid(meanBeta_);
     meanRho2_   = copyFFTGrid(meanRho_);
   }
@@ -1360,11 +1367,10 @@ Crava::computeSyntSeismic(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho)
   }
 
   int cnxp  = nxp_/2+1;
-  
+  Alpha->setAccessMode(FFTGrid::READ);
+  Beta->setAccessMode(FFTGrid::READ);
+  Rho->setAccessMode(FFTGrid::READ);
   if (seisWavelet_[0]->getDim() == 1) {
-    Alpha->setAccessMode(FFTGrid::READ);
-    Beta->setAccessMode(FFTGrid::READ);
-    Rho->setAccessMode(FFTGrid::READ);
     for(k = 0; k < nzp_; k++)
     {
       kD = diffOperator->getCAmp(k);                   // defines content of kWD    
@@ -1397,9 +1403,6 @@ Crava::computeSyntSeismic(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho)
     }
   }
   else { //dim > 1
-    Alpha->setAccessMode(FFTGrid::RANDOMACCESS);
-    Beta->setAccessMode(FFTGrid::RANDOMACCESS);
-    Rho->setAccessMode(FFTGrid::RANDOMACCESS);
     for (k=0; k<nzp_; k++) {
       kD = diffOperator->getCAmp(k);
       for (j=0; j<nyp_; j++) {
@@ -1410,12 +1413,12 @@ Crava::computeSyntSeismic(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho)
           }
           lib_matrProdScalVecCpx(kD, kWD, ntheta_);        // defines content of kWD  
           lib_matrProdDiagCpxR(kWD, A_, ntheta_, 3, WDA);  // defines content of WDA  
-          ijkParam[0]=Alpha->getComplexValue(i,j,k,true);
-          ijkParam[1]=Beta ->getComplexValue(i,j,k,true);
-          ijkParam[2]=Rho  ->getComplexValue(i,j,k,true);
+          ijkParam[0]=Alpha->getNextComplex();
+          ijkParam[1]=Beta ->getNextComplex();
+          ijkParam[2]=Rho  ->getNextComplex();
           lib_matrProdMatVecCpx(WDA,ijkParam,ntheta_,3,ijkSeis);
           for(l=0;l<ntheta_;l++)
-            seisData[l]->setComplexValue(i, j, k, ijkSeis[l], true);
+            seisData[l]->setNextComplex(ijkSeis[l]);
         }
       }
     }
@@ -1423,6 +1426,7 @@ Crava::computeSyntSeismic(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho)
   Alpha->endAccess();
   Beta->endAccess();
   Rho->endAccess();
+  
   if(Alpha->getIsTransformed()) Alpha->invFFTInPlace();
   if(Beta->getIsTransformed()) Beta->invFFTInPlace();
   if(Rho->getIsTransformed()) Rho->invFFTInPlace();
@@ -1578,7 +1582,16 @@ FFTGrid*
 Crava::copyFFTGrid(FFTGrid * fftGridOld)
 {
   FFTGrid* fftGrid;
-  fftGrid =  new FFTGrid(fftGridOld);  
+  if(fileGrid_)
+  {
+ 
+  fftGrid =  new FFTFileGrid(reinterpret_cast<FFTFileGrid*>(fftGridOld)); 
+  }
+  else
+ {
+  
+  fftGrid =  new FFTGrid(fftGridOld); 
+  }
   return(fftGrid);
 }
 
@@ -1667,7 +1680,9 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs)
                               model_->getFaciesEstimInterval(),
                               simbox_->getdz(),
                               true,
-                              model_->getModelSettings()->getNoVsFaciesProb());
+                              model_->getModelSettings()->getNoVsFaciesProb(), 
+                              this,
+                              model_->getLocalNoiseScales());
       delete meanAlpha2_;
       delete meanBeta2_;
       delete meanRho2_;
@@ -1689,7 +1704,9 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs)
                               model_->getFaciesEstimInterval(),
                               simbox_->getdz(),
                               false,
-                              model_->getModelSettings()->getNoVsFaciesProb());
+                              model_->getModelSettings()->getNoVsFaciesProb(), 
+                              this,
+                              model_->getLocalNoiseScales());
     }
     fprob_->calculateConditionalFaciesProb(wells_, 
                                            nWells_, 
@@ -2176,6 +2193,7 @@ void Crava::correctAlphaBetaRho(ModelSettings *modelSettings)
         }
 
       }
+      
       alpha = postAlpha_->getRealTrace(i,j);
       beta = postBeta_->getRealTrace(i,j);
       rho = postRho_->getRealTrace(i,j);

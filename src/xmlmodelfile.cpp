@@ -158,7 +158,6 @@ XmlModelFile::parseInversionSettings(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("simulation");
   legalCommands.push_back("krige-welldata");
   legalCommands.push_back("facies-probabilities");
-  legalCommands.push_back("synthetic-seismic");
 
   bool value;
   if(parseBool(root, "prediction", value, errTxt) == true)
@@ -199,9 +198,6 @@ XmlModelFile::parseInversionSettings(TiXmlNode * node, std::string & errTxt)
     }
   }
 
-  if(parseBool(root, "synthetic-seismic", value, errTxt) == true) { 
-    modelSettings_->setGenerateSeismicAfterInversion(value);
-  }
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
@@ -1907,7 +1903,8 @@ XmlModelFile::parseGridParameters(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("background");
   legalCommands.push_back("background-trend");
   legalCommands.push_back("extra-grids");
-  legalCommands.push_back("seismic-data");
+  legalCommands.push_back("original-seismic-data");
+  legalCommands.push_back("synthetic-seismic-data");
   legalCommands.push_back("time-to-depth-velocity");
 
   bool value = false;
@@ -1947,10 +1944,15 @@ XmlModelFile::parseGridParameters(TiXmlNode * node, std::string & errTxt)
     paramFlag += IO::BACKGROUND_TREND;
   if(parseBool(root, "extra-grids", value, errTxt) == true && value == true)
     paramFlag += IO::EXTRA_GRIDS;
-  if(parseBool(root, "seismic-data", value, errTxt) == true && value == true)
-    paramFlag += IO::SEISMIC_DATA;
+  if(parseBool(root, "original-seismic-data", value, errTxt) == true && value == true)
+    paramFlag += IO::ORIGINAL_SEISMIC_DATA;  
   if(parseBool(root, "time-to-depth-velocity", value, errTxt) == true && value == true)
     paramFlag += IO::TIME_TO_DEPTH_VELOCITY;
+  if(parseBool(root, "synthetic-seismic-data", value, errTxt) == true && value == true)
+  {
+    paramFlag += IO::SYNTHETIC_SEISMIC_DATA;
+    modelSettings_->setGenerateSeismicAfterInversion(true);
+  }
 
   modelSettings_->setDefaultGridOutputInd(false);
   modelSettings_->setGridOutputFlag(paramFlag);
@@ -2430,7 +2432,8 @@ XmlModelFile::checkForwardConsistency(std::string & errTxt) {
     if(inputFiles_->getSeismicFile(i)!="")
       errTxt+="Seismic data should not be given when doing forward modeling.\n";
     }
-   
+   if(modelSettings_->getUseLocalNoise()==true)
+      errTxt+="Local noise can not be used in forward modeling.\n";
 
     if(modelSettings_->getUseLocalWavelet()==true)
       errTxt+="Local wavelet can not be used in forward modeling.\n";

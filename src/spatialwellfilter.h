@@ -47,7 +47,7 @@ private:
   void adjustDiagSigma(double ** sigmae, int n);
   void calculateFilteredLogs(double **Aw, BlockedLogs *blockedlogs, int n, bool useVs);
   void MakeInterpolatedResiduals(const float * bwLog, const float * bwLogBG, const int n, const int offset, double ** residuals);
-
+  void fillValuesInSigmapost(double **sigmapost, const int *ipos, const int *jpos, const int *kpos, FFTGrid *covgrid, int n, int ni, int nj);
 
 };
 #endif

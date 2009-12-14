@@ -35,9 +35,8 @@ public:
   void         fillInComplexNoise(RandomGen * ranGen);
   void         fftInPlace();
   void         invFFTInPlace();
-  void         createRealGrid();
+  void         createRealGrid(bool add = true);
   void         createComplexGrid();
-
   void         setAccessMode(int mode);
   void         endAccess();
   void         writeFile(const std::string & fileName, 
@@ -53,12 +52,13 @@ public:
   int          writeSgriFile(const std::string & fileName, const Simbox *simbox, const std::string label);
   void         writeResampledStormCube(GridMapping *gridmapping, const std::string & fileName, 
                                        const Simbox *simbox, const int format, bool expTrans);
-  void         writeDirectFile(const std::string & fileName, const Simbox * simbox);
-  void         readDirectFile(const std::string & fileName, std::string & error);
+  void         writeCravaFile(const std::string & fileName, const Simbox * simbox);
+  void         readCravaFile(const std::string & fileName, std::string & error);
 
   bool         isFile() {return(1);}
-  float      * getRealTrace(int i, int j);
+  float        *getRealTrace(int i, int j);
   int          setRealTrace(int i, int j, float *value);
+  void         fillInFromRealFFTGrid(FFTGrid& fftGrid);
 private:
   void         genFileName();
   void         load();

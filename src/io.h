@@ -130,8 +130,9 @@ public:
                              FACIESPROB             = 32768, 
                              FACIESPROBRELATIVE     = 65536, 
                              EXTRA_GRIDS            = 131072,
-                             SEISMIC_DATA           = 262144,
-                             TIME_TO_DEPTH_VELOCITY = 524288};
+                             ORIGINAL_SEISMIC_DATA  = 262144,
+                             TIME_TO_DEPTH_VELOCITY = 524288,
+                             SYNTHETIC_SEISMIC_DATA = 1048576};
 
   enum           outputWells{WELLS              = 1,
                              BLOCKED_WELLS      = 2,

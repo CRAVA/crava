@@ -30,7 +30,7 @@ public:
                                        StormContGrid     * grid,
                                        const std::string & parName,
                                        bool                isStorm = true);    // No mode
-  void                 fillInFromRealFFTGrid(FFTGrid& fftGrid);  // No mode
+  virtual void         fillInFromRealFFTGrid(FFTGrid& fftGrid);  // No mode
   void                 fillInConstant(float value);              // No mode
   fftw_real*           fillInParamCorr(Corr* corr,int minIntFq,
                                        float gradI, float gradJ);// No mode
@@ -116,7 +116,7 @@ public:
   static int           getMaxAllowedGrids()   { return maxAllowedGrids_   ;}
   static int           getMaxAllocatedGrids() { return maxAllocatedGrids_ ;}
 
-  virtual void         createRealGrid();
+  virtual void         createRealGrid(bool add = true);
   virtual void         createComplexGrid();
 
   //This function interpolates seismic in all missing traces inside area, and mirrors to padding.
@@ -125,8 +125,8 @@ public:
 
   void                 checkNaN(); //NBNB Ragnar: For debug purpose. Negative number = OK.
   float                getDistToBoundary(int i, int n , int np); 
-  float               *getRealTrace(int i, int j);
-  int                  setRealTrace(int i, int j, float *value);
+  virtual float       *getRealTrace(int i, int j);
+  virtual int          setRealTrace(int i, int j, float *value);
 protected:
   //int                setPaddingSize(int n, float p); 
   int                  getFillNumber(int i, int n, int np );
@@ -181,5 +181,6 @@ protected:
   static int           maxAllowedGrids_;   // The maximum number of grids we are allowed to allocate.
   static int           maxAllocatedGrids_; // The maximum number of grids that has actually been allocated.
   static int           nGrids_;            // The actually number of grids allocated (varies as crava runs).  
+  bool                 add_;                // Tells whether we should change nGrids_ or not
 };
 #endif
