@@ -525,6 +525,9 @@ Model::checkAvailableMemory(Simbox        * timeSimbox,
 
   int nGrids;
   if(modelSettings->getForwardModeling() == true) {
+  if (modelSettings->getFileGrid())  // Use disk buffering
+      nGrids = nGridFileMode;
+  else
     nGrids = nGridParameters + nGridSeismicData;
   }
   else {
@@ -532,6 +535,11 @@ Model::checkAvailableMemory(Simbox        * timeSimbox,
       nGrids = nGridFileMode;
       if(modelSettings->getKrigingParameter() > 0) {
         nGrids += nGridKriging;
+    }
+      if(modelSettings->getNumberOfSimulations() > 0)
+        nGrids = nGridParameters;
+      if(modelSettings->getUseLocalNoise()) {
+      nGrids = nGridFileMode+nGridParameters;
     }
     }
     else {
@@ -3812,11 +3820,13 @@ Model::processDepthConversion(Simbox        * timeCutSimbox,
     timeDepthMapping_->setDepthSurfaces(inputFiles->getDepthSurfFiles(), failed, errText);
     if(velocity != NULL) 
     {
+      velocity->setAccessMode(FFTGrid::RANDOMACCESS);
       timeDepthMapping_->calculateSurfaceFromVelocity(velocity, timeSimbox);
       timeDepthMapping_->setDepthSimbox(timeSimbox, timeSimbox->getnz(), 
                                         modelSettings->getGridOutputFormat(),
                                         failed, errText);            // NBNB-PAL: Er dettet riktig nz (timeCut vs time)? 
       timeDepthMapping_->makeTimeDepthMapping(velocity, timeSimbox);
+      velocity->endAccess();
 
       if((modelSettings->getGridOutputFlag() & IO::TIME_TO_DEPTH_VELOCITY) > 0) {
         std::string baseName  = IO::FileTimeToDepthVelocity();

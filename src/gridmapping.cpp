@@ -72,7 +72,7 @@ GridMapping::makeTimeDepthMapping(FFTGrid      * velocity,
   int ny  = depthSimbox->getny();
   int nz  = depthSimbox->getnz();
   mapping_ = new StormContGrid(*depthSimbox, nx, ny, nz);
-
+ // velocity->setAccessMode(FFTGrid::RANDOMACCESS);
   for(int i=0;i<nx;i++)
   {
     for(int j=0;j<ny;j++)
@@ -108,6 +108,7 @@ GridMapping::makeTimeDepthMapping(FFTGrid      * velocity,
       }
     }
   }
+ // velocity->endAccess();
 }
 
 

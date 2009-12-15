@@ -49,7 +49,7 @@ public:
   float                getRealValueCyclic(int i, int j, int k);
   float                getRealValueInterpolated(int i, int j, float kindex, bool extSimbox = false);
   fftw_complex         getComplexValue(int i, int j, int k, bool extSimbox = false) const;
-  int                  setRealValue(int i, int j, int k, float value, bool extSimbox = false);  // Accessmode randomaccess
+  virtual int                  setRealValue(int i, int j, int k, float value, bool extSimbox = false);  // Accessmode randomaccess
   int                  setComplexValue(int i, int j ,int k, fftw_complex value, bool extSimbox = false);
   fftw_complex         getFirstComplexValue();    
   virtual int          square();                                // No mode/randomaccess

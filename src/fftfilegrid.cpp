@@ -178,7 +178,7 @@ FFTFileGrid::getNextReal()
 
 
 float        
-FFTFileGrid::getRealValue(int i, int j, int k)
+FFTFileGrid::getRealValue(int i, int j, int k, bool extSimbox)
 { 
   // i index in x direction 
   // j index in y direction 
@@ -186,10 +186,24 @@ FFTFileGrid::getRealValue(int i, int j, int k)
   assert(istransformed_==false);
   assert(accMode_ == RANDOMACCESS);
 
-  int index=i+rnxp_*j+k*rnxp_*nyp_;
+ bool  inSimbox   = (extSimbox ? ( (i < nxp_) && (j < nyp_) && (k < nzp_)):
+    ((i < nx_) && (j < ny_) && (k < nz_)));
+  bool  notMissing = ( (i > -1) && (j > -1) && (k > -1));
 
-  assert(index<rsize_); 
-  return(static_cast<float>(rvalue_[index]));
+  float value;
+ if( inSimbox && notMissing )
+  { // if index in simbox
+  int index=i+rnxp_*j+k*rnxp_*nyp_;
+  value = static_cast<float>(rvalue_[index]); 
+  }
+  else
+  {
+    value = RMISSING;
+  }
+
+  return( value );
+ // assert(index<rsize_); 
+  //return(static_cast<float>(rvalue_[index]));
 }
 
 float        
@@ -206,15 +220,16 @@ FFTFileGrid::getRealValueInterpolated(int i, int j, float kindex)
 }
 
 int        
-FFTFileGrid::setRealValue(int i, int j, int k, float value)
+FFTFileGrid::setRealValue(int i, int j, int k, float value, bool extSimbox)
 { 
   // i index in x direction 
   // j index in y direction 
   // k index in z direction 
   assert(istransformed_== false);
-  assert(accMode_ == RANDOMACCESS);
-
-  return(FFTGrid::setRealValue(i, j, k, value));
+  assert(accMode_ == NONE || accMode_ == RANDOMACCESS); // accMode_ can be NONE when called from setRealTrace
+  if(accMode_== RANDOMACCESS)
+    modified_ = 1;
+  return(FFTGrid::setRealValue(i, j, k, value, extSimbox));
 }
 
 
@@ -543,7 +558,7 @@ FFTFileGrid::unload()
 {
   fftw_free(rvalue_); // changed
   nGrids_ = nGrids_ - 1;
- LogKit::LogFormatted(LogKit::ERROR,"\nFFTFileGrid unload: nGrids_ = %d\n",nGrids_);
+// LogKit::LogFormatted(LogKit::ERROR,"\nFFTFileGrid unload: nGrids_ = %d\n",nGrids_);
   rvalue_ = NULL;
   cvalue_ = NULL;
 }

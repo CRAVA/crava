@@ -2174,6 +2174,9 @@ void Crava::correctAlphaBetaRho(ModelSettings *modelSettings)
   for(int angle=0;angle<modelSettings->getNumberOfAngles();angle++)
     minScale[angle] = model_->getLocalNoiseScale(angle)->FindMin(RMISSING);
 
+  postAlpha_->setAccessMode(FFTGrid::RANDOMACCESS);
+  postBeta_->setAccessMode(FFTGrid::RANDOMACCESS);
+  postRho_->setAccessMode(FFTGrid::RANDOMACCESS);
   for(i=0;i<nx_;i++)
     for(j=0;j<ny_;j++)
     {
@@ -2214,6 +2217,9 @@ void Crava::correctAlphaBetaRho(ModelSettings *modelSettings)
       postRho_->setRealTrace(i,j,rho);
 
     }
+    postAlpha_->endAccess();
+    postBeta_->endAccess();
+    postRho_->endAccess();
     for(i=0;i<ntheta_;i++)
       delete [] G[i];
 

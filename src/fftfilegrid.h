@@ -20,9 +20,9 @@ public:
 
   fftw_complex getNextComplex() ;
   float        getNextReal() ;
-  float        getRealValue(int i, int j, int k);
+  float        getRealValue(int i, int j, int k, bool extSimbox = false);
   float        getRealValueInterpolated(int i, int j, float kindex);
-  int          setRealValue(int i, int j, int k, float value);
+  int          setRealValue(int i, int j, int k, float value, bool extSimbox = false);
   int          setNextComplex(fftw_complex);
   int          setNextReal(float);
   int          square();

@@ -619,7 +619,7 @@ FFTGrid::createRealGrid(bool add)
   add_ = add;
   if(add==true)
     nGrids_        += 1;
-  LogKit::LogFormatted(LogKit::ERROR,"\nFFTGrid createRealGrid : nGrids = %d    maxGrids = %d\n",nGrids_,maxAllowedGrids_);
+ // LogKit::LogFormatted(LogKit::ERROR,"\nFFTGrid createRealGrid : nGrids = %d    maxGrids = %d\n",nGrids_,maxAllowedGrids_);
   if (nGrids_ > maxAllowedGrids_) {
     std::string text;
     text += "\n\nERROR in FFTGrid createRealGrid. You have allocated to many FFTGrids. The fix";

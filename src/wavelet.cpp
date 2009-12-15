@@ -1237,9 +1237,9 @@ float Wavelet::findGlobalScaleForGivenWavelet(ModelSettings *modelSettings,
       //
       // Block seismic data for this well
       //
-      seisCube->setAccessMode(FFTGrid::RANDOMACCESS);
+    //  seisCube->setAccessMode(FFTGrid::RANDOMACCESS);
       bl->getBlockedGrid(seisCube,seisLog);
-      seisCube->endAccess();
+    //  seisCube->endAccess();
       //
       // Extract a one-value-for-each-layer array of blocked logs
       //
