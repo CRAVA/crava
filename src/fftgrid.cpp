@@ -646,7 +646,7 @@ FFTGrid::createComplexGrid()
   counterForGet_  = 0; 
   counterForSet_  = 0;
   nGrids_        += 1;
-  LogKit::LogFormatted(LogKit::ERROR,"\nFFTGrid createComplexGrid : nGrids = %d    maxGrids = %d\n",nGrids_,maxAllowedGrids_);
+ // LogKit::LogFormatted(LogKit::ERROR,"\nFFTGrid createComplexGrid : nGrids = %d    maxGrids = %d\n",nGrids_,maxAllowedGrids_);
   if (nGrids_ > maxAllowedGrids_) {
     std::string text;
     text += "\n\nERROR in FFTGrid createComplexGrid. You have allocated to many FFTGrids. The fix";
