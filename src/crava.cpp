@@ -2177,6 +2177,9 @@ void Crava::correctAlphaBetaRho(ModelSettings *modelSettings)
   postAlpha_->setAccessMode(FFTGrid::RANDOMACCESS);
   postBeta_->setAccessMode(FFTGrid::RANDOMACCESS);
   postRho_->setAccessMode(FFTGrid::RANDOMACCESS);
+  meanAlpha2_->setAccessMode(FFTGrid::RANDOMACCESS);
+  meanBeta2_->setAccessMode(FFTGrid::RANDOMACCESS);
+  meanRho2_->setAccessMode(FFTGrid::RANDOMACCESS);
   for(i=0;i<nx_;i++)
     for(j=0;j<ny_;j++)
     {
@@ -2220,6 +2223,9 @@ void Crava::correctAlphaBetaRho(ModelSettings *modelSettings)
     postAlpha_->endAccess();
     postBeta_->endAccess();
     postRho_->endAccess();
+    meanAlpha2_->endAccess();
+    meanBeta2_->endAccess();
+    meanRho2_->endAccess();
     for(i=0;i<ntheta_;i++)
       delete [] G[i];
 

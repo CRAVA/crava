@@ -539,7 +539,7 @@ Model::checkAvailableMemory(Simbox        * timeSimbox,
       if(modelSettings->getNumberOfSimulations() > 0)
         nGrids = nGridParameters;
       if(modelSettings->getUseLocalNoise()) {
-      nGrids = nGridFileMode+nGridParameters;
+      nGrids = 2*nGridParameters;
     }
     }
     else {

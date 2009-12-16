@@ -829,7 +829,7 @@ FFTGrid::getRealTrace(int i, int j)
 {
   float *value = new float[nz_];
   for(int k=0;k<nz_;k++)
-    value[k] = getRealValue(i,j,k);
+    value[k] = FFTGrid::getRealValue(i,j,k);
 
   return value;
 

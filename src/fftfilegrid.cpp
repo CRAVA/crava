@@ -226,9 +226,8 @@ FFTFileGrid::setRealValue(int i, int j, int k, float value, bool extSimbox)
   // j index in y direction 
   // k index in z direction 
   assert(istransformed_== false);
-  assert(accMode_ == NONE || accMode_ == RANDOMACCESS); // accMode_ can be NONE when called from setRealTrace
-  if(accMode_== RANDOMACCESS)
-    modified_ = 1;
+  assert(accMode_ == RANDOMACCESS); 
+  modified_ = 1;
   return(FFTGrid::setRealValue(i, j, k, value, extSimbox));
 }
 
