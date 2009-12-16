@@ -512,7 +512,14 @@ Model::checkAvailableMemory(Simbox        * timeSimbox,
                                     modelSettings->getNZpad());
   int gridSize = dummyGrid->getrsize();
   delete dummyGrid;
-
+  dummyGrid = new FFTGrid(timeSimbox->getnx(), 
+                                    timeSimbox->getny(), 
+                                    timeSimbox->getnz(),
+                                    timeSimbox->getnx(), 
+                                    timeSimbox->getny(), 
+                                    timeSimbox->getnz());
+  int gridSizeKriging = dummyGrid->getrsize();
+  delete dummyGrid;
   int nGridParameters  = 3;                                      // Vp + Vs + Rho
   int nGridBackground  = 3;                                      // Vp + Vs + Rho
   int nGridCovariances = 6;                                      // Covariances
@@ -569,9 +576,14 @@ Model::checkAvailableMemory(Simbox        * timeSimbox,
 
   int   workSize    = 2500 + static_cast<int>( 0.65*gridSize ); //Size of memory used beyond grids.
 
-  float memOneGrid  = 4.0f * static_cast<float>(gridSize);  
+  float memOneGrid  = 4.0f * static_cast<float>(gridSize); 
+  float memKrig     = 4.0f * static_cast<float>(gridSizeKriging);
   float mem0        = 4.0f * workSize;
-  float mem1        = static_cast<float>(nGrids)*memOneGrid;
+  float mem1;
+  if(modelSettings->getKrigingParameter() > 0)
+    mem1 = static_cast<float>(nGrids-1)*memOneGrid+ memKrig;
+  else 
+    mem1 = static_cast<float>(nGrids)*memOneGrid;
   float mem2        = static_cast<float>(modelSettings->getNumberOfAngles())*memOneGrid + memOneSeis;
  
   float neededMem   = mem0 + std::max(mem1, mem2);
