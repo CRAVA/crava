@@ -28,10 +28,12 @@ BlockedLogs::BlockedLogs(WellData  * well,
     ipos_(NULL),
     jpos_(NULL),
     kpos_(NULL),
+    dz_(NULL),
     alpha_(NULL),
     beta_(NULL),
     rho_(NULL),
     facies_(NULL),
+    facies_prob_(NULL),
     alpha_highcut_background_(NULL),
     beta_highcut_background_(NULL),
     rho_highcut_background_(NULL),
@@ -105,7 +107,13 @@ BlockedLogs::~BlockedLogs(void)
     delete [] alpha_for_facies_;
   if (rho_for_facies_ != NULL)
     delete [] rho_for_facies_;
-
+  
+  if (facies_prob_ != NULL) {
+    for (int i=0 ; i<nFacies_ ; i++)
+      if (facies_prob_[i] != NULL)
+        delete [] facies_prob_[i];
+    delete [] facies_prob_;
+  }
   if (real_seismic_data_ != NULL) {
     for (int i=0 ; i<nAngles_ ; i++)
       if (real_seismic_data_[i] != NULL)
@@ -543,6 +551,8 @@ BlockedLogs::findBlockIJK(WellData  * well,
     kpos_[b] = k;
   }
 
+  dz_ = static_cast<float>(simbox->getRelThick(ipos_[0],jpos_[0])*simbox->getdz());
+
   bool debug = false;
   if (debug) {
     LogKit::LogFormatted(LogKit::LOW,"firstB_, lastB_        = %d, %d    \n",firstB_,lastB_);
@@ -722,6 +732,11 @@ BlockedLogs::setLogFromGrid(FFTGrid    * grid,
       real_seismic_data_ = new float * [nAngles_];
     real_seismic_data_[iAngle] = blockedLog;
   }
+  else if (type == "FACIES_PROB") {
+    if (facies_prob_ == NULL)
+      facies_prob_ = new float * [nFacies_]; 
+    facies_prob_[iAngle] = blockedLog;
+  }
   else {
     LogKit::LogFormatted(LogKit::ERROR,"\nUnknown log type \""+type
                          +"\" in BlockedLogs::setLogFromGrid()\n");
@@ -756,7 +771,7 @@ BlockedLogs::setLogFromVerticalTrend(float      * vertical_trend,
   }
   else if (type == "WELL_SYNTHETIC_SEISMIC") {
     if (well_synt_seismic_data_ == NULL)
-      well_synt_seismic_data_ = new float * [nAngles_]; // nAngles is set along with real_seismic_data_
+      well_synt_seismic_data_ = new float * [nAngles_]; 
     well_synt_seismic_data_[iAngle] = blockedLog;
   }
   else {
@@ -854,6 +869,7 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
   }
 
   bool gotFacies            = (nFacies_ > 0);
+  bool gotFaciesProb        = (facies_prob_ != NULL);
   bool gotRealSeismic       = (real_seismic_data_ != NULL);
   bool gotActualSyntSeismic = (actual_synt_seismic_data_ != NULL);
   bool gotWellSyntSeismic   = (well_synt_seismic_data_ != NULL);
@@ -867,6 +883,8 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
     nLogs += 2;
   if (gotFacies)
     nLogs += 1;
+  if (gotFaciesProb)
+    nLogs += nFacies_;
   if (gotRealSeismic)
     nLogs += nAngles_;
   if (gotActualSyntSeismic)
@@ -909,6 +927,10 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
     for (int i =0 ; i < modelSettings->getNumberOfFacies() ; i++)
       file << " " << modelSettings->getFaciesLabel(i) << " " << modelSettings->getFaciesName(i);
     file << "\n";    
+  }
+  if (gotFaciesProb) {
+    for (int i=0 ; i<nFacies_ ; i++)
+      file << "FaciesProbabilities" << i << " UNK lin\n";
   }
   if (gotRealSeismic) {
     for (int i=0 ; i<nAngles_ ; i++)
@@ -959,6 +981,11 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
     if (gotFacies)
       file << (facies_[i]==IMISSING                                 ? static_cast<int>(WELLMISSING) : facies_[i])      << "  ";
     file << std::scientific;
+    if (gotFaciesProb) {
+      for (int a=0 ; a<nFacies_ ; a++)
+        file << std::setw(12) << (facies_prob_[a][i]==RMISSING ? WELLMISSING : facies_prob_[a][i])          << " ";
+      file << " ";
+    }
     if (gotRealSeismic) {
       for (int a=0 ; a<nAngles_ ; a++)
         file << std::setw(12) << (real_seismic_data_[a][i]==RMISSING ? WELLMISSING : real_seismic_data_[a][i])          << " ";
@@ -1048,6 +1075,7 @@ BlockedLogs::writeNorsarWell(ModelSettings * modelSettings)
   std::string onlyName    = NRLib::RemovePath(logFileName);
   
   bool gotFacies            = (nFacies_ > 0);
+  bool gotFaciesProb        = (facies_prob_ != NULL);
   bool gotRealSeismic       = (real_seismic_data_ != NULL);
   bool gotActualSyntSeismic = (actual_synt_seismic_data_ != NULL);
   bool gotWellSyntSeismic   = (well_synt_seismic_data_ != NULL);
@@ -1060,6 +1088,8 @@ BlockedLogs::writeNorsarWell(ModelSettings * modelSettings)
     nLogs += 3;
   if (gotFacies)
     nLogs += 1;
+  if (gotFaciesProb)
+    nLogs += nFacies_;
   if (gotRealSeismic)
     nLogs += nAngles_;
   if (gotActualSyntSeismic)
@@ -1554,7 +1584,7 @@ void BlockedLogs::findOptimalWellLocation(FFTGrid                   ** seisCube,
 void BlockedLogs::generateSyntheticSeismic(float   ** reflCoef,
                                            int        nAngles,
                                            Wavelet ** wavelet,
-                                           Simbox   * timeSimbox,
+                                           int        nz,
                                            int        nzp)
 { 
   int          i,j;
@@ -1565,8 +1595,6 @@ void BlockedLogs::generateSyntheticSeismic(float   ** reflCoef,
 
   int    cnzp = nzp/2+1;
   int    rnzp = 2*cnzp;
-  int    nz   = timeSimbox->getnz();
-  double dz   = static_cast<float>(timeSimbox->getRelThick(ipos_[0],jpos_[0])*timeSimbox->getdz());
 
   float  * syntSeis  = new float[nz];
   float  * alphaVert = new float[nLayers_]; 
@@ -1616,7 +1644,7 @@ void BlockedLogs::generateSyntheticSeismic(float   ** reflCoef,
     for ( j=start; j<start+length; j++ )
       syntSeis[j] = synt_seis_r[j];
     
-    setLogFromVerticalTrend(syntSeis,zpos_[0],dz,nz,"ACTUAL_SYNTHETIC_SEISMIC",i);
+    setLogFromVerticalTrend(syntSeis,zpos_[0],dz_,nz,"ACTUAL_SYNTHETIC_SEISMIC",i);
     
     localWavelet->fft1DInPlace();
     delete localWavelet;
@@ -1627,4 +1655,8 @@ void BlockedLogs::generateSyntheticSeismic(float   ** reflCoef,
   delete [] betaVert; 
   delete [] rhoVert; 
   delete [] hasData; 
+  delete [] cpp_r;
+  delete [] synt_seis_r;
+
 }
+

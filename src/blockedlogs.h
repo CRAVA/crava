@@ -80,7 +80,7 @@ public:
                                          int                        & iMove,
                                          int                        & jMove,
                                          float                      & kMove);
-  void           generateSyntheticSeismic(float ** reflCoef, int nAngles, Wavelet ** wavelet, Simbox * timeSimbox, int nzp);
+  void           generateSyntheticSeismic(float ** reflCoef, int nAngles, Wavelet ** wavelet, int nz, int nzp);
 
 private:
   void           setLogFromVerticalTrend(float *& log, double * zpos, int nBlocks, 
@@ -127,9 +127,12 @@ private:
   int          * jpos_;                     ///< Simbox IJK value for block
   int          * kpos_;                     ///<
 
+  float          dz_;                       ///< Simbox dz value for block
+
   float        * alpha_;                    ///<
   float        * beta_;                     ///< Raw logs (log-domain)
   float        * rho_;                      ///<
+  float       ** facies_prob_;              ///< Facies probabilities calculated in wells
   int          * facies_;                   ///< Facies numbers using *internal* numbering
 
   float        * alpha_highcut_background_; ///< 

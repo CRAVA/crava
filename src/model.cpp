@@ -307,8 +307,7 @@ Model::Model(char * fileName)
           if(failedSeismic == false && failedWavelet == false && failedReflMat == false &&
             (modelSettings_->getOptimizeWellLocation() || modelSettings_->getEstimateWaveletNoise() ))
           {
-            getSyntheticSeismic(wavelet_, wells_, reflectionMatrix_,
-                                timeSimbox_, modelSettings_, seisCube_);
+            generateSyntheticSeismic(wavelet_, wells_, reflectionMatrix_, timeSimbox_, modelSettings_);
           }
         }
 
@@ -1872,22 +1871,22 @@ void Model::addSeismicLogs(WellData     ** wells,
   }
 }
    
-void Model::getSyntheticSeismic(Wavelet      ** wavelet,
-                                WellData     ** wells,
-                                float        ** reflectionMatrix,
-                                Simbox        * timeSimbox,
-                                ModelSettings * modelSettings,
-                                FFTGrid      ** seisCube) const
+void Model::generateSyntheticSeismic(Wavelet      ** wavelet,
+                                     WellData     ** wells,
+                                     float        ** reflectionMatrix,
+                                     Simbox        * timeSimbox,
+                                     ModelSettings * modelSettings) const
 {
   int nWells  = modelSettings->getNumberOfWells();
   int nAngles = modelSettings->getNumberOfAngles();
-  int nzp     = seisCube[0]->getNzp(); 
+  int nzp     = modelSettings->getNZpad();
+  int nz      = timeSimbox->getnz();
   int i;
 
   for( i=0; i<nWells; i++ )
   {
     if( wells[i]->isDeviated() == false )
-      wells[i]->getBlockedLogsOrigThick()->generateSyntheticSeismic(reflectionMatrix,nAngles,wavelet,timeSimbox,nzp);
+      wells[i]->getBlockedLogsOrigThick()->generateSyntheticSeismic(reflectionMatrix,nAngles,wavelet,nz,nzp);
   }
 }
 
