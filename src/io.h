@@ -87,7 +87,8 @@ public:
   //Note: By convention, input path is added to input file names at end of parsing.                                 
   //      Output path and prefix is added to output file name by call to makeFullFileName                         
   //      just before writing.                                                                                    
-  static         void           setFilePrefix(const std::string & filePrefix);                                    
+  static         void           setFilePrefix(const std::string & filePrefix);
+  static         std::string    getFilePrefix(void) { return filePrefix_ ;}
   static         void           setOutputPath(const std::string & outputPath);                                    
   static         std::string    getOutputPath(void) { return outputPath_ ;}                                       
                                                                                                                   
