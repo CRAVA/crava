@@ -452,8 +452,8 @@ Simbox::writeTopBotGrids(const std::string & topname,
   else
     suffix = IO::SuffixStormBinary();
 
-  topName_ = NRLib::RemovePath(topname+suffix);
-  botName_ = NRLib::RemovePath(botname+suffix);
+  topName_ = IO::getFilePrefix()+topname+suffix;
+  botName_ = IO::getFilePrefix()+botname+suffix;
 
   assert(typeid(GetTopSurface()) == typeid(Surface));
   assert(typeid(GetBotSurface()) == typeid(Surface));
