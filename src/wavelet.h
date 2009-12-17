@@ -45,8 +45,7 @@ public:
   virtual void          printToFile(const std::string & fileName, 
                                     bool                overrideDebug = false) = 0;
   virtual void          writeWaveletToFile(const std::string & fileName, 
-                                           float, 
-                                           Simbox *            simbox = NULL)  = 0;
+                                           float approxDzIn)                = 0;
 
   virtual void          scale(float gain);
   virtual int           getNx()                                       const {return 0;}

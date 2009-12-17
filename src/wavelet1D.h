@@ -42,7 +42,7 @@ public:
   void           setRAmp(float value, int k, int j=0, int i=0);
   void           scale(float gain);
   void           printToFile(const std::string & fileName, bool overrideDebug = false);
-  void           writeWaveletToFile(const std::string & fileName, float approxDz, Simbox *simbox = NULL);
+  void           writeWaveletToFile(const std::string & fileName, float approxDz);
   void           write1DWLas3DWL();
   void           write3DWLfrom1DWL();
   void           multiplyRAmpByConstant(float c);

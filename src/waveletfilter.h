@@ -25,7 +25,8 @@ public:
   const bool              hasHalpha() const {return hasHalpha_;}  
 
 private:
-  
+  void                    createGrid();
+
   Surface                 alpha1_;
   Surface                 Halpha_;
   Surface                 beta1_;

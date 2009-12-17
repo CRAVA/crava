@@ -67,7 +67,7 @@ public:
   FFTGrid      * getAmpCube()                                             {return &ampCube_;}
   void           multiplyByR(float p);
 
-  void           writeWaveletToFile(const std::string & fileName, float, Simbox *simbox);
+  void           writeWaveletToFile(const std::string & fileName, float approxDzIn);
   void           printToFile(const std::string & filename, bool overrideDebug = false);
   
 private:

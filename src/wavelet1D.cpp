@@ -370,15 +370,12 @@ Wavelet1D::Wavelet1D(const std::string & fileName,
                      char              * errText)
   : Wavelet(modelSettings, 1, reflCoef)
 {
-  switch (fileFormat)
-  {
+  switch (fileFormat) {
   case OLD: WaveletReadOld(fileName, errCode, errText);
     break;
   case JASON: WaveletReadJason(fileName, errCode, errText);
     break;
   }
-
- 
   
   if(errCode == 0) {
     for(int i=0; i < rnzp_ ;i++)
@@ -470,13 +467,13 @@ Wavelet1D::Wavelet1D(Wavelet                  * wavelet,
                      const std::vector<float> & wlest)
   : Wavelet(modelSettings, 1, reflCoef)
 {
-  inFFTorder_ = true;
   theta_      = wavelet->getTheta();
   readtype_   = wavelet->getReadtype();
   dz_         = wavelet->getDz();
   nz_         = wavelet->getNz();
   nzp_        = wavelet->getNzp();
   cz_         = wavelet->getCz();
+  inFFTorder_ = true;
   norm_       = wavelet->getNorm();
 
   cnzp_ = nzp_/2+1;
@@ -494,9 +491,6 @@ Wavelet1D::Wavelet1D(Wavelet                  * wavelet,
 Wavelet1D::Wavelet1D(int difftype, int nz, int nzp)
   : Wavelet(1)
 {
-  
-  shiftGrid_  = NULL;  
-  gainGrid_   = NULL; 
   theta_      = RMISSING;
   dz_         = RMISSING;
   nz_         = nz;
@@ -1215,7 +1209,7 @@ Wavelet1D::printToFile(const std::string & fileName, bool overrideDebug)
 }
 
 void
-Wavelet1D::writeWaveletToFile(const std::string & fileName, float approxDzIn, Simbox *)
+Wavelet1D::writeWaveletToFile(const std::string & fileName, float approxDzIn)
 {
   int i;
   float approxDz;

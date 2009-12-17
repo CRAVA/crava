@@ -186,28 +186,26 @@ Wavelet3D::Wavelet3D(const std::string            & filterFile,
                   float u = static_cast<float> (zPosTrace[t] - zPosWell[tau] - az[tau]*(xTr*dx_) - bz[tau]*(yTr*dy_));
                   if (hasHalpha) {
                     for (int i=0; i<nWl; i++) {
-                      float v = u - static_cast<float>(i - nhalfWl);
+                      float v = u - static_cast<float>((i - nhalfWl)*dz_);
                       float h = Halpha[tau-start];
                       lambda[tau-start][i] = static_cast<float> (h / (PI *(h*h + v*v)));
                     }
                   }
                   else {
-                    if (u >= 0.0 && u < static_cast<float> (nhalfWl)) { 
-                      int tLow  = static_cast<int> (floor(u / dz_));
-                      int tHigh = tLow + 1;
-                      float lambdaValue = u - static_cast<float> (tLow * dz_);
+                    int tLow  = static_cast<int> (floor(u / dz_));
+                    int tHigh = tLow + 1;
+                    float lambdaValue = u - static_cast<float> (tLow * dz_);
+                    if (u >= 0.0 && tLow <= nhalfWl) { 
                       lambda[tau-start][tLow]   = 1 -lambdaValue;
                       lambda[tau-start][tHigh]  = lambdaValue; 
                     }
-                    else if (u < 0.0 && -u < static_cast<float> (nhalfWl)) {
-                      int tLow  = static_cast<int> (floor(u / dz_));
-                      int tHigh = tLow + 1;
-                      float lambdaValue = u - static_cast<float> (tLow * dz_);
-                      lambda[tau-start][tLow+nWl] = 1 -lambdaValue;
+                    else if (u < 0.0 && -tHigh <= nhalfWl) {
                       if (tHigh < 0)
                         lambda[tau-start][tHigh+nWl] = lambdaValue;
                       else
                         lambda[tau-start][0] = lambdaValue;
+                      if (tLow >= -nhalfWl)
+                        lambda[tau-start][tLow+nWl] = 1 - lambdaValue;
                     }
                   }
                 }
@@ -226,6 +224,16 @@ Wavelet3D::Wavelet3D(const std::string            & filterFile,
             }
           }
         }
+
+        std::ofstream gMatFile;
+        NRLib::OpenWrite(gMatFile, "gMat.dat");
+        for (int i=0; i<nPoints; i++) {
+          gMatFile << "gMat[" << std::setw(2) << i << "]: ";
+          for (int j=0; j<nWl; j++)
+            gMatFile << std::setprecision(4) << std::setw(10) << gMat[i][j];
+          gMatFile << std::endl;
+        }
+        gMatFile.close();
 
         double **gTrg = new double *[nWl];
         for (int i=0; i<nWl; i++) {
@@ -319,7 +327,6 @@ Wavelet3D::Wavelet3D(Wavelet1D           * wavelet1D,
   ampCube_.setType(FFTGrid::COVARIANCE);
   ampCube_.setAccessMode(FFTGrid::RANDOMACCESS);
 
-  int cnxp = nxp_/2+1;
   int i, j, k;
   float kx, ky, kz;
   float radius, alpha1, hAlpha, alpha2, omega;
@@ -333,7 +340,7 @@ Wavelet3D::Wavelet3D(Wavelet1D           * wavelet1D,
     kz = static_cast<float> (k / dz_);
     for (j=0; j<=nyp_/2; j++) {
       ky = static_cast<float> (j / dy_);
-      for (i=0; i<cnxp; i++) {
+      for (i=0; i<=nxp_/2; i++) {
         kx = static_cast<float> (i / dx_);
         radius = sqrt(kx*kx + ky*ky + kz*kz);
         phi = findPhi(kx, ky);
@@ -349,7 +356,7 @@ Wavelet3D::Wavelet3D(Wavelet1D           * wavelet1D,
     }
     for (j=(nyp_/2)+1; j<nyp_; j++) {
       ky = static_cast<float> ((j-nyp_) / dy_);
-      for (i=0; i<cnxp; i++) {
+      for (i=0; i<=nxp_/2; i++) {
         kx = static_cast<float> (i / dx_);
         radius = sqrt(kx*kx + ky*ky + kz*kz);
         phi = findPhi(kx, ky);
@@ -368,7 +375,7 @@ Wavelet3D::Wavelet3D(Wavelet1D           * wavelet1D,
     kz = static_cast<float> ((nzp_-k) / dz_);
     for (j=0; j<=nyp_/2; j++) {
       ky = static_cast<float> (j / dy_);
-      for (i=0; i<cnxp; i++) {
+      for (i=0; i<=nxp_/2; i++) {
         kx = static_cast<float> (i / dx_);
         radius = sqrt(kx*kx + ky*ky + kz*kz);
         phi = findPhi(kx, ky);
@@ -384,7 +391,7 @@ Wavelet3D::Wavelet3D(Wavelet1D           * wavelet1D,
     }
     for (j=(nyp_/2)+1; j<nyp_; j++) {
       ky = static_cast<float> ((nyp_-j) / dy_);
-      for (i=0; i<cnxp; i++) {
+      for (i=0; i<=nxp_/2; i++) {
         kx = static_cast<float> (i / dx_);
         radius = sqrt(kx*kx + ky*ky + kz*kz);
         phi = findPhi(kx, ky);
@@ -399,7 +406,9 @@ Wavelet3D::Wavelet3D(Wavelet1D           * wavelet1D,
       }
     }
   }
-
+  invFFT1DInPlace();
+  wavelet1D_->invFFT1DInPlace();
+/*
   FFTGrid *shiftAmp = new FFTGrid(nx_, ny_, nz_, nx_, ny_, nz_);
   shiftAmp->fillInConstant(0.0);
   shiftAmp->setType(FFTGrid::DATA);
@@ -412,20 +421,21 @@ Wavelet3D::Wavelet3D(Wavelet1D           * wavelet1D,
 
   headerFile << "NORSAR General Grid Format v1.0\n";
   headerFile << "3\n";
-  headerFile << "kx (1/m)\n";
-  headerFile << "ky (1/m)\n";
-  headerFile << "kz (1/m)\n";
+  headerFile << "x (km)\n";
+  headerFile << "y (km)\n";
+  headerFile << "z (km)\n";
   headerFile << "FFT-grid\n";
   headerFile << "1\n";
   headerFile << "3D-wavelet" << std::endl;
   headerFile << "1 1 1\n";
   headerFile << nx_ << " " << ny_ << " " << nz_ << std::endl;
   headerFile << std::setprecision(10);
-  headerFile << 1/dx_ << " " << 1/dy_ << " " << 1/dz_ << std::endl;
-//  double x0 = simbox->getx0() + 0.5 * simbox->getdx();
-//  double y0 = simbox->gety0() + 0.5 * simbox->getdy();
-//  double z0 = zMin + 0.5 * dz;
-  headerFile << "0.0 0.0 0.0\n";
+  headerFile << dx_*0.001 << " " << dy_*0.001 << " " << dz_*0.001 << std::endl;
+  double x0 = 0.001 * (simBox->getx0() + 0.5 * dx_ * nx_);
+  double y0 = 0.001 * (simBox->gety0() + 0.5 * dy_ * ny_);
+  double z0 = 0.001 * (simBox->GetZMin(0,0) + 0.5 * dz_ * nz_);
+//  headerFile << "0.0 0.0 0.0\n";
+  headerFile << x0 << " " << y0 << " " << z0 << std::endl;
   headerFile << "0.0\n";
   headerFile << RMISSING << std::endl;
   headerFile << "WL_as_shiftedFFTGrid.Sgri\n";
@@ -445,6 +455,7 @@ Wavelet3D::Wavelet3D(Wavelet1D           * wavelet1D,
 #endif
       }
   binFile.close();
+  */
 }
 
 
@@ -788,10 +799,11 @@ Wavelet3D::printToFile(const std::string & fileName, bool overrideDebug)
 }
 
 void
-Wavelet3D::writeWaveletToFile(const std::string & fileName, float, Simbox *simbox)
+Wavelet3D::writeWaveletToFile(const std::string & fileName, float approxDzIn)
 {
   LogKit::LogFormatted(LogKit::MEDIUM,"  Writing 3D-Wavelet to file. \n");
-  ampCube_.writeFile(fileName, IO::PathToWavelets(), simbox, "", false);
+  wavelet1D_->writeWaveletToFile(fileName, approxDzIn);
+//  ampCube_.writeFile(fileName, IO::PathToWavelets(), simbox, "", false);
 }
 
 void

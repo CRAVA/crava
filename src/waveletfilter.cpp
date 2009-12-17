@@ -13,6 +13,7 @@ WaveletFilter::WaveletFilter(const std::string & /*fileName*/,
  : hasHalpha_(false)
 {
 //  readFile(fileName, errCode, errText);
+  createGrid();
 }
 
 WaveletFilter::~WaveletFilter(void)
@@ -40,3 +41,10 @@ bool WaveletFilter::readFile(const std::string & fileName,
   return(true);
 }
 
+void WaveletFilter::createGrid()
+{
+  alpha1_ = NRLib::RegularSurface<double>(0,0,2*PI,0.5*PI,360,90,0.0);
+  for (unsigned int i = 0; i<360; i++)
+    for (unsigned int j = 0; j <= 45; j++)
+      alpha1_(i,j) = 1.0;
+}

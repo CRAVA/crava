@@ -36,12 +36,16 @@
 #include "src/io.h"
 
 Wavelet::Wavelet(int dim)
-  : dim_(dim)
+  : shiftGrid_(NULL),
+    gainGrid_(NULL),
+    dim_(dim)
 {
 }
 
 Wavelet::Wavelet(int dim, float * reflCoef)
-  : dim_(dim)
+  : shiftGrid_(NULL),
+    gainGrid_(NULL),
+    dim_(dim)
 {
   coeff_[0] = reflCoef[0];
   coeff_[1] = reflCoef[1];
@@ -49,26 +53,25 @@ Wavelet::Wavelet(int dim, float * reflCoef)
 }
 
 Wavelet::Wavelet(ModelSettings * modelSettings, int dim, float * reflCoef)
-  : dim_(dim)
+  : inFFTorder_(false),
+    isReal_(true),
+    maxShift_(modelSettings->getMaxWaveletShift()),
+    minRelativeAmp_(modelSettings->getMinRelWaveletAmp()),
+    scale_(1),
+    shiftGrid_(NULL),
+    gainGrid_(NULL),
+    dim_(dim)
 {
-  maxShift_       = modelSettings->getMaxWaveletShift();
-  minRelativeAmp_ = modelSettings->getMinRelWaveletAmp();
   coeff_[0]       = reflCoef[0];
   coeff_[1]       = reflCoef[1];
   coeff_[2]       = reflCoef[2];
-  isReal_         = true;
-  inFFTorder_     = false;
-  scale_          = 1; 
- 
-  shiftGrid_      = NULL;  
-  gainGrid_       = NULL; 
 }
 
 Wavelet::Wavelet(Wavelet * wavelet, int dim)
-  : dim_(dim)
+  : shiftGrid_(NULL),
+    gainGrid_(NULL),
+    dim_(dim)
 {
-  shiftGrid_ = NULL;  
-  gainGrid_  = NULL; 
   if(! wavelet->getIsReal() ) wavelet->invFFT1DInPlace();
   theta_     = wavelet->theta_;
   dz_        = wavelet->dz_;

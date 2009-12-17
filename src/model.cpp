@@ -304,7 +304,7 @@ Model::Model(char * fileName)
                               modelSettings_, inputFiles, errText, failedWavelet);
             }
           }
-          if(failedWavelet == false && failedReflMat == false &&
+          if(failedSeismic == false && failedWavelet == false && failedReflMat == false &&
             (modelSettings_->getOptimizeWellLocation() || modelSettings_->getEstimateWaveletNoise() ))
           {
             getSyntheticSeismic(wavelet_, wells_, reflectionMatrix_,
@@ -524,6 +524,11 @@ Model::checkAvailableMemory(Simbox        * timeSimbox,
   int nGridBackground  = 3;                                      // Vp + Vs + Rho
   int nGridCovariances = 6;                                      // Covariances
   int nGridSeismicData = modelSettings->getNumberOfAngles();     // One for each angle stack
+  int nGridWavelet     = 0;
+  for (int i=0; i<modelSettings->getNumberOfAngles(); i++)
+    if (modelSettings->getWaveletDim(i) == Wavelet::THREE_D)
+      nGridWavelet++;
+
   int nGridFacies      = modelSettings->getNumberOfFacies() + 1; // One for each facies + one for undef  
  // int nGridHistograms  = modelSettings->getNumberOfFacies();     // One histogram for each facies
   int nGridHistograms = 0; // Should be counted in another way
@@ -535,7 +540,7 @@ Model::checkAvailableMemory(Simbox        * timeSimbox,
   if (modelSettings->getFileGrid())  // Use disk buffering
       nGrids = nGridFileMode;
   else
-    nGrids = nGridParameters + nGridSeismicData;
+    nGrids = nGridParameters + nGridSeismicData + nGridWavelet;
   }
   else {
     if (modelSettings->getFileGrid()) { // Use disk buffering
@@ -1085,7 +1090,6 @@ Model::setSimboxSurfaces(Simbox                        *& simbox,
                          int                            & error)
 {
   const std::string & topName  = surfFile[0]; 
-  const std::string & baseName = surfFile[1]; 
 
   Surface * z0Grid = NULL;
   Surface * z1Grid = NULL;
@@ -1116,6 +1120,7 @@ Model::setSimboxSurfaces(Simbox                        *& simbox,
       simbox->setDepth(z0Grid, dTop, lz, dz);
     }
     else {
+      const std::string & baseName = surfFile[1]; 
       try {
         if (NRLib::IsNumber(baseName)) {
           // Find the smallest surface that covers the simbox. For simplicity 
@@ -1881,9 +1886,8 @@ void Model::getSyntheticSeismic(Wavelet      ** wavelet,
 
   for( i=0; i<nWells; i++ )
   {
-    if( wells[i]->isDeviated() == true )
-      continue;
-    wells[i]->getBlockedLogsOrigThick()->generateSyntheticSeismic(reflectionMatrix,nAngles,wavelet,timeSimbox,nzp);
+    if( wells[i]->isDeviated() == false )
+      wells[i]->getBlockedLogsOrigThick()->generateSyntheticSeismic(reflectionMatrix,nAngles,wavelet,timeSimbox,nzp);
   }
 }
 
@@ -2748,7 +2752,6 @@ Model::processWavelets(Wavelet                    **& wavelet,
                                        angle,
                                        error,
                                        errText);
-  
         }
       }
     }
@@ -2785,7 +2788,7 @@ Model::processWavelets(Wavelet                    **& wavelet,
           (modelSettings->getEstimationMode() == true && 
           modelSettings->getEstimateWavelet(i) == true))
         {
-          wavelet[i]->writeWaveletToFile(IO::PrefixWavelet()+"Scaled", 1.0, timeSimbox); // dt_max = 1.0;
+          wavelet[i]->writeWaveletToFile(IO::PrefixWavelet()+"Scaled", 1.0); // dt_max = 1.0;
         }
         
         float SNRatio = modelSettings->getSNRatio(i);
@@ -3522,7 +3525,7 @@ Model::printSettings(ModelSettings * modelSettings,
   LogKit::LogFormatted(LogKit::LOW,"\nTime surfaces:\n");
   if (modelSettings->getParallelTimeSurfaces())
   {
-    LogKit::LogFormatted(LogKit::LOW,"  Surface                                  : %s\n",     inputFiles->getTimeSurfFile(1).c_str());
+    LogKit::LogFormatted(LogKit::LOW,"  Surface                                  : %s\n",     inputFiles->getTimeSurfFile(0).c_str());
     LogKit::LogFormatted(LogKit::LOW,"  Shift to top surface                     : %10.1f\n", modelSettings->getTimeDTop());
     LogKit::LogFormatted(LogKit::LOW,"  Time slice                               : %10.1f\n", modelSettings->getTimeLz());
     LogKit::LogFormatted(LogKit::LOW,"  Sampling density                         : %10.1f\n", modelSettings->getTimeDz());
