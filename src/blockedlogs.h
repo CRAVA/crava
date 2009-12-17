@@ -81,6 +81,23 @@ public:
                                          int                        & jMove,
                                          float                      & kMove);
   void           generateSyntheticSeismic(float ** reflCoef, int nAngles, Wavelet ** wavelet, int nz, int nzp);
+  void           findSeismicGradient(FFTGrid                  * seisCube,
+                                     Simbox                   * timeSimbox,
+                                     std::vector<double>       & xGradient,
+                                     std::vector<double>       & yGradient);
+
+  void           smoothTrace(std::vector<float> &trace);
+  void           findPeakTrace(std::vector<float> &trace, std::vector<double> &zPeak, std::vector<double> &peak,
+                                std::vector<double> &b, double dz, double ztop);
+  void           peakMatch(std::vector<double> &zPeak, std::vector<double> &peak, std::vector<double> &b,
+                                std::vector<double> &zPeakW, std::vector<double> &peakW, std::vector<double> &bW);
+
+
+  double          computeShift(std::vector<double> &zPeak, std::vector<double> &zPeakW,double z0);
+
+  void           computeGradient(std::vector<double> &xGradient, std::vector<double> &yGradient, 
+                                  std::vector<double> &zShift, int nx, int ny, double dx, double dy);
+
 
 private:
   void           setLogFromVerticalTrend(float *& log, double * zpos, int nBlocks, 

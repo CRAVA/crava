@@ -835,6 +835,14 @@ FFTGrid::getRealTrace(int i, int j)
 
 }
 
+std::vector<float>   
+FFTGrid::getRealTrace2(int i, int j)
+{
+  std::vector<float> value;
+  for(int k = 0; k < nz_; k++)
+    value.push_back(getRealValue(i,j,k));
+  return value;
+}
 
 float        
 FFTGrid::getRealValueCyclic(int i, int j, int k)

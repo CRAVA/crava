@@ -1581,6 +1581,291 @@ void BlockedLogs::findOptimalWellLocation(FFTGrid                   ** seisCube,
 }
 
 
+
+
+
+
+void BlockedLogs::findSeismicGradient(FFTGrid                  * seisCube,
+                                      Simbox                   * timeSimbox,
+                                      std::vector<double>       & xGradient,
+                                      std::vector<double>       & yGradient)
+{
+  int i, j, k;
+  int xEx = 5;
+  int yEx = 5;
+  
+  std::vector<float> seisTrace;
+  std::vector<double> zShift(int(xEx*yEx*nBlocks_));
+  
+  //seismic peak position and characteristics in well
+  std::vector<double> zPeakWell;
+  std::vector<double> peakWell;
+  std::vector<double> bWell;
+  
+  //seismic peak position and characterisitics in trace
+  std::vector<double> zPeak;
+  std::vector<double> peak;
+  std::vector<double> b;
+  
+  int i0 = ipos_[0];
+  int j0 = jpos_[0];
+
+  double dz, ztop, dzW, ztopW;
+ 
+  for(j = -2; j <= 2; j++){
+    for(i = -2; i <= 2; i++){
+      //NBNB Marita legg til sjekker som ser at vi er innenfor FFT griddet
+      //NBNB Marita flytt brønn på kantene for å få konstant antall traces i zShift (25 traser)
+      seisTrace = seisCube->getRealTrace2(i0, j0);
+      smoothTrace(seisTrace);
+      dzW =  timeSimbox->getdz(i0,j0);
+      ztopW =  timeSimbox->getTop(i0,j0);
+      findPeakTrace(seisTrace, zPeakWell, peakWell, bWell, dzW, ztopW);
+
+      seisTrace = seisCube->getRealTrace2(i0+i, j0+j);
+      smoothTrace(seisTrace);
+      dz =  timeSimbox->getdz(i0+i, j0+j);
+      ztop =  timeSimbox->getTop(i0+i, j0+j);
+      findPeakTrace(seisTrace, zPeak, peak, b, dz, ztop);
+
+      peakMatch(zPeak,peak,b,zPeakWell,peakWell,bWell);//Finds the matching peaks in two traces
+    
+      zShift[(i+2) + (j+2)*xEx] = computeShift(zPeak,zPeakWell,zpos_[0]);
+      for(k = 1; k < nBlocks_; k++){
+        //Check if well changes lateral position
+        if((ipos_[k]- ipos_[k-1] == 0) && (jpos_[k] - jpos_[k-1] == 0))
+          zShift[(i+2) + (j+2)*xEx + k*(xEx*yEx)] = computeShift(zPeak,zPeakWell,zpos_[k]);
+        else{
+          //well has changed lateral position and we adapt to the new well position
+          seisTrace = seisCube->getRealTrace2(ipos_[k],jpos_[k]);
+          smoothTrace(seisTrace);
+          dzW = timeSimbox->getdz(ipos_[k],jpos_[k]);
+          ztopW = timeSimbox->getTop(ipos_[k],jpos_[k]);
+          findPeakTrace(seisTrace, zPeakWell, peakWell, bWell, dzW, ztopW);
+  
+          seisTrace = seisCube->getRealTrace2(ipos_[k]+i, jpos_[k]+j);
+          smoothTrace(seisTrace);
+          dz = timeSimbox->getdz(ipos_[k]+i, jpos_[k]+j);
+          ztop = timeSimbox->getTop(ipos_[k]+i, jpos_[k]+j);
+          findPeakTrace(seisTrace, zPeak, peak, b, dz, ztop);
+  
+          peakMatch(zPeak,peak,b,zPeakWell,peakWell,bWell);
+
+          zShift[(i+2) + (j+2)*xEx + k*(xEx*yEx)] = computeShift(zPeak, zPeakWell, zpos_[k]);
+        }
+      }
+    }
+  }
+    
+  double dx = timeSimbox->getdx();
+  double dy = timeSimbox->getdy();
+  computeGradient(xGradient, yGradient, zShift, xEx, yEx, dx, dy);
+
+}
+
+void BlockedLogs::smoothTrace(std::vector<float> &trace)
+{
+  int  L = 8; //number of lags in the gauss kernel
+  float sigma = 3; //smoothing parameter
+
+  std::vector<float> gk;
+  std::vector<float> sTrace(trace.size());
+  unsigned int i;
+  int j;
+  float tmp;
+  for(j = -L; j <= L; j++){
+    tmp = pow(static_cast<float>(j),2)/(2*pow(sigma,2));
+    gk.push_back(exp(-tmp));
+  }
+ 
+  float N;
+  for(i = 0; i < trace.size(); i++){
+    N = 0;
+    for(j = -L; j <= L; j++){
+      if(i+j >= 0 && i+j < trace.size()){
+        sTrace[i] += gk[j+L]*trace[i+j];
+        N += gk[j+L];
+      }
+    }
+    sTrace[i] /= N;
+  }
+
+  for(i = 0; i < trace.size(); i++)
+    trace[i] = sTrace[i];
+}
+
+
+
+void BlockedLogs::findPeakTrace(std::vector<float> &trace, std::vector<double> &zPeak, std::vector<double> &peak,
+                                std::vector<double> &b, double dz, double ztop)
+{
+  int k;
+  double x1, x2, x3, y1, y2, y3, y11, y12, y21;
+  int N = static_cast<int>(trace.size());
+  zPeak.clear(); peak.clear(); b.clear();
+  
+
+  double a;
+  double c;
+  for(k = 1; k < N-1; k++){
+    if((trace[k] >= trace[k-1] && trace[k] > trace[k+1]) || (trace[k] <= trace[k-1] && trace[k] < trace[k+1])){
+      //Data point for interpolation
+      x1 = -dz; x2 = 0; x3 = dz;
+      y1 = static_cast<double>(trace[k-1]); y2 = static_cast<double>(trace[k]); y3 = static_cast<double>(trace[k+1]);
+      
+      //Newton interpolation method
+      y11 = (y2 - y1) / (x2 - x1); y12 = (y3 - y2) / (x3 - x2);
+      y21 = (y12 - y11) / (x3 - x1);
+      
+      //y = ax + bx^2 + c
+      c = y1 - y11*x1 + y21*x1*x2;
+      a = y11 - y21*x1 - y21*x2;
+      b.push_back(y21);
+      //zPeak = -a/2b
+      
+      zPeak.push_back( - a/(2.0*b.back()));
+      
+      double tmp = a*zPeak.back() + b.back()*zPeak.back()*zPeak.back() + c;
+      peak.push_back(tmp);
+      //Transform back to original z-axis
+      zPeak.back() += ztop + k*dz;
+      
+    }
+  }
+  
+}
+
+
+void BlockedLogs::peakMatch(std::vector<double> &zPeak, std::vector<double> &peak, std::vector<double> &b,
+                                std::vector<double> &zPeakW, std::vector<double> &peakW, std::vector<double> &bW)
+{
+  //This routine matches the peaks from two traces and returns the set of peak positions that matches.
+  unsigned int i, j;
+  std::vector<double> pW;
+  std::vector<double> p;
+  
+  double diffz;
+  
+  
+  double maxdiffz = 20; //matching criteria: Peaks must be no longer that 5 cells apart. NBNB marita legge inn sfa. lateral distanse
+  double diffp = 0.25; //matcing the size of the peaks
+
+  unsigned int lim = 0;
+  for(i = 0; i < zPeakW.size(); i++){
+    for(j = lim; j < zPeak.size(); j++){
+      diffz = abs(zPeakW[i] - zPeak[j]); 
+      if(diffz < maxdiffz){
+        //Check if the peaks point in the same direction
+        if((bW[i] < 0 && b[j] < 0)||(bW[i] >= 0 && b[j] >= 0)){
+          // Check for difference in peak size
+          if(abs(peakW[i] - peak[j])/(abs(peakW[i]) + abs(peak[j])) < diffp){
+            pW.push_back(zPeakW[i]);
+            p.push_back(zPeak[j]);
+            lim = j + 1;
+          }
+        }
+      }
+    }
+  }
+  zPeakW.clear(); zPeak.clear();
+  for(i = 0; i < p.size(); i++){
+    zPeakW.push_back(pW[i]);
+    zPeak.push_back(p[i]);
+  }
+   
+}
+
+
+double BlockedLogs::computeShift(std::vector<double> &zPeak, std::vector<double> &zPeakW, double z0)
+{
+  //This routine computes the position of z0 between two peaks in the well and finds the corresponding distance in
+  //the other trace. Then zShift is the difference in z between the two.
+  unsigned int i;
+  int pos = 0;
+  double zShift;
+  if(z0 < zPeakW[0])
+    zShift = zPeakW[0] - zPeak[0];
+  else if(z0 >= zPeakW.back())
+    zShift = zPeakW.back() - zPeak.back();
+  else{
+    for(i = 0; i < zPeakW.size()-1; i++){
+      if(z0 >= zPeakW[i] && z0 < zPeakW[i+1]){
+         pos = i;
+         i = zPeakW.size();
+      }
+    }
+    zShift = z0 - (zPeak[pos] + (z0 - zPeakW[pos])/(zPeakW[pos+1]-zPeakW[pos])*(zPeak[pos+1]-zPeak[pos]));
+  }
+      
+  return zShift;
+
+}   
+
+
+void BlockedLogs::computeGradient(std::vector<double> &xGradient, std::vector<double> &yGradient, 
+                                  std::vector<double> &zShift, int nx, int ny, double dx, double dy)
+{
+
+  //This fit the model zshift(x,y)= beta0 + beta1*x + beta2*y  ==> beta1 is x-gradient and beta2 is y-gradient
+  int i, j, k;
+  std::vector<double> Y;
+  //Initializing the design matrix 
+  std::vector<double> Z;
+   for(j = 0; j < ny;  j++){
+    for(i = 0; i < nx; i++){
+      Z.push_back(1.0);
+      Z.push_back((i-2)*dx);
+      Z.push_back((j-2)*dy);
+    }
+  }
+  //Compute inverse covariance (ZtZ)^-1 (diagonal matrix for our purpose)
+  std::vector<double> invcov;
+  double tmp;
+  for(j = 0; j < 3; j++){
+    for(i = 0; i < 3; i++){
+      tmp = 0;
+      for(k = 0; k < 25; k++)
+        tmp += Z[i + 3*k] * Z[j + 3*k];
+      if(tmp != 0)
+        invcov.push_back(1.0/tmp);
+      else
+        invcov.push_back(0.0);
+    }  
+  }
+ 
+  //Compute regression matrix (ZtZ)^-1Zt
+  std::vector<double> regM;
+  for(j = 0; j < 3; j++){
+    for(i = 0; i < 25; i++){
+      tmp = 0;
+      for(k = 0; k < 3; k++)
+        tmp += invcov[k + 3*j]*Z[i + 25*k];
+      regM.push_back(tmp);
+    }
+  }
+
+  //Do multivariate regresseion for each block k
+  for(k = 0; k < nBlocks_; k++){
+    Y.clear();
+    for(j = 0; j < ny; j++){
+      for(i = 0; i < nx; i++){
+        Y.push_back(zShift[i + j*nx + k*nx*ny]);
+      }
+    }
+    //Compute beta_1(gradientx) og beta_2(gradienty), beta_0 not necessary
+    double beta1 = 0;
+    double beta2 = 0;
+    for(j = 0; j < 25; j++){
+      beta1 += regM[j + 25]*Y[j];
+      beta2 += regM[j + 50]*Y[j];
+    }
+    xGradient.push_back(beta1);
+    yGradient.push_back(beta2);        
+  }
+
+}
+
+
 void BlockedLogs::generateSyntheticSeismic(float   ** reflCoef,
                                            int        nAngles,
                                            Wavelet ** wavelet,

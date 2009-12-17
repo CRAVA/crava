@@ -127,6 +127,9 @@ public:
   float                getDistToBoundary(int i, int n , int np); 
   virtual float       *getRealTrace(int i, int j);
   virtual int          setRealTrace(int i, int j, float *value);
+  std::vector<float>   getRealTrace2(int i, int j);
+
+
 protected:
   //int                setPaddingSize(int n, float p); 
   int                  getFillNumber(int i, int n, int np );
