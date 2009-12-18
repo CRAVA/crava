@@ -135,10 +135,10 @@ int main(int argc, char** argv)
   delete model;
 
   if (FFTGrid::getMaxAllowedGrids() > FFTGrid::getMaxAllocatedGrids()) {
-    LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: A memory requirement inconsistency has been detected:"); 
-    LogKit::LogFormatted(LogKit::WARNING,"\n            Maximum number of grids requested  :  %2d",FFTGrid::getMaxAllowedGrids()); 
-    LogKit::LogFormatted(LogKit::WARNING,"\n            Maximum number of grids allocated  :  %2d",FFTGrid::getMaxAllocatedGrids()); 
-    LogKit::LogFormatted(LogKit::WARNING,"\n         Consult method Model::checkAvailableMemory().\n"); 
+    LogKit::LogFormatted(LogKit::DEBUGLOW,"\nWARNING: A memory requirement inconsistency has been detected:"); 
+    LogKit::LogFormatted(LogKit::DEBUGLOW,"\n            Maximum number of grids requested  :  %2d",FFTGrid::getMaxAllowedGrids()); 
+    LogKit::LogFormatted(LogKit::DEBUGLOW,"\n            Maximum number of grids allocated  :  %2d",FFTGrid::getMaxAllocatedGrids()); 
+    LogKit::LogFormatted(LogKit::DEBUGLOW,"\n         Consult method Model::checkAvailableMemory().\n"); 
   }
 
   Timings::setTimeTotal(wall,cpu);

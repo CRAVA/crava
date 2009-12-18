@@ -518,8 +518,8 @@ WellData::readNorsarWell(const std::string              & wellFileName,
       rho_      = new float[nd_];
       facies_   = new int[nd_];   // Always allocate a facies log (for code simplicity)
       for(int i=0;i<nd_;i++) {
-        xpos_[i]  = (*logs[0])[i]; //*1000;
-        ypos_[i]  = (*logs[1])[i]; //*1000;
+        xpos_[i]  = (*logs[0])[i]*1000;
+        ypos_[i]  = (*logs[1])[i]*1000;
         zpos_[i]  = (*logs[2])[i]*1000;
         if(!well.IsMissing((*logs[3])[i]))
           alpha_[i] = static_cast<float>((*logs[3])[i]);
