@@ -113,9 +113,7 @@ int main(int argc, char** argv)
       // Temporary placement.  crava.cpp needs a proper restructuring.
       //
       if((model->getModelSettings()->getWellOutputFlag() & IO::BLOCKED_WELLS) > 0) {
-        WellData ** wells = model->getWells();
-        for (int i=0 ; i<model->getModelSettings()->getNumberOfWells() ; i++)
-          wells[i]->getBlockedLogsOrigThick()->writeWell(model->getModelSettings());
+        model->writeBlockedWells(model->getWells(),model->getModelSettings());
       }
       if((model->getModelSettings()->getWellOutputFlag() & IO::BLOCKED_LOGS) > 0) {
         LogKit::LogFormatted(LogKit::LOW,"\nWARNING: Writing of BLOCKED_LOGS is not implemented yet.\n");

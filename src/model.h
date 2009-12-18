@@ -61,6 +61,9 @@ public:
                                               int nyp, 
                                               int nzp, 
                                               bool fileGrid);
+
+  void                          writeBlockedWells(WellData ** wells, ModelSettings * modelSettings);
+
 private:
   void             makeTimeSimboxes(Simbox        *& timeSimbox,
                                     Simbox        *& timeCutSimbox,
@@ -109,7 +112,6 @@ private:
                                             ModelSettings * modelSettings) const;
 
   void             writeWells(WellData ** wells, ModelSettings * modelSettings);
-
 
   void             processBackground(Background   *& background, 
                                      WellData     ** wells,

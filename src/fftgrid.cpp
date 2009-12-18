@@ -205,21 +205,22 @@ FFTGrid::fillInFromSegY(SegY* segy, Simbox *simbox)
 void
 FFTGrid::fillInFromStorm(Simbox            * actSimBox,
                          StormContGrid     * grid, 
-                         const std::string & parName, bool isStorm)
+                         const std::string & parName, 
+                         bool                scale)
 {
   assert(cubetype_ != CTMISSING);
   createRealGrid();
   float scalevert, scalehor;
-  if(isStorm==true)
+  if(scale==false)
   {
     scalevert = 1.0;
     scalehor = 1.0;
   }
   else //from sgri file
   {
-    LogKit::LogFormatted(LogKit::LOW,"Sgri file read. Rescaling z axis from s to ms. \n");
-    scalevert = float(0.001);
-    scalehor = 1.0;
+    LogKit::LogFormatted(LogKit::LOW,"Sgri file read. Rescaling z axis from s to ms, x and y from km to m. \n");
+    scalevert = 0.001f;
+    scalehor  = 0.001f;
   }
   int i,j,k,refi,refj,refk;
   float distx,disty,distz,mult;
@@ -1706,6 +1707,7 @@ int
 FFTGrid::writeSgriFile(const std::string & fileName, const Simbox *simbox, const std::string label)
 {
   double vertScale = 0.001;
+  double horScale  = 0.001;
   std::string fName = fileName + IO::SuffixSgriHeader();
 
   std::ofstream headerFile;
@@ -1734,11 +1736,11 @@ FFTGrid::writeSgriFile(const std::string & fileName, const Simbox *simbox, const
   int nx = simbox->getnx();
   headerFile << nx << " " << ny << " " << nz << std::endl;
   headerFile << std::setprecision(10);
-  headerFile << simbox->getdx() << " " << simbox->getdy() << " " << dz*vertScale << std::endl;
+  headerFile << simbox->getdx()*horScale << " " << simbox->getdy()*horScale << " " << dz*vertScale << std::endl;
   double x0 = simbox->getx0() + 0.5 * simbox->getdx();
   double y0 = simbox->gety0() + 0.5 * simbox->getdy();
   double z0 = zMin + 0.5 * dz;
-  headerFile << x0 << " " << y0 << " " << z0*vertScale << std::endl;
+  headerFile << x0*horScale << " " << y0*horScale << " " << z0*vertScale << std::endl;
   headerFile << simbox->getAngle() << " 0\n";
   headerFile << RMISSING << std::endl;
   

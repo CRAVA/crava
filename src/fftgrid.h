@@ -29,7 +29,7 @@ public:
   void                 fillInFromStorm(Simbox            * actSimBox,
                                        StormContGrid     * grid,
                                        const std::string & parName,
-                                       bool                isStorm = true);    // No mode
+                                       bool                scale = false);    // No mode
   virtual void         fillInFromRealFFTGrid(FFTGrid& fftGrid);  // No mode
   void                 fillInConstant(float value);              // No mode
   fftw_real*           fillInParamCorr(Corr* corr,int minIntFq,

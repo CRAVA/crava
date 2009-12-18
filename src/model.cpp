@@ -338,6 +338,9 @@ Model::Model(char * fileName)
           {
             writeWells(wells_, modelSettings_);
           }
+          if(estimate  == true && (modelSettings_->getEstimateWaveletNoise() == true ||
+                                   (modelSettings_->getWellOutputFlag() & IO::BLOCKED_WELLS) > 0))
+            writeBlockedWells(wells_, modelSettings_);
         }
       }
     }
@@ -748,8 +751,8 @@ Model::readStormFile(const std::string  & fName,
                      Simbox             * timeSimbox, 
                      ModelSettings     *& modelSettings, 
                      std::string        & errText,
-                     bool                 isStorm,
-                     bool                nopadding)
+                     bool                 scale,
+                     bool                 nopadding)
 {
   StormContGrid * stormgrid = NULL;
   bool failed = false;
@@ -802,7 +805,7 @@ Model::readStormFile(const std::string  & fName,
                            modelSettings->getNYpad(), 
                            modelSettings->getNZpad());*/
     target->setType(gridType);
-    target->fillInFromStorm(timeSimbox,stormgrid, parName, isStorm);
+    target->fillInFromStorm(timeSimbox,stormgrid, parName, scale);
   }  
 
   if (stormgrid != NULL)
@@ -1897,6 +1900,13 @@ void Model::writeWells(WellData ** wells, ModelSettings * modelSettings)
     wells[i]->writeWell(modelSettings->getWellFormatFlag());
 }
 
+void Model::writeBlockedWells(WellData ** wells, ModelSettings * modelSettings)
+{
+  int nWells  = modelSettings->getNumberOfWells();
+  for(int i=0;i<nWells;i++)
+    wells[i]->getBlockedLogsOrigThick()->writeWell(modelSettings);
+}
+
 void Model::checkFaciesNames(WellData      ** wells,
                              ModelSettings *& modelSettings,
                              char           * tmpErrText,
@@ -2110,7 +2120,7 @@ Model::readGridFromFile(const std::string       & fileName,
   if(fileType == IO::CRAVA) 
   {
     int xpad, ypad, zpad;
-  if(nopadding==false)
+    if(nopadding==false)
     {
       xpad = modelSettings->getNXpad();
       ypad = modelSettings->getNYpad();
@@ -2141,10 +2151,10 @@ Model::readGridFromFile(const std::string       & fileName,
   }
   else if(fileType == IO::STORM) 
   {
-    readStormFile(fileName, grid, gridType, parName, timeSimbox, modelSettings, errText, true, nopadding);
+    readStormFile(fileName, grid, gridType, parName, timeSimbox, modelSettings, errText, false, nopadding);
   }
   else if(fileType == IO::SGRI)
-    readStormFile(fileName, grid, gridType, parName, timeSimbox, modelSettings, errText, false, nopadding);
+    readStormFile(fileName, grid, gridType, parName, timeSimbox, modelSettings, errText, true, nopadding);
   else 
   {
     errText += "\nReading of file \'"+fileName+"\' for grid type \'"

@@ -1013,7 +1013,7 @@ void
 BlockedLogs::writeNorsarWell(ModelSettings * modelSettings)
 {
   double vertScale = 0.001;
-  double horScale  = 1.0;
+  double horScale  = 0.001;
 
   //Note: At current, only write Vp, Vs and Rho, as others are not supported.
   float maxHz_background = modelSettings->getMaxHzBackground();
@@ -1058,7 +1058,7 @@ BlockedLogs::writeNorsarWell(ModelSettings * modelSettings)
   mainFile << "UTMX       km       " << xpos_[0]*horScale     << "\n";
   mainFile << "UTMY       km       " << ypos_[0]*horScale     << "\n";
   mainFile << "EKB        km       " << 0.0f                  << "\n";
-  mainFile << "UNDEFVAL   no_unit " << WELLMISSING            << "\n\n";
+  mainFile << "UNDEFVAL   no_unit  " << WELLMISSING           << "\n\n";
 
 
   mainFile << "[Well track data information]\n";
