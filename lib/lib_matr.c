@@ -1317,7 +1317,7 @@ void lib_matrDump(const char * fName, double ** mat, int n1, int n2)
   if(dump != NULL) {
     for(i=0;i<n1;i++) {
       for(j=0;j<n2;j++)
-        fprintf(dump, "%lf ", mat[i][j]);
+        fprintf(dump, "%f ", mat[i][j]);
       fprintf(dump,"\n");
     }
     fclose(dump);

@@ -149,8 +149,8 @@ private:
   float        * alpha_;                    ///<
   float        * beta_;                     ///< Raw logs (log-domain)
   float        * rho_;                      ///<
-  float       ** facies_prob_;              ///< Facies probabilities calculated in wells
   int          * facies_;                   ///< Facies numbers using *internal* numbering
+  float       ** facies_prob_;              ///< Facies probabilities calculated in wells
 
   float        * alpha_highcut_background_; ///< 
   float        * beta_highcut_background_;  ///< Logs high-cut filtered to background resolution (log-domain)
