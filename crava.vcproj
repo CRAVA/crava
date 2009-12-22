@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8.00"
+	Version="8,00"
 	Name="crava"
 	ProjectGUID="{7FF3AB5B-854B-46AB-99F6-B59958E1BE91}"
 	RootNamespace="crava"
@@ -209,6 +209,22 @@
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
 			>
 			<File
+				RelativePath=".\nrlib\random\chisquared.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\nrlib\random\distribution.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\nrlib\random\functions.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\nrlib\random\gamma.cpp"
+				>
+			</File>
+			<File
 				RelativePath="main.cpp"
 				>
 				<FileConfiguration
@@ -227,6 +243,40 @@
 						PreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\nrlib\random\mt19937ar.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\nrlib\random\normal.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\nrlib\random\random.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						ObjectFile="$(IntDir)\$(InputName)1.obj"
+						XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						ObjectFile="$(IntDir)\$(InputName)1.obj"
+						XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\nrlib\random\uniform.cpp"
+				>
 			</File>
 			<Filter
 				Name="src"
@@ -3744,10 +3794,6 @@
 					RelativePath="src\welldata.h"
 					>
 				</File>
-				<File
-					RelativePath=".\src\xmlmodelfile.h"
-					>
-				</File>
 			</Filter>
 			<Filter
 				Name="fft No. 1"
@@ -3813,7 +3859,15 @@
 				Name="nrlib"
 				>
 				<File
+					RelativePath=".\nrlib\random\chisquared.hpp"
+					>
+				</File>
+				<File
 					RelativePath=".\nrlib\segy\commonheaders.hpp"
+					>
+				</File>
+				<File
+					RelativePath=".\nrlib\random\distribution.hpp"
 					>
 				</File>
 				<File
@@ -3822,6 +3876,14 @@
 				</File>
 				<File
 					RelativePath=".\nrlib\iotools\fileio.hpp"
+					>
+				</File>
+				<File
+					RelativePath=".\nrlib\random\functions.hpp"
+					>
+				</File>
+				<File
+					RelativePath=".\nrlib\random\gamma.hpp"
 					>
 				</File>
 				<File
@@ -3837,7 +3899,27 @@
 					>
 				</File>
 				<File
+					RelativePath=".\nrlib\random\mt19937_32.hpp"
+					>
+				</File>
+				<File
+					RelativePath=".\nrlib\random\mt19937_64.hpp"
+					>
+				</File>
+				<File
+					RelativePath=".\nrlib\random\mt19937ar.hpp"
+					>
+				</File>
+				<File
+					RelativePath=".\nrlib\random\normal.hpp"
+					>
+				</File>
+				<File
 					RelativePath=".\nrlib\well\norsarwell.hpp"
+					>
+				</File>
+				<File
+					RelativePath=".\nrlib\random\random.hpp"
 					>
 				</File>
 				<File
@@ -3881,11 +3963,19 @@
 					>
 				</File>
 				<File
+					RelativePath=".\nrlib\random\uniform.hpp"
+					>
+				</File>
+				<File
 					RelativePath=".\nrlib\volume\volume.hpp"
 					>
 				</File>
 				<File
 					RelativePath=".\nrlib\well\well.hpp"
+					>
+				</File>
+				<File
+					RelativePath=".\src\xmlmodelfile.h"
 					>
 				</File>
 				<Filter
@@ -3951,6 +4041,10 @@
 			Filter="ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"
 			>
 		</Filter>
+		<File
+			RelativePath=".\nrlib\random\module.mk"
+			>
+		</File>
 	</Files>
 	<Globals>
 	</Globals>

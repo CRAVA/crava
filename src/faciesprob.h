@@ -48,6 +48,18 @@ public:
                                                         const double                   dz);
   void calculateFaciesProbGeomodel(const float *                  priorFacies,
                                     FFTGrid                    ** priorFaciesCubes);
+  
+  void                   calculateChiSquareTest(WellData                    ** wells, 
+                                                int                            nWells, 
+                                                const std::vector<Surface *> & faciesEstimInterval);
+
+  void                   calculateChiSquareAlternativeTest(WellData                    ** wells, 
+                                                           int                            nWells, 
+                                                           const std::vector<Surface *> & faciesEstimInterval,
+                                                           const ModelSettings          * modelSettings);
+
+  void                   writeBWFaciesProb(WellData ** wells, 
+                                           int         nWells);
 
 private:
   int             nFacies_;

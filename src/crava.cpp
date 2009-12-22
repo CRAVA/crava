@@ -1729,6 +1729,9 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs)
       std::string fileName = baseName + model_->getModelSettings()->getFaciesName(i);
       ParameterOutput::writeToFile(simbox_,model_,grid,fileName,"");
     }
+    fprob_->writeBWFaciesProb(wells_, nWells_);
+    fprob_->calculateChiSquareTest(wells_, nWells_, model_->getFaciesEstimInterval());
+
     Timings::setTimeFaciesProb(wall,cpu);
   }
 }

@@ -9,6 +9,7 @@
 #include "lib/random.h"
 #include "lib/kriging1d.h"
 
+#include "nrlib/random/chisquared.hpp"
 #include "nrlib/iotools/logkit.hpp"
 
 #include "src/welldata.h"
@@ -1132,4 +1133,281 @@ void FaciesProb::normalizeCubes(FFTGrid **priorFaciesCubes)
   }
   for(i=0;i<nFacies_;i++)
     priorFaciesCubes[i]->endAccess();
+}
+
+
+void FaciesProb::calculateChiSquareTest(WellData                    ** wells, 
+                                        int                            nWells, 
+                                        const std::vector<Surface *> & faciesEstimInterval)
+{
+  int    i, j, k;
+  int    count;
+  int    df;
+  int    thisFacies = IMISSING;
+  double pValue;
+  double chi_i;
+  double chi;
+
+  std::vector<float>       prob(nFacies_);
+  std::vector<std::string> fit(nWells);
+
+  for (i=0; i<nWells; i++)
+  {
+    BlockedLogs  * bw        = wells[i]->getBlockedLogsOrigThick();
+    const int      nBlocks   = bw->getNumberOfBlocks();
+    const int    * BWfacies  = bw->getFacies();
+    const int    * ipos      = bw->getIpos();
+    const int    * jpos      = bw->getJpos();
+    const int    * kpos      = bw->getKpos();
+    const double   dz        = bw->getDz();
+    const double * xPos      = bw->getXpos();
+    const double * yPos      = bw->getYpos();
+    const double * zPos      = bw->getZpos();
+
+    df    = 0;
+    chi   = 0;
+    count = 0;
+
+    for (j=0; j<nFacies_; j++)
+      prob[j] = 0;
+
+    // Find the first facies in well
+    for (j=0; j<nBlocks; j++)
+    {
+      if(BWfacies[j] != IMISSING)
+      {
+        thisFacies = BWfacies[j];
+        break;
+      }
+    }
+    
+    for (j=0 ; j < nBlocks ; j++) 
+    {
+      if (faciesEstimInterval.size() > 0) 
+      {
+        const double zTop  = faciesEstimInterval[0]->GetZ(xPos[j],yPos[j]);
+        const double zBase = faciesEstimInterval[1]->GetZ(xPos[j],yPos[j]);
+
+        if ( !( (zPos[j]-0.5*dz) < zTop || (zPos[j]+0.5*dz) > zBase || BWfacies[j]==IMISSING) )
+        {
+          if (BWfacies[j] != thisFacies)
+          {
+            chi_i = 0;
+            for (k=0; k<nFacies_; k++)
+            {
+              if (k==thisFacies)
+                chi_i += std::pow(count-prob[k],2)/prob[k];
+              else
+                chi_i += std::pow(0-prob[k],2)/prob[k];
+            }
+            thisFacies = BWfacies[j]; 
+            count = 1;
+            chi  += chi_i;
+            df   += 1;
+            for (k=0; k<nFacies_; k++)
+              prob[k] = faciesProb_[k]->getRealValue(ipos[j],jpos[j],kpos[j]);
+          }
+          else
+          {
+            count += 1;
+            for (k=0; k<nFacies_; k++)
+              prob[k] += faciesProb_[k]->getRealValue(ipos[j],jpos[j],kpos[j]);
+          } 
+        }
+      }
+      else
+      {
+        if (BWfacies[j]!=IMISSING)
+        {
+          if (BWfacies[j] != thisFacies)
+          {
+            chi_i = 0;
+            for (k=0; k<nFacies_; k++)
+            {
+              if (k==thisFacies)
+                chi_i += std::pow(count-prob[k],2)/prob[k];
+              else
+                chi_i += std::pow(0-prob[k],2)/prob[k];
+            }
+            thisFacies = BWfacies[j]; 
+            count = 1;
+            chi  += chi_i;
+            df   += 1;
+            for (k=0; k<nFacies_; k++)
+              prob[k] = faciesProb_[k]->getRealValue(ipos[j],jpos[j],kpos[j]);
+          }
+          else
+          {
+            count += 1;
+            for (k=0; k<nFacies_; k++)
+              prob[k] += faciesProb_[k]->getRealValue(ipos[j],jpos[j],kpos[j]);
+          }
+        }
+      }
+    }
+    // Include last observations
+    chi_i = 0;
+    for (k=0; k<nFacies_; k++)
+    {
+      if (k==thisFacies)
+        chi_i += std::pow(count-prob[k],2)/prob[k];
+      else
+        chi_i += std::pow(0-prob[k],2)/prob[k];
+    }
+    chi += chi_i;
+    chi *= 0.3; //Scale chi to give better fit
+    df  += 1;
+    
+    NRLib::ChiSquared chisquared((nFacies_-1)*df);
+    pValue = 1-chisquared.Cdf(chi);
+
+    if (pValue >= 0.05)
+      fit[i] = "good";
+    if (pValue < 0.05 && pValue >= 0.025)
+      fit[i] = "poor";
+    if (pValue < 0.025 && pValue >= 0.005)
+      fit[i] = "bad";
+    if (pValue < 0.005)
+      fit[i] = "very bad";
+  }
+
+  LogKit::LogFormatted(LogKit::MEDIUM,"\nFit between facies probabilities and facies observed in wells: \n");
+
+  LogKit::LogFormatted(LogKit::MEDIUM,"\nWell                   Fit");
+  LogKit::LogFormatted(LogKit::MEDIUM,"\n");
+  for (i = 0 ; i < 24+13*nFacies_ ; i++)
+    LogKit::LogFormatted(LogKit::MEDIUM,"-");
+  LogKit::LogFormatted(LogKit::MEDIUM,"\n");
+  
+  for (int w = 0 ; w < nWells ; w++)
+  {
+    LogKit::LogFormatted(LogKit::MEDIUM,"%-23s",wells[w]->getWellname());
+    LogKit::LogFormatted(LogKit::MEDIUM,fit[w]);
+    LogKit::LogFormatted(LogKit::MEDIUM,"\n");
+  }
+  LogKit::LogFormatted(LogKit::MEDIUM,"\n");
+}
+ 
+ void FaciesProb::writeBWFaciesProb(WellData ** wells, 
+                                    int         nWells)
+{
+  int i, j;
+  for (i=0; i<nWells; i++)
+  {
+    BlockedLogs  * bw = wells[i]->getBlockedLogsOrigThick();
+    for (j=0; j<nFacies_; j++)
+      bw->setLogFromGrid(faciesProb_[j],j,nFacies_,"FACIES_PROB");
+   }
+}
+
+ void FaciesProb::calculateChiSquareAlternativeTest(WellData                    ** wells, 
+                                                    int                            nWells,  
+                                                    const std::vector<Surface *> & faciesEstimInterval,
+                                                    const ModelSettings          * modelSettings)
+{
+  // Alternative approach for evaluating facies fit. 
+  // Is not being called, but is saved for later by approval from Ragnar.
+    
+  int    i, j, k;
+  int    df;
+  int    bin;
+  double pValue;
+  double chi;
+
+  std::vector<float>  prob(nFacies_);
+  std::vector<int>    nPos(10);
+  std::vector<int>    nObs(10);
+
+  std::vector<std::vector<std::string> > fit(nWells,std::vector<std::string>(nFacies_));
+
+  for (i=0; i<nWells; i++)
+  {
+    BlockedLogs  * bw       = wells[i]->getBlockedLogsOrigThick();
+    const int      nBlocks  = bw->getNumberOfBlocks();
+    const int    * BWfacies = bw->getFacies();
+    const int    * ipos     = bw->getIpos();
+    const int    * jpos     = bw->getJpos();
+    const int    * kpos     = bw->getKpos();
+    const double   dz       = bw->getDz();
+    const double * xPos     = bw->getXpos();
+    const double * yPos     = bw->getYpos();
+    const double * zPos     = bw->getZpos();
+
+    for (k=0; k < nFacies_; k++)
+    {
+      for (j=0; j<10; j++)
+      {
+        nPos[j] = 0;
+        nObs[j] = 0;
+      }
+
+      for (j=0 ; j < nBlocks ; j++) 
+      {
+        if (faciesEstimInterval.size() > 0) 
+        {
+          const double zTop  = faciesEstimInterval[0]->GetZ(xPos[j],yPos[j]);
+          const double zBase = faciesEstimInterval[1]->GetZ(xPos[j],yPos[j]);
+          if ( !( (zPos[j]-0.5*dz) < zTop || (zPos[j]+0.5*dz) > zBase || BWfacies[j]==IMISSING) )
+          {
+            bin = static_cast<int>(std::floor(faciesProb_[k]->getRealValue(ipos[j],jpos[j],kpos[j])*10));
+            nObs[bin] += 1;
+            if (BWfacies[j] == k)
+              nPos[bin] += 1;
+          }
+        }
+        else
+        {
+          if (BWfacies[j]!=IMISSING)
+          {
+            bin = static_cast<int>(std::floor(faciesProb_[k]->getRealValue(ipos[j],jpos[j],kpos[j])*10));
+            nObs[bin] += 1;
+            if (BWfacies[j] == k)
+              nPos[bin] += 1;
+          }
+        }
+      }
+      chi = 0;
+      df  = 0;
+      for (j=0; j<10; j++)
+      {
+        if (nObs[j] > 0)
+        {
+          df  += 1;
+          chi += std::pow(nPos[j]        -nObs[j]   *(j*0.1+0.05) ,2)/(nObs[j]*   (j*0.1+0.05));
+          chi += std::pow(nObs[j]-nPos[j]-nObs[j]*(1-(j*0.1+0.05)),2)/(nObs[j]*(1-(j*0.1+0.05)));
+        }
+      }
+      NRLib::ChiSquared chisquared(df);
+      pValue = 1-chisquared.Cdf(chi);
+
+      if (pValue >= 0.05)
+        fit[i][k] = "good";
+      if (pValue < 0.05 && pValue >= 0.025)
+        fit[i][k] = "poor";
+      if (pValue < 0.025 && pValue >= 0.005)
+        fit[i][k] = "bad";
+      if (pValue < 0.005)
+        fit[i][k] = "very bad";
+    }
+  }
+  
+  LogKit::LogFormatted(LogKit::MEDIUM,"\nFit between facies probabilities and facies observed in wells: \n");
+  LogKit::LogFormatted(LogKit::MEDIUM,"\nWell                      ");
+  for (int i = 0 ; i < nFacies_ ; i++)
+    LogKit::LogFormatted(LogKit::MEDIUM,"%12s ",modelSettings->getFaciesName(i).c_str());
+  LogKit::LogFormatted(LogKit::MEDIUM,"\n");
+  for (int i = 0 ; i < 24+13*nFacies_ ; i++)
+    LogKit::LogFormatted(LogKit::MEDIUM,"-");
+  LogKit::LogFormatted(LogKit::MEDIUM,"\n");
+  for (int w = 0 ; w < nWells ; w++)
+  {
+    LogKit::LogFormatted(LogKit::MEDIUM,"%-24s ",wells[w]->getWellname());
+    for (int i = 0 ; i < nFacies_ ; i++) 
+    {
+      LogKit::LogFormatted(LogKit::MEDIUM,"        ");
+      LogKit::LogFormatted(LogKit::MEDIUM,fit[w][i]);
+    }
+      LogKit::LogFormatted(LogKit::MEDIUM,"\n");    
+  }
+  LogKit::LogFormatted(LogKit::MEDIUM,"\n");
 }

@@ -35,6 +35,7 @@ public:
   const float  * getBeta(void)                      const { return beta_     ;}
   const float  * getRho(void)                       const { return rho_      ;}
   const int    * getFacies(void)                    const { return facies_   ;}
+  const float    getDz(void)                        const { return dz_       ;}
   const float  * getAlphaHighCutBackground(void)    const { return alpha_highcut_background_ ;} 
   const float  * getBetaHighCutBackground(void)     const { return beta_highcut_background_  ;}
   const float  * getRhoHighCutBackground(void)      const { return rho_highcut_background_   ;}
@@ -97,7 +98,6 @@ public:
 
   void           computeGradient(std::vector<double> &xGradient, std::vector<double> &yGradient, 
                                   std::vector<double> &zShift, int nx, int ny, double dx, double dy);
-
 
 private:
   void           setLogFromVerticalTrend(float *& log, double * zpos, int nBlocks, 
