@@ -1747,8 +1747,10 @@ void BlockedLogs::peakMatch(std::vector<double> &zPeak, std::vector<double> &pea
   double diffz;
   
   
-  double maxdiffz = 20; //matching criteria: Peaks must be no longer that 5 cells apart. NBNB marita legge inn sfa. lateral distanse
-  double diffp = 0.25; //matcing the size of the peaks
+  double maxdiffz = 20; //matching criteria: Peaks must be no longer that 5 cells apart. 
+                        //NBNB marita legge inn sfa. lateral distanse
+  //NBNB              legg inn default  flat hvis ingen match.
+  double diffp = 0.5; //matcing the size of the peaks NBNB-Frode: This should maybe be an input parameter!
 
   unsigned int lim = 0;
   for(i = 0; i < zPeakW.size(); i++){
@@ -1844,7 +1846,7 @@ void BlockedLogs::computeGradient(std::vector<double> &xGradient, std::vector<do
     }
   }
 
-  //Do multivariate regresseion for each block k
+  //Do multivariate regression for each block k
   for(k = 0; k < nBlocks_; k++){
     Y.clear();
     for(j = 0; j < ny; j++){

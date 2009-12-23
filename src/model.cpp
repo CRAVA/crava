@@ -2707,6 +2707,7 @@ Model::processWavelets(Wavelet                    **& wavelet,
                                    angle,
                                    error,
                                    errText);
+        modelSettings->setEstimateWaveletNoise(false);
       }
     }
     else { //Not estimation modus

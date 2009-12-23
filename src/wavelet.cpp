@@ -119,7 +119,6 @@ float  Wavelet::getLocalTimeshift(int i, int j) const
       shift = float((*shiftGrid_)(i,j));
   }
 
-
   return shift;
 }
 
@@ -200,8 +199,6 @@ Wavelet::convolve(fftw_complex* var1_c ,fftw_complex* var2_c, fftw_complex* out_
   }
 
 }
-
-
 /*
 int* 
 Wavelet::getIndexPrior(int start,int nInd,int nzp)
@@ -239,50 +236,6 @@ Wavelet::getIndexPost(int start,int nInd,int nzp)
   return index;
 }
 */
-
-int Wavelet::getWaveletLengthI()
-{
-  bool trans=false;
-  if(isReal_==false)
-  {
-    invFFT1DInPlace();
-    trans=true;
-  }
-  
-  float maxAmp =  fabs(getRAmp(0)); // gets max amp 
-  for(int i=1;i <nzp_;i++)
-    if(fabs(getRAmp(i)) > maxAmp)
-      maxAmp = fabs(getRAmp(i));
-
-  float minAmp= maxAmp*minRelativeAmp_; // minimum relevant amplitude
-
-  int wLength=nzp_;
-
-  for(int i=nzp_/2;i>0;i--)
-  {
-    if(fabs(getRAmp(i)) >minAmp)
-    {
-      wLength= (i*2+1);// adds both sides 
-      break;
-    }
-    if(fabs(getRAmp(nzp_-i)) > minAmp)
-    {
-      wLength= (2*i+1);// adds both sides 
-      break;
-    }
-  }
-  wLength =MINIM(wLength,2*((nzp_+1)/2) - 1); // always odd number
-  if(trans==true)
-    fft1DInPlace();
-
-  return wLength;
-}
-
-float
-Wavelet::getWaveletLengthF()
-{
-  return dz_*float( getWaveletLengthI() );
-}
 
 float         
 Wavelet::calculateSNRatioAndLocalWavelet(Simbox        * simbox, 

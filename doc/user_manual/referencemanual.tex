@@ -1009,19 +1009,19 @@ Estimation: Checks input data and performs estimation of lacking information for
 
 \paragraph{\hbracket{file-name}}\rnewkw{file-name}{file-name4}
  \slist
-   \item \Description File name for the 1D-wavelet file. This 1D-wavelet will define the 3D-wavelet in combination with the filter given in \kw{filter-file-name}. If not given, the 1D-wavelet is estimated.
+   \item \Description File name for the 1D-wavelet file. This 1D-wavelet will define the 3D-wavelet in combination with the filter given in \kw{processing-factor-file-name}. If not given, the 1D-wavelet is estimated.
    \item \Argument File name
    \item \Default
  \elist
 
-\paragraph{\hbracket{filter-file-name}}\newkw{filter-file-name}
+\paragraph{\hbracket{processing-factor-file-name}}\newkw{processing-factor-file-name}
  \slist
-   \item \Description File name for 3D-wavelet damping factor filter file. The 3D-wavelet is defined by the 1D-wavelet and the filter. The 1D-wavelet is either given in \kw{file-name3} or estimated. In either case this filter file must be given.
+   \item \Description File name for 3D-wavelet damping factor filter file. The 3D-wavelet is defined by the 1D-wavelet and the filter. The 1D-wavelet is either given in \kw{file-name4} or estimated. In either case this filter file must be given.
    \item \Argument File name for the amplitude scalings in the wavenumber filter.
    \item \Default
  \elist
 
-\paragraph{\hbracket{corrfactor-file-name}}\newkw{corrfactor-file-name}
+\paragraph{\hbracket{propagation-factor-file-name}}\newkw{propagation-factor-file-name}
  \slist
    \item \Description File name for 3D-wavelet correction filter filter file. This is used to set up the noise model for the 3D-wavelet.
    \item \Argument File name for the correction factors in the wavenumber filter.
@@ -1035,14 +1035,14 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Default 1.0
 \elist
 
-\paragraph{\hbracket{est-range-x}}\newkw{est-range-x}
+\paragraph{\hbracket{estimation-range-x-direction}}\newkw{estimation-range-x-direction}
  \slist
    \item \Description Range for area around the well in x-direction where data are used in 3D wavelet estimation.
    \item \Argument Value >= 0.0
    \item \Default 0.0
 \elist
 
-\paragraph{\hbracket{est-range-y}}\newkw{est-range-y}
+\paragraph{\hbracket{estimation-range-y-direction}}\newkw{estimation-range-y-direction}
  \slist
    \item \Description Range for area around the well in y-direction where data are used in 3D wavelet estimation.
    \item \Argument Value >= 0.0

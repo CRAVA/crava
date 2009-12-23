@@ -43,7 +43,6 @@ Wavelet3D::Wavelet3D(const std::string            & filterFile,
                      int                          & errCode,
                      char                         * errText)
   : Wavelet(modelSettings, 3, reflCoef),
-//    wavelet1D_(NULL),
     filter_(filterFile, errCode, errText)
 {
   LogKit::LogFormatted(LogKit::MEDIUM,"  Estimating 3D wavelet pulse from seismic data and (nonfiltered) blocked wells\n");
@@ -58,6 +57,8 @@ Wavelet3D::Wavelet3D(const std::string            & filterFile,
   dx_             = static_cast<float>(simBox->getdx());
   dy_             = static_cast<float>(simBox->getdy());
   dz_             = static_cast<float>(simBox->getdz());
+  nxp_            = seisCube->getNxp();
+  nyp_            = seisCube->getNyp();
   nzp_            = seisCube->getNzp();
 
   unsigned int nWells = modelSettings->getNumberOfWells();
@@ -76,14 +77,14 @@ Wavelet3D::Wavelet3D(const std::string            & filterFile,
 
       BlockedLogs *bl    = wells[w]->getBlockedLogsOrigThick();  
  
-      std::vector<float> tGradX(bl->getNumberOfBlocks(),0.0);
-      std::vector<float> tGradY(bl->getNumberOfBlocks(),0.0);
+      std::vector<double> tGradX;//(bl->getNumberOfBlocks(),0.0);
+      std::vector<double> tGradY;//(bl->getNumberOfBlocks(),0.0);
 
 //    NBNB-Frode: Fyll gradX og gradY for alle nzp_ ved hjelp av kall til
-/*      bl->findSeismicGradient(seisCube,
+      bl->findSeismicGradient(seisCube,
                               simBox,
-                              tgradX,
-                              tgradY);*/
+                              tGradX,
+                              tGradY);
       const int * iPos = bl->getIpos();
       const int * jPos = bl->getJpos();
       
@@ -91,10 +92,10 @@ Wavelet3D::Wavelet3D(const std::string            & filterFile,
       float * zGradX = new float[nBlocks];
       float * zGradY = new float[nBlocks];
       for (unsigned int b = 0; b<nBlocks; b++) {
-        float t0GradX = static_cast<float> (refTimeGradX(iPos[b], jPos[b]));
-        zGradX[b]     = 0.5f * v0 * (tGradX[b] - t0GradX);
-        float t0GradY = static_cast<float> (refTimeGradY(iPos[b], jPos[b]));
-        zGradY[b]     = 0.5f * v0 * (tGradY[b] - t0GradY);
+        double t0GradX = refTimeGradX(iPos[b], jPos[b]);
+        zGradX[b]     = 0.5f * v0 * 0.001f * static_cast<float> (tGradX[b] - t0GradX); //0.001f is due to ms/s conversion
+        double t0GradY = refTimeGradY(iPos[b], jPos[b]);
+        zGradY[b]     = 0.5f * v0 * 0.001f * static_cast<float> (tGradY[b] - t0GradY);
       }
 
       float * az = new float[nz_]; 
@@ -132,12 +133,18 @@ Wavelet3D::Wavelet3D(const std::string            & filterFile,
           double r      = sqrt(az[i]*az[i] + bz[i]*bz[i] + 1);
           double psi    = acos(1.0 / r);
           float alpha1  = static_cast<float> (filter_.getAlpha1(phi, psi));
-          float f       = static_cast<float> (-1.0 * r / stretch);
+          float f       = static_cast<float> (1.0 * r / stretch);
           cppAdj[i-start]     = cpp[i] * alpha1 / f;
           if (hasHalpha)
             Halpha[i-start]   = static_cast<float> (filter_.getHalpha(phi, psi));
         }
         delete [] cpp;
+
+        std::ofstream cppFile;
+        NRLib::OpenWrite(cppFile, "cppAdj.dat");
+        for (int i=0; i<length; i++)
+          cppFile << std::setprecision(4) << std::setw(10) << cppAdj[i] << std::endl;
+        cppFile.close();
 
         float *zLog = new float[nBlocks];
         for (unsigned int b=0; b<nBlocks; b++) {
@@ -172,7 +179,7 @@ Wavelet3D::Wavelet3D(const std::string            & filterFile,
             float * zPosTrace = new float[nz_];
             bl->getVerticalTrend(zLog, zPosTrace);
             delete zLog;
-            for (int t=start; t < start+length-1; t++) {
+            for (int t=start; t < start+length; t++) {
               if (seisData[t] != RMISSING) {
                 dVec.push_back(seisData[t]);
                 float **lambda = new float *[length];
@@ -181,7 +188,7 @@ Wavelet3D::Wavelet3D(const std::string            & filterFile,
                   for (int j=0; j<nWl; j++)
                     lambda[i][j] = 0.0;
                 }
-                for (int tau = start; tau < start+length-1; tau++) {
+                for (int tau = start; tau < start+length; tau++) {
                   //Hva gjør vi hvis zData[t] er RMISSING. Kan det skje?
                   float u = static_cast<float> (zPosTrace[t] - zPosWell[tau] - az[tau]*(xTr*dx_) - bz[tau]*(yTr*dy_));
                   if (hasHalpha) {
@@ -245,6 +252,22 @@ Wavelet3D::Wavelet3D(const std::string            & filterFile,
           }
         }
 
+        std::ofstream gTrgMatFile;
+        NRLib::OpenWrite(gTrgMatFile, "gTrgMat.dat");
+        for (int i=0; i<nWl; i++) {
+          gTrgMatFile << "gTrg[" << std::setw(2) << i << "]: ";
+          for (int j=0; j<nWl; j++)
+            gTrgMatFile << std::setprecision(4) << std::setw(10) << gTrg[i][j];
+          gTrgMatFile << std::endl;
+        }
+        gTrgMatFile.close();
+
+        std::ofstream dFile;
+        NRLib::OpenWrite(dFile, "data.dat");
+        for (int i=0; i<nPoints; i++)
+          dFile << std::setprecision(4) << std::setw(10) << dVec[i] << std::endl;
+        dFile.close();
+
         double *gTrd = new double[nWl];
         for (int i=0; i<nWl; i++) {
           gTrd[i] = 0.0;
@@ -282,6 +305,14 @@ Wavelet3D::Wavelet3D(const std::string            & filterFile,
     wlest[j] = wlest[j] / static_cast<float>(nActiveWells);
   }
 
+  std::ofstream wlFile;
+  NRLib::OpenWrite(wlFile, "wlest.dat");
+  for (int i=0; i<nWl; i++)
+    wlFile << std::setprecision(4) << std::setw(10) << wlest[i] << std::endl;
+  wlFile.close();
+
+  ampCube_ = FFTGrid(0, 0, 0, 0, 0, 0);
+  ampCube_.createComplexGrid();
   wavelet1D_ = new Wavelet1D(static_cast<Wavelet *> (this), modelSettings, reflCoef, wlest);
 }
 
@@ -520,6 +551,12 @@ Wavelet3D::Wavelet3D(Wavelet * wavelet)
       }
     }
   }
+}
+
+Wavelet3D::~Wavelet3D()
+{
+  if (wavelet1D_)
+    delete wavelet1D_;
 }
 
 void

@@ -47,7 +47,7 @@ public:
 
   Wavelet3D(Wavelet *                      wavelet);
 
-  virtual ~Wavelet3D() {delete wavelet1D_;}
+  virtual ~Wavelet3D(); 
 
   bool           consistentSize(int nzp, int nyp, int nxp)          const; 
   fftw_complex   getCAmp(int k, int j, int i)                       const;

@@ -481,11 +481,19 @@ Wavelet1D::Wavelet1D(Wavelet                  * wavelet,
   rAmp_ = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));  
   cAmp_ = reinterpret_cast<fftw_complex*>(rAmp_);
 
-  unsigned int nWl = wlest.size();
-  for (unsigned int i=0; i<nWl; i++)
-    rAmp_[i] = wlest[i];
-  for (int i=nWl; i<nzp_; i++)
+  int nWl = wlest.size();
+  int nHalfWl = static_cast<int> (nWl/2);
+  rAmp_[0] = wlest[0];
+  for (int i=1; i<=nHalfWl; i++) {
+    rAmp_[i]      = wlest[i];
+    rAmp_[nzp_-i] = wlest[nWl-i];
+  }
+  for (int i=nHalfWl+1; i<nzp_-nHalfWl; i++)
     rAmp_[i] = 0.0;
+  for (int i=nzp_; i<rnzp_; i++)
+    rAmp_[i] = RMISSING;
+
+  waveletLength_ = getWaveletLengthF();
 }
 
 Wavelet1D::Wavelet1D(int difftype, int nz, int nzp)
@@ -830,6 +838,51 @@ Wavelet1D::WaveletReadOld(const std::string & fileName, int & errCode, char *err
   }
 
   fftw_free(tempWave);
+}
+
+
+int Wavelet1D::getWaveletLengthI()
+{
+  bool trans=false;
+  if(isReal_==false)
+  {
+    invFFT1DInPlace();
+    trans=true;
+  }
+  
+  float maxAmp =  fabs(getRAmp(0)); // gets max amp 
+  for(int i=1;i <nzp_;i++)
+    if(fabs(getRAmp(i)) > maxAmp)
+      maxAmp = fabs(getRAmp(i));
+
+  float minAmp= maxAmp*minRelativeAmp_; // minimum relevant amplitude
+
+  int wLength=nzp_;
+
+  for(int i=nzp_/2;i>0;i--)
+  {
+    if(fabs(getRAmp(i)) >minAmp)
+    {
+      wLength= (i*2+1);// adds both sides 
+      break;
+    }
+    if(fabs(getRAmp(nzp_-i)) > minAmp)
+    {
+      wLength= (2*i+1);// adds both sides 
+      break;
+    }
+  }
+  wLength =MINIM(wLength,2*((nzp_+1)/2) - 1); // always odd number
+  if(trans==true)
+    fft1DInPlace();
+
+  return wLength;
+}
+
+float
+Wavelet1D::getWaveletLengthF()
+{
+  return dz_*float( getWaveletLengthI() );
 }
 
 void

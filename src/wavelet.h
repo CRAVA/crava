@@ -165,9 +165,7 @@ protected:
                                           int j)          const;
   float                 getLocalGainFactor(int i, 
                                            int j)         const;
-  int                   getWaveletLengthI();
-  float                 getWaveletLengthF();
-  
+
   float                 theta_;                 // the reflection angle that the wavelet correspond to
   int                   readtype_;              // how is wavelet obtained? read from file[OLD JASON SGRI] or ESTIMATE
 

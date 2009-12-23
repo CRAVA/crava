@@ -917,11 +917,11 @@ XmlModelFile::parseWavelet3D(TiXmlNode * node, std::string & errTxt)
 
   std::vector<std::string> legalCommands;
   legalCommands.push_back("file-name");
-  legalCommands.push_back("filter-file-name");
-  legalCommands.push_back("corrfactor-file-name");
+  legalCommands.push_back("processing-factor-file-name");
+  legalCommands.push_back("propagation-factor-file-name");
   legalCommands.push_back("stretch-factor");
-  legalCommands.push_back("est-range-x");
-  legalCommands.push_back("est-range-y");
+  legalCommands.push_back("estimation-range-x-direction");
+  legalCommands.push_back("estimation-range-y-direction");
 
   std::string value;
   bool estimate = false;
@@ -935,15 +935,15 @@ XmlModelFile::parseWavelet3D(TiXmlNode * node, std::string & errTxt)
     estimate = true;
   }
   
-  if(parseFileName(root, "filter-file-name", value, errTxt) == true)
+  if(parseFileName(root, "processing-factor-file-name", value, errTxt) == true)
     inputFiles_->addWaveletFilterFile(value);
   else {
     inputFiles_->addWaveletFilterFile(""); //Keeping tables balanced.
-    errTxt += "No filter file for 3D-wavelet is given in<"
+    errTxt += "No processing factor file for 3D-wavelet is given in<"
               +root->ValueStr()+"> "+ lineColumnText(root)+".\n";
   }
 
-  if(parseFileName(root, "corrfactor-file-name", value, errTxt) == true)
+  if(parseFileName(root, "propagation-factor-file-name", value, errTxt) == true)
     inputFiles_->addWaveletCorrFile(value);
   else 
     inputFiles_->addWaveletCorrFile(""); //Keeping tables balanced.
@@ -955,12 +955,12 @@ XmlModelFile::parseWavelet3D(TiXmlNode * node, std::string & errTxt)
     modelSettings_->addStretchFactor(1.0);
 
   float range;
-  if(parseValue(root, "est-range-x", range, errTxt) == true)
+  if(parseValue(root, "estimation-range-x-direction", range, errTxt) == true)
     modelSettings_->addEstRangeX(range);
   else
     modelSettings_->addEstRangeX(0.0);
 
-  if(parseValue(root, "est-range-y", range, errTxt) == true)
+  if(parseValue(root, "estimation-range-y-direction", range, errTxt) == true)
     modelSettings_->addEstRangeY(range);
   else
     modelSettings_->addEstRangeY(0.0);

@@ -58,6 +58,8 @@ private:
   void           getWavelet(fftw_real** ccor_seis_cpp_r,fftw_real** cor_cpp_r,fftw_real** wavelet_r,float* wellWeight,int nWells,int nt);
   fftw_real*     averageWavelets(fftw_real** wavelet_r,int nWells,int nzp,float* wellWeight,float* dz,float dzOut) const;
   float          getArrayValueOrZero(int i ,float * Wavelet, int nz) const;
+  int            getWaveletLengthI();
+  float          getWaveletLengthF();
   
 //  void           fillInnWavelet(fftw_real* wavelet_r,int nzp,float dz);
   
