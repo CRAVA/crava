@@ -1144,6 +1144,8 @@ void FaciesProb::calculateChiSquareTest(WellData                    ** wells,
   int    count;
   int    df;
   int    thisFacies = IMISSING;
+  int    nActualFacies;
+  float  sum;
   double pValue;
   double chi_i;
   double chi;
@@ -1196,6 +1198,16 @@ void FaciesProb::calculateChiSquareTest(WellData                    ** wells,
       faciesProb_[j]->endAccess();
     }
 
+    nActualFacies = nFacies_;
+    for (j = 0; j<nFacies_; j++)
+    {
+      sum = 0;
+      for (k = 0; k<nBlocks; k++)
+        sum += BWfaciesProb[k][j];
+      if (sum == 0)
+        nActualFacies -= 1;
+    }
+
     for (j=0 ; j < nBlocks ; j++) 
     {
       if (faciesEstimInterval.size() > 0) 
@@ -1210,10 +1222,13 @@ void FaciesProb::calculateChiSquareTest(WellData                    ** wells,
             chi_i = 0;
             for (k=0; k<nFacies_; k++)
             {
-              if (k==thisFacies)
-                chi_i += std::pow(count-prob[k],2)/prob[k];
-              else
-                chi_i += std::pow(0-prob[k],2)/prob[k];
+              if (prob[k]!=0)
+              {
+                if (k==thisFacies)
+                  chi_i += std::pow(count-prob[k],2)/prob[k];
+                else
+                  chi_i += std::pow(0-prob[k],2)/prob[k];
+              }
             }
             thisFacies = BWfacies[j]; 
             count = 1;
@@ -1239,10 +1254,13 @@ void FaciesProb::calculateChiSquareTest(WellData                    ** wells,
             chi_i = 0;
             for (k=0; k<nFacies_; k++)
             {
-              if (k==thisFacies)
-                chi_i += std::pow(count-prob[k],2)/prob[k];
-              else
-                chi_i += std::pow(0-prob[k],2)/prob[k];
+              if (prob[k]!=0)
+              {
+                if (k==thisFacies)
+                  chi_i += std::pow(count-prob[k],2)/prob[k];
+                else
+                  chi_i += std::pow(0-prob[k],2)/prob[k];
+              }
             }
             thisFacies = BWfacies[j]; 
             count = 1;
@@ -1264,16 +1282,19 @@ void FaciesProb::calculateChiSquareTest(WellData                    ** wells,
     chi_i = 0;
     for (k=0; k<nFacies_; k++)
     {
-      if (k==thisFacies)
-        chi_i += std::pow(count-prob[k],2)/prob[k];
-      else
-        chi_i += std::pow(0-prob[k],2)/prob[k];
+      if (prob[k]!=0)
+      {
+        if (k==thisFacies)
+          chi_i += std::pow(count-prob[k],2)/prob[k];
+        else
+          chi_i += std::pow(0-prob[k],2)/prob[k];
+      }
     }
     chi += chi_i;
     chi *= 0.3; //Scale chi to give better fit
     df  += 1;
     
-    NRLib::ChiSquared chisquared((nFacies_-1)*df);
+    NRLib::ChiSquared chisquared((nActualFacies-1)*df);
     pValue = 1-chisquared.Cdf(chi);
 
     if (pValue >= 0.05)
