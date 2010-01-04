@@ -385,6 +385,75 @@ FFTFileGrid::add(FFTGrid * fftGrid)
 }
 
 void 
+FFTFileGrid::subtract(FFTGrid * fftGrid)
+{
+  assert(accMode_ == NONE || accMode_ == RANDOMACCESS);
+  if(accMode_ != RANDOMACCESS)
+    load();
+  else
+    modified_ = 1;
+  assert(nxp_==fftGrid->getNxp());
+  fftGrid->setAccessMode(READ);
+
+  if(istransformed_==true)
+  {
+    int i;
+    fftw_complex value;
+    for(i=0;i<csize_;i++)
+    {
+      value = fftGrid->getNextComplex();
+      cvalue_[i].re -= value.re;
+      cvalue_[i].im -= value.im; 
+    }
+  }
+  else
+  {
+    int i;
+    for(i=0;i < rsize_;i++)
+    {
+      rvalue_[i] -= fftGrid->getNextReal();
+    }
+  }
+  fftGrid->endAccess();
+
+  if(accMode_ != RANDOMACCESS)
+    save();
+}
+
+void 
+FFTFileGrid::changeSign()
+{
+  assert(accMode_ == NONE || accMode_ == RANDOMACCESS);
+  if(accMode_ != RANDOMACCESS)
+    load();
+  else
+    modified_ = 1;
+
+  if(istransformed_==true)
+  {
+    int i;
+    for(i=0;i<csize_;i++)
+    {
+      
+      cvalue_[i].re = -cvalue_[i].re;
+      cvalue_[i].im = -cvalue_[i].im; 
+    }
+  }
+  else
+  {
+    int i;
+    for(i=0;i < rsize_;i++)
+    {
+      rvalue_[i] = -rvalue_[i];
+    }
+  }
+ 
+
+  if(accMode_ != RANDOMACCESS)
+    save();
+}
+
+void 
 FFTFileGrid::multiply(FFTGrid * fftGrid)
 {
   assert(accMode_ == NONE || accMode_ == RANDOMACCESS);

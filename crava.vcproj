@@ -209,22 +209,6 @@
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
 			>
 			<File
-				RelativePath=".\nrlib\random\chisquared.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\nrlib\random\distribution.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\nrlib\random\functions.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\nrlib\random\gamma.cpp"
-				>
-			</File>
-			<File
 				RelativePath="main.cpp"
 				>
 				<FileConfiguration
@@ -243,40 +227,6 @@
 						PreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
-			</File>
-			<File
-				RelativePath=".\nrlib\random\mt19937ar.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\nrlib\random\normal.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\nrlib\random\random.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						ObjectFile="$(IntDir)\$(InputName)1.obj"
-						XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						ObjectFile="$(IntDir)\$(InputName)1.obj"
-						XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath=".\nrlib\random\uniform.cpp"
-				>
 			</File>
 			<Filter
 				Name="src"
@@ -3530,7 +3480,15 @@
 				Name="nrlib"
 				>
 				<File
+					RelativePath=".\nrlib\random\chisquared.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\nrlib\segy\commonheaders.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\nrlib\random\distribution.cpp"
 					>
 				</File>
 				<File
@@ -3556,12 +3514,50 @@
 					</FileConfiguration>
 				</File>
 				<File
+					RelativePath=".\nrlib\random\functions.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\nrlib\random\gamma.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\nrlib\iotools\logkit.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\nrlib\random\mt19937ar.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\nrlib\random\normal.cpp"
 					>
 				</File>
 				<File
 					RelativePath=".\nrlib\well\norsarwell.cpp"
 					>
+				</File>
+				<File
+					RelativePath=".\nrlib\random\random.cpp"
+					>
+					<FileConfiguration
+						Name="Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\$(InputName)1.obj"
+							XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\$(InputName)1.obj"
+							XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
+						/>
+					</FileConfiguration>
 				</File>
 				<File
 					RelativePath=".\nrlib\segy\segy.cpp"
@@ -3619,6 +3615,10 @@
 				</File>
 				<File
 					RelativePath=".\nrlib\segy\traceheader.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\nrlib\random\uniform.cpp"
 					>
 				</File>
 				<File
@@ -3986,11 +3986,11 @@
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\system\config.hpp"
+						RelativePath=".\nrlib\boost\filesystem\config.hpp"
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\filesystem\config.hpp"
+						RelativePath=".\nrlib\boost\system\config.hpp"
 						>
 					</File>
 					<File

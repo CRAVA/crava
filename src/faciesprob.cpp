@@ -1296,7 +1296,11 @@ void FaciesProb::calculateChiSquareTest(WellData                    ** wells,
   {
     BlockedLogs  * bw = wells[i]->getBlockedLogsOrigThick();
     for (j=0; j<nFacies_; j++)
+    {
+      faciesProb_[j]->setAccessMode(FFTGrid::RANDOMACCESS);
       bw->setLogFromGrid(faciesProb_[j],j,nFacies_,"FACIES_PROB");
+      faciesProb_[j]->endAccess();
+    }
    }
 }
 

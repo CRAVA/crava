@@ -515,11 +515,11 @@ Model::checkAvailableMemory(Simbox        * timeSimbox,
   int gridSize = dummyGrid->getrsize();
   delete dummyGrid;
   dummyGrid = new FFTGrid(timeSimbox->getnx(), 
-                                    timeSimbox->getny(), 
-                                    timeSimbox->getnz(),
-                                    timeSimbox->getnx(), 
-                                    timeSimbox->getny(), 
-                                    timeSimbox->getnz());
+                          timeSimbox->getny(), 
+                          timeSimbox->getnz(),
+                          timeSimbox->getnx(), 
+                          timeSimbox->getny(), 
+                          timeSimbox->getnz());
   int gridSizeKriging = dummyGrid->getrsize();
   delete dummyGrid;
   int nGridParameters  = 3;                                      // Vp + Vs + Rho

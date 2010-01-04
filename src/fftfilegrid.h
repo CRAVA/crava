@@ -31,6 +31,8 @@ public:
   void         multiplyByScalar(float scalar);
   int          collapseAndAdd(float*);
   void         add(FFTGrid* fftGrid);
+  void         subtract(FFTGrid* fftGrid);
+  void         changeSign();
   void         multiply(FFTGrid* fftGrid);              // pointwise multiplication! 
   void         fillInComplexNoise(RandomGen * ranGen);
   void         fftInPlace();
