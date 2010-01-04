@@ -1180,7 +1180,22 @@ void FaciesProb::calculateChiSquareTest(WellData                    ** wells,
         break;
       }
     }
-    
+  
+    //
+    // Block facies probabilities and put them in one vector
+    //
+    std::vector<std::vector<float> > BWfaciesProb(nBlocks,std::vector<float>(nFacies_));
+
+    for (j = 0 ; j < nFacies_ ; j++)
+    {
+      faciesProb_[j]->setAccessMode(FFTGrid::RANDOMACCESS);
+      for(k = 0 ; k < nBlocks ; k++)
+      {
+        BWfaciesProb[k][j] = faciesProb_[j]->getRealValue(ipos[k],jpos[k],kpos[k]);
+      }
+      faciesProb_[j]->endAccess();
+    }
+
     for (j=0 ; j < nBlocks ; j++) 
     {
       if (faciesEstimInterval.size() > 0) 
@@ -1205,13 +1220,13 @@ void FaciesProb::calculateChiSquareTest(WellData                    ** wells,
             chi  += chi_i;
             df   += 1;
             for (k=0; k<nFacies_; k++)
-              prob[k] = faciesProb_[k]->getRealValue(ipos[j],jpos[j],kpos[j]);
+              prob[k] = BWfaciesProb[j][k];
           }
           else
           {
             count += 1;
             for (k=0; k<nFacies_; k++)
-              prob[k] += faciesProb_[k]->getRealValue(ipos[j],jpos[j],kpos[j]);
+              prob[k] += BWfaciesProb[j][k];
           } 
         }
       }
@@ -1234,13 +1249,13 @@ void FaciesProb::calculateChiSquareTest(WellData                    ** wells,
             chi  += chi_i;
             df   += 1;
             for (k=0; k<nFacies_; k++)
-              prob[k] = faciesProb_[k]->getRealValue(ipos[j],jpos[j],kpos[j]);
+              prob[k] = BWfaciesProb[j][k];
           }
           else
           {
             count += 1;
             for (k=0; k<nFacies_; k++)
-              prob[k] += faciesProb_[k]->getRealValue(ipos[j],jpos[j],kpos[j]);
+              prob[k] += BWfaciesProb[j][k];
           }
         }
       }
@@ -1337,6 +1352,18 @@ void FaciesProb::calculateChiSquareTest(WellData                    ** wells,
     const double * yPos     = bw->getYpos();
     const double * zPos     = bw->getZpos();
 
+     
+    std::vector<std::vector<float> > BWfaciesProb(nBlocks,std::vector<float>(nFacies_));
+    for (j = 0 ; j < nFacies_ ; j++)
+    {
+      faciesProb_[j]->setAccessMode(FFTGrid::RANDOMACCESS);
+      for(k = 0 ; k < nBlocks ; k++)
+      {
+        BWfaciesProb[k][j] = faciesProb_[j]->getRealValue(ipos[k],jpos[k],kpos[k]);
+      }
+      faciesProb_[j]->endAccess();
+    }
+
     for (k=0; k < nFacies_; k++)
     {
       for (j=0; j<10; j++)
@@ -1353,7 +1380,7 @@ void FaciesProb::calculateChiSquareTest(WellData                    ** wells,
           const double zBase = faciesEstimInterval[1]->GetZ(xPos[j],yPos[j]);
           if ( !( (zPos[j]-0.5*dz) < zTop || (zPos[j]+0.5*dz) > zBase || BWfacies[j]==IMISSING) )
           {
-            bin = static_cast<int>(std::floor(faciesProb_[k]->getRealValue(ipos[j],jpos[j],kpos[j])*10));
+            bin = static_cast<int>(std::floor(BWfaciesProb[j][k]*10));
             nObs[bin] += 1;
             if (BWfacies[j] == k)
               nPos[bin] += 1;
@@ -1363,7 +1390,7 @@ void FaciesProb::calculateChiSquareTest(WellData                    ** wells,
         {
           if (BWfacies[j]!=IMISSING)
           {
-            bin = static_cast<int>(std::floor(faciesProb_[k]->getRealValue(ipos[j],jpos[j],kpos[j])*10));
+            bin = static_cast<int>(std::floor(BWfaciesProb[j][k]*10));
             nObs[bin] += 1;
             if (BWfacies[j] == k)
               nPos[bin] += 1;
