@@ -228,9 +228,12 @@ XmlModelFile::parseSimulation(TiXmlNode * node, std::string & errTxt)
     inputFiles_->setSeedFile(filename);
   }
 
-  int value = 1;
-  parseValue(root, "number-of-simulations", value, errTxt);
-  modelSettings_->setNumberOfSimulations(value);
+  int value;
+  bool numberGiven = parseValue(root, "number-of-simulations", value, errTxt);
+  if(numberGiven == true)
+    modelSettings_->setNumberOfSimulations(value);
+  else
+    modelSettings_->setNumberOfSimulations(1);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
