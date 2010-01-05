@@ -256,6 +256,8 @@ The wells are given with the command \kw{file-name} under
 for this is that additional information may be given for each
 well. Well files should be on RMS-format. 
 
+Each well may be moved to its optimal location using \kw{optimize-location-to}\kwindex{optimize-location-to} under \kw{well}\kwindex{well}, taking the arguments \rkw{angle}{angle3}\kwindex{angle} and \kw{weight}\kwindex{weight} allowing the user to assign different weights to the different angle gathers for each well. The maximum allowed offset and vertical shift for moving wells is specified in \kw{maximum-offset}\kwindex{maximum-offset} and \kw{maximum-shift}\kwindex{maximum-shift} under \kw{well-data}, with default values of 250 m and 11 ms, respectively.
+
 \subsection{Output}
 Output is controlled under \kw{io-settings}\kwindex{io-settings} under
 \kw{project-settings}. Here, you may set the output directory using
