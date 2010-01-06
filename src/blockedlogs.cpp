@@ -1368,8 +1368,8 @@ void BlockedLogs::findOptimalWellLocation(FFTGrid                   ** seisCube,
   float totalWeight = 0;
   float dz          = static_cast<float>(timeSimbox->getdz());
 
-  float ** seisData  = new float*[nAngles]; 
-  float ** seisLog   = new float*[nAngles]; 
+  float  * seisLog   = new float[nBlocks_]; 
+  float  * seisData  = new float[nLayers_]; 
   float  * alphaVert = new float[nLayers_]; 
   float  * betaVert  = new float[nLayers_]; 
   float  * rhoVert   = new float[nLayers_]; 
@@ -1424,8 +1424,6 @@ void BlockedLogs::findOptimalWellLocation(FFTGrid                   ** seisCube,
     cor_cpp_r[j]           = new fftw_real[rnzp];
     ccor_seis_cpp_r[j]     = new fftw_real[rnzp];
     ccor_seis_cpp_Max_r[j] = new fftw_real[rnzp];
-    seisData[j]            = new float[nLayers_];
-    seisLog[j]             = new float[nBlocks_]; 
   }
 
   // Calculate reflection coefficients
@@ -1439,6 +1437,25 @@ void BlockedLogs::findOptimalWellLocation(FFTGrid                   ** seisCube,
     Utils::fftInv(cor_cpp_c[j],cor_cpp_r[j],nzp);
   }
 
+  std::vector<NRLib::Grid<float> > seisCubeSmall(nAngles,NRLib::Grid<float> (iTotOffset,jTotOffset,nBlocks_));
+  
+  for (j = 0 ; j < nAngles ; j++)
+  {
+    seisCube[j]->setAccessMode(FFTGrid::RANDOMACCESS);
+    for (k = 0; k < iTotOffset; k++)
+    {
+      for (l = 0; l < jTotOffset; l++)
+      {
+        getBlockedGrid(seisCube[j],seisLog,iOffset[k],jOffset[l]); 
+        for (m = 0; m < nBlocks_; m++)
+        {
+          seisCubeSmall[j](k, l, m) = seisLog[m];
+        }
+      }
+    }
+    seisCube[j]->endAccess();
+  }
+
   // Loop through possible well locations
   for(k=0; k<iTotOffset; k++){
     if(ipos_[0]+iOffset[k]<0 || ipos_[0]+iOffset[k]>nx-1) //Check if position is within seismic range
@@ -1449,9 +1466,12 @@ void BlockedLogs::findOptimalWellLocation(FFTGrid                   ** seisCube,
         continue;
       
       for( j=0; j<nAngles; j++ ){
-        getBlockedGrid(seisCube[j],seisLog[j],iOffset[k],jOffset[l]); 
-        getVerticalTrend(seisLog[j], seisData[j]);
-        fillInSeismic(seisData[j],start,length,seis_r[j],nzp);
+
+        for (m=0; m<nBlocks_; m++)
+          seisLog[m] = seisCubeSmall[j](k,l,m);
+
+        getVerticalTrend(seisLog, seisData);
+        fillInSeismic(seisData,start,length,seis_r[j],nzp);
 
         Utils::fft(seis_r[j],seis_c[j],nzp);
         estimateCor(seis_c[j],cpp_c[j],ccor_seis_cpp_c[j],cnzp);
@@ -1570,14 +1590,14 @@ void BlockedLogs::findOptimalWellLocation(FFTGrid                   ** seisCube,
     delete [] cpp_r[j];
     delete [] cor_cpp_r[j];
     delete [] ccor_seis_cpp_r[j];
-    delete [] seisData[j];
-    delete [] seisLog[j]; 
   }
   delete [] alphaVert;
   delete [] betaVert;
   delete [] rhoVert;
   delete [] hasData;
   delete [] ccor_seis_cpp_Max_r;
+  delete [] seisLog;
+  delete [] seisData;
 }
 
 
