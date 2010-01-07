@@ -1099,7 +1099,7 @@ void FaciesProb::normalizeCubes(FFTGrid **priorFaciesCubes)
   float sum;
   std::vector<float> value(nFacies_);
   for(i=0;i<nFacies_;i++)
-    priorFaciesCubes[i]->setAccessMode(FFTGrid::RANDOMACCESS);
+    priorFaciesCubes[i]->setAccessMode(FFTGrid::READANDWRITE);
   int negative = 0;
   for(i=0;i<nzp;i++)
   {

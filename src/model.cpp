@@ -533,7 +533,7 @@ Model::checkAvailableMemory(Simbox        * timeSimbox,
 
   int nGridFacies      = modelSettings->getNumberOfFacies() + 1; // One for each facies + one for undef  
  // int nGridHistograms  = modelSettings->getNumberOfFacies();     // One histogram for each facies
-  int nGridHistograms = 0; // Should be counted in another way
+  int nGridHistograms = modelSettings->getNumberOfFacies(); // Same size as kriging grids
   int nGridKriging     = 1;                                      // One grid for kriging
   int nGridFileMode    = 1;                                      // One grid for intermediate file storage
 
@@ -572,9 +572,9 @@ Model::checkAvailableMemory(Simbox        * timeSimbox,
     }
     if(modelSettings->getEstimateFaciesProb()) { // Seismic data is dealloctaed before new allocations are done
       if (modelSettings->getFaciesProbRelative() && !modelSettings->getUseLocalNoise())
-        nGrids += nGridBackground + std::max(0, nGridHistograms + nGridFacies - nGridSeismicData);  
+        nGrids += nGridBackground + std::max(0, nGridFacies - nGridSeismicData);  
       else {
-        nGrids += std::max(0, nGridHistograms + nGridFacies - nGridSeismicData);
+        nGrids += std::max(0, nGridFacies - nGridSeismicData);
       }
     }
     }
@@ -591,6 +591,8 @@ Model::checkAvailableMemory(Simbox        * timeSimbox,
     mem1 = static_cast<float>(nGrids-1)*memOneGrid+ memKrig;
   else 
     mem1 = static_cast<float>(nGrids)*memOneGrid;
+  if(modelSettings->getEstimateFaciesProb())
+    mem1+=static_cast<float>(nGridHistograms)*memKrig;
   float mem2        = static_cast<float>(modelSettings->getNumberOfAngles())*memOneGrid + memOneSeis;
  
   float neededMem   = mem0 + std::max(mem1, mem2);
