@@ -609,6 +609,8 @@ Model::checkAvailableMemory(Simbox        * timeSimbox,
   else
     LogKit::LogFormatted(LogKit::LOW,"\nMemory needed by CRAVA:  %.2f gigaBytes\n",gigaBytes);
 
+  if(mem1>mem2)
+    LogKit::LogFormatted(LogKit::LOW,"\n This estimate is too high because seismic data are cut to fit the internal grid\n");
   if (!modelSettings->getFileGrid()) {
     //
     // Check if we can hold everything in memory.
@@ -850,7 +852,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
                   modelSettings->getTraceHeaderFormat(0),
                   geometry,
                   tmpErrText,
-                  failed);
+                  failed, modelSettings);
       sprintf(errText,"%s%s",errText,tmpErrText.c_str());
       modelSettings->setAreaParameters(geometry);
     }
@@ -874,7 +876,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
                   modelSettings->getTraceHeaderFormat(0),
                   geometry,
                   tmpErrText,
-                  failed);
+                  failed, modelSettings);
       sprintf(errText,"%s%s",errText, tmpErrText.c_str());
       
       if(!areaFromModelFile)
@@ -4178,7 +4180,8 @@ Model::getGeometry(const std::string         seismicFile,
                    const TraceHeaderFormat * thf,
                    SegyGeometry           *& geometry,
                    std::string             & errText,
-                   bool                    & failed)
+                   bool                    & failed,
+                   const ModelSettings     * modelSettings)
 {
   if(seismicFile != "") { //May change the condition here, but need geometry if we want to set XL/IL
     int fileType = IO::findGridType(seismicFile);
@@ -4186,7 +4189,7 @@ Model::getGeometry(const std::string         seismicFile,
       geometry = geometryFromCravaFile(seismicFile);
     }
     else if(fileType == IO::SEGY) {
-      geometry = SegY::FindGridGeometry(seismicFile, thf);
+      geometry = SegY::FindGridGeometry(seismicFile, thf, modelSettings->getAreaILXL());
     }
     else if(fileType == IO::STORM || fileType==IO::SGRI) {
       geometry = geometryFromStormFile(seismicFile, errText);

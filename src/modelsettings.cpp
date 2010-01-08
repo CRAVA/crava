@@ -127,6 +127,7 @@ ModelSettings::ModelSettings(void)
   logLevel_              = LogKit::L_LOW;
 
   seed_                  =        0;
+  areaILXL_               = std::vector<int>(0); 
 }
 
 ModelSettings::~ModelSettings(void)

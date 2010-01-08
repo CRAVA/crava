@@ -1568,11 +1568,77 @@ XmlModelFile::parseIntervalOneSurface(TiXmlNode * node, std::string & errTxt)
   return(true);
 }
 
-
-bool
+bool 
 XmlModelFile::parseArea(TiXmlNode * node, std::string & errTxt)
 {
   TiXmlNode * root = node->FirstChildElement("area");
+  if(root == 0)
+    return(false);
+  
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("UTM-coordinates");
+  legalCommands.push_back("inline-crossline-numbers");
+
+  bool utm = parseUTMArea(root, errTxt);
+  if(utm==false)
+    parseILXLArea(root, errTxt);
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+
+}
+
+bool
+XmlModelFile::parseILXLArea(TiXmlNode * node, std::string & errTxt)
+{
+TiXmlNode * root = node->FirstChildElement("inline-crossline-numbers");
+  if(root == 0)
+    return(false);
+  
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("il-start");
+  legalCommands.push_back("il-end");
+  legalCommands.push_back("xl-start");
+  legalCommands.push_back("xl-end");
+  legalCommands.push_back("il-step");
+  legalCommands.push_back("xl-step");
+
+  std::vector<int> ilxlnumbers(6);
+  int value;
+  if(parseValue(root, "il-start", value, errTxt) == true)
+    ilxlnumbers[0] = value;
+  else
+    ilxlnumbers[0] = IMISSING;
+  if(parseValue(root, "il-end", value, errTxt) == true)
+    ilxlnumbers[1] = value;
+  else
+    ilxlnumbers[1] = IMISSING;
+  if(parseValue(root, "xl-start", value, errTxt) == true)
+    ilxlnumbers[2] = value;
+  else
+    ilxlnumbers[2] = IMISSING;
+  if(parseValue(root, "xl-end", value, errTxt) == true)
+    ilxlnumbers[3] = value;
+  else
+    ilxlnumbers[3] = IMISSING;
+  if(parseValue(root, "il-step", value, errTxt) == true)
+    ilxlnumbers[4] = value;
+  else
+    ilxlnumbers[4] = IMISSING;
+  if(parseValue(root, "xl-step", value, errTxt) == true)
+    ilxlnumbers[5] = value;
+  else
+    ilxlnumbers[5] = IMISSING;
+  
+  modelSettings_->setAreaILXLParameters(ilxlnumbers);
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseUTMArea(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("UTM-coordinates");
   if(root == 0)
     return(false);
   
@@ -1587,12 +1653,12 @@ XmlModelFile::parseArea(TiXmlNode * node, std::string & errTxt)
   
   double x0 = 0;
   if(parseValue(root, "reference-point-x", x0, errTxt) == false)
-    errTxt += "Reference x-coordinat must be given in command <"+
+    errTxt += "Reference x-coordinate must be given in command <"+
       root->ValueStr()+"> "+lineColumnText(root)+".\n";
 
   double y0 = 0;
   if(parseValue(root, "reference-point-y", y0, errTxt) == false)
-    errTxt += "Reference y-coordinat must be given in command <"+
+    errTxt += "Reference y-coordinate must be given in command <"+
       root->ValueStr()+"> "+lineColumnText(root)+".\n";
 
   double lx = 0;

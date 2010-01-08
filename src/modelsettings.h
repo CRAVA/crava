@@ -139,7 +139,7 @@ public:
 
   bool                             getDoInversion(void);                                            
   bool                             getDoDepthConversion(void)    const;
-
+  std::vector<int>                 getAreaILXL(void)             const { return areaILXL_              ;}
 
   void rotateVariograms(float angle);
 
@@ -268,6 +268,7 @@ public:
   void setOptimizeWellLocation(bool optimizeWellLoc)     { optimizeWellLocation_ = optimizeWellLoc    ;}
   void setLogLevel(int logLevel)                         { logLevel_             = logLevel           ;}
   void setSeed(int seed)                                 { seed_                 = seed               ;}
+  void setAreaILXLParameters(std::vector<int> ilxl)      { areaILXL_             = ilxl               ;}
 
   enum          sseismicTypes{STANDARDSEIS = 0, PSSEIS = 1};
 
@@ -422,6 +423,7 @@ private:
   int                              seed_;                  // Random seed.
                            
   static int                       debugFlag_;
+  std::vector<int>                 areaILXL_;
 };
 
 #endif

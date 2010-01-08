@@ -310,7 +310,8 @@ private:
                                const TraceHeaderFormat * thf,
                                SegyGeometry           *& geometry,
                                std::string             & errText,
-                               bool                    & failed);
+                               bool                    & failed,
+                               const ModelSettings      * modelSettings);
   SegyGeometry   * geometryFromCravaFile(const std::string & fileName); 
   SegyGeometry   * geometryFromStormFile(const std::string & fileName, std::string & errText); 
  
