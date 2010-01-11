@@ -879,11 +879,12 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
                   failed, modelSettings);
       sprintf(errText,"%s%s",errText, tmpErrText.c_str());
       
-      if(!areaFromModelFile)
+      if(!areaFromModelFile && !failed)
         modelSettings->setAreaParameters(geometry);
     }
   }
-
+  if(failed==false)
+  {
   const SegyGeometry * areaParams = modelSettings->getAreaParameters(); 
 
   int error = timeSimbox->setArea(areaParams, errText);
@@ -1078,6 +1079,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
     timeSimbox->externalFailure();
     failed = true;
   }
+  }
 }
 
 void 
@@ -1177,7 +1179,7 @@ Model::setSimboxSurfaces(Simbox                        *& simbox,
                                    outputFormat);
         }
         if((outputFormat & IO::STORM) > 0) { // These copies are only needed with the STORM format
-          if ((outputFlag & IO::BACKGROUND_TREND) > 0 || (outputFlag & IO::BACKGROUND_TREND) > 0) {
+          if ((outputFlag & IO::BACKGROUND) > 0 || (outputFlag & IO::BACKGROUND_TREND) > 0) {
             simbox->writeTopBotGrids(topSurf, 
                                      baseSurf,
                                      IO::PathToBackground(),
@@ -4189,7 +4191,15 @@ Model::getGeometry(const std::string         seismicFile,
       geometry = geometryFromCravaFile(seismicFile);
     }
     else if(fileType == IO::SEGY) {
-      geometry = SegY::FindGridGeometry(seismicFile, thf, modelSettings->getAreaILXL());
+      try
+      {
+        geometry = SegY::FindGridGeometry(seismicFile, thf, modelSettings->getAreaILXL());
+      }
+      catch (NRLib::Exception & e)
+      {
+        errText += e.what();
+        failed = true;
+      }
     }
     else if(fileType == IO::STORM || fileType==IO::SGRI) {
       geometry = geometryFromStormFile(seismicFile, errText);

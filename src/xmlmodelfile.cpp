@@ -1610,7 +1610,13 @@ TiXmlNode * root = node->FirstChildElement("inline-crossline-numbers");
   else
     ilxlnumbers[0] = IMISSING;
   if(parseValue(root, "il-end", value, errTxt) == true)
+  {
+    if(value<ilxlnumbers[0])
+    {
+      errTxt+="il-end must be larger than il-start.";
+    }
     ilxlnumbers[1] = value;
+  }
   else
     ilxlnumbers[1] = IMISSING;
   if(parseValue(root, "xl-start", value, errTxt) == true)
@@ -1618,7 +1624,13 @@ TiXmlNode * root = node->FirstChildElement("inline-crossline-numbers");
   else
     ilxlnumbers[2] = IMISSING;
   if(parseValue(root, "xl-end", value, errTxt) == true)
+  {
+    if(value<ilxlnumbers[2])
+    {
+      errTxt+="xl-end must be larger than xl-start.";
+    }
     ilxlnumbers[3] = value;
+  }
   else
     ilxlnumbers[3] = IMISSING;
   if(parseValue(root, "il-step", value, errTxt) == true)
