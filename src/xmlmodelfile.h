@@ -61,7 +61,7 @@ private:
   bool       parseILXLArea(TiXmlNode * node, std::string & errTxt);
   bool   parseTime3DMapping(TiXmlNode * node, std::string & errTxt);
   bool   parseIOSettings(TiXmlNode * node, std::string & errTxt);
-  bool     parseOutputTypes(TiXmlNode * node, std::string & errTxt);
+ // bool     parseOutputTypes(TiXmlNode * node, std::string & errTxt);
   bool       parseGridOutput(TiXmlNode * node, std::string & errTxt);
   bool         parseGridDomains(TiXmlNode * node, std::string & errTxt);
   bool         parseGridFormats(TiXmlNode * node, std::string & errTxt);

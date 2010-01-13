@@ -26,6 +26,7 @@ public:
   Vario                          * getLocalWaveletVario(void)    const { return localWaveletVario_      ;} 
   SegyGeometry                   * getAreaParameters(void)       const { return geometry_               ;}    
   TraceHeaderFormat              * getTraceHeaderFormat(void)    const { return traceHeaderFormat_      ;}
+  TraceHeaderFormat              * getTraceHeaderFormatOutput(void) const { return traceHeaderFormatOutput_      ;}
   TraceHeaderFormat              * getTraceHeaderFormat(int i)   const { return localTHF_[i]            ;}
   int                              getKrigingParameter(void)     const { return krigingParameter_       ;}
   float                            getConstBackValue(int i)      const { return constBackValue_[i]      ;}
@@ -150,6 +151,7 @@ public:
   void copyBackgroundVarioToLocalWaveletVario(void);
   void setAreaParameters(const SegyGeometry * geometry);
   void setTraceHeaderFormat(const TraceHeaderFormat & traceHeaderFormat);
+  void setTraceHeaderFormatOutput(TraceHeaderFormat * traceHeaderFormat);
   void addTraceHeaderFormat(TraceHeaderFormat * traceHeaderFormat);
   void setKrigingParameter(int krigingParameter)         { krigingParameter_     = krigingParameter     ;}
   void setConstBackValue(int i, float constBackValue)    { constBackValue_[i]    = constBackValue       ;}
@@ -284,9 +286,9 @@ private:
   SegyGeometry                    * geometry_;              // area parameters
   float                             segyOffset_;            // Starttime for SegY cubes.
   std::vector<float>                localSegyOffset_;       // Starttime for SegY cubes per angle.
-  TraceHeaderFormat               * traceHeaderFormat_;     // traceheader
+  TraceHeaderFormat               * traceHeaderFormat_;     // traceheader of input
   std::vector<TraceHeaderFormat*>   localTHF_;              // traceheader per angle
-
+  TraceHeaderFormat               * traceHeaderFormatOutput_;     // traceheader for output files
   int                               krigingParameter_;   
                           
   std::vector<int>                  seismicType_;           // PP- or PS- seismic

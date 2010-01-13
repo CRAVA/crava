@@ -35,6 +35,7 @@ ModelSettings::ModelSettings(void)
   localWaveletVario_     =     NULL; // Will be set equal to backgroundVario unless it is set separately
   geometry_              =     NULL;
   traceHeaderFormat_     =     NULL;
+  traceHeaderFormatOutput_ = new TraceHeaderFormat(TraceHeaderFormat::SEISWORKS);
   krigingParameter_      =        0; // Indicate kriging not set.
   nWells_                =        0;
   nSimulations_          =        0;
@@ -249,6 +250,14 @@ ModelSettings::setTraceHeaderFormat(const TraceHeaderFormat & traceHeaderFormat)
     delete traceHeaderFormat_;
   traceHeaderFormat_ = new TraceHeaderFormat(traceHeaderFormat);
 }
+void           
+ModelSettings::setTraceHeaderFormatOutput(TraceHeaderFormat * traceHeaderFormat)
+{
+  if (traceHeaderFormatOutput_ != NULL)
+    delete traceHeaderFormatOutput_;
+  traceHeaderFormatOutput_ = new TraceHeaderFormat(*traceHeaderFormat);
+}
+
 
 void           
 ModelSettings::addTraceHeaderFormat(TraceHeaderFormat * traceHeaderFormat)

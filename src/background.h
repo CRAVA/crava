@@ -37,7 +37,8 @@ public:
   
   void         setClassicVsVp(); //For debugging purposes.
 
-  void         writeBackgrounds(Simbox * simbox, GridMapping * depthMapping, GridMapping * timeMapping) const;
+  void         writeBackgrounds(Simbox * simbox, GridMapping * depthMapping, GridMapping * timeMapping, 
+                const TraceHeaderFormat & traceHeaderFormat = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS)) const;
 
 private:
   void         generateBackgroundModel(FFTGrid      *& bgAlpha,

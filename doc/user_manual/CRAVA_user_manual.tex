@@ -287,32 +287,30 @@ CRAVA is a simple inversion tool, particularly suited for quick generation of fi
   </output-volume>
   <io-settings>
     <file-output-prefix> CRAVA_ </file-output-prefix>
-    <output-types>
-      <grid-output>
-        <format>
-          <ascii> yes </ascii>
-        </format>
-        <domain>
-          <time>  yes </time>
-          <depth> no </depth>
-        </domain>
-        <parameters>
-          <vp> yes </vp>
-          <vs> yes </vs>
-          <density> yes </density>
-          <background> no </background>
-        </parameters>
-      </grid-output>
-      <well-output>
-        <wells> no </wells>
-        <blocked-wells> no </blocked-wells>
-      </well-output>
-      <other-output>
-        <wavelets>            no </wavelets>
-        <prior-correlations>  no </prior-correlations>
-        <background-trend-1d> no </background-trend-1d>
-      </other-output>
-    </output-types>
+    <grid-output>
+      <format>
+        <ascii> yes </ascii>
+      </format>
+      <domain>
+        <time>  yes </time>
+        <depth> no </depth>
+      </domain>
+      <parameters>
+        <vp> yes </vp>
+        <vs> yes </vs>
+        <density> yes </density>
+        <background> no </background>
+      </parameters>
+    </grid-output>
+    <well-output>
+      <wells> no </wells>
+      <blocked-wells> no </blocked-wells>
+    </well-output>
+    <other-output>
+      <wavelets>            no </wavelets>
+      <prior-correlations>  no </prior-correlations>
+      <background-trend-1d> no </background-trend-1d>
+    </other-output>
   </io-settings>
   <advanced-settings>
     <fft-grid-padding>

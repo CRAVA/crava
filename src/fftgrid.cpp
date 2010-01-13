@@ -1427,7 +1427,8 @@ FFTGrid::writeFile(const std::string & fName,
                    const std::string   label, 
                    const float         z0, 
                    GridMapping       * depthMap, 
-                   GridMapping       * timeMap)
+                   GridMapping       * timeMap,
+                   const TraceHeaderFormat & thf)
 {
   std::string fileName = IO::makeFullFileName(subDir, fName);      
   
@@ -1455,7 +1456,7 @@ FFTGrid::writeFile(const std::string & fName,
 
       //SEGY, SGRI, and CRAVA are never resampled in time.
       if((formatFlag_ & IO::SEGY) >0)
-        FFTGrid::writeSegyFile(fileName, simbox, z0);
+        FFTGrid::writeSegyFile(fileName, simbox, z0, thf);
       if((formatFlag_ & IO::SGRI) >0)
         FFTGrid::writeSgriFile(fileName, simbox, label);
       if((formatFlag_ & IO::CRAVA) >0)
@@ -1568,7 +1569,7 @@ FFTGrid::writeStormFile(const std::string & fileName, const Simbox * simbox, boo
 
 
 int
-FFTGrid::writeSegyFile(const std::string & fileName, const Simbox * simbox, float z0)
+FFTGrid::writeSegyFile(const std::string & fileName, const Simbox * simbox, float z0, const TraceHeaderFormat &thf)
 {
   //  long int timestart, timeend;
   //  time(&timestart);
@@ -1583,7 +1584,7 @@ FFTGrid::writeSegyFile(const std::string & fileName, const Simbox * simbox, floa
   double zmin,zmax;
   simbox->getMinMaxZ(zmin,zmax);
   segynz = int(ceil((zmax-z0)/dz));
-  SegY *segy = new SegY(gfName.c_str(),z0,segynz,dz,header);
+  SegY *segy = new SegY(gfName.c_str(),z0,segynz,dz,header, thf);
   SegyGeometry * geometry = new SegyGeometry(simbox->getx0(), simbox->gety0(), simbox->getdx(), simbox->getdy(), 
                                              simbox->getnx(), simbox->getny(),simbox->getIL0(), simbox->getXL0(), 
                                              simbox->getILStepX(), simbox->getILStepY(), 

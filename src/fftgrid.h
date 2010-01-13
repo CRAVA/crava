@@ -92,11 +92,13 @@ public:
                                  const std::string   sgriLabel = "NO_LABEL", 
                                  const float         z0        = 0.0, 
                                  GridMapping       * depthMap  = NULL, 
-                                 GridMapping       * timeMap   = NULL); 
+                                 GridMapping       * timeMap   = NULL,
+                                 const TraceHeaderFormat & thf  = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS)); 
   //Use this instead of the ones below.
   virtual void         writeStormFile(const std::string & fileName, const Simbox * simbox, bool expTrans = false, 
                                       bool ascii = false, bool padding = false, bool flat = false);//No mode/randomaccess
-  virtual int          writeSegyFile(const std::string & fileName, const Simbox * simbox, float z0);   //No mode/randomaccess
+  virtual int          writeSegyFile(const std::string & fileName, const Simbox * simbox, float z0, 
+                                     const TraceHeaderFormat &thf = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS));   //No mode/randomaccess
   virtual int          writeSgriFile(const std::string & fileName, const Simbox * simbox, const std::string label);
   virtual void         writeAsciiFile(const std::string & fileName);
   virtual void         writeAsciiRaw(const std::string & fileName);

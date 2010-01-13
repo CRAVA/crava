@@ -1592,7 +1592,7 @@ Model::processSeismic(FFTGrid      **& seisCube,
                                  sgriLabel, 
                                  offset,
                                  timeDepthMapping_, 
-                                 timeCutMapping_);
+                                 timeCutMapping_, *modelSettings->getTraceHeaderFormatOutput());
 
         }
       }
@@ -2101,7 +2101,7 @@ Model::processBackground(Background   *& background,
 
   if (failed == false) {
     if((modelSettings->getGridOutputFlag() & IO::BACKGROUND) > 0) {
-      background->writeBackgrounds(timeSimbox, timeDepthMapping_, timeCutMapping_); 
+      background->writeBackgrounds(timeSimbox, timeDepthMapping_, timeCutMapping_, *modelSettings->getTraceHeaderFormatOutput()); 
     }
   }
     

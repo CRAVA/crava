@@ -1476,7 +1476,8 @@ Background::padAndSetBackgroundModel(FFTGrid * bgAlpha,
 void
 Background::writeBackgrounds(Simbox      * simbox, 
                              GridMapping * depthMapping, 
-                             GridMapping * timeMapping) const 
+                             GridMapping * timeMapping,
+                             const TraceHeaderFormat &thf) const 
 {
   if(depthMapping != NULL && depthMapping->getSimbox() == NULL) {
     const Simbox * timeSimbox = simbox;
@@ -1490,9 +1491,9 @@ Background::writeBackgrounds(Simbox      * simbox,
   std::string fileName1 = IO::PrefixBackground() + "Vp" ;
   std::string fileName2 = IO::PrefixBackground() + "Vs" ;
   std::string fileName3 = IO::PrefixBackground() + "Rho";
-  backModel_[0]->writeFile(fileName1, IO::PathToBackground(), simbox, "exptrans", 0, depthMapping, timeMapping);
-  backModel_[1]->writeFile(fileName2, IO::PathToBackground(), simbox, "exptrans", 0, depthMapping, timeMapping);
-  backModel_[2]->writeFile(fileName3, IO::PathToBackground(), simbox, "exptrans", 0, depthMapping, timeMapping);
+  backModel_[0]->writeFile(fileName1, IO::PathToBackground(), simbox, "exptrans", 0, depthMapping, timeMapping, thf);
+  backModel_[1]->writeFile(fileName2, IO::PathToBackground(), simbox, "exptrans", 0, depthMapping, timeMapping, thf);
+  backModel_[2]->writeFile(fileName3, IO::PathToBackground(), simbox, "exptrans", 0, depthMapping, timeMapping, thf);
   //
   // For debugging: write cubes not in ASCII, with padding, and with flat top.
   //

@@ -509,12 +509,13 @@ FFTFileGrid::writeFile(const std::string & fileName,
                        const std::string   sgriLabel, 
                        const float         z0, 
                        GridMapping       * depthMap, 
-                       GridMapping       * timeMap)
+                       GridMapping       * timeMap,
+                       const TraceHeaderFormat & thf)
 {
   assert(accMode_ == NONE || accMode_ == RANDOMACCESS);
   if(accMode_ != RANDOMACCESS)
     load();
-  FFTGrid::writeFile(fileName, subDir, simbox, sgriLabel, z0, depthMap, timeMap);
+  FFTGrid::writeFile(fileName, subDir, simbox, sgriLabel, z0, depthMap, timeMap, thf);
   if(accMode_ != RANDOMACCESS)
     unload();
 }
@@ -532,12 +533,12 @@ FFTFileGrid::writeStormFile(const std::string & fileName, const Simbox * simbox,
 
 
 int
-FFTFileGrid::writeSegyFile(const std::string & fileName, const Simbox * simbox, float z0)
+FFTFileGrid::writeSegyFile(const std::string & fileName, const Simbox * simbox, float z0, const TraceHeaderFormat &thf)
 {
   assert(accMode_ == NONE || accMode_ == RANDOMACCESS);
   if(accMode_ != RANDOMACCESS)
     load();
-  int ok = FFTGrid::writeSegyFile(fileName, simbox, z0);
+  int ok = FFTGrid::writeSegyFile(fileName, simbox, z0, thf);
   if(accMode_ != RANDOMACCESS)
     unload();
   return(ok);

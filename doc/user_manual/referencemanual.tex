@@ -413,56 +413,105 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Default
  \elist
 
-\subsubsection{\hbracket{output-types}}\newkw{output-types}
- \slist
-   \item \Description All commands directly controlling actual result output are gathered here.
-   \item \Argument Elements controlling result output
-   \item \Default
- \elist
 
-\paragraph{\hbracket{grid-output}}\newkw{grid-output}
+\subsubsection{\hbracket{grid-output}}\newkw{grid-output}
  \slist
    \item \Description All commands related to output given as grids are gathered here.
    \item \Argument Elements controlling output given as grids
    \item \Default
  \elist
 
-\subparagraph{\hbracket{domain}}\newkw{domain}
+\paragraph{\hbracket{domain}}\newkw{domain}
  \slist
    \item \Description Commands specifying which domain output should be in.
    \item \Argument Elements controlling the output domain
    \item \Default
  \elist
 
-\subsubparagraph{\hbracket{depth}}\newkw{depth}
+\subparagraph{\hbracket{depth}}\newkw{depth}
  \slist
    \item \Description Should output come in depth domain? Requires information under \kw{interval-two-surfaces}.
    \item \Argument 'yes' or 'no'
    \item \Default 'no'
  \elist
 
-\subsubparagraph{\hbracket{time}}\newkw{time}
+\subparagraph{\hbracket{time}}\newkw{time}
  \slist
    \item \Description Should output come in time domain?
    \item \Argument 'yes' or 'no'
    \item \Default 'yes'
  \elist
 
-\subparagraph{\hbracket{format}}\newkw{format}
+\paragraph{\hbracket{format}}\newkw{format}
  \slist
    \item \Description Control of the format of output grids.
    \item \Argument Elements controlling the format of output grids
    \item \Default
  \elist
 
-\subsubparagraph{\hbracket{segy}}\newkw{segy}
+\subparagraph{\hbracket{segy-format}}\newkw{segy-format}
+ \slist
+   \item \Description Information about the segy format. By default CRAVA recognizes SeisWorks and IESX.
+   \item \Argument Elements containing information about the segy format.
+   \item \Default
+ \elist
+\subsubparagraph{\hbracket{standard-format}}\newkw{standard-format}
+ \slist
+   \item \Description Giving the starting format for modifications.
+   \item \Argument 'seisworks' or 'iesx'
+   \item \Default 'seisworks'
+ \elist
+
+\subsubparagraph{\hbracket{location-x}}\newkw{location-x}
+ \slist
+   \item \Description The byte location for the x-coordinate in the trace header.
+   \item \Argument Integer
+   \item \Default
+ \elist
+
+\subsubparagraph{\hbracket{location-y}}\newkw{location-y}
+ \slist
+   \item \Description The byte location for the y-coordinate in the trace header.
+   \item \Argument Integer
+   \item \Default
+ \elist
+
+\subsubparagraph{\hbracket{location-il}}\newkw{location-il}
+ \slist
+   \item \Description The byte location for the inline in the trace header.
+   \item \Argument Integer
+   \item \Default
+ \elist
+
+\subsubparagraph{\hbracket{location-xl}}\newkw{location-xl}
+ \slist
+   \item \Description The byte location for the crossline in the trace header.
+   \item \Argument Integer
+   \item \Default
+ \elist
+
+\subsubparagraph{\hbracket{bypass-coordinate-scaling}}\newkw{bypass-coordinate-scaling}
+ \slist
+   \item \Description Indicates whether coordinate scaling information should be used.
+   \item \Argument 'yes' or 'no'
+   \item \Default
+ \elist
+
+\subsubparagraph{\hbracket{location-scaling-coefficient}}\newkw{location-scaling-coefficient}
+ \slist
+   \item \Description 
+   \item \Argument Integer
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{segy}}\newkw{segy}
  \slist
    \item \Description Should grid output come as segy?
    \item \Argument 'yes' or 'no'
    \item \Default
  \elist
 
-\subsubparagraph{\hbracket{storm}}\newkw{storm}
+\subparagraph{\hbracket{storm}}\newkw{storm}
  \slist
    \item \Description Should grid output come as storm?
    \item \Argument 'yes' or 'no'
@@ -470,56 +519,56 @@ Estimation: Checks input data and performs estimation of lacking information for
  \elist
 
 
-\subsubparagraph{\hbracket{crava}}\newkw{crava}
+\subparagraph{\hbracket{crava}}\newkw{crava}
  \slist
    \item \Description Should grid output come in crava binary format?
    \item \Argument 'yes' or 'no'
    \item \Default
  \elist
 
-\subsubparagraph{\hbracket{sgri}}\newkw{sgri}
+\subparagraph{\hbracket{sgri}}\newkw{sgri}
  \slist
    \item \Description Should grid output come as storm sgri?
    \item \Argument 'yes' or 'no'
    \item \Default
  \elist
 
-\subsubparagraph{\hbracket{ascii}}\newkw{ascii}
+\subparagraph{\hbracket{ascii}}\newkw{ascii}
  \slist
    \item \Description Should grid output come as storm ascii?
    \item \Argument 'yes' or 'no'
    \item \Default
  \elist
 
-\subparagraph{\hbracket{parameters}}\newkw{parameters}
+\paragraph{\hbracket{parameters}}\newkw{parameters}
  \slist
    \item \Description Controls which grid parameters to output. All are 'yes' or 'no'.
    \item \Argument Elements controlling which grid parameters to output
    \item \Default If this command is not given, vp, vs and density are written.
  \elist
 
-\subsubparagraph{\hbracket{vp}}\newkw{vp}
+\subparagraph{\hbracket{vp}}\newkw{vp}
  \slist
    \item \Description
    \item \Argument 'yes' or 'no'
    \item \Default
  \elist
 
-\subsubparagraph{\hbracket{vs}}\newkw{vs}
+\subparagraph{\hbracket{vs}}\newkw{vs}
  \slist
    \item \Description
    \item \Argument 'yes' or 'no'
    \item \Default
  \elist
 
-\subsubparagraph{\hbracket{density}}\newkw{density}
+\subparagraph{\hbracket{density}}\newkw{density}
  \slist
    \item \Description
    \item \Argument 'yes' or 'no'
    \item \Default
  \elist
 
-\subsubparagraph{\hbracket{lame-lambda}}\newkw{lame-lambda}
+\subparagraph{\hbracket{lame-lambda}}\newkw{lame-lambda}
  \slist
    \item \Description
    \item \Argument 'yes' or 'no'
@@ -527,91 +576,91 @@ Estimation: Checks input data and performs estimation of lacking information for
  \elist
 
 
-\subsubparagraph{\hbracket{lame-mu}}\newkw{lame-mu}
+\subparagraph{\hbracket{lame-mu}}\newkw{lame-mu}
  \slist
    \item \Description
    \item \Argument 'yes' or 'no'
    \item \Default
  \elist
 
-\subsubparagraph{\hbracket{poisson-ratio}}\newkw{poisson-ratio}
+\subparagraph{\hbracket{poisson-ratio}}\newkw{poisson-ratio}
  \slist
    \item \Description
    \item \Argument 'yes' or 'no'
    \item \Default
  \elist
 
-\subsubparagraph{\hbracket{ai}}\newkw{ai}
+\subparagraph{\hbracket{ai}}\newkw{ai}
  \slist
    \item \Description
    \item \Argument 'yes' or 'no'
    \item \Default
  \elist
 
-\subsubparagraph{\hbracket{si}}\newkw{si}
+\subparagraph{\hbracket{si}}\newkw{si}
  \slist
    \item \Description
    \item \Argument 'yes' or 'no'
    \item \Default
  \elist
 
-\subsubparagraph{\hbracket{vp-vs-ratio}}\newkw{vp-vs-ratio}
+\subparagraph{\hbracket{vp-vs-ratio}}\newkw{vp-vs-ratio}
  \slist
    \item \Description
    \item \Argument 'yes' or 'no'
    \item \Default
  \elist
 
-\subsubparagraph{\hbracket{murho}}\newkw{murho}
+\subparagraph{\hbracket{murho}}\newkw{murho}
 \slist
   \item \Description
   \item \Argument 'yes' or 'no'
   \item \Default
 \elist
 
-\subsubparagraph{\hbracket{lambdarho}}\newkw{lambdarho}
+\subparagraph{\hbracket{lambdarho}}\newkw{lambdarho}
  \slist
    \item \Description
    \item \Argument 'yes' or 'no'
    \item \Default
 \elist
 
-\subsubparagraph{\hbracket{correlations}}\newkw{correlations}
+\subparagraph{\hbracket{correlations}}\newkw{correlations}
  \slist
    \item \Description These are the posterior correlations between vp, vs and density after inversion.
    \item \Argument 'yes' or 'no'
    \item \Default
 \elist
 
-\subsubparagraph{\hbracket{residuals}}\newkw{residuals}
+\subparagraph{\hbracket{residuals}}\newkw{residuals}
  \slist
    \item \Description
    \item \Argument 'yes' or 'no'
    \item \Default
 \elist
 
-\subsubparagraph{\hbracket{background}}\newkw{background}
+\subparagraph{\hbracket{background}}\newkw{background}
  \slist
    \item \Description
    \item \Argument 'yes' or 'no'
    \item \Default
 \elist
 
-\subsubparagraph{\hbracket{background-trend}}\newkw{background-trend}
+\subparagraph{\hbracket{background-trend}}\newkw{background-trend}
  \slist
    \item \Description
    \item \Argument 'yes' or 'no'
    \item \Default
 \elist
 
-\subsubparagraph{\hbracket{original-seismic-data}}\newkw{original-seismic-data}
+\subparagraph{\hbracket{original-seismic-data}}\newkw{original-seismic-data}
  \slist
    \item \Description Write original seismic data to file.
    \item \Argument 'yes' or 'no'
    \item \Default
  \elist
 
-\subsubparagraph{\hbracket{synthetic-seismic-data}}  \newkw{synthetic-seismic-data}
+\subparagraph{\hbracket{synthetic-seismic-data}}\newkw{synthetic-seismic-data}
  \slist
    \item \Description Generate synthetic seismic from the inverted data.
    \item \Argument 'yes' or 'no'
@@ -619,14 +668,14 @@ Estimation: Checks input data and performs estimation of lacking information for
  \elist
 
 
-\subsubparagraph{\hbracket{time-to-depth-velocity}}\newkw{time-to-depth-velocity}
+\subparagraph{\hbracket{time-to-depth-velocity}}\newkw{time-to-depth-velocity}
  \slist
    \item \Description Write time-to-depth velocity to file.
    \item \Argument 'yes' or 'no'
    \item \Default
  \elist
 
-\subsubparagraph{\hbracket{extra-grids}}\newkw{extra-grids}
+\subparagraph{\hbracket{extra-grids}}\newkw{extra-grids}
  \slist
    \item \Description Temporary, will be replaced. Currently triggers writing of
    \begin{itemize}
@@ -638,70 +687,70 @@ Estimation: Checks input data and performs estimation of lacking information for
 \elist
 
 
-\paragraph{\hbracket{well-output}}\newkw{well-output}
+\subsubsection{\hbracket{well-output}}\newkw{well-output}
  \slist
    \item \Description Collects all output that can be given in well format. Wells contain logs for vp, vs and density, each of these in four versions: Raw, filtered to background frequency, filtered to seismic frequency and seismic resolution. In addition, the facies log is written if found.
    \item \Argument Elements collecting output given in well format
    \item \Default
  \elist
 
-\subparagraph{\hbracket{format}}\rnewkw{format}{format2}
+\paragraph{\hbracket{format}}\rnewkw{format}{format2}
  \slist
    \item \Description Controls well formats used for output. Default is RMS.
    \item \Argument Elements controlling the formats used for output
    \item \Default
  \elist
 
-\subsubparagraph{\hbracket{rms}}\newkw{rms}
+\subparagraph{\hbracket{rms}}\newkw{rms}
  \slist
    \item \Description Controls if wells are written on RMS format.
    \item \Argument 'yes' or 'no'
    \item \Default
  \elist
 
- \subsubparagraph{\hbracket{norsar}}\newkw{norsar}
+ \subparagraph{\hbracket{norsar}}\newkw{norsar}
  \slist
    \item \Description Controls if wells are written on NORSAR format.
    \item \Argument 'yes' or 'no'
    \item \Default
  \elist
 
-\subparagraph{\hbracket{wells}}\newkw{wells}
+\paragraph{\hbracket{wells}}\newkw{wells}
  \slist
    \item \Description Writes wells following original sampling density.
    \item \Argument 'yes' or 'no'
    \item \Default
  \elist
 
-\subparagraph{\hbracket{blocked-wells}}\newkw{blocked-wells}
+\paragraph{\hbracket{blocked-wells}}\newkw{blocked-wells}
  \slist
    \item \Description Writes wells sampled to internal grid resolution.
    \item \Argument 'yes' or 'no'
    \item \Default
  \elist
 
-\subparagraph{\hbracket{blocked-logs}}\newkw{blocked-logs}
+\paragraph{\hbracket{blocked-logs}}\newkw{blocked-logs}
  \slist
    \item \Description Not currently active.
    \item \Argument
    \item \Default
  \elist
 
-\paragraph{\hbracket{other-output}}\newkw{other-output}
+\subsubsection{\hbracket{other-output}}\newkw{other-output}
  \slist
    \item \Description Controls output that is neither standard grid nor well.
    \item \Argument Elements controlling output
    \item \Default
  \elist
 
-\subparagraph{\hbracket{wavelets}}\newkw{wavelets}
+\paragraph{\hbracket{wavelets}}\newkw{wavelets}
  \slist
    \item \Description Write wavelet to file. Mainly for use with wavelet estimation.
    \item \Argument 'yes' or 'no'
    \item \Default
  \elist
 
-\subparagraph{\hbracket{extra-surfaces}}\newkw{extra-surfaces}
+\paragraph{\hbracket{extra-surfaces}}\newkw{extra-surfaces}
  \slist
    \item \Description Temporary, will be replaced. Currently writes:
    \begin{itemize}
@@ -715,14 +764,14 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Default
  \elist
 
-\subparagraph{\hbracket{prior-correlations}}\newkw{prior-correlations}
+\paragraph{\hbracket{prior-correlations}}\newkw{prior-correlations}
  \slist
    \item \Description Write prior correlation files.
    \item \Argument 'yes' or 'no'
    \item \Default
  \elist
 
-\subparagraph{\hbracket{background-trend-1d}}\newkw{background-trend-1d}
+\paragraph{\hbracket{background-trend-1d}}\newkw{background-trend-1d}
  \slist
    \item \Description Write the background trend as 1D curve.
    \item \Argument 'yes' or 'no'
@@ -934,52 +983,59 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Default
  \elist
 
-\paragraph{\hbracket{segy-format}}\newkw{segy-format}
+\paragraph{\hbracket{segy-format}}\rnewkw{segy-format}{segy-format2}
  \slist
-   \item \Description Information about the segy format. By default, CRAVA recognizes SeisWork and IESX.
+   \item \Description Information about the segy format. By default, CRAVA recognizes SeisWorks and IESX.
    \item \Argument Elements containing information about the segy format
    \item \Default
  \elist
 
-\subparagraph{\hbracket{standard-format}}\newkw{standard-format}
+\subparagraph{\hbracket{standard-format}}\rnewkw{standard-format}{standard-format2}
  \slist
    \item \Description Giving the starting format for modifications.
    \item \Argument 'seisworks' or 'iesx'
    \item \Default 'seisworks'
  \elist
 
-\subparagraph{\hbracket{location-x}}\newkw{location-x}
+\subparagraph{\hbracket{location-x}}\rnewkw{location-x}{location-x2}
  \slist
    \item \Description The byte location for the x-coordinate in the trace header.
    \item \Argument Integer
    \item \Default
  \elist
 
-\subparagraph{\hbracket{location-y}}\newkw{location-y}
+\subparagraph{\hbracket{location-y}}\rnewkw{location-y}{location-y2}
  \slist
    \item \Description The byte location for the y-coordinate in the trace header.
    \item \Argument Integer
    \item \Default
  \elist
 
-\subparagraph{\hbracket{location-il}}\newkw{location-il}
+\subparagraph{\hbracket{location-il}}\rnewkw{location-il}{location-il2}
  \slist
    \item \Description The byte location for the inline in the trace header.
    \item \Argument Integer
    \item \Default
  \elist
 
-\subparagraph{\hbracket{location-xl}}\newkw{location-xl}
+\subparagraph{\hbracket{location-xl}}\rnewkw{location-xl}{location-xl2}
  \slist
    \item \Description The byte location for the crossline in the trace header.
    \item \Argument Integer
    \item \Default
  \elist
 
-\subparagraph{\hbracket{bypass-coordinate-scaling}}\newkw{bypass-coordinate-scaling}
+\subparagraph{\hbracket{bypass-coordinate-scaling}}\rnewkw{bypass-coordinate-scaling}{bypass-coordinate-scaling2}
  \slist
    \item \Description Indicates whether coordinate scaling information should be used.
    \item \Argument 'yes' or 'no'
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{location-scaling-coefficient}}\rnewkw{location-scaling-coefficient}{location-scaling-coefficient2}
+ \slist
+   \item \Description 
+   \item \Argument Integer
    \item \Default
  \elist
 

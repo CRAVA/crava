@@ -47,10 +47,12 @@ public:
                          const std::string   sgriLabel = "NO_LABEL", 
                          const float         z0        = 0.0, 
                          GridMapping       * depthMap  = NULL, 
-                         GridMapping       * timeMap   = NULL);  //Use this instead of the ones below.
+                         GridMapping       * timeMap   = NULL,
+                         const TraceHeaderFormat & thf = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS));  //Use this instead of the ones below.
   void         writeStormFile(const std::string & fileName, const Simbox * simbox, bool expTrans = false,
                               bool ascii = false, bool padding = false, bool flat = false);
-  int          writeSegyFile(const std::string & fileName, const Simbox * simbox, float z0);
+  int          writeSegyFile(const std::string & fileName, const Simbox * simbox, float z0, 
+                             const TraceHeaderFormat &thf = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS));
   int          writeSgriFile(const std::string & fileName, const Simbox *simbox, const std::string label);
   void         writeResampledStormCube(GridMapping *gridmapping, const std::string & fileName, 
                                        const Simbox *simbox, const int format, bool expTrans);

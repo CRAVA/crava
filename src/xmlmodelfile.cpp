@@ -1758,10 +1758,13 @@ XmlModelFile::parseIOSettings(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("top-directory");
   legalCommands.push_back("input-directory");
   legalCommands.push_back("output-directory");
-  legalCommands.push_back("output-types");
   legalCommands.push_back("file-output-prefix");
   legalCommands.push_back("log-level");
+  legalCommands.push_back("grid-output");
+  legalCommands.push_back("well-output");
+  legalCommands.push_back("other-output");
 
+  
   std::string topDir = IO::TopDirectory();
   parseValue(root, "top-directory", topDir, errTxt);
   ensureTrailingSlash(topDir);
@@ -1778,8 +1781,9 @@ XmlModelFile::parseIOSettings(TiXmlNode * node, std::string & errTxt)
   ensureTrailingSlash(outputDir);
   IO::setOutputPath(outputDir);
 
-  parseOutputTypes(root, errTxt);
-
+  parseGridOutput(root, errTxt);
+  parseWellOutput(root, errTxt);
+  parseOtherOutput(root, errTxt);
   std::string value;
   if(parseValue(root, "file-output-prefix", value, errTxt) == true) {
     IO::setFilePrefix(value);
@@ -1836,26 +1840,6 @@ XmlModelFile::ensureTrailingSlash(std::string & directory)
     directory += slash;
 }
 
-
-bool
-XmlModelFile::parseOutputTypes(TiXmlNode * node, std::string & errTxt)
-{
-  TiXmlNode * root = node->FirstChildElement("output-types");
-  if(root == 0)
-    return(false);
-
-  std::vector<std::string> legalCommands;
-  legalCommands.push_back("grid-output");
-  legalCommands.push_back("well-output");
-  legalCommands.push_back("other-output");
-
-  parseGridOutput(root, errTxt);
-  parseWellOutput(root, errTxt);
-  parseOtherOutput(root, errTxt);
-
-  checkForJunk(root, errTxt, legalCommands);
-  return(true);
-}
 
 
 bool
@@ -1928,17 +1912,20 @@ XmlModelFile::parseGridFormats(TiXmlNode * node, std::string & errTxt)
     return(false);
 
   std::vector<std::string> legalCommands;
+  legalCommands.push_back("segy-format");
   legalCommands.push_back("segy");
   legalCommands.push_back("storm");
   legalCommands.push_back("ascii");
   legalCommands.push_back("sgri");
   legalCommands.push_back("crava");
-
-
+  TraceHeaderFormat *thf = NULL;
+  bool segyFormat = parseTraceHeaderFormat(root, "segy-format",thf, errTxt);
+ if(segyFormat==true)
+    modelSettings_->setTraceHeaderFormatOutput(thf);
   bool useFormat = false;
   int formatFlag = 0;
   bool stormSpecified = false;  //Default format, error if turned off and no others turned on.
-  if(parseBool(root, "segy", useFormat, errTxt) == true && useFormat == true)
+  if((parseBool(root, "segy", useFormat, errTxt) == true && useFormat == true) || segyFormat==true)
     formatFlag += IO::SEGY;
   if(parseBool(root, "storm", useFormat, errTxt) == true) {
     stormSpecified = true;
@@ -1958,6 +1945,7 @@ XmlModelFile::parseGridFormats(TiXmlNode * node, std::string & errTxt)
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
+
 
 
 bool
