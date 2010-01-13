@@ -1852,11 +1852,18 @@ XmlModelFile::parseGridOutput(TiXmlNode * node, std::string & errTxt)
   std::vector<std::string> legalCommands;
   legalCommands.push_back("domain");
   legalCommands.push_back("format");
-  legalCommands.push_back("parameters");
+  legalCommands.push_back("elastic-parameters");
+  legalCommands.push_back("seismic-data");
+  legalCommands.push_back("other-parameters");
   
   parseGridFormats(root, errTxt);
   parseGridDomains(root, errTxt);
-  parseGridParameters(root, errTxt);
+  int paramFlag = 0;
+  parseGridElasticParameters(root, paramFlag, errTxt);
+  parseGridSeismicData(root, paramFlag, errTxt);
+  parseGridOtherParameters(root, paramFlag, errTxt);
+  if(paramFlag!=0)
+    modelSettings_->setGridOutputFlag(paramFlag);
 
   //Set output for all FFTGrids.
   FFTGrid::setOutputFlags(modelSettings_->getGridOutputFormat(), 
@@ -1949,9 +1956,9 @@ XmlModelFile::parseGridFormats(TiXmlNode * node, std::string & errTxt)
 
 
 bool
-XmlModelFile::parseGridParameters(TiXmlNode * node, std::string & errTxt)
+XmlModelFile::parseGridElasticParameters(TiXmlNode * node, int & paramFlag, std::string & errTxt)
 {
-  TiXmlNode * root = node->FirstChildElement("parameters");
+  TiXmlNode * root = node->FirstChildElement("elastic-parameters");
   if(root == 0)
     return(false);
 
@@ -1966,18 +1973,12 @@ XmlModelFile::parseGridParameters(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("si");
   legalCommands.push_back("vp-vs-ratio");
   legalCommands.push_back("murho");
-  legalCommands.push_back("lambdarho");
-  legalCommands.push_back("correlations");
-  legalCommands.push_back("residuals");
+  legalCommands.push_back("lambdarho"); 
   legalCommands.push_back("background");
   legalCommands.push_back("background-trend");
-  legalCommands.push_back("extra-grids");
-  legalCommands.push_back("original-seismic-data");
-  legalCommands.push_back("synthetic-seismic-data");
-  legalCommands.push_back("time-to-depth-velocity");
-
+  
   bool value = false;
-  int paramFlag = 0;
+  //int paramFlag = 0;
   if(modelSettings_->getDefaultGridOutputInd() == false) //May have set faciesprobs.
     paramFlag = modelSettings_->getGridOutputFlag();
 
@@ -2003,32 +2004,67 @@ XmlModelFile::parseGridParameters(TiXmlNode * node, std::string & errTxt)
     paramFlag += IO::MURHO;
   if(parseBool(root, "lambdarho", value, errTxt) == true && value == true)
     paramFlag += IO::LAMBDARHO;
-  if(parseBool(root, "correlations", value, errTxt) == true && value == true)
-    paramFlag += IO::CORRELATION;
-  if(parseBool(root, "residuals", value, errTxt) == true && value == true)
-    paramFlag += IO::RESIDUAL;
   if(parseBool(root, "background", value, errTxt) == true && value == true)
     paramFlag += IO::BACKGROUND;
   if(parseBool(root, "background-trend", value, errTxt) == true && value == true)
     paramFlag += IO::BACKGROUND_TREND;
-  if(parseBool(root, "extra-grids", value, errTxt) == true && value == true)
-    paramFlag += IO::EXTRA_GRIDS;
-  if(parseBool(root, "original-seismic-data", value, errTxt) == true && value == true)
+ 
+  modelSettings_->setDefaultGridOutputInd(false);
+ 
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseGridSeismicData(TiXmlNode * node, int & paramFlag, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("seismic-data");
+  if(root == 0)
+    return(false);
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("original");
+  legalCommands.push_back("synthetic");
+  legalCommands.push_back("residuals");
+  bool value = false;
+  if(parseBool(root, "residuals", value, errTxt) == true && value == true)
+    paramFlag += IO::RESIDUAL;
+  if(parseBool(root, "original", value, errTxt) == true && value == true)
     paramFlag += IO::ORIGINAL_SEISMIC_DATA;  
-  if(parseBool(root, "time-to-depth-velocity", value, errTxt) == true && value == true)
-    paramFlag += IO::TIME_TO_DEPTH_VELOCITY;
-  if(parseBool(root, "synthetic-seismic-data", value, errTxt) == true && value == true)
+
+  if(parseBool(root, "synthetic", value, errTxt) == true && value == true)
   {
     paramFlag += IO::SYNTHETIC_SEISMIC_DATA;
     modelSettings_->setGenerateSeismicAfterInversion(true);
   }
-
   modelSettings_->setDefaultGridOutputInd(false);
-  modelSettings_->setGridOutputFlag(paramFlag);
-
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
+
+bool
+XmlModelFile::parseGridOtherParameters(TiXmlNode * node, int & paramFlag, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("other-parameters");
+  if(root == 0)
+    return(false);
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("correlations");
+  legalCommands.push_back("time-to-depth-velocity");
+  legalCommands.push_back("extra-grids");
+
+  bool value = false;
+  if(parseBool(root, "correlations", value, errTxt) == true && value == true)
+    paramFlag += IO::CORRELATION;
+  if(parseBool(root, "extra-grids", value, errTxt) == true && value == true)
+    paramFlag += IO::EXTRA_GRIDS;
+  if(parseBool(root, "time-to-depth-velocity", value, errTxt) == true && value == true)
+    paramFlag += IO::TIME_TO_DEPTH_VELOCITY;
+
+  modelSettings_->setDefaultGridOutputInd(false);
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
 
 
 bool

@@ -540,10 +540,10 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Default
  \elist
 
-\paragraph{\hbracket{parameters}}\newkw{parameters}
+\paragraph{\hbracket{elastic-parameters}}\newkw{elastic-parameters}
  \slist
-   \item \Description Controls which grid parameters to output. All are 'yes' or 'no'.
-   \item \Argument Elements controlling which grid parameters to output
+   \item \Description Controls which elastic grid parameters to output. All are 'yes' or 'no'.
+   \item \Argument Elements controlling which elastic parameters to output
    \item \Default If this command is not given, vp, vs and density are written.
  \elist
 
@@ -625,20 +625,6 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Default
 \elist
 
-\subparagraph{\hbracket{correlations}}\newkw{correlations}
- \slist
-   \item \Description These are the posterior correlations between vp, vs and density after inversion.
-   \item \Argument 'yes' or 'no'
-   \item \Default
-\elist
-
-\subparagraph{\hbracket{residuals}}\newkw{residuals}
- \slist
-   \item \Description
-   \item \Argument 'yes' or 'no'
-   \item \Default
-\elist
-
 \subparagraph{\hbracket{background}}\newkw{background}
  \slist
    \item \Description
@@ -653,20 +639,39 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Default
 \elist
 
-\subparagraph{\hbracket{original-seismic-data}}\newkw{original-seismic-data}
+\paragraph{\hbracket{seismic-data}}\newkw{seismic-data}
+ \slist
+   \item \Description Controls which seismic data parameters to output. All are 'yes' or 'no'.
+   \item \Argument Elements controlling which seismic data to output
+   \item \Default 
+ \elist
+\subparagraph{\hbracket{original}}\newkw{original}
  \slist
    \item \Description Write original seismic data to file.
    \item \Argument 'yes' or 'no'
    \item \Default
  \elist
 
-\subparagraph{\hbracket{synthetic-seismic-data}}\newkw{synthetic-seismic-data}
+\subparagraph{\hbracket{synthetic}}\newkw{synthetic}
  \slist
    \item \Description Generate synthetic seismic from the inverted data.
    \item \Argument 'yes' or 'no'
    \item \Default
  \elist
 
+\subparagraph{\hbracket{residuals}}\newkw{residuals}
+ \slist
+   \item \Description
+   \item \Argument 'yes' or 'no'
+   \item \Default
+\elist
+
+\paragraph{\hbracket{other-parameters}}\newkw{other-parameters}
+ \slist
+   \item \Description Controls which other parameters to output. All are 'yes' or 'no'.
+   \item \Argument Elements controlling which other to output
+   \item \Default 
+ \elist
 
 \subparagraph{\hbracket{time-to-depth-velocity}}\newkw{time-to-depth-velocity}
  \slist
@@ -685,6 +690,14 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Argument 'yes' or 'no'
    \item \Default
 \elist
+
+\subparagraph{\hbracket{correlations}}\newkw{correlations}
+ \slist
+   \item \Description These are the posterior correlations between vp, vs and density after inversion.
+   \item \Argument 'yes' or 'no'
+   \item \Default
+\elist
+
 
 
 \subsubsection{\hbracket{well-output}}\newkw{well-output}

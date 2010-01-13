@@ -61,11 +61,12 @@ private:
   bool       parseILXLArea(TiXmlNode * node, std::string & errTxt);
   bool   parseTime3DMapping(TiXmlNode * node, std::string & errTxt);
   bool   parseIOSettings(TiXmlNode * node, std::string & errTxt);
- // bool     parseOutputTypes(TiXmlNode * node, std::string & errTxt);
   bool       parseGridOutput(TiXmlNode * node, std::string & errTxt);
   bool         parseGridDomains(TiXmlNode * node, std::string & errTxt);
   bool         parseGridFormats(TiXmlNode * node, std::string & errTxt);
-  bool         parseGridParameters(TiXmlNode * node, std::string & errTxt);
+  bool         parseGridElasticParameters(TiXmlNode * node, int &paramFlag, std::string & errTxt);
+  bool         parseGridSeismicData(TiXmlNode * node, int &paramFlag, std::string & errTxt);
+  bool         parseGridOtherParameters(TiXmlNode * node, int &paramFlag, std::string & errTxt);
   bool       parseWellOutput(TiXmlNode * node, std::string & errTxt);
   bool         parseWellFormats(TiXmlNode * node, std::string & errTxt);
   bool       parseOtherOutput(TiXmlNode * node, std::string & errTxt);

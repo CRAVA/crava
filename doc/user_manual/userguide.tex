@@ -290,7 +290,6 @@ something like this:
 <project-settings>
   <io-settings>
     <file-output-prefix> CRAVA_ </file-output-prefix>
-    <output-types>
       <grid-output>
         <format>
           <segy> yes </segy>
@@ -299,18 +298,17 @@ something like this:
           <time>  yes </time>
           <depth> yes </depth>
         </domain>
-        <parameters>
+        <elastic-parameters>
           <vp> yes </vp>
           <vs> yes </vs>
           <density> yes </density>
           <background> yes </background>
-        </parameters>
+        </elastic-parameters>
       </grid-output>
       <well-output>
         <wells> yes </wells>
         <blocked-wells> yes </blocked-wells>
       </well-output>
-    </output-types>
   </io-settings>
 </project-settings>
 </crava>
@@ -318,7 +316,7 @@ something like this:
 \end{example}
 
 \subsubsection{Grid output}\kwindex{grid-output}
-Different elastic parameters can be given as grid output. In addition, estimated background model and posterior correlation may be written as grids. This is controlled by the \kw{parameters}\kwindex{parameters} command under \kw{grid-output}. See \autoref{parameters} for a full list of possible grids. If this command is not used, Vp, Vs and density will be written.
+Different elastic parameters can be given as grid output. In addition, estimated background model may be written as grids. This is controlled by the \kw{elastic-parameters}\kwindex{elastic-parameters} command under \kw{grid-output}. See \autoref{elastic-parameters} for a full list of possible grids. If this command is not used, Vp, Vs and density will be written. Output of original and synthetic seismic data can be given by the \kw{seismic-data}\kwindex{seismic-data} command. Other output grids are given by the command \kw{other-parameters}{kwindex{other-parameters}, for example correlations.
 
 The grid format may be controlled using \kw{format}\kwindex{format}. Here the yes/no parameters \kw{storm}, \kw{segy}, \kw{sgri}, \kw{crava} and \kw{ascii} can be used to decide if grids should be written on storm- (RMS), segy-, Sgri-, crava- or ascii-format. You may choose several formats for one run; all grids will be written on all selected formats. Note that correlation grids make sense only in storm format. Default output format is storm. The crava format is a binary format only to be used with Crava. It can be read and written from \crava, and is useful if the output from a \crava run should be used as input to another \crava run because the format is fast to read.
 
@@ -419,7 +417,7 @@ Var(ln(Density)) & $2*10^{-4}$ & $100*10^{-4}$ \\
 \end{table}
 
 \subsection{Generate synthetic seismic from inversion data}
-It is possible to generate synthetic seismic by a forward modeling with the Vp, Vs and density resulting from the inversion. This is done by the command  \kw{synthetic-seismic} under \kw{inversion-settings} in command \kw{actions}.
+It is possible to generate synthetic seismic by a forward modeling with the Vp, Vs and density resulting from the inversion. This is done by the command  \kw{synthetic} under \kw{seismic-data} under \kw{grid-output}, \kw{io-settings},  in command \kw{project-settings}.
 
 \section{Estimation}
 \label{sec:estimateusr}
@@ -542,13 +540,11 @@ A minor functionality in \crava is that it can do forward modelling, showing wha
 
   <io-settings>
     <file-output-prefix> CRAVA_ </file-output-prefix>
-    <output-types>
       <grid-output>
         <format>
           <segy> yes </segy>
         </format>
       </grid-output>
-    </output-types>
   </io-settings>
 
 </project-settings>
