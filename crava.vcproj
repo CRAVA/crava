@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8.00"
+	Version="8,00"
 	Name="crava"
 	ProjectGUID="{7FF3AB5B-854B-46AB-99F6-B59958E1BE91}"
 	RootNamespace="crava"
@@ -497,6 +497,10 @@
 				</File>
 				<File
 					RelativePath=".\src\spatialwellfilter.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\src\tasklist.cpp"
 					>
 				</File>
 				<File
@@ -3642,6 +3646,10 @@
 					</File>
 					<File
 						RelativePath=".\nrlib\boost\filesystem\portability.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\src\tasklist.h"
 						>
 					</File>
 				</Filter>

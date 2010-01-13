@@ -22,6 +22,7 @@
 #include "src/filterwelllogs.h"
 #include "src/timings.h"
 #include "src/spatialwellfilter.h"
+#include "src/tasklist.h"
 
 int main(int argc, char** argv)
 {  
@@ -139,7 +140,10 @@ int main(int argc, char** argv)
     LogKit::LogFormatted(LogKit::DEBUGLOW,"\n            Maximum number of grids requested  :  %2d",FFTGrid::getMaxAllowedGrids()); 
     LogKit::LogFormatted(LogKit::DEBUGLOW,"\n            Maximum number of grids allocated  :  %2d",FFTGrid::getMaxAllocatedGrids()); 
     LogKit::LogFormatted(LogKit::DEBUGLOW,"\n         Consult method Model::checkAvailableMemory().\n"); 
+    TaskList::addTask("Check if all tasks requested have been done");
   }
+  
+  TaskList::viewAllTasks();  
 
   Timings::setTimeTotal(wall,cpu);
   Timings::reportAll(LogKit::MEDIUM);
