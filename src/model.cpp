@@ -4201,8 +4201,11 @@ Model::getGeometry(const std::string         seismicFile,
         failed = true;
       }
     }
-    else if(fileType == IO::STORM || fileType==IO::SGRI) {
+    else if(fileType == IO::STORM)
       geometry = geometryFromStormFile(seismicFile, errText);
+    else if( fileType==IO::SGRI) {
+      bool scale = true;
+      geometry = geometryFromStormFile(seismicFile, errText, scale);
     }
     else {
       errText += "Trying to read grid dimensions from unknown file format.\n";
@@ -4244,12 +4247,22 @@ Model::geometryFromCravaFile(const std::string & fileName)
 
 SegyGeometry *
 Model::geometryFromStormFile(const std::string & fileName,
-                             std::string       & errText) 
+                             std::string       & errText,
+                             bool scale) 
 {
   SegyGeometry  * geometry  = NULL;
   StormContGrid * stormgrid = NULL;
   std::string     tmpErrText;
-
+  float scalehor;
+  if(scale==false)
+  {
+    scalehor = 1.0;
+  }
+  else //from sgri file
+  {
+    LogKit::LogFormatted(LogKit::LOW,"Sgri file read. Rescaling z axis from s to ms, x and y from km to m. \n");
+    scalehor  = 1000.0;
+  }
   try
   {   
     stormgrid = new StormContGrid(0,0,0);
@@ -4262,10 +4275,10 @@ Model::geometryFromStormFile(const std::string & fileName,
   }
 
   if (tmpErrText == "") {
-    double x0      = stormgrid->GetXMin();
-    double y0      = stormgrid->GetYMin();
-    double dx      = stormgrid->GetDX();
-    double dy      = stormgrid->GetDY();
+    double x0      = stormgrid->GetXMin()*scalehor;
+    double y0      = stormgrid->GetYMin()*scalehor;
+    double dx      = stormgrid->GetDX()*scalehor;
+    double dy      = stormgrid->GetDY()*scalehor;
     int    nx      = stormgrid->GetNI();
     int    ny      = stormgrid->GetNJ();
     double rot     = stormgrid->GetAngle();
