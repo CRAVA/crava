@@ -160,12 +160,12 @@ protected:
   int                  cubetype_;          // see enum gridtypes above
   float                theta_;             // angle in angle gather (case of data)
   float                scale_;             // To keep track of the scalings after fourier transforms
-  int                  nx_;                // size of original grid in depth (time)
-  int                  ny_;                // size of original grid in lateral x direction 
-  int                  nz_;                // size of original grid in lateral y direction
-  int                  nxp_;               // size of padded FFT grid in depth (time) 
-  int                  nyp_;               // size of padded FFT grid in lateral x direction 
-  int                  nzp_;               // size of padded FFT grid in lateral y direction
+  int                  nx_;                // size of original grid in lateral x direction
+  int                  ny_;                // size of original grid in lateral y direction 
+  int                  nz_;                // size of original grid in depth (time)
+  int                  nxp_;               // size of padded FFT grid in lateral x direction 
+  int                  nyp_;               // size of padded FFT grid in lateral y direction
+  int                  nzp_;               // size of padded FFT grid in depth (time) 
                                            
   int                  cnxp_;              // size in x direction for storage inplace algorithm (complex grid) nxp_/2+1
   int                  rnxp_;              // expansion in x direction for storage inplace algorithm (real grid) 2*(nxp_/2+1)

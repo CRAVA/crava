@@ -26,6 +26,7 @@
 #include "src/spatialwellfilter.h"
 #include "src/simbox.h"
 #include "src/io.h"
+#include "src/tasklist.h"
 
 FaciesProb::FaciesProb(FFTGrid                      * alpha,
                        FFTGrid                      * beta,
@@ -1092,49 +1093,84 @@ void FaciesProb::setNeededLogsSpatial(const WellData              ** wells,
 
 void FaciesProb::normalizeCubes(FFTGrid **priorFaciesCubes)
 {
-  int i,j,k,l;
-  int rnxp = priorFaciesCubes[0]->getRNxp();
-  int nyp  = priorFaciesCubes[0]->getNyp();
-  int nzp  = priorFaciesCubes[0]->getNzp();
+  int   i,j,k,l;
   float sum;
+  int   rnxp     = priorFaciesCubes[0]->getRNxp();
+  int   nyp      = priorFaciesCubes[0]->getNyp();
+  int   nzp      = priorFaciesCubes[0]->getNzp();
+  int   nx       = priorFaciesCubes[0]->getNx();
+  int   totZero  = 0;
+  int   large    = 0; 
+  int   small    = 0;
+  int   total    = 0;
+  float negative = 0;
+
   std::vector<float> value(nFacies_);
   for(i=0;i<nFacies_;i++)
     priorFaciesCubes[i]->setAccessMode(FFTGrid::READANDWRITE);
-  int negative = 0;
+
   for(i=0;i<nzp;i++)
   {
-    for(j=0;j<nyp;j++)
-      for(k=0;k<rnxp;k++)
+    for (j=0; j<nyp; j++)
+    {
+      for (k=0; k<rnxp; k++)
       {
         sum = 0.0;
-        for(l=0;l<nFacies_;l++)
+        for (l=0; l<nFacies_; l++)
         {
           value[l] = priorFaciesCubes[l]->getNextReal();
           if(value[l]<0.0)
           {
+            if (value[l] < negative && k<nx)
+              negative = value[l];
             value[l] = 0.0;
-            if(negative==0)
-            {
-              LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: Alt least one negative prior facies probability detected. The value is set to 0.0.\n");
-              negative = 1;
-            }
           }
-          sum+= value[l];
+          sum += value[l];
         }
-        if(sum>0.0)
+        if (k<nx)
         {
-          for(l=0;l<nFacies_;l++)
+          total ++;
+          if (sum == 0)
+            totZero ++;
+          else if (sum>1)
+            large ++;
+          else if( sum>0 && sum<1)
+            small ++;
+        }
+        if (sum>0.0)
+        {
+          for (l=0; l<nFacies_; l++)
           { 
             value[l] = value[l]/sum; 
             priorFaciesCubes[l]->setNextReal(value[l]);
           }
         }
       }
+    }
+  }
+  if (negative<0)
+  {
+    LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: Negative facies probabilities have been detected, and set to zero. \n         The probabilities have been rescaled. The most negative value is %4.2f.\n",negative);
+    TaskList::addTask("Check that the prior facies probability cubes have positive probability everywhere");
+  }
+  if (totZero > 0)
+  {
+    LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: The sum over the prior facies probabilities is zero in %d of %d locations.\n",totZero,total);
+    TaskList::addTask("Check that the prior facies probability cubes are defined everywhere");
+  }
+  if (small > 0)
+  {
+    LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: The sum over the prior facies probabilities is less than one in %d of %d locations. \n         The probabilities have been rescaled.\n",small,total);
+    TaskList::addTask("Check that the prior facies probability cubes sum to one everywhere");
+  }
+  if (large > 0)
+  {
+    LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: The sum over the prior facies probabilities is larger than one in %d of %d locations. \n         The probabilities have been rescaled.\n",large, total);
+    TaskList::addTask("Check that the prior facies probability cubes sum to one everywhere");
   }
   for(i=0;i<nFacies_;i++)
     priorFaciesCubes[i]->endAccess();
 }
-
 
 void FaciesProb::calculateChiSquareTest(WellData                    ** wells, 
                                         int                            nWells, 
@@ -1294,17 +1330,26 @@ void FaciesProb::calculateChiSquareTest(WellData                    ** wells,
     chi *= 0.3; //Scale chi to give better fit
     df  += 1;
     
-    NRLib::ChiSquared chisquared((nActualFacies-1)*df);
-    pValue = 1-chisquared.Cdf(chi);
+    if (nActualFacies == 1)
+    {
+      fit[i] = "not calculated";
+      LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: The number of actual facies is one, so estimation makes no sence.\n");
+      TaskList::addTask("Check that all facies have probability larger than one");
+    }
+    else
+    {
+      NRLib::ChiSquared chisquared((nActualFacies-1)*df);
+      pValue = 1-chisquared.Cdf(chi);
 
-    if (pValue >= 0.05)
-      fit[i] = "good";
-    if (pValue < 0.05 && pValue >= 0.025)
-      fit[i] = "poor";
-    if (pValue < 0.025 && pValue >= 0.005)
-      fit[i] = "bad";
-    if (pValue < 0.005)
-      fit[i] = "very bad";
+      if (pValue >= 0.05)
+        fit[i] = "good";
+      if (pValue < 0.05 && pValue >= 0.025)
+        fit[i] = "poor";
+      if (pValue < 0.025 && pValue >= 0.005)
+        fit[i] = "bad";
+      if (pValue < 0.005)
+        fit[i] = "very bad";
+    }
   }
 
   LogKit::LogFormatted(LogKit::MEDIUM,"\nFit between facies probabilities and facies observed in wells: \n");

@@ -264,6 +264,7 @@ private:
                                         InputFiles    * inputFiles);
   void             checkFaciesNames(WellData      ** wells,
                                     ModelSettings *& modelSettings,
+                                    InputFiles     * inputFiles,
                                     char           * tmpErrText,
                                     int            & error);
   void             printSettings(ModelSettings * modelSettings,

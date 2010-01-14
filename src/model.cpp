@@ -28,6 +28,7 @@
 #include "src/timings.h"
 #include "src/io.h"
 #include "src/waveletfilter.h"
+#include "src/tasklist.h"
 
 #include "lib/utils.h"
 #include "lib/random.h"
@@ -576,6 +577,8 @@ Model::checkAvailableMemory(Simbox        * timeSimbox,
       else {
         nGrids += std::max(0, nGridFacies - nGridSeismicData);
       }
+      if (modelSettings->getIsPriorFaciesProbGiven()==2)
+        nGrids += modelSettings->getNumberOfFacies();
     }
     }
   }
@@ -788,12 +791,12 @@ Model::readStormFile(const std::string  & fName,
   if(failed == false)
   {
     target = createFFTGrid(timeSimbox->getnx(), 
-                               timeSimbox->getny(), 
-                               timeSimbox->getnz(), 
-                               modelSettings->getNXpad(), 
-                               modelSettings->getNYpad(), 
-                               modelSettings->getNZpad(),
-                               modelSettings->getFileGrid());
+                           timeSimbox->getny(), 
+                           timeSimbox->getnz(), 
+                           xpad,
+                           ypad,
+                           zpad,
+                           modelSettings->getFileGrid());
    /* if(modelSettings->getFileGrid())
       target = new FFTFileGrid(timeSimbox->getnx(), 
                                timeSimbox->getny(), 
@@ -1649,10 +1652,12 @@ Model::processWells(WellData     **& wells,
 
   if (error == 0) {
     if(modelSettings->getFaciesLogGiven()) { 
-      checkFaciesNames(wells, modelSettings, tmpErrText, error);
+      checkFaciesNames(wells, modelSettings, inputFiles, tmpErrText, error);
       nFacies = modelSettings->getNumberOfFacies(); // nFacies is set in checkFaciesNames()
     }
-    
+    if (error>0)
+      sprintf(errText,"%sPrior facies probabilities failed.\n%s\n",errText,tmpErrText);
+
     int   * validWells    = new int[nWells];
     bool  * validIndex    = new bool[nWells];
     int   * nMerges       = new int[nWells];
@@ -1682,16 +1687,19 @@ Model::processWells(WellData     **& wells,
         if(wells[i]->checkSimbox(timeSimbox) == 1) {
           skip = true;
           nohit++;
+          TaskList::addTask("Consider increasing the inversion volume such that well "+NRLib::ToString(wells[i]->getWellname())+ " can be included");
         }
         if(wells[i]->getNd() == 0) {
           LogKit::LogFormatted(LogKit::LOW,"  IGNORED (no log entries found)\n");
           skip = true;
           empty++;
+          TaskList::addTask("Check the log entries in well "+NRLib::ToString(wells[i]->getWellname())+".");
         }
         if(wells[i]->isFaciesOk()==0) {
           LogKit::LogFormatted(LogKit::LOW,"   IGNORED (facies log has wrong entries)\n");
           skip = true;
           facieslognotok++;
+          TaskList::addTask("Check the facies logs in well "+NRLib::ToString(wells[i]->getWellname())+".\n       The facies logs in this well are wrong and the well is ignored");
         }
         if(skip)
           validIndex[i] = false;
@@ -1915,6 +1923,7 @@ void Model::writeBlockedWells(WellData ** wells, ModelSettings * modelSettings)
 
 void Model::checkFaciesNames(WellData      ** wells,
                              ModelSettings *& modelSettings,
+                             InputFiles     * inputFiles,
                              char           * tmpErrText,
                              int            & error)
 {
@@ -1959,13 +1968,13 @@ void Model::checkFaciesNames(WellData      ** wells,
         }
         else if(names[fnr] != name)
         {
-          sprintf(tmpErrText,"Problem with facies logs. Facies names and numbers are not uniquely defined.\n");
+          sprintf(tmpErrText,"%sProblem with facies logs. Facies names and numbers are not uniquely defined.\n",tmpErrText);
           error++;
         }
       }
     }
   }
-  
+
   LogKit::LogFormatted(LogKit::LOW,"\nFaciesLabel      FaciesName           ");
   LogKit::LogFormatted(LogKit::LOW,"\n--------------------------------------\n");
   for(int i=0 ; i<nnames ; i++)
@@ -1983,6 +1992,38 @@ void Model::checkFaciesNames(WellData      ** wells,
     {
       modelSettings->addFaciesName(names[i]);
       modelSettings->addFaciesLabel(globalmin + i);
+    }
+  }
+  
+  // Compare names in wells with names given in .xml-file
+  if(modelSettings->getIsPriorFaciesProbGiven()==1)
+  {
+    typedef std::map<std::string,float> mapType;
+    mapType myMap = modelSettings->getPriorFaciesProb();
+
+    for(int i=0;i<nFacies;i++)
+    {
+      mapType::iterator iter = myMap.find(modelSettings->getFaciesName(i));
+      if (iter==myMap.end())
+      {
+        sprintf(tmpErrText,"%sProblem with facies logs. Facies %s is not one of the facies given in the xml-file.\n",tmpErrText,modelSettings->getFaciesName(i).c_str());
+        error++;
+      }
+    }
+  }
+  else if(modelSettings->getIsPriorFaciesProbGiven()==2)
+  {
+    typedef std::map<std::string,std::string> mapType;
+    mapType myMap = inputFiles->getPriorFaciesProbFile();
+
+    for(int i=0;i<nFacies;i++)
+    {
+      mapType::iterator iter = myMap.find(modelSettings->getFaciesName(i));
+      if (iter==myMap.end())
+      {
+        sprintf(tmpErrText,"%sProblem with facies logs. Facies %s is not one of the facies given in the xml-file.\n",tmpErrText,modelSettings->getFaciesName(i).c_str());
+        error++;
+      }
     }
   }
 }
@@ -3124,6 +3165,8 @@ void Model::processPriorFaciesProb(const std::vector<Surface *> & faciesEstimInt
           else { 
             LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: No valid facies log entries have been found\n");
             modelSettings->setEstimateFaciesProb(false);
+            TaskList::addTask("Consider using a well containing facies log entries to be able to estimate facies probabilities.");
+
           }
           delete [] nData;
         }
@@ -3134,6 +3177,7 @@ void Model::processPriorFaciesProb(const std::vector<Surface *> & faciesEstimInt
           LogKit::LogFormatted(LogKit::WARNING,"\n         be able to estimate these probabilities...\n");
           modelSettings->setEstimateFaciesProb(false);
 
+          TaskList::addTask("Consider using a well containing facies log entries to be able to estimate facies probabilities.");
         }
       }
       else 
@@ -3142,6 +3186,7 @@ void Model::processPriorFaciesProb(const std::vector<Surface *> & faciesEstimInt
         LogKit::LogFormatted(LogKit::WARNING,"\n         have been found and CRAVA will therefore not be able to estimate");
         LogKit::LogFormatted(LogKit::WARNING,"\n         these probabilities...\n");
         modelSettings->setEstimateFaciesProb(false);
+        TaskList::addTask("Consider using a well containing facies log entries to be able to estimate facies probabilities.");
       }
     }
     else if(modelSettings->getIsPriorFaciesProbGiven()==1)
@@ -3158,20 +3203,35 @@ void Model::processPriorFaciesProb(const std::vector<Surface *> & faciesEstimInt
         else
         {
           LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: No prior facies probability found for facies %12s\n",modelSettings->getFaciesName(i).c_str());
-            modelSettings->setEstimateFaciesProb(false);
+          modelSettings->setEstimateFaciesProb(false);
+          TaskList::addTask("Check that facies " +NRLib::ToString(modelSettings->getFaciesName(i).c_str())+" is given a prior probability in the xml-file");
         }
       }
+      LogKit::LogFormatted(LogKit::LOW,"Facies         Probability\n");
+      LogKit::LogFormatted(LogKit::LOW,"--------------------------\n");
+      for(int i=0 ; i<nFacies ; i++) {
+        LogKit::LogFormatted(LogKit::LOW,"%-15s %10.4f\n",modelSettings->getFaciesName(i).c_str(),priorFacies[i]);
+      }
+
     }
     else if(modelSettings->getIsPriorFaciesProbGiven()==2)
     {
-       readPriorFaciesProbCubes(inputFiles, 
+      readPriorFaciesProbCubes(inputFiles, 
                                 modelSettings, 
                                 priorFaciesProbCubes_,
                                 timeSimbox_,
                                 errTxt,
                                 failed);
+       
+       typedef std::map<std::string,std::string> mapType;
+       mapType myMap = inputFiles->getPriorFaciesProbFile();
 
-      }
+       LogKit::LogFormatted(LogKit::LOW,"Facies         Probability in file\n");
+       LogKit::LogFormatted(LogKit::LOW,"----------------------------------\n");
+       for(mapType::iterator it=myMap.begin();it!=myMap.end();it++)
+         LogKit::LogFormatted(LogKit::LOW,"%-15s %10s\n",(it->first).c_str(),(it->second).c_str());
+       
+    }
   }
 }
 
@@ -3222,6 +3282,7 @@ void Model::readPriorFaciesProbCubes(InputFiles      * inputFiles,
     {
       LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: No prior facies probability found for facies %12s\n",
                            modelSettings->getFaciesName(i).c_str());
+      TaskList::addTask("Check that facies "+NRLib::ToString(modelSettings->getFaciesName(i).c_str())+" is given prior probability in the xml-file");
       modelSettings->setEstimateFaciesProb(false);
       break;
     }  
@@ -3717,6 +3778,29 @@ Model::printSettings(ModelSettings * modelSettings,
       {
         LogKit::LogFormatted(LogKit::LOW,"    Subrange                               : %10.1f\n",corr->getSubRange());
         LogKit::LogFormatted(LogKit::LOW,"    Azimuth                                : %10.1f\n",90.0 - corr->getAngle()*(180/M_PI));
+      }
+    }
+    //
+    // PRIOR FACIES
+    //
+    if (modelSettings->getIsPriorFaciesProbGiven() > 0)
+    {
+      LogKit::LogFormatted(LogKit::LOW,"\nPrior facies probabilities:\n");      
+      if(modelSettings->getIsPriorFaciesProbGiven()==1)
+      {
+        typedef std::map<std::string,float> mapType;
+        mapType myMap = modelSettings->getPriorFaciesProb();
+        
+        for(mapType::iterator i=myMap.begin();i!=myMap.end();i++)
+          LogKit::LogFormatted(LogKit::LOW,"   %-12s                            : %10.2f\n",(i->first).c_str(),i->second);
+      }
+      else if (modelSettings->getIsPriorFaciesProbGiven()==2)
+      {
+        typedef std::map<std::string,std::string> mapType;
+        mapType myMap = inputFiles->getPriorFaciesProbFile();
+
+        for(mapType::iterator i=myMap.begin();i!=myMap.end();i++)
+          LogKit::LogFormatted(LogKit::LOW,"   %-12s                            : %10s\n",(i->first).c_str(),(i->second).c_str());
       }
     }
     //

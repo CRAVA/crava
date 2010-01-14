@@ -1264,15 +1264,16 @@ XmlModelFile::parsePriorFaciesProbabilities(TiXmlNode * node, std::string & errT
     mapType myMap = modelSettings_->getPriorFaciesProb();
     for(mapType::const_iterator it=myMap.begin();it!=myMap.end();++it)
     {
+      if (it->second < 0 || it->second > 1)
+        errTxt += "Prior facies probabilities must be between 0 and 1.\n";
       sum+=(*it).second;
     }
-  if(sum!=1.0)
-  {
-    errTxt+="Prior facies probabilities must sum to 1.0. They sum to "+ NRLib::ToString(sum) +".\n";
+    if(sum!=1.0)
+    {
+      errTxt+="Prior facies probabilities must sum to 1.0. They sum to "+ NRLib::ToString(sum) +".\n";
+    } 
   }
- 
-  }
-checkForJunk(root, errTxt, legalCommands);
+  checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
 
