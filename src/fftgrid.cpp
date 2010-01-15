@@ -108,12 +108,12 @@ if (rvalue_!=NULL)
 }
 
 void
-FFTGrid::fillInFromSegY(SegY* segy, Simbox *simbox)
+FFTGrid::fillInFromSegY(SegY* segy, Simbox *simbox, bool padding)
 {
   assert(cubetype_  !=  CTMISSING);
 
-  createRealGrid();
-
+  createRealGrid(!padding);
+  add_  =!padding;
   int i,j,k,refi,refj,refk;
   float distx,disty,distz,mult;
   double x,y,z;
@@ -206,10 +206,12 @@ void
 FFTGrid::fillInFromStorm(Simbox            * actSimBox,
                          StormContGrid     * grid, 
                          const std::string & parName, 
-                         bool                scale)
+                         bool                scale,
+                         bool                nopadding)
 {
   assert(cubetype_ != CTMISSING);
-  createRealGrid();
+  createRealGrid(!nopadding);
+  add_ = !nopadding;
   float scalevert, scalehor;
   if(scale==false)
   {
@@ -1822,7 +1824,7 @@ FFTGrid::writeCravaFile(const std::string & fileName, const Simbox * simbox)
 
 
 void
-FFTGrid::readCravaFile(const std::string & fileName, std::string & errText) 
+FFTGrid::readCravaFile(const std::string & fileName, std::string & errText, bool nopadding) 
 {
   std::string error;
   try {
@@ -1855,7 +1857,8 @@ FFTGrid::readCravaFile(const std::string & fileName, std::string & errText)
       binFile.close();
       throw(NRLib::Exception(message));
     }
-    createRealGrid();
+    createRealGrid(!nopadding);
+    add_ = !nopadding;
     int i;
     for(i=0;i<rsize_;i++)
       rvalue_[i] = NRLib::ReadBinaryFloat(binFile);

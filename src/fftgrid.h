@@ -24,12 +24,13 @@ public:
   void setType(int cubeType) {cubetype_ = cubeType;}
   void setAngle(float angle) {theta_ = angle;}
 
-  void                 fillInFromSegY(SegY * segy, Simbox *simbox );            // No mode
+  void                 fillInFromSegY(SegY * segy, Simbox *simbox, bool nopadding = false );            // No mode
 
   void                 fillInFromStorm(Simbox            * actSimBox,
                                        StormContGrid     * grid,
                                        const std::string & parName,
-                                       bool                scale = false);    // No mode
+                                       bool                scale = false,
+                                       bool                nopadding = false);    // No mode
   virtual void         fillInFromRealFFTGrid(FFTGrid& fftGrid);  // No mode
   void                 fillInConstant(float value);              // No mode
   fftw_real*           fillInParamCorr(Corr* corr,int minIntFq,
@@ -105,7 +106,7 @@ public:
   virtual void         writeResampledStormCube(GridMapping *gridmapping, const std::string & fileName, 
                                                const Simbox *simbox, const int format, bool expTrans);
   virtual void         writeCravaFile(const std::string & fileName, const Simbox * simbox);
-  virtual void         readCravaFile(const std::string & fileName, std::string & errText);
+  virtual void         readCravaFile(const std::string & fileName, std::string & errText, bool nopadding = false);
 
   virtual bool         isFile() {return(0);}    // indicates wether the grid is in memory or on disk  
 

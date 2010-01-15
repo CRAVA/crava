@@ -57,7 +57,7 @@ public:
   void         writeResampledStormCube(GridMapping *gridmapping, const std::string & fileName, 
                                        const Simbox *simbox, const int format, bool expTrans);
   void         writeCravaFile(const std::string & fileName, const Simbox * simbox);
-  void         readCravaFile(const std::string & fileName, std::string & error);
+  void         readCravaFile(const std::string & fileName, std::string & error, bool nopadding = false);
 
   bool         isFile() {return(1);}
   float        *getRealTrace(int i, int j);

@@ -569,12 +569,12 @@ FFTFileGrid::writeCravaFile(const std::string & fileName, const Simbox * simbox)
 
 
 void
-FFTFileGrid::readCravaFile(const std::string & fileName, std::string & error)
+FFTFileGrid::readCravaFile(const std::string & fileName, std::string & error, bool nopadding)
 {
   assert(accMode_ == NONE || accMode_ == RANDOMACCESS);
   if(accMode_ != RANDOMACCESS)
     load();
-  FFTGrid::readCravaFile(fileName, error);
+  FFTGrid::readCravaFile(fileName, error, nopadding);
   if(accMode_ != RANDOMACCESS)
     save();
 }

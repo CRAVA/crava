@@ -577,8 +577,6 @@ Model::checkAvailableMemory(Simbox        * timeSimbox,
       else {
         nGrids += std::max(0, nGridFacies - nGridSeismicData);
       }
-      if (modelSettings->getIsPriorFaciesProbGiven()==2)
-        nGrids += modelSettings->getNumberOfFacies();
     }
     }
   }
@@ -595,6 +593,8 @@ Model::checkAvailableMemory(Simbox        * timeSimbox,
   else 
     mem1 = static_cast<float>(nGrids)*memOneGrid;
   if(modelSettings->getEstimateFaciesProb())
+    mem1+=static_cast<float>(nGridHistograms)*memKrig;
+  if(modelSettings->getIsPriorFaciesProbGiven()==2)
     mem1+=static_cast<float>(nGridHistograms)*memKrig;
   float mem2        = static_cast<float>(modelSettings->getNumberOfAngles())*memOneGrid + memOneSeis;
  
@@ -737,7 +737,7 @@ Model::readSegyFile(const std::string       & fileName,
                              ypad, 
                              zpad);*/
       target->setType(gridType);
-      target->fillInFromSegY(segy, timeSimbox);
+      target->fillInFromSegY(segy, timeSimbox, nopadding);
     }
     else 
     {
@@ -2189,7 +2189,7 @@ Model::readGridFromFile(const std::string       & fileName,
                              modelSettings->getFileGrid());
     
     grid->setType(gridType);
-    grid->readCravaFile(fileName, errText);
+    grid->readCravaFile(fileName, errText, nopadding);
   }
   else if(fileType == IO::SEGY) 
   {
