@@ -532,52 +532,59 @@ Model::checkAvailableMemory(Simbox        * timeSimbox,
     if (modelSettings->getWaveletDim(i) == Wavelet::THREE_D)
       nGridWavelet++;
 
-  int nGridFacies      = modelSettings->getNumberOfFacies() + 1; // One for each facies + one for undef  
- // int nGridHistograms  = modelSettings->getNumberOfFacies();     // One histogram for each facies
-  int nGridHistograms = modelSettings->getNumberOfFacies(); // Same size as kriging grids
-  int nGridKriging     = 1;                                      // One grid for kriging
-  int nGridFileMode    = 1;                                      // One grid for intermediate file storage
+  int nGridFacies       = modelSettings->getNumberOfFacies() + 1; // One for each facies + one for undef  
+ // int nGridHistograms  = modelSettings->getNumberOfFacies();    // One histogram for each facies
+  int nGridHistograms   = modelSettings->getNumberOfFacies();     // Same size as kriging grids
+  int nGridKriging      = 1;                                      // One grid for kriging
+  int nGridFileMode     = 1;                                      // One grid for intermediate file storage
+  int nGridComputeParam = 0;                                      // If we want elastic parameters computed from the primaries (Vp, Vs, rho),
+                                                                  //   an extra grid is needed for this.
+  int combinedParam = IO::LAMELAMBDA+IO::LAMEMU+IO::POISSONRATIO+IO::AI+IO::SI+IO::VPVSRATIO+IO::MURHO+IO::LAMBDARHO;
+  if((modelSettings->getGridOutputFlag() & combinedParam) > 0)
+    nGridComputeParam = 1;
 
   int nGrids;
   if(modelSettings->getForwardModeling() == true) {
-  if (modelSettings->getFileGrid())  // Use disk buffering
+    if (modelSettings->getFileGrid())  // Use disk buffering
       nGrids = nGridFileMode;
-  else
-    nGrids = nGridParameters + nGridSeismicData + nGridWavelet;
+    else
+      nGrids = nGridParameters + nGridSeismicData + nGridWavelet;
   }
   else {
     if (modelSettings->getFileGrid()) { // Use disk buffering
       nGrids = nGridFileMode;
       if(modelSettings->getKrigingParameter() > 0) {
         nGrids += nGridKriging;
-    }
+      }
       if(modelSettings->getNumberOfSimulations() > 0)
         nGrids = nGridParameters;
       if(modelSettings->getUseLocalNoise()) {
-      nGrids = 2*nGridParameters;
-    }
+        nGrids = 2*nGridParameters;
+      }
     }
     else {
       if(modelSettings->getNumberOfSimulations() > 0)
-        nGrids = nGridParameters + nGridCovariances + std::max(nGridSeismicData, nGridParameters);
+        nGrids = nGridParameters + nGridCovariances + std::max(nGridSeismicData, nGridParameters) + nGridComputeParam;
       else
-        nGrids = nGridParameters + nGridCovariances + nGridSeismicData;
-    
-    if(modelSettings->getKrigingParameter() > 0) {
-      nGrids += nGridKriging;
-    }
-    // Need background for facies probabilities and local noise.
+        nGrids = nGridParameters + nGridCovariances + nGridSeismicData + nGridComputeParam;
 
-    if(modelSettings->getUseLocalNoise()) {
-      nGrids = nGrids + nGridBackground;
-    }
-    if(modelSettings->getEstimateFaciesProb()) { // Seismic data is dealloctaed before new allocations are done
-      if (modelSettings->getFaciesProbRelative() && !modelSettings->getUseLocalNoise())
-        nGrids += nGridBackground + std::max(0, nGridFacies - nGridSeismicData);  
-      else {
-        nGrids += std::max(0, nGridFacies - nGridSeismicData);
+      if(modelSettings->getKrigingParameter() > 0) {
+        nGrids += nGridKriging;
       }
-    }
+      // Need background for facies probabilities and local noise.
+
+      if(modelSettings->getUseLocalNoise()) {
+        nGrids = nGrids + nGridBackground;
+      }
+      if(modelSettings->getEstimateFaciesProb()) { // Seismic data is dealloctaed before new allocations are done
+        if (modelSettings->getFaciesProbRelative() && !modelSettings->getUseLocalNoise())
+          nGrids += nGridBackground + std::max(0, nGridFacies - nGridSeismicData - nGridComputeParam);  
+        else {
+          nGrids += std::max(0, nGridFacies - nGridSeismicData);
+        }
+        if (modelSettings->getIsPriorFaciesProbGiven()==2)
+          nGrids += modelSettings->getNumberOfFacies();
+      }
     }
   }
   FFTGrid::setMaxAllowedGrids(nGrids);
@@ -603,9 +610,9 @@ Model::checkAvailableMemory(Simbox        * timeSimbox,
   float megaBytes   = neededMem/(1024.f*1024.f);
   float gigaBytes   = megaBytes/1024.f;
 
-  LogKit::LogFormatted(LogKit::HIGH,"\nMemory needed for reading seismic data   : %10.2f MB\n",mem2/(1024.f*1024.f));
-  LogKit::LogFormatted(LogKit::HIGH,"Memory needed for holding internal grids : %10.2f MB\n",mem1/(1024.f*1024.f));
-  LogKit::LogFormatted(LogKit::HIGH,"Memory needed for holding other entities : %10.2f MB\n",mem0/(1024.f*1024.f));
+  LogKit::LogFormatted(LogKit::HIGH,"\nMemory needed for reading seismic data       : %10.2f MB\n",mem2/(1024.f*1024.f));
+  LogKit::LogFormatted(LogKit::HIGH,  "Memory needed for holding internal grids (%2d): %10.2f MB\n",nGrids, mem1/(1024.f*1024.f));
+  LogKit::LogFormatted(LogKit::HIGH,  "Memory needed for holding other entities     : %10.2f MB\n",mem0/(1024.f*1024.f));
 
   if (gigaBytes < 0.01f)
     LogKit::LogFormatted(LogKit::LOW,"\nMemory needed by CRAVA:  %.2f megaBytes\n",megaBytes);
