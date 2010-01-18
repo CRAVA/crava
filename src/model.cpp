@@ -144,7 +144,12 @@ Model::Model(char * fileName)
     if(modelSettings_->getNumberOfSimulations() == 0)
       modelSettings_->setWritePrediction(true); //write predicted grids. 
     
-    bool areaFromModelFile  = modelSettings_->getAreaParameters() != NULL;
+    int areaFromModelFile = 0;
+    if(modelSettings_->getAreaParameters() != NULL)
+      areaFromModelFile = 1;
+    if(inputFiles->getAreaSurfaceFile()!="")
+      areaFromModelFile = 2;
+    //areaFromModelFile  = modelSettings_->getAreaParameters() != NULL;
 
     printSettings(modelSettings_, inputFiles, areaFromModelFile);
     
@@ -588,6 +593,8 @@ Model::checkAvailableMemory(Simbox        * timeSimbox,
     }
   }
   FFTGrid::setMaxAllowedGrids(nGrids);
+  if(modelSettings->getDebugFlag()>0)
+    FFTGrid::setTerminateOnMaxGrid(true);
 
   int   workSize    = 2500 + static_cast<int>( 0.65*gridSize ); //Size of memory used beyond grids.
 
@@ -842,7 +849,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
                         Surface       *& correlationDirection,
                         ModelSettings *& modelSettings, 
                         InputFiles     * inputFiles,
-                        bool             areaFromModelFile,
+                        int             areaFromModelFile,
                         char           * errText,
                         bool           & failed)
 {
@@ -853,9 +860,17 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
 
   std::string seismicFile("");
   SegyGeometry * geometry = NULL;
+  if(areaFromModelFile==2) // from surfaceFile
+  {
+    // read surface from file
+    std::string filename = inputFiles->getAreaSurfaceFile();
+    Surface surf = NRLib::ReadStormSurf(filename);
+    geometry = new SegyGeometry(surf);
+    modelSettings->setAreaParameters(geometry);
+  }
   if(modelSettings->getForwardModeling() == true)
   {
-    if(!areaFromModelFile)
+    if(areaFromModelFile==0)
     {
       std::string tmpErrText;
       getGeometry(inputFiles->getBackFile(0),
@@ -872,9 +887,9 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
     if (inputFiles->getNumberOfSeismicFiles() > 0)
       seismicFile = inputFiles->getSeismicFile(0); // Also needed for checkAvailableMemory()
 
-    if (!(areaFromModelFile && modelSettings->getEstimationMode()==true)) 
+    if (!(areaFromModelFile>0 && modelSettings->getEstimationMode()==true)) 
     {  
-      if (!areaFromModelFile) {
+      if (areaFromModelFile==0) {
         areaType = "Seismic data";
         LogKit::LogFormatted(LogKit::HIGH,"\nFinding inversion area from seismic data in file %s\n", seismicFile.c_str());
       }
@@ -889,7 +904,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
                   failed, modelSettings);
       sprintf(errText,"%s%s",errText, tmpErrText.c_str());
       
-      if(!areaFromModelFile && !failed)
+      if(areaFromModelFile==0 && !failed)
         modelSettings->setAreaParameters(geometry);
     }
   }
@@ -3419,7 +3434,7 @@ Model::loadExtraSurfaces(std::vector<Surface *> & waveletEstimInterval,
 void
 Model::printSettings(ModelSettings * modelSettings,
                      InputFiles    * inputFiles,
-                     bool            areaFromModelFile)
+                     int           areaFromModelFile)
 {
   LogKit::LogFormatted(LogKit::LOW,"\nGeneral settings:\n");
   if(modelSettings->getForwardModeling()==true)
@@ -3590,7 +3605,7 @@ Model::printSettings(ModelSettings * modelSettings,
   if(modelSettings->getForwardModeling()==true)
   {
     LogKit::LogFormatted(LogKit::LOW,"\nSeismic area:\n");
-    if (areaFromModelFile)
+    if (areaFromModelFile>0)
       LogKit::LogFormatted(LogKit::LOW,"  Taken from                               : Model file\n");
     else
       LogKit::LogFormatted(LogKit::LOW,"  Taken from                               : Vp\n");
@@ -3598,7 +3613,7 @@ Model::printSettings(ModelSettings * modelSettings,
   else
   {
     LogKit::LogFormatted(LogKit::LOW,"\nInversion area:\n");
-    if (areaFromModelFile)
+    if (areaFromModelFile>0)
       LogKit::LogFormatted(LogKit::LOW,"  Taken from                               : Model file\n");
     else
       LogKit::LogFormatted(LogKit::LOW,"  Taken from                               : First seismic volume\n");

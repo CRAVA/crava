@@ -20,7 +20,8 @@ InputFiles::InputFiles(void)
     reflMatrFile_(""),
     corrDirFile_(""),
     paramCorrFile_(""),
-    tempCorrFile_("")
+    tempCorrFile_(""),
+    areaSurfaceFile_("")
 {
 }
 
@@ -68,6 +69,7 @@ InputFiles::addInputPathAndCheckFiles()
   errTxt += addPathAndCheck(paramCorrFile_);
   errTxt += addPathAndCheck(tempCorrFile_);
   errTxt += addPathAndCheck(refSurfaceFile_,true);
+  errTxt += addPathAndCheck(areaSurfaceFile_);
 
   std::map<std::string, std::string>::iterator j;
   for(j=priorFaciesProb_.begin();j != priorFaciesProb_.end();j++) {

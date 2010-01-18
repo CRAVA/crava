@@ -29,6 +29,7 @@
 #include "src/definitions.h"
 #include "src/gridmapping.h"
 #include "src/io.h"
+#include "src/tasklist.h"
 
 
 FFTGrid::FFTGrid(int nx, int ny, int nz, int nxp, int nyp, int nzp)
@@ -625,12 +626,18 @@ FFTGrid::createRealGrid(bool add)
  // LogKit::LogFormatted(LogKit::ERROR,"\nFFTGrid createRealGrid : nGrids = %d    maxGrids = %d\n",nGrids_,maxAllowedGrids_);
   if (nGrids_ > maxAllowedGrids_) {
     std::string text;
-    text += "\n\nERROR in FFTGrid createRealGrid. You have allocated to many FFTGrids. The fix";
+    text += "\n\nERROR in FFTGrid createRealGrid. You have allocated too many FFTGrids. The fix";
     text += "\nis to increase the nGrids variable calculated in Model::checkAvailableMemory().\n";
     text += "\nDo you REALLY need to allocate more grids?\n";
     text += "\nAre there no grids that can be released?\n";
-    LogKit::LogFormatted(LogKit::ERROR, text);
-    exit(1);
+     if(terminateOnMaxGrid_==true)
+    {
+      LogKit::LogFormatted(LogKit::ERROR, text);
+      exit(1);
+    }
+    else
+      TaskList::addTask("Crava needs more memory than expected. The results are still correct. \n Norwegian Computing Center would like to have a look at your project.");
+  
   }    
   maxAllocatedGrids_ = std::max(nGrids_, maxAllocatedGrids_);
 
@@ -652,12 +659,17 @@ FFTGrid::createComplexGrid()
  // LogKit::LogFormatted(LogKit::ERROR,"\nFFTGrid createComplexGrid : nGrids = %d    maxGrids = %d\n",nGrids_,maxAllowedGrids_);
   if (nGrids_ > maxAllowedGrids_) {
     std::string text;
-    text += "\n\nERROR in FFTGrid createComplexGrid. You have allocated to many FFTGrids. The fix";
+    text += "\n\nERROR in FFTGrid createComplexGrid. You have allocated too many FFTGrids. The fix";
     text += "\nis to increase the nGrids variable calculated in Model::checkAvailableMemory().\n";
     text += "\nDo you REALLY need to allocate more grids?\n";
     text += "\nAre there no grids that can be released?\n";
-    LogKit::LogFormatted(LogKit::ERROR, text);
-    exit(1);
+    if(terminateOnMaxGrid_==true)
+    {
+      LogKit::LogFormatted(LogKit::ERROR, text);
+      exit(1);
+    }
+    else
+      TaskList::addTask("Crava needs more memory than expected. The results are still correct. \n Norwegian Computing Center would like to have a look at your project.");
   }    
   maxAllocatedGrids_ = std::max(nGrids_, maxAllocatedGrids_);
   //  time(&timeend);
@@ -2224,3 +2236,4 @@ int FFTGrid::domainFlag_        = IO::TIMEDOMAIN;
 int FFTGrid::maxAllowedGrids_   = 1;   // One grid is allocated and deallocated before memory check.
 int FFTGrid::maxAllocatedGrids_ = 0; 
 int FFTGrid::nGrids_            = 0;
+bool FFTGrid::terminateOnMaxGrid_ = false;

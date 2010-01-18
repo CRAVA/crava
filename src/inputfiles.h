@@ -37,6 +37,7 @@ public:
   const std::string              & getRefSurfaceFile(void)       const { return refSurfaceFile_       ;}
   const std::string              & getInputDirectory(void)       const { return inputDirectory_       ;}
   const std::map<std::string,std::string> & getPriorFaciesProbFile(void)   const {return priorFaciesProb_ ;}
+  const std::string              & getAreaSurfaceFile(void)      const { return areaSurfaceFile_      ;}
 
   const int                        getNumberOfSeismicFiles(void) const { return seismicFiles_.size()  ;}
 
@@ -47,6 +48,7 @@ public:
   void addShiftFile(const std::string & shiftFile)                        { waveletShiftFiles_.push_back(shiftFile)   ;}
   void addScaleFile(const std::string & scaleFile)                        { waveletScaleFiles_.push_back(scaleFile)   ;}
   void addNoiseFile(const std::string &noiseFile)                         { localNoiseFiles_.push_back(noiseFile)     ;}
+  void setAreaSurfaceFile(const std::string &areaFile)                    { areaSurfaceFile_      = areaFile          ;}
   void setWaveletEstIntFile(int i, const std::string & waveletEstIntFile) { waveletEstIntFile_[i] = waveletEstIntFile ;}
   void addWaveletFilterFile(const std::string & filterFile)               { waveletFilterFiles_.push_back(filterFile) ;} 
   void addWaveletCorrFile(const std::string & corrFile)                   { waveletCorrFiles_.push_back(corrFile)     ;} 
@@ -94,6 +96,7 @@ private:
   std::string                inputDirectory_;        ///< Base directory for input files.
   std::vector<std::string>   localNoiseFiles_;       ///< File names: local noise
   std::map<std::string, std::string> priorFaciesProb_; ///< File names for locally varying prior facies probability
+  std::string                areaSurfaceFile_;
 };
 
 #endif

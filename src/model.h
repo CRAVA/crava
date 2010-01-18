@@ -9,6 +9,7 @@
 #include "src/definitions.h"
 #include "src/background.h" //or move getAlpha & co to cpp-file.
 #include "src/modelsettings.h"
+#include "src/inputfiles.h"
 
 struct irapgrid;
 class Corr;
@@ -72,7 +73,7 @@ private:
                                     Surface       *& correlationDirection,
                                     ModelSettings *& modelSettings, 
                                     InputFiles     * inputFiles,
-                                    bool             areaFromModelFile,
+                                    int             areaFromModelFile,
                                     char           * errText,
                                     bool           & failed);
   void             setupExtendedTimeSimbox(Simbox  * timeSimbox, 
@@ -269,7 +270,7 @@ private:
                                     int            & error);
   void             printSettings(ModelSettings * modelSettings,
                                  InputFiles    * inputFiles,
-                                 bool            areaFromModelFile);
+                                 int            areaFromModelFile);
   int              getWaveletFileFormat(const std::string & fileName, 
                                         char              * errText);
   //Compute correlation gradient in terms of i,j and k in grid.

@@ -50,7 +50,7 @@ public:
   float                getRealValueCyclic(int i, int j, int k);
   float                getRealValueInterpolated(int i, int j, float kindex, bool extSimbox = false);
   fftw_complex         getComplexValue(int i, int j, int k, bool extSimbox = false) const;
-  virtual int                  setRealValue(int i, int j, int k, float value, bool extSimbox = false);  // Accessmode randomaccess
+  virtual int          setRealValue(int i, int j, int k, float value, bool extSimbox = false);  // Accessmode randomaccess
   int                  setComplexValue(int i, int j ,int k, fftw_complex value, bool extSimbox = false);
   fftw_complex         getFirstComplexValue();    
   virtual int          square();                                // No mode/randomaccess
@@ -118,6 +118,7 @@ public:
   static void          setMaxAllowedGrids(int maxAllowedGrids) {maxAllowedGrids_ = maxAllowedGrids ;}
   static int           getMaxAllowedGrids()   { return maxAllowedGrids_   ;}
   static int           getMaxAllocatedGrids() { return maxAllocatedGrids_ ;}
+  static void          setTerminateOnMaxGrid(bool terminate) {terminateOnMaxGrid_ = terminate ;} 
 
   virtual void         createRealGrid(bool add = true);
   virtual void         createComplexGrid();
@@ -186,7 +187,8 @@ protected:
   
   static int           maxAllowedGrids_;   // The maximum number of grids we are allowed to allocate.
   static int           maxAllocatedGrids_; // The maximum number of grids that has actually been allocated.
-  static int           nGrids_;            // The actually number of grids allocated (varies as crava runs).  
+  static int           nGrids_;            // The actually number of grids allocated (varies as crava runs).
+  static bool          terminateOnMaxGrid_; // If true, terminate when we try to allocate more than maxAllowedGrids.
   bool                 add_;                // Tells whether we should change nGrids_ or not
 };
 #endif

@@ -1348,7 +1348,9 @@ XmlModelFile::parseOutputVolume(TiXmlNode * node, std::string & errTxt)
   std::vector<std::string> legalCommands;
   legalCommands.push_back("interval-two-surfaces");
   legalCommands.push_back("interval-one-surface");
-  legalCommands.push_back("area");
+  legalCommands.push_back("area-from-surface");
+  legalCommands.push_back("UTM-coordinates");
+  legalCommands.push_back("inline-crossline-numbers");
 
   bool interval = parseIntervalTwoSurfaces(root, errTxt);
   
@@ -1361,7 +1363,16 @@ XmlModelFile::parseOutputVolume(TiXmlNode * node, std::string & errTxt)
         +lineColumnText(root)+".\n";
   }
 
-  parseArea(root, errTxt);
+
+  bool area1 = parseAreaFromSurface(root, errTxt);
+  bool area2 = parseILXLArea(root, errTxt);
+  if(area1 && area2)
+    errTxt+= "Area can not be given both by a surface and by inline and crossline numbers\n";
+  bool area3 = parseUTMArea(root, errTxt);
+  if(area1 && area3)
+    errTxt+= "Area can no be given both by a surface and by coordinates\n";
+  if(area2 && area3)
+    errTxt+= "Area can not be given both by inline crossline numbers and UTM coordinates\n";
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -1569,24 +1580,23 @@ XmlModelFile::parseIntervalOneSurface(TiXmlNode * node, std::string & errTxt)
   return(true);
 }
 
+
 bool 
-XmlModelFile::parseArea(TiXmlNode * node, std::string & errTxt)
+XmlModelFile::parseAreaFromSurface(TiXmlNode * node, std::string & errTxt)
 {
-  TiXmlNode * root = node->FirstChildElement("area");
+ TiXmlNode * root = node->FirstChildElement("area-from-surface");
   if(root == 0)
     return(false);
-  
   std::vector<std::string> legalCommands;
-  legalCommands.push_back("UTM-coordinates");
-  legalCommands.push_back("inline-crossline-numbers");
-
-  bool utm = parseUTMArea(root, errTxt);
-  if(utm==false)
-    parseILXLArea(root, errTxt);
+  legalCommands.push_back("file-name");
+  std::string filename;
+  if(parseFileName(root, "file-name", filename, errTxt) == true)
+  {
+    inputFiles_->setAreaSurfaceFile(filename);
+  }
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
-
 }
 
 bool

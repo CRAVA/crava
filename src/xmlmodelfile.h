@@ -56,9 +56,9 @@ private:
   bool       parseTopSurface(TiXmlNode * node, std::string & errTxt);
   bool       parseBaseSurface(TiXmlNode * node, std::string & errTxt);
   bool     parseIntervalOneSurface(TiXmlNode * node, std::string & errTxt);
-  bool     parseArea(TiXmlNode * node, std::string & errTxt);
-  bool       parseUTMArea(TiXmlNode * node, std::string & errTxt);
-  bool       parseILXLArea(TiXmlNode * node, std::string & errTxt);
+  bool     parseAreaFromSurface(TiXmlNode * node, std::string & errTxt);
+  bool     parseUTMArea(TiXmlNode * node, std::string & errTxt);
+  bool     parseILXLArea(TiXmlNode * node, std::string & errTxt);
   bool   parseTime3DMapping(TiXmlNode * node, std::string & errTxt);
   bool   parseIOSettings(TiXmlNode * node, std::string & errTxt);
   bool       parseGridOutput(TiXmlNode * node, std::string & errTxt);

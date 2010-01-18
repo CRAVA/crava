@@ -248,14 +248,20 @@ Estimation: Checks input data and performs estimation of lacking information for
    \item \Default
  \elist
 
-\subsubsection{\hbracket{area}}\newkw{area}
+\subsubsection{\hbracket{area-from-surface}}\newkw{area-from-surface}
  \slist
-   \item \Description This command holds the parameters defining the lateral extent of the inversion volume. It can be defined in two ways. Either by UTM coordinates or by inline and crossline numbers if the seismic is given on Segy format. If this command is not given, the information is taken from the first seismic data file, or from Vp if we do forward modeling(mode set to forward).
-   \item \Argument UTM-coordinates or inline-crossline-numbers
+   \item \Description Inverson area can be defined by a surface. Then the name of the surface is given in this command. Other ways to define inversion area are by the commands \kw{UTM-coordinates} or \kw{inline-crossline-numbers}. If none of these commands are used, the area is defined by the first seismic data file, or from Vp if we do forward modeling.
+   \item \Argument 
+   \item \Default
+ \elist
+\paragraph{\hbracket{file-name}}\rnewkw{file-name}{file-name5}
+\slist
+   \item \Description 
+   \item \Argument Name of file
    \item \Default
  \elist
 
-\paragraph{\hbracket{UTM-coordinates}}\newkw{UTM-coordinates}
+\subsubsection{\hbracket{UTM-coordinates}}\newkw{UTM-coordinates}
  \slist
    \item \Description Describe area by UTM coordinates.
    \item \Argument 
@@ -263,93 +269,93 @@ Estimation: Checks input data and performs estimation of lacking information for
  \elist
 
 
-\subparagraph{\hbracket{reference-point-x}}\newkw{reference-point-x}
+\paragraph{\hbracket{reference-point-x}}\newkw{reference-point-x}
  \slist
    \item \Description Value giving the x-coordinate of a corner of the area.
    \item \Argument Value
    \item \Default
  \elist
 
-\subparagraph{\hbracket{reference-point-y}}\newkw{reference-point-y}
+\paragraph{\hbracket{reference-point-y}}\newkw{reference-point-y}
  \slist
    \item \Description Value giving the y-coordinate of a corner of the area.
    \item \Argument Value
    \item \Default
  \elist
 
-\subparagraph{\hbracket{length-x}}\newkw{length-x}
+\paragraph{\hbracket{length-x}}\newkw{length-x}
  \slist
    \item \Description Value giving the area length along the rotated x-axis.
    \item \Argument Value
    \item \Default
  \elist
 
-\subparagraph{\hbracket{length-y}}\newkw{length-y}
+\paragraph{\hbracket{length-y}}\newkw{length-y}
  \slist
    \item \Description Value giving the area length along the rotated y-axis.
    \item \Argument Value
    \item \Default
  \elist
 
-\subparagraph{\hbracket{sample-density-x}}\newkw{sample-density-x}
+\paragraph{\hbracket{sample-density-x}}\newkw{sample-density-x}
  \slist
    \item \Description Cell size along the rotated x-axis.
    \item \Argument Integer
    \item \Default
  \elist
 
-\subparagraph{\hbracket{sample-density-y}}\newkw{sample-density-y}
+\paragraph{\hbracket{sample-density-y}}\newkw{sample-density-y}
  \slist
    \item \Description Cell size along the rotated y-axis.
    \item \Argument Integer
    \item \Default
  \elist
 
-\subparagraph{\hbracket{angle}}\newkw{angle}
+\paragraph{\hbracket{angle}}\newkw{angle}
  \slist
    \item \Description Orientation of the azimuth.
    \item \Argument
    \item \Default
  \elist
 
-\paragraph{\hbracket{inline-crossline-numbers}}\newkw{inline-crossline-numbers}
+\subsubsection{\hbracket{inline-crossline-numbers}}\newkw{inline-crossline-numbers}
  \slist
-   \item \Description Describe area by inline and crossline numbers. il-start and xl-start must be given if this command is used, the other variables are optional. The numbers which are not specified are taken from the Segy file.
+   \item \Description Describe area by inline and crossline numbers. il-start and xl-start must be given if this command is used, the other variables are optional. The numbers which are not specified are taken from the Segy file containing seismic data.
    \item \Argument 
    \item \Default
  \elist
 
-\subparagraph{\hbracket{il-start}}\newkw{il-start}
+\paragraph{\hbracket{il-start}}\newkw{il-start}
  \slist
    \item \Description Start value for inline.
    \item \Argument
    \item \Default
  \elist
-\subparagraph{\hbracket{il-end}}\newkw{il-end}
+\paragraph{\hbracket{il-end}}\newkw{il-end}
  \slist
    \item \Description End value for inline.
    \item \Argument
    \item \Default
  \elist
-\subparagraph{\hbracket{xl-start}}\newkw{xl-start}
+\paragraph{\hbracket{xl-start}}\newkw{xl-start}
  \slist
    \item \Description Start value for crossline.
    \item \Argument
    \item \Default
  \elist
-\subparagraph{\hbracket{xl-end}}\newkw{xl-end}
+\paragraph{\hbracket{xl-end}}\newkw{xl-end}
  \slist
    \item \Description End value for crossline.
    \item \Argument
    \item \Default
  \elist
-\subparagraph{\hbracket{il-step}}\newkw{il-step}
+\paragraph{\hbracket{il-step}}\newkw{il-step}
  \slist
    \item \Description Step value for inline.
    \item \Argument
    \item \Default
  \elist
-\subparagraph{\hbracket{xl-step}}\newkw{xl-step}
+\paragraph{\hbracket{xl-step}}\newkw{xl-step}
  \slist
    \item \Description Step value for crossline.
    \item \Argument

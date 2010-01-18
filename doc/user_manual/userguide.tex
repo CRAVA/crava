@@ -85,7 +85,7 @@ The volume used for inversion is given horizontally by a rectangle, and vertical
 <crava>
 <project-settings>
   <output-volume>
-    <area>
+    <UTM-coordinates>
       <reference-point-x>  403050.0   </reference-point-x>
       <reference-point-y> 7211900.0   </reference-point-y>
       <length-x>              500.0   </length-x>
@@ -93,7 +93,7 @@ The volume used for inversion is given horizontally by a rectangle, and vertical
       <angle>                  23.627 </angle>
       <sample-density-x>       50.0   </sample-density-x>
       <sample-density-y>       50.0   </sample-density-y>
-    </area>
+    </UTM-coordinates>
 
     <interval-two-surfaces>
       <top-surface>
@@ -111,7 +111,7 @@ The volume used for inversion is given horizontally by a rectangle, and vertical
 \end{example}
 
 \subsubsection{Lateral extent}
-The lateral extent of the inversion volume is given under the command \kw{area}\kwindex{area}. This command describes a rectangle, which may be rotated relative to the seismic data. It has the following parameters, which must all be specified:
+The lateral extent of the inversion volume is given under one of the the commands \kw{area-from-surface}\kwindex{area-from-surface}, \kw{UTM-coordinates}\kwindex{UTM-coordinates}, or \kw{inline-crossline-numbers}\kwindex{inline-crossline-numbers}. The command \kw{UTM-coordinates} describes a rectangle, which may be rotated relative to the seismic data. It has the following parameters, which must all be specified:
 \begin{itemize}
 \item \kw{reference-point-x}\kwindex{reference-point-x} is the UTM x-coordinate of one corner of the area.
 \item \kw{reference-point-x}\kwindex{reference-point-x} is the UTM y-coordinate of the same corner.
@@ -123,7 +123,7 @@ The lateral extent of the inversion volume is given under the command \kw{area}\
 \end{itemize}
 Note that if the grid has the same rotation as the input SegY cubes with seismic data, output SegY cubes will have correct inlines and crosslines. Otherwise, these numbers are just counting from the initial corner.
 
-The area command may be skipped altogether. The area will then be taken from the first input seismic data file, and defined as the smallest rectangle that covers all present traces.
+The area commands may be skipped altogether. The area will then be taken from the first input seismic data file, and defined as the smallest rectangle that covers all present traces.
 
 \subsubsection{Top and bottom surfaces}
 The vertical extent is normally given by a top and a base surface in time, under the command \kw{interval-two-surfaces}\kwindex{interval-two-surfaces}, as shown in \autoref{ex:volume}. The file name for the top surface is given under command \kw{top-surface}\kwindex{top-surface}, \kw{time-file}, and the base surface is given similarly under \kw{base-surface}\kwindex{base-surface}, \kw{time-file}. The file format is binary storm or ASCII irap.
@@ -517,7 +517,7 @@ A minor functionality in \crava is that it can do forward modelling, showing wha
 
 <project-settings>
   <output-volume>
-    <area>
+    <UTM-coordinates>
       <reference-point-x>  400000.0 </reference-point-x>
       <reference-point-y> 7227500.0 </reference-point-y>
       <length-x>             2500.0 </length-x>
@@ -525,7 +525,7 @@ A minor functionality in \crava is that it can do forward modelling, showing wha
       <angle>                   0.0 </angle>
       <sample-density-x>      250.0 </sample-density-x>
       <sample-density-y>      250.0 </sample-density-y>
-    </area>
+    </UTM-coordinates>
 
     <interval-two-surfaces>
       <top-surface>
