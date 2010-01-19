@@ -2314,6 +2314,8 @@ XmlModelFile::parseTraceHeaderFormat(TiXmlNode * node, const std::string & keywo
       thf = new TraceHeaderFormat(TraceHeaderFormat::SEISWORKS);
     else if(stdFormat == "iesx")
       thf = new TraceHeaderFormat(TraceHeaderFormat::IESX);
+    else if(stdFormat == "SIP")
+      thf = new TraceHeaderFormat(TraceHeaderFormat::SIP);
     else {
       errTxt += "Unknown segy-format '"+stdFormat+"' found on line"+
         NRLib::ToString(root->Row())+", column "+NRLib::ToString(root->Column())+".\n";

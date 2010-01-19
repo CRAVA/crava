@@ -122,6 +122,17 @@ The lateral extent of the inversion volume is given under one of the the command
 \item \kw{sample-density-y}\kwindex{sample-density-y} is the length of one grid cell along the local y-axis.
 \end{itemize}
 Note that if the grid has the same rotation as the input SegY cubes with seismic data, output SegY cubes will have correct inlines and crosslines. Otherwise, these numbers are just counting from the initial corner.
+The command \kw{area-from-surface} contains only one parameter, \kw{file-name}\kwindex{file-name}, the name of a storm surface file defining the lateral extent of the inversion volume.
+The last way to define the inversion area is by the command \kw{inline-crossline-numbers}\kwindex{inline-crossline-numbers}. By this command, the following parameters can be used:
+\begin{itemize}
+\item \kw{il-start}\kwindex{il-start} is the starting inline number.
+\item \kw{il-end}\kwindex{il-end} is the ending inline number.
+\item \kw{xl-start}\kwindex{xl-start} is the starting crossline number.
+\item \kw{xl-end}\kwindex{xl-end} is the ending crossline number.
+\item \kw{il-step}\kwindex{il-step} is the inline interval.
+\item \kw{xl-step}\kwindex{xl-step} is the crossline interval.
+\end{itemize}
+The parameters \kw{il-start} and \kw{xl-start} must be set if this command is used, the other parameters are optional. If they are not given, the numbers are taken from the Segy file containing the first seismic cube.
 
 The area commands may be skipped altogether. The area will then be taken from the first input seismic data file, and defined as the smallest rectangle that covers all present traces.
 
@@ -551,5 +562,5 @@ A minor functionality in \crava is that it can do forward modelling, showing wha
 </crava>
 \end{verbatim}
 \end{example}
-Note that no seismic files are given under \kw{survey}, as these are now computed. No wells are used, since nothing can be estimated here. We need the angles to generate seismic data for, the corresponding wavelets, the elastic parameters (given as earth model), and the volume. Instead of using the \kw{area} command, the volume can be taken from Vp.  The output format can be controlled using \kw{io-settings}, as can input- and output-directory. Other input will be ignored.
+Note that no seismic files are given under \kw{survey}, as these are now computed. No wells are used, since nothing can be estimated here. We need the angles to generate seismic data for, the corresponding wavelets, the elastic parameters (given as earth model), and the volume. Instead of using one of the commands defining volume, the volume can be taken from Vp.  The output format can be controlled using \kw{io-settings}, as can input- and output-directory. Other input will be ignored.
 
