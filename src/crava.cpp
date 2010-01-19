@@ -1305,7 +1305,7 @@ Crava::doPostKriging(FFTGrid & postAlpha,
                      FFTGrid & postRho) 
 {
   if(krigingParameter_ > 0) { 
-    Utils::writeHeader("Conditioning to wells");
+    Utils::writeHeader("Kriging to wells");
 
     CovGridSeparated covGridAlpha      (*correlations_->getPostCovAlpha()      );
     CovGridSeparated covGridBeta       (*correlations_->getPostCovBeta()       );
