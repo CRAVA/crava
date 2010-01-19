@@ -156,7 +156,7 @@ XmlModelFile::parseInversionSettings(TiXmlNode * node, std::string & errTxt)
   std::vector<std::string> legalCommands;
   legalCommands.push_back("prediction");
   legalCommands.push_back("simulation");
-  legalCommands.push_back("krige-welldata");
+  legalCommands.push_back("kriging-to-wells");
   legalCommands.push_back("facies-probabilities");
 
   bool value;
@@ -165,7 +165,7 @@ XmlModelFile::parseInversionSettings(TiXmlNode * node, std::string & errTxt)
   
   parseSimulation(root, errTxt);
 
-  if(parseBool(root, "krige-welldata", value, errTxt) == true) {
+  if(parseBool(root, "kriging-to-wells", value, errTxt) == true) {
     if(value == true) {
       if(modelSettings_->getKrigingParameter() == 0)
         modelSettings_->setKrigingParameter(250); //Default value.
