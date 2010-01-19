@@ -20,6 +20,7 @@
 #include "src/definitions.h"
 #include "src/fftgrid.h"
 #include "src/io.h"
+#include "src/tasklist.h"
 
 ModelFile::ModelFile(char * fileName)
 {
@@ -1429,6 +1430,7 @@ ModelFile::readCommandOutput(char ** params, int & pos, char * errText)
     {
       gridFlag -= IO::FACIESPROBRELATIVE;
       LogKit::LogFormatted(LogKit::LOW,"Warning: Both FACIESPROB and FACIESPROBRELATIVE are wanted as output. Only FACIESPROB is given.\n");
+      TaskList::addTask("Only FACIESPROB is given as output. If the output FACIESPROBRELATIVE is wanted,\n     the option FACIESPROB should be removed from the model file");
     }
 
     //Some backward compatibility lines.
