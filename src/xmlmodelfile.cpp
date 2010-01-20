@@ -8,7 +8,6 @@
 #include <cmath>
 #include "lib/global_def.h"
 #include "lib/lib_misc.h"
-
 #include "nrlib/iotools/stringtools.hpp"
 #include "nrlib/iotools/logkit.hpp"
 #include "nrlib/segy/segy.hpp"

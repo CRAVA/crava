@@ -2927,6 +2927,19 @@ Model::processWavelets(Wavelet                    **& wavelet,
       seisCube[i]->endAccess();
   } // end i (angles)
   
+  // check if local noise is set for some angles.
+  bool localNoiseSet = false;
+  for(int i=0;i<nAngles;i++)
+    if(localNoiseScale_[i]!=NULL)
+      localNoiseSet = true;
+  if(localNoiseSet==true)
+  {
+    for(int i=0;i<nAngles;i++)
+      if(localNoiseScale_[i]==NULL)
+        localNoiseScale_[i] = new Grid2D(timeSimbox->getnx(), 
+                                         timeSimbox->getny(), 
+                                         1.0);
+  }
   if (timeSimbox->getdz() > 4.01f)
     TaskList::addTask("Increase the number of layers to improve the quality of the wavelet estimation"); 
 
