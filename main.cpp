@@ -81,10 +81,6 @@ int main(int argc, char** argv)
       {
         crava->simulate(model->getRandomGen());
       }
-      if(model->getModelSettings()->getGenerateSeismicAfterInversion() == true)
-      {
-        crava->computeSyntSeismic(crava->getPostAlpha(),crava->getPostBeta(),crava->getPostRho());
-      }
 
       Corr * corr = model->getCorrelations();
       corr->invFFT();
@@ -110,6 +106,13 @@ int main(int argc, char** argv)
       if (model->getModelSettings()->getEstimateFaciesProb())
         crava->computeFaciesProb(spatwellfilter);
       delete spatwellfilter;
+
+      if(model->getModelSettings()->getKrigingParameter() > 0)
+        crava->doPredictionKriging();
+
+      if(model->getModelSettings()->getGenerateSeismicAfterInversion() == true)
+        crava->computeSyntSeismic(crava->getPostAlpha(),crava->getPostBeta(),crava->getPostRho());
+
       //
       // Temporary placement.  crava.cpp needs a proper restructuring.
       //
@@ -140,7 +143,7 @@ int main(int argc, char** argv)
     LogKit::LogFormatted(LogKit::DEBUGLOW,"\n            Maximum number of grids requested  :  %2d",FFTGrid::getMaxAllowedGrids()); 
     LogKit::LogFormatted(LogKit::DEBUGLOW,"\n            Maximum number of grids allocated  :  %2d",FFTGrid::getMaxAllocatedGrids()); 
     LogKit::LogFormatted(LogKit::DEBUGLOW,"\n         Consult method Model::checkAvailableMemory().\n"); 
-    TaskList::addTask("Check if all tasks requested have been done");
+    TaskList::addTask("CRAVA did not use as much memory as estimated. NR would be interested to konow about this, so if you could send your .xml-file to us, we would aprreciate it.");
   }
   
   TaskList::viewAllTasks();  

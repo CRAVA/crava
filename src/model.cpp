@@ -540,13 +540,8 @@ Model::checkAvailableMemory(Simbox        * timeSimbox,
   int nGridFacies       = modelSettings->getNumberOfFacies() + 1; // One for each facies + one for undef  
  // int nGridHistograms  = modelSettings->getNumberOfFacies();    // One histogram for each facies
   int nGridHistograms   = modelSettings->getNumberOfFacies();     // Same size as kriging grids
-  int nGridKriging      = 1;                                      // One grid for kriging
+  int nGridKriging      = 1;                                      // One grid for kriging, but may use space left from seismic.
   int nGridFileMode     = 1;                                      // One grid for intermediate file storage
-  int nGridComputeParam = 0;                                      // If we want elastic parameters computed from the primaries (Vp, Vs, rho),
-                                                                  //   an extra grid is needed for this.
-  int combinedParam = IO::LAMELAMBDA+IO::LAMEMU+IO::POISSONRATIO+IO::AI+IO::SI+IO::VPVSRATIO+IO::MURHO+IO::LAMBDARHO;
-  if((modelSettings->getGridOutputFlag() & combinedParam) > 0)
-    nGridComputeParam = 1;
 
   int nGrids;
   if(modelSettings->getForwardModeling() == true) {
@@ -568,14 +563,15 @@ Model::checkAvailableMemory(Simbox        * timeSimbox,
       }
     }
     else {
-      if(modelSettings->getNumberOfSimulations() > 0)
-        nGrids = nGridParameters + nGridCovariances + std::max(nGridSeismicData, nGridParameters) + nGridComputeParam;
-      else
-        nGrids = nGridParameters + nGridCovariances + nGridSeismicData + nGridComputeParam;
-
-      if(modelSettings->getKrigingParameter() > 0) {
-        nGrids += nGridKriging;
+      if(modelSettings->getNumberOfSimulations() > 0) {
+        if(modelSettings->getKrigingParameter() > 0)
+          nGrids = nGridParameters + nGridCovariances + std::max(nGridSeismicData, nGridParameters+nGridKriging);
+        else
+          nGrids = nGridParameters + nGridCovariances + std::max(nGridSeismicData, nGridParameters);
       }
+      else
+        nGrids = nGridParameters + nGridCovariances + nGridSeismicData;
+
       // Need background for facies probabilities and local noise.
 
       if(modelSettings->getUseLocalNoise()) {
@@ -583,7 +579,7 @@ Model::checkAvailableMemory(Simbox        * timeSimbox,
       }
       if(modelSettings->getEstimateFaciesProb()) { // Seismic data is dealloctaed before new allocations are done
         if (modelSettings->getFaciesProbRelative() && !modelSettings->getUseLocalNoise())
-          nGrids += nGridBackground + std::max(0, nGridFacies - nGridSeismicData - nGridComputeParam);  
+          nGrids += nGridBackground + std::max(0, nGridFacies - nGridSeismicData);  
         else {
           nGrids += std::max(0, nGridFacies - nGridSeismicData);
         }

@@ -14,7 +14,8 @@ ParameterOutput::writeParameters(const Simbox  * simbox,
                                  FFTGrid       * rho,
                                  int             outputFlag,
                                  bool            fileGrid,
-                                 int             simNum)
+                                 int             simNum,
+                                 bool            kriged)
 {
   std::string prefix;
   std::string suffix;
@@ -30,6 +31,9 @@ ParameterOutput::writeParameters(const Simbox  * simbox,
     prefix = IO::PrefixPredictions();
     suffix = "";
   }
+
+  if(kriged)
+    suffix = "_Kriged"+suffix;
 
   if((outputFlag & IO::MURHO) > 0)
   {

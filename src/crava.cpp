@@ -1019,6 +1019,32 @@ Crava::computePostMeanResidAndFFTCov()
   postBeta_->invFFTInPlace();
   postRho_->invFFTInPlace();
 
+  for(l=0;l<ntheta_;l++)
+    seisData_[l]->endAccess();
+
+  //Finish use of seisData_, since we need the memory.
+  if((outputFlag_ & IO::RESIDUAL) > 0)
+  {
+    if(simbox_->getIsConstantThick() != true)
+      multiplyDataByScaleWaveletAndWriteToFile("residuals");
+    else
+    {
+      for(l=0;l<ntheta_;l++)
+      {
+        std::string angle     = NRLib::ToString(thetaDeg_[l],1);
+        std::string sgriLabel = " Residuals for incidence angle "+angle;
+        std::string fileName  = IO::PrefixResiduals() + angle;
+        seisData_[l]->setAccessMode(FFTGrid::RANDOMACCESS);
+        seisData_[l]->invFFTInPlace();
+        seisData_[l]->writeFile(fileName, IO::PathToInversionResults(), simbox_, sgriLabel);
+        seisData_[l]->endAccess();
+      }
+    }
+  }
+  for(l=0;l<ntheta_;l++)
+    delete seisData_[l];
+  LogKit::LogFormatted(LogKit::DEBUGLOW,"\nDEALLOCATING: Seismic data\n");
+
   if(model_->getVelocityFromInversion() == true) { //Conversion undefined until prediction ready. Complete it.
     postAlpha_->setAccessMode(FFTGrid::RANDOMACCESS);
     postAlpha_->expTransf();
@@ -1040,40 +1066,9 @@ Crava::computePostMeanResidAndFFTCov()
   }
 
   if(writePrediction_ == true)
-  {
-    double wall2=0.0, cpu2=0.0;
-    TimeKit::getTime(wall2,cpu2);
-    doPostKriging(*postAlpha_, *postBeta_, *postRho_); 
-    Timings::setTimeKrigingPred(wall2,cpu2);
     ParameterOutput::writeParameters(simbox_, model_, postAlpha_, postBeta_, postRho_, 
-                                     outputFlag_, fileGrid_, -1);
-  }
+                                     outputFlag_, fileGrid_, -1, false);
 
-  for(l=0;l<ntheta_;l++)
-    seisData_[l]->endAccess();
-
-  if((outputFlag_ & IO::RESIDUAL) > 0)
-  {
-    if(simbox_->getIsConstantThick() != true)
-      multiplyDataByScaleWaveletAndWriteToFile("residuals");
-    else
-    {
-      for(l=0;l<ntheta_;l++)
-      {
-        std::string angle     = NRLib::ToString(thetaDeg_[l],1);
-        std::string sgriLabel = " Residuals for incidence angle "+angle;
-        std::string fileName  = IO::PrefixResiduals() + angle;
-        seisData_[l]->setAccessMode(FFTGrid::RANDOMACCESS);
-        seisData_[l]->invFFTInPlace();
-        seisData_[l]->writeFile(fileName, IO::PathToInversionResults(), simbox_, sgriLabel);
-        seisData_[l]->endAccess();
-      }
-    }
-  }
-  for(l=0;l<ntheta_;l++)
-    delete seisData_[l];
-
-  LogKit::LogFormatted(LogKit::DEBUGLOW,"\nDEALLOCATING: Seismic data\n");
   delete [] seisData_;
   delete [] kW;
   delete [] errMult1;
@@ -1115,6 +1110,18 @@ Crava::computePostMeanResidAndFFTCov()
   return(0);
 }
 
+void
+Crava::doPredictionKriging()
+{
+  if(writePrediction_ == true) { //No need to do this if output not requested.
+    double wall2=0.0, cpu2=0.0;
+    TimeKit::getTime(wall2,cpu2);
+    doPostKriging(*postAlpha_, *postBeta_, *postRho_); 
+    Timings::setTimeKrigingPred(wall2,cpu2);
+    ParameterOutput::writeParameters(simbox_, model_, postAlpha_, postBeta_, postRho_, 
+                                     outputFlag_, fileGrid_, -1, true);
+  }
+}
 
 int
 Crava::simulate(RandomGen * randomGen)
@@ -1126,6 +1133,7 @@ Crava::simulate(RandomGen * randomGen)
 
   if(nSim_>0)
   {
+    bool kriging = (krigingParameter_ > 0); 
     FFTGrid * postCovAlpha       = correlations_->getPostCovAlpha();
     FFTGrid * postCovBeta        = correlations_->getPostCovBeta();
     FFTGrid * postCovRho         = correlations_->getPostCovRho();
@@ -1275,12 +1283,14 @@ Crava::simulate(RandomGen * randomGen)
           seed2->add(postRho_);
           seed2->endAccess();
 
-          double wall2=0.0, cpu2=0.0;
-          TimeKit::getTime(wall2,cpu2);
-          doPostKriging(*seed0, *seed1, *seed2); 
-          Timings::addToTimeKrigingSim(wall2,cpu2);
+          if(kriging == true) { 
+            double wall2=0.0, cpu2=0.0;
+            TimeKit::getTime(wall2,cpu2);
+            doPostKriging(*seed0, *seed1, *seed2); 
+            Timings::addToTimeKrigingSim(wall2,cpu2);
+          }
           ParameterOutput::writeParameters(simbox_, model_, seed0, seed1, seed2,
-                                           outputFlag_, fileGrid_, simNr);
+                                           outputFlag_, fileGrid_, simNr, kriging);
           // time(&timeend);
           // printf("Back transform and write of simulation in %ld seconds \n",timeend-timestart);
     } 
@@ -1304,30 +1314,29 @@ Crava::doPostKriging(FFTGrid & postAlpha,
                      FFTGrid & postBeta, 
                      FFTGrid & postRho) 
 {
-  if(krigingParameter_ > 0) { 
+
     Utils::writeHeader("Kriging to wells");
 
-    CovGridSeparated covGridAlpha      (*correlations_->getPostCovAlpha()      );
-    CovGridSeparated covGridBeta       (*correlations_->getPostCovBeta()       );
-    CovGridSeparated covGridRho        (*correlations_->getPostCovRho()        ); 
-    CovGridSeparated covGridCrAlphaBeta(*correlations_->getPostCrCovAlphaBeta());
-    CovGridSeparated covGridCrAlphaRho (*correlations_->getPostCrCovAlphaRho() );
-    CovGridSeparated covGridCrBetaRho  (*correlations_->getPostCrCovBetaRho()  );
+  CovGridSeparated covGridAlpha      (*correlations_->getPostCovAlpha()      );
+  CovGridSeparated covGridBeta       (*correlations_->getPostCovBeta()       );
+  CovGridSeparated covGridRho        (*correlations_->getPostCovRho()        ); 
+  CovGridSeparated covGridCrAlphaBeta(*correlations_->getPostCrCovAlphaBeta());
+  CovGridSeparated covGridCrAlphaRho (*correlations_->getPostCrCovAlphaRho() );
+  CovGridSeparated covGridCrBetaRho  (*correlations_->getPostCrCovBetaRho()  );
 
-    KrigingData3D kd(wells_, nWells_, 1); // 1 = full resolution logs
+  KrigingData3D kd(wells_, nWells_, 1); // 1 = full resolution logs
 
-    std::string baseName = "Raw_" + IO::PrefixKrigingData() + IO::SuffixGeneralData();
-    std::string fileName = IO::makeFullFileName(IO::PathToInversionResults(), baseName);
-    kd.writeToFile(fileName);
-    
-    CKrigingAdmin pKriging(*simbox_, 
-                           kd.getData(), kd.getNumberOfData(),
-                           covGridAlpha, covGridBeta, covGridRho, 
-                           covGridCrAlphaBeta, covGridCrAlphaRho, covGridCrBetaRho, 
-                           krigingParameter_);
+  std::string baseName = "Raw_" + IO::PrefixKrigingData() + IO::SuffixGeneralData();
+  std::string fileName = IO::makeFullFileName(IO::PathToInversionResults(), baseName);
+  kd.writeToFile(fileName);
+  
+  CKrigingAdmin pKriging(*simbox_, 
+                         kd.getData(), kd.getNumberOfData(),
+                         covGridAlpha, covGridBeta, covGridRho, 
+                         covGridCrAlphaBeta, covGridCrAlphaRho, covGridCrBetaRho, 
+                         krigingParameter_);
 
-    pKriging.KrigAll(postAlpha, postBeta, postRho);
-  } 
+  pKriging.KrigAll(postAlpha, postBeta, postRho);
 }
 
 int 

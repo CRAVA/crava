@@ -47,6 +47,7 @@ public:
   void               computeG(double **G) const;
   void               newPosteriorCovPointwise(double ** sigmanew, double **G, 
                                               const std::vector<double> & scales, double **sigmamdnew) const;
+  void               doPredictionKriging();
 
 
 private: 

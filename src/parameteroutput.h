@@ -19,7 +19,8 @@ public:
                                    FFTGrid       * postRho, 
                                    int             outputFlag,
                                    bool            fileGrid,
-                                   int             simNum); 
+                                   int             simNum,
+                                   bool            kriged); 
   static void      writeToFile(const Simbox      * simbox, 
                                Model             * model, 
                                FFTGrid           * grid, 
