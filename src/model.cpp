@@ -518,7 +518,7 @@ Model::checkAvailableMemory(Simbox        * timeSimbox,
                                     modelSettings->getNXpad(), 
                                     modelSettings->getNYpad(), 
                                     modelSettings->getNZpad());
-  int gridSize = dummyGrid->getrsize();
+  int gridSizePad = 4*dummyGrid->getrsize();
   delete dummyGrid;
   dummyGrid = new FFTGrid(timeSimbox->getnx(), 
                           timeSimbox->getny(), 
@@ -526,29 +526,32 @@ Model::checkAvailableMemory(Simbox        * timeSimbox,
                           timeSimbox->getnx(), 
                           timeSimbox->getny(), 
                           timeSimbox->getnz());
-  int gridSizeKriging = dummyGrid->getrsize();
+  int gridSizeBase = 4*dummyGrid->getrsize();
   delete dummyGrid;
-  int nGridParameters  = 3;                                      // Vp + Vs + Rho
-  int nGridBackground  = 3;                                      // Vp + Vs + Rho
-  int nGridCovariances = 6;                                      // Covariances
-  int nGridSeismicData = modelSettings->getNumberOfAngles();     // One for each angle stack
-  int nGridWavelet     = 0;
+  int nGridParameters  = 3;                                      // Vp + Vs + Rho, padded
+  int nGridBackground  = 3;                                      // Vp + Vs + Rho, padded
+  int nGridCovariances = 6;                                      // Covariances, padded
+  int nGridSeismicData = modelSettings->getNumberOfAngles();     // One for each angle stack, padded
+  int nGridWavelet     = 0;                                      // NBNB Frode: What is the size of these grids? Handled as padded currently.
   for (int i=0; i<modelSettings->getNumberOfAngles(); i++)
     if (modelSettings->getWaveletDim(i) == Wavelet::THREE_D)
       nGridWavelet++;
 
-  int nGridFacies       = modelSettings->getNumberOfFacies() + 1; // One for each facies + one for undef  
- // int nGridHistograms  = modelSettings->getNumberOfFacies();    // One histogram for each facies
-  int nGridHistograms   = modelSettings->getNumberOfFacies();     // Same size as kriging grids
-  int nGridKriging      = 1;                                      // One grid for kriging, but may use space left from seismic.
+  int nGridFacies       = modelSettings->getNumberOfFacies()+1;   // One for each facies, one for undef, unpadded.
+  int nGridHistograms   = modelSettings->getNumberOfFacies();     // One for each facies, 2MB.
+  int nGridKriging      = 1;                                      // One grid for kriging, unpadded.
+  int nGridCompute      = 1;                                      // Computation grid, padded (for convenience)
   int nGridFileMode     = 1;                                      // One grid for intermediate file storage
 
   int nGrids;
+  long long int gridMem;
   if(modelSettings->getForwardModeling() == true) {
     if (modelSettings->getFileGrid())  // Use disk buffering
       nGrids = nGridFileMode;
     else
       nGrids = nGridParameters + nGridSeismicData + nGridWavelet;
+
+    gridMem = nGrids*gridSizePad;
   }
   else {
     if (modelSettings->getFileGrid()) { // Use disk buffering
@@ -561,52 +564,63 @@ Model::checkAvailableMemory(Simbox        * timeSimbox,
       if(modelSettings->getUseLocalNoise()) {
         nGrids = 2*nGridParameters;
       }
+
+      gridMem = nGrids*gridSizePad;
     }
     else {
-      if(modelSettings->getNumberOfSimulations() > 0) {
-        if(modelSettings->getKrigingParameter() > 0)
-          nGrids = nGridParameters + nGridCovariances + std::max(nGridSeismicData, nGridParameters+nGridKriging);
-        else
-          nGrids = nGridParameters + nGridCovariances + std::max(nGridSeismicData, nGridParameters);
-      }
-      else
-        nGrids = nGridParameters + nGridCovariances + nGridSeismicData;
+      //baseP and baseU are the padded and unpadde grids allocated at each peak.
+      int baseP = nGridParameters + nGridCovariances;
+      if(modelSettings->getUseLocalNoise() == true || modelSettings->getFaciesProbRelative() == true)
+        baseP += nGridBackground;
+      int baseU = 0;
+      if(modelSettings->getIsPriorFaciesProbGiven()==2)
+        baseU += modelSettings->getNumberOfFacies();
 
-      // Need background for facies probabilities and local noise.
+      //First peak: At inversion
+      int peak1P = baseP + nGridSeismicData; //Need seismic data as well here.
+      int peak1U = baseU;
+      
+      long long int peakGridMem = peak1P*gridSizePad + peak1U*gridSizeBase; //First peak must be currently largest.
+      int peakNGrid   = peak1P;                                             //Also in number of padded grids
 
-      if(modelSettings->getUseLocalNoise()) {
-        nGrids = nGrids + nGridBackground;
+      if(modelSettings->getNumberOfSimulations() > 0) { //Second possible peak when simulating.
+        int peak2P = baseP + 3; //Need three extra parameter grids for simulated parameters.
+        int peak2U = baseU;     //Base level is the same, but may increase.
+        bool computeGridUsed = ((modelSettings->getGridOutputFlag() & (IO::AI + IO::LAMBDARHO + IO::LAMELAMBDA + IO::LAMEMU + IO::MURHO + IO::POISSONRATIO + IO::SI + IO::VPVSRATIO)) > 0);
+        if(computeGridUsed == true)
+          peak2P += nGridCompute;
+        else if(modelSettings->getKrigingParameter() > 0) //Note the else, since this grid will use same memory as computation grid if both are active.
+          peak2U += nGridKriging;
+        
+        if(peak2P > peakNGrid)
+          peakNGrid = peak2P;
+
+        long long int peak2Mem = peak2P*gridSizePad + peak2U*gridSizeBase;
+        if(peak2Mem > peakGridMem)
+          peakGridMem = peak2Mem;
       }
-      if(modelSettings->getEstimateFaciesProb()) { // Seismic data is dealloctaed before new allocations are done
-        if (modelSettings->getFaciesProbRelative() && !modelSettings->getUseLocalNoise())
-          nGrids += nGridBackground + std::max(0, nGridFacies - nGridSeismicData);  
-        else {
-          nGrids += std::max(0, nGridFacies - nGridSeismicData);
-        }
-        if (modelSettings->getIsPriorFaciesProbGiven()==2)
-          nGrids += modelSettings->getNumberOfFacies();
+
+      if(modelSettings->getEstimateFaciesProb() == true) {//Third possible peak when computing facies prob.
+        int peak3P = baseP;                //No extra padded grids, so this one can not peak here.
+        int peak3U = baseU + nGridFacies;  //But this one will, and may trigger new memory max.
+        
+        long long int peak3Mem = peak3P*gridSizePad + peak3U*gridSizeBase + 2000000*nGridHistograms; //These are 2MB when Vs is used.
+        if(peak3Mem > peakGridMem)
+          peakGridMem = peak3Mem;
       }
+      nGrids  = peakNGrid;
+      gridMem = peakGridMem;
     }
   }
   FFTGrid::setMaxAllowedGrids(nGrids);
   if(modelSettings->getDebugFlag()>0)
     FFTGrid::setTerminateOnMaxGrid(true);
 
-  int   workSize    = 2500 + static_cast<int>( 0.65*gridSize ); //Size of memory used beyond grids.
+  int   workSize    = 2500 + static_cast<int>( 0.65*gridSizePad); //Size of memory used beyond grids.
 
-  float memOneGrid  = 4.0f * static_cast<float>(gridSize); 
-  float memKrig     = 4.0f * static_cast<float>(gridSizeKriging);
   float mem0        = 4.0f * workSize;
-  float mem1;
-  if(modelSettings->getKrigingParameter() > 0)
-    mem1 = static_cast<float>(nGrids-1)*memOneGrid+ memKrig;
-  else 
-    mem1 = static_cast<float>(nGrids)*memOneGrid;
-  if(modelSettings->getEstimateFaciesProb())
-    mem1+=static_cast<float>(nGridHistograms)*memKrig;
-  if(modelSettings->getIsPriorFaciesProbGiven()==2)
-    mem1+=static_cast<float>(nGridHistograms)*memKrig;
-  float mem2        = static_cast<float>(modelSettings->getNumberOfAngles())*memOneGrid + memOneSeis;
+  float mem1        = static_cast<float>(gridMem);
+  float mem2        = static_cast<float>(modelSettings->getNumberOfAngles())*gridSizePad + memOneSeis; //Peak memory when reading seismic, overestimated.
  
   float neededMem   = mem0 + std::max(mem1, mem2);
 
@@ -622,7 +636,7 @@ Model::checkAvailableMemory(Simbox        * timeSimbox,
   else
     LogKit::LogFormatted(LogKit::LOW,"\nMemory needed by CRAVA:  %.2f gigaBytes\n",gigaBytes);
 
-  if(mem1>mem2)
+  if(mem2>mem1)
     LogKit::LogFormatted(LogKit::LOW,"\n This estimate is too high because seismic data are cut to fit the internal grid\n");
   if (!modelSettings->getFileGrid()) {
     //
@@ -632,7 +646,7 @@ Model::checkAvailableMemory(Simbox        * timeSimbox,
     float ** memchunk  = new float*[nGrids];
 
     for(int i = 0 ; i < nGrids ; i++)
-      memchunk[i] = new float[gridSize];
+      memchunk[i] = new float[gridSizePad];
 
     if(memchunk[nGrids-1] == NULL)  //Could not allocate memory
     {
@@ -2925,12 +2939,12 @@ Model::processWavelets(Wavelet                    **& wavelet,
   
   // check if local noise is set for some angles.
   bool localNoiseSet = false;
-  for(int i=0;i<nAngles;i++)
+  for(unsigned int i=0;i<nAngles;i++)
     if(localNoiseScale_[i]!=NULL)
       localNoiseSet = true;
   if(localNoiseSet==true)
   {
-    for(int i=0;i<nAngles;i++)
+    for(unsigned int i=0;i<nAngles;i++)
       if(localNoiseScale_[i]==NULL)
         localNoiseScale_[i] = new Grid2D(timeSimbox->getnx(), 
                                          timeSimbox->getny(), 

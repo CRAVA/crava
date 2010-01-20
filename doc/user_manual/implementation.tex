@@ -97,4 +97,44 @@ Since we model the covariance structure as separable, we have to collapse the fu
 As with the correlation estimation, the first step is to block the wells into the modeling grid. We then filter away everything above a cutoff frequency (default 6Hz) from the well logs. The next step is to take the average of all log data in each grid layer, giving a vertical trend. This trend is then smoothed using a moving average smoother, and finally filtered with the cutoff frequency. We then use kriging of the well logs with this vertical trend as expectation to create the final background model.
 
 \subsection{Estimating optimal well location}
-The positioning uncertainty between well data and seismic data is often significant. To overcome this, the well may be moved to the location with maximum correlation between the seismic data and the reflection coefficients calculated from the well data. The relation between the seismic data and reflection coefficients is linear; so linear covariance is a good measure. The optimial well location is found by searching for the location with highest covariance in a lateral neighborhood around the original well location, where the well is allowed to be shifted vertically in each target position. The moving of wells is triggered by a command in the model file, and it is done prior to the estimation of wavelets, noise, correlations and background model. 
+The positioning uncertainty between well data and seismic data is often significant. To overcome this, the well may be moved to the location with maximum correlation between the seismic data and the reflection coefficients calculated from the well data. The relation between the seismic data and reflection coefficients is linear; so linear covariance is a good measure. The optimial well location is found by searching for the location with highest covariance in a lateral neighborhood around the original well location, where the well is allowed to be shifted vertically in each target position. The moving of wells is triggered by a command in the model file, and it is done prior to the estimation of wavelets, noise, correlations and background model.
+
+\section{Memory handling}
+The memory handling in \crava will primarily use memory to achieve speed. However, since the involved grids can be very large, we try to economize with the number of grids kept in memory. We also have a secondary option where we store more on disk, which will reduce memory use with a factor of at least 2 in realistic cases, but will also increase the running time by a factor of almost 3. We have both padded and unpadded grids. We count and check the number of padded grids used in detail, unpadded grids are only counted in memory computations. In the following, any mention of grid means padded, unpadded will be explcitly stated. Padded grids require $s_p$ MB memory, unpadded $s_u$.
+
+\subsection{Grid allocation with all grids in memory}
+ If the file option is not used, the grid memory allocation will go as follows:
+
+\begin{enumerate}
+\item Background grids for Vp, Vs and density, 3 grids.
+\item If these are estimated, another 3 grids are allocated for estimation, but destroyed again before any other allocations.
+\item Seismic grids, $n_\theta$. If well optimisation is used, this will come before background grids.
+\item Possibly prior facies probability grids, indicated by $I_p$, $n_f$ unpadded grids.
+\item Prior covariance, 6 grids.
+\item If relative facies probabilities or local noise, a copy of background indicated by $I_b$, 3 grids.
+\item {\bf Peak:} At this stage, \crava reaches its first memory peak. Minimum memory use 10 grids, typical situation with three seismic grids and facies modelling requires 15 grids. \\ 
+    Memory use: $P_1 = (9+n_\theta+I_b*3)*s_p+I_p*n_f*s_u$.
+\item The posterior distribution is computed into the background and prior covariance grids, and seismic residuals are computed into the seismic grids. Thus, the inversion requires no extra grids. (But we needed a copy of the background for local noise or facies.)
+\item After the inversion, the seismic grids are released, taking us off peak down to a base level: \\ Memory use: $(9+I_b*3)*s_p+I_p*n_f*s_u$.
+\item If simulation is used:
+\begin{enumerate}
+\item Simulated grids are allocated, 3 grids.
+\item If secondary parameters are used, indicated by $I_s$, a computation grid is allocated, 1 grid.
+\item If kriging is used, indicated by $I_k$, 1 unpadded grid, not concurrent with computation grid. 
+\end{enumerate}
+\item {\bf Peak:} New possible peak, since the number of grids now allocated may be larger than the released seismic grids. \\
+    Memory use: $P_2 = s_p*(12+I_b*3+I_s)+(I_p*n_f + max(0,I_k-I_s))*s_u$.
+\item New release of grids, back to $s_p*(9+I_b*3)+I_p*3*s_u$.
+\item If facies probabilities:
+\begin{enumerate}
+\item 3D histograms of elastic parameters per facies are created, each of size 2MB, $n_f$ special grids.
+\item Facies probability grids are created, including for undefined, $n_f+1$ unpadded grids.
+\end{enumerate}
+\item {\bf Peak:} New possible peak, since the new memory allocated may be larger than the released seismic grids and/or the simulation+computation/kriging grids. \\
+    Memory use: $P_3 = (9+I_b*3)*s_p+(I_p*n_f + n_f +1)*s_u + 2*n_f$.
+\item Can now release all grids related to facies probability, memory down to $s_p*9$.
+\item Eventual kriging of prediction allocates 1 unpadded grid.
+\item Everything released.
+\end{enumerate}
+
+The maximum memory use is thus the largest of the actual peaks. The maximum number of allocated padded grids will occur at either $P_1$ or $P_2$, whereas the largest number of other grids are allocated at $P_3$. 
