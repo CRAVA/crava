@@ -9,7 +9,6 @@
 #include "src/gridmapping.h"
 #include "src/simbox.h"
 #include "src/fftgrid.h"
-#include "src/modelfile.h"
 #include "src/io.h"
 
 #include "lib/global_def.h"

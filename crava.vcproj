@@ -460,10 +460,6 @@
 					</FileConfiguration>
 				</File>
 				<File
-					RelativePath=".\src\modelfile.cpp"
-					>
-				</File>
-				<File
 					RelativePath=".\src\modelsettings.cpp"
 					>
 				</File>
@@ -3748,10 +3744,6 @@
 				</File>
 				<File
 					RelativePath="src\model.h"
-					>
-				</File>
-				<File
-					RelativePath=".\src\modelfile.h"
 					>
 				</File>
 				<File
