@@ -138,8 +138,7 @@ GridMapping::setMappingFromVelocity(FFTGrid * velocity, const Simbox * timeSimbo
 
   int format = velocity->getOutputFormat();
   bool failed = false;
-  char * errText = new char[MAX_STRING];
-  sprintf(errText,"%c",'\0');
+  std::string errText("");
   calculateSurfaceFromVelocity(velocity, timeSimbox);
   setDepthSimbox(timeSimbox, timeSimbox->getnz(), format, failed, errText);
   makeTimeDepthMapping(velocity, timeSimbox);
@@ -147,7 +146,6 @@ GridMapping::setMappingFromVelocity(FFTGrid * velocity, const Simbox * timeSimbo
     LogKit::LogFormatted(LogKit::ERROR,"\n%s\n",errText);
     exit(1);
   }
-  delete [] errText;
 }
 
 
@@ -254,11 +252,11 @@ GridMapping::calculateSurfaceFromVelocity(FFTGrid      * velocity,
 void 
 GridMapping::setDepthSurfaces(const std::vector<std::string> & surfFile, 
                               bool                           & failed, 
-                              char                           * errText)
+                              std::string                    & errText)
 {
   if(surfFile[0]=="" && surfFile[1]=="")
   {
-    sprintf(errText,"%s Both top and base depth surfaces are missing.", errText);
+    errText += "Both top and base depth surfaces are missing.\n";
     failed = 1;
   }
   if(surfFile[0] != "")
@@ -269,7 +267,7 @@ GridMapping::setDepthSurfaces(const std::vector<std::string> & surfFile,
       surfaceMode_ = TOPGIVEN;
     }
     catch (NRLib::Exception & e) {
-      sprintf(errText,"%s%s",errText,e.what());
+      errText += e.what();
       failed = 1;
     }
   }
@@ -284,7 +282,7 @@ GridMapping::setDepthSurfaces(const std::vector<std::string> & surfFile,
         surfaceMode_ = BOTTOMGIVEN;
     }
     catch (NRLib::Exception & e) {
-      sprintf(errText,"%s%s",errText,e.what());
+      errText += e.what();
       failed = 1;
     }
   }
@@ -294,7 +292,7 @@ void GridMapping::setDepthSimbox(const Simbox * timeSimbox,
                                  int            nz,
                                  int            outputFormat,
                                  bool         & failed,
-                                 char         * errText)
+                                 std::string  & errText)
 {
   simbox_ = new Simbox(timeSimbox);
   simbox_->setDepth(z0Grid_, z1Grid_, nz);
@@ -306,8 +304,8 @@ void GridMapping::setDepthSimbox(const Simbox * timeSimbox,
   double dummyLzLimit = 0.0; // The other LzLimit is only for inversion, not depth conversion
   int error = simbox_->checkError(dummyLzLimit,errText);
   if(error == Simbox::INTERNALERROR)
-    {
-    sprintf(errText,"%sA problems was encountered for depth output grid\n", errText);
+  {
+    errText += "A problem was encountered for depth output grid.\n";
     failed = true;
   }
   double zmin, zmax;

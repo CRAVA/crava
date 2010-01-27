@@ -3488,10 +3488,6 @@
 					>
 				</File>
 				<File
-					RelativePath=".\nrlib\random\distribution.cpp"
-					>
-				</File>
-				<File
 					RelativePath=".\nrlib\iotools\fileio.cpp"
 					>
 					<FileConfiguration
@@ -3986,11 +3982,11 @@
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\filesystem\config.hpp"
+						RelativePath=".\nrlib\boost\system\config.hpp"
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\system\config.hpp"
+						RelativePath=".\nrlib\boost\filesystem\config.hpp"
 						>
 					</File>
 					<File

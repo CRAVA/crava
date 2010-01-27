@@ -8,13 +8,13 @@ public:
   //Constructor
   WaveletFilter(const std::string & filename,
                 int               & errCode,
-                char              * errText);
+                std::string       & errText);
   WaveletFilter() {};
   ~WaveletFilter();
 
   bool                    readFile(const std::string  & filename,
                                    int                & errCode,
-                                   char               * errText);
+                                   std::string        & errText);
 
 //  const double            getAlpha1(double phi, double psi) const {return alpha1_.GetZ(phi,psi)  ;}
   const double            getAlpha1(double, double psi) const {if (fabs(psi) < 0.785) return (1.0); else return (0.0);}

@@ -5,6 +5,7 @@
 #include <assert.h>
 #define _USE_MATH_DEFINES
 #include <math.h>
+#include <iostream>
 
 #include "fft/include/fftw.h"
 #include "fft/include/rfftw.h"
@@ -55,7 +56,7 @@ Wavelet1D::Wavelet1D(Simbox                       * simbox,
   inFFTorder_           = true;
   isReal_               = true; 
 
-  char  * fileName      = new char[MAX_STRING];
+  std::string fileName;
   int     nWells        = modelSettings->getNumberOfWells();
   float   waveletLength = modelSettings->getWaveletTaperingL();
   float * dz            = new float[nWells];
@@ -130,7 +131,7 @@ Wavelet1D::Wavelet1D(Simbox                       * simbox,
   {
     if (wells[w]->getUseForWaveletEstimation())
     {
-      LogKit::LogFormatted(LogKit::MEDIUM,"  Well :  %s\n",wells[w]->getWellname());
+      LogKit::LogFormatted(LogKit::MEDIUM,"  Well :  %s\n",wells[w]->getWellname().c_str());
 
       BlockedLogs * bl = wells[w]->getBlockedLogsOrigThick();
       //
@@ -173,11 +174,11 @@ Wavelet1D::Wavelet1D(Simbox                       * simbox,
       if(length*dz0 > waveletLength  ) // must have enough data
       {
         bl->fillInCpp(coeff_,start,length,cpp_r[w],nzp); 
-        sprintf(fileName,"cpp_1");               // Debug
+        fileName = "cpp_1";
         printVecToFile(fileName,cpp_r[w], nzp);  // Debug
         Utils::fft(cpp_r[w],cpp_c[w],nzp);
         bl->fillInSeismic(seisData,start,length,seis_r[w],nzp);
-        sprintf(fileName,"seis_1");              // Debug
+        fileName = "seis_1";
         printVecToFile(fileName,seis_r[w], nzp); // Debug
         Utils::fft(seis_r[w],seis_c[w],nzp);
         bl->estimateCor(cpp_c[w],cpp_c[w],cor_cpp_c[w],cnzp);
@@ -218,17 +219,17 @@ Wavelet1D::Wavelet1D(Simbox                       * simbox,
   {
     fillInnWavelet(wavelet_r[w],nzp,dz[w]);
     shiftReal(shiftWell[w]/dz[w],wavelet_r[w],nzp);
-    sprintf(fileName,"waveletShift");
+    fileName = "waveletShift";
     printVecToFile(fileName,wavelet_r[w], nzp);
     Utils::fft(wavelet_r[w],wavelet_c[w],nzp);
-    sprintf(fileName,"cpp");
+    fileName = "cpp";
     printVecToFile(fileName,cpp_r[w], nzp);
     Utils::fft(cpp_r[w],cpp_c[w],nzp);
     convolve(cpp_c[w],wavelet_c[w],synt_seis_c[w],cnzp);
     Utils::fftInv(synt_seis_c[w],synt_seis_r[w],nzp); // 
-    sprintf(fileName,"syntSeis");
+    fileName = "syntSeis";
     printVecToFile(fileName,synt_seis_r[w], nzp);
-    sprintf(fileName,"seis");
+    fileName = "seis";
     printVecToFile(fileName,seis_r[w], nzp);
 
 
@@ -266,7 +267,7 @@ Wavelet1D::Wavelet1D(Simbox                       * simbox,
   if( ModelSettings::getDebugLevel() > 0 )
   {
     //flipUpDown();
-    sprintf(fileName,"estimated_wavelet");
+    fileName = "estimated_wavelet";
     float dzOut = 1.0; // sample at least as dense as this
     writeWaveletToFile(fileName, dzOut);
     //flipUpDown();
@@ -284,12 +285,12 @@ Wavelet1D::Wavelet1D(Simbox                       * simbox,
   for(int w=0; w<nWells; w++){
     for(int i=0;i<nzp;i++)
       rAmp_[i] = wellWavelets[w][i];
-    sprintf(fileName,"Wavelet");
+    fileName = "Wavelet"; 
     std::string wellname(wells[w]->getWellname());
     NRLib::Substitute(wellname,"/","_");
     NRLib::Substitute(wellname," ","_");
 
-    sprintf(fileName,"%s_%s",fileName,wellname.c_str());
+    fileName += "_"+wellname; 
     float dzOut = 1.0; 
     writeWaveletToFile(fileName, dzOut);
   }
@@ -298,37 +299,49 @@ Wavelet1D::Wavelet1D(Simbox                       * simbox,
   cAmp_ = reinterpret_cast<fftw_complex *>(rAmp_);
 
   if(ModelSettings::getDebugLevel() > 1) {
-    sprintf(fileName,"estimated_wavelet_full_%d.txt",int(ceil((theta_*180/PI)-0.5)) );
-    FILE* fid = fopen(fileName,"w");
+    fileName = "estimated_wavelet_full_"+NRLib::ToString(int(ceil((theta_*180/PI)-0.5)))+".txt";
+        
+    std::ofstream fid;
+    NRLib::OpenWrite(fid,fileName);
+    fid << std::setprecision(6);
     for(i=0;i<nzp_;i++)
-      fprintf(fid,"%1.3e\n",rAmp_[i]);
-    fclose(fid);
+      fid <<  rAmp_[i]  << "\n";
+    fid.close();
+    fid.clear();
     
     for(j=0;j<nWells;j++)
     {
-      sprintf(fileName,"seis_%d_well_%d.txt",int(theta_*180/PI+0.5),j+1);
-      fid = fopen(fileName,"w");
+      fileName = "seis_"+NRLib::ToString(int(theta_*180/PI+0.5))+"_well_"+NRLib::ToString(j+1)+".txt";
+      NRLib::OpenWrite(fid,fileName);
+      fid << std::setprecision(6);
       for(i=0;i<nzp_;i++)
-        fprintf(fid,"%1.3e\n",seis_r[0][i]);
-      fclose(fid);
+        fid <<  seis_r[0][i]  << "\n";
+      fid.close();
+      fid.clear();
         
-      sprintf(fileName,"cor_cpp_%d_well_%d.txt",int(theta_*180/PI+0.5),j+1);
-      fid = fopen(fileName,"w");
+      fileName = "cor_cpp_"+NRLib::ToString(int(theta_*180/PI+0.5))+"well_"+NRLib::ToString(j+1)+".txt";
+      NRLib::OpenWrite(fid,fileName);
+      fid << std::setprecision(6);
       for(i=0;i<nzp_;i++)
-        fprintf(fid,"%1.3e\n",cor_cpp_r[0][i]);
-      fclose(fid);
+        fid <<  cor_cpp_r[0][i]  << "\n";
+      fid.close();
+      fid.clear();
       
-      sprintf(fileName,"ccor_seis_cpp_%d_well_%d.txt",int(theta_*180/PI+0.5),j+1);
-      fid = fopen(fileName,"w");
+      fileName = "ccor_seis_cpp_"+NRLib::ToString(int(theta_*180/PI+0.5))+"_well_"+NRLib::ToString(j+1);
+      NRLib::OpenWrite(fid,fileName);
+      fid << std::setprecision(6);
       for(i=0;i<nzp_;i++)
-        fprintf(fid,"%1.3e\n",ccor_seis_cpp_r[0][i]);
-      fclose(fid);
+        fid <<  ccor_seis_cpp_r[0][i]  << "\n";
+      fid.close();
+      fid.clear();
 
-      sprintf(fileName,"cpp_%d_well_%d.txt",int(theta_*180/PI+0.5),j+1);
-      fid = fopen(fileName,"w");
+      fileName = "cpp_"+NRLib::ToString(int(theta_*180/PI+0.5))+"_well_"+NRLib::ToString(j+1);
+      NRLib::OpenWrite(fid,fileName);
+      fid << std::setprecision(6);
       for(i=0;i<nzp_;i++)
-        fprintf(fid,"%1.3e\n",cpp_r[0][i]);
-      fclose(fid);
+        fid << cpp_r[0][i] << "\n";
+      fid.close();
+      fid.clear();
     }
   }
 
@@ -357,7 +370,6 @@ Wavelet1D::Wavelet1D(Simbox                       * simbox,
   delete [] cor_cpp_r;
   delete [] ccor_seis_cpp_r;
   delete [] wavelet_r;
-  delete [] fileName;
 
   //flipUpDown(); //NB ODD temporary fix - FRODE
 }
@@ -367,7 +379,7 @@ Wavelet1D::Wavelet1D(const std::string & fileName,
                      ModelSettings     * modelSettings, 
                      float             * reflCoef,  
                      int               & errCode, 
-                     char              * errText)
+                     std::string       & errText)
   : Wavelet(modelSettings, 1, reflCoef)
 {
   switch (fileFormat) {
@@ -596,57 +608,72 @@ Wavelet1D::~Wavelet1D()
 }
 
 void
-Wavelet1D::WaveletReadJason(const std::string & fileName, int &errCode, char *errText)
+Wavelet1D::WaveletReadJason(const std::string & fileName, int &errCode, std::string & errText)
 {
-  readtype_=JASON;
-  FILE* file = fopen(fileName.c_str(),"r");
+  readtype_= JASON;
+  std::ifstream file;
+  NRLib::OpenRead(file,fileName);
+  std::string dummyStr;
+  
   bool lineIsComment = true; 
-  char* dummyStr= new char[MAX_STRING];
-  while( lineIsComment ==true)
+  int  line          = 0;
+  int  thisLine      = 0;
+
+  while( lineIsComment == true)
   {
-    if(fscanf(file,"%s",dummyStr) == EOF)
+    if(NRLib::CheckEndOfFile(file))
     {
-      readToEOL(file);
       if (errCode == 0)  
-        sprintf(errText,"Error: End of file %s premature.\n", fileName.c_str());
+        errText += "Error: End of file "+fileName+" premature.\n";
       else 
-        sprintf(errText,"%sError: End of file %s premature.\n", errText,fileName.c_str());
+        errText += "Error: End of file "+fileName+" premature.\n";
       errCode=1; 
       return;
-    } // endif
-    else
-    {
-      readToEOL(file);
-      if((dummyStr[0]!='*') &  (dummyStr[0]!='"'))
-      {
-        lineIsComment = false;
-      }
     }
-  }  // end while
-  float shift=float(atof(dummyStr));
-  if(fscanf(file,"%s",dummyStr) == EOF)
-  {
-    readToEOL(file);
-    if (errCode == 0)  
-      sprintf(errText,"Error: End of file %s premature.\n", fileName.c_str());
-    else 
-      sprintf(errText,"%sError: End of file %s premature.\n", errText,fileName.c_str());
-    errCode=1; 
-    return;
-  } // endif
-  dz_=float(atof(dummyStr));
-  if(fscanf(file,"%s",dummyStr) == EOF)
-  {
-    readToEOL(file);
-    if (errCode == 0)  
-      sprintf(errText,"Error: End of file %s premature.\n", fileName.c_str());
-    else 
-      sprintf(errText,"%sError: End of file %s premature.\n", errText,fileName.c_str());
-    errCode=1; 
-    return;
-  } // endif
-  nz_=atoi(dummyStr);
 
+    NRLib::GetNextToken(file,dummyStr,line);
+    if (line == thisLine)
+      NRLib::DiscardRestOfLine(file,line,false);
+    thisLine = line;        
+    if((dummyStr[0]!='*') &  (dummyStr[0]!='"'))
+    {
+      lineIsComment = false;
+    }
+  }
+
+  float shift = NRLib::ParseType<float>(dummyStr);
+
+  if (NRLib::CheckEndOfFile(file)) 
+  {
+    if (errCode == 0)  
+      errText += "Error: End of file "+fileName+" premature.\n";
+    else
+      errText += "Error: End of file "+fileName+" premature.\n";
+    errCode=1; 
+    return;
+  } 
+  NRLib::GetNextToken(file,dummyStr,line);
+  if (line == thisLine)
+    NRLib::DiscardRestOfLine(file,line,false);
+  thisLine = line;
+
+  dz_ = NRLib::ParseType<float>(dummyStr);
+
+  if (NRLib::CheckEndOfFile(file)) 
+  {
+    if (errCode == 0)  
+      errText += "Error: End of file "+fileName+" premature.\n";
+    else
+      errText += "Error: End of file "+fileName+" premature.\n";
+    errCode=1; 
+    return;
+  }
+  NRLib::GetNextToken(file,dummyStr,line); 
+  if (line == thisLine)
+    NRLib::DiscardRestOfLine(file,line,false);
+  thisLine = line;
+ 
+  nz_ = NRLib::ParseType<int>(dummyStr);
   cz_   =  static_cast<int>(floor((fabs(shift/dz_))+0.5));
   nzp_  = nz_;
   cnzp_ = nzp_/2+1;
@@ -657,29 +684,27 @@ Wavelet1D::WaveletReadJason(const std::string & fileName, int &errCode, char *er
 
   for(int i=0; i<nz_;i++)
   {
-    if(fscanf(file,"%s",dummyStr) == EOF)
+    if (NRLib::CheckEndOfFile(file))
     {
-      readToEOL(file);
       if (errCode == 0)  
-        sprintf(errText,"Error: End of file %s premature.\n", fileName.c_str());
-      else 
-        sprintf(errText,"%sError: End of file %s premature.\n", errText,fileName.c_str());
+        errText += "Error: End of file "+fileName+" premature.\n";
+      else
+        errText += "Error: End of file "+fileName+" premature.\n";
       errCode=1; 
       return;
-    } // endif
-    else
-    {
-      rAmp_[i] = static_cast<fftw_real>(atof(dummyStr));
-    }
+    } 
+ 
+      NRLib::GetNextToken(file,dummyStr,line);
+
+      rAmp_[i] = static_cast<fftw_real>(NRLib::ParseType<float>(dummyStr));
   }
-  fclose(file);
+  file.close();
   waveletLength_ = getWaveletLengthF();
   LogKit::LogFormatted(LogKit::LOW,"\n  Estimated wavelet length:  %.1fms.\n",waveletLength_);
-  delete [] dummyStr;
 }
 
 void
-Wavelet1D::WaveletReadOld(const std::string & fileName, int & errCode, char *errText)
+Wavelet1D::WaveletReadOld(const std::string & fileName, int & errCode, std::string & errText)
 {
   readtype_=OLD;
   FILE* file = fopen(fileName.c_str(),"r");
@@ -698,9 +723,9 @@ Wavelet1D::WaveletReadOld(const std::string & fileName, int & errCode, char *err
     if(fscanf(file,"%s",headStr) == EOF)
     {
       if (errCode == 0)  
-        sprintf(errText,"Error: End of file %s premature.\n", fileName.c_str());
-      else 
-        sprintf(errText,"%sError: End of file %s premature.\n", errText,fileName.c_str());
+        errText = "Error: End of file "+fileName+" premature.\n";
+      else
+        errText += "Error: End of file "+fileName+" premature.\n";
       errCode=1; 
     } // endif
   }  // end for i
@@ -711,9 +736,9 @@ Wavelet1D::WaveletReadOld(const std::string & fileName, int & errCode, char *err
   if(pos==-1) 
   {
     if (errCode == 0)  
-      sprintf(errText,"Error when reading wavelet amplitude from file  %s.\n", fileName.c_str());
+      errText = "Error when reading wavelet amplitude from file "+fileName+".\n";
     else 
-      sprintf(errText,"%sError when reading wavelet amplitude from file  %s. \n", errText,fileName.c_str());
+      errText += "Error when reading wavelet amplitude from file "+fileName+".\n";
     errCode=1; 
     ampMult = RMISSING; // Dummy setting to avoid g++ warning 
   }
@@ -729,9 +754,9 @@ Wavelet1D::WaveletReadOld(const std::string & fileName, int & errCode, char *err
   if(pos==-1) 
   {
     if (errCode == 0)  
-      sprintf(errText,"Error when reading sampling interval from file  %s.\n", fileName.c_str());
+      errText = "Error when reading sampling interval from file "+fileName+".\n";
     else 
-      sprintf(errText,"%sError when reading sampling interval from file  %s.\n",errText,fileName.c_str());
+      errText += "Error when reading sampling interval from file "+fileName+".\n";
     errCode=1; 
     dz = RMISSING; // Dummy setting to avoid g++ warning
   }
@@ -766,9 +791,9 @@ Wavelet1D::WaveletReadOld(const std::string & fileName, int & errCode, char *err
     else
     {
       if (errCode == 0)  
-        sprintf(errText,"Error in memory use when reading wavelet from file  %s.\n", fileName.c_str());
+        errText = "Error in memory use when reading wavelet from file "+fileName+".\n";
       else  
-        sprintf(errText,"%sError in memory use when reading wavelet from file  %s.\n",errText,fileName.c_str());
+        errText += "Error in memory use when reading wavelet from file "+fileName+".\n";
       errCode=1;
     }//endif
   }//endwhile
@@ -783,9 +808,9 @@ Wavelet1D::WaveletReadOld(const std::string & fileName, int & errCode, char *err
     if(shift*2 == nSamples)
     {
       if (errCode == 0)  
-        sprintf(errText,"Error when reading wavelet shift from file  %s.\n    --> No SHIFT and even number of data.\n", fileName.c_str());
+        errText = "Error when reading wavelet shift from file "+fileName+".\n    --> No SHIFT and even number of data.\n";
       else  
-        sprintf(errText,"%sError when reading wavelet shift from file  %s.\n    --> No SHIFT and even number of data.\n",errText,fileName.c_str()); 
+        errText += "Error when reading wavelet shift from file "+fileName+".\n    --> No SHIFT and even number of data.\n";
       errCode=1; 
     }
     //cz_ = shift;   // case no flip

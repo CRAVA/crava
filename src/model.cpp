@@ -140,8 +140,7 @@ Model::Model(char * fileName)
     
     Utils::writeHeader("Defining modelling grid");
 
-    char errText[MAX_STRING];
-    sprintf(errText,"%c",'\0');
+    std::string errText("");
 
     makeTimeSimboxes(timeSimbox_, timeCutSimbox, timeBGSimbox, timeSimboxConstThick_,  //Handles correlation direction too.
                      correlationDirection_, modelSettings_, inputFiles, areaFromModelFile, 
@@ -431,22 +430,25 @@ Model::releaseGrids(void)
 float **
 Model::readMatrix(const std::string & fileName, int n1, int n2, 
                   const std::string & readReason, 
-                  char * errText)
+                  std::string       & errText)
 {
   float * tmpRes = new float[n1*n2+1];
-  FILE * inFile = fopen(fileName.c_str(),"r");
+  std::ifstream inFile;
+  NRLib::OpenRead(inFile,fileName);
   std::string text = "Reading "+readReason+" from file "+fileName+" ... ";
   LogKit::LogFormatted(LogKit::LOW,text);
-  char storage[MAX_STRING];
+  std::string storage;
   int index = 0;
   int error = 0;
-  while(error == 0 && fscanf(inFile,"%s",storage) != EOF) {
+  
+  while(error == 0 && inFile >> storage) {
     if(index < n1*n2) {
-      if(isNumber(storage) == 1) {
-        tmpRes[index] = float(atof(storage));
+      try {
+        tmpRes[index] = NRLib::ParseType<float>(storage);
       }
-      else {
-        sprintf(errText,"Found '%s' in file %s, expected a number.\n", storage, fileName.c_str());
+      catch (NRLib::Exception & e) {
+        errText += "Error in "+fileName+"\n"; 
+        errText += e.what();
         error = 1;
       }
     }
@@ -455,8 +457,7 @@ Model::readMatrix(const std::string & fileName, int n1, int n2,
   if(error == 0) {
     if(index != n1*n2) {
       error = 1;
-      sprintf(errText,"Found %d elements in file %s, expected %d.\n",
-              index, fileName.c_str(),n1*n2);
+      errText += "Found "+NRLib::ToString(index)+" in file "+fileName+", expected "+NRLib::ToString(n1*n2)+".\n";
     }
   }
 
@@ -844,8 +845,8 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
                         Surface       *& correlationDirection,
                         ModelSettings *& modelSettings, 
                         InputFiles     * inputFiles,
-                        int             areaFromModelFile,
-                        char           * errText,
+                        int              areaFromModelFile,
+                        std::string    & errText,
                         bool           & failed)
 {
   //
@@ -867,13 +868,13 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
   {
     if(areaFromModelFile==0)
     {
-      std::string tmpErrText;
+      std::string tmpErrText("");
       getGeometry(inputFiles->getBackFile(0),
                   modelSettings->getTraceHeaderFormat(0),
                   geometry,
                   tmpErrText,
                   failed, modelSettings);
-      sprintf(errText,"%s%s",errText,tmpErrText.c_str());
+      errText += tmpErrText;
       modelSettings->setAreaParameters(geometry);
     }
   }
@@ -891,13 +892,13 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
       else {
         LogKit::LogFormatted(LogKit::HIGH,"\nFinding IL/XL information from seismic data in file %s\n", seismicFile.c_str());
       }  
-      std::string tmpErrText;
+      std::string tmpErrText("");
       getGeometry(seismicFile,
                   modelSettings->getTraceHeaderFormat(0),
                   geometry,
                   tmpErrText,
                   failed, modelSettings);
-      sprintf(errText,"%s%s",errText, tmpErrText.c_str());
+      errText += tmpErrText;
       
       if(areaFromModelFile==0 && !failed)
         modelSettings->setAreaParameters(geometry);
@@ -911,7 +912,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
   if(error==1)
   {
     writeAreas(areaParams,timeSimbox,areaType);
-    sprintf(errText,"%s The specified AREA extends outside the surface(s).\n",errText);
+    errText += "The specified AREA extends outside the surface(s).\n";
     failed = true;
   }
   else
@@ -970,7 +971,6 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
 
     estimateZPaddingSize(timeSimbox, modelSettings);   
 
-    sprintf(errText,"%c",'\0');
     error = timeSimbox->checkError(modelSettings->getLzLimit(),errText);
 
     if(error == 0)
@@ -992,7 +992,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
     }
     else
     {
-      sprintf(errText,"%s. Could not make time simulation grid.\n",errText);
+      errText += "Could not make time simulation grid.\n";
       failed = true;
     }
 
@@ -1008,7 +1008,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
         correlationDirection = new Surface(tmpSurf);
       }
       catch (NRLib::Exception & e) {
-        sprintf(errText,"%s%s",errText,e.what());
+        errText += e.what();
         failed = true;
       }
       if(failed == false && modelSettings->getForwardModeling() == false) {
@@ -1037,7 +1037,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
       }
       else
       {
-        sprintf(errText,"%s Could not make the time simulation grid.\n",errText);
+        errText += "Could not make the time simulation grid.\n";
         failed = true;
       }
       if(modelSettings->getForwardModeling() == false) {
@@ -1063,7 +1063,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
         }
         else
         {
-          sprintf(errText,"%s Could not make the grid for background model.\n",errText);
+          errText += "Could not make the grid for background model.\n";
           failed = true;
         }
       }
@@ -1117,7 +1117,7 @@ Model::setSimboxSurfaces(Simbox                        *& simbox,
                          int                              outputFormat,
                          int                              outputDomain,
                          int                              outputFlag,
-                         char                           * errText,
+                         std::string                    & errText,
                          int                            & error)
 {
   const std::string & topName  = surfFile[0]; 
@@ -1142,7 +1142,7 @@ Model::setSimboxSurfaces(Simbox                        *& simbox,
     }
   }
   catch (NRLib::Exception & e) {
-    sprintf(errText,"%s%s",errText,e.what());
+    errText += e.what();
     error = 1;
   }
 
@@ -1170,7 +1170,7 @@ Model::setSimboxSurfaces(Simbox                        *& simbox,
         }
       }
       catch (NRLib::Exception & e) {
-        sprintf(errText,"%s%s",errText,e.what());
+        errText += e.what();
         error = 1;
       }
       if(error == 0) {
@@ -1178,7 +1178,7 @@ Model::setSimboxSurfaces(Simbox                        *& simbox,
           simbox->setDepth(z0Grid, z1Grid, nz);
         }
         catch (NRLib::Exception & e) {
-          sprintf(errText,"%s%s",errText,e.what());
+          errText += e.what();
           std::string text(std::string("Seismic data"));
           writeAreas(modelSettings_->getAreaParameters(),simbox,text);
           error = 1;
@@ -1530,7 +1530,7 @@ Model::processSeismic(FFTGrid      **& seisCube,
                       Simbox        *& timeSimbox,
                       ModelSettings *& modelSettings, 
                       InputFiles     * inputFiles,
-                      char           * errText,
+                      std::string    & errText,
                       bool           & failed)
 {
   double wall=0.0, cpu=0.0;
@@ -1546,7 +1546,7 @@ Model::processSeismic(FFTGrid      **& seisCube,
 
     for (int i = 0 ; i < nAngles ; i++) {
       geometry[i] = NULL;
-      std::string tmpErrText;
+      std::string tmpErrText("");
       std::string fileName = inputFiles->getSeismicFile(i);
       std::string dataName = "Seismic data angle stack"+NRLib::ToString(i);
       float       offset = modelSettings->getLocalSegyOffset(i);
@@ -1565,8 +1565,8 @@ Model::processSeismic(FFTGrid      **& seisCube,
                        tmpErrText);
       if(tmpErrText != "")
       {
-        tmpErrText += "Reading of file \'"+fileName+"\' for "+dataName+" failed\n";
-        sprintf(errText,"%s%s",errText,tmpErrText.c_str());
+        tmpErrText += "Reading of file \'"+fileName+"\' for "+dataName+" failed.\n";
+        errText += tmpErrText;
         failed = true;
       } 
       else { 
@@ -1637,7 +1637,7 @@ Model::processWells(WellData     **& wells,
                     RandomGen      * randomGen,
                     ModelSettings *& modelSettings, 
                     InputFiles     * inputFiles,
-                    char           * errText,
+                    std::string    & errText,
                     bool           & failed)
 {
   double wall=0.0, cpu=0.0;
@@ -1651,8 +1651,7 @@ Model::processWells(WellData     **& wells,
 
   int error = 0;
 
-  char tmpErrText[MAX_STRING];
-  sprintf(tmpErrText,"%c",'\0');
+  std::string tmpErrText("");
   wells = new WellData *[nWells];
   for(int i=0 ; i<nWells ; i++) {
     wells[i] = new WellData(inputFiles->getWellFile(i), 
@@ -1665,7 +1664,7 @@ Model::processWells(WellData     **& wells,
                             modelSettings->getIndicatorRealVs(i),
                             faciesLogGiven);
     if(wells[i]->checkError(tmpErrText) != 0) {
-      sprintf(errText,"%s%s", errText, tmpErrText);
+      errText += tmpErrText;
       error = 1;
     }
   }
@@ -1676,7 +1675,7 @@ Model::processWells(WellData     **& wells,
       nFacies = modelSettings->getNumberOfFacies(); // nFacies is set in checkFaciesNames()
     }
     if (error>0)
-      sprintf(errText,"%sPrior facies probabilities failed.\n%s\n",errText,tmpErrText);
+      errText += "Prior facies probabilities failed.\n"+tmpErrText;
 
     int   * validWells    = new int[nWells];
     bool  * validIndex    = new bool[nWells];
@@ -1702,24 +1701,24 @@ Model::processWells(WellData     **& wells,
     for (int i=0 ; i<nWells ; i++)
     {
       bool skip = false;
-      LogKit::LogFormatted(LogKit::LOW,"%s : \n",wells[i]->getWellname());
+      LogKit::LogFormatted(LogKit::LOW,"%s : \n",wells[i]->getWellname().c_str());
       if(wells[i]!=NULL) {
         if(wells[i]->checkSimbox(timeSimbox) == 1) {
           skip = true;
           nohit++;
-          TaskList::addTask("Consider increasing the inversion volume such that well "+NRLib::ToString(wells[i]->getWellname())+ " can be included");
+          TaskList::addTask("Consider increasing the inversion volume such that well "+wells[i]->getWellname()+ " can be included");
         }
         if(wells[i]->getNd() == 0) {
           LogKit::LogFormatted(LogKit::LOW,"  IGNORED (no log entries found)\n");
           skip = true;
           empty++;
-          TaskList::addTask("Check the log entries in well "+NRLib::ToString(wells[i]->getWellname())+".");
+          TaskList::addTask("Check the log entries in well "+wells[i]->getWellname()+".");
         }
         if(wells[i]->isFaciesOk()==0) {
           LogKit::LogFormatted(LogKit::LOW,"   IGNORED (facies log has wrong entries)\n");
           skip = true;
           facieslognotok++;
-          TaskList::addTask("Check the facies logs in well "+NRLib::ToString(wells[i]->getWellname())+".\n       The facies logs in this well are wrong and the well is ignored");
+          TaskList::addTask("Check the facies logs in well "+wells[i]->getWellname()+".\n       The facies logs in this well are wrong and the well is ignored");
         }
         if(skip)
           validIndex[i] = false;
@@ -1753,7 +1752,7 @@ Model::processWells(WellData     **& wells,
     for(int i=0 ; i<nWells ; i++) {
       if (validIndex[i]) 
         LogKit::LogFormatted(LogKit::LOW,"%-23s %6d    %4d %4d %4d     %3s / %5.3f      %3s / %4.1f\n",
-                             wells[i]->getWellname(),
+                             wells[i]->getWellname().c_str(),
                              nMerges[i],
                              nInvalidAlpha[i], 
                              nInvalidBeta[i], 
@@ -1764,7 +1763,7 @@ Model::processWells(WellData     **& wells,
                              devAngle[i]);
       else  
         LogKit::LogFormatted(LogKit::LOW,"%-23s      -       -    -    -       - /     -       -  /    -\n",
-                             wells[i]->getWellname());
+                             wells[i]->getWellname().c_str());
     }
     
     //
@@ -1787,7 +1786,7 @@ Model::processWells(WellData     **& wells,
           float tot = 0.0;
           for (int f = 0 ; f < nFacies ; f++)
             tot += static_cast<float>(faciesCount[i][f]);
-          LogKit::LogFormatted(LogKit::LOW,"%-23s ",wells[i]->getWellname());
+          LogKit::LogFormatted(LogKit::LOW,"%-23s ",wells[i]->getWellname().c_str());
           for (int f = 0 ; f < nFacies ; f++) {
             if (tot > 0) {
               float faciesProb = static_cast<float>(faciesCount[i][f])/tot;
@@ -1799,7 +1798,7 @@ Model::processWells(WellData     **& wells,
           LogKit::LogFormatted(LogKit::LOW,"\n");
         } 
         else {
-          LogKit::LogFormatted(LogKit::LOW,"%-23s ",wells[i]->getWellname());
+          LogKit::LogFormatted(LogKit::LOW,"%-23s ",wells[i]->getWellname().c_str());
           for (int f = 0 ; f < nFacies ; f++)
             LogKit::LogFormatted(LogKit::LOW,"         -   ");
           LogKit::LogFormatted(LogKit::LOW,"\n");
@@ -1823,14 +1822,14 @@ Model::processWells(WellData     **& wells,
           float tot = 0.0;
           for (int f = 0 ; f < nFacies ; f++)
             tot += static_cast<float>(faciesCount[i][f]);
-          LogKit::LogFormatted(LogKit::MEDIUM,"%-23s ",wells[i]->getWellname());
+          LogKit::LogFormatted(LogKit::MEDIUM,"%-23s ",wells[i]->getWellname().c_str());
           for (int f = 0 ; f < nFacies ; f++) {
             LogKit::LogFormatted(LogKit::MEDIUM,"%12d ",faciesCount[i][f]);
           }
           LogKit::LogFormatted(LogKit::MEDIUM,"\n");
         } 
         else {
-          LogKit::LogFormatted(LogKit::MEDIUM,"%-23s ",wells[i]->getWellname());
+          LogKit::LogFormatted(LogKit::MEDIUM,"%-23s ",wells[i]->getWellname().c_str());
           for (int f = 0 ; f < nFacies ; f++)
             LogKit::LogFormatted(LogKit::MEDIUM,"         -   ");
           LogKit::LogFormatted(LogKit::MEDIUM,"\n");
@@ -1944,7 +1943,7 @@ void Model::writeBlockedWells(WellData ** wells, ModelSettings * modelSettings)
 void Model::checkFaciesNames(WellData      ** wells,
                              ModelSettings *& modelSettings,
                              InputFiles     * inputFiles,
-                             char           * tmpErrText,
+                             std::string    & tmpErrText,
                              int            & error)
 {
   int min,max;
@@ -1988,7 +1987,7 @@ void Model::checkFaciesNames(WellData      ** wells,
         }
         else if(names[fnr] != name)
         {
-          sprintf(tmpErrText,"%sProblem with facies logs. Facies names and numbers are not uniquely defined.\n",tmpErrText);
+          tmpErrText += "Problem with facies logs. Facies names and numbers are not uniquely defined.\n";
           error++;
         }
       }
@@ -2026,7 +2025,7 @@ void Model::checkFaciesNames(WellData      ** wells,
       mapType::iterator iter = myMap.find(modelSettings->getFaciesName(i));
       if (iter==myMap.end())
       {
-        sprintf(tmpErrText,"%sProblem with facies logs. Facies %s is not one of the facies given in the xml-file.\n",tmpErrText,modelSettings->getFaciesName(i).c_str());
+        tmpErrText += "Problem with facies logs. Facies "+modelSettings->getFaciesName(i)+" is not one of the facies given in the xml-file.\n";
         error++;
       }
     }
@@ -2041,7 +2040,7 @@ void Model::checkFaciesNames(WellData      ** wells,
       mapType::iterator iter = myMap.find(modelSettings->getFaciesName(i));
       if (iter==myMap.end())
       {
-        sprintf(tmpErrText,"%sProblem with facies logs. Facies %s is not one of the facies given in the xml-file.\n",tmpErrText,modelSettings->getFaciesName(i).c_str());
+        tmpErrText += "Problem with facies logs. Facies "+modelSettings->getFaciesName(i)+" is not one of the facies given in the xml-file.\n";
         error++;
       }
     }
@@ -2055,7 +2054,7 @@ Model::processBackground(Background   *& background,
                          Simbox        * timeBGSimbox,
                          ModelSettings * modelSettings, 
                          InputFiles    * inputFiles,
-                         char          * errText,
+                         std::string   & errText,
                          bool          & failed)
 {
   Utils::writeHeader("Prior Expectations / Background Model");
@@ -2080,7 +2079,7 @@ Model::processBackground(Background   *& background,
     {
       if(modelSettings->getBackgroundVario() == NULL)
       {
-        sprintf(errText,"%sThere is no variogram available for the background modelling\n",errText);
+        errText += "There is no variogram available for the background modelling.\n";
         failed = true;
       }
       for (int i=0 ; i<3 ; i++)
@@ -2114,7 +2113,7 @@ Model::processBackground(Background   *& background,
           const SegyGeometry      * dummy1 = NULL;
           const TraceHeaderFormat * dummy2 = NULL;
           const float               offset = modelSettings->getSegyOffset();
-          std::string errorText;
+          std::string errorText("");
           readGridFromFile(backFile,
                            parName[i],
                            offset,
@@ -2127,8 +2126,8 @@ Model::processBackground(Background   *& background,
                            errorText);
           if(errorText != "")
           {
-            errorText += "Reading of file \'"+backFile+"\' for parameter \'"+parName[i]+"\' failed\n";
-            sprintf(errText,"%s%s", errText,errorText.c_str());
+            errorText += "Reading of file '"+backFile+"' for parameter '"+parName[i]+"' failed\n";
+            errText += errorText;
             failed = true;
           } 
           else {
@@ -2137,8 +2136,7 @@ Model::processBackground(Background   *& background,
         }
         else
         {
-          sprintf(errText,"%sReading of file for parameter \'%s\' failed. No file name is given.\n",
-                  errText,parName[i].c_str());
+          errText += "Reading of file for parameter "+parName[i]+" failed. No file name is given.\n";
           failed = true;
         }
       }
@@ -2150,8 +2148,7 @@ Model::processBackground(Background   *& background,
       }
       else
       {
-        sprintf(errText,"%sTrying to set background model to 0 for parameter %s\n\n",
-                errText,parName[i].c_str());
+        errText += "Trying to set background model to 0 for parameter "+parName[i]+"\n";
         failed = true;
       }
     }
@@ -2237,7 +2234,7 @@ Model::processPriorCorrelations(Corr         *& correlations,
                                 Simbox        * timeSimbox,
                                 ModelSettings * modelSettings, 
                                 InputFiles    * inputFiles,
-                                char          * errText,
+                                std::string   & errText,
                                 bool          & failed)
 {
   bool printResult = ((modelSettings->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0 ||
@@ -2262,13 +2259,12 @@ Model::processPriorCorrelations(Corr         *& correlations,
     bool failedParamCorr = false;
     if(!estimateParamCorr) 
     {
-      char tmpErrText[MAX_STRING];
-      sprintf(tmpErrText,"%c",'\0');
+      std::string tmpErrText("");
       paramCorr = readMatrix(paramCorrFile, 3, 3, "parameter correlation", tmpErrText);
       if(paramCorr == NULL) 
       {
-        sprintf(errText,"%sReading of file \'%s\' for parameter correlation matrix failed\n%s\n",
-                errText,paramCorrFile.c_str(),tmpErrText);
+        errText += "Reading of file "+paramCorrFile+" for parameter correlation matrix failed\n";
+        errText += tmpErrText;
         failedParamCorr = true;
       }
     }
@@ -2295,13 +2291,12 @@ Model::processPriorCorrelations(Corr         *& correlations,
     bool failedTempCorr = false;
     if(!estimateTempCorr) 
     {
-      char tmpErrText[MAX_STRING];
-      sprintf(tmpErrText,"%c",'\0');
+      std::string tmpErrText("");
       float ** corrMat = readMatrix(corrTFile, 1, nCorrT+1, "temporal correlation", tmpErrText);
       if(corrMat == NULL) 
       {
-        sprintf(errText,"%sReading of file \'%s\' for temporal correlation failed\n%s\n",
-                errText,corrTFile.c_str(),tmpErrText);
+        errText += "Reading of file '"+corrTFile+"' for temporal correlation failed\n";
+        errText += tmpErrText;
         failedTempCorr = true;
       }
       corrT = new float[nCorrT];
@@ -2367,7 +2362,7 @@ Model::processPriorCorrelations(Corr         *& correlations,
 
     if(failedTempCorr == false && failedParamCorr == false && correlations == NULL)
     {
-      sprintf(errText,"%sCould not construct prior covariance. Unknown why...\n",errText);
+      errText += "Could not construct prior covariance. Unknown why...\n";
       failed = true;
     }
 
@@ -2456,7 +2451,7 @@ Model::processReflectionMatrixFromWells(float       **& reflectionMatrix,
                                         WellData     ** wells,
                                         ModelSettings * modelSettings, 
                                         InputFiles    * inputFiles,
-                                        char          * errText,
+                                        std::string   & errText,
                                         bool          & failed)
 {
   Utils::writeHeader("Making reflection matrix from well information");  
@@ -2467,9 +2462,11 @@ Model::processReflectionMatrixFromWells(float       **& reflectionMatrix,
   const std::string & reflMatrFile = inputFiles->getReflMatrFile();
 
   if(reflMatrFile != "") {
-    reflectionMatrix = readMatrix(reflMatrFile, modelSettings->getNumberOfAngles(), 3, "reflection matrix", errText);
+    std::string tmpErrText("");
+    reflectionMatrix = readMatrix(reflMatrFile, modelSettings->getNumberOfAngles(), 3, "reflection matrix", tmpErrText);
     if(reflectionMatrix == NULL) {
-      sprintf(errText,"%sReading of file \'%s\' for reflection matrix failed\n",errText,reflMatrFile.c_str());
+      errText += "Reading of file "+reflMatrFile+ " for reflection matrix failed\n";
+      errText += tmpErrText;
       failed = true;
     }
     LogKit::LogFormatted(LogKit::LOW,"Reflection parameters read from file.\n\n");
@@ -2487,7 +2484,7 @@ Model::processReflectionMatrixFromBackground(float       **& reflectionMatrix,
                                              Background    * background,
                                              ModelSettings * modelSettings, 
                                              InputFiles    * inputFiles,
-                                             char          * errText,
+                                             std::string   & errText,
                                              bool          & failed)
 {
   Utils::writeHeader("Making reflection matrix from background model");  
@@ -2498,10 +2495,11 @@ Model::processReflectionMatrixFromBackground(float       **& reflectionMatrix,
   const std::string & reflMatrFile = inputFiles->getReflMatrFile();
 
   if(reflMatrFile != "") {
-
-    reflectionMatrix = readMatrix(reflMatrFile, modelSettings->getNumberOfAngles(), 3, "reflection matrix", errText);
+    std::string tmpErrText("");
+    reflectionMatrix = readMatrix(reflMatrFile, modelSettings->getNumberOfAngles(), 3, "reflection matrix", tmpErrText);
     if(reflectionMatrix == NULL) {
-      sprintf(errText,"%sReading of file \'%s\' for reflection matrix failed\n",errText,reflMatrFile.c_str());
+      errText += "Reading of file "+reflMatrFile+" for reflection matrix failed\n";
+      errText += tmpErrText;
       failed = true;
     }
     LogKit::LogFormatted(LogKit::LOW,"Reflection parameters read from file.\n\n");
@@ -2513,7 +2511,7 @@ Model::processReflectionMatrixFromBackground(float       **& reflectionMatrix,
       setupDefaultReflectionMatrix(reflectionMatrix, vsvp, modelSettings);
     }
     else {
-      sprintf(errText,"%s\nFailed to set up reflection matrix. Background model is empty.\n",errText);
+      errText += "\nFailed to set up reflection matrix. Background model is empty.\n";
       failed = true;
     }
   }
@@ -2656,7 +2654,7 @@ Model::processWellLocation(FFTGrid                     ** seisCube,
     wells[w]->moveWell(timeSimbox,deltaX,deltaY,kMove);
     wells[w]->setBlockedLogsOrigThick( new BlockedLogs(wells[w], timeSimbox, randomGen) );
     LogKit::LogFormatted(LogKit::LOW,"  %-13s %11.2f %12d %11.2f %8d %11.2f \n", 
-    wells[w]->getWellname(), kMove, iMove, deltaX, jMove, deltaY);
+    wells[w]->getWellname().c_str(), kMove, iMove, deltaX, jMove, deltaY);
   }
 
    for (w = 0 ; w < nWells ; w++){
@@ -2665,7 +2663,7 @@ Model::processWellLocation(FFTGrid                     ** seisCube,
     if( wells[w]->isDeviated()==true && nMoveAngles > 0 )
     {
       LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: Well %7s is treated as deviated and can not be moved.\n",
-          wells[w]->getWellname());
+          wells[w]->getWellname().c_str());
       TaskList::addTask("Well "+NRLib::ToString(wells[w]->getWellname())+" can not be moved. Remove <optimize-location-to> for this well");
     }
    }
@@ -2680,7 +2678,7 @@ Model::processWavelets(Wavelet                    **& wavelet,
                        const std::vector<Surface *> & waveletEstimInterval,    
                        ModelSettings                * modelSettings, 
                        InputFiles                   * inputFiles,
-                       char                         * errText,
+                       std::string                  & errText,
                        bool                         & failed)
 {
   int error = 0;
@@ -2723,7 +2721,7 @@ Model::processWavelets(Wavelet                    **& wavelet,
 
   if (inputFiles->getRefSurfaceFile() != "") {
     if (findTimeGradientSurface(inputFiles->getRefSurfaceFile(), timeSimbox) == false) {
-      sprintf(errText, "%sSimbox is not completely inside reference time surface in (x,y).\n", errText);
+      errText += "Simbox is not completely inside reference time surface in (x,y).\n";
       error = 1;
     }
   }
@@ -2784,7 +2782,7 @@ Model::processWavelets(Wavelet                    **& wavelet,
       const std::string & waveletFile = inputFiles->getWaveletFile(i);
       int fileFormat = getWaveletFileFormat(waveletFile,errText);
       if(fileFormat < 0) {
-        sprintf(errText, "%s Unknown file format of file  %s.\n", errText, waveletFile.c_str());
+        errText += "Unknown file format of file '"+waveletFile+"'.\n";
         error++;
       }
       else {
@@ -2801,7 +2799,7 @@ Model::processWavelets(Wavelet                    **& wavelet,
             float prescale = wavelet[i]->findGlobalScaleForGivenWavelet(modelSettings, timeSimbox, seisCube[i], wells);
             if(!modelSettings->getEstimateGlobalWaveletScale(i) && modelSettings->getWaveletScale(i)!=1.0 && modelSettings->getEstimateLocalScale(i) && (prescale>3.0 || prescale<0.333))
             {
-              sprintf(errText, "%s The wavelet given for angle no %d is badly scaled. Ask Crava to estimate global wavelet scale.\n", errText, i);
+              errText += "The wavelet given for angle no "+NRLib::ToString(i)+" is badly scaled. Ask Crava to estimate global wavelet scale.\n";
               error++;
             }
             else if(!modelSettings->getEstimateGlobalWaveletScale(i) && modelSettings->getWaveletScale(i)!=1.0 && (prescale>3.0 || prescale<0.333))
@@ -2840,7 +2838,7 @@ Model::processWavelets(Wavelet                    **& wavelet,
     }
 
     if ((modelSettings->getEstimationMode() == false) && (wavelet[i]->getDim() == 3) && !timeSimbox->getIsConstantThick()) {
-      sprintf(errText, "%s Simbox must have constant thickness if forward modelling or inversion when 3D wavelet.\n", errText);
+      errText += "Simbox must have constant thickness if forward modelling or inversion when 3D wavelet.\n";
       error++;
     }
 
@@ -2852,8 +2850,8 @@ Model::processWavelets(Wavelet                    **& wavelet,
       if ((modelSettings->getEstimateSNRatio(i) || localEst) && modelSettings->getForwardModeling() == false)
       {
         if (wavelet[i]->getDim() == 3) { //Not possible to estimate signal-to-noise ratio for 3D wavelets
-          sprintf(errText, "%s Estimation of signal-to-noise ratio is not possible for 3D wavelets.\n", errText);
-          sprintf(errText, "%s The s/n ratio must be specified in the model file\n", errText);
+          errText += "Estimation of signal-to-noise ratio is not possible for 3D wavelets.\n";
+          errText += "The s/n ratio must be specified in the model file\n";
           error++;
         }
         else {
@@ -2876,8 +2874,8 @@ Model::processWavelets(Wavelet                    **& wavelet,
         
         float SNRatio = modelSettings->getSNRatio(i);
         if (SNRatio <= 1.0f || SNRatio > 10.f) {
-          sprintf(errText, "%s Illegal signal-to-noise ratio of %.3f for cube %d\n", errText, SNRatio,i);
-          sprintf(errText, "%s Ratio must be in interval 1.0 < S/N ratio < 10.0\n", errText);
+          errText += "Illegal signal-to-noise ratio of "+NRLib::ToString(SNRatio)+" for cube "+NRLib::ToString(i)+".\n";
+          errText += "Ratio must be in interval 1.0 < S/N ratio < 10.0\n";
           error++;
         }
         
@@ -2949,7 +2947,7 @@ Model::processWavelets(Wavelet                    **& wavelet,
 }
 
 int
-Model::getWaveletFileFormat(const std::string & fileName, char * errText)
+Model::getWaveletFileFormat(const std::string & fileName, std::string & errText)
 {
   int fileformat = -1;
   char* dummyStr = new char[MAX_STRING];
@@ -2959,7 +2957,7 @@ Model::getWaveletFileFormat(const std::string & fileName, char * errText)
   {
     if(fscanf(file,"%s",dummyStr) == EOF)
     {
-      sprintf(errText,"%sEnd of wavelet file %s is premature\n",errText,fileName.c_str());
+      errText += "End of wavelet file '"+fileName+"' is premature.\n";
       return 0;
     } // endif
   }  // end for i
@@ -2995,7 +2993,7 @@ Model::getWaveletFileFormat(const std::string & fileName, char * errText)
         if(fscanf(file,"%s",dummyStr) == EOF)
         {
           readToEOL(file);
-          sprintf(errText,"%sEnd of wavelet file %s is premature\n",errText,fileName.c_str());
+          errText += "End of wavelet file "+fileName+" is premature\n";
           return 0;
         } // endif
         else
@@ -3027,7 +3025,7 @@ void Model::processPriorFaciesProb(const std::vector<Surface *> & faciesEstimInt
                                    float                          dz,
                                    ModelSettings                * modelSettings,
                                    bool                         & failed,
-                                   char                         * errTxt,
+                                   std::string                  & errTxt,
                                    InputFiles                   * inputFiles)
 {
   if (modelSettings->getEstimateFaciesProb())
@@ -3138,7 +3136,7 @@ void Model::processPriorFaciesProb(const std::vector<Surface *> & faciesEstimInt
               float tot = 0.0;
               for (int i = 0 ; i < nFacies ; i++)
                 tot += static_cast<float>(faciesCount[w][i]);
-              LogKit::LogFormatted(LogKit::LOW,"%-23s ",wells[w]->getWellname());
+              LogKit::LogFormatted(LogKit::LOW,"%-23s ",wells[w]->getWellname().c_str());
               for (int i = 0 ; i < nFacies ; i++) {
                 float faciesProb = static_cast<float>(faciesCount[w][i])/tot;
                 LogKit::LogFormatted(LogKit::LOW," %12.4f",faciesProb);
@@ -3166,7 +3164,7 @@ void Model::processPriorFaciesProb(const std::vector<Surface *> & faciesEstimInt
               float tot = 0.0;
               for (int i = 0 ; i < nFacies ; i++)
                 tot += static_cast<float>(faciesCount[w][i]);
-              LogKit::LogFormatted(LogKit::MEDIUM,"%-23s ",wells[w]->getWellname());
+              LogKit::LogFormatted(LogKit::MEDIUM,"%-23s ",wells[w]->getWellname().c_str());
               for (int i = 0 ; i < nFacies ; i++) {
                 LogKit::LogFormatted(LogKit::MEDIUM,"%12d ",faciesCount[w][i]);
               }
@@ -3282,7 +3280,7 @@ void Model::readPriorFaciesProbCubes(InputFiles      * inputFiles,
                                      ModelSettings   * modelSettings, 
                                      FFTGrid       **& priorFaciesProbCubes,
                                      Simbox          * timeSimbox,
-                                     char            * errTxt,
+                                     std::string     & errTxt,
                                      bool            & failed)
 {
   int nFacies = modelSettings->getNumberOfFacies();
@@ -3302,7 +3300,7 @@ void Model::readPriorFaciesProbCubes(InputFiles      * inputFiles,
       const SegyGeometry      * dummy1 = NULL;
       const TraceHeaderFormat * dummy2 = NULL;
       const float               offset = modelSettings->getSegyOffset();
-      std::string errorText;
+      std::string errorText("");
       readGridFromFile(faciesProbFile,
                        "priorfaciesprob",
                        offset,
@@ -3317,7 +3315,7 @@ void Model::readPriorFaciesProbCubes(InputFiles      * inputFiles,
       {
         errorText += "Reading of file \'"+faciesProbFile+"\' for prior facies probability for facies \'"
                      +modelSettings->getFaciesName(i)+"\' failed\n";
-        sprintf(errTxt,"%s%s", errTxt, errorText.c_str());
+        errTxt += errorText;
         failed = true;
       } 
     }
@@ -3337,10 +3335,10 @@ void
 Model::loadExtraSurfaces(std::vector<Surface *> & waveletEstimInterval,
                          std::vector<Surface *> & faciesEstimInterval,
                          std::vector<Surface *> & wellMoveInterval,
-                         Simbox     * timeSimbox,
-                         InputFiles * inputFiles,
-                         char       * errText,
-                         bool       & failed)
+                         Simbox      * timeSimbox,
+                         InputFiles  * inputFiles,
+                         std::string & errText,
+                         bool        & failed)
 {
   const double x0 = timeSimbox->getx0();
   const double y0 = timeSimbox->gety0();
@@ -3365,7 +3363,7 @@ Model::loadExtraSurfaces(std::vector<Surface *> & waveletEstimInterval,
       }
     }
     catch (NRLib::Exception & e) {
-      sprintf(errText, "%s%s\n", errText,e.what());
+      errText += e.what();
       failed = true;
     }
     
@@ -3378,7 +3376,7 @@ Model::loadExtraSurfaces(std::vector<Surface *> & waveletEstimInterval,
       }
     }
     catch (NRLib::Exception & e) {
-      sprintf(errText, "%s%s\n", errText,e.what());
+      errText += e.what();
       failed = true;
     }
   }
@@ -3398,8 +3396,8 @@ Model::loadExtraSurfaces(std::vector<Surface *> & waveletEstimInterval,
         faciesEstimInterval[0] = new Surface(tmpSurf);
       }
     }
-    catch (NRLib::Exception & e) {
-      sprintf(errText, "%s%s\n", errText,e.what());
+    catch (NRLib::Exception & e) {      
+      errText += e.what();
       failed = true;
     }
 
@@ -3412,7 +3410,7 @@ Model::loadExtraSurfaces(std::vector<Surface *> & waveletEstimInterval,
       }
     }
     catch (NRLib::Exception & e) {
-      sprintf(errText, "%s%s\n", errText,e.what());
+      errText += e.what();
       failed = true;
     }
   }
@@ -3433,7 +3431,7 @@ Model::loadExtraSurfaces(std::vector<Surface *> & waveletEstimInterval,
       }
     }
     catch (NRLib::Exception & e) {
-      sprintf(errText, "%s%s\n", errText,e.what());
+      errText += e.what();
       failed = true;
     }
 
@@ -3446,7 +3444,7 @@ Model::loadExtraSurfaces(std::vector<Surface *> & waveletEstimInterval,
       }
     }
     catch (NRLib::Exception & e) {
-      sprintf(errText, "%s%s\n", errText,e.what());
+      errText += e.what();
       failed = true;
     }
   }
@@ -3959,7 +3957,7 @@ Model::processDepthConversion(Simbox        * timeCutSimbox,
                               Simbox        * timeSimbox,
                               ModelSettings * modelSettings, 
                               InputFiles    * inputFiles,
-                              char          * errText, 
+                              std::string   & errText, 
                               bool          & failed)
 {
   FFTGrid * velocity = NULL;
@@ -4009,7 +4007,7 @@ Model::loadVelocity(FFTGrid          *& velocity,
                     Simbox            * timeSimbox,
                     ModelSettings     * modelSettings, 
                     const std::string & velocityField, 
-                    char              * errText,
+                    std::string       & errText,
                     bool              & failed)
 {
   Utils::writeHeader("Setup time-to-depth relationship");
@@ -4026,7 +4024,7 @@ Model::loadVelocity(FFTGrid          *& velocity,
     const SegyGeometry      * dummy1 = NULL;
     const TraceHeaderFormat * dummy2 = NULL;
     const float               offset = modelSettings->getSegyOffset();
-    std::string errorText;
+    std::string errorText("");
     readGridFromFile(velocityField,
                      "velocity field",
                      offset,
@@ -4076,14 +4074,14 @@ Model::loadVelocity(FFTGrid          *& velocity,
         text += "\n  Maximum Vp = "+NRLib::ToString(logMax,2)+"    Number of too high values : "+NRLib::ToString(tooHigh);
         text += "\nThe range of allowed values can changed using the ALLOWED_PARAMETER_VALUES keyword\n";
         text += "\naborting...\n";
-        sprintf(errText,"%sReading of file \'%s\' for background velocity field failed\n%s\n", 
-                errText,velocityField.c_str(),text.c_str());
+        errText += "Reading of file '"+velocityField+"' for background velocity field failed.\n";
+        errText += text;
         failed = true;
       } 
     }
     else {
-      errorText += "Reading of file \'"+velocityField+"\' for background velocity field failed\n";
-      sprintf(errText,"%s%s", errText,errorText.c_str());
+      errorText += "Reading of file \'"+velocityField+"\' for background velocity field failed.\n";
+      errText += errorText;
       failed = true;
     }
   }

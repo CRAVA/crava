@@ -82,7 +82,7 @@ public:
                                                         Grid2D       *& shift, 
                                                         Grid2D       *& gain, 
                                                         ModelSettings * modelSettings,
-                                                        char          * errText, 
+                                                        std::string   & errText, 
                                                         int           & error,
                                                         Grid2D       *& noiseScaled, 
                                                         int             number, 

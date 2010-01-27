@@ -66,8 +66,8 @@ public:
   double         getBot(double x, double y) const;
   std::string    getStormHeader(int cubetype, int nx, int ny, int nz, bool flat = false, bool ascii = false) const;
   void           writeTopBotGrids(const std::string & topname, const std::string & botname, const std::string & subdir, int outputFormat);
-  int            checkError(double lzLimit, char * errText);
-  int            setArea(const SegyGeometry * geometry, char * errText);
+  int            checkError(double lzLimit, std::string & errText);
+  int            setArea(const SegyGeometry * geometry, std::string & errText);
   void           setILXL(const SegyGeometry * geometry);
   bool           isAligned(const SegyGeometry * geometry) const; //Checks if IL/XL form geometry maps nicely.
   void           setDepth(Surface * zref, double zShift, double lz, double dz);

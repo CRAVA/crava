@@ -23,7 +23,7 @@ public:
             ModelSettings     * modelSettings, 
             float             * reflCoef,
             int               & errCode, 
-            char              * errText);
+            std::string       & errText);
   Wavelet1D(Wavelet * wavelet);
   Wavelet1D(Wavelet                  * wavelet, 
             ModelSettings            * modelSettings, 
@@ -51,8 +51,8 @@ private:
   void           flipUpDown();
   float          getWaveletValue(float z, float * Wavelet, int center,int nx, float dz);
   void           shiftAndScale(float shift,float gain);
-  void           WaveletReadOld(const std::string & fileName, int &errCode, char *errText);
-  void           WaveletReadJason(const std::string & fileName, int &errCode, char *errText);
+  void           WaveletReadOld(const std::string & fileName, int &errCode, std::string & errText);
+  void           WaveletReadJason(const std::string & fileName, int &errCode, std::string & errText);
   float          shiftOptimal(fftw_real** ccor_seis_cpp_r,float* wellWeight,float* dz,int nWells,int nzp,float* shiftWell);
   void           multiplyPapolouis(fftw_real** vec, float* dz,int nWells,int nzp, float waveletLength, float *wellWeight) const;
   void           getWavelet(fftw_real** ccor_seis_cpp_r,fftw_real** cor_cpp_r,fftw_real** wavelet_r,float* wellWeight,int nWells,int nt);

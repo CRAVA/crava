@@ -23,7 +23,7 @@ public:
               RandomGen * random);
   ~BlockedLogs(void);
 
-  const char   * getWellname(void)                  const { return wellname_ ;} 
+  const std::string getWellname(void)               const { return wellname_ ;}
   const int      getNumberOfBlocks(void)            const { return nBlocks_  ;}  
   const double * getXpos(void)                      const { return xpos_     ;}
   const double * getYpos(void)                      const { return ypos_     ;}
@@ -134,7 +134,7 @@ private:
                                          float         rho, 
                                          const float * coeff) const;
 
-  char         * wellname_;                 ///< Name of well   
+  std::string    wellname_;                 ///< Name of well   
 
   double       * xpos_;                     ///<
   double       * ypos_;                     ///< Simbox XYZ value for block

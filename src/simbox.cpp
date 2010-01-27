@@ -466,7 +466,7 @@ Simbox::writeTopBotGrids(const std::string & topname,
 }
 
 int
-Simbox::checkError(double lzLimit, char * errText)
+Simbox::checkError(double lzLimit, std::string & errText)
 {
   if(status_ == NODEPTH || status_ == EMPTY)
     status_ = EXTERNALERROR; //At this stage, lack of depth is an error
@@ -507,7 +507,7 @@ Simbox::checkError(double lzLimit, char * errText)
     if(lzMin < 0.0)
     {
       status_ = INTERNALERROR;
-      sprintf(errText,"At least parts of the Top surface is lower than the base surface. Are surfaces given in wrong order?\n");
+      errText += "At least parts of the top surface is lower than the base surface. Are surfaces given in wrong order?\n";
     }
     else
     {
@@ -516,7 +516,7 @@ Simbox::checkError(double lzLimit, char * errText)
       if(lzFac < lzLimit) 
       {
         status_ = INTERNALERROR;
-        sprintf(errText,"Error with top/bottom grids. Minimum thickness should be at least %f times maximum, is %f.\n", lzLimit, lzFac);
+        errText += "Error with top/bottom grids. Minimum thickness should be at least "+NRLib::ToString(lzLimit)+" times maximum, is "+NRLib::ToString(lzFac)+"\n";
       }
       else 
       {
@@ -529,7 +529,7 @@ Simbox::checkError(double lzLimit, char * errText)
 
 
 int
-Simbox::setArea(const SegyGeometry * geometry, char * errText)
+Simbox::setArea(const SegyGeometry * geometry, std::string & errText)
 {
   double x0  = geometry->GetX0();
   double y0  = geometry->GetY0();
@@ -545,7 +545,8 @@ Simbox::setArea(const SegyGeometry * geometry, char * errText)
   }
   catch (NRLib::Exception & e)
   {
-    sprintf(errText,"%s Could not set x0, y0, lx, and ly. %s",errText,e.what());
+    errText += "Could not set x0, y0, lx, and ly.\n";
+    errText += e.what();
     return 1;
   }
   try
@@ -554,7 +555,8 @@ Simbox::setArea(const SegyGeometry * geometry, char * errText)
   }
   catch (NRLib::Exception & e)
   {
-    sprintf(errText,"%s Could not set rotation angle. %s",errText,e.what());
+    errText += "Could not set rotation angle.\n";
+    errText += e.what();
     return 1;
   }
   cosrot_ = cos(rot);

@@ -9,7 +9,7 @@
 
 WaveletFilter::WaveletFilter(const std::string & /*fileName*/,
                              int               & /*errCode*/,
-                             char              * /*errText*/)
+                             std::string       & /*errText*/)
  : hasHalpha_(false)
 {
 //  readFile(fileName, errCode, errText);
@@ -23,11 +23,11 @@ WaveletFilter::~WaveletFilter(void)
 
 bool WaveletFilter::readFile(const std::string & fileName,
                              int               & errCode,
-                             char              * errText)
+                             std::string       & errText)
 {
   std::vector<NRLib::RegularSurfaceRotated<double> > rot_surfaces = NRLib::ReadMultipleSgriSurf(fileName);
   if (rot_surfaces[0].GetAngle() != 0.0) {
-    sprintf(errText, "%sGrid for wavelet filter in file %s is rotated. Must have rotation angle = 0.0.\n", errText, fileName.c_str());
+    errText += "Grid for wavelet filter in file "+fileName+" is rotated. Must have rotation angle = 0.0.\n";
     errCode = 1;
   }
   else {

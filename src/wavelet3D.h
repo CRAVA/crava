@@ -31,7 +31,7 @@ public:
             int                            angle_index,
             float                          theta,
             int                          & errCode,
-            char                         * errText);
+            std::string                  & errText);
   
   Wavelet3D(Wavelet1D                    * wavelet1d,
             const std::string            & filterfile,
@@ -40,7 +40,7 @@ public:
             Simbox                       * simBox,
             float                          theta,
             int                          & errCode,
-            char                         * errText);
+            std::string                  & errText);
 
   Wavelet3D(Wavelet                      * wavelet, 
             int                            difftype);

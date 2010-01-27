@@ -73,8 +73,8 @@ private:
                                     Surface       *& correlationDirection,
                                     ModelSettings *& modelSettings, 
                                     InputFiles     * inputFiles,
-                                    int             areaFromModelFile,
-                                    char           * errText,
+                                    int              areaFromModelFile,
+                                    std::string    & errText,
                                     bool           & failed);
   void             setupExtendedTimeSimbox(Simbox  * timeSimbox, 
                                            Surface * corrSurf, 
@@ -92,7 +92,7 @@ private:
                                   Simbox        *& timeSimbox,
                                   ModelSettings *& modelSettings, 
                                   InputFiles     * inputFiles,
-                                  char           * errText,
+                                  std::string    & errText,
                                   bool           & failed);
   void             processWells(WellData     **& wells,
                                 Simbox         * timeSimbox,
@@ -101,7 +101,7 @@ private:
                                 RandomGen      * randomGen,
                                 ModelSettings *& modelSettings, 
                                 InputFiles     * inputFiles,
-                                char           * errText,
+                                std::string    & errText,
                                 bool           & failed);
   void             addSeismicLogs(WellData ** wells, FFTGrid ** seisCube, 
                                   ModelSettings * modelSettings);
@@ -120,7 +120,7 @@ private:
                                      Simbox        * timeBGSimbox,
                                      ModelSettings * modelSettings, 
                                      InputFiles    * inputFile,
-                                     char          * errText,
+                                     std::string   & errText,
                                      bool          & failed);
   void             processPriorCorrelations(Corr         *& correlations,
                                             Background    * background,
@@ -128,21 +128,21 @@ private:
                                             Simbox        * timeSimbox,
                                             ModelSettings * modelSettings, 
                                             InputFiles    * inputFiles,
-                                            char          * errText,
+                                            std::string   & errText,
                                             bool          & failed);
 
   void             processReflectionMatrixFromWells(float       **& reflectionMatrix,
                                                     WellData     ** wells,
                                                     ModelSettings * modelSettings, 
                                                     InputFiles    * inputfiles,
-                                                    char          * errText,
+                                                    std::string   & errText,
                                                     bool          & failed);
 
   void             processReflectionMatrixFromBackground(float       **& reflectionMatrix,
                                                          Background    * background,
                                                          ModelSettings * modelSettings, 
                                                          InputFiles    * inputFiles,
-                                                         char          * errText,
+                                                         std::string   & errText,
                                                          bool          & failed);
 
   void             processWellLocation(FFTGrid                     ** seisCube, 
@@ -161,7 +161,7 @@ private:
                                    const std::vector<Surface *> & waveletEstimInterval,    
                                    ModelSettings                * modelSettings, 
                                    InputFiles                   * inputFiles,
-                                   char                         * errText,
+                                   std::string                  & errText,
                                    bool                         & failed);
 
   void             processPriorFaciesProb(const std::vector<Surface *> & faciesEstimInterval,
@@ -172,25 +172,25 @@ private:
                                           float                          dz,
                                           ModelSettings                * modelSettings,
                                           bool                         & failed,
-                                          char                         * errTxt,
+                                          std::string                  & errTxt,
                                           InputFiles                   * inputFiles);
   void             readPriorFaciesProbCubes(InputFiles      * inputFiles, 
                                             ModelSettings   * modelSettings, 
                                             FFTGrid       **& priorFaciesProbCubes,
                                             Simbox          * timeSimbox,
-                                            char            * errTxt,
+                                            std::string     & errTxt,
                                             bool            & failed);
   void             processDepthConversion(Simbox        * timeCutSimbox, 
                                           Simbox        * timeSimbox,
                                           ModelSettings * modelSettings, 
                                           InputFiles    * inputFiles,
-                                          char          * errText, 
+                                          std::string   & errText, 
                                           bool          & failedVelocity);
   void             loadVelocity(FFTGrid           *& velocity,
                                 Simbox             * timeSimbox,
                                 ModelSettings      * modelSettings, 
                                 const std::string  & velocityField, 
-                                char               * errText,
+                                std::string        & errText,
                                 bool               & failed);
   void             setSimboxSurfaces(Simbox                        *& simbox, 
                                      const std::vector<std::string> & surfFile, 
@@ -203,7 +203,7 @@ private:
                                      int                              outputFormat,
                                      int                              outputDomain,
                                      int                              outputFlag,
-                                     char                           * errText,
+                                     std::string                    & errText,
                                      int                            & error);
   void             estimateXYPaddingSizes(Simbox         * timeSimbox,
                                           ModelSettings *& modelSettings);
@@ -248,15 +248,15 @@ private:
   void             loadExtraSurfaces(std::vector<Surface *> & waveletEstimInterval,
                                      std::vector<Surface *> & faciesEstimInterval,
                                      std::vector<Surface *> & wellMoveInterval,
-                                     Simbox     * timeSimbox,
-                                     InputFiles * inputFiles,
-                                     char       * errText,
-                                     bool       & failed);
+                                     Simbox      * timeSimbox,
+                                     InputFiles  * inputFiles,
+                                     std::string & errText,
+                                     bool        & failed);
   float         ** readMatrix(const std::string & fileName, 
                               int                 n1, 
                               int                 n2, 
                               const std::string & readReason, 
-                              char              * errText);
+                              std::string       & errText);
   void             setupDefaultReflectionMatrix(float       **& reflectionMatrix,
                                                 double          vsvp,
                                                 ModelSettings * modelSettings);
@@ -266,13 +266,13 @@ private:
   void             checkFaciesNames(WellData      ** wells,
                                     ModelSettings *& modelSettings,
                                     InputFiles     * inputFiles,
-                                    char           * tmpErrText,
+                                    std::string    & tmpErrText,
                                     int            & error);
   void             printSettings(ModelSettings * modelSettings,
                                  InputFiles    * inputFiles,
                                  int            areaFromModelFile);
   int              getWaveletFileFormat(const std::string & fileName, 
-                                        char              * errText);
+                                        std::string & errText);
   //Compute correlation gradient in terms of i,j and k in grid.
   double *         findPlane(Surface * surf); //Finds plane l2-closest to surface.             
   //Create planar surface with same extent as template, p[0]+p[1]*x+p[2]*y

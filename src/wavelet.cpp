@@ -244,7 +244,7 @@ Wavelet::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
                                          Grid2D       *& shift, 
                                          Grid2D       *& gain, 
                                          ModelSettings * modelSettings,
-                                         char          * errText, 
+                                         std::string   & errText, 
                                          int           & error, 
                                          Grid2D       *& noiseScaled, 
                                          int             number, 
@@ -397,7 +397,7 @@ Wavelet::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
       else
       {
         LogKit::LogFormatted(LogKit::LOW,"\n  Not using vertical well %s for error estimation (length=%.1fms  required length=%.1fms).",
-                             wells[w]->getWellname(),length*dz0,waveletLength_);
+                             wells[w]->getWellname().c_str(),length*dz0,waveletLength_);
       }
     }
   }
@@ -461,7 +461,7 @@ Wavelet::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
 
   if (nData == 0)
   {
-    sprintf(errText, "%s Cannot estimate signal-to-noise ratio. No legal well data available.\n", errText);
+    errText += "Cannot estimate signal-to-noise ratio. No legal well data available.\n";
     error += 1;
   }
   dataVar /= float(nData);
@@ -485,19 +485,19 @@ Wavelet::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
             SNOptimalGlobal = dataVarWell[i]/(errWell[i]*errWell[i]);
             SNOptimalLocal  = dataVarWell[i]/(errWellOptScale[i]*errWellOptScale[i]);   
             LogKit::LogFormatted(LogKit::LOW,"  %-20s   %6.2f     %9.2e      %6.2f %6.2f      %6.2f %6.2f\n", 
-            wells[i]->getWellname(),shiftWell[i],sqrt(dataVarWell[i]),
+            wells[i]->getWellname().c_str(),shiftWell[i],sqrt(dataVarWell[i]),
             optScale,SNOptimalGlobal,scaleOptWell[i],SNOptimalLocal);
         }
         else
           LogKit::LogFormatted(LogKit::LOW,"  %-20s      -            -             -      -           -      -\n",
-          wells[i]->getWellname()); 
+          wells[i]->getWellname().c_str()); 
       }
       for(i=0;i<nWells;i++)
       {
         if((scaleOptWell[i]>=3.0 || scaleOptWell[i]<=0.3334) && nActiveData[i]>0)
         {
           LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: The well %s has a optimal local gain value indicating that this well should not be used for wavelet estimation\n",
-          wells[i]->getWellname());
+          wells[i]->getWellname().c_str());
         }
       }
  //   }
@@ -616,8 +616,7 @@ Wavelet::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
     LogKit::LogFormatted(LogKit::WARNING,"\n       If the wavelet was estimated by CRAVA the solution may be to remove one or more wells");
     LogKit::LogFormatted(LogKit::WARNING,"\n       from the wavelet estimation (compare shifts and SN-ratios for different wells).\n");
 
-    sprintf(errText, "%sInvalid signal-to-noise ratio obtained for the angle-gather of %.1f degrees.\n",
-            errText, static_cast<float>(180.0/M_PI)*seisCube->getTheta());
+    errText += "Invalid signal-to-noise ratio obtained for the angle-gather of "+NRLib::ToString(static_cast<float>(180.0/M_PI)*seisCube->getTheta())+" degrees.\n";
     error += 1;
   }
  

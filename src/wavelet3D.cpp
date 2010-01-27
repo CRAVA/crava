@@ -41,7 +41,7 @@ Wavelet3D::Wavelet3D(const std::string            & filterFile,
                      int                            angle_index,
                      float                          theta,
                      int                          & errCode,
-                     char                         * errText)
+                     std::string                  & errText)
   : Wavelet(modelSettings, 3, reflCoef),
     filter_(filterFile, errCode, errText)
 {
@@ -73,7 +73,7 @@ Wavelet3D::Wavelet3D(const std::string            & filterFile,
   int nActiveWells = 0;
   for (unsigned int w=0; w<nWells; w++) {
     if (wells[w]->getUseForWaveletEstimation()) {
-      LogKit::LogFormatted(LogKit::MEDIUM, "  Well :  %s\n", wells[w]->getWellname());
+      LogKit::LogFormatted(LogKit::MEDIUM, "  Well :  %s\n", wells[w]->getWellname().c_str());
 
       BlockedLogs *bl    = wells[w]->getBlockedLogsOrigThick();  
  
@@ -293,7 +293,7 @@ Wavelet3D::Wavelet3D(const std::string            & filterFile,
 
       }
       else {
-        LogKit::LogFormatted(LogKit::MEDIUM,"     No enough data for 3D wavelet estimation in well %s\n", wells[w]->getWellname());
+        LogKit::LogFormatted(LogKit::MEDIUM,"     No enough data for 3D wavelet estimation in well %s\n", wells[w]->getWellname().c_str());
       }
     }
   }
@@ -324,7 +324,7 @@ Wavelet3D::Wavelet3D(Wavelet1D           * wavelet1D,
                      Simbox              * simBox,
                      float                 theta,
                      int                 & errCode,
-                     char                * errText)
+                     std::string         & errText)
   : Wavelet(3),
     wavelet1D_(wavelet1D),
     filter_(filterFile, errCode, errText)

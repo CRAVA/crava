@@ -20,14 +20,14 @@ public:
   Simbox        * getSimbox(void)   const { return simbox_  ;}
   void            setDepthSurfaces(const std::vector<std::string> & surfFile, 
                                    bool                           & failed, 
-                                   char                           * errText);
+                                   std::string                    & errText);
   void            calculateSurfaceFromVelocity(FFTGrid      * velocity, 
                                                const Simbox * simbox);
   void            setDepthSimbox(const Simbox * timeSimbox,
                                  int            nz,
                                  int            outputFormat,
                                  bool         & failed,
-                                 char         * errText);
+                                 std::string  & errText);
   void            makeTimeDepthMapping(FFTGrid      * velocity,
                                        const Simbox * timeSimbox);
   void            makeTimeTimeMapping(const Simbox * timeCutSimbox);

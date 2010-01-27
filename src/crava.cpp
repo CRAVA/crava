@@ -1658,7 +1658,7 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs)
     LogKit::LogFormatted(LogKit::LOW,"------------------------------------------------------\n");
     for(int i=0 ; i<nWells_ ; i++) {
       LogKit::LogFormatted(LogKit::LOW,"%-23s %3s        %3s          %3s\n",
-                           wells_[i]->getWellname(),
+                           wells_[i]->getWellname().c_str(),
                            ( wells_[i]->getUseForFaciesProbabilities() ? "yes" : " no" ),
                            ( wells_[i]->hasSyntheticVsLog()            ? "yes" : " no" ),
                            ( wells_[i]->isDeviated()                   ? "yes" : " no" ));

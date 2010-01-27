@@ -296,7 +296,7 @@ Background::calculateVelocityDeviations(FFTGrid   * velocity,
   LogKit::LogFormatted(LogKit::LOW,"---------------------------------------------\n");
   for (int i=0 ; i<nWells ; i++)
     LogKit::LogFormatted(LogKit::LOW,"%-24s %5.1f          %5.1f\n",
-                         wells[i]->getWellname(),avgDevVel[i],avgDevAlpha[i]);
+                         wells[i]->getWellname().c_str(),avgDevVel[i],avgDevAlpha[i]);
 }
 
 //---------------------------------------------------------------------------
@@ -1260,7 +1260,7 @@ Background::writeDeviationsFromVerticalTrend(const float *  avg_dev_alpha,
   for (int i=0 ; i<nWells ; i++)
   {
     int ii = index[i];
-    LogKit::LogFormatted(LogKit::LOW,"%-24s %5.1f    %5.1f    %5.3f\n", wells[ii]->getWellname(),
+    LogKit::LogFormatted(LogKit::LOW,"%-24s %5.1f    %5.1f    %5.3f\n", wells[ii]->getWellname().c_str(),
                      avg_dev_alpha[ii], avg_dev_beta[ii], avg_dev_rho[ii]);
   }
 

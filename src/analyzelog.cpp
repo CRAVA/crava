@@ -148,7 +148,7 @@ Analyzelog::calculateNumberOfLags(int & numberOfLags,
           if (floor(dist/dt+0.5)) // Check that error is numerically significant
           {
             LogKit::LogFormatted(LogKit::LOW,"\nERROR: Negative lags in well %s.z[k]=%9.3f z[j]=%9.3f\n",
-              wells_[i]->getWellname(),z[k],z[j]);
+              wells_[i]->getWellname().c_str(),z[k],z[j]);
             failed_ = true;
           }
       }
@@ -570,7 +570,7 @@ Analyzelog::estimateCorrTAndVar0(float  * CorrT,
     }
     time(&timeend);
     printf("\nWell %s processed in %ld seconds.",
-      wells_[i]->getWellname(),timeend-timestart);
+      wells_[i]->getWellname().c_str(),timeend-timestart);
   }
   printf("\n");
 

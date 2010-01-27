@@ -21,7 +21,7 @@
 BlockedLogs::BlockedLogs(WellData  * well, 
                          Simbox    * simbox,
                          RandomGen * random) 
-  : wellname_(NULL),
+  : wellname_(""),
     xpos_(NULL),
     ypos_(NULL),
     zpos_(NULL),
@@ -64,8 +64,6 @@ BlockedLogs::BlockedLogs(WellData  * well,
 //------------------------------------------------------------------------------
 BlockedLogs::~BlockedLogs(void)
 {
-  if (wellname_ !=NULL)
-    delete [] wellname_;
   if (xpos_ != NULL)
     delete [] xpos_;
   if (ypos_ != NULL)
@@ -146,8 +144,7 @@ BlockedLogs::blockWell(WellData  * well,
                        Simbox    * simbox,
                        RandomGen * random) 
 {
-  wellname_ = new char[MAX_STRING];
-  strcpy(wellname_, well->getWellname());
+  wellname_ = well->getWellname();
 
   int * bInd = new int[well->getNd()]; // Gives which block each well log entry contributes to
 
@@ -857,7 +854,7 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
   std::string wellname(wellname_);
   NRLib::Substitute(wellname,"/","_");
   NRLib::Substitute(wellname," ","_");
-  std::string baseName = IO::PrefixBlockedWells() + wellname + IO::SuffixRmsWells();
+  std::string baseName = IO::PrefixBlockedWells() + wellname.c_str() + IO::SuffixRmsWells();
   std::string fileName = IO::makeFullFileName(IO::PathToWells(), baseName);
 
   std::ofstream file;
@@ -906,7 +903,7 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
   //
   file << "1.0\n"
        << "CRAVA\n"
-       << wellname_ << " " << xpos_[firstB_] << " " << ypos_[firstB_] << "\n"
+       << wellname_.c_str() << " " << xpos_[firstB_] << " " << ypos_[firstB_] << "\n"
        << nLogs << "\n";
   
   for (int i =0 ; i<3 ; i++) {

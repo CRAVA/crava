@@ -697,7 +697,7 @@ void FaciesProb::calculateConditionalFaciesProb(WellData                    ** w
         totProb[f1] += condFaciesProb[f1][f2];
       }
     }
-    LogKit::LogFormatted(LogKit::LOW,"\nWell: %s\n",bw[i]->getWellname());
+    LogKit::LogFormatted(LogKit::LOW,"\nWell: %s\n",bw[i]->getWellname().c_str());
     LogKit::LogFormatted(LogKit::LOW,"\nFacies      |");
     for(int f=0 ; f < nFacies_ ; f++)
       LogKit::LogFormatted(LogKit::LOW," %11s",modelSettings->getFaciesName(f).c_str());
@@ -1362,7 +1362,7 @@ void FaciesProb::calculateChiSquareTest(WellData                    ** wells,
   
   for (int w = 0 ; w < nWells ; w++)
   {
-    LogKit::LogFormatted(LogKit::MEDIUM,"%-23s",wells[w]->getWellname());
+    LogKit::LogFormatted(LogKit::MEDIUM,"%-23s",wells[w]->getWellname().c_str());
     LogKit::LogFormatted(LogKit::MEDIUM,fit[w]);
     LogKit::LogFormatted(LogKit::MEDIUM,"\n");
   }
@@ -1498,7 +1498,7 @@ void FaciesProb::calculateChiSquareTest(WellData                    ** wells,
   LogKit::LogFormatted(LogKit::MEDIUM,"\n");
   for (int w = 0 ; w < nWells ; w++)
   {
-    LogKit::LogFormatted(LogKit::MEDIUM,"%-24s ",wells[w]->getWellname());
+    LogKit::LogFormatted(LogKit::MEDIUM,"%-24s ",wells[w]->getWellname().c_str());
     for (int i = 0 ; i < nFacies_ ; i++) 
     {
       LogKit::LogFormatted(LogKit::MEDIUM,"        ");

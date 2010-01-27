@@ -32,8 +32,8 @@ WellData::WellData(const std::string              & wellFileName,
                    int                              indicatorRealVs,
                    bool                             faciesLogGiven)
   : modelSettings_(modelSettings),
-    wellname_(NULL),
-    wellfilename_(NULL),
+    wellname_(""),
+    wellfilename_(""),
     xpos_(NULL),
     ypos_(NULL),
     zpos_(NULL),
@@ -41,6 +41,7 @@ WellData::WellData(const std::string              & wellFileName,
     beta_(NULL),
     rho_(NULL),
     facies_(NULL),
+    faciesNames_(NULL),
     alpha_background_resolution_(NULL),
     beta_background_resolution_(NULL),
     rho_background_resolution_(NULL),
@@ -55,7 +56,7 @@ WellData::WellData(const std::string              & wellFileName,
     useForBackgroundTrend_(indicatorBGTrend),
     realVsLog_(indicatorRealVs)
 {
-  sprintf(errTxt_,"%c",'\0');
+  errTxt_="";
   if(wellFileName.find(".nwh",0) != std::string::npos)
     readNorsarWell(wellFileName, logNames, inverseVelocity, faciesLogGiven);
   else
@@ -74,14 +75,7 @@ WellData::~WellData()
   delete [] facies_;
 
   if (nFacies_ > 0)
-  {
-    delete [] faciesLogName_;
-    for (int i = 0 ; i < nFacies_ ; i++)
-      if(faciesNames_[i] != NULL)
-        delete [] faciesNames_[i];
-    delete [] faciesNames_;
     delete [] faciesNr_;
-  }
   if(alpha_background_resolution_!=NULL)
     delete [] alpha_background_resolution_;
   if(beta_background_resolution_!=NULL)
@@ -100,8 +94,6 @@ WellData::~WellData()
     delete blockedLogsConstThick_;
   if (blockedLogsExtendedBG_ != NULL)
     delete blockedLogsExtendedBG_;
-  delete [] wellfilename_;
-  delete [] wellname_;
 }
 
 //----------------------------------------------------------------------------
@@ -112,31 +104,29 @@ WellData::readRMSWell(const std::string              & wellFileName,
                       bool                             faciesLogGiven)
 {
   error_ = 0;
-  FILE* file = fopen(wellFileName.c_str(), "r");
+  std::ifstream file;
+  NRLib::OpenRead(file, wellFileName);
   int i,j, facies;
+  std::string token, dummyStr;
+  std::vector<std::string> tokenLine;
   double xpos, ypos, zpos, dummy;
   float alpha, beta, rho;
-  wellfilename_ = new char[MAX_STRING];
-  strcpy(wellfilename_,wellFileName.c_str());
-  sprintf(errTxt_,"%c",'\0');
+  wellfilename_ = wellFileName;
   if(file == 0)
   {
     error_ = 1;
-    sprintf(errTxt_,"Could not open file %s for reading.\n", wellFileName.c_str());
+    errTxt_ += "Could not open file "+wellFileName+" for reading.\n";
     //NBNB Incomplete solution, but should never happen.
   }
   int nlog; // number of logs in file
-
-  wellname_ = new char[MAX_STRING];
-
-  //First two lines contain info. we do not need.
-  readToEOL(file);
-  readToEOL(file);
-  fscanf(file, "%s %lf %lf",wellname_,&xpos0_, &ypos0_); // read wellname and positions 
-  readToEOL(file);                                       // Line may contain a dummy number 
-  fscanf(file,"%d",&nlog);                               // read number of logs 
-
-  char tmpStr[MAX_STRING];
+  int line = 0;
+  NRLib::DiscardRestOfLine(file,line,false); //First two lines contain info we do not need.
+  NRLib::DiscardRestOfLine(file,line,false);
+  NRLib::GetNextToken(file, token, line);
+  wellname_ = token;
+  xpos0_ = NRLib::GetNext<double>(file, line);
+  ypos0_ = NRLib::GetNext<double>(file, line);
+  nlog   = NRLib::GetNext<int>(file, line);
 
   //Start searching for key words.
 
@@ -170,57 +160,44 @@ WellData::readRMSWell(const std::string              & wellFileName,
   nFacies_ = 0;
   for(i=0;i<nlog;i++)
   { 
-    fscanf(file,"%s",tmpStr);
+    NRLib::GetNextToken(file,token,line);
     for(j=0;j<nVar;j++)
     {
-      if(strcmp(uppercase(tmpStr),parameterList[j].c_str())==0)
+      if( NRLib::Uppercase(token)==parameterList[j])
       {
         pos[j] = i + 4;
         if(j==4)
         {
-          faciesLogName_ = new char[MAX_STRING];
-          strcpy(faciesLogName_,parameterList[4].c_str());
+          faciesLogName_ = parameterList[4];
           // facies log - save names
-          fscanf(file,"%s",tmpStr); // read code word DISC
-          if(strcmp(tmpStr,"DISC")!=0)
+          NRLib::GetNextToken(file,token,line); // read code word DISC
+          if (token != "DISC")
           {
-            LogKit::LogFormatted(LogKit::ERROR,"ERROR: Facies log must be discrete.\n");
+            LogKit::LogFormatted(LogKit::ERROR,"ERROR: Facies log must be discrete.\n"); 
             exit(1);
           }
-          char EOL   = '\n';
-          char blank = ' ';
-          char rc = static_cast<char>(fgetc(file));
-          while(rc == blank)
-            rc = static_cast<char>(fgetc(file));
-          while(rc != EOL)
-          {
-            // Read numbers or strings           
-            while(rc != blank && rc!=EOL)
-              rc = static_cast<char>(fgetc(file));
-            // Read blanks
-            while(rc == blank && rc!=EOL)
-              rc = static_cast<char>(fgetc(file));
-            nFacies_++;
-          }
-          nFacies_ = nFacies_/2;
+          // Find number of facies
+          std::getline(file,dummyStr);
+          tokenLine = NRLib::GetTokens(dummyStr);
+          nFacies_ = tokenLine.size()/2;
         }
       }
     }
-    if(strcmp(tmpStr,"DISC")!=0) readToEOL(file);
+    if (token != "DISC")
+      NRLib::DiscardRestOfLine(file,line,false);
   }
 
-  char missVar[MAX_STRING];
-  strcpy(missVar,"");
+  std::string missVar = "";
   for(i=0 ; i<nVar ; i++)
   {
     if(pos[i]==IMISSING)
     {
-      sprintf(missVar,"%s %s", missVar, parameterList[i].c_str());
+      missVar += parameterList[i];
       error_ = 1;
     }
   }
   if(error_ > 0)
-    sprintf(errTxt_,"Cannot find log(s) %s in well file %s.\n",missVar,wellfilename_);
+    errTxt_ += "Cannot find log(s) "+missVar+"in well file "+wellfilename_+".\n";
 
 
   if(pos[0]==IMISSING)
@@ -233,14 +210,16 @@ WellData::readRMSWell(const std::string              & wellFileName,
 
   int nData = 0; 
   int legalData = 0;
-  while(fscanf(file,"%s",tmpStr) != EOF)
+  while (NRLib::CheckEndOfFile(file)==false)
   {
     nData++;
-    fscanf(file," %lf", &dummy); // read y, which we do not need yet.
-    fscanf(file,"%lf", &dummy);  // read z which we do not need.
+    dummy = NRLib::GetNext<double>(file,line); // Read x which we do not need yet.
+    dummy = NRLib::GetNext<double>(file,line); // Read y which we do not need yet.
+    dummy = NRLib::GetNext<double>(file,line); // Read z which we do not need.
+
     for(j=4;j<=nlog+3;j++)
     {
-      fscanf(file,"%lf",&dummy);
+      dummy = NRLib::GetNext<double>(file,line); // Read z which we do not need.
       if(j==pos[0] && dummy != WELLMISSING)
       {
         // Found legal TIME variable
@@ -248,7 +227,8 @@ WellData::readRMSWell(const std::string              & wellFileName,
       }
     }
   }
-  fclose(file);
+  file.close();
+  file.clear();
   nd_ = legalData;
   //
   // Check that the number of logs found for each log entry agrees
@@ -256,18 +236,23 @@ WellData::readRMSWell(const std::string              & wellFileName,
   //
   // A nicer and faster implementation for this is requested...
   //
+
   int logEntry = 0;
-  file = fopen(wellFileName.c_str(),"r");
+  NRLib::OpenRead(file, wellFileName);
+  line = 0;
   for(i=0;i<4+nlog;i++)
-    readToEOL(file);
-  while(fscanf(file,"%[^\n]\n",tmpStr) != EOF && error_ == 0)
+    NRLib::DiscardRestOfLine(file,line,false);
+  while (NRLib::CheckEndOfFile(file)==false && error_==0)
   {
     logEntry++;
     int  elements = 0;
     bool lastIsBlank = true;
-    for (i=0 ; i<=static_cast<int>(strlen(tmpStr)) ; i++)
+    std::getline(file,token);
+
+    int l = token.length();
+    for (i=0; i<l; i++)
     {
-      if (tmpStr[i] != ' ' && tmpStr[i] != '\t'  && tmpStr[i] != '\r'  && tmpStr[i] != '\0') 
+      if (token[i] != ' ' && token[i] != '\t' && token[i] != '\r' && token[i] != '\0')
       {
         if (lastIsBlank)
           elements++;
@@ -279,40 +264,37 @@ WellData::readRMSWell(const std::string              & wellFileName,
   if(elements != nlog+3)
   {
     error_ = 1;
-    sprintf(errTxt_,"%sERROR for well %s : The number of log elements (nlogs=%d) in line %d does not match header specifications (nlogs=%d).\n",
-            errTxt_, wellname_, elements-3, logEntry, nlog);
+    errTxt_ += "ERROR for well "+wellname_+": The number of log elements (nlogs="+NRLib::ToString(elements-3)+")\n in line "+NRLib::ToString(logEntry)+" does not match header specifications (nlogs="+NRLib::ToString(nlog)+").\n";
    }
   }
-  fclose(file);
+  file.close();
+  file.clear();
 
   //
   // Read logs
   //
   int k;
   if (nFacies_ > 0)
-  {
     faciesNr_    = new int[nFacies_];
-    faciesNames_ = new char*[nFacies_];
-    for(i=0 ; i<nFacies_ ; i++) {
-      faciesNames_[i] = new char[MAX_STRING];
-    }
-  }
-
-  file = fopen(wellFileName.c_str(),"r");
+  
+  NRLib::OpenRead(file, wellFileName);
+  line = 0;
   for(i=0;i<4+nlog;i++)
   {
-    fscanf(file,"%s",tmpStr);
-    if(strcmp(uppercase(tmpStr),parameterList[4].c_str())==0)
+    NRLib::GetNextToken(file,token,line);
+    if (NRLib::Uppercase(token) == parameterList[4])
     {
-     fscanf(file,"%s",tmpStr); // read code word DISC
+      NRLib::GetNextToken(file,token,line); // read code word DISC
       // facies types given here
       for(k=0;k<nFacies_;k++)
       {
-        fscanf(file,"%d",&(faciesNr_[k]));
-        fscanf(file,"%s",faciesNames_[k]);
+        NRLib::GetNextToken(file,token,line);
+        faciesNr_[k] = NRLib::ParseType<int>(token);
+        NRLib::GetNextToken(file,token,line);
+        faciesNames_.push_back(token);
       }
     }
-    readToEOL(file);
+    NRLib::DiscardRestOfLine(file,line,false);
   }
   double OPENWORKS_MISSING = -999.25;
   bool wrongMissingValues = false;
@@ -334,12 +316,12 @@ WellData::readRMSWell(const std::string              & wellFileName,
   int legal = 0;
   for(i=0;i<nData;i++)
   {
-    // fscanf(file, "%lf %lf %lf %f %f %f",&xpos, &ypos, &zpos, &alpha, &beta, &rho);
-    fscanf(file, "%lf %lf",&xpos, &ypos);
-    fscanf(file,"%lf", &dummy); // read z which we do not need.
+    xpos  = NRLib::GetNext<double>(file,line);
+    ypos  = NRLib::GetNext<double>(file,line);
+    dummy = NRLib::GetNext<double>(file,line);
     for(j=4;j<=nlog+3;j++)
     {
-      fscanf(file,"%lf",&dummy);
+      dummy = NRLib::GetNext<double>(file,line);
       if(j==pos[0])
       {
         //Found TIME variable
@@ -421,7 +403,7 @@ WellData::readRMSWell(const std::string              & wellFileName,
         wrongMissingValues = true;
     }
   }
-  fclose(file);
+  file.close();
 
   if(wrongMissingValues)
   {
@@ -444,12 +426,10 @@ WellData::readNorsarWell(const std::string              & wellFileName,
                          bool                             faciesLogGiven)
 {
   error_ = 0;
-  wellfilename_ = new char[MAX_STRING];
-  strcpy(wellfilename_,wellFileName.c_str());
-  wellname_ = new char[MAX_STRING];
+  wellfilename_ = wellFileName;
   std::string name = NRLib::RemovePath(wellFileName);
   name = NRLib::ReplaceExtension(name, "");
-  strcpy(wellname_, name.c_str());
+  wellname_ = name;
   
   try 
   {
@@ -484,22 +464,19 @@ WellData::readNorsarWell(const std::string              & wellFileName,
     logs[0] = well.GetContLog("UTMX");
     if(logs[0] == NULL) {
       error_ = 1;
-      sprintf(errTxt_,"%sError: Could not find log 'UTMX' in well file '%s'.\n", errTxt_, 
-        wellFileName.c_str());
+      errTxt_ += "Could not find log 'UTMX' in well file "+wellFileName+".\n";
     }
     logs[1] = well.GetContLog("UTMY");
     if(logs[1] == NULL) {
       error_ = 1;
-      sprintf(errTxt_,"%sError: Could not find log 'UTMY' in well file '%s'.\n", 
-        errTxt_, wellFileName.c_str());
+      errTxt_ += "Could not find log 'UTMY' in well file "+wellFileName+".\n";
     }
     for(int i=0;i<nVar;i++) {
       logs[2+i] = well.GetContLog(parameterList[i]);
       if(logs[2+i] == NULL) {
         if(i != 4 || logNames[0] != "") {
           error_ = 1;
-          sprintf(errTxt_,"%sError: Could not find log '%s' in well file '%s'.\n", 
-            errTxt_, parameterList[i].c_str(), wellFileName.c_str());
+          errTxt_ += "Could not find log "+parameterList[i]+" in well file "+wellFileName+".\n";
         }
         else if(i==4)
           nLogs = nLogs-1;
@@ -546,7 +523,7 @@ WellData::readNorsarWell(const std::string              & wellFileName,
     }
   }
   catch (NRLib::Exception & e) {
-    sprintf(errTxt_,"Error: %s\n",e.what());
+    errTxt_ += e.what();
     error_ = 1;
   }
 }
@@ -607,7 +584,7 @@ WellData::writeRMSWell(void)
   }
 
   if (nFacies_ > 0) {
-    file << faciesLogName_ << "   DISC ";
+    file << faciesLogName_.c_str() << "   DISC ";
     for (int i =0 ; i < nFacies_ ; i++)
       file << " " << faciesNr_[i] << " " << faciesNames_[i];
     file << std::endl;
@@ -771,13 +748,13 @@ WellData::writeNorsarWell()
 
 
 //----------------------------------------------------------------------------
-int WellData::checkError(char *errText)
+int WellData::checkError(std::string & errText)
 {
   if(error_ == 0)
     return(0);
   else
   {
-    strcpy(errText,errTxt_);
+    errText = errTxt_; 
     return(error_); 
   }
 }
@@ -895,7 +872,7 @@ WellData::removeDuplicateLogEntries(int & nMerges)
 
 //----------------------------------------------------------------------------
 void
-WellData::mergeCells(const char * name, double * pos_resampled, double * pos, 
+WellData::mergeCells(const std::string & name, double * pos_resampled, double * pos, 
                      int ii, int istart, int iend, bool printToScreen) 
 {
   int nSample = 0;
@@ -908,7 +885,7 @@ WellData::mergeCells(const char * name, double * pos_resampled, double * pos,
       pos_resampled[ii] += pos[i];
       nSample++; 
       if (printToScreen)
-        LogKit::LogFormatted(LogKit::LOW,"%s     Old:%d   pos = %.3f\n",name,i,pos[i]);
+        LogKit::LogFormatted(LogKit::LOW,"%s     Old:%d   pos = %.3f\n",name.c_str(),i,pos[i]);
     }
   }
   if (nSample == 0)
@@ -916,12 +893,12 @@ WellData::mergeCells(const char * name, double * pos_resampled, double * pos,
   else
     pos_resampled[ii] /= nSample;
   if (printToScreen)
-    LogKit::LogFormatted(LogKit::LOW,"%s     New:%d   pos = %.3f\n",name,ii,pos_resampled[ii]);
+    LogKit::LogFormatted(LogKit::LOW,"%s     New:%d   pos = %.3f\n",name.c_str(),ii,pos_resampled[ii]);
 }
 
 //----------------------------------------------------------------------------
 void
-WellData::mergeCells(const char * name, float * log_resampled, float * log, int ii, 
+WellData::mergeCells(const std::string & name, float * log_resampled, float * log, int ii, 
                      int istart, int iend, bool printToScreen) 
 {
   int nSample = 0;
@@ -934,7 +911,7 @@ WellData::mergeCells(const char * name, float * log_resampled, float * log, int 
       log_resampled[ii] += log[i];
       nSample++; 
       if (printToScreen)
-        LogKit::LogFormatted(LogKit::LOW,"%s     Old:%d   log = %.3f\n",name,i,log[i]);
+        LogKit::LogFormatted(LogKit::LOW,"%s     Old:%d   log = %.3f\n",name.c_str(),i,log[i]);
     }
   }
   if (nSample == 0)
@@ -942,13 +919,13 @@ WellData::mergeCells(const char * name, float * log_resampled, float * log, int 
   else
     log_resampled[ii] /= nSample;
   if (printToScreen)
-    LogKit::LogFormatted(LogKit::LOW,"%s     New:%d   log = %.3f\n",name,ii,log_resampled[ii]);
+    LogKit::LogFormatted(LogKit::LOW,"%s     New:%d   log = %.3f\n",name.c_str(),ii,log_resampled[ii]);
 }
 
 //---------------------------------------------------------------------------
 
 void
-WellData::mergeCellsDiscrete(const char * name, int * log_resampled, int * log, int ii, 
+WellData::mergeCellsDiscrete(const std::string & name, int * log_resampled, int * log, int ii, 
                      int istart, int iend, bool printToScreen) 
 {
   int nSample = 0;
@@ -959,12 +936,12 @@ WellData::mergeCellsDiscrete(const char * name, int * log_resampled, int * log, 
       //log_resampled[ii] += log[i];
       nSample++; 
       if (printToScreen)
-        LogKit::LogFormatted(LogKit::LOW,"%s     Old:%d   log = %d\n",name,i,log[i]);
+        LogKit::LogFormatted(LogKit::LOW,"%s     Old:%d   log = %d\n",name.c_str(),i,log[i]);
     }
   }
   log_resampled[ii] = log[istart];
  if (printToScreen)
-    LogKit::LogFormatted(LogKit::LOW,"%s     New:%d   log = %d\n",name,ii,log_resampled[ii]);
+    LogKit::LogFormatted(LogKit::LOW,"%s     New:%d   log = %d\n",name.c_str(),ii,log_resampled[ii]);
 
 }
 
