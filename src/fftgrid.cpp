@@ -646,7 +646,7 @@ FFTGrid::createRealGrid(bool add)
   FFTMemUse_ += rsize_ * sizeof(fftw_real);
   if(FFTMemUse_ > maxFFTMemUse_) {
     maxFFTMemUse_ = FFTMemUse_;
-    LogKit::LogFormatted(LogKit::HIGH,"\nNew FFT-grid memory peak (%2d): %10.2f MB\n",nGrids_, FFTMemUse_/(1024.f*1024.f));
+    LogKit::LogFormatted(LogKit::DEBUGHIGH,"\nNew FFT-grid memory peak (%2d): %10.2f MB\n",nGrids_, FFTMemUse_/(1024.f*1024.f));
   }
 
   //  time(&timeend);
