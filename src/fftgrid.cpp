@@ -104,6 +104,7 @@ if (rvalue_!=NULL)
   if(add_==true)
     nGrids_ = nGrids_ - 1;
   fftw_free(rvalue_);
+  FFTMemUse_ -= rsize_ * sizeof(fftw_real);
   LogKit::LogFormatted(LogKit::DEBUGLOW,"\nFFTGrid Destructor: nGrids_ = %d",nGrids_);
 }
 }
@@ -618,6 +619,7 @@ FFTGrid::createRealGrid(bool add)
   istransformed_=false;
   rvalue_    = static_cast<fftw_real*>(fftw_malloc(rsize_ * sizeof(fftw_real)));
   cvalue_    = reinterpret_cast<fftw_complex*>(rvalue_); //
+
   counterForGet_  = 0; 
   counterForSet_  = 0;
   add_ = add;
@@ -641,6 +643,12 @@ FFTGrid::createRealGrid(bool add)
   }    
   maxAllocatedGrids_ = std::max(nGrids_, maxAllocatedGrids_);
 
+  FFTMemUse_ += rsize_ * sizeof(fftw_real);
+  if(FFTMemUse_ > maxFFTMemUse_) {
+    maxFFTMemUse_ = FFTMemUse_;
+    LogKit::LogFormatted(LogKit::HIGH,"\nNew FFT-grid memory peak (%2d): %10.2f MB\n",nGrids_, FFTMemUse_/(1024.f*1024.f));
+  }
+
   //  time(&timeend);
   //  LogKit::LogFormatted(LogKit::LOW,"\nReal grid created in %ld seconds.\n",timeend-timestart);
 }
@@ -653,6 +661,7 @@ FFTGrid::createComplexGrid()
   istransformed_  = true;
   rvalue_         = static_cast<fftw_real*>(fftw_malloc(rsize_ * sizeof(fftw_real)));
   cvalue_         = reinterpret_cast<fftw_complex*>(rvalue_); //
+
   counterForGet_  = 0; 
   counterForSet_  = 0;
   nGrids_        += 1;
@@ -672,6 +681,12 @@ FFTGrid::createComplexGrid()
       TaskList::addTask("Crava needs more memory than expected. The results are still correct. \n Norwegian Computing Center would like to have a look at your project.");
   }    
   maxAllocatedGrids_ = std::max(nGrids_, maxAllocatedGrids_);
+
+  FFTMemUse_ += rsize_ * sizeof(fftw_real);
+  if(FFTMemUse_ > maxFFTMemUse_) {
+    maxFFTMemUse_ = FFTMemUse_;
+    LogKit::LogFormatted(LogKit::HIGH,"\nNew FFT-grid memory peak (%2d): %10.2f MB\n",nGrids_, FFTMemUse_/(1024.f*1024.f));
+  }
   //  time(&timeend);
   //  LogKit::LogFormatted(LogKit::LOW,"\nComplex grid created in %ld seconds.\n",timeend-timestart);
 }
@@ -2237,3 +2252,5 @@ int FFTGrid::maxAllowedGrids_   = 1;   // One grid is allocated and deallocated 
 int FFTGrid::maxAllocatedGrids_ = 0; 
 int FFTGrid::nGrids_            = 0;
 bool FFTGrid::terminateOnMaxGrid_ = false;
+float FFTGrid::maxFFTMemUse_    = 0;
+float FFTGrid::FFTMemUse_       = 0;

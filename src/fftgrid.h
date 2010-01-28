@@ -134,6 +134,13 @@ public:
   std::vector<float>   getRealTrace2(int i, int j);
 
 
+  static void          reportFFTMemoryAndWait(const char * msg) {
+                         LogKit::LogFormatted(LogKit::HIGH, "%s: %2d grids, %10.2f MB\n", msg, nGrids_, FFTMemUse_/(1024.0f*1024.0f));
+                         float tmp;
+                         std::cin >> tmp;
+                         LogKit::LogFormatted(LogKit::HIGH, "Memory used %4.0f MB, used outside grid %4.0f MB\n", tmp, tmp-FFTMemUse_/(1024.0f*1024.0f));
+                       }
+
 protected:
   //int                setPaddingSize(int n, float p); 
   int                  getFillNumber(int i, int n, int np );
@@ -190,5 +197,9 @@ protected:
   static int           nGrids_;            // The actually number of grids allocated (varies as crava runs).
   static bool          terminateOnMaxGrid_; // If true, terminate when we try to allocate more than maxAllowedGrids.
   bool                 add_;                // Tells whether we should change nGrids_ or not
+
+  static float         maxFFTMemUse_;
+  static float         FFTMemUse_;
+
 };
 #endif

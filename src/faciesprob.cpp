@@ -438,9 +438,6 @@ void FaciesProb::makeFaciesProb(int                            nfac,
   calculateFaciesProb(postAlpha, postBeta, postRho, density, volume,
                       p_undef, priorFacies, priorFaciesCubes, noiseScale);
   
-  //if(volume!=NULL)
-  //  delete volume;
-  
 }
 
 float FaciesProb::findDensity(float alpha, float beta, float rho, 
@@ -833,10 +830,10 @@ void FaciesProb::calculateFaciesProb(FFTGrid                      * alphagrid,
       faciesProb_[i] = new FFTGrid(nx, ny, nz, nx, ny, nz);
     }
     faciesProb_[i]->setAccessMode(FFTGrid::WRITE);
-    faciesProb_[i]->createRealGrid();
+    faciesProb_[i]->createRealGrid(false);
   }
   faciesProbUndef_->setAccessMode(FFTGrid::WRITE);
-  faciesProbUndef_->createRealGrid();
+  faciesProbUndef_->createRealGrid(false);
   if(priorFaciesCubes!=NULL)
     for(i=0;i<nFacies_;i++)
       priorFaciesCubes[i]->setAccessMode(FFTGrid::READ);
