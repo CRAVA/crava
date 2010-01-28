@@ -47,7 +47,6 @@ Wavelet3D::Wavelet3D(const std::string            & filterFile,
 {
   LogKit::LogFormatted(LogKit::MEDIUM,"  Estimating 3D wavelet pulse from seismic data and (nonfiltered) blocked wells\n");
   readtype_     = ESTIMATE;
-
   theta_ = theta;
   norm_ = RMISSING;
 
@@ -89,13 +88,15 @@ Wavelet3D::Wavelet3D(const std::string            & filterFile,
       const int * jPos = bl->getJpos();
       
       unsigned int nBlocks = bl->getNumberOfBlocks();
-      float * zGradX = new float[nBlocks];
-      float * zGradY = new float[nBlocks];
+      float * zGradX  = new float[nBlocks];
+      float * zGradY  = new float[nBlocks];
+      float * t0GradX = new float[nBlocks];
+      float * t0GradY = new float[nBlocks];
       for (unsigned int b = 0; b<nBlocks; b++) {
-        double t0GradX = refTimeGradX(iPos[b], jPos[b]);
-        zGradX[b]     = 0.5f * v0 * 0.001f * static_cast<float> (tGradX[b] - t0GradX); //0.001f is due to ms/s conversion
-        double t0GradY = refTimeGradY(iPos[b], jPos[b]);
-        zGradY[b]     = 0.5f * v0 * 0.001f * static_cast<float> (tGradY[b] - t0GradY);
+        t0GradX[b]    = static_cast<float> (refTimeGradX(iPos[b], jPos[b]));
+        zGradX[b]     = 0.5f * v0 * 0.001f * static_cast<float> (tGradX[b] - t0GradX[b]); //0.001f is due to ms/s conversion
+        t0GradY[b]    = static_cast<float> (refTimeGradY(iPos[b], jPos[b]));
+        zGradY[b]     = 0.5f * v0 * 0.001f * static_cast<float> (tGradY[b] - t0GradY[b]);
       }
 
       float * az = new float[nz_]; 
@@ -104,6 +105,12 @@ Wavelet3D::Wavelet3D(const std::string            & filterFile,
       float * bz = new float[nz_];
       bl->getVerticalTrend(zGradY, bz);
       delete [] zGradY;
+      float * at0 = new float[nz_]; 
+      bl->getVerticalTrend(t0GradX, at0);
+      delete [] t0GradX;
+      float * bt0 = new float[nz_];
+      bl->getVerticalTrend(t0GradY, bt0);
+      delete [] t0GradY;
 
       bool  *hasWellData = new bool[nz_];
       findLayersWithData(estimInterval, 
@@ -132,11 +139,11 @@ Wavelet3D::Wavelet3D(const std::string            & filterFile,
           double phi    = findPhi(az[i], bz[i]);
           double r      = sqrt(az[i]*az[i] + bz[i]*bz[i] + 1);
           double psi    = acos(1.0 / r);
-          float alpha1  = static_cast<float> (filter_.getAlpha1(phi, psi));
+          float alpha1  = filter_.getAlpha1(phi, psi);
           float f       = static_cast<float> (1.0 * r / stretch);
           cppAdj[i-start]     = cpp[i] * alpha1 / f;
           if (hasHalpha)
-            Halpha[i-start]   = static_cast<float> (filter_.getHalpha(phi, psi));
+            Halpha[i-start]   = filter_.getHalpha(phi, psi);
         }
         delete [] cpp;
 
@@ -190,7 +197,10 @@ Wavelet3D::Wavelet3D(const std::string            & filterFile,
                 }
                 for (int tau = start; tau < start+length; tau++) {
                   //Hva gjør vi hvis zData[t] er RMISSING. Kan det skje?
-                  float u = static_cast<float> (zPosTrace[t] - zPosWell[tau] - az[tau]*(xTr*dx_) - bz[tau]*(yTr*dy_));
+                  float at = at0[tau] + 2.0f*az[tau]/v0;
+                  float bt = bt0[tau] + 2.0f*bz[tau]/v0;
+                  float u = static_cast<float> (zPosTrace[t] - zPosWell[tau] - at*(xTr*dx_) - bt*(yTr*dy_));
+//                  float u = static_cast<float> (zPosTrace[t] - zPosWell[tau] - az[tau]*(xTr*dx_) - bz[tau]*(yTr*dy_));
                   if (hasHalpha) {
                     for (int i=0; i<nWl; i++) {
                       float v = u - static_cast<float>((i - nhalfWl)*dz_);

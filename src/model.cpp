@@ -4249,7 +4249,7 @@ Model::findTimeGradientSurface(const std::string   & refTimeFile,
   double dy = simbox->getdy();
 
   if (!NRLib::IsNumber(refTimeFile)) {
-    NRLib::RegularSurfaceRotated<double> t0surface = NRLib::ReadSgriSurf(refTimeFile);
+    NRLib::RegularSurfaceRotated<float> t0surface = NRLib::ReadSgriSurf(refTimeFile);
 
     simbox->getXYCoord(0,0,x,y);
     if (t0surface.IsInsideSurface(x,y)) {
@@ -4276,9 +4276,9 @@ Model::findTimeGradientSurface(const std::string   & refTimeFile,
       for (unsigned int i = nx-1; i >= 0; i++) {
         for (unsigned int j = ny-1; j >= 0; j++) {
           simbox->getXYCoord(i,j,x,y);
-          double z_high = t0surface.GetZInside(x,y);
+          float z_high = t0surface.GetZInside(x,y);
           simbox->getXYCoord(i,j-1,x,y); //XYCoord is ok even if j = -1, but point is outside simbox
-          double z_low = t0surface.GetZInside(x,y);
+          float z_low = t0surface.GetZInside(x,y);
           if (!t0surface.IsMissing(z_low))
             refTimeGradY_(i,j) = (z_high - z_low) / dy;
           else
