@@ -17,9 +17,7 @@ public:
                                    std::string        & errText);
 
   const float            getAlpha1(double phi, double psi) const {return alpha1_.GetZ(phi,psi)  ;}
-//  const float            getAlpha1(double, double psi) const {if (fabs(psi) < 0.785) return (1.0); else return (0.0);}
   const float            getHalpha(double phi, double psi) const {return Halpha_.GetZ(phi,psi)  ;}
-//  const float            getHalpha(double, double) const {return (0.0) ;}
   const float            getBeta1(double phi, double psi)  const {return beta1_.GetZ(phi,psi)   ;}
   const float            getHbeta(double phi, double psi)  const {return Hbeta_.GetZ(phi,psi)   ;}
   const bool              hasHalpha() const {return hasHalpha_;}  

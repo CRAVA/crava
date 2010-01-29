@@ -21,8 +21,8 @@ public:
   //Constructors and destructor
   Wavelet3D(const std::string            & filterFile,
             const std::vector<Surface *> & estimInterval,
-            const Grid2D                 & refTimeGradX,
-            const Grid2D                 & refTimeGradY,
+            const NRLib::Grid2D<float>   & refTimeGradX,
+            const NRLib::Grid2D<float>   & refTimeGradY,
             FFTGrid                      * seisCube,
             ModelSettings                * modelSettings,
             WellData                    ** wells,

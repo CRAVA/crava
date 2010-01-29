@@ -45,8 +45,8 @@ public:
   RandomGen                   * getRandomGen()             const { return randomGen_              ;} 
   GridMapping                 * getTimeDepthMapping()      const { return timeDepthMapping_       ;}
   GridMapping                 * getTimeCutMapping()        const { return timeCutMapping_         ;}
-  const Grid2D                & getRefTimeGradX()          const { return refTimeGradX_           ;}
-  const Grid2D                & getRefTimeGradY()          const { return refTimeGradY_           ;}
+  const NRLib::Grid2D<float>  & getRefTimeGradX()          const { return refTimeGradX_           ;}
+  const NRLib::Grid2D<float>  & getRefTimeGradY()          const { return refTimeGradY_           ;}
   Grid2D                      * getLocalNoiseScale(int i)  const { return localNoiseScale_[i]     ;}
   const std::vector<Grid2D *> & getLocalNoiseScales()      const { return localNoiseScale_        ;}
 
@@ -343,8 +343,8 @@ private:
   double                    gradY_;                 ///< Y-gradient of correlation rotation.
                                                     ///< These are only used with correlation surfaces.
 
-  Grid2D                    refTimeGradX_;          ///< Time gradient in x-direction for reference time surface (t0)
-  Grid2D                    refTimeGradY_;          ///< Time gradient in x-direction for reference time surface (t0)
+  NRLib::Grid2D<float>      refTimeGradX_;          ///< Time gradient in x-direction for reference time surface (t0)
+  NRLib::Grid2D<float>      refTimeGradY_;          ///< Time gradient in x-direction for reference time surface (t0)
 
   GridMapping             * timeDepthMapping_;      ///< Contains both simbox and mapping used for depth conversion
   GridMapping             * timeCutMapping_;        ///< Simbox and mapping for timeCut

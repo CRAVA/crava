@@ -41,7 +41,6 @@ WellData::WellData(const std::string              & wellFileName,
     beta_(NULL),
     rho_(NULL),
     facies_(NULL),
-    faciesNames_(NULL),
     alpha_background_resolution_(NULL),
     beta_background_resolution_(NULL),
     rho_background_resolution_(NULL),
@@ -54,7 +53,8 @@ WellData::WellData(const std::string              & wellFileName,
     useForFaciesProbabilities_(indicatorFacies),
     useForWaveletEstimation_(indicatorWavelet),  
     useForBackgroundTrend_(indicatorBGTrend),
-    realVsLog_(indicatorRealVs)
+    realVsLog_(indicatorRealVs),
+    faciesNames_(NULL)
 {
   errTxt_="";
   if(wellFileName.find(".nwh",0) != std::string::npos)
@@ -407,12 +407,12 @@ WellData::readRMSWell(const std::string              & wellFileName,
 
   if(wrongMissingValues)
   {
-    LogKit::LogFormatted(LogKit::LOW,"\nWARNING: There are incorrect missing values \'%f\' in well.\n",OPENWORKS_MISSING,wellfilename_);
+    LogKit::LogFormatted(LogKit::LOW,"\nWARNING: There are incorrect missing values \'%f\' in well.\n",OPENWORKS_MISSING,wellfilename_.c_str());
     LogKit::LogFormatted(LogKit::LOW,"           CRAVA can handle this, but it is not a legal RMS well file format.\n");
   }
   if (k != nd_-1) {
     LogKit::LogFormatted(LogKit::LOW,"ERROR: Well %s is corrupt. nd=%d log entries were expected, but only k=%d were read.\n",
-                     wellfilename_,nd_,k);
+                     wellfilename_.c_str(),nd_,k);
     exit(1);
   }
   delete [] pos;

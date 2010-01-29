@@ -1772,12 +1772,12 @@ void BlockedLogs::peakMatch(std::vector<double> &zPeak, std::vector<double> &pea
   unsigned int lim = 0;
   for(i = 0; i < zPeakW.size(); i++){
     for(j = lim; j < zPeak.size(); j++){
-      diffz = abs(zPeakW[i] - zPeak[j]); 
+      diffz = fabs(zPeakW[i] - zPeak[j]); 
       if(diffz < maxdiffz){
         //Check if the peaks point in the same direction
         if((bW[i] < 0 && b[j] < 0)||(bW[i] >= 0 && b[j] >= 0)){
           // Check for difference in peak size
-          if(abs(peakW[i] - peak[j])/(abs(peakW[i]) + abs(peak[j])) < diffp){
+          if((fabs(peakW[i] - peak[j]))/(fabs(peakW[i]) + fabs(peak[j])) < diffp){
             pW.push_back(zPeakW[i]);
             p.push_back(zPeak[j]);
             lim = j + 1;

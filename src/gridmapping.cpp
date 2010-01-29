@@ -143,7 +143,7 @@ GridMapping::setMappingFromVelocity(FFTGrid * velocity, const Simbox * timeSimbo
   setDepthSimbox(timeSimbox, timeSimbox->getnz(), format, failed, errText);
   makeTimeDepthMapping(velocity, timeSimbox);
   if (failed) {
-    LogKit::LogFormatted(LogKit::ERROR,"\n%s\n",errText);
+    LogKit::LogFormatted(LogKit::ERROR,"\n%s\n",errText.c_str());
     exit(1);
   }
 }

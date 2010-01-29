@@ -340,7 +340,7 @@ Model::Model(char * fileName)
 
     if (failedLoadingModel) {
       Utils::writeHeader("Error(s) while loading data");
-      LogKit::LogFormatted(LogKit::ERROR,"\n%s", errText);
+      LogKit::LogFormatted(LogKit::ERROR,"\n%s", errText.c_str());
       LogKit::LogFormatted(LogKit::ERROR,"\nAborting\n");
     }
 
@@ -4245,8 +4245,8 @@ Model::findTimeGradientSurface(const std::string   & refTimeFile,
   bool inside = true;
   unsigned int nx = static_cast<unsigned int> (simbox->getnx());
   unsigned int ny = static_cast<unsigned int> (simbox->getny());
-  double dx = simbox->getdx();
-  double dy = simbox->getdy();
+  float dx = static_cast<float> (simbox->getdx());
+  float dy = static_cast<float> (simbox->getdy());
 
   if (!NRLib::IsNumber(refTimeFile)) {
     NRLib::RegularSurfaceRotated<float> t0surface = NRLib::ReadSgriSurf(refTimeFile);

@@ -31,8 +31,8 @@
 
 Wavelet3D::Wavelet3D(const std::string            & filterFile,
                      const std::vector<Surface *> & estimInterval,
-                     const Grid2D                 & refTimeGradX,
-                     const Grid2D                 & refTimeGradY,
+                     const NRLib::Grid2D<float>   & refTimeGradX,
+                     const NRLib::Grid2D<float>   & refTimeGradY,
                      FFTGrid                      * seisCube,
                      ModelSettings                * modelSettings,
                      WellData                    ** wells,
@@ -93,10 +93,10 @@ Wavelet3D::Wavelet3D(const std::string            & filterFile,
       float * t0GradX = new float[nBlocks];
       float * t0GradY = new float[nBlocks];
       for (unsigned int b = 0; b<nBlocks; b++) {
-        t0GradX[b]    = static_cast<float> (refTimeGradX(iPos[b], jPos[b]));
-        zGradX[b]     = 0.5f * v0 * 0.001f * static_cast<float> (tGradX[b] - t0GradX[b]); //0.001f is due to ms/s conversion
-        t0GradY[b]    = static_cast<float> (refTimeGradY(iPos[b], jPos[b]));
-        zGradY[b]     = 0.5f * v0 * 0.001f * static_cast<float> (tGradY[b] - t0GradY[b]);
+        t0GradX[b]    = refTimeGradX(iPos[b], jPos[b]);
+        zGradX[b]     = 0.5f * v0 * 0.001f * (static_cast<float> (tGradX[b]) - t0GradX[b]); //0.001f is due to ms/s conversion
+        t0GradY[b]    = refTimeGradY(iPos[b], jPos[b]);
+        zGradY[b]     = 0.5f * v0 * 0.001f * (static_cast<float> (tGradY[b]) - t0GradY[b]);
       }
 
       float * az = new float[nz_]; 
