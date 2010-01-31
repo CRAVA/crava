@@ -854,15 +854,12 @@ FFTGrid::getRealValue(int i, int j, int k, bool extSimbox)
 
   return( value );
 }
-float *
-FFTGrid::getRealTrace(int i, int j)
+
+void
+FFTGrid::getRealTrace(float * value, int i, int j)
 {
-  float *value = new float[nz_];
-  for(int k=0;k<nz_;k++)
+  for(int k = 0 ; k < nz_ ; k++)
     value[k] = FFTGrid::getRealValue(i,j,k);
-
-  return value;
-
 }
 
 std::vector<float>   

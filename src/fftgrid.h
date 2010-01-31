@@ -129,7 +129,7 @@ public:
 
   void                 checkNaN(); //NBNB Ragnar: For debug purpose. Negative number = OK.
   float                getDistToBoundary(int i, int n , int np); 
-  virtual float       *getRealTrace(int i, int j);
+  virtual void         getRealTrace(float * value, int i, int j);
   virtual int          setRealTrace(int i, int j, float *value);
   std::vector<float>   getRealTrace2(int i, int j);
 

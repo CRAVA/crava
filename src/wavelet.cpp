@@ -259,14 +259,14 @@ Wavelet::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
   shiftGrid_=NULL;  
   gainGrid_=NULL; 
   
-  Vario  * localWaveletVario = modelSettings->getLocalWaveletVario();
-  int      nWells            = modelSettings->getNumberOfWells();
+  Vario  * localWaveletVario     = modelSettings->getLocalWaveletVario();
+  int      nWells                = modelSettings->getNumberOfWells();
  // bool     useLocalWavelet   = modelSettings->getUseLocalWavelet();
  // int      outputFormat      = modelSettings->getOutputFormatFlag();
  // int      otherOutput       = modelSettings->getOtherOutputFlag();
-  bool     doEstimateLocalShift = modelSettings->getEstimateLocalShift(number);
-  bool     doEstimateLocalScale = modelSettings->getEstimateLocalScale(number);
-  bool     doEstimateLocalNoise = modelSettings->getEstimateLocalNoise(number);
+  bool     doEstimateLocalShift  = modelSettings->getEstimateLocalShift(number);
+  bool     doEstimateLocalScale  = modelSettings->getEstimateLocalScale(number);
+  bool     doEstimateLocalNoise  = modelSettings->getEstimateLocalNoise(number);
   bool     doEstimateGlobalScale = modelSettings->getEstimateGlobalWaveletScale(number);
   bool     doEstimateSNRatio = modelSettings->getEstimateSNRatio(number);
 // bool     estimationMode = modelSettings->getEstimationMode();
@@ -1150,10 +1150,10 @@ Wavelet::estimateLocalNoise(const CovGrid2D  & cov,
   }
 }
 
-float Wavelet::findGlobalScaleForGivenWavelet(ModelSettings *modelSettings, 
-                                                Simbox *simbox,
-                                                FFTGrid        * seisCube, 
-                                                WellData ** wells)
+float Wavelet::findGlobalScaleForGivenWavelet(ModelSettings * modelSettings, 
+                                              Simbox        * simbox,
+                                              FFTGrid       * seisCube, 
+                                              WellData     ** wells)
 {
   int i,j,k;
   int nWells        = modelSettings->getNumberOfWells();

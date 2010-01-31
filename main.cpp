@@ -48,20 +48,21 @@ int main(int argc, char** argv)
   if(model->getFailed())
     return(1);
   
-  Crava * crava = NULL;
+  ModelSettings * modelSettings = model->getModelSettings();
+  Crava         * crava         = NULL;
 
-  if(model->getModelSettings()->getForwardModeling() == false)
+  if(!modelSettings->getForwardModeling())
   {
-    if (model->getModelSettings()->getDoInversion())
+    if (modelSettings->getDoInversion())
     {
       time_t timestart, timeend;
       time(&timestart);
 
-      int nwells = model->getModelSettings()->getNumberOfWells();
+      int nwells = modelSettings->getNumberOfWells();
       SpatialWellFilter *spatwellfilter = new SpatialWellFilter(nwells);
       crava = new Crava(model, spatwellfilter);
       
-      char * warningText = new char[12*MAX_STRING*model->getModelSettings()->getNumberOfAngles()];
+      char * warningText = new char[12*MAX_STRING*modelSettings->getNumberOfAngles()];
       
       if(crava->getWarning( warningText ) != 0)
        {
@@ -77,49 +78,50 @@ int main(int argc, char** argv)
       time(&timeend);
       LogKit::LogFormatted(LogKit::DEBUGLOW,"\nTime elapsed :  %d\n",timeend-timestart);  
 
-      if(model->getModelSettings()->getNumberOfSimulations() > 0)
+      if(modelSettings->getNumberOfSimulations() > 0)
       {
         crava->simulate(model->getRandomGen());
       }
 
       Corr * corr = model->getCorrelations();
       corr->invFFT();
-      corr->getPostVariances();
+      if (!modelSettings->getUseLocalNoise()) // Already done in crava.cpp if local noise
+        corr->createPostVariances();
       corr->printPostVariances();
-      if((model->getModelSettings()->getGridOutputFlag() & IO::CORRELATION) > 0)
+      if((modelSettings->getGridOutputFlag() & IO::CORRELATION) > 0)
       {
         corr->writeFilePostVariances();
         corr->writeFilePostCovGrids(model->getTimeSimbox());
       }       
 
       int activeAngles = 0; //How many dimensions for local noise interpolation? Turn off for now.
-      if(model->getModelSettings()->getUseLocalNoise()==true)
-        activeAngles = model->getModelSettings()->getNumberOfAngles();
+      if(modelSettings->getUseLocalNoise()==true)
+        activeAngles = modelSettings->getNumberOfAngles();
       spatwellfilter->doFiltering(corr,model->getWells(), 
-                                  model->getModelSettings()->getNumberOfWells(), 
-                                  model->getModelSettings()->getNoVsFaciesProb(),
+                                  modelSettings->getNumberOfWells(), 
+                                  modelSettings->getNoVsFaciesProb(),
                                   activeAngles, crava, model->getLocalNoiseScales());
       
       // FilterWellLogs * filteredlogs = NULL;
       //crava->filterLogs(model->getTimeSimboxConstThick(),filteredlogs);
 
-      if (model->getModelSettings()->getEstimateFaciesProb())
+      if (modelSettings->getEstimateFaciesProb())
         crava->computeFaciesProb(spatwellfilter);
       delete spatwellfilter;
 
-      if(model->getModelSettings()->getKrigingParameter() > 0)
+      if(modelSettings->getKrigingParameter() > 0)
         crava->doPredictionKriging();
 
-      if(model->getModelSettings()->getGenerateSeismicAfterInversion() == true)
+      if(modelSettings->getGenerateSeismicAfterInv())
         crava->computeSyntSeismic(crava->getPostAlpha(),crava->getPostBeta(),crava->getPostRho());
 
       //
       // Temporary placement.  crava.cpp needs a proper restructuring.
       //
-      if((model->getModelSettings()->getWellOutputFlag() & IO::BLOCKED_WELLS) > 0) {
-        model->writeBlockedWells(model->getWells(),model->getModelSettings());
+      if((modelSettings->getWellOutputFlag() & IO::BLOCKED_WELLS) > 0) {
+        model->writeBlockedWells(model->getWells(),modelSettings);
       }
-      if((model->getModelSettings()->getWellOutputFlag() & IO::BLOCKED_LOGS) > 0) {
+      if((modelSettings->getWellOutputFlag() & IO::BLOCKED_LOGS) > 0) {
         LogKit::LogFormatted(LogKit::LOW,"\nWARNING: Writing of BLOCKED_LOGS is not implemented yet.\n");
       }
 

@@ -65,6 +65,8 @@ public:
 
   void                          writeBlockedWells(WellData ** wells, ModelSettings * modelSettings);
 
+  enum                          areaSpecification{AREA_FROM_GRID_DATA = 0, AREA_FROM_UTM = 1, AREA_FROM_SURFACE = 2};
+
 private:
   void             makeTimeSimboxes(Simbox        *& timeSimbox,
                                     Simbox        *& timeCutSimbox,
@@ -73,7 +75,7 @@ private:
                                     Surface       *& correlationDirection,
                                     ModelSettings *& modelSettings, 
                                     InputFiles     * inputFiles,
-                                    int              areaFromModelFile,
+                                    int              areaSpecification,
                                     std::string    & errText,
                                     bool           & failed);
   void             setupExtendedTimeSimbox(Simbox  * timeSimbox, 
@@ -204,7 +206,7 @@ private:
                                      int                              outputDomain,
                                      int                              outputFlag,
                                      std::string                    & errText,
-                                     int                            & error);
+                                     bool                           & failed);
   void             estimateXYPaddingSizes(Simbox         * timeSimbox,
                                           ModelSettings *& modelSettings);
   void             estimateZPaddingSize(Simbox         * timeSimbox,
@@ -270,7 +272,7 @@ private:
                                     int            & error);
   void             printSettings(ModelSettings * modelSettings,
                                  InputFiles    * inputFiles,
-                                 int            areaFromModelFile);
+                                 int            areaSpecification);
   int              getWaveletFileFormat(const std::string & fileName, 
                                         std::string & errText);
   //Compute correlation gradient in terms of i,j and k in grid.
@@ -308,12 +310,11 @@ private:
                                            Surface      *& surface);
   bool             findTimeGradientSurface(const std::string     & refTimeFile,
                                            Simbox                * simbox);
-  void             getGeometry(const std::string         seismicFile,
-                               const TraceHeaderFormat * thf,
-                               SegyGeometry           *& geometry,
-                               std::string             & errText,
-                               bool                    & failed,
-                               const ModelSettings      * modelSettings);
+  void             getGeometryFromGridOnFile(const std::string         seismicFile,
+                                             const TraceHeaderFormat * thf,
+                                             const std::vector<int>  & ilxl,
+                                             SegyGeometry           *& geometry,
+                                             std::string             & errText);
   SegyGeometry   * geometryFromCravaFile(const std::string & fileName); 
   SegyGeometry   * geometryFromStormFile(const std::string & fileName, std::string & errText, bool scale = false); 
  

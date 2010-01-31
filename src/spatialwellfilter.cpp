@@ -244,6 +244,7 @@ void SpatialWellFilter::doFiltering(Corr *corr, WellData **wells, int nWells, bo
       delete [] imat[i];
     }
     delete [] Aw;
+    delete [] sigmapriKeep;
     delete [] sigmapri;
     delete [] sigmapost;
     delete [] imat;  
@@ -316,6 +317,7 @@ SpatialWellFilter::updateSigmaE(double ** filter, double ** priCov, double ** po
     double **G = new double*[nAng];
     for(int i=0;i<nAng;i++)
       G[i] = new double[3];
+
     cravaResult->computeG(G);
 
     double ** H    = new double * [3];
@@ -350,6 +352,7 @@ SpatialWellFilter::updateSigmaE(double ** filter, double ** priCov, double ** po
       }
 
       cravaResult->newPosteriorCovPointwise(H, G, scale, junk);
+
       for(int i=0;i<n;i++) {
         for(int j=0;j<n;j++)
           if(i==j) {
@@ -385,6 +388,18 @@ SpatialWellFilter::updateSigmaE(double ** filter, double ** priCov, double ** po
         sigmae_[conf][2][2] += sigmaeW[i + 2*n][i + 2*n];
       }
     }
+
+    for(int i=0;i<3;i++) {
+      delete [] junk[i];
+      delete [] H[i];
+    }
+    delete [] junk;
+    delete [] H;
+
+    for(int i=0;i<nAng;i++)
+      delete [] G[i];
+    delete [] G;
+
     for(int i=0;i<3*n;i++) {
       delete [] fullH[i];
       delete [] HA[i];
@@ -565,6 +580,7 @@ SpatialWellFilter::updateSigmaEVpRho(double ** filter,
     double **G = new double*[nAng];
     for(int i=0;i<nAng;i++)
       G[i] = new double[3];
+
     cravaResult->computeG(G);
 
     double ** H    = new double * [3];
@@ -599,6 +615,7 @@ SpatialWellFilter::updateSigmaEVpRho(double ** filter,
       }
 
       cravaResult->newPosteriorCovPointwise(H, G, scale, junk);
+
       for(int i=0;i<n;i++) {
         for(int j=0;j<n;j++)
           for(int k=0;k<2;k++) {
@@ -628,6 +645,18 @@ SpatialWellFilter::updateSigmaEVpRho(double ** filter,
         sigmaeVpRho_[0][1][1] += sigma[i +   n][i +  n];
       }
     }
+
+    for(int i=0;i<nAng;i++)
+      delete [] G[i];
+    delete [] G;
+
+    for(int i=0;i<3;i++) {
+      delete junk[i];
+      delete H[i];
+    }
+    delete [] junk;
+    delete [] H;
+
     for(int i=0;i<2*n;i++) {
       delete [] fullH[i];
       delete [] HA[i];

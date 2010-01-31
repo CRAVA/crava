@@ -50,13 +50,14 @@ public:
   void            getMinMaxFnr(int &min, int &max) const;
   void            getMeanVsVp(float & muA, float & muB);
 
-  BlockedLogs   * getBlockedLogsOrigThick(void)      const { return blockedLogsOrigThick_ ;}
+  BlockedLogs   * getBlockedLogsOrigThick(void)      const { return blockedLogsOrigThick_  ;}
   BlockedLogs   * getBlockedLogsConstThick(void)     const { return blockedLogsConstThick_ ;} 
   BlockedLogs   * getBlockedLogsExtendedBG(void)     const { return blockedLogsExtendedBG_ ;} 
 
-  void            setBlockedLogsOrigThick(BlockedLogs * bl)  { blockedLogsOrigThick_  = bl ;}
-  void            setBlockedLogsConstThick(BlockedLogs * bl) { blockedLogsConstThick_ = bl ;}
-  void            setBlockedLogsExtendedBG(BlockedLogs * bl) { blockedLogsExtendedBG_ = bl ;}
+  void            deleteBlockedLogsOrigThick(void)           { delete blockedLogsOrigThick_ ;}
+  void            setBlockedLogsOrigThick(BlockedLogs * bl)  { blockedLogsOrigThick_  = bl  ;}
+  void            setBlockedLogsConstThick(BlockedLogs * bl) { blockedLogsConstThick_ = bl  ;}
+  void            setBlockedLogsExtendedBG(BlockedLogs * bl) { blockedLogsExtendedBG_ = bl  ;}
 
   int             getNd() const;
   int             checkError(std::string & errText);

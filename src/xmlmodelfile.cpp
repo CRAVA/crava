@@ -2044,7 +2044,7 @@ XmlModelFile::parseGridSeismicData(TiXmlNode * node, int & paramFlag, std::strin
   if(parseBool(root, "synthetic", value, errTxt) == true && value == true)
   {
     paramFlag += IO::SYNTHETIC_SEISMIC_DATA;
-    modelSettings_->setGenerateSeismicAfterInversion(true);
+    modelSettings_->setGenerateSeismicAfterInv(true);
   }
   modelSettings_->setDefaultGridOutputInd(false);
   checkForJunk(root, errTxt, legalCommands);

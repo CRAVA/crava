@@ -294,7 +294,7 @@ Wavelet1D::Wavelet1D(Simbox                       * simbox,
     float dzOut = 1.0; 
     writeWaveletToFile(fileName, dzOut);
   }
-  delete [] rAmp_;
+  fftw_free(rAmp_);
   rAmp_ = trueAmp;
   cAmp_ = reinterpret_cast<fftw_complex *>(rAmp_);
 
@@ -1247,6 +1247,9 @@ void Wavelet1D::fft1DInPlace()
     rfftwnd_plan plan;  
     flag    = FFTW_ESTIMATE | FFTW_IN_PLACE;
     plan    = rfftwnd_create_plan(1, &nzp_ ,FFTW_REAL_TO_COMPLEX,flag);
+    //
+    // NBNB-PAL: The call rfftwnd_on_real_to_complex is causing UMRs in Purify.
+    //
     rfftwnd_one_real_to_complex(plan,rAmp_,cAmp_);
     fftwnd_destroy_plan(plan);
     isReal_ = false;
@@ -1306,16 +1309,17 @@ Wavelet1D::writeWaveletToFile(const std::string & fileName, float approxDzIn)
     remember[nzp_+1-i] = rAmp_[nzp_+1-i];
     rAmp_[nzp_+1-i]    = 0;
   }
+  float          T            = nzp_*dz_;
+  int            nzpNew       = int(ceil(T/approxDz - 0.5));  
+  float          dznew        = T/float(nzpNew);
+  int            cnzpNew      = (nzpNew/2)+1;
   
-  float T       = nzp_*dz_;
-  int   nzpNew  = int(ceil(T/approxDz - 0.5));  
-  float dznew   = T/float(nzpNew);
-  int   cnzpNew = (nzpNew/2)+1;
-  
-  fftw_real*     waveletNew_r =  new fftw_real[2*cnzpNew];
-  fftw_complex*  waveletNew_c =  reinterpret_cast<fftw_complex*>(waveletNew_r);
+  fftw_real    * waveletNew_r =  new fftw_real[2*cnzpNew];
+  fftw_complex * waveletNew_c =  reinterpret_cast<fftw_complex*>(waveletNew_r);
+
   fft1DInPlace();
-  double multiplyer = static_cast<double>(nzpNew)/static_cast<double>(nzp_);
+
+  double         multiplyer = static_cast<double>(nzpNew)/static_cast<double>(nzp_);
   
   for(i=0;i<cnzpNew;i++)
   {

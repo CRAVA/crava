@@ -60,7 +60,7 @@ public:
   void         readCravaFile(const std::string & fileName, std::string & error, bool nopadding = false);
 
   bool         isFile() {return(1);}
-  float        *getRealTrace(int i, int j);
+  void         getRealTrace(float * value, int i, int j);
   int          setRealTrace(int i, int j, float *value);
   void         fillInFromRealFFTGrid(FFTGrid& fftGrid);
 private:

@@ -1583,24 +1583,25 @@ void BlockedLogs::findOptimalWellLocation(FFTGrid                   ** seisCube,
   kMove = shift;  
 
   for( j=0; j<nAngles; j++ ){
+    delete [] ccor_seis_cpp_Max_r[j];
+    delete [] ccor_seis_cpp_r[j];
+    delete [] cor_cpp_r[j];
     delete [] seis_r[j];
     delete [] cpp_r[j];
-    delete [] cor_cpp_r[j];
-    delete [] ccor_seis_cpp_r[j];
   }
   delete [] alphaVert;
   delete [] betaVert;
   delete [] rhoVert;
   delete [] hasData;
-  delete [] ccor_seis_cpp_Max_r;
   delete [] seisLog;
   delete [] seisData;
+
+  delete [] ccor_seis_cpp_Max_r;
+  delete [] ccor_seis_cpp_r;
+  delete [] cor_cpp_r;
+  delete [] seis_r;
+  delete [] cpp_r;
 }
-
-
-
-
-
 
 void BlockedLogs::findSeismicGradient(FFTGrid                  * seisCube,
                                       Simbox                   * timeSimbox,

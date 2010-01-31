@@ -61,7 +61,7 @@ FaciesProb::~FaciesProb()
 }
 
 std::vector<FFTGrid *>
-FaciesProb::makeFaciesHistAndSetPriorProb(const std::vector<float> & alpha,
+FaciesProb::makeFaciesHistAndSetPriorProb(const std::vector<float> & alpha, // 
                                           const std::vector<float> & beta,
                                           const std::vector<float> & rho,
                                           const std::vector<int>   & faciesLog,
@@ -418,8 +418,9 @@ void FaciesProb::makeFaciesProb(int                            nfac,
                        alphaFiltered, betaFiltered, rhoFiltered, faciesLog); //Generate these logs.
 
   int densdim = sigmaEOrig.size();
-  std::vector<std::vector<FFTGrid *> > density(sigmaEOrig.size());
-  std::vector<Simbox*> volume(densdim);
+  std::vector<std::vector<FFTGrid *> > density(densdim);
+  std::vector<Simbox*>                 volume(densdim);
+
   for(int i = 0;i<densdim;i++)
     volume[i] = NULL;
   
@@ -428,20 +429,36 @@ void FaciesProb::makeFaciesProb(int                            nfac,
   double **G = new double*[nAng];
   for(int i=0;i<nAng;i++)
     G[i] = new double[3];
+
   cravaResult->computeG(G);
-  for(int i=0;i<densdim;i++)
+
+  for(int i=0;i<densdim;i++)    // 
     makeFaciesDens(nfac, sigmaEOrig, noVs, alphaFiltered, betaFiltered, rhoFiltered, 
                    faciesLog, density[i], &volume[i], i, G, cravaResult, noiseScale);
 
   if(priorFaciesCubes != NULL)
     normalizeCubes(priorFaciesCubes);
+
   calculateFaciesProb(postAlpha, postBeta, postRho, density, volume,
                       p_undef, priorFacies, priorFaciesCubes, noiseScale);
   
+  for(int i = 0 ; i < densdim ; i++) {
+    for(int j = 0 ; j < static_cast<int>(density[i].size()) ; j++)
+      delete density[i][j];
+    delete volume[i];
+  }
+
+  for(int i=0 ; i<nAng ; i++)
+    delete [] G[i];
+  delete [] G;
 }
 
 float FaciesProb::findDensity(float alpha, float beta, float rho, 
-                              std::vector<std::vector<FFTGrid*> > density, int facies, const std::vector<Simbox *> volume, std::vector<float> t, int nAng)
+                              std::vector<std::vector<FFTGrid*> > density, 
+                              int facies, 
+                              const std::vector<Simbox *> volume, 
+                              std::vector<float> t, 
+                              int nAng)
 {
   double jFull, kFull, lFull;
 

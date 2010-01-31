@@ -43,7 +43,7 @@ public:
   FFTGrid *& getPostCrCovAlphaRho(void)              { return postCrCovAlphaRho_       ;}
   FFTGrid *& getPostCrCovBetaRho(void)               { return postCrCovBetaRho_        ;}
 
-  void       getPostVariances(void);
+  void       createPostVariances(void);
 
   void       setPriorVar0(float ** priorVar0);
   void       setPriorCorrTFiltered(float * corrT, int nz, int nzp);
@@ -65,7 +65,7 @@ private:
   FFTGrid  * createFFTGrid(int nx, int ny, int nz, int nxp, int nyp, int nzp, bool fileGrid);
   void       writeFilePostCorrT(float * postCov, int nz, const std::string & subDir, const std::string & fileName) const;
   float      getOrigin(FFTGrid * grid) const;
-  float    * getPostCov00(FFTGrid * postCov);
+  float    * createPostCov00(FFTGrid * postCov);
 
   float   ** pointVar0_;             // Point variance calculated from using well log resolution
 

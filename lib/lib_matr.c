@@ -1308,6 +1308,12 @@ void lib_matr_sort3x3(double *eigenval, double **eigenvec)
     for(j=0;j<3;j++)
       eigenvec[i][j] = help2[i][j];
   }
+
+  for(i=0;i<3;i++)
+    free (help2[i]);
+  free (help2);
+  free (help1);
+  free (index);
 }
 
 void lib_matrDump(const char * fName, double ** mat, int n1, int n2) 

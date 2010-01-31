@@ -263,7 +263,7 @@ Corr::printPostVariances(void) const
 }
 //--------------------------------------------------------------------
 void
-Corr::getPostVariances(void)
+Corr::createPostVariances(void)
 {
   postVar0_ = new float*[3];
   for(int i = 0 ; i < 3 ; i++)
@@ -279,12 +279,12 @@ Corr::getPostVariances(void)
   postVar0_[2][1] = getOrigin(postCrCovBetaRho_);
   postVar0_[1][2] = postVar0_[2][1];
 
-  postCovAlpha00_       = getPostCov00(postCovAlpha_);
-  postCovBeta00_        = getPostCov00(postCovBeta_);
-  postCovRho00_         = getPostCov00(postCovRho_);
-  postCrCovAlphaBeta00_ = getPostCov00(postCrCovAlphaBeta_);
-  postCrCovAlphaRho00_  = getPostCov00(postCrCovAlphaRho_);
-  postCrCovBetaRho00_   = getPostCov00(postCrCovBetaRho_);
+  postCovAlpha00_       = createPostCov00(postCovAlpha_);
+  postCovBeta00_        = createPostCov00(postCovBeta_);
+  postCovRho00_         = createPostCov00(postCovRho_);
+  postCrCovAlphaBeta00_ = createPostCov00(postCrCovAlphaBeta_);
+  postCrCovAlphaRho00_  = createPostCov00(postCrCovAlphaRho_);
+  postCrCovBetaRho00_   = createPostCov00(postCrCovBetaRho_);
 }
 
 //--------------------------------------------------------------------
@@ -299,7 +299,7 @@ Corr::getOrigin(FFTGrid * grid) const
 
 //--------------------------------------------------------------------
 float *
-Corr::getPostCov00(FFTGrid * postCov)
+Corr::createPostCov00(FFTGrid * postCov)
 {
   int nz = postCov->getNz();
   float * postCov00 = new float[nz];

@@ -1060,8 +1060,12 @@ Crava::computePostMeanResidAndFFTCov()
   }
 
   //NBNB Anne Randi: Skaler traser ihht notat fra Hugo
-  if(model_->getModelSettings()->getUseLocalNoise()==true)
+
+  if(model_->getModelSettings()->getUseLocalNoise())
   {
+    correlations_->invFFT();
+    correlations_->createPostVariances();
+    correlations_->FFT();
     correctAlphaBetaRho(model_->getModelSettings());
   }
 
@@ -1315,7 +1319,7 @@ Crava::doPostKriging(FFTGrid & postAlpha,
                      FFTGrid & postRho) 
 {
 
-    Utils::writeHeader("Kriging to wells");
+  Utils::writeHeader("Kriging to wells");
 
   CovGridSeparated covGridAlpha      (*correlations_->getPostCovAlpha()      );
   CovGridSeparated covGridBeta       (*correlations_->getPostCovBeta()       );
@@ -1586,21 +1590,14 @@ Crava::createFFTGrid()
   return(fftGrid);
 }
 
-
 FFTGrid*            
 Crava::copyFFTGrid(FFTGrid * fftGridOld)
 {
   FFTGrid* fftGrid;
   if(fileGrid_)
-  {
- 
-  fftGrid =  new FFTFileGrid(reinterpret_cast<FFTFileGrid*>(fftGridOld)); 
-  }
+    fftGrid =  new FFTFileGrid(reinterpret_cast<FFTFileGrid*>(fftGridOld)); 
   else
- {
-  
-  fftGrid =  new FFTGrid(fftGridOld); 
-  }
+    fftGrid =  new FFTGrid(fftGridOld); 
   return(fftGrid);
 }
 
@@ -1771,9 +1768,6 @@ Crava::filterLogs(Simbox          * timeSimboxConstThick,
 
 void Crava::computeG(double **G) const
 {
-  correlations_->invFFT();
-  correlations_->getPostVariances();
-  correlations_->FFT();
   double **sigmam = new double*[3];
   int i,j;
   for(i=0;i<3;i++)
@@ -1790,15 +1784,15 @@ void Crava::computeG(double **G) const
     for(j=0;j<3;j++)
       sigmadelta[i][j] = double(sigmam[i][j]-sigmamd[i][j]);
  
-  double  * eigval = new double[3];
-  int     * error  = new int[1];
-  double ** eigvec = new double *[3];
+  double  * eigval      = new double[3];
+  int     * error       = new int[1];
+  double ** eigvec      = new double *[3];
   double ** eigvalmat   = new double *[3];
   double ** help        = new double *[3];
   double ** eigvectrans = new double *[3];
   for(i=0;i<3;i++)
   {
-    eigvec[i] = new double[3];
+    eigvec[i]      = new double[3];
     eigvalmat[i]   = new double[3];
     help[i]        = new double[3];
     eigvectrans[i] = new double [3];
@@ -1818,6 +1812,10 @@ void Crava::computeG(double **G) const
 
   lib_matr_eigen(sigmam,3,eigvec,eigval,error);
   
+  for(i=0 ; i<3 ; i++)
+    delete [] sigmam[i];
+  delete [] sigmam;
+
   double ** sigmaminv   = new double *[3];
   double ** A           = new double *[3];
  
@@ -1863,8 +1861,8 @@ void Crava::computeG(double **G) const
 
   for(i=0;i<ntheta_;i++)
   {
-    eigvece[i] = new double[ntheta_];
-    eigvalmate[i] = new double[ntheta_];
+    eigvece[i]      = new double[ntheta_];
+    eigvalmate[i]   = new double[ntheta_];
     eigvecetrans[i] = new double[ntheta_];
     helpe[i]        = new double[ntheta_];
   }
@@ -1912,21 +1910,23 @@ void Crava::computeG(double **G) const
 
   for(i=0;i<ntheta_;i++)
   {
+    delete [] eigvecetrans[i];
+    delete [] eigvalmate[i];
+    delete [] eigvece[i];
     delete [] help1[i];
     delete [] help2[i];
     delete [] helpe[i];
-    delete [] eigvecetrans[i];
-    delete [] eigvece[i];
-    delete [] eigvalmate[i];
+    delete [] lambdag[i];
   }
+  delete [] eigvecetrans;
+  delete [] eigvalmate;
+  delete [] eigvece;
   delete [] eigvale;
   delete [] help1;
   delete [] help2;
   delete [] helpe;
-  delete [] eigvecetrans;
-  delete [] eigvece;
-  delete [] eigvalmate;
   delete [] error;  
+  delete [] lambdag;
 }
 void Crava::newPosteriorCovPointwise(double ** sigmanew, double **G, const std::vector<double> & scales, 
                                      double ** sigmamdnew) const
@@ -1981,14 +1981,14 @@ void Crava::newPosteriorCovPointwise(double ** sigmanew, double **G, const std::
 
   int     * error         = new int[1];
   double  * eigvale       = new double[ntheta_];
-  double ** eigvece       = new double *[ntheta_];
-  double ** eigvalmate    = new double*[ntheta_];
-  double ** eigvecetrans  = new double *[ntheta_];
+  double ** eigvece       = new double * [ntheta_];
+  double ** eigvalmate    = new double * [ntheta_];
+  double ** eigvecetrans  = new double * [ntheta_];
   
   for(i=0;i<ntheta_;i++)
   {
-    eigvece[i] = new double[ntheta_];
-    eigvalmate[i] = new double[ntheta_];
+    eigvece[i]      = new double[ntheta_];
+    eigvalmate[i]   = new double[ntheta_];
     eigvecetrans[i] = new double[ntheta_];  
   }
   lib_matr_eigen(help,ntheta_,eigvece,eigvale,error);
@@ -2006,9 +2006,11 @@ void Crava::newPosteriorCovPointwise(double ** sigmanew, double **G, const std::
   double ** help3 = new double *[3];
   for(i=0;i<3;i++)
     help3[i] = new double[3];
+
   double **deltanew = new double *[3];
   for(i=0;i<3;i++)
     deltanew[i] = new double[3];
+
   lib_matr_prod(sigmam,GT,3,3,ntheta_,help4);
   lib_matr_prod(help4,eigvece,3,ntheta_,ntheta_,help2);
   lib_matr_prod(help2,G,3,ntheta_,3,help3);
@@ -2021,9 +2023,9 @@ void Crava::newPosteriorCovPointwise(double ** sigmanew, double **G, const std::
       sigmamdnew[i][j]+=sigmam[i][j];
     }
 
-  double  * eigval = new double[3];
-  double ** eigvalmat  = new double*[3];
-  double ** eigvec = new double *[3];
+  double  * eigval      = new double[3];
+  double ** eigvalmat   = new double*[3];
+  double ** eigvec      = new double *[3];
   double ** eigvectrans = new double *[3];
   for(i=0;i<3;i++)
   {
@@ -2079,46 +2081,49 @@ void Crava::newPosteriorCovPointwise(double ** sigmanew, double **G, const std::
 
   for(i=0;i<ntheta_;i++)
   {
-    delete [] D[i];
-    delete [] sigmaenew[i];
-    delete [] help[i];
-    delete [] eigvece[i];
-    delete [] eigvalmate[i];
     delete [] eigvecetrans[i];
+    delete [] eigvalmate[i];
+    delete [] eigvece[i];
+    delete [] sigmaenew[i];
     delete [] help1[i];
-    
+    delete [] help[i];
+    delete [] D[i];
   }
+  delete [] eigvecetrans;
+  delete [] eigvalmate;
+  delete [] eigvece;
+  delete [] sigmaenew;
+  delete [] help1;
   delete [] help;
   delete [] D;
-  delete [] sigmaenew;
-  delete [] eigvece;
-  delete [] eigvalmate;
-  delete [] eigvecetrans;
-  delete [] help1;
 
   for(i=0;i<3;i++)
   {
-    delete [] eigvalmat[i];
     delete [] eigvectrans[i];
+    delete [] eigvalmat[i];
+    delete [] eigvec[i];
     delete [] sigmadelta[i];
     delete [] sigmam[i];
-    delete [] eigvec[i];
-    delete [] help3[i];
+    delete [] deltanew[i];
     delete [] GT[i];
     delete [] help2[i];
+    delete [] help3[i];
     delete [] help4[i];
-    
   }
-  delete [] eigvalmat;
   delete [] eigvectrans;
+  delete [] eigvalmat;
+  delete [] eigvec;
+  delete [] eigval;
   delete [] sigmadelta;
   delete [] sigmam;
-  delete [] eigvec;
-  delete [] help3;
+  delete [] deltanew;
   delete [] GT;
   delete [] help2;
+  delete [] help3;
   delete [] help4;
+
   delete [] error;
+  delete [] eigvale;
 }
 
 
@@ -2128,6 +2133,7 @@ void Crava::correctAlphaBetaRho(ModelSettings *modelSettings)
   double **G = new double*[ntheta_];
   for(i=0;i<ntheta_;i++)
     G[i] = new double[3];
+
   computeG(G);
  
   double **sigmanew = new double *[3];
@@ -2147,16 +2153,16 @@ void Crava::correctAlphaBetaRho(ModelSettings *modelSettings)
 
   double  * eigval       = new double[3];
   double ** eigvalmat    = new double*[3];
-  double ** eigvec       = new double *[3];
-  double ** eigvectrans  = new double *[3];
+  double ** eigvec       = new double*[3];
+  double ** eigvectrans  = new double*[3];
   int     * error        = new int[1];
   double ** help         = new double*[3];
   for(i=0;i<3;i++)
   {
-    eigvec[i] = new double[3];
-    eigvalmat[i] = new double[3];
+    eigvec[i]      = new double[3];
+    eigvalmat[i]   = new double[3];
     eigvectrans[i] = new double[3];
-    help[i] = new double[3];
+    help[i]        = new double[3];
   }
 
   lib_matr_eigen(sigmamdold,3,eigvec,eigval,error); 
@@ -2170,19 +2176,20 @@ void Crava::correctAlphaBetaRho(ModelSettings *modelSettings)
   lib_matrTranspose(eigvec,3,3,eigvectrans);
   lib_matr_prod(help,eigvectrans,3,3,3,sigmamdold);
 
-  float *alpha = NULL;
-  float *beta = NULL;
-  float *rho = NULL;
-  float *meanalpha = NULL;
-  float *meanbeta = NULL;
-  float *meanrho = NULL;
-  float alphadiff, betadiff, rhodiff;
+  float * alpha     = new float[nz_];
+  float * beta      = new float[nz_];
+  float * rho       = new float[nz_];
+  float * meanalpha = new float[nz_];
+  float * meanbeta  = new float[nz_];
+  float * meanrho   = new float[nz_];
 
   if(modelSettings->getNumberOfSimulations()>0)
     sigmamdnew_ = new NRLib::Grid2D<double **>(nx_,ny_,NULL);
   else
     sigmamdnew_ = NULL;
+
   std::vector<double> minScale(modelSettings->getNumberOfAngles());
+
   for(int angle=0;angle<modelSettings->getNumberOfAngles();angle++)
     minScale[angle] = model_->getLocalNoiseScale(angle)->FindMin(RMISSING);
 
@@ -2192,76 +2199,96 @@ void Crava::correctAlphaBetaRho(ModelSettings *modelSettings)
   meanAlpha2_->setAccessMode(FFTGrid::RANDOMACCESS);
   meanBeta2_->setAccessMode(FFTGrid::RANDOMACCESS);
   meanRho2_->setAccessMode(FFTGrid::RANDOMACCESS);
-  for(i=0;i<nx_;i++)
-    for(j=0;j<ny_;j++)
+
+  for(i=0;i<nx_;i++) 
+  {
+    for(j=0;j<ny_;j++) 
     {
       std::vector<double> scales(modelSettings->getNumberOfAngles());
       for(int angle=0;angle<modelSettings->getNumberOfAngles();angle++)
         scales[angle] = (*(model_->getLocalNoiseScale(angle)))(i, j)/minScale[angle];
+
       newPosteriorCovPointwise(sigmanew,G, scales, sigmamd);
+
       lib_matr_prod(sigmamd,sigmamdold,3,3,3,eigvec); // store product in eigvec
+
       if(sigmamdnew_!=NULL)
       {
         (*sigmamdnew_)(i,j) = new double*[3];
         for(int ii=0;ii<3;ii++)
         {
-          (*sigmamdnew_)(i,j)[ii] =new double[3];
+          (*sigmamdnew_)(i,j)[ii] = new double[3];
           for(int jj=0;jj<3;jj++)
             (*sigmamdnew_)(i,j)[ii][jj] = eigvec[ii][jj];
         }
-
       }
       
-      alpha = postAlpha_->getRealTrace(i,j);
-      beta = postBeta_->getRealTrace(i,j);
-      rho = postRho_->getRealTrace(i,j);
-      meanalpha = meanAlpha2_->getRealTrace(i,j);
-      meanbeta = meanBeta2_->getRealTrace(i,j);
-      meanrho = meanRho2_->getRealTrace(i,j);
+      postAlpha_->getRealTrace(alpha, i, j);
+      postBeta_->getRealTrace(beta, i, j);
+      postRho_->getRealTrace(rho, i, j);
+      meanAlpha2_->getRealTrace(meanalpha, i, j);
+      meanBeta2_->getRealTrace(meanbeta, i, j);
+      meanRho2_->getRealTrace(meanrho, i, j);
+
       for(k=0;k<nz_;k++)
       {
-        alphadiff = alpha[k]-meanalpha[k];
-        betadiff = beta[k]-meanbeta[k];
-        rhodiff = rho[k]-meanrho[k];
-        alpha[k] = float(meanalpha[k]+sigmanew[0][0]*alphadiff+sigmanew[0][1]*betadiff+sigmanew[0][2]*rhodiff);
-        beta[k] = float(meanbeta[k]+sigmanew[1][0]*alphadiff+sigmanew[1][1]*betadiff+sigmanew[1][2]*rhodiff);
-        rho[k] = float(meanrho[k]+sigmanew[2][0]*alphadiff+sigmanew[2][1]*betadiff+sigmanew[2][2]*rhodiff);
+        float alphadiff = alpha[k] - meanalpha[k];
+        float betadiff  = beta[k]  - meanbeta[k];
+        float rhodiff   = rho[k]   - meanrho[k];
+        alpha[k]  = float(meanalpha[k]+sigmanew[0][0]*alphadiff + sigmanew[0][1]*betadiff + sigmanew[0][2]*rhodiff);
+        beta[k]   = float(meanbeta[k] +sigmanew[1][0]*alphadiff + sigmanew[1][1]*betadiff + sigmanew[1][2]*rhodiff);
+        rho[k]    = float(meanrho[k]  +sigmanew[2][0]*alphadiff + sigmanew[2][1]*betadiff + sigmanew[2][2]*rhodiff);
       }
       postAlpha_->setRealTrace(i,j, alpha);
       postBeta_->setRealTrace(i,j,beta);
       postRho_->setRealTrace(i,j,rho);
-
     }
-    postAlpha_->endAccess();
-    postBeta_->endAccess();
-    postRho_->endAccess();
-    meanAlpha2_->endAccess();
-    meanBeta2_->endAccess();
-    meanRho2_->endAccess();
-    for(i=0;i<ntheta_;i++)
-      delete [] G[i];
+  }
 
-    for(i=0;i<3;i++)
-    {
-      delete [] eigvalmat[i];
-      delete [] eigvectrans[i];
-      delete [] eigvec[i];
-      delete [] sigmamdold[i];
-      delete [] help[i];
-    }
-    delete [] eigval;
-    delete [] eigvalmat;
-    delete [] eigvec;
-    delete [] sigmamdold;
-    delete [] error;
-    delete [] help;
+  postAlpha_->endAccess();
+  postBeta_->endAccess();
+  postRho_->endAccess();
+  meanAlpha2_->endAccess();
+  meanBeta2_->endAccess();
+  meanRho2_->endAccess();
 
-    delete [] G;
-    delete [] alpha;
-    delete [] beta;
-    delete [] rho;
-    delete [] meanalpha;
-    delete [] meanbeta;
-    delete [] meanrho;
+  delete meanAlpha2_;
+  delete meanBeta2_;
+  delete meanRho2_;
+  
+  delete [] alpha;
+  delete [] beta;
+  delete [] rho;
+  delete [] meanalpha;
+  delete [] meanbeta;
+  delete [] meanrho;
 
+  for(i=0;i<3;i++)
+  {
+    delete [] sigmanew[i];
+    delete [] sigmamd[i];
+  }
+  delete [] sigmanew;
+  delete [] sigmamd;
+
+  for(i=0;i<ntheta_;i++)
+    delete [] G[i];
+  delete [] G;
+  
+  for(i=0;i<3;i++)
+  {
+    delete [] eigvectrans[i];
+    delete [] eigvalmat[i];
+    delete [] eigvec[i];
+    delete [] sigmamdold[i];
+    delete [] help[i];
+  }
+  delete [] eigvectrans;
+  delete [] eigvalmat;
+  delete [] eigval;
+  delete [] eigvec;
+  delete [] sigmamdold;
+  delete [] error;
+  delete [] help;
+  
 }
