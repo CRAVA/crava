@@ -13,7 +13,6 @@
 #include "fft/include/f77_func.h"
 
 #include "lib/global_def.h"
-#include "lib/lib_misc.h"
 #include "lib/lib_matr.h"
 
 #include "nrlib/iotools/logkit.hpp"
@@ -623,10 +622,7 @@ Wavelet1D::WaveletReadJason(const std::string & fileName, int &errCode, std::str
   {
     if(NRLib::CheckEndOfFile(file))
     {
-      if (errCode == 0)  
-        errText += "Error: End of file "+fileName+" premature.\n";
-      else 
-        errText += "Error: End of file "+fileName+" premature.\n";
+      errText += "Error: End of file "+fileName+" premature.\n";
       errCode=1; 
       return;
     }
@@ -645,10 +641,7 @@ Wavelet1D::WaveletReadJason(const std::string & fileName, int &errCode, std::str
 
   if (NRLib::CheckEndOfFile(file)) 
   {
-    if (errCode == 0)  
-      errText += "Error: End of file "+fileName+" premature.\n";
-    else
-      errText += "Error: End of file "+fileName+" premature.\n";
+    errText += "Error: End of file "+fileName+" premature.\n";
     errCode=1; 
     return;
   } 
@@ -661,10 +654,7 @@ Wavelet1D::WaveletReadJason(const std::string & fileName, int &errCode, std::str
 
   if (NRLib::CheckEndOfFile(file)) 
   {
-    if (errCode == 0)  
-      errText += "Error: End of file "+fileName+" premature.\n";
-    else
-      errText += "Error: End of file "+fileName+" premature.\n";
+    errText += "Error: End of file "+fileName+" premature.\n";
     errCode=1; 
     return;
   }
@@ -686,10 +676,7 @@ Wavelet1D::WaveletReadJason(const std::string & fileName, int &errCode, std::str
   {
     if (NRLib::CheckEndOfFile(file))
     {
-      if (errCode == 0)  
-        errText += "Error: End of file "+fileName+" premature.\n";
-      else
-        errText += "Error: End of file "+fileName+" premature.\n";
+      errText += "Error: End of file "+fileName+" premature.\n";
       errCode=1; 
       return;
     } 
@@ -706,81 +693,73 @@ Wavelet1D::WaveletReadJason(const std::string & fileName, int &errCode, std::str
 void
 Wavelet1D::WaveletReadOld(const std::string & fileName, int & errCode, std::string & errText)
 {
-  readtype_=OLD;
-  FILE* file = fopen(fileName.c_str(),"r");
+  readtype_= OLD;
+  std::ifstream file;
+  NRLib::OpenRead(file,fileName);
  
   int  maxWaveletL=10000;
   
   int   i,pos,shift,nSamples;
-  char  headStr[MAX_STRING];
-  char  tmpStr[MAX_STRING];
-  char  targetString[MAX_STRING];
-  char  number[MAX_STRING];
+  int line = 0;
+  std::string headStr;
+  std::string tmpStr;
+  std::string targetString;
+  std::string number;
   float dz,ampMult;
 
   for(i = 0; i < 5; i++)
   {
-    if(fscanf(file,"%s",headStr) == EOF)
+    NRLib::GetNextToken(file,headStr,line);
+    if (NRLib::CheckEndOfFile(file))
     {
-      if (errCode == 0)  
-        errText = "Error: End of file "+fileName+" premature.\n";
-      else
-        errText += "Error: End of file "+fileName+" premature.\n";
+      errText += "Error: End of file "+fileName+" premature.\n";
       errCode=1; 
-    } // endif
-  }  // end for i
+    } 
+  }  
 
 
-  strcpy(targetString,"CMX");
-  pos = findEnd(headStr, 0, targetString);
+  targetString = "CMX";
+  pos = Utils::findEnd(headStr, 0, targetString);
   if(pos==-1) 
   {
-    if (errCode == 0)  
-      errText = "Error when reading wavelet amplitude from file "+fileName+".\n";
-    else 
-      errText += "Error when reading wavelet amplitude from file "+fileName+".\n";
+    errText += "Error when reading wavelet amplitude from file "+fileName+".\n";
     errCode=1; 
     ampMult = RMISSING; // Dummy setting to avoid g++ warning 
   }
   else
   {
-    readUntilStop(pos, headStr, number ,',');
-    ampMult= float ( atof(number) );
-  } //endif
+    Utils::readUntilStop(pos, headStr, number, ",");
+    ampMult = NRLib::ParseType<float>(number);
+  } 
 
-
-  strcpy(targetString,"SI");
-  pos = findEnd(headStr, 0, targetString);
+  targetString = "SI";
+  pos = Utils::findEnd(headStr, 0, targetString);
   if(pos==-1) 
   {
-    if (errCode == 0)  
-      errText = "Error when reading sampling interval from file "+fileName+".\n";
-    else 
-      errText += "Error when reading sampling interval from file "+fileName+".\n";
+    errText += "Error when reading sampling interval from file "+fileName+".\n";
     errCode=1; 
     dz = RMISSING; // Dummy setting to avoid g++ warning
   }
   else
   {
-    readUntilStop(pos, headStr, number ,',');
-    dz= float ( atof(number) );
-  } //endif
+    Utils::readUntilStop(pos, headStr, number, ",");
+    dz = NRLib::ParseType<float>(number);
+  } 
 
   float * tempWave= static_cast<float*>(fftw_malloc(sizeof(float)* maxWaveletL ));
 
   nSamples=0;
 
-  while(fscanf(file,"%s",tmpStr) != EOF)
+  while (NRLib::CheckEndOfFile(file)==false)
   {      
+    NRLib::GetNextToken(file,tmpStr,line);
     if( maxWaveletL  > nSamples )
     {
-      char * target = new char[2];
-      strcpy(target,"F");
-      pos = findEnd(tmpStr, 0, target);
-      delete [] target;
+      std::string target = "F";
+      pos = Utils::findEnd(tmpStr, 0, target);
       if(pos == -1)
       {
-        tempWave[nSamples]= static_cast<float>( atof(tmpStr) );
+        tempWave[nSamples] = NRLib::ParseType<float>(tmpStr);
       }
       else     
       {
@@ -790,27 +769,21 @@ Wavelet1D::WaveletReadOld(const std::string & fileName, int & errCode, std::stri
     }
     else
     {
-      if (errCode == 0)  
-        errText = "Error in memory use when reading wavelet from file "+fileName+".\n";
-      else  
-        errText += "Error in memory use when reading wavelet from file "+fileName+".\n";
+      errText += "Error in memory use when reading wavelet from file "+fileName+".\n";
       errCode=1;
-    }//endif
-  }//endwhile
+    }
+  }
 
-  fclose(file);
+  file.close();
 
-  strcpy(targetString,"SHIFT");
-  pos = findEnd(headStr, 0, targetString);
+  targetString = "SHIFT";
+  pos = Utils::findEnd(headStr, 0, targetString);
   if(pos==-1) 
   {
     shift=nSamples/2; // integer division
     if(shift*2 == nSamples)
     {
-      if (errCode == 0)  
-        errText = "Error when reading wavelet shift from file "+fileName+".\n    --> No SHIFT and even number of data.\n";
-      else  
-        errText += "Error when reading wavelet shift from file "+fileName+".\n    --> No SHIFT and even number of data.\n";
+      errText += "Error when reading wavelet shift from file "+fileName+".\n    --> No SHIFT and even number of data.\n";
       errCode=1; 
     }
     //cz_ = shift;   // case no flip
@@ -818,8 +791,8 @@ Wavelet1D::WaveletReadOld(const std::string & fileName, int & errCode, std::stri
   }
   else
   {
-    readUntilStop(pos, headStr, number ,',');
-    shift= int ( atof(number) );
+    Utils::readUntilStop(pos, headStr, number ,",");
+    shift = NRLib::ParseType<int>(number);
 
     //cz_=nSamples+shift;  // case no flip
   }//endif
@@ -922,7 +895,7 @@ Wavelet1D::resample(float dz, int nz, float pz, float theta)
   float z;
   fftw_real* wlet;
 
-  nzp   =  findClosestFactorableNumber( static_cast<int>(ceil(nz*(1.0f+pz))) );
+  nzp   =  FFTGrid::findClosestFactorableNumber( static_cast<int>(ceil(nz*(1.0f+pz))) );
   cnzp  =  nzp/2 + 1;
   rnzp  =  2*cnzp;
 
@@ -968,12 +941,10 @@ Wavelet1D::resample(float dz, int nz, float pz, float theta)
   if( ModelSettings::getDebugLevel() > 0 )
   {
     //flipUpDown();// ODD temporary debugfix
-    char* fileName = new char[MAX_STRING];
-    sprintf(fileName,"resampled_wavelet");
+    std::string fileName = "resampled_wavelet";
     float dzOut = 1.0; // sample at least as dense as this
     writeWaveletToFile(fileName, dzOut);
     //flipUpDown();// ODD temporary debugfix
-    delete [] fileName;
   }
 }
 
@@ -1615,10 +1586,9 @@ Wavelet1D::averageWavelets(fftw_real** wavelet_r,int nWells,int nzp,float* wellW
     }
   }
   
-  char* fileName = new char[MAX_STRING];
-  sprintf(fileName,"wavelet_%d_fftOrder_noshift",int(floor(theta_/PI*180+0.5)));
+  std::string fileName;
+  fileName = "wavelet_"+NRLib::ToString(int(floor(theta_/PI*180+0.5)))+"_fftOrder_noshift";
   Wavelet::printVecToFile(fileName,wave,nzp_);
-  delete [] fileName;
 
   delete [] weight;
   return wave;
@@ -1639,56 +1609,63 @@ Wavelet1D::getArrayValueOrZero(int i  ,float * Wavelet, int nz) const
 void 
 Wavelet1D::write1DWLas3DWL()
 {
-  char* headerFName = new char[MAX_STRING];
-  sprintf(headerFName,"../../Input/Wavelet/3D/1Das3D.Sgrh");
-  char* gridFName = new char[MAX_STRING];
-  sprintf(gridFName,"../../Input/Wavelet/3D/1Das3D.Sgri");
-  char* asciiFName = new char[MAX_STRING];
-  sprintf(asciiFName,"../../Output/Debug/1Das3D.txt");
+  std::string headerFName = "../../Input/Wavelet/3D/1Das3D.Sgrh";
+  std::string gridFName   = "../../Input/Wavelet/3D/1Das3D.Sgri";
+  std::string asciiFName  = "../../Output/Debug/1Das3D.txt";
 
-  FILE *hFile = fopen(headerFName, "w");
-  LogKit::LogFormatted(LogKit::LOW,"\nWriting 1D Wavelet as 3D Wavelet in header file %s...", headerFName);
-  fprintf(hFile, "NORSAR General Grid Format v1.0\n");
-  fprintf(hFile, "3\n");
-  fprintf(hFile, "X (km)\n");
-  fprintf(hFile, "Y (km)\n");
-  fprintf(hFile, "Z (km)\n");
-  fprintf(hFile, "PSF\n");
-  fprintf(hFile, "1\n");
-  fprintf(hFile, "1D Wavelet as 3D Wavelet\n");
-  fprintf(hFile, "1 1 1\n");
-  fprintf(hFile, "1 1 %d\n", nz_);
-  fprintf(hFile, "1 1 %f\n", dz_ * 0.001);
-  fprintf(hFile, "0 0 0\n");
-  fprintf(hFile, "0 0\n");
-  fprintf(hFile, "-999\n");
-  fprintf(hFile, "%s\n", gridFName);
-  fprintf(hFile, "0\n");
+  std::ofstream hFile;
+  NRLib::OpenWrite(hFile,headerFName);
+  LogKit::LogFormatted(LogKit::LOW,"\nWriting 1D Wavelet as 3D Wavelet in header file %s...", headerFName.c_str());
 
-  fclose(hFile);
+  hFile << "NORSAR General Grid Format v1.0\n"
+        << "3\n"
+        << "X (km)\n"
+        << "Y (km)\n"
+        << "Z (km)\n"
+        << "PSF\n"
+        << "1\n"
+        << "1D Wavelet as 3D Wavelet\n"
+        << "1 1 1\n"
+        << "1 1 "
+        << nz_
+        << "\n"
+        << "1 1 "
+        << dz_*0.001
+        << "\n"
+        << "0 0 0\n"
+        << "0 0\n"
+        << "-999\n"
+        << gridFName
+        << "\n"
+        << "0\n"
+        << std::endl;
 
-  FILE *aFile = fopen(asciiFName, "w");
-  FILE *bFile = fopen(gridFName,"wb");
-  LogKit::LogFormatted(LogKit::LOW,"\nWriting 1D Wavelet as 3D Wavelet in binary file %s...", gridFName);
+  hFile.close();
+
+  std::ofstream aFile;
+  std::ofstream bFile;
+  NRLib::OpenWrite(aFile,asciiFName);
+  NRLib::OpenWrite(bFile,gridFName,std::ios::out | std::ios::binary);
+  LogKit::LogFormatted(LogKit::LOW,"\nWriting 1D Wavelet as 3D Wavelet in binary file %s...", gridFName.c_str());
   float value;
   char * output = reinterpret_cast<char *>(&value);
   for(int k=0;k<nz_;k++) {
      value = static_cast<float> (getRAmp(k));
-     fprintf(aFile, "%f\n", value);
+     aFile << value << "\n" << std::endl;
 #ifndef BIGENDIAN
-     fwrite(&(output[3]),1,1,bFile);
-     fwrite(&(output[2]),1,1,bFile);
-     fwrite(&(output[1]),1,1,bFile);
-     fwrite(&(output[0]),1,1,bFile);
+      bFile.write(&(output[3]),1);
+      bFile.write(&(output[2]),1);
+      bFile.write(&(output[1]),1);
+      bFile.write(&(output[0]),1);
 #else
-     fwrite(output, 1, 4, bFile);
+     bFile.write(output,4);
 #endif
     }
   output[0] = '0';
   output[1] = '\n';
-  fwrite(output, 2, 1, bFile);
-  fclose(aFile);
-  fclose(bFile);
+  bFile.write(output,2);
+  aFile.close();
+  bFile.close();
 
   return;
 }
@@ -1696,12 +1673,9 @@ Wavelet1D::write1DWLas3DWL()
 void 
 Wavelet1D::write3DWLfrom1DWL()
 {
-  char* headerFName = new char[MAX_STRING];
-  sprintf(headerFName,"../../Input/Wavelet/3D/Ricker_Gauss_1.Sgrh");
-  char* gridFName = new char[MAX_STRING];
-  sprintf(gridFName,"../../Input/Wavelet/3D/Ricker_Gauss_1.Sgri");
-  char* asciiFName = new char[MAX_STRING];
-  sprintf(asciiFName,"../../Output/Debug/Ricker_Gauss_1.txt");
+  std::string headerFName = "../../Input/Wavelet/3D/Ricker_Gauss_1.Sgrh";
+  std::string gridFName   = "../../Input/Wavelet/3D/Ricker_Gauss_1.Sgri";
+  std::string asciiFName  = "../../Output/Debug/Ricker_Gauss_1.txt";
 
   double dx = 50.0;
   double dy = 50.0;
@@ -1710,27 +1684,40 @@ Wavelet1D::write3DWLfrom1DWL()
   assert (nXCells >= 0);
   assert (nYCells >= 0);
   
-  FILE *hFile = fopen(headerFName, "w");
-  LogKit::LogFormatted(LogKit::LOW,"\nWriting 3D Wavelet from 1D Ricker in header file %s...", headerFName);
-  fprintf(hFile, "NORSAR General Grid Format v1.0\n");
-  fprintf(hFile, "3\n");
-  fprintf(hFile, "X (km)\n");
-  fprintf(hFile, "Y (km)\n");
-  fprintf(hFile, "Z (km)\n");
-  fprintf(hFile, "PSF\n");
-  fprintf(hFile, "1\n");
-  fprintf(hFile, "Ricker Gauss with x-range %d cells and y-range %d cells.\n", nXCells, nYCells);
-  fprintf(hFile, "1 1 1\n");
-  fprintf(hFile, "%d %d %d\n", 2*nXCells+1, 2*nYCells+1, nz_);
-  fprintf(hFile, "%f %f %f\n", dx*0.001, dy*0.001, dz_*0.001);
-  fprintf(hFile, "0 0 0\n");
-  fprintf(hFile, "0 0\n");
-  fprintf(hFile, "-999\n");
-  fprintf(hFile, "%s\n", gridFName);
-  fprintf(hFile, "0\n");
-
-  fclose(hFile);
+  std::ofstream hFile;
+  NRLib::OpenWrite(hFile,headerFName);
+  LogKit::LogFormatted(LogKit::LOW,"\nWriting 3D Wavelet from 1D Ricker in header file %s...", headerFName.c_str());
   
+  hFile << "NORSAR General Grid Format v1.0\n"
+        << "3\n"
+        << "X (km)\n"
+        << "Y (km)\n"
+        << "Z (km)\n"
+        << "PSF\n"
+        << "1\n"
+        << "Ricker Gauss with x-range"
+        << nXCells 
+        << "cells and y-range"
+        << nYCells 
+        << "cells.\n"
+        << "1 1 1\n"
+        << 2*nXCells+1
+        << 2*nYCells+1
+        << nz_
+        << "\n"
+        << dx*0.001
+        << dy*0.001
+        << dz_*0.001
+        << "\n"
+        << "0 0 0\n"
+        << "0 0\n"
+        << "-999\n"
+        << gridFName
+        << "\n"
+        << "0\n"
+        << std::endl;
+  hFile.close();
+
   float scaleFactor = 0.0;
   for (int j=-nYCells; j<=nYCells; j++) {
     for (int i=-nXCells; i<=nXCells; i++) {
@@ -1738,9 +1725,11 @@ Wavelet1D::write3DWLfrom1DWL()
     }
   }
 
-  FILE *aFile = fopen(asciiFName, "w");
-  FILE *bFile = fopen(gridFName,"wb");
-  LogKit::LogFormatted(LogKit::LOW,"\nWriting 3D Wavelet from Ricker in binary file %s...", gridFName);
+  std::ofstream aFile;
+  std::ofstream bFile;
+  NRLib::OpenWrite(aFile,asciiFName);
+  NRLib::OpenWrite(bFile,gridFName,std::ios::out | std::ios::binary);
+  LogKit::LogFormatted(LogKit::LOW,"\nWriting 3D Wavelet from Ricker in binary file %s...", gridFName.c_str());
   float value;
   char * output = reinterpret_cast<char *>(&value);
   for(int k=0; k<nz_; k++) {
@@ -1749,24 +1738,27 @@ Wavelet1D::write3DWLfrom1DWL()
         value = static_cast<float> (getRAmp(k));
         value *= static_cast<float> (exp(static_cast<float>(-(i*i)-(j*j))));
         value = value/scaleFactor;
-        fprintf(aFile, "%10.6f ", value);
+        aFile << std::setprecision(6)
+              << std::setw(10)
+              << value
+              << std::endl;
 #ifndef BIGENDIAN
-        fwrite(&(output[3]),1,1,bFile);
-        fwrite(&(output[2]),1,1,bFile);
-        fwrite(&(output[1]),1,1,bFile);
-        fwrite(&(output[0]),1,1,bFile);
+        bFile.write(&(output[3]),1);
+        bFile.write(&(output[2]),1);
+        bFile.write(&(output[1]),1);
+        bFile.write(&(output[0]),1);
 #else
-        fwrite(output, 1, 4, bFile);
+        bFile.write(output,4);
 #endif
       }
     }
-    fprintf(aFile, "\n");
+    aFile << "\n" << std::endl;
   }
   output[0] = '0';
   output[1] = '\n';
-  fwrite(output, 2, 1, bFile);
-  fclose(aFile);
-  fclose(bFile);
+  bFile.write(output,2);
+  aFile.close();
+  bFile.close();
 
   return;
 }
@@ -1786,3 +1778,4 @@ void Wavelet1D::multiplyRAmpByConstant(float c)
   }//end for i
 
 }
+

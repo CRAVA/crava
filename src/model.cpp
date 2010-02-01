@@ -32,7 +32,6 @@
 #include "lib/utils.h"
 #include "lib/random.h"
 #include "lib/timekit.hpp"
-#include "lib/lib_misc.h"
 #include "lib/lib_matr.h"
 #include "lib/global_def.h"
 #include "nrlib/iotools/fileio.hpp"
@@ -45,7 +44,7 @@
 #include "nrlib/stormgrid/stormcontgrid.hpp"
 
 
-Model::Model(char * fileName)
+Model::Model(const std::string & fileName)
 {
   modelSettings_          = NULL;
   timeSimbox_             = new Simbox();
@@ -635,7 +634,6 @@ Model::checkAvailableMemory(Simbox        * timeSimbox,
     //
     // Check if we can hold everything in memory.
     //
-    char   * memchunk0 = new char[workSize];
     float ** memchunk  = new float*[nGrids];
 
     for(int i = 0 ; i < nGrids ; i++)
@@ -654,8 +652,6 @@ Model::checkAvailableMemory(Simbox        * timeSimbox,
     for(int i=0 ; i<nGrids ; i++)
       if(memchunk[i] != NULL) delete [] memchunk[i];
     if(memchunk != NULL) delete [] memchunk;
-    
-    if(memchunk0 != NULL) delete[] memchunk0;
   }
 }
 
@@ -812,7 +808,7 @@ int
 Model::setPaddingSize(int nx, double px)
 {
   int leastint    =  static_cast<int>(ceil(nx*(1.0f+px)));
-  int closestprod =  findClosestFactorableNumber(leastint);
+  int closestprod =  FFTGrid::findClosestFactorableNumber(leastint);
   return(closestprod);
 }
 
@@ -2967,21 +2963,26 @@ int
 Model::getWaveletFileFormat(const std::string & fileName, std::string & errText)
 {
   int fileformat = -1;
-  char* dummyStr = new char[MAX_STRING];
+  int line = 0;
+  std::string dummyStr;
   // test for old file format
-  FILE* file = fopen(fileName.c_str(),"r");
+  std::ifstream file;
+  NRLib::OpenRead(file,fileName);
   for(int i = 0; i < 5; i++)
   {
-    if(fscanf(file,"%s",dummyStr) == EOF)
+    NRLib::GetNextToken(file,dummyStr,line);
+    if (NRLib::CheckEndOfFile(file))
     {
       errText += "End of wavelet file '"+fileName+"' is premature.\n";
       return 0;
-    } // endif
-  }  // end for i
-  fclose(file);
-  char* targetString =new char[MAX_STRING];
-  strcpy(targetString,"CMX");
-  int  pos = findEnd(dummyStr, 0, targetString);
+    } 
+  }  
+  file.close();
+  file.clear();
+  std::string targetString = "CMX";
+ 
+  int  pos = Utils::findEnd(dummyStr, 0, targetString);
+  
   if(pos>=0)
     fileformat= Wavelet::OLD;
 
@@ -3003,34 +3004,39 @@ Model::getWaveletFileFormat(const std::string & fileName, std::string & errText)
 
     if (fileformat != Wavelet::SGRI) {*/
       // test for jason file format
-      file = fopen(fileName.c_str(),"r");
-      bool lineIsComment = true; 
-      while( lineIsComment ==true)
+      
+    NRLib::OpenRead(file,fileName);
+    line         = 0;
+    int thisLine = 0;
+    bool lineIsComment = true; 
+    while (lineIsComment == true)
+    {
+      NRLib::GetNextToken(file,dummyStr,line);
+      if (NRLib::CheckEndOfFile(file))
       {
-        if(fscanf(file,"%s",dummyStr) == EOF)
+        errText += "End of wavelet file "+fileName+" is premature\n";
+        return 0;
+      } 
+      else
+      {
+        if (thisLine == line)
         {
-          readToEOL(file);
-          errText += "End of wavelet file "+fileName+" is premature\n";
-          return 0;
-        } // endif
-        else
-        {
-          readToEOL(file);
-          if((dummyStr[0]!='*') &  (dummyStr[0]!='"'))
-          {
-            lineIsComment = false;
-          }
+          NRLib::DiscardRestOfLine(file,line,false);
+          thisLine = line;
         }
-      }  // end while
-      fclose(file);
-      if(atof(dummyStr)!=0) // not convertable number
-      {
-        fileformat= Wavelet::JASON;
+        if((dummyStr[0]!='*') &  (dummyStr[0]!='"'))
+        {
+          lineIsComment = false;
+        }
       }
-//    }
+    }  
+    file.close();
+    if (NRLib::ParseType<double>(dummyStr)!=0)// not convertable number
+    {
+      fileformat= Wavelet::JASON;
+    }
+    //    }
   }
-  delete[] dummyStr;
-  delete [] targetString;
   return fileformat;
 }
 
@@ -3307,8 +3313,6 @@ void Model::readPriorFaciesProbCubes(InputFiles      * inputFiles,
   mapType myMap = inputFiles->getPriorFaciesProbFile();
   for(int i=0;i<nFacies;i++)
   {
-    //char tmpErrText[MAX_STRING];
-    //sprintf(tmpErrTxt,"%c",'\0');
     mapType::iterator iter = myMap.find(modelSettings->getFaciesName(i));
     
     if(iter!=myMap.end())
@@ -3744,7 +3748,7 @@ Model::printSettings(ModelSettings * modelSettings,
     Vario       * vario  = modelSettings->getBackgroundVario();
     GenExpVario * pVario = dynamic_cast<GenExpVario*>(vario);
     LogKit::LogFormatted(LogKit::LOW,"  Variogram\n");
-    LogKit::LogFormatted(LogKit::LOW,"    Model                                  : %10s\n",vario->getType());
+    LogKit::LogFormatted(LogKit::LOW,"    Model                                  : %10s\n",(vario->getType()).c_str());
     if (pVario != NULL)
     LogKit::LogFormatted(LogKit::LOW,"    Power                                  : %10.1f\n",pVario->getPower());
     LogKit::LogFormatted(LogKit::LOW,"    Range                                  : %10.1f\n",vario->getRange());
@@ -3828,7 +3832,7 @@ Model::printSettings(ModelSettings * modelSettings,
       LogKit::LogFormatted(LogKit::LOW,"    Var{Rho} - min                         : %10.1e\n",modelSettings->getVarRhoMin());
       LogKit::LogFormatted(LogKit::LOW,"    Var{Rho} - max                         : %10.1e\n",modelSettings->getVarRhoMax());  
       LogKit::LogFormatted(LogKit::LOW,"  Lateral correlation:\n");
-      LogKit::LogFormatted(LogKit::LOW,"    Model                                  : %10s\n",corr->getType());
+      LogKit::LogFormatted(LogKit::LOW,"    Model                                  : %10s\n",(corr->getType()).c_str());
       if (pCorr != NULL)
         LogKit::LogFormatted(LogKit::LOW,"    Power                                  : %10.1f\n",pCorr->getPower());
       LogKit::LogFormatted(LogKit::LOW,"    Range                                  : %10.1f\n",corr->getRange());
@@ -3871,7 +3875,7 @@ Model::printSettings(ModelSettings * modelSettings,
     corr  = modelSettings->getAngularCorr();
     GenExpVario * pCorr = dynamic_cast<GenExpVario*>(corr);
     LogKit::LogFormatted(LogKit::LOW,"  Angular correlation:\n");
-    LogKit::LogFormatted(LogKit::LOW,"    Model                                  : %10s\n",corr->getType());
+    LogKit::LogFormatted(LogKit::LOW,"    Model                                  : %10s\n",(corr->getType()).c_str());
     if (pCorr != NULL)
       LogKit::LogFormatted(LogKit::LOW,"    Power                                  : %10.1f\n",pCorr->getPower());
     LogKit::LogFormatted(LogKit::LOW,"    Range                                  : %10.1f\n",corr->getRange()*180.0/PI);
@@ -4456,4 +4460,3 @@ Model::createFFTGrid(int nx, int ny, int nz, int nxp, int nyp, int nzp, bool fil
 
   return(fftGrid);
 }
-

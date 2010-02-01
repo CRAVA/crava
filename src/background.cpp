@@ -3,7 +3,6 @@
 #include <string.h>
 #include <algorithm>
 
-#include "lib/lib_misc.h"
 #include "lib/global_def.h"
 #include "lib/kriging1d.h"
 #include "lib/utils.h"

@@ -2,6 +2,7 @@
 #define VARIO_H
 
 #include <math.h>
+#include <string>
 
 class Vario{
 public:
@@ -9,7 +10,7 @@ public:
   virtual ~Vario();
 
   virtual float  corr(float deltaX, float deltaY) const = 0;
-  char         * getType(void)        const { return type_   ;}
+  std::string    getType(void)        const { return type_   ;}
   float          getRange(void)       const { return range1_ ;}
   float          getSubRange(void)    const { return range2_ ;}
   float          getAngle(void)       const { return angle_  ;}
@@ -22,7 +23,7 @@ protected:
   float findDist(float deltaX, float deltaY) const;
 
 protected:
-  char * type_;
+  std::string type_;
 
 private:
   float  range1_;

@@ -71,10 +71,10 @@ private:
 
   int          accMode_;
   int          modified_;   //Tells if grid is modified during RANDOMACCESS.
-  char       * fNameIn_; //Temporary names, switches whenever a write has occured.
-  char       * fNameOut_;
-  FILE       * inFile_;
-  FILE       * outFile_;
+  std::string  fNameIn_; //Temporary names, switches whenever a write has occured.
+  std::string  fNameOut_;
+  std::ifstream inFile_;
+  std::ofstream outFile_;
 
   static int   gNum; //Number used for generating temporary files.
 };

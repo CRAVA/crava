@@ -81,7 +81,7 @@ Crava::Crava(Model * model, SpatialWellFilter * spatwellfilter)
   errorVariance_     = new float[ntheta_];
   dataVariance_      = new float[ntheta_];
   scaleWarning_      = 0;
-  scaleWarningText_  = new char[12*MAX_STRING*ntheta_]; 
+  scaleWarningText_  =("");
   errThetaCov_       = new double*[ntheta_]; 
   sigmamdnew_        = NULL;
   for(int i=0;i<ntheta_;i++) {
@@ -193,7 +193,6 @@ Crava::~Crava()
   if(postBeta_!=NULL)  delete  postBeta_;
   if(postRho_!=NULL)   delete  postRho_ ;
 
-  delete [] scaleWarningText_;
   if(sigmamdnew_!=NULL)
   {
     for(int i=0;i<nx_;i++)
@@ -370,14 +369,15 @@ Crava::computeVariances(fftw_real     * corrT,
 int
 Crava::checkScale(void)
 {
-  char scaleWarning1[240];
-  char scaleWarning2[240];
-  char scaleWarning3[240];
-  char scaleWarning4[240];
-  strcpy(scaleWarning1,"The observed variability in seismic data is much larger than in the model.\n   Variance of: \n");
-  strcpy(scaleWarning2,"The observed variability in seismic data is much less than in the model.\n   Variance of: \n");
-  strcpy(scaleWarning3,"Small signal to noise ratio detected");
-  strcpy(scaleWarning4,"Large signal to noise ratio detected");
+  std::string scaleWarning1;
+  std::string scaleWarning2;
+  std::string scaleWarning3;
+  std::string scaleWarning4;
+
+  scaleWarning1 = "The observed variability in seismic data is much larger than in the model.\n   Variance of: \n";
+  scaleWarning2 = "The observed variability in seismic data is much less than in the model.\n   Variance of: \n";
+  scaleWarning3 = "Small signal to noise ratio detected";
+  scaleWarning4 = "Large signal to noise ratio detected";
 
   bool thisThetaIsOk;
   int  isOk=0;
@@ -392,14 +392,12 @@ Crava::checkScale(void)
       if(isOk==0)
       {
         isOk = 1;
-        sprintf(scaleWarningText_,"Model inconsistency in angle %i for seismic data\n%s \n",
-                int(thetaDeg_[l]+0.5),scaleWarning1);
+        scaleWarningText_ = "Model inconsistency in angle "+NRLib::ToString(int(thetaDeg_[l]+0.5))+"for seismic data\n"+scaleWarning1+"\n";
       }
       else
       {
         isOk = 1;
-        sprintf(scaleWarningText_,"%sModel inconsistency in angle %i for seismic data\n%s \n",
-                scaleWarningText_,int(thetaDeg_[l]+0.5),scaleWarning1);
+        scaleWarningText_ += "Model inconsistency in angle "+NRLib::ToString(int(thetaDeg_[l]+0.5))+"for seismic data\n"+scaleWarning1+"\n";
       }
     }
     if( (dataVariance_[l] < 0.1 * signalVariance_[l]) && thisThetaIsOk) //1 var 0.1
@@ -408,14 +406,12 @@ Crava::checkScale(void)
       if(isOk==0)
       {
         isOk = 2;
-        sprintf(scaleWarningText_,"Model inconsistency in angle %i for seismic data\n%s\n",
-                int(thetaDeg_[l]+0.5),scaleWarning2);
+        scaleWarningText_ = "Model inconsistency in angle "+NRLib::ToString(int(thetaDeg_[l]+0.5))+"for seismic data\n"+scaleWarning2+"\n";
       }
       else
       {
         isOk = 2;
-        sprintf(scaleWarningText_,"%sModel inconsistency in angle %i for seismic data\n%s\n",
-                scaleWarningText_,int(thetaDeg_[l]+0.5),scaleWarning2);
+        scaleWarningText_ += "Model inconsistency in angle "+NRLib::ToString(int(thetaDeg_[l]+0.5))+"for seismic data\n"+scaleWarning2+"\n";
       }
     }
     if( (modelVariance_[l] < 0.02 * errorVariance_[l]) && thisThetaIsOk)
@@ -424,14 +420,12 @@ Crava::checkScale(void)
       if(isOk==0)
         {
         isOk = 3;
-        sprintf(scaleWarningText_,"%s for angle %i.\n",
-                scaleWarning3,int(thetaDeg_[l]+0.5));
+        scaleWarningText_ = scaleWarning3+" for angle "+NRLib::ToString(int(thetaDeg_[l]+0.5))+"\n";
       }
       else
         {
         isOk = 3;
-        sprintf(scaleWarningText_,"%s%s for angle %i.\n",
-                scaleWarningText_,scaleWarning3,int(thetaDeg_[l]+0.5));
+        scaleWarningText_ += scaleWarning3+" for angle "+NRLib::ToString(int(thetaDeg_[l]+0.5))+"\n";
       }
     }
     if( (modelVariance_[l] > 50.0 * errorVariance_[l]) && thisThetaIsOk)
@@ -440,14 +434,12 @@ Crava::checkScale(void)
       if(isOk==0)
         {
         isOk = 4;
-        sprintf(scaleWarningText_,"%s for angle %i.\n",
-                scaleWarning4,int(thetaDeg_[l]+0.5) );
+        scaleWarningText_ = scaleWarning4+" for angle "+NRLib::ToString(int(thetaDeg_[l]+0.5))+"\n"; 
       }
       else
       {
         isOk = 4;
-        sprintf(scaleWarningText_,"%s%s for angle %i.\n",
-                scaleWarningText_,scaleWarning4,int(thetaDeg_[l]+0.5)); 
+        scaleWarningText_ += scaleWarning4+" for angle "+NRLib::ToString(int(thetaDeg_[l]+0.5))+"\n";
       }
     }
   }

@@ -44,6 +44,15 @@ public:
                         fftw_real    * rAmp,
                         int            nt);    
 
+  static  void   readUntilStop(int           pos, 
+                               std::string & in, 
+                               std::string & out,
+                               std::string   read);
+
+  static int     findEnd(std::string & seek, 
+                         int           start, 
+                         std::string & find);
+
 
 };
 

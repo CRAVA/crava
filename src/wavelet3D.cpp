@@ -11,7 +11,6 @@
 #include "fft/include/f77_func.h"
 
 #include "lib/global_def.h"
-#include "lib/lib_misc.h"
 #include "lib/lib_matr.h"
 
 #include "nrlib/iotools/logkit.hpp"
@@ -348,11 +347,11 @@ Wavelet3D::Wavelet3D(Wavelet1D           * wavelet1D,
   dz_ = static_cast<float>(simBox->getdz() * 0.5f * v0 * 0.001f);
 
   double xPadFac = modelSettings->getXPadFac();
-  nxp_   =  findClosestFactorableNumber( static_cast<int>(ceil( static_cast<double>(nx_)*(1.0+xPadFac) )) );
+  nxp_   =  FFTGrid::findClosestFactorableNumber( static_cast<int>(ceil( static_cast<double>(nx_)*(1.0+xPadFac) )) );
   double yPadFac = modelSettings->getYPadFac();
-  nyp_   =  findClosestFactorableNumber( static_cast<int>(ceil( static_cast<double>(ny_)*(1.0+yPadFac) )) );
+  nyp_   =  FFTGrid::findClosestFactorableNumber( static_cast<int>(ceil( static_cast<double>(ny_)*(1.0+yPadFac) )) );
   double zPadFac = modelSettings->getZPadFac();
-  nzp_   =  findClosestFactorableNumber( static_cast<int>(ceil( static_cast<double>(nz_)*(1.0+zPadFac) )) );
+  nzp_   =  FFTGrid::findClosestFactorableNumber( static_cast<int>(ceil( static_cast<double>(nz_)*(1.0+zPadFac) )) );
   
   theta_ = theta;
   norm_ = RMISSING;

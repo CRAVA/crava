@@ -4,14 +4,13 @@
 #include <math.h>
 #define _USE_MATH_DEFINES
 #include <cmath>
-#include "lib/lib_misc.h"
 #include "lib/global_def.h"
 
 #include "src/vario.h"
 
 Vario::Vario(float range1, float range2, float angle)
 {
-  type_   = new char[MAX_STRING];
+  type_   = "";
   range1_ = range1;
   range2_ = range2;
   //
@@ -23,7 +22,6 @@ Vario::Vario(float range1, float range2, float angle)
 
 Vario::~Vario()
 {
-  delete [] type_;
 }
 
 float Vario::findDist(float deltaX, float deltaY) const
@@ -54,7 +52,7 @@ Vario::rotateCounterClockwise(float rotAngle)
 SphericalVario::SphericalVario(float range1, float range2, float angle)
 : Vario(range1, range2, angle)
 {
-  sprintf(type_,"Spherical");
+  type_ = "Spherical";
 }
 
 SphericalVario::~SphericalVario()
@@ -75,7 +73,7 @@ SphericalVario::corr(float deltaX, float deltaY) const
 GenExpVario::GenExpVario(float pot, float range1, float range2, float angle)
 : Vario(range1, range2, angle)
 {
-  sprintf(type_,"Generalised exponential");
+  type_ = "Generalised exponential";
   pot_ = pot;
 }
 

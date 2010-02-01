@@ -35,7 +35,7 @@ public:
   FFTGrid          * getPostBeta()                  { return postBeta_  ;}
   FFTGrid          * getPostRho()                   { return postRho_   ;}
 
-  int                getWarning(char* wText)  const {if(scaleWarning_>0) sprintf(wText,"%s",scaleWarningText_); return scaleWarning_;}
+  int                getWarning(std::string & wText)  const {if(scaleWarning_>0) wText=scaleWarningText_; return scaleWarning_;}
 
   void               printEnergyToScreen();
  // void               computeFaciesProb(FilterWellLogs *filteredlogs);
@@ -125,7 +125,7 @@ private:
   int                nWells_;
   
   int                scaleWarning_;
-  char             * scaleWarningText_;
+  std::string        scaleWarningText_;
 
   int                outputFlag_;       // See modelsettings.h for bit interpretation.
   bool               writePrediction_;  // Write prediction grids?

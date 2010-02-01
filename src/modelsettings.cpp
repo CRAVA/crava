@@ -229,7 +229,8 @@ ModelSettings::copyBackgroundVarioToLocalWaveletVario(void)
   float range1 = backgroundVario_->getRange();
   float range2 = backgroundVario_->getSubRange();
   float angle  = backgroundVario_->getAngle();
-  if (strcmp(backgroundVario_->getType(),"Spherical")==0)
+  std::string type = backgroundVario_->getType();
+  if (type == "Spherical")
   {
     localWaveletVario_ = new SphericalVario(range1, range2, angle);
   }

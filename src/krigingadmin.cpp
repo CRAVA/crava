@@ -1503,9 +1503,9 @@ void CKrigingAdmin::WriteDebugOutput2() const {
   LogKit::LogFormatted(LogKit::DEBUGHIGH,"noRMissing_: %d\n", noRMissing_);
 }
 
-void CKrigingAdmin::Require(bool test, const char* msg) const {
+void CKrigingAdmin::Require(bool test, const std::string msg) const {
   if (!test) {
-    LogKit::LogFormatted(LogKit::LOW,"Requirement failed: %s\n", msg);
+    LogKit::LogFormatted(LogKit::LOW,"Requirement failed: %s\n", msg.c_str());
     exit(1);
   }
 }

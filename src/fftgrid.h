@@ -119,6 +119,8 @@ public:
   static int           getMaxAllowedGrids()   { return maxAllowedGrids_   ;}
   static int           getMaxAllocatedGrids() { return maxAllocatedGrids_ ;}
   static void          setTerminateOnMaxGrid(bool terminate) {terminateOnMaxGrid_ = terminate ;} 
+  static int           findClosestFactorableNumber(int leastint);
+
 
   virtual void         createRealGrid(bool add = true);
   virtual void         createComplexGrid();
@@ -134,8 +136,8 @@ public:
   std::vector<float>   getRealTrace2(int i, int j);
 
 
-  static void          reportFFTMemoryAndWait(const char * msg) {
-                         LogKit::LogFormatted(LogKit::HIGH, "%s: %2d grids, %10.2f MB\n", msg, nGrids_, FFTMemUse_/(1024.0f*1024.0f));
+  static void          reportFFTMemoryAndWait(const std::string & msg) {
+                         LogKit::LogFormatted(LogKit::HIGH, "%s: %2d grids, %10.2f MB\n", msg.c_str(), nGrids_, FFTMemUse_/(1024.0f*1024.0f));
                          float tmp;
                          std::cin >> tmp;
                          LogKit::LogFormatted(LogKit::HIGH, "Memory used %4.0f MB, used outside grid %4.0f MB\n", tmp, tmp-FFTMemUse_/(1024.0f*1024.0f));

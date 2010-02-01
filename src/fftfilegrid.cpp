@@ -13,7 +13,6 @@
 #include "nrlib/iotools/logkit.hpp"
 
 #include "lib/global_def.h"
-#include "lib/lib_misc.h"
 
 #include "src/fftfilegrid.h"
 #include "src/simbox.h"
@@ -51,6 +50,7 @@ FFTGrid()
   counterForGet_  = 0; 
   counterForSet_  = 0;
   istransformed_  = false;
+  fNameIn_        = "";
   createRealGrid();
   accMode_=NONE;
 
@@ -72,13 +72,11 @@ FFTGrid()
 FFTFileGrid::~FFTFileGrid()
 {
   endAccess();
-  if(fNameIn_ != NULL)
+  if(fNameIn_ != "")
   {
-    remove(fNameIn_);
-    delete [] fNameIn_;
+    remove(fNameIn_.c_str());
   }
-  remove(fNameOut_);
-  delete [] fNameOut_;
+  remove(fNameOut_.c_str());
 }
 
 
@@ -89,14 +87,14 @@ FFTFileGrid::setAccessMode(int mode)
   switch(mode)
   {
   case READ:
-    inFile_ = fopen(fNameIn_, "rb");
+    NRLib::OpenRead(inFile_,fNameIn_,std::ios::in | std::ios::binary);
     break;
   case WRITE:
-    outFile_ = fopen(fNameOut_,"wb");
+    NRLib::OpenWrite(outFile_,fNameOut_,std::ios::out | std::ios::binary);
     break;
   case READANDWRITE:
-    inFile_ = fopen(fNameIn_, "rb");
-    outFile_ = fopen(fNameOut_,"wb");
+    NRLib::OpenRead(inFile_,fNameIn_,std::ios::in | std::ios::binary);
+    NRLib::OpenWrite(outFile_,fNameOut_,std::ios::out | std::ios::binary);
     break;
   case RANDOMACCESS:
     modified_ = 0;
@@ -109,25 +107,22 @@ FFTFileGrid::setAccessMode(int mode)
 void
 FFTFileGrid::endAccess()
 {
-  char * tmp;
+  std::string tmp("");
   switch(accMode_)
   {
   case READ:
-    fclose(inFile_);
+    inFile_.close();
     break;
   case READANDWRITE:
-    fclose(inFile_); //Intentional fallthrough to WRITE
+    inFile_.close(); //Intentional fallthrough to WRITE
   case WRITE:
-    fclose(outFile_);
+    outFile_.close();
     tmp = fNameIn_;
     fNameIn_ = fNameOut_;
-    if(tmp != NULL)
+    if(tmp != "")
       fNameOut_ = tmp;
     else
-    {
-      fNameOut_ = new char[50];
-      sprintf(fNameOut_, "%sb",fNameIn_);
-    }
+      fNameOut_ = fNameIn_+"b";
     break;
   case RANDOMACCESS:
     if(modified_ != 0)
@@ -140,7 +135,7 @@ FFTFileGrid::endAccess()
 }
 
 void
-FFTFileGrid::createRealGrid(bool add)
+FFTFileGrid::createRealGrid(bool /*add*/)
 {
   istransformed_ = false;
 }
@@ -158,8 +153,8 @@ FFTFileGrid::getNextComplex()
   assert(istransformed_==true);
   assert(accMode_ == READ || accMode_ == READANDWRITE);
   fftw_complex cVal;
-  int ok = 0;
-  ok = fread(&cVal, sizeof(fftw_complex), 1, inFile_);
+  char * buffer = reinterpret_cast<char *>(&cVal);
+  inFile_.read(buffer,sizeof(fftw_complex));
   return(cVal);
 }
 
@@ -170,9 +165,9 @@ FFTFileGrid::getNextReal()
 {
   assert(istransformed_ == false);
   assert(accMode_ == READ || accMode_ == READANDWRITE);
-  int ok = 0;
   float rVal;
-  ok = fread(&rVal, sizeof(float), 1, inFile_);
+  char * buffer = reinterpret_cast<char *>(&rVal);
+  inFile_.read(buffer,sizeof(float));
   return float(rVal);
 } 
 
@@ -237,7 +232,8 @@ FFTFileGrid::setNextComplex(fftw_complex value)
 {
   assert(istransformed_==true);
   assert(accMode_ == READANDWRITE || accMode_ == WRITE);
-  fwrite(&value, sizeof(fftw_complex), 1, outFile_);
+  char * buffer = reinterpret_cast<char *>(&value);
+  outFile_.write(buffer,sizeof(fftw_complex));
   return(0);  
 }
 
@@ -247,7 +243,8 @@ FFTFileGrid::setNextReal(float  value)
 {    
   assert(istransformed_== false);
   assert(accMode_ == READANDWRITE || accMode_ == WRITE);
-  fwrite(&value, sizeof(float), 1, outFile_);
+  char * buffer = reinterpret_cast<char *>(&value);
+  outFile_.write(buffer,sizeof(float));
   return(0);  
 }
 
@@ -589,14 +586,17 @@ FFTFileGrid::load()
     FFTGrid::createRealGrid();
   else
     FFTGrid::createComplexGrid();
-  if(fNameIn_ != NULL) //Something has been saved.
+  if(fNameIn_ != "") //Something has been saved.
   {
     int i, nRead = 1;
-    inFile_ = fopen(fNameIn_,"rb");
+    NRLib::OpenRead(inFile_,fNameIn_,std::ios::in | std::ios::binary);
     //Real/complex does not matter in next line, since same meory is used.
     for(i=0;((i<rsize_) && (nRead == 1));i++)
-      nRead = fread(&(rvalue_[i]), sizeof(float), 1, inFile_);
-    fclose(inFile_);
+    {
+      char * buffer = reinterpret_cast<char *>(&(rvalue_[i]));
+      inFile_.read(buffer,sizeof(float));
+    }
+    inFile_.close();
   }
 }
 
@@ -604,22 +604,22 @@ void
 FFTFileGrid::save()
 {
   assert(accMode_ == NONE || accMode_ == RANDOMACCESS);
-  outFile_ = fopen(fNameOut_,"wb");
+  NRLib::OpenWrite(outFile_,fNameOut_,std::ios::out | std::ios::binary);
   //Real/complex does not matter in next line, since same meory is used.
   int i, nWritten = 1;
   for(i=0;((i<rsize_) && (nWritten == 1));i++)
-    nWritten = fwrite(&(rvalue_[i]), sizeof(float), 1, outFile_);
-  fclose(outFile_);
+  {
+    char * buffer = reinterpret_cast<char *>(&(rvalue_[i]));
+    outFile_.write(buffer,sizeof(float));
+  }
+  outFile_.close();
   unload();
-  char * tmp = fNameIn_;
+  std::string tmp = fNameIn_;
   fNameIn_ = fNameOut_;
-  if(tmp != NULL)
+  if(tmp != "")
     fNameOut_ = tmp;
   else
-  {
-    fNameOut_ = new char[strlen(fNameIn_)+2];
-    sprintf(fNameOut_, "%sb",fNameIn_);
-  }
+    fNameOut_ = fNameIn_+"b";
 }
 
 void
@@ -635,12 +635,11 @@ FFTFileGrid::unload()
 void 
 FFTFileGrid::genFileName()
 {
-  fNameIn_  = NULL;
+  fNameIn_  = "";
   // Store tmp file in top directory.
   std::string baseName = IO::PrefixTmpGrids() + NRLib::ToString(gNum);
   std::string fileName = IO::makeFullFileName(IO::PathToTmpFiles(), baseName);
-  fNameOut_ = new char[MAX_STRING];
-  strcpy(fNameOut_,fileName.c_str());
+  fNameOut_ = fileName;
   gNum++;
 }
 

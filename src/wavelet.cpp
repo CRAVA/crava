@@ -12,7 +12,6 @@
 #include "fft/include/f77_func.h"
 
 #include "lib/global_def.h"
-#include "lib/lib_misc.h"
 #include "lib/lib_matr.h"
 
 #include "nrlib/surface/regularsurface.hpp"

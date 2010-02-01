@@ -25,7 +25,7 @@ class InputFiles;
 class Model
 {
 public:
-  Model(char * fileName);
+  Model(const std::string & fileName);
   ~Model();
 
   ModelSettings               * getModelSettings()         const { return modelSettings_          ;}

@@ -62,12 +62,12 @@ int main(int argc, char** argv)
       SpatialWellFilter *spatwellfilter = new SpatialWellFilter(nwells);
       crava = new Crava(model, spatwellfilter);
       
-      char * warningText = new char[12*MAX_STRING*modelSettings->getNumberOfAngles()];
+      std::string warningText("");
       
       if(crava->getWarning( warningText ) != 0)
        {
          LogKit::LogFormatted(LogKit::LOW,"\nWarning  !!!\n");
-         LogKit::LogFormatted(LogKit::LOW,"%s",warningText);
+         LogKit::LogFormatted(LogKit::LOW,"%s",warningText.c_str());
          LogKit::LogFormatted(LogKit::LOW,"\n");
        }
       crava->printEnergyToScreen();
@@ -125,7 +125,6 @@ int main(int argc, char** argv)
         LogKit::LogFormatted(LogKit::LOW,"\nWARNING: Writing of BLOCKED_LOGS is not implemented yet.\n");
       }
 
-      delete [] warningText;
       delete crava;
     } //end doinversion 
   }

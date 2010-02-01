@@ -60,7 +60,7 @@ private:
   int             GetSmoothBlockNz() { return 2 * (dzSmoothBlock_ + 1); }
   void            WriteDebugOutput() const;
   void            WriteDebugOutput2() const;
-  void            Require(bool test, const char* msg = "Requirement failed") const;
+  void            Require(bool test, const std::string msg = "Requirement failed") const;
   FFTGrid       * CreateValidGrid() const;
 
   const Simbox  & simbox_;

@@ -12,7 +12,7 @@ class InputFiles;
 class XmlModelFile
 {
 public:
-  XmlModelFile(const char * fileName);
+  XmlModelFile(const std::string & fileName);
     ~XmlModelFile(void);
 
   ModelSettings  * getModelSettings(void)  const { return modelSettings_ ;}

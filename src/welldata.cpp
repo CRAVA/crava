@@ -9,8 +9,6 @@
 #include "fft/include/fftw-int.h"
 #include "fft/include/f77_func.h"
 
-#include "lib/lib_misc.h"
-
 #include "nrlib/iotools/logkit.hpp"
 #include "nrlib/iotools/stringtools.hpp"
 #include "nrlib/well/norsarwell.hpp"

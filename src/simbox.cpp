@@ -389,25 +389,22 @@ Simbox::getStormHeader(int cubetype, int nx, int ny, int nz, bool flat, bool asc
 {
   if(flat == false)
     assert(topName_ != "");
-  char * header = new char[500];
+  std::string header;
   if(ascii == false)
-    sprintf(header,"storm_petro_binary\n");
+    header = "storm_petro_binary\n";
   else
-    sprintf(header,"storm_petro_ascii\n");
+    header = "storm_petro_ascii\n";
 
-  sprintf(header,"%s0 %d %f\n",  header, cubetype, RMISSING);
-  sprintf(header,"%sFFTGrid\n",header);
+  header += "0 "+NRLib::ToString(cubetype) +" "+ NRLib::ToString(RMISSING,6)+"\n";
+  header += "FFTGrid\n";
   if(flat == false)
-    sprintf(header,"%s%f %f %f %f %s %s 0.0 0.0\n", header, GetXMin(), GetLX(), 
-    GetYMin(), GetLY(), topName_.c_str(), botName_.c_str());
+    header += NRLib::ToString(GetXMin(),6) +" "+ NRLib::ToString(GetLX(),6) +" "+ NRLib::ToString(GetYMin(),6) +" "+ NRLib::ToString(GetLY(),6) +" "+ topName_ +" "+ botName_ +" 0.0 0.0\n";
   else
-    sprintf(header,"%s%f %f %f %f 0.0 %f 0.0 0.0\n", header, GetXMin(), GetLX(), 
-    GetYMin(), GetLY(), GetLZ());
+    header += NRLib::ToString(GetXMin(),6) +" "+ NRLib::ToString(GetLX(),6) +" "+ NRLib::ToString(GetYMin(),6) +" "+ NRLib::ToString(GetLY(),6) +" 0.0 "+ NRLib::ToString(GetLZ(),6)+" 0.0 0.0\n";
 
-  sprintf(header,"%s%f %f\n\n", header, GetLZ(), GetAngle()*180/PI);
-  sprintf(header,"%s%d %d %d\n", header, nx, ny, nz);
+  header += NRLib::ToString(GetLZ(),6) +" "+ NRLib::ToString(GetAngle()*180/PI,6)+"\n\n";
+  header += NRLib::ToString(nx) +" "+ NRLib::ToString(ny) +" "+ NRLib::ToString(nz)+"\n";
   std::string strHeader(header); 
-  delete [] header;
 
   /*
     ==>

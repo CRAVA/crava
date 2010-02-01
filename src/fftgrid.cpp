@@ -8,7 +8,6 @@
 
 #include "lib/global_def.h"
 #include "nrlib/segy/segy.hpp"
-#include "lib/lib_misc.h"
 #include "lib/random.h"
 #include "lib/timekit.hpp"
 
@@ -2242,6 +2241,38 @@ void FFTGrid::makeDepthCubeForSegy(Simbox *simbox,const std::string & fileName)
   std::string fullFileName = fileName + IO::SuffixSegy();
   FFTGrid::writeSegyFromStorm(stormcube, fullFileName);
 }
+
+int FFTGrid::findClosestFactorableNumber(int leastint)
+{
+  int i,j,k,l,m,n;
+  int factor   =       1;
+
+  int maxant2    = static_cast<int>(ceil(static_cast<double>(log(static_cast<float>(leastint))) / log(2.0f) ));
+  int maxant3    = static_cast<int>(ceil(static_cast<double>(log(static_cast<float>(leastint))) / log(3.0f) ));
+  int maxant5    = static_cast<int>(ceil(static_cast<double>(log(static_cast<float>(leastint))) / log(5.0f) ));
+  int maxant7    = static_cast<int>(ceil(static_cast<double>(log(static_cast<float>(leastint))) / log(7.0f) ));
+  int maxant11   = 0;
+  int maxant13   = 0;
+  int closestprod= static_cast<int>(pow(2.0f,maxant2));
+
+  /* kan forbedres ved aa trekke fra i endepunktene.i for lokkene*/
+  for(i=0;i<maxant2+1;i++)
+    for(j=0;j<maxant3+1;j++)
+      for(k=0;k<maxant5+1;k++)
+        for(l=0;l<maxant7+1;l++)
+          for(m=0;m<maxant11+1;m++)
+            for(n=maxant11;n<maxant13+1;n++)
+            {
+              factor = static_cast<int>(pow(2.0f,i)*pow(3.0f,j)*pow(5.0f,k)*
+                pow(7.0f,l)*pow(11.0f,m)*pow(13.0f,n));
+              if ((factor >=  leastint) &&  (factor <  closestprod))
+              {
+                closestprod=factor;
+              }
+            }
+            return closestprod;
+}
+
 
 int FFTGrid::formatFlag_        = 0;
 int FFTGrid::domainFlag_        = IO::TIMEDOMAIN;

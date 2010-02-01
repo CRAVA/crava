@@ -147,3 +147,46 @@ Utils::fftInv(fftw_complex* cAmp,fftw_real* rAmp,int nt)
   for(int i=0;i<nt;i++)
     rAmp[i]*=fftw_real(sf);
 }
+//-----------------------------------------------------------
+int 
+Utils::findEnd(std::string & seek, int start, std::string & find)
+{
+  int i    = start;
+  int end  = seek.length();
+  int ok   = find.length();
+  int flag = 0;
+
+  while(flag < ok && i < end)
+  {
+    if(seek[i] == find[flag])
+      flag++;
+    else
+      flag = 0;
+    i++;
+  }
+  if(flag == ok)
+    return(i-1);
+  else
+    return(-1);
+}
+//-------------------------------------------------------------
+void
+Utils::readUntilStop(int pos, std::string & in, std::string & out, std::string read)
+{ 
+  /*
+    reads a string from position pos+1 
+    until the terminating char given in stop 
+    returns the string excluding the stop
+  */
+  
+  int stop = in.find(read,pos);
+  if (stop < 0)
+    stop = in.length();
+  out = "";
+  int i=0;
+  while (i < stop-pos-1)
+  {
+    out.push_back(in[pos+1+i]);
+    i++;
+  }
+}

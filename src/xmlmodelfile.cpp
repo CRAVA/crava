@@ -7,7 +7,6 @@
 #define _USE_MATH_DEFINES
 #include <cmath>
 #include "lib/global_def.h"
-#include "lib/lib_misc.h"
 #include "nrlib/iotools/stringtools.hpp"
 #include "nrlib/iotools/logkit.hpp"
 #include "nrlib/segy/segy.hpp"
@@ -23,16 +22,17 @@
 #include "src/io.h"
 
 
-XmlModelFile::XmlModelFile(const char * fileName)
+XmlModelFile::XmlModelFile(const std::string & fileName)
 {
   modelSettings_ = new ModelSettings();
   inputFiles_    = new InputFiles();
   failed_        = false;
 
-  std::ifstream file(fileName);
+  std::ifstream file;
+  NRLib::OpenRead(file,fileName);
 
   if (!file) {
-    LogKit::LogFormatted(LogKit::ERROR,"\nERROR: Could not open file %s for reading.\n\n", fileName);
+    LogKit::LogFormatted(LogKit::ERROR,"\nERROR: Could not open file %s for reading.\n\n", fileName.c_str());
     exit(1);
   }
 
@@ -53,7 +53,7 @@ XmlModelFile::XmlModelFile(const char * fileName)
   if (doc.Error() == true) {
     Utils::writeHeader("Invalid XML file");
     LogKit::LogFormatted(LogKit::ERROR,"\n%s is not a valid XML file. %s In line %d, column %d.", 
-                         fileName, doc.ErrorDesc(), doc.ErrorRow(), doc.ErrorCol());
+                         fileName.c_str(), doc.ErrorDesc(), doc.ErrorRow(), doc.ErrorCol());
     if (doc.ErrorId() == 9) { // Not very robust check, but a start 
       LogKit::LogFormatted(LogKit::ERROR,"\nPossible cause: Mis-spelled or forgotten end tag.");
     }
@@ -72,7 +72,7 @@ XmlModelFile::XmlModelFile(const char * fileName)
 
     if(errTxt != "") {
       Utils::writeHeader("Invalid model file");
-      LogKit::LogFormatted(LogKit::ERROR,"\n%s is not a valid model file:\n",fileName);
+      LogKit::LogFormatted(LogKit::ERROR,"\n%s is not a valid model file:\n",fileName.c_str());
       LogKit::LogMessage(LogKit::ERROR, errTxt);
       LogKit::LogFormatted(LogKit::ERROR,"\nAborting\n");
       failed_ = true;
