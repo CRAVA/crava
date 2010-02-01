@@ -195,7 +195,7 @@ WellData::readRMSWell(const std::string              & wellFileName,
     }
   }
   if(error_ > 0)
-    errTxt_ += "Cannot find log(s) "+missVar+"in well file "+wellfilename_+".\n";
+    errTxt_ += "Cannot find log(s) "+missVar+" in well file "+wellfilename_+".\n";
 
 
   if(pos[0]==IMISSING)

@@ -191,7 +191,7 @@ public:
   void addIndicatorWavelet(int indicator)                 { indWavelet_.push_back(indicator)                     ;}
   void addIndicatorFacies(int indicator)                  { indFacies_.push_back(indicator)                      ;}
   void addIndicatorRealVs(int indicator)                  { indRealVs_.push_back(indicator)                      ;}
-  void setLogName(int i, const std::string & logName)     { logNames_[i]              = logName                  ;}
+  void setLogName(int i, const std::string & logName)     { logNames_[i]              = NRLib::Uppercase(logName);}
   void setInverseVelocity(int i, bool inverse)            { inverseVelocity_[i]       = inverse                  ;}
   void addFaciesLabel(int faciesLabel)                    { faciesLabels_.push_back(faciesLabel)                 ;}
   void addFaciesName(const std::string & faciesName)      { faciesNames_.push_back(faciesName)                   ;}
