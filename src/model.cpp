@@ -829,9 +829,11 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
 
   if(modelSettings->getForwardModeling())
     gridFile = inputFiles->getBackFile(0);    // Get geometry from earth model (Vp)
-  else
-    gridFile = inputFiles->getSeismicFile(0); // Get area from first seismic data volume
-
+  else {
+    //In estimation mode, we generally do not bother with il/xl, and may not need the gridfile, hence it might not be given.
+    if(areaSpecification == AREA_FROM_GRID_DATA || modelSettings->getEstimationMode() == false)
+      gridFile = inputFiles->getSeismicFile(0); // Get area from first seismic data volume
+  }
   //
   // Set area geometry information
   // -----------------------------
@@ -3649,7 +3651,8 @@ Model::printSettings(ModelSettings * modelSettings,
   }
   else {
     LogKit::LogFormatted(LogKit::LOW,"\nInversion area:\n");
-    gridFile = inputFiles->getSeismicFile(0); // Get area from first seismic data volume
+    if(areaSpecification == AREA_FROM_GRID_DATA)
+      gridFile = inputFiles->getSeismicFile(0); // Get area from first seismic data volume
   }
   if (areaSpecification == AREA_FROM_GRID_DATA)
     LogKit::LogFormatted(LogKit::LOW,"  Taken from                               : "+gridFile+"\n");
