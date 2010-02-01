@@ -36,10 +36,10 @@ Utils::writeHeader(const std::string     & text,
 
 //------------------------------------------------------------
 void    
-Utils::writeTitler(const char * text)
+Utils::writeTitler(const std::string & text)
 {
-  const int length = static_cast<int>(strlen(text));
-  LogKit::LogFormatted(LogKit::LOW,"\n%s\n",text);
+  const int length = static_cast<int>(text.length());
+  LogKit::LogFormatted(LogKit::LOW,"\n%s\n",text.c_str());
   for (int i = 0 ; i < length ; i++)
     LogKit::LogFormatted(LogKit::LOW,"-");
   LogKit::LogFormatted(LogKit::LOW,"\n");
