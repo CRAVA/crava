@@ -145,7 +145,7 @@ int main(int argc, char** argv)
     LogKit::LogFormatted(LogKit::DEBUGLOW,"\n            Maximum number of grids requested  :  %2d",FFTGrid::getMaxAllowedGrids()); 
     LogKit::LogFormatted(LogKit::DEBUGLOW,"\n            Maximum number of grids allocated  :  %2d",FFTGrid::getMaxAllocatedGrids()); 
     LogKit::LogFormatted(LogKit::DEBUGLOW,"\n         Consult method Model::checkAvailableMemory().\n"); 
-    TaskList::addTask("CRAVA did not use as much memory as estimated. NR would be interested to konow about this, so if you could send your .xml-file to us, we would aprreciate it.");
+    TaskList::addTask("CRAVA did not use as much memory as estimated. NR would be interested to know about this, so if you could send your .xml-file to us, we would aprreciate it.");
   }
   
   Timings::setTimeTotal(wall,cpu);
