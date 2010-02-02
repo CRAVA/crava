@@ -209,10 +209,12 @@ void CovGridSeparated::EstimateRangeY(int& rangeY) const {
 void CovGridSeparated::EstimateRangeZ(int& rangeZ) const {
   const float sillZ = 0.05f;
 
-  for (int k = nzp_/2; k >= 0; k--) {
+//  for (int k = nzp_/2; k >= 0; k--) {
+  for(int k = 0;k<=nzp_/2;k++){
     float absGamma = float(fabs(gammaZ_[k]));
-    if (absGamma >= sillZ) {
-      rangeZ = k; return;
+    //if (absGamma >= sillZ) {
+    if(absGamma<=sillZ){
+      rangeZ = k-1; return;
     }
   }
 }

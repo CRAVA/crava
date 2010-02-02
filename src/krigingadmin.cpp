@@ -432,7 +432,8 @@ void CKrigingAdmin::FindDataInDataBlockLoop(Gamma gamma) {
   DataBoxSize currDataBoxSize, startDataboxSize, testDataBoxSize;
   currDataBoxSize = FindDataInDataBlock(gamma, currDataBox_);
   startDataboxSize = currDataBoxSize;
-  CBox minDataBox = currBlock_;
+  //CBox minDataBox = currBlock_;
+  CBox minDataBox = currDataBox_;
   int iMin,iMax,jMin,jMax,kMin,kMax;
   currBlock_.GetMin(iMin,jMin,kMin);
   currBlock_.GetMax(iMax,jMax,kMax);
@@ -830,6 +831,37 @@ void CKrigingAdmin::EstimateSizeOfBlock() {
     return;
   }
 
+  if(rangeX_==0.0 && rangeY_ ==0.0)
+  {
+    dxBlock_ = 1;
+    dyBlock_ = 1;
+    dxBlockExt_ = 0;
+    dyBlockExt_ = 0;
+    dzBlock_ = static_cast<int>(ceil(rangeZ_));
+    dzBlockExt_ = dzBlock_;
+    return;
+  }
+  else if(rangeX_==0.0)
+  {
+    dxBlock_ = 1;
+    dxBlockExt_ = 0; 
+    dyBlock_ = static_cast<int>(ceil(rangeY_));
+    dyBlockExt_ = dyBlock_;
+    dzBlock_ = static_cast<int>(ceil(rangeZ_));
+    dzBlockExt_ = dzBlock_;
+    return;
+  }
+  else if(rangeY_ == 0.0)
+  {
+    dyBlock_ = 1;
+    dyBlockExt_ = 0; 
+    dxBlock_ = static_cast<int>(ceil(rangeX_));
+    dxBlockExt_ = dxBlock_;
+    dzBlock_ = static_cast<int>(ceil(rangeZ_));
+    dzBlockExt_ = dzBlock_;
+    return;
+
+  }
   int dxBlock;
   float nd;
 
@@ -1228,6 +1260,8 @@ void CKrigingAdmin::CalcSmoothWeights(Gamma gamma, int direction) {
     Require(false, "switch failed");
   } // end switch direction
 
+  
+
   // allocate
   double ** ppMatrix = new double*[size];
   double ** ppMatrix2 = new double*[size];
@@ -1293,6 +1327,7 @@ void CKrigingAdmin::CalcSmoothWeights(Gamma gamma, int direction) {
     delete [] ppMatrix2[i];
   }
   delete [] ppMatrix; delete [] ppMatrix2; delete [] pVec;
+  
 }
 
 void CKrigingAdmin::SmoothKrigedResult(Gamma gamma) {
@@ -1333,6 +1368,8 @@ void CKrigingAdmin::SmoothKrigedResult(Gamma gamma) {
         const int i2Max = MINIM(i1 + dxBlock_, simbox_.getnx());
         int j2, k2,i2;
         // smooth in X direction
+        if(dxBlock_>1)
+        {
         const int i2Start = i1 + dxBlock_ - dxSmoothBlock_; 
         const int i2End = MINIM(i1 + dxBlock_ + dxSmoothBlock_, simbox_.getnx());
         const int c2EndX = i2End;
@@ -1340,34 +1377,40 @@ void CKrigingAdmin::SmoothKrigedResult(Gamma gamma) {
         for (k2 = k1; k2 < k2Max; k2++) {
           for (j2 = j1; j2 < j2Max; j2++) {
             // check for well obs
-            bool foundObs = false;
-            for (i2 = i2Start; i2 < i2End; i2++) {
-              if (pBWellGrid_->getRealValue(i2, j2, k2) == 1.0f) {
-                foundObs = true; break;
-              }
-            } // end i2
+        //    bool foundObs = false;
+       //     for (i2 = i2Start; i2 < i2End; i2++) {
+       //       if (pBWellGrid_->getRealValue(i2, j2, k2) == 1.0f) {
+       //         foundObs = true; break;
+       //       }
+       //     } // end i2
 
             // actually smoothing
-            if (!foundObs) {
+          //  if (!foundObs) {
               for (i2 = i2Start; i2 < i2End; i2++) {
+                if (pBWellGrid_->getRealValue(i2, j2, k2) != 1.0f) {
                 float result = pGrid->getRealValue(i2, j2, k2);
                 if (result != RMISSING) {
                   const float trend = result;
                   int c;
-                  for (c = i2Start - 1; c < c2EndX; c++) {
-                    const int c2 = (c >= simbox_.getnx() ? 2*simbox_.getnx() - c - 1 : c); 
+                  for (c = i2Start - 1; c <= c2EndX; c++) {
+                 // for(c = i2 - dxSmoothBlock_; c<= i2+dxSmoothBlock_;c++){
+                    int c2 = (c >= simbox_.getnx() ? 2*simbox_.getnx() - c - 1 : c); 
+                    c2 = (c2<0 ? 0 : c2);
                     result += static_cast<float>(ppKrigSmoothWeightsX_[i2-i2Start][c - i2Start + 1]) 
+                  //  result += static_cast<float>(ppKrigSmoothWeightsX_[1][c - i2 + dxSmoothBlock_]) 
                       * (pGrid->getRealValue(c2, j2, k2) - trend);
                   } // end c
                   if (pGrid->setRealValue(i2, j2, k2, result))
                     //if (pGrid->setRealValue(i2, j2, k2, 1.0f))
                     Require(false, "pGrid->setRealValue failed"); // something is serious wrong...
                 }
-              } // end i2
-            } // end if
+              } // end if
+            } // end i2
           } // end j2
         } // end k2
-
+        }
+        if(dyBlock_>1)
+        {
         // smooth in y direction
         int j2Start = j1 + dyBlock_ - dySmoothBlock_; 
         const int j2End = MINIM(j1 + dyBlock_ + dySmoothBlock_, simbox_.getny());
@@ -1376,23 +1419,27 @@ void CKrigingAdmin::SmoothKrigedResult(Gamma gamma) {
         for (k2 = k1; k2 < k2Max; k2++) {
           for (i2 = i1; i2 < i2Max; i2++) {
             // check for well obs
-            bool foundObs = false;
-            for (j2 = j2Start; j2 < j2End; j2++) {
-              if (pBWellGrid_->getRealValue(i2, j2, k2) == 1.0f) {
-                foundObs = true; break;
-              }
-            } // end j2
+        //    bool foundObs = false;
+       //     for (j2 = j2Start; j2 < j2End; j2++) {
+        //      if (pBWellGrid_->getRealValue(i2, j2, k2) == 1.0f) {
+       //         foundObs = true; break;
+        //      }
+        //    } // end j2
 
             // actually smoothing
-            if (!foundObs) {
+          //  if (!foundObs) {
               for (j2 = j2Start; j2 < j2End; j2++) {
+              if (pBWellGrid_->getRealValue(i2, j2, k2) != 1.0f) {
                 float result = pGrid->getRealValue(i2, j2, k2);
                 if (result != RMISSING) {
                   const float trend = result;
                   int c;
-                  for (c = j2Start - 1; c < c2EndY; c++) {
-                    const int c2 = (c >= simbox_.getny() ? 2*simbox_.getny() - c - 1 : c);
+                  for (c = j2Start - 1; c <= c2EndY; c++) {
+                    //for(c = j2 - dySmoothBlock_; c<= j2+dySmoothBlock_;c++){
+                    int c2 = (c >= simbox_.getny() ? 2*simbox_.getny() - c - 1 : c);
+                    c2 = (c2<0 ? 0 : c2);
                     result += static_cast<float>(ppKrigSmoothWeightsY_[j2 - j2Start][c - j2Start + 1])
+                   // result += static_cast<float>(ppKrigSmoothWeightsY_[1][c - j2 + dySmoothBlock_])
                       * (pGrid->getRealValue(i2, c2, k2) - trend);
                   } // end c
                   if (pGrid->setRealValue(i2, j2, k2, result))
@@ -1404,7 +1451,9 @@ void CKrigingAdmin::SmoothKrigedResult(Gamma gamma) {
           } // end i2
         } // end k2
 
-
+        }
+        if(dzBlock_>1)
+        {
         // smooth in z direction
         const int k2Start = k1 + dzBlock_ - dzSmoothBlock_; 
         const int k2End = MINIM(k1 + dzBlock_ + dzSmoothBlock_, simbox_.getnz());
@@ -1412,23 +1461,27 @@ void CKrigingAdmin::SmoothKrigedResult(Gamma gamma) {
         for (j2 = j1; j2 < j2Max; j2++) {
           for (i2 = i1; i2 < i2Max; i2++) {
             // check for well obs
-            bool foundObs = false;
-            for (k2 = k2Start; k2 < k2End; k2++) {
-              if (pBWellGrid_->getRealValue(i2, j2, k2) == 1.0f) {
-                foundObs = true; break;
-              }
-            } // end k2
+         //   bool foundObs = false;
+         //   for (k2 = k2Start; k2 <= k2End; k2++) {
+          //    if (pBWellGrid_->getRealValue(i2, j2, k2) == 1.0f) {
+         //       foundObs = true; break;
+         //     }
+         //   } // end k2
 
             // actually smoothing
-            if (!foundObs) {
+          //  if (!foundObs) {
               for (k2 = k2Start; k2 < k2End; k2++) {
+              if (pBWellGrid_->getRealValue(i2, j2, k2) != 1.0f) {
                 float result = pGrid->getRealValue(i2, j2, k2);
                 if (result != RMISSING) {
                   const float trend = result;
                   int c;
-                  for (c = k2Start - 1; c < c2EndZ; c++) {
-                    const int c2 = (c >= simbox_.getnz() ? 2*simbox_.getnz() - c - 1 : c);
+                  for (c = k2Start - 1; c <= c2EndZ; c++) {
+                  //for(c = k2 - dzSmoothBlock_; c<= k2+dzSmoothBlock_;c++){
+                    int c2 = (c >= simbox_.getnz() ? 2*simbox_.getnz() - c - 1 : c);
+                    c2 = (c2<0 ? 0 : c2);
                     result += static_cast<float>(ppKrigSmoothWeightsZ_[k2 - k2Start][c - k2Start + 1])
+                   // result += static_cast<float>(ppKrigSmoothWeightsZ_[1][c - k2 + dzSmoothBlock_])
                       * (pGrid->getRealValue(i2, j2, c2) - trend);
                   } // end c
                   if (pGrid->setRealValue(i2, j2, k2, result))
@@ -1439,7 +1492,7 @@ void CKrigingAdmin::SmoothKrigedResult(Gamma gamma) {
             } // end if
           } // end i2
         } // end j2
-
+        }
       } // end i
     } // end j
   } // end k 

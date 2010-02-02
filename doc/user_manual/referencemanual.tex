@@ -320,7 +320,7 @@ Estimation: Checks input data and performs estimation of lacking information for
 
 \subsubsection{\hbracket{inline-crossline-numbers}}\newkw{inline-crossline-numbers}
  \slist
-   \item \Description Describe area by inline and crossline numbers. il-start and xl-start must be given if this command is used, the other variables are optional. The numbers which are not specified are taken from the Segy file containing seismic data.
+   \item \Description Describe area by inline and crossline numbers. il-start and xl-start must be given if this command is used, the other variables are optional. The numbers which are not specified are taken from the SegY file containing seismic data. The command is only working if seismic data are given on SegY format.
    \item \Argument 
    \item \Default
  \elist
@@ -934,7 +934,7 @@ Estimation: Checks input data and performs estimation of lacking information for
  \slist
    \item \Description Integer value giving the limit for the amount of well data used to krige each point. A high value gives a smoother and more exact field, but takes more time.
    \item \Argument Integer
-   \item \Default 300
+   \item \Default 250
  \elist
 
 \subsubsection{\hbracket{debug-level}}\newkw{debug-level}
