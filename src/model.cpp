@@ -2802,11 +2802,15 @@ Model::processWavelets(Wavelet                    **& wavelet,
         error++;
       }
       else {
+        bool flip = false;
+        if (fileFormat == Wavelet::OLD)
+          flip = true;
         if (modelSettings->getWaveletDim(i) == Wavelet::ONE_D) {
           wavelet[i] = new Wavelet1D(waveletFile, 
                                      fileFormat, 
                                      modelSettings, 
                                      reflectionMatrix[i],
+                                     angle,
                                      error, 
                                      errText);
           // Calculate a preliminary scale factor to see if wavelet is in the same size order as the data. A large or small value might cause problems.
@@ -2827,10 +2831,11 @@ Model::processWavelets(Wavelet                    **& wavelet,
               wavelet[i]->multiplyRAmpByConstant(prescale);
           }
           if (error == 0) {
+
             wavelet[i]->resample(static_cast<float>(timeSimbox->getdz()), 
-              timeSimbox->getnz(), 
-              static_cast<float>(modelSettings->getZPadFac()), 
-              angle);
+                                 timeSimbox->getnz(), 
+                                 static_cast<float>(modelSettings->getZPadFac()),
+                                 flip);
           }
         }
         else { //3D-wavelet constructed by 1D wavelet and filter
@@ -2838,9 +2843,16 @@ Model::processWavelets(Wavelet                    **& wavelet,
                                      fileFormat, 
                                      modelSettings, 
                                      reflectionMatrix[i],
+                                     angle,
                                      error, 
                                      errText,
                                      inputFiles->getWaveletFilterFile(i));
+          if (error == 0) {
+            wavelet[i]->resample(static_cast<float>(timeSimbox->getdz()), 
+                                 timeSimbox->getnz(), 
+                                 static_cast<float>(modelSettings->getZPadFac()),
+                                 flip);
+          }
         }
       }
     }

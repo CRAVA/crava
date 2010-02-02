@@ -45,7 +45,6 @@ Wavelet3D::Wavelet3D(const std::string            & filterFile,
     filter_(filterFile, errCode, errText)
 {
   LogKit::LogFormatted(LogKit::MEDIUM,"  Estimating 3D wavelet pulse from seismic data and (nonfiltered) blocked wells\n");
-  readtype_     = ESTIMATE;
   maxShift_             = modelSettings->getMaxWaveletShift();
   minRelativeAmp_       = modelSettings->getMinRelWaveletAmp();  theta_ = theta;
   norm_ = RMISSING;
@@ -346,14 +345,13 @@ Wavelet3D::Wavelet3D(const std::string & fileName,
             int                 fileFormat, 
             ModelSettings     * modelSettings, 
             float             * reflCoef,
+            float               theta,
             int               & errCode, 
             std::string       & errText,
             const std::string & filterFile)
-  : Wavelet(fileName, fileFormat, modelSettings, reflCoef, 3, errCode, errText),
+  : Wavelet(fileName, fileFormat, modelSettings, reflCoef, theta, 3, errCode, errText),
     filter_(filterFile, errCode, errText)
 {
-  //theta_ = 
-  norm_ = RMISSING;
 }
 
 Wavelet3D::Wavelet3D(Wavelet * wavelet)

@@ -45,7 +45,6 @@ Wavelet1D::Wavelet1D(Simbox                       * simbox,
   coeff_[1] = reflCoef[1];
   coeff_[2] = reflCoef[2];
 
-  readtype_             = ESTIMATE;
   maxShift_             = modelSettings->getMaxWaveletShift();
   minRelativeAmp_       = modelSettings->getMinRelWaveletAmp();
   dz_                   = static_cast<float>(simbox->getdz());
@@ -381,9 +380,10 @@ Wavelet1D::Wavelet1D(const std::string & fileName,
             int                 fileFormat, 
             ModelSettings     * modelSettings, 
             float             * reflCoef,
+            float               theta,
             int               & errCode, 
             std::string       & errText)
-  : Wavelet(fileName, fileFormat, modelSettings, reflCoef, 1, errCode, errText)
+  : Wavelet(fileName, fileFormat, modelSettings, reflCoef, theta, 1, errCode, errText)
 {
 }
 
@@ -1476,4 +1476,30 @@ Wavelet1D::averageWavelets(fftw_real** wavelet_r,int nWells,int nzp,float* wellW
   return wave;
 }
 
+void 
+Wavelet1D::shiftReal(float shift, fftw_real* rAmp,int nt)
+{
+  fftw_complex* cAmp = reinterpret_cast<fftw_complex*>(rAmp);
+  Utils::fft(rAmp,cAmp, nt);
+  int cnzp= nt/2+1;
+  float expo;
+  fftw_complex tmp,mult;
+  for(int i=0;i<cnzp;i++) {
+    tmp     = cAmp[i];
+    expo    = static_cast<float>(-2.0*shift*PI*static_cast<float>(i)/static_cast<float>(nt));
+    mult.re = cos(expo);
+    mult.im = sin(expo);
+    cAmp[i].re = tmp.re*mult.re-tmp.im*mult.im;
+    cAmp[i].im = tmp.re*mult.im+tmp.im*mult.re;
+  }
+  Utils::fftInv(cAmp,rAmp, nt);
+}
 
+void
+Wavelet1D::convolve(fftw_complex* var1_c ,fftw_complex* var2_c, fftw_complex* out_c,int cnzp) const
+{
+  for(int i=0;i<cnzp;i++) {
+    out_c[i].re = var1_c[i].re*var2_c[i].re+var1_c[i].im*var2_c[i].im; 
+    out_c[i].im = var1_c[i].im*var2_c[i].re - var1_c[i].re*var2_c[i].im;
+  }
+}

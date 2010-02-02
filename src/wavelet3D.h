@@ -35,6 +35,7 @@ public:
             int                            fileFormat, 
             ModelSettings                * modelSettings, 
             float                        * reflCoef,
+            float                          theta,
             int                          & errCode, 
             std::string                  & errText,
             const std::string            & filterFile);

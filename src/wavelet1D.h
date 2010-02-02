@@ -22,6 +22,7 @@ public:
             int                 fileFormat, 
             ModelSettings     * modelSettings, 
             float             * reflCoef,
+            float               theta,
             int               & errCode, 
             std::string       & errText);
   Wavelet1D(Wavelet * wavelet);
@@ -133,6 +134,14 @@ private:
                                  float                       * dz,
                                  float                         dzOut)         const;
 
+  void           shiftReal(float                               shift, 
+                           fftw_real                         * rAmp,
+                           int                                 nt);
+
+  void           convolve(fftw_complex                       * var1_c,
+                          fftw_complex                       * var2_c, 
+                          fftw_complex                       * out_c,
+                          int                                  cnzp)           const;
 };
 
 #endif
