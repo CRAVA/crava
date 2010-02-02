@@ -35,7 +35,8 @@ int main(int argc, char** argv)
 
   Program program( 0,                     // Major version
                    9,                     // Minor version 
-                   6,                     // Patch number 
+                   7,                     // Patch number 
+                   "beta",                // Use empty string "" for release versions 
                    -1,                    // Validity of licence in days (-1 = infinite)
                   "Norsk Regnesentral");  // Who this copy of CRAVA is licensed to
 
@@ -147,10 +148,12 @@ int main(int argc, char** argv)
     TaskList::addTask("CRAVA did not use as much memory as estimated. NR would be interested to konow about this, so if you could send your .xml-file to us, we would aprreciate it.");
   }
   
-  TaskList::viewAllTasks();  
-
   Timings::setTimeTotal(wall,cpu);
   Timings::reportAll(LogKit::MEDIUM);
+
+  TaskList::viewAllTasks();  
+
+  Timings::reportTotal(LogKit::LOW);
 
   LogKit::LogFormatted(LogKit::LOW,"\n*** CRAVA closing  ***\n"); 
   LogKit::LogFormatted(LogKit::LOW,"\n*** CRAVA finished ***\n");

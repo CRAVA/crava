@@ -8,6 +8,7 @@ class Timings
 {
 public: 
   static void    reportAll(LogKit::MessageLevels logLevel);
+  static void    reportTotal(LogKit::MessageLevels logLevel);
 
   static void    setTimeTotal(double& wall, double& cpu);
   static void    setTimeSeismic(double& wall, double& cpu);

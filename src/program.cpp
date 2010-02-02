@@ -10,17 +10,22 @@
 Program::Program(const unsigned int  major,
                  const unsigned int  minor,
                  const unsigned int  patch,
+                 const std::string & extra_text,
                  const int           licence_days,
                  const std::string & licensed_to)
   : major_(major),
     minor_(minor),
     patch_(patch),
+    extra_text_(extra_text),
     licence_days_(licence_days),
     licensed_to_(licensed_to)
 {
+  std::string version = NRLib::ToString(major)+"."+NRLib::ToString(minor)+"."+NRLib::ToString(patch)+extra_text;
+  std::string blanks(39 - version.size(), ' '); 
+
   LogKit::LogFormatted(LogKit::LOW,"\n***************************************************************************************************");
   LogKit::LogFormatted(LogKit::LOW,"\n*****                                                                                         *****"); 
-  LogKit::LogFormatted(LogKit::LOW,"\n*****                                   C R A V A  -  %d.%d.%d                                   *****",major_,minor_,patch_); 
+  LogKit::LogFormatted(LogKit::LOW,"\n*****                                   C R A V A  -  "+version+blanks+                      "*****"); 
   LogKit::LogFormatted(LogKit::LOW,"\n*****                                                                                         *****"); 
   LogKit::LogFormatted(LogKit::LOW,"\n*****                     Copyright (c) 2003 by Norsk Regnesentral/Statoil                    *****"); 
   LogKit::LogFormatted(LogKit::LOW,"\n*****                                                                                         *****"); 
@@ -29,9 +34,9 @@ Program::Program(const unsigned int  major,
   CheckForLicenceExpiration(licence_days_,
                             licensed_to_);
 
-  LogKit::LogFormatted(LogKit::LOW,"Log written by                             : %s\n",SystemCall::getUserName().c_str());
-  LogKit::LogFormatted(LogKit::LOW,"Date and time                              : %s"  ,SystemCall::getCurrentTime().c_str());
-  LogKit::LogFormatted(LogKit::LOW,"Host                                       : %s\n",SystemCall::getHostName().c_str());
+  LogKit::LogFormatted(LogKit::LOW,"Log written by                             : "+SystemCall::getUserName()+"\n");
+  LogKit::LogFormatted(LogKit::LOW,"Date and time                              : "+SystemCall::getCurrentTime());
+  LogKit::LogFormatted(LogKit::LOW,"Host                                       : "+SystemCall::getHostName()+"\n");
 }
 
 Program::~Program(void) 

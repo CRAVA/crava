@@ -47,7 +47,11 @@ Timings::reportAll(LogKit::MessageLevels logLevel)
   reportOne("Rest                     ", c_rest_             , w_rest_             , c_total_, w_total_,logLevel);
   LogKit::LogFormatted(logLevel,  "---------------------------------------------------------------------\n");
   reportOne("Total                    ", c_total_            , w_total_            , c_total_, w_total_,logLevel);
+}
 
+void 
+Timings::reportTotal(LogKit::MessageLevels logLevel)
+{
   LogKit::LogFormatted(LogKit::LOW,"\nTotal CPU  time used in CRAVA: %6d seconds",   static_cast<int>(c_total_));
   LogKit::LogFormatted(LogKit::LOW,"\nTotal Wall time used in CRAVA: %6d seconds\n", static_cast<int>(w_total_));
 }

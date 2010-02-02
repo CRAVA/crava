@@ -1887,16 +1887,14 @@ Model::processWells(WellData     **& wells,
       LogKit::LogFormatted(LogKit::LOW,"\nWARNING: %d well(s) have wrong facies logs and will be ignored.\n",facieslognotok);
     if (nWells==0) {
       LogKit::LogFormatted(LogKit::LOW,"\nERROR: There are no wells left for data analysis. Please check that the inversion area given");
-      LogKit::LogFormatted(LogKit::LOW,"\n       below is correct. If it is not, you probably have problems with coordinate scaling. To");
-      LogKit::LogFormatted(LogKit::LOW,"\n       correct this problem the seismic data must be re-exported from your data base using");
-      LogKit::LogFormatted(LogKit::LOW,"\n       the \'by-pass coordinate scaling (byte 71-72)\' toggle that matches your version of");
-      LogKit::LogFormatted(LogKit::LOW,"\n       CRAVA (see beginning of CRAVA log file). Alternatively, CRAVA can be recompiled.\n");
+      LogKit::LogFormatted(LogKit::LOW,"\n       below is correct. If it is not, you probably have problems with coordinate scaling.");
       LogKit::LogFormatted(LogKit::LOW,"\n                                   X0          Y0        DeltaX      DeltaY      Angle");
       LogKit::LogFormatted(LogKit::LOW,"\n       -------------------------------------------------------------------------------");
       LogKit::LogFormatted(LogKit::LOW,"\n       Inversion area:    %11.2f %11.2f   %11.2f %11.2f   %8.3f\n", 
                            timeSimbox->getx0(), timeSimbox->gety0(), 
                            timeSimbox->getlx(), timeSimbox->getly(), 
                            (timeSimbox->getAngle()*180)/PI);
+      errText += "No wells available for estimation.";
       error = 1;
     }
   }
@@ -3478,6 +3476,8 @@ Model::printSettings(ModelSettings * modelSettings,
                      InputFiles    * inputFiles,
                      int             areaSpecification)
 {
+  Utils::writeHeader("Model settings");
+
   LogKit::LogFormatted(LogKit::LOW,"\nGeneral settings:\n");
   if(modelSettings->getForwardModeling()==true)
     LogKit::LogFormatted(LogKit::LOW,"  Modelling mode                           : forward\n");

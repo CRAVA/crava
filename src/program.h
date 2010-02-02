@@ -18,6 +18,7 @@ public:
   Program(const unsigned int  major,
           const unsigned int  minor,
           const unsigned int  patch,
+          const std::string & extra_text,
           const int           licence_days,
           const std::string & licensed_to);
   
@@ -37,6 +38,7 @@ private:
   const unsigned int   major_;           ///< Major version number  
   const unsigned int   minor_;           ///< Minor version number
   const unsigned int   patch_;           ///< Patch number
+  const std::string    extra_text_;      ///< Extra text added to major.minor.patch string.
   const int            licence_days_;    ///< Program validity in days (-1 = infinity)
   const std::string  & licensed_to_;     ///< Who is the executable licensed to
 };
