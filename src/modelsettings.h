@@ -53,7 +53,8 @@ public:
   float                            getStretchFactor(int i)              const { return stretchFactor_[i]        ;}
   float                            getEstRangeX(int i)                  const { return estRangeX_[i]            ;}
   float                            getEstRangeY(int i)                  const { return estRangeY_[i]            ;}
-                                                                                                               
+                                                                                                                 
+  const std::string                getBackgroundType(void)              const { return backgroundType_          ;}            
   const std::vector<std::string> & getLogNames(void)                    const { return logNames_                ;}
   const std::vector<bool>        & getInverseVelocity(void)             const { return inverseVelocity_         ;}
   int                              getNumberOfFacies(void)              const { return faciesNames_.size()      ;}
@@ -161,6 +162,7 @@ public:
   void setWaveletScale(int i, float waveletScale)         { waveletScale_[i]          = waveletScale             ;} 
   void setSNRatio(int i, float SNRatio)                   { SNRatio_[i]               = SNRatio                  ;}
   void addSNRatio(float SNRatio)                          { SNRatio_.push_back(SNRatio)                          ;}
+  void setBackgroundType(std::string type)                { backgroundType_           = type                     ;}
                                                                                                                 
   void addMatchEnergies(int matchEnergies)                { matchEnergies_.push_back(matchEnergies)              ;}
   void addEstimateWavelet(int estimateWavelet)            { estimateWavelet_.push_back(estimateWavelet)          ;}
@@ -320,6 +322,7 @@ private:
 
   std::vector<float>                constBackValue_;             // Values set for constant background model
                                                                  // Negative value ==> read from file (actual value gives format).
+  std::string                       backgroundType_;             // background or earth model
 
   //The following indicators use the indicators enum above. (2 = yes, but may override in QC, 1=yes, 0=no)
   std::vector<int>                  indBGTrend_;                 // Use well to estimate background trend?

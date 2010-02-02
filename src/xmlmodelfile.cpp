@@ -63,7 +63,7 @@ XmlModelFile::XmlModelFile(const std::string & fileName)
   else {
     std::string errTxt = "";
     if(parseCrava(&doc, errTxt) == false)
-      errTxt = "'"+std::string(fileName)+"' is not a crava model file (lacks the <crava> keyword.\n";
+      errTxt = "'"+std::string(fileName)+"' is not a crava model file (lacks the <crava> keyword.)\n";
 
     std::vector<std::string> legalCommands(1);
     checkForJunk(&doc, errTxt, legalCommands);
@@ -136,9 +136,11 @@ XmlModelFile::parseActions(TiXmlNode * node, std::string & errTxt)
         mode+"> under command <"+root->ValueStr()+">"+lineColumnText(root)+".\n";
   }
 
-  parseInversionSettings(root, errTxt);
+  if (parseInversionSettings(root, errTxt) && mode == "forward")
+    errTxt += "Inversion can not be done with the mode 'forward'.\n";
 
-  parseEstimationSettings(root, errTxt);
+  if (parseEstimationSettings(root, errTxt) && mode == "forward")
+    errTxt += "Estimation can not be done with the mode 'forward'.\n";
   
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -1048,6 +1050,9 @@ XmlModelFile::parseEarthModel(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("vs-file");
   legalCommands.push_back("density-file");
   
+  if (modelSettings_->getBackgroundType() != "")
+    errTxt += "Both background and earth-model can not be given. Under forward mode, the earth-model must be used.\n";
+  modelSettings_->setBackgroundType("earth model");
 
   std::string filename;
   bool vp = parseFileName(root, "vp-file", filename, errTxt);
@@ -1056,7 +1061,7 @@ XmlModelFile::parseEarthModel(TiXmlNode * node, std::string & errTxt)
     modelSettings_->setConstBackValue(0, -1);
   }
   else
-    errTxt += "Vp is not given in command earth-model.";
+    errTxt += "Vp is not given in command earth-model.\n";
 
   bool vs = parseFileName(root, "vs-file", filename, errTxt);
   if(vs == true) {
@@ -1096,6 +1101,8 @@ XmlModelFile::parseBackground(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("velocity-field");
   legalCommands.push_back("lateral-correlation");
   legalCommands.push_back("high-cut-background-modelling");
+
+  modelSettings_->setBackgroundType("background");
 
   std::string filename;
   bool vp = parseFileName(root, "vp-file", filename, errTxt);
@@ -2535,16 +2542,13 @@ XmlModelFile::checkConsistency(std::string & errTxt) {
 
 void
 XmlModelFile::checkForwardConsistency(std::string & errTxt) {
-  //Mostly, we don't care here, but have to straighten some things.
   if(modelSettings_->getForwardModeling() == true) {
-    //Set dummy values
     int i;
     for(i=0;i<modelSettings_->getNumberOfAngles();i++)
     {
-      modelSettings_->setSNRatio(i,1.1f);
       modelSettings_->setEstimateSNRatio(i,false);
       if(modelSettings_->getEstimateWavelet(i)==true)
-        errTxt+="Wavelet must be given when doing forward modeling. Wavelet is not given for angle no. " +NRLib::ToString(i)+"\n";
+        errTxt+="Wavelet must be given when doing forward modeling. Wavelet is not given for angle "+NRLib::ToString(modelSettings_->getAngle(i)*(180/M_PI),1)+".\n";
 
     if(inputFiles_->getSeismicFile(i)!="")
       errTxt+="Seismic data should not be given when doing forward modeling.\n";
@@ -2554,6 +2558,14 @@ XmlModelFile::checkForwardConsistency(std::string & errTxt) {
 
     if(modelSettings_->getUseLocalWavelet()==true)
       errTxt+="Local wavelet can not be used in forward modeling.\n";
+
+    if (modelSettings_->getNumberOfWells() > 0)
+      errTxt +="Wells should not be given when doing forward modeling.\n";
+    
+    if (modelSettings_->getBackgroundType() == "background")
+      errTxt += "An earth model needs to be given when doing forward modeling. The background model should not be given.\n";
+    else if (modelSettings_->getBackgroundType() == "")
+      errTxt += "An earth model needs to be given when doing forward modeling.\n";
   }
 }
 

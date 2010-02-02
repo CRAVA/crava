@@ -40,6 +40,8 @@ ModelSettings::ModelSettings(void)
   krigingParameter_        =        0; // Indicate kriging not set.
   nWells_                  =        0;
   nSimulations_            =        0;
+  backgroundType_          =       "";
+
   //
   // The original ranges were provided by Nam Hoai Pham (Statoil/25.09.2007)
   //

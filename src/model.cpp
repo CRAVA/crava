@@ -2069,7 +2069,10 @@ Model::processBackground(Background   *& background,
                          std::string   & errText,
                          bool          & failed)
 {
-  Utils::writeHeader("Prior Expectations / Background Model");
+  if (modelSettings->getForwardModeling())
+    Utils::writeHeader("Earth Model");
+  else
+    Utils::writeHeader("Prior Expectations / Background Model");
 
   double wall=0.0, cpu=0.0;
   TimeKit::getTime(wall,cpu);
@@ -2108,9 +2111,9 @@ Model::processBackground(Background   *& background,
   else 
   {
     std::vector<std::string> parName;
-    parName.push_back("Vp background");
-    parName.push_back("Vs background");
-    parName.push_back("Rho background");
+    parName.push_back("Vp "+modelSettings->getBackgroundType());
+    parName.push_back("Vs "+modelSettings->getBackgroundType());
+    parName.push_back("Rho "+modelSettings->getBackgroundType());
 
     for(int i=0 ; i<3 ; i++)
     {
@@ -2878,8 +2881,8 @@ Model::processWavelets(Wavelet                    **& wavelet,
         }
         
         float SNRatio = modelSettings->getSNRatio(i);
-        if (SNRatio <= 1.0f || SNRatio > 10.f) {
-          errText += "Illegal signal-to-noise ratio of "+NRLib::ToString(SNRatio)+" for cube "+NRLib::ToString(i)+".\n";
+        if ((SNRatio <= 1.0f || SNRatio > 10.f) && modelSettings->getForwardModeling()==false) {
+          errText += "Illegal signal-to-noise ratio of "+NRLib::ToString(SNRatio)+" for cube "+NRLib::ToString(i+1)+".\n";
           errText += "Ratio must be in interval 1.0 < S/N ratio < 10.0\n";
           error++;
         }
@@ -3541,13 +3544,16 @@ Model::printSettings(ModelSettings * modelSettings,
   //
   // WELL PROCESSING
   //
-  LogKit::LogFormatted(LogKit::LOW,"\nSettings for well processing:\n");
-  LogKit::LogFormatted(LogKit::LOW,"  Threshold for merging log entries        : %10.2f ms\n",modelSettings->getMaxMergeDist());
-  LogKit::LogFormatted(LogKit::LOW,"  Threshold for Vp-Vs rank correlation     : %10.2f\n",modelSettings->getMaxRankCorr());
-  LogKit::LogFormatted(LogKit::LOW,"  Threshold for deviation angle            : %10.1f (=%.2fm/ms TWT)\n",
-                       modelSettings->getMaxDevAngle(),tan(modelSettings->getMaxDevAngle()*PI/180.0));
-  LogKit::LogFormatted(LogKit::LOW,"  High cut for background modelling        : %10.1f\n",modelSettings->getMaxHzBackground());
-  LogKit::LogFormatted(LogKit::LOW,"  High cut for seismic resolution          : %10.1f\n",modelSettings->getMaxHzSeismic());
+  if (modelSettings->getNumberOfWells() > 0)
+  {
+    LogKit::LogFormatted(LogKit::LOW,"\nSettings for well processing:\n");
+    LogKit::LogFormatted(LogKit::LOW,"  Threshold for merging log entries        : %10.2f ms\n",modelSettings->getMaxMergeDist());
+    LogKit::LogFormatted(LogKit::LOW,"  Threshold for Vp-Vs rank correlation     : %10.2f\n",modelSettings->getMaxRankCorr());
+    LogKit::LogFormatted(LogKit::LOW,"  Threshold for deviation angle            : %10.1f (=%.2fm/ms TWT)\n",
+                         modelSettings->getMaxDevAngle(),tan(modelSettings->getMaxDevAngle()*PI/180.0));
+    LogKit::LogFormatted(LogKit::LOW,"  High cut for background modelling        : %10.1f\n",modelSettings->getMaxHzBackground());
+    LogKit::LogFormatted(LogKit::LOW,"  High cut for seismic resolution          : %10.1f\n",modelSettings->getMaxHzSeismic());
+  }
   LogKit::LogFormatted(LogKit::LOW,"\nRange of allowed parameter values:\n");
   LogKit::LogFormatted(LogKit::LOW,"  Vp  - min                                : %10.0f\n",modelSettings->getAlphaMin());
   LogKit::LogFormatted(LogKit::LOW,"  Vp  - max                                : %10.0f\n",modelSettings->getAlphaMax());
@@ -3757,18 +3763,18 @@ Model::printSettings(ModelSettings * modelSettings,
   else
   {
     if(modelSettings->getForwardModeling()==true)
-      LogKit::LogFormatted(LogKit::LOW,"\nElastic parameters:\n");
+      LogKit::LogFormatted(LogKit::LOW,"\nEarth model:\n");
     else
       LogKit::LogFormatted(LogKit::LOW,"\nBackground model:\n");
     if (modelSettings->getConstBackValue(0) > 0)
-      LogKit::LogFormatted(LogKit::LOW,"  p-wave velocity                          : %10.1f\n",modelSettings->getConstBackValue(0));
+      LogKit::LogFormatted(LogKit::LOW,"  P-wave velocity                          : %10.1f\n",modelSettings->getConstBackValue(0));
     else
-      LogKit::LogFormatted(LogKit::LOW,"  p-wave velocity read from file           : "+inputFiles->getBackFile(0)+"\n");
+      LogKit::LogFormatted(LogKit::LOW,"  P-wave velocity read from file           : "+inputFiles->getBackFile(0)+"\n");
     
     if (modelSettings->getConstBackValue(1) > 0)
-      LogKit::LogFormatted(LogKit::LOW,"  s-wave velocity                          : %10.1f\n",modelSettings->getConstBackValue(1));
+      LogKit::LogFormatted(LogKit::LOW,"  S-wave velocity                          : %10.1f\n",modelSettings->getConstBackValue(1));
     else
-      LogKit::LogFormatted(LogKit::LOW,"  s-wave velocity read from file           : "+inputFiles->getBackFile(1)+"\n");
+      LogKit::LogFormatted(LogKit::LOW,"  S-wave velocity read from file           : "+inputFiles->getBackFile(1)+"\n");
       
     if (modelSettings->getConstBackValue(2) > 0)
       LogKit::LogFormatted(LogKit::LOW,"  Density                                  : %10.1f\n",modelSettings->getConstBackValue(2));
