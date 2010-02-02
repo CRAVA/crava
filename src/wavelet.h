@@ -11,9 +11,9 @@
 class Vario;
 class Simbox;
 class FFTGrid;
-class CovGrid2D;
+//class CovGrid2D;
 class WellData;
-class KrigingData2D;
+//class KrigingData2D;
 class ModelSettings;
 
 class Wavelet {
@@ -22,39 +22,37 @@ public:
   enum           waveletDims{ONE_D = 0, THREE_D = 1};
   enum           waveletreadtypes{OLD, JASON, ESTIMATE, SGRI};
   
-  virtual void   fft1DInPlace() = 0;
-  virtual void   invFFT1DInPlace() = 0;
+  void           fft1DInPlace();
+  void           invFFT1DInPlace();
 
-  //Constructors and destructor
+//Constructors and destructor
   Wavelet(int dim);
-  Wavelet(int dim, float * reflCoef);
-  Wavelet(ModelSettings * modelSettings, int dim, float * reflCoef);
-  Wavelet(Wavelet * wavelet, int dim);
+  Wavelet(int dim, Wavelet * wavelet);
+  Wavelet(Wavelet * wavelet,int difftype);
+  Wavelet(int difftype, int nz, int nzp);
+  Wavelet(const std::string & fileName, 
+          int                 fileFormat, 
+          ModelSettings     * modelSettings, 
+          float             * reflCoef,
+          int                 dim,
+          int               & errCode, 
+          std::string       & errText);
+
   virtual ~Wavelet();
-
   
-  virtual void          resample(float, int, float, float)                   {};
-  virtual void          multiplyByR(float)                                   {};
-  virtual void          multiplyRAmpByConstant(float )                       {};
-  virtual bool          consistentSize(int nzp, int nyp, int nxp)     const = 0;
-  virtual fftw_complex  getCAmp(int k, int j=0, int i=0)              const = 0;
-  virtual fftw_real     getRAmp(int k, int j=0, int i=0)                    = 0;
-  virtual fftw_complex  getCAmp(int k, float scale, int j=0, int i=0) const = 0;
-  virtual void          setRAmp(float value, int k, int j=0, int i=0)       = 0;
-  //Note: Function below is mainly controlled by debugflag. Set overrideDebug = true to force.
-  virtual void          printToFile(const std::string & fileName, 
-                                    bool                overrideDebug = false) = 0;
-  virtual void          writeWaveletToFile(const std::string & fileName, 
-                                           float approxDzIn)                = 0;
+  void                  resample(float dz, int nz, float pz,float theta);
+  bool                  consistentSize(int nzp) const;
+  void                  multiplyRAmpByConstant(float c);
 
-  virtual void          scale(float gain);
-  virtual int           getNx()                                       const {return 0;}
-  virtual int           getNy()                                       const {return 0;}
-  virtual int           getNxp()                                      const {return 0;}
-  virtual int           getNyp()                                      const {return 0;}
-  virtual float         getDx()                                       const {return 0.0;}
-  virtual float         getDy()                                       const {return 0.0;}
-  virtual FFTGrid     * getAmpCube()                                        {return NULL;}
+  fftw_complex          getCAmp(int k) const;
+  fftw_real             getRAmp(int k);
+  fftw_complex          getCAmp(int k, float scale) const;
+  void                  setRAmp(float value, int k);
+
+  void                  scale(float gain);
+  //Note: Function below is mainly controlled by debugflag. Set overrideDebug = true to force.
+  void                  printToFile(const std::string & fileName, bool overrideDebug = false);
+  void                  writeWaveletToFile(const std::string & fileName, float approxDz);
 
   Wavelet             * getLocalWavelet(int i,int j);
   float                 getNorm()                                     const {return norm_;}
@@ -64,40 +62,42 @@ public:
   int                   getNz()                                       const {return nz_;}
   int                   getNzp()                                      const {return nzp_;}
   float                 getDz()                                       const {return dz_;}
-  float                 getTheta()                                    const {return theta_;}
   float                 getScale()                                    const {return scale_;}
-  int                   getReadtype()                                 const {return readtype_;}
-  int                   getCz()                                       const {return cz_;}
   void                  setShiftGrid(Grid2D * grid);
   void                  setGainGrid(Grid2D * grid);
 
-  float                 findGlobalScaleForGivenWavelet(ModelSettings * modelSettings, 
-                                                       Simbox        * simbox, 
-                                                       FFTGrid       * seisCube, 
-                                                       WellData     ** wells);
+  virtual float         findGlobalScaleForGivenWavelet(ModelSettings * /*modelSettings*/, 
+                                                       Simbox        * /*simbox*/, 
+                                                       FFTGrid       * /*seisCube*/, 
+                                                       WellData     ** /*wells*/) {return 0.0f;}
   // for noise estimation
-  float                 calculateSNRatioAndLocalWavelet(Simbox        * simbox, 
-                                                        FFTGrid       * seisCube, 
-                                                        WellData     ** wells, 
-                                                        Grid2D       *& shift, 
-                                                        Grid2D       *& gain, 
-                                                        ModelSettings * modelSettings,
-                                                        std::string   & errText, 
-                                                        int           & error,
-                                                        Grid2D       *& noiseScaled, 
-                                                        int             number, 
-                                                        float           globalScale); 
-  void                  printVecToFile(const std::string & fileName, 
-                                       fftw_real         * vec ,
-                                       int nzp) const;
-
-  virtual void          write1DWLas3DWL() {};
-  virtual void          write3DWLfrom1DWL() {};
+  virtual float         calculateSNRatioAndLocalWavelet(Simbox        * /*simbox*/, 
+                                                        FFTGrid       * /*seisCube*/, 
+                                                        WellData     ** /*wells*/, 
+                                                        Grid2D       *& /*shift*/, 
+                                                        Grid2D       *& /*gain*/, 
+                                                        ModelSettings * /*modelSettings*/,
+                                                        std::string   & /*errText*/, 
+                                                        int           & /*error*/,
+                                                        Grid2D       *& /*noiseScaled*/, 
+                                                        int             /*number*/, 
+                                                        float           /*globalScale*/) {return 0.0f;} 
 
 protected:
-//virtual float         getWaveletValue(float z, float * Wavelet, int center,int nx, float dz) = 0;
-  virtual void          shiftAndScale(float, float) {};
+  float                 getTheta()                                    const {return theta_;}
+  int                   getReadtype()                                 const {return readtype_;}
+  int                   getCz()                                       const {return cz_;}
+  bool                  getInFFTOrder()                                  const {return inFFTorder_;}
 
+  void                  shiftAndScale(float shift,float gain);
+  void                  WaveletReadOld(const std::string & fileName, int &errCode, std::string & errText);
+  void                  WaveletReadJason(const std::string & fileName, int &errCode, std::string & errText);
+  float                 getWaveletValue(float z, float * Wavelet, int center,int nx, float dz);
+  void                  flipUpDown();
+  float                 getArrayValueOrZero(int i ,float * Wavelet, int nz) const;
+  
+  int                   getWaveletLengthI();
+  float                 getWaveletLengthF();
   // for wavelet estimation
   void                  shiftReal(float shift, 
                                   fftw_real* rAmp,
@@ -106,65 +106,21 @@ protected:
                                  fftw_complex* var2_c, 
                                  fftw_complex* out_c,
                                  int cnzp)                                const;
-  float                 findOptimalWaveletScale(fftw_real** synt_seis_r,
-                                                fftw_real** seis_r,
-                                                int nWells,
-                                                int nzp,
-                                                float* wellWeight,
-                                                float& err,
-                                                float* errWell,
-                                                float* scaleOptWell,
-                                                float* errWellOptScale)   const;
-  void                  findLocalNoiseWithGainGiven(fftw_real ** synt_r,
-                                                    fftw_real ** seis_r,
-                                                    int nWells,
-                                                    int nzp,
-                                                    float * wellWeight,
-                                                    float & err,
-                                                    float * errWell, 
-                                                    float * errWellOptScale,
-                                                    float * scaleOptWell,
-                                                    Grid2D * gain, 
-                                                    WellData **wells, 
-                                                    Simbox *simbox)       const;
-  void                  estimateLocalGain(const CovGrid2D & cov,
-                                          Grid2D         *& gain,
-                                          float           * scaleOptWell,
-                                          float             globalScale,
-                                          int             * nActiveData,
-                                          Simbox          * simbox,
-                                          WellData       ** wells,
-                                          int               nWells);
-  
-  void                  estimateLocalShift(const CovGrid2D & cov,
-                                           Grid2D         *& shift,
-                                           float           * shiftWell,
-                                           int             * nActiveData,
-                                           Simbox          * simbox,
-                                           WellData       ** wells,
-                                           int               nWells);
-  
-  void                  estimateLocalNoise(const CovGrid2D & cov,
-                                           Grid2D         *& noiseScaled,
-                                           float             globalNoise,
-                                           float           * errWellOptScale,
-                                           int             * nActiveData,
-                                           Simbox          * simbox,
-                                           WellData       ** wells,
-                                           int               nWells);
 
-  //void                flipVec(fftw_real* vec, int n);
+  float                 getLocalTimeshift(int     i, 
+                                          int     j) const;
+  float                 getLocalGainFactor(int    i, 
+                                           int    j) const;
 
-  void                  fillInnWavelet(fftw_real* wavelet_r,
-                                       int nzp,
-                                       float dz);
-  float                 findBulkShift(fftw_real* vec_r,
-                                      float dz,
-                                      int nzp);
-  float                 getLocalTimeshift(int i, 
-                                          int j)          const;
-  float                 getLocalGainFactor(int i, 
-                                           int j)         const;
+  void                  printVecToFile(const std::string & fileName, 
+                                       fftw_real         * vec ,
+                                       int                 nzp) const;
+
+
+  int                   cnzp_;                  // size in z direction for storage inplace algorithm (complex grid) nzp_/2+1
+  int                   rnzp_;                  // expansion in z direction for storage inplace algorithm (real grid) 2*(nzp_/2+1)
+  fftw_real*            rAmp_;                  // The amplitude of the wavelet  
+  fftw_complex*         cAmp_;                  // The amplitude of the wavelet complex (if fourier transformed )
 
   float                 theta_;                 // the reflection angle that the wavelet correspond to
   int                   readtype_;              // how is wavelet obtained? read from file[OLD JASON SGRI] or ESTIMATE
@@ -185,12 +141,13 @@ protected:
   float                 maxShift_;              //maximum shift of wavelet in ms
   float                 minRelativeAmp_;
 
-  //NBNB The following parameters are NOT copied in copy constructor.
+  const int             dim_;
+
+//NBNB The following parameters are NOT copied in copy constructor.
   float                 scale_;
   Grid2D              * shiftGrid_;             // 2D grid of shift
   Grid2D              * gainGrid_;              // 2D grid of gain factors.
- 
-  const int             dim_;
+
 };
 
 #endif

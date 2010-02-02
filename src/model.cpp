@@ -2801,11 +2801,11 @@ Model::processWavelets(Wavelet                    **& wavelet,
       else {
         if (modelSettings->getWaveletDim(i) == Wavelet::ONE_D) {
           wavelet[i] = new Wavelet1D(waveletFile, 
-            fileFormat, 
-            modelSettings, 
-            reflectionMatrix[i],
-            error, 
-            errText);
+                                     fileFormat, 
+                                     modelSettings, 
+                                     reflectionMatrix[i],
+                                     error, 
+                                     errText);
           // Calculate a preliminary scale factor to see if wavelet is in the same size order as the data. A large or small value might cause problems.
           if(seisCube!=NULL) // If forward modeling, we have no seismic, can not prescale wavelet.
           {
@@ -2831,21 +2831,13 @@ Model::processWavelets(Wavelet                    **& wavelet,
           }
         }
         else { //3D-wavelet constructed by 1D wavelet and filter
-          Wavelet1D *waveletFromFile = new Wavelet1D(waveletFile, 
-                                                     fileFormat, 
-                                                     modelSettings, 
-                                                     reflectionMatrix[i],
-                                                     error, 
-                                                     errText);
-          if (error == 0) 
-            wavelet[i] = new Wavelet3D(waveletFromFile,
-                                       inputFiles->getWaveletFilterFile(i),
-                                       modelSettings,
-                                       i,
-                                       timeSimbox,
-                                       angle,
-                                       error,
-                                       errText);
+          wavelet[i] = new Wavelet3D(waveletFile, 
+                                     fileFormat, 
+                                     modelSettings, 
+                                     reflectionMatrix[i],
+                                     error, 
+                                     errText,
+                                     inputFiles->getWaveletFilterFile(i));
         }
       }
     }

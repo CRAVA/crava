@@ -6,12 +6,11 @@
 #include "lib/utils.h"
 #include "src/wavelet.h"
 
+class CovGrid2D;
+
 class Wavelet1D : public Wavelet {
 public:
-  void           fft1DInPlace();
-  void           invFFT1DInPlace();
-
-  //Constructors and destructor
+//Constructors and destructor
   Wavelet1D(Simbox                       * simbox,
             FFTGrid                      * seisCube,
             WellData                    ** wells,
@@ -26,48 +25,114 @@ public:
             int               & errCode, 
             std::string       & errText);
   Wavelet1D(Wavelet * wavelet);
-  Wavelet1D(Wavelet                  * wavelet, 
-            ModelSettings            * modelSettings, 
-            float                    * reflCoef, 
-            const std::vector<float> & wlest);
-  Wavelet1D(Wavelet * wavelet,int difftype);
-  Wavelet1D(int difftype, int nz, int nzp);
-  Wavelet1D();
+
+// Wavelet1D();
   virtual ~Wavelet1D();
 
-  void           resample(float dz, int nz, float pz,float theta);
-  bool           consistentSize(int nzp, int, int) const;
-  fftw_complex   getCAmp(int k, int j=0, int i=0) const;
-  fftw_real      getRAmp(int k, int j=0, int i=0);
-  fftw_complex   getCAmp(int k, float scale, int j=0, int i=0) const;
-  void           setRAmp(float value, int k, int j=0, int i=0);
-  void           scale(float gain);
-  void           printToFile(const std::string & fileName, bool overrideDebug = false);
-  void           writeWaveletToFile(const std::string & fileName, float approxDz);
-  void           write1DWLas3DWL();
-  void           write3DWLfrom1DWL();
-  void           multiplyRAmpByConstant(float c);
+// Methods that are virtual in Wavelet
+  float         findGlobalScaleForGivenWavelet(ModelSettings * modelSettings, 
+                                               Simbox        * simbox, 
+                                               FFTGrid       * seisCube, 
+                                               WellData     ** wells);
+
+  float         calculateSNRatioAndLocalWavelet(Simbox        * simbox, 
+                                                FFTGrid       * seisCube, 
+                                                WellData     ** wells, 
+                                                Grid2D       *& shift, 
+                                                Grid2D       *& gain, 
+                                                ModelSettings * modelSettings,
+                                                std::string   & errText, 
+                                                int           & error,
+                                                Grid2D       *& noiseScaled, 
+                                                int             number, 
+                                                float           globalScale);
 
 private:
-  void           flipUpDown();
-  float          getWaveletValue(float z, float * Wavelet, int center,int nx, float dz);
-  void           shiftAndScale(float shift,float gain);
-  void           WaveletReadOld(const std::string & fileName, int &errCode, std::string & errText);
-  void           WaveletReadJason(const std::string & fileName, int &errCode, std::string & errText);
-  float          shiftOptimal(fftw_real** ccor_seis_cpp_r,float* wellWeight,float* dz,int nWells,int nzp,float* shiftWell);
-  void           multiplyPapolouis(fftw_real** vec, float* dz,int nWells,int nzp, float waveletLength, float *wellWeight) const;
-  void           getWavelet(fftw_real** ccor_seis_cpp_r,fftw_real** cor_cpp_r,fftw_real** wavelet_r,float* wellWeight,int nWells,int nt);
-  fftw_real*     averageWavelets(fftw_real** wavelet_r,int nWells,int nzp,float* wellWeight,float* dz,float dzOut) const;
-  float          getArrayValueOrZero(int i ,float * Wavelet, int nz) const;
-  int            getWaveletLengthI();
-  float          getWaveletLengthF();
+  float         findOptimalWaveletScale(fftw_real            ** synt_seis_r,
+                                        fftw_real            ** seis_r,
+                                        int                     nWells,
+                                        int                     nzp,
+                                        float                 * wellWeight,
+                                        float                 & err,
+                                        float                 * errWell,
+                                        float                 * scaleOptWell,
+                                        float                 * errWellOptScale)   const;
+
+  void          findLocalNoiseWithGainGiven(fftw_real        ** synt_r,
+                                            fftw_real        ** seis_r,
+                                            int                 nWells,
+                                            int                 nzp,
+                                            float             * wellWeight,
+                                            float             & err,
+                                            float             * errWell, 
+                                            float             * errWellOptScale,
+                                            float             * scaleOptWell,
+                                            Grid2D            * gain, 
+                                            WellData         ** wells, 
+                                            Simbox            * simbox)       const;
+
+  void          estimateLocalGain(const CovGrid2D             & cov,
+                                  Grid2D                     *& gain,
+                                  float                       * scaleOptWell,
+                                  float                         globalScale,
+                                  int                         * nActiveData,
+                                  Simbox                      * simbox,
+                                  WellData                   ** wells,
+                                  int                           nWells);
   
-//  void           fillInnWavelet(fftw_real* wavelet_r,int nzp,float dz);
+  void          estimateLocalShift(const CovGrid2D            & cov,
+                                   Grid2D                    *& shift,
+                                   float                     * shiftWell,
+                                   int                       * nActiveData,
+                                   Simbox                    * simbox,
+                                   WellData                 ** wells,
+                                   int                         nWells);
   
-  int            cnzp_;                  // size in z direction for storage inplace algorithm (complex grid) nzp_/2+1
-  int            rnzp_;                  // expansion in z direction for storage inplace algorithm (real grid) 2*(nzp_/2+1)
-  fftw_real*     rAmp_;                  // The amplitude of the wavelet  
-  fftw_complex*  cAmp_;                  // The amplitude of the wavelet complex (if fourier transformed )
+  void          estimateLocalNoise(const CovGrid2D           & cov,
+                                   Grid2D                   *& noiseScaled,
+                                   float                       globalNoise,
+                                   float                     * errWellOptScale,
+                                   int                       * nActiveData,
+                                   Simbox                    * simbox,
+                                   WellData                 ** wells,
+                                   int                         nWells);
+
+  void          fillInnWavelet(fftw_real                     * wavelet_r,
+                               int                             nzp,
+                               float                           dz);
+
+  float         findBulkShift(fftw_real                      * vec_r,
+                              float                            dz,
+                              int                              nzp);
+
+  float         shiftOptimal(fftw_real                      ** ccor_seis_cpp_r,
+                             float                           * wellWeight,
+                             float                           * dz,
+                             int                               nWells,
+                             int                               nzp,
+                             float                           * shiftWell);
+
+  void          multiplyPapolouis(fftw_real                 ** vec, 
+                                  float                      * dz,
+                                  int                          nWells,
+                                  int                          nzp, 
+                                  float                        waveletLength, 
+                                  float                      * wellWeight)    const;
+
+  void          getWavelet(fftw_real                        ** ccor_seis_cpp_r,
+                           fftw_real                        ** cor_cpp_r,
+                           fftw_real                        ** wavelet_r,
+                           float                             * wellWeight,
+                           int                                 nWells,
+                           int                                 nt);
+
+  fftw_real*     averageWavelets(fftw_real                  ** wavelet_r,
+                                 int                           nWells,
+                                 int                           nzp,
+                                 float                       * wellWeight,
+                                 float                       * dz,
+                                 float                         dzOut)         const;
+
 };
 
 #endif

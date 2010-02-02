@@ -134,7 +134,7 @@ Crava::Crava(Model * model, SpatialWellFilter * spatwellfilter)
   {
     if(!model->getModelSettings()->getForwardModeling())
       assert(seisData_[i]->consistentSize(nx_,ny_,nz_,nxp_,nyp_,nzp_));  
-    assert(seisWavelet_[i]->consistentSize(nzp_, nyp_, nxp_));
+    assert(seisWavelet_[i]->consistentSize(nzp_));
   }
 
   if(!model->getModelSettings()->getForwardModeling())
@@ -303,13 +303,13 @@ Crava::computeVariances(fftw_real     * corrT,
   for(int i=0 ; i < ntheta_ ; i++)
   {
     if (seisWavelet_[i]->getDim() == 1) {
-      errorSmooth[i] = new Wavelet1D(seisWavelet_[i],Wavelet::FIRSTORDERFORWARDDIFF);
+      errorSmooth[i] = new Wavelet(seisWavelet_[i],Wavelet::FIRSTORDERFORWARDDIFF);
       std::string angle    = NRLib::ToString(thetaDeg_[i], 1);
       std::string fileName = IO::PrefixWavelet() + std::string("Diff_") + angle + IO::SuffixGeneralData();
       errorSmooth[i]->printToFile(fileName);
     }
     else {
-      errorSmooth[i] = new Wavelet3D(seisWavelet_[i],Wavelet::FIRSTORDERBACKWARDDIFF);
+      errorSmooth[i] = new Wavelet(seisWavelet_[i],Wavelet::FIRSTORDERBACKWARDDIFF);
       errorSmooth[i]->fft1DInPlace();
     }
   }
@@ -688,9 +688,9 @@ Crava::computePostMeanResidAndFFTCov()
   for(i = 0; i < 3; i++)
     reduceVar[i]= new fftw_complex[3];  
 
-  Wavelet1D * diff1Operator = new Wavelet1D(Wavelet::FIRSTORDERFORWARDDIFF,nz_,nzp_);
-  Wavelet1D * diff2Operator = new Wavelet1D(diff1Operator,Wavelet::FIRSTORDERBACKWARDDIFF);
-  Wavelet1D * diff3Operator = new Wavelet1D(diff2Operator,Wavelet::FIRSTORDERCENTRALDIFF);
+  Wavelet * diff1Operator = new Wavelet(Wavelet::FIRSTORDERFORWARDDIFF,nz_,nzp_);
+  Wavelet * diff2Operator = new Wavelet(diff1Operator,Wavelet::FIRSTORDERBACKWARDDIFF);
+  Wavelet * diff3Operator = new Wavelet(diff2Operator,Wavelet::FIRSTORDERCENTRALDIFF);
 
   diff1Operator->fft1DInPlace();
   delete diff2Operator;
@@ -708,9 +708,9 @@ Crava::computePostMeanResidAndFFTCov()
     std::string fileName;
     seisData_[l]->setAccessMode(FFTGrid::READANDWRITE);
     if (seisWavelet_[0]->getDim() == 1) {
-      errorSmooth[l]  = new Wavelet1D(seisWavelet_[l],Wavelet::FIRSTORDERFORWARDDIFF);
-      errorSmooth2[l] = new Wavelet1D(errorSmooth[l], Wavelet::FIRSTORDERBACKWARDDIFF);
-      errorSmooth3[l] = new Wavelet1D(errorSmooth2[l],Wavelet::FIRSTORDERCENTRALDIFF); 
+      errorSmooth[l]  = new Wavelet(seisWavelet_[l],Wavelet::FIRSTORDERFORWARDDIFF);
+      errorSmooth2[l] = new Wavelet(errorSmooth[l], Wavelet::FIRSTORDERBACKWARDDIFF);
+      errorSmooth3[l] = new Wavelet(errorSmooth2[l],Wavelet::FIRSTORDERCENTRALDIFF); 
       fileName = std::string("ErrorSmooth_") + angle + IO::SuffixGeneralData();
       errorSmooth3[l]->printToFile(fileName);
       errorSmooth3[l]->fft1DInPlace();
@@ -725,7 +725,7 @@ Crava::computePostMeanResidAndFFTCov()
       delete errorSmooth2[l];
     }
     else { //3D-wavelet
-      errorSmooth3[l] = new Wavelet3D(seisWavelet_[l]);
+/*      errorSmooth3[l] = new Wavelet3D(seisWavelet_[l]);
       errorSmooth3[l]->fft1DInPlace();
       errorSmooth3[l]->multiplyByR(3.0);
       seisWavelet_[l]->fft1DInPlace();
@@ -777,6 +777,7 @@ Crava::computePostMeanResidAndFFTCov()
       ijkNorm2 /= (scale);
       seisWavelet_[l]->setNorm(sqrt(ijkNorm1));
       errorSmooth3[l]->setNorm(sqrt(ijkNorm2));
+  */
     }
   }
   delete[] errorSmooth;
@@ -861,7 +862,7 @@ Crava::computePostMeanResidAndFFTCov()
 
     for( j = 0; j < nyp_; j++) {
       for( i = 0; i < cnxp; i++) { 
-        if (seisWavelet_[0]->getDim() == 3) { //3D-wavelet
+/*        if (seisWavelet_[0]->getDim() == 3) { //3D-wavelet
           if( simbox_->getIsConstantThick() == true) {
             for(l = 0; l < ntheta_; l++) {
               errMult1[l].re  = static_cast<float>( seisWavelet_[l]->getCAmp(k,j,i).re ); 
@@ -884,7 +885,7 @@ Crava::computePostMeanResidAndFFTCov()
             LogKit::LogFormatted(LogKit::LOW,"\nERROR: Not implemented inversion with 3D wavelet for non-constant simbox thickness\n");
             exit(1);
           }
-        } //3D-wavelet
+        }*/ //3D-wavelet
         ijkMean[0] = meanAlpha_->getNextComplex();
         ijkMean[1] = meanBeta_ ->getNextComplex();
         ijkMean[2] = meanRho_  ->getNextComplex(); 
@@ -1359,7 +1360,7 @@ Crava::computeSyntSeismic(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho)
   for(i = 0; i < ntheta_; i++)
     WDA[i] = new fftw_complex[3];
 
-  Wavelet * diffOperator     = new Wavelet1D(Wavelet::FIRSTORDERFORWARDDIFF,nz_,nzp_);
+  Wavelet * diffOperator     = new Wavelet(Wavelet::FIRSTORDERFORWARDDIFF,nz_,nzp_);
   diffOperator->fft1DInPlace();
 
   FFTGrid** seisData = new FFTGrid*[ntheta_];
@@ -1408,7 +1409,7 @@ Crava::computeSyntSeismic(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho)
     }
   }
   else { //dim > 1
-    for (k=0; k<nzp_; k++) {
+ /*   for (k=0; k<nzp_; k++) {
       kD = diffOperator->getCAmp(k);
       for (j=0; j<nyp_; j++) {
         for (i=0; i<cnxp; i++) {
@@ -1426,7 +1427,7 @@ Crava::computeSyntSeismic(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho)
             seisData[l]->setNextComplex(ijkSeis[l]);
         }
       }
-    }
+    } */
   }
   Alpha->endAccess();
   Beta->endAccess();
@@ -1478,7 +1479,7 @@ float
 Crava::computeWDCorrMVar (Wavelet* WD)
 {
   float var = 0.0;
-  int cnxp = nxp_/2 + 1;
+/*  int cnxp = nxp_/2 + 1;
   
   int endX;
   if (nxp_/2 == (nxp_+1)/2) //nxp_ even
@@ -1512,7 +1513,7 @@ Crava::computeWDCorrMVar (Wavelet* WD)
     }
   }
   var /= static_cast<float>(nxp_*nyp_*nzp_);
-  parSpatialCorr->endAccess();
+  parSpatialCorr->endAccess();*/
   return var;
 }
 
