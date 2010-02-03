@@ -2792,7 +2792,6 @@ Model::processWavelets(Wavelet                    **& wavelet,
                                    timeSimbox,
                                    reflectionMatrix[i],
                                    i,
-                                   angle,
                                    error,
                                    errText);
         modelSettings->setEstimateWaveletNoise(false);
@@ -2834,13 +2833,11 @@ Model::processWavelets(Wavelet                    **& wavelet,
             else if(modelSettings->getEstimateGlobalWaveletScale(i)) // prescale, then we have correct size order, and later scale estimation will be ok.
               wavelet[i]->multiplyRAmpByConstant(prescale);
           }
-          if (error == 0) {
-
+          if (error == 0)
             wavelet[i]->resample(static_cast<float>(timeSimbox->getdz()), 
                                  timeSimbox->getnz(), 
                                  static_cast<float>(modelSettings->getZPadFac()),
                                  flip);
-          }
         }
         else { //3D-wavelet constructed by 1D wavelet and filter
           wavelet[i] = new Wavelet3D(waveletFile, 
@@ -2976,11 +2973,9 @@ Model::getWaveletFileFormat(const std::string & fileName, std::string & errText)
   // test for old file format
   std::ifstream file;
   NRLib::OpenRead(file,fileName);
-  for(int i = 0; i < 5; i++)
-  {
+  for(int i = 0; i < 5; i++) {
     NRLib::GetNextToken(file,dummyStr,line);
-    if (NRLib::CheckEndOfFile(file))
-    {
+    if (NRLib::CheckEndOfFile(file)) {
       errText += "End of wavelet file '"+fileName+"' is premature.\n";
       return 0;
     } 
@@ -2988,62 +2983,39 @@ Model::getWaveletFileFormat(const std::string & fileName, std::string & errText)
   file.close();
   file.clear();
   std::string targetString = "CMX";
- 
   int  pos = Utils::findEnd(dummyStr, 0, targetString);
-  
   if(pos>=0)
     fileformat= Wavelet::OLD;
 
-  if(fileformat<0) // not old format
-  {
-    // Test for Sgri format
- /*   file = fopen(fileName.c_str(), "r");
-    if (fscanf(file, "%s", dummyStr) == EOF)
-    {
-      sprintf(errText,"%sEnd of wavelet file %s is premature\n",errText,fileName.c_str());
-      return 0;
-    }
-    strcpy(targetString, "NORSAR");
-    readToEOL(file);
-    pos = findEnd(dummyStr, 0, targetString);
-    if (pos >= 0)
-      fileformat = Wavelet::SGRI;
-    fclose(file);
+  targetString = "pulse";
+  pos = Utils::findEnd(dummyStr, 0, targetString);
+  if(pos>=0)
+    fileformat= Wavelet::NORSAR;
 
-    if (fileformat != Wavelet::SGRI) {*/
+  if(fileformat<0) { // not old or norsar format
       // test for jason file format
-      
     NRLib::OpenRead(file,fileName);
     line         = 0;
     int thisLine = 0;
     bool lineIsComment = true; 
-    while (lineIsComment == true)
-    {
+    while (lineIsComment == true) {
       NRLib::GetNextToken(file,dummyStr,line);
-      if (NRLib::CheckEndOfFile(file))
-      {
+      if (NRLib::CheckEndOfFile(file)) {
         errText += "End of wavelet file "+fileName+" is premature\n";
         return 0;
       } 
-      else
-      {
-        if (thisLine == line)
-        {
+      else {
+        if (thisLine == line) {
           NRLib::DiscardRestOfLine(file,line,false);
           thisLine = line;
         }
         if((dummyStr[0]!='*') &  (dummyStr[0]!='"'))
-        {
           lineIsComment = false;
-        }
       }
     }  
     file.close();
-    if (NRLib::ParseType<double>(dummyStr)!=0)// not convertable number
-    {
+    if (NRLib::ParseType<double>(dummyStr)!=0) // not convertable number
       fileformat= Wavelet::JASON;
-    }
-    //    }
   }
   return fileformat;
 }

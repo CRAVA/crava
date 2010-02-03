@@ -8,7 +8,6 @@
 #include "src/definitions.h"
 #include "lib/utils.h"
 
-class Vario;
 class Simbox;
 class FFTGrid;
 class WellData;
@@ -18,7 +17,7 @@ class Wavelet {
 public:
   enum           difftypes{FIRSTORDERFORWARDDIFF, FIRSTORDERCENTRALDIFF, FIRSTORDERBACKWARDDIFF, FOURIER};
   enum           waveletDims{ONE_D = 0, THREE_D = 1};
-  enum           waveletreadtypes{OLD, JASON};
+  enum           waveletreadtypes{OLD, JASON, NORSAR};
 
 //Constructors and destructor
   Wavelet(int                 dim);
@@ -45,125 +44,142 @@ public:
   virtual ~Wavelet();
   
 // Fast Fourier Transform for inplace storage     
-  void           fft1DInPlace();
-  void           invFFT1DInPlace();
+  void          fft1DInPlace();
+  void          invFFT1DInPlace();
 
 // Access methods for wavelet values
-  fftw_real             getRAmp(int k);
-  fftw_complex          getCAmp(int k) const;
-  fftw_complex          getCAmp(int k, 
-                                float scale) const;
-  void                  setRAmp(float value, 
-                                int k);
+  fftw_real     getRAmp(int                                     k);
 
-  Wavelet             * getLocalWavelet(int i,
-                                        int j);
+  fftw_complex  getCAmp(int                                     k) const;
+  
+  fftw_complex  getCAmp(int                                     k, 
+                        float                                   scale) const;
+  
+  void          setRAmp(float                                   value, 
+                        int                                     k);
 
-  void                  resample(float dz, 
-                                 int nz, 
-                                 float pz,
-                                 bool flip);
+  Wavelet *     getLocalWavelet(int                             i,
+                                int                             j);
 
-  bool                  consistentSize(int nzp) const;
+  void          resample(float                                  dz, 
+                         int                                    nz, 
+                         float                                  pz,
+                         bool                                   flip);
 
-  void                  multiplyRAmpByConstant(float c);
+  bool          consistentSize(int                              nzp) const;
 
-  void                  scale(float gain);
+  void          multiplyRAmpByConstant(float                    c);
+
+  void          scale(float                                     gain);
+
   //Note: Function below is mainly controlled by debugflag. Set overrideDebug = true to force.
-  void                  printToFile(const std::string & fileName, bool overrideDebug = false);
-  void                  writeWaveletToFile(const std::string & fileName, float approxDz);
+  void          printToFile(const std::string                 & fileName, 
+                            bool                                overrideDebug = false);
 
-  void                  setShiftGrid(Grid2D * grid);
-  void                  setGainGrid(Grid2D * grid);
-  float                 getNorm()                                     const {return norm_;}
-  void                  setNorm(float norm)                                 {norm_ = norm;}
-  bool                  getIsReal()                                   const {return(isReal_);} 
-  int                   getDim()                                      const {return dim_;}
-  int                   getNz()                                       const {return nz_;}
-  int                   getNzp()                                      const {return nzp_;}
-  float                 getDz()                                       const {return dz_;}
-  float                 getScale()                                    const {return scale_;}
+  void          writeWaveletToFile(const std::string          & fileName, 
+                                   float                        approxDz);
+
+  void          setShiftGrid(Grid2D                           * grid);
+
+  void          setGainGrid(Grid2D                            * grid);
+
+  float         getNorm()     const {return norm_;}
+  void          setNorm(float norm) {norm_ = norm;}
+  bool          getIsReal()   const {return(isReal_);} 
+  int           getDim()      const {return dim_;}
+  int           getNz()       const {return nz_;}
+  int           getNzp()      const {return nzp_;}
+  float         getDz()       const {return dz_;}
+  float         getScale()    const {return scale_;}
 
 
-  virtual float         findGlobalScaleForGivenWavelet(ModelSettings * /*modelSettings*/, 
-                                                       Simbox        * /*simbox*/, 
-                                                       FFTGrid       * /*seisCube*/, 
-                                                       WellData     ** /*wells*/) {return 0.0f;}
+  virtual float findGlobalScaleForGivenWavelet(ModelSettings * /*modelSettings*/, 
+                                               Simbox        * /*simbox*/, 
+                                               FFTGrid       * /*seisCube*/, 
+                                               WellData     ** /*wells*/) {return 0.0f;}
+
   // for noise estimation
-  virtual float         calculateSNRatioAndLocalWavelet(Simbox        * /*simbox*/, 
-                                                        FFTGrid       * /*seisCube*/, 
-                                                        WellData     ** /*wells*/, 
-                                                        Grid2D       *& /*shift*/, 
-                                                        Grid2D       *& /*gain*/, 
-                                                        ModelSettings * /*modelSettings*/,
-                                                        std::string   & /*errText*/, 
-                                                        int           & /*error*/,
-                                                        Grid2D       *& /*noiseScaled*/, 
-                                                        int             /*number*/, 
-                                                        float           /*globalScale*/) {return 0.0f;} 
+  virtual float calculateSNRatioAndLocalWavelet(Simbox        * /*simbox*/, 
+                                                FFTGrid       * /*seisCube*/, 
+                                                WellData     ** /*wells*/, 
+                                                Grid2D       *& /*shift*/, 
+                                                Grid2D       *& /*gain*/, 
+                                                ModelSettings * /*modelSettings*/,
+                                                std::string   & /*errText*/, 
+                                                int           & /*error*/,
+                                                Grid2D       *& /*noiseScaled*/, 
+                                                int             /*number*/, 
+                                                float           /*globalScale*/) {return 0.0f;} 
 
 protected:
-  float                 getTheta()                                    const {return theta_;}
-  int                   getCz()                                       const {return cz_;}
-  bool                  getInFFTOrder()                               const {return inFFTorder_;}
+  float          getTheta()          const {return theta_;}
+  int            getCz()             const {return cz_;}
+  bool           getInFFTOrder()     const {return inFFTorder_;}
+  float          getWaveletLength()  const {return waveletLength_;}
 
-  void                  shiftAndScale(float shift,
-                                      float gain);
-  float                 getWaveletValue(float z, 
-                                        float * Wavelet, 
-                                        int center,
-                                        int nx, 
-                                        float dz);
-  void                  flipUpDown();
-  float                 getArrayValueOrZero(int i ,
-                                            float * Wavelet, 
-                                            int nz) const;
-  float                 getLocalTimeshift(int     i, 
-                                          int     j) const;
-  float                 getLocalGainFactor(int    i, 
-                                           int    j) const;
-  int                   getWaveletLengthI();
-  float                 getWaveletLengthF();
-  void                  WaveletReadOld(const std::string & fileName, 
-                                       int & errCode, 
-                                       std::string & errText);
-  void                  WaveletReadJason(const std::string & fileName, 
-                                         int & errCode, 
-                                         std::string & errText);
-  void                  printVecToFile(const std::string & fileName, 
-                                       fftw_real         * vec ,
-                                       int                 nzp) const;
+  void           shiftAndScale(float                            shift,
+                               float                            gain);
 
-  int                   cnzp_;                  // size in z direction for storage inplace algorithm (complex grid) nzp_/2+1
-  int                   rnzp_;                  // expansion in z direction for storage inplace algorithm (real grid) 2*(nzp_/2+1)
-  fftw_real*            rAmp_;                  // The amplitude of the wavelet  
-  fftw_complex*         cAmp_;                  // The amplitude of the wavelet complex (if fourier transformed )
+  float          findWaveletLength(float                       minRelativeAmp);
 
-  float                 theta_;                 // the reflection angle that the wavelet correspond to
+  void           printVecToFile(const std::string             & fileName, 
+                                fftw_real                     * vec ,
+                                int                             nzp) const;
 
-  float                 dz_;                    // Sampling interval of wavelet, unit [ ms ]
-  int                   nz_;                    // length of wavelet
-  int                   nzp_;                   // length of padded wavelet
-  
-  int                   cz_;                    // position of central point   
-  bool                  inFFTorder_;            // is true if the wavelet is ordred with the central point at the start
-                                                // false if the central point is in the middle
-  bool                  isReal_;                // is true if the wavlet is real, false if it is fourier transformed 
-  float                 norm_;                  // The (vector) norm of the wavelet (not function norm that divides by dz)
-  float                 waveletLength_;         // Length of wavelet estimated as is amplitudes larger than 1/1000 * max amplitude
+  int            cnzp_;                  // size in z direction for storage inplace algorithm (complex grid) nzp_/2+1
+  int            rnzp_;                  // expansion in z direction for storage inplace algorithm (real grid) 2*(nzp_/2+1)
+  fftw_real*     rAmp_;                  // The amplitude of the wavelet  
+  fftw_complex*  cAmp_;                  // The amplitude of the wavelet complex (if fourier transformed )
 
-  float                 coeff_[3];              //Reflection coefficients.
+  float          theta_;                 // the reflection angle that the wavelet correspond to
 
-  float                 maxShift_;              //maximum shift of wavelet in ms
-  float                 minRelativeAmp_;
+  float          dz_;                    // Sampling interval of wavelet, unit [ ms ]
+  int            nz_;                    // length of wavelet
+  int            nzp_;                   // length of padded wavelet
+  int            cz_;                    // position of central point   
+  bool           inFFTorder_;            // is true if the wavelet is ordred with the central point at the start
+                                             // false if the central point is in the middle
+  bool           isReal_;                // is true if the wavlet is real, false if it is fourier transformed 
+  float          norm_;                  // The (vector) norm of the wavelet (not function norm that divides by dz)
+  float          waveletLength_;         // Length of wavelet estimated as is amplitudes larger than 1/1000 * max amplitude
 
-  const int             dim_;
+  float          coeff_[3];              //Reflection coefficients.
+
+  const int      dim_;
 
 //NBNB The following parameters are NOT copied in copy constructor.
-  float                 scale_;
-  Grid2D              * shiftGrid_;             // 2D grid of shift
-  Grid2D              * gainGrid_;              // 2D grid of gain factors.
+  float          scale_;
+  Grid2D       * shiftGrid_;             // 2D grid of shift
+  Grid2D       * gainGrid_;              // 2D grid of gain factors.
 
+private:
+  float          getWaveletValue(float                           z, 
+                                 float                         * Wavelet, 
+                                 int                             center,
+                                 int                             nx, 
+                                 float                           dz);
+  
+  void           flipUpDown();
+  
+  float          getArrayValueOrZero(int                        i,
+                                     float                    * Wavelet, 
+                                     int                        nz) const;
+  
+  float          getLocalTimeshift(int                          i, 
+                                   int                          j) const;
+
+  float          getLocalGainFactor(int                         i, 
+                                    int                         j) const;
+
+  void           WaveletReadOld(const std::string             & fileName,
+                                float                           minRelativeAmp,
+                                int                           & errCode, 
+                                std::string                   & errText);
+
+  void           WaveletReadJason(const std::string           & fileName, 
+                                  float                         minRelativeAmp,
+                                  int                         & errCode, 
+                                  std::string                 & errText);
 };
 
 #endif

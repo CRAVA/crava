@@ -8,9 +8,7 @@
 #include "nrlib/surface/regularsurfacerotated.hpp"
 
 #include "src/wavelet.h"
-#include "src/wavelet1D.h"
 #include "src/waveletfilter.h"
-#include "src/fftgrid.h"
 
 class BlockedLogs;
 
@@ -27,7 +25,6 @@ public:
             Simbox                       * simBox,
             float                        * reflCoef,
             int                            angle_index,
-            float                          theta,
             int                          & errCode,
             std::string                  & errText);
   
@@ -47,24 +44,22 @@ public:
   WaveletFilter  getFilter() const {return filter_;}
   
 private:
-  void           findLayersWithData(const std::vector<Surface *> & estimInterval,
-                                    BlockedLogs                  * bl,
-                                    FFTGrid                      * seisCube,
-                                    float                        * az,
-                                    float                        * bz,
-                                    bool                         * hasWellData) const;
+  void          findLayersWithData(const std::vector<Surface *> & estimInterval,
+                                   BlockedLogs                  * bl,
+                                   FFTGrid                      * seisCube,
+                                   float                        * az,
+                                   float                        * bz,
+                                   bool                         * hasWellData) const;
 
-  double         findPhi(float                                     a, 
-                         float                                     b)           const;
+  double         findPhi(float                                    a, 
+                         float                                    b)           const;
 
-  double         findPsi(float                                     radius, 
-                         float                                     kz)          const;
+  double         findPsi(float                                    radius, 
+                         float                                    kz)          const;
 
-  fftw_complex   findWLvalue(Wavelet1D                           * wavelet1d,
-                             float                                 omega)       const;
+  fftw_complex   findWLvalue(float                                omega)       const;
 
   WaveletFilter  filter_;
-
 };
 
 #endif

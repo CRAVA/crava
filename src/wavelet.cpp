@@ -46,6 +46,7 @@ Wavelet::Wavelet(int dim, Wavelet * wavelet)
     cz_(wavelet->getCz()),
     inFFTorder_(wavelet->getInFFTOrder()),
     norm_(wavelet->getNorm()),
+    waveletLength_(wavelet->getWaveletLength()),
     dim_(dim),
     shiftGrid_(NULL),
     gainGrid_(NULL)
@@ -84,8 +85,6 @@ Wavelet::Wavelet(const std::string & fileName,
   : theta_(theta),
     inFFTorder_(false),
     isReal_(true),
-    maxShift_(modelSettings->getMaxWaveletShift()),
-    minRelativeAmp_(modelSettings->getMinRelWaveletAmp()),
     dim_(dim),
     scale_(1),
     shiftGrid_(NULL),
@@ -96,10 +95,14 @@ Wavelet::Wavelet(const std::string & fileName,
   coeff_[2]       = reflCoef[2];
   switch (fileFormat) {
   case OLD: 
-    WaveletReadOld(fileName, errCode, errText);
+    WaveletReadOld(fileName, modelSettings->getMinRelWaveletAmp(), errCode, errText);
     break;
   case JASON: 
-    WaveletReadJason(fileName, errCode, errText);
+    WaveletReadJason(fileName, modelSettings->getMinRelWaveletAmp(), errCode, errText);
+    break;
+  case NORSAR:
+    errText += "Error: CRAVA is not able to read the Norsar wavelet format yet.\n";
+    errCode=1; 
     break;
   }
   
@@ -674,7 +677,7 @@ Wavelet::setGainGrid(Grid2D * grid)
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
-//////////PRIVATE MEMBER METHODS//////////////////////////////////////////////////////////////////
+//////////PROTECTED MEMBER METHODS////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////
 void
 Wavelet::shiftAndScale(float shift,float gain)
@@ -698,6 +701,60 @@ Wavelet::shiftAndScale(float shift,float gain)
     cAmp_[k] =tmp;
   }
 }
+
+float
+Wavelet::findWaveletLength(float minRelativeAmp)
+{
+  bool trans=false;
+  if(isReal_==false) {
+    invFFT1DInPlace();
+    trans=true;
+  }
+  
+  float maxAmp =  fabs(getRAmp(0)); // gets max amp 
+  for(int i=1;i <nzp_;i++)
+    if(fabs(getRAmp(i)) > maxAmp)
+      maxAmp = fabs(getRAmp(i));
+
+  float minAmp= maxAmp*minRelativeAmp; // minimum relevant amplitude
+
+  int wLength=nzp_;
+
+  for(int i=nzp_/2;i>0;i--) {
+    if(fabs(getRAmp(i)) >minAmp) {
+      wLength= (i*2+1);// adds both sides 
+      break;
+    }
+    if(fabs(getRAmp(nzp_-i)) > minAmp) {
+      wLength= (2*i+1);// adds both sides 
+      break;
+    }
+  }
+  wLength =MINIM(wLength,2*((nzp_+1)/2) - 1); // always odd number
+  if(trans==true)
+    fft1DInPlace();
+
+  return (dz_*static_cast<float>(wLength));
+}
+
+void
+Wavelet::printVecToFile(const std::string & fileName, fftw_real* vec, int nzp) const
+{
+  if( ModelSettings::getDebugLevel() > 0) { 
+    std::string fName = fileName + IO::SuffixGeneralData();
+    fName = IO::makeFullFileName(IO::PathToWavelets(), fName);
+    std::ofstream file;
+    NRLib::OpenWrite(file,fName);
+    for(int i=0;i<nzp;i++)
+      file << vec[i] << "\n";
+    file.close();
+  }  
+}
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+//////////PRIVATE MEMBER METHODS//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////
 
 float 
 Wavelet::getWaveletValue(float z, float *Wavelet, int center, int nz, float dz)
@@ -808,62 +865,11 @@ Wavelet::getLocalGainFactor(int i, int j) const
   return(gain);
 }
 
-int Wavelet::getWaveletLengthI()
-{
-  bool trans=false;
-  if(isReal_==false) {
-    invFFT1DInPlace();
-    trans=true;
-  }
-  
-  float maxAmp =  fabs(getRAmp(0)); // gets max amp 
-  for(int i=1;i <nzp_;i++)
-    if(fabs(getRAmp(i)) > maxAmp)
-      maxAmp = fabs(getRAmp(i));
-
-  float minAmp= maxAmp*minRelativeAmp_; // minimum relevant amplitude
-
-  int wLength=nzp_;
-
-  for(int i=nzp_/2;i>0;i--) {
-    if(fabs(getRAmp(i)) >minAmp) {
-      wLength= (i*2+1);// adds both sides 
-      break;
-    }
-    if(fabs(getRAmp(nzp_-i)) > minAmp) {
-      wLength= (2*i+1);// adds both sides 
-      break;
-    }
-  }
-  wLength =MINIM(wLength,2*((nzp_+1)/2) - 1); // always odd number
-  if(trans==true)
-    fft1DInPlace();
-
-  return wLength;
-}
-
-float
-Wavelet::getWaveletLengthF()
-{
-  return dz_*float( getWaveletLengthI() );
-}
-
 void
-Wavelet::printVecToFile(const std::string & fileName, fftw_real* vec, int nzp) const
-{
-  if( ModelSettings::getDebugLevel() > 0) { 
-    std::string fName = fileName + IO::SuffixGeneralData();
-    fName = IO::makeFullFileName(IO::PathToWavelets(), fName);
-    std::ofstream file;
-    NRLib::OpenWrite(file,fName);
-    for(int i=0;i<nzp;i++)
-      file << vec[i] << "\n";
-    file.close();
-  }  
-}
-
-void
-Wavelet::WaveletReadJason(const std::string & fileName, int &errCode, std::string & errText)
+Wavelet::WaveletReadJason(const std::string & fileName, 
+                          float               minRelativeAmp,
+                          int               & errCode, 
+                          std::string & errText)
 {
   std::ifstream file;
   NRLib::OpenRead(file,fileName);
@@ -892,10 +898,7 @@ Wavelet::WaveletReadJason(const std::string & fileName, int &errCode, std::strin
   float shift = NRLib::ParseType<float>(dummyStr);
 
   if (NRLib::CheckEndOfFile(file))  {
-    if (errCode == 0)  
-      errText += "Error: End of file "+fileName+" premature.\n";
-    else
-      errText += "Error: End of file "+fileName+" premature.\n";
+    errText += "Error: End of file "+fileName+" premature.\n";
     errCode=1; 
     return;
   } 
@@ -907,10 +910,7 @@ Wavelet::WaveletReadJason(const std::string & fileName, int &errCode, std::strin
   dz_ = NRLib::ParseType<float>(dummyStr);
 
   if (NRLib::CheckEndOfFile(file)) {
-    if (errCode == 0)  
-      errText += "Error: End of file "+fileName+" premature.\n";
-    else
-      errText += "Error: End of file "+fileName+" premature.\n";
+    errText += "Error: End of file "+fileName+" premature.\n";
     errCode=1; 
     return;
   }
@@ -930,10 +930,7 @@ Wavelet::WaveletReadJason(const std::string & fileName, int &errCode, std::strin
 
   for(int i=0; i<nz_;i++) {
     if (NRLib::CheckEndOfFile(file)) {
-      if (errCode == 0)  
-        errText += "Error: End of file "+fileName+" premature.\n";
-      else
-        errText += "Error: End of file "+fileName+" premature.\n";
+      errText += "Error: End of file "+fileName+" premature.\n";
       errCode=1; 
       return;
     } 
@@ -942,12 +939,15 @@ Wavelet::WaveletReadJason(const std::string & fileName, int &errCode, std::strin
     rAmp_[i] = static_cast<fftw_real>(NRLib::ParseType<float>(dummyStr));
   }
   file.close();
-  waveletLength_ = getWaveletLengthF();
+  waveletLength_ = findWaveletLength(minRelativeAmp);
   LogKit::LogFormatted(LogKit::LOW,"\n  Estimated wavelet length:  %.1fms.\n",waveletLength_);
 }
 
 void
-Wavelet::WaveletReadOld(const std::string & fileName, int & errCode, std::string & errText)
+Wavelet::WaveletReadOld(const std::string & fileName,
+                        float               minRelativeAmp,
+                        int               & errCode, 
+                        std::string       & errText)
 {
   std::ifstream file;
   NRLib::OpenRead(file,fileName);
@@ -1060,7 +1060,7 @@ Wavelet::WaveletReadOld(const std::string & fileName, int & errCode, std::string
     //
     // Estimate wavelet length
     //
-    waveletLength_ = getWaveletLengthF();
+    waveletLength_ = findWaveletLength(minRelativeAmp);
     LogKit::LogFormatted(LogKit::LOW,"\n  Estimated wavelet length:  %.1fms.\n",waveletLength_);
   }
 

@@ -27,7 +27,6 @@ public:
             std::string       & errText);
   Wavelet1D(Wavelet * wavelet);
 
-// Wavelet1D();
   virtual ~Wavelet1D();
 
 // Methods that are virtual in Wavelet
@@ -104,14 +103,16 @@ private:
 
   float         findBulkShift(fftw_real                      * vec_r,
                               float                            dz,
-                              int                              nzp);
+                              int                              nzp,
+                              float                            maxShift);
 
   float         shiftOptimal(fftw_real                      ** ccor_seis_cpp_r,
                              float                           * wellWeight,
                              float                           * dz,
                              int                               nWells,
                              int                               nzp,
-                             float                           * shiftWell);
+                             float                           * shiftWell,
+                             float                             maxShift);
 
   void          multiplyPapolouis(fftw_real                 ** vec, 
                                   float                      * dz,

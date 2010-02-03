@@ -38,15 +38,14 @@ Wavelet3D::Wavelet3D(const std::string            & filterFile,
                      Simbox                       * simBox,
                      float                        * reflCoef,
                      int                            angle_index,
-                     float                          theta,
                      int                          & errCode,
                      std::string                  & errText)
   : Wavelet(3),
     filter_(filterFile, errCode, errText)
 {
   LogKit::LogFormatted(LogKit::MEDIUM,"  Estimating 3D wavelet pulse from seismic data and (nonfiltered) blocked wells\n");
-  maxShift_             = modelSettings->getMaxWaveletShift();
-  minRelativeAmp_       = modelSettings->getMinRelWaveletAmp();  theta_ = theta;
+
+  theta_ = seisCube->getTheta();;
   norm_ = RMISSING;
   cz_         = 0;
   inFFTorder_ = true;
@@ -307,7 +306,7 @@ Wavelet3D::Wavelet3D(const std::string            & filterFile,
         for (int i=nzp_; i<rnzp_; i++)
           rAmp_[i] = RMISSING;
 
-        waveletLength_ = getWaveletLengthF();
+        waveletLength_ = findWaveletLength(modelSettings->getMinRelWaveletAmp());
 
         delete [] gTrd;
 
@@ -357,9 +356,6 @@ Wavelet3D::Wavelet3D(const std::string & fileName,
 Wavelet3D::Wavelet3D(Wavelet * wavelet)
   : Wavelet(3, wavelet)
 {
-  assert(wavelet->getDim() == 3);
-  assert(wavelet->getIsReal());
-
 }
 
 Wavelet3D::~Wavelet3D()
@@ -445,27 +441,26 @@ Wavelet3D::findPsi(float radius, float kz) const
 }
 
 fftw_complex 
-Wavelet3D::findWLvalue(Wavelet1D       * wavelet1d,
-                                    float             omega) const
+Wavelet3D::findWLvalue(float omega) const
 {
-  int lowindex = static_cast<int> (omega / wavelet1d->getDz());
+  int lowindex = static_cast<int> (omega / dz_);
   fftw_complex c_low, c_high;
-  if (lowindex >= wavelet1d->getNz()) {
+  if (lowindex >= nz_) {
     c_low.re = 0.0; 
     c_low.im = 0.0;
     c_high.re = 0.0;
     c_high.im = 0.0;
   }
-  else if (lowindex == wavelet1d->getNz()-1) {
+  else if (lowindex == nz_-1) {
     c_high.re = 0.0;
     c_high.im = 0.0;
-    c_low = wavelet1d->getCAmp(lowindex);
+    c_low = getCAmp(lowindex);
   }
   else {
-    c_low = wavelet1d->getCAmp(lowindex);
-    c_high = wavelet1d->getCAmp(lowindex + 1);
+    c_low = getCAmp(lowindex);
+    c_high = getCAmp(lowindex + 1);
   }
-  float fac = omega - lowindex * wavelet1d->getDz();
+  float fac = omega - lowindex * dz_;
   fftw_complex cValue;
   cValue.re = (1-fac) * c_low.re + fac * c_high.re;
   cValue.im = (1-fac) * c_low.im + fac * c_high.im;
