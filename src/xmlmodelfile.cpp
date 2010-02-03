@@ -2249,12 +2249,25 @@ XmlModelFile::parseFFTGridPadding(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("z-fraction");
 
   double padding;
-  if(parseValue(root, "x-fraction", padding, errTxt) == true)
+  bool estXpad = true;
+  bool estYpad = true;
+  if(parseValue(root, "x-fraction", padding, errTxt) == true) {
     modelSettings_->setXPadFac(padding);
-  if(parseValue(root, "y-fraction", padding, errTxt) == true)
+    estXpad = false;
+  }
+  if(parseValue(root, "y-fraction", padding, errTxt) == true) {
     modelSettings_->setYPadFac(padding);
-  if(parseValue(root, "z-fraction", padding, errTxt) == true)
+    estYpad = false;
+  }
+  if(parseValue(root, "z-fraction", padding, errTxt) == true) {
     modelSettings_->setZPadFac(padding);
+    modelSettings_->setEstimateZPadding(false);
+  }
+
+  if ((estXpad && !estYpad) || (!estXpad && estYpad))
+    errTxt += "The lateral padding factors must either both be estimated or both given.";
+  else
+    modelSettings_->setEstimateXYPadding(false);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);

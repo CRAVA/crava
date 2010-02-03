@@ -302,8 +302,8 @@ void GridMapping::setDepthSimbox(const Simbox * timeSimbox,
   simbox_->writeTopBotGrids(topSurf, baseSurf, IO::PathToInversionResults(), outputFormat);
 
   double dummyLzLimit = 0.0; // The other LzLimit is only for inversion, not depth conversion
-  int error = simbox_->checkError(dummyLzLimit,errText);
-  if(error == Simbox::INTERNALERROR)
+  int status = simbox_->calculateDz(dummyLzLimit,errText);
+  if(status == Simbox::INTERNALERROR)
   {
     errText += "A problem was encountered for depth output grid.\n";
     failed = true;

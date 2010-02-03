@@ -100,6 +100,8 @@ public:
   int                              getNXpad(void)                       const { return nxPad_                   ;}
   int                              getNYpad(void)                       const { return nyPad_                   ;}
   int                              getNZpad(void)                       const { return nzPad_                   ;}
+  bool                             getEstimateXYPadding(void)           const { return estimateXYPadding_       ;}
+  bool                             getEstimateZPadding(void)            const { return estimateZPadding_        ;}
   float                            getSegyOffset(void)                  const { return segyOffset_              ;}
   float                            getLocalSegyOffset(int i)            const { return localSegyOffset_[i]      ;}
   float                            getPundef(void)                      const { return p_undef_                 ;}
@@ -233,6 +235,8 @@ public:
   void setNXpad(int nxPad)                                { nxPad_                    = nxPad                    ;}
   void setNYpad(int nyPad)                                { nyPad_                    = nyPad                    ;}
   void setNZpad(int nzPad)                                { nzPad_                    = nzPad                    ;}
+  void setEstimateXYPadding(bool estimateXYPadding)       { estimateXYPadding_        = estimateXYPadding        ;}
+  void setEstimateZPadding(bool estimateZPadding)         { estimateZPadding_         = estimateZPadding         ;}
   void setSegyOffset(float segyOffset)                    { segyOffset_               = segyOffset               ;}
   void addLocalSegyOffset(float segyOffset)               { localSegyOffset_.push_back(segyOffset)               ;}
   void setPundef(float p_undef)                           { p_undef_                  = p_undef                  ;}
@@ -388,6 +392,9 @@ private:
   int                               nyPad_;                    
   int                               nzPad_;                    
                                                                
+  bool                              estimateXYPadding_;          // Estimate the z-padding from ranges
+  bool                              estimateZPadding_;           // Estimate the z-padding from wavelet length
+
   float                             p_undef_;                    // Level for undefined facies
                                                                  
   double                            lzLimit_;                    // Minimum allowed value for (min interval thickness)/(max interval thickness)

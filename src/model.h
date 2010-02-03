@@ -78,6 +78,9 @@ private:
                                     int              areaSpecification,
                                     std::string    & errText,
                                     bool           & failed);
+  void             logIntervalInformation(const Simbox      * simbox, 
+                                          const std::string & header_text1, 
+                                          const std::string & header_text2);
   void             setupExtendedTimeSimbox(Simbox  * timeSimbox, 
                                            Surface * corrSurf, 
                                            Simbox *& timeCutSimbox,

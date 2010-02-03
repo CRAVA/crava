@@ -463,7 +463,7 @@ Simbox::writeTopBotGrids(const std::string & topname,
 }
 
 int
-Simbox::checkError(double lzLimit, std::string & errText)
+Simbox::calculateDz(double lzLimit, std::string & errText)
 {
   if(status_ == NODEPTH || status_ == EMPTY)
     status_ = EXTERNALERROR; //At this stage, lack of depth is an error
@@ -525,7 +525,7 @@ Simbox::checkError(double lzLimit, std::string & errText)
 }
 
 
-int
+bool
 Simbox::setArea(const SegyGeometry * geometry, std::string & errText)
 {
   double x0  = geometry->GetX0();
@@ -536,6 +536,8 @@ Simbox::setArea(const SegyGeometry * geometry, std::string & errText)
   double dx  = geometry->GetDx();
   double dy  = geometry->GetDy();
 
+  bool failed = false;
+
   try
   {
     SetDimensions(x0,y0,lx,ly);
@@ -544,7 +546,7 @@ Simbox::setArea(const SegyGeometry * geometry, std::string & errText)
   {
     errText += "Could not set x0, y0, lx, and ly.\n";
     errText += e.what();
-    return 1;
+    return true; // Failed
   }
   try
   {
@@ -554,7 +556,8 @@ Simbox::setArea(const SegyGeometry * geometry, std::string & errText)
   {
     errText += "Could not set rotation angle.\n";
     errText += e.what();
-    return 1;
+    failed = true;
+    return true; // Failed
   }
   cosrot_ = cos(rot);
   sinrot_ = sin(rot);
@@ -575,7 +578,7 @@ Simbox::setArea(const SegyGeometry * geometry, std::string & errText)
   else if(status_ == NOAREA)
     status_ = BOXOK;
 
-  return 0;
+  return false; // OK
 }
 
 void

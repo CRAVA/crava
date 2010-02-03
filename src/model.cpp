@@ -877,13 +877,12 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
   if(!failed)
   {
     const SegyGeometry * areaParams = modelSettings->getAreaParameters(); 
-    int error = timeSimbox->setArea(areaParams, errText);
+    failed = timeSimbox->setArea(areaParams, errText);
 
-    if(error==1)
+    if(failed)
     {
       writeAreas(areaParams,timeSimbox,areaType);
       errText += "The specified AREA extends outside the surface(s).\n";
-      failed = true;
     }
     else
     {
@@ -970,28 +969,14 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
           LogKit::LogFormatted(LogKit::WARNING,"\nWarning: LOCALWAVELET is ignored when using constant thickness in DEPTH.\n");
           TaskList::addTask("If local wavelet is to be used, constant thickness in depth should be removed.");
         }
-        
+
+
+        int status = timeSimbox->calculateDz(modelSettings->getLzLimit(),errText);
         estimateZPaddingSize(timeSimbox, modelSettings);   
         
-        error = timeSimbox->checkError(modelSettings->getLzLimit(),errText);
-        
-        if(error == 0)
+        if(status == Simbox::BOXOK)
         {
-          double zmin, zmax;
-          timeSimbox->getMinMaxZ(zmin,zmax);
-          LogKit::LogFormatted(LogKit::LOW,"\nTime output interval:\n");
-          LogKit::LogFormatted(LogKit::LOW,"  Two-way-time          avg / min / max    : %7.1f /%7.1f /%7.1f\n",
-                               zmin+timeSimbox->getlz()*timeSimbox->getAvgRelThick()*0.5,
-                               zmin,zmax); 
-          LogKit::LogFormatted(LogKit::LOW,"  Interval thickness    avg / min / max    : %7.1f /%7.1f /%7.1f\n", 
-                               timeSimbox->getlz()*timeSimbox->getAvgRelThick(),
-                               timeSimbox->getlz()*timeSimbox->getMinRelThick(),
-                               timeSimbox->getlz());
-          LogKit::LogFormatted(LogKit::LOW,"  Sampling density      avg / min / max    : %7.2f /%7.2f /%7.2f\n", 
-                               timeSimbox->getdz()*timeSimbox->getAvgRelThick(),
-                               timeSimbox->getdz(),
-                               timeSimbox->getdz()*timeSimbox->getMinRelThick());
-
+          logIntervalInformation(timeSimbox, "Time output interval:","Two-way-time");
           //
           // Make extended time simbox
           //
@@ -1015,25 +1000,11 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
             }      
 
             estimateZPaddingSize(timeSimbox, modelSettings);   
-            error = timeSimbox->checkError(modelSettings->getLzLimit(),errText);
 
-            if(error == 0)
-            {
-              LogKit::LogFormatted(LogKit::LOW,"\nTime inversion interval (extended relative to output interval due to correlation):\n");
-              double zmin, zmax;
-              timeSimbox->getMinMaxZ(zmin,zmax);
-              LogKit::LogFormatted(LogKit::LOW,"  Two-way-time          avg / min / max    : %7.1f /%7.1f /%7.1f\n",
-                                   zmin+timeSimbox->getlz()*timeSimbox->getAvgRelThick()*0.5,
-                                   zmin,zmax); 
-              LogKit::LogFormatted(LogKit::LOW,"  Interval thickness    avg / min / max    : %7.1f /%7.1f /%7.1f\n", 
-                                   timeSimbox->getlz()*timeSimbox->getAvgRelThick(),
-                                   timeSimbox->getlz()*timeSimbox->getMinRelThick(),
-                                   timeSimbox->getlz());
-              LogKit::LogFormatted(LogKit::LOW,"  Sampling density      avg / min / max    : %7.2f /%7.2f /%7.2f\n", 
-                                   timeSimbox->getdz()*timeSimbox->getAvgRelThick(),
-                                   timeSimbox->getdz(),
-                                   timeSimbox->getdz()*timeSimbox->getMinRelThick());
-            }
+            status = timeSimbox->calculateDz(modelSettings->getLzLimit(),errText);
+
+            if(status == Simbox::BOXOK) 
+              logIntervalInformation(timeSimbox, "Time inversion interval (extended relative to output interval due to correlation):","Two-way-time");
             else
             {
               errText += "Could not make the time simulation grid.\n";
@@ -1043,24 +1014,9 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
             if(modelSettings->getForwardModeling() == false) {
               setupExtendedBackgroundSimbox(timeSimbox, correlationDirection, timeBGSimbox, 
                                             outputFormat, outputDomain, modelSettings->getOtherOutputFlag());
-              error = timeBGSimbox->checkError(modelSettings->getLzLimit(),errText);
-              if(error == 0)
-              {
-                LogKit::LogFormatted(LogKit::LOW,"\nTime interval used for background modelling:\n");
-                double zmin, zmax;
-                timeBGSimbox->getMinMaxZ(zmin,zmax);
-                LogKit::LogFormatted(LogKit::LOW,"  Two-way-time          avg / min / max    : %7.1f /%7.1f /%7.1f\n",
-                                     zmin+timeBGSimbox->getlz()*timeBGSimbox->getAvgRelThick()*0.5,
-                                     zmin,zmax); 
-                LogKit::LogFormatted(LogKit::LOW,"  Interval thickness    avg / min / max    : %7.1f /%7.1f /%7.1f\n", 
-                                     timeBGSimbox->getlz()*timeBGSimbox->getAvgRelThick(),
-                                     timeBGSimbox->getlz()*timeBGSimbox->getMinRelThick(),
-                                     timeBGSimbox->getlz());
-                LogKit::LogFormatted(LogKit::LOW,"  Sampling density      avg / min / max    : %7.2f /%7.2f /%7.2f\n", 
-                                     timeBGSimbox->getdz()*timeBGSimbox->getAvgRelThick(),
-                                     timeBGSimbox->getdz(),
-                                     timeBGSimbox->getdz()*timeBGSimbox->getMinRelThick());
-              }
+              status = timeBGSimbox->calculateDz(modelSettings->getLzLimit(),errText);
+              if(status == Simbox::BOXOK)
+                logIntervalInformation(timeBGSimbox, "Time interval used for background modelling:","Two-way-time");
               else
               {
                 errText += "Could not make the grid for background model.\n";
@@ -1070,6 +1026,12 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
           }
           
           if(failed == false) {
+
+            std::cout << " XY: timeSimbox->getlz() " << timeSimbox->getlz() 
+                      << " timeSimbox->getlz() " << timeSimbox->getnz() 
+                      << " timeSimbox->getMinRelThick() " << timeSimbox->getMinRelThick() << std::endl;
+
+
             estimateXYPaddingSizes(timeSimbox, modelSettings);
             
             LogKit::LogFormatted(LogKit::LOW,"\nTime simulation grids:\n");
@@ -1112,6 +1074,27 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
   }
 }
   
+void 
+Model::logIntervalInformation(const Simbox      * simbox, 
+                              const std::string & header_text1, 
+                              const std::string & header_text2)
+{
+  LogKit::LogFormatted(LogKit::LOW,"\n"+header_text1+"\n");
+  double zmin, zmax;
+  simbox->getMinMaxZ(zmin,zmax);
+  LogKit::LogFormatted(LogKit::LOW," %13s          avg / min / max    : %7.1f /%7.1f /%7.1f\n",
+                       header_text2.c_str(),
+                       zmin+simbox->getlz()*simbox->getAvgRelThick()*0.5,
+                       zmin,zmax); 
+  LogKit::LogFormatted(LogKit::LOW,"  Interval thickness    avg / min / max    : %7.1f /%7.1f /%7.1f\n", 
+                       simbox->getlz()*simbox->getAvgRelThick(),
+                       simbox->getlz()*simbox->getMinRelThick(),
+                       simbox->getlz());
+  LogKit::LogFormatted(LogKit::LOW,"  Sampling density      avg / min / max    : %7.2f /%7.2f /%7.2f\n", 
+                       simbox->getdz()*simbox->getAvgRelThick(),
+                       simbox->getdz(),
+                       simbox->getdz()*simbox->getMinRelThick());
+}
   
 void 
 Model::setSimboxSurfaces(Simbox                        *& simbox, 
@@ -1459,8 +1442,6 @@ void
 Model::estimateXYPaddingSizes(Simbox         * timeSimbox, 
                               ModelSettings *& modelSettings)
 {
-  bool newPaddings = false;
-
   double xPadFac = modelSettings->getXPadFac();
   double yPadFac = modelSettings->getYPadFac();
   double xPad    = xPadFac*timeSimbox->getlx();
@@ -1468,75 +1449,70 @@ Model::estimateXYPaddingSizes(Simbox         * timeSimbox,
   double dx      = timeSimbox->getdx();
   double dy      = timeSimbox->getdy();
 
-  if (xPadFac==0.0 && yPadFac==0.0)
+  if (modelSettings->getEstimateXYPadding())
   {
-    float range1  = modelSettings->getLateralCorr()->getRange();
-    float range2  = modelSettings->getLateralCorr()->getSubRange();
-    float angle   = modelSettings->getLateralCorr()->getAngle();
+    float  range1 = modelSettings->getLateralCorr()->getRange();
+    float  range2 = modelSettings->getLateralCorr()->getSubRange();
+    float  angle  = modelSettings->getLateralCorr()->getAngle();
     double factor = 0.5;  // Lateral correlation is not very important. Half a range is probably more than enough
 
     xPad          = factor * std::max(fabs(range1*cos(angle)),fabs(range2*sin(angle)));
     yPad          = factor * std::max(fabs(range1*sin(angle)),fabs(range2*cos(angle)));
-    xPad          = std::max(xPad, dx); // Always require
-    yPad          = std::max(xPad, dy); // Always require
+    xPad          = std::max(xPad, dx); // Always require at least on grid cell
+    yPad          = std::max(xPad, dy); // Always require at least one grid cell
 
-    xPadFac       = MINIM(1.0, xPad / timeSimbox->getlx()); // A padding of more than 100% is insensible
-    yPadFac       = MINIM(1.0, yPad / timeSimbox->getly());
+    xPadFac       = std::min(1.0, xPad / timeSimbox->getlx()); // A padding of more than 100% is insensible
+    yPadFac       = std::min(1.0, yPad / timeSimbox->getly());
 
     modelSettings->setXPadFac(xPadFac);
     modelSettings->setYPadFac(yPadFac);
-    newPaddings = true;
   }
   int nxPad = setPaddingSize(timeSimbox->getnx(), xPadFac);
   int nyPad = setPaddingSize(timeSimbox->getny(), yPadFac);
   modelSettings->setNXpad(nxPad);
   modelSettings->setNYpad(nyPad);
 
-  std::string text;
+  std::string text1;
+  std::string text2;
   int logLevel = LogKit::MEDIUM;
-  if (newPaddings) {
-    text = " estimated from lateral correlation ranges in internal grid";
+  if (modelSettings->getEstimateXYPadding()) {
+    text1 = " estimated from lateral correlation ranges in internal grid";
+    logLevel = LogKit::LOW;
+  }  
+  if (modelSettings->getEstimateZPadding()) {
+    text2 = " estimated from an assumed wavelet length"; 
     logLevel = LogKit::LOW;
   }  
 
-  LogKit::LogFormatted(logLevel,"\nPadding sizes"+text+":\n");
+  LogKit::LogFormatted(logLevel,"\nPadding sizes"+text1+":\n");
   LogKit::LogFormatted(logLevel,"  xPad, xPadFac, nx, nxPad                 : %6.fm, %4.2f, %5d, %4d\n", 
                        xPad, xPadFac, timeSimbox->getnx(), nxPad);
-  LogKit::LogFormatted(logLevel,"  yPad, yPadFac, ny, nyPad                 : %6.fm, %4.2f, %5d, %4d\n", 
+  LogKit::LogFormatted(logLevel,"  yPad, yPadFac, ny, nyPad                 : %6.fm, %4.2f, %5d, %4d", 
                        yPad, yPadFac, timeSimbox->getny(), nyPad);
+  LogKit::LogFormatted(logLevel,"\nPadding sizes"+text2+":\n");
+  LogKit::LogFormatted(logLevel,"  zPad, zPadFac, nz, nzPad                 : %5.fms, %4.2f, %5d, %4d\n", 
+                       modelSettings->getZPadFac()*(timeSimbox->getlz()*timeSimbox->getMinRelThick()), 
+                       modelSettings->getZPadFac(), timeSimbox->getnz(), modelSettings->getNZpad());
 }
 
 void
 Model::estimateZPaddingSize(Simbox         * timeSimbox,
                             ModelSettings *& modelSettings)
 {
-  bool newPadding = false;
   double zPadFac = modelSettings->getZPadFac();
   double zPad    = zPadFac*timeSimbox->getlz()*timeSimbox->getMinRelThick();
 
-  if (zPadFac == 0.0)
+  if (modelSettings->getEstimateZPadding())
   {
     double wLength = 200.0;           // Assume a wavelet is approx 200ms.
     zPad           = wLength / 2.0;   // Use half a wavelet as padding
-    zPadFac        = MINIM(1.0, zPad / (timeSimbox->getlz()*timeSimbox->getMinRelThick()));
+    zPadFac        = std::min(1.0, zPad / (timeSimbox->getlz()*timeSimbox->getMinRelThick()));
     
     modelSettings->setZPadFac(zPadFac);
-    newPadding = true;
   }
 
   int nzPad = setPaddingSize(timeSimbox->getnz(), zPadFac);
   modelSettings->setNZpad(nzPad);
-
-  std::string text;
-  int logLevel = LogKit::MEDIUM;
-  if (newPadding) {
-    text = " estimated from an assumed wavelet length"; 
-    logLevel = LogKit::LOW;
-  }  
-
-  LogKit::LogFormatted(logLevel,"\nPadding sizes"+text+":\n");
-  LogKit::LogFormatted(logLevel,"  zPad, zPadFac, nz, nzPad                 : %6.fms, %4.2f, %5d, %4d\n", 
-                       zPad, zPadFac, timeSimbox->getnz(), nzPad);
 }
 
 void
