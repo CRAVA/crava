@@ -1355,7 +1355,7 @@ XmlModelFile::parseOutputVolume(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("interval-two-surfaces");
   legalCommands.push_back("interval-one-surface");
   legalCommands.push_back("area-from-surface");
-  legalCommands.push_back("UTM-coordinates");
+  legalCommands.push_back("utm-coordinates");
   legalCommands.push_back("inline-crossline-numbers");
 
   bool interval = parseIntervalTwoSurfaces(root, errTxt);
@@ -1667,7 +1667,7 @@ TiXmlNode * root = node->FirstChildElement("inline-crossline-numbers");
 bool
 XmlModelFile::parseUTMArea(TiXmlNode * node, std::string & errTxt)
 {
-  TiXmlNode * root = node->FirstChildElement("UTM-coordinates");
+  TiXmlNode * root = node->FirstChildElement("utm-coordinates");
   if(root == 0)
     return(false);
   

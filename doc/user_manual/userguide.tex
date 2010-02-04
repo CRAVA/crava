@@ -85,7 +85,7 @@ The volume used for inversion is given horizontally by a rectangle, and vertical
 <crava>
 <project-settings>
   <output-volume>
-    <UTM-coordinates>
+    <utm-coordinates>
       <reference-point-x>  403050.0   </reference-point-x>
       <reference-point-y> 7211900.0   </reference-point-y>
       <length-x>              500.0   </length-x>
@@ -93,7 +93,7 @@ The volume used for inversion is given horizontally by a rectangle, and vertical
       <angle>                  23.627 </angle>
       <sample-density-x>       50.0   </sample-density-x>
       <sample-density-y>       50.0   </sample-density-y>
-    </UTM-coordinates>
+    </utm-coordinates>
 
     <interval-two-surfaces>
       <top-surface>
@@ -111,7 +111,13 @@ The volume used for inversion is given horizontally by a rectangle, and vertical
 \end{example}
 
 \subsubsection{Lateral extent}
-The lateral extent of the inversion volume is given under one of the the commands \kw{area-from-surface}\kwindex{area-from-surface}, \kw{UTM-coordinates}\kwindex{UTM-coordinates}, or \kw{inline-crossline-numbers}\kwindex{inline-crossline-numbers}. The command \kw{UTM-coordinates} describes a rectangle, which may be rotated relative to the seismic data. It has the following parameters, which must all be specified:
+The lateral extent of the inversion volume is given under one of the
+the commands \kw{area-from-surface}\kwindex{area-from-surface},
+\kw{utm-coordinates}\kwindex{utm-coordinates}, or
+\kw{inline-crossline-numbers}\kwindex{inline-crossline-numbers}. The
+command \kw{utm-coordinates} describes a rectangle, which may be
+rotated relative to the seismic data. It has the following parameters,
+which must all be specified: 
 \begin{itemize}
 \item \kw{reference-point-x}\kwindex{reference-point-x} is the UTM x-coordinate of one corner of the area.
 \item \kw{reference-point-x}\kwindex{reference-point-x} is the UTM y-coordinate of the same corner.
@@ -367,27 +373,50 @@ The command \kw{prediction}\kwindex{prediction} can be used to turn predictions 
 \label{sec:advinvusr}
 Although \crava is mainly intended as a simple and fast inversion tool, there are still some options to control the inversion, and using more sophisticated approaches. Most of these are covered here, see also \autoref{advanced-settings} for details about \kw{advanced-settings}.
 \subsection{Non-stationary wavelet and noise}
-Although the FFT-algorithm which is at the core of \crava requires stationarity, this does not mean that the entire inversion has to be stationary, as discussed in \autoref{sec:nonstationaryimp}. We allow lateral variations in wavelet amplitude, wavelet shift and signal to noise ratio.
+Although the FFT-algorithm which is at the core of \crava requires
+stationarity, this does not mean that the entire inversion has to be
+stationary, as discussed in \autoref{sec:nonstationaryimp}. We allow
+lateral variations in wavelet amplitude, wavelet shift and signal to
+noise ratio. 
 
-Unlike the basic level, where parameters that were not specified automatically got estimated, use of local wavelets or noise must be explicitly triggered. For wavelets, this is done with the \kw{local-wavelet}\kwindex{local-wavelet} command under \kw{wavelet}. There are four possible commands under \kw{local-wavelet}:
+Unlike the basic level, where parameters that were not specified
+automatically got estimated, use of local wavelets or noise must be
+explicitly triggered. For wavelets, this is done with the
+\kw{local-wavelet}\kwindex{local-wavelet} command under
+\kw{wavelet}. There are four possible commands under
+\kw{local-wavelet}: 
 \begin{enumerate}
 \item \kw{shift-file} gives a file name for a map giving the local shifts. The file must be on storm format.
 \item \kw{estimate-shift} will estimate a local shift map when set to "yes".
 \item \kw{scale-file} gives a file name for a map giving the local scale. The file must be on storm format.
 \item \kw{estimate-scale} will estimate a local scale map when set to "yes".
 \end{enumerate}
-Naturally, the shift can not be both given and estimated, the same holds for scale. Note that you may choose to use only shifts, omitting both scale keywords, or use only scale.
+Naturally, the shift can not be both given and estimated, the same
+holds for scale. Note that you may choose to use only shifts, omitting
+both scale keywords, or use only scale. 
 
-The local noise is triggered similarly, by using one of these two commands under \kw{angle-gather}:
+The local noise is triggered similarly, by using one of these two
+commands under \kw{angle-gather}: 
 \begin{enumerate}
-\item \kw{local-noise-scaled} gives a file with the local scaling of the signal to noise ratio, on storm format.
-\item \kw{estimate-local-noise} estimates the local scaling of the signal to noise ratio if set to "yes".
+\item \kw{local-noise-scaled} gives a file with the local scaling of
+  the signal to noise ratio, on storm format. 
+\item \kw{estimate-local-noise} estimates the local scaling of the
+  signal to noise ratio if set to "yes". 
 \end{enumerate}
 
 \subsection{PS-seismic and reflection approximations}
-By default, \crava assumes that the input seismic data are PP, but PS data can also be used. For both cases, we use  linearized Aki-Richards, see \autoref{eq:aki_c}. The type of seismic data is indicated by using the \kw{type}\kwindex{type} command under\kw{seismic-data}. Here, \kw{type} should be either "pp" or "ps". Note that PS data must also be aligned in PP-travel time, as no such alignment is done internally by \crava.
+By default, \crava assumes that the input seismic data are PP, but PS
+data can also be used. For both cases, we use  linearized
+Aki-Richards, see \autoref{eq:aki_c}. The type of seismic data is
+indicated by using the \kw{type}\kwindex{type} command
+under\kw{seismic-data}. Here, \kw{type} should be either "pp" or
+"ps". Note that PS data must also be aligned in PP-travel time, as no
+such alignment is done internally by \crava. 
 
-Instead of using the default reflection approximation, the user may supply the parameters to compute the reflections. We always assume that for a given angle and seismic type, the reflections can be computed from the equation
+Instead of using the default reflection approximation, the user may
+supply the parameters to compute the reflections. We always assume
+that for a given angle and seismic type, the reflections can be
+computed from the equation 
 \begin{equation}
 \begin{split}
   c(\vect{x},t,\theta)
@@ -397,10 +426,23 @@ Instead of using the default reflection approximation, the user may supply the p
 \label{eq:linrefl}
 \end{split}
 \end{equation}
-The coefficients $a_{V\!p}$, $a_{V\!s}$ and $a_\rho$ can be read from file, using the \kw{reflection-matrix}\kwindex{reflection-matrix} command under \kw{advanced-settings}. This file should have one line for each seismic data file, and each line should have the three coefficients for one set of seismic input data. The order of the lines should be the same as the order of the seismic data in the \kw{survey} command.
+The coefficients $a_{V\!p}$, $a_{V\!s}$ and $a_\rho$ can be read from
+file, using the \kw{reflection-matrix}\kwindex{reflection-matrix}
+command under \kw{advanced-settings}. This file should have one line
+for each seismic data file, and each line should have the three
+coefficients for one set of seismic input data. The order of the lines
+should be the same as the order of the seismic data in the \kw{survey}
+command. 
 
 \subsection{Well quality checks}
-Well logs are often faulty, and \crava has some safety mechanisms to detect this. The primary mechanism is to detect extreme values, and set these missing. The default upper and lower bounds are shown in \autoref{tab:logminmax}. These can be overridden using the command \kw{allowed-parameter-values}\kwindex{allowed-parameter-values} under \kw{well-data}. Here, \kw{minimum-vp}, \kw{minimum-vs}, \kw{minimum-density} and the corresponding maximum values can be given.
+Well logs are often faulty, and \crava has some safety mechanisms to
+detect this. The primary mechanism is to detect extreme values, and
+set these missing. The default upper and lower bounds are shown in
+\autoref{tab:logminmax}. These can be overridden using the command
+\kw{allowed-parameter-values}\kwindex{allowed-parameter-values} under
+\kw{well-data}. Here, \kw{minimum-vp}, \kw{minimum-vs},
+\kw{minimum-density} and the corresponding maximum values can be
+given. 
 \begin{table}
 \begin{tabular}{|lrr|}
 \hline
@@ -414,7 +456,14 @@ Density & 1.4 & 3.3
 \end{table}
 
 
-Some logs may stay within reasonable values, but have too much or too little variation, also indicating that something is wrong. For each log, the variance of the logarithm of the log minus the background is computed, and if it is outside reasonable bounds, this triggers an error. The default bounds are shown in \autoref{tab:logvarminmax}. These can also be overridden with \kw{allowed-parameter-values}, using \kw{minimum-variance-vp} and so on.
+Some logs may stay within reasonable values, but have too much or too
+little variation, also indicating that something is wrong. For each
+log, the variance of the logarithm of the log minus the background is
+computed, and if it is outside reasonable bounds, this triggers an
+error. The default bounds are shown in
+\autoref{tab:logvarminmax}. These can also be overridden with
+\kw{allowed-parameter-values}, using \kw{minimum-variance-vp} and so
+on. 
 \begin{table}
 \begin{tabular}{|lrr|}
 \hline
@@ -428,42 +477,107 @@ Var(ln(Density)) & $2*10^{-4}$ & $100*10^{-4}$ \\
 \end{table}
 
 \subsection{Generate synthetic seismic from inversion data}
-It is possible to generate synthetic seismic by a forward modeling with the Vp, Vs and density resulting from the inversion. This is done by the command  \kw{synthetic} under \kw{seismic-data} under \kw{grid-output}, \kw{io-settings},  in command \kw{project-settings}.
+It is possible to generate synthetic seismic by a forward modeling
+with the Vp, Vs and density resulting from the inversion. This is done
+by the command  \kw{synthetic} under \kw{seismic-data} under
+\kw{grid-output}, \kw{io-settings},  in command
+\kw{project-settings}. 
 
 \section{Estimation}
 \label{sec:estimateusr}
-As mentioned, \crava can estimate many of the needed parameters. There are several commands that control the estimation behavior for wavelets, noise and background model. Note that the correlations will always be estimated as explained in \autoref{sec:estimateimp} from all available well logs, and do not have any further controls.
+As mentioned, \crava can estimate many of the needed parameters. There
+are several commands that control the estimation behavior for
+wavelets, noise and background model. Note that the correlations will
+always be estimated as explained in \autoref{sec:estimateimp} from all
+available well logs, and do not have any further controls. 
 
 \subsection{Estimation mode}
-If you only want to do the estimation, in order to check the quality of the estimates, you can use "estimate" in the \kw{mode} command. Using this, \crava will perform the initial model building tasks and estimate needed information, but terminate once all information needed for inversion is estimated. When running in estimation mode, you can also control the main estimation aspects using the \kw{estimation-settings}\kwindex{estimation-settings} command. This allows you to control which of the main estimation tasks should be carried out, setting yes or no for \kw{estimate-correlations}, \kw{estimate-wavelet-or-noise} or \kw{estimate-background}. Parameters with a "no" will not be estimated unless needed for other estimations. Note that in estimation mode, all estimated parameters are written to file, regardless of output settings.
+If you only want to do the estimation, in order to check the quality
+of the estimates, you can use "estimate" in the \kw{mode}
+command. Using this, \crava will perform the initial model building
+tasks and estimate needed information, but terminate once all
+information needed for inversion is estimated. When running in
+estimation mode, you can also control the main estimation aspects
+using the \kw{estimation-settings}\kwindex{estimation-settings}
+command. This allows you to control which of the main estimation tasks
+should be carried out, setting yes or no for
+\kw{estimate-correlations}, \kw{estimate-wavelet-or-noise} or
+\kw{estimate-background}. Parameters with a "no" will not be estimated
+unless needed for other estimations. Note that in estimation mode, all
+estimated parameters are written to file, regardless of output
+settings. 
 \subsection{Wavelet and noise estimation}
-Wavelets and noise are estimated together. These parameters will only be estimated from wells that are vertical or close to vertical, since this allows comparing synthetic seismic from well logs with one or a couple of traces, and thus reduces alignment issues. The angle limit can be controlled by the \kw{maximum-deviation-angle}\kwindex{maximum-deviation-angle} command under \kw{well-data}. In addition, wells can be excluded individually, by setting \kw{use-for-wavelet-estimation} to "no" under \kw{well}.
+Wavelets and noise are estimated together. These parameters will only
+be estimated from wells that are vertical or close to vertical, since
+this allows comparing synthetic seismic from well logs with one or a
+couple of traces, and thus reduces alignment issues. The angle limit
+can be controlled by the
+\kw{maximum-deviation-angle}\kwindex{maximum-deviation-angle} command
+under \kw{well-data}. In addition, wells can be excluded individually,
+by setting \kw{use-for-wavelet-estimation} to "no" under \kw{well}. 
 
-By default, the wavelet and noise are estimated in the region between the top and bottom surface for the inversion area. This may be further limited using the \kw{wavelet-estimation-interval} command under \kw{survey}, where a separate set of restricting surfaces are given with \kw{top-surface-file} and \kw{base-surface-file}. Since these are under \kw{wavelet}, they can be different for each angle.
+By default, the wavelet and noise are estimated in the region between
+the top and bottom surface for the inversion area. This may be further
+limited using the \kw{wavelet-estimation-interval} command under
+\kw{survey}, where a separate set of restricting surfaces are given
+with \kw{top-surface-file} and \kw{base-surface-file}. Since these are
+under \kw{wavelet}, they can be different for each angle. 
 
 Some wavelet estimation options are also found under \kw{advanced-settings} under \kw{project-settings}. These are
 \begin{itemize}
 \item \kw{wavelet-tapering-length} which controls the length of the wavelet (in ms).
-\item \kw{minimum-relative-wavelet-amplitude} which finds the wavelet length, by setting the cutoff size for edge peaks relative to center peak.
-\item \kw{maximum-wavelet-shift} which controls how far the wavelet can be shifted locally, see \autoref{sec:waveestimp}.
+\item \kw{minimum-relative-wavelet-amplitude} which finds the wavelet
+  length, by setting the cutoff size for edge peaks relative to center
+  peak. 
+\item \kw{maximum-wavelet-shift} which controls how far the wavelet
+  can be shifted locally, see \autoref{sec:waveestimp}. 
 \end{itemize}
 
 \subsection{Background model estimation}
-The background model is estimated as a low frequency vertical trend. The trend is given in relative depth in the inversion volume, so the trend value along the top and bottom surface is constant. At well locations, the trend is kriged to the well logs. By default, all wells are used background model estimation, but can be excluded by using \kw{use-for-background-trend} under \kw{well} for individual wells.
+The background model is estimated as a low frequency vertical
+trend. The trend is given in relative depth in the inversion volume,
+so the trend value along the top and bottom surface is constant. At
+well locations, the trend is kriged to the well logs. By default, all
+wells are used background model estimation, but can be excluded by
+using \kw{use-for-background-trend} under \kw{well} for individual
+wells. 
 
-The background estimation can be controlled by some commands under \kw{background}\kwindex{background}. These are:
+The background estimation can be controlled by some commands under
+\kw{background}\kwindex{background}. These are: 
 \begin{itemize}
-\item \kw{velocity-field} takes an external velocity field, typically from migration, and uses as Vp background, kriged to low frequency Vp well logs.
-\item \kw{lateral-correlation} gives a variogram for the kriging. Larger ranges extends well data further away from wells.
-\item \kw{high-cut} allows specification of a maximum frequency for the background model.
+\item \kw{velocity-field} takes an external velocity field, typically
+  from migration, and uses as Vp background, kriged to low frequency
+  Vp well logs. 
+\item \kw{lateral-correlation} gives a variogram for the
+  kriging. Larger ranges extends well data further away from wells. 
+\item \kw{high-cut} allows specification of a maximum frequency for
+  the background model. 
 \end{itemize}
 
 \section{Facies prediction}
-An important feature in \crava is the ability to create facies probabilities. This requires that \kw{mode} is set to "inversion", and is triggered by the \kw{facies-probabilities} command under \kw{inversion-settings}. The value given here should be either "absolute" or "relative", corresponding to probability computations based on absolute or relative inverted parameters. If the distribution for elastic parameters for each facies is constant over the inversion volume, using absolute values is more stable. However, if there are trends in the elastic parameters, the relative values are more robust.
+An important feature in \crava is the ability to create facies
+probabilities. This requires that \kw{mode} is set to "inversion", and
+is triggered by the \kw{facies-probabilities} command under
+\kw{inversion-settings}. The value given here should be either
+"absolute" or "relative", corresponding to probability computations
+based on absolute or relative inverted parameters. If the distribution
+for elastic parameters for each facies is constant over the inversion
+volume, using absolute values is more stable. However, if there are
+trends in the elastic parameters, the relative values are more
+robust. 
 
-The facies probabilities are computed based on the inversion results and a distribution for inversion values given facies computed from filtered well logs, where the filter is defined by the inversion. See \autoref{sec:facprobthe}. Probability cubes will be computed for all facies seen in wells, and an additional undefined probability cube is also generated, indicating areas where the inversion values are too far away from well data to make reliable predictions.
+The facies probabilities are computed based on the inversion results
+and a distribution for inversion values given facies computed from
+filtered well logs, where the filter is defined by the inversion. See
+\autoref{sec:facprobthe}. Probability cubes will be computed for all
+facies seen in wells, and an additional undefined probability cube is
+also generated, indicating areas where the inversion values are too
+far away from well data to make reliable predictions. 
 
-Except from the trigger in \kw{inversion-settings}, all parameters related to facies probabilities are given under \kw{facies-probabilities}\kwindex{facies-probabilities} under \kw{prior-model}. Here is an example:
+Except from the trigger in \kw{inversion-settings}, all parameters
+related to facies probabilities are given under
+\kw{facies-probabilities}\kwindex{facies-probabilities} under
+\kw{prior-model}. Here is an example: 
 \svex{ex:facprob}
 <crava>
 <prior-model>
@@ -488,14 +602,29 @@ Except from the trigger in \kw{inversion-settings}, all parameters related to fa
 \end{verbatim}
 \end{example}
 
-The volume to use for facies probability computation can be controlled with \kw{facies-estimation-interval}, similar to estimation interval for wavelets. Parallel to the wavelet case, wells may also be excluded using the \kw{use-for-facies-probabilities} command under \kw{well}.
+The volume to use for facies probability computation can be controlled
+with \kw{facies-estimation-interval}, similar to estimation interval
+for wavelets. Parallel to the wavelet case, wells may also be excluded
+using the \kw{use-for-facies-probabilities} command under \kw{well}. 
 
 \subsection{Prior probabilities}
-In order to get reliable probabilities, we need good prior probabilities. By default, \crava computes the average fraction of each facies in the relevant interval of the wells. This can be overridden using the \kw{prior-facies-probabilities} command, which allows specification of these. Note that probabilities must be given for each facies. Probabilities can either be given globally, with \kw{probability}, or as a full 3D trend, using \kw{probability-cube}. The latter takes a file name as argument; this should be a storm-file that covers the inversion volume.
+In order to get reliable probabilities, we need good prior
+probabilities. By default, \crava computes the average fraction of
+each facies in the relevant interval of the wells. This can be
+overridden using the \kw{prior-facies-probabilities} command, which
+allows specification of these. Note that probabilities must be given
+for each facies. Probabilities can either be given globally, with
+\kw{probability}, or as a full 3D trend, using
+\kw{probability-cube}. The latter takes a file name as argument; this
+should be a storm-file that covers the inversion volume. 
 
 \section{Forward modelling}
 \label{sec:forwardusr}
-A minor functionality in \crava is that it can do forward modelling, showing what seismic response the program would expect from a given set of elastic parameters. This is triggered by using "forward" as \kw{mode}. In this mode, we generate synthetic seismic data from the given background cubes. A file for forward modelling looks like this:
+A minor functionality in \crava is that it can do forward modelling,
+showing what seismic response the program would expect from a given
+set of elastic parameters. This is triggered by using "forward" as
+\kw{mode}. In this mode, we generate synthetic seismic data from the
+given background cubes. A file for forward modelling looks like this: 
 \svex{ex:forward}
 <crava>
 <actions>
@@ -528,7 +657,7 @@ A minor functionality in \crava is that it can do forward modelling, showing wha
 
 <project-settings>
   <output-volume>
-    <UTM-coordinates>
+    <utm-coordinates>
       <reference-point-x>  400000.0 </reference-point-x>
       <reference-point-y> 7227500.0 </reference-point-y>
       <length-x>             2500.0 </length-x>
@@ -536,7 +665,7 @@ A minor functionality in \crava is that it can do forward modelling, showing wha
       <angle>                   0.0 </angle>
       <sample-density-x>      250.0 </sample-density-x>
       <sample-density-y>      250.0 </sample-density-y>
-    </UTM-coordinates>
+    </utm-coordinates>
 
     <interval-two-surfaces>
       <top-surface>
@@ -562,5 +691,12 @@ A minor functionality in \crava is that it can do forward modelling, showing wha
 </crava>
 \end{verbatim}
 \end{example}
-Note that no seismic files are given under \kw{survey}, as these are now computed. No wells are used, since nothing can be estimated here. We need the angles to generate seismic data for, the corresponding wavelets, the elastic parameters (given as earth model), and the volume. Instead of using one of the commands defining volume, the volume can be taken from Vp.  The output format can be controlled using \kw{io-settings}, as can input- and output-directory. Other input will be ignored.
+Note that no seismic files are given under \kw{survey}, as these are
+now computed. No wells are used, since nothing can be estimated
+here. We need the angles to generate seismic data for, the
+corresponding wavelets, the elastic parameters (given as earth model),
+and the volume. Instead of using one of the commands defining volume,
+the volume can be taken from Vp.  The output format can be controlled
+using \kw{io-settings}, as can input- and output-directory. Other
+input will be ignored. 
 

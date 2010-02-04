@@ -1026,12 +1026,6 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
           }
           
           if(failed == false) {
-
-            std::cout << " XY: timeSimbox->getlz() " << timeSimbox->getlz() 
-                      << " timeSimbox->getlz() " << timeSimbox->getnz() 
-                      << " timeSimbox->getMinRelThick() " << timeSimbox->getMinRelThick() << std::endl;
-
-
             estimateXYPaddingSizes(timeSimbox, modelSettings);
             
             LogKit::LogFormatted(LogKit::LOW,"\nTime simulation grids:\n");
@@ -3615,8 +3609,10 @@ Model::printSettings(ModelSettings * modelSettings,
   }
   if (areaSpecification == AREA_FROM_GRID_DATA)
     LogKit::LogFormatted(LogKit::LOW,"  Taken from                               : "+gridFile+"\n");
-  else if (areaSpecification == AREA_FROM_UTM)
+  else if (areaSpecification == AREA_FROM_UTM) {
     LogKit::LogFormatted(LogKit::LOW,"  Taken from                               : UTM coordinates given in model file\n");
+    
+  }
   else if (areaSpecification == AREA_FROM_SURFACE)
     LogKit::LogFormatted(LogKit::LOW,"  Taken from surface                       : "+inputFiles->getAreaSurfaceFile()+"\n");
 
