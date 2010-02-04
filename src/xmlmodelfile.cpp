@@ -2424,6 +2424,8 @@ XmlModelFile::parseVariogram(TiXmlNode * node, const std::string & keyword, Vari
       }
       vario = new SphericalVario(range, subrange, angle);
     }
+    else
+      errTxt += "Variogram type "+vType+" is not a valid variogram type. Please choose between genexp and spherical.\n";
   }
 
   checkForJunk(root, errTxt, legalCommands);
