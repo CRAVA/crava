@@ -70,6 +70,8 @@ XmlModelFile::XmlModelFile(const std::string & fileName)
 
     checkConsistency(errTxt);
 
+    setDerivedParameters(errTxt);
+
     if(errTxt != "") {
       Utils::writeHeader("Invalid model file");
       LogKit::LogFormatted(LogKit::ERROR,"\n%s is not a valid model file:\n",fileName.c_str());
@@ -2618,4 +2620,23 @@ XmlModelFile::checkAngleConsistency(std::string & errTxt) {
       }
     }
   }
+}
+
+
+void
+XmlModelFile::setDerivedParameters(std::string & errTxt) 
+{
+  int areaSpecification;  
+  if(modelSettings_->getAreaParameters() != NULL) {
+    areaSpecification = ModelSettings::AREA_FROM_UTM;
+  }
+  else if(inputFiles_->getAreaSurfaceFile() != "") {
+    areaSpecification = ModelSettings::AREA_FROM_SURFACE;
+  }
+  else {
+    areaSpecification = ModelSettings::AREA_FROM_GRID_DATA; // inversion:seismic data, forward modelling: Vp
+  }
+  modelSettings_->setAreaSpecification(areaSpecification);
+  
+  // Add new derived parameters below...
 }

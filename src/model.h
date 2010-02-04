@@ -65,8 +65,6 @@ public:
 
   void                          writeBlockedWells(WellData ** wells, ModelSettings * modelSettings);
 
-  enum                          areaSpecification{AREA_FROM_GRID_DATA = 0, AREA_FROM_UTM = 1, AREA_FROM_SURFACE = 2};
-
 private:
   void             makeTimeSimboxes(Simbox        *& timeSimbox,
                                     Simbox        *& timeCutSimbox,
@@ -75,7 +73,6 @@ private:
                                     Surface       *& correlationDirection,
                                     ModelSettings *& modelSettings, 
                                     InputFiles     * inputFiles,
-                                    int              areaSpecification,
                                     std::string    & errText,
                                     bool           & failed);
   void             logIntervalInformation(const Simbox      * simbox, 
@@ -274,8 +271,7 @@ private:
                                     std::string    & tmpErrText,
                                     int            & error);
   void             printSettings(ModelSettings * modelSettings,
-                                 InputFiles    * inputFiles,
-                                 int            areaSpecification);
+                                 InputFiles    * inputFiles);
   int              getWaveletFileFormat(const std::string & fileName, 
                                         std::string & errText);
   //Compute correlation gradient in terms of i,j and k in grid.

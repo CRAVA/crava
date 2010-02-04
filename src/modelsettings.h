@@ -110,6 +110,8 @@ public:
   double                           getTimeLz(void)                      const { return time_lz_                 ;}
   double                           getTimeDz(void)                      const { return time_dz_                 ;}
   int                              getTimeNz(void)                      const { return time_nz_                 ;}
+  std::vector<int>                 getAreaILXL(void)                    const { return areaILXL_                ;}
+  int                              getAreaSpecification(void)           const { return areaSpecification_       ;}     
   bool                             getVelocityFromInversion(void)       const { return velocityFromInv_         ;}
   bool                             getWritePrediction(void)             const { return writePrediction_         ;}
   int                              getGridOutputFlag(void)              const { return gridFlag_                ;}
@@ -143,7 +145,6 @@ public:
 
   bool                             getDoInversion(void);                                            
   bool                             getDoDepthConversion(void)           const;
-  std::vector<int>                 getAreaILXL(void)                    const { return areaILXL_                ;}
 
   void rotateVariograms(float angle);
 
@@ -247,6 +248,7 @@ public:
   void setTimeNz(int time_nz)                             { time_nz_                  = time_nz                  ;}
   void setVelocityFromInversion(bool fromInversion)       { velocityFromInv_          = fromInversion            ;}
   void setAreaILXLParameters(std::vector<int> ilxl)       { areaILXL_                 = ilxl                     ;}
+  void setAreaSpecification(int areaSpecification)        { areaSpecification_        = areaSpecification        ;}
   void setWritePrediction(bool write)                     { writePrediction_          = write                    ;}
   void setDefaultGridOutputInd(bool ind)                  { defaultGridOutput_        = ind                      ;}
   void setGridOutputFlag(int gridFlag)                    { gridFlag_                 = gridFlag                 ;}
@@ -278,7 +280,10 @@ public:
   enum          sseismicTypes{STANDARDSEIS = 0, PSSEIS = 1};                          
 
   enum          indicators{NO = 0, YES = 1, NOTSET = 2};
-                   
+
+  enum          areaSpecification{AREA_FROM_GRID_DATA, 
+                                  AREA_FROM_UTM, 
+                                  AREA_FROM_SURFACE};
 private:           
                    
   Vario                           * angularCorr_;                // Variogram for lateral error correlation
@@ -403,6 +408,8 @@ private:
   double                            time_dz_;                    // Used when top and base surfaces are parallel
   int                               time_nz_;                    // Used when top and base surfaces are parallel
   bool                              velocityFromInv_;            // Velocity for time depth from inverted Vs.
+
+  int                               areaSpecification_;          // Specifying whether are is taken from UTM-coord, seismic or surface
   std::vector<int>                  areaILXL_;                   
                                                                  
   bool                              writePrediction_;            // Determines whether prediction is written.

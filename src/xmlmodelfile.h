@@ -15,9 +15,9 @@ public:
   XmlModelFile(const std::string & fileName);
     ~XmlModelFile(void);
 
-  ModelSettings  * getModelSettings(void)  const { return modelSettings_ ;}
-  InputFiles     * getInputFiles(void)     const { return inputFiles_    ;}
-  bool             getParsingFailed(void)  const { return failed_        ;}
+  ModelSettings * getModelSettings(void)  const { return modelSettings_ ;}
+  InputFiles    * getInputFiles(void)     const { return inputFiles_    ;}
+  bool            getParsingFailed(void)  const { return failed_        ;}
 
 private:  
   bool parseCrava(TiXmlNode * node, std::string & errTxt);
@@ -80,6 +80,7 @@ private:
   bool parseVariogram(TiXmlNode * node, const std::string & keyword, Vario * & vario, std::string & errTxt);
   bool parseTraceHeaderFormat(TiXmlNode * node, const std::string & keyword, TraceHeaderFormat *& thf, std::string & errTxt);
   bool parseFileName(TiXmlNode * node, const std::string & keyword, std::string & filename, std::string & errTxt, bool allowDuplicates = false);
+
   void checkAngleConsistency(std::string & errTxt);
 
   void ensureTrailingSlash(std::string & directory);
@@ -90,6 +91,8 @@ private:
   void checkConsistency(std::string & errTxt);
   void checkForwardConsistency(std::string & errTxt);
   void checkEstimationInversionConsistency(std::string & errTxt);
+  void setDerivedParameters(std::string & errTxt);
+
 
   void setMissing(int & value)         { value = IMISSING ;}
   void setMissing(float & value)       { value = RMISSING ;}

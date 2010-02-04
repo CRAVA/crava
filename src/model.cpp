@@ -128,20 +128,14 @@ Model::Model(const std::string & fileName)
     if(modelSettings_->getNumberOfSimulations() == 0)
       modelSettings_->setWritePrediction(true); //write predicted grids. 
     
-    int areaSpecification = AREA_FROM_GRID_DATA;  // inversion:seismic data, forward modelling: Vp
-    if(modelSettings_->getAreaParameters() != NULL)
-      areaSpecification = AREA_FROM_UTM;
-    if(inputFiles->getAreaSurfaceFile() != "")
-      areaSpecification = AREA_FROM_SURFACE;
-
-    printSettings(modelSettings_, inputFiles, areaSpecification);
+    printSettings(modelSettings_, inputFiles);
     
     Utils::writeHeader("Defining modelling grid");
 
     std::string errText("");
 
     makeTimeSimboxes(timeSimbox_, timeCutSimbox, timeBGSimbox, timeSimboxConstThick_,  //Handles correlation direction too.
-                     correlationDirection_, modelSettings_, inputFiles, areaSpecification, 
+                     correlationDirection_, modelSettings_, inputFiles, 
                      errText, failedSimbox);
 
     if(!failedSimbox)
@@ -820,31 +814,32 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
                         Surface       *& correlationDirection,
                         ModelSettings *& modelSettings, 
                         InputFiles     * inputFiles,
-                        int              areaSpecification,
                         std::string    & errText,
                         bool           & failed)
 {
   std::string    areaType;
   std::string    gridFile("");
 
+  int areaSpecification = modelSettings->getAreaSpecification();
+
   if(modelSettings->getForwardModeling())
     gridFile = inputFiles->getBackFile(0);    // Get geometry from earth model (Vp)
   else {
     //In estimation mode, we generally do not bother with il/xl, and may not need the gridfile, hence it might not be given.
-    if(areaSpecification == AREA_FROM_GRID_DATA || modelSettings->getEstimationMode() == false)
+    if(areaSpecification == ModelSettings::AREA_FROM_GRID_DATA || modelSettings->getEstimationMode() == false)
       gridFile = inputFiles->getSeismicFile(0); // Get area from first seismic data volume
   }
   //
   // Set area geometry information
   // -----------------------------
   //
-  if (areaSpecification == AREA_FROM_UTM) 
+  if (areaSpecification == ModelSettings::AREA_FROM_UTM) 
   {
     // The geometry is already present in modelSettings (read from model file).
     LogKit::LogFormatted(LogKit::HIGH,"\nArea information has been taken from model file\n");
     areaType = "Model file";
   }
-  else if(areaSpecification == AREA_FROM_SURFACE) 
+  else if(areaSpecification == ModelSettings::AREA_FROM_SURFACE) 
   {
     LogKit::LogFormatted(LogKit::HIGH,"\nFinding area information from surface \'"+inputFiles->getAreaSurfaceFile()+"\'\n");
     areaType = "Surface";
@@ -852,7 +847,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
     SegyGeometry geometry(surf);
     modelSettings->setAreaParameters(&geometry);
   }
-  else if(areaSpecification == AREA_FROM_GRID_DATA) 
+  else if(areaSpecification == ModelSettings::AREA_FROM_GRID_DATA) 
   {
     LogKit::LogFormatted(LogKit::HIGH,"\nFinding inversion area from grid data in file \'"+gridFile+"\'\n");
     areaType = "Grid data";
@@ -904,7 +899,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
       // Set IL/XL information in geometry
       // ---------------------------------
       //
-      bool need_ilxl_info = areaSpecification == AREA_FROM_UTM || areaSpecification == AREA_FROM_SURFACE;
+      bool need_ilxl_info = areaSpecification == ModelSettings::AREA_FROM_UTM || areaSpecification == ModelSettings::AREA_FROM_SURFACE;
       
       // Skip if estimation mode:
       //   a) For speed 
@@ -3423,8 +3418,7 @@ Model::loadExtraSurfaces(std::vector<Surface *> & waveletEstimInterval,
 
 void
 Model::printSettings(ModelSettings * modelSettings,
-                     InputFiles    * inputFiles,
-                     int             areaSpecification)
+                     InputFiles    * inputFiles)
 {
   Utils::writeHeader("Model settings");
 
@@ -3598,23 +3592,48 @@ Model::printSettings(ModelSettings * modelSettings,
   // AREA
   // 
   std::string gridFile;
+  int areaSpecification = modelSettings->getAreaSpecification();
   if(modelSettings->getForwardModeling()) {
     LogKit::LogFormatted(LogKit::LOW,"\nSeismic area:\n");
     gridFile = inputFiles->getBackFile(0);    // Get geometry from earth model (Vp)
   }
   else {
-    LogKit::LogFormatted(LogKit::LOW,"\nInversion area:\n");
-    if(areaSpecification == AREA_FROM_GRID_DATA)
+    LogKit::LogFormatted(LogKit::LOW,"\nInversion area");
+    if(areaSpecification == ModelSettings::AREA_FROM_GRID_DATA)
       gridFile = inputFiles->getSeismicFile(0); // Get area from first seismic data volume
   }
-  if (areaSpecification == AREA_FROM_GRID_DATA)
-    LogKit::LogFormatted(LogKit::LOW,"  Taken from                               : "+gridFile+"\n");
-  else if (areaSpecification == AREA_FROM_UTM) {
-    LogKit::LogFormatted(LogKit::LOW,"  Taken from                               : UTM coordinates given in model file\n");
-    
+  if (areaSpecification == ModelSettings::AREA_FROM_GRID_DATA) {
+    const std::vector<int> & areaILXL = modelSettings->getAreaILXL();
+    LogKit::LogFormatted(LogKit::LOW," taken from grid\n");
+    LogKit::LogFormatted(LogKit::LOW,"  Grid                                     : "+gridFile+"\n");
+    if (areaILXL[0] != IMISSING)
+      LogKit::LogFormatted(LogKit::LOW,"  In-line start                            : %10d\n", areaILXL[0]);
+    if (areaILXL[1] != IMISSING)
+      LogKit::LogFormatted(LogKit::LOW,"  In-line end                              : %10d\n", areaILXL[1]);
+    if (areaILXL[4] != IMISSING)
+      LogKit::LogFormatted(LogKit::LOW,"  In-line step                             : %10d\n", areaILXL[4]);
+    if (areaILXL[2] != IMISSING)
+      LogKit::LogFormatted(LogKit::LOW,"  Cross-line start                         : %10d\n", areaILXL[2]);
+    if (areaILXL[3] != IMISSING)
+      LogKit::LogFormatted(LogKit::LOW,"  Cross-line end                           : %10d\n", areaILXL[3]);
+    if (areaILXL[5] != IMISSING)
+      LogKit::LogFormatted(LogKit::LOW,"  Cross-line step                          : %10d\n", areaILXL[5]);
   }
-  else if (areaSpecification == AREA_FROM_SURFACE)
-    LogKit::LogFormatted(LogKit::LOW,"  Taken from surface                       : "+inputFiles->getAreaSurfaceFile()+"\n");
+  else if (areaSpecification == ModelSettings::AREA_FROM_UTM) {
+    LogKit::LogFormatted(LogKit::LOW," given as UTM coordinates\n");
+    const SegyGeometry * geometry = modelSettings->getAreaParameters();
+    LogKit::LogFormatted(LogKit::LOW,"  Reference point x                        : %10.1f\n", geometry->GetX0());
+    LogKit::LogFormatted(LogKit::LOW,"  Reference point y                        : %10.1f\n", geometry->GetY0());
+    LogKit::LogFormatted(LogKit::LOW,"  Length x                                 : %10.1f\n", geometry->Getlx());
+    LogKit::LogFormatted(LogKit::LOW,"  Length y                                 : %10.1f\n", geometry->Getly());
+    LogKit::LogFormatted(LogKit::LOW,"  Sample density x                         : %10.1f\n", geometry->GetDx());
+    LogKit::LogFormatted(LogKit::LOW,"  Sample density y                         : %10.1f\n", geometry->GetDy());
+    LogKit::LogFormatted(LogKit::LOW,"  Azimuth                                  : %10.1f\n", geometry->GetAngle());
+  }
+  else if (areaSpecification == ModelSettings::AREA_FROM_SURFACE) {
+    LogKit::LogFormatted(LogKit::LOW," taken from surface\n");
+    LogKit::LogFormatted(LogKit::LOW,"  Reference surface                        : "+inputFiles->getAreaSurfaceFile()+"\n");
+  }
 
   //
   // SURFACES
@@ -4288,6 +4307,7 @@ Model::getGeometryFromGridOnFile(const std::string         gridFile,
                                  SegyGeometry           *& geometry,
                                  std::string             & errText)
 {
+  geometry = NULL;
   if(gridFile != "") { //May change the condition here, but need geometry if we want to set XL/IL
     int fileType = IO::findGridType(gridFile);
     if(fileType == IO::CRAVA) {
@@ -4300,21 +4320,21 @@ Model::getGeometryFromGridOnFile(const std::string         gridFile,
       }
       catch (NRLib::Exception & e)
       {
-        errText += e.what();
+        errText = e.what();
       }
     }
     else if(fileType == IO::STORM)
       geometry = geometryFromStormFile(gridFile, errText);
-    else if( fileType==IO::SGRI) {
+    else if(fileType==IO::SGRI) {
       bool scale = true;
       geometry = geometryFromStormFile(gridFile, errText, scale);
     }
     else {
-      errText += "Trying to read grid dimensions from unknown file format.\n";
+      errText = "Trying to read grid dimensions from unknown file format.\n";
     }
   }
   else {
-    errText += "Cannot get geometry from file. The file name is empty.\n";
+    errText = "Cannot get geometry from file. The file name is empty.\n";
   }
 }
 
