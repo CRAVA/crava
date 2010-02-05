@@ -164,6 +164,10 @@ private:
   float        * beta_seismic_resolution_;  ///< Logs filtered to resolution of inversion result
   float        * rho_seismic_resolution_;   ///< 
 
+  float        * alpha_predicted_;          ///< Predicted P-wave
+  float        * beta_predicted_;           ///< Predicted S-wave
+  float        * rho_predicted_;            ///< Predicted density
+
   float        * alpha_for_facies_;         ///< As above, but omit Vs from filter. Used for facies probabilities.
   float        * rho_for_facies_;           ///< 
 

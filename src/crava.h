@@ -54,6 +54,7 @@ private:
   void               computeDataVariance(void);
   void               setupErrorCorrelation(ModelSettings * modelSttings, const std::vector<Grid2D *> & noiseScale);
   void               computeVariances(fftw_real* corrT, ModelSettings * modelSettings);
+  void               writeBWPredicted(void);
   float              getEmpSNRatio(int l)     const {return empSNRatio_[l];}
   float              getTheoSNRatio(int l)    const {return theoSNRatio_[l];}
   float              getSignalVariance(int l) const {return signalVariance_[l];}

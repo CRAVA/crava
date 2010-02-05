@@ -43,6 +43,9 @@ BlockedLogs::BlockedLogs(WellData  * well,
     alpha_seismic_resolution_(NULL),
     beta_seismic_resolution_(NULL),
     rho_seismic_resolution_(NULL),
+    alpha_predicted_(NULL),
+    beta_predicted_(NULL),
+    rho_predicted_(NULL),
     alpha_for_facies_(NULL),
     rho_for_facies_(NULL),
     real_seismic_data_(NULL),
@@ -101,6 +104,12 @@ BlockedLogs::~BlockedLogs(void)
     delete [] beta_seismic_resolution_;
   if (rho_seismic_resolution_ != NULL)
     delete [] rho_seismic_resolution_;
+  if (alpha_predicted_ != NULL)
+    delete [] alpha_predicted_;
+  if (beta_predicted_ != NULL)
+    delete [] beta_predicted_;
+  if (rho_predicted_ != NULL)
+    delete [] rho_predicted_;
   if (alpha_for_facies_ != NULL)
     delete [] alpha_for_facies_;
   if (rho_for_facies_ != NULL)
@@ -734,6 +743,13 @@ BlockedLogs::setLogFromGrid(FFTGrid    * grid,
       facies_prob_ = new float * [nFacies_]; 
     facies_prob_[iAngle] = blockedLog;
   }
+  else if (type == "ALPHA_PREDICTED") 
+    alpha_predicted_ = blockedLog; 
+  else if (type == "BETA_PREDICTED") 
+    beta_predicted_ = blockedLog;   
+  else if (type == "RHO_PREDICTED") 
+    rho_predicted_ = blockedLog; 
+
   else {
     LogKit::LogFormatted(LogKit::ERROR,"\nUnknown log type \""+type
                          +"\" in BlockedLogs::setLogFromGrid()\n");
@@ -873,6 +889,7 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
   bool gotCpp               = (cpp_ != NULL);
   bool gotFilteredLog       = (alpha_seismic_resolution_ != NULL);
   bool gotVpRhoFacLog       = (alpha_for_facies_ != NULL);
+  bool gotPredicted         = (alpha_predicted_ != NULL);
   int nLogs = 3*3;   // {Vp, Vs, Rho} x {raw, BgHz, seisHz} 
   if(gotFilteredLog)
     nLogs += 3;
@@ -890,6 +907,8 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
     nLogs += nAngles_;
   if (gotCpp)
     nLogs += nAngles_;
+  if (gotPredicted)
+    nLogs += 3;
 
   std::vector<std::string> params(3);
   params[0] = "Vp";
@@ -914,6 +933,10 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
   if(gotFilteredLog) {
     for(int i=0;i<3;i++)
       file << params[i] << "_SeismicResolution UNK lin\n";
+  }
+  if (gotPredicted) {
+    for (int i=0; i<3; i++)
+      file << params[i] << "_Predicted UNK lin\n";
   }
   if(gotVpRhoFacLog) {
     file << params[0] << "_ForFacies UNK lin\n";
@@ -970,6 +993,11 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
       file << std::setw(7) << (alpha_seismic_resolution_[i]==RMISSING ? WELLMISSING : exp(alpha_seismic_resolution_[i])) << "  "
            << std::setw(7) << (beta_seismic_resolution_[i]==RMISSING  ? WELLMISSING : exp(beta_seismic_resolution_[i]))  << "  "
            << std::setw(7) << (rho_seismic_resolution_[i]==RMISSING   ? WELLMISSING : exp(rho_seismic_resolution_[i]))   << "  ";
+    }
+    if (gotPredicted == true) {
+      file << std::setw(7) << (alpha_predicted_[i]==RMISSING ? WELLMISSING : exp(alpha_predicted_[i])) << "  "
+           << std::setw(7) << (beta_predicted_[i]==RMISSING  ? WELLMISSING : exp(beta_predicted_[i]))  << "  "
+           << std::setw(7) << (rho_predicted_[i]==RMISSING   ? WELLMISSING : exp(rho_predicted_[i]))   << "  ";
     }
     if(gotVpRhoFacLog == true) {
       file << std::setw(7) << (alpha_for_facies_[i]==RMISSING ? WELLMISSING : exp(alpha_for_facies_[i])) << "  "

@@ -81,7 +81,7 @@ Crava::Crava(Model * model, SpatialWellFilter * spatwellfilter)
   errorVariance_     = new float[ntheta_];
   dataVariance_      = new float[ntheta_];
   scaleWarning_      = 0;
-  scaleWarningText_  =("");
+  scaleWarningText_  = "";
   errThetaCov_       = new double*[ntheta_]; 
   sigmamdnew_        = NULL;
   for(int i=0;i<ntheta_;i++) {
@@ -1065,6 +1065,8 @@ Crava::computePostMeanResidAndFFTCov()
   if(writePrediction_ == true)
     ParameterOutput::writeParameters(simbox_, model_, postAlpha_, postBeta_, postRho_, 
                                      outputFlag_, fileGrid_, -1, false);
+
+  writeBWPredicted();
 
   delete [] seisData_;
   delete [] kW;
@@ -2284,4 +2286,25 @@ void Crava::correctAlphaBetaRho(ModelSettings *modelSettings)
   delete [] error;
   delete [] help;
   
+}
+
+void Crava::writeBWPredicted(void)
+{
+  int i;
+  for (i=0; i<nWells_; i++)
+  {
+    BlockedLogs  * bw = wells_[i]->getBlockedLogsOrigThick();
+
+    postAlpha_->setAccessMode(FFTGrid::RANDOMACCESS);
+    bw->setLogFromGrid(postAlpha_,0,1,"ALPHA_PREDICTED");
+    postAlpha_->endAccess();
+
+    postBeta_->setAccessMode(FFTGrid::RANDOMACCESS);
+    bw->setLogFromGrid(postBeta_,0,1,"BETA_PREDICTED");
+    postBeta_->endAccess();
+
+    postRho_->setAccessMode(FFTGrid::RANDOMACCESS);
+    bw->setLogFromGrid(postRho_,0,1,"RHO_PREDICTED");
+    postRho_->endAccess();
+   }
 }
