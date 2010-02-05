@@ -20,7 +20,7 @@ public:
   const float            getHalpha(double phi, double psi) const {return Halpha_.GetZ(phi,psi)  ;}
   const float            getBeta1(double phi, double psi)  const {return beta1_.GetZ(phi,psi)   ;}
   const float            getHbeta(double phi, double psi)  const {return Hbeta_.GetZ(phi,psi)   ;}
-  const bool              hasHalpha() const {return hasHalpha_;}  
+  const bool             hasHalpha() const {return hasHalpha_;}  
 
 private:
 //  void                    createGrid();

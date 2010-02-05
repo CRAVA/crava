@@ -54,8 +54,7 @@ private:
   double         findPhi(float                                    a, 
                          float                                    b)           const;
 
-  double         findPsi(float                                    radius, 
-                         float                                    kz)          const;
+  double         findPsi(float                                    r)           const;
 
   fftw_complex   findWLvalue(float                                omega)       const;
 

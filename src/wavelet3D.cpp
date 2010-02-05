@@ -45,19 +45,23 @@ Wavelet3D::Wavelet3D(const std::string            & filterFile,
 {
   LogKit::LogFormatted(LogKit::MEDIUM,"  Estimating 3D wavelet pulse from seismic data and (nonfiltered) blocked wells\n");
 
-  theta_ = seisCube->getTheta();;
-  norm_ = RMISSING;
+  theta_      = seisCube->getTheta();;
+  norm_       = RMISSING;
   cz_         = 0;
   inFFTorder_ = true;
-  coeff_[0] = reflCoef[0];
-  coeff_[1] = reflCoef[1];
-  coeff_[2] = reflCoef[2];
+  coeff_[0]   = reflCoef[0];
+  coeff_[1]   = reflCoef[1];
+  coeff_[2]   = reflCoef[2];
 
-  nz_               = simBox->getnz();
-  float dx          = static_cast<float>(simBox->getdx());
-  float dy          = static_cast<float>(simBox->getdy());
-  dz_               = static_cast<float>(simBox->getdz());
-  nzp_              = seisCube->getNzp();
+  nz_         = simBox->getnz();
+  float dx    = static_cast<float>(simBox->getdx());
+  float dy    = static_cast<float>(simBox->getdy());
+  dz_         = static_cast<float>(simBox->getdz());
+  nzp_        = seisCube->getNzp();
+  cnzp_       = nzp_/2+1;
+  rnzp_       = 2*cnzp_;
+  rAmp_       = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));  
+  cAmp_       = reinterpret_cast<fftw_complex*>(rAmp_);
 
   unsigned int nWells = modelSettings->getNumberOfWells();
   float v0            = modelSettings->getAverageVelocity();
@@ -136,11 +140,12 @@ Wavelet3D::Wavelet3D(const std::string            & filterFile,
 
         for (int i=start; i < start+length-1; i++) {
           double phi    = findPhi(az[i], bz[i]);
-          double r      = sqrt(az[i]*az[i] + bz[i]*bz[i] + 1);
-          double psi    = acos(1.0 / r);
+          float r       = sqrt(az[i]*az[i] + bz[i]*bz[i] + 1);
+//          double psi    = acos(1.0 / r);
+          double psi    = findPsi(r);
           float alpha1  = filter_.getAlpha1(phi, psi);
-          float f       = static_cast<float> (1.0 * r / stretch);
-          cppAdj[i-start]     = cpp[i] * alpha1 / f;
+//          float f       = static_cast<float> (1.0 * r / stretch);
+          cppAdj[i-start]     = cpp[i] * alpha1 * stretch / r;
           if (hasHalpha)
             Halpha[i-start]   = filter_.getHalpha(phi, psi);
         }
@@ -288,26 +293,6 @@ Wavelet3D::Wavelet3D(const std::string            & filterFile,
         lib_matrAxeqbR(nWl, gTrg, gTrd);
         for (int i=0; i<nWl; i++)
           wlestWell[w][i] = static_cast<float> (gTrd[i]);
-
-        cnzp_ = nzp_/2+1;
-        rnzp_ = 2*cnzp_;
-        rAmp_ = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));  
-        cAmp_ = reinterpret_cast<fftw_complex*>(rAmp_);
-
-        int nWl = wlestWell.size();
-        int nHalfWl = static_cast<int> (nWl/2);
-        rAmp_[0] = static_cast<fftw_real> (wlestWell[w][0]);
-        for (int i=1; i<=nHalfWl; i++) {
-          rAmp_[i]      = static_cast<fftw_real> (wlestWell[w][i]);
-          rAmp_[nzp_-i] = static_cast<fftw_real> (wlestWell[w][nWl-i]);
-        }
-        for (int i=nHalfWl+1; i<nzp_-nHalfWl; i++)
-          rAmp_[i] = 0.0;
-        for (int i=nzp_; i<rnzp_; i++)
-          rAmp_[i] = RMISSING;
-
-        waveletLength_ = findWaveletLength(modelSettings->getMinRelWaveletAmp());
-
         delete [] gTrd;
 
         for (int i=0; i<nWl; i++)
@@ -332,6 +317,17 @@ Wavelet3D::Wavelet3D(const std::string            & filterFile,
       wlest[j] += wlestWell[w][j];
     wlest[j] = wlest[j] / static_cast<float>(nActiveWells);
   }
+
+  rAmp_[0] = static_cast<fftw_real> (wlest[0]);
+  for (int i=1; i<=nhalfWl; i++) {
+    rAmp_[i]      = static_cast<fftw_real> (wlest[i]);
+    rAmp_[nzp_-i] = static_cast<fftw_real> (wlest[nWl-i]);
+  }
+  for (int i=nhalfWl+1; i<nzp_-nhalfWl; i++)
+    rAmp_[i] = 0.0;
+  for (int i=nzp_; i<rnzp_; i++)
+    rAmp_[i] = RMISSING;
+  waveletLength_ = findWaveletLength(modelSettings->getMinRelWaveletAmp());
 
   std::ofstream wlFile;
   NRLib::OpenWrite(wlFile, "wlest.dat");
@@ -406,10 +402,10 @@ Wavelet3D::findLayersWithData(const std::vector<Surface *> & estimInterval,
 
 double 
 Wavelet3D::findPhi(float a, float b) const
-//Return value should be between 0 and 2*PI
+//Return value should be between 0 and 360
 {
   double phi;
-  double epsilon = 0.000001;
+  double epsilon = 0.0001;
   if (a > epsilon && b >= 0.0) //1. quadrant 
     phi = atan(b/a);
   else if (a > epsilon && b < 0.0) //4. quadrant
@@ -422,21 +418,16 @@ Wavelet3D::findPhi(float a, float b) const
     phi = 0.5 * PI;
   else //kx very small
     phi = 1.5 * PI;
-
+  phi = phi * 180 / PI;
   return(phi);
 }
 
 double 
-Wavelet3D::findPsi(float radius, float kz) const
-//Return value should be between 0 and 0.5*PI
+Wavelet3D::findPsi(float r) const
+//Return value should be between 0 and 90
 {
-  double epsilon = 0.000001;
-  double psi = 0.0;
-  if (kz < 0.0)
-    kz = -kz;
-  if (radius > epsilon)
-    psi = acos(kz/radius);
-
+  double psi    = acos(1.0 / r);
+  psi = psi * 180 / PI;
   return(psi);
 }
 

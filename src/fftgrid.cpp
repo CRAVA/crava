@@ -222,8 +222,8 @@ FFTGrid::fillInFromStorm(Simbox            * actSimBox,
   else //from sgri file
   {
     LogKit::LogFormatted(LogKit::LOW,"Sgri file read. Rescaling z axis from s to ms, x and y from km to m. \n");
-    scalevert = 1000.0;
-    scalehor  = 1000.0;
+    scalevert = 0.001f; //1000.0;
+    scalehor  = 0.001f; //1000.0;
   }
   int i,j,k,refi,refj,refk;
   float distx,disty,distz,mult;
