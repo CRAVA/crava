@@ -518,10 +518,6 @@ Model::checkAvailableMemory(Simbox        * timeSimbox,
   int nGridBackground  = 3;                                      // Vp + Vs + Rho, padded
   int nGridCovariances = 6;                                      // Covariances, padded
   int nGridSeismicData = modelSettings->getNumberOfAngles();     // One for each angle stack, padded
-  int nGridWavelet     = 0;                                      // NBNB Frode: What is the size of these grids? Handled as padded currently.
-  for (int i=0; i<modelSettings->getNumberOfAngles(); i++)
-    if (modelSettings->getWaveletDim(i) == Wavelet::THREE_D)
-      nGridWavelet++;
 
   int nGridFacies       = modelSettings->getNumberOfFacies()+1;   // One for each facies, one for undef, unpadded.
   int nGridHistograms   = modelSettings->getNumberOfFacies();     // One for each facies, 2MB.
@@ -535,7 +531,7 @@ Model::checkAvailableMemory(Simbox        * timeSimbox,
     if (modelSettings->getFileGrid())  // Use disk buffering
       nGrids = nGridFileMode;
     else
-      nGrids = nGridParameters + nGridSeismicData + nGridWavelet;
+      nGrids = nGridParameters + nGridSeismicData;
 
     gridMem = nGrids*gridSizePad;
   }
