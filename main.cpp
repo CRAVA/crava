@@ -140,12 +140,12 @@ int main(int argc, char** argv)
   } 
   delete model;
 
-  if (FFTGrid::getMaxAllowedGrids() > FFTGrid::getMaxAllocatedGrids()) {
+  if (FFTGrid::getMaxAllowedGrids() > FFTGrid::getMaxAllocatedGrids() && modelSettings->getDoInversion()) {
     LogKit::LogFormatted(LogKit::DEBUGLOW,"\nWARNING: A memory requirement inconsistency has been detected:"); 
     LogKit::LogFormatted(LogKit::DEBUGLOW,"\n            Maximum number of grids requested  :  %2d",FFTGrid::getMaxAllowedGrids()); 
     LogKit::LogFormatted(LogKit::DEBUGLOW,"\n            Maximum number of grids allocated  :  %2d",FFTGrid::getMaxAllocatedGrids()); 
     LogKit::LogFormatted(LogKit::DEBUGLOW,"\n         Consult method Model::checkAvailableMemory().\n"); 
-    TaskList::addTask("CRAVA did not use as much memory as estimated. NR would be interested to know about this, so if you could send your .xml-file to us, we would aprreciate it.");
+    TaskList::addTask("CRAVA did not use as much memory as estimated. NR would be interested to know about this, so if you could send your .xml-file to us, we would appreciate it.");
   }
   
   Timings::setTimeTotal(wall,cpu);
