@@ -550,7 +550,7 @@ Background::makeKrigedBackground(const std::vector<KrigingData2D> & krigingData,
     }
     
     // Log progress
-    if (static_cast<float>(k+1) >= nextMonitor) 
+    if (k+1 >= static_cast<int>(nextMonitor)) 
     { 
       nextMonitor += monitorSize;
       std::cout << "^";

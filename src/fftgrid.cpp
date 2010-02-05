@@ -156,7 +156,8 @@ FFTGrid::fillInFromSegY(SegY* segy, Simbox *simbox, bool padding)
   LogKit::LogFormatted(LogKit::LOW,"\nResampling seismic data into %dx%dx%d grid:",nxp_,nyp_,nzp_);
   setAccessMode(WRITE);
 
-  int monitorSize = MAXIM(1,int(nyp_*nzp_*0.02));
+  float monitorSize = std::max(1.0f, static_cast<float>(nyp_*nzp_)*0.02f);
+  float nextMonitor = monitorSize;
   printf("\n  0%%       20%%       40%%       60%%       80%%      100%%");
   printf("\n  |    |    |    |    |    |    |    |    |    |    |  ");
   printf("\n  ^");
@@ -189,8 +190,9 @@ FFTGrid::fillInFromSegY(SegY* segy, Simbox *simbox, bool padding)
         setNextReal(value);
 
       } //for k,j,i
-      if ((nyp_*k+j+1)%monitorSize == 0) 
+      if (nyp_*k + j + 1 >= static_cast<int>(nextMonitor)) 
       { 
+        nextMonitor += monitorSize;
         printf("^");
         fflush(stdout);
       }
@@ -258,7 +260,8 @@ FFTGrid::fillInFromStorm(Simbox            * actSimBox,
   LogKit::LogFormatted(LogKit::LOW,"\nResampling %s into %dx%dx%d grid:\n",parName.c_str(),nxp_,nyp_,nzp_);
   setAccessMode(WRITE);
   
-  int monitorSize = MAXIM(1,int(nyp_*nzp_*0.02));
+  float monitorSize = std::max(1.0f, static_cast<float>(nyp_*nzp_)*0.02f);
+  float nextMonitor = monitorSize;
   printf("\n  0%%       20%%       40%%       60%%       80%%      100%%");
   printf("\n  |    |    |    |    |    |    |    |    |    |    |  ");
   printf("\n  ^");
@@ -290,8 +293,9 @@ FFTGrid::fillInFromStorm(Simbox            * actSimBox,
         
         setNextReal(value);
       } //for k,j,i
-      if ((nyp_*k+j+1)%monitorSize == 0) 
+      if (nyp_*k + j + 1 >= static_cast<int>(nextMonitor)) 
       { 
+        nextMonitor += monitorSize;
         printf("^");
         fflush(stdout);
       }
@@ -645,7 +649,7 @@ FFTGrid::createRealGrid(bool add)
   FFTMemUse_ += rsize_ * sizeof(fftw_real);
   if(FFTMemUse_ > maxFFTMemUse_) {
     maxFFTMemUse_ = FFTMemUse_;
-    LogKit::LogFormatted(LogKit::DEBUGHIGH,"\nNew FFT-grid memory peak (%2d): %10.2f MB\n",nGrids_, FFTMemUse_/(1024.f*1024.f));
+    LogKit::LogFormatted(LogKit::DEBUGLOW,"\nNew FFT-grid memory peak (%2d): %10.2f MB\n",nGrids_, FFTMemUse_/(1024.f*1024.f));
   }
 
   //  time(&timeend);
@@ -684,7 +688,7 @@ FFTGrid::createComplexGrid()
   FFTMemUse_ += rsize_ * sizeof(fftw_real);
   if(FFTMemUse_ > maxFFTMemUse_) {
     maxFFTMemUse_ = FFTMemUse_;
-    LogKit::LogFormatted(LogKit::HIGH,"\nNew FFT-grid memory peak (%2d): %10.2f MB\n",nGrids_, FFTMemUse_/(1024.f*1024.f));
+    LogKit::LogFormatted(LogKit::DEBUGLOW,"\nNew FFT-grid memory peak (%2d): %10.2f MB\n",nGrids_, FFTMemUse_/(1024.f*1024.f));
   }
   //  time(&timeend);
   //  LogKit::LogFormatted(LogKit::LOW,"\nComplex grid created in %ld seconds.\n",timeend-timestart);

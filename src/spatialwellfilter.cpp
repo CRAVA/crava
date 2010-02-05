@@ -120,8 +120,11 @@ void SpatialWellFilter::doFiltering(Corr *corr, WellData **wells, int nWells, bo
       sigmae_[k] = sigmae;
     }
   }
+
   for(int w1=0;w1<nWells;w1++)
   {   
+    LogKit::LogFormatted(LogKit::LOW,"\n Filtering well "+wells[w1]->getWellname());
+
     n = wells[w1]->getBlockedLogsOrigThick()->getNumberOfBlocks();
 
     sigmapost = new double * [3*n];

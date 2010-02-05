@@ -785,8 +785,10 @@ int WellData::checkSimbox(Simbox * simbox)
 
   if (error)
   {
-    if (insideArea)
+    if (insideArea) {
       LogKit::LogFormatted(LogKit::LOW,"   IGNORED (well is inside inversion area but does not hit the inversion volume)\n");
+      LogKit::LogFormatted(LogKit::LOW,"           (well-depth: min,max = "+NRLib::ToString(zpos_[0])+","+NRLib::ToString(zpos_[nd_-1])+")\n");
+    }
     else
       LogKit::LogFormatted(LogKit::LOW,"   IGNORED (well is not inside inversion area)\n");
   }

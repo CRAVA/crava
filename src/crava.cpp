@@ -979,7 +979,7 @@ Crava::computePostMeanResidAndFFTCov()
       }
     }
     // Log progress
-    if (static_cast<float>(k+1) >= nextMonitor) 
+    if (k+1 >= static_cast<int>(nextMonitor)) 
     { 
       nextMonitor += monitorSize;
       std::cout << "^";
