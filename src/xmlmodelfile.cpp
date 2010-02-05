@@ -1426,7 +1426,12 @@ XmlModelFile::parseIntervalTwoSurfaces(TiXmlNode * node, std::string & errTxt)
     errTxt += "Number of layers not specified in command <"+root->ValueStr()+">"
       +lineColumnText(root)+".\n";
   else
-    modelSettings_->setTimeNz(value);
+  {
+    if (value>0)
+      modelSettings_->setTimeNz(value);
+    else
+      errTxt += "The number of layers needs to be larger than 0.\n";
+  }
 
   std::string filename;
   bool externalField = parseFileName(root, "velocity-field", filename, errTxt);
