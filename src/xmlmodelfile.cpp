@@ -798,7 +798,7 @@ XmlModelFile::parseWavelet(TiXmlNode * node, std::string & errTxt)
   }
   else 
     if(estimate == true && scaleGiven == true) {
-      errTxt = errTxt +"Error: Can not give both value and ask for estimation of global wavelet scale"+
+      errTxt += "Error: Can not give both value and ask for estimation of global wavelet scale"+
         lineColumnText(node);
      // modelSettings_->addEstimateGlobalWaveletScale(false);
     }
@@ -2599,8 +2599,23 @@ XmlModelFile::checkForwardConsistency(std::string & errTxt) {
 }
 
 void
-XmlModelFile::checkEstimationInversionConsistency(std::string & /*errTxt*/) {
-  //Quite a few things to check here.
+XmlModelFile::checkEstimationInversionConsistency(std::string & errTxt) {
+  if (modelSettings_->getEstimationMode() == false)
+  {
+    if (inputFiles_->getSeismicFile(0)=="")
+      errTxt += "Seismic data needs to be given when doing inversion.\n";
+    if (modelSettings_->getNumberOfWells() == 0)
+    {
+      if (inputFiles_->getBackFile(0)!="" && inputFiles_->getWaveletFile(0)!="" && inputFiles_->getTempCorrFile()!="" && inputFiles_->getParamCorrFile()!="") 
+        modelSettings_->setNoWellNeeded(true); 
+      else 
+        errTxt += "Wells are needed for the inversion.\n";
+      if (modelSettings_->getKrigingParameter()>0)
+        errTxt += "Wells are needed for kriging.\n";
+      if (modelSettings_->getIsPriorFaciesProbGiven()==0 && modelSettings_->getNumberOfFacies()>0)
+        errTxt += "Wells are needed for facies probabilities.\n";
+    }
+  }
 }
 
 void

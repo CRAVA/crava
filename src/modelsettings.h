@@ -139,6 +139,7 @@ public:
   bool                             getUseLocalWavelet(void)             const { return useLocalWavelet_         ;}
   bool                             getUseLocalNoise(void)               const { return useLocalNoise_           ;}
   bool                             getOptimizeWellLocation(void)        const { return optimizeWellLocation_    ;}
+  bool                             getNoWellNedded(void)                const { return noWellNeeded_            ;}
                                                                        
   int                              getLogLevel(void)                    const { return logLevel_                ;}
   int                              getSeed(void)                        const { return seed_                    ;}
@@ -279,6 +280,8 @@ public:
   void setSeed(int seed)                                  { seed_                     = seed                     ;}
   void setDoSmoothKriging(bool smooth)                    { smoothKrigedParameters_  = smooth                   ;}
 
+  void setNoWellNeeded(bool wellNeeded)                   { noWellNeeded_             = wellNeeded               ;}
+                                                                                      
   enum          sseismicTypes{STANDARDSEIS = 0, PSSEIS = 1};                          
 
   enum          indicators{NO = 0, YES = 1, NOTSET = 2};
@@ -438,6 +441,8 @@ private:
   bool                              useLocalNoise_;              // Signal-to-noise is multiplied with gain and shift maps
   bool                              optimizeWellLocation_;       // True if at least one well is to be moved
   bool                              smoothKrigedParameters_;    // True if we should smooth borders between kriging blocks                                  
+  bool                              noWellNeeded_;               // True for some configurations of input data
+                                    
   int                               logLevel_;      
                                     
   int                               seed_;                       // Random seed.
