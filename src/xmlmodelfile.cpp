@@ -2336,15 +2336,17 @@ XmlModelFile::parseTraceHeaderFormat(TiXmlNode * node, const std::string & keywo
 
   std::string stdFormat;
   if(parseValue(root, "standard-format", stdFormat, errTxt) == true) {
-    if(stdFormat == "seisworks")
+    if(NRLib::Uppercase(stdFormat) == NRLib::Uppercase("seisworks"))
       thf = new TraceHeaderFormat(TraceHeaderFormat::SEISWORKS);
-    else if(stdFormat == "iesx")
+    else if(NRLib::Uppercase(stdFormat) == NRLib::Uppercase("iesx"))
       thf = new TraceHeaderFormat(TraceHeaderFormat::IESX);
-    else if(stdFormat == "SIP")
+    else if(NRLib::Uppercase(stdFormat) == NRLib::Uppercase("SIP"))
       thf = new TraceHeaderFormat(TraceHeaderFormat::SIP);
+    else if(NRLib::Uppercase(stdFormat) == NRLib::Uppercase("charisma"))
+      thf = new TraceHeaderFormat(TraceHeaderFormat::CHARISMA);
     else {
       errTxt += "Unknown segy-format '"+stdFormat+"' found on line"+
-        NRLib::ToString(root->Row())+", column "+NRLib::ToString(root->Column())+".\n";
+        NRLib::ToString(root->Row())+", column "+NRLib::ToString(root->Column())+".\n Known formats are 'seisworks', 'iesx', 'SIP', 'charisma'.\n";
       thf = new TraceHeaderFormat(TraceHeaderFormat::SEISWORKS);
     }
   }

@@ -202,7 +202,7 @@ void CKrigingAdmin::KrigAll(Gamma gamma) {
     SmoothKrigedResult(gamma); 
     //LogKit::LogFormatted(LogKit::LOW,"SmoothKrigedResult end\n");
   }
-
+ 
 }
 
 void CKrigingAdmin::KrigAll(FFTGrid& trendAlpha, FFTGrid& trendBeta, FFTGrid& trendRho,
@@ -822,13 +822,13 @@ void CKrigingAdmin::EstimateSizeOfBlock() {
   LogKit::LogFormatted(LogKit::LOW,"Used :     %8.0f   %8.0f   %8.0f\n", rangeX_, rangeY_, rangeZ_);
   
   if (noData_ <= dataTarget_) {
-    dxBlock_ = simbox_.getnx();
-    dyBlock_ = simbox_.getny();
-    dzBlock_ = simbox_.getnz();
-    dxBlockExt_ = static_cast<int>(rangeX_);
-    dyBlockExt_ = static_cast<int>(rangeY_);
-    dzBlockExt_ = static_cast<int>(rangeZ_);
-    return;
+     dxBlock_ = simbox_.getnx();
+     dyBlock_ = simbox_.getny();
+     dzBlock_ = simbox_.getnz();
+     dxBlockExt_ = static_cast<int>(rangeX_);
+     dyBlockExt_ = static_cast<int>(rangeY_);
+     dzBlockExt_ = static_cast<int>(rangeZ_);
+     return;
   }
 
   if(rangeX_==0.0 && rangeY_ ==0.0)

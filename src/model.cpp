@@ -3602,6 +3602,8 @@ Model::printSettings(ModelSettings * modelSettings,
     const std::vector<int> & areaILXL = modelSettings->getAreaILXL();
     LogKit::LogFormatted(LogKit::LOW," taken from grid\n");
     LogKit::LogFormatted(LogKit::LOW,"  Grid                                     : "+gridFile+"\n");
+    if(areaILXL.size()>0)
+    {
     if (areaILXL[0] != IMISSING)
       LogKit::LogFormatted(LogKit::LOW,"  In-line start                            : %10d\n", areaILXL[0]);
     if (areaILXL[1] != IMISSING)
@@ -3614,6 +3616,7 @@ Model::printSettings(ModelSettings * modelSettings,
       LogKit::LogFormatted(LogKit::LOW,"  Cross-line end                           : %10d\n", areaILXL[3]);
     if (areaILXL[5] != IMISSING)
       LogKit::LogFormatted(LogKit::LOW,"  Cross-line step                          : %10d\n", areaILXL[5]);
+    }
   }
   else if (areaSpecification == ModelSettings::AREA_FROM_UTM) {
     LogKit::LogFormatted(LogKit::LOW," given as UTM coordinates\n");
