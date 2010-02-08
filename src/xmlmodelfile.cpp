@@ -2239,8 +2239,8 @@ XmlModelFile::parseAdvancedSettings(TiXmlNode * node, std::string & errTxt)
   if(parseValue(root, "debug-level", level, errTxt) == true)
     modelSettings_->setDebugFlag(level);
 
-  bool smooth;
-  if(parseBool(root, "smooth-kriged-parameters", fileGrid, errTxt) == true)
+  bool smooth = false;
+  if(parseBool(root, "smooth-kriged-parameters", smooth, errTxt) == true)
     modelSettings_->setDoSmoothKriging(smooth);
 
   checkForJunk(root, errTxt, legalCommands);

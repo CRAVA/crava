@@ -218,6 +218,7 @@ void CKrigingAdmin::KrigAll(FFTGrid& trendAlpha, FFTGrid& trendBeta, FFTGrid& tr
   if(debugflag>0)
   {
     FFTGrid *blockGrid = new FFTGrid(simbox_.getnx(), simbox_.getny(), simbox_.getnz(), simbox_.getnx(), simbox_.getny(), simbox_.getnz());
+    LogKit::LogFormatted(LogKit::DEBUGLOW,"Grid for reporting block size created. Memory requirements may be wrongly calculated.\n");
     blockGrid->fillInConstant(0.0);
     int i,j,k;
     for(i=0;i<simbox_.getnx();i++)
