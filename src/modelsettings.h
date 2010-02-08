@@ -145,6 +145,7 @@ public:
 
   bool                             getDoInversion(void);                                            
   bool                             getDoDepthConversion(void)           const;
+  bool                             getDoSmoothKriging(void)             const { return smoothKrigedParameters_ ;}
 
   void rotateVariograms(float angle);
 
@@ -276,7 +277,8 @@ public:
   void setOptimizeWellLocation(bool optimizeWellLoc)      { optimizeWellLocation_     = optimizeWellLoc          ;}
   void setLogLevel(int logLevel)                          { logLevel_                 = logLevel                 ;}
   void setSeed(int seed)                                  { seed_                     = seed                     ;}
-                                                                                      
+  void setDoSmoothKriging(bool smooth)                    { smoothKrigedParameters_  = smooth                   ;}
+
   enum          sseismicTypes{STANDARDSEIS = 0, PSSEIS = 1};                          
 
   enum          indicators{NO = 0, YES = 1, NOTSET = 2};
@@ -435,7 +437,7 @@ private:
   bool                              useLocalWavelet_;            // Wavelets are multiplied with gain and shift maps
   bool                              useLocalNoise_;              // Signal-to-noise is multiplied with gain and shift maps
   bool                              optimizeWellLocation_;       // True if at least one well is to be moved
-                                    
+  bool                              smoothKrigedParameters_;    // True if we should smooth borders between kriging blocks                                  
   int                               logLevel_;      
                                     
   int                               seed_;                       // Random seed.

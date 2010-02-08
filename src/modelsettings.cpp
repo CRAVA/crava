@@ -134,6 +134,7 @@ ModelSettings::ModelSettings(void)
   estimateWaveletNoise_    =     true;
 
   logLevel_                = LogKit::L_LOW;
+  smoothKrigedParameters_  =    false;
 
   seed_                    =        0;
 }

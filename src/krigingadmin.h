@@ -25,11 +25,11 @@ public:
   ~CKrigingAdmin(void);
   enum Gamma {ALPHA_KRIG, BETA_KRIG, RHO_KRIG};
   void KrigAll(FFTGrid& trendAlpha, FFTGrid& trendBeta, FFTGrid& trendRho, 
-               bool trendsAlreadySubtracted = false);
+               bool trendsAlreadySubtracted = false, int debugFlag = 0, bool doSmoothing = false);
 
 private:
   void            Init();
-  void            KrigAll(Gamma gamma);
+  void            KrigAll(Gamma gamma, bool doSmoothing = false);
   void            KrigBlock(Gamma gamma);
   /* Finds the data by using the following rule: Cokriging 3 variables X,Y,Z.  
   If you are doing kriging on X. Then for each well obs: if you have info on X use it and 

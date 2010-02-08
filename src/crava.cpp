@@ -1335,7 +1335,7 @@ Crava::doPostKriging(FFTGrid & postAlpha,
                          covGridCrAlphaBeta, covGridCrAlphaRho, covGridCrBetaRho, 
                          krigingParameter_);
 
-  pKriging.KrigAll(postAlpha, postBeta, postRho);
+  pKriging.KrigAll(postAlpha, postBeta, postRho, false, model_->getModelSettings()->getDebugFlag(), model_->getModelSettings()->getDoSmoothKriging());
 }
 
 int 

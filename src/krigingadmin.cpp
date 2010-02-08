@@ -168,7 +168,7 @@ void CKrigingAdmin::Init() {
   WriteDebugOutput();
 }
 
-void CKrigingAdmin::KrigAll(Gamma gamma) {
+void CKrigingAdmin::KrigAll(Gamma gamma, bool doSmoothing) {
   // basic set of neighbourhoods
   noCholeskyDecomp_ = noSolvedMatrixEq_ = 0;
   noRMissing_ = 0;
@@ -197,16 +197,17 @@ void CKrigingAdmin::KrigAll(Gamma gamma) {
     } // end j
   } // end k 
   noKrigedVariables_++;
-  if (!backgroundModel_) {
+  if (!backgroundModel_ && doSmoothing==true) {
     //LogKit::LogFormatted(LogKit::LOW,"SmoothKrigedResult start\n");
     SmoothKrigedResult(gamma); 
     //LogKit::LogFormatted(LogKit::LOW,"SmoothKrigedResult end\n");
   }
  
+  
 }
 
 void CKrigingAdmin::KrigAll(FFTGrid& trendAlpha, FFTGrid& trendBeta, FFTGrid& trendRho,
-                            bool trendsAlreadySubtracted) {
+                            bool trendsAlreadySubtracted, int debugflag, bool doSmoothing) {
   Require(!trendAlpha.getIsTransformed() 
           && !trendBeta.getIsTransformed()
           && !trendRho.getIsTransformed(), 
@@ -214,7 +215,31 @@ void CKrigingAdmin::KrigAll(FFTGrid& trendAlpha, FFTGrid& trendBeta, FFTGrid& tr
 
   if (!trendsAlreadySubtracted)
     SubtractTrends(trendAlpha, trendBeta, trendRho);
-  
+  if(debugflag>0)
+  {
+    FFTGrid *blockGrid = new FFTGrid(simbox_.getnx(), simbox_.getny(), simbox_.getnz(), simbox_.getnx(), simbox_.getny(), simbox_.getnz());
+    blockGrid->fillInConstant(0.0);
+    int i,j,k;
+    for(i=0;i<simbox_.getnx();i++)
+    {
+      int i1 =  div(i,dxBlock_).quot+1;
+      for(j=0;j<simbox_.getny();j++)
+      {
+        int j1 = div(j,dyBlock_).quot +1;
+        for(k=0;k<simbox_.getnz();k++)
+        {
+          int k1 = div(k,dzBlock_).quot+1;
+          if(div(i1+j1+k1,2).rem==0)
+            blockGrid->setRealValue(i,j,k,0.0);
+          else
+            blockGrid->setRealValue(i,j,k,1.0);
+        }
+      }
+    }
+    blockGrid->writeFile("BlockGrid",IO::PathToInversionResults(), &simbox_);
+    delete blockGrid;
+  }
+
   trendAlpha_ = &trendAlpha; 
   trendBeta_  = &trendBeta; 
   trendRho_   = &trendRho;
@@ -225,21 +250,21 @@ void CKrigingAdmin::KrigAll(FFTGrid& trendAlpha, FFTGrid& trendBeta, FFTGrid& tr
 
   trendAlpha_->setAccessMode(FFTGrid::RANDOMACCESS);
   LogKit::LogFormatted(LogKit::DEBUGHIGH,"Start CKrigingAdminKrigAll: Alpha\n");
-  KrigAll(ALPHA_KRIG);
+  KrigAll(ALPHA_KRIG, doSmoothing);
   WriteDebugOutput2();
   LogKit::LogFormatted(LogKit::DEBUGHIGH,"End CKrigingAdminKrigAll: Alpha\n");
   trendAlpha_->endAccess();
 
   trendBeta_->setAccessMode(FFTGrid::RANDOMACCESS);
   LogKit::LogFormatted(LogKit::DEBUGHIGH,"Start CKrigingAdminKrigAll: Beta\n");
-  KrigAll(BETA_KRIG);
+  KrigAll(BETA_KRIG, doSmoothing);
   WriteDebugOutput2();
   LogKit::LogFormatted(LogKit::DEBUGHIGH,"End CKrigingAdminKrigAll: Beta\n");
   trendBeta_->endAccess();
 
   trendRho_->setAccessMode(FFTGrid::RANDOMACCESS);
   LogKit::LogFormatted(LogKit::DEBUGHIGH,"Start CKrigingAdminKrigAll: Rho\n");
-  KrigAll(RHO_KRIG);
+  KrigAll(RHO_KRIG, doSmoothing);
   WriteDebugOutput2();
   LogKit::LogFormatted(LogKit::DEBUGHIGH,"End CKrigingAdminKrigAll: Rho\n");
   trendRho_->endAccess();

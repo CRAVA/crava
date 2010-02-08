@@ -2202,6 +2202,7 @@ XmlModelFile::parseAdvancedSettings(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("reflection-matrix");
   legalCommands.push_back("kriging-data-limit");
   legalCommands.push_back("debug-level");
+  legalCommands.push_back("smooth-kriged-parameters");
 
   parseFFTGridPadding(root, errTxt);
 
@@ -2237,6 +2238,10 @@ XmlModelFile::parseAdvancedSettings(TiXmlNode * node, std::string & errTxt)
   int level = 0;
   if(parseValue(root, "debug-level", level, errTxt) == true)
     modelSettings_->setDebugFlag(level);
+
+  bool smooth;
+  if(parseBool(root, "smooth-kriged-parameters", fileGrid, errTxt) == true)
+    modelSettings_->setDoSmoothKriging(smooth);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
