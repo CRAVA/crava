@@ -613,21 +613,22 @@ Wavelet::writeWaveletToFile(const std::string & fileName, float approxDzIn)
        << wLength << "\n";
   
   for(i=halfLength ; i > 0 ; i--)
-    file << waveletNew_r[nzpNew-i] << "\n";
+    file << std::setprecision(6) << waveletNew_r[nzpNew-i] << "\n";
   for(i=0;i<=halfLength;i++)
-    file << waveletNew_r[i] << "\n";
+    file << std::setprecision(6) << waveletNew_r[i] << "\n";
   file.close();
 
   //Writing wavelet also in swav-format
-  fName = IO::makeFullFileName(IO::PathToWavelets(), std::string(fileName)+IO::SuffixNorsarWavelet());
+  fName = std::string(fileName) + "_" + NRLib::ToString(theta_*(180/M_PI), 1) + "_deg" + IO::SuffixNorsarWavelet();
+  fName = IO::makeFullFileName(IO::PathToWavelets(), fName);
   
   NRLib::OpenWrite(file, fName);
   file << "pulse file-1\n"
        << wLength << " "  << static_cast<int>(dznew) << "\n";
   for(i=halfLength ; i > 0 ; i--)
-    file << waveletNew_r[nzpNew-i] << "\n";
+    file << std::setprecision(6) << waveletNew_r[nzpNew-i] << "\n";
   for(i=0 ; i<=halfLength ; i++)
-    file << waveletNew_r[i] << "\n";
+    file << std::setprecision(6) << waveletNew_r[i] << "\n";
   file.close();
   
   delete [] waveletNew_r;

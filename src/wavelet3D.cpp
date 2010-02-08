@@ -28,18 +28,20 @@
 #include "src/io.h"
 #include "src/waveletfilter.h"
 
-Wavelet3D::Wavelet3D(const std::string            & filterFile,
-                     const std::vector<Surface *> & estimInterval,
-                     const NRLib::Grid2D<float>   & refTimeGradX,
-                     const NRLib::Grid2D<float>   & refTimeGradY,
-                     FFTGrid                      * seisCube,
-                     ModelSettings                * modelSettings,
-                     WellData                    ** wells,
-                     Simbox                       * simBox,
-                     float                        * reflCoef,
-                     int                            angle_index,
-                     int                          & errCode,
-                     std::string                  & errText)
+Wavelet3D::Wavelet3D(const std::string                          & filterFile,
+                     const std::vector<Surface *>               & estimInterval,
+                     const NRLib::Grid2D<float>                 & refTimeGradX,
+                     const NRLib::Grid2D<float>                 & refTimeGradY,
+                     const std::vector<std::vector<double> >    & tGradX,
+                     const std::vector<std::vector<double> >    & tGradY,
+                     FFTGrid                                    * seisCube,
+                     ModelSettings                              * modelSettings,
+                     WellData                                  ** wells,
+                     Simbox                                     * simBox,
+                     float                                      * reflCoef,
+                     int                                          angle_index,
+                     int                                        & errCode,
+                     std::string                                & errText)
   : Wavelet(3),
     filter_(filterFile, errCode, errText)
 {
@@ -78,15 +80,6 @@ Wavelet3D::Wavelet3D(const std::string            & filterFile,
       LogKit::LogFormatted(LogKit::MEDIUM, "  Well :  %s\n", wells[w]->getWellname().c_str());
 
       BlockedLogs *bl    = wells[w]->getBlockedLogsOrigThick();  
- 
-      std::vector<double> tGradX;//(bl->getNumberOfBlocks(),0.0);
-      std::vector<double> tGradY;//(bl->getNumberOfBlocks(),0.0);
-
-//    NBNB-Frode: Fyll gradX og gradY for alle nzp_ ved hjelp av kall til
-      bl->findSeismicGradient(seisCube,
-                              simBox,
-                              tGradX,
-                              tGradY);
       const int * iPos = bl->getIpos();
       const int * jPos = bl->getJpos();
       
@@ -97,9 +90,9 @@ Wavelet3D::Wavelet3D(const std::string            & filterFile,
       float * t0GradY = new float[nBlocks];
       for (unsigned int b = 0; b<nBlocks; b++) {
         t0GradX[b]    = refTimeGradX(iPos[b], jPos[b]);
-        zGradX[b]     = 0.5f * v0 * 0.001f * (static_cast<float> (tGradX[b]) - t0GradX[b]); //0.001f is due to ms/s conversion
+        zGradX[b]     = 0.5f * v0 * 0.001f * (static_cast<float> (tGradX[w][b]) - t0GradX[b]); //0.001f is due to ms/s conversion
         t0GradY[b]    = refTimeGradY(iPos[b], jPos[b]);
-        zGradY[b]     = 0.5f * v0 * 0.001f * (static_cast<float> (tGradY[b]) - t0GradY[b]);
+        zGradY[b]     = 0.5f * v0 * 0.001f * (static_cast<float> (tGradY[w][b]) - t0GradY[b]);
       }
 
       float * az = new float[nz_]; 
@@ -132,6 +125,12 @@ Wavelet3D::Wavelet3D(const std::string            & filterFile,
         nActiveWells++;
         float *cpp         = new float[nzp_];
         bl->fillInCpp(coeff_,start,length,cpp,nzp_);
+                
+        std::ofstream cppFile;
+        NRLib::OpenWrite(cppFile, "cpp.dat");
+        for (int i=0; i<length; i++)
+          cppFile << std::setprecision(4) << std::setw(10) << cpp[i] << std::endl;
+        cppFile.close();
 
         std::vector<float> cppAdj(length, 0.0);
         std::vector<float> Halpha;
@@ -141,17 +140,15 @@ Wavelet3D::Wavelet3D(const std::string            & filterFile,
         for (int i=start; i < start+length-1; i++) {
           double phi    = findPhi(az[i], bz[i]);
           float r       = sqrt(az[i]*az[i] + bz[i]*bz[i] + 1);
-//          double psi    = acos(1.0 / r);
           double psi    = findPsi(r);
           float alpha1  = filter_.getAlpha1(phi, psi);
-//          float f       = static_cast<float> (1.0 * r / stretch);
           cppAdj[i-start]     = cpp[i] * alpha1 * stretch / r;
           if (hasHalpha)
             Halpha[i-start]   = filter_.getHalpha(phi, psi);
         }
         delete [] cpp;
 
-        std::ofstream cppFile;
+//        std::ofstream cppFile;
         NRLib::OpenWrite(cppFile, "cppAdj.dat");
         for (int i=0; i<length; i++)
           cppFile << std::setprecision(4) << std::setw(10) << cppAdj[i] << std::endl;
@@ -332,7 +329,7 @@ Wavelet3D::Wavelet3D(const std::string            & filterFile,
   std::ofstream wlFile;
   NRLib::OpenWrite(wlFile, "wlest.dat");
   for (int i=0; i<nWl; i++)
-    wlFile << std::setprecision(4) << std::setw(10) << wlest[i] << std::endl;
+    wlFile << std::setprecision(8) << std::setw(14) << wlest[i] << std::endl;
   wlFile.close();
 }
 

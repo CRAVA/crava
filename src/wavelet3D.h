@@ -15,18 +15,20 @@ class BlockedLogs;
 class Wavelet3D : public Wavelet {
 public:
   //Constructors and destructor
-  Wavelet3D(const std::string            & filterFile,
-            const std::vector<Surface *> & estimInterval,
-            const NRLib::Grid2D<float>   & refTimeGradX,
-            const NRLib::Grid2D<float>   & refTimeGradY,
-            FFTGrid                      * seisCube,
-            ModelSettings                * modelSettings,
-            WellData                    ** wells,
-            Simbox                       * simBox,
-            float                        * reflCoef,
-            int                            angle_index,
-            int                          & errCode,
-            std::string                  & errText);
+  Wavelet3D(const std::string                          & filterFile,
+            const std::vector<Surface *>               & estimInterval,
+            const NRLib::Grid2D<float>                 & refTimeGradX,
+            const NRLib::Grid2D<float>                 & refTimeGradY,
+            const std::vector<std::vector<double> >    & tGradX,
+            const std::vector<std::vector<double> >    & tGradY,
+            FFTGrid                                    * seisCube,
+            ModelSettings                              * modelSettings,
+            WellData                                  ** wells,
+            Simbox                                     * simBox,
+            float                                      * reflCoef,
+            int                                          angle_index,
+            int                                        & errCode,
+            std::string                                & errText);
   
   Wavelet3D(const std::string            & fileName, 
             int                            fileFormat, 

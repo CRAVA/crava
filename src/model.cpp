@@ -2668,15 +2668,13 @@ Model::processWavelets(Wavelet                    **& wavelet,
   TimeKit::getTime(wall,cpu);
 
   bool estimateStuff = false;
-  for(int i=0 ; i < modelSettings->getNumberOfAngles() ; i++)
-  {  
+  for(int i=0 ; i < modelSettings->getNumberOfAngles() ; i++) {  
     estimateStuff = estimateStuff || modelSettings->getEstimateWavelet(i); 
     estimateStuff = estimateStuff || modelSettings->getEstimateSNRatio(i);
     if(modelSettings->getEstimateWavelet(i) == true)
       modelSettings->setWaveletScale(i,1.0);
   }
-  if (estimateStuff) 
-  {
+  if (estimateStuff) {
     LogKit::LogFormatted(LogKit::HIGH,"\n\nWells that cannot be used in wavelet generation or noise estimation:");
     LogKit::LogFormatted(LogKit::HIGH,"\n  Deviated wells.");
     LogKit::LogFormatted(LogKit::HIGH,"\n  Wells with too little data.\n");
@@ -2690,22 +2688,36 @@ Model::processWavelets(Wavelet                    **& wavelet,
   std::vector<Grid2D *> gainGrids(nAngles);
   localNoiseScale_.resize(nAngles);
 
+  bool has3Dwavelet = false;
   for(unsigned int i=0 ; i < nAngles ; i++)
   {
     localNoiseScale_[i] = NULL;
     shiftGrids[i]       = NULL;
     gainGrids[i]        = NULL;
-  } 
-  
-  float globalScale = 1.0;
-
-  if (inputFiles->getRefSurfaceFile() != "") {
-    if (findTimeGradientSurface(inputFiles->getRefSurfaceFile(), timeSimbox) == false) {
-      errText += "Simbox is not completely inside reference time surface in (x,y).\n";
-      error = 1;
-    }
+    if (modelSettings->getWaveletDim(i) == Wavelet::THREE_D)
+      has3Dwavelet = true;
   }
 
+  NRLib::Grid2D<float>      refTimeGradX;          ///< Time gradient in x-direction for reference time surface (t0)
+  NRLib::Grid2D<float>      refTimeGradY;          ///< Time gradient in x-direction for reference time surface (t0)
+  unsigned int nWells = modelSettings->getNumberOfWells();
+  std::vector<std::vector<double> > tGradX(nWells);
+  std::vector<std::vector<double> > tGradY(nWells);
+
+  if (has3Dwavelet) {
+    if (inputFiles->getRefSurfaceFile() != "") {
+      if (findTimeGradientSurface(inputFiles->getRefSurfaceFile(), timeSimbox, refTimeGradX, refTimeGradY) == false) {
+        errText += "Simbox is not completely inside reference time surface in (x,y).\n";
+        error = 1;
+      }
+    }
+    for (unsigned int w=0; w<nWells; w++) {
+      BlockedLogs *bl    = wells[w]->getBlockedLogsOrigThick(); 
+      bl->findSeismicGradient(seisCube[0], timeSimbox, /*nAngles,*/tGradX[w], tGradY[w]);
+    }
+  }
+  
+  float globalScale = 1.0;
   for(unsigned int i=0 ; i < nAngles ; i++) { 
     if(modelSettings_->getForwardModeling()==false)
       seisCube[i]->setAccessMode(FFTGrid::RANDOMACCESS);
@@ -2745,8 +2757,10 @@ Model::processWavelets(Wavelet                    **& wavelet,
       else {
         wavelet[i] = new Wavelet3D(inputFiles->getWaveletFilterFile(i),
                                    waveletEstimInterval,
-                                   refTimeGradX_,
-                                   refTimeGradY_,
+                                   refTimeGradX,
+                                   refTimeGradY,
+                                   tGradX,
+                                   tGradY,
                                    seisCube[i],
                                    modelSettings,
                                    wells,
@@ -4235,8 +4249,10 @@ Model::resampleGrid2DToSurface(const Simbox   * simbox,
 }
 
 bool 
-Model::findTimeGradientSurface(const std::string   & refTimeFile,
-                               Simbox              * simbox)
+Model::findTimeGradientSurface(const std::string    & refTimeFile,
+                               Simbox               * simbox,
+                               NRLib::Grid2D<float> & refTimeGradX,
+                               NRLib::Grid2D<float> & refTimeGradY)
 {
   double x, y;
   bool inside = true;
@@ -4268,8 +4284,8 @@ Model::findTimeGradientSurface(const std::string   & refTimeFile,
       inside = false;
 
     if (inside) {
-      refTimeGradX_.Resize(nx, ny, RMISSING);
-      refTimeGradY_.Resize(nx, ny, RMISSING);
+      refTimeGradX.Resize(nx, ny, RMISSING);
+      refTimeGradY.Resize(nx, ny, RMISSING);
       for (unsigned int i = nx-1; i >= 0; i++) {
         for (unsigned int j = ny-1; j >= 0; j++) {
           simbox->getXYCoord(i,j,x,y);
@@ -4277,23 +4293,23 @@ Model::findTimeGradientSurface(const std::string   & refTimeFile,
           simbox->getXYCoord(i,j-1,x,y); //XYCoord is ok even if j = -1, but point is outside simbox
           float z_low = t0surface.GetZInside(x,y);
           if (!t0surface.IsMissing(z_low))
-            refTimeGradY_(i,j) = (z_high - z_low) / dy;
+            refTimeGradY(i,j) = (z_high - z_low) / dy;
           else
-            refTimeGradY_(i,j) = refTimeGradY_(i,j+1);
+            refTimeGradY(i,j) = refTimeGradY(i,j+1);
 
           simbox->getXYCoord(i-1,j,x,y); //XYCoord is ok even if j = -1, but point is outside simbox
           z_low = t0surface.GetZInside(x,y);
           if (!t0surface.IsMissing(z_low))
-            refTimeGradX_(i,j) = (z_high - z_low) / dx;
+            refTimeGradX(i,j) = (z_high - z_low) / dx;
           else
-            refTimeGradX_(i,j) = refTimeGradX_(i+1,j);
+            refTimeGradX(i,j) = refTimeGradX(i+1,j);
         }
       }
     }
   }
   else {
-    refTimeGradX_.Resize(nx, ny, 0.0);
-    refTimeGradY_.Resize(nx, ny, 0.0);
+    refTimeGradX.Resize(nx, ny, 0.0);
+    refTimeGradY.Resize(nx, ny, 0.0);
   }
 
   return(inside);
