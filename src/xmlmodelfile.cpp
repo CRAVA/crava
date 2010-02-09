@@ -410,7 +410,10 @@ XmlModelFile::parseWell(TiXmlNode * node, std::string & errTxt)
     inputFiles_->addWellFile(value);
   }
   else
+  {
     inputFiles_->addWellFile(""); //Dummy to keep tables balanced.
+    tmpErr += "The file name for the well is not given.\n";
+  }
 
   bool use;
   if(parseBool(root, "use-for-wavelet-estimation", use, tmpErr) == true) {
@@ -2609,10 +2612,13 @@ XmlModelFile::checkEstimationInversionConsistency(std::string & errTxt) {
       if (inputFiles_->getBackFile(0)!="" && inputFiles_->getWaveletFile(0)!="" && inputFiles_->getTempCorrFile()!="" && inputFiles_->getParamCorrFile()!="") 
         modelSettings_->setNoWellNeeded(true); 
       else 
-        errTxt += "Wells are needed for the inversion.\n";
+      {
+        errTxt += "Wells are needed for the inversion. ";
+        errTxt += "Alternatively, all of background, wavelet, \ntemporal correlation and parameter correlation must be given.\n";
+      }
       if (modelSettings_->getKrigingParameter()>0)
         errTxt += "Wells are needed for kriging.\n";
-      if (modelSettings_->getIsPriorFaciesProbGiven()==0 && modelSettings_->getNumberOfFacies()>0)
+      if (modelSettings_->getEstimateFaciesProb())
         errTxt += "Wells are needed for facies probabilities.\n";
     }
   }
