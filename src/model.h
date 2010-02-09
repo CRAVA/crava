@@ -311,7 +311,6 @@ private:
                                            NRLib::Grid2D<float>  & refTimeGradY);
   void             getGeometryFromGridOnFile(const std::string         seismicFile,
                                              const TraceHeaderFormat * thf,
-                                             const std::vector<int>  & ilxl,
                                              SegyGeometry           *& geometry,
                                              std::string             & errText);
   SegyGeometry   * geometryFromCravaFile(const std::string & fileName); 

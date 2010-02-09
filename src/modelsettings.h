@@ -415,7 +415,13 @@ private:
   bool                              velocityFromInv_;            // Velocity for time depth from inverted Vs.
 
   int                               areaSpecification_;          // Specifying whether are is taken from UTM-coord, seismic or surface
-  std::vector<int>                  areaILXL_;                   
+  std::vector<int>                  areaILXL_;                   // Vector with 6 elements (if used), in this order:
+                                                                 // [0] = IL start
+                                                                 // [1] = IL end
+                                                                 // [2] = XL start
+                                                                 // [3] = XL end
+                                                                 // [4] = IL step
+                                                                 // [5] = XL step
                                                                  
   bool                              writePrediction_;            // Determines whether prediction is written.
   int                               gridFlag_;                   // Decides which grids to write (except simulation)

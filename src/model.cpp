@@ -504,7 +504,7 @@ Model::checkAvailableMemory(Simbox        * timeSimbox,
                                     modelSettings->getNXpad(), 
                                     modelSettings->getNYpad(), 
                                     modelSettings->getNZpad());
-  int gridSizePad = 4*dummyGrid->getrsize();
+  long long int gridSizePad = 4*dummyGrid->getrsize();
   delete dummyGrid;
   dummyGrid = new FFTGrid(timeSimbox->getnx(), 
                           timeSimbox->getny(), 
@@ -512,7 +512,7 @@ Model::checkAvailableMemory(Simbox        * timeSimbox,
                           timeSimbox->getnx(), 
                           timeSimbox->getny(), 
                           timeSimbox->getnz());
-  int gridSizeBase = 4*dummyGrid->getrsize();
+  long long int gridSizeBase = 4*dummyGrid->getrsize();
   delete dummyGrid;
   int nGridParameters  = 3;                                      // Vp + Vs + Rho, padded
   int nGridBackground  = 3;                                      // Vp + Vs + Rho, padded
@@ -851,11 +851,25 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
     SegyGeometry * geometry;
     getGeometryFromGridOnFile(gridFile,
                               modelSettings->getTraceHeaderFormat(0),
-                              modelSettings->getAreaILXL(),
                               geometry,
                               tmpErrText);
 
     if(geometry != NULL) {
+      if(modelSettings->getAreaILXL().size() > 0) {
+        SegyGeometry * fullGeometry = geometry;
+        bool interpolated, aligned;
+        geometry = fullGeometry->GetILXLSubGeometry(modelSettings->getAreaILXL(), interpolated, aligned);
+        geometry->WriteGeometry();
+        delete fullGeometry;
+        if(interpolated == true) {
+          if(aligned == true)
+            TaskList::addTask("Check IL/XL specifiaction: Specified IL- or XL-step is not an integer multiple of those found in the seismic data. Furthermore, the distance between first and last XL and/or IL does not match the step size.\n");
+          else
+            TaskList::addTask("Check IL/XL specifiaction: Specified IL- or XL-step is not an integer multiple of those found in the seismic data.\n");
+        }
+        else if(aligned == true)
+          TaskList::addTask("Check IL/XL specifiaction: Either start or end of IL and/or XL interval does not align with IL/XL in seismic data, or end IL and/or XL is not an integer multiple of steps away from the start.\n");
+      }
       modelSettings->setAreaParameters(geometry);
       delete geometry;
     }
@@ -910,7 +924,6 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
           SegyGeometry * geometryForILXL;
           getGeometryFromGridOnFile(gridFile,
                                     modelSettings->getTraceHeaderFormat(0),
-                                    modelSettings->getAreaILXL(),
                                     geometryForILXL,
                                     tmpErrText);
           if(geometryForILXL != NULL) {
@@ -4432,7 +4445,6 @@ Model::findTimeGradientSurface(const std::string    & refTimeFile,
 void
 Model::getGeometryFromGridOnFile(const std::string         gridFile,
                                  const TraceHeaderFormat * thf,
-                                 const std::vector<int>  & ilxl,
                                  SegyGeometry           *& geometry,
                                  std::string             & errText)
 {
@@ -4445,7 +4457,7 @@ Model::getGeometryFromGridOnFile(const std::string         gridFile,
     else if(fileType == IO::SEGY) {
       try
       {
-        geometry = SegY::FindGridGeometry(gridFile, thf, ilxl);
+        geometry = SegY::FindGridGeometry(gridFile, thf);
       }
       catch (NRLib::Exception & e)
       {

@@ -521,7 +521,7 @@ WellData::readNorsarWell(const std::string              & wellFileName,
     }
   }
   catch (NRLib::Exception & e) {
-    errTxt_ += e.what();
+    errTxt_ += "Error: " + NRLib::ToString(e.what());
     error_ = 1;
   }
 }
