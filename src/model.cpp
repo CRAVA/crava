@@ -2788,19 +2788,22 @@ Model::processWavelets(Wavelet                    **& wavelet,
                                      fileFormat, 
                                      modelSettings, 
                                      reflectionMatrix[i],
-                                     angle,
+                                     modelSettings->getAngle(i),
                                      error, 
                                      errText);
           // Calculate a preliminary scale factor to see if wavelet is in the same size order as the data. A large or small value might cause problems.
           if(seisCube!=NULL) // If forward modeling, we have no seismic, can not prescale wavelet.
           {
             float prescale = wavelet[i]->findGlobalScaleForGivenWavelet(modelSettings, timeSimbox, seisCube[i], wells);
-            if(!modelSettings->getEstimateGlobalWaveletScale(i) && modelSettings->getWaveletScale(i)!=1.0 && modelSettings->getEstimateLocalScale(i) && (prescale>3.0 || prescale<0.333))
+            double limHigh = 3.0;
+            double limLow  = 0.33; 
+            float  scale   = 1.0;
+            if(!modelSettings->getEstimateGlobalWaveletScale(i) && modelSettings->getWaveletScale(i)!=scale && modelSettings->getEstimateLocalScale(i) && (prescale>limHigh || prescale<limLow))
             {
               errText += "The wavelet given for angle no "+NRLib::ToString(i)+" is badly scaled. Ask Crava to estimate global wavelet scale.\n";
               error++;
             }
-            else if(!modelSettings->getEstimateGlobalWaveletScale(i) && modelSettings->getWaveletScale(i)!=1.0 && (prescale>3.0 || prescale<0.333))
+            else if(!modelSettings->getEstimateGlobalWaveletScale(i) && modelSettings->getWaveletScale(i)!=scale && (prescale>limHigh || prescale<limLow))
             {
               LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: The wavelet given for angle no "+ NRLib::ToString(i) +"is badly scaled. Ask Crava to estimate global wavelet scale.\n");
               TaskList::addTask("Ask Crava to estimate global wavelet scale");
@@ -2819,7 +2822,7 @@ Model::processWavelets(Wavelet                    **& wavelet,
                                      fileFormat, 
                                      modelSettings, 
                                      reflectionMatrix[i],
-                                     angle,
+                                     modelSettings->getAngle(i),
                                      error, 
                                      errText,
                                      inputFiles->getWaveletFilterFile(i));
@@ -2869,9 +2872,11 @@ Model::processWavelets(Wavelet                    **& wavelet,
         }
         
         float SNRatio = modelSettings->getSNRatio(i);
-        if ((SNRatio <= 1.0f || SNRatio > 10.f) && modelSettings->getForwardModeling()==false) {
+        float SNLow  = 1.0;
+        float SNHigh = 10.0;
+        if ((SNRatio <=SNLow  || SNRatio > SNHigh) && modelSettings->getForwardModeling()==false) {
           errText += "Illegal signal-to-noise ratio of "+NRLib::ToString(SNRatio)+" for cube "+NRLib::ToString(i+1)+".\n";
-          errText += "Ratio must be in interval 1.0 < S/N ratio < 10.0\n";
+          errText += "Ratio must be in interval "+NRLib::ToString(SNLow)+" < S/N ratio < "+NRLib::ToString(SNHigh)+"\n";
           error++;
         }
         
