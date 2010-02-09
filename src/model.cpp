@@ -907,16 +907,16 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
         if (ilxl_info_available) {
           LogKit::LogFormatted(LogKit::HIGH,"\nFinding IL/XL information from grid data file \'"+gridFile+"\'\n");
           std::string tmpErrText;
-          SegyGeometry * ilxl;
+          SegyGeometry * geometryForILXL;
           getGeometryFromGridOnFile(gridFile,
                                     modelSettings->getTraceHeaderFormat(0),
                                     modelSettings->getAreaILXL(),
-                                    ilxl,
+                                    geometryForILXL,
                                     tmpErrText);
-          if(ilxl != NULL) {
-            if(timeSimbox->isAligned(ilxl))
-              timeSimbox->setILXL(ilxl);
-            delete ilxl;
+          if(geometryForILXL != NULL) {
+            if(timeSimbox->isAligned(geometryForILXL))
+              timeSimbox->setILXL(geometryForILXL);
+            delete geometryForILXL;
           }
           else {
             errText += tmpErrText;
@@ -3487,14 +3487,103 @@ Model::printSettings(ModelSettings * modelSettings,
   else if (logLevel == LogKit::L_DEBUGHIGH)
     logText = "DEBUGHIGH";
   LogKit::LogFormatted(LogKit::LOW, "  Log level                                : %10s\n",logText.c_str());
-  //LogKit::LogFormatted(LogKit::HIGH,"  Project directory                        : %10s\n",modelSettings->getProjectDirectory());
   LogKit::LogFormatted(LogKit::HIGH,"  Input directory                          : %10s\n",inputFiles->getInputDirectory().c_str());
   LogKit::LogFormatted(LogKit::HIGH,"  Output directory                         : %10s\n",IO::getOutputPath().c_str());
 
-  // NBNB-PAL: Vi får raffinere testen nednefor etter hvert...
+  int outputFlag = modelSettings->getGridOutputFlag();
+  int gridFormat = modelSettings->getGridOutputFormat();
+
+  if (outputFlag > 0) {
+    LogKit::LogFormatted(LogKit::HIGH,"\nGrid output formats:\n");
+    if (gridFormat & IO::SEGY) {
+      const std::string & formatName = modelSettings->getTraceHeaderFormatOutput()->GetFormatName();
+      LogKit::LogFormatted(LogKit::HIGH,"  Segy - %-10s                       : yes\n",formatName.c_str());
+    }
+    if (gridFormat & IO::STORM)
+      LogKit::LogFormatted(LogKit::HIGH,"  Storm                                    :        yes\n");
+    if (gridFormat & IO::ASCII)
+      LogKit::LogFormatted(LogKit::HIGH,"  ASCII                                    :        yes\n");
+    if (gridFormat & IO::SGRI)
+      LogKit::LogFormatted(LogKit::HIGH,"  Norsar                                   :        yes\n");
+    if (gridFormat & IO::CRAVA)
+      LogKit::LogFormatted(LogKit::HIGH,"  Crava                                    :        yes\n");
+
+    LogKit::LogFormatted(LogKit::HIGH,"\nGrid output domains:\n");
+    if (gridFormat & IO::TIMEDOMAIN)
+      LogKit::LogFormatted(LogKit::HIGH,"  Time                                     :        yes\n");
+    if (gridFormat & IO::DEPTHDOMAIN)
+      LogKit::LogFormatted(LogKit::HIGH,"  Depth                                    :        yes\n");
+  }
+
+  if (modelSettings->getDoInversion()) {
+    LogKit::LogFormatted(LogKit::HIGH,"\nOutput of elastic parameters:\n");
+    if ((outputFlag & IO::VP) > 0)
+      LogKit::LogFormatted(LogKit::HIGH,"  Pressure-wave velocity  (Vp)             :        yes\n");
+    if ((outputFlag & IO::VS) > 0)
+      LogKit::LogFormatted(LogKit::HIGH,"  Shear-wave velocity  (Vs)                :        yes\n");
+    if ((outputFlag & IO::RHO) > 0)
+      LogKit::LogFormatted(LogKit::HIGH,"  Density  (Rho)                           :        yes\n");
+    if ((outputFlag & IO::AI) > 0)
+      LogKit::LogFormatted(LogKit::HIGH,"  Acoustic impedance  (AI)                 :        yes\n");
+    if ((outputFlag & IO::VPVSRATIO) > 0)
+      LogKit::LogFormatted(LogKit::HIGH,"  Vp/Vs ratio                              :        yes\n");
+    if ((outputFlag & IO::SI) > 0)
+      LogKit::LogFormatted(LogKit::HIGH,"  Shear impedance  (SI)                    :        yes\n");
+    if ((outputFlag & IO::MURHO) > 0)
+      LogKit::LogFormatted(LogKit::HIGH,"  MuRho  (SI*SI)                           :        yes\n");
+    if ((outputFlag & IO::LAMBDARHO) > 0)
+      LogKit::LogFormatted(LogKit::HIGH,"  LambdaRho  (AI*AI - 2*SI*SI)             :        yes\n");
+    if ((outputFlag & IO::LAMELAMBDA) > 0)
+      LogKit::LogFormatted(LogKit::HIGH,"  Lame's dirst parameter                   :        yes\n");
+    if ((outputFlag & IO::LAMEMU) > 0)
+      LogKit::LogFormatted(LogKit::HIGH,"  Lame's second parameter (shear modulus)  :        yes\n");
+    if ((outputFlag & IO::POISSONRATIO) > 0)
+      LogKit::LogFormatted(LogKit::HIGH,"  Poisson ratio                            :        yes\n");
+    if ((outputFlag & IO::BACKGROUND) > 0)
+      LogKit::LogFormatted(LogKit::HIGH,"  Background (Vp, Vs, Rho)                 :        yes\n");
+    if ((outputFlag & IO::BACKGROUND_TREND) > 0)
+      LogKit::LogFormatted(LogKit::HIGH,"  Background trend (Vp, Vs, Rho)           :        yes\n");
+  }    
+
+  if (modelSettings->getEstimateFaciesProb()) {
+    LogKit::LogFormatted(LogKit::HIGH,"\nOutput of facies probability volumes:\n");
+    if (modelSettings->getFaciesProbRelative())
+      LogKit::LogFormatted(LogKit::HIGH,"  Use rel. amplitudes for elastic param.   :        yes\n");
+    else
+      LogKit::LogFormatted(LogKit::HIGH,"  Use abs. amplitudes for elastic param.   :        yes\n");
+  }
+
+  if (modelSettings->getForwardModeling() ||
+      (outputFlag & IO::SYNTHETIC_SEISMIC_DATA) > 0 ||
+      (outputFlag & IO::ORIGINAL_SEISMIC_DATA) > 0 ||
+      (outputFlag & IO::RESIDUAL) > 0) {
+    LogKit::LogFormatted(LogKit::HIGH,"\nOutput of seismic data:\n");
+    if ((outputFlag & IO::SYNTHETIC_SEISMIC_DATA) > 0 || modelSettings->getForwardModeling())
+      LogKit::LogFormatted(LogKit::HIGH,"  Synthetic seismic data (forward modelled):        yes\n");
+    if ((outputFlag & IO::ORIGINAL_SEISMIC_DATA) > 0)
+      LogKit::LogFormatted(LogKit::HIGH,"  Original seismic data (in output grid)   :        yes\n");
+    if ((outputFlag & IO::RESIDUAL) > 0)
+      LogKit::LogFormatted(LogKit::HIGH,"  Seismic data residuals                   :        yes\n");
+  }
+
+  bool otherGridOutput 
+    = (outputFlag & IO::CORRELATION) > 0
+    ||(outputFlag & IO::EXTRA_GRIDS) > 0
+    ||(outputFlag & IO::TIME_TO_DEPTH_VELOCITY) > 0;
+  
+  if (otherGridOutput) {
+    if ((outputFlag & IO::CORRELATION) > 0)
+      LogKit::LogFormatted(LogKit::HIGH,"  Posterior correlations                   :        yes\n");
+    if ((outputFlag & IO::EXTRA_GRIDS) > 0)
+      LogKit::LogFormatted(LogKit::HIGH,"  Help grids (see use manual)              :        yes\n");
+    if ((outputFlag & IO::TIME_TO_DEPTH_VELOCITY) > 0)
+      LogKit::LogFormatted(LogKit::HIGH,"  Time-to-depth velocity                   :        yes\n");
+  }
+
+  // NBNB-PAL: Vi får raffinere testen nedenfor etter hvert...
   if (modelSettings->getFileGrid()) {
     LogKit::LogFormatted(LogKit::LOW,"\nAdvanced settings:\n");
-    LogKit::LogFormatted(LogKit::LOW, "  Use intermediate disk storage for grids  : %10s\n","yes");
+    LogKit::LogFormatted(LogKit::LOW, "  Use intermediate disk storage for grids  :        yes\n");
   }
 
   LogKit::LogFormatted(LogKit::HIGH,"\nUnit settings/assumptions:\n");
@@ -3571,18 +3660,38 @@ Model::printSettings(ModelSettings * modelSettings,
       estimateWavelet = estimateWavelet || modelSettings->getEstimateWavelet(i);
     if (generateBackground || estimateFaciesProb || estimateWavelet) 
     {
-      LogKit::LogFormatted(LogKit::LOW,"\nUse well (when possible) in estimation of:  ");
-      if (generateBackground) LogKit::LogFormatted(LogKit::LOW,"  BGTrend");
-      if (estimateWavelet)    LogKit::LogFormatted(LogKit::LOW,"  Wavelet");
-      if (estimateFaciesProb) LogKit::LogFormatted(LogKit::LOW,"  Facies");
+      LogKit::LogFormatted(LogKit::LOW,"\nUse well in estimation of:                   ");
+      if (generateBackground) LogKit::LogFormatted(LogKit::LOW,"BackgroundTrend  ");
+      if (estimateWavelet)    LogKit::LogFormatted(LogKit::LOW,"WaveletEstimation  ");
+      if (estimateFaciesProb) LogKit::LogFormatted(LogKit::LOW,"FaciesProbabilities");
       LogKit::LogFormatted(LogKit::LOW,"\n");
       for (int i = 0 ; i < modelSettings->getNumberOfWells() ; i++) 
       {
-        LogKit::LogFormatted(LogKit::LOW,"  %-2d                                       :  ",i+1);
-
-        if (generateBackground) LogKit::LogFormatted(LogKit::LOW,"  %-7s",(modelSettings->getIndicatorBGTrend(i) ? "yes" : " no"));
-        if (estimateWavelet)    LogKit::LogFormatted(LogKit::LOW,"  %-7s",(modelSettings->getIndicatorWavelet(i) ? "yes" : " no"));
-        if (estimateFaciesProb) LogKit::LogFormatted(LogKit::LOW,"  %-7s",(modelSettings->getIndicatorFacies(i)  ? "yes" : " no"));
+        LogKit::LogFormatted(LogKit::LOW,"  %-2d                                       : ",i+1);
+        if (generateBackground) {
+          if (modelSettings->getIndicatorBGTrend(i) == ModelSettings::YES)
+            LogKit::LogFormatted(LogKit::LOW,"%-15s  ","yes");
+          else if (modelSettings->getIndicatorBGTrend(i) == ModelSettings::NO)
+            LogKit::LogFormatted(LogKit::LOW,"%-15s  ","no");
+          else
+            LogKit::LogFormatted(LogKit::LOW,"%-15s  ","yes");            
+        }
+        if (estimateWavelet) {
+          if (modelSettings->getIndicatorWavelet(i) == ModelSettings::YES)
+            LogKit::LogFormatted(LogKit::LOW,"%-17s  ","yes");
+          else if (modelSettings->getIndicatorWavelet(i) == ModelSettings::NO)
+            LogKit::LogFormatted(LogKit::LOW,"%-17s  ","no");
+          else
+            LogKit::LogFormatted(LogKit::LOW,"%-17s  ","if possible");
+        }
+        if (estimateFaciesProb) {
+          if (modelSettings->getIndicatorFacies(i) == ModelSettings::YES)
+            LogKit::LogFormatted(LogKit::LOW,"%-16s","yes");
+          else if (modelSettings->getIndicatorFacies(i) == ModelSettings::NO)
+            LogKit::LogFormatted(LogKit::LOW,"%-16s","no");
+          else
+            LogKit::LogFormatted(LogKit::LOW,"%-16s","if possible");
+        }
         LogKit::LogFormatted(LogKit::LOW,"\n");
       }
     }
@@ -3646,7 +3755,7 @@ Model::printSettings(ModelSettings * modelSettings,
     LogKit::LogFormatted(LogKit::LOW,"  Length y                                 : %10.1f\n", geometry->Getly());
     LogKit::LogFormatted(LogKit::LOW,"  Sample density x                         : %10.1f\n", geometry->GetDx());
     LogKit::LogFormatted(LogKit::LOW,"  Sample density y                         : %10.1f\n", geometry->GetDy());
-    LogKit::LogFormatted(LogKit::LOW,"  Azimuth                                  : %10.1f\n", geometry->GetAngle());
+    LogKit::LogFormatted(LogKit::LOW,"  Azimuth                                  : %10.4f\n", geometry->GetAngle());
   }
   else if (areaSpecification == ModelSettings::AREA_FROM_SURFACE) {
     LogKit::LogFormatted(LogKit::LOW," taken from surface\n");

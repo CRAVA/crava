@@ -123,7 +123,7 @@ void SpatialWellFilter::doFiltering(Corr *corr, WellData **wells, int nWells, bo
 
   for(int w1=0;w1<nWells;w1++)
   {   
-    LogKit::LogFormatted(LogKit::LOW,"\n Filtering well "+wells[w1]->getWellname());
+    LogKit::LogFormatted(LogKit::LOW,"\nFiltering well "+wells[w1]->getWellname());
 
     n = wells[w1]->getBlockedLogsOrigThick()->getNumberOfBlocks();
 
@@ -217,8 +217,11 @@ void SpatialWellFilter::doFiltering(Corr *corr, WellData **wells, int nWells, bo
       }
     }
 
+    LogKit::LogFormatted(LogKit::LOW,"\n  Cholesky decomposition");
     lib_matrCholR(3*n, sigmapri);
+    LogKit::LogFormatted(LogKit::LOW,"\n  Equation solving");
     lib_matrAXeqBMatR(3*n, sigmapri, imat, 3*n);
+    LogKit::LogFormatted(LogKit::LOW,"\n  Matrix product");
     lib_matr_prod(sigmapost,imat,3*n,3*n,3*n,Aw);
 
     for(int i=0;i<3*n;i++)
