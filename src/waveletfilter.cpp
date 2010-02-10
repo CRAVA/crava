@@ -1,7 +1,7 @@
 #include <fstream>
 #include <math.h>
 
-#include "nrlib/surface/surfaceio.hpp"
+#include "nrlib/surface/regularsurfacerotated.hpp"
 
 #include "lib/global_def.h"
 

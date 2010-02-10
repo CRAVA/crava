@@ -262,7 +262,7 @@ GridMapping::setDepthSurfaces(const std::vector<std::string> & surfFile,
   if(surfFile[0] != "")
   {
     try {
-      Surface tmpSurf = NRLib::ReadStormSurf(surfFile[0]);
+      Surface tmpSurf(surfFile[0]);
       z0Grid_ = new Surface(tmpSurf);
       surfaceMode_ = TOPGIVEN;
     }
@@ -274,7 +274,7 @@ GridMapping::setDepthSurfaces(const std::vector<std::string> & surfFile,
   if(surfFile[1] != "")
   {
     try {
-      Surface tmpSurf = NRLib::ReadStormSurf(surfFile[1]);
+      Surface tmpSurf(surfFile[1]);
       z1Grid_ = new Surface(tmpSurf);
       if(surfaceMode_ == TOPGIVEN)
         surfaceMode_ = BOTHGIVEN;

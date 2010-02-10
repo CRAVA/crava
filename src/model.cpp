@@ -839,7 +839,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
   {
     LogKit::LogFormatted(LogKit::HIGH,"\nFinding area information from surface \'"+inputFiles->getAreaSurfaceFile()+"\'\n");
     areaType = "Surface";
-    Surface surf = NRLib::ReadStormSurf(inputFiles->getAreaSurfaceFile());
+    Surface surf(inputFiles->getAreaSurfaceFile());
     SegyGeometry geometry(surf);
     modelSettings->setAreaParameters(&geometry);
   }
@@ -989,7 +989,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
             // Get correlation direction
             //
             try {
-              Surface tmpSurf = NRLib::ReadStormSurf(inputFiles->getCorrDirFile());
+              Surface tmpSurf(inputFiles->getCorrDirFile());
               correlationDirection = new Surface(tmpSurf);
             }
             catch (NRLib::Exception & e) {
@@ -1126,7 +1126,7 @@ Model::setSimboxSurfaces(Simbox                        *& simbox,
       z0Grid = new Surface(xMin-100, yMin-100, xMax-xMin+200, yMax-yMin+200, 2, 2, atof(topName.c_str()));
     } 
     else {
-      Surface tmpSurf = NRLib::ReadStormSurf(topName);
+      Surface tmpSurf(topName);
       z0Grid = new Surface(tmpSurf);
     }
   }
@@ -1154,7 +1154,7 @@ Model::setSimboxSurfaces(Simbox                        *& simbox,
           z1Grid = new Surface(xMin-100, yMin-100, xMax-xMin+200, yMax-yMin+200, 2, 2, atof(baseName.c_str()));
         }
         else {
-          Surface tmpSurf = NRLib::ReadStormSurf(baseName);
+          Surface tmpSurf(baseName);
           z1Grid = new Surface(tmpSurf);
         }
       }
@@ -2736,7 +2736,7 @@ Model::processWavelets(Wavelet                    **& wavelet,
       seisCube[i]->setAccessMode(FFTGrid::RANDOMACCESS);
     if(modelSettings->getUseLocalWavelet()==true) {
       if(inputFiles->getScaleFile(i)!="") {
-        Surface help(NRLib::ReadStormSurf(inputFiles->getScaleFile(i)));
+        Surface help(inputFiles->getScaleFile(i));
         gainGrids[i] = new Grid2D(timeSimbox->getnx(),timeSimbox->getny(), 0.0);
         resampleSurfaceToGrid2D(timeSimbox, &help, gainGrids[i]);
       }
@@ -3352,7 +3352,7 @@ Model::loadExtraSurfaces(std::vector<Surface *> & waveletEstimInterval,
       if (NRLib::IsNumber(topWEI)) 
         waveletEstimInterval[0] = new Surface(x0,y0,lx,ly,nx,ny,atof(topWEI.c_str()));
       else { 
-        Surface tmpSurf = NRLib::ReadStormSurf(topWEI);
+        Surface tmpSurf(topWEI);
         waveletEstimInterval[0] = new Surface(tmpSurf);
       }
     }
@@ -3365,7 +3365,7 @@ Model::loadExtraSurfaces(std::vector<Surface *> & waveletEstimInterval,
       if (NRLib::IsNumber(baseWEI)) 
         waveletEstimInterval[1] = new Surface(x0,y0,lx,ly,nx,ny,atof(baseWEI.c_str()));
       else { 
-        Surface tmpSurf = NRLib::ReadStormSurf(baseWEI);
+        Surface tmpSurf(baseWEI);
         waveletEstimInterval[1] = new Surface(tmpSurf);
       }
     }
@@ -3386,7 +3386,7 @@ Model::loadExtraSurfaces(std::vector<Surface *> & waveletEstimInterval,
       if (NRLib::IsNumber(topFEI)) 
         faciesEstimInterval[0] = new Surface(x0,y0,lx,ly,nx,ny,atof(topFEI.c_str()));
       else { 
-        Surface tmpSurf = NRLib::ReadStormSurf(topFEI);
+        Surface tmpSurf(topFEI);
         faciesEstimInterval[0] = new Surface(tmpSurf);
       }
     }
@@ -3399,7 +3399,7 @@ Model::loadExtraSurfaces(std::vector<Surface *> & waveletEstimInterval,
       if (NRLib::IsNumber(baseFEI)) 
         faciesEstimInterval[1] = new Surface(x0,y0,lx,ly,nx,ny,atof(baseFEI.c_str()));
       else { 
-        Surface tmpSurf = NRLib::ReadStormSurf(baseFEI);
+        Surface tmpSurf(baseFEI);
         faciesEstimInterval[1] = new Surface(tmpSurf);
       }
     }
@@ -3420,7 +3420,7 @@ Model::loadExtraSurfaces(std::vector<Surface *> & waveletEstimInterval,
       if (NRLib::IsNumber(topWMI)) 
         wellMoveInterval[0] = new Surface(x0,y0,lx,ly,nx,ny,atof(topWMI.c_str()));
       else { 
-        Surface tmpSurf = NRLib::ReadStormSurf(topWMI);
+        Surface tmpSurf(topWMI);
         wellMoveInterval[0] = new Surface(tmpSurf);
       }
     }
@@ -3433,7 +3433,7 @@ Model::loadExtraSurfaces(std::vector<Surface *> & waveletEstimInterval,
       if (NRLib::IsNumber(baseWMI)) 
         wellMoveInterval[1] = new Surface(x0,y0,lx,ly,nx,ny,atof(baseWMI.c_str()));
       else { 
-        Surface tmpSurf = NRLib::ReadStormSurf(baseWMI);
+        Surface tmpSurf(baseWMI);
         wellMoveInterval[1] = new Surface(tmpSurf);
       }
     }
@@ -4307,7 +4307,7 @@ Model::writeLocalGridsToFile(const std::string   & fileName,
   Surface * help = NULL; 
 
   if(fileName != "") {
-    help = new Surface(NRLib::ReadStormSurf(fileName));
+    help = new Surface(fileName);
     grid = new Grid2D(timeSimbox->getnx(),timeSimbox->getny(), 0.0);
     resampleSurfaceToGrid2D(timeSimbox, help, grid);
   }
@@ -4389,7 +4389,7 @@ Model::findTimeGradientSurface(const std::string    & refTimeFile,
   float dy = static_cast<float> (simbox->getdy());
 
   if (!NRLib::IsNumber(refTimeFile)) {
-    NRLib::RegularSurfaceRotated<float> t0surface = NRLib::ReadSgriSurf(refTimeFile);
+    NRLib::RegularSurfaceRotated<float> t0surface(refTimeFile, NRLib::SURF_SGRI);
 
     simbox->getXYCoord(0,0,x,y);
     if (t0surface.IsInsideSurface(x,y)) {

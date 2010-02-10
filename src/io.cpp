@@ -43,9 +43,9 @@ IO::writeSurfaceToFile(const Surface     & surface,
   std::string fileName = IO::makeFullFileName(path, baseName);
 
   if((format & ASCII) > 0)
-    NRLib::WriteIrapClassicAsciiSurf(surface, fileName + SuffixAsciiIrapClassic());
+    surface.WriteToFile(fileName + SuffixAsciiIrapClassic(), NRLib::SURF_IRAP_CLASSIC_ASCII);
   else  
-    NRLib::WriteStormBinarySurf(surface, fileName + SuffixStormBinary());
+    surface.WriteToFile(fileName + SuffixAsciiIrapClassic(), NRLib::SURF_STORM_BINARY);
 }
 
 
