@@ -784,7 +784,15 @@ BlockedLogs::setLogFromVerticalTrend(float      * vertical_trend,
   }
   else if (type == "WELL_SYNTHETIC_SEISMIC") {
     if (well_synt_seismic_data_ == NULL)
+    {
       well_synt_seismic_data_ = new float * [nAngles_]; 
+      for (int i=0; i<nAngles_; i++)
+      {
+        well_synt_seismic_data_[i] = new float[nBlocks_];
+        for (int j=0; j<nBlocks_; j++)
+          well_synt_seismic_data_[i][j] = RMISSING; //Declare in case the wavelet is not estimated for all angles
+      }
+    }
     well_synt_seismic_data_[iAngle] = blockedLog;
   }
   else {

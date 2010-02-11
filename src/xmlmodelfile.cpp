@@ -101,11 +101,11 @@ XmlModelFile::parseCrava(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("well-data");
   legalCommands.push_back("prior-model");
 
+  parseActions(root, errTxt);
   parseWellData(root, errTxt);
   parseSurvey(root, errTxt);
   parseProjectSettings(root, errTxt);
   parsePriorModel(root, errTxt);
-  parseActions(root, errTxt);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -138,11 +138,11 @@ XmlModelFile::parseActions(TiXmlNode * node, std::string & errTxt)
         mode+"> under command <"+root->ValueStr()+">"+lineColumnText(root)+".\n";
   }
 
-  if (parseInversionSettings(root, errTxt) && mode == "forward")
-    errTxt += "Inversion can not be done with the mode 'forward'.\n";
+  if (parseInversionSettings(root, errTxt) && (mode == "forward" || mode == "estimation"))
+    errTxt += "Inversion settings can only be given with the mode 'inversion'.\n";
 
-  if (parseEstimationSettings(root, errTxt) && mode == "forward")
-    errTxt += "Estimation can not be done with the mode 'forward'.\n";
+  if (parseEstimationSettings(root, errTxt) && (mode == "forward" || mode == "inversion"))
+    errTxt += "Estimation settings can only be given with the mode 'estimation'.\n";
   
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -722,7 +722,10 @@ XmlModelFile::parseSeismicData(TiXmlNode * node, std::string & errTxt)
   if(parseFileName(root, "file-name", value, errTxt) == true)
     inputFiles_->addSeismicFile(value);
   else
+  {
     inputFiles_->addSeismicFile(""); //Keeping tables balanced.
+    errTxt += "The file name for the seismic data is not given.\n";
+  }
 
   if(parseValue(root, "type", value, errTxt) == true) {
     if(value == "pp") 
@@ -2603,10 +2606,34 @@ XmlModelFile::checkForwardConsistency(std::string & errTxt) {
 
 void
 XmlModelFile::checkEstimationInversionConsistency(std::string & errTxt) {
-  if (modelSettings_->getEstimationMode() == false)
+  if (modelSettings_->getEstimationMode())
   {
-    if (inputFiles_->getSeismicFile(0)=="")
-      errTxt += "Seismic data needs to be given when doing inversion.\n";
+    if (modelSettings_->getNumberOfWells()==0)
+    {
+      if (modelSettings_->getEstimateBackground())
+        errTxt += "Wells are needed for estimation of background.\n";
+      if (modelSettings_->getEstimateCorrelations())
+        errTxt += "Wells are needed for estimation of correlations.\n";
+      if (modelSettings_->getEstimateWaveletNoise())
+        errTxt += "Wells are needed for estimation of wavelet and noise.\n";
+    }
+    if (modelSettings_->getEstimateWaveletNoise()==false && modelSettings_->getOptimizeWellLocation()==false)
+      modelSettings_->setNoSeismicNeeded(true);
+    else
+    {
+      if (inputFiles_->getNumberOfSeismicFiles()==0)
+      {
+        if (modelSettings_->getOptimizeWellLocation())
+          errTxt += "Seismic data are needed for optimizing well locations.\n";
+        if (modelSettings_->getEstimateWaveletNoise())
+          errTxt += "Seismic data are needed for estimation of wavelets and noise.\n";
+      }
+    }
+  }
+  else
+  {
+    if (inputFiles_->getNumberOfSeismicFiles()==0)
+      errTxt += "Seismic data are needed for inversion.\n";
     if (modelSettings_->getNumberOfWells() == 0)
     {
       if (inputFiles_->getBackFile(0)!="" && inputFiles_->getWaveletFile(0)!="" && inputFiles_->getTempCorrFile()!="" && inputFiles_->getParamCorrFile()!="") 
@@ -2642,12 +2669,14 @@ XmlModelFile::checkAngleConsistency(std::string & errTxt) {
       angle   = modelSettings_->getWellMoveAngle(w,i);
 
       for( j=0; j<nSeismicAngles; j++ ){
-        if( angle==modelSettings_->getAngle(j)){
+        if( angle==modelSettings_->getAngle(j))
+        {
+          if (inputFiles_->getSeismicFile(j)=="")
+            errTxt += "Seismic data are needed for angle "+NRLib::ToString(angle/float(M_PI/180))+" to optimize the well locations.\n";
           compare[i] = true;
           break;
         }
       }
-
       if( compare[i]==false ){
         errTxt += "Unexpected angle "+NRLib::ToString(angle/float(M_PI/180))+" in <optimize-location-to> is not equal to any of seismic offset-angles"+".\n";
       }
@@ -2662,12 +2691,18 @@ XmlModelFile::setDerivedParameters(std::string & errTxt)
   int areaSpecification;  
   if(modelSettings_->getAreaParameters() != NULL) {
     areaSpecification = ModelSettings::AREA_FROM_UTM;
+    if (modelSettings_->getNoSeismicNeeded() && inputFiles_->getNumberOfSeismicFiles()>0)
+      errTxt += "Seismic data should not be given when estimating background or correlations. \nExceptions are for optimization of well locations or if the area is taken from the seismic data.\n";
   }
   else if(inputFiles_->getAreaSurfaceFile() != "") {
     areaSpecification = ModelSettings::AREA_FROM_SURFACE;
+    if (modelSettings_->getNoSeismicNeeded() && inputFiles_->getNumberOfSeismicFiles()>0)
+      errTxt += "Seismic data should not be given when estimating background or correlations. \nExceptions are for optimization of well locations or if the area is taken from the seismic data.";
   }
   else {
     areaSpecification = ModelSettings::AREA_FROM_GRID_DATA; // inversion:seismic data, forward modelling: Vp
+    if (modelSettings_->getNoSeismicNeeded() && inputFiles_->getNumberOfSeismicFiles()==0)
+      errTxt += "The area needs to be defined from seismic data, a surface or UTM-coordinates.\n";
   }
   modelSettings_->setAreaSpecification(areaSpecification);
   

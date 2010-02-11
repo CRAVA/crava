@@ -274,9 +274,8 @@ Model::Model(const std::string & fileName)
                                      inputFiles, errText, failedPriorCorr);
           }
 
-          if(failedSeismic == false && 
-             failedBackground == false && 
-            (estimate == false || modelSettings_->getEstimateWaveletNoise()))
+          if(failedSeismic == false && failedBackground == false && 
+            (estimate == false || modelSettings_->getEstimateWaveletNoise() || modelSettings_->getOptimizeWellLocation()))
           {
             addSeismicLogs(wells_, seisCube_, modelSettings_); 
             if(failedReflMat == false && failedExtraSurf == false) 
@@ -2631,7 +2630,7 @@ Model::processWellLocation(FFTGrid                     ** seisCube,
     }
 
     sum = 0;
-    for( i=0; i<nMoveAngles; i++ )
+    for( i=0; i<nAngles; i++ )
       sum += angleWeight[i];
     if( sum == 0 )
       continue;
@@ -3985,90 +3984,93 @@ Model::printSettings(ModelSettings * modelSettings,
     //
     // SEISMIC
     //
-    LogKit::LogFormatted(LogKit::LOW,"\nGeneral settings for seismic:\n");
-    LogKit::LogFormatted(LogKit::LOW,"  White noise component                    : %10.2f\n",modelSettings->getWNC());
-    LogKit::LogFormatted(LogKit::LOW,"  Low cut for inversion                    : %10.1f\n",modelSettings->getLowCut());
-    LogKit::LogFormatted(LogKit::LOW,"  High cut for inversion                   : %10.1f\n",modelSettings->getHighCut());
-    corr  = modelSettings->getAngularCorr();
-    GenExpVario * pCorr = dynamic_cast<GenExpVario*>(corr);
-    LogKit::LogFormatted(LogKit::LOW,"  Angular correlation:\n");
-    LogKit::LogFormatted(LogKit::LOW,"    Model                                  : %10s\n",(corr->getType()).c_str());
-    if (pCorr != NULL)
-      LogKit::LogFormatted(LogKit::LOW,"    Power                                  : %10.1f\n",pCorr->getPower());
-    LogKit::LogFormatted(LogKit::LOW,"    Range                                  : %10.1f\n",corr->getRange()*180.0/PI);
-    if (corr->getAnisotropic())
+    if (modelSettings->getNoSeismicNeeded())
     {
-      LogKit::LogFormatted(LogKit::LOW,"    Subrange                               : %10.1f\n",corr->getSubRange()*180.0/PI);
-      LogKit::LogFormatted(LogKit::LOW,"    Angle                                  : %10.1f\n",corr->getAngle());
-    }
-    bool estimateNoise = false;
-    for (int i = 0 ; i < modelSettings->getNumberOfAngles() ; i++) {
-      estimateNoise = estimateNoise || modelSettings->getEstimateSNRatio(i); 
-    }
-    LogKit::LogFormatted(LogKit::LOW,"\nGeneral settings for wavelet:\n");
-    if (estimateNoise)
-      LogKit::LogFormatted(LogKit::LOW,"  Maximum shift in noise estimation        : %10.1f\n",modelSettings->getMaxWaveletShift());
-    LogKit::LogFormatted(LogKit::LOW,"  Minimum relative amplitude               : %10.3f\n",modelSettings->getMinRelWaveletAmp());
-    LogKit::LogFormatted(LogKit::LOW,"  Wavelet tapering length                  : %10.1f\n",modelSettings->getWaveletTaperingL());
-    if (modelSettings->getOptimizeWellLocation()) {
-      LogKit::LogFormatted(LogKit::LOW,"\nGeneral settings for well locations:\n");
-      LogKit::LogFormatted(LogKit::LOW,"  Maximum offset                           : %10.1f\n",modelSettings->getMaxWellOffset());
-      LogKit::LogFormatted(LogKit::LOW,"  Maximum vertical shift                   : %10.1f\n",modelSettings->getMaxWellShift());
-    }
-    for (int i = 0 ; i < modelSettings->getNumberOfAngles() ; i++)
-    {
-      LogKit::LogFormatted(LogKit::LOW,"\nSettings for AVO stack %d:\n",i+1);
-      LogKit::LogFormatted(LogKit::LOW,"  Angle                                    : %10.1f\n",(modelSettings->getAngle(i)*180/PI));
-      LogKit::LogFormatted(LogKit::LOW,"  SegY start time                          : %10.1f\n",modelSettings->getSegyOffset());
-      TraceHeaderFormat * thf = modelSettings->getTraceHeaderFormat(i);
-      if (thf != NULL) 
+      LogKit::LogFormatted(LogKit::LOW,"\nGeneral settings for seismic:\n");
+      LogKit::LogFormatted(LogKit::LOW,"  White noise component                    : %10.2f\n",modelSettings->getWNC());
+      LogKit::LogFormatted(LogKit::LOW,"  Low cut for inversion                    : %10.1f\n",modelSettings->getLowCut());
+      LogKit::LogFormatted(LogKit::LOW,"  High cut for inversion                   : %10.1f\n",modelSettings->getHighCut());
+      corr  = modelSettings->getAngularCorr();
+      GenExpVario * pCorr = dynamic_cast<GenExpVario*>(corr);
+      LogKit::LogFormatted(LogKit::LOW,"  Angular correlation:\n");
+      LogKit::LogFormatted(LogKit::LOW,"    Model                                  : %10s\n",(corr->getType()).c_str());
+      if (pCorr != NULL)
+        LogKit::LogFormatted(LogKit::LOW,"    Power                                  : %10.1f\n",pCorr->getPower());
+      LogKit::LogFormatted(LogKit::LOW,"    Range                                  : %10.1f\n",corr->getRange()*180.0/PI);
+      if (corr->getAnisotropic())
       {
-        LogKit::LogFormatted(LogKit::LOW,"  SegY trace header format:\n");
-        LogKit::LogFormatted(LogKit::LOW,"    Format name                            : "+thf->GetFormatName()+"\n");
-        if (thf->GetBypassCoordScaling())
-          LogKit::LogFormatted(LogKit::LOW,"    Bypass coordinate scaling              :        yes\n");
-        if (!thf->GetStandardType()) 
+        LogKit::LogFormatted(LogKit::LOW,"    Subrange                               : %10.1f\n",corr->getSubRange()*180.0/PI);
+        LogKit::LogFormatted(LogKit::LOW,"    Angle                                  : %10.1f\n",corr->getAngle());
+      }
+      bool estimateNoise = false;
+      for (int i = 0 ; i < modelSettings->getNumberOfAngles() ; i++) {
+        estimateNoise = estimateNoise || modelSettings->getEstimateSNRatio(i); 
+      }
+      LogKit::LogFormatted(LogKit::LOW,"\nGeneral settings for wavelet:\n");
+      if (estimateNoise)
+        LogKit::LogFormatted(LogKit::LOW,"  Maximum shift in noise estimation        : %10.1f\n",modelSettings->getMaxWaveletShift());
+      LogKit::LogFormatted(LogKit::LOW,"  Minimum relative amplitude               : %10.3f\n",modelSettings->getMinRelWaveletAmp());
+      LogKit::LogFormatted(LogKit::LOW,"  Wavelet tapering length                  : %10.1f\n",modelSettings->getWaveletTaperingL());
+      if (modelSettings->getOptimizeWellLocation()) {
+        LogKit::LogFormatted(LogKit::LOW,"\nGeneral settings for well locations:\n");
+        LogKit::LogFormatted(LogKit::LOW,"  Maximum offset                           : %10.1f\n",modelSettings->getMaxWellOffset());
+        LogKit::LogFormatted(LogKit::LOW,"  Maximum vertical shift                   : %10.1f\n",modelSettings->getMaxWellShift());
+      }
+      for (int i = 0 ; i < modelSettings->getNumberOfAngles() ; i++)
+      {
+        LogKit::LogFormatted(LogKit::LOW,"\nSettings for AVO stack %d:\n",i+1);
+        LogKit::LogFormatted(LogKit::LOW,"  Angle                                    : %10.1f\n",(modelSettings->getAngle(i)*180/PI));
+        LogKit::LogFormatted(LogKit::LOW,"  SegY start time                          : %10.1f\n",modelSettings->getSegyOffset());
+        TraceHeaderFormat * thf = modelSettings->getTraceHeaderFormat(i);
+        if (thf != NULL) 
         {
-          LogKit::LogFormatted(LogKit::LOW,"    Start pos coordinate scaling           : %10d\n",thf->GetScalCoLoc());
-          LogKit::LogFormatted(LogKit::LOW,"    Start pos trace x coordinate           : %10d\n",thf->GetUtmxLoc());
-          LogKit::LogFormatted(LogKit::LOW,"    Start pos trace y coordinate           : %10d\n",thf->GetUtmyLoc());
-          LogKit::LogFormatted(LogKit::LOW,"    Start pos inline index                 : %10d\n",thf->GetInlineLoc());
-          LogKit::LogFormatted(LogKit::LOW,"    Start pos crossline index              : %10d\n",thf->GetCrosslineLoc());
-          LogKit::LogFormatted(LogKit::LOW,"    Coordinate system                      : %10s\n",thf->GetCoordSys()==0 ? "UTM" : "ILXL" );
+          LogKit::LogFormatted(LogKit::LOW,"  SegY trace header format:\n");
+          LogKit::LogFormatted(LogKit::LOW,"    Format name                            : "+thf->GetFormatName()+"\n");
+          if (thf->GetBypassCoordScaling())
+            LogKit::LogFormatted(LogKit::LOW,"    Bypass coordinate scaling              :        yes\n");
+          if (!thf->GetStandardType()) 
+          {
+            LogKit::LogFormatted(LogKit::LOW,"    Start pos coordinate scaling           : %10d\n",thf->GetScalCoLoc());
+            LogKit::LogFormatted(LogKit::LOW,"    Start pos trace x coordinate           : %10d\n",thf->GetUtmxLoc());
+            LogKit::LogFormatted(LogKit::LOW,"    Start pos trace y coordinate           : %10d\n",thf->GetUtmyLoc());
+            LogKit::LogFormatted(LogKit::LOW,"    Start pos inline index                 : %10d\n",thf->GetInlineLoc());
+            LogKit::LogFormatted(LogKit::LOW,"    Start pos crossline index              : %10d\n",thf->GetCrosslineLoc());
+            LogKit::LogFormatted(LogKit::LOW,"    Coordinate system                      : %10s\n",thf->GetCoordSys()==0 ? "UTM" : "ILXL" );
+          }
         }
-      }
-      LogKit::LogFormatted(LogKit::LOW,"  Data                                     : "+inputFiles->getSeismicFile(i)+"\n");
-      if (modelSettings->getEstimateWavelet(i))
-        LogKit::LogFormatted(LogKit::LOW,"  Estimate wavelet                         : %10s\n", "yes");
-      else
-        LogKit::LogFormatted(LogKit::LOW,"  Read wavelet from file                   : "+inputFiles->getWaveletFile(i)+"\n");
-      if (modelSettings->getUseLocalWavelet()) {
-        if (inputFiles->getShiftFile(i) == "")
-          LogKit::LogFormatted(LogKit::LOW,"  Estimate local shift map                 : %10s\n", "yes");
+        LogKit::LogFormatted(LogKit::LOW,"  Data                                     : "+inputFiles->getSeismicFile(i)+"\n");
+        if (modelSettings->getEstimateWavelet(i))
+          LogKit::LogFormatted(LogKit::LOW,"  Estimate wavelet                         : %10s\n", "yes");
         else
-          LogKit::LogFormatted(LogKit::LOW,"  Local shift map                          : "+inputFiles->getShiftFile(i)+"\n");  
-        if (inputFiles->getScaleFile(i) == "")
-          LogKit::LogFormatted(LogKit::LOW,"  Estimate local scale map                 : %10s\n", "yes");
+          LogKit::LogFormatted(LogKit::LOW,"  Read wavelet from file                   : "+inputFiles->getWaveletFile(i)+"\n");
+        if (modelSettings->getUseLocalWavelet()) {
+          if (inputFiles->getShiftFile(i) == "")
+            LogKit::LogFormatted(LogKit::LOW,"  Estimate local shift map                 : %10s\n", "yes");
+          else
+            LogKit::LogFormatted(LogKit::LOW,"  Local shift map                          : "+inputFiles->getShiftFile(i)+"\n");  
+          if (inputFiles->getScaleFile(i) == "")
+            LogKit::LogFormatted(LogKit::LOW,"  Estimate local scale map                 : %10s\n", "yes");
+          else
+            LogKit::LogFormatted(LogKit::LOW,"  Local scale map                          : "+inputFiles->getScaleFile(i)+"\n");
+        }        
+        if (modelSettings->getMatchEnergies(i)) 
+          LogKit::LogFormatted(LogKit::LOW,"  Match empirical and theoretical energies : %10s\n", "yes");
+        if (!modelSettings->getEstimateWavelet(i) && !modelSettings->getMatchEnergies(i)) {
+          if (modelSettings->getEstimateGlobalWaveletScale(i))
+            LogKit::LogFormatted(LogKit::LOW,"  Estimate global wavelet scale            : %10s\n","yes");
+          else
+            LogKit::LogFormatted(LogKit::LOW,"  Global wavelet scale                     : %10.2e\n",modelSettings->getWaveletScale(i));
+        }
+        if (modelSettings->getEstimateSNRatio(i)) 
+          LogKit::LogFormatted(LogKit::LOW,"  Estimate signal-to-noise ratio           : %10s\n", "yes");
         else
-          LogKit::LogFormatted(LogKit::LOW,"  Local scale map                          : "+inputFiles->getScaleFile(i)+"\n");
-      }        
-      if (modelSettings->getMatchEnergies(i)) 
-        LogKit::LogFormatted(LogKit::LOW,"  Match empirical and theoretical energies : %10s\n", "yes");
-      if (!modelSettings->getEstimateWavelet(i) && !modelSettings->getMatchEnergies(i)) {
-        if (modelSettings->getEstimateGlobalWaveletScale(i))
-          LogKit::LogFormatted(LogKit::LOW,"  Estimate global wavelet scale            : %10s\n","yes");
-        else
-          LogKit::LogFormatted(LogKit::LOW,"  Global wavelet scale                     : %10.2e\n",modelSettings->getWaveletScale(i));
-      }
-      if (modelSettings->getEstimateSNRatio(i)) 
-        LogKit::LogFormatted(LogKit::LOW,"  Estimate signal-to-noise ratio           : %10s\n", "yes");
-      else
-        LogKit::LogFormatted(LogKit::LOW,"  Signal-to-noise ratio                    : %10.1f\n",modelSettings->getSNRatio(i));
-      if (modelSettings->getEstimateLocalNoise(i)) { 
-        if (inputFiles->getLocalNoiseFile(i) == "") 
-          LogKit::LogFormatted(LogKit::LOW,"  Estimate local signal-to-noise ratio map : %10s\n", "yes");
-        else
-          LogKit::LogFormatted(LogKit::LOW,"  Estimate local signal-to-noise ratio map : "+inputFiles->getLocalNoiseFile(i)+"\n");
+          LogKit::LogFormatted(LogKit::LOW,"  Signal-to-noise ratio                    : %10.1f\n",modelSettings->getSNRatio(i));
+        if (modelSettings->getEstimateLocalNoise(i)) { 
+          if (inputFiles->getLocalNoiseFile(i) == "") 
+            LogKit::LogFormatted(LogKit::LOW,"  Estimate local signal-to-noise ratio map : %10s\n", "yes");
+          else
+            LogKit::LogFormatted(LogKit::LOW,"  Estimate local signal-to-noise ratio map : "+inputFiles->getLocalNoiseFile(i)+"\n");
+        }
       }
     }
   }

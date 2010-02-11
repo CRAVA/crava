@@ -140,6 +140,7 @@ public:
   bool                             getUseLocalNoise(void)               const { return useLocalNoise_           ;}
   bool                             getOptimizeWellLocation(void)        const { return optimizeWellLocation_    ;}
   bool                             getNoWellNedded(void)                const { return noWellNeeded_            ;}
+  bool                             getNoSeismicNeeded(void)             const { return noSeismicNeeded_         ;}
                                                                        
   int                              getLogLevel(void)                    const { return logLevel_                ;}
   int                              getSeed(void)                        const { return seed_                    ;}
@@ -281,6 +282,7 @@ public:
   void setDoSmoothKriging(bool smooth)                    { smoothKrigedParameters_  = smooth                   ;}
 
   void setNoWellNeeded(bool wellNeeded)                   { noWellNeeded_             = wellNeeded               ;}
+  void setNoSeismicNeeded(bool seismicNeeded)             { noSeismicNeeded_          = seismicNeeded            ;}
                                                                                       
   enum          sseismicTypes{STANDARDSEIS = 0, PSSEIS = 1};                          
 
@@ -448,6 +450,7 @@ private:
   bool                              optimizeWellLocation_;       // True if at least one well is to be moved
   bool                              smoothKrigedParameters_;    // True if we should smooth borders between kriging blocks                                  
   bool                              noWellNeeded_;               // True for some configurations of input data
+  bool                              noSeismicNeeded_;            // True for some estimation settings
                                     
   int                               logLevel_;      
                                     

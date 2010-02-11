@@ -29,7 +29,8 @@ ModelSettings::ModelSettings(void)
     inverseVelocity_(2),
     faciesLabels_(0),
     faciesNames_(NULL),
-    noWellNeeded_(false)
+    noWellNeeded_(false),
+    noSeismicNeeded_(false)
 {
   angularCorr_             = new GenExpVario(1, 10*static_cast<float>(PI/180.0)); // Power=1 range=10deg
   lateralCorr_             = new GenExpVario(1, 1000, 1000); 
