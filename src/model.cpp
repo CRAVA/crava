@@ -858,16 +858,29 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
         SegyGeometry * fullGeometry = geometry;
         bool interpolated, aligned;
         geometry = fullGeometry->GetILXLSubGeometry(modelSettings->getAreaILXL(), interpolated, aligned);
-        geometry->WriteGeometry();
+        //Mener at denne dekkes av utskriften "Resolution ..." nedenfor.
+        //geometry->WriteGeometry();
         delete fullGeometry;
+        std::string text;
         if(interpolated == true) {
-          if(aligned == true)
-            TaskList::addTask("Check IL/XL specifiaction: Specified IL- or XL-step is not an integer multiple of those found in the seismic data. Furthermore, the distance between first and last XL and/or IL does not match the step size.\n");
-          else
-            TaskList::addTask("Check IL/XL specifiaction: Specified IL- or XL-step is not an integer multiple of those found in the seismic data.\n");
+          if(aligned == true) {
+            text  = "Check IL/XL specification: Specified IL- or XL-step is not an integer multiple\n";
+            text += "   of those found in the seismic data. Furthermore, the distance between first\n";
+            text += "   and last XL and/or IL does not match the step size.\n";
+            TaskList::addTask(text);
+          }
+          else {
+            text  = "Check IL/XL specifiaction: Specified IL- or XL-step is not an integer multiple\n";
+            text  = "   of those found in the seismic data.\n";
+            TaskList::addTask(text);
+          }
         }
-        else if(aligned == true)
-          TaskList::addTask("Check IL/XL specifiaction: Either start or end of IL and/or XL interval does not align with IL/XL in seismic data, or end IL and/or XL is not an integer multiple of steps away from the start.\n");
+        else if(aligned == true) {
+          text  = "Check IL/XL specification: Either start or end of IL and/or XL interval does not\n";
+          text += "   align with IL/XL in seismic data, or end IL and/or XL is not an integer multiple\n";
+          text += "   of steps away from the start.\n";
+          TaskList::addTask(text);
+        }
       }
       modelSettings->setAreaParameters(geometry);
       delete geometry;
@@ -3682,27 +3695,27 @@ Model::printSettings(ModelSettings * modelSettings,
         LogKit::LogFormatted(LogKit::LOW,"  %-2d                                       : ",i+1);
         if (generateBackground) {
           if (modelSettings->getIndicatorBGTrend(i) == ModelSettings::YES)
-            LogKit::LogFormatted(LogKit::LOW,"%-15s  ","yes");
+            LogKit::LogFormatted(LogKit::LOW,"    %-11s  ","yes");
           else if (modelSettings->getIndicatorBGTrend(i) == ModelSettings::NO)
-            LogKit::LogFormatted(LogKit::LOW,"%-15s  ","no");
+            LogKit::LogFormatted(LogKit::LOW,"    %-11s  ","no");
           else
-            LogKit::LogFormatted(LogKit::LOW,"%-15s  ","yes");            
+            LogKit::LogFormatted(LogKit::LOW,"    %-11s  ","yes");            
         }
         if (estimateWavelet) {
           if (modelSettings->getIndicatorWavelet(i) == ModelSettings::YES)
-            LogKit::LogFormatted(LogKit::LOW,"%-17s  ","yes");
+            LogKit::LogFormatted(LogKit::LOW,"    %-13s  ","yes");
           else if (modelSettings->getIndicatorWavelet(i) == ModelSettings::NO)
-            LogKit::LogFormatted(LogKit::LOW,"%-17s  ","no");
+            LogKit::LogFormatted(LogKit::LOW,"    %-13s  ","no");
           else
-            LogKit::LogFormatted(LogKit::LOW,"%-17s  ","if possible");
+            LogKit::LogFormatted(LogKit::LOW,"    %-13s  ","if possible");
         }
         if (estimateFaciesProb) {
           if (modelSettings->getIndicatorFacies(i) == ModelSettings::YES)
-            LogKit::LogFormatted(LogKit::LOW,"%-16s","yes");
+            LogKit::LogFormatted(LogKit::LOW,"    %-12s","yes");
           else if (modelSettings->getIndicatorFacies(i) == ModelSettings::NO)
-            LogKit::LogFormatted(LogKit::LOW,"%-16s","no");
+            LogKit::LogFormatted(LogKit::LOW,"    %-12s","no");
           else
-            LogKit::LogFormatted(LogKit::LOW,"%-16s","if possible");
+            LogKit::LogFormatted(LogKit::LOW,"    %-12s","if possible");
         }
         LogKit::LogFormatted(LogKit::LOW,"\n");
       }

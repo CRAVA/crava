@@ -57,6 +57,8 @@ private:
   void         padAndSetBackgroundModel(FFTGrid * bgAlpha,
                                         FFTGrid * bgBeta,
                                         FFTGrid * bgRho);
+  void         createPaddedParameter(FFTGrid *& pNew,
+                                     FFTGrid  * pOld);
   void         calculateBackgroundTrend(float             * trend,
                                         float             * avgDev,
                                         WellData         ** wells,

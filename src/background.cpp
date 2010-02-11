@@ -60,7 +60,7 @@ Background::Background(FFTGrid       ** grids,
                             timeSimbox,
                             modelSettings);
   }  
-  padAndSetBackgroundModel(bgAlpha,bgBeta,bgRho);    
+  padAndSetBackgroundModel(bgAlpha,bgBeta,bgRho);
 
   delete bgAlpha;
   delete bgBeta;
@@ -124,7 +124,8 @@ Background::generateBackgroundModel(FFTGrid      *& bgAlpha,
                            modelSettings->getMaxHzBackground(), 
                            write1D, write3D,
                            nWells, hasVelocityTrend,
-                           std::string("Vp"), modelSettings->getFileGrid());
+                           std::string("Vp"), 
+                           modelSettings->getFileGrid());
   calculateBackgroundTrend(trendBeta, avgDevBeta, 
                            wells, simbox, 
                            modelSettings->getBetaMin(), 
@@ -132,7 +133,8 @@ Background::generateBackgroundModel(FFTGrid      *& bgAlpha,
                            modelSettings->getMaxHzBackground(), 
                            write1D, write3D,
                            nWells, hasVelocityTrend,
-                           std::string("Vs"),modelSettings->getFileGrid());
+                           std::string("Vs"),
+                           modelSettings->getFileGrid());
   calculateBackgroundTrend(trendRho, avgDevRho,
                            wells, simbox, 
                            modelSettings->getRhoMin(), 
@@ -140,7 +142,8 @@ Background::generateBackgroundModel(FFTGrid      *& bgAlpha,
                            modelSettings->getMaxHzBackground(), 
                            write1D, write3D,
                            nWells, hasVelocityTrend,
-                           std::string("Rho"), modelSettings->getFileGrid());
+                           std::string("Rho"), 
+                           modelSettings->getFileGrid());
 
   if (velocity != NULL) {
     //
@@ -508,10 +511,10 @@ Background::makeKrigedBackground(const std::vector<KrigingData2D> & krigingData,
   const int    nzp  = nz;
   const int    rnxp = 2*(nxp/2 + 1);
 
-  const double  x0  = simbox->getx0();
-  const double  y0  = simbox->gety0();
-  const double  lx  = simbox->getlx();
-  const double  ly  = simbox->getly();
+  const double x0  = simbox->getx0();
+  const double y0  = simbox->gety0();
+  const double lx  = simbox->getlx();
+  const double ly  = simbox->getly();
 
   //
   // Template surface to be kriged
@@ -1425,7 +1428,6 @@ Background::resampleParameter(FFTGrid *& pNew,        // Resample to
   //
   // Resample parameter
   //
-  //pNew = new FFTGrid(nx,ny,nz,nxp,nyp,nzp);
   pNew = Model::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, isFile);
   pNew->createRealGrid();
   pNew->setType(FFTGrid::PARAMETER);
@@ -1466,9 +1468,85 @@ Background::padAndSetBackgroundModel(FFTGrid * bgAlpha,
                                      FFTGrid * bgRho)
 {
   LogKit::LogFormatted(LogKit::LOW,"\nPadding background model...\n");
-  backModel_[0]->fillInFromRealFFTGrid(*bgAlpha);
-  backModel_[1]->fillInFromRealFFTGrid(*bgBeta);
-  backModel_[2]->fillInFromRealFFTGrid(*bgRho);
+  //backModel_[0]->fillInFromRealFFTGrid(*bgAlpha);
+  //backModel_[1]->fillInFromRealFFTGrid(*bgBeta);
+  //backModel_[2]->fillInFromRealFFTGrid(*bgRho);
+
+  createPaddedParameter(backModel_[0], bgAlpha);
+  createPaddedParameter(backModel_[1], bgBeta);
+  createPaddedParameter(backModel_[2], bgRho);
+}
+
+//-------------------------------------------------------------------------------
+void
+Background::createPaddedParameter(FFTGrid *& pNew,     // Padded
+                                  FFTGrid  * pOld)     // Non-padded
+{
+  //
+  // Fill padding using linear interpolation between edges. 
+  // 
+  // When we fill the z-padding, we assume that x- and y-padding is
+  // already filled. The loop structure ensures this. Likewise, it
+  // is assumed that the x-padding is filled when we fill the 
+  // y-padding.
+  //
+  // The linear algortihm is not "perfect", but should be more
+  // than good enough for padding the smooth background model.
+  // 
+  int nx  = pNew->getNx();
+  int ny  = pNew->getNy();
+  int nz  = pNew->getNz();
+  int nxp = pNew->getNxp();
+  int nyp = pNew->getNyp();
+  int nzp = pNew->getNzp();
+
+  pNew->createRealGrid();
+  pNew->setType(FFTGrid::PARAMETER);
+
+  pNew->setAccessMode(FFTGrid::RANDOMACCESS);
+  pOld->setAccessMode(FFTGrid::RANDOMACCESS);
+
+  float sum_c = 1.0f/static_cast<float>(nzp - nz + 1);
+  float sum_b = 1.0f/static_cast<float>(nyp - ny + 1);  
+  float sum_a = 1.0f/static_cast<float>(nxp - nx + 1);  
+
+  for(int k = 0 ; k < nzp ; k++) {
+    for(int j = 0 ; j < nyp ; j++) {
+      for(int i = 0 ; i < nxp ; i++) { // We do not use rnxp here (only needed for complex grids)
+
+        float value = RMISSING;
+        if(i < nx && j < ny && k < nz) { // Not in padding
+          value = pOld->getRealValue(i, j, k);
+        }
+        else {
+          if(k >= nz) { // In z-padding (x- and y- padding is filled in pNew)
+            float c1 = pNew->getRealValue(i, j, 0     , true); 
+            float c2 = pNew->getRealValue(i, j, nz - 1, true); 
+            float w1 = sum_c*static_cast<float>(k - nz + 1);
+            float w2 = sum_c*static_cast<float>(nzp - k);
+            value = c1*w1 + c2*w2;            
+          }
+          else if(j >= ny) { // In y-padding (x-padding is filled in pNew)
+            float b1 = pNew->getRealValue(i, 0     , k, true);
+            float b2 = pNew->getRealValue(i, ny - 1, k, true); 
+            float w1 = sum_b*static_cast<float>(j - ny + 1);
+            float w2 = sum_b*static_cast<float>(nyp - j);
+            value = b1*w1 + b2*w2;
+          }
+          else if(i >= nx) { // In x-padding
+            float a1 = pNew->getRealValue(     0, j, k, true); 
+            float a2 = pNew->getRealValue(nx - 1, j, k, true); 
+            float w1 = sum_a*static_cast<float>(i - nx + 1);
+            float w2 = sum_a*static_cast<float>(nxp - i);
+            value = a1*w1 + a2*w2;
+          }
+        }
+        pNew->setRealValue(i, j, k, value, true);
+      }
+    }
+  }  
+  pNew->endAccess();
+  pOld->endAccess();
 }
 
 //-------------------------------------------------------------------------------

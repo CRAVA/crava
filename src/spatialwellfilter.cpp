@@ -168,14 +168,14 @@ void SpatialWellFilter::doFiltering(Corr *corr, WellData **wells, int nWells, bo
         i2 = ipos[l2];
         j2 = jpos[l2];
         k2 = kpos[l2];
-     //   sigmapost[l1      ][l2      ] = corr->getPostCovAlpha()->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
-     //   sigmapost[l1 + n  ][l2 + n  ] = corr->getPostCovBeta()->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
-     //   sigmapost[l1 + 2*n][l2 + 2*n] = corr->getPostCovRho()->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
-     //   sigmapost[l1      ][l2 + n  ] = corr->getPostCrCovAlphaBeta()->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
+        // sigmapost[l1      ][l2      ] = corr->getPostCovAlpha()->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
+        // sigmapost[l1 + n  ][l2 + n  ] = corr->getPostCovBeta()->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
+        // sigmapost[l1 + 2*n][l2 + 2*n] = corr->getPostCovRho()->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
+        // sigmapost[l1      ][l2 + n  ] = corr->getPostCrCovAlphaBeta()->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
+        // sigmapost[l1      ][l2 + 2*n] = corr->getPostCrCovAlphaRho()->getRealValueCyclic(i1-i2,j1-j2,k1-k2);       
+        // sigmapost[l1 + 2*n][l2 + n  ] = corr->getPostCrCovBetaRho()->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
         sigmapost[l2 + n  ][l1      ] = sigmapost[l1][n+l2];
-     //   sigmapost[l1      ][l2 + 2*n] = corr->getPostCrCovAlphaRho()->getRealValueCyclic(i1-i2,j1-j2,k1-k2);       
         sigmapost[l2 + 2*n][l1      ] = sigmapost[l1][2*n+l2];
-      //  sigmapost[l1 + 2*n][l2 + n  ] = corr->getPostCrCovBetaRho()->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
         sigmapost[l2 + n  ][l1 + 2*n] = sigmapost[2*n+l1][n+l2];
         sigmapri [l1      ][l2      ] = corr->getPriorVar0()[0][0]*priorSpatialCorr_[w1][l1][l2];
         sigmapri [l1 + n  ][l2 + n  ] = corr->getPriorVar0()[1][1]*priorSpatialCorr_[w1][l1][l2];
@@ -217,11 +217,11 @@ void SpatialWellFilter::doFiltering(Corr *corr, WellData **wells, int nWells, bo
       }
     }
 
-    LogKit::LogFormatted(LogKit::LOW,"\n  Cholesky decomposition");
+    LogKit::LogFormatted(LogKit::LOW,"\n  Performing a Cholesky decomposition ...");
     lib_matrCholR(3*n, sigmapri);
-    LogKit::LogFormatted(LogKit::LOW,"\n  Equation solving");
+    LogKit::LogFormatted(LogKit::LOW,"\n  Solving an equation ...");
     lib_matrAXeqBMatR(3*n, sigmapri, imat, 3*n);
-    LogKit::LogFormatted(LogKit::LOW,"\n  Matrix product");
+    LogKit::LogFormatted(LogKit::LOW,"\n  Make a matrix multiplication ...\n");
     lib_matr_prod(sigmapost,imat,3*n,3*n,3*n,Aw);
 
     for(int i=0;i<3*n;i++)
