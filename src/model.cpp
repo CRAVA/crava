@@ -644,7 +644,7 @@ Model::checkAvailableMemory(Simbox        * timeSimbox,
   }
 }
 
-void
+int
 Model::readSegyFile(const std::string       & fileName, 
                     FFTGrid                *& target, 
                     Simbox                 *& timeSimbox, 
@@ -693,6 +693,7 @@ Model::readSegyFile(const std::string       & fileName,
     failed = true;
   }
   
+  int outsideTraces = 0;
   if (failed == false)
   {
     const SegyGeometry * geo;
@@ -701,7 +702,6 @@ Model::readSegyFile(const std::string       & fileName,
     if (gridType == FFTGrid::DATA) 
       geometry = new SegyGeometry(geo);
     
-    int error = timeSimbox->insideRectangle(geo);
     int xpad, ypad, zpad;
     if(nopadding==false)
     {
@@ -715,30 +715,23 @@ Model::readSegyFile(const std::string       & fileName,
       ypad = timeSimbox->getny();
       zpad = timeSimbox->getnz();
     }
-    if(error == 0)
-    {
-      target = createFFTGrid(timeSimbox->getnx(), 
-                             timeSimbox->getny(), 
-                             timeSimbox->getnz(), 
-                             xpad, 
-                             ypad, 
-                             zpad, 
-                             modelSettings->getFileGrid());
-      target->setType(gridType);
-      target->fillInFromSegY(segy, timeSimbox, nopadding);
-    }
-    else 
-    {
-      errText += "Specified area in command AREA is larger than the data from SegY file "+fileName+"\n";
-      failed = true;
-    }
+    target = createFFTGrid(timeSimbox->getnx(), 
+                           timeSimbox->getny(), 
+                           timeSimbox->getnz(), 
+                           xpad, 
+                           ypad, 
+                           zpad, 
+                           modelSettings->getFileGrid());
+    target->setType(gridType);
+    outsideTraces = target->fillInFromSegY(segy, timeSimbox, nopadding);
   }
   if (segy != NULL)
     delete segy;
+  return(outsideTraces);
 }
 
 
-void
+int
 Model::readStormFile(const std::string  & fName, 
                      FFTGrid           *& target, 
                      const int            gridType,
@@ -751,7 +744,7 @@ Model::readStormFile(const std::string  & fName,
 {
   StormContGrid * stormgrid = NULL;
   bool failed = false;
-
+  
   try
   {   
     stormgrid = new StormContGrid(0,0,0);
@@ -765,17 +758,18 @@ Model::readStormFile(const std::string  & fName,
   }
   int xpad, ypad, zpad;
   if(nopadding==false)
-    {
-      xpad = modelSettings->getNXpad();
-      ypad = modelSettings->getNYpad();
-      zpad = modelSettings->getNZpad();
-    }
-    else
-    {
-      xpad = timeSimbox->getnx();
-      ypad = timeSimbox->getny();
-      zpad = timeSimbox->getnz();
-    }
+  {
+    xpad = modelSettings->getNXpad();
+    ypad = modelSettings->getNYpad();
+    zpad = modelSettings->getNZpad();
+  }
+  else
+  {
+    xpad = timeSimbox->getnx();
+    ypad = timeSimbox->getny();
+    zpad = timeSimbox->getnz();
+  }
+  int outsideTraces = 0;
   if(failed == false)
   {
     target = createFFTGrid(timeSimbox->getnx(), 
@@ -786,11 +780,13 @@ Model::readStormFile(const std::string  & fName,
                            zpad,
                            modelSettings->getFileGrid());
     target->setType(gridType);
-    target->fillInFromStorm(timeSimbox,stormgrid, parName, scale);
+    outsideTraces = target->fillInFromStorm(timeSimbox,stormgrid, parName, scale);
   }  
 
   if (stormgrid != NULL)
     delete stormgrid;
+
+  return(outsideTraces);
 }
 
 int 
@@ -1544,6 +1540,7 @@ Model::processSeismic(FFTGrid      **& seisCube,
     const SegyGeometry ** geometry = new const SegyGeometry * [nAngles];
     seisCube = new FFTGrid * [nAngles];
 
+    bool outsideWarning = false;
     for (int i = 0 ; i < nAngles ; i++) {
       geometry[i] = NULL;
       std::string tmpErrText("");
@@ -1553,16 +1550,16 @@ Model::processSeismic(FFTGrid      **& seisCube,
       if(offset < 0)
         offset = modelSettings->getSegyOffset();
 
-      readGridFromFile(fileName,
-                       dataName,
-                       offset,
-                       seisCube[i],
-                       geometry[i],
-                       modelSettings->getTraceHeaderFormat(i),
-                       FFTGrid::DATA,
-                       timeSimbox,
-                       modelSettings,
-                       tmpErrText);
+      int outsideTraces = readGridFromFile(fileName,
+                                           dataName,
+                                           offset,
+                                           seisCube[i],
+                                           geometry[i],
+                                           modelSettings->getTraceHeaderFormat(i),
+                                           FFTGrid::DATA,
+                                           timeSimbox,
+                                           modelSettings,
+                                           tmpErrText);
       if(tmpErrText != "")
       {
         tmpErrText += "Reading of file \'"+fileName+"\' for "+dataName+" failed.\n";
@@ -1571,9 +1568,22 @@ Model::processSeismic(FFTGrid      **& seisCube,
       } 
       else { 
         seisCube[i]->setAngle(modelSettings->getAngle(i));
+        if(outsideTraces > 0) {
+          if(outsideTraces == seisCube[i]->getNxp()*seisCube[i]->getNyp()) {
+            errText += "Error: Data in file "+fileName+" was completely outside the inversion area.\n";
+            failed = true;
+          }
+          else {
+            LogKit::LogMessage(LogKit::WARNING, "Warning: "+NRLib::ToString(outsideTraces)+" traces in the grid were outside the data area in file "
+              +fileName+". Note that this includes traces in the padding.\n");
+            outsideWarning = true;
+          }
+        }
       }
     }
     LogKit::LogFormatted(LogKit::LOW,"\n");
+    if(outsideWarning == true)
+      TaskList::addTask("Check seismic volumes and inversion area: One or more of the seismic input files did not have data enough for the entire area (including padding).\n");
 
     if(failed == false)
     {
@@ -2101,6 +2111,7 @@ Model::processBackground(Background   *& background,
     parName.push_back("Vs "+modelSettings->getBackgroundType());
     parName.push_back("Rho "+modelSettings->getBackgroundType());
 
+    bool outsideWarning = false;
     for(int i=0 ; i<3 ; i++)
     {
       float constBackValue = modelSettings->getConstBackValue(i);
@@ -2115,16 +2126,16 @@ Model::processBackground(Background   *& background,
           const TraceHeaderFormat * dummy2 = NULL;
           const float               offset = modelSettings->getSegyOffset();
           std::string errorText("");
-          readGridFromFile(backFile,
-                           parName[i],
-                           offset,
-                           backModel[i],
-                           dummy1,
-                           dummy2,
-                           FFTGrid::PARAMETER,
-                           timeSimbox,
-                           modelSettings,
-                           errorText);
+          int outsideTraces = readGridFromFile(backFile,
+                                               parName[i],
+                                               offset,
+                                               backModel[i],
+                                               dummy1,
+                                               dummy2,
+                                               FFTGrid::PARAMETER,
+                                               timeSimbox,
+                                               modelSettings,
+                                               errorText);
           if(errorText != "")
           {
             errorText += "Reading of file '"+backFile+"' for parameter '"+parName[i]+"' failed\n";
@@ -2133,6 +2144,10 @@ Model::processBackground(Background   *& background,
           } 
           else {
             backModel[i]->logTransf();
+            if(outsideTraces > 0) {
+                errText += "Error: Background model in file "+backFile+" does not cover the inversion area.\n";
+                failed = true;
+            }
           }
         }
         else
@@ -2167,7 +2182,7 @@ Model::processBackground(Background   *& background,
   Timings::setTimePriorExpectation(wall,cpu);
 }
 
-void
+int
 Model::readGridFromFile(const std::string       & fileName,
                         const std::string       & parName,
                         const float               offset,
@@ -2182,6 +2197,7 @@ Model::readGridFromFile(const std::string       & fileName,
 {
   int fileType = IO::findGridType(fileName);
 
+  int outsideTraces = 0;
   if(fileType == IO::CRAVA) 
   {
     int xpad, ypad, zpad;
@@ -2210,21 +2226,18 @@ Model::readGridFromFile(const std::string       & fileName,
     grid->readCravaFile(fileName, errText, nopadding);
   }
   else if(fileType == IO::SEGY) 
-  {
-    readSegyFile(fileName, grid, timeSimbox, modelSettings, geometry, 
-                 gridType, offset, format, errText, nopadding);
-  }
+    outsideTraces  = readSegyFile(fileName, grid, timeSimbox, modelSettings, geometry, 
+                                  gridType, offset, format, errText, nopadding);
   else if(fileType == IO::STORM) 
-  {
-    readStormFile(fileName, grid, gridType, parName, timeSimbox, modelSettings, errText, false, nopadding);
-  }
+    outsideTraces = readStormFile(fileName, grid, gridType, parName, timeSimbox, modelSettings, errText, false, nopadding);
   else if(fileType == IO::SGRI)
-    readStormFile(fileName, grid, gridType, parName, timeSimbox, modelSettings, errText, true, nopadding);
+    outsideTraces = readStormFile(fileName, grid, gridType, parName, timeSimbox, modelSettings, errText, true, nopadding);
   else 
   {
     errText += "\nReading of file \'"+fileName+"\' for grid type \'"
                +parName+"\'failed. File type not recognized.\n";
   }
+  return(outsideTraces);
 }
 
 

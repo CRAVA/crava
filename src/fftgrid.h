@@ -24,9 +24,9 @@ public:
   void setType(int cubeType) {cubetype_ = cubeType;}
   void setAngle(float angle) {theta_ = angle;}
 
-  void                 fillInFromSegY(SegY * segy, Simbox *simbox, bool nopadding = false );            // No mode
+  int                  fillInFromSegY(SegY * segy, Simbox *simbox, bool nopadding = false );            // No mode
 
-  void                 fillInFromStorm(Simbox            * actSimBox,
+  int                  fillInFromStorm(Simbox            * actSimBox,
                                        StormContGrid     * grid,
                                        const std::string & parName,
                                        bool                scale = false,

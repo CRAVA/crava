@@ -98,17 +98,17 @@ FFTGrid::FFTGrid(FFTGrid  * fftGrid)
 
 FFTGrid::~FFTGrid()
 {
-if (rvalue_!=NULL)
-{
-  if(add_==true)
-    nGrids_ = nGrids_ - 1;
-  fftw_free(rvalue_);
-  FFTMemUse_ -= rsize_ * sizeof(fftw_real);
-  LogKit::LogFormatted(LogKit::DEBUGLOW,"\nFFTGrid Destructor: nGrids_ = %d",nGrids_);
-}
+  if (rvalue_!=NULL)
+  {
+    if(add_==true)
+      nGrids_ = nGrids_ - 1;
+    fftw_free(rvalue_);
+    FFTMemUse_ -= rsize_ * sizeof(fftw_real);
+    LogKit::LogFormatted(LogKit::DEBUGLOW,"\nFFTGrid Destructor: nGrids_ = %d",nGrids_);
+  }
 }
 
-void
+int
 FFTGrid::fillInFromSegY(SegY* segy, Simbox *simbox, bool padding)
 {
   assert(cubetype_  !=  CTMISSING);
@@ -131,24 +131,29 @@ FFTGrid::fillInFromSegY(SegY* segy, Simbox *simbox, bool padding)
 
   fftw_real value  = 0.0;
   float val1,val2;
-  if(isParameter)
-  { 
-    meanvalue= static_cast<float*>(fftw_malloc(sizeof(float)*nyp_*nxp_));
 
-    for(j=0;j<nyp_;j++)
-      for(i=0;i<nxp_;i++)   
-      {
-        refi = getXSimboxIndex(i);
-        refj = getYSimboxIndex(j);
-        refk = 0;
-        simbox->getCoord(refi,refj,refk,x,y,z);
-        val1 = segy->GetValue(x,y,z, outMode);
-        refk = nz_-1;
-        simbox->getCoord(refi,refj,refk,x,y,z);
-        val2 = segy->GetValue(x,y,z, outMode);
-        meanvalue[i+j*nxp_] = static_cast<float>((val1+val2)/2.0);
+  meanvalue= static_cast<float*>(fftw_malloc(sizeof(float)*nyp_*nxp_));
+
+  int outsideTraces = 0;
+  for(j=0;j<nyp_;j++) {
+    for(i=0;i<nxp_;i++) {
+      refi = getXSimboxIndex(i);
+      refj = getYSimboxIndex(j);
+      refk = 0;
+      simbox->getCoord(refi,refj,refk,x,y,z);
+      val1 = segy->GetValue(x,y,z, outMode);
+      refk = nz_-1;
+      simbox->getCoord(refi,refj,refk,x,y,z);
+      val2 = segy->GetValue(x,y,z, outMode);
+      meanvalue[i+j*nxp_] = static_cast<float>((val1+val2)/2.0);
+      if((outMode == SegY::ZERO && val1 == 0 && val2 == 0) ||
+         (outMode != SegY::ZERO && val1 == RMISSING && val2 == RMISSING)) {
+           if(cubetype_ == DATA || (i < nx_ && j< ny_)) //Count padding traces only for data.
+            if(segy->GetGeometry()->IsInside(static_cast<float>(x),static_cast<float>(y)) == false)
+              outsideTraces++;
       }
-  } // endif
+    }
+  }
 
   double wall=0.0, cpu=0.0;
   TimeKit::getTime(wall,cpu);
@@ -177,12 +182,14 @@ FFTGrid::fillInFromSegY(SegY* segy, Simbox *simbox, bool padding)
           distx  = getDistToBoundary(i,nx_,nxp_);
           disty  = getDistToBoundary(j,ny_,nyp_);
           distz  = getDistToBoundary(k,nz_,nzp_);         
-          mult   = float(pow(MAXIM(1.0-distx*distx-disty*disty-distz*distz,0.0),3));
-          value=segy->GetValue(x,y,z, outMode );
-          if(isParameter)
-            value=float ( ((mult*value+(1.0-mult)*meanvalue[i+j*nxp_])) );
-          else
-            value*=mult;
+          mult   = static_cast<float>(float(pow(MAXIM(1.0-distx*distx-disty*disty-distz*distz,0.0),3)));
+          value  = segy->GetValue(x,y,z, outMode );
+          if(value != RMISSING) {
+            if(isParameter)
+              value = static_cast<float>(mult*value+(1.0-mult)*meanvalue[i+j*nxp_]);
+            else
+              value *= mult;
+          }
         }
         else
           value=RMISSING;        
@@ -200,12 +207,13 @@ FFTGrid::fillInFromSegY(SegY* segy, Simbox *simbox, bool padding)
   }
   LogKit::LogFormatted(LogKit::LOW,"\n");
   endAccess();
-  if(isParameter) fftw_free(meanvalue);
+  fftw_free(meanvalue);
 
   Timings::setTimeResamplingSeismic(wall,cpu);
+  return(outsideTraces);
 }
 
-void
+int
 FFTGrid::fillInFromStorm(Simbox            * actSimBox,
                          StormContGrid     * grid, 
                          const std::string & parName, 
@@ -240,22 +248,26 @@ FFTGrid::fillInFromStorm(Simbox            * actSimBox,
 
   meanvalue= static_cast<float*>(fftw_malloc(sizeof(float)*nyp_*nxp_));
 
-  for(j=0;j<nyp_;j++)
-    for(i=0;i<nxp_;i++)   
-    {
+  int outsideTraces = 0;
+  for(j=0;j<nyp_;j++) {
+    for(i=0;i<nxp_;i++) {
       refi   = getXSimboxIndex(i);
       refj   = getYSimboxIndex(j);
       actSimBox->getCoord(refi, refj, 0, x, y, z);
-      val=grid->GetValueZInterpolated(x*scalehor,y*scalehor,z*scalevert);
+      val = grid->GetValueZInterpolated(x*scalehor,y*scalehor,z*scalevert);
       actSimBox->getCoord(refi, refj, nz_-1, x, y, z);
- 
-        if(val != RMISSING)
-   
-          val = (grid->GetValueZInterpolated(x*scalehor,y*scalehor,z*scalevert)+val)/2.0;
-        else     
-          val = grid->GetValueZInterpolated(x*scalehor,y*scalehor,z*scalevert);
+      if(val != RMISSING)
+        val = (grid->GetValueZInterpolated(x*scalehor,y*scalehor,z*scalevert)+val)/2.0;
+      else     
+        val = grid->GetValueZInterpolated(x*scalehor,y*scalehor,z*scalevert);
       meanvalue[i+j*nxp_] = static_cast<float>(val);
+      if(val == RMISSING) {
+        if(cubetype_ == DATA || (i < nx_ && j< ny_)) //Count padding traces only for data.
+          if(grid->IsInside(x,y) == false)
+            outsideTraces++;
+      }
     }
+  }
 
   LogKit::LogFormatted(LogKit::LOW,"\nResampling %s into %dx%dx%d grid:\n",parName.c_str(),nxp_,nyp_,nzp_);
   setAccessMode(WRITE);
@@ -284,9 +296,14 @@ FFTGrid::fillInFromStorm(Simbox            * actSimBox,
         {
           actSimBox->getCoord(refi, refj, refk, x, y, z);
           value = static_cast<fftw_real>(grid->GetValueZInterpolated(x*scalehor,y*scalehor,z*scalevert));
-          if(value==RMISSING)
+          if(value!=RMISSING) {
+            if(cubetype_ == FFTGrid::PARAMETER)
+              value=static_cast<float>( ((mult*value+(1.0-mult)*meanvalue[i+j*nxp_])) );
+            else
+              value *= mult;
+          }
+          else if(cubetype_ == FFTGrid::DATA)
             value = 0;
-          value=static_cast<float>( ((mult*value+(1.0-mult)*meanvalue[i+j*nxp_])) );
         }
         else
           value=RMISSING;        
@@ -304,6 +321,7 @@ FFTGrid::fillInFromStorm(Simbox            * actSimBox,
   LogKit::LogFormatted(LogKit::LOW,"\n");
   endAccess();
   fftw_free(meanvalue);
+  return(outsideTraces);
 }
 
 void
