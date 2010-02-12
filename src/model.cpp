@@ -820,6 +820,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
     if(areaSpecification == ModelSettings::AREA_FROM_GRID_DATA || modelSettings->getEstimationMode() == false)
       gridFile = inputFiles->getSeismicFile(0); // Get area from first seismic data volume
   }
+  SegyGeometry * ILXLGeometry = NULL; //Geometry with correct XL and IL settings.
   //
   // Set area geometry information
   // -----------------------------
@@ -853,33 +854,40 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
       if(modelSettings->getAreaILXL().size() > 0) {
         SegyGeometry * fullGeometry = geometry;
         bool interpolated, aligned;
-        geometry = fullGeometry->GetILXLSubGeometry(modelSettings->getAreaILXL(), interpolated, aligned);
-        //Mener at denne dekkes av utskriften "Resolution ..." nedenfor.
-        //geometry->WriteGeometry();
+        try {
+          geometry = fullGeometry->GetILXLSubGeometry(modelSettings->getAreaILXL(), interpolated, aligned);
+          std::string text;
+          if(interpolated == true) {
+            if(aligned == true) {
+              text  = "Check IL/XL specification: Specified IL- or XL-step is not an integer multiple\n";
+              text += "   of those found in the seismic data. Furthermore, the distance between first\n";
+              text += "   and last XL and/or IL does not match the step size.\n";
+              TaskList::addTask(text);
+            }
+            else {
+              text  = "Check IL/XL specifiaction: Specified IL- or XL-step is not an integer multiple\n";
+              text  = "   of those found in the seismic data.\n";
+              TaskList::addTask(text);
+            }
+          }
+          else if(aligned == true) {
+            text  = "Check IL/XL specification: Either start or end of IL and/or XL interval does not\n";
+            text += "   align with IL/XL in seismic data, or end IL and/or XL is not an integer multiple\n";
+            text += "   of steps away from the start.\n";
+            TaskList::addTask(text);
+          }
+        }
+        catch (NRLib::Exception & e) {
+          errText += "Error: "+std::string(e.what());
+          geometry = NULL;
+          failed = true;
+        }
         delete fullGeometry;
-        std::string text;
-        if(interpolated == true) {
-          if(aligned == true) {
-            text  = "Check IL/XL specification: Specified IL- or XL-step is not an integer multiple\n";
-            text += "   of those found in the seismic data. Furthermore, the distance between first\n";
-            text += "   and last XL and/or IL does not match the step size.\n";
-            TaskList::addTask(text);
-          }
-          else {
-            text  = "Check IL/XL specifiaction: Specified IL- or XL-step is not an integer multiple\n";
-            text  = "   of those found in the seismic data.\n";
-            TaskList::addTask(text);
-          }
-        }
-        else if(aligned == true) {
-          text  = "Check IL/XL specification: Either start or end of IL and/or XL interval does not\n";
-          text += "   align with IL/XL in seismic data, or end IL and/or XL is not an integer multiple\n";
-          text += "   of steps away from the start.\n";
-          TaskList::addTask(text);
-        }
       }
-      modelSettings->setAreaParameters(geometry);
-      delete geometry;
+      if(!failed) {
+        modelSettings->setAreaParameters(geometry);
+        ILXLGeometry = geometry;
+      }
     }
     else {
       errText += tmpErrText;
@@ -917,35 +925,33 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
       // Set IL/XL information in geometry
       // ---------------------------------
       //
-      bool need_ilxl_info = areaSpecification == ModelSettings::AREA_FROM_UTM || areaSpecification == ModelSettings::AREA_FROM_SURFACE;
-      
       // Skip if estimation mode:
       //   a) For speed 
       //   b) Grid data may not be available.
-      need_ilxl_info = need_ilxl_info && !modelSettings->getEstimationMode();
-      
-      if (need_ilxl_info) {
-        bool ilxl_info_available = IO::findGridType(gridFile) == IO::SEGY;
-        if (ilxl_info_available) {
-          LogKit::LogFormatted(LogKit::HIGH,"\nFinding IL/XL information from grid data file \'"+gridFile+"\'\n");
-          std::string tmpErrText;
-          SegyGeometry * geometryForILXL;
-          getGeometryFromGridOnFile(gridFile,
-                                    modelSettings->getTraceHeaderFormat(0),
-                                    geometryForILXL,
-                                    tmpErrText);
-          if(geometryForILXL != NULL) {
-            if(timeSimbox->isAligned(geometryForILXL))
-              timeSimbox->setILXL(geometryForILXL);
-            delete geometryForILXL;
+      if (modelSettings->getEstimationMode() == false) {
+        if(ILXLGeometry == NULL) {
+          int gridType = IO::findGridType(gridFile);
+          bool ilxl_info_available = ((gridType == IO::SEGY) || (gridType == IO::CRAVA));
+          if (ilxl_info_available) {
+            LogKit::LogFormatted(LogKit::HIGH,"\nFinding IL/XL information from grid data file \'"+gridFile+"\'\n");
+            std::string tmpErrText;
+            getGeometryFromGridOnFile(gridFile,
+                                      modelSettings->getTraceHeaderFormat(0),
+                                      ILXLGeometry,
+                                      tmpErrText);
+            if(ILXLGeometry == NULL) {
+              errText += tmpErrText;
+              failed = true;
+            }
           }
           else {
-            errText += tmpErrText;
-            failed = true;
+            LogKit::LogFormatted(LogKit::HIGH,"\nCannot extract IL/XL information from non-SEGY grid data file \'"+gridFile+"\'\n");
           }
         }
-        else {
-          LogKit::LogFormatted(LogKit::HIGH,"\nCannot extract IL/XL information from non-SEGY grid data file \'"+gridFile+"\'\n");
+        if(ILXLGeometry != NULL) {
+          if(timeSimbox->isAligned(ILXLGeometry))
+            timeSimbox->setILXL(ILXLGeometry);
+          delete ILXLGeometry;
         }
       }
       
@@ -2111,7 +2117,6 @@ Model::processBackground(Background   *& background,
     parName.push_back("Vs "+modelSettings->getBackgroundType());
     parName.push_back("Rho "+modelSettings->getBackgroundType());
 
-//    bool outsideWarning = false; //NBNB-Frode: Why is this one here? Never used
     for(int i=0 ; i<3 ; i++)
     {
       float constBackValue = modelSettings->getConstBackValue(i);
@@ -4178,13 +4183,13 @@ Model::loadVelocity(FFTGrid          *& velocity,
 {
   Utils::writeHeader("Setup time-to-depth relationship");
 
-  if((velocityField == "CONSTANT") || (velocityField == ""))
-    velocity = NULL;
   if(modelSettings->getVelocityFromInversion() == true)
   {
     velocityFromInversion_ = true;
     velocity = NULL;
   }
+  else if(velocityField == "")
+    velocity = NULL;
   else
   {
     const SegyGeometry      * dummy1 = NULL;
