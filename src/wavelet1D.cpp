@@ -57,8 +57,8 @@ Wavelet1D::Wavelet1D(Simbox                       * simbox,
   isReal_               = true; 
 
   std::string fileName;
-  int     nWells        = modelSettings->getNumberOfWells();
-  float   waveletLength = modelSettings->getWaveletTaperingL();
+  int     nWells              = modelSettings->getNumberOfWells();
+  float   waveletTaperLength  = modelSettings->getWaveletTaperingL();
  
   //Wavelet estimation
   fftw_real    ** cpp_r = new fftw_real*[nWells];
@@ -147,7 +147,7 @@ Wavelet1D::Wavelet1D(Simbox                       * simbox,
       //
       int start,length;
       bl->findContiniousPartOfData(hasData, nz_, start, length);
-      if(length*dz_ > waveletLength ) { // must have enough data
+      if(length*dz_ > waveletTaperLength ) { // must have enough data
         bl->fillInCpp(coeff_, start, length, cpp_r[w], nzp_); 
         fileName = "cpp_1";
         printVecToFile(fileName, cpp_r[w], nzp_);  // Debug
@@ -173,8 +173,8 @@ Wavelet1D::Wavelet1D(Simbox                       * simbox,
 
   std::vector<float> shiftWell(nWells);
   float shiftAvg = shiftOptimal(ccor_seis_cpp_r, wellWeight, dzWell, nWells, nzp_, shiftWell, modelSettings->getMaxWaveletShift());
-  multiplyPapolouis(ccor_seis_cpp_r, dzWell, nWells, nzp_, waveletLength, wellWeight);
-  multiplyPapolouis(cor_cpp_r, dzWell, nWells, nzp_, waveletLength, wellWeight);
+  multiplyPapolouis(ccor_seis_cpp_r, dzWell, nWells, nzp_, waveletTaperLength, wellWeight);
+  multiplyPapolouis(cor_cpp_r, dzWell, nWells, nzp_, waveletTaperLength, wellWeight);
   getWavelet(ccor_seis_cpp_r, cor_cpp_r, wavelet_r, wellWeight, nWells, nzp_);
 
   // Save estimated wavelet for each well, write to file later because waveletlength calculted for average wavelet is used for all well wavelets
@@ -226,14 +226,13 @@ Wavelet1D::Wavelet1D(Simbox                       * simbox,
 
   double norm2=0.0;
   for(int i=0; i < nzp_; i++ )
-      norm2 += rAmp_[i]*rAmp_[i];
+      norm2 += static_cast<double> (rAmp_[i]*rAmp_[i]);
   norm_= static_cast<float>(sqrt(norm2));
 
   //Writing well wavelets to file. Using writeWaveletToFile, so manipulating rAmp_
   fftw_real * trueAmp = rAmp_;
   rAmp_               = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));
   cAmp_               = reinterpret_cast<fftw_complex *>(rAmp_);
-
   for(int w=0; w<nWells; w++) {
     for(int i=0;i<nzp_;i++)
       rAmp_[i] = wellWavelets[w][i];
@@ -241,10 +240,8 @@ Wavelet1D::Wavelet1D(Simbox                       * simbox,
     std::string wellname(wells[w]->getWellname());
     NRLib::Substitute(wellname,"/","_");
     NRLib::Substitute(wellname," ","_");
-
     fileName += "_"+wellname; 
-    float dzOut = 1.0; 
-    writeWaveletToFile(fileName, dzOut);
+    writeWaveletToFile(fileName, 1.0f);
   }
   fftw_free(rAmp_);
   rAmp_ = trueAmp;
@@ -298,26 +295,23 @@ Wavelet1D::findGlobalScaleForGivenWavelet(ModelSettings * modelSettings,
                                           WellData     ** wells)
 {
   int nWells          = modelSettings->getNumberOfWells();
+//The reason why the next three variables are not taken from the class variables is that this function is called
+//before resample in Model::processWavelets. This means that at this point nz_, nzp_ and rnzp_ are not properly set.
   int nz              = simbox->getnz();                     
   int nzp             = seisCube->getNzp();
   int rnzp            = 2*(nzp/2+1);
+
   fftw_real ** cpp_r  = new fftw_real*[nWells];
   fftw_real ** seis_r = new fftw_real*[nWells];
-  float *seisData     = new float[nz];
 
-  int maxBlocks       = 0;
   for(int i=0;i<nWells;i++) {
     cpp_r[i]      = new fftw_real[rnzp];
     seis_r[i]     = new fftw_real[rnzp];
-    for(int j=0;j<rnzp;j++) {
+    for(int j=0; j<rnzp; j++) {
       cpp_r[i][j] = 0;
       seis_r[i][j] = 0;
     }
-    int nBlocks        = wells[i]->getBlockedLogsOrigThick()->getNumberOfBlocks();
-    if (nBlocks > maxBlocks)
-      maxBlocks = nBlocks;
   }
-  float * seisLog = new float[maxBlocks];
   float maxSeis = 0.0;
   float maxCpp = 0.0;
   //
@@ -329,30 +323,30 @@ Wavelet1D::findGlobalScaleForGivenWavelet(ModelSettings * modelSettings,
       //
       // Block seismic data for this well
       //
-      bl->getBlockedGrid(seisCube,seisLog);
+      std::vector<float> seisLog(wells[w]->getBlockedLogsOrigThick()->getNumberOfBlocks());
+      bl->getBlockedGrid(seisCube, &seisLog[0]);
       //
       // Extract a one-value-for-each-layer array of blocked logs
       //
-      bl->getVerticalTrend(seisLog, seisData);
       std::vector<bool> hasData(nz);
-      for (int k = 0 ; k < nz ; k++)
+      std::vector<float> seisData(nz);
+      bl->getVerticalTrend(&seisLog[0], &seisData[0]);
+      for (int k = 0 ; k < nz; k++)
         hasData[k] = seisData[k] != RMISSING;
       int start,length;
       bl->findContiniousPartOfData(hasData,nz,start,length);
-      
       bl->fillInCpp(coeff_,start,length,cpp_r[w],nzp); 
-      bl->fillInSeismic(seisData,start,length,seis_r[w],nzp);
+      bl->fillInSeismic(&seisData[0],start,length,seis_r[w],nzp);
 
       for(int i=0;i<nzp;i++) {
-        if(cpp_r[w][i]>maxCpp)
+        if(cpp_r[w][i] > maxCpp)
           maxCpp = cpp_r[w][i];
-        if(seis_r[w][i]>maxSeis)
+        if(seis_r[w][i] > maxSeis)
           maxSeis = seis_r[w][i];
       }
     }
   }
-  delete [] seisLog;
-  delete [] seisData;
+
   for(int i=0;i<nWells;i++) {
     delete [] cpp_r[i]; 
     delete [] seis_r[i] ;
@@ -1116,13 +1110,10 @@ Wavelet1D::fillInnWavelet(fftw_real* wavelet_r,
   fftw_real current1 = 0.0f;
   fftw_real current2 = 0.0f;
   wavelet_r[0]        = previous1;
-  //wavelet_r[nzp/2]    = 0;
-  //wavelet_r[nzp/2+1]    = 0;
-  int counterForWavelet   = 1;
 
+  int counterForWavelet   = 1;
   float w;
-  int i;
-  for(i=1;i<= nzp/2;i++) {
+  for(int i=1;i<= nzp/2;i++) {
     if(counterForWavelet*dz_ < i*dz) {
       counterForWavelet++;
       previous1=current1;
@@ -1240,12 +1231,11 @@ Wavelet1D::multiplyPapolouis(fftw_real                ** vec,
                              float                       waveletLength,
                              const std::vector<float>  & wellWeight) const
 {
-  int i,w;
   float wHL=float( waveletLength/2.0);
   float weight,dist;
-  for(w=0;w<nWells;w++) {
+  for(int w=0;w<nWells;w++) {
     if(wellWeight[w] > 0) {
-      for(i=1;i<nzp;i++) {
+      for(int i=1;i<nzp;i++) {
         dist =MINIM(i,nzp-i)*dz[w];
         if(dist < wHL) {
           weight  = float(1.0/PI*fabs(sin(PI*(dist)/wHL))); 
@@ -1292,71 +1282,6 @@ Wavelet1D::getWavelet(fftw_real               ** ccor_seis_cpp_r,
   }
 }
 
-fftw_real* 
-Wavelet1D::averageWavelets(const std::vector<std::vector<fftw_real> > & wavelet_r,
-                           int                                          nWells,
-                           int                                          nzp,
-                           const std::vector<float>                   & wellWeight,
-                           const std::vector<float>                   & dz,
-                           float                                        dzOut) const
-{
-  // assumes dz[w] < dzOut for all w
-  fftw_real* wave= static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));  
-
-  int w,i;
-
-  float* weight= new float[nWells];// weight is length of data interval in well
-  float sum = 0;
-  for(i=0;i<nWells;i++)
-    sum+=wellWeight[i];
-
-  for(i=0;i<nWells;i++)
-    weight[i]=wellWeight[i]/sum;
-
-  
-  for(i=0;i<nzp;i++)
-    wave[i] = 0.0; // initialize
-  float ww;
-
-  for( w=0;w<nWells;w++)
-  {
-    if(wellWeight[w]>0)
-    {
-      wave[0] += weight[w]* wavelet_r[w][0]; // central
-
-      for(i=1;i <nzp/2-1;i++) // positive time
-      {
-        int ind     = int(floor(i*dzOut/dz[w]));
-        float t     = (i*dzOut-ind*dz[w])/dz[w];  // fraction of distance to ind*dz[w]
-        if(ind<nzp/2)
-            ww= (1-t)* wavelet_r[w][ind]+t*(wavelet_r[w][ind+1]);
-        else
-          ww=0;
-        wave[i]    += weight[w]*ww;
-
-      }
-      for(i=1;i < nzp/2-1;i++)// negative time Note dz[w] <= dzOut for all w
-      {
-        int ind     = int(floor(i*dzOut/dz[w]));
-        float t     = (i*dzOut-ind*dz[w])/dz[w];
-        if(ind<nzp/2)
-          ww    = (1-t)* wavelet_r[w][nzp-ind]+t*(wavelet_r[w][nzp-(ind+1)]);
-        else
-          ww=0;
-
-        wave[nzp-i] += weight[w]*ww;
-      }
-    }
-  }
-  
-  std::string fileName;
-  fileName = "wavelet_"+NRLib::ToString(int(floor(theta_/PI*180+0.5)))+"_fftOrder_noshift";
-  printVecToFile(fileName,wave,nzp_);
-
-  delete [] weight;
-  return wave;
-}
-
 void 
 Wavelet1D::shiftReal(float        shift, 
                      fftw_real  * rAmp,
@@ -1388,22 +1313,6 @@ Wavelet1D::convolve(fftw_complex  * var1_c ,
     out_c[i].re = var1_c[i].re*var2_c[i].re+var1_c[i].im*var2_c[i].im; 
     out_c[i].im = var1_c[i].im*var2_c[i].re - var1_c[i].re*var2_c[i].im;
   }
-}
-
-void
-Wavelet1D::printVecToFile(const std::string & fileName, 
-                          fftw_real         * vec, 
-                          int                 nzp) const
-{
-  if( ModelSettings::getDebugLevel() > 0) { 
-    std::string fName = fileName + IO::SuffixGeneralData();
-    fName = IO::makeFullFileName(IO::PathToWavelets(), fName);
-    std::ofstream file;
-    NRLib::OpenWrite(file,fName);
-    for(int i=0;i<nzp;i++)
-      file << vec[i] << "\n";
-    file.close();
-  }  
 }
 
 void

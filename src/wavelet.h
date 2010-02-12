@@ -120,8 +120,19 @@ protected:
   void           shiftAndScale(float                            shift,
                                float                            gain);
 
-  float          findWaveletLength(float                       minRelativeAmp);
+  float          findWaveletLength(float                        minRelativeAmp);
 
+  
+  fftw_real*     averageWavelets(const std::vector<std::vector<float> > & wavelet_r,
+                                 int                                      nWells,
+                                 int                                      nzp,
+                                 const std::vector<float>               & wellWeight,
+                                 const std::vector<float>               & dz,
+                                 float                                    dzOut)         const;
+
+  void           printVecToFile(const std::string                       & fileName, 
+                                fftw_real                               * vec ,
+                                int                                       nzp) const;
 
   int            cnzp_;                  // size in z direction for storage inplace algorithm (complex grid) nzp_/2+1
   int            rnzp_;                  // expansion in z direction for storage inplace algorithm (real grid) 2*(nzp_/2+1)
@@ -175,6 +186,8 @@ private:
   void           WaveletReadJason(const std::string           & fileName,
                                   int                         & errCode, 
                                   std::string                 & errText);
+
+
 };
 
 #endif

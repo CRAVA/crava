@@ -162,21 +162,21 @@ Wavelet::Wavelet(Wavelet * wavelet,
           break;
         case FIRSTORDERCENTRALDIFF:
           if(i == 0 )
-            rAmp_[i] = float( 0.5*(wavelet->getRAmp(i+1) - wavelet->getRAmp(nzp_-1)) );
+            rAmp_[i] = static_cast<fftw_real> (0.5 * (wavelet->getRAmp(i+1) - wavelet->getRAmp(nzp_-1)));
           else {
             if(i == nzp_-1 )
-              rAmp_[i] = float( 0.5*(wavelet->getRAmp(0) - wavelet->getRAmp(i-1)));
+              rAmp_[i] = static_cast<fftw_real> (0.5 * (wavelet->getRAmp(0) - wavelet->getRAmp(i-1)));
             else
-              rAmp_[i] = float( 0.5*(wavelet->getRAmp(i+1) - wavelet->getRAmp(i-1)));
+              rAmp_[i] = static_cast<fftw_real> (0.5 * (wavelet->getRAmp(i+1) - wavelet->getRAmp(i-1)));
           }      
           break;
         }
-        norm2 += rAmp_[i]*rAmp_[i];
+        norm2 += static_cast<double> (rAmp_[i]*rAmp_[i]);
       }
       else
         rAmp_[i] = RMISSING;
     }
-    norm_=float( sqrt(norm2) );
+    norm_= static_cast<float> (sqrt(norm2));
   }
   else {
     fftw_complex  iValue;
@@ -185,13 +185,13 @@ Wavelet::Wavelet(Wavelet * wavelet,
     fft1DInPlace();
     for(i=0; i < cnzp_; i++ ) {
       iValue  =  cAmp_[i];
-      cAmp_[i].re = float( - iValue.im * 2 * PI * float(i)/float(nzp_) );
-      cAmp_[i].im = float(   iValue.re * 2 * PI * float(i)/float(nzp_) );
+      cAmp_[i].re = static_cast<float> (- iValue.im * 2.0 * PI * i/(static_cast<float>(nzp_)));
+      cAmp_[i].im = float(iValue.re * 2 * PI * i/(static_cast<float>(nzp_)));
     }
     invFFT1DInPlace();
     for(i=0; i < nzp_; i++ )
-      norm2 += rAmp_[i]*rAmp_[i];
-    norm_= float( sqrt(norm2));
+      norm2 += static_cast<double> (rAmp_[i]*rAmp_[i]);
+    norm_= static_cast<float>(sqrt(norm2));
   }
 }
 
@@ -228,17 +228,17 @@ Wavelet::Wavelet(int difftype,
     case FIRSTORDERFORWARDDIFF:
       rAmp_[0] = -1.0; 
       rAmp_[nzp_-1] = 1.0; 
-      norm_    = float( sqrt(2.0) );
+      norm_    = sqrt(2.0f);
       break;
     case FIRSTORDERBACKWARDDIFF:
       rAmp_[0]      = 1.0;
       rAmp_[nzp_-1] =  -1.0;      
-      norm_    = float( sqrt(2.0) ); 
+      norm_    = sqrt(2.0f); 
       break;
     case FIRSTORDERCENTRALDIFF:
       rAmp_[1]      = 0.5;
       rAmp_[nzp_-1] = -0.5;
-      norm_    = float( sqrt(0.5) ); 
+      norm_    = sqrt(0.5f); 
       break;
     }
   }
@@ -246,16 +246,16 @@ Wavelet::Wavelet(int difftype,
     double norm2 = 0.0;
     isReal_    = false;
     for(i=0;i < cnzp_; i++) {
-      cAmp_[i].re = 0.0;
-      cAmp_[i].im = float( 2.0 * PI * float( i ) / float( nzp_ ) );   
+      cAmp_[i].re = 0.0f;
+      cAmp_[i].im = static_cast<float>( 2.0 * PI * i/(static_cast<float>(nzp_)) );   
     }
 
     invFFT1DInPlace();
 
     for(i = 0; i < nzp_;i++) 
-      norm2 +=  rAmp_[i]* rAmp_[i];
+      norm2 +=  static_cast<double> (rAmp_[i]* rAmp_[i]);
 
-    norm_= float( sqrt( norm2 ) );
+    norm_= static_cast<float>(sqrt( norm2));
   }       
 }
 
@@ -439,17 +439,15 @@ Wavelet::resample(float dz,
   //LogKit::LogFormatted(LogKit::LOW,"  Resampling wavelet\n");
   assert(isReal_);
   assert(!inFFTorder_);
-  int nzp,cnzp,rnzp,k;
   float z;
-  fftw_real* wlet;
 
-  nzp   =  FFTGrid::findClosestFactorableNumber( static_cast<int>(ceil(nz*(1.0f+pz))) );
-  cnzp  =  nzp/2 + 1;
-  rnzp  =  2*cnzp;
+  int nzp   =  FFTGrid::findClosestFactorableNumber( static_cast<int>(ceil(nz*(1.0f+pz))) );
+  int cnzp  =  nzp/2 + 1;
+  int rnzp  =  2*cnzp;
 
-  wlet  = static_cast<fftw_real *>(fftw_malloc( sizeof(fftw_real)*rnzp ));
+  fftw_real * wlet  = static_cast<fftw_real *>(fftw_malloc( sizeof(fftw_real)*rnzp ));
 
-  for(k=0; k < rnzp; k++) {
+  for(int k=0; k < rnzp; k++) {
     if(k < nzp) {
       if(k < nzp/2+1)
         z = static_cast<float>( dz*k );
@@ -463,9 +461,10 @@ Wavelet::resample(float dz,
   fftw_free( rAmp_);
 
   double norm2 = 0.0; 
-  for(k=0; k < nzp; k++) 
-    norm2 +=wlet[k]*wlet[k];
+  for(int k=0; k < nzp; k++) 
+    norm2 += static_cast<double> (wlet[k]*wlet[k]);
   norm_       = static_cast<float>(sqrt( norm2));
+
   rAmp_       = static_cast<fftw_real *>(wlet); // rAmp_ is not allocated 
   cAmp_       = reinterpret_cast<fftw_complex*>(rAmp_);
   nzp_        = nzp;
@@ -747,6 +746,77 @@ Wavelet::findWaveletLength(float minRelativeAmp)
     fft1DInPlace();
 
   return (dz_*static_cast<float>(wLength));
+}
+
+
+fftw_real* 
+Wavelet::averageWavelets(const std::vector<std::vector<fftw_real> > & wavelet_r,
+                         int                                          nWells,
+                         int                                          nzp,
+                         const std::vector<float>                   & wellWeight,
+                         const std::vector<float>                   & dz,
+                         float                                        dzOut) const
+{
+  // assumes dz[w] < dzOut for all w
+  fftw_real* wave= static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));  
+  for(int i=0; i<nzp; i++)
+    wave[i] = 0.0; // initialize
+
+  std::vector<float> weight(nWells);// weight is length of data interval in well
+  float sum = 0.0f;
+  for(int w=0; w<nWells; w++)
+    sum += wellWeight[w];
+
+  for(int w=0; w<nWells; w++)
+    weight[w] = wellWeight[w]/sum;
+  
+  float ww;
+
+  for(int w=0;w<nWells;w++) {
+    if(wellWeight[w] > 0.0) {
+      wave[0] += weight[w]* wavelet_r[w][0]; // central
+      for(int i=1;i <nzp/2-1;i++) { // positive time
+        int ind     = int(floor(i*dzOut/dz[w]));
+        float t     = (i*dzOut-ind*dz[w])/dz[w];  // fraction of distance to ind*dz[w]
+        if(ind<nzp/2)
+            ww= (1-t)* wavelet_r[w][ind]+t*(wavelet_r[w][ind+1]);
+        else
+          ww=0;
+        wave[i]    += weight[w]*ww;
+      }
+      for(int i=1;i < nzp/2-1;i++) {// negative time Note dz[w] <= dzOut for all w
+        int ind     = int(floor(i*dzOut/dz[w]));
+        float t     = (i*dzOut-ind*dz[w])/dz[w];
+        if(ind<nzp/2)
+          ww    = (1-t)* wavelet_r[w][nzp-ind]+t*(wavelet_r[w][nzp-(ind+1)]);
+        else
+          ww=0;
+        wave[nzp-i] += weight[w]*ww;
+      }
+    }
+  }
+  
+  std::string fileName;
+  fileName = "wavelet_"+NRLib::ToString(int(floor(theta_/PI*180+0.5)))+"_fftOrder_noshift";
+  printVecToFile(fileName,wave,nzp_);
+
+  return wave;
+}
+
+void
+Wavelet::printVecToFile(const std::string & fileName, 
+                        fftw_real         * vec, 
+                        int                 nzp) const
+{
+  if( ModelSettings::getDebugLevel() > 0) { 
+    std::string fName = fileName + IO::SuffixGeneralData();
+    fName = IO::makeFullFileName(IO::PathToWavelets(), fName);
+    std::ofstream file;
+    NRLib::OpenWrite(file,fName);
+    for(int i=0;i<nzp;i++)
+      file << vec[i] << "\n";
+    file.close();
+  }  
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////

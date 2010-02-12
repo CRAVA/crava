@@ -31,7 +31,7 @@ public:
 
 // Methods that are virtual in Wavelet
   float         findGlobalScaleForGivenWavelet(ModelSettings * modelSettings, 
-                                               Simbox        * simbox, 
+                                               Simbox        * simbox,
                                                FFTGrid       * seisCube, 
                                                WellData     ** wells);
 
@@ -134,13 +134,6 @@ private:
                            int                                 nWells,
                            int                                 nt);
 
-  fftw_real*     averageWavelets(const std::vector<std::vector<float> > & wavelet_r,
-                                 int                                      nWells,
-                                 int                                      nzp,
-                                 const std::vector<float>               & wellWeight,
-                                 const std::vector<float>               & dz,
-                                 float                                    dzOut)         const;
-
   void           shiftReal(float                               shift, 
                            fftw_real                         * rAmp,
                            int                                 nt);
@@ -149,11 +142,6 @@ private:
                           fftw_complex                       * var2_c, 
                           fftw_complex                       * out_c,
                           int                                  cnzp)           const;
-
-  
-  void           printVecToFile(const std::string            & fileName, 
-                                fftw_real                    * vec ,
-                                int                            nzp) const;
 
   void           writeDebugInfo(fftw_real                   ** seis_r,
                                 fftw_real                   ** cor_cpp_r,

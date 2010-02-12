@@ -49,8 +49,8 @@ private:
   void          findLayersWithData(const std::vector<Surface *> & estimInterval,
                                    BlockedLogs                  * bl,
                                    FFTGrid                      * seisCube,
-                                   float                        * az,
-                                   float                        * bz,
+                                   const std::vector<float>     & az,
+                                   const std::vector<float>     & bz,
                                    std::vector<bool>            & hasWellData) const;
 
   double         findPhi(float                                    a, 
@@ -60,10 +60,10 @@ private:
 
   fftw_complex   findWLvalue(float                                omega)       const;
 
-  void           printVecToFile(const std::string               & fileName, 
+/*  void           printVecToFile(const std::string               & fileName, 
                                 const std::vector<float>        & vec, 
                                 int                               n) const;
-
+*/
   void           printMatToFile(const std::string                       & fileName, 
                                 const std::vector<std::vector<float> >  & mat, 
                                 int                                       n,
