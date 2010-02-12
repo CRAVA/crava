@@ -4172,6 +4172,15 @@ Model::processDepthConversion(Simbox        * timeCutSimbox,
                             timeCutMapping_);
       }
     }
+    else if (velocity==NULL && velocityFromInversion_==false)
+    {
+      timeDepthMapping_->setDepthSimbox(timeSimbox, 
+                                        timeSimbox->getnz(), 
+                                        modelSettings->getGridOutputFormat(),
+                                        failed, 
+                                        errText);
+
+    }
   }
   if(velocity != NULL)
     delete velocity;
