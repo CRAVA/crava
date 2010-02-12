@@ -62,7 +62,6 @@ public:
   bool         isFile() {return(1);}
   void         getRealTrace(float * value, int i, int j);
   int          setRealTrace(int i, int j, float *value);
-  void         fillInFromRealFFTGrid(FFTGrid& fftGrid);
 private:
   void         genFileName();
   void         load();

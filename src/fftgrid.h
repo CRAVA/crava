@@ -31,7 +31,6 @@ public:
                                        const std::string & parName,
                                        bool                scale = false,
                                        bool                nopadding = false);    // No mode
-  virtual void         fillInFromRealFFTGrid(FFTGrid& fftGrid);  // No mode
   void                 fillInConstant(float value);              // No mode
   fftw_real*           fillInParamCorr(Corr* corr,int minIntFq,
                                        float gradI, float gradJ);// No mode

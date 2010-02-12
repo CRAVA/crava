@@ -1451,7 +1451,7 @@ XmlModelFile::parseIntervalTwoSurfaces(TiXmlNode * node, std::string & errTxt)
   if(inversionField == true) {
     modelSettings_->setVelocityFromInversion(true);
     if(externalField == true)
-      errTxt += "Both <velcoity-field> and <velocity-field-from-inversion> given in command <"
+      errTxt += "Both <velocity-field> and <velocity-field-from-inversion> given in command <"
         +root->ValueStr()+">"+lineColumnText(root)+".\n";
   }
 

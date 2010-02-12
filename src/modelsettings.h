@@ -414,7 +414,7 @@ private:
   double                            time_lz_;                    // Used when top and base surfaces are parallel
   double                            time_dz_;                    // Used when top and base surfaces are parallel
   int                               time_nz_;                    // Used when top and base surfaces are parallel
-  bool                              velocityFromInv_;            // Velocity for time depth from inverted Vs.
+  bool                              velocityFromInv_;            // Velocity for time depth from inverted Vp.
 
   int                               areaSpecification_;          // Specifying whether are is taken from UTM-coord, seismic or surface
   std::vector<int>                  areaILXL_;                   // Vector with 6 elements (if used), in this order:

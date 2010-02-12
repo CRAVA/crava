@@ -3537,76 +3537,76 @@ Model::printSettings(ModelSettings * modelSettings,
   int gridFormat = modelSettings->getGridOutputFormat();
 
   if (outputFlag > 0) {
-    LogKit::LogFormatted(LogKit::HIGH,"\nGrid output formats:\n");
+    LogKit::LogFormatted(LogKit::MEDIUM,"\nGrid output formats:\n");
     if (gridFormat & IO::SEGY) {
       const std::string & formatName = modelSettings->getTraceHeaderFormatOutput()->GetFormatName();
-      LogKit::LogFormatted(LogKit::HIGH,"  Segy - %-10s                       : yes\n",formatName.c_str());
+      LogKit::LogFormatted(LogKit::MEDIUM,"  Segy - %-10s                        : yes\n",formatName.c_str());
     }
     if (gridFormat & IO::STORM)
-      LogKit::LogFormatted(LogKit::HIGH,"  Storm                                    :        yes\n");
+      LogKit::LogFormatted(LogKit::MEDIUM,"  Storm                                    :        yes\n");
     if (gridFormat & IO::ASCII)
-      LogKit::LogFormatted(LogKit::HIGH,"  ASCII                                    :        yes\n");
+      LogKit::LogFormatted(LogKit::MEDIUM,"  ASCII                                    :        yes\n");
     if (gridFormat & IO::SGRI)
-      LogKit::LogFormatted(LogKit::HIGH,"  Norsar                                   :        yes\n");
+      LogKit::LogFormatted(LogKit::MEDIUM,"  Norsar                                   :        yes\n");
     if (gridFormat & IO::CRAVA)
-      LogKit::LogFormatted(LogKit::HIGH,"  Crava                                    :        yes\n");
+      LogKit::LogFormatted(LogKit::MEDIUM,"  Crava                                    :        yes\n");
 
-    LogKit::LogFormatted(LogKit::HIGH,"\nGrid output domains:\n");
+    LogKit::LogFormatted(LogKit::MEDIUM,"\nGrid output domains:\n");
     if (gridFormat & IO::TIMEDOMAIN)
-      LogKit::LogFormatted(LogKit::HIGH,"  Time                                     :        yes\n");
+      LogKit::LogFormatted(LogKit::MEDIUM,"  Time                                     :        yes\n");
     if (gridFormat & IO::DEPTHDOMAIN)
-      LogKit::LogFormatted(LogKit::HIGH,"  Depth                                    :        yes\n");
+      LogKit::LogFormatted(LogKit::MEDIUM,"  Depth                                    :        yes\n");
   }
 
   if (modelSettings->getDoInversion()) {
-    LogKit::LogFormatted(LogKit::HIGH,"\nOutput of elastic parameters:\n");
+    LogKit::LogFormatted(LogKit::MEDIUM,"\nOutput of elastic parameters:\n");
     if ((outputFlag & IO::VP) > 0)
-      LogKit::LogFormatted(LogKit::HIGH,"  Pressure-wave velocity  (Vp)             :        yes\n");
+      LogKit::LogFormatted(LogKit::MEDIUM,"  Pressure-wave velocity  (Vp)             :        yes\n");
     if ((outputFlag & IO::VS) > 0)
-      LogKit::LogFormatted(LogKit::HIGH,"  Shear-wave velocity  (Vs)                :        yes\n");
+      LogKit::LogFormatted(LogKit::MEDIUM,"  Shear-wave velocity  (Vs)                :        yes\n");
     if ((outputFlag & IO::RHO) > 0)
-      LogKit::LogFormatted(LogKit::HIGH,"  Density  (Rho)                           :        yes\n");
+      LogKit::LogFormatted(LogKit::MEDIUM,"  Density  (Rho)                           :        yes\n");
     if ((outputFlag & IO::AI) > 0)
-      LogKit::LogFormatted(LogKit::HIGH,"  Acoustic impedance  (AI)                 :        yes\n");
+      LogKit::LogFormatted(LogKit::MEDIUM,"  Acoustic impedance  (AI)                 :        yes\n");
     if ((outputFlag & IO::VPVSRATIO) > 0)
-      LogKit::LogFormatted(LogKit::HIGH,"  Vp/Vs ratio                              :        yes\n");
+      LogKit::LogFormatted(LogKit::MEDIUM,"  Vp/Vs ratio                              :        yes\n");
     if ((outputFlag & IO::SI) > 0)
-      LogKit::LogFormatted(LogKit::HIGH,"  Shear impedance  (SI)                    :        yes\n");
+      LogKit::LogFormatted(LogKit::MEDIUM,"  Shear impedance  (SI)                    :        yes\n");
     if ((outputFlag & IO::MURHO) > 0)
-      LogKit::LogFormatted(LogKit::HIGH,"  MuRho  (SI*SI)                           :        yes\n");
+      LogKit::LogFormatted(LogKit::MEDIUM,"  MuRho  (SI*SI)                           :        yes\n");
     if ((outputFlag & IO::LAMBDARHO) > 0)
-      LogKit::LogFormatted(LogKit::HIGH,"  LambdaRho  (AI*AI - 2*SI*SI)             :        yes\n");
+      LogKit::LogFormatted(LogKit::MEDIUM,"  LambdaRho  (AI*AI - 2*SI*SI)             :        yes\n");
     if ((outputFlag & IO::LAMELAMBDA) > 0)
-      LogKit::LogFormatted(LogKit::HIGH,"  Lame's dirst parameter                   :        yes\n");
+      LogKit::LogFormatted(LogKit::MEDIUM,"  Lame's dirst parameter                   :        yes\n");
     if ((outputFlag & IO::LAMEMU) > 0)
-      LogKit::LogFormatted(LogKit::HIGH,"  Lame's second parameter (shear modulus)  :        yes\n");
+      LogKit::LogFormatted(LogKit::MEDIUM,"  Lame's second parameter (shear modulus)  :        yes\n");
     if ((outputFlag & IO::POISSONRATIO) > 0)
-      LogKit::LogFormatted(LogKit::HIGH,"  Poisson ratio                            :        yes\n");
+      LogKit::LogFormatted(LogKit::MEDIUM,"  Poisson ratio                            :        yes\n");
     if ((outputFlag & IO::BACKGROUND) > 0)
-      LogKit::LogFormatted(LogKit::HIGH,"  Background (Vp, Vs, Rho)                 :        yes\n");
+      LogKit::LogFormatted(LogKit::MEDIUM,"  Background (Vp, Vs, Rho)                 :        yes\n");
     if ((outputFlag & IO::BACKGROUND_TREND) > 0)
-      LogKit::LogFormatted(LogKit::HIGH,"  Background trend (Vp, Vs, Rho)           :        yes\n");
+      LogKit::LogFormatted(LogKit::MEDIUM,"  Background trend (Vp, Vs, Rho)           :        yes\n");
   }    
 
   if (modelSettings->getEstimateFaciesProb()) {
-    LogKit::LogFormatted(LogKit::HIGH,"\nOutput of facies probability volumes:\n");
+    LogKit::LogFormatted(LogKit::MEDIUM,"\nOutput of facies probability volumes:\n");
     if (modelSettings->getFaciesProbRelative())
-      LogKit::LogFormatted(LogKit::HIGH,"  Use rel. amplitudes for elastic param.   :        yes\n");
+      LogKit::LogFormatted(LogKit::MEDIUM,"  Use rel. amplitudes for elastic param.   :        yes\n");
     else
-      LogKit::LogFormatted(LogKit::HIGH,"  Use abs. amplitudes for elastic param.   :        yes\n");
+      LogKit::LogFormatted(LogKit::MEDIUM,"  Use abs. amplitudes for elastic param.   :        yes\n");
   }
 
   if (modelSettings->getForwardModeling() ||
       (outputFlag & IO::SYNTHETIC_SEISMIC_DATA) > 0 ||
       (outputFlag & IO::ORIGINAL_SEISMIC_DATA) > 0 ||
       (outputFlag & IO::RESIDUAL) > 0) {
-    LogKit::LogFormatted(LogKit::HIGH,"\nOutput of seismic data:\n");
+    LogKit::LogFormatted(LogKit::MEDIUM,"\nOutput of seismic data:\n");
     if ((outputFlag & IO::SYNTHETIC_SEISMIC_DATA) > 0 || modelSettings->getForwardModeling())
-      LogKit::LogFormatted(LogKit::HIGH,"  Synthetic seismic data (forward modelled):        yes\n");
+      LogKit::LogFormatted(LogKit::MEDIUM,"  Synthetic seismic data (forward modelled):        yes\n");
     if ((outputFlag & IO::ORIGINAL_SEISMIC_DATA) > 0)
-      LogKit::LogFormatted(LogKit::HIGH,"  Original seismic data (in output grid)   :        yes\n");
+      LogKit::LogFormatted(LogKit::MEDIUM,"  Original seismic data (in output grid)   :        yes\n");
     if ((outputFlag & IO::RESIDUAL) > 0)
-      LogKit::LogFormatted(LogKit::HIGH,"  Seismic data residuals                   :        yes\n");
+      LogKit::LogFormatted(LogKit::MEDIUM,"  Seismic data residuals                   :        yes\n");
   }
 
   bool otherGridOutput 
@@ -3616,17 +3616,17 @@ Model::printSettings(ModelSettings * modelSettings,
   
   if (otherGridOutput) {
     if ((outputFlag & IO::CORRELATION) > 0)
-      LogKit::LogFormatted(LogKit::HIGH,"  Posterior correlations                   :        yes\n");
+      LogKit::LogFormatted(LogKit::MEDIUM,"  Posterior correlations                   :        yes\n");
     if ((outputFlag & IO::EXTRA_GRIDS) > 0)
-      LogKit::LogFormatted(LogKit::HIGH,"  Help grids (see use manual)              :        yes\n");
+      LogKit::LogFormatted(LogKit::MEDIUM,"  Help grids (see use manual)              :        yes\n");
     if ((outputFlag & IO::TIME_TO_DEPTH_VELOCITY) > 0)
-      LogKit::LogFormatted(LogKit::HIGH,"  Time-to-depth velocity                   :        yes\n");
+      LogKit::LogFormatted(LogKit::MEDIUM,"  Time-to-depth velocity                   :        yes\n");
   }
 
-  // NBNB-PAL: Vi får raffinere testen nedenfor etter hvert...
+  // NBNB-PAL: Vi får utvide testen nedenfor etter hvert...
   if (modelSettings->getFileGrid()) {
-    LogKit::LogFormatted(LogKit::LOW,"\nAdvanced settings:\n");
-    LogKit::LogFormatted(LogKit::LOW, "  Use intermediate disk storage for grids  :        yes\n");
+    LogKit::LogFormatted(LogKit::MEDIUM,"\nAdvanced settings:\n");
+    LogKit::LogFormatted(LogKit::MEDIUM, "  Use intermediate disk storage for grids  :        yes\n");
   }
 
   LogKit::LogFormatted(LogKit::HIGH,"\nUnit settings/assumptions:\n");
@@ -3642,21 +3642,21 @@ Model::printSettings(ModelSettings * modelSettings,
   //
   if (modelSettings->getNumberOfWells() > 0)
   {
-    LogKit::LogFormatted(LogKit::LOW,"\nSettings for well processing:\n");
-    LogKit::LogFormatted(LogKit::LOW,"  Threshold for merging log entries        : %10.2f ms\n",modelSettings->getMaxMergeDist());
-    LogKit::LogFormatted(LogKit::LOW,"  Threshold for Vp-Vs rank correlation     : %10.2f\n",modelSettings->getMaxRankCorr());
-    LogKit::LogFormatted(LogKit::LOW,"  Threshold for deviation angle            : %10.1f (=%.2fm/ms TWT)\n",
+    LogKit::LogFormatted(LogKit::HIGH,"\nSettings for well processing:\n");
+    LogKit::LogFormatted(LogKit::HIGH,"  Threshold for merging log entries        : %10.2f ms\n",modelSettings->getMaxMergeDist());
+    LogKit::LogFormatted(LogKit::HIGH,"  Threshold for Vp-Vs rank correlation     : %10.2f\n",modelSettings->getMaxRankCorr());
+    LogKit::LogFormatted(LogKit::HIGH,"  Threshold for deviation angle            : %10.1f (=%.2fm/ms TWT)\n",
                          modelSettings->getMaxDevAngle(),tan(modelSettings->getMaxDevAngle()*PI/180.0));
-    LogKit::LogFormatted(LogKit::LOW,"  High cut for background modelling        : %10.1f\n",modelSettings->getMaxHzBackground());
-    LogKit::LogFormatted(LogKit::LOW,"  High cut for seismic resolution          : %10.1f\n",modelSettings->getMaxHzSeismic());
+    LogKit::LogFormatted(LogKit::HIGH,"  High cut for background modelling        : %10.1f\n",modelSettings->getMaxHzBackground());
+    LogKit::LogFormatted(LogKit::HIGH,"  High cut for seismic resolution          : %10.1f\n",modelSettings->getMaxHzSeismic());
   }
-  LogKit::LogFormatted(LogKit::LOW,"\nRange of allowed parameter values:\n");
-  LogKit::LogFormatted(LogKit::LOW,"  Vp  - min                                : %10.0f\n",modelSettings->getAlphaMin());
-  LogKit::LogFormatted(LogKit::LOW,"  Vp  - max                                : %10.0f\n",modelSettings->getAlphaMax());
-  LogKit::LogFormatted(LogKit::LOW,"  Vs  - min                                : %10.0f\n",modelSettings->getBetaMin());
-  LogKit::LogFormatted(LogKit::LOW,"  Vs  - max                                : %10.0f\n",modelSettings->getBetaMax());
-  LogKit::LogFormatted(LogKit::LOW,"  Rho - min                                : %10.1f\n",modelSettings->getRhoMin());
-  LogKit::LogFormatted(LogKit::LOW,"  Rho - max                                : %10.1f\n",modelSettings->getRhoMax());  
+  LogKit::LogFormatted(LogKit::HIGH,"\nRange of allowed parameter values:\n");
+  LogKit::LogFormatted(LogKit::HIGH,"  Vp  - min                                : %10.0f\n",modelSettings->getAlphaMin());
+  LogKit::LogFormatted(LogKit::HIGH,"  Vp  - max                                : %10.0f\n",modelSettings->getAlphaMax());
+  LogKit::LogFormatted(LogKit::HIGH,"  Vs  - min                                : %10.0f\n",modelSettings->getBetaMin());
+  LogKit::LogFormatted(LogKit::HIGH,"  Vs  - max                                : %10.0f\n",modelSettings->getBetaMax());
+  LogKit::LogFormatted(LogKit::HIGH,"  Rho - min                                : %10.1f\n",modelSettings->getRhoMin());
+  LogKit::LogFormatted(LogKit::HIGH,"  Rho - max                                : %10.1f\n",modelSettings->getRhoMax());  
 
   //
   // WELL DATA
@@ -3844,12 +3844,16 @@ Model::printSettings(ModelSettings * modelSettings,
     if (inputFiles->getDepthSurfFile(0) != "")
       LogKit::LogFormatted(LogKit::LOW,"  Top depth surface                        : "+inputFiles->getDepthSurfFile(0)+"\n");
     else
-      LogKit::LogFormatted(LogKit::LOW,"  Top depth surface                        : %s\n", "Not given");
+      LogKit::LogFormatted(LogKit::LOW,"  Top depth surface                        : %s\n", "Made from base depth surface and velocity field");
     if (inputFiles->getDepthSurfFile(1) != "")
       LogKit::LogFormatted(LogKit::LOW,"  Base depth surface                       : "+inputFiles->getDepthSurfFile(1)+"\n");
     else
-      LogKit::LogFormatted(LogKit::LOW,"  Base depth surface                       : %s\n", "Not given");
-    LogKit::LogFormatted(LogKit::LOW,"  Velocity field                           : "+inputFiles->getVelocityField()+"\n");
+      LogKit::LogFormatted(LogKit::LOW,"  Base depth surface                       : %s\n", "Made from top depth surface and velocity field");
+    std::string velocityField = inputFiles->getVelocityField();
+    if (modelSettings->getVelocityFromInversion()) {
+      velocityField = "Use Vp from inversion";
+    }
+     LogKit::LogFormatted(LogKit::LOW,"  Velocity field                           : "+velocityField+"\n");
   }
 
   const std::string & topWEI  = inputFiles->getWaveletEstIntFile(0);
