@@ -48,28 +48,34 @@ public:
                                                 float           globalScale);
 
 private:
-  float         findOptimalWaveletScale(fftw_real            ** synt_seis_r,
-                                        fftw_real            ** seis_r,
-                                        int                     nWells,
-                                        int                     nzp,
-                                        float                 * wellWeight,
-                                        float                 & err,
-                                        float                 * errWell,
-                                        float                 * scaleOptWell,
-                                        float                 * errWellOptScale)   const;
+  float         findOptimalWaveletScale(fftw_real               ** synt_seis_r,
+                                        fftw_real               ** seis_r,
+                                        int                        nWells,
+                                        int                        nzp,
+                                        const std::vector<float> & wellWeight,
+                                        float                    & err,
+                                        float                    * errWell,
+                                        float                    * scaleOptWell,
+                                        float                    * errWellOptScale)   const;
 
-  void          findLocalNoiseWithGainGiven(fftw_real        ** synt_r,
-                                            fftw_real        ** seis_r,
-                                            int                 nWells,
-                                            int                 nzp,
-                                            float             * wellWeight,
-                                            float             & err,
-                                            float             * errWell, 
-                                            float             * errWellOptScale,
-                                            float             * scaleOptWell,
-                                            Grid2D            * gain, 
-                                            WellData         ** wells, 
-                                            Simbox            * simbox)       const;
+  float         findOptimalWaveletScale(fftw_real               ** synt_seis_r,
+                                        fftw_real               ** seis_r,
+                                        int                        nWells,
+                                        int                        nzp,
+                                        const std::vector<float> & wellWeight)   const;
+
+  void          findLocalNoiseWithGainGiven(fftw_real               ** synt_r,
+                                            fftw_real               ** seis_r,
+                                            int                        nWells,
+                                            int                        nzp,
+                                            const std::vector<float> & wellWeight,
+                                            float                    & err,
+                                            float                    * errWell, 
+                                            float                    * errWellOptScale,
+                                            float                    * scaleOptWell,
+                                            Grid2D                   * gain, 
+                                            WellData                ** wells, 
+                                            Simbox                   * simbox)       const;
 
   void          estimateLocalGain(const CovGrid2D             & cov,
                                   Grid2D                     *& gain,
@@ -107,33 +113,33 @@ private:
                               float                            maxShift);
 
   float         shiftOptimal(fftw_real                      ** ccor_seis_cpp_r,
-                             float                           * wellWeight,
-                             float                           * dz,
+                             const std::vector<float>        & wellWeight,
+                             const std::vector<float>        & dz,
                              int                               nWells,
                              int                               nzp,
-                             float                           * shiftWell,
+                             std::vector<float>              & shiftWell,
                              float                             maxShift);
 
   void          multiplyPapolouis(fftw_real                 ** vec, 
-                                  float                      * dz,
+                                  const std::vector<float>   & dz,
                                   int                          nWells,
                                   int                          nzp, 
                                   float                        waveletLength, 
-                                  float                      * wellWeight)    const;
+                                  const std::vector<float>   & wellWeight)    const;
 
   void          getWavelet(fftw_real                        ** ccor_seis_cpp_r,
                            fftw_real                        ** cor_cpp_r,
                            fftw_real                        ** wavelet_r,
-                           float                             * wellWeight,
+                           const std::vector<float>          & wellWeight,
                            int                                 nWells,
                            int                                 nt);
 
-  fftw_real*     averageWavelets(fftw_real                  ** wavelet_r,
-                                 int                           nWells,
-                                 int                           nzp,
-                                 float                       * wellWeight,
-                                 float                       * dz,
-                                 float                         dzOut)         const;
+  fftw_real*     averageWavelets(const std::vector<std::vector<float> > & wavelet_r,
+                                 int                                      nWells,
+                                 int                                      nzp,
+                                 const std::vector<float>               & wellWeight,
+                                 const std::vector<float>               & dz,
+                                 float                                    dzOut)         const;
 
   void           shiftReal(float                               shift, 
                            fftw_real                         * rAmp,
@@ -143,6 +149,17 @@ private:
                           fftw_complex                       * var2_c, 
                           fftw_complex                       * out_c,
                           int                                  cnzp)           const;
+
+  
+  void           printVecToFile(const std::string            & fileName, 
+                                fftw_real                    * vec ,
+                                int                            nzp) const;
+
+  void           writeDebugInfo(fftw_real                   ** seis_r,
+                                fftw_real                   ** cor_cpp_r,
+                                fftw_real                   ** ccor_seis_cpp_r,
+                                fftw_real                   ** cpp_r,
+                                int                            nWells) const;
 };
 
 #endif

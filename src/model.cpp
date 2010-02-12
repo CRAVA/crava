@@ -2111,7 +2111,7 @@ Model::processBackground(Background   *& background,
     parName.push_back("Vs "+modelSettings->getBackgroundType());
     parName.push_back("Rho "+modelSettings->getBackgroundType());
 
-    bool outsideWarning = false;
+//    bool outsideWarning = false; //NBNB-Frode: Why is this one here? Never used
     for(int i=0 ; i<3 ; i++)
     {
       float constBackValue = modelSettings->getConstBackValue(i);

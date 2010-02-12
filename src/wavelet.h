@@ -122,9 +122,6 @@ protected:
 
   float          findWaveletLength(float                       minRelativeAmp);
 
-  void           printVecToFile(const std::string             & fileName, 
-                                fftw_real                     * vec ,
-                                int                             nzp) const;
 
   int            cnzp_;                  // size in z direction for storage inplace algorithm (complex grid) nzp_/2+1
   int            rnzp_;                  // expansion in z direction for storage inplace algorithm (real grid) 2*(nzp_/2+1)
@@ -172,12 +169,10 @@ private:
                                     int                         j) const;
 
   void           WaveletReadOld(const std::string             & fileName,
-                                float                           minRelativeAmp,
                                 int                           & errCode, 
                                 std::string                   & errText);
 
-  void           WaveletReadJason(const std::string           & fileName, 
-                                  float                         minRelativeAmp,
+  void           WaveletReadJason(const std::string           & fileName,
                                   int                         & errCode, 
                                   std::string                 & errText);
 };

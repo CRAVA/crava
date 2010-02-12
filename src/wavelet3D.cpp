@@ -62,8 +62,7 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
   nzp_        = seisCube->getNzp();
   cnzp_       = nzp_/2+1;
   rnzp_       = 2*cnzp_;
-  rAmp_       = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));  
-  cAmp_       = reinterpret_cast<fftw_complex*>(rAmp_);
+
 
   unsigned int nWells = modelSettings->getNumberOfWells();
   float v0            = modelSettings->getAverageVelocity();
@@ -72,7 +71,9 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
   
   int nhalfWl         = static_cast<int> (0.5 * modelSettings->getWaveletTaperingL() / dz_);
   int nWl             = 2 * nhalfWl + 1;
-  std::vector<std::vector<float> > wlestWell(nWells, std::vector<float>(nWl, 0.0));
+  std::vector<std::vector<fftw_real> > wlestWell(nWells, std::vector<float>(nzp_, 0.0));
+  std::vector<float>                   wellWeights(nWells, 0.0);  
+  float sumWellWeights = 0.0;
 
   int nActiveWells = 0;
   for (unsigned int w=0; w<nWells; w++) {
@@ -108,7 +109,7 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
       bl->getVerticalTrend(t0GradY, bt0);
       delete [] t0GradY;
 
-      bool  *hasWellData = new bool[nz_];
+      std::vector<bool> hasWellData(nz_);
       findLayersWithData(estimInterval, 
                          bl, 
                          seisCube, 
@@ -125,13 +126,7 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
         nActiveWells++;
         float *cpp         = new float[nzp_];
         bl->fillInCpp(coeff_,start,length,cpp,nzp_);
-                
-        std::ofstream cppFile;
-        NRLib::OpenWrite(cppFile, "cpp.dat");
-        for (int i=0; i<length; i++)
-          cppFile << std::setprecision(4) << std::setw(10) << cpp[i] << std::endl;
-        cppFile.close();
-
+  
         std::vector<float> cppAdj(length, 0.0);
         std::vector<float> Halpha;
         if (hasHalpha)
@@ -148,11 +143,7 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
         }
         delete [] cpp;
 
-//        std::ofstream cppFile;
-        NRLib::OpenWrite(cppFile, "cppAdj.dat");
-        for (int i=0; i<length; i++)
-          cppFile << std::setprecision(4) << std::setw(10) << cppAdj[i] << std::endl;
-        cppFile.close();
+        printVecToFile("cpp_dipadjust", cppAdj, length);
 
         float *zLog = new float[nBlocks];
         for (unsigned int b=0; b<nBlocks; b++) {
@@ -243,15 +234,7 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
           }
         }
 
-        std::ofstream gMatFile;
-        NRLib::OpenWrite(gMatFile, "gMat.dat");
-        for (int i=0; i<nPoints; i++) {
-          gMatFile << "gMat[" << std::setw(2) << i << "]: ";
-          for (int j=0; j<nWl; j++)
-            gMatFile << std::setprecision(4) << std::setw(10) << gMat[i][j];
-          gMatFile << std::endl;
-        }
-        gMatFile.close();
+        printMatToFile("design_matrix", gMat, nPoints, nWl);
 
         double **gTrg = new double *[nWl];
         for (int i=0; i<nWl; i++) {
@@ -263,21 +246,7 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
           }
         }
 
-        std::ofstream gTrgMatFile;
-        NRLib::OpenWrite(gTrgMatFile, "gTrgMat.dat");
-        for (int i=0; i<nWl; i++) {
-          gTrgMatFile << "gTrg[" << std::setw(2) << i << "]: ";
-          for (int j=0; j<nWl; j++)
-            gTrgMatFile << std::setprecision(4) << std::setw(10) << gTrg[i][j];
-          gTrgMatFile << std::endl;
-        }
-        gTrgMatFile.close();
-
-        std::ofstream dFile;
-        NRLib::OpenWrite(dFile, "data.dat");
-        for (int i=0; i<nPoints; i++)
-          dFile << std::setprecision(4) << std::setw(10) << dVec[i] << std::endl;
-        dFile.close();
+        printVecToFile("seismic", dVec, nPoints);
 
         double *gTrd = new double[nWl];
         for (int i=0; i<nWl; i++) {
@@ -288,9 +257,27 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
 
         lib_matrCholR(nWl, gTrg);
         lib_matrAxeqbR(nWl, gTrg, gTrd);
-        for (int i=0; i<nWl; i++)
-          wlestWell[w][i] = static_cast<float> (gTrd[i]);
+        wlestWell[w][0] = static_cast<fftw_real> (gTrd[0]);
+        for (int i=0; i<nhalfWl; i++) {
+          wlestWell[w][i]      = static_cast<fftw_real> (gTrd[i]);
+          wlestWell[w][nzp_-1] = static_cast<fftw_real> (gTrd[nWl-i]);
+        }
+        for (int i=nhalfWl+1; i<nzp_-nhalfWl; i++)
+          wlestWell[w][i] = 0.0f;
+        for (int i=nzp_; i<rnzp_; i++)
+          wlestWell[w][i] = RMISSING;
         delete [] gTrd;
+
+        double s2 = 0.0;
+        for (int i=0; i<nPoints; i++) {
+          double prod = 0.0;
+          for (int j=0; j<nWl; j++)
+            prod += static_cast<double> (gMat[i][j]*wlestWell[w][j]);
+          double residual = prod - dVec[i];
+          s2 += residual * residual;
+        }
+        wellWeights[w] = static_cast<float> (1/s2);
+        sumWellWeights += wellWeights[w];
 
         for (int i=0; i<nWl; i++)
           delete [] gTrg[i];
@@ -298,9 +285,6 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
 
         delete [] az;
         delete [] bz;
-
-        delete [] hasWellData;
-
       }
       else {
         LogKit::LogFormatted(LogKit::MEDIUM,"     No enough data for 3D wavelet estimation in well %s\n", wells[w]->getWellname().c_str());
@@ -308,29 +292,24 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
     }
   }
 
-  std::vector<float> wlest(nWl,0.0);
+/*  std::vector<float> wlest(nWl,0.0);
   for (int j=0; j<nWl; j++) {
     for(unsigned int w=0; w<nWells; w++)
       wlest[j] += wlestWell[w][j];
     wlest[j] = wlest[j] / static_cast<float>(nActiveWells);
   }
+*/
+  //Dropp dette når averagewavelets kalles
+  for(unsigned int w=0; w<nWells; w++)
+    wellWeights[w] /= sumWellWeights;
+//  rAmp_ = averageWavelets(wlestWell, nWells, nzp_, wellWeight, dzWell, dz_);
+//  cAmp_ = reinterpret_cast<fftw_complex*>(rAmp_);
 
-  rAmp_[0] = static_cast<fftw_real> (wlest[0]);
-  for (int i=1; i<=nhalfWl; i++) {
-    rAmp_[i]      = static_cast<fftw_real> (wlest[i]);
-    rAmp_[nzp_-i] = static_cast<fftw_real> (wlest[nWl-i]);
-  }
-  for (int i=nhalfWl+1; i<nzp_-nhalfWl; i++)
-    rAmp_[i] = 0.0;
-  for (int i=nzp_; i<rnzp_; i++)
-    rAmp_[i] = RMISSING;
   waveletLength_ = findWaveletLength(modelSettings->getMinRelWaveletAmp());
+  LogKit::LogFormatted(LogKit::LOW,"  Estimated wavelet length:  %.1fms\n",waveletLength_);
 
-  std::ofstream wlFile;
-  NRLib::OpenWrite(wlFile, "wlest.dat");
-  for (int i=0; i<nWl; i++)
-    wlFile << std::setprecision(8) << std::setw(14) << wlest[i] << std::endl;
-  wlFile.close();
+  if( ModelSettings::getDebugLevel() > 0 )
+    writeWaveletToFile("estimated_wavelet", 1.0f);
 }
 
 Wavelet3D::Wavelet3D(const std::string & fileName, 
@@ -361,7 +340,7 @@ Wavelet3D::findLayersWithData(const std::vector<Surface *> & estimInterval,
                               FFTGrid                      * seisCube,
                               float                        * az,
                               float                        * bz,
-                              bool                         * hasWellData) const
+                              std::vector<bool>            & hasWellData) const
 {
   float *seisLog     = new float[bl->getNumberOfBlocks()];
   bl->getBlockedGrid(seisCube, seisLog);
@@ -402,7 +381,7 @@ Wavelet3D::findPhi(float a, float b) const
 //Return value should be between 0 and 360
 {
   double phi;
-  double epsilon = 0.0001;
+  double epsilon = 0.001;
   if (a > epsilon && b >= 0.0) //1. quadrant 
     phi = atan(b/a);
   else if (a > epsilon && b < 0.0) //4. quadrant
@@ -454,4 +433,40 @@ Wavelet3D::findWLvalue(float omega) const
   cValue.im = (1-fac) * c_low.im + fac * c_high.im;
 
   return cValue;
+}
+
+void
+Wavelet3D::printVecToFile(const std::string & fileName, 
+                          const std::vector<float> & vec, 
+                          int n) const
+{
+  if( ModelSettings::getDebugLevel() > 0) { 
+    std::string fName = fileName + IO::SuffixGeneralData();
+    fName = IO::makeFullFileName(IO::PathToWavelets(), fName);
+    std::ofstream file;
+    NRLib::OpenWrite(file,fName);
+    for(int i=0;i<n;i++)
+      file << vec[i] << "\n";
+    file.close();
+  }  
+}
+
+void
+Wavelet3D::printMatToFile(const std::string                       & fileName, 
+                          const std::vector<std::vector<float> >  & mat, 
+                          int                                       n,
+                          int                                       m) const
+{
+  if( ModelSettings::getDebugLevel() > 0) { 
+    std::string fName = fileName + IO::SuffixGeneralData();
+    fName = IO::makeFullFileName(IO::PathToWavelets(), fName);
+    std::ofstream file;
+    NRLib::OpenWrite(file,fName);
+    for(int i = 0; i < n; i++) {
+      for (int j = 0; j < m; j++)
+        file << mat[i][j];
+      file << "\n";
+    }
+    file.close();
+  }  
 }

@@ -711,7 +711,7 @@ BlockedLogs::getBlockedGrid(FFTGrid * grid,
 
   }
 }
- 
+
 //------------------------------------------------------------------------------
 void 
 BlockedLogs::setLogFromGrid(FFTGrid    * grid, 
@@ -1323,12 +1323,10 @@ void BlockedLogs::estimateCor(fftw_complex * var1_c,
   }
 }
 
-
-
-
-
-
-void BlockedLogs::findContiniousPartOfData(bool* hasData,int nz,int &start, int &length) const
+void BlockedLogs::findContiniousPartOfData(const std::vector<bool> & hasData,
+                                           int                       nz,
+                                           int                     & start, 
+                                           int                     & length) const
 { 
   int  i;
   int  lPice=0;
@@ -1406,7 +1404,7 @@ void BlockedLogs::findOptimalWellLocation(FFTGrid                   ** seisCube,
   float  * alphaVert = new float[nLayers_]; 
   float  * betaVert  = new float[nLayers_]; 
   float  * rhoVert   = new float[nLayers_]; 
-  bool   * hasData   = new bool[nLayers_]; 
+
    
   std::vector<int>   iOffset(iTotOffset);
   std::vector<int>   jOffset(jTotOffset);
@@ -1445,7 +1443,8 @@ void BlockedLogs::findOptimalWellLocation(FFTGrid                   ** seisCube,
   getVerticalTrendLimited(alpha_, alphaVert, limits);
   getVerticalTrendLimited(beta_, betaVert, limits);
   getVerticalTrendLimited(rho_, rhoVert, limits);
-    
+  
+  std::vector<bool> hasData(nLayers_); 
   for(i = 0 ; i < nLayers_ ; i++) {
     hasData[i] = alphaVert[i] != RMISSING && betaVert[i] != RMISSING && rhoVert[i] != RMISSING;
   }
@@ -1628,7 +1627,6 @@ void BlockedLogs::findOptimalWellLocation(FFTGrid                   ** seisCube,
   delete [] alphaVert;
   delete [] betaVert;
   delete [] rhoVert;
-  delete [] hasData;
   delete [] seisLog;
   delete [] seisData;
 
@@ -1941,8 +1939,7 @@ void BlockedLogs::generateSyntheticSeismic(float   ** reflCoef,
   float  * alphaVert = new float[nLayers_]; 
   float  * betaVert  = new float[nLayers_]; 
   float  * rhoVert   = new float[nLayers_]; 
-  bool   * hasData   = new bool[nLayers_]; 
-   
+
   fftw_real    * cpp_r       = new fftw_real[rnzp]; 
   fftw_complex * cpp_c       = reinterpret_cast<fftw_complex*>(cpp_r); 
   fftw_real    * synt_seis_r = new fftw_real[rnzp]; 
@@ -1952,6 +1949,7 @@ void BlockedLogs::generateSyntheticSeismic(float   ** reflCoef,
   getVerticalTrend(beta_, betaVert);
   getVerticalTrend(rho_, rhoVert);
     
+  std::vector<bool> hasData(nLayers_); 
   for( i=0 ; i<nLayers_; i++ )
     hasData[i] = alphaVert[i] != RMISSING && betaVert[i] != RMISSING && rhoVert[i] != RMISSING;
 
@@ -1995,9 +1993,57 @@ void BlockedLogs::generateSyntheticSeismic(float   ** reflCoef,
   delete [] alphaVert; 
   delete [] betaVert; 
   delete [] rhoVert; 
-  delete [] hasData; 
   delete [] cpp_r;
   delete [] synt_seis_r;
 
 }
 
+const std::vector<int>
+BlockedLogs::getIposVector() const
+{
+  std::vector<int> ipos(nBlocks_);
+  const int * ipos_pt = getIpos();
+  for (int i=0; i<nBlocks_; i++)
+    ipos[i] = ipos_pt[i];
+  return (ipos);
+}
+
+const std::vector<int>
+BlockedLogs::getJposVector() const
+{
+  std::vector<int> jpos(nBlocks_);
+  const int * jpos_pt = getJpos();
+  for (int i=0; i<nBlocks_; i++)
+    jpos[i] = jpos_pt[i];
+  return (jpos);
+}
+
+const std::vector<double>
+BlockedLogs::getXposVector() const
+{
+  std::vector<double> xpos(nBlocks_);
+  const double * xpos_pt = getXpos();
+  for (int i=0; i<nBlocks_; i++)
+    xpos[i] = xpos_pt[i];
+  return (xpos);
+}
+
+const std::vector<double>
+BlockedLogs::getYposVector() const
+{
+  std::vector<double> ypos(nBlocks_);
+  const double * ypos_pt = getYpos();
+  for (int i=0; i<nBlocks_; i++)
+    ypos[i] = ypos_pt[i];
+  return (ypos);
+}
+
+const std::vector<double>
+BlockedLogs::getZposVector() const
+{
+  std::vector<double> zpos(nBlocks_);
+  const double * zpos_pt = getZpos();
+  for (int i=0; i<nBlocks_; i++)
+    zpos[i] = zpos_pt[i];
+  return (zpos);
+}

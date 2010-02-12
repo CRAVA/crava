@@ -38,7 +38,8 @@ Wavelet::Wavelet(int dim)
 {
 }
 
-Wavelet::Wavelet(int dim, Wavelet * wavelet)
+Wavelet::Wavelet(int       dim, 
+                 Wavelet * wavelet)
   : theta_(wavelet->getTheta()),
     dz_(wavelet->getDz()),
     nz_(wavelet->getNz()),
@@ -95,17 +96,19 @@ Wavelet::Wavelet(const std::string & fileName,
   coeff_[2]       = reflCoef[2];
   switch (fileFormat) {
   case OLD: 
-    WaveletReadOld(fileName, modelSettings->getMinRelWaveletAmp(), errCode, errText);
+    WaveletReadOld(fileName, errCode, errText);
     break;
   case JASON: 
-    WaveletReadJason(fileName, modelSettings->getMinRelWaveletAmp(), errCode, errText);
+    WaveletReadJason(fileName, errCode, errText);
     break;
   case NORSAR:
     errText += "Error: CRAVA is not able to read the Norsar wavelet format yet.\n";
     errCode=1; 
     break;
   }
-  
+  waveletLength_ = findWaveletLength(modelSettings->getMinRelWaveletAmp());
+  LogKit::LogFormatted(LogKit::LOW,"\n  Estimated wavelet length:  %.1fms.\n",waveletLength_);
+
   if(errCode == 0) {
     for(int i=0; i < rnzp_ ;i++) {  
       if(i < nzp_)
@@ -116,7 +119,8 @@ Wavelet::Wavelet(const std::string & fileName,
   }
 }
 
-Wavelet::Wavelet(Wavelet * wavelet, int difftype)
+Wavelet::Wavelet(Wavelet * wavelet, 
+                 int       difftype)
   : theta_(wavelet->getTheta()),
     dz_(wavelet->getDz()),
     nz_(wavelet->getNz()),
@@ -191,7 +195,9 @@ Wavelet::Wavelet(Wavelet * wavelet, int difftype)
   }
 }
 
-Wavelet::Wavelet(int difftype, int nz, int nzp)
+Wavelet::Wavelet(int difftype, 
+                 int nz, 
+                 int nzp)
   : theta_(RMISSING),
     dz_(RMISSING),
     nz_(nz),
@@ -342,7 +348,8 @@ Wavelet::getCAmp(int k) const
 
 
 fftw_complex   
-Wavelet::getCAmp(int k, float scale) const
+Wavelet::getCAmp(int    k, 
+                 float  scale) const
 {
   ///////////////////////////////////////////////////////////
   //
@@ -400,13 +407,15 @@ Wavelet::getCAmp(int k, float scale) const
 }
 
 void           
-Wavelet::setRAmp(float value, int k)
+Wavelet::setRAmp(float  value, 
+                 int    k)
 {
   rAmp_[k] = value;
 }
 
 Wavelet*  
-Wavelet::getLocalWavelet(int i, int j)
+Wavelet::getLocalWavelet(int i, 
+                         int j)
 {
   Wavelet * localWavelet;
   if (dim_ == 1) {
@@ -422,7 +431,10 @@ Wavelet::getLocalWavelet(int i, int j)
 }
 
 void
-Wavelet::resample(float dz, int nz, float pz, bool flip) 
+Wavelet::resample(float dz, 
+                  int   nz, 
+                  float pz, 
+                  bool  flip) 
 {
   //LogKit::LogFormatted(LogKit::LOW,"  Resampling wavelet\n");
   assert(isReal_);
@@ -450,9 +462,10 @@ Wavelet::resample(float dz, int nz, float pz, bool flip)
   }
   fftw_free( rAmp_);
 
-  float norm2 = 0.0; 
-  for(k=0; k < nzp; k++) norm2 +=wlet[k]*wlet[k];
-
+  double norm2 = 0.0; 
+  for(k=0; k < nzp; k++) 
+    norm2 +=wlet[k]*wlet[k];
+  norm_       = static_cast<float>(sqrt( norm2));
   rAmp_       = static_cast<fftw_real *>(wlet); // rAmp_ is not allocated 
   cAmp_       = reinterpret_cast<fftw_complex*>(rAmp_);
   nzp_        = nzp;
@@ -461,10 +474,8 @@ Wavelet::resample(float dz, int nz, float pz, bool flip)
   cz_         = 0;
   nz_         = nz;
   dz_         = dz;
-  norm_       = float( sqrt( norm2) );
   inFFTorder_ = true;
 
-//  if(readtype_ == OLD) //FRODE
   if (flip) 
     flipUpDown();
   if( ModelSettings::getDebugLevel() > 0 ) {
@@ -506,7 +517,8 @@ Wavelet::scale(float scale)
 }
 
 void
-Wavelet::printToFile(const std::string & fileName, bool overrideDebug)
+Wavelet::printToFile(const std::string & fileName, 
+                     bool                overrideDebug)
 {
   if(overrideDebug == true || ModelSettings::getDebugLevel() > 0) {
     std::string fName = IO::makeFullFileName(IO::PathToWavelets(), fileName + IO::SuffixGeneralData());
@@ -519,12 +531,10 @@ Wavelet::printToFile(const std::string & fileName, bool overrideDebug)
 }
 
 void
-Wavelet::writeWaveletToFile(const std::string & fileName, float approxDzIn)
+Wavelet::writeWaveletToFile(const std::string & fileName, 
+                            float               approxDzIn)
 {
-  int i;
-  float approxDz;
-  
-  approxDz = MINIM(approxDzIn,floor(dz_*10)/10);
+  float approxDz = MINIM(approxDzIn,floor(dz_*10)/10);
   approxDz = MINIM(approxDzIn,dz_);
   
   //Trick: Written wavelet may be shorter than the actual.
@@ -532,7 +542,7 @@ Wavelet::writeWaveletToFile(const std::string & fileName, float approxDzIn)
   //Make consistent by truncating wavelet to writing range before interpolation.
   int     activeCells = int(floor(waveletLength_/2/dz_));
   float * remember    = new float[nzp_];
-  for(i=activeCells+1;i<=nz_;i++) {
+  for(int i=activeCells+1;i<=nz_;i++) {
     remember[i]        = rAmp_[i];
     rAmp_[i]           = 0;
     remember[nzp_+1-i] = rAmp_[nzp_+1-i];
@@ -550,7 +560,7 @@ Wavelet::writeWaveletToFile(const std::string & fileName, float approxDzIn)
 
   double         multiplyer = static_cast<double>(nzpNew)/static_cast<double>(nzp_);
   
-  for(i=0;i<cnzpNew;i++) {
+  for(int i=0;i<cnzpNew;i++) {
     if(i < cnzp_) {
       waveletNew_c[i].re = static_cast<fftw_real>(cAmp_[i].re*multiplyer);
       waveletNew_c[i].im = static_cast<fftw_real>(cAmp_[i].im*multiplyer);
@@ -563,7 +573,7 @@ Wavelet::writeWaveletToFile(const std::string & fileName, float approxDzIn)
     }
   }
   invFFT1DInPlace();
-  for(i=activeCells+1;i<=nz_;i++) {
+  for(int i=activeCells+1;i<=nz_;i++) {
     rAmp_[i] = remember[i];
     rAmp_[nzp_+1-i] = remember[nzp_+1-i];
   }
@@ -612,9 +622,9 @@ Wavelet::writeWaveletToFile(const std::string & fileName, float approxDzIn)
        << dznew   << "\n"
        << wLength << "\n";
   
-  for(i=halfLength ; i > 0 ; i--)
+  for(int i=halfLength ; i > 0 ; i--)
     file << std::setprecision(6) << waveletNew_r[nzpNew-i] << "\n";
-  for(i=0;i<=halfLength;i++)
+  for(int i=0;i<=halfLength;i++)
     file << std::setprecision(6) << waveletNew_r[i] << "\n";
   file.close();
 
@@ -625,9 +635,9 @@ Wavelet::writeWaveletToFile(const std::string & fileName, float approxDzIn)
   NRLib::OpenWrite(file, fName);
   file << "pulse file-1\n"
        << wLength << " "  << static_cast<int>(dznew) << "\n";
-  for(i=halfLength ; i > 0 ; i--)
+  for(int i=halfLength ; i > 0 ; i--)
     file << std::setprecision(6) << waveletNew_r[nzpNew-i] << "\n";
-  for(i=0 ; i<=halfLength ; i++)
+  for(int i=0 ; i<=halfLength ; i++)
     file << std::setprecision(6) << waveletNew_r[i] << "\n";
   file.close();
   
@@ -681,7 +691,8 @@ Wavelet::setGainGrid(Grid2D * grid)
 //////////PROTECTED MEMBER METHODS////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////
 void
-Wavelet::shiftAndScale(float shift,float gain)
+Wavelet::shiftAndScale(float shift,
+                       float gain)
 {
   int k;
 
@@ -738,27 +749,16 @@ Wavelet::findWaveletLength(float minRelativeAmp)
   return (dz_*static_cast<float>(wLength));
 }
 
-void
-Wavelet::printVecToFile(const std::string & fileName, fftw_real* vec, int nzp) const
-{
-  if( ModelSettings::getDebugLevel() > 0) { 
-    std::string fName = fileName + IO::SuffixGeneralData();
-    fName = IO::makeFullFileName(IO::PathToWavelets(), fName);
-    std::ofstream file;
-    NRLib::OpenWrite(file,fName);
-    for(int i=0;i<nzp;i++)
-      file << vec[i] << "\n";
-    file.close();
-  }  
-}
-
-
 //////////////////////////////////////////////////////////////////////////////////////////////////
 //////////PRIVATE MEMBER METHODS//////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
 float 
-Wavelet::getWaveletValue(float z, float *Wavelet, int center, int nz, float dz)
+Wavelet::getWaveletValue(float   z, 
+                         float * Wavelet, 
+                         int     center, 
+                         int     nz, 
+                         float   dz)
 {
   // returns the value of the vavelet in the location z. Wavelet have the length nz 
   // and the center value is Wavelet[center]
@@ -826,7 +826,9 @@ Wavelet::flipUpDown()
 }
 
 float 
-Wavelet::getArrayValueOrZero(int i  ,float * Wavelet, int nz) const
+Wavelet::getArrayValueOrZero(int     i,
+                             float * Wavelet, 
+                             int     nz) const
 {
   float value;
 
@@ -839,7 +841,8 @@ Wavelet::getArrayValueOrZero(int i  ,float * Wavelet, int nz) const
 
 
 float  
-Wavelet::getLocalTimeshift(int i, int j) const
+Wavelet::getLocalTimeshift(int i, 
+                           int j) const
 {
   float shift = 0.0f;
 
@@ -853,7 +856,8 @@ Wavelet::getLocalTimeshift(int i, int j) const
 }
 
 float  
-Wavelet::getLocalGainFactor(int i, int j) const
+Wavelet::getLocalGainFactor(int i, 
+                            int j) const
 {
   float gain = 1.0f;
   
@@ -868,9 +872,8 @@ Wavelet::getLocalGainFactor(int i, int j) const
 
 void
 Wavelet::WaveletReadJason(const std::string & fileName, 
-                          float               minRelativeAmp,
                           int               & errCode, 
-                          std::string & errText)
+                          std::string       & errText)
 {
   std::ifstream file;
   NRLib::OpenRead(file,fileName);
@@ -940,13 +943,10 @@ Wavelet::WaveletReadJason(const std::string & fileName,
     rAmp_[i] = static_cast<fftw_real>(NRLib::ParseType<float>(dummyStr));
   }
   file.close();
-  waveletLength_ = findWaveletLength(minRelativeAmp);
-  LogKit::LogFormatted(LogKit::LOW,"\n  Estimated wavelet length:  %.1fms.\n",waveletLength_);
 }
 
 void
 Wavelet::WaveletReadOld(const std::string & fileName,
-                        float               minRelativeAmp,
                         int               & errCode, 
                         std::string       & errText)
 {
@@ -1057,12 +1057,6 @@ Wavelet::WaveletReadOld(const std::string & fileName,
         rAmp_[i]=RMISSING;
     }//end for i 
     LogKit::LogFormatted(LogKit::MEDIUM,"\nReading wavelet file %s  ... done.\n",fileName.c_str());
-
-    //
-    // Estimate wavelet length
-    //
-    waveletLength_ = findWaveletLength(minRelativeAmp);
-    LogKit::LogFormatted(LogKit::LOW,"\n  Estimated wavelet length:  %.1fms.\n",waveletLength_);
   }
 
   fftw_free(tempWave);

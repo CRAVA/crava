@@ -29,6 +29,7 @@ public:
   const double * getYpos(void)                      const { return ypos_     ;}
   const double * getZpos(void)                      const { return zpos_     ;}
   const int    * getIpos(void)                      const { return ipos_     ;}
+
   const int    * getJpos(void)                      const { return jpos_     ;}
   const int    * getKpos(void)                      const { return kpos_     ;}
   const float  * getAlpha(void)                     const { return alpha_    ;}
@@ -54,7 +55,6 @@ public:
   void           getVerticalTrendLimited(const float * blockedLog, float * trend, const std::vector<Surface *> & limits);
   void           getVerticalTrend(const int * blockedLog,int * trend, RandomGen * random);
   void           getBlockedGrid(FFTGrid * grid, float * blockedLog, int iOffset = 0, int jOffset = 0);
-
   void           setLogFromVerticalTrend(float * vertical_trend, double z0, double dz, 
                                          int nz, std::string type, int iAngle = IMISSING);
   void           setLogFromGrid(FFTGrid * grid, int iAngle, int nAngles, std::string type);
@@ -68,7 +68,7 @@ public:
   void           fillInCpp(const float * coeff,int start,int length,fftw_real* cpp_r,int nzp);
   void           fillInSeismic(float* seismicData,int start,int length,fftw_real* seis_r,int nzp) const;
   void           estimateCor(fftw_complex* var1_c,fftw_complex* var2_c,fftw_complex* ccor_1_2_c,int cnzp) const;
-  void           findContiniousPartOfData(bool* hasData,int nz,int &start,int &length) const;
+  void           findContiniousPartOfData(const std::vector<bool> & hasData,int nz,int &start,int &length) const;
   void           findOptimalWellLocation(FFTGrid                   ** seisCube,
                                          Simbox                     * timeSimbox,
                                          float                     ** reflCoef,
@@ -94,10 +94,16 @@ public:
                                 std::vector<double> &zPeakW, std::vector<double> &peakW, std::vector<double> &bW);
 
 
-  double          computeShift(std::vector<double> &zPeak, std::vector<double> &zPeakW,double z0);
+  double         computeShift(std::vector<double> &zPeak, std::vector<double> &zPeakW,double z0);
 
   void           computeGradient(std::vector<double> &xGradient, std::vector<double> &yGradient, 
                                   std::vector<double> &zShift, int nx, int ny, double dx, double dy);
+
+  const std::vector<int>    getIposVector()           const;
+  const std::vector<int>    getJposVector()           const;
+  const std::vector<double> getXposVector()           const;
+  const std::vector<double> getYposVector()           const;
+  const std::vector<double> getZposVector()           const;
 
 private:
   void           setLogFromVerticalTrend(float *& log, double * zpos, int nBlocks, 
