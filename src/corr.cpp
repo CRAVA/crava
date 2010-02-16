@@ -183,7 +183,7 @@ Corr::setPriorCorrTFiltered(float * corrT, int nz, int nzp)
 void
 Corr::invFFT(void)
 {
-  LogKit::LogFormatted(LogKit::HIGH,"Backtransforming correlation grids from FFT domain to time domain...");
+  LogKit::LogFormatted(LogKit::HIGH,"\nBacktransforming correlation grids from FFT domain to time domain...");
   if (postCovAlpha_->getIsTransformed())
     postCovAlpha_->invFFTInPlace();
   if (postCovBeta_->getIsTransformed())

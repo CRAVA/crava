@@ -1201,19 +1201,60 @@ RETURN VALUE:
 {
  /* local variables */
 
- int         l_i,l_j,l_k;
- double       l_x;
+  int         l_i,l_j,l_k;
+  double      l_x;
 
- for(l_i = 0 ; l_i <= i_n1-1 ; l_i++)
+  for(l_i = 0 ; l_i <= i_n1-1 ; l_i++)
     for(l_j = 0 ; l_j <= i_n3-1 ; l_j++)
-      {
-       l_x = 0.0000000000000;
-       for(l_k = 0 ; l_k <= i_n2-1 ; l_k++)
-          l_x = l_x + i_mat1[l_i][l_k] * i_mat2[l_k][l_j];
-       o_mat[l_i][l_j] = l_x;
-     }
-
+    {
+      l_x = 0.0000000000000;
+      for(l_k = 0 ; l_k <= i_n2-1 ; l_k++)
+        l_x = l_x + i_mat1[l_i][l_k] * i_mat2[l_k][l_j];
+      o_mat[l_i][l_j] = l_x;
+    }
 }
+
+
+void lib_matr_prod_sym(
+   double      **i_mat1,
+   double      **i_mat2,
+   int         i_n1,
+   int         i_n2,
+   int         i_n3,
+   double      **o_mat)
+/*FUNC******************************************************************
+
+DESCRIPTION:
+
+Calculate the matrix product of a n1 x n2 matrix and a n2 x n3
+matrix
+
+HOW TO USE THE FUNCTION:
+
+SIDE-EFFECTS:
+
+RETURN VALUE:
+
+***********************************************************************/
+
+{
+ /* local variables */
+
+  int         l_i,l_j,l_k;
+  double      l_x;
+
+  printf("Using matrix multiplication for symmetric matrices\n");
+
+  for(l_i = 0 ; l_i <= i_n1-1 ; l_i++)
+    for(l_j = 0 ; l_j <= i_n3-1 ; l_j++)
+    {
+      l_x = 0.0000000000000;
+      for(l_k = 0 ; l_k <= i_n2-1 ; l_k++)
+        l_x = l_x + i_mat1[l_i][l_k] * i_mat2[l_j][l_k];  /* Not swap of i_mat2 indices*/
+      o_mat[l_i][l_j] = l_x;
+    }
+}
+
 /*
 Find the transpose to mat and return in output
 */

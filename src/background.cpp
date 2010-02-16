@@ -1467,7 +1467,7 @@ Background::padAndSetBackgroundModel(FFTGrid * bgAlpha,
                                      FFTGrid * bgBeta,
                                      FFTGrid * bgRho)
 {
-  LogKit::LogFormatted(LogKit::LOW,"\nPadding background model...\n");
+  //LogKit::LogFormatted(LogKit::LOW,"\nPadding background model...\n");
   createPaddedParameter(backModel_[0], bgAlpha);
   createPaddedParameter(backModel_[1], bgBeta);
   createPaddedParameter(backModel_[2], bgRho);

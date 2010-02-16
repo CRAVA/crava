@@ -6,10 +6,10 @@
 extern "C"
 {
 #endif
-  extern int lib_matrCholR(int i_dim, double **x_mat);
+  extern int  lib_matrCholR(int i_dim, double **x_mat);
   extern void lib_matrAxeqbR(int i_dim, double **i_mat, double *x_vec);
   extern void lib_matrAXeqBMatR(int i_dim, double ** i_mat, double **x_mat, int n);
-  extern int lib_matrCholCpx(int i_dim, fftw_complex **x_mat);
+  extern int  lib_matrCholCpx(int i_dim, fftw_complex **x_mat);
   extern void lib_matrAxeqbCpx(int i_dim, fftw_complex **i_mat,fftw_complex *x_vec);
   extern void lib_matrAXeqBMatCpx(int i_dim, fftw_complex **i_mat, fftw_complex **x_mat, int n);
   extern void lib_matrLXeqBMatCpx(int i_dim, fftw_complex **i_mat, fftw_complex **x_mat, int n);
@@ -49,8 +49,9 @@ extern "C"
 
   extern void lib_matrPrintR(float ** mat, int n1, int n2);
   extern void lib_matrPrintCpx(fftw_complex ** mat, int n1, int n2);
-  extern void  lib_matr_eigen(double **i_mat,int i_n,double **o_eigvec,double *o_eigval,int *o_error);
+  extern void lib_matr_eigen(double **i_mat,int i_n,double **o_eigvec,double *o_eigval,int *o_error);
   extern void lib_matr_prod(double **i_mat1, double **i_mat2,int i_n1,int i_n2,int i_n3,double **o_mat);
+  extern void lib_matr_prod_sym(double **i_mat1, double **i_mat2,int i_n1,int i_n2,int i_n3,double **o_mat);
   extern void lib_matrTranspose(double **mat, int n1, int n2, double **outmat);
   extern void lib_matrLtXeqBR(int i_dim, double **i_mat, double **x_mat, int n);
   extern void lib_matr_sort3x3(double *eigenval, double **eigenvec);

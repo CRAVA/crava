@@ -1226,19 +1226,19 @@ XmlModelFile::parseFaciesEstimationInterval(TiXmlNode * node, std::string & errT
     return(false);
 
   std::vector<std::string> legalCommands;
-  legalCommands.push_back("top-file-name");
-  legalCommands.push_back("base-file-name");
+  legalCommands.push_back("top-surface-file");
+  legalCommands.push_back("base-surface-file");
 
   std::string filename;
-  if(parseFileName(root, "top-file-name", filename, errTxt) == true)
+  if(parseFileName(root, "top-surface-file", filename, errTxt) == true)
     inputFiles_->setFaciesEstIntFile(0, filename);
   else
-    errTxt += "Must specify <top-file-name> in command <"+root->ValueStr()+"> "+
+    errTxt += "Must specify <top-surface-file> in command <"+root->ValueStr()+"> "+
       lineColumnText(root)+".\n";
-  if(parseFileName(root, "base-file-name", filename, errTxt) == true)
+  if(parseFileName(root, "base-surface-file", filename, errTxt) == true)
     inputFiles_->setFaciesEstIntFile(1, filename);
   else
-    errTxt += "Must specify <base-file-name> in command <"+root->ValueStr()+">"+
+    errTxt += "Must specify <base-surface-file> in command <"+root->ValueStr()+">"+
       lineColumnText(root)+".\n";
 
   checkForJunk(root, errTxt, legalCommands);

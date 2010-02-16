@@ -798,6 +798,55 @@ void FaciesProb::calculateConditionalFaciesProb(WellData                    ** w
   }
   LogKit::LogFormatted(LogKit::LOW,"\n");
 
+
+  bool tooSmallDiff = false;
+  bool wrongMaximum = false;
+  for (int f1=0 ; f1 < nFacies_ ; f1++) { 
+    const std::string & faciesName = modelSettings->getFaciesName(f1);
+    int   indMin  = -IMISSING;
+    int   indMax  = -IMISSING;
+    float minProb = 1.0;
+    float maxProb = 0.0;
+    for (int f2=0 ; f2 < nFacies_ ; f2++) { // Facies in well-log
+      float prob = condFaciesProb[f2][f1];
+      if (prob > maxProb) {
+        maxProb = prob;
+        indMax  = f2;
+      }
+      if (prob < minProb) 
+        minProb = prob;
+        indMin  = f2;
+    }
+    float fraction = maxProb/minProb;
+    if (fraction < 1.05f) {
+      tooSmallDiff = true;
+      LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: For facies \'"+faciesName+"\' the difference between smallest and ");
+      LogKit::LogFormatted(LogKit::WARNING,"largest probability is only %.2f percent.\n",(fraction - 1.f)*100.f);
+    }
+    if (indMax != f1) {
+      wringMaximum = true;
+      LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: A problem has been detected. The probability of of finding facies \'"+faciesName+"\' is\n");
+      LogKit::LogFormatted(LogKit::WARNING,"           largest when the well log shows \'%s\' and not when it shows \'%s\'\n",
+                                           modelSettings->getFaciesName(f1).c_str(), faciesName.c_str());
+    }
+  }
+
+  if (tooSmallDiff) {
+    std::string text;
+    text += "For one or more facies the conditional facies probabilities do not distinguish between\n";
+    text += "   facies (probabilities are too similar). This indicates that you are using \'absolute\'\n";
+    text += "   elastic logs for the probability estimation and that the trends are too large. Try\n";
+    text += "   specifying <facies-probabilities> relative </facies-probabilities>.\n";
+    TaskList::addTask(text);
+  }
+  if (wrongMaximum) {
+    std::string text;
+    text += "For one or more facies the conditional facies probabilities are incorrect. The probability\n";
+    text += "   of finding, say \'sand\', is not largest where \'sand\' is observed in the well log. You\n";
+    text += "   possibly have alignment problems between elastic parameters and facies in the logs.\n";
+    TaskList::addTask(text);
+  }
+
   delete [] totProb;
 
   for(int i=0 ; i < nFacies_ ; i++)

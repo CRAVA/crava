@@ -2718,7 +2718,7 @@ Model::processWavelets(Wavelet                    **& wavelet,
       modelSettings->setWaveletScale(i,1.0);
   }
   if (estimateStuff) {
-    LogKit::LogFormatted(LogKit::HIGH,"\n\nWells that cannot be used in wavelet generation or noise estimation:");
+    LogKit::LogFormatted(LogKit::HIGH,"\nWells that cannot be used in wavelet generation or noise estimation:");
     LogKit::LogFormatted(LogKit::HIGH,"\n  Deviated wells.");
     LogKit::LogFormatted(LogKit::HIGH,"\n  Wells with too little data.\n");
   }
