@@ -520,7 +520,7 @@ Wavelet::printToFile(const std::string & fileName,
                      bool                overrideDebug)
 {
   if(overrideDebug == true || ModelSettings::getDebugLevel() > 0) {
-    std::string fName = IO::makeFullFileName(IO::PathToWavelets(), fileName + IO::SuffixGeneralData());
+    std::string fName = IO::makeFullFileName(IO::PathToWavelets(), fileName);
     std::ofstream file;
     NRLib::OpenWrite(file, fName);
     for(int i=0;i<nzp_;i++)
@@ -592,54 +592,65 @@ Wavelet::writeWaveletToFile(const std::string & fileName,
   float shift = -dznew*halfLength;
   
   std::string fName;
-  fName = std::string(fileName) + "_" + NRLib::ToString(theta_*(180/M_PI), 1) + "_deg" + IO::SuffixJasonWavelet();
-  fName = IO::makeFullFileName(IO::PathToWavelets(), fName);
-  
-  LogKit::LogFormatted(LogKit::MEDIUM,"  Writing Wavelet to file \'"+fName+"\'\n");
-  
   std::ofstream file;
-  NRLib::OpenWrite(file, fName);
   
-  file << "\"* Export format using Comma Separated Values\"\n"
-       << "\"* Wavelet written from CRAVA\"\n"
-       << "\"* Generated \"\n"
-       << "\"*\"\n"
-       << "\"* File format: \"\n"
-       << "\"* - N lines starting with * are comment (such as this line)\"\n"
-       << "\"* - 1 line with four fields (data type, data unit, depth type, depth unit) \"\n"
-       << "\"* - 1 line with start time  \"\n"
-       << "\"* - 1 line with sample interval \"\n"
-       << "\"* - 1 line with number of data lines \"\n"
-       << "\"* - N lines with trace data \"\n"
-       << "\"* Data values are represented as floating point numbers,\"\n"
-       << "\"* \"\n"
-       << "\"wavelet\",\"none\",\"time\",\"ms\"\n"
-       << std::fixed 
-       << std::setprecision(0)
-       << shift   << "\n"
-       << std::setprecision(2)
-       << dznew   << "\n"
-       << wLength << "\n";
-  
-  for(int i=halfLength ; i > 0 ; i--)
-    file << std::setprecision(6) << waveletNew_r[nzpNew-i] << "\n";
-  for(int i=0;i<=halfLength;i++)
-    file << std::setprecision(6) << waveletNew_r[i] << "\n";
-  file.close();
+  if ((formats_ & IO::JASONWAVELET)>0)
+    {
+    
+    fName = std::string(fileName) + "_" + NRLib::ToString(theta_*(180/M_PI), 1) + "_deg" + IO::SuffixJasonWavelet();
+    fName = IO::makeFullFileName(IO::PathToWavelets(), fName);
+    
+    LogKit::LogFormatted(LogKit::MEDIUM,"  Writing Wavelet to file \'"+fName+"\'\n");
+    
+    NRLib::OpenWrite(file, fName);
+    
+    file << "\"* Export format using Comma Separated Values\"\n"
+         << "\"* Wavelet written from CRAVA\"\n"
+         << "\"* Generated \"\n"
+         << "\"*\"\n"
+         << "\"* File format: \"\n"
+         << "\"* - N lines starting with * are comment (such as this line)\"\n"
+         << "\"* - 1 line with four fields (data type, data unit, depth type, depth unit) \"\n"
+         << "\"* - 1 line with start time  \"\n"
+         << "\"* - 1 line with sample interval \"\n"
+         << "\"* - 1 line with number of data lines \"\n"
+         << "\"* - N lines with trace data \"\n"
+         << "\"* Data values are represented as floating point numbers,\"\n"
+         << "\"* \"\n"
+         << "\"wavelet\",\"none\",\"time\",\"ms\"\n"
+         << std::fixed 
+         << std::setprecision(0)
+         << shift   << "\n"
+         << std::setprecision(2)
+         << dznew   << "\n"
+         << wLength << "\n";
+    
+    for(int i=halfLength ; i > 0 ; i--)
+      file << std::setprecision(6) << waveletNew_r[nzpNew-i] << "\n";
+    for(int i=0;i<=halfLength;i++)
+      file << std::setprecision(6) << waveletNew_r[i] << "\n";
+    file.close();
+  }
 
-  //Writing wavelet also in swav-format
-  fName = std::string(fileName) + "_" + NRLib::ToString(theta_*(180/M_PI), 1) + "_deg" + IO::SuffixNorsarWavelet();
-  fName = IO::makeFullFileName(IO::PathToWavelets(), fName);
-  
-  NRLib::OpenWrite(file, fName);
-  file << "pulse file-1\n"
-       << wLength << " "  << static_cast<int>(dznew) << "\n";
-  for(int i=halfLength ; i > 0 ; i--)
-    file << std::setprecision(6) << waveletNew_r[nzpNew-i] << "\n";
-  for(int i=0 ; i<=halfLength ; i++)
-    file << std::setprecision(6) << waveletNew_r[i] << "\n";
-  file.close();
-  
+  if ((formats_ & IO::NORSARWAVELET)>0)  
+    {
+    //Writing wavelet in swav-format
+    fName = std::string(fileName) + "_" + NRLib::ToString(theta_*(180/M_PI), 1) + "_deg" + IO::SuffixNorsarWavelet();
+    fName = IO::makeFullFileName(IO::PathToWavelets(), fName);
+
+    LogKit::LogFormatted(LogKit::MEDIUM,"  Writing Wavelet to file \'"+fName+"\'\n");
+
+    NRLib::OpenWrite(file, fName);
+
+    file << "pulse file-1\n"
+         << wLength << " "  << static_cast<int>(dznew) << "\n";
+    for(int i=halfLength ; i > 0 ; i--)
+      file << std::setprecision(6) << waveletNew_r[nzpNew-i] << "\n";
+    for(int i=0 ; i<=halfLength ; i++)
+      file << std::setprecision(6) << waveletNew_r[i] << "\n";
+    file.close();
+  }
+
   delete [] waveletNew_r;
 }
 

@@ -112,6 +112,8 @@ ModelSettings::ModelSettings(void)
   domainFlag_              = IO::TIMEDOMAIN;   
   wellFlag_                =        0;   
   wellFormatFlag_          = IO::RMSWELL;
+  waveletFlag_             =        0;
+  waveletFormatFlag_       = IO::JASONWAVELET;
   otherFlag_               =        0;   
   debugFlag_               =        0;
   fileGrid_                =    false;

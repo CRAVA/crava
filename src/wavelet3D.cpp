@@ -55,6 +55,7 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
   coeff_[0]   = reflCoef[0];
   coeff_[1]   = reflCoef[1];
   coeff_[2]   = reflCoef[2];
+  formats_    = modelSettings->getWaveletFormatFlag();
 
   nz_         = simBox->getnz();
   float dx    = static_cast<float>(simBox->getdx());
@@ -287,15 +288,18 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
   cAmp_               = reinterpret_cast<fftw_complex *>(rAmp_);
 
   for(unsigned int w=0; w<nWells; w++) {
-    for(int i=0; i<nzp_; i++)
-      rAmp_[i] = wellWavelets[w][i];
-    std::string fileName = "Wavelet"; 
-    std::string wellname(wells[w]->getWellname());
-    NRLib::Substitute(wellname,"/","_");
-    NRLib::Substitute(wellname," ","_");
+    if (wells[w]->getUseForWaveletEstimation() && (modelSettings->getWaveletOutputFlag() & IO::WELL_WAVELETS)>0)
+    {
+      for(int i=0; i<nzp_; i++)
+        rAmp_[i] = wellWavelets[w][i];
+      std::string fileName = "Wavelet_well"; 
+      std::string wellname(wells[w]->getWellname());
+      NRLib::Substitute(wellname,"/","_");
+      NRLib::Substitute(wellname," ","_");
 
-    fileName += "_"+wellname; 
-    writeWaveletToFile(fileName, 1.0f);
+      fileName += "_"+wellname; 
+      writeWaveletToFile(fileName, 1.0f);
+    }
   }
   fftw_free(rAmp_);
   rAmp_ = trueAmp;

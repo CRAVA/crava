@@ -2907,9 +2907,8 @@ Model::processWavelets(Wavelet                    **& wavelet,
       }
 
       if (error == 0) {
-        if((modelSettings->getOtherOutputFlag() & IO::WAVELETS) > 0 ||
-          (modelSettings->getEstimationMode() == true && 
-          modelSettings->getEstimateWavelet(i) == true))
+        if((modelSettings->getWaveletOutputFlag() & IO::GLOBAL_WAVELETS) > 0 || 
+          (modelSettings->getEstimationMode() && modelSettings->getEstimateWavelet(i)))
         {
           wavelet[i]->writeWaveletToFile(IO::PrefixWavelet()+"Scaled", 1.0); // dt_max = 1.0;
         }
@@ -4019,7 +4018,7 @@ Model::printSettings(ModelSettings * modelSettings,
     //
     // SEISMIC
     //
-    if (modelSettings->getNoSeismicNeeded())
+    if (modelSettings->getNoSeismicNeeded()==false)
     {
       LogKit::LogFormatted(LogKit::LOW,"\nGeneral settings for seismic:\n");
       LogKit::LogFormatted(LogKit::LOW,"  White noise component                    : %10.2f\n",modelSettings->getWNC());
@@ -4078,16 +4077,14 @@ Model::printSettings(ModelSettings * modelSettings,
           LogKit::LogFormatted(LogKit::LOW,"  Estimate wavelet                         : %10s\n", "yes");
         else
           LogKit::LogFormatted(LogKit::LOW,"  Read wavelet from file                   : "+inputFiles->getWaveletFile(i)+"\n");
-        if (modelSettings->getUseLocalWavelet()) {
-          if (inputFiles->getShiftFile(i) == "")
-            LogKit::LogFormatted(LogKit::LOW,"  Estimate local shift map                 : %10s\n", "yes");
-          else
-            LogKit::LogFormatted(LogKit::LOW,"  Local shift map                          : "+inputFiles->getShiftFile(i)+"\n");  
-          if (inputFiles->getScaleFile(i) == "")
-            LogKit::LogFormatted(LogKit::LOW,"  Estimate local scale map                 : %10s\n", "yes");
-          else
-            LogKit::LogFormatted(LogKit::LOW,"  Local scale map                          : "+inputFiles->getScaleFile(i)+"\n");
-        }        
+        if (modelSettings->getEstimateLocalShift(i))
+          LogKit::LogFormatted(LogKit::LOW,"  Estimate local shift map                 : %10s\n", "yes");
+        else if (inputFiles->getShiftFile(i) != "")
+          LogKit::LogFormatted(LogKit::LOW,"  Local shift map                          : "+inputFiles->getShiftFile(i)+"\n");  
+        if (modelSettings->getEstimateLocalScale(i))
+          LogKit::LogFormatted(LogKit::LOW,"  Estimate local scale map                 : %10s\n", "yes");
+        else if (inputFiles->getScaleFile(i) != "")
+          LogKit::LogFormatted(LogKit::LOW,"  Local scale map                          : "+inputFiles->getScaleFile(i)+"\n");      
         if (modelSettings->getMatchEnergies(i)) 
           LogKit::LogFormatted(LogKit::LOW,"  Match empirical and theoretical energies : %10s\n", "yes");
         if (!modelSettings->getEstimateWavelet(i) && !modelSettings->getMatchEnergies(i)) {
@@ -4106,6 +4103,10 @@ Model::printSettings(ModelSettings * modelSettings,
           else
             LogKit::LogFormatted(LogKit::LOW,"  Estimate local signal-to-noise ratio map : "+inputFiles->getLocalNoiseFile(i)+"\n");
         }
+        if (modelSettings->getEstimateLocalNoise(i))
+          LogKit::LogFormatted(LogKit::LOW,"  Estimate local noise                     : %10s\n", "yes");
+        if (inputFiles->getLocalNoiseFile(i) != "")
+          LogKit::LogFormatted(LogKit::LOW,"  Local noise                              : "+inputFiles->getLocalNoiseFile(i)+"\n");
       }
     }
   }
@@ -4345,7 +4346,6 @@ Model::writeLocalGridsToFile(const std::string   & fileName,
                              Simbox              * timeSimbox,
                              Grid2D             *& grid)  
 {
-  bool   writeLocalGrids  = (modelSettings->getOtherOutputFlag() & IO::EXTRA_SURFACES) > 0;
   bool   estimationMode   = modelSettings->getEstimationMode();
   int    outputFormat     = modelSettings->getGridOutputFormat();
   double angle            = modelSettings->getAngle(i)*180.0/M_PI;
@@ -4362,11 +4362,17 @@ Model::writeLocalGridsToFile(const std::string   & fileName,
       resampleGrid2DToSurface(timeSimbox, grid, help);
     }
   }
-  if ((writeLocalGrids || estimationMode) && help != NULL) {
-    
+  if ((estimationMode ||
+    ((type==IO::PrefixLocalWaveletGain() || type==IO::PrefixLocalWaveletShift()) && (modelSettings->getWaveletOutputFlag() & IO::LOCAL_WAVELETS)>0) ||
+    (type==IO::PrefixLocalNoise() && (modelSettings->getOtherOutputFlag() & IO::LOCAL_NOISE)>0)) && 
+     help != NULL)
+  {    
     std::string baseName = type + NRLib::ToString(angle, 1);
     help->Multiply(scaleFactor);
-    IO::writeSurfaceToFile(*help, baseName, IO::PathToWavelets(), outputFormat);
+    if (type==IO::PrefixLocalNoise())
+      IO::writeSurfaceToFile(*help, baseName, IO::PathToNoise(), outputFormat);
+    else
+      IO::writeSurfaceToFile(*help, baseName, IO::PathToWavelets(), outputFormat);
   }
   if (help != NULL)
     delete help;

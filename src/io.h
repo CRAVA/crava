@@ -14,7 +14,8 @@ public:
   inline static  std::string    TopDirectory(void)                 { return std::string("")                         ;}
   inline static  std::string    InputDirectory(void)               { return std::string("")                         ;}
   inline static  std::string    OutputDirectory(void)              { return std::string("output")                   ;}
-                                                                                                                    
+  
+  inline static  std::string    PathToNoise(void)                  { return std::string("noise/")                   ;}                                                                                                             
   inline static  std::string    PathToWells(void)                  { return std::string("wells/")                   ;}
   inline static  std::string    PathToBackground(void)             { return std::string("background/")              ;}
   inline static  std::string    PathToWavelets(void)               { return std::string("wavelets/")                ;}
@@ -112,6 +113,9 @@ public:
 
   enum           wellFormats{RMSWELL    = 1, 
                              NORSARWELL = 2};
+  
+  enum           waveletFormats{JASONWAVELET     = 1,
+                                NORSARWAVELET    = 2};
 
   enum           outputGrids{CORRELATION            = 1, 
                              RESIDUAL               = 2, 
@@ -139,10 +143,14 @@ public:
                              BLOCKED_WELLS      = 2,
                              BLOCKED_LOGS       = 4};
 
-  enum           outputOther{WAVELETS            = 1,
-                             EXTRA_SURFACES      = 2,
-                             PRIORCORRELATIONS   = 4,
-                             BACKGROUND_TREND_1D = 8};
+  enum           outputOther{EXTRA_SURFACES      = 1,
+                             PRIORCORRELATIONS   = 2,
+                             BACKGROUND_TREND_1D = 4,
+                             LOCAL_NOISE         = 8};
+
+  enum           outputWavelets{WELL_WAVELETS    = 1,
+                                GLOBAL_WAVELETS  = 2,
+                                LOCAL_WAVELETS   = 4};
 
 private:
   static         bool           IsCravaBinaryFile(const std::string & fileName);

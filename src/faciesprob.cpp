@@ -824,7 +824,7 @@ void FaciesProb::calculateConditionalFaciesProb(WellData                    ** w
       LogKit::LogFormatted(LogKit::WARNING,"largest probability is only %.2f percent.\n",(fraction - 1.f)*100.f);
     }
     if (indMax != f1) {
-      wringMaximum = true;
+      wrongMaximum = true;
       LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: A problem has been detected. The probability of of finding facies \'"+faciesName+"\' is\n");
       LogKit::LogFormatted(LogKit::WARNING,"           largest when the well log shows \'%s\' and not when it shows \'%s\'\n",
                                            modelSettings->getFaciesName(f1).c_str(), faciesName.c_str());

@@ -120,6 +120,8 @@ public:
   int                              getGridOutputDomain(void)            const { return domainFlag_              ;}
   int                              getWellOutputFlag(void)              const { return wellFlag_                ;}
   int                              getWellFormatFlag(void)              const { return wellFormatFlag_          ;}
+  int                              getWaveletOutputFlag(void)           const { return waveletFlag_             ;}
+  int                              getWaveletFormatFlag(void)           const { return waveletFormatFlag_       ;}
   int                              getOtherOutputFlag(void)             const { return otherFlag_               ;}
   int                              getDebugFlag(void)                   const { return debugFlag_               ;}
   static int                       getDebugLevel(void)                        { return debugFlag_               ;}
@@ -259,6 +261,8 @@ public:
   void setGridOutputDomain(int domainFlag)                { domainFlag_               = domainFlag               ;}
   void setWellOutputFlag(int wellFlag)                    { wellFlag_                 = wellFlag                 ;}
   void setWellFormatFlag(int formatFlag)                  { wellFormatFlag_           = formatFlag               ;}
+  void setWaveletOutputFlag(int waveletFlag)              { waveletFlag_              = waveletFlag              ;}
+  void setWaveletFormatFlag(int formatFlag)               { waveletFormatFlag_        = formatFlag               ;}
   void setOtherOutputFlag(int otherFlag)                  { otherFlag_                = otherFlag                ;}
   void setDebugFlag(int debugFlag)                        { debugFlag_                = debugFlag                ;}
   void setFileGrid(bool fileGrid)                         { fileGrid_                 = fileGrid                 ;}
@@ -431,6 +435,8 @@ private:
   int                               formatFlag_;                 // Decides output format, see above.
   int                               wellFlag_;                   // Decides well output.
   int                               wellFormatFlag_;             // Decides well output format.
+  int                               waveletFlag_;                // Decides wavelet output
+  int                               waveletFormatFlag_;          // Decides wavelet output format
   int                               otherFlag_;                  // Decides output beyond grids and wells.
   bool                              fileGrid_;                   // Indicator telling if grids are to be kept on file
   bool                              defaultGridOutput_;          // Indicator telling whether grid output has been actively controlled.

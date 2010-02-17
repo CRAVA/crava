@@ -1455,7 +1455,7 @@ FFTGrid::writeFile(const std::string & fName,
       if(depthMap->getMapping() == NULL) {
         if(depthMap->getSimbox() == NULL) {
           LogKit::LogFormatted(LogKit::WARNING,
-                               "Depth interval lacking when trying to write %s. Write cancelled.\n",depthName.c_str());
+            "WARNING: Depth interval lacking when trying to write %s. Write cancelled.\n",depthName.c_str());
           return;
         }
         if(expTrans) {
@@ -1478,7 +1478,7 @@ FFTGrid::writeFile(const std::string & fName,
       {
         if(depthMap->getSimbox() == NULL) {
           LogKit::LogFormatted(LogKit::WARNING,
-                               "Depth mapping incomplete when trying to write %s. Write cancelled.\n",depthName.c_str());
+            "WARNING: Depth mapping incomplete when trying to write %s. Write cancelled.\n",depthName.c_str());
           return;
         }
         // Writes also segy in depth if required

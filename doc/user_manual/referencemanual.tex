@@ -755,17 +755,59 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
    \item \Default
  \elist
 
+\subsubsection{\hbracket{wavelet-output}}\newkw{wavelet-output}
+ \slist
+   \item \Description Collects all output that can be given for wavelets.
+   \item \Argument Elements controlling wavelet output
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{format}}\rnewkw{format}{format3}
+ \slist
+   \item \Description Controls wavelet formats used for output. Default is JASON.
+   \item \Argument Elements controlling the formats used for output
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{jason}}\newkw{jason}
+ \slist
+   \item \Description Controls if wavelets are written on JASON form, being 'wlt' format.
+   \item \Argument 'yes' or 'no'
+   \item \Default 'yes'
+ \elist
+
+ \subparagraph{\hbracket{norsar}}\rnewkw{norsar}{norsar2}
+ \slist
+   \item \Description Controls if wavelets are written on NORSAR form, being 'swav' format.
+   \item \Argument 'yes' or 'no'
+   \item \Default 'no'
+ \elist
+
+\paragraph{\hbracket{well-wavelets}}\newkw{well-wavelets}
+ \slist
+   \item \Description Writes estimated wavelets for each well used for wavelet estimation.
+	\item \Argument 'yes' or 'no'
+	\item \Default 'no'
+ \elist
+
+\paragraph{\hbracket{global-wavelets}}\newkw{global-wavelets}
+ \slist
+   \item \Description Writes global wavelets for each seismic angle.
+	\item \Argument 'yes' or 'no'
+	\item \Default 'no'
+ \elist
+
+\paragraph{\hbracket{local-wavelets}}\newkw{local-wavelets}
+ \slist
+   \item \Description Writes estimated local wavelet shift and scale surfaces. Can only be written when \kw{local-wavelet} is requested.
+	\item \Argument 'yes' or 'no'
+	\item \Default
+ \elist
+
 \subsubsection{\hbracket{other-output}}\newkw{other-output}
  \slist
    \item \Description Controls output that is neither standard grid nor well.
    \item \Argument Elements controlling output
-   \item \Default
- \elist
-
-\paragraph{\hbracket{wavelets}}\newkw{wavelets}
- \slist
-   \item \Description Write wavelet to file. Mainly for use with wavelet estimation.
-   \item \Argument 'yes' or 'no'
    \item \Default
  \elist
 
@@ -776,8 +818,6 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
    \item Top and base surface for constant thickness interval used for log filtering and facies probabilities.
    \item Top and base surface for extended inversion interval computed from correlation surface.
    \item Top and base surface for background estimation interval (larger than inversion interval).
-   \item Estimated local wavelet shift.
-   \item Estimated local wavelet scale.
    \end{itemize}
    \item \Argument 'yes' or 'no'
    \item \Default
@@ -793,6 +833,13 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 \paragraph{\hbracket{background-trend-1d}}\newkw{background-trend-1d}
  \slist
    \item \Description Write the background trend as 1D curve.
+   \item \Argument 'yes' or 'no'
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{local-noise}}\newkw{local-noise}
+ \slist
+   \item \Description Writes estimated local noise surface. Can only be written when \kw{local-noise-scaled} or \kw{estimate-local-noise} is requested.
    \item \Argument 'yes' or 'no'
    \item \Default
  \elist
@@ -1574,7 +1621,7 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 
 \subsubsection{\hbracket{velocity-field}}\rnewkw{velocity-field}{velocity-field2}
  \slist
-   \item \Description File name for storm grid bile giving a velocity field used as base for vp in background estimation. Can not be used if the background parameters are given.
+   \item \Description File name for storm grid file giving a velocity field used as base for vp in background estimation. Can not be used if the background parameters are given.
    \item \Argument File name
    \item \Default
  \elist

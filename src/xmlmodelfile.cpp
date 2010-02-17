@@ -19,8 +19,8 @@
 #include "src/fftgrid.h"
 #include "src/vario.h"
 #include "lib/utils.h"
+#include "tasklist.h"
 #include "src/io.h"
-
 
 XmlModelFile::XmlModelFile(const std::string & fileName)
 {
@@ -674,7 +674,7 @@ XmlModelFile::parseAngleGather(TiXmlNode * node, std::string & errTxt)
     modelSettings_->addEstimateSNRatio(true);
     modelSettings_->addSNRatio(RMISSING);
   }
-   std::string fileName; 
+  std::string fileName; 
   bool localNoiseGiven = parseFileName(root, "local-noise-scaled", fileName, errTxt);
   if(localNoiseGiven) {
     inputFiles_->addNoiseFile(fileName);
@@ -695,6 +695,8 @@ XmlModelFile::parseAngleGather(TiXmlNode * node, std::string & errTxt)
         lineColumnText(node);
       modelSettings_->addEstimateLocalNoise(false);
     }
+    else if (estimate==false && localNoiseGiven==false)
+      modelSettings_->addEstimateLocalNoise(false);
     else {
       modelSettings_->setUseLocalNoise(true);
       modelSettings_->addEstimateLocalNoise(estimate);
@@ -848,17 +850,23 @@ XmlModelFile::parseLocalWavelet(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("estimate-shift");
   legalCommands.push_back("estimate-scale");
 
-  modelSettings_->setUseLocalWavelet(true);
+  modelSettings_->setUseLocalWavelet(false);
   std::string filename;
   bool shiftGiven = parseFileName(root, "shift-file", filename, errTxt);
   if(shiftGiven)
+  {
     inputFiles_->addShiftFile(filename);
+    modelSettings_->setUseLocalWavelet(true);
+  }
   else
     inputFiles_->addShiftFile("");
 
   bool scaleGiven = parseFileName(root, "scale-file", filename, errTxt);
   if(scaleGiven)
+  {
     inputFiles_->addScaleFile(filename);
+    modelSettings_->setUseLocalWavelet(true);
+  }
   else
     inputFiles_->addScaleFile("");
 
@@ -874,8 +882,13 @@ XmlModelFile::parseLocalWavelet(TiXmlNode * node, std::string & errTxt)
         lineColumnText(node);
       modelSettings_->addEstimateLocalShift(false);
     }
+    else if (estimate == true)
+    {
+      modelSettings_->addEstimateLocalShift(true);
+      modelSettings_->setUseLocalWavelet(true);
+    }
     else
-      modelSettings_->addEstimateLocalShift(estimate);
+      modelSettings_->addEstimateLocalShift(false);
 
   tmpErr = "";
   if(parseBool(root, "estimate-scale",estimate,tmpErr) == false || tmpErr != "") {
@@ -888,8 +901,13 @@ XmlModelFile::parseLocalWavelet(TiXmlNode * node, std::string & errTxt)
         lineColumnText(node);
       modelSettings_->addEstimateLocalScale(false);
     }
+    else if (estimate == true)
+    {
+      modelSettings_->addEstimateLocalScale(true);
+      modelSettings_->setUseLocalWavelet(true);
+    }
     else
-      modelSettings_->addEstimateLocalScale(estimate);
+      modelSettings_->addEstimateLocalScale(false);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -1792,6 +1810,7 @@ XmlModelFile::parseIOSettings(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("log-level");
   legalCommands.push_back("grid-output");
   legalCommands.push_back("well-output");
+  legalCommands.push_back("wavelet-output");
   legalCommands.push_back("other-output");
 
   
@@ -1813,6 +1832,7 @@ XmlModelFile::parseIOSettings(TiXmlNode * node, std::string & errTxt)
 
   parseGridOutput(root, errTxt);
   parseWellOutput(root, errTxt);
+  parseWaveletOutput(root, errTxt);
   parseOtherOutput(root, errTxt);
   std::string value;
   if(parseValue(root, "file-output-prefix", value, errTxt) == true) {
@@ -2158,6 +2178,65 @@ XmlModelFile::parseWellFormats(TiXmlNode * node, std::string & errTxt)
 }
 
 bool
+XmlModelFile::parseWaveletOutput(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("wavelet-output");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("format");
+  legalCommands.push_back("well-wavelets");
+  legalCommands.push_back("global-wavelets");
+  legalCommands.push_back("local-wavelets");
+
+  parseWaveletFormats(root, errTxt);
+
+  bool value;
+  int waveletFlag = 0;
+  if(parseBool(root, "well-wavelets", value, errTxt) == true && value == true)
+    waveletFlag += IO::WELL_WAVELETS;
+  if(parseBool(root, "global-wavelets", value, errTxt) == true && value == true)
+    waveletFlag += IO::GLOBAL_WAVELETS;
+  if(parseBool(root, "local-wavelets", value, errTxt) == true && value == true)
+    waveletFlag += IO::LOCAL_WAVELETS;
+
+  modelSettings_->setWaveletOutputFlag(waveletFlag);
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseWaveletFormats(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("format");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("jason");
+  legalCommands.push_back("norsar");
+
+  bool useFormat = false;
+  int formatFlag = 0;
+  bool jasonSpecified = false;  //Default format, check if turned off.
+  if(parseBool(root, "jason", useFormat, errTxt) == true) {
+    jasonSpecified = true;
+    if(useFormat == true)
+      formatFlag += IO::JASONWAVELET;
+  }
+  if(parseBool(root, "norsar", useFormat, errTxt) == true && useFormat == true)
+    formatFlag += IO::NORSARWAVELET;
+
+  if(formatFlag > 0 || jasonSpecified == true)
+    modelSettings_->setWaveletFormatFlag(formatFlag);
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
 XmlModelFile::parseOtherOutput(TiXmlNode * node, std::string & errTxt)
 {
   TiXmlNode * root = node->FirstChildElement("other-output");
@@ -2165,21 +2244,21 @@ XmlModelFile::parseOtherOutput(TiXmlNode * node, std::string & errTxt)
     return(false);
 
   std::vector<std::string> legalCommands;
-  legalCommands.push_back("wavelets");
   legalCommands.push_back("extra-surfaces");
   legalCommands.push_back("prior-correlations");
   legalCommands.push_back("background-trend-1d");
+  legalCommands.push_back("local-noise");
 
   bool value;
   int otherFlag = 0;
-  if(parseBool(root, "wavelets", value, errTxt) == true && value == true)
-    otherFlag += IO::WAVELETS;
   if(parseBool(root, "extra-surfaces", value, errTxt) == true && value == true)
     otherFlag += IO::EXTRA_SURFACES;
   if(parseBool(root, "prior-correlations", value, errTxt) == true && value == true)
     otherFlag += IO::PRIORCORRELATIONS;
   if(parseBool(root, "background-trend-1d", value, errTxt) == true && value == true)
     otherFlag += IO::BACKGROUND_TREND_1D;
+  if(parseBool(root, "local-noise", value, errTxt) == true && value == true)
+    otherFlag += IO::LOCAL_NOISE;
 
   modelSettings_->setOtherOutputFlag(otherFlag);
 
@@ -2572,6 +2651,7 @@ XmlModelFile::checkConsistency(std::string & errTxt) {
       modelSettings_->copyBackgroundVarioToLocalWaveletVario();
   if(modelSettings_->getOptimizeWellLocation()==true)
     checkAngleConsistency(errTxt);
+  checkIOConsistency(errTxt);
 }
 
 
@@ -2681,6 +2761,21 @@ XmlModelFile::checkAngleConsistency(std::string & errTxt) {
         errTxt += "Unexpected angle "+NRLib::ToString(angle/float(M_PI/180))+" in <optimize-location-to> is not equal to any of seismic offset-angles"+".\n";
       }
     }
+  }
+}
+
+void 
+XmlModelFile::checkIOConsistency(std::string & /*errTxt*/)
+{
+  if ((modelSettings_->getOtherOutputFlag() & IO::LOCAL_NOISE)>0 && modelSettings_->getUseLocalNoise()==false)
+  {
+    LogKit::LogFormatted(LogKit::WARNING, "\nWarning: Local noise can not be written to file when <local-noise-scaled> or <estimate-local-noise> is not requested.");
+    TaskList::addTask("Remove <local-noise> from <other-output> in the model file if local noise is not used.");
+  }
+  if ((modelSettings_->getWaveletOutputFlag() & IO::GLOBAL_WAVELETS)>0 && modelSettings_->getUseLocalWavelet()==false)
+  {
+   LogKit::LogFormatted(LogKit::WARNING, "\nWarning: Local wavelets can not be written to file when <local-wavelet> is not requested for the angle gathers.");
+    TaskList::addTask("Remove <local-wavelets> from <wavelet-output> in the model file if local wavelets are not used.");
   }
 }
 

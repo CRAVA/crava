@@ -346,7 +346,7 @@ Crava::computeVariances(fftw_real     * corrT,
       LogKit::LogFormatted(LogKit::LOW,"Matching syntethic and empirical energies:\n");
       float gain = sqrt((errorVariance_[l]/modelVariance_[l])*(empSNRatio_[l] - 1.0f));
       seisWavelet_[l]->scale(gain);
-      if((modelSettings->getOtherOutputFlag() & IO::WAVELETS) > 0) 
+      if((modelSettings->getWaveletOutputFlag() & IO::GLOBAL_WAVELETS) > 0) 
       {
         std::string angle    = NRLib::ToString(thetaDeg_[l], 1);
         std::string fileName = IO::PrefixWavelet() + std::string("EnergyMatched_") + angle;

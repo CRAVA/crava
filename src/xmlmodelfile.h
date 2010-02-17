@@ -67,8 +67,10 @@ private:
   bool         parseGridElasticParameters(TiXmlNode * node, int &paramFlag, std::string & errTxt);
   bool         parseGridSeismicData(TiXmlNode * node, int &paramFlag, std::string & errTxt);
   bool         parseGridOtherParameters(TiXmlNode * node, int &paramFlag, std::string & errTxt);
-  bool       parseWellOutput(TiXmlNode * node, std::string & errTxt);
+  bool         parseWellOutput(TiXmlNode * node, std::string & errTxt);
   bool         parseWellFormats(TiXmlNode * node, std::string & errTxt);
+  bool         parseWaveletOutput(TiXmlNode * node, std::string & errTxt);
+  bool         parseWaveletFormats(TiXmlNode * node, std::string & errTxt);
   bool       parseOtherOutput(TiXmlNode * node, std::string & errTxt);
   bool   parseAdvancedSettings(TiXmlNode * node, std::string & errTxt);
   bool     parseFFTGridPadding(TiXmlNode * node, std::string & errTxt);
@@ -91,6 +93,7 @@ private:
   void checkConsistency(std::string & errTxt);
   void checkForwardConsistency(std::string & errTxt);
   void checkEstimationInversionConsistency(std::string & errTxt);
+  void checkIOConsistency(std::string & errTxt);
   void setDerivedParameters(std::string & errTxt);
 
 

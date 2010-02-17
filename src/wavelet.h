@@ -145,6 +145,7 @@ protected:
   int            nz_;                    // length of wavelet
   int            nzp_;                   // length of padded wavelet
   int            cz_;                    // position of central point   
+  int            formats_;                // formats for output of wavelet
   bool           inFFTorder_;            // is true if the wavelet is ordred with the central point at the start
                                              // false if the central point is in the middle
   bool           isReal_;                // is true if the wavlet is real, false if it is fourier transformed 

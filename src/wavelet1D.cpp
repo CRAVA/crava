@@ -55,6 +55,7 @@ Wavelet1D::Wavelet1D(Simbox                       * simbox,
   cz_                   = 0;
   inFFTorder_           = true;
   isReal_               = true; 
+  formats_              = modelSettings->getWaveletFormatFlag();
 
   std::string fileName;
   int     nWells              = modelSettings->getNumberOfWells();
@@ -234,14 +235,17 @@ Wavelet1D::Wavelet1D(Simbox                       * simbox,
   rAmp_               = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));
   cAmp_               = reinterpret_cast<fftw_complex *>(rAmp_);
   for(int w=0; w<nWells; w++) {
-    for(int i=0;i<nzp_;i++)
-      rAmp_[i] = wellWavelets[w][i];
-    fileName = "Wavelet"; 
-    std::string wellname(wells[w]->getWellname());
-    NRLib::Substitute(wellname,"/","_");
-    NRLib::Substitute(wellname," ","_");
-    fileName += "_"+wellname; 
-    writeWaveletToFile(fileName, 1.0f);
+    if (wells[w]->getUseForWaveletEstimation() && (modelSettings->getWaveletOutputFlag() & IO::WELL_WAVELETS)>0)
+    {
+      for(int i=0;i<nzp_;i++)
+        rAmp_[i] = wellWavelets[w][i];
+      fileName = "Wavelet_well"; 
+      std::string wellname(wells[w]->getWellname());
+      NRLib::Substitute(wellname,"/","_");
+      NRLib::Substitute(wellname," ","_");
+      fileName += "_"+wellname; 
+      writeWaveletToFile(fileName, 1.0f);
+    }
   }
   fftw_free(rAmp_);
   rAmp_ = trueAmp;
