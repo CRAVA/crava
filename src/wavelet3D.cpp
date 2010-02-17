@@ -288,7 +288,8 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
   cAmp_               = reinterpret_cast<fftw_complex *>(rAmp_);
 
   for(unsigned int w=0; w<nWells; w++) {
-    if (wells[w]->getUseForWaveletEstimation() && (modelSettings->getWaveletOutputFlag() & IO::WELL_WAVELETS)>0)
+    if (wells[w]->getUseForWaveletEstimation() && 
+       ((modelSettings->getWaveletOutputFlag() & IO::WELL_WAVELETS)>0 || modelSettings->getEstimationMode()))
     {
       for(int i=0; i<nzp_; i++)
         rAmp_[i] = wellWavelets[w][i];
@@ -296,7 +297,6 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
       std::string wellname(wells[w]->getWellname());
       NRLib::Substitute(wellname,"/","_");
       NRLib::Substitute(wellname," ","_");
-
       fileName += "_"+wellname; 
       writeWaveletToFile(fileName, 1.0f);
     }

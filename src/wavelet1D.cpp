@@ -235,7 +235,8 @@ Wavelet1D::Wavelet1D(Simbox                       * simbox,
   rAmp_               = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));
   cAmp_               = reinterpret_cast<fftw_complex *>(rAmp_);
   for(int w=0; w<nWells; w++) {
-    if (wells[w]->getUseForWaveletEstimation() && (modelSettings->getWaveletOutputFlag() & IO::WELL_WAVELETS)>0)
+    if (wells[w]->getUseForWaveletEstimation() && 
+       ((modelSettings->getWaveletOutputFlag() & IO::WELL_WAVELETS)>0 || modelSettings->getEstimationMode()))
     {
       for(int i=0;i<nzp_;i++)
         rAmp_[i] = wellWavelets[w][i];
