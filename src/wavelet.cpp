@@ -544,8 +544,8 @@ Wavelet::writeWaveletToFile(const std::string & fileName,
   for(int i=activeCells+1;i<=nz_;i++) {
     remember[i]        = rAmp_[i];
     rAmp_[i]           = 0;
-    remember[nzp_+1-i] = rAmp_[nzp_+1-i];
-    rAmp_[nzp_+1-i]    = 0;
+    remember[nzp_-i] = rAmp_[nzp_-i];
+    rAmp_[nzp_-i]    = 0;
   }
   float          T            = nzp_*dz_;
   int            nzpNew       = int(ceil(T/approxDz - 0.5));  
@@ -574,7 +574,7 @@ Wavelet::writeWaveletToFile(const std::string & fileName,
   invFFT1DInPlace();
   for(int i=activeCells+1;i<=nz_;i++) {
     rAmp_[i] = remember[i];
-    rAmp_[nzp_+1-i] = remember[nzp_+1-i];
+    rAmp_[nzp_-i] = remember[nzp_-i];
   }
   delete [] remember;
   

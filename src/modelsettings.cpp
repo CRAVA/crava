@@ -78,7 +78,7 @@ ModelSettings::ModelSettings(void)
   maxWellShift_            =    11.0f;
   maxWellOffset_           =   250.0f;
                            
-  minRelWaveletAmp_        =    0.05f;
+  minRelWaveletAmp_        =    0.04f;
   maxWaveletShift_         =    11.0f;
   waveletTaperingL_        =   200.0f;
                            
