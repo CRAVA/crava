@@ -122,6 +122,7 @@ public:
   int                              getWellFormatFlag(void)              const { return wellFormatFlag_          ;}
   int                              getWaveletOutputFlag(void)           const { return waveletFlag_             ;}
   int                              getWaveletFormatFlag(void)           const { return waveletFormatFlag_       ;}
+  int                              getEstimateNumberOfWavelets(void)    const { return estimateWavelet_.size()  ;}
   int                              getOtherOutputFlag(void)             const { return otherFlag_               ;}
   int                              getDebugFlag(void)                   const { return debugFlag_               ;}
   static int                       getDebugLevel(void)                        { return debugFlag_               ;}

@@ -2775,7 +2775,7 @@ XmlModelFile::checkIOConsistency(std::string & /*errTxt*/)
   if ((modelSettings_->getWaveletOutputFlag() & IO::LOCAL_WAVELETS)>0 && modelSettings_->getUseLocalWavelet()==false)
   {
    LogKit::LogFormatted(LogKit::WARNING, "\nWarning: Local wavelets can not be written to file when <local-wavelet> is not requested for the angle gathers.");
-    TaskList::addTask("Remove <local-wavelets> from <wavelet-output> in the model file if local wavelets are not used.");
+   TaskList::addTask("Remove <local-wavelets> from <wavelet-output> in the model file if local wavelets are not used.");
   }
 }
 
