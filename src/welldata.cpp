@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#define _USE_MATH_DEFINES
 #include <math.h>
 #include <iostream>
 
@@ -1473,7 +1474,7 @@ WellData::calculateDeviation(float  & devAngle,
                              Simbox * timeSimbox)
 {
   float maxDevAngle   = modelSettings_->getMaxDevAngle();
-  float thr_deviation = float(tan(maxDevAngle*PI/180.0));  // Largest allowed deviation
+  float thr_deviation = float(tan(maxDevAngle*M_PI/180.0));  // Largest allowed deviation
   float max_deviation =  0.0f;
   float max_dz        = 10.0f;                      // Calculate slope each 10'th millisecond.
 
@@ -1526,7 +1527,7 @@ WellData::calculateDeviation(float  & devAngle,
       }
     }
   }
-  devAngle = static_cast<float>(atan(max_deviation)*180.0/PI);
+  devAngle = static_cast<float>(atan(max_deviation)*180.0/M_PI);
   LogKit::LogFormatted(LogKit::LOW,"   Maximum local deviation is %.1f degrees.",devAngle);
 
   if (max_deviation > thr_deviation) 

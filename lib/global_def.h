@@ -8,9 +8,6 @@ Define macros
 
 #if !defined(GLOBAL_DEF_H)
 #define GLOBAL_DEF_H 1 
-#ifndef PI 
-#define PI  3.14159265358979323846
-#endif
 
 #ifndef RMISSING
 #define RMISSING -99999.000

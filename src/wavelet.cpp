@@ -185,8 +185,8 @@ Wavelet::Wavelet(Wavelet * wavelet,
     fft1DInPlace();
     for(i=0; i < cnzp_; i++ ) {
       iValue  =  cAmp_[i];
-      cAmp_[i].re = static_cast<float> (- iValue.im * 2.0 * PI * i/(static_cast<float>(nzp_)));
-      cAmp_[i].im = float(iValue.re * 2 * PI * i/(static_cast<float>(nzp_)));
+      cAmp_[i].re = static_cast<float> (- iValue.im * 2.0 * M_PI * i/(static_cast<float>(nzp_)));
+      cAmp_[i].im = float(iValue.re * 2 * M_PI * i/(static_cast<float>(nzp_)));
     }
     invFFT1DInPlace();
     for(i=0; i < nzp_; i++ )
@@ -247,7 +247,7 @@ Wavelet::Wavelet(int difftype,
     isReal_    = false;
     for(i=0;i < cnzp_; i++) {
       cAmp_[i].re = 0.0f;
-      cAmp_[i].im = static_cast<float>( 2.0 * PI * i/(static_cast<float>(nzp_)) );   
+      cAmp_[i].im = static_cast<float>( 2.0 * M_PI * i/(static_cast<float>(nzp_)) );   
     }
 
     invFFT1DInPlace();
@@ -714,8 +714,8 @@ Wavelet::shiftAndScale(float shift,
   float iShift=shift/dz_;
 
   for(k=0;k < cnzp_; k++) {
-    ampMultiplier.re = float(gain*cos(2.0*(PI*(iShift)*k)/float(nzp_)));
-    ampMultiplier.im = float(gain*sin(-2.0*(PI*(iShift)*k)/float(nzp_)));
+    ampMultiplier.re = float(gain*cos(2.0*(M_PI*(iShift)*k)/float(nzp_)));
+    ampMultiplier.im = float(gain*sin(-2.0*(M_PI*(iShift)*k)/float(nzp_)));
 
     tmp.re = ampMultiplier.re*cAmp_[k].re - ampMultiplier.im*cAmp_[k].im;
     tmp.im = ampMultiplier.im*cAmp_[k].re + ampMultiplier.re*cAmp_[k].im;
@@ -808,7 +808,7 @@ Wavelet::averageWavelets(const std::vector<std::vector<fftw_real> > & wavelet_r,
   }
   
   std::string fileName;
-  fileName = "wavelet_"+NRLib::ToString(int(floor(theta_/PI*180+0.5)))+"_fftOrder_noshift";
+  fileName = "wavelet_"+NRLib::ToString(int(floor(theta_/M_PI*180+0.5)))+"_fftOrder_noshift";
   printVecToFile(fileName,wave,nzp_);
 
   return wave;
@@ -865,11 +865,11 @@ Wavelet::getWaveletValue(float   z,
   { 
     Cov[k] = new double[6];
     deltaT = (dz*ind[k]-z)*0.001;
-    cov[k] = (1-2*nu*nu*PI*PI*(deltaT)*(deltaT))*exp(-nu*nu*PI*PI*(deltaT)*(deltaT));
+    cov[k] = (1-2*nu*nu*M_PI*M_PI*(deltaT)*(deltaT))*exp(-nu*nu*M_PI*M_PI*(deltaT)*(deltaT));
     for(l=0;l<6;l++)
     {
       deltaT =(dz*ind[k]-dz*ind[l])*0.001;
-      Cov[k][l] = (1-2*nu*nu*PI*PI*deltaT * deltaT )*exp(-nu*nu*PI*PI*deltaT*deltaT);
+      Cov[k][l] = (1-2*nu*nu*M_PI*M_PI*deltaT * deltaT )*exp(-nu*nu*M_PI*M_PI*deltaT*deltaT);
     }
   }
   //OK not very intellegent implementation since chol is done for each time step.

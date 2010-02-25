@@ -38,8 +38,8 @@ float Vario::findDist(float deltaX, float deltaY) const
 void
 Vario::convertRangesFromDegToRad()
 {
-  range1_ *= static_cast<float>(PI/180.0);
-  range2_ *= static_cast<float>(PI/180.0);
+  range1_ *= static_cast<float>(M_PI/180.0);
+  range2_ *= static_cast<float>(M_PI/180.0);
 }
 
 void

@@ -3,6 +3,7 @@
 
 #include <string.h>
 #include <assert.h>
+#define _USE_MATH_DEFINES
 #include <math.h>
 
 #include "fft/include/fftw.h"
@@ -182,7 +183,7 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
                     for (int i=0; i<nWl; i++) {
                       float v = u - static_cast<float>((i - nhalfWl)*dz_);
                       float h = Halpha[tau-start];
-                      lambda[tau-start][i] = static_cast<float> (h / (PI *(h*h + v*v)));
+                      lambda[tau-start][i] = static_cast<float> (h / (M_PI *(h*h + v*v)));
                     }
                   }
                   else {
@@ -375,16 +376,16 @@ Wavelet3D::findPhi(float a, float b) const
   if (a > epsilon && b >= 0.0) //1. quadrant 
     phi = atan(b/a);
   else if (a > epsilon && b < 0.0) //4. quadrant
-    phi = 2*PI + atan(b/a);
+    phi = 2*M_PI + atan(b/a);
   else if (a < - epsilon && b >= 0.0) //2. quadrant
-    phi = PI + atan(b/a);
+    phi = M_PI + atan(b/a);
   else if (a < - epsilon && b < 0.0) //3. quadrant
-    phi = PI + atan(b/a);
+    phi = M_PI + atan(b/a);
   else if (b  >= 0.0) //kx very small
-    phi = 0.5 * PI;
+    phi = 0.5 * M_PI;
   else //kx very small
-    phi = 1.5 * PI;
-  phi = phi * 180 / PI;
+    phi = 1.5 * M_PI;
+  phi = phi * 180 / M_PI;
   return(phi);
 }
 
@@ -393,7 +394,7 @@ Wavelet3D::findPsi(float r) const
 //Return value should be between 0 and 90
 {
   double psi    = acos(1.0 / r);
-  psi = psi * 180 / PI;
+  psi = psi * 180 / M_PI;
   return(psi);
 }
 

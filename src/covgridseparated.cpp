@@ -1,4 +1,5 @@
 #include <assert.h>
+#define _USE_MATH_DEFINES
 #include <math.h>
 
 #include "lib/global_def.h"
@@ -230,10 +231,10 @@ void CovGridSeparated::findTaperRanges(float & rangeX, float & rangeY, float & r
 
   //X and Y ranges estimated simultaneously, by sweeping a 180 degree angle.
   float angle = 0;
-  float dAngle = float(PI)/20.0f;
+  float dAngle = float(M_PI)/20.0f;
   rangeX = 0;
   rangeY = 0;
-  while(angle < PI)
+  while(angle < M_PI)
   {
     sum = 2.5f*angleSum(angle);
     if(sum*cos(angle) > rangeX)

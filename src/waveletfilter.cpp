@@ -43,7 +43,7 @@ bool WaveletFilter::readFile(const std::string & fileName,
 
 /*void WaveletFilter::createGrid()
 {
-  alpha1_ = NRLib::RegularSurface<float>(0,0,2*PI,0.5*PI,360,90,0.0);
+  alpha1_ = NRLib::RegularSurface<float>(0,0,2*M_PI,0.5*M_PI,360,90,0.0);
   for (unsigned int i = 0; i<360; i++)
     for (unsigned int j = 0; j <= 45; j++)
       alpha1_(i,j) = 1.0;

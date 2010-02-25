@@ -1243,8 +1243,8 @@ Wavelet1D::multiplyPapolouis(fftw_real                ** vec,
       for(int i=1;i<nzp;i++) {
         dist =MINIM(i,nzp-i)*dz[w];
         if(dist < wHL) {
-          weight  = float(1.0/PI*fabs(sin(PI*(dist)/wHL))); 
-          weight += float((1-fabs(dist)/wHL)*cos(PI*dist/wHL));
+          weight  = float(1.0/M_PI*fabs(sin(M_PI*(dist)/wHL))); 
+          weight += float((1-fabs(dist)/wHL)*cos(M_PI*dist/wHL));
         }
         else
           weight=0;
@@ -1299,7 +1299,7 @@ Wavelet1D::shiftReal(float        shift,
   fftw_complex tmp,mult;
   for(int i=0;i<cnzp;i++) {
     tmp     = cAmp[i];
-    expo    = static_cast<float>(-2.0*shift*PI*static_cast<float>(i)/static_cast<float>(nt));
+    expo    = static_cast<float>(-2.0*shift*M_PI*static_cast<float>(i)/static_cast<float>(nt));
     mult.re = cos(expo);
     mult.im = sin(expo);
     cAmp[i].re = tmp.re*mult.re-tmp.im*mult.im;
@@ -1327,7 +1327,7 @@ Wavelet1D::writeDebugInfo(fftw_real ** seis_r,
                           fftw_real ** cpp_r,
                           int          nWells) const
 {
-  std::string fileName = "estimated_wavelet_full_"+NRLib::ToString(int(ceil((theta_*180/PI)-0.5)))+".txt";
+  std::string fileName = "estimated_wavelet_full_"+NRLib::ToString(int(ceil((theta_*180/M_PI)-0.5)))+".txt";
         
   std::ofstream fid;
   NRLib::OpenWrite(fid,fileName);
@@ -1338,7 +1338,7 @@ Wavelet1D::writeDebugInfo(fftw_real ** seis_r,
   fid.clear();
     
   for(int j=0;j<nWells;j++) {
-    fileName = "seis_"+NRLib::ToString(int(theta_*180/PI+0.5))+"_well_"+NRLib::ToString(j+1)+".txt";
+    fileName = "seis_"+NRLib::ToString(int(theta_*180/M_PI+0.5))+"_well_"+NRLib::ToString(j+1)+".txt";
     NRLib::OpenWrite(fid,fileName);
     fid << std::setprecision(6);
     for(int i=0;i<nzp_;i++)
@@ -1346,7 +1346,7 @@ Wavelet1D::writeDebugInfo(fftw_real ** seis_r,
     fid.close();
     fid.clear();
         
-    fileName = "cor_cpp_"+NRLib::ToString(int(theta_*180/PI+0.5))+"well_"+NRLib::ToString(j+1)+".txt";
+    fileName = "cor_cpp_"+NRLib::ToString(int(theta_*180/M_PI+0.5))+"well_"+NRLib::ToString(j+1)+".txt";
     NRLib::OpenWrite(fid,fileName);
     fid << std::setprecision(6);
     for(int i=0;i<nzp_;i++)
@@ -1354,7 +1354,7 @@ Wavelet1D::writeDebugInfo(fftw_real ** seis_r,
     fid.close();
     fid.clear();
       
-    fileName = "ccor_seis_cpp_"+NRLib::ToString(int(theta_*180/PI+0.5))+"_well_"+NRLib::ToString(j+1);
+    fileName = "ccor_seis_cpp_"+NRLib::ToString(int(theta_*180/M_PI+0.5))+"_well_"+NRLib::ToString(j+1);
     NRLib::OpenWrite(fid,fileName);
     fid << std::setprecision(6);
     for(int i=0;i<nzp_;i++)
@@ -1362,7 +1362,7 @@ Wavelet1D::writeDebugInfo(fftw_real ** seis_r,
     fid.close();
     fid.clear();
 
-    fileName = "cpp_"+NRLib::ToString(int(theta_*180/PI+0.5))+"_well_"+NRLib::ToString(j+1);
+    fileName = "cpp_"+NRLib::ToString(int(theta_*180/M_PI+0.5))+"_well_"+NRLib::ToString(j+1);
     NRLib::OpenWrite(fid,fileName);
     fid << std::setprecision(6);
     for(int i=0;i<nzp_;i++)

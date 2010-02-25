@@ -322,7 +322,7 @@ Simbox::insideRectangle(const SegyGeometry *  geometry) const
   if(rx < -0.49*dx_ || rx > lxr+0.49*dx_ || ry<-0.49*dy_ || ry > lyr+0.49*dy_)
     allOk = 0;
   if(rotr<0)
-    rotr+=2*PI;
+    rotr+=2*M_PI;
   
   if (allOk==0) {
     double seisAzimuth = (-1)*rotr*(180/M_PI);
@@ -402,7 +402,7 @@ Simbox::getStormHeader(int cubetype, int nx, int ny, int nz, bool flat, bool asc
   else
     header += NRLib::ToString(GetXMin(),6) +" "+ NRLib::ToString(GetLX(),6) +" "+ NRLib::ToString(GetYMin(),6) +" "+ NRLib::ToString(GetLY(),6) +" 0.0 "+ NRLib::ToString(GetLZ(),6)+" 0.0 0.0\n";
 
-  header += NRLib::ToString(GetLZ(),6) +" "+ NRLib::ToString(GetAngle()*180/PI,6)+"\n\n";
+  header += NRLib::ToString(GetLZ(),6) +" "+ NRLib::ToString(GetAngle()*180/M_PI,6)+"\n\n";
   header += NRLib::ToString(nx) +" "+ NRLib::ToString(ny) +" "+ NRLib::ToString(nz)+"\n";
   std::string strHeader(header); 
 

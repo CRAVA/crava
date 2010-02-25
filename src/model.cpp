@@ -1895,7 +1895,7 @@ Model::processWells(WellData     **& wells,
       LogKit::LogFormatted(LogKit::LOW,"\n       Inversion area:    %11.2f %11.2f   %11.2f %11.2f   %8.3f\n", 
                            timeSimbox->getx0(), timeSimbox->gety0(), 
                            timeSimbox->getlx(), timeSimbox->getly(), 
-                           (timeSimbox->getAngle()*180)/PI);
+                           (timeSimbox->getAngle()*180)/M_PI);
       errText += "No wells available for estimation.";
       error = 1;
     }
@@ -3647,7 +3647,7 @@ Model::printSettings(ModelSettings * modelSettings,
     LogKit::LogFormatted(LogKit::HIGH,"  Threshold for merging log entries        : %10.2f ms\n",modelSettings->getMaxMergeDist());
     LogKit::LogFormatted(LogKit::HIGH,"  Threshold for Vp-Vs rank correlation     : %10.2f\n",modelSettings->getMaxRankCorr());
     LogKit::LogFormatted(LogKit::HIGH,"  Threshold for deviation angle            : %10.1f (=%.2fm/ms TWT)\n",
-                         modelSettings->getMaxDevAngle(),tan(modelSettings->getMaxDevAngle()*PI/180.0));
+                         modelSettings->getMaxDevAngle(),tan(modelSettings->getMaxDevAngle()*M_PI/180.0));
     LogKit::LogFormatted(LogKit::HIGH,"  High cut for background modelling        : %10.1f\n",modelSettings->getMaxHzBackground());
     LogKit::LogFormatted(LogKit::HIGH,"  High cut for seismic resolution          : %10.1f\n",modelSettings->getMaxHzSeismic());
   }
@@ -3747,9 +3747,9 @@ Model::printSettings(ModelSettings * modelSettings,
         int nMoveAngles = modelSettings->getNumberOfWellAngles(i);
         if( nMoveAngles > 0 )
         {
-          LogKit::LogFormatted(LogKit::LOW," %2d %46.1f %10.1f\n",i+1,(modelSettings->getWellMoveAngle(i,0)*180/PI),modelSettings->getWellMoveWeight(i,0));
+          LogKit::LogFormatted(LogKit::LOW," %2d %46.1f %10.1f\n",i+1,(modelSettings->getWellMoveAngle(i,0)*180/M_PI),modelSettings->getWellMoveWeight(i,0));
           for (int j=1; j<nMoveAngles; j++)
-            LogKit::LogFormatted(LogKit::LOW," %49.1f %10.1f\n",(modelSettings->getWellMoveAngle(i,j)*180/PI),modelSettings->getWellMoveWeight(i,j));
+            LogKit::LogFormatted(LogKit::LOW," %49.1f %10.1f\n",(modelSettings->getWellMoveAngle(i,j)*180/M_PI),modelSettings->getWellMoveWeight(i,j));
         }
         LogKit::LogFormatted(LogKit::LOW,"\n");
       }
@@ -4032,10 +4032,10 @@ Model::printSettings(ModelSettings * modelSettings,
       LogKit::LogFormatted(LogKit::LOW,"    Model                                  : %10s\n",(corr->getType()).c_str());
       if (pCorr != NULL)
         LogKit::LogFormatted(LogKit::LOW,"    Power                                  : %10.1f\n",pCorr->getPower());
-      LogKit::LogFormatted(LogKit::LOW,"    Range                                  : %10.1f\n",corr->getRange()*180.0/PI);
+      LogKit::LogFormatted(LogKit::LOW,"    Range                                  : %10.1f\n",corr->getRange()*180.0/M_PI);
       if (corr->getAnisotropic())
       {
-        LogKit::LogFormatted(LogKit::LOW,"    Subrange                               : %10.1f\n",corr->getSubRange()*180.0/PI);
+        LogKit::LogFormatted(LogKit::LOW,"    Subrange                               : %10.1f\n",corr->getSubRange()*180.0/M_PI);
         LogKit::LogFormatted(LogKit::LOW,"    Angle                                  : %10.1f\n",corr->getAngle());
       }
       bool estimateNoise = false;
@@ -4055,7 +4055,7 @@ Model::printSettings(ModelSettings * modelSettings,
       for (int i = 0 ; i < modelSettings->getNumberOfAngles() ; i++)
       {
         LogKit::LogFormatted(LogKit::LOW,"\nSettings for AVO stack %d:\n",i+1);
-        LogKit::LogFormatted(LogKit::LOW,"  Angle                                    : %10.1f\n",(modelSettings->getAngle(i)*180/PI));
+        LogKit::LogFormatted(LogKit::LOW,"  Angle                                    : %10.1f\n",(modelSettings->getAngle(i)*180/M_PI));
         LogKit::LogFormatted(LogKit::LOW,"  SegY start time                          : %10.1f\n",modelSettings->getSegyOffset());
         TraceHeaderFormat * thf = modelSettings->getTraceHeaderFormat(i);
         if (thf != NULL) 
