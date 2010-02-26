@@ -766,21 +766,29 @@ BlockedLogs::setLogFromVerticalTrend(float      * vertical_trend,
                                      std::string  type,
                                      int          iAngle)                  
 {
-  float * blockedLog = new float[nBlocks_];
+  if (type != "WELL_SYNTHETIC_SEISMIC")
+  {
+    float * blockedLog = new float[nBlocks_];
 
-  setLogFromVerticalTrend(blockedLog, zpos_, nBlocks_, 
-                          vertical_trend, z0, dz, nz);
+    setLogFromVerticalTrend(blockedLog, zpos_, nBlocks_, 
+                            vertical_trend, z0, dz, nz);
 
-  if (type == "ALPHA_SEISMIC_RESOLUTION")
-    alpha_seismic_resolution_ = blockedLog;
-  else if (type == "BETA_SEISMIC_RESOLUTION")
-    beta_seismic_resolution_ = blockedLog;
-  else if (type == "RHO_SEISMIC_RESOLUTION")
-    rho_seismic_resolution_ = blockedLog;
-  else if (type == "ACTUAL_SYNTHETIC_SEISMIC") {
-    if (actual_synt_seismic_data_ == NULL)
-      actual_synt_seismic_data_ = new float * [nAngles_]; // nAngles is set along with real_seismic_data_
-    actual_synt_seismic_data_[iAngle] = blockedLog;
+    if (type == "ALPHA_SEISMIC_RESOLUTION")
+      alpha_seismic_resolution_ = blockedLog;
+    else if (type == "BETA_SEISMIC_RESOLUTION")
+      beta_seismic_resolution_ = blockedLog;
+    else if (type == "RHO_SEISMIC_RESOLUTION")
+      rho_seismic_resolution_ = blockedLog;
+    else if (type == "ACTUAL_SYNTHETIC_SEISMIC") {
+      if (actual_synt_seismic_data_ == NULL)
+        actual_synt_seismic_data_ = new float * [nAngles_]; // nAngles is set along with real_seismic_data_
+      actual_synt_seismic_data_[iAngle] = blockedLog;
+    }
+    else {
+      LogKit::LogFormatted(LogKit::ERROR,"\nUnknown log type \""+type+
+                           "\" in BlockedLogs::setLogFromVerticalTrend()\n");
+      exit(1);
+    }
   }
   else if (type == "WELL_SYNTHETIC_SEISMIC") {
     if (well_synt_seismic_data_ == NULL)
@@ -793,12 +801,8 @@ BlockedLogs::setLogFromVerticalTrend(float      * vertical_trend,
           well_synt_seismic_data_[i][j] = RMISSING; //Declare in case the wavelet is not estimated for all angles
       }
     }
-    well_synt_seismic_data_[iAngle] = blockedLog;
-  }
-  else {
-    LogKit::LogFormatted(LogKit::ERROR,"\nUnknown log type \""+type+
-                         "\" in BlockedLogs::setLogFromVerticalTrend()\n");
-    exit(1);
+    setLogFromVerticalTrend(well_synt_seismic_data_[iAngle], zpos_, nBlocks_, 
+                            vertical_trend, z0, dz, nz);
   }
 }
 
