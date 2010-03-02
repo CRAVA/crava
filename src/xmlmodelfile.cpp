@@ -402,7 +402,7 @@ XmlModelFile::parseWell(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("use-for-background-trend");
   legalCommands.push_back("use-for-facies-probabilities");
   legalCommands.push_back("synthetic-vs-log");
-  legalCommands.push_back("optimize-location-to");
+  legalCommands.push_back("optimize-position");
   legalCommands.push_back("filter-elastic-logs");
 
   std::string tmpErr = "";
@@ -478,7 +478,7 @@ XmlModelFile::parseWell(TiXmlNode * node, std::string & errTxt)
 bool
 XmlModelFile::parseOptimizeLocation(TiXmlNode * node, std::string & errTxt)
 {
-  TiXmlNode * root = node->FirstChildElement("optimize-location-to");
+  TiXmlNode * root = node->FirstChildElement("optimize-position");
   if(root == 0)
     return(false);
 
@@ -2766,7 +2766,7 @@ XmlModelFile::checkAngleConsistency(std::string & errTxt) {
         }
       }
       if( compare[i]==false ){
-        errTxt += "Unexpected angle "+NRLib::ToString(angle/float(M_PI/180))+" in <optimize-location-to> is not equal to any of seismic offset-angles"+".\n";
+        errTxt += "Unexpected angle "+NRLib::ToString(angle/float(M_PI/180))+" in <optimize-position> is not equal to any of seismic offset-angles"+".\n";
       }
     }
   }
