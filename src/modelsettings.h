@@ -64,6 +64,7 @@ public:
   int                              getIndicatorWavelet(int i)           const { return indWavelet_[i]           ;}
   int                              getIndicatorFacies(int i)            const { return indFacies_[i]            ;}
   int                              getIndicatorRealVs(int i)            const { return indRealVs_[i]            ;}
+  const std::vector<int>         & getIndicatorFilter(void)             const { return indFilter_               ;}
   int                              getNumberOfWells(void)               const { return nWells_                  ;}
   int                              getNumberOfSimulations(void)         const { return nSimulations_            ;}
   float                            getAlphaMin(void)                    const { return alpha_min_               ;}
@@ -197,11 +198,11 @@ public:
                                                             wellMoveWeight_.push_back(moveWeight_)               ;}                                         
   void clearMoveWell(void)                                { moveAngle_.clear();                                  
                                                             moveWeight_.clear()                                  ;}
-  void setAllIndicatorsTrue(int nWells);                                                                         
   void addIndicatorBGTrend(int indicator)                 { indBGTrend_.push_back(indicator)                     ;}
   void addIndicatorWavelet(int indicator)                 { indWavelet_.push_back(indicator)                     ;}
   void addIndicatorFacies(int indicator)                  { indFacies_.push_back(indicator)                      ;}
   void addIndicatorRealVs(int indicator)                  { indRealVs_.push_back(indicator)                      ;}
+  void addIndicatorFilter(int indicator)                  { indFilter_.push_back(indicator)                      ;}
   void setLogName(int i, const std::string & logName)     { logNames_[i]              = NRLib::Uppercase(logName);}
   void setInverseVelocity(int i, bool inverse)            { inverseVelocity_[i]       = inverse                  ;}
   void addFaciesLabel(int faciesLabel)                    { faciesLabels_.push_back(faciesLabel)                 ;}
@@ -291,7 +292,7 @@ public:
                                                                                       
   enum          sseismicTypes{STANDARDSEIS = 0, PSSEIS = 1};                          
 
-  enum          indicators{NO = 0, YES = 1, NOTSET = 2};
+  enum          indicators{NO, YES, NOTSET};
 
   enum          areaSpecification{AREA_FROM_GRID_DATA, 
                                   AREA_FROM_UTM, 
@@ -350,6 +351,7 @@ private:
   std::vector<int>                  indWavelet_;                 // Use well to estimate wavelet? 
   std::vector<int>                  indFacies_;                  // Use well to estimate facies? 
   std::vector<int>                  indRealVs_;                  // Treat Vs log as real? 
+  std::vector<int>                  indFilter_;                  // Filter elastic logs using spatial multi-parameter filter?
 
   std::vector<std::string>          logNames_;                   // The keywords to look for for time, sonic, shear sonic and density
   std::vector<bool>                 inverseVelocity_;            // If element 0 is true, vp comes from dt, if 1 is true, vs comes from dts in well.

@@ -22,6 +22,8 @@ SpatialWellFilter::SpatialWellFilter(int nwells)
 {
   nWells_ = nwells;
   priorSpatialCorr_ = new double **[nWells_];
+  for(int i = 0 ; i < nWells_ ; i++)
+    priorSpatialCorr_[i] = NULL;
 }
 
 SpatialWellFilter::~SpatialWellFilter()
@@ -78,8 +80,14 @@ void SpatialWellFilter::setPriorSpatialCorr(FFTGrid *parSpatialCorr, WellData *w
   }
 }
 
-void SpatialWellFilter::doFiltering(Corr *corr, WellData **wells, int nWells, bool useVpRhoFilter, int nAngles,
-                                    const Crava * cravaResult, const std::vector<Grid2D *> & noiseScale)
+void SpatialWellFilter::doFiltering(Corr                        * corr, 
+                                    WellData                   ** wells, 
+                                    int                           nWells, 
+                                    bool                          useVpRhoFilter, 
+                                    const std::vector<int>      & filterWell,
+                                    int                           nAngles,
+                                    const Crava                 * cravaResult, 
+                                    const std::vector<Grid2D *> & noiseScale)
 {
  Utils::writeHeader("Creating spatial multi-parameter filter");
 
@@ -91,9 +99,6 @@ void SpatialWellFilter::doFiltering(Corr *corr, WellData **wells, int nWells, bo
   double ** sigmapri;
   double ** imat;
   double ** Aw;
-  nData_ = 0;
-  for(int w1=0;w1<nWells;w1++)
-    nData_ += wells[w1]->getBlockedLogsOrigThick()->getNumberOfBlocks();
 
   int lastn = 0;
   int n = 0;
@@ -123,9 +128,12 @@ void SpatialWellFilter::doFiltering(Corr *corr, WellData **wells, int nWells, bo
 
   for(int w1=0;w1<nWells;w1++)
   {   
-    LogKit::LogFormatted(LogKit::LOW,"\nFiltering well "+wells[w1]->getWellname());
-
     n = wells[w1]->getBlockedLogsOrigThick()->getNumberOfBlocks();
+    n_[w1] = n;
+
+  if (filterWell[w1] != ModelSettings::NO) 
+  {
+    LogKit::LogFormatted(LogKit::LOW,"\nFiltering well "+wells[w1]->getWellname());
 
     sigmapost = new double * [3*n];
     for(int i=0;i<3*n;i++)
@@ -239,7 +247,6 @@ void SpatialWellFilter::doFiltering(Corr *corr, WellData **wells, int nWells, bo
 
     calculateFilteredLogs(Aw, wells[w1]->getBlockedLogsOrigThick(), n, true);
 
-    n_[w1] = n;
     lastn += n;
 
     for(int i=0;i<3*n;i++)
@@ -256,6 +263,7 @@ void SpatialWellFilter::doFiltering(Corr *corr, WellData **wells, int nWells, bo
     delete [] sigmapri;
     delete [] sigmapost;
     delete [] imat;  
+  }
   }
 
   completeSigmaE(lastn);

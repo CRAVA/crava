@@ -283,18 +283,4 @@ ModelSettings::addTraceHeaderFormat(TraceHeaderFormat * traceHeaderFormat)
   localTHF_.push_back(traceHeaderFormat);
 }
 
-void           
-ModelSettings::setAllIndicatorsTrue(int nWells)
-{
-  indBGTrend_.resize(nWells);
-  indWavelet_.resize(nWells);
-  indFacies_.resize(nWells);
-  for (int i=0 ; i<nWells ; i++)
-  {
-    indBGTrend_[i] = 1;
-    indWavelet_[i] = 1;
-    indFacies_[i]  = 1;
-  }
-}
-
 int  ModelSettings::debugFlag_  = 0;

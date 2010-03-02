@@ -403,6 +403,7 @@ XmlModelFile::parseWell(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("use-for-facies-probabilities");
   legalCommands.push_back("synthetic-vs-log");
   legalCommands.push_back("optimize-location-to");
+  legalCommands.push_back("filter-elastic-logs");
 
   std::string tmpErr = "";
   std::string value;
@@ -415,44 +416,54 @@ XmlModelFile::parseWell(TiXmlNode * node, std::string & errTxt)
     tmpErr += "The file name for the well is not given.\n";
   }
 
+  int useForBackgroundTrend   = ModelSettings::NOTSET;
+  int useForWaveletEstimation = ModelSettings::NOTSET;
+  int useForFaciesProbability = ModelSettings::NOTSET;
+  int filterElasticLogs       = ModelSettings::NOTSET;
+  int hasRealVs               = ModelSettings::NOTSET;
+
   bool use;
-  if(parseBool(root, "use-for-wavelet-estimation", use, tmpErr) == true) {
-    if(use == false)
-      modelSettings_->addIndicatorWavelet(ModelSettings::NO);
+  if(parseBool(root, "use-for-background-trend", use, tmpErr)) {
+    if(use)
+      useForBackgroundTrend = ModelSettings::YES;
     else
-      modelSettings_->addIndicatorWavelet(ModelSettings::YES);
+      useForBackgroundTrend = ModelSettings::NO;
   }
-  else
-    modelSettings_->addIndicatorWavelet(ModelSettings::NOTSET);
-
-
-  if(parseBool(root, "use-for-background-trend", use, tmpErr) == true) {
-    if(use == false)
-      modelSettings_->addIndicatorBGTrend(ModelSettings::NO);
+  
+  if(parseBool(root, "use-for-wavelet-estimation", use, tmpErr)) {
+    if(use)
+      useForWaveletEstimation = ModelSettings::YES;
     else
-      modelSettings_->addIndicatorBGTrend(ModelSettings::YES);
+      useForWaveletEstimation = ModelSettings::NO;
   }
-  else
-    modelSettings_->addIndicatorBGTrend(ModelSettings::NOTSET);
 
-  if(parseBool(root, "use-for-facies-probabilities", use, tmpErr) == true) {
-    if(use == false)
-      modelSettings_->addIndicatorFacies(ModelSettings::NO);
+  if(parseBool(root, "use-for-facies-probabilities", use, tmpErr)) {
+    if(use)
+      useForFaciesProbability = ModelSettings::YES;
     else
-      modelSettings_->addIndicatorFacies(ModelSettings::YES);
+      useForFaciesProbability = ModelSettings::NO;
   }
-  else
-    modelSettings_->addIndicatorFacies(ModelSettings::NOTSET);
 
   bool synth = false;
-  if(parseBool(root, "synthetic-vs-log", synth, tmpErr) == true) {
+  if(parseBool(root, "synthetic-vs-log", synth, tmpErr)) {
     if(synth == false)
-      modelSettings_->addIndicatorRealVs(ModelSettings::YES); //Note the inversion. The keyword is most logical this way,
-    else                                                      //but the default should be that the log is real.
-      modelSettings_->addIndicatorRealVs(ModelSettings::NO);
+      hasRealVs = ModelSettings::YES;   //Note the inversion. The keyword is most logical this way,
+    else                                //but the default should be that the log is real.
+      hasRealVs = ModelSettings::NO;
   }
-  else
-    modelSettings_->addIndicatorRealVs(ModelSettings::NOTSET);
+
+  if(parseBool(root, "filter-elastic-logs", use, tmpErr)) {
+    if(use || useForFaciesProbability != ModelSettings::NO)
+      filterElasticLogs = ModelSettings::YES;
+    else
+      filterElasticLogs = ModelSettings::NO;
+  }
+
+  modelSettings_->addIndicatorBGTrend(useForBackgroundTrend);
+  modelSettings_->addIndicatorWavelet(useForWaveletEstimation);
+  modelSettings_->addIndicatorFacies(useForFaciesProbability);
+  modelSettings_->addIndicatorRealVs(hasRealVs);
+  modelSettings_->addIndicatorFilter(filterElasticLogs);
 
   modelSettings_->clearMoveWell();
   while(parseOptimizeLocation(root, tmpErr) == true);
@@ -2645,8 +2656,12 @@ void
 XmlModelFile::checkConsistency(std::string & errTxt) {
   if(modelSettings_->getForwardModeling() == true)
     checkForwardConsistency(errTxt);
-  else
-    checkEstimationInversionConsistency(errTxt);
+  else {
+    if (modelSettings_->getEstimationMode())
+      checkEstimationConsistency(errTxt);
+    else
+      checkInversionConsistency(errTxt);
+  }
   if(modelSettings_->getLocalWaveletVario()==NULL) 
       modelSettings_->copyBackgroundVarioToLocalWaveletVario();
   if(modelSettings_->getOptimizeWellLocation()==true)
@@ -2683,51 +2698,44 @@ XmlModelFile::checkForwardConsistency(std::string & errTxt) {
       errTxt += "An earth model needs to be given when doing forward modeling.\n";
   }
 }
-
+ 
 void
-XmlModelFile::checkEstimationInversionConsistency(std::string & errTxt) {
-  if (modelSettings_->getEstimationMode())
-  {
-    if (modelSettings_->getNumberOfWells()==0)
-    {
-      if (modelSettings_->getEstimateBackground())
-        errTxt += "Wells are needed for estimation of background.\n";
-      if (modelSettings_->getEstimateCorrelations())
-        errTxt += "Wells are needed for estimation of correlations.\n";
+XmlModelFile::checkEstimationConsistency(std::string & errTxt) {
+  if (modelSettings_->getNumberOfWells()==0) {
+    if (modelSettings_->getEstimateBackground())
+      errTxt += "Wells are needed for estimation of background.\n";
+    if (modelSettings_->getEstimateCorrelations())
+      errTxt += "Wells are needed for estimation of correlations.\n";
+    if (modelSettings_->getEstimateWaveletNoise())
+      errTxt += "Wells are needed for estimation of wavelet and noise.\n";
+  }
+  if (modelSettings_->getEstimateWaveletNoise()==false && modelSettings_->getOptimizeWellLocation()==false)
+    modelSettings_->setNoSeismicNeeded(true);
+  else {
+    if (inputFiles_->getNumberOfSeismicFiles()==0) {
+      if (modelSettings_->getOptimizeWellLocation())
+        errTxt += "Seismic data are needed for optimizing well locations.\n";
       if (modelSettings_->getEstimateWaveletNoise())
-        errTxt += "Wells are needed for estimation of wavelet and noise.\n";
-    }
-    if (modelSettings_->getEstimateWaveletNoise()==false && modelSettings_->getOptimizeWellLocation()==false)
-      modelSettings_->setNoSeismicNeeded(true);
-    else
-    {
-      if (inputFiles_->getNumberOfSeismicFiles()==0)
-      {
-        if (modelSettings_->getOptimizeWellLocation())
-          errTxt += "Seismic data are needed for optimizing well locations.\n";
-        if (modelSettings_->getEstimateWaveletNoise())
-          errTxt += "Seismic data are needed for estimation of wavelets and noise.\n";
-      }
+        errTxt += "Seismic data are needed for estimation of wavelets and noise.\n";
     }
   }
-  else
-  {
-    if (inputFiles_->getNumberOfSeismicFiles()==0)
-      errTxt += "Seismic data are needed for inversion.\n";
-    if (modelSettings_->getNumberOfWells() == 0)
-    {
-      if (inputFiles_->getBackFile(0)!="" && inputFiles_->getWaveletFile(0)!="" && inputFiles_->getTempCorrFile()!="" && inputFiles_->getParamCorrFile()!="") 
-        modelSettings_->setNoWellNeeded(true); 
-      else 
-      {
-        errTxt += "Wells are needed for the inversion. ";
-        errTxt += "Alternatively, all of background, wavelet, \ntemporal correlation and parameter correlation must be given.\n";
-      }
-      if (modelSettings_->getKrigingParameter()>0)
-        errTxt += "Wells are needed for kriging.\n";
-      if (modelSettings_->getEstimateFaciesProb())
-        errTxt += "Wells are needed for facies probabilities.\n";
+}
+
+void
+XmlModelFile::checkInversionConsistency(std::string & errTxt) {
+  if (inputFiles_->getNumberOfSeismicFiles()==0)
+    errTxt += "Seismic data are needed for inversion.\n";
+  if (modelSettings_->getNumberOfWells() == 0) {
+    if (inputFiles_->getBackFile(0)!="" && inputFiles_->getWaveletFile(0)!="" && inputFiles_->getTempCorrFile()!="" && inputFiles_->getParamCorrFile()!="") 
+      modelSettings_->setNoWellNeeded(true); 
+    else {
+      errTxt += "Wells are needed for the inversion. ";
+      errTxt += "Alternatively, all of background, wavelet, \ntemporal correlation and parameter correlation must be given.\n";
     }
+    if (modelSettings_->getKrigingParameter()>0)
+      errTxt += "Wells are needed for kriging.\n";
+    if (modelSettings_->getEstimateFaciesProb())
+      errTxt += "Wells are needed for facies probabilities.\n";
   }
 }
 

@@ -16,9 +16,14 @@ public:
   ~SpatialWellFilter();
   
   void                     setPriorSpatialCorr(FFTGrid *parSpatialCorr, WellData *well, int wellnr);
-  void                     doFiltering(Corr *corr, WellData **wells, int nWells, bool useVpRhoFilter, int nAngles,
-                                       const Crava * cravaResult, const std::vector<Grid2D *> & noiseScale);
-  int                      getNdata(void) const {return nData_;}
+  void                     doFiltering(Corr                        * corr, 
+                                       WellData                   ** wells, 
+                                       int                           nWells, 
+                                       bool                          useVpRhoFilter, 
+                                       const std::vector<int>      & filterWell,
+                                       int                           nAngles,
+                                       const Crava                 * cravaResult, 
+                                       const std::vector<Grid2D *> & noiseScale);
   std::vector<double **> & getSigmae(void) {return sigmae_;}
   
 private:

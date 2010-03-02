@@ -98,10 +98,14 @@ int main(int argc, char** argv)
       int activeAngles = 0; //How many dimensions for local noise interpolation? Turn off for now.
       if(modelSettings->getUseLocalNoise()==true)
         activeAngles = modelSettings->getNumberOfAngles();
-      spatwellfilter->doFiltering(corr,model->getWells(), 
+      spatwellfilter->doFiltering(corr,
+                                  model->getWells(), 
                                   modelSettings->getNumberOfWells(), 
                                   modelSettings->getNoVsFaciesProb(),
-                                  activeAngles, crava, model->getLocalNoiseScales());
+                                  modelSettings->getIndicatorFilter(),
+                                  activeAngles, 
+                                  crava, 
+                                  model->getLocalNoiseScales());
       
       // FilterWellLogs * filteredlogs = NULL;
       //crava->filterLogs(model->getTimeSimboxConstThick(),filteredlogs);
