@@ -277,7 +277,7 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
   LogKit::LogFormatted(LogKit::LOW,"  Estimated wavelet length:  %.1fms\n",waveletLength_);
 
   if( ModelSettings::getDebugLevel() > 0 )
-    writeWaveletToFile("estimated_wavelet", 1.0f);
+    writeWaveletToFile("estimated_wavelet_", 1.0f);
 
   double norm2=0.0;
   for(int i=0; i < nzp_; i++ )
@@ -294,11 +294,10 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
     {
       for(int i=0; i<nzp_; i++)
         rAmp_[i] = wellWavelets[w][i];
-      std::string fileName = "Wavelet_well"; 
       std::string wellname(wells[w]->getWellname());
       NRLib::Substitute(wellname,"/","_");
       NRLib::Substitute(wellname," ","_");
-      fileName += "_"+wellname; 
+      std::string fileName = IO::PrefixWellWavelet() + wellname + "_"; 
       writeWaveletToFile(fileName, 1.0f);
     }
   }

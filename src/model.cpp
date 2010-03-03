@@ -167,10 +167,6 @@ Model::Model(const std::string & fileName)
         //
         // INVERSION/ESTIMATION
         //
-        bool estimate   = modelSettings_->getEstimationMode();
-        int  gridOutput = modelSettings_->getGridOutputFlag();
-        int  gridFormat = modelSettings_->getGridOutputFormat();
-
         if(timeCutSimbox!=NULL)  {
           timeCutMapping_ = new GridMapping();
           timeCutMapping_->makeTimeTimeMapping(timeCutSimbox);
@@ -184,9 +180,8 @@ Model::Model(const std::string & fileName)
         loadExtraSurfaces(waveletEstimInterval_, faciesEstimInterval_, wellMoveInterval_, 
                           timeSimbox_, inputFiles, errText, failedExtraSurf);
 
-        bool writeBackgroundInCravaFormat = (gridFormat & IO::CRAVA) > 0 && (gridOutput & IO::BACKGROUND) > 0;
-        bool writeSeismicInCravaFormat    = (gridFormat & IO::CRAVA) > 0 && (gridOutput & IO::ORIGINAL_SEISMIC_DATA) > 0;
-        bool writeVelocityInCravaFormat   = (gridFormat & IO::CRAVA) > 0 && (gridOutput & IO::TIME_TO_DEPTH_VELOCITY) > 0;
+
+        bool estimationMode = modelSettings_->getEstimationMode();
 
         if (!failedWells && !failedDepthConv)
         {
@@ -195,12 +190,11 @@ Model::Model(const std::string & fileName)
           if(!(modelSettings_->getOptimizeWellLocation() == true &&
                modelSettings_->getGenerateBackground() == true)) 
           { 
-            if(estimate == false || 
+            if(estimationMode == false || 
                modelSettings_->getEstimateBackground() == true ||
                modelSettings_->getEstimateCorrelations() == true || 
                modelSettings_->getEstimateWaveletNoise() == true ||
-               modelSettings_->getOptimizeWellLocation() == true ||
-               writeBackgroundInCravaFormat) 
+               modelSettings_->getOptimizeWellLocation() == true) 
             {
               processBackground(background_, wells_, timeSimbox_, timeBGSimbox,
                                 modelSettings_, inputFiles,
@@ -209,7 +203,7 @@ Model::Model(const std::string & fileName)
             }
 
             if(failedBackground == false && backgroundDone == true &&
-              (estimate == false || modelSettings_->getEstimateWaveletNoise() || 
+              (estimationMode == false || modelSettings_->getEstimateWaveletNoise() || 
                modelSettings_->getOptimizeWellLocation() == true))
             {
               processReflectionMatrixFromBackground(reflectionMatrix_, background_, modelSettings_, 
@@ -218,8 +212,8 @@ Model::Model(const std::string & fileName)
 
             if(failedBackground == false && backgroundDone == true && 
                failedReflMat == false && failedExtraSurf == false &&
-               (estimate == false || modelSettings_->getEstimateWaveletNoise() || 
-               modelSettings_->getOptimizeWellLocation() == true || writeSeismicInCravaFormat ))
+               (estimationMode == false || modelSettings_->getEstimateWaveletNoise() || 
+                modelSettings_->getOptimizeWellLocation() == true))
             {
               processSeismic(seisCube_, timeSimbox_, modelSettings_, 
                              inputFiles, errText, failedSeismic);
@@ -254,11 +248,10 @@ Model::Model(const std::string & fileName)
                                     timeSimbox_, modelSettings_, wellMoveInterval_, randomGen_);       
               }
             }
-            if(estimate == false || 
+            if(estimationMode == false || 
                modelSettings_->getEstimateBackground() == true ||
                modelSettings_->getEstimateCorrelations() == true || 
-               modelSettings_->getEstimateWaveletNoise() == true ||
-               writeBackgroundInCravaFormat) 
+               modelSettings_->getEstimateWaveletNoise() == true) 
             {
               processBackground(background_, wells_, timeSimbox_, timeBGSimbox, 
                                 modelSettings_, inputFiles, errText, failedBackground);
@@ -268,14 +261,14 @@ Model::Model(const std::string & fileName)
 
           if(failedBackground == false && backgroundDone == true && 
              failedSeismic == false && failedReflMat == false &&
-             (estimate == false || modelSettings_->getEstimateCorrelations() == true))
+             (estimationMode == false || modelSettings_->getEstimateCorrelations() == true))
           {
             processPriorCorrelations(correlations_, background_, wells_, timeSimbox_, modelSettings_, 
                                      inputFiles, errText, failedPriorCorr);
           }
 
           if(failedSeismic == false && failedBackground == false && 
-            (estimate == false || modelSettings_->getEstimateWaveletNoise() || modelSettings_->getOptimizeWellLocation()))
+            (estimationMode == false || modelSettings_->getEstimateWaveletNoise() || modelSettings_->getOptimizeWellLocation()))
           {
             addSeismicLogs(wells_, seisCube_, modelSettings_); 
             if(failedReflMat == false && failedExtraSurf == false) 
@@ -292,13 +285,13 @@ Model::Model(const std::string & fileName)
           }
         }
 
-        if((estimate == false && modelSettings_->getDoDepthConversion() == true) || writeVelocityInCravaFormat)
+        if(estimationMode == false && modelSettings_->getDoDepthConversion() == true)
         {
           processDepthConversion(timeCutSimbox, timeSimbox_, modelSettings_, 
                                  inputFiles, errText, failedDepthConv);
         }
 
-        if (estimate == false && !failedWells && !failedExtraSurf)
+        if (estimationMode == false && !failedWells && !failedExtraSurf)
         {
           processPriorFaciesProb(faciesEstimInterval_,
                                  priorFacies_,
@@ -315,11 +308,11 @@ Model::Model(const std::string & fileName)
         if (!failedWells)
         {
           if(((modelSettings_->getWellOutputFlag() & IO::WELLS) > 0) ||
-             (estimate == true && modelSettings_->getEstimateBackground() == true))
+             (estimationMode == true && modelSettings_->getEstimateBackground() == true))
           {
             writeWells(wells_, modelSettings_);
           }
-          if(estimate  == true && (modelSettings_->getEstimateWaveletNoise() == true ||
+          if(estimationMode  == true && (modelSettings_->getEstimateWaveletNoise() == true ||
                                    (modelSettings_->getWellOutputFlag() & IO::BLOCKED_WELLS) > 0))
             writeBlockedWells(wells_, modelSettings_);
         }
@@ -969,6 +962,8 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
       setSimboxSurfaces(timeSimbox, 
                         inputFiles->getTimeSurfFiles(), 
                         modelSettings->getForwardModeling(),
+                        modelSettings->getEstimationMode(),
+                        modelSettings->getGenerateBackground(),
                         modelSettings->getParallelTimeSurfaces(), 
                         modelSettings->getTimeDTop(), 
                         modelSettings->getTimeLz(), 
@@ -1112,6 +1107,8 @@ void
 Model::setSimboxSurfaces(Simbox                        *& simbox, 
                          const std::vector<std::string> & surfFile, 
                          bool                             generateSeismic,
+                         bool                             estimationMode,
+                         bool                             generateBackground,
                          bool                             parallelSurfaces, 
                          double                           dTop,
                          double                           lz, 
@@ -1198,14 +1195,16 @@ Model::setSimboxSurfaces(Simbox                        *& simbox,
                                    IO::PathToSeismicData(),
                                    outputFormat);
         }
-        else {
+        else if (!estimationMode){
           simbox->writeTopBotGrids(topSurf, 
                                    baseSurf,
                                    IO::PathToInversionResults(),
                                    outputFormat);
         }
         if((outputFormat & IO::STORM) > 0) { // These copies are only needed with the STORM format
-          if ((outputFlag & IO::BACKGROUND) > 0 || (outputFlag & IO::BACKGROUND_TREND) > 0) {
+          if ((outputFlag & IO::BACKGROUND) > 0 || 
+              (outputFlag & IO::BACKGROUND_TREND) > 0 || 
+              estimationMode && generateBackground) {
             simbox->writeTopBotGrids(topSurf, 
                                      baseSurf,
                                      IO::PathToBackground(),
@@ -2179,8 +2178,12 @@ Model::processBackground(Background   *& background,
   }
 
   if (failed == false) {
-    if((modelSettings->getGridOutputFlag() & IO::BACKGROUND) > 0) {
-      background->writeBackgrounds(timeSimbox, timeDepthMapping_, timeCutMapping_, *modelSettings->getTraceHeaderFormatOutput()); 
+    if(((modelSettings->getGridOutputFlag() & IO::BACKGROUND) > 0) || 
+       ( modelSettings->getEstimationMode() && modelSettings->getGenerateBackground())) {
+      background->writeBackgrounds(timeSimbox, 
+                                   timeDepthMapping_, 
+                                   timeCutMapping_, 
+                                   *modelSettings->getTraceHeaderFormatOutput()); 
     }
   }
     
@@ -2916,7 +2919,14 @@ Model::processWavelets(Wavelet                    **& wavelet,
         if((modelSettings->getWaveletOutputFlag() & IO::GLOBAL_WAVELETS) > 0 || 
           (modelSettings->getEstimationMode() && modelSettings->getEstimateWavelet(i)))
         {
-          wavelet[i]->writeWaveletToFile(IO::PrefixWavelet()+"Scaled", 1.0); // dt_max = 1.0;
+          std::string type;
+          if (modelSettings->getEstimateWavelet(i))
+            type = "Estimated_";
+          else if (modelSettings->getWaveletScale(i) == 1.00)
+            type = "";
+          else
+            type = "Scaled_";
+          wavelet[i]->writeWaveletToFile(IO::PrefixWavelet()+type, 1.0); // dt_max = 1.0;
         }
         
         float SNRatio = modelSettings->getSNRatio(i);
@@ -3545,7 +3555,7 @@ Model::printSettings(ModelSettings * modelSettings,
     LogKit::LogFormatted(LogKit::MEDIUM,"\nGrid output formats:\n");
     if (gridFormat & IO::SEGY) {
       const std::string & formatName = modelSettings->getTraceHeaderFormatOutput()->GetFormatName();
-      LogKit::LogFormatted(LogKit::MEDIUM,"  Segy - %-10s                        : yes\n",formatName.c_str());
+      LogKit::LogFormatted(LogKit::MEDIUM,"  Segy - %-10s                        :        yes\n",formatName.c_str());
     }
     if (gridFormat & IO::STORM)
       LogKit::LogFormatted(LogKit::MEDIUM,"  Storm                                    :        yes\n");

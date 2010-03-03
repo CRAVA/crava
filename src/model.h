@@ -195,6 +195,8 @@ private:
   void             setSimboxSurfaces(Simbox                        *& simbox, 
                                      const std::vector<std::string> & surfFile, 
                                      bool                             generateSeismic,
+                                     bool                             estimationMode,
+                                     bool                             generateBackground,
                                      bool                             parallelSurfaces, 
                                      double                           dTop,
                                      double                           lz, 

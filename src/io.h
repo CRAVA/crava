@@ -55,6 +55,7 @@ public:
   inline static  std::string    PrefixSyntheticSeismicData(void)   { return std::string("Synthetic_Seismic_Data_")  ;}
   inline static  std::string    PrefixFaciesProbability(void)      { return std::string("Facies_Probability_")      ;}
   inline static  std::string    PrefixWavelet(void)                { return std::string("Wavelet_")                 ;}
+  inline static  std::string    PrefixWellWavelet(void)            { return std::string("Wavelet_Well_")            ;}
   inline static  std::string    PrefixLocalWaveletGain(void)       { return std::string("Local_Wavelet_Scale_")     ;}
   inline static  std::string    PrefixLocalWaveletShift(void)      { return std::string("Local_Wavelet_Shift_")     ;}
   inline static  std::string    PrefixLocalNoise(void)             { return std::string("Local_Noise_Scaled_")      ;}

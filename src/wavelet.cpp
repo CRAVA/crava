@@ -478,7 +478,7 @@ Wavelet::resample(float dz,
   if (flip) 
     flipUpDown();
   if( ModelSettings::getDebugLevel() > 0 ) {
-    std::string fileName = "resampled_wavelet";
+    std::string fileName = "resampled_wavelet_";
     float dzOut = 1.0; // sample at least as dense as this
     writeWaveletToFile(fileName, dzOut);
   }
@@ -596,8 +596,7 @@ Wavelet::writeWaveletToFile(const std::string & fileName,
   
   if ((formats_ & IO::JASONWAVELET)>0)
     {
-    
-    fName = std::string(fileName) + "_" + NRLib::ToString(theta_*(180/M_PI), 1) + "_deg" + IO::SuffixJasonWavelet();
+    fName = std::string(fileName) + NRLib::ToString(theta_*(180/M_PI), 1) + "deg" + IO::SuffixJasonWavelet();
     fName = IO::makeFullFileName(IO::PathToWavelets(), fName);
     
     LogKit::LogFormatted(LogKit::MEDIUM,"  Writing Wavelet to file \'"+fName+"\'\n");
@@ -635,7 +634,7 @@ Wavelet::writeWaveletToFile(const std::string & fileName,
   if ((formats_ & IO::NORSARWAVELET)>0)  
     {
     //Writing wavelet in swav-format
-    fName = std::string(fileName) + "_" + NRLib::ToString(theta_*(180/M_PI), 1) + "_deg" + IO::SuffixNorsarWavelet();
+    fName = std::string(fileName) + NRLib::ToString(theta_*(180/M_PI), 1) + "deg" + IO::SuffixNorsarWavelet();
     fName = IO::makeFullFileName(IO::PathToWavelets(), fName);
 
     LogKit::LogFormatted(LogKit::MEDIUM,"  Writing Wavelet to file \'"+fName+"\'\n");
