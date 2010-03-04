@@ -119,7 +119,6 @@ Model::Model(const std::string & fileName)
     }
     LogKit::EndBuffering();
     
-
     if(inputFiles->getSeedFile() == "")
       randomGen_ = new RandomGen(modelSettings_->getSeed());
     else
@@ -329,6 +328,10 @@ Model::Model(const std::string & fileName)
     }
 
     delete inputFiles;
+  }
+  else {
+    LogKit::SetFileLog(IO::FileLog()+IO::SuffixTextFiles(), modelSettings_->getLogLevel());
+    LogKit::EndBuffering();
   }
   
   failed_ = failedModelFile || failedInputFiles || failedLoadingModel;
