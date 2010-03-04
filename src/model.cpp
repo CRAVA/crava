@@ -801,16 +801,18 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
                         std::string    & errText,
                         bool           & failed)
 {
-  std::string    areaType;
-  std::string    gridFile("");
+  std::string gridFile("");
 
-  int areaSpecification = modelSettings->getAreaSpecification();
+  int  areaSpecification      = modelSettings->getAreaSpecification();
 
+  bool estimationModeNeedILXL = modelSettings->getEstimationMode() && 
+                                (areaSpecification == ModelSettings::AREA_FROM_GRID_DATA ||
+                                 (modelSettings->getGridOutputFlag() & IO::ORIGINAL_SEISMIC_DATA) > 0);
+                                 
   if(modelSettings->getForwardModeling())
     gridFile = inputFiles->getBackFile(0);    // Get geometry from earth model (Vp)
   else {
-    //In estimation mode, we generally do not bother with il/xl, and may not need the gridfile, hence it might not be given.
-    if(areaSpecification == ModelSettings::AREA_FROM_GRID_DATA || modelSettings->getEstimationMode() == false)
+    if (modelSettings->getEstimationMode() == false || estimationModeNeedILXL)
       gridFile = inputFiles->getSeismicFile(0); // Get area from first seismic data volume
   }
   SegyGeometry * ILXLGeometry = NULL; //Geometry with correct XL and IL settings.
@@ -818,6 +820,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
   // Set area geometry information
   // -----------------------------
   //
+  std::string areaType;
   if (areaSpecification == ModelSettings::AREA_FROM_UTM) 
   {
     // The geometry is already present in modelSettings (read from model file).
@@ -872,6 +875,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
         }
         catch (NRLib::Exception & e) {
           errText += "Error: "+std::string(e.what());
+          geometry->WriteGeometry(true);
           geometry = NULL;
           failed = true;
         }
@@ -918,10 +922,10 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
       // Set IL/XL information in geometry
       // ---------------------------------
       //
-      // Skip if estimation mode:
+      // Skip for estimation mode if possible:
       //   a) For speed 
       //   b) Grid data may not be available.
-      if (modelSettings->getEstimationMode() == false) {
+      if (modelSettings->getEstimationMode() == false || estimationModeNeedILXL == true) {
         if(ILXLGeometry == NULL) {
           int gridType = IO::findGridType(gridFile);
           bool ilxl_info_available = ((gridType == IO::SEGY) || (gridType == IO::CRAVA));

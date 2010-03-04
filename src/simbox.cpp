@@ -57,10 +57,10 @@ Simbox::Simbox(double x0, double y0, Surface * z0, double lx,
 
   inLine0_     = -0.5;
   crossLine0_  = -0.5;
-  xlStepX_ = cosrot_/dx_;
-  xlStepY_ = sinrot_/dx_;
-  ilStepX_ = -sinrot_/dy_;
-  ilStepY_ = cosrot_/dy_;
+  xlStepX_     =  cosrot_/dx_;
+  xlStepY_     =  sinrot_/dx_;
+  ilStepX_     = -sinrot_/dy_;
+  ilStepY_     =  cosrot_/dy_;
 }
 
 Simbox::Simbox(const Simbox *simbox) : 
@@ -559,19 +559,21 @@ Simbox::setArea(const SegyGeometry * geometry, std::string & errText)
     failed = true;
     return true; // Failed
   }
-  cosrot_ = cos(rot);
-  sinrot_ = sin(rot);
-  dx_     = dx;
-  dy_     = dy;
-  nx_     = int(0.5+lx/dx_);
-  ny_     = int(0.5+ly/dy_);
+  cosrot_      = cos(rot);
+  sinrot_      = sin(rot);
+  dx_          = dx;
+  dy_          = dy;
+  nx_          = static_cast<int>(0.5+lx/dx_);
+  ny_          = static_cast<int>(0.5+ly/dy_);
 
+  // In case IL/XL information is not available, we fall back
+  //  on the following base case values ...
   inLine0_     = -0.5;
   crossLine0_  = -0.5;
-  ilStepX_     = cosrot_/dx_;
-  ilStepY_     = sinrot_/dx_;
+  ilStepX_     =  cosrot_/dx_;
+  ilStepY_     =  sinrot_/dx_;
   xlStepX_     = -sinrot_/dy_;
-  xlStepY_     = cosrot_/dy_;
+  xlStepY_     =  cosrot_/dy_;
 
   if(status_ == EMPTY)
     status_ = NODEPTH;
