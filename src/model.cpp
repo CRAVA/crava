@@ -1457,12 +1457,17 @@ void
 Model::estimateXYPaddingSizes(Simbox         * timeSimbox, 
                               ModelSettings *& modelSettings)
 {
-  double xPadFac = modelSettings->getXPadFac();
-  double yPadFac = modelSettings->getYPadFac();
-  double xPad    = xPadFac*timeSimbox->getlx();
-  double yPad    = yPadFac*timeSimbox->getly();
   double dx      = timeSimbox->getdx();
   double dy      = timeSimbox->getdy();
+  double lx      = timeSimbox->getlx();
+  double ly      = timeSimbox->getly();
+  int    nx      = timeSimbox->getnx();
+  int    ny      = timeSimbox->getny();
+
+  double xPadFac = modelSettings->getXPadFac();
+  double yPadFac = modelSettings->getYPadFac();
+  double xPad    = xPadFac*lx;
+  double yPad    = yPadFac*ly;
 
   if (modelSettings->getEstimateXYPadding())
   {
@@ -1471,21 +1476,25 @@ Model::estimateXYPaddingSizes(Simbox         * timeSimbox,
     float  angle  = modelSettings->getLateralCorr()->getAngle();
     double factor = 0.5;  // Lateral correlation is not very important. Half a range is probably more than enough
 
-    xPad          = factor * std::max(fabs(range1*cos(angle)),fabs(range2*sin(angle)));
-    yPad          = factor * std::max(fabs(range1*sin(angle)),fabs(range2*cos(angle)));
-    xPad          = std::max(xPad, dx); // Always require at least on grid cell
-    yPad          = std::max(xPad, dy); // Always require at least one grid cell
-
-    xPadFac       = std::min(1.0, xPad / timeSimbox->getlx()); // A padding of more than 100% is insensible
-    yPadFac       = std::min(1.0, yPad / timeSimbox->getly());
-
-    modelSettings->setXPadFac(xPadFac);
-    modelSettings->setYPadFac(yPadFac);
+    xPad          = factor * std::max(fabs(range1*cos(angle)), fabs(range2*sin(angle)));
+    yPad          = factor * std::max(fabs(range1*sin(angle)), fabs(range2*cos(angle)));
+    xPad          = std::max(xPad, dx);     // Always require at least on grid cell
+    yPad          = std::max(yPad, dy);     // Always require at least one grid cell
+    xPadFac       = std::min(1.0, xPad/lx); // A padding of more than 100% is insensible
+    yPadFac       = std::min(1.0, yPad/ly);
   }
-  int nxPad = setPaddingSize(timeSimbox->getnx(), xPadFac);
-  int nyPad = setPaddingSize(timeSimbox->getny(), yPadFac);
+
+  int nxPad = setPaddingSize(nx, xPadFac);
+  int nyPad = setPaddingSize(ny, yPadFac);
+  xPadFac   = static_cast<double>(nxPad - nx)/static_cast<double>(nx); // Update xPadFac
+  yPadFac   = static_cast<double>(nyPad - ny)/static_cast<double>(ny); // Update yPadFac
+  xPad      = xPadFac*lx;                                              // Update xPad
+  yPad      = yPadFac*ly;                                              // Update yPad
+
   modelSettings->setNXpad(nxPad);
   modelSettings->setNYpad(nyPad);
+  modelSettings->setXPadFac(xPadFac);
+  modelSettings->setYPadFac(yPadFac);
 
   std::string text1;
   std::string text2;
@@ -1514,20 +1523,23 @@ void
 Model::estimateZPaddingSize(Simbox         * timeSimbox,
                             ModelSettings *& modelSettings)
 {
-  double zPadFac = modelSettings->getZPadFac();
-  double zPad    = zPadFac*timeSimbox->getlz()*timeSimbox->getMinRelThick();
+  int    nz          = timeSimbox->getnz();
+  double minLz       = timeSimbox->getlz()*timeSimbox->getMinRelThick();
+  double zPadFac     = modelSettings->getZPadFac();
+  double zPad        = zPadFac*minLz;
 
   if (modelSettings->getEstimateZPadding())
   {
-    double wLength = 200.0;           // Assume a wavelet is approx 200ms.
-    zPad           = wLength / 2.0;   // Use half a wavelet as padding
-    zPadFac        = std::min(1.0, zPad / (timeSimbox->getlz()*timeSimbox->getMinRelThick()));
-    
-    modelSettings->setZPadFac(zPadFac);
+    double wLength = 200.0;                     // Assume a wavelet is approx 200ms.
+    zPad           = wLength/2.0;               // Use half a wavelet as padding
+    zPadFac        = std::min(1.0, zPad/minLz); // More than 100% padding is not sensible
   }
 
-  int nzPad = setPaddingSize(timeSimbox->getnz(), zPadFac);
+  int nzPad = setPaddingSize(nz, zPadFac);
+  zPadFac   = static_cast<double>(nzPad - nz)/static_cast<double>(nz); // Update yPadFac
+ 
   modelSettings->setNZpad(nzPad);
+  modelSettings->setZPadFac(zPadFac);
 }
 
 void
