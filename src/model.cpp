@@ -126,13 +126,16 @@ Model::Model(const std::string & fileName)
 
     if(modelSettings_->getNumberOfSimulations() == 0)
       modelSettings_->setWritePrediction(true); //write predicted grids. 
-    
+
     printSettings(modelSettings_, inputFiles);
     
-    Utils::writeHeader("Defining modelling grid");
-
+    //Set output for all FFTGrids.
+    FFTGrid::setOutputFlags(modelSettings_->getGridOutputFormat(), 
+                            modelSettings_->getGridOutputDomain());
+    
     std::string errText("");
 
+    Utils::writeHeader("Defining modelling grid");
     makeTimeSimboxes(timeSimbox_, timeCutSimbox, timeBGSimbox, timeSimboxConstThick_,  //Handles correlation direction too.
                      correlationDirection_, modelSettings_, inputFiles, 
                      errText, failedSimbox);
@@ -1196,6 +1199,7 @@ Model::setSimboxSurfaces(Simbox                        *& simbox,
       if((outputDomain & IO::TIMEDOMAIN) > 0) {
         std::string topSurf  = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixTime();
         std::string baseSurf = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime();
+        simbox->setTopBotName(topSurf,baseSurf,outputFormat);
         if (generateSeismic) {
           simbox->writeTopBotGrids(topSurf, 
                                    baseSurf,
@@ -2375,8 +2379,8 @@ Model::processPriorCorrelations(Corr         *& correlations,
         for(i=0;i<max;i++)
           corrT[i] = estCorrT[i];
         if(i<nCorrT) {
-          LogKit::LogFormatted(LogKit::WARNING, 
-            "Warning: Only able to estimate %d of %d lags needed in temporal correlation. The rest are set to 0.\n", nEst, nCorrT);
+          LogKit::LogFormatted(LogKit::HIGH, 
+            "\nOnly able to estimate %d of %d lags needed in temporal correlation. The rest are set to 0.\n", nEst, nCorrT);
           for(;i<nCorrT;i++)
             corrT[i] = 0.0f;
         }
@@ -3564,13 +3568,16 @@ Model::printSettings(ModelSettings * modelSettings,
   else if (logLevel == LogKit::L_DEBUGHIGH)
     logText = "DEBUGHIGH";
   LogKit::LogFormatted(LogKit::LOW, "  Log level                                : %10s\n",logText.c_str());
-  LogKit::LogFormatted(LogKit::HIGH,"  Input directory                          : %10s\n",inputFiles->getInputDirectory().c_str());
-  LogKit::LogFormatted(LogKit::HIGH,"  Output directory                         : %10s\n",IO::getOutputPath().c_str());
+  if (inputFiles->getInputDirectory() != "")
+    LogKit::LogFormatted(LogKit::HIGH,"  Input directory                          : %10s\n",inputFiles->getInputDirectory().c_str());
+  if (IO::getOutputPath() != "")
+    LogKit::LogFormatted(LogKit::HIGH,"  Output directory                         : %10s\n",IO::getOutputPath().c_str());
 
   int outputFlag = modelSettings->getGridOutputFlag();
   int gridFormat = modelSettings->getGridOutputFormat();
+  int gridDomain = modelSettings->getGridOutputDomain();
 
-  if (outputFlag > 0) {
+  if (outputFlag > 0 && modelSettings->getEstimationMode()==false) {
     LogKit::LogFormatted(LogKit::MEDIUM,"\nGrid output formats:\n");
     if (gridFormat & IO::SEGY) {
       const std::string & formatName = modelSettings->getTraceHeaderFormatOutput()->GetFormatName();
@@ -3586,13 +3593,15 @@ Model::printSettings(ModelSettings * modelSettings,
       LogKit::LogFormatted(LogKit::MEDIUM,"  Crava                                    :        yes\n");
 
     LogKit::LogFormatted(LogKit::MEDIUM,"\nGrid output domains:\n");
-    if (gridFormat & IO::TIMEDOMAIN)
+    if (gridDomain & IO::TIMEDOMAIN)
       LogKit::LogFormatted(LogKit::MEDIUM,"  Time                                     :        yes\n");
-    if (gridFormat & IO::DEPTHDOMAIN)
+    if (gridDomain & IO::DEPTHDOMAIN)
       LogKit::LogFormatted(LogKit::MEDIUM,"  Depth                                    :        yes\n");
   }
 
-  if (modelSettings->getDoInversion()) {
+  if (modelSettings->getElasticOutput() && 
+      modelSettings->getForwardModeling() == false &&
+      modelSettings->getEstimationMode()  == false) {
     LogKit::LogFormatted(LogKit::MEDIUM,"\nOutput of elastic parameters:\n");
     if ((outputFlag & IO::VP) > 0)
       LogKit::LogFormatted(LogKit::MEDIUM,"  Pressure-wave velocity  (Vp)             :        yes\n");
@@ -3611,7 +3620,7 @@ Model::printSettings(ModelSettings * modelSettings,
     if ((outputFlag & IO::LAMBDARHO) > 0)
       LogKit::LogFormatted(LogKit::MEDIUM,"  LambdaRho  (AI*AI - 2*SI*SI)             :        yes\n");
     if ((outputFlag & IO::LAMELAMBDA) > 0)
-      LogKit::LogFormatted(LogKit::MEDIUM,"  Lame's dirst parameter                   :        yes\n");
+      LogKit::LogFormatted(LogKit::MEDIUM,"  Lame's first parameter                   :        yes\n");
     if ((outputFlag & IO::LAMEMU) > 0)
       LogKit::LogFormatted(LogKit::MEDIUM,"  Lame's second parameter (shear modulus)  :        yes\n");
     if ((outputFlag & IO::POISSONRATIO) > 0)
@@ -3649,6 +3658,7 @@ Model::printSettings(ModelSettings * modelSettings,
     ||(outputFlag & IO::TIME_TO_DEPTH_VELOCITY) > 0;
   
   if (otherGridOutput) {
+    LogKit::LogFormatted(LogKit::MEDIUM,"\nOther grid output:\n");
     if ((outputFlag & IO::CORRELATION) > 0)
       LogKit::LogFormatted(LogKit::MEDIUM,"  Posterior correlations                   :        yes\n");
     if ((outputFlag & IO::EXTRA_GRIDS) > 0)
@@ -3774,7 +3784,7 @@ Model::printSettings(ModelSettings * modelSettings,
     }
     if ( modelSettings->getOptimizeWellLocation() ) 
     {
-      LogKit::LogFormatted(LogKit::LOW,"\nFor well, optimize location to             : Angle with Weight\n");
+      LogKit::LogFormatted(LogKit::LOW,"\nFor well, optimize position for            : Angle with Weight\n");
       for (int i = 0 ; i < modelSettings->getNumberOfWells() ; i++) 
       {
         int nMoveAngles = modelSettings->getNumberOfWellAngles(i);
@@ -4126,7 +4136,7 @@ Model::printSettings(ModelSettings * modelSettings,
           if (modelSettings->getEstimateGlobalWaveletScale(i))
             LogKit::LogFormatted(LogKit::LOW,"  Estimate global wavelet scale            : %10s\n","yes");
           else
-            LogKit::LogFormatted(LogKit::LOW,"  Global wavelet scale                     : %10.2e\n",modelSettings->getWaveletScale(i));
+            LogKit::LogFormatted(LogKit::LOW,"  Global wavelet scale                     : %10.2f\n",modelSettings->getWaveletScale(i));
         }
         if (modelSettings->getEstimateSNRatio(i)) 
           LogKit::LogFormatted(LogKit::LOW,"  Estimate signal-to-noise ratio           : %10s\n", "yes");

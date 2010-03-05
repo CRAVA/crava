@@ -110,6 +110,7 @@ ModelSettings::ModelSettings(void)
   writePrediction_         =    false;  //Will be set to true if no simulations.
   gridFlag_                = IO::VP + IO::VS + IO::RHO;  // Default output
   defaultGridOutput_       =     true;
+  elasticOutput_           =     true;
   formatFlag_              = IO::STORM;   
   domainFlag_              = IO::TIMEDOMAIN;   
   wellFlag_                =        0;   

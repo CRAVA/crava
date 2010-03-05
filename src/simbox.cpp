@@ -443,15 +443,6 @@ Simbox::writeTopBotGrids(const std::string & topname,
                          const std::string & subdir,
                          int                 outputFormat)
 {
-  std::string suffix;
-  if ((outputFormat & IO::ASCII) > 0)
-    suffix = IO::SuffixAsciiIrapClassic();
-  else
-    suffix = IO::SuffixStormBinary();
-
-  topName_ = IO::getFilePrefix()+topname+suffix;
-  botName_ = IO::getFilePrefix()+botname+suffix;
-
   assert(typeid(GetTopSurface()) == typeid(Surface));
   assert(typeid(GetBotSurface()) == typeid(Surface));
 
@@ -460,6 +451,21 @@ Simbox::writeTopBotGrids(const std::string & topname,
 
   IO::writeSurfaceToFile(wtsurf, topname, subdir, outputFormat);
   IO::writeSurfaceToFile(wbsurf, botname, subdir, outputFormat);
+}
+
+void
+Simbox::setTopBotName(const std::string & topname, 
+                      const std::string & botname,
+                      int                 outputFormat)
+{
+  std::string suffix;
+  if ((outputFormat & IO::ASCII) > 0)
+    suffix = IO::SuffixAsciiIrapClassic();
+  else
+    suffix = IO::SuffixStormBinary();
+
+  topName_ = IO::getFilePrefix()+topname+suffix;
+  botName_ = IO::getFilePrefix()+botname+suffix;
 }
 
 int

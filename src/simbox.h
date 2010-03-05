@@ -66,6 +66,7 @@ public:
   double         getBot(double x, double y) const;
   std::string    getStormHeader(int cubetype, int nx, int ny, int nz, bool flat = false, bool ascii = false) const;
   void           writeTopBotGrids(const std::string & topname, const std::string & botname, const std::string & subdir, int outputFormat);
+  void           setTopBotName(const std::string & topname, const std::string & botname, int outputFormat);
   int            calculateDz(double lzLimit, std::string & errText);
   bool           setArea(const SegyGeometry * geometry, std::string & errText);
   void           setILXL(const SegyGeometry * geometry);

@@ -180,8 +180,11 @@ XmlModelFile::parseInversionSettings(TiXmlNode * node, std::string & errTxt)
   std::string facprob;
   if(parseValue(root, "facies-probabilities", facprob, errTxt) == true) {
     int flag = 0;
-    if(modelSettings_->getDefaultGridOutputInd() == false)
+    if(modelSettings_->getDefaultGridOutputInd() == false){
       flag = modelSettings_->getGridOutputFlag();
+      if ((flag & IO::VP)>0)
+        flag -= IO::VP - IO::VS - IO::RHO;
+    }
     if(facprob == "absolute") {
       flag = (flag | IO::FACIESPROB);
       modelSettings_->setFaciesProbRelative(false);
@@ -1926,10 +1929,6 @@ XmlModelFile::parseGridOutput(TiXmlNode * node, std::string & errTxt)
   if(paramFlag!=0)
     modelSettings_->setGridOutputFlag(paramFlag);
 
-  //Set output for all FFTGrids.
-  FFTGrid::setOutputFlags(modelSettings_->getGridOutputFormat(), 
-                          modelSettings_->getGridOutputDomain());
-
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
@@ -1988,7 +1987,7 @@ XmlModelFile::parseGridFormats(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("crava");
   TraceHeaderFormat *thf = NULL;
   bool segyFormat = parseTraceHeaderFormat(root, "segy-format",thf, errTxt);
- if(segyFormat==true)
+  if(segyFormat==true)
     modelSettings_->setTraceHeaderFormatOutput(thf);
   bool useFormat = false;
   int formatFlag = 0;
@@ -2038,40 +2037,68 @@ XmlModelFile::parseGridElasticParameters(TiXmlNode * node, int & paramFlag, std:
   legalCommands.push_back("background");
   legalCommands.push_back("background-trend");
   
-  bool value = false;
-  //int paramFlag = 0;
   if(modelSettings_->getDefaultGridOutputInd() == false) //May have set faciesprobs.
     paramFlag = modelSettings_->getGridOutputFlag();
 
-  if(parseBool(root, "vp", value, errTxt) == true && value == true)
+  bool elasticOutput = false;
+  bool value         = false;
+ 
+  if(parseBool(root, "vp", value, errTxt) == true && value == true){
     paramFlag += IO::VP;
-  if(parseBool(root, "vs", value, errTxt) == true && value == true)
+    elasticOutput = true;
+  }
+  if(parseBool(root, "vs", value, errTxt) == true && value == true){
     paramFlag += IO::VS;
-  if(parseBool(root, "density", value, errTxt) == true && value == true)
-    paramFlag += IO::RHO;
-  if(parseBool(root, "lame-lambda", value, errTxt) == true && value == true)
-    paramFlag += IO::LAMELAMBDA;
-  if(parseBool(root, "lame-mu", value, errTxt) == true && value == true)
+    elasticOutput = true;
+  }
+  if(parseBool(root, "density", value, errTxt) == true && value == true){
+    paramFlag += IO::RHO;   
+    elasticOutput = true;
+  }
+  if(parseBool(root, "lame-lambda", value, errTxt) == true && value == true){
+    paramFlag += IO::LAMELAMBDA;    
+    elasticOutput = true;
+  }
+  if(parseBool(root, "lame-mu", value, errTxt) == true && value == true){
     paramFlag += IO::LAMEMU;
-  if(parseBool(root, "poisson-ratio", value, errTxt) == true && value == true)
+    elasticOutput = true;
+  }
+  if(parseBool(root, "poisson-ratio", value, errTxt) == true && value == true){
     paramFlag += IO::POISSONRATIO;
-  if(parseBool(root, "ai", value, errTxt) == true && value == true)
+    elasticOutput = true;
+  }
+  if(parseBool(root, "ai", value, errTxt) == true && value == true){
     paramFlag += IO::AI;
-  if(parseBool(root, "si", value, errTxt) == true && value == true)
+    elasticOutput = true;
+  }
+  if(parseBool(root, "si", value, errTxt) == true && value == true){
     paramFlag += IO::SI;
-  if(parseBool(root, "vp-vs-ratio", value, errTxt) == true && value == true)
+    elasticOutput = true;
+  }
+  if(parseBool(root, "vp-vs-ratio", value, errTxt) == true && value == true){
     paramFlag += IO::VPVSRATIO;
-  if(parseBool(root, "murho", value, errTxt) == true && value == true)
+    elasticOutput = true;
+  }
+  if(parseBool(root, "murho", value, errTxt) == true && value == true){
     paramFlag += IO::MURHO;
-  if(parseBool(root, "lambdarho", value, errTxt) == true && value == true)
+    elasticOutput = true;
+ }
+  if(parseBool(root, "lambdarho", value, errTxt) == true && value == true){
     paramFlag += IO::LAMBDARHO;
-  if(parseBool(root, "background", value, errTxt) == true && value == true)
+    elasticOutput = true;
+  }
+  if(parseBool(root, "background", value, errTxt) == true && value == true){
     paramFlag += IO::BACKGROUND;
-  if(parseBool(root, "background-trend", value, errTxt) == true && value == true)
+    elasticOutput = true;
+  }
+  if(parseBool(root, "background-trend", value, errTxt) == true && value == true){
     paramFlag += IO::BACKGROUND_TREND;
- 
+    elasticOutput = true;
+  }
+
+  modelSettings_->setElasticOutput(elasticOutput);
   modelSettings_->setDefaultGridOutputInd(false);
- 
+
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
@@ -2724,6 +2751,8 @@ XmlModelFile::checkEstimationConsistency(std::string & errTxt) {
   }
   if (modelSettings_->getEstimate3DWavelet() && !modelSettings_->getHasTime3DMapping())
     errTxt += "Time 3D mapping must be given when 3D wavelet is to be estimated.\n";
+  if (modelSettings_->getGridOutputFlag()>0 && modelSettings_->getDefaultGridOutputInd()==false)
+    errTxt += "Grid output can not be given when in estimation mode.\n";
 }
 
 void
@@ -2742,6 +2771,9 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
     if (modelSettings_->getEstimateFaciesProb())
       errTxt += "Wells are needed for facies probabilities.\n";
   }
+  if (modelSettings_->getGridOutputFlag()==0    && modelSettings_->getWellOutputFlag()==0 &&
+      modelSettings_->getWaveletOutputFlag()==0 && modelSettings_->getOtherOutputFlag()==0)
+    errTxt += "No output is specified for the inversion model.\n";
 }
 
 void

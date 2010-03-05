@@ -117,6 +117,7 @@ public:
   int                              getAreaSpecification(void)           const { return areaSpecification_       ;}     
   bool                             getVelocityFromInversion(void)       const { return velocityFromInv_         ;}
   bool                             getWritePrediction(void)             const { return writePrediction_         ;}
+  bool                             getElasticOutput(void)               const { return elasticOutput_           ;}
   int                              getGridOutputFlag(void)              const { return gridFlag_                ;}
   bool                             getDefaultGridOutputInd(void)        const { return defaultGridOutput_       ;}
   int                              getGridOutputFormat(void)            const { return formatFlag_              ;}
@@ -261,6 +262,7 @@ public:
   void setAreaILXLParameters(std::vector<int> ilxl)       { areaILXL_                 = ilxl                     ;}
   void setAreaSpecification(int areaSpecification)        { areaSpecification_        = areaSpecification        ;}
   void setWritePrediction(bool write)                     { writePrediction_          = write                    ;}
+  void setElasticOutput(bool elasticOutput)               { elasticOutput_            = elasticOutput            ;}
   void setDefaultGridOutputInd(bool ind)                  { defaultGridOutput_        = ind                      ;}
   void setGridOutputFlag(int gridFlag)                    { gridFlag_                 = gridFlag                 ;}
   void setGridOutputFormat(int formatFlag)                { formatFlag_               = formatFlag               ;}
@@ -449,6 +451,7 @@ private:
   int                               otherFlag_;                  // Decides output beyond grids and wells.
   bool                              fileGrid_;                   // Indicator telling if grids are to be kept on file
   bool                              defaultGridOutput_;          // Indicator telling whether grid output has been actively controlled.
+  bool                              elasticOutput_;              // True if elastic output is written to file
                                                                  
   bool                              forwardModeling_;            // Forward modelling
   bool                              estimationMode_;             // Estimation
