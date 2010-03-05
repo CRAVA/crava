@@ -365,28 +365,28 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 
 \subsection{\hbracket{time-3D-mapping}} \newkw{time-3D-mapping}
  \slist
-   \item \Description Defines the mapping between pseudo depth and local time in the target area for 3D wavelet.
+   \item \Description Defines the mapping between pseudo depth and local time in the target area for 3D wavelet. When estimation of 3D wavelet is performed this command must be given.
    \item \Argument Reference depth, velocity and time surface for mapping
    \item \Default
  \elist
 
 \subsubsection{\hbracket{reference-depth}} \newkw{reference-depth}
  \slist
-   \item \Description Holds the z-value for the reference depth for target area
+   \item \Description Holds the z-value for the reference depth for target area. Necessary when \kw{time-3D-mapping} is given. 
    \item \Argument Depth in meter
    \item \Default
 \elist
 
 \subsubsection{\hbracket{average-velocity}} \newkw{average-velocity}
  \slist
-   \item \Description Holds the average velocity in the target area
+   \item \Description Holds the average velocity in the target area. Necessary when \kw{time-3D-mapping} is given.
    \item \Argument Velocity in meter/second
    \item \Default
 \elist
 
 \subsubsection{\hbracket{reference-time-surface}} \newkw{reference-time-surface}
  \slist
-   \item \Description Filename for the time surface corresponding to the reference depth.
+   \item \Description Filename for the time surface corresponding to the reference depth. Necessary when \kw{time-3D-mapping} is given.
    \item \Argument File name
    \item \Default
 \elist
@@ -1198,21 +1198,21 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 
 \paragraph{\hbracket{processing-factor-file-name}}\newkw{processing-factor-file-name}
  \slist
-   \item \Description File name for 3D-wavelet damping factor filter file. The 3D-wavelet is defined by the 1D-wavelet and the filter. The 1D-wavelet is either given in \kw{file-name4} or estimated. In either case this filter file must be given.
+   \item \Description File name for 3D-wavelet processing factor filter file. The 3D-wavelet is defined by the 1D-wavelet and the filter. The 1D-wavelet is either given in \kw{file-name4} or estimated. In either case this filter file must be given.
    \item \Argument File name for the amplitude scalings in the wavenumber filter.
    \item \Default
  \elist
 
 \paragraph{\hbracket{propagation-factor-file-name}}\newkw{propagation-factor-file-name}
  \slist
-   \item \Description File name for 3D-wavelet correction filter filter file. This is used to set up the noise model for the 3D-wavelet.
+   \item \Description File name for 3D-wavelet propagation filter file. This is used to set up the noise model for the 3D-wavelet.
    \item \Argument File name for the correction factors in the wavenumber filter.
    \item \Default
  \elist
 
 \paragraph{\hbracket{stretch-factor}}\newkw{stretch-factor}
  \slist
-   \item \Description Stretch factor for 3D-wavelet. The pulse is stretch with this factor.
+   \item \Description Stretch factor for 3D-wavelet. The pulse is stretched with this factor.
    \item \Argument Value > 0.0
    \item \Default 1.0
 \elist
