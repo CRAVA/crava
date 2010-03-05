@@ -965,7 +965,6 @@ XmlModelFile::parseWavelet3D(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("estimation-range-y-direction");
 
   std::string value;
-  bool estimate = false;
   if(parseFileName(root, "file-name", value, errTxt) == true) {
     inputFiles_->addWaveletFile(value);
     modelSettings_->addEstimateWavelet(false);
@@ -973,7 +972,7 @@ XmlModelFile::parseWavelet3D(TiXmlNode * node, std::string & errTxt)
   else {
     inputFiles_->addWaveletFile(""); //Keeping tables balanced.
     modelSettings_->addEstimateWavelet(true);
-    estimate = true;
+    modelSettings_->setEstimate3DWavelet(true);
   }
   
   if(parseFileName(root, "processing-factor-file-name", value, errTxt) == true)
@@ -1372,7 +1371,8 @@ XmlModelFile::parseProjectSettings(TiXmlNode * node, std::string & errTxt)
     errTxt += "Command <output-volume> is needed in command <"+
       root->ValueStr()+">"+lineColumnText(root)+".\n";
 
-  parseTime3DMapping(root, errTxt);
+  if (parseTime3DMapping(root, errTxt))
+    modelSettings_->setHasTime3DMapping(true);
   parseIOSettings(root, errTxt);
   parseAdvancedSettings(root, errTxt);
 
@@ -2696,6 +2696,9 @@ XmlModelFile::checkForwardConsistency(std::string & errTxt) {
       errTxt += "An earth model needs to be given when doing forward modeling. The background model should not be given.\n";
     else if (modelSettings_->getBackgroundType() == "")
       errTxt += "An earth model needs to be given when doing forward modeling.\n";
+
+    if (modelSettings_->getEstimate3DWavelet() && !modelSettings_->getHasTime3DMapping())
+      errTxt += "Time 3D mapping must be given when 3D wavelet is to be estimated.\n";
   }
 }
  
@@ -2719,6 +2722,8 @@ XmlModelFile::checkEstimationConsistency(std::string & errTxt) {
         errTxt += "Seismic data are needed for estimation of wavelets and noise.\n";
     }
   }
+  if (modelSettings_->getEstimate3DWavelet() && !modelSettings_->getHasTime3DMapping())
+    errTxt += "Time 3D mapping must be given when 3D wavelet is to be estimated.\n";
 }
 
 void

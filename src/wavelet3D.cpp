@@ -68,7 +68,8 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
 
   unsigned int nWells    = modelSettings->getNumberOfWells();
   float        v0        = modelSettings->getAverageVelocity();
-  float        stretch   = modelSettings->getStretchFactor(angle_index);
+//  float        stretch   = modelSettings->getStretchFactor(angle_index);
+  float stretch          = std::cos(theta_);
   bool         hasHalpha = filter_.hasHalpha();
   
   int nhalfWl         = static_cast<int> (0.5 * modelSettings->getWaveletTaperingL() / dz_);
@@ -424,23 +425,7 @@ Wavelet3D::findWLvalue(float omega) const
 
   return cValue;
 }
-/*
-void
-Wavelet3D::printVecToFile(const std::string & fileName, 
-                          const std::vector<float> & vec, 
-                          int n) const
-{
-  if( ModelSettings::getDebugLevel() > 0) { 
-    std::string fName = fileName + IO::SuffixGeneralData();
-    fName = IO::makeFullFileName(IO::PathToWavelets(), fName);
-    std::ofstream file;
-    NRLib::OpenWrite(file,fName);
-    for(int i=0;i<n;i++)
-      file << vec[i] << "\n";
-    file.close();
-  }  
-}
-*/
+
 void
 Wavelet3D::printMatToFile(const std::string                       & fileName, 
                           const std::vector<std::vector<float> >  & mat, 

@@ -4476,7 +4476,7 @@ Model::findTimeGradientSurface(const std::string    & refTimeFile,
   float dy = static_cast<float> (simbox->getdy());
 
   if (!NRLib::IsNumber(refTimeFile)) {
-    NRLib::RegularSurfaceRotated<float> t0surface(refTimeFile, NRLib::SURF_SGRI);
+    NRLib::RegularSurfaceRotated<float> t0surface(refTimeFile);
 
     simbox->getXYCoord(0,0,x,y);
     if (t0surface.IsInsideSurface(x,y)) {

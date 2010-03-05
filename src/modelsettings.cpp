@@ -138,6 +138,8 @@ ModelSettings::ModelSettings(void)
   estimateBackground_      =     true;
   estimateCorrelations_    =     true;
   estimateWaveletNoise_    =     true;
+  estimate3DWavelet_       =    false;
+  hasTime3DMapping_        =    false;
 
   logLevel_                = LogKit::L_LOW;
   smoothKrigedParameters_  =    false;

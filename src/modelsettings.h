@@ -49,6 +49,8 @@ public:
   bool                             getEstimateBackground(void)          const { return estimateBackground_      ;}
   bool                             getEstimateCorrelations(void)        const { return estimateCorrelations_    ;}
   bool                             getEstimateWaveletNoise(void)        const { return estimateWaveletNoise_    ;}
+  bool                             getEstimate3DWavelet(void)           const { return estimate3DWavelet_       ;}
+  bool                             getHasTime3DMapping(void)            const { return hasTime3DMapping_        ;}
   int                              getWaveletDim(int i)                 const { return waveletDim_[i]           ;}
   float                            getStretchFactor(int i)              const { return stretchFactor_[i]        ;}
   float                            getEstRangeX(int i)                  const { return estRangeX_[i]            ;}
@@ -191,6 +193,8 @@ public:
   void setEstimateBackground(bool estimateBackground)     { estimateBackground_       = estimateBackground       ;}
   void setEstimateCorrelations(bool estimateCorrelations) { estimateCorrelations_     = estimateCorrelations     ;}
   void setEstimateWaveletNoise(bool estimateWaveletNoise) { estimateWaveletNoise_     = estimateWaveletNoise     ;}
+  void setEstimate3DWavelet(bool estimate3DWavelet)       { estimate3DWavelet_        = estimate3DWavelet        ;}
+  void setHasTime3DMapping(bool hasTime3DMapping)         { hasTime3DMapping_         = hasTime3DMapping         ;}
                                                                                                                  
   void addMoveAngle(float moveAngle)                      { moveAngle_.push_back(moveAngle)                      ;} //Local temporary variable
   void addMoveWeight(float moveWeight)                    { moveWeight_.push_back(moveWeight)                    ;} //Local temporary variable
@@ -341,6 +345,8 @@ private:
   bool                              estimateBackground_;         // In estimation mode, skip estimation of background if false
   bool                              estimateCorrelations_;       // As above, but correlations.
   bool                              estimateWaveletNoise_;       // As above, but for wavelet and noise parameters.
+  bool                              estimate3DWavelet_;          // True if a 3D wavelet is estimated for at least one angle.
+  bool                              hasTime3DMapping_;           // True if command time-3D-mapping is used
 
   std::vector<float>                constBackValue_;             // Values set for constant background model
                                                                  // Negative value ==> read from file (actual value gives format).
