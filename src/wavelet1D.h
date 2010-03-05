@@ -54,9 +54,9 @@ private:
                                         int                        nzp,
                                         const std::vector<float> & wellWeight,
                                         float                    & err,
-                                        float                    * errWell,
-                                        float                    * scaleOptWell,
-                                        float                    * errWellOptScale)   const;
+                                        std::vector<float>       & errWell,
+                                        std::vector<float>       & scaleOptWell,
+                                        std::vector<float>       & errWellOptScale)   const;
 
   float         findOptimalWaveletScale(fftw_real               ** synt_seis_r,
                                         fftw_real               ** seis_r,
@@ -70,35 +70,35 @@ private:
                                             int                        nzp,
                                             const std::vector<float> & wellWeight,
                                             float                    & err,
-                                            float                    * errWell, 
-                                            float                    * errWellOptScale,
-                                            float                    * scaleOptWell,
+                                            std::vector<float>       & errWell, 
+                                            std::vector<float>       & errWellOptScale,
+                                            std::vector<float>       & scaleOptWell,
                                             Grid2D                   * gain, 
                                             WellData                ** wells, 
                                             Simbox                   * simbox)       const;
 
   void          estimateLocalGain(const CovGrid2D             & cov,
                                   Grid2D                     *& gain,
-                                  float                       * scaleOptWell,
+                                  const std::vector<float>    & scaleOptWell,
                                   float                         globalScale,
-                                  int                         * nActiveData,
+                                  const std::vector<int>      & nActiveData,
                                   Simbox                      * simbox,
                                   WellData                   ** wells,
                                   int                           nWells);
   
   void          estimateLocalShift(const CovGrid2D            & cov,
                                    Grid2D                    *& shift,
-                                   float                     * shiftWell,
-                                   int                       * nActiveData,
-                                   Simbox                    * simbox,
-                                   WellData                 ** wells,
-                                   int                         nWells);
+                                   const std::vector<float>   & shiftWell,
+                                   const std::vector<int>     & nActiveData,
+                                   Simbox                     * simbox,
+                                   WellData                  ** wells,
+                                   int                          nWells);
   
   void          estimateLocalNoise(const CovGrid2D           & cov,
                                    Grid2D                   *& noiseScaled,
                                    float                       globalNoise,
-                                   float                     * errWellOptScale,
-                                   int                       * nActiveData,
+                                   const std::vector<float>  & errWellOptScale,
+                                   const std::vector<int>    & nActiveData,
                                    Simbox                    * simbox,
                                    WellData                 ** wells,
                                    int                         nWells);
