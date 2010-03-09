@@ -432,6 +432,12 @@ ParameterOutput::writeToFile(const Simbox      * simbox,
   float         seismicStartTime = model->getModelSettings()->getSegyOffset();
   TraceHeaderFormat *format = model->getModelSettings()->getTraceHeaderFormatOutput();
 
-  grid->writeFile(fileName, IO::PathToInversionResults(), simbox, sgriLabel, 
-                  seismicStartTime, timeDepthMapping, timeCutMapping, *format);
+  grid->writeFile(fileName, 
+                  IO::PathToInversionResults(), 
+                  simbox,
+                  sgriLabel, 
+                  seismicStartTime, 
+                  timeDepthMapping, 
+                  timeCutMapping, 
+                  *format);
 }

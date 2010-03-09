@@ -2123,7 +2123,6 @@ Model::processBackground(Background   *& background,
       }
       for (int i=0 ; i<3 ; i++)
       {
-        //backModel[i] = new FFTGrid(nx, ny, nz, nxPad, nyPad, nzPad);    
         backModel[i] = createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, modelSettings->getFileGrid());
         backModel[i]->setType(FFTGrid::PARAMETER);
       }
@@ -2170,7 +2169,15 @@ Model::processBackground(Background   *& background,
             failed = true;
           } 
           else {
-            backModel[i]->logTransf();
+            if(IO::findGridType(backFile) == IO::STORM) {
+              backModel[i]->logTransf();
+            }
+            
+            // In log-domain
+            //   IO::CRAVA
+            //   IO::SEGY   (We probably want to have this in exp-domain?)
+            //   IO::SGRI
+
             if(outsideTraces > 0) {
                 errText += "Error: Background model in file "+backFile+" does not cover the inversion area.\n";
                 failed = true;
@@ -2232,33 +2239,33 @@ Model::readGridFromFile(const std::string       & fileName,
   if(fileType == IO::CRAVA) 
   {
     int xpad, ypad, zpad;
-    if(nopadding==false)
-    {
-      xpad = modelSettings->getNXpad();
-      ypad = modelSettings->getNYpad();
-      zpad = modelSettings->getNZpad();
-    }
-    else
+    if(nopadding)
     {
       xpad = timeSimbox->getnx();
       ypad = timeSimbox->getny();
       zpad = timeSimbox->getnz();
     }
+    else
+    {
+      xpad = modelSettings->getNXpad();
+      ypad = modelSettings->getNYpad();
+      zpad = modelSettings->getNZpad();
+    }
     LogKit::LogFormatted(LogKit::LOW,"\nReading grid \'"+parName+"\' from file "+fileName);
     grid = createFFTGrid(timeSimbox->getnx(),
-                             timeSimbox->getny(), 
-                             timeSimbox->getnz(),
-                             xpad, 
-                             ypad, 
-                             zpad,
-                             modelSettings->getFileGrid());
+                         timeSimbox->getny(), 
+                         timeSimbox->getnz(),
+                         xpad, 
+                         ypad, 
+                         zpad,
+                         modelSettings->getFileGrid());
     
     grid->setType(gridType);
     grid->readCravaFile(fileName, errText, nopadding);
   }
   else if(fileType == IO::SEGY) 
-    outsideTraces  = readSegyFile(fileName, grid, timeSimbox, modelSettings, geometry, 
-                                  gridType, offset, format, errText, nopadding);
+    outsideTraces = readSegyFile(fileName, grid, timeSimbox, modelSettings, geometry, 
+                                 gridType, offset, format, errText, nopadding);
   else if(fileType == IO::STORM) 
     outsideTraces = readStormFile(fileName, grid, gridType, parName, timeSimbox, modelSettings, errText, false, nopadding);
   else if(fileType == IO::SGRI)
@@ -2291,24 +2298,24 @@ Model::processPriorCorrelations(Corr         *& correlations,
     double wall=0.0, cpu=0.0;
     TimeKit::getTime(wall,cpu);
 
-    const std::string & paramCorrFile = inputFiles->getParamCorrFile();
-    const std::string & corrTFile     = inputFiles->getTempCorrFile();
+    const std::string & paramCovFile = inputFiles->getParamCorrFile();
+    const std::string & corrTFile    = inputFiles->getTempCorrFile();
 
-    bool estimateParamCorr = paramCorrFile == "";
-    bool estimateTempCorr  = corrTFile     == "";
+    bool estimateParamCov = paramCovFile == "";
+    bool estimateTempCorr = corrTFile    == "";
 
     //
-    // Read parameter correlation (Var0) from file 
+    // Read parameter covariance (Var0) from file 
     //
     float ** paramCorr = NULL;
     bool failedParamCorr = false;
-    if(!estimateParamCorr) 
+    if(!estimateParamCov) 
     {
       std::string tmpErrText("");
-      paramCorr = readMatrix(paramCorrFile, 3, 3, "parameter correlation", tmpErrText);
+      paramCorr = readMatrix(paramCovFile, 3, 3, "parameter covariance", tmpErrText);
       if(paramCorr == NULL) 
       {
-        errText += "Reading of file "+paramCorrFile+" for parameter correlation matrix failed\n";
+        errText += "Reading of file "+paramCovFile+" for parameter covariance matrix failed\n";
         errText += tmpErrText;
         failedParamCorr = true;
       }
@@ -2355,14 +2362,14 @@ Model::processPriorCorrelations(Corr         *& correlations,
     }
 
     float ** pointVar0 = NULL;
-    if (estimateParamCorr || estimateTempCorr) //Need well estimation
+    if (estimateParamCov || estimateTempCorr) //Need well estimation
     {
       Analyzelog * analyze = new Analyzelog(wells, 
                                             background,
                                             timeSimbox, 
                                             modelSettings);
 
-      if(estimateParamCorr)
+      if(estimateParamCov)
         paramCorr = analyze->getVar0();
       else
         delete [] analyze->getVar0();
@@ -3372,7 +3379,8 @@ void Model::readPriorFaciesProbCubes(InputFiles      * inputFiles,
                        FFTGrid::PARAMETER,
                        timeSimbox,
                        modelSettings,
-                       errorText, true);
+                       errorText, 
+                       true);
       if(errorText != "")
       {
         errorText += "Reading of file \'"+faciesProbFile+"\' for prior facies probability for facies \'"
@@ -3397,10 +3405,10 @@ void
 Model::loadExtraSurfaces(std::vector<Surface *> & waveletEstimInterval,
                          std::vector<Surface *> & faciesEstimInterval,
                          std::vector<Surface *> & wellMoveInterval,
-                         Simbox      * timeSimbox,
-                         InputFiles  * inputFiles,
-                         std::string & errText,
-                         bool        & failed)
+                         Simbox                 * timeSimbox,
+                         InputFiles             * inputFiles,
+                         std::string            & errText,
+                         bool                   & failed)
 {
   const double x0 = timeSimbox->getx0();
   const double y0 = timeSimbox->gety0();

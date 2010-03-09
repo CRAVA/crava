@@ -934,7 +934,7 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
   //
   file << "1.0\n"
        << "CRAVA\n"
-       << wellname_.c_str() << " " << xpos_[firstB_] << " " << ypos_[firstB_] << "\n"
+       << IO::PrefixBlockedWells() + wellname_ << " " << xpos_[firstB_] << " " << ypos_[firstB_] << "\n"
        << nLogs << "\n";
   
   for (int i =0 ; i<3 ; i++) {

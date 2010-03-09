@@ -342,7 +342,6 @@ Background::calculateBackgroundTrend(float             * trend,
 
     std::string fileName = IO::PrefixBackground() + IO::PrefixTrend() + name;
     trendGrid->writeFile(fileName, IO::PathToBackground(), simbox, "exptrans");
-    //trendGrid->writeFile(fileName, IO::PathToBackground(), simbox, "NO_LABEL");
     delete trendGrid;
   }
 }
@@ -1567,6 +1566,7 @@ Background::writeBackgrounds(Simbox      * simbox,
   backModel_[0]->writeFile(fileName1, IO::PathToBackground(), simbox, "exptrans", 0, depthMapping, timeMapping, thf);
   backModel_[1]->writeFile(fileName2, IO::PathToBackground(), simbox, "exptrans", 0, depthMapping, timeMapping, thf);
   backModel_[2]->writeFile(fileName3, IO::PathToBackground(), simbox, "exptrans", 0, depthMapping, timeMapping, thf);
+
   //
   // For debugging: write cubes not in ASCII, with padding, and with flat top.
   //

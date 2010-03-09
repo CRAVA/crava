@@ -1408,13 +1408,13 @@ FFTGrid::consistentSize(int nx,int ny, int nz, int nxp, int nyp, int nzp)
 
 
 void 
-FFTGrid::writeFile(const std::string & fName, 
-                   const std::string & subDir, 
-                   const Simbox      * simbox, 
-                   const std::string   label, 
-                   const float         z0, 
-                   GridMapping       * depthMap, 
-                   GridMapping       * timeMap,
+FFTGrid::writeFile(const std::string       & fName, 
+                   const std::string       & subDir, 
+                   const Simbox            * simbox, 
+                   const std::string         label, 
+                   const float               z0, 
+                   GridMapping             * depthMap, 
+                   GridMapping             * timeMap,
                    const TraceHeaderFormat & thf)
 {
   std::string fileName = IO::makeFullFileName(subDir, fName);      
@@ -1422,20 +1422,13 @@ FFTGrid::writeFile(const std::string & fName,
   if(formatFlag_ > 0) //Output format specified.
   {
     bool expTrans = (label == "exptrans"); // use sgriLabel to active exponential transformations
+
     if((domainFlag_ & IO::TIMEDOMAIN) > 0) {
       if(timeMap == NULL) { //No resampling of storm 
-        if(expTrans) {
-          if((formatFlag_ & IO::STORM) > 0) 
-            FFTGrid::writeStormFile(fileName, simbox, true, false);
-          if((formatFlag_ & IO::ASCII) > 0)
-            FFTGrid::writeStormFile(fileName, simbox, true, true);
-        }
-        else {
-          if((formatFlag_ & IO::STORM) > 0) 
-            FFTGrid::writeStormFile(fileName, simbox, false, false);
-          if((formatFlag_ & IO::ASCII) > 0)
-            FFTGrid::writeStormFile(fileName, simbox, false, true);
-        }
+        if((formatFlag_ & IO::STORM) > 0) 
+          FFTGrid::writeStormFile(fileName, simbox, expTrans, false);
+        if((formatFlag_ & IO::ASCII) > 0)
+          FFTGrid::writeStormFile(fileName, simbox, expTrans, true);
       }
       else {
         FFTGrid::writeResampledStormCube(timeMap, fileName, simbox, formatFlag_, expTrans);
@@ -1458,19 +1451,10 @@ FFTGrid::writeFile(const std::string & fName,
             "WARNING: Depth interval lacking when trying to write %s. Write cancelled.\n",depthName.c_str());
           return;
         }
-        if(expTrans) {
-          if((formatFlag_ & IO::STORM) > 0) 
-            FFTGrid::writeStormFile(depthName, depthMap->getSimbox(), true, false);
-          if((formatFlag_ & IO::ASCII) > 0)
-            FFTGrid::writeStormFile(depthName, depthMap->getSimbox(), true, true);
-        }
-        else {
-          if((formatFlag_ & IO::STORM) >0) 
-            FFTGrid::writeStormFile(depthName, depthMap->getSimbox(), false, false);
-          if((formatFlag_ & IO::ASCII) >0)
-            FFTGrid::writeStormFile(depthName, depthMap->getSimbox(), false, true);
-        }
-
+        if((formatFlag_ & IO::STORM) > 0) 
+          FFTGrid::writeStormFile(depthName, depthMap->getSimbox(), expTrans, false);
+        if((formatFlag_ & IO::ASCII) > 0)
+          FFTGrid::writeStormFile(depthName, depthMap->getSimbox(), expTrans, true);
         if((formatFlag_ & IO::SEGY) >0)
           makeDepthCubeForSegy(depthMap->getSimbox(),depthName);
       }
@@ -1489,7 +1473,12 @@ FFTGrid::writeFile(const std::string & fName,
 }
 
 void
-FFTGrid::writeStormFile(const std::string & fileName, const Simbox * simbox, bool expTrans, bool ascii, bool padding, bool flat)
+FFTGrid::writeStormFile(const std::string & fileName, 
+                        const Simbox      * simbox, 
+                        bool                expTrans, 
+                        bool                ascii, 
+                        bool                padding, 
+                        bool                flat)
 {
   int nx, ny, nz;
   if(padding == true)
@@ -1526,7 +1515,6 @@ FFTGrid::writeStormFile(const std::string & fileName, const Simbox * simbox, boo
             value = getRealValue(i,j,k,true);          
           NRLib::WriteBinaryFloat(binFile, value);
         }
-    //NRLib::WriteBinaryInt(binFile, 0);
     binFile << "0\n";
     binFile.close();
   }
@@ -1556,7 +1544,10 @@ FFTGrid::writeStormFile(const std::string & fileName, const Simbox * simbox, boo
 
 
 int
-FFTGrid::writeSegyFile(const std::string & fileName, const Simbox * simbox, float z0, const TraceHeaderFormat &thf)
+FFTGrid::writeSegyFile(const std::string       & fileName, 
+                       const Simbox            * simbox, 
+                       float                     z0, 
+                       const TraceHeaderFormat & thf)
 {
   //  long int timestart, timeend;
   //  time(&timestart);
@@ -1615,8 +1606,8 @@ FFTGrid::writeSegyFile(const std::string & fileName, const Simbox * simbox, floa
         for(;k<segynz;k++)
           trace[k] = 0;
 
-        float xx = float(x);
-        float yy = float(y);
+        float xx = static_cast<float>(x);
+        float yy = static_cast<float>(y);
         segy->StoreTrace(xx, yy, trace, NULL);
       }
     }
@@ -1795,8 +1786,7 @@ FFTGrid::writeCravaFile(const std::string & fileName, const Simbox * simbox)
     NRLib::WriteBinaryInt(binFile, rnxp_);
     NRLib::WriteBinaryInt(binFile, nyp_);
     NRLib::WriteBinaryInt(binFile, nzp_);
-    int i;
-    for(i=0;i<rsize_;i++)
+    for(int i=0;i<rsize_;i++)
       NRLib::WriteBinaryFloat(binFile, rvalue_[i]);
 
     binFile.close();

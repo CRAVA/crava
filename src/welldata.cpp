@@ -583,7 +583,7 @@ WellData::writeRMSWell(void)
   }
 
   if (nFacies_ > 0) {
-    file << faciesLogName_.c_str() << "   DISC ";
+    file << faciesLogName_ << "   DISC ";
     for (int i =0 ; i < nFacies_ ; i++)
       file << " " << faciesNr_[i] << " " << faciesNames_[i];
     file << std::endl;
