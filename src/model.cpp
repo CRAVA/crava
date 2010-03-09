@@ -2506,7 +2506,7 @@ Model::processReflectionMatrixFromWells(float       **& reflectionMatrix,
                                         std::string   & errText,
                                         bool          & failed)
 {
-  Utils::writeHeader("Making reflection matrix from well information");  
+  Utils::writeHeader("Reflection matrix");  
   //
   // About to process wavelets and energy information. Needs the a-matrix, so create
   // if not already made. A-matrix may need Vp/Vs-ratio from wells.
@@ -2521,9 +2521,10 @@ Model::processReflectionMatrixFromWells(float       **& reflectionMatrix,
       errText += tmpErrText;
       failed = true;
     }
-    LogKit::LogFormatted(LogKit::LOW,"Reflection parameters read from file.\n\n");
+    LogKit::LogFormatted(LogKit::LOW,"\nReflection parameters read from file.\n\n");
   }
   else {
+    LogKit::LogFormatted(LogKit::LOW,"\nMaking reflection matrix from well information\n");
 
     double vsvp = vsvpFromWells(wells, modelSettings);
 
@@ -2539,10 +2540,7 @@ Model::processReflectionMatrixFromBackground(float       **& reflectionMatrix,
                                              std::string   & errText,
                                              bool          & failed)
 {
-  if (modelSettings->getForwardModeling())
-    Utils::writeHeader("Making reflection matrix from earth model");  
-  else
-    Utils::writeHeader("Making reflection matrix from background model");  
+  Utils::writeHeader("Reflection matrix");  
   //
   // About to process wavelets and energy information. Needs the a-matrix, so create
   // if not already made. A-matrix may need Vp/Vs-ratio from background model.
@@ -2557,11 +2555,15 @@ Model::processReflectionMatrixFromBackground(float       **& reflectionMatrix,
       errText += tmpErrText;
       failed = true;
     }
-    LogKit::LogFormatted(LogKit::LOW,"Reflection parameters read from file.\n\n");
+    LogKit::LogFormatted(LogKit::LOW,"\nReflection parameters read from file.\n\n");
   }
   else {
-
     if (background != NULL) {
+      if (modelSettings->getForwardModeling())
+        LogKit::LogFormatted(LogKit::LOW,"\nMaking reflection matrix from earth model\n");
+      else
+        LogKit::LogFormatted(LogKit::LOW,"\nMaking reflection matrix from background model\n");
+
       double vsvp  = background->getMeanVsVp(); 
       setupDefaultReflectionMatrix(reflectionMatrix, vsvp, modelSettings);
     }
@@ -2608,7 +2610,21 @@ Model::setupDefaultReflectionMatrix(float       **& reflectionMatrix,
     }
   }
   reflectionMatrix = A;
-  LogKit::LogFormatted(LogKit::LOW,"\nMaking reflection parameters using a Vp/Vs ratio of %4.2f\n",1.0f/vsvp);
+  float vpvs = 1.0f/vsvp;
+  LogKit::LogFormatted(LogKit::LOW,"\nMaking reflection parameters using a Vp/Vs ratio of %4.2f\n",vpvs);
+  std::string text;
+  if (vpvs < modelSettings->getVpVsRatioMin()) {
+    LogKit::LogFormatted(LogKit::WARNING,"\nA very small Vp/Vs-ratio has been detected. Values below %.2f are regarded unlikely. \n",modelSettings->getVpVsRatioMin());
+    text  = "Check the Vp/Vs-ratio. A small value has been found. If the value is acceptable,\n";
+    text += "   you can remove this task using the <minimim-vp-vs-ratio> keyword.\n";
+    TaskList::addTask(text);
+  } 
+  else if (vpvs > modelSettings->getVpVsRatioMax()) {
+    LogKit::LogFormatted(LogKit::WARNING,"\nA very large Vp/Vs-ratio has been detected. Values above %.2f are regarded unlikely. \n",modelSettings->getVpVsRatioMax());
+    text  = "Check the Vp/Vs-ratio. A large value has been found. If the value is acceptable,\n";
+    text += "   you can remove this task using the <maximum-vp-vs-ratio> keyword.\n";
+    TaskList::addTask(text);
+  }
 }
 
 double Model::vsvpFromWells(WellData     ** wells,

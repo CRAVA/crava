@@ -81,6 +81,8 @@ public:
   float                            getVarBetaMax(void)                  const { return var_beta_max_            ;}
   float                            getVarRhoMin(void)                   const { return var_rho_min_             ;}
   float                            getVarRhoMax(void)                   const { return var_rho_max_             ;}
+  float                            getVpVsRatioMin(void)                const { return vp_vs_ratio_min_         ;}
+  float                            getVpVsRatioMax(void)                const { return vp_vs_ratio_max_         ;}
   float                            getRefDepth(void)                    const { return ref_depth_               ;}
   float                            getAverageVelocity(void)             const { return average_velocity_        ;}
   float                            getMaxHzBackground(void)             const { return maxHz_background_        ;}
@@ -226,6 +228,8 @@ public:
   void setVarBetaMax(float var_beta_max)                  { var_beta_max_             = var_beta_max             ;}
   void setVarRhoMin(float var_rho_min)                    { var_rho_min_              = var_rho_min              ;}
   void setVarRhoMax(float var_rho_max)                    { var_rho_max_              = var_rho_max              ;}
+  void setVpVsRatioMin(float vp_vs_ratio_min)             { vp_vs_ratio_min_          = vp_vs_ratio_min          ;}
+  void setVpVsRatioMax(float vp_vs_ratio_max)             { vp_vs_ratio_max_          = vp_vs_ratio_max          ;}
   void setRefDepth(float ref_depth)                       { ref_depth_                = ref_depth                ;}
   void setAverageVelocity(float average_velocity)         { average_velocity_         = average_velocity         ;}
   void setMaxHzBackground(float maxHz_background)         { maxHz_background_         = maxHz_background         ;}
@@ -385,7 +389,10 @@ private:
   float                             var_beta_max_;               //| 
   float                             var_rho_min_;                //| The limits are for point variances. The minimum allowed variance 
   float                             var_rho_max_;                //| for parameters will be scaled with 1/dt*dt 
-                                                                 
+ 
+  float                             vp_vs_ratio_min_;            // Smallest Vp/Vs-ratio regarded as likely
+  float                             vp_vs_ratio_max_;            // Largest Vp/Vs-ratio regarded as likely
+
   float                             ref_depth_;                  // z0 - reference depth for target area
   float                             average_velocity_;           // v0 - average velocity in target area
                                                                  

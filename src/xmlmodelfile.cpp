@@ -528,6 +528,8 @@ XmlModelFile::parseAllowedParameterValues(TiXmlNode * node, std::string & errTxt
   legalCommands.push_back("maximum-variance-vs");
   legalCommands.push_back("minimum-variance-density");
   legalCommands.push_back("maximum-variance-density");
+  legalCommands.push_back("minimum-vp-vs-ratio");
+  legalCommands.push_back("maximum-vp-vs-ratio");
 
   float value;
   if(parseValue(root, "minimum-vp", value, errTxt) == true)
@@ -555,6 +557,11 @@ XmlModelFile::parseAllowedParameterValues(TiXmlNode * node, std::string & errTxt
     modelSettings_->setVarRhoMin(value);
   if(parseValue(root, "maximum-variance-density", value, errTxt) == true)
     modelSettings_->setVarRhoMax(value);
+
+  if(parseValue(root, "minimum-vp-vs-ratio", value, errTxt) == true)
+    modelSettings_->setVpVsRatioMin(value);
+  if(parseValue(root, "maximum-vp-vs-ratio", value, errTxt) == true)
+    modelSettings_->setVpVsRatioMax(value);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -2751,8 +2758,6 @@ XmlModelFile::checkEstimationConsistency(std::string & errTxt) {
   }
   if (modelSettings_->getEstimate3DWavelet() && !modelSettings_->getHasTime3DMapping())
     errTxt += "Time 3D mapping must be given when 3D wavelet is to be estimated.\n";
-  if (modelSettings_->getGridOutputFlag()>0 && modelSettings_->getDefaultGridOutputInd()==false)
-    errTxt += "Grid output can not be given when in estimation mode.\n";
 }
 
 void

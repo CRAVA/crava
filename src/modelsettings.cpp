@@ -62,6 +62,9 @@ ModelSettings::ModelSettings(void)
   var_beta_max_            = 500.e-4f; 
   var_rho_min_             =   2.e-4f; 
   var_rho_max_             = 100.e-4f; 
+
+  vp_vs_ratio_min_         =     1.4f;
+  vp_vs_ratio_max_         =     3.0f;
                            
   maxHz_background_        =     6.0f;       
   maxHz_seismic_           =    40.0f;       
