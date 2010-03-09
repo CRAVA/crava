@@ -1601,11 +1601,12 @@ FFTGrid::writeSegyFile(const std::string       & fileName,
         }
         for(k=0;k<firstData;k++)
           trace[k] = 0;
+//          trace[k] = -1e35; //NBNB-Frode: Norsar-hack
         for(;k<endData;k++)
           trace[k] = this->getRegularZInterpolatedRealValue(i,j,z0,dz,k,z,gdz);
         for(;k<segynz;k++)
           trace[k] = 0;
-
+//          trace[k] = -1e35; //NBNB-Frode: Norsar-hack
         float xx = static_cast<float>(x);
         float yy = static_cast<float>(y);
         segy->StoreTrace(xx, yy, trace, NULL);

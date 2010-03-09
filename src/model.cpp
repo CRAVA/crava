@@ -4534,8 +4534,8 @@ Model::findTimeGradientSurface(const std::string    & refTimeFile,
     if (inside) {
       refTimeGradX.Resize(nx, ny, RMISSING);
       refTimeGradY.Resize(nx, ny, RMISSING);
-      for (unsigned int i = nx-1; i >= 0; i++) {
-        for (unsigned int j = ny-1; j >= 0; j++) {
+      for (int i = nx-1; i >= 0; i--) {
+        for (int j = ny-1; j >= 0; j--) {
           simbox->getXYCoord(i,j,x,y);
           float z_high = t0surface.GetZInside(x,y);
           simbox->getXYCoord(i,j-1,x,y); //XYCoord is ok even if j = -1, but point is outside simbox

@@ -142,7 +142,6 @@ int main(int argc, char** argv)
     crava->computeSyntSeismic(crava->getPostAlpha(),crava->getPostBeta(),crava->getPostRho());
     delete crava;
   } 
-  delete model;
 
   if (FFTGrid::getMaxAllowedGrids() > FFTGrid::getMaxAllocatedGrids() && modelSettings->getDoInversion()) {
     LogKit::LogFormatted(LogKit::DEBUGLOW,"\nWARNING: A memory requirement inconsistency has been detected:"); 
@@ -152,6 +151,8 @@ int main(int argc, char** argv)
     TaskList::addTask("CRAVA did not use as much memory as estimated. NR would be interested to know about this, so if you could send your .xml-file to us, we would appreciate it.");
   }
   
+  delete model;
+
   Timings::setTimeTotal(wall,cpu);
   Timings::reportAll(LogKit::MEDIUM);
 
