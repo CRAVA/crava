@@ -118,27 +118,29 @@ public:
   enum           waveletFormats{JASONWAVELET     = 1,
                                 NORSARWAVELET    = 2};
 
-  enum           outputGrids{CORRELATION            = 1, 
-                             RESIDUAL               = 2, 
-                             VP                     = 4, 
-                             VS                     = 8, 
-                             RHO                    = 16,
-                             LAMELAMBDA             = 32, 
-                             LAMEMU                 = 64, 
-                             POISSONRATIO           = 128, 
-                             AI                     = 256,
-                             SI                     = 512, 
-                             VPVSRATIO              = 1024, 
-                             MURHO                  = 2048, 
-                             LAMBDARHO              = 4096, 
-                             BACKGROUND             = 8192, 
-                             BACKGROUND_TREND       = 16384, 
-                             FACIESPROB             = 32768, 
-                             FACIESPROBRELATIVE     = 65536, 
-                             EXTRA_GRIDS            = 131072,
-                             ORIGINAL_SEISMIC_DATA  = 262144,
-                             TIME_TO_DEPTH_VELOCITY = 524288,
-                             SYNTHETIC_SEISMIC_DATA = 1048576};
+  enum           outputGridsElastic{VP                     = 1, 
+                                    VS                     = 2, 
+                                    RHO                    = 4,
+                                    LAMELAMBDA             = 8, 
+                                    LAMEMU                 = 16, 
+                                    POISSONRATIO           = 32, 
+                                    AI                     = 64,
+                                    SI                     = 128,
+                                    VPVSRATIO              = 256, 
+                                    MURHO                  = 512, 
+                                    LAMBDARHO              = 1024, 
+                                    BACKGROUND             = 2048, 
+                                    BACKGROUND_TREND       = 4096};
+                             
+  enum           outputGridsOther{FACIESPROB             = 1,
+                                  FACIESPROB_WITH_UNDEF  = 2,
+                                  TIME_TO_DEPTH_VELOCITY = 4,
+                                  EXTRA_GRIDS            = 8,
+                                  CORRELATION            = 16};
+
+  enum           outputGridsSeismic{ORIGINAL_SEISMIC_DATA  = 1,
+                                    SYNTHETIC_SEISMIC_DATA = 2,
+                                    RESIDUAL               = 4};
 
   enum           outputWells{WELLS              = 1,
                              BLOCKED_WELLS      = 2,

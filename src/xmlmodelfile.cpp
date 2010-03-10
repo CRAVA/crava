@@ -179,29 +179,21 @@ XmlModelFile::parseInversionSettings(TiXmlNode * node, std::string & errTxt)
 
   std::string facprob;
   if(parseValue(root, "facies-probabilities", facprob, errTxt) == true) {
-    int flag = 0;
-    if(modelSettings_->getDefaultGridOutputInd() == false){
-      flag = modelSettings_->getGridOutputFlag();
-      if ((flag & IO::VP)>0)
-        flag -= IO::VP - IO::VS - IO::RHO;
-    }
-    if(facprob == "absolute") {
-      flag = (flag | IO::FACIESPROB);
+
+    if(facprob == "absolute")
       modelSettings_->setFaciesProbRelative(false);
-    }
-    else if(facprob == "relative") {
-      flag = (flag | IO::FACIESPROBRELATIVE);
+
+    else if(facprob == "relative")
       modelSettings_->setFaciesProbRelative(true);
-    }
+
     else
       errTxt += "Illegal type \'"+facprob+"\' specified for keyword <facies-probabilities>."
         +" Choose from \'absolute\' and \'relative\'\n";
 
-    if(flag != 0) {
-      modelSettings_->setGridOutputFlag(flag);
-      modelSettings_->setDefaultGridOutputInd(false);
-      modelSettings_->setEstimateFaciesProb(true);
-    }
+    modelSettings_->setEstimateFaciesProb(true);
+    modelSettings_->setOutputGridsOther(IO::FACIESPROB);
+    modelSettings_->setOutputGridsDefaultInd(false);
+    modelSettings_->setOutputGridsElastic(0);
   }
 
   checkForJunk(root, errTxt, legalCommands);
@@ -1929,12 +1921,9 @@ XmlModelFile::parseGridOutput(TiXmlNode * node, std::string & errTxt)
   
   parseGridFormats(root, errTxt);
   parseGridDomains(root, errTxt);
-  int paramFlag = 0;
-  parseGridElasticParameters(root, paramFlag, errTxt);
-  parseGridSeismicData(root, paramFlag, errTxt);
-  parseGridOtherParameters(root, paramFlag, errTxt);
-  if(paramFlag!=0)
-    modelSettings_->setGridOutputFlag(paramFlag);
+  parseGridElasticParameters(root, errTxt);
+  parseGridSeismicData(root, errTxt);
+  parseGridOtherParameters(root, errTxt);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -1953,7 +1942,7 @@ XmlModelFile::parseGridDomains(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("time");
 
   bool useDomain = false;
-  int domainFlag = modelSettings_->getGridOutputDomain();
+  int domainFlag = modelSettings_->getOutputGridDomain();
   if(parseBool(root, "time", useDomain, errTxt) == true) {
     if(useDomain == true)
       domainFlag = (domainFlag | IO::TIMEDOMAIN);
@@ -1967,7 +1956,7 @@ XmlModelFile::parseGridDomains(TiXmlNode * node, std::string & errTxt)
     else if((domainFlag & IO::DEPTHDOMAIN) > 0)
       domainFlag -= IO::DEPTHDOMAIN;
   }
-  modelSettings_->setGridOutputDomain(domainFlag);
+  modelSettings_->setOutputGridDomain(domainFlag);
 
   if(domainFlag == 0)
     errTxt += "Both time and depth domain output turned off after command <"
@@ -2014,7 +2003,7 @@ XmlModelFile::parseGridFormats(TiXmlNode * node, std::string & errTxt)
     formatFlag += IO::CRAVA;
 
   if(formatFlag > 0 || stormSpecified == true)
-    modelSettings_->setGridOutputFormat(formatFlag);
+    modelSettings_->setOutputGridFormat(formatFlag);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -2023,7 +2012,7 @@ XmlModelFile::parseGridFormats(TiXmlNode * node, std::string & errTxt)
 
 
 bool
-XmlModelFile::parseGridElasticParameters(TiXmlNode * node, int & paramFlag, std::string & errTxt)
+XmlModelFile::parseGridElasticParameters(TiXmlNode * node, std::string & errTxt)
 {
   TiXmlNode * root = node->FirstChildElement("elastic-parameters");
   if(root == 0)
@@ -2043,75 +2032,46 @@ XmlModelFile::parseGridElasticParameters(TiXmlNode * node, int & paramFlag, std:
   legalCommands.push_back("lambdarho"); 
   legalCommands.push_back("background");
   legalCommands.push_back("background-trend");
-  
-  if(modelSettings_->getDefaultGridOutputInd() == false) //May have set faciesprobs.
-    paramFlag = modelSettings_->getGridOutputFlag();
 
-  bool elasticOutput = false;
   bool value         = false;
+  int  paramFlag     = 0;
  
-  if(parseBool(root, "vp", value, errTxt) == true && value == true){
+  if(parseBool(root, "vp", value, errTxt) == true && value == true)
     paramFlag += IO::VP;
-    elasticOutput = true;
-  }
-  if(parseBool(root, "vs", value, errTxt) == true && value == true){
+  if(parseBool(root, "vs", value, errTxt) == true && value == true)
     paramFlag += IO::VS;
-    elasticOutput = true;
-  }
-  if(parseBool(root, "density", value, errTxt) == true && value == true){
+  if(parseBool(root, "density", value, errTxt) == true && value == true)
     paramFlag += IO::RHO;   
-    elasticOutput = true;
-  }
-  if(parseBool(root, "lame-lambda", value, errTxt) == true && value == true){
+  if(parseBool(root, "lame-lambda", value, errTxt) == true && value == true)
     paramFlag += IO::LAMELAMBDA;    
-    elasticOutput = true;
-  }
-  if(parseBool(root, "lame-mu", value, errTxt) == true && value == true){
+  if(parseBool(root, "lame-mu", value, errTxt) == true && value == true)
     paramFlag += IO::LAMEMU;
-    elasticOutput = true;
-  }
-  if(parseBool(root, "poisson-ratio", value, errTxt) == true && value == true){
+  if(parseBool(root, "poisson-ratio", value, errTxt) == true && value == true)
     paramFlag += IO::POISSONRATIO;
-    elasticOutput = true;
-  }
-  if(parseBool(root, "ai", value, errTxt) == true && value == true){
+  if(parseBool(root, "ai", value, errTxt) == true && value == true)
     paramFlag += IO::AI;
-    elasticOutput = true;
-  }
-  if(parseBool(root, "si", value, errTxt) == true && value == true){
+  if(parseBool(root, "si", value, errTxt) == true && value == true)
     paramFlag += IO::SI;
-    elasticOutput = true;
-  }
-  if(parseBool(root, "vp-vs-ratio", value, errTxt) == true && value == true){
+  if(parseBool(root, "vp-vs-ratio", value, errTxt) == true && value == true)
     paramFlag += IO::VPVSRATIO;
-    elasticOutput = true;
-  }
-  if(parseBool(root, "murho", value, errTxt) == true && value == true){
+  if(parseBool(root, "murho", value, errTxt) == true && value == true)
     paramFlag += IO::MURHO;
-    elasticOutput = true;
- }
-  if(parseBool(root, "lambdarho", value, errTxt) == true && value == true){
+  if(parseBool(root, "lambdarho", value, errTxt) == true && value == true)
     paramFlag += IO::LAMBDARHO;
-    elasticOutput = true;
-  }
-  if(parseBool(root, "background", value, errTxt) == true && value == true){
+  if(parseBool(root, "background", value, errTxt) == true && value == true)
     paramFlag += IO::BACKGROUND;
-    elasticOutput = true;
-  }
-  if(parseBool(root, "background-trend", value, errTxt) == true && value == true){
+  if(parseBool(root, "background-trend", value, errTxt) == true && value == true)
     paramFlag += IO::BACKGROUND_TREND;
-    elasticOutput = true;
-  }
 
-  modelSettings_->setElasticOutput(elasticOutput);
-  modelSettings_->setDefaultGridOutputInd(false);
+  modelSettings_->setOutputGridsElastic(paramFlag);
+  modelSettings_->setOutputGridsDefaultInd(false);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
 
 bool
-XmlModelFile::parseGridSeismicData(TiXmlNode * node, int & paramFlag, std::string & errTxt)
+XmlModelFile::parseGridSeismicData(TiXmlNode * node, std::string & errTxt)
 {
   TiXmlNode * root = node->FirstChildElement("seismic-data");
   if(root == 0)
@@ -2120,9 +2080,13 @@ XmlModelFile::parseGridSeismicData(TiXmlNode * node, int & paramFlag, std::strin
   legalCommands.push_back("original");
   legalCommands.push_back("synthetic");
   legalCommands.push_back("residuals");
-  bool value = false;
+  
+  bool value    = false;
+  int paramFlag = 0;
+
   if(parseBool(root, "residuals", value, errTxt) == true && value == true)
     paramFlag += IO::RESIDUAL;
+
   if(parseBool(root, "original", value, errTxt) == true && value == true)
     paramFlag += IO::ORIGINAL_SEISMIC_DATA;  
 
@@ -2131,21 +2095,54 @@ XmlModelFile::parseGridSeismicData(TiXmlNode * node, int & paramFlag, std::strin
     paramFlag += IO::SYNTHETIC_SEISMIC_DATA;
     modelSettings_->setGenerateSeismicAfterInv(true);
   }
-  modelSettings_->setDefaultGridOutputInd(false);
+  
+  if (modelSettings_->getOutputGridsDefaultInd() == true){
+    modelSettings_->setOutputGridsDefaultInd(false);
+    modelSettings_->setOutputGridsElastic(0);
+  }
+  modelSettings_->setOutputGridsSeismic(paramFlag);
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
 
 bool
-XmlModelFile::parseGridOtherParameters(TiXmlNode * node, int & paramFlag, std::string & errTxt)
+XmlModelFile::parseGridOtherParameters(TiXmlNode * node, std::string & errTxt)
 {
   TiXmlNode * root = node->FirstChildElement("other-parameters");
   if(root == 0)
     return(false);
   std::vector<std::string> legalCommands;
+  legalCommands.push_back("facies-probabilities");
+  legalCommands.push_back("facies-probabilities-with-undef");
   legalCommands.push_back("correlations");
   legalCommands.push_back("time-to-depth-velocity");
   legalCommands.push_back("extra-grids");
+ 
+  bool faciesValue      = false;
+  bool faciesValueUndef = false;
+  bool facies;
+  bool faciesUndef;
+  int  paramFlag        = 0;
+
+  facies      = parseBool(root, "facies-probabilities", faciesValue, errTxt);
+  faciesUndef = parseBool(root, "facies-probabilities-with-undef", faciesValueUndef, errTxt);
+
+  if (modelSettings_->getEstimateFaciesProb()){
+    if (facies || faciesUndef){
+      if (faciesValue == true)
+        paramFlag += IO::FACIESPROB;
+      if (faciesValueUndef == true)
+        paramFlag += IO::FACIESPROB_WITH_UNDEF;
+    }
+    else
+      paramFlag += IO::FACIESPROB;
+  }
+  else{
+    if (facies || faciesUndef){
+      if (faciesValue || faciesValueUndef)
+        errTxt += "Facies probabilities can not be specified under <other-output> when facies probabilities are not estimated.\n";
+    }
+  }
 
   bool value = false;
   if(parseBool(root, "correlations", value, errTxt) == true && value == true)
@@ -2155,7 +2152,11 @@ XmlModelFile::parseGridOtherParameters(TiXmlNode * node, int & paramFlag, std::s
   if(parseBool(root, "time-to-depth-velocity", value, errTxt) == true && value == true)
     paramFlag += IO::TIME_TO_DEPTH_VELOCITY;
 
-  modelSettings_->setDefaultGridOutputInd(false);
+  if (modelSettings_->getOutputGridsDefaultInd() == true){
+    modelSettings_->setOutputGridsDefaultInd(false);
+    modelSettings_->setOutputGridsElastic(0);
+  }
+  modelSettings_->setOutputGridsOther(paramFlag);
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
@@ -2764,6 +2765,7 @@ void
 XmlModelFile::checkInversionConsistency(std::string & errTxt) {
   if (inputFiles_->getNumberOfSeismicFiles()==0)
     errTxt += "Seismic data are needed for inversion.\n";
+
   if (modelSettings_->getNumberOfWells() == 0) {
     if (inputFiles_->getBackFile(0)!="" && inputFiles_->getWaveletFile(0)!="" && inputFiles_->getTempCorrFile()!="" && inputFiles_->getParamCorrFile()!="") 
       modelSettings_->setNoWellNeeded(true); 
@@ -2776,11 +2778,25 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
     if (modelSettings_->getEstimateFaciesProb())
       errTxt += "Wells are needed for facies probabilities.\n";
   }
-  if (modelSettings_->getGridOutputFlag()==0    && modelSettings_->getWellOutputFlag()==0 &&
-      modelSettings_->getWaveletOutputFlag()==0 && modelSettings_->getOtherOutputFlag()==0)
-    errTxt += "No output is specified for the inversion model.\n";
-}
 
+  if (modelSettings_->getOutputGridsElastic() == 0 && 
+      modelSettings_->getOutputGridsSeismic() == 0 &&
+      modelSettings_->getOutputGridsOther()   == 0 &&
+      modelSettings_->getWellOutputFlag()     == 0 &&
+      modelSettings_->getWaveletOutputFlag()  == 0 && 
+      modelSettings_->getOtherOutputFlag()    == 0)
+    errTxt += "No output is specified for the inversion model.\n";
+
+  if (modelSettings_->getEstimateFaciesProb()                                 &&
+     (modelSettings_->getOutputGridsOther() & IO::FACIESPROB)            == 0 &&
+     (modelSettings_->getOutputGridsOther() & IO::FACIESPROB_WITH_UNDEF) == 0 &&
+     (modelSettings_->getWellFormatFlag()   & IO::BLOCKED_WELLS)         == 0)
+  {
+    errTxt += "Grid output for facies probabilities or facies probabilities with undefined value,\n";
+    errTxt += "or blocked wells needs to be specified when doing facies estimation.\n";
+  }       
+}
+  
 void
 XmlModelFile::checkAngleConsistency(std::string & errTxt) {
 

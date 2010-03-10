@@ -116,7 +116,7 @@ Background::generateBackgroundModel(FFTGrid      *& bgAlpha,
 
   bool hasVelocityTrend = velocity != NULL;
   bool write1D = ((modelSettings->getOtherOutputFlag()& IO::BACKGROUND_TREND_1D) > 0);
-  bool write3D = ((modelSettings->getGridOutputFlag() & IO::BACKGROUND_TREND) > 0);
+  bool write3D = ((modelSettings->getOutputGridsElastic() & IO::BACKGROUND_TREND) > 0);
   calculateBackgroundTrend(trendAlpha, avgDevAlpha,
                            wells, simbox, 
                            modelSettings->getAlphaMin(), 
@@ -153,7 +153,7 @@ Background::generateBackgroundModel(FFTGrid      *& bgAlpha,
     //
     calculateVelocityDeviations(velocity, wells, simbox, 
                                 trendVel, avgDevVel, avgDevAlpha,
-                                modelSettings->getGridOutputFlag(),
+                                modelSettings->getOutputGridsElastic(),
                                 nWells);
     velocity->logTransf();
     delete bgAlpha;
@@ -178,7 +178,7 @@ Background::generateBackgroundModel(FFTGrid      *& bgAlpha,
     
     setupKrigingData2D(krigingDataAlpha,krigingDataBeta,krigingDataRho,
                        trendAlpha,trendBeta,trendRho,
-                       modelSettings->getGridOutputFlag(),
+                       modelSettings->getOutputGridsElastic(),
                        simbox,wells,nWells);
     
     const CovGrid2D & covGrid2D = makeCovGrid2D(simbox,
@@ -1349,7 +1349,7 @@ Background::resampleBackgroundModel(FFTGrid      *& bgAlpha,
                                     Simbox        * timeSimbox,
                                     ModelSettings * modelSettings)
 {
-  if((modelSettings->getGridOutputFlag() & IO::EXTRA_GRIDS) > 0) {
+  if((modelSettings->getOutputGridsOther() & IO::EXTRA_GRIDS) > 0) {
     std::string fileName1 = IO::PrefixBackground() + "Vp_BackgroundGrid";
     std::string fileName2 = IO::PrefixBackground() + "Vs_BackgroundGrid";
     std::string fileName3 = IO::PrefixBackground() + "Rho_BackgroundGrid";
@@ -1367,7 +1367,7 @@ Background::resampleBackgroundModel(FFTGrid      *& bgAlpha,
   resampleParameter(resBgBeta ,bgBeta ,timeSimbox, timeBGSimbox, modelSettings->getFileGrid());
   resampleParameter(resBgRho  ,bgRho  ,timeSimbox, timeBGSimbox, modelSettings->getFileGrid());
   
-  if((modelSettings->getGridOutputFlag() & IO::EXTRA_GRIDS) > 0) {
+  if((modelSettings->getOutputGridsOther() & IO::EXTRA_GRIDS) > 0) {
     std::string fileName1 = IO::PrefixBackground() + "Vp_InversionGrid";
     std::string fileName2 = IO::PrefixBackground() + "Vs_InversionGrid";
     std::string fileName3 = IO::PrefixBackground() + "Rho_InversionGrid";

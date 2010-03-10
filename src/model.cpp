@@ -130,8 +130,8 @@ Model::Model(const std::string & fileName)
     printSettings(modelSettings_, inputFiles);
     
     //Set output for all FFTGrids.
-    FFTGrid::setOutputFlags(modelSettings_->getGridOutputFormat(), 
-                            modelSettings_->getGridOutputDomain());
+    FFTGrid::setOutputFlags(modelSettings_->getOutputGridFormat(), 
+                            modelSettings_->getOutputGridDomain());
     
     std::string errText("");
 
@@ -566,7 +566,7 @@ Model::checkAvailableMemory(Simbox        * timeSimbox,
       if(modelSettings->getNumberOfSimulations() > 0) { //Second possible peak when simulating.
         int peak2P = baseP + 3; //Need three extra parameter grids for simulated parameters.
         int peak2U = baseU;     //Base level is the same, but may increase.
-        bool computeGridUsed = ((modelSettings->getGridOutputFlag() & (IO::AI + IO::LAMBDARHO + IO::LAMELAMBDA + IO::LAMEMU + IO::MURHO + IO::POISSONRATIO + IO::SI + IO::VPVSRATIO)) > 0);
+        bool computeGridUsed = ((modelSettings->getOutputGridsElastic() & (IO::AI + IO::LAMBDARHO + IO::LAMELAMBDA + IO::LAMEMU + IO::MURHO + IO::POISSONRATIO + IO::SI + IO::VPVSRATIO)) > 0);
         if(computeGridUsed == true)
           peak2P += nGridCompute;
         else if(modelSettings->getKrigingParameter() > 0) //Note the else, since this grid will use same memory as computation grid if both are active.
@@ -813,7 +813,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
 
   bool estimationModeNeedILXL = modelSettings->getEstimationMode() && 
                                 (areaSpecification == ModelSettings::AREA_FROM_GRID_DATA ||
-                                 (modelSettings->getGridOutputFlag() & IO::ORIGINAL_SEISMIC_DATA) > 0);
+                                (modelSettings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0);
                                  
   if(modelSettings->getForwardModeling())
     gridFile = inputFiles->getBackFile(0);    // Get geometry from earth model (Vp)
@@ -964,24 +964,10 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
       //
       // Set SURFACES
       //
-      int outputFormat = modelSettings->getGridOutputFormat();
-      int outputDomain = modelSettings->getGridOutputDomain();
-      int outputFlag   = modelSettings->getGridOutputFlag();
-      int otherOutput  = modelSettings->getOtherOutputFlag();
       
       setSimboxSurfaces(timeSimbox, 
                         inputFiles->getTimeSurfFiles(), 
-                        modelSettings->getForwardModeling(),
-                        modelSettings->getEstimationMode(),
-                        modelSettings->getGenerateBackground(),
-                        modelSettings->getParallelTimeSurfaces(), 
-                        modelSettings->getTimeDTop(), 
-                        modelSettings->getTimeLz(), 
-                        modelSettings->getTimeDz(), 
-                        modelSettings->getTimeNz(),
-                        outputFormat,
-                        outputDomain,
-                        outputFlag,
+                        modelSettings,
                         errText,
                         failed);
  
@@ -1018,8 +1004,11 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
 
             if(failed == false && modelSettings->getForwardModeling() == false) {
               //Extends timeSimbox for correlation coverage. Original stored in timeCutSimbox
-              setupExtendedTimeSimbox(timeSimbox, correlationDirection, timeCutSimbox, 
-                                      outputFormat, outputDomain, modelSettings->getOtherOutputFlag()); 
+              setupExtendedTimeSimbox(timeSimbox, correlationDirection, 
+                                      timeCutSimbox, 
+                                      modelSettings->getOutputGridFormat(), 
+                                      modelSettings->getOutputGridDomain(),
+                                      modelSettings->getOtherOutputFlag()); 
             }      
 
             estimateZPaddingSize(timeSimbox, modelSettings);   
@@ -1036,7 +1025,9 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
 
             if(modelSettings->getForwardModeling() == false) {
               setupExtendedBackgroundSimbox(timeSimbox, correlationDirection, timeBGSimbox, 
-                                            outputFormat, outputDomain, modelSettings->getOtherOutputFlag());
+                                            modelSettings->getOutputGridFormat(), 
+                                            modelSettings->getOutputGridDomain(), 
+                                            modelSettings->getOtherOutputFlag());
               status = timeBGSimbox->calculateDz(modelSettings->getLzLimit(),errText);
               if(status == Simbox::BOXOK)
                 logIntervalInformation(timeBGSimbox, "Time interval used for background modelling:","Two-way-time");
@@ -1067,13 +1058,13 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
           Surface * tsurf = new Surface(dynamic_cast<const Surface &> (timeSimbox->GetTopSurface()));
           timeSimboxConstThick->setDepth(tsurf, 0, timeSimbox->getlz(), timeSimbox->getdz());
           
-          if((otherOutput & IO::EXTRA_SURFACES) > 0 && (outputDomain & IO::TIMEDOMAIN) > 0) {
+          if((modelSettings->getOtherOutputFlag() & IO::EXTRA_SURFACES) > 0 && (modelSettings->getOutputGridDomain() & IO::TIMEDOMAIN) > 0) {
             std::string topSurf  = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixTime() + "_ConstThick";
             std::string baseSurf = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime() + "_ConstThick";
             timeSimboxConstThick->writeTopBotGrids(topSurf, 
                                                    baseSurf,
                                                    IO::PathToInversionResults(),
-                                                   outputFormat);
+                                                   modelSettings->getOutputGridFormat());
           }
         }
         else
@@ -1116,21 +1107,25 @@ Model::logIntervalInformation(const Simbox      * simbox,
 void 
 Model::setSimboxSurfaces(Simbox                        *& simbox, 
                          const std::vector<std::string> & surfFile, 
-                         bool                             generateSeismic,
-                         bool                             estimationMode,
-                         bool                             generateBackground,
-                         bool                             parallelSurfaces, 
-                         double                           dTop,
-                         double                           lz, 
-                         double                           dz, 
-                         int                              nz,
-                         int                              outputFormat,
-                         int                              outputDomain,
-                         int                              outputFlag,
+                         ModelSettings                  * modelSettings, 
                          std::string                    & errText,
                          bool                           & failed)
 {
   const std::string & topName = surfFile[0]; 
+
+  bool   generateSeismic    = modelSettings->getForwardModeling();
+  bool   estimationMode     = modelSettings->getEstimationMode();
+  bool   generateBackground = modelSettings->getGenerateBackground();
+  bool   parallelSurfaces   = modelSettings->getParallelTimeSurfaces();
+  int    nz                 = modelSettings->getTimeNz();
+  int    outputFormat       = modelSettings->getOutputGridFormat();
+  int    outputDomain       = modelSettings->getOutputGridDomain();
+  int    outputGridsElastic = modelSettings->getOutputGridsElastic();
+  int    outputGridsOther   = modelSettings->getOutputGridsOther();
+  int    outputGridsSeismic = modelSettings->getOutputGridsSeismic();
+  double dTop               = modelSettings->getTimeDTop();
+  double lz                 = modelSettings->getTimeLz();
+  double dz                 = modelSettings->getTimeDz();
 
   Surface * z0Grid = NULL;
   Surface * z1Grid = NULL;
@@ -1213,27 +1208,27 @@ Model::setSimboxSurfaces(Simbox                        *& simbox,
                                    outputFormat);
         }
         if((outputFormat & IO::STORM) > 0) { // These copies are only needed with the STORM format
-          if ((outputFlag & IO::BACKGROUND) > 0 || 
-              (outputFlag & IO::BACKGROUND_TREND) > 0 || 
+          if ((outputGridsElastic & IO::BACKGROUND) > 0 || 
+              (outputGridsElastic & IO::BACKGROUND_TREND) > 0 || 
               estimationMode && generateBackground) {
             simbox->writeTopBotGrids(topSurf, 
                                      baseSurf,
                                      IO::PathToBackground(),
                                      outputFormat);
           }
-          if ((outputFlag & IO::CORRELATION) > 0) {
+          if ((outputGridsOther & IO::CORRELATION) > 0) {
             simbox->writeTopBotGrids(topSurf, 
                                      baseSurf,
                                      IO::PathToCorrelations(),
                                      outputFormat);
           }
-          if ((outputFlag & (IO::ORIGINAL_SEISMIC_DATA | IO::SYNTHETIC_SEISMIC_DATA)) > 0) {
+          if ((outputGridsSeismic & (IO::ORIGINAL_SEISMIC_DATA | IO::SYNTHETIC_SEISMIC_DATA)) > 0) {
             simbox->writeTopBotGrids(topSurf, 
                                      baseSurf,
                                      IO::PathToSeismicData(),
                                      outputFormat);
           }
-          if ((outputFlag & IO::TIME_TO_DEPTH_VELOCITY) > 0) {
+          if ((outputGridsOther & IO::TIME_TO_DEPTH_VELOCITY) > 0) {
             simbox->writeTopBotGrids(topSurf, 
                                      baseSurf,
                                      IO::PathToVelocity(),
@@ -1639,7 +1634,7 @@ Model::processSeismic(FFTGrid      **& seisCube,
         }
       }
 
-      if((modelSettings->getGridOutputFlag() & IO::ORIGINAL_SEISMIC_DATA) > 0) {
+      if((modelSettings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0) {
         for(int i=0;i<nAngles;i++) {
           std::string angle    = NRLib::ToString(modelSettings->getAngle(i)*(180/M_PI), 1);
           std::string baseName = IO::PrefixOriginalSeismicData() + angle;
@@ -2208,7 +2203,7 @@ Model::processBackground(Background   *& background,
   }
 
   if (failed == false) {
-    if(((modelSettings->getGridOutputFlag() & IO::BACKGROUND) > 0) || 
+    if(((modelSettings->getOutputGridsElastic() & IO::BACKGROUND) > 0) || 
        ( modelSettings->getEstimationMode() && modelSettings->getGenerateBackground())) {
       background->writeBackgrounds(timeSimbox, 
                                    timeDepthMapping_, 
@@ -3597,11 +3592,16 @@ Model::printSettings(ModelSettings * modelSettings,
   if (IO::getOutputPath() != "")
     LogKit::LogFormatted(LogKit::HIGH,"  Output directory                         : %10s\n",IO::getOutputPath().c_str());
 
-  int outputFlag = modelSettings->getGridOutputFlag();
-  int gridFormat = modelSettings->getGridOutputFormat();
-  int gridDomain = modelSettings->getGridOutputDomain();
+  int gridFormat         = modelSettings->getOutputGridFormat();
+  int gridDomain         = modelSettings->getOutputGridDomain();
+  int outputGridsOther   = modelSettings->getOutputGridsOther(); 
+  int outputGridsElastic = modelSettings->getOutputGridsElastic();
+  int outputGridsSeismic = modelSettings->getOutputGridsSeismic();
 
-  if (outputFlag > 0 && modelSettings->getEstimationMode()==false) {
+  if ((outputGridsElastic > 0  ||
+       outputGridsSeismic > 0  ||
+       outputGridsOther   > 0) && 
+       modelSettings->getEstimationMode()==false) {
     LogKit::LogFormatted(LogKit::MEDIUM,"\nGrid output formats:\n");
     if (gridFormat & IO::SEGY) {
       const std::string & formatName = modelSettings->getTraceHeaderFormatOutput()->GetFormatName();
@@ -3623,71 +3623,73 @@ Model::printSettings(ModelSettings * modelSettings,
       LogKit::LogFormatted(LogKit::MEDIUM,"  Depth                                    :        yes\n");
   }
 
-  if (modelSettings->getElasticOutput() && 
-      modelSettings->getForwardModeling() == false &&
-      modelSettings->getEstimationMode()  == false) {
+  if (outputGridsElastic > 0 && 
+      modelSettings->getForwardModeling() == false) {
     LogKit::LogFormatted(LogKit::MEDIUM,"\nOutput of elastic parameters:\n");
-    if ((outputFlag & IO::VP) > 0)
+    if ((outputGridsElastic & IO::VP) > 0)
       LogKit::LogFormatted(LogKit::MEDIUM,"  Pressure-wave velocity  (Vp)             :        yes\n");
-    if ((outputFlag & IO::VS) > 0)
+    if ((outputGridsElastic & IO::VS) > 0)
       LogKit::LogFormatted(LogKit::MEDIUM,"  Shear-wave velocity  (Vs)                :        yes\n");
-    if ((outputFlag & IO::RHO) > 0)
+    if ((outputGridsElastic & IO::RHO) > 0)
       LogKit::LogFormatted(LogKit::MEDIUM,"  Density  (Rho)                           :        yes\n");
-    if ((outputFlag & IO::AI) > 0)
+    if ((outputGridsElastic & IO::AI) > 0)
       LogKit::LogFormatted(LogKit::MEDIUM,"  Acoustic impedance  (AI)                 :        yes\n");
-    if ((outputFlag & IO::VPVSRATIO) > 0)
+    if ((outputGridsElastic & IO::VPVSRATIO) > 0)
       LogKit::LogFormatted(LogKit::MEDIUM,"  Vp/Vs ratio                              :        yes\n");
-    if ((outputFlag & IO::SI) > 0)
+    if ((outputGridsElastic & IO::SI) > 0)
       LogKit::LogFormatted(LogKit::MEDIUM,"  Shear impedance  (SI)                    :        yes\n");
-    if ((outputFlag & IO::MURHO) > 0)
+    if ((outputGridsElastic & IO::MURHO) > 0)
       LogKit::LogFormatted(LogKit::MEDIUM,"  MuRho  (SI*SI)                           :        yes\n");
-    if ((outputFlag & IO::LAMBDARHO) > 0)
+    if ((outputGridsElastic & IO::LAMBDARHO) > 0)
       LogKit::LogFormatted(LogKit::MEDIUM,"  LambdaRho  (AI*AI - 2*SI*SI)             :        yes\n");
-    if ((outputFlag & IO::LAMELAMBDA) > 0)
+    if ((outputGridsElastic & IO::LAMELAMBDA) > 0)
       LogKit::LogFormatted(LogKit::MEDIUM,"  Lame's first parameter                   :        yes\n");
-    if ((outputFlag & IO::LAMEMU) > 0)
+    if ((outputGridsElastic & IO::LAMEMU) > 0)
       LogKit::LogFormatted(LogKit::MEDIUM,"  Lame's second parameter (shear modulus)  :        yes\n");
-    if ((outputFlag & IO::POISSONRATIO) > 0)
+    if ((outputGridsElastic & IO::POISSONRATIO) > 0)
       LogKit::LogFormatted(LogKit::MEDIUM,"  Poisson ratio                            :        yes\n");
-    if ((outputFlag & IO::BACKGROUND) > 0)
+    if ((outputGridsElastic & IO::BACKGROUND) > 0)
       LogKit::LogFormatted(LogKit::MEDIUM,"  Background (Vp, Vs, Rho)                 :        yes\n");
-    if ((outputFlag & IO::BACKGROUND_TREND) > 0)
+    if ((outputGridsElastic & IO::BACKGROUND_TREND) > 0)
       LogKit::LogFormatted(LogKit::MEDIUM,"  Background trend (Vp, Vs, Rho)           :        yes\n");
   }    
 
   if (modelSettings->getEstimateFaciesProb()) {
-    LogKit::LogFormatted(LogKit::MEDIUM,"\nOutput of facies probability volumes:\n");
-    if (modelSettings->getFaciesProbRelative())
-      LogKit::LogFormatted(LogKit::MEDIUM,"  Use rel. amplitudes for elastic param.   :        yes\n");
-    else
-      LogKit::LogFormatted(LogKit::MEDIUM,"  Use abs. amplitudes for elastic param.   :        yes\n");
+      LogKit::LogFormatted(LogKit::MEDIUM,"\nOutput of facies probability volumes:\n");
+      if ((outputGridsOther & IO::FACIESPROB) > 0)
+        LogKit::LogFormatted(LogKit::MEDIUM,"  Facies probabilities                     :        yes\n");
+      if ((outputGridsOther & IO::FACIESPROB_WITH_UNDEF) > 0)
+        LogKit::LogFormatted(LogKit::MEDIUM,"  Facies probabilities with undefined value:        yes\n");
+      if (modelSettings->getFaciesProbRelative())
+        LogKit::LogFormatted(LogKit::MEDIUM,"  Use rel. amplitudes for elastic param.   :        yes\n");
+      else
+        LogKit::LogFormatted(LogKit::MEDIUM,"  Use abs. amplitudes for elastic param.   :        yes\n");
+      if ((outputGridsOther & IO::FACIESPROB)            > 0 ||
+        (outputGridsOther & IO::FACIESPROB_WITH_UNDEF) > 0){
+      }
   }
 
   if (modelSettings->getForwardModeling() ||
-      (outputFlag & IO::SYNTHETIC_SEISMIC_DATA) > 0 ||
-      (outputFlag & IO::ORIGINAL_SEISMIC_DATA) > 0 ||
-      (outputFlag & IO::RESIDUAL) > 0) {
+      outputGridsSeismic > 0) {
     LogKit::LogFormatted(LogKit::MEDIUM,"\nOutput of seismic data:\n");
-    if ((outputFlag & IO::SYNTHETIC_SEISMIC_DATA) > 0 || modelSettings->getForwardModeling())
+    if ((outputGridsSeismic & IO::SYNTHETIC_SEISMIC_DATA) > 0 || modelSettings->getForwardModeling())
       LogKit::LogFormatted(LogKit::MEDIUM,"  Synthetic seismic data (forward modelled):        yes\n");
-    if ((outputFlag & IO::ORIGINAL_SEISMIC_DATA) > 0)
+    if ((outputGridsSeismic & IO::ORIGINAL_SEISMIC_DATA) > 0)
       LogKit::LogFormatted(LogKit::MEDIUM,"  Original seismic data (in output grid)   :        yes\n");
-    if ((outputFlag & IO::RESIDUAL) > 0)
+    if ((outputGridsSeismic & IO::RESIDUAL) > 0)
       LogKit::LogFormatted(LogKit::MEDIUM,"  Seismic data residuals                   :        yes\n");
   }
 
-  bool otherGridOutput 
-    = (outputFlag & IO::CORRELATION) > 0
-    ||(outputFlag & IO::EXTRA_GRIDS) > 0
-    ||(outputFlag & IO::TIME_TO_DEPTH_VELOCITY) > 0;
-  
-  if (otherGridOutput) {
+
+  if ((outputGridsOther & IO::CORRELATION)>0 ||
+      (outputGridsOther & IO::EXTRA_GRIDS)  >0 ||
+      (outputGridsOther & IO::TIME_TO_DEPTH_VELOCITY)>0) { 
     LogKit::LogFormatted(LogKit::MEDIUM,"\nOther grid output:\n");
-    if ((outputFlag & IO::CORRELATION) > 0)
+    if ((outputGridsOther & IO::CORRELATION) > 0)
       LogKit::LogFormatted(LogKit::MEDIUM,"  Posterior correlations                   :        yes\n");
-    if ((outputFlag & IO::EXTRA_GRIDS) > 0)
+    if ((outputGridsOther & IO::EXTRA_GRIDS) > 0)
       LogKit::LogFormatted(LogKit::MEDIUM,"  Help grids (see use manual)              :        yes\n");
-    if ((outputFlag & IO::TIME_TO_DEPTH_VELOCITY) > 0)
+    if ((outputGridsOther & IO::TIME_TO_DEPTH_VELOCITY) > 0)
       LogKit::LogFormatted(LogKit::MEDIUM,"  Time-to-depth velocity                   :        yes\n");
   }
 
@@ -4224,12 +4226,12 @@ Model::processDepthConversion(Simbox        * timeCutSimbox,
       velocity->setAccessMode(FFTGrid::RANDOMACCESS);
       timeDepthMapping_->calculateSurfaceFromVelocity(velocity, timeSimbox);
       timeDepthMapping_->setDepthSimbox(timeSimbox, timeSimbox->getnz(), 
-                                        modelSettings->getGridOutputFormat(),
+                                        modelSettings->getOutputGridFormat(),
                                         failed, errText);            // NBNB-PAL: Er dettet riktig nz (timeCut vs time)? 
       timeDepthMapping_->makeTimeDepthMapping(velocity, timeSimbox);
       velocity->endAccess();
 
-      if((modelSettings->getGridOutputFlag() & IO::TIME_TO_DEPTH_VELOCITY) > 0) {
+      if((modelSettings->getOutputGridsOther() & IO::TIME_TO_DEPTH_VELOCITY) > 0) {
         std::string baseName  = IO::FileTimeToDepthVelocity();
         std::string sgriLabel = std::string("Time-to-depth velocity");
         float       offset    = modelSettings->getSegyOffset();
@@ -4246,7 +4248,7 @@ Model::processDepthConversion(Simbox        * timeCutSimbox,
     {
       timeDepthMapping_->setDepthSimbox(timeSimbox, 
                                         timeSimbox->getnz(), 
-                                        modelSettings->getGridOutputFormat(),
+                                        modelSettings->getOutputGridFormat(),
                                         failed, 
                                         errText);
 
@@ -4416,7 +4418,7 @@ Model::writeLocalGridsToFile(const std::string   & fileName,
                              Grid2D             *& grid)  
 {
   bool   estimationMode   = modelSettings->getEstimationMode();
-  int    outputFormat     = modelSettings->getGridOutputFormat();
+  int    outputFormat     = modelSettings->getOutputGridFormat();
   double angle            = modelSettings->getAngle(i)*180.0/M_PI;
 
   Surface * help = NULL; 

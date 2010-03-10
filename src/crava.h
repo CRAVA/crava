@@ -128,7 +128,8 @@ private:
   int                scaleWarning_;
   std::string        scaleWarningText_;
 
-  int                outputFlag_;       // See modelsettings.h for bit interpretation.
+  int                outputGridsSeismic_; // See modelsettings.h for bit interpretation.
+  int                outputGridsElastic_;
   bool               writePrediction_;  // Write prediction grids?
 
   float              energyTreshold_;   // If energy in reflection trace divided by mean energy

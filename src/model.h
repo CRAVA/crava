@@ -194,17 +194,7 @@ private:
                                 bool               & failed);
   void             setSimboxSurfaces(Simbox                        *& simbox, 
                                      const std::vector<std::string> & surfFile, 
-                                     bool                             generateSeismic,
-                                     bool                             estimationMode,
-                                     bool                             generateBackground,
-                                     bool                             parallelSurfaces, 
-                                     double                           dTop,
-                                     double                           lz, 
-                                     double                           dz, 
-                                     int                              nz,
-                                     int                              outputFormat,
-                                     int                              outputDomain,
-                                     int                              outputFlag,
+                                     ModelSettings                  * modelSettings,
                                      std::string                    & errText,
                                      bool                           & failed);
   void             estimateXYPaddingSizes(Simbox         * timeSimbox,

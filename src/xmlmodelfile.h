@@ -64,9 +64,9 @@ private:
   bool       parseGridOutput(TiXmlNode * node, std::string & errTxt);
   bool         parseGridDomains(TiXmlNode * node, std::string & errTxt);
   bool         parseGridFormats(TiXmlNode * node, std::string & errTxt);
-  bool         parseGridElasticParameters(TiXmlNode * node, int &paramFlag, std::string & errTxt);
-  bool         parseGridSeismicData(TiXmlNode * node, int &paramFlag, std::string & errTxt);
-  bool         parseGridOtherParameters(TiXmlNode * node, int &paramFlag, std::string & errTxt);
+  bool         parseGridElasticParameters(TiXmlNode * node, std::string & errTxt);
+  bool         parseGridSeismicData(TiXmlNode * node, std::string & errTxt);
+  bool         parseGridOtherParameters(TiXmlNode * node, std::string & errTxt);
   bool         parseWellOutput(TiXmlNode * node, std::string & errTxt);
   bool         parseWellFormats(TiXmlNode * node, std::string & errTxt);
   bool         parseWaveletOutput(TiXmlNode * node, std::string & errTxt);

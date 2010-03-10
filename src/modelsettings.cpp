@@ -111,9 +111,10 @@ ModelSettings::ModelSettings(void)
   areaILXL_                = std::vector<int>(0); 
 
   writePrediction_         =    false;  //Will be set to true if no simulations.
-  gridFlag_                = IO::VP + IO::VS + IO::RHO;  // Default output
-  defaultGridOutput_       =     true;
-  elasticOutput_           =     true;
+  outputGridsElastic_      = IO::VP + IO::VS + IO::RHO;  // Default output
+  outputGridsOther_        =        0;
+  outputGridsSeismic_      =        0;
+  outputGridsDefault_      =     true;
   formatFlag_              = IO::STORM;   
   domainFlag_              = IO::TIMEDOMAIN;   
   wellFlag_                =        0;   
@@ -178,22 +179,36 @@ ModelSettings::~ModelSettings(void)
 bool 
 ModelSettings::getDoInversion(void)
 {
-  int flag = IO::VP 
-    + IO::VS 
-    + IO::RHO 
-    + IO::LAMELAMBDA 
-    + IO::LAMEMU 
-    + IO::POISSONRATIO
-    + IO::AI 
-    + IO::SI
-    + IO::VPVSRATIO 
-    + IO::MURHO 
-    + IO::LAMBDARHO 
-    + IO::FACIESPROB
-    + IO::CORRELATION 
-    + IO::FACIESPROBRELATIVE
-    + IO::SYNTHETIC_SEISMIC_DATA;
-  return ((flag & gridFlag_) > 0 && estimationMode_ == false); 
+  int elasticFlag = 0;
+  int otherFlag   = 0;
+  int seismicFlag = 0;
+
+  elasticFlag += IO::VP 
+              +  IO::VS 
+              +  IO::RHO 
+              +  IO::LAMELAMBDA 
+              +  IO::LAMEMU 
+              +  IO::POISSONRATIO
+              +  IO::AI 
+              +  IO::SI
+              +  IO::VPVSRATIO 
+              +  IO::MURHO 
+              +  IO::LAMBDARHO;
+
+  otherFlag   += IO::FACIESPROB 
+              +  IO::FACIESPROB_WITH_UNDEF
+              +  IO::CORRELATION;
+
+  seismicFlag += IO::SYNTHETIC_SEISMIC_DATA
+              +  IO::RESIDUAL;
+
+  if (((elasticFlag & outputGridsElastic_) > 0  || 
+       (otherFlag   & outputGridsOther_)   > 0  ||
+       (seismicFlag & outputGridsSeismic_) > 0) &&
+       estimationMode_ == false)
+    return true;
+  else
+    return false;
 }
 
 bool 

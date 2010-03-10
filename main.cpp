@@ -89,7 +89,7 @@ int main(int argc, char** argv)
       if (!modelSettings->getUseLocalNoise()) // Already done in crava.cpp if local noise
         corr->createPostVariances();
       corr->printPostVariances();
-      if((modelSettings->getGridOutputFlag() & IO::CORRELATION) > 0)
+      if((modelSettings->getOutputGridsOther() & IO::CORRELATION) > 0)
       {
         corr->writeFilePostVariances();
         corr->writeFilePostCovGrids(model->getTimeSimbox());

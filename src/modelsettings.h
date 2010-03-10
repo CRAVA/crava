@@ -119,11 +119,12 @@ public:
   int                              getAreaSpecification(void)           const { return areaSpecification_       ;}     
   bool                             getVelocityFromInversion(void)       const { return velocityFromInv_         ;}
   bool                             getWritePrediction(void)             const { return writePrediction_         ;}
-  bool                             getElasticOutput(void)               const { return elasticOutput_           ;}
-  int                              getGridOutputFlag(void)              const { return gridFlag_                ;}
-  bool                             getDefaultGridOutputInd(void)        const { return defaultGridOutput_       ;}
-  int                              getGridOutputFormat(void)            const { return formatFlag_              ;}
-  int                              getGridOutputDomain(void)            const { return domainFlag_              ;}
+  int                              getOutputGridsElastic(void)          const { return outputGridsElastic_      ;}
+  int                              getOutputGridsOther(void)            const { return outputGridsOther_        ;}
+  int                              getOutputGridsSeismic(void)          const { return outputGridsSeismic_      ;}
+  int                              getOutputGridFormat(void)            const { return formatFlag_              ;}
+  int                              getOutputGridDomain(void)            const { return domainFlag_              ;}
+  bool                             getOutputGridsDefaultInd(void)       const { return outputGridsDefault_      ;}
   int                              getWellOutputFlag(void)              const { return wellFlag_                ;}
   int                              getWellFormatFlag(void)              const { return wellFormatFlag_          ;}
   int                              getWaveletOutputFlag(void)           const { return waveletFlag_             ;}
@@ -266,11 +267,12 @@ public:
   void setAreaILXLParameters(std::vector<int> ilxl)       { areaILXL_                 = ilxl                     ;}
   void setAreaSpecification(int areaSpecification)        { areaSpecification_        = areaSpecification        ;}
   void setWritePrediction(bool write)                     { writePrediction_          = write                    ;}
-  void setElasticOutput(bool elasticOutput)               { elasticOutput_            = elasticOutput            ;}
-  void setDefaultGridOutputInd(bool ind)                  { defaultGridOutput_        = ind                      ;}
-  void setGridOutputFlag(int gridFlag)                    { gridFlag_                 = gridFlag                 ;}
-  void setGridOutputFormat(int formatFlag)                { formatFlag_               = formatFlag               ;}
-  void setGridOutputDomain(int domainFlag)                { domainFlag_               = domainFlag               ;}
+  void setOutputGridFormat(int formatFlag)                { formatFlag_               = formatFlag               ;}
+  void setOutputGridDomain(int domainFlag)                { domainFlag_               = domainFlag               ;}
+  void setOutputGridsElastic(int outputGridsElastic)      { outputGridsElastic_       = outputGridsElastic       ;}
+  void setOutputGridsOther(int outputGridsOther)          { outputGridsOther_         = outputGridsOther         ;}
+  void setOutputGridsSeismic(int outputGridsSeismic)      { outputGridsSeismic_       = outputGridsSeismic       ;}
+  void setOutputGridsDefaultInd(bool ind)                 { outputGridsDefault_       = ind                      ;}
   void setWellOutputFlag(int wellFlag)                    { wellFlag_                 = wellFlag                 ;}
   void setWellFormatFlag(int formatFlag)                  { wellFormatFlag_           = formatFlag               ;}
   void setWaveletOutputFlag(int waveletFlag)              { waveletFlag_              = waveletFlag              ;}
@@ -448,7 +450,9 @@ private:
                                                                  // [5] = XL step
                                                                  
   bool                              writePrediction_;            // Determines whether prediction is written.
-  int                               gridFlag_;                   // Decides which grids to write (except simulation)
+  int                               outputGridsElastic_;         // Decides which elastic grids to be written to file.
+  int                               outputGridsOther_;           // Decides other grid output to be written to file
+  int                               outputGridsSeismic_;         // Decides seismic grid output to be written to file.
   int                               domainFlag_;                 // Decides writing in time and/or depth.
   int                               formatFlag_;                 // Decides output format, see above.
   int                               wellFlag_;                   // Decides well output.
@@ -457,8 +461,7 @@ private:
   int                               waveletFormatFlag_;          // Decides wavelet output format
   int                               otherFlag_;                  // Decides output beyond grids and wells.
   bool                              fileGrid_;                   // Indicator telling if grids are to be kept on file
-  bool                              defaultGridOutput_;          // Indicator telling whether grid output has been actively controlled.
-  bool                              elasticOutput_;              // True if elastic output is written to file
+  bool                              outputGridsDefault_;         // Indicator telling if grid output has been actively controlled 
                                                                  
   bool                              forwardModeling_;            // Forward modelling
   bool                              estimationMode_;             // Estimation

@@ -363,7 +363,7 @@ void Corr::writeFilePriorVariances(ModelSettings * modelSettings) const
   }
   file.close();
 
-  IO::writeSurfaceToFile(*priorCorrXY_, baseName3, IO::PathToCorrelations(), modelSettings->getGridOutputFormat());
+  IO::writeSurfaceToFile(*priorCorrXY_, baseName3, IO::PathToCorrelations(), modelSettings->getOutputGridFormat());
 }
 
 //--------------------------------------------------------------------
