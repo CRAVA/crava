@@ -177,19 +177,8 @@ XmlModelFile::parseInversionSettings(TiXmlNode * node, std::string & errTxt)
       modelSettings_->setKrigingParameter(-1);
   }
 
-  std::string facprob;
-  if(parseValue(root, "facies-probabilities", facprob, errTxt) == true) {
-
-    if(facprob == "absolute")
-      modelSettings_->setFaciesProbRelative(false);
-
-    else if(facprob == "relative")
-      modelSettings_->setFaciesProbRelative(true);
-
-    else
-      errTxt += "Illegal type \'"+facprob+"\' specified for keyword <facies-probabilities>."
-        +" Choose from \'absolute\' and \'relative\'\n";
-
+  if(parseBool(root, "facies-probabilities", value, errTxt) == true && value == true) {
+    modelSettings_->setFaciesProbRelative(true);
     modelSettings_->setEstimateFaciesProb(true);
     modelSettings_->setOutputGridsOther(IO::FACIESPROB);
     modelSettings_->setOutputGridsDefaultInd(false);
@@ -2334,6 +2323,7 @@ XmlModelFile::parseAdvancedSettings(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("kriging-data-limit");
   legalCommands.push_back("debug-level");
   legalCommands.push_back("smooth-kriged-parameters");
+  legalCommands.push_back("absolute-facies-probabilities");
 
   parseFFTGridPadding(root, errTxt);
 
@@ -2373,6 +2363,10 @@ XmlModelFile::parseAdvancedSettings(TiXmlNode * node, std::string & errTxt)
   bool smooth = false;
   if(parseBool(root, "smooth-kriged-parameters", smooth, errTxt) == true)
     modelSettings_->setDoSmoothKriging(smooth);
+  
+  bool absolute;
+  if(parseBool(root, "absolute-facies-probabilities", absolute, errTxt) == true && absolute == true)
+    modelSettings_->setFaciesProbRelative(false);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -2795,6 +2789,8 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
     errTxt += "Grid output for facies probabilities or facies probabilities with undefined value,\n";
     errTxt += "or blocked wells needs to be specified when doing facies estimation.\n";
   }       
+  if (modelSettings_->getEstimateFaciesProb() == false && modelSettings_->getFaciesProbRelative() == false)
+    errTxt += "Absolute facies probabilities can not be requested without requesting facies probabilities under inversion settings.\n";
 }
   
 void

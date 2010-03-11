@@ -549,7 +549,7 @@ Model::checkAvailableMemory(Simbox        * timeSimbox,
     else {
       //baseP and baseU are the padded and unpadde grids allocated at each peak.
       int baseP = nGridParameters + nGridCovariances;
-      if(modelSettings->getUseLocalNoise() == true || modelSettings->getFaciesProbRelative() == true)
+      if(modelSettings->getUseLocalNoise() == true || (modelSettings->getEstimateFaciesProb() && modelSettings->getFaciesProbRelative()))
         baseP += nGridBackground;
       int baseU = 0;
       if(modelSettings->getIsPriorFaciesProbGiven()==2)

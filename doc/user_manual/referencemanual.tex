@@ -78,9 +78,9 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 
 \subsubsection{\hbracket{facies-probabilities}}  \newkw{facies-probabilities}
  \slist
-   \item \Description Triggers generation of facies probabilities. Absolute: facies probabilities are generated based on inverted parameters including background model. Relative: Background model is not used when facies probabilities are generated.
-   \item \Argument 'absolute' or 'relative'
-   \item \Default
+   \item \Description Should facies probabilities be estimated?
+   \item \Argument 'yes' or 'no'
+   \item \Default 'no'
  \elist
 
 
@@ -1011,6 +1011,13 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
    \item \Argument yes or no
    \item \Default no
 \elist
+
+\subsubsection{\hbracket{absolute-facies-probabilities}}  \newkw{absolute-facies-probabilities}
+ \slist
+   \item \Description Can only be used with \kw{facies-probabilities} under \kw{inversion-settings}. Using this command, the facies probabilities are generated based on absolute inverted parameters including trend (background model). When not specified, the trend is subtracted when the facies probabilities are generated. 
+   \item \Argument 'yes' or 'no'
+   \item \Default 'no'
+ \elist
 
  \section{\hbracket{survey}\necessary} \newkw{survey}
  \slist

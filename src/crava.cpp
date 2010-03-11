@@ -1647,8 +1647,7 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs)
     LogKit::LogFormatted(LogKit::LOW,"\n");
     LogKit::LogFormatted(LogKit::LOW,"Facies         Probability\n");
     LogKit::LogFormatted(LogKit::LOW,"--------------------------\n");
-    float * priorFacies = new float [nfac];
-    priorFacies = model_->getPriorFacies();
+    float * priorFacies = model_->getPriorFacies();
     for(int i=0 ; i<nfac; i++) {
       LogKit::LogFormatted(LogKit::LOW,"%-15s %10.4f\n",model_->getModelSettings()->getFaciesName(i).c_str(),priorFacies[i]);
     }
@@ -1759,8 +1758,6 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs)
 
     Timings::setTimeFaciesProb(wall,cpu);
     
-    delete [] priorFacies;
-
   }
 }
 
