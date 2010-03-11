@@ -790,8 +790,8 @@ Model::readStormFile(const std::string  & fName,
 int 
 Model::setPaddingSize(int nx, double px)
 {
-  int leastint    =  static_cast<int>(ceil(nx*(1.0f+px)));
-  int closestprod =  FFTGrid::findClosestFactorableNumber(leastint);
+  int leastint    = static_cast<int>(ceil(nx*(1.0f+px)));
+  int closestprod = FFTGrid::findClosestFactorableNumber(leastint);
   return(closestprod);
 }
 
@@ -1464,6 +1464,7 @@ Model::estimateXYPaddingSizes(Simbox         * timeSimbox,
   double ly      = timeSimbox->getly();
   int    nx      = timeSimbox->getnx();
   int    ny      = timeSimbox->getny();
+  int    nz      = timeSimbox->getnz();
 
   double xPadFac = modelSettings->getXPadFac();
   double yPadFac = modelSettings->getYPadFac();
@@ -1487,15 +1488,19 @@ Model::estimateXYPaddingSizes(Simbox         * timeSimbox,
 
   int nxPad = setPaddingSize(nx, xPadFac);
   int nyPad = setPaddingSize(ny, yPadFac);
-  xPadFac   = static_cast<double>(nxPad - nx)/static_cast<double>(nx); // Update xPadFac
-  yPadFac   = static_cast<double>(nyPad - ny)/static_cast<double>(ny); // Update yPadFac
-  xPad      = xPadFac*lx;                                              // Update xPad
-  yPad      = yPadFac*ly;                                              // Update yPad
+  int nzPad = modelSettings->getNZpad();
+
+  double true_xPadFac = static_cast<double>(nxPad - nx)/static_cast<double>(nx);
+  double true_yPadFac = static_cast<double>(nyPad - ny)/static_cast<double>(ny);
+  double true_zPadFac = modelSettings->getZPadFac();
+  double true_xPad    = true_xPadFac*lx;
+  double true_yPad    = true_yPadFac*ly;
+  double true_zPad    = true_zPadFac*(timeSimbox->getlz()*timeSimbox->getMinRelThick());
 
   modelSettings->setNXpad(nxPad);
   modelSettings->setNYpad(nyPad);
-  modelSettings->setXPadFac(xPadFac);
-  modelSettings->setYPadFac(yPadFac);
+  modelSettings->setXPadFac(true_xPadFac);
+  modelSettings->setYPadFac(true_yPadFac);
 
   std::string text1;
   std::string text2;
@@ -1510,14 +1515,13 @@ Model::estimateXYPaddingSizes(Simbox         * timeSimbox,
   }  
 
   LogKit::LogFormatted(logLevel,"\nPadding sizes"+text1+":\n");
-  LogKit::LogFormatted(logLevel,"  xPad, xPadFac, nx, nxPad                 : %6.fm, %4.2f, %5d, %4d\n", 
-                       xPad, xPadFac, timeSimbox->getnx(), nxPad);
-  LogKit::LogFormatted(logLevel,"  yPad, yPadFac, ny, nyPad                 : %6.fm, %4.2f, %5d, %4d", 
-                       yPad, yPadFac, timeSimbox->getny(), nyPad);
+  LogKit::LogFormatted(logLevel,"  xPad, xPadFac, nx, nxPad                 : %6.fm, %5.3f, %5d, %4d\n", 
+                       true_xPad, true_xPadFac, nx, nxPad);
+  LogKit::LogFormatted(logLevel,"  yPad, yPadFac, ny, nyPad                 : %6.fm, %5.3f, %5d, %4d", 
+                       true_yPad, true_yPadFac, ny, nyPad);
   LogKit::LogFormatted(logLevel,"\nPadding sizes"+text2+":\n");
-  LogKit::LogFormatted(logLevel,"  zPad, zPadFac, nz, nzPad                 : %5.fms, %4.2f, %5d, %4d\n", 
-                       modelSettings->getZPadFac()*(timeSimbox->getlz()*timeSimbox->getMinRelThick()), 
-                       modelSettings->getZPadFac(), timeSimbox->getnz(), modelSettings->getNZpad());
+  LogKit::LogFormatted(logLevel,"  zPad, zPadFac, nz, nzPad                 : %5.fms, %5.3f, %5d, %4d\n", 
+                       true_zPad, true_zPadFac, nz, nzPad);
 }
 
 void
@@ -1535,10 +1539,9 @@ Model::estimateZPaddingSize(Simbox         * timeSimbox,
     zPad           = wLength/2.0;               // Use half a wavelet as padding
     zPadFac        = std::min(1.0, zPad/minLz); // More than 100% padding is not sensible
   }
+  int nzPad        = setPaddingSize(nz, zPadFac);
+  zPadFac          = static_cast<double>(nzPad - nz)/static_cast<double>(nz);
 
-  int nzPad = setPaddingSize(nz, zPadFac);
-  zPadFac   = static_cast<double>(nzPad - nz)/static_cast<double>(nz); // Update yPadFac
- 
   modelSettings->setNZpad(nzPad);
   modelSettings->setZPadFac(zPadFac);
 }
@@ -2518,7 +2521,7 @@ Model::processReflectionMatrixFromWells(float       **& reflectionMatrix,
     LogKit::LogFormatted(LogKit::LOW,"\nReflection parameters read from file.\n\n");
   }
   else {
-    LogKit::LogFormatted(LogKit::LOW,"\nMaking reflection matrix from well information\n");
+    LogKit::LogFormatted(LogKit::LOW,"\nMaking reflection matrix with Vp and Vs from wells\n");
 
     double vsvp = vsvpFromWells(wells, modelSettings);
 
@@ -2554,9 +2557,9 @@ Model::processReflectionMatrixFromBackground(float       **& reflectionMatrix,
   else {
     if (background != NULL) {
       if (modelSettings->getForwardModeling())
-        LogKit::LogFormatted(LogKit::LOW,"\nMaking reflection matrix from earth model\n");
+        LogKit::LogFormatted(LogKit::LOW,"\nMaking reflection matrix with Vp and Vs from earth model\n");
       else
-        LogKit::LogFormatted(LogKit::LOW,"\nMaking reflection matrix from background model\n");
+        LogKit::LogFormatted(LogKit::LOW,"\nMaking reflection matrix with Vp and Vs from background model\n");
 
       double vsvp  = background->getMeanVsVp(); 
       setupDefaultReflectionMatrix(reflectionMatrix, vsvp, modelSettings);
@@ -2886,27 +2889,31 @@ Model::processWavelets(Wavelet                    **& wavelet,
           // Calculate a preliminary scale factor to see if wavelet is in the same size order as the data. A large or small value might cause problems.
           if(seisCube!=NULL) // If forward modeling, we have no seismic, can not prescale wavelet.
           {
-            float prescale = wavelet[i]->findGlobalScaleForGivenWavelet(modelSettings, timeSimbox, seisCube[i], wells);
-            double limHigh = 3.0;
-            double limLow  = 0.33; 
-            float  scale   = 1.0;
-            if(!modelSettings->getEstimateGlobalWaveletScale(i) && modelSettings->getWaveletScale(i)!=scale && modelSettings->getEstimateLocalScale(i) && (prescale>limHigh || prescale<limLow))
-            {
-              errText += "The wavelet given for angle no "+NRLib::ToString(i)+" is badly scaled. Ask Crava to estimate global wavelet scale.\n";
-              error++;
-            }
-            else if(!modelSettings->getEstimateGlobalWaveletScale(i) && modelSettings->getWaveletScale(i)!=scale && (prescale>limHigh || prescale<limLow))
-            {
-              LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: The wavelet given for angle no "+ NRLib::ToString(i) +"is badly scaled. Ask Crava to estimate global wavelet scale.\n");
-              TaskList::addTask("Ask Crava to estimate global wavelet scale");
-            }
-            else if(modelSettings->getEstimateGlobalWaveletScale(i)) // prescale, then we have correct size order, and later scale estimation will be ok.
+            float  prescale = wavelet[i]->findGlobalScaleForGivenWavelet(modelSettings, timeSimbox, seisCube[i], wells);
+            double limHigh  = 3.0;
+            double limLow   = 0.33; 
+            float  scale    = 1.0;
+
+            if(modelSettings->getEstimateGlobalWaveletScale(i)) // prescale, then we have correct size order, and later scale estimation will be ok.
               wavelet[i]->multiplyRAmpByConstant(prescale);
+            else {
+              if(modelSettings->getWaveletScale(i)!=scale && (prescale>limHigh || prescale<limLow)) {
+                std::string text = "The wavelet given for angle no "+NRLib::ToString(i)+" is badly scaled. Ask Crava to estimate global wavelet scale.\n";
+                if(modelSettings->getEstimateLocalScale(i)) {
+                  errText += text;
+                  error++;
+                }
+                else {
+                  LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: "+text);
+                  TaskList::addTask("The wavelet is badly scaled. Consider having CRAVA estimate global wavelet scale");
+                }
+              }
+            }
           }
           if (error == 0)
             wavelet[i]->resample(static_cast<float>(timeSimbox->getdz()), 
                                  timeSimbox->getnz(), 
-                                 static_cast<float>(modelSettings->getZPadFac()),
+                                 modelSettings->getNZpad(),
                                  flip);
         }
         else { //3D-wavelet constructed by 1D wavelet and filter
@@ -2921,7 +2928,7 @@ Model::processWavelets(Wavelet                    **& wavelet,
           if (error == 0) {
             wavelet[i]->resample(static_cast<float>(timeSimbox->getdz()), 
                                  timeSimbox->getnz(), 
-                                 static_cast<float>(modelSettings->getZPadFac()),
+                                 modelSettings->getNZpad(),
                                  flip);
           }
         }

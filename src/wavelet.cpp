@@ -432,20 +432,19 @@ Wavelet::getLocalWavelet(int i,
 void
 Wavelet::resample(float dz, 
                   int   nz, 
-                  float pz, 
+                  int   nzp, 
                   bool  flip) 
 {
   //LogKit::LogFormatted(LogKit::LOW,"  Resampling wavelet\n");
   assert(isReal_);
   assert(!inFFTorder_);
-  float z;
-
-  int nzp   =  FFTGrid::findClosestFactorableNumber( static_cast<int>(ceil(nz*(1.0f+pz))) );
+  
   int cnzp  =  nzp/2 + 1;
   int rnzp  =  2*cnzp;
 
   fftw_real * wlet  = static_cast<fftw_real *>(fftw_malloc( sizeof(fftw_real)*rnzp ));
 
+  float z;
   for(int k=0; k < rnzp; k++) {
     if(k < nzp) {
       if(k < nzp/2+1)
@@ -481,14 +480,6 @@ Wavelet::resample(float dz,
     float dzOut = 1.0; // sample at least as dense as this
     writeWaveletToFile(fileName, dzOut);
   }
-}
-
-bool           
-Wavelet::consistentSize(int nzp) const
-{ 
-  if (nzp!=nzp_) 
-    printf("nzp=%d  nzp_wavelet=%d\n",nzp,nzp_); 
-  return (nzp==nzp_);
 }
 
 void 

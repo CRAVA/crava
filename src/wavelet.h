@@ -47,29 +47,27 @@ public:
   void          invFFT1DInPlace();
 
 // Access methods for wavelet values
-  fftw_real     getRAmp(int                                     k);
+  fftw_real     getRAmp(int k);
 
-  fftw_complex  getCAmp(int                                     k) const;
+  fftw_complex  getCAmp(int k) const;
   
-  fftw_complex  getCAmp(int                                     k, 
-                        float                                   scale) const;
+  fftw_complex  getCAmp(int   k, 
+                        float scale) const;
   
-  void          setRAmp(float                                   value, 
-                        int                                     k);
+  void          setRAmp(float value, 
+                        int   k);
 
-  Wavelet *     getLocalWavelet(int                             i,
-                                int                             j);
+  Wavelet *     getLocalWavelet(int i,
+                                int j);
 
-  void          resample(float                                  dz, 
-                         int                                    nz, 
-                         float                                  pz,
-                         bool                                   flip);
+  void          resample(float dz, 
+                         int   nz, 
+                         int   nzp, 
+                         bool  flip);
 
-  bool          consistentSize(int                              nzp) const;
+  void          multiplyRAmpByConstant(float c);
 
-  void          multiplyRAmpByConstant(float                    c);
-
-  void          scale(float                                     gain);
+  void          scale(float gain);
 
   //Note: Function below is mainly controlled by debugflag. Set overrideDebug = true to force.
   void          printToFile(const std::string                 & fileName, 

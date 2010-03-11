@@ -136,7 +136,6 @@ Crava::Crava(Model * model, SpatialWellFilter * spatwellfilter)
   {
     if(!model->getModelSettings()->getForwardModeling())
       assert(seisData_[i]->consistentSize(nx_,ny_,nz_,nxp_,nyp_,nzp_));  
-    assert(seisWavelet_[i]->consistentSize(nzp_));
   }
 
   if(!model->getModelSettings()->getForwardModeling())
