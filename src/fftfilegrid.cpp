@@ -12,8 +12,7 @@
 
 #include "nrlib/iotools/logkit.hpp"
 
-#include "lib/global_def.h"
-
+#include "src/definitions.h"
 #include "src/fftfilegrid.h"
 #include "src/simbox.h"
 #include "src/model.h"

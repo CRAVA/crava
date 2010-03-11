@@ -6,7 +6,6 @@
 #include <stdio.h>
 #include <string>
 
-#include "lib/global_def.h"
 #include "nrlib/segy/segy.hpp"
 #include "lib/random.h"
 #include "lib/timekit.hpp"
@@ -182,7 +181,7 @@ FFTGrid::fillInFromSegY(SegY* segy, Simbox *simbox, bool padding)
           distx  = getDistToBoundary(i,nx_,nxp_);
           disty  = getDistToBoundary(j,ny_,nyp_);
           distz  = getDistToBoundary(k,nz_,nzp_);         
-          mult   = static_cast<float>(float(pow(MAXIM(1.0-distx*distx-disty*disty-distz*distz,0.0),3)));
+          mult   = static_cast<float>(pow(std::max<double>(1.0-distx*distx-disty*disty-distz*distz,0.0),3));
           value  = segy->GetValue(x,y,z, outMode );
           if(value != RMISSING) {
             if(isParameter)
@@ -290,7 +289,7 @@ FFTGrid::fillInFromStorm(Simbox            * actSimBox,
         distx  = getDistToBoundary(i,nx_,nxp_);
         disty  = getDistToBoundary(j,ny_,nyp_);
         distz  = getDistToBoundary(k,nz_,nzp_);         
-        mult   = float(pow(MAXIM(1.0-distx*distx-disty*disty-distz*distz,0.0),3));
+        mult   = float(pow(std::max(1.0-distx*distx-disty*disty-distz*distz,0.0),3));
         
         if(i<nxp_)  // computes the index reference from the cube puts it in value
         {
@@ -676,10 +675,10 @@ FFTGrid::getFillNumber(int i, int n, int np )
       if( AbovEn < BeloWnp )
       { 
         // Then the index is closer to end than start.
-        refi=MAXIM(n-AbovEn,n/2);
+        refi=std::max(n-AbovEn,n/2);
       }else{
         // The it is closer to  start than the end
-        refi=MINIM(BeloWnp,n/2);
+        refi=std::min(BeloWnp,n/2);
       }//endif
     }//endif
   }//endif
@@ -726,7 +725,7 @@ FFTGrid::getDistToBoundary(int i, int n, int np )
       dist  =  0.0;
     else
     { 
-      taperlength= static_cast<float>((MINIM(n,np-n)/2.1)) ;// taper goes to zero  at taperlength
+      taperlength = static_cast<float>((std::min(n,np-n)/2.1)) ;// taper goes to zero  at taperlength
       BeloWnp  = np-i;   
       AbovEn   = i-(n-1);
       if( AbovEn < BeloWnp )
@@ -2083,7 +2082,7 @@ FFTGrid::extrapolateSeismic(int imin, int imax, int jmin, int jmax)
           distx  = getDistToBoundary(i,nx_,nxp_);
           disty  = getDistToBoundary(j,ny_,nyp_);
           distz  = getDistToBoundary(k,nz_,nzp_);         
-          mult   = float(pow(MAXIM(1.0-distx*distx-disty*disty-distz*distz,0.0),3));
+          mult   = float(pow(std::max<double>(1.0-distx*distx-disty*disty-distz*distz,0.0),3));
           setRealValue(i, j, k, mult*value, true);
         }
       }

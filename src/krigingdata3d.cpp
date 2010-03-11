@@ -3,8 +3,6 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include "lib/global_def.h"
-
 #include "nrlib/iotools/logkit.hpp"
 
 #include "src/krigingdata3d.h"

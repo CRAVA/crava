@@ -2,7 +2,6 @@
 
 #include "src/definitions.h"
 #include "lib/kriging1d.h"
-#include "lib/global_def.h"
 #include "lib/lib_matr.h"
 #include "lib/utils.h"
 

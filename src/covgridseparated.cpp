@@ -2,8 +2,6 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
-#include "lib/global_def.h"
-
 #include "nrlib/iotools/logkit.hpp"
 
 #include "src/covgridseparated.h"

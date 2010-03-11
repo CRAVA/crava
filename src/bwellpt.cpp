@@ -1,6 +1,8 @@
 #include "src/bwellpt.h"
-#include "lib/global_def.h"
+#include "src/definitions.h"
+
 #include "lib/random.h"
+
 #include "nrlib/iotools/logkit.hpp"
 
 #include <stdio.h>

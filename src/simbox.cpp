@@ -5,13 +5,12 @@
 #include <cmath>
 #include "nrlib/volume/volume.hpp"
 #include "nrlib/surface/surfaceio.hpp"
-
 #include "nrlib/iotools/logkit.hpp"
+
 #include "src/simbox.h"
 #include "src/fftgrid.h"
 #include "src/model.h"
 #include "src/definitions.h"
-#include "lib/global_def.h"
 
 Simbox::Simbox(void) 
   : Volume()
@@ -712,19 +711,19 @@ Simbox::getRelThick(double x, double y) const
 
 void Simbox::getMinAndMaxXY(double &xmin, double &xmax, double &ymin, double &ymax)const
 {
-  xmin = MINIM(GetXMin()+GetLX()*cosrot_, GetXMin());
-  xmin = MINIM(xmin,GetXMin()-GetLY()*sinrot_);
-  xmin = MINIM(xmin,GetXMin()+GetLX()*cosrot_-GetLY()*sinrot_);
+  xmin = std::min(GetXMin()+GetLX()*cosrot_, GetXMin());
+  xmin = std::min(xmin,GetXMin()-GetLY()*sinrot_);
+  xmin = std::min(xmin,GetXMin()+GetLX()*cosrot_-GetLY()*sinrot_);
 
-  xmax = MAXIM(GetXMin()+GetLX()*cosrot_, GetXMin());
-  xmax = MAXIM(xmax,GetXMin()-GetLY()*sinrot_);
-  xmax = MAXIM(xmax,GetXMin()+GetLX()*cosrot_-GetLY()*sinrot_);
+  xmax = std::max(GetXMin()+GetLX()*cosrot_, GetXMin());
+  xmax = std::max(xmax,GetXMin()-GetLY()*sinrot_);
+  xmax = std::max(xmax,GetXMin()+GetLX()*cosrot_-GetLY()*sinrot_);
 
-  ymin = MINIM(GetYMin()+GetLX()*sinrot_, GetYMin());
-  ymin = MINIM(ymin,GetYMin()+GetLY()*cosrot_);
-  ymin = MINIM(ymin,GetYMin()+GetLX()*sinrot_+GetLY()*cosrot_);
+  ymin = std::min(GetYMin()+GetLX()*sinrot_, GetYMin());
+  ymin = std::min(ymin,GetYMin()+GetLY()*cosrot_);
+  ymin = std::min(ymin,GetYMin()+GetLX()*sinrot_+GetLY()*cosrot_);
 
-  ymax = MAXIM(GetYMin(),GetYMin()+GetLX()*sinrot_);
-  ymax = MAXIM(ymax,GetYMin()+GetLY()*cosrot_);
-  ymax = MAXIM(ymax,GetYMin()+GetLX()*sinrot_+GetLY()*cosrot_);
+  ymax = std::max(GetYMin(),GetYMin()+GetLX()*sinrot_);
+  ymax = std::max(ymax,GetYMin()+GetLY()*cosrot_);
+  ymax = std::max(ymax,GetYMin()+GetLX()*sinrot_+GetLY()*cosrot_);
 }

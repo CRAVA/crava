@@ -1,7 +1,6 @@
 #ifndef WELLDATA_H
 #define WELLDATA_H
 
-#include "lib/global_def.h"
 #include "src/blockedlogs.h"
 #include "src/simbox.h"
 #include <string.h>

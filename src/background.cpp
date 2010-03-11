@@ -3,12 +3,12 @@
 #include <string.h>
 #include <algorithm>
 
-#include "lib/global_def.h"
 #include "lib/kriging1d.h"
 #include "lib/utils.h"
 
 #include "nrlib/iotools/logkit.hpp"
 
+#include "src/definitions.h"
 #include "src/model.h"
 #include "src/modelsettings.h"
 #include "src/vario.h"

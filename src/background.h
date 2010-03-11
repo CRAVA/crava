@@ -3,8 +3,6 @@
 
 #include <stdio.h>
 
-#include "lib/global_def.h"
-
 class Vario;
 class Simbox;
 class FFTGrid;

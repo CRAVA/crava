@@ -4,7 +4,6 @@
 #include "nrlib/surface/regularsurface.hpp"
 
 #include "fft/include/fftw.h"
-#include "lib/global_def.h"
 #include "src/definitions.h"
 #include "lib/utils.h"
 

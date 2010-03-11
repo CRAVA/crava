@@ -3,8 +3,6 @@
 
 #include "fft/include/fftw.h"
 
-#include "lib/global_def.h"
-
 #include "nrlib/surface/regularsurfacerotated.hpp"
 
 #include "src/wavelet.h"

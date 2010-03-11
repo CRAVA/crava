@@ -6,7 +6,7 @@
 #include <time.h>
 #define _USE_MATH_DEFINES
 #include <cmath>
-#include "lib/global_def.h"
+
 #include "nrlib/iotools/stringtools.hpp"
 #include "nrlib/iotools/logkit.hpp"
 #include "nrlib/segy/segy.hpp"

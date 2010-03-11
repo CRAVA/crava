@@ -522,14 +522,14 @@ float FaciesProb::findDensity(float alpha, float beta, float rho,
 
   
     density[i][facies]->setAccessMode(FFTGrid::RANDOMACCESS);
-    float value1 = MAXIM(0,density[i][facies]->getRealValue(j1,k1,l1));
-    float value2 = MAXIM(0,density[i][facies]->getRealValue(j1,k1,l2));
-    float value3 = MAXIM(0,density[i][facies]->getRealValue(j1,k2,l1));
-    float value4 = MAXIM(0,density[i][facies]->getRealValue(j1,k2,l2));
-    float value5 = MAXIM(0,density[i][facies]->getRealValue(j2,k1,l1));
-    float value6 = MAXIM(0,density[i][facies]->getRealValue(j2,k1,l2));
-    float value7 = MAXIM(0,density[i][facies]->getRealValue(j2,k2,l1));
-    float value8 = MAXIM(0,density[i][facies]->getRealValue(j2,k2,l2));
+    float value1 = std::max<float>(0,density[i][facies]->getRealValue(j1,k1,l1));
+    float value2 = std::max<float>(0,density[i][facies]->getRealValue(j1,k1,l2));
+    float value3 = std::max<float>(0,density[i][facies]->getRealValue(j1,k2,l1));
+    float value4 = std::max<float>(0,density[i][facies]->getRealValue(j1,k2,l2));
+    float value5 = std::max<float>(0,density[i][facies]->getRealValue(j2,k1,l1));
+    float value6 = std::max<float>(0,density[i][facies]->getRealValue(j2,k1,l2));
+    float value7 = std::max<float>(0,density[i][facies]->getRealValue(j2,k2,l1));
+    float value8 = std::max<float>(0,density[i][facies]->getRealValue(j2,k2,l2));
     density[i][facies]->endAccess();
     //float value=0;
     value[i] = 0;

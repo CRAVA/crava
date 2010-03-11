@@ -4,6 +4,7 @@
 #include <stdio.h>
 
 #include "nrlib/tinyxml/tinyxml.h"
+#include "src/definitions.h"
 
 class Vario;
 class ModelSettings;

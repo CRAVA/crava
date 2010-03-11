@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <map>
-#include "lib/global_def.h"
+
 #include "src/definitions.h"
 #include "nrlib/iotools/logkit.hpp"
 #include "nrlib/segy/traceheader.hpp"

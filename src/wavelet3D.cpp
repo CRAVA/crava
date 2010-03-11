@@ -11,7 +11,6 @@
 #include "fft/include/fftw-int.h"
 #include "fft/include/f77_func.h"
 
-#include "lib/global_def.h"
 #include "lib/lib_matr.h"
 
 #include "nrlib/iotools/logkit.hpp"

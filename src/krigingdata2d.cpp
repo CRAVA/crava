@@ -1,10 +1,9 @@
 #include <iostream>
 #include <iomanip>
 
-#include "lib/global_def.h"
-
 #include "nrlib/iotools/logkit.hpp"
 
+#include "src/definitions.h"
 #include "src/krigingdata2d.h"
 #include "src/modelsettings.h"
 

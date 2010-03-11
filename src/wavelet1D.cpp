@@ -12,7 +12,6 @@
 #include "fft/include/fftw-int.h"
 #include "fft/include/f77_func.h"
 
-#include "lib/global_def.h"
 #include "lib/lib_matr.h"
 
 #include "nrlib/iotools/logkit.hpp"
@@ -1217,7 +1216,7 @@ Wavelet1D::multiplyPapolouis(fftw_real                ** vec,
   for(int w=0;w<nWells;w++) {
     if(wellWeight[w] > 0) {
       for(int i=1;i<nzp;i++) {
-        dist =MINIM(i,nzp-i)*dz[w];
+        dist = std::min(i,nzp-i)*dz[w];
         if(dist < wHL) {
           weight  = float(1.0/M_PI*fabs(sin(M_PI*(dist)/wHL))); 
           weight += float((1-fabs(dist)/wHL)*cos(M_PI*dist/wHL));

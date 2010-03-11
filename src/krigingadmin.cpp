@@ -2,7 +2,6 @@
 #include <math.h>
 #include <stdio.h>
 
-#include "lib/global_def.h"
 #include "lib/lib_matr.h"
 
 #include "nrlib/iotools/logkit.hpp"
@@ -108,12 +107,12 @@ void CKrigingAdmin::Init() {
     rangeAlphaY_ = rangeBetaY_ = rangeRhoY_  = simbox_.getny();
     rangeAlphaZ_ = rangeBetaZ_ = rangeRhoZ_  = 0;
 
-    rangeX_ = static_cast<float>(MAXIM(rangeAlphaX_, rangeBetaX_));
-    rangeX_ = static_cast<float>(MAXIM(rangeRhoX_, rangeX_));
-    rangeY_ = static_cast<float>(MAXIM(rangeAlphaY_, rangeBetaY_));
-    rangeY_ = static_cast<float>(MAXIM(rangeRhoY_, rangeY_));
-    rangeZ_ = static_cast<float>(MAXIM(rangeAlphaZ_, rangeBetaZ_));
-    rangeZ_ = static_cast<float>(MAXIM(rangeRhoZ_, rangeZ_));
+    rangeX_ = static_cast<float>(std::max(rangeAlphaX_, rangeBetaX_));
+    rangeX_ = static_cast<float>(std::max(static_cast<float>(rangeRhoX_), rangeX_));
+    rangeY_ = static_cast<float>(std::max(rangeAlphaY_, rangeBetaY_));
+    rangeY_ = static_cast<float>(std::max(static_cast<float>(rangeRhoY_), rangeY_));
+    rangeZ_ = static_cast<float>(std::max(rangeAlphaZ_, rangeBetaZ_));
+    rangeZ_ = static_cast<float>(std::max(static_cast<float>(rangeRhoZ_), rangeZ_));
 
     dxBlock_ = simbox_.getnx();
     dyBlock_ = simbox_.getny();
@@ -154,9 +153,9 @@ void CKrigingAdmin::Init() {
     (dyBlock_ + 2*static_cast<int>(ceil(rangeY_))) *
     (dzBlock_ + 2*static_cast<int>(ceil(rangeZ_)));
 
-  int maxAlphaData2 = MINIM(noValidAlpha_, sizeMaxBlock);
-  int maxBetaData2 = MINIM(noValidBeta_, sizeMaxBlock);
-  int maxRhoData2 = MINIM(noValidRho_, sizeMaxBlock);
+  int maxAlphaData2 = std::min(noValidAlpha_, sizeMaxBlock);
+  int maxBetaData2  = std::min(noValidBeta_, sizeMaxBlock);
+  int maxRhoData2   = std::min(noValidRho_, sizeMaxBlock);
 
   pIndexAlpha_ = new int[maxAlphaData2];
   pIndexBeta_ = new int[maxBetaData2];
@@ -177,7 +176,7 @@ void CKrigingAdmin::KrigAll(Gamma gamma, bool doSmoothing) {
   const int nzBlock = NBlocks(dzBlock_, simbox_.getnz());
 
   monitorSize_ = int(3*simbox_.getnx()*simbox_.getny()*simbox_.getnz()*0.02);
-  monitorSize_ = MAXIM(1,monitorSize_);
+  monitorSize_ = std::max(1,monitorSize_);
 
   // loop over all kriging blocks
   int i,j,k;
@@ -808,12 +807,12 @@ void CKrigingAdmin::EstimateSizeOfBlock() {
   covAlpha_.findTaperRanges(rAx, rAy, rAz);
   covBeta_.findTaperRanges(rBx, rBy, rBz);
   covRho_.findTaperRanges(rRx, rRy, rRz);
-  rx = MAXIM(rAx, rBx);
-  rx = MAXIM(rx, rRx);
-  ry = MAXIM(rAy, rBy);
-  ry = MAXIM(ry, rRy);
-  rz = MAXIM(rAz, rBz);
-  rz = MAXIM(rz, rRz);
+  rx = std::max(rAx, rBx);
+  rx = std::max(rx, rRx);
+  ry = std::max(rAy, rBy);
+  ry = std::max(ry, rRy);
+  rz = std::max(rAz, rBz);
+  rz = std::max(rz, rRz);
   covAlpha_.performTapering(rx, ry, rz);
   covBeta_.performTapering(rx, ry, rz);
   covRho_.performTapering(rx, ry, rz);
@@ -832,12 +831,12 @@ void CKrigingAdmin::EstimateSizeOfBlock() {
     failed2EstimateRange_ = true;
   }
   
-  rangeX_ = static_cast<float>(MAXIM(rangeAlphaX_, rangeBetaX_));
-  rangeX_ = static_cast<float>(MAXIM(rangeRhoX_, rangeX_));
-  rangeY_ = static_cast<float>(MAXIM(rangeAlphaY_, rangeBetaY_));
-  rangeY_ = static_cast<float>(MAXIM(rangeRhoY_, rangeY_));
-  rangeZ_ = static_cast<float>(MAXIM(rangeAlphaZ_, rangeBetaZ_));
-  rangeZ_ = static_cast<float>(MAXIM(rangeRhoZ_, rangeZ_));
+  rangeX_ = static_cast<float>(std::max(rangeAlphaX_, rangeBetaX_));
+  rangeX_ = static_cast<float>(std::max(static_cast<float>(rangeRhoX_), rangeX_));
+  rangeY_ = static_cast<float>(std::max(rangeAlphaY_, rangeBetaY_));
+  rangeY_ = static_cast<float>(std::max(static_cast<float>(rangeRhoY_), rangeY_));
+  rangeZ_ = static_cast<float>(std::max(rangeAlphaZ_, rangeBetaZ_));
+  rangeZ_ = static_cast<float>(std::max(static_cast<float>(rangeRhoZ_), rangeZ_));
   
   LogKit::LogFormatted(LogKit::LOW,"Estimated ranges(grid cells) from covariance cubes:\n");
   LogKit::LogFormatted(LogKit::LOW,"             rangeX     rangeY     rangeZ\n");
@@ -1385,19 +1384,19 @@ void CKrigingAdmin::SmoothKrigedResult(Gamma gamma) {
   int i,j,k;
   for (k = 0; k < nzBlock; k++) {
     int k1 = k*dzBlock_;
-    const int k2Max = MINIM(k1 + dzBlock_, simbox_.getnz());
+    const int k2Max = std::min(k1 + dzBlock_, simbox_.getnz());
     for (j = 0; j < nyBlock; j++) {
       int j1 = j*dyBlock_;
-      const int j2Max = MINIM(j1 + dyBlock_, simbox_.getny());
+      const int j2Max = std::min(j1 + dyBlock_, simbox_.getny());
       for (i = 0; i < nxBlock; i++) {
         int i1 = i*dxBlock_;
-        const int i2Max = MINIM(i1 + dxBlock_, simbox_.getnx());
+        const int i2Max = std::min(i1 + dxBlock_, simbox_.getnx());
         int j2, k2,i2;
         // smooth in X direction
         if(dxBlock_>1)
         {
         const int i2Start = i1 + dxBlock_ - dxSmoothBlock_; 
-        const int i2End = MINIM(i1 + dxBlock_ + dxSmoothBlock_, simbox_.getnx());
+        const int i2End = std::min(i1 + dxBlock_ + dxSmoothBlock_, simbox_.getnx());
         const int c2EndX = i2End;
 
         for (k2 = k1; k2 < k2Max; k2++) {
@@ -1439,7 +1438,7 @@ void CKrigingAdmin::SmoothKrigedResult(Gamma gamma) {
         {
         // smooth in y direction
         int j2Start = j1 + dyBlock_ - dySmoothBlock_; 
-        const int j2End = MINIM(j1 + dyBlock_ + dySmoothBlock_, simbox_.getny());
+        const int j2End = std::min(j1 + dyBlock_ + dySmoothBlock_, simbox_.getny());
         const int c2EndY = j2End;
 
         for (k2 = k1; k2 < k2Max; k2++) {
@@ -1482,7 +1481,7 @@ void CKrigingAdmin::SmoothKrigedResult(Gamma gamma) {
         {
         // smooth in z direction
         const int k2Start = k1 + dzBlock_ - dzSmoothBlock_; 
-        const int k2End = MINIM(k1 + dzBlock_ + dzSmoothBlock_, simbox_.getnz());
+        const int k2End = std::min(k1 + dzBlock_ + dzSmoothBlock_, simbox_.getnz());
         const int c2EndZ = k2End;
         for (j2 = j1; j2 < j2Max; j2++) {
           for (i2 = i1; i2 < i2Max; i2++) {

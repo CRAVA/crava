@@ -5,7 +5,6 @@
 
 #include "nrlib/surface/regularsurface.hpp"
 
-#include "lib/global_def.h"
 #include "src/definitions.h"
 #include "src/background.h" //or move getAlpha & co to cpp-file.
 #include "src/modelsettings.h"

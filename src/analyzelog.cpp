@@ -3,8 +3,6 @@
 #include <iostream>
 #include <fstream>
 
-#include "lib/global_def.h"
-
 #include "nrlib/iotools/logkit.hpp"
 
 #include "src/definitions.h"
@@ -712,7 +710,7 @@ Analyzelog::estimateCorrTAndVar0(float  * CorrT,
       }
       cprev    = corTT[iprev];
       cnext    = corTT[inext];
-      nipol    = MINIM(nTT[iprev],nTT[inext]);
+      nipol    = std::min(nTT[iprev],nTT[inext]);
       cipol    = ((inext-i)*cprev + (i-iprev)*cnext)/(inext-iprev);
       CorrT[i] = (nTT[i]*corTT[i] + nipol*cipol)/(nTT[i]+nipol);
 

@@ -11,7 +11,6 @@
 #include "fft/include/fftw-int.h"
 #include "fft/include/f77_func.h"
 
-#include "lib/global_def.h"
 #include "lib/lib_matr.h"
 
 #include "nrlib/surface/regularsurface.hpp"
@@ -533,8 +532,8 @@ void
 Wavelet::writeWaveletToFile(const std::string & fileName, 
                             float               approxDzIn)
 {
-  float approxDz = MINIM(approxDzIn,floor(dz_*10)/10);
-  approxDz = MINIM(approxDzIn,dz_);
+  float approxDz = std::min(approxDzIn,static_cast<float>(floor(dz_*10)/10));
+  approxDz = std::min(approxDzIn,dz_);
   
   //Trick: Written wavelet may be shorter than the actual.
   //This gives inconsistency if a wavelet is read and written.
@@ -751,7 +750,7 @@ Wavelet::findWaveletLength(float minRelativeAmp)
       break;
     }
   }
-  wLength =MINIM(wLength,2*((nzp_+1)/2) - 1); // always odd number
+  wLength = std::min(wLength,2*((nzp_+1)/2) - 1); // always odd number
   if(trans==true)
     fft1DInPlace();
 

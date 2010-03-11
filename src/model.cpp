@@ -33,7 +33,6 @@
 #include "lib/random.h"
 #include "lib/timekit.hpp"
 #include "lib/lib_matr.h"
-#include "lib/global_def.h"
 #include "nrlib/iotools/fileio.hpp"
 #include "nrlib/iotools/stringtools.hpp"
 #include "nrlib/segy/segy.hpp"
@@ -2605,7 +2604,7 @@ Model::setupDefaultReflectionMatrix(float       **& reflectionMatrix,
     }
   }
   reflectionMatrix = A;
-  float vpvs = 1.0f/vsvp;
+  double vpvs = 1.0f/vsvp;
   LogKit::LogFormatted(LogKit::LOW,"\nMaking reflection parameters using a Vp/Vs ratio of %4.2f\n",vpvs);
   std::string text;
   if (vpvs < modelSettings->getVpVsRatioMin()) {

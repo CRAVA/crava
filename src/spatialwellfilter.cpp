@@ -11,6 +11,7 @@
 #include "nrlib/iotools/logkit.hpp"
 
 #include "src/spatialwellfilter.h"
+#include "src/definitions.h"
 #include "src/welldata.h"
 #include "src/timings.h"
 #include "src/model.h"

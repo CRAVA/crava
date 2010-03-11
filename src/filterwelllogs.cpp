@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include "lib/lib_matr.h"
 #include "lib/kriging1d.h"
+#include "src/definitions.h"
 #include "src/welldata.h"
 #include "src/filterwelllogs.h"
 #include "src/simbox.h"

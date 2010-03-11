@@ -3,8 +3,6 @@
 
 #include "nrlib/surface/regularsurfacerotated.hpp"
 
-#include "lib/global_def.h"
-
 #include "src/waveletfilter.h"
 
 WaveletFilter::WaveletFilter(const std::string & fileName,

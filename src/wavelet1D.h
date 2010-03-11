@@ -2,7 +2,6 @@
 #define WAVELET1D_H
 
 #include "fft/include/fftw.h"
-#include "lib/global_def.h"
 #include "lib/utils.h"
 #include "src/wavelet.h"
 

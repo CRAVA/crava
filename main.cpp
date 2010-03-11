@@ -3,7 +3,6 @@
 #include <time.h>
 #include <assert.h>
 
-#include "lib/global_def.h"
 #include "lib/timekit.hpp"
 #include "lib/utils.h"
 

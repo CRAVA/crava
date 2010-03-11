@@ -4,7 +4,7 @@
 #include <stdio.h>
 
 #include "src/definitions.h"
-#include "lib/global_def.h"
+
 #include "nrlib/surface/regularsurface.hpp"
 #include "nrlib/stormgrid/stormcontgrid.hpp"
 

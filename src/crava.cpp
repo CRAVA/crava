@@ -495,7 +495,7 @@ Crava:: divideDataByScaleWavelet()
           if(k > nz_)
           {
             float dist = seisData_[l]->getDistToBoundary( k, nz_, nzp_);  
-            rData[k] *= MAXIM(1-dist*dist,0);
+            rData[k] *= std::max<float>(1-dist*dist,0);
           }
         }
 
@@ -824,7 +824,7 @@ Crava::computePostMeanResidAndFFTCov()
 
   for(k = 0; k < nzp_; k++)
   {  
-    realFrequency = static_cast<float>((nz_*1000.0f)/(simbox_->getlz()*nzp_)*MINIM(k,nzp_-k)); // the physical frequency
+    realFrequency = static_cast<float>((nz_*1000.0f)/(simbox_->getlz()*nzp_)*std::min(k,nzp_-k)); // the physical frequency
     kD = diff1Operator->getCAmp(k);                   // defines content of kD  
     if (seisWavelet_[0]->getDim() == 1) { //1D-wavelet
       if( simbox_->getIsConstantThick() == true)
@@ -1474,7 +1474,7 @@ Crava::computeWDCorrMVar (Wavelet* WD ,fftw_real* corrT)
   for(i=0;i<nzp_;i++)
     for(j=0;j<nzp_;j++)
     {
-      corrInd = MAXIM(i-j,j-i);
+      corrInd = std::max(i-j,j-i);
       var += WD->getRAmp(i)*corrT[corrInd]*WD->getRAmp(j);
     }
     return var;
@@ -1559,7 +1559,7 @@ Crava::fillInverseAbskWRobust(int k, fftw_complex* invkW )
 
     modulus      = value.re*value.re + value.im*value.im;
     modulusFine  = valueFine.re*valueFine.re + valueFine.im*valueFine.im;
-    maxMod       = MAXIM(modulus,modulusFine);
+    maxMod       = std::max(modulus,modulusFine);
 
     if(maxMod > 0.0)
     {

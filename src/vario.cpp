@@ -4,7 +4,6 @@
 #include <math.h>
 #define _USE_MATH_DEFINES
 #include <cmath>
-#include "lib/global_def.h"
 
 #include "src/vario.h"
 

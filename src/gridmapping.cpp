@@ -11,8 +11,6 @@
 #include "src/fftgrid.h"
 #include "src/io.h"
 
-#include "lib/global_def.h"
-
 #include "nrlib/surface/surfaceio.hpp"
 #include "nrlib/iotools/logkit.hpp"
 #include "nrlib/stormgrid/stormcontgrid.hpp"

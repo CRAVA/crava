@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <map>
-#include "lib/global_def.h"
 #include "nrlib/iotools/logkit.hpp"
 
 #include "src/definitions.h"

@@ -1,10 +1,10 @@
 #include "lib/systemcall.h"
-#include "lib/global_def.h"
 #include "nrlib/iotools/logkit.hpp"
 
 #if defined(__WIN32__) || defined(WIN32) || defined(_WINDOWS)
 #include <winsock2.h>
 #include <windows.h>
+#include <Lmcons.h>
 #else
 #include <unistd.h>
 #include <pwd.h>
@@ -18,13 +18,14 @@ SystemCall::getUserName()
 {
 #if defined(__WIN32__) || defined(WIN32) || defined(_WINDOWS)
   std::string strUserName; 
-  char * userName = new char[MAX_STRING]; 
-  DWORD nUserName = sizeof(userName);
+  DWORD nUserName = UNLEN;
+  char * userName = new char[nUserName]; 
   if (GetUserName(userName, &nUserName)) 
   {
     if (userName == NULL) 
       strUserName= std::string("Empty user name found");
-
+    else
+      strUserName = userName;
   }
   else 
   {
@@ -51,18 +52,18 @@ SystemCall::getUserName()
 const std::string
 SystemCall::getHostName()
 {
-  char * hostname = new char[MAX_STRING];
+  int max_string = 2400;
+  char * hostname = new char[max_string];
 #if defined(__WIN32__) || defined(WIN32) || defined(_WINDOWS)
-  // WORD wVersionRequested;
-  // WSADATA wsaData;
-  int err=1;
-  // wVersionRequested = MAKEWORD( 2, 2 );
-  // err = WSAStartup( wVersionRequested, &wsaData );
-  // if ( err == 0 )
-  //   gethostname(hostname, MAX_STRING);
-  // WSACleanup( );
+   WORD wVersionRequested;
+   WSADATA wsaData;
+   wVersionRequested = MAKEWORD( 2, 2 );
+   int err = WSAStartup( wVersionRequested, &wsaData );
+   if ( err == 0 )
+     gethostname(hostname, max_string);
+   WSACleanup( );
 #else 
-  int err = gethostname(hostname, MAX_STRING);
+  int err = gethostname(hostname, max_string);
 #endif
 
   std::string strHostname;
@@ -84,8 +85,8 @@ SystemCall::getCurrentTime(void)
   time(&raw); 
   
 #if _MSC_VER >= 1400
-  const size_t size = 200;
-  char * buffer = new char[MAX_STRING];
+  const size_t size = 26;
+  char * buffer = new char[size];
   ctime_s(buffer, size, &raw);
   std::string strBuffer = std::string(buffer);
   delete [] buffer;
