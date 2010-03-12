@@ -16,7 +16,7 @@ class Wavelet {
 public:
   enum           difftypes{FIRSTORDERFORWARDDIFF, FIRSTORDERCENTRALDIFF, FIRSTORDERBACKWARDDIFF, FOURIER};
   enum           waveletDims{ONE_D = 0, THREE_D = 1};
-  enum           waveletreadtypes{OLD, JASON, NORSAR};
+  enum           waveletreadtypes{JASON, NORSAR};
 
 //Constructors and destructor
   Wavelet(int                 dim);
@@ -62,8 +62,7 @@ public:
 
   void          resample(float dz, 
                          int   nz, 
-                         int   nzp, 
-                         bool  flip);
+                         int   nzp);
 
   void          multiplyRAmpByConstant(float c);
 
@@ -164,9 +163,7 @@ private:
                                  int                             center,
                                  int                             nx, 
                                  float                           dz);
-  
-  void           flipUpDown();
-  
+   
   float          getArrayValueOrZero(int                        i,
                                      float                    * Wavelet, 
                                      int                        nz) const;
@@ -176,10 +173,6 @@ private:
 
   float          getLocalGainFactor(int                         i, 
                                     int                         j) const;
-
-  void           WaveletReadOld(const std::string             & fileName,
-                                int                           & errCode, 
-                                std::string                   & errText);
 
   void           WaveletReadJason(const std::string           & fileName,
                                   int                         & errCode, 

@@ -2873,11 +2873,9 @@ Model::processWavelets(Wavelet                    **& wavelet,
       if(fileFormat < 0) {
         errText += "Unknown file format of file '"+waveletFile+"'.\n";
         error++;
+        break;
       }
       else {
-        bool flip = false;
-        if (fileFormat == Wavelet::OLD)
-          flip = true;
         if (modelSettings->getWaveletDim(i) == Wavelet::ONE_D) {
           wavelet[i] = new Wavelet1D(waveletFile, 
                                      fileFormat, 
@@ -2913,8 +2911,7 @@ Model::processWavelets(Wavelet                    **& wavelet,
           if (error == 0)
             wavelet[i]->resample(static_cast<float>(timeSimbox->getdz()), 
                                  timeSimbox->getnz(), 
-                                 modelSettings->getNZpad(),
-                                 flip);
+                                 modelSettings->getNZpad());
         }
         else { //3D-wavelet constructed by 1D wavelet and filter
           wavelet[i] = new Wavelet3D(waveletFile, 
@@ -2928,8 +2925,7 @@ Model::processWavelets(Wavelet                    **& wavelet,
           if (error == 0) {
             wavelet[i]->resample(static_cast<float>(timeSimbox->getdz()), 
                                  timeSimbox->getnz(), 
-                                 modelSettings->getNZpad(),
-                                 flip);
+                                 modelSettings->getNZpad());
           }
         }
       }
@@ -3053,31 +3049,23 @@ int
 Model::getWaveletFileFormat(const std::string & fileName, std::string & errText)
 {
   int fileformat = -1;
-  int line = 0;
+  int line       = 0;
+  int pos;
   std::string dummyStr;
-  // test for old file format
+  std::string targetString;
+
   std::ifstream file;
   NRLib::OpenRead(file,fileName);
-  for(int i = 0; i < 5; i++) {
-    NRLib::GetNextToken(file,dummyStr,line);
-    if (NRLib::CheckEndOfFile(file)) {
-      errText += "End of wavelet file '"+fileName+"' is premature.\n";
-      return 0;
-    } 
-  }  
-  file.close();
-  file.clear();
-  std::string targetString = "CMX";
-  int  pos = Utils::findEnd(dummyStr, 0, targetString);
-  if(pos>=0)
-    fileformat= Wavelet::OLD;
-
+  
+  NRLib::GetNextToken(file,dummyStr,line);
   targetString = "pulse";
   pos = Utils::findEnd(dummyStr, 0, targetString);
   if(pos>=0)
     fileformat= Wavelet::NORSAR;
+  file.close();
+  file.clear();
 
-  if(fileformat<0) { // not old or norsar format
+  if(fileformat<0) { // not norsar format
       // test for jason file format
     NRLib::OpenRead(file,fileName);
     line         = 0;
@@ -3099,7 +3087,7 @@ Model::getWaveletFileFormat(const std::string & fileName, std::string & errText)
       }
     }  
     file.close();
-    if (NRLib::ParseType<double>(dummyStr)!=0) // not convertable number
+    if (NRLib::IsNumber(dummyStr)) // not convertable number
       fileformat= Wavelet::JASON;
   }
   return fileformat;

@@ -94,9 +94,6 @@ Wavelet::Wavelet(const std::string & fileName,
   coeff_[1]       = reflCoef[1];
   coeff_[2]       = reflCoef[2];
   switch (fileFormat) {
-  case OLD: 
-    WaveletReadOld(fileName, errCode, errText);
-    break;
   case JASON: 
     WaveletReadJason(fileName, errCode, errText);
     break;
@@ -432,8 +429,7 @@ Wavelet::getLocalWavelet(int i,
 void
 Wavelet::resample(float dz, 
                   int   nz, 
-                  int   nzp, 
-                  bool  flip) 
+                  int   nzp) 
 {
   //LogKit::LogFormatted(LogKit::LOW,"  Resampling wavelet\n");
   assert(isReal_);
@@ -473,8 +469,6 @@ Wavelet::resample(float dz,
   dz_         = dz;
   inFFTorder_ = true;
 
-  if (flip) 
-    flipUpDown();
   if( ModelSettings::getDebugLevel() > 0 ) {
     std::string fileName = "resampled_wavelet_";
     float dzOut = 1.0; // sample at least as dense as this
@@ -878,22 +872,7 @@ Wavelet::getWaveletValue(float   z,
   return value;
 }
 
-void           
-Wavelet::flipUpDown()
-{
-  if(isReal_==true) {
-    float tmp;
-    for(int i=1;i<nzp_/2;i++) {
-      tmp=rAmp_[i];
-      rAmp_[i] = rAmp_[nzp_-i];
-      rAmp_[nzp_-i] =tmp;
-    }
-  }
-  else {
-    for(int i=0;i<cnzp_;i++)
-      cAmp_[i].im *=-1.0;
-  }
-}
+
 
 float 
 Wavelet::getArrayValueOrZero(int     i,
@@ -1015,119 +994,3 @@ Wavelet::WaveletReadJason(const std::string & fileName,
   file.close();
 }
 
-void
-Wavelet::WaveletReadOld(const std::string & fileName,
-                        int               & errCode, 
-                        std::string       & errText)
-{
-  std::ifstream file;
-  NRLib::OpenRead(file,fileName);
- 
-  int  maxWaveletL=10000;
-  
-  int   i,pos,shift,nSamples;
-  int line = 0;
-  std::string headStr;
-  std::string tmpStr;
-  std::string targetString;
-  std::string number;
-  float dz,ampMult;
-
-  for(i = 0; i < 5; i++) {
-    NRLib::GetNextToken(file,headStr,line);
-    if (NRLib::CheckEndOfFile(file)) {
-      errText += "Error: End of file "+fileName+" premature.\n";
-      errCode=1; 
-    } 
-  }
-
-  targetString = "CMX";
-  pos = Utils::findEnd(headStr, 0, targetString);
-  if(pos==-1) {
-    errText += "Error when reading wavelet amplitude from file "+fileName+".\n";
-    errCode=1; 
-    ampMult = RMISSING; // Dummy setting to avoid g++ warning 
-  }
-  else {
-    Utils::readUntilStop(pos, headStr, number, ",");
-    ampMult = NRLib::ParseType<float>(number);
-  } //endif
-
-  targetString = "SI";
-  pos = Utils::findEnd(headStr, 0, targetString);
-  if(pos==-1) {
-    errText += "Error when reading sampling interval from file "+fileName+".\n";
-    errCode=1; 
-    dz = RMISSING; // Dummy setting to avoid g++ warning
-  }
-  else {
-    Utils::readUntilStop(pos, headStr, number, ",");
-    dz = NRLib::ParseType<float>(number);
-  } //endif
-
-  float * tempWave= static_cast<float*>(fftw_malloc(sizeof(float)* maxWaveletL ));
-
-  nSamples=0;
-  while (NRLib::CheckEndOfFile(file)==false)
-  {      
-    NRLib::GetNextToken(file,tmpStr,line);
-    if( maxWaveletL  > nSamples )
-    {
-      std::string target = "F";
-      if(pos == -1)
-        tempWave[nSamples] = NRLib::ParseType<float>(tmpStr);
-      else
-        nSamples--;
-      nSamples++;
-    }
-    else {
-      errText += "Error in memory use when reading wavelet from file "+fileName+".\n";
-      errCode=1;
-    }//endif
-  }//endwhile
-
-  file.close();
-
-  targetString = "SHIFT";
-  pos = Utils::findEnd(headStr, 0, targetString);
-  if(pos==-1) {
-    shift=nSamples/2; // integer division
-    if(shift*2 == nSamples) {
-      errText += "Error when reading wavelet shift from file "+fileName+".\n    --> No SHIFT and even number of data.\n";
-      errCode=1; 
-    }
-    shift =-shift-1; // case flip
-  }
-  else {
-    Utils::readUntilStop(pos, headStr, number ,",");
-    shift = NRLib::ParseType<int>(number);
-  }//endif
-
-  if(errCode == 0) {
-    cz_          = -shift-1; // case flip
-    theta_       = RMISSING;
-    dz_          = dz;
-    nz_          = nSamples;
-    nzp_         = nSamples;
-    cnzp_        = nzp_/2+1;
-    rnzp_        = 2*cnzp_; 
-    inFFTorder_  = false;
-    isReal_      = true;
-    rAmp_        = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp_));
-    cAmp_        = reinterpret_cast<fftw_complex*>(rAmp_);
-    norm_        = RMISSING;
-
-    // Note the wavelet is fliped left to right  
-    // since it is used for a convolution 
-
-    for(i=0; i < rnzp_ ;i++) {  
-      if(i < nzp_)
-        rAmp_[i]=ampMult*tempWave[nzp_-i-1];
-      else
-        rAmp_[i]=RMISSING;
-    }//end for i 
-    LogKit::LogFormatted(LogKit::MEDIUM,"\nReading wavelet file %s  ... done.\n",fileName.c_str());
-  }
-
-  fftw_free(tempWave);
-}
