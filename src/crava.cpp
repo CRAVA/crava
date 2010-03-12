@@ -158,16 +158,14 @@ Crava::Crava(Model * model, SpatialWellFilter * spatwellfilter)
   if ((model->getModelSettings()->getEstimateFaciesProb() && model->getModelSettings()->getFaciesProbRelative()) 
       || model->getModelSettings()->getUseLocalNoise())
   {
-  //  meanAlpha_->setAccessMode(FFTGrid::READ);
     meanAlpha2_ = copyFFTGrid(meanAlpha_);
-  //  meanAlpha2_->endAccess();
-   // meanBeta_->setAccessMode(FFTGrid::READ);
-  //  meanRho_->setAccessMode(FFTGrid::READ);
-    
     meanBeta2_  = copyFFTGrid(meanBeta_);
     meanRho2_   = copyFFTGrid(meanRho_);
   }
-
+  // NBNB-PAL: Crava complains about UMR for the three calls to FFTGrid::fftInPlace made
+  // NBNB-PAL: below. The complaint if for member vector 'rvalue_' but I have verified
+  // NBNB-PAL: that this vector is indeed set. Purify probably gets confused by constructions
+  // NBNB-PAL: like rvalue_ = static_cast<fftw_real*>(fftw_malloc(rsize_ * sizeof(fftw_real)))
   meanAlpha_->fftInPlace();
   meanBeta_ ->fftInPlace();
   meanRho_  ->fftInPlace();
@@ -1647,7 +1645,7 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs)
     LogKit::LogFormatted(LogKit::LOW,"\n");
     LogKit::LogFormatted(LogKit::LOW,"Facies         Probability\n");
     LogKit::LogFormatted(LogKit::LOW,"--------------------------\n");
-    float * priorFacies = model_->getPriorFacies();
+    const float * priorFacies = model_->getPriorFacies();
     for(int i=0 ; i<nfac; i++) {
       LogKit::LogFormatted(LogKit::LOW,"%-15s %10.4f\n",model_->getModelSettings()->getFaciesName(i).c_str(),priorFacies[i]);
     }
@@ -1659,7 +1657,7 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs)
       std::string text("");
       text += "Increase the number of layers to improve the quality of the facies probabilities.\n";
       text += "   The minimum sampling density is "+NRLib::ToString(simbox_->getdz())+", and it should be lower than 4.0.\n";
-      text += "   To obtain the desired density, the number of layers should be at least "+NRLib::ToString(simbox_->GetLZ()/4);
+      text += "   To obtain the desired density, the number of layers should be at least "+NRLib::ToString(static_cast<int>(simbox_->GetLZ()/4.0))+"\n";
       TaskList::addTask(text);
     }
 
@@ -1757,7 +1755,6 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs)
     fprob_->calculateChiSquareTest(wells_, nWells_, model_->getFaciesEstimInterval());
 
     Timings::setTimeFaciesProb(wall,cpu);
-    
   }
 }
 

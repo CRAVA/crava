@@ -35,7 +35,7 @@ public:
   FFTGrid                     * getBackBeta()              const { return background_->getBeta()  ;}
   FFTGrid                     * getBackRho()               const { return background_->getRho()   ;}
   Corr                        * getCorrelations()          const { return correlations_           ;}
-  float                       * getPriorFacies()           const { return priorFacies_            ;} 
+  const float                 * getPriorFacies()           const { return priorFacies_            ;} 
   FFTGrid                    ** getPriorFaciesCubes()      const { return priorFaciesProbCubes_   ;}
   FFTGrid                    ** getSeisCubes()             const { return seisCube_               ;}
   Wavelet                    ** getWavelets()              const { return wavelet_                ;}
@@ -325,7 +325,10 @@ private:
 
   Surface                 * correlationDirection_;  ///< Grid giving the correlation direction.
   RandomGen               * randomGen_;             ///< Random generator.
-  float                   * priorFacies_;
+
+  float                   * priorFacies_;           ///< 
+  FFTGrid                ** priorFaciesProbCubes_;  ///< Cubes for prior facies probabilities
+
   float                  ** reflectionMatrix_;      ///< May specify own Zoeppritz-approximation. Default NULL,
                                                     ///< indicating that standard approximation will be used.
 
@@ -339,7 +342,6 @@ private:
   std::vector<Grid2D *>     localNoiseScale_;       ///< Scale factors for local noise
 
   bool                      velocityFromInversion_;
-  FFTGrid                ** priorFaciesProbCubes_;  ///< Cubes for prior facies probabilities
 
   bool                      failed_;                ///< Indicates whether errors occured during construction. 
 };

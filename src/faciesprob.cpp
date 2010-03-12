@@ -820,13 +820,13 @@ void FaciesProb::calculateConditionalFaciesProb(WellData                    ** w
     float fraction = maxProb/minProb;
     if (fraction < 1.05f) {
       tooSmallDiff = true;
-      LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: For facies \'"+faciesName+"\' the difference between smallest and ");
-      LogKit::LogFormatted(LogKit::WARNING,"largest probability is only %.2f percent.\n",(fraction - 1.f)*100.f);
+      LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: For facies \'"+faciesName+"\' the difference between smallest and largest probability\n");
+      LogKit::LogFormatted(LogKit::WARNING,"         is only %.2f percent.\n",(fraction - 1.f)*100.f);
     }
     if (indMax != f1) {
       wrongMaximum = true;
-      LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: A problem has been detected. The probability of of finding facies \'"+faciesName+"\' is\n");
-      LogKit::LogFormatted(LogKit::WARNING,"           largest when the well log shows \'%s\' and not when it shows \'%s\'\n",
+      LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: The probability of finding facies \'"+faciesName+"\' is largest");
+      LogKit::LogFormatted(LogKit::WARNING," when the well log\n         shows \'%s\' and not when it shows \'%s\'.\n",
                                            modelSettings->getFaciesName(f1).c_str(), faciesName.c_str());
     }
   }

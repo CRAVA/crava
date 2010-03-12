@@ -1125,7 +1125,7 @@ FFTGrid::fftInPlace()
   assert(cubetype_!= CTMISSING);
 
   if( cubetype_!= COVARIANCE )  
-    FFTGrid::multiplyByScalar(static_cast<float>(1.0/( sqrt(static_cast<float>(nxp_*nyp_*nzp_)) ) ) );
+    FFTGrid::multiplyByScalar(1.0f/sqrt(static_cast<float>(nxp_*nyp_*nzp_)));
 
   int flag;
   rfftwnd_plan plan;  
@@ -1165,7 +1165,8 @@ FFTGrid::invFFTInPlace()
   rfftwnd_one_complex_to_real(plan,cvalue_,rvalue_);
   fftwnd_destroy_plan(plan);
   istransformed_=false; 
-  FFTGrid::multiplyByScalar( scale);
+
+  FFTGrid::multiplyByScalar(scale);
   time(&timeend);
   LogKit::LogFormatted(LogKit::DEBUGLOW,"\nInverse FFT of grid type %d finished after %ld seconds \n",cubetype_, timeend-timestart);  
 }
@@ -1279,8 +1280,7 @@ void
 FFTGrid::multiplyByScalar(float scalar)
 {
   assert(istransformed_==false);
-  int i;
-  for(i=0;i<rsize_;i++)
+  for(int i=0;i<rsize_;i++)
   {
     rvalue_[i]*=scalar;
   }

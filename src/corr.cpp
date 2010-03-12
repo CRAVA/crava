@@ -59,7 +59,7 @@ Corr::~Corr(void)
   delete [] priorCorrT_;
 
   if(priorCorrTFiltered_!=NULL)      
-    delete [] priorCorrTFiltered_ ;
+    delete [] priorCorrTFiltered_;
 
   if (postVar0_ != NULL) {
     for(int i=0 ; i<3 ; i++)
@@ -163,6 +163,7 @@ Corr::setPriorCorrTFiltered(float * corrT, int nz, int nzp)
 {
   // This is the cyclic and filtered version of CorrT which
   // has one or more zeros in the middle
+
   priorCorrTFiltered_ = new float[nzp];
 
   int refk;
@@ -172,6 +173,7 @@ Corr::setPriorCorrTFiltered(float * corrT, int nz, int nzp)
       refk = i;
     else
       refk = nzp - i;
+
     if(refk < nz && corrT != NULL)
       priorCorrTFiltered_[i] = corrT[refk];
     else

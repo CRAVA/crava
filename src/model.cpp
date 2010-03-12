@@ -376,7 +376,7 @@ Model::~Model(void)
     if (faciesEstimInterval_[1] != NULL)
       delete faciesEstimInterval_[1];
   }
-
+  
   if (priorFacies_ != NULL) 
     delete [] priorFacies_;
 
@@ -2813,8 +2813,9 @@ Model::processWavelets(Wavelet                    **& wavelet,
     LogKit::LogFormatted(LogKit::LOW,"         The number of layers must be increased.                                  \n");
     std::string text("");
     text += "Increase the number of layers to improve the quality of the wavelet estimation.\n";
-    text += "   The minimum sampling density is "+NRLib::ToString(timeSimbox->getdz())+", and it should be lower than 4.0.\n";
-    text += "   To obtain the desired density, the number of layers should be at least "+NRLib::ToString(timeSimbox->GetLZ()/4);
+    text += "   The minimum sampling density is "+NRLib::ToString(timeSimbox->getdz())+", and it should be";
+    text += "lower than 4.0.\n   To obtain the desired density, the number of layers should be at least ";
+    text += NRLib::ToString(static_cast<int>(timeSimbox->GetLZ()/4.0))+"\n";
     TaskList::addTask(text);
   }
 
