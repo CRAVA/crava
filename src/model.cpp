@@ -552,7 +552,7 @@ Model::checkAvailableMemory(Simbox        * timeSimbox,
       if(modelSettings->getUseLocalNoise() == true || (modelSettings->getEstimateFaciesProb() && modelSettings->getFaciesProbRelative()))
         baseP += nGridBackground;
       int baseU = 0;
-      if(modelSettings->getIsPriorFaciesProbGiven()==2)
+      if(modelSettings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_CUBES)
         baseU += modelSettings->getNumberOfFacies();
 
       //First peak: At inversion
@@ -1979,6 +1979,7 @@ void Model::checkFaciesNames(WellData      ** wells,
                              std::string    & tmpErrText,
                              int            & error)
 {
+  //Compare facies names from wells with facies names given in model file or read from proability cubes
   int min,max;
   int globalmin = 0;
   int globalmax = 0;
@@ -2048,7 +2049,7 @@ void Model::checkFaciesNames(WellData      ** wells,
   }
   
   // Compare names in wells with names given in .xml-file
-  if(modelSettings->getIsPriorFaciesProbGiven()==1)
+  if(modelSettings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_MODEL_FILE)
   {
     typedef std::map<std::string,float> mapType;
     mapType myMap = modelSettings->getPriorFaciesProb();
@@ -2063,7 +2064,8 @@ void Model::checkFaciesNames(WellData      ** wells,
       }
     }
   }
-  else if(modelSettings->getIsPriorFaciesProbGiven()==2)
+  // Compare names in wells with names given as input in proability cubes
+  else if(modelSettings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_CUBES)
   {
     typedef std::map<std::string,std::string> mapType;
     mapType myMap = inputFiles->getPriorFaciesProbFile();
@@ -3110,7 +3112,7 @@ void Model::processPriorFaciesProb(const std::vector<Surface *> & faciesEstimInt
     Utils::writeHeader("Prior Facies Probabilities");
     int nFacies = modelSettings->getNumberOfFacies();
 
-    if(modelSettings->getIsPriorFaciesProbGiven()==0)
+    if(modelSettings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_WELLS)
     {
       if (nFacies > 0) 
       {
@@ -3307,7 +3309,7 @@ void Model::processPriorFaciesProb(const std::vector<Surface *> & faciesEstimInt
         TaskList::addTask("Consider using a well containing facies log entries to be able to estimate facies probabilities.");
       }
     }
-    else if(modelSettings->getIsPriorFaciesProbGiven()==1)
+    else if(modelSettings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_MODEL_FILE)
     {
       priorFacies = new float[nFacies];
       typedef std::map<std::string,float> mapType;
@@ -3332,7 +3334,7 @@ void Model::processPriorFaciesProb(const std::vector<Surface *> & faciesEstimInt
       }
 
     }
-    else if(modelSettings->getIsPriorFaciesProbGiven()==2)
+    else if(modelSettings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_CUBES)
     {
       readPriorFaciesProbCubes(inputFiles, 
                                 modelSettings, 
@@ -4061,10 +4063,12 @@ Model::printSettings(ModelSettings * modelSettings,
     //
     // PRIOR FACIES
     //
-    if (modelSettings->getIsPriorFaciesProbGiven() > 0)
+    if (modelSettings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_MODEL_FILE ||
+        modelSettings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_CUBES) 
+        // Can not be written when FACIES_FROM_WELLS as this information not is extracted yet
     {
       LogKit::LogFormatted(LogKit::LOW,"\nPrior facies probabilities:\n");      
-      if(modelSettings->getIsPriorFaciesProbGiven()==1)
+      if(modelSettings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_MODEL_FILE)
       {
         typedef std::map<std::string,float> mapType;
         mapType myMap = modelSettings->getPriorFaciesProb();
@@ -4072,7 +4076,7 @@ Model::printSettings(ModelSettings * modelSettings,
         for(mapType::iterator i=myMap.begin();i!=myMap.end();i++)
           LogKit::LogFormatted(LogKit::LOW,"   %-12s                            : %10.2f\n",(i->first).c_str(),i->second);
       }
-      else if (modelSettings->getIsPriorFaciesProbGiven()==2)
+      else if (modelSettings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_CUBES)
       {
         typedef std::map<std::string,std::string> mapType;
         mapType myMap = inputFiles->getPriorFaciesProbFile();

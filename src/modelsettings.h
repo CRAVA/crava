@@ -301,7 +301,11 @@ public:
 
   void setNoWellNeeded(bool wellNeeded)                   { noWellNeeded_             = wellNeeded               ;}
   void setNoSeismicNeeded(bool seismicNeeded)             { noSeismicNeeded_          = seismicNeeded            ;}
-                                                                                      
+                        
+  enum          priorFacies{FACIES_FROM_WELLS,
+                            FACIES_FROM_MODEL_FILE,
+                            FACIES_FROM_CUBES};
+
   enum          sseismicTypes{STANDARDSEIS = 0, PSSEIS = 1};                          
 
   enum          indicators{NO, YES, NOTSET};

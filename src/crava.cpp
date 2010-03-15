@@ -1701,8 +1701,6 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs)
       delete meanAlpha2_;
       delete meanBeta2_;
       delete meanRho2_;
-
-      baseName += "Relative_";
     }
     else
     {
@@ -1722,6 +1720,7 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs)
                               model_->getModelSettings()->getNoVsFaciesProb(), 
                               this,
                               model_->getLocalNoiseScales());
+      baseName += "Absolute_";
     }
     fprob_->calculateConditionalFaciesProb(wells_, 
                                            nWells_, 
@@ -1735,7 +1734,7 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs)
       for(int i=0;i<nfac;i++)
       {
         FFTGrid * grid = fprob_->getFaciesProb(i);
-        std::string fileName = baseName + "With_Undef_" + model_->getModelSettings()->getFaciesName(i);
+        std::string fileName = baseName +"With_Undef_"+ model_->getModelSettings()->getFaciesName(i);
         ParameterOutput::writeToFile(simbox_,model_,grid,fileName,"");
       }
     }

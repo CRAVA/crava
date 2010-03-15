@@ -1279,9 +1279,6 @@ XmlModelFile::parsePriorFaciesProbabilities(TiXmlNode * node, std::string & errT
   sum = 0.0;
   int oldStatus = 0;
  
- // std::map<std::string,float> pp;
- // std::map<std::string, std::string> pp2;
-  modelSettings_->setPriorFaciesProbGiven(0);
   while(parseFacies(root,errTxt)==true)
   {
     status = modelSettings_->getIsPriorFaciesProbGiven();
@@ -1326,19 +1323,17 @@ TiXmlNode * root = node->FirstChildElement("facies");
   std::string filename;
   float value;
   parseValue(root, "name", faciesname,errTxt, true);
-  
-    if(parseValue(root,"probability",value,errTxt,true)==true)
-    {
-     modelSettings_->setPriorFaciesProbGiven(1);
-     modelSettings_->addPriorFaciesProb(faciesname,value);
-     // status = 1;
-    }
-    else if(parseValue(root,"probability-cube",filename,errTxt,true)==true)
-    {
-     modelSettings_->setPriorFaciesProbGiven(2);
-     inputFiles_->setPriorFaciesProb(faciesname,filename);
-     // status = 2;
-    }
+
+  if(parseValue(root,"probability",value,errTxt,true)==true)
+  {
+    modelSettings_->setPriorFaciesProbGiven(ModelSettings::FACIES_FROM_MODEL_FILE); 
+    modelSettings_->addPriorFaciesProb(faciesname,value);
+  }
+  else if(parseValue(root,"probability-cube",filename,errTxt,true)==true)
+  {
+    modelSettings_->setPriorFaciesProbGiven(ModelSettings::FACIES_FROM_CUBES); 
+    inputFiles_->setPriorFaciesProb(faciesname,filename);
+  }
  
  checkForJunk(root, errTxt, legalCommands, true); //allow duplicates
   return(true);

@@ -136,7 +136,7 @@ ModelSettings::ModelSettings(void)
   useLocalWavelet_         =    false;
   useLocalNoise_           =    false;
   optimizeWellLocation_    =    false;
-  priorFaciesProbGiven_    =        0;
+  priorFaciesProbGiven_    = ModelSettings::FACIES_FROM_WELLS;
 
   generateSeismicAfterInv_ =    false;
   estimateBackground_      =     true;
