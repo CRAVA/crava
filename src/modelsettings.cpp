@@ -130,6 +130,7 @@ ModelSettings::ModelSettings(void)
   estimateFaciesProb_      =    false;
   faciesProbRelative_      =     true;
   noVsFaciesProb_          =    false;
+  useFilterForProb_        =     true;
   faciesLogGiven_          =    false;
   depthDataOk_             =    false;
   parallelTimeSurfaces_    =    false;

@@ -141,6 +141,7 @@ public:
   bool                             getEstimateFaciesProb(void)          const { return estimateFaciesProb_      ;}
   bool                             getFaciesProbRelative(void)          const { return faciesProbRelative_      ;}
   bool                             getNoVsFaciesProb(void)              const { return noVsFaciesProb_          ;}
+  bool                             getUseFilterForFaciesProb()          const { return useFilterForProb_        ;}
   bool                             getFaciesLogGiven(void)              const { return faciesLogGiven_          ;}
   std::map<std::string,float>      getPriorFaciesProb(void)             const { return priorFaciesProb_         ;} 
   int                              getIsPriorFaciesProbGiven(void)      const { return priorFaciesProbGiven_    ;}
@@ -287,6 +288,7 @@ public:
   void setEstimateFaciesProb(bool estFaciesProb)          { estimateFaciesProb_       = estFaciesProb            ;}
   void setFaciesProbRelative(bool faciesProbRel)          { faciesProbRelative_       = faciesProbRel            ;}
   void setNoVsFaciesProb(bool noVsFaciesProb)             { noVsFaciesProb_           = noVsFaciesProb           ;}
+  void setUseFilterForFaciesProb(bool useFilterForProb)   { useFilterForProb_         = useFilterForProb         ;}
   void setFaciesLogGiven(bool faciesLogGiven)             { faciesLogGiven_           = faciesLogGiven           ;}
   void addPriorFaciesProb(std::string name, float value)  { priorFaciesProb_[name]    = value                    ;}
   void setPriorFaciesProbGiven(int fpg)                   { priorFaciesProbGiven_     = fpg                      ;}
@@ -474,6 +476,7 @@ private:
   bool                              estimateFaciesProb_;         // Shall facies probabilites be estimated?
   bool                              faciesProbRelative_;         // Use relative elastic parameters for facies prob estimation?
   bool                              noVsFaciesProb_;             // Do not use Vs for faciesprob.
+  bool                              useFilterForProb_;           // Use filtered logs for facies probs, otherwise, use sampled inversion.
   bool                              faciesLogGiven_;           
   bool                              depthDataOk_;                // We have what we need to do depth conversion
   bool                              parallelTimeSurfaces_;     

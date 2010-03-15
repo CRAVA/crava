@@ -47,6 +47,9 @@ public:
   const float  * getRhoSeismicResolution(void)      const { return rho_seismic_resolution_   ;}  
   const float  * getAlphaForFacies(void)            const { return alpha_for_facies_         ;}
   const float  * getRhoForFacies(void)              const { return rho_for_facies_           ;}  
+  const float  * getAlphaPredicted(void)            const { return alpha_predicted_          ;} 
+  const float  * getBetaPredicted(void)             const { return beta_predicted_           ;} 
+  const float  * getRhoPredicted(void)              const { return rho_predicted_            ;} 
   float       ** getRealSeismicData(void)           const { return real_seismic_data_        ;}
   float       ** getSyntSeismicData(void)           const { return actual_synt_seismic_data_        ;}
   float       ** getCpp(void)                       const { return cpp_ ;}              

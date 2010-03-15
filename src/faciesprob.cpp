@@ -36,6 +36,7 @@ FaciesProb::FaciesProb(FFTGrid                      * alpha,
                        const float                  * priorFacies,
                        FFTGrid                     ** priorFaciesCubes,
                        const std::vector<double **> & sigmaEOrig,
+                       bool                           useFilter,
                        const WellData              ** wells,
                        int                            nWells,
                        const std::vector<Surface *> & faciesEstimInterval,
@@ -45,7 +46,7 @@ FaciesProb::FaciesProb(FFTGrid                      * alpha,
                        Crava                          *cravaResult,
                        const std::vector<Grid2D *>   & noiseScale)
 {
-  makeFaciesProb(nFac, alpha, beta, rho, sigmaEOrig, wells, nWells, 
+  makeFaciesProb(nFac, alpha, beta, rho, sigmaEOrig, useFilter, wells, nWells, 
                  faciesEstimInterval, dz, relative, noVs,
                  p_undef, priorFacies, priorFaciesCubes, cravaResult, noiseScale);
 }
@@ -139,6 +140,7 @@ FaciesProb::makeFaciesHistAndSetPriorProb(const std::vector<float> & alpha, //
 void       
 FaciesProb::makeFaciesDens(int nfac, 
                            const std::vector<double **> & sigmaEOrig,
+                           bool                           useFilter,
                            bool                           noVs,
                            const std::vector<float>     & alphaFiltered,
                            const std::vector<float>     & betaFiltered,
@@ -251,22 +253,30 @@ FaciesProb::makeFaciesDens(int nfac,
   for(i=0;i<3;i++)
     sigmae[i] = new double[3];
 
-  if(noVs == false) {
-    for(i=0;i<3;i++) {
-      for(j=0;j<3;j++)
-        sigmae[i][j] = sigmaEOrig[index][i][j];
+  if(useFilter == true) {
+    if(noVs == false) {
+      for(i=0;i<3;i++) {
+        for(j=0;j<3;j++)
+          sigmae[i][j] = sigmaEOrig[index][i][j];
+      }
+    }
+    else {
+      sigmae[0][0] = sigmaEOrig[index][0][0];
+      sigmae[0][1] = 0.0;
+      sigmae[0][2] = sigmaEOrig[index][0][1];
+      sigmae[1][0] = 0.0;
+      sigmae[1][1] = 0.0; //Will be overruled by reasonable value.
+      sigmae[1][2] = 0.0;
+      sigmae[2][0] = sigmaEOrig[index][1][0];
+      sigmae[2][1] = 0.0;
+      sigmae[2][2] = sigmaEOrig[index][1][1];
     }
   }
   else {
-    sigmae[0][0] = sigmaEOrig[index][index][index];
-    sigmae[0][1] = 0.0;
-    sigmae[0][2] = sigmaEOrig[index][index][1];
-    sigmae[1][0] = 0.0;
-    sigmae[1][1] = 0.0; //Will be overruled by reasonable value.
-    sigmae[1][2] = 0.0;
-    sigmae[2][0] = sigmaEOrig[index][1][index];
-    sigmae[2][1] = 0.0;
-    sigmae[2][2] = sigmaEOrig[index][1][1];
+    for(i=0;i<3;i++) {
+      for(j=0;j<3;j++)
+        sigmae[i][j] = 0.0;
+    }
   }
 
   if(sigmae[0][0]<kstda*kstda)
@@ -396,7 +406,8 @@ void FaciesProb::makeFaciesProb(int                            nfac,
                                 FFTGrid                      * postAlpha, 
                                 FFTGrid                      * postBeta, 
                                 FFTGrid                      * postRho,
-                                const std::vector<double **> & sigmaEOrig, 
+                                const std::vector<double **> & sigmaEOrig,
+                                bool                           useFilter,
                                 const WellData              ** wells, 
                                 int                            nWells,
                                 const std::vector<Surface *> & faciesEstimInterval,
@@ -414,7 +425,7 @@ void FaciesProb::makeFaciesProb(int                            nfac,
   std::vector<float> rhoFiltered;
   std::vector<int>   faciesLog;
 
-  setNeededLogsSpatial(wells, nWells, faciesEstimInterval, dz, relative, noVs,
+  setNeededLogsSpatial(wells, nWells, faciesEstimInterval, dz, relative, noVs, useFilter,
                        alphaFiltered, betaFiltered, rhoFiltered, faciesLog); //Generate these logs.
 
   int densdim = sigmaEOrig.size();
@@ -433,7 +444,7 @@ void FaciesProb::makeFaciesProb(int                            nfac,
   cravaResult->computeG(G);
 
   for(int i=0;i<densdim;i++)    // 
-    makeFaciesDens(nfac, sigmaEOrig, noVs, alphaFiltered, betaFiltered, rhoFiltered, 
+    makeFaciesDens(nfac, sigmaEOrig, useFilter, noVs, alphaFiltered, betaFiltered, rhoFiltered, 
                    faciesLog, density[i], &volume[i], i, G, cravaResult, noiseScale);
 
   if(priorFaciesCubes != NULL)
@@ -1095,6 +1106,7 @@ void FaciesProb::setNeededLogsSpatial(const WellData              ** wells,
                                       const double                   dz,
                                       bool                           relative,
                                       bool                           noVs,
+                                      bool                           useFilter,
                                       std::vector<float>           & alphaFiltered,
                                       std::vector<float>           & betaFiltered,
                                       std::vector<float>           & rhoFiltered,
@@ -1119,15 +1131,28 @@ void FaciesProb::setNeededLogsSpatial(const WellData              ** wells,
       for(int i=0;i<n;i++)
       {
         if(noVs == false) {
-          alphaFiltered[index] = bw->getAlphaSeismicResolution()[i];
-          betaFiltered[index]  = bw->getBetaSeismicResolution()[i];
-          rhoFiltered[index]   = bw->getRhoSeismicResolution()[i];
+          if(useFilter == true) {
+            alphaFiltered[index] = bw->getAlphaSeismicResolution()[i];
+            betaFiltered[index]  = bw->getBetaSeismicResolution()[i];
+            rhoFiltered[index]   = bw->getRhoSeismicResolution()[i];
+          }
+          else {
+            alphaFiltered[index] = bw->getAlphaPredicted()[i];
+            betaFiltered[index]  = bw->getBetaPredicted()[i];
+            rhoFiltered[index]   = bw->getRhoPredicted()[i];
+          }
         }
         else {
-          alphaFiltered[index] = bw->getAlphaForFacies()[i];
           //Beta log here is mainly dummy, but must be at correct level.
           betaFiltered[index]  = bw->getBetaHighCutBackground()[i];
-          rhoFiltered[index]   = bw->getRhoForFacies()[i];
+          if(useFilter == true) {
+            alphaFiltered[index] = bw->getAlphaForFacies()[i];
+            rhoFiltered[index]   = bw->getRhoForFacies()[i];
+          }
+          else {
+            alphaFiltered[index] = bw->getAlphaPredicted()[i];
+            rhoFiltered[index]   = bw->getRhoPredicted()[i];
+          }
         }
         if(relative == true) {
           alphaFiltered[index] -= bw->getAlphaHighCutBackground()[i];

@@ -1219,6 +1219,7 @@ XmlModelFile::parseFaciesProbabilities(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("prior-facies-probabilities");
   legalCommands.push_back("facies-probability-undefined-value");
   legalCommands.push_back("use-vs-for-facies-probabilities");
+  legalCommands.push_back("use-inversion-for-facies-probabilities");
 
   parseFaciesEstimationInterval(root, errTxt);
 
@@ -1230,7 +1231,11 @@ XmlModelFile::parseFaciesProbabilities(TiXmlNode * node, std::string & errTxt)
 
   bool useVs = true;
   if(parseBool(root, "use-vs-for-facies-probabilities", useVs, errTxt) == true && useVs == false)
-    modelSettings_->setNoVsFaciesProb(true);
+    modelSettings_->setNoVsFaciesProb(true); //Note: What we store is inverse of what we ask for.
+
+  bool useInversion = false;
+  if(parseBool(root, "use-inversion-for-facies-probabilities", useInversion, errTxt) == true && useInversion == true)
+    modelSettings_->setUseFilterForFaciesProb(false); //Note: What we store is inverse of what we ask for.
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);

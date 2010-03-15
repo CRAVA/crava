@@ -39,7 +39,7 @@ public:
 
   void               printEnergyToScreen();
  // void               computeFaciesProb(FilterWellLogs *filteredlogs);
-  void               computeFaciesProb(SpatialWellFilter *filteredlogs);
+  void               computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter);
   void               filterLogs(Simbox          * timeSimboxConstThick,
                                 FilterWellLogs *& filterlogs);
   int                getRelative();

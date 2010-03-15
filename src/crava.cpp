@@ -1630,7 +1630,7 @@ Crava::printEnergyToScreen()
 
 
 void 
-Crava::computeFaciesProb(SpatialWellFilter *filteredlogs)
+Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
 {
   if(model_->getModelSettings()->getEstimateFaciesProb())
   {
@@ -1690,6 +1690,7 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs)
                               model_->getPriorFacies(), 
                               model_->getPriorFaciesCubes(),
                               filteredlogs->getSigmae(),
+                              useFilter,
                               const_cast<const WellData **>(wells_), 
                               nWells_,
                               model_->getFaciesEstimInterval(),
@@ -1712,6 +1713,7 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs)
                               model_->getPriorFacies(), 
                               model_->getPriorFaciesCubes(),
                               filteredlogs->getSigmae(),
+                              useFilter,
                               const_cast<const WellData **>(wells_), 
                               nWells_,
                               model_->getFaciesEstimInterval(),

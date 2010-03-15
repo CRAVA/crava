@@ -109,8 +109,10 @@ int main(int argc, char** argv)
       // FilterWellLogs * filteredlogs = NULL;
       //crava->filterLogs(model->getTimeSimboxConstThick(),filteredlogs);
 
-      if (modelSettings->getEstimateFaciesProb())
-        crava->computeFaciesProb(spatwellfilter);
+      if (modelSettings->getEstimateFaciesProb()) {
+        bool useFilter = modelSettings->getUseFilterForFaciesProb();
+        crava->computeFaciesProb(spatwellfilter, useFilter);
+      }
       delete spatwellfilter;
 
       if(modelSettings->getKrigingParameter() > 0)
