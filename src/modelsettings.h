@@ -28,6 +28,7 @@ public:
   TraceHeaderFormat              * getTraceHeaderFormat(void)           const { return traceHeaderFormat_       ;}
   TraceHeaderFormat              * getTraceHeaderFormatOutput(void)     const { return traceHeaderFormatOutput_ ;}
   TraceHeaderFormat              * getTraceHeaderFormat(int i)          const { return localTHF_[i]             ;}
+  int                              getNumberOfTraceHeaderFormats(void)  const { return localTHF_.size()         ;}
   int                              getKrigingParameter(void)            const { return krigingParameter_        ;}
   float                            getConstBackValue(int i)             const { return constBackValue_[i]       ;}
   int                              getNumberOfAngles(void)              const { return angle_.size()            ;} 

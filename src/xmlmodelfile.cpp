@@ -2705,35 +2705,40 @@ XmlModelFile::checkConsistency(std::string & errTxt) {
 
 
 void
-XmlModelFile::checkForwardConsistency(std::string & errTxt) {
-  if(modelSettings_->getForwardModeling() == true) {
-    int i;
-    for(i=0;i<modelSettings_->getNumberOfAngles();i++)
-    {
-      modelSettings_->setEstimateSNRatio(i,false);
-      if(modelSettings_->getEstimateWavelet(i)==true)
-        errTxt+="Wavelet must be given when doing forward modeling. Wavelet is not given for angle "+NRLib::ToString(modelSettings_->getAngle(i)*(180/M_PI),1)+".\n";
+XmlModelFile::checkForwardConsistency(std::string & errTxt) 
+{
+  if (modelSettings_->getNumberOfAngles() == 0) {
+    errTxt+="At least one wavelet must be specified for forward modelling\n";
+  }
 
+  if (modelSettings_->getNumberOfTraceHeaderFormats() == 0)
+    modelSettings_->addTraceHeaderFormat(NULL);
+
+  for(int i=0;i<modelSettings_->getNumberOfAngles();i++) {
+    modelSettings_->setEstimateSNRatio(i,false);
+    if(modelSettings_->getEstimateWavelet(i)==true)
+      errTxt+="Wavelet must be given when doing forward modeling. Wavelet is not given for angle "+NRLib::ToString(modelSettings_->getAngle(i)*(180/M_PI),1)+".\n";
+    
     if(inputFiles_->getSeismicFile(i)!="")
       errTxt+="Seismic data should not be given when doing forward modeling.\n";
-    }
-   if(modelSettings_->getUseLocalNoise()==true)
-      errTxt+="Local noise can not be used in forward modeling.\n";
-
-    if(modelSettings_->getUseLocalWavelet()==true)
-      errTxt+="Local wavelet can not be used in forward modeling.\n";
-
-    if (modelSettings_->getNumberOfWells() > 0)
-      errTxt +="Wells should not be given when doing forward modeling.\n";
-    
-    if (modelSettings_->getBackgroundType() == "background")
-      errTxt += "An earth model needs to be given when doing forward modeling. The background model should not be given.\n";
-    else if (modelSettings_->getBackgroundType() == "")
-      errTxt += "An earth model needs to be given when doing forward modeling.\n";
-
-    if (modelSettings_->getEstimate3DWavelet() && !modelSettings_->getHasTime3DMapping())
-      errTxt += "Time 3D mapping must be given when 3D wavelet is to be estimated.\n";
   }
+
+  if(modelSettings_->getUseLocalNoise()==true)
+    errTxt+="Local noise can not be used in forward modeling.\n";
+  
+  if(modelSettings_->getUseLocalWavelet()==true)
+    errTxt+="Local wavelet can not be used in forward modeling.\n";
+  
+  if (modelSettings_->getNumberOfWells() > 0)
+    errTxt +="Wells should not be given when doing forward modeling.\n";
+  
+  if (modelSettings_->getBackgroundType() == "background")
+    errTxt += "An earth model needs to be given when doing forward modeling. The background model should not be given.\n";
+  else if (modelSettings_->getBackgroundType() == "")
+    errTxt += "An earth model needs to be given when doing forward modeling.\n";
+  
+  if (modelSettings_->getEstimate3DWavelet() && !modelSettings_->getHasTime3DMapping())
+    errTxt += "Time 3D mapping must be given when 3D wavelet is to be estimated.\n";
 }
  
 void

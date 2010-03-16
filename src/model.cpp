@@ -4610,6 +4610,7 @@ Model::getGeometryFromGridOnFile(const std::string         gridFile,
                                  std::string             & errText)
 {
   geometry = NULL;
+
   if(gridFile != "") { //May change the condition here, but need geometry if we want to set XL/IL
     int fileType = IO::findGridType(gridFile);
     if(fileType == IO::CRAVA) {
