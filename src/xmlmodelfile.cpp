@@ -778,6 +778,7 @@ XmlModelFile::parseWavelet(TiXmlNode * node, std::string & errTxt)
 
   modelSettings_->addStretchFactor(1.0);
   std::string value;
+  bool estimate = false;
   if(parseFileName(root, "file-name", value, errTxt) == true) {
     inputFiles_->addWaveletFile(value);
     modelSettings_->addEstimateWavelet(false);
@@ -785,6 +786,7 @@ XmlModelFile::parseWavelet(TiXmlNode * node, std::string & errTxt)
   else {
     inputFiles_->addWaveletFile(""); //Keeping tables balanced.
     modelSettings_->addEstimateWavelet(true);
+    estimate = true;
   }
   
   float scale;
@@ -794,8 +796,11 @@ XmlModelFile::parseWavelet(TiXmlNode * node, std::string & errTxt)
     scaleGiven = true;
     modelSettings_->addWaveletScale(scale);
     modelSettings_->addEstimateGlobalWaveletScale(false);
+    if (estimate)
+      LogKit::LogFormatted(LogKit::WARNING, "\nWARNING: The wavelet scale specified in the model file ("
+           +NRLib::ToString(scale,2)
+           +") has no effect when the wavelet\n         is estimated and not read from file\n\n");
   }
-  bool estimate;
   std::string tmpErr;
  
   if(parseBool(root, "estimate-scale",estimate,tmpErr) == false || tmpErr != "") {

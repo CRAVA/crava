@@ -151,7 +151,6 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
         int nTracesX    = static_cast<int> (modelSettings->getEstRangeX(angle_index) / dx);
         int nTracesY    = static_cast<int> (modelSettings->getEstRangeY(angle_index) / dy);
 
-//        int nMaxPoints = length * (2 * nTracesX + 1) * (2 * nTracesY + 1); 
         std::vector<std::vector<float> > gMat;
         std::vector<float> dVec;
         int nPoints = 0;
@@ -161,7 +160,6 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
             bl->getBlockedGrid(&seisCube[0], &seisLog[0], xTr, yTr);
             std::vector<float> seisData(nz_);
             bl->getVerticalTrend(&seisLog[0], &seisData[0]);
-            std::vector<float> zLog(nBlocks);
             for (unsigned int b=0; b<nBlocks; b++) {
               int xIndex      = iPos[b] + xTr;
               int yIndex      = jPos[b] + yTr;
@@ -181,15 +179,15 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
                   float u = static_cast<float> (zPosTrace[t] - zPosWell[tau] - at*(xTr*dx) - bt*(yTr*dy));
                   if (hasHalpha) {
                     for (int i=0; i<nWl; i++) {
-                      float v = u - static_cast<float>((i - nhalfWl)*dz_);
+                      float v = u - static_cast<float>((i - nhalfWl)*dzWell[w]);
                       float h = Halpha[tau-start];
                       lambda[tau-start][i] = static_cast<float> (h / (M_PI *(h*h + v*v)));
                     }
                   }
                   else {
-                    int tLow  = static_cast<int> (floor(u / dz_));
+                    int tLow  = static_cast<int> (floor(u / dzWell[w]));
                     int tHigh = tLow + 1;
-                    float lambdaValue = u - static_cast<float> (tLow * dz_);
+                    float lambdaValue = (u/dzWell[w]) - static_cast<float> (tLow);
                     if (u >= 0.0 && tLow <= nhalfWl) { 
                       lambda[tau-start][tLow]   = 1 -lambdaValue;
                       lambda[tau-start][tHigh]  = lambdaValue; 
@@ -247,13 +245,14 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
         wellWavelets[w][0] = static_cast<fftw_real> (gTrd[0]);
         for (int i=0; i<nhalfWl; i++) {
           wellWavelets[w][i]      = static_cast<fftw_real> (gTrd[i]);
-          wellWavelets[w][nzp_-1] = static_cast<fftw_real> (gTrd[nWl-i]);
+          wellWavelets[w][nzp_-i] = static_cast<fftw_real> (gTrd[nWl-i]);
         }
         for (int i=nhalfWl+1; i<nzp_-nhalfWl; i++)
           wellWavelets[w][i] = 0.0f;
         for (int i=nzp_; i<rnzp_; i++)
           wellWavelets[w][i] = RMISSING;
         delete [] gTrd;
+        printVecToFile("well_wavelet", &wellWavelets[0][0], rnzp_);
 
         double s2 = 0.0;
         for (int i=0; i<nPoints; i++) {
@@ -438,7 +437,7 @@ Wavelet3D::printMatToFile(const std::string                       & fileName,
     NRLib::OpenWrite(file,fName);
     for(int i = 0; i < n; i++) {
       for (int j = 0; j < m; j++)
-        file << mat[i][j];
+        file << mat[i][j] << " ";
       file << "\n";
     }
     file.close();

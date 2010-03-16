@@ -558,8 +558,8 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
     error += 1;
   }
 
-  dataVar /= float(nData);
-  errStd  /= float(nData);
+  dataVar /= static_cast<float> (nData);
+  errStd  /= static_cast<float> (nData);
   errStd   = sqrt(errStd);
 
   LogKit::LogFormatted(LogKit::MEDIUM,"\n  Reporting errors (as standard deviations) estimated in different ways:\n\n");
@@ -569,10 +569,9 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
   LogKit::LogFormatted(LogKit::LOW,"  Well                  shift[ms]     StdDev         Gain   S/N         Gain   S/N \n");
   LogKit::LogFormatted(LogKit::LOW,"  ----------------------------------------------------------------------------------\n");
   for(int w=0; w<nWells; w++) {
-    if(nActiveData[w]>0) {
-      float SNOptimalGlobal, SNOptimalLocal;    
-      SNOptimalGlobal = dataVarWell[w]/(errWell[w]*errWell[w]);
-      SNOptimalLocal  = dataVarWell[w]/(errWellOptScale[w]*errWellOptScale[w]);   
+    if(nActiveData[w]>0) {    
+      float SNOptimalGlobal = dataVarWell[w]/(errWell[w]*errWell[w]);
+      float SNOptimalLocal  = dataVarWell[w]/(errWellOptScale[w]*errWellOptScale[w]);   
       LogKit::LogFormatted(LogKit::LOW,"  %-20s   %6.2f     %9.2e      %6.2f %6.2f      %6.2f %6.2f\n", 
             wells[w]->getWellname().c_str(),shiftWell[w],sqrt(dataVarWell[w]),
             optScale,SNOptimalGlobal,scaleOptWell[w],SNOptimalLocal);

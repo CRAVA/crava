@@ -163,8 +163,7 @@ Model::Model(const std::string & fileName)
           }              
         }
       }
-      else
-      {
+      else {
         //
         // INVERSION/ESTIMATION
         //
@@ -184,8 +183,7 @@ Model::Model(const std::string & fileName)
 
         bool estimationMode = modelSettings_->getEstimationMode();
 
-        if (!failedWells && !failedDepthConv)
-        {
+        if (!failedWells && !failedDepthConv) {
           bool backgroundDone = false;
 
           if(!(modelSettings_->getOptimizeWellLocation() == true &&
@@ -306,15 +304,10 @@ Model::Model(const std::string & fileName)
                                  inputFiles);
         }
 
-        if (!failedWells)
-        {
-          if(((modelSettings_->getWellOutputFlag() & IO::WELLS) > 0) ||
-             (estimationMode == true && modelSettings_->getEstimateBackground() == true))
-          {
-            writeWells(wells_, modelSettings_);
-          }
-          if(estimationMode  == true && (modelSettings_->getEstimateWaveletNoise() == true ||
-                                   (modelSettings_->getWellOutputFlag() & IO::BLOCKED_WELLS) > 0))
+        if (!failedWells) {
+          if(estimationMode || (modelSettings_->getWellOutputFlag() & IO::WELLS) > 0)
+             writeWells(wells_, modelSettings_);
+          if(estimationMode || (modelSettings_->getWellOutputFlag() & IO::BLOCKED_WELLS) > 0)
             writeBlockedWells(wells_, modelSettings_);
         }
       }
@@ -2758,19 +2751,6 @@ Model::processWavelets(Wavelet                    **& wavelet,
   double wall=0.0, cpu=0.0;
   TimeKit::getTime(wall,cpu);
 
-  bool estimateStuff = false;
-  for(int i=0 ; i < modelSettings->getNumberOfAngles() ; i++) {  
-    estimateStuff = estimateStuff || modelSettings->getEstimateWavelet(i); 
-    estimateStuff = estimateStuff || modelSettings->getEstimateSNRatio(i);
-    if(modelSettings->getEstimateWavelet(i) == true)
-      modelSettings->setWaveletScale(i,1.0);
-  }
-  if (estimateStuff) {
-    LogKit::LogFormatted(LogKit::HIGH,"\nWells that cannot be used in wavelet generation or noise estimation:");
-    LogKit::LogFormatted(LogKit::HIGH,"\n  Deviated wells.");
-    LogKit::LogFormatted(LogKit::HIGH,"\n  Wells with too little data.\n");
-  }
-
   unsigned int nAngles = modelSettings->getNumberOfAngles();
 
   wavelet = new Wavelet * [nAngles];
@@ -2780,13 +2760,14 @@ Model::processWavelets(Wavelet                    **& wavelet,
   localNoiseScale_.resize(nAngles);
 
   bool has3Dwavelet = false;
-  for(unsigned int i=0 ; i < nAngles ; i++)
-  {
+  for(unsigned int i=0 ; i < nAngles ; i++) {
     localNoiseScale_[i] = NULL;
     shiftGrids[i]       = NULL;
     gainGrids[i]        = NULL;
     if (modelSettings->getWaveletDim(i) == Wavelet::THREE_D)
       has3Dwavelet = true;
+    if(modelSettings->getEstimateWavelet(i) == true)
+      modelSettings->setWaveletScale(i,1.0);
   }
 
   NRLib::Grid2D<float>      refTimeGradX;          ///< Time gradient in x-direction for reference time surface (t0)
@@ -2821,206 +2802,41 @@ Model::processWavelets(Wavelet                    **& wavelet,
     TaskList::addTask(text);
   }
 
-  float globalScale = 1.0;
-  for(unsigned int i=0 ; i < nAngles ; i++) { 
-    if(modelSettings_->getForwardModeling()==false)
-      seisCube[i]->setAccessMode(FFTGrid::RANDOMACCESS);
-    if(modelSettings->getUseLocalWavelet()==true) {
-      if(inputFiles->getScaleFile(i)!="") {
-        Surface help(inputFiles->getScaleFile(i));
-        gainGrids[i] = new Grid2D(timeSimbox->getnx(),timeSimbox->getny(), 0.0);
-        resampleSurfaceToGrid2D(timeSimbox, &help, gainGrids[i]);
-      }
-    }
-    
-    globalScale = modelSettings->getWaveletScale(i);
-    
+  for(unsigned int i=0 ; i < nAngles ; i++) {
     float angle = float(modelSettings->getAngle(i)*180.0/M_PI);
     LogKit::LogFormatted(LogKit::LOW,"\nAngle stack : %.1f deg",angle);
-    if (modelSettings->getEstimateWavelet(i)) 
-    {
-      if (modelSettings->getWaveletScale(i) != 1.0) {
-        LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: The wavelet scale specified in the model file ("
-                             +NRLib::ToString(modelSettings->getWaveletScale(i),2)
-                             +") has no effect when the wavelet\n         is estimated and not read from file\n\n");
-      }
-      if (modelSettings->getWaveletDim(i) == Wavelet::ONE_D)
-        wavelet[i] = new Wavelet1D(timeSimbox, 
-                                   seisCube[i], 
-                                   wells, 
-                                   waveletEstimInterval,                                   
-                                   modelSettings, 
-                                   reflectionMatrix[i],
-                                   i);
-      else {
-        wavelet[i] = new Wavelet3D(inputFiles->getWaveletFilterFile(i),
-                                   waveletEstimInterval,
-                                   refTimeGradX,
-                                   refTimeGradY,
-                                   tGradX,
-                                   tGradY,
-                                   seisCube[i],
-                                   modelSettings,
-                                   wells,
-                                   timeSimbox,
-                                   reflectionMatrix[i],
-                                   i,
-                                   error,
-                                   errText);
-        modelSettings->setEstimateWaveletNoise(false);
-      }
-    }
-    else { //Not estimation modus
-      const std::string & waveletFile = inputFiles->getWaveletFile(i);
-      int fileFormat = getWaveletFileFormat(waveletFile,errText);
-      if(fileFormat < 0) {
-        errText += "Unknown file format of file '"+waveletFile+"'.\n";
-        error++;
-        break;
-      }
-      else {
-        if (modelSettings->getWaveletDim(i) == Wavelet::ONE_D) {
-          wavelet[i] = new Wavelet1D(waveletFile, 
-                                     fileFormat, 
-                                     modelSettings, 
-                                     reflectionMatrix[i],
-                                     modelSettings->getAngle(i),
-                                     error, 
-                                     errText);
-          // Calculate a preliminary scale factor to see if wavelet is in the same size order as the data. A large or small value might cause problems.
-          if(seisCube!=NULL) // If forward modeling, we have no seismic, can not prescale wavelet.
-          {
-            float  prescale = wavelet[i]->findGlobalScaleForGivenWavelet(modelSettings, timeSimbox, seisCube[i], wells);
-            double limHigh  = 3.0;
-            double limLow   = 0.33; 
-            float  scale    = 1.0;
+    if(modelSettings_->getForwardModeling()==false)
+      seisCube[i]->setAccessMode(FFTGrid::RANDOMACCESS);
 
-            if(modelSettings->getEstimateGlobalWaveletScale(i)) // prescale, then we have correct size order, and later scale estimation will be ok.
-              wavelet[i]->multiplyRAmpByConstant(prescale);
-            else {
-              if(modelSettings->getWaveletScale(i)!=scale && (prescale>limHigh || prescale<limLow)) {
-                std::string text = "The wavelet given for angle no "+NRLib::ToString(i)+" is badly scaled. Ask Crava to estimate global wavelet scale.\n";
-                if(modelSettings->getEstimateLocalScale(i)) {
-                  errText += text;
-                  error++;
-                }
-                else {
-                  LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: "+text);
-                  TaskList::addTask("The wavelet is badly scaled. Consider having CRAVA estimate global wavelet scale");
-                }
-              }
-            }
-          }
-          if (error == 0)
-            wavelet[i]->resample(static_cast<float>(timeSimbox->getdz()), 
-                                 timeSimbox->getnz(), 
-                                 modelSettings->getNZpad());
-        }
-        else { //3D-wavelet constructed by 1D wavelet and filter
-          wavelet[i] = new Wavelet3D(waveletFile, 
-                                     fileFormat, 
-                                     modelSettings, 
-                                     reflectionMatrix[i],
-                                     modelSettings->getAngle(i),
-                                     error, 
-                                     errText,
-                                     inputFiles->getWaveletFilterFile(i));
-          if (error == 0) {
-            wavelet[i]->resample(static_cast<float>(timeSimbox->getdz()), 
-                                 timeSimbox->getnz(), 
-                                 modelSettings->getNZpad());
-          }
-        }
-      }
-    }
+    if (modelSettings->getWaveletDim(i) == Wavelet::ONE_D) 
+      error = process1DWavelet(modelSettings,
+                               inputFiles,
+                               timeSimbox,
+                               gainGrids[i],
+                               shiftGrids[i],
+                               seisCube,
+                               wells,
+                               waveletEstimInterval,
+                               reflectionMatrix[i],
+                               errText,
+                               wavelet[i],
+                               i);
+    else
+      error = process3DWavelet(modelSettings,
+                               inputFiles,
+                               timeSimbox,
+                               seisCube,
+                               wells,
+                               waveletEstimInterval,
+                               reflectionMatrix[i],
+                               errText,
+                               wavelet[i],
+                               i,
+                               refTimeGradX,
+                               refTimeGradY,
+                               tGradX,
+                               tGradY);
 
-    if ((modelSettings->getEstimationMode() == false) && (wavelet[i]->getDim() == 3) && !timeSimbox->getIsConstantThick()) {
-      errText += "Simbox must have constant thickness if forward modelling or inversion when 3D wavelet.\n";
-      error++;
-    }
-
-    if (error == 0) {
-      wavelet[i]->scale(modelSettings->getWaveletScale(i));
-      bool localEst = (modelSettings->getEstimateLocalScale(i) || modelSettings->getEstimateLocalShift(i) ||
-                       modelSettings->getEstimateLocalNoise(i) || modelSettings->getEstimateGlobalWaveletScale(i));
-
-      if ((modelSettings->getEstimateSNRatio(i) || localEst) && modelSettings->getForwardModeling() == false)
-      {
-        if (wavelet[i]->getDim() == 3) { //Not possible to estimate signal-to-noise ratio for 3D wavelets
-          errText += "Estimation of signal-to-noise ratio is not possible for 3D wavelets.\n";
-          errText += "The s/n ratio must be specified in the model file\n";
-          error++;
-        }
-        else {
-          float SNRatio = wavelet[i]->calculateSNRatioAndLocalWavelet(timeSimbox, seisCube[i], wells, 
-                                                                      shiftGrids[i], gainGrids[i],
-                                                                      modelSettings, errText, error, 
-                                                                      localNoiseScale_[i], i, globalScale);
-          if(modelSettings->getEstimateSNRatio(i))
-            modelSettings->setSNRatio(i,SNRatio);
-        }
-      }
-
-      if (error == 0) {
-        if((modelSettings->getWaveletOutputFlag() & IO::GLOBAL_WAVELETS) > 0 || 
-          (modelSettings->getEstimationMode() && modelSettings->getEstimateWavelet(i)))
-        {
-          std::string type;
-          if (modelSettings->getEstimateWavelet(i))
-            type = "Estimated_";
-          else if (modelSettings->getWaveletScale(i) == 1.00)
-            type = "";
-          else
-            type = "Scaled_";
-          wavelet[i]->writeWaveletToFile(IO::PrefixWavelet()+type, 1.0); // dt_max = 1.0;
-        }
-        
-        float SNRatio = modelSettings->getSNRatio(i);
-        float SNLow  = 1.0;
-        float SNHigh = 10.0;
-        if ((SNRatio <=SNLow  || SNRatio > SNHigh) && modelSettings->getForwardModeling()==false) {
-          errText += "Illegal signal-to-noise ratio of "+NRLib::ToString(SNRatio)+" for cube "+NRLib::ToString(i+1)+".\n";
-          errText += "Ratio must be in interval "+NRLib::ToString(SNLow)+" < S/N ratio < "+NRLib::ToString(SNHigh)+"\n";
-          error++;
-        }
-        
-        bool useLocalNoise = modelSettings->getEstimateLocalNoise(i) || inputFiles->getLocalNoiseFile(i) != "";
-        bool useLocalShift = modelSettings->getEstimateLocalShift(i) || inputFiles->getShiftFile(i) != "";
-        bool useLocalGain  = modelSettings->getEstimateLocalScale(i) || inputFiles->getScaleFile(i) != "";
-
-        if (useLocalNoise) {
-          writeLocalGridsToFile(inputFiles->getLocalNoiseFile(i),                              
-                                IO::PrefixLocalNoise(),
-                                1.0,  // Scale map with this factor before writing to disk
-                                modelSettings,
-                                i,
-                                timeSimbox,
-                                localNoiseScale_[i]);
-        }
-
-        if (useLocalShift) {
-          writeLocalGridsToFile(inputFiles->getShiftFile(i),
-                                IO::PrefixLocalWaveletShift(),
-                                1.0,
-                                modelSettings,
-                                i,
-                                timeSimbox,
-                                shiftGrids[i]);
-          wavelet[i]->setShiftGrid(shiftGrids[i]);
-        }
-
-        if (useLocalGain) {
-          writeLocalGridsToFile("", // Gain grids have already been read.
-                                IO::PrefixLocalWaveletGain(),
-                                1.0,
-                                modelSettings,
-                                i,
-                                timeSimbox,
-                                gainGrids[i]);
-          wavelet[i]->setGainGrid(gainGrids[i]);
-        }
-      }
-    }
     if(modelSettings_->getForwardModeling()==false) // else, no seismic data
       seisCube[i]->endAccess();
   } // end i (angles)
@@ -3030,8 +2846,7 @@ Model::processWavelets(Wavelet                    **& wavelet,
   for(unsigned int i=0;i<nAngles;i++)
     if(localNoiseScale_[i]!=NULL)
       localNoiseSet = true;
-  if(localNoiseSet==true)
-  {
+  if(localNoiseSet==true) {
     for(unsigned int i=0;i<nAngles;i++)
       if(localNoiseScale_[i]==NULL)
         localNoiseScale_[i] = new Grid2D(timeSimbox->getnx(), 
@@ -3041,11 +2856,240 @@ Model::processWavelets(Wavelet                    **& wavelet,
  
   Timings::setTimeWavelets(wall,cpu);
   failed = error > 0;
-  if(estimateStuff == true && modelSettings->getEstimationMode() == true) {
-    WellData ** wells = getWells();
-    for (int i=0 ; i<modelSettings->getNumberOfWells() ; i++)
-      wells[i]->getBlockedLogsOrigThick()->writeWell(modelSettings);
+}
+
+int
+Model::process1DWavelet(ModelSettings                * modelSettings,
+                        InputFiles                   * inputFiles,
+                        Simbox                       * timeSimbox,
+                        Grid2D                      *& gainGrid,
+                        Grid2D                      *& shiftGrid,
+                        FFTGrid                     ** seisCube,
+                        WellData                    ** wells,
+                        const std::vector<Surface *> & waveletEstimInterval,
+                        float                        * reflectionMatrix,
+                        std::string                  & errText,
+                        Wavelet                     *& wavelet,
+                        unsigned int                   i)
+{
+  int error = 0;
+  if(modelSettings->getUseLocalWavelet()==true) {
+    if(inputFiles->getScaleFile(i)!="") {
+      Surface help(inputFiles->getScaleFile(i));
+      gainGrid = new Grid2D(timeSimbox->getnx(),timeSimbox->getny(), 0.0);
+      resampleSurfaceToGrid2D(timeSimbox, &help, gainGrid);
+    }
   }
+
+  float globalScale = modelSettings->getWaveletScale(i);
+
+  if (modelSettings->getEstimateWavelet(i)) {
+    wavelet = new Wavelet1D(timeSimbox, 
+                            seisCube[i], 
+                            wells, 
+                            waveletEstimInterval,                                   
+                            modelSettings, 
+                            reflectionMatrix,
+                            i);
+  }
+  else { //Not estimation modus
+    const std::string & waveletFile = inputFiles->getWaveletFile(i);
+    int fileFormat = getWaveletFileFormat(waveletFile,errText);
+    if(fileFormat < 0) {
+      errText += "Unknown file format of file '"+waveletFile+"'.\n";
+      error++;
+    }
+    else {
+      wavelet = new Wavelet1D(waveletFile, 
+                              fileFormat, 
+                              modelSettings, 
+                              reflectionMatrix,
+                              modelSettings->getAngle(i),
+                              error, 
+                              errText);
+      // Calculate a preliminary scale factor to see if wavelet is in the same size order as the data. A large or small value might cause problems.
+      if(seisCube!=NULL) {// If forward modeling, we have no seismic, can not prescale wavelet.
+        float       prescale = wavelet->findGlobalScaleForGivenWavelet(modelSettings, timeSimbox, seisCube[i], wells);
+        const float limHigh  = 3.0f;
+        const float limLow   = 0.33f; 
+        float       scale    = 1.0;
+
+        if(modelSettings->getEstimateGlobalWaveletScale(i)) // prescale, then we have correct size order, and later scale estimation will be ok.
+           wavelet->multiplyRAmpByConstant(prescale);
+        else {
+          if(modelSettings->getWaveletScale(i)!=scale && (prescale>limHigh || prescale<limLow)) {
+             std::string text = "The wavelet given for angle no "+NRLib::ToString(i)+" is badly scaled. Ask Crava to estimate global wavelet scale.\n";
+            if(modelSettings->getEstimateLocalScale(i)) {
+              errText += text;
+              error++;
+            }
+            else {
+              LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: "+text);
+              TaskList::addTask("The wavelet is badly scaled. Consider having CRAVA estimate global wavelet scale");
+            }
+          }
+        }
+      }
+      if (error == 0)
+        wavelet->resample(static_cast<float>(timeSimbox->getdz()), 
+                          timeSimbox->getnz(), 
+                          modelSettings->getNZpad());
+    }
+  }
+  if (error == 0) {
+    wavelet->scale(modelSettings->getWaveletScale(i));
+    bool localEst = (modelSettings->getEstimateLocalScale(i) || modelSettings->getEstimateLocalShift(i) ||
+                     modelSettings->getEstimateLocalNoise(i) || modelSettings->getEstimateGlobalWaveletScale(i));
+
+    if ((modelSettings->getEstimateSNRatio(i) || localEst) && modelSettings->getForwardModeling() == false) {
+      float SNRatio = wavelet->calculateSNRatioAndLocalWavelet(timeSimbox, 
+                                                               seisCube[i], 
+                                                               wells, 
+                                                               shiftGrid, 
+                                                               gainGrid,
+                                                               modelSettings, 
+                                                               errText, 
+                                                               error, 
+                                                               localNoiseScale_[i], 
+                                                               i, 
+                                                               globalScale);
+      if(modelSettings->getEstimateSNRatio(i))
+        modelSettings->setSNRatio(i,SNRatio);
+    }
+
+    if (error == 0) {
+      if((modelSettings->getWaveletOutputFlag() & IO::GLOBAL_WAVELETS) > 0 || 
+         (modelSettings->getEstimationMode() && modelSettings->getEstimateWavelet(i))) {
+        std::string type;
+        if (modelSettings->getEstimateWavelet(i))
+          type = "Estimated_";
+        else if (modelSettings->getWaveletScale(i) == 1.00)
+          type = "";
+        else
+          type = "Scaled_";
+        wavelet->writeWaveletToFile(IO::PrefixWavelet()+type, 1.0); // dt_max = 1.0;
+      }
+        
+      float SNRatio = modelSettings->getSNRatio(i);
+      const float SNLow  = 1.0;
+      const float SNHigh = 10.0;
+      if ((SNRatio <=SNLow  || SNRatio > SNHigh) && modelSettings->getForwardModeling()==false) {
+        errText += "Illegal signal-to-noise ratio of "+NRLib::ToString(SNRatio)+" for cube "+NRLib::ToString(i+1)+".\n";
+        errText += "Ratio must be in interval "+NRLib::ToString(SNLow)+" < S/N ratio < "+NRLib::ToString(SNHigh)+"\n";
+        error++;
+      }
+        
+      bool useLocalNoise = modelSettings->getEstimateLocalNoise(i) || inputFiles->getLocalNoiseFile(i) != "";
+      bool useLocalShift = modelSettings->getEstimateLocalShift(i) || inputFiles->getShiftFile(i) != "";
+      bool useLocalGain  = modelSettings->getEstimateLocalScale(i) || inputFiles->getScaleFile(i) != "";
+
+      if (useLocalNoise)
+        writeLocalGridsToFile(inputFiles->getLocalNoiseFile(i),                              
+                              IO::PrefixLocalNoise(),
+                              1.0,  // Scale map with this factor before writing to disk
+                              modelSettings,
+                              i,
+                              timeSimbox,
+                              localNoiseScale_[i]);
+
+      if (useLocalShift) {
+        writeLocalGridsToFile(inputFiles->getShiftFile(i),
+                              IO::PrefixLocalWaveletShift(),
+                              1.0,
+                              modelSettings,
+                              i,
+                              timeSimbox,
+                              shiftGrid);
+        wavelet->setShiftGrid(shiftGrid);
+      }
+
+      if (useLocalGain) {
+        writeLocalGridsToFile("", // Gain grids have already been read.
+                              IO::PrefixLocalWaveletGain(),
+                              1.0,
+                              modelSettings,
+                              i,
+                              timeSimbox,
+                              gainGrid);
+        wavelet->setGainGrid(gainGrid);
+      }
+    }
+  }
+  return error;
+}
+
+int
+Model::process3DWavelet(ModelSettings                           * modelSettings,
+                        InputFiles                              * inputFiles,
+                        Simbox                                  * timeSimbox,
+                        FFTGrid                                ** seisCube,
+                        WellData                               ** wells,
+                        const std::vector<Surface *>            & waveletEstimInterval,
+                        float                                   * reflectionMatrix,
+                        std::string                             & errText,
+                        Wavelet                                *& wavelet,
+                        unsigned int                              i,
+                        const NRLib::Grid2D<float>              & refTimeGradX,
+                        const NRLib::Grid2D<float>              & refTimeGradY,
+                        const std::vector<std::vector<double> > & tGradX,
+                        const std::vector<std::vector<double> > & tGradY)
+{
+  int error = 0;
+  if (modelSettings->getEstimateWavelet(i)) {
+    wavelet = new Wavelet3D(inputFiles->getWaveletFilterFile(i),
+                            waveletEstimInterval,
+                            refTimeGradX,
+                            refTimeGradY,
+                            tGradX,
+                            tGradY,
+                            seisCube[i],
+                            modelSettings,
+                            wells,
+                            timeSimbox,
+                            reflectionMatrix,
+                            i,
+                            error,
+                            errText);
+  }
+  else { //Not estimation modus
+    const std::string & waveletFile = inputFiles->getWaveletFile(i);
+    int fileFormat = getWaveletFileFormat(waveletFile,errText);
+    if(fileFormat < 0) {
+      errText += "Unknown file format of file '"+waveletFile+"'.\n";
+      error++;
+    }
+    else {
+      wavelet = new Wavelet3D(waveletFile, 
+                              fileFormat, 
+                              modelSettings, 
+                              reflectionMatrix,
+                              modelSettings->getAngle(i),
+                              error, 
+                              errText,
+                              inputFiles->getWaveletFilterFile(i));
+      if (error == 0)
+        wavelet->resample(static_cast<float>(timeSimbox->getdz()), 
+                          timeSimbox->getnz(), 
+                          modelSettings->getNZpad());
+    }
+  }
+  if ((modelSettings->getEstimationMode() == false) && !timeSimbox->getIsConstantThick()) {
+    errText += "Simbox must have constant thickness if forward modelling or inversion when 3D wavelet.\n";
+    error++;
+  }
+  if (error == 0) {
+    wavelet->scale(modelSettings->getWaveletScale(i));
+    bool localEst = (modelSettings->getEstimateLocalScale(i) || modelSettings->getEstimateLocalShift(i) ||
+                     modelSettings->getEstimateLocalNoise(i) || modelSettings->getEstimateGlobalWaveletScale(i));
+
+    if ((modelSettings->getEstimateSNRatio(i) || localEst) && modelSettings->getForwardModeling() == false) {
+      //Not possible to estimate signal-to-noise ratio for 3D wavelets
+      errText += "Estimation of signal-to-noise ratio is not possible for 3D wavelets.\n";
+      errText += "The s/n ratio must be specified in the model file\n";
+      error++;
+    }
+  }
+  return error;
 }
 
 int
@@ -4172,7 +4216,7 @@ Model::printSettings(ModelSettings * modelSettings,
           if (inputFiles->getLocalNoiseFile(i) == "") 
             LogKit::LogFormatted(LogKit::LOW,"  Estimate local signal-to-noise ratio map : %10s\n", "yes");
           else
-            LogKit::LogFormatted(LogKit::LOW,"  Estimate local signal-to-noise ratio map : "+inputFiles->getLocalNoiseFile(i)+"\n");
+            LogKit::LogFormatted(LogKit::LOW,"  Local signal-to-noise ratio map          : "+inputFiles->getLocalNoiseFile(i)+"\n");
         }
         if (modelSettings->getEstimateLocalNoise(i))
           LogKit::LogFormatted(LogKit::LOW,"  Estimate local noise                     : %10s\n", "yes");

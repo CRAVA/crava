@@ -163,6 +163,34 @@ private:
                                    std::string                  & errText,
                                    bool                         & failed);
 
+  int              process1DWavelet(ModelSettings                * modelSettings,
+                                    InputFiles                   * inputFiles,
+                                    Simbox                       * timeSimbox,
+                                    Grid2D                      *& gainGrid,
+                                    Grid2D                      *& shiftGrid,
+                                    FFTGrid                     ** seisCube,
+                                    WellData                    ** wells,
+                                    const std::vector<Surface *> & waveletEstimInterval,
+                                    float                        * reflectionMatrix,
+                                    std::string                  & errText,
+                                    Wavelet                     *& wavelet,
+                                    unsigned int                   i);
+
+ int               process3DWavelet(ModelSettings                           * modelSettings,
+                                    InputFiles                              * inputFiles,
+                                    Simbox                                  * timeSimbox,
+                                    FFTGrid                                ** seisCube,
+                                    WellData                               ** wells,
+                                    const std::vector<Surface *>            & waveletEstimInterval,
+                                    float                                   * reflectionMatrix,
+                                    std::string                             & errText,
+                                    Wavelet                                *& wavelet,
+                                    unsigned int                              i,
+                                    const NRLib::Grid2D<float>              & refTimeGradX,
+                                    const NRLib::Grid2D<float>              & refTimeGradY,
+                                    const std::vector<std::vector<double> > & tGradX,
+                                    const std::vector<std::vector<double> > & tGradY);
+
   void             processPriorFaciesProb(const std::vector<Surface *> & faciesEstimInterval,
                                           float                       *& priorFacies,
                                           WellData                    ** wells,
