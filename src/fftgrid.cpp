@@ -52,16 +52,13 @@ FFTGrid::FFTGrid(int nx, int ny, int nz, int nxp, int nyp, int nzp)
   istransformed_  = false;
   rvalue_         = NULL;
   add_            = true;
- // nGrids_        += 1;
   // index= i+rnxp_*j+k*rnxp_*nyp_;
   // i index in x direction 
   // j index in y direction 
   // k index in z direction 
-
- 
 }
 
-FFTGrid::FFTGrid(FFTGrid  * fftGrid)
+FFTGrid::FFTGrid(FFTGrid  * fftGrid, bool expTrans)
 {
   cubetype_       = fftGrid->cubetype_;
   theta_          = fftGrid->theta_;
@@ -80,19 +77,21 @@ FFTGrid::FFTGrid(FFTGrid  * fftGrid)
   rsize_          = rnxp_*nyp_*nzp_;
   counterForGet_  = fftGrid->getCounterForGet(); 
   counterForSet_  = fftGrid->getCounterForSet();
+  add_            = fftGrid->add_;
   istransformed_  = false;
-  add_ = fftGrid->add_;
   
   createRealGrid(add_);
-  for(int k=0;k<nzp_;k++)
-    for(int j=0;j<nyp_;j++)
-      for(int i=0;i<rnxp_;i++)   
-      {
+  for(int k=0;k<nzp_;k++) {
+    for(int j=0;j<nyp_;j++) {
+      for(int i=0;i<rnxp_;i++) {
         float value = fftGrid->getNextReal();
-        setNextReal(value);
-      }// k,j,i
-
- 
+        if (expTrans)
+          setNextReal(exp(value));
+        else
+          setNextReal(value);
+      }
+    }
+  }
 }
 
 FFTGrid::~FFTGrid()
@@ -1420,17 +1419,15 @@ FFTGrid::writeFile(const std::string       & fName,
   
   if(formatFlag_ > 0) //Output format specified.
   {
-    bool expTrans = (label == "exptrans"); // use sgriLabel to active exponential transformations
-
     if((domainFlag_ & IO::TIMEDOMAIN) > 0) {
       if(timeMap == NULL) { //No resampling of storm 
         if((formatFlag_ & IO::STORM) > 0) 
-          FFTGrid::writeStormFile(fileName, simbox, expTrans, false);
+          FFTGrid::writeStormFile(fileName, simbox, false);
         if((formatFlag_ & IO::ASCII) > 0)
-          FFTGrid::writeStormFile(fileName, simbox, expTrans, true);
+          FFTGrid::writeStormFile(fileName, simbox, true);
       }
       else {
-        FFTGrid::writeResampledStormCube(timeMap, fileName, simbox, formatFlag_, expTrans);
+        FFTGrid::writeResampledStormCube(timeMap, fileName, simbox, formatFlag_);
       }
 
       //SEGY, SGRI, and CRAVA are never resampled in time.
@@ -1451,9 +1448,9 @@ FFTGrid::writeFile(const std::string       & fName,
           return;
         }
         if((formatFlag_ & IO::STORM) > 0) 
-          FFTGrid::writeStormFile(depthName, depthMap->getSimbox(), expTrans, false);
+          FFTGrid::writeStormFile(depthName, depthMap->getSimbox(), false);
         if((formatFlag_ & IO::ASCII) > 0)
-          FFTGrid::writeStormFile(depthName, depthMap->getSimbox(), expTrans, true);
+          FFTGrid::writeStormFile(depthName, depthMap->getSimbox(), true);
         if((formatFlag_ & IO::SEGY) >0)
           makeDepthCubeForSegy(depthMap->getSimbox(),depthName);
       }
@@ -1465,7 +1462,7 @@ FFTGrid::writeFile(const std::string       & fName,
           return;
         }
         // Writes also segy in depth if required
-        FFTGrid::writeResampledStormCube(depthMap, depthName, simbox, formatFlag_, expTrans);
+        FFTGrid::writeResampledStormCube(depthMap, depthName, simbox, formatFlag_);
       }
     }
   }
@@ -1474,7 +1471,6 @@ FFTGrid::writeFile(const std::string       & fName,
 void
 FFTGrid::writeStormFile(const std::string & fileName, 
                         const Simbox      * simbox, 
-                        bool                expTrans, 
                         bool                ascii, 
                         bool                padding, 
                         bool                flat)
@@ -1508,10 +1504,7 @@ FFTGrid::writeStormFile(const std::string & fileName,
       for(j=0;j<ny;j++)
         for(i=0;i<nx;i++)
         {
-          if (expTrans)
-            value = exp(getRealValue(i,j,k,true));
-          else
-            value = getRealValue(i,j,k,true);          
+          value = getRealValue(i,j,k,true);          
           NRLib::WriteBinaryFloat(binFile, value);
         }
     binFile << "0\n";
@@ -1528,10 +1521,7 @@ FFTGrid::writeStormFile(const std::string & fileName,
       for(j=0;j<ny;j++) {
         for(i=0;i<nx;i++) {
           value = getRealValue(i,j,k,true);
-          if (expTrans)
-            file << exp(value) << " ";
-          else
-            file << value << " ";
+          file << value << " ";
         }
         file << "\n";
       }
@@ -1628,8 +1618,7 @@ void
 FFTGrid::writeResampledStormCube(GridMapping       * gridmapping, 
                                  const std::string & fileName, 
                                  const Simbox      * simbox,
-                                 const int           format,
-                                 bool                expTrans)
+                                 const int           format)
 {
   // simbox is related to the cube we resample from. gridmapping contains simbox for the cube we resample to.
  
@@ -1649,10 +1638,7 @@ FFTGrid::writeResampledStormCube(GridMapping       * gridmapping,
         time = (*mapping)(i,j,k);
         kindex = float((time - static_cast<float>(simbox->getTop(x,y)))/simbox->getdz());
         float value = getRealValueInterpolated(i,j,kindex);
-        if (expTrans)
-          (*outgrid)(i,j,k) = exp(value);
-        else
-          (*outgrid)(i,j,k) = value;
+        (*outgrid)(i,j,k) = value;
       }
     }
   }

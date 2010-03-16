@@ -25,7 +25,7 @@ FFTGrid(nx, ny, nz, nxp, nyp, nzp)
   accMode_=NONE;
 }
 
-FFTFileGrid::FFTFileGrid(FFTFileGrid  * fftGrid) :
+FFTFileGrid::FFTFileGrid(FFTFileGrid  * fftGrid, bool expTrans) :
 FFTGrid()
 {
   float value;
@@ -50,20 +50,24 @@ FFTGrid()
   counterForSet_  = 0;
   istransformed_  = false;
   fNameIn_        = "";
+  accMode_        = NONE;
   createRealGrid();
-  accMode_=NONE;
 
   setAccessMode(WRITE);
   fftGrid->setAccessMode(READ);
-  for(k=0;k<nzp_;k++)
-    for(j=0;j<nyp_;j++)
-      for(i=0;i<rnxp_;i++)   
-      {
+  for(k=0;k<nzp_;k++) {
+    for(j=0;j<nyp_;j++) {
+      for(i=0;i<rnxp_;i++) {
         value=fftGrid->getNextReal();
-        setNextReal(value);
-      }// k,j,i
-      endAccess();
-      fftGrid->endAccess();
+        if (expTrans)
+          setNextReal(exp(value));
+        else
+          setNextReal(value);
+      }
+    }
+  }
+  endAccess();
+  fftGrid->endAccess();
 }
 
 
@@ -517,12 +521,12 @@ FFTFileGrid::writeFile(const std::string & fileName,
 }
 
 void
-FFTFileGrid::writeStormFile(const std::string & fileName, const Simbox * simbox, bool expTrans, bool ascii, bool padding, bool flat)
+FFTFileGrid::writeStormFile(const std::string & fileName, const Simbox * simbox, bool ascii, bool padding, bool flat)
 {
   assert(accMode_ == NONE || accMode_ == RANDOMACCESS);
   if(accMode_ != RANDOMACCESS)
     load();
-  FFTGrid::writeStormFile(fileName, simbox, expTrans, ascii, padding, flat);
+  FFTGrid::writeStormFile(fileName, simbox, ascii, padding, flat);
   if(accMode_ != RANDOMACCESS)
     unload();
 }
@@ -646,13 +650,12 @@ void
 FFTFileGrid::writeResampledStormCube(GridMapping       * gridmapping, 
                                      const std::string & fileName, 
                                      const Simbox      * simbox,
-                                     const int           format,
-                                     bool                expTrans)
+                                     const int           format)
 {
   assert(accMode_ == NONE || accMode_ == RANDOMACCESS);
   if(accMode_ != RANDOMACCESS)
     load();
-  FFTGrid::writeResampledStormCube(gridmapping, fileName, simbox, format, expTrans);
+  FFTGrid::writeResampledStormCube(gridmapping, fileName, simbox, format);
   if(accMode_ != RANDOMACCESS)
     unload();
 }

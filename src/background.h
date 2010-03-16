@@ -35,9 +35,12 @@ public:
   
   void         setClassicVsVp(); //For debugging purposes.
 
-  void         writeBackgrounds(Simbox * simbox, GridMapping * depthMapping, GridMapping * timeMapping, 
-                const TraceHeaderFormat & traceHeaderFormat = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS)) const;
-
+  void         writeBackgrounds(Simbox                  * simbox, 
+                                GridMapping             * depthMapping, 
+                                GridMapping             * timeMapping,
+                                const bool                isFile, 
+                                const TraceHeaderFormat & thf = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS)) const;
+  
 private:
   void         generateBackgroundModel(FFTGrid      *& bgAlpha,
                                        FFTGrid      *& bgBeta,
@@ -164,6 +167,9 @@ private:
                                 int          nz);
   void         findMeanVsVp(FFTGrid * Vp,
                             FFTGrid * Vs);
+  FFTGrid    * copyFFTGrid(FFTGrid   * origGrid, 
+                           const bool  expTrans, 
+                           const bool  fileGrid) const;
 
   FFTGrid    * backModel_[3];       // Cubes for background model files.
   int          DataTarget_;         // Number of data requested in a kriging block 

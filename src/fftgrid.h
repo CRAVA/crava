@@ -17,7 +17,7 @@ class FFTGrid{
 public:
 
   FFTGrid(int nx, int ny, int nz, int nxp, int nyp, int nzp);
-  FFTGrid(FFTGrid * fftGrid);
+  FFTGrid(FFTGrid * fftGrid, bool expTrans = false);
   FFTGrid() {} //Dummy constructor needed for FFTFileGrid
   virtual ~FFTGrid();
 
@@ -95,15 +95,15 @@ public:
                                  GridMapping       * timeMap   = NULL,
                                  const TraceHeaderFormat & thf  = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS)); 
   //Use this instead of the ones below.
-  virtual void         writeStormFile(const std::string & fileName, const Simbox * simbox, bool expTrans = false, 
-                                      bool ascii = false, bool padding = false, bool flat = false);//No mode/randomaccess
+  virtual void         writeStormFile(const std::string & fileName, const Simbox * simbox, bool ascii = false, 
+                                      bool padding = false, bool flat = false);//No mode/randomaccess
   virtual int          writeSegyFile(const std::string & fileName, const Simbox * simbox, float z0, 
                                      const TraceHeaderFormat &thf = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS));   //No mode/randomaccess
   virtual int          writeSgriFile(const std::string & fileName, const Simbox * simbox, const std::string label);
   virtual void         writeAsciiFile(const std::string & fileName);
   virtual void         writeAsciiRaw(const std::string & fileName);
   virtual void         writeResampledStormCube(GridMapping *gridmapping, const std::string & fileName, 
-                                               const Simbox *simbox, const int format, bool expTrans);
+                                               const Simbox *simbox, const int format);
   virtual void         writeCravaFile(const std::string & fileName, const Simbox * simbox);
   virtual void         readCravaFile(const std::string & fileName, std::string & errText, bool nopadding = false);
 

@@ -15,7 +15,7 @@ class FFTFileGrid : public FFTGrid
 { 
 public:
   FFTFileGrid(int nx, int ny, int nz, int nxp, int nyp, int nzp);
-  FFTFileGrid(FFTFileGrid * FFTFileGrid);
+  FFTFileGrid(FFTFileGrid * FFTFileGrid, bool expTrans = false);
   ~FFTFileGrid();
 
   fftw_complex getNextComplex() ;
@@ -49,13 +49,13 @@ public:
                          GridMapping       * depthMap  = NULL, 
                          GridMapping       * timeMap   = NULL,
                          const TraceHeaderFormat & thf = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS));  //Use this instead of the ones below.
-  void         writeStormFile(const std::string & fileName, const Simbox * simbox, bool expTrans = false,
-                              bool ascii = false, bool padding = false, bool flat = false);
+  void         writeStormFile(const std::string & fileName, const Simbox * simbox, bool ascii = false, 
+                              bool padding = false, bool flat = false);
   int          writeSegyFile(const std::string & fileName, const Simbox * simbox, float z0, 
                              const TraceHeaderFormat &thf = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS));
   int          writeSgriFile(const std::string & fileName, const Simbox *simbox, const std::string label);
   void         writeResampledStormCube(GridMapping *gridmapping, const std::string & fileName, 
-                                       const Simbox *simbox, const int format, bool expTrans);
+                                       const Simbox *simbox, const int format);
   void         writeCravaFile(const std::string & fileName, const Simbox * simbox);
   void         readCravaFile(const std::string & fileName, std::string & error, bool nopadding = false);
 

@@ -2161,14 +2161,7 @@ Model::processBackground(Background   *& background,
             failed = true;
           } 
           else {
-            if(IO::findGridType(backFile) == IO::STORM) {
-              backModel[i]->logTransf();
-            }
-            
-            // In log-domain
-            //   IO::CRAVA
-            //   IO::SEGY   (We probably want to have this in exp-domain?)
-            //   IO::SGRI
+            backModel[i]->logTransf();
 
             if(outsideTraces > 0) {
                 errText += "Error: Background model in file "+backFile+" does not cover the inversion area.\n";
@@ -2184,7 +2177,7 @@ Model::processBackground(Background   *& background,
       }
       else if(constBackValue > 0)
       {
-        backModel[i] = createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, modelSettings->getFileGrid());            
+        backModel[i] = createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, modelSettings->getFileGrid());
         backModel[i]->setType(FFTGrid::PARAMETER);
         backModel[i]->fillInConstant(float( log( constBackValue )));
       }
@@ -2204,7 +2197,8 @@ Model::processBackground(Background   *& background,
        ( modelSettings->getEstimationMode() && modelSettings->getGenerateBackground())) {
       background->writeBackgrounds(timeSimbox, 
                                    timeDepthMapping_, 
-                                   timeCutMapping_, 
+                                   timeCutMapping_,
+                                   modelSettings->getFileGrid(), 
                                    *modelSettings->getTraceHeaderFormatOutput()); 
     }
   }

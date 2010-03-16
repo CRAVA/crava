@@ -472,7 +472,7 @@ Crava:: divideDataByScaleWavelet()
     std::string angle = NRLib::ToString(thetaDeg_[l], 1);
     if(ModelSettings::getDebugLevel() > 0) {
       std::string fileName = IO::PrefixOriginalSeismicData() + "With_Padding_" + angle;
-      seisData_[l]->writeStormFile(fileName, simbox_, false, false, true, true);
+      seisData_[l]->writeStormFile(fileName, simbox_, false, true, true);
     }
 
     seisWavelet_[l]->fft1DInPlace();
@@ -544,7 +544,7 @@ Crava:: divideDataByScaleWavelet()
         std::string fileName2 = IO::PrefixReflectionCoefficients() + "With_Padding_" + angle;
         std::string sgriLabel = "Reflection coefficients for incidence angle " + angle;
         seisData_[l]->writeFile(fileName1, IO::PathToDebug(), simbox_, sgriLabel);
-        seisData_[l]->writeStormFile(fileName2, simbox_, false, false, true, true);
+        seisData_[l]->writeStormFile(fileName2, simbox_, false, true, true);
       }
 
       LogKit::LogFormatted(LogKit::MEDIUM,"\nInterpolating reflections for angle stack "+angle+": ");
@@ -556,7 +556,7 @@ Crava:: divideDataByScaleWavelet()
         std::string fileName1 = IO::PrefixReflectionCoefficients() + "Interpolated_" + angle;
         std::string fileName2 = IO::PrefixReflectionCoefficients()  + "Interpolated_With_Padding_" + angle;
         seisData_[l]->writeFile(fileName1, IO::PathToDebug(), simbox_, sgriLabel);
-        seisData_[l]->writeStormFile(fileName2, simbox_, false, false, true, true);
+        seisData_[l]->writeStormFile(fileName2, simbox_, false, true, true);
       }
       seisData_[l]->endAccess();
   }

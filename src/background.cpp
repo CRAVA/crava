@@ -203,9 +203,6 @@ Background::generateBackgroundModel(FFTGrid      *& bgAlpha,
     bgAlpha = Model::createFFTGrid(nx, ny, nz, nx, ny, nz, modelSettings->getFileGrid());
     bgBeta = Model::createFFTGrid(nx, ny, nz, nx, ny, nz, modelSettings->getFileGrid());
     bgRho = Model::createFFTGrid(nx, ny, nz, nx, ny, nz, modelSettings->getFileGrid());
-    // bgAlpha = new FFTGrid(nx, ny, nz, nx, ny, nz);
-   // bgBeta  = new FFTGrid(nx, ny, nz, nx, ny, nz);
-   // bgRho   = new FFTGrid(nx, ny, nz, nx, ny, nz);
     fillInVerticalTrend(bgAlpha, trendAlpha);
     fillInVerticalTrend(bgBeta, trendBeta);
     fillInVerticalTrend(bgRho, trendRho);
@@ -336,13 +333,13 @@ Background::calculateBackgroundTrend(float             * trend,
   {
     const int nx = simbox->getnx();
     const int ny = simbox->getny();
-    //FFTGrid * trendGrid = new FFTGrid(nx, ny, nz, nx, ny, nz);
     FFTGrid * trendGrid = Model::createFFTGrid(nx, ny, nz, nx, ny, nz, isFile);
     fillInVerticalTrend(trendGrid, trend);
-
-    std::string fileName = IO::PrefixBackground() + IO::PrefixTrend() + name;
-    trendGrid->writeFile(fileName, IO::PathToBackground(), simbox, "exptrans");
+    FFTGrid * expTrend = copyFFTGrid(trendGrid, true, isFile);
     delete trendGrid;
+    std::string fileName = IO::PrefixBackground() + IO::PrefixTrend() + name;
+    expTrend->writeFile(fileName, IO::PathToBackground(), simbox);
+    delete expTrend;
   }
 }
 
@@ -527,7 +524,6 @@ Background::makeKrigedBackground(const std::vector<KrigingData2D> & krigingData,
     << "\n  |    |    |    |    |    |    |    |    |    |    |  "
     << "\n  ^"; 
 
-  //bgGrid = new FFTGrid(nx, ny, nz, nxp, nyp, nzp); 
   bgGrid = Model::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, isFile);
   bgGrid->createRealGrid();
   bgGrid->setType(FFTGrid::PARAMETER);
@@ -1349,13 +1345,24 @@ Background::resampleBackgroundModel(FFTGrid      *& bgAlpha,
                                     Simbox        * timeSimbox,
                                     ModelSettings * modelSettings)
 {
+  bool isFile = modelSettings->getFileGrid();
+
   if((modelSettings->getOutputGridsOther() & IO::EXTRA_GRIDS) > 0) {
     std::string fileName1 = IO::PrefixBackground() + "Vp_BackgroundGrid";
     std::string fileName2 = IO::PrefixBackground() + "Vs_BackgroundGrid";
     std::string fileName3 = IO::PrefixBackground() + "Rho_BackgroundGrid";
-    bgAlpha->writeFile(fileName1, IO::PathToBackground(), timeBGSimbox, "exptrans");
-    bgBeta->writeFile(fileName2, IO::PathToBackground(), timeBGSimbox, "exptrans");
-    bgRho->writeFile(fileName3, IO::PathToBackground(), timeBGSimbox, "exptrans");
+
+    FFTGrid * expAlpha = copyFFTGrid(bgAlpha, true, isFile);
+    expAlpha->writeFile(fileName1, IO::PathToBackground(), timeBGSimbox);
+    delete expAlpha;
+
+    FFTGrid * expBeta = copyFFTGrid(bgBeta, true, isFile);
+    expBeta->writeFile(fileName2, IO::PathToBackground(), timeBGSimbox);
+    delete expBeta;
+
+    FFTGrid * expRho = copyFFTGrid(bgRho, true, isFile);
+    expRho->writeFile(fileName3, IO::PathToBackground(), timeBGSimbox);
+    delete expRho;
   }
 
   FFTGrid * resBgAlpha = NULL;
@@ -1371,9 +1378,18 @@ Background::resampleBackgroundModel(FFTGrid      *& bgAlpha,
     std::string fileName1 = IO::PrefixBackground() + "Vp_InversionGrid";
     std::string fileName2 = IO::PrefixBackground() + "Vs_InversionGrid";
     std::string fileName3 = IO::PrefixBackground() + "Rho_InversionGrid";
-    resBgAlpha->writeFile(fileName1, IO::PathToBackground(), timeSimbox, "exptrans");
-    resBgBeta->writeFile(fileName2, IO::PathToBackground(), timeSimbox, "exptrans");
-    resBgRho->writeFile(fileName3, IO::PathToBackground(), timeSimbox, "exptrans");
+
+    FFTGrid * expResAlpha = copyFFTGrid(resBgAlpha, true, isFile);
+    expResAlpha->writeFile(fileName1, IO::PathToBackground(), timeSimbox);
+    delete expResAlpha;
+
+    FFTGrid * expResBeta = copyFFTGrid(resBgBeta, true, isFile);
+    expResBeta->writeFile(fileName2, IO::PathToBackground(), timeSimbox);
+    delete expResBeta;
+
+    FFTGrid * expResRho = copyFFTGrid(resBgRho, true, isFile);
+    expResRho->writeFile(fileName3, IO::PathToBackground(), timeSimbox);
+    delete expResRho;
   }
   
   delete bgAlpha;
@@ -1546,10 +1562,11 @@ Background::createPaddedParameter(FFTGrid *& pNew,     // Padded
 
 //-------------------------------------------------------------------------------
 void
-Background::writeBackgrounds(Simbox      * simbox, 
-                             GridMapping * depthMapping, 
-                             GridMapping * timeMapping,
-                             const TraceHeaderFormat &thf) const 
+Background::writeBackgrounds(Simbox                  * simbox, 
+                             GridMapping             * depthMapping, 
+                             GridMapping             * timeMapping,
+                             const bool                isFile,
+                             const TraceHeaderFormat & thf) const 
 {
   if(depthMapping != NULL && depthMapping->getSimbox() == NULL) {
     const Simbox * timeSimbox = simbox;
@@ -1563,9 +1580,18 @@ Background::writeBackgrounds(Simbox      * simbox,
   std::string fileName1 = IO::PrefixBackground() + "Vp" ;
   std::string fileName2 = IO::PrefixBackground() + "Vs" ;
   std::string fileName3 = IO::PrefixBackground() + "Rho";
-  backModel_[0]->writeFile(fileName1, IO::PathToBackground(), simbox, "exptrans", 0, depthMapping, timeMapping, thf);
-  backModel_[1]->writeFile(fileName2, IO::PathToBackground(), simbox, "exptrans", 0, depthMapping, timeMapping, thf);
-  backModel_[2]->writeFile(fileName3, IO::PathToBackground(), simbox, "exptrans", 0, depthMapping, timeMapping, thf);
+  
+  FFTGrid * expAlpha = copyFFTGrid(backModel_[0], true, isFile);
+  expAlpha->writeFile(fileName1, IO::PathToBackground(), simbox, "NO_LABEL", 0, depthMapping, timeMapping, thf);
+  delete expAlpha;
+
+  FFTGrid * expBeta = copyFFTGrid(backModel_[1], true, isFile);
+  expBeta->writeFile(fileName2, IO::PathToBackground(), simbox, "NO_LABEL", 0, depthMapping, timeMapping, thf);
+  delete expBeta;
+  
+  FFTGrid * expRho = copyFFTGrid(backModel_[2], true, isFile);
+  expRho->writeFile(fileName3, IO::PathToBackground(), simbox, "NO_LABEL", 0, depthMapping, timeMapping, thf);
+  delete expRho;
 
   //
   // For debugging: write cubes not in ASCII, with padding, and with flat top.
@@ -1573,4 +1599,19 @@ Background::writeBackgrounds(Simbox      * simbox,
   //backModel_[0]->writeStormFile(fileName1, simbox, true, false, true, true);
   //backModel_[1]->writeStormFile(fileName2, simbox, true, false, true, true);
   //backModel_[2]->writeStormFile(fileName3, simbox, true, false, true, true);
+}
+
+FFTGrid *
+Background::copyFFTGrid(FFTGrid   * origGrid, 
+                        const bool  expTrans, 
+                        const bool  fileGrid) const
+{
+  FFTGrid * newGrid;
+
+  if (fileGrid)
+    newGrid = new FFTFileGrid(static_cast<FFTFileGrid *>(origGrid), expTrans);
+  else
+    newGrid = new FFTGrid(origGrid, expTrans);
+
+  return (newGrid);
 }
