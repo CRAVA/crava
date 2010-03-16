@@ -3557,13 +3557,14 @@ Model::printSettings(ModelSettings * modelSettings,
   if(modelSettings->getForwardModeling()==false)
   {
     LogKit::LogFormatted(LogKit::LOW,"  Kriging                                  : %10s\n",(modelSettings->getKrigingParameter()>0 ? "yes" : "no"));
-    if (modelSettings->getEstimateFaciesProb()) {
-      if (modelSettings->getFaciesProbRelative())
-        LogKit::LogFormatted(LogKit::LOW,"  Facies probabilities                     : %10s\n","relative");
-      else
-        LogKit::LogFormatted(LogKit::LOW,"  Facies probabilities                     : %10s\n","absolute");
-    }
+    LogKit::LogFormatted(LogKit::LOW,"  Facies probabilities                     : %10s\n",(modelSettings->getEstimateFaciesProb() ? "yes" : "no"));
     LogKit::LogFormatted(LogKit::LOW,"  Synthetic seismic                        : %10s\n",(modelSettings->getGenerateSeismicAfterInv() ? "yes" : "no" ));
+  }
+
+  if (modelSettings->getEstimateFaciesProb()) {
+    LogKit::LogFormatted(LogKit::LOW,"\nSettings for facies probability estimation:\n");
+    LogKit::LogFormatted(LogKit::LOW,"  Use elastic parameters relative to trend : %10s\n",(modelSettings->getFaciesProbRelative() ? "yes" : "no"));
+    LogKit::LogFormatted(LogKit::LOW,"  Include Vs information in filter         : %10s\n",(modelSettings->getNoVsFaciesProb()     ? "no"  : "yes"));
   }
 
   LogKit::LogFormatted(LogKit::LOW,"\nInput/Output settings:\n");
