@@ -92,20 +92,19 @@ public:
   virtual float findGlobalScaleForGivenWavelet(ModelSettings * /*modelSettings*/, 
                                                Simbox        * /*simbox*/, 
                                                FFTGrid       * /*seisCube*/, 
-                                               WellData     ** /*wells*/) {return 0.0f;}
+                                               WellData     ** /*wells*/) {return 1.0f;}
 
   // for noise estimation
   virtual float calculateSNRatioAndLocalWavelet(Simbox        * /*simbox*/, 
                                                 FFTGrid       * /*seisCube*/, 
                                                 WellData     ** /*wells*/, 
-                                                Grid2D       *& /*shift*/, 
-                                                Grid2D       *& /*gain*/, 
                                                 ModelSettings * /*modelSettings*/,
                                                 std::string   & /*errText*/, 
-                                                int           & /*error*/,
+                                                int           & /*error*/, 
+                                                int             /*number*/,
                                                 Grid2D       *& /*noiseScaled*/, 
-                                                int             /*number*/, 
-                                                float           /*globalScale*/) {return 0.0f;} 
+                                                Grid2D       *& /*shift*/, 
+                                                Grid2D       *& /*gain*/) {return 0.0f;} 
 
 protected:
   float          getTheta()          const {return theta_;}

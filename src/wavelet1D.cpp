@@ -373,20 +373,19 @@ float
 Wavelet1D::calculateSNRatioAndLocalWavelet(Simbox        * simbox, 
                                            FFTGrid       * seisCube, 
                                            WellData     ** wells, 
-                                           Grid2D       *& shift, 
-                                           Grid2D       *& gain, 
                                            ModelSettings * modelSettings,
                                            std::string   & errText, 
                                            int           & error, 
+                                           int             number,
                                            Grid2D       *& noiseScaled, 
-                                           int             number, 
-                                           float           globalScale)
+                                           Grid2D       *& shiftGrid, 
+                                           Grid2D       *& gainGrid)
 {
   LogKit::LogFormatted(LogKit::MEDIUM,"\n  Estimating noise from seismic data and (nonfiltered) blocked wells");
   float errStd  = 0.0f;
   float dataVar = 0.0f;
-  
-  Vario  * localWaveletVario     = modelSettings->getLocalWaveletVario();
+
+
   int      nWells                = modelSettings->getNumberOfWells();
   bool     doEstimateLocalShift  = modelSettings->getEstimateLocalShift(number);
   bool     doEstimateLocalScale  = modelSettings->getEstimateLocalScale(number);
@@ -496,11 +495,11 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
       }
     }
   }
-
+  
+  float globalScale = modelSettings->getWaveletScale(number);
   std::vector<float> scaleOptWell(nWells, -1.0f);
   std::vector<float> errWellOptScale(nWells);
   std::vector<float> errWell(nWells);
-  bool writelog = false;
   float errOptScale = 1.0;
   //Estimate global scale, local scale and error.
   //If global scale given, do not use return value. Do kriging with global scale as mean.
@@ -508,7 +507,6 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
   float optScale;
   if(doEstimateLocalScale==true || doEstimateGlobalScale==true) {
     optScale = findOptimalWaveletScale(synt_r, seis_r, nWells, nzp_, dataVarWell, errOptScale, errWell, scaleOptWell, errWellOptScale);
-    writelog = true;
     if(doEstimateGlobalScale==false)
       optScale = globalScale;
     else {
@@ -518,10 +516,9 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
     }
   }
   // local scale given means gain !=NULL
-  else if(doEstimateLocalNoise==true && gain!=NULL) {
+  else if(doEstimateLocalNoise==true && gainGrid!=NULL) {
     optScale = globalScale; // Global scale must be given if local scale is given
-    findLocalNoiseWithGainGiven(synt_r, seis_r, nWells, nzp_, dataVarWell, errOptScale, errWell, errWellOptScale, scaleOptWell, gain, wells, simbox);
-    writelog = true;
+    findLocalNoiseWithGainGiven(synt_r, seis_r, nWells, nzp_, dataVarWell, errOptScale, errWell, errWellOptScale, scaleOptWell, gainGrid, wells, simbox);
   }
   else {
     optScale = globalScale;
@@ -606,6 +603,7 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
     //
     // Pretabulate correlations
     //
+    Vario  * localWaveletVario     = modelSettings->getLocalWaveletVario();
     const CovGrid2D cov(localWaveletVario, 
                         simbox->getnx(),
                         simbox->getny(),
@@ -619,10 +617,10 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
     }
 
     if(doEstimateLocalShift)
-      estimateLocalShift(cov, shift, shiftWell, nActiveData, simbox,wells, nWells);
+      estimateLocalShift(cov, shiftGrid, shiftWell, nActiveData, simbox,wells, nWells);
     
     if(doEstimateLocalScale)
-      estimateLocalGain(cov, gain, scaleOptWell, 1.0, nActiveData, simbox,wells, nWells);
+      estimateLocalGain(cov, gainGrid, scaleOptWell, 1.0, nActiveData, simbox,wells, nWells);
 
     if(doEstimateLocalNoise) {
       float errStdLN;
@@ -630,7 +628,7 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
         errStdLN = errStd;
       else //SNRatio given in model file
         errStdLN = sqrt(dataVar/modelSettings->getSNRatio(number));
-      if(gain==NULL && doEstimateLocalScale==false && doEstimateGlobalScale==false) { // No local wavelet scale 
+      if(gainGrid == NULL && doEstimateLocalScale==false && doEstimateGlobalScale==false) { // No local wavelet scale 
         for(int w=0; w<nWells; w++) 
           errVarWell[w] = sqrt(errVarWell[w]);
         estimateLocalNoise(cov, noiseScaled, errStdLN, errVarWell, nActiveData, simbox,wells, nWells); 
@@ -656,8 +654,7 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
     errText += "Invalid signal-to-noise ratio obtained for the angle-gather of "+NRLib::ToString(static_cast<float>(180.0/M_PI)*seisCube->getTheta())+" degrees.\n";
     error += 1;
   }
-
-   
+  
   return empSNRatio;
 }
 

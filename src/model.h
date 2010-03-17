@@ -166,8 +166,6 @@ private:
   int              process1DWavelet(ModelSettings                * modelSettings,
                                     InputFiles                   * inputFiles,
                                     Simbox                       * timeSimbox,
-                                    Grid2D                      *& gainGrid,
-                                    Grid2D                      *& shiftGrid,
                                     FFTGrid                     ** seisCube,
                                     WellData                    ** wells,
                                     const std::vector<Surface *> & waveletEstimInterval,
@@ -311,13 +309,13 @@ private:
                                                double       & yMin,
                                                double       & xMax,
                                                double       & yMax); 
-  void             writeLocalGridsToFile(const std::string   & fileName,
-                                         const std::string   & type,
-                                         const float           scaleFactor,
-                                         const ModelSettings * modelSettings,
-                                         const unsigned int    i,
-                                         Simbox              * timeSimbox,
-                                         Grid2D             *& grid);
+  void             readAndWriteLocalGridsToFile(const std::string   & fileName,
+                                                const std::string   & type,
+                                                const float           scaleFactor,
+                                                const ModelSettings * modelSettings,
+                                                const unsigned int    i,
+                                                Simbox              * timeSimbox,
+                                                Grid2D             *& grid);
   void             resampleSurfaceToGrid2D(const Simbox  * simbox, 
                                            const Surface * surface, 
                                            Grid2D        * outgrid);
