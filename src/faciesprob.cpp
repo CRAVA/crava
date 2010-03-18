@@ -88,10 +88,7 @@ FaciesProb::makeFaciesHistAndSetPriorProb(const std::vector<float> & alpha, //
       for(k=0;k<ny;k++)
       {
         for(j=0;j<rnxp;j++)
-          if(j<nx)
-            hist[i]->setNextReal(0.0f);
-          else
-            hist[i]->setNextReal(RMISSING);
+          hist[i]->setNextReal(0.0f);
       }
     }
     hist[i]->endAccess();
@@ -125,10 +122,7 @@ FaciesProb::makeFaciesHistAndSetPriorProb(const std::vector<float> & alpha, //
       {
         for(j=0;j<rnxp;j++) {
           double value = static_cast<double>(hist[i]->getNextReal())*nf;
-          if(j<nx)
-            hist[i]->setNextReal(static_cast<float>(value));
-          else
-            hist[i]->setNextReal(RMISSING);
+          hist[i]->setNextReal(static_cast<float>(value));
         }
       }
     }
@@ -286,6 +280,14 @@ FaciesProb::makeFaciesDens(int nfac,
   if(sigmae[2][2]<kstdr*kstdr)
     sigmae[2][2] = kstdr*kstdr;
 
+  //Establish limits before we invert sigma.
+  float alphaMin = *min_element(alphaFilteredNew.begin(), alphaFilteredNew.end()) - 5.0f*sqrt(sigmae[0][0]);
+  float alphaMax = *max_element(alphaFilteredNew.begin(), alphaFilteredNew.end()) + 5.0f*sqrt(sigmae[0][0]);
+  float betaMin  = *min_element(betaFilteredNew.begin(), betaFilteredNew.end()) - 5.0f*sqrt(sigmae[1][1]);
+  float betaMax  = *max_element(betaFilteredNew.begin(), betaFilteredNew.end()) + 5.0f*sqrt(sigmae[1][1]);
+  float rhoMin   = *min_element(rhoFilteredNew.begin(), rhoFilteredNew.end()) - 5.0f*sqrt(sigmae[2][2]);
+  float rhoMax   = *max_element(rhoFilteredNew.begin(), rhoFilteredNew.end()) + 5.0f*sqrt(sigmae[2][2]);
+
   // invert sigmae
   double **sigmaeinv = new double *[3];
   for(i=0;i<3;i++)
@@ -303,13 +305,6 @@ FaciesProb::makeFaciesDens(int nfac,
   for(int i=0;i<3;i++)
     delete [] sigmae[i];
   delete [] sigmae;
-
-  float alphaMin = *min_element(alphaFilteredNew.begin(), alphaFilteredNew.end()) - 5.0f*kstda;
-  float alphaMax = *max_element(alphaFilteredNew.begin(), alphaFilteredNew.end()) + 5.0f*kstda;
-  float betaMin  = *min_element(betaFilteredNew.begin(), betaFilteredNew.end()) - 5.0f*kstdb;
-  float betaMax  = *max_element(betaFilteredNew.begin(), betaFilteredNew.end()) + 5.0f*kstdb;
-  float rhoMin   = *min_element(rhoFilteredNew.begin(), rhoFilteredNew.end()) - 5.0f*kstdr;
-  float rhoMax   = *max_element(rhoFilteredNew.begin(), rhoFilteredNew.end()) + 5.0f*kstdr;
 
   float dAlpha = (alphaMax-alphaMin)/nbinsa;
   float dBeta  = (betaMax-betaMin)/nbinsb;
@@ -383,6 +378,12 @@ FaciesProb::makeFaciesDens(int nfac,
 
   for(i=0;i<nFacies_;i++)
   {
+    if(ModelSettings::getDebugLevel() >= 1)
+    {
+      std::string baseName = "Hist_" + NRLib::ToString(i) + IO::SuffixAsciiFiles();
+      std::string fileName = IO::makeFullFileName(IO::PathToDebug(), baseName);
+      density[i]->writeAsciiFile(fileName);
+    }
     density[i]->fftInPlace();
     density[i]->multiply(smoother);
     density[i]->invFFTInPlace();
