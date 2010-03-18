@@ -578,11 +578,11 @@ float FaciesProb::findDensity(float alpha, float beta, float rho,
     return 0.0;
 }
 
-void FaciesProb::calculateConditionalFaciesProb(WellData                    ** wells, 
-                                                int                            nWells, 
-                                                const std::vector<Surface *> & faciesEstimInterval,
-                                                const ModelSettings          * modelSettings,
-                                                const double                   dz)
+void FaciesProb::calculateConditionalFaciesProb(WellData                      ** wells, 
+                                                int                              nWells, 
+                                                const std::vector<Surface *>   & faciesEstimInterval,
+                                                const std::vector<std::string> & faciesNames,
+                                                const double                     dz)
 {
   //
   // Get the needed blocked logs
@@ -600,13 +600,13 @@ void FaciesProb::calculateConditionalFaciesProb(WellData                    ** w
       count++;
     }
   }
-  int nonDeviatedWells = count;
+  int nActiveWells = count;
 
   //
   // Put all blocked facies logs in one vector
   //
-  int ** BWfacies = new int * [nonDeviatedWells]; 
-  for (int i = 0 ; i < nonDeviatedWells ; i++)
+  int ** BWfacies = new int * [nActiveWells]; 
+  for (int i = 0 ; i < nActiveWells ; i++)
   {
     const int   nBlocks    = bw[i]->getNumberOfBlocks();
     const int * BWfacies_i = bw[i]->getFacies();
@@ -642,8 +642,8 @@ void FaciesProb::calculateConditionalFaciesProb(WellData                    ** w
   for(int f = 0 ; f < nFacies_ ; f++)
   {
     faciesProb_[f]->setAccessMode(FFTGrid::RANDOMACCESS);
-    BWfaciesProb[f] = new float * [nonDeviatedWells];
-    for (int i = 0 ; i < nonDeviatedWells ; i++)
+    BWfaciesProb[f] = new float * [nActiveWells];
+    for (int i = 0 ; i < nActiveWells ; i++)
     {
       const int   nBlocks = bw[i]->getNumberOfBlocks();
       const int * ipos    = bw[i]->getIpos();
@@ -670,9 +670,9 @@ void FaciesProb::calculateConditionalFaciesProb(WellData                    ** w
     numProb[f1] = new int * [nFacies_];
     for(int f2 = 0 ; f2 < nFacies_ ; f2++)
     {
-      sumProb[f1][f2] = new float[nonDeviatedWells];
-      numProb[f1][f2] = new int[nonDeviatedWells];
-      for (int i = 0 ; i < nonDeviatedWells ; i++)
+      sumProb[f1][f2] = new float[nActiveWells];
+      numProb[f1][f2] = new int[nActiveWells];
+      for (int i = 0 ; i < nActiveWells ; i++)
       {
         sumProb[f1][f2][i] = 0.0f;
         numProb[f1][f2][i] = 0;
@@ -687,12 +687,12 @@ void FaciesProb::calculateConditionalFaciesProb(WellData                    ** w
       }
     }
   }
-  for (int i = 0 ; i < nonDeviatedWells ; i++)
+  for (int i = 0 ; i < nActiveWells ; i++)
     delete [] BWfacies[i];
   delete [] BWfacies;
    
   for(int f = 0 ; f < nFacies_ ; f++) {
-    for (int i = 0 ; i < nonDeviatedWells ; i++)
+    for (int i = 0 ; i < nActiveWells ; i++)
       delete [] BWfaciesProb[f][i];
     delete [] BWfaciesProb[f];
   }
@@ -708,7 +708,7 @@ void FaciesProb::calculateConditionalFaciesProb(WellData                    ** w
   //
   // Estimate P( facies2 | facies1 ) for each well
   //
-  for (int i = 0 ; i < nonDeviatedWells ; i++)
+  for (int i = 0 ; i < nActiveWells ; i++)
   {
     for(int f1 = 0 ; f1 < nFacies_ ; f1++)
     {
@@ -722,17 +722,18 @@ void FaciesProb::calculateConditionalFaciesProb(WellData                    ** w
         totProb[f1] += condFaciesProb[f1][f2];
       }
     }
-    LogKit::LogFormatted(LogKit::LOW,"\nWell: %s\n",bw[i]->getWellname().c_str());
+
+    LogKit::LogFormatted(LogKit::LOW,"\nWell: "+bw[i]->getWellname()+"\n");
     LogKit::LogFormatted(LogKit::LOW,"\nFacies      |");
     for(int f=0 ; f < nFacies_ ; f++)
-      LogKit::LogFormatted(LogKit::LOW," %11s",modelSettings->getFaciesName(f).c_str());
+      LogKit::LogFormatted(LogKit::LOW," %11s",faciesNames[f].c_str());
     LogKit::LogFormatted(LogKit::LOW,"\n------------+");
     for(int f=0 ; f < nFacies_ ; f++)
       LogKit::LogFormatted(LogKit::LOW,"------------",f);
     LogKit::LogFormatted(LogKit::LOW,"\n");
     for(int f1=0 ; f1 < nFacies_ ; f1++)
     {
-      LogKit::LogFormatted(LogKit::LOW,"%-11s |",modelSettings->getFaciesName(f1).c_str());
+      LogKit::LogFormatted(LogKit::LOW,"%-11s |",faciesNames[f1].c_str());
       for(int f2=0 ; f2 < nFacies_ ; f2++)
       {
         LogKit::LogFormatted(LogKit::LOW," %11.3f",condFaciesProb[f2][f1]);
@@ -745,6 +746,9 @@ void FaciesProb::calculateConditionalFaciesProb(WellData                    ** w
       LogKit::LogFormatted(LogKit::LOW," %11.3f",totProb[f]);
     }
     LogKit::LogFormatted(LogKit::LOW,"\n");
+
+    bool low_probabilities;
+    checkConditionalProbabilities(condFaciesProb, faciesNames, nFacies_, bw[i]->getWellname(), false, low_probabilities);
   }
 
   //
@@ -760,7 +764,7 @@ void FaciesProb::calculateConditionalFaciesProb(WellData                    ** w
     {
       float sumFaciesProb = 0.0f;
       int   numFaciesProb =   0;
-      for (int i = 0 ; i < nonDeviatedWells ; i++)
+      for (int i = 0 ; i < nActiveWells ; i++)
       {
         if (numProb[f1][f2][i] > 0)
         {
@@ -790,14 +794,14 @@ void FaciesProb::calculateConditionalFaciesProb(WellData                    ** w
   LogKit::LogFormatted(LogKit::LOW,"\nFor all wells:\n");
   LogKit::LogFormatted(LogKit::LOW,"\nFacies      |");
   for(int f=0 ; f < nFacies_ ; f++)
-    LogKit::LogFormatted(LogKit::LOW," %11s",modelSettings->getFaciesName(f).c_str());
+    LogKit::LogFormatted(LogKit::LOW," %11s",faciesNames[f].c_str());
   LogKit::LogFormatted(LogKit::LOW,"\n------------+");
   for(int f=0 ; f < nFacies_ ; f++)
     LogKit::LogFormatted(LogKit::LOW,"------------",f);
   LogKit::LogFormatted(LogKit::LOW,"\n");
   for(int f1=0 ; f1 < nFacies_ ; f1++)
   {
-    LogKit::LogFormatted(LogKit::LOW,"%-11s |",modelSettings->getFaciesName(f1).c_str());
+    LogKit::LogFormatted(LogKit::LOW,"%-11s |",faciesNames[f1].c_str());
     for(int f2=0 ; f2 < nFacies_ ; f2++)
       LogKit::LogFormatted(LogKit::LOW," %11.3f",condFaciesProb[f2][f1]);
     LogKit::LogFormatted(LogKit::LOW,"\n");
@@ -809,52 +813,12 @@ void FaciesProb::calculateConditionalFaciesProb(WellData                    ** w
   }
   LogKit::LogFormatted(LogKit::LOW,"\n");
 
+  bool low_probabilities;
+  checkConditionalProbabilities(condFaciesProb, faciesNames, nFacies_, "NOT SET", false, low_probabilities); 
 
-  bool tooSmallDiff = false;
-  bool wrongMaximum = false;
-  for (int f1=0 ; f1 < nFacies_ ; f1++) { 
-    const std::string & faciesName = modelSettings->getFaciesName(f1);
-    int   indMin  = -IMISSING;
-    int   indMax  = -IMISSING;
-    float minProb = 1.0;
-    float maxProb = 0.0;
-    for (int f2=0 ; f2 < nFacies_ ; f2++) { // Facies in well-log
-      float prob = condFaciesProb[f2][f1];
-      if (prob > maxProb) {
-        maxProb = prob;
-        indMax  = f2;
-      }
-      if (prob < minProb) 
-        minProb = prob;
-        indMin  = f2;
-    }
-    float fraction = maxProb/minProb;
-    if (fraction < 1.05f) {
-      tooSmallDiff = true;
-      LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: For facies \'"+faciesName+"\' the difference between smallest and largest probability\n");
-      LogKit::LogFormatted(LogKit::WARNING,"         is only %.2f percent.\n",(fraction - 1.f)*100.f);
-    }
-    if (indMax != f1) {
-      wrongMaximum = true;
-      LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: The probability of finding facies \'"+faciesName+"\' is largest");
-      LogKit::LogFormatted(LogKit::WARNING," when the well log\n         shows \'%s\' and not when it shows \'%s\'.\n",
-                                           modelSettings->getFaciesName(f1).c_str(), faciesName.c_str());
-    }
-  }
-
-  if (tooSmallDiff) {
+  if (low_probabilities) {
     std::string text;
-    text += "For one or more facies the conditional facies probabilities do not distinguish between\n";
-    text += "   facies (probabilities are too similar). This indicates that you are using \'absolute\'\n";
-    text += "   elastic logs for the probability estimation and that the trends are too large. Try\n";
-    text += "   specifying <facies-probabilities> relative </facies-probabilities>.\n";
-    TaskList::addTask(text);
-  }
-  if (wrongMaximum) {
-    std::string text;
-    text += "For one or more facies the conditional facies probabilities are incorrect. The probability\n";
-    text += "   of finding, say \'sand\', is not largest where \'sand\' is observed in the well log. You\n";
-    text += "   possibly have alignment problems between elastic parameters and facies in the logs.\n";
+    text += "For one or several facies, the total probability of finding that facies is less\n   than 0.95. Check each well carefully.\n";
     TaskList::addTask(text);
   }
 
@@ -865,6 +829,100 @@ void FaciesProb::calculateConditionalFaciesProb(WellData                    ** w
   delete [] condFaciesProb;
   // We cannot delete blocked logs here, only the array of blocked logs.
   delete [] bw;
+}
+
+void FaciesProb::checkConditionalProbabilities(float                         ** condFaciesProb,
+                                               const std::vector<std::string> & faciesNames,
+                                               const int                        nFacies,
+                                               const std::string              & identifier,
+                                               const bool                       accumulative,
+                                               bool                           & lowProbs)
+{
+  bool tooSmallDiff = false;
+  bool wrongMaximum = false;
+  
+  std::vector<float> totProb(nFacies); // Automatically initialized to zero
+  
+  for (int f1=0 ; f1 < nFacies ; f1++) { 
+    int   indMin  = -IMISSING;
+    int   indMax  = -IMISSING;
+    float minProb = 1.0;
+    float maxProb = 0.0;
+    for (int f2=0 ; f2 < nFacies ; f2++) { // Facies in well-log
+      float prob = condFaciesProb[f2][f1];
+      totProb[f2] += prob;
+      if (prob > maxProb) {
+          maxProb = prob;
+          indMax  = f2;
+      }
+      if (prob < minProb) {
+        minProb = prob;
+        indMin  = f2;
+      }
+    }
+
+    float fraction = maxProb/minProb;
+    
+    if (fraction < 1.05f) {
+      tooSmallDiff = true;
+      LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: For facies \'"+faciesNames[f1]+"\' the difference between smallest and largest probability\n");
+      LogKit::LogFormatted(LogKit::WARNING,"         is only %.2f percent.\n",(fraction - 1.f)*100.f);
+    }
+    if (indMax != f1) {
+      wrongMaximum = true;
+      LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: The probability of finding facies \'"+faciesNames[f1]+"\' is largest when the well log of\n");
+      LogKit::LogFormatted(LogKit::WARNING,"         well \'"+identifier+"\' shows \'"+faciesNames[indMax]+"\' and not when it shows \'"+faciesNames[f1]+"\'.\n");
+    }
+  }
+  
+  for (int f1=0 ; f1 < nFacies ; f1++) { // This loop cannot be joined with loop above
+    if (totProb[f1] < 0.95) {
+      lowProbs = true;
+      if (accumulative) {
+        std::string text;
+        text += "\nWARNING: The total probability for facies \'"+faciesNames[f1]+"\' is only "+NRLib::ToString(totProb[f1],3)+". This indicates";
+        text += "\n         a major problem with the facies probability estimation.";
+        LogKit::LogFormatted(LogKit::WARNING,text);
+      }
+      else {
+        std::string text;
+        text += "\nWARNING: The total probability for facies \'"+faciesNames[f1]+"\' in well "+identifier+" is only ";
+        text += NRLib::ToString(totProb[f1],3)+". This\n         indicates a major problem. Check the well.\n";
+        LogKit::LogFormatted(LogKit::WARNING,text);
+      }
+    }
+  }
+  
+  if (tooSmallDiff) {
+    std::string text;
+    if (accumulative) {
+      text += "For one or more facies the conditional facies probabilities do not distinguish between\n";
+      text += "   facies (probabilities are too similar). This indicates that you are using \'absolute\'\n";
+      text += "   elastic logs for the probability estimation and that the trends are too large. Use\n";
+      text += "   \'relative\' elastic logs instead.\n";
+    }
+    else {
+      text += "For one or more facies the conditional facies probabilities do not distinguish between\n";
+      text += "   facies (probabilities are too similar). Check well "+identifier+".\n";
+    }
+      TaskList::addTask(text);
+  }
+  if (wrongMaximum) {
+    std::string text;
+    if (accumulative) {
+      text += "For one or more facies the conditional facies probabilities are incorrect. The\n";
+      text += "   probability of finding, say \'sand\', is not largest where \'sand\' is observed\n";
+      text += "   in the well logs. It seemes that you have major alignment problems between\n";
+      text += "   elastic parameters and facies in the logs. Check the alignments.\n";
+    }
+    else {
+      text += "For well "+identifier+" the conditional facies probabilities are incorrect. The\n";
+      text += "   probability of finding a facies is not largest where that facies is observed\n";
+      text += "   in the well log. You possibly have alignment problems between elastic\n";
+      text += "   parameters and facies in the logs. Check the well.\n";
+    }
+    TaskList::addTask(text);
+  }
 }
 
 void FaciesProb::calculateFaciesProb(FFTGrid                      * alphagrid, 

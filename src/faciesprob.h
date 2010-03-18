@@ -42,13 +42,14 @@ public:
 
   FFTGrid              * getFaciesProb(int i){return faciesProb_[i];};
 
-  void                   calculateConditionalFaciesProb(WellData                    ** wells, 
-                                                        int                            nwells, 
-                                                        const std::vector<Surface *> & faciesEstimInterval,
-                                                        const ModelSettings          * modelSettings,
-                                                        const double                   dz);
-  void calculateFaciesProbGeomodel(const float *                  priorFacies,
-                                    FFTGrid                    ** priorFaciesCubes);
+  void                   calculateConditionalFaciesProb(WellData                      ** wells, 
+                                                        int                              nwells, 
+                                                        const std::vector<Surface *>   & faciesEstimInterval,
+                                                        const std::vector<std::string> & faciesNames,
+                                                        const double                     dz);
+
+  void                   calculateFaciesProbGeomodel(const float *                  priorFacies,
+                                                     FFTGrid                    ** priorFaciesCubes);
   
   void                   calculateChiSquareTest(WellData                    ** wells, 
                                                 int                            nWells, 
@@ -147,5 +148,11 @@ private:
 
   void                   normalizeCubes(FFTGrid **priorFaciesCubes);
 
+  void                   checkConditionalProbabilities(float                         ** condFaciesProb,
+                                                       const std::vector<std::string> & faciesNames,
+                                                       const int                        nFacies,
+                                                       const std::string              & identifier,
+                                                       const bool                       accumulative,
+                                                       bool                           & lowProbs);
 };
 #endif

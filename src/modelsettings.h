@@ -61,6 +61,7 @@ public:
   const std::vector<std::string> & getLogNames(void)                    const { return logNames_                ;}
   const std::vector<bool>        & getInverseVelocity(void)             const { return inverseVelocity_         ;}
   int                              getNumberOfFacies(void)              const { return faciesNames_.size()      ;}
+  const std::vector<std::string> & getFaciesNames(void)                 const { return faciesNames_             ;}
   const std::string              & getFaciesName(int i)                 const { return faciesNames_[i]          ;}
   int                              getFaciesLabel(int i)                const { return faciesLabels_[i]         ;}
   int                              getIndicatorBGTrend(int i)           const { return indBGTrend_[i]           ;}

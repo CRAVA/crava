@@ -1632,14 +1632,16 @@ Crava::printEnergyToScreen()
 void 
 Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
 {
-  if(model_->getModelSettings()->getEstimateFaciesProb())
+  ModelSettings * modelSettings = model_->getModelSettings();
+
+  if(modelSettings->getEstimateFaciesProb())
   {
     Utils::writeHeader("Facies probability volumes");
 
     double wall=0.0, cpu=0.0;
     TimeKit::getTime(wall,cpu);
     
-    int nfac = model_->getModelSettings()->getNumberOfFacies();
+    int nfac = modelSettings->getNumberOfFacies();
     
     LogKit::LogFormatted(LogKit::LOW,"\nPrior facies probabilities:\n");
     LogKit::LogFormatted(LogKit::LOW,"\n");
@@ -1647,7 +1649,7 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
     LogKit::LogFormatted(LogKit::LOW,"--------------------------\n");
     const float * priorFacies = model_->getPriorFacies();
     for(int i=0 ; i<nfac; i++) {
-      LogKit::LogFormatted(LogKit::LOW,"%-15s %10.4f\n",model_->getModelSettings()->getFaciesName(i).c_str(),priorFacies[i]);
+      LogKit::LogFormatted(LogKit::LOW,"%-15s %10.4f\n",modelSettings->getFaciesName(i).c_str(),priorFacies[i]);
     }
     
     if (simbox_->getdz() > 4.01f) { // Require this density for estimation of facies probabilities
@@ -1674,7 +1676,7 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
 
     std::string baseName = IO::PrefixFaciesProbability();
 
-    if(model_->getModelSettings()->getFaciesProbRelative())
+    if(modelSettings->getFaciesProbRelative())
     {
       meanAlpha2_->subtract(postAlpha_);
       meanAlpha2_->changeSign();
@@ -1686,7 +1688,7 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
                               meanBeta2_,
                               meanRho2_,
                               nfac,
-                              model_->getModelSettings()->getPundef(), 
+                              modelSettings->getPundef(), 
                               model_->getPriorFacies(), 
                               model_->getPriorFaciesCubes(),
                               filteredlogs->getSigmae(),
@@ -1696,7 +1698,7 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
                               model_->getFaciesEstimInterval(),
                               simbox_->getdz(),
                               true,
-                              model_->getModelSettings()->getNoVsFaciesProb(), 
+                              modelSettings->getNoVsFaciesProb(), 
                               this,
                               model_->getLocalNoiseScales());
       delete meanAlpha2_;
@@ -1709,7 +1711,7 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
                               postBeta_,
                               postRho_,
                               nfac,
-                              model_->getModelSettings()->getPundef(), 
+                              modelSettings->getPundef(), 
                               model_->getPriorFacies(), 
                               model_->getPriorFaciesCubes(),
                               filteredlogs->getSigmae(),
@@ -1719,7 +1721,7 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
                               model_->getFaciesEstimInterval(),
                               simbox_->getdz(),
                               false,
-                              model_->getModelSettings()->getNoVsFaciesProb(), 
+                              modelSettings->getNoVsFaciesProb(), 
                               this,
                               model_->getLocalNoiseScales());
       baseName += "Absolute_";
@@ -1727,16 +1729,16 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
     fprob_->calculateConditionalFaciesProb(wells_, 
                                            nWells_, 
                                            model_->getFaciesEstimInterval(),
-                                           model_->getModelSettings(),
+                                           modelSettings->getFaciesNames(),
                                            simbox_->getdz());
     LogKit::LogFormatted(LogKit::LOW,"\nProbability cubes done\n");
 
 
-    if (model_->getModelSettings()->getOutputGridsOther() & IO::FACIESPROB_WITH_UNDEF){
+    if (modelSettings->getOutputGridsOther() & IO::FACIESPROB_WITH_UNDEF){
       for(int i=0;i<nfac;i++)
       {
         FFTGrid * grid = fprob_->getFaciesProb(i);
-        std::string fileName = baseName +"With_Undef_"+ model_->getModelSettings()->getFaciesName(i);
+        std::string fileName = baseName +"With_Undef_"+ modelSettings->getFaciesName(i);
         ParameterOutput::writeToFile(simbox_,model_,grid,fileName,"");
       }
     }
@@ -1744,11 +1746,11 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
     fprob_->calculateFaciesProbGeomodel(model_->getPriorFacies(),
                                        model_->getPriorFaciesCubes());
     
-    if (model_->getModelSettings()->getOutputGridsOther() & IO::FACIESPROB){
+    if (modelSettings->getOutputGridsOther() & IO::FACIESPROB){
       for(int i=0;i<nfac;i++)
       {
         FFTGrid * grid = fprob_->getFaciesProb(i);
-        std::string fileName = baseName + model_->getModelSettings()->getFaciesName(i);
+        std::string fileName = baseName + modelSettings->getFaciesName(i);
         ParameterOutput::writeToFile(simbox_,model_,grid,fileName,"");
       }
     }
