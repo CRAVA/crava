@@ -709,6 +709,7 @@ void FaciesProb::calculateConditionalFaciesProb(WellData                      **
   //
   // Estimate P( facies2 | facies1 ) for each well
   //
+  bool low_probabilities = false;
   for (int i = 0 ; i < nActiveWells ; i++)
   {
     for(int f1 = 0 ; f1 < nFacies_ ; f1++)
@@ -748,8 +749,21 @@ void FaciesProb::calculateConditionalFaciesProb(WellData                      **
     }
     LogKit::LogFormatted(LogKit::LOW,"\n");
 
-    bool low_probabilities;
-    checkConditionalProbabilities(condFaciesProb, faciesNames, nFacies_, bw[i]->getWellname(), false, low_probabilities);
+    bool low_probabilities_this_well = false;
+    checkConditionalProbabilities(condFaciesProb, 
+                                  faciesNames, 
+                                  nFacies_, 
+                                  bw[i]->getWellname(), 
+                                  false, 
+                                  low_probabilities_this_well);
+    low_probabilities = low_probabilities || low_probabilities_this_well;
+  }
+
+  if (low_probabilities) {
+    std::string text;
+    text  = "Low facies probabilities have been detected for one or more wells. Check the conditional\n";
+    text += "   facies probabilities for all wells.\n";
+    TaskList::addTask(text);
   }
 
   //
@@ -814,12 +828,13 @@ void FaciesProb::calculateConditionalFaciesProb(WellData                      **
   }
   LogKit::LogFormatted(LogKit::LOW,"\n");
 
-  bool low_probabilities;
-  checkConditionalProbabilities(condFaciesProb, faciesNames, nFacies_, "NOT SET", false, low_probabilities); 
+  low_probabilities = false;
+  checkConditionalProbabilities(condFaciesProb, faciesNames, nFacies_, "NOT SET", false, low_probabilities);
 
   if (low_probabilities) {
     std::string text;
-    text += "For one or several facies, the total probability of finding that facies is less\n   than 0.95. Check each well carefully.\n";
+    text  = "For one or several facies, the total probability of finding that facies is less than\n";
+    text += "   0.95. This indicates a problem with the estimation. Check each well carefully.\n";
     TaskList::addTask(text);
   }
 
@@ -875,7 +890,7 @@ void FaciesProb::checkConditionalProbabilities(float                         ** 
       LogKit::LogFormatted(LogKit::WARNING,"         well \'"+identifier+"\' shows \'"+faciesNames[indMax]+"\' and not when it shows \'"+faciesNames[f1]+"\'.\n");
     }
   }
-  
+
   for (int f1=0 ; f1 < nFacies ; f1++) { // This loop cannot be joined with loop above
     if (totProb[f1] < 0.95) {
       lowProbs = true;
@@ -893,7 +908,7 @@ void FaciesProb::checkConditionalProbabilities(float                         ** 
       }
     }
   }
-  
+
   if (tooSmallDiff) {
     std::string text;
     if (accumulative) {

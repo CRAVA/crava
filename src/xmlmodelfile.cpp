@@ -437,7 +437,7 @@ XmlModelFile::parseWell(TiXmlNode * node, std::string & errTxt)
   }
 
   if(parseBool(root, "filter-elastic-logs", use, tmpErr)) {
-    if(use || useForFaciesProbability != ModelSettings::NO)
+    if(use)
       filterElasticLogs = ModelSettings::YES;
     else
       filterElasticLogs = ModelSettings::NO;
@@ -2687,6 +2687,39 @@ XmlModelFile::lineColumnText(TiXmlNode * node)
 
 
 void
+XmlModelFile::setDerivedParameters(std::string & errTxt) 
+{
+  int areaSpecification;  
+  if(modelSettings_->getAreaParameters() != NULL) {
+    areaSpecification = ModelSettings::AREA_FROM_UTM;
+    if (modelSettings_->getNoSeismicNeeded() && inputFiles_->getNumberOfSeismicFiles()>0)
+      errTxt += "Seismic data should not be given when estimating background or correlations. \nExceptions are for optimization of well locations or if the area is taken from the seismic data.\n";
+  }
+  else if(inputFiles_->getAreaSurfaceFile() != "") {
+    areaSpecification = ModelSettings::AREA_FROM_SURFACE;
+    if (modelSettings_->getNoSeismicNeeded() && inputFiles_->getNumberOfSeismicFiles()>0)
+      errTxt += "Seismic data should not be given when estimating background or correlations. \nExceptions are for optimization of well locations or if the area is taken from the seismic data.";
+  }
+  else {
+    areaSpecification = ModelSettings::AREA_FROM_GRID_DATA; // inversion:seismic data, forward modelling: Vp
+    if (modelSettings_->getNoSeismicNeeded() && inputFiles_->getNumberOfSeismicFiles()==0)
+      errTxt += "The area needs to be defined from seismic data, a surface or UTM-coordinates.\n";
+  }
+  modelSettings_->setAreaSpecification(areaSpecification);
+  
+  bool useFilter = modelSettings_->getUseFilterForFaciesProb(); 
+  for (int i=0 ; i < modelSettings_->getNumberOfWells() ; i++) {
+    int filterElasticLogs       = modelSettings_->getIndicatorFilter(i);
+    int useForFaciesProbability = modelSettings_->getIndicatorFacies(i);
+
+    if (filterElasticLogs == ModelSettings::NO && useFilter && useForFaciesProbability != ModelSettings::NO) {
+      modelSettings_->setIndicatorFilter(i, ModelSettings::YES);
+    }
+  }
+}
+
+
+void
 XmlModelFile::checkConsistency(std::string & errTxt) {
   if(modelSettings_->getForwardModeling() == true)
     checkForwardConsistency(errTxt);
@@ -2849,29 +2882,4 @@ XmlModelFile::checkIOConsistency(std::string & /*errTxt*/)
    LogKit::LogFormatted(LogKit::WARNING, "\nWarning: Local wavelets can not be written to file when <local-wavelet> is not requested for the angle gathers.");
    TaskList::addTask("Remove <local-wavelets> from <wavelet-output> in the model file if local wavelets are not used.");
   }
-}
-
-
-void
-XmlModelFile::setDerivedParameters(std::string & errTxt) 
-{
-  int areaSpecification;  
-  if(modelSettings_->getAreaParameters() != NULL) {
-    areaSpecification = ModelSettings::AREA_FROM_UTM;
-    if (modelSettings_->getNoSeismicNeeded() && inputFiles_->getNumberOfSeismicFiles()>0)
-      errTxt += "Seismic data should not be given when estimating background or correlations. \nExceptions are for optimization of well locations or if the area is taken from the seismic data.\n";
-  }
-  else if(inputFiles_->getAreaSurfaceFile() != "") {
-    areaSpecification = ModelSettings::AREA_FROM_SURFACE;
-    if (modelSettings_->getNoSeismicNeeded() && inputFiles_->getNumberOfSeismicFiles()>0)
-      errTxt += "Seismic data should not be given when estimating background or correlations. \nExceptions are for optimization of well locations or if the area is taken from the seismic data.";
-  }
-  else {
-    areaSpecification = ModelSettings::AREA_FROM_GRID_DATA; // inversion:seismic data, forward modelling: Vp
-    if (modelSettings_->getNoSeismicNeeded() && inputFiles_->getNumberOfSeismicFiles()==0)
-      errTxt += "The area needs to be defined from seismic data, a surface or UTM-coordinates.\n";
-  }
-  modelSettings_->setAreaSpecification(areaSpecification);
-  
-  // Add new derived parameters below...
 }

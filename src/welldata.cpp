@@ -1461,7 +1461,11 @@ WellData::lookForSyntheticVsLog(float & rank_correlation)
   {
     LogKit::LogFormatted(LogKit::LOW,"   Cannot calculate Vp-Vs rank correlation. One or both logs are empty.\n");
   }
-  if(realVsLog_ == ModelSettings::NO && useForFaciesProbabilities_ == ModelSettings::NOTSET)
+
+  bool useFilter  = modelSettings_->getUseFilterForFaciesProb(); 
+  bool useVpVsRho = modelSettings_->getNoVsFaciesProb() == false; 
+
+  if(useFilter && useVpVsRho && realVsLog_ == ModelSettings::NO && useForFaciesProbabilities_ == ModelSettings::NOTSET)
     useForFaciesProbabilities_ = ModelSettings::NO;
 
   delete [] sorted_alpha;

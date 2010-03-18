@@ -1510,7 +1510,7 @@ Model::estimateXYPaddingSizes(Simbox         * timeSimbox,
   LogKit::LogFormatted(logLevel,"\nPadding sizes"+text1+":\n");
   LogKit::LogFormatted(logLevel,"  xPad, xPadFac, nx, nxPad                 : %6.fm, %5.3f, %5d, %4d\n", 
                        true_xPad, true_xPadFac, nx, nxPad);
-  LogKit::LogFormatted(logLevel,"  yPad, yPadFac, ny, nyPad                 : %6.fm, %5.3f, %5d, %4d", 
+  LogKit::LogFormatted(logLevel,"  yPad, yPadFac, ny, nyPad                 : %6.fm, %5.3f, %5d, %4d\n", 
                        true_yPad, true_yPadFac, ny, nyPad);
   LogKit::LogFormatted(logLevel,"\nPadding sizes"+text2+":\n");
   LogKit::LogFormatted(logLevel,"  zPad, zPadFac, nz, nzPad                 : %5.fms, %5.3f, %5d, %4d\n", 
@@ -3588,8 +3588,9 @@ Model::printSettings(ModelSettings * modelSettings,
 
   if (modelSettings->getEstimateFaciesProb()) {
     LogKit::LogFormatted(LogKit::LOW,"\nSettings for facies probability estimation:\n");
-    LogKit::LogFormatted(LogKit::LOW,"  Use elastic parameters relative to trend : %10s\n",(modelSettings->getFaciesProbRelative() ? "yes" : "no"));
-    LogKit::LogFormatted(LogKit::LOW,"  Include Vs information in filter         : %10s\n",(modelSettings->getNoVsFaciesProb()     ? "no"  : "yes"));
+    LogKit::LogFormatted(LogKit::LOW,"  Use elastic parameters relative to trend : %10s\n",(modelSettings->getFaciesProbRelative()     ? "yes" : "no"));
+    LogKit::LogFormatted(LogKit::LOW,"  Include Vs information in estimation     : %10s\n",(modelSettings->getNoVsFaciesProb()         ? "no"  : "yes"));
+    LogKit::LogFormatted(LogKit::LOW,"  Use filtered well logs for estimation    : %10s\n",(modelSettings->getUseFilterForFaciesProb() ? "yes" : "no"));
   }
 
   LogKit::LogFormatted(LogKit::LOW,"\nInput/Output settings:\n");

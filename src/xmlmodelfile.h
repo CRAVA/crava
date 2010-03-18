@@ -91,12 +91,12 @@ private:
                     bool allowDuplicates = false);
   std::string lineColumnText(TiXmlNode * node);
 
+  void setDerivedParameters(std::string & errTxt);
   void checkConsistency(std::string & errTxt);
   void checkForwardConsistency(std::string & errTxt);
   void checkEstimationConsistency(std::string & errTxt);
   void checkInversionConsistency(std::string & errTxt);
   void checkIOConsistency(std::string & errTxt);
-  void setDerivedParameters(std::string & errTxt);
 
   void setMissing(int & value)         { value = IMISSING ;}
   void setMissing(float & value)       { value = RMISSING ;}

@@ -68,6 +68,7 @@ public:
   int                              getIndicatorWavelet(int i)           const { return indWavelet_[i]           ;}
   int                              getIndicatorFacies(int i)            const { return indFacies_[i]            ;}
   int                              getIndicatorRealVs(int i)            const { return indRealVs_[i]            ;}
+  int                              getIndicatorFilter(int i)            const { return indFilter_[i]            ;}
   const std::vector<int>         & getIndicatorFilter(void)             const { return indFilter_               ;}
   int                              getNumberOfWells(void)               const { return nWells_                  ;}
   int                              getNumberOfSimulations(void)         const { return nSimulations_            ;}
@@ -214,6 +215,7 @@ public:
   void addIndicatorFacies(int indicator)                  { indFacies_.push_back(indicator)                      ;}
   void addIndicatorRealVs(int indicator)                  { indRealVs_.push_back(indicator)                      ;}
   void addIndicatorFilter(int indicator)                  { indFilter_.push_back(indicator)                      ;}
+  void setIndicatorFilter(int i ,int indicator)           { indFilter_[i]             = indicator                ;} 
   void setLogName(int i, const std::string & logName)     { logNames_[i]              = NRLib::Uppercase(logName);}
   void setInverseVelocity(int i, bool inverse)            { inverseVelocity_[i]       = inverse                  ;}
   void addFaciesLabel(int faciesLabel)                    { faciesLabels_.push_back(faciesLabel)                 ;}
