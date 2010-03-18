@@ -1012,13 +1012,6 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
    \item \Default no
 \elist
 
-\subsubsection{\hbracket{absolute-facies-probabilities}}  \newkw{absolute-facies-probabilities}
- \slist
-   \item \Description Can only be used with \kw{facies-probabilities} under \kw{inversion-settings}. Using this command, the facies probabilities are generated based on absolute inverted parameters including trend (background model). When not specified, the trend is subtracted when the facies probabilities are generated.
-   \item \Argument 'yes' or 'no'
-   \item \Default 'no'
- \elist
-
  \section{\hbracket{survey}\necessary} \newkw{survey}
  \slist
    \item \Description All information about the seismic data is collected here.
@@ -1761,21 +1754,30 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
    \item \Default
  \elist
 
-\subsubsection{\hbracket{use-vs-for-facies-probabilities}}\newkw{use-vs-for-facies-probabilities}
+\subsubsection{\hbracket{use-vs}}\newkw{use-vs}
 \slist
-  \item \Description Decides whether \vs is used when computing facies probabilities.
+  \item \Description Decides whether \vs information is used when computing facies probabilities.
   \item \Argument'yes' or 'no'.
   \item \Default 'yes'.
 \elist
 
-\subsubsection{\hbracket{use-inversion-for-facies-probabilities}}\newkw{use-inversion-for-facies-probabilities}
+\subsubsection{\hbracket{use-prediction}}\newkw{use-prediction}
 \slist
   \item \Description Decides whether sampled inversion logs are used when computing facies probabilities. If not, filtered logs are used.
   \item \Argument'yes' or 'no'.
   \item \Default 'no'.
 \elist
 
-\subsubsection{\hbracket{facies-estimation-interval}}\newkw{facies-estimation-interval}
+\subsubsection{\hbracket{use-absolute-elastic-parameters}}  \newkw{use-absolute-elastic-parameters}
+ \slist
+   \item \Description Decides whether facies probabilities are
+     generated based on absolute elastic parameters or elastic
+     parameters minus trend (background model).
+   \item \Argument 'yes' or 'no'
+   \item \Default 'no'
+ \elist
+
+\subsubsection{\hbracket{estimation-interval}}\newkw{estimation-interval}
  \slist
    \item \Description Defines an interval for estimation of facies probability given elastic parameters.
    \item \Argument Elements defining estimation interval
@@ -1796,9 +1798,12 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
    \item \Default
  \elist
 
-\subsubsection{\hbracket{prior-facies-probabilities}}\newkw{prior-facies-probabilities}
+\subsubsection{\hbracket{prior-probabilities}}\newkw{prior-probabilities}
  \slist
-   \item \Description Prior facies probabilities are given for all facies. Priors can be given as constant numbers or storm cubes. If this command is not given, prior distribution is estimated from wells.
+   \item \Description Prior facies probabilities are given for all
+     facies. Priors can be given as constant numbers or storm
+     cubes. If this command is not given, prior distribution is
+     estimated from wells. 
    \item \Argument Elements controlling facies probabilities
    \item \Default
  \elist
@@ -1826,15 +1831,20 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 
 \subparagraph{\hbracket{probability-cube}}\newkw{probability-cube}
  \slist
-   \item \Description File name for file containing prior facies probability for facies with name given above. Either this command or \kw{probability} is given, same for all facies.
+   \item \Description File name for file containing prior facies
+     probability for facies with name given above. Either this command
+     or \kw{probability} is given, same for all facies. 
    \item \Argument File name
    \item \Default
  \elist
 
 
-\subsubsection{\hbracket{facies-probability-undefined-value}}\newkw{facies-probability-undefined-value}
+\subsubsection{\hbracket{uncertainty-level}}\newkw{uncertainty-level}
  \slist
-   \item \Description Value defining how large the undefined probability will be when facies probabilities are computed. This value is scaled and used as likelihood for undefined when facies probabilities are computed.
+   \item \Description Value defining how large the undefined
+     probability will be when facies probabilities are computed. This
+     value is scaled and used as likelihood for undefined when facies
+     probabilities are computed. 
    \item \Argument Value
    \item \Default 0.01
  \elist

@@ -1220,27 +1220,32 @@ XmlModelFile::parseFaciesProbabilities(TiXmlNode * node, std::string & errTxt)
     return(false);
 
   std::vector<std::string> legalCommands;
-  legalCommands.push_back("facies-estimation-interval");
-  legalCommands.push_back("prior-facies-probabilities");
-  legalCommands.push_back("facies-probability-undefined-value");
-  legalCommands.push_back("use-vs-for-facies-probabilities");
-  legalCommands.push_back("use-inversion-for-facies-probabilities");
+  legalCommands.push_back("estimation-interval");
+  legalCommands.push_back("prior-probabilities");
+  legalCommands.push_back("uncertainty-level");
+  legalCommands.push_back("use-vs");
+  legalCommands.push_back("use-prediction");
+  legalCommands.push_back("use-absolute-elastic-parameters");
 
   parseFaciesEstimationInterval(root, errTxt);
 
   parsePriorFaciesProbabilities(root, errTxt);
 
   float value;
-  if(parseValue(root, "facies-probability-undefined-value", value, errTxt) == true)
+  if(parseValue(root, "uncertainty-level", value, errTxt) == true)
     modelSettings_->setPundef(value);
 
   bool useVs = true;
-  if(parseBool(root, "use-vs-for-facies-probabilities", useVs, errTxt) == true && useVs == false)
+  if(parseBool(root, "use-vs", useVs, errTxt) == true && useVs == false)
     modelSettings_->setNoVsFaciesProb(true); //Note: What we store is inverse of what we ask for.
 
   bool useInversion = false;
-  if(parseBool(root, "use-inversion-for-facies-probabilities", useInversion, errTxt) == true && useInversion == true)
+  if(parseBool(root, "use-prediction", useInversion, errTxt) == true && useInversion == true)
     modelSettings_->setUseFilterForFaciesProb(false); //Note: What we store is inverse of what we ask for.
+
+  bool absolute;
+  if(parseBool(root, "use-absolute-elastic-parameters", absolute, errTxt) == true && absolute == true)
+    modelSettings_->setFaciesProbRelative(false);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -1250,7 +1255,7 @@ XmlModelFile::parseFaciesProbabilities(TiXmlNode * node, std::string & errTxt)
 bool
 XmlModelFile::parseFaciesEstimationInterval(TiXmlNode * node, std::string & errTxt)
 {
-  TiXmlNode * root = node->FirstChildElement("facies-estimation-interval");
+  TiXmlNode * root = node->FirstChildElement("estimation-interval");
   if(root == 0)
     return(false);
 
@@ -1277,7 +1282,7 @@ XmlModelFile::parseFaciesEstimationInterval(TiXmlNode * node, std::string & errT
 bool
 XmlModelFile::parsePriorFaciesProbabilities(TiXmlNode * node, std::string & errTxt)
 {
-  TiXmlNode * root = node->FirstChildElement("prior-facies-probabilities");
+  TiXmlNode * root = node->FirstChildElement("prior-probabilities");
   if(root == 0)
     return(false);
 
@@ -2328,7 +2333,6 @@ XmlModelFile::parseAdvancedSettings(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("kriging-data-limit");
   legalCommands.push_back("debug-level");
   legalCommands.push_back("smooth-kriged-parameters");
-  legalCommands.push_back("absolute-facies-probabilities");
 
   parseFFTGridPadding(root, errTxt);
 
@@ -2369,10 +2373,6 @@ XmlModelFile::parseAdvancedSettings(TiXmlNode * node, std::string & errTxt)
   if(parseBool(root, "smooth-kriged-parameters", smooth, errTxt) == true)
     modelSettings_->setDoSmoothKriging(smooth);
   
-  bool absolute;
-  if(parseBool(root, "absolute-facies-probabilities", absolute, errTxt) == true && absolute == true)
-    modelSettings_->setFaciesProbRelative(false);
-
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
