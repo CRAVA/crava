@@ -750,12 +750,7 @@ void FaciesProb::calculateConditionalFaciesProb(WellData                      **
     LogKit::LogFormatted(LogKit::LOW,"\n");
 
     bool low_probabilities_this_well = false;
-    checkConditionalProbabilities(condFaciesProb, 
-                                  faciesNames, 
-                                  nFacies_, 
-                                  bw[i]->getWellname(), 
-                                  false, 
-                                  low_probabilities_this_well);
+    checkConditionalProbabilities(condFaciesProb, faciesNames, nFacies_, bw[i]->getWellname(), false, low_probabilities_this_well);
     low_probabilities = low_probabilities || low_probabilities_this_well;
   }
 
@@ -829,7 +824,7 @@ void FaciesProb::calculateConditionalFaciesProb(WellData                      **
   LogKit::LogFormatted(LogKit::LOW,"\n");
 
   low_probabilities = false;
-  checkConditionalProbabilities(condFaciesProb, faciesNames, nFacies_, "NOT SET", false, low_probabilities);
+  checkConditionalProbabilities(condFaciesProb, faciesNames, nFacies_, "NOT SET", true, low_probabilities);
 
   if (low_probabilities) {
     std::string text;
@@ -867,11 +862,11 @@ void FaciesProb::checkConditionalProbabilities(float                         ** 
     for (int f2=0 ; f2 < nFacies ; f2++) { // Facies in well-log
       float prob = condFaciesProb[f2][f1];
       totProb[f2] += prob;
-      if (prob > maxProb) {
+      if (prob > maxProb + 0.001) {
           maxProb = prob;
           indMax  = f2;
       }
-      if (prob < minProb) {
+      if (prob < minProb - 0.001) {
         minProb = prob;
         indMin  = f2;
       }
@@ -886,8 +881,14 @@ void FaciesProb::checkConditionalProbabilities(float                         ** 
     }
     if (indMax != f1) {
       wrongMaximum = true;
-      LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: The probability of finding facies \'"+faciesNames[f1]+"\' is largest when the well log of\n");
-      LogKit::LogFormatted(LogKit::WARNING,"         well \'"+identifier+"\' shows \'"+faciesNames[indMax]+"\' and not when it shows \'"+faciesNames[f1]+"\'.\n");
+      if (accumulative) {
+        LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: The probability of finding facies \'"+faciesNames[f1]+"\' is largest when the logs\n");
+        LogKit::LogFormatted(LogKit::WARNING,"         show \'"+faciesNames[indMax]+"\' and not when it shows \'"+faciesNames[f1]+"\'.\n");
+      }
+      else { 
+        LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: The probability of finding facies \'"+faciesNames[f1]+"\' is largest when the well log of\n");
+        LogKit::LogFormatted(LogKit::WARNING,"         well \'"+identifier+"\' shows \'"+faciesNames[indMax]+"\' and not when it shows \'"+faciesNames[f1]+"\'.\n");
+      }
     }
   }
 
@@ -1187,9 +1188,12 @@ void FaciesProb::setNeededLogsSpatial(const WellData              ** wells,
                                       std::vector<int>             & faciesLog)
 {
   int nData = 0;
-  for(int w=0;w<nWells;w++)
+
+  for(int w=0;w<nWells;w++) {
     if(wells[w]->getUseForFaciesProbabilities())
       nData += wells[w]->getBlockedLogsOrigThick()->getNumberOfBlocks();
+  }  
+
   alphaFiltered.resize(nData, RMISSING);
   betaFiltered.resize(nData, RMISSING);
   rhoFiltered.resize(nData, RMISSING);
@@ -1202,41 +1206,38 @@ void FaciesProb::setNeededLogsSpatial(const WellData              ** wells,
     { 
       BlockedLogs * bw = wells[w]->getBlockedLogsOrigThick();
       int n = bw->getNumberOfBlocks();
+
       for(int i=0;i<n;i++)
       {
+        float a, b, r;
+        float aBg, bBg, rBg;
+        int f;
         if(noVs == false) {
           if(useFilter == true) {
-            alphaFiltered[index] = bw->getAlphaSeismicResolution()[i];
-            betaFiltered[index]  = bw->getBetaSeismicResolution()[i];
-            rhoFiltered[index]   = bw->getRhoSeismicResolution()[i];
+            a = bw->getAlphaSeismicResolution()[i];
+            b = bw->getBetaSeismicResolution()[i];
+            r = bw->getRhoSeismicResolution()[i];
           }
           else {
-            alphaFiltered[index] = bw->getAlphaPredicted()[i];
-            betaFiltered[index]  = bw->getBetaPredicted()[i];
-            rhoFiltered[index]   = bw->getRhoPredicted()[i];
+            a = bw->getAlphaPredicted()[i];
+            b = bw->getBetaPredicted()[i];
+            r = bw->getRhoPredicted()[i];
           }
         }
         else {
           //Beta log here is mainly dummy, but must be at correct level.
-          betaFiltered[index]  = bw->getBetaHighCutBackground()[i];
+          b = bw->getBetaHighCutBackground()[i];
           if(useFilter == true) {
-            alphaFiltered[index] = bw->getAlphaForFacies()[i];
-            rhoFiltered[index]   = bw->getRhoForFacies()[i];
+            a = bw->getAlphaForFacies()[i];
+            r = bw->getRhoForFacies()[i];
           }
           else {
-            alphaFiltered[index] = bw->getAlphaPredicted()[i];
-            rhoFiltered[index]   = bw->getRhoPredicted()[i];
+            a = bw->getAlphaPredicted()[i];
+            r = bw->getRhoPredicted()[i];
           }
         }
-        if(relative == true) {
-          alphaFiltered[index] -= bw->getAlphaHighCutBackground()[i];
-          betaFiltered[index]  -= bw->getBetaHighCutBackground()[i];
-          rhoFiltered[index]   -= bw->getRhoHighCutBackground()[i];
-        }
-        if(bw->getAlpha()[i]==RMISSING || bw->getBeta()[i]==RMISSING || bw->getRho()[i]==RMISSING)
-          faciesLog[index] = IMISSING;
-        else
-          faciesLog[index] = bw->getFacies()[i];
+
+        f = bw->getFacies()[i];
 
         if (faciesEstimInterval.size() > 0) {
           const double * xPos  = bw->getXpos();
@@ -1245,12 +1246,45 @@ void FaciesProb::setNeededLogsSpatial(const WellData              ** wells,
           const double   zTop  = faciesEstimInterval[0]->GetZ(xPos[i],yPos[i]);
           const double   zBase = faciesEstimInterval[1]->GetZ(xPos[i],yPos[i]);
           if ( (zPos[i]-0.5*dz) < zTop || (zPos[i]+0.5*dz) > zBase)
-            faciesLog[index] = IMISSING;
+            f = IMISSING;
         }
-        index++;
+
+        if (relative == true) 
+        {
+          aBg = bw->getAlphaHighCutBackground()[i];
+          bBg = bw->getBetaHighCutBackground()[i];
+          rBg = bw->getRhoHighCutBackground()[i];
+          
+          if (a != RMISSING &&  aBg != RMISSING &&
+              b != RMISSING &&  bBg != RMISSING &&
+              r != RMISSING &&  rBg != RMISSING &&
+              f != IMISSING) 
+          {
+            alphaFiltered[index] = a - aBg;
+            betaFiltered[index]  = b - bBg;
+            rhoFiltered[index]   = r - rBg;
+            faciesLog[index]     = f;
+            index++;
+          }
+        }
+        else 
+        {
+          if (a != RMISSING && b != RMISSING && r != RMISSING && f != IMISSING) 
+          {
+            alphaFiltered[index] = a;
+            betaFiltered[index]  = b;
+            rhoFiltered[index]   = r;
+            faciesLog[index]     = f;
+            index++;
+          }
+        }
       }
     }
   }
+  alphaFiltered.resize(index);
+  betaFiltered.resize(index);
+  rhoFiltered.resize(index);
+  faciesLog.resize(index);
 }
 
 void FaciesProb::normalizeCubes(FFTGrid **priorFaciesCubes)

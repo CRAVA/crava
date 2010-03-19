@@ -902,6 +902,7 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
   bool gotFilteredLog       = (alpha_seismic_resolution_ != NULL);
   bool gotVpRhoFacLog       = (alpha_for_facies_ != NULL);
   bool gotPredicted         = (alpha_predicted_ != NULL);
+
   int nLogs = 3*3;   // {Vp, Vs, Rho} x {raw, BgHz, seisHz} 
   if(gotFilteredLog)
     nLogs += 3;

@@ -2712,7 +2712,7 @@ XmlModelFile::setDerivedParameters(std::string & errTxt)
     int filterElasticLogs       = modelSettings_->getIndicatorFilter(i);
     int useForFaciesProbability = modelSettings_->getIndicatorFacies(i);
 
-    if (filterElasticLogs == ModelSettings::NO && useFilter && useForFaciesProbability != ModelSettings::NO) {
+    if (useFilter && useForFaciesProbability != ModelSettings::NO && filterElasticLogs == ModelSettings::NO) {
       modelSettings_->setIndicatorFilter(i, ModelSettings::YES);
     }
   }

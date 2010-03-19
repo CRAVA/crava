@@ -307,7 +307,7 @@ Model::Model(const std::string & fileName)
         if (!failedWells) {
           if(estimationMode || (modelSettings_->getWellOutputFlag() & IO::WELLS) > 0)
              writeWells(wells_, modelSettings_);
-          if(estimationMode || (modelSettings_->getWellOutputFlag() & IO::BLOCKED_WELLS) > 0)
+          if(estimationMode)
             writeBlockedWells(wells_, modelSettings_);
         }
       }
