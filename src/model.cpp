@@ -277,7 +277,7 @@ Model::Model(const std::string & fileName)
                               modelSettings_, inputFiles, errText, failedWavelet);
             }
           }
-          if(failedSeismic == false && failedWavelet == false && failedReflMat == false &&
+          if(failedSeismic == false && failedWavelet == false && failedReflMat == false && failedBackground == false &&
             (modelSettings_->getOptimizeWellLocation() || modelSettings_->getEstimateWaveletNoise() ))
           {
             generateSyntheticSeismic(wavelet_, wells_, reflectionMatrix_, timeSimbox_, modelSettings_);
@@ -2918,11 +2918,8 @@ Model::process1DWavelet(ModelSettings                * modelSettings,
   }
   if (error == 0) {
     wavelet->scale(modelSettings->getWaveletScale(i));
-    bool localEst = (modelSettings->getEstimateLocalScale(i) || modelSettings->getEstimateLocalShift(i) ||
-                     modelSettings->getEstimateLocalNoise(i) || modelSettings->getEstimateGlobalWaveletScale(i) ||
-                     modelSettings->getEstimateSNRatio(i));
-
-    if (localEst && modelSettings->getForwardModeling() == false) {
+  
+    if (modelSettings->getForwardModeling() == false) {
       float SNRatio = wavelet->calculateSNRatioAndLocalWavelet(timeSimbox, 
                                                                seisCube[i], 
                                                                wells, 

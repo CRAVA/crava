@@ -21,6 +21,7 @@
 #include "src/definitions.h"
 #include "src/wavelet1D.h"
 #include "src/welldata.h"
+#include "src/tasklist.h"
 #include "src/fftgrid.h"
 #include "src/simbox.h"
 #include "src/model.h"
@@ -642,7 +643,24 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
 
   float empSNRatio = dataVar/(errStd*errStd);
   if(doEstimateSNRatio==true)
-    LogKit::LogFormatted(LogKit::LOW,"\n  Signal to noise ratio used for this angle stack is: %6.2f\n", empSNRatio);
+    LogKit::LogFormatted(LogKit::LOW,"\n  The signal to noise ratio used for this angle stack is: %6.2f\n", empSNRatio);
+  else
+  {
+    float SNRatio = modelSettings->getSNRatio(number);
+    LogKit::LogFormatted(LogKit::LOW,"\n  The signal to noise ratio given in the model file and used for this angle stack is: %6.2f\n", SNRatio);
+    LogKit::LogFormatted(LogKit::LOW,"  For comparison, the signal to noise ratio calculated from the wells is: %6.2f\n", empSNRatio);
+    float minSN = static_cast<float>(1+(empSNRatio-1)/2.0);
+    float maxSN = static_cast<float>(1+(empSNRatio-1)*2.0);
+    if ((SNRatio<minSN || SNRatio>maxSN) && 
+        modelSettings->getEstimateWavelet(number))
+    {
+      LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: The deviation between the SN ratio from the model file and the calculated SN ratio is too large.\n");
+      if (SNRatio < minSN)
+        TaskList::addTask("To obtain relaible inversion results, increased the SN ratio for angle stack "+NRLib::ToString(number)+" to minimum "+NRLib::ToString(minSN,1));
+      else
+        TaskList::addTask("To obtain relaible inversion results, decrease the SN ratio for angle stack "+NRLib::ToString(number)+" to maximum "+NRLib::ToString(minSN,1));
+    }        
+  }
 
   if (empSNRatio < 1.1f) {
     LogKit::LogFormatted(LogKit::WARNING,"\nERROR: The empirical signal-to-noise ratio Var(data)/Var(noise) is %.2f. Ratios smaller",empSNRatio);
