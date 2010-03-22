@@ -3061,12 +3061,47 @@ Model::process3DWavelet(ModelSettings                           * modelSettings,
                      modelSettings->getEstimateSNRatio(i));
 
     if (localEst && modelSettings->getForwardModeling() == false) {
-      //Not possible to estimate signal-to-noise ratio for 3D wavelets
-      errText += "Estimation of signal-to-noise ratio is not possible for 3D wavelets.\n";
-      errText += "The s/n ratio must be specified in the model file\n";
-      error++;
+      Grid2D * shiftGrid(NULL);
+      Grid2D * gainGrid(NULL);
+      Grid2D * noiseGrid(NULL);
+      float SNRatio = wavelet->calculateSNRatioAndLocalWavelet(timeSimbox, 
+                                                               seisCube[i], 
+                                                               wells, 
+                                                               modelSettings,
+                                                               errText, 
+                                                               error, 
+                                                               i,
+                                                               shiftGrid,
+                                                               gainGrid,
+                                                               noiseGrid);
+      if(modelSettings->getEstimateSNRatio(i))
+        modelSettings->setSNRatio(i,SNRatio);
+
+    }
+    if (error == 0) {
+      if((modelSettings->getWaveletOutputFlag() & IO::GLOBAL_WAVELETS) > 0 || 
+         (modelSettings->getEstimationMode() && modelSettings->getEstimateWavelet(i))) {
+        std::string type;
+        if (modelSettings->getEstimateWavelet(i))
+          type = "Estimated_";
+        else if (modelSettings->getWaveletScale(i) == 1.00)
+          type = "";
+        else
+          type = "Scaled_";
+        wavelet->writeWaveletToFile(IO::PrefixWavelet()+type, 1.0); // dt_max = 1.0;
+      }
+        
+      float SNRatio = modelSettings->getSNRatio(i);
+      const float SNLow  = 1.0;
+      const float SNHigh = 10.0;
+      if ((SNRatio <=SNLow  || SNRatio > SNHigh) && modelSettings->getForwardModeling()==false) {
+        errText += "Illegal signal-to-noise ratio of "+NRLib::ToString(SNRatio)+" for cube "+NRLib::ToString(i+1)+".\n";
+        errText += "Ratio must be in interval "+NRLib::ToString(SNLow)+" < S/N ratio < "+NRLib::ToString(SNHigh)+"\n";
+        error++;
+      }
     }
   }
+
   return error;
 }
 

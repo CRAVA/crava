@@ -34,16 +34,16 @@ public:
                                                FFTGrid       * seisCube, 
                                                WellData     ** wells);
 
-  float         calculateSNRatioAndLocalWavelet(Simbox        * /*simbox*/, 
-                                                FFTGrid       * /*seisCube*/, 
-                                                WellData     ** /*wells*/, 
-                                                ModelSettings * /*modelSettings*/,
-                                                std::string   & /*errText*/, 
-                                                int           & /*error*/, 
-                                                int             /*number*/,
-                                                Grid2D       *& /*noiseScaled*/, 
-                                                Grid2D       *& /*shift*/, 
-                                                Grid2D       *& /*gain*/);
+  float         calculateSNRatioAndLocalWavelet(Simbox        * simbox, 
+                                                FFTGrid       * seisCube, 
+                                                WellData     ** wells, 
+                                                ModelSettings * modelSettings,
+                                                std::string   & errText, 
+                                                int           & error, 
+                                                int             number,
+                                                Grid2D      *& noiseScaled, 
+                                                Grid2D      *& shift, 
+                                                Grid2D      *& gain);
 
 private:
   float         findOptimalWaveletScale(fftw_real               ** synt_seis_r,

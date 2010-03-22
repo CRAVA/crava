@@ -104,7 +104,7 @@ public:
                                                 int             /*number*/,
                                                 Grid2D       *& /*noiseScaled*/, 
                                                 Grid2D       *& /*shift*/, 
-                                                Grid2D       *& /*gain*/) {return 0.0f;} 
+                                                Grid2D       *& /*gain*/) {return 1.0f;} 
 
 protected:
   float          getTheta()          const {return theta_;}
@@ -117,6 +117,7 @@ protected:
 
   float          findWaveletLength(float                        minRelativeAmp);
 
+  float          findNorm() const;
   
   fftw_real*     averageWavelets(const std::vector<std::vector<float> > & wavelet_r,
                                  int                                      nWells,

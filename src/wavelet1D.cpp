@@ -225,10 +225,7 @@ Wavelet1D::Wavelet1D(Simbox                       * simbox,
   if( ModelSettings::getDebugLevel() > 0 ) 
     writeWaveletToFile("estimated_wavelet_", 1.0f);
 
-  double norm2=0.0;
-  for(int i=0; i < nzp_; i++ )
-      norm2 += static_cast<double> (rAmp_[i]*rAmp_[i]);
-  norm_= static_cast<float>(sqrt(norm2));
+  norm_ = findNorm();
 
   //Writing well wavelets to file. Using writeWaveletToFile, so manipulating rAmp_
   fftw_real * trueAmp = rAmp_;
@@ -378,9 +375,9 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
                                            std::string   & errText, 
                                            int           & error, 
                                            int             number,
-                                           Grid2D       *& noiseScaled, 
-                                           Grid2D       *& shiftGrid, 
-                                           Grid2D       *& gainGrid)
+                                           Grid2D      *& noiseScaled, 
+                                           Grid2D      *& shiftGrid, 
+                                           Grid2D      *& gainGrid)
 {
   LogKit::LogFormatted(LogKit::MEDIUM,"\n  Estimating noise from seismic data and (nonfiltered) blocked wells");
   float errStd  = 0.0f;

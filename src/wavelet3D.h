@@ -43,6 +43,18 @@ public:
 
   WaveletFilter  getFilter() const {return filter_;}
   
+  // Methods that are virtual in Wavelet
+  float         calculateSNRatioAndLocalWavelet(Simbox        * /*simbox*/, 
+                                                FFTGrid       * /*seisCube*/, 
+                                                WellData     ** /*wells*/, 
+                                                ModelSettings * /*modelSettings*/,
+                                                std::string   & errText, 
+                                                int           & error, 
+                                                int             /*number*/,
+                                                Grid2D       *& /*noiseScaled*/, 
+                                                Grid2D       *& /*shift*/, 
+                                                Grid2D       *& /*gain*/);
+
 private:
   void          findLayersWithData(const std::vector<Surface *> & estimInterval,
                                    BlockedLogs                  * bl,
@@ -57,11 +69,39 @@ private:
   double         findPsi(float                                    r)           const;
 
   fftw_complex   findWLvalue(float                                omega)       const;
+  
+  float          calculateWellWeight(int                                      nWl,
+                                     int                                      nPoints,
+                                     const std::vector<std::vector<float> > & gMat,
+                                     const std::vector<float>               & wellWavelet,
+                                     const std::vector<float>               & dVec) const;
 
-/*  void           printVecToFile(const std::string               & fileName, 
-                                const std::vector<float>        & vec, 
-                                int                               n) const;
-*/
+  std::vector<fftw_real> adjustCpp(BlockedLogs              * bl,
+                                   const std::vector<float> & az,
+                                   const std::vector<float> & bz,
+                                   std::vector<float>       & Halpha,
+                                   int                        start,
+                                   int                        length) const;
+
+  void           calculateGradients(BlockedLogs                * bl,
+                                    const std::vector<int>     & iPos,
+                                    const std::vector<int>     & jPos,
+                                    const NRLib::Grid2D<float> & refTimeGradX,
+                                    const NRLib::Grid2D<float> & refTimeGradY,
+                                    const std::vector<double>  & tGradX,
+                                    const std::vector<double>  & tGradY,
+                                    float                        v0,
+                                    std::vector<float>         & az,
+                                    std::vector<float>         & bz,
+                                    std::vector<float>         & at0,
+                                    std::vector<float>         & bt0) const;
+
+  std::vector<fftw_real> calculateWellWavelet(const std::vector<std::vector<float> > & gMat,
+                                              const std::vector<float>               & dVec,
+                                              int                                      nWl,
+                                              int                                      nhalfWl,
+                                              int                                      nPoints) const;
+
   void           printMatToFile(const std::string                       & fileName, 
                                 const std::vector<std::vector<float> >  & mat, 
                                 int                                       n,

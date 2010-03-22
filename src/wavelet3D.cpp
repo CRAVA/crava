@@ -68,12 +68,10 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
   unsigned int nWells    = modelSettings->getNumberOfWells();
   float        v0        = modelSettings->getAverageVelocity();
 //  float        stretch   = modelSettings->getStretchFactor(angle_index);
-  float stretch          = std::cos(theta_);
-  bool         hasHalpha = filter_.hasHalpha();
-  
+   
   int nhalfWl         = static_cast<int> (0.5 * modelSettings->getWaveletTaperingL() / dz_);
   int nWl             = 2 * nhalfWl + 1;
-  std::vector<std::vector<fftw_real> > wellWavelets(nWells, std::vector<float>(rnzp_, 0.0));
+  std::vector<std::vector<fftw_real> > wellWavelets(nWells/*, std::vector<float>(rnzp_, 0.0)*/);
   std::vector<float>                   wellWeight(nWells, 0.0);  
   std::vector<float>                   dzWell(nWells, 0.0);
   for (unsigned int w=0; w<nWells; w++) {
@@ -83,28 +81,25 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
       BlockedLogs *bl    = wells[w]->getBlockedLogsOrigThick();  
       const std::vector<int> iPos = bl->getIposVector();
       const std::vector<int> jPos = bl->getJposVector();
-      dzWell[w]          = static_cast<float>(simBox->getRelThick(iPos[0],jPos[0])) * dz_;
-      
-      unsigned int nBlocks = bl->getNumberOfBlocks();
-      std::vector<float> zGradX(nBlocks);
-      std::vector<float> zGradY(nBlocks);
-      std::vector<float> t0GradX(nBlocks);
-      std::vector<float> t0GradY(nBlocks);
-      for (unsigned int b = 0; b<nBlocks; b++) {
-        t0GradX[b]    = refTimeGradX(iPos[b], jPos[b]);
-        zGradX[b]     = 0.5f * v0 * 0.001f * (static_cast<float> (tGradX[w][b]) - t0GradX[b]); //0.001f is due to ms/s conversion
-        t0GradY[b]    = refTimeGradY(iPos[b], jPos[b]);
-        zGradY[b]     = 0.5f * v0 * 0.001f * (static_cast<float> (tGradY[w][b]) - t0GradY[b]);
-      }
-
+       
       std::vector<float> az(nz_); 
-      bl->getVerticalTrend(&zGradX[0], &az[0]);
       std::vector<float> bz(nz_);
-      bl->getVerticalTrend(&zGradY[0], &bz[0]);
-      std::vector<float> at0(nz_); 
-      bl->getVerticalTrend(&t0GradX[0], &at0[0]);
+      std::vector<float> at0(nz_);
       std::vector<float> bt0(nz_);
-      bl->getVerticalTrend(&t0GradY[0], &bt0[0]);
+      unsigned int nBlocks = bl->getNumberOfBlocks();
+      calculateGradients(bl,
+                         iPos,
+                         jPos,
+                         refTimeGradX,
+                         refTimeGradY,
+                         tGradX[w],
+                         tGradY[w],
+                         v0,
+                         az,
+                         bz,
+                         at0,
+                         bt0);
+
 
       std::vector<bool> hasWellData(nz_);
       findLayersWithData(estimInterval, 
@@ -119,24 +114,16 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
                                    nz_, 
                                    start, 
                                    length);
-      if (length > nWl) {
-        std::vector<fftw_real> cpp(nzp_);
-        bl->fillInCpp(coeff_, start, length, &cpp[0], nzp_);
-        printVecToFile("cpp", &cpp[0], length);
 
-        std::vector<fftw_real> cppAdj(length, 0.0);
+      dzWell[w]          = static_cast<float>(simBox->getRelThick(iPos[0],jPos[0])) * dz_;
+      if (length > nWl) {
         std::vector<float> Halpha;
-        if (hasHalpha)
-          Halpha.resize(length,0.0);
-        for (int i=start; i < start+length-1; i++) {
-          double phi    = findPhi(az[i], bz[i]);
-          float r       = sqrt(az[i]*az[i] + bz[i]*bz[i] + 1);
-          double psi    = findPsi(r);
-          float alpha1  = filter_.getAlpha1(phi, psi);
-          cppAdj[i-start]     = static_cast<fftw_real> (cpp[i] * alpha1 * stretch / r);
-          if (hasHalpha)
-            Halpha[i-start]   = filter_.getHalpha(phi, psi);
-        }
+        std::vector<fftw_real> cppAdj = adjustCpp(bl,
+                                                  az,
+                                                  bz,
+                                                  Halpha,
+                                                  start,
+                                                  length);
 
         printVecToFile("cpp_dipadjust", &cppAdj[0], length);
 
@@ -177,7 +164,7 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
                   float at = at0[tau] + 2.0f*az[tau]/v0;
                   float bt = bt0[tau] + 2.0f*bz[tau]/v0;
                   float u = static_cast<float> (zPosTrace[t] - zPosWell[tau] - at*(xTr*dx) - bt*(yTr*dy));
-                  if (hasHalpha) {
+                  if (filter_.hasHalpha()) {
                     for (int i=0; i<nWl; i++) {
                       float v = u - static_cast<float>((i - nhalfWl)*dzWell[w]);
                       float h = Halpha[tau-start];
@@ -216,53 +203,18 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
         }
 
         printMatToFile("design_matrix", gMat, nPoints, nWl);
-
-        double **gTrg = new double *[nWl];
-        for (int i=0; i<nWl; i++) {
-          gTrg[i]     = new double[nWl];
-          for (int j=0; j<nWl; j++) {
-            gTrg[i][j] = 0.0;
-            for (int k=0; k<nPoints; k++)
-              gTrg[i][j] += gMat[k][i]*gMat[k][j];
-          }
-        }
-
         printVecToFile("seismic", &dVec[0], nPoints);
-
-        double *gTrd = new double[nWl];
-        for (int i=0; i<nWl; i++) {
-          gTrd[i] = 0.0;
-          for (int j=0; j<nPoints; j++)
-            gTrd[i] += gMat[j][i] * dVec[j];
-        }
-
-        lib_matrCholR(nWl, gTrg);
-        lib_matrAxeqbR(nWl, gTrg, gTrd);
-        for (int i=0; i<nWl; i++)
-          delete [] gTrg[i];
-        delete [] gTrg;
+        wellWavelets[w] = calculateWellWavelet(gMat,
+                                               dVec,
+                                               nWl,
+                                               nhalfWl,
+                                               nPoints);
  
-        wellWavelets[w][0] = static_cast<fftw_real> (gTrd[0]);
-        for (int i=0; i<nhalfWl; i++) {
-          wellWavelets[w][i]      = static_cast<fftw_real> (gTrd[i]);
-          wellWavelets[w][nzp_-i] = static_cast<fftw_real> (gTrd[nWl-i]);
-        }
-        for (int i=nhalfWl+1; i<nzp_-nhalfWl; i++)
-          wellWavelets[w][i] = 0.0f;
-        for (int i=nzp_; i<rnzp_; i++)
-          wellWavelets[w][i] = RMISSING;
-        delete [] gTrd;
-        printVecToFile("well_wavelet", &wellWavelets[0][0], rnzp_);
-
-        double s2 = 0.0;
-        for (int i=0; i<nPoints; i++) {
-          double prod = 0.0;
-          for (int j=0; j<nWl; j++)
-            prod += static_cast<double> (gMat[i][j]*wellWavelets[w][j]);
-          double residual = prod - dVec[i];
-          s2 += residual * residual;
-        }
-        wellWeight[w] = static_cast<float> (1/s2);
+        wellWeight[w] = calculateWellWeight(nWl,
+                                            nPoints,
+                                            gMat,
+                                            wellWavelets[w],
+                                            dVec);
       } //if (length > nWl)
       else {
         LogKit::LogFormatted(LogKit::MEDIUM,"     No enough data for 3D wavelet estimation in well %s\n", wells[w]->getWellname().c_str());
@@ -278,10 +230,7 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
   if( ModelSettings::getDebugLevel() > 0 )
     writeWaveletToFile("estimated_wavelet_", 1.0f);
 
-  double norm2=0.0;
-  for(int i=0; i < nzp_; i++ )
-      norm2 += static_cast<double> (rAmp_[i]*rAmp_[i]);
-  norm_= static_cast<float>(sqrt(norm2));
+  norm_ = findNorm();
 
   fftw_real * trueAmp = rAmp_;
   rAmp_               = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));
@@ -326,6 +275,25 @@ Wavelet3D::Wavelet3D(Wavelet * wavelet)
 
 Wavelet3D::~Wavelet3D()
 {
+}
+
+float         
+Wavelet3D::calculateSNRatioAndLocalWavelet(Simbox        * /*simbox*/, 
+                                           FFTGrid       * /*seisCube*/, 
+                                           WellData     ** /*wells*/, 
+                                           ModelSettings * /*modelSettings*/,
+                                           std::string   & errText, 
+                                           int           & error, 
+                                           int             /*number*/,
+                                           Grid2D       *& /*noiseScaled*/, 
+                                           Grid2D       *& /*shift*/, 
+                                           Grid2D       *& /*gain*/)
+{
+ //Not possible to estimate signal-to-noise ratio for 3D wavelets
+  errText += "Estimation of signal-to-noise ratio is not possible for 3D wavelets.\n";
+  errText += "The s/n ratio must be specified in the model file\n";
+  error++;
+  return (1.0f);
 }
 
 void
@@ -422,6 +390,134 @@ Wavelet3D::findWLvalue(float omega) const
   cValue.im = (1-fac) * c_low.im + fac * c_high.im;
 
   return cValue;
+}
+
+std::vector<fftw_real>
+Wavelet3D::adjustCpp(BlockedLogs              * bl,
+                     const std::vector<float> & az,
+                     const std::vector<float> & bz,
+                     std::vector<float>       & Halpha,
+                     int start,
+                     int length) const
+{
+  std::vector<fftw_real> cpp(nzp_);
+  bl->fillInCpp(coeff_, start, length, &cpp[0], nzp_);
+  printVecToFile("cpp", &cpp[0], length);
+
+  std::vector<fftw_real> cppAdj(length, 0.0);
+
+  if (filter_.hasHalpha())
+    Halpha.resize(length,0.0);
+  for (int i=start; i < start+length-1; i++) {
+    double phi    = findPhi(az[i], bz[i]);
+    float r       = sqrt(az[i]*az[i] + bz[i]*bz[i] + 1);
+    double psi    = findPsi(r);
+    float alpha1  = filter_.getAlpha1(phi, psi);
+    float stretch = std::cos(theta_);
+    cppAdj[i-start]     = static_cast<fftw_real> (cpp[i] * alpha1 * stretch / r);
+    if (filter_.hasHalpha())
+      Halpha[i-start]   = filter_.getHalpha(phi, psi);
+  }
+  return cppAdj;
+}
+
+
+void
+Wavelet3D::calculateGradients(BlockedLogs                * bl,
+                              const std::vector<int>     & iPos,
+                              const std::vector<int>     & jPos,
+                              const NRLib::Grid2D<float> & refTimeGradX,
+                              const NRLib::Grid2D<float> & refTimeGradY,
+                              const std::vector<double>  & tGradX,
+                              const std::vector<double>  & tGradY,
+                              float                        v0,
+                              std::vector<float>         & az,
+                              std::vector<float>         & bz,
+                              std::vector<float>         & at0,
+                              std::vector<float>         & bt0) const
+{
+  unsigned int nBlocks = bl->getNumberOfBlocks();
+  std::vector<float> zGradX(nBlocks);
+  std::vector<float> zGradY(nBlocks);
+  std::vector<float> t0GradX(nBlocks);
+  std::vector<float> t0GradY(nBlocks);
+  for (unsigned int b = 0; b<nBlocks; b++) {
+    t0GradX[b]    = refTimeGradX(iPos[b], jPos[b]);
+    zGradX[b]     = 0.5f * v0 * 0.001f * (static_cast<float> (tGradX[b]) - t0GradX[b]); //0.001f is due to ms/s conversion
+    t0GradY[b]    = refTimeGradY(iPos[b], jPos[b]);
+    zGradY[b]     = 0.5f * v0 * 0.001f * (static_cast<float> (tGradY[b]) - t0GradY[b]);
+  }
+
+  bl->getVerticalTrend(&zGradX[0], &az[0]);
+  bl->getVerticalTrend(&zGradY[0], &bz[0]);
+  bl->getVerticalTrend(&t0GradX[0], &at0[0]);
+  bl->getVerticalTrend(&t0GradY[0], &bt0[0]);
+}
+
+
+std::vector<fftw_real>
+Wavelet3D::calculateWellWavelet(const std::vector<std::vector<float> > & gMat,
+                                const std::vector<float>               & dVec,
+                                int                                      nWl,
+                                int                                      nhalfWl,
+                                int                                      nPoints) const
+{
+  std::vector<fftw_real> wellWavelet(rnzp_, 0.0);
+
+  double **gTrg = new double *[nWl];
+  for (int i=0; i<nWl; i++) {
+    gTrg[i]     = new double[nWl];
+    for (int j=0; j<nWl; j++) {
+      gTrg[i][j] = 0.0;
+      for (int k=0; k<nPoints; k++)
+        gTrg[i][j] += gMat[k][i]*gMat[k][j];
+    }
+  }
+
+  double *gTrd = new double[nWl];
+  for (int i=0; i<nWl; i++) {
+    gTrd[i] = 0.0;
+    for (int j=0; j<nPoints; j++)
+      gTrd[i] += gMat[j][i] * dVec[j];
+  }
+
+  lib_matrCholR(nWl, gTrg);
+  lib_matrAxeqbR(nWl, gTrg, gTrd);
+  for (int i=0; i<nWl; i++)
+    delete [] gTrg[i];
+  delete [] gTrg;
+
+  wellWavelet[0] = static_cast<fftw_real> (gTrd[0]);
+  for (int i=0; i<nhalfWl; i++) {
+    wellWavelet[i]      = static_cast<fftw_real> (gTrd[i]);
+    wellWavelet[nzp_-i] = static_cast<fftw_real> (gTrd[nWl-i]);
+  }
+  for (int i=nhalfWl+1; i<nzp_-nhalfWl; i++)
+    wellWavelet[i] = 0.0f;
+  for (int i=nzp_; i<rnzp_; i++)
+    wellWavelet[i] = RMISSING;
+  delete [] gTrd;
+
+  return wellWavelet;
+}
+
+float
+Wavelet3D::calculateWellWeight(int nWl,
+                               int nPoints,
+                               const std::vector<std::vector<float> > & gMat,
+                               const std::vector<float>               & wellWavelet,
+                               const std::vector<float>               & dVec) const
+{
+  double s2 = 0.0;
+  for (int i=0; i<nPoints; i++) {
+    double prod = 0.0;
+    for (int j=0; j<nWl; j++)
+      prod += static_cast<double> (gMat[i][j]*wellWavelet[j]);
+    double residual = prod - dVec[i];
+    s2 += residual * residual;
+  }
+  float weight = static_cast<float> (1/s2);
+  return weight;
 }
 
 void

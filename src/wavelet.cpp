@@ -138,9 +138,8 @@ Wavelet::Wavelet(Wavelet * wavelet,
   cAmp_ = reinterpret_cast<fftw_complex*>(rAmp_);
   int i;
 
-  double norm2 = 0.0;
-
   if(difftype != FOURIER) {
+//    double norm2 = 0.0;
     for( i = 0; i < rnzp_; i++) {
       if(i < nzp_) {
         switch(difftype) {
@@ -167,12 +166,12 @@ Wavelet::Wavelet(Wavelet * wavelet,
           }      
           break;
         }
-        norm2 += static_cast<double> (rAmp_[i]*rAmp_[i]);
+ //       norm2 += static_cast<double> (rAmp_[i]*rAmp_[i]);
       }
       else
         rAmp_[i] = RMISSING;
     }
-    norm_= static_cast<float> (sqrt(norm2));
+//    norm_= findNorm(); //static_cast<float> (sqrt(norm2));
   }
   else {
     fftw_complex  iValue;
@@ -185,10 +184,9 @@ Wavelet::Wavelet(Wavelet * wavelet,
       cAmp_[i].im = float(iValue.re * 2 * M_PI * i/(static_cast<float>(nzp_)));
     }
     invFFT1DInPlace();
-    for(i=0; i < nzp_; i++ )
-      norm2 += static_cast<double> (rAmp_[i]*rAmp_[i]);
-    norm_= static_cast<float>(sqrt(norm2));
+//    norm_ = findNorm();
   }
+  norm_ = findNorm();
 }
 
 Wavelet::Wavelet(int difftype, 
@@ -239,7 +237,6 @@ Wavelet::Wavelet(int difftype,
     }
   }
   else {
-    double norm2 = 0.0;
     isReal_    = false;
     for(i=0;i < cnzp_; i++) {
       cAmp_[i].re = 0.0f;
@@ -247,11 +244,7 @@ Wavelet::Wavelet(int difftype,
     }
 
     invFFT1DInPlace();
-
-    for(i = 0; i < nzp_;i++) 
-      norm2 +=  static_cast<double> (rAmp_[i]* rAmp_[i]);
-
-    norm_= static_cast<float>(sqrt( norm2));
+    norm_ = findNorm();
   }       
 }
 
@@ -742,6 +735,15 @@ Wavelet::findWaveletLength(float minRelativeAmp)
   return (dz_*static_cast<float>(wLength));
 }
 
+float
+Wavelet::findNorm() const
+{
+  double norm2=0.0;
+  for(int i=0; i < nzp_; i++ )
+    norm2 += static_cast<double> (rAmp_[i]*rAmp_[i]);
+  float norm = static_cast<float>(sqrt(norm2));
+  return norm;
+}
 
 fftw_real* 
 Wavelet::averageWavelets(const std::vector<std::vector<fftw_real> > & wavelet_r,
