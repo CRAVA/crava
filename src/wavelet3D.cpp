@@ -115,7 +115,7 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
                                    start, 
                                    length);
 
-      dzWell[w]          = static_cast<float>(simBox->getRelThick(iPos[0],jPos[0])) * dz_;
+      dzWell[w]          = static_cast<float>(simBox->getRelThick(iPos[0],jPos[0]) * dz_);
       if (length > nWl) {
         std::vector<float> Halpha;
         std::vector<fftw_real> cppAdj = adjustCpp(bl,
@@ -129,8 +129,9 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
 
         std::vector<float> zLog(nBlocks);
         for (unsigned int b=0; b<nBlocks; b++) {
-          double zTop     = simBox->getTop(iPos[b], jPos[b]);
-          zLog[b]         = static_cast<float> (zTop + b * simBox->getRelThick(iPos[b], jPos[b]) * dz_);
+          float zTop     = static_cast<float> (simBox->getTop(iPos[b], jPos[b]));
+//          zLog[b]         = static_cast<float> (zTop + b * simBox->getRelThick(iPos[b], jPos[b]) * dz_);
+          zLog[b]         = static_cast<float> (zTop + b * dzWell[w]);
         }
         std::vector<float> zPosWell(nz_);
         bl->getVerticalTrend(&zLog[0], &zPosWell[0]);
@@ -150,8 +151,9 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
             for (unsigned int b=0; b<nBlocks; b++) {
               int xIndex      = iPos[b] + xTr;
               int yIndex      = jPos[b] + yTr;
-              double zTop     = simBox->getTop(xIndex, yIndex);
-              zLog[b]         = static_cast<float> (zTop + b * simBox->getRelThick(xIndex, yIndex) * dz_);
+              float zTop     = static_cast<float> (simBox->getTop(iPos[b], jPos[b]));
+//              zLog[b]         = static_cast<float> (zTop + b * simBox->getRelThick(xIndex, yIndex) * dz_);
+              zLog[b]         = static_cast<float> (zTop + b * dzWell[w]);
             }
             std::vector<float> zPosTrace(nz_);
             bl->getVerticalTrend(&zLog[0], &zPosTrace[0]);
@@ -163,7 +165,7 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
                   //Hva gjør vi hvis zData[t] er RMISSING. Kan det skje?
                   float at = at0[tau] + 2.0f*az[tau]/v0;
                   float bt = bt0[tau] + 2.0f*bz[tau]/v0;
-                  float u = static_cast<float> (zPosTrace[t] - zPosWell[tau] - at*(xTr*dx) - bt*(yTr*dy));
+                  float u = static_cast<float> (zPosTrace[t] - zPosWell[tau] - at*xTr*dx - bt*yTr*dy);
                   if (filter_.hasHalpha()) {
                     for (int i=0; i<nWl; i++) {
                       float v = u - static_cast<float>((i - nhalfWl)*dzWell[w]);
@@ -209,6 +211,7 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
                                                nWl,
                                                nhalfWl,
                                                nPoints);
+        printVecToFile("well_wl", &wellWavelets[w][0], nzp_);
  
         wellWeight[w] = calculateWellWeight(nWl,
                                             nPoints,
@@ -289,6 +292,7 @@ Wavelet3D::calculateSNRatioAndLocalWavelet(Simbox        * /*simbox*/,
                                            Grid2D       *& /*shift*/, 
                                            Grid2D       *& /*gain*/)
 {
+
  //Not possible to estimate signal-to-noise ratio for 3D wavelets
   errText += "Estimation of signal-to-noise ratio is not possible for 3D wavelets.\n";
   errText += "The s/n ratio must be specified in the model file\n";
@@ -415,6 +419,7 @@ Wavelet3D::adjustCpp(BlockedLogs              * bl,
     float alpha1  = filter_.getAlpha1(phi, psi);
     float stretch = std::cos(theta_);
     cppAdj[i-start]     = static_cast<fftw_real> (cpp[i] * alpha1 * stretch / r);
+//    cppAdj[i-start]     = static_cast<fftw_real> (cpp[i]);
     if (filter_.hasHalpha())
       Halpha[i-start]   = filter_.getHalpha(phi, psi);
   }
@@ -488,7 +493,7 @@ Wavelet3D::calculateWellWavelet(const std::vector<std::vector<float> > & gMat,
   delete [] gTrg;
 
   wellWavelet[0] = static_cast<fftw_real> (gTrd[0]);
-  for (int i=0; i<nhalfWl; i++) {
+  for (int i=1; i<nhalfWl; i++) {
     wellWavelet[i]      = static_cast<fftw_real> (gTrd[i]);
     wellWavelet[nzp_-i] = static_cast<fftw_real> (gTrd[nWl-i]);
   }

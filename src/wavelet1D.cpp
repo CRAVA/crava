@@ -383,7 +383,6 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
   float errStd  = 0.0f;
   float dataVar = 0.0f;
 
-
   int      nWells                = modelSettings->getNumberOfWells();
   bool     doEstimateLocalShift  = modelSettings->getEstimateLocalShift(number);
   bool     doEstimateLocalScale  = modelSettings->getEstimateLocalScale(number);
