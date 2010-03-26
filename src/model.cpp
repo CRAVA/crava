@@ -1202,7 +1202,7 @@ Model::setSimboxSurfaces(Simbox                        *& simbox,
         if((outputFormat & IO::STORM) > 0) { // These copies are only needed with the STORM format
           if ((outputGridsElastic & IO::BACKGROUND) > 0 || 
               (outputGridsElastic & IO::BACKGROUND_TREND) > 0 || 
-              estimationMode && generateBackground) {
+              (estimationMode && generateBackground)) {
             simbox->writeTopBotGrids(topSurf, 
                                      baseSurf,
                                      IO::PathToBackground(),
@@ -1563,7 +1563,8 @@ Model::processSeismic(FFTGrid      **& seisCube,
       geometry[i] = NULL;
       std::string tmpErrText("");
       std::string fileName = inputFiles->getSeismicFile(i);
-      std::string dataName = "Seismic data angle stack"+NRLib::ToString(i);
+      std::string angle    = NRLib::ToString(modelSettings->getAngle(i)*(180/M_PI), 1);
+      std::string dataName = "Seismic data angle stack "+angle;
       float       offset = modelSettings->getLocalSegyOffset(i);
       if(offset < 0)
         offset = modelSettings->getSegyOffset();
@@ -1580,7 +1581,7 @@ Model::processSeismic(FFTGrid      **& seisCube,
                                            tmpErrText);
       if(tmpErrText != "")
       {
-        tmpErrText += "Reading of file \'"+fileName+"\' for "+dataName+" failed.\n";
+        tmpErrText += "\nReading of file \'"+fileName+"\' for "+dataName+" failed.\n";
         errText += tmpErrText;
         failed = true;
       } 
@@ -2193,8 +2194,7 @@ Model::processBackground(Background   *& background,
   }
 
   if (failed == false) {
-    if(((modelSettings->getOutputGridsElastic() & IO::BACKGROUND) > 0) || 
-       ( modelSettings->getEstimationMode() && modelSettings->getGenerateBackground())) {
+    if((modelSettings->getOutputGridsElastic() & IO::BACKGROUND) > 0) {
       background->writeBackgrounds(timeSimbox, 
                                    timeDepthMapping_, 
                                    timeCutMapping_,
@@ -3241,7 +3241,6 @@ void Model::processPriorFaciesProb(const std::vector<Surface *> & faciesEstimInt
                 facies = IMISSING;
 
               faciesLog[w*nz + i] = facies;
-
               if(facies != IMISSING)
                 faciesCount[w][facies]++;
             }
@@ -3270,8 +3269,10 @@ void Model::processPriorFaciesProb(const std::vector<Surface *> & faciesEstimInt
             if(wells[w]->getNFacies() > 0) // Well has facies log
             { 
               float tot = 0.0;
-              for (int i = 0 ; i < nFacies ; i++)
+              for (int i = 0 ; i < nFacies ; i++) {
                 tot += static_cast<float>(faciesCount[w][i]);
+              }
+
               LogKit::LogFormatted(LogKit::LOW,"%-23s ",wells[w]->getWellname().c_str());
               for (int i = 0 ; i < nFacies ; i++) {
                 float faciesProb = static_cast<float>(faciesCount[w][i])/tot;
@@ -3284,7 +3285,7 @@ void Model::processPriorFaciesProb(const std::vector<Surface *> & faciesEstimInt
           //
           // Counts
           //
-          LogKit::LogFormatted(LogKit::MEDIUM,"\nFacies counts for each well: \n");
+          LogKit::LogFormatted(LogKit::MEDIUM,"\nFacies counts for each blocked well: \n");
 
           LogKit::LogFormatted(LogKit::MEDIUM,"\nBlockedWell              ");
           for (int i = 0 ; i < nFacies ; i++)
@@ -3295,14 +3296,14 @@ void Model::processPriorFaciesProb(const std::vector<Surface *> & faciesEstimInt
           LogKit::LogFormatted(LogKit::MEDIUM,"\n");
           for (int w = 0 ; w < nWells ; w++)
           {
-            if(wells[w]->getUseForFaciesProbabilities())
+            if(wells[w]->getNFacies() > 0)
             { 
               float tot = 0.0;
               for (int i = 0 ; i < nFacies ; i++)
                 tot += static_cast<float>(faciesCount[w][i]);
               LogKit::LogFormatted(LogKit::MEDIUM,"%-23s ",wells[w]->getWellname().c_str());
               for (int i = 0 ; i < nFacies ; i++) {
-                LogKit::LogFormatted(LogKit::MEDIUM,"%12d ",faciesCount[w][i]);
+                LogKit::LogFormatted(LogKit::MEDIUM," %12d",faciesCount[w][i]);
               }
               LogKit::LogFormatted(LogKit::MEDIUM,"\n");
             }
@@ -3322,8 +3323,9 @@ void Model::processPriorFaciesProb(const std::vector<Surface *> & faciesEstimInt
             nData[i] = 0;
 
           for(int i=0 ; i<ndata ; i++) {
-            if(faciesLog[i] != IMISSING)
+            if(faciesLog[i] != IMISSING) {
               nData[faciesLog[i]]++;
+            }
           }
           delete [] faciesLog;
 
@@ -3331,6 +3333,7 @@ void Model::processPriorFaciesProb(const std::vector<Surface *> & faciesEstimInt
             sum += nData[i];
 
           if (sum > 0) {
+            LogKit::LogFormatted(LogKit::LOW,"Facies probabilities based on all blocked wells:\n\n");
             LogKit::LogFormatted(LogKit::LOW,"Facies         Probability\n");
             LogKit::LogFormatted(LogKit::LOW,"--------------------------\n");
             priorFacies = new float[nFacies];
@@ -3654,10 +3657,7 @@ Model::printSettings(ModelSettings * modelSettings,
   int outputGridsElastic = modelSettings->getOutputGridsElastic();
   int outputGridsSeismic = modelSettings->getOutputGridsSeismic();
 
-  if ((outputGridsElastic > 0  ||
-       outputGridsSeismic > 0  ||
-       outputGridsOther   > 0) && 
-       modelSettings->getEstimationMode()==false) {
+  if (outputGridsElastic > 0  || outputGridsSeismic > 0  || outputGridsOther > 0) {
     LogKit::LogFormatted(LogKit::MEDIUM,"\nGrid output formats:\n");
     if (gridFormat & IO::SEGY) {
       const std::string & formatName = modelSettings->getTraceHeaderFormatOutput()->GetFormatName();
@@ -3703,7 +3703,7 @@ Model::printSettings(ModelSettings * modelSettings,
     if ((outputGridsElastic & IO::LAMEMU) > 0)
       LogKit::LogFormatted(LogKit::MEDIUM,"  Lame's second parameter (shear modulus)  :        yes\n");
     if ((outputGridsElastic & IO::POISSONRATIO) > 0)
-      LogKit::LogFormatted(LogKit::MEDIUM,"  Poisson ratio                            :        yes\n");
+      LogKit::LogFormatted(LogKit::MEDIUM,"  Poisson ratio  (X-1)/2(X-2), X=(Vp/Vs)^2 :        yes\n");
     if ((outputGridsElastic & IO::BACKGROUND) > 0)
       LogKit::LogFormatted(LogKit::MEDIUM,"  Background (Vp, Vs, Rho)                 :        yes\n");
     if ((outputGridsElastic & IO::BACKGROUND_TREND) > 0)

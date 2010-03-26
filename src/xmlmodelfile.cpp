@@ -131,8 +131,20 @@ XmlModelFile::parseActions(TiXmlNode * node, std::string & errTxt)
   else {
     if(mode == "forward")
       modelSettings_->setForwardModeling(true);
-    else if(mode == "estimation")
+    else if(mode == "estimation") {
       modelSettings_->setEstimationMode(true);
+      modelSettings_->setEstimateCorrelations(true);
+      modelSettings_->setEstimateWaveletNoise(true);
+      modelSettings_->setEstimateBackground(true);
+      if (modelSettings_->getOutputGridsDefaultInd()) {
+        modelSettings_->setOutputGridsElastic(IO::BACKGROUND);
+        modelSettings_->setOutputGridsDefaultInd(false);
+      }
+      else {
+        int paramFlag = modelSettings_->getOutputGridsElastic() & IO::BACKGROUND;
+        modelSettings_->setOutputGridsElastic(paramFlag);
+      }
+    }
     else if(mode != "inversion")
       errTxt += "String after <mode> must be either <inversion>, <estimation> or <forward>, found <"+
         mode+"> under command <"+root->ValueStr()+">"+lineColumnText(root)+".\n";
@@ -180,9 +192,15 @@ XmlModelFile::parseInversionSettings(TiXmlNode * node, std::string & errTxt)
   if(parseBool(root, "facies-probabilities", value, errTxt) == true && value == true) {
     modelSettings_->setFaciesProbRelative(true);
     modelSettings_->setEstimateFaciesProb(true);
-    modelSettings_->setOutputGridsOther(IO::FACIESPROB);
-    modelSettings_->setOutputGridsDefaultInd(false);
-    modelSettings_->setOutputGridsElastic(0);
+    if (modelSettings_->getOutputGridsDefaultInd()) {
+      modelSettings_->setOutputGridsOther(IO::FACIESPROB);
+      modelSettings_->setOutputGridsDefaultInd(false);
+      modelSettings_->setOutputGridsElastic(0);
+    }
+    else {
+      int paramFlag = modelSettings_->getOutputGridsElastic() & IO::FACIESPROB;
+      modelSettings_->setOutputGridsElastic(paramFlag);
+    }
   }
 
   checkForJunk(root, errTxt, legalCommands);
@@ -281,6 +299,16 @@ XmlModelFile::parseWellData(TiXmlNode * node, std::string & errTxt)
   while(parseWell(root, errTxt) == true)
     nWells++;
   modelSettings_->setNumberOfWells(nWells);
+
+  bool useFilter = modelSettings_->getUseFilterForFaciesProb(); 
+  for (int i=0 ; i < modelSettings_->getNumberOfWells() ; i++) {
+    int filterElasticLogs       = modelSettings_->getIndicatorFilter(i);
+    int useForFaciesProbability = modelSettings_->getIndicatorFacies(i);
+
+    if (useFilter && useForFaciesProbability != ModelSettings::NO && filterElasticLogs == ModelSettings::NO) {
+      modelSettings_->setIndicatorFilter(i, ModelSettings::YES);
+    }
+  }
 
   float value;
   if(parseValue(root, "high-cut-seismic-resolution", value, errTxt) == true)
@@ -1364,7 +1392,7 @@ XmlModelFile::parseProjectSettings(TiXmlNode * node, std::string & errTxt)
   
   std::vector<std::string> legalCommands;
   legalCommands.push_back("output-volume");
-  legalCommands.push_back("time-3D-mapping");
+  legalCommands.push_back("time-to-depth-mapping-for-3d-wavelet");
   legalCommands.push_back("io-settings");
   legalCommands.push_back("advanced-settings");
 
@@ -1406,7 +1434,6 @@ XmlModelFile::parseOutputVolume(TiXmlNode * node, std::string & errTxt)
       errTxt += "No time interval specified in command <"+root->ValueStr()+"> "
         +lineColumnText(root)+".\n";
   }
-
 
   bool area1 = parseAreaFromSurface(root, errTxt);
   bool area2 = parseILXLArea(root, errTxt);
@@ -1772,7 +1799,7 @@ XmlModelFile::parseUTMArea(TiXmlNode * node, std::string & errTxt)
 bool
 XmlModelFile::parseTime3DMapping(TiXmlNode * node, std::string & errTxt)
 {
-  TiXmlNode * root = node->FirstChildElement("time-3D-mapping");
+  TiXmlNode * root = node->FirstChildElement("time-to-depth-mapping-for-3d-wavelet");
   if(root == 0)
     return(false);
 
@@ -2009,7 +2036,6 @@ XmlModelFile::parseGridFormats(TiXmlNode * node, std::string & errTxt)
 }
 
 
-
 bool
 XmlModelFile::parseGridElasticParameters(TiXmlNode * node, std::string & errTxt)
 {
@@ -2032,8 +2058,8 @@ XmlModelFile::parseGridElasticParameters(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("background");
   legalCommands.push_back("background-trend");
 
-  bool value         = false;
-  int  paramFlag     = 0;
+  bool value     = false;
+  int  paramFlag = 0;
  
   if(parseBool(root, "vp", value, errTxt) == true && value == true)
     paramFlag += IO::VP;
@@ -2062,8 +2088,16 @@ XmlModelFile::parseGridElasticParameters(TiXmlNode * node, std::string & errTxt)
   if(parseBool(root, "background-trend", value, errTxt) == true && value == true)
     paramFlag += IO::BACKGROUND_TREND;
 
-  modelSettings_->setOutputGridsElastic(paramFlag);
-  modelSettings_->setOutputGridsDefaultInd(false);
+  if (modelSettings_->getOutputGridsDefaultInd()) {
+    if (paramFlag > 0) {
+      modelSettings_->setOutputGridsElastic(paramFlag);
+      modelSettings_->setOutputGridsDefaultInd(false);
+    }
+  }
+  else {
+    paramFlag = paramFlag & modelSettings_->getOutputGridsElastic();
+    modelSettings_->setOutputGridsElastic(paramFlag);
+  }
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -2095,7 +2129,7 @@ XmlModelFile::parseGridSeismicData(TiXmlNode * node, std::string & errTxt)
     modelSettings_->setGenerateSeismicAfterInv(true);
   }
   
-  if (modelSettings_->getOutputGridsDefaultInd() == true){
+  if (modelSettings_->getOutputGridsDefaultInd() && paramFlag > 0){
     modelSettings_->setOutputGridsDefaultInd(false);
     modelSettings_->setOutputGridsElastic(0);
   }
@@ -2117,10 +2151,10 @@ XmlModelFile::parseGridOtherParameters(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("time-to-depth-velocity");
   legalCommands.push_back("extra-grids");
  
-  bool faciesValue      = false;
-  bool faciesValueUndef = false;
   bool facies;
   bool faciesUndef;
+  bool faciesValue      = false;
+  bool faciesValueUndef = false;
   int  paramFlag        = 0;
 
   facies      = parseBool(root, "facies-probabilities", faciesValue, errTxt);
@@ -2151,15 +2185,15 @@ XmlModelFile::parseGridOtherParameters(TiXmlNode * node, std::string & errTxt)
   if(parseBool(root, "time-to-depth-velocity", value, errTxt) == true && value == true)
     paramFlag += IO::TIME_TO_DEPTH_VELOCITY;
 
-  if (modelSettings_->getOutputGridsDefaultInd() == true){
+  if (modelSettings_->getOutputGridsDefaultInd() && paramFlag > 0){
     modelSettings_->setOutputGridsDefaultInd(false);
     modelSettings_->setOutputGridsElastic(0);
   }
+
   modelSettings_->setOutputGridsOther(paramFlag);
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
-
 
 
 bool
@@ -2438,20 +2472,6 @@ XmlModelFile::parseFrequencyBand(TiXmlNode * node, std::string & errTxt)
 }
 
 
-/*
-bool
-XmlModelFile::parse(TiXmlNode * node, std::string & errTxt)
-{
-  TiXmlNode * root = node->FirstChildElement();
-  if(root == 0)
-    return(false);
-
-  checkForJunk(root, errTxt);
-  return(true);
-}
-*/
-
-
 bool
 XmlModelFile::parseTraceHeaderFormat(TiXmlNode * node, const std::string & keyword, TraceHeaderFormat *& thf, std::string & errTxt)
 {
@@ -2620,7 +2640,6 @@ XmlModelFile::parseFileName(TiXmlNode * node, const std::string & keyword, std::
 }
 
 
-
 void 
 XmlModelFile::checkForJunk(TiXmlNode * root, std::string & errTxt, const std::vector<std::string> & legalCommands, 
                     bool allowDuplicates)
@@ -2706,16 +2725,6 @@ XmlModelFile::setDerivedParameters(std::string & errTxt)
       errTxt += "The area needs to be defined from seismic data, a surface or UTM-coordinates.\n";
   }
   modelSettings_->setAreaSpecification(areaSpecification);
-  
-  bool useFilter = modelSettings_->getUseFilterForFaciesProb(); 
-  for (int i=0 ; i < modelSettings_->getNumberOfWells() ; i++) {
-    int filterElasticLogs       = modelSettings_->getIndicatorFilter(i);
-    int useForFaciesProbability = modelSettings_->getIndicatorFacies(i);
-
-    if (useFilter && useForFaciesProbability != ModelSettings::NO && filterElasticLogs == ModelSettings::NO) {
-      modelSettings_->setIndicatorFilter(i, ModelSettings::YES);
-    }
-  }
 }
 
 
@@ -2868,6 +2877,7 @@ XmlModelFile::checkAngleConsistency(std::string & errTxt) {
     }
   }
 }
+
 
 void 
 XmlModelFile::checkIOConsistency(std::string & /*errTxt*/)

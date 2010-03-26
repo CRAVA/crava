@@ -1,4 +1,3 @@
-
 #ifndef MODELSETTINGS_H
 #define MODELSETTINGS_H
 
