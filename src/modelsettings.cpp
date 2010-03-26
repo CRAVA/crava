@@ -179,32 +179,36 @@ ModelSettings::~ModelSettings(void)
 bool 
 ModelSettings::getDoInversion(void)
 {
-  int elasticFlag = 0;
-  int otherFlag   = 0;
-  int seismicFlag = 0;
+  int elasticFlag  = 0;
+  int otherFlag    = 0;
+  int seismicFlag  = 0;
+  int blockedWells = 0;
 
-  elasticFlag += IO::VP 
-              +  IO::VS 
-              +  IO::RHO 
-              +  IO::LAMELAMBDA 
-              +  IO::LAMEMU 
-              +  IO::POISSONRATIO
-              +  IO::AI 
-              +  IO::SI
-              +  IO::VPVSRATIO 
-              +  IO::MURHO 
-              +  IO::LAMBDARHO;
+  elasticFlag  += IO::VP 
+               +  IO::VS 
+                +  IO::RHO 
+               +  IO::LAMELAMBDA 
+               +  IO::LAMEMU 
+               +  IO::POISSONRATIO
+               +  IO::AI 
+               +  IO::SI
+               +  IO::VPVSRATIO 
+               +  IO::MURHO 
+               +  IO::LAMBDARHO;
 
-  otherFlag   += IO::FACIESPROB 
-              +  IO::FACIESPROB_WITH_UNDEF
-              +  IO::CORRELATION;
+  otherFlag    += IO::FACIESPROB 
+               +  IO::FACIESPROB_WITH_UNDEF
+               +  IO::CORRELATION;
 
-  seismicFlag += IO::SYNTHETIC_SEISMIC_DATA
-              +  IO::RESIDUAL;
+  seismicFlag  += IO::SYNTHETIC_SEISMIC_DATA
+               +  IO::RESIDUAL;
 
-  if (((elasticFlag & outputGridsElastic_) > 0  || 
-       (otherFlag   & outputGridsOther_)   > 0  ||
-       (seismicFlag & outputGridsSeismic_) > 0) &&
+  blockedWells += IO::BLOCKED_WELLS;
+
+  if (((elasticFlag  & outputGridsElastic_) > 0  || 
+       (otherFlag    & outputGridsOther_  ) > 0  ||
+       (seismicFlag  & outputGridsSeismic_) > 0  ||
+       (blockedWells & wellFlag_          ) > 0) &&
        estimationMode_ == false)
     return true;
   else

@@ -2836,7 +2836,7 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
   if (modelSettings_->getEstimateFaciesProb()                                 &&
      (modelSettings_->getOutputGridsOther() & IO::FACIESPROB)            == 0 &&
      (modelSettings_->getOutputGridsOther() & IO::FACIESPROB_WITH_UNDEF) == 0 &&
-     (modelSettings_->getWellFormatFlag()   & IO::BLOCKED_WELLS)         == 0)
+     (modelSettings_->getWellOutputFlag()   & IO::BLOCKED_WELLS)         == 0)
   {
     errTxt += "Grid output for facies probabilities or facies probabilities with undefined value,\n";
     errTxt += "or blocked wells needs to be specified when doing facies estimation.\n";

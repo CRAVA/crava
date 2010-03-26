@@ -1194,10 +1194,11 @@ Model::setSimboxSurfaces(Simbox                        *& simbox,
                                    outputFormat);
         }
         else if (!estimationMode){
-          simbox->writeTopBotGrids(topSurf, 
-                                   baseSurf,
-                                   IO::PathToInversionResults(),
-                                   outputFormat);
+          if (outputGridsElastic > 0 || outputGridsOther > 0 || outputGridsSeismic > 0)
+            simbox->writeTopBotGrids(topSurf, 
+                                     baseSurf,
+                                     IO::PathToInversionResults(),
+                                     outputFormat);
         }
         if((outputFormat & IO::STORM) > 0) { // These copies are only needed with the STORM format
           if ((outputGridsElastic & IO::BACKGROUND) > 0 || 
@@ -3710,21 +3711,6 @@ Model::printSettings(ModelSettings * modelSettings,
       LogKit::LogFormatted(LogKit::MEDIUM,"  Background trend (Vp, Vs, Rho)           :        yes\n");
   }    
 
-  if (modelSettings->getEstimateFaciesProb()) {
-      LogKit::LogFormatted(LogKit::MEDIUM,"\nOutput of facies probability volumes:\n");
-      if ((outputGridsOther & IO::FACIESPROB) > 0)
-        LogKit::LogFormatted(LogKit::MEDIUM,"  Facies probabilities                     :        yes\n");
-      if ((outputGridsOther & IO::FACIESPROB_WITH_UNDEF) > 0)
-        LogKit::LogFormatted(LogKit::MEDIUM,"  Facies probabilities with undefined value:        yes\n");
-      if (modelSettings->getFaciesProbRelative())
-        LogKit::LogFormatted(LogKit::MEDIUM,"  Use rel. amplitudes for elastic param.   :        yes\n");
-      else
-        LogKit::LogFormatted(LogKit::MEDIUM,"  Use abs. amplitudes for elastic param.   :        yes\n");
-      if ((outputGridsOther & IO::FACIESPROB)            > 0 ||
-        (outputGridsOther & IO::FACIESPROB_WITH_UNDEF) > 0){
-      }
-  }
-
   if (modelSettings->getForwardModeling() ||
       outputGridsSeismic > 0) {
     LogKit::LogFormatted(LogKit::MEDIUM,"\nOutput of seismic data:\n");
@@ -3736,6 +3722,13 @@ Model::printSettings(ModelSettings * modelSettings,
       LogKit::LogFormatted(LogKit::MEDIUM,"  Seismic data residuals                   :        yes\n");
   }
 
+  if (modelSettings->getEstimateFaciesProb()) {
+    LogKit::LogFormatted(LogKit::MEDIUM,"\nOutput of facies probability volumes:\n");
+    if ((outputGridsOther & IO::FACIESPROB) > 0)
+      LogKit::LogFormatted(LogKit::MEDIUM,"  Facies probabilities                     :        yes\n");
+    if ((outputGridsOther & IO::FACIESPROB_WITH_UNDEF) > 0)
+      LogKit::LogFormatted(LogKit::MEDIUM,"  Facies probabilities with undefined value:        yes\n");
+  }
 
   if ((outputGridsOther & IO::CORRELATION)>0 ||
       (outputGridsOther & IO::EXTRA_GRIDS)  >0 ||
