@@ -1356,20 +1356,10 @@ WellData::applyFilter(float * log_filtered, float *log_interpolated, int n_time_
 }
 
 //----------------------------------------------
-typedef struct 
-{
-  float        value;
-  unsigned int index;
-} Item, *pItem;
 
-
-//----------------------------------------------
-int compare(const void *l, const void *r)
+bool compare(const std::pair<int, float>& i1, const std::pair<int, float>& i2)
 {
-  double res = ((pItem)l)->value - ((pItem)r)->value;
-  if (res < 0) return -1;
-  if (res > 0) return  1;
-  return 0;
+  return (i1.second < i2.second); 
 }
 
 //----------------------------------------------------------------------------
@@ -1382,33 +1372,31 @@ WellData::lookForSyntheticVsLog(float & rank_correlation)
   // Estimate the correlation between Vp and Vs logs. To be able to identify
   // nonlinear relationships between the logs we use rank correlation.
   //
-  Item * sorted_alpha = new Item[nd_];
-  Item * sorted_beta  = new Item[nd_];
+  typedef std::pair<int, float> Item;
+  std::vector<Item> sorted_alpha;
+  std::vector<Item> sorted_beta;
 
   //
   // Store Vp and Vs in sortable structs. Note that we can only use nonmissing values.
   //
-  int n = 0;
   for (int i = 0 ; i < nd_ ; i++) 
   {
     if (alpha_[i] != RMISSING && beta_[i] != RMISSING) 
-    {  
-      sorted_alpha[n].value = alpha_[i];
-      sorted_alpha[n].index = i;
-      sorted_beta[n].value  = beta_[i];
-      sorted_beta[n].index  = i;
-      n++;
+    {
+      sorted_alpha.push_back(Item(i, alpha_[i]));
+      sorted_beta.push_back(Item(i,beta_[i]));
     }
   }
 
+  int n = sorted_alpha.size();
   if (n > 0)
   {
     //
     // Sort Vp and Vs logs. 
     //
-    qsort(sorted_alpha, n, sizeof(Item), compare);
-    qsort(sorted_beta , n, sizeof(Item), compare);
-    
+    std::sort(sorted_alpha.begin(), sorted_alpha.end(), compare);
+    std::sort(sorted_beta.begin(), sorted_beta.end(), compare);
+
     //
     // Estimate correlation between sorted alpha and beta sorted by alpha
     //
@@ -1421,7 +1409,8 @@ WellData::lookForSyntheticVsLog(float & rank_correlation)
       var_rank +=(i - mean)*(i - mean);
       for (int j = 0 ; j < n ; j++) 
       {
-        if (sorted_beta[j].index == sorted_alpha[i].index) 
+       
+        if (sorted_beta[j].first == sorted_alpha[i].first) 
         {
           cov_rank += (j - mean)*(i - mean);
         }  
@@ -1467,9 +1456,6 @@ WellData::lookForSyntheticVsLog(float & rank_correlation)
 
   if(useFilter && useVpVsRho && realVsLog_ == ModelSettings::NO && useForFaciesProbabilities_ == ModelSettings::NOTSET)
     useForFaciesProbabilities_ = ModelSettings::NO;
-
-  delete [] sorted_alpha;
-  delete [] sorted_beta;
 }
 
 //----------------------------------------------------------------------------
