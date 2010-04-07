@@ -788,6 +788,7 @@ Background::calculateVerticalTrend(WellData         ** wells,
                                          logMin,
                                          logMax,
                                          name);
+
     WellData::applyFilter(filtered_log, 
                           trend, 
                           nz, 
@@ -833,7 +834,7 @@ Background::smoothTrendWithLocalLinearRegression(float      * trend,
   // In the center parts of the scatter plots the average value should be
   // accepted as a trend value if the number of data points behind each 
   // average is fraction * iWells, where fraction is the acceptance
-  // fraction, possibly larger than one.
+  // fraction, typically larger than one.
   //
   // Sometimes we have only one, two, or three wells available. In the
   // case of two and three wells, the logs for these may differ considerably,
@@ -856,13 +857,14 @@ Background::smoothTrendWithLocalLinearRegression(float      * trend,
   // "arbitrary" end behaviour.
   //
 
-  float fraction   = 3.0f;                      // Require minimum 3*iWells
+  float fraction   = 5.0f;                      // Require minimum 5*iWells
   int   nTimeLimit = static_cast<int>(50.0/dz); // The smaller sampling density, the more values are needed.
   int   nLowLimit  = 10;                        // Require minimum 10
   int   nDataMin   = std::max(nLowLimit, std::max(nTimeLimit, int(fraction * iWells)));
 
   bool  use_weights = true;
   bool  error = false;
+  bool  undef = false;
 
   //
   // Copy the average values (stored in array 'trend') to the array 'mean'.
@@ -872,11 +874,27 @@ Background::smoothTrendWithLocalLinearRegression(float      * trend,
     mean[k] = trend[k];
   }
 
+  //
+  // Find last non-missing value
+  //
+  int lastNonmissing = nz - 1;
+  for (int k = nz - 1 ; k > 0 ; k--) {
+    if (trend[k] > 0.0f) {
+      lastNonmissing = k;
+      break;
+    }
+  }
+
   float * x = new float[nz];  // Time indices
   float * y = new float[nz];  // Log values
   float * w = new float[nz];  // Weights (number of data behind each avg.)
 
   for (int k = 0 ; k < nz ; k++) {
+    int nCurDataMin = nDataMin;
+    if (k > lastNonmissing) {
+      nCurDataMin *= 2.0f;
+    }
+
     int n = 0;
     int nData = 0;
     if (debug) 
@@ -895,11 +913,11 @@ Background::smoothTrendWithLocalLinearRegression(float      * trend,
     }
 
     //
-    // 2. Add local data points to get 'nDataMin' points behind each trend 
+    // 2. Add local data points to get 'nCurDataMin' points behind each trend 
     //    value. Note that the bandwidth varies
     //
     int i = 0;
-    while (nData < nDataMin) {
+    while (nData < nCurDataMin) {
       i++;
       if (k - i >= 0 && count[k - i] > 0) {
         w[n]   = static_cast<float>(count[k - i]);
@@ -963,6 +981,8 @@ Background::smoothTrendWithLocalLinearRegression(float      * trend,
       if (value < min_value || value > max_value) {
         if (debug)
           LogKit::LogFormatted(LogKit::LOW,"   TREND: trend[k] = %.2f\n",value);
+        if (k > lastNonmissing)
+          undef = true;
         error = true;
         break;
       }
@@ -976,37 +996,47 @@ Background::smoothTrendWithLocalLinearRegression(float      * trend,
   }
 
   if (error) {
-    //
-    // NBNB-PAL: Here we should possibly first try a global linear regression...
-    //
-    LogKit::LogFormatted(LogKit::LOW,"\nWARNING : The calculation of the vertical trend for parameter "+parName+" using local linear\n");
-    LogKit::LogFormatted(LogKit::LOW,"          regression failed - trying global mean instead. Possible causes: \n");
-    LogKit::LogFormatted(LogKit::LOW,"          1) Available logs cover too small a part of inversion grid giving extrapolation problems.\n");
-    LogKit::LogFormatted(LogKit::LOW,"          2) There are too many layers in grid compared to well logs available.\n");
-    float sum = 0.0f;
-    int nData = 0;
-    for (int k = 0 ; k < nz ; k++) {
-      if (count[k] > 0) {
-        if (use_weights) {
-          sum   += mean[k]*count[k];
-          nData += count[k];
-          if (debug)           
-            LogKit::LogFormatted(LogKit::LOW,"k=%d  count[k], mean[k]  nData, sum  %d  %8.3f     %d  %8.3f\n",
-                             k,count[k],mean[k],nData,sum);
-        }
-        else {
-          sum   += mean[k];
-          nData += 1;
-        }
+    if (undef) {
+      // Fix last part of trend containing missing-values.
+      float lastValue = trend[lastNonmissing];
+      LogKit::LogFormatted(LogKit::LOW,"\nWARNING : The calculation of the vertical trend for parameter "+parName+" using local linear\n");
+      LogKit::LogFormatted(LogKit::LOW,"          regression failed in the lower part of the interval where the logs are undefined.\n");
+      LogKit::LogFormatted(LogKit::LOW,"          The last defined value of %.2f we be used throughout this region.\n",lastValue);
+      for (int k = lastNonmissing + 1 ; k < nz ; k++) {
+        trend[k] = lastValue;
       }
     }
-    float global_mean = sum/nData;
-    for (int k = 0 ; k < nz ; k++) {
+    else {
+      // Nothing else worked. This is the last resort ...
+      LogKit::LogFormatted(LogKit::LOW,"\nWARNING : The calculation of the vertical trend for parameter "+parName+" using local linear\n");
+      LogKit::LogFormatted(LogKit::LOW,"          regression failed - trying global mean instead. Possible causes: \n");
+      LogKit::LogFormatted(LogKit::LOW,"          1) Available logs cover too small a part of inversion grid giving extrapolation problems.\n");
+      LogKit::LogFormatted(LogKit::LOW,"          2) There are too many layers in grid compared to well logs available.\n");
+      float sum = 0.0f;
+      int nData = 0;
+      for (int k = 0 ; k < nz ; k++) {
+        if (count[k] > 0) {
+          if (use_weights) {
+            sum   += mean[k]*count[k];
+            nData += count[k];
+            if (debug)           
+              LogKit::LogFormatted(LogKit::LOW,"k=%d  count[k], mean[k]  nData, sum  %d  %8.3f     %d  %8.3f\n",
+                                   k,count[k],mean[k],nData,sum);
+          }
+          else {
+            sum += mean[k];
+          nData += 1;
+          }
+        }
+      }
+      float global_mean = sum/nData;
+      for (int k = 0 ; k < nz ; k++) {
       trend[k] = log(global_mean);
       if (debug) 
         LogKit::LogFormatted(LogKit::LOW,"   TREND: k = %d   trend[k] = %.2f\n",k,exp(trend[k]));
+      }
+      LogKit::LogFormatted(LogKit::LOW,"\nGlobal mean for parameter %s = %.2f\n\n",parName.c_str(),global_mean);
     }
-    LogKit::LogFormatted(LogKit::LOW,"\nGlobal mean for parameter %s = %.2f\n\n",parName.c_str(),global_mean);
   }
   delete [] x;
   delete [] y;
@@ -1144,7 +1174,6 @@ Background::writeVerticalTrend(float      * trend,
          << std::setw(8) << exp( trend[i] ) << " "
          << "0.00\n";
   }
-  file << "999.00 999.00 999.00" << std::endl;
   file.close();
 }
 
