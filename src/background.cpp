@@ -468,19 +468,19 @@ Background::makeKrigedBackground(const std::vector<KrigingData2D> & krigingData,
   std::string text = "\nBuilding "+type+" background:";
   LogKit::LogFormatted(LogKit::LOW,text);
 
-  const int     nx  = simbox->getnx();
-  const int     ny  = simbox->getny();
-  const int     nz  = simbox->getnz();
+  const int    nx   = simbox->getnx();
+  const int    ny   = simbox->getny();
+  const int    nz   = simbox->getnz();
 
   const int    nxp  = nx;
   const int    nyp  = ny;
   const int    nzp  = nz;
   const int    rnxp = 2*(nxp/2 + 1);
 
-  const double x0  = simbox->getx0();
-  const double y0  = simbox->gety0();
-  const double lx  = simbox->getlx();
-  const double ly  = simbox->getly();
+  const double x0   = simbox->getx0();
+  const double y0   = simbox->gety0();
+  const double lx   = simbox->getlx();
+  const double ly   = simbox->getly();
 
   //
   // Template surface to be kriged
@@ -513,7 +513,7 @@ Background::makeKrigedBackground(const std::vector<KrigingData2D> & krigingData,
         if(i<nxp)
           bgGrid->setNextReal(float(surface(i,j)));
         else
-          bgGrid->setNextReal(0);  //dummy in padding
+          bgGrid->setNextReal(0);  //dummy in padding (but there is no padding)
       }
     }
     
@@ -1157,6 +1157,9 @@ Background::resampleParameter(FFTGrid *& pNew,        // Resample to
   //
   // Use same padding as for nonresampled cubes
   //
+  // NBNB-PAL: These grids are unpadded, so all nxp, nyp, ... would probably
+  //           better be replaced by nx, ny, ... to avoid confusion...
+  //
   int nxp = nx + (pOld->getNxp() - pOld->getNxp()); 
   int nyp = ny + (pOld->getNyp() - pOld->getNyp());
   int nzp = nz + (pOld->getNzp() - pOld->getNzp());
@@ -1194,18 +1197,59 @@ Background::resampleParameter(FFTGrid *& pNew,        // Resample to
 
   int rnxp = 2*(nxp/2 + 1);
 
+  double * layer = new double[nx*ny];
+
   for(int k=0 ; k<nzp ; k++) {
+    //
+    // Map a layer
+    //
     int ij=0;
-    for(int j=0 ; j<nyp ; j++) {
-      for(int i=0 ; i<rnxp ; i++) {
-        float value;
-        if(i < nx && j < ny && k < nz) {
-          int kOld = static_cast<int>(static_cast<double>(k)*a[ij] + b[ij]); 
+    for (int j=0 ; j<nyp ; j++) {
+      for (int i=0 ; i<rnxp ; i++) {
+        if (i < nx && j < ny && k < nz) {
+          int kOld = static_cast<int>(static_cast<double>(k)*a[ij] + b[ij]);
+          layer[ij] = pOld->getRealValue(i, j, kOld);
           ij++;
-          value = pOld->getRealValue(i, j, kOld);
         }
+      }
+    }
+    //
+    // Smooth the layer (equal weighting of all neighbouring cells)
+    //
+    float value;
+    for (int j=0 ; j<nyp ; j++) {
+      for (int i=0 ; i<rnxp ; i++) {
+        if (i < nx && j < ny && k < nz) {
+          int n = 1;
+          float sum = layer[j*nx + i];
+          if (i>1) {
+            sum += layer[j*nx + i - 1];         
+            n++;
+          }          
+          if (j>1) {
+            sum += layer[(j - 1)*nx + i];
+            n++;
+          }          
+          if (i>1 && j>1) {
+            sum += layer[(j - 1)*nx + i - 1];
+            n++;
+          }
+          if (i<nx-1) {
+            sum += layer[j*nx + i + 1];
+            n++;
+          }          
+          if (j<ny-1) {
+            sum += layer[(j + 1)*nx + i];
+            n++;
+          }          
+          if (i<nx-1 && j<ny-1) {            
+            sum += layer[(j + 1)*nx + i + 1];
+            n++;
+          }
+          value = sum/static_cast<float>(n);
+        } 
         else {
-          value = RMISSING;
+          value = RMISSING; 
         }
         pNew->setNextReal(value);
       }
@@ -1214,6 +1258,7 @@ Background::resampleParameter(FFTGrid *& pNew,        // Resample to
   pOld->endAccess();
   pNew->endAccess();
 
+  delete [] layer;
   delete [] a;
   delete [] b;
 }
