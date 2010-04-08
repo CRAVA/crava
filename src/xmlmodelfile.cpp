@@ -2716,14 +2716,15 @@ XmlModelFile::setDerivedParameters(std::string & errTxt)
   }
   modelSettings_->setAreaSpecification(areaSpecification);
 
-  // Cannot be placed under parseWellData() since we do not there if getUseFilterForFaciesProb() has been set.
-  bool useFilter = modelSettings_->getUseFilterForFaciesProb(); 
-  for (int i=0 ; i < modelSettings_->getNumberOfWells() ; i++) {
-    int filterElasticLogs       = modelSettings_->getIndicatorFilter(i);
-    int useForFaciesProbability = modelSettings_->getIndicatorFacies(i);
-
-    if (useFilter && useForFaciesProbability != ModelSettings::NO && filterElasticLogs == ModelSettings::NO) {
-      modelSettings_->setIndicatorFilter(i, ModelSettings::YES);
+  if (modelSettings_->getEstimateFaciesProb()) {
+    // Cannot be placed under parseWellData() since we do not there if getUseFilterForFaciesProb() has been set.
+    bool useFilter = modelSettings_->getUseFilterForFaciesProb(); 
+    for (int i=0 ; i < modelSettings_->getNumberOfWells() ; i++) {
+      int filterElasticLogs       = modelSettings_->getIndicatorFilter(i);
+      int useForFaciesProbability = modelSettings_->getIndicatorFacies(i);
+      if (useFilter && useForFaciesProbability != ModelSettings::NO && filterElasticLogs == ModelSettings::NO) {
+        modelSettings_->setIndicatorFilter(i, ModelSettings::YES);
+      }
     }
   }
 }

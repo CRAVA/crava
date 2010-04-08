@@ -73,9 +73,9 @@ private:
                                         bool                hasVelocityTrend,
                                         const std::string & name,
                                         bool                isFile);
-  const CovGrid2D  & makeCovGrid2D(Simbox * simbox,
-                             Vario  * vario, 
-                             int      debugFlag);
+  const CovGrid2D & makeCovGrid2D(Simbox * simbox,
+                                  Vario  * vario, 
+                                  int      debugFlag);
   void         setupKrigingData2D(std::vector<KrigingData2D> & krigingDataAlpha,
                                   std::vector<KrigingData2D> & krigingDataBeta,
                                   std::vector<KrigingData2D> & krigingDataRho,
@@ -93,20 +93,6 @@ private:
                                     const CovGrid2D                  & covGrid2D,
                                     const std::string                & type,
                                     bool                               isFile);
-  void         setupKrigingData3D(KrigingData3D *& krigingData,
-                                WellData      ** wells,
-                                Simbox         * simbox,
-                                float          * trendAlpha,
-                                float          * trendBeta, 
-                                float          * trendRho , 
-                                const int        nWells);
-  void         interpolateBackgroundTrend(KrigingData3D * krigingData,
-                                          FFTGrid       * bgAlpha,
-                                          FFTGrid       * bgBeta,
-                                          FFTGrid       * bgRho,
-                                          Simbox        * simbox,
-                                          Vario         * vario,
-                                          int             debugFlag);
   void         calculateVelocityDeviations(FFTGrid   * velocity,
                                            WellData ** wells,
                                            Simbox    * simbox,                               
@@ -148,10 +134,6 @@ private:
                                                 WellData    ** wells,
                                                 const int      nWells,
                                                 const int      nz);
-  void         smoothTrendWithMovingAverage(float * trend, 
-                                            int   * count,
-                                            int     nWells,
-                                            int     nz);
   void         smoothTrendWithLocalLinearRegression(float      * trend, 
                                                     int        * count,
                                                     int          nWells,
@@ -162,9 +144,6 @@ private:
                                                     std::string  parName);
   void         fillInVerticalTrend(FFTGrid     * bgTrend, 
                                    const float * trend);
-  void         extrapolateTrend(std::string  pName, 
-                                float      * log,
-                                int          nz);
   void         findMeanVsVp(FFTGrid * Vp,
                             FFTGrid * Vs);
   FFTGrid    * copyFFTGrid(FFTGrid   * origGrid, 
