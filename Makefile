@@ -52,7 +52,7 @@ cleanall:
 	rm -f $(OBJSUBDIR)/*.o
 	rm -f $(OBJNRLIBDIR)/*/*.o
 	rm -f $(OBJNRLIBDIR)/*/*/*.o
-	rm -f $(PROGRAM) main.o
+	rm -f $(PROGRAM) $(GRAMMAR) main.o
 
 test:	$(PROGRAM) $(GRAMMAR)
 	cd test_suite; chmod +x TestScript.pl; perl -s ./TestScript.pl ../$(PROGRAM) $(case); cd ..

@@ -1,0 +1,69 @@
+How to release a new version of CRAVA
+=====================================
+
+At each release we give Statoil the source code instead of binaries which 
+they make themselves. This makes the release-procedure a bit cumbersome.
+
+1. Check in a version of CRAVA in Subversion with the commit text "Release X.Y.Z", 
+   where X.Y.Z is the version number. This text is useful when we later want to track 
+   down the release in the revision system. Ensure that this version number is also 
+   given in the initialisation of the program data in file main.cpp. Remove any 
+   "beta" annotations. Example:
+
+     Program program( 0,                     // Major version
+                      9,                     // Minor version 
+                      8,                     // Patch number 
+                      "",                    // Use empty string "" for release versions 
+                      -1,                    // Validity of licence in days (-1 = infinite)
+                     "Norsk Regnesentral");  // Who this copy of CRAVA is licensed to
+
+2. Update and compile the user manual with the same version number
+
+3. Copy the entire CRAVA directory (this takes a looong time) 
+
+     > cp -R trunk crava_prog_0.9.8
+
+4. Clean up the copied code (to reduce the disk requirement)
+
+     > cd crava_prog_0.9.8
+
+     > make cleanall
+
+     > cd test_suite
+     > rm -r */output
+     > rm -rf .svn
+     > rm -rf */.svn
+     > rm -rf */*/.svn
+     > rm -rf */*/*/.svn
+     > rm -rf */*/*/*/.svn
+
+   If you are in a great hurry, you can remove the entire test_suite directory,
+   but this is not recommended.
+
+5. Make an archive of the directory (there is no point in compressing the directory
+   if the test_suite is still present since there are large binary files in the suite)
+  
+     > tar cvf crava_prog_0.9.8.tar crava_prog_0.9.8
+
+6. Create a "randomly" named directory of eight letters under the www_ekstern directory 
+   of your home directory and put the archive in it. Make sure that this directory is 
+   fully readable and executable and that the archive is also fully readable:
+
+     > cd $HOME/www_ekstern
+     > mkdir f8eu3j2d
+     > chmod a+rx f8eu3j2d
+     > cp /some-place/crava_prog_0.9.8.tar ./
+     > chmod a+r crava_prog_0.9.8.tar 
+
+7. Send a release-e-mail. Make sure to send a copy of the mail to yourself so that 
+   you can verify that the link you supply the recipients are alive. The link will
+   look something like:
+
+     http://www.nr.no/~your-login-name/www_ekstern/f8eu3j2d/crava_prog_0.9.8.tar 
+
+   For a standard release-e-mail and recipients see the files
+  
+     release-text
+     release-mottakere
+
+8. Update the version number in main.cpp. For the example above you would use '0.9.9 beta'.
