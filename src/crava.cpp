@@ -2271,10 +2271,13 @@ void Crava::correctAlphaBetaRho(ModelSettings *modelSettings)
   meanBeta2_->endAccess();
   meanRho2_->endAccess();
 
-  delete meanAlpha2_;
-  delete meanBeta2_;
-  delete meanRho2_;
-  
+  if(!(model_->getModelSettings()->getEstimateFaciesProb() && model_->getModelSettings()->getFaciesProbRelative())) {
+    //We do not need these, and they will not be deleted elsewhere in this case.
+    delete meanAlpha2_;
+    delete meanBeta2_;
+    delete meanRho2_;
+  }
+
   delete [] alpha;
   delete [] beta;
   delete [] rho;
