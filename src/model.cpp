@@ -494,7 +494,7 @@ Model::checkAvailableMemory(Simbox        * timeSimbox,
                                     modelSettings->getNXpad(), 
                                     modelSettings->getNYpad(), 
                                     modelSettings->getNZpad());
-  long long int gridSizePad = 4*dummyGrid->getrsize();
+  long long int gridSizePad = static_cast<long long int>(4)*dummyGrid->getrsize();
 
   delete dummyGrid;
   dummyGrid = new FFTGrid(timeSimbox->getnx(), 
