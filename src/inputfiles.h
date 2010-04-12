@@ -39,7 +39,7 @@ public:
   const std::map<std::string,std::string> & getPriorFaciesProbFile(void)   const {return priorFaciesProb_ ;}
   const std::string              & getAreaSurfaceFile(void)      const { return areaSurfaceFile_      ;}
 
-  const int                        getNumberOfSeismicFiles(void) const { return seismicFiles_.size()  ;}
+  int                              getNumberOfSeismicFiles(void) const { return static_cast<int>(seismicFiles_.size());}
 
   void setSeedFile(const std::string & seedFile)                          { seedFile_             = seedFile          ;}
   void addWellFile(const std::string & wellFile)                          { wellFiles_.push_back(wellFile)            ;}

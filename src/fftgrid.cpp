@@ -1627,7 +1627,7 @@ FFTGrid::writeResampledStormCube(GridMapping       * gridmapping,
   StormContGrid *outgrid = new StormContGrid(*mapping);
  
   double x,y;
-  int nz = mapping->GetNK();
+  int nz = static_cast<int>(mapping->GetNK());
   for(int i=0;i<nx_;i++)
   {
     for(int j=0;j<ny_;j++)
@@ -2112,8 +2112,8 @@ void FFTGrid::writeSegyFromStorm(StormContGrid *data, std::string fileName)
 
   int i,k,j;
   TextualHeader header = TextualHeader::standardHeader();
-  int nx = data->GetNI();
-  int ny = data->GetNJ();
+  int nx = static_cast<int>(data->GetNI());
+  int ny = static_cast<int>(data->GetNJ());
   const SegyGeometry *geometry = new SegyGeometry(data->GetXMin(),data->GetYMin(),data->GetDX(),data->GetDY(),
                nx,ny,data->GetAngle());
   float dz = float(floor((data->GetLZ()/data->GetNK())));

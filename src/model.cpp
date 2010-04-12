@@ -617,7 +617,7 @@ Model::checkAvailableMemory(Simbox        * timeSimbox,
     float ** memchunk  = new float*[nGrids];
 
     for(int i = 0 ; i < nGrids ; i++)
-      memchunk[i] = new float[gridSizePad];
+      memchunk[i] = new float[static_cast<size_t>(gridSizePad)];
 
     if(memchunk[nGrids-1] == NULL)  //Could not allocate memory
     {
@@ -2458,7 +2458,7 @@ Model::estimateCorrXYFromSeismic(Surface *& corrXY,
   FFTGrid * transf;
   float   * grid;
 
-  int n = corrXY->GetNI()*corrXY->GetNJ();
+  int n = static_cast<int>(corrXY->GetNI()*corrXY->GetNJ());
   grid = new float[n];
 
   for(int i=0 ; i<n ; i++)
@@ -4719,8 +4719,8 @@ Model::geometryFromStormFile(const std::string & fileName,
     double y0      = stormgrid->GetYMin()*scalehor;
     double dx      = stormgrid->GetDX()*scalehor;
     double dy      = stormgrid->GetDY()*scalehor;
-    int    nx      = stormgrid->GetNI();
-    int    ny      = stormgrid->GetNJ();
+    int    nx      = static_cast<int>(stormgrid->GetNI());
+    int    ny      = static_cast<int>(stormgrid->GetNJ());
     double rot     = stormgrid->GetAngle();
     double IL0     = 0.0;  ///< Dummy value since information is not contained in format
     double XL0     = 0.0;  ///< Dummy value since information is not contained in format

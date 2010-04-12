@@ -2635,7 +2635,7 @@ XmlModelFile::checkForJunk(TiXmlNode * root, std::string & errTxt, const std::ve
                     bool allowDuplicates)
 {
   TiXmlNode * child = root->FirstChild();
-  unsigned int startLength = errTxt.size();
+  unsigned int startLength = static_cast<unsigned int>(errTxt.size());
   while(child != NULL) {
     switch(child->Type()) {
       case TiXmlNode::COMMENT :

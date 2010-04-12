@@ -178,7 +178,7 @@ WellData::readRMSWell(const std::string              & wellFileName,
           // Find number of facies
           std::getline(file,dummyStr);
           tokenLine = NRLib::GetTokens(dummyStr);
-          nFacies_ = tokenLine.size()/2;
+          nFacies_ = static_cast<int>(tokenLine.size())/2;
         }
       }
     }
@@ -248,7 +248,7 @@ WellData::readRMSWell(const std::string              & wellFileName,
     bool lastIsBlank = true;
     std::getline(file,token);
 
-    int l = token.length();
+    int l = static_cast<int>(token.length());
     for (i=0; i<l; i++)
     {
       if (token[i] != ' ' && token[i] != '\t' && token[i] != '\r' && token[i] != '\0')
@@ -459,7 +459,8 @@ WellData::readNorsarWell(const std::string              & wellFileName,
     }
 
     int nLogs = 2+nVar;
-    std::vector<std::vector<double> *> logs(nLogs, NULL);
+    std::vector<double> * filler = NULL; //to eliminate warning.
+    std::vector<std::vector<double> *> logs(nLogs, filler);
     logs[0] = well.GetContLog("UTMX");
     if(logs[0] == NULL) {
       error_ = 1;
@@ -518,7 +519,7 @@ WellData::readNorsarWell(const std::string              & wellFileName,
         else
           facies_[i] = IMISSING;
       }
-      nFacies_ = facCodes.size();
+      nFacies_ = static_cast<int>(facCodes.size());
     }
   }
   catch (NRLib::Exception & e) {
@@ -1388,7 +1389,7 @@ WellData::lookForSyntheticVsLog(float & rank_correlation)
     }
   }
 
-  int n = sorted_alpha.size();
+  int n = static_cast<int>(sorted_alpha.size());
   if (n > 0)
   {
     //

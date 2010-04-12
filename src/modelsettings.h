@@ -19,144 +19,144 @@ public:
   ModelSettings(void);
   ~ModelSettings(void); 
 
-  Vario                          * getAngularCorr(void)                 const { return angularCorr_             ;} 
-  Vario                          * getLateralCorr(void)                 const { return lateralCorr_             ;}
-  Vario                          * getBackgroundVario(void)             const { return backgroundVario_         ;} 
-  Vario                          * getLocalWaveletVario(void)           const { return localWaveletVario_       ;} 
-  SegyGeometry                   * getAreaParameters(void)              const { return geometry_                ;}    
-  TraceHeaderFormat              * getTraceHeaderFormat(void)           const { return traceHeaderFormat_       ;}
-  TraceHeaderFormat              * getTraceHeaderFormatOutput(void)     const { return traceHeaderFormatOutput_ ;}
-  TraceHeaderFormat              * getTraceHeaderFormat(int i)          const { return localTHF_[i]             ;}
-  int                              getNumberOfTraceHeaderFormats(void)  const { return localTHF_.size()         ;}
-  int                              getKrigingParameter(void)            const { return krigingParameter_        ;}
-  float                            getConstBackValue(int i)             const { return constBackValue_[i]       ;}
-  int                              getNumberOfAngles(void)              const { return angle_.size()            ;} 
-  int                              getSeismicType(int i)                const { return seismicType_[i]          ;}
-  float                            getAngle(int i)                      const { return angle_[i]                ;}
-  float                            getWaveletScale(int i)               const { return waveletScale_[i]         ;} 
-  float                            getSNRatio(int i)                    const { return SNRatio_[i]              ;} 
-  float                            getWellMoveAngle(int i,int j)        const { return wellMoveAngle_[i][j]     ;}
-  float                            getWellMoveWeight(int i,int j)       const { return wellMoveWeight_[i][j]    ;}
-  int                              getNumberOfWellAngles(int i)         const { return wellMoveAngle_[i].size() ;} 
+  Vario                          * getAngularCorr(void)                 const { return angularCorr_                               ;} 
+  Vario                          * getLateralCorr(void)                 const { return lateralCorr_                               ;}
+  Vario                          * getBackgroundVario(void)             const { return backgroundVario_                           ;} 
+  Vario                          * getLocalWaveletVario(void)           const { return localWaveletVario_                         ;} 
+  SegyGeometry                   * getAreaParameters(void)              const { return geometry_                                  ;}    
+  TraceHeaderFormat              * getTraceHeaderFormat(void)           const { return traceHeaderFormat_                         ;}
+  TraceHeaderFormat              * getTraceHeaderFormatOutput(void)     const { return traceHeaderFormatOutput_                   ;}
+  TraceHeaderFormat              * getTraceHeaderFormat(int i)          const { return localTHF_[i]                               ;}
+  int                              getNumberOfTraceHeaderFormats(void)  const { return static_cast<int>(localTHF_.size())         ;}
+  int                              getKrigingParameter(void)            const { return krigingParameter_                          ;}
+  float                            getConstBackValue(int i)             const { return constBackValue_[i]                         ;}
+  int                              getNumberOfAngles(void)              const { return static_cast<int>(angle_.size())            ;} 
+  int                              getSeismicType(int i)                const { return seismicType_[i]                            ;}
+  float                            getAngle(int i)                      const { return angle_[i]                                  ;}
+  float                            getWaveletScale(int i)               const { return waveletScale_[i]                           ;} 
+  float                            getSNRatio(int i)                    const { return SNRatio_[i]                                ;} 
+  float                            getWellMoveAngle(int i,int j)        const { return wellMoveAngle_[i][j]                       ;}
+  float                            getWellMoveWeight(int i,int j)       const { return wellMoveWeight_[i][j]                      ;}
+  int                              getNumberOfWellAngles(int i)         const { return static_cast<int>(wellMoveAngle_[i].size()) ;} 
 
-  bool                             getMatchEnergies(int i)              const { return matchEnergies_[i]      == 1 ;} 
-  bool                             getEstimateWavelet(int i)            const { return estimateWavelet_[i]    == 1 ;}
-  bool                             getEstimateSNRatio(int i)            const { return estimateSNRatio_[i]    == 1 ;}
-  bool                             getEstimateLocalScale(int i)         const { return estimateLocalScale_[i] == 1 ;}
-  bool                             getEstimateLocalShift(int i)         const { return estimateLocalShift_[i] == 1 ;}
-  bool                             getEstimateLocalNoise(int i)         const { return estimateLocalNoise_[i] == 1 ;}
-  bool                             getEstimateGlobalWaveletScale(int i) const {return estimateGlobalWaveletScale_[i]==1 ;}
-  bool                             getEstimateBackground(void)          const { return estimateBackground_      ;}
-  bool                             getEstimateCorrelations(void)        const { return estimateCorrelations_    ;}
-  bool                             getEstimateWaveletNoise(void)        const { return estimateWaveletNoise_    ;}
-  bool                             getEstimate3DWavelet(void)           const { return estimate3DWavelet_       ;}
-  bool                             getHasTime3DMapping(void)            const { return hasTime3DMapping_        ;}
-  int                              getWaveletDim(int i)                 const { return waveletDim_[i]           ;}
-  float                            getStretchFactor(int i)              const { return stretchFactor_[i]        ;}
-  float                            getEstRangeX(int i)                  const { return estRangeX_[i]            ;}
-  float                            getEstRangeY(int i)                  const { return estRangeY_[i]            ;}
+  bool                             getMatchEnergies(int i)              const { return matchEnergies_[i]      == 1                ;} 
+  bool                             getEstimateWavelet(int i)            const { return estimateWavelet_[i]    == 1                ;}
+  bool                             getEstimateSNRatio(int i)            const { return estimateSNRatio_[i]    == 1                ;}
+  bool                             getEstimateLocalScale(int i)         const { return estimateLocalScale_[i] == 1                ;}
+  bool                             getEstimateLocalShift(int i)         const { return estimateLocalShift_[i] == 1                ;}
+  bool                             getEstimateLocalNoise(int i)         const { return estimateLocalNoise_[i] == 1                ;}
+  bool                             getEstimateGlobalWaveletScale(int i) const { return estimateGlobalWaveletScale_[i]==1          ;}
+  bool                             getEstimateBackground(void)          const { return estimateBackground_                        ;}
+  bool                             getEstimateCorrelations(void)        const { return estimateCorrelations_                      ;}
+  bool                             getEstimateWaveletNoise(void)        const { return estimateWaveletNoise_                      ;}
+  bool                             getEstimate3DWavelet(void)           const { return estimate3DWavelet_                         ;}
+  bool                             getHasTime3DMapping(void)            const { return hasTime3DMapping_                          ;}
+  int                              getWaveletDim(int i)                 const { return waveletDim_[i]                             ;}
+  float                            getStretchFactor(int i)              const { return stretchFactor_[i]                          ;}
+  float                            getEstRangeX(int i)                  const { return estRangeX_[i]                              ;}
+  float                            getEstRangeY(int i)                  const { return estRangeY_[i]                              ;}
                                                                                                                  
-  const std::string                getBackgroundType(void)              const { return backgroundType_          ;}            
-  const std::vector<std::string> & getLogNames(void)                    const { return logNames_                ;}
-  const std::vector<bool>        & getInverseVelocity(void)             const { return inverseVelocity_         ;}
-  int                              getNumberOfFacies(void)              const { return faciesNames_.size()      ;}
-  const std::vector<std::string> & getFaciesNames(void)                 const { return faciesNames_             ;}
-  const std::string              & getFaciesName(int i)                 const { return faciesNames_[i]          ;}
-  int                              getFaciesLabel(int i)                const { return faciesLabels_[i]         ;}
-  int                              getIndicatorBGTrend(int i)           const { return indBGTrend_[i]           ;}
-  int                              getIndicatorWavelet(int i)           const { return indWavelet_[i]           ;}
-  int                              getIndicatorFacies(int i)            const { return indFacies_[i]            ;}
-  int                              getIndicatorRealVs(int i)            const { return indRealVs_[i]            ;}
-  int                              getIndicatorFilter(int i)            const { return indFilter_[i]            ;}
-  const std::vector<int>         & getIndicatorFilter(void)             const { return indFilter_               ;}
-  int                              getNumberOfWells(void)               const { return nWells_                  ;}
-  int                              getNumberOfSimulations(void)         const { return nSimulations_            ;}
-  float                            getAlphaMin(void)                    const { return alpha_min_               ;}
-  float                            getAlphaMax(void)                    const { return alpha_max_               ;}
-  float                            getBetaMin(void)                     const { return beta_min_                ;}
-  float                            getBetaMax(void)                     const { return beta_max_                ;}
-  float                            getRhoMin(void)                      const { return rho_min_                 ;}
-  float                            getRhoMax(void)                      const { return rho_max_                 ;}
-  float                            getVarAlphaMin(void)                 const { return var_alpha_min_           ;}
-  float                            getVarAlphaMax(void)                 const { return var_alpha_max_           ;}
-  float                            getVarBetaMin(void)                  const { return var_beta_min_            ;}
-  float                            getVarBetaMax(void)                  const { return var_beta_max_            ;}
-  float                            getVarRhoMin(void)                   const { return var_rho_min_             ;}
-  float                            getVarRhoMax(void)                   const { return var_rho_max_             ;}
-  float                            getVpVsRatioMin(void)                const { return vp_vs_ratio_min_         ;}
-  float                            getVpVsRatioMax(void)                const { return vp_vs_ratio_max_         ;}
-  float                            getRefDepth(void)                    const { return ref_depth_               ;}
-  float                            getAverageVelocity(void)             const { return average_velocity_        ;}
-  float                            getMaxHzBackground(void)             const { return maxHz_background_        ;}
-  float                            getMaxHzSeismic(void)                const { return maxHz_seismic_           ;}
-  float                            getMaxRankCorr(void)                 const { return maxRankCorr_             ;}
-  float                            getMaxMergeDist(void)                const { return maxMergeDist_            ;}
-  float                            getMaxDevAngle(void)                 const { return maxDevAngle_             ;}
-  float                            getLowCut(void)                      const { return lowCut_                  ;}
-  float                            getHighCut(void)                     const { return highCut_                 ;}
-  float                            getWNC(void)                         const { return wnc_                     ;}
-  float                            getEnergyThreshold(void)             const { return energyThreshold_         ;}
-  float                            getMaxWellOffset(void)               const { return maxWellOffset_           ;}
-  float                            getMaxWellShift(void)                const { return maxWellShift_            ;}
-  float                            getMinRelWaveletAmp(void)            const { return minRelWaveletAmp_        ;}
-  float                            getMaxWaveletShift(void)             const { return maxWaveletShift_         ;}
-  float                            getWaveletTaperingL(void)            const { return waveletTaperingL_        ;}
-  double                           getXPadFac(void)                     const { return xPadFac_                 ;}
-  double                           getYPadFac(void)                     const { return yPadFac_                 ;}
-  double                           getZPadFac(void)                     const { return zPadFac_                 ;}
-  int                              getNXpad(void)                       const { return nxPad_                   ;}
-  int                              getNYpad(void)                       const { return nyPad_                   ;}
-  int                              getNZpad(void)                       const { return nzPad_                   ;}
-  bool                             getEstimateXYPadding(void)           const { return estimateXYPadding_       ;}
-  bool                             getEstimateZPadding(void)            const { return estimateZPadding_        ;}
-  float                            getSegyOffset(void)                  const { return segyOffset_              ;}
-  float                            getLocalSegyOffset(int i)            const { return localSegyOffset_[i]      ;}
-  float                            getPundef(void)                      const { return p_undef_                 ;}
-  double                           getLzLimit(void)                     const { return lzLimit_                 ;}
-  double                           getTimeDTop(void)                    const { return time_dTop_               ;}
-  double                           getTimeLz(void)                      const { return time_lz_                 ;}
-  double                           getTimeDz(void)                      const { return time_dz_                 ;}
-  int                              getTimeNz(void)                      const { return time_nz_                 ;}
-  std::vector<int>                 getAreaILXL(void)                    const { return areaILXL_                ;}
-  int                              getAreaSpecification(void)           const { return areaSpecification_       ;}     
-  bool                             getVelocityFromInversion(void)       const { return velocityFromInv_         ;}
-  bool                             getWritePrediction(void)             const { return writePrediction_         ;}
-  int                              getOutputGridsElastic(void)          const { return outputGridsElastic_      ;}
-  int                              getOutputGridsOther(void)            const { return outputGridsOther_        ;}
-  int                              getOutputGridsSeismic(void)          const { return outputGridsSeismic_      ;}
-  int                              getOutputGridFormat(void)            const { return formatFlag_              ;}
-  int                              getOutputGridDomain(void)            const { return domainFlag_              ;}
-  bool                             getOutputGridsDefaultInd(void)       const { return outputGridsDefault_      ;}
-  int                              getWellOutputFlag(void)              const { return wellFlag_                ;}
-  int                              getWellFormatFlag(void)              const { return wellFormatFlag_          ;}
-  int                              getWaveletOutputFlag(void)           const { return waveletFlag_             ;}
-  int                              getWaveletFormatFlag(void)           const { return waveletFormatFlag_       ;}
-  int                              getEstimateNumberOfWavelets(void)    const { return estimateWavelet_.size()  ;}
-  int                              getOtherOutputFlag(void)             const { return otherFlag_               ;}
-  int                              getDebugFlag(void)                   const { return debugFlag_               ;}
-  static int                       getDebugLevel(void)                        { return debugFlag_               ;}
-  bool                             getFileGrid(void)                    const { return fileGrid_                ;}
-  bool                             getEstimationMode(void)              const { return estimationMode_          ;}
-  bool                             getForwardModeling(void)             const { return forwardModeling_         ;}
-  bool                             getGenerateSeismicAfterInv(void)     const { return generateSeismicAfterInv_ ;}
-  bool                             getGenerateBackground(void)          const { return generateBackground_      ;}
-  bool                             getEstimateFaciesProb(void)          const { return estimateFaciesProb_      ;}
-  bool                             getFaciesProbRelative(void)          const { return faciesProbRelative_      ;}
-  bool                             getNoVsFaciesProb(void)              const { return noVsFaciesProb_          ;}
-  bool                             getUseFilterForFaciesProb()          const { return useFilterForProb_        ;}
-  bool                             getFaciesLogGiven(void)              const { return faciesLogGiven_          ;}
-  std::map<std::string,float>      getPriorFaciesProb(void)             const { return priorFaciesProb_         ;} 
-  int                              getIsPriorFaciesProbGiven(void)      const { return priorFaciesProbGiven_    ;}
-  bool                             getDepthDataOK(void)                 const { return depthDataOk_             ;}
-  bool                             getParallelTimeSurfaces(void)        const { return parallelTimeSurfaces_    ;}
-  bool                             getUseLocalWavelet(void)             const { return useLocalWavelet_         ;}
-  bool                             getUseLocalNoise(void)               const { return useLocalNoise_           ;}
-  bool                             getOptimizeWellLocation(void)        const { return optimizeWellLocation_    ;}
-  bool                             getNoWellNedded(void)                const { return noWellNeeded_            ;}
-  bool                             getNoSeismicNeeded(void)             const { return noSeismicNeeded_         ;}
+  const std::string                getBackgroundType(void)              const { return backgroundType_                            ;}            
+  const std::vector<std::string> & getLogNames(void)                    const { return logNames_                                  ;}
+  const std::vector<bool>        & getInverseVelocity(void)             const { return inverseVelocity_                           ;}
+  int                              getNumberOfFacies(void)              const { return static_cast<int>(faciesNames_.size())      ;}
+  const std::vector<std::string> & getFaciesNames(void)                 const { return faciesNames_                               ;}
+  const std::string              & getFaciesName(int i)                 const { return faciesNames_[i]                            ;}
+  int                              getFaciesLabel(int i)                const { return faciesLabels_[i]                           ;}
+  int                              getIndicatorBGTrend(int i)           const { return indBGTrend_[i]                             ;}
+  int                              getIndicatorWavelet(int i)           const { return indWavelet_[i]                             ;}
+  int                              getIndicatorFacies(int i)            const { return indFacies_[i]                              ;}
+  int                              getIndicatorRealVs(int i)            const { return indRealVs_[i]                              ;}
+  int                              getIndicatorFilter(int i)            const { return indFilter_[i]                              ;}
+  const std::vector<int>         & getIndicatorFilter(void)             const { return indFilter_                                 ;}
+  int                              getNumberOfWells(void)               const { return nWells_                                    ;}
+  int                              getNumberOfSimulations(void)         const { return nSimulations_                              ;}
+  float                            getAlphaMin(void)                    const { return alpha_min_                                 ;}
+  float                            getAlphaMax(void)                    const { return alpha_max_                                 ;}
+  float                            getBetaMin(void)                     const { return beta_min_                                  ;}
+  float                            getBetaMax(void)                     const { return beta_max_                                  ;}
+  float                            getRhoMin(void)                      const { return rho_min_                                   ;}
+  float                            getRhoMax(void)                      const { return rho_max_                                   ;}
+  float                            getVarAlphaMin(void)                 const { return var_alpha_min_                             ;}
+  float                            getVarAlphaMax(void)                 const { return var_alpha_max_                             ;}
+  float                            getVarBetaMin(void)                  const { return var_beta_min_                              ;}
+  float                            getVarBetaMax(void)                  const { return var_beta_max_                              ;}
+  float                            getVarRhoMin(void)                   const { return var_rho_min_                               ;}
+  float                            getVarRhoMax(void)                   const { return var_rho_max_                               ;}
+  float                            getVpVsRatioMin(void)                const { return vp_vs_ratio_min_                           ;}
+  float                            getVpVsRatioMax(void)                const { return vp_vs_ratio_max_                           ;}
+  float                            getRefDepth(void)                    const { return ref_depth_                                 ;}
+  float                            getAverageVelocity(void)             const { return average_velocity_                          ;}
+  float                            getMaxHzBackground(void)             const { return maxHz_background_                          ;}
+  float                            getMaxHzSeismic(void)                const { return maxHz_seismic_                             ;}
+  float                            getMaxRankCorr(void)                 const { return maxRankCorr_                               ;}
+  float                            getMaxMergeDist(void)                const { return maxMergeDist_                              ;}
+  float                            getMaxDevAngle(void)                 const { return maxDevAngle_                               ;}
+  float                            getLowCut(void)                      const { return lowCut_                                    ;}
+  float                            getHighCut(void)                     const { return highCut_                                   ;}
+  float                            getWNC(void)                         const { return wnc_                                       ;}
+  float                            getEnergyThreshold(void)             const { return energyThreshold_                           ;}
+  float                            getMaxWellOffset(void)               const { return maxWellOffset_                             ;}
+  float                            getMaxWellShift(void)                const { return maxWellShift_                              ;}
+  float                            getMinRelWaveletAmp(void)            const { return minRelWaveletAmp_                          ;}
+  float                            getMaxWaveletShift(void)             const { return maxWaveletShift_                           ;}
+  float                            getWaveletTaperingL(void)            const { return waveletTaperingL_                          ;}
+  double                           getXPadFac(void)                     const { return xPadFac_                                   ;}
+  double                           getYPadFac(void)                     const { return yPadFac_                                   ;}
+  double                           getZPadFac(void)                     const { return zPadFac_                                   ;}
+  int                              getNXpad(void)                       const { return nxPad_                                     ;}
+  int                              getNYpad(void)                       const { return nyPad_                                     ;}
+  int                              getNZpad(void)                       const { return nzPad_                                     ;}
+  bool                             getEstimateXYPadding(void)           const { return estimateXYPadding_                         ;}
+  bool                             getEstimateZPadding(void)            const { return estimateZPadding_                          ;}
+  float                            getSegyOffset(void)                  const { return segyOffset_                                ;}
+  float                            getLocalSegyOffset(int i)            const { return localSegyOffset_[i]                        ;}
+  float                            getPundef(void)                      const { return p_undef_                                   ;}
+  double                           getLzLimit(void)                     const { return lzLimit_                                   ;}
+  double                           getTimeDTop(void)                    const { return time_dTop_                                 ;}
+  double                           getTimeLz(void)                      const { return time_lz_                                   ;}
+  double                           getTimeDz(void)                      const { return time_dz_                                   ;}
+  int                              getTimeNz(void)                      const { return time_nz_                                   ;}
+  std::vector<int>                 getAreaILXL(void)                    const { return areaILXL_                                  ;}
+  int                              getAreaSpecification(void)           const { return areaSpecification_                         ;}     
+  bool                             getVelocityFromInversion(void)       const { return velocityFromInv_                           ;}
+  bool                             getWritePrediction(void)             const { return writePrediction_                           ;}
+  int                              getOutputGridsElastic(void)          const { return outputGridsElastic_                        ;}
+  int                              getOutputGridsOther(void)            const { return outputGridsOther_                          ;}
+  int                              getOutputGridsSeismic(void)          const { return outputGridsSeismic_                        ;}
+  int                              getOutputGridFormat(void)            const { return formatFlag_                                ;}
+  int                              getOutputGridDomain(void)            const { return domainFlag_                                ;}
+  bool                             getOutputGridsDefaultInd(void)       const { return outputGridsDefault_                        ;}
+  int                              getWellOutputFlag(void)              const { return wellFlag_                                  ;}
+  int                              getWellFormatFlag(void)              const { return wellFormatFlag_                            ;}
+  int                              getWaveletOutputFlag(void)           const { return waveletFlag_                               ;}
+  int                              getWaveletFormatFlag(void)           const { return waveletFormatFlag_                         ;}
+  int                              getEstimateNumberOfWavelets(void)    const { return static_cast<int>(estimateWavelet_.size())  ;}
+  int                              getOtherOutputFlag(void)             const { return otherFlag_                                 ;}
+  int                              getDebugFlag(void)                   const { return debugFlag_                                 ;}
+  static int                       getDebugLevel(void)                        { return debugFlag_                                 ;}
+  bool                             getFileGrid(void)                    const { return fileGrid_                                  ;}
+  bool                             getEstimationMode(void)              const { return estimationMode_                            ;}
+  bool                             getForwardModeling(void)             const { return forwardModeling_                           ;}
+  bool                             getGenerateSeismicAfterInv(void)     const { return generateSeismicAfterInv_                   ;}
+  bool                             getGenerateBackground(void)          const { return generateBackground_                        ;}
+  bool                             getEstimateFaciesProb(void)          const { return estimateFaciesProb_                        ;}
+  bool                             getFaciesProbRelative(void)          const { return faciesProbRelative_                        ;}
+  bool                             getNoVsFaciesProb(void)              const { return noVsFaciesProb_                            ;}
+  bool                             getUseFilterForFaciesProb()          const { return useFilterForProb_                          ;}
+  bool                             getFaciesLogGiven(void)              const { return faciesLogGiven_                            ;}
+  std::map<std::string,float>      getPriorFaciesProb(void)             const { return priorFaciesProb_                           ;} 
+  int                              getIsPriorFaciesProbGiven(void)      const { return priorFaciesProbGiven_                      ;}
+  bool                             getDepthDataOK(void)                 const { return depthDataOk_                               ;}
+  bool                             getParallelTimeSurfaces(void)        const { return parallelTimeSurfaces_                      ;}
+  bool                             getUseLocalWavelet(void)             const { return useLocalWavelet_                           ;}
+  bool                             getUseLocalNoise(void)               const { return useLocalNoise_                             ;}
+  bool                             getOptimizeWellLocation(void)        const { return optimizeWellLocation_                      ;}
+  bool                             getNoWellNedded(void)                const { return noWellNeeded_                              ;}
+  bool                             getNoSeismicNeeded(void)             const { return noSeismicNeeded_                           ;}
                                                                        
-  int                              getLogLevel(void)                    const { return logLevel_                ;}
-  int                              getSeed(void)                        const { return seed_                    ;}
+  int                              getLogLevel(void)                    const { return logLevel_                                  ;}
+  int                              getSeed(void)                        const { return seed_                                      ;}
 
   bool                             getDoInversion(void);                                            
   bool                             getDoDepthConversion(void)           const;

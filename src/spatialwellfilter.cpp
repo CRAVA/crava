@@ -322,7 +322,7 @@ SpatialWellFilter::updateSigmaE(double ** filter, double ** priCov, double ** po
   }
 
   if(sigmae_.size() > 1) {
-    int nAng = noiseScale.size();
+    int nAng = static_cast<int>(noiseScale.size());
     std::vector<double> maxScale(nAng);
     double maxS, minS;
     for(int angle=0;angle<nAng;angle++) {
@@ -518,7 +518,7 @@ SpatialWellFilter::doVpRhoFiltering(const double ** sigmapri, const double ** si
 
   calculateFilteredLogs(Aw, blockedLogs, n, false);
 
-  updateSigmaEVpRho(Aw, sigmapri2Keep, sigmapost2, sigmae_.size(), n, cravaResult, noiseScale);
+  updateSigmaEVpRho(Aw, sigmapri2Keep, sigmapost2, static_cast<int>(sigmae_.size()), n, cravaResult, noiseScale);
   
   for(int i=0;i<2*n;i++)
   {
@@ -585,7 +585,7 @@ SpatialWellFilter::updateSigmaEVpRho(double ** filter,
   }
 
   if(sigmaeVpRho_.size() > 1) {
-    int nAng = noiseScale.size();
+    int nAng = static_cast<int>(noiseScale.size());
     std::vector<double> maxScale(nAng);
     double maxS, minS;
     for(int angle=0;angle<nAng;angle++) {

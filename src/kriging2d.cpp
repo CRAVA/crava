@@ -22,8 +22,8 @@ void Kriging2D::krigSurface(Grid2D              & trend,
   const std::vector<int> & indexj = krigingData.getIndexJ();
   std::vector<float>       data   = krigingData.getData();   // Take an editable copy
 
-  int nx = trend.GetNI();
-  int ny = trend.GetNJ();
+  int nx = static_cast<int>(trend.GetNI());
+  int ny = static_cast<int>(trend.GetNJ());
   if (md < nx*ny) {
     subtractTrend(data, trend, indexi, indexj, md);
 

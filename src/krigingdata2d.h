@@ -13,14 +13,14 @@ public:
                                      float value);
   void                       findMeanValues(void);
 
-  const std::vector<float> & getData(void)         const { return data_       ;}
-  const std::vector<int>   & getIndexI(void)       const { return indexI_     ;}          
-  const std::vector<int>   & getIndexJ(void)       const { return indexJ_     ;}          
+  const std::vector<float> & getData(void)         const { return data_                          ;}
+  const std::vector<int>   & getIndexI(void)       const { return indexI_                        ;}          
+  const std::vector<int>   & getIndexJ(void)       const { return indexJ_                        ;}          
 
-  inline int                 getNumberOfData(void) const { return data_.size() ;}          
-  inline float               getData(int k)        const { return data_[k]     ;}
-  inline int                 getIndexI(int k)      const { return indexI_[k]   ;}          
-  inline int                 getIndexJ(int k)      const { return indexJ_[k]   ;}          
+  inline int                 getNumberOfData(void) const { return static_cast<int>(data_.size()) ;}          
+  inline float               getData(int k)        const { return data_[k]                       ;}
+  inline int                 getIndexI(int k)      const { return indexI_[k]                     ;}          
+  inline int                 getIndexJ(int k)      const { return indexJ_[k]                     ;}          
  
   void                       writeToFile(const std::string & name);
 

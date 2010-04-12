@@ -181,7 +181,7 @@ FaciesProb::makeFaciesDens(int nfac,
       junk[i] = new double[3];
     }
 
-    int nAng = noiseScale.size();
+    int nAng = static_cast<int>(noiseScale.size());
     // int nAng = int(log(float(sigmaEOrig.size()))/log(2.0));
 
     std::vector<double> maxScale(nAng);
@@ -281,12 +281,13 @@ FaciesProb::makeFaciesDens(int nfac,
     sigmae[2][2] = kstdr*kstdr;
 
   //Establish limits before we invert sigma.
-  float alphaMin = *min_element(alphaFilteredNew.begin(), alphaFilteredNew.end()) - 5.0f*sqrt(sigmae[0][0]);
-  float alphaMax = *max_element(alphaFilteredNew.begin(), alphaFilteredNew.end()) + 5.0f*sqrt(sigmae[0][0]);
-  float betaMin  = *min_element(betaFilteredNew.begin(), betaFilteredNew.end()) - 5.0f*sqrt(sigmae[1][1]);
-  float betaMax  = *max_element(betaFilteredNew.begin(), betaFilteredNew.end()) + 5.0f*sqrt(sigmae[1][1]);
-  float rhoMin   = *min_element(rhoFilteredNew.begin(), rhoFilteredNew.end()) - 5.0f*sqrt(sigmae[2][2]);
-  float rhoMax   = *max_element(rhoFilteredNew.begin(), rhoFilteredNew.end()) + 5.0f*sqrt(sigmae[2][2]);
+  double alphaMin = *min_element(alphaFilteredNew.begin(), alphaFilteredNew.end()) - 5.0f*sqrt(sigmae[0][0]);
+  double alphaMax = *max_element(alphaFilteredNew.begin(), alphaFilteredNew.end()) + 5.0f*sqrt(sigmae[0][0]);
+  double betaMin  = *min_element(betaFilteredNew.begin(), betaFilteredNew.end()) - 5.0f*sqrt(sigmae[1][1]);
+  double betaMax  = *max_element(betaFilteredNew.begin(), betaFilteredNew.end()) + 5.0f*sqrt(sigmae[1][1]);
+  double rhoMin   = *min_element(rhoFilteredNew.begin(), rhoFilteredNew.end()) - 5.0f*sqrt(sigmae[2][2]);
+  double rhoMax   = *max_element(rhoFilteredNew.begin(), rhoFilteredNew.end()) + 5.0f*sqrt(sigmae[2][2]);
+
 
   // invert sigmae
   double **sigmaeinv = new double *[3];
@@ -306,9 +307,9 @@ FaciesProb::makeFaciesDens(int nfac,
     delete [] sigmae[i];
   delete [] sigmae;
 
-  float dAlpha = (alphaMax-alphaMin)/nbinsa;
-  float dBeta  = (betaMax-betaMin)/nbinsb;
-  float dRho   = (rhoMax-rhoMin)/nbinsr;
+  double dAlpha = (alphaMax-alphaMin)/nbinsa;
+  double dBeta  = (betaMax-betaMin)/nbinsb;
+  double dRho   = (rhoMax-rhoMin)/nbinsr;
 
   Surface * rhoMinSurf = new Surface(alphaMin, betaMin, alphaMax-alphaMin, betaMax-betaMin, 2, 2, rhoMin);
   //Associate alpha with x, beta with y and rho with z.
@@ -429,7 +430,7 @@ void FaciesProb::makeFaciesProb(int                            nfac,
   setNeededLogsSpatial(wells, nWells, faciesEstimInterval, dz, relative, noVs, useFilter,
                        alphaFiltered, betaFiltered, rhoFiltered, faciesLog); //Generate these logs.
 
-  int densdim = sigmaEOrig.size();
+  int densdim = static_cast<int>(sigmaEOrig.size());
   std::vector<std::vector<FFTGrid *> > density(densdim);
   std::vector<Simbox*>                 volume(densdim);
 
@@ -437,7 +438,7 @@ void FaciesProb::makeFaciesProb(int                            nfac,
     volume[i] = NULL;
   
   //int nAng = int(log(float(densdim))/log(2.0));
-  int nAng = noiseScale.size();
+  int nAng = static_cast<int>(noiseScale.size());
   double **G = new double*[nAng];
   for(int i=0;i<nAng;i++)
     G[i] = new double[3];
@@ -475,7 +476,7 @@ float FaciesProb::findDensity(float alpha, float beta, float rho,
   double jFull, kFull, lFull;
 
   int i;
-  int dim = density.size();
+  int dim = static_cast<int>(density.size());
   std::vector<float> value(dim);
   for(i=0;i<dim;i++)
   {

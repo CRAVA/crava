@@ -160,7 +160,7 @@ int main(int argc, char** argv)
 
   TaskList::viewAllTasks();  
 
-  Timings::reportTotal(LogKit::LOW);
+  Timings::reportTotal();
 
   LogKit::LogFormatted(LogKit::LOW,"\n*** CRAVA closing  ***\n"); 
   LogKit::LogFormatted(LogKit::LOW,"\n*** CRAVA finished ***\n");

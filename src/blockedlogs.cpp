@@ -1839,8 +1839,8 @@ double BlockedLogs::computeShift(std::vector<double> &zPeak, std::vector<double>
 {
   //This routine computes the position of z0 between two peaks in the well and finds the corresponding distance in
   //the other trace. Then zShift is the difference in z between the two.
-  unsigned int i;
-  int pos = 0;
+  size_t i;
+  size_t pos = 0;
   double zShift;
   if(z0 < zPeakW[0])
     zShift = zPeakW[0] - zPeak[0];

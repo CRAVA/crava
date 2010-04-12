@@ -19,29 +19,29 @@ public:
        Surface  * priorCorrXY);
   ~Corr(void); 
 
-  float   ** getPriorVar0(void)                const { return priorVar0_               ;}
+  float   ** getPriorVar0(void)                const { return priorVar0_                              ;}
   float    * getPriorCorrT(int &n, float &dt)  const;
-  float    * getPriorCorrTFiltered(void)       const { return priorCorrTFiltered_      ;}
-  Surface  * getPriorCorrXY(void)              const { return priorCorrXY_             ;}
+  float    * getPriorCorrTFiltered(void)       const { return priorCorrTFiltered_                     ;}
+  Surface  * getPriorCorrXY(void)              const { return priorCorrXY_                            ;}
 
-  int        getnx(void)                       const { return priorCorrXY_->GetNI()    ;} 
-  int        getny(void)                       const { return priorCorrXY_->GetNJ()    ;} 
-  int        getn(void)                        const { return n_                       ;}
-  float      getdt(void)                       const { return dt_                      ;}
+  int        getnx(void)                       const { return static_cast<int>(priorCorrXY_->GetNI()) ;} 
+  int        getny(void)                       const { return static_cast<int>(priorCorrXY_->GetNJ()) ;} 
+  int        getn(void)                        const { return n_                                      ;}
+  float      getdt(void)                       const { return dt_                                     ;}
  
-  float   ** getPostVar0(void)                 const { return postVar0_                ;}
-  float      getPostCovAlpha00(int k)          const { return postCovAlpha00_[k]       ;}
-  float      getPostCovBeta00(int k)           const { return postCovBeta00_[k]        ;}       
-  float      getPostCovRho00(int k)            const { return postCovRho00_[k]         ;}        
-  float      getPostCrCovAlphaBeta00(int k)    const { return postCrCovAlphaBeta00_[k] ;}
-  float      getPostCrCovAlphaRho00(int k)     const { return postCrCovAlphaRho00_[k]  ;}
-  float      getPostCrCovBetaRho00(int k)      const { return postCrCovBetaRho00_[k]   ;}
-  FFTGrid *& getPostCovAlpha(void)                   { return postCovAlpha_            ;}
-  FFTGrid *& getPostCovBeta(void)                    { return postCovBeta_             ;}       
-  FFTGrid *& getPostCovRho(void)                     { return postCovRho_              ;}        
-  FFTGrid *& getPostCrCovAlphaBeta(void)             { return postCrCovAlphaBeta_      ;}
-  FFTGrid *& getPostCrCovAlphaRho(void)              { return postCrCovAlphaRho_       ;}
-  FFTGrid *& getPostCrCovBetaRho(void)               { return postCrCovBetaRho_        ;}
+  float   ** getPostVar0(void)                 const { return postVar0_                               ;}
+  float      getPostCovAlpha00(int k)          const { return postCovAlpha00_[k]                      ;}
+  float      getPostCovBeta00(int k)           const { return postCovBeta00_[k]                       ;}
+  float      getPostCovRho00(int k)            const { return postCovRho00_[k]                        ;}
+  float      getPostCrCovAlphaBeta00(int k)    const { return postCrCovAlphaBeta00_[k]                ;}
+  float      getPostCrCovAlphaRho00(int k)     const { return postCrCovAlphaRho00_[k]                 ;}
+  float      getPostCrCovBetaRho00(int k)      const { return postCrCovBetaRho00_[k]                  ;}
+  FFTGrid *& getPostCovAlpha(void)                   { return postCovAlpha_                           ;}
+  FFTGrid *& getPostCovBeta(void)                    { return postCovBeta_                            ;}
+  FFTGrid *& getPostCovRho(void)                     { return postCovRho_                             ;}
+  FFTGrid *& getPostCrCovAlphaBeta(void)             { return postCrCovAlphaBeta_                     ;}
+  FFTGrid *& getPostCrCovAlphaRho(void)              { return postCrCovAlphaRho_                      ;}
+  FFTGrid *& getPostCrCovBetaRho(void)               { return postCrCovBetaRho_                       ;}
 
   void       createPostVariances(void);
 

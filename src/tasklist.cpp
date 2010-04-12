@@ -10,8 +10,8 @@ std::vector<std::string> TaskList::task_(0);
 
 void TaskList::viewAllTasks(void)
 {
-  int i;
-  int size = task_.size();
+  size_t i;
+  size_t size = task_.size();
 
   if (size > 0)
   {

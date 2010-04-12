@@ -702,7 +702,7 @@ Background::smoothTrendWithLocalLinearRegression(float      * trend,
   for (int k = 0 ; k < nz ; k++) {
     int nCurDataMin = nDataMin;
     if (k < firstNonmissing || k > lastNonmissing) {
-      nCurDataMin *= 2.0f;
+      nCurDataMin *= 2;
     }
 
     int n = 0;
@@ -1221,7 +1221,7 @@ Background::resampleParameter(FFTGrid *& pNew,        // Resample to
       for (int i=0 ; i<rnxp ; i++) {
         if (i < nx && j < ny && k < nz) {
           int n = 1;
-          float sum = layer[j*nx + i];
+          double sum = layer[j*nx + i];
           if (i>1) {
             sum += layer[j*nx + i - 1];         
             n++;
@@ -1246,7 +1246,7 @@ Background::resampleParameter(FFTGrid *& pNew,        // Resample to
             sum += layer[(j + 1)*nx + i + 1];
             n++;
           }
-          value = sum/static_cast<float>(n);
+          value = static_cast<float>(sum)/static_cast<float>(n);
         } 
         else {
           value = RMISSING; 

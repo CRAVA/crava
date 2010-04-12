@@ -149,8 +149,8 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
             std::vector<float> seisData(nz_);
             bl->getVerticalTrend(&seisLog[0], &seisData[0]);
             for (unsigned int b=0; b<nBlocks; b++) {
-              int xIndex      = iPos[b] + xTr;
-              int yIndex      = jPos[b] + yTr;
+              int xIndex      = iPos[b] + xTr; //NBNB Frode: Gir warning fordi den ikkje blir brukt. Slett om du ikkje skal bruka.
+              int yIndex      = jPos[b] + yTr; //NBNB Frode: Gir warning fordi den ikkje blir brukt. Slett om du ikkje skal bruka.
               float zTop     = static_cast<float> (simBox->getTop(iPos[b], jPos[b]));
 //              zLog[b]         = static_cast<float> (zTop + b * simBox->getRelThick(xIndex, yIndex) * dz_);
               zLog[b]         = static_cast<float> (zTop + b * dzWell[w]);
