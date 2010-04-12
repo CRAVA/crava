@@ -495,6 +495,7 @@ Model::checkAvailableMemory(Simbox        * timeSimbox,
                                     modelSettings->getNYpad(), 
                                     modelSettings->getNZpad());
   long long int gridSizePad = 4*dummyGrid->getrsize();
+
   delete dummyGrid;
   dummyGrid = new FFTGrid(timeSimbox->getnx(), 
                           timeSimbox->getny(), 
@@ -593,7 +594,7 @@ Model::checkAvailableMemory(Simbox        * timeSimbox,
   float mem0        = 4.0f * workSize;
   float mem1        = static_cast<float>(gridMem);
   float mem2        = static_cast<float>(modelSettings->getNumberOfAngles())*gridSizePad + memOneSeis; //Peak memory when reading seismic, overestimated.
- 
+
   float neededMem   = mem0 + std::max(mem1, mem2);
 
   float megaBytes   = neededMem/(1024.f*1024.f);

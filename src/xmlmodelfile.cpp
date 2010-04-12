@@ -2085,10 +2085,9 @@ XmlModelFile::parseGridElasticParameters(TiXmlNode * node, std::string & errTxt)
     }
   }
   else {
-    paramFlag = paramFlag & modelSettings_->getOutputGridsElastic();
+    paramFlag = paramFlag | modelSettings_->getOutputGridsElastic();
     modelSettings_->setOutputGridsElastic(paramFlag);
   }
-
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
@@ -2432,7 +2431,7 @@ XmlModelFile::parseFFTGridPadding(TiXmlNode * node, std::string & errTxt)
 
   if ((estXpad && !estYpad) || (!estXpad && estYpad))
     errTxt += "The lateral padding factors must either both be estimated or both given.";
-  else
+  if (!estXpad && !estYpad)
     modelSettings_->setEstimateXYPadding(false);
 
   checkForJunk(root, errTxt, legalCommands);

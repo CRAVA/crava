@@ -47,6 +47,7 @@ FFTGrid::FFTGrid(int nx, int ny, int nz, int nxp, int nyp, int nzp)
 
   csize_          = cnxp_*nyp_*nzp_;
   rsize_          = rnxp_*nyp_*nzp_;
+
   counterForGet_  = 0; 
   counterForSet_  = 0;
   istransformed_  = false;
@@ -75,6 +76,7 @@ FFTGrid::FFTGrid(FFTGrid  * fftGrid, bool expTrans)
 
   csize_          = cnxp_*nyp_*nzp_;
   rsize_          = rnxp_*nyp_*nzp_;
+
   counterForGet_  = fftGrid->getCounterForGet(); 
   counterForSet_  = fftGrid->getCounterForSet();
   add_            = fftGrid->add_;
