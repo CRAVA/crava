@@ -85,6 +85,17 @@ When using local wavelets, we find the optimal shift and/or scale of the global 
 
 Local noise is estimated using the local noise energies from above. We always use local shift when estimating the noise, but only use local scale if it is used in the inversion. If local scale is used, the noise is divided by this. A noise scaling factor is then computed in each well, and kriged as above.
 
+\subsection{Estimating 3D wavelet}
+\label{sec:3Dwaveestimp}
+The expression for the 3D wavelet given in \autoref{eq:waveletform} has only one unknown element, namely the 1D pulse $w_0(\omega)$. As for the 1D wavelet, the pulse is estimated from wells. Using reflection coefficients from well logs, time gradients estimated from seismic around wells and depth gradients computed from time gradients by using reference time surface and average velocity given by the user, a linear regression model can be set up for the seismic as
+\begin{equation}
+\vect{d} = \vect{K}\vect{w}_0 + \vect{e}.
+\end{equation}
+The least squares estimate for $\vect{w}_0$ is
+\begin{equation}
+\widehat{w}_0 = (\vect{K}'\vect{K})^{-1}\vect{G}'\vect{d}.
+\end{equation}
+
 \subsection{Estimating correlations}
 \label{sec:correstimp}
 We estimate correlations by first blocking the wells into the grid, and then do standard correlation estimation using
