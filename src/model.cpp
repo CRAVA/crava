@@ -2861,10 +2861,20 @@ Model::process1DWavelet(ModelSettings                * modelSettings,
   int error = 0;
   Grid2D * shiftGrid(NULL);
   Grid2D * gainGrid(NULL);
-  if(modelSettings->getUseLocalWavelet() && inputFiles->getScaleFile(i)!="") {
+  if(modelSettings->getUseLocalWavelet() && inputFiles->getScaleFile(i) != "") {
       Surface help(inputFiles->getScaleFile(i));
       gainGrid = new Grid2D(timeSimbox->getnx(),timeSimbox->getny(), 0.0);
       resampleSurfaceToGrid2D(timeSimbox, &help, gainGrid);
+  }
+  if (modelSettings->getUseLocalWavelet() && inputFiles->getShiftFile(i) != ""){
+    Surface helpShift(inputFiles->getShiftFile(i));
+    shiftGrid = new Grid2D(timeSimbox->getnx(),timeSimbox->getny(), 0.0);
+    resampleSurfaceToGrid2D(timeSimbox, &helpShift, shiftGrid);
+  }
+  if (modelSettings->getUseLocalNoise() && inputFiles->getLocalNoiseFile(i) != ""){
+    Surface helpNoise(inputFiles->getLocalNoiseFile(i));
+    localNoiseScale_[i] = new Grid2D(timeSimbox->getnx(), timeSimbox->getny(), 0.0);
+    resampleSurfaceToGrid2D(timeSimbox, &helpNoise, localNoiseScale_[i]);
   }
 
   if (modelSettings->getEstimateWavelet(i)) 
@@ -2983,7 +2993,7 @@ Model::process1DWavelet(ModelSettings                * modelSettings,
       }
 
       if (useLocalGain) {
-        readAndWriteLocalGridsToFile("", // Gain grids have already been read.
+        readAndWriteLocalGridsToFile(inputFiles->getScaleFile(i),
                                      IO::PrefixLocalWaveletGain(),
                                      1.0,
                                      modelSettings,
@@ -4475,10 +4485,16 @@ Model::readAndWriteLocalGridsToFile(const std::string   & fileName,
 
   Surface * help = NULL; 
 
-  if(fileName != "") {
-    help = new Surface(fileName);
-    grid = new Grid2D(timeSimbox->getnx(),timeSimbox->getny(), 0.0);
-    resampleSurfaceToGrid2D(timeSimbox, help, grid);
+  if(fileName != "") { 
+    std::string toPath = NRLib::RemovePath(fileName);
+
+    if (type == IO::PrefixLocalNoise())
+      toPath = NRLib::PrependDir(IO::PathToNoise(), toPath);
+    else
+      toPath = NRLib::PrependDir(IO::PathToWavelets(), toPath);
+
+    NRLib::CreateDirIfNotExists(toPath);
+    NRLib::CopyFile(fileName, toPath, true);
   }
   else {
     if (grid != NULL) {
@@ -4527,13 +4543,13 @@ Model::resampleGrid2DToSurface(const Simbox   * simbox,
   double angle = simbox->getAngle()*180.0/M_PI;
   if(angle > -45 || angle < 45)
   {
-    nx = static_cast<int>(floor(simbox->getnx()*1.0/std::cos(simbox->getAngle())+0.5));
-    ny = static_cast<int>(floor(simbox->getny()*1.0/std::cos(simbox->getAngle())+0.5));
+    nx = static_cast<int>(floor(simbox->getnx()*1.0/std::cos(simbox->getAngle())+0.5)) * 2;
+    ny = static_cast<int>(floor(simbox->getny()*1.0/std::cos(simbox->getAngle())+0.5)) * 2;
   }
   else
   {
-    nx = static_cast<int>(floor(simbox->getnx()*1.0/std::sin(simbox->getAngle())+0.5));
-    ny = static_cast<int>(floor(simbox->getny()*1.0/std::sin(simbox->getAngle())+0.5));
+    nx = static_cast<int>(floor(simbox->getnx()*1.0/std::sin(simbox->getAngle())+0.5)) * 2;
+    ny = static_cast<int>(floor(simbox->getny()*1.0/std::sin(simbox->getAngle())+0.5)) * 2;
   }
   surface = new Surface(xmin,ymin,xmax-xmin,ymax-ymin,nx,ny,0.0);
   double x,y;

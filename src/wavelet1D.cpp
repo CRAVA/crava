@@ -515,7 +515,7 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
   // local scale given means gain !=NULL
   else if(doEstimateLocalNoise==true && gainGrid!=NULL) {
     optScale = globalScale; // Global scale must be given if local scale is given
-    findLocalNoiseWithGainGiven(synt_r, seis_r, nWells, nzp_, dataVarWell, errOptScale, errWell, errWellOptScale, scaleOptWell, gainGrid, wells, simbox);
+    findLocalNoiseWithGainGiven(synt_r, seis_r, nWells, nzp_, dataVarWell, errOptScale, errWell, scaleOptWell, errWellOptScale, gainGrid, wells, simbox);
   }
   else {
     optScale = globalScale;
