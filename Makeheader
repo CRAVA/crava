@@ -5,8 +5,8 @@
 CDIR       = 
 CXX        = g++
 CC         = gcc
-GCCWARNING = -Wall -pedantic -Wno-long-long
-GXXWARNING = -Wall -pedantic -Woverloaded-virtual -Wno-long-long -Wold-style-cast
+GCCWARNING = -Wall -pedantic -Wno-long-long -Werror
+GXXWARNING = -Wall -pedantic -Woverloaded-virtual -Wno-long-long -Wold-style-cast -Werror
 PROGRAM    = cravarun
 GRAMMAR    = grammar
 OPT        = -O2
