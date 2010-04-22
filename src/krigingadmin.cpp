@@ -218,7 +218,7 @@ void CKrigingAdmin::KrigAll(FFTGrid& trendAlpha, FFTGrid& trendBeta, FFTGrid& tr
   {
     FFTGrid *blockGrid = new FFTGrid(simbox_.getnx(), simbox_.getny(), simbox_.getnz(), simbox_.getnx(), simbox_.getny(), simbox_.getnz());
     LogKit::LogFormatted(LogKit::DEBUGLOW,"Grid for reporting block size created. Memory requirements may be wrongly calculated.\n");
-    blockGrid->fillInConstant(0.0);
+    blockGrid->fillInConstant(0.0, false);
     int i,j,k;
     for(i=0;i<simbox_.getnx();i++)
     {
@@ -329,7 +329,7 @@ FFTGrid* CKrigingAdmin::CreateValidGrid() const
   //                             simbox_.getnx(), simbox_.getny(), simbox_.getnz());
   FFTGrid* pGrid = Model::createFFTGrid(simbox_.getnx(), simbox_.getny(), simbox_.getnz(),
                                 simbox_.getnx(), simbox_.getny(), simbox_.getnz(), false);
-  pGrid->fillInConstant(-1.0f);
+  pGrid->fillInConstant(-1.0f, false);
   pGrid->setAccessMode(FFTGrid::RANDOMACCESS);
   int i;
   for (i = 0; i < noData_; i++) {

@@ -325,9 +325,9 @@ FFTGrid::fillInFromStorm(Simbox            * actSimBox,
 }
 
 void
-FFTGrid::fillInConstant(float value)
+FFTGrid::fillInConstant(float value, bool add)
 {  
-  createRealGrid();
+  createRealGrid(add);
   int i,j,k;
   setAccessMode(WRITE);
   for( k = 0; k < nzp_; k++)

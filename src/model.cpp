@@ -106,7 +106,13 @@ Model::Model(const std::string & fileName)
 
   if(!failedModelFile && !failedInputFiles)
   {
-    LogKit::SetScreenLog(modelSettings_->getLogLevel());
+    int debugLevel = modelSettings_->getLogLevel();
+    if(modelSettings_->getDebugLevel() == 1)
+      debugLevel = LogKit::L_DEBUGLOW;
+    else if(modelSettings_->getDebugLevel() == 1)
+      debugLevel = LogKit::L_DEBUGHIGH;
+
+    LogKit::SetScreenLog(debugLevel);
 
     std::string logFileName = IO::makeFullFileName("",IO::FileLog()+IO::SuffixTextFiles());
     LogKit::SetFileLog(logFileName,modelSettings_->getLogLevel());
@@ -114,7 +120,7 @@ Model::Model(const std::string & fileName)
     if(modelSettings_->getDebugFlag() > 0)
     {
       std::string fName = IO::makeFullFileName("",IO::FileDebug()+IO::SuffixTextFiles());
-      LogKit::SetFileLog(fName, LogKit::DEBUGHIGH+LogKit::DEBUGLOW);
+      LogKit::SetFileLog(fName, debugLevel);
     }
     LogKit::EndBuffering();
     

@@ -31,7 +31,7 @@ public:
                                        const std::string & parName,
                                        bool                scale = false,
                                        bool                nopadding = false);    // No mode
-  void                 fillInConstant(float value);              // No mode
+  void                 fillInConstant(float value, bool add = true);              // No mode
   fftw_real*           fillInParamCorr(Corr* corr,int minIntFq,
                                        float gradI, float gradJ);// No mode
   void                 fillInErrCorr(Corr* parCorr,              // No mode
