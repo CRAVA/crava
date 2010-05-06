@@ -31,7 +31,7 @@ ifeq ($(mode),purify)
 DEBUG   = -g
 OPT     = -O0
 PROGRAM = cravarun.purify
-PURIFY  = /nr/prog/rational/releases/PurifyPlus.7.0.0.0-008/i386_linux2/bin/purify
+PURIFY  = purify -best-effort
 endif
 
 OPT     := $(strip $(OPT))
