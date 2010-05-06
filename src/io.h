@@ -65,7 +65,8 @@ public:
   inline static  std::string    PrefixTime(void)                   { return std::string("Time")                     ;}
   inline static  std::string    PrefixDepth(void)                  { return std::string("Depth")                    ;}
   inline static  std::string    PrefixTmpGrids(void)               { return std::string("tmpGrid_")                 ;}
-                                                                                                                    
+  inline static  std::string    PrefixDensity(void)                { return std::string("Density_")                 ;}
+                                                                                                                      
   // Suffixes                                                                                                       
                                                                                                                     
   inline static  std::string    SuffixGeneralData(void)            { return std::string(".dat")                     ;}
@@ -146,10 +147,11 @@ public:
                              BLOCKED_WELLS      = 2,
                              BLOCKED_LOGS       = 4};
 
-  enum           outputOther{EXTRA_SURFACES      = 1,
-                             PRIORCORRELATIONS   = 2,
-                             BACKGROUND_TREND_1D = 4,
-                             LOCAL_NOISE         = 8};
+  enum           outputOther{EXTRA_SURFACES      =  1,
+                             PRIORCORRELATIONS   =  2,
+                             BACKGROUND_TREND_1D =  4,
+                             LOCAL_NOISE         =  8,
+                             ROCK_PHYSICS        = 16};
 
   enum           outputWavelets{WELL_WAVELETS    = 1,
                                 GLOBAL_WAVELETS  = 2,

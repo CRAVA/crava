@@ -857,6 +857,13 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
    \item \Default
  \elist
 
+\paragraph{\hbracket{rock-physics-distributions}}\newkw{rock-physics-distributions}
+ \slist
+   \item \Description Writes rock physics distribution per facies, in a vp, vs, and density STORM-grid. Only available when facies probabilities are computed.
+   \item \Argument 'yes' or 'no'
+   \item \Default 'no'
+\elist
+
 \subsubsection{\hbracket{file-output-prefix}}\newkw{file-output-prefix}
  \slist
    \item \Description Common prefix added to all files written in the run. Identifies the run.
@@ -1802,7 +1809,7 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
    \item \Description Prior facies probabilities are given for all
      facies. Priors can be given as constant numbers or storm
      cubes. If this command is not given, prior distribution is
-     estimated from wells. 
+     estimated from wells.
    \item \Argument Elements controlling facies probabilities
    \item \Default
  \elist
@@ -1832,7 +1839,7 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
  \slist
    \item \Description File name for file containing prior facies
      probability for facies with name given above. Either this command
-     or \kw{probability} is given, same for all facies. 
+     or \kw{probability} is given, same for all facies.
    \item \Argument File name
    \item \Default
  \elist
@@ -1843,7 +1850,7 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
    \item \Description Value defining how large the undefined
      probability will be when facies probabilities are computed. This
      value is scaled and used as likelihood for undefined when facies
-     probabilities are computed. 
+     probabilities are computed.
    \item \Argument Value
    \item \Default 0.01
  \elist

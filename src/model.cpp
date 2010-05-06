@@ -3135,7 +3135,7 @@ Model::getWaveletFileFormat(const std::string & fileName, std::string & errText)
   std::ifstream file;
   NRLib::OpenRead(file,fileName);
   
-  NRLib::GetNextToken(file,dummyStr,line);
+  NRLib::ReadNextToken(file,dummyStr,line);
   targetString = "pulse";
   pos = Utils::findEnd(dummyStr, 0, targetString);
   if(pos>=0)
@@ -3150,7 +3150,7 @@ Model::getWaveletFileFormat(const std::string & fileName, std::string & errText)
     int thisLine = 0;
     bool lineIsComment = true; 
     while (lineIsComment == true) {
-      NRLib::GetNextToken(file,dummyStr,line);
+      NRLib::ReadNextToken(file,dummyStr,line);
       if (NRLib::CheckEndOfFile(file)) {
         errText += "End of wavelet file "+fileName+" is premature\n";
         return 0;

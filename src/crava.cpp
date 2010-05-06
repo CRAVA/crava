@@ -1700,7 +1700,8 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
                               true,
                               modelSettings->getNoVsFaciesProb(), 
                               this,
-                              model_->getLocalNoiseScales());
+                              model_->getLocalNoiseScales(),
+                              model_->getModelSettings());
       delete meanAlpha2_;
       delete meanBeta2_;
       delete meanRho2_;
@@ -1723,7 +1724,8 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
                               false,
                               modelSettings->getNoVsFaciesProb(), 
                               this,
-                              model_->getLocalNoiseScales());
+                              model_->getLocalNoiseScales(),
+                              model_->getModelSettings());
       baseName += "Absolute_";
     }
     fprob_->calculateConditionalFaciesProb(wells_, 

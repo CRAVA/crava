@@ -52,8 +52,7 @@ WellData::WellData(const std::string              & wellFileName,
     useForFaciesProbabilities_(indicatorFacies),
     useForWaveletEstimation_(indicatorWavelet),  
     useForBackgroundTrend_(indicatorBGTrend),
-    realVsLog_(indicatorRealVs),
-    faciesNames_(NULL)
+    realVsLog_(indicatorRealVs)
 {
   errTxt_="";
   if(wellFileName.find(".nwh",0) != std::string::npos)
@@ -121,11 +120,11 @@ WellData::readRMSWell(const std::string              & wellFileName,
   int line = 0;
   NRLib::DiscardRestOfLine(file,line,false); //First two lines contain info we do not need.
   NRLib::DiscardRestOfLine(file,line,false);
-  NRLib::GetNextToken(file, token, line);
+  NRLib::ReadNextToken(file, token, line);
   wellname_ = token;
-  xpos0_ = NRLib::GetNext<double>(file, line);
-  ypos0_ = NRLib::GetNext<double>(file, line);
-  nlog   = NRLib::GetNext<int>(file, line);
+  xpos0_ = NRLib::ReadNext<double>(file, line);
+  ypos0_ = NRLib::ReadNext<double>(file, line);
+  nlog   = NRLib::ReadNext<int>(file, line);
 
   //Start searching for key words.
 
@@ -159,7 +158,7 @@ WellData::readRMSWell(const std::string              & wellFileName,
   nFacies_ = 0;
   for(i=0;i<nlog;i++)
   { 
-    NRLib::GetNextToken(file,token,line);
+    NRLib::ReadNextToken(file,token,line);
     for(j=0;j<nVar;j++)
     {
       if( NRLib::Uppercase(token)==parameterList[j])
@@ -169,7 +168,7 @@ WellData::readRMSWell(const std::string              & wellFileName,
         {
           faciesLogName_ = parameterList[4];
           // facies log - save names
-          NRLib::GetNextToken(file,token,line); // read code word DISC
+          NRLib::ReadNextToken(file,token,line); // read code word DISC
           if (token != "DISC")
           {
             LogKit::LogFormatted(LogKit::ERROR,"ERROR: Facies log must be discrete.\n"); 
@@ -212,13 +211,13 @@ WellData::readRMSWell(const std::string              & wellFileName,
   while (NRLib::CheckEndOfFile(file)==false)
   {
     nData++;
-    dummy = NRLib::GetNext<double>(file,line); // Read x which we do not need yet.
-    dummy = NRLib::GetNext<double>(file,line); // Read y which we do not need yet.
-    dummy = NRLib::GetNext<double>(file,line); // Read z which we do not need.
+    dummy = NRLib::ReadNext<double>(file,line); // Read x which we do not need yet.
+    dummy = NRLib::ReadNext<double>(file,line); // Read y which we do not need yet.
+    dummy = NRLib::ReadNext<double>(file,line); // Read z which we do not need.
 
     for(j=4;j<=nlog+3;j++)
     {
-      dummy = NRLib::GetNext<double>(file,line); // Read z which we do not need.
+      dummy = NRLib::ReadNext<double>(file,line); // Read z which we do not need.
       if(j==pos[0] && dummy != WELLMISSING)
       {
         // Found legal TIME variable
@@ -280,16 +279,16 @@ WellData::readRMSWell(const std::string              & wellFileName,
   line = 0;
   for(i=0;i<4+nlog;i++)
   {
-    NRLib::GetNextToken(file,token,line);
+    NRLib::ReadNextToken(file,token,line);
     if (NRLib::Uppercase(token) == parameterList[4])
     {
-      NRLib::GetNextToken(file,token,line); // read code word DISC
+      NRLib::ReadNextToken(file,token,line); // read code word DISC
       // facies types given here
       for(k=0;k<nFacies_;k++)
       {
-        NRLib::GetNextToken(file,token,line);
+        NRLib::ReadNextToken(file,token,line);
         faciesNr_[k] = NRLib::ParseType<int>(token);
-        NRLib::GetNextToken(file,token,line);
+        NRLib::ReadNextToken(file,token,line);
         faciesNames_.push_back(token);
       }
     }
@@ -315,12 +314,12 @@ WellData::readRMSWell(const std::string              & wellFileName,
   int legal = 0;
   for(i=0;i<nData;i++)
   {
-    xpos  = NRLib::GetNext<double>(file,line);
-    ypos  = NRLib::GetNext<double>(file,line);
-    dummy = NRLib::GetNext<double>(file,line);
+    xpos  = NRLib::ReadNext<double>(file,line);
+    ypos  = NRLib::ReadNext<double>(file,line);
+    dummy = NRLib::ReadNext<double>(file,line);
     for(j=4;j<=nlog+3;j++)
     {
-      dummy = NRLib::GetNext<double>(file,line);
+      dummy = NRLib::ReadNext<double>(file,line);
       if(j==pos[0])
       {
         //Found TIME variable

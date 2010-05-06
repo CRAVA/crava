@@ -471,7 +471,7 @@ private:
   int                               otherFlag_;                  // Decides output beyond grids and wells.
   bool                              fileGrid_;                   // Indicator telling if grids are to be kept on file
   bool                              outputGridsDefault_;         // Indicator telling if grid output has been actively controlled 
-                                                                 
+
   bool                              forwardModeling_;            // Forward modelling
   bool                              estimationMode_;             // Estimation
   bool                              generateSeismicAfterInv_;    // Synthetic seismic from inversion result

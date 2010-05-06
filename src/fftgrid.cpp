@@ -787,7 +787,7 @@ FFTGrid::getNextReal()
 } 
 
 float        
-FFTGrid::getRealValue(int i, int j, int k, bool extSimbox)
+FFTGrid::getRealValue(int i, int j, int k, bool extSimbox) const
 { 
   // when index is in simbox (or the extended simbox if extSimbox is true) it returns the grid value  
   // else it returns RMISSING

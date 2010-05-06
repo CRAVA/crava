@@ -45,7 +45,7 @@ public:
   virtual float        getNextReal() ;                          // Accessmode read/readandwrite
   virtual int          setNextComplex(fftw_complex);            // Accessmode write/readandwrite
   virtual int          setNextReal(float);                      // Accessmode write/readandwrite
-  float                getRealValue(int i, int j, int k, bool extSimbox = false);  // Accessmode randomaccess
+  float                getRealValue(int i, int j, int k, bool extSimbox = false) const;  // Accessmode randomaccess
   float                getRealValueCyclic(int i, int j, int k);
   float                getRealValueInterpolated(int i, int j, float kindex, bool extSimbox = false);
   fftw_complex         getComplexValue(int i, int j, int k, bool extSimbox = false) const;

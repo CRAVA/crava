@@ -37,7 +37,9 @@ public:
              bool                           relative,
              bool                           noVs,
              Crava                         *cravaResult,
-             const std::vector<Grid2D *>   & noiseScale);
+             const std::vector<Grid2D *>  & noiseScale,
+             const ModelSettings          * modelSettings);
+
   ~FaciesProb();
 
   FFTGrid              * getFaciesProb(int i){return faciesProb_[i];};
@@ -83,8 +85,9 @@ private:
                                         float                          p_undef,
                                         const float                  * priorFacies,
                                         FFTGrid                     ** priorFaciesCubes,
-                                        Crava                         * cravaResult,
-                                        const std::vector<Grid2D *>   & noiseScale);
+                                        Crava                        * cravaResult,
+                                        const std::vector<Grid2D *>  & noiseScale,
+                                        const ModelSettings          * modelSettings);
 
   std::vector<FFTGrid *> makeFaciesHistAndSetPriorProb(const std::vector<float> & alpha,
                                                        const std::vector<float> & beta,
@@ -127,14 +130,23 @@ private:
                                             float                    & varBeta,
                                             float                    & varRho);
 
-  float                  findDensity(float          alpha, 
-                                     float          beta, 
-                                     float          rho, 
-                                     std::vector<std::vector<FFTGrid*> >       density, 
-                                     int facies,
-                                     const std::vector<Simbox *> volume,
-                                      std::vector<float> t, 
-                                      int nAng);
+  float                  findDensity(float                                       alpha, 
+                                     float                                       beta, 
+                                     float                                       rho, 
+                                     const std::vector<std::vector<FFTGrid*> > & density, 
+                                     int                                         facies,
+                                     const std::vector<Simbox *>               & volume,
+                                     const std::vector<float>                  & t, 
+                                     int                                         nAng);
+
+  void                   resampleAndWriteDensity(const FFTGrid     * density, 
+                                                 const std::string & fileName,
+                                                 const Simbox      * origVol,
+                                                 Simbox            * volume, 
+                                                 int                 gridNo,
+                                                 bool                writeSurface);
+  Simbox *               createExpVol(const Simbox * volume);
+
 
   void                   calculateFaciesProb(FFTGrid                      * alphagrid, 
                                              FFTGrid                      * betagrid, 

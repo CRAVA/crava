@@ -44,11 +44,13 @@ FaciesProb::FaciesProb(FFTGrid                      * alpha,
                        bool                           relative,
                        bool                           noVs,
                        Crava                          *cravaResult,
-                       const std::vector<Grid2D *>   & noiseScale)
+                       const std::vector<Grid2D *>   & noiseScale,
+                       const ModelSettings *           modelSettings)
 {
   makeFaciesProb(nFac, alpha, beta, rho, sigmaEOrig, useFilter, wells, nWells, 
                  faciesEstimInterval, dz, relative, noVs,
-                 p_undef, priorFacies, priorFaciesCubes, cravaResult, noiseScale);
+                 p_undef, priorFacies, priorFaciesCubes, cravaResult, noiseScale,
+                 modelSettings);
 }
 
 FaciesProb::~FaciesProb()
@@ -389,12 +391,6 @@ FaciesProb::makeFaciesDens(int nfac,
     density[i]->multiply(smoother);
     density[i]->invFFTInPlace();
     density[i]->multiplyByScalar(float(sqrt(double(nbinsa*nbinsb*nbinsr))));
-    if(ModelSettings::getDebugLevel() >= 1)
-    {
-      std::string baseName = "Dens_" + NRLib::ToString(i) + IO::SuffixAsciiFiles();
-      std::string fileName = IO::makeFullFileName(IO::PathToDebug(), baseName);
-      density[i]->writeAsciiFile(fileName);
-    }
   }
   delete smoother;
   delete [] smooth;
@@ -419,8 +415,9 @@ void FaciesProb::makeFaciesProb(int                            nfac,
                                 float                          p_undef,
                                 const float                  * priorFacies,
                                 FFTGrid                     ** priorFaciesCubes,
-                                Crava                         * cravaResult,
-                                const std::vector<Grid2D *>   & noiseScale)
+                                Crava                        * cravaResult,
+                                const std::vector<Grid2D *>  & noiseScale,
+                                const ModelSettings          * modelSettings)
 {
   std::vector<float> alphaFiltered;
   std::vector<float> betaFiltered;
@@ -445,9 +442,30 @@ void FaciesProb::makeFaciesProb(int                            nfac,
 
   cravaResult->computeG(G);
 
-  for(int i=0;i<densdim;i++)    // 
+  for(int i=0;i<densdim;i++) {
     makeFaciesDens(nfac, sigmaEOrig, useFilter, noVs, alphaFiltered, betaFiltered, rhoFiltered, 
                    faciesLog, density[i], &volume[i], i, G, cravaResult, noiseScale);
+    if(modelSettings->getOtherOutputFlag() && IO::ROCK_PHYSICS > 0 && 
+       (i == 0 || i == densdim-1)) {
+      Simbox * expVol = createExpVol(volume[i]);
+      for(int j=0; j<static_cast<int>(density[i].size()); j++) {
+        std::string baseName;
+        if(densdim > 1) {
+          if(i == 0) 
+            baseName = "Rock_Physics_Min_Noise_";
+          else
+            baseName = "Rock_Physics_Max_Noise_";
+        }
+        else
+          baseName = "Rock_Physics_";
+        baseName = baseName + modelSettings->getFaciesName(j);
+        std::string fileName = IO::makeFullFileName(IO::PathToInversionResults(), baseName);
+        bool writeSurface = (j==0); //writeSurface is true if j == 0.
+        resampleAndWriteDensity(density[i][j], fileName, volume[i], expVol, i, writeSurface);
+      }
+      delete expVol;
+    }
+  }
 
   if(priorFaciesCubes != NULL)
     normalizeCubes(priorFaciesCubes);
@@ -466,12 +484,14 @@ void FaciesProb::makeFaciesProb(int                            nfac,
   delete [] G;
 }
 
-float FaciesProb::findDensity(float alpha, float beta, float rho, 
-                              std::vector<std::vector<FFTGrid*> > density, 
-                              int facies, 
-                              const std::vector<Simbox *> volume, 
-                              std::vector<float> t, 
-                              int nAng)
+float FaciesProb::findDensity(float                                       alpha, 
+                              float                                       beta, 
+                              float                                       rho, 
+                              const std::vector<std::vector<FFTGrid*> > & density, 
+                              int                                         facies, 
+                              const std::vector<Simbox *>               & volume, 
+                              const std::vector<float>                  & t, 
+                              int                                         nAng)
 {
   double jFull, kFull, lFull;
 
@@ -579,6 +599,86 @@ float FaciesProb::findDensity(float alpha, float beta, float rho,
   else
     return 0.0;
 }
+
+
+void
+FaciesProb::resampleAndWriteDensity(const FFTGrid     * density, 
+                                    const std::string & fileName,
+                                    const Simbox      * origVol,
+                                    Simbox            * volume,
+                                    int                 gridNo,
+                                    bool                writeSurface)
+{
+  if(writeSurface == true) {
+    int format = IO::STORM;
+    std::string topSurf  = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixDensity() + NRLib::ToString(gridNo);
+    std::string baseSurf = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixDensity() + NRLib::ToString(gridNo);
+    volume->writeTopBotGrids(topSurf, baseSurf, IO::PathToInversionResults(), format);
+    volume->setTopBotName(topSurf, baseSurf, format);
+  }
+
+  int nx = density->getNx();
+  int ny = density->getNy();
+  int nz = density->getNz();
+
+  FFTGrid expDens(nx, ny, nz, nx, ny, nz);
+  expDens.createRealGrid();
+
+  double sum = 0;
+  for(int k=0; k<nz; k++) {
+    for(int j=0; j<ny; j++) {
+      for(int i=0; i<nx; i++) {
+        double alpha, beta, rho;
+        volume->getCoord(i, j, k, alpha, beta, rho);
+        double aInd, bInd, rInd;
+        origVol->getInterpolationIndexes(log(alpha), log(beta), log(rho), aInd, bInd, rInd);
+        double ti = aInd-floor(aInd);
+        double tj = bInd-floor(bInd);
+        double tk = rInd-floor(rInd);
+        int li  = static_cast<int>(floor(aInd));
+        int li2 = (li == nx-1) ? li : li+1;
+        int lj = static_cast<int>(floor(bInd));
+        int lj2 = (lj == ny-1) ? lj : lj+1;
+        int lk = static_cast<int>(floor(rInd));
+        int lk2 = (lk == nz-1) ? lk : lk+1;
+        double tmpFrontLeft  = density->getRealValue(li, lj, lk)*(1-tk)+density->getRealValue(li, lj, lk2)*tk;
+        double tmpFrontRight = density->getRealValue(li2, lj, lk)*(1-tk)+density->getRealValue(li2, lj, lk2)*tk;
+        double tmpBackLeft   = density->getRealValue(li, lj2, lk)*(1-tk)+density->getRealValue(li, lj2, lk2)*tk;
+        double tmpBackRight  = density->getRealValue(li2, lj2, lk)*(1-tk)+density->getRealValue(li2, lj2, lk2)*tk;
+        double tmpLeft  = tmpFrontLeft*(1-tj)+tmpBackLeft*tj;
+        double tmpRight = tmpFrontRight*(1-tj)+tmpBackRight*tj;
+        double value = (tmpLeft*(1-ti)+tmpRight*ti)/alpha/beta/rho;
+        expDens.setRealValue(i, j, k, static_cast<float>(value));
+        sum += value;
+      }
+    }
+  }
+  expDens.multiplyByScalar(static_cast<float>(1.0/sum));
+  expDens.writeStormFile(fileName, volume);
+}
+
+
+Simbox * 
+FaciesProb::createExpVol(const Simbox * volume)
+{
+  double minA = exp(volume->getx0());
+  double minB = exp(volume->gety0());
+  double maxA = exp(volume->getx0()+volume->getlx());
+  double maxB = exp(volume->gety0()+volume->getly());
+  double minLR, maxLR;
+  volume->getMinMaxZ(minLR, maxLR);
+  double minR = exp(minLR);
+  double maxR = exp(maxLR);
+
+  double dA = (maxA-minA)/volume->getnx();
+  double dB = (maxB-minB)/volume->getny();
+  double dR = (maxR-minR)/volume->getnz();
+
+  Surface * rhoMinSurf = new Surface(minA, minB, maxA-minA, maxB-minB, 2, 2, minR);
+  Simbox  * expVol      = new Simbox(minA, minB, rhoMinSurf, maxA-minA, maxB-minB, maxR-minR, 0, dA, dB, dR); 
+  return(expVol);
+}
+
 
 void FaciesProb::calculateConditionalFaciesProb(WellData                      ** wells, 
                                                 int                              nWells, 

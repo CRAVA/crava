@@ -57,7 +57,7 @@ IO::findGridType(const std::string & fileName)
   if (IsCravaBinaryFile(fileName))
     return(CRAVA);
   else {
-    int fType = NRLib::FindFileType(fileName);
+    int fType = NRLib::FindGridFileType(fileName);
     if (fType == NRLib::STORM_PETRO_BINARY)
       return(STORM);
     else if (fType == NRLib::SEGY)

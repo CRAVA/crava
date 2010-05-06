@@ -941,7 +941,7 @@ Wavelet::WaveletReadJason(const std::string & fileName,
       return;
     }
 
-    NRLib::GetNextToken(file,dummyStr,line);
+    NRLib::ReadNextToken(file,dummyStr,line);
     if (line == thisLine)
       NRLib::DiscardRestOfLine(file,line,false);
     thisLine = line;        
@@ -957,7 +957,7 @@ Wavelet::WaveletReadJason(const std::string & fileName,
     errCode=1; 
     return;
   } 
-  NRLib::GetNextToken(file,dummyStr,line);
+  NRLib::ReadNextToken(file,dummyStr,line);
   if (line == thisLine)
     NRLib::DiscardRestOfLine(file,line,false);
   thisLine = line;
@@ -969,7 +969,7 @@ Wavelet::WaveletReadJason(const std::string & fileName,
     errCode=1; 
     return;
   }
-  NRLib::GetNextToken(file,dummyStr,line); 
+  NRLib::ReadNextToken(file,dummyStr,line); 
   if (line == thisLine)
     NRLib::DiscardRestOfLine(file,line,false);
   thisLine = line;
@@ -989,7 +989,7 @@ Wavelet::WaveletReadJason(const std::string & fileName,
       errCode=1; 
       return;
     } 
-    NRLib::GetNextToken(file,dummyStr,line);
+    NRLib::ReadNextToken(file,dummyStr,line);
 
     rAmp_[i] = static_cast<fftw_real>(NRLib::ParseType<float>(dummyStr));
   }
