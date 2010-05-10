@@ -226,7 +226,7 @@ private:
                                           ModelSettings *& modelSettings);
   void             estimateZPaddingSize(Simbox         * timeSimbox,
                                         ModelSettings *& modelSettings);
-  int              readGridFromFile(const std::string       & fileName,
+  void             readGridFromFile(const std::string       & fileName,
                                     const std::string       & parName,
                                     const float               offset,
                                     FFTGrid                *& grid,
@@ -235,6 +235,7 @@ private:
                                     int                       gridType,
                                     Simbox                  * timeSimbox,
                                     ModelSettings           * modelSettings, 
+                                    int                     & outsideTraces,
                                     std::string             & errorText,
                                     bool                      nopadding = false);
   int              readSegyFile(const std::string       & fileName, 

@@ -1577,16 +1577,18 @@ Model::processSeismic(FFTGrid      **& seisCube,
       if(offset < 0)
         offset = modelSettings->getSegyOffset();
 
-      int outsideTraces = readGridFromFile(fileName,
-                                           dataName,
-                                           offset,
-                                           seisCube[i],
-                                           geometry[i],
-                                           modelSettings->getTraceHeaderFormat(i),
-                                           FFTGrid::DATA,
-                                           timeSimbox,
-                                           modelSettings,
-                                           tmpErrText);
+      int outsideTraces = 0;
+      readGridFromFile(fileName,
+                       dataName,
+                       offset,
+                       seisCube[i],
+                       geometry[i],
+                       modelSettings->getTraceHeaderFormat(i),
+                       FFTGrid::DATA,
+                       timeSimbox,
+                       modelSettings,
+                       outsideTraces,
+                       tmpErrText);
       if(tmpErrText != "")
       {
         tmpErrText += "\nReading of file \'"+fileName+"\' for "+dataName+" failed.\n";
@@ -2153,16 +2155,18 @@ Model::processBackground(Background   *& background,
           const TraceHeaderFormat * dummy2 = NULL;
           const float               offset = modelSettings->getSegyOffset();
           std::string errorText("");
-          int outsideTraces = readGridFromFile(backFile,
-                                               parName[i],
-                                               offset,
-                                               backModel[i],
-                                               dummy1,
-                                               dummy2,
-                                               FFTGrid::PARAMETER,
-                                               timeSimbox,
-                                               modelSettings,
-                                               errorText);
+          int outsideTraces = 0;
+          readGridFromFile(backFile,
+                           parName[i],
+                           offset,
+                           backModel[i],
+                           dummy1,
+                           dummy2,
+                           FFTGrid::PARAMETER,
+                           timeSimbox,
+                           modelSettings,
+                           outsideTraces,
+                           errorText);
           if(errorText != "")
           {
             errorText += "Reading of file '"+backFile+"' for parameter '"+parName[i]+"' failed\n";
@@ -2214,7 +2218,7 @@ Model::processBackground(Background   *& background,
   Timings::setTimePriorExpectation(wall,cpu);
 }
 
-int
+void
 Model::readGridFromFile(const std::string       & fileName,
                         const std::string       & parName,
                         const float               offset,
@@ -2224,34 +2228,35 @@ Model::readGridFromFile(const std::string       & fileName,
                         int                       gridType,
                         Simbox                  * timeSimbox,
                         ModelSettings           * modelSettings,
+                        int                     & outsideTraces,
                         std::string             & errText,
                         bool                      nopadding)
 {
   int fileType = IO::findGridType(fileName);
 
-  int outsideTraces = 0;
+  outsideTraces = 0;
   if(fileType == IO::CRAVA) 
   {
-    int xpad, ypad, zpad;
+    int nxPad, nyPad, nzPad;
     if(nopadding)
     {
-      xpad = timeSimbox->getnx();
-      ypad = timeSimbox->getny();
-      zpad = timeSimbox->getnz();
+      nxPad = timeSimbox->getnx();
+      nyPad = timeSimbox->getny();
+      nzPad = timeSimbox->getnz();
     }
     else
     {
-      xpad = modelSettings->getNXpad();
-      ypad = modelSettings->getNYpad();
-      zpad = modelSettings->getNZpad();
+      nxPad = modelSettings->getNXpad();
+      nyPad = modelSettings->getNYpad();
+      nzPad = modelSettings->getNZpad();
     }
     LogKit::LogFormatted(LogKit::LOW,"\nReading grid \'"+parName+"\' from file "+fileName);
     grid = createFFTGrid(timeSimbox->getnx(),
                          timeSimbox->getny(), 
                          timeSimbox->getnz(),
-                         xpad, 
-                         ypad, 
-                         zpad,
+                         nxPad, 
+                         nyPad, 
+                         nzPad,
                          modelSettings->getFileGrid());
     
     grid->setType(gridType);
@@ -2269,9 +2274,7 @@ Model::readGridFromFile(const std::string       & fileName,
     errText += "\nReading of file \'"+fileName+"\' for grid type \'"
                +parName+"\'failed. File type not recognized.\n";
   }
-  return(outsideTraces);
 }
-
 
 void 
 Model::processPriorCorrelations(Corr         *& correlations,
@@ -2808,32 +2811,32 @@ Model::processWavelets(Wavelet                    **& wavelet,
       seisCube[i]->setAccessMode(FFTGrid::RANDOMACCESS);
 
     if (modelSettings->getWaveletDim(i) == Wavelet::ONE_D) 
-      error = process1DWavelet(modelSettings,
-                               inputFiles,
-                               timeSimbox,
-                               seisCube,
-                               wells,
-                               waveletEstimInterval,
-                               reflectionMatrix[i],
-                               errText,
-                               wavelet[i],
-                               i);
+      error += process1DWavelet(modelSettings,
+                                inputFiles,
+                                timeSimbox,
+                                seisCube,
+                                wells,
+                                waveletEstimInterval,
+                                reflectionMatrix[i],
+                                errText,
+                                wavelet[i],
+                                i);
     else
-      error = process3DWavelet(modelSettings,
-                               inputFiles,
-                               timeSimbox,
-                               seisCube,
-                               wells,
-                               waveletEstimInterval,
-                               reflectionMatrix[i],
-                               errText,
-                               wavelet[i],
-                               i,
-                               refTimeGradX,
-                               refTimeGradY,
-                               tGradX,
-                               tGradY);
-
+      error += process3DWavelet(modelSettings,
+                                inputFiles,
+                                timeSimbox,
+                                seisCube,
+                                wells,
+                                waveletEstimInterval,
+                                reflectionMatrix[i],
+                                errText,
+                                wavelet[i],
+                                i,
+                                refTimeGradX,
+                                refTimeGradY,
+                                tGradX,
+                                tGradY);
+    
     if(localNoiseScale_[i]!=NULL)
       localNoiseSet = true;
     if(modelSettings_->getForwardModeling()==false) // else, no seismic data
@@ -2948,6 +2951,7 @@ Model::process1DWavelet(ModelSettings                * modelSettings,
                                                                localNoiseScale_[i], 
                                                                shiftGrid, 
                                                                gainGrid);
+
       if(modelSettings->getEstimateSNRatio(i))
         modelSettings->setSNRatio(i,SNRatio);
     }
@@ -3456,6 +3460,7 @@ void Model::readPriorFaciesProbCubes(InputFiles      * inputFiles,
       const TraceHeaderFormat * dummy2 = NULL;
       const float               offset = modelSettings->getSegyOffset();
       std::string errorText("");
+      int outsideTraces = 0;
       readGridFromFile(faciesProbFile,
                        "priorfaciesprob",
                        offset,
@@ -3465,6 +3470,7 @@ void Model::readPriorFaciesProbCubes(InputFiles      * inputFiles,
                        FFTGrid::PARAMETER,
                        timeSimbox,
                        modelSettings,
+                       outsideTraces,
                        errorText, 
                        true);
       if(errorText != "")
@@ -4349,6 +4355,7 @@ Model::loadVelocity(FFTGrid          *& velocity,
     const TraceHeaderFormat * dummy2 = NULL;
     const float               offset = modelSettings->getSegyOffset();
     std::string errorText("");
+    int outsideTraces = 0;
     readGridFromFile(velocityField,
                      "velocity field",
                      offset,
@@ -4358,6 +4365,7 @@ Model::loadVelocity(FFTGrid          *& velocity,
                      FFTGrid::PARAMETER,
                      timeSimbox,
                      modelSettings,
+                     outsideTraces,
                      errorText);
     
     if (errorText == "") { // No errors

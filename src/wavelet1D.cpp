@@ -383,12 +383,17 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
   float errStd  = 0.0f;
   float dataVar = 0.0f;
 
-  int      nWells                = modelSettings->getNumberOfWells();
-  bool     doEstimateLocalShift  = modelSettings->getEstimateLocalShift(number);
-  bool     doEstimateLocalScale  = modelSettings->getEstimateLocalScale(number);
-  bool     doEstimateLocalNoise  = modelSettings->getEstimateLocalNoise(number);
-  bool     doEstimateGlobalScale = modelSettings->getEstimateGlobalWaveletScale(number);
-  bool     doEstimateSNRatio     = modelSettings->getEstimateSNRatio(number);
+  std::string angle                 = NRLib::ToString((180.0/M_PI)*theta_, 1);
+  int         nWells                = modelSettings->getNumberOfWells();
+  bool        doEstimateLocalShift  = modelSettings->getEstimateLocalShift(number);
+  bool        doEstimateLocalScale  = modelSettings->getEstimateLocalScale(number);
+  bool        doEstimateLocalNoise  = modelSettings->getEstimateLocalNoise(number);
+  bool        doEstimateGlobalScale = modelSettings->getEstimateGlobalWaveletScale(number);
+  bool        doEstimateSNRatio     = modelSettings->getEstimateSNRatio(number);
+  bool        doEstimateWavelet     = modelSettings->getEstimateWavelet(number);
+
+  bool        estimateSomething     = doEstimateLocalShift || doEstimateLocalScale || doEstimateLocalNoise 
+                                      || doEstimateGlobalScale || doEstimateSNRatio || doEstimateWavelet;
 
   //Noise estimation
   fftw_real    ** cpp_r           = new fftw_real*[nWells];
@@ -472,7 +477,6 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
         shiftReal(-shift/dzWell[w], synt_r[w], nzp_);
         bl->fillInSeismic(&seisData[0], start, length, seis_r[w], nzp_);
         if(ModelSettings::getDebugLevel() > 0) {
-          std::string angle = NRLib::ToString(theta_/(M_PI*180.0),1);
           std::string fileName;
           fileName = "seismic_Well_" + NRLib::ToString(w) + "_" + angle;
           printVecToFile(fileName,seis_r[w], nzp_);
@@ -571,18 +575,27 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
             optScale,SNOptimalGlobal,scaleOptWell[w],SNOptimalLocal);
     }
     else
-      LogKit::LogFormatted(LogKit::LOW,"  %-20s      -            -             -      -           -      -\n",
-      wells[w]->getWellname().c_str()); 
+      LogKit::LogFormatted(LogKit::LOW,"  %-20s      -            -             -      -           -      -\n",wells[w]->getWellname().c_str());
   }
-  for(int w=0; w<nWells; w++) {
-    if((scaleOptWell[w]>=3.0 || scaleOptWell[w]<=0.3334) && nActiveData[w]>0) {
-      LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: The well %s has a optimal local gain value indicating that this well should not be used for wavelet estimation\n",
-          wells[w]->getWellname().c_str());
+
+  if (estimateSomething) {
+    float minLocalGain = 0.3334f;
+    float maxLocalGain = 3.0f;
+    for(int w=0; w<nWells; w++) {
+      if((scaleOptWell[w] >= maxLocalGain || scaleOptWell[w] <= minLocalGain) && nActiveData[w]>0) {
+        std::string text;
+        text  = "\nWARNING: An optimal local gain cannot be established for well "+wells[w]->getWellname()+". The gain-value found ("+NRLib::ToString(scaleOptWell[w],3)+")\n";
+        text += "         is outside the interval accepted by CRAVA which is <"+NRLib::ToString(minLocalGain,2)+", "+NRLib::ToString(maxLocalGain,2)+">.\n";
+        LogKit::LogFormatted(LogKit::WARNING, text);
+        if (modelSettings->getEstimateWavelet(number)) {
+          TaskList::addTask("Well "+wells[w]->getWellname()+" should not be used in the wavelet estimation for angle stack "+angle+".");
+        }
+      }
     }
   }
 
   if(doEstimateLocalScale==true) {
-// Estimate global noise with local waveletscale
+    // Estimate global noise with local waveletscale
     dataVar = 0.0;
     errStd = 0.0;
     for(int w=0; w<nWells; w++) {
@@ -643,32 +656,41 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
   else
   {
     float SNRatio = modelSettings->getSNRatio(number);
-    LogKit::LogFormatted(LogKit::LOW,"\n  The signal to noise ratio given in the model file and used for this angle stack is: %6.2f\n", SNRatio);
-    LogKit::LogFormatted(LogKit::LOW,"  For comparison, the signal to noise ratio calculated from the wells is: %6.2f\n", empSNRatio);
-    float minSN = static_cast<float>(1+(empSNRatio-1)/2.0);
-    float maxSN = static_cast<float>(1+(empSNRatio-1)*2.0);
-    if ((SNRatio<minSN || SNRatio>maxSN) && 
-        modelSettings->getEstimateWavelet(number))
+    LogKit::LogFormatted(LogKit::LOW,"\n  The signal to noise ratio given in the model file and used for this angle stack is : %6.2f\n", SNRatio);
+    LogKit::LogFormatted(LogKit::LOW,"  For comparison, the signal-to-noise ratio calculated from the available wells is   : %6.2f\n", empSNRatio);
+    float minSN = 1.0f + (empSNRatio - 1.0f)/2.0f;
+    float maxSN = 1.0f + (empSNRatio - 1.0f)*2.0f;
+    if ((SNRatio<minSN || SNRatio>maxSN) && modelSettings->getEstimateWavelet(number))
     {
-      LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: The deviation between the SN ratio from the model file and the calculated SN ratio is too large.\n");
+      LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: The difference between the SN ratio given in the model file and the calculated SN ratio is too large.\n");
       if (SNRatio < minSN)
-        TaskList::addTask("To obtain relaible inversion results, increased the SN ratio for angle stack "+NRLib::ToString(number)+" to minimum "+NRLib::ToString(minSN,1));
+        TaskList::addTask("Consider increasing the SN ratio for angle stack "+NRLib::ToString(number)+" to minimum "+NRLib::ToString(minSN,1));
       else
-        TaskList::addTask("To obtain relaible inversion results, decrease the SN ratio for angle stack "+NRLib::ToString(number)+" to maximum "+NRLib::ToString(minSN,1));
+        TaskList::addTask("Consider decreasing the SN ratio for angle stack "+NRLib::ToString(number)+" to maximum "+NRLib::ToString(minSN,1));
     }        
   }
 
   if (empSNRatio < 1.1f) {
-    LogKit::LogFormatted(LogKit::WARNING,"\nERROR: The empirical signal-to-noise ratio Var(data)/Var(noise) is %.2f. Ratios smaller",empSNRatio);
-    LogKit::LogFormatted(LogKit::WARNING,"\n       than 1.1 are not acceptable. The signal-to-noise ratio was not reliably estimated");
-    LogKit::LogFormatted(LogKit::WARNING,"\n       and you must give it as input in the model file.\n");
-    LogKit::LogFormatted(LogKit::WARNING,"\n       If the wavelet was estimated by CRAVA the solution may be to remove one or more wells");
-    LogKit::LogFormatted(LogKit::WARNING,"\n       from the wavelet estimation (compare shifts and SN-ratios for different wells).\n");
-
-    errText += "Invalid signal-to-noise ratio obtained for the angle-gather of "+NRLib::ToString(static_cast<float>(180.0/M_PI)*seisCube->getTheta())+" degrees.\n";
-    error += 1;
+    if (doEstimateSNRatio) {
+      LogKit::LogFormatted(LogKit::WARNING,"\nERROR: The empirical signal-to-noise ratio Var(data)/Var(noise) is %.2f. Ratios smaller",empSNRatio);
+      LogKit::LogFormatted(LogKit::WARNING,"\n       than 1.1 are not acceptable. The signal-to-noise ratio was not reliably estimated");
+      LogKit::LogFormatted(LogKit::WARNING,"\n       and you must give it as input in the model file.\n");
+      LogKit::LogFormatted(LogKit::WARNING,"\n       If the wavelet was estimated by CRAVA the solution may be to remove one or more wells");
+      LogKit::LogFormatted(LogKit::WARNING,"\n       from the wavelet estimation (compare shifts and SN-ratios for different wells).\n");
+      
+      errText += "Invalid signal-to-noise ratio obtained for the angle-gather of "+angle+" degrees.\n";
+      error += 1;
+    }
+    else {
+      LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: The empirical signal-to-noise ratio Var(data)/Var(noise) is %.2f. Ratios smaller",empSNRatio);
+      LogKit::LogFormatted(LogKit::WARNING,"\n         than 1.1 are not acceptable. If the low ratio is caused by one or more specific");
+      LogKit::LogFormatted(LogKit::WARNING,"\n         wells, these wells should not have been included in the wavelet estimation. If");
+      LogKit::LogFormatted(LogKit::WARNING,"\n         they indeed were omitted, you can avoid this warning by specifying");
+      LogKit::LogFormatted(LogKit::WARNING,"\n         <use-for-wavelet-estimation> no </use-...> for these wells in the model file.\n");                           
+      TaskList::addTask("Check the signal-to-noise ratio given for angle stack "+NRLib::ToString(number)+" against that calculated by CRAVA.");
+    }
   }
-  
+
   return empSNRatio;
 }
 
@@ -1312,7 +1334,8 @@ Wavelet1D::writeDebugInfo(fftw_real ** seis_r,
                           fftw_real ** cpp_r,
                           int          nWells) const
 {
-  std::string fileName = "estimated_wavelet_full_"+NRLib::ToString(int(ceil((theta_*180/M_PI)-0.5)))+".txt";
+  std::string angle    = NRLib::ToString(theta_*180/M_PI, 1);
+  std::string fileName = "estimated_wavelet_full_"+angle+".txt";
         
   std::ofstream fid;
   NRLib::OpenWrite(fid,fileName);
@@ -1323,7 +1346,8 @@ Wavelet1D::writeDebugInfo(fftw_real ** seis_r,
   fid.clear();
     
   for(int j=0;j<nWells;j++) {
-    fileName = "seis_"+NRLib::ToString(int(theta_*180/M_PI+0.5))+"_well_"+NRLib::ToString(j+1)+".txt";
+    std::string jp1 = NRLib::ToString(j+1);
+    fileName = "seis_"+angle+"_well_"+jp1+".txt";
     NRLib::OpenWrite(fid,fileName);
     fid << std::setprecision(6);
     for(int i=0;i<nzp_;i++)
@@ -1331,7 +1355,7 @@ Wavelet1D::writeDebugInfo(fftw_real ** seis_r,
     fid.close();
     fid.clear();
         
-    fileName = "cor_cpp_"+NRLib::ToString(int(theta_*180/M_PI+0.5))+"well_"+NRLib::ToString(j+1)+".txt";
+    fileName = "cor_cpp_"+angle+"well_"+jp1+".txt";
     NRLib::OpenWrite(fid,fileName);
     fid << std::setprecision(6);
     for(int i=0;i<nzp_;i++)
@@ -1339,7 +1363,7 @@ Wavelet1D::writeDebugInfo(fftw_real ** seis_r,
     fid.close();
     fid.clear();
       
-    fileName = "ccor_seis_cpp_"+NRLib::ToString(int(theta_*180/M_PI+0.5))+"_well_"+NRLib::ToString(j+1);
+    fileName = "ccor_seis_cpp_"+angle+"_well_"+jp1;
     NRLib::OpenWrite(fid,fileName);
     fid << std::setprecision(6);
     for(int i=0;i<nzp_;i++)
@@ -1347,7 +1371,7 @@ Wavelet1D::writeDebugInfo(fftw_real ** seis_r,
     fid.close();
     fid.clear();
 
-    fileName = "cpp_"+NRLib::ToString(int(theta_*180/M_PI+0.5))+"_well_"+NRLib::ToString(j+1);
+    fileName = "cpp_"+angle+"_well_"+jp1;
     NRLib::OpenWrite(fid,fileName);
     fid << std::setprecision(6);
     for(int i=0;i<nzp_;i++)

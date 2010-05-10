@@ -1810,15 +1810,18 @@ FFTGrid::readCravaFile(const std::string & fileName, std::string & errText, bool
     dummy = NRLib::ReadBinaryDouble(binFile);
     dummy = NRLib::ReadBinaryDouble(binFile);
     dummy = NRLib::ReadBinaryDouble(binFile);
-    int nx = NRLib::ReadBinaryInt(binFile);
-    int ny = NRLib::ReadBinaryInt(binFile);
-    int nz = NRLib::ReadBinaryInt(binFile);
+    int rnxp = NRLib::ReadBinaryInt(binFile);
+    int nyp  = NRLib::ReadBinaryInt(binFile);
+    int nzp  = NRLib::ReadBinaryInt(binFile);
 
-    if(nx != rnxp_ || ny != nyp_ || nz != nzp_) {
-      std::string message = "Grid dimension is wrong for file read from the direct crava format '"+
-        fileName+"'.";
+    if(rnxp != rnxp_ || nyp != nyp_ || nzp != nzp_) {
+      LogKit::LogFormatted(LogKit::LOW,"\n\nERROR: The grid has different dimensions than the model grid. Check the padding settings");
+      LogKit::LogFormatted(LogKit::LOW,"\n                rnxp   nyp   nzp");
+      LogKit::LogFormatted(LogKit::LOW,"\n--------------------------------");
+      LogKit::LogFormatted(LogKit::LOW,"\nModel grid  :   %4d  %4d  %4d",rnxp_,nyp_,nzp_);
+      LogKit::LogFormatted(LogKit::LOW,"\nGrid on file:   %4d  %4d  %4d\n",rnxp ,nyp ,nzp );
       binFile.close();
-      throw(NRLib::Exception(message));
+      throw(NRLib::Exception("Grid dimension is wrong for file '"+fileName+"'."));
     }
     createRealGrid(!nopadding);
     add_ = !nopadding;

@@ -1043,15 +1043,15 @@ void FaciesProb::checkConditionalProbabilities(float                         ** 
   }
 }
 
-void FaciesProb::calculateFaciesProb(FFTGrid                      * alphagrid, 
-                                     FFTGrid                      * betagrid, 
-                                     FFTGrid                      * rhogrid,
+void FaciesProb::calculateFaciesProb(FFTGrid                                    * alphagrid, 
+                                     FFTGrid                                    * betagrid, 
+                                     FFTGrid                                    * rhogrid,
                                      const std::vector<std::vector<FFTGrid *> > & density, 
-                                     const std::vector<Simbox *>    volume, 
-                                     float                          p_undefined,
-                                     const float *                  priorFacies,
-                                     FFTGrid                    ** priorFaciesCubes,
-                                     const std::vector<Grid2D *>   & noiseScale)
+                                     const std::vector<Simbox *>                  volume, 
+                                     float                                        p_undefined,
+                                     const float                                * priorFacies,
+                                     FFTGrid                                   ** priorFaciesCubes,
+                                     const std::vector<Grid2D *>                & noiseScale)
 {
   float * value = new float[nFacies_];
   int i,j,k,l;
@@ -1113,7 +1113,13 @@ void FaciesProb::calculateFaciesProb(FFTGrid                      * alphagrid,
           (*tgrid[angle])(ii,jj) = ((*noiseScale[angle])(ii,jj)-minS)/(maxS-minS);
     }
   
-
+  LogKit::LogFormatted(LogKit::LOW,"\nBuilding facies probabilities:");
+  float monitorSize = std::max(1.0f, static_cast<float>(nzp)*0.02f);
+  float nextMonitor = monitorSize;
+  std::cout 
+    << "\n  0%       20%       40%       60%       80%      100%"
+    << "\n  |    |    |    |    |    |    |    |    |    |    |  "
+    << "\n  ^"; 
 
   float help;
   float dens;
@@ -1166,7 +1172,15 @@ void FaciesProb::calculateFaciesProb(FFTGrid                      * alphagrid,
         }
       }
     }
+    // Log progress
+    if (i+1 >= static_cast<int>(nextMonitor)) { 
+      nextMonitor += monitorSize;
+      std::cout << "^";
+      fflush(stdout);
+    }
   }
+  std::cout << "\n";
+
   if(priorFaciesCubes!=NULL)
     for(i=0;i<nFacies_;i++)
     {

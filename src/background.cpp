@@ -795,9 +795,10 @@ Background::smoothTrendWithLocalLinearRegression(float      * trend,
           errorHead = true;
         else if (k > lastNonmissing)
           errorTrail = true;
-        else
+        else {
           errorMid   = true;
-        break;
+          break;
+        }
       }
       trend[k] = log(value);
     }
@@ -843,9 +844,9 @@ Background::smoothTrendWithLocalLinearRegression(float      * trend,
     if (errorHead) {
       // Fix first part of trend containing missing-values.
       float firstValue = trend[firstNonmissing];
-      LogKit::LogFormatted(LogKit::LOW,"\nWARNING : The calculation of the vertical trend for parameter "+parName+" using local linear\n");
-      LogKit::LogFormatted(LogKit::LOW,"          regression failed in the upper part of the interval where the log is undefined.\n");
-      LogKit::LogFormatted(LogKit::LOW,"          The first defined value of %.2f we be used throughout this region.\n",firstValue);
+      LogKit::LogFormatted(LogKit::LOW,"\nWARNING : The calculation of the vertical trend for parameter \'"+parName+"\' using local linear\n");
+      LogKit::LogFormatted(LogKit::LOW,"          regression failed for cells [0-%d] where the log is undefined. The first\n",firstNonmissing-1);
+      LogKit::LogFormatted(LogKit::LOW,"          defined value of %.2f in cell %d we be used throughout this region.\n",exp(firstValue),firstNonmissing);
       for (int k = 0 ; k < firstNonmissing ; k++) {
         trend[k] = firstValue;
       }
@@ -854,8 +855,8 @@ Background::smoothTrendWithLocalLinearRegression(float      * trend,
       // Fix last part of trend containing missing-values.
       float lastValue = trend[lastNonmissing];
       LogKit::LogFormatted(LogKit::LOW,"\nWARNING : The calculation of the vertical trend for parameter "+parName+" using local linear\n");
-      LogKit::LogFormatted(LogKit::LOW,"          regression failed in the lower part of the interval where the log is undefined.\n");
-      LogKit::LogFormatted(LogKit::LOW,"          The last defined value of %.2f we be used throughout this region.\n",lastValue);
+      LogKit::LogFormatted(LogKit::LOW,"          regression failed for cells [%d,%d] where the log is undefined. The last\n",lastNonmissing+1,nz-1);
+      LogKit::LogFormatted(LogKit::LOW,"          defined value of %.2f in cell %d we be used throughout this region.\n",exp(lastValue),lastNonmissing);
       for (int k = lastNonmissing + 1 ; k < nz ; k++) {
         trend[k] = lastValue;
       }
