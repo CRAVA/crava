@@ -1299,6 +1299,27 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
    \item \Argument File name
    \item \Default
  \elist
+ 
+\subsection{\hbracket{time-gradient-settings}}\newkw{time-gradient-settings}
+ \slist
+   \item \Description The prior standard deviation of the gradients are given, as well as the minimum distance for where gradient lines should not cross each other
+   \item \Argument The standard deviation and the minimum distance
+   \item \Default
+ \elist
+ 
+\subsubsection{\hbracket{distance}}\newkw{distance}
+ \slist
+   \item \Description The minimum lateral distance for where the gradient lines should not cross. The distance is equal for both x- and y-direction. 
+   \item \Argument Value
+   \item \Default 100 m
+ \elist
+
+\subsubsection{\hbracket{sigma}}\newkw{sigma}
+ \slist
+   \item \Description The prior standard deviation of the gradient. Equal for both x- and y-gradients
+   \item \Argument Value
+   \item \Default 1 ms/m
+ \elist
 
 \section{\hbracket{well-data}} \newkw{well-data}
  \slist

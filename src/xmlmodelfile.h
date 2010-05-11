@@ -42,6 +42,7 @@ private:
   bool       parseLocalWavelet(TiXmlNode * node, std::string & errTxt);
   bool       parseWaveletEstimationInterval(TiXmlNode * node, std::string & errTxt);
   bool     parseWavelet3D(TiXmlNode * node, std::string & errTxt);
+  bool     parseTimeGradientSettings(TiXmlNode * node, std::string & errTxt);
 
   bool parsePriorModel(TiXmlNode * node, std::string & errTxt);
   bool parseEarthModel(TiXmlNode * node, std::string & errTxt);

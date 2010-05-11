@@ -161,6 +161,7 @@ public:
   bool                             getDoInversion(void);                                            
   bool                             getDoDepthConversion(void)           const;
   bool                             getDoSmoothKriging(void)             const { return smoothKrigedParameters_ ;}
+  void                             getTimeGradientSettings(float &distance, float &alpha);       
 
   void rotateVariograms(float angle);
 
@@ -303,8 +304,8 @@ public:
   void setLogLevel(int logLevel)                          { logLevel_                 = logLevel                 ;}
   void setSeed(int seed)                                  { seed_                     = seed                     ;}
   void setDoSmoothKriging(bool smooth)                    { smoothKrigedParameters_  = smooth                   ;}
-
   void setNoWellNeeded(bool wellNeeded)                   { noWellNeeded_             = wellNeeded               ;}
+  void setTimeGradientSettings(float distance, float alpha);
   void setNoSeismicNeeded(bool seismicNeeded)             { noSeismicNeeded_          = seismicNeeded            ;}
                         
   enum          priorFacies{FACIES_FROM_WELLS,
@@ -488,8 +489,10 @@ private:
   bool                              optimizeWellLocation_;       // True if at least one well is to be moved
   bool                              smoothKrigedParameters_;    // True if we should smooth borders between kriging blocks                                  
   bool                              noWellNeeded_;               // True for some configurations of input data
-  bool                              noSeismicNeeded_;            // True for some estimation settings
-                                    
+  bool                              noSeismicNeeded_;            // True for some estimation settings                             
+  float                             distanceFromWell_;           //Minimum distance for where gradients should not cross
+  float                             sigma_m_;                      //smoothness level of the gradients
+
   int                               logLevel_;      
                                     
   int                               seed_;                       // Random seed.

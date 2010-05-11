@@ -148,6 +148,9 @@ ModelSettings::ModelSettings(void)
   logLevel_                = LogKit::L_LOW;
   smoothKrigedParameters_  =    false;
 
+  distanceFromWell_        =      100;
+  sigma_m_                 =        1;
+
   seed_                    =        0;
 }
 
@@ -305,6 +308,21 @@ void
 ModelSettings::addTraceHeaderFormat(TraceHeaderFormat * traceHeaderFormat)
 {
   localTHF_.push_back(traceHeaderFormat);
+}
+
+void 
+ModelSettings::setTimeGradientSettings(float distance, float sigma_m)
+{ 
+  distanceFromWell_  = distance;
+  sigma_m_ = sigma_m;                   
+}
+
+
+void
+ModelSettings::getTimeGradientSettings(float &distance, float &sigma_m)
+{
+  distance = distanceFromWell_;
+  sigma_m = sigma_m_;
 }
 
 int  ModelSettings::debugFlag_  = 0;

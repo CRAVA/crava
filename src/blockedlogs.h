@@ -84,22 +84,15 @@ public:
                                          int                        & jMove,
                                          float                      & kMove);
   void           generateSyntheticSeismic(float ** reflCoef, int nAngles, Wavelet ** wavelet, int nz, int nzp);
-  void           findSeismicGradient(FFTGrid                  * seisCube,
+  void           setTimeGradientSettings(float distance, float sigma_m);
+  void           findSeismicGradient(FFTGrid                  ** seisCube,
                                      Simbox                   * timeSimbox,
+                                     int                        nAngles,
                                      std::vector<double>       & xGradient,
-                                     std::vector<double>       & yGradient);
-
-  void           smoothTrace(std::vector<float> &trace);
-  void           findPeakTrace(std::vector<float> &trace, std::vector<double> &zPeak, std::vector<double> &peak,
-                                std::vector<double> &b, double dz, double ztop);
-  void           peakMatch(std::vector<double> &zPeak, std::vector<double> &peak, std::vector<double> &b,
-                                std::vector<double> &zPeakW, std::vector<double> &peakW, std::vector<double> &bW);
+                                     std::vector<double>       & yGradient,
+                                     std::vector<std::vector<double> > &Sigma_gradient);
 
 
-  double         computeShift(std::vector<double> &zPeak, std::vector<double> &zPeakW,double z0);
-
-  void           computeGradient(std::vector<double> &xGradient, std::vector<double> &yGradient, 
-                                  std::vector<double> &zShift, int nx, int ny, double dx, double dy);
 
   const std::vector<int>    getIposVector()           const;
   const std::vector<int>    getJposVector()           const;
@@ -141,6 +134,22 @@ private:
                                          float         vs, 
                                          float         rho, 
                                          const float * coeff) const;
+
+  void           smoothTrace(std::vector<float> &trace);
+  void           findPeakTrace(std::vector<float> &trace, std::vector<double> &zPeak, std::vector<double> &peak,
+                                std::vector<double> &b, double dz, double ztop);
+  void           peakMatch(std::vector<double> &zPeak, std::vector<double> &peak, std::vector<double> &b,
+                                std::vector<double> &zPeakW, std::vector<double> &peakW, std::vector<double> &bW);
+
+
+  double          computeShift(std::vector<double> &zPeak, std::vector<double> &zPeakW,double z0);
+
+  void           computeGradient(std::vector<double> &Qepsilon, std::vector<double> &Qepsilon_data,
+                                 std::vector<double> &zShift, int nx, int ny, double dx, double dy);
+  void           smoothGradient(std::vector<double> &xGradient, std::vector<double> &yGradient, 
+                                  std::vector<double> &Qepsilon, std::vector<double> &Qepsilon_data, 
+                                  std::vector<std::vector<double> > &Sigma_gradient);
+  void           computePrecisionMatrix(double &a, double &b, double &c);
 
   std::string    wellname_;                 ///< Name of well   
 
@@ -196,6 +205,11 @@ private:
 
   const int    * faciesNumbers_;
   int            nFacies_;
+  
+  float          lateralThresholdGradient_;  //Minimum lateral distance where gradient lines must not cross
+  float          sigma_m_;             //Smoothing factor for the gradients
+
+
 };
 
 #endif

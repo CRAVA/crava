@@ -2776,6 +2776,7 @@ Model::processWavelets(Wavelet                    **& wavelet,
   std::vector<std::vector<double> > tGradX(nWells);
   std::vector<std::vector<double> > tGradY(nWells);
 
+
   if (has3Dwavelet) {
     if (inputFiles->getRefSurfaceFile() != "") {
       if (findTimeGradientSurface(inputFiles->getRefSurfaceFile(), timeSimbox, refTimeGradX, refTimeGradY) == false) {
@@ -2783,9 +2784,13 @@ Model::processWavelets(Wavelet                    **& wavelet,
         error = 1;
       }
     }
+    float distance, sigma_m;
+    modelSettings->getTimeGradientSettings(distance, sigma_m);
+    std::vector<std::vector<double> > SigmaXY;
     for (unsigned int w=0; w<nWells; w++) {
       BlockedLogs *bl    = wells[w]->getBlockedLogsOrigThick(); 
-      bl->findSeismicGradient(seisCube[0], timeSimbox, /*nAngles,*/tGradX[w], tGradY[w]);
+      bl->setTimeGradientSettings(distance, sigma_m);
+      bl->findSeismicGradient(seisCube, timeSimbox, nAngles,tGradX[w], tGradY[w],SigmaXY);
     }
   }
   
@@ -2809,7 +2814,6 @@ Model::processWavelets(Wavelet                    **& wavelet,
     LogKit::LogFormatted(LogKit::LOW,"\nAngle stack : %.1f deg",angle);
     if(modelSettings_->getForwardModeling()==false)
       seisCube[i]->setAccessMode(FFTGrid::RANDOMACCESS);
-
     if (modelSettings->getWaveletDim(i) == Wavelet::ONE_D) 
       error += process1DWavelet(modelSettings,
                                 inputFiles,

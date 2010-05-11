@@ -599,6 +599,7 @@ XmlModelFile::parseSurvey(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("segy-start-time");
   legalCommands.push_back("angle-gather");
   legalCommands.push_back("wavelet-estimation-interval");
+  legalCommands.push_back("time-gradient-settings");
 
   Vario * vario = NULL;
   if(parseVariogram(root, "angular-correlation", vario, errTxt) == true) {
@@ -619,6 +620,8 @@ XmlModelFile::parseSurvey(TiXmlNode * node, std::string & errTxt)
     lineColumnText(root)+".\n";
 
   parseWaveletEstimationInterval(root, errTxt);
+
+  parseTimeGradientSettings(root,errTxt);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -1021,6 +1024,32 @@ XmlModelFile::parseWavelet3D(TiXmlNode * node, std::string & errTxt)
 
   modelSettings_->addWaveletDim(Wavelet::THREE_D);
 
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+bool
+XmlModelFile::parseTimeGradientSettings(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("time-gradient-settings");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("distance");
+  legalCommands.push_back("sigma");
+ 
+  float distance, sigma_m, value;
+  if(parseValue(root,"distance", value, errTxt) == true)
+    distance = value;
+  else
+    distance = 100.0;
+  if(parseValue(root,"sigma", value, errTxt) == true)
+    sigma_m = value;
+  else
+    sigma_m = 1.0;
+  
+  modelSettings_->setTimeGradientSettings(distance,sigma_m);
+  
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
