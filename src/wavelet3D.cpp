@@ -100,7 +100,6 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
                          at0,
                          bt0);
 
-
       std::vector<bool> hasWellData(nz_);
       findLayersWithData(estimInterval, 
                          bl, 
@@ -118,6 +117,9 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
       dzWell[w]          = static_cast<float>(simBox->getRelThick(iPos[0],jPos[0]) * dz_);
       if (length > nWl) {
         std::vector<float> Halpha;
+        printVecToFile("az", &az[0], length);
+        printVecToFile("bz", &bz[0], length);
+  
         std::vector<fftw_real> cppAdj = adjustCpp(bl,
                                                   az,
                                                   bz,
@@ -165,7 +167,8 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
                   //Hva gjør vi hvis zData[t] er RMISSING. Kan det skje?
                   float at = at0[tau] + 2.0f*az[tau]/v0;
                   float bt = bt0[tau] + 2.0f*bz[tau]/v0;
-                  float u = static_cast<float> (zPosTrace[t] - zPosWell[tau] - at*xTr*dx - bt*yTr*dy);
+//                  float u = static_cast<float> (zPosTrace[t] - zPosWell[tau] - at*xTr*dx - bt*yTr*dy);
+                  float u = static_cast<float> (zPosWell[tau] + at*xTr*dx + bt*yTr*dy - zPosTrace[t]);
                   if (filter_.hasHalpha()) {
                     for (int i=0; i<nWl; i++) {
                       float v = u - static_cast<float>((i - nhalfWl)*dzWell[w]);
@@ -351,9 +354,9 @@ Wavelet3D::findPhi(float a, float b) const
     phi = M_PI + atan(b/a);
   else if (a < - epsilon && b < 0.0) //3. quadrant
     phi = M_PI + atan(b/a);
-  else if (b  >= 0.0) //kx very small
+  else if (b  >= 0.0) //a very small
     phi = 0.5 * M_PI;
-  else //kx very small
+  else //a very small
     phi = 1.5 * M_PI;
   phi = phi * 180 / M_PI;
   return(phi);
@@ -407,22 +410,46 @@ Wavelet3D::adjustCpp(BlockedLogs              * bl,
   std::vector<fftw_real> cpp(nzp_);
   bl->fillInCpp(coeff_, start, length, &cpp[0], nzp_);
   printVecToFile("cpp", &cpp[0], length);
-
   std::vector<fftw_real> cppAdj(length, 0.0);
 
   if (filter_.hasHalpha())
     Halpha.resize(length,0.0);
+
+  std::string fNamePhi = "phi" + IO::SuffixGeneralData();
+  fNamePhi = IO::makeFullFileName(IO::PathToWavelets(), fNamePhi);
+  std::ofstream filePhi;
+  NRLib::OpenWrite(filePhi, fNamePhi);
+
+  std::string fNamePsi = "psi" + IO::SuffixGeneralData();
+  fNamePsi = IO::makeFullFileName(IO::PathToWavelets(), fNamePsi);
+  std::ofstream filePsi;
+  NRLib::OpenWrite(filePsi, fNamePsi);
+
+  std::string fNameAlpha = "alpha" + IO::SuffixGeneralData();
+  fNameAlpha = IO::makeFullFileName(IO::PathToWavelets(), fNameAlpha);
+  std::ofstream fileAlpha;
+  NRLib::OpenWrite(fileAlpha, fNameAlpha);
+
   for (int i=start; i < start+length-1; i++) {
     double phi    = findPhi(az[i], bz[i]);
+    filePhi << phi << "\n";
     float r       = sqrt(az[i]*az[i] + bz[i]*bz[i] + 1);
     double psi    = findPsi(r);
+    filePsi << psi << "\n";
     float alpha1  = filter_.getAlpha1(phi, psi);
+    fileAlpha << alpha1 << "\n";
     float stretch = std::cos(theta_);
-    cppAdj[i-start]     = static_cast<fftw_real> (cpp[i] * alpha1 * stretch / r);
+//    cppAdj[i-start]     = static_cast<fftw_real> (cpp[i] * alpha1 * stretch / r);
 //    cppAdj[i-start]     = static_cast<fftw_real> (cpp[i]);
+    cppAdj[i-start]     = static_cast<fftw_real> (cpp[i] * stretch / r);
     if (filter_.hasHalpha())
       Halpha[i-start]   = filter_.getHalpha(phi, psi);
   }
+  
+  filePhi.close();
+  filePsi.close();
+  fileAlpha.close();
+
   return cppAdj;
 }
 
@@ -469,6 +496,15 @@ Wavelet3D::calculateWellWavelet(const std::vector<std::vector<float> > & gMat,
 {
   std::vector<fftw_real> wellWavelet(rnzp_, 0.0);
 
+//  double maxD = 0.0;
+  double maxG = 0.0;
+  for (int i=0; i<nPoints; i++) {
+//    maxD = std::max(maxD, static_cast<double> (fabs(dVec[i])));
+    for (int j=0; j<nWl; j++)
+      maxG = std::max(maxG, static_cast<double> (fabs(gMat[i][j])));
+  }
+//  double sd = 2.0 / maxG;
+
   double **gTrg = new double *[nWl];
   for (int i=0; i<nWl; i++) {
     gTrg[i]     = new double[nWl];
@@ -480,8 +516,17 @@ Wavelet3D::calculateWellWavelet(const std::vector<std::vector<float> > & gMat,
   }
 
   double *gTrd = new double[nWl];
+  double alpha = 4.0;
+  double SNR   = 4.0;
+  double beta  = 1.0;
   for (int i=0; i<nWl; i++) {
     gTrd[i] = 0.0;
+    double a;
+    if (i <= nhalfWl)
+      a = static_cast<double> (i)/ static_cast<double> (nhalfWl);
+    else
+      a = static_cast<double> (nWl-i)/ static_cast<double> (nhalfWl);
+    gTrg[i][i] += maxG * maxG * exp(alpha*a*a) / (SNR * beta * beta); 
     for (int j=0; j<nPoints; j++)
       gTrd[i] += gMat[j][i] * dVec[j];
   }
