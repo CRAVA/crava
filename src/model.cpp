@@ -198,7 +198,6 @@ Model::Model(const std::string & fileName)
             if(estimationMode == false || 
                modelSettings_->getEstimateBackground() == true ||
                modelSettings_->getEstimateCorrelations() == true || 
-               modelSettings_->getEstimateWaveletNoise() == true ||
                modelSettings_->getOptimizeWellLocation() == true) 
             {
               processBackground(background_, wells_, timeSimbox_, timeBGSimbox,
@@ -206,7 +205,6 @@ Model::Model(const std::string & fileName)
                                 errText, failedBackground);
               backgroundDone = true;
             }
-
             if(failedBackground == false && backgroundDone == true &&
               (estimationMode == false || modelSettings_->getEstimateWaveletNoise() || 
                modelSettings_->getOptimizeWellLocation() == true))
@@ -214,7 +212,15 @@ Model::Model(const std::string & fileName)
               processReflectionMatrixFromBackground(reflectionMatrix_, background_, modelSettings_, 
                                                     inputFiles, errText, failedReflMat);
             }
-
+            else if(estimationMode == true && 
+                    modelSettings_->getEstimateWaveletNoise() == true && 
+                    modelSettings_->getEstimateBackground() == false &&
+                    modelSettings_->getEstimateCorrelations() == false)
+            {
+              processReflectionMatrixFromWells(reflectionMatrix_, wells_, modelSettings_, 
+                                               inputFiles, errText, failedReflMat);
+              backgroundDone = true; //Not really, but do not need it in this case.
+            }
             if(failedBackground == false && backgroundDone == true && 
                failedReflMat == false && failedExtraSurf == false &&
                (estimationMode == false || modelSettings_->getEstimateWaveletNoise() || 
