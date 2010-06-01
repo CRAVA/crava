@@ -101,15 +101,6 @@ private:
                                    WellData                 ** wells,
                                    int                         nWells);
 
-  void          fillInnWavelet(fftw_real                     * wavelet_r,
-                               int                             nzp,
-                               float                           dz);
-
-  float         findBulkShift(fftw_real                      * vec_r,
-                              float                            dz,
-                              int                              nzp,
-                              float                            maxShift);
-
   float         shiftOptimal(fftw_real                      ** ccor_seis_cpp_r,
                              const std::vector<float>        & wellWeight,
                              const std::vector<float>        & dz,
@@ -130,10 +121,6 @@ private:
                            fftw_real                        ** wavelet_r,
                            const std::vector<float>          & wellWeight,
                            int                                 nWells,
-                           int                                 nt);
-
-  void           shiftReal(float                               shift, 
-                           fftw_real                         * rAmp,
                            int                                 nt);
 
   void           convolve(fftw_complex                       * var1_c,

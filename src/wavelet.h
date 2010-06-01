@@ -106,6 +106,18 @@ public:
                                                 Grid2D       *& /*shift*/, 
                                                 Grid2D       *& /*gain*/) {return 1.0f;} 
 
+  virtual float calculateSNRatio(Simbox                                   * /*simbox*/, 
+                                 FFTGrid                                  * /*seisCube*/, 
+                                 WellData                                ** /*wells*/, 
+                                 ModelSettings                            * /*modelSettings*/,
+                                 std::string                              & /*errText*/, 
+                                 int                                      & /*error*/,
+                                 const NRLib::Grid2D<float>               & /*refTimeGradX*/,
+                                 const NRLib::Grid2D<float>               & /*refTimeGradY*/,
+                                 const std::vector<std::vector<double> >  & /*tGradX*/,
+                                 const std::vector<std::vector<double> >  & /*tGradY*/,
+                                 int                                        /*i*/) {return 1.0f;}
+
 protected:
   float          getTheta()          const {return theta_;}
   int            getCz()             const {return cz_;}
@@ -125,6 +137,20 @@ protected:
                                  const std::vector<float>               & wellWeight,
                                  const std::vector<float>               & dz,
                                  float                                    dzOut)         const;
+  
+  void          fillInnWavelet(fftw_real                     * wavelet_r,
+                               int                             nzp,
+                               float                           dz);
+
+  
+  float         findBulkShift(fftw_real                      * vec_r,
+                              float                            dz,
+                              int                              nzp,
+                              float                            maxShift);
+
+  void           shiftReal(float                               shift, 
+                           fftw_real                         * rAmp,
+                           int                                 nt);
 
   void           printVecToFile(const std::string                       & fileName, 
                                 fftw_real                               * vec ,

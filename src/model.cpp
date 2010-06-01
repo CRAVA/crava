@@ -3093,19 +3093,17 @@ Model::process3DWavelet(ModelSettings                           * modelSettings,
                      modelSettings->getEstimateSNRatio(i));
 
     if (localEst && modelSettings->getForwardModeling() == false) {
-      Grid2D * shiftGrid(NULL);
-      Grid2D * gainGrid(NULL);
-      Grid2D * noiseGrid(NULL);
-      float SNRatio = wavelet->calculateSNRatioAndLocalWavelet(timeSimbox, 
-                                                               seisCube[i], 
-                                                               wells, 
-                                                               modelSettings,
-                                                               errText, 
-                                                               error, 
-                                                               i,
-                                                               shiftGrid,
-                                                               gainGrid,
-                                                               noiseGrid);
+      float SNRatio = wavelet->calculateSNRatio(timeSimbox, 
+                                                seisCube[i], 
+                                                wells, 
+                                                modelSettings,
+                                                errText, 
+                                                error, 
+                                                refTimeGradX,
+                                                refTimeGradY,
+                                                tGradX,
+                                                tGradY,
+                                                i);
       if(modelSettings->getEstimateSNRatio(i))
         modelSettings->setSNRatio(i,SNRatio);
 

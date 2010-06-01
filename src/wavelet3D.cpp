@@ -22,6 +22,7 @@
 #include "src/wavelet3D.h"
 #include "src/wavelet1D.h"
 #include "src/welldata.h"
+#include "src/tasklist.h"
 #include "src/fftgrid.h"
 #include "src/simbox.h"
 #include "src/model.h"
@@ -65,12 +66,12 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
   cnzp_       = nzp_/2+1;
   rnzp_       = 2*cnzp_;
 
-  unsigned int nWells    = modelSettings->getNumberOfWells();
-  float        v0        = modelSettings->getAverageVelocity();
-//  float        stretch   = modelSettings->getStretchFactor(angle_index);
-   
+  unsigned int nWells = modelSettings->getNumberOfWells();
+  float        v0     = modelSettings->getAverageVelocity();
   int nhalfWl         = static_cast<int> (0.5 * modelSettings->getWaveletTaperingL() / dz_);
   int nWl             = 2 * nhalfWl + 1;
+  std::string angle   = NRLib::ToString((180.0/M_PI)*theta_, 1);
+
   std::vector<std::vector<fftw_real> > wellWavelets(nWells/*, std::vector<float>(rnzp_, 0.0)*/);
   std::vector<float>                   wellWeight(nWells, 0.0);  
   std::vector<float>                   dzWell(nWells, 0.0);
@@ -116,18 +117,27 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
 
       dzWell[w]          = static_cast<float>(simBox->getRelThick(iPos[0],jPos[0]) * dz_);
       if (length > nWl) {
+        std::string wellname(wells[w]->getWellname());
+        NRLib::Substitute(wellname,"/","_");
+        NRLib::Substitute(wellname," ","_");
         std::vector<float> Halpha;
-        printVecToFile("az", &az[0], length);
-        printVecToFile("bz", &bz[0], length);
-  
         std::vector<fftw_real> cppAdj = adjustCpp(bl,
                                                   az,
                                                   bz,
                                                   Halpha,
                                                   start,
-                                                  length);
+                                                  length,
+                                                  wellname,
+                                                  angle);
 
-        printVecToFile("cpp_dipadjust", &cppAdj[0], length);
+        if( ModelSettings::getDebugLevel() > 0 ) {
+          std::string fileName = "xgrad_depth_" + wellname + "_" + angle;
+          printVecToFile(fileName, &az[0], length);
+          fileName = "ygrad_depth_" + wellname + "_" + angle;
+          printVecToFile(fileName, &bz[0], length);
+          fileName = "cpp_adjust_" + wellname + "_" + angle;
+          printVecToFile(fileName, &cppAdj[0], length);
+        }
 
         std::vector<float> zLog(nBlocks);
         for (unsigned int b=0; b<nBlocks; b++) {
@@ -180,18 +190,16 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
                     int tLow  = static_cast<int> (floor(u / dzWell[w]));
                     int tHigh = tLow + 1;
                     float lambdaValue = (u/dzWell[w]) - static_cast<float> (tLow);
-                    if (u >= 0.0 && tLow <= nhalfWl) { 
-                      lambda[tau-start][tLow]   = 1 -lambdaValue;
-                      lambda[tau-start][tHigh]  = lambdaValue; 
-                    }
-                    else if (u < 0.0 && -tHigh <= nhalfWl) {
+                    if ((tLow >= -nhalfWl) && (tHigh <= nhalfWl)) {
+                      if (tLow >= 0)
+                        lambda[tau-start][tLow] = 1-lambdaValue;
+                      else
+                        lambda[tau-start][tLow+nWl] = 1-lambdaValue;
                       if (tHigh < 0)
                         lambda[tau-start][tHigh+nWl] = lambdaValue;
                       else
-                        lambda[tau-start][0] = lambdaValue;
-                      if (tLow >= -nhalfWl)
-                        lambda[tau-start][tLow+nWl] = 1 - lambdaValue;
-                    } // else if
+                        lambda[tau-start][tHigh] = lambdaValue;
+                    }
                   } // else
                 } // for (tau=start...start+length)
                 std::vector<float> gVec(nWl);
@@ -207,15 +215,18 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
           }
         }
 
-        printMatToFile("design_matrix", gMat, nPoints, nWl);
-        printVecToFile("seismic", &dVec[0], nPoints);
+        
         wellWavelets[w] = calculateWellWavelet(gMat,
                                                dVec,
                                                nWl,
                                                nhalfWl,
                                                nPoints);
-        printVecToFile("well_wl", &wellWavelets[w][0], nzp_);
- 
+        if( ModelSettings::getDebugLevel() > 0 ) {
+          std::string fileName = "seismic_" + wellname + "_" + angle;
+          printVecToFile(fileName, &dVec[0], nPoints);
+          fileName = "gmat_" + wellname + "_" + angle;
+          printMatToFile(fileName, gMat, nPoints, nWl);
+        }
         wellWeight[w] = calculateWellWeight(nWl,
                                             nPoints,
                                             gMat,
@@ -284,23 +295,251 @@ Wavelet3D::~Wavelet3D()
 }
 
 float         
-Wavelet3D::calculateSNRatioAndLocalWavelet(Simbox        * /*simbox*/, 
-                                           FFTGrid       * /*seisCube*/, 
-                                           WellData     ** /*wells*/, 
-                                           ModelSettings * /*modelSettings*/,
-                                           std::string   & errText, 
-                                           int           & error, 
-                                           int             /*number*/,
-                                           Grid2D       *& /*noiseScaled*/, 
-                                           Grid2D       *& /*shift*/, 
-                                           Grid2D       *& /*gain*/)
+Wavelet3D::calculateSNRatio(Simbox                                   * simbox, 
+                            FFTGrid                                  * seisCube, 
+                            WellData                                ** wells, 
+                            ModelSettings                            * modelSettings,
+                            std::string                              & errText, 
+                            int                                      & error,
+                            const NRLib::Grid2D<float>               & refTimeGradX,
+                            const NRLib::Grid2D<float>               & refTimeGradY,
+                            const std::vector<std::vector<double> >  & tGradX,
+                            const std::vector<std::vector<double> >  & tGradY,
+                            int                                        number)                                           
 {
+  std::string angle    = NRLib::ToString((180.0/M_PI)*theta_, 1);
+  unsigned int nWells  = modelSettings->getNumberOfWells();
+  int          nhalfWl = static_cast<int> (0.5 * modelSettings->getWaveletTaperingL() / dz_);
+  int          nWl     = 2 * nhalfWl + 1;
+  float        v0      = modelSettings->getAverageVelocity();
+  float        dataVar = 0.0f;
+  float        errVar  = 0.0f;
+  int          nData   = 0;
+  std::vector<float> shiftWell  (nWells, 0.0f);
+  std::vector<float> dzWell(nWells, 0.0);
+  std::vector<float> dataVarWell(nWells, 0.0f);
+  std::vector<float> errVarWell (nWells, 0.0f);
+  std::vector<int>   nActiveData(nWells, 0);
 
- //Not possible to estimate signal-to-noise ratio for 3D wavelets
-  errText += "Estimation of signal-to-noise ratio is not possible for 3D wavelets.\n";
-  errText += "The s/n ratio must be specified in the model file\n";
-  error++;
-  return (1.0f);
+  for (unsigned int w=0; w<nWells; w++) {
+    if (wells[w]->getUseForWaveletEstimation()) {
+      LogKit::LogFormatted(LogKit::MEDIUM, "  Well :  %s\n", wells[w]->getWellname().c_str());
+
+      BlockedLogs *bl    = wells[w]->getBlockedLogsOrigThick();  
+      const std::vector<int> iPos = bl->getIposVector();
+      const std::vector<int> jPos = bl->getJposVector();
+
+      std::vector<float> az(nz_); 
+      std::vector<float> bz(nz_);
+      std::vector<float> at0(nz_);
+      std::vector<float> bt0(nz_);
+      unsigned int nBlocks = bl->getNumberOfBlocks();
+      calculateGradients(bl,
+                         iPos,
+                         jPos,
+                         refTimeGradX,
+                         refTimeGradY,
+                         tGradX[w],
+                         tGradY[w],
+                         v0,
+                         az,
+                         bz,
+                         at0,
+                         bt0);
+
+      std::vector<bool> hasWellData(nz_);
+      std::vector<float> seisLog(nBlocks);
+      bl->getBlockedGrid(seisCube, &seisLog[0]);
+      std::vector<float> seisData(nz_);
+      bl->getVerticalTrend(&seisLog[0], &seisData[0]);
+
+      std::vector<float> alpha(nz_);
+      std::vector<float> beta(nz_);
+      std::vector<float> rho(nz_);
+      bl->getVerticalTrend(bl->getAlpha(), &alpha[0]);
+      bl->getVerticalTrend(bl->getBeta(), &beta[0]);
+      bl->getVerticalTrend(bl->getRho(), &rho[0]);
+
+      for (int k=0; k<nz_; k++) 
+        hasWellData[k] = (alpha[k] != RMISSING && beta[k] != RMISSING && rho[k] != RMISSING && az[k] != RMISSING && bz[k] != RMISSING && seisData[k] != RMISSING);
+
+      int start, length;
+      bl->findContiniousPartOfData(hasWellData, 
+                                   nz_, 
+                                   start, 
+                                   length);
+
+      dzWell[w]          = static_cast<float>(simbox->getRelThick(iPos[0],jPos[0]) * dz_);
+      if (length > nWl) {
+        std::string wellname(wells[w]->getWellname());
+        NRLib::Substitute(wellname,"/","_");
+        NRLib::Substitute(wellname," ","_");
+        std::vector<float> Halpha;
+        std::vector<fftw_real> cppAdj = adjustCpp(bl,
+                                                  az,
+                                                  bz,
+                                                  Halpha,
+                                                  start,
+                                                  length,
+                                                  wellname,
+                                                  angle);
+
+        std::vector<float> zLog(nBlocks);
+        for (unsigned int b=0; b<nBlocks; b++) {
+          float zTop     = static_cast<float> (simbox->getTop(iPos[b], jPos[b]));
+          //          zLog[b]         = static_cast<float> (zTop + b * simBox->getRelThick(iPos[b], jPos[b]) * dz_);
+          zLog[b]         = static_cast<float> (zTop + b * dzWell[w]);
+        }
+        std::vector<float> zPosWell(nz_);
+        bl->getVerticalTrend(&zLog[0], &zPosWell[0]);
+
+        std::vector<std::vector<float> > gMat;
+        std::vector<float> dVec;
+
+        for (int t=start; t < start+length; t++) {
+          if (seisData[t] != RMISSING) {
+            dVec.push_back(seisData[t]);
+            std::vector<std::vector<float> > lambda(length, std::vector<float>(nWl,0.0)); //NBNB-Frode: Bør denne deklareres utenfor?
+            for (int tau = start; tau < start+length; tau++) {
+              float u = static_cast<float> (zPosWell[tau] - zPosWell[t]);
+              if (filter_.hasHalpha()) {
+                for (int i=0; i<nWl; i++) {
+                  float v = u - static_cast<float>((i - nhalfWl)*dzWell[w]);
+                  float h = Halpha[tau-start];
+                  lambda[tau-start][i] = static_cast<float> (h / (M_PI *(h*h + v*v)));
+                }
+              }
+              else {
+                int tLow  = static_cast<int> (floor(u / dzWell[w]));
+                int tHigh = tLow + 1;
+                float lambdaValue = (u/dzWell[w]) - static_cast<float> (tLow);
+
+                if ((tLow >= -nhalfWl) && (tHigh <= nhalfWl)) {
+                  if (tLow >= 0)
+                    lambda[tau-start][tLow] = 1-lambdaValue;
+                  else
+                    lambda[tau-start][tLow+nWl] = 1-lambdaValue;
+                  if (tHigh < 0)
+                    lambda[tau-start][tHigh+nWl] = lambdaValue;
+                  else
+                    lambda[tau-start][tHigh] = lambdaValue;
+                }
+              } // else
+            } // for (tau=start...start+length)
+            std::vector<float> gVec(nWl);
+            for (int i=0; i<nWl; i++) {
+              gVec[i] = 0.0f;
+              for (int j=0; j<length; j++)
+                gVec[i] += cppAdj[j] * lambda[j][i];
+            }
+            gMat.push_back(gVec);
+          } //if (seisData[t] != RMISSING)
+        }
+
+        std::vector<fftw_real> full_wavelet(nzp_);
+        fillInnWavelet(&full_wavelet[0],
+                       nzp_,
+                       dzWell[w]);
+        float shift = findBulkShift(&full_wavelet[0], 
+                                    dzWell[w], 
+                                    nzp_, 
+                                    modelSettings->getMaxWaveletShift());
+        shift = floor(shift*10.0f+0.5f)/10.0f;//rounds to nearest 0.1 ms (don't have more accuracy)
+        shiftWell[w] = shift;
+
+        std::vector<float> wavelet(nWl);
+        wavelet[0] = static_cast<float> (full_wavelet[0]);
+        for (int i=1; i<nhalfWl; i++) {
+          wavelet[i]     = static_cast<float> (full_wavelet[i]);
+          wavelet[nWl-i] = static_cast<float> (full_wavelet[nzp_-i]);
+        }
+        std::vector<float> synt_seis(length);
+        nActiveData[w] = length;
+        for (int i=0; i<length; i++) {
+          synt_seis[i] = 0.0f;
+          for (int j=0; j<nWl; j++) 
+            synt_seis[i] += gMat[i][j] * wavelet[j];
+          float residual = dVec[i] - synt_seis[i];
+          errVarWell[w]  += residual * residual;
+          dataVarWell[w] += dVec[i] * dVec[i];
+        }
+        errVar  += errVarWell[w];
+        dataVar += dataVarWell[w];
+        nData   += nActiveData[w];
+        if(ModelSettings::getDebugLevel() > 0) {
+          std::string fileName;
+          fileName = "seismic_" + wellname + "_" + angle;
+          printVecToFile(fileName, &dVec[0], length);
+          fileName = "synthetic_seismic_" + wellname + "_" + angle;
+          printVecToFile(fileName, &synt_seis[0], length);
+        }
+      }
+      else {
+        LogKit::LogFormatted(LogKit::LOW, "\n  Not using vertical well %s for error estimation (length=%.1fms  required length=%.1fms).",
+          wells[w]->getWellname().c_str(), length*dz_, waveletLength_);
+      }
+    }
+  }
+
+  dataVar /= nData;
+  errVar  /= nData;
+  float empSNRatio = dataVar/errVar;
+
+  LogKit::LogFormatted(LogKit::MEDIUM,"\n  Reporting errors (as standard deviations) estimated:\n\n");
+
+  LogKit::LogFormatted(LogKit::LOW,"\n");
+  LogKit::LogFormatted(LogKit::LOW,"                                     SeisData            \n");
+  LogKit::LogFormatted(LogKit::LOW,"  Well                  shift[ms]     StdDev         S/N \n");
+  LogKit::LogFormatted(LogKit::LOW,"  -------------------------------------------------------\n");
+  for(unsigned int w=0; w<nWells; w++) {
+    if(nActiveData[w]>0) {    
+      float SNWell = dataVarWell[w]/errVarWell[w];
+      LogKit::LogFormatted(LogKit::LOW,"  %-20s   %6.2f     %9.2e      %6.2f \n", 
+            wells[w]->getWellname().c_str(),shiftWell[w],sqrt(dataVarWell[w]),SNWell);
+    }
+    else
+      LogKit::LogFormatted(LogKit::LOW,"  %-20s      -            -             - \n",wells[w]->getWellname().c_str());
+  }
+
+  if(modelSettings->getEstimateSNRatio(number))
+    LogKit::LogFormatted(LogKit::LOW,"\n  The signal to noise ratio used for this angle stack is: %6.2f\n", empSNRatio);
+  else {
+    float SNRatio = modelSettings->getSNRatio(number);
+    LogKit::LogFormatted(LogKit::LOW,"\n  The signal to noise ratio given in the model file and used for this angle stack is : %6.2f\n", SNRatio);
+    LogKit::LogFormatted(LogKit::LOW,"  For comparison, the signal-to-noise ratio calculated from the available wells is   : %6.2f\n", empSNRatio);
+    float minSN = 1.0f + (empSNRatio - 1.0f)/2.0f;
+    float maxSN = 1.0f + (empSNRatio - 1.0f)*2.0f;
+    if ((SNRatio<minSN || SNRatio>maxSN) && modelSettings->getEstimateWavelet(number)) {
+      LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: The difference between the SN ratio given in the model file and the calculated SN ratio is too large.\n");
+      if (SNRatio < minSN)
+        TaskList::addTask("Consider increasing the SN ratio for angle stack "+NRLib::ToString(number)+" to minimum "+NRLib::ToString(minSN,1));
+      else
+        TaskList::addTask("Consider decreasing the SN ratio for angle stack "+NRLib::ToString(number)+" to maximum "+NRLib::ToString(minSN,1));
+    }        
+  }
+
+  if (empSNRatio < 1.1f) {
+    if (modelSettings->getEstimateSNRatio(number)) {
+      LogKit::LogFormatted(LogKit::WARNING,"\nERROR: The empirical signal-to-noise ratio Var(data)/Var(noise) is %.2f. Ratios smaller",empSNRatio);
+      LogKit::LogFormatted(LogKit::WARNING,"\n       than 1.1 are not acceptable. The signal-to-noise ratio was not reliably estimated");
+      LogKit::LogFormatted(LogKit::WARNING,"\n       and you must give it as input in the model file.\n");
+      LogKit::LogFormatted(LogKit::WARNING,"\n       If the wavelet was estimated by CRAVA the solution may be to remove one or more wells");
+      LogKit::LogFormatted(LogKit::WARNING,"\n       from the wavelet estimation (compare shifts and SN-ratios for different wells).\n");
+
+      errText += "Invalid signal-to-noise ratio obtained for the angle-gather of "+angle+" degrees.\n";
+      error += 1;
+    }
+    else {
+      LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: The empirical signal-to-noise ratio Var(data)/Var(noise) is %.2f. Ratios smaller",empSNRatio);
+      LogKit::LogFormatted(LogKit::WARNING,"\n         than 1.1 are not acceptable. If the low ratio is caused by one or more specific");
+      LogKit::LogFormatted(LogKit::WARNING,"\n         wells, these wells should not have been included in the wavelet estimation. If");
+      LogKit::LogFormatted(LogKit::WARNING,"\n         they indeed were omitted, you can avoid this warning by specifying");
+      LogKit::LogFormatted(LogKit::WARNING,"\n         <use-for-wavelet-estimation> no </use-...> for these wells in the model file.\n");                           
+      TaskList::addTask("Check the signal-to-noise ratio given for angle stack "+NRLib::ToString(number)+" against that calculated by CRAVA.");
+    }
+  }
+
+  return empSNRatio;
 }
 
 void
@@ -404,51 +643,46 @@ Wavelet3D::adjustCpp(BlockedLogs              * bl,
                      const std::vector<float> & az,
                      const std::vector<float> & bz,
                      std::vector<float>       & Halpha,
-                     int start,
-                     int length) const
+                     int                        start,
+                     int                        length,
+                     const std::string        & wellname,
+                     const std::string        & angle) const
 {
   std::vector<fftw_real> cpp(nzp_);
   bl->fillInCpp(coeff_, start, length, &cpp[0], nzp_);
-  printVecToFile("cpp", &cpp[0], length);
+
   std::vector<fftw_real> cppAdj(length, 0.0);
+  std::vector<float>     alpha1_vec(length, 0.0);
+  std::vector<float>     phi_vec(length, 0.0);
+  std::vector<float>     psi_vec(length, 0.0);
 
   if (filter_.hasHalpha())
     Halpha.resize(length,0.0);
 
-  std::string fNamePhi = "phi" + IO::SuffixGeneralData();
-  fNamePhi = IO::makeFullFileName(IO::PathToWavelets(), fNamePhi);
-  std::ofstream filePhi;
-  NRLib::OpenWrite(filePhi, fNamePhi);
-
-  std::string fNamePsi = "psi" + IO::SuffixGeneralData();
-  fNamePsi = IO::makeFullFileName(IO::PathToWavelets(), fNamePsi);
-  std::ofstream filePsi;
-  NRLib::OpenWrite(filePsi, fNamePsi);
-
-  std::string fNameAlpha = "alpha" + IO::SuffixGeneralData();
-  fNameAlpha = IO::makeFullFileName(IO::PathToWavelets(), fNameAlpha);
-  std::ofstream fileAlpha;
-  NRLib::OpenWrite(fileAlpha, fNameAlpha);
-
   for (int i=start; i < start+length-1; i++) {
-    double phi    = findPhi(az[i], bz[i]);
-    filePhi << phi << "\n";
-    float r       = sqrt(az[i]*az[i] + bz[i]*bz[i] + 1);
-    double psi    = findPsi(r);
-    filePsi << psi << "\n";
-    float alpha1  = filter_.getAlpha1(phi, psi);
-    fileAlpha << alpha1 << "\n";
+    double phi       = findPhi(az[i], bz[i]);
+    phi_vec[i-start] = static_cast<float> (phi);
+    float r          = sqrt(az[i]*az[i] + bz[i]*bz[i] + 1);
+    double psi       = findPsi(r);
+    psi_vec[i-start] = static_cast<float> (psi);
+    float alpha1     = filter_.getAlpha1(phi, psi);
+    alpha1_vec[i-start] = alpha1;       
     float stretch = std::cos(theta_);
-//    cppAdj[i-start]     = static_cast<fftw_real> (cpp[i] * alpha1 * stretch / r);
-//    cppAdj[i-start]     = static_cast<fftw_real> (cpp[i]);
-    cppAdj[i-start]     = static_cast<fftw_real> (cpp[i] * stretch / r);
+    cppAdj[i-start]     = static_cast<fftw_real> (cpp[i] * alpha1 * stretch / r);
     if (filter_.hasHalpha())
       Halpha[i-start]   = filter_.getHalpha(phi, psi);
   }
   
-  filePhi.close();
-  filePsi.close();
-  fileAlpha.close();
+  if(ModelSettings::getDebugLevel() > 0) {
+    std::string fileName = "cpp_" + wellname + "_" + angle;
+    printVecToFile(fileName, &cpp[0], length);
+    fileName = "phi_" + wellname + "_" + angle;
+    printVecToFile(fileName, &phi_vec[0], length);
+    fileName = "psi_" + wellname + "_" + angle;
+    printVecToFile(fileName, &psi_vec[0], length);
+    fileName = "alpha_" + wellname + "_" + angle;
+    printVecToFile(fileName, &alpha1_vec[0], length);
+  }
 
   return cppAdj;
 }
@@ -496,14 +730,11 @@ Wavelet3D::calculateWellWavelet(const std::vector<std::vector<float> > & gMat,
 {
   std::vector<fftw_real> wellWavelet(rnzp_, 0.0);
 
-//  double maxD = 0.0;
   double maxG = 0.0;
   for (int i=0; i<nPoints; i++) {
-//    maxD = std::max(maxD, static_cast<double> (fabs(dVec[i])));
     for (int j=0; j<nWl; j++)
       maxG = std::max(maxG, static_cast<double> (fabs(gMat[i][j])));
   }
-//  double sd = 2.0 / maxG;
 
   double **gTrg = new double *[nWl];
   for (int i=0; i<nWl; i++) {
@@ -518,7 +749,8 @@ Wavelet3D::calculateWellWavelet(const std::vector<std::vector<float> > & gMat,
   double *gTrd = new double[nWl];
   double alpha = 4.0;
   double SNR   = 4.0;
-  double beta  = 1.0;
+//  double beta  = 1.0;
+  double beta = 0.5;
   for (int i=0; i<nWl; i++) {
     gTrd[i] = 0.0;
     double a;

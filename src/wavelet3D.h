@@ -44,16 +44,28 @@ public:
   WaveletFilter  getFilter() const {return filter_;}
   
   // Methods that are virtual in Wavelet
-  float         calculateSNRatioAndLocalWavelet(Simbox        * /*simbox*/, 
-                                                FFTGrid       * /*seisCube*/, 
-                                                WellData     ** /*wells*/, 
-                                                ModelSettings * /*modelSettings*/,
-                                                std::string   & errText, 
-                                                int           & error, 
-                                                int             /*number*/,
-                                                Grid2D       *& /*noiseScaled*/, 
-                                                Grid2D       *& /*shift*/, 
-                                                Grid2D       *& /*gain*/);
+//  float         calculateSNRatioAndLocalWavelet(Simbox        * /*simbox*/, 
+//                                                FFTGrid       * /*seisCube*/, 
+//                                                WellData     ** /*wells*/, 
+//                                                ModelSettings * /*modelSettings*/,
+//                                                std::string   & errText, 
+//                                                int           & error, 
+//                                                int             /*number*/,
+//                                                Grid2D       *& /*noiseScaled*/, 
+//                                                Grid2D       *& /*shift*/, 
+//                                                Grid2D       *& /*gain*/);
+
+  float         calculateSNRatio(Simbox                                   * simbox, 
+                                 FFTGrid                                  * seisCube, 
+                                 WellData                                ** wells, 
+                                 ModelSettings                            * modelSettings,
+                                 std::string                              & errText, 
+                                 int                                      & error,
+                                 const NRLib::Grid2D<float>               & refTimeGradX,
+                                 const NRLib::Grid2D<float>               & refTimeGradY,
+                                 const std::vector<std::vector<double> >  & tGradX,
+                                 const std::vector<std::vector<double> >  & tGradY,
+                                 int                                        number);      
 
 private:
   void          findLayersWithData(const std::vector<Surface *> & estimInterval,
@@ -81,7 +93,9 @@ private:
                                    const std::vector<float> & bz,
                                    std::vector<float>       & Halpha,
                                    int                        start,
-                                   int                        length) const;
+                                   int                        length,
+                                   const std::string        & wellname,
+                                   const std::string        & angle) const;
 
   void           calculateGradients(BlockedLogs                * bl,
                                     const std::vector<int>     & iPos,
