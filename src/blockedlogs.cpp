@@ -1718,10 +1718,10 @@ void BlockedLogs::findSeismicGradient(FFTGrid                  ** seisCube,
       jpos_[k] += dj;
     }
   }
-  //
-  //char* buffer = new char[1000];
-  //sprintf(buffer,"%s.txt", "C:/Outputfiles/traces");
-  //std::ofstream out(buffer);
+  
+  char* buffer = new char[1000];
+  sprintf(buffer,"%s.txt", "C:/Outputfiles/traces");
+  std::ofstream out(buffer);
   //bool welltmp = false;
 
  
@@ -1730,15 +1730,12 @@ void BlockedLogs::findSeismicGradient(FFTGrid                  ** seisCube,
     for(j = -yEx; j <= yEx; j++){
       for(i = -xEx; i <= xEx; i++){
         seisTrace = seisCube[l]->getRealTrace2(i0, j0);
-        //if(welltmp){
-        //  for(int s = 0; s < nBlocks_; s++)
-        //    out << seisTrace[s] << std::endl;       
-        //}
+
         smoothTrace(seisTrace);
- /*       if(welltmp){
-          for(int s = 0; s < nBlocks_; s++)
-            out << seisTrace[s] << std::endl; 
-        }*/
+        //if(j == 0 ){
+        //  for(int s = 0; s < seisTrace.size(); s++)
+        //    out << seisTrace[s] << std::endl; 
+        //}
 
         dzW =  timeSimbox->getdz(i0,j0);
         ztopW =  timeSimbox->getTop(i0,j0);
@@ -1746,6 +1743,10 @@ void BlockedLogs::findSeismicGradient(FFTGrid                  ** seisCube,
 
         seisTrace = seisCube[l]->getRealTrace2(i0+i, j0+j);
         smoothTrace(seisTrace);
+        if(i==0){
+          for(int s = 0; s < seisTrace.size(); s++)
+            out << seisTrace[s] << std::endl;       
+        }
 
         dz =  timeSimbox->getdz(i0+i, j0+j);
         ztop =  timeSimbox->getTop(i0+i, j0+j);
@@ -1948,19 +1949,19 @@ void BlockedLogs::computeGradient(std::vector<double> &Qepsilon, std::vector<dou
   std::vector<double> cov(9);
   std::vector<double> invcov(9);
   std::vector<double> regM(3*nx*ny);
-  //
-  //static bool append = false;
+  
+  static bool append = false;
 
-  //char* buffer = new char[1000];
-  //sprintf(buffer,"%s.txt", "C:/Outputfiles/gradNoSmooth");
-  //std::ofstream out;
-  //if(append){
-  //  out.open(buffer, std::ios::app|std::ios::out);
-  //}
-  //else{
-  //  out.open(buffer);
-  //  append = true;
-  //}
+  char* buffer = new char[1000];
+  sprintf(buffer,"%s.txt", "C:/Outputfiles/gradNoSmooth");
+  std::ofstream out;
+  if(append){
+    out.open(buffer, std::ios::app|std::ios::out);
+  }
+  else{
+    out.open(buffer);
+    append = true;
+  }
 
   int ndata;
   double data;
@@ -2041,10 +2042,10 @@ void BlockedLogs::computeGradient(std::vector<double> &Qepsilon, std::vector<dou
         sigma2 += sigmatmp*sigmatmp;
       }  
 
- //     double qa = sigma2*invcov[4];
-//      double qb = sigma2*invcov[8];
+      double qa = sigma2*invcov[4];
+      double qb = sigma2*invcov[8];
 
-      //out << beta1 << " " << beta2 << " " << qa << " " << qb << std::endl;
+      out << beta1 << " " << beta2 << " " << qa << " " << qb << std::endl;
 
       //cov(beta) = sigma2*(ZtZ)^{-1}
       Qepsilon[counter1] += cov[4]/sigma2;
@@ -2148,24 +2149,25 @@ void BlockedLogs::smoothGradient(std::vector<double> &xGradient, std::vector<dou
    counter +=2;
   }
   
-   //char* buffer2 = new char[1000];
-   //sprintf(buffer2,"%s.txt", "C:/Outputfiles/gradients");
-   //std::ofstream out2(buffer2);
-   //for(i = 0; i < nBlocks_; i++){
-   //    out2 << xGradient[i] << " " << yGradient[i];
-   //  out2 << std::endl;
-   //}
+   char* buffer2 = new char[1000];
+   sprintf(buffer2,"%s.txt", "C:/Outputfiles/gradients");
+   std::ofstream out2(buffer2);
+   for(i = 0; i < nBlocks_; i++){
+       out2 << xGradient[i] << " " << yGradient[i];
+     out2 << std::endl;
+   }
 
-//  for(i = 0; i < n_beta; i++){
-//    if(Qbeta_data[i] != NULL)
-//      delete [] Qbeta_data[i];
-//    if(Identity[i] != NULL)
-//      delete [] Identity[i];
-//  }
+  for(i = 0; i < n_beta; i++){
+    if(Qbeta_data[i] != NULL)
+      delete [] Qbeta_data[i];
+    if(Identity[i] != NULL)
+      delete [] Identity[i];
+  }
   delete [] Qbeta_data;
   delete [] Identity;
   delete [] res;
  
+
 
 
 }
