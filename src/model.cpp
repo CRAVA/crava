@@ -753,7 +753,6 @@ Model::readStormFile(const std::string  & fName,
   {   
     stormgrid = new StormContGrid(0,0,0);
     stormgrid->ReadFromFile(fName);
-    stormgrid->SetMissingCode(RMISSING);
   }
   catch (NRLib::Exception & e) 
   {

@@ -1744,7 +1744,7 @@ void BlockedLogs::findSeismicGradient(FFTGrid                  ** seisCube,
         seisTrace = seisCube[l]->getRealTrace2(i0+i, j0+j);
         smoothTrace(seisTrace);
         if(i==0){
-          for(int s = 0; s < seisTrace.size(); s++)
+          for(size_t s = 0; s < seisTrace.size(); s++)
             out << seisTrace[s] << std::endl;       
         }
 

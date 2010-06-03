@@ -244,7 +244,7 @@ FFTGrid::fillInFromStorm(Simbox            * actSimBox,
   fftw_real value  = 0.0;
   
   double x,y,z;
-  double val;
+  float  val;
 
   meanvalue= static_cast<float*>(fftw_malloc(sizeof(float)*nyp_*nxp_));
 
@@ -256,16 +256,18 @@ FFTGrid::fillInFromStorm(Simbox            * actSimBox,
       actSimBox->getCoord(refi, refj, 0, x, y, z);
       val = grid->GetValueZInterpolated(x*scalehor,y*scalehor,z*scalevert);
       actSimBox->getCoord(refi, refj, nz_-1, x, y, z);
-      if(val != RMISSING)
-        val = (grid->GetValueZInterpolated(x*scalehor,y*scalehor,z*scalevert)+val)/2.0;
+      if(grid->IsMissing(val) == false)
+        val = (grid->GetValueZInterpolated(x*scalehor,y*scalehor,z*scalevert)+val)/2.0f;
       else     
         val = grid->GetValueZInterpolated(x*scalehor,y*scalehor,z*scalevert);
-      meanvalue[i+j*nxp_] = static_cast<float>(val);
-      if(val == RMISSING) {
+      if(grid->IsMissing(val) == true) {
+        meanvalue[i+j*nxp_] = RMISSING; //Translate missing code
         if(cubetype_ == DATA || (i < nx_ && j< ny_)) //Count padding traces only for data.
           if(grid->IsInside(x,y) == false)
             outsideTraces++;
       }
+    else
+      meanvalue[i+j*nxp_] = static_cast<float>(val);
     }
   }
 
@@ -296,7 +298,7 @@ FFTGrid::fillInFromStorm(Simbox            * actSimBox,
         {
           actSimBox->getCoord(refi, refj, refk, x, y, z);
           value = static_cast<fftw_real>(grid->GetValueZInterpolated(x*scalehor,y*scalehor,z*scalevert));
-          if(value!=RMISSING) {
+          if(grid->IsMissing(value) == false) {
             if(cubetype_ == FFTGrid::PARAMETER)
               value=static_cast<float>( ((mult*value+(1.0-mult)*meanvalue[i+j*nxp_])) );
             else
@@ -304,6 +306,8 @@ FFTGrid::fillInFromStorm(Simbox            * actSimBox,
           }
           else if(cubetype_ == FFTGrid::DATA)
             value = 0;
+          else
+            value = RMISSING;
         }
         else
           value=RMISSING;        
@@ -1904,7 +1908,7 @@ FFTGrid::writeAsciiRaw(const std::string & fileName)
       for(i=0;i<rnxp_;i++)
       {
         value = getNextReal(); 
-        file << i << " " << j << " " << k << " " << value;
+        file << i << " " << j << " " << k << " " << value << " ";
       }
   file.close();
   LogKit::LogFormatted(LogKit::LOW,"done.\n");

@@ -244,7 +244,7 @@ Crava::computeDataVariance(void)
       totvar += tmpvar1;
     }
     seisData_[l]->endAccess();
-    dataVariance_[l] = float(totvar)/float(ndata);
+    dataVariance_[l] = static_cast<float>(totvar/static_cast<double>(ndata));
   }
 }
 
@@ -725,7 +725,7 @@ Crava::computePostMeanResidAndFFTCov()
       delete errorSmooth2[l];
     }
     else { //3D-wavelet
-/*      errorSmooth3[l] = new Wavelet3D(seisWavelet_[l]);
+      /*      errorSmooth3[l] = new Wavelet3D(seisWavelet_[l]);
       errorSmooth3[l]->fft1DInPlace();
       errorSmooth3[l]->multiplyByR(3.0);
       seisWavelet_[l]->fft1DInPlace();
@@ -734,50 +734,50 @@ Crava::computePostMeanResidAndFFTCov()
       errCorrUnsmooth->setAccessMode(FFTGrid::RANDOMACCESS);
       int endX;
       if (nxp_/2 == (nxp_+1)/2) //nxp_ even
-        endX = cnxp-1;
+      endX = cnxp-1;
       else 
-        endX = cnxp;
+      endX = cnxp;
       float ijkNorm1 = 0.0;
       float ijkNorm2 = 0.0;
       float scale = static_cast<float>( 1.0/(nxp_*nyp_*nzp_));
       for (k=0; k<nzp_; k++) {
-        float ijNorm1 = 0.0;
-        float ijNorm2 = 0.0;
-        for (j=0; j<nyp_; j++) {
-          float iNorm1 = 0.0;
-          float iNorm2 = 0.0;
-          fftw_complex s1 = seisWavelet_[l]->getCAmp(k,j,0);
-          fftw_complex s2 = errorSmooth3[l]->getCAmp(k,j,0);
-          fftw_complex rho = errCorrUnsmooth->getComplexValue(0,j,k,true);
-          float lambda = sqrt(rho.re * rho.re);
-          iNorm1 += (s1.re * s1.re + s1.im * s1.im) * lambda;
-          iNorm2 += (s2.re * s2.re + s2.im * s2.im) * lambda;
-          for (i=1; i<endX; i++) {
-            s1 = seisWavelet_[l]->getCAmp(k,j,i);
-            s2 = errorSmooth3[l]->getCAmp(k,j,i);
-            rho = errCorrUnsmooth->getComplexValue(i,j,k,true);
-            lambda = sqrt(rho.re * rho.re);
-            iNorm1 += 2.0f * (s1.re * s1.re + s1.im * s1.im) * lambda;
-            iNorm2 += 2.0f * (s2.re * s2.re + s2.im * s2.im) * lambda;
-          }
-          if (endX == cnxp-1) { //nxp_ even, takes the last element once
-            s1 = seisWavelet_[l]->getCAmp(k,j,cnxp-1);
-            s2 = errorSmooth3[l]->getCAmp(k,j,cnxp-1);
-            rho = errCorrUnsmooth->getComplexValue(cnxp-1,j,k,true);
-            lambda = sqrt(rho.re * rho.re);
-            iNorm1 += (s1.re * s1.re + s1.im * s1.im) * lambda;
-            iNorm2 += (s2.re * s2.re + s2.im * s2.im) * lambda;
-          }
-          ijNorm1 += iNorm1;
-          ijNorm2 += iNorm2;
-        }
-        ijkNorm1 += scale * ijNorm1;
-        ijkNorm2 += ijNorm2;
+      float ijNorm1 = 0.0;
+      float ijNorm2 = 0.0;
+      for (j=0; j<nyp_; j++) {
+      float iNorm1 = 0.0;
+      float iNorm2 = 0.0;
+      fftw_complex s1 = seisWavelet_[l]->getCAmp(k,j,0);
+      fftw_complex s2 = errorSmooth3[l]->getCAmp(k,j,0);
+      fftw_complex rho = errCorrUnsmooth->getComplexValue(0,j,k,true);
+      float lambda = sqrt(rho.re * rho.re);
+      iNorm1 += (s1.re * s1.re + s1.im * s1.im) * lambda;
+      iNorm2 += (s2.re * s2.re + s2.im * s2.im) * lambda;
+      for (i=1; i<endX; i++) {
+      s1 = seisWavelet_[l]->getCAmp(k,j,i);
+      s2 = errorSmooth3[l]->getCAmp(k,j,i);
+      rho = errCorrUnsmooth->getComplexValue(i,j,k,true);
+      lambda = sqrt(rho.re * rho.re);
+      iNorm1 += 2.0f * (s1.re * s1.re + s1.im * s1.im) * lambda;
+      iNorm2 += 2.0f * (s2.re * s2.re + s2.im * s2.im) * lambda;
+      }
+      if (endX == cnxp-1) { //nxp_ even, takes the last element once
+      s1 = seisWavelet_[l]->getCAmp(k,j,cnxp-1);
+      s2 = errorSmooth3[l]->getCAmp(k,j,cnxp-1);
+      rho = errCorrUnsmooth->getComplexValue(cnxp-1,j,k,true);
+      lambda = sqrt(rho.re * rho.re);
+      iNorm1 += (s1.re * s1.re + s1.im * s1.im) * lambda;
+      iNorm2 += (s2.re * s2.re + s2.im * s2.im) * lambda;
+      }
+      ijNorm1 += iNorm1;
+      ijNorm2 += iNorm2;
+      }
+      ijkNorm1 += scale * ijNorm1;
+      ijkNorm2 += ijNorm2;
       }
       ijkNorm2 /= (scale);
       seisWavelet_[l]->setNorm(sqrt(ijkNorm1));
       errorSmooth3[l]->setNorm(sqrt(ijkNorm2));
-  */
+      */
     }
   }
   delete[] errorSmooth;
@@ -862,29 +862,29 @@ Crava::computePostMeanResidAndFFTCov()
 
     for( j = 0; j < nyp_; j++) {
       for( i = 0; i < cnxp; i++) { 
-/*        if (seisWavelet_[0]->getDim() == 3) { //3D-wavelet
-          if( simbox_->getIsConstantThick() == true) {
-            for(l = 0; l < ntheta_; l++) {
-              errMult1[l].re  = static_cast<float>( seisWavelet_[l]->getCAmp(k,j,i).re ); 
-              errMult1[l].im  = static_cast<float>( seisWavelet_[l]->getCAmp(k,j,i).im ); 
-            }
-            lib_matrProdScalVecCpx(kD, errMult1, ntheta_); 
-            lib_matrProdDiagCpxR(errMult1, A_, ntheta_, 3, K);  
-            // defines error-term multipliers  
-            for(l = 0; l < ntheta_; l++) {
-              errMult1[l].re   = static_cast<float>(seisWavelet_[l]->getCAmp(k,j,i).re / seisWavelet_[l]->getNorm());
-              errMult1[l].im   = static_cast<float>(seisWavelet_[l]->getCAmp(k,j,i).im / seisWavelet_[l]->getNorm());
-            }       
-            for(l = 0; l < ntheta_; l++) {
-              errMult2[l].re   = static_cast<float>(errorSmooth3[l]->getCAmp(k,j,i).re / errorSmooth3[l]->getNorm());
-              errMult2[l].im   = static_cast<float>(errorSmooth3[l]->getCAmp(k,j,i).im / errorSmooth3[l]->getNorm());
-            }
-            lib_matrFillOnesVecCpx(errMult3,ntheta_);
-          }
-          else {
-            LogKit::LogFormatted(LogKit::LOW,"\nERROR: Not implemented inversion with 3D wavelet for non-constant simbox thickness\n");
-            exit(1);
-          }
+        /*        if (seisWavelet_[0]->getDim() == 3) { //3D-wavelet
+        if( simbox_->getIsConstantThick() == true) {
+        for(l = 0; l < ntheta_; l++) {
+        errMult1[l].re  = static_cast<float>( seisWavelet_[l]->getCAmp(k,j,i).re ); 
+        errMult1[l].im  = static_cast<float>( seisWavelet_[l]->getCAmp(k,j,i).im ); 
+        }
+        lib_matrProdScalVecCpx(kD, errMult1, ntheta_); 
+        lib_matrProdDiagCpxR(errMult1, A_, ntheta_, 3, K);  
+        // defines error-term multipliers  
+        for(l = 0; l < ntheta_; l++) {
+        errMult1[l].re   = static_cast<float>(seisWavelet_[l]->getCAmp(k,j,i).re / seisWavelet_[l]->getNorm());
+        errMult1[l].im   = static_cast<float>(seisWavelet_[l]->getCAmp(k,j,i).im / seisWavelet_[l]->getNorm());
+        }       
+        for(l = 0; l < ntheta_; l++) {
+        errMult2[l].re   = static_cast<float>(errorSmooth3[l]->getCAmp(k,j,i).re / errorSmooth3[l]->getNorm());
+        errMult2[l].im   = static_cast<float>(errorSmooth3[l]->getCAmp(k,j,i).im / errorSmooth3[l]->getNorm());
+        }
+        lib_matrFillOnesVecCpx(errMult3,ntheta_);
+        }
+        else {
+        LogKit::LogFormatted(LogKit::LOW,"\nERROR: Not implemented inversion with 3D wavelet for non-constant simbox thickness\n");
+        exit(1);
+        }
         }*/ //3D-wavelet
         ijkMean[0] = meanAlpha_->getNextComplex();
         ijkMean[1] = meanBeta_ ->getNextComplex();
@@ -916,7 +916,7 @@ Crava::computePostMeanResidAndFFTCov()
 
           if(realFrequency > lowCut_*simbox_->getMinRelThick() &&  realFrequency < highCut_) // inverting only relevant frequencies
           {
-            for(l = 0; l < ntheta_; l++ )
+            for(l = 0; l < ntheta_; l++ ) {
               for(m = 0; m < ntheta_; m++ )
               {        // Note we multiply kWNorm[l] and comp.conj(kWNorm[m]) hence the + and not a minus as in pure multiplication
                 errVar[l][m].re  = float( 0.5*(1.0-wnc_)*errThetaCov_[l][m] * ijkErrLam.re * ( errMult1[l].re *  errMult1[m].re +  errMult1[l].im *  errMult1[m].im)); 
@@ -930,39 +930,39 @@ Crava::computePostMeanResidAndFFTCov()
                   errVar[l][m].im += float( 0.5*(1.0-wnc_)*errThetaCov_[l][m] * ijkErrLam.re * (-errMult2[l].re * errMult2[m].im + errMult2[l].im * errMult2[m].re));
                 }
               }
+            }
+            lib_matrProdCpx(K, parVar , ntheta_, 3 ,3, KS);              //  KS is defined here  
+            lib_matrProdAdjointCpx(KS, K, ntheta_, 3 ,ntheta_, margVar); // margVar = (K)S(K)' is defined here      
+            lib_matrAddMatCpx(errVar, ntheta_,ntheta_, margVar);         // errVar  is added to margVar = (WDA)S(WDA)'  + errVar 
 
-              lib_matrProdCpx(K, parVar , ntheta_, 3 ,3, KS);              //  KS is defined here  
-              lib_matrProdAdjointCpx(KS, K, ntheta_, 3 ,ntheta_, margVar); // margVar = (K)S(K)' is defined here      
-              lib_matrAddMatCpx(errVar, ntheta_,ntheta_, margVar);         // errVar  is added to margVar = (WDA)S(WDA)'  + errVar 
+            cholFlag=lib_matrCholCpx(ntheta_,margVar);                   // Choleskey factor of margVar is Defined
 
-              cholFlag=lib_matrCholCpx(ntheta_,margVar);                   // Choleskey factor of margVar is Defined
+            if(cholFlag==0)
+            { // then it is ok else posterior is identical to prior              
 
-              if(cholFlag==0)
-              { // then it is ok else posterior is identical to prior              
+              lib_matrAdjoint(KS,ntheta_,3,KScc);                        //  WDAScc is adjoint of WDAS   
+              lib_matrAXeqBMatCpx(ntheta_, margVar, KS, 3);              // redefines WDAS                 
+              lib_matrProdCpx(KScc,KS,3,ntheta_,3,reduceVar);            // defines reduceVar
+              //double hj=1000000.0;
+              //if(reduceVar[0][0].im!=0)
+              // hj = MAXIM(reduceVar[0][0].re/reduceVar[0][0].im,-reduceVar[0][0].re/reduceVar[0][0].im); //NBNB DEBUG
+              lib_matrSubtMatCpx(reduceVar,3,3,parVar);                  // redefines parVar as the posterior solution
 
-                lib_matrAdjoint(KS,ntheta_,3,KScc);                        //  WDAScc is adjoint of WDAS   
-                lib_matrAXeqBMatCpx(ntheta_, margVar, KS, 3);              // redefines WDAS                 
-                lib_matrProdCpx(KScc,KS,3,ntheta_,3,reduceVar);            // defines reduceVar
-                //double hj=1000000.0;
-                //if(reduceVar[0][0].im!=0)
-                // hj = MAXIM(reduceVar[0][0].re/reduceVar[0][0].im,-reduceVar[0][0].re/reduceVar[0][0].im); //NBNB DEBUG
-                lib_matrSubtMatCpx(reduceVar,3,3,parVar);                  // redefines parVar as the posterior solution
+              lib_matrProdMatVecCpx(K,ijkMean, ntheta_, 3, ijkDataMean); //  defines content of ijkDataMean      
+              lib_matrSubtVecCpx(ijkDataMean, ntheta_, ijkData);         //  redefines content of ijkData   
 
-                lib_matrProdMatVecCpx(K,ijkMean, ntheta_, 3, ijkDataMean); //  defines content of ijkDataMean      
-                lib_matrSubtVecCpx(ijkDataMean, ntheta_, ijkData);         //  redefines content of ijkData   
+              lib_matrProdAdjointMatVecCpx(KS,ijkData,3,ntheta_,ijkAns); // defines ijkAns
 
-                lib_matrProdAdjointMatVecCpx(KS,ijkData,3,ntheta_,ijkAns); // defines ijkAns
+              lib_matrAddVecCpx(ijkAns, 3,ijkMean);                      // redefines ijkMean 
+              lib_matrProdMatVecCpx(K,ijkMean, ntheta_, 3, ijkData);     // redefines ijkData
+              lib_matrSubtVecCpx(ijkData, ntheta_,ijkRes);               // redefines ijkRes      
+            } 
 
-                lib_matrAddVecCpx(ijkAns, 3,ijkMean);                      // redefines ijkMean 
-                lib_matrProdMatVecCpx(K,ijkMean, ntheta_, 3, ijkData);     // redefines ijkData
-                lib_matrSubtVecCpx(ijkData, ntheta_,ijkRes);               // redefines ijkRes      
-              } 
-
-              // quality control DEBUG
-              if(priorVarVp*4 < ijkAns[0].re*ijkAns[0].re + ijkAns[0].re*ijkAns[0].re)
-              {
-                justfactor = sqrt(ijkAns[0].re*ijkAns[0].re + ijkAns[0].re*ijkAns[0].re)/sqrt(priorVarVp);
-              }
+            // quality control DEBUG
+            if(priorVarVp*4 < ijkAns[0].re*ijkAns[0].re + ijkAns[0].re*ijkAns[0].re)
+            {
+              justfactor = sqrt(ijkAns[0].re*ijkAns[0].re + ijkAns[0].re*ijkAns[0].re)/sqrt(priorVarVp);
+            }
           }
           postAlpha_->setNextComplex(ijkMean[0]);
           postBeta_ ->setNextComplex(ijkMean[1]);
@@ -1064,7 +1064,7 @@ Crava::computePostMeanResidAndFFTCov()
 
   if(writePrediction_ == true)
     ParameterOutput::writeParameters(simbox_, model_, postAlpha_, postBeta_, postRho_, 
-                                     outputGridsElastic_, fileGrid_, -1, false);
+    outputGridsElastic_, fileGrid_, -1, false);
 
   writeBWPredicted();
 
