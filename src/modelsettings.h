@@ -131,6 +131,7 @@ public:
   int                              getWellFormatFlag(void)              const { return wellFormatFlag_                            ;}
   int                              getWaveletOutputFlag(void)           const { return waveletFlag_                               ;}
   int                              getWaveletFormatFlag(void)           const { return waveletFormatFlag_                         ;}
+  bool                             getWaveletFormatManual(void)         const { return waveletFormatManual_                       ;}
   int                              getEstimateNumberOfWavelets(void)    const { return static_cast<int>(estimateWavelet_.size())  ;}
   int                              getOtherOutputFlag(void)             const { return otherFlag_                                 ;}
   int                              getDebugFlag(void)                   const { return debugFlag_                                 ;}
@@ -282,6 +283,7 @@ public:
   void setWellFormatFlag(int formatFlag)                  { wellFormatFlag_           = formatFlag               ;}
   void setWaveletOutputFlag(int waveletFlag)              { waveletFlag_              = waveletFlag              ;}
   void setWaveletFormatFlag(int formatFlag)               { waveletFormatFlag_        = formatFlag               ;}
+  void setWaveletFormatManual(bool waveletManual)         { waveletFormatManual_      = waveletManual            ;}
   void setOtherOutputFlag(int otherFlag)                  { otherFlag_                = otherFlag                ;}
   void setDebugFlag(int debugFlag)                        { debugFlag_                = debugFlag                ;}
   void setFileGrid(bool fileGrid)                         { fileGrid_                 = fileGrid                 ;}
@@ -472,6 +474,7 @@ private:
   int                               otherFlag_;                  // Decides output beyond grids and wells.
   bool                              fileGrid_;                   // Indicator telling if grids are to be kept on file
   bool                              outputGridsDefault_;         // Indicator telling if grid output has been actively controlled 
+  bool                              waveletFormatManual_;        // True if wavelet format is decided in the model file
 
   bool                              forwardModeling_;            // Forward modelling
   bool                              estimationMode_;             // Estimation

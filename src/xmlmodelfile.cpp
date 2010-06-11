@@ -2315,6 +2315,7 @@ XmlModelFile::parseWaveletFormats(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("jason");
   legalCommands.push_back("norsar");
 
+  modelSettings_->setWaveletFormatManual(true);
   bool useFormat = false;
   int formatFlag = 0;
   bool jasonSpecified = false;  //Default format, check if turned off.
@@ -2913,7 +2914,7 @@ XmlModelFile::checkAngleConsistency(std::string & errTxt) {
 
 
 void 
-XmlModelFile::checkIOConsistency(std::string & /*errTxt*/)
+XmlModelFile::checkIOConsistency(std::string & errTxt)
 {
   if ((modelSettings_->getOtherOutputFlag() & IO::LOCAL_NOISE)>0 && modelSettings_->getUseLocalNoise()==false)
   {
@@ -2924,5 +2925,15 @@ XmlModelFile::checkIOConsistency(std::string & /*errTxt*/)
   {
    LogKit::LogFormatted(LogKit::WARNING, "\nWarning: Local wavelets can not be written to file when <local-wavelet> is not requested for the angle gathers.");
    TaskList::addTask("Remove <local-wavelets> from <wavelet-output> in the model file if local wavelets are not used.");
+  }
+  if (((modelSettings_->getWaveletFormatFlag() & IO::NORSARWAVELET)  > 0   ||
+     (modelSettings_->getWaveletFormatFlag() & IO::JASONWAVELET)     > 0 ) &&
+     (modelSettings_->getWaveletOutputFlag() & IO::LOCAL_WAVELETS)  == 0   &&
+     (modelSettings_->getWaveletOutputFlag() & IO::GLOBAL_WAVELETS) == 0   &&
+     (modelSettings_->getWaveletOutputFlag() & IO::WELL_WAVELETS)   == 0   &&
+     modelSettings_->getWaveletFormatManual() == true)
+  {
+    errTxt += "A format is requested in wavelet-output without specifying any of the wavelet\n";
+    errTxt += " outputs <well-wavelets>, <global-wavelets> nor <local-wavelets>.\n";
   }
 }

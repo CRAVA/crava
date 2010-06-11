@@ -3146,11 +3146,12 @@ Model::getWaveletFileFormat(const std::string & fileName, std::string & errText)
   std::ifstream file;
   NRLib::OpenRead(file,fileName);
   
-  NRLib::ReadNextToken(file,dummyStr,line);
-  targetString = "pulse";
+  std::getline(file,dummyStr);
+  line++;
+  targetString = "pulse file-3";
   pos = Utils::findEnd(dummyStr, 0, targetString);
-  if(pos>=0)
-    fileformat= Wavelet::NORSAR;
+  if (pos >= 0) 
+    fileformat = Wavelet::NORSAR;
   file.close();
   file.clear();
 

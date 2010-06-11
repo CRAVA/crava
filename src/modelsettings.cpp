@@ -122,7 +122,8 @@ ModelSettings::ModelSettings(void)
   otherFlag_               =        0;   
   debugFlag_               =        0;
   fileGrid_                =    false;
-                           
+  waveletFormatManual_     =    false;   
+
   estimationMode_          =    false;
   forwardModeling_         =    false;
   generateBackground_      =     true;

@@ -98,10 +98,10 @@ Wavelet::Wavelet(const std::string & fileName,
     WaveletReadJason(fileName, errCode, errText);
     break;
   case NORSAR:
-    errText += "Error: CRAVA is not able to read the Norsar wavelet format yet.\n";
-    errCode=1; 
+    WaveletReadNorsar(fileName, errCode, errText);
     break;
   }
+  formats_       = modelSettings->getWaveletFormatFlag();
   waveletLength_ = findWaveletLength(modelSettings->getMinRelWaveletAmp());
   LogKit::LogFormatted(LogKit::LOW,"\n  Estimated wavelet length:  %.1fms.\n",waveletLength_);
 
@@ -613,16 +613,34 @@ Wavelet::writeWaveletToFile(const std::string & fileName,
     //Writing wavelet in swav-format
     fName = std::string(fileName) + NRLib::ToString(theta_*(180/M_PI), 1) + "deg" + IO::SuffixNorsarWavelet();
     fName = IO::makeFullFileName(IO::PathToWavelets(), fName);
+  
+    int   cznew = static_cast<int>(floor((fabs(shift/dznew))+0.5));
+    float t0    = static_cast<float>(-dznew * cznew);
 
     LogKit::LogFormatted(LogKit::MEDIUM,"  Writing Wavelet to file \'"+fName+"\'\n");
 
     NRLib::OpenWrite(file, fName);
 
-    file << "pulse file-1\n"
-         << wLength << " "  << static_cast<int>(dznew) << "\n";
-    for(int i=halfLength ; i > 0 ; i--)
+    file << "pulse file-3\n"
+         << "* Written by CRAVA\n"
+         << "* time - millisec - sample value legend\n"
+         << "Time 1 Amplitude\n" 
+         << "* Min, main and max frequency/wavenumber\n"
+         << "-999.99 -999.99 -999.99\n"
+         << "* Number of samples - millisec sampling - time at first sample\n"
+         << std::fixed
+         << std::setprecision(2)
+         << wLength
+         << " "
+         << dznew
+         << " "
+         << std::setprecision(0)
+         << t0  
+         << "\n";
+
+    for (int i = halfLength ; i > 0 ; i--)
       file << std::setprecision(6) << waveletNew_r[nzpNew-i] << "\n";
-    for(int i=0 ; i<=halfLength ; i++)
+    for (int i = 0; i <= halfLength; i++)
       file << std::setprecision(6) << waveletNew_r[i] << "\n";
     file.close();
   }
@@ -1125,3 +1143,107 @@ Wavelet::WaveletReadJason(const std::string & fileName,
   file.close();
 }
 
+void
+Wavelet::WaveletReadNorsar(const std::string & fileName, 
+                           int               & errCode, 
+                           std::string       & errText)
+{
+  std::ifstream file;
+  NRLib::OpenRead(file,fileName);
+  std::string dummyStr;
+  
+  bool  lineIsComment = true; 
+  int   line          = 0;
+  int   timeUnits;
+  float milliSec;
+  float samplingInt;
+  float firstSample;
+
+  NRLib::DiscardRestOfLine(file, line, false);
+
+  // Domain
+  while (lineIsComment == true) {
+    if(NRLib::CheckEndOfFile(file)) {
+      errText += "Error: End of file "+fileName+" premature.\n";
+      errCode=1; 
+      return;
+    }
+
+    NRLib::ReadNextToken(file,dummyStr,line);
+    if (dummyStr[0] != '*') 
+      lineIsComment = false;
+    else
+      NRLib::DiscardRestOfLine(file,line,false);
+  }
+
+  if (NRLib::Uppercase(dummyStr) != "TIME") {
+    errText += "Error: The NORSAR wavelet in file "+fileName+" needs to be given in Time domain.\n";
+    errCode  = 1;
+    return;
+  }
+
+  timeUnits = NRLib::ReadNext<int>(file,line);
+  milliSec = static_cast<float>(std::pow(10.0, 3*(1-timeUnits)));
+
+  NRLib::DiscardRestOfLine(file,line,false); //Contains text for sample values not used by CRAVA
+
+  // Frequency info
+  lineIsComment = true;
+  while( lineIsComment == true) {
+    if(NRLib::CheckEndOfFile(file)) {
+      errText += "Error: End of file "+fileName+" premature.\n";
+      errCode=1; 
+      return;
+    }
+
+    NRLib::ReadNextToken(file,dummyStr,line);
+    if (dummyStr[0] != '*') 
+      lineIsComment = false;
+    else
+      NRLib::DiscardRestOfLine(file,line,false);
+  }
+ 
+  NRLib::DiscardRestOfLine(file,line,false); //Line contains frequency information not used by CRAVA
+
+  // Sample info
+  lineIsComment = true; 
+  while( lineIsComment == true) {
+    if(NRLib::CheckEndOfFile(file)) {
+      errText += "Error: End of file "+fileName+" premature.\n";
+      errCode=1; 
+      return;
+    }
+
+    NRLib::ReadNextToken(file,dummyStr,line);
+    if (dummyStr[0] != '*') 
+      lineIsComment = false;
+    else
+      NRLib::DiscardRestOfLine(file,line,false);
+  }
+
+  nz_         = NRLib::ParseType<int>(dummyStr);
+  samplingInt = NRLib::ReadNext<float>(file,line);
+  firstSample = NRLib::ReadNext<float>(file,line);
+  
+  dz_   = samplingInt * milliSec;
+  cz_   = static_cast<int>((-firstSample / dz_) + 0.5);
+  nzp_  = nz_;
+  cnzp_ = nzp_/2+1;
+  rnzp_ = 2*cnzp_; 
+  rAmp_ = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp_));
+  cAmp_ = reinterpret_cast<fftw_complex*>(rAmp_);
+  norm_ = RMISSING;
+
+  // Pulse samples
+  for(int i=0; i<nz_;i++) {
+    if (NRLib::CheckEndOfFile(file)) {
+      errText += "Error: End of file "+fileName+" premature.\n";
+      errCode=1; 
+      return;
+    } 
+    NRLib::ReadNextToken(file,dummyStr,line);
+
+    rAmp_[i] = static_cast<fftw_real>(NRLib::ParseType<float>(dummyStr));
+  }
+  file.close();
+}

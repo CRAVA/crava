@@ -204,6 +204,9 @@ private:
                                   int                         & errCode, 
                                   std::string                 & errText);
 
+  void           WaveletReadNorsar(const std::string          & fileName,
+                                   int                        & errCode,
+                                   std::string                & errText);
 
 };
 
