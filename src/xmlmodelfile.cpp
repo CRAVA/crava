@@ -2927,11 +2927,12 @@ XmlModelFile::checkIOConsistency(std::string & errTxt)
    TaskList::addTask("Remove <local-wavelets> from <wavelet-output> in the model file if local wavelets are not used.");
   }
   if (((modelSettings_->getWaveletFormatFlag() & IO::NORSARWAVELET)  > 0   ||
-     (modelSettings_->getWaveletFormatFlag() & IO::JASONWAVELET)     > 0 ) &&
-     (modelSettings_->getWaveletOutputFlag() & IO::LOCAL_WAVELETS)  == 0   &&
-     (modelSettings_->getWaveletOutputFlag() & IO::GLOBAL_WAVELETS) == 0   &&
-     (modelSettings_->getWaveletOutputFlag() & IO::WELL_WAVELETS)   == 0   &&
-     modelSettings_->getWaveletFormatManual() == true)
+      (modelSettings_->getWaveletFormatFlag() & IO::JASONWAVELET)     > 0 ) &&
+      (modelSettings_->getWaveletOutputFlag() & IO::LOCAL_WAVELETS)  == 0   &&
+      (modelSettings_->getWaveletOutputFlag() & IO::GLOBAL_WAVELETS) == 0   &&
+      (modelSettings_->getWaveletOutputFlag() & IO::WELL_WAVELETS)   == 0   &&
+      modelSettings_->getWaveletFormatManual() == true                      &&
+      modelSettings_->getEstimationMode() == false)
   {
     errTxt += "A format is requested in wavelet-output without specifying any of the wavelet\n";
     errTxt += " outputs <well-wavelets>, <global-wavelets> nor <local-wavelets>.\n";
