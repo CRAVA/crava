@@ -482,6 +482,11 @@ WellData::readNorsarWell(const std::string              & wellFileName,
       }
     }
 
+    if(logs[2] == NULL)
+      timemissing_ = 1;
+    else
+      timemissing_ =0;
+
     if(error_ == 0) {
       faciesok_ = 1;
       std::vector<int> facCodes;
@@ -520,6 +525,8 @@ WellData::readNorsarWell(const std::string              & wellFileName,
       }
       nFacies_ = static_cast<int>(facCodes.size());
     }
+    xpos0_ = well.GetXPosOrigin()*1000;
+    ypos0_ = well.GetYPosOrigin()*1000;
   }
   catch (NRLib::Exception & e) {
     errTxt_ += "Error: " + NRLib::ToString(e.what());
@@ -1031,66 +1038,61 @@ WellData::filterLogs(void)
   //
   // Time
   //
-  resampleTime(time_resampled, nd_, dt); 
+  bool filtered = resampleTime(time_resampled, nd_, dt); //False if well not monotonous in time.
 
-  //
-  // Vp
-  //
-  resampleLog(alpha_resampled, alpha_, zpos_, time_resampled, nd_, dt);         // May generate missing values
-  interpolateLog(alpha_interpolated, alpha_resampled, nd_);                     // Interpolate missing values
+  if(filtered) {
+    //
+    // Vp
+    //
+    resampleLog(alpha_resampled, alpha_, zpos_, time_resampled, nd_, dt);         // May generate missing values
+    interpolateLog(alpha_interpolated, alpha_resampled, nd_);                     // Interpolate missing values
 
-  applyFilter(alpha_filtered, alpha_interpolated, nd_, dt, maxHz_background);
-  resampleLog(alpha_resampled, alpha_filtered, time_resampled, zpos_, nd_, dt);
-  interpolateLog(alpha_background_resolution_, alpha_resampled, nd_);
+    applyFilter(alpha_filtered, alpha_interpolated, nd_, dt, maxHz_background);
+    resampleLog(alpha_resampled, alpha_filtered, time_resampled, zpos_, nd_, dt);
+    interpolateLog(alpha_background_resolution_, alpha_resampled, nd_);
 
-  applyFilter(alpha_filtered, alpha_interpolated, nd_, dt, maxHz_seismic);
-  resampleLog(alpha_resampled, alpha_filtered, time_resampled, zpos_, nd_, dt);
-  interpolateLog(alpha_seismic_resolution_, alpha_resampled, nd_);
+    applyFilter(alpha_filtered, alpha_interpolated, nd_, dt, maxHz_seismic);
+    resampleLog(alpha_resampled, alpha_filtered, time_resampled, zpos_, nd_, dt);
+    interpolateLog(alpha_seismic_resolution_, alpha_resampled, nd_);
 
-  //
-  // Vs
-  //
-  resampleLog(beta_resampled, beta_, zpos_, time_resampled, nd_, dt);
-  interpolateLog(beta_interpolated, beta_resampled, nd_);
+    //
+    // Vs
+    //
+    resampleLog(beta_resampled, beta_, zpos_, time_resampled, nd_, dt);
+    interpolateLog(beta_interpolated, beta_resampled, nd_);
 
-  applyFilter(beta_filtered, beta_interpolated, nd_, dt, maxHz_background);
-  resampleLog(beta_resampled, beta_filtered, time_resampled, zpos_, nd_, dt);
-  interpolateLog(beta_background_resolution_, beta_resampled, nd_);
+    applyFilter(beta_filtered, beta_interpolated, nd_, dt, maxHz_background);
+    resampleLog(beta_resampled, beta_filtered, time_resampled, zpos_, nd_, dt);
+    interpolateLog(beta_background_resolution_, beta_resampled, nd_);
 
-  applyFilter(beta_filtered, beta_interpolated, nd_, dt, maxHz_seismic);
-  resampleLog(beta_resampled, beta_filtered, time_resampled, zpos_, nd_, dt);
-  interpolateLog(beta_seismic_resolution_, beta_resampled, nd_);
+    applyFilter(beta_filtered, beta_interpolated, nd_, dt, maxHz_seismic);
+    resampleLog(beta_resampled, beta_filtered, time_resampled, zpos_, nd_, dt);
+    interpolateLog(beta_seismic_resolution_, beta_resampled, nd_);
 
-  //
-  // Rho
-  //
-  resampleLog(rho_resampled, rho_, zpos_, time_resampled, nd_, dt);
-  interpolateLog(rho_interpolated, rho_resampled, nd_);
+    //
+    // Rho
+    //
+    resampleLog(rho_resampled, rho_, zpos_, time_resampled, nd_, dt);
+    interpolateLog(rho_interpolated, rho_resampled, nd_);
 
-  applyFilter(rho_filtered, rho_interpolated, nd_, dt, maxHz_background);
-  resampleLog(rho_resampled, rho_filtered, time_resampled, zpos_, nd_, dt);
-  interpolateLog(rho_background_resolution_, rho_resampled, nd_);
+    applyFilter(rho_filtered, rho_interpolated, nd_, dt, maxHz_background);
+    resampleLog(rho_resampled, rho_filtered, time_resampled, zpos_, nd_, dt);
+    interpolateLog(rho_background_resolution_, rho_resampled, nd_);
 
-  applyFilter(rho_filtered, rho_interpolated, nd_, dt, maxHz_seismic);
-  resampleLog(rho_resampled, rho_filtered, time_resampled, zpos_, nd_, dt);
-  interpolateLog(rho_seismic_resolution_, rho_resampled, nd_);
-
-  /*
-  for (unsigned int i = 0 ; i < nd_ ; i++)
-  {
-    printf("i = %d\n",i);
-    printf("alpha_[i]                         %.3f\n", alpha_[i] );
-    printf("beta_[i]                          %.3f\n", beta_[i] );
-    printf("rho_[i]                           %.3f\n", rho_[i] );
-    printf("alpha_seismic_resolution_[i]      %.3f\n", alpha_seismic_resolution_[i] );
-    printf("beta_seismic_resolution_[i]       %.3f\n", beta_seismic_resolution_[i] );
-    printf("rho_seismic_resolution_[i]        %.3f\n", rho_seismic_resolution_[i] );
-    printf("alpha_background_resolution_[i]   %.3f\n", alpha_background_resolution_[i] );
-    printf("beta_background_resolution_[i]    %.3f\n", beta_background_resolution_[i] );
-    printf("rho_background_resolution_[i]     %.3f\n", rho_background_resolution_[i] );
+    applyFilter(rho_filtered, rho_interpolated, nd_, dt, maxHz_seismic);
+    resampleLog(rho_resampled, rho_filtered, time_resampled, zpos_, nd_, dt);
+    interpolateLog(rho_seismic_resolution_, rho_resampled, nd_);
   }
-  */
-
+  else {
+    for(int i=0;i<nd_;i++) {
+      alpha_background_resolution_[i] = WELLMISSING;
+      alpha_seismic_resolution_[i]    = WELLMISSING;
+      beta_background_resolution_[i]  = WELLMISSING;
+      beta_seismic_resolution_[i]     = WELLMISSING;
+      rho_background_resolution_[i]   = WELLMISSING;
+      rho_seismic_resolution_[i]      = WELLMISSING;
+    }
+  }
   delete [] alpha_interpolated;
   delete [] beta_interpolated;
   delete [] rho_interpolated;   
@@ -1105,16 +1107,25 @@ WellData::filterLogs(void)
 }
 
 //----------------------------------------------------------------------------
-void
+bool
 WellData::resampleTime(double * time_resampled,
                        int      nd, 
                        double & dt) 
 {
+  //Only resample if monotonous increasing in time.
+  double time_begin = zpos_[0];
+  double time_end   = zpos_[nd - 1];
+  bool   monotonous = true;
+  for (int i = 1 ; (i < nd && monotonous == true); i++) 
+    if(zpos_[i] < zpos_[i-1])
+      monotonous = false;
+  
+  if(monotonous == false)
+    return(false);
+
   //
   // Make new time scale with constant sampling density
   //
-  double time_begin = zpos_[0];
-  double time_end   = zpos_[nd - 1];
   
   if (time_begin != RMISSING && time_end != RMISSING)
   {
@@ -1124,11 +1135,13 @@ WellData::resampleTime(double * time_resampled,
   }
   else 
   {
-    LogKit::LogFormatted(LogKit::LOW,"ERROR: First or last time sample is undefined. Cannot estimate average sampling density.\n");
-    LogKit::LogFormatted(LogKit::LOW,"       time[first] = %12.2f\n",time_begin);
-    LogKit::LogFormatted(LogKit::LOW,"       time[last]  = %12.2f\n",time_end);
-    exit(1);
+    LogKit::LogFormatted(LogKit::WARNING,"WARNING: First or last time sample is undefined. Cannot estimate average sampling density.\n");
+    LogKit::LogFormatted(LogKit::WARNING,"         time[first] = %12.2f\n",time_begin);
+    LogKit::LogFormatted(LogKit::WARNING,"         time[last]  = %12.2f\n",time_end);
+    return(false);
   }
+  
+  return(true);
 
   //printf("i time[i] dt  time_resampled[i] dt   %d  %7.3f         %7.3f\n",0,time[0],time_resampled[0]);
   //for (unsigned int i = 1 ; i < nd ; i++) 

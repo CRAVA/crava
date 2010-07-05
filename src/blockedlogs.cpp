@@ -1229,10 +1229,11 @@ BlockedLogs::writeNorsarWell(ModelSettings * modelSettings)
     }
   }
   trackFile.close();
-  for(int f=0;f<nFiles;f++)
+  for(int f=0;f<nFiles;f++) {
     logFiles[f]->close();
+    delete logFiles[f];
+  }
 }
-  
 
 void BlockedLogs::setSpatialFilteredLogs(float * filteredlog, int nData, std::string type, const float *bg)
 {

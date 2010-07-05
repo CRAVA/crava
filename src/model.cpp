@@ -415,6 +415,15 @@ Model::~Model(void)
   if(correlationDirection_ !=NULL)
     delete correlationDirection_;
 
+  if(background_ != NULL)
+    delete background_;
+
+  if(seisCube_ != NULL) {
+    for(int i=0;i<modelSettings_->getNumberOfAngles();i++)
+      delete seisCube_[i];
+    delete [] seisCube_;
+  }
+
   delete randomGen_;
   delete modelSettings_;
   delete timeSimbox_;
@@ -425,7 +434,9 @@ Model::~Model(void)
 void
 Model::releaseGrids(void)
 {
+  background_->releaseGrids();
   delete background_;
+  background_ = NULL;
   seisCube_ = NULL;
 }
 

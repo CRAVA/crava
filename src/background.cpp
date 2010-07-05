@@ -83,12 +83,16 @@ Background::Background(FFTGrid ** grids)
 //-------------------------------------------------------------------------------
 Background::~Background(void)
 {
-  //
-  // Hmmm, denne gir "*** glibc detected *** ./crava.exe: double free or corruption ***"
-  //
-  //for (int i=0 ; i<3 ; i++)
-  //  delete backModel_[i];
-  //delete backModel_;
+  for (int i=0 ; i<3 ; i++)
+    delete backModel_[i];
+}
+
+//-------------------------------------------------------------------------------
+void
+Background::releaseGrids()
+{
+  for (int i=0 ; i<3 ; i++)
+    backModel_[i] = NULL;
 }
 
 //-------------------------------------------------------------------------------
@@ -1292,12 +1296,13 @@ Background::createPaddedParameter(FFTGrid *& pNew,     // Padded
   // The linear algortihm is not "perfect", but should be more
   // than good enough for padding the smooth background model.
   // 
-  int nx  = pNew->getNx();
-  int ny  = pNew->getNy();
-  int nz  = pNew->getNz();
-  int nxp = pNew->getNxp();
-  int nyp = pNew->getNyp();
-  int nzp = pNew->getNzp();
+  int nx   = pNew->getNx();
+  int ny   = pNew->getNy();
+  int nz   = pNew->getNz();
+  int nxp  = pNew->getNxp();
+  int nyp  = pNew->getNyp();
+  int nzp  = pNew->getNzp();
+  int rnxp = pNew->getRNxp();
 
   pNew->createRealGrid();
   pNew->setType(FFTGrid::PARAMETER);
@@ -1311,14 +1316,16 @@ Background::createPaddedParameter(FFTGrid *& pNew,     // Padded
 
   for(int k = 0 ; k < nzp ; k++) {
     for(int j = 0 ; j < nyp ; j++) {
-      for(int i = 0 ; i < nxp ; i++) { // We do not use rnxp here (only needed for complex grids)
+      for(int i = 0 ; i < rnxp ; i++) { // Must fill entire grid to avoid UMR.
 
         float value = RMISSING;
         if(i < nx && j < ny && k < nz) { // Not in padding
           value = pOld->getRealValue(i, j, k);
         }
         else {
-          if(k >= nz) { // In z-padding (x- and y- padding is filled in pNew)
+          if(i >= nxp)       //In dummy area for real grid, but fill to avoid UMR.
+            value = 0;
+          else if(k >= nz) { // In z-padding (x- and y- padding is filled in pNew)
             float c1 = pNew->getRealValue(i, j, 0     , true); 
             float c2 = pNew->getRealValue(i, j, nz - 1, true); 
             float w1 = sum_c*static_cast<float>(k - nz + 1);
@@ -1340,7 +1347,7 @@ Background::createPaddedParameter(FFTGrid *& pNew,     // Padded
             value = a1*w1 + a2*w2;
           }
         }
-        pNew->setRealValue(i, j, k, value, true);
+        pNew->setNextReal(value);
       }
     }
   }  

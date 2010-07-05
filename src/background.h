@@ -40,6 +40,8 @@ public:
                                 GridMapping             * timeMapping,
                                 const bool                isFile, 
                                 const TraceHeaderFormat & thf = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS)) const;
+
+  void         releaseGrids(); //backModel grids are now taken care of by other classes.
   
 private:
   void         generateBackgroundModel(FFTGrid      *& bgAlpha,

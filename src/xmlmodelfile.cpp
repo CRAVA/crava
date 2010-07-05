@@ -7,6 +7,7 @@
 #define _USE_MATH_DEFINES
 #include <cmath>
 
+#include "nrlib/exception/exception.hpp"
 #include "nrlib/iotools/stringtools.hpp"
 #include "nrlib/iotools/logkit.hpp"
 #include "nrlib/segy/segy.hpp"
@@ -29,10 +30,11 @@ XmlModelFile::XmlModelFile(const std::string & fileName)
   failed_        = false;
 
   std::ifstream file;
-  NRLib::OpenRead(file,fileName);
-
-  if (!file) {
-    LogKit::LogFormatted(LogKit::ERROR,"\nERROR: Could not open file %s for reading.\n\n", fileName.c_str());
+  try {
+    NRLib::OpenRead(file,fileName);
+  }
+  catch (NRLib::IOError e) {
+    LogKit::LogMessage(LogKit::ERROR,"\nERROR: "+std::string(e.what()));
     exit(1);
   }
 

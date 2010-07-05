@@ -89,7 +89,8 @@ private:
                              int ii, int istart, int iend, bool debug);
   void            mergeCellsDiscrete(const std::string & name, int * log_resampled, int * log, int ii, 
                                      int istart, int iend, bool printToScreen);
-  void            resampleTime(double * time_resampled, int nd, double & dt);
+  bool            resampleTime(double * time_resampled, int nd, double & dt); //True if monotonously increasing well.
+                                                                              //Otherwise, no resampling done.
   void            resampleLog(float * log_resampled, const float * log_interpolated, 
                               const double * time, const double * time_resampled, 
                               int nd, double dt);
