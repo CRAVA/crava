@@ -137,7 +137,8 @@ public:
                                   FACIESPROB_WITH_UNDEF  = 2,
                                   TIME_TO_DEPTH_VELOCITY = 4,
                                   EXTRA_GRIDS            = 8,
-                                  CORRELATION            = 16};
+                                  CORRELATION            = 16,
+                                  SEISMIC_QUALITY_GRID   = 32};
 
   enum           outputGridsSeismic{ORIGINAL_SEISMIC_DATA  = 1,
                                     SYNTHETIC_SEISMIC_DATA = 2,

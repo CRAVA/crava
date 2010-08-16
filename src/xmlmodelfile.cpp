@@ -2170,6 +2170,7 @@ XmlModelFile::parseGridOtherParameters(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("correlations");
   legalCommands.push_back("time-to-depth-velocity");
   legalCommands.push_back("extra-grids");
+  legalCommands.push_back("seismic-quality-grid");
  
   bool facies;
   bool faciesUndef;
@@ -2204,6 +2205,9 @@ XmlModelFile::parseGridOtherParameters(TiXmlNode * node, std::string & errTxt)
     paramFlag += IO::EXTRA_GRIDS;
   if(parseBool(root, "time-to-depth-velocity", value, errTxt) == true && value == true)
     paramFlag += IO::TIME_TO_DEPTH_VELOCITY;
+  if(parseBool(root, "seismic-quality-grid", value, errTxt) == true && value == true)
+    paramFlag += IO::SEISMIC_QUALITY_GRID;
+  
 
   if (modelSettings_->getOutputGridsDefaultInd() && paramFlag > 0){
     modelSettings_->setOutputGridsDefaultInd(false);
@@ -2879,6 +2883,8 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
   }       
   if (modelSettings_->getEstimateFaciesProb() == false && modelSettings_->getFaciesProbRelative() == false)
     errTxt += "Absolute facies probabilities can not be requested without requesting facies probabilities under inversion settings.\n";
+  if (modelSettings_->getEstimateFaciesProb() == false && (modelSettings_->getOutputGridsOther() & IO::SEISMIC_QUALITY_GRID))
+    errTxt += "Seismic quality grid can not be estimated without requesting facies probabilities under inversion settings.\n";
 }
   
 void

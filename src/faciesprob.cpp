@@ -1483,9 +1483,9 @@ void FaciesProb::normalizeCubes(FFTGrid **priorFaciesCubes)
     priorFaciesCubes[i]->endAccess();
 }
 
-void FaciesProb::calculateChiSquareTest(WellData                    ** wells, 
-                                        int                            nWells, 
-                                        const std::vector<Surface *> & faciesEstimInterval)
+std::vector<double> FaciesProb::calculateChiSquareTest(WellData                    ** wells, 
+                                                       int                            nWells, 
+                                                       const std::vector<Surface *> & faciesEstimInterval)                   
 {
   int    i, j, k;
   int    count;
@@ -1493,10 +1493,10 @@ void FaciesProb::calculateChiSquareTest(WellData                    ** wells,
   int    thisFacies = IMISSING;
   int    nActualFacies;
   float  sum;
-  double pValue;
   double chi_i;
   double chi;
 
+  std::vector<double>      pValue(nWells);
   std::vector<float>       prob(nFacies_);
   std::vector<std::string> fit(nWells);
 
@@ -1645,20 +1645,20 @@ void FaciesProb::calculateChiSquareTest(WellData                    ** wells,
     {
       fit[i] = "not calculated";
       LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: The number of actual facies is one, so estimation makes no sence.\n");
-      TaskList::addTask("Check that all facies have probability larger than one");
+      TaskList::addTask("Check that all facies have probability larger than zero");
     }
     else
     {
       NRLib::ChiSquared chisquared((nActualFacies-1)*df);
-      pValue = 1-chisquared.Cdf(chi);
+      pValue[i] = 1-chisquared.Cdf(chi);
 
-      if (pValue >= 0.05)
+      if (pValue[i] >= 0.05)
         fit[i] = "good";
-      if (pValue < 0.05 && pValue >= 0.025)
+      if (pValue[i] < 0.05 && pValue[i] >= 0.025)
         fit[i] = "poor";
-      if (pValue < 0.025 && pValue >= 0.005)
+      if (pValue[i] < 0.025 && pValue[i] >= 0.005)
         fit[i] = "bad";
-      if (pValue < 0.005)
+      if (pValue[i] < 0.005)
         fit[i] = "very bad";
     }
   }
@@ -1678,6 +1678,8 @@ void FaciesProb::calculateChiSquareTest(WellData                    ** wells,
     LogKit::LogFormatted(LogKit::MEDIUM,"\n");
   }
   LogKit::LogFormatted(LogKit::MEDIUM,"\n");
+
+  return pValue;
 }
  
  void FaciesProb::writeBWFaciesProb(WellData ** wells, 

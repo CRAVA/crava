@@ -1,6 +1,8 @@
 #ifndef PARAMETEROUTPUT_H
 #define PARAMETEROUTPUT_H
 
+#include <string>
+
 class FFTFileGrid;
 class FFTGrid;
 class Simbox;

@@ -20,6 +20,7 @@
 #include "src/parameteroutput.h"
 #include "src/timings.h"
 #include "src/spatialwellfilter.h"
+#include "src/qualitygrid.h"
 #include "src/io.h"
 #include "src/tasklist.h"
 #include "lib/timekit.hpp"
@@ -1757,7 +1758,10 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
       }
     }
     fprob_->writeBWFaciesProb(wells_, nWells_);
-    fprob_->calculateChiSquareTest(wells_, nWells_, model_->getFaciesEstimInterval());
+    std::vector<double> pValue = fprob_->calculateChiSquareTest(wells_, nWells_, model_->getFaciesEstimInterval());
+    
+    if (modelSettings->getOutputGridsOther() & IO::SEISMIC_QUALITY_GRID)
+      QualityGrid qualityGrid(pValue, wells_, simbox_, modelSettings, model_);
 
     Timings::setTimeFaciesProb(wall,cpu);
   }

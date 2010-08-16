@@ -2,6 +2,8 @@
 #ifndef KRIGINGDATA2D_H
 #define KRIGINGDATA2D_H
 
+#include <vector>
+
 class KrigingData2D
 {
 public:

@@ -53,7 +53,7 @@ public:
   void                   calculateFaciesProbGeomodel(const float *                  priorFacies,
                                                      FFTGrid                    ** priorFaciesCubes);
   
-  void                   calculateChiSquareTest(WellData                    ** wells, 
+  std::vector<double>    calculateChiSquareTest(WellData                    ** wells, 
                                                 int                            nWells, 
                                                 const std::vector<Surface *> & faciesEstimInterval);
 
