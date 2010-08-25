@@ -2914,6 +2914,12 @@ Model::process1DWavelet(ModelSettings                * modelSettings,
                             modelSettings, 
                             reflectionMatrix,
                             i);
+  else if(modelSettings->getUseRickerWavelet(i))
+    wavelet = new Wavelet1D(modelSettings,
+                            reflectionMatrix,
+                            modelSettings->getAngle(i),
+                            modelSettings->getRickerPeakFrequency(i),
+                            error);
   else { //Not estimation modus
     const std::string & waveletFile = inputFiles->getWaveletFile(i);
     int fileFormat = getWaveletFileFormat(waveletFile,errText);

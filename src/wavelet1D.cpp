@@ -289,6 +289,15 @@ Wavelet1D::~Wavelet1D()
 {
 }
 
+Wavelet1D::Wavelet1D(ModelSettings * modelSettings, 
+                     float         * reflCoef,
+                     float           theta,
+                     float          peakFrequency,
+                     int           & errCode)
+  : Wavelet(modelSettings, reflCoef, theta, 1, peakFrequency, errCode)
+{
+}
+
 float 
 Wavelet1D::findGlobalScaleForGivenWavelet(ModelSettings * modelSettings, 
                                           Simbox        * simbox,

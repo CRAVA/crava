@@ -40,6 +40,13 @@ public:
           int                 nz, 
           int                 nzp);
 
+  Wavelet(ModelSettings     * modelSettings, 
+          float             * reflCoef,
+          float               theta,
+          int                 dim, 
+          float               peakFrequency,
+          int               & errCode);
+
   virtual ~Wavelet();
   
 // Fast Fourier Transform for inplace storage     
@@ -155,6 +162,8 @@ protected:
   void           printVecToFile(const std::string                       & fileName, 
                                 fftw_real                               * vec ,
                                 int                                       nzp) const;
+
+  double         Ricker(double t, float peakF);
 
   int            cnzp_;                  // size in z direction for storage inplace algorithm (complex grid) nzp_/2+1
   int            rnzp_;                  // expansion in z direction for storage inplace algorithm (real grid) 2*(nzp_/2+1)

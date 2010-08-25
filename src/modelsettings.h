@@ -41,6 +41,7 @@ public:
 
   bool                             getMatchEnergies(int i)              const { return matchEnergies_[i]      == 1                ;} 
   bool                             getEstimateWavelet(int i)            const { return estimateWavelet_[i]    == 1                ;}
+  bool                             getUseRickerWavelet(int i)           const { return useRickerWavelet_[i]   == 1                ;}
   bool                             getEstimateSNRatio(int i)            const { return estimateSNRatio_[i]    == 1                ;}
   bool                             getEstimateLocalScale(int i)         const { return estimateLocalScale_[i] == 1                ;}
   bool                             getEstimateLocalShift(int i)         const { return estimateLocalShift_[i] == 1                ;}
@@ -55,7 +56,8 @@ public:
   float                            getStretchFactor(int i)              const { return stretchFactor_[i]                          ;}
   float                            getEstRangeX(int i)                  const { return estRangeX_[i]                              ;}
   float                            getEstRangeY(int i)                  const { return estRangeY_[i]                              ;}
-                                                                                                                 
+  float                            getRickerPeakFrequency(int i)        const { return rickerPeakFrequency_[i]                    ;}
+
   const std::string                getBackgroundType(void)              const { return backgroundType_                            ;}            
   const std::vector<std::string> & getLogNames(void)                    const { return logNames_                                  ;}
   const std::vector<bool>        & getInverseVelocity(void)             const { return inverseVelocity_                           ;}
@@ -193,6 +195,8 @@ public:
   void addEstimateLocalScale(int estimateScale)           { estimateLocalScale_.push_back(estimateScale)         ;}
   void addEstimateLocalNoise(int estimateNoise)           { estimateLocalNoise_.push_back(estimateNoise)         ;}
   void addEstimateGlobalWaveletScale(int estimateScale)   { estimateGlobalWaveletScale_.push_back(estimateScale) ;}
+  void addUseRickerWavelet(int useRicker)                 { useRickerWavelet_.push_back(useRicker)               ;}
+  void addRickerPeakFrequency(float pf)                   { rickerPeakFrequency_.push_back(pf)                   ;}
 
   void addWaveletDim(int waveletDim)                      { waveletDim_.push_back(waveletDim)                    ;}
   void addStretchFactor(float stretchFactor)              { stretchFactor_.push_back(stretchFactor)              ;}
@@ -355,7 +359,10 @@ private:
   std::vector<int>                  estimateLocalScale_;         // Estimate local wavelet scale
   std::vector<int>                  estimateLocalNoise_;         // Estimate local noise 
   std::vector<int>                  estimateGlobalWaveletScale_;  
+  std::vector<int>                  useRickerWavelet_;
   // --------- End Purify-motivated use of 'int' instead of 'bool' -------------
+
+  std::vector<float>                rickerPeakFrequency_;
 
   std::vector<int>                  waveletDim_;                 // Holds if 1D-wavelet (=0) or 3D-wavelet (=1)
   std::vector<float>                stretchFactor_;              // Stretch factor for pulse in 3D-wavelet

@@ -795,6 +795,7 @@ XmlModelFile::parseWavelet(TiXmlNode * node, std::string & errTxt)
 
   std::vector<std::string> legalCommands;
   legalCommands.push_back("file-name");
+  legalCommands.push_back("ricker");
   legalCommands.push_back("scale");
   legalCommands.push_back("estimate-scale");
   legalCommands.push_back("local-wavelet");
@@ -802,13 +803,24 @@ XmlModelFile::parseWavelet(TiXmlNode * node, std::string & errTxt)
   modelSettings_->addStretchFactor(1.0);
   std::string value;
   bool estimate = false;
+  float peakFrequency;
   if(parseFileName(root, "file-name", value, errTxt) == true) {
     inputFiles_->addWaveletFile(value);
     modelSettings_->addEstimateWavelet(false);
+    modelSettings_->addUseRickerWavelet(false);
+    modelSettings_->addRickerPeakFrequency(RMISSING);
+  }
+  else if(parseValue(root, "ricker", peakFrequency, errTxt) == true){
+    inputFiles_->addWaveletFile(""); //Keeping tables balanced.
+    modelSettings_->addRickerPeakFrequency(peakFrequency);
+    modelSettings_->addEstimateWavelet(false);
+    modelSettings_->addUseRickerWavelet(true);
   }
   else {
     inputFiles_->addWaveletFile(""); //Keeping tables balanced.
     modelSettings_->addEstimateWavelet(true);
+    modelSettings_->addUseRickerWavelet(false);
+    modelSettings_->addRickerPeakFrequency(RMISSING);
     estimate = true;
   }
   

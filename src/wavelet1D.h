@@ -26,6 +26,12 @@ public:
             std::string       & errText);
   Wavelet1D(Wavelet * wavelet);
 
+Wavelet1D(ModelSettings * modelSettings, 
+          float         * reflCoef,
+          float           theta,
+          float           peakFrequency,
+          int           & errCode);
+
   virtual ~Wavelet1D();
 
 // Methods that are virtual in Wavelet

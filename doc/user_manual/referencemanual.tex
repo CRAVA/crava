@@ -1154,14 +1154,21 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 
 \paragraph{\hbracket{file-name}}\rnewkw{file-name}{file-name2}
  \slist
-   \item \Description File name for wavelet file. If not given, wavelet is estimated.
+   \item \Description File name for wavelet file. Can not be given together with ricker. If neither file-name nor ricker is given, wavelet is estimated.
    \item \Argument File name
+   \item \Default
+ \elist
+ 
+\paragraph{\hbracket{ricker}}\newkw{ricker}
+ \slist
+   \item \Description Use Ricker wavelet. Can not be given together with file-name. If neither file-name nor ricker is given, wavelet is estimated.
+   \item \Argument Peak frequency
    \item \Default
  \elist
 
 \paragraph{\hbracket{scale}}\newkw{scale}
  \slist
-   \item \Description Wavelet read from file is multiplied by this. Has no meaning when wavelet is estimated.
+   \item \Description Wavelet read from file or ricker wavelet is multiplied by this. Has no meaning when wavelet is estimated.
    \item \Argument Value
    \item \Default
  \elist

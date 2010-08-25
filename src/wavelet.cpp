@@ -114,6 +114,56 @@ Wavelet::Wavelet(const std::string & fileName,
     }//end for i
   }
 }
+Wavelet::Wavelet(ModelSettings     * modelSettings, 
+                 float             * reflCoef,
+                 float               theta,
+                 int                 dim, 
+                 float               peakFrequency,
+                 int               & errCode)
+  : theta_(theta),
+    inFFTorder_(false),
+    isReal_(true),
+    dim_(dim),
+    scale_(1),
+    shiftGrid_(NULL),
+    gainGrid_(NULL)
+{
+  coeff_[0]       = reflCoef[0];
+  coeff_[1]       = reflCoef[1];
+  coeff_[2]       = reflCoef[2];
+  
+  double dt = 1.0;
+  nz_ = 119;
+ // cz_   =  static_cast<int>(floor((fabs(shift/dz_))+0.5));
+  cz_ = 0;
+  nzp_  = nz_;
+  cnzp_ = nzp_/2+1;
+  rnzp_ = 2*cnzp_; 
+  rAmp_ = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp_));
+  cAmp_ = reinterpret_cast<fftw_complex*>(rAmp_);
+  norm_ = RMISSING;
+
+  for (int i = 0; i < nz_; ++i) {
+       double t = i * dt;
+       rAmp_[i] = static_cast<fftw_real>(Ricker(t, peakFrequency));
+     }
+
+
+  formats_       = modelSettings->getWaveletFormatFlag();
+  waveletLength_ = findWaveletLength(modelSettings->getMinRelWaveletAmp());
+  LogKit::LogFormatted(LogKit::LOW,"\n  Estimated wavelet length:  %.1fms.\n",waveletLength_);
+
+  if(errCode == 0) {
+    for(int i=0; i < rnzp_ ;i++) {  
+      if(i < nzp_)
+        rAmp_[i]*=scale_;
+      else
+        rAmp_[i]=RMISSING;
+    }//end for i
+  }
+}
+
+
 
 Wavelet::Wavelet(Wavelet * wavelet, 
                  int       difftype)
@@ -1247,3 +1297,11 @@ Wavelet::WaveletReadNorsar(const std::string & fileName,
   }
   file.close();
 }
+
+double 
+Wavelet::Ricker(double t, float peakF)
+{
+  double c = NRLib::PI * NRLib::PI * peakF * peakF * t * t * 1e-6;
+   return (1 - 2*c) * exp(-c);
+}
+
