@@ -744,6 +744,7 @@ XmlModelFile::parseSeismicData(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("start-time");
   legalCommands.push_back("segy-format");
   legalCommands.push_back("type");
+ 
 
   std::string value;
   if(parseFileName(root, "file-name", value, errTxt) == true)

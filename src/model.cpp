@@ -2914,27 +2914,30 @@ Model::process1DWavelet(ModelSettings                * modelSettings,
                             modelSettings, 
                             reflectionMatrix,
                             i);
-  else if(modelSettings->getUseRickerWavelet(i))
-    wavelet = new Wavelet1D(modelSettings,
-                            reflectionMatrix,
-                            modelSettings->getAngle(i),
-                            modelSettings->getRickerPeakFrequency(i),
-                            error);
+ 
   else { //Not estimation modus
-    const std::string & waveletFile = inputFiles->getWaveletFile(i);
-    int fileFormat = getWaveletFileFormat(waveletFile,errText);
-    if(fileFormat < 0) {
-      errText += "Unknown file format of file '"+waveletFile+"'.\n";
-      error++;
-    }
+    if(modelSettings->getUseRickerWavelet(i))
+        wavelet = new Wavelet1D(modelSettings,
+                                reflectionMatrix,
+                                modelSettings->getAngle(i),
+                                modelSettings->getRickerPeakFrequency(i),
+                                error);
     else {
-      wavelet = new Wavelet1D(waveletFile, 
-                              fileFormat, 
-                              modelSettings, 
-                              reflectionMatrix,
-                              modelSettings->getAngle(i),
-                              error, 
-                              errText);
+      const std::string & waveletFile = inputFiles->getWaveletFile(i);
+      int fileFormat = getWaveletFileFormat(waveletFile,errText);
+      if(fileFormat < 0) {
+        errText += "Unknown file format of file '"+waveletFile+"'.\n";
+        error++;
+      }
+      else
+        wavelet = new Wavelet1D(waveletFile, 
+                                fileFormat, 
+                                modelSettings, 
+                                reflectionMatrix,
+                                modelSettings->getAngle(i),
+                                error, 
+                                errText);
+    }
       // Calculate a preliminary scale factor to see if wavelet is in the same size order as the data. A large or small value might cause problems.
       if(seisCube!=NULL) {// If forward modeling, we have no seismic, can not prescale wavelet.
         float       prescale = wavelet->findGlobalScaleForGivenWavelet(modelSettings, timeSimbox, seisCube[i], wells);
@@ -2961,8 +2964,8 @@ Model::process1DWavelet(ModelSettings                * modelSettings,
         wavelet->resample(static_cast<float>(timeSimbox->getdz()), 
                           timeSimbox->getnz(), 
                           modelSettings->getNZpad());
-    }
   }
+
   if (error == 0) {
     wavelet->scale(modelSettings->getWaveletScale(i));
   
