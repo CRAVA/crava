@@ -136,10 +136,10 @@ public:
 
 
   static void          reportFFTMemoryAndWait(const std::string & msg) {
-                         LogKit::LogFormatted(LogKit::HIGH, "%s: %2d grids, %10.2f MB\n", msg.c_str(), nGrids_, FFTMemUse_/(1024.0f*1024.0f));
+                         LogKit::LogFormatted(LogKit::High, "%s: %2d grids, %10.2f MB\n", msg.c_str(), nGrids_, FFTMemUse_/(1024.0f*1024.0f));
                          float tmp;
                          std::cin >> tmp;
-                         LogKit::LogFormatted(LogKit::HIGH, "Memory used %4.0f MB, used outside grid %4.0f MB\n", tmp, tmp-FFTMemUse_/(1024.0f*1024.0f));
+                         LogKit::LogFormatted(LogKit::High, "Memory used %4.0f MB, used outside grid %4.0f MB\n", tmp, tmp-FFTMemUse_/(1024.0f*1024.0f));
                        }
 
 protected:

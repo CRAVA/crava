@@ -74,7 +74,7 @@ CovGridSeparated::CovGridSeparated(int nxp, int nyp, int nzp,
   const int uppernxp2 = (nxp % 2 == 0 ? nxp2 : nxp2 + 1);
   const int uppernyp2 = (nyp % 2 == 0 ? nyp2 : nyp2 + 1);
   const int uppernzp2 = (nzp % 2 == 0 ? nzp2 : nzp2 + 1);  
-  //LogKit::LogFormatted(LogKit::DEBUGLOW,": %d %d %d %d\n",nxp,nxp2,nyp,nyp2);
+  //LogKit::LogFormatted(LogKit::DebugLow,": %d %d %d %d\n",nxp,nxp2,nyp,nyp2);
   int i, j;
   int countxy = 0;
   for (j = -nyp2; j < uppernyp2; j++) {
@@ -103,7 +103,7 @@ CovGridSeparated::CovGridSeparated(int nxp, int nyp, int nzp,
   }
   
   if (countxy != nxp_*nyp_ || countz != nzp_) {
-    LogKit::LogFormatted(LogKit::LOW,"ERROR in CovGridSeparated constructor.");
+    LogKit::LogFormatted(LogKit::Low,"ERROR in CovGridSeparated constructor.");
     exit(1);
   }
 }
@@ -157,22 +157,22 @@ void CovGridSeparated::EstimateRangeX(int& rangeX) const {
   for (i = nxp2 - 1; i >= 0; i--) {
     for (j = nyp2 - 1; j >= 0; j--) {
       int index = Get2DIndex(i, j);
-      //      LogKit::LogFormatted(LogKit::DEBUGHIGH,"%d ", index);
+      //      LogKit::LogFormatted(LogKit::DebugHigh,"%d ", index);
       float absGamma = float(fabs(gammaXY_[index]));
       if(absGamma >= sillXY) {
         rangeX = i;
-        LogKit::LogFormatted(LogKit::DEBUGHIGH,": %d\n",i);
+        LogKit::LogFormatted(LogKit::DebugHigh,": %d\n",i);
         return;
       }
     } // end backward j
 
     for (j = nyp2; j < nyp; j++) {
       int index = Get2DIndex(i, j);
-      LogKit::LogFormatted(LogKit::DEBUGHIGH,"%d ", index);
+      LogKit::LogFormatted(LogKit::DebugHigh,"%d ", index);
       float absGamma = float(fabs(gammaXY_[index]));
       if(absGamma >= sillXY) {
         rangeX = i;
-        LogKit::LogFormatted(LogKit::DEBUGHIGH,": %d\n", i);
+        LogKit::LogFormatted(LogKit::DebugHigh,": %d\n", i);
         return;
       }
     } // end forward j
@@ -337,7 +337,7 @@ float CovGridSeparated::GetGamma2(int i1, int j1, int k1, int i2, int j2, int k2
   if (tabulateCorr_) {
     //NBNB fjellvoll should be commented in when NOT kriging BGB model
     //
-    //LogKit::LogFormatted(LogKit::DEBUGHIGH,"PAL: abs(deltai),abs(deltaj),abs(deltak) : nxp_/2 nyp_/2 nzp_/2  =  %d %d %d : %d %d %d\n",
+    //LogKit::LogFormatted(LogKit::DebugHigh,"PAL: abs(deltai),abs(deltaj),abs(deltak) : nxp_/2 nyp_/2 nzp_/2  =  %d %d %d : %d %d %d\n",
     //                      abs(deltai),abs(deltaj),abs(deltak),nxp_/2,nyp_/2,nzp_/2);
     //
     //NBNB-PAL: The variogram covers only half the grid in x- and y-directions. This explains 

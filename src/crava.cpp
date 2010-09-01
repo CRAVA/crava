@@ -268,9 +268,9 @@ Crava::setupErrorCorrelation(ModelSettings * modelSettings,
 
     if (empSNRatio_[l] < 1.1f) 
     {
-      LogKit::LogFormatted(LogKit::LOW,"\nThe empirical signal-to-noise ratio for angle stack %d is %7.1e. Ratios smaller than\n",l+1,empSNRatio_[l]);
-      LogKit::LogFormatted(LogKit::LOW," 1 are illegal and CRAVA has to stop. CRAVA was for some reason not able to estimate\n");
-      LogKit::LogFormatted(LogKit::LOW," this ratio reliably, and you must give it as input to the model file\n\n");
+      LogKit::LogFormatted(LogKit::Low,"\nThe empirical signal-to-noise ratio for angle stack %d is %7.1e. Ratios smaller than\n",l+1,empSNRatio_[l]);
+      LogKit::LogFormatted(LogKit::Low," 1 are illegal and CRAVA has to stop. CRAVA was for some reason not able to estimate\n");
+      LogKit::LogFormatted(LogKit::Low," this ratio reliably, and you must give it as input to the model file\n\n");
       exit(1);
     }
   }
@@ -343,7 +343,7 @@ Crava::computeVariances(fftw_real     * corrT,
   {
     if (modelSettings->getMatchEnergies(l))
     {
-      LogKit::LogFormatted(LogKit::LOW,"Matching syntethic and empirical energies:\n");
+      LogKit::LogFormatted(LogKit::Low,"Matching syntethic and empirical energies:\n");
       float gain = sqrt((errorVariance_[l]/modelVariance_[l])*(empSNRatio_[l] - 1.0f));
       seisWavelet_[l]->scale(gain);
       if((modelSettings->getWaveletOutputFlag() & IO::GLOBAL_WAVELETS) > 0 || 
@@ -548,7 +548,7 @@ Crava:: divideDataByScaleWavelet()
         seisData_[l]->writeStormFile(fileName2, simbox_, false, true, true);
       }
 
-      LogKit::LogFormatted(LogKit::MEDIUM,"\nInterpolating reflections for angle stack "+angle+": ");
+      LogKit::LogFormatted(LogKit::Medium,"\nInterpolating reflections for angle stack "+angle+": ");
       seisData_[l]->interpolateSeismic(energyTreshold_);
 
       if(ModelSettings::getDebugLevel() > 0)
@@ -812,7 +812,7 @@ Crava::computePostMeanResidAndFFTCov()
   //   time(&timestart);
   float realFrequency;
 
-  LogKit::LogFormatted(LogKit::LOW,"\nBuilding posterior distribution:");
+  LogKit::LogFormatted(LogKit::Low,"\nBuilding posterior distribution:");
   float monitorSize = std::max(1.0f, static_cast<float>(nzp_)*0.02f);
   float nextMonitor = monitorSize;
   std::cout 
@@ -883,7 +883,7 @@ Crava::computePostMeanResidAndFFTCov()
         lib_matrFillOnesVecCpx(errMult3,ntheta_);
         }
         else {
-        LogKit::LogFormatted(LogKit::LOW,"\nERROR: Not implemented inversion with 3D wavelet for non-constant simbox thickness\n");
+        LogKit::LogFormatted(LogKit::Low,"\nERROR: Not implemented inversion with 3D wavelet for non-constant simbox thickness\n");
         exit(1);
         }
         }*/ //3D-wavelet
@@ -990,7 +990,7 @@ Crava::computePostMeanResidAndFFTCov()
   std::cout << "\n";
 
   //  time(&timeend);
-  // LogKit::LogFormatted(LogKit::LOW,"\n Core inversion finished after %ld seconds ***\n",timeend-timestart);
+  // LogKit::LogFormatted(LogKit::Low,"\n Core inversion finished after %ld seconds ***\n",timeend-timestart);
   // these does not have the initial meaning
   meanAlpha_      = NULL; // the content is taken care of by  postAlpha_
   meanBeta_       = NULL; // the content is taken care of by  postBeta_
@@ -1037,7 +1037,7 @@ Crava::computePostMeanResidAndFFTCov()
   }
   for(l=0;l<ntheta_;l++)
     delete seisData_[l];
-  LogKit::LogFormatted(LogKit::DEBUGLOW,"\nDEALLOCATING: Seismic data\n");
+  LogKit::LogFormatted(LogKit::DebugLow,"\nDEALLOCATING: Seismic data\n");
 
   if(model_->getVelocityFromInversion() == true) { //Conversion undefined until prediction ready. Complete it.
     postAlpha_->setAccessMode(FFTGrid::RANDOMACCESS);
@@ -1610,23 +1610,23 @@ void
 Crava::printEnergyToScreen()
 {
   int i;
-  LogKit::LogFormatted(LogKit::LOW,"\n\n                       ");
-  for(i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::LOW,"  Seismic %4.1f ",thetaDeg_[i]);
-  LogKit::LogFormatted(LogKit::LOW,"\n----------------------");
-  for(i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::LOW,"---------------");
-  LogKit::LogFormatted(LogKit::LOW,"\nObserved data variance :");
-  for(i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::LOW,"    %1.3e  ",dataVariance_[i]);
-  LogKit::LogFormatted(LogKit::LOW,"\nModelled data variance :");
-  for(i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::LOW,"    %1.3e  ",signalVariance_[i]);
-  LogKit::LogFormatted(LogKit::LOW,"\nError variance         :");
-  for(i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::LOW,"    %1.3e  ",errorVariance_[i]);
-  LogKit::LogFormatted(LogKit::LOW,"\nWavelet scale          :");
-  for(i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::LOW,"    %2.3e  ",seisWavelet_[i]->getScale());
-  LogKit::LogFormatted(LogKit::LOW,"\nEmpirical S/N          :");
-  for(i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::LOW,"    %5.2f      ",empSNRatio_[i]);
-  LogKit::LogFormatted(LogKit::LOW,"\nModelled S/N           :");
-  for(i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::LOW,"    %5.2f      ",theoSNRatio_[i]);
-  LogKit::LogFormatted(LogKit::LOW,"\n");
+  LogKit::LogFormatted(LogKit::Low,"\n\n                       ");
+  for(i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::Low,"  Seismic %4.1f ",thetaDeg_[i]);
+  LogKit::LogFormatted(LogKit::Low,"\n----------------------");
+  for(i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::Low,"---------------");
+  LogKit::LogFormatted(LogKit::Low,"\nObserved data variance :");
+  for(i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::Low,"    %1.3e  ",dataVariance_[i]);
+  LogKit::LogFormatted(LogKit::Low,"\nModelled data variance :");
+  for(i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::Low,"    %1.3e  ",signalVariance_[i]);
+  LogKit::LogFormatted(LogKit::Low,"\nError variance         :");
+  for(i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::Low,"    %1.3e  ",errorVariance_[i]);
+  LogKit::LogFormatted(LogKit::Low,"\nWavelet scale          :");
+  for(i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::Low,"    %2.3e  ",seisWavelet_[i]->getScale());
+  LogKit::LogFormatted(LogKit::Low,"\nEmpirical S/N          :");
+  for(i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::Low,"    %5.2f      ",empSNRatio_[i]);
+  LogKit::LogFormatted(LogKit::Low,"\nModelled S/N           :");
+  for(i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::Low,"    %5.2f      ",theoSNRatio_[i]);
+  LogKit::LogFormatted(LogKit::Low,"\n");
 }
 
 
@@ -1644,19 +1644,19 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
     
     int nfac = modelSettings->getNumberOfFacies();
     
-    LogKit::LogFormatted(LogKit::LOW,"\nPrior facies probabilities:\n");
-    LogKit::LogFormatted(LogKit::LOW,"\n");
-    LogKit::LogFormatted(LogKit::LOW,"Facies         Probability\n");
-    LogKit::LogFormatted(LogKit::LOW,"--------------------------\n");
+    LogKit::LogFormatted(LogKit::Low,"\nPrior facies probabilities:\n");
+    LogKit::LogFormatted(LogKit::Low,"\n");
+    LogKit::LogFormatted(LogKit::Low,"Facies         Probability\n");
+    LogKit::LogFormatted(LogKit::Low,"--------------------------\n");
     const float * priorFacies = model_->getPriorFacies();
     for(int i=0 ; i<nfac; i++) {
-      LogKit::LogFormatted(LogKit::LOW,"%-15s %10.4f\n",modelSettings->getFaciesName(i).c_str(),priorFacies[i]);
+      LogKit::LogFormatted(LogKit::Low,"%-15s %10.4f\n",modelSettings->getFaciesName(i).c_str(),priorFacies[i]);
     }
     
     if (simbox_->getdz() > 4.01f) { // Require this density for estimation of facies probabilities
-      LogKit::LogFormatted(LogKit::LOW,"\nWARNING: The minimum sampling density is lower than 4.0. The FACIES PROBABILITIES\n");
-      LogKit::LogFormatted(LogKit::LOW,"         generated by CRAVA are not reliable. To get more reliable probabilities    \n");
-      LogKit::LogFormatted(LogKit::LOW,"         the number of layers must be increased.                                    \n");
+      LogKit::LogFormatted(LogKit::Low,"\nWARNING: The minimum sampling density is lower than 4.0. The FACIES PROBABILITIES\n");
+      LogKit::LogFormatted(LogKit::Low,"         generated by CRAVA are not reliable. To get more reliable probabilities    \n");
+      LogKit::LogFormatted(LogKit::Low,"         the number of layers must be increased.                                    \n");
       std::string text("");
       text += "Increase the number of layers to improve the quality of the facies probabilities.\n";
       text += "   The minimum sampling density is "+NRLib::ToString(simbox_->getdz())+", and it should be lower than 4.0.\n";
@@ -1664,11 +1664,11 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
       TaskList::addTask(text);
     }
 
-    LogKit::LogFormatted(LogKit::LOW,"\n");
-    LogKit::LogFormatted(LogKit::LOW,"Well                    Use    SyntheticVs    Deviated\n");
-    LogKit::LogFormatted(LogKit::LOW,"------------------------------------------------------\n");
+    LogKit::LogFormatted(LogKit::Low,"\n");
+    LogKit::LogFormatted(LogKit::Low,"Well                    Use    SyntheticVs    Deviated\n");
+    LogKit::LogFormatted(LogKit::Low,"------------------------------------------------------\n");
     for(int i=0 ; i<nWells_ ; i++) {
-      LogKit::LogFormatted(LogKit::LOW,"%-23s %3s        %3s          %3s\n",
+      LogKit::LogFormatted(LogKit::Low,"%-23s %3s        %3s          %3s\n",
                            wells_[i]->getWellname().c_str(),
                            ( wells_[i]->getUseForFaciesProbabilities() ? "yes" : " no" ),
                            ( wells_[i]->hasSyntheticVsLog()            ? "yes" : " no" ),
@@ -1734,7 +1734,7 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
                                            model_->getFaciesEstimInterval(),
                                            modelSettings->getFaciesNames(),
                                            simbox_->getdz());
-    LogKit::LogFormatted(LogKit::LOW,"\nProbability cubes done\n");
+    LogKit::LogFormatted(LogKit::Low,"\nProbability cubes done\n");
 
 
     if (modelSettings->getOutputGridsOther() & IO::FACIESPROB_WITH_UNDEF){

@@ -63,9 +63,9 @@ Kriging2D::subtractTrend(std::vector<float>     & data,
   
   bool debug = false;
   if (debug) {
-    LogKit::LogFormatted(LogKit::LOW,"\nData vector after trend subtraction:\n");
+    LogKit::LogFormatted(LogKit::Low,"\nData vector after trend subtraction:\n");
     for (int i = 0 ; i < md ; i++) {
-      LogKit::LogFormatted(LogKit::LOW," i indexi[i] indexj[i] data : %3d %3d %3d  %.5f\n",i,indexi[i],indexj[i],data[i]);
+      LogKit::LogFormatted(LogKit::Low," i indexi[i] indexj[i] data : %3d %3d %3d  %.5f\n",i,indexi[i],indexj[i],data[i]);
     }
   }
 }
@@ -146,7 +146,7 @@ Kriging2D::cholesky(double ** K,
       K[i][i] *= choleskyRepairFactor;
     count++;
     if (count > 5)
-      LogKit::LogFormatted(LogKit::LOW,"\nERROR in Kriging1D::Cholesky(): Could not find cholesky factor\n");
+      LogKit::LogFormatted(LogKit::Low,"\nERROR in Kriging1D::Cholesky(): Could not find cholesky factor\n");
   }
 }
 

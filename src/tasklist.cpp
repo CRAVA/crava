@@ -16,8 +16,8 @@ void TaskList::viewAllTasks(void)
   if (size > 0)
   {
     Utils::writeHeader("Suggested tasks");
-    LogKit::LogFormatted(LogKit::LOW,"\n");
+    LogKit::LogFormatted(LogKit::Low,"\n");
     for (i=0; i<size; i++)
-      LogKit::LogFormatted(LogKit::LOW,"%d: %s \n", i+1, task_[i].c_str());
+      LogKit::LogFormatted(LogKit::Low,"%d: %s \n", i+1, task_[i].c_str());
   }
 }

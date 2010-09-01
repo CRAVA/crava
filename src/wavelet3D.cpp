@@ -46,7 +46,7 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
   : Wavelet(3),
     filter_(filterFile, errCode, errText)
 {
-  LogKit::LogFormatted(LogKit::MEDIUM,"  Estimating 3D wavelet pulse from seismic data and (nonfiltered) blocked wells\n");
+  LogKit::LogFormatted(LogKit::Medium,"  Estimating 3D wavelet pulse from seismic data and (nonfiltered) blocked wells\n");
 
   theta_      = seisCube->getTheta();;
   norm_       = RMISSING;
@@ -77,7 +77,7 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
   std::vector<float>                   dzWell(nWells, 0.0);
   for (unsigned int w=0; w<nWells; w++) {
     if (wells[w]->getUseForWaveletEstimation()) {
-      LogKit::LogFormatted(LogKit::MEDIUM, "  Well :  %s\n", wells[w]->getWellname().c_str());
+      LogKit::LogFormatted(LogKit::Medium, "  Well :  %s\n", wells[w]->getWellname().c_str());
 
       BlockedLogs *bl    = wells[w]->getBlockedLogsOrigThick();  
       const std::vector<int> iPos = bl->getIposVector();
@@ -234,7 +234,7 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
                                             dVec);
       } //if (length > nWl)
       else {
-        LogKit::LogFormatted(LogKit::MEDIUM,"     No enough data for 3D wavelet estimation in well %s\n", wells[w]->getWellname().c_str());
+        LogKit::LogFormatted(LogKit::Medium,"     No enough data for 3D wavelet estimation in well %s\n", wells[w]->getWellname().c_str());
       }
     } // if(wells->getUseForEstimation)
   } // for (w=0...nWells) 
@@ -242,7 +242,7 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
   rAmp_ = averageWavelets(wellWavelets, nWells, nzp_, wellWeight, dzWell, dz_);
   cAmp_ = reinterpret_cast<fftw_complex*>(rAmp_);
   waveletLength_ = findWaveletLength(modelSettings->getMinRelWaveletAmp());
-  LogKit::LogFormatted(LogKit::LOW,"  Estimated wavelet length:  %.1fms\n",waveletLength_);
+  LogKit::LogFormatted(LogKit::Low,"  Estimated wavelet length:  %.1fms\n",waveletLength_);
 
   if( ModelSettings::getDebugLevel() > 0 )
     writeWaveletToFile("estimated_wavelet_", 1.0f);
@@ -323,7 +323,7 @@ Wavelet3D::calculateSNRatio(Simbox                                   * simbox,
 
   for (unsigned int w=0; w<nWells; w++) {
     if (wells[w]->getUseForWaveletEstimation()) {
-      LogKit::LogFormatted(LogKit::MEDIUM, "  Well :  %s\n", wells[w]->getWellname().c_str());
+      LogKit::LogFormatted(LogKit::Medium, "  Well :  %s\n", wells[w]->getWellname().c_str());
 
       BlockedLogs *bl    = wells[w]->getBlockedLogsOrigThick();  
       const std::vector<int> iPos = bl->getIposVector();
@@ -475,7 +475,7 @@ Wavelet3D::calculateSNRatio(Simbox                                   * simbox,
         }
       }
       else {
-        LogKit::LogFormatted(LogKit::LOW, "\n  Not using vertical well %s for error estimation (length=%.1fms  required length=%.1fms).",
+        LogKit::LogFormatted(LogKit::Low, "\n  Not using vertical well %s for error estimation (length=%.1fms  required length=%.1fms).",
           wells[w]->getWellname().c_str(), length*dz_, waveletLength_);
       }
     }
@@ -485,32 +485,32 @@ Wavelet3D::calculateSNRatio(Simbox                                   * simbox,
   errVar  /= nData;
   float empSNRatio = dataVar/errVar;
 
-  LogKit::LogFormatted(LogKit::MEDIUM,"\n  Reporting errors (as standard deviations) estimated:\n\n");
+  LogKit::LogFormatted(LogKit::Medium,"\n  Reporting errors (as standard deviations) estimated:\n\n");
 
-  LogKit::LogFormatted(LogKit::LOW,"\n");
-  LogKit::LogFormatted(LogKit::LOW,"                                     SeisData            \n");
-  LogKit::LogFormatted(LogKit::LOW,"  Well                  shift[ms]     StdDev         S/N \n");
-  LogKit::LogFormatted(LogKit::LOW,"  -------------------------------------------------------\n");
+  LogKit::LogFormatted(LogKit::Low,"\n");
+  LogKit::LogFormatted(LogKit::Low,"                                     SeisData            \n");
+  LogKit::LogFormatted(LogKit::Low,"  Well                  shift[ms]     StdDev         S/N \n");
+  LogKit::LogFormatted(LogKit::Low,"  -------------------------------------------------------\n");
   for(unsigned int w=0; w<nWells; w++) {
     if(nActiveData[w]>0) {    
       float SNWell = dataVarWell[w]/errVarWell[w];
-      LogKit::LogFormatted(LogKit::LOW,"  %-20s   %6.2f     %9.2e      %6.2f \n", 
+      LogKit::LogFormatted(LogKit::Low,"  %-20s   %6.2f     %9.2e      %6.2f \n", 
             wells[w]->getWellname().c_str(),shiftWell[w],sqrt(dataVarWell[w]),SNWell);
     }
     else
-      LogKit::LogFormatted(LogKit::LOW,"  %-20s      -            -             - \n",wells[w]->getWellname().c_str());
+      LogKit::LogFormatted(LogKit::Low,"  %-20s      -            -             - \n",wells[w]->getWellname().c_str());
   }
 
   if(modelSettings->getEstimateSNRatio(number))
-    LogKit::LogFormatted(LogKit::LOW,"\n  The signal to noise ratio used for this angle stack is: %6.2f\n", empSNRatio);
+    LogKit::LogFormatted(LogKit::Low,"\n  The signal to noise ratio used for this angle stack is: %6.2f\n", empSNRatio);
   else {
     float SNRatio = modelSettings->getSNRatio(number);
-    LogKit::LogFormatted(LogKit::LOW,"\n  The signal to noise ratio given in the model file and used for this angle stack is : %6.2f\n", SNRatio);
-    LogKit::LogFormatted(LogKit::LOW,"  For comparison, the signal-to-noise ratio calculated from the available wells is   : %6.2f\n", empSNRatio);
+    LogKit::LogFormatted(LogKit::Low,"\n  The signal to noise ratio given in the model file and used for this angle stack is : %6.2f\n", SNRatio);
+    LogKit::LogFormatted(LogKit::Low,"  For comparison, the signal-to-noise ratio calculated from the available wells is   : %6.2f\n", empSNRatio);
     float minSN = 1.0f + (empSNRatio - 1.0f)/2.0f;
     float maxSN = 1.0f + (empSNRatio - 1.0f)*2.0f;
     if ((SNRatio<minSN || SNRatio>maxSN) && modelSettings->getEstimateWavelet(number)) {
-      LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: The difference between the SN ratio given in the model file and the calculated SN ratio is too large.\n");
+      LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The difference between the SN ratio given in the model file and the calculated SN ratio is too large.\n");
       if (SNRatio < minSN)
         TaskList::addTask("Consider increasing the SN ratio for angle stack "+NRLib::ToString(number)+" to minimum "+NRLib::ToString(minSN,1));
       else
@@ -520,21 +520,21 @@ Wavelet3D::calculateSNRatio(Simbox                                   * simbox,
 
   if (empSNRatio < 1.1f) {
     if (modelSettings->getEstimateSNRatio(number)) {
-      LogKit::LogFormatted(LogKit::WARNING,"\nERROR: The empirical signal-to-noise ratio Var(data)/Var(noise) is %.2f. Ratios smaller",empSNRatio);
-      LogKit::LogFormatted(LogKit::WARNING,"\n       than 1.1 are not acceptable. The signal-to-noise ratio was not reliably estimated");
-      LogKit::LogFormatted(LogKit::WARNING,"\n       and you must give it as input in the model file.\n");
-      LogKit::LogFormatted(LogKit::WARNING,"\n       If the wavelet was estimated by CRAVA the solution may be to remove one or more wells");
-      LogKit::LogFormatted(LogKit::WARNING,"\n       from the wavelet estimation (compare shifts and SN-ratios for different wells).\n");
+      LogKit::LogFormatted(LogKit::Warning,"\nERROR: The empirical signal-to-noise ratio Var(data)/Var(noise) is %.2f. Ratios smaller",empSNRatio);
+      LogKit::LogFormatted(LogKit::Warning,"\n       than 1.1 are not acceptable. The signal-to-noise ratio was not reliably estimated");
+      LogKit::LogFormatted(LogKit::Warning,"\n       and you must give it as input in the model file.\n");
+      LogKit::LogFormatted(LogKit::Warning,"\n       If the wavelet was estimated by CRAVA the solution may be to remove one or more wells");
+      LogKit::LogFormatted(LogKit::Warning,"\n       from the wavelet estimation (compare shifts and SN-ratios for different wells).\n");
 
       errText += "Invalid signal-to-noise ratio obtained for the angle-gather of "+angle+" degrees.\n";
       error += 1;
     }
     else {
-      LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: The empirical signal-to-noise ratio Var(data)/Var(noise) is %.2f. Ratios smaller",empSNRatio);
-      LogKit::LogFormatted(LogKit::WARNING,"\n         than 1.1 are not acceptable. If the low ratio is caused by one or more specific");
-      LogKit::LogFormatted(LogKit::WARNING,"\n         wells, these wells should not have been included in the wavelet estimation. If");
-      LogKit::LogFormatted(LogKit::WARNING,"\n         they indeed were omitted, you can avoid this warning by specifying");
-      LogKit::LogFormatted(LogKit::WARNING,"\n         <use-for-wavelet-estimation> no </use-...> for these wells in the model file.\n");                           
+      LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The empirical signal-to-noise ratio Var(data)/Var(noise) is %.2f. Ratios smaller",empSNRatio);
+      LogKit::LogFormatted(LogKit::Warning,"\n         than 1.1 are not acceptable. If the low ratio is caused by one or more specific");
+      LogKit::LogFormatted(LogKit::Warning,"\n         wells, these wells should not have been included in the wavelet estimation. If");
+      LogKit::LogFormatted(LogKit::Warning,"\n         they indeed were omitted, you can avoid this warning by specifying");
+      LogKit::LogFormatted(LogKit::Warning,"\n         <use-for-wavelet-estimation> no </use-...> for these wells in the model file.\n");                           
       TaskList::addTask("Check the signal-to-noise ratio given for angle stack "+NRLib::ToString(number)+" against that calculated by CRAVA.");
     }
   }

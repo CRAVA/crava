@@ -171,7 +171,7 @@ WellData::readRMSWell(const std::string              & wellFileName,
           NRLib::ReadNextToken(file,token,line); // read code word DISC
           if (token != "DISC")
           {
-            LogKit::LogFormatted(LogKit::ERROR,"ERROR: Facies log must be discrete.\n"); 
+            LogKit::LogFormatted(LogKit::Error,"ERROR: Facies log must be discrete.\n"); 
             exit(1);
           }
           // Find number of facies
@@ -405,11 +405,11 @@ WellData::readRMSWell(const std::string              & wellFileName,
 
   if(wrongMissingValues)
   {
-    LogKit::LogFormatted(LogKit::LOW,"\nWARNING: There are incorrect missing values \'%f\' in well.\n",OPENWORKS_MISSING,wellfilename_.c_str());
-    LogKit::LogFormatted(LogKit::LOW,"           CRAVA can handle this, but it is not a legal RMS well file format.\n");
+    LogKit::LogFormatted(LogKit::Low,"\nWARNING: There are incorrect missing values \'%f\' in well.\n",OPENWORKS_MISSING,wellfilename_.c_str());
+    LogKit::LogFormatted(LogKit::Low,"           CRAVA can handle this, but it is not a legal RMS well file format.\n");
   }
   if (k != nd_-1) {
-    LogKit::LogFormatted(LogKit::LOW,"ERROR: Well %s is corrupt. nd=%d log entries were expected, but only k=%d were read.\n",
+    LogKit::LogFormatted(LogKit::Low,"ERROR: Well %s is corrupt. nd=%d log entries were expected, but only k=%d were read.\n",
                      wellfilename_.c_str(),nd_,k);
     exit(1);
   }
@@ -794,11 +794,11 @@ int WellData::checkSimbox(Simbox * simbox)
   if (error)
   {
     if (insideArea) {
-      LogKit::LogFormatted(LogKit::LOW,"   IGNORED (well is inside inversion area but does not hit the inversion volume)\n");
-      LogKit::LogFormatted(LogKit::LOW,"           (well-depth: min,max = "+NRLib::ToString(zpos_[0])+","+NRLib::ToString(zpos_[nd_-1])+")\n");
+      LogKit::LogFormatted(LogKit::Low,"   IGNORED (well is inside inversion area but does not hit the inversion volume)\n");
+      LogKit::LogFormatted(LogKit::Low,"           (well-depth: min,max = "+NRLib::ToString(zpos_[0])+","+NRLib::ToString(zpos_[nd_-1])+")\n");
     }
     else
-      LogKit::LogFormatted(LogKit::LOW,"   IGNORED (well is not inside inversion area)\n");
+      LogKit::LogFormatted(LogKit::Low,"   IGNORED (well is not inside inversion area)\n");
   }
   return(error);
 }
@@ -835,7 +835,7 @@ WellData::removeDuplicateLogEntries(int & nMerges)
 
     bool printToScreen = debug && iend != istart;
     if (printToScreen)
-      LogKit::LogFormatted(LogKit::LOW,"Merge log entries %d -> %d into new entry %d\n",istart,iend,ii);
+      LogKit::LogFormatted(LogKit::Low,"Merge log entries %d -> %d into new entry %d\n",istart,iend,ii);
 
     mergeCells("time",zpos_resampled, zpos_ ,ii,istart,iend,printToScreen);
     mergeCells("x   ",xpos_resampled, xpos_ ,ii,istart,iend,printToScreen);
@@ -847,7 +847,7 @@ WellData::removeDuplicateLogEntries(int & nMerges)
       mergeCellsDiscrete("Facies ",facies_resampled, facies_, ii, istart, iend, printToScreen);
 
     if (printToScreen)
-      LogKit::LogFormatted(LogKit::LOW,"\n");
+      LogKit::LogFormatted(LogKit::Low,"\n");
     
     istart = iend + 1;
     ii++;
@@ -857,7 +857,7 @@ WellData::removeDuplicateLogEntries(int & nMerges)
   if (ii != nd_)
   {
     nMerges = nd_-ii; 
-    LogKit::LogFormatted(LogKit::LOW,"   Duplicate log entries merged with neighbour : %d\n",nMerges);
+    LogKit::LogFormatted(LogKit::Low,"   Duplicate log entries merged with neighbour : %d\n",nMerges);
     nd_ = ii;
   }
 
@@ -893,7 +893,7 @@ WellData::mergeCells(const std::string & name, double * pos_resampled, double * 
       pos_resampled[ii] += pos[i];
       nSample++; 
       if (printToScreen)
-        LogKit::LogFormatted(LogKit::LOW,"%s     Old:%d   pos = %.3f\n",name.c_str(),i,pos[i]);
+        LogKit::LogFormatted(LogKit::Low,"%s     Old:%d   pos = %.3f\n",name.c_str(),i,pos[i]);
     }
   }
   if (nSample == 0)
@@ -901,7 +901,7 @@ WellData::mergeCells(const std::string & name, double * pos_resampled, double * 
   else
     pos_resampled[ii] /= nSample;
   if (printToScreen)
-    LogKit::LogFormatted(LogKit::LOW,"%s     New:%d   pos = %.3f\n",name.c_str(),ii,pos_resampled[ii]);
+    LogKit::LogFormatted(LogKit::Low,"%s     New:%d   pos = %.3f\n",name.c_str(),ii,pos_resampled[ii]);
 }
 
 //----------------------------------------------------------------------------
@@ -919,7 +919,7 @@ WellData::mergeCells(const std::string & name, float * log_resampled, float * lo
       log_resampled[ii] += log[i];
       nSample++; 
       if (printToScreen)
-        LogKit::LogFormatted(LogKit::LOW,"%s     Old:%d   log = %.3f\n",name.c_str(),i,log[i]);
+        LogKit::LogFormatted(LogKit::Low,"%s     Old:%d   log = %.3f\n",name.c_str(),i,log[i]);
     }
   }
   if (nSample == 0)
@@ -927,7 +927,7 @@ WellData::mergeCells(const std::string & name, float * log_resampled, float * lo
   else
     log_resampled[ii] /= nSample;
   if (printToScreen)
-    LogKit::LogFormatted(LogKit::LOW,"%s     New:%d   log = %.3f\n",name.c_str(),ii,log_resampled[ii]);
+    LogKit::LogFormatted(LogKit::Low,"%s     New:%d   log = %.3f\n",name.c_str(),ii,log_resampled[ii]);
 }
 
 //---------------------------------------------------------------------------
@@ -944,12 +944,12 @@ WellData::mergeCellsDiscrete(const std::string & name, int * log_resampled, int 
       //log_resampled[ii] += log[i];
       nSample++; 
       if (printToScreen)
-        LogKit::LogFormatted(LogKit::LOW,"%s     Old:%d   log = %d\n",name.c_str(),i,log[i]);
+        LogKit::LogFormatted(LogKit::Low,"%s     Old:%d   log = %d\n",name.c_str(),i,log[i]);
     }
   }
   log_resampled[ii] = log[istart];
  if (printToScreen)
-    LogKit::LogFormatted(LogKit::LOW,"%s     New:%d   log = %d\n",name.c_str(),ii,log_resampled[ii]);
+    LogKit::LogFormatted(LogKit::Low,"%s     New:%d   log = %d\n",name.c_str(),ii,log_resampled[ii]);
 
 }
 
@@ -980,28 +980,28 @@ WellData::setWrongLogEntriesUndefined(int & count_alpha, int & count_beta, int &
     if (alpha_[i] != RMISSING && (alpha_[i] < alpha_min  || alpha_[i] > alpha_max)) 
     {
       if (debug) 
-        LogKit::LogFormatted(LogKit::LOW,"   Set undefined:   time = %.2f   Vp = %.2f\n",zpos_[i],alpha_[i]);
+        LogKit::LogFormatted(LogKit::Low,"   Set undefined:   time = %.2f   Vp = %.2f\n",zpos_[i],alpha_[i]);
       alpha_[i] = RMISSING; 
       count_alpha++;
     }
     if (beta_[i] != RMISSING && (beta_[i] < beta_min  || beta_[i] > beta_max))
     {
       if (debug) 
-        LogKit::LogFormatted(LogKit::LOW,"   Set undefined:   time = %.2f   Vs = %.2f\n",zpos_[i],beta_[i]);
+        LogKit::LogFormatted(LogKit::Low,"   Set undefined:   time = %.2f   Vs = %.2f\n",zpos_[i],beta_[i]);
       beta_[i] = RMISSING;
       count_beta++;
     }
     if (rho_[i] != RMISSING && (rho_[i] < rho_min || rho_[i] > rho_max))
     {
       if (debug) 
-        LogKit::LogFormatted(LogKit::LOW,"   Set undefined:   time = %.2f   Rho = %.2f\n",zpos_[i],rho_[i]);
+        LogKit::LogFormatted(LogKit::Low,"   Set undefined:   time = %.2f   Rho = %.2f\n",zpos_[i],rho_[i]);
       rho_[i] = RMISSING;
       count_rho++;
     }
   }
 
   if (count_alpha > 0 || count_beta || count_rho > 0)
-    LogKit::LogFormatted(LogKit::LOW,"   Log entries have been set undefined (Vp:%d Vs:%d Rho:%d)\n",
+    LogKit::LogFormatted(LogKit::Low,"   Log entries have been set undefined (Vp:%d Vs:%d Rho:%d)\n",
                      count_alpha,count_beta,count_rho);
 }
 
@@ -1135,9 +1135,9 @@ WellData::resampleTime(double * time_resampled,
   }
   else 
   {
-    LogKit::LogFormatted(LogKit::WARNING,"WARNING: First or last time sample is undefined. Cannot estimate average sampling density.\n");
-    LogKit::LogFormatted(LogKit::WARNING,"         time[first] = %12.2f\n",time_begin);
-    LogKit::LogFormatted(LogKit::WARNING,"         time[last]  = %12.2f\n",time_end);
+    LogKit::LogFormatted(LogKit::Warning,"WARNING: First or last time sample is undefined. Cannot estimate average sampling density.\n");
+    LogKit::LogFormatted(LogKit::Warning,"         time[first] = %12.2f\n",time_begin);
+    LogKit::LogFormatted(LogKit::Warning,"         time[last]  = %12.2f\n",time_end);
     return(false);
   }
   
@@ -1434,34 +1434,34 @@ WellData::lookForSyntheticVsLog(float & rank_correlation)
     if (rank_correlation > corr_threshold) 
     {
       if(realVsLog_ == ModelSettings::NOTSET) {
-        LogKit::LogFormatted(LogKit::LOW,"   Vp-Vs rank correlation is %5.3f. Treating Vs log as synthetic.\n",rank_correlation);
+        LogKit::LogFormatted(LogKit::Low,"   Vp-Vs rank correlation is %5.3f. Treating Vs log as synthetic.\n",rank_correlation);
         realVsLog_ = ModelSettings::NO;
       }
       else {
         if(realVsLog_ == ModelSettings::YES)
-          LogKit::LogFormatted(LogKit::LOW,"   Vp-Vs rank correlation is %5.3f, but well log is defined as real.\n",rank_correlation);
+          LogKit::LogFormatted(LogKit::Low,"   Vp-Vs rank correlation is %5.3f, but well log is defined as real.\n",rank_correlation);
         else
-          LogKit::LogFormatted(LogKit::LOW,"   Vp-Vs rank correlation is %5.3f. (Well log is defined as synthetic.)\n",rank_correlation);
+          LogKit::LogFormatted(LogKit::Low,"   Vp-Vs rank correlation is %5.3f. (Well log is defined as synthetic.)\n",rank_correlation);
       }
     }
     else
     {
       switch(realVsLog_) {
         case ModelSettings::YES :
-          LogKit::LogFormatted(LogKit::LOW,"   Vp-Vs rank correlation is %5.3f. (Well log is defined as real.)\n",rank_correlation);
+          LogKit::LogFormatted(LogKit::Low,"   Vp-Vs rank correlation is %5.3f. (Well log is defined as real.)\n",rank_correlation);
           break;
         case ModelSettings::NO :
-          LogKit::LogFormatted(LogKit::LOW,"   Vp-Vs rank correlation is %5.3f. (Well log is defined as synthetic.)\n",rank_correlation);
+          LogKit::LogFormatted(LogKit::Low,"   Vp-Vs rank correlation is %5.3f. (Well log is defined as synthetic.)\n",rank_correlation);
           break;
         default :
-          LogKit::LogFormatted(LogKit::LOW,"   Vp-Vs rank correlation is %5.3f. (Well log is treated as real.)\n",rank_correlation);
+          LogKit::LogFormatted(LogKit::Low,"   Vp-Vs rank correlation is %5.3f. (Well log is treated as real.)\n",rank_correlation);
           break;
       }
     }
   }
   else 
   {
-    LogKit::LogFormatted(LogKit::LOW,"   Cannot calculate Vp-Vs rank correlation. One or both logs are empty.\n");
+    LogKit::LogFormatted(LogKit::Low,"   Cannot calculate Vp-Vs rank correlation. One or both logs are empty.\n");
   }
 
   bool useFilter  = modelSettings_->getUseFilterForFaciesProb(); 
@@ -1531,19 +1531,19 @@ WellData::calculateDeviation(float  & devAngle,
     }
   }
   devAngle = static_cast<float>(atan(max_deviation)*180.0/M_PI);
-  LogKit::LogFormatted(LogKit::LOW,"   Maximum local deviation is %.1f degrees.",devAngle);
+  LogKit::LogFormatted(LogKit::Low,"   Maximum local deviation is %.1f degrees.",devAngle);
 
   if (max_deviation > thr_deviation) 
   {
     if(useForWaveletEstimation_ == ModelSettings::NOTSET)   
       useForWaveletEstimation_ = ModelSettings::NO;    
     isDeviated_ = true;
-    LogKit::LogFormatted(LogKit::LOW," Well is treated as deviated.\n");
+    LogKit::LogFormatted(LogKit::Low," Well is treated as deviated.\n");
   }
   else
   {
     isDeviated_ = false;
-    LogKit::LogFormatted(LogKit::LOW,"\n");
+    LogKit::LogFormatted(LogKit::Low,"\n");
   }
 }
 

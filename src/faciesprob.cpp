@@ -726,13 +726,13 @@ void FaciesProb::calculateConditionalFaciesProb(WellData                      **
           BWfacies[i][b] = IMISSING;
         else
           BWfacies[i][b] = BWfacies_i[b];
-        //LogKit::LogFormatted(LogKit::LOW,"ib, BWfacies[i][b] = %d %d\n",ib,BWfacies[ib]);
+        //LogKit::LogFormatted(LogKit::Low,"ib, BWfacies[i][b] = %d %d\n",ib,BWfacies[ib]);
       }
     }
     else {
       for (int b = 0 ; b < nBlocks ; b++) {
         BWfacies[i][b] = BWfacies_i[b];
-        //LogKit::LogFormatted(LogKit::LOW,"ib, BWfacies[i][b] = %d %d\n",ib,BWfacies[ib]);
+        //LogKit::LogFormatted(LogKit::Low,"ib, BWfacies[i][b] = %d %d\n",ib,BWfacies[ib]);
       }
     }
   }
@@ -755,7 +755,7 @@ void FaciesProb::calculateConditionalFaciesProb(WellData                      **
       for(int b = 0 ; b < nBlocks ; b++)
       {
         BWfaciesProb[f][i][b] = faciesProb_[f]->getRealValue(ipos[b],jpos[b],kpos[b]);
-        //LogKit::LogFormatted(LogKit::LOW,"f,ib, BWfaciesProb[f][i][b] = %d %d %.5f\n",f,ib,BWfaciesProb[f][ib]);
+        //LogKit::LogFormatted(LogKit::Low,"f,ib, BWfaciesProb[f][i][b] = %d %d %.5f\n",f,ib,BWfaciesProb[f][ib]);
       }
     }
     faciesProb_[f]->endAccess();
@@ -781,7 +781,7 @@ void FaciesProb::calculateConditionalFaciesProb(WellData                      **
         for(int b = 0 ; b < bw[i]->getNumberOfBlocks() ; b++)
         {
           if (BWfacies[i][b] == f1) {
-            //LogKit::LogFormatted(LogKit::LOW,"f1,f2 = %d,%d   ib = %d    BWfacies[i][b] = %d   sumProb = %.5f\n",f1,f2,ib,BWfacies[i][b],sumProb);
+            //LogKit::LogFormatted(LogKit::Low,"f1,f2 = %d,%d   ib = %d    BWfacies[i][b] = %d   sumProb = %.5f\n",f1,f2,ib,BWfacies[i][b],sumProb);
             sumProb[f1][f2][i] += BWfaciesProb[f2][i][b];
             numProb[f1][f2][i] += 1;
           }
@@ -826,29 +826,29 @@ void FaciesProb::calculateConditionalFaciesProb(WellData                      **
       }
     }
 
-    LogKit::LogFormatted(LogKit::LOW,"\nWell: "+bw[i]->getWellname()+"\n");
-    LogKit::LogFormatted(LogKit::LOW,"\nFacies      |");
+    LogKit::LogFormatted(LogKit::Low,"\nWell: "+bw[i]->getWellname()+"\n");
+    LogKit::LogFormatted(LogKit::Low,"\nFacies      |");
     for(int f=0 ; f < nFacies_ ; f++)
-      LogKit::LogFormatted(LogKit::LOW," %11s",faciesNames[f].c_str());
-    LogKit::LogFormatted(LogKit::LOW,"\n------------+");
+      LogKit::LogFormatted(LogKit::Low," %11s",faciesNames[f].c_str());
+    LogKit::LogFormatted(LogKit::Low,"\n------------+");
     for(int f=0 ; f < nFacies_ ; f++)
-      LogKit::LogFormatted(LogKit::LOW,"------------",f);
-    LogKit::LogFormatted(LogKit::LOW,"\n");
+      LogKit::LogFormatted(LogKit::Low,"------------",f);
+    LogKit::LogFormatted(LogKit::Low,"\n");
     for(int f1=0 ; f1 < nFacies_ ; f1++)
     {
-      LogKit::LogFormatted(LogKit::LOW,"%-11s |",faciesNames[f1].c_str());
+      LogKit::LogFormatted(LogKit::Low,"%-11s |",faciesNames[f1].c_str());
       for(int f2=0 ; f2 < nFacies_ ; f2++)
       {
-        LogKit::LogFormatted(LogKit::LOW," %11.3f",condFaciesProb[f2][f1]);
+        LogKit::LogFormatted(LogKit::Low," %11.3f",condFaciesProb[f2][f1]);
       }
-      LogKit::LogFormatted(LogKit::LOW,"\n");
+      LogKit::LogFormatted(LogKit::Low,"\n");
     }
-    LogKit::LogFormatted(LogKit::LOW,"Total Prob  |");
+    LogKit::LogFormatted(LogKit::Low,"Total Prob  |");
     for(int f=0 ; f < nFacies_ ; f++)
     {
-      LogKit::LogFormatted(LogKit::LOW," %11.3f",totProb[f]);
+      LogKit::LogFormatted(LogKit::Low," %11.3f",totProb[f]);
     }
-    LogKit::LogFormatted(LogKit::LOW,"\n");
+    LogKit::LogFormatted(LogKit::Low,"\n");
 
     bool low_probabilities_this_well = false;
     checkConditionalProbabilities(condFaciesProb, faciesNames, nFacies_, bw[i]->getWellname(), false, low_probabilities_this_well);
@@ -865,9 +865,9 @@ void FaciesProb::calculateConditionalFaciesProb(WellData                      **
   //
   // Estimate P( facies2 | facies1 )
   //
-  LogKit::LogFormatted(LogKit::HIGH,"\nThe table below gives the mean conditional probability of finding one of");
-  LogKit::LogFormatted(LogKit::HIGH,"\nthe facies specified in the left column when one of the facies specified");
-  LogKit::LogFormatted(LogKit::HIGH,"\nin the top row are observed in well logs ==> P(A|B)\n");
+  LogKit::LogFormatted(LogKit::High,"\nThe table below gives the mean conditional probability of finding one of");
+  LogKit::LogFormatted(LogKit::High,"\nthe facies specified in the left column when one of the facies specified");
+  LogKit::LogFormatted(LogKit::High,"\nin the top row are observed in well logs ==> P(A|B)\n");
   for(int f1 = 0 ; f1 < nFacies_ ; f1++)
   {
     totProb[f1] = 0.0f;
@@ -902,27 +902,27 @@ void FaciesProb::calculateConditionalFaciesProb(WellData                      **
   delete [] sumProb;
   delete [] numProb;
 
-  LogKit::LogFormatted(LogKit::LOW,"\nFor all wells:\n");
-  LogKit::LogFormatted(LogKit::LOW,"\nFacies      |");
+  LogKit::LogFormatted(LogKit::Low,"\nFor all wells:\n");
+  LogKit::LogFormatted(LogKit::Low,"\nFacies      |");
   for(int f=0 ; f < nFacies_ ; f++)
-    LogKit::LogFormatted(LogKit::LOW," %11s",faciesNames[f].c_str());
-  LogKit::LogFormatted(LogKit::LOW,"\n------------+");
+    LogKit::LogFormatted(LogKit::Low," %11s",faciesNames[f].c_str());
+  LogKit::LogFormatted(LogKit::Low,"\n------------+");
   for(int f=0 ; f < nFacies_ ; f++)
-    LogKit::LogFormatted(LogKit::LOW,"------------",f);
-  LogKit::LogFormatted(LogKit::LOW,"\n");
+    LogKit::LogFormatted(LogKit::Low,"------------",f);
+  LogKit::LogFormatted(LogKit::Low,"\n");
   for(int f1=0 ; f1 < nFacies_ ; f1++)
   {
-    LogKit::LogFormatted(LogKit::LOW,"%-11s |",faciesNames[f1].c_str());
+    LogKit::LogFormatted(LogKit::Low,"%-11s |",faciesNames[f1].c_str());
     for(int f2=0 ; f2 < nFacies_ ; f2++)
-      LogKit::LogFormatted(LogKit::LOW," %11.3f",condFaciesProb[f2][f1]);
-    LogKit::LogFormatted(LogKit::LOW,"\n");
+      LogKit::LogFormatted(LogKit::Low," %11.3f",condFaciesProb[f2][f1]);
+    LogKit::LogFormatted(LogKit::Low,"\n");
   }
-  LogKit::LogFormatted(LogKit::LOW,"Total Prob  |");
+  LogKit::LogFormatted(LogKit::Low,"Total Prob  |");
   for(int f=0 ; f < nFacies_ ; f++)
   {
-    LogKit::LogFormatted(LogKit::LOW," %11.3f",totProb[f]);
+    LogKit::LogFormatted(LogKit::Low," %11.3f",totProb[f]);
   }
-  LogKit::LogFormatted(LogKit::LOW,"\n");
+  LogKit::LogFormatted(LogKit::Low,"\n");
 
   low_probabilities = false;
   checkConditionalProbabilities(condFaciesProb, faciesNames, nFacies_, "NOT SET", true, low_probabilities);
@@ -977,18 +977,18 @@ void FaciesProb::checkConditionalProbabilities(float                         ** 
     
     if (fraction < 1.05f) {
       tooSmallDiff = true;
-      LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: For facies \'"+faciesNames[f1]+"\' the difference between smallest and largest probability\n");
-      LogKit::LogFormatted(LogKit::WARNING,"         is only %.2f percent.\n",(fraction - 1.f)*100.f);
+      LogKit::LogFormatted(LogKit::Warning,"\nWARNING: For facies \'"+faciesNames[f1]+"\' the difference between smallest and largest probability\n");
+      LogKit::LogFormatted(LogKit::Warning,"         is only %.2f percent.\n",(fraction - 1.f)*100.f);
     }
     if (indMax != f1) {
       wrongMaximum = true;
       if (accumulative) {
-        LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: The probability of finding facies \'"+faciesNames[f1]+"\' is largest when the logs\n");
-        LogKit::LogFormatted(LogKit::WARNING,"         show \'"+faciesNames[indMax]+"\' and not when it shows \'"+faciesNames[f1]+"\'.\n");
+        LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The probability of finding facies \'"+faciesNames[f1]+"\' is largest when the logs\n");
+        LogKit::LogFormatted(LogKit::Warning,"         show \'"+faciesNames[indMax]+"\' and not when it shows \'"+faciesNames[f1]+"\'.\n");
       }
       else { 
-        LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: The probability of finding facies \'"+faciesNames[f1]+"\' is largest when the well log of\n");
-        LogKit::LogFormatted(LogKit::WARNING,"         well \'"+identifier+"\' shows \'"+faciesNames[indMax]+"\' and not when it shows \'"+faciesNames[f1]+"\'.\n");
+        LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The probability of finding facies \'"+faciesNames[f1]+"\' is largest when the well log of\n");
+        LogKit::LogFormatted(LogKit::Warning,"         well \'"+identifier+"\' shows \'"+faciesNames[indMax]+"\' and not when it shows \'"+faciesNames[f1]+"\'.\n");
       }
     }
   }
@@ -1000,13 +1000,13 @@ void FaciesProb::checkConditionalProbabilities(float                         ** 
         std::string text;
         text += "\nWARNING: The total probability for facies \'"+faciesNames[f1]+"\' is only "+NRLib::ToString(totProb[f1],3)+". This indicates";
         text += "\n         a major problem with the facies probability estimation.";
-        LogKit::LogFormatted(LogKit::WARNING,text);
+        LogKit::LogFormatted(LogKit::Warning,text);
       }
       else {
         std::string text;
         text += "\nWARNING: The total probability for facies \'"+faciesNames[f1]+"\' in well "+identifier+" is only ";
         text += NRLib::ToString(totProb[f1],3)+". This\n         indicates a major problem. Check the well.\n";
-        LogKit::LogFormatted(LogKit::WARNING,text);
+        LogKit::LogFormatted(LogKit::Warning,text);
       }
     }
   }
@@ -1113,7 +1113,7 @@ void FaciesProb::calculateFaciesProb(FFTGrid                                    
           (*tgrid[angle])(ii,jj) = ((*noiseScale[angle])(ii,jj)-minS)/(maxS-minS);
     }
   
-  LogKit::LogFormatted(LogKit::LOW,"\nBuilding facies probabilities:");
+  LogKit::LogFormatted(LogKit::Low,"\nBuilding facies probabilities:");
   float monitorSize = std::max(1.0f, static_cast<float>(nzp)*0.02f);
   float nextMonitor = monitorSize;
   std::cout 
@@ -1461,22 +1461,22 @@ void FaciesProb::normalizeCubes(FFTGrid **priorFaciesCubes)
   }
   if (negative<0)
   {
-    LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: Negative facies probabilities have been detected, and set to zero. \n         The probabilities have been rescaled. The most negative value is %4.2f.\n",negative);
+    LogKit::LogFormatted(LogKit::Warning,"\nWARNING: Negative facies probabilities have been detected, and set to zero. \n         The probabilities have been rescaled. The most negative value is %4.2f.\n",negative);
     TaskList::addTask("Check that the prior facies probability cubes have positive probability everywhere");
   }
   if (totZero > 0)
   {
-    LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: The sum over the prior facies probabilities is zero in %d of %d locations.\n",totZero,total);
+    LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The sum over the prior facies probabilities is zero in %d of %d locations.\n",totZero,total);
     TaskList::addTask("Check that the prior facies probability cubes are defined everywhere");
   }
   if (small > 0)
   {
-    LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: The sum over the prior facies probabilities is less than one in %d of %d locations. \n         The probabilities have been rescaled.\n",small,total);
+    LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The sum over the prior facies probabilities is less than one in %d of %d locations. \n         The probabilities have been rescaled.\n",small,total);
     TaskList::addTask("Check that the prior facies probability cubes sum to one everywhere");
   }
   if (large > 0)
   {
-    LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: The sum over the prior facies probabilities is larger than one in %d of %d locations. \n         The probabilities have been rescaled.\n",large, total);
+    LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The sum over the prior facies probabilities is larger than one in %d of %d locations. \n         The probabilities have been rescaled.\n",large, total);
     TaskList::addTask("Check that the prior facies probability cubes sum to one everywhere");
   }
   for(i=0;i<nFacies_;i++)
@@ -1644,7 +1644,7 @@ std::vector<double> FaciesProb::calculateChiSquareTest(WellData                 
     if (nActualFacies == 1)
     {
       fit[i] = "not calculated";
-      LogKit::LogFormatted(LogKit::WARNING,"\nWARNING: The number of actual facies is one, so estimation makes no sence.\n");
+      LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The number of actual facies is one, so estimation makes no sence.\n");
       TaskList::addTask("Check that all facies have probability larger than zero");
     }
     else
@@ -1663,21 +1663,21 @@ std::vector<double> FaciesProb::calculateChiSquareTest(WellData                 
     }
   }
 
-  LogKit::LogFormatted(LogKit::MEDIUM,"\nFit between facies probabilities and facies observed in wells: \n");
+  LogKit::LogFormatted(LogKit::Medium,"\nFit between facies probabilities and facies observed in wells: \n");
 
-  LogKit::LogFormatted(LogKit::MEDIUM,"\nWell                   Fit");
-  LogKit::LogFormatted(LogKit::MEDIUM,"\n");
+  LogKit::LogFormatted(LogKit::Medium,"\nWell                   Fit");
+  LogKit::LogFormatted(LogKit::Medium,"\n");
   for (i = 0 ; i < 24+13*nFacies_ ; i++)
-    LogKit::LogFormatted(LogKit::MEDIUM,"-");
-  LogKit::LogFormatted(LogKit::MEDIUM,"\n");
+    LogKit::LogFormatted(LogKit::Medium,"-");
+  LogKit::LogFormatted(LogKit::Medium,"\n");
   
   for (int w = 0 ; w < nWells ; w++)
   {
-    LogKit::LogFormatted(LogKit::MEDIUM,"%-23s",wells[w]->getWellname().c_str());
-    LogKit::LogFormatted(LogKit::MEDIUM,fit[w]);
-    LogKit::LogFormatted(LogKit::MEDIUM,"\n");
+    LogKit::LogFormatted(LogKit::Medium,"%-23s",wells[w]->getWellname().c_str());
+    LogKit::LogFormatted(LogKit::Medium,fit[w]);
+    LogKit::LogFormatted(LogKit::Medium,"\n");
   }
-  LogKit::LogFormatted(LogKit::MEDIUM,"\n");
+  LogKit::LogFormatted(LogKit::Medium,"\n");
 
   return pValue;
 }
@@ -1801,23 +1801,23 @@ std::vector<double> FaciesProb::calculateChiSquareTest(WellData                 
     }
   }
   
-  LogKit::LogFormatted(LogKit::MEDIUM,"\nFit between facies probabilities and facies observed in wells: \n");
-  LogKit::LogFormatted(LogKit::MEDIUM,"\nWell                      ");
+  LogKit::LogFormatted(LogKit::Medium,"\nFit between facies probabilities and facies observed in wells: \n");
+  LogKit::LogFormatted(LogKit::Medium,"\nWell                      ");
   for (int i = 0 ; i < nFacies_ ; i++)
-    LogKit::LogFormatted(LogKit::MEDIUM,"%12s ",modelSettings->getFaciesName(i).c_str());
-  LogKit::LogFormatted(LogKit::MEDIUM,"\n");
+    LogKit::LogFormatted(LogKit::Medium,"%12s ",modelSettings->getFaciesName(i).c_str());
+  LogKit::LogFormatted(LogKit::Medium,"\n");
   for (int i = 0 ; i < 24+13*nFacies_ ; i++)
-    LogKit::LogFormatted(LogKit::MEDIUM,"-");
-  LogKit::LogFormatted(LogKit::MEDIUM,"\n");
+    LogKit::LogFormatted(LogKit::Medium,"-");
+  LogKit::LogFormatted(LogKit::Medium,"\n");
   for (int w = 0 ; w < nWells ; w++)
   {
-    LogKit::LogFormatted(LogKit::MEDIUM,"%-24s ",wells[w]->getWellname().c_str());
+    LogKit::LogFormatted(LogKit::Medium,"%-24s ",wells[w]->getWellname().c_str());
     for (int i = 0 ; i < nFacies_ ; i++) 
     {
-      LogKit::LogFormatted(LogKit::MEDIUM,"        ");
-      LogKit::LogFormatted(LogKit::MEDIUM,fit[w][i]);
+      LogKit::LogFormatted(LogKit::Medium,"        ");
+      LogKit::LogFormatted(LogKit::Medium,fit[w][i]);
     }
-      LogKit::LogFormatted(LogKit::MEDIUM,"\n");    
+      LogKit::LogFormatted(LogKit::Medium,"\n");    
   }
-  LogKit::LogFormatted(LogKit::MEDIUM,"\n");
+  LogKit::LogFormatted(LogKit::Medium,"\n");
 }

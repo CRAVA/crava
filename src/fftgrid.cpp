@@ -104,7 +104,7 @@ FFTGrid::~FFTGrid()
       nGrids_ = nGrids_ - 1;
     fftw_free(rvalue_);
     FFTMemUse_ -= rsize_ * sizeof(fftw_real);
-    LogKit::LogFormatted(LogKit::DEBUGLOW,"\nFFTGrid Destructor: nGrids_ = %d",nGrids_);
+    LogKit::LogFormatted(LogKit::DebugLow,"\nFFTGrid Destructor: nGrids_ = %d",nGrids_);
   }
 }
 
@@ -158,7 +158,7 @@ FFTGrid::fillInFromSegY(SegY* segy, Simbox *simbox, bool padding)
   double wall=0.0, cpu=0.0;
   TimeKit::getTime(wall,cpu);
 
-  LogKit::LogFormatted(LogKit::LOW,"\nResampling seismic data into %dx%dx%d grid:",nxp_,nyp_,nzp_);
+  LogKit::LogFormatted(LogKit::Low,"\nResampling seismic data into %dx%dx%d grid:",nxp_,nyp_,nzp_);
   setAccessMode(WRITE);
 
   float monitorSize = std::max(1.0f, static_cast<float>(nyp_*nzp_)*0.02f);
@@ -205,7 +205,7 @@ FFTGrid::fillInFromSegY(SegY* segy, Simbox *simbox, bool padding)
       }
     }
   }
-  LogKit::LogFormatted(LogKit::LOW,"\n");
+  LogKit::LogFormatted(LogKit::Low,"\n");
   endAccess();
   fftw_free(meanvalue);
 
@@ -231,7 +231,7 @@ FFTGrid::fillInFromStorm(Simbox            * actSimBox,
   }
   else //from sgri file
   {
-    LogKit::LogFormatted(LogKit::LOW,"Sgri file read. Rescaling z axis from s to ms, x and y from km to m. \n");
+    LogKit::LogFormatted(LogKit::Low,"Sgri file read. Rescaling z axis from s to ms, x and y from km to m. \n");
     scalevert = 0.001f; //1000.0;
     scalehor  = 0.001f; //1000.0;
   }
@@ -271,7 +271,7 @@ FFTGrid::fillInFromStorm(Simbox            * actSimBox,
     }
   }
 
-  LogKit::LogFormatted(LogKit::LOW,"\nResampling %s into %dx%dx%d grid:\n",parName.c_str(),nxp_,nyp_,nzp_);
+  LogKit::LogFormatted(LogKit::Low,"\nResampling %s into %dx%dx%d grid:\n",parName.c_str(),nxp_,nyp_,nzp_);
   setAccessMode(WRITE);
   
   float monitorSize = std::max(1.0f, static_cast<float>(nyp_*nzp_)*0.02f);
@@ -322,7 +322,7 @@ FFTGrid::fillInFromStorm(Simbox            * actSimBox,
       }
     }
   }
-  LogKit::LogFormatted(LogKit::LOW,"\n");
+  LogKit::LogFormatted(LogKit::Low,"\n");
   endAccess();
   fftw_free(meanvalue);
   return(outsideTraces);
@@ -590,7 +590,7 @@ FFTGrid::createRealGrid(bool add)
   add_ = add;
   if(add==true)
     nGrids_        += 1;
- // LogKit::LogFormatted(LogKit::ERROR,"\nFFTGrid createRealGrid : nGrids = %d    maxGrids = %d\n",nGrids_,maxAllowedGrids_);
+ // LogKit::LogFormatted(LogKit::Error,"\nFFTGrid createRealGrid : nGrids = %d    maxGrids = %d\n",nGrids_,maxAllowedGrids_);
   if (nGrids_ > maxAllowedGrids_) {
     std::string text;
     text += "\n\nERROR in FFTGrid createRealGrid. You have allocated too many FFTGrids. The fix";
@@ -599,7 +599,7 @@ FFTGrid::createRealGrid(bool add)
     text += "\nAre there no grids that can be released?\n";
      if(terminateOnMaxGrid_==true)
     {
-      LogKit::LogFormatted(LogKit::ERROR, text);
+      LogKit::LogFormatted(LogKit::Error, text);
       exit(1);
     }
     else
@@ -611,11 +611,11 @@ FFTGrid::createRealGrid(bool add)
   FFTMemUse_ += rsize_ * sizeof(fftw_real);
   if(FFTMemUse_ > maxFFTMemUse_) {
     maxFFTMemUse_ = FFTMemUse_;
-    LogKit::LogFormatted(LogKit::DEBUGLOW,"\nNew FFT-grid memory peak (%2d): %10.2f MB\n",nGrids_, FFTMemUse_/(1024.f*1024.f));
+    LogKit::LogFormatted(LogKit::DebugLow,"\nNew FFT-grid memory peak (%2d): %10.2f MB\n",nGrids_, FFTMemUse_/(1024.f*1024.f));
   }
 
   //  time(&timeend);
-  //  LogKit::LogFormatted(LogKit::LOW,"\nReal grid created in %ld seconds.\n",timeend-timestart);
+  //  LogKit::LogFormatted(LogKit::Low,"\nReal grid created in %ld seconds.\n",timeend-timestart);
 }
 
 void
@@ -630,7 +630,7 @@ FFTGrid::createComplexGrid()
   counterForGet_  = 0; 
   counterForSet_  = 0;
   nGrids_        += 1;
- // LogKit::LogFormatted(LogKit::ERROR,"\nFFTGrid createComplexGrid : nGrids = %d    maxGrids = %d\n",nGrids_,maxAllowedGrids_);
+ // LogKit::LogFormatted(LogKit::Error,"\nFFTGrid createComplexGrid : nGrids = %d    maxGrids = %d\n",nGrids_,maxAllowedGrids_);
   if (nGrids_ > maxAllowedGrids_) {
     std::string text;
     text += "\n\nERROR in FFTGrid createComplexGrid. You have allocated too many FFTGrids. The fix";
@@ -639,7 +639,7 @@ FFTGrid::createComplexGrid()
     text += "\nAre there no grids that can be released?\n";
     if(terminateOnMaxGrid_==true)
     {
-      LogKit::LogFormatted(LogKit::ERROR, text);
+      LogKit::LogFormatted(LogKit::Error, text);
       exit(1);
     }
     else
@@ -650,10 +650,10 @@ FFTGrid::createComplexGrid()
   FFTMemUse_ += rsize_ * sizeof(fftw_real);
   if(FFTMemUse_ > maxFFTMemUse_) {
     maxFFTMemUse_ = FFTMemUse_;
-    LogKit::LogFormatted(LogKit::DEBUGLOW,"\nNew FFT-grid memory peak (%2d): %10.2f MB\n",nGrids_, FFTMemUse_/(1024.f*1024.f));
+    LogKit::LogFormatted(LogKit::DebugLow,"\nNew FFT-grid memory peak (%2d): %10.2f MB\n",nGrids_, FFTMemUse_/(1024.f*1024.f));
   }
   //  time(&timeend);
-  //  LogKit::LogFormatted(LogKit::LOW,"\nComplex grid created in %ld seconds.\n",timeend-timestart);
+  //  LogKit::LogFormatted(LogKit::Low,"\nComplex grid created in %ld seconds.\n",timeend-timestart);
 }
 
 int 
@@ -1140,7 +1140,7 @@ FFTGrid::fftInPlace()
   fftwnd_destroy_plan(plan);
   istransformed_=true;
   time(&timeend);
-  LogKit::LogFormatted(LogKit::DEBUGLOW,"\nFFT of grid type %d finished after %ld seconds \n",cubetype_, timeend-timestart);  
+  LogKit::LogFormatted(LogKit::DebugLow,"\nFFT of grid type %d finished after %ld seconds \n",cubetype_, timeend-timestart);  
 }
 
 void
@@ -1173,7 +1173,7 @@ FFTGrid::invFFTInPlace()
 
   FFTGrid::multiplyByScalar(scale);
   time(&timeend);
-  LogKit::LogFormatted(LogKit::DEBUGLOW,"\nInverse FFT of grid type %d finished after %ld seconds \n",cubetype_, timeend-timestart);  
+  LogKit::LogFormatted(LogKit::DebugLow,"\nInverse FFT of grid type %d finished after %ld seconds \n",cubetype_, timeend-timestart);  
 }
 
 void
@@ -1349,8 +1349,8 @@ FFTGrid::makeCircCorrTPosDef(fftw_real* CircCorrT,int minIntFq)
     scale = float( 1.0/CircCorrT[0] );
   else
   {
-    LogKit::LogFormatted(LogKit::LOW,"\nERROR: The circular temporal correlation (CircCorrT) is undefined. You\n");
-    LogKit::LogFormatted(LogKit::LOW,"       probably need to increase the number of layers...\n\nAborting\n");
+    LogKit::LogFormatted(LogKit::Low,"\nERROR: The circular temporal correlation (CircCorrT) is undefined. You\n");
+    LogKit::LogFormatted(LogKit::Low,"       probably need to increase the number of layers...\n\nAborting\n");
     exit(1);
   }    
   for(k = 0; k < nzp_; k++)
@@ -1449,7 +1449,7 @@ FFTGrid::writeFile(const std::string       & fName,
       std::string depthName = fileName+"_Depth";
       if(depthMap->getMapping() == NULL) {
         if(depthMap->getSimbox() == NULL) {
-          LogKit::LogFormatted(LogKit::WARNING,
+          LogKit::LogFormatted(LogKit::Warning,
             "WARNING: Depth interval lacking when trying to write %s. Write cancelled.\n",depthName.c_str());
           return;
         }
@@ -1463,7 +1463,7 @@ FFTGrid::writeFile(const std::string       & fName,
       else
       {
         if(depthMap->getSimbox() == NULL) {
-          LogKit::LogFormatted(LogKit::WARNING,
+          LogKit::LogFormatted(LogKit::Warning,
             "WARNING: Depth mapping incomplete when trying to write %s. Write cancelled.\n",depthName.c_str());
           return;
         }
@@ -1502,7 +1502,7 @@ FFTGrid::writeStormFile(const std::string & fileName,
 
   if(ascii == false) {
     gfName = fileName + IO::SuffixStormBinary();
-    LogKit::LogFormatted(LogKit::LOW,"\nWriting STORM binary file "+gfName+"...");
+    LogKit::LogFormatted(LogKit::Low,"\nWriting STORM binary file "+gfName+"...");
     std::ofstream binFile;
     NRLib::OpenWrite(binFile, gfName, std::ios::out | std::ios::binary);
     binFile << header;
@@ -1520,7 +1520,7 @@ FFTGrid::writeStormFile(const std::string & fileName,
     gfName = fileName + IO::SuffixGeneralData();
     std::ofstream file;
     NRLib::OpenWrite(file, gfName);
-    LogKit::LogFormatted(LogKit::LOW,"\nWriting STORM ascii file "+gfName+"...");
+    LogKit::LogFormatted(LogKit::Low,"\nWriting STORM ascii file "+gfName+"...");
     file << header;
     file << std::fixed << std::setw(11) << std::setprecision(6);
     for(k=0;k<nz;k++)
@@ -1534,7 +1534,7 @@ FFTGrid::writeStormFile(const std::string & fileName,
     file << "0\n";
   }
 
-  LogKit::LogFormatted(LogKit::LOW,"done\n");
+  LogKit::LogFormatted(LogKit::Low,"done\n");
 }
 
 
@@ -1565,7 +1565,7 @@ FFTGrid::writeSegyFile(const std::string       & fileName,
                                              simbox->getAngle());
   segy->SetGeometry(geometry);
   delete geometry; //Call above takes a copy.
-  LogKit::LogFormatted(LogKit::LOW,"\nWriting SEGY file "+gfName+"...");
+  LogKit::LogFormatted(LogKit::Low,"\nWriting SEGY file "+gfName+"...");
 
   int i,j,k;
   double x,y,z;
@@ -1613,7 +1613,7 @@ FFTGrid::writeSegyFile(const std::string       & fileName,
 
   delete segy; //Closes file.
   // delete [] value;
-  LogKit::LogFormatted(LogKit::LOW,"done\n");
+  LogKit::LogFormatted(LogKit::Low,"done\n");
   //  time(&timeend);
   //printf("\n Write SEGY was performed in %ld seconds.\n",timeend-timestart);
   return(0);
@@ -1684,7 +1684,7 @@ FFTGrid::writeSgriFile(const std::string & fileName, const Simbox *simbox, const
   std::ofstream headerFile;
   NRLib::OpenWrite(headerFile, fName);
 
-  LogKit::LogFormatted(LogKit::LOW,"\nWriting SGRI header file "+fName+"...");
+  LogKit::LogFormatted(LogKit::Low,"\nWriting SGRI header file "+fName+"...");
 
   headerFile << "NORSAR General Grid Format v1.0\n";
   headerFile << "3\n";
@@ -1785,7 +1785,7 @@ FFTGrid::writeCravaFile(const std::string & fileName, const Simbox * simbox)
   }
   catch (NRLib::Exception & e) {
     std::string message = "Error: "+std::string(e.what())+"\n";
-    LogKit::LogMessage(LogKit::ERROR, message);
+    LogKit::LogMessage(LogKit::Error, message);
   }
 }
 
@@ -1819,11 +1819,11 @@ FFTGrid::readCravaFile(const std::string & fileName, std::string & errText, bool
     int nzp  = NRLib::ReadBinaryInt(binFile);
 
     if(rnxp != rnxp_ || nyp != nyp_ || nzp != nzp_) {
-      LogKit::LogFormatted(LogKit::LOW,"\n\nERROR: The grid has different dimensions than the model grid. Check the padding settings");
-      LogKit::LogFormatted(LogKit::LOW,"\n                rnxp   nyp   nzp");
-      LogKit::LogFormatted(LogKit::LOW,"\n--------------------------------");
-      LogKit::LogFormatted(LogKit::LOW,"\nModel grid  :   %4d  %4d  %4d",rnxp_,nyp_,nzp_);
-      LogKit::LogFormatted(LogKit::LOW,"\nGrid on file:   %4d  %4d  %4d\n",rnxp ,nyp ,nzp );
+      LogKit::LogFormatted(LogKit::Low,"\n\nERROR: The grid has different dimensions than the model grid. Check the padding settings");
+      LogKit::LogFormatted(LogKit::Low,"\n                rnxp   nyp   nzp");
+      LogKit::LogFormatted(LogKit::Low,"\n--------------------------------");
+      LogKit::LogFormatted(LogKit::Low,"\nModel grid  :   %4d  %4d  %4d",rnxp_,nyp_,nzp_);
+      LogKit::LogFormatted(LogKit::Low,"\nGrid on file:   %4d  %4d  %4d\n",rnxp ,nyp ,nzp );
       binFile.close();
       throw(NRLib::Exception("Grid dimension is wrong for file '"+fileName+"'."));
     }
@@ -1881,7 +1881,7 @@ FFTGrid::writeAsciiFile(const std::string & fileName)
 {
   std::ofstream file;
   NRLib::OpenWrite(file, fileName);
-  LogKit::LogFormatted(LogKit::LOW,"\nWriting ASCII file "+fileName+"...");
+  LogKit::LogFormatted(LogKit::Low,"\nWriting ASCII file "+fileName+"...");
   int i, j, k;
   float value;
   for(k=0;k<nzp_;k++)
@@ -1892,7 +1892,7 @@ FFTGrid::writeAsciiFile(const std::string & fileName)
         file << value << "\n";
       }
   file.close();
-  LogKit::LogFormatted(LogKit::LOW,"done.\n");
+  LogKit::LogFormatted(LogKit::Low,"done.\n");
 }
 
 void
@@ -1900,7 +1900,7 @@ FFTGrid::writeAsciiRaw(const std::string & fileName)
 {
   std::ofstream file;
   NRLib::OpenWrite(file, fileName);
-  LogKit::LogFormatted(LogKit::LOW,"\nWriting ASCII file "+fileName+"...");
+  LogKit::LogFormatted(LogKit::Low,"\nWriting ASCII file "+fileName+"...");
   int i, j, k;
   float value;
   for(k=0;k<nzp_;k++)
@@ -1911,7 +1911,7 @@ FFTGrid::writeAsciiRaw(const std::string & fileName)
         file << i << " " << j << " " << k << " " << value << " ";
       }
   file.close();
-  LogKit::LogFormatted(LogKit::LOW,"done.\n");
+  LogKit::LogFormatted(LogKit::Low,"done.\n");
 }
 
 
@@ -1972,7 +1972,7 @@ FFTGrid::interpolateSeismic(float energyTreshold)
         index++;
       }
 
-      LogKit::LogFormatted(LogKit::LOW,"%d of %d traces (%d with zero response)",
+      LogKit::LogFormatted(LogKit::Low,"%d of %d traces (%d with zero response)",
         nInter, nx_*ny_, nInter0);
       int curIndex = 0;
       for(j=0;j<ny_;j++)

@@ -23,20 +23,20 @@ Program::Program(const unsigned int  major,
   std::string version = NRLib::ToString(major)+"."+NRLib::ToString(minor)+"."+NRLib::ToString(patch)+extra_text;
   std::string blanks(39 - version.size(), ' '); 
 
-  LogKit::LogFormatted(LogKit::LOW,"\n***************************************************************************************************");
-  LogKit::LogFormatted(LogKit::LOW,"\n*****                                                                                         *****"); 
-  LogKit::LogFormatted(LogKit::LOW,"\n*****                                   C R A V A  -  "+version+blanks+                      "*****"); 
-  LogKit::LogFormatted(LogKit::LOW,"\n*****                                                                                         *****"); 
-  LogKit::LogFormatted(LogKit::LOW,"\n*****                     Copyright (c) 2003 by Norsk Regnesentral/Statoil                    *****"); 
-  LogKit::LogFormatted(LogKit::LOW,"\n*****                                                                                         *****"); 
-  LogKit::LogFormatted(LogKit::LOW,"\n***************************************************************************************************\n\n");
+  LogKit::LogFormatted(LogKit::Low,"\n***************************************************************************************************");
+  LogKit::LogFormatted(LogKit::Low,"\n*****                                                                                         *****"); 
+  LogKit::LogFormatted(LogKit::Low,"\n*****                                   C R A V A  -  "+version+blanks+                      "*****"); 
+  LogKit::LogFormatted(LogKit::Low,"\n*****                                                                                         *****"); 
+  LogKit::LogFormatted(LogKit::Low,"\n*****                     Copyright (c) 2003 by Norsk Regnesentral/Statoil                    *****"); 
+  LogKit::LogFormatted(LogKit::Low,"\n*****                                                                                         *****"); 
+  LogKit::LogFormatted(LogKit::Low,"\n***************************************************************************************************\n\n");
 
   CheckForLicenceExpiration(licence_days_,
                             licensed_to_);
 
-  LogKit::LogFormatted(LogKit::LOW,"Log written by                             : "+SystemCall::getUserName()+"\n");
-  LogKit::LogFormatted(LogKit::LOW,"Date and time                              : "+SystemCall::getCurrentTime());
-  LogKit::LogFormatted(LogKit::LOW,"Host                                       : "+SystemCall::getHostName()+"\n");
+  LogKit::LogFormatted(LogKit::Low,"Log written by                             : "+SystemCall::getUserName()+"\n");
+  LogKit::LogFormatted(LogKit::Low,"Date and time                              : "+SystemCall::getCurrentTime());
+  LogKit::LogFormatted(LogKit::Low,"Host                                       : "+SystemCall::getHostName()+"\n");
 }
 
 Program::~Program(void) 
@@ -52,23 +52,23 @@ Program::CheckForLicenceExpiration(const int           licence_days,
     int days_since_compilation = static_cast<int>((now - TimeOfCompilation()) / 86400);
 
     if (days_since_compilation > licence_days) {
-      LogKit::LogFormatted(LogKit::ERROR,"The CRAVA licence have expired. Please contact the Norwegian Computing Center to obtain a new one.\n");
+      LogKit::LogFormatted(LogKit::Error,"The CRAVA licence have expired. Please contact the Norwegian Computing Center to obtain a new one.\n");
       std::exit(EXIT_FAILURE);
     }
     else if (days_since_compilation < 0) {
-      LogKit::LogFormatted(LogKit::ERROR,"The CRAVA licence is not valid yet. Are you tampering with the system clock?\n");
-      LogKit::LogFormatted(LogKit::ERROR,"Please contact the Norwegian Computing Center to obtain a new one.\n");
+      LogKit::LogFormatted(LogKit::Error,"The CRAVA licence is not valid yet. Are you tampering with the system clock?\n");
+      LogKit::LogFormatted(LogKit::Error,"Please contact the Norwegian Computing Center to obtain a new one.\n");
       std::exit(EXIT_FAILURE);
     }
     else {
       int days_left_of_licence = licence_days - days_since_compilation;
-      LogKit::LogFormatted(LogKit::ERROR,"License expires in                         : %d days\n",days_left_of_licence);
-      LogKit::LogFormatted(LogKit::ERROR,"Licensed to                                : %s\n\n",licensed_to.c_str());
+      LogKit::LogFormatted(LogKit::Error,"License expires in                         : %d days\n",days_left_of_licence);
+      LogKit::LogFormatted(LogKit::Error,"Licensed to                                : %s\n\n",licensed_to.c_str());
     }
   }
   else
   {
-    LogKit::LogFormatted(LogKit::LOW,"Compiled: %s/%s\n\n",SystemCall::getDate().c_str(),SystemCall::getTime().c_str());
+    LogKit::LogFormatted(LogKit::Low,"Compiled: %s/%s\n\n",SystemCall::getDate().c_str(),SystemCall::getTime().c_str());
   }
 }
 

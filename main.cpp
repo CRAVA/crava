@@ -29,7 +29,7 @@ int main(int argc, char** argv)
     printf("Usage: %s modelfile\n",argv[0]);
     exit(1);
   }
-  LogKit::SetScreenLog(LogKit::L_LOW);
+  LogKit::SetScreenLog(LogKit::L_Low);
   LogKit::StartBuffering();
 
   Program program( 0,                     // Major version
@@ -67,17 +67,17 @@ int main(int argc, char** argv)
       
       if(crava->getWarning( warningText ) != 0)
        {
-         LogKit::LogFormatted(LogKit::LOW,"\nWarning  !!!\n");
-         LogKit::LogFormatted(LogKit::LOW,"%s",warningText.c_str());
-         LogKit::LogFormatted(LogKit::LOW,"\n");
+         LogKit::LogFormatted(LogKit::Low,"\nWarning  !!!\n");
+         LogKit::LogFormatted(LogKit::Low,"%s",warningText.c_str());
+         LogKit::LogFormatted(LogKit::Low,"\n");
        }
       crava->printEnergyToScreen();
       
       time(&timeend);
-      LogKit::LogFormatted(LogKit::DEBUGLOW,"\nTime elapsed :  %d\n",timeend-timestart);  
+      LogKit::LogFormatted(LogKit::DebugLow,"\nTime elapsed :  %d\n",timeend-timestart);  
       crava->computePostMeanResidAndFFTCov();
       time(&timeend);
-      LogKit::LogFormatted(LogKit::DEBUGLOW,"\nTime elapsed :  %d\n",timeend-timestart);  
+      LogKit::LogFormatted(LogKit::DebugLow,"\nTime elapsed :  %d\n",timeend-timestart);  
 
       if(modelSettings->getNumberOfSimulations() > 0)
       {
@@ -129,7 +129,7 @@ int main(int argc, char** argv)
         model->writeBlockedWells(model->getWells(),modelSettings);
       }
       if((modelSettings->getWellOutputFlag() & IO::BLOCKED_LOGS) > 0) {
-        LogKit::LogFormatted(LogKit::LOW,"\nWARNING: Writing of BLOCKED_LOGS is not implemented yet.\n");
+        LogKit::LogFormatted(LogKit::Low,"\nWARNING: Writing of BLOCKED_LOGS is not implemented yet.\n");
       }
 
       delete crava;
@@ -137,33 +137,33 @@ int main(int argc, char** argv)
   }
   else // do forward modeling
   {
-    LogKit::LogFormatted(LogKit::LOW,"\nBuilding model ...\n");
+    LogKit::LogFormatted(LogKit::Low,"\nBuilding model ...\n");
     crava = new Crava(model, 0);
-    LogKit::LogFormatted(LogKit::LOW,"\n               ... model built\n");
+    LogKit::LogFormatted(LogKit::Low,"\n               ... model built\n");
   
     crava->computeSyntSeismic(crava->getPostAlpha(),crava->getPostBeta(),crava->getPostRho());
     delete crava;
   } 
 
   if (FFTGrid::getMaxAllowedGrids() > FFTGrid::getMaxAllocatedGrids() && modelSettings->getDoInversion()) {
-    LogKit::LogFormatted(LogKit::DEBUGLOW,"\nWARNING: A memory requirement inconsistency has been detected:"); 
-    LogKit::LogFormatted(LogKit::DEBUGLOW,"\n            Maximum number of grids requested  :  %2d",FFTGrid::getMaxAllowedGrids()); 
-    LogKit::LogFormatted(LogKit::DEBUGLOW,"\n            Maximum number of grids allocated  :  %2d",FFTGrid::getMaxAllocatedGrids()); 
-    LogKit::LogFormatted(LogKit::DEBUGLOW,"\n         Consult method Model::checkAvailableMemory().\n"); 
+    LogKit::LogFormatted(LogKit::DebugLow,"\nWARNING: A memory requirement inconsistency has been detected:"); 
+    LogKit::LogFormatted(LogKit::DebugLow,"\n            Maximum number of grids requested  :  %2d",FFTGrid::getMaxAllowedGrids()); 
+    LogKit::LogFormatted(LogKit::DebugLow,"\n            Maximum number of grids allocated  :  %2d",FFTGrid::getMaxAllocatedGrids()); 
+    LogKit::LogFormatted(LogKit::DebugLow,"\n         Consult method Model::checkAvailableMemory().\n"); 
     TaskList::addTask("CRAVA did not use as much memory as estimated. NR would be interested to know about this, so if you could send your .xml-file to us, we would appreciate it.");
   }
   
   delete model;
 
   Timings::setTimeTotal(wall,cpu);
-  Timings::reportAll(LogKit::MEDIUM);
+  Timings::reportAll(LogKit::Medium);
 
   TaskList::viewAllTasks();  
 
   Timings::reportTotal();
 
-  LogKit::LogFormatted(LogKit::LOW,"\n*** CRAVA closing  ***\n"); 
-  LogKit::LogFormatted(LogKit::LOW,"\n*** CRAVA finished ***\n");
+  LogKit::LogFormatted(LogKit::Low,"\n*** CRAVA closing  ***\n"); 
+  LogKit::LogFormatted(LogKit::Low,"\n*** CRAVA finished ***\n");
   LogKit::EndLog();
   return(0);
 }

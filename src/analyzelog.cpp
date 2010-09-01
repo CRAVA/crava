@@ -67,7 +67,7 @@ Analyzelog::estimate(ModelSettings * modelSettings,
   }
   if (allVsLogsAreSynthetic)
   {
-    LogKit::LogFormatted(LogKit::LOW,"\nThere are no nonsynthetic Vs logs available. Cov(Vp,Vs) and Cov(Vs,Rho) are set zero.\n");
+    LogKit::LogFormatted(LogKit::Low,"\nThere are no nonsynthetic Vs logs available. Cov(Vp,Vs) and Cov(Vs,Rho) are set zero.\n");
   }
 
   estimateLnData(lnDataAlpha, background->getAlpha(), 0);
@@ -145,7 +145,7 @@ Analyzelog::calculateNumberOfLags(int & numberOfLags,
         if(dist < 0)              // Small negative lags were observed on Smorbukk Sor
           if (floor(dist/dt+0.5)) // Check that error is numerically significant
           {
-            LogKit::LogFormatted(LogKit::LOW,"\nERROR: Negative lags in well %s.z[k]=%9.3f z[j]=%9.3f\n",
+            LogKit::LogFormatted(LogKit::Low,"\nERROR: Negative lags in well %s.z[k]=%9.3f z[j]=%9.3f\n",
               wells_[i]->getWellname().c_str(),z[k],z[j]);
             failed_ = true;
           }
@@ -179,7 +179,7 @@ Analyzelog::estimateLnData(float   **& lnData,
     else if (logNr == 2)
       wLog = wells_[i]->getRho(nd); 
     else
-      LogKit::LogFormatted(LogKit::LOW,"ERROR in Analyzelog::estimateLnData: Log number %d does not exist (Vp=1,Vs=2,Rho=3)\n",logNr);
+      LogKit::LogFormatted(LogKit::Low,"ERROR in Analyzelog::estimateLnData: Log number %d does not exist (Vp=1,Vs=2,Rho=3)\n",logNr);
 
     float * mean = new float[nd];
     readMeanData(background, nd, xpos, ypos, zpos, mean);
@@ -219,7 +219,7 @@ Analyzelog::estimateLnData(float   **& lnData,
   }
   else
   {
-    LogKit::LogFormatted(LogKit::LOW,"ERROR: Could not estimate globalMean for log %d (Vp=0,Vs=1,Rho=2)\n",logNr);
+    LogKit::LogFormatted(LogKit::Low,"ERROR: Could not estimate globalMean for log %d (Vp=0,Vs=1,Rho=2)\n",logNr);
     exit(1);
   }
 }
@@ -330,12 +330,12 @@ Analyzelog::estimatePointVar0(float ** Var0,
   int error = 0;
   if(tell1 < 2)
   {
-    LogKit::LogFormatted(LogKit::LOW,"\nERROR: Not enough well data within simulation area to estimate variance of Vp.\n");
+    LogKit::LogFormatted(LogKit::Low,"\nERROR: Not enough well data within simulation area to estimate variance of Vp.\n");
     error = 1;
   }
   if(tell3 < 2)
   {
-    LogKit::LogFormatted(LogKit::LOW,"\nERROR: Not enough well data within simulation area to estimate variance of Rho.\n");
+    LogKit::LogFormatted(LogKit::Low,"\nERROR: Not enough well data within simulation area to estimate variance of Rho.\n");
     error = 1;
   }
 
@@ -347,7 +347,7 @@ Analyzelog::estimatePointVar0(float ** Var0,
     else
     {
       Var0[1][1] = 2*Var0[0][0];
-      LogKit::LogFormatted(LogKit::LOW,"\nEstimating Vs variance as 2 * Vp variance.\n");
+      LogKit::LogFormatted(LogKit::Low,"\nEstimating Vs variance as 2 * Vp variance.\n");
     }
     Var0[2][2] = float (sum3/(tell3-1));
     if(tell4>1)
@@ -575,12 +575,12 @@ Analyzelog::estimateCorrTAndVar0(float  * CorrT,
   int error = 0;
   if(nAA[0]<2)
   {
-    LogKit::LogFormatted(LogKit::LOW,"\nERROR: Not enough well data within simulation area to estimate variance of Vp.\n");
+    LogKit::LogFormatted(LogKit::Low,"\nERROR: Not enough well data within simulation area to estimate variance of Vp.\n");
     error = 1;
   }
   if(nRR[0]<2)
   {
-    LogKit::LogFormatted(LogKit::LOW,"\nERROR: Not enough well data within simulation area to estimate variance of Rho.\n");
+    LogKit::LogFormatted(LogKit::Low,"\nERROR: Not enough well data within simulation area to estimate variance of Rho.\n");
     error = 1;
   }
 
@@ -595,7 +595,7 @@ Analyzelog::estimateCorrTAndVar0(float  * CorrT,
       Var0[1][1] = covBB[0]/(nBB[0]-1);
     else
     {  
-      LogKit::LogFormatted(LogKit::LOW,"\nEstimating Vs variance as 2 * Vp variance.\n");
+      LogKit::LogFormatted(LogKit::Low,"\nEstimating Vs variance as 2 * Vp variance.\n");
       Var0[1][1] = 2*Var0[0][0];
     }
     Var0[0][1] = Var0[1][0] = 0.0;  
@@ -649,17 +649,17 @@ Analyzelog::estimateCorrTAndVar0(float  * CorrT,
 
       if (corAA<-1 || corAA>1)
       {
-        LogKit::LogFormatted(LogKit::LOW,"ERROR: Correlation corAA=%7.3f out of range for element %d\n",corAA,i);
+        LogKit::LogFormatted(LogKit::Low,"ERROR: Correlation corAA=%7.3f out of range for element %d\n",corAA,i);
         error = 1;
       }
       if (corBB<-1 || corBB>1)
       {
-        LogKit::LogFormatted(LogKit::LOW,"ERROR: Correlation corBB=%7.3f out of range for element %d\n",corBB,i);
+        LogKit::LogFormatted(LogKit::Low,"ERROR: Correlation corBB=%7.3f out of range for element %d\n",corBB,i);
         error = 1;
       }
       if (corRR<-1 || corRR>1)
       {
-        LogKit::LogFormatted(LogKit::LOW,"ERROR: Correlation corRR=%7.3f out of range for element %d\n",corRR,i);
+        LogKit::LogFormatted(LogKit::Low,"ERROR: Correlation corRR=%7.3f out of range for element %d\n",corRR,i);
         error = 1;
       }
       if (naa>1 || nbb>1 || nrr>1)
@@ -714,7 +714,7 @@ Analyzelog::estimateCorrTAndVar0(float  * CorrT,
       cipol    = ((inext-i)*cprev + (i-iprev)*cnext)/(inext-iprev);
       CorrT[i] = (nTT[i]*corTT[i] + nipol*cipol)/(nTT[i]+nipol);
 
-      //LogKit::LogFormatted(LogKit::LOW," i nTT,corTT  iprev,cprev  inext,cnext  nipol,cipol  %4d %4d%8.3f %4d%8.3f %4d%8.3f    %4d%8.3f\n",
+      //LogKit::LogFormatted(LogKit::Low," i nTT,corTT  iprev,cprev  inext,cnext  nipol,cipol  %4d %4d%8.3f %4d%8.3f %4d%8.3f    %4d%8.3f\n",
       //                   i,nTT[i],corTT[i],iprev,cprev,inext,cnext,nipol,cipol);
 
     }
@@ -764,7 +764,7 @@ Analyzelog::estimateCorrTAndVar0(float  * CorrT,
   // n=nend;
   //
   time(&timeend);
-  LogKit::LogFormatted(LogKit::LOW,"\nEstimate parameter variance and parameter temporal correlation in %d seconds.\n",
+  LogKit::LogFormatted(LogKit::Low,"\nEstimate parameter variance and parameter temporal correlation in %d seconds.\n",
                    static_cast<int>(timeend-timestart));
 
   delete [] z;
@@ -813,29 +813,29 @@ Analyzelog::checkVariances(ModelSettings  * modelSettings,
 
   if (pointVar0[0][0] < minVarAlpha || pointVar0[0][0] > maxVarAlpha) 
   {
-    LogKit::LogFormatted(LogKit::LOW,"\n\nERROR: The Vp point variance %.2e is outside allowed interval Min=%.1e  Max=%.1e.",
+    LogKit::LogFormatted(LogKit::Low,"\n\nERROR: The Vp point variance %.2e is outside allowed interval Min=%.1e  Max=%.1e.",
                      pointVar0[0][0],minVarAlpha,maxVarAlpha);
     error = 1;
   }
   if (pointVar0[1][1] < minVarBeta || pointVar0[1][1] > maxVarBeta) 
   {
-    LogKit::LogFormatted(LogKit::LOW,"\n\nERROR: The Vs point variance %.2e is outside allowed interval Min=%.1e  Max=%.1e.",
+    LogKit::LogFormatted(LogKit::Low,"\n\nERROR: The Vs point variance %.2e is outside allowed interval Min=%.1e  Max=%.1e.",
                      pointVar0[1][1],minVarBeta,maxVarBeta);
     error = 1;
   }
   if (pointVar0[2][2] < minVarRho || pointVar0[2][2] > maxVarRho) 
   {
-    LogKit::LogFormatted(LogKit::LOW,"\n\nERROR: The Rho point variance %.2e is outside allowed interval Min=%.1e  Max=%.1e.",
+    LogKit::LogFormatted(LogKit::Low,"\n\nERROR: The Rho point variance %.2e is outside allowed interval Min=%.1e  Max=%.1e.",
                      pointVar0[2][2],minVarRho,maxVarRho);
     error = 1;
   }
   
   if (error)
   {
-    LogKit::LogFormatted(LogKit::LOW,"\n\n---------------------------------------------------");
-    LogKit::LogFormatted(LogKit::LOW,"\n                         ln Vp     ln Vs    ln Rho ");
-    LogKit::LogFormatted(LogKit::LOW,"\nWell log variances:   %.2e  %.2e  %.2e ",pointVar0[0][0],pointVar0[1][1],pointVar0[2][2]);
-    LogKit::LogFormatted(LogKit::LOW,"\n---------------------------------------------------\n");
+    LogKit::LogFormatted(LogKit::Low,"\n\n---------------------------------------------------");
+    LogKit::LogFormatted(LogKit::Low,"\n                         ln Vp     ln Vs    ln Rho ");
+    LogKit::LogFormatted(LogKit::Low,"\nWell log variances:   %.2e  %.2e  %.2e ",pointVar0[0][0],pointVar0[1][1],pointVar0[2][2]);
+    LogKit::LogFormatted(LogKit::Low,"\n---------------------------------------------------\n");
   }
   
   //
@@ -843,28 +843,28 @@ Analyzelog::checkVariances(ModelSettings  * modelSettings,
   //
   if (Var0[0][0] < minVarAlpha/dt || Var0[0][0] > maxVarAlpha) 
   {
-    LogKit::LogFormatted(LogKit::LOW,"\nERROR: The Vp variance %.2e is outside allowed interval  Min=%.1e  Max=%.1e.\n",
+    LogKit::LogFormatted(LogKit::Low,"\nERROR: The Vp variance %.2e is outside allowed interval  Min=%.1e  Max=%.1e.\n",
                      Var0[0][0],minVarAlpha/dt,maxVarAlpha);
     error = 1;
   }
   if (Var0[1][1] < minVarBeta/dt || Var0[1][1] > maxVarBeta) 
   {
-    LogKit::LogFormatted(LogKit::LOW,"\nERROR: The Vs variance Vs %.2e is outside allowed interval  Min=%.1e  Max=%.1e.\n",
+    LogKit::LogFormatted(LogKit::Low,"\nERROR: The Vs variance Vs %.2e is outside allowed interval  Min=%.1e  Max=%.1e.\n",
                      Var0[1][1],minVarBeta/dt,maxVarBeta);
     error = 1;
   }
   if (Var0[2][2] < minVarRho/dt || Var0[2][2] > maxVarRho) 
   {
-    LogKit::LogFormatted(LogKit::LOW,"\nERROR: The Rho variance %.2e is outside allowed interval  Min=%.1e  Max=%.1e.\n",
+    LogKit::LogFormatted(LogKit::Low,"\nERROR: The Rho variance %.2e is outside allowed interval  Min=%.1e  Max=%.1e.\n",
                      Var0[2][2],minVarRho/dt,maxVarRho);
     error = 1;
   }
   if (error)
   {
-    LogKit::LogFormatted(LogKit::LOW,"\n--------------------------------------------------------------------");
-    LogKit::LogFormatted(LogKit::LOW,"\n                          ln Vp     ln Vs    ln Rho ");
-    LogKit::LogFormatted(LogKit::LOW,"\nWell log  variances:   %.2e  %.2e  %.2e",pointVar0[0][0],pointVar0[1][1],pointVar0[2][2]);
-    LogKit::LogFormatted(LogKit::LOW,"\nParameter variances:   %.2e  %.2e  %.2e (used by program)",Var0[0][0],Var0[1][1],Var0[2][2]);
-    LogKit::LogFormatted(LogKit::LOW,"\n--------------------------------------------------------------------\n");
+    LogKit::LogFormatted(LogKit::Low,"\n--------------------------------------------------------------------");
+    LogKit::LogFormatted(LogKit::Low,"\n                          ln Vp     ln Vs    ln Rho ");
+    LogKit::LogFormatted(LogKit::Low,"\nWell log  variances:   %.2e  %.2e  %.2e",pointVar0[0][0],pointVar0[1][1],pointVar0[2][2]);
+    LogKit::LogFormatted(LogKit::Low,"\nParameter variances:   %.2e  %.2e  %.2e (used by program)",Var0[0][0],Var0[1][1],Var0[2][2]);
+    LogKit::LogFormatted(LogKit::Low,"\n--------------------------------------------------------------------\n");
   }
 }

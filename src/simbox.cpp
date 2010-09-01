@@ -138,7 +138,7 @@ Simbox::getIndexes(double x, double y, double z, int & xInd, int & yInd, int & z
         xInd = int(floor(rx/dx_));
         yInd = int(floor(ry/dy_));
         zInd = int(floor(static_cast<double>(nz_)*(z-zTop)/(zBot-zTop)));
-        //LogKit::LogFormatted(LogKit::LOW,"rx,dx,xInd = %.4f %.4f %d   ry,dy,yInd = %.4f %.4f %d    %d\n",rx,dx_,xInd,ry,dy_,yInd,zInd);
+        //LogKit::LogFormatted(LogKit::Low,"rx,dx,xInd = %.4f %.4f %d   ry,dy,yInd = %.4f %.4f %d    %d\n",rx,dx_,xInd,ry,dy_,yInd,zInd);
       }
     }
   }
@@ -328,21 +328,21 @@ Simbox::insideRectangle(const SegyGeometry *  geometry) const
     double areaAzimuth = (-1)*GetAngle()*(180/M_PI);
     if (seisAzimuth < 0) seisAzimuth += 360.0;
     if (areaAzimuth < 0) areaAzimuth += 360.0;
-    LogKit::LogFormatted(LogKit::LOW,"                        x0            y0           lx         ly     azimuth         dx      dy\n");
-    LogKit::LogFormatted(LogKit::LOW,"--------------------------------------------------------------------------------------------\n");
-    LogKit::LogFormatted(LogKit::LOW,"Model area:    %11.2f  %11.2f    %11.2f %11.2f    %8.3f    %7.2f %7.2f\n", 
+    LogKit::LogFormatted(LogKit::Low,"                        x0            y0           lx         ly     azimuth         dx      dy\n");
+    LogKit::LogFormatted(LogKit::Low,"--------------------------------------------------------------------------------------------\n");
+    LogKit::LogFormatted(LogKit::Low,"Model area:    %11.2f  %11.2f    %11.2f %11.2f    %8.3f    %7.2f %7.2f\n", 
                          GetXMin(), GetYMin(), GetLX(), GetLY(), dx_, dy_, areaAzimuth);
-    LogKit::LogFormatted(LogKit::LOW,"Seismic area:  %11.2f  %11.2f    %10.2f %10.2f    %8.3f    %7.2f %7.2f\n", 
+    LogKit::LogFormatted(LogKit::Low,"Seismic area:  %11.2f  %11.2f    %10.2f %10.2f    %8.3f    %7.2f %7.2f\n", 
                          xr, yr, lxr, lyr, dxr, dyr, seisAzimuth);
     
-    LogKit::LogFormatted(LogKit::HIGH,"\nCorner     XY Area                    XY Seismic\n");
-    LogKit::LogFormatted(LogKit::HIGH,"-----------------------------------------------------------\n");
-    LogKit::LogFormatted(LogKit::HIGH,"A %18.2f %11.2f    %11.2f %11.2f\n", GetXMin(),GetYMin(), xr,yr);
-    LogKit::LogFormatted(LogKit::HIGH,"B %18.2f %11.2f    %11.2f %11.2f\n", GetXMin()+GetLX()*cosrot_, GetYMin()+GetLX()*sinrot_,
+    LogKit::LogFormatted(LogKit::High,"\nCorner     XY Area                    XY Seismic\n");
+    LogKit::LogFormatted(LogKit::High,"-----------------------------------------------------------\n");
+    LogKit::LogFormatted(LogKit::High,"A %18.2f %11.2f    %11.2f %11.2f\n", GetXMin(),GetYMin(), xr,yr);
+    LogKit::LogFormatted(LogKit::High,"B %18.2f %11.2f    %11.2f %11.2f\n", GetXMin()+GetLX()*cosrot_, GetYMin()+GetLX()*sinrot_,
                          xr+lxr*cosrotr, yr+lxr*sinrotr);
-    LogKit::LogFormatted(LogKit::HIGH,"C %18.2f %11.2f    %11.2f %11.2f\n", GetXMin()-GetLY()*sinrot_, GetYMin()+GetLY()*cosrot_,
+    LogKit::LogFormatted(LogKit::High,"C %18.2f %11.2f    %11.2f %11.2f\n", GetXMin()-GetLY()*sinrot_, GetYMin()+GetLY()*cosrot_,
                          xr -lyr*sinrotr, yr +lyr*cosrotr);
-    LogKit::LogFormatted(LogKit::HIGH,"D %18.2f %11.2f    %11.2f %11.2f\n", 
+    LogKit::LogFormatted(LogKit::High,"D %18.2f %11.2f    %11.2f %11.2f\n", 
                          GetXMin()+GetLX()*cosrot_-GetLY()*sinrot_, GetYMin()+GetLX()*sinrot_+GetLY()*cosrot_,
                          xr +lxr*cosrotr-lyr*sinrotr, yr +lxr*sinrotr+lyr*cosrotr);
     //

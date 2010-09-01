@@ -103,7 +103,7 @@ Wavelet::Wavelet(const std::string & fileName,
   }
   formats_       = modelSettings->getWaveletFormatFlag();
   waveletLength_ = findWaveletLength(modelSettings->getMinRelWaveletAmp());
-  LogKit::LogFormatted(LogKit::LOW,"\n  Estimated wavelet length:  %.1fms.\n",waveletLength_);
+  LogKit::LogFormatted(LogKit::Low,"\n  Estimated wavelet length:  %.1fms.\n",waveletLength_);
 
   if(errCode == 0) {
     for(int i=0; i < rnzp_ ;i++) {  
@@ -153,7 +153,7 @@ Wavelet::Wavelet(ModelSettings     * modelSettings,
 
   formats_       = modelSettings->getWaveletFormatFlag();
   waveletLength_ = findWaveletLength(modelSettings->getMinRelWaveletAmp());
-  LogKit::LogFormatted(LogKit::LOW,"\n  Estimated wavelet length:  %.1fms.\n",waveletLength_);
+  LogKit::LogFormatted(LogKit::Low,"\n  Estimated wavelet length:  %.1fms.\n",waveletLength_);
 
   if(errCode == 0) {
     for(int i=0; i < rnzp_ ;i++) {  
@@ -476,7 +476,7 @@ Wavelet::resample(float dz,
                   int   nz, 
                   int   nzp) 
 {
-  //LogKit::LogFormatted(LogKit::LOW,"  Resampling wavelet\n");
+  //LogKit::LogFormatted(LogKit::Low,"  Resampling wavelet\n");
   assert(isReal_);
   assert(!inFFTorder_);
   
@@ -536,7 +536,7 @@ void
 Wavelet::scale(float scale)
 {
   if (scale != 1.0f) {
-    LogKit::LogFormatted(LogKit::LOW,"  Scaling wavelet with factor         : %.3e\n",scale);
+    LogKit::LogFormatted(LogKit::Low,"  Scaling wavelet with factor         : %.3e\n",scale);
     for(int i=0; i < rnzp_ ; i++)
       if(rAmp_[i] != RMISSING)
         rAmp_[i]=rAmp_[i]*scale;
@@ -628,7 +628,7 @@ Wavelet::writeWaveletToFile(const std::string & fileName,
     fName = std::string(fileName) + NRLib::ToString(theta_*(180/M_PI), 1) + "deg" + IO::SuffixJasonWavelet();
     fName = IO::makeFullFileName(IO::PathToWavelets(), fName);
     
-    LogKit::LogFormatted(LogKit::MEDIUM,"  Writing Wavelet to file \'"+fName+"\'\n");
+    LogKit::LogFormatted(LogKit::Medium,"  Writing Wavelet to file \'"+fName+"\'\n");
     
     NRLib::OpenWrite(file, fName);
     
@@ -669,7 +669,7 @@ Wavelet::writeWaveletToFile(const std::string & fileName,
     int   cznew = static_cast<int>(floor((fabs(shift/dznew))+0.5));
     float t0    = static_cast<float>(-dznew * cznew);
 
-    LogKit::LogFormatted(LogKit::MEDIUM,"  Writing Wavelet to file \'"+fName+"\'\n");
+    LogKit::LogFormatted(LogKit::Medium,"  Writing Wavelet to file \'"+fName+"\'\n");
 
     NRLib::OpenWrite(file, fName);
 

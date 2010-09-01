@@ -141,7 +141,7 @@ GridMapping::setMappingFromVelocity(FFTGrid * velocity, const Simbox * timeSimbo
   setDepthSimbox(timeSimbox, timeSimbox->getnz(), format, failed, errText);
   makeTimeDepthMapping(velocity, timeSimbox);
   if (failed) {
-    LogKit::LogFormatted(LogKit::ERROR,"\n%s\n",errText.c_str());
+    LogKit::LogFormatted(LogKit::Error,"\n%s\n",errText.c_str());
     exit(1);
   }
 }
@@ -308,15 +308,15 @@ void GridMapping::setDepthSimbox(const Simbox * timeSimbox,
   }
   double zmin, zmax;
   simbox_->getMinMaxZ(zmin,zmax);
-  LogKit::LogFormatted(LogKit::LOW,"\nDepth output interval:\n");
-  LogKit::LogFormatted(LogKit::LOW,"  True vertical depth   avg / min / max    : %7.1f /%7.1f /%7.1f\n",
+  LogKit::LogFormatted(LogKit::Low,"\nDepth output interval:\n");
+  LogKit::LogFormatted(LogKit::Low,"  True vertical depth   avg / min / max    : %7.1f /%7.1f /%7.1f\n",
                        zmin+simbox_->getlz()*simbox_->getAvgRelThick()*0.5,
                        zmin, zmax); 
-  LogKit::LogFormatted(LogKit::LOW,"  Interval thickness    avg / min / max    : %7.1f /%7.1f /%7.1f\n", 
+  LogKit::LogFormatted(LogKit::Low,"  Interval thickness    avg / min / max    : %7.1f /%7.1f /%7.1f\n", 
                        simbox_->getlz()*simbox_->getAvgRelThick(),
                        simbox_->getlz()*simbox_->getMinRelThick(),
                        simbox_->getlz());
-  LogKit::LogFormatted(LogKit::LOW,"  Sampling density      avg / min / max    : %7.2f /%7.2f /%7.2f\n", 
+  LogKit::LogFormatted(LogKit::Low,"  Sampling density      avg / min / max    : %7.2f /%7.2f /%7.2f\n", 
                        simbox_->getdz()*simbox_->getAvgRelThick(),
                        simbox_->getdz(),
                        simbox_->getdz()*simbox_->getMinRelThick());

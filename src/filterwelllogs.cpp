@@ -159,7 +159,7 @@ void FilterWellLogs::doFiltering(const Simbox  * timeSimboxConstThick,
                                  int             nz, 
                                  int             nzp)
 {
-  LogKit::LogFormatted(LogKit::LOW,"\nFiltering well logs\n");
+  LogKit::LogFormatted(LogKit::Low,"\nFiltering well logs\n");
   
   float domega = static_cast<float> (1000.0f/(nzp*timeSimboxConstThick->getdz()));  //dz in milliseconds
 
@@ -456,7 +456,7 @@ FilterWellLogs::extrapolate(float * blockedLog,
   }
   else
   {
-    LogKit::LogFormatted(LogKit::LOW,"WARNING: All ... trend values are missing.\n");
+    LogKit::LogFormatted(LogKit::Low,"WARNING: All ... trend values are missing.\n");
   }
 }
 

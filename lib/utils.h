@@ -10,7 +10,7 @@
 class Utils
 {
 public:
-  static void    writeHeader(const std::string & text, LogKit::MessageLevels logLevel = LogKit::LOW);
+  static void    writeHeader(const std::string & text, LogKit::MessageLevels logLevel = LogKit::Low);
   static void    writeTitler(const std::string & text);
 
   static void    copyVector(const int * from,

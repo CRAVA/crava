@@ -185,7 +185,7 @@ Corr::setPriorCorrTFiltered(float * corrT, int nz, int nzp)
 void
 Corr::invFFT(void)
 {
-  LogKit::LogFormatted(LogKit::HIGH,"\nBacktransforming correlation grids from FFT domain to time domain...");
+  LogKit::LogFormatted(LogKit::High,"\nBacktransforming correlation grids from FFT domain to time domain...");
   if (postCovAlpha_->getIsTransformed())
     postCovAlpha_->invFFTInPlace();
   if (postCovBeta_->getIsTransformed())
@@ -198,14 +198,14 @@ Corr::invFFT(void)
     postCrCovAlphaRho_->invFFTInPlace();
   if (postCrCovBetaRho_->getIsTransformed())
     postCrCovBetaRho_->invFFTInPlace();
-  LogKit::LogFormatted(LogKit::HIGH,"...done\n");
+  LogKit::LogFormatted(LogKit::High,"...done\n");
 }
 
 //--------------------------------------------------------------------
 void
 Corr::FFT(void)
 {
-  LogKit::LogFormatted(LogKit::HIGH,"Transforming correlation grids from time domain to FFT domain...");
+  LogKit::LogFormatted(LogKit::High,"Transforming correlation grids from time domain to FFT domain...");
   if (!postCovAlpha_->getIsTransformed())
     postCovAlpha_->fftInPlace();
   if (!postCovBeta_->getIsTransformed())
@@ -218,29 +218,29 @@ Corr::FFT(void)
     postCrCovAlphaRho_->fftInPlace();
   if (!postCrCovBetaRho_->getIsTransformed())
     postCrCovBetaRho_->fftInPlace();
-  LogKit::LogFormatted(LogKit::HIGH,"...done\n");
+  LogKit::LogFormatted(LogKit::High,"...done\n");
 }
 
 //--------------------------------------------------------------------
 void Corr::printPriorVariances(void) const
 {
-  LogKit::LogFormatted(LogKit::LOW,"\nVariances and correlations for parameter residuals:\n");
-  LogKit::LogFormatted(LogKit::LOW,"\n");
-  LogKit::LogFormatted(LogKit::LOW,"Variances           ln Vp     ln Vs    ln Rho         \n");
-  LogKit::LogFormatted(LogKit::LOW,"---------------------------------------------------------------\n");
-  LogKit::LogFormatted(LogKit::LOW,"Inversion grid:   %.1e   %.1e   %.1e (used by program)\n",priorVar0_[0][0],priorVar0_[1][1],priorVar0_[2][2]);
+  LogKit::LogFormatted(LogKit::Low,"\nVariances and correlations for parameter residuals:\n");
+  LogKit::LogFormatted(LogKit::Low,"\n");
+  LogKit::LogFormatted(LogKit::Low,"Variances           ln Vp     ln Vs    ln Rho         \n");
+  LogKit::LogFormatted(LogKit::Low,"---------------------------------------------------------------\n");
+  LogKit::LogFormatted(LogKit::Low,"Inversion grid:   %.1e   %.1e   %.1e (used by program)\n",priorVar0_[0][0],priorVar0_[1][1],priorVar0_[2][2]);
   if(pointVar0_ != NULL)
-    LogKit::LogFormatted(LogKit::LOW,"Well logs     :   %.1e   %.1e   %.1e                  \n",pointVar0_[0][0],pointVar0_[1][1],pointVar0_[2][2]);
+    LogKit::LogFormatted(LogKit::Low,"Well logs     :   %.1e   %.1e   %.1e                  \n",pointVar0_[0][0],pointVar0_[1][1],pointVar0_[2][2]);
 
   float corr01 = priorVar0_[0][1]/(sqrt(priorVar0_[0][0]*priorVar0_[1][1]));
   float corr02 = priorVar0_[0][2]/(sqrt(priorVar0_[0][0]*priorVar0_[2][2]));
   float corr12 = priorVar0_[1][2]/(sqrt(priorVar0_[1][1]*priorVar0_[2][2]));
-  LogKit::LogFormatted(LogKit::LOW,"\n");
-  LogKit::LogFormatted(LogKit::LOW,"Corr   | ln Vp     ln Vs    ln Rho \n");
-  LogKit::LogFormatted(LogKit::LOW,"-------+---------------------------\n");
-  LogKit::LogFormatted(LogKit::LOW,"ln Vp  | %5.2f     %5.2f     %5.2f \n",1.0f, corr01, corr02);
-  LogKit::LogFormatted(LogKit::LOW,"ln Vs  |           %5.2f     %5.2f \n",1.0f, corr12);
-  LogKit::LogFormatted(LogKit::LOW,"ln Rho |                     %5.2f \n",1.0f);
+  LogKit::LogFormatted(LogKit::Low,"\n");
+  LogKit::LogFormatted(LogKit::Low,"Corr   | ln Vp     ln Vs    ln Rho \n");
+  LogKit::LogFormatted(LogKit::Low,"-------+---------------------------\n");
+  LogKit::LogFormatted(LogKit::Low,"ln Vp  | %5.2f     %5.2f     %5.2f \n",1.0f, corr01, corr02);
+  LogKit::LogFormatted(LogKit::Low,"ln Vs  |           %5.2f     %5.2f \n",1.0f, corr12);
+  LogKit::LogFormatted(LogKit::Low,"ln Rho |                     %5.2f \n",1.0f);
 }
 
 //--------------------------------------------------------------------
@@ -248,20 +248,20 @@ void
 Corr::printPostVariances(void) const
 {
   Utils::writeHeader("Posterior Covariance");
-  LogKit::LogFormatted(LogKit::LOW,"\nVariances and correlations for parameter residuals:\n");
-  LogKit::LogFormatted(LogKit::LOW,"\n");
-  LogKit::LogFormatted(LogKit::LOW,"               ln Vp     ln Vs    ln Rho \n");
-  LogKit::LogFormatted(LogKit::LOW,"-----------------------------------------\n");
-  LogKit::LogFormatted(LogKit::LOW,"Variances:   %.1e   %.1e   %.1e    \n",postVar0_[0][0],postVar0_[1][1],postVar0_[2][2]); 
-  LogKit::LogFormatted(LogKit::LOW,"\n");
+  LogKit::LogFormatted(LogKit::Low,"\nVariances and correlations for parameter residuals:\n");
+  LogKit::LogFormatted(LogKit::Low,"\n");
+  LogKit::LogFormatted(LogKit::Low,"               ln Vp     ln Vs    ln Rho \n");
+  LogKit::LogFormatted(LogKit::Low,"-----------------------------------------\n");
+  LogKit::LogFormatted(LogKit::Low,"Variances:   %.1e   %.1e   %.1e    \n",postVar0_[0][0],postVar0_[1][1],postVar0_[2][2]); 
+  LogKit::LogFormatted(LogKit::Low,"\n");
   float corr01 = postVar0_[0][1]/(sqrt(postVar0_[0][0]*postVar0_[1][1]));
   float corr02 = postVar0_[0][2]/(sqrt(postVar0_[0][0]*postVar0_[2][2]));
   float corr12 = postVar0_[1][2]/(sqrt(postVar0_[1][1]*postVar0_[2][2]));
-  LogKit::LogFormatted(LogKit::LOW,"Corr   | ln Vp     ln Vs    ln Rho \n");
-  LogKit::LogFormatted(LogKit::LOW,"-------+---------------------------\n");
-  LogKit::LogFormatted(LogKit::LOW,"ln Vp  | %5.2f     %5.2f     %5.2f \n",1.0f, corr01, corr02);
-  LogKit::LogFormatted(LogKit::LOW,"ln Vs  |           %5.2f     %5.2f \n",1.0f, corr12);
-  LogKit::LogFormatted(LogKit::LOW,"ln Rho |                     %5.2f \n",1.0f);
+  LogKit::LogFormatted(LogKit::Low,"Corr   | ln Vp     ln Vs    ln Rho \n");
+  LogKit::LogFormatted(LogKit::Low,"-------+---------------------------\n");
+  LogKit::LogFormatted(LogKit::Low,"ln Vp  | %5.2f     %5.2f     %5.2f \n",1.0f, corr01, corr02);
+  LogKit::LogFormatted(LogKit::Low,"ln Vs  |           %5.2f     %5.2f \n",1.0f, corr12);
+  LogKit::LogFormatted(LogKit::Low,"ln Rho |                     %5.2f \n",1.0f);
 }
 //--------------------------------------------------------------------
 void

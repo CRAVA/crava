@@ -263,12 +263,12 @@ Background::calculateVelocityDeviations(FFTGrid   * velocity,
   for (int k=0 ; k<nz ; k++)
     trendVel[k] /= nWells;
 
-  LogKit::LogFormatted(LogKit::LOW,"\nAverage deviations of type well-log-Vp-minus-velocity-read-from-file and ");
-  LogKit::LogFormatted(LogKit::LOW,"\nwell-log-Vp-minus-estimated-Vp-trend (added for quality control):\n\n");
-  LogKit::LogFormatted(LogKit::LOW,"Well             TrendFromFile  TrendFromData\n");
-  LogKit::LogFormatted(LogKit::LOW,"---------------------------------------------\n");
+  LogKit::LogFormatted(LogKit::Low,"\nAverage deviations of type well-log-Vp-minus-velocity-read-from-file and ");
+  LogKit::LogFormatted(LogKit::Low,"\nwell-log-Vp-minus-estimated-Vp-trend (added for quality control):\n\n");
+  LogKit::LogFormatted(LogKit::Low,"Well             TrendFromFile  TrendFromData\n");
+  LogKit::LogFormatted(LogKit::Low,"---------------------------------------------\n");
   for (int i=0 ; i<nWells ; i++)
-    LogKit::LogFormatted(LogKit::LOW,"%-24s %5.1f          %5.1f\n",
+    LogKit::LogFormatted(LogKit::Low,"%-24s %5.1f          %5.1f\n",
                          wells[i]->getWellname().c_str(),avgDevVel[i],avgDevAlpha[i]);
 }
 
@@ -470,7 +470,7 @@ Background::makeKrigedBackground(const std::vector<KrigingData2D> & krigingData,
                                  bool                               isFile)
 {
   std::string text = "\nBuilding "+type+" background:";
-  LogKit::LogFormatted(LogKit::LOW,text);
+  LogKit::LogFormatted(LogKit::Low,text);
 
   const int    nx   = simbox->getnx();
   const int    ny   = simbox->getny();
@@ -571,8 +571,8 @@ Background::calculateVerticalTrend(WellData         ** wells,
       else if (name == "Rho")
         bl->getVerticalTrend(bl->getRho(), wellTrend);
       else {
-        LogKit::LogFormatted(LogKit::LOW,"ERROR in Background::calculateVerticalTrend(): ");
-        LogKit::LogFormatted(LogKit::LOW,"Log \'"+name+"\' requested, but no such log exists.\n");
+        LogKit::LogFormatted(LogKit::Low,"ERROR in Background::calculateVerticalTrend(): ");
+        LogKit::LogFormatted(LogKit::Low,"Log \'"+name+"\' requested, but no such log exists.\n");
         exit(1);
       }
       for (int k = 0 ; k < nz ; k++) {
@@ -592,8 +592,8 @@ Background::calculateVerticalTrend(WellData         ** wells,
     }
   }
   else {
-    LogKit::LogFormatted(LogKit::LOW,"\nERROR in Background::calculateVerticalTrend(): There are no wells\n");
-    LogKit::LogFormatted(LogKit::LOW,"available for the estimation of background trend.\n");
+    LogKit::LogFormatted(LogKit::Low,"\nERROR in Background::calculateVerticalTrend(): There are no wells\n");
+    LogKit::LogFormatted(LogKit::Low,"available for the estimation of background trend.\n");
     exit(1);
   }
 
@@ -712,7 +712,7 @@ Background::smoothTrendWithLocalLinearRegression(float      * trend,
     int n = 0;
     int nData = 0;
     if (debug) 
-      LogKit::LogFormatted(LogKit::LOW,"k=%d\n",k);
+      LogKit::LogFormatted(LogKit::Low,"k=%d\n",k);
     //
     // 1. Add current data point to local data set if present.
     //
@@ -722,7 +722,7 @@ Background::smoothTrendWithLocalLinearRegression(float      * trend,
       y[0]   = trend[k];
       nData += count[k];
       if (debug) 
-        LogKit::LogFormatted(LogKit::LOW,"   A:t=%.2f   x[0] y[0]  %d   %.2f\n",dz*(x[0] + 0.5f),int(x[0]),y[0]);
+        LogKit::LogFormatted(LogKit::Low,"   A:t=%.2f   x[0] y[0]  %d   %.2f\n",dz*(x[0] + 0.5f),int(x[0]),y[0]);
       n++;
     }
 
@@ -739,7 +739,7 @@ Background::smoothTrendWithLocalLinearRegression(float      * trend,
         y[n]   = mean [k - i];
         nData += count[k - i];
         if (debug) 
-          LogKit::LogFormatted(LogKit::LOW,"   B:t=%.2f   x[%d] y[%d]  %d   %.2f\n",dz*(x[n] + 0.5f),n,n,int(x[n]),y[n]);
+          LogKit::LogFormatted(LogKit::Low,"   B:t=%.2f   x[%d] y[%d]  %d   %.2f\n",dz*(x[n] + 0.5f),n,n,int(x[n]),y[n]);
         n++;
       }
       if (k + i < nz  && count[k + i] > 0) {
@@ -748,7 +748,7 @@ Background::smoothTrendWithLocalLinearRegression(float      * trend,
         y[n]   = mean [k + i];
         nData += count[k + i];
         if (debug) 
-          LogKit::LogFormatted(LogKit::LOW,"   C:t=%.2f   x[%d] y[%d]  %d   %.2f\n",dz*(x[n] + 0.5f),n,n,int(x[n]),y[n]);
+          LogKit::LogFormatted(LogKit::Low,"   C:t=%.2f   x[%d] y[%d]  %d   %.2f\n",dz*(x[n] + 0.5f),n,n,int(x[n]),y[n]);
         n++;
       }
       if (k-i < 0 && k+i >= nz) { // We will never find enough data
@@ -786,7 +786,7 @@ Background::smoothTrendWithLocalLinearRegression(float      * trend,
       float b = (Sxy - Sx*Sy)/(Sxx - Sx*Sx);
       float a = (Sy - b*Sx);
       if (debug) 
-        LogKit::LogFormatted(LogKit::LOW,"Sx, Sy, Sxx, Sxy  : %.4f, %.4f, %.4f, %.4f     a, b : %.4f %.4f\n",Sx,Sy,Sxx,Sxy,a,b);
+        LogKit::LogFormatted(LogKit::Low,"Sx, Sy, Sxx, Sxy  : %.4f, %.4f, %.4f, %.4f     a, b : %.4f %.4f\n",Sx,Sy,Sxx,Sxy,a,b);
       
       //
       // Estimate value of regression line at requested point.
@@ -794,7 +794,7 @@ Background::smoothTrendWithLocalLinearRegression(float      * trend,
       float value = a + b*static_cast<float>(k);
       if (value < min_value || value > max_value) {
         if (debug)
-          LogKit::LogFormatted(LogKit::LOW,"   TREND: trend[k] = %.2f\n",value);
+          LogKit::LogFormatted(LogKit::Low,"   TREND: trend[k] = %.2f\n",value);
         if (k < firstNonmissing) 
           errorHead = true;
         else if (k > lastNonmissing)
@@ -810,15 +810,15 @@ Background::smoothTrendWithLocalLinearRegression(float      * trend,
       trend[k] = log(y[0]);
     }
     if (debug) 
-      LogKit::LogFormatted(LogKit::LOW,"   TREND: trend[k] = %.2f        (minLog/maxLog = %.2f / %.2f)\n",exp(trend[k]),min_value,max_value);
+      LogKit::LogFormatted(LogKit::Low,"   TREND: trend[k] = %.2f        (minLog/maxLog = %.2f / %.2f)\n",exp(trend[k]),min_value,max_value);
   }
 
   if (errorMid) {
     // Big problem ...
-    LogKit::LogFormatted(LogKit::LOW,"\nWARNING : The calculation of the vertical trend for parameter "+parName+" using local linear\n");
-    LogKit::LogFormatted(LogKit::LOW,"          regression failed - trying global mean instead. Possible causes: \n");
-    LogKit::LogFormatted(LogKit::LOW,"          1) Available logs cover too small a part of inversion grid giving extrapolation problems.\n");
-    LogKit::LogFormatted(LogKit::LOW,"          2) There are too many layers in grid compared to well logs available.\n");
+    LogKit::LogFormatted(LogKit::Low,"\nWARNING : The calculation of the vertical trend for parameter "+parName+" using local linear\n");
+    LogKit::LogFormatted(LogKit::Low,"          regression failed - trying global mean instead. Possible causes: \n");
+    LogKit::LogFormatted(LogKit::Low,"          1) Available logs cover too small a part of inversion grid giving extrapolation problems.\n");
+    LogKit::LogFormatted(LogKit::Low,"          2) There are too many layers in grid compared to well logs available.\n");
     float sum = 0.0f;
     int nData = 0;
     for (int k = 0 ; k < nz ; k++) {
@@ -827,7 +827,7 @@ Background::smoothTrendWithLocalLinearRegression(float      * trend,
           sum   += mean[k]*count[k];
           nData += count[k];
           if (debug)           
-            LogKit::LogFormatted(LogKit::LOW,"k=%d  count[k], mean[k]  nData, sum  %d  %8.3f     %d  %8.3f\n",
+            LogKit::LogFormatted(LogKit::Low,"k=%d  count[k], mean[k]  nData, sum  %d  %8.3f     %d  %8.3f\n",
                                  k,count[k],mean[k],nData,sum);
         }
         else {
@@ -840,17 +840,17 @@ Background::smoothTrendWithLocalLinearRegression(float      * trend,
     for (int k = 0 ; k < nz ; k++) {
       trend[k] = log(global_mean);
       if (debug) 
-        LogKit::LogFormatted(LogKit::LOW,"   TREND: k = %d   trend[k] = %.2f\n",k,exp(trend[k]));
+        LogKit::LogFormatted(LogKit::Low,"   TREND: k = %d   trend[k] = %.2f\n",k,exp(trend[k]));
     }
-    LogKit::LogFormatted(LogKit::LOW,"\nGlobal mean for parameter %s = %.2f\n\n",parName.c_str(),global_mean);
+    LogKit::LogFormatted(LogKit::Low,"\nGlobal mean for parameter %s = %.2f\n\n",parName.c_str(),global_mean);
   }
   else {
     if (errorHead) {
       // Fix first part of trend containing missing-values.
       float firstValue = trend[firstNonmissing];
-      LogKit::LogFormatted(LogKit::LOW,"\nWARNING : The calculation of the vertical trend for parameter \'"+parName+"\' using local linear\n");
-      LogKit::LogFormatted(LogKit::LOW,"          regression failed for cells [0-%d] where the log is undefined. The first\n",firstNonmissing-1);
-      LogKit::LogFormatted(LogKit::LOW,"          defined value of %.2f in cell %d we be used throughout this region.\n",exp(firstValue),firstNonmissing);
+      LogKit::LogFormatted(LogKit::Low,"\nWARNING : The calculation of the vertical trend for parameter \'"+parName+"\' using local linear\n");
+      LogKit::LogFormatted(LogKit::Low,"          regression failed for cells [0-%d] where the log is undefined. The first\n",firstNonmissing-1);
+      LogKit::LogFormatted(LogKit::Low,"          defined value of %.2f in cell %d we be used throughout this region.\n",exp(firstValue),firstNonmissing);
       for (int k = 0 ; k < firstNonmissing ; k++) {
         trend[k] = firstValue;
       }
@@ -858,9 +858,9 @@ Background::smoothTrendWithLocalLinearRegression(float      * trend,
     if (errorTrail) {
       // Fix last part of trend containing missing-values.
       float lastValue = trend[lastNonmissing];
-      LogKit::LogFormatted(LogKit::LOW,"\nWARNING : The calculation of the vertical trend for parameter "+parName+" using local linear\n");
-      LogKit::LogFormatted(LogKit::LOW,"          regression failed for cells [%d,%d] where the log is undefined. The last\n",lastNonmissing+1,nz-1);
-      LogKit::LogFormatted(LogKit::LOW,"          defined value of %.2f in cell %d we be used throughout this region.\n",exp(lastValue),lastNonmissing);
+      LogKit::LogFormatted(LogKit::Low,"\nWARNING : The calculation of the vertical trend for parameter "+parName+" using local linear\n");
+      LogKit::LogFormatted(LogKit::Low,"          regression failed for cells [%d,%d] where the log is undefined. The last\n",lastNonmissing+1,nz-1);
+      LogKit::LogFormatted(LogKit::Low,"          defined value of %.2f in cell %d we be used throughout this region.\n",exp(lastValue),lastNonmissing);
       for (int k = lastNonmissing + 1 ; k < nz ; k++) {
         trend[k] = lastValue;
       }
@@ -915,8 +915,8 @@ Background::calculateDeviationFromVerticalTrend(WellData    ** wells,
     else if (name == "Rho")
       bl->getVerticalTrend(bl->getRhoHighCutBackground(), wellTrend);
     else {
-      LogKit::LogFormatted(LogKit::LOW,"ERROR in Background::calculateVerticalTrend(): ");
-      LogKit::LogFormatted(LogKit::LOW,"Log \'"+name+"\' requested, but no such log exists.\n");
+      LogKit::LogFormatted(LogKit::Low,"ERROR in Background::calculateVerticalTrend(): ");
+      LogKit::LogFormatted(LogKit::Low,"Log \'"+name+"\' requested, but no such log exists.\n");
       exit(1);
     }
     float sum_dev = 0.0f;
@@ -997,21 +997,21 @@ Background::writeDeviationsFromVerticalTrend(const float *  avg_dev_alpha,
   //
   if (nWells > 0) 
   {
-    LogKit::LogFormatted(LogKit::LOW,"\nSummary of average deviation from vertical trend (well with largest misfit listed first):\n\n");
-    LogKit::LogFormatted(LogKit::LOW,"Well                        Vp       Vs      Rho\n");
-    LogKit::LogFormatted(LogKit::LOW,"------------------------------------------------\n");
+    LogKit::LogFormatted(LogKit::Low,"\nSummary of average deviation from vertical trend (well with largest misfit listed first):\n\n");
+    LogKit::LogFormatted(LogKit::Low,"Well                        Vp       Vs      Rho\n");
+    LogKit::LogFormatted(LogKit::Low,"------------------------------------------------\n");
   }  
   for (int i=0 ; i<nWells ; i++)
   {
     int ii = index[i];
-    LogKit::LogFormatted(LogKit::LOW,"%-24s %5.1f    %5.1f    %5.3f\n", wells[ii]->getWellname().c_str(),
+    LogKit::LogFormatted(LogKit::Low,"%-24s %5.1f    %5.1f    %5.3f\n", wells[ii]->getWellname().c_str(),
                      avg_dev_alpha[ii], avg_dev_beta[ii], avg_dev_rho[ii]);
   }
 
   if (nWells == 1)
   {
-    LogKit::LogFormatted(LogKit::HIGH,"\nNOTE: A deviation may be observed even with one well since the global trend is");
-    LogKit::LogFormatted(LogKit::HIGH,"\n      estimated from blocked logs rather than the full resolution raw logs.\n");
+    LogKit::LogFormatted(LogKit::High,"\nNOTE: A deviation may be observed even with one well since the global trend is");
+    LogKit::LogFormatted(LogKit::High,"\n      estimated from blocked logs rather than the full resolution raw logs.\n");
   }
   delete [] rel_avg_dev;
   delete [] index;
@@ -1116,7 +1116,7 @@ Background::resampleBackgroundModel(FFTGrid      *& bgAlpha,
   FFTGrid * resBgBeta = NULL;
   FFTGrid * resBgRho = NULL;
   
-  LogKit::LogFormatted(LogKit::LOW,"\nResampling background model...\n");
+  LogKit::LogFormatted(LogKit::Low,"\nResampling background model...\n");
   resampleParameter(resBgAlpha,bgAlpha,timeSimbox, timeBGSimbox, modelSettings->getFileGrid());
   resampleParameter(resBgBeta ,bgBeta ,timeSimbox, timeBGSimbox, modelSettings->getFileGrid());
   resampleParameter(resBgRho  ,bgRho  ,timeSimbox, timeBGSimbox, modelSettings->getFileGrid());
@@ -1274,7 +1274,7 @@ Background::padAndSetBackgroundModel(FFTGrid * bgAlpha,
                                      FFTGrid * bgBeta,
                                      FFTGrid * bgRho)
 {
-  //LogKit::LogFormatted(LogKit::LOW,"\nPadding background model...\n");
+  //LogKit::LogFormatted(LogKit::Low,"\nPadding background model...\n");
   createPaddedParameter(backModel_[0], bgAlpha);
   createPaddedParameter(backModel_[1], bgBeta);
   createPaddedParameter(backModel_[2], bgRho);

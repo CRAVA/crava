@@ -54,7 +54,7 @@ Kriging1D::krigVector(float * data,
     bool debug = false;
     if (debug) {
       for (int i = 0 ; i < nd ; i++) {
-        LogKit::LogFormatted(LogKit::LOW," i krigedData[i] : %3d  %.5f\n",i,data[i]);
+        LogKit::LogFormatted(LogKit::Low," i krigedData[i] : %3d  %.5f\n",i,data[i]);
       }
     }
   }
@@ -76,16 +76,16 @@ Kriging1D::locateValidData(float * data,
     }
   }
   if (count == 0) {
-    LogKit::LogFormatted(LogKit::LOW,"\nWARNING in Kriging1D::locateDataIndices() : ");
-    LogKit::LogFormatted(LogKit::LOW,"Only missing values found in data vector.\n");
+    LogKit::LogFormatted(LogKit::Low,"\nWARNING in Kriging1D::locateDataIndices() : ");
+    LogKit::LogFormatted(LogKit::Low,"Only missing values found in data vector.\n");
   }
   md = count;
 
   bool debug = false;
   if (debug) {
-    LogKit::LogFormatted(LogKit::LOW,"\nData vector after trend subtraction:\n");
+    LogKit::LogFormatted(LogKit::Low,"\nData vector after trend subtraction:\n");
     for (int i = 0 ; i < md ; i++) {
-      LogKit::LogFormatted(LogKit::LOW," i index[i]  data : %3d %3d  %.5f\n",i,index[i],data[index[i]]);
+      LogKit::LogFormatted(LogKit::Low," i index[i]  data : %3d %3d  %.5f\n",i,index[i],data[index[i]]);
     }
   }
 }
@@ -102,9 +102,9 @@ Kriging1D::subtractTrend(float * data,
   }
   bool debug = false;
   if (debug) {
-    LogKit::LogFormatted(LogKit::LOW,"\nData vector after trend subtraction:\n");
+    LogKit::LogFormatted(LogKit::Low,"\nData vector after trend subtraction:\n");
     for (int i = 0 ; i < md ; i++) {
-      LogKit::LogFormatted(LogKit::LOW," i index[i]  data : %3d %3d  %.5f\n",i,index[i],data[index[i]]);
+      LogKit::LogFormatted(LogKit::Low," i index[i]  data : %3d %3d  %.5f\n",i,index[i],data[index[i]]);
     }
   }
 }
@@ -191,7 +191,7 @@ Kriging1D::cholesky(double ** K,
       K[i][i] *= choleskyRepairFactor;
     count++;
     if (count > 5)
-      LogKit::LogFormatted(LogKit::LOW,"\nERROR in Kriging1D::Cholesky(): Could not find cholesky factor\n");
+      LogKit::LogFormatted(LogKit::Low,"\nERROR in Kriging1D::Cholesky(): Could not find cholesky factor\n");
   }
 }
 

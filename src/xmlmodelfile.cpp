@@ -34,7 +34,7 @@ XmlModelFile::XmlModelFile(const std::string & fileName)
     NRLib::OpenRead(file,fileName);
   }
   catch (NRLib::IOError e) {
-    LogKit::LogMessage(LogKit::ERROR,"\nERROR: "+std::string(e.what()));
+    LogKit::LogMessage(LogKit::Error,"\nERROR: "+std::string(e.what()));
     exit(1);
   }
 
@@ -54,12 +54,12 @@ XmlModelFile::XmlModelFile(const std::string & fileName)
 
   if (doc.Error() == true) {
     Utils::writeHeader("Invalid XML file");
-    LogKit::LogFormatted(LogKit::ERROR,"\n%s is not a valid XML file. %s In line %d, column %d.", 
+    LogKit::LogFormatted(LogKit::Error,"\n%s is not a valid XML file. %s In line %d, column %d.", 
                          fileName.c_str(), doc.ErrorDesc(), doc.ErrorRow(), doc.ErrorCol());
     if (doc.ErrorId() == 9) { // Not very robust check, but a start 
-      LogKit::LogFormatted(LogKit::ERROR,"\nPossible cause: Mis-spelled or forgotten end tag.");
+      LogKit::LogFormatted(LogKit::Error,"\nPossible cause: Mis-spelled or forgotten end tag.");
     }
-    LogKit::LogFormatted(LogKit::ERROR,"\nAborting\n");
+    LogKit::LogFormatted(LogKit::Error,"\nAborting\n");
     failed_ = true;
   }
   else {
@@ -76,9 +76,9 @@ XmlModelFile::XmlModelFile(const std::string & fileName)
 
     if(errTxt != "") {
       Utils::writeHeader("Invalid model file");
-      LogKit::LogFormatted(LogKit::ERROR,"\n%s is not a valid model file:\n",fileName.c_str());
-      LogKit::LogMessage(LogKit::ERROR, errTxt);
-      LogKit::LogFormatted(LogKit::ERROR,"\nAborting\n");
+      LogKit::LogFormatted(LogKit::Error,"\n%s is not a valid model file:\n",fileName.c_str());
+      LogKit::LogMessage(LogKit::Error, errTxt);
+      LogKit::LogFormatted(LogKit::Error,"\nAborting\n");
       failed_ = true;
     }
   }
@@ -833,7 +833,7 @@ XmlModelFile::parseWavelet(TiXmlNode * node, std::string & errTxt)
     modelSettings_->addWaveletScale(scale);
     modelSettings_->addEstimateGlobalWaveletScale(false);
     if (estimate)
-      LogKit::LogFormatted(LogKit::WARNING, "\nWARNING: The wavelet scale specified in the model file ("
+      LogKit::LogFormatted(LogKit::Warning, "\nWARNING: The wavelet scale specified in the model file ("
            +NRLib::ToString(scale,2)
            +") has no effect when the wavelet\n         is estimated and not read from file\n\n");
   }
@@ -1914,21 +1914,21 @@ XmlModelFile::parseIOSettings(TiXmlNode * node, std::string & errTxt)
 
   std::string level;
   if(parseValue(root, "log-level", level, errTxt) == true) {
-    int logLevel = LogKit::ERROR;
+    int logLevel = LogKit::Error;
     if(level=="error")
-      logLevel = LogKit::L_ERROR;
+      logLevel = LogKit::L_Error;
     else if(level=="warning")
-      logLevel = LogKit::L_WARNING;
+      logLevel = LogKit::L_Warning;
     else if(level=="low")
-      logLevel = LogKit::L_LOW;
+      logLevel = LogKit::L_Low;
     else if(level=="medium")
-      logLevel = LogKit::L_MEDIUM;
+      logLevel = LogKit::L_Medium;
     else if(level=="high")
-      logLevel = LogKit::L_HIGH;
+      logLevel = LogKit::L_High;
     else if(level=="debuglow")
-      logLevel = LogKit::L_DEBUGLOW;
+      logLevel = LogKit::L_DebugLow;
     else if(level=="debughigh")
-      logLevel = LogKit::L_DEBUGHIGH;
+      logLevel = LogKit::L_DebugHigh;
     else {
       errTxt += "Unknown log level " + level + " in command <log-level>. ";
       errTxt += "Choose from: error, warning, low, medium, and high\n";
@@ -2939,12 +2939,12 @@ XmlModelFile::checkIOConsistency(std::string & errTxt)
 {
   if ((modelSettings_->getOtherOutputFlag() & IO::LOCAL_NOISE)>0 && modelSettings_->getUseLocalNoise()==false)
   {
-    LogKit::LogFormatted(LogKit::WARNING, "\nWarning: Local noise can not be written to file when <local-noise-scaled> or <estimate-local-noise> is not requested.");
+    LogKit::LogFormatted(LogKit::Warning, "\nWarning: Local noise can not be written to file when <local-noise-scaled> or <estimate-local-noise> is not requested.");
     TaskList::addTask("Remove <local-noise> from <other-output> in the model file if local noise is not used.");
   }
   if ((modelSettings_->getWaveletOutputFlag() & IO::LOCAL_WAVELETS)>0 && modelSettings_->getUseLocalWavelet()==false)
   {
-   LogKit::LogFormatted(LogKit::WARNING, "\nWarning: Local wavelets can not be written to file when <local-wavelet> is not requested for the angle gathers.");
+   LogKit::LogFormatted(LogKit::Warning, "\nWarning: Local wavelets can not be written to file when <local-wavelet> is not requested for the angle gathers.");
    TaskList::addTask("Remove <local-wavelets> from <wavelet-output> in the model file if local wavelets are not used.");
   }
   if (((modelSettings_->getWaveletFormatFlag() & IO::NORSARWAVELET)  > 0   ||

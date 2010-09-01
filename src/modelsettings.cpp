@@ -146,7 +146,7 @@ ModelSettings::ModelSettings(void)
   estimate3DWavelet_       =    false;
   hasTime3DMapping_        =    false;
 
-  logLevel_                = LogKit::L_LOW;
+  logLevel_                = LogKit::L_Low;
   smoothKrigedParameters_  =    false;
 
   distanceFromWell_        =      100;

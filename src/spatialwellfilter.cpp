@@ -134,7 +134,7 @@ void SpatialWellFilter::doFiltering(Corr                        * corr,
 
   if (filterWell[w1] != ModelSettings::NO) 
   {
-    LogKit::LogFormatted(LogKit::LOW,"\nFiltering well "+wells[w1]->getWellname());
+    LogKit::LogFormatted(LogKit::Low,"\nFiltering well "+wells[w1]->getWellname());
 
     sigmapost = new double * [3*n];
     for(int i=0;i<3*n;i++)
@@ -226,11 +226,11 @@ void SpatialWellFilter::doFiltering(Corr                        * corr,
       }
     }
 
-    LogKit::LogFormatted(LogKit::LOW,"\n  Cholesky decomposition ...");
+    LogKit::LogFormatted(LogKit::Low,"\n  Cholesky decomposition ...");
     lib_matrCholR(3*n, sigmapri);
-    LogKit::LogFormatted(LogKit::LOW,"\n  Equation solving ...");
+    LogKit::LogFormatted(LogKit::Low,"\n  Equation solving ...");
     lib_matrAXeqBMatR(3*n, sigmapri, imat, 3*n);
-    LogKit::LogFormatted(LogKit::LOW,"\n  Matrix multiplication ...\n");
+    LogKit::LogFormatted(LogKit::Low,"\n  Matrix multiplication ...\n");
     lib_matr_prod(sigmapost,imat,3*n,3*n,3*n,Aw);
     //NBNB-PAL: Aktiver etterhvert
     //lib_matr_prod_sym(sigmapost,imat,3*n,3*n,3*n,Aw);

@@ -103,7 +103,7 @@ void QualityGrid::makeKrigedProbField(std::vector<KrigingData2D> & krigingData,
                                       const bool                   isFile) const
 {
   std::string text = "\nBuilding seismic quality grid:";
-  LogKit::LogFormatted(LogKit::LOW, text);
+  LogKit::LogFormatted(LogKit::Low, text);
   
   const int nx = simbox->getnx();
   const int ny = simbox->getny();

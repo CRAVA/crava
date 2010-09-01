@@ -185,7 +185,7 @@ void CKrigingAdmin::KrigAll(Gamma gamma, bool doSmoothing) {
     for (j = 0; j < nyBlock; j++) {
       int j1 = j*dyBlock_;
       for (i = 0; i < nxBlock; i++) {
-   //     LogKit::LogFormatted(LogKit::DEBUGLOW,"%d %d %d : %d %d %d\n",i, j, k, nxBlock, nyBlock, nzBlock);
+   //     LogKit::LogFormatted(LogKit::DebugLow,"%d %d %d : %d %d %d\n",i, j, k, nxBlock, nyBlock, nzBlock);
         int i1 = i*dxBlock_;
         currBlock_ = CBox(i1, j1, k1, i1 + dxBlock_ - 1, j1 + dyBlock_ - 1, k1 + dzBlock_ - 1, &simbox_);
         currDataBox_ = CBox(i1 - dxBlockExt_, j1 - dyBlockExt_, k1 - dzBlockExt_,
@@ -197,9 +197,9 @@ void CKrigingAdmin::KrigAll(Gamma gamma, bool doSmoothing) {
   } // end k 
   noKrigedVariables_++;
   if (!backgroundModel_ && doSmoothing==true) {
-    //LogKit::LogFormatted(LogKit::LOW,"SmoothKrigedResult start\n");
+    //LogKit::LogFormatted(LogKit::Low,"SmoothKrigedResult start\n");
     SmoothKrigedResult(gamma); 
-    //LogKit::LogFormatted(LogKit::LOW,"SmoothKrigedResult end\n");
+    //LogKit::LogFormatted(LogKit::Low,"SmoothKrigedResult end\n");
   }
  
   
@@ -217,7 +217,7 @@ void CKrigingAdmin::KrigAll(FFTGrid& trendAlpha, FFTGrid& trendBeta, FFTGrid& tr
   if(debugflag>0)
   {
     FFTGrid *blockGrid = new FFTGrid(simbox_.getnx(), simbox_.getny(), simbox_.getnz(), simbox_.getnx(), simbox_.getny(), simbox_.getnz());
-    LogKit::LogFormatted(LogKit::DEBUGLOW,"Grid for reporting block size created. Memory requirements may be wrongly calculated.\n");
+    LogKit::LogFormatted(LogKit::DebugLow,"Grid for reporting block size created. Memory requirements may be wrongly calculated.\n");
     blockGrid->fillInConstant(0.0, false);
     int i,j,k;
     for(i=0;i<simbox_.getnx();i++)
@@ -249,38 +249,38 @@ void CKrigingAdmin::KrigAll(FFTGrid& trendAlpha, FFTGrid& trendBeta, FFTGrid& tr
   printf("\n  ^");
 
   trendAlpha_->setAccessMode(FFTGrid::RANDOMACCESS);
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"Start CKrigingAdminKrigAll: Alpha\n");
+  LogKit::LogFormatted(LogKit::DebugHigh,"Start CKrigingAdminKrigAll: Alpha\n");
   KrigAll(ALPHA_KRIG, doSmoothing);
   WriteDebugOutput2();
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"End CKrigingAdminKrigAll: Alpha\n");
+  LogKit::LogFormatted(LogKit::DebugHigh,"End CKrigingAdminKrigAll: Alpha\n");
   trendAlpha_->endAccess();
 
   trendBeta_->setAccessMode(FFTGrid::RANDOMACCESS);
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"Start CKrigingAdminKrigAll: Beta\n");
+  LogKit::LogFormatted(LogKit::DebugHigh,"Start CKrigingAdminKrigAll: Beta\n");
   KrigAll(BETA_KRIG, doSmoothing);
   WriteDebugOutput2();
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"End CKrigingAdminKrigAll: Beta\n");
+  LogKit::LogFormatted(LogKit::DebugHigh,"End CKrigingAdminKrigAll: Beta\n");
   trendBeta_->endAccess();
 
   trendRho_->setAccessMode(FFTGrid::RANDOMACCESS);
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"Start CKrigingAdminKrigAll: Rho\n");
+  LogKit::LogFormatted(LogKit::DebugHigh,"Start CKrigingAdminKrigAll: Rho\n");
   KrigAll(RHO_KRIG, doSmoothing);
   WriteDebugOutput2();
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"End CKrigingAdminKrigAll: Rho\n");
+  LogKit::LogFormatted(LogKit::DebugHigh,"End CKrigingAdminKrigAll: Rho\n");
   trendRho_->endAccess();
 
   printf("\n");
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"KrigAll finished\n");
+  LogKit::LogFormatted(LogKit::DebugHigh,"KrigAll finished\n");
 }
 
 void CKrigingAdmin::KrigBlock(Gamma gamma) {
   // search for neighbours
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"FindDataInDataBlockLoop(gamma) called next\n");
+  LogKit::LogFormatted(LogKit::DebugHigh,"FindDataInDataBlockLoop(gamma) called next\n");
   FindDataInDataBlockLoop(gamma);
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"sizeAlpha_: %d\n", sizeAlpha_); 
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"sizeBeta_: %d\n", sizeBeta_); 
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"sizeRho_: %d\n", sizeRho_); 
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"totalNoDataInCurrKrigBlock_: %d\n", totalNoDataInCurrKrigBlock_); 
+  LogKit::LogFormatted(LogKit::DebugHigh,"sizeAlpha_: %d\n", sizeAlpha_); 
+  LogKit::LogFormatted(LogKit::DebugHigh,"sizeBeta_: %d\n", sizeBeta_); 
+  LogKit::LogFormatted(LogKit::DebugHigh,"sizeRho_: %d\n", sizeRho_); 
+  LogKit::LogFormatted(LogKit::DebugHigh,"totalNoDataInCurrKrigBlock_: %d\n", totalNoDataInCurrKrigBlock_); 
   //FindDataInDataBlock(gamma); //DEBUG
 
   int iMin, jMin, kMin, iMax, jMax, kMax;
@@ -440,7 +440,7 @@ CKrigingAdmin::FindDataInDataBlock(Gamma gamma, const CBox & dataBox) {
       // early exit
     } // end if
   } // end i
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"Found %d data. (%d, %d)\n", totalNoDataInCurrKrigBlock_,
+  LogKit::LogFormatted(LogKit::DebugHigh,"Found %d data. (%d, %d)\n", totalNoDataInCurrKrigBlock_,
     countTotalMin, countTotalMax);
   if (totalNoDataInCurrKrigBlock_ <= countTotalMax && totalNoDataInCurrKrigBlock_ >= countTotalMin)
     return DBS_RIGHT;
@@ -517,7 +517,7 @@ void CKrigingAdmin::FindDataInDataBlockLoop(Gamma gamma) {
   } // end while
   currDataBox_.ModifyBox(currDataBox_, &simbox_); //Does not modify, only truncates.
 
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"FindDataInDataBlock iterations: %d\n", counter);
+  LogKit::LogFormatted(LogKit::DebugHigh,"FindDataInDataBlock iterations: %d\n", counter);
 }
 
 
@@ -672,8 +672,8 @@ void CKrigingAdmin::SetMatrix(Gamma gamma) {
 //int i,j;
 //for(i=0;i<maxData;i++){
 //for(j=0;j<maxData;j++)
-//LogKit::LogFormatted(LogKit::DEBUGLOW,"%f ",krigMatrix_[i][j]);
-//LogKit::LogFormatted(LogKit::DEBUGLOW,"\n");
+//LogKit::LogFormatted(LogKit::DebugLow,"%f ",krigMatrix_[i][j]);
+//LogKit::LogFormatted(LogKit::DebugLow,"\n");
 //}
 
   // Also calulates the kriging data vector
@@ -721,7 +721,7 @@ void CKrigingAdmin::SetKrigVector(Gamma gamma) {
   // set krig vector
   // for alpha kriging
 
-  //LogKit::LogFormatted(LogKit::DEBUGHIGH,"\n");
+  //LogKit::LogFormatted(LogKit::DebugHigh,"\n");
 
   // k_a
   int a2;
@@ -838,13 +838,13 @@ void CKrigingAdmin::EstimateSizeOfBlock() {
   rangeZ_ = static_cast<float>(std::max(rangeAlphaZ_, rangeBetaZ_));
   rangeZ_ = static_cast<float>(std::max(static_cast<float>(rangeRhoZ_), rangeZ_));
   
-  LogKit::LogFormatted(LogKit::LOW,"Estimated ranges(grid cells) from covariance cubes:\n");
-  LogKit::LogFormatted(LogKit::LOW,"             rangeX     rangeY     rangeZ\n");
-  LogKit::LogFormatted(LogKit::LOW,"-----------------------------------------\n");
-  LogKit::LogFormatted(LogKit::LOW,"Vp   :     %8d   %8d   %8d\n", rangeAlphaX_, rangeAlphaY_, rangeAlphaZ_);
-  LogKit::LogFormatted(LogKit::LOW,"Vs   :     %8d   %8d   %8d\n", rangeBetaX_, rangeBetaY_, rangeBetaZ_);
-  LogKit::LogFormatted(LogKit::LOW,"Rho  :     %8d   %8d   %8d\n", rangeRhoX_, rangeRhoY_, rangeRhoZ_);
-  LogKit::LogFormatted(LogKit::LOW,"Used :     %8.0f   %8.0f   %8.0f\n", rangeX_, rangeY_, rangeZ_);
+  LogKit::LogFormatted(LogKit::Low,"Estimated ranges(grid cells) from covariance cubes:\n");
+  LogKit::LogFormatted(LogKit::Low,"             rangeX     rangeY     rangeZ\n");
+  LogKit::LogFormatted(LogKit::Low,"-----------------------------------------\n");
+  LogKit::LogFormatted(LogKit::Low,"Vp   :     %8d   %8d   %8d\n", rangeAlphaX_, rangeAlphaY_, rangeAlphaZ_);
+  LogKit::LogFormatted(LogKit::Low,"Vs   :     %8d   %8d   %8d\n", rangeBetaX_, rangeBetaY_, rangeBetaZ_);
+  LogKit::LogFormatted(LogKit::Low,"Rho  :     %8d   %8d   %8d\n", rangeRhoX_, rangeRhoY_, rangeRhoZ_);
+  LogKit::LogFormatted(LogKit::Low,"Used :     %8.0f   %8.0f   %8.0f\n", rangeX_, rangeY_, rangeZ_);
   
   if (noData_ <= dataTarget_) {
      dxBlock_ = simbox_.getnx();
@@ -1226,11 +1226,11 @@ void CKrigingAdmin::DoCholesky() {
   }
   if(counter > maxCholeskyLoopCounter_)
   {
-    LogKit::LogFormatted(LogKit::DEBUGHIGH,"Error: Kriging failed counter > maxCholeskyLoopCounter_.\n");
+    LogKit::LogFormatted(LogKit::DebugHigh,"Error: Kriging failed counter > maxCholeskyLoopCounter_.\n");
     exit(1);
   }
   if (counter > 0)
-    LogKit::LogFormatted(LogKit::DEBUGHIGH,"Cholesky decomposition looped: %d\n", counter); 
+    LogKit::LogFormatted(LogKit::DebugHigh,"Cholesky decomposition looped: %d\n", counter); 
   noCholeskyDecomp_++;
 }
 
@@ -1524,66 +1524,66 @@ void CKrigingAdmin::SmoothKrigedResult(Gamma gamma) {
 }
 
 void CKrigingAdmin::WriteDebugOutput() const {
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"Inside CKrigingAdmin::WriteDebugOutput, before KrigAll is called\n");
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"number of cells to define a kriging block\n");
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"dxBlock_: %d\n", dxBlock_);
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"dyBlock_: %d\n", dyBlock_);
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"dzBlock_: %d\n", dzBlock_);
+  LogKit::LogFormatted(LogKit::DebugHigh,"Inside CKrigingAdmin::WriteDebugOutput, before KrigAll is called\n");
+  LogKit::LogFormatted(LogKit::DebugHigh,"number of cells to define a kriging block\n");
+  LogKit::LogFormatted(LogKit::DebugHigh,"dxBlock_: %d\n", dxBlock_);
+  LogKit::LogFormatted(LogKit::DebugHigh,"dyBlock_: %d\n", dyBlock_);
+  LogKit::LogFormatted(LogKit::DebugHigh,"dzBlock_: %d\n", dzBlock_);
 
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"number of additional cells to reach data neighbourhood\n");
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"dxBlockExt_: %d\n", dxBlockExt_);
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"dyBlockExt_: %d\n", dyBlockExt_);
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"dzBlockExt_: %d\n", dzBlockExt_);
+  LogKit::LogFormatted(LogKit::DebugHigh,"number of additional cells to reach data neighbourhood\n");
+  LogKit::LogFormatted(LogKit::DebugHigh,"dxBlockExt_: %d\n", dxBlockExt_);
+  LogKit::LogFormatted(LogKit::DebugHigh,"dyBlockExt_: %d\n", dyBlockExt_);
+  LogKit::LogFormatted(LogKit::DebugHigh,"dzBlockExt_: %d\n", dzBlockExt_);
 
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"dataTarget_: %d\n", dataTarget_);
+  LogKit::LogFormatted(LogKit::DebugHigh,"dataTarget_: %d\n", dataTarget_);
 
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"Estimated ranges from covariance cubes\n");
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"rangeAlphaX_: %d\n", rangeAlphaX_);
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"rangeAlphaY_: %d\n", rangeAlphaY_);
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"rangeAlphaZ_: %d\n", rangeAlphaZ_);
+  LogKit::LogFormatted(LogKit::DebugHigh,"Estimated ranges from covariance cubes\n");
+  LogKit::LogFormatted(LogKit::DebugHigh,"rangeAlphaX_: %d\n", rangeAlphaX_);
+  LogKit::LogFormatted(LogKit::DebugHigh,"rangeAlphaY_: %d\n", rangeAlphaY_);
+  LogKit::LogFormatted(LogKit::DebugHigh,"rangeAlphaZ_: %d\n", rangeAlphaZ_);
 
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"rangeBetaX_: %d\n", rangeBetaX_);
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"rangeBetaY_: %d\n", rangeBetaY_);
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"rangeBetaZ_: %d\n", rangeBetaZ_);
+  LogKit::LogFormatted(LogKit::DebugHigh,"rangeBetaX_: %d\n", rangeBetaX_);
+  LogKit::LogFormatted(LogKit::DebugHigh,"rangeBetaY_: %d\n", rangeBetaY_);
+  LogKit::LogFormatted(LogKit::DebugHigh,"rangeBetaZ_: %d\n", rangeBetaZ_);
 
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"rangeRhoX_: %d\n", rangeRhoX_);
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"rangeRhoY_: %d\n", rangeRhoY_);
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"rangeRhoZ_: %d\n", rangeRhoZ_);
+  LogKit::LogFormatted(LogKit::DebugHigh,"rangeRhoX_: %d\n", rangeRhoX_);
+  LogKit::LogFormatted(LogKit::DebugHigh,"rangeRhoY_: %d\n", rangeRhoY_);
+  LogKit::LogFormatted(LogKit::DebugHigh,"rangeRhoZ_: %d\n", rangeRhoZ_);
 
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"rangeX_: %f\n", rangeX_);
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"rangeY_: %f\n", rangeY_);
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"rangeZ_: %f\n", rangeZ_);
+  LogKit::LogFormatted(LogKit::DebugHigh,"rangeX_: %f\n", rangeX_);
+  LogKit::LogFormatted(LogKit::DebugHigh,"rangeY_: %f\n", rangeY_);
+  LogKit::LogFormatted(LogKit::DebugHigh,"rangeZ_: %f\n", rangeZ_);
 
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"Bool flags\n");
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"failed2EstimateRange_: %d\n", static_cast<int>(failed2EstimateRange_));
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"failed2EstimateDefaultDataBoxAndBlock_: %d\n", static_cast<int>(failed2EstimateDefaultDataBoxAndBlock_));
+  LogKit::LogFormatted(LogKit::DebugHigh,"Bool flags\n");
+  LogKit::LogFormatted(LogKit::DebugHigh,"failed2EstimateRange_: %d\n", static_cast<int>(failed2EstimateRange_));
+  LogKit::LogFormatted(LogKit::DebugHigh,"failed2EstimateDefaultDataBoxAndBlock_: %d\n", static_cast<int>(failed2EstimateDefaultDataBoxAndBlock_));
 
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"Smoothing\n");
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"dxSmoothBlock_: %d\n", dxSmoothBlock_);
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"dySmoothBlock_: %d\n", dySmoothBlock_);
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"dzSmoothBlock_: %d\n", dzSmoothBlock_);
+  LogKit::LogFormatted(LogKit::DebugHigh,"Smoothing\n");
+  LogKit::LogFormatted(LogKit::DebugHigh,"dxSmoothBlock_: %d\n", dxSmoothBlock_);
+  LogKit::LogFormatted(LogKit::DebugHigh,"dySmoothBlock_: %d\n", dySmoothBlock_);
+  LogKit::LogFormatted(LogKit::DebugHigh,"dzSmoothBlock_: %d\n", dzSmoothBlock_);
 
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"Kriging Data (from blocked wells)\n");
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"NumberOfObs: %d\n", noData_);
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"NoValidData: %d\n", noValid_);
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"NoValidDataAlpha: %d\n", noValidAlpha_);
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"NoValidDataBeta: %d\n", noValidBeta_);
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"NoValidDataRho: %d\n", noValidRho_);
+  LogKit::LogFormatted(LogKit::DebugHigh,"Kriging Data (from blocked wells)\n");
+  LogKit::LogFormatted(LogKit::DebugHigh,"NumberOfObs: %d\n", noData_);
+  LogKit::LogFormatted(LogKit::DebugHigh,"NoValidData: %d\n", noValid_);
+  LogKit::LogFormatted(LogKit::DebugHigh,"NoValidDataAlpha: %d\n", noValidAlpha_);
+  LogKit::LogFormatted(LogKit::DebugHigh,"NoValidDataBeta: %d\n", noValidBeta_);
+  LogKit::LogFormatted(LogKit::DebugHigh,"NoValidDataRho: %d\n", noValidRho_);
 }
 
 void CKrigingAdmin::WriteDebugOutput2() const {
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"Inside CKrigingAdmin::WriteDebugOutput2, Kriging for a variable is finished\n");
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"noKrigedCells_: %d\n", noKrigedCells_);
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"noEmptyDataBlocks_: %d\n", noEmptyDataBlocks_);
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"noKrigedVariables_: %d\n", noKrigedVariables_);
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"noCholeskyDecomp_: %d\n", noCholeskyDecomp_);
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"noSolvedMatrixEq_: %d\n", noSolvedMatrixEq_);
-  LogKit::LogFormatted(LogKit::DEBUGHIGH,"noRMissing_: %d\n", noRMissing_);
+  LogKit::LogFormatted(LogKit::DebugHigh,"Inside CKrigingAdmin::WriteDebugOutput2, Kriging for a variable is finished\n");
+  LogKit::LogFormatted(LogKit::DebugHigh,"noKrigedCells_: %d\n", noKrigedCells_);
+  LogKit::LogFormatted(LogKit::DebugHigh,"noEmptyDataBlocks_: %d\n", noEmptyDataBlocks_);
+  LogKit::LogFormatted(LogKit::DebugHigh,"noKrigedVariables_: %d\n", noKrigedVariables_);
+  LogKit::LogFormatted(LogKit::DebugHigh,"noCholeskyDecomp_: %d\n", noCholeskyDecomp_);
+  LogKit::LogFormatted(LogKit::DebugHigh,"noSolvedMatrixEq_: %d\n", noSolvedMatrixEq_);
+  LogKit::LogFormatted(LogKit::DebugHigh,"noRMissing_: %d\n", noRMissing_);
 }
 
 void CKrigingAdmin::Require(bool test, const std::string msg) const {
   if (!test) {
-    LogKit::LogFormatted(LogKit::LOW,"Requirement failed: %s\n", msg.c_str());
+    LogKit::LogFormatted(LogKit::Low,"Requirement failed: %s\n", msg.c_str());
     exit(1);
   }
 }

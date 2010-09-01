@@ -630,7 +630,7 @@ FFTFileGrid::unload()
 {
   fftw_free(rvalue_); // changed
   nGrids_ = nGrids_ - 1;
-// LogKit::LogFormatted(LogKit::ERROR,"\nFFTFileGrid unload: nGrids_ = %d\n",nGrids_);
+// LogKit::LogFormatted(LogKit::Error,"\nFFTFileGrid unload: nGrids_ = %d\n",nGrids_);
   rvalue_ = NULL;
   cvalue_ = NULL;
 }

@@ -38,10 +38,10 @@ void
 Utils::writeTitler(const std::string & text)
 {
   const int length = static_cast<int>(text.length());
-  LogKit::LogFormatted(LogKit::LOW,"\n%s\n",text.c_str());
+  LogKit::LogFormatted(LogKit::Low,"\n%s\n",text.c_str());
   for (int i = 0 ; i < length ; i++)
-    LogKit::LogFormatted(LogKit::LOW,"-");
-  LogKit::LogFormatted(LogKit::LOW,"\n");
+    LogKit::LogFormatted(LogKit::Low,"-");
+  LogKit::LogFormatted(LogKit::Low,"\n");
 }  
 
 //------------------------------------------------------------
@@ -82,9 +82,9 @@ Utils::writeVector(float * vector,
                    int     ndim)
 {
   for (int i = 0 ; i < ndim ; i++) {
-    LogKit::LogFormatted(LogKit::LOW,"%10.6f ",vector[i]);
+    LogKit::LogFormatted(LogKit::Low,"%10.6f ",vector[i]);
   }
-  LogKit::LogFormatted(LogKit::LOW,"\n");
+  LogKit::LogFormatted(LogKit::Low,"\n");
 }
 
 //------------------------------------------------------------
@@ -93,9 +93,9 @@ Utils::writeVector(double * vector,
                    int      ndim)
 {
   for (int i = 0 ; i < ndim ; i++) {
-    LogKit::LogFormatted(LogKit::LOW,"%10.6f ",vector[i]);
+    LogKit::LogFormatted(LogKit::Low,"%10.6f ",vector[i]);
   }
-  LogKit::LogFormatted(LogKit::LOW,"\n");
+  LogKit::LogFormatted(LogKit::Low,"\n");
 }
 
 //------------------------------------------------------------
@@ -106,9 +106,9 @@ Utils::writeMatrix(float ** matrix,
 {
   for (int i = 0 ; i < ndim1 ; i++) {
     for (int j = 0 ; j < ndim2 ; j++) {
-      LogKit::LogFormatted(LogKit::LOW,"%10.6f ",matrix[i][j]);
+      LogKit::LogFormatted(LogKit::Low,"%10.6f ",matrix[i][j]);
     }
-    LogKit::LogFormatted(LogKit::LOW,"\n");
+    LogKit::LogFormatted(LogKit::Low,"\n");
   }
 }
 
@@ -120,9 +120,9 @@ Utils::writeMatrix(double ** matrix,
 {
   for (int i = 0 ; i < ndim1 ; i++) {
     for (int j = 0 ; j < ndim2 ; j++) {
-      LogKit::LogFormatted(LogKit::LOW,"%10.6f ",matrix[i][j]);
+      LogKit::LogFormatted(LogKit::Low,"%10.6f ",matrix[i][j]);
     }
-    LogKit::LogFormatted(LogKit::LOW,"\n");
+    LogKit::LogFormatted(LogKit::Low,"\n");
   }
 }
 
