@@ -936,6 +936,12 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
                            timeSimbox->getlx(), timeSimbox->getly(), azimuth, 
                            timeSimbox->getdx(), timeSimbox->getdy());
     }
+    
+    float minHorRes = modelSettings->getMinHorizontalRes();
+    if (timeSimbox->getdx() < minHorRes || timeSimbox->getdy() < minHorRes){
+      failed = true;
+      errText += "The horizontal resolution in dx and dy should be above "+NRLib::ToString(minHorRes)+" m. \n";
+    }
 
     if(!failed)
     {
@@ -998,6 +1004,12 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
         int status = timeSimbox->calculateDz(modelSettings->getLzLimit(),errText);
         estimateZPaddingSize(timeSimbox, modelSettings);   
         
+        float minSampDens = modelSettings->getMinSamplingDensity();
+        if (timeSimbox->getdz()*timeSimbox->getMinRelThick() < minSampDens){
+          failed   = true;
+          errText += "The sampling density should be above "+NRLib::ToString(minSampDens)+" ms.\nPlease decrease the number of layers. \n";
+        }
+
         if(status == Simbox::BOXOK)
         {
           logIntervalInformation(timeSimbox, "Time output interval:","Two-way-time");

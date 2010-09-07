@@ -103,6 +103,8 @@ public:
   float                            getMinRelWaveletAmp(void)            const { return minRelWaveletAmp_                          ;}
   float                            getMaxWaveletShift(void)             const { return maxWaveletShift_                           ;}
   float                            getWaveletTaperingL(void)            const { return waveletTaperingL_                          ;}
+  float                            getMinSamplingDensity(void)          const { return minSamplingDensity_                        ;}
+  float                            getMinHorizontalRes(void)            const { return minHorizontalRes_                          ;}
   double                           getXPadFac(void)                     const { return xPadFac_                                   ;}
   double                           getYPadFac(void)                     const { return yPadFac_                                   ;}
   double                           getZPadFac(void)                     const { return zPadFac_                                   ;}
@@ -254,6 +256,8 @@ public:
   void setEnergyThreshold(float energyThreshold)          { energyThreshold_          = energyThreshold          ;}
   void setMinRelWaveletAmp(float minRelWaveletAmp)        { minRelWaveletAmp_         = minRelWaveletAmp         ;}
   void setMaxWaveletShift(float maxWaveletShift)          { maxWaveletShift_          = maxWaveletShift          ;}
+  void setMinSamplingDensity(float minSamplingDens)       { minSamplingDensity_       = minSamplingDens          ;}
+  void setMinHorizontalRes(float minHorizontalRes)        { minHorizontalRes_         = minHorizontalRes         ;}
   void setMaxWellOffset(float maxWellOffset)              { maxWellOffset_            = maxWellOffset            ;}
   void setMaxWellShift(float maxWellShift)                { maxWellShift_             = maxWellShift             ;}
   void setWaveletTaperingL(float waveletTaperingL)        { waveletTaperingL_         = waveletTaperingL         ;}
@@ -438,7 +442,10 @@ private:
   float                             minRelWaveletAmp_;           // Minimum relative wavelet amplitude. Smaller amplitudes are disregarded.
   float                             maxWaveletShift_;            // Largest allowed shift when estimating wavelet
   float                             waveletTaperingL_;           // Til Odds waveletestimering
-                                                                 
+  
+  float                             minSamplingDensity_;         // Threshold value for minimum sampling density in dz
+  float                             minHorizontalRes_;           // Threshold value for minimum horizontal resolution in dx and dy
+
   double                            xPadFac_;                    // Padding factor/fraction in x direction
   double                            yPadFac_;                    // Padding factor/fraction in y direction
   double                            zPadFac_;                    // Padding factor/fraction in z direction

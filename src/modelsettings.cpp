@@ -84,7 +84,10 @@ ModelSettings::ModelSettings(void)
   minRelWaveletAmp_        =    0.04f;
   maxWaveletShift_         =    11.0f;
   waveletTaperingL_        =   200.0f;
-                           
+  
+  minSamplingDensity_      =     0.5f;
+  minHorizontalRes_        =     5.0f;
+
   xPadFac_                 =      0.0;
   yPadFac_                 =      0.0;
   zPadFac_                 =      0.0;

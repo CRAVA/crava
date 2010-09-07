@@ -2403,6 +2403,8 @@ XmlModelFile::parseAdvancedSettings(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("wavelet-tapering-length");
   legalCommands.push_back("minimum-relative-wavelet-amplitude");
   legalCommands.push_back("maximum-wavelet-shift");
+  legalCommands.push_back("minimum-sampling-density");
+  legalCommands.push_back("minimum-horizontal-resolution");
   legalCommands.push_back("white-noise-component");
   legalCommands.push_back("reflection-matrix");
   legalCommands.push_back("kriging-data-limit");
@@ -2430,6 +2432,10 @@ XmlModelFile::parseAdvancedSettings(TiXmlNode * node, std::string & errTxt)
     modelSettings_->setMinRelWaveletAmp(value);
   if(parseValue(root, "maximum-wavelet-shift", value, errTxt) == true)
     modelSettings_->setMaxWaveletShift(value);
+  if(parseValue(root, "minimum-sampling-density", value, errTxt) == true)
+    modelSettings_->setMinSamplingDensity(value);
+  if(parseValue(root, "minimum-horizontal-resolution", value, errTxt) == true)
+    modelSettings_->setMinHorizontalRes(value);
   if(parseValue(root, "white-noise-component", value, errTxt) == true)
     modelSettings_->setWNC(value);
   std::string filename;
