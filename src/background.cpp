@@ -1347,7 +1347,7 @@ Background::createPaddedParameter(FFTGrid *& pNew,     // Padded
             value = a1*w1 + a2*w2;
           }
         }
-        pNew->setNextReal(value);
+        pNew->setRealValue(i,j,k,value,true);
       }
     }
   }  

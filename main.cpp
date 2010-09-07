@@ -43,127 +43,133 @@ int main(int argc, char** argv)
   double wall=0.0, cpu=0.0;
   TimeKit::getTime(wall,cpu);
 
-  // Parsing modelfile and reading files
-  Model * model = new Model(argv[1]);
-
-  if(model->getFailed())
-    return(1);
-  
-  ModelSettings * modelSettings = model->getModelSettings();
-  Crava         * crava         = NULL;
-
-  if(!modelSettings->getForwardModeling())
+  try
   {
-    if (modelSettings->getDoInversion())
+    // Parsing modelfile and reading files
+    Model * model = new Model(argv[1]);
+
+    if(model->getFailed())
+      return(1);
+    
+    ModelSettings * modelSettings = model->getModelSettings();
+    Crava         * crava         = NULL;
+
+    if(!modelSettings->getForwardModeling())
     {
-      time_t timestart, timeend;
-      time(&timestart);
-
-      int nwells = modelSettings->getNumberOfWells();
-      SpatialWellFilter *spatwellfilter = new SpatialWellFilter(nwells);
-      crava = new Crava(model, spatwellfilter);
-      
-      std::string warningText("");
-      
-      if(crava->getWarning( warningText ) != 0)
-       {
-         LogKit::LogFormatted(LogKit::Low,"\nWarning  !!!\n");
-         LogKit::LogFormatted(LogKit::Low,"%s",warningText.c_str());
-         LogKit::LogFormatted(LogKit::Low,"\n");
-       }
-      crava->printEnergyToScreen();
-      
-      time(&timeend);
-      LogKit::LogFormatted(LogKit::DebugLow,"\nTime elapsed :  %d\n",timeend-timestart);  
-      crava->computePostMeanResidAndFFTCov();
-      time(&timeend);
-      LogKit::LogFormatted(LogKit::DebugLow,"\nTime elapsed :  %d\n",timeend-timestart);  
-
-      if(modelSettings->getNumberOfSimulations() > 0)
+      if (modelSettings->getDoInversion())
       {
-        crava->simulate(model->getRandomGen());
-      }
+        time_t timestart, timeend;
+        time(&timestart);
 
-      Corr * corr = model->getCorrelations();
-      corr->invFFT();
-      if (!modelSettings->getUseLocalNoise()) // Already done in crava.cpp if local noise
-        corr->createPostVariances();
-      corr->printPostVariances();
-      if((modelSettings->getOutputGridsOther() & IO::CORRELATION) > 0)
-      {
-        corr->writeFilePostVariances();
-        corr->writeFilePostCovGrids(model->getTimeSimbox());
-      }       
+        int nwells = modelSettings->getNumberOfWells();
+        SpatialWellFilter *spatwellfilter = new SpatialWellFilter(nwells);
+        crava = new Crava(model, spatwellfilter);
+        
+        std::string warningText("");
+        
+        if(crava->getWarning( warningText ) != 0)
+         {
+           LogKit::LogFormatted(LogKit::Low,"\nWarning  !!!\n");
+           LogKit::LogFormatted(LogKit::Low,"%s",warningText.c_str());
+           LogKit::LogFormatted(LogKit::Low,"\n");
+         }
+        crava->printEnergyToScreen();
+        
+        time(&timeend);
+        LogKit::LogFormatted(LogKit::DebugLow,"\nTime elapsed :  %d\n",timeend-timestart);  
+        crava->computePostMeanResidAndFFTCov();
+        time(&timeend);
+        LogKit::LogFormatted(LogKit::DebugLow,"\nTime elapsed :  %d\n",timeend-timestart);  
 
-      int activeAngles = 0; //How many dimensions for local noise interpolation? Turn off for now.
-      if(modelSettings->getUseLocalNoise()==true)
-        activeAngles = modelSettings->getNumberOfAngles();
-      spatwellfilter->doFiltering(corr,
-                                  model->getWells(), 
-                                  modelSettings->getNumberOfWells(), 
-                                  modelSettings->getNoVsFaciesProb(),
-                                  modelSettings->getIndicatorFilter(),
-                                  activeAngles, 
-                                  crava, 
-                                  model->getLocalNoiseScales());
-      
-      // FilterWellLogs * filteredlogs = NULL;
-      //crava->filterLogs(model->getTimeSimboxConstThick(),filteredlogs);
+        if(modelSettings->getNumberOfSimulations() > 0)
+        {
+          crava->simulate(model->getRandomGen());
+        }
 
-      if (modelSettings->getEstimateFaciesProb()) {
-        bool useFilter = modelSettings->getUseFilterForFaciesProb();
-        crava->computeFaciesProb(spatwellfilter, useFilter);
-      }
-      delete spatwellfilter;
+        Corr * corr = model->getCorrelations();
+        corr->invFFT();
+        if (!modelSettings->getUseLocalNoise()) // Already done in crava.cpp if local noise
+          corr->createPostVariances();
+        corr->printPostVariances();
+        if((modelSettings->getOutputGridsOther() & IO::CORRELATION) > 0)
+        {
+          corr->writeFilePostVariances();
+          corr->writeFilePostCovGrids(model->getTimeSimbox());
+        }       
 
-      if(modelSettings->getKrigingParameter() > 0)
-        crava->doPredictionKriging();
+        int activeAngles = 0; //How many dimensions for local noise interpolation? Turn off for now.
+        if(modelSettings->getUseLocalNoise()==true)
+          activeAngles = modelSettings->getNumberOfAngles();
+        spatwellfilter->doFiltering(corr,
+                                    model->getWells(), 
+                                    modelSettings->getNumberOfWells(), 
+                                    modelSettings->getNoVsFaciesProb(),
+                                    modelSettings->getIndicatorFilter(),
+                                    activeAngles, 
+                                    crava, 
+                                    model->getLocalNoiseScales());
+        
+        // FilterWellLogs * filteredlogs = NULL;
+        //crava->filterLogs(model->getTimeSimboxConstThick(),filteredlogs);
 
-      if(modelSettings->getGenerateSeismicAfterInv())
-        crava->computeSyntSeismic(crava->getPostAlpha(),crava->getPostBeta(),crava->getPostRho());
+        if (modelSettings->getEstimateFaciesProb()) {
+          bool useFilter = modelSettings->getUseFilterForFaciesProb();
+          crava->computeFaciesProb(spatwellfilter, useFilter);
+        }
+        delete spatwellfilter;
 
-      //
-      // Temporary placement.  crava.cpp needs a proper restructuring.
-      //
-      if((modelSettings->getWellOutputFlag() & IO::BLOCKED_WELLS) > 0) {
-        model->writeBlockedWells(model->getWells(),modelSettings);
-      }
-      if((modelSettings->getWellOutputFlag() & IO::BLOCKED_LOGS) > 0) {
-        LogKit::LogFormatted(LogKit::Low,"\nWARNING: Writing of BLOCKED_LOGS is not implemented yet.\n");
-      }
+        if(modelSettings->getKrigingParameter() > 0)
+          crava->doPredictionKriging();
 
+        if(modelSettings->getGenerateSeismicAfterInv())
+          crava->computeSyntSeismic(crava->getPostAlpha(),crava->getPostBeta(),crava->getPostRho());
+
+        //
+        // Temporary placement.  crava.cpp needs a proper restructuring.
+        //
+        if((modelSettings->getWellOutputFlag() & IO::BLOCKED_WELLS) > 0) {
+          model->writeBlockedWells(model->getWells(),modelSettings);
+        }
+        if((modelSettings->getWellOutputFlag() & IO::BLOCKED_LOGS) > 0) {
+          LogKit::LogFormatted(LogKit::Low,"\nWARNING: Writing of BLOCKED_LOGS is not implemented yet.\n");
+        }
+
+        delete crava;
+      } //end doinversion 
+    }
+    else // do forward modeling
+    {
+      LogKit::LogFormatted(LogKit::Low,"\nBuilding model ...\n");
+      crava = new Crava(model, 0);
+      LogKit::LogFormatted(LogKit::Low,"\n               ... model built\n");
+    
+      crava->computeSyntSeismic(crava->getPostAlpha(),crava->getPostBeta(),crava->getPostRho());
       delete crava;
-    } //end doinversion 
+    } 
+
+    if (FFTGrid::getMaxAllowedGrids() > FFTGrid::getMaxAllocatedGrids() && modelSettings->getDoInversion()) {
+      LogKit::LogFormatted(LogKit::DebugLow,"\nWARNING: A memory requirement inconsistency has been detected:"); 
+      LogKit::LogFormatted(LogKit::DebugLow,"\n            Maximum number of grids requested  :  %2d",FFTGrid::getMaxAllowedGrids()); 
+      LogKit::LogFormatted(LogKit::DebugLow,"\n            Maximum number of grids allocated  :  %2d",FFTGrid::getMaxAllocatedGrids()); 
+      LogKit::LogFormatted(LogKit::DebugLow,"\n         Consult method Model::checkAvailableMemory().\n"); 
+      TaskList::addTask("CRAVA did not use as much memory as estimated. NR would be interested to know about this, so if you could send your .xml-file to us, we would appreciate it.");
+    }
+    
+    delete model;
+
+    Timings::setTimeTotal(wall,cpu);
+    Timings::reportAll(LogKit::Medium);
+
+    TaskList::viewAllTasks();  
+
+    Timings::reportTotal();
+    LogKit::LogFormatted(LogKit::Low,"\n*** CRAVA closing  ***\n"); 
+    LogKit::LogFormatted(LogKit::Low,"\n*** CRAVA finished ***\n");
+    LogKit::EndLog();
   }
-  else // do forward modeling
+  catch (std::bad_alloc& ba)
   {
-    LogKit::LogFormatted(LogKit::Low,"\nBuilding model ...\n");
-    crava = new Crava(model, 0);
-    LogKit::LogFormatted(LogKit::Low,"\n               ... model built\n");
-  
-    crava->computeSyntSeismic(crava->getPostAlpha(),crava->getPostBeta(),crava->getPostRho());
-    delete crava;
-  } 
-
-  if (FFTGrid::getMaxAllowedGrids() > FFTGrid::getMaxAllocatedGrids() && modelSettings->getDoInversion()) {
-    LogKit::LogFormatted(LogKit::DebugLow,"\nWARNING: A memory requirement inconsistency has been detected:"); 
-    LogKit::LogFormatted(LogKit::DebugLow,"\n            Maximum number of grids requested  :  %2d",FFTGrid::getMaxAllowedGrids()); 
-    LogKit::LogFormatted(LogKit::DebugLow,"\n            Maximum number of grids allocated  :  %2d",FFTGrid::getMaxAllocatedGrids()); 
-    LogKit::LogFormatted(LogKit::DebugLow,"\n         Consult method Model::checkAvailableMemory().\n"); 
-    TaskList::addTask("CRAVA did not use as much memory as estimated. NR would be interested to know about this, so if you could send your .xml-file to us, we would appreciate it.");
+    std::cerr << "Out of memory: " << ba.what() << std::endl;
   }
-  
-  delete model;
-
-  Timings::setTimeTotal(wall,cpu);
-  Timings::reportAll(LogKit::Medium);
-
-  TaskList::viewAllTasks();  
-
-  Timings::reportTotal();
-
-  LogKit::LogFormatted(LogKit::Low,"\n*** CRAVA closing  ***\n"); 
-  LogKit::LogFormatted(LogKit::Low,"\n*** CRAVA finished ***\n");
-  LogKit::EndLog();
   return(0);
 }
