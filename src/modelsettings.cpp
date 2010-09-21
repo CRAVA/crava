@@ -329,4 +329,18 @@ ModelSettings::getTimeGradientSettings(float &distance, float &sigma_m)
   sigma_m = sigma_m_;
 }
 
+int
+ModelSettings::getEstimateNumberOfWavelets(void) const
+{
+  int n   = static_cast<int>(estimateWavelet_.size());
+  int tot = 0;
+
+  for (int i=0; i<n; i++)
+  {
+    if (estimateWavelet_[i] == 1)
+      tot++;
+  }
+  return tot;
+}
+
 int  ModelSettings::debugFlag_  = 0;

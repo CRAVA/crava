@@ -136,7 +136,6 @@ public:
   int                              getWaveletOutputFlag(void)           const { return waveletFlag_                               ;}
   int                              getWaveletFormatFlag(void)           const { return waveletFormatFlag_                         ;}
   bool                             getWaveletFormatManual(void)         const { return waveletFormatManual_                       ;}
-  int                              getEstimateNumberOfWavelets(void)    const { return static_cast<int>(estimateWavelet_.size())  ;}
   int                              getOtherOutputFlag(void)             const { return otherFlag_                                 ;}
   int                              getDebugFlag(void)                   const { return debugFlag_                                 ;}
   static int                       getDebugLevel(void)                        { return debugFlag_                                 ;}
@@ -166,7 +165,8 @@ public:
   bool                             getDoInversion(void);                                            
   bool                             getDoDepthConversion(void)           const;
   bool                             getDoSmoothKriging(void)             const { return smoothKrigedParameters_ ;}
-  void                             getTimeGradientSettings(float &distance, float &alpha);       
+  void                             getTimeGradientSettings(float &distance, float &alpha);      
+  int                              getEstimateNumberOfWavelets(void)    const;
 
   void rotateVariograms(float angle);
 
