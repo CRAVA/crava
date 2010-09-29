@@ -132,7 +132,7 @@ Wavelet::Wavelet(ModelSettings     * modelSettings,
   coeff_[1]       = reflCoef[1];
   coeff_[2]       = reflCoef[2];
   
-  double dt = 1.0;
+  dz_ = 1.0;
   nz_ = 2*119 - 1;
  // cz_   =  static_cast<int>(floor((fabs(shift/dz_))+0.5));
   cz_ = 0;
@@ -144,7 +144,7 @@ Wavelet::Wavelet(ModelSettings     * modelSettings,
   norm_ = RMISSING;
   double t;
   for (int i = 0; i < 119; ++i) {
-         t = i * dt;
+         t = i * dz_;
         rAmp_[i] = static_cast<fftw_real>(Ricker(t, peakFrequency));
         if(i>0)
         rAmp_[nz_-i] = static_cast<fftw_real>(Ricker(-t, peakFrequency));
