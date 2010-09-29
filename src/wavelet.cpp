@@ -1303,7 +1303,7 @@ Wavelet::WaveletReadNorsar(const std::string & fileName,
 double 
 Wavelet::Ricker(double t, float peakF)
 {
-  double c = NRLib::PI * NRLib::PI * peakF * peakF * t * t * 1e-6;
+  double c = NRLib::Pi * NRLib::Pi * peakF * peakF * t * t * 1e-6;
    return (1 - 2*c) * exp(-c);
 }
 
