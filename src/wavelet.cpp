@@ -131,11 +131,12 @@ Wavelet::Wavelet(ModelSettings     * modelSettings,
   coeff_[0]       = reflCoef[0];
   coeff_[1]       = reflCoef[1];
   coeff_[2]       = reflCoef[2];
-  
+   int length = 119;
+   
   dz_ = 1.0;
-  nz_ = 2*119 - 1;
+  nz_ = 2*length + 1;
  // cz_   =  static_cast<int>(floor((fabs(shift/dz_))+0.5));
-  cz_ = 0;
+  cz_ = length;
   nzp_  = nz_;
   cnzp_ = nzp_/2+1;
   rnzp_ = 2*cnzp_; 
@@ -143,11 +144,15 @@ Wavelet::Wavelet(ModelSettings     * modelSettings,
   cAmp_ = reinterpret_cast<fftw_complex*>(rAmp_);
   norm_ = RMISSING;
   double t;
-  for (int i = 0; i < 119; ++i) {
+  for (int i = 0; i < nz_; ++i) {
+    t = (i-cz_) * dz_;
+    rAmp_[i] = static_cast<fftw_real>(Ricker(t, peakFrequency));
+    /*
          t = i * dz_;
         rAmp_[i] = static_cast<fftw_real>(Ricker(t, peakFrequency));
         if(i>0)
         rAmp_[nz_-i] = static_cast<fftw_real>(Ricker(-t, peakFrequency));
+        */
      }
 
 
@@ -163,6 +168,8 @@ Wavelet::Wavelet(ModelSettings     * modelSettings,
         rAmp_[i]=RMISSING;
     }//end for i
   }
+  printToFile("ricker20.txt",true);
+ 
 }
 
 
