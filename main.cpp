@@ -35,8 +35,8 @@ int main(int argc, char** argv)
   Program program( 0,                     // Major version
                    9,                     // Minor version 
                    9,                     // Patch number 
-//                   "",                    // Use empty string "" for release versions 
-                   " beta",               // Use empty string "" for release versions 
+                   "",                    // Use empty string "" for release versions 
+                   //                   " beta",               // Use empty string "" for release versions 
                    -1,                    // Validity of licence in days (-1 = infinite)
                   "Norsk Regnesentral");  // Who this copy of CRAVA is licensed to
 
