@@ -7,6 +7,7 @@ DIRS        = src lib nrlib fft/fftw fft/rfftw
 OBJDIR      = obj
 OBJSUBDIR   = obj/fft
 OBJNRLIBDIR = obj/nrlib
+OBJFINDGRAM = findgrammar/findgrammar.o
 OBJGRAMMAR  = obj/nrlib/iotools/fileio.o               \
               obj/nrlib/tinyxml/tinyxml.o              \
               obj/nrlib/tinyxml/tinyxmlerror.o         \
@@ -24,7 +25,7 @@ $(PROGRAM): $(DIRS) main.o
 	$(PURIFY) $(CXX) $(CXXFLAGS) $(LFLAGS) -o $@ $(OBJDIR)/*.o $(OBJSUBDIR)/*.o $(OBJNRLIBDIR)/*/*.o $(OBJNRLIBDIR)/*/*/*.o main.o
 
 $(GRAMMAR): findgrammar/findgrammar.o
-	$(PURIFY) $(CXX) $(CXXFLAGS) $(LFLAGS) -o $@ $(OBJGRAMMAR) findgrammar/findgrammar.o
+	$(PURIFY) $(CXX) $(CXXFLAGS) $(LFLAGS) -o $@ $(OBJGRAMMAR) $(OBJFINDGRAM)
 
 $(OBJDIR):
 	install -d $(OBJDIR)
@@ -52,7 +53,7 @@ cleanall:
 	rm -f $(OBJSUBDIR)/*.o
 	rm -f $(OBJNRLIBDIR)/*/*.o
 	rm -f $(OBJNRLIBDIR)/*/*/*.o
-	rm -f $(PROGRAM) $(GRAMMAR) main.o
+	rm -f $(PROGRAM) $(GRAMMAR) $(OBJFINDGRAM) main.o
 
 test:	$(PROGRAM) $(GRAMMAR)
 	cd test_suite; chmod +x TestScript.pl; perl -s ./TestScript.pl ../$(PROGRAM) $(case); cd ..
