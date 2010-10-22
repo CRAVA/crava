@@ -1764,6 +1764,7 @@ Model::processWells(WellData     **& wells,
     int nohit=0;
     int empty=0;
     int facieslognotok = 0;
+    int upwards=0;
     LogKit::LogFormatted(LogKit::Low,"\n");
     for (int i=0 ; i<nWells ; i++)
     {
@@ -1787,11 +1788,16 @@ Model::processWells(WellData     **& wells,
           facieslognotok++;
           TaskList::addTask("Check the facies logs in well "+wells[i]->getWellname()+".\n       The facies logs in this well are wrong and the well is ignored");
         }
+        if(wells[i]->removeDuplicateLogEntries(timeSimbox, nMerges[i]) == false) {
+          LogKit::LogFormatted(LogKit::Low,"   IGNORED (well is too far from monotonous in time)\n");
+          skip = true;
+          upwards++;
+          TaskList::addTask("Check the TWT log in well "+wells[i]->getWellname()+".\n       The well is moving too much upwards, and the well is ignored");
+        }
         if(skip)
           validIndex[i] = false;
         else {
           validIndex[i] = true;
-          wells[i]->removeDuplicateLogEntries(nMerges[i]);
           wells[i]->setWrongLogEntriesUndefined(nInvalidAlpha[i], nInvalidBeta[i], nInvalidRho[i]);
           wells[i]->filterLogs();
           wells[i]->lookForSyntheticVsLog(rankCorr[i]);
@@ -1938,6 +1944,8 @@ Model::processWells(WellData     **& wells,
       LogKit::LogFormatted(LogKit::Low,"\nWARNING: %d well(s) contain no log entries and will be ignored.\n",empty);
     if(facieslognotok>0)
       LogKit::LogFormatted(LogKit::Low,"\nWARNING: %d well(s) have wrong facies logs and will be ignored.\n",facieslognotok);
+    if(upwards>0)
+      LogKit::LogFormatted(LogKit::Low,"\nWARNING: %d well(s) are moving upwards in TWT and will be ignored.\n",upwards);
     if (nWells==0 && modelSettings->getNoWellNedded()==false) {
       LogKit::LogFormatted(LogKit::Low,"\nERROR: There are no wells left for data analysis. Please check that the inversion area given");
       LogKit::LogFormatted(LogKit::Low,"\n       below is correct. If it is not, you probably have problems with coordinate scaling.");

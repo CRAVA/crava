@@ -61,7 +61,7 @@ public:
   int             getNd() const;
   int             checkError(std::string & errText);
   int             checkSimbox(Simbox *simbox);  
-  void            removeDuplicateLogEntries(int & nMerges);
+  bool            removeDuplicateLogEntries(const Simbox * simbox, int & nMerges);
   void            setWrongLogEntriesUndefined(int & count_alpha, int & count_beta, int & count_rho);
   void            filterLogs(void);
   void            lookForSyntheticVsLog(float & rank_correlation);

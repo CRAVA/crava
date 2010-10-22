@@ -804,10 +804,13 @@ int WellData::checkSimbox(Simbox * simbox)
 }
 
 //----------------------------------------------------------------------------
-void
-WellData::removeDuplicateLogEntries(int & nMerges) 
+bool
+WellData::removeDuplicateLogEntries(const Simbox * simbox, int & nMerges) 
 {
   bool debug = false;
+  bool monotonous = true; //Check that well does not move unreasonably much upwards.
+  float maxUpwardDist = -3.0f*static_cast<float>(simbox->getdz()); //Do not allow upwards movement of more than three cells. Calibrate.
+
   float minMergeDist = modelSettings_->getMaxMergeDist();
 
   double * xpos_resampled   = new double[nd_];                        
@@ -828,8 +831,11 @@ WellData::removeDuplicateLogEntries(int & nMerges)
     else
     {
       iend = istart + 1;                         // Start looking one element ahead 
-      while (zpos_[iend] - zpos_[istart] < minMergeDist && iend < nd_ - 1)
+      while (zpos_[iend] - zpos_[istart] < minMergeDist && iend < nd_ - 1) {
         iend++; 
+        if(monotonous == true && zpos_[iend] - zpos_[istart] < maxUpwardDist)
+          monotonous = false;
+      }
       iend--;
     }
 
@@ -876,6 +882,7 @@ WellData::removeDuplicateLogEntries(int & nMerges)
   beta_   = beta_resampled; 
   rho_    = rho_resampled; 
   facies_ = facies_resampled;
+  return(monotonous);
 }
 
 //----------------------------------------------------------------------------
