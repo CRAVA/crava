@@ -3,8 +3,6 @@
 #include "nrlib/surface/surfaceio.hpp"
 #include "nrlib/iotools/logkit.hpp"
 
-#include "lib/utils.h"
-
 #include "src/modelsettings.h"
 #include "src/definitions.h"
 #include "src/fftfilegrid.h"
@@ -247,7 +245,7 @@ void Corr::printPriorVariances(void) const
 void
 Corr::printPostVariances(void) const
 {
-  Utils::writeHeader("Posterior Covariance");
+  LogKit::WriteHeader("Posterior Covariance");
   LogKit::LogFormatted(LogKit::Low,"\nVariances and correlations for parameter residuals:\n");
   LogKit::LogFormatted(LogKit::Low,"\n");
   LogKit::LogFormatted(LogKit::Low,"               ln Vp     ln Vs    ln Rho \n");

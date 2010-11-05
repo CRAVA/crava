@@ -4,7 +4,6 @@
 
 #include "src/tasklist.h"
 #include "nrlib/iotools/logkit.hpp"
-#include "lib/utils.h"
 
 std::vector<std::string> TaskList::task_(0);
 
@@ -15,9 +14,9 @@ void TaskList::viewAllTasks(void)
 
   if (size > 0)
   {
-    Utils::writeHeader("Suggested tasks");
-    LogKit::LogFormatted(LogKit::Low,"\n");
+    NRLib::LogKit::WriteHeader("Suggested tasks");
+    NRLib::LogKit::LogFormatted(NRLib::LogKit::Low,"\n");
     for (i=0; i<size; i++)
-      LogKit::LogFormatted(LogKit::Low,"%d: %s \n", i+1, task_[i].c_str());
+      NRLib::LogKit::LogFormatted(NRLib::LogKit::Low,"%d: %s \n", i+1, task_[i].c_str());
   }
 }

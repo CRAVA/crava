@@ -19,7 +19,6 @@
 #include "src/wavelet.h"
 #include "src/fftgrid.h"
 #include "src/vario.h"
-#include "lib/utils.h"
 #include "tasklist.h"
 #include "src/io.h"
 
@@ -53,7 +52,7 @@ XmlModelFile::XmlModelFile(const std::string & fileName)
   doc.Parse(clean.c_str());
 
   if (doc.Error() == true) {
-    Utils::writeHeader("Invalid XML file");
+    LogKit::WriteHeader("Invalid XML file");
     LogKit::LogFormatted(LogKit::Error,"\n%s is not a valid XML file. %s In line %d, column %d.", 
                          fileName.c_str(), doc.ErrorDesc(), doc.ErrorRow(), doc.ErrorCol());
     if (doc.ErrorId() == 9) { // Not very robust check, but a start 
@@ -75,7 +74,7 @@ XmlModelFile::XmlModelFile(const std::string & fileName)
     setDerivedParameters(errTxt);
 
     if(errTxt != "") {
-      Utils::writeHeader("Invalid model file");
+      LogKit::WriteHeader("Invalid model file");
       LogKit::LogFormatted(LogKit::Error,"\n%s is not a valid model file:\n",fileName.c_str());
       LogKit::LogMessage(LogKit::Error, errTxt);
       LogKit::LogFormatted(LogKit::Error,"\nAborting\n");

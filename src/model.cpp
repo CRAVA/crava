@@ -98,7 +98,7 @@ Model::Model(const std::string & fileName)
  
   std::string errTxt = inputFiles->addInputPathAndCheckFiles();
   if(errTxt != "") {
-    Utils::writeHeader("Error opening files");
+    LogKit::WriteHeader("Error opening files");
     LogKit::LogMessage(LogKit::Error, "\n"+errTxt);
     LogKit::LogFormatted(LogKit::Error,"\nAborting\n");
     failedInputFiles = true;
@@ -140,7 +140,7 @@ Model::Model(const std::string & fileName)
     
     std::string errText("");
 
-    Utils::writeHeader("Defining modelling grid");
+    LogKit::WriteHeader("Defining modelling grid");
     makeTimeSimboxes(timeSimbox_, timeCutSimbox, timeBGSimbox, timeSimboxConstThick_,  //Handles correlation direction too.
                      correlationDirection_, modelSettings_, inputFiles, 
                      errText, failedSimbox);
@@ -329,7 +329,7 @@ Model::Model(const std::string & fileName)
                          failedWavelet || failedDepthConv || failedExtraSurf  || failedPriorFacies;
 
     if (failedLoadingModel) {
-      Utils::writeHeader("Error(s) while loading data");
+      LogKit::WriteHeader("Error(s) while loading data");
       LogKit::LogFormatted(LogKit::Error,"\n"+errText);
       LogKit::LogFormatted(LogKit::Error,"\nAborting\n");
     }
@@ -499,7 +499,7 @@ Model::checkAvailableMemory(Simbox        * timeSimbox,
                             ModelSettings * modelSettings,
                             InputFiles    * inputFiles)
 {
-  Utils::writeHeader("Estimating amount of memory needed");
+  LogKit::WriteHeader("Estimating amount of memory needed");
   //
   // Find the size of first seismic volume
   //
@@ -1588,7 +1588,7 @@ Model::processSeismic(FFTGrid      **& seisCube,
 
   if(inputFiles->getNumberOfSeismicFiles() > 0)
   {
-    Utils::writeHeader("Reading seismic data");
+    LogKit::WriteHeader("Reading seismic data");
 
     int nAngles = modelSettings->getNumberOfAngles();
     const SegyGeometry ** geometry = new const SegyGeometry * [nAngles];
@@ -1710,7 +1710,7 @@ Model::processWells(WellData     **& wells,
   double wall=0.0, cpu=0.0;
   TimeKit::getTime(wall,cpu);
 
-  Utils::writeHeader("Reading and processing wells");
+  LogKit::WriteHeader("Reading and processing wells");
 
   bool    faciesLogGiven = modelSettings->getFaciesLogGiven();
   int     nWells         = modelSettings->getNumberOfWells();
@@ -2133,9 +2133,9 @@ Model::processBackground(Background   *& background,
                          bool          & failed)
 {
   if (modelSettings->getForwardModeling())
-    Utils::writeHeader("Earth Model");
+    LogKit::WriteHeader("Earth Model");
   else
-    Utils::writeHeader("Prior Expectations / Background Model");
+    LogKit::WriteHeader("Prior Expectations / Background Model");
 
   double wall=0.0, cpu=0.0;
   TimeKit::getTime(wall,cpu);
@@ -2326,7 +2326,7 @@ Model::processPriorCorrelations(Corr         *& correlations,
                       modelSettings->getEstimationMode() == true);
   if (modelSettings->getDoInversion() || printResult)
   {
-    Utils::writeHeader("Prior Covariance");
+    LogKit::WriteHeader("Prior Covariance");
 
     double wall=0.0, cpu=0.0;
     TimeKit::getTime(wall,cpu);
@@ -2539,7 +2539,7 @@ Model::processReflectionMatrixFromWells(float       **& reflectionMatrix,
                                         std::string   & errText,
                                         bool          & failed)
 {
-  Utils::writeHeader("Reflection matrix");  
+  LogKit::WriteHeader("Reflection matrix");  
   //
   // About to process wavelets and energy information. Needs the a-matrix, so create
   // if not already made. A-matrix may need Vp/Vs-ratio from wells.
@@ -2573,7 +2573,7 @@ Model::processReflectionMatrixFromBackground(float       **& reflectionMatrix,
                                              std::string   & errText,
                                              bool          & failed)
 {
-  Utils::writeHeader("Reflection matrix");  
+  LogKit::WriteHeader("Reflection matrix");  
   //
   // About to process wavelets and energy information. Needs the a-matrix, so create
   // if not already made. A-matrix may need Vp/Vs-ratio from background model.
@@ -2693,7 +2693,7 @@ Model::processWellLocation(FFTGrid                     ** seisCube,
                            const std::vector<Surface *> & interval, 
                            RandomGen                    * randomGen)
 {
-  Utils::writeHeader("Estimating optimized well location");
+  LogKit::WriteHeader("Estimating optimized well location");
   
   double  deltaX, deltaY;
   float   sum;
@@ -2787,7 +2787,7 @@ Model::processWavelets(Wavelet                    **& wavelet,
                        bool                         & failed)
 {
   int error = 0;
-  Utils::writeHeader("Processing/generating wavelets");
+  LogKit::WriteHeader("Processing/generating wavelets");
 
   double wall=0.0, cpu=0.0;
   TimeKit::getTime(wall,cpu);
@@ -3236,7 +3236,7 @@ void Model::processPriorFaciesProb(const std::vector<Surface *> & faciesEstimInt
 {
   if (modelSettings->getEstimateFaciesProb())
   {
-    Utils::writeHeader("Prior Facies Probabilities");
+    LogKit::WriteHeader("Prior Facies Probabilities");
     int nFacies = modelSettings->getNumberOfFacies();
 
     if(modelSettings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_WELLS)
@@ -3664,7 +3664,7 @@ void
 Model::printSettings(ModelSettings * modelSettings,
                      InputFiles    * inputFiles)
 {
-  Utils::writeHeader("Model settings");
+  LogKit::WriteHeader("Model settings");
 
   LogKit::LogFormatted(LogKit::Low,"\nGeneral settings:\n");
   if(modelSettings->getForwardModeling()==true)
@@ -4388,7 +4388,7 @@ Model::loadVelocity(FFTGrid          *& velocity,
                     std::string       & errText,
                     bool              & failed)
 {
-  Utils::writeHeader("Setup time-to-depth relationship");
+  LogKit::WriteHeader("Setup time-to-depth relationship");
 
   if(modelSettings->getVelocityFromInversion() == true)
   {

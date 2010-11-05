@@ -90,7 +90,7 @@ void SpatialWellFilter::doFiltering(Corr                        * corr,
                                     const Crava                 * cravaResult, 
                                     const std::vector<Grid2D *> & noiseScale)
 {
- Utils::writeHeader("Creating spatial multi-parameter filter");
+ LogKit::WriteHeader("Creating spatial multi-parameter filter");
 
   double wall=0.0, cpu=0.0;
   TimeKit::getTime(wall,cpu);

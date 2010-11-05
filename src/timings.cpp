@@ -6,7 +6,6 @@
 #include "nrlib/iotools/logkit.hpp"
 
 #include "lib/timekit.hpp"
-#include "lib/utils.h"
 
 #include "src/definitions.h"
 #include "src/timings.h"
@@ -14,7 +13,7 @@
 void 
 Timings::reportAll(LogKit::MessageLevels logLevel)
 {
-  Utils::writeHeader("Timings summary", logLevel);
+  LogKit::WriteHeader("Timings summary", logLevel);
 
   double c_loadingSeismic = c_seismic_ - c_resamplingSeismic_;
   double w_loadingSeismic = w_seismic_ - w_resamplingSeismic_;

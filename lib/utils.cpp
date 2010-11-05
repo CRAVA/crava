@@ -12,28 +12,6 @@
 #include "nrlib/iotools/logkit.hpp"
 
 //------------------------------------------------------------
-void
-Utils::writeHeader(const std::string     & text, 
-                   LogKit::MessageLevels   logLevel)
-{
-  int width = 100; // Total width of header
-  std::string ruler(width,'*');
-  std::string stars("*****");
-  LogKit::LogFormatted(logLevel,"\n"+ruler+"\n");
-  int starLength  = int(stars.length());
-  int textLength  = int(text.length());
-  int blankLength = width - textLength - 2*starLength;
-  std::string blanks(blankLength/2,' ');
-  std::string center;
-  if(blankLength % 2)
-    center = stars + blanks + text + blanks + " " + stars;
-  else
-    center = stars + blanks + text + blanks +stars;
-  LogKit::LogFormatted(logLevel,center+"\n");
-  LogKit::LogFormatted(logLevel,ruler+"\n");
-}
-
-//------------------------------------------------------------
 void    
 Utils::writeTitler(const std::string & text)
 {

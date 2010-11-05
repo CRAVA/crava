@@ -25,7 +25,6 @@
 #include "src/tasklist.h"
 #include "lib/timekit.hpp"
 #include "lib/random.h"
-#include "lib/utils.h"
 #include "lib/lib_matr.h"
 #include "nrlib/iotools/logkit.hpp"
 #include "nrlib/stormgrid/stormcontgrid.hpp"
@@ -39,7 +38,7 @@
 
 Crava::Crava(Model * model, SpatialWellFilter * spatwellfilter)
 {
-  Utils::writeHeader("Building Stochastic Model");
+  LogKit::WriteHeader("Building Stochastic Model");
 
   double wall=0.0, cpu=0.0;
   TimeKit::getTime(wall,cpu);
@@ -639,7 +638,7 @@ Crava::multiplyDataByScaleWaveletAndWriteToFile(const std::string & typeName)
 int 
 Crava::computePostMeanResidAndFFTCov()
 {
-  Utils::writeHeader("Posterior model / Performing Inversion");
+  LogKit::WriteHeader("Posterior model / Performing Inversion");
 
   double wall=0.0, cpu=0.0;
   TimeKit::getTime(wall,cpu);
@@ -1126,7 +1125,7 @@ Crava::doPredictionKriging()
 int
 Crava::simulate(RandomGen * randomGen)
 {   
-  Utils::writeHeader("Simulating from posterior model");
+  LogKit::WriteHeader("Simulating from posterior model");
 
   double wall=0.0, cpu=0.0;
   TimeKit::getTime(wall,cpu);
@@ -1315,7 +1314,7 @@ Crava::doPostKriging(FFTGrid & postAlpha,
                      FFTGrid & postRho) 
 {
 
-  Utils::writeHeader("Kriging to wells");
+  LogKit::WriteHeader("Kriging to wells");
 
   CovGridSeparated covGridAlpha      (*correlations_->getPostCovAlpha()      );
   CovGridSeparated covGridBeta       (*correlations_->getPostCovBeta()       );
@@ -1342,7 +1341,7 @@ Crava::doPostKriging(FFTGrid & postAlpha,
 int 
 Crava::computeSyntSeismic(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho)
 {
-  Utils::writeHeader("Compute Synthetic Seismic");
+  LogKit::WriteHeader("Compute Synthetic Seismic");
 
   if(!Alpha->getIsTransformed()) Alpha->fftInPlace();
   if(!Beta->getIsTransformed()) Beta->fftInPlace();
@@ -1637,7 +1636,7 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
 
   if(modelSettings->getEstimateFaciesProb())
   {
-    Utils::writeHeader("Facies probability volumes");
+    LogKit::WriteHeader("Facies probability volumes");
 
     double wall=0.0, cpu=0.0;
     TimeKit::getTime(wall,cpu);
