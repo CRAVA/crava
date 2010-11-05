@@ -490,7 +490,11 @@ WellData::readNorsarWell(const std::string              & wellFileName,
     if(error_ == 0) {
       faciesok_ = 1;
       std::vector<int> facCodes;
-      nd_       = static_cast<int>(logs[0]->size());
+      nd_ = 0;
+      for(size_t i=0;i<logs[2]->size();i++)
+        if(well.IsMissing((*logs[2])[i]) == false)
+          nd_++;
+
       xpos_     = new double[nd_];
       ypos_     = new double[nd_];
       zpos_     = new double[nd_];
@@ -498,30 +502,34 @@ WellData::readNorsarWell(const std::string              & wellFileName,
       beta_     = new float[nd_];
       rho_      = new float[nd_];
       facies_   = new int[nd_];   // Always allocate a facies log (for code simplicity)
-      for(int i=0;i<nd_;i++) {
-        xpos_[i]  = (*logs[0])[i]*1000;
-        ypos_[i]  = (*logs[1])[i]*1000;
-        zpos_[i]  = (*logs[2])[i]*1000;
-        if(!well.IsMissing((*logs[3])[i]))
-          alpha_[i] = static_cast<float>((*logs[3])[i]);
-        else 
-          alpha_[i] = RMISSING;
-        if(!well.IsMissing((*logs[5])[i]))
-          beta_[i]  = static_cast<float>((*logs[5])[i]);
-        else 
-          beta_[i] = RMISSING;
-        if(!well.IsMissing((*logs[4])[i]))
-          rho_[i]   = static_cast<float>((*logs[4])[i]);
-        else 
-          rho_[i] = RMISSING;
-        if(nLogs > 6 && logs[6] != NULL && 
-          !well.IsMissing((*logs[4])[i])) {
-          facies_[i]  = static_cast<int>((*logs[6])[i]);
-          if(find(facCodes.begin(), facCodes.end(), facies_[i]) == facCodes.end())
-            facCodes.push_back(facies_[i]);
+      int ind   = 0;
+      for(size_t i=0;i<logs[0]->size();i++) {
+        if(well.IsMissing((*logs[2])[i]) == false) {
+          xpos_[ind]  = (*logs[0])[i]*1000;
+          ypos_[ind]  = (*logs[1])[i]*1000;
+          zpos_[ind]  = (*logs[2])[i]*1000;
+          if(!well.IsMissing((*logs[3])[i]))
+            alpha_[ind] = static_cast<float>((*logs[3])[i]);
+          else 
+            alpha_[ind] = RMISSING;
+          if(!well.IsMissing((*logs[5])[i]))
+            beta_[ind]  = static_cast<float>((*logs[5])[i]);
+          else 
+            beta_[ind] = RMISSING;
+          if(!well.IsMissing((*logs[4])[i]))
+            rho_[ind]   = static_cast<float>((*logs[4])[i]);
+          else 
+            rho_[ind] = RMISSING;
+          if(nLogs > 6 && logs[6] != NULL && 
+            !well.IsMissing((*logs[6])[i])) {
+            facies_[ind]  = static_cast<int>((*logs[6])[i]);
+            if(find(facCodes.begin(), facCodes.end(), facies_[ind]) == facCodes.end())
+              facCodes.push_back(facies_[ind]);
+          }
+          else
+            facies_[ind] = IMISSING;
         }
-        else
-          facies_[i] = IMISSING;
+        ind++;
       }
       nFacies_ = static_cast<int>(facCodes.size());
     }
