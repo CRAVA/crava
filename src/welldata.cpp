@@ -528,8 +528,8 @@ WellData::readNorsarWell(const std::string              & wellFileName,
           }
           else
             facies_[ind] = IMISSING;
+          ind++;
         }
-        ind++;
       }
       nFacies_ = static_cast<int>(facCodes.size());
     }

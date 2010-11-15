@@ -972,7 +972,7 @@ FFTGrid::setRealValue(int i, int j ,int k, float  value, bool extSimbox)
 {    
   assert(istransformed_== false);
 
-  bool  inSimbox   = (extSimbox ? ( (i < nxp_) && (j < nyp_) && (k < nzp_)):
+  bool  inSimbox   = (extSimbox ? ( (i < rnxp_) && (j < nyp_) && (k < nzp_)):
     ((i < nx_) && (j < ny_) && (k < nz_)));
   bool  notMissing = ( (i > -1) && (j > -1) && (k > -1));
 
