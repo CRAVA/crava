@@ -33,6 +33,8 @@ GridMapping::~GridMapping()
   if(mapping_!=NULL)
     delete mapping_;
   mapping_ = NULL;
+  delete z0Grid_;
+  delete z1Grid_;
 }
 
 void 
@@ -293,7 +295,7 @@ void GridMapping::setDepthSimbox(const Simbox * timeSimbox,
                                  std::string  & errText)
 {
   simbox_ = new Simbox(timeSimbox);
-  simbox_->setDepth(z0Grid_, z1Grid_, nz);
+  simbox_->setDepth(*z0Grid_, *z1Grid_, nz);
 
   std::string topSurf  = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixDepth();
   std::string baseSurf = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixDepth();

@@ -828,7 +828,8 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
 
   bool estimationModeNeedILXL = modelSettings->getEstimationMode() && 
                                 (areaSpecification == ModelSettings::AREA_FROM_GRID_DATA ||
-                                (modelSettings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0);
+                                (modelSettings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0 ||
+                                (modelSettings->getOutputGridFormat() & IO::SEGY) > 0);
                                  
   if(modelSettings->getForwardModeling())
     gridFile = inputFiles->getBackFile(0);    // Get geometry from earth model (Vp)
@@ -1082,7 +1083,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
           // Make time simbox with constant thicknesses (needed for log filtering and facies probabilities)
           //
           timeSimboxConstThick = new Simbox(timeSimbox);
-          Surface * tsurf = new Surface(dynamic_cast<const Surface &> (timeSimbox->GetTopSurface()));
+          Surface tsurf(dynamic_cast<const Surface &> (timeSimbox->GetTopSurface()));
           timeSimboxConstThick->setDepth(tsurf, 0, timeSimbox->getlz(), timeSimbox->getdz());
           
           if((modelSettings->getOtherOutputFlag() & IO::EXTRA_SURFACES) > 0 && (modelSettings->getOutputGridDomain() & IO::TIMEDOMAIN) > 0) {
@@ -1180,7 +1181,7 @@ Model::setSimboxSurfaces(Simbox                        *& simbox,
 
   if(!failed) {
     if(parallelSurfaces) { //Only one reference surface
-      simbox->setDepth(z0Grid, dTop, lz, dz);
+      simbox->setDepth(*z0Grid, dTop, lz, dz);
     }
     else {
       const std::string & baseName = surfFile[1]; 
@@ -1207,7 +1208,7 @@ Model::setSimboxSurfaces(Simbox                        *& simbox,
       }
       if(!failed) {
         try {
-          simbox->setDepth(z0Grid, z1Grid, nz);
+          simbox->setDepth(*z0Grid, *z1Grid, nz);
         }
         catch (NRLib::Exception & e) {
           errText += e.what();
@@ -1266,6 +1267,8 @@ Model::setSimboxSurfaces(Simbox                        *& simbox,
       }
     }
   }
+  delete z0Grid;
+  delete z1Grid;
 }
 
 void
@@ -1303,16 +1306,16 @@ Model::setupExtendedTimeSimbox(Simbox   * timeSimbox,
   delete [] corrPlanePars;
   delete [] refPlanePars;
 
-  Surface * topSurf = new Surface(*refPlane);
-  topSurf->SubtractNonConform(&(timeSimbox->GetTopSurface()));
-  double shiftTop = topSurf->Max();
+  Surface topSurf(*refPlane);
+  topSurf.SubtractNonConform(&(timeSimbox->GetTopSurface()));
+  double shiftTop = topSurf.Max();
   shiftTop *= -1.0;
-  topSurf->Add(shiftTop);
-  topSurf->AddNonConform(&(timeSimbox->GetTopSurface()));
+  topSurf.Add(shiftTop);
+  topSurf.AddNonConform(&(timeSimbox->GetTopSurface()));
 
-  Surface * botSurf = new Surface(*refPlane);
-  botSurf->SubtractNonConform(&(timeSimbox->GetBotSurface()));
-  double shiftBot = botSurf->Min();
+  Surface botSurf(*refPlane);
+  botSurf.SubtractNonConform(&(timeSimbox->GetBotSurface()));
+  double shiftBot = botSurf.Min();
   shiftBot *= -1.0;
   double thick    = shiftBot-shiftTop;
   double dz       = timeCutSimbox->getdz();
@@ -1326,8 +1329,8 @@ Model::setupExtendedTimeSimbox(Simbox   * timeSimbox,
     LogKit::LogFormatted(LogKit::High,"\nNumber of layers in inversion increased from %d",timeCutSimbox->getnz());
     LogKit::LogFormatted(LogKit::High," to %d in grid created using correlation direction.\n",nz);
   }
-  botSurf->Add(shiftBot);
-  botSurf->AddNonConform(&(timeSimbox->GetBotSurface()));
+  botSurf.Add(shiftBot);
+  botSurf.AddNonConform(&(timeSimbox->GetBotSurface()));
 
   timeSimbox->setDepth(topSurf, botSurf, nz);
   
@@ -1354,12 +1357,12 @@ Model::setupExtendedBackgroundSimbox(Simbox   * timeSimbox,
   //
   // Move correlation surface for easier handling.
   //
-  Surface * tmpSurf = new Surface(*corrSurf);
-  double avg = tmpSurf->Avg();
+  Surface tmpSurf(*corrSurf);
+  double avg = tmpSurf.Avg();
   if (avg > 0)
-    tmpSurf->Subtract(avg);
+    tmpSurf.Subtract(avg);
   else
-    tmpSurf->Add(avg); // This situation is not very likely, but ...
+    tmpSurf.Add(avg); // This situation is not very likely, but ...
 
   //
   // Find top surface of background simbox. 
@@ -1367,32 +1370,30 @@ Model::setupExtendedBackgroundSimbox(Simbox   * timeSimbox,
   // The funny/strange dTop->Multiply(-1.0) is due to NRLIB's current
   // inability to set dTop equal to Simbox top surface.
   //
-  Surface * dTop = new Surface(*tmpSurf);
-  dTop->SubtractNonConform(&(timeSimbox->GetTopSurface()));
-  dTop->Multiply(-1.0);
-  double shiftTop = dTop->Min();
-  delete dTop;
-  Surface * topSurf = new Surface(*tmpSurf);
-  topSurf->Add(shiftTop);
+  Surface dTop(tmpSurf);
+  dTop.SubtractNonConform(&(timeSimbox->GetTopSurface()));
+  dTop.Multiply(-1.0);
+  double shiftTop = dTop.Min();
+  Surface topSurf(tmpSurf);
+  topSurf.Add(shiftTop);
 
   //
   // Find base surface of background simbox
   //
-  Surface * dBot = new Surface(*tmpSurf);
-  dBot->SubtractNonConform(&(timeSimbox->GetBotSurface()));
-  dBot->Multiply(-1.0);
-  double shiftBot = dBot->Max();
-  delete dBot;
-  Surface * botSurf = new Surface(*tmpSurf);
-  botSurf->Add(shiftBot);
+  Surface dBot(tmpSurf);
+  dBot.SubtractNonConform(&(timeSimbox->GetBotSurface()));
+  dBot.Multiply(-1.0);
+  double shiftBot = dBot.Max();
+  Surface botSurf(tmpSurf);
+  botSurf.Add(shiftBot);
 
   //
   // Calculate number of layers of background simbox 
   //
-  tmpSurf->Assign(0.0);
-  tmpSurf->AddNonConform(botSurf);
-  tmpSurf->SubtractNonConform(topSurf);
-  double dMax = tmpSurf->Max();
+  tmpSurf.Assign(0.0);
+  tmpSurf.AddNonConform(&botSurf);
+  tmpSurf.SubtractNonConform(&topSurf);
+  double dMax = tmpSurf.Max();
   double dt = timeSimbox->getdz();
   int nz;
   //
@@ -1404,7 +1405,6 @@ Model::setupExtendedBackgroundSimbox(Simbox   * timeSimbox,
   //  dt = 10.0;  // A sampling density of 10.0ms is good enough for BG model
   // }
   nz = static_cast<int>(ceil(dMax/dt));
-  delete tmpSurf;
 
   //
   // Make new simbox

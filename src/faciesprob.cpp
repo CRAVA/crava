@@ -313,7 +313,7 @@ FaciesProb::makeFaciesDens(int nfac,
   double dBeta  = (betaMax-betaMin)/nbinsb;
   double dRho   = (rhoMax-rhoMin)/nbinsr;
 
-  Surface * rhoMinSurf = new Surface(alphaMin, betaMin, alphaMax-alphaMin, betaMax-betaMin, 2, 2, rhoMin);
+  Surface rhoMinSurf(alphaMin, betaMin, alphaMax-alphaMin, betaMax-betaMin, 2, 2, rhoMin);
   //Associate alpha with x, beta with y and rho with z.
   *volume  = new Simbox(alphaMin, betaMin, rhoMinSurf, alphaMax-alphaMin, betaMax-betaMin, rhoMax-rhoMin, 0, dAlpha, dBeta, dRho); 
   density = makeFaciesHistAndSetPriorProb(alphaFilteredNew, betaFilteredNew, rhoFilteredNew, faciesLog, *volume);
@@ -674,8 +674,8 @@ FaciesProb::createExpVol(const Simbox * volume)
   double dB = (maxB-minB)/volume->getny();
   double dR = (maxR-minR)/volume->getnz();
 
-  Surface * rhoMinSurf = new Surface(minA, minB, maxA-minA, maxB-minB, 2, 2, minR);
-  Simbox  * expVol      = new Simbox(minA, minB, rhoMinSurf, maxA-minA, maxB-minB, maxR-minR, 0, dA, dB, dR); 
+  Surface rhoMinSurf(minA, minB, maxA-minA, maxB-minB, 2, 2, minR);
+  Simbox  * expVol = new Simbox(minA, minB, rhoMinSurf, maxA-minA, maxB-minB, maxR-minR, 0, dA, dB, dR); 
   return(expVol);
 }
 

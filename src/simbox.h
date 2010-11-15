@@ -14,7 +14,7 @@ class Simbox : public NRLib::Volume
 {
 public:
   Simbox(void);
-  Simbox(double x0, double y0, Surface * z0, double lx, 
+  Simbox(double x0, double y0, const Surface & z0, double lx, 
          double ly, double lz, double rot, double dx, double dy, double dz); //Assumes constant thickness.
   Simbox(const Simbox *simbox);
   ~Simbox();
@@ -71,8 +71,8 @@ public:
   bool           setArea(const SegyGeometry * geometry, std::string & errText);
   void           setILXL(const SegyGeometry * geometry);
   bool           isAligned(const SegyGeometry * geometry) const; //Checks if IL/XL form geometry maps nicely.
-  void           setDepth(Surface * zref, double zShift, double lz, double dz);
-  void           setDepth(Surface * z0, Surface * z1, int nz);
+  void           setDepth(const Surface & zRef, double zShift, double lz, double dz);
+  void           setDepth(const Surface & z0, const Surface & z1, int nz);
   int            status() const {return(status_);}
   void           externalFailure() {status_ = EXTERNALERROR;}
   void           getMinAndMaxXY(double &xmin, double &xmax, double &ymin, double &ymax) const;

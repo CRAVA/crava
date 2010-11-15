@@ -29,7 +29,7 @@ Simbox::Simbox(void)
   ilStepY_     = 1;
 }
 
-Simbox::Simbox(double x0, double y0, Surface * z0, double lx, 
+Simbox::Simbox(double x0, double y0, const Surface & z0, double lx, 
                double ly, double lz, double rot, double dx, double dy, double dz) :
   Volume()
 {
@@ -39,8 +39,8 @@ Simbox::Simbox(double x0, double y0, Surface * z0, double lx,
   SetDimensions(x0,y0,lx,ly);
   SetAngle(rot);
   
-  Surface * z1 = new Surface(*z0);
-  z1->Add(lz);
+  Surface z1(z0);
+  z1.Add(lz);
   SetSurfaces(z0,z1); //Automatically sets lz correct in this case.
 
   cosrot_      = cos(rot);
@@ -589,12 +589,13 @@ Simbox::setArea(const SegyGeometry * geometry, std::string & errText)
 }
 
 void
-Simbox::setDepth(Surface * zref, double zShift, double lz, double dz)
+Simbox::setDepth(const Surface & zRef, double zShift, double lz, double dz)
 {
-  zref->Add(zShift);
-  Surface * zBot = new Surface(*zref);
-  zBot->Add(lz);
-  SetSurfaces(zref,zBot);
+  Surface zTop(zRef);
+  zTop.Add(zShift);
+  Surface zBot(zTop);
+  zBot.Add(lz);
+  SetSurfaces(zTop,zBot);
   dz_ = dz;
   nz_ = int(0.5+lz/dz_);
   if(status_ == EMPTY)
@@ -604,7 +605,7 @@ Simbox::setDepth(Surface * zref, double zShift, double lz, double dz)
 }
 
 void
-Simbox::setDepth(Surface * z0, Surface * z1, int nz)
+Simbox::setDepth(const Surface & z0, const Surface & z1, int nz)
 {
   SetSurfaces(z0, z1);
   nz_ = nz;
