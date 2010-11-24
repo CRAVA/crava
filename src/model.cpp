@@ -1023,7 +1023,12 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
             //
             try {
               Surface tmpSurf(inputFiles->getCorrDirFile());
-              correlationDirection = new Surface(tmpSurf);
+              if(timeSimbox->CheckSurface(tmpSurf) == true)
+                correlationDirection = new Surface(tmpSurf);
+              else {
+                errText += "Error: Correlation surface does not cover volume.\n";
+                failed = true;
+              }
             }
             catch (NRLib::Exception & e) {
               errText += e.what();
@@ -1051,7 +1056,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
               failed = true;
             }
 
-            if(modelSettings->getForwardModeling() == false) {
+            if(modelSettings->getForwardModeling() == false && failed == false) {
               setupExtendedBackgroundSimbox(timeSimbox, correlationDirection, timeBGSimbox, 
                                             modelSettings->getOutputGridFormat(), 
                                             modelSettings->getOutputGridDomain(), 
@@ -1281,7 +1286,27 @@ Model::setupExtendedTimeSimbox(Simbox   * timeSimbox,
 {
   timeCutSimbox = new Simbox(timeSimbox);
   double * corrPlanePars = findPlane(corrSurf);
-  Surface * meanSurf = new Surface(*corrSurf);
+  Surface * meanSurf;
+  if(corrSurf->GetNI() > 2)
+    meanSurf = new Surface(*corrSurf);
+  else {
+    meanSurf = new Surface(dynamic_cast<const Surface &>(timeSimbox->GetTopSurface()));
+    if(meanSurf->GetNI() == 2) { //Extend corrSurf to cover other surfaces.
+      double minX = meanSurf->GetXMin();
+      double maxX = meanSurf->GetXMax();
+      double minY = meanSurf->GetYMin();
+      double maxY = meanSurf->GetYMax();
+      if(minX > corrSurf->GetXMin())
+        minX = corrSurf->GetXMin();
+      if(maxX < corrSurf->GetXMax())
+        maxX = corrSurf->GetXMax();
+      if(minY > corrSurf->GetYMin())
+        minY = corrSurf->GetYMin();
+      if(maxY < corrSurf->GetYMax())
+        maxY = corrSurf->GetYMax();
+      corrSurf->SetDimensions(minX, minY, maxX-minX, maxY-minY);
+    }
+  }
   int i;
   for(i=0;i<static_cast<int>(meanSurf->GetN());i++)
     (*meanSurf)(i) = 0;
@@ -1290,14 +1315,15 @@ Model::setupExtendedTimeSimbox(Simbox   * timeSimbox,
   meanSurf->AddNonConform(&(timeSimbox->GetBotSurface()));
   meanSurf->Multiply(0.5);
   double * refPlanePars = findPlane(meanSurf);
-  delete meanSurf;
 
   for(i=0;i<3;i++)
     refPlanePars[i] -= corrPlanePars[i];
   gradX_ = refPlanePars[1];
   gradY_ = refPlanePars[2];
 
-  Surface * refPlane = createPlaneSurface(refPlanePars, corrSurf);
+  Surface * refPlane = createPlaneSurface(refPlanePars, meanSurf);
+  delete meanSurf;
+  meanSurf = NULL;
 
   std::string fileName = "Correlation_Rotation_Plane";
   IO::writeSurfaceToFile(*refPlane, fileName, IO::PathToCorrelations(), outputFormat);
