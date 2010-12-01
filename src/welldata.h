@@ -35,6 +35,7 @@ public:
   const double  * getXpos(int &nData) const;
   const double  * getYpos(int &nData) const;
   const double  * getZpos(int &nData) const;
+  const double  * getMD(int &nData) const;
   const std::string   getWellname(void)              const { return wellname_                      ;} 
   const bool      hasSyntheticVsLog(void)            const { return(realVsLog_ == 0)               ;}
   const bool      isDeviated(void)                   const { return isDeviated_                    ;}
@@ -105,6 +106,7 @@ private:
   double        * xpos_;                        // x-coord. in well
   double        * ypos_;                        // y-coord in well
   double        * zpos_;                        // time step
+  double        * md_;
 
   float         * alpha_; 
   float         * beta_;
@@ -215,6 +217,14 @@ inline const double * WellData::getZpos(int &nData) const
 {
   nData = nd_;
   return zpos_;
+}
+inline const double * WellData::getMD(int &nData) const
+{
+  if(md_ != NULL)
+    nData = nd_;
+  else
+    nData = 0;
+  return md_;
 }
 inline int WellData::getNd() const
 {

@@ -157,6 +157,8 @@ private:
   double       * ypos_;                     ///< Simbox XYZ value for block
   double       * zpos_;                     ///<
 
+  double       * md_;                       ///< Preserve this when handling NORSAR-wells.
+
   int          * ipos_;                     ///<
   int          * jpos_;                     ///< Simbox IJK value for block
   int          * kpos_;                     ///<

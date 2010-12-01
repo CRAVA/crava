@@ -36,6 +36,7 @@ WellData::WellData(const std::string              & wellFileName,
     xpos_(NULL),
     ypos_(NULL),
     zpos_(NULL),
+    md_(NULL),
     alpha_(NULL),
     beta_(NULL),
     rho_(NULL),
@@ -71,6 +72,7 @@ WellData::~WellData()
   delete [] beta_;
   delete [] rho_;
   delete [] facies_;
+  delete [] md_;
 
   if (nFacies_ > 0)
     delete [] faciesNr_;
@@ -145,7 +147,7 @@ WellData::readRMSWell(const std::string              & wellFileName,
   }
  else
   {
-    parameterList[0] = "TWT"; // Names are preliminary, to be changed
+    parameterList[0] = "TWT";
     parameterList[1] = "DT";
     parameterList[2] = "RHOB";
     parameterList[3] = "DTS";
@@ -450,16 +452,17 @@ WellData::readNorsarWell(const std::string              & wellFileName,
     }
    else
     {
-      parameterList[0] = "TWT"; // Names are preliminary, to be changed
+      parameterList[0] = "TWT";
       parameterList[1] = "DT";
       parameterList[2] = "RHOB";
       parameterList[3] = "DTS";
       parameterList[4] = "FACIES";
     }
 
-    int nLogs = 2+nVar;
+    int nLogs  = 2+nVar;
+    int nExtra = 1; //MD log, needed for writing.
     std::vector<double> * filler = NULL; //to eliminate warning.
-    std::vector<std::vector<double> *> logs(nLogs, filler);
+    std::vector<std::vector<double> *> logs(nLogs+nExtra, filler);
     logs[0] = well.GetContLog("UTMX");
     if(logs[0] == NULL) {
       error_ = 1;
@@ -482,6 +485,17 @@ WellData::readNorsarWell(const std::string              & wellFileName,
       }
     }
 
+    //Added MD log.
+    int mdLog = nLogs;
+    logs[mdLog] = well.GetContLog("MD");
+    if(logs[mdLog] == NULL) {
+      error_ = 1;
+      errTxt_ += "Could not find log 'MD' in well file "+wellFileName+".\n";
+
+    }
+    nLogs++;
+
+
     if(logs[2] == NULL)
       timemissing_ = 1;
     else
@@ -502,6 +516,7 @@ WellData::readNorsarWell(const std::string              & wellFileName,
       beta_     = new float[nd_];
       rho_      = new float[nd_];
       facies_   = new int[nd_];   // Always allocate a facies log (for code simplicity)
+      md_       = new double[nd_];
       int ind   = 0;
       for(size_t i=0;i<logs[0]->size();i++) {
         if(well.IsMissing((*logs[2])[i]) == false) {
@@ -520,7 +535,7 @@ WellData::readNorsarWell(const std::string              & wellFileName,
             rho_[ind]   = static_cast<float>((*logs[4])[i]);
           else 
             rho_[ind] = RMISSING;
-          if(nLogs > 6 && logs[6] != NULL && 
+          if(mdLog != 6 && nLogs > 6 && logs[6] != NULL && 
             !well.IsMissing((*logs[6])[i])) {
             facies_[ind]  = static_cast<int>((*logs[6])[i]);
             if(find(facCodes.begin(), facCodes.end(), facies_[ind]) == facCodes.end())
@@ -528,6 +543,10 @@ WellData::readNorsarWell(const std::string              & wellFileName,
           }
           else
             facies_[ind] = IMISSING;
+          if(!well.IsMissing((*logs[mdLog])[i]))
+            md_[ind]   = static_cast<float>((*logs[mdLog])[i]);
+          else 
+            md_[ind] = RMISSING;
           ind++;
         }
       }
@@ -652,6 +671,8 @@ WellData::writeNorsarWell()
            << std::setprecision(2);
 
   std::vector<double> md(nd_,0);
+  if(md_ != NULL)
+    md[0] = md_[0];
   double dmax = 0;
   double dmin = 1e+30;
   for(int i=1;i<nd_;i++) {
@@ -663,7 +684,10 @@ WellData::writeNorsarWell()
       dmax = d;
     else if(d<dmin)
       dmin = d;
-    md[i] = md[i-1] + d;
+    if(md_ != NULL)
+      md[i] = md_[i];
+    else
+      md[i] = md[i-1] + d;
   }
   mainFile << "[Version information]\nVERSION 1000\nFORMAT ASCII\n\n";
   mainFile << "[Well information]\n";
@@ -1296,7 +1320,7 @@ WellData::applyFilter(float * log_filtered, float *log_interpolated, int n_time_
   int last_nonmissing = i;
   int n_time_samples_defined = last_nonmissing - first_nonmissing + 1;
   
-  for(int i=0 ; i < n_time_samples ; i++) {            // Initialise with RMISSING
+  for(i=0 ; i < n_time_samples ; i++) {            // Initialise with RMISSING
     log_filtered[i] = RMISSING;
   }
 
@@ -1312,7 +1336,7 @@ WellData::applyFilter(float * log_filtered, float *log_interpolated, int n_time_
     fftw_real*    rAmp = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnt));
     fftw_complex* cAmp = reinterpret_cast<fftw_complex*>(rAmp);
     
-    for (int i=0 ; i<n_time_samples_defined ; i++) {          // Array to filter is made symmetric
+    for (i=0 ; i<n_time_samples_defined ; i++) {          // Array to filter is made symmetric
       rAmp[i]      = log_interpolated[first_nonmissing + i];
       rAmp[nt-i-1] = rAmp[i];
     }
@@ -1341,13 +1365,13 @@ WellData::applyFilter(float * log_filtered, float *log_interpolated, int n_time_
     int   N   = int(maxHz/w + 0.5f);                         // Number of elements of Fourier vector to keep
 
     float * magic_vector = new float[cnt];
-    for(int i=0 ; i < N+1 ; i++) {
+    for(i=0 ; ((i < N+1) && (i < cnt)); i++) {
       magic_vector[i] = 1.0;
     }
-    for(int i=N+1 ; i < cnt ; i++) {
+    for(;i < cnt ; i++) {
       magic_vector[i] = 0.0; 
     }
-    for (int i=0 ; i<cnt ; i++) {
+    for (i=0 ; i<cnt ; i++) {
       cAmp[i].re *= magic_vector[i];      
       cAmp[i].im *= magic_vector[i];
     }
@@ -1364,14 +1388,14 @@ WellData::applyFilter(float * log_filtered, float *log_interpolated, int n_time_
     fftwnd_destroy_plan(p2);
 
     float scale= float(1.0/nt);
-    for(int i=0 ; i < rnt ; i++) {
+    for(i=0 ; i < rnt ; i++) {
       rAmp[i] *= scale;  
     }
     
     //
     // Fill log_filtered[]
     //  
-    for(int i=0 ; i < n_time_samples_defined ; i++) { 
+    for(i=0 ; i < n_time_samples_defined ; i++) { 
       log_filtered[first_nonmissing + i] = rAmp[i];      // Fill with values where defined
     }
     delete [] magic_vector;
