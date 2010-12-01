@@ -719,7 +719,7 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 
 \subparagraph{\hbracket{seismic-quality-grid}}\newkw{seismic-quality-grid}
  \slist
-   \item \Description Quality grid kriged from values for fit between facies probabilities and facies observed in each of the wells. 
+   \item \Description Quality grid kriged from values for fit between facies probabilities and facies observed in each of the wells.
    \item \Argument 'yes' or 'no'
    \item \Default
 \elist
@@ -804,7 +804,7 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 
 \paragraph{\hbracket{well-wavelets}}\newkw{well-wavelets}
  \slist
-   \item \Description Writes estimated wavelets for each well used for wavelet estimation.
+   \item \Description Writes estimated wavelets for each well used for wavelet estimation. Note: These wavelets are not optimally shifted, but aligned for easy comparison.
 	\item \Argument 'yes' or 'no'
 	\item \Default 'no'
  \elist
@@ -1172,7 +1172,7 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
    \item \Argument File name
    \item \Default
  \elist
- 
+
 \paragraph{\hbracket{ricker}}\newkw{ricker}
  \slist
    \item \Description Use Ricker wavelet. Can not be given together with file-name. If neither file-name nor ricker is given, wavelet is estimated.
@@ -1326,17 +1326,17 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
    \item \Argument File name
    \item \Default
  \elist
- 
+
 \subsection{\hbracket{time-gradient-settings}}\newkw{time-gradient-settings}
  \slist
    \item \Description The prior standard deviation of the gradients are given, as well as the minimum distance for where gradient lines should not cross each other
    \item \Argument The standard deviation and the minimum distance
    \item \Default
  \elist
- 
+
 \subsubsection{\hbracket{distance}}\newkw{distance}
  \slist
-   \item \Description The minimum lateral distance for where the gradient lines should not cross. The distance is equal for both x- and y-direction. 
+   \item \Description The minimum lateral distance for where the gradient lines should not cross. The distance is equal for both x- and y-direction.
    \item \Argument Value
    \item \Default 100 m
  \elist
