@@ -1364,6 +1364,10 @@ WellData::applyFilter(float * log_filtered, float *log_interpolated, int n_time_
     float w   = 1/T;                                         // Lowest frequency that can be extracted from log
     int   N   = int(maxHz/w + 0.5f);                         // Number of elements of Fourier vector to keep
 
+    if(cnt < N+1) {
+      LogKit::LogMessage(LogKit::Warning, "Warning: The vertical resolution is too low to allow filtering of well logs to %3.1f Hz.\n");
+    }
+
     float * magic_vector = new float[cnt];
     for(i=0 ; ((i < N+1) && (i < cnt)); i++) {
       magic_vector[i] = 1.0;

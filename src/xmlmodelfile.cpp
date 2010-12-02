@@ -2365,6 +2365,8 @@ XmlModelFile::parseOtherOutput(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("background-trend-1d");
   legalCommands.push_back("local-noise");
   legalCommands.push_back("rock-physics-distributions");
+  legalCommands.push_back("error-file");
+  legalCommands.push_back("task-file");
 
   bool value;
   int otherFlag = 0;
@@ -2378,6 +2380,10 @@ XmlModelFile::parseOtherOutput(TiXmlNode * node, std::string & errTxt)
     otherFlag += IO::LOCAL_NOISE;
   if(parseBool(root, "rock-physics-distributions", value, errTxt) == true && value == true)
     otherFlag += IO::LOCAL_NOISE;
+  if(parseBool(root, "error-file", value, errTxt) == true && value == true)
+    otherFlag += IO::ERROR_FILE;
+  if(parseBool(root, "task-file", value, errTxt) == true && value == true)
+    otherFlag += IO::TASK_FILE;
 
   modelSettings_->setOtherOutputFlag(otherFlag);
 

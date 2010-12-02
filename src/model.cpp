@@ -122,6 +122,12 @@ Model::Model(const std::string & fileName)
       std::string fName = IO::makeFullFileName("",IO::FileDebug()+IO::SuffixTextFiles());
       LogKit::SetFileLog(fName, debugLevel);
     }
+
+    if(modelSettings_->getErrorFileFlag() == true)
+    {
+      std::string fName = IO::makeFullFileName("",IO::FileError()+IO::SuffixTextFiles());
+      LogKit::SetFileLog(fName, LogKit::Error);
+    }
     LogKit::EndBuffering();
     
     if(inputFiles->getSeedFile() == "")

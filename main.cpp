@@ -155,12 +155,11 @@ int main(int argc, char** argv)
       TaskList::addTask("CRAVA did not use as much memory as estimated. NR would be interested to know about this, so if you could send your .xml-file to us, we would appreciate it.");
     }
     
-    delete model;
-
     Timings::setTimeTotal(wall,cpu);
     Timings::reportAll(LogKit::Medium);
 
-    TaskList::viewAllTasks();  
+    TaskList::viewAllTasks(modelSettings->getTaskFileFlag());  
+    delete model;
 
     Timings::reportTotal();
     LogKit::LogFormatted(LogKit::Low,"\n*** CRAVA closing  ***\n"); 

@@ -2,6 +2,7 @@
 #define CRAVA_SRC_IO_H
 
 #include <string>
+#include "src/definitions.h"
 
 class IO
 {
@@ -30,6 +31,8 @@ public:
                                                                                                                     
   inline static  std::string    FileLog(void)                      { return std::string("logFile")                  ;}
   inline static  std::string    FileDebug(void)                    { return std::string("debug")                    ;}
+  inline static  std::string    FileError(void)                    { return std::string("error")                    ;}
+  inline static  std::string    FileTasks(void)                    { return std::string("tasks")                    ;}
   inline static  std::string    FileParameterCov(void)             { return std::string("Parameter_Covariance")     ;}
   inline static  std::string    FileLateralCorr(void)              { return std::string("Lateral_Correlation")      ;}
   inline static  std::string    FileTemporalCorr(void)             { return std::string("Temporal_Correlation")     ;}
@@ -152,7 +155,9 @@ public:
                              PRIORCORRELATIONS   =  2,
                              BACKGROUND_TREND_1D =  4,
                              LOCAL_NOISE         =  8,
-                             ROCK_PHYSICS        = 16};
+                             ROCK_PHYSICS        = 16,
+                             ERROR_FILE          = 32,
+                             TASK_FILE           = 64};
 
   enum           outputWavelets{WELL_WAVELETS    = 1,
                                 GLOBAL_WAVELETS  = 2,

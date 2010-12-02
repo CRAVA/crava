@@ -11,7 +11,7 @@ class TaskList
 public:
   static void addTask(std::string task) {task_.push_back(task);}
 
-  static void viewAllTasks(void);
+  static void viewAllTasks(bool useFile = false);
 
 private:
   TaskList();

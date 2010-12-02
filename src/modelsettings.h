@@ -6,6 +6,7 @@
 #include <map>
 
 #include "src/definitions.h"
+#include "src/io.h"
 #include "nrlib/iotools/logkit.hpp"
 #include "nrlib/segy/traceheader.hpp"
 #include "nrlib/segy/segy.hpp"
@@ -160,6 +161,8 @@ public:
   bool                             getNoSeismicNeeded(void)             const { return noSeismicNeeded_                           ;}
                                                                        
   int                              getLogLevel(void)                    const { return logLevel_                                  ;}
+  bool                             getErrorFileFlag()                   const { return ((otherFlag_ & IO::ERROR_FILE)>0)           ;}
+  bool                             getTaskFileFlag()                    const { return ((otherFlag_ & IO::TASK_FILE)>0)            ;}
   int                              getSeed(void)                        const { return seed_                                      ;}
 
   bool                             getDoInversion(void);                                            
