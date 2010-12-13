@@ -2123,15 +2123,15 @@ void FFTGrid::writeSegyFromStorm(StormContGrid *data, std::string fileName)
   TextualHeader header = TextualHeader::standardHeader();
   int nx = static_cast<int>(data->GetNI());
   int ny = static_cast<int>(data->GetNJ());
-  const SegyGeometry *geometry = new SegyGeometry(data->GetXMin(),data->GetYMin(),data->GetDX(),data->GetDY(),
-               nx,ny,data->GetAngle());
+  SegyGeometry geometry(data->GetXMin(),data->GetYMin(),data->GetDX(),data->GetDY(),
+                        nx,ny,data->GetAngle());
   float dz = float(floor((data->GetLZ()/data->GetNK())));
   //int nz = int(data->GetZMax()/dz);
   //float z0 = float(data->GetZMin());
   float z0 = 0.0;
   int nz = int(ceil((data->GetZMax())/dz));
   SegY segyout(fileName,0,nz,dz,header);
-  segyout.SetGeometry(geometry);
+  segyout.SetGeometry(&geometry);
 
   std::vector<float> datavec;
   datavec.resize(nz);
@@ -2139,10 +2139,10 @@ void FFTGrid::writeSegyFromStorm(StormContGrid *data, std::string fileName)
   for(j=0;j<ny;j++)
     for(i=0;i<nx;i++)
     {
-      xt = float((i+0.5)*geometry->GetDx());
-      yt = float((j+0.5)*geometry->GetDy());
-      x = float(geometry->GetX0()+xt*geometry->GetCosRot()-yt*geometry->GetSinRot());
-      y = float(geometry->GetY0()+yt*geometry->GetCosRot()+xt*geometry->GetSinRot());
+      xt = float((i+0.5)*geometry.GetDx());
+      yt = float((j+0.5)*geometry.GetDy());
+      x = float(geometry.GetX0()+xt*geometry.GetCosRot()-yt*geometry.GetSinRot());
+      y = float(geometry.GetY0()+yt*geometry.GetCosRot()+xt*geometry.GetSinRot());
   
       double zbot= data->GetBotSurface().GetZ(x,y);
       double ztop = data->GetTopSurface().GetZ(x,y);
