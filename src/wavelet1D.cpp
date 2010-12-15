@@ -183,8 +183,12 @@ Wavelet1D::Wavelet1D(Simbox                       * simbox,
   std::vector<std::vector<fftw_real> > wellWavelets(nWells);
   for(int w=0; w<nWells; w++) {
     wellWavelets[w].resize(nzp_);
-    for(int i=0;i<nzp_;i++)
-      wellWavelets[w][i] = wavelet_r[w][i];
+    for(int i=0;i<nzp_;i++) {
+      if(wellWeight[w] > 0)
+        wellWavelets[w][i] = wavelet_r[w][i];
+      else
+        wellWavelets[w][i] = 0;
+    }
   }
 
   rAmp_ = averageWavelets(wellWavelets, nWells, nzp_, wellWeight, dzWell, dz_); // wavelet centered
