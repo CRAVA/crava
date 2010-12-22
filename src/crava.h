@@ -29,8 +29,8 @@ public:
   ~Crava();
   int                computePostMeanResidAndFFTCov();
   int                simulate( RandomGen * randomGen );
-  int                computeSyntSeismic(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho);
-
+  void               computeSyntSeismic(FFTGrid * alpha, FFTGrid * beta, FFTGrid * rho);
+  int                computeSyntSeismicOld(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho);
   FFTGrid          * getPostAlpha()                 { return postAlpha_ ;}
   FFTGrid          * getPostBeta()                  { return postBeta_  ;}
   FFTGrid          * getPostRho()                   { return postRho_   ;}
@@ -76,6 +76,13 @@ private:
   void               doPostKriging(FFTGrid & postAlpha, FFTGrid & postBeta, FFTGrid & postRho);
 
   void               correctAlphaBetaRho(ModelSettings *modelSettings);
+
+  FFTGrid *          computeSeismicImpedance(FFTGrid * alpha, 
+                                             FFTGrid * beta, 
+                                             FFTGrid * rho, 
+                                             int angle);
+
+
   bool               fileGrid_;         // is true if is storage is on file 
   const Simbox     * simbox_;           // the simbox
   int                nx_;               // dimensions of the problem

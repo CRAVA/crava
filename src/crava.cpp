@@ -153,22 +153,19 @@ Crava::Crava(Model * model, SpatialWellFilter * spatwellfilter)
       seisData_[i]->fftInPlace();
       seisData_[i]->endAccess();
     }
-  }
 
-  if ((model->getModelSettings()->getEstimateFaciesProb() && model->getModelSettings()->getFaciesProbRelative()) 
-      || model->getModelSettings()->getUseLocalNoise())
-  {
-    meanAlpha2_ = copyFFTGrid(meanAlpha_);
-    meanBeta2_  = copyFFTGrid(meanBeta_);
-    meanRho2_   = copyFFTGrid(meanRho_);
+    if ((model->getModelSettings()->getEstimateFaciesProb() && model->getModelSettings()->getFaciesProbRelative()) 
+        || model->getModelSettings()->getUseLocalNoise())
+    {
+      meanAlpha2_ = copyFFTGrid(meanAlpha_);
+      meanBeta2_  = copyFFTGrid(meanBeta_);
+      meanRho2_   = copyFFTGrid(meanRho_);
+    }
+
+    meanAlpha_->fftInPlace();
+    meanBeta_ ->fftInPlace();
+    meanRho_  ->fftInPlace();
   }
-  // NBNB-PAL: Crava complains about UMR for the three calls to FFTGrid::fftInPlace made
-  // NBNB-PAL: below. The complaint if for member vector 'rvalue_' but I have verified
-  // NBNB-PAL: that this vector is indeed set. Purify probably gets confused by constructions
-  // NBNB-PAL: like rvalue_ = static_cast<fftw_real*>(fftw_malloc(rsize_ * sizeof(fftw_real)))
-  meanAlpha_->fftInPlace();
-  meanBeta_ ->fftInPlace();
-  meanRho_  ->fftInPlace();
 
   Timings::setTimeStochasticModel(wall,cpu);
 }
@@ -1338,129 +1335,103 @@ Crava::doPostKriging(FFTGrid & postAlpha,
   pKriging.KrigAll(postAlpha, postBeta, postRho, false, model_->getModelSettings()->getDebugFlag(), model_->getModelSettings()->getDoSmoothKriging());
 }
 
-int 
-Crava::computeSyntSeismic(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho)
+FFTGrid *
+Crava::computeSeismicImpedance(FFTGrid * alpha, FFTGrid * beta, FFTGrid * rho, int angle)
 {
-  LogKit::WriteHeader("Compute Synthetic Seismic");
+  FFTGrid * impedance = createFFTGrid();
+  impedance->setType(FFTGrid::DATA);
+  impedance->createRealGrid();
+  impedance->setAccessMode(FFTGrid::WRITE);
 
-  if(!Alpha->getIsTransformed()) Alpha->fftInPlace();
-  if(!Beta->getIsTransformed()) Beta->fftInPlace();
-  if(!Rho->getIsTransformed()) Rho->fftInPlace();
-  int i,j,k,l;
-
-  for(i=0;i<ntheta_;i++)
-  {
-    if(seisWavelet_[i]->getIsReal() == true)
-      seisWavelet_[i]->fft1DInPlace();
-  }
-
-  fftw_complex   kD;
-  fftw_complex * kWD         = new fftw_complex[ntheta_];
-  fftw_complex * ijkSeis     = new fftw_complex[ntheta_];
-  fftw_complex * ijkParam    = new fftw_complex[3];
-  fftw_complex** WDA         = new fftw_complex*[ntheta_];
-  for(i = 0; i < ntheta_; i++)
-    WDA[i] = new fftw_complex[3];
-
-  Wavelet * diffOperator     = new Wavelet(Wavelet::FIRSTORDERFORWARDDIFF,nz_,nzp_);
-  diffOperator->fft1DInPlace();
-
-  FFTGrid** seisData = new FFTGrid*[ntheta_];
-  for(l=0;l<ntheta_;l++)
-  {    
-    seisData[l]= createFFTGrid();
-    seisData[l]->setType(FFTGrid::DATA);
-    seisData[l]->createComplexGrid();
-    seisData[l]->setAccessMode(FFTGrid::WRITE);
-  }
-
-  int cnxp  = nxp_/2+1;
-  Alpha->setAccessMode(FFTGrid::READ);
-  Beta->setAccessMode(FFTGrid::READ);
-  Rho->setAccessMode(FFTGrid::READ);
-  if (seisWavelet_[0]->getDim() == 1) {
-    for(k = 0; k < nzp_; k++)
+  int rnxp  = alpha->getRNxp();
+  alpha->setAccessMode(FFTGrid::READ);
+  beta->setAccessMode(FFTGrid::READ);
+  rho->setAccessMode(FFTGrid::READ);
+  for(int k = 0; k < nzp_; k++) {
+    for(int j = 0; j < nyp_; j++)
     {
-      kD = diffOperator->getCAmp(k);                   // defines content of kWD    
-//        fillkW(k,kWD);                                   // defines content of kWD
-      //FRODE - substituted prev. call with following loop - may08
-      for(l = 0; l < ntheta_; l++)
+      for(int i = 0; i < rnxp; i++)
       {
-        kWD[l].re  = float( seisWavelet_[l]->getCAmp(k).re );// 
-        kWD[l].im  = float( -seisWavelet_[l]->getCAmp(k).im );//
-      } 
-      //FRODE 
-      lib_matrProdScalVecCpx(kD, kWD, ntheta_);        // defines content of kWD
-      lib_matrProdDiagCpxR(kWD, A_, ntheta_, 3, WDA);  // defines content of WDA  
-      for( j = 0; j < nyp_; j++)
-      {
-        for( i = 0; i < cnxp; i++)
-        {
-          ijkParam[0]=Alpha->getNextComplex();
-          ijkParam[1]=Beta ->getNextComplex();
-          ijkParam[2]=Rho  ->getNextComplex();
-
-          lib_matrProdMatVecCpx(WDA,ijkParam,ntheta_,3,ijkSeis); //defines  ijkSeis 
-
-          for(l=0;l<ntheta_;l++)
-          {
-            seisData[l]->setNextComplex(ijkSeis[l]);
-          }
-        }
+        float imp = 0;
+        imp += alpha->getNextReal()*A_[angle][0];
+        imp += beta->getNextReal()*A_[angle][1];
+        imp += rho->getNextReal()*A_[angle][2];
+        
+        impedance->setNextReal(imp);
       }
     }
   }
-  else { //dim > 1
- /*   for (k=0; k<nzp_; k++) {
-      kD = diffOperator->getCAmp(k);
-      for (j=0; j<nyp_; j++) {
-        for (i=0; i<cnxp; i++) {
-           for(l = 0; l < ntheta_; l++) {
-            kWD[l].re  = float( seisWavelet_[l]->getCAmp(k,j,i).re ); 
-            kWD[l].im  = float( -seisWavelet_[l]->getCAmp(k,j,i).im );
-          }
-          lib_matrProdScalVecCpx(kD, kWD, ntheta_);        // defines content of kWD  
-          lib_matrProdDiagCpxR(kWD, A_, ntheta_, 3, WDA);  // defines content of WDA  
-          ijkParam[0]=Alpha->getNextComplex();
-          ijkParam[1]=Beta ->getNextComplex();
-          ijkParam[2]=Rho  ->getNextComplex();
-          lib_matrProdMatVecCpx(WDA,ijkParam,ntheta_,3,ijkSeis);
-          for(l=0;l<ntheta_;l++)
-            seisData[l]->setNextComplex(ijkSeis[l]);
+  impedance->endAccess();
+  alpha->endAccess();
+  beta->endAccess();
+  rho->endAccess();
+  return(impedance);
+}
+
+
+void 
+Crava::computeSyntSeismic(FFTGrid * alpha, FFTGrid * beta, FFTGrid * rho)
+{
+  LogKit::WriteHeader("Compute Synthetic Seismic");
+
+  bool fftDomain = alpha->getIsTransformed();
+  if(fftDomain == true) {
+    alpha->invFFTInPlace();
+    beta->invFFTInPlace();
+    rho->invFFTInPlace();
+  }
+
+  for(int l=0;l<ntheta_;l++) {
+    FFTGrid * imp = computeSeismicImpedance(alpha, beta, rho, l);
+    imp->setAccessMode(FFTGrid::RANDOMACCESS);
+    for(int i=0;i<nx_; i++) {
+      for(int j=0;j<ny_;j++) {
+        Wavelet impVec(1);
+        impVec.setupAsVector(nz_, nzp_);
+        int k;
+        for(k=0;k<nz_;k++){
+          float value = imp->getRealValue(i, j, k, true);
+          impVec.setRAmp(value, k);
+        }
+        //Tapering:
+        float fac = 1.0f/static_cast<float>(nzp_-nz_-1);
+        for(;k<nzp_;k++) {
+          float value = fac*((k-nz_)*impVec.getRAmp(0)+(nzp_-k-1)*impVec.getRAmp(nz_-1));
+          impVec.setRAmp(value, k);
+        }
+        Wavelet resultVec(&impVec, Wavelet::FIRSTORDERFORWARDDIFF);
+        resultVec.fft1DInPlace();
+        Wavelet * localWavelet = seisWavelet_[l]->getLocalWavelet(i,j);
+        float sf = static_cast<float>(simbox_->getRelThick(i, j));
+        for(int k=0;k<(nzp_/2 +1);k++) {
+          fftw_complex r = resultVec.getCAmp(k);
+          fftw_complex w = localWavelet->getCAmp(k,static_cast<float>(sf));
+          fftw_complex s;
+          s.re = r.re*w.re+r.im*w.im; //Use complex conjugate of w
+          s.im = -r.re*w.im+r.im*w.re;
+          resultVec.setCAmp(s,k);
+        }
+        resultVec.invFFT1DInPlace();
+        for(int k=0;k<nzp_;k++){
+          float value = resultVec.getRAmp(k);
+          imp->setRealValue(i, j, k, value, true);
         }
       }
-    } */
-  }
-  Alpha->endAccess();
-  Beta->endAccess();
-  Rho->endAccess();
-  
-  if(Alpha->getIsTransformed()) Alpha->invFFTInPlace();
-  if(Beta->getIsTransformed()) Beta->invFFTInPlace();
-  if(Rho->getIsTransformed()) Rho->invFFTInPlace();
-  for(l=0;l<ntheta_;l++)
-  { 
-    seisData[l]->endAccess();
-    seisData[l]->invFFTInPlace();
+    }
     std::string angle     = NRLib::ToString(thetaDeg_[l],1);
     std::string sgriLabel = " Synthetic seismic for incidence angle "+angle;
     std::string fileName  = IO::PrefixSyntheticSeismicData() + angle;
-    seisData[l]->writeFile(fileName, IO::PathToSeismicData(), simbox_,sgriLabel);
-    delete seisData[l];
+    imp->writeFile(fileName, IO::PathToSeismicData(), simbox_,sgriLabel);
+    delete imp;
   }
 
-  delete [] seisData;
-  delete diffOperator;
-
-  delete [] kWD;
-  delete [] ijkSeis;
-  delete [] ijkParam;
-  for(i = 0; i < ntheta_; i++)
-    delete [] WDA[i];
-  delete [] WDA;
-
-  return(0);
+  if(fftDomain == true) {
+    alpha->fftInPlace();
+    beta->fftInPlace();
+    rho->fftInPlace();
+  }
 }
+
 
 float  
 Crava::computeWDCorrMVar (Wavelet* WD ,fftw_real* corrT)

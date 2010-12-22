@@ -64,6 +64,9 @@ public:
   void          setRAmp(float value, 
                         int   k);
 
+  void          setCAmp(fftw_complex value,
+                        int k);
+
   Wavelet *     getLocalWavelet(int i,
                                 int j);
 
@@ -95,6 +98,7 @@ public:
   float         getDz()       const {return dz_;}
   float         getScale()    const {return scale_;}
 
+  void          setupAsVector(int nz, int nzp);
 
   virtual float findGlobalScaleForGivenWavelet(ModelSettings * /*modelSettings*/, 
                                                Simbox        * /*simbox*/, 

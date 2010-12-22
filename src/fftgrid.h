@@ -85,7 +85,7 @@ public:
   virtual void         multiplyByScalar(float scalar);      //No mode/randomaccess
   int                  getType() const {return(cubetype_);}
   virtual void         setAccessMode(int mode){assert(mode>=0);}
-  virtual void         endAccess(){}
+  virtual void         endAccess(){counterForGet_ = 0; counterForSet_ = 0;}
   virtual void         writeFile(const std::string & fileName, 
                                  const std::string & subDir, 
                                  const Simbox      * simbox, 

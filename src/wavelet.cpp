@@ -31,10 +31,35 @@
 #include "src/io.h"
 
 Wavelet::Wavelet(int dim)
-  : dim_(dim),
+  : cnzp_(0),
+    rnzp_(0),
+    theta_(0),
+    dz_(1.0),
+    nz_(0),
+    nzp_(0),
+    cz_(0),
+    inFFTorder_(false),
+    isReal_(true),
+    dim_(dim),
+    scale_(1),
     shiftGrid_(NULL),
     gainGrid_(NULL)
 {
+}
+
+void
+Wavelet::setupAsVector(int nz, int nzp)
+{
+  nz_   = nz;
+  nzp_  = nzp;
+  cnzp_ = nzp_/2+1;
+  rnzp_ = 2*cnzp_;
+  rAmp_ = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));  
+  cAmp_ = reinterpret_cast<fftw_complex*>(rAmp_);
+
+  coeff_[0] = 0;
+  coeff_[1] = 0;
+  coeff_[2] = 0;
 }
 
 Wavelet::Wavelet(int       dim, 
@@ -404,11 +429,10 @@ Wavelet::getCAmp(int    k,
   // Get the  fourier transform of the streched wavelet.
   // scale is  in [0 1] wavelet
   // scale = 1 this is identical to getCAmp(int k)
-  // Note we do not use the normal scale relation:  
+  // We use the normal scale relation:  
   //  
   // FFT( w(s*t) ) = fw(w/s) * ( 1/s )   with  fw( w ) = FFT( w(t) )
   //
-  // We return:  fw(w/s) 
   ///////////////////////////////////////////////////////////// 
 
   assert(!isReal_);
@@ -451,6 +475,8 @@ Wavelet::getCAmp(int    k,
       value.im =  (- cAmp_[omL].im * ( 1.0f - dOmega ) - cAmp_[omU].im * dOmega);
     }
   }
+  value.re /= scale;
+  value.im /= scale; 
   return value;
 }
 
@@ -459,6 +485,14 @@ Wavelet::setRAmp(float  value,
                  int    k)
 {
   rAmp_[k] = value;
+}
+
+void           
+Wavelet::setCAmp(fftw_complex value, 
+                 int    k)
+{
+  cAmp_[k].re = value.re;
+  cAmp_[k].im = value.im;
 }
 
 Wavelet*  
