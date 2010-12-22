@@ -392,7 +392,7 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
                                            Grid2D      *& shiftGrid, 
                                            Grid2D      *& gainGrid)
 {
-  LogKit::LogFormatted(LogKit::Medium,"\n  Estimating noise from seismic data and (nonfiltered) blocked wells");
+  LogKit::LogFormatted(LogKit::Medium,"\n  Estimating/checking noise from seismic data and (nonfiltered) blocked wells");
   float errStd  = 0.0f;
   float dataVar = 0.0f;
 
@@ -565,30 +565,35 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
   }
 
   if (nData == 0) {
-    errText += "Cannot estimate signal-to-noise ratio. No legal well data available.\n";
-    error += 1;
+    if(doEstimateSNRatio == true) {
+      errText += "Cannot estimate signal-to-noise ratio. No legal well data available.\n";
+      error += 1;
+    }
+  }
+  else {
+    dataVar /= static_cast<float> (nData);
+    errStd  /= static_cast<float> (nData);
+    errStd   = sqrt(errStd);
   }
 
-  dataVar /= static_cast<float> (nData);
-  errStd  /= static_cast<float> (nData);
-  errStd   = sqrt(errStd);
+  if(nWells > 0) {
+    LogKit::LogFormatted(LogKit::Medium,"\n  Reporting errors (as standard deviations) estimated in different ways:\n\n");
 
-  LogKit::LogFormatted(LogKit::Medium,"\n  Reporting errors (as standard deviations) estimated in different ways:\n\n");
-
-  LogKit::LogFormatted(LogKit::Low,"\n");
-  LogKit::LogFormatted(LogKit::Low,"                                     SeisData       OptimalGlobal      OptimalLocal\n");
-  LogKit::LogFormatted(LogKit::Low,"  Well                  shift[ms]     StdDev         Gain   S/N         Gain   S/N \n");
-  LogKit::LogFormatted(LogKit::Low,"  ----------------------------------------------------------------------------------\n");
-  for(int w=0; w<nWells; w++) {
-    if(nActiveData[w]>0) {    
-      float SNOptimalGlobal = dataVarWell[w]/(errWell[w]*errWell[w]);
-      float SNOptimalLocal  = dataVarWell[w]/(errWellOptScale[w]*errWellOptScale[w]);   
-      LogKit::LogFormatted(LogKit::Low,"  %-20s   %6.2f     %9.2e      %6.2f %6.2f      %6.2f %6.2f\n", 
-            wells[w]->getWellname().c_str(),shiftWell[w],sqrt(dataVarWell[w]),
-            optScale,SNOptimalGlobal,scaleOptWell[w],SNOptimalLocal);
+    LogKit::LogFormatted(LogKit::Low,"\n");
+    LogKit::LogFormatted(LogKit::Low,"                                     SeisData       OptimalGlobal      OptimalLocal\n");
+    LogKit::LogFormatted(LogKit::Low,"  Well                  shift[ms]     StdDev         Gain   S/N         Gain   S/N \n");
+    LogKit::LogFormatted(LogKit::Low,"  ----------------------------------------------------------------------------------\n");
+    for(int w=0; w<nWells; w++) {
+      if(nActiveData[w]>0) {    
+        float SNOptimalGlobal = dataVarWell[w]/(errWell[w]*errWell[w]);
+        float SNOptimalLocal  = dataVarWell[w]/(errWellOptScale[w]*errWellOptScale[w]);   
+        LogKit::LogFormatted(LogKit::Low,"  %-20s   %6.2f     %9.2e      %6.2f %6.2f      %6.2f %6.2f\n", 
+              wells[w]->getWellname().c_str(),shiftWell[w],sqrt(dataVarWell[w]),
+              optScale,SNOptimalGlobal,scaleOptWell[w],SNOptimalLocal);
+      }
+      else
+        LogKit::LogFormatted(LogKit::Low,"  %-20s      -            -             -      -           -      -\n",wells[w]->getWellname().c_str());
     }
-    else
-      LogKit::LogFormatted(LogKit::Low,"  %-20s      -            -             -      -           -      -\n",wells[w]->getWellname().c_str());
   }
 
   if (estimateSomething) {
@@ -670,17 +675,19 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
   {
     float SNRatio = modelSettings->getSNRatio(number);
     LogKit::LogFormatted(LogKit::Low,"\n  The signal to noise ratio given in the model file and used for this angle stack is : %6.2f\n", SNRatio);
-    LogKit::LogFormatted(LogKit::Low,"  For comparison, the signal-to-noise ratio calculated from the available wells is   : %6.2f\n", empSNRatio);
-    float minSN = 1.0f + (empSNRatio - 1.0f)/2.0f;
-    float maxSN = 1.0f + (empSNRatio - 1.0f)*2.0f;
-    if ((SNRatio<minSN || SNRatio>maxSN) && modelSettings->getEstimateWavelet(number))
-    {
-      LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The difference between the SN ratio given in the model file and the calculated SN ratio is too large.\n");
-      if (SNRatio < minSN)
-        TaskList::addTask("Consider increasing the SN ratio for angle stack "+NRLib::ToString(number)+" to minimum "+NRLib::ToString(minSN,1));
-      else
-        TaskList::addTask("Consider decreasing the SN ratio for angle stack "+NRLib::ToString(number)+" to maximum "+NRLib::ToString(minSN,1));
-    }        
+    if(nWells > 0) {
+      LogKit::LogFormatted(LogKit::Low,"  For comparison, the signal-to-noise ratio calculated from the available wells is   : %6.2f\n", empSNRatio);
+      float minSN = 1.0f + (empSNRatio - 1.0f)/2.0f;
+      float maxSN = 1.0f + (empSNRatio - 1.0f)*2.0f;
+      if ((SNRatio<minSN || SNRatio>maxSN) && modelSettings->getEstimateWavelet(number))
+      {
+        LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The difference between the SN ratio given in the model file and the calculated SN ratio is too large.\n");
+        if (SNRatio < minSN)
+          TaskList::addTask("Consider increasing the SN ratio for angle stack "+NRLib::ToString(number)+" to minimum "+NRLib::ToString(minSN,1));
+        else
+          TaskList::addTask("Consider decreasing the SN ratio for angle stack "+NRLib::ToString(number)+" to maximum "+NRLib::ToString(minSN,1));
+      }        
+    }
   }
 
   if (empSNRatio < 1.1f) {

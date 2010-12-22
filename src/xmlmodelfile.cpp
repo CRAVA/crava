@@ -2877,7 +2877,10 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
     errTxt += "Seismic data are needed for inversion.\n";
 
   if (modelSettings_->getNumberOfWells() == 0) {
-    if (inputFiles_->getBackFile(0)!="" && inputFiles_->getWaveletFile(0)!="" && inputFiles_->getTempCorrFile()!="" && inputFiles_->getParamCorrFile()!="") 
+    if (inputFiles_->getBackFile(0)!="" && 
+        (inputFiles_->getWaveletFile(0)!="" || modelSettings_->getUseRickerWavelet(0) == true) && 
+        inputFiles_->getTempCorrFile()!="" && 
+        inputFiles_->getParamCorrFile()!="") 
       modelSettings_->setNoWellNeeded(true); 
     else {
       errTxt += "Wells are needed for the inversion. ";
