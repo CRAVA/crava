@@ -38,7 +38,8 @@ public:
              bool                           noVs,
              Crava                         *cravaResult,
              const std::vector<Grid2D *>  & noiseScale,
-             const ModelSettings          * modelSettings);
+             const ModelSettings          * modelSettings,
+             FFTGrid                      * seismicLH);
 
   ~FaciesProb();
 
@@ -62,8 +63,13 @@ public:
                                                            const std::vector<Surface *> & faciesEstimInterval,
                                                            const ModelSettings          * modelSettings);
 
-  void                   writeBWFaciesProb(WellData ** wells, 
-                                           int         nWells);
+  FFTGrid *              createLHCube(FFTGrid     * likelihood, 
+                                      int           fac, 
+                                      const float * priorFacies,
+                                      FFTGrid    ** priorFaciesCubes);
+
+  void writeBWFaciesProb(WellData ** wells, 
+                         int         nWells);
 
 private:
   int             nFacies_;
@@ -87,7 +93,8 @@ private:
                                         FFTGrid                     ** priorFaciesCubes,
                                         Crava                        * cravaResult,
                                         const std::vector<Grid2D *>  & noiseScale,
-                                        const ModelSettings          * modelSettings);
+                                        const ModelSettings          * modelSettings,
+                                        FFTGrid                      * seismicLH);
 
   std::vector<FFTGrid *> makeFaciesHistAndSetPriorProb(const std::vector<float> & alpha,
                                                        const std::vector<float> & beta,
@@ -156,7 +163,8 @@ private:
                                              float                          p_undef,
                                              const float                  * priorFacies,
                                              FFTGrid                     ** priorFaciesCubes,
-                                             const std::vector<Grid2D *>   & noiseScale);
+                                             const std::vector<Grid2D *>   & noiseScale,
+                                             FFTGrid                       * seismicLH);
 
   void                   normalizeCubes(FFTGrid **priorFaciesCubes);
 

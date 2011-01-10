@@ -2179,34 +2179,37 @@ XmlModelFile::parseGridOtherParameters(TiXmlNode * node, std::string & errTxt)
   std::vector<std::string> legalCommands;
   legalCommands.push_back("facies-probabilities");
   legalCommands.push_back("facies-probabilities-with-undef");
+  legalCommands.push_back("facies-likelihood");
   legalCommands.push_back("correlations");
   legalCommands.push_back("time-to-depth-velocity");
   legalCommands.push_back("extra-grids");
   legalCommands.push_back("seismic-quality-grid");
  
-  bool facies;
-  bool faciesUndef;
+  bool facies           = true;
+  bool faciesUndef      = false;
+  bool faciesLH         = false;
   bool faciesValue      = false;
   bool faciesValueUndef = false;
   int  paramFlag        = 0;
 
   facies      = parseBool(root, "facies-probabilities", faciesValue, errTxt);
   faciesUndef = parseBool(root, "facies-probabilities-with-undef", faciesValueUndef, errTxt);
+  faciesLH    = parseBool(root, "facies-likelihood", faciesValueUndef, errTxt);
 
   if (modelSettings_->getEstimateFaciesProb()){
-    if (facies || faciesUndef){
-      if (faciesValue == true)
-        paramFlag += IO::FACIESPROB;
-      if (faciesValueUndef == true)
-        paramFlag += IO::FACIESPROB_WITH_UNDEF;
-    }
-    else
-      paramFlag += IO::FACIESPROB;
+    int tmpFlag = 0;
+    if(faciesLH == true)
+      tmpFlag += IO::FACIES_LIKELIHOOD;
+    if(faciesUndef == true)
+      tmpFlag += IO::FACIESPROB_WITH_UNDEF;
+    if(facies == true || tmpFlag == 0)
+      tmpFlag += IO::FACIESPROB;
+    paramFlag += tmpFlag;
   }
   else{
-    if (facies || faciesUndef){
+    if (facies || faciesUndef || faciesLH){
       if (faciesValue || faciesValueUndef)
-        errTxt += "Facies probabilities can not be specified under <other-output> when facies probabilities are not estimated.\n";
+        errTxt += "Facies probability related cubes can not be specified under <other-output> when facies probabilities are not estimated.\n";
     }
   }
 

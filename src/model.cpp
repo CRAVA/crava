@@ -605,6 +605,8 @@ Model::checkAvailableMemory(Simbox        * timeSimbox,
       if(modelSettings->getEstimateFaciesProb() == true) {//Third possible peak when computing facies prob.
         int peak3P = baseP;                //No extra padded grids, so this one can not peak here.
         int peak3U = baseU + nGridFacies;  //But this one will, and may trigger new memory max.
+        if((modelSettings->getOtherOutputFlag() & IO::FACIES_LIKELIHOOD) > 0)
+          peak3U += 1; //Also needs to store seismic likelihood.
         
         long long int peak3Mem = peak3P*gridSizePad + peak3U*gridSizeBase + 2000000*nGridHistograms; //These are 2MB when Vs is used.
         if(peak3Mem > peakGridMem)

@@ -45,12 +45,13 @@ FaciesProb::FaciesProb(FFTGrid                      * alpha,
                        bool                           noVs,
                        Crava                          *cravaResult,
                        const std::vector<Grid2D *>   & noiseScale,
-                       const ModelSettings *           modelSettings)
+                       const ModelSettings *           modelSettings,
+                       FFTGrid                       * seismicLH)
 {
   makeFaciesProb(nFac, alpha, beta, rho, sigmaEOrig, useFilter, wells, nWells, 
                  faciesEstimInterval, dz, relative, noVs,
                  p_undef, priorFacies, priorFaciesCubes, cravaResult, noiseScale,
-                 modelSettings);
+                 modelSettings, seismicLH);
 }
 
 FaciesProb::~FaciesProb()
@@ -417,7 +418,8 @@ void FaciesProb::makeFaciesProb(int                            nfac,
                                 FFTGrid                     ** priorFaciesCubes,
                                 Crava                        * cravaResult,
                                 const std::vector<Grid2D *>  & noiseScale,
-                                const ModelSettings          * modelSettings)
+                                const ModelSettings          * modelSettings,
+                                FFTGrid                      * seismicLH)
 {
   std::vector<float> alphaFiltered;
   std::vector<float> betaFiltered;
@@ -471,7 +473,7 @@ void FaciesProb::makeFaciesProb(int                            nfac,
     normalizeCubes(priorFaciesCubes);
 
   calculateFaciesProb(postAlpha, postBeta, postRho, density, volume,
-                      p_undef, priorFacies, priorFaciesCubes, noiseScale);
+                      p_undef, priorFacies, priorFaciesCubes, noiseScale, seismicLH);
   
   for(int i = 0 ; i < densdim ; i++) {
     for(int j = 0 ; j < static_cast<int>(density[i].size()) ; j++)
@@ -1051,7 +1053,8 @@ void FaciesProb::calculateFaciesProb(FFTGrid                                    
                                      float                                        p_undefined,
                                      const float                                * priorFacies,
                                      FFTGrid                                   ** priorFaciesCubes,
-                                     const std::vector<Grid2D *>                & noiseScale)
+                                     const std::vector<Grid2D *>                & noiseScale,
+                                     FFTGrid                                    * seismicLH)
 {
   float * value = new float[nFacies_];
   int i,j,k,l;
@@ -1087,6 +1090,9 @@ void FaciesProb::calculateFaciesProb(FFTGrid                                    
   }
   faciesProbUndef_->setAccessMode(FFTGrid::WRITE);
   faciesProbUndef_->createRealGrid(false);
+  if(seismicLH != NULL)
+    seismicLH->setAccessMode(FFTGrid::WRITE);
+
   if(priorFaciesCubes!=NULL)
     for(i=0;i<nFacies_;i++)
       priorFaciesCubes[i]->setAccessMode(FFTGrid::READ);
@@ -1164,11 +1170,16 @@ void FaciesProb::calculateFaciesProb(FFTGrid                                    
               faciesProb_[l]->setNextReal(RMISSING);             
             }
           }
-          if(k<nx)
+          if(k<nx) {
             faciesProbUndef_->setNextReal(undefSum/sum);
-          else
+            if(seismicLH != NULL)
+              seismicLH->setNextReal(sum);
+          }
+          else {
             faciesProbUndef_->setNextReal(RMISSING);
-
+            if(seismicLH != NULL)
+              seismicLH->setNextReal(RMISSING);
+          }
         }
       }
     }
@@ -1192,6 +1203,8 @@ void FaciesProb::calculateFaciesProb(FFTGrid                                    
   betagrid->endAccess();
   rhogrid->endAccess();
   faciesProbUndef_->endAccess();
+  if(seismicLH != NULL)
+    seismicLH->endAccess();
 
   delete [] value;
 }
@@ -1820,4 +1833,50 @@ std::vector<double> FaciesProb::calculateChiSquareTest(WellData                 
       LogKit::LogFormatted(LogKit::Medium,"\n");    
   }
   LogKit::LogFormatted(LogKit::Medium,"\n");
+}
+
+
+FFTGrid * 
+FaciesProb::createLHCube(FFTGrid     * likelihood, 
+                         int           fac, 
+                         const float * priorFacies,
+                         FFTGrid    ** priorFaciesCubes)
+{
+  int nx = likelihood->getNx();
+  int ny = likelihood->getNy();
+  int nz = likelihood->getNz();
+  FFTGrid * result = new FFTGrid(nx, ny, nz, nx, ny, nz);
+  result->createRealGrid(false);
+  result->setAccessMode(FFTGrid::WRITE);
+  faciesProb_[fac]->setAccessMode(FFTGrid::READ);
+  if(priorFaciesCubes != NULL)
+    priorFaciesCubes[fac]->setAccessMode(FFTGrid::READ);
+
+  int i,j,k, rnx = likelihood->getRNxp();
+  for(i=0;i<nz;i++) {
+    for(j=0;j<ny;j++) {
+      for(k=0;k<rnx;k++) {
+        float prob  = faciesProb_[fac]->getNextReal();
+        float prior;
+        if(priorFaciesCubes != NULL)
+          prior = priorFaciesCubes[fac]->getNextReal();
+        else
+          prior = priorFacies[fac];
+        float lh = likelihood->getNextReal();
+        if(k<nx) {
+          float condLH = lh*prob/prior;
+          result->setNextReal(condLH);
+        }
+        else
+          result->setNextReal(RMISSING);
+      }
+    }
+  }
+  result->endAccess();
+  likelihood->endAccess();
+  faciesProb_[fac]->endAccess();
+  if(priorFaciesCubes != NULL)
+    priorFaciesCubes[fac]->endAccess();
+
+  return(result);
 }

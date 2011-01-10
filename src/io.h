@@ -57,6 +57,7 @@ public:
   inline static  std::string    PrefixOriginalSeismicData(void)    { return std::string("Original_Seismic_Data_")   ;}
   inline static  std::string    PrefixSyntheticSeismicData(void)   { return std::string("Synthetic_Seismic_Data_")  ;}
   inline static  std::string    PrefixFaciesProbability(void)      { return std::string("Facies_Probability_")      ;}
+  inline static  std::string    PrefixLikelihood(void)             { return std::string("Seismic_Likelihood_")      ;}
   inline static  std::string    PrefixWavelet(void)                { return std::string("Wavelet_")                 ;}
   inline static  std::string    PrefixWellWavelet(void)            { return std::string("Wavelet_Well_")            ;}
   inline static  std::string    PrefixLocalWaveletGain(void)       { return std::string("Local_Wavelet_Scale_")     ;}
@@ -141,7 +142,8 @@ public:
                                   TIME_TO_DEPTH_VELOCITY = 4,
                                   EXTRA_GRIDS            = 8,
                                   CORRELATION            = 16,
-                                  SEISMIC_QUALITY_GRID   = 32};
+                                  SEISMIC_QUALITY_GRID   = 32,
+                                  FACIES_LIKELIHOOD      = 64};
 
   enum           outputGridsSeismic{ORIGINAL_SEISMIC_DATA  = 1,
                                     SYNTHETIC_SEISMIC_DATA = 2,

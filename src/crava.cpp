@@ -1647,6 +1647,18 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
 
     std::string baseName = IO::PrefixFaciesProbability();
 
+    FFTGrid * likelihood = NULL;
+    if((modelSettings->getOutputGridsOther() & IO::FACIES_LIKELIHOOD) > 0) {
+      int nx = postAlpha_->getNx();
+      int ny = postAlpha_->getNy();
+      int nz = postAlpha_->getNz();
+      if(postAlpha_->isFile()==1)
+        likelihood = new FFTFileGrid(nx, ny, nz, nx, ny, nz);
+      else
+        likelihood = new FFTGrid(nx, ny, nz, nx, ny, nz);
+      likelihood->createRealGrid(false);
+    }
+
     if(modelSettings->getFaciesProbRelative())
     {
       meanAlpha2_->subtract(postAlpha_);
@@ -1672,7 +1684,8 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
                               modelSettings->getNoVsFaciesProb(), 
                               this,
                               model_->getLocalNoiseScales(),
-                              model_->getModelSettings());
+                              model_->getModelSettings(),
+                              likelihood);
       delete meanAlpha2_;
       delete meanBeta2_;
       delete meanRho2_;
@@ -1696,7 +1709,8 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
                               modelSettings->getNoVsFaciesProb(), 
                               this,
                               model_->getLocalNoiseScales(),
-                              model_->getModelSettings());
+                              model_->getModelSettings(),
+                              likelihood);
       baseName += "Absolute_";
     }
     fprob_->calculateConditionalFaciesProb(wells_, 
@@ -1717,7 +1731,7 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
     }
 
     fprob_->calculateFaciesProbGeomodel(model_->getPriorFacies(),
-                                       model_->getPriorFaciesCubes());
+                                        model_->getPriorFaciesCubes());
     
     if (modelSettings->getOutputGridsOther() & IO::FACIESPROB){
       for(int i=0;i<nfac;i++)
@@ -1733,6 +1747,16 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
     if (modelSettings->getOutputGridsOther() & IO::SEISMIC_QUALITY_GRID)
       QualityGrid qualityGrid(pValue, wells_, simbox_, modelSettings, model_);
 
+    if(likelihood != NULL) {
+      for(int i=0;i<nfac;i++) {
+        FFTGrid * grid = fprob_->createLHCube(likelihood, i, 
+                                              model_->getPriorFacies(), model_->getPriorFaciesCubes());
+        std::string fileName = IO::PrefixLikelihood() + modelSettings->getFaciesName(i);
+        ParameterOutput::writeToFile(simbox_,model_,grid,fileName,"");
+        delete grid;
+      }
+    }
+    
     Timings::setTimeFaciesProb(wall,cpu);
   }
 }
