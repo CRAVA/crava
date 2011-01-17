@@ -4,6 +4,7 @@
 #include <string.h>
 #include <time.h>
 #include <assert.h>
+#include <limits.h>
 #define _USE_MATH_DEFINES
 #include <cmath>
 
@@ -926,12 +927,13 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
   {
     const SegyGeometry * areaParams = modelSettings->getAreaParameters(); 
     failed = timeSimbox->setArea(areaParams, errText);
-
-    if(failed)
+    
+     if(failed)
     {
       writeAreas(areaParams,timeSimbox,areaType);
       errText += "The specified AREA extends outside the surface(s).\n";
     }
+      
     else
     {
       LogKit::LogFormatted(LogKit::Low,"\nResolution                x0           y0            lx         ly     azimuth         dx      dy\n");
@@ -1082,7 +1084,14 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
           
           if(failed == false) {
             estimateXYPaddingSizes(timeSimbox, modelSettings);
-            
+            unsigned long long int gridsize = (timeSimbox->getnx()+modelSettings->getNXpad())*(timeSimbox->getny()+modelSettings->getNYpad())*(timeSimbox->getnz()+modelSettings->getNZpad());
+
+            if(gridsize > std::numeric_limits<unsigned int>::max())
+            {
+              failed = true;
+              errText+= "Grid size is too large.  Reduce resolution or extend the grid.\n";
+            }
+   
             LogKit::LogFormatted(LogKit::Low,"\nTime simulation grids:\n");
             LogKit::LogFormatted(LogKit::Low,"  Output grid         %4i * %4i * %4i   : %10i\n",
                                  timeSimbox->getnx(),timeSimbox->getny(),timeSimbox->getnz(),
