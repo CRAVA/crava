@@ -47,7 +47,7 @@ For each available angle, the rest of the information is gathered under an \kw{a
 
 \subsubsection{Seismic data}
 \label{sec:basicseis}
-The seismic data can be given as SegY-files. By default, \crava recognizes the Seisworks, Charisma and IESX formats, but you are also allowed to define your own format using the \kw{segy-format}\kwindex{segy-format} command. For information on how to use this, see \kw{segy-format} in the reference manual chapter.
+The seismic data can be given as SegY-files. By default, \crava recognizes the Seisworks, Charisma and IESX formats, but you are also allowed to define your own format using the \kw{segy-format}\kwindex{segy-format} command. A standard format is given by \kw{standard-format}. Possible arguments are 'seisworks', 'iesx', 'charisma' or 'SIP'. Modifications to the chosen standard format can be given by the following commands: \kw{location-x}, \kw{location-y}, \kw{location-il}, \kw{location-xl} and \kw{bypass-coordinate-scaling}. For more information on how to use this, see \kw{segy-format} in the reference manual chapter.
 
 The name of the SegY file is given with \kw{file-name}, as seen in \autoref{ex:survey}. Naturally, seismic data is always required when running an inversion.
 
@@ -71,6 +71,8 @@ To invert the seismic data, we need a wavelet for each angle. This wavelet can b
 \end{example}
 
 We can read wavelets on Swav and asc format.
+
+The Ricker wavelet is implemented in \crava, and can be used by the command \kw{ricker}\kwindex{ricker}. The peak frequency is given as argument.
 
 If the \kw{wavelet} command is not given, or given without \kw{file-name}, the wavelet is estimated. See \autoref{sec:waveestimp} for how this is done. If the wavelet is given on file, but unscaled, the command \kw{scale}\kwindex{scale} should be used if the scale is known, otherwise, the scale can be estimated by using the \kw{estimate-scale}\kwindex{estimate-scale} command. If none of these are specified, the wavelet will be used as it is on file.
 
@@ -143,9 +145,9 @@ The parameters \kw{il-start} and \kw{xl-start} must be set if this command is us
 The area commands may be skipped altogether. The area will then be taken from the first input seismic data file, and defined as the smallest rectangle that covers all present traces.
 
 \subsubsection{Top and bottom surfaces}
-The vertical extent is normally given by a top and a base surface in time, under the command \kw{interval-two-surfaces}\kwindex{interval-two-surfaces}, as shown in \autoref{ex:volume}. The file name for the top surface is given under command \kw{top-surface}\kwindex{top-surface}, \kw{time-file}, and the base surface is given similarly under \kw{base-surface}\kwindex{base-surface}, \kw{time-file}. The file format is binary storm or ASCII irap.
+The vertical extent is normally given by a top and a base surface in time, under the command \kw{interval-two-surfaces}\kwindex{interval-two-surfaces}, as shown in \autoref{ex:volume}. The file name for the top surface is given under command \kw{top-surface}\kwindex{top-surface}, \kw{time-file}, and the base surface is given similarly under \kw{base-surface}\kwindex{base-surface}, \kw{time-file}. The file format is binary storm or ASCII irap. Top and bottom time values for the inversion interval can be given as constants instead of files, by using the command \kw{time-value}\kwindex{time-value}. 
 
-These surfaces also define the default lateral correlation direction for the elastic parameters, with the correlation being parallel to the top surface at the top, and base surface at the base. Between this, we create a top- and base-conform grid, so that the number of grid cells in each trace is constant, although the interval thickness may vary. This is shown in \autoref{fig:conformgrid}. The inversion may be unstable if the resolution varies too much in different traces, so we recommend that no trace interval is larger than twice the shortest interval.
+These surfaces also define the default lateral correlation direction for the elastic parameters, with the correlation being parallel to the top surface at the top, and base surface at the base. Between this, we create a top- and base-conform grid, so that the number of grid cells in each trace is constant, although the interval thickness may vary. This is shown in \autoref{fig:conformgrid}. The inversion may be unstable if the resolution varies too much in different traces, so we recommend that no trace interval is larger than twice the shortest interval. The number of layers between top and base is given by the command \kw{number-of-layers}\kwindex{number-of-layers}.
 \begin{figure}[H]
   \includegraphics[width=.99\linewidth]{images/conformgrid}
   \caption{The layer structure of a top- and base-conform grid.}
@@ -273,8 +275,17 @@ The wells are given with the command \kw{file-name} under
 for this is that additional information may be given for each
 well. Well files should be on RMS-format. 
 
-Each well may be moved to its optimal location using \kw{optimize-location-to}\kwindex{optimize-location-to} under \kw{well}\kwindex{well}, taking the arguments \rkw{angle}{angle3}\kwindex{angle} and \kw{weight}\kwindex{weight} allowing the user to assign different weights to the different angle gathers for each well. The maximum allowed offset and vertical shift for moving wells is specified in \kw{maximum-offset}\kwindex{maximum-offset} and \kw{maximum-shift}\kwindex{maximum-shift} under \kw{well-data}, with default values of 250 m and 11 ms, respectively.
+Each well may be moved to its optimal location using \kw{optimize-position}\kwindex{optimize-location-to} under \kw{well}\kwindex{well}, taking the arguments \rkw{angle}{angle3}\kwindex{angle} and \kw{weight}\kwindex{weight} allowing the user to assign different weights to the different angle gathers for each well. The maximum allowed offset and vertical shift for moving wells is specified in \kw{maximum-offset}\kwindex{maximum-offset} and \kw{maximum-shift}\kwindex{maximum-shift} under \kw{well-data}, with default values of 250 m and 11 ms, respectively.
 
+The command \kw{synthetic-vs-log} tells whether the Vs log is synthetic. If not specified, it will be detected from correlation with Vp. The command \kw{filter-elastic-logs}\kwindex{filter-elastic-logs} is used to do multi-parameter-filtering of the elastic logs in this well after the inversion.
+
+\subsection{I/O settings}
+Two commands are used to specify the directory for input files. \kw{top-directory}\kwindex{top-directory} gives the working directory for the model file. 
+The command \kw{input-directory}\kwindex{input-directory} is used to specify directory name for root directory for input files. The name is given relative to \kw{top-directory}.
+
+Under \kw{advanced-settings}, the command \kw{use-intermediate-disk-storage} can be used to save memory use when running large \crava jobs. A built-in smart-swap is then activated. The option has largest effect on Windows. 
+
+Under \kw{project-settings}, \kw{io-settings} and \kw{other-output}, the command \kw{error-file}\kwindex{error-file} writes all errors to a separate file, in addition to the log file. The command \kw{task-file}\kwindex{task-file} writes all tasks to a separate file, in addition to the log file. 
 \subsection{Output}
 Output is controlled under \kw{io-settings}\kwindex{io-settings} under
 \kw{project-settings}. Here, you may set the output directory using
@@ -287,7 +298,7 @@ Except for the log file which is placed directly under the
 output directory, all files output by crava are placed in
 sub-directories. These sub-directories are 
 
-\svex{ex:output-directoies}
+\svex{ex:output-directories}
 output-directory / wells 
                  / background 
                  / wavelets 
@@ -333,14 +344,14 @@ something like this:
 \end{example}
 
 \subsubsection{Grid output}\kwindex{grid-output}
-Different elastic parameters can be given as grid output. In addition, estimated background model may be written as grids. This is controlled by the \kw{elastic-parameters}\kwindex{elastic-parameters} command under \kw{grid-output}. See \autoref{elastic-parameters} for a full list of possible grids. If this command is not used, Vp, Vs and density will be written. Output of original and synthetic seismic data can be given by the \kw{seismic-data}\kwindex{seismic-data} command. Other output grids are given by the command \kw{other-parameters}{kwindex{other-parameters}, for example correlations.
+Different elastic parameters can be given as grid output. In addition, estimated background model may be written as grids. This is controlled by the \kw{elastic-parameters}\kwindex{elastic-parameters} command under \kw{grid-output}. See \autoref{elastic-parameters} for a full list of possible grids. If this command is not used, Vp, Vs and density will be written. Output of original and synthetic seismic data can be given by the \kw{seismic-data}\kwindex{seismic-data} command. Other output grids are given by the command \kw{other-parameters}\kwindex{other-parameters}, for example correlations.
 
-The grid format may be controlled using \kw{format}\kwindex{format}. Here the yes/no parameters \kw{storm}, \kw{segy}, \kw{sgri}, \kw{crava} and \kw{ascii} can be used to decide if grids should be written on storm- (RMS), segy-, Sgri-, crava- or ascii-format. You may choose several formats for one run; all grids will be written on all selected formats. Note that correlation grids make sense only in storm format. Default output format is storm. The crava format is a binary format only to be used with Crava. It can be read and written from \crava, and is useful if the output from a \crava run should be used as input to another \crava run because the format is fast to read.
+The grid format may be controlled using \kw{format}\kwindex{format}. Here the yes/no parameters \kw{storm}, \kw{segy}, \kw{sgri}, \kw{crava} and \kw{ascii} can be used to decide if grids should be written on storm- (RMS), segy-, Sgri-, crava- or ascii-format. You may choose several formats for one run; all grids will be written on all selected formats. The Segy format can be controlled by the \kw{segy-format} command, in the same way as for input data, described in \autoref{sec:basicseis}. Note that correlation grids make sense only in storm format. Default output format is storm. The crava format is a binary format only to be used with \crava. It can be read and written from \crava, and is useful if the output from a \crava run should be used as input to another \crava run because the format is fast to read.
 
 By using the \kw{domain}\kwindex{domain} option, output may be written in time domain (\kw{time}) or depth domain (\kw{depth}, requires parameters set under \kw{output-volume}, see \autoref{sec:depthconvusr}), or both. Again, correlation grids only make sense in time domain, which is default.
 
 \subsubsection{Well output}\kwindex{well-output}
-Some versions of filtered elastic parameters (Vp, Vs and density) in wells can be generated by the \kw{well-output} command. The logs written are
+Some versions of filtered elastic parameters (Vp, Vs and density) in wells can be generated by the \kw{well-output} command. The wells can be given in two different formats, RMS or NORSAR. This is controlled by the \kw{format}\kwindex{format} command. The logs written are
 \begin{itemize}
 \item Raw elastic logs.
 \item Elastic logs filtered to background frequency.
@@ -369,6 +380,9 @@ The final information that is needed for a \crava run is what the run is suppose
 \end{example}
 
 The command \kw{prediction}\kwindex{prediction} can be used to turn predictions on or off. By default, the prediction will be generated. A number of full frequency stochastic realisations of the inversion by specifying \kw{number-of-simulations}\kwindex{number-of-simulations} under \kw{simulation}\kwindex{simulation}. The seed for the random generator can also be given here, with the \kw{seed}\kwindex{seed} command. Changing the seed will give a new set of realisations.
+
+The command \kw{kriging-to-wells}\kwindex{kriging-to-wells} can be used to kriege realisations to well data. By default, this is done if not the \kw{simulation}\kwindex{simulation} command is used.
+
 \section{Advanced inversion options}
 \label{sec:advinvusr}
 Although \crava is mainly intended as a simple and fast inversion tool, there are still some options to control the inversion, and using more sophisticated approaches. Most of these are covered here, see also \autoref{advanced-settings} for details about \kw{advanced-settings}.
@@ -533,6 +547,16 @@ Some wavelet estimation options are also found under \kw{advanced-settings} unde
   can be shifted locally, see \autoref{sec:waveestimp}. 
 \end{itemize}
 
+Prior information for local wavelet modeling is given by the \kw{local-wavelet} command under \kw{prior-model}. Here, lateral correlation is specified as  a 2D variogram for the lateral correlation in local wavelet modeling, by the command \kw{lateral-correlation}.
+
+Output of wavelets is controlled by the \kw{wavelet-output}\kwindex{wavelet-output} command under \kw{io-settings}. 
+Two different formats can be specified, JASON and NORSAR. Estimated wavelets for each well is written by the 
+\kw{well-wavelets}\kwindex{well-wavelets} command. The command \kw{global-wavelets}\kwindex{global-wavelets} 
+writes global wavelets for each seismic angle. if \kw{local-wavelet} is requested, the command 
+\kw{lacal-wavelets}\kwindex{local-wavelets} writes estimated local wavelet shift and scale surfaces.
+
+Output of estimated local noise surface is given by the command \kw{local-noise} under \kw{io-settings} and \kw{other-output}. 
+ 
 \subsection{Background model estimation}
 The background model is estimated as a low frequency vertical
 trend. The trend is given in relative depth in the inversion volume,
@@ -554,6 +578,8 @@ The background estimation can be controlled by some commands under
   the background model. 
 \end{itemize}
 
+\subsection{Prior correlations}
+Prior correlations between Vp, Vs and density, and autocorrelation are estimated. they can be written to file by the commans \kw{prior-correlations}\kwindex{prior-correlations} under \kw{project-settings}, \kw{io-settings} and \kw{other-output}.
 \section{Facies prediction}
 An important feature in \crava is the ability to create facies
 probabilities. This requires that \kw{mode} is set to "inversion", and
@@ -582,11 +608,14 @@ related to facies probabilities are given under
 <crava>
 <prior-model>
   <facies-probabilities>
-    <facies-estimation-interval>
+    <use-vs> yes </use-vs>
+    <use-prediction> yes </use-prediction>
+    <use-absolute-elastic-parameters> yes </use-absolute-elastic-parameters>
+    <estimation-interval>
       <top-surface-file>  ../input/horizons/facies_top.storm  </top-surface-file>
       <base-surface-file> ../input/horizons/facies_base.storm </base-surface-file>
-    </facies-estimation-interval>
-    <prior-facies-probabilities>
+    </estimation-interval>
+    <prior-probabilities>
       <facies>
         <name>        sand </name>
         <probability> 0.4  </probability>
@@ -595,17 +624,27 @@ related to facies probabilities are given under
         <name>        shale </name>
         <probability> 0.6   </probability>
       </facies>
-    </prior-facies-probabilities>
+    </prior-probabilities>
   </facies-probabilities>
 </prior-model>
 </crava>
 \end{verbatim}
 \end{example}
 
+Instead of \kw{probability}, we can use \kw{probability-cube}, where prior facies probabilities are given on a file. A prior value for undefined facies is set with the command \kw{uncertainty-level}.
+
 The volume to use for facies probability computation can be controlled
 with \kw{facies-estimation-interval}, similar to estimation interval
 for wavelets. Parallel to the wavelet case, wells may also be excluded
 using the \kw{use-for-facies-probabilities} command under \kw{well}. 
+
+Facies probabilities can be written to file by using the command \kw{facies-probabilities}\kwindex{facies-probabilities} 
+or \kw{facies-probabilities-with-undef}\kwindex{facies-probabilities-with-undef}
+under \kw{project-settings}, \kw{io-settings} and \kw{grid-output}. \kw{facies-probabilities} gives probabilities for the existing facies that sum up to one. This is recommended for use in RMS. \kw{facies-probabilities-with-undef} includes probability for undefined facies, and this cube will be the most correct one. The command \kw{facies-likelihood}\kwindex{facies-likelihood} writes the likelihood for inverted seismic for each
+facies, $p(m|f)$. The command \kw{seismic-quality-grid}\kwindex{seismic-quality-grid} writes a grid kriged from values for fit between facies probabilities and facies observed in each of the wells.
+
+Rock physics distributions can be written by the command \kw{rock-physics-distributions}\kwindex{rock-physics-distributions} under \kw{io-settings} and \kw{other-output}. The distributions are written per facies, in a STORM grid with Vp, Vs and density as axes.
+ 
 
 \subsection{Prior probabilities}
 In order to get reliable probabilities, we need good prior
