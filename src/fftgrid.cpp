@@ -1725,18 +1725,17 @@ FFTGrid::writeSgriFile(const std::string & fileName, const Simbox *simbox, const
   int i,j,k;
   double x, y, z, zTop, zBot;
   float value;
-  for (j=0; j<ny; j++) {
-    for (i=0; i<nx; i++) {
-      simbox->getXYCoord(i, j, x, y);
-      zTop = simbox->getTop(x, y);
-      zBot = simbox->getBot(x, y);
-      double scale = 1.0/(simbox->getdz()*simbox->getRelThick(i,j));
-      for (k=0; k<nz; k++) {
+  for(k=0;k<nz;k++) {
+    for (j=0; j<ny; j++) {
+      for (i=0; i<nx; i++) {
+        simbox->getXYCoord(i, j, x, y);
+        zTop = simbox->getTop(x, y);
+        zBot = simbox->getBot(x, y);
         z = zMin + k*dz;
         if (z < zTop || z > zBot)
           value = RMISSING;
         else {
-          int simboxK = static_cast<int> ((z - zTop)*scale + 0.5);
+          int simboxK = static_cast<int> ((z - zTop)/ (simbox->getdz()*simbox->getRelThick(i,j)) + 0.5);
           value = getRealValue(i,j,simboxK);
         }
 #ifndef BIGENDIAN
