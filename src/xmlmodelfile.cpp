@@ -2382,7 +2382,7 @@ XmlModelFile::parseOtherOutput(TiXmlNode * node, std::string & errTxt)
   if(parseBool(root, "local-noise", value, errTxt) == true && value == true)
     otherFlag += IO::LOCAL_NOISE;
   if(parseBool(root, "rock-physics-distributions", value, errTxt) == true && value == true)
-    otherFlag += IO::LOCAL_NOISE;
+    otherFlag += IO::ROCK_PHYSICS;
   if(parseBool(root, "error-file", value, errTxt) == true && value == true)
     otherFlag += IO::ERROR_FILE;
   if(parseBool(root, "task-file", value, errTxt) == true && value == true)

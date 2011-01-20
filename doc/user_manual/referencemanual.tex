@@ -8,6 +8,7 @@ File names are currently given with a path relative to the directory settings in
 
 All commands are optional, unless otherwise stated. A necessary command under an optional is only necessary if the optional is given.
 
+Standard grid formats for surfaces and 3D grids are given in \autoref{sec:gridformats}.
 
 \section{\hbracket{actions}\necessary} \newkw{actions}
  \slist
@@ -144,7 +145,7 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 
 \subparagraph{\hbracket{time-file}} \newkw{time-file}
  \slist
-   \item \Description File name for storm grid file giving top surface in time. This or \kw{time-value} must be given.
+   \item \Description File name for standard surface file giving top surface in time. This or \kw{time-value} must be given.
    \item \Argument File name
    \item \Default
  \elist
@@ -158,7 +159,7 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 
  \subparagraph{\hbracket{depth-file}} \newkw{depth-file}
  \slist
-   \item \Description File name for storm grid file giving top surface in depth.
+   \item \Description File name for standard surface file giving top surface in depth.
    \item \Argument File name
    \item \Default
  \elist
@@ -172,7 +173,7 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 
 \subparagraph{\hbracket{time-file}} \rnewkw{time-file}{time-file2}
 \slist
-   \item \Description File name for storm grid file giving base surface in time. This or \rkw{time-value}{time-value2} must be given.
+   \item \Description File name for standard surface file giving base surface in time. This or \rkw{time-value}{time-value2} must be given.
    \item \Argument File name
    \item \Default
 \elist
@@ -186,7 +187,7 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 
 \subparagraph{\hbracket{depth-file}} \rnewkw{depth-file}{depth-file2}
 \slist
-   \item \Description File name for storm grid file giving base surface in depth.
+   \item \Description File name for standard surface file giving base surface in depth.
    \item \Argument File name
    \item \Default
 \elist
@@ -201,7 +202,7 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 
 \paragraph{\hbracket{velocity-field}} \newkw{velocity-field}
  \slist
-   \item \Description File name for storm grid file. Gives more detailed depth conversion information. Without this, constant velocity per trace is used. If only one depth surface is given, this is used to compute the other. Otherwise, the depth interval will always match both surfaces, but the velocity field is scaled and used for internal depth computations. Can not be used with \kw{velocity-field-from-inversion}.
+   \item \Description File name for standard 3D grid file. Gives more detailed depth conversion information. Without this, constant velocity per trace is used. If only one depth surface is given, this is used to compute the other. Otherwise, the depth interval will always match both surfaces, but the velocity field is scaled and used for internal depth computations. Can not be used with \kw{velocity-field-from-inversion}.
    \item \Argument File name
    \item \Default
  \elist
@@ -222,7 +223,7 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 
 \paragraph{\hbracket{reference-surface}} \newkw{reference-surface}
  \slist
-   \item \Description File name for storm surface file. The top and base surfaces for the inversion interval will be parallel to this.
+   \item \Description File name for standard surface file. The top and base surfaces for the inversion interval will be parallel to this.
    \item \Argument File name
    \item \Default
  \elist
@@ -256,8 +257,8 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
  \elist
 \paragraph{\hbracket{file-name}}\rnewkw{file-name}{file-name5}
 \slist
-   \item \Description
-   \item \Argument Name of file
+   \item \Description File name for standard surface file.
+   \item \Argument File name
    \item \Default
  \elist
 
@@ -385,7 +386,7 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 
 \subsubsection{\hbracket{reference-time-surface}} \newkw{reference-time-surface}
  \slist
-   \item \Description Filename for the time surface corresponding to the reference depth.
+   \item \Description File name for the time surface corresponding to the reference depth. Standard surface format.
    \item \Argument File name
    \item \Default
 \elist
@@ -1107,8 +1108,7 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 
 \paragraph{\hbracket{file-name}\necessary}\newkw{file-name}
  \slist
-   \item \Description File name for the seismic data cube. This can be
-     a segy file, a storm binary file, a Sgri file or a crava binary file. The file
+   \item \Description File name for the seismic data cube of one of the standard 3D formats, see \autoref{sec:gridformats}. The file
      type will be automatically detected.
    \item \Argument File name
    \item \Default
@@ -1193,7 +1193,7 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 
 \paragraph{\hbracket{file-name}}\rnewkw{file-name}{file-name2}
  \slist
-   \item \Description File name for wavelet file. Can not be given together with ricker. If neither file-name nor ricker is given, wavelet is estimated.
+   \item \Description File name for wavelet file on JASON or NORSAR format. Can not be given together with ricker. If neither file-name nor ricker is given, wavelet is estimated.
    \item \Argument File name
    \item \Default
  \elist
@@ -1228,14 +1228,14 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 
 \subparagraph{\hbracket{shift-file}}\newkw{shift-file}
  \slist
-   \item \Description File name for storm surface file giving the local shift for the wavelet. Not allowed when wavelet is estimated.
+   \item \Description File name for standard surface file giving the local shift for the wavelet. Not allowed when wavelet is estimated.
    \item \Argument File name
    \item \Default
  \elist
 
 \subparagraph{\hbracket{scale-file}}\newkw{scale-file}
  \slist
-   \item \Description File name for storm surface file giving local scale for the wavelet. Not allowed when wavelet is estimated.
+   \item \Description File name for standard surface file giving local scale for the wavelet. Not allowed when wavelet is estimated.
    \item \Argument File name
    \item \Default
  \elist
@@ -1319,7 +1319,7 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 
 \subsubsection{\hbracket{local-noise-scaled}}\newkw{local-noise-scaled}
  \slist
-   \item \Description Name of file with local noise.
+   \item \Description Name of standard surface file with local noise.
    \item \Argument File name
    \item \Default
  \elist
@@ -1340,14 +1340,14 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 
 \subsubsection{\hbracket{top-surface-file}}\newkw{top-surface-file}
  \slist
-   \item \Description File name for storm surface file giving the top of the time interval used for wavelet estimation.
+   \item \Description File name for standard surface file giving the top of the time interval used for wavelet estimation.
    \item \Argument File name
    \item \Default
  \elist
 
 \subsubsection{\hbracket{base-surface-file}}\newkw{base-surface-file}
  \slist
-   \item \Description File name for storm surface file giving the base of the time interval used for wavelet estimation.
+   \item \Description File name for standard surface file giving the base of the time interval used for wavelet estimation.
    \item \Argument File name
    \item \Default
  \elist
@@ -1664,14 +1664,14 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 
 \subsubsection{\hbracket{top-surface-file}}\rnewkw{top-surface-file}{top-surface-file2}
  \slist
-   \item \Description File name for storm surface file giving the top of the estimation interval.
+   \item \Description File name for standard surface file giving the top of the estimation interval.
    \item \Argument File name
    \item \Default
  \elist
 
 \subsubsection{\hbracket{base-surface-file}}\rnewkw{base-surface-file}{base-surface-file2}
  \slist
-   \item \Description File name for storm surface file giving the base of the estimation interval.
+   \item \Description File name for standard surface file giving the base of the estimation interval.
    \item \Argument File name
    \item \Default
  \elist
@@ -1694,21 +1694,21 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 
 \subsubsection{\hbracket{vp-file}}\newkw{vp-file}
  \slist
-   \item \Description File name for storm, segy, Sgri or crava grid file, giving background vp. Can not be given together with \kw{vp-constant}.
+   \item \Description File name for 3D grid file, giving background vp. Can not be given together with \kw{vp-constant}.
    \item \Argument File name
    \item \Default
  \elist
 
 \subsubsection{\hbracket{vs-file}}\newkw{vs-file}
  \slist
-   \item \Description File name for storm, segy, Sgri or crava grid file, giving background vs. Can not be given together with \kw{vs-constant}.
+   \item \Description File name for 3D grid file, giving background vs. Can not be given together with \kw{vs-constant}.
    \item \Argument File name
    \item \Default
  \elist
 
 \subsubsection{\hbracket{density-file}}\newkw{density-file}
  \slist
-   \item \Description File name for storm, segy, Sgri or crava grid file, giving background density. Can not be given together with \kw{density-constant}.
+   \item \Description File name for 3D grid file, giving background density. Can not be given together with \kw{density-constant}.
    \item \Argument File name
    \item \Default
  \elist
@@ -1736,7 +1736,7 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 
 \subsubsection{\hbracket{velocity-field}}\rnewkw{velocity-field}{velocity-field2}
  \slist
-   \item \Description File name for storm grid file giving a velocity field used as base for vp in background estimation. Can not be used if the background parameters are given.
+   \item \Description File name for 3D grid file giving a velocity field used as base for vp in background estimation. Can not be used if the background parameters are given.
    \item \Argument File name
    \item \Default
  \elist
@@ -1744,7 +1744,7 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 \subsubsection{\hbracket{lateral-correlation}}\newkw{lateral-correlation}
  \slist
    \item \Description 2D variogram for the lateral correlation in the elastic parameters in the estimated background model, used for kriging of wells. Can not be used if the background parameters are given.
-   \item \Argument 2D variogram
+   \item \Argument 2D variogram, see \autoref{sec:variogram}.
    \item \Default
  \elist
 
@@ -1765,21 +1765,21 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 
 \subsubsection{\hbracket{vp-file}}\rnewkw{vp-file}{vp-file2}
  \slist
-   \item \Description File name for storm, segy, Sgri or crava grid file, giving vp.
+   \item \Description File name for 3D grid file, giving vp.
    \item \Argument File name
    \item \Default
  \elist
 
 \subsubsection{\hbracket{vs-file}}\rnewkw{vs-file}{vs-file2}
  \slist
-   \item \Description File name for storm, segy, Sgri or crava grid file, giving vs.
+   \item \Description File name for 3D grid file, giving vs.
    \item \Argument File name
    \item \Default
  \elist
 
 \subsubsection{\hbracket{density-file}}\rnewkw{density-file}{density-file2}
  \slist
-   \item \Description File name for storm, segy, Sgri or crava grid file, giving density.
+   \item \Description File name 3D grid file, giving density.
    \item \Argument File name
    \item \Default
  \elist
@@ -1794,34 +1794,41 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 \subsubsection{\hbracket{lateral-correlation}}\rnewkw{lateral-correlation}{lateral-correlation3}
  \slist
    \item \Description 2D variogram for the lateral correlation in local wavelet  modeling.
-   \item \Argument 2D variogram
+   \item \Argument 2D variogram, see \autoref{sec:variogram}.
    \item \Default
  \elist
 
 \subsection{\hbracket{lateral-correlation}}\rnewkw{lateral-correlation}{lateral-correlation2}
  \slist
    \item \Description 2D variogram for the lateral correlation in the elastic parameters.
-   \item \Argument 2D variogram
+   \item \Argument 2D variogram, see \autoref{sec:variogram}.
    \item \Default
  \elist
 
 \subsection{\hbracket{temporal-correlation}}\newkw{temporal-correlation}
  \slist
-   \item \Description File name for the temporal correlation file.
+   \item \Description File name for the temporal correlation file. The file is an ascii file. Usually, this file comes from an earlier run of \crava.
    \item \Argument File name
    \item \Default
  \elist
 
 \subsection{\hbracket{parameter-correlation}}\newkw{parameter-correlation}
  \slist
-   \item \Description File name for the parameter correlation file.
+   \item \Description File name for the parameter correlation file. The file is an ascii file, containing covariances between Vp, Vs and density.
+   It is most common to use a file resulting from an earlier run of \crava, and the file might look like this:
+   
+  \begin{verbatim}
+    0.001171   0.000786   0.000046 
+  	0.000786   0.001810  -0.000395 
+  	0.000046  -0.000395   0.000530 
+  \end{verbatim}
    \item \Argument File name
    \item \Default
  \elist
 
 \subsection{\hbracket{correlation-direction}}\newkw{correlation-direction}
  \slist
-   \item \Description File name for the storm surface file giving the correlation direction for the inversion.
+   \item \Description File name for the standard surface file giving the correlation direction for the inversion.
    \item \Argument File name
    \item \Default
  \elist
@@ -1865,14 +1872,14 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 
 \paragraph{\hbracket{top-surface-file}}\newkw{top-surface-file}
  \slist
-   \item \Description File name for storm surface file giving the top of the estimation interval.
+   \item \Description File name for standard surface file giving the top of the estimation interval.
    \item \Argument File name
    \item \Default
  \elist
 
 \paragraph{\hbracket{base-surface-file}}\newkw{base-surface-file}
  \slist
-   \item \Description File name for storm surface file giving the base of the estimation interval.
+   \item \Description File name for standard surface file giving the base of the estimation interval.
    \item \Argument File name
    \item \Default
  \elist
@@ -1880,7 +1887,7 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 \subsubsection{\hbracket{prior-probabilities}}\newkw{prior-probabilities}
  \slist
    \item \Description Prior facies probabilities are given for all
-     facies. Priors can be given as constant numbers or storm
+     facies. Priors can be given as constant numbers or 3D
      cubes. If this command is not given, prior distribution is
      estimated from wells.
    \item \Argument Elements controlling facies probabilities
@@ -1910,7 +1917,7 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 
 \subparagraph{\hbracket{probability-cube}}\newkw{probability-cube}
  \slist
-   \item \Description File name for file containing prior facies
+   \item \Description File name for 3D grid file containing prior facies
      probability for facies with name given above. Either this command
      or \kw{probability} is given, same for all facies.
    \item \Argument File name
@@ -1928,13 +1935,10 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
    \item \Default 0.01
  \elist
 
-\section{\hbracket{variogram-keyword}}\newkw{variogram-keyword}
- \slist
-   \item \Description Variograms are given on the following form
-   \item \Argument
-   \item \Default
- \elist
-
+\section{2D variogram}\newkw{variogram-keyword}
+\label{sec:variogram}
+  2D variograms are given on the following form:
+ 
 \subsection{\hbracket{variogram-type}}\newkw{variogram-type}
  \slist
    \item \Description Either 'genexp' or 'spherical' for general exponential or spherical variogram.
@@ -1971,3 +1975,11 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
  \elist
 
 All angles are given as mathematical angles in degrees.
+
+\section{Standard grid formats}
+\label{sec:gridformats}
+Crava can read and write the following 3D grid formats: SegY, storm, Sgri and crava.
+
+The standard format for surfaces is binary storm.
+
+
