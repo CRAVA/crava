@@ -590,22 +590,7 @@ FFTGrid::createRealGrid(bool add)
   add_ = add;
   if(add==true)
     nGrids_        += 1;
- // LogKit::LogFormatted(LogKit::Error,"\nFFTGrid createRealGrid : nGrids = %d    maxGrids = %d\n",nGrids_,maxAllowedGrids_);
-  if (nGrids_ > maxAllowedGrids_) {
-    std::string text;
-    text += "\n\nERROR in FFTGrid createRealGrid. You have allocated too many FFTGrids. The fix";
-    text += "\nis to increase the nGrids variable calculated in Model::checkAvailableMemory().\n";
-    text += "\nDo you REALLY need to allocate more grids?\n";
-    text += "\nAre there no grids that can be released?\n";
-     if(terminateOnMaxGrid_==true)
-    {
-      LogKit::LogFormatted(LogKit::Error, text);
-      exit(1);
-    }
-    else
-      TaskList::addTask("Crava needs more memory than expected. The results are still correct. \n Norwegian Computing Center would like to have a look at your project.");
-  
-  }    
+
   maxAllocatedGrids_ = std::max(nGrids_, maxAllocatedGrids_);
 
   FFTMemUse_ += rsize_ * sizeof(fftw_real);

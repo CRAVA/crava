@@ -147,12 +147,11 @@ int main(int argc, char** argv)
       delete crava;
     } 
 
-    if (FFTGrid::getMaxAllowedGrids() > FFTGrid::getMaxAllocatedGrids() && modelSettings->getDoInversion()) {
+    if (FFTGrid::getMaxAllowedGrids() != FFTGrid::getMaxAllocatedGrids() && modelSettings->getDoInversion()) {
       LogKit::LogFormatted(LogKit::DebugLow,"\nWARNING: A memory requirement inconsistency has been detected:"); 
       LogKit::LogFormatted(LogKit::DebugLow,"\n            Maximum number of grids requested  :  %2d",FFTGrid::getMaxAllowedGrids()); 
-      LogKit::LogFormatted(LogKit::DebugLow,"\n            Maximum number of grids allocated  :  %2d",FFTGrid::getMaxAllocatedGrids()); 
-      LogKit::LogFormatted(LogKit::DebugLow,"\n         Consult method Model::checkAvailableMemory().\n"); 
-      TaskList::addTask("CRAVA did not use as much memory as estimated. NR would be interested to know about this, so if you could send your .xml-file to us, we would appreciate it.");
+      LogKit::LogFormatted(LogKit::DebugLow,"\n            Maximum number of grids allocated  :  %2d",FFTGrid::getMaxAllocatedGrids());
+      TaskList::addTask("The memory estimate in CRAVA failed. The developers would be interested to know about this, so if you inform support about this, and provide your xml-file, it would be appreciated.");
     }
     
     Timings::setTimeTotal(wall,cpu);

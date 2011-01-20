@@ -110,7 +110,7 @@ Model::Model(const std::string & fileName)
     int debugLevel = modelSettings_->getLogLevel();
     if(modelSettings_->getDebugLevel() == 1)
       debugLevel = LogKit::L_DebugLow;
-    else if(modelSettings_->getDebugLevel() == 1)
+    else if(modelSettings_->getDebugLevel() == 2)
       debugLevel = LogKit::L_DebugHigh;
 
     LogKit::SetScreenLog(debugLevel);
@@ -587,7 +587,10 @@ Model::checkAvailableMemory(Simbox        * timeSimbox,
       int peakNGrid   = peak1P;                                             //Also in number of padded grids
 
       if(modelSettings->getNumberOfSimulations() > 0) { //Second possible peak when simulating.
-        int peak2P = baseP + 3; //Need three extra parameter grids for simulated parameters.
+        int peak2P = baseP + 3; //Three extra parameter grids for simulated parameters.
+        if(modelSettings->getUseLocalNoise() == true &&
+           (modelSettings->getEstimateFaciesProb() == false || modelSettings->getFaciesProbRelative() == false)) 
+          peak2P -= nGridBackground; //Background grids are released before simulation in this case.
         int peak2U = baseU;     //Base level is the same, but may increase.
         bool computeGridUsed = ((modelSettings->getOutputGridsElastic() & (IO::AI + IO::LAMBDARHO + IO::LAMELAMBDA + IO::LAMEMU + IO::MURHO + IO::POISSONRATIO + IO::SI + IO::VPVSRATIO)) > 0);
         if(computeGridUsed == true)
