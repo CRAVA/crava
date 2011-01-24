@@ -83,7 +83,12 @@ public:
                                          int                        & iMove,
                                          int                        & jMove,
                                          float                      & kMove);
-  void           generateSyntheticSeismic(float ** reflCoef, int nAngles, Wavelet ** wavelet, int nz, int nzp);
+  void           generateSyntheticSeismic(float ** reflCoef, 
+                                          int nAngles, 
+                                          Wavelet ** wavelet, 
+                                          int nz, 
+                                          int nzp,
+                                          const Simbox * timeSimbox);
   void           setTimeGradientSettings(float distance, float sigma_m);
   void           findSeismicGradient(FFTGrid                  ** seisCube,
                                      Simbox                   * timeSimbox,

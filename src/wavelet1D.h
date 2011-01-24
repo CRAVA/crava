@@ -16,7 +16,10 @@ public:
             const std::vector<Surface *> & estimInterval,
             ModelSettings                * modelSettings,
             float                        * reflCoef,
-            int                            iAngle);
+            int                            iAngle,
+            int                          & errCode,
+            std::string                  & errTxt);
+
   Wavelet1D(const std::string & fileName, 
             int                 fileFormat, 
             ModelSettings     * modelSettings, 

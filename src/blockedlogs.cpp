@@ -2208,7 +2208,8 @@ void BlockedLogs::generateSyntheticSeismic(float   ** reflCoef,
                                            int        nAngles,
                                            Wavelet ** wavelet,
                                            int        nz,
-                                           int        nzp)
+                                           int        nzp,
+                                           const Simbox * timeSimbox)
 { 
   int          i,j;
   int          start,length;
@@ -2239,6 +2240,8 @@ void BlockedLogs::generateSyntheticSeismic(float   ** reflCoef,
 
   findContiniousPartOfData(hasData,nLayers_,start,length);
 
+  float scale = static_cast<float>(timeSimbox->getRelThick(ipos_[0], jpos_[0]));
+
   for( i=0; i<nAngles; i++ )
   {
     for(j=0; j<rnzp; j++)
@@ -2254,7 +2257,7 @@ void BlockedLogs::generateSyntheticSeismic(float   ** reflCoef,
 
     for( j=0; j<cnzp; j++ )
     {
-      cAmp =  localWavelet->getCAmp(j);
+      cAmp =  localWavelet->getCAmp(j, scale);
       synt_seis_c[j].re = cpp_c[j].re*cAmp.re + cpp_c[j].im*cAmp.im; 
       synt_seis_c[j].im = cpp_c[j].im*cAmp.re - cpp_c[j].re*cAmp.im;
     }

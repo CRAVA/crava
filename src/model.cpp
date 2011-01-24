@@ -2036,12 +2036,13 @@ void Model::generateSyntheticSeismic(Wavelet      ** wavelet,
   int nAngles = modelSettings->getNumberOfAngles();
   int nzp     = modelSettings->getNZpad();
   int nz      = timeSimbox->getnz();
+
   int i;
 
   for( i=0; i<nWells; i++ )
   {
     if( wells[i]->isDeviated() == false )
-      wells[i]->getBlockedLogsOrigThick()->generateSyntheticSeismic(reflectionMatrix,nAngles,wavelet,nz,nzp);
+      wells[i]->getBlockedLogsOrigThick()->generateSyntheticSeismic(reflectionMatrix,nAngles,wavelet,nz,nzp,timeSimbox);
   }
 }
 
@@ -2979,7 +2980,9 @@ Model::process1DWavelet(ModelSettings                * modelSettings,
                             waveletEstimInterval,                                   
                             modelSettings, 
                             reflectionMatrix,
-                            i);
+                            i,
+                            error,
+                            errText);
  
   else { //Not estimation modus
     if(modelSettings->getUseRickerWavelet(i))

@@ -36,7 +36,9 @@ Wavelet1D::Wavelet1D(Simbox                       * simbox,
                      const std::vector<Surface *> & estimInterval,
                      ModelSettings                * modelSettings,
                      float                        * reflCoef,
-                     int                            iAngle)
+                     int                            iAngle,
+                     int                          & errCode,
+                     std::string                  & errTxt)
   : Wavelet(1)
 {
   LogKit::LogFormatted(LogKit::Medium,"  Estimating 1D wavelet from seismic data and (nonfiltered) blocked wells\n");
@@ -105,6 +107,7 @@ Wavelet1D::Wavelet1D(Simbox                       * simbox,
   //
   // Loop over wells and create a blocked well and blocked seismic
   //
+  int nUsedWells = 0;
   for (int w = 0 ; w < nWells ; w++) {
     if (wells[w]->getUseForWaveletEstimation()) {
       LogKit::LogFormatted(LogKit::Medium,"  Well :  %s\n",wells[w]->getWellname().c_str());
@@ -149,6 +152,7 @@ Wavelet1D::Wavelet1D(Simbox                       * simbox,
       int start,length;
       bl->findContiniousPartOfData(hasData, nz_, start, length);
       if(length*dz_ > waveletTaperLength ) { // must have enough data
+        nUsedWells++;
         bl->fillInCpp(coeff_, start, length, cpp_r[w], nzp_); 
         fileName = "cpp_1";
         printVecToFile(fileName, cpp_r[w], nzp_);  // Debug
@@ -169,91 +173,102 @@ Wavelet1D::Wavelet1D(Simbox                       * simbox,
         sampleStart[w] = start;
         sampleStop[w]  = start + length;
       }
-    }
-  }
-
-  std::vector<float> shiftWell(nWells);
-  float shiftAvg = shiftOptimal(ccor_seis_cpp_r, wellWeight, dzWell, nWells, nzp_, shiftWell, modelSettings->getMaxWaveletShift());
-  multiplyPapolouis(ccor_seis_cpp_r, dzWell, nWells, nzp_, waveletTaperLength, wellWeight);
-  multiplyPapolouis(cor_cpp_r, dzWell, nWells, nzp_, waveletTaperLength, wellWeight);
-  getWavelet(ccor_seis_cpp_r, cor_cpp_r, wavelet_r, wellWeight, nWells, nzp_);
-
-  // Save estimated wavelet for each well, write to file later because waveletlength calculted for average wavelet is used for all well wavelets
-  // to simplify comparison 
-  std::vector<std::vector<fftw_real> > wellWavelets(nWells);
-  for(int w=0; w<nWells; w++) {
-    wellWavelets[w].resize(nzp_);
-    for(int i=0;i<nzp_;i++) {
-      if(wellWeight[w] > 0)
-        wellWavelets[w][i] = wavelet_r[w][i];
       else
-        wellWavelets[w][i] = 0;
+        LogKit::LogMessage(LogKit::Warning, "Warning: Well " + wells[w]->getWellname() + 
+                                            " was not used in wavelet estimation. Longest continuous log interval was " + 
+                                            NRLib::ToString(length*dz_) + " ms while a length of " + 
+                                            NRLib::ToString(waveletTaperLength) + "ms is needed.\n");
     }
   }
 
-  rAmp_ = averageWavelets(wellWavelets, nWells, nzp_, wellWeight, dzWell, dz_); // wavelet centered
-  cAmp_ = reinterpret_cast<fftw_complex*>(rAmp_);
-
-  for(int w=0;w<nWells;w++) { // gets syntetic seismic with estimated wavelet
-    fillInnWavelet(wavelet_r[w], nzp_, dzWell[w]);
-    shiftReal(shiftWell[w]/dzWell[w], wavelet_r[w], nzp_);
-    fileName = "waveletShift";
-    printVecToFile(fileName, wavelet_r[w], nzp_);
-    Utils::fft(wavelet_r[w], wavelet_c[w], nzp_);
-    fileName = "cpp";
-    printVecToFile(fileName, cpp_r[w], nzp_);
-    Utils::fft(cpp_r[w], cpp_c[w], nzp_);
-    convolve(cpp_c[w], wavelet_c[w], synt_seis_c[w], cnzp_);
-    Utils::fftInv(synt_seis_c[w], synt_seis_r[w], nzp_); // 
-    fileName = "syntSeis";
-    printVecToFile(fileName, synt_seis_r[w], nzp_);
-    fileName = "seis";
-    printVecToFile(fileName, seis_r[w], nzp_);
-
-    std::vector<float> syntSeis(nz_, 0.0f); // Do not use RMISSING (fails in setLogFromVerticalTrend())
-    if (wellWeight[w] > 0) {
-      for (int i = sampleStart[w] ; i < sampleStop[w] ; i++)
-        syntSeis[i] = synt_seis_r[w][i];
-      wells[w]->getBlockedLogsOrigThick()->setLogFromVerticalTrend(&syntSeis[0], z0[w], dzWell[w], nz_,
-                                                                   "WELL_SYNTHETIC_SEISMIC", iAngle);
-    }
+  if(nUsedWells == 0) {
+    errCode = 1;
+    errTxt  += "Error: No wells left for wavelet estimation.\n";
   }
+  else {
+    std::vector<float> shiftWell(nWells);
+    float shiftAvg = shiftOptimal(ccor_seis_cpp_r, wellWeight, dzWell, nWells, nzp_, shiftWell, modelSettings->getMaxWaveletShift());
+    multiplyPapolouis(ccor_seis_cpp_r, dzWell, nWells, nzp_, waveletTaperLength, wellWeight);
+    multiplyPapolouis(cor_cpp_r, dzWell, nWells, nzp_, waveletTaperLength, wellWeight);
+    getWavelet(ccor_seis_cpp_r, cor_cpp_r, wavelet_r, wellWeight, nWells, nzp_);
 
-  float scaleOpt = findOptimalWaveletScale(synt_seis_r, seis_r, nWells, nzp_, wellWeight);
-
-  shiftAndScale(shiftAvg, scaleOpt);//shifts wavelet average from wells
-  invFFT1DInPlace();
-  waveletLength_ = findWaveletLength(modelSettings->getMinRelWaveletAmp());
-  LogKit::LogFormatted(LogKit::Low,"  Estimated wavelet length:  %.1fms\n",waveletLength_);
-
-  if( ModelSettings::getDebugLevel() > 0 ) 
-    writeWaveletToFile("estimated_wavelet_", 1.0f);
-
-  norm_ = findNorm();
-
-  //Writing well wavelets to file. Using writeWaveletToFile, so manipulating rAmp_
-  fftw_real * trueAmp = rAmp_;
-  rAmp_               = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));
-  cAmp_               = reinterpret_cast<fftw_complex *>(rAmp_);
-  for(int w=0; w<nWells; w++) {
-    if (wells[w]->getUseForWaveletEstimation() && 
-       ((modelSettings->getWaveletOutputFlag() & IO::WELL_WAVELETS)>0 || modelSettings->getEstimationMode()))
-    {
-      for(int i=0;i<nzp_;i++)
-        rAmp_[i] = wellWavelets[w][i];
-      std::string wellname(wells[w]->getWellname());
-      NRLib::Substitute(wellname,"/","_");
-      NRLib::Substitute(wellname," ","_");
-      fileName = IO::PrefixWellWavelet() + wellname + "_"; 
-      writeWaveletToFile(fileName, 1.0f);
+    // Save estimated wavelet for each well, write to file later because waveletlength calculted for average wavelet is used for all well wavelets
+    // to simplify comparison 
+    std::vector<std::vector<fftw_real> > wellWavelets(nWells);
+    for(int w=0; w<nWells; w++) {
+      wellWavelets[w].resize(nzp_);
+      for(int i=0;i<nzp_;i++) {
+        if(wellWeight[w] > 0)
+          wellWavelets[w][i] = wavelet_r[w][i];
+        else
+          wellWavelets[w][i] = 0;
+      }
     }
-  }
-  fftw_free(rAmp_);
-  rAmp_ = trueAmp;
-  cAmp_ = reinterpret_cast<fftw_complex *>(rAmp_);
 
-  if(ModelSettings::getDebugLevel() > 1)
-    writeDebugInfo(seis_r, cor_cpp_r, ccor_seis_cpp_r, cpp_r, nWells);
+    rAmp_ = averageWavelets(wellWavelets, nWells, nzp_, wellWeight, dzWell, dz_); // wavelet centered
+    cAmp_ = reinterpret_cast<fftw_complex*>(rAmp_);
+
+    for(int w=0;w<nWells;w++) { // gets syntetic seismic with estimated wavelet
+      fillInnWavelet(wavelet_r[w], nzp_, dzWell[w]);
+      shiftReal(shiftWell[w]/dzWell[w], wavelet_r[w], nzp_);
+      fileName = "waveletShift";
+      printVecToFile(fileName, wavelet_r[w], nzp_);
+      Utils::fft(wavelet_r[w], wavelet_c[w], nzp_);
+      fileName = "cpp";
+      printVecToFile(fileName, cpp_r[w], nzp_);
+      Utils::fft(cpp_r[w], cpp_c[w], nzp_);
+      convolve(cpp_c[w], wavelet_c[w], synt_seis_c[w], cnzp_);
+      Utils::fftInv(synt_seis_c[w], synt_seis_r[w], nzp_); // 
+      fileName = "syntSeis";
+      printVecToFile(fileName, synt_seis_r[w], nzp_);
+      fileName = "seis";
+      printVecToFile(fileName, seis_r[w], nzp_);
+
+      std::vector<float> syntSeis(nz_, 0.0f); // Do not use RMISSING (fails in setLogFromVerticalTrend())
+      if (wellWeight[w] > 0) {
+        for (int i = sampleStart[w] ; i < sampleStop[w] ; i++)
+          syntSeis[i] = synt_seis_r[w][i];
+        wells[w]->getBlockedLogsOrigThick()->setLogFromVerticalTrend(&syntSeis[0], z0[w], dzWell[w], nz_,
+                                                                     "WELL_SYNTHETIC_SEISMIC", iAngle);
+      }
+    }
+
+    float scaleOpt = findOptimalWaveletScale(synt_seis_r, seis_r, nWells, nzp_, wellWeight);
+
+    shiftAndScale(shiftAvg, scaleOpt);//shifts wavelet average from wells
+    invFFT1DInPlace();
+    waveletLength_ = findWaveletLength(modelSettings->getMinRelWaveletAmp());
+    LogKit::LogFormatted(LogKit::Low,"  Estimated wavelet length:  %.1fms\n",waveletLength_);
+
+    if( ModelSettings::getDebugLevel() > 0 ) 
+      writeWaveletToFile("estimated_wavelet_", 1.0f);
+
+    norm_ = findNorm();
+
+    //Writing well wavelets to file. Using writeWaveletToFile, so manipulating rAmp_
+    fftw_real * trueAmp = rAmp_;
+    rAmp_               = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));
+    cAmp_               = reinterpret_cast<fftw_complex *>(rAmp_);
+    for(int w=0; w<nWells; w++) {
+      if (wells[w]->getUseForWaveletEstimation() && 
+         ((modelSettings->getWaveletOutputFlag() & IO::WELL_WAVELETS)>0 || modelSettings->getEstimationMode()))
+      {
+        for(int i=0;i<nzp_;i++)
+          rAmp_[i] = wellWavelets[w][i];
+        std::string wellname(wells[w]->getWellname());
+        NRLib::Substitute(wellname,"/","_");
+        NRLib::Substitute(wellname," ","_");
+        fileName = IO::PrefixWellWavelet() + wellname + "_"; 
+        writeWaveletToFile(fileName, 1.0f);
+      }
+    }
+    fftw_free(rAmp_);
+    rAmp_ = trueAmp;
+    cAmp_ = reinterpret_cast<fftw_complex *>(rAmp_);
+
+    if(ModelSettings::getDebugLevel() > 1)
+      writeDebugInfo(seis_r, cor_cpp_r, ccor_seis_cpp_r, cpp_r, nWells);
+  }
 
   for(int i=0;i<nWells;i++) {
     delete [] cpp_r[i]; 

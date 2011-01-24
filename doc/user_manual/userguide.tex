@@ -384,6 +384,31 @@ The command \kw{prediction}\kwindex{prediction} can be used to turn predictions 
 
 The command \kw{kriging-to-wells}\kwindex{kriging-to-wells} can be used to krige realisations to well data. By default, this is done if not the \kw{simulation} command is used.
 
+\subsection{Standard grid formats}
+\label{sec:gridformats}
+\begin{itemize}
+\item {\bf 3D-grid:} Crava can read and write the following 3D grid
+  formats: SegY, storm, Sgri (NORSAR) and crava (internal) . On
+  output, the format is controlled by a \kw{format} keyword. On input,
+  the program automatically detects the format, although it may need
+  help to correctly read segy-formats, using the \kw{segy-format}
+  keyword. The default output format is storm.
+
+\item {\bf Surfaces:} The standard format for reading and writing
+  surfaces is binary storm. Some surfaces related to 3D-inversion are
+  read as sgri (NORSAR).
+
+\item {\bf Wavelets:} Wavelets are either on JASON or NORSAR format,
+  both for reading and writing. Autodetect is used on reading, use \kw{format}
+  for writing. The default output format is JASON.
+
+\item{\bf Wells:} Wells are either on RMS or NORSAR format, both for
+  reading and writing. Autodetect is used on reading use \kw{format} to
+  control writing. The default output format is RMS.
+
+\end{itemize}
+
+
 \section{Advanced inversion options}
 \label{sec:advinvusr}
 Although \crava is mainly intended as a simple and fast inversion tool, there are still some options to control the inversion, and using more sophisticated approaches. Most of these are covered here, see also \autoref{advanced-settings} for details about \kw{advanced-settings}.
