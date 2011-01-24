@@ -557,7 +557,7 @@ writes global wavelets for each seismic angle. if \kw{local-wavelet} is requeste
 \kw{lacal-wavelets}\kwindex{local-wavelets} writes estimated local wavelet shift and scale surfaces.
 
 Output of estimated local noise surface is given by the command \kw{local-noise} under \kw{io-settings} and \kw{other-output}. 
- 
+
 \subsection{Background model estimation}
 The background model is estimated as a low frequency vertical
 trend. The trend is given in relative depth in the inversion volume,
@@ -581,6 +581,17 @@ The background estimation can be controlled by some commands under
 
 \subsection{Prior correlations}
 Prior correlations between Vp, Vs and density, and autocorrelation are estimated. they can be written to file by the commans \kw{prior-correlations}\kwindex{prior-correlations} under \kw{project-settings}, \kw{io-settings} and \kw{other-output}.
+
+\section{3D wavelet}
+In stead of the traditional 1D wavelet a 3D wavelet can be used in \crava. This wavelet is constructed by a 1D pulse and a 3D wavelet filter based on illumination vectors.
+The use of a 3D wavelet is invoked by the keyword \kw{wavelet-3d}. If a filename is specified by the \kw{file-name4}, it means that this file contains the 1D pulse used to construct the 3D wavelet. If not, this pulse is estimated. Anyway, a filter file must be given by the keyword \kw{processing-factor-file-name}. This filter contains the illumination vectors and is given on .Sgri format. 
+
+For noise estimation in the 3D wavelet setting, a propagation filter file is given by the keyword \kw{propagation-factor-file-name}. At present, this is not used. The keyword \kw{stretch-factor} can be given, but is not used since this stretch factor is automatically calculated from the offset angle.
+
+In the case of estimating the 1D pulse, seismic data from a neighbourhood of the well can be used. The range, in meters, from the well that data are collected is given by the commands \kw{estimation-range-x-direction} and \kw{estimation-range-y-direction}. The default is that only data from the well position are used. 
+
+When 3D wavelet is used, certain parameters related to the mapping between time and depth is needed. This is due to the fact that the illumination vectors are related to depth, while \crava works in time. These settings are given in \kw{project-settings} under the keyword \newline \kw{time-to-depth-mapping-for-3d-wavelet}. A reference depth for the target area needs to be defined by \kw{reference-depth}. This depth represents a constant surface which in time normally will refer to a variable surface due to varying velocity above this depth. This reference surface is given by \kw{reference-time-surface} and can be given on Storm- or Sgri-format. The parameter \kw{average-velocity} can be given, but is not used in the present version. 
+
 \section{Facies prediction}
 An important feature in \crava is the ability to create facies
 probabilities. This requires that \kw{mode} is set to "inversion", and
@@ -645,7 +656,6 @@ under \kw{project-settings}, \kw{io-settings} and \kw{grid-output}. \kw{facies-p
 facies, $p(m|f)$. The command \kw{seismic-quality-grid}\kwindex{seismic-quality-grid} writes a grid kriged from values for fit between facies probabilities and facies observed in each of the wells.
 
 Rock physics distributions can be written by the command \kw{rock-physics-distributions}\kwindex{rock-physics-distributions} under \kw{io-settings} and \kw{other-output}. The distributions are written per facies, in a STORM grid with Vp, Vs and density as axes.
- 
 
 \subsection{Prior probabilities}
 In order to get reliable probabilities, we need good prior
