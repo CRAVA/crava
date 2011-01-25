@@ -579,7 +579,7 @@ Output of wavelets is controlled by the \kw{wavelet-output}\kwindex{wavelet-outp
 Two different formats can be specified, JASON and NORSAR. Estimated wavelets for each well is written by the 
 \kw{well-wavelets}\kwindex{well-wavelets} command. The command \kw{global-wavelets}\kwindex{global-wavelets} 
 writes global wavelets for each seismic angle. if \kw{local-wavelet} is requested, the command 
-\kw{lacal-wavelets}\kwindex{local-wavelets} writes estimated local wavelet shift and scale surfaces.
+\kw{local-wavelets}\kwindex{local-wavelets} writes estimated local wavelet shift and scale surfaces.
 
 Output of estimated local noise surface is given by the command \kw{local-noise} under \kw{io-settings} and \kw{other-output}. 
 
@@ -671,7 +671,7 @@ related to facies probabilities are given under
 Instead of \kw{probability}, we can use \kw{probability-cube}, where prior facies probabilities are given on a file. A prior value for undefined facies is set with the command \kw{uncertainty-level}.
 
 The volume to use for facies probability computation can be controlled
-with \kw{facies-estimation-interval}, similar to estimation interval
+with \kw{estimation-interval}, similar to estimation interval
 for wavelets. Parallel to the wavelet case, wells may also be excluded
 using the \kw{use-for-facies-probabilities} command under \kw{well}. 
 
@@ -686,7 +686,7 @@ Rock physics distributions can be written by the command \kw{rock-physics-distri
 In order to get reliable probabilities, we need good prior
 probabilities. By default, \crava computes the average fraction of
 each facies in the relevant interval of the wells. This can be
-overridden using the \kw{prior-facies-probabilities} command, which
+overridden using the \kw{prior-probabilities} command, which
 allows specification of these. Note that probabilities must be given
 for each facies. Probabilities can either be given globally, with
 \kw{probability}, or as a full 3D trend, using
