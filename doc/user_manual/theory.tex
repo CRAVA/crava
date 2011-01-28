@@ -189,7 +189,7 @@ structures may be used.
 
 If we let $\vect{m}$ and $\vect{d}_{obs}$ be discrete representations
 of $\vect{m}(\vect{x},t)$ and $d_{obs}(\vect{x},t,\theta)$ in a time
-interval, equation \eqref{timeconv} may be written in matrix
+interval, Equation \eqref{timeconv} may be written in matrix
 notation as
 %
 \begin{eqnarray}
@@ -226,14 +226,14 @@ covariance matrix containing the noise variances for the different
 reflection angles on the diagonal, and the covariances between the
 angles off the diagonal. Furthermore, $\cel(\xi)$ and $\cet(\tau)$
 are lateral and temporal correlation functions, similar to those
-given for $\vect{m}(\vect{x},t)$ in equation~\eqref{sigma_m}.
+given for $\vect{m}(\vect{x},t)$ in Equation~\eqref{sigma_m}.
 
 Since the relationship between the reflection coefficients and the
-elastic parameters given in equation~\eqref{eq:aki_c} is linear, and
+elastic parameters given in Equation~\eqref{eq:aki_c} is linear, and
 the elastic parameters are assumed Gaussian distributed, the
 reflection coefficients become Gaussian. Moreover, since the
 convolution is a linear operation and we have assumed a Gaussian error
-model, the seismic data given in equation~\eqref{timeconv} are also
+model, the seismic data given in Equation~\eqref{timeconv} are also
 Gaussian distributed.
 
 For the time-discretized seismic data $\vect{d}_{obs}$, this gives us
@@ -272,7 +272,7 @@ covariance matrix between logarithmic parameters and
 observations. See \cite{geo68ab1} for a detailed description on
 how to compute these.
 
-The computations given in equations~\eqref{eq:mupost}
+The computations given in Equations~\eqref{eq:mupost}
 and~\eqref{eq:sigmapost} involves the inverse of $\bSigma_{d}$. Given an
 inversion volume with $n$ cells, this matrix has $n_\theta^2n^2$
 elements, and for any reasonably sized volumes, inverting this matrix
@@ -328,3 +328,17 @@ p(f=j|\bmu_{m|d_{obs}}) = \frac{p(\bmu_{m|d_{obs}}|f=j)p(f=j)}{\sum_i p(\bmu_{m|
 \end{equation}
 where $p(f=i)$ is the prior probability of facies $i$.
 This probability is then computed for each facies and each cell in the grid, with $\bmu_{m|d_{obs}}$ given by the inversion results. 
+
+Far away from the wells, the estimates will not be reliable. Therefore, we can introduce an undefined facies, which shows areas where the facies probabilities are unreliable. The facies probabilities are then calculated as follows:
+\begin{equation}
+p(f=j|\bmu_{m|d_{obs}}) = \frac{p(\bmu_{m|d_{obs}}|f=j)p(f=j)}{\sum_i p(\bmu_{m|d_{obs}}|f=i)p(f=i)+p(u)},
+\end{equation}
+where $p(u)$ is a likelihood for undefined, uniform over the area, and low compared to the likelihood for facies when we are close to data. In 
+Figure~\ref{fig:faciesprobundef} the effect of the undefined facies is illustrated. Far away from wells, the probability for undefined facies is large, and the sand probability is small. 
+\begin{figure}
+  \includegraphics[width=.33\linewidth]{images/faciesprob1}
+  \includegraphics[width=.33\linewidth]{images/faciesprob2}
+  \includegraphics[width=.33\linewidth]{images/faciesprob3}
+  \caption{To the left, the posterior sand probability calculated without undefined facies. In the middle, the sand probability when undefined facies is introduced. To the right, the posterior probability for undefined facies. }
+  \label{fig:faciesprobundef}
+\end{figure} 
