@@ -45,6 +45,8 @@ public:
 
   FFTGrid              * getFaciesProb(int i){return faciesProb_[i];};
 
+  FFTGrid              * getFaciesProbUndef(){return faciesProbUndef_;};
+
   void                   calculateConditionalFaciesProb(WellData                      ** wells, 
                                                         int                              nwells, 
                                                         const std::vector<Surface *>   & faciesEstimInterval,
