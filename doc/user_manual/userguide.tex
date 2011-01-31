@@ -445,7 +445,7 @@ both scale keywords, or use only scale.
 The local noise is triggered similarly, by using one of these two
 commands under \kw{angle-gather}: 
 \begin{enumerate}
-\item \kw{local-noise-scaled} gives a file with the local scaling of
+\item \kw{local-noise-scaled} gives a file name for a map with the local scaling of
   the signal to noise ratio, on storm format. 
 \item \kw{estimate-local-noise} estimates the local scaling of the
   signal to noise ratio if set to "yes". 
@@ -497,9 +497,10 @@ given.
 \hline
 Vp & 1300 & 7000 \\
 Vs &  200 & 4200 \\
-Density & 1.4 & 3.3
+Density & 1.4 & 3.3 \\
+\hline
 \end{tabular}
-\caption{Default intervals for valid log values.\label{tab:logminmax}}
+\caption{Default intervals for valid well log values.\label{tab:logminmax}}
 \end{table}
 
 
@@ -519,8 +520,9 @@ on.
 Var(ln(Vp)) & $5*10^{-4}$ & $250*10^{-4}$ \\
 Var(ln(Vs)) & $10*10^{-4}$ & $500*10^{-4}$ \\
 Var(ln(Density)) & $2*10^{-4}$ & $100*10^{-4}$ \\
+\hline
 \end{tabular}
-\caption{Default intervals for valid log variances.\label{tab:logvarminmax}}
+\caption{Default intervals for valid well log variances.\label{tab:logvarminmax}}
 \end{table}
 
 \subsection{Generate synthetic seismic from inversion data}
