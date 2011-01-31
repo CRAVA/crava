@@ -587,12 +587,12 @@ float FaciesProb::findDensity(float                                       alpha,
     {
       if(j>0)
         factor*=2;
-     if((i & factor) > 0)
-       value[i]*=t[j];
-     else
-       value[i]*=(1-t[j]);
+      if((i & factor) > 0)
+        value[i]*=t[j];
+      else
+        value[i]*=(1-t[j]);
     }
-      
+
     valuesum += value[i];
   }
 

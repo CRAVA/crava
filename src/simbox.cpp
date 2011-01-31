@@ -127,7 +127,7 @@ Simbox::getIndexes(double x, double y, double z, int & xInd, int & yInd, int & z
   zInd = IMISSING;
   double rx =  (x-GetXMin())*cosrot_ + (y-GetYMin())*sinrot_;
   double ry = -(x-GetXMin())*sinrot_ + (y-GetYMin())*cosrot_;
-  if(rx > 0 && rx < GetLX() && ry>0 && ry < GetLY())
+  if(rx >= 0 && rx <= GetLX() && ry >= 0 && ry <= GetLY())
   {
     double zBot, zTop = GetTopSurface().GetZ(x,y);
     if(GetTopSurface().IsMissing(zTop) == false)
@@ -136,7 +136,11 @@ Simbox::getIndexes(double x, double y, double z, int & xInd, int & yInd, int & z
       if(GetBotSurface().IsMissing(zBot) == false &&  z > zTop && z < zBot)
       {
         xInd = int(floor(rx/dx_));
+        if(xInd > nx_-1)
+          xInd = nx_-1;
         yInd = int(floor(ry/dy_));
+        if(yInd > ny_-1)
+          yInd = ny_-1;
         zInd = int(floor(static_cast<double>(nz_)*(z-zTop)/(zBot-zTop)));
         //LogKit::LogFormatted(LogKit::Low,"rx,dx,xInd = %.4f %.4f %d   ry,dy,yInd = %.4f %.4f %d    %d\n",rx,dx_,xInd,ry,dy_,yInd,zInd);
       }

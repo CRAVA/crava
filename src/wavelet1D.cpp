@@ -173,11 +173,15 @@ Wavelet1D::Wavelet1D(Simbox                       * simbox,
         sampleStart[w] = start;
         sampleStop[w]  = start + length;
       }
-      else
-        LogKit::LogMessage(LogKit::Warning, "Warning: Well " + wells[w]->getWellname() + 
+      else {
+        std::string coarseWell;
+        if(bl->getNumberOfBlocks() < nz_)
+          coarseWell = "The reason for this may be that the well log has coarser sampling than the modelling grid.\n";
+        LogKit::LogMessage(LogKit::Warning, "\nWarning: Well " + wells[w]->getWellname() + 
                                             " was not used in wavelet estimation. Longest continuous log interval was " + 
                                             NRLib::ToString(length*dz_) + " ms while a length of " + 
-                                            NRLib::ToString(waveletTaperLength) + "ms is needed.\n");
+                                            NRLib::ToString(waveletTaperLength) + "ms is needed.\n"+coarseWell);
+      }
     }
   }
 

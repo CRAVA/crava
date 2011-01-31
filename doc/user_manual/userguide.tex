@@ -417,7 +417,14 @@ Although the FFT-algorithm which is at the core of \crava requires
 stationarity, this does not mean that the entire inversion has to be
 stationary, as discussed in \autoref{sec:nonstationaryimp}. We allow
 lateral variations in wavelet amplitude, wavelet shift and signal to
-noise ratio. 
+noise ratio.
+
+The local wavelet transformations fit well within the core framework
+of \crava, but the local noise requires some approximations, as
+explained in section \autoref{sec:localnoiseimp}. This means that
+local noise only improves the final result if the local variations are
+substantial. We do not recommend using local noise if the variation in
+noise level is less than 15\%.
 
 Unlike the basic level, where parameters that were not specified
 automatically got estimated, use of local wavelets or noise must be

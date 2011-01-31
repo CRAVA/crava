@@ -463,19 +463,22 @@ WellData::readNorsarWell(const std::string              & wellFileName,
     int nExtra = 1; //MD log, needed for writing.
     std::vector<double> * filler = NULL; //to eliminate warning.
     std::vector<std::vector<double> *> logs(nLogs+nExtra, filler);
-    logs[0] = well.GetContLog("UTMX");
-    if(logs[0] == NULL) {
+    if(well.HasContLog("UTMX") == false) {
       error_ = 1;
       errTxt_ += "Could not find log 'UTMX' in well file "+wellFileName+".\n";
+      logs[0] = NULL;
     }
-    logs[1] = well.GetContLog("UTMY");
-    if(logs[1] == NULL) {
+    else
+      logs[0] = &(well.GetContLog("UTMX"));
+    if(well.HasContLog("UTMY") == false) {
       error_ = 1;
       errTxt_ += "Could not find log 'UTMY' in well file "+wellFileName+".\n";
+      logs[1] = NULL;
     }
+    logs[1] = &(well.GetContLog("UTMY"));
     for(int i=0;i<nVar;i++) {
-      logs[2+i] = well.GetContLog(parameterList[i]);
-      if(logs[2+i] == NULL) {
+      if(well.HasContLog(parameterList[i]) == false) {
+        logs[2+i] = NULL;
         if(i != 4 || logNames[0] != "") {
           error_ = 1;
           errTxt_ += "Could not find log "+parameterList[i]+" in well file "+wellFileName+".\n";
@@ -483,16 +486,18 @@ WellData::readNorsarWell(const std::string              & wellFileName,
         else if(i==4)
           nLogs = nLogs-1;
       }
+      else
+        logs[2+i] = &(well.GetContLog(parameterList[i]));
     }
 
     //Added MD log.
     int mdLog = nLogs;
-    logs[mdLog] = well.GetContLog("MD");
-    if(logs[mdLog] == NULL) {
+    if(well.HasContLog("MD") == false) {
       error_ = 1;
       errTxt_ += "Could not find log 'MD' in well file "+wellFileName+".\n";
-
+      logs[mdLog] = NULL;
     }
+    logs[mdLog] = &(well.GetContLog("MD"));
     nLogs++;
 
 

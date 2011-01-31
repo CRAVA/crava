@@ -3718,6 +3718,9 @@ Model::printSettings(ModelSettings * modelSettings,
   LogKit::LogFormatted(LogKit::Low,"\nGeneral settings:\n");
   if(modelSettings->getForwardModeling()==true)
     LogKit::LogFormatted(LogKit::Low,"  Modelling mode                           : forward\n");
+  else if (modelSettings->getEstimationMode()==true)
+    LogKit::LogFormatted(LogKit::Low,"  Modelling mode                           : estimation\n");
+
   else if (modelSettings->getNumberOfSimulations() == 0)
     LogKit::LogFormatted(LogKit::Low,"  Modelling mode                           : prediction\n"); 
   else
