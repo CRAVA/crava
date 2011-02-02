@@ -43,10 +43,14 @@ public:
   void               filterLogs(Simbox          * timeSimboxConstThick,
                                 FilterWellLogs *& filterlogs);
   int                getRelative();
-
+  
+  
   void               computeG(double **G) const;
+  float**            getPriorVar0() const;
+  float**            getPostVar0() const;
   void               newPosteriorCovPointwise(double ** sigmanew, double **G, 
                                               const std::vector<double> & scales, double **sigmamdnew) const;
+  void               computeFilter(float ** priorCov,  double ** posteriorCov,int n,double** filter) const;
   void               doPredictionKriging();
 
 

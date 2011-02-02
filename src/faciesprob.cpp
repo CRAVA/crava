@@ -207,26 +207,37 @@ FaciesProb::makeFaciesDens(int nfac,
 
     cravaResult->newPosteriorCovPointwise(H, G, scale, junk);
 
-    double **help = new double*[3];
-    help[0] = new double[1];
-    help[1] = new double[1];
-    help[2] = new double[1];
+    double **help1 = new double*[3];
+    help1[0] = new double[1];
+    help1[1] = new double[1];
+    help1[2] = new double[1];
+    double **help2 = new double*[3];
+    help2[0] = new double[1];
+    help2[1] = new double[1];
+    help2[2] = new double[1];
     for(i=0;i<int(alphaFiltered.size());i++)
     {
-      help[0][0] = alphaFiltered[i];
-      help[1][0] = betaFiltered[i];
-      help[2][0] = rhoFiltered[i];
-      lib_matr_prod(H,help,3,3,1,help);
-      alphaFilteredNew[i] = float(help[0][0]);
-      betaFilteredNew[i] = float(help[1][0]);
-      rhoFilteredNew[i] = float(help[2][0]);
+      help1[0][0] = alphaFiltered[i];
+      help1[1][0] = betaFiltered[i];
+      help1[2][0] = rhoFiltered[i];
+      lib_matr_prod(H,help1,3,3,1,help2);  // 
+      alphaFilteredNew[i] = float(help2[0][0]);
+      betaFilteredNew[i] = float(help2[1][0]);
+      rhoFilteredNew[i] = float(help2[2][0]);
     }
+    for(i=0;i<3;i++)
+    {
+      delete [] help1[i];
+      delete [] help2[i];
+    }
+    delete [] help1;
+    delete [] help2;
   }
   else
   {
     for(i=0;i<int(alphaFiltered.size());i++)
    {
-     alphaFilteredNew[i] = alphaFiltered[i];
+      alphaFilteredNew[i] = alphaFiltered[i];
       betaFilteredNew[i] = betaFiltered[i];
       rhoFilteredNew[i] = rhoFiltered[i];
 

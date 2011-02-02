@@ -1787,6 +1787,13 @@ Crava::filterLogs(Simbox          * timeSimboxConstThick,
   Timings::setTimeFiltering(wall,cpu);
 }
 
+float**            
+Crava::getPriorVar0() const {return correlations_->getPriorVar0();}
+
+float**            
+Crava::getPostVar0() const {return correlations_->getPostVar0();}
+
+
 
 void Crava::computeG(double **G) const
 {
@@ -1953,6 +1960,10 @@ void Crava::computeG(double **G) const
 void Crava::newPosteriorCovPointwise(double ** sigmanew, double **G, const std::vector<double> & scales, 
                                      double ** sigmamdnew) const
 {
+  //  this function name is not suited... it returns not what we should think perhaps...
+  //  sigmanew=  sqrt( (sigmaM - sigmaM|d_new )^-1 ) * sqrt( (sigmaM -s igmaM|d_old )^-1)
+  //  sigmamdnew = Sqrt( Posterior covariance)
+
   double **sigmaenew = new double*[ntheta_];
   double **D         = new double*[ntheta_];
   double **help      = new double*[ntheta_];
@@ -1999,6 +2010,7 @@ void Crava::newPosteriorCovPointwise(double ** sigmanew, double **G, const std::
   for(i=0;i<ntheta_;i++)
     for(j=0;j<ntheta_;j++)
       help[i][j]+=sigmaenew[i][j];
+  // help = G*Sigmam*GT+sigmaE_New 
 
 
   int     * error         = new int[1];
@@ -2023,7 +2035,7 @@ void Crava::newPosteriorCovPointwise(double ** sigmanew, double **G, const std::
 
   lib_matrTranspose(eigvece,ntheta_,ntheta_,eigvecetrans);
   lib_matr_prod(eigvece,eigvalmate,ntheta_,ntheta_,ntheta_,help);
-  lib_matr_prod(help,eigvecetrans,ntheta_,ntheta_,ntheta_,eigvece); // eigvece er inversmatrisen
+  lib_matr_prod(help,eigvecetrans,ntheta_,ntheta_,ntheta_,eigvece); // eigvece = (G*Sigmam*GT+sigmaE_New)^-1
 
   double ** help3 = new double *[3];
   for(i=0;i<3;i++)
@@ -2034,9 +2046,9 @@ void Crava::newPosteriorCovPointwise(double ** sigmanew, double **G, const std::
     deltanew[i] = new double[3];
 
   lib_matr_prod(sigmam,GT,3,3,ntheta_,help4);
-  lib_matr_prod(help4,eigvece,3,ntheta_,ntheta_,help2);
-  lib_matr_prod(help2,G,3,ntheta_,3,help3);
-  lib_matr_prod(help3,sigmam,3,3,3,deltanew);
+  lib_matr_prod(help4,eigvece,3,ntheta_,ntheta_,help2);// help2= SigmaM*GT*(G*Sigmam*GT+sigmaE_New)^-1
+  lib_matr_prod(help2,G,3,ntheta_,3,help3);// help2= SigmaM*GT*(G*Sigmam*GT+sigmaE_New)^-1*G
+  lib_matr_prod(help3,sigmam,3,3,3,deltanew);// delta new= SigmaM*GT*(G*Sigmam*GT+sigmaE_New)^-1*GSigmaM
 
   for(i=0;i<3;i++)
     for(j=0;j<3;j++)
@@ -2044,6 +2056,7 @@ void Crava::newPosteriorCovPointwise(double ** sigmanew, double **G, const std::
       sigmamdnew[i][j] = -deltanew[i][j];
       sigmamdnew[i][j]+=sigmam[i][j];
     }
+   // sigmamdnew = SigmaM - SigmaM*GT*(G*Sigmam*GT+sigmaE_New)^-1*GSigmaM;  is the local posterior covariance.
 
   double  * eigval      = new double[3];
   double ** eigvalmat   = new double*[3];
@@ -2066,7 +2079,9 @@ void Crava::newPosteriorCovPointwise(double ** sigmanew, double **G, const std::
   lib_matr_prod(eigvec,eigvalmat,3,3,3,help3);
   lib_matrTranspose(eigvec,3,3,eigvectrans);
   lib_matr_prod(help3,eigvectrans,3,3,3,sigmamdnew);
+  // sigmamdnew = Sqrt( Posterior covariance)
 
+  // delta new= SigmaM*GT*(G*Sigmam*GT+sigmaE_New)^-1*GSigmaM
   lib_matr_eigen(deltanew,3,eigvec,eigval,error);
   for(i=0;i<3;i++)
     for(j=0;j<3;j++)
@@ -2078,6 +2093,7 @@ void Crava::newPosteriorCovPointwise(double ** sigmanew, double **G, const std::
   lib_matr_prod(eigvec,eigvalmat,3,3,3,help3);
   lib_matrTranspose(eigvec,3,3,eigvectrans);
   lib_matr_prod(help3,eigvectrans,3,3,3,deltanew);
+  // deltanew = sqrt(  SigmaM*GT*(G*Sigmam*GT+sigmaE_New)^-1*GSigmaM)
 
   float **sigmamd = correlations_->getPostVar0();
   double **sigmadelta = new double*[3];
@@ -2087,6 +2103,7 @@ void Crava::newPosteriorCovPointwise(double ** sigmanew, double **G, const std::
   for(i=0;i<3;i++)
     for(j=0;j<3;j++)
       sigmadelta[i][j] = double(sigmam[i][j]-sigmamd[i][j]);
+  // sigmadelta = sigmaM-sigmaM|d
 
   lib_matr_eigen(sigmadelta,3,eigvec,eigval,error);
   for(i=0;i<3;i++)
@@ -2098,8 +2115,11 @@ void Crava::newPosteriorCovPointwise(double ** sigmanew, double **G, const std::
   lib_matr_prod(eigvec,eigvalmat,3,3,3,help3);
   lib_matrTranspose(eigvec,3,3,eigvectrans);
   lib_matr_prod(help3,eigvectrans,3,3,3,sigmadelta);
+   // sigmadelta = sqrt( sigmaM-sigmaM|d ) (robustified )
+
 
   lib_matr_prod(deltanew,sigmadelta,3,3,3,sigmanew);
+  // sigmanew=  sqrt( (sigmaM - sigmaM|d_new )^-1 ) * sqrt( (sigmaM -s igmaM|d_old )^-1)
 
   for(i=0;i<ntheta_;i++)
   {
@@ -2146,6 +2166,43 @@ void Crava::newPosteriorCovPointwise(double ** sigmanew, double **G, const std::
 
   delete [] error;
   delete [] eigvale;
+}
+
+void 
+Crava::computeFilter( float ** priorCov, double ** posteriorCov,int n,double** filter) const
+{ 
+  double ** imat       = new double *[n];
+  double ** priorCov2       = new double *[n];
+  for(int i=0;i<n;i++)
+  { 
+    imat[i] = new double [n];
+    priorCov2[i] = new double [n];
+    for(int j=0;j<n;j++)
+    {
+      priorCov2[i][j] =  priorCov[i][j];
+      imat[i][j] = 0.0;
+      if(i==j)
+        imat[i][j] =1.0;
+    }
+  }
+
+  lib_matrCholR(n, priorCov2);
+  lib_matrAXeqBMatR(n, priorCov2, imat, n);
+  lib_matr_prod(posteriorCov,imat,n,n,n,filter);
+  for(int i=0;i<n;i++)
+  {
+    for(int j=0;j<n;j++)
+    {
+      filter[i][j] *=-1.0;
+      if(i==j)
+        filter[i][j]+=1.0;
+    }
+    delete [] imat[i];
+    delete [] priorCov2[i];
+  }
+  
+  delete [] imat;
+  delete [] priorCov2;
 }
 
 

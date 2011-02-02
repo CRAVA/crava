@@ -35,21 +35,17 @@ private:
   double             *** priorSpatialCorr_;
 
   void doVpRhoFiltering(const double ** sigmapri, const double ** sigmapost, int n, 
-                        BlockedLogs * blockedlogs, const Crava * cravaResult,
-                        const std::vector<Grid2D *> & noiseScale);
-  void updateSigmaE(double ** filter, double ** priCov, double ** postCov, int n, 
-                    const Crava * cravaResult, const std::vector<Grid2D *> & noiseScale);
-  void completeSigmaE(int lastn);
-  void updateSigmaEVpRho(double ** filter, 
-                         double ** priCov, 
-                         double ** postCov, 
-                         int nDim, 
-                         int n,
-                         const Crava * cravaResult, 
-                         const std::vector<Grid2D *> & noiseScale);
-  void completeSigmaEVpRho(int lastn);
+                        BlockedLogs * blockedlogs);
+  void updateSigmaE(double ** filter, double ** postCov, int n);
+  void completeSigmaE(int lastn, const Crava * cravaResult, const std::vector<Grid2D *> & noiseScale);
+  
+  void updateSigmaEVpRho(double ** filter, double ** postCov,  int nDim, int n);
+  void completeSigmaEVpRho(int lastn, const Crava * cravaResult, const std::vector<Grid2D *> & noiseScale);
+
+  void computeSigmaEAdjusted(double** sigmae ,double** sigmaE0,double** sigmaETmp,int n,double** sigmaEAdj);
 
   void adjustDiagSigma(double ** sigmae, int n);
+
   void calculateFilteredLogs(double **Aw, BlockedLogs *blockedlogs, int n, bool useVs);
   void MakeInterpolatedResiduals(const float * bwLog, const float * bwLogBG, const int n, const int offset, double ** residuals);
   void fillValuesInSigmapost(double **sigmapost, const int *ipos, const int *jpos, const int *kpos, FFTGrid *covgrid, int n, int ni, int nj);
