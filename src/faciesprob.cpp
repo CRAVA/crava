@@ -458,8 +458,7 @@ void FaciesProb::makeFaciesProb(int                            nfac,
   for(int i=0;i<densdim;i++) {
     makeFaciesDens(nfac, sigmaEOrig, useFilter, noVs, alphaFiltered, betaFiltered, rhoFiltered, 
                    faciesLog, density[i], &volume[i], i, G, cravaResult, noiseScale);
-    if((modelSettings->getOtherOutputFlag() & IO::ROCK_PHYSICS > 0) && 
-       (i == 0 || i == densdim-1)) {
+    if((modelSettings->getOtherOutputFlag() & (IO::ROCK_PHYSICS > 0)) && (i == 0 || i == densdim-1)) {
       Simbox * expVol = createExpVol(volume[i]);
       for(int j=0; j<static_cast<int>(density[i].size()); j++) {
         std::string baseName;
@@ -1220,8 +1219,8 @@ void FaciesProb::calculateFaciesProb(FFTGrid                                    
   delete [] value;
 }
 
-void FaciesProb::calculateFaciesProbGeomodel(const float *                  priorFacies,
-                                             FFTGrid                    ** priorFaciesCubes)
+void FaciesProb::calculateFaciesProbGeomodel(const float  * priorFacies,
+                                             FFTGrid     ** priorFaciesCubes)
 {
   int i,j,k,l;
   int nx, ny, nz;

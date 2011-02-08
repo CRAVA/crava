@@ -41,7 +41,14 @@ All information regarding the seismic data is gathered under the \kw{survey}\kwi
 \end{verbatim}
 \end{example}
 
-The seismic data can be on SegY-format, with a common offset time, given with \kw{segy-start-time}\kwindex{segy-start-time} if different from 0. The first value is used to represent the interval from start-time to start-time + time-step, so with a start-time of 100ms, and 4ms sampling, the first value is used in the grid cell covering the interval 100-104ms. If we use seismic data of another format than SegY, the \kw{segy-start-time} command is not used.
+The seismic data can be given on SegY-format, with a common offset time
+specified by the keyword \kw{segy-start-time}\kwindex{segy-start-time}
+if the offset is different from 0. The first value is used to
+represent the interval from start-time to start-time + time-step, so
+with a start-time of 100ms, and 4ms sampling, the first value is used
+in the grid cell covering the interval 100-104ms. If we use seismic
+data of another format than SegY, the \kw{segy-start-time} command is
+not used.  
 
 For each available angle, the rest of the information is gathered under an \kw{angle-gather} tag, one for each offset. The actual angle is given by \kw{offset-angle}\kwindex{offset-angle}.
 
@@ -145,27 +152,65 @@ The parameters \kw{il-start} and \kw{xl-start} must be set if this command is us
 
 The area commands may be skipped altogether. The area will then be taken from the first input seismic data file, and defined as the smallest rectangle that covers all present traces.
 
-\subsubsection{Top and bottom surfaces}
-The vertical extent is normally given by a top and a base surface in time, under the command \kw{interval-two-surfaces}\kwindex{interval-two-surfaces}, as shown in \autoref{ex:volume}. The file name for the top surface is given under command \kw{top-surface}\kwindex{top-surface}, \kw{time-file}, and the base surface is given similarly under \kw{base-surface}\kwindex{base-surface}, \kw{time-file}. The file format is binary storm or ASCII irap. Top and bottom time values for the inversion interval can be given as constants instead of files, by using the command \kw{time-value}\kwindex{time-value}. 
+\subsubsection{Top and base surfaces}
+The vertical extent is normally given by a top and a base surface in
+time, under the command \kw{interval-two-surfaces}
+\kwindex{interval-two-surfaces}, as shown in \autoref{ex:volume}. The
+file name for the top surface is given under command
+\kw{top-surface}\kwindex{top-surface}, \kw{time-file}, and the base
+surface is given similarly under \kw{base-surface}
+\kwindex{base-surface}, \kw{time-file}. The file format is binary
+storm or ASCII irap. Top and base time values for the inversion
+interval can be given as constants instead of files, by using the
+command \kw{time-value}\kwindex{time-value}.   
 
-These surfaces also define the default lateral correlation direction for the elastic parameters, with the correlation being parallel to the top surface at the top, and base surface at the base. Between this, we create a top- and base-conform grid, so that the number of grid cells in each trace is constant, although the interval thickness may vary. This is shown in \autoref{fig:conformgrid}. The inversion may be unstable if the resolution varies too much in different traces, so we recommend that no trace interval is larger than twice the shortest interval. The number of layers between top and base is given by the command \kw{number-of-layers}\kwindex{number-of-layers}.
-\begin{figure}[H]
-  \includegraphics[width=.99\linewidth]{images/conformgrid}
-  \caption{The layer structure of a top- and base-conform grid.}
-  \label{fig:conformgrid}
-\end{figure}
+These surfaces also define the default lateral correlation direction
+for the elastic parameters, with the correlation being parallel to the
+top surface at the top, and base surface at the base. Between this, we
+create a top- and base-conform grid, so that the number of grid cells
+in each trace is constant, although the interval thickness may
+vary. This is shown in part B of
+\autoref{fig:inversion-interval-types}. The inversion may be unstable
+if the resolution varies too much in different traces, so we recommend
+that no trace interval is larger than twice the shortest interval. The
+number of layers between top and base is given by the command
+\kw{number-of-layers} \kwindex{number-of-layers}.
+
+%\begin{figure}
+%  \includegraphics[width=.99\linewidth]{images/conformgrid}
+%  \caption{The layer structure of a top- and base-conform grid.}
+%  \label{fig:conformgrid}
+%\end{figure}
+
 \begin{figure}
   \includegraphics[width=.49\linewidth]{images/A_correlation_parallel}
   \includegraphics[width=.49\linewidth]{images/B_correlation_proportional}\\
   \includegraphics[width=.49\linewidth]{images/C_correlation_parallel_timecut}
   \includegraphics[width=.49\linewidth]{images/D_correlation_proportional_timecut}
   \caption{The layer structure of a (A) parallel top and base,
-    (B) top- and base-conform compaction grid (C) Uniform correlation structure in a cut grid (D) Compactional correlation structure in a cut grid.}
+           (B) top- and base-conform compaction grid (C) Uniform correlation
+           structure in a cut grid (D) Compactional correlation structure in a
+           cut grid.} 
   \label{fig:inversion-interval-types}
 \end{figure}
-By specifying a correlation surface, the correlation direction can be independent of the interval surfaces, see \autoref{sec:basiccorr}. If this is done, there are no restrictions on the differences in interval thickness.
 
-If only one surface is known, the command \kw{interval-one-surface} can be used to invert an interval with top and base parallel to this surface. See \autoref{interval-one-surface} in the reference guide for more details. Note that depth conversion and correlation surfaces will not be available in this mode, so the lateral correlation will be parallel to this surface.
+By specifying a correlation surface, the correlation direction can be
+independent of the interval surfaces, see part C of
+\autoref{fig:inversion-interval-types} and \autoref{sec:basiccorr}. If
+this is done, there are no restrictions on the differences in interval
+thickness.
+
+The more flexible approach where a compactional correlation structure
+is specified independent of the interval of interest (see part D of
+\autoref{fig:inversion-interval-types})  is currently not implemented. 
+
+If only one surface is known, the command \kw{interval-one-surface}
+can be used to invert an interval with top and base parallel to this
+surface. See \autoref{interval-one-surface} in the reference guide for
+more details. Note that depth conversion and correlation surfaces will
+not be available in this mode, so the lateral correlation will be
+parallel to this surface as illustrated in part A of
+\autoref{fig:inversion-interval-types}. 
 
 \subsubsection{Depth conversion}\label{sec:depthconvusr}
 The \kw{output-volume} command is also where the depth conversion is specified, since this also constitutes a volume although in depth. Since the lateral area obviously is the same, the additional information for depth conversion is given under \kw{interval-two-surfaces}. To do the depth conversion, one of the following must be given:
@@ -491,6 +536,7 @@ set these missing. The default upper and lower bounds are shown in
 \kw{minimum-density} and the corresponding maximum values can be
 given. 
 \begin{table}
+\caption{Default intervals for valid well log values.\label{tab:logminmax}}
 \begin{tabular}{|lrr|}
 \hline
 & Min & Max \\
@@ -500,9 +546,7 @@ Vs &  200 & 4200 \\
 Density & 1.4 & 3.3 \\
 \hline
 \end{tabular}
-\caption{Default intervals for valid well log values.\label{tab:logminmax}}
 \end{table}
-
 
 Some logs may stay within reasonable values, but have too much or too
 little variation, also indicating that something is wrong. For each
@@ -513,6 +557,7 @@ error. The default bounds are shown in
 \kw{allowed-parameter-values}, using \kw{minimum-variance-vp} and so
 on. 
 \begin{table}
+\caption{Default intervals for valid well log variances.\label{tab:logvarminmax}}
 \begin{tabular}{|lrr|}
 \hline
 & Min & Max \\
@@ -522,7 +567,6 @@ Var(ln(Vs)) & $10*10^{-4}$ & $500*10^{-4}$ \\
 Var(ln(Density)) & $2*10^{-4}$ & $100*10^{-4}$ \\
 \hline
 \end{tabular}
-\caption{Default intervals for valid well log variances.\label{tab:logvarminmax}}
 \end{table}
 
 \subsection{Generate synthetic seismic from inversion data}
@@ -566,7 +610,7 @@ under \kw{well-data}. In addition, wells can be excluded individually,
 by setting \kw{use-for-wavelet-estimation} to "no" under \kw{well}. 
 
 By default, the wavelet and noise are estimated in the region between
-the top and bottom surface for the inversion area. This may be further
+the top and base surface for the inversion area. This may be further
 limited using the \kw{wavelet-estimation-interval} command under
 \kw{survey}, where a separate set of restricting surfaces are given
 with \kw{top-surface-file} and \kw{base-surface-file}. Since these are
@@ -595,7 +639,7 @@ Output of estimated local noise surface is given by the command \kw{local-noise}
 \subsection{Background model estimation}
 The background model is estimated as a low frequency vertical
 trend. The trend is given in relative depth in the inversion volume,
-so the trend value along the top and bottom surface is constant. At
+so the trend value along the top and base surface is constant. At
 well locations, the trend is kriged to the well logs. By default, all
 wells are used background model estimation, but can be excluded by
 using \kw{use-for-background-trend} under \kw{well} for individual

@@ -413,8 +413,7 @@ XmlModelFile::parseWell(TiXmlNode * node, std::string & errTxt)
   if(parseValue(root, "file-name", value, tmpErr) == true) {
     inputFiles_->addWellFile(value);
   }
-  else
-  {
+  else {
     inputFiles_->addWellFile(""); //Dummy to keep tables balanced.
     tmpErr += "The file name for the well is not given.\n";
   }

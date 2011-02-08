@@ -14,13 +14,11 @@ The $\tilde{ }$ denotes the 3D fourier transform, with temporal frequency $\omeg
 
 \section{Local wavelet and noise}
 \label{sec:nonstationaryimp}
-As shown, even though the use of FFT-transform requires stationarity, we are able to work around this. Wavelets can be made local since these can be divided out before solving the problem, and locally higher noise levels can be approximated by interpolating the low-noise solution and the prior distribution.
-
-\begin{figure}
-  \includegraphics[width=.99\linewidth]{images/local-wavelet}
-  \caption{The local gain and shift maps involved when using local wavelets}
-  \label{fig:local-wavelet}
-\end{figure}
+As shown, even though the use of FFT-transform requires stationarity,
+we are able to work around this. Wavelets can be made local since
+these can be divided out before solving the problem, and locally
+higher noise levels can be approximated by interpolating the low-noise
+solution and the prior distribution. 
 
 \subsection{Dividing out the wavelet}
 \label{sec:divwavimp}
@@ -81,7 +79,19 @@ Note that the convolution has disappeared, and the equation can be solved for ea
 
 We find the optimal vertical shift for each well. The global wavelet is then found by taking the arithmetic average of the zero-phase wavelets, weighted by the number of samples used from each well. The noise estimate is found by generating synthetic seismic using the averaged wavelet optimally shifted in each well, and subtracting this from the seismic data. The remaining part is assumed to be noise, and we measure the noise energy from this.
 
-When using local wavelets, we find the optimal shift and/or scale of the global wavelet at each well location. Optimal here means minimizing the noise energy. We then use kriging to interpolate this between wells, with a shift of 0 and a scale of 1 as the mean level outside the well control area.
+When using local wavelets, we find the optimal shift and/or scale of
+the global wavelet at each well location. Optimal here means
+minimizing the noise energy. We then use kriging to interpolate this
+between wells, with a shift of 0 and a scale of 1 as the mean level
+outside the well control area.  This is illustrated in
+\autoref{fig:local-wavelet}. 
+
+\begin{figure}
+  \centering
+  \includegraphics[width=.95\linewidth]{images/local-wavelet}
+  \caption{The local scale and shift maps involved when using local wavelets}
+  \label{fig:local-wavelet}
+\end{figure}
 
 Local noise is estimated using the local noise energies from above. We always use local shift when estimating the noise, but only use local scale if it is used in the inversion. If local scale is used, the noise is divided by this. A noise scaling factor is then computed in each well, and kriged as above.
 
@@ -118,7 +128,7 @@ The memory handling in \crava will primarily use memory to achieve speed. Howeve
 
 \begin{enumerate}
 \item Background grids for Vp, Vs and density, 3 grids.
-\item If these are estimated, another 3 grids are allocated for estimation, but destroyed again before any other allocations.
+\item If these are estimated, another 3 grids are allocated for estimation, but destroyed before any other allocations.
 \item Seismic grids, $n_\theta$. If well optimisation is used, this will come before background grids.
 \item Possibly prior facies probability grids, indicated by $I_p$, $n_f$ unpadded grids.
 \item Prior covariance, 6 grids.
