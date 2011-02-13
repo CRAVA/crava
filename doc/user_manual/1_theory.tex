@@ -354,12 +354,77 @@ correlations inside a trace are much stronger than between traces. See
 
 \subsection{Facies probabilities}
 \label{sec:facprobthe}
-Facies probabilities are found by first establishing the link between
-facies and inversion result, $p(f_i|\bmu_{m|d,i})$, where $f_i$ is the
-facies at location $i$ and $\bmu_{m|d,i}$ is the inversion result at
-the same location. The first step is to establish the link between the
-well logs $\vect{m}$ and the expectation given seismic observations
-$\bmu_{m|d_{obs}}$. We get this by combining \autoref{eq:Gm} and
+To calculate facies probabilities from inverted elastic parameters we
+must first establish a link between the elastic parameters from
+inversion and facies. There are several ways to do this, and we have
+listed the four most realistic in 
+\autoref{tab:paramsfacies}.
+
+First, we may establish the link using a rock physics models. This
+way we avoid any alignment problems, but we get no frequency control
+and get to use no correlation information from the
+inversion. A prediction obtained this way tends to be too
+optimistic, but if there are no well logs available, this is our only
+option.
+
+\begin{table}
+\centering
+\caption{Different methods for establishing a relation between elastic parameters and facies.}
+\label{tab:paramsfacies}
+\begin{tabular}{|l|l|l|l|l|l|}
+\hline
+Approach & Frequency & Inversion   & Alignment & Predictions\\
+         & control   & correlation &  & \\ \hline
+Rock physics                               &  No &  No & Yes & Optimistic  \\ \hline
+Low-pass filtered elastic well logs        & Yes &  No & Yes & Optimistic  \\ \hline
+Inversion                                  & Yes & Yes & No  & Pessimistic \\ \hline
+Parameter filtered elastic well logs & Yes & Yes & Yes & Realistic   \\ \hline
+\end{tabular}
+\end{table}
+
+Second, we may filter the elastic well logs using a low-pass filter,
+and use these filtered logs and facies logs to make a density
+estimation of $p(\bmu_{m|d_{obs}}|f)$, where $f$ is the facies. This
+gives us frequency control and proper alignment, but again there are
+no correlation information from the inversion included, and the
+predictions become to optimistic. The frequency filtering of well logs
+is illustrated in \autoref{fig:parmeterfilter}.
+
+\begin{figure}
+  \centering
+  \fbox{\includegraphics[width=.310\linewidth]{images/Crossplot_raw_logs}}
+  \fbox{\includegraphics[width=.310\linewidth]{images/Crossplot_40Hz_logs}}
+  \fbox{\includegraphics[width=.315\linewidth]{images/Crossplot_multi-parameter_filtered}}
+  \caption{Acoustic impedance residuals calculated from blocked raw
+    logs plotted against corresponding \vp/\vs  residuals (left), the
+    same plot, but with logs high-cut frequency  filtered to 40Hz
+    (middle), and the same logs but filtered using frequency and
+    correlation information from inversion (right).} 
+  \label{fig:parmeterfilter}
+\end{figure} 
+
+Third, we may set up the probability density for an elastic responds
+given the facies directly from the inverted elastic parameters. This
+way we get both frequency control and correlation information
+included, but we get no alignment information, and the predictions
+become to pessimistic.
+
+Finally, we may establish the density using elastic parameters from
+well logs, but filter these using frequency and correlation
+information obtained from the inversion. Since we only use well logs
+to establish the density estimates, we get no alignment problems, and
+in total, this gives us realistic facies predictions. How the
+inversion-based filtering differs from the pure frequency-based
+filtering mentioned above is illustrated in
+\autoref{fig:parmeterfilter}.  
+
+The link between facies and elastic parameters that we eventually are
+interested in is $p(f_i|\bmu_{m|d,i})$, where $f_i$ is the facies at
+location $i$ and  $\bmu_{m|d,i}$ is the inversion result at the same
+location. To establish this link, we must first establish a link
+between the well logs $\vect{m}$ and the expectation given the seismic
+data $\bmu_{m|d_{obs}}$. We get this 
+by combining \autoref{eq:Gm} and 
 \autoref{eq:mupost}: 
 \begin{eqnarray}
 \bmu_{m|d_{obs}} &=&\bmu_{m} +\bSigma_{m}\vect{G}^T \bSigma_{d}^{-1}
@@ -418,7 +483,7 @@ combined with a probability map shown as a Colo coded map.
 In the left figure, we show the probability of sand before the
 undefined facies has been introduced. Note how combinations of $\rho$
 and \vp which are far away from any well observations, as for instance
-$(\vp,\rho)=(2000m/s,2.25g/cm^3)$, may still lead to a facies
+(\vp, $\rho$) = (2000m/s, 2.25g/cm$^3$), may still lead to a facies
 prediction of sand equal to one. This is not realistic.
 
 In the middle figure, the undefined facies has been introduced, and

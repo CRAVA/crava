@@ -2,7 +2,7 @@
 \chapter{CRAVA model file reference manual}\index{reference manual, CRAVA model file elements}
 \label{ap:model-file-reference}
 \index{CRAVA model file@Crava model file!reference manual for elements}
-The numbering shows the command grouping. A command with no subnumbering expects a value to be given, otherwise, it is only a grouping of other commands.
+The numbering shows the command grouping. A command with no sub-numbering expects a value to be given, otherwise, it is only a grouping of other commands.
 
 File names are currently given with a path relative to the directory settings in <project-settings>-<io-settings>-<input/output/top-directory>. If these are not given, the path will always be relative to the working directory.
 
@@ -14,7 +14,6 @@ Standard grid formats for surfaces and 3D grids are given in \autoref{sec:gridfo
  \slist
    \item \Description Controls the main purpose of the run.
    \item \Argument Elements specifying the main purpose
-   \item \Default
  \elist
 
 \subsection{\hbracket{mode}\necessary}  \newkw{mode}
@@ -23,7 +22,6 @@ Standard grid formats for surfaces and 3D grids are given in \autoref{sec:gridfo
 Forward:\index{forward!mode} Create seismic response from background model. Not able to estimate anything.
 Estimation:\index{estimation!mode} Checks input data and performs estimation of lacking information for inversion, but stops before inversion.
    \item \Argument 'inversion', 'forward' or 'estimation'
-   \item \Default
  \elist
 
 \subsection{\hbracket{inversion-settings}}  \newkw{inversion-settings}
@@ -44,16 +42,15 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
  \slist
    \item \Description Controls aspects of the simulation of elastic parameters.
    \item \Argument Elements controlling the simulation of elastic parameters
-   \item \Default
  \elist
 
 
 
 \paragraph{\hbracket{seed}}  \newkw{seed}
  \slist
-   \item \Description A number used to initialize the random generator. Running a model file with a given seed will give the same simulation results each time.
+   \item \Description A number used to initialise the random generator. Running a model file with a given seed will give the same simulation results each time.
    \item \Argument Integer
-   \item \Default 0.0
+   \item \Default 0
  \elist
 
 \paragraph{\hbracket{seed-file}}  \newkw{seed-file}
@@ -251,7 +248,7 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 
 \subsubsection{\hbracket{area-from-surface}}\newkw{area-from-surface}
  \slist
-   \item \Description Inverson area can be defined by a surface. Then the name of the surface is given in this command. Other ways to define inversion area are by the commands \kw{utm-coordinates} or \kw{inline-crossline-numbers}. If none of these commands are used, the area is defined by the first seismic data file, or from Vp if we do forward modeling.
+   \item \Description Inversion area can be defined by a surface. Then the name of the surface is given in this command. Other ways to define inversion area are by the commands \kw{utm-coordinates} or \kw{inline-crossline-numbers}. If none of these commands are used, the area is defined by the first seismic data file, or from Vp if we do forward modelling.
    \item \Argument
    \item \Default
  \elist
@@ -457,7 +454,7 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 
 \subparagraph{\hbracket{segy-format}}\newkw{segy-format}
  \slist
-   \item \Description Information about the segy format. By default CRAVA recognizes SeisWorks, IESX, SIP and Charisma.
+   \item \Description Information about the segy format. By default CRAVA recognises SeisWorks, IESX, SIP and Charisma.
    \item \Argument Elements containing information about the segy format.
    \item \Default
  \elist
@@ -989,7 +986,7 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 
 \subsubsection{\hbracket{energy-threshold}}\newkw{energy-threshold}
  \slist
-   \item \Description If the energy in a trace falls below this threshold relative to the average, the trace is interpolated from neighbors.
+   \item \Description If the energy in a trace falls below this threshold relative to the average, the trace is interpolated from neighbours.
    \item \Argument Value
    \item \Default 0.0
  \elist
@@ -1031,7 +1028,7 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 
  \subsubsection{\hbracket{white-noise-component}}\newkw{white-noise-component}
  \slist
-   \item \Description In order to stabilize the inversion, we need to interpret some of the noise as white. This value controls the fraction.
+   \item \Description In order to stabilise the inversion, we need to interpret some of the noise as white. This value controls the fraction.
    \item \Argument Value between 0 and 1.
    \item \Default 0.1
  \elist
@@ -1040,7 +1037,7 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 \slist
    \item \Description The file should be a 3 by  number of seismic data cubes ascii matrix. The first column is the factor used for vp for each cube setting (angle and ps/pp) when computing the reflection coefficients. The second and third are for vs and density.
    \item \Argument File name
-   \item \Default Linearized Aki-Richards.
+   \item \Default Linearised Aki-Richards.
  \elist
 
 \subsubsection{\hbracket{kriging-data-limit}}\newkw{kriging-data-limit}
@@ -1123,7 +1120,7 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 
 \paragraph{\hbracket{segy-format}}\rnewkw{segy-format}{segy-format2}
  \slist
-   \item \Description Information about the segy format. By default, CRAVA recognizes SeisWorks, IESX, SIP and Charisma.
+   \item \Description Information about the segy format. By default, CRAVA recognises SeisWorks, IESX, SIP and Charisma.
    \item \Argument Elements containing information about the segy format
    \item \Default
  \elist
@@ -1489,14 +1486,14 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 
 \subsubsection{\hbracket{optimize-position}}\newkw{optimize-position}
  \slist
-   \item \Description Repeatable command, one for each offset angle used for estimating optimized well location for this well.
-   \item \Argument Elements controlling optimization of well location
+   \item \Description Repeatable command, one for each offset angle used for estimating optimised well location for this well.
+   \item \Argument Elements controlling optimisation of well location
    \item \Default
  \elist
 
 \paragraph{\hbracket{angle}}\rnewkw{angle}{angle3}
  \slist
-    \item \Description Offset angle used for estimating optimized well location
+    \item \Description Offset angle used for estimating optimised well location
     \item \Argument Value
     \item \Default
  \elist
@@ -1758,8 +1755,8 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 
 \subsection{\hbracket{earth-model}}\newkw{earth-model}
  \slist
-   \item \Description Contains inverted seismic data used for forward modeling.
-   \item \Argument Vp, vs and rho used for forward modeling.
+   \item \Description Contains inverted seismic data used for forward modelling.
+   \item \Argument Vp, vs and rho used for forward modelling.
    \item \Default
  \elist
 
@@ -1786,14 +1783,14 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 
 \subsection{\hbracket{local-wavelet}}\rnewkw{local-wavelet}{local-wavelet4}
  \slist
-   \item \Description Contains prior information for local wavelet modeling.
+   \item \Description Contains prior information for local wavelet modelling.
    \item \Argument Elements containing prior information for local wavelet estimation.
    \item \Default
  \elist
 
 \subsubsection{\hbracket{lateral-correlation}}\rnewkw{lateral-correlation}{lateral-correlation3}
  \slist
-   \item \Description 2D variogram for the lateral correlation in local wavelet  modeling.
+   \item \Description 2D variogram for the lateral correlation in local wavelet  modelling.
    \item \Argument 2D variogram, see \autoref{sec:variogram}.
    \item \Default
  \elist
