@@ -143,17 +143,14 @@ another definition of the S/N ratio where the noise energy is not
 included in the enumerator.
 
 \subsection{Convolution with 3D wavelet}
-The seismic data can also be represented as a convolution in three dimension 
+The seismic data can also be represented as a convolution in three dimensions 
 %
 \begin{equation} \label{3Dconv}
    d_{obs}(\vect{x},t,\theta)
     =\int w(\vect{x},\tau,\theta) \: c(\vect{x}-\vect{\chi},t-\tau,\theta) \: d\vect{\chi}d\tau + e(\vect{x},t,\theta),
 \end{equation}
-where $w$ now denotes a 3D wavelet. This wavelet is parameterised in
-the Fourier domain in terms of the spatial frequencies $\vect{k}=(k_x,
-k_y, k_z)$. For a more physical interpretation of the wavelet the
-parameterisation is in spherical coordinates. For a point $P$ this is
-given by 
+where $w$ now denotes a 3D wavelet. The 3D wavelet is derived from the point-spread function (PSF) which acts as a filter on the reflectivity cube to mimic the imaging process of prestack depth migration. For a thorough description on how the PSF is calculated with ray-tracing by identifying the illumination vectors, see \cite{lecomte08}. For a more physical interpretation of the PSF, the parametrization in the wavenumber (Fourier) domain is done in terms of spherical coordinates. The relationship between these coordinates and the spatial frequencies $\vect{k}=(k_x,
+k_y, k_z)$ for a point $P$ is given by 
 \begin{equation}
 k_x=r\cos(\phi)\sin(\psi),\; k_y=r\sin(\phi)\sin(\psi),\; k_z=r\cos(\psi), \label{eq:spherical}
 \end{equation}
@@ -169,10 +166,10 @@ considered, and not turning waves.
 Defining the temporal frequency $\omega = V_0r(2\cos{\theta})^{-1}$
 where $V_0$ is the average velocity for the region of interest and
 $\cos{\theta}$ represents a stretch factor due to reflection angle,
-the model for the 3D wavelet can be written
+the model for the point-spread function, $f$, is given by
 \begin{equation}
-  \tilde{w}(r,\phi,\psi;\theta) 
-  = \alpha_1(\phi,\psi;\theta)
+  \tilde{f}(r,\phi,\psi;\theta) 
+  = \tilde{\alpha}_1(\phi,\psi;\theta)
     \tilde{\alpha}_2(\omega,\phi,\psi;\theta)
     \tilde{w}_0\left(\omega;\theta\right), \label{eq:waveletform}
 \end{equation}
@@ -180,8 +177,15 @@ where the tilde denotes Fourier transform,
 $\tilde{w}_0(\omega;\theta)$ is the 1D pulse and functions
 $\tilde{\alpha}_1(\phi,\psi;\theta)$ and
 $\tilde{\alpha}_2(\omega,\phi,\psi;\theta) = \exp(-\pi |\omega|
-H(\phi,\psi;\theta))$ are frequency independent and frequency
+\tilde{H}(\phi,\psi;\theta))$ are frequency independent and frequency
 dependent processing factors respectively.
+
+Since the point-spread function is defined in the depth domain, and the 3D wavelet in expression \eqref{3Dconv} is in time domain, a relation between time and depth is needed. In the region of interest, a target center is defined at depth $Z_0$. A reference time surface $T_0(x,y)$ corresponds to this depth. For a given time $\tau$ the corresponding depth is $\zeta$. Let $T_{\tau}(x,y)$ be the time to a point, and $Z_{\zeta}(x,y)$ the depth to the same point, the time-depth relation is:
+\begin{equation}
+T_{\tau}(x,y) = T_0(x,y) + \frac{2}{V_0}(Z_{\zeta}(x,y)-Z_0)
+\end{equation}
+
+
 
 \section{Statistical model}
 \label{sec:statmodthe}
