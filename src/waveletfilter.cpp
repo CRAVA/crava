@@ -23,7 +23,9 @@ bool WaveletFilter::readFile(const std::string & fileName,
                              int               & errCode,
                              std::string       & errText)
 {
-  std::vector<NRLib::RegularSurfaceRotated<float> > rot_surfaces = NRLib::ReadMultipleSgriSurf(fileName);
+  std::vector<std::string> args;
+  std::vector<NRLib::RegularSurfaceRotated<float> > rot_surfaces = 
+    NRLib::ReadMultipleSgriSurf(fileName,args);
   if (rot_surfaces[0].GetAngle() != 0.0) {
     errText += "Grid for wavelet filter in file "+fileName+" is rotated. Must have rotation angle = 0.0.\n";
     errCode = 1;

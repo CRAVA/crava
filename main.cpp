@@ -32,9 +32,9 @@ int main(int argc, char** argv)
   LogKit::SetScreenLog(LogKit::L_Low);
   LogKit::StartBuffering();
 
-  Program program( 0,                     // Major version
-                   9,                     // Minor version 
-                   9,                     // Patch number 
+  Program program( 1,                     // Major version
+                   0,                     // Minor version 
+                   0,                     // Patch number 
                    "",                    // Use empty string "" for release versions 
                    //                   " beta",               // Use empty string "" for release versions 
                    -1,                    // Validity of licence in days (-1 = infinite)

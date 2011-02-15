@@ -221,7 +221,7 @@ int main(int argc, char** argv)
     std::cout << "All files are checked for existence.\n";
   
   std::ifstream infile;
-  NRLib::OpenRead(infile,topDir+"doc/user_manual/referencemanual.tex");
+  NRLib::OpenRead(infile,topDir+"doc/user_manual/4_referencemanual.tex");
   std::string file;
   std::string line;
   while(!infile.eof()) {
