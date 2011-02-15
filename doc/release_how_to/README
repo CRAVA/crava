@@ -29,6 +29,12 @@ they make themselves. This makes the release-procedure a bit cumbersome.
 
      > make cleanall
 
+In a standard release, remove the test suite:
+
+     > rm -rf test_suite
+
+If you want to include the test suite, replace the command above with
+
      > cd test_suite
      > rm -r */output
      > rm -rf .svn
@@ -36,9 +42,6 @@ they make themselves. This makes the release-procedure a bit cumbersome.
      > rm -rf */*/.svn
      > rm -rf */*/*/.svn
      > rm -rf */*/*/*/.svn
-
-   If you are in a great hurry, you can remove the entire test_suite directory,
-   but this is not recommended.
 
 5. Make an archive of the directory (there is no point in compressing the directory
    if the test_suite is still present since there are large binary files in the suite)
@@ -59,7 +62,7 @@ they make themselves. This makes the release-procedure a bit cumbersome.
    you can verify that the link you supply the recipients are alive. The link will
    look something like:
 
-     http://www.nr.no/~your-login-name/www_ekstern/f8eu3j2d/crava_prog_0.9.8.tar 
+     http://www.nr.no/~your-login-name/f8eu3j2d/crava_prog_0.9.8.tar 
 
    For a standard release-e-mail and recipients see the files
   
