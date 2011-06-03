@@ -114,7 +114,11 @@ private:
 
 template <typename T>
 bool
-XmlModelFile::parseValue(TiXmlNode * node, const std::string & keyword, T & value, std::string & errTxt, bool allowDuplicates)
+XmlModelFile::parseValue(TiXmlNode         * node, 
+                         const std::string & keyword, 
+                         T                 & value, 
+                         std::string       & errTxt, 
+                         bool                allowDuplicates)
 {
   setMissing(value);
   TiXmlNode * root = node->FirstChild(keyword);

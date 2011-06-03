@@ -56,6 +56,23 @@ Utils::copyMatrix(const float ** from,
 
 //------------------------------------------------------------
 void    
+Utils::writeVectorToFile(const std::string & fileName,
+                         float             * vector,
+                         int                  ndim)
+{
+  std::ofstream fout;
+  NRLib::OpenWrite(fout,fileName);
+  fout << std::setprecision(6);
+  for (int i = 0 ; i < ndim ; i++) {
+    fout << std::setw(6)  << i + 1
+         << std::setw(12) << vector[i] << "\n";
+  }
+  fout << std::endl;
+  fout.close();
+}
+
+//------------------------------------------------------------
+void    
 Utils::writeVector(float * vector,
                    int     ndim)
 {

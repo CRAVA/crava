@@ -109,7 +109,8 @@ WellData::readRMSWell(const std::string              & wellFileName,
   int i,j, facies;
   std::string token, dummyStr;
   std::vector<std::string> tokenLine;
-  double xpos, ypos, zpos, dummy;
+  double xpos, ypos, zpos;
+  double dummy = RMISSING;
   float alpha, beta, rho;
   wellfilename_ = wellFileName;
   if(file == 0)
@@ -213,18 +214,25 @@ WellData::readRMSWell(const std::string              & wellFileName,
   while (NRLib::CheckEndOfFile(file)==false)
   {
     nData++;
-    dummy = NRLib::ReadNext<double>(file,line); // Read x which we do not need yet.
-    dummy = NRLib::ReadNext<double>(file,line); // Read y which we do not need yet.
-    dummy = NRLib::ReadNext<double>(file,line); // Read z which we do not need.
-
-    for(j=4;j<=nlog+3;j++)
-    {
+    try {
+      dummy = NRLib::ReadNext<double>(file,line); // Read x which we do not need yet.
+      dummy = NRLib::ReadNext<double>(file,line); // Read y which we do not need yet.
       dummy = NRLib::ReadNext<double>(file,line); // Read z which we do not need.
-      if(j==pos[0] && dummy != WELLMISSING)
-      {
-        // Found legal TIME variable
-        legalData++;   
-      }
+
+      for(j=4;j<=nlog+3;j++) {
+        dummy = NRLib::ReadNext<double>(file,line); // Read z which we do not need.
+        if(j==pos[0] && dummy != WELLMISSING) {
+          legalData++;   // Found legal TIME variable
+        }
+      }      
+    }
+    catch (NRLib::IOError e) {
+      std::string text;
+      text += std::string("\nERROR: Reading of well \'") + wellFileName + "\' failed for log record ";
+      text += NRLib::ToString(nData) + " (not counting header lines).\n";
+      text += std::string("\nERROR message is \'") + e.what() + "\'";
+      LogKit::LogMessage(LogKit::Error,text);
+      exit(1);
     }
   }
   file.close();

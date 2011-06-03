@@ -546,7 +546,7 @@ Background::calculateVerticalTrend(WellData         ** wells,
 {  
   float * filtered_log = new float[nz]; 
   float * wellTrend    = filtered_log;   // Use same memory twice
-  int   * count = new int[nz];
+  int   * count        = new int[nz];
   //
   // Calculate the average values of well log
   // ----------------------------------------
@@ -597,12 +597,16 @@ Background::calculateVerticalTrend(WellData         ** wells,
     exit(1);
   }
 
+  //Utils::writeVectorToFile(std::string("trend_mean_values_") + name, trend, nz);
+
   smoothTrendWithLocalLinearRegression(trend, count,
                                        iWells, nz, dz, 
                                        logMin,
                                        logMax,
                                        name);
   
+  //Utils::writeVectorToFile(std::string("trend_after_linreg_") + name, trend, nz);
+
   WellData::applyFilter(filtered_log, 
                         trend, 
                         nz, 
@@ -612,6 +616,9 @@ Background::calculateVerticalTrend(WellData         ** wells,
   for (int i=0 ; i<nz ; i++) {
     trend[i] = filtered_log[i];
   }
+
+  //Utils::writeVectorToFile(std::string("trend_after_filter_") + name, trend, nz);
+
   
   delete [] filtered_log; 
   delete [] count;
