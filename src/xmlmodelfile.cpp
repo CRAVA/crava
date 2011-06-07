@@ -1188,7 +1188,7 @@ XmlModelFile::parseBackground(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("vs-file");
   legalCommands.push_back("density-file");
   legalCommands.push_back("ai-file");
-  legalCommands.push_back("vpvs-file");
+  legalCommands.push_back("vp-vs-ratio-file");
   legalCommands.push_back("vp-constant");
   legalCommands.push_back("vs-constant");
   legalCommands.push_back("density-constant");
@@ -1224,7 +1224,7 @@ XmlModelFile::parseBackground(TiXmlNode * node, std::string & errTxt)
     modelSettings_->setUseAIBackground(true);
   }
 
-  bool vpvs = parseFileName(root, "vpvs-file", filename, errTxt);
+  bool vpvs = parseFileName(root, "vp-vs-ratio-file", filename, errTxt);
   if(vpvs == true) {
     inputFiles_->setBackFile(1, filename);     // Store Vp/Vs background in Vs slot 
     modelSettings_->setConstBackValue(1, -1);  //
