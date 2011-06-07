@@ -1187,6 +1187,8 @@ XmlModelFile::parseBackground(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("vp-file");
   legalCommands.push_back("vs-file");
   legalCommands.push_back("density-file");
+  legalCommands.push_back("ai-file");
+  legalCommands.push_back("vpvs-file");
   legalCommands.push_back("vp-constant");
   legalCommands.push_back("vs-constant");
   legalCommands.push_back("density-constant");
@@ -1213,6 +1215,20 @@ XmlModelFile::parseBackground(TiXmlNode * node, std::string & errTxt)
   if(rho == true) {
     inputFiles_->setBackFile(2, filename);
     modelSettings_->setConstBackValue(2, -1);
+  }
+
+  bool ai = parseFileName(root, "ai-file", filename, errTxt);
+  if(ai == true) {
+    inputFiles_->setBackFile(0, filename);     // Store AI background in Vp slot
+    modelSettings_->setConstBackValue(0, -1);  //
+    modelSettings_->setUseAIBackground(true);
+  }
+
+  bool vpvs = parseFileName(root, "vpvs-file", filename, errTxt);
+  if(vpvs == true) {
+    inputFiles_->setBackFile(1, filename);     // Store Vp/Vs background in Vs slot 
+    modelSettings_->setConstBackValue(1, -1);  //
+    modelSettings_->setUseVpVsBackground(true);
   }
 
   float value;
@@ -1246,14 +1262,24 @@ XmlModelFile::parseBackground(TiXmlNode * node, std::string & errTxt)
     }
   }
 
-  bool bgGiven = (vp & vs & rho);
+  if (vp && ai) {
+      errTxt += "Both AI background and Vp background has been given in command <"+root->ValueStr()+"> "+
+        lineColumnText(root)+". Please give only one.\n";
+  }
+
+  if (vs && vpvs) {
+      errTxt += "Both AI background and Vp background has been given in command <"+root->ValueStr()+"> "+
+        lineColumnText(root)+". Please give only one.\n";
+  }
+
+  bool bgGiven = (vp & vs & rho) || (ai & vs & rho) || (vp & vpvs & rho) || (ai & vpvs & rho);
+
   bool estimate = !(vp | vs | rho);
   modelSettings_->setGenerateBackground(estimate);
   if((bgGiven | estimate) == false) {
     errTxt +=  "Either all or no background parameters must be given in command <"+root->ValueStr()+"> "+
         lineColumnText(root)+".\n";
   }
-
   if(parseFileName(root, "velocity-field", filename, errTxt) == true)
     inputFiles_->setBackVelFile(filename);
   

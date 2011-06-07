@@ -59,7 +59,6 @@ public:
                                               int nyp, 
                                               int nzp, 
                                               bool fileGrid);
-
   void                          writeBlockedWells(WellData ** wells, ModelSettings * modelSettings);
 
 private:
@@ -333,7 +332,6 @@ private:
                                              std::string             & errText);
   SegyGeometry   * geometryFromCravaFile(const std::string & fileName); 
   SegyGeometry   * geometryFromStormFile(const std::string & fileName, std::string & errText, bool scale = false); 
- 
 
   ModelSettings           * modelSettings_;
   Simbox                  * timeSimbox_;            ///< Information about simulation area.

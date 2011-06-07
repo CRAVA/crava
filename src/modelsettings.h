@@ -31,6 +31,8 @@ public:
   int                              getNumberOfTraceHeaderFormats(void)  const { return static_cast<int>(localTHF_.size())         ;}
   int                              getKrigingParameter(void)            const { return krigingParameter_                          ;}
   float                            getConstBackValue(int i)             const { return constBackValue_[i]                         ;}
+  bool                             getUseAIBackground(void)             const { return useAIBackground_                           ;}
+  bool                             getUseVpVsBackground(void)           const { return useVpVsBackground_                         ;}
   int                              getNumberOfAngles(void)              const { return static_cast<int>(angle_.size())            ;} 
   int                              getSeismicType(int i)                const { return seismicType_[i]                            ;}
   float                            getAngle(int i)                      const { return angle_[i]                                  ;}
@@ -39,7 +41,6 @@ public:
   float                            getWellMoveAngle(int i,int j)        const { return wellMoveAngle_[i][j]                       ;}
   float                            getWellMoveWeight(int i,int j)       const { return wellMoveWeight_[i][j]                      ;}
   int                              getNumberOfWellAngles(int i)         const { return static_cast<int>(wellMoveAngle_[i].size()) ;} 
-
   bool                             getMatchEnergies(int i)              const { return matchEnergies_[i]      == 1                ;} 
   bool                             getEstimateWavelet(int i)            const { return estimateWavelet_[i]    == 1                ;}
   bool                             getUseRickerWavelet(int i)           const { return useRickerWavelet_[i]   == 1                ;}
@@ -58,7 +59,6 @@ public:
   float                            getEstRangeX(int i)                  const { return estRangeX_[i]                              ;}
   float                            getEstRangeY(int i)                  const { return estRangeY_[i]                              ;}
   float                            getRickerPeakFrequency(int i)        const { return rickerPeakFrequency_[i]                    ;}
-
   const std::string                getBackgroundType(void)              const { return backgroundType_                            ;}            
   const std::vector<std::string> & getLogNames(void)                    const { return logNames_                                  ;}
   const std::vector<bool>        & getInverseVelocity(void)             const { return inverseVelocity_                           ;}
@@ -159,12 +159,10 @@ public:
   bool                             getOptimizeWellLocation(void)        const { return optimizeWellLocation_                      ;}
   bool                             getNoWellNedded(void)                const { return noWellNeeded_                              ;}
   bool                             getNoSeismicNeeded(void)             const { return noSeismicNeeded_                           ;}
-                                                                       
   int                              getLogLevel(void)                    const { return logLevel_                                  ;}
-  bool                             getErrorFileFlag()                   const { return ((otherFlag_ & IO::ERROR_FILE)>0)           ;}
-  bool                             getTaskFileFlag()                    const { return ((otherFlag_ & IO::TASK_FILE)>0)            ;}
+  bool                             getErrorFileFlag()                   const { return ((otherFlag_ & IO::ERROR_FILE)>0)          ;}
+  bool                             getTaskFileFlag()                    const { return ((otherFlag_ & IO::TASK_FILE)>0)           ;}
   int                              getSeed(void)                        const { return seed_                                      ;}
-
   bool                             getDoInversion(void);                                            
   bool                             getDoDepthConversion(void)           const;
   bool                             getDoSmoothKriging(void)             const { return smoothKrigedParameters_ ;}
@@ -172,7 +170,6 @@ public:
   int                              getEstimateNumberOfWavelets(void)    const;
 
   void rotateVariograms(float angle);
-
   void setAngularCorr(Vario * vario);    
   void setLateralCorr(Vario * vario);    
   void setBackgroundVario(Vario * vario);
@@ -184,6 +181,8 @@ public:
   void addTraceHeaderFormat(TraceHeaderFormat * traceHeaderFormat);
   void setKrigingParameter(int krigingParameter)          { krigingParameter_         = krigingParameter         ;}
   void setConstBackValue(int i, float constBackValue)     { constBackValue_[i]        = constBackValue           ;}
+  void setUseAIBackground(bool useAIBackground)           { useAIBackground_          = useAIBackground          ;}
+  void setUseVpVsBackground(bool useVpVsBackground)       { useVpVsBackground_        = useVpVsBackground        ;}
   void addSeismicType(int seismicType)                    { seismicType_.push_back(seismicType)                  ;}
   void addAngle(float angle)                              { angle_.push_back(angle)                              ;}
   void addWaveletScale(float waveletScale)                { waveletScale_.push_back(waveletScale)                ;}
@@ -384,6 +383,8 @@ private:
 
   std::vector<float>                constBackValue_;             // Values set for constant background model
                                                                  // Negative value ==> read from file (actual value gives format).
+  bool                              useAIBackground_;            // Read in file for AI background instead of Vp background
+  bool                              useVpVsBackground_;          // Read in file for VpVs background instead of Vs background
   std::string                       backgroundType_;             // background or earth model
 
   //The following indicators use the indicators enum above. (2 = yes, but may override in QC, 1=yes, 0=no)

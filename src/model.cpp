@@ -2220,8 +2220,14 @@ Model::processBackground(Background   *& background,
   else 
   {
     std::vector<std::string> parName;
-    parName.push_back("Vp "+modelSettings->getBackgroundType());
-    parName.push_back("Vs "+modelSettings->getBackgroundType());
+    if (modelSettings->getUseAIBackground())
+      parName.push_back("AI "+modelSettings->getBackgroundType());
+    else
+      parName.push_back("Vp "+modelSettings->getBackgroundType());
+    if (modelSettings->getUseVpVsBackground())
+      parName.push_back("Vp/Vs "+modelSettings->getBackgroundType());
+    else
+      parName.push_back("Vs "+modelSettings->getBackgroundType());
     parName.push_back("Rho "+modelSettings->getBackgroundType());
 
     for(int i=0 ; i<3 ; i++)
@@ -2284,6 +2290,15 @@ Model::processBackground(Background   *& background,
       }
     }
     if (failed == false) {
+      if (modelSettings->getUseAIBackground())   { // Vp = AI/Rho     ==> lnVp = lnAI - lnRho
+        LogKit::LogMessage(LogKit::Low, "\nMaking Vp background from AI and Rho\n");
+        backModel[0]->subtract(backModel[2]);
+      }
+      if (modelSettings->getUseVpVsBackground()) { // Vs = Vp/(Vp/Vs) ==> lnVs = lnVp - ln(Vp/Vs)
+        LogKit::LogMessage(LogKit::Low, "\nMaking Vs background from Vp and Vp/Vs\n");
+        backModel[1]->subtract(backModel[0]);
+        backModel[1]->changeSign();
+      }
       background = new Background(backModel);
     }
   }
