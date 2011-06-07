@@ -429,7 +429,7 @@ ParameterOutput::writeToFile(const Simbox      * simbox,
 {
   GridMapping * timeDepthMapping = model->getTimeDepthMapping();
   GridMapping * timeCutMapping   = model->getTimeCutMapping();
-  float         seismicStartTime = model->getModelSettings()->getSegyOffset();
+  float         seismicStartTime = 0.0; //Hack for Sebastian, was: model->getModelSettings()->getSegyOffset();
   TraceHeaderFormat *format = model->getModelSettings()->getTraceHeaderFormatOutput();
 
   grid->writeFile(fileName, 

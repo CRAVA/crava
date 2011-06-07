@@ -127,6 +127,7 @@ WellData::readRMSWell(const std::string              & wellFileName,
   wellname_ = token;
   xpos0_ = NRLib::ReadNext<double>(file, line);
   ypos0_ = NRLib::ReadNext<double>(file, line);
+  NRLib::DiscardRestOfLine(file,line,false);
   nlog   = NRLib::ReadNext<int>(file, line);
 
   //Start searching for key words.
@@ -372,7 +373,7 @@ WellData::readRMSWell(const std::string              & wellFileName,
         else
           rho = RMISSING;
       }
-      else if(j==pos[4])
+      else if(nVar > 4 && j==pos[4])
       {
         //Found facies variable
         if(dummy != WELLMISSING)
