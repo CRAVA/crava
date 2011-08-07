@@ -129,20 +129,15 @@ private:
                                             std::string   & errText,
                                             bool          & failed);
 
-  void             processReflectionMatrixFromWells(float       **& reflectionMatrix,
-                                                    WellData     ** wells,
-                                                    ModelSettings * modelSettings, 
-                                                    InputFiles    * inputfiles,
-                                                    std::string   & errText,
-                                                    bool          & failed);
-
-  void             processReflectionMatrixFromBackground(float       **& reflectionMatrix,
-                                                         Background    * background,
-                                                         ModelSettings * modelSettings, 
-                                                         InputFiles    * inputFiles,
-                                                         std::string   & errText,
-                                                         bool          & failed);
-
+  void             processReflectionMatrix(float        **& reflectionMatrix,
+                                           Background     * background,
+                                           WellData      ** wells,
+                                           ModelSettings  * modelSettings, 
+                                           InputFiles     * inputFiles,
+                                           bool             use_background,
+                                           std::string    & errText,
+                                           bool           & failed);
+ 
   void             processWellLocation(FFTGrid                     ** seisCube, 
                                        WellData                    ** wells, 
                                        float                       ** reflectionMatrix,

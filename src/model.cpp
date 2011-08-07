@@ -165,9 +165,10 @@ Model::Model(const std::string & fileName)
                           errText, failedBackground);
         if (!failedBackground)
         {
-          processReflectionMatrixFromBackground(reflectionMatrix_, background_, 
-                                                modelSettings_, inputFiles,
-                                                errText, failedReflMat);  
+          bool useWells = false;
+          processReflectionMatrix(reflectionMatrix_, background_, wells_, modelSettings_, 
+                                  inputFiles, useWells, errText, failedReflMat);
+            
           if (!failedReflMat)
           {
             processWavelets(wavelet_, seisCube_, wells_, reflectionMatrix_,
@@ -216,16 +217,20 @@ Model::Model(const std::string & fileName)
               (estimationMode == false || modelSettings_->getEstimateWaveletNoise() || 
                modelSettings_->getOptimizeWellLocation() == true))
             {
-              processReflectionMatrixFromBackground(reflectionMatrix_, background_, modelSettings_, 
-                                                    inputFiles, errText, failedReflMat);
+
+
+              bool useWells = false;
+              processReflectionMatrix(reflectionMatrix_, background_, wells_, modelSettings_, 
+                                      inputFiles, useWells, errText, failedReflMat);
             }
             else if(estimationMode == true && 
                     modelSettings_->getEstimateWaveletNoise() == true && 
                     modelSettings_->getEstimateBackground() == false &&
                     modelSettings_->getEstimateCorrelations() == false)
             {
-              processReflectionMatrixFromWells(reflectionMatrix_, wells_, modelSettings_, 
-                                               inputFiles, errText, failedReflMat);
+              bool useWells = true;
+              processReflectionMatrix(reflectionMatrix_, background_, wells_, modelSettings_, 
+                                      inputFiles, useWells, errText, failedReflMat);
               backgroundDone = true; //Not really, but do not need it in this case.
             }
             if(failedBackground == false && backgroundDone == true && 
@@ -254,8 +259,10 @@ Model::Model(const std::string & fileName)
             // locations need to be estimated before the background model is processed.
             //
           {
-            processReflectionMatrixFromWells(reflectionMatrix_, wells_, modelSettings_, 
-                                             inputFiles, errText, failedReflMat);
+            bool useWells = true;
+            processReflectionMatrix(reflectionMatrix_, background_, wells_, modelSettings_, 
+                                    inputFiles, useWells, errText, failedReflMat);
+
             if (failedReflMat == false && failedExtraSurf == false)
             {
               processSeismic(seisCube_, timeSimbox_, modelSettings_, 
@@ -2593,22 +2600,26 @@ Model::estimateCorrXYFromSeismic(Surface *& corrXY,
   delete [] grid;
 }
 
-void 
-Model::processReflectionMatrixFromWells(float       **& reflectionMatrix,
-                                        WellData     ** wells,
-                                        ModelSettings * modelSettings, 
-                                        InputFiles    * inputFiles,
-                                        std::string   & errText,
-                                        bool          & failed)
+
+void
+Model::processReflectionMatrix(float        **& reflectionMatrix,
+                               Background     * background,
+                               WellData      ** wells,
+                               ModelSettings  * modelSettings, 
+                               InputFiles     * inputFiles,
+                               bool             useWells,
+                               std::string    & errText,
+                               bool           & failed)
 {
   LogKit::WriteHeader("Reflection matrix");  
   //
   // About to process wavelets and energy information. Needs the a-matrix, so create
-  // if not already made. A-matrix may need Vp/Vs-ratio from wells.
+  // if not already made. A-matrix may need Vp/Vs-ratio from background model or wells.
   //
   const std::string & reflMatrFile = inputFiles->getReflMatrFile();
+  const double        vpvs         = modelSettings->getVpVsRatio();
 
-  if(reflMatrFile != "") {
+  if (reflMatrFile != "") {
     std::string tmpErrText("");
     reflectionMatrix = readMatrix(reflMatrFile, modelSettings->getNumberOfAngles(), 3, "reflection matrix", tmpErrText);
     if(reflectionMatrix == NULL) {
@@ -2618,39 +2629,15 @@ Model::processReflectionMatrixFromWells(float       **& reflectionMatrix,
     }
     LogKit::LogFormatted(LogKit::Low,"\nReflection parameters read from file.\n\n");
   }
-  else {
-    LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix with Vp and Vs from wells\n");
-
-    double vsvp = vsvpFromWells(wells, modelSettings);
-
+  else if (vpvs != RMISSING) {
+    LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix with Vp/Vs ratio specified in model file.\n");
+    double vsvp = 1.0/vpvs;
     setupDefaultReflectionMatrix(reflectionMatrix, vsvp, modelSettings);
   }
-}
-
-void 
-Model::processReflectionMatrixFromBackground(float       **& reflectionMatrix,
-                                             Background    * background,
-                                             ModelSettings * modelSettings, 
-                                             InputFiles    * inputFiles,
-                                             std::string   & errText,
-                                             bool          & failed)
-{
-  LogKit::WriteHeader("Reflection matrix");  
-  //
-  // About to process wavelets and energy information. Needs the a-matrix, so create
-  // if not already made. A-matrix may need Vp/Vs-ratio from background model.
-  //
-  const std::string & reflMatrFile = inputFiles->getReflMatrFile();
-
-  if(reflMatrFile != "") {
-    std::string tmpErrText("");
-    reflectionMatrix = readMatrix(reflMatrFile, modelSettings->getNumberOfAngles(), 3, "reflection matrix", tmpErrText);
-    if(reflectionMatrix == NULL) {
-      errText += "Reading of file "+reflMatrFile+" for reflection matrix failed\n";
-      errText += tmpErrText;
-      failed = true;
-    }
-    LogKit::LogFormatted(LogKit::Low,"\nReflection parameters read from file.\n\n");
+  else if (useWells) {
+    LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix with Vp and Vs from wells\n");
+    double vsvp = vsvpFromWells(wells, modelSettings);
+    setupDefaultReflectionMatrix(reflectionMatrix, vsvp, modelSettings);
   }
   else {
     if (background != NULL) {

@@ -86,6 +86,7 @@ public:
   float                            getVarBetaMax(void)                  const { return var_beta_max_                              ;}
   float                            getVarRhoMin(void)                   const { return var_rho_min_                               ;}
   float                            getVarRhoMax(void)                   const { return var_rho_max_                               ;}
+  float                            getVpVsRatio(void)                   const { return vp_vs_ratio_                               ;}
   float                            getVpVsRatioMin(void)                const { return vp_vs_ratio_min_                           ;}
   float                            getVpVsRatioMax(void)                const { return vp_vs_ratio_max_                           ;}
   float                            getRefDepth(void)                    const { return ref_depth_                                 ;}
@@ -243,6 +244,7 @@ public:
   void setVarBetaMax(float var_beta_max)                  { var_beta_max_             = var_beta_max             ;}
   void setVarRhoMin(float var_rho_min)                    { var_rho_min_              = var_rho_min              ;}
   void setVarRhoMax(float var_rho_max)                    { var_rho_max_              = var_rho_max              ;}
+  void setVpVsRatio(float vp_vs_ratio)                    { vp_vs_ratio_              = vp_vs_ratio              ;}
   void setVpVsRatioMin(float vp_vs_ratio_min)             { vp_vs_ratio_min_          = vp_vs_ratio_min          ;}
   void setVpVsRatioMax(float vp_vs_ratio_max)             { vp_vs_ratio_max_          = vp_vs_ratio_max          ;}
   void setRefDepth(float ref_depth)                       { ref_depth_                = ref_depth                ;}
@@ -421,6 +423,7 @@ private:
  
   float                             vp_vs_ratio_min_;            // Smallest Vp/Vs-ratio regarded as likely
   float                             vp_vs_ratio_max_;            // Largest Vp/Vs-ratio regarded as likely
+  float                             vp_vs_ratio_;                // Vp/Vs-ratio from input (for wavelet estimation if requested)
 
   float                             ref_depth_;                  // z0 - reference depth for target area
   float                             average_velocity_;           // v0 - average velocity in target area

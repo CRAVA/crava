@@ -2429,6 +2429,7 @@ XmlModelFile::parseAdvancedSettings(TiXmlNode * node, std::string & errTxt)
 
   std::vector<std::string> legalCommands;
   legalCommands.push_back("fft-grid-padding");
+  legalCommands.push_back("vp-vs-ratio");
   legalCommands.push_back("use-intermediate-disk-storage");
   legalCommands.push_back("maximum-relative-thickness-difference");
   legalCommands.push_back("frequency-band");
@@ -2445,6 +2446,10 @@ XmlModelFile::parseAdvancedSettings(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("smooth-kriged-parameters");
 
   parseFFTGridPadding(root, errTxt);
+
+  double ratio;
+  if(parseValue(root,"vp-vs-ratio", ratio, errTxt) == true)
+    modelSettings_->setVpVsRatio(ratio);
 
   bool fileGrid;
   if(parseBool(root, "use-intermediate-disk-storage", fileGrid, errTxt) == true)
@@ -2835,8 +2840,21 @@ XmlModelFile::checkConsistency(std::string & errTxt) {
   if(modelSettings_->getOptimizeWellLocation()==true)
     checkAngleConsistency(errTxt);
   checkIOConsistency(errTxt);
-}
 
+  if (modelSettings_->getVpVsRatio() != RMISSING) {
+    double vpvs    = modelSettings_->getVpVsRatio();
+    double vpvsMin = modelSettings_->getVpVsRatioMin();
+    double vpvsMax = modelSettings_->getVpVsRatioMax();
+    if (vpvs < vpvsMin) {
+      errTxt+="Specified Vp/Vs of "+NRLib::ToString(vpvs,2)
+        +" is less than minimum allowed value of "+NRLib::ToString(vpvsMin,2);
+    }
+    if (vpvs > vpvsMax) {
+      errTxt+="Specified Vp/Vs of "+NRLib::ToString(vpvs,2)
+        +" is larger than maximum allowed value of "+NRLib::ToString(vpvsMax,2);
+    }
+  }
+}
 
 void
 XmlModelFile::checkForwardConsistency(std::string & errTxt) 
