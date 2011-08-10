@@ -2466,10 +2466,16 @@ Model::processPriorCorrelations(Corr         *& correlations,
     float ** pointVar0 = NULL;
     if (estimateParamCov || estimateTempCorr) //Need well estimation
     {
+      std::string tmpErrTxt;
       Analyzelog * analyze = new Analyzelog(wells, 
                                             background,
                                             timeSimbox, 
-                                            modelSettings);
+                                            modelSettings,
+                                            tmpErrTxt);
+      if (tmpErrTxt != "") {
+        errText += tmpErrTxt;
+        failedParamCorr = true;
+      }
 
       if(estimateParamCov)
         paramCorr = analyze->getVar0();
