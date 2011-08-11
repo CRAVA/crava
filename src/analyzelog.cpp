@@ -68,7 +68,7 @@ Analyzelog::estimate(ModelSettings * modelSettings,
   }
   if (allVsLogsAreSynthetic)
   {
-    LogKit::LogFormatted(LogKit::Low,"\nThere are no nonsynthetic Vs logs available. Cov(Vp,Vs) and Cov(Vs,Rho) are set zero.\n");
+    LogKit::LogFormatted(LogKit::Low,"\nThere are no nonsynthetic Vs logs available. Cov(Vp,Vs) and Cov(Vs,Rho) are set 0.7.\n");
   }
 
   estimateLnData(lnDataAlpha, background->getAlpha(), 0, errTxt);
@@ -594,7 +594,7 @@ Analyzelog::estimateCorrTAndVar0(float       * CorrT,
       LogKit::LogFormatted(LogKit::Low,"\nEstimating Vs variance as 2 * Vp variance.\n");
       Var0[1][1] = 2*Var0[0][0];
     }
-    Var0[0][1] = Var0[1][0] = 0.0;  
+    Var0[0][1] = Var0[1][0] = 0.7; // Default correlation between Vp and Vs. Value is explained in Jira.
     Var0[0][2] = Var0[2][0] = 0.0;
     Var0[1][2] = Var0[2][1] = 0.0;
     if (nAB>1)  
