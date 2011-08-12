@@ -888,6 +888,7 @@ Model::makeTimeSimboxes(Simbox        *& timeSimbox,
                               tmpErrText);
 
     if(geometry != NULL) {
+      geometry->WriteGeometry(true);
       if(modelSettings->getAreaILXL().size() > 0) {
         SegyGeometry * fullGeometry = geometry;
         bool interpolated, aligned;
