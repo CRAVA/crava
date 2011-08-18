@@ -24,7 +24,6 @@
 #include "src/tasklist.h"
 #include "src/fftgrid.h"
 #include "src/simbox.h"
-#include "src/model.h"
 #include "src/covgrid2d.h"
 #include "src/kriging2d.h"
 #include "src/krigingdata2d.h"

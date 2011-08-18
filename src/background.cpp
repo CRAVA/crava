@@ -9,7 +9,7 @@
 #include "nrlib/iotools/logkit.hpp"
 
 #include "src/definitions.h"
-#include "src/model.h"
+#include "src/modelgeneral.h"
 #include "src/modelsettings.h"
 #include "src/vario.h"
 #include "src/simbox.h"
@@ -307,7 +307,7 @@ Background::calculateBackgroundTrend(float             * trend,
   {
     const int nx = simbox->getnx();
     const int ny = simbox->getny();
-    FFTGrid * trendGrid = Model::createFFTGrid(nx, ny, nz, nx, ny, nz, isFile);
+    FFTGrid * trendGrid = ModelGeneral::createFFTGrid(nx, ny, nz, nx, ny, nz, isFile);
     fillInVerticalTrend(trendGrid, trend);
     FFTGrid * expTrend = copyFFTGrid(trendGrid, true, isFile);
     delete trendGrid;
@@ -498,7 +498,7 @@ Background::makeKrigedBackground(const std::vector<KrigingData2D> & krigingData,
     << "\n  |    |    |    |    |    |    |    |    |    |    |  "
     << "\n  ^"; 
 
-  bgGrid = Model::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, isFile);
+  bgGrid = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, isFile);
   bgGrid->createRealGrid();
   bgGrid->setType(FFTGrid::PARAMETER);
   bgGrid->setAccessMode(FFTGrid::WRITE);
@@ -1200,7 +1200,7 @@ Background::resampleParameter(FFTGrid *& pNew,        // Resample to
   //
   // Resample parameter
   //
-  pNew = Model::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, isFile);
+  pNew = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, isFile);
   pNew->createRealGrid();
   pNew->setType(FFTGrid::PARAMETER);
   pNew->setAccessMode(FFTGrid::WRITE);

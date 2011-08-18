@@ -21,7 +21,6 @@
 #include "src/wavelet1D.h"
 #include "src/wavelet3D.h"
 #include "src/modelsettings.h"
-#include "src/model.h"
 #include "src/blockedlogs.h"
 #include "src/welldata.h"
 #include "src/definitions.h"

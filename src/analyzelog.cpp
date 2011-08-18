@@ -7,7 +7,6 @@
 
 #include "src/definitions.h"
 #include "src/analyzelog.h"
-#include "src/model.h"
 #include "src/modelsettings.h"
 #include "src/fftgrid.h"
 #include "src/fftfilegrid.h"

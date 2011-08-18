@@ -463,6 +463,18 @@
 					</FileConfiguration>
 				</File>
 				<File
+					RelativePath=".\src\modelavodynamic.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\src\modelavostatic.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\src\modelgeneral.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\src\modelsettings.cpp"
 					>
 				</File>
@@ -3734,6 +3746,18 @@
 					>
 				</File>
 				<File
+					RelativePath=".\src\modelavodynamic.h"
+					>
+				</File>
+				<File
+					RelativePath=".\src\modelavostatic.h"
+					>
+				</File>
+				<File
+					RelativePath=".\src\modelgeneral.h"
+					>
+				</File>
+				<File
 					RelativePath=".\src\modelsettings.h"
 					>
 				</File>
@@ -3783,6 +3807,10 @@
 				</File>
 				<File
 					RelativePath="src\welldata.h"
+					>
+				</File>
+				<File
+					RelativePath=".\src\xmlmodelfile.h"
 					>
 				</File>
 			</Filter>
@@ -3959,10 +3987,6 @@
 				</File>
 				<File
 					RelativePath=".\nrlib\well\well.hpp"
-					>
-				</File>
-				<File
-					RelativePath=".\src\xmlmodelfile.h"
 					>
 				</File>
 				<Filter

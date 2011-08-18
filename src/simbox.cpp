@@ -9,7 +9,6 @@
 
 #include "src/simbox.h"
 #include "src/fftgrid.h"
-#include "src/model.h"
 #include "src/definitions.h"
 
 Simbox::Simbox(void) 

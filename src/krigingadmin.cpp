@@ -8,7 +8,7 @@
 
 #include "src/krigingadmin.h"
 #include "src/fftgrid.h"
-#include "src/model.h"
+#include "src/modelgeneral.h"
 #include "src/welldata.h"
 #include "src/bwellpt.h"
 #include "src/simbox.h"
@@ -327,8 +327,8 @@ FFTGrid* CKrigingAdmin::CreateValidGrid() const
 {
   //FFTGrid* pGrid = new FFTGrid(simbox_.getnx(), simbox_.getny(), simbox_.getnz(),
   //                             simbox_.getnx(), simbox_.getny(), simbox_.getnz());
-  FFTGrid* pGrid = Model::createFFTGrid(simbox_.getnx(), simbox_.getny(), simbox_.getnz(),
-                                simbox_.getnx(), simbox_.getny(), simbox_.getnz(), false);
+  FFTGrid* pGrid = ModelGeneral::createFFTGrid(simbox_.getnx(), simbox_.getny(), simbox_.getnz(),
+                                               simbox_.getnx(), simbox_.getny(), simbox_.getnz(), false);
   pGrid->fillInConstant(-1.0f, false);
   pGrid->setAccessMode(FFTGrid::RANDOMACCESS);
   int i;

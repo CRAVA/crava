@@ -4,7 +4,9 @@
 #include "fft/include/fftw.h"
 #include "definitions.h"
 
-class Model;
+class ModelGeneral;
+class ModelAVOStatic;
+class ModelAVODynamic;
 class FFTGrid;
 class FFTFileGrid;
 class Wavelet;
@@ -25,7 +27,9 @@ class SpatialWellFilter;
 class Crava 
 {
 public:
-  Crava(Model * model, SpatialWellFilter *spatwellfilter);
+  Crava(ModelSettings * modelSettings, 
+        ModelGeneral * modelGeneral, ModelAVOStatic * modelAVOstatic, ModelAVODynamic * modelAVOdynamic, 
+        SpatialWellFilter *spatwellfilter);
   ~Crava();
   int                computePostMeanResidAndFFTCov();
   int                simulate( RandomGen * randomGen );
@@ -148,7 +152,13 @@ private:
                                         // will be interpolated. Default 0, set from model.
   RandomGen        * random_;
   FaciesProb       * fprob_;
-  Model            * model_;
+  
+  ModelSettings    * modelSettings_;
+  ModelGeneral     * modelGeneral_;
+  ModelAVOStatic   * modelAVOstatic_;
+  ModelAVODynamic  * modelAVOdynamic_;
+
+
   NRLib::Grid2D<double **>           *sigmamdnew_;
 };
 #endif

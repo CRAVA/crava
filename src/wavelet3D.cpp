@@ -25,7 +25,6 @@
 #include "src/tasklist.h"
 #include "src/fftgrid.h"
 #include "src/simbox.h"
-#include "src/model.h"
 #include "src/io.h"
 #include "src/waveletfilter.h"
 

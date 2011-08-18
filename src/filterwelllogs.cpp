@@ -13,7 +13,6 @@
 #include "src/fftgrid.h"
 #include "src/fftfilegrid.h"
 #include "src/corr.h"
-#include "src/model.h"
 #include "nrlib/iotools/logkit.hpp"
 
 

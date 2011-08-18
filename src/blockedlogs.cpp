@@ -16,7 +16,7 @@
 #include "src/wavelet.h"
 #include "src/fftgrid.h"
 #include "src/simbox.h"
-#include "src/model.h"
+#include "src/modelsettings.h"
 #include "src/io.h"
 
 BlockedLogs::BlockedLogs(WellData  * well, 

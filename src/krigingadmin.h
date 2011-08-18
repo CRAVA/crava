@@ -4,7 +4,6 @@
 
 class FFTGrid;
 class CBWellPt;
-class Model;
 class Simbox;
 class CovGridSeparated;
 #include "src/box.h"

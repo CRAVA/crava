@@ -9,14 +9,14 @@
 #include "src/welldata.h"
 #include "src/fftgrid.h"
 #include "src/simbox.h"
-#include "src/model.h"
+#include "src/modelgeneral.h"
 #include "src/vario.h"
 
 QualityGrid::QualityGrid(const std::vector<double>   pValue,
                          WellData                 ** wells,
                          const Simbox              * simbox,
                          const ModelSettings       * modelSettings,
-                         Model                     * model)
+                         ModelGeneral              * modelGeneral)
 : wellValue_(0)
 {
   
@@ -38,7 +38,7 @@ QualityGrid::QualityGrid(const std::vector<double>   pValue,
   generateProbField(grid, wells, simbox, modelSettings);
   
   std::string fileName = "Seismic_Quality_Grid";
-  ParameterOutput::writeToFile(simbox, model, grid, fileName, "");
+  ParameterOutput::writeToFile(simbox, modelGeneral, modelSettings, grid, fileName, "");
  
   delete grid; 
 }
@@ -131,7 +131,7 @@ void QualityGrid::makeKrigedProbField(std::vector<KrigingData2D> & krigingData,
     << "\n  |    |    |    |    |    |    |    |    |    |    |  "
     << "\n  ^"; 
 
-  grid = Model::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, isFile);
+  grid = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, isFile);
   grid->createRealGrid();
   grid->setType(FFTGrid::PARAMETER);
   grid->setAccessMode(FFTGrid::WRITE);

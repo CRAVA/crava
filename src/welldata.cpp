@@ -17,7 +17,6 @@
 #include "src/definitions.h"
 #include "src/welldata.h"
 #include "src/modelsettings.h"
-#include "src/model.h"
 #include "src/io.h"
 
 //----------------------------------------------------------------------------

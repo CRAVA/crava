@@ -6,7 +6,6 @@
 
 #include "src/covgridseparated.h"
 #include "src/fftgrid.h"
-#include "src/model.h"
 #include "src/definitions.h"
 #include "src/io.h"
 

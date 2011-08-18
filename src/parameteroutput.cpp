@@ -3,12 +3,13 @@
 #include "src/parameteroutput.h"
 #include "src/modelsettings.h"
 #include "src/simbox.h"
-#include "src/model.h"
+#include "src/modelgeneral.h"
 #include "src/io.h"
 
 void
 ParameterOutput::writeParameters(const Simbox  * simbox,
-                                 Model         * model,
+                                 ModelGeneral  * modelGeneral,
+                                 const ModelSettings * modelSettings,
                                  FFTGrid       * alpha, 
                                  FFTGrid       * beta, 
                                  FFTGrid       * rho,
@@ -38,49 +39,49 @@ ParameterOutput::writeParameters(const Simbox  * simbox,
   if((outputFlag & IO::MURHO) > 0)
   {
     fileName = prefix+"MuRho"+suffix;
-    computeMuRho(simbox, model, alpha, beta, rho, fileGrid, fileName);
+    computeMuRho(simbox, modelGeneral, modelSettings, alpha, beta, rho, fileGrid, fileName);
   }
   if((outputFlag & IO::LAMBDARHO) > 0)
   {
     fileName = prefix+"LambdaRho"+suffix;
-    computeLambdaRho(simbox, model, alpha, beta, rho, fileGrid, fileName);
+    computeLambdaRho(simbox, modelGeneral, modelSettings, alpha, beta, rho, fileGrid, fileName);
   }
   if((outputFlag & IO::LAMELAMBDA) > 0)
   {
     fileName = prefix+"LameLambda"+suffix;
-    computeLameLambda(simbox, model, alpha, beta, rho, fileGrid, fileName);
+    computeLameLambda(simbox, modelGeneral, modelSettings, alpha, beta, rho, fileGrid, fileName);
   }
   if((outputFlag & IO::LAMEMU) > 0)
   {
     fileName = prefix+"LameMu"+suffix;
-    computeLameMu(simbox, model,  beta, rho, fileGrid, fileName);
+    computeLameMu(simbox, modelGeneral,  modelSettings, beta, rho, fileGrid, fileName);
   }
   if((outputFlag & IO::POISSONRATIO) > 0)
   {
     fileName = prefix+"PoissonRatio"+suffix;
-    computePoissonRatio(simbox, model, alpha, beta, fileGrid, fileName);
+    computePoissonRatio(simbox, modelGeneral, modelSettings, alpha, beta, fileGrid, fileName);
   }
   if((outputFlag & IO::AI) > 0)
   {
     fileName = prefix+"AI"+suffix;
-    computeAcousticImpedance(simbox, model, alpha, rho, fileGrid, fileName);
+    computeAcousticImpedance(simbox, modelGeneral, modelSettings, alpha, rho, fileGrid, fileName);
   }
   if((outputFlag & IO::SI) > 0)
   {
     fileName = prefix+"SI"+suffix;
-    computeShearImpedance(simbox, model, beta, rho, fileGrid, fileName);
+    computeShearImpedance(simbox, modelGeneral, modelSettings, beta, rho, fileGrid, fileName);
   }
   if((outputFlag & IO::VPVSRATIO) > 0)
   {
     fileName = prefix+"VpVsRatio"+suffix;
-    computeVpVsRatio(simbox, model, alpha, beta, fileGrid, fileName);
+    computeVpVsRatio(simbox, modelGeneral, modelSettings, alpha, beta, fileGrid, fileName);
   }
   if((outputFlag & IO::VP) > 0)
   {
     fileName = prefix+"Vp"+suffix;
     alpha->setAccessMode(FFTGrid::RANDOMACCESS);
     alpha->expTransf();
-    writeToFile(simbox, model, alpha, fileName, "Inverted Vp");
+    writeToFile(simbox, modelGeneral, modelSettings, alpha, fileName, "Inverted Vp");
     if(simNum<0) //prediction, need grid unharmed.
       alpha->logTransf();
     alpha->endAccess();
@@ -90,7 +91,7 @@ ParameterOutput::writeParameters(const Simbox  * simbox,
     fileName = prefix+"Vs"+suffix;
     beta->setAccessMode(FFTGrid::RANDOMACCESS);
     beta->expTransf();
-    writeToFile(simbox, model, beta, fileName, "Inverted Vs");
+    writeToFile(simbox, modelGeneral, modelSettings, beta, fileName, "Inverted Vs");
     if(simNum<0) //prediction, need grid unharmed.
       beta->logTransf();
     beta->endAccess();
@@ -100,7 +101,7 @@ ParameterOutput::writeParameters(const Simbox  * simbox,
     fileName = prefix+"Rho"+suffix;
     rho->setAccessMode(FFTGrid::RANDOMACCESS);
     rho->expTransf();
-    writeToFile(simbox, model, rho, fileName, "Inverted density");
+    writeToFile(simbox, modelGeneral, modelSettings, rho, fileName, "Inverted density");
     if(simNum<0) //prediction, need grid unharmed.
       rho->logTransf();
     rho->endAccess();
@@ -108,7 +109,8 @@ ParameterOutput::writeParameters(const Simbox  * simbox,
 }
 
 void 
-ParameterOutput::computeAcousticImpedance(const Simbox * simbox, Model * model, FFTGrid * Alpha, FFTGrid * Rho , 
+ParameterOutput::computeAcousticImpedance(const Simbox * simbox, ModelGeneral * modelGeneral, const ModelSettings * modelSettings,
+                                          FFTGrid * Alpha, FFTGrid * Rho , 
                                           bool fileGrid, const std::string & fileName)
 {   
   if(Alpha->getIsTransformed()) Alpha->invFFTInPlace();
@@ -138,12 +140,13 @@ ParameterOutput::computeAcousticImpedance(const Simbox * simbox, Model * model, 
   Rho->endAccess();
 
   prImpedance->endAccess();
-  writeToFile(simbox, model, prImpedance, fileName, "Acoustic Impedance");
+  writeToFile(simbox, modelGeneral, modelSettings, prImpedance, fileName, "Acoustic Impedance");
   delete prImpedance;
 }
 
 void
-ParameterOutput::computeShearImpedance(const Simbox * simbox, Model * model, FFTGrid * Beta, FFTGrid * Rho,
+ParameterOutput::computeShearImpedance(const Simbox * simbox, ModelGeneral * modelGeneral, const ModelSettings * modelSettings,
+                                       FFTGrid * Beta, FFTGrid * Rho,
                                        bool fileGrid, const std::string & fileName)
 {
 
@@ -173,13 +176,14 @@ ParameterOutput::computeShearImpedance(const Simbox * simbox, Model * model, FFT
   Rho->endAccess();
 
   shImpedance->endAccess(); 
-  writeToFile(simbox, model, shImpedance, fileName, "Shear impedance");
+  writeToFile(simbox, modelGeneral, modelSettings, shImpedance, fileName, "Shear impedance");
   delete shImpedance;
 }
 
 
 void
-ParameterOutput::computeVpVsRatio(const Simbox * simbox, Model * model, FFTGrid * Alpha, FFTGrid * Beta,
+ParameterOutput::computeVpVsRatio(const Simbox * simbox, ModelGeneral * modelGeneral, const ModelSettings * modelSettings,
+                                  FFTGrid * Alpha, FFTGrid * Beta,
                                   bool fileGrid, const std::string & fileName)
 {
   if(Alpha->getIsTransformed()) Alpha->invFFTInPlace(); 
@@ -208,12 +212,13 @@ ParameterOutput::computeVpVsRatio(const Simbox * simbox, Model * model, FFTGrid 
   Beta->endAccess();
 
   ratioVpVs->endAccess();
-  writeToFile(simbox, model, ratioVpVs, fileName, "Vp-Vs ratio");
+  writeToFile(simbox, modelGeneral, modelSettings, ratioVpVs, fileName, "Vp-Vs ratio");
   delete ratioVpVs;
 }
 
 void
-ParameterOutput::computePoissonRatio(const Simbox * simbox, Model * model, FFTGrid * Alpha, FFTGrid * Beta,
+ParameterOutput::computePoissonRatio(const Simbox * simbox, ModelGeneral * modelGeneral, const ModelSettings * modelSettings,
+                                     FFTGrid * Alpha, FFTGrid * Beta,
                                      bool fileGrid, const std::string & fileName)
 {
   if(Alpha->getIsTransformed()) Alpha->invFFTInPlace();
@@ -244,12 +249,13 @@ ParameterOutput::computePoissonRatio(const Simbox * simbox, Model * model, FFTGr
   Beta->endAccess();
 
   poiRat->endAccess();
-  writeToFile(simbox, model, poiRat, fileName, "Poisson ratio");
+  writeToFile(simbox, modelGeneral, modelSettings, poiRat, fileName, "Poisson ratio");
   delete poiRat;
 }
 
 void 
-ParameterOutput::computeLameMu(const Simbox * simbox, Model * model, FFTGrid * Beta, FFTGrid * Rho,
+ParameterOutput::computeLameMu(const Simbox * simbox, ModelGeneral * modelGeneral, const ModelSettings * modelSettings,
+                               FFTGrid * Beta, FFTGrid * Rho,
                                bool fileGrid, const std::string & fileName )
 {
   if(Beta->getIsTransformed()) Beta->invFFTInPlace();
@@ -278,13 +284,14 @@ ParameterOutput::computeLameMu(const Simbox * simbox, Model * model, FFTGrid * B
   Beta->endAccess();
   Rho->endAccess();
   mu->endAccess();
-  writeToFile(simbox, model, mu, fileName, "Lame mu");
+  writeToFile(simbox, modelGeneral, modelSettings, mu, fileName, "Lame mu");
 
   delete mu;
 }
 
 void
-ParameterOutput::computeLameLambda(const Simbox * simbox, Model * model, FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho,
+ParameterOutput::computeLameLambda(const Simbox * simbox, ModelGeneral * modelGeneral, const ModelSettings * modelSettings,
+                                   FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho,
                                    bool fileGrid, const std::string & fileName)
 {
   if(Alpha->getIsTransformed()) Alpha->invFFTInPlace();
@@ -318,13 +325,14 @@ ParameterOutput::computeLameLambda(const Simbox * simbox, Model * model, FFTGrid
   Rho->endAccess();
 
   lambda->endAccess();
-  writeToFile(simbox, model, lambda, fileName, "Lame lambda");
+  writeToFile(simbox, modelGeneral, modelSettings, lambda, fileName, "Lame lambda");
 
   delete lambda;
 }
 
 void
-ParameterOutput::computeLambdaRho(const Simbox * simbox, Model * model, FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho,
+ParameterOutput::computeLambdaRho(const Simbox * simbox, ModelGeneral * modelGeneral, const ModelSettings * modelSettings,
+                                  FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho,
                                   bool fileGrid, const std::string & fileName)
 {
   if(Alpha->getIsTransformed()) Alpha->invFFTInPlace();
@@ -359,12 +367,13 @@ ParameterOutput::computeLambdaRho(const Simbox * simbox, Model * model, FFTGrid 
 
   lambdaRho->endAccess();
  
-  writeToFile(simbox, model, lambdaRho, fileName, "Lambda rho");
+  writeToFile(simbox, modelGeneral, modelSettings, lambdaRho, fileName, "Lambda rho");
   delete lambdaRho;
 }
 
 void
-ParameterOutput::computeMuRho(const Simbox * simbox, Model * model, FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho,
+ParameterOutput::computeMuRho(const Simbox * simbox, ModelGeneral * modelGeneral, const ModelSettings * modelSettings,
+                              FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho,
                               bool fileGrid, const std::string & fileName)
 {
   if(Beta->getIsTransformed()) Beta->invFFTInPlace();
@@ -395,7 +404,7 @@ ParameterOutput::computeMuRho(const Simbox * simbox, Model * model, FFTGrid * Al
   Rho->endAccess();
 
   muRho->endAccess();
-  writeToFile(simbox, model, muRho, fileName, "Mu rho");
+  writeToFile(simbox, modelGeneral, modelSettings, muRho, fileName, "Mu rho");
 
   delete muRho;
 }
@@ -422,15 +431,16 @@ ParameterOutput::createFFTGrid(FFTGrid * referenceGrid, bool fileGrid)
 
 void 
 ParameterOutput::writeToFile(const Simbox      * simbox, 
-                             Model             * model, 
+                             ModelGeneral      * modelGeneral, 
+                             const ModelSettings     * modelSettings,
                              FFTGrid           * grid, 
                              const std::string & fileName, 
                              const std::string & sgriLabel) 
 {
-  GridMapping * timeDepthMapping = model->getTimeDepthMapping();
-  GridMapping * timeCutMapping   = model->getTimeCutMapping();
+  GridMapping * timeDepthMapping = modelGeneral->getTimeDepthMapping();
+  GridMapping * timeCutMapping   = modelGeneral->getTimeCutMapping();
   float         seismicStartTime = 0.0; //Hack for Sebastian, was: model->getModelSettings()->getSegyOffset();
-  TraceHeaderFormat *format = model->getModelSettings()->getTraceHeaderFormatOutput();
+  TraceHeaderFormat *format = modelSettings->getTraceHeaderFormatOutput();
 
   grid->writeFile(fileName, 
                   IO::PathToInversionResults(), 

@@ -22,7 +22,6 @@
 #include "src/fftgrid.h"
 #include "src/corr.h"
 #include "src/simbox.h"
-#include "src/model.h"
 #include "src/timings.h"
 #include "src/definitions.h"
 #include "src/gridmapping.h"

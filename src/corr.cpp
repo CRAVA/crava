@@ -7,7 +7,6 @@
 #include "src/definitions.h"
 #include "src/fftfilegrid.h"
 #include "src/fftgrid.h"
-#include "src/model.h"
 #include "src/corr.h"
 #include "src/io.h"
 

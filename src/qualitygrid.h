@@ -10,7 +10,7 @@ class WellData;
 class Simbox;
 class FFTGrid;
 class Vario;
-class Model;
+class ModelGeneral;
 
 class QualityGrid 
 {
@@ -20,7 +20,7 @@ public:
               WellData                 ** wells,
               const Simbox              * simbox,
               const ModelSettings       * modelSettings,
-              Model                     * model);
+              ModelGeneral              * modelGeneral);
                       
 private:
 

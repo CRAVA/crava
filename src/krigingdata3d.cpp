@@ -8,7 +8,6 @@
 #include "src/krigingdata3d.h"
 #include "src/welldata.h"
 #include "src/bwellpt.h"
-#include "src/model.h"
 #include "src/definitions.h"
 
 //---------------------------------------------------------------------

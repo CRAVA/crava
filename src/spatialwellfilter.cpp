@@ -14,9 +14,8 @@
 #include "src/definitions.h"
 #include "src/welldata.h"
 #include "src/timings.h"
-#include "src/model.h"
+#include "src/modelsettings.h"
 #include "src/corr.h"
-#include "src/model.h"
 #include "src/crava.h"
 
 SpatialWellFilter::SpatialWellFilter(int nwells)

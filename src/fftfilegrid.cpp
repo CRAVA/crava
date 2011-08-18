@@ -15,7 +15,6 @@
 #include "src/definitions.h"
 #include "src/fftfilegrid.h"
 #include "src/simbox.h"
-#include "src/model.h"
 #include "src/io.h"
 
 FFTFileGrid::FFTFileGrid(int nx, int ny, int nz, int nxp, int nyp, int nzp) :

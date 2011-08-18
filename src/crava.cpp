@@ -5,7 +5,9 @@
 #include "src/wavelet1D.h"
 #include "src/wavelet3D.h"
 #include "src/corr.h"
-#include "src/model.h"
+#include "src/modelgeneral.h"
+#include "src/modelavostatic.h"
+#include "src/modelavodynamic.h"
 #include "src/fftgrid.h"
 #include "src/fftfilegrid.h"
 #include "src/vario.h"
@@ -36,41 +38,47 @@
 #include <assert.h>
 #include <time.h>
 
-Crava::Crava(Model * model, SpatialWellFilter * spatwellfilter)
+Crava::Crava(ModelSettings * modelSettings,
+             ModelGeneral * modelGeneral, ModelAVOStatic * modelAVOstatic, ModelAVODynamic * modelAVOdynamic, 
+             SpatialWellFilter *spatwellfilter)
 {
   LogKit::WriteHeader("Building Stochastic Model");
 
   double wall=0.0, cpu=0.0;
   TimeKit::getTime(wall,cpu);
 
-  model_             = model;
-  nx_                = model->getBackAlpha()->getNx();
-  ny_                = model->getBackAlpha()->getNy();
-  nz_                = model->getBackAlpha()->getNz(); 
-  nxp_               = model->getBackAlpha()->getNxp();
-  nyp_               = model->getBackAlpha()->getNyp();
-  nzp_               = model->getBackAlpha()->getNzp();
-  lowCut_            = model->getModelSettings()->getLowCut();
-  highCut_           = model->getModelSettings()->getHighCut();
-  wnc_               = model->getModelSettings()->getWNC();     // white noise component see crava.h
-  energyTreshold_    = model->getModelSettings()->getEnergyThreshold();
-  ntheta_            = model->getModelSettings()->getNumberOfAngles();
-  fileGrid_          = model->getModelSettings()->getFileGrid();
-  outputGridsSeismic_= model->getModelSettings()->getOutputGridsSeismic();
-  outputGridsElastic_= model->getModelSettings()->getOutputGridsElastic();
-  writePrediction_   = model->getModelSettings()->getWritePrediction();
-  krigingParameter_  = model->getModelSettings()->getKrigingParameter();
-  nWells_            = model->getModelSettings()->getNumberOfWells();
-  nSim_              = model->getModelSettings()->getNumberOfSimulations();
-  wells_             = model->getWells();
-  simbox_            = model->getTimeSimbox(); 
-  meanAlpha_         = model->getBackAlpha(); 
-  meanBeta_          = model->getBackBeta();
-  meanRho_           = model->getBackRho();
-  correlations_      = model->getCorrelations();
-  random_            = model->getRandomGen();
-  seisWavelet_       = model->getWavelets();
-  A_                 = model->getAMatrix();
+  modelSettings_     = modelSettings;
+  modelGeneral_      = modelGeneral;
+  modelAVOstatic_    = modelAVOstatic;
+  modelAVOdynamic_   = modelAVOdynamic;
+
+  nx_                = modelAVOdynamic_->getBackAlpha()->getNx();
+  ny_                = modelAVOdynamic_->getBackAlpha()->getNy();
+  nz_                = modelAVOdynamic_->getBackAlpha()->getNz(); 
+  nxp_               = modelAVOdynamic_->getBackAlpha()->getNxp();
+  nyp_               = modelAVOdynamic_->getBackAlpha()->getNyp();
+  nzp_               = modelAVOdynamic_->getBackAlpha()->getNzp();
+  lowCut_            = modelSettings_->getLowCut();
+  highCut_           = modelSettings_->getHighCut();
+  wnc_               = modelSettings_->getWNC();     // white noise component see crava.h
+  energyTreshold_    = modelSettings_->getEnergyThreshold();
+  ntheta_            = modelSettings_->getNumberOfAngles();
+  fileGrid_          = modelSettings_->getFileGrid();
+  outputGridsSeismic_= modelSettings_->getOutputGridsSeismic();
+  outputGridsElastic_= modelSettings_->getOutputGridsElastic();
+  writePrediction_   = modelSettings_->getWritePrediction();
+  krigingParameter_  = modelSettings_->getKrigingParameter();
+  nWells_            = modelSettings_->getNumberOfWells();
+  nSim_              = modelSettings_->getNumberOfSimulations();
+  wells_             = modelAVOstatic_->getWells();
+  simbox_            = modelGeneral_->getTimeSimbox(); 
+  meanAlpha_         = modelAVOdynamic_->getBackAlpha(); 
+  meanBeta_          = modelAVOdynamic_->getBackBeta();
+  meanRho_           = modelAVOdynamic_->getBackRho();
+  correlations_      = modelAVOdynamic_->getCorrelations();
+  random_            = modelGeneral_->getRandomGen();
+  seisWavelet_       = modelAVOdynamic_->getWavelets();
+  A_                 = modelAVOdynamic_->getAMatrix();
   postAlpha_         = meanAlpha_;         // Write over the input to save memory
   postBeta_          = meanBeta_;          // Write over the input to save memory
   postRho_           = meanRho_;           // Write over the input to save memory
@@ -88,7 +96,7 @@ Crava::Crava(Model * model, SpatialWellFilter * spatwellfilter)
   sigmamdnew_        = NULL;
   for(int i=0;i<ntheta_;i++) {
     errThetaCov_[i]  = new double[ntheta_]; 
-    thetaDeg_[i]     = static_cast<float>(model->getModelSettings()->getAngle(i)*180.0/M_PI); 
+    thetaDeg_[i]     = static_cast<float>(modelSettings_->getAngle(i)*180.0/M_PI); 
   }
 
   fftw_real * corrT = NULL; // =  fftw_malloc(2*(nzp_/2+1)*sizeof(fftw_real)); 
@@ -97,10 +105,10 @@ Crava::Crava(Model * model, SpatialWellFilter * spatwellfilter)
   FFTGrid * parSpatialCorr  = NULL;  // Parameter correlation
   FFTGrid * errCorrUnsmooth = NULL;  // Error correlation
 
-  if(!model->getModelSettings()->getForwardModeling())
+  if(!modelSettings_->getForwardModeling())
   {
-    seisData_       = model->getSeisCubes();
-    model->releaseGrids(); 
+    seisData_       = modelAVOdynamic_->getSeisCubes();
+    modelAVOdynamic_->releaseGrids(); 
     correlations_->createPostGrids(nx_,ny_,nz_,nxp_,nyp_,nzp_,fileGrid_);
     parPointCov_    = correlations_->getPriorVar0(); 
     parSpatialCorr  = correlations_->getPostCovAlpha();  // Double-use grids to save memory
@@ -109,7 +117,7 @@ Crava::Crava(Model * model, SpatialWellFilter * spatwellfilter)
     int lowIntCut = int(floor(lowCut_*(nzp_*0.001*correlations_->getdt()))); 
     // computes the integer whis corresponds to the low cut frequency.
     float corrGradI, corrGradJ;
-    model->getCorrGradIJ(corrGradI, corrGradJ);
+    modelGeneral_->getCorrGradIJ(corrGradI, corrGradJ);
     corrT = parSpatialCorr->fillInParamCorr(correlations_,lowIntCut,corrGradI, corrGradJ);
     if(spatwellfilter!=NULL)
     {
@@ -120,12 +128,12 @@ Crava::Crava(Model * model, SpatialWellFilter * spatwellfilter)
     }
     correlations_->setPriorCorrTFiltered(corrT,nz_,nzp_); // Can has zeros in the middle
     errCorrUnsmooth->fillInErrCorr(correlations_,corrGradI,corrGradJ); 
-    if((model->getModelSettings()->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0)
+    if((modelSettings_->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0)
       correlations_->writeFilePriorCorrT(corrT,nzp_);     // No zeros in the middle
   }
   else
   {
-    model->releaseGrids();
+    modelAVOdynamic_->releaseGrids();
   }
 
   // reality check: all dimensions involved match
@@ -134,14 +142,14 @@ Crava::Crava(Model * model, SpatialWellFilter * spatwellfilter)
 
   for(int i=0 ; i< ntheta_ ; i++)
   {
-    if(!model->getModelSettings()->getForwardModeling())
+    if(!modelSettings_->getForwardModeling())
       assert(seisData_[i]->consistentSize(nx_,ny_,nz_,nxp_,nyp_,nzp_));  
   }
 
-  if(!model->getModelSettings()->getForwardModeling())
+  if(!modelSettings_->getForwardModeling())
   {
     parSpatialCorr->fftInPlace();
-    computeVariances(corrT,model->getModelSettings());
+    computeVariances(corrT,modelSettings_);
     scaleWarning_ = checkScale();  // fills in scaleWarningText_ if needed.
     fftw_free(corrT);  
     if(simbox_->getIsConstantThick() == false)
@@ -154,8 +162,8 @@ Crava::Crava(Model * model, SpatialWellFilter * spatwellfilter)
       seisData_[i]->endAccess();
     }
 
-    if ((model->getModelSettings()->getEstimateFaciesProb() && model->getModelSettings()->getFaciesProbRelative()) 
-        || model->getModelSettings()->getUseLocalNoise())
+    if ((modelSettings_->getEstimateFaciesProb() && modelSettings_->getFaciesProbRelative()) 
+        || modelSettings_->getUseLocalNoise())
     {
       meanAlpha2_ = copyFFTGrid(meanAlpha_);
       meanBeta2_  = copyFFTGrid(meanBeta_);
@@ -290,7 +298,7 @@ Crava::computeVariances(fftw_real     * corrT,
 {
   computeDataVariance();
     
-  setupErrorCorrelation(modelSettings, model_->getLocalNoiseScales());
+  setupErrorCorrelation(modelSettings, modelAVOdynamic_->getLocalNoiseScales());
 
   Wavelet ** errorSmooth = new Wavelet*[ntheta_];
   float    * paramVar    = new float[ntheta_] ;
@@ -1035,11 +1043,11 @@ Crava::computePostMeanResidAndFFTCov()
     delete seisData_[l];
   LogKit::LogFormatted(LogKit::DebugLow,"\nDEALLOCATING: Seismic data\n");
 
-  if(model_->getVelocityFromInversion() == true) { //Conversion undefined until prediction ready. Complete it.
+  if(modelGeneral_->getVelocityFromInversion() == true) { //Conversion undefined until prediction ready. Complete it.
     postAlpha_->setAccessMode(FFTGrid::RANDOMACCESS);
     postAlpha_->expTransf();
-    GridMapping * tdMap = model_->getTimeDepthMapping();
-    const GridMapping * dcMap = model_->getTimeCutMapping();
+    GridMapping * tdMap = modelGeneral_->getTimeDepthMapping();
+    const GridMapping * dcMap = modelGeneral_->getTimeCutMapping();
     const Simbox * timeSimbox = simbox_;
     if(dcMap != NULL)
       timeSimbox = dcMap->getSimbox();
@@ -1051,16 +1059,16 @@ Crava::computePostMeanResidAndFFTCov()
 
   //NBNB Anne Randi: Skaler traser ihht notat fra Hugo
 
-  if(model_->getModelSettings()->getUseLocalNoise())
+  if(modelSettings_->getUseLocalNoise())
   {
     correlations_->invFFT();
     correlations_->createPostVariances();
     correlations_->FFT();
-    correctAlphaBetaRho(model_->getModelSettings());
+    correctAlphaBetaRho(modelSettings_);
   }
 
   if(writePrediction_ == true)
-    ParameterOutput::writeParameters(simbox_, model_, postAlpha_, postBeta_, postRho_, 
+    ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, postAlpha_, postBeta_, postRho_, 
     outputGridsElastic_, fileGrid_, -1, false);
 
   writeBWPredicted();
@@ -1114,7 +1122,7 @@ Crava::doPredictionKriging()
     TimeKit::getTime(wall2,cpu2);
     doPostKriging(*postAlpha_, *postBeta_, *postRho_); 
     Timings::setTimeKrigingPred(wall2,cpu2);
-    ParameterOutput::writeParameters(simbox_, model_, postAlpha_, postBeta_, postRho_, 
+    ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, postAlpha_, postBeta_, postRho_, 
                                      outputGridsElastic_, fileGrid_, -1, true);
   }
 }
@@ -1251,7 +1259,7 @@ Crava::simulate(RandomGen * randomGen)
           seed2->setAccessMode(FFTGrid::RANDOMACCESS);
           seed2->invFFTInPlace(); 
 
-          if(model_->getModelSettings()->getUseLocalNoise()==true)
+          if(modelSettings_->getUseLocalNoise()==true)
           {
             float alpha,beta, rho;
             float alphanew, betanew, rhonew;
@@ -1285,7 +1293,7 @@ Crava::simulate(RandomGen * randomGen)
             doPostKriging(*seed0, *seed1, *seed2); 
             Timings::addToTimeKrigingSim(wall2,cpu2);
           }
-          ParameterOutput::writeParameters(simbox_, model_, seed0, seed1, seed2,
+          ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, seed0, seed1, seed2,
                                            outputGridsElastic_, fileGrid_, simNr, kriging);
           // time(&timeend);
           // printf("Back transform and write of simulation in %ld seconds \n",timeend-timestart);
@@ -1332,7 +1340,7 @@ Crava::doPostKriging(FFTGrid & postAlpha,
                          covGridCrAlphaBeta, covGridCrAlphaRho, covGridCrBetaRho, 
                          krigingParameter_);
 
-  pKriging.KrigAll(postAlpha, postBeta, postRho, false, model_->getModelSettings()->getDebugFlag(), model_->getModelSettings()->getDoSmoothKriging());
+  pKriging.KrigAll(postAlpha, postBeta, postRho, false, modelSettings_->getDebugFlag(), modelSettings_->getDoSmoothKriging());
 }
 
 FFTGrid *
@@ -1603,7 +1611,7 @@ Crava::printEnergyToScreen()
 void 
 Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
 {
-  ModelSettings * modelSettings = model_->getModelSettings();
+  ModelSettings * modelSettings = modelSettings_;
 
   if(modelSettings->getEstimateFaciesProb())
   {
@@ -1618,7 +1626,7 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
     LogKit::LogFormatted(LogKit::Low,"\n");
     LogKit::LogFormatted(LogKit::Low,"Facies         Probability\n");
     LogKit::LogFormatted(LogKit::Low,"--------------------------\n");
-    const float * priorFacies = model_->getPriorFacies();
+    const float * priorFacies = modelAVOstatic_->getPriorFacies();
     for(int i=0 ; i<nfac; i++) {
       LogKit::LogFormatted(LogKit::Low,"%-15s %10.4f\n",modelSettings->getFaciesName(i).c_str(),priorFacies[i]);
     }
@@ -1672,19 +1680,19 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
                               meanRho2_,
                               nfac,
                               modelSettings->getPundef(), 
-                              model_->getPriorFacies(), 
-                              model_->getPriorFaciesCubes(),
+                              modelAVOstatic_->getPriorFacies(), 
+                              modelAVOstatic_->getPriorFaciesCubes(),
                               filteredlogs->getSigmae(),
                               useFilter,
                               const_cast<const WellData **>(wells_), 
                               nWells_,
-                              model_->getFaciesEstimInterval(),
+                              modelAVOstatic_->getFaciesEstimInterval(),
                               simbox_->getdz(),
                               true,
                               modelSettings->getNoVsFaciesProb(), 
                               this,
-                              model_->getLocalNoiseScales(),
-                              model_->getModelSettings(),
+                              modelAVOdynamic_->getLocalNoiseScales(),
+                              modelSettings_,
                               likelihood);
       delete meanAlpha2_;
       delete meanBeta2_;
@@ -1697,25 +1705,25 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
                               postRho_,
                               nfac,
                               modelSettings->getPundef(), 
-                              model_->getPriorFacies(), 
-                              model_->getPriorFaciesCubes(),
+                              modelAVOstatic_->getPriorFacies(), 
+                              modelAVOstatic_->getPriorFaciesCubes(),
                               filteredlogs->getSigmae(),
                               useFilter,
                               const_cast<const WellData **>(wells_), 
                               nWells_,
-                              model_->getFaciesEstimInterval(),
+                              modelAVOstatic_->getFaciesEstimInterval(),
                               simbox_->getdz(),
                               false,
                               modelSettings->getNoVsFaciesProb(), 
                               this,
-                              model_->getLocalNoiseScales(),
-                              model_->getModelSettings(),
+                              modelAVOdynamic_->getLocalNoiseScales(),
+                              modelSettings_,
                               likelihood);
       baseName += "Absolute_";
     }
     fprob_->calculateConditionalFaciesProb(wells_, 
                                            nWells_, 
-                                           model_->getFaciesEstimInterval(),
+                                           modelAVOstatic_->getFaciesEstimInterval(),
                                            modelSettings->getFaciesNames(),
                                            simbox_->getdz());
     LogKit::LogFormatted(LogKit::Low,"\nProbability cubes done\n");
@@ -1726,36 +1734,36 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
       {
         FFTGrid * grid = fprob_->getFaciesProb(i);
         std::string fileName = baseName +"With_Undef_"+ modelSettings->getFaciesName(i);
-        ParameterOutput::writeToFile(simbox_,model_,grid,fileName,"");
+        ParameterOutput::writeToFile(simbox_, modelGeneral_, modelSettings_, grid, fileName,"");
       }
       FFTGrid * grid = fprob_->getFaciesProbUndef();
       std::string fileName = baseName + "Undef";
-      ParameterOutput::writeToFile(simbox_,model_,grid,fileName,"");
+      ParameterOutput::writeToFile(simbox_, modelGeneral_, modelSettings_, grid, fileName,"");
     }
 
-    fprob_->calculateFaciesProbGeomodel(model_->getPriorFacies(),
-                                        model_->getPriorFaciesCubes());
+    fprob_->calculateFaciesProbGeomodel(modelAVOstatic_->getPriorFacies(),
+                                        modelAVOstatic_->getPriorFaciesCubes());
     
     if (modelSettings->getOutputGridsOther() & IO::FACIESPROB){
       for(int i=0;i<nfac;i++)
       {
         FFTGrid * grid = fprob_->getFaciesProb(i);
         std::string fileName = baseName + modelSettings->getFaciesName(i);
-        ParameterOutput::writeToFile(simbox_,model_,grid,fileName,"");
+        ParameterOutput::writeToFile(simbox_, modelGeneral_, modelSettings_, grid, fileName,"");
       }
     }
     fprob_->writeBWFaciesProb(wells_, nWells_);
-    std::vector<double> pValue = fprob_->calculateChiSquareTest(wells_, nWells_, model_->getFaciesEstimInterval());
+    std::vector<double> pValue = fprob_->calculateChiSquareTest(wells_, nWells_, modelAVOstatic_->getFaciesEstimInterval());
     
     if (modelSettings->getOutputGridsOther() & IO::SEISMIC_QUALITY_GRID)
-      QualityGrid qualityGrid(pValue, wells_, simbox_, modelSettings, model_);
+      QualityGrid qualityGrid(pValue, wells_, simbox_, modelSettings, modelGeneral_);
 
     if(likelihood != NULL) {
       for(int i=0;i<nfac;i++) {
         FFTGrid * grid = fprob_->createLHCube(likelihood, i, 
-                                              model_->getPriorFacies(), model_->getPriorFaciesCubes());
+                                              modelAVOstatic_->getPriorFacies(), modelAVOstatic_->getPriorFaciesCubes());
         std::string fileName = IO::PrefixLikelihood() + modelSettings->getFaciesName(i);
-        ParameterOutput::writeToFile(simbox_,model_,grid,fileName,"");
+        ParameterOutput::writeToFile(simbox_, modelGeneral_, modelSettings_, grid,fileName,"");
         delete grid;
       }
     }
@@ -1772,7 +1780,7 @@ Crava::filterLogs(Simbox          * timeSimboxConstThick,
   double wall=0.0, cpu=0.0;
   TimeKit::getTime(wall,cpu);
   int relative;
-  if(model_->getModelSettings()->getEstimateFaciesProb())
+  if(modelSettings_->getEstimateFaciesProb())
     relative = 1;
   else 
     relative = 0;
@@ -2270,7 +2278,7 @@ void Crava::correctAlphaBetaRho(ModelSettings *modelSettings)
   std::vector<double> minScale(modelSettings->getNumberOfAngles());
 
   for(int angle=0;angle<modelSettings->getNumberOfAngles();angle++)
-    minScale[angle] = model_->getLocalNoiseScale(angle)->FindMin(RMISSING);
+    minScale[angle] = modelAVOdynamic_->getLocalNoiseScale(angle)->FindMin(RMISSING);
 
   postAlpha_->setAccessMode(FFTGrid::RANDOMACCESS);
   postBeta_->setAccessMode(FFTGrid::RANDOMACCESS);
@@ -2285,7 +2293,7 @@ void Crava::correctAlphaBetaRho(ModelSettings *modelSettings)
     {
       std::vector<double> scales(modelSettings->getNumberOfAngles());
       for(int angle=0;angle<modelSettings->getNumberOfAngles();angle++)
-        scales[angle] = (*(model_->getLocalNoiseScale(angle)))(i, j)/minScale[angle];
+        scales[angle] = (*(modelAVOdynamic_->getLocalNoiseScale(angle)))(i, j)/minScale[angle];
 
       newPosteriorCovPointwise(sigmanew,G, scales, sigmamd);
 
@@ -2331,7 +2339,7 @@ void Crava::correctAlphaBetaRho(ModelSettings *modelSettings)
   meanBeta2_->endAccess();
   meanRho2_->endAccess();
 
-  if(!(model_->getModelSettings()->getEstimateFaciesProb() && model_->getModelSettings()->getFaciesProbRelative())) {
+  if(!(modelSettings_->getEstimateFaciesProb() && modelSettings_->getFaciesProbRelative())) {
     //We do not need these, and they will not be deleted elsewhere in this case.
     delete meanAlpha2_;
     delete meanBeta2_;
