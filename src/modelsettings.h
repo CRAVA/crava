@@ -167,6 +167,7 @@ public:
   bool                             getDoInversion(void);                                            
   bool                             getDoDepthConversion(void)           const;
   bool                             getDoSmoothKriging(void)             const { return smoothKrigedParameters_ ;}
+  bool                             getRunFromPanel(void)                const { return runFromPanel_ ;}
   void                             getTimeGradientSettings(float &distance, float &alpha);      
   int                              getEstimateNumberOfWavelets(void)    const;
 
@@ -317,7 +318,8 @@ public:
   void setOptimizeWellLocation(bool optimizeWellLoc)      { optimizeWellLocation_     = optimizeWellLoc          ;}
   void setLogLevel(int logLevel)                          { logLevel_                 = logLevel                 ;}
   void setSeed(int seed)                                  { seed_                     = seed                     ;}
-  void setDoSmoothKriging(bool smooth)                    { smoothKrigedParameters_  = smooth                   ;}
+  void setDoSmoothKriging(bool smooth)                    { smoothKrigedParameters_   = smooth                   ;}
+  void setRunFromPanel(bool panel)                        { runFromPanel_             = panel                    ;}
   void setNoWellNeeded(bool wellNeeded)                   { noWellNeeded_             = wellNeeded               ;}
   void setTimeGradientSettings(float distance, float alpha);
   void setNoSeismicNeeded(bool seismicNeeded)             { noSeismicNeeded_          = seismicNeeded            ;}
@@ -511,11 +513,12 @@ private:
   bool                              useLocalWavelet_;            // Wavelets are multiplied with gain and shift maps
   bool                              useLocalNoise_;              // Signal-to-noise is multiplied with gain and shift maps
   bool                              optimizeWellLocation_;       // True if at least one well is to be moved
-  bool                              smoothKrigedParameters_;    // True if we should smooth borders between kriging blocks                                  
+  bool                              smoothKrigedParameters_;     // True if we should smooth borders between kriging blocks                                  
+  bool                              runFromPanel_;               // True if run is started from RMS panel. Relaxed checking.                                 
   bool                              noWellNeeded_;               // True for some configurations of input data
   bool                              noSeismicNeeded_;            // True for some estimation settings                             
-  float                             distanceFromWell_;           //Minimum distance for where gradients should not cross
-  float                             sigma_m_;                      //smoothness level of the gradients
+  float                             distanceFromWell_;           // Minimum distance for where gradients should not cross
+  float                             sigma_m_;                    // Smoothness level of the gradients
 
   int                               logLevel_;      
                                     

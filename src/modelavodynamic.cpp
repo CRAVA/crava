@@ -1108,7 +1108,7 @@ ModelAVODynamic::processWellLocation(FFTGrid                     ** seisCube,
     deltaY = iMove*dx*sin(angle) + jMove*dy*cos(angle);
     wells[w]->moveWell(timeSimbox,deltaX,deltaY,kMove);
     wells[w]->deleteBlockedLogsOrigThick();
-    wells[w]->setBlockedLogsOrigThick( new BlockedLogs(wells[w], timeSimbox, randomGen) );
+    wells[w]->setBlockedLogsOrigThick( new BlockedLogs(wells[w], timeSimbox, randomGen, modelSettings->getRunFromPanel()) );
     LogKit::LogFormatted(LogKit::Low,"  %-13s %11.2f %12d %11.2f %8d %11.2f \n", 
     wells[w]->getWellname().c_str(), kMove, iMove, deltaX, jMove, deltaY);
   }

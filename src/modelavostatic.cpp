@@ -257,7 +257,7 @@ ModelAVOStatic::processWells(WellData          **& wells,
           wells[i]->filterLogs();
           wells[i]->lookForSyntheticVsLog(rankCorr[i]);
           wells[i]->calculateDeviation(devAngle[i], timeSimbox);
-          wells[i]->setBlockedLogsOrigThick( new BlockedLogs(wells[i], timeSimbox, randomGen) );
+          wells[i]->setBlockedLogsOrigThick( new BlockedLogs(wells[i], timeSimbox, randomGen, modelSettings->getRunFromPanel()) );
           wells[i]->setBlockedLogsConstThick( new BlockedLogs(wells[i], timeSimboxConstThick, randomGen) );
           if (timeBGSimbox==NULL)
             wells[i]->setBlockedLogsExtendedBG( new BlockedLogs(wells[i], timeSimbox, randomGen) ); // Need a copy constructor?

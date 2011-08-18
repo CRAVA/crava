@@ -594,7 +594,7 @@ Analyzelog::estimateCorrTAndVar0(float       * CorrT,
       Var0[1][1] = 2*Var0[0][0];
     }
     // Default covariance between Vp and Vs. Value is explained in Jira issue CRA-220.
-    Var0[0][1] = Var0[1][0] = std::sqrt(Var0[0][0])*std::sqrt(Var0[1][1])*0.70; 
+    Var0[0][1] = Var0[1][0] = static_cast<float>(std::sqrt(Var0[0][0])*std::sqrt(Var0[1][1])*0.70); 
     Var0[0][2] = Var0[2][0] = 0.0;
     Var0[1][2] = Var0[2][1] = 0.0;
     if (nAB>1)  

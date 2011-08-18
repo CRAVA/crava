@@ -1564,7 +1564,7 @@ FFTGrid::writeSegyFile(const std::string       & fileName,
       if(z == RMISSING || z == WELLMISSING)
       {
         //printf("Missing trace.\n");
-        for(k=0;k<nz_;k++)
+        for(k=0;k<segynz;k++)
           trace[k] = 0;
       }
       else

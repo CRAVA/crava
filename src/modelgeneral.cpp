@@ -881,7 +881,7 @@ ModelGeneral::setSimboxSurfaces(Simbox                        *& simbox,
 
   if(!failed) {
     if(parallelSurfaces) { //Only one reference surface
-      simbox->setDepth(*z0Grid, dTop, lz, dz);
+      simbox->setDepth(*z0Grid, dTop, lz, dz, modelSettings->getRunFromPanel());
     }
     else {
       const std::string & baseName = surfFile[1]; 
@@ -908,7 +908,7 @@ ModelGeneral::setSimboxSurfaces(Simbox                        *& simbox,
       }
       if(!failed) {
         try {
-          simbox->setDepth(*z0Grid, *z1Grid, nz);
+          simbox->setDepth(*z0Grid, *z1Grid, nz, modelSettings->getRunFromPanel());
         }
         catch (NRLib::Exception & e) {
           errText += e.what();

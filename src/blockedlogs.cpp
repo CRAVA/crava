@@ -21,7 +21,8 @@
 
 BlockedLogs::BlockedLogs(WellData  * well, 
                          Simbox    * simbox,
-                         RandomGen * random) 
+                         RandomGen * random,
+                         bool        interpolate) 
   : wellname_(""),
     xpos_(NULL),
     ypos_(NULL),
@@ -63,7 +64,7 @@ BlockedLogs::BlockedLogs(WellData  * well,
     nLayers_(simbox->getnz()),
     nFacies_(0)
 {
-  blockWell(well, simbox, random);
+  blockWell(well, simbox, random, interpolate);
 }
 
 //------------------------------------------------------------------------------
@@ -155,7 +156,8 @@ BlockedLogs::~BlockedLogs(void)
 void 
 BlockedLogs::blockWell(WellData  * well,
                        Simbox    * simbox,
-                       RandomGen * random) 
+                       RandomGen * random,
+                       bool        interpolate) 
 {
   wellname_ = well->getWellname();
 
@@ -187,6 +189,45 @@ BlockedLogs::blockWell(WellData  * well,
 
   if (well->isFaciesLogDefined())
     blockDiscreteLog(bInd, well->getFacies(dummy), well->getFaciesNr(), well->getNFacies(), facies_, random);
+
+  if(interpolate == true) {
+    for(int i=1;i<well->getNd();i++) {
+      if(abs(bInd[i]-bInd[i-1]) > 1) {
+        int start, end;
+        if(bInd[i] > bInd[i-1]) {
+          start = bInd[i-1];
+          end   = bInd[i];
+        }
+        else {
+          start = bInd[i];
+          end   = bInd[i-1];
+        }
+        for(int j = start+1;j<end;j++) {
+          float t = static_cast<float>(j-start)/static_cast<float>(end-start);
+          interpolateContinuousLog(xpos_, start, end, j, t);
+          interpolateContinuousLog(ypos_, start, end, j, t);
+          interpolateContinuousLog(zpos_, start, end, j, t);
+          if(md_ != NULL)
+            interpolateContinuousLog(md_, start, end, j, t);
+
+          interpolateContinuousLog(alpha_, start, end, j, t);
+          interpolateContinuousLog(beta_, start, end, j, t);
+          interpolateContinuousLog(rho_, start, end, j, t);
+          interpolateContinuousLog(alpha_highcut_background_, start, end, j, t);
+          interpolateContinuousLog(beta_highcut_background_, start, end, j, t);
+          interpolateContinuousLog(rho_highcut_background_, start, end, j, t);
+          interpolateContinuousLog(alpha_highcut_seismic_, start, end, j, t);
+          interpolateContinuousLog(beta_highcut_seismic_, start, end, j, t);
+          interpolateContinuousLog(rho_highcut_seismic_, start, end, j, t);
+
+          if (well->isFaciesLogDefined()) {
+            if(facies_[j] == IMISSING)
+              facies_[j] = facies_[j-1];
+          }
+        }
+      }
+    }
+  }
 
   delete [] bInd;
 }
@@ -367,6 +408,25 @@ BlockedLogs::blockDiscreteLog(const int *  bInd,
     //    LogKit::LogFormatted(LogKit::Low,"b=%-3d   blockedLog[b]=%6d\n",b,IMISSING);
   }
 }
+
+
+void
+BlockedLogs::interpolateContinuousLog(float * blockedLog, int start, int end, 
+                                      int index, float rel)
+{
+  if(blockedLog[start] != RMISSING && blockedLog[end] != RMISSING && blockedLog[index] == RMISSING)
+    blockedLog[index] = rel*blockedLog[end]+(1-rel)*blockedLog[start];
+}
+
+
+void
+BlockedLogs::interpolateContinuousLog(double * blockedLog, int start, int end, 
+                                      int index, float rel)
+{
+  if(blockedLog[start] != RMISSING && blockedLog[end] != RMISSING && blockedLog[index] == RMISSING)
+    blockedLog[index] = rel*blockedLog[end]+(1-rel)*blockedLog[start];
+}
+
 
 //------------------------------------------------------------------------------
 int 

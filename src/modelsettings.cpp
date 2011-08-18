@@ -29,6 +29,7 @@ ModelSettings::ModelSettings(void)
     logNames_(5),
     inverseVelocity_(2),
     faciesLabels_(0),
+    runFromPanel_(false),
     noWellNeeded_(false),
     noSeismicNeeded_(false)
 {

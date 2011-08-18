@@ -592,13 +592,13 @@ Simbox::setArea(const SegyGeometry * geometry, std::string & errText)
 }
 
 void
-Simbox::setDepth(const Surface & zRef, double zShift, double lz, double dz)
+Simbox::setDepth(const Surface & zRef, double zShift, double lz, double dz, bool skipCheck)
 {
   Surface zTop(zRef);
   zTop.Add(zShift);
   Surface zBot(zTop);
   zBot.Add(lz);
-  SetSurfaces(zTop,zBot);
+  SetSurfaces(zTop,zBot,skipCheck);
   dz_ = dz;
   nz_ = int(0.5+lz/dz_);
   if(status_ == EMPTY)
@@ -608,9 +608,9 @@ Simbox::setDepth(const Surface & zRef, double zShift, double lz, double dz)
 }
 
 void
-Simbox::setDepth(const Surface & z0, const Surface & z1, int nz)
+Simbox::setDepth(const Surface & z0, const Surface & z1, int nz, bool skipCheck)
 {
-  SetSurfaces(z0, z1);
+  SetSurfaces(z0, z1, skipCheck);
   nz_ = nz;
   dz_ = -1;
   if(status_ == EMPTY)

@@ -19,7 +19,9 @@ class BlockedLogs
 public:
   BlockedLogs(WellData  * well, 
               Simbox    * simbox,
-              RandomGen * random);
+              RandomGen * random,
+              bool interpolate = false);
+
   ~BlockedLogs(void);
 
   const std::string getWellname(void)               const { return wellname_ ;}
@@ -110,7 +112,8 @@ private:
                                          float * vertical_trend, double z0, double dz, int nz);
   void           blockWell(WellData  * well, 
                            Simbox    * simbox,
-                           RandomGen * random);
+                           RandomGen * random,
+                           bool        interpolate = false);
   void           blockCoordinateLog(const int    *  bInd,
                                     const double *  coord,
                                     double       *& blockedCoord);
@@ -123,6 +126,10 @@ private:
                                   int          nFacies,
                                   int       *& blockedLog,
                                   RandomGen * random);
+  void           interpolateContinuousLog(double * blockedLog, int start, int end, 
+                                          int index, float rel);
+  void           interpolateContinuousLog(float * blockedLog, int start, int end, 
+                                          int index, float rel);
   int            findMostProbable(const int * count,
                                   int         nFacies,
                                   RandomGen * random); 

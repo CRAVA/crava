@@ -2444,10 +2444,11 @@ XmlModelFile::parseAdvancedSettings(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("kriging-data-limit");
   legalCommands.push_back("debug-level");
   legalCommands.push_back("smooth-kriged-parameters");
+  legalCommands.push_back("rms-panel-mode");
 
   parseFFTGridPadding(root, errTxt);
 
-  double ratio;
+  float ratio;
   if(parseValue(root,"vp-vs-ratio", ratio, errTxt) == true)
     modelSettings_->setVpVsRatio(ratio);
 
@@ -2491,6 +2492,10 @@ XmlModelFile::parseAdvancedSettings(TiXmlNode * node, std::string & errTxt)
   bool smooth = false;
   if(parseBool(root, "smooth-kriged-parameters", smooth, errTxt) == true)
     modelSettings_->setDoSmoothKriging(smooth);
+  
+  bool panel = false;
+  if(parseBool(root, "rms-panel-mode", panel, errTxt) == true)
+    modelSettings_->setRunFromPanel(panel);
   
   checkForJunk(root, errTxt, legalCommands);
   return(true);
