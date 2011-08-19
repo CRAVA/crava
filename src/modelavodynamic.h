@@ -27,8 +27,8 @@ class ModelAVODynamic
 public:
   ModelAVODynamic(ModelSettings       *& modelSettings,
                   const InputFiles     * inputFiles,
-                  bool                   failedGeneral,
-                  bool                   failedStatic, 
+                  std::vector<bool>      failedGeneralDetails,
+                  std::vector<bool>      failedStaticDetails,
                   Simbox               * timeSimbox,
                   Simbox              *& timeBGSimbox,
                   RandomGen            * randomGen,
@@ -37,7 +37,7 @@ public:
                   std::vector<Surface *> waveletEstimInterval, 
                   std::vector<Surface *> wellMoveInterval,
                   std::vector<Surface *> faciesEstimInterval,  
-                  ModelAVOStatic       * modelAVOstatic);    // modelAVOstatic::wells_ may be altered. modelAVOstatic is deliberately sent in as un-const.
+                  ModelAVOStatic       * modelAVOstatic);    // modelAVOstatic::wells_ are altered. modelAVOstatic is deliberately sent in as un-const.
   ~ModelAVODynamic();
 
   FFTGrid                     * getBackAlpha()             const { return background_->getAlpha() ;}
@@ -51,6 +51,7 @@ public:
   const std::vector<Grid2D *> & getLocalNoiseScales()      const { return localNoiseScale_        ;}
 
   bool                          getFailed()                const { return failed_                 ;}
+  std::vector<bool>             getFailedDetails()         const { return failed_details_         ;}
 
   void                          releaseGrids();                        // Cuts connection to SeisCube_ and  backModel_
 private:
@@ -175,7 +176,8 @@ private:
 
   std::vector<Grid2D *>     localNoiseScale_;       ///< Scale factors for local noise
 
-  bool                      failed_;                ///< Indicates whether errors occured during construction. 
+  bool                      failed_;                ///< Indicates whether errors occured during construction.
+  std::vector<bool>         failed_details_;        ///< Detailed failed information.
 };
 
 #endif

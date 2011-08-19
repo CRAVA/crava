@@ -35,6 +35,7 @@ public:
 
   bool                          getVelocityFromInversion() const { return velocityFromInversion_  ;}
   bool                          getFailed()                const { return failed_                 ;}
+  std::vector<bool>             getFailedDetails()         const { return failed_details_         ;}
 
   void                          getCorrGradIJ(float & corrGradI, float &corrGradJ) const;
   
@@ -172,6 +173,7 @@ private:
   bool                      velocityFromInversion_;
 
   bool                      failed_;                ///< Indicates whether errors occured during construction. 
+  std::vector<bool>         failed_details_;        ///< Detailed failed information.
 };
 
 #endif

@@ -82,15 +82,15 @@ int main(int argc, char** argv)
       modelGeneral    = new ModelGeneral(modelSettings, inputFiles, timeBGSimbox);
       modelAVOstatic  = new ModelAVOStatic(modelSettings, 
                                            inputFiles,
-                                           modelGeneral->getFailed(), 
+                                           modelGeneral->getFailedDetails(),
                                            modelGeneral->getTimeSimbox(),
                                            timeBGSimbox,
                                            modelGeneral->getTimeSimboxConstThick(),
                                            modelGeneral->getRandomGen());
       // Wells are adjusted by ModelAVODynamic constructor.
       modelAVOdynamic = new ModelAVODynamic(modelSettings, inputFiles,
-                                            modelGeneral->getFailed(), 
-                                            modelAVOstatic->getFailed(), 
+                                            modelGeneral->getFailedDetails(),
+                                            modelAVOstatic->getFailedDetails(),
                                             modelGeneral->getTimeSimbox(),
                                             timeBGSimbox,
                                             modelGeneral->getRandomGen(),
@@ -99,7 +99,6 @@ int main(int argc, char** argv)
                                             modelAVOstatic->getWaveletEstimInterval(), 
                                             modelAVOstatic->getWellMoveInterval(),
                                             modelAVOstatic->getFaciesEstimInterval(),
-                                            modelAVOstatic->getWells(), 
                                             modelAVOstatic);
       if(timeBGSimbox != NULL)
         delete timeBGSimbox;

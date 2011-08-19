@@ -152,6 +152,8 @@ ModelGeneral::ModelGeneral(ModelSettings *& modelSettings, const InputFiles * in
   }
   
   failed_ = failedLoadingModel;
+  failed_details_.push_back(failedSimbox);
+  failed_details_.push_back(failedDepthConv);
 
   if(timeCutSimbox != NULL)
     delete timeCutSimbox;

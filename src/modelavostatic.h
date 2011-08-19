@@ -24,13 +24,13 @@ class InputFiles;
 class ModelAVOStatic
 {
 public:
-  ModelAVOStatic(ModelSettings *& modelSettings, 
-                 const InputFiles * inputFiles,
-                 bool failedGeneral, 
-                 Simbox * timeSimbox, 
-                 Simbox *& timeBGSimbox, 
-                 Simbox * timeSimboxConstThick,
-                 RandomGen * randomGen);
+  ModelAVOStatic(ModelSettings      *& modelSettings, 
+                 const InputFiles    * inputFiles,
+                 std::vector<bool>     failedGeneralDetails,
+                 Simbox              * timeSimbox, 
+                 Simbox             *& timeBGSimbox, 
+                 Simbox              * timeSimboxConstThick,
+                 RandomGen           * randomGen);
   ~ModelAVOStatic();
 
   WellData                  **& getWells()                 /*const*/ { return wells_                  ;}
@@ -44,6 +44,7 @@ public:
 
 
   bool                          getFailed()                const { return failed_                 ;}
+  std::vector<bool>             getFailedDetails()         const { return failed_details_         ;}
 
   void                          writeWells(       WellData ** wells, ModelSettings * modelSettings) const;
   void                          writeBlockedWells(WellData ** wells, ModelSettings * modelSettings) const;
@@ -117,6 +118,7 @@ private:
   FFTGrid                ** priorFaciesProbCubes_;  ///< Cubes for prior facies probabilities
 
   bool                      failed_;                ///< Indicates whether errors occured during construction. 
+  std::vector<bool>         failed_details_;        ///< Detailed failed information.
 };
 
 #endif

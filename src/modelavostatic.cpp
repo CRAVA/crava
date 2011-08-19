@@ -45,13 +45,13 @@
 #include "nrlib/stormgrid/stormcontgrid.hpp"
 
 
-ModelAVOStatic::ModelAVOStatic(ModelSettings *& modelSettings, 
-                               const InputFiles * inputFiles,
-                               bool failedGeneral, 
-                               Simbox * timeSimbox, 
-                               Simbox *& timeBGSimbox, 
-                               Simbox * timeSimboxConstThick,
-                               RandomGen * randomGen)
+ModelAVOStatic::ModelAVOStatic(ModelSettings      *& modelSettings, 
+                               const InputFiles    * inputFiles,
+                               std::vector<bool>     failedGeneralDetails,
+                               Simbox              * timeSimbox, 
+                               Simbox             *& timeBGSimbox, 
+                               Simbox              * timeSimboxConstThick,
+                               RandomGen           * randomGen)
 {
   forwardModeling_        = modelSettings->getForwardModeling();
   numberOfWells_          = modelSettings->getNumberOfWells();
@@ -60,9 +60,11 @@ ModelAVOStatic::ModelAVOStatic(ModelSettings *& modelSettings,
   priorFaciesProbCubes_   = NULL;
   wells_                  = NULL;
 
+  bool failedSimbox       = failedGeneralDetails[0];
+
   failed_                 = false;
-  bool failedExtraSurf    = false;
   bool failedWells        = false;
+  bool failedExtraSurf    = false;
   bool failedPriorFacies  = false;
 
   bool failedLoadingModel = false;
@@ -71,7 +73,7 @@ ModelAVOStatic::ModelAVOStatic(ModelSettings *& modelSettings,
 
   
 
-  if(!failedGeneral)  // timeSimbox is ok if failedGeneral == false
+  if(!failedSimbox)
   { 
     if (modelSettings->getForwardModeling() == false)
     {
@@ -111,6 +113,9 @@ ModelAVOStatic::ModelAVOStatic(ModelSettings *& modelSettings,
   }  
   
   failed_ = failedLoadingModel;
+  failed_details_.push_back(failedWells);
+  failed_details_.push_back(failedExtraSurf);
+  failed_details_.push_back(failedPriorFacies);
 }
 
 

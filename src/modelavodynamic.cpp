@@ -48,8 +48,8 @@
 
 ModelAVODynamic::ModelAVODynamic(ModelSettings       *& modelSettings, 
                                  const InputFiles     * inputFiles,
-                                 bool                   failedGeneral, 
-                                 bool                   failedStatic,
+                                 std::vector<bool>      failedGeneralDetails,
+                                 std::vector<bool>      failedStaticDetails,
                                  Simbox               * timeSimbox,
                                  Simbox              *& timeBGSimbox,
                                  RandomGen            * randomGen,
@@ -68,31 +68,11 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings       *& modelSettings,
   reflectionMatrix_       = NULL;
   failed_                 = false;
 
-  bool failedSimbox;
-  bool failedDepthConv;
-  bool failedExtraSurf;
-  bool failedWells;
-
-  // If there is overall failure for General class or Static class,
-  // we know that at least one of its individual booleans is true. 
-  // We do not care which one, and set all relevant booleans to true. 
-  // Appropriate error messages are written in the respective classes.
-  if (!failedGeneral){
-    failedSimbox    = false;
-    failedDepthConv = false;
-  }
-  else{
-    failedSimbox    = true;
-    failedDepthConv = true;
-  }
-  if (!failedStatic){
-    failedExtraSurf = false;
-    failedWells     = false;
-  }
-  else{
-    failedExtraSurf = true;
-    failedWells     = true;
-  }
+  bool failedSimbox       = failedGeneralDetails[0];;
+  bool failedDepthConv    = failedGeneralDetails[1];
+  bool failedWells        = failedStaticDetails[0];
+  bool failedExtraSurf    = failedStaticDetails[1];
+  // ModelAVOStatic's failedPriorFacies is not used here.
   
   bool failedWavelet      = false;
   bool failedSeismic      = false;
@@ -264,6 +244,11 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings       *& modelSettings,
   }
 
   failed_ = failedLoadingModel;
+  failed_details_.push_back(failedSeismic);
+  failed_details_.push_back(failedPriorCorr);
+  failed_details_.push_back(failedReflMat);
+  failed_details_.push_back(failedBackground);
+  failed_details_.push_back(failedWavelet);
 }
 
 
