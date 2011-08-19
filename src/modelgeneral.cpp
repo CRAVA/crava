@@ -2029,11 +2029,11 @@ ModelGeneral::processDepthConversion(Simbox            * timeCutSimbox,
   FFTGrid * velocity = NULL;
   if(timeCutSimbox != NULL)
     loadVelocity(velocity, timeCutSimbox, modelSettings, 
-                 inputFiles->getVelocityField(), 
+                 inputFiles->getVelocityField(), velocityFromInversion_,
                  errText, failed);
   else
     loadVelocity(velocity, timeSimbox, modelSettings, 
-                 inputFiles->getVelocityField(), 
+                 inputFiles->getVelocityField(), velocityFromInversion_,
                  errText, failed);
   
   if(!failed) 
@@ -2081,7 +2081,8 @@ void
 ModelGeneral::loadVelocity(FFTGrid          *& velocity,
                            Simbox            * timeSimbox,
                            ModelSettings     * modelSettings, 
-                           const std::string & velocityField, 
+                           const std::string & velocityField,
+                           bool              & velocityFromInversion,
                            std::string       & errText,
                            bool              & failed)
 {
@@ -2089,7 +2090,7 @@ ModelGeneral::loadVelocity(FFTGrid          *& velocity,
 
   if(modelSettings->getVelocityFromInversion() == true)
   {
-    velocityFromInversion_ = true;
+    velocityFromInversion = true;
     velocity = NULL;
   }
   else if(velocityField == "")

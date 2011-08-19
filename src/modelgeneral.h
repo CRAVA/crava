@@ -76,6 +76,13 @@ public:
                                  std::string        & errText,
                                  bool                 isStorm  = true,
                                  bool                 nopadding = true);
+  static void      loadVelocity(FFTGrid           *& velocity,
+                                Simbox             * timeSimbox,
+                                ModelSettings      * modelSettings, 
+                                const std::string  & velocityField,
+                                bool               & velocityFromInversion,
+                                std::string        & errText,
+                                bool               & failed);
  
 private:
   void             makeTimeSimboxes(Simbox          *& timeSimbox,
@@ -108,12 +115,6 @@ private:
                                           const InputFiles * inputFiles,
                                           std::string      & errText, 
                                           bool             & failedVelocity);
-  void             loadVelocity(FFTGrid           *& velocity,
-                                Simbox             * timeSimbox,
-                                ModelSettings      * modelSettings, 
-                                const std::string  & velocityField, 
-                                std::string        & errText,
-                                bool               & failed);
   void             setSimboxSurfaces(Simbox                        *& simbox, 
                                      const std::vector<std::string> & surfFile, 
                                      ModelSettings                  * modelSettings,
@@ -123,37 +124,6 @@ private:
                                           ModelSettings *& modelSettings);
   void             estimateZPaddingSize(Simbox         * timeSimbox,
                                         ModelSettings *& modelSettings);
-  /*void             readGridFromFile(const std::string       & fileName,
-                                    const std::string       & parName,
-                                    const float               offset,
-                                    FFTGrid                *& grid,
-                                    const SegyGeometry     *& geometry,
-                                    const TraceHeaderFormat * format,
-                                    int                       gridType,
-                                    Simbox                  * timeSimbox,
-                                    ModelSettings           * modelSettings, 
-                                    int                     & outsideTraces,
-                                    std::string             & errorText,
-                                    bool                      nopadding = false);
-  int              readSegyFile(const std::string       & fileName, 
-                                FFTGrid                *& target, 
-                                Simbox                 *& timeSimbox, 
-                                ModelSettings          *& modelSettings,
-                                const SegyGeometry     *& geometry,
-                                int                       gridType,
-                                float                     offset,
-                                const TraceHeaderFormat * format,
-                                std::string             & errText,
-                                bool                      nopadding = false); 
-  int              readStormFile(const std::string  & fileName, 
-                                 FFTGrid           *& target, 
-                                 const int            gridType,
-                                 const std::string  & parName, 
-                                 Simbox             * timeSimbox,
-                                 ModelSettings     *& modelSettings, 
-                                 std::string        & errText,
-                                 bool                 isStorm  = true,
-                                 bool                 nopadding = true);*/
   int              setPaddingSize(int    nx, 
                                   double px);
   void             checkAvailableMemory(Simbox              * timeSimbox,

@@ -37,8 +37,7 @@ public:
                   std::vector<Surface *> waveletEstimInterval, 
                   std::vector<Surface *> wellMoveInterval,
                   std::vector<Surface *> faciesEstimInterval,  
-                  WellData           **& wells, 
-                  const ModelAVOStatic * ModelAVOstatic);
+                  ModelAVOStatic       * modelAVOstatic);    // modelAVOstatic::wells_ may be altered. modelAVOstatic is deliberately sent in as un-const.
   ~ModelAVODynamic();
 
   FFTGrid                     * getBackAlpha()             const { return background_->getAlpha() ;}
@@ -63,14 +62,6 @@ private:
                                   const InputFiles  * inputFiles,
                                   std::string       & errText,
                                   bool              & failed);
-  void             addSeismicLogs(WellData ** wells, FFTGrid ** seisCube, 
-                                  ModelSettings * modelSettings);     
-
-  void             generateSyntheticSeismic(Wavelet      ** wavelet,
-                                            WellData     ** wells,
-                                            float        ** reflectionMatrix,
-                                            Simbox        * timeSimbox,
-                                            ModelSettings * modelSettings) const;
 
   void             processBackground(Background      *& background, 
                                      WellData        ** wells,
@@ -99,13 +90,6 @@ private:
                                            bool                use_background,
                                            std::string       & errText,
                                            bool              & failed);
-  void             processWellLocation(FFTGrid                     ** seisCube, 
-                                       WellData                    ** wells, 
-                                       float                       ** reflectionMatrix,
-                                       Simbox                       * timeSimbox,
-                                       ModelSettings                * modelSettings,
-                                       const std::vector<Surface *> & interval, 
-                                       RandomGen                    * randomGen); 
 
   void             processWavelets(Wavelet                    **& wavelet,
                                    FFTGrid                     ** seisCube,
@@ -143,12 +127,6 @@ private:
                                     const NRLib::Grid2D<float>              & refTimeGradY,
                                     const std::vector<std::vector<double> > & tGradX,
                                     const std::vector<std::vector<double> > & tGradY);
-  void             loadVelocity(FFTGrid           *& velocity,
-                                Simbox             * timeSimbox,
-                                ModelSettings      * modelSettings, 
-                                const std::string  & velocityField, 
-                                std::string        & errText,
-                                bool               & failed);
   void             estimateCorrXYFromSeismic(Surface *& CorrXY,
                                              FFTGrid ** seisCube,
                                              int        nAngles);

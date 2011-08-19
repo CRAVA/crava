@@ -47,6 +47,21 @@ public:
 
   void                          writeWells(       WellData ** wells, ModelSettings * modelSettings) const;
   void                          writeBlockedWells(WellData ** wells, ModelSettings * modelSettings) const;
+
+  void             addSeismicLogs(WellData ** wells, FFTGrid ** seisCube, 
+                                  ModelSettings * modelSettings);                              // Changes wells
+  void             generateSyntheticSeismic(Wavelet      ** wavelet,
+                                            WellData     ** wells,
+                                            float        ** reflectionMatrix,
+                                            Simbox        * timeSimbox,
+                                            ModelSettings * modelSettings);                    // Changes wells
+  void             processWellLocation(FFTGrid                     ** seisCube, 
+                                       WellData                    ** wells, 
+                                       float                       ** reflectionMatrix,
+                                       Simbox                       * timeSimbox,
+                                       ModelSettings                * modelSettings,
+                                       const std::vector<Surface *> & interval, 
+                                       RandomGen                    * randomGen);              // Changes wells
   
 private:
   void             processWells(WellData     **& wells,

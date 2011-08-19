@@ -978,3 +978,129 @@ void ModelAVOStatic::writeBlockedWells(WellData ** wells, ModelSettings * modelS
   for(int i=0;i<nWells;i++)
     wells[i]->getBlockedLogsOrigThick()->writeWell(modelSettings);
 }
+
+void ModelAVOStatic::addSeismicLogs(WellData     ** wells, 
+                                    FFTGrid      ** seisCube, 
+                                    ModelSettings * modelSettings)
+{
+  int nWells  = modelSettings->getNumberOfWells();
+  int nAngles = modelSettings->getNumberOfAngles();
+  
+    for (int iAngle = 0 ; iAngle < nAngles ; iAngle++)
+    {
+      seisCube[iAngle]->setAccessMode(FFTGrid::RANDOMACCESS);
+      for(int i=0;i<nWells;i++) 
+        wells[i]->getBlockedLogsOrigThick()->setLogFromGrid(seisCube[iAngle],iAngle,nAngles,"SEISMIC_DATA");
+      seisCube[iAngle]->endAccess();
+  }
+}
+   
+void ModelAVOStatic::generateSyntheticSeismic(Wavelet      ** wavelet,
+                                              WellData     ** wells,
+                                              float        ** reflectionMatrix,
+                                              Simbox        * timeSimbox,
+                                              ModelSettings * modelSettings)
+{
+  int nWells  = modelSettings->getNumberOfWells();
+  int nAngles = modelSettings->getNumberOfAngles();
+  int nzp     = modelSettings->getNZpad();
+  int nz      = timeSimbox->getnz();
+
+  int i;
+
+  for( i=0; i<nWells; i++ )
+  {
+    if( wells[i]->isDeviated() == false )
+      wells[i]->getBlockedLogsOrigThick()->generateSyntheticSeismic(reflectionMatrix,nAngles,wavelet,nz,nzp,timeSimbox);
+  }
+}
+
+void
+ModelAVOStatic::processWellLocation(FFTGrid                     ** seisCube, 
+                                    WellData                    ** wells, 
+                                    float                       ** reflectionMatrix,
+                                    Simbox                       * timeSimbox,
+                                    ModelSettings                * modelSettings,
+                                    const std::vector<Surface *> & interval, 
+                                    RandomGen                    * randomGen)
+{
+  LogKit::WriteHeader("Estimating optimized well location");
+  
+  double  deltaX, deltaY;
+  float   sum;
+  float   kMove;
+  float   moveAngle;
+  int     iMove;
+  int     jMove;
+  int     i,j,w;
+  int     iMaxOffset;
+  int     jMaxOffset;
+  int     nMoveAngles = 0;
+  int     nWells      = modelSettings->getNumberOfWells();
+  int     nAngles     = modelSettings->getNumberOfAngles();
+  float   maxShift    = modelSettings->getMaxWellShift();
+  float   maxOffset   = modelSettings->getMaxWellOffset();
+  double  angle       = timeSimbox->getAngle();
+  double  dx          = timeSimbox->getdx();
+  double  dy          = timeSimbox->getdx();
+
+  std::vector<float> angleWeight(nAngles); 
+  LogKit::LogFormatted(LogKit::Low,"\n");
+  LogKit::LogFormatted(LogKit::Low,"  Well             Shift[ms]       DeltaI   DeltaX[m]   DeltaJ   DeltaY[m] \n");
+  LogKit::LogFormatted(LogKit::Low,"  ----------------------------------------------------------------------------------\n");
+
+  for (w = 0 ; w < nWells ; w++) {
+    if( wells[w]->isDeviated()==true )
+      continue;
+
+    BlockedLogs * bl = wells[w]->getBlockedLogsOrigThick();
+    nMoveAngles = modelSettings->getNumberOfWellAngles(w);
+    
+    if( nMoveAngles==0 )
+      continue;
+
+    for( i=0; i<nAngles; i++ )
+      angleWeight[i] = 0;
+
+    for( i=0; i<nMoveAngles; i++ ){
+      moveAngle   = modelSettings->getWellMoveAngle(w,i);
+
+      for( j=0; j<nAngles; j++ ){
+        if( moveAngle==modelSettings->getAngle(j)){
+          angleWeight[j] = modelSettings->getWellMoveWeight(w,i);
+          break;
+        }
+      }
+    }
+
+    sum = 0;
+    for( i=0; i<nAngles; i++ )
+      sum += angleWeight[i];
+    if( sum == 0 )
+      continue;
+
+    iMaxOffset = static_cast<int>(std::ceil(maxOffset/dx));
+    jMaxOffset = static_cast<int>(std::ceil(maxOffset/dy));
+
+    bl->findOptimalWellLocation(seisCube,timeSimbox,reflectionMatrix,nAngles,angleWeight,maxShift,iMaxOffset,jMaxOffset,interval,iMove,jMove,kMove);
+
+    deltaX = iMove*dx*cos(angle) - jMove*dy*sin(angle);
+    deltaY = iMove*dx*sin(angle) + jMove*dy*cos(angle);
+    wells[w]->moveWell(timeSimbox,deltaX,deltaY,kMove);
+    wells[w]->deleteBlockedLogsOrigThick();
+    wells[w]->setBlockedLogsOrigThick( new BlockedLogs(wells[w], timeSimbox, randomGen, modelSettings->getRunFromPanel()) );
+    LogKit::LogFormatted(LogKit::Low,"  %-13s %11.2f %12d %11.2f %8d %11.2f \n", 
+    wells[w]->getWellname().c_str(), kMove, iMove, deltaX, jMove, deltaY);
+  }
+
+   for (w = 0 ; w < nWells ; w++){
+     nMoveAngles = modelSettings->getNumberOfWellAngles(w);
+
+    if( wells[w]->isDeviated()==true && nMoveAngles > 0 )
+    {
+      LogKit::LogFormatted(LogKit::Warning,"\nWARNING: Well %7s is treated as deviated and can not be moved.\n",
+          wells[w]->getWellname().c_str());
+      TaskList::addTask("Well "+NRLib::ToString(wells[w]->getWellname())+" can not be moved. Remove <optimize-location-to> for this well");
+    }
+   }
+}
