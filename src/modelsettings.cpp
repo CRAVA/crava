@@ -33,7 +33,7 @@ ModelSettings::ModelSettings(void)
     noWellNeeded_(false),
     noSeismicNeeded_(false)
 {
-  angularCorr_             = new GenExpVario(1, 10*static_cast<float>(M_PI/180.0)); // Power=1 range=10deg
+  angularCorr_             = new GenExpVario(1, 10*static_cast<float>(NRLib::Pi/180.0)); // Power=1 range=10deg
   lateralCorr_             = new GenExpVario(1, 1000, 1000); 
   backgroundVario_         = new GenExpVario(1, 2000, 2000); 
   localWaveletVario_       =     NULL; // Will be set equal to backgroundVario unless it is set separately

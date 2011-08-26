@@ -11,6 +11,7 @@ class Simbox;
 class FFTGrid;
 class WellData;
 class ModelSettings;
+class Wavelet1D;
 
 class Wavelet {
 public:
@@ -24,6 +25,13 @@ public:
   Wavelet(int                 dim, 
           Wavelet           * wavelet);
   
+  Wavelet(Wavelet              * wavelet ,
+          int              /*   difftype */); 
+
+  Wavelet(int                /*  difftype*/, 
+          int                /*  nz */ ,
+          int                 /* nzp */);
+  
   Wavelet(const std::string & fileName, 
           int                 fileFormat, 
           ModelSettings     * modelSettings, 
@@ -33,12 +41,6 @@ public:
           int               & errCode, 
           std::string       & errText);
   
-  Wavelet(Wavelet           * wavelet,
-          int                 difftype);
-
-  Wavelet(int                 difftype, 
-          int                 nz, 
-          int                 nzp);
 
   Wavelet(ModelSettings     * modelSettings, 
           float             * reflCoef,
@@ -64,17 +66,17 @@ public:
   void          setRAmp(float value, 
                         int   k);
 
+  
   void          setCAmp(fftw_complex value,
                         int k);
-
-  Wavelet *     getLocalWavelet(int i,
-                                int j);
 
   void          resample(float dz, 
                          int   nz, 
                          int   nzp);
 
   void          multiplyRAmpByConstant(float c);
+  void          setupAsVector(int nz, int nzp);
+
 
   void          scale(float gain);
 
@@ -97,8 +99,15 @@ public:
   int           getNzp()      const {return nzp_;}
   float         getDz()       const {return dz_;}
   float         getScale()    const {return scale_;}
+  virtual float getLocalStretch(int /*i*/, 
+                                int /*j*/) {return 1.0f;} // note Not robust towards padding
 
-  void          setupAsVector(int nz, int nzp);
+  
+  virtual Wavelet1D * getLocalWavelet1D(int /*i*/, 
+                                        int /*j*/) {return 0;} // note Not robust towards padding
+  virtual Wavelet1D * getWavelet1DForErrorNorm() {return 0;}   
+ 
+
 
   virtual float findGlobalScaleForGivenWavelet(ModelSettings * /*modelSettings*/, 
                                                Simbox        * /*simbox*/, 
@@ -134,11 +143,23 @@ protected:
   int            getCz()             const {return cz_;}
   bool           getInFFTOrder()     const {return inFFTorder_;}
   float          getWaveletLength()  const {return waveletLength_;}
+           
+  void           doLocalShiftAndScale1D(Wavelet1D* localWavelet,// wavelet to shift and scale
+                                        int                   i,
+                                        int                   j);
 
-  void           shiftAndScale(float                            shift,
-                               float                            gain);
+  float          getLocalTimeshift(int                          i, 
+                                   int                          j) const;
+
+  float          getLocalGainFactor(int                         i, 
+                                    int                         j) const;
 
   float          findWaveletLength(float                        minRelativeAmp);
+  
+  void           convolve(fftw_complex                       * var1_c,
+                          fftw_complex                       * var2_c, 
+                          fftw_complex                       * out_c,
+                          int                                  cnzp)           const;
 
   float          findNorm() const;
   
@@ -207,11 +228,7 @@ private:
                                      float                    * Wavelet, 
                                      int                        nz) const;
   
-  float          getLocalTimeshift(int                          i, 
-                                   int                          j) const;
 
-  float          getLocalGainFactor(int                         i, 
-                                    int                         j) const;
 
   void           WaveletReadJason(const std::string           & fileName,
                                   int                         & errCode, 

@@ -228,10 +228,10 @@ void CovGridSeparated::findTaperRanges(float & rangeX, float & rangeY, float & r
 
   //X and Y ranges estimated simultaneously, by sweeping a 180 degree angle.
   float angle = 0;
-  float dAngle = float(M_PI)/20.0f;
+  float dAngle = float(NRLib::Pi)/20.0f;
   rangeX = 0;
   rangeY = 0;
-  while(angle < M_PI)
+  while(angle < NRLib::Pi)
   {
     sum = 2.5f*angleSum(angle);
     if(sum*cos(angle) > rangeX)

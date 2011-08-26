@@ -492,7 +492,7 @@ XmlModelFile::parseOptimizeLocation(TiXmlNode * node, std::string & errTxt)
 
   float value;
   if(parseValue(root, "angle", value, errTxt) == true)
-    modelSettings_->addMoveAngle(value*float(M_PI/180));
+    modelSettings_->addMoveAngle(value*float(NRLib::Pi/180));
   else
     modelSettings_->addMoveAngle(RMISSING);
 
@@ -647,7 +647,7 @@ XmlModelFile::parseAngleGather(TiXmlNode * node, std::string & errTxt)
 
   float value;
   if(parseValue(root, "offset-angle", value, errTxt) == true)
-    modelSettings_->addAngle(value*float(M_PI/180));
+    modelSettings_->addAngle(value*float(NRLib::Pi/180));
   else
     errTxt += "Need offset angle for gather"+lineColumnText(root)+".\n";
 
@@ -659,7 +659,7 @@ XmlModelFile::parseAngleGather(TiXmlNode * node, std::string & errTxt)
 
   bool oneDwavelet(false);
   if(parseWavelet(root, errTxt) == false) {
-    modelSettings_->addWaveletScale(RMISSING);
+    modelSettings_->addWaveletScale(1.0); // NBNB OK  why RMISSING here????
     modelSettings_->addEstimateGlobalWaveletScale(false); 
     inputFiles_->addShiftFile("");
     inputFiles_->addScaleFile("");
@@ -1843,7 +1843,7 @@ XmlModelFile::parseUTMArea(TiXmlNode * node, std::string & errTxt)
     errTxt += "Rotation angle must be given in command <"+
       root->ValueStr()+"> "+lineColumnText(root)+".\n";
 
-  double rot = (-1)*angle*(M_PI/180.0);
+  double rot = (-1)*angle*(NRLib::Pi/180.0);
   int nx = static_cast<int>(lx/dx);
   int ny = static_cast<int>(ly/dy);
   SegyGeometry * geometry = new SegyGeometry(x0, y0, dx, dy, nx, ny, rot);
@@ -2874,7 +2874,7 @@ XmlModelFile::checkForwardConsistency(std::string & errTxt)
   for(int i=0;i<modelSettings_->getNumberOfAngles();i++) {
     modelSettings_->setEstimateSNRatio(i,false);
     if(modelSettings_->getEstimateWavelet(i)==true)
-      errTxt+="Wavelet must be given when doing forward modeling. Wavelet is not given for angle "+NRLib::ToString(modelSettings_->getAngle(i)*(180/M_PI),1)+".\n";
+      errTxt+="Wavelet must be given when doing forward modeling. Wavelet is not given for angle "+NRLib::ToString(modelSettings_->getAngle(i)*(180/NRLib::Pi),1)+".\n";
     
     if(inputFiles_->getSeismicFile(i)!="")
       errTxt+="Seismic data should not be given when doing forward modeling.\n";
@@ -2986,13 +2986,13 @@ XmlModelFile::checkAngleConsistency(std::string & errTxt) {
         if( angle==modelSettings_->getAngle(j))
         {
           if (inputFiles_->getSeismicFile(j)=="")
-            errTxt += "Seismic data are needed for angle "+NRLib::ToString(angle/float(M_PI/180))+" to optimize the well locations.\n";
+            errTxt += "Seismic data are needed for angle "+NRLib::ToString(angle/float(NRLib::Pi/180))+" to optimize the well locations.\n";
           compare[i] = true;
           break;
         }
       }
       if( compare[i]==false ){
-        errTxt += "Unexpected angle "+NRLib::ToString(angle/float(M_PI/180))+" in <optimize-position> is not equal to any of seismic offset-angles"+".\n";
+        errTxt += "Unexpected angle "+NRLib::ToString(angle/float(NRLib::Pi/180))+" in <optimize-position> is not equal to any of seismic offset-angles"+".\n";
       }
     }
   }

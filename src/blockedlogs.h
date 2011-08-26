@@ -91,6 +91,14 @@ public:
                                           int nz, 
                                           int nzp,
                                           const Simbox * timeSimbox);
+  void           setSeismicGradient(  double v0, 
+                                      const NRLib::Grid2D<float>   &    stuctureDepthGradX,
+                                      const NRLib::Grid2D<float>   &    stuctureDepthGradY,
+                                      const NRLib::Grid2D<float>   &    refTimeGradX ,
+                                      const NRLib::Grid2D<float>   &    refTimeGradY,
+                                      std::vector<double>        & xGradient,
+                                      std::vector<double>        & yGradient);
+
   void           setTimeGradientSettings(float distance, float sigma_m);
   void           findSeismicGradient(FFTGrid                  ** seisCube,
                                      Simbox                   * timeSimbox,

@@ -15,12 +15,14 @@
 
 #include "nrlib/iotools/logkit.hpp"
 #include "nrlib/surface/surfaceio.hpp"
+#include "nrlib/surface/regularsurface.hpp"
 
 #include "src/modelsettings.h"
 #include "src/blockedlogs.h"
 #include "src/definitions.h"
 #include "src/wavelet3D.h"
 #include "src/wavelet1D.h"
+#include "src/wavelet.h"
 #include "src/welldata.h"
 #include "src/tasklist.h"
 #include "src/fftgrid.h"
@@ -69,7 +71,7 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
   float        v0     = modelSettings->getAverageVelocity();
   int nhalfWl         = static_cast<int> (0.5 * modelSettings->getWaveletTaperingL() / dz_);
   int nWl             = 2 * nhalfWl + 1;
-  std::string angle   = NRLib::ToString((180.0/M_PI)*theta_, 1);
+  std::string angle   = NRLib::ToString((180.0/NRLib::Pi)*theta_, 1);
 
   std::vector<std::vector<fftw_real> > wellWavelets(nWells/*, std::vector<float>(rnzp_, 0.0)*/);
   std::vector<float>                   wellWeight(nWells, 0.0);  
@@ -176,19 +178,25 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
                   //Hva gjør vi hvis zData[t] er RMISSING. Kan det skje?
                   float at = at0[tau] + 2.0f*az[tau]/v0;
                   float bt = bt0[tau] + 2.0f*bz[tau]/v0;
+                  double time_scale = cos(theta_)/sqrt(1+az[tau]*az[tau]+bz[tau]*bz[tau]);
 //                  float u = static_cast<float> (zPosTrace[t] - zPosWell[tau] - at*xTr*dx - bt*yTr*dy);
-                  float u = static_cast<float> (zPosWell[tau] + at*xTr*dx + bt*yTr*dy - zPosTrace[t]);
-                  if (filter_.hasHalpha()) {
+                  float u = static_cast<float> ((zPosWell[tau] + at*xTr*dx + bt*yTr*dy - zPosTrace[t])*time_scale);
+
+                  if ((filter_.hasHalpha() )&& (Halpha[tau-start]!=0)) {
+                    float h = Halpha[tau-start];
                     for (int i=0; i<nWl; i++) {
-                      float v = u - static_cast<float>((i - nhalfWl)*dzWell[w]);
-                      float h = Halpha[tau-start];
-                      lambda[tau-start][i] = static_cast<float> (h / (M_PI *(h*h + v*v)));
+                      int indexPlace = i;
+                      if(i > nhalfWl)
+                        indexPlace -=nWl;
+                      float v = u - static_cast<float>(indexPlace*dzWell[w]*time_scale);                      
+                      lambda[tau-start][i] =  std::min(1.0f,static_cast<float> (2*h*dzWell[w]*1e-3 / (NRLib::Pi*(h*h + 4*v*v*1e-6)))); // invers fouriertransform of exp(-pi*h*Omega*v) 
+                      // the minimum of 1 and the value isto avoid problem when halpha is very small i.e. 0.0005
                     }
                   }
                   else {
-                    int tLow  = static_cast<int> (floor(u / dzWell[w]));
+                    int tLow  = static_cast<int> (floor(u / (dzWell[w]*time_scale)));
                     int tHigh = tLow + 1;
-                    float lambdaValue = (u/dzWell[w]) - static_cast<float> (tLow);
+                    float lambdaValue = (u/(dzWell[w]*time_scale)) - static_cast<float> (tLow);
                     if ((tLow >= -nhalfWl) && (tHigh <= nhalfWl)) {
                       if (tLow >= 0)
                         lambda[tau-start][tLow] = 1-lambdaValue;
@@ -293,6 +301,94 @@ Wavelet3D::~Wavelet3D()
 {
 }
 
+float    
+Wavelet3D::getLocalStretch(int i,  int j) // Note: Not robust towards padding
+{
+  float gx=0.0f;
+  float gy=0.0f;
+
+  if(gradX_.GetN()>0)
+  {
+    gx        = GetLocalDepthGradientX(i,j);
+    gy        = GetLocalDepthGradientY(i,j);
+  }
+
+  float r     = sqrt(gx*gx + gy*gy + 1);
+  double psi  = findPsi(r); 
+
+  float  sf   = float(cos(psi)*cos( getTheta() )); // First is local dip adjustment second is for anglestack 
+  return sf;
+}
+
+Wavelet1D*   
+Wavelet3D::getLocalWavelet1D( int i, int j)// note Not robust towards padding
+{ 
+  // returns the local wavelet exccept from the strech factor
+  // The stretch factor is given by  getLocalStretch
+  // this is done to avoid double resampling of wavelet.
+
+  float gx=0.0f;
+  float gy=0.0f;
+
+  Wavelet1D* localWavelet;
+  if(gradX_.GetN()>0)
+  {
+    gx        = GetLocalDepthGradientX(i,j);
+    gy        = GetLocalDepthGradientY(i,j);
+  }
+
+  // NBNB transform to local vs not local xy coordinates ?? 
+  double phi       = findPhi(gx, gy);
+  float r         = sqrt(gx*gx + gy*gy + 1);
+  double psi       = findPsi(r); 
+
+
+  localWavelet = extractLocalWaveletByDip1D(phi,psi);// makes a new wavelet
+
+  doLocalShiftAndScale1D(localWavelet,i,j);
+
+  return localWavelet;
+}
+
+Wavelet1D*   
+Wavelet3D::extractLocalWaveletByDip1D(double phi,double psi)
+{
+  Wavelet1D* wavelet = getSourceWavelet(); 
+  dipAdjustWavelet(wavelet,phi,psi);
+
+  return wavelet;
+}
+
+Wavelet1D*   
+Wavelet3D::getSourceWavelet()
+{
+    Wavelet1D* sourceWavelet = new Wavelet1D(this);
+    return sourceWavelet;
+}
+
+void  
+Wavelet3D::dipAdjustWavelet(Wavelet1D* wavelet, double phi, double psi)
+{
+  // NBNB open cos(psi)*cos(getTheta()) is  included 
+  double multiplyer = filter_.getAlpha1(phi, psi)*(cos(psi)*cos(getTheta()));
+  
+  double Halpha = filter_.getHalpha(phi, psi); 
+  wavelet->adjustForAmplitudeEffect(multiplyer,Halpha);
+}
+
+
+
+Wavelet1D*   
+Wavelet3D::getWavelet1DForErrorNorm()
+{
+  Wavelet1D* errorWavelet;
+  errorWavelet=getLocalWavelet1D( 0, 0);
+  // NBNB OK gjør om denne skaleringen til RMS gain.
+  return errorWavelet;
+}
+
+
+
 float         
 Wavelet3D::calculateSNRatio(Simbox                                   * simbox, 
                             FFTGrid                                  * seisCube, 
@@ -306,7 +402,7 @@ Wavelet3D::calculateSNRatio(Simbox                                   * simbox,
                             const std::vector<std::vector<double> >  & tGradY,
                             int                                        number)                                           
 {
-  std::string angle    = NRLib::ToString((180.0/M_PI)*theta_, 1);
+  std::string angle    = NRLib::ToString((180.0/NRLib::Pi)*theta_, 1);
   unsigned int nWells  = modelSettings->getNumberOfWells();
   int          nhalfWl = static_cast<int> (0.5 * modelSettings->getWaveletTaperingL() / dz_);
   int          nWl     = 2 * nhalfWl + 1;
@@ -400,18 +496,22 @@ Wavelet3D::calculateSNRatio(Simbox                                   * simbox,
             dVec.push_back(seisData[t]);
             std::vector<std::vector<float> > lambda(length, std::vector<float>(nWl,0.0)); //NBNB-Frode: Bør denne deklareres utenfor?
             for (int tau = start; tau < start+length; tau++) {
-              float u = static_cast<float> (zPosWell[tau] - zPosWell[t]);
-              if (filter_.hasHalpha()) {
+              double time_scale = cos(theta_)/sqrt(1+az[tau]*az[tau]+bz[tau]*bz[tau]);
+              float u = static_cast<float> ((zPosWell[tau] - zPosWell[t])*time_scale);
+              if ((filter_.hasHalpha() )&& (Halpha[tau-start]!=0)) {
+                float h = Halpha[tau-start];
                 for (int i=0; i<nWl; i++) {
-                  float v = u - static_cast<float>((i - nhalfWl)*dzWell[w]);
-                  float h = Halpha[tau-start];
-                  lambda[tau-start][i] = static_cast<float> (h / (M_PI *(h*h + v*v)));
+                  int indexPlace = i;
+                  if(i > nhalfWl)
+                    indexPlace -=nWl;
+                  float v = u - static_cast<float>(indexPlace*dzWell[w]*time_scale);                      
+                  lambda[tau-start][i] = std::min(1.0f,static_cast<float> (2*h*dzWell[w]*1e-3 / (NRLib::Pi *(h*h + 4*v*v*1e-6)))); // ? 
                 }
               }
               else {
-                int tLow  = static_cast<int> (floor(u / dzWell[w]));
+                int tLow  = static_cast<int> (floor(u / (dzWell[w]*time_scale)));
                 int tHigh = tLow + 1;
-                float lambdaValue = (u/dzWell[w]) - static_cast<float> (tLow);
+                float lambdaValue = (u/(dzWell[w]*time_scale)) - static_cast<float> (tLow);
 
                 if ((tLow >= -nhalfWl) && (tHigh <= nhalfWl)) {
                   if (tLow >= 0)
@@ -435,16 +535,18 @@ Wavelet3D::calculateSNRatio(Simbox                                   * simbox,
           } //if (seisData[t] != RMISSING)
         }
 
-        std::vector<fftw_real> full_wavelet(nzp_);
-        fillInnWavelet(&full_wavelet[0],
-                       nzp_,
-                       dzWell[w]);
-        float shift = findBulkShift(&full_wavelet[0], 
-                                    dzWell[w], 
-                                    nzp_, 
-                                    modelSettings->getMaxWaveletShift());
-        shift = floor(shift*10.0f+0.5f)/10.0f;//rounds to nearest 0.1 ms (don't have more accuracy)
-        shiftWell[w] = shift;
+        nActiveData[w] = length;
+        fftw_real* syntSeisExt               = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));
+        fftw_complex * syntSeisExt_c               = reinterpret_cast<fftw_complex *>(syntSeisExt);
+        fftw_real* dataExt               = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));
+        fftw_complex * dataExt_c               = reinterpret_cast<fftw_complex *>(dataExt);
+        fftw_real* crossCorr               = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));
+        fftw_complex * crossCorr_c               = reinterpret_cast<fftw_complex *>(crossCorr);
+
+        
+        std::vector<fftw_real> full_wavelet(rnzp_);
+        fillInnWavelet(&full_wavelet[0], nzp_, dzWell[w]);
+
 
         std::vector<float> wavelet(nWl);
         wavelet[0] = static_cast<float> (full_wavelet[0]);
@@ -452,25 +554,59 @@ Wavelet3D::calculateSNRatio(Simbox                                   * simbox,
           wavelet[i]     = static_cast<float> (full_wavelet[i]);
           wavelet[nWl-i] = static_cast<float> (full_wavelet[nzp_-i]);
         }
-        std::vector<float> synt_seis(length);
-        nActiveData[w] = length;
+
         for (int i=0; i<length; i++) {
-          synt_seis[i] = 0.0f;
+          syntSeisExt[i] = 0.0f;
+          dataExt[i]=dVec[i];
           for (int j=0; j<nWl; j++) 
-            synt_seis[i] += gMat[i][j] * wavelet[j];
-          float residual = dVec[i] - synt_seis[i];
+            syntSeisExt[i] += gMat[i][j] * wavelet[j];
+        }
+        
+        
+        for (int i=length; i<nzp_; i++) {
+          syntSeisExt[i] = 0.0f;
+          dataExt[i]= 0.0f;
+        }
+
+        Utils::fft(syntSeisExt, syntSeisExt_c, nzp_);
+        Utils::fft(dataExt, dataExt_c, nzp_);
+        
+       
+
+        convolve(syntSeisExt_c, dataExt_c, crossCorr_c, cnzp_);
+        Utils::fftInv(crossCorr_c, crossCorr, nzp_); // 
+
+        float shift = findBulkShift(crossCorr, dzWell[w], nzp_,  modelSettings->getMaxWaveletShift());
+        
+
+        shift = floor(shift*10.0f+0.5f)/10.0f;//rounds to nearest 0.1 ms (don't have more accuracy)
+        shiftWell[w] = shift;
+        shiftReal(-shift/dzWell[w], crossCorr, nzp_);// NBNB just checking
+
+        Utils::fftInv(syntSeisExt_c, syntSeisExt, nzp_);
+        shiftReal(-shift/dzWell[w], syntSeisExt, nzp_);
+
+        Utils::fftInv(dataExt_c, dataExt, nzp_);
+
+        for (int i=0; i<length; i++) { 
+          float residual = dataExt[i] - syntSeisExt[i];
           errVarWell[w]  += residual * residual;
           dataVarWell[w] += dVec[i] * dVec[i];
         }
         errVar  += errVarWell[w];
         dataVar += dataVarWell[w];
         nData   += nActiveData[w];
+        dataVarWell[w] /= static_cast<double>(nActiveData[w]);
+        errVarWell[w]  /= static_cast<double>(nActiveData[w]);
+
         if(ModelSettings::getDebugLevel() > 0) {
           std::string fileName;
-          fileName = "seismic_" + wellname + "_" + angle;
+          //fileName = "seismic_" + wellname + "_" + angle;
+          fileName = "seismic_Well_" + NRLib::ToString(w+1) + "_" + angle;
           printVecToFile(fileName, &dVec[0], length);
-          fileName = "synthetic_seismic_" + wellname + "_" + angle;
-          printVecToFile(fileName, &synt_seis[0], length);
+          //fileName = "synthetic_seismic_" + wellname + "_" + angle;
+          fileName = "synthetic_seismic_Well_" + NRLib::ToString(w+1) + "_" + angle;
+          printVecToFile(fileName, syntSeisExt, length);
         }
       }
       else {
@@ -580,32 +716,38 @@ Wavelet3D::findLayersWithData(const std::vector<Surface *> & estimInterval,
 
 double 
 Wavelet3D::findPhi(float a, float b) const
-//Return value should be between 0 and 360
+//Return value should be between 0 and 2*PI
 {
   double phi;
   double epsilon = 0.001;
   if (a > epsilon && b >= 0.0) //1. quadrant 
     phi = atan(b/a);
   else if (a > epsilon && b < 0.0) //4. quadrant
-    phi = 2*M_PI + atan(b/a);
+    phi = 2*NRLib::Pi + atan(b/a);
   else if (a < - epsilon && b >= 0.0) //2. quadrant
-    phi = M_PI + atan(b/a);
+    phi = NRLib::Pi + atan(b/a);
   else if (a < - epsilon && b < 0.0) //3. quadrant
-    phi = M_PI + atan(b/a);
+    phi = NRLib::Pi + atan(b/a);
   else if (b  >= 0.0) //a very small
-    phi = 0.5 * M_PI;
+    phi = 0.5 * NRLib::Pi;
   else //a very small
-    phi = 1.5 * M_PI;
-  phi = phi * 180 / M_PI;
+    phi = 1.5 * NRLib::Pi;
+  phi = phi;
   return(phi);
 }
 
 double 
 Wavelet3D::findPsi(float r) const
-//Return value should be between 0 and 90
+//Return value should be between 0 and PI/2
 {
-  double psi    = acos(1.0 / r);
-  psi = psi * 180 / M_PI;
+   double psi;
+  if(r > 1)
+  {
+    psi  = acos(1.0 / r);
+    psi = psi  ;
+  }else
+    psi=0;
+
   return(psi);
 }
 
@@ -647,7 +789,7 @@ Wavelet3D::adjustCpp(BlockedLogs              * bl,
                      const std::string        & wellname,
                      const std::string        & angle) const
 {
-  std::vector<fftw_real> cpp(nzp_);
+  std::vector<fftw_real> cpp(rnzp_);
   bl->fillInCpp(coeff_, start, length, &cpp[0], nzp_);
 
   std::vector<fftw_real> cppAdj(length, 0.0);
@@ -730,11 +872,15 @@ Wavelet3D::calculateWellWavelet(const std::vector<std::vector<float> > & gMat,
   std::vector<fftw_real> wellWavelet(rnzp_, 0.0);
 
   double maxG = 0.0;
+  //double maxD = 0.0;
   for (int i=0; i<nPoints; i++) {
+    //maxD = std::max(maxD, static_cast<double> (fabs(dVec[i]))); 
     for (int j=0; j<nWl; j++)
       maxG = std::max(maxG, static_cast<double> (fabs(gMat[i][j])));
   }
-
+  
+  //double wScale = maxD/maxG;
+   
   double **gTrg = new double *[nWl];
   for (int i=0; i<nWl; i++) {
     gTrg[i]     = new double[nWl];
@@ -757,11 +903,12 @@ Wavelet3D::calculateWellWavelet(const std::vector<std::vector<float> > & gMat,
       a = static_cast<double> (i)/ static_cast<double> (nhalfWl);
     else
       a = static_cast<double> (nWl-i)/ static_cast<double> (nhalfWl);
-    gTrg[i][i] += maxG * maxG * exp(alpha*a*a) / (SNR * beta * beta); 
+    gTrg[i][i] += maxG * maxG * exp(alpha*a*a) / (SNR * beta * beta); //( GTG+ (maxG/maxD)^2*(Noise)^2*priorCov^-1)=( GTG+ maxG^2/SN*(priorCov^-1)
     for (int j=0; j<nPoints; j++)
       gTrd[i] += gMat[j][i] * dVec[j];
   }
 
+  //int result=
   lib_matrCholR(nWl, gTrg);
   lib_matrAxeqbR(nWl, gTrg, gTrd);
   for (int i=0; i<nWl; i++)
@@ -820,3 +967,7 @@ Wavelet3D::printMatToFile(const std::string                       & fileName,
     file.close();
   }  
 }
+
+
+NRLib::Grid2D<float> Wavelet3D::gradX_    = NRLib::Grid2D<float>(0,0);
+NRLib::Grid2D<float> Wavelet3D::gradY_    = NRLib::Grid2D<float>(0,0);

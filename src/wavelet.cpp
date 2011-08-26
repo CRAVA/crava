@@ -46,20 +46,7 @@ Wavelet::Wavelet(int dim)
 {
 }
 
-void
-Wavelet::setupAsVector(int nz, int nzp)
-{
-  nz_   = nz;
-  nzp_  = nzp;
-  cnzp_ = nzp_/2+1;
-  rnzp_ = 2*cnzp_;
-  rAmp_ = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));  
-  cAmp_ = reinterpret_cast<fftw_complex*>(rAmp_);
 
-  coeff_[0] = 0;
-  coeff_[1] = 0;
-  coeff_[2] = 0;
-}
 
 Wavelet::Wavelet(int       dim, 
                  Wavelet * wavelet)
@@ -196,83 +183,7 @@ Wavelet::Wavelet(ModelSettings     * modelSettings,
  
 }
 
-
-
-Wavelet::Wavelet(Wavelet * wavelet, 
-                 int       difftype)
-  : theta_(wavelet->getTheta()),
-    dz_(wavelet->getDz()),
-    nz_(wavelet->getNz()),
-    nzp_(wavelet->getNzp()),
-    cz_(wavelet->getCz()),
-    inFFTorder_(wavelet->getInFFTOrder()),
-    norm_(wavelet->getNorm()),
-    dim_(wavelet->getDim()),
-    shiftGrid_(NULL),
-    gainGrid_(NULL)
-{
-  if(! wavelet->getIsReal() ) wavelet->invFFT1DInPlace();
-  isReal_    = wavelet->isReal_;  //NBNB-Frode: Always true?
-  norm_      = wavelet->norm_;
-
-  cnzp_ = nzp_/2+1;
-  rnzp_ = 2*cnzp_;
-  rAmp_ = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));  
-  cAmp_ = reinterpret_cast<fftw_complex*>(rAmp_);
-  int i;
-
-  if(difftype != FOURIER) {
-//    double norm2 = 0.0;
-    for( i = 0; i < rnzp_; i++) {
-      if(i < nzp_) {
-        switch(difftype) {
-        case FIRSTORDERFORWARDDIFF:
-          if(i == nzp_-1 )
-            rAmp_[i] = wavelet->getRAmp(0) - wavelet->getRAmp(i);
-          else
-            rAmp_[i] = wavelet->getRAmp(i+1)-wavelet->getRAmp(i);      
-          break;
-        case FIRSTORDERBACKWARDDIFF:
-          if(i == 0 )
-            rAmp_[i] = wavelet->getRAmp(0) - wavelet->getRAmp(nzp_-1);
-          else
-            rAmp_[i] = wavelet->getRAmp(i)-wavelet->getRAmp(i-1);      
-          break;
-        case FIRSTORDERCENTRALDIFF:
-          if(i == 0 )
-            rAmp_[i] = static_cast<fftw_real> (0.5 * (wavelet->getRAmp(i+1) - wavelet->getRAmp(nzp_-1)));
-          else {
-            if(i == nzp_-1 )
-              rAmp_[i] = static_cast<fftw_real> (0.5 * (wavelet->getRAmp(0) - wavelet->getRAmp(i-1)));
-            else
-              rAmp_[i] = static_cast<fftw_real> (0.5 * (wavelet->getRAmp(i+1) - wavelet->getRAmp(i-1)));
-          }      
-          break;
-        }
- //       norm2 += static_cast<double> (rAmp_[i]*rAmp_[i]);
-      }
-      else
-        rAmp_[i] = RMISSING;
-    }
-//    norm_= findNorm(); //static_cast<float> (sqrt(norm2));
-  }
-  else {
-    fftw_complex  iValue;
-    for(i=0; i < nzp_; i++ )
-      rAmp_[i] = wavelet->getRAmp(i);
-    fft1DInPlace();
-    for(i=0; i < cnzp_; i++ ) {
-      iValue  =  cAmp_[i];
-      cAmp_[i].re = static_cast<float> (- iValue.im * 2.0 * M_PI * i/(static_cast<float>(nzp_)));
-      cAmp_[i].im = float(iValue.re * 2 * M_PI * i/(static_cast<float>(nzp_)));
-    }
-    invFFT1DInPlace();
-//    norm_ = findNorm();
-  }
-  norm_ = findNorm();
-}
-
-Wavelet::Wavelet(int difftype, 
+Wavelet::Wavelet(int /*difftype */, 
                  int nz, 
                  int nzp)
   : theta_(RMISSING),
@@ -285,52 +196,41 @@ Wavelet::Wavelet(int difftype,
     shiftGrid_(NULL),
     gainGrid_(NULL)
 {
-  cnzp_       = nzp_/2+1;
-  rnzp_       = 2*cnzp_;
-  rAmp_       = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));  
-  cAmp_       = reinterpret_cast<fftw_complex*>(rAmp_);
-  norm_       = RMISSING;
-  int i;
-
-  if(difftype != FOURIER) {
-    isReal_    = true;
-    for(i=0;i < rnzp_; i++) {
-      if( i < nzp_)
-        rAmp_[i] = 0.0;
-      else
-        rAmp_[i] = RMISSING;
-    }
-
-    switch(difftype) {
-    case FIRSTORDERFORWARDDIFF:
-      rAmp_[0] = -1.0; 
-      rAmp_[nzp_-1] = 1.0; 
-      norm_    = sqrt(2.0f);
-      break;
-    case FIRSTORDERBACKWARDDIFF:
-      rAmp_[0]      = 1.0;
-      rAmp_[nzp_-1] =  -1.0;      
-      norm_    = sqrt(2.0f); 
-      break;
-    case FIRSTORDERCENTRALDIFF:
-      rAmp_[1]      = 0.5;
-      rAmp_[nzp_-1] = -0.5;
-      norm_    = sqrt(0.5f); 
-      break;
-    }
-  }
-  else {
-    isReal_    = false;
-    for(i=0;i < cnzp_; i++) {
-      cAmp_[i].re = 0.0f;
-      cAmp_[i].im = static_cast<float>( 2.0 * M_PI * i/(static_cast<float>(nzp_)) );   
-    }
-
-    invFFT1DInPlace();
-    norm_ = findNorm();
-  }       
 }
 
+Wavelet::Wavelet(Wavelet * wavelet, 
+                 int     /*  difftype */)
+  : theta_(wavelet->getTheta()),
+    dz_(wavelet->getDz()),
+    nz_(wavelet->getNz()),
+    nzp_(wavelet->getNzp()),
+    cz_(wavelet->getCz()),
+    inFFTorder_(wavelet->getInFFTOrder()),
+    norm_(wavelet->getNorm()),
+    dim_(wavelet->getDim()),
+    shiftGrid_(NULL),
+    gainGrid_(NULL)
+{
+  if(! wavelet->getIsReal() ) 
+    wavelet->invFFT1DInPlace();
+  isReal_    = wavelet->getIsReal();  //NBNB-Frode: Always true?
+  norm_      = wavelet->getNorm();
+}
+
+void
+Wavelet::setupAsVector(int nz, int nzp)
+{
+  nz_   = nz;
+  nzp_  = nzp;
+  cnzp_ = nzp_/2+1;
+  rnzp_ = 2*cnzp_;
+  rAmp_ = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));  
+  cAmp_ = reinterpret_cast<fftw_complex*>(rAmp_);
+
+  coeff_[0] = 0;
+  coeff_[1] = 0;
+  coeff_[2] = 0;
+}
 
 Wavelet::~Wavelet()
 {
@@ -358,6 +258,7 @@ void Wavelet::fft1DInPlace()
   }
 }
 
+
 void Wavelet::invFFT1DInPlace()
 {
   // use the operator version of the fourier transform
@@ -375,6 +276,8 @@ void Wavelet::invFFT1DInPlace()
       rAmp_[i] = static_cast<fftw_real>(rAmp_[i]*scale);  
   }
 }
+
+
 
 fftw_real  
 Wavelet::getRAmp(int k)
@@ -494,22 +397,18 @@ Wavelet::setCAmp(fftw_complex value,
   cAmp_[k].im = value.im;
 }
 
-Wavelet*  
-Wavelet::getLocalWavelet(int i, 
-                         int j)
+void
+Wavelet::convolve(fftw_complex  * var1_c ,
+                    fftw_complex  * var2_c, 
+                    fftw_complex  * out_c,
+                    int             cnzp) const
 {
-  Wavelet * localWavelet;
-  if (dim_ == 1) {
-    localWavelet = new Wavelet1D(this);
-    float  ts    = this->getLocalTimeshift(i,j);
-    float gain   = this->getLocalGainFactor(i,j);
-    localWavelet->shiftAndScale(ts,gain);
+  for(int i=0;i<cnzp;i++) {
+    out_c[i].re = var1_c[i].re*var2_c[i].re+var1_c[i].im*var2_c[i].im; 
+    out_c[i].im = var1_c[i].im*var2_c[i].re - var1_c[i].re*var2_c[i].im;
   }
-  else
-    localWavelet = new Wavelet3D(this);
-
-  return localWavelet;
 }
+
 
 void
 Wavelet::resample(float dz, 
@@ -665,7 +564,7 @@ Wavelet::writeWaveletToFile(const std::string & fileName,
   
   if ((formats_ & IO::JASONWAVELET)>0)
     {
-    fName = std::string(fileName) + NRLib::ToString(theta_*(180/M_PI), 1) + "deg" + IO::SuffixJasonWavelet();
+    fName = std::string(fileName) + NRLib::ToString(theta_*(180/NRLib::Pi), 1) + "deg" + IO::SuffixJasonWavelet();
     fName = IO::makeFullFileName(IO::PathToWavelets(), fName);
     
     LogKit::LogFormatted(LogKit::Medium,"  Writing Wavelet to file \'"+fName+"\'\n");
@@ -703,7 +602,7 @@ Wavelet::writeWaveletToFile(const std::string & fileName,
   if ((formats_ & IO::NORSARWAVELET)>0)  
     {
     //Writing wavelet in swav-format
-    fName = std::string(fileName) + NRLib::ToString(theta_*(180/M_PI), 1) + "deg" + IO::SuffixNorsarWavelet();
+    fName = std::string(fileName) + NRLib::ToString(theta_*(180/NRLib::Pi), 1) + "deg" + IO::SuffixNorsarWavelet();
     fName = IO::makeFullFileName(IO::PathToWavelets(), fName);
   
     int   cznew = static_cast<int>(floor((fabs(shift/dznew))+0.5));
@@ -786,28 +685,14 @@ Wavelet::setGainGrid(Grid2D * grid)
 //////////////////////////////////////////////////////////////////////////////////////////////////
 //////////PROTECTED MEMBER METHODS////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////
-void
-Wavelet::shiftAndScale(float shift,
-                       float gain)
+void 
+Wavelet::doLocalShiftAndScale1D(Wavelet1D* localWavelet,// wavelet to shift and scale
+                                 int       i,
+                                 int       j)
 {
-  int k;
-
-  fftw_complex  ampMultiplier,tmp;
-
-  if(isReal_) 
-    fft1DInPlace();
-
-  float iShift=shift/dz_;
-
-  for(k=0;k < cnzp_; k++) {
-    ampMultiplier.re = float(gain*cos(2.0*(M_PI*(iShift)*k)/float(nzp_)));
-    ampMultiplier.im = float(gain*sin(-2.0*(M_PI*(iShift)*k)/float(nzp_)));
-
-    tmp.re = ampMultiplier.re*cAmp_[k].re - ampMultiplier.im*cAmp_[k].im;
-    tmp.im = ampMultiplier.im*cAmp_[k].re + ampMultiplier.re*cAmp_[k].im;
-
-    cAmp_[k] =tmp;
-  }
+  float  ts    = this->getLocalTimeshift(i,j);
+  float gain   = this->getLocalGainFactor(i,j);
+  localWavelet->shiftAndScale(ts,gain);
 }
 
 float
@@ -903,7 +788,7 @@ Wavelet::averageWavelets(const std::vector<std::vector<fftw_real> > & wavelet_r,
   }
   
   std::string fileName;
-  fileName = "wavelet_"+NRLib::ToString(int(floor(theta_/M_PI*180+0.5)))+"_fftOrder_noshift";
+  fileName = "wavelet_"+NRLib::ToString(int(floor(theta_/NRLib::Pi*180+0.5)))+"_fftOrder_noshift";
   printVecToFile(fileName,wave,nzp_);
 
   return wave;
@@ -1029,7 +914,7 @@ Wavelet::shiftReal(float        shift,
   fftw_complex tmp,mult;
   for(int i=0;i<cnzp;i++) {
     tmp     = cAmp[i];
-    expo    = static_cast<float>(-2.0*shift*M_PI*static_cast<float>(i)/static_cast<float>(nt));
+    expo    = static_cast<float>(-2.0*shift*NRLib::Pi*static_cast<float>(i)/static_cast<float>(nt));
     mult.re = cos(expo);
     mult.im = sin(expo);
     cAmp[i].re = tmp.re*mult.re-tmp.im*mult.im;
@@ -1089,11 +974,11 @@ Wavelet::getWaveletValue(float   z,
   { 
     Cov[k] = new double[6];
     deltaT = (dz*ind[k]-z)*0.001;
-    cov[k] = (1-2*nu*nu*M_PI*M_PI*(deltaT)*(deltaT))*exp(-nu*nu*M_PI*M_PI*(deltaT)*(deltaT));
+    cov[k] = (1-2*nu*nu*NRLib::Pi*NRLib::Pi*(deltaT)*(deltaT))*exp(-nu*nu*NRLib::Pi*NRLib::Pi*(deltaT)*(deltaT));
     for(l=0;l<6;l++)
     {
       deltaT =(dz*ind[k]-dz*ind[l])*0.001;
-      Cov[k][l] = (1-2*nu*nu*M_PI*M_PI*deltaT * deltaT )*exp(-nu*nu*M_PI*M_PI*deltaT*deltaT);
+      Cov[k][l] = (1-2*nu*nu*NRLib::Pi*NRLib::Pi*deltaT * deltaT )*exp(-nu*nu*NRLib::Pi*NRLib::Pi*deltaT*deltaT);
     }
   }
   //OK not very intellegent implementation since chol is done for each time step.
@@ -1159,6 +1044,7 @@ Wavelet::getLocalGainFactor(int i,
 
   return(gain);
 }
+
 
 void
 Wavelet::WaveletReadJason(const std::string & fileName, 

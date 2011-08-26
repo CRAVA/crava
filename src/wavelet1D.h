@@ -10,6 +10,7 @@ class CovGrid2D;
 class Wavelet1D : public Wavelet {
 public:
 //Constructors and destructor
+  Wavelet1D();
   Wavelet1D(Simbox                       * simbox,
             FFTGrid                      * seisCube,
             WellData                    ** wells,
@@ -29,15 +30,33 @@ public:
             std::string       & errText);
   Wavelet1D(Wavelet * wavelet);
 
+  Wavelet1D(std::vector<float>   vec, 
+          int                 nzp);
+
+  Wavelet1D(Wavelet          * wavelet,
+          int                 difftype);
+
+  Wavelet1D(int                 difftype, 
+          int                 nz, 
+          int                 nzp);
+
 Wavelet1D(ModelSettings * modelSettings, 
           float         * reflCoef,
           float           theta,
           float           peakFrequency,
           int           & errCode);
 
+  void   shiftAndScale(float shift, float scale);
+  void   adjustForAmplitudeEffect(double multiplyer, double Halpha);
+
   virtual ~Wavelet1D();
 
 // Methods that are virtual in Wavelet
+  
+  Wavelet1D*  getWavelet1DForErrorNorm();
+  Wavelet1D * getLocalWavelet1D(int i, 
+                                int j);
+
   float         findGlobalScaleForGivenWavelet(ModelSettings * modelSettings, 
                                                Simbox        * simbox,
                                                FFTGrid       * seisCube, 
@@ -132,10 +151,7 @@ private:
                            int                                 nWells,
                            int                                 nt);
 
-  void           convolve(fftw_complex                       * var1_c,
-                          fftw_complex                       * var2_c, 
-                          fftw_complex                       * out_c,
-                          int                                  cnzp)           const;
+ 
 
   void           writeDebugInfo(fftw_real                   ** seis_r,
                                 fftw_real                   ** cor_cpp_r,

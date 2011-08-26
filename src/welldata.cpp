@@ -1533,7 +1533,7 @@ WellData::calculateDeviation(float  & devAngle,
                              Simbox * timeSimbox)
 {
   float maxDevAngle   = modelSettings_->getMaxDevAngle();
-  float thr_deviation = float(tan(maxDevAngle*M_PI/180.0));  // Largest allowed deviation
+  float thr_deviation = float(tan(maxDevAngle*NRLib::Pi/180.0));  // Largest allowed deviation
   float max_deviation =  0.0f;
   float max_dz        = 10.0f;                      // Calculate slope each 10'th millisecond.
 
@@ -1586,7 +1586,7 @@ WellData::calculateDeviation(float  & devAngle,
       }
     }
   }
-  devAngle = static_cast<float>(atan(max_deviation)*180.0/M_PI);
+  devAngle = static_cast<float>(atan(max_deviation)*180.0/NRLib::Pi);
   LogKit::LogFormatted(LogKit::Low,"   Maximum local deviation is %.1f degrees.",devAngle);
 
   if (max_deviation > thr_deviation) 

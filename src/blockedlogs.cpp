@@ -14,6 +14,7 @@
 #include "src/blockedlogs.h"
 #include "src/welldata.h"
 #include "src/wavelet.h"
+#include "src/wavelet1D.h"
 #include "src/fftgrid.h"
 #include "src/simbox.h"
 #include "src/modelsettings.h"
@@ -1717,6 +1718,26 @@ void BlockedLogs::findOptimalWellLocation(FFTGrid                   ** seisCube,
 }
 
 
+void BlockedLogs::setSeismicGradient(double v0, 
+                                      const NRLib::Grid2D<float>   &    stuctureDepthGradX,
+                                      const NRLib::Grid2D<float>   &    stuctureDepthGradY,
+                                      const NRLib::Grid2D<float>   &    refTimeGradX ,
+                                      const NRLib::Grid2D<float>   &    refTimeGradY,
+                                      std::vector<double>        & xGradient,
+                                      std::vector<double>        & yGradient)
+{
+  xGradient.resize(nBlocks_);
+  yGradient.resize(nBlocks_);
+
+  double mp= 2.0/(v0*0.001);
+  for(int k = 0; k < nBlocks_; k++){
+    int i = ipos_[k];
+    int j = jpos_[k];
+    xGradient[k]= stuctureDepthGradX(i,j)*mp+refTimeGradX(i,j);
+    yGradient[k]= stuctureDepthGradY(i,j)*mp+refTimeGradY(i,j);
+  }
+}
+
 void 
 BlockedLogs::setTimeGradientSettings(float distance, float sigma_m)
 {
@@ -1861,6 +1882,11 @@ void BlockedLogs::findSeismicGradient(FFTGrid                  ** seisCube,
   }
    
   smoothGradient(xGradient, yGradient, Qepsilon, Qepsilon_data, Sigma_gradient);
+  // NBNB Odd slår av estimeringen for å teste om det gir bedre resultat
+ /* for(k = 0; k < nBlocks_; k++){
+    xGradient[k]=0.0;
+    yGradient[k]=0.0;
+  }*/
 
 }
 
@@ -2275,7 +2301,7 @@ void BlockedLogs::generateSyntheticSeismic(float   ** reflCoef,
   int          start,length;
   
   fftw_complex   cAmp; 
-  Wavelet      * localWavelet;
+  Wavelet1D     * localWavelet;
 
   int    cnzp = nzp/2+1;
   int    rnzp = 2*cnzp;
@@ -2312,8 +2338,11 @@ void BlockedLogs::generateSyntheticSeismic(float   ** reflCoef,
     fillInCpp(reflCoef[i],start,length,cpp_r,nzp); 
     Utils::fft(cpp_r,cpp_c,nzp);
     
-    localWavelet = wavelet[i]->getLocalWavelet(ipos_[0],jpos_[0]);
+    localWavelet = wavelet[i]->getLocalWavelet1D(ipos_[0],jpos_[0]);
     localWavelet->fft1DInPlace();
+   // float sf = wavelet[i]->getLocalStretch(ipos_[0],jpos_[0]);
+   // what about relative thickness ????
+   // float sf = wavelet[i]->getLocalStretch(ipos_[0],jpos_[0])*Relativethikness... Need simbox;
 
     for( j=0; j<cnzp; j++ )
     {
@@ -2332,7 +2361,7 @@ void BlockedLogs::generateSyntheticSeismic(float   ** reflCoef,
     
     setLogFromVerticalTrend(syntSeis,zpos_[0],dz_,nz,"ACTUAL_SYNTHETIC_SEISMIC",i);
     
-    localWavelet->fft1DInPlace();
+    //localWavelet->fft1DInPlace();
     delete localWavelet;
   }
 

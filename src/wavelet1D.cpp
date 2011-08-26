@@ -29,6 +29,12 @@
 #include "src/krigingdata2d.h"
 #include "src/io.h"
 
+Wavelet1D::Wavelet1D()
+ : Wavelet(1)
+{
+}
+
+
 Wavelet1D::Wavelet1D(Simbox                       * simbox,
                      FFTGrid                      * seisCube,
                      WellData                    ** wells,
@@ -307,6 +313,120 @@ Wavelet1D::Wavelet1D(Wavelet * wavelet)
 {
 }
 
+Wavelet1D::Wavelet1D(int difftype, 
+                 int nz, 
+                 int nzp)
+: Wavelet(difftype, nz, nzp)
+{
+  cnzp_       = nzp_/2+1;
+  rnzp_       = 2*cnzp_;
+  rAmp_       = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));  
+  cAmp_       = reinterpret_cast<fftw_complex*>(rAmp_);
+  norm_       = RMISSING;
+  int i;
+
+  if(difftype != FOURIER) {
+    isReal_    = true;
+    for(i=0;i < rnzp_; i++) {
+      if( i < nzp_)
+        rAmp_[i] = 0.0;
+      else
+        rAmp_[i] = RMISSING;
+    }
+
+    switch(difftype) {
+    case FIRSTORDERFORWARDDIFF:
+      rAmp_[0] = -1.0; 
+      rAmp_[nzp_-1] = 1.0; 
+      norm_    = sqrt(2.0f);
+      break;
+    case FIRSTORDERBACKWARDDIFF:
+      rAmp_[0]      = 1.0;
+      rAmp_[nzp_-1] =  -1.0;      
+      norm_    = sqrt(2.0f); 
+      break;
+    case FIRSTORDERCENTRALDIFF:
+      rAmp_[1]      = 0.5;
+      rAmp_[nzp_-1] = -0.5;
+      norm_    = sqrt(0.5f); 
+      break;
+    }
+  }
+  else {
+    isReal_    = false;
+    for(i=0;i < cnzp_; i++) {
+      cAmp_[i].re = 0.0f;
+      cAmp_[i].im = static_cast<float>( 2.0 * NRLib::Pi * i/(static_cast<float>(nzp_)) );   
+    }
+
+    invFFT1DInPlace();
+    norm_ = findNorm();
+  }       
+}
+
+
+Wavelet1D::Wavelet1D(Wavelet * wavelet, 
+                 int       difftype)
+ :Wavelet(wavelet, difftype)
+{
+  cnzp_ = nzp_/2+1;
+  rnzp_ = 2*cnzp_;
+  rAmp_ = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));  
+  cAmp_ = reinterpret_cast<fftw_complex*>(rAmp_);
+  int i;
+
+  if(difftype != FOURIER) {
+//    double norm2 = 0.0;
+    for( i = 0; i < rnzp_; i++) {
+      if(i < nzp_) {
+        switch(difftype) {
+        case FIRSTORDERFORWARDDIFF:
+          if(i == nzp_-1 )
+            rAmp_[i] = wavelet->getRAmp(0) - wavelet->getRAmp(i);
+          else
+            rAmp_[i] = wavelet->getRAmp(i+1)-wavelet->getRAmp(i);      
+          break;
+        case FIRSTORDERBACKWARDDIFF:
+          if(i == 0 )
+            rAmp_[i] = wavelet->getRAmp(0) - wavelet->getRAmp(nzp_-1);
+          else
+            rAmp_[i] = wavelet->getRAmp(i)-wavelet->getRAmp(i-1);      
+          break;
+        case FIRSTORDERCENTRALDIFF:
+          if(i == 0 )
+            rAmp_[i] = static_cast<fftw_real> (0.5 * (wavelet->getRAmp(i+1) - wavelet->getRAmp(nzp_-1)));
+          else {
+            if(i == nzp_-1 )
+              rAmp_[i] = static_cast<fftw_real> (0.5 * (wavelet->getRAmp(0) - wavelet->getRAmp(i-1)));
+            else
+              rAmp_[i] = static_cast<fftw_real> (0.5 * (wavelet->getRAmp(i+1) - wavelet->getRAmp(i-1)));
+          }      
+          break;
+        }
+ //       norm2 += static_cast<double> (rAmp_[i]*rAmp_[i]);
+      }
+      else
+        rAmp_[i] = RMISSING;
+    }
+//    norm_= findNorm(); //static_cast<float> (sqrt(norm2));
+  }
+  else {
+    fftw_complex  iValue;
+    for(i=0; i < nzp_; i++ )
+      rAmp_[i] = wavelet->getRAmp(i);
+    fft1DInPlace();
+    for(i=0; i < cnzp_; i++ ) {
+      iValue  =  cAmp_[i];
+      cAmp_[i].re = static_cast<float> (- iValue.im * 2.0 * NRLib::Pi * i/(static_cast<float>(nzp_)));
+      cAmp_[i].im = float(iValue.re * 2 * NRLib::Pi * i/(static_cast<float>(nzp_)));
+    }
+    invFFT1DInPlace();
+//    norm_ = findNorm();
+  }
+  norm_ = findNorm();
+}
+
+
 Wavelet1D::~Wavelet1D()
 {
 }
@@ -319,6 +439,111 @@ Wavelet1D::Wavelet1D(ModelSettings * modelSettings,
   : Wavelet(modelSettings, reflCoef, theta, 1, peakFrequency, errCode)
 {
 }
+
+
+Wavelet1D*   
+Wavelet1D::getLocalWavelet1D(int i,
+                             int j)
+{ 
+  Wavelet1D* localWavelet;
+  localWavelet = new Wavelet1D(this);
+  doLocalShiftAndScale1D(localWavelet,i,j);
+
+  return localWavelet;
+}
+
+Wavelet1D*   
+Wavelet1D::getWavelet1DForErrorNorm()
+{
+  Wavelet1D* errorWavelet;
+  errorWavelet= new Wavelet1D(this);
+  return errorWavelet;
+}
+
+Wavelet1D::Wavelet1D(std::vector<float>   vecReal, 
+          int                 nzp)
+: Wavelet(1)
+{
+  int nz= std::min(static_cast<int>(vecReal.size()),nzp);
+  setupAsVector( nz, nzp);
+  double sum=0.0f;
+  for(int i=0;i<nz;i++)
+  {
+    rAmp_[i] = vecReal[i];
+    sum +=vecReal[i];
+  }
+  double meanVal=sum/static_cast<double>(nz);
+
+  for(int i=nz;i<nzp_;i++)
+  {
+    rAmp_[i]= static_cast<fftw_real>(meanVal);
+  }
+
+}
+
+
+
+void
+Wavelet1D::shiftAndScale(float shift,
+                       float gain)
+{
+  int k;
+
+  fftw_complex  ampMultiplier,tmp;
+
+  if(isReal_) 
+    fft1DInPlace();
+
+  float iShift=shift/dz_;
+
+  for(k=0;k < cnzp_; k++) {
+    ampMultiplier.re = float(gain*cos(2.0*(NRLib::Pi*(iShift)*k)/float(nzp_)));
+    ampMultiplier.im = float(gain*sin(-2.0*(NRLib::Pi*(iShift)*k)/float(nzp_)));
+
+    tmp.re = ampMultiplier.re*cAmp_[k].re - ampMultiplier.im*cAmp_[k].im;
+    tmp.im = ampMultiplier.im*cAmp_[k].re + ampMultiplier.re*cAmp_[k].im;
+
+    cAmp_[k] =tmp;
+  }
+  //norm_*=gain; // new factor introduced  NBNB should be in
+}
+
+void
+Wavelet1D::adjustForAmplitudeEffect(double multiplyer, double Halpha)
+{
+  int k;
+  bool backTrans=false;
+
+  if(isReal_) 
+  {
+    fft1DInPlace();
+    backTrans=true;
+  }
+
+  if(Halpha>0){
+    for(k=0;k < cnzp_; k++) {
+      double omega = double(k)/double(nzp_*dz_*1e-3);
+      float ampMultiplier = float(exp(-NRLib::Pi*omega*Halpha));
+      cAmp_[k].re*=multiplyer*ampMultiplier;
+      cAmp_[k].im*=multiplyer*ampMultiplier;
+    }
+  }else{
+    for(k=0;k < cnzp_; k++) {
+      cAmp_[k].re*=multiplyer;
+      cAmp_[k].im*=multiplyer;
+    }
+  }
+
+
+  if( backTrans)
+     invFFT1DInPlace();
+
+  norm_=findNorm();
+
+}
+
+
+
 
 float 
 Wavelet1D::findGlobalScaleForGivenWavelet(ModelSettings * modelSettings, 
@@ -414,7 +639,7 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
   float errStd  = 0.0f;
   float dataVar = 0.0f;
 
-  std::string angle                 = NRLib::ToString((180.0/M_PI)*theta_, 1);
+  std::string angle                 = NRLib::ToString((180.0/NRLib::Pi)*theta_, 1);
   int         nWells                = modelSettings->getNumberOfWells();
   bool        doEstimateLocalShift  = modelSettings->getEstimateLocalShift(number);
   bool        doEstimateLocalScale  = modelSettings->getEstimateLocalScale(number);
@@ -509,15 +734,15 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
         bl->fillInSeismic(&seisData[0], start, length, seis_r[w], nzp_);
         if(ModelSettings::getDebugLevel() > 0) {
           std::string fileName;
-          fileName = "seismic_Well_" + NRLib::ToString(w) + "_" + angle;
+          fileName = "seismic_Well_" + NRLib::ToString(w+1) + "_" + angle;
           printVecToFile(fileName,seis_r[w], nzp_);
-          fileName = "synthetic_seismic_Well_" + NRLib::ToString(w) + "_" + angle;
+          fileName = "synthetic_seismic_Well_" + NRLib::ToString(w+1) + "_" + angle;
           printVecToFile(fileName,synt_r[w], nzp_);
         }
         for(int i=start;i<start+length;i++) { 
           float err=(seis_r[w][i] - synt_r[w][i]);
           errVarWell[w]+=err*err;
-          dataVarWell[w]+=seis_r[w][i] *seis_r[w][i] ;
+          dataVarWell[w]+=seis_r[w][i] *seis_r[w][i] ; // contains the sum of squares
         }
         nActiveData[w]=length;
       }
@@ -583,6 +808,7 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
   }
 
   if (nData == 0) {
+
     if(doEstimateSNRatio == true) {
       errText += "Cannot estimate signal-to-noise ratio. No legal well data available.\n";
       error += 1;
@@ -692,18 +918,17 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
   else
   {
     float SNRatio = modelSettings->getSNRatio(number);
-    LogKit::LogFormatted(LogKit::Low,"\n  The signal to noise ratio given in the model file and used for this angle stack is : %6.2f\n", SNRatio);
-    if(nWells > 0) {
+    if(nWells>0) {
+      LogKit::LogFormatted(LogKit::Low,"\n  The signal to noise ratio given in the model file and used for this angle stack is : %6.2f\n", SNRatio);
       LogKit::LogFormatted(LogKit::Low,"  For comparison, the signal-to-noise ratio calculated from the available wells is   : %6.2f\n", empSNRatio);
       float minSN = 1.0f + (empSNRatio - 1.0f)/2.0f;
       float maxSN = 1.0f + (empSNRatio - 1.0f)*2.0f;
-      if ((SNRatio<minSN || SNRatio>maxSN) && modelSettings->getEstimateWavelet(number))
-      {
+      if ((SNRatio<minSN || SNRatio>maxSN) && modelSettings->getEstimateWavelet(number)) {
         LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The difference between the SN ratio given in the model file and the calculated SN ratio is too large.\n");
-        if (SNRatio < minSN)
-          TaskList::addTask("Consider increasing the SN ratio for angle stack "+NRLib::ToString(number)+" to minimum "+NRLib::ToString(minSN,1));
-        else
-          TaskList::addTask("Consider decreasing the SN ratio for angle stack "+NRLib::ToString(number)+" to maximum "+NRLib::ToString(minSN,1));
+      if (SNRatio < minSN)
+        TaskList::addTask("Consider increasing the SN ratio for angle stack "+NRLib::ToString(number)+" to minimum "+NRLib::ToString(minSN,1));
+      else
+        TaskList::addTask("Consider decreasing the SN ratio for angle stack "+NRLib::ToString(number)+" to maximum "+NRLib::ToString(minSN,1));
       }        
     }
   }
@@ -1179,8 +1404,8 @@ Wavelet1D::multiplyPapolouis(fftw_real                ** vec,
       for(int i=1;i<nzp;i++) {
         dist = std::min(i,nzp-i)*dz[w];
         if(dist < wHL) {
-          weight  = float(1.0/M_PI*fabs(sin(M_PI*(dist)/wHL))); 
-          weight += float((1-fabs(dist)/wHL)*cos(M_PI*dist/wHL));
+          weight  = float(1.0/NRLib::Pi*fabs(sin(NRLib::Pi*(dist)/wHL))); 
+          weight += float((1-fabs(dist)/wHL)*cos(NRLib::Pi*dist/wHL));
         }
         else
           weight=0;
@@ -1224,17 +1449,7 @@ Wavelet1D::getWavelet(fftw_real               ** ccor_seis_cpp_r,
 }
 
 
-void
-Wavelet1D::convolve(fftw_complex  * var1_c ,
-                    fftw_complex  * var2_c, 
-                    fftw_complex  * out_c,
-                    int             cnzp) const
-{
-  for(int i=0;i<cnzp;i++) {
-    out_c[i].re = var1_c[i].re*var2_c[i].re+var1_c[i].im*var2_c[i].im; 
-    out_c[i].im = var1_c[i].im*var2_c[i].re - var1_c[i].re*var2_c[i].im;
-  }
-}
+
 
 void
 Wavelet1D::writeDebugInfo(fftw_real ** seis_r,
@@ -1243,7 +1458,7 @@ Wavelet1D::writeDebugInfo(fftw_real ** seis_r,
                           fftw_real ** cpp_r,
                           int          nWells) const
 {
-  std::string angle    = NRLib::ToString(theta_*180/M_PI, 1);
+  std::string angle    = NRLib::ToString(theta_*180/NRLib::Pi, 1);
   std::string fileName = "estimated_wavelet_full_"+angle+".txt";
         
   std::ofstream fid;

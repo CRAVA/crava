@@ -10,6 +10,7 @@ class ModelAVODynamic;
 class FFTGrid;
 class FFTFileGrid;
 class Wavelet;
+class Wavelet1D;
 class Simbox;
 class RandomGen;
 class WellData;
@@ -70,14 +71,14 @@ private:
   float              getDataVariance(int l)   const {return dataVariance_[l];}
   int                checkScale(void);
   void               fillkW(int k, fftw_complex* kW );
-  void               fillInverseAbskWRobust(int k, fftw_complex* invkW );
-  void               fillkWNorm(int k, fftw_complex* kWNorm, Wavelet** wavelet);
+  void               fillInverseAbskWRobust(int k, fftw_complex* invkW ,Wavelet1D** seisWaveletForNorm);
+  void               fillkWNorm(int k, fftw_complex* kWNorm, Wavelet1D** wavelet);
   FFTGrid          * createFFTGrid();
   FFTGrid          * copyFFTGrid(FFTGrid * fftGridOld);
   FFTFileGrid      * copyFFTGrid(FFTFileGrid * fftGridOld);
 
-  float              computeWDCorrMVar (Wavelet* WD, fftw_real* corrT);
-  float              computeWDCorrMVar (Wavelet* WD);
+  float              computeWDCorrMVar (Wavelet1D* WD, fftw_real* corrT);
+  //float              computeWDCorrMVar (Wavelet* WD);
 
   void               divideDataByScaleWavelet();
   void               multiplyDataByScaleWaveletAndWriteToFile(const std::string & typeName);

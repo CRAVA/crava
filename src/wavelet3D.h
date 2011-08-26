@@ -9,6 +9,7 @@
 #include "src/waveletfilter.h"
 
 class BlockedLogs;
+class Wavelet1D;
 
 class Wavelet3D : public Wavelet {
 public:
@@ -42,6 +43,7 @@ public:
   virtual ~Wavelet3D(); 
 
   WaveletFilter  getFilter() const {return filter_;}
+  static void setGradientMaps( NRLib::Grid2D<float> gradX , NRLib::Grid2D<float> gradY ){gradX_=gradX; gradY_=gradY;}
   
   // Methods that are virtual in Wavelet
 //  float         calculateSNRatioAndLocalWavelet(Simbox        * /*simbox*/, 
@@ -54,6 +56,15 @@ public:
 //                                                Grid2D       *& /*noiseScaled*/, 
 //                                                Grid2D       *& /*shift*/, 
 //                                                Grid2D       *& /*gain*/);
+Wavelet1D*  getWavelet1DForErrorNorm();
+Wavelet1D * getLocalWavelet1D( int i, int j);
+float       getLocalStretch(int i,int j);
+
+Wavelet1D*  getSourceWavelet();
+Wavelet1D*  extractLocalWaveletByDip1D(double phi, double psi);
+void        dipAdjustWavelet(Wavelet1D* Wavelet, double phi, double psi);
+float      GetLocalDepthGradientX(int i, int j){ return gradX_(i,j);}
+float      GetLocalDepthGradientY(int i, int j){ return gradY_(i,j);}
 
   float         calculateSNRatio(Simbox                                   * simbox, 
                                  FFTGrid                                  * seisCube, 
@@ -110,6 +121,8 @@ private:
                                     std::vector<float>         & at0,
                                     std::vector<float>         & bt0) const;
 
+  
+
   std::vector<fftw_real> calculateWellWavelet(const std::vector<std::vector<float> > & gMat,
                                               const std::vector<float>               & dVec,
                                               int                                      nWl,
@@ -122,6 +135,8 @@ private:
                                 int                                       m) const;
 
   WaveletFilter  filter_;
+  static NRLib::Grid2D<float>  gradX_;
+  static NRLib::Grid2D<float>  gradY_;
 };
 
 #endif
