@@ -732,10 +732,21 @@ Wavelet::findWaveletLength(float minRelativeAmp)
 
 float
 Wavelet::findNorm() const
-{
+{ // note there is a difference in scale since wavelet is an operator, 
+  // the squared norm in fft domain is nzp_ times the squared in regular domain.
+  // for consistency we use the norm in real (time) domain
   double norm2=0.0;
-  for(int i=0; i < nzp_; i++ )
-    norm2 += static_cast<double> (rAmp_[i]*rAmp_[i]);
+  if(isReal_)
+    for(int i=0; i < nzp_; i++ )
+      norm2 += static_cast<double> (rAmp_[i]*rAmp_[i]);
+  else
+  { 
+    double fac=1.0/double(nzp_);
+    norm2 = static_cast<double> (cAmp_[0].re*cAmp_[0].re*fac);
+    for(int i=1;i<cnzp_;i++)
+      norm2 += static_cast<double> (2.0*fac*(cAmp_[i].re*cAmp_[i].re+cAmp_[i].im*cAmp_[i].im));
+  }
+
   float norm = static_cast<float>(sqrt(norm2));
   return norm;
 }

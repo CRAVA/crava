@@ -479,7 +479,8 @@ Crava:: divideDataByScaleWavelet()
 
     seisWavelet_[l]->fft1DInPlace();
     modW = seisWavelet_[l]->getNorm();
-    modW *= modW/float(nzp_);
+    modW *= modW; // note the wavelet norm is in time domain. In frequency domain we have an additional factor float(nzp_);
+                  // this is because we define the wavelet as an operator hence the fft is not norm preserving.
 
     seisData_[l]->setAccessMode(FFTGrid::RANDOMACCESS);
     for(i=0; i < nxp_; i++)
@@ -506,6 +507,7 @@ Crava:: divideDataByScaleWavelet()
           jInd = 2*ny_-jInd-1; 
 
         localWavelet = seisWavelet_[l]->getLocalWavelet1D(iInd,jInd);  // NBNB causes difference ??
+
 
         for(k=0;k<nzp_;k++)
         {
@@ -534,7 +536,7 @@ Crava:: divideDataByScaleWavelet()
           // wVal      =  seisWavelet_[l]->getCAmp(k);
           // modW      =  wVal.re * wVal.re + wVal.im * wVal.im;
           //  Here we need only the modulus
-          // ( see definition of getCAmp)         
+          // ( see definition of getCAmp)  
           if((modW > 0) && (deltaF*k < highCut_ ) && (deltaF*k > lowCut_ )) //NBNB frequency cleaning
           {
             float tolFac= 0.10f;
