@@ -1088,7 +1088,7 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
  \subsection{\hbracket{angular-correlation}}\newkw{angular-correlation}
  \slist
    \item \Description 1D variogram. Gives the noise correlation between survey angles.
-   \item \Argument 1D variogram
+   \item \Argument 1D variogram, see \autoref{sec:variogram}.
    \item \Default
  \elist
 
@@ -1965,9 +1965,9 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
    \item \Default 0.01
  \elist
 
-\section{2D variogram}\newkw{variogram-keyword}
+\section{Variogram}\newkw{variogram-keyword}
 \label{sec:variogram}
-  2D variograms are given on the following form:
+  The variograms are given on the following form:
  
 \subsection{\hbracket{variogram-type}}\newkw{variogram-type}
  \slist
@@ -1978,7 +1978,7 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 
 \subsection{\hbracket{angle}}\rnewkw{angle}{angle2}
  \slist
-   \item \Description Value for the azimuth direction.
+   \item \Description Value for the azimuth direction. Only for 2D variograms.
    \item \Argument
    \item \Default
  \elist
@@ -1992,7 +1992,7 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 
 \subsection{\hbracket{subrange}}\newkw{subrange}
  \slist
-   \item \Description Value for the range normal to the azimuth direction.
+   \item \Description Value for the range normal to the azimuth direction. Only for 2D variograms.
    \item \Argument
    \item \Default
  \elist
