@@ -40,6 +40,8 @@ public:
 
   void                 fillInTest(float value1, float value2);   // No mode /DEBUG
   void                 fillInFromArray(float *value);
+  void                 calculateStatistics();                    // min,max, avg
+  void                 setUndefinedCellsToGlobalAverage();      // For BG model
 
   virtual fftw_complex getNextComplex() ;                       // Accessmode read/readandwrite
   virtual float        getNextReal() ;                          // Accessmode read/readandwrite
@@ -68,17 +70,20 @@ public:
   bool                 consistentSize(int nx,int ny, int nz, int nxp, int nyp, int nzp);
   int                  getCounterForGet() const {return(counterForGet_);}
   int                  getCounterForSet() const {return(counterForSet_);}
-  int                  getNx()    const {return(nx_);}
-  int                  getNy()    const {return(ny_);}
-  int                  getNz()    const {return(nz_);}
-  int                  getNxp()   const {return(nxp_);}
-  int                  getNyp()   const {return(nyp_);}
-  int                  getNzp()   const {return(nzp_);}
-  int                  getRNxp()  const {return(rnxp_);}
-  int                  getcsize() const {return(csize_);}
-  int                  getrsize() const {return(rsize_);}
-  float                getTheta() const {return(theta_);}  
-  float                getScale() const {return(scale_);}
+  int                  getNx()      const {return(nx_);}
+  int                  getNy()      const {return(ny_);}
+  int                  getNz()      const {return(nz_);}
+  int                  getNxp()     const {return(nxp_);}
+  int                  getNyp()     const {return(nyp_);}
+  int                  getNzp()     const {return(nzp_);}
+  int                  getRNxp()    const {return(rnxp_);}
+  int                  getcsize()   const {return(csize_);}
+  int                  getrsize()   const {return(rsize_);}
+  float                getTheta()   const {return(theta_);}  
+  float                getScale()   const {return(scale_);}
+  float                getMinReal() const {return rValMin_;}
+  float                getMaxReal() const {return rValMax_;}
+  float                getAvgReal() const {return rValAvg_;}
   bool                 getIsTransformed() const {return(istransformed_);}
   enum                 gridTypes{CTMISSING,DATA,PARAMETER,COVARIANCE,VELOCITY};
   enum                 accessMode{NONE,READ,WRITE,READANDWRITE,RANDOMACCESS};
@@ -189,7 +194,11 @@ protected:
                                            
   fftw_complex       * cvalue_;            // values of complex parameter in grid points
   fftw_real          * rvalue_;            // values of real parameter in grid points
-                                           
+           
+  float                rValMin_;           // minimum real value 
+  float                rValMax_;           // maximum real value
+  float                rValAvg_;           // average real value
+                                
   static int           formatFlag_;        // Decides format of output (see ModelSettings).
   static int           domainFlag_;        // Decides domain of output (see ModelSettings).
   

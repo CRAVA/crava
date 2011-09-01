@@ -571,6 +571,8 @@ ModelAVODynamic::processBackground(Background         *& background,
             failed = true;
           } 
           else {
+            backModel[i]->calculateStatistics();
+            backModel[i]->setUndefinedCellsToGlobalAverage();
             backModel[i]->logTransf();
 
             if(outsideTraces > 0) {
@@ -598,6 +600,16 @@ ModelAVODynamic::processBackground(Background         *& background,
       }
     }
     if (failed == false) {
+
+      LogKit::LogFormatted(LogKit::Low, "\nSummary                Average   Minimum   Maximum\n");
+      LogKit::LogFormatted(LogKit::Low, "--------------------------------------------------\n");
+      for(int i=0 ; i<3 ; i++) {
+        LogKit::LogFormatted(LogKit::Low, "%-20s %9.2f %9.2f %9.2f\n", 
+                             parName[i].c_str(), 
+                             backModel[i]->getAvgReal(),
+                             backModel[i]->getMinReal(),
+                             backModel[i]->getMaxReal());
+      }
       if (modelSettings->getUseAIBackground())   { // Vp = AI/Rho     ==> lnVp = lnAI - lnRho
         LogKit::LogMessage(LogKit::Low, "\nMaking Vp background from AI and Rho\n");
         backModel[0]->subtract(backModel[2]);

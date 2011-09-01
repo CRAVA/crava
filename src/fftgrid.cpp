@@ -40,7 +40,9 @@ FFTGrid::FFTGrid(int nx, int ny, int nz, int nxp, int nyp, int nzp)
   nyp_            = nyp;
   nzp_            = nzp;
   scale_          = 1.0;
-
+  rValMin_        = RMISSING;
+  rValMax_        = RMISSING;
+  rValAvg_        = RMISSING;
   cnxp_           = nxp_/2+1;
   rnxp_           = 2*(cnxp_);   
 
@@ -52,6 +54,7 @@ FFTGrid::FFTGrid(int nx, int ny, int nz, int nxp, int nyp, int nzp)
   istransformed_  = false;
   rvalue_         = NULL;
   add_            = true;
+
   // index= i+rnxp_*j+k*rnxp_*nyp_;
   // i index in x direction 
   // j index in y direction 
@@ -69,6 +72,9 @@ FFTGrid::FFTGrid(FFTGrid  * fftGrid, bool expTrans)
   nyp_            = fftGrid->nyp_;
   nzp_            = fftGrid->nzp_;
   scale_          = fftGrid->scale_;
+  rValMin_        = fftGrid->rValMin_;
+  rValMax_        = fftGrid->rValMax_;
+  rValAvg_        = fftGrid->rValAvg_;
 
   cnxp_           = nxp_/2+1;
   rnxp_           = 2*(cnxp_);   
@@ -412,6 +418,78 @@ FFTGrid::fillInFromArray(float *value) //NB works only for padding size up to nx
   }
 
   endAccess();
+}
+
+void
+FFTGrid::calculateStatistics()
+{
+  rValMin_ = +std::numeric_limits<float>::infinity();
+  rValMax_ = -std::numeric_limits<float>::infinity();
+  rValAvg_ = 0.0f;                                   
+
+  long long count = 0;
+  float sum_xyz = 0.0f;
+
+  setAccessMode(RANDOMACCESS);
+  for (int k = 0 ; k < nz_ ; k++) {
+    float sum_xy = 0.0f;
+    for (int j = 0 ; j < ny_ ; j++) {
+      float sum_x = 0.0f;
+      for (int i = 0 ; i < nx_ ; i++) {
+        float value = getRealValue(i,j,k);
+        if (value != RMISSING) {
+          if (value < rValMin_)
+            rValMin_ = value;
+          if (value > rValMax_)
+            rValMax_ = value;
+          sum_x += value;
+          count++;
+        }
+      }
+      sum_xy += sum_x;
+    }
+    sum_xyz += sum_xy;
+  }
+  endAccess();
+
+  if (count > 0) {
+    rValAvg_ = sum_xyz/count;
+  }
+}
+
+void
+FFTGrid::setUndefinedCellsToGlobalAverage() // Used for background model
+{
+  float globalAvg = getAvgReal();
+
+  if (globalAvg == RMISSING) {
+    calculateStatistics();
+  }  
+
+  long long count = 0;
+
+  setAccessMode(RANDOMACCESS);
+  for (int k = 0 ; k < nzp_ ; k++) {
+    for (int j = 0 ; j < nyp_ ; j++) {
+      for (int i = 0 ; i < rnxp_ ; i++) {
+        float value = getRealValue(i,j,k,true);
+        if (value == RMISSING) {
+          setRealValue(i,j,k,globalAvg,true);
+          if (i < nx_ && j < ny_ && k < nz_) { // Do not count undefined in padding (confusing for user)
+            count++;
+          }
+        }
+      }
+    }
+  }
+  endAccess();
+
+  if (count > 0) {
+    long long nxyz = static_cast<long>(nx_)*static_cast<long>(ny_)*static_cast<long>(nz_);
+    LogKit::LogFormatted(LogKit::Medium, "\nThe grid contains %ld undefined grid cells (%.2f%). Setting these to global average\n", 
+                         count, 100.0f*static_cast<float>(count)/(static_cast<float>(count) + static_cast<float>(nxyz)),
+                         globalAvg);
+  }    
 }
 
 
@@ -789,7 +867,6 @@ FFTGrid::getRealValue(int i, int j, int k, bool extSimbox) const
   bool  inSimbox   = (extSimbox ? ( (i < nxp_) && (j < nyp_) && (k < nzp_)):
     ((i < nx_) && (j < ny_) && (k < nz_)));
   bool  notMissing = ( (i > -1) && (j > -1) && (k > -1));
-
 
   if( inSimbox && notMissing )
   { // if index in simbox

@@ -482,6 +482,11 @@ Crava:: divideDataByScaleWavelet()
     modW *= modW; // note the wavelet norm is in time domain. In frequency domain we have an additional factor float(nzp_);
                   // this is because we define the wavelet as an operator hence the fft is not norm preserving.
 
+
+    //double maxfrequency = double((nzp_/2)*1000.0*nz_)/(simbox_->getlz()*nzp_);
+    //modW *= maxfrequency/double(highCut_); // this is the mean squared sum over reklevant frequency band.
+    //                                       // Makes the problem less sensitive to the padding size
+
     seisData_[l]->setAccessMode(FFTGrid::RANDOMACCESS);
     for(i=0; i < nxp_; i++)
       for(j=0; j< nyp_; j++)
@@ -542,6 +547,7 @@ Crava:: divideDataByScaleWavelet()
             float tolFac= 0.10f;
             if(modScaleW <  tolFac * modW)
               modScaleW =   float(sqrt(modScaleW*tolFac * modW));
+              //modScaleW =   float(0.5*(modScaleW + tolFac * modW));
             if(modScaleW == 0)
               modScaleW = 1;
             tmp           = cData[k].re * (scaleWVal.re/modScaleW) 
