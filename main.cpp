@@ -27,6 +27,8 @@
 #include "src/modelavodynamic.h"
 #include "src/modelgeneral.h"
 
+#include "src/seismicparametersholder.h"
+
 int main(int argc, char** argv)
 {  
   if (argc != 2) {
@@ -114,6 +116,18 @@ int main(int argc, char** argv)
 
     if(failedModelFile || failedInputFiles || failedLoadingModel)
         return(1);
+
+    
+    //--------------------------------------------------------------------------------//
+    //
+    // Only for demonstrating use.
+    SeismicParametersHolder seismic_parameters(modelAVOdynamic->getBackAlpha(),
+                                               modelAVOdynamic->getBackBeta(),
+                                               modelAVOdynamic->getBackRho(),
+                                               modelAVOdynamic->getCorrelations());
+    //
+    //--------------------------------------------------------------------------------//
+    
 
     Crava         * crava         = NULL;
 

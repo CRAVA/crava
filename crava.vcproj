@@ -853,6 +853,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\src\timeevolution.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\src\timings.cpp"
 					>
 				</File>
@@ -6482,11 +6486,19 @@
 					>
 				</File>
 				<File
+					RelativePath=".\src\seismicparametersholder.h"
+					>
+				</File>
+				<File
 					RelativePath="src\simbox.h"
 					>
 				</File>
 				<File
 					RelativePath=".\src\spatialwellfilter.h"
+					>
+				</File>
+				<File
+					RelativePath=".\src\timeevolution.h"
 					>
 				</File>
 				<File
@@ -6705,11 +6717,11 @@
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\system\config.hpp"
+						RelativePath=".\nrlib\boost\filesystem\config.hpp"
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\filesystem\config.hpp"
+						RelativePath=".\nrlib\boost\system\config.hpp"
 						>
 					</File>
 					<File
