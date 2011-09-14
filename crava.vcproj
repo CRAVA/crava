@@ -853,10 +853,6 @@
 					>
 				</File>
 				<File
-					RelativePath=".\src\timeevolution.cpp"
-					>
-				</File>
-				<File
 					RelativePath=".\src\timings.cpp"
 					>
 				</File>
@@ -6495,10 +6491,6 @@
 				</File>
 				<File
 					RelativePath=".\src\spatialwellfilter.h"
-					>
-				</File>
-				<File
-					RelativePath=".\src\timeevolution.h"
 					>
 				</File>
 				<File
