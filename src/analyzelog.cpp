@@ -136,6 +136,7 @@ Analyzelog::calculateNumberOfLags(int         & numberOfLags,
       float yj = static_cast<float>(ypos[j]);
       z[j] = static_cast<float>((zpos[j]-simbox_->getTop(xj,yj))/simbox_->getRelThick(xj,yj));
     }
+    std::string wellErrTxt = "";
     for(int j=0 ; j<nd ; j++)
     {
       for(int k=j+1 ; k<nd ; k++)
@@ -143,14 +144,16 @@ Analyzelog::calculateNumberOfLags(int         & numberOfLags,
         double dist = z[k] - z[j];
         if(dist > maxdist)
           maxdist = dist;
-        if(dist < 0)              // Small negative lags were observed on Smorbukk Sor
-          if (floor(dist/dt+0.5)) // Check that error is numerically significant
+        if(dist < 0) {             // Small negative lags were observed on Smorbukk Sor
+          if (floor(dist/dt+0.5) < 0 && wellErrTxt == "") // Check that error is numerically significant
           {
-            errTxt += std::string("Negative lags in well \'") + wells_[i]->getWellname() +  + "\'.z[k]=";
-            errTxt += NRLib::ToString(z[k],3) + std::string(" z[j]=") + NRLib::ToString(z[j],3) + "\n";
+            wellErrTxt += std::string("Negative lags in well \'") + wells_[i]->getWellname() +  + "\'.z[k]=";
+            wellErrTxt += NRLib::ToString(z[k],3) + std::string(" z[j]=") + NRLib::ToString(z[j],3) + "\n";
           }
+        }
       }
     }
+    errTxt += wellErrTxt;
     delete [] z;
   }
   numberOfLags = int(maxdist/dt)+1;
@@ -376,6 +379,8 @@ Analyzelog::estimateCorrTAndVar0(float       * CorrT,
   time_t timestart, timeend;
   time(&timestart);    
 
+  std::string tmpErrTxt = "";
+
   float * corTT    = new float[n+1];
   float * varAj    = new float[n+1];
   float * varBj    = new float[n+1];
@@ -482,10 +487,12 @@ Analyzelog::estimateCorrTAndVar0(float       * CorrT,
       for(k=j;k<na;k++) // indA points to nonmissing entries of dLnAlpha[]
       {
         h = static_cast<int>(floor(z[indA[k]]-z[indA[j]]+0.5));
-        covAA[h] += dLnAlpha[indA[j]]*dLnAlpha[indA[k]];
-        varAj[h] += dLnAlpha[indA[j]]*dLnAlpha[indA[j]];
-        varAk[h] += dLnAlpha[indA[k]]*dLnAlpha[indA[k]];
-        nAA[h]++;
+        if(h >= 0) { //Guard against small upwards movements in transformed domain.
+          covAA[h] += dLnAlpha[indA[j]]*dLnAlpha[indA[k]];
+          varAj[h] += dLnAlpha[indA[j]]*dLnAlpha[indA[j]];
+          varAk[h] += dLnAlpha[indA[k]]*dLnAlpha[indA[k]];
+          nAA[h]++;
+        }
       }
     }
     if (allVsLogsAreSynthetic || !wells_[i]->hasSyntheticVsLog())
@@ -495,10 +502,12 @@ Analyzelog::estimateCorrTAndVar0(float       * CorrT,
         for(k=j;k<nb;k++) // indB points to nonmissing entries of dLnBeta[]
         {
           h = static_cast<int>(floor(z[indB[k]]-z[indB[j]]+0.5));
-          covBB[h] += dLnBeta[indB[j]]*dLnBeta[indB[k]];
-          varBj[h] += dLnBeta[indB[j]]*dLnBeta[indB[j]];
-          varBk[h] += dLnBeta[indB[k]]*dLnBeta[indB[k]];
-          nBB[h]++;
+          if(h >= 0) { //Guard against small upwards movements in transformed domain.
+            covBB[h] += dLnBeta[indB[j]]*dLnBeta[indB[k]];
+            varBj[h] += dLnBeta[indB[j]]*dLnBeta[indB[j]];
+            varBk[h] += dLnBeta[indB[k]]*dLnBeta[indB[k]];
+            nBB[h]++;
+          }
         }
       }
     }
@@ -507,10 +516,12 @@ Analyzelog::estimateCorrTAndVar0(float       * CorrT,
       for(k=j;k<nr;k++) // indR points to nonmissing entries of dLnRho[]
       {
         h = static_cast<int>(floor(z[indR[k]]-z[indR[j]]+0.5));
-        covRR[h] += dLnRho[indR[j]]*dLnRho[indR[k]];
-        varRj[h] += dLnRho[indR[j]]*dLnRho[indR[j]];
-        varRk[h] += dLnRho[indR[k]]*dLnRho[indR[k]];
-        nRR[h]++;
+        if(h >= 0) { //Guard against small upwards movements in transformed domain.
+          covRR[h] += dLnRho[indR[j]]*dLnRho[indR[k]];
+          varRj[h] += dLnRho[indR[j]]*dLnRho[indR[j]];
+          varRk[h] += dLnRho[indR[k]]*dLnRho[indR[k]];
+          nRR[h]++;
+        }
       }
     }
     //
@@ -572,14 +583,14 @@ Analyzelog::estimateCorrTAndVar0(float       * CorrT,
 
   if(nAA[0]<2)
   {
-    errTxt += "Not enough well data within simulation area to estimate variance of Vp.\n";
+    tmpErrTxt += "Not enough well data within simulation area to estimate variance of Vp.\n";
   }
   if(nRR[0]<2)
   {
-    errTxt += "Not enough well data within simulation area to estimate variance of Rho.\n";
+    tmpErrTxt += "Not enough well data within simulation area to estimate variance of Rho.\n";
   }
 
-  if(errTxt == "")
+  if(tmpErrTxt == "")
   { //
     // Calculate Var0 (covariances at zero lag)
     // ==============
@@ -645,17 +656,17 @@ Analyzelog::estimateCorrTAndVar0(float       * CorrT,
 
       if (corAA<-1 || corAA>1)
       {
-        errTxt += std::string("Correlation corAA=") + NRLib::ToString(corAA, 3) 
+        tmpErrTxt += std::string("Correlation corAA=") + NRLib::ToString(corAA, 3) 
                 + std::string(" out of range for element ") + NRLib::ToString(i) + "\n";
       }
       if (corBB<-1 || corBB>1)
       {
-        errTxt += std::string("Correlation corBB=") + NRLib::ToString(corBB, 3) 
+        tmpErrTxt += std::string("Correlation corBB=") + NRLib::ToString(corBB, 3) 
                 + std::string(" out of range for element ") + NRLib::ToString(i) + "\n";
       }
       if (corRR<-1 || corRR>1)
       {
-        errTxt += std::string("Correlation corRR=") + NRLib::ToString(corRR, 3) 
+        tmpErrTxt += std::string("Correlation corRR=") + NRLib::ToString(corRR, 3) 
                 + std::string(" out of range for element ") + NRLib::ToString(i) + "\n";
       }
       if (naa>1 || nbb>1 || nrr>1)
@@ -754,6 +765,8 @@ Analyzelog::estimateCorrTAndVar0(float       * CorrT,
       file.close();
     }
   }
+
+  errTxt += tmpErrTxt;
   //
   // Return replace n by nonzero elements nend?
   //

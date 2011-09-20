@@ -63,7 +63,8 @@ BlockedLogs::BlockedLogs(WellData  * well,
     lastB_(IMISSING),
     nBlocks_(0),
     nLayers_(simbox->getnz()),
-    nFacies_(0)
+    nFacies_(0),
+    interpolate_(interpolate)
 {
   blockWell(well, simbox, random, interpolate);
 }
@@ -679,6 +680,8 @@ BlockedLogs::getVerticalTrend(const float   * blockedLog,
       else
         trend[k] = RMISSING;
     }
+    if(interpolate_ == true)
+      interpolateTrend(blockedLog,trend);
     delete [] count;
   }
   else {
@@ -718,6 +721,8 @@ BlockedLogs::getVerticalTrendLimited(const float                  * blockedLog,
       else
         trend[k] = RMISSING;
     }
+    if(interpolate_ == true)
+      interpolateTrend(blockedLog,trend,limits);
     delete [] count;
   }
   else {
@@ -754,6 +759,9 @@ BlockedLogs::getVerticalTrend(const int * blockedLog,
       }
       trend[k] = findMostProbable(count, nFacies_, random);
     }
+    if(interpolate_ == true)
+      interpolateTrend(blockedLog,trend);
+
     delete [] count;
   }
   else {
@@ -764,6 +772,72 @@ BlockedLogs::getVerticalTrend(const int * blockedLog,
     exit(1);
   }    
 }
+
+
+//------------------------------------------------------------------------------
+void 
+BlockedLogs::interpolateTrend(const float * blockedLog, float * trend)
+{
+  for (int m = 1 ; m < nBlocks_ ; m++) {
+    if(abs(kpos_[m]-kpos_[m-1]) > 1) {
+      int delta = 1;
+      if(kpos_[m] < kpos_[m-1])
+        delta = -1;
+      float step_mult = static_cast<float>(delta)/static_cast<float>(kpos_[m]-kpos_[m-1]);
+      float t = step_mult;
+      for(int j = kpos_[m-1]+delta; j != kpos_[m];j++) {
+        if(trend[j] == RMISSING)
+          trend[j] = t*blockedLog[m]+(1-t)*blockedLog[m-1];
+        t += step_mult;
+      }
+    }
+  }
+}
+
+
+//------------------------------------------------------------------------------
+void 
+BlockedLogs::interpolateTrend(const float * blockedLog, float * trend, const std::vector<Surface *> & limits)
+{
+  for (int m = 1 ; m < nBlocks_ ; m++) {
+    if(abs(kpos_[m]-kpos_[m-1]) > 1) {
+      int delta = 1;
+      if(kpos_[m] < kpos_[m-1])
+        delta = -1;
+      float step_mult = static_cast<float>(delta)/static_cast<float>(kpos_[m]-kpos_[m-1]);
+      float t = step_mult;
+      for(int j = kpos_[m-1]+delta; j != kpos_[m];j++) {
+        if(trend[j] == RMISSING) {
+          if(limits.size() == 0 || 
+             (limits[0]->GetZ(xpos_[m],ypos_[m]) <= zpos_[m] &&
+              limits[1]->GetZ(xpos_[m],ypos_[m]) >= zpos_[m])) {
+            trend[j] = t*blockedLog[m]+(1-t)*blockedLog[m-1];
+          }
+        }
+        t += step_mult;
+      }
+    }
+  }
+}
+
+
+//------------------------------------------------------------------------------
+void 
+BlockedLogs::interpolateTrend(const int * blockedLog, int * trend)
+{
+  for (int m = 1 ; m < nBlocks_ ; m++) {
+    if(abs(kpos_[m]-kpos_[m-1]) > 1) {
+      int delta = 1;
+      if(kpos_[m] < kpos_[m-1])
+        delta = -1;
+      for(int j = kpos_[m-1]+delta; j != kpos_[m];j++) {
+        if(trend[j] == RMISSING)
+          trend[j] = blockedLog[m-1];
+      }
+    }
+  }
+}
+
 
 
 //------------------------------------------------------------------------------

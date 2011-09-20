@@ -326,24 +326,23 @@ ModelGeneral::checkAvailableMemory(Simbox        * timeSimbox,
     //
     // Check if we can hold everything in memory.
     //
-    float ** memchunk  = new float*[nGrids];
-
-    for(int i = 0 ; i < nGrids ; i++)
-      memchunk[i] = new float[static_cast<size_t>(gridSizePad)];
-
-    if(memchunk[nGrids-1] == NULL)  //Could not allocate memory
+    modelSettings->setFileGrid(false);
+    char ** memchunk  = new char*[nGrids];
+    
+    int i = 0;
+    try {
+      for(i = 0 ; i < nGrids ; i++)
+        memchunk[i] = new char[static_cast<size_t>(gridSizePad)];
+    }
+    catch (std::bad_alloc& ) //Could not allocate memory
     {
       modelSettings->setFileGrid(true);
       LogKit::LogFormatted(LogKit::Low,"Not enough memory to hold all grids. Using file storage.\n");
     }
-    else
-    {
-      modelSettings->setFileGrid(false);
-    }
     
-    for(int i=0 ; i<nGrids ; i++)
-      if(memchunk[i] != NULL) delete [] memchunk[i];
-    if(memchunk != NULL) delete [] memchunk;
+    for(int j=0 ; j<i ; j++)
+      delete [] memchunk[j];
+    delete [] memchunk;
   }
 }
 

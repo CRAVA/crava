@@ -27,7 +27,6 @@ Program::Program(const unsigned int  major,
   LogKit::LogFormatted(LogKit::Low,"\n*****                                                                                         *****"); 
   LogKit::LogFormatted(LogKit::Low,"\n*****                                   C R A V A  -  "+version+blanks+                      "*****"); 
   LogKit::LogFormatted(LogKit::Low,"\n*****                                                                                         *****"); 
-  LogKit::LogFormatted(LogKit::Low,"\n*****                     Copyright (c) 2003 by Norsk Regnesentral/Statoil                    *****"); 
   LogKit::LogFormatted(LogKit::Low,"\n*****                                                                                         *****"); 
   LogKit::LogFormatted(LogKit::Low,"\n***************************************************************************************************\n\n");
 

@@ -1137,12 +1137,12 @@ WellData::filterLogs(void)
   }
   else {
     for(int i=0;i<nd_;i++) {
-      alpha_background_resolution_[i] = WELLMISSING;
-      alpha_seismic_resolution_[i]    = WELLMISSING;
-      beta_background_resolution_[i]  = WELLMISSING;
-      beta_seismic_resolution_[i]     = WELLMISSING;
-      rho_background_resolution_[i]   = WELLMISSING;
-      rho_seismic_resolution_[i]      = WELLMISSING;
+      alpha_background_resolution_[i] = RMISSING;
+      alpha_seismic_resolution_[i]    = RMISSING;
+      beta_background_resolution_[i]  = RMISSING;
+      beta_seismic_resolution_[i]     = RMISSING;
+      rho_background_resolution_[i]   = RMISSING;
+      rho_seismic_resolution_[i]      = RMISSING;
     }
   }
   delete [] alpha_interpolated;

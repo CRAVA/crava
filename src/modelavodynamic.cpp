@@ -239,8 +239,8 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings       *& modelSettings,
 
   if (failedLoadingModel) {
     LogKit::WriteHeader("Error(s) while loading data");
-    LogKit::LogFormatted(LogKit::Error,"\n"+errText);
-    LogKit::LogFormatted(LogKit::Error,"\nAborting\n");
+    LogKit::LogMessage(LogKit::Error,"\n"+errText);
+    LogKit::LogMessage(LogKit::Error,"\nAborting\n");
   }
 
   failed_ = failedLoadingModel;

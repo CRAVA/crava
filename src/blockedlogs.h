@@ -138,6 +138,13 @@ private:
                                           int index, float rel);
   void           interpolateContinuousLog(float * blockedLog, int start, int end, 
                                           int index, float rel);
+  void           interpolateTrend(const float * blockedLog, 
+                                  float * trend);
+  void           interpolateTrend(const float * blockedLog, 
+                                  float * trend, 
+                                  const std::vector<Surface *> & limits);
+  void           interpolateTrend(const int * blockedLog, 
+                                  int * trend);
   int            findMostProbable(const int * count,
                                   int         nFacies,
                                   RandomGen * random); 
@@ -231,7 +238,7 @@ private:
   float          lateralThresholdGradient_;  //Minimum lateral distance where gradient lines must not cross
   float          sigma_m_;             //Smoothing factor for the gradients
 
-
+  bool           interpolate_;         //Should vertical interpolation be done? (for Roxar)
 };
 
 #endif

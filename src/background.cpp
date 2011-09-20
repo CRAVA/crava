@@ -982,22 +982,22 @@ Background::writeDeviationsFromVerticalTrend(const float *  avg_dev_alpha,
   //
   // Sort deviations to find worst well.
   //
+
   int * index = new int[nWells];
-  float cur_min = 99999.0f;
-  int   cur_pos = 0;
+  for(int i=0;i<nWells;i++)
+    index[i] = i;
+
   for (int i=0 ; i<nWells ; i++)
   {
-    float cur_max = 0.0f;
-    for (int j=0 ; j<nWells ; j++)
+    for (int j=i; j<nWells ; j++)
     {
-      if (rel_avg_dev[j] > cur_max && rel_avg_dev[j] < cur_min) 
+      if (rel_avg_dev[index[j]] > rel_avg_dev[index[i]]) 
       {   
-        cur_max = rel_avg_dev[j];
-        cur_pos = j;
+        int tmp = index[i];
+        index[i] = index[j];
+        index[j] = tmp;
       }
     }
-    index[i] = cur_pos;
-    cur_min = cur_max;
   }
   //
   // Print results
