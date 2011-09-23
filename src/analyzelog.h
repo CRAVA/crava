@@ -14,7 +14,7 @@ public:
              Background     * background,
              Simbox         * simbox,
              ModelSettings  * modelSettings,
-             std::string    & errTxt); 
+             std::string    & errTxt);
   ~Analyzelog(void);
 
   float        ** getVar0(void)         const { return Var0_         ;}
@@ -27,8 +27,8 @@ private:
                            Background    * background,
                            std::string   & errTxt);
 
-  void            estimateLnData(float      **& lnData, 
-                                 FFTGrid      * background, 
+  void            estimateLnData(float      **& lnData,
+                                 FFTGrid      * background,
                                  int            logNr,
                                  std::string  & errTxt);
 
@@ -38,18 +38,18 @@ private:
                                     float       ** lnDataRho,
                                     std::string & errTxt);
 
-  void            estimateCorrTAndVar0(float       * CorrT, 
-                                       float      ** Var0, 
+  void            estimateCorrTAndVar0(float       * CorrT,
+                                       float      ** Var0,
                                        float      ** lnDataAlpha,
                                        float      ** lnDataBeta,
-                                       float      ** lnDataRho, 
+                                       float      ** lnDataRho,
                                        bool          allVsLogsAreSynthetic,
-                                       float         dt, 
-                                       int           n, 
+                                       float         dt,
+                                       int           n,
                                        int           maxnd,
                                        std::string & errTxt);
 
-  void            readMeanData(FFTGrid *cube, int nd, const double *xpos, const double *ypos, 
+  void            readMeanData(FFTGrid *cube, int nd, const double *xpos, const double *ypos,
                                const double *zpos, float *meanValue);
 
   void            calculateNumberOfLags(int         & numberOfLags,
@@ -63,7 +63,7 @@ private:
                                  float         ** Var0,
                                  float            dt,
                                  std::string    & errTxt);
-  
+
   const Simbox  * simbox_;
   WellData     ** wells_;
   int             nwells_;       // Number of wells

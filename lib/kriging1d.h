@@ -22,18 +22,18 @@ private:
   static void      addTrend(float * data,
                             float * trend,
                             int     nd);
-  static void      allocateSpaceForMatrixEq(double ** & K, 
+  static void      allocateSpaceForMatrixEq(double ** & K,
                                             double ** & C,
                                             double  * & k,
                                             int         md);
-  static void      deAllocateSpaceForMatrixEq(double ** & K, 
+  static void      deAllocateSpaceForMatrixEq(double ** & K,
                                               double ** & C,
                                               double  * & k,
                                               int         md);
   static void      fillKrigingMatrix(double ** K,
                                      int     * index,
                                      int       md,
-                                     double    range, 
+                                     double    range,
                                      double    power,
                                      double    dz);
   static void      cholesky(double ** K,
@@ -42,10 +42,10 @@ private:
   static double ** copyMatrix(double ** in,
                               double ** out,
                               int       md);
-  static void      fillKrigingVector(double * k,                             
+  static void      fillKrigingVector(double * k,
                                      int    * index,
                                      int      md,
-                                     double   range, 
+                                     double   range,
                                      double   power,
                                      double   dz,
                                      int      krigK);

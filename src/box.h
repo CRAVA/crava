@@ -9,7 +9,7 @@ class Simbox;
 class CBox
 {
 public:
-  CBox(int iMin = 0, int jMin = 0, int kMin = 0, int iMax = 0, int jMax = 0, int kMax = 0, 
+  CBox(int iMin = 0, int jMin = 0, int kMin = 0, int iMax = 0, int jMax = 0, int kMax = 0,
     const Simbox* pSBox = 0);
   ~CBox(void);
   bool IsInside(int i, int j, int k) const; // returns true if inside box, ijk is rotated indexes relative to simbox
@@ -18,8 +18,8 @@ public:
   int GetNz() const { return kMax_ - kMin_ + 1;}
   void GetMin(int& iMin, int& jMin, int& kMin) const { iMin = iMin_; jMin = jMin_; kMin = kMin_;}
   void GetMax(int& iMax, int& jMax, int& kMax) const { iMax = iMax_; jMax = jMax_; kMax = kMax_;}
-  void ModifyBox(const CBox& boxS, const Simbox* pSBox = 0, 
-    float rangeX = 0.0f, float rangeY = 0.0f, float rangeZ = 0.0f); // a special function 
+  void ModifyBox(const CBox& boxS, const Simbox* pSBox = 0,
+    float rangeX = 0.0f, float rangeY = 0.0f, float rangeZ = 0.0f); // a special function
   bool operator==(const CBox& boxS) const
   {
     return (iMin_ == boxS.iMin_ && jMin_ == boxS.jMin_ && kMin_ == boxS.kMin_ &&

@@ -7,10 +7,10 @@
 class CovGrid2D
 {
 public:
-  CovGrid2D(Vario * vario, 
-            int     nx, 
-            int     ny, 
-            double  dx, 
+  CovGrid2D(Vario * vario,
+            int     nx,
+            int     ny,
+            double  dx,
             double  dy);
   float              getCov(int deltai, int deltaj) const;
   void               writeToFile(const std::string & name) const;

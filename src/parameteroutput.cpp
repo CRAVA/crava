@@ -10,8 +10,8 @@ void
 ParameterOutput::writeParameters(const Simbox  * simbox,
                                  ModelGeneral  * modelGeneral,
                                  const ModelSettings * modelSettings,
-                                 FFTGrid       * alpha, 
-                                 FFTGrid       * beta, 
+                                 FFTGrid       * alpha,
+                                 FFTGrid       * beta,
                                  FFTGrid       * rho,
                                  int             outputFlag,
                                  bool            fileGrid,
@@ -108,25 +108,25 @@ ParameterOutput::writeParameters(const Simbox  * simbox,
   }
 }
 
-void 
+void
 ParameterOutput::computeAcousticImpedance(const Simbox * simbox, ModelGeneral * modelGeneral, const ModelSettings * modelSettings,
-                                          FFTGrid * Alpha, FFTGrid * Rho , 
+                                          FFTGrid * Alpha, FFTGrid * Rho ,
                                           bool fileGrid, const std::string & fileName)
-{   
+{
   if(Alpha->getIsTransformed()) Alpha->invFFTInPlace();
   if(Rho->getIsTransformed()) Rho->invFFTInPlace();
 
   Alpha->setAccessMode(FFTGrid::READ);
   Rho->setAccessMode(FFTGrid::READ);
 
-  FFTGrid* prImpedance; 
+  FFTGrid* prImpedance;
   prImpedance = createFFTGrid(Alpha, fileGrid);
   prImpedance->setType(FFTGrid::PARAMETER);
   prImpedance->createRealGrid();
   prImpedance->setAccessMode(FFTGrid::WRITE);
 
   int i;
-  int rSize =  prImpedance->getrsize(); 
+  int rSize =  prImpedance->getrsize();
   double ijkA, ijkR, compVal;
   for(i=0; i  <  rSize; i++)
   {
@@ -156,13 +156,13 @@ ParameterOutput::computeShearImpedance(const Simbox * simbox, ModelGeneral * mod
   Beta->setAccessMode(FFTGrid::READ);
   Rho->setAccessMode(FFTGrid::READ);
 
-  FFTGrid* shImpedance; 
+  FFTGrid* shImpedance;
   shImpedance  = createFFTGrid(Beta, fileGrid);
   shImpedance->setType(FFTGrid::PARAMETER);
   shImpedance->createRealGrid();
   shImpedance->setAccessMode(FFTGrid::WRITE);
   int i;
-  int rSize =  shImpedance->getrsize(); 
+  int rSize =  shImpedance->getrsize();
   double ijkB, ijkR, compVal;
   for(i=0; i  <  rSize; i++)
   {
@@ -175,7 +175,7 @@ ParameterOutput::computeShearImpedance(const Simbox * simbox, ModelGeneral * mod
   Beta->endAccess();
   Rho->endAccess();
 
-  shImpedance->endAccess(); 
+  shImpedance->endAccess();
   writeToFile(simbox, modelGeneral, modelSettings, shImpedance, fileName, "Shear impedance");
   delete shImpedance;
 }
@@ -186,19 +186,19 @@ ParameterOutput::computeVpVsRatio(const Simbox * simbox, ModelGeneral * modelGen
                                   FFTGrid * Alpha, FFTGrid * Beta,
                                   bool fileGrid, const std::string & fileName)
 {
-  if(Alpha->getIsTransformed()) Alpha->invFFTInPlace(); 
+  if(Alpha->getIsTransformed()) Alpha->invFFTInPlace();
   if(Beta->getIsTransformed())  Beta->invFFTInPlace();
 
   Alpha->setAccessMode(FFTGrid::READ);
   Beta->setAccessMode(FFTGrid::READ);
 
-  FFTGrid* ratioVpVs; 
+  FFTGrid* ratioVpVs;
   ratioVpVs = createFFTGrid(Alpha, fileGrid);
   ratioVpVs->setType(FFTGrid::PARAMETER);
   ratioVpVs->createRealGrid();
   ratioVpVs->setAccessMode(FFTGrid::WRITE);
   int i;
-  int rSize =  ratioVpVs->getrsize(); 
+  int rSize =  ratioVpVs->getrsize();
   double ijkA, ijkB, compVal;
   for(i=0; i  <  rSize; i++)
   {
@@ -227,14 +227,14 @@ ParameterOutput::computePoissonRatio(const Simbox * simbox, ModelGeneral * model
   Alpha->setAccessMode(FFTGrid::READ);
   Beta->setAccessMode(FFTGrid::READ);
 
-  FFTGrid* poiRat; 
+  FFTGrid* poiRat;
   poiRat  = createFFTGrid(Alpha, fileGrid);
   poiRat->setType(FFTGrid::PARAMETER);
   poiRat->createRealGrid();
   poiRat->setAccessMode(FFTGrid::WRITE);
 
   int i;
-  int rSize =  poiRat->getrsize(); 
+  int rSize =  poiRat->getrsize();
   double ijkA, ijkB, compVal, vRatioSq;
   for(i=0; i  <  rSize; i++)
   {
@@ -253,7 +253,7 @@ ParameterOutput::computePoissonRatio(const Simbox * simbox, ModelGeneral * model
   delete poiRat;
 }
 
-void 
+void
 ParameterOutput::computeLameMu(const Simbox * simbox, ModelGeneral * modelGeneral, const ModelSettings * modelSettings,
                                FFTGrid * Beta, FFTGrid * Rho,
                                bool fileGrid, const std::string & fileName )
@@ -264,14 +264,14 @@ ParameterOutput::computeLameMu(const Simbox * simbox, ModelGeneral * modelGenera
   Beta->setAccessMode(FFTGrid::READ);
   Rho->setAccessMode(FFTGrid::READ);
 
-  FFTGrid* mu; 
+  FFTGrid* mu;
   mu  = createFFTGrid(Beta, fileGrid);
   mu->setType(FFTGrid::PARAMETER);
   mu->createRealGrid();
   mu->setAccessMode(FFTGrid::WRITE);
 
   int i;
-  int rSize =  mu->getrsize(); 
+  int rSize =  mu->getrsize();
   double ijkB, ijkR, compVal;
   for(i=0; i  <  rSize; i++)
   {
@@ -302,14 +302,14 @@ ParameterOutput::computeLameLambda(const Simbox * simbox, ModelGeneral * modelGe
   Beta->setAccessMode(FFTGrid::READ);
   Rho->setAccessMode(FFTGrid::READ);
 
-  FFTGrid* lambda; 
+  FFTGrid* lambda;
   lambda  = createFFTGrid(Alpha, fileGrid);
   lambda->setType(FFTGrid::PARAMETER);
   lambda->createRealGrid();
   lambda->setAccessMode(FFTGrid::WRITE);
 
   int i;
-  int rSize =  lambda->getrsize(); 
+  int rSize =  lambda->getrsize();
   double ijkA, ijkB, ijkR, compVal;
   for(i=0; i  <  rSize; i++)
   {
@@ -343,14 +343,14 @@ ParameterOutput::computeLambdaRho(const Simbox * simbox, ModelGeneral * modelGen
   Beta->setAccessMode(FFTGrid::READ);
   Rho->setAccessMode(FFTGrid::READ);
 
-  FFTGrid* lambdaRho; 
+  FFTGrid* lambdaRho;
   lambdaRho  = createFFTGrid(Alpha, fileGrid);
   lambdaRho->setType(FFTGrid::PARAMETER);
   lambdaRho->createRealGrid();
   lambdaRho->setAccessMode(FFTGrid::WRITE);
 
   int i;
-  int rSize =  lambdaRho->getrsize(); 
+  int rSize =  lambdaRho->getrsize();
   double ijkA, ijkB, ijkR, compVal;
   for(i=0; i  <  rSize; i++)
   {
@@ -366,7 +366,7 @@ ParameterOutput::computeLambdaRho(const Simbox * simbox, ModelGeneral * modelGen
   Rho->endAccess();
 
   lambdaRho->endAccess();
- 
+
   writeToFile(simbox, modelGeneral, modelSettings, lambdaRho, fileName, "Lambda rho");
   delete lambdaRho;
 }
@@ -382,14 +382,14 @@ ParameterOutput::computeMuRho(const Simbox * simbox, ModelGeneral * modelGeneral
   Beta->setAccessMode(FFTGrid::READ);
   Rho->setAccessMode(FFTGrid::READ);
 
-  FFTGrid* muRho; 
+  FFTGrid* muRho;
   muRho = createFFTGrid(Alpha, fileGrid);
   muRho->setType(FFTGrid::PARAMETER);
   muRho->createRealGrid();
   muRho->setAccessMode(FFTGrid::WRITE);
 
   int i;
-  int rSize =  muRho->getrsize(); 
+  int rSize =  muRho->getrsize();
   double ijkB, ijkR, compVal;
   for(i=0; i  <  rSize; i++)
   {
@@ -409,12 +409,12 @@ ParameterOutput::computeMuRho(const Simbox * simbox, ModelGeneral * modelGeneral
   delete muRho;
 }
 
-FFTGrid*            
+FFTGrid*
 ParameterOutput::createFFTGrid(FFTGrid * referenceGrid, bool fileGrid)
 {
   int nx  = referenceGrid->getNx();
   int ny  = referenceGrid->getNy();
-  int nz  = referenceGrid->getNz(); 
+  int nz  = referenceGrid->getNz();
   int nxp = referenceGrid->getNxp();
   int nyp = referenceGrid->getNyp();
   int nzp = referenceGrid->getNzp();
@@ -429,25 +429,25 @@ ParameterOutput::createFFTGrid(FFTGrid * referenceGrid, bool fileGrid)
   return(fftGrid);
 }
 
-void 
-ParameterOutput::writeToFile(const Simbox      * simbox, 
-                             ModelGeneral      * modelGeneral, 
+void
+ParameterOutput::writeToFile(const Simbox      * simbox,
+                             ModelGeneral      * modelGeneral,
                              const ModelSettings     * modelSettings,
-                             FFTGrid           * grid, 
-                             const std::string & fileName, 
-                             const std::string & sgriLabel) 
+                             FFTGrid           * grid,
+                             const std::string & fileName,
+                             const std::string & sgriLabel)
 {
   GridMapping * timeDepthMapping = modelGeneral->getTimeDepthMapping();
   GridMapping * timeCutMapping   = modelGeneral->getTimeCutMapping();
   float         seismicStartTime = 0.0; //Hack for Sebastian, was: model->getModelSettings()->getSegyOffset();
   TraceHeaderFormat *format = modelSettings->getTraceHeaderFormatOutput();
 
-  grid->writeFile(fileName, 
-                  IO::PathToInversionResults(), 
+  grid->writeFile(fileName,
+                  IO::PathToInversionResults(),
                   simbox,
-                  sgriLabel, 
-                  seismicStartTime, 
-                  timeDepthMapping, 
-                  timeCutMapping, 
+                  sgriLabel,
+                  seismicStartTime,
+                  timeDepthMapping,
+                  timeCutMapping,
                   *format);
 }

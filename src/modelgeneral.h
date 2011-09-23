@@ -29,7 +29,7 @@ public:
 
   Simbox                      * getTimeSimbox()            const { return timeSimbox_             ;}
   Simbox                      * getTimeSimboxConstThick()  const { return timeSimboxConstThick_   ;}
-  RandomGen                   * getRandomGen()             const { return randomGen_              ;} 
+  RandomGen                   * getRandomGen()             const { return randomGen_              ;}
   GridMapping                 * getTimeDepthMapping()      const { return timeDepthMapping_       ;}
   GridMapping                 * getTimeCutMapping()        const { return timeCutMapping_         ;}
 
@@ -38,13 +38,13 @@ public:
   std::vector<bool>             getFailedDetails()         const { return failed_details_         ;}
 
   void                          getCorrGradIJ(float & corrGradI, float &corrGradJ) const;
-  
-  static FFTGrid*               createFFTGrid(int nx, 
-                                              int ny, 
-                                              int nz, 
-                                              int nxp, 
-                                              int nyp, 
-                                              int nzp, 
+
+  static FFTGrid*               createFFTGrid(int nx,
+                                              int ny,
+                                              int nz,
+                                              int nxp,
+                                              int nyp,
+                                              int nzp,
                                               bool fileGrid);
   static void      readGridFromFile(const std::string       & fileName,
                                     const std::string       & parName,
@@ -54,70 +54,70 @@ public:
                                     const TraceHeaderFormat * format,
                                     int                       gridType,
                                     Simbox                  * timeSimbox,
-                                    ModelSettings           * modelSettings, 
+                                    ModelSettings           * modelSettings,
                                     int                     & outsideTraces,
                                     std::string             & errorText,
                                     bool                      nopadding = false);
-  static int       readSegyFile(const std::string       & fileName, 
-                                FFTGrid                *& target, 
-                                Simbox                 *& timeSimbox, 
+  static int       readSegyFile(const std::string       & fileName,
+                                FFTGrid                *& target,
+                                Simbox                 *& timeSimbox,
                                 ModelSettings          *& modelSettings,
                                 const SegyGeometry     *& geometry,
                                 int                       gridType,
                                 float                     offset,
                                 const TraceHeaderFormat * format,
                                 std::string             & errText,
-                                bool                      nopadding = false); 
-  static int       readStormFile(const std::string  & fileName, 
-                                 FFTGrid           *& target, 
+                                bool                      nopadding = false);
+  static int       readStormFile(const std::string  & fileName,
+                                 FFTGrid           *& target,
                                  const int            gridType,
-                                 const std::string  & parName, 
+                                 const std::string  & parName,
                                  Simbox             * timeSimbox,
-                                 ModelSettings     *& modelSettings, 
+                                 ModelSettings     *& modelSettings,
                                  std::string        & errText,
                                  bool                 isStorm  = true,
                                  bool                 nopadding = true);
   static void      loadVelocity(FFTGrid           *& velocity,
                                 Simbox             * timeSimbox,
-                                ModelSettings      * modelSettings, 
+                                ModelSettings      * modelSettings,
                                 const std::string  & velocityField,
                                 bool               & velocityFromInversion,
                                 std::string        & errText,
                                 bool               & failed);
- 
+
 private:
   void             makeTimeSimboxes(Simbox          *& timeSimbox,
                                     Simbox          *& timeCutSimbox,
                                     Simbox          *& timeBGSimbox,
                                     Simbox          *& timeSimboxConstThick,
                                     Surface         *& correlationDirection,
-                                    ModelSettings   *& modelSettings, 
+                                    ModelSettings   *& modelSettings,
                                     const InputFiles * inputFiles,
                                     std::string      & errText,
                                     bool             & failed);
-  void             logIntervalInformation(const Simbox      * simbox, 
-                                          const std::string & header_text1, 
+  void             logIntervalInformation(const Simbox      * simbox,
+                                          const std::string & header_text1,
                                           const std::string & header_text2);
-  void             setupExtendedTimeSimbox(Simbox  * timeSimbox, 
-                                           Surface * corrSurf, 
+  void             setupExtendedTimeSimbox(Simbox  * timeSimbox,
+                                           Surface * corrSurf,
                                            Simbox *& timeCutSimbox,
                                            int       outputFormat,
                                            int       outputDomain,
                                            int       otherOutput);
-  void             setupExtendedBackgroundSimbox(Simbox   * timeSimbox, 
-                                                 Surface  * corrSurf, 
+  void             setupExtendedBackgroundSimbox(Simbox   * timeSimbox,
+                                                 Surface  * corrSurf,
                                                  Simbox  *& timeBGSimbox,
                                                  int        outputFormat,
                                                  int        outputDomain,
                                                  int        otherOutput);
-  void             processDepthConversion(Simbox           * timeCutSimbox, 
+  void             processDepthConversion(Simbox           * timeCutSimbox,
                                           Simbox           * timeSimbox,
-                                          ModelSettings    * modelSettings, 
+                                          ModelSettings    * modelSettings,
                                           const InputFiles * inputFiles,
-                                          std::string      & errText, 
+                                          std::string      & errText,
                                           bool             & failedVelocity);
-  void             setSimboxSurfaces(Simbox                        *& simbox, 
-                                     const std::vector<std::string> & surfFile, 
+  void             setSimboxSurfaces(Simbox                        *& simbox,
+                                     const std::vector<std::string> & surfFile,
                                      ModelSettings                  * modelSettings,
                                      std::string                    & errText,
                                      bool                           & failed);
@@ -125,7 +125,7 @@ private:
                                           ModelSettings *& modelSettings);
   void             estimateZPaddingSize(Simbox         * timeSimbox,
                                         ModelSettings *& modelSettings);
-  int              setPaddingSize(int    nx, 
+  int              setPaddingSize(int    nx,
                                   double px);
   void             checkAvailableMemory(Simbox              * timeSimbox,
                                         ModelSettings       * modelSettings,
@@ -133,37 +133,37 @@ private:
   void             printSettings(ModelSettings       * modelSettings,
                                  const InputFiles    * inputFiles);
   //Compute correlation gradient in terms of i,j and k in grid.
-  double *         findPlane(Surface * surf); //Finds plane l2-closest to surface.             
+  double *         findPlane(Surface * surf); //Finds plane l2-closest to surface.
   //Create planar surface with same extent as template, p[0]+p[1]*x+p[2]*y
-  Surface *        createPlaneSurface(double  * planeParams, 
+  Surface *        createPlaneSurface(double  * planeParams,
                                       Surface * templateSurf);
 
   void             writeAreas(const SegyGeometry * areaParams,
                               Simbox             * timeSimbox,
                               std::string        & text);
-  void             findSmallestSurfaceGeometry(const double   x0, 
-                                               const double   y0, 
-                                               const double   lx, 
-                                               const double   ly, 
+  void             findSmallestSurfaceGeometry(const double   x0,
+                                               const double   y0,
+                                               const double   lx,
+                                               const double   ly,
                                                const double   rot,
                                                double       & xMin,
                                                double       & yMin,
                                                double       & xMax,
-                                               double       & yMax); 
+                                               double       & yMax);
   void             getGeometryFromGridOnFile(const std::string         seismicFile,
                                              const TraceHeaderFormat * thf,
                                              SegyGeometry           *& geometry,
                                              std::string             & errText);
-  SegyGeometry   * geometryFromCravaFile(const std::string & fileName); 
-  SegyGeometry   * geometryFromStormFile(const std::string & fileName, std::string & errText, bool scale = false); 
+  SegyGeometry   * geometryFromCravaFile(const std::string & fileName);
+  SegyGeometry   * geometryFromStormFile(const std::string & fileName, std::string & errText, bool scale = false);
 
   Simbox                  * timeSimbox_;            ///< Information about simulation area.
-  Simbox                  * timeSimboxConstThick_;  ///< Simbox with constant thickness   
-  
+  Simbox                  * timeSimboxConstThick_;  ///< Simbox with constant thickness
+
   Surface                 * correlationDirection_;  ///< Grid giving the correlation direction.
   RandomGen               * randomGen_;             ///< Random generator.
 
-  double                    gradX_;                 ///< X-gradient of correlation rotation. 
+  double                    gradX_;                 ///< X-gradient of correlation rotation.
   double                    gradY_;                 ///< Y-gradient of correlation rotation.
                                                     ///< These are only used with correlation surfaces.
 
@@ -172,7 +172,7 @@ private:
 
   bool                      velocityFromInversion_;
 
-  bool                      failed_;                ///< Indicates whether errors occured during construction. 
+  bool                      failed_;                ///< Indicates whether errors occured during construction.
   std::vector<bool>         failed_details_;        ///< Detailed failed information.
 };
 

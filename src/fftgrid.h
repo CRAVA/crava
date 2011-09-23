@@ -4,7 +4,7 @@
 #include <assert.h>
 #include <string>
 
-#include "fft/include/fftw.h"
+#include "fftw.h"
 #include "definitions.h"
 
 class Corr;
@@ -53,7 +53,7 @@ public:
   fftw_complex         getComplexValue(int i, int j, int k, bool extSimbox = false) const;
   virtual int          setRealValue(int i, int j, int k, float value, bool extSimbox = false);  // Accessmode randomaccess
   int                  setComplexValue(int i, int j ,int k, fftw_complex value, bool extSimbox = false);
-  fftw_complex         getFirstComplexValue();    
+  fftw_complex         getFirstComplexValue();
   virtual int          square();                                // No mode/randomaccess
   virtual int          expTransf();                             // No mode/randomaccess
   virtual int          logTransf();                             // No mode/randomaccess
@@ -66,7 +66,7 @@ public:
   virtual void         add(FFTGrid* fftGrid);                   // No mode/randomaccess
   virtual void         subtract(FFTGrid* fftGrid);                   // No mode/randomaccess
   virtual void         changeSign();                   // No mode/randomaccess
-  virtual void         multiply(FFTGrid* fftGrid);              // pointwise multiplication!    
+  virtual void         multiply(FFTGrid* fftGrid);              // pointwise multiplication!
   bool                 consistentSize(int nx,int ny, int nz, int nxp, int nyp, int nzp);
   int                  getCounterForGet() const {return(counterForGet_);}
   int                  getCounterForSet() const {return(counterForSet_);}
@@ -79,7 +79,7 @@ public:
   int                  getRNxp()    const {return(rnxp_);}
   int                  getcsize()   const {return(csize_);}
   int                  getrsize()   const {return(rsize_);}
-  float                getTheta()   const {return(theta_);}  
+  float                getTheta()   const {return(theta_);}
   float                getScale()   const {return(scale_);}
   float                getMinReal() const {return rValMin_;}
   float                getMaxReal() const {return rValMax_;}
@@ -91,38 +91,38 @@ public:
   int                  getType() const {return(cubetype_);}
   virtual void         setAccessMode(int mode){assert(mode>=0);}
   virtual void         endAccess(){counterForGet_ = 0; counterForSet_ = 0;}
-  virtual void         writeFile(const std::string & fileName, 
-                                 const std::string & subDir, 
-                                 const Simbox      * simbox, 
-                                 const std::string   sgriLabel = "NO_LABEL", 
-                                 const float         z0        = 0.0, 
-                                 GridMapping       * depthMap  = NULL, 
+  virtual void         writeFile(const std::string & fileName,
+                                 const std::string & subDir,
+                                 const Simbox      * simbox,
+                                 const std::string   sgriLabel = "NO_LABEL",
+                                 const float         z0        = 0.0,
+                                 GridMapping       * depthMap  = NULL,
                                  GridMapping       * timeMap   = NULL,
-                                 const TraceHeaderFormat & thf  = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS)); 
+                                 const TraceHeaderFormat & thf  = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS));
   //Use this instead of the ones below.
-  virtual void         writeStormFile(const std::string & fileName, const Simbox * simbox, bool ascii = false, 
+  virtual void         writeStormFile(const std::string & fileName, const Simbox * simbox, bool ascii = false,
                                       bool padding = false, bool flat = false);//No mode/randomaccess
-  virtual int          writeSegyFile(const std::string & fileName, const Simbox * simbox, float z0, 
+  virtual int          writeSegyFile(const std::string & fileName, const Simbox * simbox, float z0,
                                      const TraceHeaderFormat &thf = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS));   //No mode/randomaccess
   virtual int          writeSgriFile(const std::string & fileName, const Simbox * simbox, const std::string label);
   virtual void         writeAsciiFile(const std::string & fileName);
   virtual void         writeAsciiRaw(const std::string & fileName);
-  virtual void         writeResampledStormCube(GridMapping *gridmapping, const std::string & fileName, 
+  virtual void         writeResampledStormCube(GridMapping *gridmapping, const std::string & fileName,
                                                const Simbox *simbox, const int format);
   virtual void         writeCravaFile(const std::string & fileName, const Simbox * simbox);
   virtual void         readCravaFile(const std::string & fileName, std::string & errText, bool nopadding = false);
 
-  virtual bool         isFile() {return(0);}    // indicates wether the grid is in memory or on disk  
+  virtual bool         isFile() {return(0);}    // indicates wether the grid is in memory or on disk
 
   static void          setOutputFlags(int format, int domain) {formatFlag_ = format;domainFlag_=domain;};
-  static void          setOutputFormat(int format) {formatFlag_ = format;} 
-  int                  getOutputFormat() {return(formatFlag_);} 
-  static void          setOutputDomain(int domain) {domainFlag_ = domain;} 
-  int                  getOutputDomain() {return(domainFlag_);} 
+  static void          setOutputFormat(int format) {formatFlag_ = format;}
+  int                  getOutputFormat() {return(formatFlag_);}
+  static void          setOutputDomain(int domain) {domainFlag_ = domain;}
+  int                  getOutputDomain() {return(domainFlag_);}
   static void          setMaxAllowedGrids(int maxAllowedGrids) {maxAllowedGrids_ = maxAllowedGrids ;}
   static int           getMaxAllowedGrids()   { return maxAllowedGrids_   ;}
   static int           getMaxAllocatedGrids() { return maxAllocatedGrids_ ;}
-  static void          setTerminateOnMaxGrid(bool terminate) {terminateOnMaxGrid_ = terminate ;} 
+  static void          setTerminateOnMaxGrid(bool terminate) {terminateOnMaxGrid_ = terminate ;}
   static int           findClosestFactorableNumber(int leastint);
 
 
@@ -134,7 +134,7 @@ public:
   virtual void         interpolateSeismic(float energyTreshold = 0);
 
   void                 checkNaN(); //NBNB Ragnar: For debug purpose. Negative number = OK.
-  float                getDistToBoundary(int i, int n , int np); 
+  float                getDistToBoundary(int i, int n , int np);
   virtual void         getRealTrace(float * value, int i, int j);
   virtual int          setRealTrace(int i, int j, float *value);
   std::vector<float>   getRealTrace2(int i, int j);
@@ -148,7 +148,7 @@ public:
                        }
 
 protected:
-  //int                setPaddingSize(int n, float p); 
+  //int                setPaddingSize(int n, float p);
   int                  getFillNumber(int i, int n, int np );
 
   int                  getXSimboxIndex(int i){return(getFillNumber(i, nx_, nxp_ ));}
@@ -176,32 +176,32 @@ protected:
   float                theta_;             // angle in angle gather (case of data)
   float                scale_;             // To keep track of the scalings after fourier transforms
   int                  nx_;                // size of original grid in lateral x direction
-  int                  ny_;                // size of original grid in lateral y direction 
+  int                  ny_;                // size of original grid in lateral y direction
   int                  nz_;                // size of original grid in depth (time)
-  int                  nxp_;               // size of padded FFT grid in lateral x direction 
+  int                  nxp_;               // size of padded FFT grid in lateral x direction
   int                  nyp_;               // size of padded FFT grid in lateral y direction
-  int                  nzp_;               // size of padded FFT grid in depth (time) 
-                                           
+  int                  nzp_;               // size of padded FFT grid in depth (time)
+
   int                  cnxp_;              // size in x direction for storage inplace algorithm (complex grid) nxp_/2+1
   int                  rnxp_;              // expansion in x direction for storage inplace algorithm (real grid) 2*(nxp_/2+1)
-                                           
+
   int                  csize_;             // size of complex grid, cnxp_*nyp_*nzp_
   int                  rsize_;             // size of real grid rnxp_*nyp_*nzp_
   int                  counterForGet_;     // active cell in grid
   int                  counterForSet_;     // active cell in grid
-                                           
+
   bool                 istransformed_;     // true if the grid contain Fourier values (i.e complex variables)
-                                           
+
   fftw_complex       * cvalue_;            // values of complex parameter in grid points
   fftw_real          * rvalue_;            // values of real parameter in grid points
-           
-  float                rValMin_;           // minimum real value 
+
+  float                rValMin_;           // minimum real value
   float                rValMax_;           // maximum real value
   float                rValAvg_;           // average real value
-                                
+
   static int           formatFlag_;        // Decides format of output (see ModelSettings).
   static int           domainFlag_;        // Decides domain of output (see ModelSettings).
-  
+
   static int           maxAllowedGrids_;   // The maximum number of grids we are allowed to allocate.
   static int           maxAllocatedGrids_; // The maximum number of grids that has actually been allocated.
   static int           nGrids_;            // The actually number of grids allocated (varies as crava runs).

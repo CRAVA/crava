@@ -13,7 +13,7 @@ Vario::Vario(float range1, float range2, float angle)
   range1_ = range1;
   range2_ = range2;
   //
-  // It seems (from txx and tyy below) that all angles are mathematical angles, 
+  // It seems (from txx and tyy below) that all angles are mathematical angles,
   // that is, angles relative to the x-axis in counterclockwise direction.
   //
   angle_  = static_cast<float>(angle*M_PI/180.0); // conversion to radians, but no change of reference points.
@@ -25,7 +25,7 @@ Vario::~Vario()
 
 float Vario::findDist(float deltaX, float deltaY) const
 {
-  float dist; 
+  float dist;
   float txx, txy, tyy;
   txx = static_cast<float>(cos(angle_)*cos(angle_)/(range1_*range1_) + sin(angle_)*sin(angle_)/(range2_*range2_));
   tyy = static_cast<float>(sin(angle_)*sin(angle_)/(range1_*range1_) + cos(angle_)*cos(angle_)/(range2_*range2_));

@@ -1,7 +1,7 @@
 #ifndef LIB_MATR_H
 #define LIB_MATR_H
 
-#include "fft/include/fftw.h"
+#include "fftw.h"
 #ifdef __cplusplus
 extern "C"
 {
@@ -45,7 +45,7 @@ extern "C"
   extern void lib_matrCopy(double **mat, int n1, int n2, double **outmat);
 
   extern void lib_matrFillOnesVecCpx(fftw_complex* v1, int n1);
-  extern void lib_matrFillValueVecCpx(fftw_complex value,fftw_complex* v1, int n1); 
+  extern void lib_matrFillValueVecCpx(fftw_complex value,fftw_complex* v1, int n1);
 
   extern void lib_matrPrintR(float ** mat, int n1, int n2);
   extern void lib_matrPrintCpx(fftw_complex ** mat, int n1, int n2);

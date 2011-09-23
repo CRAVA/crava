@@ -45,11 +45,11 @@
 #include "nrlib/stormgrid/stormcontgrid.hpp"
 
 
-ModelAVOStatic::ModelAVOStatic(ModelSettings      *& modelSettings, 
+ModelAVOStatic::ModelAVOStatic(ModelSettings      *& modelSettings,
                                const InputFiles    * inputFiles,
                                std::vector<bool>     failedGeneralDetails,
-                               Simbox              * timeSimbox, 
-                               Simbox             *& timeBGSimbox, 
+                               Simbox              * timeSimbox,
+                               Simbox             *& timeBGSimbox,
                                Simbox              * timeSimboxConstThick,
                                RandomGen           * randomGen)
 {
@@ -68,24 +68,24 @@ ModelAVOStatic::ModelAVOStatic(ModelSettings      *& modelSettings,
   bool failedPriorFacies  = false;
 
   bool failedLoadingModel = false;
-  
+
   std::string errText("");
 
-  
+
 
   if(!failedSimbox)
-  { 
+  {
     if (modelSettings->getForwardModeling() == false)
     {
       //
       // INVERSION/ESTIMATION
-      // 
+      //
 
-      processWells(wells_, timeSimbox, timeBGSimbox, timeSimboxConstThick, 
+      processWells(wells_, timeSimbox, timeBGSimbox, timeSimboxConstThick,
                      randomGen, modelSettings, inputFiles, errText, failedWells);
 
-      loadExtraSurfaces(waveletEstimInterval_, faciesEstimInterval_, wellMoveInterval_, 
-                        timeSimbox, inputFiles, errText, failedExtraSurf); 
+      loadExtraSurfaces(waveletEstimInterval_, faciesEstimInterval_, wellMoveInterval_,
+                        timeSimbox, inputFiles, errText, failedExtraSurf);
 
       bool estimationMode = modelSettings->getEstimationMode();
       if (estimationMode == false && !failedWells && !failedExtraSurf)
@@ -110,8 +110,8 @@ ModelAVOStatic::ModelAVOStatic(ModelSettings      *& modelSettings,
     LogKit::WriteHeader("Error(s) while loading data");
     LogKit::LogFormatted(LogKit::Error,"\n"+errText);
     LogKit::LogFormatted(LogKit::Error,"\nAborting\n");
-  }  
-  
+  }
+
   failed_ = failedLoadingModel;
   failed_details_.push_back(failedWells);
   failed_details_.push_back(failedExtraSurf);
@@ -121,7 +121,7 @@ ModelAVOStatic::ModelAVOStatic(ModelSettings      *& modelSettings,
 
 ModelAVOStatic::~ModelAVOStatic(void)
 {
-  if(!forwardModeling_) 
+  if(!forwardModeling_)
   {
     for(int i=0 ; i<numberOfWells_ ; i++)
       if(wells_[i] != NULL)
@@ -142,8 +142,8 @@ ModelAVOStatic::~ModelAVOStatic(void)
     if (faciesEstimInterval_[1] != NULL)
       delete faciesEstimInterval_[1];
   }
-  
-  if (priorFacies_ != NULL) 
+
+  if (priorFacies_ != NULL)
     delete [] priorFacies_;
 
   if(wellMoveInterval_.size() == 2) {
@@ -156,13 +156,13 @@ ModelAVOStatic::~ModelAVOStatic(void)
 }
 
 
-void 
+void
 ModelAVOStatic::processWells(WellData          **& wells,
                              Simbox              * timeSimbox,
                              Simbox              * timeBGSimbox,
                              Simbox              * timeSimboxConstThick,
                              RandomGen           * randomGen,
-                             ModelSettings      *& modelSettings, 
+                             ModelSettings      *& modelSettings,
                              const InputFiles    * inputFiles,
                              std::string         & errText,
                              bool                & failed)
@@ -181,10 +181,10 @@ ModelAVOStatic::processWells(WellData          **& wells,
   std::string tmpErrText("");
   wells = new WellData *[nWells];
   for(int i=0 ; i<nWells ; i++) {
-    wells[i] = new WellData(inputFiles->getWellFile(i), 
+    wells[i] = new WellData(inputFiles->getWellFile(i),
                             modelSettings->getLogNames(),
                             modelSettings->getInverseVelocity(),
-                            modelSettings, 
+                            modelSettings,
                             modelSettings->getIndicatorFacies(i),
                             modelSettings->getIndicatorWavelet(i),
                             modelSettings->getIndicatorBGTrend(i),
@@ -197,7 +197,7 @@ ModelAVOStatic::processWells(WellData          **& wells,
   }
 
   if (error == 0) {
-    if(modelSettings->getFaciesLogGiven()) { 
+    if(modelSettings->getFaciesLogGiven()) {
       checkFaciesNames(wells, modelSettings, inputFiles, tmpErrText, error);
       nFacies = modelSettings->getNumberOfFacies(); // nFacies is set in checkFaciesNames()
     }
@@ -213,13 +213,13 @@ ModelAVOStatic::processWells(WellData          **& wells,
     float * rankCorr      = new float[nWells];
     float * devAngle      = new float[nWells];
     int  ** faciesCount   = NULL;
-    
-    if(nFacies > 0) { 
-      faciesCount = new int * [nWells]; 
+
+    if(nFacies > 0) {
+      faciesCount = new int * [nWells];
       for (int i = 0 ; i < nWells ; i++)
         faciesCount[i] = new int[nFacies];
     }
-    
+
     int count = 0;
     int nohit=0;
     int empty=0;
@@ -271,7 +271,7 @@ ModelAVOStatic::processWells(WellData          **& wells,
           if (nFacies > 0)
             wells[i]->countFacies(timeSimbox,faciesCount[i]);
           validWells[count] = i;
-          count++;      
+          count++;
         }
       }
     }
@@ -283,26 +283,26 @@ ModelAVOStatic::processWells(WellData          **& wells,
     LogKit::LogFormatted(LogKit::Low,"Well                    Merges      Vp   Vs  Rho  synthVs/Corr    Deviated/Angle \n");
     LogKit::LogFormatted(LogKit::Low,"---------------------------------------------------------------------------------\n");
     for(int i=0 ; i<nWells ; i++) {
-      if (validIndex[i]) 
+      if (validIndex[i])
         LogKit::LogFormatted(LogKit::Low,"%-23s %6d    %4d %4d %4d     %3s / %5.3f      %3s / %4.1f\n",
                              wells[i]->getWellname().c_str(),
                              nMerges[i],
-                             nInvalidAlpha[i], 
-                             nInvalidBeta[i], 
+                             nInvalidAlpha[i],
+                             nInvalidBeta[i],
                              nInvalidRho[i],
                              (wells[i]->hasSyntheticVsLog() ? "yes" : " no"),
                              rankCorr[i],
                              (devAngle[i] > modelSettings->getMaxDevAngle() ? "yes" : " no"),
                              devAngle[i]);
-      else  
+      else
         LogKit::LogFormatted(LogKit::Low,"%-23s      -       -    -    -       - /     -       -  /    -\n",
                              wells[i]->getWellname().c_str());
     }
-    
+
     //
     // Print facies count for each well
     //
-    if(nFacies > 0) { 
+    if(nFacies > 0) {
       //
       // Probabilities
       //
@@ -329,7 +329,7 @@ ModelAVOStatic::processWells(WellData          **& wells,
               LogKit::LogFormatted(LogKit::Low,"         -   ");
           }
           LogKit::LogFormatted(LogKit::Low,"\n");
-        } 
+        }
         else {
           LogKit::LogFormatted(LogKit::Low,"%-23s ",wells[i]->getWellname().c_str());
           for (int f = 0 ; f < nFacies ; f++)
@@ -360,7 +360,7 @@ ModelAVOStatic::processWells(WellData          **& wells,
             LogKit::LogFormatted(LogKit::Medium,"%12d ",faciesCount[i][f]);
           }
           LogKit::LogFormatted(LogKit::Medium,"\n");
-        } 
+        }
         else {
           LogKit::LogFormatted(LogKit::Medium,"%-23s ",wells[i]->getWellname().c_str());
           for (int f = 0 ; f < nFacies ; f++)
@@ -371,12 +371,12 @@ ModelAVOStatic::processWells(WellData          **& wells,
       }
       LogKit::LogFormatted(LogKit::Medium,"\n");
     }
-    
+
     //
     // Remove invalid wells
     //
     for(int i=0 ; i<nWells ; i++)
-      if (!validIndex[i]) 
+      if (!validIndex[i])
         delete wells[i];
     for(int i=0 ; i<count ; i++)
       wells[i] = wells[validWells[i]];
@@ -384,7 +384,7 @@ ModelAVOStatic::processWells(WellData          **& wells,
       wells[i] = NULL;
     nWells = count;
     modelSettings->setNumberOfWells(nWells);
-    
+
     delete [] validWells;
     delete [] validIndex;
     delete [] nMerges;
@@ -393,7 +393,7 @@ ModelAVOStatic::processWells(WellData          **& wells,
     delete [] nInvalidRho;
     delete [] rankCorr;
     delete [] devAngle;
-    if(nFacies > 0) { 
+    if(nFacies > 0) {
       for (int i = 0 ; i<nWells ; i++)
         delete [] faciesCount[i];
       delete [] faciesCount;
@@ -411,9 +411,9 @@ ModelAVOStatic::processWells(WellData          **& wells,
       LogKit::LogFormatted(LogKit::Low,"\n       below is correct. If it is not, you probably have problems with coordinate scaling.");
       LogKit::LogFormatted(LogKit::Low,"\n                                   X0          Y0        DeltaX      DeltaY      Angle");
       LogKit::LogFormatted(LogKit::Low,"\n       -------------------------------------------------------------------------------");
-      LogKit::LogFormatted(LogKit::Low,"\n       Inversion area:    %11.2f %11.2f   %11.2f %11.2f   %8.3f\n", 
-                           timeSimbox->getx0(), timeSimbox->gety0(), 
-                           timeSimbox->getlx(), timeSimbox->getly(), 
+      LogKit::LogFormatted(LogKit::Low,"\n       Inversion area:    %11.2f %11.2f   %11.2f %11.2f   %8.3f\n",
+                           timeSimbox->getx0(), timeSimbox->gety0(),
+                           timeSimbox->getlx(), timeSimbox->getly(),
                            (timeSimbox->getAngle()*180)/M_PI);
       errText += "No wells available for estimation.";
       error = 1;
@@ -456,7 +456,7 @@ void ModelAVOStatic::checkFaciesNames(WellData ** wells,
 
   int nnames = globalmax - globalmin + 1;
   std::vector<std::string> names(nnames);
-  
+
   for(int w=0 ; w<modelSettings->getNumberOfWells() ; w++)
   {
     if(wells[w]->isFaciesLogDefined())
@@ -481,14 +481,14 @@ void ModelAVOStatic::checkFaciesNames(WellData ** wells,
   LogKit::LogFormatted(LogKit::Low,"\nFaciesLabel      FaciesName           ");
   LogKit::LogFormatted(LogKit::Low,"\n--------------------------------------\n");
   for(int i=0 ; i<nnames ; i++)
-    if(names[i] != "") 
+    if(names[i] != "")
       LogKit::LogFormatted(LogKit::Low,"    %2d           %-20s\n",i+globalmin,names[i].c_str());
-  
+
   int nFacies = 0;
   for(int i=0 ; i<nnames ; i++)
-    if(names[i] != "") 
+    if(names[i] != "")
       nFacies++;
-  
+
   for(int i=0 ; i<nnames ; i++)
   {
     if(names[i] != "")
@@ -497,7 +497,7 @@ void ModelAVOStatic::checkFaciesNames(WellData ** wells,
       modelSettings->addFaciesLabel(globalmin + i);
     }
   }
-  
+
   // Compare names in wells with names given in .xml-file
   if(modelSettings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_MODEL_FILE)
   {
@@ -551,13 +551,13 @@ void ModelAVOStatic::processPriorFaciesProb(const std::vector<Surface *> & facie
 
     if(modelSettings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_WELLS)
     {
-      if (nFacies > 0) 
+      if (nFacies > 0)
       {
         int nWells  = modelSettings->getNumberOfWells();
         int nFacies = modelSettings->getNumberOfFacies();
         int ndata   = nWells*nz;
 
-        int ** faciesCount = new int * [nWells]; 
+        int ** faciesCount = new int * [nWells];
         for (int w = 0 ; w < nWells ; w++)
           faciesCount[w] = new int[nFacies];
 
@@ -579,7 +579,7 @@ void ModelAVOStatic::processPriorFaciesProb(const std::vector<Surface *> & facie
         for (int w = 0 ; w < nWells ; w++)
         {
           if(wells[w]->getNFacies() > 0) // Well has facies log
-          { 
+          {
             //
             // Note that we use timeSimbox to calculate prior facies probabilities
             // instead of the simbox with parallel top and base surfaces. This
@@ -628,9 +628,9 @@ void ModelAVOStatic::processPriorFaciesProb(const std::vector<Surface *> & facie
           }
         }
         delete [] vtAlpha;
-        delete [] vtBeta; 
-        delete [] vtRho;  
-        delete [] vtFacies; 
+        delete [] vtBeta;
+        delete [] vtRho;
+        delete [] vtFacies;
 
         if (nUsedWells > 0) {
           //
@@ -647,7 +647,7 @@ void ModelAVOStatic::processPriorFaciesProb(const std::vector<Surface *> & facie
           for (int w = 0 ; w < nWells ; w++)
           {
             if(wells[w]->getNFacies() > 0) // Well has facies log
-            { 
+            {
               float tot = 0.0;
               for (int i = 0 ; i < nFacies ; i++) {
                 tot += static_cast<float>(faciesCount[w][i]);
@@ -677,7 +677,7 @@ void ModelAVOStatic::processPriorFaciesProb(const std::vector<Surface *> & facie
           for (int w = 0 ; w < nWells ; w++)
           {
             if(wells[w]->getNFacies() > 0)
-            { 
+            {
               float tot = 0.0;
               for (int i = 0 ; i < nFacies ; i++)
                 tot += static_cast<float>(faciesCount[w][i]);
@@ -722,7 +722,7 @@ void ModelAVOStatic::processPriorFaciesProb(const std::vector<Surface *> & facie
               LogKit::LogFormatted(LogKit::Low,"%-15s %10.4f\n",modelSettings->getFaciesName(i).c_str(),priorFacies[i]);
             }
           }
-          else { 
+          else {
             LogKit::LogFormatted(LogKit::Warning,"\nWARNING: No valid facies log entries have been found\n");
             modelSettings->setEstimateFaciesProb(false);
             TaskList::addTask("Consider using a well containing facies log entries to be able to estimate facies probabilities.");
@@ -740,7 +740,7 @@ void ModelAVOStatic::processPriorFaciesProb(const std::vector<Surface *> & facie
           TaskList::addTask("Consider using a well containing facies log entries to be able to estimate facies probabilities.");
         }
       }
-      else 
+      else
       {
         LogKit::LogFormatted(LogKit::Warning,"\nWARNING: Estimation of facies probabilites have been requested, but no facies");
         LogKit::LogFormatted(LogKit::Warning,"\n         have been found and CRAVA will therefore not be able to estimate");
@@ -754,7 +754,7 @@ void ModelAVOStatic::processPriorFaciesProb(const std::vector<Surface *> & facie
       priorFacies = new float[nFacies];
       typedef std::map<std::string,float> mapType;
       mapType myMap = modelSettings->getPriorFaciesProb();
-      
+
       for(int i=0;i<nFacies;i++)
       {
         mapType::iterator iter = myMap.find(modelSettings->getFaciesName(i));
@@ -776,13 +776,13 @@ void ModelAVOStatic::processPriorFaciesProb(const std::vector<Surface *> & facie
     }
     else if(modelSettings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_CUBES)
     {
-      readPriorFaciesProbCubes(inputFiles, 
-                                modelSettings, 
+      readPriorFaciesProbCubes(inputFiles,
+                                modelSettings,
                                 priorFaciesProbCubes_,
                                 timeSimbox,
                                 errTxt,
                                 failed);
-       
+
        typedef std::map<std::string,std::string> mapType;
        mapType myMap = inputFiles->getPriorFaciesProbFile();
 
@@ -790,13 +790,13 @@ void ModelAVOStatic::processPriorFaciesProb(const std::vector<Surface *> & facie
        LogKit::LogFormatted(LogKit::Low,"----------------------------------\n");
        for(mapType::iterator it=myMap.begin();it!=myMap.end();it++)
          LogKit::LogFormatted(LogKit::Low,"%-15s %10s\n",(it->first).c_str(),(it->second).c_str());
-       
+
     }
   }
 }
 
-void ModelAVOStatic::readPriorFaciesProbCubes(const InputFiles      * inputFiles, 
-                                              ModelSettings   * modelSettings, 
+void ModelAVOStatic::readPriorFaciesProbCubes(const InputFiles      * inputFiles,
+                                              ModelSettings   * modelSettings,
                                               FFTGrid       **& priorFaciesProbCubes,
                                               Simbox          * timeSimbox,
                                               std::string     & errTxt,
@@ -810,7 +810,7 @@ void ModelAVOStatic::readPriorFaciesProbCubes(const InputFiles      * inputFiles
   for(int i=0;i<nFacies;i++)
   {
     mapType::iterator iter = myMap.find(modelSettings->getFaciesName(i));
-    
+
     if(iter!=myMap.end())
     {
       const std::string & faciesProbFile = iter->second;
@@ -829,7 +829,7 @@ void ModelAVOStatic::readPriorFaciesProbCubes(const InputFiles      * inputFiles
                        timeSimbox,
                        modelSettings,
                        outsideTraces,
-                       errorText, 
+                       errorText,
                        true);
       if(errorText != "")
       {
@@ -837,7 +837,7 @@ void ModelAVOStatic::readPriorFaciesProbCubes(const InputFiles      * inputFiles
                      +modelSettings->getFaciesName(i)+"\' failed\n";
         errTxt += errorText;
         failed = true;
-      } 
+      }
     }
     else
     {
@@ -846,7 +846,7 @@ void ModelAVOStatic::readPriorFaciesProbCubes(const InputFiles      * inputFiles
       TaskList::addTask("Check that facies "+NRLib::ToString(modelSettings->getFaciesName(i).c_str())+" is given prior probability in the xml-file");
       modelSettings->setEstimateFaciesProb(false);
       break;
-    }  
+    }
   }
 }
 
@@ -872,12 +872,12 @@ ModelAVOStatic::loadExtraSurfaces(std::vector<Surface *> & waveletEstimInterval,
   const std::string & topWEI  = inputFiles->getWaveletEstIntFile(0);
   const std::string & baseWEI = inputFiles->getWaveletEstIntFile(1);
 
-  if (topWEI != "" && baseWEI != "") {  
+  if (topWEI != "" && baseWEI != "") {
     waveletEstimInterval.resize(2);
     try {
-      if (NRLib::IsNumber(topWEI)) 
+      if (NRLib::IsNumber(topWEI))
         waveletEstimInterval[0] = new Surface(x0,y0,lx,ly,nx,ny,atof(topWEI.c_str()));
-      else { 
+      else {
         Surface tmpSurf(topWEI);
         waveletEstimInterval[0] = new Surface(tmpSurf);
       }
@@ -886,11 +886,11 @@ ModelAVOStatic::loadExtraSurfaces(std::vector<Surface *> & waveletEstimInterval,
       errText += e.what();
       failed = true;
     }
-    
+
     try {
-      if (NRLib::IsNumber(baseWEI)) 
+      if (NRLib::IsNumber(baseWEI))
         waveletEstimInterval[1] = new Surface(x0,y0,lx,ly,nx,ny,atof(baseWEI.c_str()));
-      else { 
+      else {
         Surface tmpSurf(baseWEI);
         waveletEstimInterval[1] = new Surface(tmpSurf);
       }
@@ -906,25 +906,25 @@ ModelAVOStatic::loadExtraSurfaces(std::vector<Surface *> & waveletEstimInterval,
   const std::string & topFEI  = inputFiles->getFaciesEstIntFile(0);
   const std::string & baseFEI = inputFiles->getFaciesEstIntFile(1);
 
-  if (topFEI != "" && baseFEI != "") {  
+  if (topFEI != "" && baseFEI != "") {
     faciesEstimInterval.resize(2);
     try {
-      if (NRLib::IsNumber(topFEI)) 
+      if (NRLib::IsNumber(topFEI))
         faciesEstimInterval[0] = new Surface(x0,y0,lx,ly,nx,ny,atof(topFEI.c_str()));
-      else { 
+      else {
         Surface tmpSurf(topFEI);
         faciesEstimInterval[0] = new Surface(tmpSurf);
       }
     }
-    catch (NRLib::Exception & e) {      
+    catch (NRLib::Exception & e) {
       errText += e.what();
       failed = true;
     }
 
     try {
-      if (NRLib::IsNumber(baseFEI)) 
+      if (NRLib::IsNumber(baseFEI))
         faciesEstimInterval[1] = new Surface(x0,y0,lx,ly,nx,ny,atof(baseFEI.c_str()));
-      else { 
+      else {
         Surface tmpSurf(baseFEI);
         faciesEstimInterval[1] = new Surface(tmpSurf);
       }
@@ -940,12 +940,12 @@ ModelAVOStatic::loadExtraSurfaces(std::vector<Surface *> & waveletEstimInterval,
   const std::string & topWMI  = inputFiles->getWellMoveIntFile(0);
   const std::string & baseWMI = inputFiles->getWellMoveIntFile(1);
 
-  if (topWMI != "" && baseWMI != "") {  
+  if (topWMI != "" && baseWMI != "") {
     wellMoveInterval.resize(2);
     try {
-      if (NRLib::IsNumber(topWMI)) 
+      if (NRLib::IsNumber(topWMI))
         wellMoveInterval[0] = new Surface(x0,y0,lx,ly,nx,ny,atof(topWMI.c_str()));
-      else { 
+      else {
         Surface tmpSurf(topWMI);
         wellMoveInterval[0] = new Surface(tmpSurf);
       }
@@ -956,9 +956,9 @@ ModelAVOStatic::loadExtraSurfaces(std::vector<Surface *> & waveletEstimInterval,
     }
 
     try {
-      if (NRLib::IsNumber(baseWMI)) 
+      if (NRLib::IsNumber(baseWMI))
         wellMoveInterval[1] = new Surface(x0,y0,lx,ly,nx,ny,atof(baseWMI.c_str()));
-      else { 
+      else {
         Surface tmpSurf(baseWMI);
         wellMoveInterval[1] = new Surface(tmpSurf);
       }
@@ -970,7 +970,7 @@ ModelAVOStatic::loadExtraSurfaces(std::vector<Surface *> & waveletEstimInterval,
   }
 }
 
-void ModelAVOStatic::writeWells(WellData ** wells, ModelSettings * modelSettings) const 
+void ModelAVOStatic::writeWells(WellData ** wells, ModelSettings * modelSettings) const
 {
   int nWells  = modelSettings->getNumberOfWells();
   for(int i=0;i<nWells;i++)
@@ -984,22 +984,22 @@ void ModelAVOStatic::writeBlockedWells(WellData ** wells, ModelSettings * modelS
     wells[i]->getBlockedLogsOrigThick()->writeWell(modelSettings);
 }
 
-void ModelAVOStatic::addSeismicLogs(WellData     ** wells, 
-                                    FFTGrid      ** seisCube, 
+void ModelAVOStatic::addSeismicLogs(WellData     ** wells,
+                                    FFTGrid      ** seisCube,
                                     ModelSettings * modelSettings)
 {
   int nWells  = modelSettings->getNumberOfWells();
   int nAngles = modelSettings->getNumberOfAngles();
-  
+
     for (int iAngle = 0 ; iAngle < nAngles ; iAngle++)
     {
       seisCube[iAngle]->setAccessMode(FFTGrid::RANDOMACCESS);
-      for(int i=0;i<nWells;i++) 
+      for(int i=0;i<nWells;i++)
         wells[i]->getBlockedLogsOrigThick()->setLogFromGrid(seisCube[iAngle],iAngle,nAngles,"SEISMIC_DATA");
       seisCube[iAngle]->endAccess();
   }
 }
-   
+
 void ModelAVOStatic::generateSyntheticSeismic(Wavelet      ** wavelet,
                                               WellData     ** wells,
                                               float        ** reflectionMatrix,
@@ -1021,16 +1021,16 @@ void ModelAVOStatic::generateSyntheticSeismic(Wavelet      ** wavelet,
 }
 
 void
-ModelAVOStatic::processWellLocation(FFTGrid                     ** seisCube, 
-                                    WellData                    ** wells, 
+ModelAVOStatic::processWellLocation(FFTGrid                     ** seisCube,
+                                    WellData                    ** wells,
                                     float                       ** reflectionMatrix,
                                     Simbox                       * timeSimbox,
                                     ModelSettings                * modelSettings,
-                                    const std::vector<Surface *> & interval, 
+                                    const std::vector<Surface *> & interval,
                                     RandomGen                    * randomGen)
 {
   LogKit::WriteHeader("Estimating optimized well location");
-  
+
   double  deltaX, deltaY;
   float   sum;
   float   kMove;
@@ -1049,7 +1049,7 @@ ModelAVOStatic::processWellLocation(FFTGrid                     ** seisCube,
   double  dx          = timeSimbox->getdx();
   double  dy          = timeSimbox->getdx();
 
-  std::vector<float> angleWeight(nAngles); 
+  std::vector<float> angleWeight(nAngles);
   LogKit::LogFormatted(LogKit::Low,"\n");
   LogKit::LogFormatted(LogKit::Low,"  Well             Shift[ms]       DeltaI   DeltaX[m]   DeltaJ   DeltaY[m] \n");
   LogKit::LogFormatted(LogKit::Low,"  ----------------------------------------------------------------------------------\n");
@@ -1060,7 +1060,7 @@ ModelAVOStatic::processWellLocation(FFTGrid                     ** seisCube,
 
     BlockedLogs * bl = wells[w]->getBlockedLogsOrigThick();
     nMoveAngles = modelSettings->getNumberOfWellAngles(w);
-    
+
     if( nMoveAngles==0 )
       continue;
 
@@ -1094,7 +1094,7 @@ ModelAVOStatic::processWellLocation(FFTGrid                     ** seisCube,
     wells[w]->moveWell(timeSimbox,deltaX,deltaY,kMove);
     wells[w]->deleteBlockedLogsOrigThick();
     wells[w]->setBlockedLogsOrigThick( new BlockedLogs(wells[w], timeSimbox, randomGen, modelSettings->getRunFromPanel()) );
-    LogKit::LogFormatted(LogKit::Low,"  %-13s %11.2f %12d %11.2f %8d %11.2f \n", 
+    LogKit::LogFormatted(LogKit::Low,"  %-13s %11.2f %12d %11.2f %8d %11.2f \n",
     wells[w]->getWellname().c_str(), kMove, iMove, deltaX, jMove, deltaY);
   }
 

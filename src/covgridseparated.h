@@ -3,14 +3,14 @@
 
 class FFTGrid;
 
-class CovGridSeparated 
+class CovGridSeparated
 {
 public:
   CovGridSeparated(const FFTGrid& grid);
-  CovGridSeparated(int nxp, int nyp, int nzp, 
+  CovGridSeparated(int nxp, int nyp, int nzp,
                    float dx, float dy, float dz,
-                   float rangeX, float rangeY, 
-                   float rangeZ, float power, 
+                   float rangeX, float rangeY,
+                   float rangeZ, float power,
                    float rotAngle = 0.f,
                    bool tabulateCorr = true); // for BG model
   CovGridSeparated(int nxp, int nyp, int nzp); // for CrCorr = 0
@@ -25,7 +25,7 @@ public:
   void    writeXYGrid(const std::string fName) const;
 
 private:
-  int     Get2DIndex(int i, int j)        const { return i + j*nxp_;} 
+  int     Get2DIndex(int i, int j)        const { return i + j*nxp_;}
   int     Get3DIndex(int i, int j, int k) const { return i + j*nxp_ + k*nxp_*nyp_; }
   void    EstimateRangeX(int& rangeX) const;
   void    EstimateRangeY(int& rangeY) const;
@@ -41,23 +41,23 @@ private:
   float * gammaXY_;
   float * gammaZ_;
   float   rotMatrix_[3][3];
-  bool    tabulateCorr_; 
+  bool    tabulateCorr_;
   // these next variables are only init if tabulateCorr_ is false
-  float   dx_; 
+  float   dx_;
   float   dy_;
   float   dz_;
   float   rangeX_;
-  float   rangeY_; 
-  float   rangeZ_; 
+  float   rangeY_;
+  float   rangeZ_;
   float   power_;
   float   rotAngle_;
 };
 
-inline bool 
+inline bool
 CovGridSeparated::IsIndexValid(int i, int j, int k) const // returns true if inside grid
-{   
-  if (i < 0 || i >= nxp_ || j < 0 || j >= nyp_ || k < 0 || k >= nzp_) 
-    return false;  
+{
+  if (i < 0 || i >= nxp_ || j < 0 || j >= nyp_ || k < 0 || k >= nzp_)
+    return false;
   return true;
 }
 

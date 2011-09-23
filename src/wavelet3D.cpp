@@ -6,10 +6,10 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
-#include "fft/include/fftw.h"
-#include "fft/include/rfftw.h"
-#include "fft/include/fftw-int.h"
-#include "fft/include/f77_func.h"
+#include "fftw.h"
+#include "rfftw.h"
+#include "fftw-int.h"
+#include "f77_func.h"
 
 #include "lib/lib_matr.h"
 

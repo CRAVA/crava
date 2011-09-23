@@ -1,6 +1,6 @@
 #include "src/crava.h"
 
-#include "fft/include/rfftw.h"
+#include "rfftw.h"
 
 #include "src/wavelet.h"
 #include "src/wavelet1D.h"

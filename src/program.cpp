@@ -21,13 +21,13 @@ Program::Program(const unsigned int  major,
     licensed_to_(licensed_to)
 {
   std::string version = NRLib::ToString(major)+"."+NRLib::ToString(minor)+"."+NRLib::ToString(patch)+extra_text;
-  std::string blanks(39 - version.size(), ' '); 
+  std::string blanks(39 - version.size(), ' ');
 
   LogKit::LogFormatted(LogKit::Low,"\n***************************************************************************************************");
-  LogKit::LogFormatted(LogKit::Low,"\n*****                                                                                         *****"); 
-  LogKit::LogFormatted(LogKit::Low,"\n*****                                   C R A V A  -  "+version+blanks+                      "*****"); 
-  LogKit::LogFormatted(LogKit::Low,"\n*****                                                                                         *****"); 
-  LogKit::LogFormatted(LogKit::Low,"\n*****                                                                                         *****"); 
+  LogKit::LogFormatted(LogKit::Low,"\n*****                                                                                         *****");
+  LogKit::LogFormatted(LogKit::Low,"\n*****                                   C R A V A  -  "+version+blanks+                      "*****");
+  LogKit::LogFormatted(LogKit::Low,"\n*****                                                                                         *****");
+  LogKit::LogFormatted(LogKit::Low,"\n*****                                                                                         *****");
   LogKit::LogFormatted(LogKit::Low,"\n***************************************************************************************************\n\n");
 
   CheckForLicenceExpiration(licence_days_,
@@ -38,7 +38,7 @@ Program::Program(const unsigned int  major,
   LogKit::LogFormatted(LogKit::Low,"Host                                       : "+SystemCall::getHostName()+"\n");
 }
 
-Program::~Program(void) 
+Program::~Program(void)
 {
 }
 
@@ -71,7 +71,7 @@ Program::CheckForLicenceExpiration(const int           licence_days,
   }
 }
 
-time_t 
+time_t
 Program::TimeOfCompilation(void) const
 {
   /*

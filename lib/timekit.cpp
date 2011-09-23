@@ -11,12 +11,12 @@ TimeKit::getTime(double& wall, double& cpu)
   if (tmpwall == static_cast<time_t>(-1))  std::cerr << "Unable to get time()\n";
   if (tmpcpu  == static_cast<clock_t>(-1)) std::cerr << "Unable to get clock()\n";
 
-  if (wall==0 && cpu==0) 
+  if (wall==0 && cpu==0)
   {
-    wall = static_cast<double>(tmpwall); 
-    cpu  = static_cast<double>(tmpcpu); 
+    wall = static_cast<double>(tmpwall);
+    cpu  = static_cast<double>(tmpcpu);
   }
-  else 
+  else
   {
     wall = static_cast<double>(tmpwall) - wall;
     cpu  = (static_cast<double>(tmpcpu)  - cpu)/CLOCKS_PER_SEC;

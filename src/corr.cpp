@@ -10,11 +10,11 @@
 #include "src/corr.h"
 #include "src/io.h"
 
-Corr::Corr(float  ** pointVar0, 
-           float  ** priorVar0, 
-           float   * priorCorrT, 
-           int       n, 
-           float     dt, 
+Corr::Corr(float  ** pointVar0,
+           float  ** priorVar0,
+           float   * priorCorrT,
+           int       n,
+           float     dt,
            Surface * priorCorrXY)
   : priorCorrTFiltered_(NULL),
     postVar0_(NULL),
@@ -55,7 +55,7 @@ Corr::~Corr(void)
 
   delete [] priorCorrT_;
 
-  if(priorCorrTFiltered_!=NULL)      
+  if(priorCorrTFiltered_!=NULL)
     delete [] priorCorrTFiltered_;
 
   if (postVar0_ != NULL) {
@@ -64,30 +64,30 @@ Corr::~Corr(void)
     delete [] postVar0_;
   }
 
-  if(postCovAlpha00_!=NULL)      
+  if(postCovAlpha00_!=NULL)
     delete [] postCovAlpha00_ ;
-  if(postCovBeta00_!=NULL)       
+  if(postCovBeta00_!=NULL)
     delete [] postCovBeta00_ ;
-  if(postCovRho00_!=NULL)        
+  if(postCovRho00_!=NULL)
     delete [] postCovRho00_ ;
   if(postCrCovAlphaBeta00_!=NULL)
     delete [] postCrCovAlphaBeta00_ ;
-  if(postCrCovAlphaRho00_!=NULL) 
+  if(postCrCovAlphaRho00_!=NULL)
     delete [] postCrCovAlphaRho00_ ;
-  if(postCrCovBetaRho00_!=NULL)  
+  if(postCrCovBetaRho00_!=NULL)
     delete [] postCrCovBetaRho00_;
 
-  if(postCovAlpha_!=NULL)      
+  if(postCovAlpha_!=NULL)
     delete postCovAlpha_ ;
-  if(postCovBeta_!=NULL)       
+  if(postCovBeta_!=NULL)
     delete postCovBeta_ ;
-  if(postCovRho_!=NULL)        
+  if(postCovRho_!=NULL)
     delete postCovRho_ ;
   if(postCrCovAlphaBeta_!=NULL)
     delete postCrCovAlphaBeta_ ;
-  if(postCrCovAlphaRho_!=NULL) 
+  if(postCrCovAlphaRho_!=NULL)
     delete postCrCovAlphaRho_ ;
-  if(postCrCovBetaRho_!=NULL)  
+  if(postCrCovBetaRho_!=NULL)
     delete postCrCovBetaRho_;
 }
 
@@ -97,12 +97,12 @@ Corr::createPostGrids(int nx,  int ny,  int nz,
                       int nxp, int nyp, int nzp,
                       bool fileGrid)
 {
-  postCovAlpha_       = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid);                     
-  postCovBeta_        = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid);    
-  postCovRho_         = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid);    
-  postCrCovAlphaBeta_ = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid); 
-  postCrCovAlphaRho_  = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid);                     
-  postCrCovBetaRho_   = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid);    
+  postCovAlpha_       = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid);
+  postCovBeta_        = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid);
+  postCovRho_         = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid);
+  postCrCovAlphaBeta_ = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid);
+  postCrCovAlphaRho_  = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid);
+  postCrCovBetaRho_   = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid);
 
   postCovAlpha_       ->setType(FFTGrid::COVARIANCE);
   postCovBeta_        ->setType(FFTGrid::COVARIANCE);
@@ -120,7 +120,7 @@ Corr::createPostGrids(int nx,  int ny,  int nz,
 }
 
 //--------------------------------------------------------------------
-FFTGrid*            
+FFTGrid*
 Corr::createFFTGrid(int nx,  int ny,  int nz,
                     int nxp, int nyp, int nzp,
                     bool fileGrid)
@@ -134,7 +134,7 @@ Corr::createFFTGrid(int nx,  int ny,  int nz,
 }
 
 //--------------------------------------------------------------------
-float * 
+float *
 Corr::getPriorCorrT(int &n, float &dt) const
 {
   n = n_;
@@ -249,7 +249,7 @@ Corr::printPostVariances(void) const
   LogKit::LogFormatted(LogKit::Low,"\n");
   LogKit::LogFormatted(LogKit::Low,"               ln Vp     ln Vs    ln Rho \n");
   LogKit::LogFormatted(LogKit::Low,"-----------------------------------------\n");
-  LogKit::LogFormatted(LogKit::Low,"Variances:   %.1e   %.1e   %.1e    \n",postVar0_[0][0],postVar0_[1][1],postVar0_[2][2]); 
+  LogKit::LogFormatted(LogKit::Low,"Variances:   %.1e   %.1e   %.1e    \n",postVar0_[0][0],postVar0_[1][1],postVar0_[2][2]);
   LogKit::LogFormatted(LogKit::Low,"\n");
   float corr01 = postVar0_[0][1]/(sqrt(postVar0_[0][0]*postVar0_[1][1]));
   float corr02 = postVar0_[0][2]/(sqrt(postVar0_[0][0]*postVar0_[2][2]));
@@ -287,7 +287,7 @@ Corr::createPostVariances(void)
 }
 
 //--------------------------------------------------------------------
-float 
+float
 Corr::getOrigin(FFTGrid * grid) const
 {
   grid->setAccessMode(FFTGrid::RANDOMACCESS);
@@ -320,8 +320,8 @@ Corr::writeFilePriorCorrT(float* corrT, int nzp) const
   std::string fileName = IO::makeFullFileName(IO::PathToCorrelations(), baseName);
   std::ofstream file;
   NRLib::OpenWrite(file, fileName);
-  file << std::fixed 
-       << std::right  
+  file << std::fixed
+       << std::right
        << std::setprecision(6)
        << dt_ << "\n";
   for(int i=0 ; i<nzp ; i++) {
@@ -353,8 +353,8 @@ void Corr::writeFilePriorVariances(ModelSettings * modelSettings) const
   file.close();
 
   NRLib::OpenWrite(file, fileName2);
-  file << std::fixed 
-       << std::right  
+  file << std::fixed
+       << std::right
        << std::setprecision(8)
        << dt_ << "\n";
   for(int i=0 ; i<n_ ; i++) {
@@ -397,8 +397,8 @@ Corr::writeFilePostVariances(void) const
 //--------------------------------------------------------------------
 void
 Corr::writeFilePostCorrT(float             * postCov,
-                         int                 nz,   
-                         const std::string & subDir,   
+                         int                 nz,
+                         const std::string & subDir,
                          const std::string & baseName) const
 {
   std::string fileName = IO::makeFullFileName(subDir,baseName);
@@ -424,27 +424,27 @@ Corr::writeFilePostCovGrids(Simbox * simbox) const
   postCovAlpha_ ->setAccessMode(FFTGrid::RANDOMACCESS);
   postCovAlpha_ ->writeFile(fileName, IO::PathToCorrelations(), simbox, "Posterior covariance for Vp");
   postCovAlpha_ ->endAccess();
-  
+
   fileName = IO::PrefixPosterior() + IO::PrefixCovariance() + "Vs";
   postCovBeta_ ->setAccessMode(FFTGrid::RANDOMACCESS);
   postCovBeta_ ->writeFile(fileName, IO::PathToCorrelations(), simbox, "Posterior covariance for Vs");
   postCovBeta_ ->endAccess();
-  
+
   fileName = IO::PrefixPosterior() + IO::PrefixCovariance() + "Rho";
   postCovRho_ ->setAccessMode(FFTGrid::RANDOMACCESS);
   postCovRho_ ->writeFile(fileName, IO::PathToCorrelations(), simbox, "Posterior covariance for density");
   postCovRho_ ->endAccess();
-  
+
   fileName = IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VpVs";
   postCrCovAlphaBeta_ ->setAccessMode(FFTGrid::RANDOMACCESS);
   postCrCovAlphaBeta_ ->writeFile(fileName, IO::PathToCorrelations(), simbox, "Posterior cross-covariance for (Vp,Vs)");
   postCrCovAlphaBeta_ ->endAccess();
-  
+
   fileName = IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VpRho";
   postCrCovAlphaRho_ ->setAccessMode(FFTGrid::RANDOMACCESS);
   postCrCovAlphaRho_ ->writeFile(fileName, IO::PathToCorrelations(), simbox, "Posterior cross-covariance for (Vp,density)");
   postCrCovAlphaRho_ ->endAccess();
-  
+
   fileName = IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VsRho";
   postCrCovBetaRho_ ->setAccessMode(FFTGrid::RANDOMACCESS);
   postCrCovBetaRho_ ->writeFile(fileName, IO::PathToCorrelations(), simbox, "Posterior cross-covariance for (Vs,density)");

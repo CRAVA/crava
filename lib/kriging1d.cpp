@@ -12,11 +12,11 @@ void
 Kriging1D::krigVector(float * data,
                       float * trend,
                       int     nd,
-                      float   dz) 
+                      float   dz)
 {
   //
   // This class takes the incomplete vector 'data' and fills it using kriging.
-  // 
+  //
   int * index = new int[nd];
 
   double range = 500.0;
@@ -28,9 +28,9 @@ Kriging1D::krigVector(float * data,
   if (md < nd) {
     subtractTrend(data, trend, index, md);
 
-    double ** K;  // Kriging matrix                     
-    double ** C;  // Kriging matrix cholesky decomposed 
-    double *  k;  // Kriging vector                     
+    double ** K;  // Kriging matrix
+    double ** C;  // Kriging matrix cholesky decomposed
+    double *  k;  // Kriging vector
 
     allocateSpaceForMatrixEq(K, C, k, md);
     fillKrigingMatrix(K, index, md, range, power, static_cast<double>(dz));
@@ -66,7 +66,7 @@ void
 Kriging1D::locateValidData(float * data,
                            int   * index,
                            int     nd,
-                           int   & md) 
+                           int   & md)
 {
   int count = 0;
   for (int i = 0 ; i < nd ; i++) {
@@ -91,12 +91,12 @@ Kriging1D::locateValidData(float * data,
 }
 
 //-----------------------------------------------------------------------
-void 
+void
 Kriging1D::subtractTrend(float * data,
                          float * trend,
                          int   * index,
                          int     md)
-{  
+{
   for (int i = 0 ; i < md ; i++) {
     data[index[i]] -= trend[index[i]];
   }
@@ -110,35 +110,35 @@ Kriging1D::subtractTrend(float * data,
 }
 
 //-----------------------------------------------------------------------
-void 
+void
 Kriging1D::addTrend(float * data,
                     float * trend,
                     int     nd)
-{  
+{
   for (int i = 0 ; i < nd ; i++) {
     data[i] += trend[i];
   }
 }
 
 //-----------------------------------------------------------------------
-void 
-Kriging1D::allocateSpaceForMatrixEq(double ** & K, 
+void
+Kriging1D::allocateSpaceForMatrixEq(double ** & K,
                                     double ** & C,
                                     double  * & k,
                                     int         md)
 {
-  K = new double * [md];  
-  C = new double * [md];  
-  k = new double[md];   
+  K = new double * [md];
+  C = new double * [md];
+  k = new double[md];
   for (int i = 0 ; i < md ; i++) {
     K[i] = new double[md];
-    C[i] = new double[md]; 
+    C[i] = new double[md];
   }
 }
 
 //-----------------------------------------------------------------------
-void 
-Kriging1D::deAllocateSpaceForMatrixEq(double ** & K, 
+void
+Kriging1D::deAllocateSpaceForMatrixEq(double ** & K,
                                       double ** & C,
                                       double  * & k,
                                       int         md)
@@ -149,18 +149,18 @@ Kriging1D::deAllocateSpaceForMatrixEq(double ** & K,
   }
   delete [] K;
   delete [] C;
-  delete [] k; 
+  delete [] k;
   K = NULL;
   C = NULL;
   k = NULL;
 }
 
 //-----------------------------------------------------------------------
-void 
+void
 Kriging1D::fillKrigingMatrix(double ** K,
                              int     * index,
                              int       md,
-                             double    range, 
+                             double    range,
                              double    power,
                              double    dz)
 {
@@ -196,7 +196,7 @@ Kriging1D::cholesky(double ** K,
 }
 
 //-----------------------------------------------------------------------
-double ** 
+double **
 Kriging1D::copyMatrix(double ** in,
                       double ** out,
                       int       md)
@@ -209,11 +209,11 @@ Kriging1D::copyMatrix(double ** in,
 }
 
 //-----------------------------------------------------------------------
-void 
-Kriging1D::fillKrigingVector(double * k,                             
+void
+Kriging1D::fillKrigingVector(double * k,
                              int    * index,
                              int      md,
-                             double   range, 
+                             double   range,
                              double   power,
                              double   dz,
                              int      krigK)

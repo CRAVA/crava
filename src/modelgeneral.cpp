@@ -48,13 +48,13 @@ ModelGeneral::ModelGeneral(ModelSettings *& modelSettings, const InputFiles * in
 {
   timeSimbox_             = new Simbox();
   timeSimboxConstThick_   = NULL;
- 
-  correlationDirection_   = NULL;     
+
+  correlationDirection_   = NULL;
   randomGen_              = NULL;
   failed_                 = false;
   gradX_                  = 0.0;
   gradY_                  = 0.0;
- 
+
   timeDepthMapping_       = NULL;
   timeCutMapping_         = NULL;
   velocityFromInversion_  = false;
@@ -90,36 +90,36 @@ ModelGeneral::ModelGeneral(ModelSettings *& modelSettings, const InputFiles * in
       LogKit::SetFileLog(fName, LogKit::Error);
     }
     LogKit::EndBuffering();
-    
+
     if(inputFiles->getSeedFile() == "")
       randomGen_ = new RandomGen(modelSettings->getSeed());
     else
       randomGen_ = new RandomGen(inputFiles->getSeedFile().c_str());
 
     if(modelSettings->getNumberOfSimulations() == 0)
-      modelSettings->setWritePrediction(true); //write predicted grids. 
+      modelSettings->setWritePrediction(true); //write predicted grids.
 
     printSettings(modelSettings, inputFiles);
-    
+
     //Set output for all FFTGrids.
-    FFTGrid::setOutputFlags(modelSettings->getOutputGridFormat(), 
+    FFTGrid::setOutputFlags(modelSettings->getOutputGridFormat(),
                             modelSettings->getOutputGridDomain());
-    
+
     std::string errText("");
 
     LogKit::WriteHeader("Defining modelling grid");
     makeTimeSimboxes(timeSimbox_, timeCutSimbox, timeBGSimbox, timeSimboxConstThick_,  //Handles correlation direction too.
-                     correlationDirection_, modelSettings, inputFiles, 
+                     correlationDirection_, modelSettings, inputFiles,
                      errText, failedSimbox);
 
     if(!failedSimbox)
-    { 
+    {
       //
       // FORWARD MODELLING
       //
       if (modelSettings->getForwardModeling() == true)
       {
-        checkAvailableMemory(timeSimbox_, modelSettings, inputFiles); 
+        checkAvailableMemory(timeSimbox_, modelSettings, inputFiles);
       }
       else {
         //
@@ -130,13 +130,13 @@ ModelGeneral::ModelGeneral(ModelSettings *& modelSettings, const InputFiles * in
           timeCutMapping_->makeTimeTimeMapping(timeCutSimbox);
         }
 
-        checkAvailableMemory(timeSimbox_, modelSettings, inputFiles); 
+        checkAvailableMemory(timeSimbox_, modelSettings, inputFiles);
 
         bool estimationMode = modelSettings->getEstimationMode();
 
         if(estimationMode == false && modelSettings->getDoDepthConversion() == true)
         {
-          processDepthConversion(timeCutSimbox, timeSimbox_, modelSettings, 
+          processDepthConversion(timeCutSimbox, timeSimbox_, modelSettings,
                                  inputFiles, errText, failedDepthConv);
         }
 
@@ -150,7 +150,7 @@ ModelGeneral::ModelGeneral(ModelSettings *& modelSettings, const InputFiles * in
       LogKit::LogFormatted(LogKit::Error,"\nAborting\n");
     }
   }
-  
+
   failed_ = failedLoadingModel;
   failed_details_.push_back(failedSimbox);
   failed_details_.push_back(failedDepthConv);
@@ -194,20 +194,20 @@ ModelGeneral::checkAvailableMemory(Simbox        * timeSimbox,
   //
   // Find the size of one grid
   //
-  FFTGrid * dummyGrid = new FFTGrid(timeSimbox->getnx(), 
-                                    timeSimbox->getny(), 
+  FFTGrid * dummyGrid = new FFTGrid(timeSimbox->getnx(),
+                                    timeSimbox->getny(),
                                     timeSimbox->getnz(),
-                                    modelSettings->getNXpad(), 
-                                    modelSettings->getNYpad(), 
+                                    modelSettings->getNXpad(),
+                                    modelSettings->getNYpad(),
                                     modelSettings->getNZpad());
   long long int gridSizePad = static_cast<long long int>(4)*dummyGrid->getrsize();
 
   delete dummyGrid;
-  dummyGrid = new FFTGrid(timeSimbox->getnx(), 
-                          timeSimbox->getny(), 
+  dummyGrid = new FFTGrid(timeSimbox->getnx(),
+                          timeSimbox->getny(),
                           timeSimbox->getnz(),
-                          timeSimbox->getnx(), 
-                          timeSimbox->getny(), 
+                          timeSimbox->getnx(),
+                          timeSimbox->getny(),
                           timeSimbox->getnz());
   long long int gridSizeBase = 4*dummyGrid->getrsize();
   delete dummyGrid;
@@ -258,14 +258,14 @@ ModelGeneral::checkAvailableMemory(Simbox        * timeSimbox,
       //First peak: At inversion
       int peak1P = baseP + nGridSeismicData; //Need seismic data as well here.
       int peak1U = baseU;
-      
+
       long long int peakGridMem = peak1P*gridSizePad + peak1U*gridSizeBase; //First peak must be currently largest.
       int peakNGrid   = peak1P;                                             //Also in number of padded grids
 
       if(modelSettings->getNumberOfSimulations() > 0) { //Second possible peak when simulating.
         int peak2P = baseP + 3; //Three extra parameter grids for simulated parameters.
         if(modelSettings->getUseLocalNoise() == true &&
-           (modelSettings->getEstimateFaciesProb() == false || modelSettings->getFaciesProbRelative() == false)) 
+           (modelSettings->getEstimateFaciesProb() == false || modelSettings->getFaciesProbRelative() == false))
           peak2P -= nGridBackground; //Background grids are released before simulation in this case.
         int peak2U = baseU;     //Base level is the same, but may increase.
         bool computeGridUsed = ((modelSettings->getOutputGridsElastic() & (IO::AI + IO::LAMBDARHO + IO::LAMELAMBDA + IO::LAMEMU + IO::MURHO + IO::POISSONRATIO + IO::SI + IO::VPVSRATIO)) > 0);
@@ -273,7 +273,7 @@ ModelGeneral::checkAvailableMemory(Simbox        * timeSimbox,
           peak2P += nGridCompute;
         else if(modelSettings->getKrigingParameter() > 0) //Note the else, since this grid will use same memory as computation grid if both are active.
           peak2U += nGridKriging;
-        
+
         if(peak2P > peakNGrid)
           peakNGrid = peak2P;
 
@@ -287,7 +287,7 @@ ModelGeneral::checkAvailableMemory(Simbox        * timeSimbox,
         int peak3U = baseU + nGridFacies;  //But this one will, and may trigger new memory max.
         if((modelSettings->getOtherOutputFlag() & IO::FACIES_LIKELIHOOD) > 0)
           peak3U += 1; //Also needs to store seismic likelihood.
-        
+
         long long int peak3Mem = peak3P*gridSizePad + peak3U*gridSizeBase + 2000000*nGridHistograms; //These are 2MB when Vs is used.
         if(peak3Mem > peakGridMem)
           peakGridMem = peak3Mem;
@@ -328,7 +328,7 @@ ModelGeneral::checkAvailableMemory(Simbox        * timeSimbox,
     //
     modelSettings->setFileGrid(false);
     char ** memchunk  = new char*[nGrids];
-    
+
     int i = 0;
     try {
       for(i = 0 ; i < nGrids ; i++)
@@ -339,7 +339,7 @@ ModelGeneral::checkAvailableMemory(Simbox        * timeSimbox,
       modelSettings->setFileGrid(true);
       LogKit::LogFormatted(LogKit::Low,"Not enough memory to hold all grids. Using file storage.\n");
     }
-    
+
     for(int j=0 ; j<i ; j++)
       delete [] memchunk[j];
     delete [] memchunk;
@@ -347,10 +347,10 @@ ModelGeneral::checkAvailableMemory(Simbox        * timeSimbox,
 }
 
 int
-ModelGeneral::readSegyFile(const std::string       & fileName, 
-                           FFTGrid                *& target, 
-                           Simbox                 *& timeSimbox, 
-                           ModelSettings          *& modelSettings, 
+ModelGeneral::readSegyFile(const std::string       & fileName,
+                           FFTGrid                *& target,
+                           Simbox                 *& timeSimbox,
+                           ModelSettings          *& modelSettings,
                            const SegyGeometry     *& geometry,
                            int                       gridType,
                            float                     offset,
@@ -365,7 +365,7 @@ ModelGeneral::readSegyFile(const std::string       & fileName,
   try
   {
     //
-    // Currently we have only one optional TraceHeaderFormat, but this can 
+    // Currently we have only one optional TraceHeaderFormat, but this can
     // be augmented to a list with several formats ...
     //
     if(format == NULL) { //Unknown format
@@ -375,16 +375,16 @@ ModelGeneral::readSegyFile(const std::string       & fileName,
         traceHeaderFormats.push_back(modelSettings->getTraceHeaderFormat());
       }
 
-      segy = new SegY(fileName, 
-                      offset, 
-                      traceHeaderFormats, 
+      segy = new SegY(fileName,
+                      offset,
+                      traceHeaderFormats,
                       true); // Add standard formats to format search
     }
     else //Known format, read directly.
       segy = new SegY(fileName, offset, *format);
 
     bool onlyVolume = modelSettings->getAreaParameters() != NULL; // This is now always true
-    segy->ReadAllTraces(timeSimbox, 
+    segy->ReadAllTraces(timeSimbox,
                         modelSettings->getZPadFac(),
                         onlyVolume);
     segy->CreateRegularGrid();
@@ -394,16 +394,16 @@ ModelGeneral::readSegyFile(const std::string       & fileName,
     errText += e.what();
     failed = true;
   }
-  
+
   int outsideTraces = 0;
   if (failed == false)
   {
     const SegyGeometry * geo;
     geo = segy->GetGeometry();
     geo->WriteGeometry();
-    if (gridType == FFTGrid::DATA) 
+    if (gridType == FFTGrid::DATA)
       geometry = new SegyGeometry(geo);
-    
+
     int xpad, ypad, zpad;
     if(nopadding==false)
     {
@@ -417,12 +417,12 @@ ModelGeneral::readSegyFile(const std::string       & fileName,
       ypad = timeSimbox->getny();
       zpad = timeSimbox->getnz();
     }
-    target = createFFTGrid(timeSimbox->getnx(), 
-                           timeSimbox->getny(), 
-                           timeSimbox->getnz(), 
-                           xpad, 
-                           ypad, 
-                           zpad, 
+    target = createFFTGrid(timeSimbox->getnx(),
+                           timeSimbox->getny(),
+                           timeSimbox->getnz(),
+                           xpad,
+                           ypad,
+                           zpad,
                            modelSettings->getFileGrid());
     target->setType(gridType);
     outsideTraces = target->fillInFromSegY(segy, timeSimbox, nopadding);
@@ -434,25 +434,25 @@ ModelGeneral::readSegyFile(const std::string       & fileName,
 
 
 int
-ModelGeneral::readStormFile(const std::string  & fName, 
-                            FFTGrid           *& target, 
+ModelGeneral::readStormFile(const std::string  & fName,
+                            FFTGrid           *& target,
                             const int            gridType,
-                            const std::string  & parName, 
-                            Simbox             * timeSimbox, 
-                            ModelSettings     *& modelSettings, 
+                            const std::string  & parName,
+                            Simbox             * timeSimbox,
+                            ModelSettings     *& modelSettings,
                             std::string        & errText,
                             bool                 scale,
                             bool                 nopadding)
 {
   StormContGrid * stormgrid = NULL;
   bool failed = false;
-  
+
   try
-  {   
+  {
     stormgrid = new StormContGrid(0,0,0);
     stormgrid->ReadFromFile(fName);
   }
-  catch (NRLib::Exception & e) 
+  catch (NRLib::Exception & e)
   {
     errText += e.what();
     failed = true;
@@ -473,16 +473,16 @@ ModelGeneral::readStormFile(const std::string  & fName,
   int outsideTraces = 0;
   if(failed == false)
   {
-    target = createFFTGrid(timeSimbox->getnx(), 
-                           timeSimbox->getny(), 
-                           timeSimbox->getnz(), 
+    target = createFFTGrid(timeSimbox->getnx(),
+                           timeSimbox->getny(),
+                           timeSimbox->getnz(),
                            xpad,
                            ypad,
                            zpad,
                            modelSettings->getFileGrid());
     target->setType(gridType);
     outsideTraces = target->fillInFromStorm(timeSimbox,stormgrid, parName, scale);
-  }  
+  }
 
   if (stormgrid != NULL)
     delete stormgrid;
@@ -490,7 +490,7 @@ ModelGeneral::readStormFile(const std::string  & fName,
   return(outsideTraces);
 }
 
-int 
+int
 ModelGeneral::setPaddingSize(int nx, double px)
 {
   int leastint    = static_cast<int>(ceil(nx*(1.0f+px)));
@@ -498,13 +498,13 @@ ModelGeneral::setPaddingSize(int nx, double px)
   return(closestprod);
 }
 
-void 
+void
 ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
                         Simbox          *& timeCutSimbox,
                         Simbox          *& timeBGSimbox,
                         Simbox          *& timeSimboxConstThick,
                         Surface         *& correlationDirection,
-                        ModelSettings   *& modelSettings, 
+                        ModelSettings   *& modelSettings,
                         const InputFiles * inputFiles,
                         std::string      & errText,
                         bool             & failed)
@@ -513,11 +513,11 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
 
   int  areaSpecification      = modelSettings->getAreaSpecification();
 
-  bool estimationModeNeedILXL = modelSettings->getEstimationMode() && 
+  bool estimationModeNeedILXL = modelSettings->getEstimationMode() &&
                                 (areaSpecification == ModelSettings::AREA_FROM_GRID_DATA ||
                                 (modelSettings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0 ||
                                 (modelSettings->getOutputGridFormat() & IO::SEGY) > 0);
-                                 
+
   if(modelSettings->getForwardModeling())
     gridFile = inputFiles->getBackFile(0);    // Get geometry from earth model (Vp)
   else {
@@ -530,13 +530,13 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
   // -----------------------------
   //
   std::string areaType;
-  if (areaSpecification == ModelSettings::AREA_FROM_UTM) 
+  if (areaSpecification == ModelSettings::AREA_FROM_UTM)
   {
     // The geometry is already present in modelSettings (read from model file).
     LogKit::LogFormatted(LogKit::High,"\nArea information has been taken from model file\n");
     areaType = "Model file";
   }
-  else if(areaSpecification == ModelSettings::AREA_FROM_SURFACE) 
+  else if(areaSpecification == ModelSettings::AREA_FROM_SURFACE)
   {
     LogKit::LogFormatted(LogKit::High,"\nFinding area information from surface \'"+inputFiles->getAreaSurfaceFile()+"\'\n");
     areaType = "Surface";
@@ -544,7 +544,7 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
     SegyGeometry geometry(surf);
     modelSettings->setAreaParameters(&geometry);
   }
-  else if(areaSpecification == ModelSettings::AREA_FROM_GRID_DATA) 
+  else if(areaSpecification == ModelSettings::AREA_FROM_GRID_DATA)
   {
     LogKit::LogFormatted(LogKit::High,"\nFinding inversion area from grid data in file \'"+gridFile+"\'\n");
     areaType = "Grid data";
@@ -604,15 +604,15 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
 
   if(!failed)
   {
-    const SegyGeometry * areaParams = modelSettings->getAreaParameters(); 
+    const SegyGeometry * areaParams = modelSettings->getAreaParameters();
     failed = timeSimbox->setArea(areaParams, errText);
-    
+
      if(failed)
     {
       writeAreas(areaParams,timeSimbox,areaType);
       errText += "The specified AREA extends outside the surface(s).\n";
     }
-      
+
     else
     {
       LogKit::LogFormatted(LogKit::Low,"\nResolution                x0           y0            lx         ly     azimuth         dx      dy\n");
@@ -620,13 +620,13 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
       double azimuth = (-1)*timeSimbox->getAngle()*(180.0/M_PI);
       if (azimuth < 0)
         azimuth += 360.0;
-      LogKit::LogFormatted(LogKit::Low,"%-12s     %11.2f  %11.2f    %10.2f %10.2f    %8.3f    %7.2f %7.2f\n", 
+      LogKit::LogFormatted(LogKit::Low,"%-12s     %11.2f  %11.2f    %10.2f %10.2f    %8.3f    %7.2f %7.2f\n",
                            areaType.c_str(),
-                           timeSimbox->getx0(), timeSimbox->gety0(), 
-                           timeSimbox->getlx(), timeSimbox->getly(), azimuth, 
+                           timeSimbox->getx0(), timeSimbox->gety0(),
+                           timeSimbox->getlx(), timeSimbox->getly(), azimuth,
                            timeSimbox->getdx(), timeSimbox->getdy());
     }
-    
+
     float minHorRes = modelSettings->getMinHorizontalRes();
     if (timeSimbox->getdx() < minHorRes || timeSimbox->getdy() < minHorRes){
       failed = true;
@@ -640,7 +640,7 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
       // ---------------------------------
       //
       // Skip for estimation mode if possible:
-      //   a) For speed 
+      //   a) For speed
       //   b) Grid data may not be available.
       if (modelSettings->getEstimationMode() == false || estimationModeNeedILXL == true) {
         if(ILXLGeometry == NULL) {
@@ -668,20 +668,20 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
           delete ILXLGeometry;
         }
       }
-      
+
       // Rotate variograms relative to simbox
       modelSettings->rotateVariograms(static_cast<float> (timeSimbox_->getAngle()));
-      
+
       //
       // Set SURFACES
       //
-      
-      setSimboxSurfaces(timeSimbox, 
-                        inputFiles->getTimeSurfFiles(), 
+
+      setSimboxSurfaces(timeSimbox,
+                        inputFiles->getTimeSurfFiles(),
                         modelSettings,
                         errText,
                         failed);
- 
+
       if(!failed)
       {
         if(modelSettings->getUseLocalWavelet() && timeSimbox->getIsConstantThick())
@@ -692,8 +692,8 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
 
 
         int status = timeSimbox->calculateDz(modelSettings->getLzLimit(),errText);
-        estimateZPaddingSize(timeSimbox, modelSettings);   
-        
+        estimateZPaddingSize(timeSimbox, modelSettings);
+
         float minSampDens = modelSettings->getMinSamplingDensity();
         if (timeSimbox->getdz()*timeSimbox->getMinRelThick() < minSampDens){
           failed   = true;
@@ -726,18 +726,18 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
 
             if(failed == false && modelSettings->getForwardModeling() == false) {
               //Extends timeSimbox for correlation coverage. Original stored in timeCutSimbox
-              setupExtendedTimeSimbox(timeSimbox, correlationDirection, 
-                                      timeCutSimbox, 
-                                      modelSettings->getOutputGridFormat(), 
+              setupExtendedTimeSimbox(timeSimbox, correlationDirection,
+                                      timeCutSimbox,
+                                      modelSettings->getOutputGridFormat(),
                                       modelSettings->getOutputGridDomain(),
-                                      modelSettings->getOtherOutputFlag()); 
-            }      
+                                      modelSettings->getOtherOutputFlag());
+            }
 
-            estimateZPaddingSize(timeSimbox, modelSettings);   
+            estimateZPaddingSize(timeSimbox, modelSettings);
 
             status = timeSimbox->calculateDz(modelSettings->getLzLimit(),errText);
 
-            if(status == Simbox::BOXOK) 
+            if(status == Simbox::BOXOK)
               logIntervalInformation(timeSimbox, "Time inversion interval (extended relative to output interval due to correlation):","Two-way-time");
             else
             {
@@ -746,9 +746,9 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
             }
 
             if(modelSettings->getForwardModeling() == false && failed == false) {
-              setupExtendedBackgroundSimbox(timeSimbox, correlationDirection, timeBGSimbox, 
-                                            modelSettings->getOutputGridFormat(), 
-                                            modelSettings->getOutputGridDomain(), 
+              setupExtendedBackgroundSimbox(timeSimbox, correlationDirection, timeBGSimbox,
+                                            modelSettings->getOutputGridFormat(),
+                                            modelSettings->getOutputGridDomain(),
                                             modelSettings->getOtherOutputFlag());
               status = timeBGSimbox->calculateDz(modelSettings->getLzLimit(),errText);
               if(status == Simbox::BOXOK)
@@ -760,7 +760,7 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
               }
             }
           }
-          
+
           if(failed == false) {
             estimateXYPaddingSizes(timeSimbox, modelSettings);
             unsigned long long int gridsize = (timeSimbox->getnx()+modelSettings->getNXpad())*(timeSimbox->getny()+modelSettings->getNYpad())*(timeSimbox->getnz()+modelSettings->getNZpad());
@@ -770,27 +770,27 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
               failed = true;
               errText+= "Grid size is too large.  Reduce resolution or extend the grid.\n";
             }
-   
+
             LogKit::LogFormatted(LogKit::Low,"\nTime simulation grids:\n");
             LogKit::LogFormatted(LogKit::Low,"  Output grid         %4i * %4i * %4i   : %10i\n",
                                  timeSimbox->getnx(),timeSimbox->getny(),timeSimbox->getnz(),
-                                 timeSimbox->getnx()*timeSimbox->getny()*timeSimbox->getnz()); 
+                                 timeSimbox->getnx()*timeSimbox->getny()*timeSimbox->getnz());
             LogKit::LogFormatted(LogKit::Low,"  FFT grid            %4i * %4i * %4i   : %10i\n",
                                  modelSettings->getNXpad(),modelSettings->getNYpad(),modelSettings->getNZpad(),
                                  modelSettings->getNXpad()*modelSettings->getNYpad()*modelSettings->getNZpad());
           }
-          
+
           //
           // Make time simbox with constant thicknesses (needed for log filtering and facies probabilities)
           //
           timeSimboxConstThick = new Simbox(timeSimbox);
           Surface tsurf(dynamic_cast<const Surface &> (timeSimbox->GetTopSurface()));
           timeSimboxConstThick->setDepth(tsurf, 0, timeSimbox->getlz(), timeSimbox->getdz());
-          
+
           if((modelSettings->getOtherOutputFlag() & IO::EXTRA_SURFACES) > 0 && (modelSettings->getOutputGridDomain() & IO::TIMEDOMAIN) > 0) {
             std::string topSurf  = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixTime() + "_ConstThick";
             std::string baseSurf = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime() + "_ConstThick";
-            timeSimboxConstThick->writeTopBotGrids(topSurf, 
+            timeSimboxConstThick->writeTopBotGrids(topSurf,
                                                    baseSurf,
                                                    IO::PathToInversionResults(),
                                                    modelSettings->getOutputGridFormat());
@@ -810,10 +810,10 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
     }
   }
 }
-  
-void 
-ModelGeneral::logIntervalInformation(const Simbox      * simbox, 
-                                     const std::string & header_text1, 
+
+void
+ModelGeneral::logIntervalInformation(const Simbox      * simbox,
+                                     const std::string & header_text1,
                                      const std::string & header_text2)
 {
   LogKit::LogFormatted(LogKit::Low,"\n"+header_text1+"\n");
@@ -822,25 +822,25 @@ ModelGeneral::logIntervalInformation(const Simbox      * simbox,
   LogKit::LogFormatted(LogKit::Low," %13s          avg / min / max    : %7.1f /%7.1f /%7.1f\n",
                        header_text2.c_str(),
                        zmin+simbox->getlz()*simbox->getAvgRelThick()*0.5,
-                       zmin,zmax); 
-  LogKit::LogFormatted(LogKit::Low,"  Interval thickness    avg / min / max    : %7.1f /%7.1f /%7.1f\n", 
+                       zmin,zmax);
+  LogKit::LogFormatted(LogKit::Low,"  Interval thickness    avg / min / max    : %7.1f /%7.1f /%7.1f\n",
                        simbox->getlz()*simbox->getAvgRelThick(),
                        simbox->getlz()*simbox->getMinRelThick(),
                        simbox->getlz());
-  LogKit::LogFormatted(LogKit::Low,"  Sampling density      avg / min / max    : %7.2f /%7.2f /%7.2f\n", 
+  LogKit::LogFormatted(LogKit::Low,"  Sampling density      avg / min / max    : %7.2f /%7.2f /%7.2f\n",
                        simbox->getdz()*simbox->getAvgRelThick(),
                        simbox->getdz(),
                        simbox->getdz()*simbox->getMinRelThick());
 }
-  
-void 
-ModelGeneral::setSimboxSurfaces(Simbox                        *& simbox, 
-                                const std::vector<std::string> & surfFile, 
-                                ModelSettings                  * modelSettings, 
+
+void
+ModelGeneral::setSimboxSurfaces(Simbox                        *& simbox,
+                                const std::vector<std::string> & surfFile,
+                                ModelSettings                  * modelSettings,
                                 std::string                    & errText,
                                 bool                           & failed)
 {
-  const std::string & topName = surfFile[0]; 
+  const std::string & topName = surfFile[0];
 
   bool   generateSeismic    = modelSettings->getForwardModeling();
   bool   estimationMode     = modelSettings->getEstimationMode();
@@ -860,16 +860,16 @@ ModelGeneral::setSimboxSurfaces(Simbox                        *& simbox,
   Surface * z1Grid = NULL;
   try {
     if (NRLib::IsNumber(topName)) {
-      // Find the smallest surface that covers the simbox. For simplicity 
+      // Find the smallest surface that covers the simbox. For simplicity
       // we use only four nodes (nx=ny=2).
       double xMin, xMax;
       double yMin, yMax;
       findSmallestSurfaceGeometry(simbox->getx0(), simbox->gety0(),
                                   simbox->getlx(), simbox->getly(),
-                                  simbox->getAngle(), 
+                                  simbox->getAngle(),
                                   xMin,yMin,xMax,yMax);
       z0Grid = new Surface(xMin-100, yMin-100, xMax-xMin+200, yMax-yMin+200, 2, 2, atof(topName.c_str()));
-    } 
+    }
     else {
       Surface tmpSurf(topName);
       z0Grid = new Surface(tmpSurf);
@@ -885,16 +885,16 @@ ModelGeneral::setSimboxSurfaces(Simbox                        *& simbox,
       simbox->setDepth(*z0Grid, dTop, lz, dz, modelSettings->getRunFromPanel());
     }
     else {
-      const std::string & baseName = surfFile[1]; 
+      const std::string & baseName = surfFile[1];
       try {
         if (NRLib::IsNumber(baseName)) {
-          // Find the smallest surface that covers the simbox. For simplicity 
+          // Find the smallest surface that covers the simbox. For simplicity
           // we use only four nodes (nx=ny=2).
           double xMin, xMax;
           double yMin, yMax;
           findSmallestSurfaceGeometry(simbox->getx0(), simbox->gety0(),
                                       simbox->getlx(), simbox->getly(),
-                                      simbox->getAngle(), 
+                                      simbox->getAngle(),
                                       xMin,yMin,xMax,yMax);
           z1Grid = new Surface(xMin-100, yMin-100, xMax-xMin+200, yMax-yMin+200, 2, 2, atof(baseName.c_str()));
         }
@@ -925,44 +925,44 @@ ModelGeneral::setSimboxSurfaces(Simbox                        *& simbox,
         std::string baseSurf = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime();
         simbox->setTopBotName(topSurf,baseSurf,outputFormat);
         if (generateSeismic) {
-          simbox->writeTopBotGrids(topSurf, 
+          simbox->writeTopBotGrids(topSurf,
                                    baseSurf,
                                    IO::PathToSeismicData(),
                                    outputFormat);
         }
         else if (!estimationMode){
           if (outputGridsElastic > 0 || outputGridsOther > 0 || outputGridsSeismic > 0)
-            simbox->writeTopBotGrids(topSurf, 
+            simbox->writeTopBotGrids(topSurf,
                                      baseSurf,
                                      IO::PathToInversionResults(),
                                      outputFormat);
         }
         if((outputFormat & IO::STORM) > 0) { // These copies are only needed with the STORM format
-          if ((outputGridsElastic & IO::BACKGROUND) > 0 || 
-              (outputGridsElastic & IO::BACKGROUND_TREND) > 0 || 
+          if ((outputGridsElastic & IO::BACKGROUND) > 0 ||
+              (outputGridsElastic & IO::BACKGROUND_TREND) > 0 ||
               (estimationMode && generateBackground)) {
-            simbox->writeTopBotGrids(topSurf, 
+            simbox->writeTopBotGrids(topSurf,
                                      baseSurf,
                                      IO::PathToBackground(),
                                      outputFormat);
           }
           if ((outputGridsOther & IO::CORRELATION) > 0) {
-            simbox->writeTopBotGrids(topSurf, 
+            simbox->writeTopBotGrids(topSurf,
                                      baseSurf,
                                      IO::PathToCorrelations(),
                                      outputFormat);
           }
           if ((outputGridsSeismic & (IO::ORIGINAL_SEISMIC_DATA | IO::SYNTHETIC_SEISMIC_DATA)) > 0) {
-            simbox->writeTopBotGrids(topSurf, 
+            simbox->writeTopBotGrids(topSurf,
                                      baseSurf,
                                      IO::PathToSeismicData(),
                                      outputFormat);
           }
           if ((outputGridsOther & IO::TIME_TO_DEPTH_VELOCITY) > 0) {
-            simbox->writeTopBotGrids(topSurf, 
+            simbox->writeTopBotGrids(topSurf,
                                      baseSurf,
                                      IO::PathToVelocity(),
-                                     outputFormat);          
+                                     outputFormat);
           }
         }
       }
@@ -973,8 +973,8 @@ ModelGeneral::setSimboxSurfaces(Simbox                        *& simbox,
 }
 
 void
-ModelGeneral::setupExtendedTimeSimbox(Simbox   * timeSimbox, 
-                                      Surface  * corrSurf, 
+ModelGeneral::setupExtendedTimeSimbox(Simbox   * timeSimbox,
+                                      Surface  * corrSurf,
                                       Simbox  *& timeCutSimbox,
                                       int        outputFormat,
                                       int        outputDomain,
@@ -1055,11 +1055,11 @@ ModelGeneral::setupExtendedTimeSimbox(Simbox   * timeSimbox,
   botSurf.AddNonConform(&(timeSimbox->GetBotSurface()));
 
   timeSimbox->setDepth(topSurf, botSurf, nz);
-  
+
   if((otherOutput & IO::EXTRA_SURFACES) > 0 && (outputDomain & IO::TIMEDOMAIN) > 0) {
     std::string topSurf  = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixTime() + "_Extended";
     std::string baseSurf = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime() + "_Extended";
-    timeSimbox->writeTopBotGrids(topSurf, 
+    timeSimbox->writeTopBotGrids(topSurf,
                                  baseSurf,
                                  IO::PathToInversionResults(),
                                  outputFormat);
@@ -1069,8 +1069,8 @@ ModelGeneral::setupExtendedTimeSimbox(Simbox   * timeSimbox,
 }
 
 void
-ModelGeneral::setupExtendedBackgroundSimbox(Simbox   * timeSimbox, 
-                                            Surface  * corrSurf, 
+ModelGeneral::setupExtendedBackgroundSimbox(Simbox   * timeSimbox,
+                                            Surface  * corrSurf,
                                             Simbox  *& timeBGSimbox,
                                             int        outputFormat,
                                             int        outputDomain,
@@ -1087,7 +1087,7 @@ ModelGeneral::setupExtendedBackgroundSimbox(Simbox   * timeSimbox,
     tmpSurf.Add(avg); // This situation is not very likely, but ...
 
   //
-  // Find top surface of background simbox. 
+  // Find top surface of background simbox.
   //
   // The funny/strange dTop->Multiply(-1.0) is due to NRLIB's current
   // inability to set dTop equal to Simbox top surface.
@@ -1110,7 +1110,7 @@ ModelGeneral::setupExtendedBackgroundSimbox(Simbox   * timeSimbox,
   botSurf.Add(shiftBot);
 
   //
-  // Calculate number of layers of background simbox 
+  // Calculate number of layers of background simbox
   //
   tmpSurf.Assign(0.0);
   tmpSurf.AddNonConform(&botSurf);
@@ -1206,7 +1206,7 @@ ModelGeneral::createPlaneSurface(double * planeParams, Surface * templateSurf)
 
 
 void
-ModelGeneral::estimateXYPaddingSizes(Simbox         * timeSimbox, 
+ModelGeneral::estimateXYPaddingSizes(Simbox         * timeSimbox,
                                      ModelSettings *& modelSettings)
 {
   double dx      = timeSimbox->getdx();
@@ -1259,19 +1259,19 @@ ModelGeneral::estimateXYPaddingSizes(Simbox         * timeSimbox,
   if (modelSettings->getEstimateXYPadding()) {
     text1 = " estimated from lateral correlation ranges in internal grid";
     logLevel = LogKit::Low;
-  }  
+  }
   if (modelSettings->getEstimateZPadding()) {
-    text2 = " estimated from an assumed wavelet length"; 
+    text2 = " estimated from an assumed wavelet length";
     logLevel = LogKit::Low;
-  }  
+  }
 
   LogKit::LogFormatted(logLevel,"\nPadding sizes"+text1+":\n");
-  LogKit::LogFormatted(logLevel,"  xPad, xPadFac, nx, nxPad                 : %6.fm, %5.3f, %5d, %4d\n", 
+  LogKit::LogFormatted(logLevel,"  xPad, xPadFac, nx, nxPad                 : %6.fm, %5.3f, %5d, %4d\n",
                        true_xPad, true_xPadFac, nx, nxPad);
-  LogKit::LogFormatted(logLevel,"  yPad, yPadFac, ny, nyPad                 : %6.fm, %5.3f, %5d, %4d\n", 
+  LogKit::LogFormatted(logLevel,"  yPad, yPadFac, ny, nyPad                 : %6.fm, %5.3f, %5d, %4d\n",
                        true_yPad, true_yPadFac, ny, nyPad);
   LogKit::LogFormatted(logLevel,"\nPadding sizes"+text2+":\n");
-  LogKit::LogFormatted(logLevel,"  zPad, zPadFac, nz, nzPad                 : %5.fms, %5.3f, %5d, %4d\n", 
+  LogKit::LogFormatted(logLevel,"  zPad, zPadFac, nz, nzPad                 : %5.fms, %5.3f, %5d, %4d\n",
                        true_zPad, true_zPadFac, nz, nzPad);
 }
 
@@ -1302,7 +1302,7 @@ ModelGeneral::readGridFromFile(const std::string       & fileName,
                                const std::string       & parName,
                                const float               offset,
                                FFTGrid                *& grid,
-                               const SegyGeometry     *& geometry,   
+                               const SegyGeometry     *& geometry,
                                const TraceHeaderFormat * format,
                                int                       gridType,
                                Simbox                  * timeSimbox,
@@ -1314,7 +1314,7 @@ ModelGeneral::readGridFromFile(const std::string       & fileName,
   int fileType = IO::findGridType(fileName);
 
   outsideTraces = 0;
-  if(fileType == IO::CRAVA) 
+  if(fileType == IO::CRAVA)
   {
     int nxPad, nyPad, nzPad;
     if(nopadding)
@@ -1331,24 +1331,24 @@ ModelGeneral::readGridFromFile(const std::string       & fileName,
     }
     LogKit::LogFormatted(LogKit::Low,"\nReading grid \'"+parName+"\' from file "+fileName);
     grid = createFFTGrid(timeSimbox->getnx(),
-                         timeSimbox->getny(), 
+                         timeSimbox->getny(),
                          timeSimbox->getnz(),
-                         nxPad, 
-                         nyPad, 
+                         nxPad,
+                         nyPad,
                          nzPad,
                          modelSettings->getFileGrid());
-    
+
     grid->setType(gridType);
     grid->readCravaFile(fileName, errText, nopadding);
   }
-  else if(fileType == IO::SEGY) 
-    outsideTraces = readSegyFile(fileName, grid, timeSimbox, modelSettings, geometry, 
+  else if(fileType == IO::SEGY)
+    outsideTraces = readSegyFile(fileName, grid, timeSimbox, modelSettings, geometry,
                                  gridType, offset, format, errText, nopadding);
-  else if(fileType == IO::STORM) 
+  else if(fileType == IO::STORM)
     outsideTraces = readStormFile(fileName, grid, gridType, parName, timeSimbox, modelSettings, errText, false, nopadding);
   else if(fileType == IO::SGRI)
     outsideTraces = readStormFile(fileName, grid, gridType, parName, timeSimbox, modelSettings, errText, true, nopadding);
-  else 
+  else
   {
     errText += "\nReading of file \'"+fileName+"\' for grid type \'"
                +parName+"\'failed. File type not recognized.\n";
@@ -1368,7 +1368,7 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
     LogKit::LogFormatted(LogKit::Low,"  Modelling mode                           : estimation\n");
 
   else if (modelSettings->getNumberOfSimulations() == 0)
-    LogKit::LogFormatted(LogKit::Low,"  Modelling mode                           : prediction\n"); 
+    LogKit::LogFormatted(LogKit::Low,"  Modelling mode                           : prediction\n");
   else
   {
     LogKit::LogFormatted(LogKit::Low,"  Modelling mode                           : simulation\n");
@@ -1423,7 +1423,7 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
 
   int gridFormat         = modelSettings->getOutputGridFormat();
   int gridDomain         = modelSettings->getOutputGridDomain();
-  int outputGridsOther   = modelSettings->getOutputGridsOther(); 
+  int outputGridsOther   = modelSettings->getOutputGridsOther();
   int outputGridsElastic = modelSettings->getOutputGridsElastic();
   int outputGridsSeismic = modelSettings->getOutputGridsSeismic();
 
@@ -1449,7 +1449,7 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
       LogKit::LogFormatted(LogKit::Medium,"  Depth                                    :        yes\n");
   }
 
-  if (outputGridsElastic > 0 && 
+  if (outputGridsElastic > 0 &&
       modelSettings->getForwardModeling() == false) {
     LogKit::LogFormatted(LogKit::Medium,"\nOutput of elastic parameters:\n");
     if ((outputGridsElastic & IO::VP) > 0)
@@ -1478,7 +1478,7 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
       LogKit::LogFormatted(LogKit::Medium,"  Background (Vp, Vs, Rho)                 :        yes\n");
     if ((outputGridsElastic & IO::BACKGROUND_TREND) > 0)
       LogKit::LogFormatted(LogKit::Medium,"  Background trend (Vp, Vs, Rho)           :        yes\n");
-  }    
+  }
 
   if (modelSettings->getForwardModeling() ||
       outputGridsSeismic > 0) {
@@ -1501,7 +1501,7 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
 
   if ((outputGridsOther & IO::CORRELATION)>0 ||
       (outputGridsOther & IO::EXTRA_GRIDS)  >0 ||
-      (outputGridsOther & IO::TIME_TO_DEPTH_VELOCITY)>0) { 
+      (outputGridsOther & IO::TIME_TO_DEPTH_VELOCITY)>0) {
     LogKit::LogFormatted(LogKit::Medium,"\nOther grid output:\n");
     if ((outputGridsOther & IO::CORRELATION) > 0)
       LogKit::LogFormatted(LogKit::Medium,"  Posterior correlations                   :        yes\n");
@@ -1544,7 +1544,7 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
   LogKit::LogFormatted(LogKit::High,"  Vs  - min                                : %10.0f\n",modelSettings->getBetaMin());
   LogKit::LogFormatted(LogKit::High,"  Vs  - max                                : %10.0f\n",modelSettings->getBetaMax());
   LogKit::LogFormatted(LogKit::High,"  Rho - min                                : %10.1f\n",modelSettings->getRhoMin());
-  LogKit::LogFormatted(LogKit::High,"  Rho - max                                : %10.1f\n",modelSettings->getRhoMax());  
+  LogKit::LogFormatted(LogKit::High,"  Rho - max                                : %10.1f\n",modelSettings->getRhoMax());
 
   //
   // WELL DATA
@@ -1557,12 +1557,12 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
     if (logNames.size() > 0)
     {
       LogKit::LogFormatted(LogKit::Low,"  Time                                     : %10s\n",  logNames[0].c_str());
-      if(NRLib::Uppercase(logNames[1])=="VP" || 
+      if(NRLib::Uppercase(logNames[1])=="VP" ||
          NRLib::Uppercase(logNames[1])=="LFP_VP")
         LogKit::LogFormatted(LogKit::Low,"  p-wave velocity                          : %10s\n",logNames[1].c_str());
       else
         LogKit::LogFormatted(LogKit::Low,"  Sonic                                    : %10s\n",logNames[1].c_str());
-      if(NRLib::Uppercase(logNames[3])=="VS" || 
+      if(NRLib::Uppercase(logNames[3])=="VS" ||
          NRLib::Uppercase(logNames[3])=="LFP_VS")
         LogKit::LogFormatted(LogKit::Low,"  s-wave velocity                          : %10s\n",logNames[3].c_str());
       else
@@ -1580,7 +1580,7 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
       LogKit::LogFormatted(LogKit::Low,"  Facies                                   : %10s\n","FACIES");
     }
     LogKit::LogFormatted(LogKit::Low,"\nWell files:\n");
-    for (int i = 0 ; i < modelSettings->getNumberOfWells() ; i++) 
+    for (int i = 0 ; i < modelSettings->getNumberOfWells() ; i++)
     {
       LogKit::LogFormatted(LogKit::Low,"  %-2d                                       : %s\n",i+1,inputFiles->getWellFile(i).c_str());
     }
@@ -1589,14 +1589,14 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
     bool estimateWavelet    = false;
     for (int i = 0 ; i < modelSettings->getNumberOfAngles() ; i++)
       estimateWavelet = estimateWavelet || modelSettings->getEstimateWavelet(i);
-    if (generateBackground || estimateFaciesProb || estimateWavelet) 
+    if (generateBackground || estimateFaciesProb || estimateWavelet)
     {
       LogKit::LogFormatted(LogKit::Low,"\nUse well in estimation of:                   ");
       if (generateBackground) LogKit::LogFormatted(LogKit::Low,"BackgroundTrend  ");
       if (estimateWavelet)    LogKit::LogFormatted(LogKit::Low,"WaveletEstimation  ");
       if (estimateFaciesProb) LogKit::LogFormatted(LogKit::Low,"FaciesProbabilities");
       LogKit::LogFormatted(LogKit::Low,"\n");
-      for (int i = 0 ; i < modelSettings->getNumberOfWells() ; i++) 
+      for (int i = 0 ; i < modelSettings->getNumberOfWells() ; i++)
       {
         LogKit::LogFormatted(LogKit::Low,"  %-2d                                       : ",i+1);
         if (generateBackground) {
@@ -1605,7 +1605,7 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
           else if (modelSettings->getIndicatorBGTrend(i) == ModelSettings::NO)
             LogKit::LogFormatted(LogKit::Low,"    %-11s  ","no");
           else
-            LogKit::LogFormatted(LogKit::Low,"    %-11s  ","yes");            
+            LogKit::LogFormatted(LogKit::Low,"    %-11s  ","yes");
         }
         if (estimateWavelet) {
           if (modelSettings->getIndicatorWavelet(i) == ModelSettings::YES)
@@ -1626,10 +1626,10 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
         LogKit::LogFormatted(LogKit::Low,"\n");
       }
     }
-    if ( modelSettings->getOptimizeWellLocation() ) 
+    if ( modelSettings->getOptimizeWellLocation() )
     {
       LogKit::LogFormatted(LogKit::Low,"\nFor well, optimize position for            : Angle with Weight\n");
-      for (int i = 0 ; i < modelSettings->getNumberOfWells() ; i++) 
+      for (int i = 0 ; i < modelSettings->getNumberOfWells() ; i++)
       {
         int nMoveAngles = modelSettings->getNumberOfWellAngles(i);
         if( nMoveAngles > 0 )
@@ -1645,7 +1645,7 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
 
   //
   // AREA
-  // 
+  //
   std::string gridFile;
   int areaSpecification = modelSettings->getAreaSpecification();
   if(modelSettings->getForwardModeling()) {
@@ -1695,7 +1695,7 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
 
   //
   // SURFACES
-  // 
+  //
   LogKit::LogFormatted(LogKit::Low,"\nTime surfaces:\n");
   if (modelSettings->getParallelTimeSurfaces())
   {
@@ -1707,8 +1707,8 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
   }
   else
   {
-    const std::string & topName  = inputFiles->getTimeSurfFile(0); 
-    const std::string & baseName = inputFiles->getTimeSurfFile(1); 
+    const std::string & topName  = inputFiles->getTimeSurfFile(0);
+    const std::string & baseName = inputFiles->getTimeSurfFile(1);
 
     if (NRLib::IsNumber(topName))
       LogKit::LogFormatted(LogKit::Low,"  Start time                               : %10.2f\n",atof(topName.c_str()));
@@ -1753,7 +1753,7 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
       LogKit::LogFormatted(LogKit::Low,"  Start time                               : %10.2f\n",atof(topWEI.c_str()));
     else
       LogKit::LogFormatted(LogKit::Low,"  Start time                               : "+topWEI+"\n");
-    
+
     if (NRLib::IsNumber(baseWEI))
       LogKit::LogFormatted(LogKit::Low,"  Stop time                                : %10.2f\n",atof(baseWEI.c_str()));
     else
@@ -1769,7 +1769,7 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
       LogKit::LogFormatted(LogKit::Low,"  Start time                               : %10.2f\n",atof(topFEI.c_str()));
     else
       LogKit::LogFormatted(LogKit::Low,"  Start time                               : "+topFEI+"\n");
-    
+
     if (NRLib::IsNumber(baseFEI))
       LogKit::LogFormatted(LogKit::Low,"  Stop time                                : %10.2f\n",atof(baseFEI.c_str()));
     else
@@ -1779,7 +1779,7 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
   //
   // BACKGROUND
   //
-  if (modelSettings->getGenerateBackground()) 
+  if (modelSettings->getGenerateBackground())
   {
     LogKit::LogFormatted(LogKit::Low,"\nBackground model (estimated):\n");
     if (inputFiles->getBackVelFile() != "")
@@ -1791,7 +1791,7 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
     if (pVario != NULL)
     LogKit::LogFormatted(LogKit::Low,"    Power                                  : %10.1f\n",pVario->getPower());
     LogKit::LogFormatted(LogKit::Low,"    Range                                  : %10.1f\n",vario->getRange());
-    if (vario->getAnisotropic()) 
+    if (vario->getAnisotropic())
     {
       LogKit::LogFormatted(LogKit::Low,"    Subrange                               : %10.1f\n",vario->getSubRange());
       LogKit::LogFormatted(LogKit::Low,"    Azimuth                                : %10.1f\n",90.0 - vario->getAngle()*(180/M_PI));
@@ -1808,12 +1808,12 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
       LogKit::LogFormatted(LogKit::Low,"  P-wave velocity                          : %10.1f\n",modelSettings->getConstBackValue(0));
     else
       LogKit::LogFormatted(LogKit::Low,"  P-wave velocity read from file           : "+inputFiles->getBackFile(0)+"\n");
-    
+
     if (modelSettings->getConstBackValue(1) > 0)
       LogKit::LogFormatted(LogKit::Low,"  S-wave velocity                          : %10.1f\n",modelSettings->getConstBackValue(1));
     else
       LogKit::LogFormatted(LogKit::Low,"  S-wave velocity read from file           : "+inputFiles->getBackFile(1)+"\n");
-      
+
     if (modelSettings->getConstBackValue(2) > 0)
       LogKit::LogFormatted(LogKit::Low,"  Density                                  : %10.1f\n",modelSettings->getConstBackValue(2));
     else
@@ -1821,14 +1821,14 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
   }
 
   TraceHeaderFormat * thf_old = modelSettings->getTraceHeaderFormat();
-  if (thf_old != NULL) 
+  if (thf_old != NULL)
   {
     LogKit::LogFormatted(LogKit::Low,"\nAdditional SegY trace header format:\n");
     if (thf_old != NULL) {
       LogKit::LogFormatted(LogKit::Low,"  Format name                              : "+thf_old->GetFormatName()+"\n");
       if (thf_old->GetBypassCoordScaling())
         LogKit::LogFormatted(LogKit::Low,"  Bypass coordinate scaling                :        yes\n");
-      if (!thf_old->GetStandardType()) 
+      if (!thf_old->GetStandardType())
       {
         LogKit::LogFormatted(LogKit::Low,"  Start pos coordinate scaling             : %10d\n",thf_old->GetScalCoLoc());
         LogKit::LogFormatted(LogKit::Low,"  Start pos trace x coordinate             : %10d\n",thf_old->GetUtmxLoc());
@@ -1869,7 +1869,7 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
       LogKit::LogFormatted(LogKit::Low,"    Var{Vs}  - min                         : %10.1e\n",modelSettings->getVarBetaMin());
       LogKit::LogFormatted(LogKit::Low,"    Var{Vs}  - max                         : %10.1e\n",modelSettings->getVarBetaMax());
       LogKit::LogFormatted(LogKit::Low,"    Var{Rho} - min                         : %10.1e\n",modelSettings->getVarRhoMin());
-      LogKit::LogFormatted(LogKit::Low,"    Var{Rho} - max                         : %10.1e\n",modelSettings->getVarRhoMax());  
+      LogKit::LogFormatted(LogKit::Low,"    Var{Rho} - max                         : %10.1e\n",modelSettings->getVarRhoMax());
       LogKit::LogFormatted(LogKit::Low,"  Lateral correlation:\n");
       LogKit::LogFormatted(LogKit::Low,"    Model                                  : %10s\n",(corr->getType()).c_str());
       if (pCorr != NULL)
@@ -1885,15 +1885,15 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
     // PRIOR FACIES
     //
     if (modelSettings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_MODEL_FILE ||
-        modelSettings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_CUBES) 
+        modelSettings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_CUBES)
         // Can not be written when FACIES_FROM_WELLS as this information not is extracted yet
     {
-      LogKit::LogFormatted(LogKit::Low,"\nPrior facies probabilities:\n");      
+      LogKit::LogFormatted(LogKit::Low,"\nPrior facies probabilities:\n");
       if(modelSettings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_MODEL_FILE)
       {
         typedef std::map<std::string,float> mapType;
         mapType myMap = modelSettings->getPriorFaciesProb();
-        
+
         for(mapType::iterator i=myMap.begin();i!=myMap.end();i++)
           LogKit::LogFormatted(LogKit::Low,"   %-12s                            : %10.2f\n",(i->first).c_str(),i->second);
       }
@@ -1929,7 +1929,7 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
       }
       bool estimateNoise = false;
       for (int i = 0 ; i < modelSettings->getNumberOfAngles() ; i++) {
-        estimateNoise = estimateNoise || modelSettings->getEstimateSNRatio(i); 
+        estimateNoise = estimateNoise || modelSettings->getEstimateSNRatio(i);
       }
       LogKit::LogFormatted(LogKit::Low,"\nGeneral settings for wavelet:\n");
       if (estimateNoise)
@@ -1947,13 +1947,13 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
         LogKit::LogFormatted(LogKit::Low,"  Angle                                    : %10.1f\n",(modelSettings->getAngle(i)*180/M_PI));
         LogKit::LogFormatted(LogKit::Low,"  SegY start time                          : %10.1f\n",modelSettings->getSegyOffset());
         TraceHeaderFormat * thf = modelSettings->getTraceHeaderFormat(i);
-        if (thf != NULL) 
+        if (thf != NULL)
         {
           LogKit::LogFormatted(LogKit::Low,"  SegY trace header format:\n");
           LogKit::LogFormatted(LogKit::Low,"    Format name                            : "+thf->GetFormatName()+"\n");
           if (thf->GetBypassCoordScaling())
             LogKit::LogFormatted(LogKit::Low,"    Bypass coordinate scaling              :        yes\n");
-          if (!thf->GetStandardType()) 
+          if (!thf->GetStandardType())
           {
             LogKit::LogFormatted(LogKit::Low,"    Start pos coordinate scaling           : %10d\n",thf->GetScalCoLoc());
             LogKit::LogFormatted(LogKit::Low,"    Start pos trace x coordinate           : %10d\n",thf->GetUtmxLoc());
@@ -1971,12 +1971,12 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
         if (modelSettings->getEstimateLocalShift(i))
           LogKit::LogFormatted(LogKit::Low,"  Estimate local shift map                 : %10s\n", "yes");
         else if (inputFiles->getShiftFile(i) != "")
-          LogKit::LogFormatted(LogKit::Low,"  Local shift map                          : "+inputFiles->getShiftFile(i)+"\n");  
+          LogKit::LogFormatted(LogKit::Low,"  Local shift map                          : "+inputFiles->getShiftFile(i)+"\n");
         if (modelSettings->getEstimateLocalScale(i))
           LogKit::LogFormatted(LogKit::Low,"  Estimate local scale map                 : %10s\n", "yes");
         else if (inputFiles->getScaleFile(i) != "")
-          LogKit::LogFormatted(LogKit::Low,"  Local scale map                          : "+inputFiles->getScaleFile(i)+"\n");      
-        if (modelSettings->getMatchEnergies(i)) 
+          LogKit::LogFormatted(LogKit::Low,"  Local scale map                          : "+inputFiles->getScaleFile(i)+"\n");
+        if (modelSettings->getMatchEnergies(i))
           LogKit::LogFormatted(LogKit::Low,"  Match empirical and theoretical energies : %10s\n", "yes");
         if (!modelSettings->getEstimateWavelet(i) && !modelSettings->getMatchEnergies(i)) {
           if (modelSettings->getEstimateGlobalWaveletScale(i))
@@ -1984,12 +1984,12 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
           else
             LogKit::LogFormatted(LogKit::Low,"  Global wavelet scale                     : %10.2f\n",modelSettings->getWaveletScale(i));
         }
-        if (modelSettings->getEstimateSNRatio(i)) 
+        if (modelSettings->getEstimateSNRatio(i))
           LogKit::LogFormatted(LogKit::Low,"  Estimate signal-to-noise ratio           : %10s\n", "yes");
         else
           LogKit::LogFormatted(LogKit::Low,"  Signal-to-noise ratio                    : %10.1f\n",modelSettings->getSNRatio(i));
-        if (modelSettings->getEstimateLocalNoise(i)) { 
-          if (inputFiles->getLocalNoiseFile(i) == "") 
+        if (modelSettings->getEstimateLocalNoise(i)) {
+          if (inputFiles->getLocalNoiseFile(i) == "")
             LogKit::LogFormatted(LogKit::Low,"  Estimate local signal-to-noise ratio map : %10s\n", "yes");
           else
             LogKit::LogFormatted(LogKit::Low,"  Local signal-to-noise ratio map          : "+inputFiles->getLocalNoiseFile(i)+"\n");
@@ -2009,7 +2009,7 @@ ModelGeneral::getCorrGradIJ(float & corrGradI, float &corrGradJ) const
   double angle  = timeSimbox_->getAngle();
   double cosrot = cos(angle);
   double sinrot = sin(angle);
-  double dx     = timeSimbox_->getdx();  
+  double dx     = timeSimbox_->getdx();
   double dy     = timeSimbox_->getdy();
 
   double cI =  dx*cosrot*gradX_ + dy*sinrot*gradY_;
@@ -2020,34 +2020,34 @@ ModelGeneral::getCorrGradIJ(float & corrGradI, float &corrGradJ) const
 }
 
 void
-ModelGeneral::processDepthConversion(Simbox            * timeCutSimbox, 
+ModelGeneral::processDepthConversion(Simbox            * timeCutSimbox,
                                      Simbox            * timeSimbox,
-                                     ModelSettings     * modelSettings, 
+                                     ModelSettings     * modelSettings,
                                      const InputFiles  * inputFiles,
-                                     std::string       & errText, 
+                                     std::string       & errText,
                                      bool              & failed)
 {
   FFTGrid * velocity = NULL;
   if(timeCutSimbox != NULL)
-    loadVelocity(velocity, timeCutSimbox, modelSettings, 
+    loadVelocity(velocity, timeCutSimbox, modelSettings,
                  inputFiles->getVelocityField(), velocityFromInversion_,
                  errText, failed);
   else
-    loadVelocity(velocity, timeSimbox, modelSettings, 
+    loadVelocity(velocity, timeSimbox, modelSettings,
                  inputFiles->getVelocityField(), velocityFromInversion_,
                  errText, failed);
-  
-  if(!failed) 
+
+  if(!failed)
   {
     timeDepthMapping_ = new GridMapping();
     timeDepthMapping_->setDepthSurfaces(inputFiles->getDepthSurfFiles(), failed, errText);
-    if(velocity != NULL) 
+    if(velocity != NULL)
     {
       velocity->setAccessMode(FFTGrid::RANDOMACCESS);
       timeDepthMapping_->calculateSurfaceFromVelocity(velocity, timeSimbox);
-      timeDepthMapping_->setDepthSimbox(timeSimbox, timeSimbox->getnz(), 
+      timeDepthMapping_->setDepthSimbox(timeSimbox, timeSimbox->getnz(),
                                         modelSettings->getOutputGridFormat(),
-                                        failed, errText);            // NBNB-PAL: Er dettet riktig nz (timeCut vs time)? 
+                                        failed, errText);            // NBNB-PAL: Er dettet riktig nz (timeCut vs time)?
       timeDepthMapping_->makeTimeDepthMapping(velocity, timeSimbox);
       velocity->endAccess();
 
@@ -2055,21 +2055,21 @@ ModelGeneral::processDepthConversion(Simbox            * timeCutSimbox,
         std::string baseName  = IO::FileTimeToDepthVelocity();
         std::string sgriLabel = std::string("Time-to-depth velocity");
         float       offset    = modelSettings->getSegyOffset();
-        velocity->writeFile(baseName, 
-                            IO::PathToVelocity(), 
-                            timeSimbox, 
-                            sgriLabel, 
+        velocity->writeFile(baseName,
+                            IO::PathToVelocity(),
+                            timeSimbox,
+                            sgriLabel,
                             offset,
-                            timeDepthMapping_, 
+                            timeDepthMapping_,
                             timeCutMapping_);
       }
     }
     else if (velocity==NULL && velocityFromInversion_==false)
     {
-      timeDepthMapping_->setDepthSimbox(timeSimbox, 
-                                        timeSimbox->getnz(), 
+      timeDepthMapping_->setDepthSimbox(timeSimbox,
+                                        timeSimbox->getnz(),
                                         modelSettings->getOutputGridFormat(),
-                                        failed, 
+                                        failed,
                                         errText);
 
     }
@@ -2078,10 +2078,10 @@ ModelGeneral::processDepthConversion(Simbox            * timeCutSimbox,
     delete velocity;
 }
 
-void 
+void
 ModelGeneral::loadVelocity(FFTGrid          *& velocity,
                            Simbox            * timeSimbox,
-                           ModelSettings     * modelSettings, 
+                           ModelSettings     * modelSettings,
                            const std::string & velocityField,
                            bool              & velocityFromInversion,
                            std::string       & errText,
@@ -2114,7 +2114,7 @@ ModelGeneral::loadVelocity(FFTGrid          *& velocity,
                      modelSettings,
                      outsideTraces,
                      errorText);
-    
+
     if (errorText == "") { // No errors
       //
       // Check that the velocity grid is veldefined.
@@ -2127,11 +2127,11 @@ ModelGeneral::loadVelocity(FFTGrid          *& velocity,
       const int nz = velocity->getNz();
       const int ny = velocity->getNy();
       const int nx = velocity->getNx();
-      int tooLow  = 0; 
-      int tooHigh = 0; 
+      int tooLow  = 0;
+      int tooHigh = 0;
       velocity->setAccessMode(FFTGrid::READ);
       int rnxp = 2*(nxp/2 + 1);
-      for (int k = 0; k < nzp; k++) 
+      for (int k = 0; k < nzp; k++)
         for (int j = 0; j < nyp; j++)
           for (int i = 0; i < rnxp; i++) {
             if(i < nx && j < ny && k < nz) {
@@ -2144,7 +2144,7 @@ ModelGeneral::loadVelocity(FFTGrid          *& velocity,
             }
           }
       velocity->endAccess();
-      
+
       if (tooLow+tooHigh > 0) {
         std::string text;
         text += "\nThe velocity grid used as trend in the background model of Vp";
@@ -2156,7 +2156,7 @@ ModelGeneral::loadVelocity(FFTGrid          *& velocity,
         errText += "Reading of file '"+velocityField+"' for background velocity field failed.\n";
         errText += text;
         failed = true;
-      } 
+      }
     }
     else {
       errorText += "Reading of file \'"+velocityField+"\' for background velocity field failed.\n";
@@ -2166,7 +2166,7 @@ ModelGeneral::loadVelocity(FFTGrid          *& velocity,
   }
 }
 
-void 
+void
 ModelGeneral::writeAreas(const SegyGeometry * areaParams,
                          Simbox             * timeSimbox,
                          std::string        & text)
@@ -2193,26 +2193,26 @@ ModelGeneral::writeAreas(const SegyGeometry * areaParams,
   double azimuth = (-1)*areaRot*(180.0/M_PI);
   if (azimuth < 0)
     azimuth += 360.0;
-  LogKit::LogFormatted(LogKit::Low,"Model area       %11.2f  %11.2f    %10.2f %10.2f    %8.3f    %7.2f %7.2f\n\n", 
+  LogKit::LogFormatted(LogKit::Low,"Model area       %11.2f  %11.2f    %10.2f %10.2f    %8.3f    %7.2f %7.2f\n\n",
                        areaX0, areaY0, areaLx, areaLy, areaDx, areaDy, azimuth);
 
   LogKit::LogFormatted(LogKit::Low,"Area                    xmin         xmax           ymin        ymax\n");
   LogKit::LogFormatted(LogKit::Low,"--------------------------------------------------------------------\n");
-  LogKit::LogFormatted(LogKit::Low,"%-12s     %11.2f  %11.2f    %11.2f %11.2f\n", 
+  LogKit::LogFormatted(LogKit::Low,"%-12s     %11.2f  %11.2f    %11.2f %11.2f\n",
                        text.c_str(),areaXmin, areaXmax, areaYmin, areaYmax);
   const NRLib::Surface<double> & top  = timeSimbox->GetTopSurface();
   const NRLib::Surface<double> & base = timeSimbox->GetBotSurface();
-  LogKit::LogFormatted(LogKit::Low,"Top surface      %11.2f  %11.2f    %11.2f %11.2f\n", 
-                       top.GetXMin(), top.GetXMax(), top.GetYMin(), top.GetYMax()); 
-  LogKit::LogFormatted(LogKit::Low,"Base surface     %11.2f  %11.2f    %11.2f %11.2f\n", 
-                       base.GetXMin(), base.GetXMax(), base.GetYMin(), base.GetYMax()); 
+  LogKit::LogFormatted(LogKit::Low,"Top surface      %11.2f  %11.2f    %11.2f %11.2f\n",
+                       top.GetXMin(), top.GetXMax(), top.GetYMin(), top.GetYMax());
+  LogKit::LogFormatted(LogKit::Low,"Base surface     %11.2f  %11.2f    %11.2f %11.2f\n",
+                       base.GetXMin(), base.GetXMax(), base.GetYMin(), base.GetYMax());
 }
 
-void   
-ModelGeneral::findSmallestSurfaceGeometry(const double   x0, 
-                                          const double   y0, 
-                                          const double   lx, 
-                                          const double   ly, 
+void
+ModelGeneral::findSmallestSurfaceGeometry(const double   x0,
+                                          const double   y0,
+                                          const double   lx,
+                                          const double   ly,
                                           const double   rot,
                                           double       & xMin,
                                           double       & yMin,
@@ -2270,13 +2270,13 @@ ModelGeneral::getGeometryFromGridOnFile(const std::string         gridFile,
 }
 
 SegyGeometry *
-ModelGeneral::geometryFromCravaFile(const std::string & fileName) 
+ModelGeneral::geometryFromCravaFile(const std::string & fileName)
 {
   std::ifstream binFile;
   NRLib::OpenRead(binFile, fileName, std::ios::in | std::ios::binary);
-  
+
   std::string fileType;
-  getline(binFile,fileType);         
+  getline(binFile,fileType);
 
   double x0      = NRLib::ReadBinaryDouble(binFile);
   double y0      = NRLib::ReadBinaryDouble(binFile);
@@ -2293,9 +2293,9 @@ ModelGeneral::geometryFromCravaFile(const std::string & fileName)
   double rot     = NRLib::ReadBinaryDouble(binFile);
 
   binFile.close();
-  
+
   SegyGeometry * geometry = new SegyGeometry(x0, y0, dx, dy, nx, ny, ///< When XL, IL is available.
-                                             IL0, XL0, ilStepX, ilStepY, 
+                                             IL0, XL0, ilStepX, ilStepY,
                                              xlStepX, xlStepY, rot);
   return(geometry);
 }
@@ -2303,7 +2303,7 @@ ModelGeneral::geometryFromCravaFile(const std::string & fileName)
 SegyGeometry *
 ModelGeneral::geometryFromStormFile(const std::string & fileName,
                                     std::string       & errText,
-                                    bool scale) 
+                                    bool scale)
 {
   SegyGeometry  * geometry  = NULL;
   StormContGrid * stormgrid = NULL;
@@ -2319,12 +2319,12 @@ ModelGeneral::geometryFromStormFile(const std::string & fileName,
     scalehor  = 1000.0;
   }
   try
-  {   
+  {
     stormgrid = new StormContGrid(0,0,0);
     stormgrid->ReadFromFile(fileName);
     stormgrid->SetMissingCode(RMISSING);
   }
-  catch (NRLib::Exception & e) 
+  catch (NRLib::Exception & e)
   {
     tmpErrText = e.what();
   }
@@ -2344,7 +2344,7 @@ ModelGeneral::geometryFromStormFile(const std::string & fileName,
     double xlStepX =   1;  ///< Dummy value since information is not contained in format
     double xlStepY =   1;  ///< Dummy value since information is not contained in format
     geometry = new SegyGeometry(x0, y0, dx, dy, nx, ny, ///< When XL, IL is available.
-                                IL0, XL0, ilStepX, ilStepY, 
+                                IL0, XL0, ilStepX, ilStepY,
                                 xlStepX, xlStepY, rot);
   }
   else {
@@ -2353,11 +2353,11 @@ ModelGeneral::geometryFromStormFile(const std::string & fileName,
 
   if (stormgrid != NULL)
     delete stormgrid;
-  
+
   return(geometry);
 }
 
-FFTGrid*            
+FFTGrid*
 ModelGeneral::createFFTGrid(int nx, int ny, int nz, int nxp, int nyp, int nzp, bool fileGrid)
 {
   FFTGrid* fftGrid;

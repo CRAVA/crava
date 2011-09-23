@@ -38,7 +38,7 @@ public:
   SphericalVario(float range1, float range2 = 1.0, float angle =0.0);
   ~SphericalVario();
 
-  float  corr(float deltaX, float deltaY) const; 
+  float  corr(float deltaX, float deltaY) const;
 };
 
 
@@ -49,7 +49,7 @@ public:
   GenExpVario(float pot, float range1, float range2=1.0, float angle=0.0);
   ~GenExpVario();
 
-  float  corr(float deltaX, float deltaY) const; 
+  float  corr(float deltaX, float deltaY) const;
   float  getPower() const { return pot_; }
 
 private:

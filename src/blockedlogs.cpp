@@ -5,10 +5,10 @@
 #include "lib/random.h"
 #include "lib/lib_matr.h"
 #include "nrlib/iotools/logkit.hpp"
-#include "fft/include/fftw.h"
-#include "fft/include/rfftw.h"
-#include "fft/include/fftw-int.h"
-#include "fft/include/f77_func.h"
+#include "fftw.h"
+#include "rfftw.h"
+#include "fftw-int.h"
+#include "f77_func.h"
 
 #include "src/definitions.h"
 #include "src/blockedlogs.h"
@@ -20,10 +20,10 @@
 #include "src/modelsettings.h"
 #include "src/io.h"
 
-BlockedLogs::BlockedLogs(WellData  * well, 
+BlockedLogs::BlockedLogs(WellData  * well,
                          Simbox    * simbox,
                          RandomGen * random,
-                         bool        interpolate) 
+                         bool        interpolate)
   : wellname_(""),
     xpos_(NULL),
     ypos_(NULL),
@@ -121,7 +121,7 @@ BlockedLogs::~BlockedLogs(void)
     delete [] alpha_for_facies_;
   if (rho_for_facies_ != NULL)
     delete [] rho_for_facies_;
-  
+
   if (facies_prob_ != NULL) {
     for (int i=0 ; i<nFacies_ ; i++)
       if (facies_prob_[i] != NULL)
@@ -146,7 +146,7 @@ BlockedLogs::~BlockedLogs(void)
         delete [] well_synt_seismic_data_[i];
     delete [] well_synt_seismic_data_;
   }
-  if (cpp_ != NULL) { 
+  if (cpp_ != NULL) {
     for (int i=0 ; i<nAngles_ ; i++)
       if (cpp_[i] != NULL)
         delete [] cpp_[i];
@@ -155,17 +155,17 @@ BlockedLogs::~BlockedLogs(void)
 }
 
 //------------------------------------------------------------------------------
-void 
+void
 BlockedLogs::blockWell(WellData  * well,
                        Simbox    * simbox,
                        RandomGen * random,
-                       bool        interpolate) 
+                       bool        interpolate)
 {
   wellname_ = well->getWellname();
 
   int * bInd = new int[well->getNd()]; // Gives which block each well log entry contributes to
 
-  findSizeAndBlockPointers(well, simbox, bInd);  
+  findSizeAndBlockPointers(well, simbox, bInd);
   findBlockIJK(well, simbox, bInd);
   //We do not use block centre to represent BW position any more, due to ugly visualisation
   //findBlockXYZ(simbox);
@@ -235,7 +235,7 @@ BlockedLogs::blockWell(WellData  * well,
 }
 
 //------------------------------------------------------------------------------
-void 
+void
 BlockedLogs::blockCoordinateLog(const int    *  bInd,
                                 const double *  coord,
                                 double       *& blockedCoord)
@@ -268,11 +268,11 @@ BlockedLogs::blockCoordinateLog(const int    *  bInd,
 }
 
 //------------------------------------------------------------------------------
-void 
+void
 BlockedLogs::findXYZforVirtualPart(Simbox * simbox)
 {
   //
-  // If the ends have undefined coordinates we use the nearest defined 
+  // If the ends have undefined coordinates we use the nearest defined
   // coordinate for x and y and the block cell centre for z
   //
   for (int b = 0 ; b < firstB_ ; b++)
@@ -295,7 +295,7 @@ BlockedLogs::findXYZforVirtualPart(Simbox * simbox)
 }
 
 //------------------------------------------------------------------------------
-void 
+void
 BlockedLogs::blockContinuousLog(const int   *  bInd,
                                 const float *  wellLog,
                                 float       *& blockedLog)
@@ -333,7 +333,7 @@ BlockedLogs::blockContinuousLog(const int   *  bInd,
 }
 
 //------------------------------------------------------------------------------
-void 
+void
 BlockedLogs::blockDiscreteLog(const int *  bInd,
                               const int *  wellLog,
                               const int *  faciesNumbers,
@@ -350,15 +350,15 @@ BlockedLogs::blockDiscreteLog(const int *  bInd,
     blockedLog = new int[nBlocks_];
     for (int m = 0 ; m < nBlocks_ ; m++)
       blockedLog[m] = IMISSING;
-    
+
     int   maxAllowedValue = 100;  // Largest allowed value (facies number).
     int * count = new int[nFacies];
-    int * table = new int[maxAllowedValue];                  
+    int * table = new int[maxAllowedValue];
 
     //
-    // Set up facies-to-position table. 
+    // Set up facies-to-position table.
     //
-    // Example: If log values range from 2 to 4 the table looks like 
+    // Example: If log values range from 2 to 4 the table looks like
     //
     // table[0] = IMISSING
     // table[1] = IMISSING
@@ -367,7 +367,7 @@ BlockedLogs::blockDiscreteLog(const int *  bInd,
     // table[4] =    2
     // table[5] = IMISSING
     //    .          .
-    //    .          . 
+    //    .          .
     //
     for (int i = 0 ; i < maxAllowedValue ; i++)
       table[i] = IMISSING;
@@ -398,7 +398,7 @@ BlockedLogs::blockDiscreteLog(const int *  bInd,
     delete [] count;
     delete [] table;
 
-    // 
+    //
     // NOTE: The blocked log contains internal numbers 0, 1, 2, ... and
     //       is NOT the facies lables.
     //
@@ -413,7 +413,7 @@ BlockedLogs::blockDiscreteLog(const int *  bInd,
 
 
 void
-BlockedLogs::interpolateContinuousLog(float * blockedLog, int start, int end, 
+BlockedLogs::interpolateContinuousLog(float * blockedLog, int start, int end,
                                       int index, float rel)
 {
   if(blockedLog[start] != RMISSING && blockedLog[end] != RMISSING && blockedLog[index] == RMISSING)
@@ -422,7 +422,7 @@ BlockedLogs::interpolateContinuousLog(float * blockedLog, int start, int end,
 
 
 void
-BlockedLogs::interpolateContinuousLog(double * blockedLog, int start, int end, 
+BlockedLogs::interpolateContinuousLog(double * blockedLog, int start, int end,
                                       int index, float rel)
 {
   if(blockedLog[start] != RMISSING && blockedLog[end] != RMISSING && blockedLog[index] == RMISSING)
@@ -431,13 +431,13 @@ BlockedLogs::interpolateContinuousLog(double * blockedLog, int start, int end,
 
 
 //------------------------------------------------------------------------------
-int 
+int
 BlockedLogs::findMostProbable(const int * count,
                               int         nFacies,
-                              RandomGen * rndgen) 
+                              RandomGen * rndgen)
 { //
   // Find which value have the highest frequency. Add a random [0,1]
-  // value to ensure that two Facies never get the same probability. 
+  // value to ensure that two Facies never get the same probability.
   //
   double maxFreqValue = RMISSING;
   int    maxFreqIndex = IMISSING;
@@ -449,12 +449,12 @@ BlockedLogs::findMostProbable(const int * count,
     }
   }
   //No! Gives WARNING under Linux. Also when moved here
-  //rndgen; //To eliminate warning 
+  //rndgen; //To eliminate warning
   return (maxFreqIndex);
 }
 
 //------------------------------------------------------------------------------
-void 
+void
 BlockedLogs::findSizeAndBlockPointers(WellData * well,
                                       Simbox   * simbox,
                                       int      * bInd)
@@ -466,7 +466,7 @@ BlockedLogs::findSizeAndBlockPointers(WellData * well,
   const double * z  = well->getZpos(dummy);
   //
   // Find first cell in Simbox that the well hits
-  // 
+  //
   int firstI(IMISSING);
   int firstJ(IMISSING);
   int firstK(IMISSING);
@@ -479,10 +479,10 @@ BlockedLogs::findSizeAndBlockPointers(WellData * well,
   }
   //
   // Find last cell in Simbox that the well hits
-  // 
+  //
   int lastI(IMISSING);
   int lastJ(IMISSING);
-  int lastK(IMISSING);  
+  int lastK(IMISSING);
   for (int m = nd - 1 ; m > 0 ; m--) {
     simbox->getIndexes(x[m], y[m], z[m], lastI, lastJ, lastK);
     if (lastI != IMISSING && lastJ != IMISSING && lastK != IMISSING) {
@@ -492,7 +492,7 @@ BlockedLogs::findSizeAndBlockPointers(WellData * well,
   }
   //
   // Count number of blocks needed for the defined part of well.
-  // 
+  //
   for (int m = 0 ; m < nd ; m++) {
     bInd[m] = IMISSING;
   }
@@ -504,9 +504,9 @@ BlockedLogs::findSizeAndBlockPointers(WellData * well,
   int nDefinedBlocks = 0;
   bInd[firstM_] = firstK; // The first defined well log entry contributes to this block.
 
-  // 
-  // The well positions used to be given in float rather than double. Unfortunately, this 
-  // allowed a well to oscillate between two or more cells, leading to a breakdown of the 
+  //
+  // The well positions used to be given in float rather than double. Unfortunately, this
+  // allowed a well to oscillate between two or more cells, leading to a breakdown of the
   // algorithm below. To remedy for this we introduced array simboxInd which records the
   // indices of the simbox cells that are already accounted for, so that these are not
   // enlisted more than one time.
@@ -523,7 +523,7 @@ BlockedLogs::findSizeAndBlockPointers(WellData * well,
 
       int  thisInd = nx*ny*newK + nx*newJ + newI;                    // help hack
       bool blockNotListed = true;                                    // help hack
-      for (int l = 0 ; l < nDefinedBlocks ; l++) {                   // help hack 
+      for (int l = 0 ; l < nDefinedBlocks ; l++) {                   // help hack
         if (thisInd == simboxInd[l]) {                               // help hack
           blockNotListed = false;                                    // help hack
           break;                                                     // help hack
@@ -549,15 +549,15 @@ BlockedLogs::findSizeAndBlockPointers(WellData * well,
   // estimate a vertical trend in the total volume, anf then we interpolate
   // the blocked log intop this trend volume. To avoid sharp contrast we
   // ensure that the blocked log is defined from top to base of the volume.
-  // In regions where the log is undefined we generate it by kriging from 
+  // In regions where the log is undefined we generate it by kriging from
   // the rest of the log. Likewise, in regions where there is no blocked
   // log at all because the well was too short, we have to make a virtual
   // well.
   //
   nBlocks_ = firstK + nDefinedBlocks + (nLayers_ - lastK - 1);
-  
+
   bool debug = false;
-  if (debug) {  
+  if (debug) {
     LogKit::LogFormatted(LogKit::Low,"firstM_, lastM_          = %d, %d    \n",firstM_,lastM_);
     LogKit::LogFormatted(LogKit::Low,"nLayers_                 = %d        \n",nLayers_);
     LogKit::LogFormatted(LogKit::Low,"firstI,firstJ,firstK     = %d, %d, %d\n",firstI,firstJ,firstK);
@@ -568,7 +568,7 @@ BlockedLogs::findSizeAndBlockPointers(WellData * well,
 }
 
 //------------------------------------------------------------------------------
-void 
+void
 BlockedLogs::findBlockIJK(WellData  * well,
                           Simbox    * simbox,
                           const int * bInd)
@@ -583,7 +583,7 @@ BlockedLogs::findBlockIJK(WellData  * well,
   const double * z = well->getZpos(dummy);
   //
   // Set IJK for virtual part of well in upper part of simbox
-  // 
+  //
   int b = -1; // block counter;
   int firstI, firstJ, firstK;
   simbox->getIndexes(x[firstM_], y[firstM_], z[firstM_], firstI, firstJ, firstK);
@@ -596,7 +596,7 @@ BlockedLogs::findBlockIJK(WellData  * well,
 
   //
   // Set IJK for the defined part of the well
-  // 
+  //
   b = firstK;
   ipos_[b] = firstI;
   jpos_[b] = firstJ;
@@ -608,7 +608,7 @@ BlockedLogs::findBlockIJK(WellData  * well,
       simbox->getIndexes(x[m], y[m], z[m], i, j, k);
       ipos_[b] = i;
       jpos_[b] = j;
-      kpos_[b] = k;      
+      kpos_[b] = k;
     }
   }
   firstB_ = firstK;
@@ -616,8 +616,8 @@ BlockedLogs::findBlockIJK(WellData  * well,
 
   //
   // Set IJK for the virtual part of well in lower part of simbox
-  // 
-  int lastI,  lastJ,  lastK;  
+  //
+  int lastI,  lastJ,  lastK;
   simbox->getIndexes(x[lastM_], y[lastM_], z[lastM_], lastI, lastJ, lastK);
   for (int k = lastK + 1 ; k < nLayers_ ; k++) {
     b++;
@@ -639,7 +639,7 @@ BlockedLogs::findBlockIJK(WellData  * well,
 }
 
 //------------------------------------------------------------------------------
-void 
+void
 BlockedLogs::findBlockXYZ(Simbox * simbox)
 {
   xpos_ = new double[nBlocks_];
@@ -676,7 +676,7 @@ BlockedLogs::getVerticalTrend(const float   * blockedLog,
     }
     for (int k = 0 ; k < nLayers_ ; k++) {
       if (count[k] > 0)
-        trend[k] = trend[k]/count[k];     
+        trend[k] = trend[k]/count[k];
       else
         trend[k] = RMISSING;
     }
@@ -690,7 +690,7 @@ BlockedLogs::getVerticalTrend(const float   * blockedLog,
     if (trend == NULL)
       LogKit::LogFormatted(LogKit::Low,"ERROR in BlockedLogs::getVerticalTrend(): Trying to use an undefined trend (NULL pointer)\n");
     exit(1);
-  }    
+  }
 }
 
 
@@ -707,7 +707,7 @@ BlockedLogs::getVerticalTrendLimited(const float                  * blockedLog,
     }
     for (int m = 0 ; m < nBlocks_ ; m++) {
       if (blockedLog[m] != RMISSING) {
-        if(limits.size() == 0 || 
+        if(limits.size() == 0 ||
            (limits[0]->GetZ(xpos_[m],ypos_[m]) <= zpos_[m] &&
             limits[1]->GetZ(xpos_[m],ypos_[m]) >= zpos_[m])) {
           trend[kpos_[m]] += blockedLog[m];
@@ -717,7 +717,7 @@ BlockedLogs::getVerticalTrendLimited(const float                  * blockedLog,
     }
     for (int k = 0 ; k < nLayers_ ; k++) {
       if (count[k] > 0)
-        trend[k] = trend[k]/count[k];     
+        trend[k] = trend[k]/count[k];
       else
         trend[k] = RMISSING;
     }
@@ -731,7 +731,7 @@ BlockedLogs::getVerticalTrendLimited(const float                  * blockedLog,
     if (trend == NULL)
       LogKit::LogFormatted(LogKit::Low,"ERROR in BlockedLogs::getVerticalTrendLimited(): Trying to use an undefined trend (NULL pointer)\n");
     exit(1);
-  }    
+  }
 }
 
 //------------------------------------------------------------------------------
@@ -770,12 +770,12 @@ BlockedLogs::getVerticalTrend(const int * blockedLog,
     if (trend == NULL)
       LogKit::LogFormatted(LogKit::Low,"ERROR in BlockedLogs::getVerticalTrend(): Trying to use an undefined trend (NULL pointer)\n");
     exit(1);
-  }    
+  }
 }
 
 
 //------------------------------------------------------------------------------
-void 
+void
 BlockedLogs::interpolateTrend(const float * blockedLog, float * trend)
 {
   for (int m = 1 ; m < nBlocks_ ; m++) {
@@ -796,7 +796,7 @@ BlockedLogs::interpolateTrend(const float * blockedLog, float * trend)
 
 
 //------------------------------------------------------------------------------
-void 
+void
 BlockedLogs::interpolateTrend(const float * blockedLog, float * trend, const std::vector<Surface *> & limits)
 {
   for (int m = 1 ; m < nBlocks_ ; m++) {
@@ -808,7 +808,7 @@ BlockedLogs::interpolateTrend(const float * blockedLog, float * trend, const std
       float t = step_mult;
       for(int j = kpos_[m-1]+delta; j != kpos_[m];j++) {
         if(trend[j] == RMISSING) {
-          if(limits.size() == 0 || 
+          if(limits.size() == 0 ||
              (limits[0]->GetZ(xpos_[m],ypos_[m]) <= zpos_[m] &&
               limits[1]->GetZ(xpos_[m],ypos_[m]) >= zpos_[m])) {
             trend[j] = t*blockedLog[m]+(1-t)*blockedLog[m-1];
@@ -822,7 +822,7 @@ BlockedLogs::interpolateTrend(const float * blockedLog, float * trend, const std
 
 
 //------------------------------------------------------------------------------
-void 
+void
 BlockedLogs::interpolateTrend(const int * blockedLog, int * trend)
 {
   for (int m = 1 ; m < nBlocks_ ; m++) {
@@ -841,11 +841,11 @@ BlockedLogs::interpolateTrend(const int * blockedLog, int * trend)
 
 
 //------------------------------------------------------------------------------
-void 
+void
 BlockedLogs::getBlockedGrid(FFTGrid * grid,
                             float   * blockedLog,
                             int       iOffset,
-                            int       jOffset) 
+                            int       jOffset)
 {
   for (int m = 0 ; m < nBlocks_ ; m++) {
     //LogKit::LogFormatted(LogKit::Low,"m=%d  ipos_[m], jpos_[m], kpos_[m] = %d %d %d\n",m,ipos_[m], jpos_[m], kpos_[m]);
@@ -855,8 +855,8 @@ BlockedLogs::getBlockedGrid(FFTGrid * grid,
 }
 
 //------------------------------------------------------------------------------
-void 
-BlockedLogs::setLogFromGrid(FFTGrid    * grid, 
+void
+BlockedLogs::setLogFromGrid(FFTGrid    * grid,
                             int          iAngle,
                             int          nAngles,
                             std::string  type)
@@ -871,7 +871,7 @@ BlockedLogs::setLogFromGrid(FFTGrid    * grid,
     nAngles_ = nAngles;
 
   if (type == "REFLECTION_COEFFICIENT") {
-    if (cpp_ == NULL) 
+    if (cpp_ == NULL)
       cpp_ = new float * [nAngles_];
     cpp_[iAngle] = blockedLog;
   }
@@ -882,15 +882,15 @@ BlockedLogs::setLogFromGrid(FFTGrid    * grid,
   }
   else if (type == "FACIES_PROB") {
     if (facies_prob_ == NULL)
-      facies_prob_ = new float * [nFacies_]; 
+      facies_prob_ = new float * [nFacies_];
     facies_prob_[iAngle] = blockedLog;
   }
-  else if (type == "ALPHA_PREDICTED") 
-    alpha_predicted_ = blockedLog; 
-  else if (type == "BETA_PREDICTED") 
-    beta_predicted_ = blockedLog;   
-  else if (type == "RHO_PREDICTED") 
-    rho_predicted_ = blockedLog; 
+  else if (type == "ALPHA_PREDICTED")
+    alpha_predicted_ = blockedLog;
+  else if (type == "BETA_PREDICTED")
+    beta_predicted_ = blockedLog;
+  else if (type == "RHO_PREDICTED")
+    rho_predicted_ = blockedLog;
 
   else {
     LogKit::LogFormatted(LogKit::Error,"\nUnknown log type \""+type
@@ -900,19 +900,19 @@ BlockedLogs::setLogFromGrid(FFTGrid    * grid,
 }
 
 //------------------------------------------------------------------------------
-void           
-BlockedLogs::setLogFromVerticalTrend(float      * vertical_trend, 
+void
+BlockedLogs::setLogFromVerticalTrend(float      * vertical_trend,
                                      double       z0,              // z-value of center in top layer
                                      double       dz,              // dz in vertical trend
                                      int          nz,              // layers in vertical trend
                                      std::string  type,
-                                     int          iAngle)                  
+                                     int          iAngle)
 {
   if (type != "WELL_SYNTHETIC_SEISMIC")
   {
     float * blockedLog = new float[nBlocks_];
 
-    setLogFromVerticalTrend(blockedLog, zpos_, nBlocks_, 
+    setLogFromVerticalTrend(blockedLog, zpos_, nBlocks_,
                             vertical_trend, z0, dz, nz);
 
     if (type == "ALPHA_SEISMIC_RESOLUTION")
@@ -935,7 +935,7 @@ BlockedLogs::setLogFromVerticalTrend(float      * vertical_trend,
   else if (type == "WELL_SYNTHETIC_SEISMIC") {
     if (well_synt_seismic_data_ == NULL)
     {
-      well_synt_seismic_data_ = new float * [nAngles_]; 
+      well_synt_seismic_data_ = new float * [nAngles_];
       for (int i=0; i<nAngles_; i++)
       {
         well_synt_seismic_data_[i] = new float[nBlocks_];
@@ -943,17 +943,17 @@ BlockedLogs::setLogFromVerticalTrend(float      * vertical_trend,
           well_synt_seismic_data_[i][j] = RMISSING; //Declare in case the wavelet is not estimated for all angles
       }
     }
-    setLogFromVerticalTrend(well_synt_seismic_data_[iAngle], zpos_, nBlocks_, 
+    setLogFromVerticalTrend(well_synt_seismic_data_[iAngle], zpos_, nBlocks_,
                             vertical_trend, z0, dz, nz);
   }
 }
 
 //------------------------------------------------------------------------------
-void           
+void
 BlockedLogs::setLogFromVerticalTrend(float     *& blockedLog,
-                                     double     * zpos, 
+                                     double     * zpos,
                                      int          nBlocks,
-                                     float      * vertical_trend, 
+                                     float      * vertical_trend,
                                      double       z0,
                                      double       dzVt,
                                      int          nz)
@@ -963,7 +963,7 @@ BlockedLogs::setLogFromVerticalTrend(float     *& blockedLog,
   //
   for (int i=0 ; i<nBlocks ; i++)
     blockedLog[i] = RMISSING;
-  
+
   //
   // Aritmethic mean of values in overlapping cells
   //
@@ -973,7 +973,7 @@ BlockedLogs::setLogFromVerticalTrend(float     *& blockedLog,
       dz = zpos[i]-zpos[i-1];
     else
       dz = zpos[i+1]-zpos[i];
-    double zi = zpos[i]; 
+    double zi = zpos[i];
     double a  = zi - 0.5*dz;     // Top of blocked log cell
     double b  = z0 + 0.5*dzVt;   // Base of first vertical trend cell
 
@@ -986,12 +986,12 @@ BlockedLogs::setLogFromVerticalTrend(float     *& blockedLog,
 
     float value;
     if (j==nz) {
-      // We have come to the end of the end-of-vertical-trend 
-      value = vertical_trend[j-1]; 
+      // We have come to the end of the end-of-vertical-trend
+      value = vertical_trend[j-1];
     }
     else if (b >= a+dz) {
       // One single vertical-trend-cell covers a blocked log cell completely.
-      value = vertical_trend[j]; 
+      value = vertical_trend[j];
     }
     else {
       double zj = b + 0.5*dzVt; // Center of vertical trend cell
@@ -1045,7 +1045,7 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
   bool gotVpRhoFacLog       = (alpha_for_facies_ != NULL);
   bool gotPredicted         = (alpha_predicted_ != NULL);
 
-  int nLogs = 3*3;   // {Vp, Vs, Rho} x {raw, BgHz, seisHz} 
+  int nLogs = 3*3;   // {Vp, Vs, Rho} x {raw, BgHz, seisHz}
   if(gotFilteredLog)
     nLogs += 3;
   if(gotVpRhoFacLog)
@@ -1079,7 +1079,7 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
        << "CRAVA\n"
        << IO::PrefixBlockedWells() + wellname_ << " " << xpos_[firstB_] << " " << ypos_[firstB_] << "\n"
        << nLogs << "\n";
-  
+
   for (int i =0 ; i<3 ; i++) {
     file << params[i] << "  UNK lin\n";
     file << params[i] << static_cast<int>(maxHz_background) << "  UNK lin\n";
@@ -1101,7 +1101,7 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
     file << "FaciesLog  DISC ";
     for (int i =0 ; i < modelSettings->getNumberOfFacies() ; i++)
       file << " " << modelSettings->getFaciesLabel(i) << " " << modelSettings->getFaciesName(i);
-    file << "\n";    
+    file << "\n";
   }
   if (gotFaciesProb) {
     for (int i=0 ; i<nFacies_ ; i++)
@@ -1233,7 +1233,7 @@ BlockedLogs::writeNorsarWell(ModelSettings * modelSettings)
     else
       md[i-firstB_] = md_[i];
   }
-  
+
   mainFile << "[Version information]\nVERSION 1000\nFORMAT ASCII\n\n";
   mainFile << "[Well information]\n";
   mainFile << std::setprecision(5);
@@ -1255,11 +1255,11 @@ BlockedLogs::writeNorsarWell(ModelSettings * modelSettings)
   mainFile << "TWT     s\n";
   mainFile << "UTMX    km\n";
   mainFile << "UTMY    km\n";
-  
+
   std::string logBaseName = IO::PrefixBlockedWells() + wellname + IO::SuffixNorsarLog();
   std::string logFileName = IO::makeFullFileName(IO::PathToWells(), logBaseName);
   std::string onlyName    = NRLib::RemovePath(logFileName);
-  
+
   bool gotFacies            = (nFacies_ > 0);
   bool gotFaciesProb        = (facies_prob_ != NULL);
   bool gotRealSeismic       = (real_seismic_data_ != NULL);
@@ -1269,7 +1269,7 @@ BlockedLogs::writeNorsarWell(ModelSettings * modelSettings)
   bool gotFilteredLog       = (alpha_seismic_resolution_ != NULL);
   bool gotVpRhoFacLog       = (alpha_for_facies_ != NULL);
 
-  int nLogs = 3*3;   // {Vp, Vs, Rho} x {raw, BgHz, seisHz, seisRes} 
+  int nLogs = 3*3;   // {Vp, Vs, Rho} x {raw, BgHz, seisHz, seisRes}
   if(gotFilteredLog)
     nLogs += 3;
   if (gotFacies)
@@ -1329,7 +1329,7 @@ BlockedLogs::writeNorsarWell(ModelSettings * modelSettings)
             << std::fixed
             << std::setprecision(2)
             << "[NORSAR Well Track]\n";
-    
+
   //Note: logFileName created above, needed in mainFile.
   std::vector<std::ofstream *> logFiles;
   logFiles.resize(nFiles);
@@ -1340,9 +1340,9 @@ BlockedLogs::writeNorsarWell(ModelSettings * modelSettings)
     *(logFiles[f]) << "[NORSAR Well Log]\n";
     *(logFiles[f]) << "[See header (.nwh) file for log information]\n";
   }
-  
+
   for(int i = firstB_;i<=lastB_;i++) {
-    trackFile << std::setprecision(5) << std::setw(7) 
+    trackFile << std::setprecision(5) << std::setw(7)
               << md[i-firstB_] << " " << std::setw(7) << zpos_[i]*vertScale << " " << zpos_[i]*vertScale
               << " " << std::setw(10)<< xpos_[i]*horScale << " " << std::setw(10)<< ypos_[i]*horScale << "\n";
 
@@ -1425,32 +1425,32 @@ void BlockedLogs::fillInCpp(const float * coeff,
     float ei1 = computeElasticImpedance(alphaVert[i],betaVert[i],rhoVert[i],coeff);
     float ei2 = computeElasticImpedance(alphaVert[i+1],betaVert[i+1],rhoVert[i+1],coeff);
     cpp_r[i] =  ei2-ei1;
-  } 
+  }
   delete [] alphaVert;
   delete [] betaVert;
   delete [] rhoVert;
 
 }
 
-float BlockedLogs::computeElasticImpedance(float         alpha, 
-                                           float         beta, 
-                                           float         rho, 
+float BlockedLogs::computeElasticImpedance(float         alpha,
+                                           float         beta,
+                                           float         rho,
                                            const float * coeff) const
 {
   // vp, vs, rho are logtransformed
   float angImp;
 
   angImp = float(coeff[0]*alpha+coeff[1]*beta+coeff[2]*rho );
-  
-  return(angImp); 
+
+  return(angImp);
 }
 
-void BlockedLogs::fillInSeismic(float     * seismicData, 
-                                int         start, 
+void BlockedLogs::fillInSeismic(float     * seismicData,
+                                int         start,
                                 int         length,
                                 fftw_real * seis_r,
                                 int         nzp) const
-{ 
+{
   int i;
   for(i=0; i<nzp; i++)
     seis_r[i] = 0.0;
@@ -1467,7 +1467,7 @@ void BlockedLogs::fillInSeismic(float     * seismicData,
 }
 
 void BlockedLogs::estimateCor(fftw_complex * var1_c,
-                              fftw_complex * var2_c, 
+                              fftw_complex * var2_c,
                               fftw_complex * ccor_1_2_c,
                               int            cnzp) const
 {
@@ -1479,9 +1479,9 @@ void BlockedLogs::estimateCor(fftw_complex * var1_c,
 
 void BlockedLogs::findContiniousPartOfData(const std::vector<bool> & hasData,
                                            int                       nz,
-                                           int                     & start, 
+                                           int                     & start,
                                            int                     & length) const
-{ 
+{
   int  i;
   int  lPice=0;
   int  lengthMaxPice=-1;
@@ -1515,7 +1515,7 @@ void BlockedLogs::findContiniousPartOfData(const std::vector<bool> & hasData,
   }
 
   start  = startLongestPice;
-  length = lengthMaxPice; 
+  length = lengthMaxPice;
 }
 
 
@@ -1531,35 +1531,35 @@ void BlockedLogs::findOptimalWellLocation(FFTGrid                   ** seisCube,
                                           int                        & iMove,
                                           int                        & jMove,
                                           float                      & kMove)
-{   
+{
   int   polarity;
   int   i,j,k,l,m;
   int   start,length;
   float sum;
   float shiftF;
   float maxTot;
-  float f1,f2,f3; 
+  float f1,f2,f3;
 
   int nx            = seisCube[0]->getNx();
   int ny            = seisCube[0]->getNy();
-  int nzp           = seisCube[0]->getNzp(); 
+  int nzp           = seisCube[0]->getNzp();
   int cnzp          = nzp/2+1;
   int rnzp          = 2*cnzp;
   int iTotOffset    = 2*iMaxOffset+1;
-  int jTotOffset    = 2*jMaxOffset+1; 
+  int jTotOffset    = 2*jMaxOffset+1;
   int polarityMax   = 0;
   float shift       = 0.0f;
   float maxValueTot = 0;
   float totalWeight = 0;
   float dz          = static_cast<float>(timeSimbox->getdz());
 
-  float  * seisLog   = new float[nBlocks_]; 
-  float  * seisData  = new float[nLayers_]; 
-  float  * alphaVert = new float[nLayers_]; 
-  float  * betaVert  = new float[nLayers_]; 
-  float  * rhoVert   = new float[nLayers_]; 
+  float  * seisLog   = new float[nBlocks_];
+  float  * seisData  = new float[nLayers_];
+  float  * alphaVert = new float[nLayers_];
+  float  * betaVert  = new float[nLayers_];
+  float  * rhoVert   = new float[nLayers_];
 
-   
+
   std::vector<int>   iOffset(iTotOffset);
   std::vector<int>   jOffset(jTotOffset);
   std::vector<int>   shiftI(nAngles);
@@ -1567,19 +1567,19 @@ void BlockedLogs::findOptimalWellLocation(FFTGrid                   ** seisCube,
   std::vector<float> maxValue(nAngles);
   std::vector<float> maxValueMax(nAngles);
 
-  fftw_real    ** cpp_r               = new fftw_real*[nAngles]; 
+  fftw_real    ** cpp_r               = new fftw_real*[nAngles];
   fftw_complex ** cpp_c               = reinterpret_cast<fftw_complex**>(cpp_r);
 
-  fftw_real    ** cor_cpp_r           = new fftw_real*[nAngles]; 
+  fftw_real    ** cor_cpp_r           = new fftw_real*[nAngles];
   fftw_complex ** cor_cpp_c           = reinterpret_cast<fftw_complex**>(cor_cpp_r);
- 
-  fftw_real    ** seis_r              = new fftw_real*[nAngles]; 
+
+  fftw_real    ** seis_r              = new fftw_real*[nAngles];
   fftw_complex ** seis_c              = reinterpret_cast<fftw_complex**>(seis_r);
 
-  fftw_real    ** ccor_seis_cpp_r     = new fftw_real*[nAngles]; 
+  fftw_real    ** ccor_seis_cpp_r     = new fftw_real*[nAngles];
   fftw_complex ** ccor_seis_cpp_c     = reinterpret_cast<fftw_complex**>(ccor_seis_cpp_r);
 
-  fftw_real    ** ccor_seis_cpp_Max_r = new fftw_real*[nAngles]; 
+  fftw_real    ** ccor_seis_cpp_Max_r = new fftw_real*[nAngles];
 
   for( i=0; i<nAngles; i++ ){
     maxValueMax[i] = 0.0f;
@@ -1587,18 +1587,18 @@ void BlockedLogs::findOptimalWellLocation(FFTGrid                   ** seisCube,
   }
 
   // make offset vectors
-  for(i=-iMaxOffset; i<iMaxOffset+1; i++){ 
+  for(i=-iMaxOffset; i<iMaxOffset+1; i++){
     iOffset[i+iMaxOffset]=i;
   }
-  for(j=-jMaxOffset; j<jMaxOffset+1; j++){ 
+  for(j=-jMaxOffset; j<jMaxOffset+1; j++){
     jOffset[j+jMaxOffset]=j;
   }
 
   getVerticalTrendLimited(alpha_, alphaVert, limits);
   getVerticalTrendLimited(beta_, betaVert, limits);
   getVerticalTrendLimited(rho_, rhoVert, limits);
-  
-  std::vector<bool> hasData(nLayers_); 
+
+  std::vector<bool> hasData(nLayers_);
   for(i = 0 ; i < nLayers_ ; i++) {
     hasData[i] = alphaVert[i] != RMISSING && betaVert[i] != RMISSING && rhoVert[i] != RMISSING;
   }
@@ -1617,14 +1617,14 @@ void BlockedLogs::findOptimalWellLocation(FFTGrid                   ** seisCube,
     for(i=0; i<rnzp; i++){
       cpp_r[j][i] = 0;
     }
-    fillInCpp(reflCoef[j],start,length,cpp_r[j],nzp); 
+    fillInCpp(reflCoef[j],start,length,cpp_r[j],nzp);
     Utils::fft(cpp_r[j],cpp_c[j],nzp);
     estimateCor(cpp_c[j],cpp_c[j],cor_cpp_c[j],cnzp);
     Utils::fftInv(cor_cpp_c[j],cor_cpp_r[j],nzp);
   }
 
   std::vector<NRLib::Grid<float> > seisCubeSmall(nAngles,NRLib::Grid<float> (iTotOffset,jTotOffset,nBlocks_));
-  
+
   for (j = 0 ; j < nAngles ; j++)
   {
     seisCube[j]->setAccessMode(FFTGrid::RANDOMACCESS);
@@ -1632,7 +1632,7 @@ void BlockedLogs::findOptimalWellLocation(FFTGrid                   ** seisCube,
     {
       for (l = 0; l < jTotOffset; l++)
       {
-        getBlockedGrid(seisCube[j],seisLog,iOffset[k],jOffset[l]); 
+        getBlockedGrid(seisCube[j],seisLog,iOffset[k],jOffset[l]);
         for (m = 0; m < nBlocks_; m++)
         {
           seisCubeSmall[j](k, l, m) = seisLog[m];
@@ -1650,7 +1650,7 @@ void BlockedLogs::findOptimalWellLocation(FFTGrid                   ** seisCube,
     for(l=0; l<jTotOffset; l++){
       if(jpos_[0]+jOffset[l]<0 || jpos_[0]+jOffset[l]>ny-1) //Check if position is within seismic range
         continue;
-      
+
       for( j=0; j<nAngles; j++ ){
 
         for (m=0; m<nBlocks_; m++)
@@ -1664,7 +1664,7 @@ void BlockedLogs::findOptimalWellLocation(FFTGrid                   ** seisCube,
         Utils::fftInv(ccor_seis_cpp_c[j],ccor_seis_cpp_r[j],nzp);
       }
 
-      // if the sum from -maxShift to maxShift ms is 
+      // if the sum from -maxShift to maxShift ms is
       // positive then polarity is positive
       dz = static_cast<float>(timeSimbox->getRelThick(ipos_[0]+iOffset[k],jpos_[0]+jOffset[l])*timeSimbox->getdz());
       sum = 0;
@@ -1679,7 +1679,7 @@ void BlockedLogs::findOptimalWellLocation(FFTGrid                   ** seisCube,
       polarity=-1;
       if(sum > 0)
         polarity=1;
-      
+
       // Find maximum correlation and corresponding shift for each angle
       maxTot = 0.0;
       for( j=0; j<nAngles; j++ ){
@@ -1769,7 +1769,7 @@ void BlockedLogs::findOptimalWellLocation(FFTGrid                   ** seisCube,
   }
 
   shift/=totalWeight;
-  kMove = shift;  
+  kMove = shift;
 
   for( j=0; j<nAngles; j++ ){
     delete [] ccor_seis_cpp_Max_r[j];
@@ -1792,7 +1792,7 @@ void BlockedLogs::findOptimalWellLocation(FFTGrid                   ** seisCube,
 }
 
 
-void BlockedLogs::setSeismicGradient(double v0, 
+void BlockedLogs::setSeismicGradient(double v0,
                                       const NRLib::Grid2D<float>   &    stuctureDepthGradX,
                                       const NRLib::Grid2D<float>   &    stuctureDepthGradY,
                                       const NRLib::Grid2D<float>   &    refTimeGradX ,
@@ -1812,13 +1812,13 @@ void BlockedLogs::setSeismicGradient(double v0,
   }
 }
 
-void 
+void
 BlockedLogs::setTimeGradientSettings(float distance, float sigma_m)
 {
   lateralThresholdGradient_ = distance;
   sigma_m_ = sigma_m;
 }
-  
+
 
 
 
@@ -1841,25 +1841,25 @@ void BlockedLogs::findSeismicGradient(FFTGrid                  ** seisCube,
   std::vector<double> tmpYgrad(nBlocks_);
   std::vector<double> Qepsilon(4*nBlocks_);
   std::vector<double> Qepsilon_data(2*nBlocks_);
-  
+
   std::vector<float> seisTrace;
   std::vector<double> zShift(int(nZx*nZy*nBlocks_));
-  
+
   //seismic peak position and characteristics in well
   std::vector<double> zPeakWell;
   std::vector<double> peakWell;
   std::vector<double> bWell;
-  
+
   //seismic peak position and characterisitics in trace
   std::vector<double> zPeak;
   std::vector<double> peak;
   std::vector<double> b;
-  
+
   int i0 = ipos_[0];
   int j0 = jpos_[0];
- 
-  
-  //Check if well needs to change position in order for the whole 
+
+
+  //Check if well needs to change position in order for the whole
   //shift region to be contained in the seismic cube
   //NBNB marita Må testes om det fungerer for forskjellige brønner
   int nx = timeSimbox->getnx();
@@ -1875,7 +1875,7 @@ void BlockedLogs::findSeismicGradient(FFTGrid                  ** seisCube,
   i0 = std::min(nx - xEx - 1, i0 + di_pos) - di_pos;
   j0 = std::max(yEx, j0 + dj_neg) - dj_neg;
   j0 = std::min(ny - yEx - 1, j0 + dj_pos) - dj_pos;
-  
+
 
   int di = i0 - ipos_[0];
   int dj = j0 - jpos_[0];
@@ -1886,13 +1886,13 @@ void BlockedLogs::findSeismicGradient(FFTGrid                  ** seisCube,
       jpos_[k] += dj;
     }
   }
-  
+
   char* buffer = new char[1000];
   sprintf(buffer,"%s.txt", "C:/Outputfiles/traces");
   std::ofstream out(buffer);
   //bool welltmp = false;
 
- 
+
   double dz, ztop, dzW, ztopW;
   for(l = 0; l < nAngles; l++){
     for(j = -yEx; j <= yEx; j++){
@@ -1902,7 +1902,7 @@ void BlockedLogs::findSeismicGradient(FFTGrid                  ** seisCube,
         smoothTrace(seisTrace);
         //if(j == 0 ){
         //  for(int s = 0; s < seisTrace.size(); s++)
-        //    out << seisTrace[s] << std::endl; 
+        //    out << seisTrace[s] << std::endl;
         //}
 
         dzW =  timeSimbox->getdz(i0,j0);
@@ -1913,7 +1913,7 @@ void BlockedLogs::findSeismicGradient(FFTGrid                  ** seisCube,
         smoothTrace(seisTrace);
         if(i==0){
           for(size_t s = 0; s < seisTrace.size(); s++)
-            out << seisTrace[s] << std::endl;       
+            out << seisTrace[s] << std::endl;
         }
 
         dz =  timeSimbox->getdz(i0+i, j0+j);
@@ -1934,13 +1934,13 @@ void BlockedLogs::findSeismicGradient(FFTGrid                  ** seisCube,
             dzW = timeSimbox->getdz(ipos_[k],jpos_[k]);
             ztopW = timeSimbox->getTop(ipos_[k],jpos_[k]);
             findPeakTrace(seisTrace, zPeakWell, peakWell, bWell, dzW, ztopW);
-    
+
             seisTrace = seisCube[l]->getRealTrace2(ipos_[k]+i, jpos_[k]+j);
             smoothTrace(seisTrace);
             dz = timeSimbox->getdz(ipos_[k]+i, jpos_[k]+j);
             ztop = timeSimbox->getTop(ipos_[k]+i, jpos_[k]+j);
             findPeakTrace(seisTrace, zPeak, peak, b, dz, ztop);
-    
+
             peakMatch(zPeak,peak,b,zPeakWell,peakWell,bWell);
 
             zShift[(i+2) + (j+2)*nZx + k*(nZx*nZx)] = computeShift(zPeak, zPeakWell, zpos_[k]);
@@ -1948,13 +1948,13 @@ void BlockedLogs::findSeismicGradient(FFTGrid                  ** seisCube,
         }
       }
     }
-      
+
     double dx = timeSimbox->getdx();
     double dy = timeSimbox->getdy();
 
     computeGradient(Qepsilon, Qepsilon_data, zShift, nZx, nZx, dx, dy);
   }
-   
+
   smoothGradient(xGradient, yGradient, Qepsilon, Qepsilon_data, Sigma_gradient);
   // NBNB Odd slår av estimeringen for å teste om det gir bedre resultat
  /* for(k = 0; k < nBlocks_; k++){
@@ -1967,7 +1967,7 @@ void BlockedLogs::findSeismicGradient(FFTGrid                  ** seisCube,
 void BlockedLogs::smoothTrace(std::vector<float> &trace)
 {
   float smoothing_distance = 40; //ms in each direction
-  int  L = static_cast<int>(ceil(smoothing_distance/dz_)); //number of lags in the gauss kernel 
+  int  L = static_cast<int>(ceil(smoothing_distance/dz_)); //number of lags in the gauss kernel
   float sigma = 10 /dz_; // ms / (ms/cell)
 
   unsigned int ntrace = static_cast<unsigned int>(trace.size());
@@ -1980,7 +1980,7 @@ void BlockedLogs::smoothTrace(std::vector<float> &trace)
     tmp = (j*j)/(2*sigma*sigma);
     gk[j+L] = exp(-tmp);
   }
- 
+
   float N;
   for(i = 0; i < ntrace; i++){
     N = 0;
@@ -2015,29 +2015,29 @@ void BlockedLogs::findPeakTrace(std::vector<float> &trace, std::vector<double> &
       //Data point for interpolation
       x1 = -dz; x2 = 0; x3 = dz;
       y1 = static_cast<double>(trace[k-1]); y2 = static_cast<double>(trace[k]); y3 = static_cast<double>(trace[k+1]);
-      
+
       //Newton interpolation method
       y11 = (y2 - y1) / (x2 - x1); y12 = (y3 - y2) / (x3 - x2);
       y21 = (y12 - y11) / (x3 - x1);
-      
+
       //y = ax + bx^2 + c
       c = y1 - y11*x1 + y21*x1*x2;
       a = y11 - y21*x1 - y21*x2;
       b[counter] = y21;
       //zPeak = -a/2b
-      
+
       zPeak[counter] = - a/(2.0*b[counter]);
-      
+
       double tmp = a*zPeak[counter] + b[counter]*zPeak[counter]*zPeak[counter] + c;
       peak[counter] = tmp;
       //Transform back to original z-axis
       zPeak[counter] += ztop + k*dz;
       counter++;
-      
+
     }
   }
   zPeak.resize(counter); b.resize(counter); peak.resize(counter);
-  
+
 }
 
 
@@ -2048,17 +2048,17 @@ void BlockedLogs::peakMatch(std::vector<double> &zPeak, std::vector<double> &pea
   unsigned int i, j;
   std::vector<double> pW(zPeak.size());
   std::vector<double> p(zPeak.size());
-  
-  double diffz;  
-  
-  double maxdiffz = 5 * dz_; //matching criteria: Peaks must be no longer that 5 cells apart. (marita: input parameter?) 
+
+  double diffz;
+
+  double maxdiffz = 5 * dz_; //matching criteria: Peaks must be no longer that 5 cells apart. (marita: input parameter?)
   double diffp = 0.5; //matcing the size of the peaks NBNB-Frode: This should maybe be an input parameter!
 
   int counter = 0;
   unsigned int lim = 0;
   for(i = 0; i < zPeakW.size(); i++){
     for(j = lim; j < zPeak.size(); j++){
-      diffz = fabs(zPeakW[i] - zPeak[j]); 
+      diffz = fabs(zPeakW[i] - zPeak[j]);
       if(diffz < maxdiffz){
         //Check if the peaks point in the same direction
         if((bW[i] < 0 && b[j] < 0)||(bW[i] >= 0 && b[j] >= 0)){
@@ -2078,7 +2078,7 @@ void BlockedLogs::peakMatch(std::vector<double> &zPeak, std::vector<double> &pea
     zPeakW[i] = pW[i];
     zPeak[i] =  p[i];
   }
-   
+
 }
 
 
@@ -2106,10 +2106,10 @@ double BlockedLogs::computeShift(std::vector<double> &zPeak, std::vector<double>
       }
       zShift = z0 - (zPeak[pos] + (z0 - zPeakW[pos])/(zPeakW[pos+1]-zPeakW[pos])*(zPeak[pos+1]-zPeak[pos]));
     }
-      
+
     return zShift;
   }
-}   
+}
 
 
 void BlockedLogs::computeGradient(std::vector<double> &Qepsilon, std::vector<double> &Qepsilon_data,
@@ -2122,7 +2122,7 @@ void BlockedLogs::computeGradient(std::vector<double> &Qepsilon, std::vector<dou
   std::vector<double> cov(9);
   std::vector<double> invcov(9);
   std::vector<double> regM(3*nx*ny);
-  
+
   static bool append = false;
 
   char* buffer = new char[1000];
@@ -2161,7 +2161,7 @@ void BlockedLogs::computeGradient(std::vector<double> &Qepsilon, std::vector<dou
     Z.resize(cz);
 
     ndata = cy;
-    
+
     //Compute inverse covariance (ZtZ)^-1 (diagonal matrix for our purpose)
     double tmp;
     for(j = 0; j < 3; j++){
@@ -2172,9 +2172,9 @@ void BlockedLogs::computeGradient(std::vector<double> &Qepsilon, std::vector<dou
         cov[i + 3*j] = tmp;
       }
     }
-    double det = cov[0]*(cov[4]*cov[8] - cov[5]*cov[7]) - cov[1]*(cov[3]*cov[8] - cov[5]*cov[6])  
+    double det = cov[0]*(cov[4]*cov[8] - cov[5]*cov[7]) - cov[1]*(cov[3]*cov[8] - cov[5]*cov[6])
                   +   cov[2]*(cov[3]*cov[7] - cov[4]*cov[6]);
-    
+
     if(det != 0){
       invcov[0] = (cov[4]*cov[8] - cov[5]*cov[7]) / det;
       invcov[1] = (cov[2]*cov[7] - cov[1]*cov[8]) / det;
@@ -2185,8 +2185,8 @@ void BlockedLogs::computeGradient(std::vector<double> &Qepsilon, std::vector<dou
       invcov[6] = (cov[3]*cov[7] - cov[4]*cov[6]) / det;
       invcov[7] = (cov[1]*cov[6] - cov[0]*cov[7]) / det;
       invcov[8] = (cov[0]*cov[4] - cov[1]*cov[3]) / det;
-      
-   
+
+
 
       //Compute regression matrix (ZtZ)^-1Zt
       regM.resize(static_cast<unsigned int>(3*ndata));
@@ -2207,13 +2207,13 @@ void BlockedLogs::computeGradient(std::vector<double> &Qepsilon, std::vector<dou
       for(j = 0; j < ndata; j++){
         beta0 += regM[j]*Y[j];
         beta1 += regM[j + ndata]*Y[j];
-        beta2 += regM[j + 2*ndata]*Y[j];}      
+        beta2 += regM[j + 2*ndata]*Y[j];}
       double sigma2 = 0;
       double sigmatmp;
       for(j = 0; j < ndata; j++){
         sigmatmp = Y[j] - beta0*Z[j*3] - beta1*Z[j*3 + 1] - beta2*Z[j*3 + 2];
         sigma2 += sigmatmp*sigmatmp;
-      }  
+      }
 
       double qa = sigma2*invcov[4];
       double qb = sigma2*invcov[8];
@@ -2227,17 +2227,17 @@ void BlockedLogs::computeGradient(std::vector<double> &Qepsilon, std::vector<dou
       Qepsilon[counter1+3] += 0;
       counter1 += 4;
 
-      Qepsilon_data[counter2] += (cov[4]* beta1 + cov[5]*beta2) / sigma2;  
+      Qepsilon_data[counter2] += (cov[4]* beta1 + cov[5]*beta2) / sigma2;
       Qepsilon_data[counter2+1] += (cov[5]* beta1 + cov[8]*beta2) / sigma2;
       counter2 += 2;
 
-    } 
+    }
   }
 }
 
-void BlockedLogs::smoothGradient(std::vector<double> &xGradient, std::vector<double> &yGradient, 
+void BlockedLogs::smoothGradient(std::vector<double> &xGradient, std::vector<double> &yGradient,
                                  std::vector<double> &Qepsilon, std::vector<double> &Qepsilon_data, std::vector<std::vector<double> > &Sigma_gradient)
-{ 
+{
   int i, j;
   int n_beta = nBlocks_* 2;
   double **Qbeta_data = new double * [n_beta];
@@ -2269,10 +2269,10 @@ void BlockedLogs::smoothGradient(std::vector<double> &xGradient, std::vector<dou
     for(j = i+3; j < n_beta; j++)
       Qbeta_data[i][j] = 0;
   }
-  //Transpose and fill in 
+  //Transpose and fill in
   for(i = 1; i < n_beta; i++){
     for(j = 0; j < i; j++)
-      Qbeta_data[i][j] = Qbeta_data[j][i]; 
+      Qbeta_data[i][j] = Qbeta_data[j][i];
   }
 
   //Inversion of precision matrix
@@ -2299,7 +2299,7 @@ void BlockedLogs::smoothGradient(std::vector<double> &xGradient, std::vector<dou
   double *res = new double[n_beta];
   double tmp;
   for(i = 0; i < n_beta; i++){
-    tmp = 0; 
+    tmp = 0;
     for(j = 0; j < n_beta; j++)
       tmp += Identity[i][j]*Qepsilon_data[j];
     res[i] = tmp;
@@ -2314,14 +2314,14 @@ void BlockedLogs::smoothGradient(std::vector<double> &xGradient, std::vector<dou
     Sigma_gradient[i] = tmp_vec;
   }
 
-  
+
   int counter = 0;
   for(i = 0; i < nBlocks_; i++){
    xGradient[i] = res[counter];
    yGradient[i] = res[counter+1];
    counter +=2;
   }
-  
+
    char* buffer2 = new char[1000];
    sprintf(buffer2,"%s.txt", "C:/Outputfiles/gradients");
    std::ofstream out2(buffer2);
@@ -2339,7 +2339,7 @@ void BlockedLogs::smoothGradient(std::vector<double> &xGradient, std::vector<dou
   delete [] Qbeta_data;
   delete [] Identity;
   delete [] res;
- 
+
 
 
 
@@ -2370,31 +2370,31 @@ void BlockedLogs::generateSyntheticSeismic(float   ** reflCoef,
                                            int        nz,
                                            int        nzp,
                                            const Simbox * timeSimbox)
-{ 
+{
   int          i,j;
   int          start,length;
-  
-  fftw_complex   cAmp; 
+
+  fftw_complex   cAmp;
   Wavelet1D     * localWavelet;
 
   int    cnzp = nzp/2+1;
   int    rnzp = 2*cnzp;
 
   float  * syntSeis  = new float[nz];
-  float  * alphaVert = new float[nLayers_]; 
-  float  * betaVert  = new float[nLayers_]; 
-  float  * rhoVert   = new float[nLayers_]; 
+  float  * alphaVert = new float[nLayers_];
+  float  * betaVert  = new float[nLayers_];
+  float  * rhoVert   = new float[nLayers_];
 
-  fftw_real    * cpp_r       = new fftw_real[rnzp]; 
-  fftw_complex * cpp_c       = reinterpret_cast<fftw_complex*>(cpp_r); 
-  fftw_real    * synt_seis_r = new fftw_real[rnzp]; 
+  fftw_real    * cpp_r       = new fftw_real[rnzp];
+  fftw_complex * cpp_c       = reinterpret_cast<fftw_complex*>(cpp_r);
+  fftw_real    * synt_seis_r = new fftw_real[rnzp];
   fftw_complex * synt_seis_c = reinterpret_cast<fftw_complex*>(synt_seis_r);
 
   getVerticalTrend(alpha_, alphaVert);
   getVerticalTrend(beta_, betaVert);
   getVerticalTrend(rho_, rhoVert);
-    
-  std::vector<bool> hasData(nLayers_); 
+
+  std::vector<bool> hasData(nLayers_);
   for( i=0 ; i<nLayers_; i++ )
     hasData[i] = alphaVert[i] != RMISSING && betaVert[i] != RMISSING && rhoVert[i] != RMISSING;
 
@@ -2409,9 +2409,9 @@ void BlockedLogs::generateSyntheticSeismic(float   ** reflCoef,
       cpp_r[j] = 0;
       synt_seis_r[j] = 0;
     }
-    fillInCpp(reflCoef[i],start,length,cpp_r,nzp); 
+    fillInCpp(reflCoef[i],start,length,cpp_r,nzp);
     Utils::fft(cpp_r,cpp_c,nzp);
-    
+
     localWavelet = wavelet[i]->getLocalWavelet1D(ipos_[0],jpos_[0]);
     localWavelet->fft1DInPlace();
    // float sf = wavelet[i]->getLocalStretch(ipos_[0],jpos_[0]);
@@ -2421,7 +2421,7 @@ void BlockedLogs::generateSyntheticSeismic(float   ** reflCoef,
     for( j=0; j<cnzp; j++ )
     {
       cAmp =  localWavelet->getCAmp(j, scale);
-      synt_seis_c[j].re = cpp_c[j].re*cAmp.re + cpp_c[j].im*cAmp.im; 
+      synt_seis_c[j].re = cpp_c[j].re*cAmp.re + cpp_c[j].im*cAmp.im;
       synt_seis_c[j].im = cpp_c[j].im*cAmp.re - cpp_c[j].re*cAmp.im;
     }
 
@@ -2432,17 +2432,17 @@ void BlockedLogs::generateSyntheticSeismic(float   ** reflCoef,
 
     for ( j=start; j<start+length; j++ )
       syntSeis[j] = synt_seis_r[j];
-    
+
     setLogFromVerticalTrend(syntSeis,zpos_[0],dz_,nz,"ACTUAL_SYNTHETIC_SEISMIC",i);
-    
+
     //localWavelet->fft1DInPlace();
     delete localWavelet;
   }
 
   delete [] syntSeis;
-  delete [] alphaVert; 
-  delete [] betaVert; 
-  delete [] rhoVert; 
+  delete [] alphaVert;
+  delete [] betaVert;
+  delete [] rhoVert;
   delete [] cpp_r;
   delete [] synt_seis_r;
 

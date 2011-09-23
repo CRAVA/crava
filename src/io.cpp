@@ -15,26 +15,26 @@ IO::~IO(void)
 }
 
 void
-IO::setOutputPath(const std::string & outputPath) 
+IO::setOutputPath(const std::string & outputPath)
 {
   outputPath_ = outputPath;
 }
 
 void
-IO::setFilePrefix(const std::string & filePrefix)               
+IO::setFilePrefix(const std::string & filePrefix)
 {
   filePrefix_ = filePrefix;
 }
 
-std::string 
-IO::makeFullFileName(const std::string & subDir, 
+std::string
+IO::makeFullFileName(const std::string & subDir,
                      const std::string & fileName)
 {
   return (outputPath_ + subDir + filePrefix_ + fileName);
 }
 
 
-void   
+void
 IO::writeSurfaceToFile(const Surface     & surface,
                        const std::string & baseName,
                        const std::string & path,
@@ -44,7 +44,7 @@ IO::writeSurfaceToFile(const Surface     & surface,
 
   if((format & ASCII) > 0)
     surface.WriteToFile(fileName + SuffixAsciiIrapClassic(), NRLib::SURF_IRAP_CLASSIC_ASCII);
-  else  
+  else
     surface.WriteToFile(fileName + SuffixStormBinary(), NRLib::SURF_STORM_BINARY);
 }
 
@@ -74,7 +74,7 @@ bool IO::IsCravaBinaryFile(const std::string & fileName)
   std::ifstream file;
   NRLib::OpenRead(file, fileName);
   std::string line;
-  getline(file,line);         
+  getline(file,line);
   file.close();
   std::string label = line.substr(0,20);
   if (label.compare("crava_fftgrid_binary") == 0)
@@ -88,9 +88,9 @@ bool IO::IsStormBinaryFile(const std::string & fileName)
   std::ifstream file;
   NRLib::OpenRead(file, fileName);
   std::string line;
-  getline(file,line);         
+  getline(file,line);
   file.close();
-  std::string label = line.substr(0,18);  
+  std::string label = line.substr(0,18);
   if (label.compare("storm_petro_binary") == 0)
     return true;
   else

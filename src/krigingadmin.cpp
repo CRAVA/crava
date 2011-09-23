@@ -15,32 +15,32 @@
 #include "src/covgridseparated.h"
 #include "src/definitions.h"
 
-CKrigingAdmin::CKrigingAdmin(const Simbox      & simbox, 
-                             CBWellPt         ** pBWellPt, 
+CKrigingAdmin::CKrigingAdmin(const Simbox      & simbox,
+                             CBWellPt         ** pBWellPt,
                              int                 noData,
-                             CovGridSeparated  & covAlpha,      
-                             CovGridSeparated  & covBeta, 
-                             CovGridSeparated  & covRho,        
-                             CovGridSeparated  & covCrAlphaBeta, 
-                             CovGridSeparated  & covCrAlphaRho, 
+                             CovGridSeparated  & covAlpha,
+                             CovGridSeparated  & covBeta,
+                             CovGridSeparated  & covRho,
+                             CovGridSeparated  & covCrAlphaBeta,
+                             CovGridSeparated  & covCrAlphaRho,
                              CovGridSeparated  & covCrBetaRho,
-                             int                 dataTarget,    
+                             int                 dataTarget,
                              bool                backgroundModel) :
-  simbox_(simbox), 
-  trendAlpha_(0), 
-  trendBeta_(0), 
-  trendRho_(0), 
-  covAlpha_(covAlpha), 
-  covBeta_(covBeta), 
-  covRho_(covRho), 
-  covCrAlphaBeta_(covCrAlphaBeta), 
-  covCrAlphaRho_(covCrAlphaRho), 
+  simbox_(simbox),
+  trendAlpha_(0),
+  trendBeta_(0),
+  trendRho_(0),
+  covAlpha_(covAlpha),
+  covBeta_(covBeta),
+  covRho_(covRho),
+  covCrAlphaBeta_(covCrAlphaBeta),
+  covCrAlphaRho_(covCrAlphaRho),
   covCrBetaRho_(covCrBetaRho),
   pBWellPt_(pBWellPt),
   noData_(noData),
   dataTarget_(dataTarget),
   backgroundModel_(backgroundModel)
-{ 
+{
   Init(); // Common init
 }
 
@@ -57,7 +57,7 @@ CKrigingAdmin::~CKrigingAdmin(void)
   }
 
   for (i = 0; i < GetSmoothBlockNy() - 2; i++) {
-    delete [] ppKrigSmoothWeightsY_[i]; 
+    delete [] ppKrigSmoothWeightsY_[i];
   }
 
   for (i = 0; i < GetSmoothBlockNz() - 2; i++) {
@@ -84,19 +84,19 @@ void CKrigingAdmin::Init() {
   noValidBeta_ = 0;
   noValidRho_ = 0;
   for (int m = 0 ; m < noData_ ; m++) {
-    bool validA, validB, validR; 
+    bool validA, validB, validR;
     pBWellPt_[m]->IsValidObs(validA, validB, validR);
     if (validA) noValidAlpha_++;
     if (validB) noValidBeta_++;
     if (validR) noValidRho_++;
-  } 
+  }
   noValid_ = noValidAlpha_ + noValidBeta_ + noValidRho_;
 
   noKrigedCells_ = noKrigedVariables_ = totalNoDataInCurrKrigBlock_= noEmptyDataBlocks_ = 0;
   sizeAlpha_ = sizeBeta_ = sizeRho_ = 0;
   rangeAlphaX_ = rangeAlphaY_ = rangeAlphaZ_ = 0;
   rangeBetaX_ = rangeBetaY_ = rangeBetaZ_ = 0;
-  rangeRhoX_ = rangeRhoY_ = rangeRhoZ_ = 0; 
+  rangeRhoX_ = rangeRhoY_ = rangeRhoZ_ = 0;
   noSolvedMatrixEq_ = noCholeskyDecomp_ = noRMissing_ = 0;
   dxSmoothBlock_ = dySmoothBlock_ = dzSmoothBlock_ = 0;
   ppKrigSmoothWeightsX_ = ppKrigSmoothWeightsY_ = ppKrigSmoothWeightsZ_ = 0;
@@ -127,11 +127,11 @@ void CKrigingAdmin::Init() {
     if (dyBlock_ < 1) dyBlock_ = 1;
     if (dzBlock_ < 1) dzBlock_ = 1;
   }
- 
+
   dxSmoothBlock_ = (dxBlock_ <= 4 ? 1 : 2);
   dySmoothBlock_ = (dyBlock_ <= 4 ? 1 : 2);
   dzSmoothBlock_ = (dzBlock_ <= 4 ? 1 : 2);
-  
+
   int i;
   ppKrigSmoothWeightsX_ = new double*[GetSmoothBlockNx() - 2];
   for (i = 0; i < GetSmoothBlockNx() - 2; i++) {
@@ -148,7 +148,7 @@ void CKrigingAdmin::Init() {
     ppKrigSmoothWeightsZ_[i] = new double[GetSmoothBlockNz()];
   }
 
-  const int sizeMaxBlock = 
+  const int sizeMaxBlock =
     (dxBlock_ + 2*static_cast<int>(ceil(rangeX_))) *
     (dyBlock_ + 2*static_cast<int>(ceil(rangeY_))) *
     (dzBlock_ + 2*static_cast<int>(ceil(rangeZ_)));
@@ -161,7 +161,7 @@ void CKrigingAdmin::Init() {
   pIndexBeta_ = new int[maxBetaData2];
   pIndexRho_  = new int[maxRhoData2];
 
-  Require(dxBlockExt_ <= rangeX_ && dyBlockExt_ <= rangeY_ && dzBlockExt_ <= rangeZ_, 
+  Require(dxBlockExt_ <= rangeX_ && dyBlockExt_ <= rangeY_ && dzBlockExt_ <= rangeZ_,
     "dxBlockExt_ <= rangeX_ && dyBlockExt_ <= rangeY_ && dzBlockExt_ <= rangeZ_");
 
   WriteDebugOutput();
@@ -194,22 +194,22 @@ void CKrigingAdmin::KrigAll(Gamma gamma, bool doSmoothing) {
         KrigBlock(gamma);
       } // end i
     } // end j
-  } // end k 
+  } // end k
   noKrigedVariables_++;
   if (!backgroundModel_ && doSmoothing==true) {
     //LogKit::LogFormatted(LogKit::Low,"SmoothKrigedResult start\n");
-    SmoothKrigedResult(gamma); 
+    SmoothKrigedResult(gamma);
     //LogKit::LogFormatted(LogKit::Low,"SmoothKrigedResult end\n");
   }
- 
-  
+
+
 }
 
 void CKrigingAdmin::KrigAll(FFTGrid& trendAlpha, FFTGrid& trendBeta, FFTGrid& trendRho,
                             bool trendsAlreadySubtracted, int debugflag, bool doSmoothing) {
-  Require(!trendAlpha.getIsTransformed() 
+  Require(!trendAlpha.getIsTransformed()
           && !trendBeta.getIsTransformed()
-          && !trendRho.getIsTransformed(), 
+          && !trendRho.getIsTransformed(),
           "!trendAlpha.getIsTransformed() && !trendBeta.getIsTransformed() && !trendRho.getIsTransformed()");
 
   if (!trendsAlreadySubtracted)
@@ -240,10 +240,10 @@ void CKrigingAdmin::KrigAll(FFTGrid& trendAlpha, FFTGrid& trendBeta, FFTGrid& tr
     delete blockGrid;
   }
 
-  trendAlpha_ = &trendAlpha; 
-  trendBeta_  = &trendBeta; 
+  trendAlpha_ = &trendAlpha;
+  trendBeta_  = &trendBeta;
   trendRho_   = &trendRho;
-  
+
   printf("\n  0%%       20%%       40%%       60%%       80%%      100%%");
   printf("\n  |    |    |    |    |    |    |    |    |    |    |  ");
   printf("\n  ^");
@@ -277,10 +277,10 @@ void CKrigingAdmin::KrigBlock(Gamma gamma) {
   // search for neighbours
   LogKit::LogFormatted(LogKit::DebugHigh,"FindDataInDataBlockLoop(gamma) called next\n");
   FindDataInDataBlockLoop(gamma);
-  LogKit::LogFormatted(LogKit::DebugHigh,"sizeAlpha_: %d\n", sizeAlpha_); 
-  LogKit::LogFormatted(LogKit::DebugHigh,"sizeBeta_: %d\n", sizeBeta_); 
-  LogKit::LogFormatted(LogKit::DebugHigh,"sizeRho_: %d\n", sizeRho_); 
-  LogKit::LogFormatted(LogKit::DebugHigh,"totalNoDataInCurrKrigBlock_: %d\n", totalNoDataInCurrKrigBlock_); 
+  LogKit::LogFormatted(LogKit::DebugHigh,"sizeAlpha_: %d\n", sizeAlpha_);
+  LogKit::LogFormatted(LogKit::DebugHigh,"sizeBeta_: %d\n", sizeBeta_);
+  LogKit::LogFormatted(LogKit::DebugHigh,"sizeRho_: %d\n", sizeRho_);
+  LogKit::LogFormatted(LogKit::DebugHigh,"totalNoDataInCurrKrigBlock_: %d\n", totalNoDataInCurrKrigBlock_);
   //FindDataInDataBlock(gamma); //DEBUG
 
   int iMin, jMin, kMin, iMax, jMax, kMax;
@@ -289,7 +289,7 @@ void CKrigingAdmin::KrigBlock(Gamma gamma) {
     int cellsInBlock = (kMax - kMin + 1)*(jMax - jMin + 1)*(iMax - iMin + 1);
     int i;
     for (i=noKrigedCells_ ; i<noKrigedCells_+cellsInBlock ; i++) {
-      if (noKrigedCells_ > 0 && i%monitorSize_ == 0) { 
+      if (noKrigedCells_ > 0 && i%monitorSize_ == 0) {
         printf("^");
         fflush(stdout);
       }
@@ -304,16 +304,16 @@ void CKrigingAdmin::KrigBlock(Gamma gamma) {
   SetMatrix(gamma);
   DoCholesky();
 
-  for (k_ = kMin; k_ <= kMax; k_++) { 
-    for (j_ = jMin; j_ <= jMax; j_++) { 
-      for (i_ = iMin; i_ <= iMax; i_++) { 
+  for (k_ = kMin; k_ <= kMax; k_++) {
+    for (j_ = jMin; j_ <= jMax; j_++) {
+      for (i_ = iMin; i_ <= iMax; i_++) {
         // set kriging vector
         SetKrigVector(gamma);
         // kriging
         SolveKrigingEq(gamma);
         noKrigedCells_++;
         // return result
-        if (noKrigedCells_%monitorSize_ == 0) { 
+        if (noKrigedCells_%monitorSize_ == 0) {
           printf("^");
           fflush(stdout);
         }
@@ -323,7 +323,7 @@ void CKrigingAdmin::KrigBlock(Gamma gamma) {
   DeAllocateSpaceForMatrixEq();
 }
 
-FFTGrid* CKrigingAdmin::CreateValidGrid() const 
+FFTGrid* CKrigingAdmin::CreateValidGrid() const
 {
   //FFTGrid* pGrid = new FFTGrid(simbox_.getnx(), simbox_.getny(), simbox_.getnz(),
   //                             simbox_.getnx(), simbox_.getny(), simbox_.getnz());
@@ -333,10 +333,10 @@ FFTGrid* CKrigingAdmin::CreateValidGrid() const
   pGrid->setAccessMode(FFTGrid::RANDOMACCESS);
   int i;
   for (i = 0; i < noData_; i++) {
-    bool validA, validB, validR; 
+    bool validA, validB, validR;
     pBWellPt_[i]->IsValidObs(validA, validB, validR);
     if (validA || validB || validR) {
-      int i1, j1, k1; 
+      int i1, j1, k1;
       pBWellPt_[i]->GetIJK(i1, j1, k1);
       pGrid->setRealValue(i1, j1, k1, 1.0f);
     }
@@ -345,14 +345,14 @@ FFTGrid* CKrigingAdmin::CreateValidGrid() const
   return pGrid;
 }
 
-void 
-CKrigingAdmin::SubtractTrends(FFTGrid& trend_alpha, FFTGrid& trend_beta, FFTGrid& trend_rho) 
-{  
+void
+CKrigingAdmin::SubtractTrends(FFTGrid& trend_alpha, FFTGrid& trend_beta, FFTGrid& trend_rho)
+{
   FFTGrid* pGrid = 0;
   CBWellPt::Gamma type = CBWellPt::ERROR;
   for (int l = 0; l < 3; l++) {
     switch (l) {
-      case 0 : 
+      case 0 :
         pGrid = &trend_alpha;
         type  = CBWellPt::ALPHA;
         break;
@@ -370,14 +370,14 @@ CKrigingAdmin::SubtractTrends(FFTGrid& trend_alpha, FFTGrid& trend_beta, FFTGrid
     }
     pGrid->setAccessMode(FFTGrid::RANDOMACCESS);
     bool isTrans = pGrid->getIsTransformed();
-    if (isTrans) 
+    if (isTrans)
       pGrid->invFFTInPlace();
     for (int m = 0 ; m < noData_ ; m++) {
       int i,j,k;
       pBWellPt_[m]->GetIJK(i, j, k);
       float value = pGrid->getRealValue(i, j, k);
       pBWellPt_[m]->SubtractOnly(type, value);
-      
+
     } // end loop over well obs
     if (isTrans)
       pGrid->fftInPlace();
@@ -385,17 +385,17 @@ CKrigingAdmin::SubtractTrends(FFTGrid& trend_alpha, FFTGrid& trend_beta, FFTGrid
   } // end l
 }
 
-CKrigingAdmin::DataBoxSize 
+CKrigingAdmin::DataBoxSize
 CKrigingAdmin::FindDataInDataBlock(Gamma gamma, const CBox & dataBox) {
   sizeAlpha_ = sizeBeta_ = sizeRho_ = totalNoDataInCurrKrigBlock_ = 0;
   const int countTotalMin = int(dataTarget_*(1.0f - maxDataTolerance_/100.0f));
   const int countTotalMax = int(dataTarget_*(1.0f + maxDataTolerance_/100.0f));
 
   for (int i = 0; i < noData_ ; i++) {
-    int i1, j1, k1; 
+    int i1, j1, k1;
     pBWellPt_[i]->GetIJK(i1, j1, k1);
     if (dataBox.IsInside(i1, j1, k1)) {
-      bool validA, validB, validR; 
+      bool validA, validB, validR;
       pBWellPt_[i]->IsValidObs(validA, validB, validR);
       switch (gamma) {
       case ALPHA_KRIG :
@@ -447,7 +447,7 @@ CKrigingAdmin::FindDataInDataBlock(Gamma gamma, const CBox & dataBox) {
   if (totalNoDataInCurrKrigBlock_ < countTotalMin)
     return DBS_TOO_SMALL;
   else {//(totalNoDataInCurrKrigBlock_ > countTotalMax)
-    return DBS_TOO_BIG; 
+    return DBS_TOO_BIG;
   }
 }
 
@@ -488,12 +488,12 @@ void CKrigingAdmin::FindDataInDataBlockLoop(Gamma gamma) {
   default :
     Require(false, "switch failed");
     break;
-    
+
   }
 
   while (currDataBoxSize != DBS_RIGHT) {
     switch (currDataBoxSize) {
-    case DBS_TOO_SMALL : 
+    case DBS_TOO_SMALL :
       minDataBox = currDataBox_;
       currDataBox_.ModifyBox(maxDataBox);
       break;
@@ -525,7 +525,7 @@ int CKrigingAdmin::NBlocks(int dBlocks, int lSBox) const {
   if (lSBox % dBlocks == 0)
     return lSBox/dBlocks;
 
-  return lSBox/dBlocks + 1; 
+  return lSBox/dBlocks + 1;
 }
 
 void CKrigingAdmin::AllocateSpaceForMatrixEq() {
@@ -534,7 +534,7 @@ void CKrigingAdmin::AllocateSpaceForMatrixEq() {
   const int maxData = sizeAlpha_ + sizeBeta_ + sizeRho_;
   krigMatrix_  = new double*[maxData];
   krigMatrix2_ = new double*[maxData];
-  for (i = 0; i < maxData; i++) { 
+  for (i = 0; i < maxData; i++) {
     krigMatrix_[i]  = new double[maxData];
     krigMatrix2_[i] = new double[maxData];
   }
@@ -551,7 +551,7 @@ void CKrigingAdmin::DeAllocateSpaceForMatrixEq() {
     delete [] krigMatrix2_[i];
   }
 
-  delete [] krigMatrix_; delete [] krigMatrix2_; 
+  delete [] krigMatrix_; delete [] krigMatrix2_;
   krigMatrix_ = krigMatrix2_ = 0;
   delete [] krigVector_; delete [] krigDataVector_;
   krigVector_ = 0;
@@ -564,40 +564,40 @@ void CKrigingAdmin::SetMatrix(Gamma gamma) {
     return;
   int a, b, r;
 
-  // set Kriging Matrix 
+  // set Kriging Matrix
   // for alpha kriging
   int a2, b2, r2;
   // first row
   for (a = 0; a < sizeAlpha_; a++) {
     int krigRowIndex = a;
     int indexA = pIndexAlpha_[a];
-    int i,j,k; 
+    int i,j,k;
     pBWellPt_[indexA]->GetIJK(i, j, k);
     // K_aa
     for (a2 = 0; a2 < sizeAlpha_; a2++) {
-      int indexA2 = pIndexAlpha_[a2]; 
-      int i2, j2, k2; 
+      int indexA2 = pIndexAlpha_[a2];
+      int i2, j2, k2;
       pBWellPt_[indexA2]->GetIJK(i2, j2, k2);
 
-      krigMatrix_[krigRowIndex][a2] = 
+      krigMatrix_[krigRowIndex][a2] =
         covAlpha_.GetGamma2(i, j, k, i2, j2, k2);
     } // end a2
 
     // K_ab
     for (b2 = 0; b2 < sizeBeta_; b2++) {
-      int indexB2 = pIndexBeta_[b2]; 
-      int i2, j2, k2; 
+      int indexB2 = pIndexBeta_[b2];
+      int i2, j2, k2;
       pBWellPt_[indexB2]->GetIJK(i2, j2, k2);
-      krigMatrix_[krigRowIndex][b2 + sizeAlpha_] = 
+      krigMatrix_[krigRowIndex][b2 + sizeAlpha_] =
         covCrAlphaBeta_.GetGamma2(i, j, k, i2, j2, k2);
     } // end b2
 
     // K_ar
     for (r2 = 0; r2 < sizeRho_; r2++) {
-      int indexR2 = pIndexRho_[r2]; 
-      int i2, j2, k2; 
+      int indexR2 = pIndexRho_[r2];
+      int i2, j2, k2;
       pBWellPt_[indexR2]->GetIJK(i2, j2, k2);
-      krigMatrix_[krigRowIndex][r2 + sizeAlpha_ + sizeBeta_] = 
+      krigMatrix_[krigRowIndex][r2 + sizeAlpha_ + sizeBeta_] =
         covCrAlphaRho_.GetGamma2(i, j, k, i2, j2, k2);
     } // end r2
   }// end a
@@ -606,32 +606,32 @@ void CKrigingAdmin::SetMatrix(Gamma gamma) {
   for (b = 0; b < sizeBeta_; b++) {
     int krigRowIndex = b + sizeAlpha_;
     int indexB = pIndexBeta_[b];
-    int i,j,k; 
+    int i,j,k;
     pBWellPt_[indexB]->GetIJK(i, j, k);
     // K_ba
     for (a2 = 0; a2 < sizeAlpha_; a2++) {
-      int indexA2 = pIndexAlpha_[a2]; 
-      int i2, j2, k2; 
+      int indexA2 = pIndexAlpha_[a2];
+      int i2, j2, k2;
       pBWellPt_[indexA2]->GetIJK(i2, j2, k2);
-      krigMatrix_[krigRowIndex][a2] = 
+      krigMatrix_[krigRowIndex][a2] =
         covCrAlphaBeta_.GetGamma2(i2, j2, k2, i, j, k); // flip
     } // end a2
 
     // K_bb
     for (b2 = 0; b2 < sizeBeta_; b2++) {
-      int indexB2 = pIndexBeta_[b2]; 
-      int i2, j2, k2; 
+      int indexB2 = pIndexBeta_[b2];
+      int i2, j2, k2;
       pBWellPt_[indexB2]->GetIJK(i2, j2, k2);
-      krigMatrix_[krigRowIndex][b2 + sizeAlpha_] = 
+      krigMatrix_[krigRowIndex][b2 + sizeAlpha_] =
         covBeta_.GetGamma2(i, j, k, i2, j2, k2);
     } // end b2
 
     // K_br
     for (r2 = 0; r2 < sizeRho_; r2++) {
-      int indexR2 = pIndexRho_[r2]; 
-      int i2, j2, k2; 
+      int indexR2 = pIndexRho_[r2];
+      int i2, j2, k2;
       pBWellPt_[indexR2]->GetIJK(i2, j2, k2);
-      krigMatrix_[krigRowIndex][r2 + sizeAlpha_ + sizeBeta_] = 
+      krigMatrix_[krigRowIndex][r2 + sizeAlpha_ + sizeBeta_] =
         covCrBetaRho_.GetGamma2(i, j, k, i2, j2, k2);
     } // end r2
   }// end b
@@ -639,32 +639,32 @@ void CKrigingAdmin::SetMatrix(Gamma gamma) {
   for (r = 0; r < sizeRho_; r++) {
     int krigRowIndex = r + sizeAlpha_ + sizeBeta_;
     int indexR = pIndexRho_[r];
-    int i,j,k; 
+    int i,j,k;
     pBWellPt_[indexR]->GetIJK(i, j, k);
     // K_ra
     for (a2 = 0; a2 < sizeAlpha_; a2++) {
-      int indexA2 = pIndexAlpha_[a2]; 
-      int i2, j2, k2; 
+      int indexA2 = pIndexAlpha_[a2];
+      int i2, j2, k2;
       pBWellPt_[indexA2]->GetIJK(i2, j2, k2);
-      krigMatrix_[krigRowIndex][a2] = 
+      krigMatrix_[krigRowIndex][a2] =
         covCrAlphaRho_.GetGamma2(i2, j2, k2, i, j, k); // flip
     } // end a2
 
     // K_rb
     for (b2 = 0; b2 < sizeBeta_; b2++) {
-      int indexB2 = pIndexBeta_[b2]; 
-      int i2, j2, k2; 
+      int indexB2 = pIndexBeta_[b2];
+      int i2, j2, k2;
       pBWellPt_[indexB2]->GetIJK(i2, j2, k2);
-      krigMatrix_[krigRowIndex][b2  + sizeAlpha_] = 
+      krigMatrix_[krigRowIndex][b2  + sizeAlpha_] =
         covCrBetaRho_.GetGamma2(i2, j2, k2, i, j, k); // flip
     } // end b2
 
     // K_rr
     for (r2 = 0; r2 < sizeRho_; r2++) {
-      int indexR2 = pIndexRho_[r2]; 
-      int i2, j2, k2; 
+      int indexR2 = pIndexRho_[r2];
+      int i2, j2, k2;
       pBWellPt_[indexR2]->GetIJK(i2, j2, k2);
-      krigMatrix_[krigRowIndex][r2 + sizeAlpha_ + sizeBeta_] = 
+      krigMatrix_[krigRowIndex][r2 + sizeAlpha_ + sizeBeta_] =
         covRho_.GetGamma2(i, j, k, i2, j2, k2);
     } // end r2
   }// end r
@@ -678,9 +678,9 @@ void CKrigingAdmin::SetMatrix(Gamma gamma) {
 
   // Also calulates the kriging data vector
   for (a = 0; a < sizeAlpha_; a++) {
-    int indexA = pIndexAlpha_[a]; 
-    krigDataVector_[a] = pBWellPt_[indexA]->GetAlpha(); 
-  } // end a 
+    int indexA = pIndexAlpha_[a];
+    krigDataVector_[a] = pBWellPt_[indexA]->GetAlpha();
+  } // end a
 
   for (b = 0; b < sizeBeta_; b++) {
     int indexB = pIndexBeta_[b];
@@ -697,7 +697,7 @@ void CKrigingAdmin::SetMatrix(Gamma gamma) {
 void CKrigingAdmin::SetKrigVector(Gamma gamma) {
   int offsetB1, offsetR1;
   offsetB1 = sizeAlpha_; offsetR1 = sizeAlpha_ + sizeBeta_;
-  const CovGridSeparated *pA = NULL, *pB = NULL, *pR = NULL; 
+  const CovGridSeparated *pA = NULL, *pB = NULL, *pR = NULL;
   bool flipA = false, flipB = false, flipR = false;
   switch(gamma) {
   case ALPHA_KRIG :
@@ -726,10 +726,10 @@ void CKrigingAdmin::SetKrigVector(Gamma gamma) {
   // k_a
   int a2;
   for (a2 = 0; a2 < sizeAlpha_; a2++) {
-    int indexA2 = pIndexAlpha_[a2]; 
-    int i2, j2, k2; 
+    int indexA2 = pIndexAlpha_[a2];
+    int i2, j2, k2;
     pBWellPt_[indexA2]->GetIJK(i2, j2, k2);
-    krigVector_[a2] = 
+    krigVector_[a2] =
       (!flipA ? pA->GetGamma2(i_, j_, k_, i2, j2, k2) :
     pA->GetGamma2(i2, j2, k2, i_, j_, k_));
 
@@ -742,8 +742,8 @@ void CKrigingAdmin::SetKrigVector(Gamma gamma) {
   // k_b
   int b2;
   for (b2 = 0; b2 < sizeBeta_; b2++) {
-    int indexB2 = pIndexBeta_[b2]; 
-    int i2, j2, k2; 
+    int indexB2 = pIndexBeta_[b2];
+    int i2, j2, k2;
     pBWellPt_[indexB2]->GetIJK(i2, j2, k2);
     krigVector_[b2 + offsetB1] =
       (!flipB ? pB->GetGamma2(i_, j_, k_, i2, j2, k2) :
@@ -753,8 +753,8 @@ void CKrigingAdmin::SetKrigVector(Gamma gamma) {
   // k_r
   int r2;
   for (r2 = 0; r2 < sizeRho_; r2++) {
-    int indexR2 = pIndexRho_[r2]; 
-    int i2, j2, k2; 
+    int indexR2 = pIndexRho_[r2];
+    int i2, j2, k2;
     pBWellPt_[indexR2]->GetIJK(i2, j2, k2);
     krigVector_[r2 + offsetR1] =
       (!flipR ? pR->GetGamma2(i_, j_, k_, i2, j2, k2) :
@@ -794,7 +794,7 @@ void CKrigingAdmin::SolveKrigingEq(Gamma gamma) {
   //Require(result != RMISSING, "result != RMISSING");
 
   for (j = 0; j < currMatrixDim; j++)
-    result += static_cast<float>(krigVector_[j]) * krigDataVector_[j]; 
+    result += static_cast<float>(krigVector_[j]) * krigDataVector_[j];
   //result += 1.0f;
 
   //if(pGrid->setRealValue(i_, j_, k_, 1.0f))
@@ -825,19 +825,19 @@ void CKrigingAdmin::EstimateSizeOfBlock() {
 
   // Should check ranges
 
-  if (!(rangeAlphaX_ > 0 && rangeAlphaY_ > 0 && rangeAlphaZ_ > 0 && 
-        rangeBetaX_ > 0 && rangeBetaY_ > 0 && rangeBetaZ_ > 0 && 
+  if (!(rangeAlphaX_ > 0 && rangeAlphaY_ > 0 && rangeAlphaZ_ > 0 &&
+        rangeBetaX_ > 0 && rangeBetaY_ > 0 && rangeBetaZ_ > 0 &&
         rangeRhoX_ > 0 && rangeRhoY_ > 0 && rangeRhoZ_ > 0)) {
     failed2EstimateRange_ = true;
   }
-  
+
   rangeX_ = static_cast<float>(std::max(rangeAlphaX_, rangeBetaX_));
   rangeX_ = static_cast<float>(std::max(static_cast<float>(rangeRhoX_), rangeX_));
   rangeY_ = static_cast<float>(std::max(rangeAlphaY_, rangeBetaY_));
   rangeY_ = static_cast<float>(std::max(static_cast<float>(rangeRhoY_), rangeY_));
   rangeZ_ = static_cast<float>(std::max(rangeAlphaZ_, rangeBetaZ_));
   rangeZ_ = static_cast<float>(std::max(static_cast<float>(rangeRhoZ_), rangeZ_));
-  
+
   LogKit::LogFormatted(LogKit::Low,"Estimated ranges(grid cells) from covariance cubes:\n");
   LogKit::LogFormatted(LogKit::Low,"             rangeX     rangeY     rangeZ\n");
   LogKit::LogFormatted(LogKit::Low,"-----------------------------------------\n");
@@ -845,7 +845,7 @@ void CKrigingAdmin::EstimateSizeOfBlock() {
   LogKit::LogFormatted(LogKit::Low,"Vs   :     %8d   %8d   %8d\n", rangeBetaX_, rangeBetaY_, rangeBetaZ_);
   LogKit::LogFormatted(LogKit::Low,"Rho  :     %8d   %8d   %8d\n", rangeRhoX_, rangeRhoY_, rangeRhoZ_);
   LogKit::LogFormatted(LogKit::Low,"Used :     %8.0f   %8.0f   %8.0f\n", rangeX_, rangeY_, rangeZ_);
-  
+
   if (noData_ <= dataTarget_) {
      dxBlock_ = simbox_.getnx();
      dyBlock_ = simbox_.getny();
@@ -869,7 +869,7 @@ void CKrigingAdmin::EstimateSizeOfBlock() {
   else if(rangeX_==0.0)
   {
     dxBlock_ = 1;
-    dxBlockExt_ = 0; 
+    dxBlockExt_ = 0;
     dyBlock_ = static_cast<int>(ceil(rangeY_));
     dyBlockExt_ = dyBlock_;
     dzBlock_ = static_cast<int>(ceil(rangeZ_));
@@ -879,7 +879,7 @@ void CKrigingAdmin::EstimateSizeOfBlock() {
   else if(rangeY_ == 0.0)
   {
     dyBlock_ = 1;
-    dyBlockExt_ = 0; 
+    dyBlockExt_ = 0;
     dxBlock_ = static_cast<int>(ceil(rangeX_));
     dxBlockExt_ = dxBlock_;
     dzBlock_ = static_cast<int>(ceil(rangeZ_));
@@ -892,25 +892,25 @@ void CKrigingAdmin::EstimateSizeOfBlock() {
 
   int dxBlockT = 0;
   bool rapidInc = false;
-  
-  // find minimum time given that dyBlockExt = rangeY_ 
+
+  // find minimum time given that dyBlockExt = rangeY_
   int dyBlockExt = static_cast<int>(rangeY_);
   int dyBlockExtT = dyBlockExt;
   float tMin = CalcCPUTime(1, static_cast<float>(dyBlockExt), nd, rapidInc);
   float ndT = nd;
   for (dxBlock = 2; dxBlock <= simbox_.getnx(); dxBlock += 1) {
-    float t1 = CalcCPUTime(static_cast<float>(dxBlock),static_cast<float>(dyBlockExt), nd, rapidInc); 
+    float t1 = CalcCPUTime(static_cast<float>(dxBlock),static_cast<float>(dyBlockExt), nd, rapidInc);
     if (t1 < tMin) {
       tMin = t1;
       dxBlockT = dxBlock;
       ndT = nd;
     }
   } // end loop dxBlock
-  
+
   if (ndT < dataTarget_) {
-    dxBlock_ = dxBlockT; 
+    dxBlock_ = dxBlockT;
     dyBlockExt_ = dyBlockExtT;
-    
+
     EstimateSizeOfBlock2();
     return;
   }
@@ -919,13 +919,13 @@ void CKrigingAdmin::EstimateSizeOfBlock() {
   float sumdyBExt = 0.0f, sumdxBlock = 0.0f;
   int count = 0;
   CalcCPUTime(1.0f,1.0f, nd, rapidInc);
-  CalcCPUTime(static_cast<float>(simbox_.getnx()),rangeY_, nd, rapidInc); 
-  //int maxNd = (int)nd; // LATER better to use dataTarget_ here ? 
+  CalcCPUTime(static_cast<float>(simbox_.getnx()),rangeY_, nd, rapidInc);
+  //int maxNd = (int)nd; // LATER better to use dataTarget_ here ?
   int maxNd = dataTarget_;
   int nd2;
   const float V = static_cast<float>(simbox_.getnx() * simbox_.getny() * simbox_.getnz());
   const float R = rangeX_*rangeY_*rangeZ_;
-  
+
   // for (nd2 = minNd; nd2 <= maxNd; nd2++) {
   for (nd2 = maxNd; nd2 <= maxNd; nd2++) {
     const float a = static_cast<float>(pow(nd2*V/(noValid_*R),0.333333333f));
@@ -934,26 +934,26 @@ void CKrigingAdmin::EstimateSizeOfBlock() {
       float dxBlock2 = rangeX_ * (a - 2*dyBlockExt/rangeY_);
       if(dxBlock2 < 1)
         continue; // should never happen, but...
-      
+
       //float t1 = CalcCPUTime(dxBlock2,(float)dyBlockExt, nd, rapidInc); //NBNB Bjorn: Used before, keep if change of mind?
-      if (rapidInc) { 
+      if (rapidInc) {
         test = true;
         sumdyBExt += dyBlockExt;
         sumdxBlock += dxBlock2;
         count++;
         break;
       }
-      
+
     } // end loop dyBlockExt
-  } // end loop nd2 
+  } // end loop nd2
   if (test) {
     dxBlock_    = static_cast<int>(ceil(sumdxBlock/count));
     dyBlockExt_ = static_cast<int>(ceil(sumdyBExt/count));
-    
+
     EstimateSizeOfBlock2();
     return;
   }
-  
+
   // if we are here we failed to estimate, should never happen, but we put in worst case values
   failed2EstimateDefaultDataBoxAndBlock_ = true;
   // speed will slow down
@@ -967,14 +967,14 @@ void CKrigingAdmin::EstimateSizeOfBlock() {
 
 
 void CKrigingAdmin::EstimateSizeOfBlock2() {
-  dyBlock_ = static_cast<int>(ceil((dxBlock_*rangeY_) / rangeX_)); 
+  dyBlock_ = static_cast<int>(ceil((dxBlock_*rangeY_) / rangeX_));
   dzBlock_ = static_cast<int>(ceil((dxBlock_*rangeZ_) / rangeX_));
 
   if (dyBlockExt_ > static_cast<int>(rangeY_)) dyBlockExt_ = static_cast<int>(rangeY_);
-  dxBlockExt_ = static_cast<int>(ceil((dyBlockExt_*rangeX_) / rangeY_)); 
+  dxBlockExt_ = static_cast<int>(ceil((dyBlockExt_*rangeX_) / rangeY_));
   dzBlockExt_ = static_cast<int>(ceil((dyBlockExt_*rangeZ_) / rangeY_));
 
-  if (dxBlockExt_ > static_cast<int>(rangeX_)) dxBlockExt_ = static_cast<int>(rangeX_); 
+  if (dxBlockExt_ > static_cast<int>(rangeX_)) dxBlockExt_ = static_cast<int>(rangeX_);
   if (dzBlockExt_ > static_cast<int>(rangeZ_)) dzBlockExt_ = static_cast<int>(rangeZ_);
 }
 
@@ -985,22 +985,22 @@ float CKrigingAdmin::CalcCPUTime(float dxBlock, float dyBlockExt, float& nd, boo
   //static const float t_solve = 70.0f; static const float t_smallk = 164.0f;
 
   Require(dxBlock >= 1.0f && dyBlockExt >= 0.0f, "dxBlock >= 1.0f && dyBlockExt >= 0.0f");
-  static const float t_bigK   = static_cast<float>(1.50E-6); 
+  static const float t_bigK   = static_cast<float>(1.50E-6);
   static const float t_chol   = static_cast<float>(1.90E-8);
-  static const float t_solve  = static_cast<float>(7.00E-7); 
+  static const float t_solve  = static_cast<float>(7.00E-7);
   static const float t_smallk = static_cast<float>(1.64E-6);
-  float dxBlockExt = (dyBlockExt*rangeX_) / rangeY_; 
+  float dxBlockExt = (dyBlockExt*rangeX_) / rangeY_;
   float dzBlockExt = (dyBlockExt*rangeZ_) / rangeY_;
-  float dyBlock = (dxBlock*rangeY_) / rangeX_; 
-  float dzBlock = (dxBlock*rangeZ_) / rangeX_; 
+  float dyBlock = (dxBlock*rangeY_) / rangeX_;
+  float dzBlock = (dxBlock*rangeZ_) / rangeX_;
 
   const float V = static_cast<float>(simbox_.getnx() * simbox_.getny() * simbox_.getnz());
   const float v = dxBlock * dyBlock * dzBlock;
-  const float Nss = V/v; 
-  nd = (dxBlock + 2*dxBlockExt)*(dyBlock + 2*dyBlockExt)*(dzBlock + 2*dzBlockExt)* noValid_ / V;  
-  const float T_BigK = t_bigK*Nss*nd*nd; 
+  const float Nss = V/v;
+  nd = (dxBlock + 2*dxBlockExt)*(dyBlock + 2*dyBlockExt)*(dzBlock + 2*dzBlockExt)* noValid_ / V;
+  const float T_BigK = t_bigK*Nss*nd*nd;
   const float T_chol = t_chol*Nss*nd*nd*nd;
-  const float T_solve = t_solve*Nss*nd*nd; 
+  const float T_solve = t_solve*Nss*nd*nd;
   const float T_smallk = t_smallk*V*nd;
   rapidInc = (T_chol >= 0.5*T_smallk);
   return T_BigK + T_chol + T_solve + T_smallk;
@@ -1009,7 +1009,7 @@ float CKrigingAdmin::CalcCPUTime(float dxBlock, float dyBlockExt, float& nd, boo
 }
 
 
-const FFTGrid& 
+const FFTGrid&
 CKrigingAdmin::CreateAndFillFFTGridWithCov(int i1) {
   FFTGrid* pGrid = new FFTGrid(simbox_.getnx(), simbox_.getny(), simbox_.getnz(),
     simbox_.getnx(), simbox_.getny(), simbox_.getnz());
@@ -1020,7 +1020,7 @@ CKrigingAdmin::CreateAndFillFFTGridWithCov(int i1) {
   float power = 1.0f;
   switch (i1) {
   case 1:
-    rangeXf = 2.0f; rangeYf = 4.0f; rangeZf = 2.0f;//2.5f; 
+    rangeXf = 2.0f; rangeYf = 4.0f; rangeZf = 2.0f;//2.5f;
     power = 1.0f;
     break;
   case 2:
@@ -1034,7 +1034,7 @@ CKrigingAdmin::CreateAndFillFFTGridWithCov(int i1) {
   default:
     Require(false, "switch failed");
   }// end switch
-  //rangeXf = 2.0f; rangeYf = 4.0f; rangeZf = 2.0f;//2.5f; 
+  //rangeXf = 2.0f; rangeYf = 4.0f; rangeZf = 2.0f;//2.5f;
   int i, j, k;
   float rangeX = static_cast<float>(simbox_.getlx())/rangeXf;
   float rangeY = static_cast<float>(simbox_.getly())/rangeYf;
@@ -1060,8 +1060,8 @@ CKrigingAdmin::CreateAndFillFFTGridWithCov(int i1) {
       for (i = -nxp2; i < nxp2; i++) {
         int i1 = (i < 0 ? nxp + i : i);
         float deltaX = static_cast<float>(i*simbox_.getdx());
-        const float h = float(sqrt(deltaX*deltaX/(rangeX*rangeX) + deltaY*deltaY/(rangeY*rangeY) + 
-          deltaZ*deltaZ/(rangeZ*rangeZ))); 
+        const float h = float(sqrt(deltaX*deltaX/(rangeX*rangeX) + deltaY*deltaY/(rangeY*rangeY) +
+          deltaZ*deltaZ/(rangeZ*rangeZ)));
         const float gamma = float(exp(-pow(h,power)));
 
         pGrid->setRealValue(i1, j1, k1, gamma);
@@ -1074,7 +1074,7 @@ CKrigingAdmin::CreateAndFillFFTGridWithCov(int i1) {
 }
 
 
-const FFTGrid& 
+const FFTGrid&
 CKrigingAdmin::CreateAndFillFFTGridWithCovRot(int i1) {
   FFTGrid* pGrid = new FFTGrid(simbox_.getnx(), simbox_.getny(), simbox_.getnz(),
     simbox_.getnx(), simbox_.getny(), simbox_.getnz());
@@ -1085,7 +1085,7 @@ CKrigingAdmin::CreateAndFillFFTGridWithCovRot(int i1) {
   float power = 1.0f;
   switch (i1) {
   case 1:
-    rangeXf = 2.0f; rangeYf = 4.0f; rangeZf = 2.0f;//2.5f; 
+    rangeXf = 2.0f; rangeYf = 4.0f; rangeZf = 2.0f;//2.5f;
     power = 1.0f;
     break;
   case 2:
@@ -1099,7 +1099,7 @@ CKrigingAdmin::CreateAndFillFFTGridWithCovRot(int i1) {
   default:
     Require(false, "switch failed");
   }// end switch
-  //rangeXf = 2.0f; rangeYf = 4.0f; rangeZf = 2.0f;//2.5f; 
+  //rangeXf = 2.0f; rangeYf = 4.0f; rangeZf = 2.0f;//2.5f;
   int i, j, k;
   float rangeX = static_cast<float>(simbox_.getlx())/rangeXf;
   float rangeY = static_cast<float>(simbox_.getly())/rangeYf;
@@ -1136,8 +1136,8 @@ CKrigingAdmin::CreateAndFillFFTGridWithCovRot(int i1) {
         //deltaX -= nxp2; deltaY -= nyp2; deltaZ -= nzp2;
         RotateVec(deltaX, deltaY, deltaZ, rotMatrix);
         //deltaX += nxp2; deltaY += nyp2; deltaZ += nzp2;
-        const float h = float(sqrt(deltaX*deltaX/(rangeX*rangeX) + deltaY*deltaY/(rangeY*rangeY) + 
-          deltaZ*deltaZ/(rangeZ*rangeZ))); 
+        const float h = float(sqrt(deltaX*deltaX/(rangeX*rangeX) + deltaY*deltaY/(rangeY*rangeY) +
+          deltaZ*deltaZ/(rangeZ*rangeZ)));
         const float gamma = float(exp(-pow(h,power)));
 
         pGrid->setRealValue(i1, j1, k1, gamma);
@@ -1182,7 +1182,7 @@ const FFTGrid& CKrigingAdmin::CreateAndFillFFTGridWithCrCov() {
     } //end j
   } // endk;
   pGrid->endAccess();
-  return *pGrid; 
+  return *pGrid;
 }
 
 /*
@@ -1192,7 +1192,7 @@ int currMatrixDim = sizeAlpha_ + sizeBeta_ + sizeRho_;
 int i,j;
 for (j = 0; j < currMatrixDim; j++) {
 for (i = 0; i < currMatrixDim; i++) {
-krigMatrix2_[i][j] = krigMatrix_[i][j];  
+krigMatrix2_[i][j] = krigMatrix_[i][j];
 } // end i
 } // end j
 
@@ -1200,16 +1200,16 @@ return krigMatrix2_;
 }
 */
 
-double** 
+double**
 CKrigingAdmin::CopyMatrix(double** inMatrix, double** outMatrix, int size) {
   int i,j;
   for (j = 0; j < size; j++) {
     for (i = 0; i < size; i++) {
-      outMatrix[i][j] = inMatrix[i][j];  
+      outMatrix[i][j] = inMatrix[i][j];
     } // end i
   } // end j
 
-  return outMatrix;  
+  return outMatrix;
 }
 
 void CKrigingAdmin::DoCholesky() {
@@ -1220,9 +1220,9 @@ void CKrigingAdmin::DoCholesky() {
   while (lib_matrCholR(currMatrixDim, CopyMatrix(krigMatrix_, krigMatrix2_, currMatrixDim))) {
     int i;
     for (i = 0; i < currMatrixDim; i++)
-      krigMatrix_[i][i] *= cholesky_repair_factor; 
+      krigMatrix_[i][i] *= cholesky_repair_factor;
 
-    if (counter++ > maxCholeskyLoopCounter_) break; 
+    if (counter++ > maxCholeskyLoopCounter_) break;
   }
   if(counter > maxCholeskyLoopCounter_)
   {
@@ -1230,14 +1230,14 @@ void CKrigingAdmin::DoCholesky() {
     exit(1);
   }
   if (counter > 0)
-    LogKit::LogFormatted(LogKit::DebugHigh,"Cholesky decomposition looped: %d\n", counter); 
+    LogKit::LogFormatted(LogKit::DebugHigh,"Cholesky decomposition looped: %d\n", counter);
   noCholeskyDecomp_++;
 }
 
 void CKrigingAdmin::RotateVec(float& rx, float& ry, float& rz, const float mat[][3]) {
-  float res[3] = {0.0f}; 
+  float res[3] = {0.0f};
 
-  float input[3]; 
+  float input[3];
   input[0] = rx; input[1] = ry; input[2] = rz;
   int i,j;
   for (i = 0; i < 3; i++) {
@@ -1285,7 +1285,7 @@ void CKrigingAdmin::CalcSmoothWeights(Gamma gamma, int direction) {
     Require(false, "switch failed");
   } // end switch direction
 
-  
+
 
   // allocate
   double ** ppMatrix = new double*[size];
@@ -1299,7 +1299,7 @@ void CKrigingAdmin::CalcSmoothWeights(Gamma gamma, int direction) {
     //if (i > 0) {
     switch (direction) {
     case 1 :
-      pVec[i] = pCov->GetGamma2(0, 0, 0, i, 0, 0); 
+      pVec[i] = pCov->GetGamma2(0, 0, 0, i, 0, 0);
       break;
     case 2 :
       pVec[i] = pCov->GetGamma2(0, 0, 0, 0, i, 0);
@@ -1331,7 +1331,7 @@ void CKrigingAdmin::CalcSmoothWeights(Gamma gamma, int direction) {
   static const double cholesky_repair_factor = 1.01;
   while (lib_matrCholR(size, CopyMatrix(ppMatrix, ppMatrix2, size))) {
     for (i = 0; i < size; i++)
-      ppMatrix[i][i] *= cholesky_repair_factor; 
+      ppMatrix[i][i] *= cholesky_repair_factor;
 
     if (counter++ > maxCholeskyLoopCounter_) break;
   } // end while
@@ -1340,19 +1340,19 @@ void CKrigingAdmin::CalcSmoothWeights(Gamma gamma, int direction) {
   int krigI;
   for (krigI = 0; krigI < size - 2; krigI++) {
     double * const pWeights = ppKrigSmoothWeights[krigI];
-    for (b = 0; b < size; b++) 
+    for (b = 0; b < size; b++)
       pWeights[b] = pVec[abs(b - krigI - 1)];
 
     lib_matrAxeqbR(size, ppMatrix2, pWeights);
   } // end krigI
   // deallocate
 
-  for (i = 0; i < size; i++) { 
+  for (i = 0; i < size; i++) {
     delete [] ppMatrix[i];
     delete [] ppMatrix2[i];
   }
   delete [] ppMatrix; delete [] ppMatrix2; delete [] pVec;
-  
+
 }
 
 void CKrigingAdmin::SmoothKrigedResult(Gamma gamma) {
@@ -1395,7 +1395,7 @@ void CKrigingAdmin::SmoothKrigedResult(Gamma gamma) {
         // smooth in X direction
         if(dxBlock_>1)
         {
-        const int i2Start = i1 + dxBlock_ - dxSmoothBlock_; 
+        const int i2Start = i1 + dxBlock_ - dxSmoothBlock_;
         const int i2End = std::min(i1 + dxBlock_ + dxSmoothBlock_, simbox_.getnx());
         const int c2EndX = i2End;
 
@@ -1419,10 +1419,10 @@ void CKrigingAdmin::SmoothKrigedResult(Gamma gamma) {
                   int c;
                   for (c = i2Start - 1; c <= c2EndX; c++) {
                  // for(c = i2 - dxSmoothBlock_; c<= i2+dxSmoothBlock_;c++){
-                    int c2 = (c >= simbox_.getnx() ? 2*simbox_.getnx() - c - 1 : c); 
+                    int c2 = (c >= simbox_.getnx() ? 2*simbox_.getnx() - c - 1 : c);
                     c2 = (c2<0 ? 0 : c2);
-                    result += static_cast<float>(ppKrigSmoothWeightsX_[i2-i2Start][c - i2Start + 1]) 
-                  //  result += static_cast<float>(ppKrigSmoothWeightsX_[1][c - i2 + dxSmoothBlock_]) 
+                    result += static_cast<float>(ppKrigSmoothWeightsX_[i2-i2Start][c - i2Start + 1])
+                  //  result += static_cast<float>(ppKrigSmoothWeightsX_[1][c - i2 + dxSmoothBlock_])
                       * (pGrid->getRealValue(c2, j2, k2) - trend);
                   } // end c
                   if (pGrid->setRealValue(i2, j2, k2, result))
@@ -1437,7 +1437,7 @@ void CKrigingAdmin::SmoothKrigedResult(Gamma gamma) {
         if(dyBlock_>1)
         {
         // smooth in y direction
-        int j2Start = j1 + dyBlock_ - dySmoothBlock_; 
+        int j2Start = j1 + dyBlock_ - dySmoothBlock_;
         const int j2End = std::min(j1 + dyBlock_ + dySmoothBlock_, simbox_.getny());
         const int c2EndY = j2End;
 
@@ -1480,7 +1480,7 @@ void CKrigingAdmin::SmoothKrigedResult(Gamma gamma) {
         if(dzBlock_>1)
         {
         // smooth in z direction
-        const int k2Start = k1 + dzBlock_ - dzSmoothBlock_; 
+        const int k2Start = k1 + dzBlock_ - dzSmoothBlock_;
         const int k2End = std::min(k1 + dzBlock_ + dzSmoothBlock_, simbox_.getnz());
         const int c2EndZ = k2End;
         for (j2 = j1; j2 < j2Max; j2++) {
@@ -1520,7 +1520,7 @@ void CKrigingAdmin::SmoothKrigedResult(Gamma gamma) {
         }
       } // end i
     } // end j
-  } // end k 
+  } // end k
 }
 
 void CKrigingAdmin::WriteDebugOutput() const {

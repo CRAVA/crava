@@ -12,27 +12,27 @@ class CKrigingAdmin
 {
 private: enum DataBoxSize { DBS_TOO_SMALL, DBS_TOO_BIG, DBS_RIGHT};
 public:
-  CKrigingAdmin(const Simbox& simbox, CBWellPt ** pBWellPt, int noData,              
-                CovGridSeparated& covAlpha, 
-                CovGridSeparated& covBeta, 
-                CovGridSeparated& covRho,   
-                CovGridSeparated& covCrAlphaBeta, 
-                CovGridSeparated& covCrAlphaRho, 
+  CKrigingAdmin(const Simbox& simbox, CBWellPt ** pBWellPt, int noData,
+                CovGridSeparated& covAlpha,
+                CovGridSeparated& covBeta,
+                CovGridSeparated& covRho,
+                CovGridSeparated& covCrAlphaBeta,
+                CovGridSeparated& covCrAlphaRho,
                 CovGridSeparated& covCrBetaRho,
                 int  dataTarget = 200,
                 bool backgroundModel = false);
   ~CKrigingAdmin(void);
   enum Gamma {ALPHA_KRIG, BETA_KRIG, RHO_KRIG};
-  void KrigAll(FFTGrid& trendAlpha, FFTGrid& trendBeta, FFTGrid& trendRho, 
+  void KrigAll(FFTGrid& trendAlpha, FFTGrid& trendBeta, FFTGrid& trendRho,
                bool trendsAlreadySubtracted = false, int debugFlag = 0, bool doSmoothing = false);
 
 private:
   void            Init();
   void            KrigAll(Gamma gamma, bool doSmoothing = false);
   void            KrigBlock(Gamma gamma);
-  /* Finds the data by using the following rule: Cokriging 3 variables X,Y,Z.  
-  If you are doing kriging on X. Then for each well obs: if you have info on X use it and 
-  ignore the two others Y,Z. Else use info on Y and Z. 
+  /* Finds the data by using the following rule: Cokriging 3 variables X,Y,Z.
+  If you are doing kriging on X. Then for each well obs: if you have info on X use it and
+  ignore the two others Y,Z. Else use info on Y and Z.
   */
   void            SubtractTrends(FFTGrid& trend_alpha, FFTGrid& trend_beta, FFTGrid& trend_rho);
   void            FindDataInDataBlockLoop(Gamma gamma);
@@ -63,12 +63,12 @@ private:
   FFTGrid       * CreateValidGrid() const;
 
   const Simbox  & simbox_;
-  FFTGrid       * trendAlpha_, *trendBeta_, *trendRho_; // pointers to current kriging variables 
+  FFTGrid       * trendAlpha_, *trendBeta_, *trendRho_; // pointers to current kriging variables
   CovGridSeparated &covAlpha_, &covBeta_, &covRho_, &covCrAlphaBeta_, &covCrAlphaRho_, &covCrBetaRho_;
-  FFTGrid       * pBWellGrid_; // a "bool" grid that says "true" (1.0f), (or NOT -1.0f) if there is at least one blocked valid well data in the cell 
+  FFTGrid       * pBWellGrid_; // a "bool" grid that says "true" (1.0f), (or NOT -1.0f) if there is at least one blocked valid well data in the cell
   CBWellPt     ** pBWellPt_;
   CBox            currDataBox_, currBlock_;                  // current data neightbourhood and kriging area
-  int             dxBlock_, dyBlock_, dzBlock_;              // number of cells to define a kriging block 
+  int             dxBlock_, dyBlock_, dzBlock_;              // number of cells to define a kriging block
   int             dxBlockExt_, dyBlockExt_, dzBlockExt_;     // number of additional cells to reach data neighbourhood
   int             i_, j_, k_;                                // current kriging indexes
   int           * pIndexAlpha_, *pIndexBeta_, *pIndexRho_;  // holds an array of indexes into pBWells_
@@ -83,13 +83,13 @@ private:
   int             noCholeskyDecomp_;                         // number of cholesky decompositions
   int             monitorSize_;                              // for progress monitor
 
-  double       ** krigMatrix_, **krigMatrix2_, *krigVector_; 
+  double       ** krigMatrix_, **krigMatrix2_, *krigVector_;
   float         * krigDataVector_;
   int             rangeAlphaX_, rangeAlphaY_, rangeAlphaZ_;
   int             rangeBetaX_, rangeBetaY_, rangeBetaZ_;
   int             rangeRhoX_, rangeRhoY_, rangeRhoZ_;        // ranges estimated from covariance cubes
   float           rangeX_, rangeY_, rangeZ_;                 // max ranges
-  enum            { maxDataTolerance_         = 10,          // in % of dataTarget_ 
+  enum            { maxDataTolerance_         = 10,          // in % of dataTarget_
                     maxDataBlockLoopCounter_  =  7,          // ca. max number of attempts to find a right data block neighbourhood, not used
                     maxCholeskyLoopCounter_   = 20,          // max number of attempts to cholesky decomposition
                     switchFailed_             =  1};         // assert flag
@@ -100,7 +100,7 @@ private:
   bool            failed2EstimateRange_, failed2EstimateDefaultDataBoxAndBlock_;             // bool flags if we failed 2 estimate true
   bool            backgroundModel_;
   int             dxSmoothBlock_, dySmoothBlock_, dzSmoothBlock_;                            // normal value is 2, data size is 2*n + 2
-  double       ** ppKrigSmoothWeightsX_, **ppKrigSmoothWeightsY_, **ppKrigSmoothWeightsZ_; // first index is kriged point, second is data 
+  double       ** ppKrigSmoothWeightsX_, **ppKrigSmoothWeightsY_, **ppKrigSmoothWeightsZ_; // first index is kriged point, second is data
 };
 
 #endif

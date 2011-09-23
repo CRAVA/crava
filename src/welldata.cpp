@@ -5,10 +5,10 @@
 #include <math.h>
 #include <iostream>
 
-#include "fft/include/fftw.h"
-#include "fft/include/rfftw.h"
-#include "fft/include/fftw-int.h"
-#include "fft/include/f77_func.h"
+#include "fftw.h"
+#include "rfftw.h"
+#include "fftw-int.h"
+#include "f77_func.h"
 
 #include "nrlib/iotools/logkit.hpp"
 #include "nrlib/iotools/stringtools.hpp"
@@ -20,7 +20,7 @@
 #include "src/io.h"
 
 //----------------------------------------------------------------------------
-WellData::WellData(const std::string              & wellFileName, 
+WellData::WellData(const std::string              & wellFileName,
                    const std::vector<std::string> & logNames,
                    const std::vector<bool>        & inverseVelocity,
                    ModelSettings                  * modelSettings,
@@ -50,7 +50,7 @@ WellData::WellData(const std::string              & wellFileName,
     blockedLogsConstThick_(NULL),
     blockedLogsExtendedBG_(NULL),
     useForFaciesProbabilities_(indicatorFacies),
-    useForWaveletEstimation_(indicatorWavelet),  
+    useForWaveletEstimation_(indicatorWavelet),
     useForBackgroundTrend_(indicatorBGTrend),
     realVsLog_(indicatorRealVs)
 {
@@ -97,8 +97,8 @@ WellData::~WellData()
 
 //----------------------------------------------------------------------------
 void
-WellData::readRMSWell(const std::string              & wellFileName, 
-                      const std::vector<std::string> & logNames, 
+WellData::readRMSWell(const std::string              & wellFileName,
+                      const std::vector<std::string> & logNames,
                       const std::vector<bool>        & inverseVelocity,
                       bool                             faciesLogGiven)
 {
@@ -140,9 +140,9 @@ WellData::readRMSWell(const std::string              & wellFileName,
 
   if(logNames[0] != "") // Assume that all lognames are filled present if first is.
   {
-    parameterList = logNames; 
+    parameterList = logNames;
     if (!faciesLogGiven)
-      nVar = 4; 
+      nVar = 4;
     vpLog = !inverseVelocity[0];
     vsLog = !inverseVelocity[1];
   }
@@ -160,7 +160,7 @@ WellData::readRMSWell(const std::string              & wellFileName,
 
   nFacies_ = 0;
   for(i=0;i<nlog;i++)
-  { 
+  {
     NRLib::ReadNextToken(file,token,line);
     for(j=0;j<nVar;j++)
     {
@@ -174,7 +174,7 @@ WellData::readRMSWell(const std::string              & wellFileName,
           NRLib::ReadNextToken(file,token,line); // read code word DISC
           if (token != "DISC")
           {
-            LogKit::LogFormatted(LogKit::Error,"ERROR: Facies log must be discrete.\n"); 
+            LogKit::LogFormatted(LogKit::Error,"ERROR: Facies log must be discrete.\n");
             exit(1);
           }
           // Find number of facies
@@ -206,10 +206,10 @@ WellData::readRMSWell(const std::string              & wellFileName,
   else
     timemissing_ = 0;
 
-  // Find nd_, the number of observations in well. 
+  // Find nd_, the number of observations in well.
   // Count the number of time observations which is not missing values.
 
-  int nData = 0; 
+  int nData = 0;
   int legalData = 0;
   while (NRLib::CheckEndOfFile(file)==false)
   {
@@ -224,7 +224,7 @@ WellData::readRMSWell(const std::string              & wellFileName,
         if(j==pos[0] && dummy != WELLMISSING) {
           legalData++;   // Found legal TIME variable
         }
-      }      
+      }
     }
     catch (NRLib::IOError e) {
       std::string text;
@@ -284,7 +284,7 @@ WellData::readRMSWell(const std::string              & wellFileName,
   int k;
   if (nFacies_ > 0)
     faciesNr_    = new int[nFacies_];
-  
+
   NRLib::OpenRead(file, wellFileName);
   line = 0;
   for(i=0;i<4+nlog;i++)
@@ -428,8 +428,8 @@ WellData::readRMSWell(const std::string              & wellFileName,
 
 
 void
-WellData::readNorsarWell(const std::string              & wellFileName, 
-                         const std::vector<std::string> & logNames, 
+WellData::readNorsarWell(const std::string              & wellFileName,
+                         const std::vector<std::string> & logNames,
                          const std::vector<bool>        & inverseVelocity,
                          bool                             faciesLogGiven)
 {
@@ -438,8 +438,8 @@ WellData::readNorsarWell(const std::string              & wellFileName,
   std::string name = NRLib::RemovePath(wellFileName);
   name = NRLib::ReplaceExtension(name, "");
   wellname_ = name;
-  
-  try 
+
+  try
   {
     NRLib::NorsarWell well(wellFileName);
 
@@ -452,9 +452,9 @@ WellData::readNorsarWell(const std::string              & wellFileName,
 
     if(logNames[0] != "") // Assume that all lognames are filled present if first is.
     {
-      parameterList = logNames; 
+      parameterList = logNames;
       if (!faciesLogGiven)
-        nVar = 4; 
+        nVar = 4;
       vpLog = !inverseVelocity[0];
       vsLog = !inverseVelocity[1];
     }
@@ -538,17 +538,17 @@ WellData::readNorsarWell(const std::string              & wellFileName,
           zpos_[ind]  = (*logs[2])[i]*1000;
           if(!well.IsMissing((*logs[3])[i]))
             alpha_[ind] = static_cast<float>((*logs[3])[i]);
-          else 
+          else
             alpha_[ind] = RMISSING;
           if(!well.IsMissing((*logs[5])[i]))
             beta_[ind]  = static_cast<float>((*logs[5])[i]);
-          else 
+          else
             beta_[ind] = RMISSING;
           if(!well.IsMissing((*logs[4])[i]))
             rho_[ind]   = static_cast<float>((*logs[4])[i]);
-          else 
+          else
             rho_[ind] = RMISSING;
-          if(mdLog != 6 && nLogs > 6 && logs[6] != NULL && 
+          if(mdLog != 6 && nLogs > 6 && logs[6] != NULL &&
             !well.IsMissing((*logs[6])[i])) {
             facies_[ind]  = static_cast<int>((*logs[6])[i]);
             if(find(facCodes.begin(), facCodes.end(), facies_[ind]) == facCodes.end())
@@ -558,7 +558,7 @@ WellData::readNorsarWell(const std::string              & wellFileName,
             facies_[ind] = IMISSING;
           if(!well.IsMissing((*logs[mdLog])[i]))
             md_[ind]   = static_cast<float>((*logs[mdLog])[i]);
-          else 
+          else
             md_[ind] = RMISSING;
           ind++;
         }
@@ -617,10 +617,10 @@ WellData::writeRMSWell(void)
        << wellname_ << " "
        << std::fixed
        << std::setprecision(2)
-       << xpos0_ << " " 
+       << xpos0_ << " "
        << ypos0_ << "\n"
        << nLogs << "\n"
-       << "Time  UNK lin" 
+       << "Time  UNK lin"
        << std::endl;
 
   for (int i =0 ; i < 3 ; i++) {
@@ -647,7 +647,7 @@ WellData::writeRMSWell(void)
          << std::setprecision(5)
          << std::setw(7) << (alpha_[i]==RMISSING                       ? WELLMISSING : alpha_[i])                       << " "
          << std::setw(7) << (alpha_background_resolution_[i]==RMISSING ? WELLMISSING : alpha_background_resolution_[i]) << " "
-         << std::setw(7) << (alpha_seismic_resolution_[i]==RMISSING    ? WELLMISSING : alpha_seismic_resolution_[i])    << " " 
+         << std::setw(7) << (alpha_seismic_resolution_[i]==RMISSING    ? WELLMISSING : alpha_seismic_resolution_[i])    << " "
          << std::setw(7) << (beta_[i]==RMISSING                        ? WELLMISSING : beta_[i])                        << " "
          << std::setw(7) << (beta_background_resolution_[i]==RMISSING  ? WELLMISSING : beta_background_resolution_[i])  << " "
          << std::setw(7) << (beta_seismic_resolution_[i]==RMISSING     ? WELLMISSING : beta_seismic_resolution_[i])     << " "
@@ -656,7 +656,7 @@ WellData::writeRMSWell(void)
          << std::setw(7) << (rho_seismic_resolution_[i]==RMISSING      ? WELLMISSING : rho_seismic_resolution_[i])      << " ";
 
       if (nFacies_ > 0)
-        file << std::setw(3) << (facies_[i]==IMISSING ? static_cast<int>(WELLMISSING) : facies_[i]); 
+        file << std::setw(3) << (facies_[i]==IMISSING ? static_cast<int>(WELLMISSING) : facies_[i]);
 
     file << "\n";
   }
@@ -720,14 +720,14 @@ WellData::writeNorsarWell()
   mainFile << "TWT     s\n";
   mainFile << "UTMX    m\n";
   mainFile << "UTMY    m\n\n";
-  
+
   std::string logBaseName = IO::PrefixWells() + wellname + IO::SuffixNorsarLog();
   std::string logFileName = IO::makeFullFileName(IO::PathToWells(), logBaseName);
   std::string onlyName    = NRLib::RemovePath(logFileName);
 
   bool gotFacies = nFacies_ > 0;
 
-  int nLogs = 3*3;   // {Vp, Vs, Rho} x {raw, BgHz, seisHz} 
+  int nLogs = 3*3;   // {Vp, Vs, Rho} x {raw, BgHz, seisHz}
   if (gotFacies)
     nLogs += 1;
 
@@ -756,7 +756,7 @@ WellData::writeNorsarWell()
   if (gotFacies)
     mainFile << "FACIES no_unit\n";
   mainFile.close();
-  
+
 
   //Write the two other files.
   std::string baseTrackName = IO::PrefixWells() + wellname + IO::SuffixNorsarTrack();
@@ -767,14 +767,14 @@ WellData::writeNorsarWell()
             << std::fixed
             << std::setprecision(2)
             << "[NORSAR Well Track]\n";
-    
+
   //Note: logFileName created above, needed in mainFile.
   std::ofstream logFile;
   NRLib::OpenWrite(logFile, logFileName);
   logFile << "[NORSAR Well Log]\n";
 
   for(int i = 0;i<nd_;i++) {
-    trackFile << std::setw(7) << md[i] << " " << std::setw(7) << zpos_[i] 
+    trackFile << std::setw(7) << md[i] << " " << std::setw(7) << zpos_[i]
               << " " << std::setw(10)<< xpos_[i] << " " << std::setw(10)<< ypos_[i] << "\n";
 
     logFile   << std::right << std::fixed << std::setprecision(2)
@@ -805,8 +805,8 @@ int WellData::checkError(std::string & errText)
     return(0);
   else
   {
-    errText = errTxt_; 
-    return(error_); 
+    errText = errTxt_;
+    return(error_);
   }
 }
 
@@ -850,7 +850,7 @@ int WellData::checkSimbox(Simbox * simbox)
 
 //----------------------------------------------------------------------------
 bool
-WellData::removeDuplicateLogEntries(const Simbox * simbox, int & nMerges) 
+WellData::removeDuplicateLogEntries(const Simbox * simbox, int & nMerges)
 {
   bool debug = false;
   bool monotonous = true; //Check that well does not move unreasonably much upwards.
@@ -858,13 +858,13 @@ WellData::removeDuplicateLogEntries(const Simbox * simbox, int & nMerges)
 
   float minMergeDist = modelSettings_->getMaxMergeDist();
 
-  double * xpos_resampled   = new double[nd_];                        
-  double * ypos_resampled   = new double[nd_];                        
+  double * xpos_resampled   = new double[nd_];
+  double * ypos_resampled   = new double[nd_];
   double * zpos_resampled   = new double[nd_];   // time step
-  float  * alpha_resampled  = new float[nd_]; 
+  float  * alpha_resampled  = new float[nd_];
   float  * beta_resampled   = new float[nd_];
   float  * rho_resampled    = new float[nd_];
-  int    * facies_resampled = new int[nd_];      // Always included (for convenience) 
+  int    * facies_resampled = new int[nd_];      // Always included (for convenience)
 
   int ii = 0;
   int istart = 0;                                // First element in merge
@@ -875,9 +875,9 @@ WellData::removeDuplicateLogEntries(const Simbox * simbox, int & nMerges)
       iend = istart;
     else
     {
-      iend = istart + 1;                         // Start looking one element ahead 
+      iend = istart + 1;                         // Start looking one element ahead
       while (zpos_[iend] - zpos_[istart] < minMergeDist && iend < nd_ - 1) {
-        iend++; 
+        iend++;
         if(monotonous == true && zpos_[iend] - zpos_[istart] < maxUpwardDist)
           monotonous = false;
       }
@@ -899,15 +899,15 @@ WellData::removeDuplicateLogEntries(const Simbox * simbox, int & nMerges)
 
     if (printToScreen)
       LogKit::LogFormatted(LogKit::Low,"\n");
-    
+
     istart = iend + 1;
     ii++;
-  }    
+  }
 
   nMerges = 0;
   if (ii != nd_)
   {
-    nMerges = nd_-ii; 
+    nMerges = nd_-ii;
     LogKit::LogFormatted(LogKit::Low,"   Duplicate log entries merged with neighbour : %d\n",nMerges);
     nd_ = ii;
   }
@@ -920,30 +920,30 @@ WellData::removeDuplicateLogEntries(const Simbox * simbox, int & nMerges)
   delete [] rho_;
   delete [] facies_;
 
-  xpos_   = xpos_resampled;   // Make original logs point to resampled logs. 
-  ypos_   = ypos_resampled;   
-  zpos_   = zpos_resampled; 
+  xpos_   = xpos_resampled;   // Make original logs point to resampled logs.
+  ypos_   = ypos_resampled;
+  zpos_   = zpos_resampled;
   alpha_  = alpha_resampled;
-  beta_   = beta_resampled; 
-  rho_    = rho_resampled; 
+  beta_   = beta_resampled;
+  rho_    = rho_resampled;
   facies_ = facies_resampled;
   return(monotonous);
 }
 
 //----------------------------------------------------------------------------
 void
-WellData::mergeCells(const std::string & name, double * pos_resampled, double * pos, 
-                     int ii, int istart, int iend, bool printToScreen) 
+WellData::mergeCells(const std::string & name, double * pos_resampled, double * pos,
+                     int ii, int istart, int iend, bool printToScreen)
 {
   int nSample = 0;
   pos_resampled[ii] = 0.0f;
-  
+
   for (int i = istart ; i < iend + 1 ; i++)
   {
     if (pos[i] != RMISSING)
     {
       pos_resampled[ii] += pos[i];
-      nSample++; 
+      nSample++;
       if (printToScreen)
         LogKit::LogFormatted(LogKit::Low,"%s     Old:%d   pos = %.3f\n",name.c_str(),i,pos[i]);
     }
@@ -958,18 +958,18 @@ WellData::mergeCells(const std::string & name, double * pos_resampled, double * 
 
 //----------------------------------------------------------------------------
 void
-WellData::mergeCells(const std::string & name, float * log_resampled, float * log, int ii, 
-                     int istart, int iend, bool printToScreen) 
+WellData::mergeCells(const std::string & name, float * log_resampled, float * log, int ii,
+                     int istart, int iend, bool printToScreen)
 {
   int nSample = 0;
   log_resampled[ii] = 0.0f;
-  
+
   for (int i = istart ; i < iend + 1 ; i++)
   {
     if (log[i] != RMISSING)
     {
       log_resampled[ii] += log[i];
-      nSample++; 
+      nSample++;
       if (printToScreen)
         LogKit::LogFormatted(LogKit::Low,"%s     Old:%d   log = %.3f\n",name.c_str(),i,log[i]);
     }
@@ -985,8 +985,8 @@ WellData::mergeCells(const std::string & name, float * log_resampled, float * lo
 //---------------------------------------------------------------------------
 
 void
-WellData::mergeCellsDiscrete(const std::string & name, int * log_resampled, int * log, int ii, 
-                     int istart, int iend, bool printToScreen) 
+WellData::mergeCellsDiscrete(const std::string & name, int * log_resampled, int * log, int ii,
+                     int istart, int iend, bool printToScreen)
 {
   int nSample = 0;
   for (int i = istart ; i < iend + 1 ; i++)
@@ -994,7 +994,7 @@ WellData::mergeCellsDiscrete(const std::string & name, int * log_resampled, int 
     if (log[i] != RMISSING)
     {
       //log_resampled[ii] += log[i];
-      nSample++; 
+      nSample++;
       if (printToScreen)
         LogKit::LogFormatted(LogKit::Low,"%s     Old:%d   log = %d\n",name.c_str(),i,log[i]);
     }
@@ -1021,7 +1021,7 @@ WellData::setWrongLogEntriesUndefined(int & count_alpha, int & count_beta, int &
   float beta_min  = modelSettings_->getBetaMin();
   float beta_max  = modelSettings_->getBetaMax();
   float rho_min   = modelSettings_->getRhoMin();
-  float rho_max   = modelSettings_->getRhoMax();  
+  float rho_max   = modelSettings_->getRhoMax();
 
   count_alpha = 0;
   count_beta  = 0;
@@ -1029,23 +1029,23 @@ WellData::setWrongLogEntriesUndefined(int & count_alpha, int & count_beta, int &
 
   for (int i = 0 ; i < nd_ ; i++)
   {
-    if (alpha_[i] != RMISSING && (alpha_[i] < alpha_min  || alpha_[i] > alpha_max)) 
+    if (alpha_[i] != RMISSING && (alpha_[i] < alpha_min  || alpha_[i] > alpha_max))
     {
-      if (debug) 
+      if (debug)
         LogKit::LogFormatted(LogKit::Low,"   Set undefined:   time = %.2f   Vp = %.2f\n",zpos_[i],alpha_[i]);
-      alpha_[i] = RMISSING; 
+      alpha_[i] = RMISSING;
       count_alpha++;
     }
     if (beta_[i] != RMISSING && (beta_[i] < beta_min  || beta_[i] > beta_max))
     {
-      if (debug) 
+      if (debug)
         LogKit::LogFormatted(LogKit::Low,"   Set undefined:   time = %.2f   Vs = %.2f\n",zpos_[i],beta_[i]);
       beta_[i] = RMISSING;
       count_beta++;
     }
     if (rho_[i] != RMISSING && (rho_[i] < rho_min || rho_[i] > rho_max))
     {
-      if (debug) 
+      if (debug)
         LogKit::LogFormatted(LogKit::Low,"   Set undefined:   time = %.2f   Rho = %.2f\n",zpos_[i],rho_[i]);
       rho_[i] = RMISSING;
       count_rho++;
@@ -1059,18 +1059,18 @@ WellData::setWrongLogEntriesUndefined(int & count_alpha, int & count_beta, int &
 
 //----------------------------------------------------------------------------
 void
-WellData::filterLogs(void) 
+WellData::filterLogs(void)
 {
   float maxHz_background = modelSettings_->getMaxHzBackground();
   float maxHz_seismic    = modelSettings_->getMaxHzSeismic();
 
-  float  * alpha_interpolated = new float[nd_]; 
-  float  * beta_interpolated = new float[nd_]; 
-  float  * rho_interpolated = new float[nd_]; 
+  float  * alpha_interpolated = new float[nd_];
+  float  * beta_interpolated = new float[nd_];
+  float  * rho_interpolated = new float[nd_];
 
-  float  * alpha_resampled = new float[nd_]; 
-  float  * beta_resampled = new float[nd_]; 
-  float  * rho_resampled = new float[nd_]; 
+  float  * alpha_resampled = new float[nd_];
+  float  * beta_resampled = new float[nd_];
+  float  * rho_resampled = new float[nd_];
 
   float  * alpha_filtered = new float[nd_];
   float  * beta_filtered = new float[nd_];
@@ -1079,13 +1079,13 @@ WellData::filterLogs(void)
   double * time_resampled = new double[nd_];
   double   dt;
 
-  alpha_background_resolution_ = new float[nd_]; 
-  beta_background_resolution_ = new float[nd_]; 
-  rho_background_resolution_ = new float[nd_]; 
+  alpha_background_resolution_ = new float[nd_];
+  beta_background_resolution_ = new float[nd_];
+  rho_background_resolution_ = new float[nd_];
 
-  alpha_seismic_resolution_ = new float[nd_]; 
-  beta_seismic_resolution_ = new float[nd_]; 
-  rho_seismic_resolution_ = new float[nd_]; 
+  alpha_seismic_resolution_ = new float[nd_];
+  beta_seismic_resolution_ = new float[nd_];
+  rho_seismic_resolution_ = new float[nd_];
 
   //
   // Time
@@ -1147,13 +1147,13 @@ WellData::filterLogs(void)
   }
   delete [] alpha_interpolated;
   delete [] beta_interpolated;
-  delete [] rho_interpolated;   
+  delete [] rho_interpolated;
   delete [] alpha_resampled;
   delete [] beta_resampled;
-  delete [] rho_resampled;   
+  delete [] rho_resampled;
   delete [] alpha_filtered;
   delete [] beta_filtered;
-  delete [] rho_filtered;   
+  delete [] rho_filtered;
   delete [] time_resampled;
 
 }
@@ -1161,42 +1161,42 @@ WellData::filterLogs(void)
 //----------------------------------------------------------------------------
 bool
 WellData::resampleTime(double * time_resampled,
-                       int      nd, 
-                       double & dt) 
+                       int      nd,
+                       double & dt)
 {
   //Only resample if monotonous increasing in time.
   double time_begin = zpos_[0];
   double time_end   = zpos_[nd - 1];
   bool   monotonous = true;
-  for (int i = 1 ; (i < nd && monotonous == true); i++) 
+  for (int i = 1 ; (i < nd && monotonous == true); i++)
     if(zpos_[i] < zpos_[i-1])
       monotonous = false;
-  
+
   if(monotonous == false)
     return(false);
 
   //
   // Make new time scale with constant sampling density
   //
-  
+
   if (time_begin != RMISSING && time_end != RMISSING)
   {
     dt = (time_end - time_begin)/(nd - 1);            // average sampling density
-    for (int i = 0 ; i < nd ; i++) 
-      time_resampled[i] = time_begin + i*dt;          
+    for (int i = 0 ; i < nd ; i++)
+      time_resampled[i] = time_begin + i*dt;
   }
-  else 
+  else
   {
     LogKit::LogFormatted(LogKit::Warning,"WARNING: First or last time sample is undefined. Cannot estimate average sampling density.\n");
     LogKit::LogFormatted(LogKit::Warning,"         time[first] = %12.2f\n",time_begin);
     LogKit::LogFormatted(LogKit::Warning,"         time[last]  = %12.2f\n",time_end);
     return(false);
   }
-  
+
   return(true);
 
   //printf("i time[i] dt  time_resampled[i] dt   %d  %7.3f         %7.3f\n",0,time[0],time_resampled[0]);
-  //for (unsigned int i = 1 ; i < nd ; i++) 
+  //for (unsigned int i = 1 ; i < nd ; i++)
   //{
   //  printf("i time[i] dt  time_resampled[i] dt   %d  %7.3f %.3f   %7.3f %.3f\n",i,time[i],time[i]-time[i-1],time_resampled[i],dt);
   //}
@@ -1204,18 +1204,18 @@ WellData::resampleTime(double * time_resampled,
 
 //----------------------------------------------------------------------------
 void
-WellData::resampleLog(float        * log_resampled, 
-                      const float  * log, 
-                      const double * time, 
-                      const double * time_resampled, 
-                      int            nd, 
-                      double         dt) 
+WellData::resampleLog(float        * log_resampled,
+                      const float  * log,
+                      const double * time,
+                      const double * time_resampled,
+                      int            nd,
+                      double         dt)
 {
   bool resample_log = true;
 
-  if (!resample_log) 
+  if (!resample_log)
   {
-    for (int i = 0 ; i < nd ; i++) 
+    for (int i = 0 ; i < nd ; i++)
     {
       log_resampled[i] = log[i];
     }
@@ -1224,7 +1224,7 @@ WellData::resampleLog(float        * log_resampled,
   //
   // Initialise as undefined
   //
-  for (int i = 0 ; i < nd ; i++) 
+  for (int i = 0 ; i < nd ; i++)
   {
     log_resampled[i] = RMISSING;
   }
@@ -1244,7 +1244,7 @@ WellData::resampleLog(float        * log_resampled,
   while (time[j] < time_resampled[1] - 0.5*dt) // Find starting position
     j++;
 
-  for (int i = 1 ; i < nd - 1 ; i++)  // End points are already set 
+  for (int i = 1 ; i < nd - 1 ; i++)  // End points are already set
   {
     // Start gathering values
     float        value = 0.0f;
@@ -1261,11 +1261,11 @@ WellData::resampleLog(float        * log_resampled,
       }
       j++;
     }
-    if (count > 0) 
+    if (count > 0)
       log_resampled[i] = value/count;
   }
 
-  //for (unsigned int i = 0 ; i < nd ; i++) 
+  //for (unsigned int i = 0 ; i < nd ; i++)
   //{
   //  printf("i log[i] log_resampled[i]    %d  %7.3f   %7.3f\n",i,log[i],log_resampled[i]);
   //}
@@ -1273,32 +1273,32 @@ WellData::resampleLog(float        * log_resampled,
 
 //----------------------------------------------------------------------------
 void
-WellData::interpolateLog(float * log_interpolated, const float *log_resampled, int nd) 
+WellData::interpolateLog(float * log_interpolated, const float *log_resampled, int nd)
 {
   int i;
   for (i = 0 ; i < nd ; i++) {
     log_interpolated[i] = log_resampled[i];
   }
-  
+
   // Skip leading RMISSING
-  
+
   i = 0;
   while (i<nd && log_resampled[i]==RMISSING)
     i++;
 
   // When the log has intermediate RMISSING... use linear interpolation. Skip trailing RMISSING
 
-  while (i<nd) { 
-    if (log_resampled[i]==RMISSING) {                
+  while (i<nd) {
+    if (log_resampled[i]==RMISSING) {
       int last_nonmissing = i - 1;                // last defined value (e.g. ..., 2.31, -99999, -99999, ...)
       while (i<nd && log_resampled[i]==RMISSING)  //                               ^^^^
         i++;
-      if (i<nd) { 
+      if (i<nd) {
         int   first_nonmissing = i;               // first defined value (e.g. ..., -99999, -99999, 2.29, ...)
         int   j0 = last_nonmissing;               //                                                ^^^^
         int   j1 = first_nonmissing;
-        float l0 = log_resampled[j0]; 
-        float l1 = log_resampled[j1]; 
+        float l0 = log_resampled[j0];
+        float l1 = log_resampled[j1];
 
         float a = (l1 - l0)/float(j1 - j0);
 
@@ -1307,7 +1307,7 @@ WellData::interpolateLog(float * log_interpolated, const float *log_resampled, i
         }
       }
     }
-    else 
+    else
       i++;
   }
   //for (int i=0 ; i<nd ; i++) {
@@ -1317,8 +1317,8 @@ WellData::interpolateLog(float * log_interpolated, const float *log_resampled, i
 
 //----------------------------------------------------------------------------
 void
-WellData::applyFilter(float * log_filtered, float *log_interpolated, int n_time_samples, 
-                      double dt_milliseconds, float maxHz) 
+WellData::applyFilter(float * log_filtered, float *log_interpolated, int n_time_samples,
+                      double dt_milliseconds, float maxHz)
 {
   //
   // Extract nonmissing part of log
@@ -1332,7 +1332,7 @@ WellData::applyFilter(float * log_filtered, float *log_interpolated, int n_time_
     i--;
   int last_nonmissing = i;
   int n_time_samples_defined = last_nonmissing - first_nonmissing + 1;
-  
+
   for(i=0 ; i < n_time_samples ; i++) {            // Initialise with RMISSING
     log_filtered[i] = RMISSING;
   }
@@ -1342,13 +1342,13 @@ WellData::applyFilter(float * log_filtered, float *log_interpolated, int n_time_
     //
     // Setup FFT
     //
-    int   nt  = 2*n_time_samples_defined; 
-    int   cnt = nt/2 + 1;                  
-    int   rnt = 2*cnt; 
+    int   nt  = 2*n_time_samples_defined;
+    int   cnt = nt/2 + 1;
+    int   rnt = 2*cnt;
 
     fftw_real*    rAmp = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnt));
     fftw_complex* cAmp = reinterpret_cast<fftw_complex*>(rAmp);
-    
+
     for (i=0 ; i<n_time_samples_defined ; i++) {          // Array to filter is made symmetric
       rAmp[i]      = log_interpolated[first_nonmissing + i];
       rAmp[nt-i-1] = rAmp[i];
@@ -1357,7 +1357,7 @@ WellData::applyFilter(float * log_filtered, float *log_interpolated, int n_time_
     //for (int i=0 ; i<nt ; i++) {
     //  printf("i=%d, log_interpolated[i]=%7.4f\n",i,rAmp[i]);
     //}
-    
+
     //
     // Transform to Fourier domain
     //
@@ -1368,7 +1368,7 @@ WellData::applyFilter(float * log_filtered, float *log_interpolated, int n_time_
     //for (int i=0 ; i<cnt ; i++) {
     //  printf("i=%2d, cAmp.re[i]=%11.4f  cAmp.im[i]=%11.4f\n",i,cAmp[i].re,cAmp[i].im);
     //}
-    
+
     //
     // Filter using Odd's magic vector...
     //
@@ -1386,33 +1386,33 @@ WellData::applyFilter(float * log_filtered, float *log_interpolated, int n_time_
       magic_vector[i] = 1.0;
     }
     for(;i < cnt ; i++) {
-      magic_vector[i] = 0.0; 
+      magic_vector[i] = 0.0;
     }
     for (i=0 ; i<cnt ; i++) {
-      cAmp[i].re *= magic_vector[i];      
+      cAmp[i].re *= magic_vector[i];
       cAmp[i].im *= magic_vector[i];
     }
-    
+
     //for (int i=0 ; i<cnt ; i++) {
     //  printf("i=%2d, cAmp.re[i]=%11.4f  cAmp.im[i]=%11.4f\n",i,cAmp[i].re,cAmp[i].im);
     //}
 
     //
     // Backtransform to time domain
-    //  
+    //
     rfftwnd_plan p2 = rfftwnd_create_plan(1, &nt, FFTW_COMPLEX_TO_REAL, FFTW_ESTIMATE | FFTW_IN_PLACE);
     rfftwnd_one_complex_to_real(p2, cAmp, rAmp);
     fftwnd_destroy_plan(p2);
 
     float scale= float(1.0/nt);
     for(i=0 ; i < rnt ; i++) {
-      rAmp[i] *= scale;  
+      rAmp[i] *= scale;
     }
-    
+
     //
     // Fill log_filtered[]
-    //  
-    for(i=0 ; i < n_time_samples_defined ; i++) { 
+    //
+    for(i=0 ; i < n_time_samples_defined ; i++) {
       log_filtered[first_nonmissing + i] = rAmp[i];      // Fill with values where defined
     }
     delete [] magic_vector;
@@ -1428,11 +1428,11 @@ WellData::applyFilter(float * log_filtered, float *log_interpolated, int n_time_
 
 bool compare(const std::pair<int, float>& i1, const std::pair<int, float>& i2)
 {
-  return (i1.second < i2.second); 
+  return (i1.second < i2.second);
 }
 
 //----------------------------------------------------------------------------
-void 
+void
 WellData::lookForSyntheticVsLog(float & rank_correlation)
 {
   float corr_threshold = modelSettings_->getMaxRankCorr();
@@ -1448,9 +1448,9 @@ WellData::lookForSyntheticVsLog(float & rank_correlation)
   //
   // Store Vp and Vs in sortable structs. Note that we can only use nonmissing values.
   //
-  for (int i = 0 ; i < nd_ ; i++) 
+  for (int i = 0 ; i < nd_ ; i++)
   {
-    if (alpha_[i] != RMISSING && beta_[i] != RMISSING) 
+    if (alpha_[i] != RMISSING && beta_[i] != RMISSING)
     {
       sorted_alpha.push_back(Item(i, alpha_[i]));
       sorted_beta.push_back(Item(i,beta_[i]));
@@ -1461,7 +1461,7 @@ WellData::lookForSyntheticVsLog(float & rank_correlation)
   if (n > 0)
   {
     //
-    // Sort Vp and Vs logs. 
+    // Sort Vp and Vs logs.
     //
     std::sort(sorted_alpha.begin(), sorted_alpha.end(), compare);
     std::sort(sorted_beta.begin(), sorted_beta.end(), compare);
@@ -1472,22 +1472,22 @@ WellData::lookForSyntheticVsLog(float & rank_correlation)
     float mean = float(n)/2.0f; // We start the indexing at 0 rather than 1
     float cov_rank = 0.0;       // Covariance between ranks of alpha and beta (sorted on alpha)
     float var_rank = 0.0;       // Variance in ranks of alpha and beta (which are equal)
-    
-    for (int i = 0 ; i < n ; i++) 
+
+    for (int i = 0 ; i < n ; i++)
     {
       var_rank +=(i - mean)*(i - mean);
-      for (int j = 0 ; j < n ; j++) 
+      for (int j = 0 ; j < n ; j++)
       {
-       
-        if (sorted_beta[j].first == sorted_alpha[i].first) 
+
+        if (sorted_beta[j].first == sorted_alpha[i].first)
         {
           cov_rank += (j - mean)*(i - mean);
-        }  
+        }
       }
     }
     rank_correlation = cov_rank/var_rank; // Skip division by n-1 in both nominator and denominator
-    
-    if (rank_correlation > corr_threshold) 
+
+    if (rank_correlation > corr_threshold)
     {
       if(realVsLog_ == ModelSettings::NOTSET) {
         LogKit::LogFormatted(LogKit::Low,"   Vp-Vs rank correlation is %5.3f. Treating Vs log as synthetic.\n",rank_correlation);
@@ -1515,20 +1515,20 @@ WellData::lookForSyntheticVsLog(float & rank_correlation)
       }
     }
   }
-  else 
+  else
   {
     LogKit::LogFormatted(LogKit::Low,"   Cannot calculate Vp-Vs rank correlation. One or both logs are empty.\n");
   }
 
-  bool useFilter  = modelSettings_->getUseFilterForFaciesProb(); 
-  bool useVpVsRho = modelSettings_->getNoVsFaciesProb() == false; 
+  bool useFilter  = modelSettings_->getUseFilterForFaciesProb();
+  bool useVpVsRho = modelSettings_->getNoVsFaciesProb() == false;
 
   if(useFilter && useVpVsRho && realVsLog_ == ModelSettings::NO && useForFaciesProbabilities_ == ModelSettings::NOTSET)
     useForFaciesProbabilities_ = ModelSettings::NO;
 }
 
 //----------------------------------------------------------------------------
-void 
+void
 WellData::calculateDeviation(float  & devAngle,
                              Simbox * timeSimbox)
 {
@@ -1545,10 +1545,10 @@ WellData::calculateDeviation(float  & devAngle,
   for(i=0 ; i < nd_ ; i++)
   {
     if(timeSimbox->isInside(xpos_[i], ypos_[i]))
-    { 
+    {
       if (zpos_[i] > timeSimbox->getTop(xpos_[i], ypos_[i]))
       {
-        iFirst = i; 
+        iFirst = i;
         break;
       }
     }
@@ -1559,7 +1559,7 @@ WellData::calculateDeviation(float  & devAngle,
   int iLast = iFirst;
   for(i = iFirst + 1 ; i < nd_ ; i++)
   {
-    if(timeSimbox->isInside(xpos_[i], ypos_[i])) 
+    if(timeSimbox->isInside(xpos_[i], ypos_[i]))
     {
       if (zpos_[i] > timeSimbox->getBot(xpos_[i], ypos_[i]))
         break;
@@ -1571,7 +1571,7 @@ WellData::calculateDeviation(float  & devAngle,
   double x0 = xpos_[iFirst];
   double y0 = ypos_[iFirst];
   double z0 = zpos_[iFirst];
-  for (int i = iFirst+1 ; i < iLast+1 ; i++) 
+  for (int i = iFirst+1 ; i < iLast+1 ; i++)
   {
     double x1 = xpos_[i];
     double y1 = ypos_[i];
@@ -1580,7 +1580,7 @@ WellData::calculateDeviation(float  & devAngle,
     if (dz > max_dz)
     {
       float deviation = static_cast<float>(sqrt((x1 - x0)*(x1 - x0) + (y1 - y0)*(y1 - y0))/(z1 - z0));
-      if (deviation > max_deviation) 
+      if (deviation > max_deviation)
       {
         max_deviation = deviation;
       }
@@ -1589,10 +1589,10 @@ WellData::calculateDeviation(float  & devAngle,
   devAngle = static_cast<float>(atan(max_deviation)*180.0/NRLib::Pi);
   LogKit::LogFormatted(LogKit::Low,"   Maximum local deviation is %.1f degrees.",devAngle);
 
-  if (max_deviation > thr_deviation) 
+  if (max_deviation > thr_deviation)
   {
-    if(useForWaveletEstimation_ == ModelSettings::NOTSET)   
-      useForWaveletEstimation_ = ModelSettings::NO;    
+    if(useForWaveletEstimation_ == ModelSettings::NOTSET)
+      useForWaveletEstimation_ = ModelSettings::NO;
     isDeviated_ = true;
     LogKit::LogFormatted(LogKit::Low," Well is treated as deviated.\n");
   }
@@ -1604,7 +1604,7 @@ WellData::calculateDeviation(float  & devAngle,
 }
 
 //----------------------------------------------------------------------------
-void 
+void
 WellData::countFacies(Simbox *simbox, int * faciesCount)
 {
   for (int i=0 ; i < nFacies_ ; i++)
@@ -1660,7 +1660,7 @@ void WellData::moveWell(Simbox * timeSimbox, double deltaX, double deltaY, float
 
   int    i;
   double deltaZ;
-  double topOld, topNew; 
+  double topOld, topNew;
 
   topOld = timeSimbox->getTop(xpos_[0], ypos_[0]);
 
@@ -1673,7 +1673,7 @@ void WellData::moveWell(Simbox * timeSimbox, double deltaX, double deltaY, float
   topNew = timeSimbox->getTop(xpos_[0], ypos_[0]);
 
   deltaZ = topNew - topOld + kMove;
-  
+
   for(i=0; i<nd_; i++)
     zpos_[i] = zpos_[i]+deltaZ;
 

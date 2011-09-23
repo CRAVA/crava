@@ -8,10 +8,10 @@ class SystemCall
 public:
   static const std::string  getHostName(void);
   static const std::string  getUserName(void);
-  static const std::string  getCurrentTime(void); 
+  static const std::string  getCurrentTime(void);
 
   static const std::string  getTime(void) { return __TIME__ ; }
-  static const std::string  getDate(void) { return __DATE__  ;} 
+  static const std::string  getDate(void) { return __DATE__  ;}
 };
 #endif
 

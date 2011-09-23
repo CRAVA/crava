@@ -1,7 +1,7 @@
 #ifndef WAVELET3D_H
 #define WAVELET3D_H
 
-#include "fft/include/fftw.h"
+#include "fftw.h"
 
 #include "nrlib/surface/regularsurfacerotated.hpp"
 
@@ -28,33 +28,33 @@ public:
             int                                          angle_index,
             int                                        & errCode,
             std::string                                & errText);
-  
-  Wavelet3D(const std::string            & fileName, 
-            int                            fileFormat, 
-            ModelSettings                * modelSettings, 
+
+  Wavelet3D(const std::string            & fileName,
+            int                            fileFormat,
+            ModelSettings                * modelSettings,
             float                        * reflCoef,
             float                          theta,
-            int                          & errCode, 
+            int                          & errCode,
             std::string                  & errText,
             const std::string            & filterFile);
 
   Wavelet3D(Wavelet *                      wavelet);
 
-  virtual ~Wavelet3D(); 
+  virtual ~Wavelet3D();
 
   WaveletFilter  getFilter() const {return filter_;}
   static void setGradientMaps( NRLib::Grid2D<float> gradX , NRLib::Grid2D<float> gradY ){gradX_=gradX; gradY_=gradY;}
-  
+
   // Methods that are virtual in Wavelet
-//  float         calculateSNRatioAndLocalWavelet(Simbox        * /*simbox*/, 
-//                                                FFTGrid       * /*seisCube*/, 
-//                                                WellData     ** /*wells*/, 
+//  float         calculateSNRatioAndLocalWavelet(Simbox        * /*simbox*/,
+//                                                FFTGrid       * /*seisCube*/,
+//                                                WellData     ** /*wells*/,
 //                                                ModelSettings * /*modelSettings*/,
-//                                                std::string   & errText, 
-//                                                int           & error, 
+//                                                std::string   & errText,
+//                                                int           & error,
 //                                                int             /*number*/,
-//                                                Grid2D       *& /*noiseScaled*/, 
-//                                                Grid2D       *& /*shift*/, 
+//                                                Grid2D       *& /*noiseScaled*/,
+//                                                Grid2D       *& /*shift*/,
 //                                                Grid2D       *& /*gain*/);
 Wavelet1D*  getWavelet1DForErrorNorm();
 Wavelet1D * getLocalWavelet1D( int i, int j);
@@ -66,17 +66,17 @@ void        dipAdjustWavelet(Wavelet1D* Wavelet, double phi, double psi);
 float      GetLocalDepthGradientX(int i, int j){ return gradX_(i,j);}
 float      GetLocalDepthGradientY(int i, int j){ return gradY_(i,j);}
 
-  float         calculateSNRatio(Simbox                                   * simbox, 
-                                 FFTGrid                                  * seisCube, 
-                                 WellData                                ** wells, 
+  float         calculateSNRatio(Simbox                                   * simbox,
+                                 FFTGrid                                  * seisCube,
+                                 WellData                                ** wells,
                                  ModelSettings                            * modelSettings,
-                                 std::string                              & errText, 
+                                 std::string                              & errText,
                                  int                                      & error,
                                  const NRLib::Grid2D<float>               & refTimeGradX,
                                  const NRLib::Grid2D<float>               & refTimeGradY,
                                  const std::vector<std::vector<double> >  & tGradX,
                                  const std::vector<std::vector<double> >  & tGradY,
-                                 int                                        number);      
+                                 int                                        number);
 
 private:
   void          findLayersWithData(const std::vector<Surface *> & estimInterval,
@@ -86,13 +86,13 @@ private:
                                    const std::vector<float>     & bz,
                                    std::vector<bool>            & hasWellData) const;
 
-  double         findPhi(float                                    a, 
+  double         findPhi(float                                    a,
                          float                                    b)           const;
 
   double         findPsi(float                                    r)           const;
 
   fftw_complex   findWLvalue(float                                omega)       const;
-  
+
   float          calculateWellWeight(int                                      nWl,
                                      int                                      nPoints,
                                      const std::vector<std::vector<float> > & gMat,
@@ -121,7 +121,7 @@ private:
                                     std::vector<float>         & at0,
                                     std::vector<float>         & bt0) const;
 
-  
+
 
   std::vector<fftw_real> calculateWellWavelet(const std::vector<std::vector<float> > & gMat,
                                               const std::vector<float>               & dVec,
@@ -129,8 +129,8 @@ private:
                                               int                                      nhalfWl,
                                               int                                      nPoints) const;
 
-  void           printMatToFile(const std::string                       & fileName, 
-                                const std::vector<std::vector<float> >  & mat, 
+  void           printMatToFile(const std::string                       & fileName,
+                                const std::vector<std::vector<float> >  & mat,
                                 int                                       n,
                                 int                                       m) const;
 

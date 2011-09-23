@@ -20,7 +20,7 @@ public:
   InputFiles    * getInputFiles(void)     const { return inputFiles_    ;}
   bool            getParsingFailed(void)  const { return failed_        ;}
 
-private:  
+private:
   bool parseCrava(TiXmlNode * node, std::string & errTxt);
 
   bool parseActions(TiXmlNode * node, std::string & errTxt);
@@ -50,7 +50,7 @@ private:
   bool   parseBackground(TiXmlNode * node, std::string & errTxt);
   bool   parseFaciesProbabilities(TiXmlNode * node, std::string & errTxt);
   bool   parsePriorFaciesProbabilities(TiXmlNode * node, std::string & errTxt);
-  bool   parseFaciesEstimationInterval(TiXmlNode * node, std::string & errTxt);  
+  bool   parseFaciesEstimationInterval(TiXmlNode * node, std::string & errTxt);
 
   bool parseProjectSettings(TiXmlNode * node, std::string & errTxt);
   bool   parseOutputVolume(TiXmlNode * node, std::string & errTxt);
@@ -108,16 +108,16 @@ private:
 
   ModelSettings  * modelSettings_;
   InputFiles     * inputFiles_;
-  
-  bool             failed_;                // Indicates whether errors ocuured during construction. 
+
+  bool             failed_;                // Indicates whether errors ocuured during construction.
 };
 
 template <typename T>
 bool
-XmlModelFile::parseValue(TiXmlNode         * node, 
-                         const std::string & keyword, 
-                         T                 & value, 
-                         std::string       & errTxt, 
+XmlModelFile::parseValue(TiXmlNode         * node,
+                         const std::string & keyword,
+                         T                 & value,
+                         std::string       & errTxt,
                          bool                allowDuplicates)
 {
   setMissing(value);

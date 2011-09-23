@@ -1,10 +1,10 @@
 #ifndef FACIESPROB_H
 #define FACIESPROB_H
 
-#include "fft/include/fftw.h"
-#include "fft/include/rfftw.h"
-#include "fft/include/fftw-int.h"
-#include "fft/include/f77_func.h"
+#include "fftw.h"
+#include "rfftw.h"
+#include "fftw-int.h"
+#include "f77_func.h"
 
 class Corr;
 class FFTGrid;
@@ -25,7 +25,7 @@ public:
              FFTGrid                      * beta,
              FFTGrid                      * rho,
              int                            nFac,
-             float                          p_undef, 
+             float                          p_undef,
              const float                  * priorFacies,
              FFTGrid                     ** priorFaciesCubes,
              const std::vector<double **> & sigmaEOrig,
@@ -47,30 +47,30 @@ public:
 
   FFTGrid              * getFaciesProbUndef(){return faciesProbUndef_;};
 
-  void                   calculateConditionalFaciesProb(WellData                      ** wells, 
-                                                        int                              nwells, 
+  void                   calculateConditionalFaciesProb(WellData                      ** wells,
+                                                        int                              nwells,
                                                         const std::vector<Surface *>   & faciesEstimInterval,
                                                         const std::vector<std::string> & faciesNames,
                                                         const double                     dz);
 
   void                   calculateFaciesProbGeomodel(const float *                  priorFacies,
                                                      FFTGrid                    ** priorFaciesCubes);
-  
-  std::vector<double>    calculateChiSquareTest(WellData                    ** wells, 
-                                                int                            nWells, 
+
+  std::vector<double>    calculateChiSquareTest(WellData                    ** wells,
+                                                int                            nWells,
                                                 const std::vector<Surface *> & faciesEstimInterval);
 
-  void                   calculateChiSquareAlternativeTest(WellData                    ** wells, 
-                                                           int                            nWells, 
+  void                   calculateChiSquareAlternativeTest(WellData                    ** wells,
+                                                           int                            nWells,
                                                            const std::vector<Surface *> & faciesEstimInterval,
                                                            const ModelSettings          * modelSettings);
 
-  FFTGrid *              createLHCube(FFTGrid     * likelihood, 
-                                      int           fac, 
+  FFTGrid *              createLHCube(FFTGrid     * likelihood,
+                                      int           fac,
                                       const float * priorFacies,
                                       FFTGrid    ** priorFaciesCubes);
 
-  void writeBWFaciesProb(WellData ** wells, 
+  void writeBWFaciesProb(WellData ** wells,
                          int         nWells);
 
 private:
@@ -78,13 +78,13 @@ private:
   FFTGrid      ** faciesProb_;
   FFTGrid      *  faciesProbUndef_;
 
-  void                   makeFaciesProb(int                            nfac, 
-                                        FFTGrid                      * postAlpha, 
-                                        FFTGrid                      * postBeta, 
+  void                   makeFaciesProb(int                            nfac,
+                                        FFTGrid                      * postAlpha,
+                                        FFTGrid                      * postBeta,
                                         FFTGrid                      * postRho,
                                         const std::vector<double **> & sigmaEOrig,
                                         bool                           useFilter,
-                                        const WellData              ** wells, 
+                                        const WellData              ** wells,
                                         int                            nWells,
                                         const std::vector<Surface *> & faciesEstimInterval,
                                         const double                   dz,
@@ -104,17 +104,17 @@ private:
                                                        const std::vector<int>   & facies,
                                                        const Simbox             * volume);
 
-  void                   makeFaciesDens(int nfac, 
+  void                   makeFaciesDens(int nfac,
                                         const std::vector<double **> & sigmaEOrig,
                                         bool                           useFilter,
-                                        bool                           noVs,  
+                                        bool                           noVs,
                                         const std::vector<float>     & alphaFiltered,
                                         const std::vector<float>     & betaFiltered,
                                         const std::vector<float>     & rhoFiltered,
                                         const std::vector<int>       & faciesLog,
                                         std::vector<FFTGrid *>       & density,
                                         Simbox                      ** volume,
-                                        int                            index, 
+                                        int                            index,
                                         double                       **G,
                                         Crava                         *cravaResult,
                                         const std::vector<Grid2D *>   & noiseScale);
@@ -130,7 +130,7 @@ private:
                                               std::vector<float>           & betaFiltered,
                                               std::vector<float>           & rhoFiltered,
                                               std::vector<int>             & faciesLog);
-  
+
   void                   calculateVariances(const std::vector<float> & alpha,
                                             const std::vector<float> & beta,
                                             const std::vector<float> & rho,
@@ -139,28 +139,28 @@ private:
                                             float                    & varBeta,
                                             float                    & varRho);
 
-  float                  findDensity(float                                       alpha, 
-                                     float                                       beta, 
-                                     float                                       rho, 
-                                     const std::vector<std::vector<FFTGrid*> > & density, 
+  float                  findDensity(float                                       alpha,
+                                     float                                       beta,
+                                     float                                       rho,
+                                     const std::vector<std::vector<FFTGrid*> > & density,
                                      int                                         facies,
                                      const std::vector<Simbox *>               & volume,
-                                     const std::vector<float>                  & t, 
+                                     const std::vector<float>                  & t,
                                      int                                         nAng);
 
-  void                   resampleAndWriteDensity(const FFTGrid     * density, 
+  void                   resampleAndWriteDensity(const FFTGrid     * density,
                                                  const std::string & fileName,
                                                  const Simbox      * origVol,
-                                                 Simbox            * volume, 
+                                                 Simbox            * volume,
                                                  int                 gridNo,
                                                  bool                writeSurface);
   Simbox *               createExpVol(const Simbox * volume);
 
 
-  void                   calculateFaciesProb(FFTGrid                      * alphagrid, 
-                                             FFTGrid                      * betagrid, 
+  void                   calculateFaciesProb(FFTGrid                      * alphagrid,
+                                             FFTGrid                      * betagrid,
                                              FFTGrid                      * rhogrid,
-                                             const std::vector<std::vector<FFTGrid *> > & density, 
+                                             const std::vector<std::vector<FFTGrid *> > & density,
                                              const std::vector<Simbox *>    volume,
                                              float                          p_undef,
                                              const float                  * priorFacies,

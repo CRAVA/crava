@@ -32,7 +32,7 @@ FaciesProb::FaciesProb(FFTGrid                      * alpha,
                        FFTGrid                      * beta,
                        FFTGrid                      * rho,
                        int                            nFac,
-                       float                          p_undef, 
+                       float                          p_undef,
                        const float                  * priorFacies,
                        FFTGrid                     ** priorFaciesCubes,
                        const std::vector<double **> & sigmaEOrig,
@@ -48,7 +48,7 @@ FaciesProb::FaciesProb(FFTGrid                      * alpha,
                        const ModelSettings *           modelSettings,
                        FFTGrid                       * seismicLH)
 {
-  makeFaciesProb(nFac, alpha, beta, rho, sigmaEOrig, useFilter, wells, nWells, 
+  makeFaciesProb(nFac, alpha, beta, rho, sigmaEOrig, useFilter, wells, nWells,
                  faciesEstimInterval, dz, relative, noVs,
                  p_undef, priorFacies, priorFaciesCubes, cravaResult, noiseScale,
                  modelSettings, seismicLH);
@@ -65,7 +65,7 @@ FaciesProb::~FaciesProb()
 }
 
 std::vector<FFTGrid *>
-FaciesProb::makeFaciesHistAndSetPriorProb(const std::vector<float> & alpha, // 
+FaciesProb::makeFaciesHistAndSetPriorProb(const std::vector<float> & alpha, //
                                           const std::vector<float> & beta,
                                           const std::vector<float> & rho,
                                           const std::vector<int>   & faciesLog,
@@ -96,7 +96,7 @@ FaciesProb::makeFaciesHistAndSetPriorProb(const std::vector<float> & alpha, //
     }
     hist[i]->endAccess();
   }
-  
+
   std::vector<int> nData(nFacies_,0);
 
   int facies;
@@ -113,7 +113,7 @@ FaciesProb::makeFaciesHistAndSetPriorProb(const std::vector<float> & alpha, //
       hist[facies]->endAccess();
     }
   }
- 
+
   for(i=0;i<nFacies_;i++)
   {
     hist[i]->setAccessMode(FFTGrid::READANDWRITE);
@@ -134,8 +134,8 @@ FaciesProb::makeFaciesHistAndSetPriorProb(const std::vector<float> & alpha, //
   return hist;
 }
 
-void       
-FaciesProb::makeFaciesDens(int nfac, 
+void
+FaciesProb::makeFaciesDens(int nfac,
                            const std::vector<double **> & sigmaEOrig,
                            bool                           useFilter,
                            bool                           noVs,
@@ -144,13 +144,13 @@ FaciesProb::makeFaciesDens(int nfac,
                            const std::vector<float>     & rhoFiltered,
                            const std::vector<int>       & faciesLog,
                            std::vector<FFTGrid *>       & density,
-                           Simbox                      ** volume, 
-                           int                            index, 
+                           Simbox                      ** volume,
+                           int                            index,
                            double                       **G,
                            Crava                         *cravaResult,
                            const std::vector<Grid2D *>   & noiseScale)
-{ 
-  //Note: If noVs is true, the beta dimension is mainly dummy. Due to the lookup mechanism that maps 
+{
+  //Note: If noVs is true, the beta dimension is mainly dummy. Due to the lookup mechanism that maps
   //      values outside the denisty table to the edge, any values should do in this dimension.
   //      Still, we prefer to create reasonable values.
   int i,j,k,l;
@@ -220,7 +220,7 @@ FaciesProb::makeFaciesDens(int nfac,
       help1[0][0] = alphaFiltered[i];
       help1[1][0] = betaFiltered[i];
       help1[2][0] = rhoFiltered[i];
-      lib_matr_prod(H,help1,3,3,1,help2);  // 
+      lib_matr_prod(H,help1,3,3,1,help2);  //
       alphaFilteredNew[i] = float(help2[0][0]);
       betaFilteredNew[i] = float(help2[1][0]);
       rhoFilteredNew[i] = float(help2[2][0]);
@@ -327,12 +327,12 @@ FaciesProb::makeFaciesDens(int nfac,
 
   Surface rhoMinSurf(alphaMin, betaMin, alphaMax-alphaMin, betaMax-betaMin, 2, 2, rhoMin);
   //Associate alpha with x, beta with y and rho with z.
-  *volume  = new Simbox(alphaMin, betaMin, rhoMinSurf, alphaMax-alphaMin, betaMax-betaMin, rhoMax-rhoMin, 0, dAlpha, dBeta, dRho); 
+  *volume  = new Simbox(alphaMin, betaMin, rhoMinSurf, alphaMax-alphaMin, betaMax-betaMin, rhoMax-rhoMin, 0, dAlpha, dBeta, dRho);
   density = makeFaciesHistAndSetPriorProb(alphaFilteredNew, betaFilteredNew, rhoFilteredNew, faciesLog, *volume);
 
   int jj,jjj,kk,kkk,ll,lll;
   lll=2;
-  
+
   float sum = 0.0f;
   for(l=0;l<nbinsr;l++)
   {
@@ -412,13 +412,13 @@ FaciesProb::makeFaciesDens(int nfac,
 }
 
 
-void FaciesProb::makeFaciesProb(int                            nfac, 
-                                FFTGrid                      * postAlpha, 
-                                FFTGrid                      * postBeta, 
+void FaciesProb::makeFaciesProb(int                            nfac,
+                                FFTGrid                      * postAlpha,
+                                FFTGrid                      * postBeta,
                                 FFTGrid                      * postRho,
                                 const std::vector<double **> & sigmaEOrig,
                                 bool                           useFilter,
-                                const WellData              ** wells, 
+                                const WellData              ** wells,
                                 int                            nWells,
                                 const std::vector<Surface *> & faciesEstimInterval,
                                 const double                   dz,
@@ -446,7 +446,7 @@ void FaciesProb::makeFaciesProb(int                            nfac,
 
   for(int i = 0;i<densdim;i++)
     volume[i] = NULL;
-  
+
   //int nAng = int(log(float(densdim))/log(2.0));
   int nAng = static_cast<int>(noiseScale.size());
   double **G = new double*[nAng];
@@ -456,14 +456,14 @@ void FaciesProb::makeFaciesProb(int                            nfac,
   cravaResult->computeG(G);
 
   for(int i=0;i<densdim;i++) {
-    makeFaciesDens(nfac, sigmaEOrig, useFilter, noVs, alphaFiltered, betaFiltered, rhoFiltered, 
+    makeFaciesDens(nfac, sigmaEOrig, useFilter, noVs, alphaFiltered, betaFiltered, rhoFiltered,
                    faciesLog, density[i], &volume[i], i, G, cravaResult, noiseScale);
     if(((modelSettings->getOtherOutputFlag() & IO::ROCK_PHYSICS) > 0) && (i == 0 || i == densdim-1)) {
       Simbox * expVol = createExpVol(volume[i]);
       for(int j=0; j<static_cast<int>(density[i].size()); j++) {
         std::string baseName;
         if(densdim > 1) {
-          if(i == 0) 
+          if(i == 0)
             baseName = "Rock_Physics_Min_Noise_";
           else
             baseName = "Rock_Physics_Max_Noise_";
@@ -484,7 +484,7 @@ void FaciesProb::makeFaciesProb(int                            nfac,
 
   calculateFaciesProb(postAlpha, postBeta, postRho, density, volume,
                       p_undef, priorFacies, priorFaciesCubes, noiseScale, seismicLH);
-  
+
   for(int i = 0 ; i < densdim ; i++) {
     for(int j = 0 ; j < static_cast<int>(density[i].size()) ; j++)
       delete density[i][j];
@@ -496,13 +496,13 @@ void FaciesProb::makeFaciesProb(int                            nfac,
   delete [] G;
 }
 
-float FaciesProb::findDensity(float                                       alpha, 
-                              float                                       beta, 
-                              float                                       rho, 
-                              const std::vector<std::vector<FFTGrid*> > & density, 
-                              int                                         facies, 
-                              const std::vector<Simbox *>               & volume, 
-                              const std::vector<float>                  & t, 
+float FaciesProb::findDensity(float                                       alpha,
+                              float                                       beta,
+                              float                                       rho,
+                              const std::vector<std::vector<FFTGrid*> > & density,
+                              int                                         facies,
+                              const std::vector<Simbox *>               & volume,
+                              const std::vector<float>                  & t,
                               int                                         nAng)
 {
   double jFull, kFull, lFull;
@@ -565,7 +565,7 @@ float FaciesProb::findDensity(float                                       alpha,
     wl = static_cast<float>(lFull-l1);
   }
 
-  
+
     density[i][facies]->setAccessMode(FFTGrid::RANDOMACCESS);
     float value1 = std::max<float>(0,density[i][facies]->getRealValue(j1,k1,l1));
     float value2 = std::max<float>(0,density[i][facies]->getRealValue(j1,k1,l2));
@@ -614,7 +614,7 @@ float FaciesProb::findDensity(float                                       alpha,
 
 
 void
-FaciesProb::resampleAndWriteDensity(const FFTGrid     * density, 
+FaciesProb::resampleAndWriteDensity(const FFTGrid     * density,
                                     const std::string & fileName,
                                     const Simbox      * origVol,
                                     Simbox            * volume,
@@ -670,7 +670,7 @@ FaciesProb::resampleAndWriteDensity(const FFTGrid     * density,
 }
 
 
-Simbox * 
+Simbox *
 FaciesProb::createExpVol(const Simbox * volume)
 {
   double minA = exp(volume->getx0());
@@ -687,13 +687,13 @@ FaciesProb::createExpVol(const Simbox * volume)
   double dR = (maxR-minR)/volume->getnz();
 
   Surface rhoMinSurf(minA, minB, maxA-minA, maxB-minB, 2, 2, minR);
-  Simbox  * expVol = new Simbox(minA, minB, rhoMinSurf, maxA-minA, maxB-minB, maxR-minR, 0, dA, dB, dR); 
+  Simbox  * expVol = new Simbox(minA, minB, rhoMinSurf, maxA-minA, maxB-minB, maxR-minR, 0, dA, dB, dR);
   return(expVol);
 }
 
 
-void FaciesProb::calculateConditionalFaciesProb(WellData                      ** wells, 
-                                                int                              nWells, 
+void FaciesProb::calculateConditionalFaciesProb(WellData                      ** wells,
+                                                int                              nWells,
                                                 const std::vector<Surface *>   & faciesEstimInterval,
                                                 const std::vector<std::string> & faciesNames,
                                                 const double                     dz)
@@ -701,14 +701,14 @@ void FaciesProb::calculateConditionalFaciesProb(WellData                      **
   //
   // Get the needed blocked logs
   //
-  BlockedLogs ** bw = new BlockedLogs * [nWells];  
+  BlockedLogs ** bw = new BlockedLogs * [nWells];
   int totBlocks = 0;
   int count = 0;
 
   for (int i = 0 ; i < nWells ; i++)
   {
     if(wells[i]->getUseForFaciesProbabilities())
-    { 
+    {
       bw[count] = wells[i]->getBlockedLogsConstThick();
       totBlocks += bw[count]->getNumberOfBlocks();
       count++;
@@ -719,12 +719,12 @@ void FaciesProb::calculateConditionalFaciesProb(WellData                      **
   //
   // Put all blocked facies logs in one vector
   //
-  int ** BWfacies = new int * [nActiveWells]; 
+  int ** BWfacies = new int * [nActiveWells];
   for (int i = 0 ; i < nActiveWells ; i++)
   {
     const int   nBlocks    = bw[i]->getNumberOfBlocks();
     const int * BWfacies_i = bw[i]->getFacies();
-    BWfacies[i] = new int[nBlocks]; 
+    BWfacies[i] = new int[nBlocks];
 
     if (faciesEstimInterval.size() > 0) {
       const double * xPos  = bw[i]->getXpos();
@@ -748,7 +748,7 @@ void FaciesProb::calculateConditionalFaciesProb(WellData                      **
       }
     }
   }
-   
+
   //
   // Block facies probabilities and put them in one vector
   //
@@ -804,7 +804,7 @@ void FaciesProb::calculateConditionalFaciesProb(WellData                      **
   for (int i = 0 ; i < nActiveWells ; i++)
     delete [] BWfacies[i];
   delete [] BWfacies;
-   
+
   for(int f = 0 ; f < nFacies_ ; f++) {
     for (int i = 0 ; i < nActiveWells ; i++)
       delete [] BWfaciesProb[f][i];
@@ -830,7 +830,7 @@ void FaciesProb::calculateConditionalFaciesProb(WellData                      **
       totProb[f1] = 0.0f;
       for(int f2 = 0 ; f2 < nFacies_ ; f2++)
       {
-        if (numProb[f1][f2][i] > 0) 
+        if (numProb[f1][f2][i] > 0)
           condFaciesProb[f1][f2] = sumProb[f1][f2][i]/numProb[f1][f2][i];
         else
           condFaciesProb[f1][f2] = 0.0f;
@@ -964,10 +964,10 @@ void FaciesProb::checkConditionalProbabilities(float                         ** 
 {
   bool tooSmallDiff = false;
   bool wrongMaximum = false;
-  
+
   std::vector<float> totProb(nFacies); // Automatically initialized to zero
-  
-  for (int f1=0 ; f1 < nFacies ; f1++) { 
+
+  for (int f1=0 ; f1 < nFacies ; f1++) {
     int   indMin  = -IMISSING;
     int   indMax  = -IMISSING;
     float minProb = 1.0;
@@ -986,7 +986,7 @@ void FaciesProb::checkConditionalProbabilities(float                         ** 
     }
 
     float fraction = maxProb/minProb;
-    
+
     if (fraction < 1.05f) {
       tooSmallDiff = true;
       LogKit::LogFormatted(LogKit::Warning,"\nWARNING: For facies \'"+faciesNames[f1]+"\' the difference between smallest and largest probability\n");
@@ -998,7 +998,7 @@ void FaciesProb::checkConditionalProbabilities(float                         ** 
         LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The probability of finding facies \'"+faciesNames[f1]+"\' is largest when the logs\n");
         LogKit::LogFormatted(LogKit::Warning,"         show \'"+faciesNames[indMax]+"\' and not when it shows \'"+faciesNames[f1]+"\'.\n");
       }
-      else { 
+      else {
         LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The probability of finding facies \'"+faciesNames[f1]+"\' is largest when the well log of\n");
         LogKit::LogFormatted(LogKit::Warning,"         well \'"+identifier+"\' shows \'"+faciesNames[indMax]+"\' and not when it shows \'"+faciesNames[f1]+"\'.\n");
       }
@@ -1055,11 +1055,11 @@ void FaciesProb::checkConditionalProbabilities(float                         ** 
   }
 }
 
-void FaciesProb::calculateFaciesProb(FFTGrid                                    * alphagrid, 
-                                     FFTGrid                                    * betagrid, 
+void FaciesProb::calculateFaciesProb(FFTGrid                                    * alphagrid,
+                                     FFTGrid                                    * betagrid,
                                      FFTGrid                                    * rhogrid,
-                                     const std::vector<std::vector<FFTGrid *> > & density, 
-                                     const std::vector<Simbox *>                  volume, 
+                                     const std::vector<std::vector<FFTGrid *> > & density,
+                                     const std::vector<Simbox *>                  volume,
                                      float                                        p_undefined,
                                      const float                                * priorFacies,
                                      FFTGrid                                   ** priorFaciesCubes,
@@ -1070,14 +1070,14 @@ void FaciesProb::calculateFaciesProb(FFTGrid                                    
   int i,j,k,l;
   int nx, ny, nz, rnxp, nyp, nzp, smallrnxp;
   float alpha, beta, rho, sum;
-  
+
   rnxp = alphagrid->getRNxp();
   nyp  = alphagrid->getNyp();
   nzp  = alphagrid->getNzp();
   nx   = alphagrid->getNx();
   ny   = alphagrid->getNy();
   nz   = alphagrid->getNz();
-  faciesProb_ = new FFTGrid*[nFacies_]; 
+  faciesProb_ = new FFTGrid*[nFacies_];
   if(alphagrid->isFile()==1)
     faciesProbUndef_ = new FFTFileGrid(nx, ny, nz, nx, ny, nz);
   else
@@ -1128,14 +1128,14 @@ void FaciesProb::calculateFaciesProb(FFTGrid                                    
           else
           (*tgrid[angle])(ii,jj) = ((*noiseScale[angle])(ii,jj)-minS)/(maxS-minS);
     }
-  
+
   LogKit::LogFormatted(LogKit::Low,"\nBuilding facies probabilities:");
   float monitorSize = std::max(1.0f, static_cast<float>(nzp)*0.02f);
   float nextMonitor = monitorSize;
-  std::cout 
+  std::cout
     << "\n  0%       20%       40%       60%       80%      100%"
     << "\n  |    |    |    |    |    |    |    |    |    |    |  "
-    << "\n  ^"; 
+    << "\n  ^";
 
   float help;
   float dens;
@@ -1150,7 +1150,7 @@ void FaciesProb::calculateFaciesProb(FFTGrid                                    
         beta = betagrid->getNextReal();
         rho = rhogrid->getNextReal();
         if(k<smallrnxp && j<ny && i<nz)
-        {      
+        {
           sum = undefSum;
           for(l=0;l<nFacies_;l++)
           {
@@ -1165,7 +1165,7 @@ void FaciesProb::calculateFaciesProb(FFTGrid                                    
             if(priorFaciesCubes!=NULL)
               value[l] = priorFaciesCubes[l]->getNextReal()*dens;
             else
-              value[l] = priorFacies[l]*dens; 
+              value[l] = priorFacies[l]*dens;
             sum = sum+value[l];
           }
           for(l=0;l<nFacies_;l++)
@@ -1173,11 +1173,11 @@ void FaciesProb::calculateFaciesProb(FFTGrid                                    
             help = value[l]/sum;
             if(k<nx)
             {
-              faciesProb_[l]->setNextReal(help);         
+              faciesProb_[l]->setNextReal(help);
             }
             else
             {
-              faciesProb_[l]->setNextReal(RMISSING);             
+              faciesProb_[l]->setNextReal(RMISSING);
             }
           }
           if(k<nx) {
@@ -1194,7 +1194,7 @@ void FaciesProb::calculateFaciesProb(FFTGrid                                    
       }
     }
     // Log progress
-    if (i+1 >= static_cast<int>(nextMonitor)) { 
+    if (i+1 >= static_cast<int>(nextMonitor)) {
       nextMonitor += monitorSize;
       std::cout << "^";
       fflush(stdout);
@@ -1247,7 +1247,7 @@ void FaciesProb::calculateFaciesProbGeomodel(const float  * priorFacies,
           if(priorFaciesCubes!=NULL)
             value = priorFaciesCubes[l]->getNextReal()*undef+faciesProb_[l]->getNextReal();
           else
-            value = priorFacies[l]*undef+faciesProb_[l]->getNextReal(); 
+            value = priorFacies[l]*undef+faciesProb_[l]->getNextReal();
           if(k<nx)
             faciesProb_[l]->setNextReal(value);
           else
@@ -1330,7 +1330,7 @@ void FaciesProb::setNeededLogsSpatial(const WellData              ** wells,
   for(int w=0;w<nWells;w++) {
     if(wells[w]->getUseForFaciesProbabilities())
       nData += wells[w]->getBlockedLogsOrigThick()->getNumberOfBlocks();
-  }  
+  }
 
   alphaFiltered.resize(nData, RMISSING);
   betaFiltered.resize(nData, RMISSING);
@@ -1341,7 +1341,7 @@ void FaciesProb::setNeededLogsSpatial(const WellData              ** wells,
   for (int w=0 ; w<nWells ; w++)
   {
     if(wells[w]->getUseForFaciesProbabilities())
-    { 
+    {
       BlockedLogs * bw = wells[w]->getBlockedLogsOrigThick();
       int n = bw->getNumberOfBlocks();
 
@@ -1387,16 +1387,16 @@ void FaciesProb::setNeededLogsSpatial(const WellData              ** wells,
             f = IMISSING;
         }
 
-        if (relative == true) 
+        if (relative == true)
         {
           aBg = bw->getAlphaHighCutBackground()[i];
           bBg = bw->getBetaHighCutBackground()[i];
           rBg = bw->getRhoHighCutBackground()[i];
-          
+
           if (a != RMISSING &&  aBg != RMISSING &&
               b != RMISSING &&  bBg != RMISSING &&
               r != RMISSING &&  rBg != RMISSING &&
-              f != IMISSING) 
+              f != IMISSING)
           {
             alphaFiltered[index] = a - aBg;
             betaFiltered[index]  = b - bBg;
@@ -1405,9 +1405,9 @@ void FaciesProb::setNeededLogsSpatial(const WellData              ** wells,
             index++;
           }
         }
-        else 
+        else
         {
-          if (a != RMISSING && b != RMISSING && r != RMISSING && f != IMISSING) 
+          if (a != RMISSING && b != RMISSING && r != RMISSING && f != IMISSING)
           {
             alphaFiltered[index] = a;
             betaFiltered[index]  = b;
@@ -1434,7 +1434,7 @@ void FaciesProb::normalizeCubes(FFTGrid **priorFaciesCubes)
   int   nzp      = priorFaciesCubes[0]->getNzp();
   int   nx       = priorFaciesCubes[0]->getNx();
   int   totZero  = 0;
-  int   large    = 0; 
+  int   large    = 0;
   int   small    = 0;
   int   total    = 0;
   float negative = 0;
@@ -1474,8 +1474,8 @@ void FaciesProb::normalizeCubes(FFTGrid **priorFaciesCubes)
         if (sum>0.0)
         {
           for (l=0; l<nFacies_; l++)
-          { 
-            value[l] = value[l]/sum; 
+          {
+            value[l] = value[l]/sum;
             priorFaciesCubes[l]->setNextReal(value[l]);
           }
         }
@@ -1506,9 +1506,9 @@ void FaciesProb::normalizeCubes(FFTGrid **priorFaciesCubes)
     priorFaciesCubes[i]->endAccess();
 }
 
-std::vector<double> FaciesProb::calculateChiSquareTest(WellData                    ** wells, 
-                                                       int                            nWells, 
-                                                       const std::vector<Surface *> & faciesEstimInterval)                   
+std::vector<double> FaciesProb::calculateChiSquareTest(WellData                    ** wells,
+                                                       int                            nWells,
+                                                       const std::vector<Surface *> & faciesEstimInterval)
 {
   int    i, j, k;
   int    count;
@@ -1552,7 +1552,7 @@ std::vector<double> FaciesProb::calculateChiSquareTest(WellData                 
         break;
       }
     }
-  
+
     //
     // Block facies probabilities and put them in one vector
     //
@@ -1578,9 +1578,9 @@ std::vector<double> FaciesProb::calculateChiSquareTest(WellData                 
         nActualFacies -= 1;
     }
 
-    for (j=0 ; j < nBlocks ; j++) 
+    for (j=0 ; j < nBlocks ; j++)
     {
-      if (faciesEstimInterval.size() > 0) 
+      if (faciesEstimInterval.size() > 0)
       {
         const double zTop  = faciesEstimInterval[0]->GetZ(xPos[j],yPos[j]);
         const double zBase = faciesEstimInterval[1]->GetZ(xPos[j],yPos[j]);
@@ -1600,7 +1600,7 @@ std::vector<double> FaciesProb::calculateChiSquareTest(WellData                 
                   chi_i += std::pow(0-prob[k],2)/prob[k];
               }
             }
-            thisFacies = BWfacies[j]; 
+            thisFacies = BWfacies[j];
             count = 1;
             chi  += chi_i;
             df   += 1;
@@ -1612,7 +1612,7 @@ std::vector<double> FaciesProb::calculateChiSquareTest(WellData                 
             count += 1;
             for (k=0; k<nFacies_; k++)
               prob[k] += BWfaciesProb[j][k];
-          } 
+          }
         }
       }
       else
@@ -1632,7 +1632,7 @@ std::vector<double> FaciesProb::calculateChiSquareTest(WellData                 
                   chi_i += std::pow(0-prob[k],2)/prob[k];
               }
             }
-            thisFacies = BWfacies[j]; 
+            thisFacies = BWfacies[j];
             count = 1;
             chi  += chi_i;
             df   += 1;
@@ -1663,7 +1663,7 @@ std::vector<double> FaciesProb::calculateChiSquareTest(WellData                 
     chi += chi_i;
     chi *= 0.3; //Scale chi to give better fit
     df  += 1;
-    
+
     if (nActualFacies == 1)
     {
       fit[i] = "not calculated";
@@ -1693,7 +1693,7 @@ std::vector<double> FaciesProb::calculateChiSquareTest(WellData                 
   for (i = 0 ; i < 24+13*nFacies_ ; i++)
     LogKit::LogFormatted(LogKit::Medium,"-");
   LogKit::LogFormatted(LogKit::Medium,"\n");
-  
+
   for (int w = 0 ; w < nWells ; w++)
   {
     LogKit::LogFormatted(LogKit::Medium,"%-23s",wells[w]->getWellname().c_str());
@@ -1704,8 +1704,8 @@ std::vector<double> FaciesProb::calculateChiSquareTest(WellData                 
 
   return pValue;
 }
- 
- void FaciesProb::writeBWFaciesProb(WellData ** wells, 
+
+ void FaciesProb::writeBWFaciesProb(WellData ** wells,
                                     int         nWells)
 {
   int i, j;
@@ -1721,14 +1721,14 @@ std::vector<double> FaciesProb::calculateChiSquareTest(WellData                 
    }
 }
 
- void FaciesProb::calculateChiSquareAlternativeTest(WellData                    ** wells, 
-                                                    int                            nWells,  
+ void FaciesProb::calculateChiSquareAlternativeTest(WellData                    ** wells,
+                                                    int                            nWells,
                                                     const std::vector<Surface *> & faciesEstimInterval,
                                                     const ModelSettings          * modelSettings)
 {
-  // Alternative approach for evaluating facies fit. 
+  // Alternative approach for evaluating facies fit.
   // Is not being called, but is saved for later by approval from Ragnar.
-    
+
   int    i, j, k;
   int    df;
   int    bin;
@@ -1754,7 +1754,7 @@ std::vector<double> FaciesProb::calculateChiSquareTest(WellData                 
     const double * yPos     = bw->getYpos();
     const double * zPos     = bw->getZpos();
 
-     
+
     std::vector<std::vector<float> > BWfaciesProb(nBlocks,std::vector<float>(nFacies_));
     for (j = 0 ; j < nFacies_ ; j++)
     {
@@ -1774,9 +1774,9 @@ std::vector<double> FaciesProb::calculateChiSquareTest(WellData                 
         nObs[j] = 0;
       }
 
-      for (j=0 ; j < nBlocks ; j++) 
+      for (j=0 ; j < nBlocks ; j++)
       {
-        if (faciesEstimInterval.size() > 0) 
+        if (faciesEstimInterval.size() > 0)
         {
           const double zTop  = faciesEstimInterval[0]->GetZ(xPos[j],yPos[j]);
           const double zBase = faciesEstimInterval[1]->GetZ(xPos[j],yPos[j]);
@@ -1823,7 +1823,7 @@ std::vector<double> FaciesProb::calculateChiSquareTest(WellData                 
         fit[i][k] = "very bad";
     }
   }
-  
+
   LogKit::LogFormatted(LogKit::Medium,"\nFit between facies probabilities and facies observed in wells: \n");
   LogKit::LogFormatted(LogKit::Medium,"\nWell                      ");
   for (int i = 0 ; i < nFacies_ ; i++)
@@ -1835,20 +1835,20 @@ std::vector<double> FaciesProb::calculateChiSquareTest(WellData                 
   for (int w = 0 ; w < nWells ; w++)
   {
     LogKit::LogFormatted(LogKit::Medium,"%-24s ",wells[w]->getWellname().c_str());
-    for (int i = 0 ; i < nFacies_ ; i++) 
+    for (int i = 0 ; i < nFacies_ ; i++)
     {
       LogKit::LogFormatted(LogKit::Medium,"        ");
       LogKit::LogFormatted(LogKit::Medium,fit[w][i]);
     }
-      LogKit::LogFormatted(LogKit::Medium,"\n");    
+      LogKit::LogFormatted(LogKit::Medium,"\n");
   }
   LogKit::LogFormatted(LogKit::Medium,"\n");
 }
 
 
-FFTGrid * 
-FaciesProb::createLHCube(FFTGrid     * likelihood, 
-                         int           fac, 
+FFTGrid *
+FaciesProb::createLHCube(FFTGrid     * likelihood,
+                         int           fac,
                          const float * priorFacies,
                          FFTGrid    ** priorFaciesCubes)
 {

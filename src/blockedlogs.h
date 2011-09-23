@@ -4,7 +4,7 @@
 #include "nrlib/iotools/logkit.hpp"
 #include <stdlib.h>
 #include <string.h>
-#include "fft/include/fftw.h"
+#include "fftw.h"
 #include "lib/utils.h"
 
 class ModelSettings;
@@ -17,7 +17,7 @@ class Wavelet;
 class BlockedLogs
 {
 public:
-  BlockedLogs(WellData  * well, 
+  BlockedLogs(WellData  * well,
               Simbox    * simbox,
               RandomGen * random,
               bool interpolate = false);
@@ -25,7 +25,7 @@ public:
   ~BlockedLogs(void);
 
   const std::string getWellname(void)               const { return wellname_ ;}
-  const int      getNumberOfBlocks(void)            const { return nBlocks_  ;}  
+  const int      getNumberOfBlocks(void)            const { return nBlocks_  ;}
   const double * getXpos(void)                      const { return xpos_     ;}
   const double * getYpos(void)                      const { return ypos_     ;}
   const double * getZpos(void)                      const { return zpos_     ;}
@@ -38,28 +38,28 @@ public:
   const float  * getRho(void)                       const { return rho_      ;}
   const int    * getFacies(void)                    const { return facies_   ;}
   const float    getDz(void)                        const { return dz_       ;}
-  const float  * getAlphaHighCutBackground(void)    const { return alpha_highcut_background_ ;} 
+  const float  * getAlphaHighCutBackground(void)    const { return alpha_highcut_background_ ;}
   const float  * getBetaHighCutBackground(void)     const { return beta_highcut_background_  ;}
   const float  * getRhoHighCutBackground(void)      const { return rho_highcut_background_   ;}
   const float  * getAlphaHighCutSeismic(void)       const { return alpha_highcut_seismic_    ;}
-  const float  * getBetaHighCutSeismic(void)        const { return beta_highcut_seismic_     ;} 
-  const float  * getRhoHighCutSeismic(void)         const { return rho_highcut_seismic_      ;}  
+  const float  * getBetaHighCutSeismic(void)        const { return beta_highcut_seismic_     ;}
+  const float  * getRhoHighCutSeismic(void)         const { return rho_highcut_seismic_      ;}
   const float  * getAlphaSeismicResolution(void)    const { return alpha_seismic_resolution_ ;}
-  const float  * getBetaSeismicResolution(void)     const { return beta_seismic_resolution_  ;} 
-  const float  * getRhoSeismicResolution(void)      const { return rho_seismic_resolution_   ;}  
+  const float  * getBetaSeismicResolution(void)     const { return beta_seismic_resolution_  ;}
+  const float  * getRhoSeismicResolution(void)      const { return rho_seismic_resolution_   ;}
   const float  * getAlphaForFacies(void)            const { return alpha_for_facies_         ;}
-  const float  * getRhoForFacies(void)              const { return rho_for_facies_           ;}  
-  const float  * getAlphaPredicted(void)            const { return alpha_predicted_          ;} 
-  const float  * getBetaPredicted(void)             const { return beta_predicted_           ;} 
-  const float  * getRhoPredicted(void)              const { return rho_predicted_            ;} 
+  const float  * getRhoForFacies(void)              const { return rho_for_facies_           ;}
+  const float  * getAlphaPredicted(void)            const { return alpha_predicted_          ;}
+  const float  * getBetaPredicted(void)             const { return beta_predicted_           ;}
+  const float  * getRhoPredicted(void)              const { return rho_predicted_            ;}
   float       ** getRealSeismicData(void)           const { return real_seismic_data_        ;}
   float       ** getSyntSeismicData(void)           const { return actual_synt_seismic_data_        ;}
-  float       ** getCpp(void)                       const { return cpp_ ;}              
+  float       ** getCpp(void)                       const { return cpp_ ;}
   void           getVerticalTrend(const float * blockedLog, float * trend);
   void           getVerticalTrendLimited(const float * blockedLog, float * trend, const std::vector<Surface *> & limits);
   void           getVerticalTrend(const int * blockedLog,int * trend, RandomGen * random);
   void           getBlockedGrid(FFTGrid * grid, float * blockedLog, int iOffset = 0, int jOffset = 0);
-  void           setLogFromVerticalTrend(float * vertical_trend, double z0, double dz, 
+  void           setLogFromVerticalTrend(float * vertical_trend, double z0, double dz,
                                          int nz, std::string type, int iAngle = IMISSING);
   void           setLogFromGrid(FFTGrid * grid, int iAngle, int nAngles, std::string type);
 
@@ -85,13 +85,13 @@ public:
                                          int                        & iMove,
                                          int                        & jMove,
                                          float                      & kMove);
-  void           generateSyntheticSeismic(float ** reflCoef, 
-                                          int nAngles, 
-                                          Wavelet ** wavelet, 
-                                          int nz, 
+  void           generateSyntheticSeismic(float ** reflCoef,
+                                          int nAngles,
+                                          Wavelet ** wavelet,
+                                          int nz,
                                           int nzp,
                                           const Simbox * timeSimbox);
-  void           setSeismicGradient(  double v0, 
+  void           setSeismicGradient(  double v0,
                                       const NRLib::Grid2D<float>   &    stuctureDepthGradX,
                                       const NRLib::Grid2D<float>   &    stuctureDepthGradY,
                                       const NRLib::Grid2D<float>   &    refTimeGradX ,
@@ -116,9 +116,9 @@ public:
   const std::vector<double> getZposVector()           const;
 
 private:
-  void           setLogFromVerticalTrend(float *& log, double * zpos, int nBlocks, 
+  void           setLogFromVerticalTrend(float *& log, double * zpos, int nBlocks,
                                          float * vertical_trend, double z0, double dz, int nz);
-  void           blockWell(WellData  * well, 
+  void           blockWell(WellData  * well,
                            Simbox    * simbox,
                            RandomGen * random,
                            bool        interpolate = false);
@@ -134,20 +134,20 @@ private:
                                   int          nFacies,
                                   int       *& blockedLog,
                                   RandomGen * random);
-  void           interpolateContinuousLog(double * blockedLog, int start, int end, 
+  void           interpolateContinuousLog(double * blockedLog, int start, int end,
                                           int index, float rel);
-  void           interpolateContinuousLog(float * blockedLog, int start, int end, 
+  void           interpolateContinuousLog(float * blockedLog, int start, int end,
                                           int index, float rel);
-  void           interpolateTrend(const float * blockedLog, 
+  void           interpolateTrend(const float * blockedLog,
                                   float * trend);
-  void           interpolateTrend(const float * blockedLog, 
-                                  float * trend, 
+  void           interpolateTrend(const float * blockedLog,
+                                  float * trend,
                                   const std::vector<Surface *> & limits);
-  void           interpolateTrend(const int * blockedLog, 
+  void           interpolateTrend(const int * blockedLog,
                                   int * trend);
   int            findMostProbable(const int * count,
                                   int         nFacies,
-                                  RandomGen * random); 
+                                  RandomGen * random);
   void           findSizeAndBlockPointers(WellData * well,
                                           Simbox   * simbox,
                                           int      * bInd);
@@ -157,9 +157,9 @@ private:
   void           findBlockXYZ(Simbox * simbox);
   void           findXYZforVirtualPart(Simbox * simbox);
 
-  float          computeElasticImpedance(float         vp, 
-                                         float         vs, 
-                                         float         rho, 
+  float          computeElasticImpedance(float         vp,
+                                         float         vs,
+                                         float         rho,
                                          const float * coeff) const;
 
   void           smoothTrace(std::vector<float> &trace);
@@ -173,12 +173,12 @@ private:
 
   void           computeGradient(std::vector<double> &Qepsilon, std::vector<double> &Qepsilon_data,
                                  std::vector<double> &zShift, int nx, int ny, double dx, double dy);
-  void           smoothGradient(std::vector<double> &xGradient, std::vector<double> &yGradient, 
-                                  std::vector<double> &Qepsilon, std::vector<double> &Qepsilon_data, 
+  void           smoothGradient(std::vector<double> &xGradient, std::vector<double> &yGradient,
+                                  std::vector<double> &Qepsilon, std::vector<double> &Qepsilon_data,
                                   std::vector<std::vector<double> > &Sigma_gradient);
   void           computePrecisionMatrix(double &a, double &b, double &c);
 
-  std::string    wellname_;                 ///< Name of well   
+  std::string    wellname_;                 ///< Name of well
 
   double       * xpos_;                     ///<
   double       * ypos_;                     ///< Simbox XYZ value for block
@@ -198,24 +198,24 @@ private:
   int          * facies_;                   ///< Facies numbers using *internal* numbering
   float       ** facies_prob_;              ///< Facies probabilities calculated in wells
 
-  float        * alpha_highcut_background_; ///< 
+  float        * alpha_highcut_background_; ///<
   float        * beta_highcut_background_;  ///< Logs high-cut filtered to background resolution (log-domain)
-  float        * rho_highcut_background_;   ///< 
+  float        * rho_highcut_background_;   ///<
 
-  float        * alpha_highcut_seismic_;    ///< 
+  float        * alpha_highcut_seismic_;    ///<
   float        * beta_highcut_seismic_;     ///< Logs high-cut filtered to approx. seismic resolution (log-domain)
-  float        * rho_highcut_seismic_;      ///< 
+  float        * rho_highcut_seismic_;      ///<
 
-  float        * alpha_seismic_resolution_; ///< 
+  float        * alpha_seismic_resolution_; ///<
   float        * beta_seismic_resolution_;  ///< Logs filtered to resolution of inversion result
-  float        * rho_seismic_resolution_;   ///< 
+  float        * rho_seismic_resolution_;   ///<
 
   float        * alpha_predicted_;          ///< Predicted P-wave
   float        * beta_predicted_;           ///< Predicted S-wave
   float        * rho_predicted_;            ///< Predicted density
 
   float        * alpha_for_facies_;         ///< As above, but omit Vs from filter. Used for facies probabilities.
-  float        * rho_for_facies_;           ///< 
+  float        * rho_for_facies_;           ///<
 
   float       ** real_seismic_data_;        ///< Seismic data
   float       ** actual_synt_seismic_data_; ///< Forward modelled seismic data using local wavelet
@@ -234,7 +234,7 @@ private:
 
   const int    * faciesNumbers_;
   int            nFacies_;
-  
+
   float          lateralThresholdGradient_;  //Minimum lateral distance where gradient lines must not cross
   float          sigma_m_;             //Smoothing factor for the gradients
 

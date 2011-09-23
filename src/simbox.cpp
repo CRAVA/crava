@@ -11,7 +11,7 @@
 #include "src/fftgrid.h"
 #include "src/definitions.h"
 
-Simbox::Simbox(void) 
+Simbox::Simbox(void)
   : Volume()
 {
   status_      = EMPTY;
@@ -28,7 +28,7 @@ Simbox::Simbox(void)
   ilStepY_     = 1;
 }
 
-Simbox::Simbox(double x0, double y0, const Surface & z0, double lx, 
+Simbox::Simbox(double x0, double y0, const Surface & z0, double lx,
                double ly, double lz, double rot, double dx, double dy, double dz) :
   Volume()
 {
@@ -37,7 +37,7 @@ Simbox::Simbox(double x0, double y0, const Surface & z0, double lx,
   botName_     = "";
   SetDimensions(x0,y0,lx,ly);
   SetAngle(rot);
-  
+
   Surface z1(z0);
   z1.Add(lz);
   SetSurfaces(z0,z1); //Automatically sets lz correct in this case.
@@ -61,7 +61,7 @@ Simbox::Simbox(double x0, double y0, const Surface & z0, double lx,
   ilStepY_     =  cosrot_/dy_;
 }
 
-Simbox::Simbox(const Simbox *simbox) : 
+Simbox::Simbox(const Simbox *simbox) :
   Volume(*simbox)
 {
   status_      = simbox->status_;
@@ -83,7 +83,7 @@ Simbox::Simbox(const Simbox *simbox) :
   minRelThick_ = simbox->minRelThick_;
   topName_     = simbox->topName_;
   botName_     = simbox->botName_;
-}   
+}
 
 Simbox::~Simbox()
 {
@@ -118,7 +118,7 @@ Simbox::getClosestZIndex(double x, double y, double z)
   return(index);
 }
 
-void 
+void
 Simbox::getIndexes(double x, double y, double z, int & xInd, int & yInd, int & zInd) const
 {
   xInd = IMISSING;
@@ -147,7 +147,7 @@ Simbox::getIndexes(double x, double y, double z, int & xInd, int & yInd, int & z
   }
 }
 
-void 
+void
 Simbox::getIndexes(double x, double y, int & xInd, int & yInd) const
 {
   xInd = IMISSING;
@@ -161,7 +161,7 @@ Simbox::getIndexes(double x, double y, int & xInd, int & yInd) const
   }
 }
 
-void 
+void
 Simbox::getIndexesFull(double x, double y, double z, int & xInd, int & yInd, int & zInd) const
 {
   double rx =  (x-GetXMin())*cosrot_ + (y-GetYMin())*sinrot_;
@@ -178,8 +178,8 @@ Simbox::getIndexesFull(double x, double y, double z, int & xInd, int & yInd, int
   }
 }
 
-void 
-Simbox::getInterpolationIndexes(double x, double y, double z, 
+void
+Simbox::getInterpolationIndexes(double x, double y, double z,
                                 double & xInd, double & yInd, double & zInd) const
 {
   double rx =  (x-GetXMin())*cosrot_ + (y-GetYMin())*sinrot_;
@@ -197,7 +197,7 @@ Simbox::getInterpolationIndexes(double x, double y, double z,
 }
 
 void
-Simbox::getZInterpolation(double x, double y, double z, 
+Simbox::getZInterpolation(double x, double y, double z,
                           int & index1, int & index2, double & t) const
 {
   double rx =  (x-GetXMin())*cosrot_ + (y-GetYMin())*sinrot_;
@@ -219,7 +219,7 @@ Simbox::getZInterpolation(double x, double y, double z,
         t = (z-zTop)/dz - 0.5 - static_cast<double>(zInd1);
         zInd2 = zInd1+1;
       }
-      else 
+      else
       {
         t = 0;
         if(zInd1 < 0)
@@ -234,7 +234,7 @@ Simbox::getZInterpolation(double x, double y, double z,
   }
 }
 
-void  
+void
 Simbox::getCoord(int xInd, int yInd, int zInd, double &x, double &y, double &z) const
 {
   double rx = (static_cast<double>(xInd) + 0.5)*dx_;
@@ -254,7 +254,7 @@ Simbox::getCoord(int xInd, int yInd, int zInd, double &x, double &y, double &z) 
   }
 }
 
-void  
+void
 Simbox::getXYCoord(int xInd, int yInd, double &x, double &y) const
 {
   double rx = (static_cast<double>(xInd) + 0.5)*dx_;
@@ -309,14 +309,14 @@ Simbox::insideRectangle(const SegyGeometry *  geometry) const
   ry = -(x-xr)*sinrotr + (y-yr)*cosrotr;
   if(rx < -0.49*dx_ || rx > lxr+0.49*dx_ || ry<-0.49*dy_ || ry > lyr+0.49*dy_)
     allOk = 0;
-  
+
   x  = GetXMin()-GetLY()*sinrot_;
   y  = GetYMin()+GetLY()*cosrot_;
   rx =  (x-xr)*cosrotr + (y-yr)*sinrotr;
   ry = -(x-xr)*sinrotr + (y-yr)*cosrotr;
   if(rx < -0.49*dx_ || rx > lxr+0.49*dx_ || ry<-0.49*dy_ || ry > lyr+0.49*dy_)
     allOk = 0;
-  
+
   x  = GetXMin()+GetLX()*cosrot_-GetLY()*sinrot_;
   y  = GetYMin()+GetLX()*sinrot_+GetLY()*cosrot_;
   rx =  (x-xr)*cosrotr + (y-yr)*sinrotr;
@@ -325,7 +325,7 @@ Simbox::insideRectangle(const SegyGeometry *  geometry) const
     allOk = 0;
   if(rotr<0)
     rotr+=2*NRLib::Pi;
-  
+
   if (allOk==0) {
     double seisAzimuth = (-1)*rotr*(180/NRLib::Pi);
     double areaAzimuth = (-1)*GetAngle()*(180/NRLib::Pi);
@@ -333,11 +333,11 @@ Simbox::insideRectangle(const SegyGeometry *  geometry) const
     if (areaAzimuth < 0) areaAzimuth += 360.0;
     LogKit::LogFormatted(LogKit::Low,"                        x0            y0           lx         ly     azimuth         dx      dy\n");
     LogKit::LogFormatted(LogKit::Low,"--------------------------------------------------------------------------------------------\n");
-    LogKit::LogFormatted(LogKit::Low,"Model area:    %11.2f  %11.2f    %11.2f %11.2f    %8.3f    %7.2f %7.2f\n", 
+    LogKit::LogFormatted(LogKit::Low,"Model area:    %11.2f  %11.2f    %11.2f %11.2f    %8.3f    %7.2f %7.2f\n",
                          GetXMin(), GetYMin(), GetLX(), GetLY(), dx_, dy_, areaAzimuth);
-    LogKit::LogFormatted(LogKit::Low,"Seismic area:  %11.2f  %11.2f    %10.2f %10.2f    %8.3f    %7.2f %7.2f\n", 
+    LogKit::LogFormatted(LogKit::Low,"Seismic area:  %11.2f  %11.2f    %10.2f %10.2f    %8.3f    %7.2f %7.2f\n",
                          xr, yr, lxr, lyr, dxr, dyr, seisAzimuth);
-    
+
     LogKit::LogFormatted(LogKit::High,"\nCorner     XY Area                    XY Seismic\n");
     LogKit::LogFormatted(LogKit::High,"-----------------------------------------------------------\n");
     LogKit::LogFormatted(LogKit::High,"A %18.2f %11.2f    %11.2f %11.2f\n", GetXMin(),GetYMin(), xr,yr);
@@ -345,7 +345,7 @@ Simbox::insideRectangle(const SegyGeometry *  geometry) const
                          xr+lxr*cosrotr, yr+lxr*sinrotr);
     LogKit::LogFormatted(LogKit::High,"C %18.2f %11.2f    %11.2f %11.2f\n", GetXMin()-GetLY()*sinrot_, GetYMin()+GetLY()*cosrot_,
                          xr -lyr*sinrotr, yr +lyr*cosrotr);
-    LogKit::LogFormatted(LogKit::High,"D %18.2f %11.2f    %11.2f %11.2f\n", 
+    LogKit::LogFormatted(LogKit::High,"D %18.2f %11.2f    %11.2f %11.2f\n",
                          GetXMin()+GetLX()*cosrot_-GetLY()*sinrot_, GetYMin()+GetLX()*sinrot_+GetLY()*cosrot_,
                          xr +lxr*cosrotr-lyr*sinrotr, yr +lxr*sinrotr+lyr*cosrotr);
     //
@@ -353,7 +353,7 @@ Simbox::insideRectangle(const SegyGeometry *  geometry) const
     //
     // Not implemented...
   }
-  int error = 1 - allOk; 
+  int error = 1 - allOk;
   return error;
 }
 
@@ -406,7 +406,7 @@ Simbox::getStormHeader(int cubetype, int nx, int ny, int nz, bool flat, bool asc
 
   header += NRLib::ToString(GetLZ(),6) +" "+ NRLib::ToString(GetAngle()*180/NRLib::Pi,6)+"\n\n";
   header += NRLib::ToString(nx) +" "+ NRLib::ToString(ny) +" "+ NRLib::ToString(nz)+"\n";
-  std::string strHeader(header); 
+  std::string strHeader(header);
 
   /*
     ==>
@@ -424,12 +424,12 @@ Simbox::getStormHeader(int cubetype, int nx, int ny, int nz, bool flat, bool asc
   if(flat == false)
     strHeader += NRLib::ToString(GetXMin(),6) + " " + NRLib::ToString(GetLX(),6) + " "
       + NRLib::ToString(GetYMin(),6) + " " + NRLib::ToString(GetLY(),6) + " "
-               + topName_ + " " 
+               + topName_ + " "
       + botName_ + " 0.0 0.0\n";
   else
     strHeader += NRLib::ToString(GetXMin(),6) + " " + NRLib::ToString(GetLX(),6) + " "
       + NRLib::ToString(GetYMin(),6) + " " + NRLib::ToString(GetLY(),6) + " "
-               + "0.0 " 
+               + "0.0 "
       + NRLib::ToString(GetLZ(),6)+" 0.0 0.0\n";
 
   strHeader += NRLib::ToString(GetLZ(),6) + " " + NRLib::ToString(GetAngle()*180/PI,6) + "\n\n";
@@ -440,7 +440,7 @@ Simbox::getStormHeader(int cubetype, int nx, int ny, int nz, bool flat, bool asc
 }
 
 void
-Simbox::writeTopBotGrids(const std::string & topname, 
+Simbox::writeTopBotGrids(const std::string & topname,
                          const std::string & botname,
                          const std::string & subdir,
                          int                 outputFormat)
@@ -456,7 +456,7 @@ Simbox::writeTopBotGrids(const std::string & topname,
 }
 
 void
-Simbox::setTopBotName(const std::string & topname, 
+Simbox::setTopBotName(const std::string & topname,
                       const std::string & botname,
                       int                 outputFormat)
 {
@@ -518,12 +518,12 @@ Simbox::calculateDz(double lzLimit, std::string & errText)
     {
       double lzFac = lzMin/GetLZ();
       minRelThick_ = lzFac;
-      if(lzFac < lzLimit) 
+      if(lzFac < lzLimit)
       {
         status_ = INTERNALERROR;
         errText += "Error with top/bottom grids. Minimum thickness should be at least "+NRLib::ToString(lzLimit)+" times maximum, is "+NRLib::ToString(lzFac)+"\n";
       }
-      else 
+      else
       {
         dz_ = GetLZ()/static_cast<double>(nz_);
       }
@@ -628,7 +628,7 @@ Simbox::setILXL(const SegyGeometry * geometry)
   xlStepY_ = geometry->GetXLStepY();
   ilStepX_ = geometry->GetILStepX();
   ilStepY_ = geometry->GetILStepY();
-  
+
   float x0 = static_cast<float>(GetXMin());
   float y0 = static_cast<float>(GetYMin());
   geometry->FindContILXL(x0, y0, inLine0_, crossLine0_); //Sets IL0 ,XL0
@@ -656,7 +656,7 @@ Simbox::isAligned(const SegyGeometry * geometry) const
   getXYCoord(nx_-1, ny_-1, x, y);
   int IL3, XL3;
   geometry->FindILXL(static_cast<float>(x), static_cast<float>(y), IL3, XL3);
-  
+
   int XLdx = XLx1 - XL0;
   int XLdy = XLy1 - XL0;
   int ILdx = ILx1 - IL0;
@@ -668,7 +668,7 @@ Simbox::isAligned(const SegyGeometry * geometry) const
   int XLndy = XL2 - XL0;
   int ILndx = IL1 - IL0;
   int ILndy = IL2 - IL0;
-  if(XLndx != (nx_-1)*XLdx || XLndy != (ny_-1)*XLdy || 
+  if(XLndx != (nx_-1)*XLdx || XLndy != (ny_-1)*XLdy ||
      ILndx != (nx_-1)*ILdx || ILndy != (ny_-1)*ILdy)
     return(false); //XL or IL difference at corners not multiple of one-step difference
 
@@ -687,7 +687,7 @@ Simbox::getAvgRelThick(void) const
       avgThick += getRelThick(i, j);
     }
   }
-  avgThick /= nx_*ny_; 
+  avgThick /= nx_*ny_;
   return avgThick;
 }
 
@@ -707,7 +707,7 @@ Simbox::getRelThick(double x, double y) const
   double relThick = 1; //Default value to be used outside grid.
   double zTop = GetTopSurface().GetZ(x,y);
   double zBot = GetBotSurface().GetZ(x,y);
-  if(GetTopSurface().IsMissing(zTop) == false && 
+  if(GetTopSurface().IsMissing(zTop) == false &&
      GetBotSurface().IsMissing(zBot) == false)
     relThick = (zBot-zTop)/GetLZ();
   return(relThick);

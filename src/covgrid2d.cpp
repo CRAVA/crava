@@ -10,10 +10,10 @@
 #include "nrlib/iotools/fileio.hpp"
 #include "src/covgrid2d.h"
 
-CovGrid2D::CovGrid2D(Vario * vario, 
-                     int      nx, 
-                     int      ny, 
-                     double   dx, 
+CovGrid2D::CovGrid2D(Vario * vario,
+                     int      nx,
+                     int      ny,
+                     double   dx,
                      double   dy)
   : cov_(2*nx*ny),
     nx_(nx),
@@ -50,13 +50,13 @@ CovGrid2D::writeToFile(const std::string & name) const
   std::ofstream file;
   NRLib::OpenWrite(file, name);
   file.precision(14);
-  file << 2*nx_-1  << " " 
-       << 2*ny_-1  << " " 
-       << dx_      << " " 
+  file << 2*nx_-1  << " "
+       << 2*ny_-1  << " "
+       << dx_      << " "
        << dy_      << "\n"
-       << -dx_*nx_ << " " 
+       << -dx_*nx_ << " "
        <<  dx_*nx_ << " "
-       << -dy_*ny_ << " " 
+       << -dy_*ny_ << " "
        <<  dy_*ny_ << "\n";
 
   for(int j=-ny_+1;j<ny_;j++)

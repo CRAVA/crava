@@ -16,15 +16,15 @@
 #include "nrlib/iotools/logkit.hpp"
 
 
-FilterWellLogs::FilterWellLogs(const Simbox * timeSimboxConstThick, 
-                               const Simbox * timeSimboxOrigThick, 
+FilterWellLogs::FilterWellLogs(const Simbox * timeSimboxConstThick,
+                               const Simbox * timeSimboxOrigThick,
                                const Corr   * correlations,
-                               int            nzp, 
-                               int            nz, 
-                               WellData    ** wells, 
-                               int            nWells, 
-                               float          lowCut, 
-                               float          highCut, 
+                               int            nzp,
+                               int            nz,
+                               WellData    ** wells,
+                               int            nWells,
+                               float          lowCut,
+                               float          highCut,
                                int            relative)
   : vtAlphaFiltered_(NULL),
     vtBetaFiltered_(NULL),
@@ -36,7 +36,7 @@ FilterWellLogs::FilterWellLogs(const Simbox * timeSimboxConstThick,
 {
   fftw_real * postcova, * postcovb, * postcovr;
   fftw_real * postcrab, * postcrar, * postcrbr;
-  fftw_real * priorCorr;  
+  fftw_real * priorCorr;
 
   int rnzp = 2*(nzp/2+1);
   postcova  = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp));
@@ -81,12 +81,12 @@ FilterWellLogs::FilterWellLogs(const Simbox * timeSimboxConstThick,
       refk = nzp - i;
     if(refk < nz)
     {
-      postcova[i] = correlations->getPostCovAlpha00(refk);      
-      postcovb[i] = correlations->getPostCovBeta00(refk);       
-      postcovr[i] = correlations->getPostCovRho00(refk);        
+      postcova[i] = correlations->getPostCovAlpha00(refk);
+      postcovb[i] = correlations->getPostCovBeta00(refk);
+      postcovr[i] = correlations->getPostCovRho00(refk);
       postcrab[i] = correlations->getPostCrCovAlphaBeta00(refk);
-      postcrar[i] = correlations->getPostCrCovAlphaRho00(refk); 
-      postcrbr[i] = correlations->getPostCrCovBetaRho00(refk);  
+      postcrar[i] = correlations->getPostCrCovAlphaRho00(refk);
+      postcrbr[i] = correlations->getPostCrCovBetaRho00(refk);
     }
     else
     {
@@ -104,15 +104,15 @@ FilterWellLogs::FilterWellLogs(const Simbox * timeSimboxConstThick,
   for(int i=0;i<nzp;i++)
     priorCorr[i] = priorCorrTFiltered[i];
 
-  doFiltering(timeSimboxConstThick, 
-              timeSimboxOrigThick, 
-              wells,nWells, 
+  doFiltering(timeSimboxConstThick,
+              timeSimboxOrigThick,
+              wells,nWells,
               correlations->getPriorVar0(),
               postcova,postcovb,postcovr,
-              postcrab,postcrar,postcrbr, 
-              priorCorr, lowCut, highCut, 
+              postcrab,postcrar,postcrbr,
+              priorCorr, lowCut, highCut,
               relative, nz, nzp);
-  
+
   fftw_free(priorCorr);
   fftw_free(postcova);
   fftw_free(postcovb);
@@ -140,26 +140,26 @@ FilterWellLogs::~FilterWellLogs()
   delete [] vtRho_;
 }
 
-void FilterWellLogs::doFiltering(const Simbox  * timeSimboxConstThick, 
-                                 const Simbox  * timeSimboxOrigThick, 
-                                 WellData     ** wells, 
-                                 int             nWells, 
+void FilterWellLogs::doFiltering(const Simbox  * timeSimboxConstThick,
+                                 const Simbox  * timeSimboxOrigThick,
+                                 WellData     ** wells,
+                                 int             nWells,
                                  float        ** sigma0,
-                                 fftw_real     * postcova, 
-                                 fftw_real     * postcovb, 
+                                 fftw_real     * postcova,
+                                 fftw_real     * postcovb,
                                  fftw_real     * postcovr,
-                                 fftw_real     * postcrab, 
-                                 fftw_real     * postcrar, 
-                                 fftw_real     * postcrbr, 
+                                 fftw_real     * postcrab,
+                                 fftw_real     * postcrar,
+                                 fftw_real     * postcrbr,
                                  fftw_real     * corrprior,
-                                 float           lowCut, 
-                                 float           highCut, 
-                                 int             relative, 
-                                 int             nz, 
+                                 float           lowCut,
+                                 float           highCut,
+                                 int             relative,
+                                 int             nz,
                                  int             nzp)
 {
   LogKit::LogFormatted(LogKit::Low,"\nFiltering well logs\n");
-  
+
   float domega = static_cast<float> (1000.0f/(nzp*timeSimboxConstThick->getdz()));  //dz in milliseconds
 
   // Do fourier transform of covariances
@@ -184,7 +184,7 @@ void FilterWellLogs::doFiltering(const Simbox  * timeSimboxConstThick,
   fftw_real    * alpha_rAmp = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp));
   fftw_real    * beta_rAmp  = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp));
   fftw_real    * rho_rAmp   = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp));
- 
+
   fftw_complex * alpha_cAmp = reinterpret_cast<fftw_complex*>(alpha_rAmp);
   fftw_complex * beta_cAmp  = reinterpret_cast<fftw_complex*>(beta_rAmp);
   fftw_complex * rho_cAmp   = reinterpret_cast<fftw_complex*>(rho_rAmp);
@@ -204,23 +204,23 @@ void FilterWellLogs::doFiltering(const Simbox  * timeSimboxConstThick,
     //
     // Extract a one-value-for-each-layer array of blocked logs
     //
-    bw->getVerticalTrend(bw->getAlphaHighCutBackground(), vtAlphaBg); // might be missing data at end because of simbox 
+    bw->getVerticalTrend(bw->getAlphaHighCutBackground(), vtAlphaBg); // might be missing data at end because of simbox
     bw->getVerticalTrend(bw->getBetaHighCutBackground(), vtBetaBg);
     bw->getVerticalTrend(bw->getRhoHighCutBackground(), vtRhoBg);
-    
+
     extrapolate(vtAlphaBg,nz);
     extrapolate(vtBetaBg,nz);
     extrapolate(vtRhoBg,nz);
-    
+
     bw->getVerticalTrend(bw->getAlpha(),vtAlpha);
     bw->getVerticalTrend(bw->getBeta(),vtBeta);
     bw->getVerticalTrend(bw->getRho(),vtRho);
-    
+
     // Set logs MISSING if outside original simbox
     const int * ipos = bw->getIpos();
     const int * jpos = bw->getJpos();
     const int * kpos = bw->getKpos();
-    
+
     for(int i=0;i<nz;i++)
     {
       double x0,y0,z;
@@ -232,19 +232,19 @@ void FilterWellLogs::doFiltering(const Simbox  * timeSimboxConstThick,
         vtRho[i]   = RMISSING;
       }
     }
-    
+
     float dz = static_cast<float> (timeSimboxConstThick->getdz()*timeSimboxConstThick->getRelThick(ipos[0],jpos[0]));
     Kriging1D::krigVector(vtAlpha, vtAlphaBg, nz, dz);
     Kriging1D::krigVector(vtBeta, vtBetaBg, nz, dz);
     Kriging1D::krigVector(vtRho, vtRhoBg, nz, dz);
-    
+
     for(int i=0;i<nz;i++)
     {
       alpha_rAmp[i] = vtAlpha[i] - vtAlphaBg[i];
       beta_rAmp[i] = vtBeta[i] - vtBetaBg[i];
       rho_rAmp[i] = vtRho[i] - vtRhoBg[i];
     }
-    
+
     int j = nz-1;
     float diffa = (alpha_rAmp[0]-alpha_rAmp[j])/(nzp-j-1);
     float diffb = (beta_rAmp[0]-beta_rAmp[j])/(nzp-j-1);
@@ -258,11 +258,11 @@ void FilterWellLogs::doFiltering(const Simbox  * timeSimboxConstThick,
       rho_rAmp[i] = rho_rAmp[j]+(i-j)*diffr;
     }
 
-    // Fourier transform of alphadiff,betadiff,rhodiff    
+    // Fourier transform of alphadiff,betadiff,rhodiff
     rfftwnd_one_real_to_complex(p1, alpha_rAmp, alpha_cAmp);
     rfftwnd_one_real_to_complex(p1, beta_rAmp, beta_cAmp);
     rfftwnd_one_real_to_complex(p1, rho_rAmp, rho_cAmp);
-    
+
     //loop over frequencies, create 3*3 matrices, and the filter
     fftw_complex **sigmaK = new fftw_complex*[3];
     fftw_complex **sigmaE = new fftw_complex*[3];
@@ -270,13 +270,13 @@ void FilterWellLogs::doFiltering(const Simbox  * timeSimboxConstThick,
     fftw_complex *help = new fftw_complex[3];
     int ok;
     double **F = new double*[3];
-    
+
     for(int i=0;i<3;i++){
       sigmaK[i] = new fftw_complex[3];
       sigmaE[i] = new fftw_complex[3];
       F[i] =new double[3];
     }
-    
+
     for(int w=0;w<nzp/2+1;w++)
     {
       //  if(corrprior_cAmp[w].re<delta)
@@ -308,7 +308,7 @@ void FilterWellLogs::doFiltering(const Simbox  * timeSimboxConstThick,
       sigmaK[2][1].re = corrprior_cAmp[w].re*sigma0[1][2];
       //sigmaK[2][1].im = -corrprior_cAmp[w].im*sigma0_[1][2];
       sigmaK[2][1].im = 0.0;
-      
+
       sigmaE[0][0].re = sigmaK[0][0].re - postcova_cAmp[w].re;
       sigmaE[0][0].im = sigmaK[0][0].im - postcova_cAmp[w].im;
       sigmaE[1][1].re = sigmaK[1][1].re - postcovb_cAmp[w].re;
@@ -327,7 +327,7 @@ void FilterWellLogs::doFiltering(const Simbox  * timeSimboxConstThick,
       sigmaE[1][2].im = sigmaK[1][2].im - postcovbr_cAmp[w].im;
       sigmaE[2][1].re = sigmaE[1][2].re;
       sigmaE[2][1].im = -sigmaE[1][2].im;
-      
+
       //Do cholesky of sigmaK
       ok = lib_matrCholCpx(3,sigmaK);
       if(ok==0 && (w*domega > lowCut && w*domega < highCut) )
@@ -351,8 +351,8 @@ void FilterWellLogs::doFiltering(const Simbox  * timeSimboxConstThick,
         beta_cAmp[w].im = 0.0;
         rho_cAmp[w].im = 0.0;
       }
-    }   
-    
+    }
+
     // do inverse fourier transform, and add background model
     rfftwnd_plan p2 = rfftwnd_create_plan(1, &nzp, FFTW_COMPLEX_TO_REAL, FFTW_ESTIMATE | FFTW_IN_PLACE);
     rfftwnd_one_complex_to_real(p2, alpha_cAmp, alpha_rAmp);
@@ -361,7 +361,7 @@ void FilterWellLogs::doFiltering(const Simbox  * timeSimboxConstThick,
 
     for(int i=0;i<nz;i++)
     {
-      if (vtAlpha[i]==RMISSING || vtBeta[i]==RMISSING || vtRho[i]==RMISSING) 
+      if (vtAlpha[i]==RMISSING || vtBeta[i]==RMISSING || vtRho[i]==RMISSING)
       {
         vtAlphaFiltered_[w1][i] = RMISSING;
         vtBetaFiltered_[w1][i]  = RMISSING;
@@ -388,7 +388,7 @@ void FilterWellLogs::doFiltering(const Simbox  * timeSimboxConstThick,
     //
     //Subtract background model if the relative method is used.
     //
-    if (relative == 1) 
+    if (relative == 1)
     {
       for(int i=0;i<nz;i++)
       {
@@ -429,29 +429,29 @@ void FilterWellLogs::doFiltering(const Simbox  * timeSimboxConstThick,
 
 void
 FilterWellLogs::extrapolate(float * blockedLog,
-                            int     nz) 
+                            int     nz)
 {
   //
   // Extrapolate blockedLog[] in both ends if needed
-  //  
+  //
   int i=0;
   while (i<nz && blockedLog[i]==RMISSING)
     i++;
-  if (i < nz - 1) 
-  { 
+  if (i < nz - 1)
+  {
     int first_nonmissing = i;
     i = nz - 1;
     while (i>0 && blockedLog[i]==RMISSING)
       i--;
     int last_nonmissing = i;
-    
-    for(int i=0 ; i < first_nonmissing ; i++) { 
-      blockedLog[i] = blockedLog[first_nonmissing]; 
+
+    for(int i=0 ; i < first_nonmissing ; i++) {
+      blockedLog[i] = blockedLog[first_nonmissing];
     }
-    for(int i=last_nonmissing + 1 ; i < nz ; i++) { 
-      blockedLog[i] = blockedLog[last_nonmissing]; 
+    for(int i=last_nonmissing + 1 ; i < nz ; i++) {
+      blockedLog[i] = blockedLog[last_nonmissing];
     }
-   
+
   }
   else
   {
@@ -486,7 +486,7 @@ FilterWellLogs::calcFilter(fftw_complex **sigmaK, fftw_complex **sigmaE, double 
   lib_matrAdjoint(sigmaE,3,3,help);
   lib_matrLXeqBMatCpx(3, sigmaK, help, 3);
   lib_matrAdjoint(help,3,3,sigmaE); //sigmaE = M
-  
+
   for(i=0;i<3;i++)
     for(j=0;j<3;j++)
       M[i][j] = sigmaE[i][j].re;
@@ -504,7 +504,7 @@ FilterWellLogs::calcFilter(fftw_complex **sigmaK, fftw_complex **sigmaE, double 
   lib_matrTranspose(V,3,3,EV);  // EV = V^T
   lib_matr_prod(M,EV,3,3,3,V);  // V = A^K=VD^0.5V^T
   //F = L*V*L^-1
-    
+
   for(i=0;i<3;i++)
     for(j=0;j<3;j++)
       EV[i][j] = sigmaKreal[i][j];
@@ -514,8 +514,8 @@ FilterWellLogs::calcFilter(fftw_complex **sigmaK, fftw_complex **sigmaE, double 
   lib_matr_prod(EV,V,3,3,3,M); //M=LA
   lib_matrTranspose(M,3,3,V);
   lib_matrLtXeqBR(3, sigmaKreal, V, 3);  //L^T*F^T = V
-  lib_matrTranspose(V,3,3,F);     
-  
+  lib_matrTranspose(V,3,3,F);
+
   delete [] ok1;
   delete [] ev;
   for (int i=0 ; i < 3 ; i++)

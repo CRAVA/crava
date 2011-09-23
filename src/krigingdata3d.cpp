@@ -11,7 +11,7 @@
 #include "src/definitions.h"
 
 //---------------------------------------------------------------------
-KrigingData3D::KrigingData3D(int ntot) 
+KrigingData3D::KrigingData3D(int ntot)
   : data_(NULL),
     nd_(0)
 {
@@ -21,7 +21,7 @@ KrigingData3D::KrigingData3D(int ntot)
 //---------------------------------------------------------------------
 KrigingData3D::KrigingData3D(WellData ** wells,
                              int         nWells,
-                             int         type) 
+                             int         type)
   : data_(NULL),
     nd_(0)
 {
@@ -46,7 +46,7 @@ KrigingData3D::KrigingData3D(WellData ** wells,
 
     BlockedLogs * bl = wells[w]->getBlockedLogsOrigThick();
     const int nBlocks = bl->getNumberOfBlocks();
-   
+
     const float * alpha;
     const float * beta;
     const float * rho;
@@ -74,18 +74,18 @@ KrigingData3D::KrigingData3D(WellData ** wells,
       LogKit::LogFormatted(LogKit::Low,"ERROR: Undefined log type %d\n",type);
       exit(1);
     }
-    
+
     const int * ipos = bl->getIpos();
     const int * jpos = bl->getJpos();
     const int * kpos = bl->getKpos();
-    
+
     addData(alpha, beta, rho, ipos, jpos, kpos, nBlocks);
-  } 
+  }
   divide();
 }
 
 //---------------------------------------------------------------------
-KrigingData3D::~KrigingData3D(void) 
+KrigingData3D::~KrigingData3D(void)
 {
   for (int i = 0 ; i < nd_ ; i++)
     delete data_[i];
@@ -103,33 +103,33 @@ KrigingData3D::addData(const float * alpha,
                        const int   * kpos,
                        const int     nd)
 {
-  for (int m = 0 ; m < nd ; m++) 
+  for (int m = 0 ; m < nd ; m++)
   {
     const int i = ipos[m];
     const int j = jpos[m];
     const int k = kpos[m];
 
-    if (alpha[m] != RMISSING || beta[m] != RMISSING || rho[m] != RMISSING) 
+    if (alpha[m] != RMISSING || beta[m] != RMISSING || rho[m] != RMISSING)
     {
       float a,b,r;
-      
+
       if (alpha[m] != RMISSING)
         a = exp(alpha[m]);
-      else 
+      else
         a = RMISSING;
-      
+
       if (beta[m] != RMISSING)
         b = exp(beta[m]);
-      else 
+      else
         b = RMISSING;
-          
+
       if (rho[m] != RMISSING)
         r = exp(rho[m]);
-      else 
+      else
         r = RMISSING;
 
       int index = gotBlock(i,j,k);
-      if (index == -1) 
+      if (index == -1)
       {
         data_[nd_] = new CBWellPt(i, j, k);
         data_[nd_]->AddLog(a, b, r);
@@ -155,9 +155,9 @@ KrigingData3D::gotBlock(int i, int j, int k) const
 {
   for (int b = 0 ; b < nd_ ; b++)
   {
-    if (data_[b]->GetI() == i && 
-        data_[b]->GetJ() == j && 
-        data_[b]->GetK() == k) 
+    if (data_[b]->GetI() == i &&
+        data_[b]->GetJ() == j &&
+        data_[b]->GetK() == k)
       return b;
   }
   return -1;
@@ -166,10 +166,10 @@ KrigingData3D::gotBlock(int i, int j, int k) const
 //---------------------------------------------------------------------
 void
 KrigingData3D::divide(void)
-{ 
+{
   //
   // This method is only required if two wells share the same block,
-  // which is not very likely in our case. Possibly therefore, the NOTE 
+  // which is not very likely in our case. Possibly therefore, the NOTE
   // given above is better changed to a WARNING...
   //
   for (int b = 0 ; b < nd_ ; b++)
@@ -177,29 +177,29 @@ KrigingData3D::divide(void)
 }
 
 //---------------------------------------------------------------------
-void 
+void
 KrigingData3D::writeToFile(const std::string fileName)
-{ 
+{
   std::ofstream file;
   NRLib::OpenWrite(file, fileName);
 
   file << "  i   j   k      alpha      beta       rho\n"
        << "------------------------------------------\n";
 
-  for (int m = 0 ; m < nd_ ; m++) 
+  for (int m = 0 ; m < nd_ ; m++)
   {
     float  alpha, beta, rho;
     bool   hasAlpha, hasBeta, hasRho;
     int    i, j, k;
     data_[m]->GetIJK(i, j, k);
     data_[m]->IsValidObs(hasAlpha, hasBeta, hasRho);
-    data_[m]->GetAlphaBetaRho(alpha, beta, rho);  
+    data_[m]->GetAlphaBetaRho(alpha, beta, rho);
 
     if (hasAlpha)
       alpha = exp(alpha);
-    else 
+    else
       alpha = WELLMISSING;
-    if (hasBeta)  
+    if (hasBeta)
       beta = exp(beta);
     else
       beta = WELLMISSING;

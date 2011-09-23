@@ -2,7 +2,7 @@
 #define FFTFILEGRID_H
 
 #include <string>
-#include "fft/include/fftw.h"
+#include "fftw.h"
 
 #include "fftgrid.h"
 
@@ -12,7 +12,7 @@ class Simbox;
 class GridMapping;
 
 class FFTFileGrid : public FFTGrid
-{ 
+{
 public:
   FFTFileGrid(int nx, int ny, int nz, int nxp, int nyp, int nzp);
   FFTFileGrid(FFTFileGrid * FFTFileGrid, bool expTrans = false);
@@ -33,7 +33,7 @@ public:
   void         add(FFTGrid* fftGrid);
   void         subtract(FFTGrid* fftGrid);
   void         changeSign();
-  void         multiply(FFTGrid* fftGrid);              // pointwise multiplication! 
+  void         multiply(FFTGrid* fftGrid);              // pointwise multiplication!
   void         fillInComplexNoise(RandomGen * ranGen);
   void         fftInPlace();
   void         invFFTInPlace();
@@ -41,20 +41,20 @@ public:
   void         createComplexGrid();
   void         setAccessMode(int mode);
   void         endAccess();
-  void         writeFile(const std::string & fileName, 
-                         const std::string & subDir, 
-                         const Simbox      * simbox, 
-                         const std::string   sgriLabel = "NO_LABEL", 
-                         const float         z0        = 0.0, 
-                         GridMapping       * depthMap  = NULL, 
+  void         writeFile(const std::string & fileName,
+                         const std::string & subDir,
+                         const Simbox      * simbox,
+                         const std::string   sgriLabel = "NO_LABEL",
+                         const float         z0        = 0.0,
+                         GridMapping       * depthMap  = NULL,
                          GridMapping       * timeMap   = NULL,
                          const TraceHeaderFormat & thf = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS));  //Use this instead of the ones below.
-  void         writeStormFile(const std::string & fileName, const Simbox * simbox, bool ascii = false, 
+  void         writeStormFile(const std::string & fileName, const Simbox * simbox, bool ascii = false,
                               bool padding = false, bool flat = false);
-  int          writeSegyFile(const std::string & fileName, const Simbox * simbox, float z0, 
+  int          writeSegyFile(const std::string & fileName, const Simbox * simbox, float z0,
                              const TraceHeaderFormat &thf = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS));
   int          writeSgriFile(const std::string & fileName, const Simbox *simbox, const std::string label);
-  void         writeResampledStormCube(GridMapping *gridmapping, const std::string & fileName, 
+  void         writeResampledStormCube(GridMapping *gridmapping, const std::string & fileName,
                                        const Simbox *simbox, const int format);
   void         writeCravaFile(const std::string & fileName, const Simbox * simbox);
   void         readCravaFile(const std::string & fileName, std::string & error, bool nopadding = false);
