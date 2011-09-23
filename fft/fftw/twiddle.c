@@ -120,7 +120,7 @@ static fftw_complex *fftw_compute_twiddle(int n, const fftw_codelet_desc *d)
 }
 
 /*
- * these routines implement a simple reference-count-based 
+ * these routines implement a simple reference-count-based
  * management of twiddle structures
  */
 static fftw_twiddle *twlist = (fftw_twiddle *) 0;

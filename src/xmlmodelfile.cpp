@@ -53,9 +53,9 @@ XmlModelFile::XmlModelFile(const std::string & fileName)
 
   if (doc.Error() == true) {
     LogKit::WriteHeader("Invalid XML file");
-    LogKit::LogFormatted(LogKit::Error,"\n%s is not a valid XML file. %s In line %d, column %d.", 
+    LogKit::LogFormatted(LogKit::Error,"\n%s is not a valid XML file. %s In line %d, column %d.",
                          fileName.c_str(), doc.ErrorDesc(), doc.ErrorRow(), doc.ErrorCol());
-    if (doc.ErrorId() == 9) { // Not very robust check, but a start 
+    if (doc.ErrorId() == 9) { // Not very robust check, but a start
       LogKit::LogFormatted(LogKit::Error,"\nPossible cause: Mis-spelled or forgotten end tag.");
     }
     LogKit::LogFormatted(LogKit::Error,"\nAborting\n");
@@ -112,14 +112,14 @@ XmlModelFile::parseCrava(TiXmlNode * node, std::string & errTxt)
   return(true);
 }
 
-  
+
 bool
 XmlModelFile::parseActions(TiXmlNode * node, std::string & errTxt)
 {
   TiXmlNode * root = node->FirstChildElement("actions");
   if(root == 0)
     return(false);
-  
+
   std::vector<std::string> legalCommands;
   legalCommands.push_back("mode");
   legalCommands.push_back("inversion-settings");
@@ -156,7 +156,7 @@ XmlModelFile::parseActions(TiXmlNode * node, std::string & errTxt)
 
   if (parseEstimationSettings(root, errTxt) && (mode == "forward" || mode == "inversion"))
     errTxt += "Estimation settings can only be given with the mode 'estimation'.\n";
-  
+
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
@@ -178,7 +178,7 @@ XmlModelFile::parseInversionSettings(TiXmlNode * node, std::string & errTxt)
   bool value;
   if(parseBool(root, "prediction", value, errTxt) == true)
     modelSettings_->setWritePrediction(value);
-  
+
   parseSimulation(root, errTxt);
 
   if(parseBool(root, "kriging-to-wells", value, errTxt) == true) {
@@ -281,7 +281,7 @@ XmlModelFile::parseWellData(TiXmlNode * node, std::string & errTxt)
   TiXmlNode * root = node->FirstChildElement("well-data");
   if(root == 0)
     return(false);
-  
+
   std::vector<std::string> legalCommands;
   legalCommands.push_back("log-names");
   legalCommands.push_back("well");
@@ -386,7 +386,7 @@ XmlModelFile::parseLogNames(TiXmlNode * node, std::string & errTxt)
     modelSettings_->setLogName(4, value);
     modelSettings_->setFaciesLogGiven(true);
   }
-  
+
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
@@ -431,7 +431,7 @@ XmlModelFile::parseWell(TiXmlNode * node, std::string & errTxt)
     else
       useForBackgroundTrend = ModelSettings::NO;
   }
-  
+
   if(parseBool(root, "use-for-wavelet-estimation", use, tmpErr)) {
     if(use)
       useForWaveletEstimation = ModelSettings::YES;
@@ -499,9 +499,9 @@ XmlModelFile::parseOptimizeLocation(TiXmlNode * node, std::string & errTxt)
   if(parseValue(root, "weight", value, errTxt) == true)
     modelSettings_->addMoveWeight(value);
   else
-    modelSettings_->addMoveWeight(1); // Default 
+    modelSettings_->addMoveWeight(1); // Default
 
-  checkForJunk(root, errTxt, legalCommands, true); 
+  checkForJunk(root, errTxt, legalCommands, true);
 
   return(true);
 }
@@ -660,7 +660,7 @@ XmlModelFile::parseAngleGather(TiXmlNode * node, std::string & errTxt)
   bool oneDwavelet(false);
   if(parseWavelet(root, errTxt) == false) {
     modelSettings_->addWaveletScale(1.0); // NBNB OK  why RMISSING here????
-    modelSettings_->addEstimateGlobalWaveletScale(false); 
+    modelSettings_->addEstimateGlobalWaveletScale(false);
     inputFiles_->addShiftFile("");
     inputFiles_->addScaleFile("");
     modelSettings_->addEstimateLocalShift(false);
@@ -697,7 +697,7 @@ XmlModelFile::parseAngleGather(TiXmlNode * node, std::string & errTxt)
     modelSettings_->addEstimateSNRatio(true);
     modelSettings_->addSNRatio(RMISSING);
   }
-  std::string fileName; 
+  std::string fileName;
   bool localNoiseGiven = parseFileName(root, "local-noise-scaled", fileName, errTxt);
   if(localNoiseGiven) {
     inputFiles_->addNoiseFile(fileName);
@@ -712,7 +712,7 @@ XmlModelFile::parseAngleGather(TiXmlNode * node, std::string & errTxt)
     modelSettings_->addEstimateLocalNoise(false);
     errTxt += tmpErr;
   }
-  else { 
+  else {
     if(estimate == true && localNoiseGiven == true) {
       errTxt = errTxt +"Error: Can not give both file and ask for estimation of local noise"+
         lineColumnText(node);
@@ -736,13 +736,13 @@ XmlModelFile::parseSeismicData(TiXmlNode * node, std::string & errTxt)
   TiXmlNode * root = node->FirstChildElement("seismic-data");
   if(root == 0)
     return(false);
-  
+
   std::vector<std::string> legalCommands;
   legalCommands.push_back("file-name");
   legalCommands.push_back("start-time");
   legalCommands.push_back("segy-format");
   legalCommands.push_back("type");
- 
+
 
   std::string value;
   if(parseFileName(root, "file-name", value, errTxt) == true)
@@ -754,7 +754,7 @@ XmlModelFile::parseSeismicData(TiXmlNode * node, std::string & errTxt)
   }
 
   if(parseValue(root, "type", value, errTxt) == true) {
-    if(value == "pp") 
+    if(value == "pp")
       modelSettings_->addSeismicType(ModelSettings::STANDARDSEIS);
     else if(value == "ps")
       modelSettings_->addSeismicType(ModelSettings::PSSEIS);
@@ -822,7 +822,7 @@ XmlModelFile::parseWavelet(TiXmlNode * node, std::string & errTxt)
     modelSettings_->addRickerPeakFrequency(RMISSING);
     estimate = true;
   }
-  
+
   float scale;
   bool scaleGiven = false;
   if(parseValue(root, "scale", scale, errTxt) == true)
@@ -836,7 +836,7 @@ XmlModelFile::parseWavelet(TiXmlNode * node, std::string & errTxt)
            +") has no effect when the wavelet\n         is estimated and not read from file\n\n");
   }
   std::string tmpErr;
- 
+
   if(parseBool(root, "estimate-scale",estimate,tmpErr) == false || tmpErr != "") {
    if(scaleGiven==false) // no commands given
    {
@@ -845,7 +845,7 @@ XmlModelFile::parseWavelet(TiXmlNode * node, std::string & errTxt)
    }
     errTxt += tmpErr;
   }
-  else 
+  else
     if(estimate == true && scaleGiven == true) {
       errTxt += "Error: Can not give both value and ask for estimation of global wavelet scale"+
         lineColumnText(node);
@@ -855,7 +855,7 @@ XmlModelFile::parseWavelet(TiXmlNode * node, std::string & errTxt)
     {
       modelSettings_->addEstimateGlobalWaveletScale(true);
       modelSettings_->addWaveletScale(1);
-    } 
+    }
     else if(estimate==false && scaleGiven==false)// estimate given as no, no scale command given
     {
       modelSettings_->addWaveletScale(1);
@@ -868,7 +868,7 @@ XmlModelFile::parseWavelet(TiXmlNode * node, std::string & errTxt)
     inputFiles_->addShiftFile("");
     inputFiles_->addScaleFile("");
     modelSettings_->addEstimateLocalShift(false);
-    modelSettings_->addEstimateLocalScale(false);   
+    modelSettings_->addEstimateLocalScale(false);
   }
 
   checkForJunk(root, errTxt, legalCommands);
@@ -881,7 +881,7 @@ XmlModelFile::parseLocalWavelet(TiXmlNode * node, std::string & errTxt)
 {
   TiXmlNode * root = node->FirstChildElement("local-wavelet");
   if(root == 0)
-  {  
+  {
     return(false);
   }
 
@@ -917,7 +917,7 @@ XmlModelFile::parseLocalWavelet(TiXmlNode * node, std::string & errTxt)
     modelSettings_->addEstimateLocalShift(false);
     errTxt += tmpErr;
   }
-  else 
+  else
     if(estimate == true && shiftGiven == true) {
       errTxt += "Can not give both file and ask for estimation of local wavelet shift"+
         lineColumnText(node);
@@ -936,7 +936,7 @@ XmlModelFile::parseLocalWavelet(TiXmlNode * node, std::string & errTxt)
     modelSettings_->addEstimateLocalScale(false);
     errTxt += tmpErr;
   }
-  else 
+  else
     if(estimate == true && scaleGiven == true) {
       errTxt += "Can not give both file and ask for estimation of local wavelet scale"+
         lineColumnText(node);
@@ -1004,7 +1004,7 @@ XmlModelFile::parseWavelet3D(TiXmlNode * node, std::string & errTxt)
     modelSettings_->addEstimateWavelet(true);
     modelSettings_->setEstimate3DWavelet(true);
   }
-  
+
   if(parseFileName(root, "processing-factor-file-name", value, errTxt) == true)
     inputFiles_->addWaveletFilterFile(value);
   else {
@@ -1015,9 +1015,9 @@ XmlModelFile::parseWavelet3D(TiXmlNode * node, std::string & errTxt)
 
   if(parseFileName(root, "propagation-factor-file-name", value, errTxt) == true)
     inputFiles_->addWaveletCorrFile(value);
-  else 
+  else
     inputFiles_->addWaveletCorrFile(""); //Keeping tables balanced.
-    
+
   float stretch;
   if(parseValue(root, "stretch-factor", stretch, errTxt) == true)
     modelSettings_->addStretchFactor(stretch);
@@ -1050,7 +1050,7 @@ XmlModelFile::parseTimeGradientSettings(TiXmlNode * node, std::string & errTxt)
   std::vector<std::string> legalCommands;
   legalCommands.push_back("distance");
   legalCommands.push_back("sigma");
- 
+
   float distance, sigma_m, value;
   if(parseValue(root,"distance", value, errTxt) == true)
     distance = value;
@@ -1060,9 +1060,9 @@ XmlModelFile::parseTimeGradientSettings(TiXmlNode * node, std::string & errTxt)
     sigma_m = value;
   else
     sigma_m = 1.0;
-  
+
   modelSettings_->setTimeGradientSettings(distance,sigma_m);
-  
+
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
@@ -1141,7 +1141,7 @@ XmlModelFile::parseEarthModel(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("vp-file");
   legalCommands.push_back("vs-file");
   legalCommands.push_back("density-file");
-  
+
   if (modelSettings_->getBackgroundType() != "")
     errTxt += "Both background and earth-model can not be given. Under forward mode, the earth-model must be used.\n";
   modelSettings_->setBackgroundType("earth model");
@@ -1171,7 +1171,7 @@ XmlModelFile::parseEarthModel(TiXmlNode * node, std::string & errTxt)
   else
     errTxt += "Density is not given in command earth-model.";
 
-  modelSettings_->setGenerateBackground(false); 
+  modelSettings_->setGenerateBackground(false);
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
@@ -1226,7 +1226,7 @@ XmlModelFile::parseBackground(TiXmlNode * node, std::string & errTxt)
 
   bool vpvs = parseFileName(root, "vp-vs-ratio-file", filename, errTxt);
   if(vpvs == true) {
-    inputFiles_->setBackFile(1, filename);     // Store Vp/Vs background in Vs slot 
+    inputFiles_->setBackFile(1, filename);     // Store Vp/Vs background in Vs slot
     modelSettings_->setConstBackValue(1, -1);  //
     modelSettings_->setUseVpVsBackground(true);
   }
@@ -1282,7 +1282,7 @@ XmlModelFile::parseBackground(TiXmlNode * node, std::string & errTxt)
   }
   if(parseFileName(root, "velocity-field", filename, errTxt) == true)
     inputFiles_->setBackVelFile(filename);
-  
+
   Vario * vario = NULL;
   if(parseVariogram(root, "lateral-correlation", vario, errTxt) == true) {
     if (vario != NULL) {
@@ -1374,20 +1374,20 @@ XmlModelFile::parsePriorFaciesProbabilities(TiXmlNode * node, std::string & errT
 
   std::vector<std::string> legalCommands;
   legalCommands.push_back("facies");
-  
+
   float sum;
   int status = 0;
   sum = 0.0;
   int oldStatus = 0;
- 
+
   while(parseFacies(root,errTxt)==true)
   {
     status = modelSettings_->getIsPriorFaciesProbGiven();
     if(oldStatus!=0 &&oldStatus!=status)
       errTxt+= "Prior facies probability must be given in the same way for all facies.\n";
-   
+
     oldStatus = status;
-   
+
   }
   if(status==1)
   {
@@ -1402,13 +1402,13 @@ XmlModelFile::parsePriorFaciesProbabilities(TiXmlNode * node, std::string & errT
     if(sum!=1.0)
     {
       errTxt+="Prior facies probabilities must sum to 1.0. They sum to "+ NRLib::ToString(sum) +".\n";
-    } 
+    }
   }
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
 
-bool 
+bool
 XmlModelFile::parseFacies(TiXmlNode * node, std::string & errTxt)
 {
 TiXmlNode * root = node->FirstChildElement("facies");
@@ -1427,15 +1427,15 @@ TiXmlNode * root = node->FirstChildElement("facies");
 
   if(parseValue(root,"probability",value,errTxt,true)==true)
   {
-    modelSettings_->setPriorFaciesProbGiven(ModelSettings::FACIES_FROM_MODEL_FILE); 
+    modelSettings_->setPriorFaciesProbGiven(ModelSettings::FACIES_FROM_MODEL_FILE);
     modelSettings_->addPriorFaciesProb(faciesname,value);
   }
   else if(parseValue(root,"probability-cube",filename,errTxt,true)==true)
   {
-    modelSettings_->setPriorFaciesProbGiven(ModelSettings::FACIES_FROM_CUBES); 
+    modelSettings_->setPriorFaciesProbGiven(ModelSettings::FACIES_FROM_CUBES);
     inputFiles_->setPriorFaciesProb(faciesname,filename);
   }
- 
+
  checkForJunk(root, errTxt, legalCommands, true); //allow duplicates
   return(true);
 
@@ -1447,7 +1447,7 @@ XmlModelFile::parseProjectSettings(TiXmlNode * node, std::string & errTxt)
   TiXmlNode * root = node->FirstChildElement("project-settings");
   if(root == 0)
     return(false);
-  
+
   std::vector<std::string> legalCommands;
   legalCommands.push_back("output-volume");
   legalCommands.push_back("time-to-depth-mapping-for-3d-wavelet");
@@ -1483,7 +1483,7 @@ XmlModelFile::parseOutputVolume(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("inline-crossline-numbers");
 
   bool interval = parseIntervalTwoSurfaces(root, errTxt);
-  
+
   if(parseIntervalOneSurface(root, errTxt) == interval) { //Either both or none given
     if(interval == true)
       errTxt += "Time interval specified in more than one way in command <"+root->ValueStr()+"> "
@@ -1561,7 +1561,7 @@ XmlModelFile::parseIntervalTwoSurfaces(TiXmlNode * node, std::string & errTxt)
 
   bool inversionField = false;
   parseBool(root, "velocity-field-from-inversion", inversionField, errTxt);
-  
+
 
   if(inversionField == true) {
     modelSettings_->setVelocityFromInversion(true);
@@ -1638,7 +1638,7 @@ XmlModelFile::parseBaseSurface(TiXmlNode * node, std::string & errTxt)
   TiXmlNode * root = node->FirstChildElement("base-surface");
   if(root == 0)
     return(false);
-  
+
   std::vector<std::string> legalCommands;
   legalCommands.push_back("time-file");
   legalCommands.push_back("time-value");
@@ -1715,7 +1715,7 @@ XmlModelFile::parseIntervalOneSurface(TiXmlNode * node, std::string & errTxt)
 }
 
 
-bool 
+bool
 XmlModelFile::parseAreaFromSurface(TiXmlNode * node, std::string & errTxt)
 {
  TiXmlNode * root = node->FirstChildElement("area-from-surface");
@@ -1739,7 +1739,7 @@ XmlModelFile::parseILXLArea(TiXmlNode * node, std::string & errTxt)
 TiXmlNode * root = node->FirstChildElement("inline-crossline-numbers");
   if(root == 0)
     return(false);
-  
+
   std::vector<std::string> legalCommands;
   legalCommands.push_back("il-start");
   legalCommands.push_back("il-end");
@@ -1786,7 +1786,7 @@ TiXmlNode * root = node->FirstChildElement("inline-crossline-numbers");
     ilxlnumbers[5] = value;
   else
     ilxlnumbers[5] = IMISSING;
-  
+
   modelSettings_->setAreaILXLParameters(ilxlnumbers);
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -1798,7 +1798,7 @@ XmlModelFile::parseUTMArea(TiXmlNode * node, std::string & errTxt)
   TiXmlNode * root = node->FirstChildElement("utm-coordinates");
   if(root == 0)
     return(false);
-  
+
   std::vector<std::string> legalCommands;
   legalCommands.push_back("reference-point-x");
   legalCommands.push_back("reference-point-y");
@@ -1807,7 +1807,7 @@ XmlModelFile::parseUTMArea(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("sample-density-x");
   legalCommands.push_back("sample-density-y");
   legalCommands.push_back("angle");
-  
+
   double x0 = 0;
   if(parseValue(root, "reference-point-x", x0, errTxt) == false)
     errTxt += "Reference x-coordinate must be given in command <"+
@@ -1873,7 +1873,7 @@ XmlModelFile::parseTime3DMapping(TiXmlNode * node, std::string & errTxt)
   else
     modelSettings_->setRefDepth(value);
 
-  if (parseValue(root, "average-velocity", value, errTxt) == false) 
+  if (parseValue(root, "average-velocity", value, errTxt) == false)
     errTxt += "Average velocity must be given in command <"+
       root->ValueStr()+"> "+lineColumnText(root)+".\n";
   else
@@ -1910,7 +1910,7 @@ XmlModelFile::parseIOSettings(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("wavelet-output");
   legalCommands.push_back("other-output");
 
-  
+
   std::string topDir = IO::TopDirectory();
   parseValue(root, "top-directory", topDir, errTxt);
   ensureTrailingSlash(topDir);
@@ -1920,7 +1920,7 @@ XmlModelFile::parseIOSettings(TiXmlNode * node, std::string & errTxt)
   inputDir = topDir+inputDir;
   ensureTrailingSlash(inputDir);
   inputFiles_->setInputDirectory(inputDir);
-  
+
   std::string outputDir = IO::OutputDirectory();
   parseValue(root, "output-directory", outputDir, errTxt);
   outputDir = topDir+outputDir;
@@ -2002,7 +2002,7 @@ XmlModelFile::parseGridOutput(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("elastic-parameters");
   legalCommands.push_back("seismic-data");
   legalCommands.push_back("other-parameters");
-  
+
   parseGridFormats(root, errTxt);
   parseGridDomains(root, errTxt);
   parseGridElasticParameters(root, errTxt);
@@ -2112,21 +2112,21 @@ XmlModelFile::parseGridElasticParameters(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("si");
   legalCommands.push_back("vp-vs-ratio");
   legalCommands.push_back("murho");
-  legalCommands.push_back("lambdarho"); 
+  legalCommands.push_back("lambdarho");
   legalCommands.push_back("background");
   legalCommands.push_back("background-trend");
 
   bool value     = false;
   int  paramFlag = 0;
- 
+
   if(parseBool(root, "vp", value, errTxt) == true && value == true)
     paramFlag += IO::VP;
   if(parseBool(root, "vs", value, errTxt) == true && value == true)
     paramFlag += IO::VS;
   if(parseBool(root, "density", value, errTxt) == true && value == true)
-    paramFlag += IO::RHO;   
+    paramFlag += IO::RHO;
   if(parseBool(root, "lame-lambda", value, errTxt) == true && value == true)
-    paramFlag += IO::LAMELAMBDA;    
+    paramFlag += IO::LAMELAMBDA;
   if(parseBool(root, "lame-mu", value, errTxt) == true && value == true)
     paramFlag += IO::LAMEMU;
   if(parseBool(root, "poisson-ratio", value, errTxt) == true && value == true)
@@ -2170,7 +2170,8 @@ XmlModelFile::parseGridSeismicData(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("original");
   legalCommands.push_back("synthetic");
   legalCommands.push_back("residuals");
-  
+  legalCommands.push_back("synthetic-residuals");
+
   bool value    = false;
   int paramFlag = 0;
 
@@ -2178,14 +2179,20 @@ XmlModelFile::parseGridSeismicData(TiXmlNode * node, std::string & errTxt)
     paramFlag += IO::RESIDUAL;
 
   if(parseBool(root, "original", value, errTxt) == true && value == true)
-    paramFlag += IO::ORIGINAL_SEISMIC_DATA;  
+    paramFlag += IO::ORIGINAL_SEISMIC_DATA;
 
   if(parseBool(root, "synthetic", value, errTxt) == true && value == true)
   {
     paramFlag += IO::SYNTHETIC_SEISMIC_DATA;
     modelSettings_->setGenerateSeismicAfterInv(true);
   }
-  
+
+  if(parseBool(root, "synthetic-residuals", value, errTxt) == true && value == true)
+  {
+    paramFlag += IO::SYNTHETIC_RESIDUAL;
+    modelSettings_->setGenerateSeismicAfterInv(true);
+  }
+
   if (modelSettings_->getOutputGridsDefaultInd() && paramFlag > 0){
     modelSettings_->setOutputGridsDefaultInd(false);
     modelSettings_->setOutputGridsElastic(0);
@@ -2209,7 +2216,7 @@ XmlModelFile::parseGridOtherParameters(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("time-to-depth-velocity");
   legalCommands.push_back("extra-grids");
   legalCommands.push_back("seismic-quality-grid");
- 
+
   bool facies           = true;
   bool faciesUndef      = false;
   bool faciesLH         = false;
@@ -2247,7 +2254,7 @@ XmlModelFile::parseGridOtherParameters(TiXmlNode * node, std::string & errTxt)
     paramFlag += IO::TIME_TO_DEPTH_VELOCITY;
   if(parseBool(root, "seismic-quality-grid", value, errTxt) == true && value == true)
     paramFlag += IO::SEISMIC_QUALITY_GRID;
-  
+
 
   if (modelSettings_->getOutputGridsDefaultInd() && paramFlag > 0){
     modelSettings_->setOutputGridsDefaultInd(false);
@@ -2459,7 +2466,7 @@ XmlModelFile::parseAdvancedSettings(TiXmlNode * node, std::string & errTxt)
   double limit;
   if(parseValue(root,"maximum-relative-thickness-difference", limit, errTxt) == true)
     modelSettings_->setLzLimit(limit);
-  
+
   parseFrequencyBand(root, errTxt);
 
   float value = 0.0f;
@@ -2492,11 +2499,11 @@ XmlModelFile::parseAdvancedSettings(TiXmlNode * node, std::string & errTxt)
   bool smooth = false;
   if(parseBool(root, "smooth-kriged-parameters", smooth, errTxt) == true)
     modelSettings_->setDoSmoothKriging(smooth);
-  
+
   bool panel = false;
   if(parseBool(root, "rms-panel-mode", panel, errTxt) == true)
     modelSettings_->setRunFromPanel(panel);
-  
+
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
@@ -2546,7 +2553,7 @@ XmlModelFile::parseFrequencyBand(TiXmlNode * node, std::string & errTxt)
   TiXmlNode * root = node->FirstChildElement("frequency-band");
   if(root == 0)
     return(false);
-  
+
   std::vector<std::string> legalCommands;
   legalCommands.push_back("low-cut");
   legalCommands.push_back("high-cut");
@@ -2721,7 +2728,7 @@ XmlModelFile::parseFileName(TiXmlNode * node, const std::string & keyword, std::
   std::string tmpErr;
   if(parseValue(node, keyword, value, tmpErr, allowDuplicates) == false)
     return(false);
-  
+
   filename = value;
 
   //No junk-clearing, done in parseValue
@@ -2730,8 +2737,8 @@ XmlModelFile::parseFileName(TiXmlNode * node, const std::string & keyword, std::
 }
 
 
-void 
-XmlModelFile::checkForJunk(TiXmlNode * root, std::string & errTxt, const std::vector<std::string> & legalCommands, 
+void
+XmlModelFile::checkForJunk(TiXmlNode * root, std::string & errTxt, const std::vector<std::string> & legalCommands,
                     bool allowDuplicates)
 {
   TiXmlNode * child = root->FirstChild();
@@ -2796,9 +2803,9 @@ XmlModelFile::lineColumnText(TiXmlNode * node)
 
 
 void
-XmlModelFile::setDerivedParameters(std::string & errTxt) 
+XmlModelFile::setDerivedParameters(std::string & errTxt)
 {
-  int areaSpecification;  
+  int areaSpecification;
   if(modelSettings_->getAreaParameters() != NULL) {
     areaSpecification = ModelSettings::AREA_FROM_UTM;
     if (modelSettings_->getNoSeismicNeeded() && inputFiles_->getNumberOfSeismicFiles()>0)
@@ -2818,7 +2825,7 @@ XmlModelFile::setDerivedParameters(std::string & errTxt)
 
   if (modelSettings_->getEstimateFaciesProb()) {
     // Cannot be placed under parseWellData() since we do not there if getUseFilterForFaciesProb() has been set.
-    bool useFilter = modelSettings_->getUseFilterForFaciesProb(); 
+    bool useFilter = modelSettings_->getUseFilterForFaciesProb();
     for (int i=0 ; i < modelSettings_->getNumberOfWells() ; i++) {
       int filterElasticLogs       = modelSettings_->getIndicatorFilter(i);
       int useForFaciesProbability = modelSettings_->getIndicatorFacies(i);
@@ -2840,7 +2847,7 @@ XmlModelFile::checkConsistency(std::string & errTxt) {
     else
       checkInversionConsistency(errTxt);
   }
-  if(modelSettings_->getLocalWaveletVario()==NULL) 
+  if(modelSettings_->getLocalWaveletVario()==NULL)
       modelSettings_->copyBackgroundVarioToLocalWaveletVario();
   if(modelSettings_->getOptimizeWellLocation()==true)
     checkAngleConsistency(errTxt);
@@ -2862,7 +2869,7 @@ XmlModelFile::checkConsistency(std::string & errTxt) {
 }
 
 void
-XmlModelFile::checkForwardConsistency(std::string & errTxt) 
+XmlModelFile::checkForwardConsistency(std::string & errTxt)
 {
   if (modelSettings_->getNumberOfAngles() == 0) {
     errTxt+="At least one wavelet must be specified for forward modelling\n";
@@ -2875,29 +2882,29 @@ XmlModelFile::checkForwardConsistency(std::string & errTxt)
     modelSettings_->setEstimateSNRatio(i,false);
     if(modelSettings_->getEstimateWavelet(i)==true)
       errTxt+="Wavelet must be given when doing forward modeling. Wavelet is not given for angle "+NRLib::ToString(modelSettings_->getAngle(i)*(180/NRLib::Pi),1)+".\n";
-    
+
     if(inputFiles_->getSeismicFile(i)!="")
       errTxt+="Seismic data should not be given when doing forward modeling.\n";
   }
 
   if(modelSettings_->getUseLocalNoise()==true)
     errTxt+="Local noise can not be used in forward modeling.\n";
-  
+
   if(modelSettings_->getUseLocalWavelet()==true)
     errTxt+="Local wavelet can not be used in forward modeling.\n";
-  
+
   if (modelSettings_->getNumberOfWells() > 0)
     errTxt +="Wells should not be given when doing forward modeling.\n";
-  
+
   if (modelSettings_->getBackgroundType() == "background")
     errTxt += "An earth model needs to be given when doing forward modeling. The background model should not be given.\n";
   else if (modelSettings_->getBackgroundType() == "")
     errTxt += "An earth model needs to be given when doing forward modeling.\n";
-  
+
   if (modelSettings_->getEstimate3DWavelet() && !modelSettings_->getHasTime3DMapping())
     errTxt += "Time 3D mapping must be given when 3D wavelet is to be estimated.\n";
 }
- 
+
 void
 XmlModelFile::checkEstimationConsistency(std::string & errTxt) {
   if (modelSettings_->getNumberOfWells()==0) {
@@ -2928,11 +2935,11 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
     errTxt += "Seismic data are needed for inversion.\n";
 
   if (modelSettings_->getNumberOfWells() == 0) {
-    if (inputFiles_->getBackFile(0)!="" && 
-        (inputFiles_->getWaveletFile(0)!="" || modelSettings_->getUseRickerWavelet(0) == true) && 
-        inputFiles_->getTempCorrFile()!="" && 
-        inputFiles_->getParamCorrFile()!="") 
-      modelSettings_->setNoWellNeeded(true); 
+    if (inputFiles_->getBackFile(0)!="" &&
+        (inputFiles_->getWaveletFile(0)!="" || modelSettings_->getUseRickerWavelet(0) == true) &&
+        inputFiles_->getTempCorrFile()!="" &&
+        inputFiles_->getParamCorrFile()!="")
+      modelSettings_->setNoWellNeeded(true);
     else {
       errTxt += "Wells are needed for the inversion. ";
       errTxt += "Alternatively, all of background, wavelet, \ntemporal correlation and parameter correlation must be given.\n";
@@ -2943,11 +2950,11 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
       errTxt += "Wells are needed for facies probabilities.\n";
   }
 
-  if (modelSettings_->getOutputGridsElastic() == 0 && 
+  if (modelSettings_->getOutputGridsElastic() == 0 &&
       modelSettings_->getOutputGridsSeismic() == 0 &&
       modelSettings_->getOutputGridsOther()   == 0 &&
       modelSettings_->getWellOutputFlag()     == 0 &&
-      modelSettings_->getWaveletOutputFlag()  == 0 && 
+      modelSettings_->getWaveletOutputFlag()  == 0 &&
       modelSettings_->getOtherOutputFlag()    == 0)
     errTxt += "No output is specified for the inversion model.\n";
 
@@ -2958,13 +2965,13 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
   {
     errTxt += "Grid output for facies probabilities or facies probabilities with undefined value,\n";
     errTxt += "or blocked wells needs to be specified when doing facies estimation.\n";
-  }       
+  }
   if (modelSettings_->getEstimateFaciesProb() == false && modelSettings_->getFaciesProbRelative() == false)
     errTxt += "Absolute facies probabilities can not be requested without requesting facies probabilities under inversion settings.\n";
   if (modelSettings_->getEstimateFaciesProb() == false && (modelSettings_->getOutputGridsOther() & IO::SEISMIC_QUALITY_GRID))
     errTxt += "Seismic quality grid can not be estimated without requesting facies probabilities under inversion settings.\n";
 }
-  
+
 void
 XmlModelFile::checkAngleConsistency(std::string & errTxt) {
 
@@ -2975,7 +2982,7 @@ XmlModelFile::checkAngleConsistency(std::string & errTxt) {
   int   nWells         = modelSettings_->getNumberOfWells();
 
   for(w=0; w<nWells; w++){
-    nMoveAngles = modelSettings_->getNumberOfWellAngles(w); 
+    nMoveAngles = modelSettings_->getNumberOfWellAngles(w);
     std::vector<bool> compare(nMoveAngles);
 
     for( i=0; i<nMoveAngles; i++ ){
@@ -2999,7 +3006,7 @@ XmlModelFile::checkAngleConsistency(std::string & errTxt) {
 }
 
 
-void 
+void
 XmlModelFile::checkIOConsistency(std::string & errTxt)
 {
   if ((modelSettings_->getOtherOutputFlag() & IO::LOCAL_NOISE)>0 && modelSettings_->getUseLocalNoise()==false)
