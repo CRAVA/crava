@@ -61,7 +61,7 @@ public:
 
 private: 
   void               computeDataVariance(void);
-  void               setupErrorCorrelation(ModelSettings * modelSttings, const std::vector<Grid2D *> & noiseScale);
+  void               setupErrorCorrelation(const std::vector<Grid2D *> & noiseScale);
   void               computeVariances(fftw_real* corrT, ModelSettings * modelSettings);
   void               writeBWPredicted(void);
   float              getEmpSNRatio(int l)     const {return empSNRatio_[l];}

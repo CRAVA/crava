@@ -7,12 +7,12 @@
 
 #include "src/definitions.h"
 #include "src/io.h"
+#include "src/vario.h"
 #include "nrlib/iotools/logkit.hpp"
 #include "nrlib/segy/traceheader.hpp"
 #include "nrlib/segy/segy.hpp"
 
 class Simbox;
-class Vario;
 
 class ModelSettings
 {
@@ -20,45 +20,50 @@ public:
   ModelSettings(void);
   ~ModelSettings(void); 
 
-  Vario                          * getAngularCorr(void)                 const { return angularCorr_                               ;} 
+  Vario                          * getAngularCorr(int i)                const { return angularCorr_[i]                            ;} 
   Vario                          * getLateralCorr(void)                 const { return lateralCorr_                               ;}
   Vario                          * getBackgroundVario(void)             const { return backgroundVario_                           ;} 
   Vario                          * getLocalWaveletVario(void)           const { return localWaveletVario_                         ;} 
   SegyGeometry                   * getAreaParameters(void)              const { return geometry_                                  ;}    
   TraceHeaderFormat              * getTraceHeaderFormat(void)           const { return traceHeaderFormat_                         ;}
   TraceHeaderFormat              * getTraceHeaderFormatOutput(void)     const { return traceHeaderFormatOutput_                   ;}
-  TraceHeaderFormat              * getTraceHeaderFormat(int i)          const { return localTHF_[i]                               ;}
-  int                              getNumberOfTraceHeaderFormats(void)  const { return static_cast<int>(localTHF_.size())         ;}
+  TraceHeaderFormat              * getTraceHeaderFormat(int i, int j)   const { return timeLapseLocalTHF_[i][j]                   ;}
+  int                              getNumberOfTraceHeaderFormats(int i) const { return static_cast<int>(timeLapseLocalTHF_[i].size());}
   int                              getKrigingParameter(void)            const { return krigingParameter_                          ;}
   float                            getConstBackValue(int i)             const { return constBackValue_[i]                         ;}
   bool                             getUseAIBackground(void)             const { return useAIBackground_                           ;}
   bool                             getUseVpVsBackground(void)           const { return useVpVsBackground_                         ;}
-  int                              getNumberOfAngles(void)              const { return static_cast<int>(angle_.size())            ;} 
-  int                              getSeismicType(int i)                const { return seismicType_[i]                            ;}
-  float                            getAngle(int i)                      const { return angle_[i]                                  ;}
-  float                            getWaveletScale(int i)               const { return waveletScale_[i]                           ;} 
-  float                            getSNRatio(int i)                    const { return SNRatio_[i]                                ;} 
+  int                              getNumberOfAngles(int i)             const { return static_cast<int>(timeLapseAngle_[i].size());} 
+  int                              getNumberOfTimeLapses(void)          const { return static_cast<int>(timeLapseAngle_.size())   ;}
+  int                              getVintageYear(int i)                const { return vintageYear_[i]                            ;}   
+  int                              getVintageMonth(int i)               const { return vintageMonth_[i]                           ;}
+  int                              getVintageDay(int i)                 const { return vintageDay_[i]                             ;}
+  std::vector<int>                 getSeismicType(int i)                const { return timeLapseSeismicType_[i]                   ;}
+  std::vector<float>               getAngle(int i)                      const { return timeLapseAngle_[i]                         ;}
+  float                            getWaveletScale(int i, int j)        const { return timeLapseWaveletScale_[i][j]               ;} 
+  std::vector<float>               getSNRatio(int i)                    const { return timeLapseSNRatio_[i]                       ;} 
   float                            getWellMoveAngle(int i,int j)        const { return wellMoveAngle_[i][j]                       ;}
   float                            getWellMoveWeight(int i,int j)       const { return wellMoveWeight_[i][j]                      ;}
   int                              getNumberOfWellAngles(int i)         const { return static_cast<int>(wellMoveAngle_[i].size()) ;} 
-  bool                             getMatchEnergies(int i)              const { return matchEnergies_[i]      == 1                ;} 
-  bool                             getEstimateWavelet(int i)            const { return estimateWavelet_[i]    == 1                ;}
-  bool                             getUseRickerWavelet(int i)           const { return useRickerWavelet_[i]   == 1                ;}
-  bool                             getEstimateSNRatio(int i)            const { return estimateSNRatio_[i]    == 1                ;}
-  bool                             getEstimateLocalScale(int i)         const { return estimateLocalScale_[i] == 1                ;}
-  bool                             getEstimateLocalShift(int i)         const { return estimateLocalShift_[i] == 1                ;}
-  bool                             getEstimateLocalNoise(int i)         const { return estimateLocalNoise_[i] == 1                ;}
-  bool                             getEstimateGlobalWaveletScale(int i) const { return estimateGlobalWaveletScale_[i]==1          ;}
+  std::vector<bool>                getMatchEnergies(int i)              const { return timeLapseMatchEnergies_[i]                 ;} 
+  std::vector<bool>                getEstimateWavelet(int i)            const { return timeLapseEstimateWavelet_[i]               ;}
+  std::vector<bool>                getUseRickerWavelet(int i)           const { return timeLapseUseRickerWavelet_[i]              ;}
+  bool                             getEstimateSNRatio(int i, int j)     const { return timeLapseEstimateSNRatio_[i][j]            ;}
+  bool                             getEstimateLocalScale(int i, int j)  const { return timeLapseEstimateLocalScale_[i][j]         ;} 
+  bool                             getEstimateLocalShift(int i, int j)  const { return timeLapseEstimateLocalShift_[i][j]         ;}
+  bool                             getEstimateLocalNoise(int i, int j)  const { return timeLapseEstimateLocalNoise_[i][j]         ;}
+  bool                             getEstimateGlobalWaveletScale(int i, int j) const { return timeLapseEstimateGlobalWaveletScale_[i][j];}
   bool                             getEstimateBackground(void)          const { return estimateBackground_                        ;}
   bool                             getEstimateCorrelations(void)        const { return estimateCorrelations_                      ;}
   bool                             getEstimateWaveletNoise(void)        const { return estimateWaveletNoise_                      ;}
   bool                             getEstimate3DWavelet(void)           const { return estimate3DWavelet_                         ;}
   bool                             getHasTime3DMapping(void)            const { return hasTime3DMapping_                          ;}
+  bool                             getUse3DWavelet(void)                const { return use3DWavelet_                              ;}
   int                              getWaveletDim(int i)                 const { return waveletDim_[i]                             ;}
-  float                            getStretchFactor(int i)              const { return stretchFactor_[i]                          ;}
+  std::vector<float>               getStretchFactor(int i)              const { return timeLapseStretchFactor_[i]                 ;} //Never used...
   float                            getEstRangeX(int i)                  const { return estRangeX_[i]                              ;}
   float                            getEstRangeY(int i)                  const { return estRangeY_[i]                              ;}
-  float                            getRickerPeakFrequency(int i)        const { return rickerPeakFrequency_[i]                    ;}
+  float                            getRickerPeakFrequency(int i, int j) const { return timeLapseRickerPeakFrequency_[i][j]        ;}
   const std::string                getBackgroundType(void)              const { return backgroundType_                            ;}            
   const std::vector<std::string> & getLogNames(void)                    const { return logNames_                                  ;}
   const std::vector<bool>        & getInverseVelocity(void)             const { return inverseVelocity_                           ;}
@@ -115,8 +120,8 @@ public:
   int                              getNZpad(void)                       const { return nzPad_                                     ;}
   bool                             getEstimateXYPadding(void)           const { return estimateXYPadding_                         ;}
   bool                             getEstimateZPadding(void)            const { return estimateZPadding_                          ;}
-  float                            getSegyOffset(void)                  const { return segyOffset_                                ;}
-  float                            getLocalSegyOffset(int i)            const { return localSegyOffset_[i]                        ;}
+  float                            getSegyOffset(int i)                 const { return segyOffset_[i]                             ;}
+  std::vector<float>               getLocalSegyOffset(int i)            const { return timeLapseLocalSegyOffset_[i]               ;}
   float                            getPundef(void)                      const { return p_undef_                                   ;}
   double                           getLzLimit(void)                     const { return lzLimit_                                   ;}
   double                           getTimeDTop(void)                    const { return time_dTop_                                 ;}
@@ -156,7 +161,7 @@ public:
   bool                             getDepthDataOK(void)                 const { return depthDataOk_                               ;}
   bool                             getParallelTimeSurfaces(void)        const { return parallelTimeSurfaces_                      ;}
   bool                             getUseLocalWavelet(void)             const { return useLocalWavelet_                           ;}
-  bool                             getUseLocalNoise(void)               const { return useLocalNoise_                             ;}
+  bool                             getUseLocalNoise(int i)              const { return timeLapseUseLocalNoise_[i]                 ;}
   bool                             getOptimizeWellLocation(void)        const { return optimizeWellLocation_                      ;}
   bool                             getNoWellNedded(void)                const { return noWellNeeded_                              ;}
   bool                             getNoSeismicNeeded(void)             const { return noSeismicNeeded_                           ;}
@@ -168,11 +173,12 @@ public:
   bool                             getDoDepthConversion(void)           const;
   bool                             getDoSmoothKriging(void)             const { return smoothKrigedParameters_ ;}
   bool                             getRunFromPanel(void)                const { return runFromPanel_ ;}
-  void                             getTimeGradientSettings(float &distance, float &alpha);      
-  int                              getEstimateNumberOfWavelets(void)    const;
+  void                             getTimeGradientSettings(float &distance, float &alpha, int t);      
+  int                              getEstimateNumberOfWavelets(int t)   const;
+  std::vector<int>                 findSortedVintages(void)             const;
 
   void rotateVariograms(float angle);
-  void setAngularCorr(Vario * vario);    
+  void setLastAngularCorr(Vario * vario);    
   void setLateralCorr(Vario * vario);    
   void setBackgroundVario(Vario * vario);
   void setLocalWaveletVario(Vario * vario);
@@ -188,20 +194,19 @@ public:
   void addSeismicType(int seismicType)                    { seismicType_.push_back(seismicType)                  ;}
   void addAngle(float angle)                              { angle_.push_back(angle)                              ;}
   void addWaveletScale(float waveletScale)                { waveletScale_.push_back(waveletScale)                ;}
-  void setWaveletScale(int i, float waveletScale)         { waveletScale_[i]          = waveletScale             ;} 
-  void setSNRatio(int i, float SNRatio)                   { SNRatio_[i]               = SNRatio                  ;}
+  void setWaveletScale(int i, int j, float waveletScale)  { timeLapseWaveletScale_[i][j] = waveletScale          ;} 
   void addSNRatio(float SNRatio)                          { SNRatio_.push_back(SNRatio)                          ;}
   void setBackgroundType(std::string type)                { backgroundType_           = type                     ;}
                                                                                                                 
-  void addMatchEnergies(int matchEnergies)                { matchEnergies_.push_back(matchEnergies)              ;}
-  void addEstimateWavelet(int estimateWavelet)            { estimateWavelet_.push_back(estimateWavelet)          ;}
-  void addEstimateSNRatio(int estimateSNRatio)            { estimateSNRatio_.push_back(estimateSNRatio)          ;}
-  void setEstimateSNRatio(int i, int estimateSNRatio)     { estimateSNRatio_[i] = estimateSNRatio                ;}
-  void addEstimateLocalShift(int estimateShift)           { estimateLocalShift_.push_back(estimateShift)         ;}
-  void addEstimateLocalScale(int estimateScale)           { estimateLocalScale_.push_back(estimateScale)         ;}
-  void addEstimateLocalNoise(int estimateNoise)           { estimateLocalNoise_.push_back(estimateNoise)         ;}
-  void addEstimateGlobalWaveletScale(int estimateScale)   { estimateGlobalWaveletScale_.push_back(estimateScale) ;}
-  void addUseRickerWavelet(int useRicker)                 { useRickerWavelet_.push_back(useRicker)               ;}
+  void addMatchEnergies(bool matchEnergies)               { matchEnergies_.push_back(matchEnergies)              ;}
+  void addEstimateWavelet(bool estimateWavelet)           { estimateWavelet_.push_back(estimateWavelet)          ;}
+  void addEstimateSNRatio(bool estimateSNRatio)           { estimateSNRatio_.push_back(estimateSNRatio)          ;}
+  void setEstimateSNRatio(int i, int j, bool estimateSNRatio){ timeLapseEstimateSNRatio_[i][j] = estimateSNRatio ;}
+  void addEstimateLocalShift(bool estimateShift)          { estimateLocalShift_.push_back(estimateShift)         ;}
+  void addEstimateLocalScale(bool estimateScale)          { estimateLocalScale_.push_back(estimateScale)         ;}
+  void addEstimateLocalNoise(bool estimateNoise)          { estimateLocalNoise_.push_back(estimateNoise)         ;}
+  void addEstimateGlobalWaveletScale(bool estimateScale)  { estimateGlobalWaveletScale_.push_back(estimateScale) ;}
+  void addUseRickerWavelet(bool useRicker)                { useRickerWavelet_.push_back(useRicker)               ;}
   void addRickerPeakFrequency(float pf)                   { rickerPeakFrequency_.push_back(pf)                   ;}
 
   void addWaveletDim(int waveletDim)                      { waveletDim_.push_back(waveletDim)                    ;}
@@ -214,6 +219,7 @@ public:
   void setEstimateWaveletNoise(bool estimateWaveletNoise) { estimateWaveletNoise_     = estimateWaveletNoise     ;}
   void setEstimate3DWavelet(bool estimate3DWavelet)       { estimate3DWavelet_        = estimate3DWavelet        ;}
   void setHasTime3DMapping(bool hasTime3DMapping)         { hasTime3DMapping_         = hasTime3DMapping         ;}
+  void setUse3DWavelet(bool use3DWavelet)                 { use3DWavelet_             = use3DWavelet             ;}
                                                                                                                  
   void addMoveAngle(float moveAngle)                      { moveAngle_.push_back(moveAngle)                      ;} //Local temporary variable
   void addMoveWeight(float moveWeight)                    { moveWeight_.push_back(moveWeight)                    ;} //Local temporary variable
@@ -274,7 +280,7 @@ public:
   void setNZpad(int nzPad)                                { nzPad_                    = nzPad                    ;}
   void setEstimateXYPadding(bool estimateXYPadding)       { estimateXYPadding_        = estimateXYPadding        ;}
   void setEstimateZPadding(bool estimateZPadding)         { estimateZPadding_         = estimateZPadding         ;}
-  void setSegyOffset(float segyOffset)                    { segyOffset_               = segyOffset               ;}
+  void addSegyOffset(float segyOffset)                    { segyOffset_.push_back(segyOffset)                    ;}
   void addLocalSegyOffset(float segyOffset)               { localSegyOffset_.push_back(segyOffset)               ;}
   void setPundef(float p_undef)                           { p_undef_                  = p_undef                  ;}
   void setLzLimit(double lzLimit)                         { lzLimit_                  = lzLimit                  ;}
@@ -321,8 +327,51 @@ public:
   void setDoSmoothKriging(bool smooth)                    { smoothKrigedParameters_   = smooth                   ;}
   void setRunFromPanel(bool panel)                        { runFromPanel_             = panel                    ;}
   void setNoWellNeeded(bool wellNeeded)                   { noWellNeeded_             = wellNeeded               ;}
-  void setTimeGradientSettings(float distance, float alpha);
+  void addVintage(int year, int month, int day);
   void setNoSeismicNeeded(bool seismicNeeded)             { noSeismicNeeded_          = seismicNeeded            ;}
+  void addTimeGradientSettings(float distance, float alpha);
+
+  void addDefaultVintage(void);
+  void addDefaultTimeGradientSettings(void);     
+  void addDefaultSegyOffset(void)                         { segyOffset_.push_back(0.0f)                          ;}
+  void addDefaultAngularCorr(void)                        { angularCorr_.push_back(new GenExpVario(1, 10*static_cast<float>(NRLib::Pi/180.0)));} // Power=1 range=10deg
+  void setDefaultUseLocalNoise(void)                      { useLocalNoise_ = false                               ;}                      
+  
+  void clearTimeLapse(void)                               { angle_.clear();
+                                                            localTHF_.clear();
+                                                            localSegyOffset_.clear();
+                                                            seismicType_.clear();
+                                                            estimateGlobalWaveletScale_.clear();
+                                                            estimateLocalShift_.clear();
+                                                            estimateLocalScale_.clear();
+                                                            estimateLocalNoise_.clear();
+                                                            waveletScale_.clear();
+                                                            useRickerWavelet_.clear();
+                                                            rickerPeakFrequency_.clear();
+                                                            estimateWavelet_.clear();
+                                                            stretchFactor_.clear();
+                                                            matchEnergies_.clear();
+                                                            estimateSNRatio_.clear();
+                                                            SNRatio_.clear()                                     ;}
+
+  void addTimeLapse(void)                                 { timeLapseAngle_.push_back(angle_);
+                                                            timeLapseLocalTHF_.push_back(localTHF_);
+                                                            timeLapseLocalSegyOffset_.push_back(localSegyOffset_);
+                                                            timeLapseSeismicType_.push_back(seismicType_);
+                                                            timeLapseEstimateGlobalWaveletScale_.push_back(estimateGlobalWaveletScale_);
+                                                            timeLapseEstimateLocalShift_.push_back(estimateLocalShift_);
+                                                            timeLapseEstimateLocalScale_.push_back(estimateLocalScale_);
+                                                            timeLapseEstimateLocalNoise_.push_back(estimateLocalNoise_);
+                                                            timeLapseWaveletScale_.push_back(waveletScale_);
+                                                            timeLapseUseRickerWavelet_.push_back(useRickerWavelet_);
+                                                            timeLapseRickerPeakFrequency_.push_back(rickerPeakFrequency_);
+                                                            timeLapseEstimateWavelet_.push_back(estimateWavelet_);
+                                                            timeLapseStretchFactor_.push_back(stretchFactor_);
+                                                            timeLapseMatchEnergies_.push_back(matchEnergies_);
+                                                            timeLapseEstimateSNRatio_.push_back(estimateSNRatio_);
+                                                            timeLapseSNRatio_.push_back(SNRatio_);
+                                                            timeLapseUseLocalNoise_.push_back(useLocalNoise_);}
+
                         
   enum          priorFacies{FACIES_FROM_WELLS,
                             FACIES_FROM_MODEL_FILE,
@@ -337,13 +386,13 @@ public:
                                   AREA_FROM_SURFACE};
 private:           
                    
-  Vario                           * angularCorr_;                // Variogram for lateral error correlation
+  std::vector<Vario*>               angularCorr_;                // Variogram for lateral error correlation, time lapse
   Vario                           * lateralCorr_;                // Variogram for lateral parameter correlation 
   Vario                           * backgroundVario_;            // Used for lateral background correlation.
   Vario                           * localWaveletVario_;          // Used for local wavelet (gain and shift) and local noise.
                                                                  
   SegyGeometry                    * geometry_;                   // area parameters
-  float                             segyOffset_;                 // Starttime for SegY cubes.
+  std::vector<float>                segyOffset_;                 // Starttime for SegY cubes, time lapse
   std::vector<float>                localSegyOffset_;            // Starttime for SegY cubes per angle.
   TraceHeaderFormat               * traceHeaderFormat_;          // traceheader of input
   std::vector<TraceHeaderFormat*>   localTHF_;                   // traceheader per angle
@@ -360,17 +409,33 @@ private:
   std::vector<std::vector<float> >  wellMoveAngle_;              // moveAngle_ collected for all wells
   std::vector<std::vector<float> >  wellMoveWeight_;             // moveWeight_ collected for all wells
 
-  // --------- Start Purify-motivated use of 'int' instead of 'bool' -------------
-  // NBNB-PAL: I have temporarily converted the arrays below from bool ==> int to avoid annoying UMRs in Purify
-  std::vector<int>                  matchEnergies_;              // Let dataVariance_ = signalVariance_
-  std::vector<int>                  estimateWavelet_;            // 
-  std::vector<int>                  estimateSNRatio_;            //
-  std::vector<int>                  estimateLocalShift_;         // Estimate local wavelet shift
-  std::vector<int>                  estimateLocalScale_;         // Estimate local wavelet scale
-  std::vector<int>                  estimateLocalNoise_;         // Estimate local noise 
-  std::vector<int>                  estimateGlobalWaveletScale_;  
-  std::vector<int>                  useRickerWavelet_;
-  // --------- End Purify-motivated use of 'int' instead of 'bool' -------------
+  std::vector<bool>                 matchEnergies_;              // Let dataVariance_ = signalVariance_
+  std::vector<bool>                 estimateWavelet_;            // 
+  std::vector<bool>                 estimateSNRatio_;            //
+  std::vector<bool>                 estimateLocalShift_;         // Estimate local wavelet shift
+  std::vector<bool>                 estimateLocalScale_;         // Estimate local wavelet scale
+  std::vector<bool>                 estimateLocalNoise_;         // Estimate local noise 
+  std::vector<bool>                 estimateGlobalWaveletScale_;  
+  std::vector<bool>                 useRickerWavelet_;
+  std::vector<bool>                 timeLapseUseLocalNoise_;
+  
+  std::vector<std::vector<bool> >   timeLapseEstimateLocalShift_;// Estimate local wavelet shift
+  std::vector<std::vector<bool> >   timeLapseEstimateLocalScale_;// Estimate local wavelet scale
+  std::vector<std::vector<bool> >   timeLapseEstimateLocalNoise_;// Estimate local noise 
+  std::vector<std::vector<bool> >   timeLapseUseRickerWavelet_;
+  std::vector<std::vector<bool> >   timeLapseEstimateWavelet_;
+  std::vector<std::vector<bool> >   timeLapseMatchEnergies_;     // Let dataVariance_ = signalVariance_
+  std::vector<std::vector<bool> >   timeLapseEstimateGlobalWaveletScale_;
+  std::vector<std::vector<bool> >   timeLapseEstimateSNRatio_;
+  std::vector<std::vector<int> >    timeLapseSeismicType_;       // PP- or PS- seismic
+  std::vector<std::vector<float> >  timeLapseWaveletScale_;      // Signal-to-noise ratio
+  std::vector<std::vector<float> >  timeLapseRickerPeakFrequency_;
+  std::vector<std::vector<float> >  timeLapseStretchFactor_;     // Stretch factor for pulse in 3D-wavelet
+  std::vector<std::vector<float> >  timeLapseSNRatio_;           // Signal-to-noise ratio
+  std::vector<std::vector<float> >  timeLapseAngle_;             // Angles
+  std::vector<std::vector<float> >  timeLapseLocalSegyOffset_;   // Starttime for SegY cubes per angle.
+
+  std::vector<std::vector<TraceHeaderFormat*> > timeLapseLocalTHF_;
 
   std::vector<float>                rickerPeakFrequency_;
 
@@ -384,6 +449,7 @@ private:
   bool                              estimateWaveletNoise_;       // As above, but for wavelet and noise parameters.
   bool                              estimate3DWavelet_;          // True if a 3D wavelet is estimated for at least one angle.
   bool                              hasTime3DMapping_;           // True if command time-3D-mapping is used
+  bool                              use3DWavelet_;               // True if 3D wavelet is used
 
   std::vector<float>                constBackValue_;             // Values set for constant background model
                                                                  // Negative value ==> read from file (actual value gives format).
@@ -511,14 +577,17 @@ private:
   bool                              depthDataOk_;                // We have what we need to do depth conversion
   bool                              parallelTimeSurfaces_;     
   bool                              useLocalWavelet_;            // Wavelets are multiplied with gain and shift maps
-  bool                              useLocalNoise_;              // Signal-to-noise is multiplied with gain and shift maps
+  bool                              useLocalNoise_;              // Signal-to-noise is multiplied with gain and shift maps, time lapse
   bool                              optimizeWellLocation_;       // True if at least one well is to be moved
   bool                              smoothKrigedParameters_;     // True if we should smooth borders between kriging blocks                                  
   bool                              runFromPanel_;               // True if run is started from RMS panel. Relaxed checking.                                 
   bool                              noWellNeeded_;               // True for some configurations of input data
   bool                              noSeismicNeeded_;            // True for some estimation settings                             
-  float                             distanceFromWell_;           // Minimum distance for where gradients should not cross
-  float                             sigma_m_;                    // Smoothness level of the gradients
+  std::vector<float>                distanceFromWell_;           // Minimum distance for where gradients should not cross, time lapse
+  std::vector<float>                sigma_m_;                    // Smoothness level of the gradients, time lapse
+  std::vector<int>                  vintageDay_;                 // Day of month the seismic time lapse data were collected
+  std::vector<int>                  vintageMonth_;               // Month the seismic time lapse data were collected
+  std::vector<int>                  vintageYear_;                // Year the seismic time lapse data were collected
 
   int                               logLevel_;      
                                     

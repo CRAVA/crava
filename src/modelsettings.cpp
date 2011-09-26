@@ -11,18 +11,7 @@
 #include "src/simbox.h"
 
 ModelSettings::ModelSettings(void)
-  : localSegyOffset_(0),
-    localTHF_(0),
-    seismicType_(0),
-    angle_(0), 
-    waveletScale_(0),
-    SNRatio_(0),
-    matchEnergies_(0),   
-    estimateWavelet_(0), 
-    estimateSNRatio_(0), 
-    estimateLocalNoise_(0),
-    estimateGlobalWaveletScale_(0),
-    constBackValue_(3),
+  : constBackValue_(3),
     indBGTrend_(0),
     indWavelet_(0),
     indFacies_(0),
@@ -33,7 +22,6 @@ ModelSettings::ModelSettings(void)
     noWellNeeded_(false),
     noSeismicNeeded_(false)
 {
-  angularCorr_             = new GenExpVario(1, 10*static_cast<float>(NRLib::Pi/180.0)); // Power=1 range=10deg
   lateralCorr_             = new GenExpVario(1, 1000, 1000); 
   backgroundVario_         = new GenExpVario(1, 2000, 2000); 
   localWaveletVario_       =     NULL; // Will be set equal to backgroundVario unless it is set separately
@@ -101,7 +89,6 @@ ModelSettings::ModelSettings(void)
   estimateXYPadding_       =     true;
   estimateZPadding_        =     true;
 
-  segyOffset_              =     0.0f;
   p_undef_                 =    0.01f;
                            
   lzLimit_                 =     0.41;   // NB! This is a double ==> do not use 'f'.
@@ -142,7 +129,6 @@ ModelSettings::ModelSettings(void)
   depthDataOk_             =    false;
   parallelTimeSurfaces_    =    false;
   useLocalWavelet_         =    false;
-  useLocalNoise_           =    false;
   optimizeWellLocation_    =    false;
   priorFaciesProbGiven_    = ModelSettings::FACIES_FROM_WELLS;
 
@@ -152,20 +138,18 @@ ModelSettings::ModelSettings(void)
   estimateWaveletNoise_    =     true;
   estimate3DWavelet_       =    false;
   hasTime3DMapping_        =    false;
+  use3DWavelet_            =    false;
 
   logLevel_                = LogKit::L_Low;
   smoothKrigedParameters_  =    false;
-
-  distanceFromWell_        =      100;
-  sigma_m_                 =        1;
 
   seed_                    =        0;
 }
 
 ModelSettings::~ModelSettings(void)
 { 
-  if (angularCorr_ != NULL)
-    delete angularCorr_;
+  for(size_t i = 0; i<angularCorr_.size(); i++)
+    delete angularCorr_[i];
 
   if (lateralCorr_ != NULL)
     delete lateralCorr_;
@@ -239,11 +223,12 @@ ModelSettings::rotateVariograms(float angle)
 }
 
 void           
-ModelSettings::setAngularCorr(Vario * vario)               
+ModelSettings::setLastAngularCorr(Vario * vario)               
 {
-  if (angularCorr_ != NULL)
-    delete angularCorr_;
-  angularCorr_ = vario;
+  size_t i = angularCorr_.size()-1;
+  if (angularCorr_[i] != NULL)
+    delete angularCorr_[i];
+  angularCorr_[i] = vario;
 }
 
 void           
@@ -319,32 +304,78 @@ ModelSettings::addTraceHeaderFormat(TraceHeaderFormat * traceHeaderFormat)
 }
 
 void 
-ModelSettings::setTimeGradientSettings(float distance, float sigma_m)
+ModelSettings::addTimeGradientSettings(float distance, float sigma_m)
 { 
-  distanceFromWell_  = distance;
-  sigma_m_ = sigma_m;                   
+  distanceFromWell_.push_back(distance);
+  sigma_m_.push_back(sigma_m);                   
 }
-
 
 void
-ModelSettings::getTimeGradientSettings(float &distance, float &sigma_m)
+ModelSettings::addDefaultTimeGradientSettings(void)
 {
-  distance = distanceFromWell_;
-  sigma_m = sigma_m_;
+  distanceFromWell_.push_back(100.0f);
+  sigma_m_.push_back(1.0f);
 }
 
-int
-ModelSettings::getEstimateNumberOfWavelets(void) const
+void
+ModelSettings::getTimeGradientSettings(float &distance, float &sigma_m, int t)
 {
-  int n   = static_cast<int>(estimateWavelet_.size());
+  distance = distanceFromWell_[t];
+  sigma_m = sigma_m_[t];
+}
+
+void
+ModelSettings::addVintage(int year, int month, int day)
+{
+  vintageYear_.push_back(year);
+  vintageMonth_.push_back(month);
+  vintageDay_.push_back(day);
+}
+
+void
+ModelSettings::addDefaultVintage(void)
+{
+  vintageYear_.push_back(IMISSING);
+  vintageMonth_.push_back(IMISSING);
+  vintageDay_.push_back(IMISSING);
+}
+  
+int
+ModelSettings::getEstimateNumberOfWavelets(int t) const
+{
+  int n   = static_cast<int>(timeLapseEstimateWavelet_[t].size());
   int tot = 0;
 
   for (int i=0; i<n; i++)
   {
-    if (estimateWavelet_[i] == 1)
+    if (timeLapseEstimateWavelet_[t][i] == 1)
       tot++;
   }
   return tot;
+}
+
+std::vector<int>
+ModelSettings::findSortedVintages(void) const
+{
+  int n = getNumberOfTimeLapses();
+
+  std::vector<int> index(n);
+  for(int i=0; i<n; i++)
+    index[i] = i;
+
+  int tmp;
+  for(int i=0; i<n; i++){
+    for(int j=i+1; j<n; j++){
+      if(vintageYear_[j]<vintageYear_[i] || 
+        (vintageYear_[j]==vintageYear_[i] && vintageMonth_[j]<vintageMonth_[i]) || 
+        (vintageYear_[j]==vintageYear_[i] && vintageMonth_[j]==vintageMonth_[i] && vintageDay_[j]<vintageDay_[i])){
+        tmp      = index[i];
+        index[i] = index[j];
+        index[j] = tmp;
+      }
+    }
+  }
+  return(index);
 }
 
 int  ModelSettings::debugFlag_  = 0;

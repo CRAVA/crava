@@ -107,6 +107,7 @@ public:
                                      std::vector<double>       & yGradient,
                                      std::vector<std::vector<double> > &Sigma_gradient);
 
+  void           deleteDynamicBlockedLogs();
 
 
   const std::vector<int>    getIposVector()           const;

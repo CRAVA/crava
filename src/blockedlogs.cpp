@@ -152,7 +152,77 @@ BlockedLogs::~BlockedLogs(void)
     delete [] cpp_;
   }
 }
+//------------------------------------------------------------------------------
+void
+BlockedLogs::deleteDynamicBlockedLogs()
+{
+  if (alpha_seismic_resolution_ != NULL){
+    delete [] alpha_seismic_resolution_;
+    alpha_seismic_resolution_ = NULL;
+  }
+  if (beta_seismic_resolution_ != NULL){
+    delete [] beta_seismic_resolution_;
+    beta_seismic_resolution_ = NULL;
+  }
+  if (rho_seismic_resolution_ != NULL){
+    delete [] rho_seismic_resolution_;
+    rho_seismic_resolution_ = NULL;
+  }
 
+  if (alpha_predicted_ != NULL){
+    delete [] alpha_predicted_;
+    alpha_predicted_ = NULL;
+  }
+  if (beta_predicted_ != NULL){
+    delete [] beta_predicted_;
+    beta_predicted_ = NULL;
+  }
+  if (rho_predicted_ != NULL){
+    delete [] rho_predicted_;
+    rho_predicted_ = NULL;
+  }
+
+  if (alpha_for_facies_ != NULL){
+    delete [] alpha_for_facies_;
+    alpha_for_facies_ = NULL;
+  }
+  if (rho_for_facies_ != NULL){
+    delete [] rho_for_facies_;
+    rho_for_facies_ = NULL;
+  }
+
+  if (real_seismic_data_ != NULL) {
+    for (int i=0 ; i<nAngles_ ; i++)
+      if (real_seismic_data_[i] != NULL)
+        delete [] real_seismic_data_[i];
+    delete [] real_seismic_data_;
+    real_seismic_data_ = NULL;
+  }
+  if (actual_synt_seismic_data_ != NULL) {
+    for (int i=0 ; i<nAngles_ ; i++)
+      if (actual_synt_seismic_data_[i] != NULL)
+        delete [] actual_synt_seismic_data_[i];
+    delete [] actual_synt_seismic_data_;
+    actual_synt_seismic_data_ = NULL;
+  }
+  if (well_synt_seismic_data_ != NULL) {
+    for (int i=0 ; i<nAngles_ ; i++)
+      if (well_synt_seismic_data_[i] != NULL)
+        delete [] well_synt_seismic_data_[i];
+    delete [] well_synt_seismic_data_;
+    well_synt_seismic_data_ = NULL;
+  }
+
+  if (cpp_ != NULL) { 
+    for (int i=0 ; i<nAngles_ ; i++)
+      if (cpp_[i] != NULL)
+        delete [] cpp_[i];
+    delete [] cpp_;
+    cpp_ = NULL;
+  }
+  
+  nAngles_ = 0;
+}
 //------------------------------------------------------------------------------
 void 
 BlockedLogs::blockWell(WellData  * well,

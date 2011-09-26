@@ -71,7 +71,15 @@ Wavelet1D(ModelSettings * modelSettings,
                                                 int             number,
                                                 Grid2D      *& noiseScaled, 
                                                 Grid2D      *& shift, 
-                                                Grid2D      *& gain);
+                                                Grid2D      *& gain,
+                                                float          SNRatio,
+                                                float          waveletScale,
+                                                bool           estimateSNRatio,
+                                                bool           estimateGlobalScale,
+                                                bool           estimateLocalNoise,
+                                                bool           estimateLocalShift,
+                                                bool           estimateLocalScale,
+                                                bool           estimateWavelet);
 
 private:
   float         findOptimalWaveletScale(fftw_real               ** synt_seis_r,

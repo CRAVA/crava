@@ -55,7 +55,8 @@ public:
 //                                                int             /*number*/,
 //                                                Grid2D       *& /*noiseScaled*/, 
 //                                                Grid2D       *& /*shift*/, 
-//                                                Grid2D       *& /*gain*/);
+//                                                Grid2D       *& /*gain*/,
+//                                                float           /*SNRatio*/);
 Wavelet1D*  getWavelet1DForErrorNorm();
 Wavelet1D * getLocalWavelet1D( int i, int j);
 float       getLocalStretch(int i,int j);
@@ -76,7 +77,10 @@ float      GetLocalDepthGradientY(int i, int j){ return gradY_(i,j);}
                                  const NRLib::Grid2D<float>               & refTimeGradY,
                                  const std::vector<std::vector<double> >  & tGradX,
                                  const std::vector<std::vector<double> >  & tGradY,
-                                 int                                        number);      
+                                 int                                        number,
+                                 float                                      SNRatio,
+                                 bool                                       estimateSNRatio,
+                                 bool                                       estimateWavelet);      
 
 private:
   void          findLayersWithData(const std::vector<Surface *> & estimInterval,

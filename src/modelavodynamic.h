@@ -5,6 +5,7 @@
 
 #include "nrlib/surface/regularsurface.hpp"
 
+#include "src/vario.h"
 #include "src/definitions.h"
 #include "src/background.h" //or move getAlpha & co to cpp-file.
 #include "src/modelsettings.h"
@@ -13,7 +14,6 @@
 struct irapgrid;
 class Corr;
 class Wavelet;
-class Vario;
 class Simbox;
 class WellData;
 class FFTGrid;
@@ -37,7 +37,8 @@ public:
                   std::vector<Surface *> waveletEstimInterval, 
                   std::vector<Surface *> wellMoveInterval,
                   std::vector<Surface *> faciesEstimInterval,  
-                  ModelAVOStatic       * modelAVOstatic);    // modelAVOstatic::wells_ are altered. modelAVOstatic is deliberately sent in as un-const.
+                  ModelAVOStatic       * modelAVOstatic,
+                  int                    t);    // modelAVOstatic::wells_ are altered. modelAVOstatic is deliberately sent in as un-const.
   ~ModelAVODynamic();
 
   FFTGrid                     * getBackAlpha()             const { return background_->getAlpha() ;}
@@ -52,6 +53,15 @@ public:
 
   bool                          getFailed()                const { return failed_                 ;}
   std::vector<bool>             getFailedDetails()         const { return failed_details_         ;}
+
+  Vario                       * getAngularCorr()           const { return angularCorr_                    ;}    
+  float                         getSNRatio(int i)          const { return SNRatio_[i]                     ;} 
+  bool                          getUseLocalNoise()         const { return useLocalNoise_                  ;}
+  float                         getAngle(int i)            const { return angle_[i]                       ;}
+  bool                          getEstimateWavelet(int i)  const { return estimateWavelet_[i]             ;}
+  bool                          getMatchEnergies(int i)    const { return matchEnergies_[i]               ;}
+  int                           getNumberOfAngles()        const { return static_cast<int>(angle_.size()) ;}
+
 
   void                          releaseGrids();                        // Cuts connection to SeisCube_ and  backModel_
 private:
@@ -112,7 +122,8 @@ private:
                                     float                        * reflectionMatrix,
                                     std::string                  & errText,
                                     Wavelet                     *& wavelet,
-                                    unsigned int                   i);
+                                    unsigned int                   i,
+                                    bool                           useRickerWavelet);
 
  int               process3DWavelet(ModelSettings                           * modelSettings,
                                     const InputFiles                        * inputFiles,
@@ -129,8 +140,7 @@ private:
                                     const std::vector<std::vector<double> > & tGradX,
                                     const std::vector<std::vector<double> > & tGradY);
   void             estimateCorrXYFromSeismic(Surface *& CorrXY,
-                                             FFTGrid ** seisCube,
-                                             int        nAngles);
+                                             FFTGrid ** seisCube);
   Surface        * findCorrXYGrid(Simbox * timeSimbox, ModelSettings * modelSettings);
   float         ** readMatrix(const std::string & fileName, 
                               int                 n1, 
@@ -178,6 +188,15 @@ private:
 
   bool                      failed_;                ///< Indicates whether errors occured during construction.
   std::vector<bool>         failed_details_;        ///< Detailed failed information.
+
+  Vario                   * angularCorr_;
+  std::vector<float>        SNRatio_;
+  std::vector<float>        angle_;
+  std::vector<bool>         matchEnergies_;
+  std::vector<bool>         estimateWavelet_;
+  bool                      useLocalNoise_;
+  int                       thisTimeLapse_;
+
 };
 
 #endif

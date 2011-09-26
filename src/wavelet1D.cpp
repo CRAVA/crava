@@ -633,7 +633,15 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
                                            int             number,
                                            Grid2D      *& noiseScaled, 
                                            Grid2D      *& shiftGrid, 
-                                           Grid2D      *& gainGrid)
+                                           Grid2D      *& gainGrid,
+                                           float          SNRatio,
+                                           float          waveletScale,
+                                           bool           doEstimateSNRatio,
+                                           bool           doEstimateGlobalScale,
+                                           bool           doEstimateLocalNoise,
+                                           bool           doEstimateLocalShift,
+                                           bool           doEstimateLocalScale,
+                                           bool           doEstimateWavelet)
 {
   LogKit::LogFormatted(LogKit::Medium,"\n  Estimating/checking noise from seismic data and (nonfiltered) blocked wells");
   float errStd  = 0.0f;
@@ -641,13 +649,6 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
 
   std::string angle                 = NRLib::ToString((180.0/NRLib::Pi)*theta_, 1);
   int         nWells                = modelSettings->getNumberOfWells();
-  bool        doEstimateLocalShift  = modelSettings->getEstimateLocalShift(number);
-  bool        doEstimateLocalScale  = modelSettings->getEstimateLocalScale(number);
-  bool        doEstimateLocalNoise  = modelSettings->getEstimateLocalNoise(number);
-  bool        doEstimateGlobalScale = modelSettings->getEstimateGlobalWaveletScale(number);
-  bool        doEstimateSNRatio     = modelSettings->getEstimateSNRatio(number);
-  bool        doEstimateWavelet     = modelSettings->getEstimateWavelet(number);
-
   bool        estimateSomething     = doEstimateLocalShift || doEstimateLocalScale || doEstimateLocalNoise 
                                       || doEstimateGlobalScale || doEstimateSNRatio || doEstimateWavelet;
 
@@ -753,7 +754,7 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
     }
   }
   
-  float globalScale = modelSettings->getWaveletScale(number);
+  float globalScale = waveletScale;
   std::vector<float> scaleOptWell(nWells, -1.0f);
   std::vector<float> errWellOptScale(nWells);
   std::vector<float> errWell(nWells);
@@ -849,7 +850,7 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
         text  = "\nWARNING: An optimal local gain cannot be established for well "+wells[w]->getWellname()+". The gain-value found ("+NRLib::ToString(scaleOptWell[w],3)+")\n";
         text += "         is outside the interval accepted by CRAVA which is <"+NRLib::ToString(minLocalGain,2)+", "+NRLib::ToString(maxLocalGain,2)+">.\n";
         LogKit::LogFormatted(LogKit::Warning, text);
-        if (modelSettings->getEstimateWavelet(number)) {
+        if (doEstimateWavelet) {
           TaskList::addTask("Well "+wells[w]->getWellname()+" should not be used in the wavelet estimation for angle stack "+angle+".");
         }
       }
@@ -899,7 +900,7 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
       if(doEstimateSNRatio==true)
         errStdLN = errStd;
       else //SNRatio given in model file
-        errStdLN = sqrt(dataVar/modelSettings->getSNRatio(number));
+        errStdLN = sqrt(dataVar/SNRatio);
       if(gainGrid == NULL && doEstimateLocalScale==false && doEstimateGlobalScale==false) { // No local wavelet scale 
         for(int w=0; w<nWells; w++) 
           errVarWell[w] = sqrt(errVarWell[w]);
@@ -917,13 +918,12 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
     LogKit::LogFormatted(LogKit::Low,"\n  The signal to noise ratio used for this angle stack is: %6.2f\n", empSNRatio);
   else
   {
-    float SNRatio = modelSettings->getSNRatio(number);
     if(nWells>0) {
       LogKit::LogFormatted(LogKit::Low,"\n  The signal to noise ratio given in the model file and used for this angle stack is : %6.2f\n", SNRatio);
       LogKit::LogFormatted(LogKit::Low,"  For comparison, the signal-to-noise ratio calculated from the available wells is   : %6.2f\n", empSNRatio);
       float minSN = 1.0f + (empSNRatio - 1.0f)/2.0f;
       float maxSN = 1.0f + (empSNRatio - 1.0f)*2.0f;
-      if ((SNRatio<minSN || SNRatio>maxSN) && modelSettings->getEstimateWavelet(number)) {
+      if ((SNRatio<minSN || SNRatio>maxSN) && doEstimateWavelet) {
         LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The difference between the SN ratio given in the model file and the calculated SN ratio is too large.\n");
       if (SNRatio < minSN)
         TaskList::addTask("Consider increasing the SN ratio for angle stack "+NRLib::ToString(number)+" to minimum "+NRLib::ToString(minSN,1));

@@ -27,6 +27,7 @@ XmlModelFile::XmlModelFile(const std::string & fileName)
   modelSettings_ = new ModelSettings();
   inputFiles_    = new InputFiles();
   failed_        = false;
+  surveyFailed_  = false;
 
   std::ifstream file;
   try {
@@ -104,7 +105,12 @@ XmlModelFile::parseCrava(TiXmlNode * node, std::string & errTxt)
 
   parseActions(root, errTxt);
   parseWellData(root, errTxt);
-  parseSurvey(root, errTxt);
+
+  size_t checkFailed = errTxt.size();
+  while(parseSurvey(root, errTxt) == true);
+  if(errTxt.size() > checkFailed)
+    surveyFailed_ = true;
+
   parseProjectSettings(root, errTxt);
   parsePriorModel(root, errTxt);
 
@@ -600,30 +606,41 @@ XmlModelFile::parseSurvey(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("angle-gather");
   legalCommands.push_back("wavelet-estimation-interval");
   legalCommands.push_back("time-gradient-settings");
+  legalCommands.push_back("vintage");
 
   Vario * vario = NULL;
+  modelSettings_->addDefaultAngularCorr();
   if(parseVariogram(root, "angular-correlation", vario, errTxt) == true) {
     if (vario != NULL) {
       vario->convertRangesFromDegToRad();
-      modelSettings_->setAngularCorr(vario);
+      modelSettings_->setLastAngularCorr(vario);
     }
   }
 
   float value;
   if(parseValue(root, "segy-start-time", value, errTxt) == true)
-    modelSettings_->setSegyOffset(value);
+    modelSettings_->addSegyOffset(value);
+  else
+    modelSettings_->addDefaultSegyOffset();
 
+  modelSettings_->clearTimeLapse();
+  inputFiles_->clearTimeLapse();
   while(parseAngleGather(root, errTxt) == true);
+  modelSettings_->addTimeLapse();
+  inputFiles_->addTimeLapse();
 
-  if(modelSettings_->getNumberOfAngles() == 0)
-    errTxt +=  "Need at least one angle gather in command <"+root->ValueStr()+">"+
-    lineColumnText(root)+".\n";
+  if(parseWaveletEstimationInterval(root, errTxt) == false){
+    inputFiles_->addDefaultWaveletEstIntFileTop();
+    inputFiles_->addDefaultWaveletEstIntFileBase();
+  }
 
-  parseWaveletEstimationInterval(root, errTxt);
+  if(parseTimeGradientSettings(root,errTxt) == false)
+    modelSettings_->addDefaultTimeGradientSettings();
 
-  parseTimeGradientSettings(root,errTxt);
+  if(parseVintage(root, errTxt) == false)
+    modelSettings_->addDefaultVintage();
 
-  checkForJunk(root, errTxt, legalCommands);
+  checkForJunk(root, errTxt, legalCommands, true);
   return(true);
 }
 
@@ -661,6 +678,8 @@ XmlModelFile::parseAngleGather(TiXmlNode * node, std::string & errTxt)
   if(parseWavelet(root, errTxt) == false) {
     modelSettings_->addWaveletScale(1.0); // NBNB OK  why RMISSING here????
     modelSettings_->addEstimateGlobalWaveletScale(false); 
+    modelSettings_->addUseRickerWavelet(false);
+    modelSettings_->addRickerPeakFrequency(RMISSING);
     inputFiles_->addShiftFile("");
     inputFiles_->addScaleFile("");
     modelSettings_->addEstimateLocalShift(false);
@@ -699,6 +718,7 @@ XmlModelFile::parseAngleGather(TiXmlNode * node, std::string & errTxt)
   }
   std::string fileName; 
   bool localNoiseGiven = parseFileName(root, "local-noise-scaled", fileName, errTxt);
+  modelSettings_->setDefaultUseLocalNoise(); 
   if(localNoiseGiven) {
     inputFiles_->addNoiseFile(fileName);
     modelSettings_->setUseLocalNoise(true);
@@ -966,11 +986,13 @@ XmlModelFile::parseWaveletEstimationInterval(TiXmlNode * node, std::string & err
   legalCommands.push_back("top-surface-file");
   legalCommands.push_back("base-surface-file");
 
-  std::string filename;
-  if(parseFileName(root, "top-surface-file", filename, errTxt) == true)
-    inputFiles_->setWaveletEstIntFile(0, filename);
-  if(parseFileName(root, "base-surface-file", filename, errTxt) == true)
-    inputFiles_->setWaveletEstIntFile(1, filename);
+  std::string filenameTop  = "";
+  std::string filenameBase = "";
+  parseFileName(root, "top-surface-file", filenameTop, errTxt);
+  parseFileName(root, "base-surface-file", filenameBase, errTxt);
+
+  inputFiles_->addWaveletEstIntFileTop(filenameTop);
+  inputFiles_->addWaveletEstIntFileBase(filenameBase);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -1036,6 +1058,7 @@ XmlModelFile::parseWavelet3D(TiXmlNode * node, std::string & errTxt)
     modelSettings_->addEstRangeY(0.0);
 
   modelSettings_->addWaveletDim(Wavelet::THREE_D);
+  modelSettings_->setUse3DWavelet(true);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -1061,12 +1084,51 @@ XmlModelFile::parseTimeGradientSettings(TiXmlNode * node, std::string & errTxt)
   else
     sigma_m = 1.0;
   
-  modelSettings_->setTimeGradientSettings(distance,sigma_m);
+  modelSettings_->addTimeGradientSettings(distance,sigma_m);
   
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
 
+bool
+XmlModelFile::parseVintage(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("vintage");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("year");
+  legalCommands.push_back("month");
+  legalCommands.push_back("day-of-month");
+  
+  int value;
+  int year  = IMISSING;
+  int month = IMISSING;
+  int day   = IMISSING;
+
+  if(parseValue(root, "year", value, errTxt) == true)
+    year = value;
+
+  if(parseValue(root, "month", value, errTxt) == true){
+    if(year == IMISSING)
+      errTxt += "<year> needs to be specified if <month> is specified in <vintage>.\n";
+    else
+      month = value;
+  }
+
+  if(parseValue(root, "day-of-month", value, errTxt) == true){
+    if(year == IMISSING || month == IMISSING)
+      errTxt += "Both <year> and <month> need to be specified if <day-of-month> is specifeid in <vintage>.\n";
+    else
+      day = value;
+  }
+  
+  modelSettings_->addVintage(year, month, day);
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
 
 bool
 XmlModelFile::parsePriorModel(TiXmlNode * node, std::string & errTxt)
@@ -2801,18 +2863,24 @@ XmlModelFile::setDerivedParameters(std::string & errTxt)
   int areaSpecification;  
   if(modelSettings_->getAreaParameters() != NULL) {
     areaSpecification = ModelSettings::AREA_FROM_UTM;
-    if (modelSettings_->getNoSeismicNeeded() && inputFiles_->getNumberOfSeismicFiles()>0)
-      errTxt += "Seismic data should not be given when estimating background or correlations. \nExceptions are for optimization of well locations or if the area is taken from the seismic data.\n";
+    for(int i=0; i<modelSettings_->getNumberOfTimeLapses(); i++){
+      if (modelSettings_->getNoSeismicNeeded() && inputFiles_->getNumberOfSeismicFiles(i)>0)
+        errTxt += "Seismic data should not be given when estimating background or correlations. \nExceptions are for optimization of well locations or if the area is taken from the seismic data.\n";
+    }
   }
   else if(inputFiles_->getAreaSurfaceFile() != "") {
     areaSpecification = ModelSettings::AREA_FROM_SURFACE;
-    if (modelSettings_->getNoSeismicNeeded() && inputFiles_->getNumberOfSeismicFiles()>0)
-      errTxt += "Seismic data should not be given when estimating background or correlations. \nExceptions are for optimization of well locations or if the area is taken from the seismic data.";
+    for(int i=0; i<modelSettings_->getNumberOfTimeLapses(); i++){
+      if (modelSettings_->getNoSeismicNeeded() && inputFiles_->getNumberOfSeismicFiles(i)>0)
+        errTxt += "Seismic data should not be given when estimating background or correlations. \nExceptions are for optimization of well locations or if the area is taken from the seismic data.";
+    }
   }
   else {
     areaSpecification = ModelSettings::AREA_FROM_GRID_DATA; // inversion:seismic data, forward modelling: Vp
-    if (modelSettings_->getNoSeismicNeeded() && inputFiles_->getNumberOfSeismicFiles()==0)
-      errTxt += "The area needs to be defined from seismic data, a surface or UTM-coordinates.\n";
+    for(int i=0; i<modelSettings_->getNumberOfTimeLapses(); i++){
+      if (modelSettings_->getNoSeismicNeeded() && inputFiles_->getNumberOfSeismicFiles(i)==0)
+        errTxt += "The area needs to be defined from seismic data, a surface or UTM-coordinates.\n";
+    }
   }
   modelSettings_->setAreaSpecification(areaSpecification);
 
@@ -2845,6 +2913,8 @@ XmlModelFile::checkConsistency(std::string & errTxt) {
   if(modelSettings_->getOptimizeWellLocation()==true)
     checkAngleConsistency(errTxt);
   checkIOConsistency(errTxt);
+  if(modelSettings_->getNumberOfTimeLapses() > 1 && surveyFailed_ == false)
+    checkTimeLapseConsistency(errTxt);
 
   if (modelSettings_->getVpVsRatio() != RMISSING) {
     double vpvs    = modelSettings_->getVpVsRatio();
@@ -2864,23 +2934,30 @@ XmlModelFile::checkConsistency(std::string & errTxt) {
 void
 XmlModelFile::checkForwardConsistency(std::string & errTxt) 
 {
-  if (modelSettings_->getNumberOfAngles() == 0) {
+  
+  if (modelSettings_->getNumberOfTimeLapses() > 1)
+    errTxt += "Forward modeling can not be done in 4D.\n";
+
+  if (modelSettings_->getNumberOfAngles(0) == 0) {
     errTxt+="At least one wavelet must be specified for forward modelling\n";
   }
 
-  if (modelSettings_->getNumberOfTraceHeaderFormats() == 0)
+  if (modelSettings_->getNumberOfTraceHeaderFormats(0) == 0)
     modelSettings_->addTraceHeaderFormat(NULL);
 
-  for(int i=0;i<modelSettings_->getNumberOfAngles();i++) {
-    modelSettings_->setEstimateSNRatio(i,false);
-    if(modelSettings_->getEstimateWavelet(i)==true)
-      errTxt+="Wavelet must be given when doing forward modeling. Wavelet is not given for angle "+NRLib::ToString(modelSettings_->getAngle(i)*(180/NRLib::Pi),1)+".\n";
-    
-    if(inputFiles_->getSeismicFile(i)!="")
-      errTxt+="Seismic data should not be given when doing forward modeling.\n";
-  }
+  std::vector<float>  angle = modelSettings_->getAngle(0); 
+  std::vector<bool> wavelet = modelSettings_->getEstimateWavelet(0);
 
-  if(modelSettings_->getUseLocalNoise()==true)
+  for(int i=0; i<modelSettings_->getNumberOfAngles(0); i++){
+    modelSettings_->setEstimateSNRatio(0,i,false);
+    if(wavelet[i] == true)
+      errTxt+="Wavelet must be given when doing forward modeling. Wavelet is not given for angle "+NRLib::ToString(angle[i]*(180/NRLib::Pi),1)+".\n";
+   
+    if(inputFiles_->getSeismicFile(0,i)!="")
+      errTxt+="Seismic data should not be given when doing forward modeling.\n";
+  } 
+
+  if(modelSettings_->getUseLocalNoise(0)==true)
     errTxt+="Local noise can not be used in forward modeling.\n";
   
   if(modelSettings_->getUseLocalWavelet()==true)
@@ -2911,7 +2988,7 @@ XmlModelFile::checkEstimationConsistency(std::string & errTxt) {
   if (modelSettings_->getEstimateWaveletNoise()==false && modelSettings_->getOptimizeWellLocation()==false)
     modelSettings_->setNoSeismicNeeded(true);
   else {
-    if (inputFiles_->getNumberOfSeismicFiles()==0) {
+    if (inputFiles_->getNumberOfSeismicFiles(0)==0) {
       if (modelSettings_->getOptimizeWellLocation())
         errTxt += "Seismic data are needed for optimizing well locations.\n";
       if (modelSettings_->getEstimateWaveletNoise())
@@ -2924,12 +3001,13 @@ XmlModelFile::checkEstimationConsistency(std::string & errTxt) {
 
 void
 XmlModelFile::checkInversionConsistency(std::string & errTxt) {
-  if (inputFiles_->getNumberOfSeismicFiles()==0)
+  if (inputFiles_->getNumberOfSeismicFiles(0)==0)
     errTxt += "Seismic data are needed for inversion.\n";
 
   if (modelSettings_->getNumberOfWells() == 0) {
+    std::vector<bool> useRicker = modelSettings_->getUseRickerWavelet(0);
     if (inputFiles_->getBackFile(0)!="" && 
-        (inputFiles_->getWaveletFile(0)!="" || modelSettings_->getUseRickerWavelet(0) == true) && 
+        (inputFiles_->getWaveletFile(0,0)!="" || useRicker[0] == true) && 
         inputFiles_->getTempCorrFile()!="" && 
         inputFiles_->getParamCorrFile()!="") 
       modelSettings_->setNoWellNeeded(true); 
@@ -2966,13 +3044,14 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
 }
   
 void
-XmlModelFile::checkAngleConsistency(std::string & errTxt) {
+XmlModelFile::checkAngleConsistency(std::string & errTxt) { //Wells can not be moved for time lapse data
 
   float angle;
   int   i,j,w;
   int   nMoveAngles;
-  int   nSeismicAngles = modelSettings_->getNumberOfAngles();
+  int   nSeismicAngles = modelSettings_->getNumberOfAngles(0);
   int   nWells         = modelSettings_->getNumberOfWells();
+  std::vector<float> seismicAngle = modelSettings_->getAngle(0);
 
   for(w=0; w<nWells; w++){
     nMoveAngles = modelSettings_->getNumberOfWellAngles(w); 
@@ -2983,9 +3062,9 @@ XmlModelFile::checkAngleConsistency(std::string & errTxt) {
       angle   = modelSettings_->getWellMoveAngle(w,i);
 
       for( j=0; j<nSeismicAngles; j++ ){
-        if( angle==modelSettings_->getAngle(j))
+        if( angle == seismicAngle[j])
         {
-          if (inputFiles_->getSeismicFile(j)=="")
+          if (inputFiles_->getSeismicFile(0,j)=="")
             errTxt += "Seismic data are needed for angle "+NRLib::ToString(angle/float(NRLib::Pi/180))+" to optimize the well locations.\n";
           compare[i] = true;
           break;
@@ -2998,11 +3077,75 @@ XmlModelFile::checkAngleConsistency(std::string & errTxt) {
   }
 }
 
+void
+XmlModelFile::checkTimeLapseConsistency(std::string & errTxt)
+{
+  int nTimeLapse = modelSettings_->getNumberOfTimeLapses();
+  
+  if(modelSettings_->getEstimateFaciesProb())
+    errTxt += "Facies estimation is not allowed for time lapse data.\n";
+
+  for(int i=0; i<nTimeLapse-1; i++){
+    if(modelSettings_->getSegyOffset(i) != modelSettings_->getSegyOffset(i+1))
+      errTxt += "<segy-start-time> in <survey> need to be the same for all time lapses.\n";
+    
+    if(inputFiles_->getWaveletEstIntFileTop(i) != inputFiles_->getWaveletEstIntFileTop(i+1))
+      errTxt += "When <top-surface-file> in <wavelet-estimation-interval> is given, it needs to be the same for all time lapses.\n";
+    if(inputFiles_->getWaveletEstIntFileBase(i) != inputFiles_->getWaveletEstIntFileBase(i+1))
+      errTxt += "When <base-surface-file> in <wavelet-estimation-interval> is given, it needs to be the same for all time lapses.\n";
+
+    if(modelSettings_->getUseLocalNoise(i) != modelSettings_->getUseLocalNoise(i+1))
+      errTxt += "If local noise is used for one time lapse, it needs to be used for all time lapses.\n";
+  }
+  for(int i=0; i<modelSettings_->getNumberOfTimeLapses(); i++){
+    if(modelSettings_->getNumberOfAngles(i) == 0)
+      errTxt += "Need at least one <angle-gather> in <survey>.\n";
+    if(modelSettings_->getVintageYear(i) == RMISSING)
+      errTxt += "<year> in <vintage> needs to be specified when using time lapse data.\n";
+  }
+
+  if(modelSettings_->getUse3DWavelet()==true)
+    errTxt += "3D wavelets can not be used for time lapse data.\n";
+
+  if (modelSettings_->getOptimizeWellLocation())
+    errTxt += "The well locations can not be optimized with time lapse data.\n";
+
+  TraceHeaderFormat * thf1;
+  TraceHeaderFormat * thf2;
+  for(int i=0; i<nTimeLapse-1; i++){
+    int nThf1 = modelSettings_->getNumberOfAngles(i);
+    int nThf2 = modelSettings_->getNumberOfAngles(i+1);
+    int j = 0;
+    while(j<nThf1 && j<nThf2){
+      thf1 = modelSettings_->getTraceHeaderFormat(i,j);
+      thf2 = modelSettings_->getTraceHeaderFormat(i+1,j);
+      if(thf1 != NULL && thf2 != NULL){
+        if(thf1->GetUtmxLoc() != thf2->GetUtmxLoc())
+          errTxt +="When <location-x> in <segy-format> is given, it needs to be the same for all time lapses.\n";
+        if(thf1->GetUtmyLoc() != thf2->GetUtmyLoc())
+          errTxt += "When <location-y> in <segy-format> is given, it needs to be the same for all time lapses.\n";
+        if(thf1->GetInlineLoc() != thf2->GetInlineLoc())
+          errTxt += "When <location-il> in <segy-format> is given, it needs to be the same for all time lapses.\n";
+        if(thf1->GetCrosslineLoc() != thf2->GetCrosslineLoc())
+          errTxt += "When <location-xl> in <segy-format> is given, it needs to be the same for all time lapses.\n";
+        if(thf1->GetScalCoLoc() != thf2->GetScalCoLoc())
+          errTxt += "When <bypass-coordinate-scaling> in <segy-format> is given, it needs to be the same for all time lapses.\n";
+        if(thf1->GetFormatName() != thf2->GetFormatName())
+          errTxt += "When <standard-format> in <segy-format> is given, it needs to be the same for all time lapses.\n";
+      }
+      else if (thf1 != NULL && thf2 == NULL)
+        errTxt += "When <segy-format> in <seismic-data> is given, it needs to be identical for all time lapses.\n";
+      else if (thf1 == NULL && thf2 != NULL)
+        errTxt += "When <segy-format> in <seismic-data> is given, it needs to be identical for all time lapses.\n";
+      j++;
+    }
+  }
+}
 
 void 
 XmlModelFile::checkIOConsistency(std::string & errTxt)
 {
-  if ((modelSettings_->getOtherOutputFlag() & IO::LOCAL_NOISE)>0 && modelSettings_->getUseLocalNoise()==false)
+  if ((modelSettings_->getOtherOutputFlag() & IO::LOCAL_NOISE)>0 && modelSettings_->getUseLocalNoise(0)==false) //When local noise is used, it is used for all time lapses
   {
     LogKit::LogFormatted(LogKit::Warning, "\nWarning: Local noise can not be written to file when <local-noise-scaled> or <estimate-local-noise> is not requested.");
     TaskList::addTask("Remove <local-noise> from <other-output> in the model file if local noise is not used.");

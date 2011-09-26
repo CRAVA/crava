@@ -63,7 +63,7 @@ Crava::Crava(ModelSettings * modelSettings,
   highCut_           = modelSettings_->getHighCut();
   wnc_               = modelSettings_->getWNC();     // white noise component see crava.h
   energyTreshold_    = modelSettings_->getEnergyThreshold();
-  ntheta_            = modelSettings_->getNumberOfAngles();
+  ntheta_            = modelAVOdynamic->getNumberOfAngles();
   fileGrid_          = modelSettings_->getFileGrid();
   outputGridsSeismic_= modelSettings_->getOutputGridsSeismic();
   outputGridsElastic_= modelSettings_->getOutputGridsElastic();
@@ -97,7 +97,7 @@ Crava::Crava(ModelSettings * modelSettings,
   sigmamdnew_        = NULL;
   for(int i=0;i<ntheta_;i++) {
     errThetaCov_[i]  = new double[ntheta_]; 
-    thetaDeg_[i]     = static_cast<float>(modelSettings_->getAngle(i)*180.0/NRLib::Pi); 
+    thetaDeg_[i]     = static_cast<float>(modelAVOdynamic_->getAngle(i)*180.0/NRLib::Pi); 
   }
 
   fftw_real * corrT = NULL; // =  fftw_malloc(2*(nzp_/2+1)*sizeof(fftw_real)); 
@@ -164,7 +164,7 @@ Crava::Crava(ModelSettings * modelSettings,
     }
 
     if ((modelSettings_->getEstimateFaciesProb() && modelSettings_->getFaciesProbRelative()) 
-        || modelSettings_->getUseLocalNoise())
+        || modelAVOdynamic_->getUseLocalNoise())
     {
       meanAlpha2_ = copyFFTGrid(meanAlpha_);
       meanBeta2_  = copyFFTGrid(meanBeta_);
@@ -255,16 +255,15 @@ Crava::computeDataVariance(void)
 }
 
 void
-Crava::setupErrorCorrelation(ModelSettings * modelSettings, 
-                             const std::vector<Grid2D *> & noiseScale)
+Crava::setupErrorCorrelation(const std::vector<Grid2D *> & noiseScale)
 {
   //
   //  Setup error correlation matrix
   //
   for(int l=0 ; l < ntheta_ ; l++)
   {
-    empSNRatio_[l] = modelSettings->getSNRatio(l);
-    if(modelSettings->getUseLocalNoise() == true) {
+    empSNRatio_[l] = modelAVOdynamic_->getSNRatio(l);
+    if(modelAVOdynamic_->getUseLocalNoise() == true) {
       double minScale = noiseScale[l]->FindMin(RMISSING);
       errorVariance_[l] = float(dataVariance_[l]*minScale/empSNRatio_[l]);
     }
@@ -280,12 +279,12 @@ Crava::setupErrorCorrelation(ModelSettings * modelSettings,
     }
   }
 
-  Vario * angularCorr = modelSettings->getAngularCorr();
+  Vario * angularCorr = modelAVOdynamic_->getAngularCorr();
 
   for(int i = 0; i < ntheta_; i++)
     for(int j = 0; j < ntheta_; j++) 
       {
-        float dTheta = modelSettings->getAngle(i) - modelSettings->getAngle(j);
+        float dTheta = modelAVOdynamic_->getAngle(i) - modelAVOdynamic_->getAngle(j);
         errThetaCov_[i][j] = static_cast<float>(sqrt(errorVariance_[i])
                                                 *sqrt(errorVariance_[j])
                                                 *angularCorr->corr(dTheta,0));
@@ -299,7 +298,7 @@ Crava::computeVariances(fftw_real     * corrT,
 {
   computeDataVariance();
     
-  setupErrorCorrelation(modelSettings, modelAVOdynamic_->getLocalNoiseScales());
+  setupErrorCorrelation(modelAVOdynamic_->getLocalNoiseScales());
 
   Wavelet1D ** errorSmooth = new Wavelet1D*[ntheta_];
   float    * paramVar    = new float[ntheta_] ;
@@ -308,10 +307,8 @@ Crava::computeVariances(fftw_real     * corrT,
   for(int i=0 ; i < ntheta_ ; i++)
   {
     Wavelet1D* wavelet1D=seisWavelet_[i]->getWavelet1DForErrorNorm();
-
     errorSmooth[i] = new Wavelet1D(wavelet1D,Wavelet::FIRSTORDERFORWARDDIFF);
-    if (seisWavelet_[i]->getDim() != 1) // do not delete seisWavelet_[i]!!
-      delete wavelet1D;
+    delete wavelet1D;
 
     std::string angle    = NRLib::ToString(thetaDeg_[i], 1);
     std::string fileName = IO::PrefixWavelet() + std::string("Diff_") + angle + IO::SuffixGeneralData();
@@ -342,13 +339,13 @@ Crava::computeVariances(fftw_real     * corrT,
 
   for(int l=0 ; l < ntheta_ ; l++)
   {
-    if (modelSettings->getMatchEnergies(l))
+    if (modelAVOdynamic_->getMatchEnergies(l))
     {
       LogKit::LogFormatted(LogKit::Low,"Matching syntethic and empirical energies:\n");
       float gain = sqrt((errorVariance_[l]/modelVariance_[l])*(empSNRatio_[l] - 1.0f));
       seisWavelet_[l]->scale(gain);
       if((modelSettings->getWaveletOutputFlag() & IO::GLOBAL_WAVELETS) > 0 || 
-          (modelSettings->getEstimationMode() && modelSettings->getEstimateWavelet(l))) 
+          (modelSettings->getEstimationMode() && modelAVOdynamic_->getEstimateWavelet(l))) 
       {
         std::string angle    = NRLib::ToString(thetaDeg_[l], 1);
         std::string fileName = IO::PrefixWavelet() + std::string("EnergyMatched_") + angle;
@@ -1010,7 +1007,7 @@ Crava::computePostMeanResidAndFFTCov()
 
   //NBNB Anne Randi: Skaler traser ihht notat fra Hugo
 
-  if(modelSettings_->getUseLocalNoise())
+  if(modelAVOdynamic_->getUseLocalNoise())
   {
     correlations_->invFFT();
     correlations_->createPostVariances();
@@ -1214,7 +1211,7 @@ Crava::simulate(RandomGen * randomGen)
           seed2->setAccessMode(FFTGrid::RANDOMACCESS);
           seed2->invFFTInPlace(); 
 
-          if(modelSettings_->getUseLocalNoise()==true)
+          if(modelAVOdynamic_->getUseLocalNoise()==true)
           {
             float alpha,beta, rho;
             float alphanew, betanew, rhonew;
@@ -1376,6 +1373,9 @@ Crava::computeSyntSeismic(FFTGrid * alpha, FFTGrid * beta, FFTGrid * rho)
           s.im = -r.re*w.im+r.im*w.re;
           resultVec.setCAmp(s,k);
         }
+
+        delete localWavelet;
+
         resultVec.invFFT1DInPlace();
         for(int k=0;k<nzp_;k++){
           float value = resultVec.getRAmp(k);
@@ -2234,9 +2234,9 @@ void Crava::correctAlphaBetaRho(ModelSettings *modelSettings)
   else
     sigmamdnew_ = NULL;
 
-  std::vector<double> minScale(modelSettings->getNumberOfAngles());
+  std::vector<double> minScale(modelAVOdynamic_->getNumberOfAngles());
 
-  for(int angle=0;angle<modelSettings->getNumberOfAngles();angle++)
+  for(int angle=0;angle<modelAVOdynamic_->getNumberOfAngles();angle++)
     minScale[angle] = modelAVOdynamic_->getLocalNoiseScale(angle)->FindMin(RMISSING);
 
   postAlpha_->setAccessMode(FFTGrid::RANDOMACCESS);
@@ -2250,8 +2250,8 @@ void Crava::correctAlphaBetaRho(ModelSettings *modelSettings)
   {
     for(j=0;j<ny_;j++) 
     {
-      std::vector<double> scales(modelSettings->getNumberOfAngles());
-      for(int angle=0;angle<modelSettings->getNumberOfAngles();angle++)
+      std::vector<double> scales(modelAVOdynamic_->getNumberOfAngles());
+      for(int angle=0;angle<modelAVOdynamic_->getNumberOfAngles();angle++)
         scales[angle] = (*(modelAVOdynamic_->getLocalNoiseScale(angle)))(i, j)/minScale[angle];
 
       newPosteriorCovPointwise(sigmanew,G, scales, sigmamd);

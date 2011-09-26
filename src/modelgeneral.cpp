@@ -187,8 +187,8 @@ ModelGeneral::checkAvailableMemory(Simbox        * timeSimbox,
   // Find the size of first seismic volume
   //
   float memOneSeis = 0.0f;
-  if (inputFiles->getNumberOfSeismicFiles() > 0 && inputFiles->getSeismicFile(0) != "") {
-    memOneSeis = static_cast<float> (NRLib::FindFileSize(inputFiles->getSeismicFile(0)));
+  if (inputFiles->getNumberOfSeismicFiles(0) > 0 && inputFiles->getSeismicFile(0,0) != "") {
+    memOneSeis = static_cast<float> (NRLib::FindFileSize(inputFiles->getSeismicFile(0,0)));
   }
 
   //
@@ -214,13 +214,18 @@ ModelGeneral::checkAvailableMemory(Simbox        * timeSimbox,
   int nGridParameters  = 3;                                      // Vp + Vs + Rho, padded
   int nGridBackground  = 3;                                      // Vp + Vs + Rho, padded
   int nGridCovariances = 6;                                      // Covariances, padded
-  int nGridSeismicData = modelSettings->getNumberOfAngles();     // One for each angle stack, padded
 
   int nGridFacies       = modelSettings->getNumberOfFacies()+1;   // One for each facies, one for undef, unpadded.
   int nGridHistograms   = modelSettings->getNumberOfFacies();     // One for each facies, 2MB.
   int nGridKriging      = 1;                                      // One grid for kriging, unpadded.
   int nGridCompute      = 1;                                      // Computation grid, padded (for convenience)
   int nGridFileMode     = 1;                                      // One grid for intermediate file storage
+
+  int nGridSeismicData = 0;
+  for(int i=0; i<modelSettings->getNumberOfTimeLapses(); i++){    // Find time lapse with most seismic cubes
+    if(modelSettings->getNumberOfAngles(i) > nGridSeismicData)
+      nGridSeismicData = modelSettings->getNumberOfAngles(i);     // One for each angle stack, padded
+  }
 
   int nGrids;
   long long int gridMem;
@@ -240,7 +245,7 @@ ModelGeneral::checkAvailableMemory(Simbox        * timeSimbox,
       }
       if(modelSettings->getNumberOfSimulations() > 0)
         nGrids = nGridParameters;
-      if(modelSettings->getUseLocalNoise()) {
+      if(modelSettings->getUseLocalNoise(0)) { //If local noise is used, it is used for all time lapses
         nGrids = 2*nGridParameters;
       }
 
@@ -249,7 +254,7 @@ ModelGeneral::checkAvailableMemory(Simbox        * timeSimbox,
     else {
       //baseP and baseU are the padded and unpadde grids allocated at each peak.
       int baseP = nGridParameters + nGridCovariances;
-      if(modelSettings->getUseLocalNoise() == true || (modelSettings->getEstimateFaciesProb() && modelSettings->getFaciesProbRelative()))
+      if(modelSettings->getUseLocalNoise(0) == true || (modelSettings->getEstimateFaciesProb() && modelSettings->getFaciesProbRelative()))
         baseP += nGridBackground;
       int baseU = 0;
       if(modelSettings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_CUBES)
@@ -264,7 +269,7 @@ ModelGeneral::checkAvailableMemory(Simbox        * timeSimbox,
 
       if(modelSettings->getNumberOfSimulations() > 0) { //Second possible peak when simulating.
         int peak2P = baseP + 3; //Three extra parameter grids for simulated parameters.
-        if(modelSettings->getUseLocalNoise() == true &&
+        if(modelSettings->getUseLocalNoise(0) == true &&
            (modelSettings->getEstimateFaciesProb() == false || modelSettings->getFaciesProbRelative() == false)) 
           peak2P -= nGridBackground; //Background grids are released before simulation in this case.
         int peak2U = baseU;     //Base level is the same, but may increase.
@@ -304,7 +309,7 @@ ModelGeneral::checkAvailableMemory(Simbox        * timeSimbox,
 
   float mem0        = 4.0f * workSize;
   float mem1        = static_cast<float>(gridMem);
-  float mem2        = static_cast<float>(modelSettings->getNumberOfAngles())*gridSizePad + memOneSeis; //Peak memory when reading seismic, overestimated.
+  float mem2        = static_cast<float>(modelSettings->getNumberOfAngles(0))*gridSizePad + memOneSeis; //Peak memory when reading seismic, overestimated.
 
   float neededMem   = mem0 + std::max(mem1, mem2);
 
@@ -523,7 +528,7 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
     gridFile = inputFiles->getBackFile(0);    // Get geometry from earth model (Vp)
   else {
     if (modelSettings->getEstimationMode() == false || estimationModeNeedILXL)
-      gridFile = inputFiles->getSeismicFile(0); // Get area from first seismic data volume
+      gridFile = inputFiles->getSeismicFile(0,0); // Get area from first seismic data volume
   }
   SegyGeometry * ILXLGeometry = NULL; //Geometry with correct XL and IL settings.
   //
@@ -552,7 +557,7 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
     std::string tmpErrText;
     SegyGeometry * geometry;
     getGeometryFromGridOnFile(gridFile,
-                              modelSettings->getTraceHeaderFormat(0),
+                              modelSettings->getTraceHeaderFormat(0,0), //Trace header format is the same for all time lapses
                               geometry,
                               tmpErrText);
 
@@ -651,7 +656,7 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
             LogKit::LogFormatted(LogKit::High,"\nFinding IL/XL information from grid data file \'"+gridFile+"\'\n");
             std::string tmpErrText;
             getGeometryFromGridOnFile(gridFile,
-                                      modelSettings->getTraceHeaderFormat(0),
+                                      modelSettings->getTraceHeaderFormat(0,0), //Trace header format is the same for all time lapses
                                       ILXLGeometry,
                                       tmpErrText);
             if(ILXLGeometry == NULL) {
@@ -1588,8 +1593,11 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
     bool generateBackground = modelSettings->getGenerateBackground();
     bool estimateFaciesProb = modelSettings->getFaciesLogGiven();
     bool estimateWavelet    = false;
-    for (int i = 0 ; i < modelSettings->getNumberOfAngles() ; i++)
-      estimateWavelet = estimateWavelet || modelSettings->getEstimateWavelet(i);
+    for(int i=0; i<modelSettings->getNumberOfTimeLapses(); i++){
+      std::vector<bool> estimateWaveletAllTraces = modelSettings->getEstimateWavelet(i);
+      for (int j = 0 ; j < modelSettings->getNumberOfAngles(i) ; j++)
+        estimateWavelet = estimateWavelet || estimateWaveletAllTraces[j];
+    }
     if (generateBackground || estimateFaciesProb || estimateWavelet) 
     {
       LogKit::LogFormatted(LogKit::Low,"\nUse well in estimation of:                   ");
@@ -1656,7 +1664,7 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
   else {
     LogKit::LogFormatted(LogKit::Low,"\nInversion area");
     if(areaSpecification == ModelSettings::AREA_FROM_GRID_DATA)
-      gridFile = inputFiles->getSeismicFile(0); // Get area from first seismic data volume
+      gridFile = inputFiles->getSeismicFile(0,0); // Get area from first seismic data volume
   }
   if (areaSpecification == ModelSettings::AREA_FROM_GRID_DATA) {
     const std::vector<int> & areaILXL = modelSettings->getAreaILXL();
@@ -1745,8 +1753,8 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
      LogKit::LogFormatted(LogKit::Low,"  Velocity field                           : "+velocityField+"\n");
   }
 
-  const std::string & topWEI  = inputFiles->getWaveletEstIntFile(0);
-  const std::string & baseWEI = inputFiles->getWaveletEstIntFile(1);
+  const std::string & topWEI  = inputFiles->getWaveletEstIntFileTop(0);
+  const std::string & baseWEI = inputFiles->getWaveletEstIntFileBase(0);
 
   if (topWEI != "" || baseWEI != "") {
     LogKit::LogFormatted(LogKit::Low,"\nWavelet estimation interval:\n");
@@ -1848,11 +1856,12 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
     //
     LogKit::LogFormatted(LogKit::Low,"\nGeneral settings for seismic:\n");
     LogKit::LogFormatted(LogKit::Low,"  Generating seismic                       : %10s\n","yes");
-    for (int i = 0 ; i < modelSettings->getNumberOfAngles() ; i++)
+    std::vector<float> angle = modelSettings->getAngle(0);
+    for (int i = 0 ; i < modelSettings->getNumberOfAngles(0) ; i++) //Forward modeling can only be done for one time lapse 
     {
       LogKit::LogFormatted(LogKit::Low,"\nSettings for AVO stack %d:\n",i+1);
-      LogKit::LogFormatted(LogKit::Low,"  Angle                                    : %10.1f\n",(modelSettings->getAngle(i)*180/M_PI));
-      LogKit::LogFormatted(LogKit::Low,"  Read wavelet from file                   : "+inputFiles->getWaveletFile(i)+"\n");
+      LogKit::LogFormatted(LogKit::Low,"  Angle                                    : %10.1f\n",(angle[i]*180/M_PI));
+      LogKit::LogFormatted(LogKit::Low,"  Read wavelet from file                   : "+inputFiles->getWaveletFile(0,i)+"\n");
     }
   }
   else
@@ -1916,89 +1925,110 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
       LogKit::LogFormatted(LogKit::Low,"  White noise component                    : %10.2f\n",modelSettings->getWNC());
       LogKit::LogFormatted(LogKit::Low,"  Low cut for inversion                    : %10.1f\n",modelSettings->getLowCut());
       LogKit::LogFormatted(LogKit::Low,"  High cut for inversion                   : %10.1f\n",modelSettings->getHighCut());
-      corr  = modelSettings->getAngularCorr();
-      GenExpVario * pCorr = dynamic_cast<GenExpVario*>(corr);
-      LogKit::LogFormatted(LogKit::Low,"  Angular correlation:\n");
-      LogKit::LogFormatted(LogKit::Low,"    Model                                  : %10s\n",(corr->getType()).c_str());
-      if (pCorr != NULL)
-        LogKit::LogFormatted(LogKit::Low,"    Power                                  : %10.1f\n",pCorr->getPower());
-      LogKit::LogFormatted(LogKit::Low,"    Range                                  : %10.1f\n",corr->getRange()*180.0/M_PI);
-      if (corr->getAnisotropic())
-      {
-        LogKit::LogFormatted(LogKit::Low,"    Subrange                               : %10.1f\n",corr->getSubRange()*180.0/M_PI);
-        LogKit::LogFormatted(LogKit::Low,"    Angle                                  : %10.1f\n",corr->getAngle());
-      }
-      bool estimateNoise = false;
-      for (int i = 0 ; i < modelSettings->getNumberOfAngles() ; i++) {
-        estimateNoise = estimateNoise || modelSettings->getEstimateSNRatio(i); 
-      }
-      LogKit::LogFormatted(LogKit::Low,"\nGeneral settings for wavelet:\n");
-      if (estimateNoise)
-        LogKit::LogFormatted(LogKit::Low,"  Maximum shift in noise estimation        : %10.1f\n",modelSettings->getMaxWaveletShift());
-      LogKit::LogFormatted(LogKit::Low,"  Minimum relative amplitude               : %10.3f\n",modelSettings->getMinRelWaveletAmp());
-      LogKit::LogFormatted(LogKit::Low,"  Wavelet tapering length                  : %10.1f\n",modelSettings->getWaveletTaperingL());
-      if (modelSettings->getOptimizeWellLocation()) {
-        LogKit::LogFormatted(LogKit::Low,"\nGeneral settings for well locations:\n");
-        LogKit::LogFormatted(LogKit::Low,"  Maximum offset                           : %10.1f\n",modelSettings->getMaxWellOffset());
-        LogKit::LogFormatted(LogKit::Low,"  Maximum vertical shift                   : %10.1f\n",modelSettings->getMaxWellShift());
-      }
-      for (int i = 0 ; i < modelSettings->getNumberOfAngles() ; i++)
-      {
-        LogKit::LogFormatted(LogKit::Low,"\nSettings for AVO stack %d:\n",i+1);
-        LogKit::LogFormatted(LogKit::Low,"  Angle                                    : %10.1f\n",(modelSettings->getAngle(i)*180/M_PI));
-        LogKit::LogFormatted(LogKit::Low,"  SegY start time                          : %10.1f\n",modelSettings->getSegyOffset());
-        TraceHeaderFormat * thf = modelSettings->getTraceHeaderFormat(i);
-        if (thf != NULL) 
+
+      if (modelSettings->getNumberOfTimeLapses() > 1)        
+        LogKit::LogFormatted(LogKit::Low,"\n4D seismic data:\n");
+
+      for (int i=0; i<modelSettings->getNumberOfTimeLapses(); i++){
+        if(modelSettings->getNumberOfTimeLapses() > 1)
+          LogKit::LogFormatted(LogKit::Low,"\nVintage:\n");
+        if(modelSettings->getVintageMonth(i)==IMISSING && modelSettings->getVintageYear(i) != IMISSING)
+          LogKit::LogFormatted(LogKit::Low,"    %-2d                                     : %10d\n", i+1, modelSettings->getVintageYear(i)); 
+        else if(modelSettings->getVintageDay(i)==IMISSING && modelSettings->getVintageMonth(i) != IMISSING && modelSettings->getVintageYear(i) != IMISSING)
+          LogKit::LogFormatted(LogKit::Low,"    %-2d                                     : %10d %4d\n", i+1, modelSettings->getVintageYear(i), modelSettings->getVintageMonth(i)); 
+        else if(modelSettings->getVintageDay(i)!=IMISSING && modelSettings->getVintageMonth(i)!=IMISSING && modelSettings->getVintageYear(i) != IMISSING)
+          LogKit::LogFormatted(LogKit::Low,"    %-2d                                     : %10d %4d %4d\n", i+1, modelSettings->getVintageYear(i), modelSettings->getVintageMonth(i), modelSettings->getVintageDay(i)); 
+
+        corr  = modelSettings->getAngularCorr(i);
+        GenExpVario * pCorr = dynamic_cast<GenExpVario*>(corr);
+        LogKit::LogFormatted(LogKit::Low,"  \nAngular correlation:\n");
+        LogKit::LogFormatted(LogKit::Low,"    Model                                  : %10s\n",(corr->getType()).c_str());
+        if (pCorr != NULL)
+          LogKit::LogFormatted(LogKit::Low,"    Power                                  : %10.1f\n",pCorr->getPower());
+        LogKit::LogFormatted(LogKit::Low,"    Range                                  : %10.1f\n",corr->getRange()*180.0/M_PI);
+        if (corr->getAnisotropic())
+       {
+         LogKit::LogFormatted(LogKit::Low,"    Subrange                               : %10.1f\n",corr->getSubRange()*180.0/M_PI);
+          LogKit::LogFormatted(LogKit::Low,"    Angle                                  : %10.1f\n",corr->getAngle());
+        }
+        bool estimateNoise = false;
+        for (int j = 0 ; j < modelSettings->getNumberOfAngles(i) ; j++) {
+          estimateNoise = estimateNoise || modelSettings->getEstimateSNRatio(i,j); 
+        }
+        LogKit::LogFormatted(LogKit::Low,"\nGeneral settings for wavelet:\n");
+       if (estimateNoise)
+          LogKit::LogFormatted(LogKit::Low,"  Maximum shift in noise estimation        : %10.1f\n",modelSettings->getMaxWaveletShift());
+        LogKit::LogFormatted(LogKit::Low,"  Minimum relative amplitude               : %10.3f\n",modelSettings->getMinRelWaveletAmp());
+        LogKit::LogFormatted(LogKit::Low,"  Wavelet tapering length                  : %10.1f\n",modelSettings->getWaveletTaperingL());
+        if (modelSettings->getOptimizeWellLocation()) {
+          LogKit::LogFormatted(LogKit::Low,"\nGeneral settings for well locations:\n");
+          LogKit::LogFormatted(LogKit::Low,"  Maximum offset                           : %10.1f\n",modelSettings->getMaxWellOffset());
+          LogKit::LogFormatted(LogKit::Low,"  Maximum vertical shift                   : %10.1f\n",modelSettings->getMaxWellShift());
+        }
+
+        std::vector<float> angle = modelSettings->getAngle(i);
+        std::vector<float> SNRatio = modelSettings->getSNRatio(i);
+        std::vector<bool>  estimateWavelet = modelSettings->getEstimateWavelet(i);
+        std::vector<bool>  matchEnergies = modelSettings->getMatchEnergies(i);
+
+        for (int j = 0 ; j < modelSettings->getNumberOfAngles(i) ; j++)
         {
-          LogKit::LogFormatted(LogKit::Low,"  SegY trace header format:\n");
-          LogKit::LogFormatted(LogKit::Low,"    Format name                            : "+thf->GetFormatName()+"\n");
-          if (thf->GetBypassCoordScaling())
-            LogKit::LogFormatted(LogKit::Low,"    Bypass coordinate scaling              :        yes\n");
-          if (!thf->GetStandardType()) 
+          LogKit::LogFormatted(LogKit::Low,"\nSettings for AVO stack %d:\n",j+1);
+          LogKit::LogFormatted(LogKit::Low,"  Angle                                    : %10.1f\n",(angle[j]*180/M_PI)); 
+          LogKit::LogFormatted(LogKit::Low,"  SegY start time                          : %10.1f\n",modelSettings->getSegyOffset(i)); 
+          TraceHeaderFormat * thf = modelSettings->getTraceHeaderFormat(i,j);
+          if (thf != NULL) 
           {
-            LogKit::LogFormatted(LogKit::Low,"    Start pos coordinate scaling           : %10d\n",thf->GetScalCoLoc());
-            LogKit::LogFormatted(LogKit::Low,"    Start pos trace x coordinate           : %10d\n",thf->GetUtmxLoc());
-            LogKit::LogFormatted(LogKit::Low,"    Start pos trace y coordinate           : %10d\n",thf->GetUtmyLoc());
-            LogKit::LogFormatted(LogKit::Low,"    Start pos inline index                 : %10d\n",thf->GetInlineLoc());
-            LogKit::LogFormatted(LogKit::Low,"    Start pos crossline index              : %10d\n",thf->GetCrosslineLoc());
-            LogKit::LogFormatted(LogKit::Low,"    Coordinate system                      : %10s\n",thf->GetCoordSys()==0 ? "UTM" : "ILXL" );
+            LogKit::LogFormatted(LogKit::Low,"  SegY trace header format:\n");
+            LogKit::LogFormatted(LogKit::Low,"    Format name                            : "+thf->GetFormatName()+"\n");
+            if (thf->GetBypassCoordScaling())
+              LogKit::LogFormatted(LogKit::Low,"    Bypass coordinate scaling              :        yes\n");
+            if (!thf->GetStandardType()) 
+            {
+              LogKit::LogFormatted(LogKit::Low,"    Start pos coordinate scaling           : %10d\n",thf->GetScalCoLoc());
+              LogKit::LogFormatted(LogKit::Low,"    Start pos trace x coordinate           : %10d\n",thf->GetUtmxLoc());
+              LogKit::LogFormatted(LogKit::Low,"    Start pos trace y coordinate           : %10d\n",thf->GetUtmyLoc());
+              LogKit::LogFormatted(LogKit::Low,"    Start pos inline index                 : %10d\n",thf->GetInlineLoc());
+              LogKit::LogFormatted(LogKit::Low,"    Start pos crossline index              : %10d\n",thf->GetCrosslineLoc());
+              LogKit::LogFormatted(LogKit::Low,"    Coordinate system                      : %10s\n",thf->GetCoordSys()==0 ? "UTM" : "ILXL" );
+            }
           }
-        }
-        LogKit::LogFormatted(LogKit::Low,"  Data                                     : "+inputFiles->getSeismicFile(i)+"\n");
-        if (modelSettings->getEstimateWavelet(i))
-          LogKit::LogFormatted(LogKit::Low,"  Estimate wavelet                         : %10s\n", "yes");
-        else
-          LogKit::LogFormatted(LogKit::Low,"  Read wavelet from file                   : "+inputFiles->getWaveletFile(i)+"\n");
-        if (modelSettings->getEstimateLocalShift(i))
-          LogKit::LogFormatted(LogKit::Low,"  Estimate local shift map                 : %10s\n", "yes");
-        else if (inputFiles->getShiftFile(i) != "")
-          LogKit::LogFormatted(LogKit::Low,"  Local shift map                          : "+inputFiles->getShiftFile(i)+"\n");  
-        if (modelSettings->getEstimateLocalScale(i))
-          LogKit::LogFormatted(LogKit::Low,"  Estimate local scale map                 : %10s\n", "yes");
-        else if (inputFiles->getScaleFile(i) != "")
-          LogKit::LogFormatted(LogKit::Low,"  Local scale map                          : "+inputFiles->getScaleFile(i)+"\n");      
-        if (modelSettings->getMatchEnergies(i)) 
-          LogKit::LogFormatted(LogKit::Low,"  Match empirical and theoretical energies : %10s\n", "yes");
-        if (!modelSettings->getEstimateWavelet(i) && !modelSettings->getMatchEnergies(i)) {
-          if (modelSettings->getEstimateGlobalWaveletScale(i))
-            LogKit::LogFormatted(LogKit::Low,"  Estimate global wavelet scale            : %10s\n","yes");
+          LogKit::LogFormatted(LogKit::Low,"  Data                                     : "+inputFiles->getSeismicFile(i,j)+"\n");
+          if (estimateWavelet[j])
+            LogKit::LogFormatted(LogKit::Low,"  Estimate wavelet                         : %10s\n", "yes");
           else
-            LogKit::LogFormatted(LogKit::Low,"  Global wavelet scale                     : %10.2f\n",modelSettings->getWaveletScale(i));
-        }
-        if (modelSettings->getEstimateSNRatio(i)) 
-          LogKit::LogFormatted(LogKit::Low,"  Estimate signal-to-noise ratio           : %10s\n", "yes");
-        else
-          LogKit::LogFormatted(LogKit::Low,"  Signal-to-noise ratio                    : %10.1f\n",modelSettings->getSNRatio(i));
-        if (modelSettings->getEstimateLocalNoise(i)) { 
-          if (inputFiles->getLocalNoiseFile(i) == "") 
-            LogKit::LogFormatted(LogKit::Low,"  Estimate local signal-to-noise ratio map : %10s\n", "yes");
+            LogKit::LogFormatted(LogKit::Low,"  Read wavelet from file                   : "+inputFiles->getWaveletFile(i,j)+"\n");
+          if (modelSettings->getEstimateLocalShift(i,j))
+           LogKit::LogFormatted(LogKit::Low,"  Estimate local shift map                 : %10s\n", "yes");
+          else if (inputFiles->getShiftFile(i,j) != "") 
+            LogKit::LogFormatted(LogKit::Low,"  Local shift map                          : "+inputFiles->getShiftFile(i,j)+"\n");  
+          if (modelSettings->getEstimateLocalScale(i,j))
+            LogKit::LogFormatted(LogKit::Low,"  Estimate local scale map                 : %10s\n", "yes");
+          else if (inputFiles->getScaleFile(i,j) != "")
+            LogKit::LogFormatted(LogKit::Low,"  Local scale map                          : "+inputFiles->getScaleFile(i,j)+"\n");      
+          if (matchEnergies[j]) 
+            LogKit::LogFormatted(LogKit::Low,"  Match empirical and theoretical energies : %10s\n", "yes");
+          if (!estimateWavelet[j] && !matchEnergies[j]){
+            if (modelSettings->getEstimateGlobalWaveletScale(i,j))
+              LogKit::LogFormatted(LogKit::Low,"  Estimate global wavelet scale            : %10s\n","yes");
+            else
+              LogKit::LogFormatted(LogKit::Low,"  Global wavelet scale                     : %10.2f\n",modelSettings->getWaveletScale(i,j));
+          }
+          if (modelSettings->getEstimateSNRatio(i,j))  
+            LogKit::LogFormatted(LogKit::Low,"  Estimate signal-to-noise ratio           : %10s\n", "yes");
           else
-            LogKit::LogFormatted(LogKit::Low,"  Local signal-to-noise ratio map          : "+inputFiles->getLocalNoiseFile(i)+"\n");
+            LogKit::LogFormatted(LogKit::Low,"  Signal-to-noise ratio                    : %10.1f\n",SNRatio[j]);
+          if (modelSettings->getEstimateLocalNoise(i,j)) { 
+            if (inputFiles->getLocalNoiseFile(i,j) == "") 
+              LogKit::LogFormatted(LogKit::Low,"  Estimate local signal-to-noise ratio map : %10s\n", "yes");
+            else
+              LogKit::LogFormatted(LogKit::Low,"  Local signal-to-noise ratio map          : "+inputFiles->getLocalNoiseFile(i,j)+"\n");
+          }
+          if (modelSettings->getEstimateLocalNoise(i,j))
+            LogKit::LogFormatted(LogKit::Low,"  Estimate local noise                     : %10s\n", "yes");
+          if (inputFiles->getLocalNoiseFile(i,j) != "")
+            LogKit::LogFormatted(LogKit::Low,"  Local noise                              : "+inputFiles->getLocalNoiseFile(i,j)+"\n");
         }
-        if (modelSettings->getEstimateLocalNoise(i))
-          LogKit::LogFormatted(LogKit::Low,"  Estimate local noise                     : %10s\n", "yes");
-        if (inputFiles->getLocalNoiseFile(i) != "")
-          LogKit::LogFormatted(LogKit::Low,"  Local noise                              : "+inputFiles->getLocalNoiseFile(i)+"\n");
       }
     }
   }
@@ -2055,7 +2085,7 @@ ModelGeneral::processDepthConversion(Simbox            * timeCutSimbox,
       if((modelSettings->getOutputGridsOther() & IO::TIME_TO_DEPTH_VELOCITY) > 0) {
         std::string baseName  = IO::FileTimeToDepthVelocity();
         std::string sgriLabel = std::string("Time-to-depth velocity");
-        float       offset    = modelSettings->getSegyOffset();
+        float       offset    = modelSettings->getSegyOffset(0);//Only allow one segy offset for time lapse data
         velocity->writeFile(baseName, 
                             IO::PathToVelocity(), 
                             timeSimbox, 
@@ -2101,7 +2131,7 @@ ModelGeneral::loadVelocity(FFTGrid          *& velocity,
   {
     const SegyGeometry      * dummy1 = NULL;
     const TraceHeaderFormat * dummy2 = NULL;
-    const float               offset = modelSettings->getSegyOffset();
+    const float               offset = modelSettings->getSegyOffset(0); //Segy offset needs to be the same for all time lapse data
     std::string errorText("");
     int outsideTraces = 0;
     readGridFromFile(velocityField,

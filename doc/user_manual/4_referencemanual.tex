@@ -1386,6 +1386,34 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
    \item \Argument Value
    \item \Default 1 ms/m
  \elist
+ 
+\subsection{\hbracket{vintage}}\newkw{vintage}
+ \slist
+   \item \Description Vintage of seismic time lapse data
+   \item \Argument Elements controlling the vintage
+   \item \Default
+ \elist
+ 
+ \subsubsection{\hbracket{year}}\newkw{year}
+ \slist
+   \item \Description The year the seismic data were collected
+   \item \Argument Integer value
+   \item \Default 
+ \elist
+
+ \subsubsection{\hbracket{month}}\newkw{month}
+ \slist
+   \item \Description The month the seismic data were collected. Can not be specified unless the corresponding year is specified
+   \item \Argument Integer value
+   \item \Default 
+ \elist
+ 
+  \subsubsection{\hbracket{day-of-month}}\newkw{day-of-month}
+ \slist
+   \item \Description The day the seismic data were collected. Can not be specified unless both the corresponding year and month are specified
+   \item \Argument Integer value
+   \item \Default 
+ \elist
 
 \section{\hbracket{well-data}} \newkw{well-data}
  \slist

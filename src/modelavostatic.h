@@ -49,13 +49,16 @@ public:
   void                          writeWells(       WellData ** wells, ModelSettings * modelSettings) const;
   void                          writeBlockedWells(WellData ** wells, ModelSettings * modelSettings) const;
 
-  void             addSeismicLogs(WellData ** wells, FFTGrid ** seisCube, 
-                                  ModelSettings * modelSettings);                              // Changes wells
+  void             addSeismicLogs(WellData      ** wells, 
+                                  FFTGrid       ** seisCube, 
+                                  ModelSettings  * modelSettings,
+                                  int              nAngles);                              // Changes wells
   void             generateSyntheticSeismic(Wavelet      ** wavelet,
                                             WellData     ** wells,
                                             float        ** reflectionMatrix,
                                             Simbox        * timeSimbox,
-                                            ModelSettings * modelSettings);                    // Changes wells
+                                            ModelSettings * modelSettings,
+                                            int             nAngles);                    // Changes wells
   void             processWellLocation(FFTGrid                     ** seisCube, 
                                        WellData                    ** wells, 
                                        float                       ** reflectionMatrix,
@@ -63,6 +66,9 @@ public:
                                        ModelSettings                * modelSettings,
                                        const std::vector<Surface *> & interval, 
                                        RandomGen                    * randomGen);              // Changes wells
+
+  void             deleteDynamicWells(WellData ** wells,
+                                      int         nWells);
   
 private:
   void             processWells(WellData     **& wells,

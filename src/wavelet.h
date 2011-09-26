@@ -124,7 +124,15 @@ public:
                                                 int             /*number*/,
                                                 Grid2D       *& /*noiseScaled*/, 
                                                 Grid2D       *& /*shift*/, 
-                                                Grid2D       *& /*gain*/) {return 1.0f;} 
+                                                Grid2D       *& /*gain*/,
+                                                float           /*SNRatio*/,
+                                                float           /*waveletScale*/,
+                                                bool            /*estimateSNRatio*/,
+                                                bool            /*estimateGlobalScale*/,
+                                                bool            /*estimateLocalNoise*/,
+                                                bool            /*estimateLocalShift*/,
+                                                bool            /*estimateLocalScale*/,
+                                                bool            /*estimateWavelet*/) {return 1.0f;} 
 
   virtual float calculateSNRatio(Simbox                                   * /*simbox*/, 
                                  FFTGrid                                  * /*seisCube*/, 
@@ -136,7 +144,10 @@ public:
                                  const NRLib::Grid2D<float>               & /*refTimeGradY*/,
                                  const std::vector<std::vector<double> >  & /*tGradX*/,
                                  const std::vector<std::vector<double> >  & /*tGradY*/,
-                                 int                                        /*i*/) {return 1.0f;}
+                                 int                                        /*i*/,
+                                 float                                      /*SNRatio*/,
+                                 bool                                       /*estimateSNRatio*/,
+                                 bool                                       /*estimateWavelet*/) {return 1.0f;}
 
 protected:
   float          getTheta()          const {return theta_;}

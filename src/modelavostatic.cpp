@@ -816,7 +816,7 @@ void ModelAVOStatic::readPriorFaciesProbCubes(const InputFiles      * inputFiles
       const std::string & faciesProbFile = iter->second;
       const SegyGeometry      * dummy1 = NULL;
       const TraceHeaderFormat * dummy2 = NULL;
-      const float               offset = modelSettings->getSegyOffset();
+      const float               offset = modelSettings->getSegyOffset(0); //Facies estimation only allowed for one time lapse
       std::string errorText("");
       int outsideTraces = 0;
       ModelGeneral::readGridFromFile(faciesProbFile,
@@ -869,8 +869,8 @@ ModelAVOStatic::loadExtraSurfaces(std::vector<Surface *> & waveletEstimInterval,
   //
   // Get wavelet estimation interval
   //
-  const std::string & topWEI  = inputFiles->getWaveletEstIntFile(0);
-  const std::string & baseWEI = inputFiles->getWaveletEstIntFile(1);
+  const std::string & topWEI  = inputFiles->getWaveletEstIntFileTop(0); //Same for all time lapses
+  const std::string & baseWEI = inputFiles->getWaveletEstIntFileBase(0);//Same for all time lapses 
 
   if (topWEI != "" && baseWEI != "") {  
     waveletEstimInterval.resize(2);
@@ -986,11 +986,11 @@ void ModelAVOStatic::writeBlockedWells(WellData ** wells, ModelSettings * modelS
 
 void ModelAVOStatic::addSeismicLogs(WellData     ** wells, 
                                     FFTGrid      ** seisCube, 
-                                    ModelSettings * modelSettings)
+                                    ModelSettings * modelSettings,
+                                    int             nAngles)
 {
   int nWells  = modelSettings->getNumberOfWells();
-  int nAngles = modelSettings->getNumberOfAngles();
-  
+
     for (int iAngle = 0 ; iAngle < nAngles ; iAngle++)
     {
       seisCube[iAngle]->setAccessMode(FFTGrid::RANDOMACCESS);
@@ -1004,10 +1004,10 @@ void ModelAVOStatic::generateSyntheticSeismic(Wavelet      ** wavelet,
                                               WellData     ** wells,
                                               float        ** reflectionMatrix,
                                               Simbox        * timeSimbox,
-                                              ModelSettings * modelSettings)
+                                              ModelSettings * modelSettings,
+                                              int             nAngles)
 {
   int nWells  = modelSettings->getNumberOfWells();
-  int nAngles = modelSettings->getNumberOfAngles();
   int nzp     = modelSettings->getNZpad();
   int nz      = timeSimbox->getnz();
 
@@ -1042,12 +1042,13 @@ ModelAVOStatic::processWellLocation(FFTGrid                     ** seisCube,
   int     jMaxOffset;
   int     nMoveAngles = 0;
   int     nWells      = modelSettings->getNumberOfWells();
-  int     nAngles     = modelSettings->getNumberOfAngles();
+  int     nAngles     = modelSettings->getNumberOfAngles(0);//Well location is not estimated when using time lapse data
   float   maxShift    = modelSettings->getMaxWellShift();
   float   maxOffset   = modelSettings->getMaxWellOffset();
   double  angle       = timeSimbox->getAngle();
   double  dx          = timeSimbox->getdx();
   double  dy          = timeSimbox->getdx();
+  std::vector<float> seismicAngle = modelSettings->getAngle(0); //Use first time lapse as this not is allowed in 4D 
 
   std::vector<float> angleWeight(nAngles); 
   LogKit::LogFormatted(LogKit::Low,"\n");
@@ -1071,7 +1072,7 @@ ModelAVOStatic::processWellLocation(FFTGrid                     ** seisCube,
       moveAngle   = modelSettings->getWellMoveAngle(w,i);
 
       for( j=0; j<nAngles; j++ ){
-        if( moveAngle==modelSettings->getAngle(j)){
+        if( moveAngle == seismicAngle[j]){
           angleWeight[j] = modelSettings->getWellMoveWeight(w,i);
           break;
         }
@@ -1108,4 +1109,14 @@ ModelAVOStatic::processWellLocation(FFTGrid                     ** seisCube,
       TaskList::addTask("Well "+NRLib::ToString(wells[w]->getWellname())+" can not be moved. Remove <optimize-location-to> for this well");
     }
    }
+}
+
+void ModelAVOStatic::deleteDynamicWells(WellData ** wells,
+                                        int         nWells)
+{
+  for(int i=0; i<nWells; i++){
+    wells[i]->getBlockedLogsConstThick()->deleteDynamicBlockedLogs();
+    wells[i]->getBlockedLogsExtendedBG()->deleteDynamicBlockedLogs();
+    wells[i]->getBlockedLogsOrigThick()->deleteDynamicBlockedLogs();
+  }
 }

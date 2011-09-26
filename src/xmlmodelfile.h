@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 
+#include "nrlib/segy/traceheader.hpp"
 #include "nrlib/tinyxml/tinyxml.h"
 #include "src/definitions.h"
 
@@ -43,6 +44,7 @@ private:
   bool       parseWaveletEstimationInterval(TiXmlNode * node, std::string & errTxt);
   bool     parseWavelet3D(TiXmlNode * node, std::string & errTxt);
   bool     parseTimeGradientSettings(TiXmlNode * node, std::string & errTxt);
+  bool parseVintage(TiXmlNode * node, std::string & errTxt);
 
   bool parsePriorModel(TiXmlNode * node, std::string & errTxt);
   bool parseEarthModel(TiXmlNode * node, std::string & errTxt);
@@ -97,6 +99,7 @@ private:
   void checkForwardConsistency(std::string & errTxt);
   void checkEstimationConsistency(std::string & errTxt);
   void checkInversionConsistency(std::string & errTxt);
+  void checkTimeLapseConsistency(std::string & errTxt);
   void checkIOConsistency(std::string & errTxt);
 
   void setMissing(int & value)         { value = IMISSING ;}
@@ -110,6 +113,7 @@ private:
   InputFiles     * inputFiles_;
   
   bool             failed_;                // Indicates whether errors ocuured during construction. 
+  bool             surveyFailed_;
 };
 
 template <typename T>

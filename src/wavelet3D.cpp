@@ -400,7 +400,10 @@ Wavelet3D::calculateSNRatio(Simbox                                   * simbox,
                             const NRLib::Grid2D<float>               & refTimeGradY,
                             const std::vector<std::vector<double> >  & tGradX,
                             const std::vector<std::vector<double> >  & tGradY,
-                            int                                        number)                                           
+                            int                                        number,
+                            float                                      SNRatio,
+                            bool                                       estimateSNRatio,
+                            bool                                       estimateWavelet)                                           
 {
   std::string angle    = NRLib::ToString((180.0/NRLib::Pi)*theta_, 1);
   unsigned int nWells  = modelSettings->getNumberOfWells();
@@ -636,15 +639,14 @@ Wavelet3D::calculateSNRatio(Simbox                                   * simbox,
       LogKit::LogFormatted(LogKit::Low,"  %-20s      -            -             - \n",wells[w]->getWellname().c_str());
   }
 
-  if(modelSettings->getEstimateSNRatio(number))
+  if(estimateSNRatio)
     LogKit::LogFormatted(LogKit::Low,"\n  The signal to noise ratio used for this angle stack is: %6.2f\n", empSNRatio);
   else {
-    float SNRatio = modelSettings->getSNRatio(number);
     LogKit::LogFormatted(LogKit::Low,"\n  The signal to noise ratio given in the model file and used for this angle stack is : %6.2f\n", SNRatio);
     LogKit::LogFormatted(LogKit::Low,"  For comparison, the signal-to-noise ratio calculated from the available wells is   : %6.2f\n", empSNRatio);
     float minSN = 1.0f + (empSNRatio - 1.0f)/2.0f;
     float maxSN = 1.0f + (empSNRatio - 1.0f)*2.0f;
-    if ((SNRatio<minSN || SNRatio>maxSN) && modelSettings->getEstimateWavelet(number)) {
+    if ((SNRatio<minSN || SNRatio>maxSN) && estimateWavelet) {
       LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The difference between the SN ratio given in the model file and the calculated SN ratio is too large.\n");
       if (SNRatio < minSN)
         TaskList::addTask("Consider increasing the SN ratio for angle stack "+NRLib::ToString(number)+" to minimum "+NRLib::ToString(minSN,1));
@@ -654,7 +656,7 @@ Wavelet3D::calculateSNRatio(Simbox                                   * simbox,
   }
 
   if (empSNRatio < 1.1f) {
-    if (modelSettings->getEstimateSNRatio(number)) {
+    if (estimateSNRatio) {
       LogKit::LogFormatted(LogKit::Warning,"\nERROR: The empirical signal-to-noise ratio Var(data)/Var(noise) is %.2f. Ratios smaller",empSNRatio);
       LogKit::LogFormatted(LogKit::Warning,"\n       than 1.1 are not acceptable. The signal-to-noise ratio was not reliably estimated");
       LogKit::LogFormatted(LogKit::Warning,"\n       and you must give it as input in the model file.\n");
