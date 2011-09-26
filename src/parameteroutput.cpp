@@ -316,7 +316,7 @@ ParameterOutput::computeLameLambda(const Simbox * simbox, ModelGeneral * modelGe
     ijkA = Alpha->getNextReal();
     ijkB = Beta->getNextReal();
     ijkR = Rho->getNextReal();
-    compVal = exp(ijkR)*(exp(2*ijkA-13.81551)-exp(2*ijkB-13.81551)); // -13.81551 in the exponent divides by 1 000 000
+    compVal = exp(ijkR)*(exp(2*ijkA-13.81551)-2*exp(2*ijkB-13.81551)); // -13.81551 in the exponent divides by 1 000 000
     lambda->setNextReal(float( compVal));
   }
 
