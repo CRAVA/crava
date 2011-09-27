@@ -3,20 +3,21 @@
 #include <time.h>
 #include <assert.h>
 
-#ifdef COMPILE_STORM_MODULES_FOR_RMS
+#if defined(COMPILE_STORM_MODULES_FOR_RMS)
 #include <util/precompile.h>
 
 #include <license/feature.h>
 #include <license/features.h>
 #include <file/appl.h>
+#include <config/releaseinfo.h>
 #ifdef GCOMPILE_SIMPLELMSYSTEM
 #include <license/simplelmsystem.h>
 #else
 #include <license/flexlm/flexlmsystem.h>
 #endif
-
-#include <config/releaseinfo.h>
 #endif
+
+
 
 #include "lib/timekit.hpp"
 #include "lib/utils.h"
@@ -42,7 +43,8 @@
 #include "src/modelavodynamic.h"
 #include "src/modelgeneral.h"
 
-#ifdef COMPILE_STORM_MODULES_FOR_RMS
+#if defined(COMPILE_STORM_MODULES_FOR_RMS)
+
 class CravaAppl : public IoAppl {
 public:
   CravaAppl(const char  *appl_name,
@@ -99,11 +101,12 @@ CravaAppl::Main(int /*argc*/, char ** /*argv*/) {
 
   return 1;
 }
+
 #endif
 
 int main(int argc, char** argv)
 {
-#ifdef COMPILE_STORM_MODULES_FOR_RMS
+#if defined(COMPILE_STORM_MODULES_FOR_RMS)
   //* The Appl is static, otherwise it is not deleted upon call to exit().
   //* TODO: checkUsage() must not call exit(), either return a status, or
   //* throw an exception that is caught here.
@@ -120,6 +123,7 @@ int main(int argc, char** argv)
                       ReleaseInfo::GetLicenseVersion());
   Appl::Instance()->Main(argc, argv);
 #endif
+
   if (argc != 2) {
     printf("Usage: %s modelfile\n",argv[0]);
     exit(1);
@@ -330,7 +334,7 @@ int main(int argc, char** argv)
     std::cerr << "Out of memory: " << ba.what() << std::endl;
   }
 
-#ifdef COMPILE_STORM_MODULES_FOR_RMS
+#if defined(COMPILE_STORM_MODULES_FOR_RMS)
   Feature& feature = FEATURE_SEISMIC; //TODO change to FEATURE_INVERSION when ready
   LicenseSystem::Instance()->CheckIn(&feature);
 #endif
