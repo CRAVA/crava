@@ -48,8 +48,8 @@
 				Name="VCCLCompilerTool"
 				AdditionalOptions="/D &quot;_CRT_SECURE_NO_DEPRECATE&quot;  /wd4512 /wd4127 /w44263 /w44264 /w44062 /I &quot;.&quot; /I &quot;.\fft\include&quot; /D &quot;BYPASS_COORDINATE_SCALING&quot;"
 				Optimization="0"
-				AdditionalIncludeDirectories=".;nrlib;fft"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;"
+				AdditionalIncludeDirectories=".;nrlib;fft;&quot;$(INTEL_DEF_IA32_INSTALL_DIR)MKL\Include&quot;;&quot;$(INTEL_DEF_IA32_INSTALL_DIR)MKL\Include\ia32&quot;;G:\sand\Libraries"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;MKL;FLENS_FIRST_INDEX=0"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -78,10 +78,11 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/FIXED:NO"
-				AdditionalDependencies="Ws2_32.lib"
+				AdditionalDependencies="Ws2_32.lib mkl_solver_sequential.lib mkl_intel_c.lib mkl_sequential.lib mkl_core.lib"
 				OutputFile=".\Debug/crava.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
+				AdditionalLibraryDirectories="$(INTEL_DEF_IA32_INSTALL_DIR)MKL\lib\ia32"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile=".\Debug/crava.pdb"
 				SubSystem="1"
@@ -146,8 +147,8 @@
 				Name="VCCLCompilerTool"
 				AdditionalOptions="/D &quot;_CRT_SECURE_NO_DEPRECATE&quot;  /wd4512 /wd4127 /w44263 /w44264 /w44062 /I &quot;.&quot; /I &quot;.\fft\include&quot; /D &quot;BYPASS_COORDINATE_SCALING&quot;"
 				Optimization="0"
-				AdditionalIncludeDirectories=".;nrlib;fft"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;"
+				AdditionalIncludeDirectories=".;nrlib;fft;G:\sand\Libraries;&quot;$(INTEL_DEF_X64_INSTALL_DIR)MKL\Include&quot;;&quot;$(INTEL_DEF_X64_INSTALL_DIR)MKL\Include\intel64&quot;"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;MKL;FLENS_FIRST_INDEX=0"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -176,10 +177,11 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/FIXED:NO"
-				AdditionalDependencies="Ws2_32.lib"
+				AdditionalDependencies="Ws2_32.lib mkl_solver_lp64_sequential.lib mkl_intel_lp64.lib mkl_sequential.lib mkl_core.lib"
 				OutputFile=".\Debug/crava.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
+				AdditionalLibraryDirectories="$(INTEL_DEF_X64_INSTALL_DIR)MKL\lib\intel64"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile=".\Debug/crava.pdb"
 				SubSystem="1"
@@ -244,8 +246,8 @@
 				AdditionalOptions="/D &quot;_CRT_SECURE_NO_DEPRECATE&quot;"
 				Optimization="2"
 				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories=".;nrlib;fft/include"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
+				AdditionalIncludeDirectories=".;nrlib;fft/include;&quot;$(INTEL_DEF_IA32_INSTALL_DIR)MKL\Include&quot;;&quot;$(INTEL_DEF_IA32_INSTALL_DIR)MKL\Include\ia32&quot;;G:\sand\Libraries"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;MKL;FLENS_FIRST_INDEX=0"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
@@ -269,10 +271,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="Ws2_32.lib"
+				AdditionalDependencies="Ws2_32.lib mkl_solver_sequential.lib mkl_intel_c.lib mkl_sequential.lib mkl_core.lib"
 				OutputFile=".\Release/crava.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
+				AdditionalLibraryDirectories="$(INTEL_DEF_IA32_INSTALL_DIR)MKL\lib\ia32"
 				ProgramDatabaseFile=".\Release/crava.pdb"
 				SubSystem="1"
 				TargetMachine="1"
@@ -337,8 +340,8 @@
 				AdditionalOptions="/D &quot;_CRT_SECURE_NO_DEPRECATE&quot;"
 				Optimization="2"
 				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories=".;nrlib;fft/include"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
+				AdditionalIncludeDirectories=".;nrlib;fft/include;&quot;$(INTEL_DEF_X64_INSTALL_DIR)MKL\Include&quot;;&quot;$(INTEL_DEF_X64_INSTALL_DIR)MKL\Include\intel64&quot;;G:\sand\Libraries"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;MKL;FLENS_FIRST_INDEX=0"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
@@ -362,10 +365,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="Ws2_32.lib"
+				AdditionalDependencies="Ws2_32.lib mkl_solver_lp64_sequential.lib mkl_intel_lp64.lib mkl_sequential.lib mkl_core.lib"
 				OutputFile=".\Release/crava.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
+				AdditionalLibraryDirectories="$(INTEL_DEF_X64_INSTALL_DIR)MKL\lib\intel64"
 				ProgramDatabaseFile=".\Release/crava.pdb"
 				SubSystem="1"
 				TargetMachine="17"
@@ -6360,6 +6364,46 @@
 						>
 					</File>
 				</Filter>
+				<Filter
+					Name="flens"
+					>
+					<File
+						RelativePath="G:\sand\Libraries\flens\aux_complex.cpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\blas.cpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\id.cpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\lapack.cpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\range.cpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\scalarclosures.cpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\snapshot.cpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\sparse_blas.cpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\underscore.cpp"
+						>
+					</File>
+				</Filter>
 			</Filter>
 		</Filter>
 		<Filter
@@ -6709,11 +6753,11 @@
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\filesystem\config.hpp"
+						RelativePath=".\nrlib\boost\system\config.hpp"
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\system\config.hpp"
+						RelativePath=".\nrlib\boost\filesystem\config.hpp"
 						>
 					</File>
 					<File
@@ -6754,6 +6798,210 @@
 					</File>
 					<File
 						RelativePath=".\nrlib\boost\system\windows_error.hpp"
+						>
+					</File>
+				</Filter>
+				<Filter
+					Name="flens"
+					>
+					<File
+						RelativePath="G:\sand\Libraries\flens\array.hpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\aux_cmath.hpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\aux_complex.hpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\aux_malloc.hpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\bandstorage.hpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\blas.hpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\blas_flens.hpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\blas_generic.hpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\cg.hpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\crs.hpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\densevector.hpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\evalclosure.hpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\fixedsizearray.hpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\flens.hpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\fullstorage.hpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\generalmatrix.hpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\hacksforgmpxx.hpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\hermitianmatrix.hpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\id.hpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\lapack.hpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\lapack_flens.hpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\lapack_flens_aux.hpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\lapack_generic.hpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\listinitializer.hpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\macros.hpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\matvec.hpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\matvecclosures.hpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\matvecio.hpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\matvecoperations.hpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\multigrid.hpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\operationtypes.hpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\packedstorage.hpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\polynom.hpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\range.hpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\result.hpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\scalarclosures.hpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\scalaroperations.hpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\snapshot.hpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\sparse_blas.hpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\sparse_blas_flens.hpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\sparsematrix.hpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\storage.hpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\symmetricmatrix.hpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\tiny_blas.hpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\tinymatrix.hpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\tinyvector.hpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\traits.hpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\triangularmatrix.hpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\underscore.hpp"
+						>
+					</File>
+					<File
+						RelativePath="G:\sand\Libraries\flens\uplo.hpp"
 						>
 					</File>
 				</Filter>

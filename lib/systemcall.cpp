@@ -1,7 +1,7 @@
 #include "lib/systemcall.h"
 #include "nrlib/iotools/logkit.hpp"
 
-#if defined(__WIN32__) || defined(WIN32) || defined(_WINDOWS)
+#if defined(_WIN32) || defined(WIN32) || defined(_WINDOWS)
 #include <winsock2.h>
 #include <windows.h>
 #include <Lmcons.h>
@@ -16,7 +16,7 @@
 const std::string
 SystemCall::getUserName()
 {
-#if defined(__WIN32__) || defined(WIN32) || defined(_WINDOWS)
+#if defined(_WIN32) || defined(WIN32) || defined(_WINDOWS)
   std::string strUserName; 
   DWORD nUserName = UNLEN;
   char * userName = new char[nUserName]; 
@@ -54,7 +54,7 @@ SystemCall::getHostName()
 {
   int max_string = 2400;
   char * hostname = new char[max_string];
-#if defined(__WIN32__) || defined(WIN32) || defined(_WINDOWS)
+#if defined(_WIN32) || defined(WIN32) || defined(_WINDOWS)
    WORD wVersionRequested;
    WSADATA wsaData;
    wVersionRequested = MAKEWORD( 2, 2 );
