@@ -857,6 +857,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\src\timeline.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\src\timings.cpp"
 					>
 				</File>
@@ -6535,6 +6539,10 @@
 				</File>
 				<File
 					RelativePath=".\src\spatialwellfilter.h"
+					>
+				</File>
+				<File
+					RelativePath=".\src\timeline.h"
 					>
 				</File>
 				<File
