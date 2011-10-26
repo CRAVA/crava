@@ -22,6 +22,7 @@ SpatialWellFilter::SpatialWellFilter(int nwells)
 {
   nWells_ = nwells;
   priorSpatialCorr_ = new double **[nWells_];
+  n_                = new int[nWells_];
   for(int i = 0 ; i < nWells_ ; i++)
     priorSpatialCorr_[i] = NULL;
 }
@@ -57,6 +58,7 @@ void SpatialWellFilter::setPriorSpatialCorr(FFTGrid *parSpatialCorr, WellData *w
 {
   int n = well->getBlockedLogsOrigThick()->getNumberOfBlocks();
   priorSpatialCorr_[wellnr] = new double *[n];
+  n_[wellnr] = n;
   for(int i=0;i<n;i++)
     priorSpatialCorr_[wellnr][i] = new double[n];
 
@@ -89,12 +91,11 @@ void SpatialWellFilter::doFiltering(Corr                        * corr,
                                     const Crava                 * cravaResult,
                                     const std::vector<Grid2D *> & noiseScale)
 {
- LogKit::WriteHeader("Creating spatial multi-parameter filter");
+  LogKit::WriteHeader("Creating spatial multi-parameter filter");
 
   double wall=0.0, cpu=0.0;
   TimeKit::getTime(wall,cpu);
 
-  n_ = new int[nWells];
   double ** sigmapost;
   double ** sigmapri;
   double ** imat;
@@ -129,139 +130,138 @@ void SpatialWellFilter::doFiltering(Corr                        * corr,
   for(int w1=0;w1<nWells;w1++)
   {
     n = wells[w1]->getBlockedLogsOrigThick()->getNumberOfBlocks();
-    n_[w1] = n;
 
-  if (filterWell[w1] != ModelSettings::NO)
-  {
-    LogKit::LogFormatted(LogKit::Low,"\nFiltering well "+wells[w1]->getWellname());
-
-    sigmapost = new double * [3*n];
-    for(int i=0;i<3*n;i++)
-      sigmapost[i] = new double[3*n];
-    sigmapri = new double * [3*n];
-    for(int i=0;i<3*n;i++)
-      sigmapri[i] = new double[3*n];
-    imat = new double * [3*n];
-    for(int i=0;i<3*n;i++)
-      imat[i] = new double[3*n];
-    Aw = new double * [3*n];
-    for(int i=0;i<3*n;i++)
-      Aw[i] = new double[3*n];
-
-    for(int i=0;i<3*n;i++)
-      for(int j=0;j<3*n;j++)
-        if(i==j)
-          imat[i][j] = 1.0;
-        else
-          imat[i][j] = 0.0;
-    int i1,j1,k1,l1, i2,j2,k2,l2;
-    const int *ipos = wells[w1]->getBlockedLogsOrigThick()->getIpos();
-    const int *jpos = wells[w1]->getBlockedLogsOrigThick()->getJpos();
-    const int *kpos = wells[w1]->getBlockedLogsOrigThick()->getKpos();
-    float regularization = Definitions::SpatialFilterRegularisationValue();
-    fillValuesInSigmapost(sigmapost, ipos, jpos, kpos, corr->getPostCovAlpha(), n, 0, 0);
-    fillValuesInSigmapost(sigmapost, ipos, jpos, kpos, corr->getPostCovBeta(), n, n, n);
-    fillValuesInSigmapost(sigmapost, ipos, jpos, kpos, corr->getPostCovRho(), n, 2*n, 2*n);
-    fillValuesInSigmapost(sigmapost, ipos, jpos, kpos, corr->getPostCrCovAlphaBeta(), n, 0, n);
-    fillValuesInSigmapost(sigmapost, ipos, jpos, kpos, corr->getPostCrCovAlphaRho(), n, 0, 2*n);
-    fillValuesInSigmapost(sigmapost, ipos, jpos, kpos, corr->getPostCrCovBetaRho(), n, 2*n, n);
-
-    for(l1=0;l1<n;l1++)
+    if (filterWell[w1] != ModelSettings::NO)
     {
-      i1 = ipos[l1];
-      j1 = jpos[l1];
-      k1 = kpos[l1];
-      for(l2=0;l2<n;l2++)
-      {
-        i2 = ipos[l2];
-        j2 = jpos[l2];
-        k2 = kpos[l2];
-        // sigmapost[l1      ][l2      ] = corr->getPostCovAlpha()->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
-        // sigmapost[l1 + n  ][l2 + n  ] = corr->getPostCovBeta()->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
-        // sigmapost[l1 + 2*n][l2 + 2*n] = corr->getPostCovRho()->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
-        // sigmapost[l1      ][l2 + n  ] = corr->getPostCrCovAlphaBeta()->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
-        // sigmapost[l1      ][l2 + 2*n] = corr->getPostCrCovAlphaRho()->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
-        // sigmapost[l1 + 2*n][l2 + n  ] = corr->getPostCrCovBetaRho()->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
-        sigmapost[l2 + n  ][l1      ] = sigmapost[l1][n+l2];
-        sigmapost[l2 + 2*n][l1      ] = sigmapost[l1][2*n+l2];
-        sigmapost[l2 + n  ][l1 + 2*n] = sigmapost[2*n+l1][n+l2];
-        sigmapri [l1      ][l2      ] = corr->getPriorVar0()[0][0]*priorSpatialCorr_[w1][l1][l2];
-        sigmapri [l1 + n  ][l2 + n  ] = corr->getPriorVar0()[1][1]*priorSpatialCorr_[w1][l1][l2];
-        sigmapri [l1 + 2*n][l2 + 2*n] = corr->getPriorVar0()[2][2]*priorSpatialCorr_[w1][l1][l2];
-        if(l1==l2)
-        {
-          sigmapost[l1      ][l2      ] += regularization*sigmapost[l1][l2]/sigmapri[l1][l2];
-          sigmapost[l1 + n  ][l2 + n  ] += regularization*sigmapost[n+l1][n+l2]/sigmapri[n+l1][n+l2];
-          sigmapost[l1 + 2*n][l2 + 2*n] += regularization*sigmapost[2*n+l1][2*n+l2]/sigmapri[2*n+l1][2*n+l2];
-          sigmapri [l1      ][l2      ] += regularization;
-          sigmapri [l1 + n  ][l2 + n  ] += regularization;
-          sigmapri [l1 + 2*n][l2 + 2*n] += regularization;
-        }
-        sigmapri[l1 + n  ][l2      ] = corr->getPriorVar0()[1][0]*priorSpatialCorr_[w1][l1][l2];
-        sigmapri[l2      ][l1 + n  ] = corr->getPriorVar0()[1][0]*priorSpatialCorr_[w1][l1][l2];
-        sigmapri[l1 + 2*n][l2      ] = corr->getPriorVar0()[2][0]*priorSpatialCorr_[w1][l1][l2];
-        sigmapri[l2      ][l1 + 2*n] = corr->getPriorVar0()[2][0]*priorSpatialCorr_[w1][l1][l2];
-        sigmapri[l1 + n  ][l2 + 2*n] = corr->getPriorVar0()[2][1]*priorSpatialCorr_[w1][l1][l2];
-        sigmapri[l2 + 2*n][l1 + n  ] = corr->getPriorVar0()[2][1]*priorSpatialCorr_[w1][l1][l2];
-      }
-    }
+      LogKit::LogFormatted(LogKit::Low,"\nFiltering well "+wells[w1]->getWellname());
 
-    if(useVpRhoFilter == true) //Only additional
-      doVpRhoFiltering(const_cast<const double **>(sigmapri),
-                       const_cast<const double **>(sigmapost),
-                       n,
-                       wells[w1]->getBlockedLogsOrigThick()); //Must do before Cholesky of sigmapri.
-
-    double ** sigmapriKeep = NULL;
-    if(nDim > 1) {
-      sigmapriKeep = new double * [3*n];
+      sigmapost = new double * [3*n];
       for(int i=0;i<3*n;i++)
-      {
-        sigmapriKeep[i] = new double[3*n];
+        sigmapost[i] = new double[3*n];
+      sigmapri = new double * [3*n];
+      for(int i=0;i<3*n;i++)
+        sigmapri[i] = new double[3*n];
+      imat = new double * [3*n];
+      for(int i=0;i<3*n;i++)
+        imat[i] = new double[3*n];
+      Aw = new double * [3*n];
+      for(int i=0;i<3*n;i++)
+        Aw[i] = new double[3*n];
+
+      for(int i=0;i<3*n;i++)
         for(int j=0;j<3*n;j++)
-          sigmapriKeep[i][j] = sigmapri[i][j];
-      }
-    }
+          if(i==j)
+            imat[i][j] = 1.0;
+          else
+            imat[i][j] = 0.0;
+      int i1,j1,k1,l1, i2,j2,k2,l2;
+      const int *ipos = wells[w1]->getBlockedLogsOrigThick()->getIpos();
+      const int *jpos = wells[w1]->getBlockedLogsOrigThick()->getJpos();
+      const int *kpos = wells[w1]->getBlockedLogsOrigThick()->getKpos();
+      float regularization = Definitions::SpatialFilterRegularisationValue();
+      fillValuesInSigmapost(sigmapost, ipos, jpos, kpos, corr->getPostCovAlpha(), n, 0, 0);
+      fillValuesInSigmapost(sigmapost, ipos, jpos, kpos, corr->getPostCovBeta(), n, n, n);
+      fillValuesInSigmapost(sigmapost, ipos, jpos, kpos, corr->getPostCovRho(), n, 2*n, 2*n);
+      fillValuesInSigmapost(sigmapost, ipos, jpos, kpos, corr->getPostCrCovAlphaBeta(), n, 0, n);
+      fillValuesInSigmapost(sigmapost, ipos, jpos, kpos, corr->getPostCrCovAlphaRho(), n, 0, 2*n);
+      fillValuesInSigmapost(sigmapost, ipos, jpos, kpos, corr->getPostCrCovBetaRho(), n, 2*n, n);
 
-    LogKit::LogFormatted(LogKit::Low,"\n  Cholesky decomposition ...");
-    lib_matrCholR(3*n, sigmapri);
-    LogKit::LogFormatted(LogKit::Low,"\n  Equation solving ...");
-    lib_matrAXeqBMatR(3*n, sigmapri, imat, 3*n);
-    LogKit::LogFormatted(LogKit::Low,"\n  Matrix multiplication ...\n");
-    lib_matr_prod(sigmapost,imat,3*n,3*n,3*n,Aw);
-    //NBNB-PAL: Aktiver etterhvert
-    //lib_matr_prod_sym(sigmapost,imat,3*n,3*n,3*n,Aw);
-
-    for(int i=0;i<3*n;i++)
-      for(int j=0;j<3*n;j++)
+      for(l1=0;l1<n;l1++)
+      {
+        i1 = ipos[l1];
+        j1 = jpos[l1];
+        k1 = kpos[l1];
+        for(l2=0;l2<n;l2++)
         {
-        Aw[i][j] *=-1.0;
-        if(i==j)
-          Aw[i][j]+=1.0;
+          i2 = ipos[l2];
+          j2 = jpos[l2];
+          k2 = kpos[l2];
+          // sigmapost[l1      ][l2      ] = corr->getPostCovAlpha()->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
+          // sigmapost[l1 + n  ][l2 + n  ] = corr->getPostCovBeta()->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
+          // sigmapost[l1 + 2*n][l2 + 2*n] = corr->getPostCovRho()->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
+          // sigmapost[l1      ][l2 + n  ] = corr->getPostCrCovAlphaBeta()->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
+          // sigmapost[l1      ][l2 + 2*n] = corr->getPostCrCovAlphaRho()->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
+          // sigmapost[l1 + 2*n][l2 + n  ] = corr->getPostCrCovBetaRho()->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
+          sigmapost[l2 + n  ][l1      ] = sigmapost[l1][n+l2];
+          sigmapost[l2 + 2*n][l1      ] = sigmapost[l1][2*n+l2];
+          sigmapost[l2 + n  ][l1 + 2*n] = sigmapost[2*n+l1][n+l2];
+          sigmapri [l1      ][l2      ] = corr->getPriorVar0()[0][0]*priorSpatialCorr_[w1][l1][l2];
+          sigmapri [l1 + n  ][l2 + n  ] = corr->getPriorVar0()[1][1]*priorSpatialCorr_[w1][l1][l2];
+          sigmapri [l1 + 2*n][l2 + 2*n] = corr->getPriorVar0()[2][2]*priorSpatialCorr_[w1][l1][l2];
+          if(l1==l2)
+          {
+            sigmapost[l1      ][l2      ] += regularization*sigmapost[l1][l2]/sigmapri[l1][l2];
+            sigmapost[l1 + n  ][l2 + n  ] += regularization*sigmapost[n+l1][n+l2]/sigmapri[n+l1][n+l2];
+            sigmapost[l1 + 2*n][l2 + 2*n] += regularization*sigmapost[2*n+l1][2*n+l2]/sigmapri[2*n+l1][2*n+l2];
+            sigmapri [l1      ][l2      ] += regularization;
+            sigmapri [l1 + n  ][l2 + n  ] += regularization;
+            sigmapri [l1 + 2*n][l2 + 2*n] += regularization;
+          }
+          sigmapri[l1 + n  ][l2      ] = corr->getPriorVar0()[1][0]*priorSpatialCorr_[w1][l1][l2];
+          sigmapri[l2      ][l1 + n  ] = corr->getPriorVar0()[1][0]*priorSpatialCorr_[w1][l1][l2];
+          sigmapri[l1 + 2*n][l2      ] = corr->getPriorVar0()[2][0]*priorSpatialCorr_[w1][l1][l2];
+          sigmapri[l2      ][l1 + 2*n] = corr->getPriorVar0()[2][0]*priorSpatialCorr_[w1][l1][l2];
+          sigmapri[l1 + n  ][l2 + 2*n] = corr->getPriorVar0()[2][1]*priorSpatialCorr_[w1][l1][l2];
+          sigmapri[l2 + 2*n][l1 + n  ] = corr->getPriorVar0()[2][1]*priorSpatialCorr_[w1][l1][l2];
+        }
       }
 
-    if(useVpRhoFilter == false) //Save time, since below is not needed then.
-      updateSigmaE(Aw, sigmapost, n);
+      if(useVpRhoFilter == true) //Only additional
+        doVpRhoFiltering(const_cast<const double **>(sigmapri),
+        const_cast<const double **>(sigmapost),
+        n,
+        wells[w1]->getBlockedLogsOrigThick()); //Must do before Cholesky of sigmapri.
 
-    calculateFilteredLogs(Aw, wells[w1]->getBlockedLogsOrigThick(), n, true);
+      double ** sigmapriKeep = NULL;
+      if(nDim > 1) {
+        sigmapriKeep = new double * [3*n];
+        for(int i=0;i<3*n;i++)
+        {
+          sigmapriKeep[i] = new double[3*n];
+          for(int j=0;j<3*n;j++)
+            sigmapriKeep[i][j] = sigmapri[i][j];
+        }
+      }
 
-    lastn += n;
+      LogKit::LogFormatted(LogKit::Low,"\n  Cholesky decomposition ...");
+      lib_matrCholR(3*n, sigmapri);
+      LogKit::LogFormatted(LogKit::Low,"\n  Equation solving ...");
+      lib_matrAXeqBMatR(3*n, sigmapri, imat, 3*n);
+      LogKit::LogFormatted(LogKit::Low,"\n  Matrix multiplication ...\n");
+      lib_matr_prod(sigmapost,imat,3*n,3*n,3*n,Aw);
+      //NBNB-PAL: Aktiver etterhvert
+      //lib_matr_prod_sym(sigmapost,imat,3*n,3*n,3*n,Aw);
 
-    for(int i=0;i<3*n;i++)
-    {
-      delete [] Aw[i];
-      delete [] sigmapri[i];
-      if(sigmapriKeep != NULL)
-        delete [] sigmapriKeep[i];
-      delete [] sigmapost[i];
-      delete [] imat[i];
+      for(int i=0;i<3*n;i++)
+        for(int j=0;j<3*n;j++)
+        {
+          Aw[i][j] *=-1.0;
+          if(i==j)
+            Aw[i][j]+=1.0;
+        }
+
+        if(useVpRhoFilter == false) //Save time, since below is not needed then.
+          updateSigmaE(Aw, sigmapost, n);
+
+        calculateFilteredLogs(Aw, wells[w1]->getBlockedLogsOrigThick(), n, true);
+
+        lastn += n;
+
+        for(int i=0;i<3*n;i++)
+        {
+          delete [] Aw[i];
+          delete [] sigmapri[i];
+          if(sigmapriKeep != NULL)
+            delete [] sigmapriKeep[i];
+          delete [] sigmapost[i];
+          delete [] imat[i];
+        }
+        delete [] Aw;
+        delete [] sigmapriKeep;
+        delete [] sigmapri;
+        delete [] sigmapost;
+        delete [] imat;
     }
-    delete [] Aw;
-    delete [] sigmapriKeep;
-    delete [] sigmapri;
-    delete [] sigmapost;
-    delete [] imat;
-  }
   }
 
   completeSigmaE(lastn, cravaResult,noiseScale);

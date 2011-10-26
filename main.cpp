@@ -255,18 +255,19 @@ int main(int argc, char** argv)
           corr->writeFilePostCovGrids(modelGeneral->getTimeSimbox());
         }
 
-        int activeAngles = 0; //How many dimensions for local noise interpolation? Turn off for now.
-        if(modelSettings->getUseLocalNoise()==true)
-          activeAngles = modelSettings->getNumberOfAngles();
-        spatwellfilter->doFiltering(corr,
-                                    modelAVOstatic->getWells(),
-                                    modelSettings->getNumberOfWells(),
-                                    modelSettings->getNoVsFaciesProb(),
-                                    modelSettings->getIndicatorFilter(),
-                                    activeAngles,
-                                    crava,
-                                    modelAVOdynamic->getLocalNoiseScales());
-
+        if(modelSettings->getRunFromPanel() == false) {
+          int activeAngles = 0; //How many dimensions for local noise interpolation? Turn off for now.
+          if(modelSettings->getUseLocalNoise()==true)
+            activeAngles = modelSettings->getNumberOfAngles();
+          spatwellfilter->doFiltering(corr,
+                                      modelAVOstatic->getWells(),
+                                      modelSettings->getNumberOfWells(),
+                                      modelSettings->getNoVsFaciesProb(),
+                                      modelSettings->getIndicatorFilter(),
+                                      activeAngles,
+                                      crava,
+                                      modelAVOdynamic->getLocalNoiseScales());
+        }
         // FilterWellLogs * filteredlogs = NULL;
         //crava->filterLogs(modelGeneral->getTimeSimboxConstThick(),filteredlogs);
 

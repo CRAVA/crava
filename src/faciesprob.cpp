@@ -666,7 +666,7 @@ FaciesProb::resampleAndWriteDensity(const FFTGrid     * density,
     }
   }
   expDens.multiplyByScalar(static_cast<float>(1.0/sum));
-  expDens.writeStormFile(fileName, volume);
+  expDens.writeFile(fileName, "", volume);
 }
 
 
