@@ -69,10 +69,16 @@ private:
   float              getSignalVariance(int l) const {return signalVariance_[l];}
   float              getErrorVariance(int l)  const {return errorVariance_[l];}
   float              getDataVariance(int l)   const {return dataVariance_[l];}
+  void               computeElasticImpedanceTimeCovariance(fftw_real* eiCovT,const float* corrT,float** Var0,float * A) const;
+  void               computeReflectionCoefficientTimeCovariance(fftw_real* refCovT,const float* corrT,float** Var0,float * A ) const ;
+
   int                checkScale(void);
   void               fillkW(int k, fftw_complex* kW );
   void               fillInverseAbskWRobust(int k, fftw_complex* invkW ,Wavelet1D** seisWaveletForNorm);
   void               fillkWNorm(int k, fftw_complex* kWNorm, Wavelet1D** wavelet);
+
+  void               computeAdjustmentFactor(fftw_complex* relativeWeights, Wavelet1D* wLocal, double scaleF, Wavelet * wGlobal, const Corr* corr,float * A, float errorVar);
+
   FFTGrid          * createFFTGrid();
   FFTGrid          * copyFFTGrid(FFTGrid * fftGridOld);
   FFTFileGrid      * copyFFTGrid(FFTFileGrid * fftGridOld);
@@ -120,11 +126,11 @@ private:
 
   Wavelet         ** seisWavelet_;      // wavelet operator that define the forward map.
   FFTGrid         ** seisData_;         // Data
-  double           ** errThetaCov_;      //
+  double          ** errThetaCov_;      //
   float              wnc_ ;             // if wnc=0.01 1% of the error wariance is white this has largest effect on
                                         // high frequency components. It makes everything run smoother we
                                         // avoid ill posed problems.
-  float           ** A_;                //
+  float           ** A_;                // coefficients in Aki-Richards 3 term reflection coefficients
 
   float            * empSNRatio_;       // signal noise ratio empirical
   float            * theoSNRatio_;      // signal noise ratio from model
