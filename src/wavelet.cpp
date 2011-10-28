@@ -751,6 +751,69 @@ Wavelet::findNorm() const
   return norm;
 }
 
+float
+Wavelet::findNormWithinFrequencyBand(float loCut ,float hiCut ) const
+{ // note there is a difference in scale since wavelet is an operator,
+  // the squared norm in fft domain is nzp_ times the squared in regular domain.
+  // for consistency we use the norm in real (time) domain
+  double norm2=0.0;
+ 
+  assert(!isReal_);
+  
+  float dOmega = 1.0/(nzp_*dz_*0.001);
+  int loI = std::max<int>(0,static_cast<int>(floor(loCut/dOmega)));
+  int hiI = std::min<int>(cnzp_,static_cast<int>(ceil(hiCut/dOmega)));
+
+  double fac=1.0/double(nzp_);
+  for(int i=loI;i<hiI;i++)
+    norm2 += static_cast<double> (2.0*fac*(cAmp_[i].re*cAmp_[i].re+cAmp_[i].im*cAmp_[i].im));
+    
+  if(loI==0)
+    norm2 -=fac*(cAmp_[0].re*cAmp_[0].re+cAmp_[0].im*cAmp_[0].im);
+
+  float norm = static_cast<float>(sqrt(norm2));
+
+  return norm;
+}
+
+void
+Wavelet::nullOutsideFrequencyBand(float loCut ,float hiCut ) 
+{ // note there is a difference in scale since wavelet is an operator,
+  // the squared norm in fft domain is nzp_ times the squared in regular domain.
+  // for consistency we use the norm in real (time) domain
+  assert(!isReal_);
+  
+  float dOmega = 1.0/(nzp_*dz_*0.001);
+  int loI = std::max<int>(0,static_cast<int>(floor(loCut/dOmega)));
+  int hiI = std::min<int>(cnzp_,static_cast<int>(ceil(hiCut/dOmega)));
+
+  double fac=1.0/double(nzp_);
+  
+  for(int i=0;i<loI;i++)
+  {
+    cAmp_[i].re=0;
+    cAmp_[i].im=0;
+  }
+  
+  for(int i =hiI;i<cnzp_;i++)
+  {
+    cAmp_[i].re=0;
+    cAmp_[i].im=0;
+  } 
+  
+  float norm2=0;
+  for(int i=loI;i<hiI;i++)
+    norm2 += static_cast<double> (2.0*fac*(cAmp_[i].re*cAmp_[i].re+cAmp_[i].im*cAmp_[i].im));
+  if(loI==0)
+      norm2 -=fac*(cAmp_[0].re*cAmp_[0].re+cAmp_[0].im*cAmp_[0].im);
+
+  setNorm(static_cast<float>(sqrt(norm2)));
+}
+
+
+
+
+
 fftw_real*
 Wavelet::averageWavelets(const std::vector<std::vector<fftw_real> > & wavelet_r,
                          int                                          nWells,
