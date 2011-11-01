@@ -1,4 +1,4 @@
-#ifndef FLUIDSUBSTITUTION_H
+#ifndef FLUIDSUBSTITUTION_H 
 #define FLUIDSUBSTITUTION_H
 
 #include <vector>
@@ -11,10 +11,30 @@
 class FluidSubstitution {
 public:
 
-  FluidSubstitution(){}
+  FluidSubstitution();
 
-  virtual ~FluidSubstitution(){}
-  virtual void  DoSubstitute(const Rock                         * rock, 
+  virtual ~FluidSubstitution();
+
+  void DoSubstitute(const Rock                         * rock, 
+                    const std::vector< const Fluid * >   fluid_old, 
+                    const std::vector< double >          saturation_old, 
+                    const double                         vp_old, 
+                    const double                         vs_old, 
+                    const double                         rho_old, 
+                    const std::vector< const Fluid * >   fluid_new, 
+                    const std::vector< double >          saturation_new, 
+                    double                             & vp_new, 
+                    double                             & vs_new, 
+                    double                             & rho_new) const;
+
+protected:
+  virtual bool InputOK(const Rock                         * rock, 
+                       const std::vector< const Fluid * >   fluid_old, 
+                       const std::vector< double >          saturation_old, 
+                       const std::vector< const Fluid * >   fluid_new, 
+                       const std::vector< double >          saturation_new) const = 0;
+
+  virtual void  DoSubstituteImpl(const Rock                         * rock, 
                              const std::vector< const Fluid * >   fluid_old, 
                              const std::vector< double >          saturation_old, 
                              const double                         vp_old, 
@@ -25,6 +45,10 @@ public:
                              double                             & vp_new, 
                              double                             & vs_new, 
                              double                             & rho_new) const = 0;
+
+  // The following can be GassMann-Reuss if rock != NULL and we insist that rock must give us Kmineral in addition to poro
+  //void DoSimplestPossible(...) const;
+
 
 };
 

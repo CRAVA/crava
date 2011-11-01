@@ -40,6 +40,8 @@ RockPhysics::FluidSubstitute(const std::vector< const Fluid * >   fluid_old,
                              double                             & vs_new, 
                              double                             & rho_new) const
 {
+  assert( fluid_old.size() == saturation_old.size() );
+  assert( fluid_new.size() == saturation_new.size() );
   fluid_subst_->DoSubstitute(rock_, fluid_old, saturation_old, vp_old, vs_old, rho_old, 
                                     fluid_new, saturation_new, vp_new, vs_new, rho_new);
 }

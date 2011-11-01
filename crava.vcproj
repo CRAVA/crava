@@ -6417,6 +6417,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\rplib\fluidsubstitution.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\rplib\mineral.cpp"
 					>
 				</File>
@@ -6777,11 +6781,11 @@
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\system\config.hpp"
+						RelativePath=".\nrlib\boost\filesystem\config.hpp"
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\filesystem\config.hpp"
+						RelativePath=".\nrlib\boost\system\config.hpp"
 						>
 					</File>
 					<File
