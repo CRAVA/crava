@@ -6409,6 +6409,22 @@
 					</File>
 				</Filter>
 			</Filter>
+			<Filter
+				Name="rplib"
+				>
+				<File
+					RelativePath=".\rplib\fluid.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\mineral.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\rockphysics.cpp"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -7013,6 +7029,30 @@
 						>
 					</File>
 				</Filter>
+			</Filter>
+			<Filter
+				Name="rplib"
+				>
+				<File
+					RelativePath=".\rplib\fluid.h"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\fluidsubstitution.h"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\mineral.h"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\rock.h"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\rockphysics.h"
+					>
+				</File>
 			</Filter>
 		</Filter>
 		<Filter
