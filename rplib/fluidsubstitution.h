@@ -34,20 +34,29 @@ protected:
                        const std::vector< const Fluid * >   fluid_new, 
                        const std::vector< double >          saturation_new) const = 0;
 
-  virtual void  DoSubstituteImpl(const Rock                         * rock, 
-                             const std::vector< const Fluid * >   fluid_old, 
-                             const std::vector< double >          saturation_old, 
-                             const double                         vp_old, 
-                             const double                         vs_old, 
-                             const double                         rho_old, 
-                             const std::vector< const Fluid * >   fluid_new, 
-                             const std::vector< double >          saturation_new, 
-                             double                             & vp_new, 
-                             double                             & vs_new, 
-                             double                             & rho_new) const = 0;
+  virtual void DoSubstituteImpl(const Rock                         * rock, 
+                                const std::vector< const Fluid * >   fluid_old, 
+                                const std::vector< double >          saturation_old, 
+                                const double                         vp_old, 
+                                const double                         vs_old, 
+                                const double                         rho_old, 
+                                const std::vector< const Fluid * >   fluid_new, 
+                                const std::vector< double >          saturation_new, 
+                                double                             & vp_new, 
+                                double                             & vs_new, 
+                                double                             & rho_new) const = 0;
 
-  // The following can be GassMann-Reuss if rock != NULL and we insist that rock must give us Kmineral in addition to poro
-  //void DoSimplestPossible(...) const;
+  void DoGassmannReuss(const Rock                         * rock, 
+                       const std::vector< const Fluid * >   fluid_old, 
+                       const std::vector< double >          saturation_old, 
+                       const double                         vp_old, 
+                       const double                         vs_old, 
+                       const double                         rho_old, 
+                       const std::vector< const Fluid * >   fluid_new, 
+                       const std::vector< double >          saturation_new, 
+                       double                             & vp_new, 
+                       double                             & vs_new, 
+                       double                             & rho_new) const;  // Implementation of Eq. 1.15 in Avseth, Mukerji, Mavko.
 
 
 };

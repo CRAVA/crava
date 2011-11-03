@@ -6425,6 +6425,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\rplib\rock.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\rplib\rockphysics.cpp"
 					>
 				</File>
