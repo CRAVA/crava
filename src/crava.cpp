@@ -43,8 +43,14 @@ Crava::Crava(ModelSettings * modelSettings,
              ModelGeneral * modelGeneral, ModelAVOStatic * modelAVOstatic, ModelAVODynamic * modelAVOdynamic, 
              SpatialWellFilter *spatwellfilter)
 {
-  LogKit::WriteHeader("Building Stochastic Model");
+  if(modelSettings->getForwardModeling())
+    LogKit::LogFormatted(LogKit::Low,"\nBuilding model ...\n");
 
+  LogKit::WriteHeader("Building Stochastic Model");
+  
+  time_t timestart, timeend;
+  time(&timestart);
+  
   double wall=0.0, cpu=0.0;
   TimeKit::getTime(wall,cpu);
 
@@ -101,63 +107,38 @@ Crava::Crava(ModelSettings * modelSettings,
   }
 
   fftw_real * corrT = NULL; // =  fftw_malloc(2*(nzp_/2+1)*sizeof(fftw_real)); 
-
-  // Double-use grids to save memory
-  FFTGrid * parSpatialCorr  = NULL;  // Parameter correlation
-  FFTGrid * errCorrUnsmooth = NULL;  // Error correlation
+  
+  // reality check: all dimensions involved match
+  assert(meanBeta_->consistentSize(nx_,ny_,nz_,nxp_,nyp_,nzp_));
+  assert(meanRho_->consistentSize(nx_,ny_,nz_,nxp_,nyp_,nzp_));
 
   if(!modelSettings_->getForwardModeling())
   {
     seisData_       = modelAVOdynamic_->getSeisCubes();
     modelAVOdynamic_->releaseGrids(); 
-    correlations_->createPostGrids(nx_,ny_,nz_,nxp_,nyp_,nzp_,fileGrid_);
+    correlations_->createPostGrids(nx_,ny_,nz_,nxp_,nyp_,nzp_,fileGrid_); 
     parPointCov_    = correlations_->getPriorVar0(); 
-    parSpatialCorr  = correlations_->getPostCovAlpha();  // Double-use grids to save memory
-    errCorrUnsmooth = correlations_->getPostCovBeta();   // Double-use grids to save memory
     // NBNB   nzp_*0.001*corr->getdt() = T    lowCut = lowIntCut*domega = lowIntCut/T
     int lowIntCut = int(floor(lowCut_*(nzp_*0.001*correlations_->getdt()))); 
     // computes the integer whis corresponds to the low cut frequency.
     float corrGradI, corrGradJ;
     modelGeneral_->getCorrGradIJ(corrGradI, corrGradJ);
-    corrT = parSpatialCorr->fillInParamCorr(correlations_,lowIntCut,corrGradI, corrGradJ);
-    if(spatwellfilter!=NULL)
-    {
-      parSpatialCorr->setAccessMode(FFTGrid::RANDOMACCESS);
-      for(int i=0;i<nWells_;i++)
-        spatwellfilter->setPriorSpatialCorr(parSpatialCorr, wells_[i], i);
-      parSpatialCorr->endAccess();
-    }
-    correlations_->setPriorCorrTFiltered(corrT,nz_,nzp_); // Can has zeros in the middle
-    errCorrUnsmooth->fillInErrCorr(correlations_,corrGradI,corrGradJ); 
+    corrT = correlations_->initializeCorrelations(spatwellfilter, wells_, corrGradI, corrGradJ, lowIntCut, nWells_, nz_, nzp_);
+
     if((modelSettings_->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0)
       correlations_->writeFilePriorCorrT(corrT,nzp_);     // No zeros in the middle
-  }
-  else
-  {
-    modelAVOdynamic_->releaseGrids();
-  }
-
-  // reality check: all dimensions involved match
-  assert(meanBeta_->consistentSize(nx_,ny_,nz_,nxp_,nyp_,nzp_));
-  assert(meanRho_->consistentSize(nx_,ny_,nz_,nxp_,nyp_,nzp_));
-
-  for(int i=0 ; i< ntheta_ ; i++)
-  {
-    if(!modelSettings_->getForwardModeling())
+  
+    for(int i=0 ; i< ntheta_ ; i++)
       assert(seisData_[i]->consistentSize(nx_,ny_,nz_,nxp_,nyp_,nzp_));  
-  }
-
-  if(!modelSettings_->getForwardModeling())
-  {
-    parSpatialCorr->fftInPlace();
+    
     computeVariances(corrT,modelSettings_);
     scaleWarning_ = checkScale();  // fills in scaleWarningText_ if needed.
     fftw_free(corrT);  
+    
     if(simbox_->getIsConstantThick() == false)
       divideDataByScaleWavelet();
-    errCorrUnsmooth->fftInPlace(); 
-    for(int i = 0 ; i < ntheta_ ; i++)
-    {
+
+    for(int i = 0 ; i < ntheta_ ; i++){
       seisData_[i]->setAccessMode(FFTGrid::RANDOMACCESS);
       seisData_[i]->fftInPlace();
       seisData_[i]->endAccess();
@@ -175,8 +156,76 @@ Crava::Crava(ModelSettings * modelSettings,
     meanBeta_ ->fftInPlace();
     meanRho_  ->fftInPlace();
   }
+  else{
+    modelAVOdynamic_->releaseGrids();
+  }
 
   Timings::setTimeStochasticModel(wall,cpu);
+  
+  if(!modelSettings->getForwardModeling()){
+    if(scaleWarning_ != 0){
+      LogKit::LogFormatted(LogKit::Low,"\nWarning  !!!\n");
+      LogKit::LogFormatted(LogKit::Low,"%s",scaleWarningText_.c_str());
+      LogKit::LogFormatted(LogKit::Low,"\n");
+    }
+
+    printEnergyToScreen();
+    
+    time(&timeend);
+    LogKit::LogFormatted(LogKit::DebugLow,"\nTime elapsed :  %d\n",timeend-timestart);  
+
+    computePostMeanResidAndFFTCov();
+    
+    time(&timeend);
+    LogKit::LogFormatted(LogKit::DebugLow,"\nTime elapsed :  %d\n",timeend-timestart);  
+
+    if(modelSettings->getNumberOfSimulations() > 0)
+      simulate(modelGeneral->getRandomGen());
+
+    correlations_->invFFT();
+    if (!modelAVOdynamic->getUseLocalNoise()) // Already done in crava.cpp if local noise
+      correlations_->createPostVariances();
+    correlations_->printPostVariances();
+    if((modelSettings->getOutputGridsOther() & IO::CORRELATION) > 0){
+      correlations_->writeFilePostVariances();
+      correlations_->writeFilePostCovGrids(modelGeneral->getTimeSimbox());
+    } 
+    int activeAngles = 0; //How many dimensions for local noise interpolation? Turn off for now.
+    if(modelAVOdynamic->getUseLocalNoise()==true)
+      activeAngles = modelAVOdynamic->getNumberOfAngles();
+    if(spatwellfilter != NULL)
+      spatwellfilter->doFiltering(correlations_,
+                                  modelAVOstatic->getWells(),
+                                  modelSettings->getNumberOfWells(), 
+                                  modelSettings->getNoVsFaciesProb(),
+                                  modelSettings->getIndicatorFilter(),
+                                  activeAngles, 
+                                  this, 
+                                  modelAVOdynamic->getLocalNoiseScales());
+    if (modelSettings->getEstimateFaciesProb()) {
+      bool useFilter = modelSettings->getUseFilterForFaciesProb();
+      computeFaciesProb(spatwellfilter, useFilter);
+    }
+    if(modelSettings->getKrigingParameter() > 0)
+      doPredictionKriging();
+
+    if(modelSettings->getGenerateSeismicAfterInv())
+      computeSyntSeismic(postAlpha_,postBeta_,postRho_);
+    //
+    // Temporary placement.
+    //
+    if((modelSettings->getWellOutputFlag() & IO::BLOCKED_WELLS) > 0) {
+      modelAVOstatic->writeBlockedWells(modelAVOstatic->getWells(),modelSettings);
+    }
+    if((modelSettings->getWellOutputFlag() & IO::BLOCKED_LOGS) > 0) {
+      LogKit::LogFormatted(LogKit::Low,"\nWARNING: Writing of BLOCKED_LOGS is not implemented yet.\n");
+    }
+  }
+  else{
+    LogKit::LogFormatted(LogKit::Low,"\n               ... model built\n");
+  
+    computeSyntSeismic(postAlpha_,postBeta_,postRho_);
+  }
 }
 
 Crava::~Crava()
@@ -193,10 +242,6 @@ Crava::~Crava()
   for(int i = 0;i<ntheta_;i++)
     delete[] errThetaCov_[i];
   delete [] errThetaCov_; 
-
-  if(postAlpha_!=NULL) delete  postAlpha_ ;
-  if(postBeta_!=NULL)  delete  postBeta_;
-  if(postRho_!=NULL)   delete  postRho_ ;
 
   if(sigmamdnew_!=NULL)
   {
@@ -664,7 +709,7 @@ Crava::computePostMeanResidAndFFTCov()
 
   double wall=0.0, cpu=0.0;
   TimeKit::getTime(wall,cpu);
-  int i,j,k,l,m;
+  int i,j,k,l;
 
   fftw_complex * kW          = new fftw_complex[ntheta_];
 
@@ -678,9 +723,6 @@ Crava::computePostMeanResidAndFFTCov()
   fftw_complex * ijkMean     = new fftw_complex[3];
   fftw_complex * ijkAns      = new fftw_complex[3]; 
   fftw_complex   kD,kD3;
-  fftw_complex   ijkParLam;
-  fftw_complex   ijkErrLam;
-  fftw_complex   ijkTmp;
 
   fftw_complex**  K  = new fftw_complex*[ntheta_];
   for(i = 0; i < ntheta_; i++)
@@ -757,22 +799,16 @@ Crava::computePostMeanResidAndFFTCov()
   meanBeta_ ->setAccessMode(FFTGrid::READANDWRITE);  //   the top five are over written
   meanRho_  ->setAccessMode(FFTGrid::READANDWRITE);  //   does not have the initial meaning.
 
-  FFTGrid * parSpatialCorr     = correlations_->getPostCovAlpha(); // NB! Note double usage of postCovAlpha
-  FFTGrid * errCorrUnsmooth    = correlations_->getPostCovBeta();  // NB! Note double usage of postCovBeta
   FFTGrid * postCovAlpha       = correlations_->getPostCovAlpha();
   FFTGrid * postCovBeta        = correlations_->getPostCovBeta();
   FFTGrid * postCovRho         = correlations_->getPostCovRho();
   FFTGrid * postCrCovAlphaBeta = correlations_->getPostCrCovAlphaBeta();
   FFTGrid * postCrCovAlphaRho  = correlations_->getPostCrCovAlphaRho();
   FFTGrid * postCrCovBetaRho   = correlations_->getPostCrCovBetaRho();
-  parSpatialCorr    ->setAccessMode(FFTGrid::READANDWRITE);  //   after the prosessing
-  errCorrUnsmooth   ->setAccessMode(FFTGrid::READANDWRITE);  // 
-  postCovRho        ->setAccessMode(FFTGrid::WRITE);  
-  postCrCovAlphaBeta->setAccessMode(FFTGrid::WRITE);  
-  postCrCovAlphaRho ->setAccessMode(FFTGrid::WRITE);  
-  postCrCovBetaRho  ->setAccessMode(FFTGrid::WRITE);  
+  
+  correlations_->initializeAccess(); //Accessmodes for covariance grids
 
-  // Computes the posterior mean first  below the covariance is computed 
+  // Computes the posterior mean first, below the covariance is computed 
   // To avoid to many grids in mind at the same time
   double priorVarVp,justfactor;
 
@@ -837,53 +873,26 @@ Crava::computePostMeanResidAndFFTCov()
       } //simbox_->getIsConstantThick() 
   
 
-    for( j = 0; j < nyp_; j++) {
-      for( i = 0; i < cnxp; i++) {  
-        ijkMean[0] = meanAlpha_->getNextComplex();
-        ijkMean[1] = meanBeta_ ->getNextComplex();
-        ijkMean[2] = meanRho_  ->getNextComplex(); 
+      for( j = 0; j < nyp_; j++) {
+        for( i = 0; i < cnxp; i++) {  
+          ijkMean[0] = meanAlpha_->getNextComplex();
+          ijkMean[1] = meanBeta_ ->getNextComplex();
+          ijkMean[2] = meanRho_  ->getNextComplex(); 
 
-        for(l = 0; l < ntheta_; l++ )
-        {
-          ijkData[l] = seisData_[l]->getNextComplex();
-          ijkRes[l]  = ijkData[l];
-        }  
+          for(l = 0; l < ntheta_; l++ ){
+            ijkData[l] = seisData_[l]->getNextComplex();
+            ijkRes[l]  = ijkData[l];
+          }  
 
-        ijkTmp       = parSpatialCorr->getNextComplex();  
-        ijkParLam.re = float ( sqrt(ijkTmp.re * ijkTmp.re));
-        ijkParLam.im = 0.0;
+          correlations_->getNextParameterCovariance(parVar);
 
-        for(l = 0; l < 3; l++ )
-          for(m = 0; m < 3; m++ )
-          {        
-            parVar[l][m].re = parPointCov_[l][m] * ijkParLam.re;       
-            parVar[l][m].im = 0.0;
-            // if(l!=m)
-            //   parVar[l][m].re *= 0.75;  //NBNB OK DEBUG TEST
-          }
-
+          bool invert_frequency = realFrequency > lowCut_*simbox_->getMinRelThick() &&  realFrequency < highCut_;
+           
           priorVarVp = parVar[0][0].re; 
-          ijkTmp       = errCorrUnsmooth->getNextComplex();  
-          ijkErrLam.re = float( sqrt(ijkTmp.re * ijkTmp.re));
-          ijkErrLam.im = 0.0;
 
-          if(realFrequency > lowCut_*simbox_->getMinRelThick() &&  realFrequency < highCut_) // inverting only relevant frequencies
-          {
-            for(l = 0; l < ntheta_; l++ ) {
-              for(m = 0; m < ntheta_; m++ )
-              {        // Note we multiply kWNorm[l] and comp.conj(kWNorm[m]) hence the + and not a minus as in pure multiplication
-                errVar[l][m].re  = float( 0.5*(1.0-wnc_)*errThetaCov_[l][m] * ijkErrLam.re * ( errMult1[l].re *  errMult1[m].re +  errMult1[l].im *  errMult1[m].im)); 
-                errVar[l][m].re += float( 0.5*(1.0-wnc_)*errThetaCov_[l][m] * ijkErrLam.re * ( errMult2[l].re *  errMult2[m].re +  errMult2[l].im *  errMult2[m].im)); 
-                if(l==m) {
-                  errVar[l][m].re += float( wnc_*errThetaCov_[l][m] * errMult3[l].re  * errMult3[l].re);
-                  errVar[l][m].im   = 0.0;             
-                }   
-                else {
-                  errVar[l][m].im  = float( 0.5*(1.0-wnc_)*errThetaCov_[l][m] * ijkErrLam.re * (-errMult1[l].re * errMult1[m].im + errMult1[l].im * errMult1[m].re));
-                  errVar[l][m].im += float( 0.5*(1.0-wnc_)*errThetaCov_[l][m] * ijkErrLam.re * (-errMult2[l].re * errMult2[m].im + errMult2[l].im * errMult2[m].re));
-                }
-              }
-            }
+          correlations_->getNextErrorVariance(errVar, errMult1, errMult2, errMult3, ntheta_, wnc_, errThetaCov_, invert_frequency);
+
+          if(invert_frequency){
             lib_matrProdCpx(K, parVar , ntheta_, 3 ,3, KS);              //  KS is defined here  
             lib_matrProdAdjointCpx(KS, K, ntheta_, 3 ,ntheta_, margVar); // margVar = (K)S(K)' is defined here      
             lib_matrAddMatCpx(errVar, ntheta_,ntheta_, margVar);         // errVar  is added to margVar = (WDA)S(WDA)'  + errVar 
@@ -917,6 +926,7 @@ Crava::computePostMeanResidAndFFTCov()
               justfactor = sqrt(ijkAns[0].re*ijkAns[0].re + ijkAns[0].re*ijkAns[0].re)/sqrt(priorVarVp);
             }
           }
+
           postAlpha_->setNextComplex(ijkMean[0]);
           postBeta_ ->setNextComplex(ijkMean[1]);
           postRho_  ->setNextComplex(ijkMean[2]);
@@ -947,8 +957,6 @@ Crava::computePostMeanResidAndFFTCov()
   meanAlpha_      = NULL; // the content is taken care of by  postAlpha_
   meanBeta_       = NULL; // the content is taken care of by  postBeta_
   meanRho_        = NULL; // the content is taken care of by  postRho_
-  parSpatialCorr  = NULL; // the content is taken care of by  postCovAlpha      
-  errCorrUnsmooth = NULL; // the content is taken care of by  postCovBeta
 
   postAlpha_->endAccess();
   postBeta_->endAccess(); 
@@ -960,6 +968,7 @@ Crava::computePostMeanResidAndFFTCov()
   postCrCovAlphaBeta->endAccess();
   postCrCovAlphaRho->endAccess();
   postCrCovBetaRho->endAccess();  
+  correlations_->terminateAccess();
 
   postAlpha_->invFFTInPlace();
   postBeta_->invFFTInPlace();

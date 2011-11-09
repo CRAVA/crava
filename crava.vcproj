@@ -645,6 +645,10 @@
 					</FileConfiguration>
 				</File>
 				<File
+					RelativePath=".\src\doinversion.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\src\faciesprob.cpp"
 					>
 				</File>
@@ -810,6 +814,10 @@
 				</File>
 				<File
 					RelativePath=".\src\qualitygrid.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\src\seismicparametersholder.cpp"
 					>
 				</File>
 				<File
@@ -6479,6 +6487,10 @@
 				</File>
 				<File
 					RelativePath=".\src\definitions.h"
+					>
+				</File>
+				<File
+					RelativePath=".\src\doinversion.h"
 					>
 				</File>
 				<File

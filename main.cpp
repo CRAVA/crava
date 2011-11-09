@@ -28,6 +28,7 @@
 #include "src/modelgeneral.h"
 
 #include "src/seismicparametersholder.h"
+#include "src/doinversion.h"
 
 int main(int argc, char** argv)
 {  
@@ -51,7 +52,6 @@ int main(int argc, char** argv)
 
   try
   {
-    {
     InputFiles * inputFiles;
     XmlModelFile modelFile(argv[1]);
     inputFiles     = modelFile.getInputFiles();
@@ -63,7 +63,6 @@ int main(int argc, char** argv)
 
     ModelGeneral    * modelGeneral    = NULL;
     ModelAVOStatic  * modelAVOstatic  = NULL;
-    ModelAVODynamic * modelAVOdynamic = NULL;
 
     if (modelFile.getParsingFailed()) {
       failedModelFile = true;
@@ -78,150 +77,43 @@ int main(int argc, char** argv)
     }
     
     Simbox * timeBGSimbox   = NULL;
+    SeismicParametersHolder seismicParameters;
+ 
     if(!failedModelFile && !failedInputFiles){
-      // Construct ModelGeneral object first.
-      // For each data type, construct the static model class before the dynamic.
-      modelGeneral    = new ModelGeneral(modelSettings, inputFiles, timeBGSimbox);
-      modelAVOstatic  = new ModelAVOStatic(modelSettings, 
-                                           inputFiles,
-                                           modelGeneral->getFailedDetails(),
-                                           modelGeneral->getTimeSimbox(),
-                                           timeBGSimbox,
-                                           modelGeneral->getTimeSimboxConstThick(),
-                                           modelGeneral->getRandomGen());
-    }
-    else {
-      LogKit::SetFileLog(IO::FileLog()+IO::SuffixTextFiles(), modelSettings->getLogLevel());
-      LogKit::EndBuffering();
-    }
-    
-    Crava         * crava         = NULL;
-    
-    std::vector<int> sortedVintages = modelSettings->findSortedVintages();
-    int nTimeLapse = modelSettings->getNumberOfTimeLapses();
-    for( int i = 0; i<nTimeLapse; i++)
-    {
-      // Wells are adjusted by ModelAVODynamic constructor.
-      modelAVOdynamic = new ModelAVODynamic(modelSettings, 
-                                            inputFiles,
-                                            modelGeneral->getFailedDetails(),
-                                            modelAVOstatic->getFailedDetails(),
-                                            modelGeneral->getTimeSimbox(),
-                                            timeBGSimbox,
-                                            modelGeneral->getRandomGen(),
-                                            modelGeneral->getTimeDepthMapping(), 
-                                            modelGeneral->getTimeCutMapping(),
-                                            modelAVOstatic->getWaveletEstimInterval(), 
-                                            modelAVOstatic->getWellMoveInterval(),
-                                            modelAVOstatic->getFaciesEstimInterval(),
-                                            modelAVOstatic,
-                                            sortedVintages[i]);
+
+      setupStaticModels(modelGeneral, modelAVOstatic, modelSettings, inputFiles, timeBGSimbox);
+ 
+      failedLoadingModel =  modelGeneral    == NULL || modelGeneral->getFailed()   || 
+                            modelAVOstatic  == NULL || modelAVOstatic->getFailed();
+
+      if(failedModelFile || failedInputFiles || failedLoadingModel)
+        return(1);
+
+      std::vector<int> sortedVintages = modelSettings->findSortedVintages();
+      
+      bool failedFirstAVO = false;
+           
+      failedFirstAVO = doFirstAVOInversion(modelSettings, modelGeneral, modelAVOstatic, seismicParameters, inputFiles, sortedVintages[0], timeBGSimbox);
+ 
+      if(failedFirstAVO == true || errTxt != "")
+        return(1);
 
       if(timeBGSimbox != NULL)
         delete timeBGSimbox;
 
-      failedLoadingModel =  modelGeneral    == NULL || modelGeneral->getFailed()   || 
-                            modelAVOstatic  == NULL || modelAVOstatic->getFailed() || 
-                            modelAVOdynamic == NULL || modelAVOdynamic->getFailed();
+      if(modelSettings->getNumberOfTimeLapses() > 1){
+        for(int i = 1; i<modelSettings->getNumberOfTimeLapses(); i++){
 
-      if(failedModelFile || failedInputFiles || failedLoadingModel)
-          return(1);
-
-      if(!modelSettings->getForwardModeling())
-      {
-        if (modelSettings->getDoInversion())
-        {
-          time_t timestart, timeend;
-          time(&timestart);
-
-          int nwells = modelSettings->getNumberOfWells();
-          SpatialWellFilter *spatwellfilter = new SpatialWellFilter(nwells);
-          crava = new Crava(modelSettings, modelGeneral, modelAVOstatic, modelAVOdynamic, spatwellfilter);
-          
-          std::string warningText("");
-          
-          if(crava->getWarning( warningText ) != 0)
-           {
-             LogKit::LogFormatted(LogKit::Low,"\nWarning  !!!\n");
-             LogKit::LogFormatted(LogKit::Low,"%s",warningText.c_str());
-             LogKit::LogFormatted(LogKit::Low,"\n");
-           }
-          crava->printEnergyToScreen();
-          
-          time(&timeend);
-          LogKit::LogFormatted(LogKit::DebugLow,"\nTime elapsed :  %d\n",timeend-timestart);  
-          crava->computePostMeanResidAndFFTCov();
-          time(&timeend);
-          LogKit::LogFormatted(LogKit::DebugLow,"\nTime elapsed :  %d\n",timeend-timestart);  
-
-          if(modelSettings->getNumberOfSimulations() > 0)
-          {
-            crava->simulate(modelGeneral->getRandomGen());
-          }
-
-          Corr * corr = modelAVOdynamic->getCorrelations();
-          corr->invFFT();
-          if (!modelAVOdynamic->getUseLocalNoise()) // Already done in crava.cpp if local noise
-            corr->createPostVariances();
-          corr->printPostVariances();
-          if((modelSettings->getOutputGridsOther() & IO::CORRELATION) > 0)
-          {
-            corr->writeFilePostVariances();
-            corr->writeFilePostCovGrids(modelGeneral->getTimeSimbox());
-          }       
-
-          int activeAngles = 0; //How many dimensions for local noise interpolation? Turn off for now.
-          if(modelAVOdynamic->getUseLocalNoise()==true)
-            activeAngles = modelAVOdynamic->getNumberOfAngles();
-          spatwellfilter->doFiltering(corr,
-                                      modelAVOstatic->getWells(),
-                                      modelSettings->getNumberOfWells(), 
-                                      modelSettings->getNoVsFaciesProb(),
-                                      modelSettings->getIndicatorFilter(),
-                                      activeAngles, 
-                                      crava, 
-                                      modelAVOdynamic->getLocalNoiseScales());
-          
-          // FilterWellLogs * filteredlogs = NULL;
-          //crava->filterLogs(modelGeneral->getTimeSimboxConstThick(),filteredlogs);
-
-          if (modelSettings->getEstimateFaciesProb()) {
-            bool useFilter = modelSettings->getUseFilterForFaciesProb();
-            crava->computeFaciesProb(spatwellfilter, useFilter);
-          }
-          delete spatwellfilter;
-
-          if(modelSettings->getKrigingParameter() > 0)
-            crava->doPredictionKriging();
-
-          if(modelSettings->getGenerateSeismicAfterInv())
-            crava->computeSyntSeismic(crava->getPostAlpha(),crava->getPostBeta(),crava->getPostRho());
-
-          //
-          // Temporary placement.  crava.cpp needs a proper restructuring.
-          //
-          if((modelSettings->getWellOutputFlag() & IO::BLOCKED_WELLS) > 0) {
-            modelAVOstatic->writeBlockedWells(modelAVOstatic->getWells(),modelSettings);
-          }
-          if((modelSettings->getWellOutputFlag() & IO::BLOCKED_LOGS) > 0) {
-            LogKit::LogFormatted(LogKit::Low,"\nWARNING: Writing of BLOCKED_LOGS is not implemented yet.\n");
-          }
-
-        } //end doinversion 
+          bool failedTimeLapseAVO = doTimeLapseAVOInversion(modelSettings, modelGeneral, modelAVOstatic, inputFiles, seismicParameters, sortedVintages[i]);
+    
+          if(failedTimeLapseAVO == true)
+            return(1);
+        }
       }
-      else // do forward modeling
-      {
-        LogKit::LogFormatted(LogKit::Low,"\nBuilding model ...\n");
-
-        crava = new Crava(modelSettings, modelGeneral, modelAVOstatic, modelAVOdynamic, 0);
-        LogKit::LogFormatted(LogKit::Low,"\n               ... model built\n");
-      
-        crava->computeSyntSeismic(crava->getPostAlpha(),crava->getPostBeta(),crava->getPostRho());
-      } 
-
-      modelAVOstatic->deleteDynamicWells(modelAVOstatic->getWells(),modelSettings->getNumberOfWells());
-      delete crava;
-      delete modelAVOdynamic;
+    }
+    else {
+      LogKit::SetFileLog(IO::FileLog()+IO::SuffixTextFiles(), modelSettings->getLogLevel());
+      LogKit::EndBuffering();
     }
 
     if (FFTGrid::getMaxAllowedGrids() != FFTGrid::getMaxAllocatedGrids() && modelSettings->getDoInversion()) {
@@ -239,18 +131,17 @@ int main(int argc, char** argv)
     delete modelAVOstatic;
     delete modelGeneral;
     delete modelSettings;
-    delete inputFiles;
+    delete inputFiles;  
 
     Timings::reportTotal();
-    LogKit::LogFormatted(LogKit::Low,"\n*** CRAVA closing  ***\n"); 
-    LogKit::LogFormatted(LogKit::Low,"\n*** CRAVA finished ***\n");
-    LogKit::EndLog();
-
-    }
   }
   catch (std::bad_alloc& ba)
   {
     std::cerr << "Out of memory: " << ba.what() << std::endl;
   }
+  LogKit::LogFormatted(LogKit::Low,"\n*** CRAVA closing  ***\n"); 
+  LogKit::LogFormatted(LogKit::Low,"\n*** CRAVA finished ***\n");
+  LogKit::EndLog();
+
   return(0);
 }

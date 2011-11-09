@@ -7,6 +7,9 @@
 
 class ModelSettings;
 class Simbox;
+class SeismicParametersHolder;
+class SpatialWellFilter;
+class WellData;
 
 class Corr
 {
@@ -17,10 +20,14 @@ public:
        int        n, 
        float      dt, 
        Surface  * priorCorrXY);
+
+  Corr(int                       n,  
+       float                     dt, 
+       SeismicParametersHolder & seismicParameters);
+
   ~Corr(void); 
 
   float   ** getPriorVar0(void)                const { return priorVar0_                              ;}
-  float    * getPriorCorrT(int &n, float &dt)  const;
   float    * getPriorCorrTFiltered(void)       const { return priorCorrTFiltered_                     ;}
   Surface  * getPriorCorrXY(void)              const { return priorCorrXY_                            ;}
 
@@ -43,7 +50,31 @@ public:
   FFTGrid *& getPostCrCovAlphaRho(void)              { return postCrCovAlphaRho_                      ;}
   FFTGrid *& getPostCrCovBetaRho(void)               { return postCrCovBetaRho_                       ;}
 
+  void       getNextParameterCovariance(fftw_complex **& parVar);
+  void       getNextErrorVariance(fftw_complex **& errVar, 
+                                  fftw_complex * errMult1,
+                                  fftw_complex * errMult2,
+                                  fftw_complex * errMult3,
+                                  int              ntheta,
+                                  float            wnc,
+                                  double ** errThetaCov,
+                                  bool invert_frequency);
+
+  fftw_real* initializeCorrelations(SpatialWellFilter * spatwellfilter, 
+                                    WellData         ** wells,  
+                                    float               corrGradI, 
+                                    float               corrGradJ, 
+                                    int                 lowIntCut, 
+                                    int                 nWells, 
+                                    int                 nz, 
+                                    int                 nzp);
+  void       terminateAccess(void);
+  void       initializeAccess(void);
+
   void       createPostVariances(void);
+
+  void       computeCircCorrT(fftw_real* CircCorrT, int nzp);
+  void       makeCircCorrTPosDef(fftw_real* CircCorrT, int minIntFq, int nzp);
 
   void       setPriorVar0(float ** priorVar0);
   void       setPriorCorrTFiltered(float * corrT, int nz, int nzp);
@@ -66,6 +97,9 @@ private:
   void       writeFilePostCorrT(float * postCov, int nz, const std::string & subDir, const std::string & fileName) const;
   float      getOrigin(FFTGrid * grid) const;
   float    * createPostCov00(FFTGrid * postCov);
+  void       createPriorVar0(void);
+
+  fftw_real* extractParamCorr(FFTGrid * covAlpha, int nzp);
 
   float   ** pointVar0_;             // Point variance calculated from using well log resolution
 
@@ -76,6 +110,10 @@ private:
         
   int        n_;                     // priorCorrT - length
   float      dt_;                    // priorCorrT - time step
+
+  bool       common_correlation_;    // True:  Correlations made by multiplying pointwise variances with common correlation grids
+                                     // False: Get correlations directly from covariance grids
+
 
   float   ** postVar0_;
 
@@ -92,5 +130,7 @@ private:
   FFTGrid  * postCrCovAlphaBeta_;
   FFTGrid  * postCrCovAlphaRho_;
   FFTGrid  * postCrCovBetaRho_;
+  FFTGrid  * errCorr_;
+
 };
 #endif

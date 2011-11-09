@@ -426,8 +426,8 @@ FFTGrid::fillInParamCorr(Corr* corr,int minIntFq, float gradI, float gradJ)
   float value,subK;
   fftw_real* circCorrT;
   circCorrT = reinterpret_cast<fftw_real*>(fftw_malloc(2*(nzp_/2+1)*sizeof(fftw_real)));
-  computeCircCorrT(corr,circCorrT);
-  makeCircCorrTPosDef(circCorrT, minIntFq);
+  corr->computeCircCorrT(circCorrT, nzp_);
+  corr->makeCircCorrTPosDef(circCorrT, minIntFq, nzp_);
 
   setAccessMode(WRITE);
   for( k = 0; k < nzp_; k++)
@@ -520,6 +520,48 @@ FFTGrid::fillInErrCorr(Corr* parCorr, float gradI, float gradJ)
         setNextReal(value);
       } //for k,j,i
       endAccess();
+}
+void
+FFTGrid::fillInErrCorrFromCovAlpha(FFTGrid * covAlpha, float gradI, float gradJ)
+{
+  assert(istransformed_== false);
+  setAccessMode(WRITE);
+  covAlpha->setAccessMode(RANDOMACCESS);
+
+  int   cycleI;
+  int   cycleJ;
+  int   range    = 1;
+  float value;
+  float subK;
+  float constant = covAlpha->getRealValue(0, 0, 0, true);
+
+  for( int k = 0; k < nzp_; k++){
+    for( int j = 0; j < nyp_; j++){
+      for( int i = 0; i < rnxp_; i++){   
+        cycleI = i-nxp_;
+        if(i < -cycleI)
+          cycleI = i;
+        cycleJ = j-nyp_;
+        if(j < -cycleJ)
+          cycleJ = j;
+
+        subK  =  k+cycleI*gradI+cycleJ*gradJ;
+        if(i < nxp_) {
+          if(fabs(subK) < range*1.0f || fabs(subK-nzp_) < range*1.0f)
+            value = covAlpha->getRealValue(i, j, 0, true) / constant;
+          else
+            value = 0;
+        }
+        else
+          value = RMISSING;        
+
+        setNextReal(value);
+      }
+    }
+  }
+      
+  endAccess();
+  covAlpha->endAccess();
 }
 
 
@@ -1275,77 +1317,8 @@ FFTGrid::multiplyByScalar(float scalar)
   }
 }
 
-void
-FFTGrid::computeCircCorrT(Corr* corr,fftw_real* CircCorrT)
-{
-  int k,n,refk;
-  float dummy;
-  const float* CorrT;
-
-  CorrT = corr->getPriorCorrT(n,dummy);
-
-  assert(CorrT[0] != 0);
-
-  for(k = 0 ; k < 2*(nzp_/2+1) ; k++ )
-  {
-    if(k < nzp_)
-    {
-      if( k < nzp_/2+1)
-        refk = k;
-      else
-        refk = nzp_ - k;
-      if(refk < n)
-        CircCorrT[k] = CorrT[refk];
-      else
-        CircCorrT[k] = 0.0;
-    }
-    else
-    {
-      CircCorrT[k]=RMISSING;
-    }
-  }
-}
-
-
-void
-FFTGrid::makeCircCorrTPosDef(fftw_real* CircCorrT,int minIntFq)
-{
-  int k;
-  fftw_complex* fftCircCorrT;
-  fftCircCorrT = fft1DzInPlace(CircCorrT);
-  for(k = 0; k < nzp_/2+1; k++)
-  {
-    if(k <= minIntFq)
-      fftCircCorrT[k].re = 0.0 ;
-    else
-      fftCircCorrT[k].re = float(sqrt(fftCircCorrT[k].re * fftCircCorrT[k].re + 
-      fftCircCorrT[k].im * fftCircCorrT[k].im ));
-    fftCircCorrT[k].im = 0.0;
-  }
-
-  CircCorrT   = invFFT1DzInPlace(fftCircCorrT);
-  //
-  // NBNB-PAL: If the number of layers is too small CircCorrT[0] = 0. How 
-  //           do we avoid this, or how do we flag the problem?
-  //
-  float scale;
-  if (CircCorrT[0] > 1.e-5f) // NBNB-PAL: Temporary solution for above mentioned problem
-    scale = float( 1.0/CircCorrT[0] );
-  else
-  {
-    LogKit::LogFormatted(LogKit::Low,"\nERROR: The circular temporal correlation (CircCorrT) is undefined. You\n");
-    LogKit::LogFormatted(LogKit::Low,"       probably need to increase the number of layers...\n\nAborting\n");
-    exit(1);
-  }    
-  for(k = 0; k < nzp_; k++)
-  {
-    CircCorrT[k] *= scale;
-  }
-}
-
-
 fftw_complex* 
-FFTGrid::fft1DzInPlace(fftw_real*  in)
+FFTGrid::fft1DzInPlace(fftw_real*  in, int nzp)
 {  
   // in is over vritten by out 
   // not norm preservingtransform ifft(fft(funk))=N*funk
@@ -1357,7 +1330,7 @@ FFTGrid::fft1DzInPlace(fftw_real*  in)
   out = reinterpret_cast<fftw_complex*>(in);
 
   flag    = FFTW_ESTIMATE | FFTW_IN_PLACE;
-  plan    = rfftwnd_create_plan(1, &nzp_ ,FFTW_REAL_TO_COMPLEX,flag);
+  plan    = rfftwnd_create_plan(1, &nzp ,FFTW_REAL_TO_COMPLEX,flag);
   rfftwnd_one_real_to_complex(plan,in ,out);
   fftwnd_destroy_plan(plan);
 
@@ -1365,7 +1338,7 @@ FFTGrid::fft1DzInPlace(fftw_real*  in)
 }
 
 fftw_real*  
-FFTGrid::invFFT1DzInPlace(fftw_complex* in)
+FFTGrid::invFFT1DzInPlace(fftw_complex* in, int nzp)
 {
   // in is over vritten by out 
   // not norm preserving transform  ifft(fft(funk))=N*funk
@@ -1376,7 +1349,7 @@ FFTGrid::invFFT1DzInPlace(fftw_complex* in)
   out = reinterpret_cast<fftw_real*>(in); 
 
   flag = FFTW_ESTIMATE | FFTW_IN_PLACE;
-  plan= rfftwnd_create_plan(1,&nzp_,FFTW_COMPLEX_TO_REAL,flag);
+  plan= rfftwnd_create_plan(1,&nzp,FFTW_COMPLEX_TO_REAL,flag);
   rfftwnd_one_complex_to_real(plan,in,out);
   fftwnd_destroy_plan(plan);
   return out;

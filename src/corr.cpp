@@ -1,11 +1,15 @@
 #include <stdio.h>
+#include <math.h>
 
 #include "nrlib/surface/surfaceio.hpp"
 #include "nrlib/iotools/logkit.hpp"
 
+#include "src/seismicparametersholder.h"
+#include "src/spatialwellfilter.h"
 #include "src/modelsettings.h"
 #include "src/definitions.h"
 #include "src/fftfilegrid.h"
+#include "src/welldata.h"
 #include "src/fftgrid.h"
 #include "src/corr.h"
 #include "src/io.h"
@@ -31,64 +35,83 @@ Corr::Corr(float  ** pointVar0,
     postCrCovAlphaRho_(NULL),
     postCrCovBetaRho_(NULL)
 {
-  pointVar0_   = pointVar0;
-  priorVar0_   = priorVar0;
-  priorCorrT_  = priorCorrT;
-  priorCorrXY_ = priorCorrXY;
-  n_           = n;
-  dt_          = dt;
+  pointVar0_         = pointVar0;
+  priorVar0_         = priorVar0;
+  priorCorrT_        = priorCorrT;
+  priorCorrXY_       = priorCorrXY;
+  n_                 = n;
+  dt_                = dt;
+  common_correlation_ = true;
+
 }
+
+Corr::Corr(int                       n,  
+           float                     dt, 
+           SeismicParametersHolder & seismicParameters)
+  : errCorr_(NULL)
+{
+  postCovAlpha_       = seismicParameters.GetCovAlpha();
+  postCovBeta_        = seismicParameters.GetCovBeta();
+  postCovRho_         = seismicParameters.GetCovRho();
+  postCrCovAlphaBeta_ = seismicParameters.GetCrCovAlphaBeta();
+  postCrCovAlphaRho_  = seismicParameters.GetCrCovAlphaRho();
+  postCrCovBetaRho_   = seismicParameters.GetCrCovBetaRho();
+  dt_                 = dt;
+  common_correlation_  = false;
+   
+  if((n % 2) == 0)
+    n_ = n/2+1;
+  else
+    n_ = n/2;
+ 
+ createPriorVar0(); 
+}
+
 
 Corr::~Corr(void)
 {
-  if(pointVar0_ != NULL) {
-    for(int i=0;i<3;i++)
-      delete [] pointVar0_[i];
-    delete [] pointVar0_;
+  if(common_correlation_ == true){
+    if(pointVar0_!=NULL){
+      for(int i=0; i<3; i++)
+        delete [] pointVar0_[i];
+      delete [] pointVar0_;
+    }
+    delete priorCorrXY_;
+    delete [] priorCorrT_;  
+
+    if(priorCorrTFiltered_!=NULL)
+      delete [] priorCorrTFiltered_; 
+
+  }
+  else
+    delete errCorr_;
+  
+  if(priorVar0_!=NULL){
+    for(int i=0; i<3; i++)
+      delete [] priorVar0_[i];
+    delete [] priorVar0_;
   }
 
-  for(int i=0;i<3;i++)
-    delete [] priorVar0_[i];
-  delete [] priorVar0_;
-
-  delete priorCorrXY_;
-
-  delete [] priorCorrT_;
-
-  if(priorCorrTFiltered_!=NULL)      
-    delete [] priorCorrTFiltered_;
-
-  if (postVar0_ != NULL) {
+  if(postVar0_!=NULL){
     for(int i=0 ; i<3 ; i++)
       delete[] postVar0_[i];
     delete [] postVar0_;
   }
 
-  if(postCovAlpha00_!=NULL)      
+  if(postCovAlpha00_!=NULL)
     delete [] postCovAlpha00_ ;
-  if(postCovBeta00_!=NULL)       
+  if(postCovBeta00_!=NULL)
     delete [] postCovBeta00_ ;
-  if(postCovRho00_!=NULL)        
+  if(postCovRho00_!=NULL)
     delete [] postCovRho00_ ;
   if(postCrCovAlphaBeta00_!=NULL)
     delete [] postCrCovAlphaBeta00_ ;
-  if(postCrCovAlphaRho00_!=NULL) 
+  if(postCrCovAlphaRho00_!=NULL)
     delete [] postCrCovAlphaRho00_ ;
-  if(postCrCovBetaRho00_!=NULL)  
-    delete [] postCrCovBetaRho00_;
+  if(postCrCovBetaRho00_!=NULL)
+    delete [] postCrCovBetaRho00_;  
 
-  if(postCovAlpha_!=NULL)      
-    delete postCovAlpha_ ;
-  if(postCovBeta_!=NULL)       
-    delete postCovBeta_ ;
-  if(postCovRho_!=NULL)        
-    delete postCovRho_ ;
-  if(postCrCovAlphaBeta_!=NULL)
-    delete postCrCovAlphaBeta_ ;
-  if(postCrCovAlphaRho_!=NULL) 
-    delete postCrCovAlphaRho_ ;
-  if(postCrCovBetaRho_!=NULL)  
-    delete postCrCovBetaRho_;
+  //Covariance grids are deleted in seismicParametersHolder
 }
 
 //--------------------------------------------------------------------
@@ -97,29 +120,128 @@ Corr::createPostGrids(int nx,  int ny,  int nz,
                       int nxp, int nyp, int nzp,
                       bool fileGrid)
 {
-  postCovAlpha_       = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid);                     
-  postCovBeta_        = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid);    
-  postCovRho_         = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid);    
-  postCrCovAlphaBeta_ = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid); 
-  postCrCovAlphaRho_  = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid);                     
-  postCrCovBetaRho_   = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid);    
+  if(common_correlation_ == true){
+    postCovAlpha_       = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid);   //Deleted in seismicParametersHolder                  
+    postCovBeta_        = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid);   //Deleted in seismicParametersHolder    
+    postCovRho_         = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid);   //Deleted in seismicParametersHolder    
+    postCrCovAlphaBeta_ = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid);   //Deleted in seismicParametersHolder    
+    postCrCovAlphaRho_  = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid);   //Deleted in seismicParametersHolder    
+    postCrCovBetaRho_   = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid);   //Deleted in seismicParametersHolder    
 
-  postCovAlpha_       ->setType(FFTGrid::COVARIANCE);
-  postCovBeta_        ->setType(FFTGrid::COVARIANCE);
-  postCovRho_         ->setType(FFTGrid::COVARIANCE);
-  postCrCovAlphaBeta_ ->setType(FFTGrid::COVARIANCE);
-  postCrCovAlphaRho_  ->setType(FFTGrid::COVARIANCE);
-  postCrCovBetaRho_   ->setType(FFTGrid::COVARIANCE);
+    postCovAlpha_       ->setType(FFTGrid::COVARIANCE);
+    postCovBeta_        ->setType(FFTGrid::COVARIANCE);
+    postCovRho_         ->setType(FFTGrid::COVARIANCE);
+    postCrCovAlphaBeta_ ->setType(FFTGrid::COVARIANCE);
+    postCrCovAlphaRho_  ->setType(FFTGrid::COVARIANCE);
+    postCrCovBetaRho_   ->setType(FFTGrid::COVARIANCE);
 
-  postCovAlpha_       ->createRealGrid();     // First used in time domain
-  postCovBeta_        ->createRealGrid();     // First used in time domain
-  postCovRho_         ->createComplexGrid();  // First used in Fourier domain
-  postCrCovAlphaBeta_ ->createComplexGrid();  // First used in Fourier domain
-  postCrCovAlphaRho_  ->createComplexGrid();  // First used in Fourier domain
-  postCrCovBetaRho_   ->createComplexGrid();  // First used in Fourier domain
+    postCovAlpha_       ->createRealGrid();     // First used in time domain
+    postCovBeta_        ->createRealGrid();     // First used in time domain
+    postCovRho_         ->createComplexGrid();  // First used in Fourier domain
+    postCrCovAlphaBeta_ ->createComplexGrid();  // First used in Fourier domain
+    postCrCovAlphaRho_  ->createComplexGrid();  // First used in Fourier domain
+    postCrCovBetaRho_   ->createComplexGrid();  // First used in Fourier domain
+  }
+  else{
+    errCorr_ = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid);
+    errCorr_ ->setType(FFTGrid::COVARIANCE);
+    errCorr_ ->createRealGrid();                // First used in time domain
+  }
 }
-
 //--------------------------------------------------------------------
+void
+Corr::computeCircCorrT(fftw_real* CircCorrT, int nzp)
+{
+  int k,refk;
+
+  assert(priorCorrT_[0] != 0);
+
+  for(k = 0 ; k < 2*(nzp/2+1) ; k++ )
+  {
+    if(k < nzp)
+    {
+      if( k < nzp/2+1)
+        refk = k;
+      else
+        refk = nzp - k;
+      if(refk < n_)
+        CircCorrT[k] = priorCorrT_[refk];
+      else
+        CircCorrT[k] = 0.0;
+    }
+    else
+    {
+      CircCorrT[k] = RMISSING;
+    }
+  }
+}
+//-------------------------------------------------------------------
+fftw_real*
+Corr::extractParamCorr(FFTGrid * covAlpha, int nzp) 
+{
+  assert(covAlpha->getIsTransformed() == false);
+
+  covAlpha->setAccessMode(FFTGrid::RANDOMACCESS);
+
+  fftw_real * circCorrT = reinterpret_cast<fftw_real*>(fftw_malloc(2*(nzp/2+1)*sizeof(fftw_real)));
+  int         refk;
+  float       constant = covAlpha->getRealValue(0,0,0);
+
+  for(int k = 0 ; k < 2*(nzp/2+1) ; k++ ){
+    if(k < nzp){
+      if( k < nzp/2+1)
+        refk = k;
+      else
+        refk = nzp - k;
+      if(refk < n_) 
+        circCorrT[k] = covAlpha->getRealValue(0,0,refk)/constant;
+      else
+        circCorrT[k] = 0.0;
+    }
+    else
+      circCorrT[k]=RMISSING;
+  }
+  covAlpha->endAccess();
+
+  return circCorrT;//fftw_free(circCorrT);
+}
+//------------------------------------------------------------------
+void
+Corr::makeCircCorrTPosDef(fftw_real* CircCorrT, int minIntFq, int nzp)
+{
+  int k;
+  fftw_complex* fftCircCorrT;
+  fftCircCorrT = FFTGrid::fft1DzInPlace(CircCorrT, nzp);
+  for(k = 0; k < nzp/2+1; k++)
+  {
+    if(k <= minIntFq)
+      fftCircCorrT[k].re = 0.0 ;
+    else
+      fftCircCorrT[k].re = float(sqrt(fftCircCorrT[k].re * fftCircCorrT[k].re + 
+                                      fftCircCorrT[k].im * fftCircCorrT[k].im ));
+    fftCircCorrT[k].im = 0.0;
+  }
+
+  CircCorrT   = FFTGrid::invFFT1DzInPlace(fftCircCorrT, nzp);
+  //
+  // NBNB-PAL: If the number of layers is too small CircCorrT[0] = 0. How 
+  //           do we avoid this, or how do we flag the problem?
+  //
+  float scale;
+  if (CircCorrT[0] > 1.e-5f) // NBNB-PAL: Temporary solution for above mentioned problem
+    scale = float( 1.0/CircCorrT[0] );
+  else
+  {
+    LogKit::LogFormatted(LogKit::Low,"\nERROR: The circular temporal correlation (CircCorrT) is undefined. You\n");
+    LogKit::LogFormatted(LogKit::Low,"       probably need to increase the number of layers...\n\nAborting\n");
+    exit(1);
+  }    
+  for(k = 0; k < nzp; k++)
+  {
+    CircCorrT[k] *= scale;
+  }
+}
+//-------------------------------------------------------------------
 FFTGrid*            
 Corr::createFFTGrid(int nx,  int ny,  int nz,
                     int nxp, int nyp, int nzp,
@@ -132,16 +254,6 @@ Corr::createFFTGrid(int nx,  int ny,  int nz,
     fftGrid = new FFTGrid(nx, ny, nz, nxp, nyp, nzp);
   return(fftGrid);
 }
-
-//--------------------------------------------------------------------
-float * 
-Corr::getPriorCorrT(int &n, float &dt) const
-{
-  n = n_;
-  dt = dt_;
-  return priorCorrT_;
-}
-
 //--------------------------------------------------------------------
 void
 Corr::setPriorVar0(float ** priorVar0)
@@ -195,6 +307,8 @@ Corr::invFFT(void)
     postCrCovAlphaRho_->invFFTInPlace();
   if (postCrCovBetaRho_->getIsTransformed())
     postCrCovBetaRho_->invFFTInPlace();
+  if (common_correlation_==false && errCorr_->getIsTransformed())
+    errCorr_->invFFTInPlace();
   LogKit::LogFormatted(LogKit::High,"...done\n");
 }
 
@@ -215,6 +329,8 @@ Corr::FFT(void)
     postCrCovAlphaRho_->fftInPlace();
   if (!postCrCovBetaRho_->getIsTransformed())
     postCrCovBetaRho_->fftInPlace();
+  if (common_correlation_==false && !errCorr_->getIsTransformed())
+    errCorr_->fftInPlace();
   LogKit::LogFormatted(LogKit::High,"...done\n");
 }
 
@@ -259,6 +375,189 @@ Corr::printPostVariances(void) const
   LogKit::LogFormatted(LogKit::Low,"ln Vp  | %5.2f     %5.2f     %5.2f \n",1.0f, corr01, corr02);
   LogKit::LogFormatted(LogKit::Low,"ln Vs  |           %5.2f     %5.2f \n",1.0f, corr12);
   LogKit::LogFormatted(LogKit::Low,"ln Rho |                     %5.2f \n",1.0f);
+}
+//--------------------------------------------------------------------
+void
+Corr::getNextParameterCovariance(fftw_complex **& parVar)
+{
+  if(common_correlation_ == true) {  
+    fftw_complex ijkParLam;
+    fftw_complex ijkTmp = postCovAlpha_->getNextComplex(); 
+
+    ijkParLam.re = float ( sqrt(ijkTmp.re * ijkTmp.re));
+    ijkParLam.im = 0.0;
+
+    for(int l = 0; l < 3; l++ ){
+      for(int m = 0; m < 3; m++ )
+      {        
+        parVar[l][m].re = priorVar0_[l][m] * ijkParLam.re;      
+        parVar[l][m].im = 0.0;
+        // if(l!=m)
+        //   parVar[l][m].re *= 0.75;  //NBNB OK DEBUG TEST
+      }
+    }
+  }
+  else{
+    fftw_complex ii;
+    fftw_complex jj;
+    fftw_complex kk;
+    fftw_complex ij;
+    fftw_complex ik;
+    fftw_complex jk;
+
+    fftw_complex iiTmp = postCovAlpha_      ->getNextComplex();
+    fftw_complex jjTmp = postCovBeta_       ->getNextComplex();
+    fftw_complex kkTmp = postCovRho_        ->getNextComplex();
+    fftw_complex ijTmp = postCrCovAlphaBeta_->getNextComplex();
+    fftw_complex ikTmp = postCrCovAlphaRho_ ->getNextComplex();
+    fftw_complex jkTmp = postCrCovBetaRho_  ->getNextComplex();
+
+    ii.re = float( sqrt(iiTmp.re * iiTmp.re));
+    ii.im = 0.0;
+    jj.re = float( sqrt(jjTmp.re * jjTmp.re));
+    jj.im = 0.0;
+    kk.re = float( sqrt(kkTmp.re * kkTmp.re));
+    kk.im = 0.0;
+    ij.re = float( sqrt(ijTmp.re * ijTmp.re));
+    ij.im = 0.0;
+    ik.re = float( sqrt(ikTmp.re * ikTmp.re));
+    ik.im = 0.0;
+    jk.re = float( sqrt(jkTmp.re * jkTmp.re));
+    jk.im = 0.0;
+
+    parVar[0][0].re = ii.re;
+    parVar[0][0].im = ii.im; 
+    
+    parVar[1][1].re = jj.re;
+    parVar[1][1].im = jj.im; 
+
+    parVar[2][2].re = kk.re;
+    parVar[2][2].im = kk.im; 
+
+    parVar[0][1].re = ij.re;
+    parVar[0][1].im = ij.im; 
+    parVar[1][0].re = ij.re;
+    parVar[1][0].im = -ij.im;  
+
+    parVar[0][2].re = ik.re;
+    parVar[0][2].im = ik.im; 
+    parVar[2][0].re = ik.re;
+    parVar[2][0].im = ik.im; 
+
+    parVar[1][2].re = jk.re;
+    parVar[1][2].im = jk.im; 
+    parVar[2][1].re = jk.re;
+    parVar[2][1].im = -jk.im; 
+  }
+}
+//--------------------------------------------------------------------
+void
+Corr::getNextErrorVariance(fftw_complex **& errVar, 
+                           fftw_complex * errMult1,
+                           fftw_complex * errMult2,
+                           fftw_complex * errMult3,
+                           int ntheta,
+                           float wnc,
+                           double ** errThetaCov,
+                           bool invert_frequency)
+{
+  fftw_complex ijkErrLam;
+  fftw_complex ijkTmp;
+  if(common_correlation_ == true)
+    ijkTmp = postCovBeta_->getNextComplex();
+  else
+    ijkTmp = errCorr_->getNextComplex();  
+
+  ijkErrLam.re        = float( sqrt(ijkTmp.re * ijkTmp.re));
+  ijkErrLam.im        = 0.0;
+
+
+  if(invert_frequency) // inverting only relevant frequencies
+  {
+    for(int l = 0; l < ntheta; l++ ) {
+      for(int m = 0; m < ntheta; m++ )
+      {        // Note we multiply kWNorm[l] and comp.conj(kWNorm[m]) hence the + and not a minus as in pure multiplication
+        errVar[l][m].re  = float( 0.5*(1.0-wnc)*errThetaCov[l][m] * ijkErrLam.re * ( errMult1[l].re *  errMult1[m].re +  errMult1[l].im *  errMult1[m].im)); 
+        errVar[l][m].re += float( 0.5*(1.0-wnc)*errThetaCov[l][m] * ijkErrLam.re * ( errMult2[l].re *  errMult2[m].re +  errMult2[l].im *  errMult2[m].im)); 
+        if(l==m) {
+          errVar[l][m].re += float( wnc*errThetaCov[l][m] * errMult3[l].re  * errMult3[l].re);
+          errVar[l][m].im   = 0.0;             
+        }   
+        else {
+          errVar[l][m].im  = float( 0.5*(1.0-wnc)*errThetaCov[l][m] * ijkErrLam.re * (-errMult1[l].re * errMult1[m].im + errMult1[l].im * errMult1[m].re));
+          errVar[l][m].im += float( 0.5*(1.0-wnc)*errThetaCov[l][m] * ijkErrLam.re * (-errMult2[l].re * errMult2[m].im + errMult2[l].im * errMult2[m].re));
+        }
+      }
+    }
+  }
+}
+//--------------------------------------------------------------------
+fftw_real*
+Corr::initializeCorrelations(SpatialWellFilter *spatwellfilter, WellData ** wells, float corrGradI, float corrGradJ, int lowIntCut, int nWells, int nz, int nzp)
+{
+  
+  fftw_real * corrT = NULL; // =  fftw_malloc(2*(nzp_/2+1)*sizeof(fftw_real)); 
+
+  if(common_correlation_ == true){
+    corrT = postCovAlpha_->fillInParamCorr(this, lowIntCut, corrGradI, corrGradJ);
+    setPriorCorrTFiltered(corrT, nz, nzp); // Can have zeros in the middle
+
+    if(spatwellfilter != NULL){
+      postCovAlpha_->setAccessMode(FFTGrid::RANDOMACCESS);
+      
+      for(int i=0; i<nWells; i++)
+        spatwellfilter->setPriorSpatialCorr(postCovAlpha_, wells[i], i);
+
+      postCovAlpha_->endAccess();
+    }
+    
+    postCovBeta_->fillInErrCorr(this, corrGradI, corrGradJ); 
+  }
+  else{
+    
+    corrT = extractParamCorr(postCovAlpha_, nzp);
+    setPriorCorrTFiltered(corrT, nz, nzp);
+
+    errCorr_->fillInErrCorrFromCovAlpha(postCovAlpha_, corrGradI, corrGradJ);
+  }
+  
+  return(corrT);
+}
+//--------------------------------------------------------------------
+void
+Corr::initializeAccess(void)
+{
+  if(common_correlation_ == true){
+
+    postCovAlpha_      ->fftInPlace();
+    postCovBeta_       ->fftInPlace();
+    
+    postCovAlpha_      ->setAccessMode(FFTGrid::READANDWRITE);  //endAccess() in Crava::computePostMeanResidAndFFTCov()
+    postCovBeta_       ->setAccessMode(FFTGrid::READANDWRITE);  
+    postCovRho_        ->setAccessMode(FFTGrid::WRITE);
+    postCrCovAlphaBeta_->setAccessMode(FFTGrid::WRITE);
+    postCrCovAlphaRho_ ->setAccessMode(FFTGrid::WRITE);
+    postCrCovBetaRho_  ->setAccessMode(FFTGrid::WRITE);
+  }
+  else{
+ 
+    FFT();
+
+    errCorr_           ->setAccessMode(FFTGrid::READ);          //endAccess() in Corr::terminateAccess
+    postCovAlpha_      ->setAccessMode(FFTGrid::READANDWRITE);  //endAccess() in Crava::computePostMeanResidAndFFTCov()
+    postCovBeta_       ->setAccessMode(FFTGrid::READANDWRITE);  
+    postCovRho_        ->setAccessMode(FFTGrid::READANDWRITE);
+    postCrCovAlphaBeta_->setAccessMode(FFTGrid::READANDWRITE);
+    postCrCovAlphaRho_ ->setAccessMode(FFTGrid::READANDWRITE);
+    postCrCovBetaRho_  ->setAccessMode(FFTGrid::READANDWRITE);
+  }
+}
+//--------------------------------------------------------------------
+void
+Corr::terminateAccess(void)
+{
+  if(common_correlation_ == false)
+    errCorr_->endAccess();
 }
 //--------------------------------------------------------------------
 void
@@ -310,7 +609,38 @@ Corr::createPostCov00(FFTGrid * postCov)
   postCov->endAccess();
   return (postCov00);
 }
+//--------------------------------------------------------------------
+void
+Corr::createPriorVar0(void)
+{
+  postCovAlpha_      ->setAccessMode(FFTGrid::RANDOMACCESS);
+  postCovBeta_       ->setAccessMode(FFTGrid::RANDOMACCESS);
+  postCovRho_        ->setAccessMode(FFTGrid::RANDOMACCESS);
+  postCrCovAlphaBeta_->setAccessMode(FFTGrid::RANDOMACCESS);
+  postCrCovAlphaRho_ ->setAccessMode(FFTGrid::RANDOMACCESS);
+  postCrCovBetaRho_  ->setAccessMode(FFTGrid::RANDOMACCESS);
+ 
+  priorVar0_ = new float*[3];
+  for(int i=0 ; i<3 ; i++)
+    priorVar0_[i] = new float[3];
 
+  priorVar0_[0][0] = postCovAlpha_      ->getRealValue(0,0,0);
+  priorVar0_[1][1] = postCovBeta_       ->getRealValue(0,0,0);
+  priorVar0_[2][2] = postCovRho_        ->getRealValue(0,0,0);
+  priorVar0_[0][1] = postCrCovAlphaBeta_->getRealValue(0,0,0);
+  priorVar0_[1][0] = postCrCovAlphaBeta_->getRealValue(0,0,0);
+  priorVar0_[0][2] = postCrCovAlphaRho_ ->getRealValue(0,0,0);
+  priorVar0_[2][0] = postCrCovAlphaRho_ ->getRealValue(0,0,0);
+  priorVar0_[1][2] = postCrCovBetaRho_  ->getRealValue(0,0,0);
+  priorVar0_[2][1] = postCrCovBetaRho_  ->getRealValue(0,0,0);
+
+  postCovAlpha_      ->endAccess();
+  postCovBeta_       ->endAccess();
+  postCovRho_        ->endAccess();
+  postCrCovAlphaBeta_->endAccess();
+  postCrCovAlphaRho_ ->endAccess();
+  postCrCovBetaRho_  ->endAccess();
+}
 //--------------------------------------------------------------------
 void
 Corr::writeFilePriorCorrT(float* corrT, int nzp) const
@@ -450,3 +780,4 @@ Corr::writeFilePostCovGrids(Simbox * simbox) const
   postCrCovBetaRho_ ->writeFile(fileName, IO::PathToCorrelations(), simbox, "Posterior cross-covariance for (Vs,density)");
   postCrCovBetaRho_ ->endAccess();
 }
+//--------------------------------------------------------------------

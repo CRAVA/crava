@@ -31,6 +31,7 @@
 #include "src/io.h"
 #include "src/waveletfilter.h"
 #include "src/tasklist.h"
+#include "src/seismicparametersholder.h"
 
 #include "lib/utils.h"
 #include "lib/random.h"
@@ -55,9 +56,6 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings       *& modelSettings,
                                  RandomGen            * randomGen,
                                  GridMapping          * timeDepthMapping, 
                                  GridMapping          * timeCutMapping,
-                                 std::vector<Surface *> waveletEstimInterval, 
-                                 std::vector<Surface *> wellMoveInterval,
-                                 std::vector<Surface *> faciesEstimInterval,
                                  ModelAVOStatic       * modelAVOstatic,
                                  int                    t)
 {
@@ -111,7 +109,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings       *& modelSettings,
         if (!failedReflMat)
         {
           processWavelets(wavelet_, seisCube_, modelAVOstatic->getWells(), reflectionMatrix_,
-                          timeSimbox, waveletEstimInterval, 
+                          timeSimbox, modelAVOstatic->getWaveletEstimInterval(), 
                           modelSettings, inputFiles, errText, failedWavelet);
         }              
       }
@@ -169,7 +167,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings       *& modelSettings,
               for(int i=0;i<numberOfAngles_;i++)
                 seisCube_[i]->setAccessMode(FFTGrid::RANDOMACCESS);
               modelAVOstatic->processWellLocation(seisCube_, modelAVOstatic->getWells(), reflectionMatrix_,
-                                                  timeSimbox, modelSettings, wellMoveInterval, randomGen);
+                                                  timeSimbox, modelSettings, modelAVOstatic->getWellMoveInterval(), randomGen);
               for(int i=0;i<numberOfAngles_;i++)
                 seisCube_[i]->endAccess();
             }
@@ -193,7 +191,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings       *& modelSettings,
             if(failedSeismic == false) 
             {
               modelAVOstatic->processWellLocation(seisCube_, modelAVOstatic->getWells(), reflectionMatrix_,
-                                                  timeSimbox, modelSettings, wellMoveInterval, randomGen);       
+                                                  timeSimbox, modelSettings, modelAVOstatic->getWellMoveInterval(), randomGen);       
             }
           }
           if(estimationMode == false || 
@@ -223,7 +221,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings       *& modelSettings,
           if(failedReflMat == false && failedExtraSurf == false) 
           {
             processWavelets(wavelet_, seisCube_, modelAVOstatic->getWells(), reflectionMatrix_,
-                            timeSimbox, waveletEstimInterval,
+                            timeSimbox, modelAVOstatic->getWaveletEstimInterval(),
                             modelSettings, inputFiles, errText, failedWavelet);
           }
         }
@@ -259,6 +257,91 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings       *& modelSettings,
   failed_details_.push_back(failedWavelet);
 }
 
+ModelAVODynamic::ModelAVODynamic(ModelSettings          *& modelSettings,  
+                                 const InputFiles        * inputFiles,
+                                 ModelAVOStatic          * modelAVOstatic,
+                                 SeismicParametersHolder & seismicParameters,
+                                 Simbox                  * timeSimbox,
+                                 GridMapping             * timeDepthMapping, 
+                                 GridMapping             * timeCutMapping,
+                                 int                       t)
+{ //Time lapse constructor
+  background_             = NULL;
+  correlations_           = NULL;
+  seisCube_               = NULL;
+  wavelet_                = NULL;
+  reflectionMatrix_       = NULL;
+  failed_                 = false;
+  thisTimeLapse_          = t;
+  angularCorr_            = modelSettings->getAngularCorr(thisTimeLapse_);
+  SNRatio_                = modelSettings->getSNRatio(thisTimeLapse_);
+  useLocalNoise_          = modelSettings->getUseLocalNoise(thisTimeLapse_);
+  angle_                  = modelSettings->getAngle(thisTimeLapse_);
+  estimateWavelet_        = modelSettings->getEstimateWavelet(thisTimeLapse_);
+  matchEnergies_          = modelSettings->getMatchEnergies(thisTimeLapse_);
+  numberOfAngles_         = modelSettings->getNumberOfAngles(thisTimeLapse_);
+  
+  bool failedWavelet      = false;
+  bool failedSeismic      = false;
+  bool failedReflMat      = false;
+  bool failedPriorCorr    = false;
+  bool failedLoadingModel = false;
+
+  std::string errText("");
+
+  bool estimationMode = modelSettings->getEstimationMode();
+
+  if(estimationMode == false) {
+    FFTGrid * backModel[3];
+    backModel[0] = seismicParameters.GetMuAlpha();
+    backModel[1] = seismicParameters.GetMuBeta();
+    backModel[2] = seismicParameters.GetMuRho();
+
+    background_ = new Background(backModel);
+  }
+  if(estimationMode == false || modelSettings->getEstimateWaveletNoise() ){
+    bool useWells = false;
+    processReflectionMatrix(reflectionMatrix_, background_, modelAVOstatic->getWells(), modelSettings, 
+                              inputFiles, useWells, errText, failedReflMat);
+  }
+
+  if(failedReflMat == false && (estimationMode == false || modelSettings->getEstimateWaveletNoise() ))
+    processSeismic(seisCube_, timeSimbox, timeDepthMapping, timeCutMapping,
+                   modelSettings, inputFiles, errText, failedSeismic);
+   
+
+  if(failedSeismic == false && failedReflMat == false && estimationMode == false)
+    correlations_ = new Corr(modelSettings->getNZpad(), static_cast<float>(timeSimbox->getdz()), seismicParameters);
+
+  if(failedSeismic == false && (estimationMode == false || modelSettings->getEstimateWaveletNoise() )){
+    modelAVOstatic->addSeismicLogs(modelAVOstatic->getWells(), seisCube_, modelSettings, numberOfAngles_); 
+    if(failedReflMat == false) 
+      processWavelets(wavelet_, seisCube_, modelAVOstatic->getWells(), reflectionMatrix_,
+                      timeSimbox, modelAVOstatic->getWaveletEstimInterval(),
+                      modelSettings, inputFiles, errText, failedWavelet);
+  }
+  if(failedSeismic == false && failedWavelet == false && failedReflMat == false && modelSettings->getEstimateWaveletNoise() )
+    modelAVOstatic->generateSyntheticSeismic(wavelet_, modelAVOstatic->getWells(), reflectionMatrix_, timeSimbox, modelSettings, numberOfAngles_);
+
+  if(estimationMode || (modelSettings->getWellOutputFlag() & IO::WELLS) > 0)
+    modelAVOstatic->writeWells(modelAVOstatic->getWells(), modelSettings);
+  if(estimationMode)
+    modelAVOstatic->writeBlockedWells(modelAVOstatic->getWells(), modelSettings);
+
+  failedLoadingModel = failedSeismic || failedPriorCorr || failedReflMat || failedWavelet;
+
+  if (failedLoadingModel) {
+    LogKit::WriteHeader("Error(s) while loading data");
+    LogKit::LogFormatted(LogKit::Error,"\n"+errText);
+    LogKit::LogFormatted(LogKit::Error,"\nAborting\n");
+  }
+
+  failed_ = failedLoadingModel;
+  failed_details_.push_back(failedSeismic);
+  failed_details_.push_back(failedPriorCorr);
+  failed_details_.push_back(failedReflMat);
+  failed_details_.push_back(failedWavelet);
+}
 
 ModelAVODynamic::~ModelAVODynamic(void)
 {
@@ -283,9 +366,6 @@ ModelAVODynamic::~ModelAVODynamic(void)
   
   if (correlations_ != NULL)
     delete correlations_;
-
-  if(background_ != NULL)
-    delete background_;
 
   if(seisCube_ != NULL) {
     for(int i=0;i<numberOfAngles_;i++)
@@ -688,7 +768,7 @@ ModelAVODynamic::processPriorCorrelations(Corr                   *& correlations
     if((nCorrT % 2) == 0)
       nCorrT = nCorrT/2+1;
     else
-      nCorrT = nCorrT/2+1;
+      nCorrT = nCorrT/2;
     float * corrT = NULL;
 
     bool failedTempCorr = false;

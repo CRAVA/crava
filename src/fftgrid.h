@@ -36,6 +36,7 @@ public:
                                        float gradI, float gradJ);// No mode
   void                 fillInErrCorr(Corr* parCorr,              // No mode
                                      float gradI, float gradJ);  // No mode
+  void                 fillInErrCorrFromCovAlpha(FFTGrid * covAlpha, float gradI, float gradJ);
   virtual void         fillInComplexNoise(RandomGen * ranGen);   // No mode/randomaccess
 
   void                 fillInTest(float value1, float value2);   // No mode /DEBUG
@@ -120,6 +121,8 @@ public:
   static void          setTerminateOnMaxGrid(bool terminate) {terminateOnMaxGrid_ = terminate ;} 
   static int           findClosestFactorableNumber(int leastint);
 
+  static fftw_complex* fft1DzInPlace(fftw_real*  in, int nzp);
+  static fftw_real*    invFFT1DzInPlace(fftw_complex* in, int nzp);
 
   virtual void         createRealGrid(bool add = true);
   virtual void         createComplexGrid();
@@ -149,11 +152,7 @@ protected:
   int                  getXSimboxIndex(int i){return(getFillNumber(i, nx_, nxp_ ));}
   int                  getYSimboxIndex(int j){return(getFillNumber(j, ny_, nyp_ ));}
   int                  getZSimboxIndex(int k);
-  void                 computeCircCorrT(Corr* corr,fftw_real* CircCorrT);
-  void                 makeCircCorrTPosDef(fftw_real* CircularCorrT,int minIntFq);
-  fftw_complex*        fft1DzInPlace(fftw_real*  in);
-  fftw_real*           invFFT1DzInPlace(fftw_complex* in);
-
+ 
   //Interpolation into SegY and sgri
   float                getRegularZInterpolatedRealValue(int i, int j, double z0Reg,
                                                          double dzReg, int kReg,

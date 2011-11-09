@@ -21,6 +21,7 @@ class RandomGen;
 class GridMapping;
 class InputFiles;
 class ModelAVOStatic;
+class SeismicParametersHolder;
 
 class ModelAVODynamic
 {
@@ -34,11 +35,18 @@ public:
                   RandomGen            * randomGen,
                   GridMapping          * timeDepthMapping,
                   GridMapping          * timeCutMapping,
-                  std::vector<Surface *> waveletEstimInterval, 
-                  std::vector<Surface *> wellMoveInterval,
-                  std::vector<Surface *> faciesEstimInterval,  
                   ModelAVOStatic       * modelAVOstatic,
                   int                    t);    // modelAVOstatic::wells_ are altered. modelAVOstatic is deliberately sent in as un-const.
+
+  ModelAVODynamic(ModelSettings          *& modelSettings,
+                  const InputFiles        * inputFiles,
+                  ModelAVOStatic          * modelAVOstatic,
+                  SeismicParametersHolder & seismicParameters,
+                  Simbox                  * timeSimbox,
+                  GridMapping             * timeDepthMapping,
+                  GridMapping             * timeCutMapping,
+                  int                       t);   
+
   ~ModelAVODynamic();
 
   FFTGrid                     * getBackAlpha()             const { return background_->getAlpha() ;}

@@ -32,32 +32,18 @@ public:
         ModelGeneral * modelGeneral, ModelAVOStatic * modelAVOstatic, ModelAVODynamic * modelAVOdynamic, 
         SpatialWellFilter *spatwellfilter);
   ~Crava();
-  int                computePostMeanResidAndFFTCov();
-  int                simulate( RandomGen * randomGen );
-  void               computeSyntSeismic(FFTGrid * alpha, FFTGrid * beta, FFTGrid * rho);
-  int                computeSyntSeismicOld(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho);
+
   FFTGrid          * getPostAlpha()                 { return postAlpha_ ;}
   FFTGrid          * getPostBeta()                  { return postBeta_  ;}
   FFTGrid          * getPostRho()                   { return postRho_   ;}
+  Corr             * getCorrelations()        const { return correlations_;}
 
-  int                getWarning(std::string & wText)  const {if(scaleWarning_>0) wText=scaleWarningText_; return scaleWarning_;}
-
-  void               printEnergyToScreen();
- // void               computeFaciesProb(FilterWellLogs *filteredlogs);
-  void               computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter);
-  void               filterLogs(Simbox          * timeSimboxConstThick,
-                                FilterWellLogs *& filterlogs);
-  int                getRelative();
-  
-  
   void               computeG(double **G) const;
   float**            getPriorVar0() const;
   float**            getPostVar0() const;
   void               newPosteriorCovPointwise(double ** sigmanew, double **G, 
                                               const std::vector<double> & scales, double **sigmamdnew) const;
   void               computeFilter(float ** priorCov,  double ** posteriorCov,int n,double** filter) const;
-  void               doPredictionKriging();
-
 
 private: 
   void               computeDataVariance(void);
@@ -69,6 +55,14 @@ private:
   float              getSignalVariance(int l) const {return signalVariance_[l];}
   float              getErrorVariance(int l)  const {return errorVariance_[l];}
   float              getDataVariance(int l)   const {return dataVariance_[l];}
+  int                simulate( RandomGen * randomGen );
+  int                computePostMeanResidAndFFTCov();
+  void               printEnergyToScreen();
+  void               computeSyntSeismic(FFTGrid * alpha, FFTGrid * beta, FFTGrid * rho);
+  void               computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter);
+  void               filterLogs(Simbox * timeSimboxConstThick, FilterWellLogs *& filterlogs);
+  void               doPredictionKriging();
+
   int                checkScale(void);
   void               fillkW(int k, fftw_complex* kW );
   void               fillInverseAbskWRobust(int k, fftw_complex* invkW ,Wavelet1D** seisWaveletForNorm);
@@ -78,7 +72,6 @@ private:
   FFTFileGrid      * copyFFTGrid(FFTFileGrid * fftGridOld);
 
   float              computeWDCorrMVar (Wavelet1D* WD, fftw_real* corrT);
-  //float              computeWDCorrMVar (Wavelet* WD);
 
   void               divideDataByScaleWavelet();
   void               multiplyDataByScaleWaveletAndWriteToFile(const std::string & typeName);
