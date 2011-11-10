@@ -7,7 +7,7 @@
 #include "rplib/rock.h"
 
 
-// Abstract class containing the fluid substitution scheme.
+// Base class containing the fluid substitution scheme.
 class FluidSubstitution {
 public:
 
@@ -15,50 +15,30 @@ public:
 
   virtual ~FluidSubstitution();
 
-  void DoSubstitute(const Rock                         * rock, 
-                    const std::vector< const Fluid * >   fluid_old, 
-                    const std::vector< double >          saturation_old, 
-                    const double                         vp_old, 
-                    const double                         vs_old, 
-                    const double                         rho_old, 
-                    const std::vector< const Fluid * >   fluid_new, 
-                    const std::vector< double >          saturation_new, 
-                    double                             & vp_new, 
-                    double                             & vs_new, 
-                    double                             & rho_new) const;
+  // Base class uses Gassmann-Reuss fluid substitution, with an
+  // implementation of section 1.3.1, Eq. 1.15, 1.16 in Avseth, Mukerji, Mavko.
+  // Virtuality ensures derived classes can use another fluid substitution.
+  virtual bool DoSubstitute(const Rock                         * rock, 
+                            const std::vector< const Fluid * > & fluid_old, 
+                            const std::vector< double >        & saturation_old, 
+                            const double                         vp_old, 
+                            const double                         vs_old, 
+                            const double                         rho_old, 
+                            const std::vector< const Fluid * > & fluid_new, 
+                            const std::vector< double >        & saturation_new, 
+                            double                             & vp_new, 
+                            double                             & vs_new, 
+                            double                             & rho_new) const;
 
-protected:
-  virtual bool InputOK(const Rock                         * rock, 
-                       const std::vector< const Fluid * >   fluid_old, 
-                       const std::vector< double >          saturation_old, 
-                       const std::vector< const Fluid * >   fluid_new, 
-                       const std::vector< double >          saturation_new) const = 0;
-
-  virtual void DoSubstituteImpl(const Rock                         * rock, 
-                                const std::vector< const Fluid * >   fluid_old, 
-                                const std::vector< double >          saturation_old, 
-                                const double                         vp_old, 
-                                const double                         vs_old, 
-                                const double                         rho_old, 
-                                const std::vector< const Fluid * >   fluid_new, 
-                                const std::vector< double >          saturation_new, 
-                                double                             & vp_new, 
-                                double                             & vs_new, 
-                                double                             & rho_new) const = 0;
-
-  void DoGassmannReuss(const Rock                         * rock, 
-                       const std::vector< const Fluid * >   fluid_old, 
-                       const std::vector< double >          saturation_old, 
-                       const double                         vp_old, 
-                       const double                         vs_old, 
-                       const double                         rho_old, 
-                       const std::vector< const Fluid * >   fluid_new, 
-                       const std::vector< double >          saturation_new, 
-                       double                             & vp_new, 
-                       double                             & vs_new, 
-                       double                             & rho_new) const;  // Implementation of Eq. 1.15 in Avseth, Mukerji, Mavko.
-
-
+private:
+  bool InputOK(const Rock                         * rock, 
+               const std::vector< const Fluid * > & fluid_old, 
+               const std::vector< double >        & saturation_old,
+               const double                         vp_old, 
+               const double                         vs_old, 
+               const double                         rho_old, 
+               const std::vector< const Fluid * > & fluid_new, 
+               const std::vector< double >        & saturation_new) const;
 };
 
 #endif
