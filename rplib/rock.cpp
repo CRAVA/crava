@@ -23,7 +23,8 @@ Rock::~Rock()
 void 
 Rock::CalculateMeanAndCov()
 {
-  int n_samples = 1000;
+  const int     n_samples     = 1000;
+  const double  dbl_n_samples = n_samples;
 
   double vp       = 0.0;
   double vs       = 0.0;
@@ -55,18 +56,18 @@ Rock::CalculateMeanAndCov()
     }
   }
 
-  vp    /= double(n_samples);
-  vs    /= double(n_samples);
-  rho   /= double(n_samples);
-  vp2   /= double(n_samples);
-  vs2   /= double(n_samples);
-  rho2  /= double(n_samples);
-  vpvs  /= double(n_samples);
-  vprho /= double(n_samples);
-  vsrho /= double(n_samples);
+  vp    /= dbl_n_samples;
+  vs    /= dbl_n_samples;
+  rho   /= dbl_n_samples;
+  vp2   /= dbl_n_samples;
+  vs2   /= dbl_n_samples;
+  rho2  /= dbl_n_samples;
+  vpvs  /= dbl_n_samples;
+  vprho /= dbl_n_samples;
+  vsrho /= dbl_n_samples;
   if (poro_ != rmissing_){  // Rock without porosity does not resample poro_.
-    poro  /= double(n_samples);
-    poro2 /= double(n_samples);
+    poro  /= dbl_n_samples;
+    poro2 /= dbl_n_samples;
   }
 
   mean_seis_params_.resize(3, 0.0);

@@ -8,7 +8,7 @@
 class Fluid {
 public:
 
-  Fluid(std::string name, double k, double rho);
+  Fluid(const std::string& name, double k, double rho);
   Fluid(const Fluid & rhs);
   ~Fluid();
   Fluid& operator=(const Fluid& rhs);

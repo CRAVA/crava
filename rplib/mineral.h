@@ -8,7 +8,7 @@
 class Mineral {
 public:
 
-  Mineral(std::string name, double k, double g, double rho);
+  Mineral(const std::string& name, double k, double g, double rho);
   Mineral(const Mineral & rhs);
   ~Mineral();
   Mineral& operator=(const Mineral& rhs);
