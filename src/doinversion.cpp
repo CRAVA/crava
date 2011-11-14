@@ -63,15 +63,13 @@ bool doFirstAVOInversion(ModelSettings           * modelSettings,
 
     if(!modelSettings->getForwardModeling()){
       if (modelSettings->getDoInversion()){
-
         spatwellfilter = new SpatialWellFilter(modelSettings->getNumberOfWells());
         crava          = new Crava(modelSettings, modelGeneral, modelAVOstatic, modelAVOdynamic, spatwellfilter);
+        seismicParameters.setSeismicParameters(crava->getPostAlpha(), crava->getPostBeta(), crava->getPostRho(), crava->getCorrelations());
       }
     }
     else
       crava = new Crava(modelSettings, modelGeneral, modelAVOstatic, modelAVOdynamic, spatwellfilter);
-    
-    seismicParameters.setSeismicParameters(crava->getPostAlpha(), crava->getPostBeta(), crava->getPostRho(), crava->getCorrelations());
 
     delete crava;
     delete spatwellfilter;
