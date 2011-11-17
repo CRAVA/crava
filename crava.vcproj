@@ -6404,39 +6404,39 @@
 					Name="flens"
 					>
 					<File
-						RelativePath="G:\sand\Libraries\flens\aux_complex.cc"
+						RelativePath=".\flens\flens\aux_complex.cc"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\blas.cc"
+						RelativePath=".\flens\flens\blas.cc"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\id.cc"
+						RelativePath=".\flens\flens\id.cc"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\lapack.cc"
+						RelativePath=".\flens\flens\lapack.cc"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\range.cc"
+						RelativePath=".\flens\flens\range.cc"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\scalarclosures.cc"
+						RelativePath=".\flens\flens\scalarclosures.cc"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\snapshot.cc"
+						RelativePath=".\flens\flens\snapshot.cc"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\sparse_blas.cc"
+						RelativePath=".\flens\flens\sparse_blas.cc"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\underscore.cc"
+						RelativePath=".\flens\flens\underscore.cc"
 						>
 					</File>
 				</Filter>
@@ -6797,11 +6797,11 @@
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\filesystem\config.hpp"
+						RelativePath=".\nrlib\boost\system\config.hpp"
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\system\config.hpp"
+						RelativePath=".\nrlib\boost\filesystem\config.hpp"
 						>
 					</File>
 					<File
@@ -6849,203 +6849,203 @@
 					Name="flens"
 					>
 					<File
-						RelativePath="G:\sand\Libraries\flens\array.h"
+						RelativePath=".\flens\flens\array.h"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\aux_cmath.h"
+						RelativePath=".\flens\flens\aux_cmath.h"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\aux_complex.h"
+						RelativePath=".\flens\flens\aux_complex.h"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\aux_malloc.h"
+						RelativePath=".\flens\flens\aux_malloc.h"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\bandstorage.h"
+						RelativePath=".\flens\flens\bandstorage.h"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\blas.h"
+						RelativePath=".\flens\flens\blas.h"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\blas_flens.h"
+						RelativePath=".\flens\flens\blas_flens.h"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\blas_generic.h"
+						RelativePath=".\flens\flens\blas_generic.h"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\cg.h"
+						RelativePath=".\flens\flens\cg.h"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\crs.h"
+						RelativePath=".\flens\flens\crs.h"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\densevector.h"
+						RelativePath=".\flens\flens\densevector.h"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\evalclosure.h"
+						RelativePath=".\flens\flens\evalclosure.h"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\fixedsizearray.h"
+						RelativePath=".\flens\flens\fixedsizearray.h"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\flens.h"
+						RelativePath=".\flens\flens\flens.h"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\fullstorage.h"
+						RelativePath=".\flens\flens\fullstorage.h"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\generalmatrix.h"
+						RelativePath=".\flens\flens\generalmatrix.h"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\hacksforgmpxx.h"
+						RelativePath=".\flens\flens\hacksforgmpxx.h"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\hermitianmatrix.h"
+						RelativePath=".\flens\flens\hermitianmatrix.h"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\id.h"
+						RelativePath=".\flens\flens\id.h"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\lapack.h"
+						RelativePath=".\flens\flens\lapack.h"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\lapack_flens.h"
+						RelativePath=".\flens\flens\lapack_flens.h"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\lapack_flens_aux.h"
+						RelativePath=".\flens\flens\lapack_flens_aux.h"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\lapack_generic.h"
+						RelativePath=".\flens\flens\lapack_generic.h"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\listinitializer.h"
+						RelativePath=".\flens\flens\listinitializer.h"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\macros.h"
+						RelativePath=".\flens\flens\macros.h"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\matvec.h"
+						RelativePath=".\flens\flens\matvec.h"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\matvecclosures.h"
+						RelativePath=".\flens\flens\matvecclosures.h"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\matvecio.h"
+						RelativePath=".\flens\flens\matvecio.h"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\matvecoperations.h"
+						RelativePath=".\flens\flens\matvecoperations.h"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\multigrid.h"
+						RelativePath=".\flens\flens\multigrid.h"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\operationtypes.h"
+						RelativePath=".\flens\flens\operationtypes.h"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\packedstorage.h"
+						RelativePath=".\flens\flens\packedstorage.h"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\polynom.h"
+						RelativePath=".\flens\flens\polynom.h"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\range.h"
+						RelativePath=".\flens\flens\range.h"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\result.h"
+						RelativePath=".\flens\flens\result.h"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\scalarclosures.h"
+						RelativePath=".\flens\flens\scalarclosures.h"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\scalaroperations.h"
+						RelativePath=".\flens\flens\scalaroperations.h"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\snapshot.h"
+						RelativePath=".\flens\flens\snapshot.h"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\sparse_blas.h"
+						RelativePath=".\flens\flens\sparse_blas.h"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\sparse_blas_flens.h"
+						RelativePath=".\flens\flens\sparse_blas_flens.h"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\sparsematrix.h"
+						RelativePath=".\flens\flens\sparsematrix.h"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\storage.h"
+						RelativePath=".\flens\flens\storage.h"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\symmetricmatrix.h"
+						RelativePath=".\flens\flens\symmetricmatrix.h"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\tiny_blas.h"
+						RelativePath=".\flens\flens\tiny_blas.h"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\tinymatrix.h"
+						RelativePath=".\flens\flens\tinymatrix.h"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\tinyvector.h"
+						RelativePath=".\flens\flens\tinyvector.h"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\traits.h"
+						RelativePath=".\flens\flens\traits.h"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\triangularmatrix.h"
+						RelativePath=".\flens\flens\triangularmatrix.h"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\underscore.h"
+						RelativePath=".\flens\flens\underscore.h"
 						>
 					</File>
 					<File
-						RelativePath="G:\sand\Libraries\flens\uplo.h"
+						RelativePath=".\flens\flens\uplo.h"
 						>
 					</File>
 				</Filter>

@@ -1,7 +1,7 @@
 
 include ../Makeheader
 
-INCLUDE = -I.. -I../fft/include
+INCLUDE = -I.. -I../fft/include -I../flens -I $(MKLINCLUDE)
 CPPFLAGS += $(INCLUDE)
 
 OBJDIR = ../obj

@@ -3,7 +3,7 @@
 #
 include Makeheader
 
-DIRS        = src lib nrlib fft/fftw fft/rfftw
+DIRS        = src lib nrlib fft/fftw fft/rfftw flens
 OBJDIR      = obj
 OBJSUBDIR   = obj/fft
 OBJNRLIBDIR = obj/nrlib
@@ -16,13 +16,13 @@ OBJGRAMMAR  = obj/nrlib/iotools/fileio.o               \
               obj/nrlib/boost/filesystem/path.o        \
               obj/nrlib/boost/filesystem/operations.o  \
               obj/nrlib/boost/filesystem/portability.o
-INCLUDE     = -I. -I./fft/include -I./nrlib
+INCLUDE     = -I. -I./fft/include -I./nrlib -I./flens -I $(MKLINCLUDE)
 CPPFLAGS   += $(INCLUDE) 
 
 all:	$(PROGRAM)
 
 $(PROGRAM): $(DIRS) main.o
-	$(PURIFY) $(CXX) $(CXXFLAGS) $(LFLAGS) -o $@ $(OBJDIR)/*.o $(OBJSUBDIR)/*.o $(OBJNRLIBDIR)/*/*.o $(OBJNRLIBDIR)/*/*/*.o main.o
+	$(PURIFY) $(CXX) $(CXXFLAGS) $(LFLAGS) -o $@ $(OBJDIR)/*.o $(OBJSUBDIR)/*.o $(OBJNRLIBDIR)/*/*.o $(OBJNRLIBDIR)/*/*/*.o main.o $(MKLLFLAGS) 
 
 $(GRAMMAR): findgrammar/findgrammar.o
 	$(PURIFY) $(CXX) $(CXXFLAGS) $(LFLAGS) -o $@ $(OBJGRAMMAR) $(OBJFINDGRAM)

@@ -47,7 +47,13 @@ PURIFY  := $(strip $(PURIFY))
 
 EXTRAFLAGS = $(strip $(OPT) $(PROFILE) $(DEBUG) $(CDIR))
 
+MKLINCLUDE := /nr/prog/intel/Compiler/mkl/include
+MKLPATH    := /nr/prog/intel/Compiler/mkl/lib/intel64
+MKLLFLAGS  := -L$(MKLPATH) -I$(MKLINCLUDE) -Wl,--start-group $(MKLPATH)/libmkl_intel_lp64.a \
+	$(MKLPATH)/libmkl_sequential.a $(MKLPATH)/libmkl_core.a -Wl,--end-group \
+	-lpthread
+
 CFLAGS     = $(GCCWARNING)
-CXXFLAGS   = $(GXXWARNING)
+CXXFLAGS   = $(GXXWARNING) -DFLENS_FIRST_INDEX=0 -DMKL
 CPPFLAGS   = $(EXTRAFLAGS)
 LFLAGS     = $(PROFILE) $(DEBUG) -lm
