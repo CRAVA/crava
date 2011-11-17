@@ -255,7 +255,7 @@ int main(int argc, char** argv)
           corr->writeFilePostCovGrids(modelGeneral->getTimeSimbox());
         }
 
-        if(modelSettings->getRunFromPanel() == false) {
+        if(modelSettings->getRunFromPanel() == false || modelSettings->getEstimateFaciesProb()==true) {
           int activeAngles = 0; //How many dimensions for local noise interpolation? Turn off for now.
           if(modelSettings->getUseLocalNoise()==true)
             activeAngles = modelSettings->getNumberOfAngles();

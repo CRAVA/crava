@@ -992,7 +992,7 @@ void FaciesProb::checkConditionalProbabilities(float                         ** 
       LogKit::LogFormatted(LogKit::Warning,"\nWARNING: For facies \'"+faciesNames[f1]+"\' the difference between smallest and largest probability\n");
       LogKit::LogFormatted(LogKit::Warning,"         is only %.2f percent.\n",(fraction - 1.f)*100.f);
     }
-    if (indMax != f1) {
+    if (indMax != f1 && indMax !=-IMISSING) {
       wrongMaximum = true;
       if (accumulative) {
         LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The probability of finding facies \'"+faciesNames[f1]+"\' is largest when the logs\n");
