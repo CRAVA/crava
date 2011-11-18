@@ -6153,6 +6153,10 @@
 				Name="rplib"
 				>
 				<File
+					RelativePath=".\rplib\distributionwithtrend.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\rplib\fluid.cpp"
 					>
 				</File>
@@ -6170,6 +6174,10 @@
 				</File>
 				<File
 					RelativePath=".\rplib\rockphysics.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\trend.cpp"
 					>
 				</File>
 			</Filter>
@@ -6805,11 +6813,11 @@
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\filesystem\config.hpp"
+						RelativePath=".\nrlib\boost\system\config.hpp"
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\system\config.hpp"
+						RelativePath=".\nrlib\boost\filesystem\config.hpp"
 						>
 					</File>
 					<File
@@ -7062,6 +7070,10 @@
 				Name="rplib"
 				>
 				<File
+					RelativePath=".\rplib\distributionwithtrend.h"
+					>
+				</File>
+				<File
 					RelativePath=".\rplib\fluid.h"
 					>
 				</File>
@@ -7079,6 +7091,10 @@
 				</File>
 				<File
 					RelativePath=".\rplib\rockphysics.h"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\trend.h"
 					>
 				</File>
 			</Filter>
