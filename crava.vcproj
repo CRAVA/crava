@@ -6169,6 +6169,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\rplib\multinormalwithtrend.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\rplib\rock.cpp"
 					>
 				</File>
@@ -6813,11 +6817,11 @@
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\system\config.hpp"
+						RelativePath=".\nrlib\boost\filesystem\config.hpp"
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\filesystem\config.hpp"
+						RelativePath=".\nrlib\boost\system\config.hpp"
 						>
 					</File>
 					<File
@@ -7083,6 +7087,10 @@
 				</File>
 				<File
 					RelativePath=".\rplib\mineral.h"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\multinormalwithtrend.h"
 					>
 				</File>
 				<File
