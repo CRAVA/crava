@@ -30,9 +30,9 @@ public:
   virtual double GetValue(double s1, double /*s2*/) const;
 
 private:
-  std::vector<double> trend_;
-  double              s1_min_, s1_max_;
-  double              inv_s1_inc_;
+  const std::vector<double>&  trend_;
+  double                      s1_min_, s1_max_;
+  double                      inv_s1_inc_;
 
 };
 
@@ -45,14 +45,14 @@ public:
   virtual double GetValue(double s1, double s2) const;
 
 private:
-  std::vector<double> trend_;
-  int                 ns1_, ns2_;
+  const std::vector<double>&    trend_;
+  int                           ns1_, ns2_;
 
-  double              s1_min_, s1_max_;
-  double              inv_s1_inc_;
+  double                        s1_min_, s1_max_;
+  double                        inv_s1_inc_;
 
-  double              s2_min_, s2_max_;
-  double              inv_s2_inc_;
+  double                        s2_min_, s2_max_;
+  double                        inv_s2_inc_;
 
 };
 #endif

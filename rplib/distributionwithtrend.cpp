@@ -1,9 +1,9 @@
 #include "rplib/distributionwithtrend.h"
 
 
-DistributionWithTrend::DistributionWithTrend(NRLib::Distribution<double>*  distr,
-                                             Trend*                        mean,
-                                             Trend*                        sd) :
+DistributionWithTrend::DistributionWithTrend(const NRLib::Distribution<double>&  distr,
+                                             const Trend&                        mean,
+                                             const Trend&                        sd) :
   distr_(distr), mean_(mean), sd_(sd) {
 
 
