@@ -16,7 +16,7 @@ MultiNormalWithTrend(const NRLib::Distribution<double>&        vp,
                      const Trend&                              mean_trend_vp,
                      const Trend&                              mean_trend_vs,
                      const Trend&                              mean_trend_rho,
-                     const std::vector< std::vector<Trend*> >  cov_trend) :
+                     const std::vector< std::vector<Trend*> >& cov_trend) :
   vp_(vp), vs_(vs), rho_(rho), 
   mean_trend_vp_(mean_trend_vp), mean_trend_vs_(mean_trend_vs), mean_trend_rho_(mean_trend_rho), 
   cov_trend_(cov_trend)
@@ -53,7 +53,7 @@ MultiNormalWithTrend::ReSample(double s1, double s2,
     cov_matrix[i] = new double[3];
 
   for (int j = 0; j < 3; ++j) {
-    for (int i = 0; i < 3; ++i) 
+    for (int i = 0; i < 3; ++i)
       cov_matrix[j][i] = cov_trend_[j][i]->GetValue(s1, s2);
   }
   

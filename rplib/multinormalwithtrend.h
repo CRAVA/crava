@@ -15,7 +15,7 @@ class MultiNormalWithTrend {
                         const Trend&                              mean_trend_vp,
                         const Trend&                              mean_trend_vs,
                         const Trend&                              mean_trend_rho,
-                        const std::vector< std::vector<Trend*> >  cov_trend); //If error, throws NRLib::IndexOutOfRange
+                        const std::vector< std::vector<Trend*> >& cov_trend); //If error, throws NRLib::IndexOutOfRange
 
    virtual ~MultiNormalWithTrend();
    
