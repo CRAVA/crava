@@ -26,6 +26,7 @@
 #include "src/modelavostatic.h"
 #include "src/modelavodynamic.h"
 #include "src/modelgeneral.h"
+#include "src/timeline.h"
 
 #include "src/seismicparametersholder.h"
 #include "src/doinversion.h"
@@ -89,24 +90,54 @@ int main(int argc, char** argv)
       if(failedModelFile || failedInputFiles || failedLoadingModel)
         return(1);
 
-      std::vector<int> sortedVintages = modelSettings->findSortedVintages();
-      
-      bool failedFirstAVO = false;
-           
-      failedFirstAVO = doFirstAVOInversion(modelSettings, modelGeneral, modelAVOstatic, seismicParameters, inputFiles, sortedVintages[0], timeBGSimbox);
- 
-      if(failedFirstAVO == true || errTxt != "")
-        return(1);
+      bool failedFirst = false;
 
-      if(timeBGSimbox != NULL)
-        delete timeBGSimbox;
+      int eventType;
+      int eventIndex;
+      int oldTime;
+      if(modelGeneral->getTimeLine() == NULL) {//Forward modelling.
+        bool failed = doFirstAVOInversion(modelSettings, modelGeneral, modelAVOstatic, seismicParameters, inputFiles, 0, timeBGSimbox);
+        if(failed == true || errTxt != "")
+          return(1);
+      }
+      else {
+        modelGeneral->getTimeLine()->GetNextEvent(eventType, eventIndex, oldTime);
+        switch(eventType) {
+          case TimeLine::AVO :
+            failedFirst = doFirstAVOInversion(modelSettings, modelGeneral, modelAVOstatic, seismicParameters, inputFiles, eventIndex, timeBGSimbox);
+            break;
+          case TimeLine::TRAVEL_TIME :
+          case TimeLine::GRAVITY :
+            errTxt += "Error: Asked for inversion type that is not implemented yet.\n";
+            break;
+          default :
+            errTxt += "Error: Unknown inverstion type.\n";
+            break;
+        }
+   
+        if(failedFirst == true || errTxt != "")
+          return(1);
 
-      if(modelSettings->getNumberOfTimeLapses() > 1){
-        for(int i = 1; i<modelSettings->getNumberOfTimeLapses(); i++){
+        if(timeBGSimbox != NULL)
+          delete timeBGSimbox;
 
-          bool failedTimeLapseAVO = doTimeLapseAVOInversion(modelSettings, modelGeneral, modelAVOstatic, inputFiles, seismicParameters, sortedVintages[i]);
-    
-          if(failedTimeLapseAVO == true)
+        int time;
+        while(modelGeneral->getTimeLine()->GetNextEvent(eventType, eventIndex, time) == true) {
+          //Advance time (time-oldTime);
+          bool failed;
+          switch(eventType) {
+            case TimeLine::AVO :
+              failed = doTimeLapseAVOInversion(modelSettings, modelGeneral, modelAVOstatic, inputFiles, seismicParameters, eventIndex);
+              break;
+            case TimeLine::TRAVEL_TIME :
+            case TimeLine::GRAVITY :
+              failed = true;
+              break;
+            default :
+              failed = true;
+              break;
+          }
+          if(failed == true)
             return(1);
         }
       }

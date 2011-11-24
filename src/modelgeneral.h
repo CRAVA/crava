@@ -20,6 +20,7 @@ class FFTGrid;
 class RandomGen;
 class GridMapping;
 class InputFiles;
+class TimeLine;
 
 class ModelGeneral
 {
@@ -38,6 +39,8 @@ public:
   std::vector<bool>             getFailedDetails()         const { return failed_details_         ;}
 
   void                          getCorrGradIJ(float & corrGradI, float &corrGradJ) const;
+
+  TimeLine                    * getTimeLine() const {return(timeLine_);}
   
   static FFTGrid*               createFFTGrid(int nx, 
                                               int ny, 
@@ -157,6 +160,8 @@ private:
   SegyGeometry   * geometryFromCravaFile(const std::string & fileName); 
   SegyGeometry   * geometryFromStormFile(const std::string & fileName, std::string & errText, bool scale = false); 
 
+  int              computeTime(int year, int month, int day) const;
+
   Simbox                  * timeSimbox_;            ///< Information about simulation area.
   Simbox                  * timeSimboxConstThick_;  ///< Simbox with constant thickness   
   
@@ -174,6 +179,8 @@ private:
 
   bool                      failed_;                ///< Indicates whether errors occured during construction. 
   std::vector<bool>         failed_details_;        ///< Detailed failed information.
+
+  TimeLine                * timeLine_;
 };
 
 #endif

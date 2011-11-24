@@ -29,6 +29,7 @@
 #include "src/io.h"
 #include "src/waveletfilter.h"
 #include "src/tasklist.h"
+#include "src/timeline.h"
 
 #include "lib/utils.h"
 #include "lib/random.h"
@@ -65,6 +66,7 @@ ModelGeneral::ModelGeneral(ModelSettings *& modelSettings, const InputFiles * in
   bool failedLoadingModel = false;
 
   Simbox * timeCutSimbox  = NULL;
+  timeLine_               = NULL;
 
   {
     int debugLevel = modelSettings->getLogLevel();
@@ -140,6 +142,28 @@ ModelGeneral::ModelGeneral(ModelSettings *& modelSettings, const InputFiles * in
                                  inputFiles, errText, failedDepthConv);
         }
 
+        //Set up timeline.
+        timeLine_ = new TimeLine();
+        //Activate below when gravity data are ready.
+        //Do gravity first.
+        //for(int i=0;i<modelSettings->getNumberOfGravityData();i++) {
+        //  int time = computeTime(modelSettings->getGravityYear[i], 
+        //                         modelSettings->getGravityMonth[i],
+        //                         modelSettings->getGravityDay[i]);
+        //  timeLine_->AddEvent(time, TimeLine::GRAVITY, i);
+
+        for(int i=0;i<modelSettings->getNumberOfVintages();i++) {
+          //Vintages may have both travel time and AVO
+          int time = computeTime(modelSettings->getVintageYear(i), 
+                                 modelSettings->getVintageMonth(i),
+                                 modelSettings->getVintageDay(i));
+          //Activate below when travel time is ready.
+          //Travel time ebefore AVO for same vintage.
+          //if(travel time for this vintage)
+          //timeLine_->AddEvent(time, TimeLine::TRAVEL_TIME, i);
+          if(modelSettings->getNumberOfAngles(i) > 0) //Check for AVO data, could be pure travel time.
+            timeLine_->AddEvent(time, TimeLine::AVO, i);
+        }
       }
     }
     failedLoadingModel = failedSimbox  || failedDepthConv;
@@ -2399,4 +2423,38 @@ ModelGeneral::createFFTGrid(int nx, int ny, int nz, int nxp, int nyp, int nzp, b
     fftGrid =  new FFTGrid(nx, ny, nz, nxp, nyp, nzp);
 
   return(fftGrid);
+}
+
+int 
+ModelGeneral::computeTime(int year, int month, int day) const
+{
+  if(year == IMISSING)
+    return(0);
+
+  int deltaYear = year-1900; //Ok baseyear.
+  int time = 365*deltaYear+deltaYear/4; //Leap years.
+  if(month == IMISSING)
+    time += 182;
+  else {
+    std::vector<int> accDays(12,0);
+    accDays[1]  = accDays[0]  + 31;
+    accDays[2]  = accDays[1]  + 28;
+    accDays[3]  = accDays[2]  + 31;
+    accDays[4]  = accDays[3]  + 30;
+    accDays[5]  = accDays[4]  + 31;
+    accDays[6]  = accDays[5]  + 30;
+    accDays[7]  = accDays[6]  + 31;
+    accDays[8]  = accDays[7]  + 31;
+    accDays[9]  = accDays[8]  + 30;
+    accDays[10] = accDays[9]  + 31;
+    accDays[11] = accDays[10] + 30;
+    
+    time += accDays[month];
+
+    if(day == IMISSING)
+      time += 15;
+    else
+      time += day;
+  }
+  return(time);
 }

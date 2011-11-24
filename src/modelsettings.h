@@ -35,6 +35,7 @@ public:
   bool                             getUseVpVsBackground(void)           const { return useVpVsBackground_                         ;}
   int                              getNumberOfAngles(int i)             const { return static_cast<int>(timeLapseAngle_[i].size());} 
   int                              getNumberOfTimeLapses(void)          const { return static_cast<int>(timeLapseAngle_.size())   ;}
+  int                              getNumberOfVintages(void)            const { return static_cast<int>(vintageYear_.size())      ;}
   int                              getVintageYear(int i)                const { return vintageYear_[i]                            ;}   
   int                              getVintageMonth(int i)               const { return vintageMonth_[i]                           ;}
   int                              getVintageDay(int i)                 const { return vintageDay_[i]                             ;}

@@ -5,7 +5,6 @@
 
 class TimeLine {
 public:
-
   TimeLine();
 
   ~TimeLine();
