@@ -92,7 +92,7 @@ CravaAppl::Main(int /*argc*/, char ** /*argv*/) {
 #endif
   LicenseSystem *license_system = LicenseSystem::Instance();
 
-  Feature& feature = FEATURE_SEISMIC; //TODO change to FEATURE_INVERSION when ready
+  Feature& feature = FEATURE_INVERSION_EXE;
   if (feature.GetState() == Feature::NOTEXIST ||
       !license_system->CheckOut(&feature)) {
     fprintf(stderr,"Can't check out licence feature %s\n",feature.GetFullName().toLatin1().constData());
@@ -255,7 +255,7 @@ int main(int argc, char** argv)
           corr->writeFilePostCovGrids(modelGeneral->getTimeSimbox());
         }
 
-        if(modelSettings->getRunFromPanel() == false || modelSettings->getEstimateFaciesProb()==true) {
+        if(modelSettings->getRunFromPanel() == false || modelSettings->getEstimateFaciesProb() == true) {
           int activeAngles = 0; //How many dimensions for local noise interpolation? Turn off for now.
           if(modelSettings->getUseLocalNoise()==true)
             activeAngles = modelSettings->getNumberOfAngles();
@@ -268,8 +268,6 @@ int main(int argc, char** argv)
                                       crava,
                                       modelAVOdynamic->getLocalNoiseScales());
         }
-        // FilterWellLogs * filteredlogs = NULL;
-        //crava->filterLogs(modelGeneral->getTimeSimboxConstThick(),filteredlogs);
 
         if (modelSettings->getEstimateFaciesProb()) {
           bool useFilter = modelSettings->getUseFilterForFaciesProb();
@@ -336,7 +334,7 @@ int main(int argc, char** argv)
   }
 
 #if defined(COMPILE_STORM_MODULES_FOR_RMS)
-  Feature& feature = FEATURE_SEISMIC; //TODO change to FEATURE_INVERSION when ready
+  Feature& feature = FEATURE_INVERSION_EXE;
   LicenseSystem::Instance()->CheckIn(&feature);
 #endif
 
