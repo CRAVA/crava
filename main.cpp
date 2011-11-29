@@ -53,20 +53,17 @@ int main(int argc, char** argv)
 
   try
   {
-    InputFiles * inputFiles;
     XmlModelFile modelFile(argv[1]);
-    inputFiles     = modelFile.getInputFiles();
-    ModelSettings * modelSettings = modelFile.getModelSettings();
 
-    bool failedModelFile    = false;
-    bool failedInputFiles   = false;
-    bool failedLoadingModel = false;
-
-    ModelGeneral    * modelGeneral    = NULL;
-    ModelAVOStatic  * modelAVOstatic  = NULL;
+    InputFiles     * inputFiles     = modelFile.getInputFiles();
+    ModelSettings  * modelSettings  = modelFile.getModelSettings();
+    ModelGeneral   * modelGeneral   = NULL;
+    ModelAVOStatic * modelAVOstatic = NULL;
 
     if (modelFile.getParsingFailed()) {
-      failedModelFile = true;
+      LogKit::SetFileLog(IO::FileLog()+IO::SuffixTextFiles(), modelSettings->getLogLevel());
+      LogKit::EndBuffering();
+      return(1);
     }
    
     std::string errTxt = inputFiles->addInputPathAndCheckFiles();
@@ -74,84 +71,92 @@ int main(int argc, char** argv)
       LogKit::WriteHeader("Error opening files");
       LogKit::LogMessage(LogKit::Error, "\n"+errTxt);
       LogKit::LogFormatted(LogKit::Error,"\nAborting\n");
-      failedInputFiles = true;
+      LogKit::SetFileLog(IO::FileLog()+IO::SuffixTextFiles(), modelSettings->getLogLevel());
+      LogKit::EndBuffering();
+      return(1);
     }
-    
+
     Simbox * timeBGSimbox   = NULL;
     SeismicParametersHolder seismicParameters;
  
-    if(!failedModelFile && !failedInputFiles){
-
-      setupStaticModels(modelGeneral, modelAVOstatic, modelSettings, inputFiles, timeBGSimbox);
- 
-      failedLoadingModel =  modelGeneral    == NULL || modelGeneral->getFailed()   || 
-                            modelAVOstatic  == NULL || modelAVOstatic->getFailed();
-
-      if(failedModelFile || failedInputFiles || failedLoadingModel)
+    setupStaticModels(modelGeneral, 
+                      modelAVOstatic, 
+                      modelSettings, 
+                      inputFiles, 
+                      timeBGSimbox);
+    
+    if(modelGeneral   == NULL || modelGeneral->getFailed()   || 
+       modelAVOstatic == NULL || modelAVOstatic->getFailed())
+      return(1);
+    
+    if(modelGeneral->getTimeLine() == NULL) {//Forward modelling.
+      bool failed = doFirstAVOInversion(modelSettings, 
+                                        modelGeneral, 
+                                        modelAVOstatic, 
+                                        seismicParameters, 
+                                        inputFiles, 
+                                        0, 
+                                        timeBGSimbox);
+      if(failed)
         return(1);
-
-      bool failedFirst = false;
-
-      int eventType;
-      int eventIndex;
-      int oldTime;
-      if(modelGeneral->getTimeLine() == NULL) {//Forward modelling.
-        bool failed = doFirstAVOInversion(modelSettings, modelGeneral, modelAVOstatic, seismicParameters, inputFiles, 0, timeBGSimbox);
-        if(failed == true || errTxt != "")
-          return(1);
-      }
-      else {
-        modelGeneral->getTimeLine()->GetNextEvent(eventType, eventIndex, oldTime);
-        switch(eventType) {
-          case TimeLine::AVO :
-            failedFirst = doFirstAVOInversion(modelSettings, modelGeneral, modelAVOstatic, seismicParameters, inputFiles, eventIndex, timeBGSimbox);
-            break;
-          case TimeLine::TRAVEL_TIME :
-          case TimeLine::GRAVITY :
-            errTxt += "Error: Asked for inversion type that is not implemented yet.\n";
-            break;
-          default :
-            errTxt += "Error: Unknown inverstion type.\n";
-            break;
-        }
-   
-        if(failedFirst == true || errTxt != "")
-          return(1);
-
-        if(timeBGSimbox != NULL)
-          delete timeBGSimbox;
-
-        int time;
-        while(modelGeneral->getTimeLine()->GetNextEvent(eventType, eventIndex, time) == true) {
-          //Advance time (time-oldTime);
-          bool failed;
-          switch(eventType) {
-            case TimeLine::AVO :
-              failed = doTimeLapseAVOInversion(modelSettings, modelGeneral, modelAVOstatic, inputFiles, seismicParameters, eventIndex);
-              break;
-            case TimeLine::TRAVEL_TIME :
-            case TimeLine::GRAVITY :
-              failed = true;
-              break;
-            default :
-              failed = true;
-              break;
-          }
-          if(failed == true)
-            return(1);
-        }
-      }
     }
     else {
-      LogKit::SetFileLog(IO::FileLog()+IO::SuffixTextFiles(), modelSettings->getLogLevel());
-      LogKit::EndBuffering();
+      int  eventType;
+      int  eventIndex;
+      int  oldTime;      
+      bool failedFirst = false;
+      modelGeneral->getTimeLine()->GetNextEvent(eventType, eventIndex, oldTime);
+      switch(eventType) {
+      case TimeLine::AVO :
+        failedFirst = doFirstAVOInversion(modelSettings, 
+                                          modelGeneral, 
+                                          modelAVOstatic, 
+                                          seismicParameters, 
+                                          inputFiles, 
+                                          eventIndex, 
+                                          timeBGSimbox);
+        break;
+      case TimeLine::TRAVEL_TIME :
+      case TimeLine::GRAVITY :
+        errTxt += "Error: Asked for inversion type that is not implemented yet.\n";
+        break;
+      default :
+        errTxt += "Error: Unknown inverstion type.\n";
+        break;
+      }
+      
+      if(failedFirst == true || errTxt != "")
+        return(1);
+      
+      if(timeBGSimbox != NULL)
+        delete timeBGSimbox;
+      
+      int time;
+      while(modelGeneral->getTimeLine()->GetNextEvent(eventType, eventIndex, time) == true) {
+        //Advance time (time-oldTime);
+        bool failed;
+        switch(eventType) {
+        case TimeLine::AVO :
+          failed = doTimeLapseAVOInversion(modelSettings, modelGeneral, modelAVOstatic, inputFiles, seismicParameters, eventIndex);
+          break;
+        case TimeLine::TRAVEL_TIME :
+        case TimeLine::GRAVITY :
+          failed = true;
+          break;
+        default :
+          failed = true;
+          break;
+        }
+        if(failed)
+          return(1);
+      }
     }
-
-    if (FFTGrid::getMaxAllowedGrids() != FFTGrid::getMaxAllocatedGrids() && modelSettings->getDoInversion()) {
-      LogKit::LogFormatted(LogKit::DebugLow,"\nWARNING: A memory requirement inconsistency has been detected:"); 
-      LogKit::LogFormatted(LogKit::DebugLow,"\n            Maximum number of grids requested  :  %2d",FFTGrid::getMaxAllowedGrids()); 
-      LogKit::LogFormatted(LogKit::DebugLow,"\n            Maximum number of grids allocated  :  %2d",FFTGrid::getMaxAllocatedGrids());
-      TaskList::addTask("The memory estimate in CRAVA failed. The developers would be interested to know about this, so if you inform support about this, and provide your xml-file, it would be appreciated.");
+    
+    if (modelSettings->getDoInversion() && FFTGrid::getMaxAllowedGrids() != FFTGrid::getMaxAllocatedGrids()) {
+      LogKit::LogFormatted(LogKit::Warning,"\nWARNING: A memory requirement inconsistency has been detected:");
+      LogKit::LogFormatted(LogKit::Warning,"\n            Maximum number of grids requested  :  %2d",FFTGrid::getMaxAllowedGrids());
+      LogKit::LogFormatted(LogKit::Warning,"\n            Maximum number of grids allocated  :  %2d",FFTGrid::getMaxAllocatedGrids());
+      TaskList::addTask("The memory usage estimate failed. Please send your XML-model file and\nthe logFile.txt to the CRAVA developers.");
     }
     
     Timings::setTimeTotal(wall,cpu);
