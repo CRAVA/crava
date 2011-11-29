@@ -17,8 +17,6 @@
 #endif
 #endif
 
-
-
 #include "lib/timekit.hpp"
 #include "lib/utils.h"
 
@@ -144,73 +142,65 @@ int main(int argc, char** argv)
 
   try
   {
-    {
-    InputFiles * inputFiles;
     XmlModelFile modelFile(argv[1]);
-    inputFiles     = modelFile.getInputFiles();
-    ModelSettings * modelSettings = modelFile.getModelSettings();
-
-    bool failedModelFile    = false;
-    bool failedInputFiles   = false;
-    bool failedLoadingModel = false;
-
+    
+    InputFiles      * inputFiles      = modelFile.getInputFiles();
+    ModelSettings   * modelSettings   = modelFile.getModelSettings();
     ModelGeneral    * modelGeneral    = NULL;
     ModelAVOStatic  * modelAVOstatic  = NULL;
     ModelAVODynamic * modelAVOdynamic = NULL;
-
+    
     if (modelFile.getParsingFailed()) {
-      failedModelFile = true;
+      LogKit::SetFileLog(IO::FileLog()+IO::SuffixTextFiles(), modelSettings->getLogLevel());
+      LogKit::EndBuffering();
+      return(1);
     }
-
+    
     std::string errTxt = inputFiles->addInputPathAndCheckFiles();
     if(errTxt != "") {
       LogKit::WriteHeader("Error opening files");
       LogKit::LogMessage(LogKit::Error, "\n"+errTxt);
       LogKit::LogFormatted(LogKit::Error,"\nAborting\n");
-      failedInputFiles = true;
-    }
-
-    if(!failedModelFile && !failedInputFiles){
-      // Construct ModelGeneral object first.
-      // For each data type, construct the static model class before the dynamic.
-      Simbox * timeBGSimbox   = NULL;
-      modelGeneral    = new ModelGeneral(modelSettings, inputFiles, timeBGSimbox);
-      modelAVOstatic  = new ModelAVOStatic(modelSettings,
-                                           inputFiles,
-                                           modelGeneral->getFailedDetails(),
-                                           modelGeneral->getTimeSimbox(),
-                                           timeBGSimbox,
-                                           modelGeneral->getTimeSimboxConstThick(),
-                                           modelGeneral->getRandomGen());
-      // Wells are adjusted by ModelAVODynamic constructor.
-      modelAVOdynamic = new ModelAVODynamic(modelSettings, inputFiles,
-                                            modelGeneral->getFailedDetails(),
-                                            modelAVOstatic->getFailedDetails(),
-                                            modelGeneral->getTimeSimbox(),
-                                            timeBGSimbox,
-                                            modelGeneral->getRandomGen(),
-                                            modelGeneral->getTimeDepthMapping(),
-                                            modelGeneral->getTimeCutMapping(),
-                                            modelAVOstatic->getWaveletEstimInterval(),
-                                            modelAVOstatic->getWellMoveInterval(),
-                                            modelAVOstatic->getFaciesEstimInterval(),
-                                            modelAVOstatic);
-      if(timeBGSimbox != NULL)
-        delete timeBGSimbox;
-    }
-    else {
       LogKit::SetFileLog(IO::FileLog()+IO::SuffixTextFiles(), modelSettings->getLogLevel());
       LogKit::EndBuffering();
+      return(1);
     }
+    
+    // Construct ModelGeneral object first.
+    // For each data type, construct the static model class before the dynamic.
+    Simbox * timeBGSimbox   = NULL;
+    modelGeneral    = new ModelGeneral(modelSettings, inputFiles, timeBGSimbox);
+    modelAVOstatic  = new ModelAVOStatic(modelSettings,
+                                         inputFiles,
+                                         modelGeneral->getFailedDetails(),
+                                         modelGeneral->getTimeSimbox(),
+                                         timeBGSimbox,
+                                         modelGeneral->getTimeSimboxConstThick(),
+                                         modelGeneral->getRandomGen());
+    // Wells are adjusted by ModelAVODynamic constructor.
+    modelAVOdynamic = new ModelAVODynamic(modelSettings, inputFiles,
+                                          modelGeneral->getFailedDetails(),
+                                          modelAVOstatic->getFailedDetails(),
+                                          modelGeneral->getTimeSimbox(),
+                                          timeBGSimbox,
+                                          modelGeneral->getRandomGen(),
+                                          modelGeneral->getTimeDepthMapping(),
+                                          modelGeneral->getTimeCutMapping(),
+                                          modelAVOstatic->getWaveletEstimInterval(),
+                                          modelAVOstatic->getWellMoveInterval(),
+                                          modelAVOstatic->getFaciesEstimInterval(),
+                                          modelAVOstatic);
+    if(timeBGSimbox != NULL)
+      delete timeBGSimbox;
+    
     delete inputFiles;
-    failedLoadingModel =  modelGeneral    == NULL || modelGeneral->getFailed()   ||
-                          modelAVOstatic  == NULL || modelAVOstatic->getFailed() ||
-                          modelAVOdynamic == NULL || modelAVOdynamic->getFailed();
-
-    if(failedModelFile || failedInputFiles || failedLoadingModel)
-        return(1);
-
-    Crava         * crava         = NULL;
+    
+    if (modelGeneral    == NULL || modelGeneral->getFailed()   ||
+        modelAVOstatic  == NULL || modelAVOstatic->getFailed() ||
+        modelAVOdynamic == NULL || modelAVOdynamic->getFailed())
+      return(1);
+    
+    Crava * crava = NULL;
 
     if(!modelSettings->getForwardModeling())
     {
@@ -304,11 +294,11 @@ int main(int argc, char** argv)
       delete crava;
     }
 
-    if (FFTGrid::getMaxAllowedGrids() != FFTGrid::getMaxAllocatedGrids() && modelSettings->getDoInversion()) {
-      LogKit::LogFormatted(LogKit::DebugLow,"\nWARNING: A memory requirement inconsistency has been detected:");
-      LogKit::LogFormatted(LogKit::DebugLow,"\n            Maximum number of grids requested  :  %2d",FFTGrid::getMaxAllowedGrids());
-      LogKit::LogFormatted(LogKit::DebugLow,"\n            Maximum number of grids allocated  :  %2d",FFTGrid::getMaxAllocatedGrids());
-      TaskList::addTask("The memory estimate in CRAVA failed. The developers would be interested to know about this, so if you inform support about this, and provide your xml-file, it would be appreciated.");
+    if (modelSettings->getDoInversion() && FFTGrid::getMaxAllowedGrids() != FFTGrid::getMaxAllocatedGrids()) {
+      LogKit::LogFormatted(LogKit::Warning,"\nWARNING: A memory requirement inconsistency has been detected:");
+      LogKit::LogFormatted(LogKit::Warning,"\n            Maximum number of grids requested  :  %2d",FFTGrid::getMaxAllowedGrids());
+      LogKit::LogFormatted(LogKit::Warning,"\n            Maximum number of grids allocated  :  %2d",FFTGrid::getMaxAllocatedGrids());
+      TaskList::addTask("The memory usage estimate failed. Please send your XML-model file and\nthe logFile.txt to the CRAVA developers.");
     }
 
     Timings::setTimeTotal(wall,cpu);
@@ -326,7 +316,6 @@ int main(int argc, char** argv)
     LogKit::LogFormatted(LogKit::Low,"\n*** CRAVA finished ***\n");
     LogKit::EndLog();
 
-    }
   }
   catch (std::bad_alloc& ba)
   {
