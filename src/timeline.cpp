@@ -9,6 +9,16 @@ TimeLine::TimeLine()
 
 TimeLine::~TimeLine() {}
 
+
+void
+TimeLine::ReSet()
+{
+  current_time_  = time_.begin();
+  current_event_ = event_type_.begin();
+  current_index_ = event_data_index_.begin();
+}
+
+
 void
 TimeLine::AddEvent(int time, int event_type, int event_data_index)
 {

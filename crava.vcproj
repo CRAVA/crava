@@ -601,6 +601,10 @@
 					</FileConfiguration>
 				</File>
 				<File
+					RelativePath=".\src\correlatedrocksamples.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\src\covgrid2d.cpp"
 					>
 				</File>
@@ -6161,23 +6165,11 @@
 					>
 				</File>
 				<File
-					RelativePath=".\rplib\fluidsubstitution.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\rplib\mineral.cpp"
-					>
-				</File>
-				<File
 					RelativePath=".\rplib\multinormalwithtrend.cpp"
 					>
 				</File>
 				<File
 					RelativePath=".\rplib\rock.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\rplib\rockphysics.cpp"
 					>
 				</File>
 				<File
@@ -6487,6 +6479,10 @@
 				</File>
 				<File
 					RelativePath="src\corr.h"
+					>
+				</File>
+				<File
+					RelativePath=".\src\correlatedrocksamples.h"
 					>
 				</File>
 				<File
@@ -7074,19 +7070,35 @@
 				Name="rplib"
 				>
 				<File
+					RelativePath=".\rplib\distributionsgeochemical.h"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\distributionsgeochemicaldem.h"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\distributionsrockt0.h"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\distributionsrockt0dem.h"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\distributionssaturation.h"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\distributionssaturationexmpl.h"
+					>
+				</File>
+				<File
 					RelativePath=".\rplib\distributionwithtrend.h"
 					>
 				</File>
 				<File
 					RelativePath=".\rplib\fluid.h"
-					>
-				</File>
-				<File
-					RelativePath=".\rplib\fluidsubstitution.h"
-					>
-				</File>
-				<File
-					RelativePath=".\rplib\mineral.h"
 					>
 				</File>
 				<File
@@ -7098,7 +7110,7 @@
 					>
 				</File>
 				<File
-					RelativePath=".\rplib\rockphysics.h"
+					RelativePath=".\rplib\rockdem.h"
 					>
 				</File>
 				<File
