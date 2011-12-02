@@ -260,6 +260,7 @@ ModelAVOStatic::processWells(WellData          **& wells,
           validIndex[i] = true;
           wells[i]->setWrongLogEntriesUndefined(nInvalidAlpha[i], nInvalidBeta[i], nInvalidRho[i]);
           wells[i]->filterLogs();
+          wells[i]->findMeanVsVp(waveletEstimInterval_);
           wells[i]->lookForSyntheticVsLog(rankCorr[i]);
           wells[i]->calculateDeviation(devAngle[i], timeSimbox);
           wells[i]->setBlockedLogsOrigThick( new BlockedLogs(wells[i], timeSimbox, randomGen, modelSettings->getRunFromPanel()) );

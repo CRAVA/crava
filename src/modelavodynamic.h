@@ -142,8 +142,8 @@ private:
                                                 ModelSettings * modelSettings);
   int              getWaveletFileFormat(const std::string & fileName,
                                         std::string & errText);
-  double           vsvpFromWells(WellData     ** wells,
-                                 ModelSettings * modelSettings);
+  double           vsvpFromWells(WellData ** wells,
+                                 int         nWells);
   void             readAndWriteLocalGridsToFile(const std::string   & fileName,
                                                 const std::string   & type,
                                                 const float           scaleFactor,

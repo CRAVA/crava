@@ -1679,23 +1679,38 @@ void WellData::moveWell(Simbox * timeSimbox, double deltaX, double deltaY, float
 
 }
 
-void WellData::getMeanVsVp(float & muA, float & muB)
+void WellData::findMeanVsVp(const std::vector<Surface*> & waveletEstimInterval)
 {
-  int i;
-  int n = 0;
+  meanVsVp_ = 0.0f;
+  nVsVp_    = 0;
 
-  muA = 0;
-  muB = 0;
+  bool * active_cell = new bool[nd_];
 
-  for( i=0; i<nd_; i++ )
-  {
-    if (alpha_background_resolution_[i] != RMISSING && beta_background_resolution_[i] != RMISSING )
-    {
-      muA += alpha_background_resolution_[i];
-      muB += beta_background_resolution_[i];
-      n += 1;
+  for(int i=0; i < nd_; i++) {
+    active_cell[i] = true;
+  }
+  
+  if (waveletEstimInterval.size() == 2) {
+    for(int i=0; i < nd_; i++) {
+      const double zTop  = waveletEstimInterval[0]->GetZ(xpos_[i], ypos_[i]);
+      const double zBase = waveletEstimInterval[1]->GetZ(xpos_[i], ypos_[i]);
+      if ( (zpos_[i] < zTop) || (zpos_[i] > zBase) )
+        active_cell[i] = false;
     }
   }
-  muA /= n;
-  muB /= n;
+
+  for(int i=0; i < nd_; i++) {
+    if (alpha_background_resolution_[i] != RMISSING && 
+        beta_background_resolution_[i]  != RMISSING &&
+        active_cell[i]) {
+      meanVsVp_ += beta_background_resolution_[i]/alpha_background_resolution_[i];
+      nVsVp_    += 1;
+    }
+  }
+  
+  meanVsVp_ /= nVsVp_;
+
+  LogKit::LogFormatted(LogKit::Low,"   Vp/Vs ratio in well is %5.3f\n",1.0f/meanVsVp_);
+
+  delete [] active_cell;
 }

@@ -904,7 +904,7 @@ ModelAVODynamic::processReflectionMatrix(float                  **& reflectionMa
   }
   else if (useWells) {
     LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix with Vp and Vs from wells\n");
-    double vsvp = vsvpFromWells(wells, modelSettings);
+    double vsvp = vsvpFromWells(wells, modelSettings->getNumberOfWells());
     setupDefaultReflectionMatrix(reflectionMatrix, vsvp, modelSettings);
   }
   else {
@@ -914,7 +914,7 @@ ModelAVODynamic::processReflectionMatrix(float                  **& reflectionMa
       else
         LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix with Vp and Vs from background model\n");
 
-      double vsvp  = background->getMeanVsVp();
+      double vsvp = background->getMeanVsVp();
       setupDefaultReflectionMatrix(reflectionMatrix, vsvp, modelSettings);
     }
     else {
@@ -977,26 +977,19 @@ ModelAVODynamic::setupDefaultReflectionMatrix(float       **& reflectionMatrix,
   }
 }
 
-double ModelAVODynamic::vsvpFromWells(WellData     ** wells,
-                                      ModelSettings * modelSettings)
+double ModelAVODynamic::vsvpFromWells(WellData ** wells,
+                                      int         nWells)
 {
-  int    i;
-  int    nWells = modelSettings->getNumberOfWells();
-  double vsvp;
-  float  muA;
-  float  muB;
-  float  vp = 0;
-  float  vs = 0;
+  int   N      = 0;
+  float VsVp   = 0.0f;
 
-  for( i=0; i<nWells; i++ )
-  {
-    wells[i]->getMeanVsVp(muA, muB);
-    vp += muA;
-    vs += muB;
+  for(int i=0 ; i < nWells ; i++) {
+    N    += wells[i]->getNumberOfVsVpSamples();
+    VsVp += wells[i]->getMeanVsVp()*N;
   }
+  VsVp /= N;
 
-  vsvp = vs/vp;
-  return vsvp;
+  return static_cast<double>(VsVp);
 }
 
 void

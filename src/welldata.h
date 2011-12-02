@@ -22,125 +22,130 @@ public:
            bool                             faciesLogGiven);
   ~WellData(void);
 
-  const float   * getAlpha(int &nData) const;
-  const float   * getBeta(int &nData) const;
-  const float   * getRho(int &nData) const;
-  const int     * getFacies(int &nData) const;
-  const float   * getAlphaBackgroundResolution(int &nData) const;
-  const float   * getBetaBackgroundResolution(int &nData) const;
-  const float   * getRhoBackgroundResolution(int &nData) const;
-  const float   * getAlphaSeismicResolution(int &nData) const;
-  const float   * getBetaSeismicResolution(int &nData) const;
-  const float   * getRhoSeismicResolution(int &nData) const;
-  const double  * getXpos(int &nData) const;
-  const double  * getYpos(int &nData) const;
-  const double  * getZpos(int &nData) const;
-  const double  * getMD(int &nData) const;
-  const std::string   getWellname(void)              const { return wellname_                      ;}
-  const bool      hasSyntheticVsLog(void)            const { return(realVsLog_ == 0)               ;}
-  const bool      isDeviated(void)                   const { return isDeviated_                    ;}
-  const bool      getUseForFaciesProbabilities(void) const { return(useForFaciesProbabilities_ > 0);}
-  const bool      getUseForWaveletEstimation(void)   const { return(useForWaveletEstimation_ > 0)  ;}
-  const bool      getUseForBackgroundTrend(void)     const { return(useForBackgroundTrend_ > 0)    ;}
-  bool            isFaciesLogDefined(void) const;
-  int             getNFacies(void)                   const { return nFacies_                   ;}
-  int           * getFaciesNr(void)                  const { return faciesNr_                  ;}
-  int             getFaciesNr(int i)                 const { return faciesNr_[i]               ;}
-  std::string     getFaciesName(int i)               const { return faciesNames_[i]            ;}
-  void            getMinMaxFnr(int &min, int &max) const;
-  void            getMeanVsVp(float & muA, float & muB);
+  const float       * getAlpha(int &nData) const;
+  const float       * getBeta(int &nData) const;
+  const float       * getRho(int &nData) const;
+  const int         * getFacies(int &nData) const;
+  const float       * getAlphaBackgroundResolution(int &nData) const;
+  const float       * getBetaBackgroundResolution(int &nData) const;
+  const float       * getRhoBackgroundResolution(int &nData) const;
+  const float       * getAlphaSeismicResolution(int &nData) const;
+  const float       * getBetaSeismicResolution(int &nData) const;
+  const float       * getRhoSeismicResolution(int &nData) const;
+  const double      * getXpos(int &nData) const;
+  const double      * getYpos(int &nData) const;
+  const double      * getZpos(int &nData) const;
+  const double      * getMD(int &nData) const;
+  const std::string   getWellname(void)                  const { return wellname_                      ;}
+  float               getMeanVsVp(void)                  const { return meanVsVp_                      ;}
+  int                 getNumberOfVsVpSamples(void)       const { return nVsVp_                         ;}
+  bool                hasSyntheticVsLog(void)            const { return(realVsLog_ == 0)               ;}
+  bool                isDeviated(void)                   const { return isDeviated_                    ;}
+  bool                getUseForFaciesProbabilities(void) const { return(useForFaciesProbabilities_ > 0);}
+  bool                getUseForWaveletEstimation(void)   const { return(useForWaveletEstimation_ > 0)  ;}
+  bool                getUseForBackgroundTrend(void)     const { return(useForBackgroundTrend_ > 0)    ;}
+  bool                isFaciesLogDefined(void) const;
+  int                 getNFacies(void)                   const { return nFacies_                   ;}
+  int               * getFaciesNr(void)                  const { return faciesNr_                  ;}
+  int                 getFaciesNr(int i)                 const { return faciesNr_[i]               ;}
+  std::string         getFaciesName(int i)               const { return faciesNames_[i]            ;}
+  void                getMinMaxFnr(int &min, int &max) const;
+  void                findMeanVsVp(const std::vector<Surface*> & waveletEstimInterval);
 
-  BlockedLogs   * getBlockedLogsOrigThick(void)      const { return blockedLogsOrigThick_  ;}
-  BlockedLogs   * getBlockedLogsConstThick(void)     const { return blockedLogsConstThick_ ;}
-  BlockedLogs   * getBlockedLogsExtendedBG(void)     const { return blockedLogsExtendedBG_ ;}
+  BlockedLogs       * getBlockedLogsOrigThick(void)      const { return blockedLogsOrigThick_  ;}
+  BlockedLogs       * getBlockedLogsConstThick(void)     const { return blockedLogsConstThick_ ;}
+  BlockedLogs       * getBlockedLogsExtendedBG(void)     const { return blockedLogsExtendedBG_ ;}
 
-  void            deleteBlockedLogsOrigThick(void)           { delete blockedLogsOrigThick_ ;}
-  void            setBlockedLogsOrigThick(BlockedLogs * bl)  { blockedLogsOrigThick_  = bl  ;}
-  void            setBlockedLogsConstThick(BlockedLogs * bl) { blockedLogsConstThick_ = bl  ;}
-  void            setBlockedLogsExtendedBG(BlockedLogs * bl) { blockedLogsExtendedBG_ = bl  ;}
+  void                deleteBlockedLogsOrigThick(void)           { delete blockedLogsOrigThick_ ;}
+  void                setBlockedLogsOrigThick(BlockedLogs * bl)  { blockedLogsOrigThick_  = bl  ;}
+  void                setBlockedLogsConstThick(BlockedLogs * bl) { blockedLogsConstThick_ = bl  ;}
+  void                setBlockedLogsExtendedBG(BlockedLogs * bl) { blockedLogsExtendedBG_ = bl  ;}
 
-  int             getNd() const;
-  int             checkError(std::string & errText);
-  int             checkSimbox(Simbox *simbox);
-  bool            removeDuplicateLogEntries(const Simbox * simbox, int & nMerges);
-  void            setWrongLogEntriesUndefined(int & count_alpha, int & count_beta, int & count_rho);
-  void            filterLogs(void);
-  void            lookForSyntheticVsLog(float & rank_correlation);
-  void            calculateDeviation(float  & devAngle,
-                                     Simbox * timeSimbox);
-  void            countFacies(Simbox *simbox, int * faciesCount);
-  void            writeWell(int wellFormat);
-  void            writeRMSWell(void);
-  void            writeNorsarWell(void);
-  void            moveWell(Simbox*timeSimbox, double deltaX, double deltaY, float kMove);
+  int                 getNd(void) const;
+  int                 checkError(std::string & errText);
+  int                 checkSimbox(Simbox *simbox);
+  bool                removeDuplicateLogEntries(const Simbox * simbox, int & nMerges);
+  void                setWrongLogEntriesUndefined(int & count_alpha, int & count_beta, int & count_rho);
+  void                filterLogs(void);
+  void                lookForSyntheticVsLog(float & rank_correlation);
+  void                calculateDeviation(float  & devAngle,
+                                         Simbox * timeSimbox);
+  void                countFacies(Simbox *simbox, int * faciesCount);
+  void                writeWell(int wellFormat);
+  void                writeRMSWell(void);
+  void                writeNorsarWell(void);
+  void                moveWell(Simbox*timeSimbox, double deltaX, double deltaY, float kMove);
 
-  static void     applyFilter(float *log_filtered, float *log_interpolated, int nt, double dt_milliseconds, float maxHz);
-  static void     interpolateLog(float *log_interpolated, const float *log_raw, int nd);
-  int             isFaciesOk(){return faciesok_;};
+  static void         applyFilter(float *log_filtered, float *log_interpolated, int nt, double dt_milliseconds, float maxHz);
+  static void         interpolateLog(float *log_interpolated, const float *log_raw, int nd);
+  int                 isFaciesOk(){return faciesok_;};
+
 private:
-  void            readRMSWell(const std::string & wellFileName, const std::vector<std::string> & logNames,
-                              const std::vector<bool>  & inverseVelocity, bool faciesLogGiven);
-  void            readNorsarWell(const std::string & wellFileName, const std::vector<std::string> & logNames,
-                                 const std::vector<bool>  & inverseVelocity, bool faciesLogGiven);
-  void            mergeCells(const std::string & name, double * log_resampled, double * log,
-                             int ii, int istart, int iend, bool debug);
-  void            mergeCells(const std::string & name, float * log_resampled, float * log,
-                            int ii, int istart, int iend, bool debug);
-  void            mergeCells(const std::string & name, int * log_resampled, int * log,
-                             int ii, int istart, int iend, bool debug);
-  void            mergeCellsDiscrete(const std::string & name, int * log_resampled, int * log, int ii,
-                                     int istart, int iend, bool printToScreen);
-  bool            resampleTime(double * time_resampled, int nd, double & dt); //True if monotonously increasing well.
-                                                                              //Otherwise, no resampling done.
-  void            resampleLog(float * log_resampled, const float * log_interpolated,
-                              const double * time, const double * time_resampled,
-                              int nd, double dt);
+  void                readRMSWell(const std::string & wellFileName, const std::vector<std::string> & logNames,
+                                  const std::vector<bool>  & inverseVelocity, bool faciesLogGiven);
+  void                readNorsarWell(const std::string & wellFileName, const std::vector<std::string> & logNames,
+                                     const std::vector<bool>  & inverseVelocity, bool faciesLogGiven);
+  void                mergeCells(const std::string & name, double * log_resampled, double * log,
+                                 int ii, int istart, int iend, bool debug);
+  void                mergeCells(const std::string & name, float * log_resampled, float * log,
+                                int ii, int istart, int iend, bool debug);
+  void                mergeCells(const std::string & name, int * log_resampled, int * log,
+                                 int ii, int istart, int iend, bool debug);
+  void                mergeCellsDiscrete(const std::string & name, int * log_resampled, int * log, int ii,
+                                         int istart, int iend, bool printToScreen);
+  bool                resampleTime(double * time_resampled, int nd, double & dt); //True if monotonously increasing well.
+                                                                                  //Otherwise, no resampling done.
+  void                resampleLog(float * log_resampled, const float * log_interpolated,
+                                  const double * time, const double * time_resampled,
+                                  int nd, double dt);
 
-  ModelSettings * modelSettings_;
+  ModelSettings           * modelSettings_;
 
-  std::string     wellname_;
-  std::string     wellfilename_;                // wellname given in RMS well file
-
-  double          xpos0_;                       // x-coordinate from well file header
-  double          ypos0_;                       // y-coordinate from well file header
-  double        * xpos_;                        // x-coord. in well
-  double        * ypos_;                        // y-coord in well
-  double        * zpos_;                        // time step
-  double        * md_;
-
-  float         * alpha_;
-  float         * beta_;
-  float         * rho_;
-  int           * facies_;
-
-  float         * alpha_background_resolution_; // Vp  - filtered to background resolution
-  float         * beta_background_resolution_;  //
-  float         * rho_background_resolution_;   //
-
-  float         * alpha_seismic_resolution_;    // Vp  - filtered to seismic resolution
-  float         * beta_seismic_resolution_;     //
-  float         * rho_seismic_resolution_;      //
-
-  BlockedLogs   * blockedLogsOrigThick_;
-  BlockedLogs   * blockedLogsConstThick_;
-  BlockedLogs   * blockedLogsExtendedBG_;
-
-  int             useForFaciesProbabilities_;   //Uses the indicator enum from Modelsettings.
-  int             useForWaveletEstimation_;     //Uses the indicator enum from Modelsettings.
-  int             useForBackgroundTrend_;       //Uses the indicator enum from Modelsettings.
-
-  std::string     errTxt_;
-  int             error_;
-  int             timemissing_;
-  int             realVsLog_;                   //Uses the indicator enum from Modelsettings.
-  bool            isDeviated_;
-  int             nFacies_;
-  std::string     faciesLogName_;
-  std::vector<std::string> faciesNames_;
-
-  int           * faciesNr_;
-  int             nd_;                          // number of obs. in well
-  int             faciesok_;                    // all faciesnumbers read are present in header
+  std::string               wellname_;
+  std::string               wellfilename_;                // wellname given in RMS well file
+                       
+  double                    xpos0_;                       // x-coordinate from well file header
+  double                    ypos0_;                       // y-coordinate from well file header
+  double                  * xpos_;                        // x-coord. in well
+  double                  * ypos_;                        // y-coord in well
+  double                  * zpos_;                        // time step
+  double                  * md_;
+                       
+  float                   * alpha_;
+  float                   * beta_;
+  float                   * rho_;
+  int                     * facies_;
+                       
+  float                   * alpha_background_resolution_; // Vp  - filtered to background resolution
+  float                   * beta_background_resolution_;  //
+  float                   * rho_background_resolution_;   //
+                       
+  float                   * alpha_seismic_resolution_;    // Vp  - filtered to seismic resolution
+  float                   * beta_seismic_resolution_;     //
+  float                   * rho_seismic_resolution_;      //
+                       
+  BlockedLogs             * blockedLogsOrigThick_;
+  BlockedLogs             * blockedLogsConstThick_;
+  BlockedLogs             * blockedLogsExtendedBG_;
+                       
+  int                       useForFaciesProbabilities_;   //Uses the indicator enum from Modelsettings.
+  int                       useForWaveletEstimation_;     //Uses the indicator enum from Modelsettings.
+  int                       useForBackgroundTrend_;       //Uses the indicator enum from Modelsettings.
+                       
+  std::string               errTxt_;
+  int                       error_;
+  int                       timemissing_;
+  int                       realVsLog_;                   //Uses the indicator enum from Modelsettings.
+  bool                      isDeviated_;
+  float                     meanVsVp_;                    // Average Vs/Vp for this well 
+  int                       nVsVp_;                       // Number of samples behind Vs/Vp estimate
+                       
+  int                       nFacies_;
+  std::string               faciesLogName_;
+  std::vector<std::string>  faciesNames_;
+  int                     * faciesNr_;
+  int                       nd_;                          // number of obs. in well
+  int                       faciesok_;                    // all faciesnumbers read are present in header
 
 };
 
