@@ -965,11 +965,22 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 
 \subsubsection{\hbracket{vp-vs-ratio}}\newkw{vp-vs-ratio}
  \slist
-   \item \Description Value of Vp/Vs-ratio used in reflection
-     matrix. If not specified, the Vp/Vs-ratio is estimated from the
+   \item \Description Value of Vp/Vs ratio used in reflection
+     matrix. By default, the Vp/Vs ratio is estimated from the
      background model.
    \item \Argument Value
    \item \Default Not set
+   \elist
+     
+\subsubsection{\hbracket{vp-vs-ratio-from-wells}}\newkw{vp-vs-ratio-from-wells}
+ \slist
+   \item \Description If this command is given, the Vp/Vs ratio used
+     in the reflection matrix will be estimated from well data. By
+     default, the ratio is taken from the background model. If the
+     keyword \kw{wavelet-estimation-interval} has also been specified,
+     the estimate will be limited to that interval. 
+   \item \Argument 'yes' or 'no'
+   \item \Default 'no'
    \elist
      
 \subsubsection{\hbracket{maximum-relative-thickness-difference}}\newkw{maximum-relative-thickness-difference}
