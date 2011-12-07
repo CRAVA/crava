@@ -192,7 +192,7 @@ Wavelet1D::Wavelet1D(Simbox                       * simbox,
 
   if(nUsedWells == 0) {
     errCode = 1;
-    errTxt  += "Error: No wells left for wavelet estimation.\n";
+    errTxt  += "No wells left for wavelet estimation.\n";
   }
   else {
     std::vector<float> shiftWell(nWells);

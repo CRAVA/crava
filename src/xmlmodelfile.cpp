@@ -2437,6 +2437,7 @@ XmlModelFile::parseAdvancedSettings(TiXmlNode * node, std::string & errTxt)
   std::vector<std::string> legalCommands;
   legalCommands.push_back("fft-grid-padding");
   legalCommands.push_back("vp-vs-ratio");
+  legalCommands.push_back("vp-vs-ratio-from-wells");
   legalCommands.push_back("use-intermediate-disk-storage");
   legalCommands.push_back("maximum-relative-thickness-difference");
   legalCommands.push_back("frequency-band");
@@ -2455,10 +2456,19 @@ XmlModelFile::parseAdvancedSettings(TiXmlNode * node, std::string & errTxt)
 
   parseFFTGridPadding(root, errTxt);
 
-  float ratio;
+  float ratio = RMISSING;
   if(parseValue(root,"vp-vs-ratio", ratio, errTxt) == true)
     modelSettings_->setVpVsRatio(ratio);
 
+  bool ratio_from_wells = false;
+  if(parseBool(root,"vp-vs-ratio-from-wells", ratio_from_wells, errTxt) == true)
+    modelSettings_->setVpVsRatioFromWells(ratio_from_wells);
+
+  if (ratio_from_wells && ratio != RMISSING) {
+    errTxt += "You cannot both specify a Vp/Vs ratio (" + NRLib::ToString(ratio,2)
+              + ") and ask the ratio to be estimated from well data.\n";
+  }
+  
   bool fileGrid;
   if(parseBool(root, "use-intermediate-disk-storage", fileGrid, errTxt) == true)
     modelSettings_->setFileGrid(fileGrid);
@@ -2853,17 +2863,26 @@ XmlModelFile::checkConsistency(std::string & errTxt) {
     checkAngleConsistency(errTxt);
   checkIOConsistency(errTxt);
 
+  if (inputFiles_->getReflMatrFile() != "") {
+    if (modelSettings_->getVpVsRatio() != RMISSING) {
+      errTxt += "You cannot specify a Vp/Vs ratio when a reflection matrix is read from file";
+    }
+    else if (modelSettings_->getVpVsRatioFromWells()) {
+      errTxt += "You cannot ask the Vp/Vs ratio to be calculated from well data when a reflection matrix is read from file";
+    }
+  }
+
   if (modelSettings_->getVpVsRatio() != RMISSING) {
     double vpvs    = modelSettings_->getVpVsRatio();
     double vpvsMin = modelSettings_->getVpVsRatioMin();
     double vpvsMax = modelSettings_->getVpVsRatioMax();
     if (vpvs < vpvsMin) {
-      errTxt+="Specified Vp/Vs of "+NRLib::ToString(vpvs,2)
-        +" is less than minimum allowed value of "+NRLib::ToString(vpvsMin,2);
+      errTxt += "Specified Vp/Vs of "+NRLib::ToString(vpvs,2)
+                +" is less than minimum allowed value of "+NRLib::ToString(vpvsMin,2);
     }
     if (vpvs > vpvsMax) {
-      errTxt+="Specified Vp/Vs of "+NRLib::ToString(vpvs,2)
-        +" is larger than maximum allowed value of "+NRLib::ToString(vpvsMax,2);
+      errTxt += "Specified Vp/Vs of "+NRLib::ToString(vpvs,2)
+                +" is larger than maximum allowed value of "+NRLib::ToString(vpvsMax,2);
     }
   }
 }
@@ -3020,12 +3039,12 @@ XmlModelFile::checkIOConsistency(std::string & errTxt)
    TaskList::addTask("Remove <local-wavelets> from <wavelet-output> in the model file if local wavelets are not used.");
   }
   if (((modelSettings_->getWaveletFormatFlag() & IO::NORSARWAVELET)  > 0   ||
-      (modelSettings_->getWaveletFormatFlag() & IO::JASONWAVELET)     > 0 ) &&
-      (modelSettings_->getWaveletOutputFlag() & IO::LOCAL_WAVELETS)  == 0   &&
-      (modelSettings_->getWaveletOutputFlag() & IO::GLOBAL_WAVELETS) == 0   &&
-      (modelSettings_->getWaveletOutputFlag() & IO::WELL_WAVELETS)   == 0   &&
-      modelSettings_->getWaveletFormatManual() == true                      &&
-      modelSettings_->getEstimationMode() == false)
+       (modelSettings_->getWaveletFormatFlag() & IO::JASONWAVELET)   > 0 ) &&
+       (modelSettings_->getWaveletOutputFlag() & IO::LOCAL_WAVELETS)  == 0 &&
+       (modelSettings_->getWaveletOutputFlag() & IO::GLOBAL_WAVELETS) == 0 &&
+       (modelSettings_->getWaveletOutputFlag() & IO::WELL_WAVELETS)   == 0 &&
+        modelSettings_->getWaveletFormatManual() == true                   &&
+        modelSettings_->getEstimationMode() == false)
   {
     errTxt += "A format is requested in wavelet-output without specifying any of the wavelet\n";
     errTxt += " outputs <well-wavelets>, <global-wavelets> nor <local-wavelets>.\n";

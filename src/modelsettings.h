@@ -87,6 +87,7 @@ public:
   float                            getVarRhoMin(void)                   const { return var_rho_min_                               ;}
   float                            getVarRhoMax(void)                   const { return var_rho_max_                               ;}
   float                            getVpVsRatio(void)                   const { return vp_vs_ratio_                               ;}
+  float                            getVpVsRatioFromWells(void)          const { return vp_vs_ratio_from_wells_                    ;}
   float                            getVpVsRatioMin(void)                const { return vp_vs_ratio_min_                           ;}
   float                            getVpVsRatioMax(void)                const { return vp_vs_ratio_max_                           ;}
   float                            getRefDepth(void)                    const { return ref_depth_                                 ;}
@@ -246,6 +247,7 @@ public:
   void setVarRhoMin(float var_rho_min)                    { var_rho_min_              = var_rho_min              ;}
   void setVarRhoMax(float var_rho_max)                    { var_rho_max_              = var_rho_max              ;}
   void setVpVsRatio(float vp_vs_ratio)                    { vp_vs_ratio_              = vp_vs_ratio              ;}
+  void setVpVsRatioFromWells(bool vp_vs_ratio_from_wells) { vp_vs_ratio_from_wells_   = vp_vs_ratio_from_wells   ;}
   void setVpVsRatioMin(float vp_vs_ratio_min)             { vp_vs_ratio_min_          = vp_vs_ratio_min          ;}
   void setVpVsRatioMax(float vp_vs_ratio_max)             { vp_vs_ratio_max_          = vp_vs_ratio_max          ;}
   void setRefDepth(float ref_depth)                       { ref_depth_                = ref_depth                ;}
@@ -425,7 +427,8 @@ private:
 
   float                             vp_vs_ratio_min_;            // Smallest Vp/Vs-ratio regarded as likely
   float                             vp_vs_ratio_max_;            // Largest Vp/Vs-ratio regarded as likely
-  float                             vp_vs_ratio_;                // Vp/Vs-ratio from input (for wavelet estimation if requested)
+  float                             vp_vs_ratio_;                // Vp/Vs-ratio from input
+  bool                              vp_vs_ratio_from_wells_;     // Estimate Vp/Vs-ratio from well data
 
   float                             ref_depth_;                  // z0 - reference depth for target area
   float                             average_velocity_;           // v0 - average velocity in target area

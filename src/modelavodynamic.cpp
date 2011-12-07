@@ -97,9 +97,9 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings       *& modelSettings,
                         errText, failedBackground);
       if (!failedBackground)
       {
-        bool useWells = false;
+        bool gotEarthModel = true;
         processReflectionMatrix(reflectionMatrix_, background_, modelAVOstatic->getWells(), modelSettings,
-                                inputFiles, useWells, errText, failedReflMat);
+                                inputFiles, gotEarthModel, errText, failedReflMat);
         if (!failedReflMat)
         {
           processWavelets(wavelet_, seisCube_, modelAVOstatic->getWells(), reflectionMatrix_,
@@ -135,18 +135,18 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings       *& modelSettings,
             (estimationMode == false || modelSettings->getEstimateWaveletNoise() ||
              modelSettings->getOptimizeWellLocation() == true))
           {
-            bool useWells = false;
+            bool gotBackground = true;
             processReflectionMatrix(reflectionMatrix_, background_, modelAVOstatic->getWells(), modelSettings,
-                                      inputFiles, useWells, errText, failedReflMat);
+                                      inputFiles, gotBackground, errText, failedReflMat);
           }
           else if(estimationMode == true &&
                   modelSettings->getEstimateWaveletNoise() == true &&
                   modelSettings->getEstimateBackground() == false &&
                   modelSettings->getEstimateCorrelations() == false)
           {
-            bool useWells = true;
+            bool gotBackground = false;
             processReflectionMatrix(reflectionMatrix_, background_, modelAVOstatic->getWells(), modelSettings,
-                                      inputFiles, useWells, errText, failedReflMat);
+                                      inputFiles, gotBackground, errText, failedReflMat);
             backgroundDone = true; //Not really, but do not need it in this case.
           }
           if(failedBackground == false && backgroundDone == true &&
@@ -175,9 +175,9 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings       *& modelSettings,
           // locations need to be estimated before the background model is processed.
           //
         {
-          bool useWells = true;
+          bool gotBackground = false;
           processReflectionMatrix(reflectionMatrix_, background_, modelAVOstatic->getWells(), modelSettings,
-                                    inputFiles, useWells, errText, failedReflMat);
+                                    inputFiles, gotBackground, errText, failedReflMat);
           if (failedReflMat == false && failedExtraSurf == false)
           {
             processSeismic(seisCube_, timeSimbox, timeDepthMapping, timeCutMapping,
@@ -870,14 +870,14 @@ ModelAVODynamic::estimateCorrXYFromSeismic(Surface *& corrXY,
 }
 
 void
-ModelAVODynamic::processReflectionMatrix(float                  **& reflectionMatrix,
-                                         Background               * background,
-                                         WellData                ** wells,
-                                         ModelSettings            * modelSettings,
-                                         const InputFiles         * inputFiles,
-                                         bool                       useWells,
-                                         std::string              & errText,
-                                         bool                     & failed)
+ModelAVODynamic::processReflectionMatrix(float            **& reflectionMatrix,
+                                         Background         * background,
+                                         WellData          ** wells,
+                                         ModelSettings      * modelSettings,
+                                         const InputFiles   * inputFiles,
+                                         bool                 gotBackground,
+                                         std::string        & errText,
+                                         bool               & failed)
 {
   LogKit::WriteHeader("Reflection matrix");
   //
@@ -902,25 +902,19 @@ ModelAVODynamic::processReflectionMatrix(float                  **& reflectionMa
     double vsvp = 1.0/vpvs;
     setupDefaultReflectionMatrix(reflectionMatrix, vsvp, modelSettings);
   }
-  else if (useWells) {
+  else if (background == NULL || modelSettings->getVpVsRatioFromWells()) {
     LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix with Vp and Vs from wells\n");
     double vsvp = vsvpFromWells(wells, modelSettings->getNumberOfWells());
     setupDefaultReflectionMatrix(reflectionMatrix, vsvp, modelSettings);
   }
   else {
-    if (background != NULL) {
-      if (modelSettings->getForwardModeling())
-        LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix with Vp and Vs from earth model\n");
-      else
-        LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix with Vp and Vs from background model\n");
-
-      double vsvp = background->getMeanVsVp();
-      setupDefaultReflectionMatrix(reflectionMatrix, vsvp, modelSettings);
-    }
-    else {
-      errText += "\nFailed to set up reflection matrix. Background model is empty.\n";
-      failed = true;
-    }
+    if (modelSettings->getForwardModeling())
+      LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix with Vp and Vs from earth model\n");
+    else
+      LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix with Vp and Vs from background model\n");
+    
+    double vsvp = background->getMeanVsVp();
+    setupDefaultReflectionMatrix(reflectionMatrix, vsvp, modelSettings);
   }
 }
 

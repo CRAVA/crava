@@ -71,8 +71,6 @@ ModelAVOStatic::ModelAVOStatic(ModelSettings      *& modelSettings,
 
   std::string errText("");
 
-
-
   if(!failedSimbox)
   {
     if (modelSettings->getForwardModeling() == false)
@@ -80,12 +78,11 @@ ModelAVOStatic::ModelAVOStatic(ModelSettings      *& modelSettings,
       //
       // INVERSION/ESTIMATION
       //
+      loadExtraSurfaces(waveletEstimInterval_, faciesEstimInterval_, wellMoveInterval_,
+                        timeSimbox, inputFiles, errText, failedExtraSurf);
 
       processWells(wells_, timeSimbox, timeBGSimbox, timeSimboxConstThick,
                      randomGen, modelSettings, inputFiles, errText, failedWells);
-
-      loadExtraSurfaces(waveletEstimInterval_, faciesEstimInterval_, wellMoveInterval_,
-                        timeSimbox, inputFiles, errText, failedExtraSurf);
 
       bool estimationMode = modelSettings->getEstimationMode();
       if (estimationMode == false && !failedWells && !failedExtraSurf)

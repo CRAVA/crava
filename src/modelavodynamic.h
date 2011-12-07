@@ -88,7 +88,7 @@ private:
                                            WellData         ** wells,
                                            ModelSettings     * modelSettings,
                                            const InputFiles  * inputFiles,
-                                           bool                use_background,
+                                           bool                gotBackground,
                                            std::string       & errText,
                                            bool              & failed);
 

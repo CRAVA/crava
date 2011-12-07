@@ -63,6 +63,7 @@ ModelSettings::ModelSettings(void)
   var_rho_max_             = 100.e-4f;
 
   vp_vs_ratio_             = RMISSING;
+  vp_vs_ratio_from_wells_  =    false;
   vp_vs_ratio_min_         =     1.4f;
   vp_vs_ratio_max_         =     3.0f;
 

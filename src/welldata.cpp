@@ -1681,16 +1681,10 @@ void WellData::moveWell(Simbox * timeSimbox, double deltaX, double deltaY, float
 
 void WellData::findMeanVsVp(const std::vector<Surface*> & waveletEstimInterval)
 {
-  meanVsVp_ = 0.0f;
-  nVsVp_    = 0;
+  std::vector<bool> active_cell(nd_, true);
 
-  bool * active_cell = new bool[nd_];
-
-  for(int i=0; i < nd_; i++) {
-    active_cell[i] = true;
-  }
-  
-  if (waveletEstimInterval.size() == 2) {
+  bool useInterval = (waveletEstimInterval.size() == 2);
+  if (useInterval) {
     for(int i=0; i < nd_; i++) {
       const double zTop  = waveletEstimInterval[0]->GetZ(xpos_[i], ypos_[i]);
       const double zBase = waveletEstimInterval[1]->GetZ(xpos_[i], ypos_[i]);
@@ -1698,6 +1692,9 @@ void WellData::findMeanVsVp(const std::vector<Surface*> & waveletEstimInterval)
         active_cell[i] = false;
     }
   }
+
+  meanVsVp_ = 0.0f;
+  nVsVp_    = 0;
 
   for(int i=0; i < nd_; i++) {
     if (alpha_background_resolution_[i] != RMISSING && 
@@ -1710,7 +1707,8 @@ void WellData::findMeanVsVp(const std::vector<Surface*> & waveletEstimInterval)
   
   meanVsVp_ /= nVsVp_;
 
-  LogKit::LogFormatted(LogKit::Low,"   Vp/Vs ratio in well is %5.3f\n",1.0f/meanVsVp_);
-
-  delete [] active_cell;
+  if (useInterval)
+    LogKit::LogFormatted(LogKit::Low,"   Average Vp/Vs ratio in wavelet estimation interval is %5.3f.\n",1.0f/meanVsVp_);
+  else
+    LogKit::LogFormatted(LogKit::Low,"   Average Vp/Vs ratio is %5.3f.\n",1.0f/meanVsVp_);
 }

@@ -1482,11 +1482,11 @@ void BlockedLogs::findContiniousPartOfData(const std::vector<bool> & hasData,
                                            int                     & start,
                                            int                     & length) const
 {
-  int  i;
-  int  lPice=0;
-  int  lengthMaxPice=-1;
-  int  startLongestPice=0;
-  bool previousHadData = false;
+  int  i; 
+  int  lPice            =  0;
+  int  lengthMaxPice    = -1;
+  int  startLongestPice =  0;
+  bool previousHadData  = false;
 
   for(i = 0; i < nz ;i++){
     if(hasData[i]){
@@ -1516,6 +1516,9 @@ void BlockedLogs::findContiniousPartOfData(const std::vector<bool> & hasData,
 
   start  = startLongestPice;
   length = lengthMaxPice;
+  
+  if (length == -1) 
+    length = 0;
 }
 
 
