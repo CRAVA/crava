@@ -14,7 +14,7 @@ public:
   virtual ~DistributionsRockT0(){}
 
   // Rock is an abstract class, hence pointer must be used here. Allocated memory (using new) MUST be deleted by caller.
-  virtual Rock  * GenerateSample() const = 0;  
+  virtual Rock  * GenerateSample(const std::vector<double> & trend_params) const = 0;  
 
 };
 

@@ -40,10 +40,11 @@ CorrelatedRockSamples::CreateSamples(int                              i_max,
       m[k][i].resize(3);
   }
 
+  const std::vector<double> trend_params_dummy(0);
   // Finding the sets of correlated samples. 
   // Each set of samples for a specific i are correlated in time.
   for (int i = 0; i < i_max; ++i){
-    rock[0][i] = dist_rock->GenerateSample();
+    rock[0][i] = dist_rock->GenerateSample(trend_params_dummy);
     rock[0][i]->ComputeSeismicParams(m[0][i][0], m[0][i][1], m[0][i][2]);
     std::vector< Rock * > rock_seen(1, rock[0][i]);
     for (int k = 1; k < k_max; ++k){

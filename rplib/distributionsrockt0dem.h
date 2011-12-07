@@ -12,8 +12,10 @@ public:
 
   virtual ~DistributionsRockT0DEM(){}
 
-  virtual Rock  * GenerateSample() const {
+  virtual Rock  * GenerateSample(const std::vector<double> & trend_params) const {
     std::vector<double> param(6);      //FAKE
+    if (trend_params.size() > 0)       //FAKE
+      param[0] -= trend_params[0];     //FAKE
     std::vector<double> saturation(2); //FAKE
     saturation[0] = 1;                 //FAKE
     Rock * rock = new RockDEM(param, saturation);
