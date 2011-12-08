@@ -3,6 +3,7 @@
 #include "rplib/trend.h"
 
 #include "nrlib/exception/exception.hpp"
+#include "nrlib/grid/grid2d.hpp"
 
 #include "lib/lib_matr.h"
 
@@ -12,25 +13,19 @@
 
 
 MultiNormalWithTrend::
-MultiNormalWithTrend(const NRLib::Normal&                      vp, 
-                     const NRLib::Normal&                      vs, 
-                     const NRLib::Normal&                      rho,
+MultiNormalWithTrend(const NRLib::Normal&                      vp01, 
+                     const NRLib::Normal&                      vs01, 
+                     const NRLib::Normal&                      rho01,
                      const Trend&                              mean_trend_vp,
                      const Trend&                              mean_trend_vs,
                      const Trend&                              mean_trend_rho,
-                     const std::vector< std::vector<Trend*> >& cov_trend) :
-  vp_(vp), vs_(vs), rho_(rho), 
+                     const NRLib::Grid2D<Trend*>&              cov_trend) :
+  vp01_(vp01), vs01_(vs01), rho01_(rho01), 
   mean_trend_vp_(mean_trend_vp), mean_trend_vs_(mean_trend_vs), mean_trend_rho_(mean_trend_rho), 
   cov_trend_(cov_trend)
 {
-  if (cov_trend_.size() != 3)
-    throw NRLib::IndexOutOfRange("MultiNormalWithTrend: Number of Cov trend rows is not valid.");
-
-  unsigned int i;
-  for (i = 0; i < cov_trend_.size(); ++i) {
-    if (cov_trend_[i].size() != 3)
-      throw NRLib::IndexOutOfRange("MultiNormalWithTrend: Number of Cov trend columns is not valid.");
-  }
+  if (cov_trend_.GetNI() != 3 || cov_trend_.GetNJ() != 3)
+    throw NRLib::IndexOutOfRange("MultiNormalWithTrend: Size of covariance trend matrix is not valid.");
 
 }
 
@@ -45,9 +40,9 @@ MultiNormalWithTrend::ReSample(double s1, double s2,
   std::vector<double> rhs(3); // right hand side
   std::vector<double> rc(3);  // random component
 
-  rc[0] = vp_.Draw();
-  rc[1] = vs_.Draw();
-  rc[2] = rho_.Draw();
+  rc[0] = vp01_.Draw();
+  rc[1] = vs01_.Draw();
+  rc[2] = rho01_.Draw();
 
   // fill cov matrix
   double ** cov_matrix = CreateCovMatrix(s1, s2);
@@ -74,9 +69,9 @@ MultiNormalWithTrend::ReSample(double s1, double s2,
   std::vector<double> rhs(3); // right hand side
   std::vector<double> rc(3);  // random component
 
-  rc[0] = vp_.Draw();
-  rc[1] = vs_.Draw();
-  rc[2] = rho_.Draw();
+  rc[0] = vp01_.Draw();
+  rc[1] = vs01_.Draw();
+  rc[2] = rho01_.Draw();
   
   //cholesky 
   if (!is_cholesky)
@@ -251,7 +246,7 @@ MultiNormalWithTrend::CreateCovMatrix(double s1, double s2) const {
 
   for (int j = 0; j < 3; ++j) {
     for (int i = 0; i < 3; ++i)
-      cov_matrix[j][i] = cov_trend_[j][i]->GetValue(s1, s2);
+      cov_matrix[j][i] = cov_trend_(i, j)->GetValue(s1, s2);
   }
 
   return cov_matrix;
