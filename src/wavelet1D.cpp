@@ -821,8 +821,7 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
   }
 
   if(nWells > 0) {
-    LogKit::LogFormatted(LogKit::Medium,"\n  Reporting errors (as standard deviations) estimated in different ways:\n\n");
-
+    LogKit::LogFormatted(LogKit::Medium,"\n  Reporting  estimated errors (as standard deviations) in different ways:\n");
     LogKit::LogFormatted(LogKit::Low,"\n");
     LogKit::LogFormatted(LogKit::Low,"                                     SeisData       OptimalGlobal      OptimalLocal\n");
     LogKit::LogFormatted(LogKit::Low,"  Well                  shift[ms]     StdDev         Gain   S/N         Gain   S/N \n");
