@@ -50,8 +50,7 @@ ModelAVOStatic::ModelAVOStatic(ModelSettings      *& modelSettings,
                                std::vector<bool>     failedGeneralDetails,
                                Simbox              * timeSimbox,
                                Simbox             *& timeBGSimbox,
-                               Simbox              * timeSimboxConstThick,
-                               RandomGen           * randomGen)
+                               Simbox              * timeSimboxConstThick)
 {
   forwardModeling_        = modelSettings->getForwardModeling();
   numberOfWells_          = modelSettings->getNumberOfWells();
@@ -82,7 +81,7 @@ ModelAVOStatic::ModelAVOStatic(ModelSettings      *& modelSettings,
                         timeSimbox, inputFiles, errText, failedExtraSurf);
 
       processWells(wells_, timeSimbox, timeBGSimbox, timeSimboxConstThick,
-                     randomGen, modelSettings, inputFiles, errText, failedWells);
+                   modelSettings, inputFiles, errText, failedWells);
 
       bool estimationMode = modelSettings->getEstimationMode();
       if (estimationMode == false && !failedWells && !failedExtraSurf)
@@ -90,7 +89,6 @@ ModelAVOStatic::ModelAVOStatic(ModelSettings      *& modelSettings,
         processPriorFaciesProb(faciesEstimInterval_,
                                priorFacies_,
                                wells_,
-                               randomGen,
                                timeSimbox->getnz(),
                                static_cast<float> (timeSimbox->getdz()),
                                timeSimbox,
@@ -158,7 +156,6 @@ ModelAVOStatic::processWells(WellData          **& wells,
                              Simbox              * timeSimbox,
                              Simbox              * timeBGSimbox,
                              Simbox              * timeSimboxConstThick,
-                             RandomGen           * randomGen,
                              ModelSettings      *& modelSettings,
                              const InputFiles    * inputFiles,
                              std::string         & errText,
@@ -260,12 +257,12 @@ ModelAVOStatic::processWells(WellData          **& wells,
           wells[i]->findMeanVsVp(waveletEstimInterval_);
           wells[i]->lookForSyntheticVsLog(rankCorr[i]);
           wells[i]->calculateDeviation(devAngle[i], timeSimbox);
-          wells[i]->setBlockedLogsOrigThick( new BlockedLogs(wells[i], timeSimbox, randomGen, modelSettings->getRunFromPanel()) );
-          wells[i]->setBlockedLogsConstThick( new BlockedLogs(wells[i], timeSimboxConstThick, randomGen) );
+          wells[i]->setBlockedLogsOrigThick( new BlockedLogs(wells[i], timeSimbox, modelSettings->getRunFromPanel()) );
+          wells[i]->setBlockedLogsConstThick( new BlockedLogs(wells[i], timeSimboxConstThick) );
           if (timeBGSimbox==NULL)
-            wells[i]->setBlockedLogsExtendedBG( new BlockedLogs(wells[i], timeSimbox, randomGen) ); // Need a copy constructor?
+            wells[i]->setBlockedLogsExtendedBG( new BlockedLogs(wells[i], timeSimbox) ); // Need a copy constructor?
           else
-            wells[i]->setBlockedLogsExtendedBG( new BlockedLogs(wells[i], timeBGSimbox, randomGen) );
+            wells[i]->setBlockedLogsExtendedBG( new BlockedLogs(wells[i], timeBGSimbox) );
           if (nFacies > 0)
             wells[i]->countFacies(timeSimbox,faciesCount[i]);
           validWells[count] = i;
@@ -533,7 +530,6 @@ void ModelAVOStatic::checkFaciesNames(WellData ** wells,
 void ModelAVOStatic::processPriorFaciesProb(const std::vector<Surface *> & faciesEstimInterval,
                                             float                       *& priorFacies,
                                             WellData                    ** wells,
-                                            RandomGen                    * randomGen,
                                             int                            nz,
                                             float                          dz,
                                             Simbox                       * timeSimbox,
@@ -607,7 +603,7 @@ void ModelAVOStatic::processPriorFaciesProb(const std::vector<Surface *> & facie
             bl->getVerticalTrend(bl->getAlpha(),vtAlpha);
             bl->getVerticalTrend(bl->getBeta(),vtBeta);
             bl->getVerticalTrend(bl->getRho(),vtRho);
-            bl->getVerticalTrend(blFaciesLog,vtFacies,randomGen);
+            bl->getVerticalTrend(blFaciesLog,vtFacies);
             delete [] blFaciesLog;
 
             for(int i=0 ; i<nz ; i++)
@@ -1024,8 +1020,7 @@ ModelAVOStatic::processWellLocation(FFTGrid                     ** seisCube,
                                     float                       ** reflectionMatrix,
                                     Simbox                       * timeSimbox,
                                     ModelSettings                * modelSettings,
-                                    const std::vector<Surface *> & interval,
-                                    RandomGen                    * randomGen)
+                                    const std::vector<Surface *> & interval)
 {
   LogKit::WriteHeader("Estimating optimized well location");
 
@@ -1091,7 +1086,7 @@ ModelAVOStatic::processWellLocation(FFTGrid                     ** seisCube,
     deltaY = iMove*dx*sin(angle) + jMove*dy*cos(angle);
     wells[w]->moveWell(timeSimbox,deltaX,deltaY,kMove);
     wells[w]->deleteBlockedLogsOrigThick();
-    wells[w]->setBlockedLogsOrigThick( new BlockedLogs(wells[w], timeSimbox, randomGen, modelSettings->getRunFromPanel()) );
+    wells[w]->setBlockedLogsOrigThick( new BlockedLogs(wells[w], timeSimbox, modelSettings->getRunFromPanel()) );
     LogKit::LogFormatted(LogKit::Low,"  %-13s %11.2f %12d %11.2f %8d %11.2f \n",
     wells[w]->getWellname().c_str(), kMove, iMove, deltaX, jMove, deltaY);
   }

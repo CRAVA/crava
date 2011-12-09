@@ -2,7 +2,6 @@
 #include <iomanip>
 #include <math.h>
 
-#include "lib/random.h"
 #include "lib/lib_matr.h"
 #include "nrlib/iotools/logkit.hpp"
 #include "fftw.h"
@@ -22,7 +21,6 @@
 
 BlockedLogs::BlockedLogs(WellData  * well,
                          Simbox    * simbox,
-                         RandomGen * random,
                          bool        interpolate)
   : wellname_(""),
     xpos_(NULL),
@@ -66,7 +64,7 @@ BlockedLogs::BlockedLogs(WellData  * well,
     nFacies_(0),
     interpolate_(interpolate)
 {
-  blockWell(well, simbox, random, interpolate);
+  blockWell(well, simbox, interpolate);
 }
 
 //------------------------------------------------------------------------------
@@ -158,7 +156,6 @@ BlockedLogs::~BlockedLogs(void)
 void
 BlockedLogs::blockWell(WellData  * well,
                        Simbox    * simbox,
-                       RandomGen * random,
                        bool        interpolate)
 {
   wellname_ = well->getWellname();
@@ -190,7 +187,7 @@ BlockedLogs::blockWell(WellData  * well,
   blockContinuousLog(bInd, well->getRhoSeismicResolution(dummy), rho_highcut_seismic_);
 
   if (well->isFaciesLogDefined())
-    blockDiscreteLog(bInd, well->getFacies(dummy), well->getFaciesNr(), well->getNFacies(), facies_, random);
+    blockDiscreteLog(bInd, well->getFacies(dummy), well->getFaciesNr(), well->getNFacies(), facies_);
 
   if(interpolate == true) {
     for(int i=1;i<well->getNd();i++) {
@@ -338,8 +335,7 @@ BlockedLogs::blockDiscreteLog(const int *  bInd,
                               const int *  wellLog,
                               const int *  faciesNumbers,
                               int          nFacies,
-                              int       *& blockedLog,
-                              RandomGen *  random)
+                              int       *& blockedLog)
 {
   if (wellLog != NULL) {
     //
@@ -384,8 +380,8 @@ BlockedLogs::blockDiscreteLog(const int *  bInd,
       count[table[value]]++;
 
     for (int m = firstM_+1 ; m < lastM_ + 1 ; m++) {
-      if (bInd[m] != bInd[m - 1]) {
-        blockedLog[bInd[m-1]] = findMostProbable(count, nFacies, random);
+      if (bInd[m] != bInd[m - 1]) { // bInd[m] is the block number which sample 'm' lies in
+        blockedLog[bInd[m-1]] = findMostProbable(count, nFacies, bInd[m-1]);
         for (int i = 0 ; i < nFacies ; i++)
           count[i] = 0;
       }
@@ -393,7 +389,7 @@ BlockedLogs::blockDiscreteLog(const int *  bInd,
     if(value!=IMISSING)
       count[table[value]]++;
     }
-    blockedLog[bInd[lastM_]] = findMostProbable(count, nFacies, random);
+    blockedLog[bInd[lastM_]] = findMostProbable(count, nFacies, bInd[lastM_]);
 
     delete [] count;
     delete [] table;
@@ -434,23 +430,35 @@ BlockedLogs::interpolateContinuousLog(double * blockedLog, int start, int end,
 int
 BlockedLogs::findMostProbable(const int * count,
                               int         nFacies,
-                              RandomGen * rndgen)
-{ //
-  // Find which value have the highest frequency. Add a random [0,1]
-  // value to ensure that two Facies never get the same probability.
-  //
-  double maxFreqValue = RMISSING;
-  int    maxFreqIndex = IMISSING;
+                              int         blockIndex)
+{
+  int  maxIndex     = IMISSING;
+  int  maxCount     = 0;
+  bool inconclusive = false;
+
   for (int i=0 ; i < nFacies ; i++ ) {
-    double freqValue = static_cast<double>(count[i]) + rndgen->unif01();
-    if (freqValue > maxFreqValue && count[i]>0) {
-      maxFreqValue = freqValue;
-      maxFreqIndex = i;
+    if (count[i] > 0 && count[i] > maxCount) {
+      maxCount     = count[i];
+      maxIndex     = i;
+      inconclusive = false;
+    }
+    else if (count[i] > 0 && count[i] == maxCount) {
+      inconclusive = true;
     }
   }
-  //No! Gives WARNING under Linux. Also when moved here
-  //rndgen; //To eliminate warning
-  return (maxFreqIndex);
+  
+  if (inconclusive) {
+    std::vector<int> equal;
+    for (int i=0 ; i < nFacies ; i++ ) {
+      if (count[i] == maxCount) {
+        equal.push_back(i);
+      }
+    }
+    int j = (blockIndex + 1) % equal.size();
+    maxIndex = equal[j];
+  }
+  
+  return (maxIndex);
 }
 
 //------------------------------------------------------------------------------
@@ -737,8 +745,7 @@ BlockedLogs::getVerticalTrendLimited(const float                  * blockedLog,
 //------------------------------------------------------------------------------
 void
 BlockedLogs::getVerticalTrend(const int * blockedLog,
-                              int       * trend,
-                              RandomGen * random)
+                              int       * trend)
 {
   if (blockedLog != NULL && trend != NULL) {
 
@@ -757,7 +764,7 @@ BlockedLogs::getVerticalTrend(const int * blockedLog,
           }
         }
       }
-      trend[k] = findMostProbable(count, nFacies_, random);
+      trend[k] = findMostProbable(count, nFacies_, k);
     }
     if(interpolate_ == true)
       interpolateTrend(blockedLog,trend);

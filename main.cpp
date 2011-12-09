@@ -175,8 +175,7 @@ int main(int argc, char** argv)
                                          modelGeneral->getFailedDetails(),
                                          modelGeneral->getTimeSimbox(),
                                          timeBGSimbox,
-                                         modelGeneral->getTimeSimboxConstThick(),
-                                         modelGeneral->getRandomGen());
+                                         modelGeneral->getTimeSimboxConstThick());
     // Wells are adjusted by ModelAVODynamic constructor.
     modelAVOdynamic = new ModelAVODynamic(modelSettings, inputFiles,
                                           modelGeneral->getFailedDetails(),

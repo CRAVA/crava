@@ -17,7 +17,6 @@ class Vario;
 class Simbox;
 class WellData;
 class FFTGrid;
-class RandomGen;
 class GridMapping;
 class InputFiles;
 
@@ -29,8 +28,7 @@ public:
                  std::vector<bool>     failedGeneralDetails,
                  Simbox              * timeSimbox,
                  Simbox             *& timeBGSimbox,
-                 Simbox              * timeSimboxConstThick,
-                 RandomGen           * randomGen);
+                 Simbox              * timeSimboxConstThick);
   ~ModelAVOStatic();
 
   WellData                  **& getWells()                 /*const*/ { return wells_                  ;}
@@ -61,31 +59,28 @@ public:
                                        float                       ** reflectionMatrix,
                                        Simbox                       * timeSimbox,
                                        ModelSettings                * modelSettings,
-                                       const std::vector<Surface *> & interval,
-                                       RandomGen                    * randomGen);              // Changes wells
+                                       const std::vector<Surface *> & interval);              // Changes wells
 
 private:
-  void             processWells(WellData     **& wells,
-                                Simbox         * timeSimbox,
-                                Simbox         * timeBGSimbox,
-                                Simbox         * timeSimboxConstThick,
-                                RandomGen      * randomGen,
-                                ModelSettings *& modelSettings,
-                                const InputFiles     * inputFiles,
-                                std::string    & errText,
-                                bool           & failed);
+  void             processWells(WellData       **& wells,
+                                Simbox           * timeSimbox,
+                                Simbox           * timeBGSimbox,
+                                Simbox           * timeSimboxConstThick,
+                                ModelSettings   *& modelSettings,
+                                const InputFiles * inputFiles,
+                                std::string      & errText,
+                                bool             & failed);
 
   void             processPriorFaciesProb(const std::vector<Surface *> & faciesEstimInterval,
                                           float                       *& priorFacies,
                                           WellData                    ** wells,
-                                          RandomGen                    * randomGen,
                                           int                            nz,
                                           float                          dz,
                                           Simbox                       * timeSimbox,
                                           ModelSettings                * modelSettings,
                                           bool                         & failed,
                                           std::string                  & errTxt,
-                                          const InputFiles                   * inputFiles);
+                                          const InputFiles             * inputFiles);
   void             readPriorFaciesProbCubes(const InputFiles * inputFiles,
                                             ModelSettings    * modelSettings,
                                             FFTGrid        **& priorFaciesProbCubes,

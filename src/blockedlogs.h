@@ -8,7 +8,6 @@
 #include "lib/utils.h"
 
 class ModelSettings;
-class RandomGen;
 class FFTGrid;
 class WellData;
 class Simbox;
@@ -19,167 +18,185 @@ class BlockedLogs
 public:
   BlockedLogs(WellData  * well,
               Simbox    * simbox,
-              RandomGen * random,
               bool interpolate = false);
 
   ~BlockedLogs(void);
 
-  const std::string getWellname(void)               const { return wellname_ ;}
-  const int      getNumberOfBlocks(void)            const { return nBlocks_  ;}
-  const double * getXpos(void)                      const { return xpos_     ;}
-  const double * getYpos(void)                      const { return ypos_     ;}
-  const double * getZpos(void)                      const { return zpos_     ;}
-  const int    * getIpos(void)                      const { return ipos_     ;}
-
-  const int    * getJpos(void)                      const { return jpos_     ;}
-  const int    * getKpos(void)                      const { return kpos_     ;}
-  const float  * getAlpha(void)                     const { return alpha_    ;}
-  const float  * getBeta(void)                      const { return beta_     ;}
-  const float  * getRho(void)                       const { return rho_      ;}
-  const int    * getFacies(void)                    const { return facies_   ;}
-  const float    getDz(void)                        const { return dz_       ;}
-  const float  * getAlphaHighCutBackground(void)    const { return alpha_highcut_background_ ;}
-  const float  * getBetaHighCutBackground(void)     const { return beta_highcut_background_  ;}
-  const float  * getRhoHighCutBackground(void)      const { return rho_highcut_background_   ;}
-  const float  * getAlphaHighCutSeismic(void)       const { return alpha_highcut_seismic_    ;}
-  const float  * getBetaHighCutSeismic(void)        const { return beta_highcut_seismic_     ;}
-  const float  * getRhoHighCutSeismic(void)         const { return rho_highcut_seismic_      ;}
-  const float  * getAlphaSeismicResolution(void)    const { return alpha_seismic_resolution_ ;}
-  const float  * getBetaSeismicResolution(void)     const { return beta_seismic_resolution_  ;}
-  const float  * getRhoSeismicResolution(void)      const { return rho_seismic_resolution_   ;}
-  const float  * getAlphaForFacies(void)            const { return alpha_for_facies_         ;}
-  const float  * getRhoForFacies(void)              const { return rho_for_facies_           ;}
-  const float  * getAlphaPredicted(void)            const { return alpha_predicted_          ;}
-  const float  * getBetaPredicted(void)             const { return beta_predicted_           ;}
-  const float  * getRhoPredicted(void)              const { return rho_predicted_            ;}
-  float       ** getRealSeismicData(void)           const { return real_seismic_data_        ;}
-  float       ** getSyntSeismicData(void)           const { return actual_synt_seismic_data_        ;}
-  float       ** getCpp(void)                       const { return cpp_ ;}
-  void           getVerticalTrend(const float * blockedLog, float * trend);
-  void           getVerticalTrendLimited(const float * blockedLog, float * trend, const std::vector<Surface *> & limits);
-  void           getVerticalTrend(const int * blockedLog,int * trend, RandomGen * random);
-  void           getBlockedGrid(FFTGrid * grid, float * blockedLog, int iOffset = 0, int jOffset = 0);
-  void           setLogFromVerticalTrend(float * vertical_trend, double z0, double dz,
+  const std::string         getWellname(void)                  const { return wellname_ ;}
+  const int                 getNumberOfBlocks(void)            const { return nBlocks_  ;}
+  const double            * getXpos(void)                      const { return xpos_     ;}
+  const double            * getYpos(void)                      const { return ypos_     ;}
+  const double            * getZpos(void)                      const { return zpos_     ;}
+  const int               * getIpos(void)                      const { return ipos_     ;}
+  const int               * getJpos(void)                      const { return jpos_     ;}
+  const int               * getKpos(void)                      const { return kpos_     ;}
+  const std::vector<int>    getIposVector(void)                const;
+  const std::vector<int>    getJposVector(void)                const;
+  const std::vector<double> getXposVector(void)                const;
+  const std::vector<double> getYposVector(void)                const;
+  const std::vector<double> getZposVector(void)                const;
+  const float             * getAlpha(void)                     const { return alpha_    ;}
+  const float             * getBeta(void)                      const { return beta_     ;}
+  const float             * getRho(void)                       const { return rho_      ;}
+  const int               * getFacies(void)                    const { return facies_   ;}
+  const float               getDz(void)                        const { return dz_       ;}
+  const float             * getAlphaHighCutBackground(void)    const { return alpha_highcut_background_ ;}
+  const float             * getBetaHighCutBackground(void)     const { return beta_highcut_background_  ;}
+  const float             * getRhoHighCutBackground(void)      const { return rho_highcut_background_   ;}
+  const float             * getAlphaHighCutSeismic(void)       const { return alpha_highcut_seismic_    ;}
+  const float             * getBetaHighCutSeismic(void)        const { return beta_highcut_seismic_     ;}
+  const float             * getRhoHighCutSeismic(void)         const { return rho_highcut_seismic_      ;}
+  const float             * getAlphaSeismicResolution(void)    const { return alpha_seismic_resolution_ ;}
+  const float             * getBetaSeismicResolution(void)     const { return beta_seismic_resolution_  ;}
+  const float             * getRhoSeismicResolution(void)      const { return rho_seismic_resolution_   ;}
+  const float             * getAlphaForFacies(void)            const { return alpha_for_facies_         ;}
+  const float             * getRhoForFacies(void)              const { return rho_for_facies_           ;}
+  const float             * getAlphaPredicted(void)            const { return alpha_predicted_          ;}
+  const float             * getBetaPredicted(void)             const { return beta_predicted_           ;}
+  const float             * getRhoPredicted(void)              const { return rho_predicted_            ;}
+  float                  ** getRealSeismicData(void)           const { return real_seismic_data_        ;}
+  float                  ** getSyntSeismicData(void)           const { return actual_synt_seismic_data_        ;}
+  float                  ** getCpp(void)                       const { return cpp_ ;}
+  void                      getVerticalTrend(const float * blockedLog, float * trend);
+  void                      getVerticalTrendLimited(const float * blockedLog, float * trend, const std::vector<Surface *> & limits);
+  void                      getVerticalTrend(const int * blockedLog,int * trend);
+  void                      getBlockedGrid(FFTGrid * grid, float * blockedLog, int iOffset = 0, int jOffset = 0);
+  void                      setLogFromVerticalTrend(float * vertical_trend, double z0, double dz,
                                          int nz, std::string type, int iAngle = IMISSING);
-  void           setLogFromGrid(FFTGrid * grid, int iAngle, int nAngles, std::string type);
+  void                      setLogFromGrid(FFTGrid * grid, int iAngle, int nAngles, std::string type);
 
-  void           writeWell(ModelSettings * modelSettings);       //Use this, will handle formats automatically.
-  void           writeRMSWell(ModelSettings * modelSettings);
-  void           writeNorsarWell(ModelSettings * modelSettings);
+  void                      writeWell(ModelSettings * modelSettings);       //Use this, will handle formats automatically.
+  void                      writeRMSWell(ModelSettings * modelSettings);
+  void                      writeNorsarWell(ModelSettings * modelSettings);
 
-  void           setSpatialFilteredLogs(float * filteredlog, int nData, std::string type, const float *bg);
+  void                      setSpatialFilteredLogs(float * filteredlog, int nData, std::string type, const float *bg);
 
-  void           fillInCpp(const float * coeff,int start,int length,fftw_real* cpp_r,int nzp);
-  void           fillInSeismic(float* seismicData,int start,int length,fftw_real* seis_r,int nzp) const;
-  void           estimateCor(fftw_complex* var1_c,fftw_complex* var2_c,fftw_complex* ccor_1_2_c,int cnzp) const;
-  void           findContiniousPartOfData(const std::vector<bool> & hasData,int nz,int &start,int &length) const;
-  void           findOptimalWellLocation(FFTGrid                   ** seisCube,
-                                         Simbox                     * timeSimbox,
-                                         float                     ** reflCoef,
-                                         int                          nAngles,
-                                         const std::vector<float>   & angleWeight,
-                                         float                        maxShift,
-                                         int                          iMaxOffset,
-                                         int                          jMaxOffset,
-                                         const std::vector<Surface *> limits,
-                                         int                        & iMove,
-                                         int                        & jMove,
-                                         float                      & kMove);
-  void           generateSyntheticSeismic(float ** reflCoef,
-                                          int nAngles,
-                                          Wavelet ** wavelet,
-                                          int nz,
-                                          int nzp,
-                                          const Simbox * timeSimbox);
-  void           setSeismicGradient(  double v0,
-                                      const NRLib::Grid2D<float>   &    stuctureDepthGradX,
-                                      const NRLib::Grid2D<float>   &    stuctureDepthGradY,
-                                      const NRLib::Grid2D<float>   &    refTimeGradX ,
-                                      const NRLib::Grid2D<float>   &    refTimeGradY,
-                                      std::vector<double>        & xGradient,
-                                      std::vector<double>        & yGradient);
-
-  void           setTimeGradientSettings(float distance, float sigma_m);
-  void           findSeismicGradient(FFTGrid                  ** seisCube,
-                                     Simbox                   * timeSimbox,
-                                     int                        nAngles,
-                                     std::vector<double>       & xGradient,
-                                     std::vector<double>       & yGradient,
-                                     std::vector<std::vector<double> > &Sigma_gradient);
-
-
-
-  const std::vector<int>    getIposVector()           const;
-  const std::vector<int>    getJposVector()           const;
-  const std::vector<double> getXposVector()           const;
-  const std::vector<double> getYposVector()           const;
-  const std::vector<double> getZposVector()           const;
-
+  void                      fillInCpp(const float * coeff,int start,int length,fftw_real* cpp_r,int nzp);
+  void                      fillInSeismic(float* seismicData,int start,int length,fftw_real* seis_r,int nzp) const;
+  void                      estimateCor(fftw_complex* var1_c,fftw_complex* var2_c,fftw_complex* ccor_1_2_c,int cnzp) const;
+  void                      findContiniousPartOfData(const std::vector<bool> & hasData,int nz,int &start,int &length) const;
+  void                      findOptimalWellLocation(FFTGrid                   ** seisCube,
+                                                    Simbox                     * timeSimbox,
+                                                    float                     ** reflCoef,
+                                                    int                          nAngles,
+                                                    const std::vector<float>   & angleWeight,
+                                                    float                        maxShift,
+                                                    int                          iMaxOffset,
+                                                    int                          jMaxOffset,
+                                                    const std::vector<Surface *> limits,
+                                                    int                        & iMove,
+                                                    int                        & jMove,
+                                                    float                      & kMove);
+  void                      generateSyntheticSeismic(float ** reflCoef,
+                                                     int nAngles,
+                                                     Wavelet ** wavelet,
+                                                     int nz,
+                                                     int nzp,
+                                                     const Simbox * timeSimbox);
+  void                      setSeismicGradient(  double v0,
+                                                 const NRLib::Grid2D<float>   &    stuctureDepthGradX,
+                                                 const NRLib::Grid2D<float>   &    stuctureDepthGradY,
+                                                 const NRLib::Grid2D<float>   &    refTimeGradX ,
+                                                 const NRLib::Grid2D<float>   &    refTimeGradY,
+                                                 std::vector<double>        & xGradient,
+                                                 std::vector<double>        & yGradient);
+  
+  void                      setTimeGradientSettings(float distance, float sigma_m);
+  void                      findSeismicGradient(FFTGrid                  ** seisCube,
+                                                Simbox                   * timeSimbox,
+                                                int                        nAngles,
+                                                std::vector<double>       & xGradient,
+                                                std::vector<double>       & yGradient,
+                                                std::vector<std::vector<double> > &Sigma_gradient);
+  
 private:
-  void           setLogFromVerticalTrend(float *& log, double * zpos, int nBlocks,
-                                         float * vertical_trend, double z0, double dz, int nz);
-  void           blockWell(WellData  * well,
-                           Simbox    * simbox,
-                           RandomGen * random,
-                           bool        interpolate = false);
-  void           blockCoordinateLog(const int    *  bInd,
-                                    const double *  coord,
-                                    double       *& blockedCoord);
-  void           blockContinuousLog(const int   *  bInd,
-                                    const float *  wellLog,
-                                    float       *& blockedLog);
-  void           blockDiscreteLog(const int * bInd,
-                                  const int *  wellLog,
-                                  const int *  faciesNumbers,
-                                  int          nFacies,
-                                  int       *& blockedLog,
-                                  RandomGen * random);
-  void           interpolateContinuousLog(double * blockedLog, int start, int end,
-                                          int index, float rel);
-  void           interpolateContinuousLog(float * blockedLog, int start, int end,
-                                          int index, float rel);
-  void           interpolateTrend(const float * blockedLog,
-                                  float * trend);
-  void           interpolateTrend(const float * blockedLog,
-                                  float * trend,
-                                  const std::vector<Surface *> & limits);
-  void           interpolateTrend(const int * blockedLog,
-                                  int * trend);
-  int            findMostProbable(const int * count,
-                                  int         nFacies,
-                                  RandomGen * random);
-  void           findSizeAndBlockPointers(WellData * well,
-                                          Simbox   * simbox,
-                                          int      * bInd);
-  void           findBlockIJK(WellData  * well,
-                              Simbox    * simbox,
-                              const int * bInd);
-  void           findBlockXYZ(Simbox * simbox);
-  void           findXYZforVirtualPart(Simbox * simbox);
+  void                      setLogFromVerticalTrend(float *& log, double * zpos, int nBlocks,
+                                                    float * vertical_trend, double z0, double dz, int nz);
 
-  float          computeElasticImpedance(float         vp,
-                                         float         vs,
-                                         float         rho,
-                                         const float * coeff) const;
+  void                      blockWell(WellData * well,
+                                      Simbox   * simbox,
+                                      bool       interpolate = false);
 
-  void           smoothTrace(std::vector<float> &trace);
-  void           findPeakTrace(std::vector<float> &trace, std::vector<double> &zPeak, std::vector<double> &peak,
-                                std::vector<double> &b, double dz, double ztop);
-  void           peakMatch(std::vector<double> &zPeak, std::vector<double> &peak, std::vector<double> &b,
-                                std::vector<double> &zPeakW, std::vector<double> &peakW, std::vector<double> &bW);
+  void                      blockCoordinateLog(const int    *  bInd,
+                                               const double *  coord,
+                                               double       *& blockedCoord);
 
+  void                      blockContinuousLog(const int   *  bInd,
+                                               const float *  wellLog,
+                                               float       *& blockedLog);
 
-  double          computeShift(std::vector<double> &zPeak, std::vector<double> &zPeakW,double z0);
+  void                      blockDiscreteLog(const int * bInd,
+                                             const int *  wellLog,
+                                             const int *  faciesNumbers,
+                                             int          nFacies,
+                                             int       *& blockedLog);
 
-  void           computeGradient(std::vector<double> &Qepsilon, std::vector<double> &Qepsilon_data,
-                                 std::vector<double> &zShift, int nx, int ny, double dx, double dy);
-  void           smoothGradient(std::vector<double> &xGradient, std::vector<double> &yGradient,
-                                  std::vector<double> &Qepsilon, std::vector<double> &Qepsilon_data,
-                                  std::vector<std::vector<double> > &Sigma_gradient);
-  void           computePrecisionMatrix(double &a, double &b, double &c);
+  void                      interpolateContinuousLog(double * blockedLog, int start, int end, int index, float rel);
+  void                      interpolateContinuousLog(float * blockedLog, int start, int end, int index, float rel);
+  void                      interpolateTrend(const float * blockedLog, float * trend);
+  void                      interpolateTrend(const float * blockedLog, float * trend, const std::vector<Surface *> & limits);
+  void                      interpolateTrend(const int * blockedLog, int * trend);
 
+  int                       findMostProbable(const int * count,
+                                             int         nFacies,
+                                             int         blockIndex);
+
+  void                      findSizeAndBlockPointers(WellData * well,
+                                                     Simbox   * simbox,
+                                                     int      * bInd);
+
+  void                      findBlockIJK(WellData  * well,
+                                         Simbox    * simbox,
+                                         const int * bInd);
+
+  void                      findBlockXYZ(Simbox * simbox);
+
+  void                      findXYZforVirtualPart(Simbox * simbox);  
+
+  float                     computeElasticImpedance(float         vp,
+                                                    float         vs,
+                                                    float         rho,
+                                                    const float * coeff) const;
+  
+  void                      smoothTrace(std::vector<float> & trace);
+
+  void                      findPeakTrace(std::vector<float>  & trace, 
+                                          std::vector<double> & zPeak, 
+                                          std::vector<double> & peak,
+                                          std::vector<double> & b, 
+                                          double dz, 
+                                          double ztop);
+
+  void                      peakMatch(std::vector<double> & zPeak, 
+                                      std::vector<double> & peak, 
+                                      std::vector<double> & b,
+                                      std::vector<double> & zPeakW, 
+                                      std::vector<double> & peakW,
+                                      std::vector<double> & bW);
+  
+  double                    computeShift(std::vector<double> & zPeak, 
+                                         std::vector<double> & zPeakW,
+                                         double z0);
+  
+  void                      computeGradient(std::vector<double> & Qepsilon, 
+                                            std::vector<double> & Qepsilon_data,
+                                            std::vector<double> & zShift, 
+                                            int nx, 
+                                            int ny, 
+                                            double dx, 
+                                            double dy);
+
+  void                      smoothGradient(std::vector<double>               & xGradient, 
+                                           std::vector<double>               & yGradient,
+                                           std::vector<double>               & Qepsilon, 
+                                           std::vector<double>               & Qepsilon_data,
+                                           std::vector<std::vector<double> > & Sigma_gradient);
+  void                      computePrecisionMatrix(double & a, 
+                                                   double & b, 
+                                                   double & c);
+  
   std::string    wellname_;                 ///< Name of well
-
+  
   double       * xpos_;                     ///<
   double       * ypos_;                     ///< Simbox XYZ value for block
   double       * zpos_;                     ///<

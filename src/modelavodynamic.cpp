@@ -161,7 +161,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings       *& modelSettings,
               for(int i=0;i<modelSettings->getNumberOfAngles();i++)
                 seisCube_[i]->setAccessMode(FFTGrid::RANDOMACCESS);
               modelAVOstatic->processWellLocation(seisCube_, modelAVOstatic->getWells(), reflectionMatrix_,
-                                                  timeSimbox, modelSettings, wellMoveInterval, randomGen);
+                                                  timeSimbox, modelSettings, wellMoveInterval);
               for(int i=0;i<modelSettings->getNumberOfAngles();i++)
                 seisCube_[i]->endAccess();
             }
@@ -185,7 +185,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings       *& modelSettings,
             if(failedSeismic == false)
             {
               modelAVOstatic->processWellLocation(seisCube_, modelAVOstatic->getWells(), reflectionMatrix_,
-                                                  timeSimbox, modelSettings, wellMoveInterval, randomGen);
+                                                  timeSimbox, modelSettings, wellMoveInterval);
             }
           }
           if(estimationMode == false ||
