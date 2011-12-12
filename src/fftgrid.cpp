@@ -656,44 +656,19 @@ FFTGrid::fillInComplexNoise(RandomGen * ranGen)
 void
 FFTGrid::createRealGrid(bool add)
 {
-  //  long int timestart, timeend;
-  //  time(&timestart);
   istransformed_=false;
   add_ = add;
   if(add==true)
     nGrids_        += 1;
   createGrid();
- // rvalue_    = static_cast<fftw_real*>(fftw_malloc(rsize_ * sizeof(fftw_real)));
- // cvalue_    = reinterpret_cast<fftw_complex*>(rvalue_); //
-
-//  counterForGet_  = 0;
-//  counterForSet_  = 0;
-//  add_ = add;
-//  if(add==true)
-//    nGrids_        += 1;
-
-//  maxAllocatedGrids_ = std::max(nGrids_, maxAllocatedGrids_);
-
- // FFTMemUse_ += rsize_ * sizeof(fftw_real);
-//  if(FFTMemUse_ > maxFFTMemUse_) {
-//    maxFFTMemUse_ = FFTMemUse_;
- //   LogKit::LogFormatted(LogKit::DebugLow,"\nNew FFT-grid memory peak (%2d): %10.2f MB\n",nGrids_, FFTMemUse_/(1024.f*1024.f));
- // }
-
-  //  time(&timeend);
-  //  LogKit::LogFormatted(LogKit::Low,"\nReal grid created in %ld seconds.\n",timeend-timestart);
 }
 
 void
 FFTGrid::createComplexGrid()
 {
-  //  long int timestart, timeend;
-  //  time(&timestart);
   istransformed_  = true;
   nGrids_        += 1;
   createGrid();
-  //  time(&timeend);
-  //  LogKit::LogFormatted(LogKit::Low,"\nComplex grid created in %ld seconds.\n",timeend-timestart);
 }
 
 void FFTGrid::createGrid()
@@ -703,7 +678,7 @@ void FFTGrid::createGrid()
 
   counterForGet_  = 0;
   counterForSet_  = 0;
- 
+
  // LogKit::LogFormatted(LogKit::Error,"\nFFTGrid createComplexGrid : nGrids = %d    maxGrids = %d\n",nGrids_,maxAllowedGrids_);
   if (nGrids_ > maxAllowedGrids_) {
     std::string text;

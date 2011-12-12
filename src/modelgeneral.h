@@ -127,7 +127,7 @@ private:
                                         ModelSettings *& modelSettings);
   int              setPaddingSize(int    nx,
                                   double px);
-  
+
   void             printSettings(ModelSettings       * modelSettings,
                                  const InputFiles    * inputFiles);
   //Compute correlation gradient in terms of i,j and k in grid.

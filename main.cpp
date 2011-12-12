@@ -143,19 +143,19 @@ int main(int argc, char** argv)
   try
   {
     XmlModelFile modelFile(argv[1]);
-    
+
     InputFiles      * inputFiles      = modelFile.getInputFiles();
     ModelSettings   * modelSettings   = modelFile.getModelSettings();
     ModelGeneral    * modelGeneral    = NULL;
     ModelAVOStatic  * modelAVOstatic  = NULL;
     ModelAVODynamic * modelAVOdynamic = NULL;
-    
+
     if (modelFile.getParsingFailed()) {
       LogKit::SetFileLog(IO::FileLog()+IO::SuffixTextFiles(), modelSettings->getLogLevel());
       LogKit::EndBuffering();
       return(1);
     }
-    
+
     std::string errTxt = inputFiles->addInputPathAndCheckFiles();
     if(errTxt != "") {
       LogKit::WriteHeader("Error opening files");
@@ -165,7 +165,7 @@ int main(int argc, char** argv)
       LogKit::EndBuffering();
       return(1);
     }
-    
+
     // Construct ModelGeneral object first.
     // For each data type, construct the static model class before the dynamic.
     Simbox * timeBGSimbox   = NULL;
@@ -191,14 +191,14 @@ int main(int argc, char** argv)
                                           modelAVOstatic);
     if(timeBGSimbox != NULL)
       delete timeBGSimbox;
-    
+
     delete inputFiles;
-    
+
     if (modelGeneral    == NULL || modelGeneral->getFailed()   ||
         modelAVOstatic  == NULL || modelAVOstatic->getFailed() ||
         modelAVOdynamic == NULL || modelAVOdynamic->getFailed())
       return(1);
-    
+
     Crava * crava = NULL;
 
     if(!modelSettings->getForwardModeling())
