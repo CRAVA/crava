@@ -912,7 +912,7 @@ ModelAVODynamic::processReflectionMatrix(float            **& reflectionMatrix,
       LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix with Vp and Vs from earth model\n");
     else
       LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix with Vp and Vs from background model\n");
-    
+
     double vsvp = background->getMeanVsVp();
     setupDefaultReflectionMatrix(reflectionMatrix, vsvp, modelSettings);
   }

@@ -100,7 +100,7 @@ public:
                                                  const NRLib::Grid2D<float>   &    refTimeGradY,
                                                  std::vector<double>        & xGradient,
                                                  std::vector<double>        & yGradient);
-  
+
   void                      setTimeGradientSettings(float distance, float sigma_m);
   void                      findSeismicGradient(FFTGrid                  ** seisCube,
                                                 Simbox                   * timeSimbox,
@@ -108,7 +108,7 @@ public:
                                                 std::vector<double>       & xGradient,
                                                 std::vector<double>       & yGradient,
                                                 std::vector<std::vector<double> > &Sigma_gradient);
-  
+
 private:
   void                      setLogFromVerticalTrend(float *& log, double * zpos, int nBlocks,
                                                     float * vertical_trend, double z0, double dz, int nz);
@@ -151,52 +151,52 @@ private:
 
   void                      findBlockXYZ(Simbox * simbox);
 
-  void                      findXYZforVirtualPart(Simbox * simbox);  
+  void                      findXYZforVirtualPart(Simbox * simbox);
 
   float                     computeElasticImpedance(float         vp,
                                                     float         vs,
                                                     float         rho,
                                                     const float * coeff) const;
-  
+
   void                      smoothTrace(std::vector<float> & trace);
 
-  void                      findPeakTrace(std::vector<float>  & trace, 
-                                          std::vector<double> & zPeak, 
+  void                      findPeakTrace(std::vector<float>  & trace,
+                                          std::vector<double> & zPeak,
                                           std::vector<double> & peak,
-                                          std::vector<double> & b, 
-                                          double dz, 
+                                          std::vector<double> & b,
+                                          double dz,
                                           double ztop);
 
-  void                      peakMatch(std::vector<double> & zPeak, 
-                                      std::vector<double> & peak, 
+  void                      peakMatch(std::vector<double> & zPeak,
+                                      std::vector<double> & peak,
                                       std::vector<double> & b,
-                                      std::vector<double> & zPeakW, 
+                                      std::vector<double> & zPeakW,
                                       std::vector<double> & peakW,
                                       std::vector<double> & bW);
-  
-  double                    computeShift(std::vector<double> & zPeak, 
+
+  double                    computeShift(std::vector<double> & zPeak,
                                          std::vector<double> & zPeakW,
                                          double z0);
-  
-  void                      computeGradient(std::vector<double> & Qepsilon, 
+
+  void                      computeGradient(std::vector<double> & Qepsilon,
                                             std::vector<double> & Qepsilon_data,
-                                            std::vector<double> & zShift, 
-                                            int nx, 
-                                            int ny, 
-                                            double dx, 
+                                            std::vector<double> & zShift,
+                                            int nx,
+                                            int ny,
+                                            double dx,
                                             double dy);
 
-  void                      smoothGradient(std::vector<double>               & xGradient, 
+  void                      smoothGradient(std::vector<double>               & xGradient,
                                            std::vector<double>               & yGradient,
-                                           std::vector<double>               & Qepsilon, 
+                                           std::vector<double>               & Qepsilon,
                                            std::vector<double>               & Qepsilon_data,
                                            std::vector<std::vector<double> > & Sigma_gradient);
-  void                      computePrecisionMatrix(double & a, 
-                                                   double & b, 
+  void                      computePrecisionMatrix(double & a,
+                                                   double & b,
                                                    double & c);
-  
+
   std::string    wellname_;                 ///< Name of well
-  
+
   double       * xpos_;                     ///<
   double       * ypos_;                     ///< Simbox XYZ value for block
   double       * zpos_;                     ///<

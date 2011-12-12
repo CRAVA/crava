@@ -367,7 +367,7 @@ Crava::computeVariances(fftw_real     * corrT,
   delete [] errorSmooth;
 }
 
-void 
+void
 Crava::computeElasticImpedanceTimeCovariance(fftw_real* eiCovT,const float* corrT,float** Var0,float * A ) const
 {
   double eiVar=0.0;
@@ -379,14 +379,14 @@ Crava::computeElasticImpedanceTimeCovariance(fftw_real* eiCovT,const float* corr
     eiCovT[k]=static_cast<fftw_real>(eiVar*corrT[k]);
 }
 
-void 
-Crava::computeReflectionCoefficientTimeCovariance(fftw_real* refCovT,const float* corrT,float** Var0,float * A ) const 
+void
+Crava::computeReflectionCoefficientTimeCovariance(fftw_real* refCovT,const float* corrT,float** Var0,float * A ) const
 {
   computeElasticImpedanceTimeCovariance(refCovT,corrT,Var0,A );
-  
+
   fftw_real first = refCovT[0];
   fftw_real prev  = refCovT[nzp_-1];
-  
+
   for(int i=0;i<nzp_-1;i++)
   {
     fftw_real curr = refCovT[i];
@@ -489,7 +489,7 @@ Crava:: divideDataByScaleWavelet()
   fftw_complex* cData ;
   fftw_complex* adjustmentFactor;
 
-  
+
   rfftwnd_plan plan1,plan2;
 
   rData  = static_cast<fftw_real*>(fftw_malloc(2*(nzp_/2+1)*sizeof(fftw_real)));
@@ -510,12 +510,11 @@ Crava:: divideDataByScaleWavelet()
       seisData_[l]->writeStormFile(fileName, simbox_, false, true, true);
     }
 
-    
     seisData_[l]->setAccessMode(FFTGrid::RANDOMACCESS);
     for(i=0; i < nxp_; i++)
       for(j=0; j< nyp_; j++)
       {
-        // gets data 
+        // gets data
         int iInd=i;
         int jInd=j;
 
@@ -536,7 +535,6 @@ Crava:: divideDataByScaleWavelet()
         if(jInd >= ny_ )
           jInd = 2*ny_-jInd-1;
 
-        
         for(k=0;k<nzp_;k++)
         {
           rData[k] = seisData_[l]->getRealValue(i,j,k, true)/static_cast<float>(sqrt(static_cast<float>(nzp_)));
@@ -549,22 +547,21 @@ Crava:: divideDataByScaleWavelet()
         }
         rfftwnd_one_real_to_complex(plan1,rData ,cData); // fourier transform of data in profile (i,j)
         // end get data
-      
+
         // Wavelet local properties
-        localWavelet = seisWavelet_[l]->getLocalWavelet1D(iInd,jInd);  // 
-        double sfLoc     =(simbox_->getRelThick(i,j)*seisWavelet_[l]->getLocalStretch(iInd,jInd));// scale factor from thickness stretch + (local stretch when 3D wavelet) 
-        
+        localWavelet = seisWavelet_[l]->getLocalWavelet1D(iInd,jInd);  //
+        double sfLoc     =(simbox_->getRelThick(i,j)*seisWavelet_[l]->getLocalStretch(iInd,jInd));// scale factor from thickness stretch + (local stretch when 3D wavelet)
+
         double relT   = simbox_->getRelThick(i,j);
         double deltaF = static_cast<double>(nz_)*1000.0/(relT*simbox_->getlz()*static_cast<double>(nzp_));
-        
+
         computeAdjustmentFactor( adjustmentFactor, localWavelet , sfLoc, seisWavelet_[l],  correlations_,A_[l],static_cast<float>(errThetaCov_[l][l]));
         delete localWavelet;
 
         for(k=0;k < (nzp_/2 +1);k++) // all complex values
         {
-          
           if( (deltaF*k < highCut_ ) && (deltaF*k > lowCut_ )) //NBNB frequency cleaning
-          {            
+          {
             tmp           = cData[k].re * adjustmentFactor[k].re - cData[k].im * adjustmentFactor[k].im;
             cData[k].im   = cData[k].im * adjustmentFactor[k].re + cData[k].re * adjustmentFactor[k].im;
             cData[k].re   = tmp;
@@ -612,10 +609,10 @@ Crava:: divideDataByScaleWavelet()
 }
 
 
-void               
+void
 Crava::computeAdjustmentFactor(fftw_complex* adjustmentFactor, Wavelet1D* wLocal, double sf, Wavelet * wGlobal, const Corr* corr, float * A, float errorVar)
 {
-// Computes the 1D inversion (of a single cube) with the local wavelet 
+// Computes the 1D inversion (of a single cube) with the local wavelet
 // and then multiply up with the values of the global wavelet
 // in order to adjust the data that inversion is ok with new data.
   float tolFac= 0.05f;
@@ -647,7 +644,7 @@ Crava::computeAdjustmentFactor(fftw_complex* adjustmentFactor, Wavelet1D* wLocal
   wGlobal->fft1DInPlace();
   float modW = wGlobal->getNorm();// note the wavelet norm is in time domain. In frequency domain we have an additional factor float(nzp_);
                                   // this is because we define the wavelet as an operator hence the fft is not norm preserving.
-  modW *= modW; 
+  modW *= modW;
   float maxfrequency = static_cast<float>((nzp_/2)*1000.0*nz_)/static_cast<float>(simbox_->getlz()*nzp_);
   modW *= maxfrequency/static_cast<float>(highCut_); // this is the mean squared sum over relevant frequency band.(up to highCut_)
                                                // Makes the problem less sensitive to the padding size
@@ -688,8 +685,8 @@ Crava::computeAdjustmentFactor(fftw_complex* adjustmentFactor, Wavelet1D* wLocal
       sigma2Loc *= wLoc2Adj/wLoc2;
     }
 
-    adjustmentFactor[k].re = (wLoc.re/(tau2*wLoc2Adj+sigma2Loc )) / ( wGlob2Adj/(tau2*wGlob2+sigma2Glob)) ;  
-    adjustmentFactor[k].im = (wLoc.im/(tau2*wLoc2Adj+sigma2Loc )) / ( wGlob2Adj/(tau2*wGlob2+sigma2Glob)) ; 
+    adjustmentFactor[k].re = (wLoc.re/(tau2*wLoc2Adj+sigma2Loc )) / ( wGlob2Adj/(tau2*wGlob2+sigma2Glob)) ;
+    adjustmentFactor[k].im = (wLoc.im/(tau2*wLoc2Adj+sigma2Loc )) / ( wGlob2Adj/(tau2*wGlob2+sigma2Glob)) ;
   }
   // clean up
   delete errorSmooth;
@@ -857,11 +854,11 @@ Crava::computePostMeanResidAndFFTCov()
     fileName = std::string("FourierWavelet_") + angle + IO::SuffixGeneralData();
     wavelet1D->printToFile(fileName);
     delete wavelet1D;
-    
+
     delete errorSmooth2[l];
   }
 
- 
+
   delete[] errorSmooth2;
 
   meanAlpha_->setAccessMode(FFTGrid::READANDWRITE);  //   Note
@@ -944,7 +941,7 @@ Crava::computePostMeanResidAndFFTCov()
         for(l=0; l < ntheta_; l++)
         {
           //float errorSmoothMult =  1.0f/errorSmooth3[l]->findNormWithinFrequencyBand(lowCut_,highCut_); // defines scaleFactor;
-          float errorSmoothMult =  1.0f/errorSmooth3[l]->getNorm(); // defines scaleFactor;  
+          float errorSmoothMult =  1.0f/errorSmooth3[l]->getNorm(); // defines scaleFactor;
           errMult2[l].re  *= errorSmoothMult; // defines content of errMult2
           errMult2[l].im  *= errorSmoothMult; // defines content of errMult2
         }

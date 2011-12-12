@@ -103,43 +103,43 @@ private:
 
   std::string               wellname_;
   std::string               wellfilename_;                // wellname given in RMS well file
-                       
+
   double                    xpos0_;                       // x-coordinate from well file header
   double                    ypos0_;                       // y-coordinate from well file header
   double                  * xpos_;                        // x-coord. in well
   double                  * ypos_;                        // y-coord in well
   double                  * zpos_;                        // time step
   double                  * md_;
-                       
+
   float                   * alpha_;
   float                   * beta_;
   float                   * rho_;
   int                     * facies_;
-                       
+
   float                   * alpha_background_resolution_; // Vp  - filtered to background resolution
   float                   * beta_background_resolution_;  //
   float                   * rho_background_resolution_;   //
-                       
+
   float                   * alpha_seismic_resolution_;    // Vp  - filtered to seismic resolution
   float                   * beta_seismic_resolution_;     //
   float                   * rho_seismic_resolution_;      //
-                       
+
   BlockedLogs             * blockedLogsOrigThick_;
   BlockedLogs             * blockedLogsConstThick_;
   BlockedLogs             * blockedLogsExtendedBG_;
-                       
+
   int                       useForFaciesProbabilities_;   //Uses the indicator enum from Modelsettings.
   int                       useForWaveletEstimation_;     //Uses the indicator enum from Modelsettings.
   int                       useForBackgroundTrend_;       //Uses the indicator enum from Modelsettings.
-                       
+
   std::string               errTxt_;
   int                       error_;
   int                       timemissing_;
   int                       realVsLog_;                   //Uses the indicator enum from Modelsettings.
   bool                      isDeviated_;
-  float                     meanVsVp_;                    // Average Vs/Vp for this well 
+  float                     meanVsVp_;                    // Average Vs/Vp for this well
   int                       nVsVp_;                       // Number of samples behind Vs/Vp estimate
-                       
+
   int                       nFacies_;
   std::string               faciesLogName_;
   std::vector<std::string>  faciesNames_;

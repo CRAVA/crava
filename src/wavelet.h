@@ -57,7 +57,7 @@ public:
 
 // Access methods for wavelet values
   fftw_real     getRAmp(int k);
-  fftw_real*    getRAmp(){ return rAmp_;} 
+  fftw_real*    getRAmp(){ return rAmp_;}
 
   fftw_complex  getCAmp(int k) const;
 
@@ -140,7 +140,7 @@ public:
                                  int                                        /*i*/) {return 1.0f;}
 
  float          findNormWithinFrequencyBand(float loCut ,float hiCut ) const;
- void           nullOutsideFrequencyBand(float loCut ,float hiCut ); 
+ void           nullOutsideFrequencyBand(float loCut ,float hiCut );
 
 protected:
   float          getTheta()          const {return theta_;}
@@ -170,7 +170,7 @@ protected:
                                 fftw_real                               * vec ,
                                 int                                       nzp) const;
 
- 
+
   fftw_real*     averageWavelets(const std::vector<std::vector<float> > & wavelet_r,
                                  int                                      nWells,
                                  int                                      nzp,
@@ -192,7 +192,7 @@ protected:
                            fftw_real                         * rAmp,
                            int                                 nt);
 
-  
+
 
   double         Ricker(double t, float peakF);
 

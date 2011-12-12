@@ -2468,7 +2468,7 @@ XmlModelFile::parseAdvancedSettings(TiXmlNode * node, std::string & errTxt)
     errTxt += "You cannot both specify a Vp/Vs ratio (" + NRLib::ToString(ratio,2)
               + ") and ask the ratio to be estimated from well data.\n";
   }
-  
+
   bool fileGrid;
   if(parseBool(root, "use-intermediate-disk-storage", fileGrid, errTxt) == true)
     modelSettings_->setFileGrid(fileGrid);

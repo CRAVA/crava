@@ -446,7 +446,7 @@ BlockedLogs::findMostProbable(const int * count,
       inconclusive = true;
     }
   }
-  
+
   if (inconclusive) {
     std::vector<int> equal;
     for (int i=0 ; i < nFacies ; i++ ) {
@@ -457,7 +457,7 @@ BlockedLogs::findMostProbable(const int * count,
     int j = (blockIndex + 1) % equal.size();
     maxIndex = equal[j];
   }
-  
+
   return (maxIndex);
 }
 
@@ -934,7 +934,7 @@ BlockedLogs::setLogFromVerticalTrend(float      * vertical_trend,
       actual_synt_seismic_data_[iAngle] = blockedLog;
     }
     else {
-      LogKit::LogFormatted(LogKit::Error,"\nUnknown log type \""+type+
+      LogKit::LogFormatted(LogKit::Error,"\nUnknown log type \""+type
                            "\" in BlockedLogs::setLogFromVerticalTrend()\n");
       exit(1);
     }
@@ -1489,7 +1489,7 @@ void BlockedLogs::findContiniousPartOfData(const std::vector<bool> & hasData,
                                            int                     & start,
                                            int                     & length) const
 {
-  int  i; 
+  int  i;
   int  lPice            =  0;
   int  lengthMaxPice    = -1;
   int  startLongestPice =  0;
@@ -1523,8 +1523,8 @@ void BlockedLogs::findContiniousPartOfData(const std::vector<bool> & hasData,
 
   start  = startLongestPice;
   length = lengthMaxPice;
-  
-  if (length == -1) 
+
+  if (length == -1)
     length = 0;
 }
 

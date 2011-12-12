@@ -1697,14 +1697,14 @@ void WellData::findMeanVsVp(const std::vector<Surface*> & waveletEstimInterval)
   nVsVp_    = 0;
 
   for(int i=0; i < nd_; i++) {
-    if (alpha_background_resolution_[i] != RMISSING && 
+    if (alpha_background_resolution_[i] != RMISSING &&
         beta_background_resolution_[i]  != RMISSING &&
         active_cell[i]) {
       meanVsVp_ += beta_background_resolution_[i]/alpha_background_resolution_[i];
       nVsVp_    += 1;
     }
   }
-  
+
   meanVsVp_ /= nVsVp_;
 
   if (useInterval)
