@@ -1466,9 +1466,9 @@ void FaciesProb::normalizeCubes(FFTGrid **priorFaciesCubes)
           total ++;
           if (sum == 0)
             totZero ++;
-          else if (sum>1)
+          else if (sum>1.001)
             large ++;
-          else if( sum>0 && sum<1)
+          else if( sum>0 && sum<0.999)
             small ++;
         }
         if (sum>0.0)
@@ -1485,22 +1485,22 @@ void FaciesProb::normalizeCubes(FFTGrid **priorFaciesCubes)
   if (negative<0)
   {
     LogKit::LogFormatted(LogKit::Warning,"\nWARNING: Negative facies probabilities have been detected, and set to zero. \n         The probabilities have been rescaled. The most negative value is %4.2f.\n",negative);
-    TaskList::addTask("Check that the prior facies probability cubes have positive probability everywhere");
+    TaskList::addTask("Negative prior facies probabilities detected. This is a serious problem. \n Make sure that the prior facies probability cubes have positive probability everywhere.");
   }
   if (totZero > 0)
   {
     LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The sum over the prior facies probabilities is zero in %d of %d locations.\n",totZero,total);
-    TaskList::addTask("Check that the prior facies probability cubes are defined everywhere");
+    TaskList::addTask("In some cells, the prior facies probabilities sum up to zero. This is a serious problem. \n Make sure that the prior facies probability cubes are defined everywhere.");
   }
   if (small > 0)
   {
     LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The sum over the prior facies probabilities is less than one in %d of %d locations. \n         The probabilities have been rescaled.\n",small,total);
-    TaskList::addTask("Check that the prior facies probability cubes sum to one everywhere");
+    TaskList::addTask("The prior facies probability cubes does not sum to one everywhere. This is a serious problem. ");
   }
   if (large > 0)
   {
     LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The sum over the prior facies probabilities is larger than one in %d of %d locations. \n         The probabilities have been rescaled.\n",large, total);
-    TaskList::addTask("Check that the prior facies probability cubes sum to one everywhere");
+    TaskList::addTask("The sum over prior facies probabilities is larger than one in some locations. \n Make sure that the prior facies probability cubes sum to one everywhere.");
   }
   for(i=0;i<nFacies_;i++)
     priorFaciesCubes[i]->endAccess();

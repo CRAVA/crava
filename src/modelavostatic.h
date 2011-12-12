@@ -100,6 +100,10 @@ private:
                                     std::string      & tmpErrText,
                                     int              & error);
 
+  void             checkAvailableMemory(Simbox              * timeSimbox,
+                                        ModelSettings       * modelSettings,
+                                        const InputFiles    * inputFiles);
+
   bool                      forwardModeling_;
   int                       numberOfWells_;
 

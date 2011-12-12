@@ -158,6 +158,7 @@ protected:
   void                 makeCircCorrTPosDef(fftw_real* CircularCorrT,int minIntFq);
   fftw_complex*        fft1DzInPlace(fftw_real*  in);
   fftw_real*           invFFT1DzInPlace(fftw_complex* in);
+  void                 createGrid();
 
   //Interpolation into SegY and sgri
   float                getRegularZInterpolatedRealValue(int i, int j, double z0Reg,
