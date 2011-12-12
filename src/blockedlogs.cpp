@@ -934,7 +934,7 @@ BlockedLogs::setLogFromVerticalTrend(float      * vertical_trend,
       actual_synt_seismic_data_[iAngle] = blockedLog;
     }
     else {
-      LogKit::LogFormatted(LogKit::Error,"\nUnknown log type \""+type
+      LogKit::LogFormatted(LogKit::Error,"\nUnknown log type \""+type+
                            "\" in BlockedLogs::setLogFromVerticalTrend()\n");
       exit(1);
     }
