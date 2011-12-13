@@ -39,9 +39,11 @@
 #include <assert.h>
 #include <time.h>
 
-Crava::Crava(ModelSettings * modelSettings,
-             ModelGeneral * modelGeneral, ModelAVOStatic * modelAVOstatic, ModelAVODynamic * modelAVOdynamic,
-             SpatialWellFilter *spatwellfilter)
+Crava::Crava(ModelSettings     * modelSettings,
+             ModelGeneral      * modelGeneral,
+             ModelAVOStatic    * modelAVOstatic,
+             ModelAVODynamic   * modelAVOdynamic,
+             SpatialWellFilter * spatwellfilter)
 {
   LogKit::WriteHeader("Building Stochastic Model");
 
@@ -894,6 +896,9 @@ Crava::computePostMeanResidAndFFTCov()
   {
     seisWaveletForNorm[l]=seisWavelet_[l]->getWavelet1DForErrorNorm();
     seisWaveletForNorm[l]->fft1DInPlace();
+    if(simbox_->getIsConstantThick()) {
+      seisWavelet_[l]->fft1DInPlace();
+    }
   }
 
   LogKit::LogFormatted(LogKit::Low,"\nBuilding posterior distribution:");
@@ -907,47 +912,45 @@ Crava::computePostMeanResidAndFFTCov()
   for(k = 0; k < nzp_; k++)
   {
     realFrequency = static_cast<float>((nz_*1000.0f)/(simbox_->getlz()*nzp_)*std::min(k,nzp_-k)); // the physical frequency
-    kD = diff1Operator->getCAmp(k);                   // defines content of kD
-      if( simbox_->getIsConstantThick() == true)
+    kD = diff1Operator->getCAmp(k);                      // defines content of kD
+    if(simbox_->getIsConstantThick())
+    {
+      // defines content of K=WDA
+      fillkW(k, kW, seisWavelet_);
+
+      lib_matrProdScalVecCpx(kD, kW, ntheta_);
+      lib_matrProdDiagCpxR(errMult1, A_, ntheta_, 3, K); // defines content of (WDA) K
+
+      // defines error-term multipliers
+      fillkWNorm(k,errMult1,seisWaveletForNorm);         // defines input of  (kWNorm) errMult1
+      fillkWNorm(k,errMult2,errorSmooth3);               // defines input of  (kWD3Norm) errMult2
+      lib_matrFillOnesVecCpx(errMult3,ntheta_);          // defines content of errMult3
+    }
+    else
+    {
+      kD3 = diff3Operator->getCAmp(k);                   // defines  kD3
+
+      // defines content of K = DA
+      lib_matrFillValueVecCpx(kD, errMult1, ntheta_);    // errMult1 used as dummy
+      lib_matrProdDiagCpxR(errMult1, A_, ntheta_, 3, K); // defines content of ( K = DA )
+
+      // defines error-term multipliers
+      lib_matrFillOnesVecCpx(errMult1,ntheta_);          // defines content of errMult1
+      for(l=0; l < ntheta_; l++)
       {
-        // defines content of K=WDA
-        fillkW(k,errMult1);                                    // errMult1 used as dummy
-        lib_matrProdScalVecCpx(kD, errMult1, ntheta_);         // errMult1 used as dummy
-        lib_matrProdDiagCpxR(errMult1, A_, ntheta_, 3, K);     // defines content of (WDA)     K
-
-        // defines error-term multipliers
-
-        fillkWNorm(k,errMult1,seisWaveletForNorm);               // defines input of  (kWNorm) errMult1
-        fillkWNorm(k,errMult2,errorSmooth3);               // defines input of  (kWD3Norm) errMult2
-        lib_matrFillOnesVecCpx(errMult3,ntheta_);          // defines content of errMult3
-
+        errMult1[l].re /= seisWavelet_[l]->getNorm();    // defines content of errMult1
       }
-      else //simbox_->getIsConstantThick() == false
+
+      lib_matrFillValueVecCpx(kD3,errMult2,ntheta_);     // defines content of errMult2
+      for(l=0; l < ntheta_; l++)
       {
-        kD3 = diff3Operator->getCAmp(k);          // defines  kD3
-
-        // defines content of K = DA
-        lib_matrFillValueVecCpx(kD, errMult1, ntheta_);      // errMult1 used as dummy
-        lib_matrProdDiagCpxR(errMult1, A_, ntheta_, 3, K); // defines content of ( K = DA )
-
-        // defines error-term multipliers
-        lib_matrFillOnesVecCpx(errMult1,ntheta_);        // defines content of errMult1
-        for(l=0; l < ntheta_; l++)
-        {
-          errMult1[l].re /= seisWavelet_[l]->getNorm();  // defines content of errMult1
-        }
-
-        lib_matrFillValueVecCpx(kD3,errMult2,ntheta_);   // defines content of errMult2
-        for(l=0; l < ntheta_; l++)
-        {
-          //float errorSmoothMult =  1.0f/errorSmooth3[l]->findNormWithinFrequencyBand(lowCut_,highCut_); // defines scaleFactor;
-          float errorSmoothMult =  1.0f/errorSmooth3[l]->getNorm(); // defines scaleFactor;
-          errMult2[l].re  *= errorSmoothMult; // defines content of errMult2
-          errMult2[l].im  *= errorSmoothMult; // defines content of errMult2
-        }
-        fillInverseAbskWRobust(k,errMult3,seisWaveletForNorm);// defines content of errMult3
-      } //simbox_->getIsConstantThick()
-
+        //float errorSmoothMult =  1.0f/errorSmooth3[l]->findNormWithinFrequencyBand(lowCut_,highCut_); // defines scaleFactor;
+        float errorSmoothMult =  1.0f/errorSmooth3[l]->getNorm(); // defines scaleFactor;
+        errMult2[l].re  *= errorSmoothMult; // defines content of errMult2
+        errMult2[l].im  *= errorSmoothMult; // defines content of errMult2
+      }
+      fillInverseAbskWRobust(k,errMult3,seisWaveletForNorm);// defines content of errMult3
+    }
 
     for( j = 0; j < nyp_; j++) {
       for( i = 0; i < cnxp; i++) {
@@ -1552,19 +1555,17 @@ Crava::computeWDCorrMVar (Wavelet1D* WD ,fftw_real* corrT)
 
 
 void
-Crava::fillkW(int k, fftw_complex* kW )
+Crava::fillkW(int k, fftw_complex* kW, Wavelet** seisWavelet)
 {
-  int l;
-  for(l = 0; l < ntheta_; l++)
+  for(int l = 0; l < ntheta_; l++)
   {
-    kW[l].re  = float( seisWavelet_[l]->getCAmp(k).re );//
-    kW[l].im  = float( seisWavelet_[l]->getCAmp(k).im );//
+    kW[l].re  = float( seisWavelet[l]->getCAmp(k).re );
+    kW[l].im  = float( seisWavelet[l]->getCAmp(k).im );
   }
-
 }
 
 void
-Crava::fillkWNorm(int k, fftw_complex* kWNorm,Wavelet1D** wavelet )
+Crava::fillkWNorm(int k, fftw_complex* kWNorm, Wavelet1D** wavelet )
 {
   int l;
   for(l = 0; l < ntheta_; l++)

@@ -28,9 +28,11 @@ class SpatialWellFilter;
 class Crava
 {
 public:
-  Crava(ModelSettings * modelSettings,
-        ModelGeneral * modelGeneral, ModelAVOStatic * modelAVOstatic, ModelAVODynamic * modelAVOdynamic,
-        SpatialWellFilter *spatwellfilter);
+  Crava(ModelSettings     * modelSettings,
+        ModelGeneral      * modelGeneral,
+        ModelAVOStatic    * modelAVOstatic,
+        ModelAVODynamic   * modelAVOdynamic,
+        SpatialWellFilter * spatwellfilter);
   ~Crava();
   int                computePostMeanResidAndFFTCov();
   int                simulate( RandomGen * randomGen );
@@ -73,7 +75,7 @@ private:
   void               computeReflectionCoefficientTimeCovariance(fftw_real* refCovT,const float* corrT,float** Var0,float * A ) const ;
 
   int                checkScale(void);
-  void               fillkW(int k, fftw_complex* kW );
+  void               fillkW(int k, fftw_complex* kW, Wavelet** seisWavelet);
   void               fillInverseAbskWRobust(int k, fftw_complex* invkW ,Wavelet1D** seisWaveletForNorm);
   void               fillkWNorm(int k, fftw_complex* kWNorm, Wavelet1D** wavelet);
 
