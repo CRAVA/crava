@@ -653,7 +653,7 @@ Crava::computeAdjustmentFactor(fftw_complex* adjustmentFactor, Wavelet1D* wLocal
 
   for(int k=0;k< (nzp_/2 +1);k++)
   {
-    fftw_complex wLoc   = wLocal->getCAmp(k,static_cast<float>(sf)); // returns complex conjugate ...
+    fftw_complex wLoc   = wLocal->getCAmp(k,static_cast<float>(sf)); // returns complex conjugate ...see below 
     float wLoc2          = (wLoc.re*wLoc.re+wLoc.im*wLoc.im);
     fftw_complex wGlob  = wGlobal->getCAmp(k);
     float wGlob2          = (wGlob.re*wGlob.re+wGlob.im*wGlob.im);
@@ -688,7 +688,7 @@ Crava::computeAdjustmentFactor(fftw_complex* adjustmentFactor, Wavelet1D* wLocal
     }
 
     adjustmentFactor[k].re = (wLoc.re/(tau2*wLoc2Adj+sigma2Loc )) / ( wGlob2Adj/(tau2*wGlob2+sigma2Glob)) ;
-    adjustmentFactor[k].im = (wLoc.im/(tau2*wLoc2Adj+sigma2Loc )) / ( wGlob2Adj/(tau2*wGlob2+sigma2Glob)) ;
+    adjustmentFactor[k].im = (wLoc.im/(tau2*wLoc2Adj+sigma2Loc )) / ( wGlob2Adj/(tau2*wGlob2+sigma2Glob)) ; // this is where we use thatthe value we have is the complex conjugate (otherwise it should be minus)
   }
   // clean up
   delete errorSmooth;
@@ -919,7 +919,7 @@ Crava::computePostMeanResidAndFFTCov()
       fillkW(k, kW, seisWavelet_);
 
       lib_matrProdScalVecCpx(kD, kW, ntheta_);
-      lib_matrProdDiagCpxR(errMult1, A_, ntheta_, 3, K); // defines content of (WDA) K
+      lib_matrProdDiagCpxR(kW, A_, ntheta_, 3, K); // defines content of (WDA) K
 
       // defines error-term multipliers
       fillkWNorm(k,errMult1,seisWaveletForNorm);         // defines input of  (kWNorm) errMult1
@@ -1484,7 +1484,7 @@ Crava::computeSyntSeismic(FFTGrid * alpha, FFTGrid * beta, FFTGrid * rho)
 
         for(int k=0;k<(nzp_/2 +1);k++) {
           fftw_complex r = resultVec.getCAmp(k);
-          fftw_complex w = localWavelet->getCAmp(k,static_cast<float>(sf));
+          fftw_complex w = localWavelet->getCAmp(k,static_cast<float>(sf));// returns complex conjugate
           fftw_complex s;
           s.re = r.re*w.re+r.im*w.im; //Use complex conjugate of w
           s.im = -r.re*w.im+r.im*w.re;
@@ -1560,7 +1560,7 @@ Crava::fillkW(int k, fftw_complex* kW, Wavelet** seisWavelet)
   for(int l = 0; l < ntheta_; l++)
   {
     kW[l].re  = float( seisWavelet[l]->getCAmp(k).re );
-    kW[l].im  = float( seisWavelet[l]->getCAmp(k).im );
+    kW[l].im  = -float( seisWavelet[l]->getCAmp(k).im ); // adjust for complex conjugate in getCAmp(k)
   }
 }
 
@@ -1571,7 +1571,7 @@ Crava::fillkWNorm(int k, fftw_complex* kWNorm, Wavelet1D** wavelet )
   for(l = 0; l < ntheta_; l++)
   {
     kWNorm[l].re   = float( wavelet[l]->getCAmp(k).re/wavelet[l]->getNorm());
-    kWNorm[l].im   = float( wavelet[l]->getCAmp(k).im/wavelet[l]->getNorm());
+    kWNorm[l].im   = -float( wavelet[l]->getCAmp(k).im/wavelet[l]->getNorm()); // // adjust for complex conjugate in getCAmp(k)
   }
 }
 
