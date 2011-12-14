@@ -127,6 +127,8 @@ void SpatialWellFilter::doFiltering(Corr                        * corr,
     }
   }
 
+  bool no_wells_filtered = true;
+
   for(int w1=0;w1<nWells;w1++)
   {
     n = wells[w1]->getBlockedLogsOrigThick()->getNumberOfBlocks();
@@ -134,6 +136,7 @@ void SpatialWellFilter::doFiltering(Corr                        * corr,
     if (filterWell[w1] != ModelSettings::NO)
     {
       LogKit::LogFormatted(LogKit::Low,"\nFiltering well "+wells[w1]->getWellname());
+      no_wells_filtered = false;
 
       sigmapost = new double * [3*n];
       for(int i=0;i<3*n;i++)
@@ -269,6 +272,10 @@ void SpatialWellFilter::doFiltering(Corr                        * corr,
 
   if(useVpRhoFilter == true)
     completeSigmaEVpRho(lastn,cravaResult,noiseScale);
+
+  if (no_wells_filtered) {
+    LogKit::LogFormatted(LogKit::Low,"\nNo wells have been filtered.\n");
+  }
 
   Timings::setTimeFiltering(wall,cpu);
 }

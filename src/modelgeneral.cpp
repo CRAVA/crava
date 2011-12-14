@@ -1446,7 +1446,7 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
           else if (modelSettings->getIndicatorWavelet(i) == ModelSettings::NO)
             LogKit::LogFormatted(LogKit::Low,"    %-13s  ","no");
           else
-            LogKit::LogFormatted(LogKit::Low,"    %-13s  ","if possible");
+            LogKit::LogFormatted(LogKit::Low,"    %-12s  ","if possible");
         }
         if (estimateFaciesProb) {
           if (modelSettings->getIndicatorFacies(i) == ModelSettings::YES)
@@ -1532,7 +1532,7 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
   LogKit::LogFormatted(LogKit::Low,"\nTime surfaces:\n");
   if (modelSettings->getParallelTimeSurfaces())
   {
-    LogKit::LogFormatted(LogKit::Low,"  Surface                                  : "+inputFiles->getTimeSurfFile(0)+"\n");
+    LogKit::LogFormatted(LogKit::Low,"  Reference surface                        : "+inputFiles->getTimeSurfFile(0)+"\n");
     LogKit::LogFormatted(LogKit::Low,"  Shift to top surface                     : %10.1f\n", modelSettings->getTimeDTop());
     LogKit::LogFormatted(LogKit::Low,"  Time slice                               : %10.1f\n", modelSettings->getTimeLz());
     LogKit::LogFormatted(LogKit::Low,"  Sampling density                         : %10.1f\n", modelSettings->getTimeDz());
