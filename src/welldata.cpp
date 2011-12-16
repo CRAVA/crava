@@ -1553,53 +1553,65 @@ WellData::calculateDeviation(float  & devAngle,
       }
     }
   }
-  //
-  // Find last log entry in simbox
-  //
-  int iLast = iFirst;
-  for(i = iFirst + 1 ; i < nd_ ; i++)
-  {
-    if(timeSimbox->isInside(xpos_[i], ypos_[i]))
+
+  if (iFirst != IMISSING) {
+    //
+    // Find last log entry in simbox
+    //
+    int iLast = iFirst;
+    for(i = iFirst + 1 ; i < nd_ ; i++)
     {
-      if (zpos_[i] > timeSimbox->getBot(xpos_[i], ypos_[i]))
+      if(timeSimbox->isInside(xpos_[i], ypos_[i]))
+        {
+          if (zpos_[i] > timeSimbox->getBot(xpos_[i], ypos_[i]))
+            break;
+        }
+      else
         break;
+      iLast = i;
     }
-    else
-      break;
-    iLast = i;
-  }
-  double x0 = xpos_[iFirst];
-  double y0 = ypos_[iFirst];
-  double z0 = zpos_[iFirst];
-  for (int i = iFirst+1 ; i < iLast+1 ; i++)
-  {
-    double x1 = xpos_[i];
-    double y1 = ypos_[i];
-    double z1 = zpos_[i];
-    float dz = static_cast<float>(z1 - z0);
-    if (dz > max_dz)
-    {
-      float deviation = static_cast<float>(sqrt((x1 - x0)*(x1 - x0) + (y1 - y0)*(y1 - y0))/(z1 - z0));
-      if (deviation > max_deviation)
-      {
-        max_deviation = deviation;
+
+    if (iLast > iFirst) {
+      double x0 = xpos_[iFirst];
+      double y0 = ypos_[iFirst];
+      double z0 = zpos_[iFirst];
+      for (int i = iFirst+1 ; i < iLast+1 ; i++) {
+        double x1 = xpos_[i];
+        double y1 = ypos_[i];
+        double z1 = zpos_[i];
+        float dz = static_cast<float>(z1 - z0);
+
+        if (dz > max_dz || i == iLast) {
+          float deviation = static_cast<float>(sqrt((x1 - x0)*(x1 - x0) + (y1 - y0)*(y1 - y0))/dz);
+          if (deviation > max_deviation) {
+            x0 = x1;
+            y0 = y1;
+            z0 = z1;
+            max_deviation = deviation;
+          }
+        }
       }
     }
-  }
-  devAngle = static_cast<float>(atan(max_deviation)*180.0/NRLib::Pi);
-  LogKit::LogFormatted(LogKit::Low,"   Maximum local deviation is %.1f degrees.",devAngle);
+    devAngle = static_cast<float>(atan(max_deviation)*180.0/NRLib::Pi);
+    LogKit::LogFormatted(LogKit::Low,"   Maximum local deviation is %.1f degrees.",devAngle);
 
-  if (max_deviation > thr_deviation)
-  {
-    if(useForWaveletEstimation_ == ModelSettings::NOTSET)
-      useForWaveletEstimation_ = ModelSettings::NO;
-    isDeviated_ = true;
-    LogKit::LogFormatted(LogKit::Low," Well is treated as deviated.\n");
+    if (max_deviation > thr_deviation)
+    {
+      if(useForWaveletEstimation_ == ModelSettings::NOTSET) {
+        useForWaveletEstimation_ = ModelSettings::NO;
+      }
+      isDeviated_ = true;
+      LogKit::LogFormatted(LogKit::Low," Well is treated as deviated.\n");
+    }
+    else
+    {
+      isDeviated_ = false;
+      LogKit::LogFormatted(LogKit::Low,"\n");
+    }
   }
-  else
-  {
+  else {
     isDeviated_ = false;
-    LogKit::LogFormatted(LogKit::Low,"\n");
+    LogKit::LogFormatted(LogKit::Low,"Well is outside inversion interval. Cannot calculate deviation.\n");
   }
 }
 

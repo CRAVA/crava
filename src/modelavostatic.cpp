@@ -666,7 +666,7 @@ ModelAVOStatic::checkAvailableMemory(Simbox        * timeSimbox,
   LogKit::LogFormatted(LogKit::High,  "Memory needed for holding internal grids (%2d): %10.2f MB\n",nGrids, mem1/(1024.f*1024.f));
   LogKit::LogFormatted(LogKit::High,  "Memory needed for holding other entities     : %10.2f MB\n",mem0/(1024.f*1024.f));
 
-  if (gigaBytes < 0.01f)
+  if (gigaBytes < 1.0f)
     LogKit::LogFormatted(LogKit::Low,"\nMemory needed by CRAVA:  %.2f megaBytes\n",megaBytes);
   else
     LogKit::LogFormatted(LogKit::Low,"\nMemory needed by CRAVA:  %.2f gigaBytes\n",gigaBytes);
