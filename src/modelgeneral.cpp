@@ -463,7 +463,8 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
     float minHorRes = modelSettings->getMinHorizontalRes();
     if (timeSimbox->getdx() < minHorRes || timeSimbox->getdy() < minHorRes){
       failed = true;
-      errText += "The horizontal resolution in dx and dy should be above "+NRLib::ToString(minHorRes)+" m. \n";
+      errText += "The horizontal resolution in dx and dy should normally be above "+NRLib::ToString(minHorRes)
+        +" m. If you need a denser\n sampling, please specify a new <advanced-settings><minimum-horizontal-resolution>\n";
     }
 
     if(!failed)
@@ -530,7 +531,8 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
         float minSampDens = modelSettings->getMinSamplingDensity();
         if (timeSimbox->getdz()*timeSimbox->getMinRelThick() < minSampDens){
           failed   = true;
-          errText += "The sampling density should be above "+NRLib::ToString(minSampDens)+" ms.\nPlease decrease the number of layers. \n";
+          errText += "The sampling density should normally be above "+NRLib::ToString(minSampDens)
+            +" ms.If you need denser\n sampling, please specify a new <advanced-settings><minimum-sampling-density>\n";
         }
 
         if(status == Simbox::BOXOK)
