@@ -653,7 +653,7 @@ Crava::computeAdjustmentFactor(fftw_complex* adjustmentFactor, Wavelet1D* wLocal
 
   for(int k=0;k< (nzp_/2 +1);k++)
   {
-    fftw_complex wLoc   = wLocal->getCAmp(k,static_cast<float>(sf)); // returns complex conjugate ...see below 
+    fftw_complex wLoc   = wLocal->getCAmp(k,static_cast<float>(sf)); // returns complex conjugate ...see below
     float wLoc2          = (wLoc.re*wLoc.re+wLoc.im*wLoc.im);
     fftw_complex wGlob  = wGlobal->getCAmp(k);
     float wGlob2          = (wGlob.re*wGlob.re+wGlob.im*wGlob.im);
