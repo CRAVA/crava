@@ -1438,7 +1438,7 @@ void FaciesProb::normalizeCubes(FFTGrid **priorFaciesCubes)
   int   small    = 0;
   int   total    = 0;
   float negative = 0;
-
+  bool missing = false;
   std::vector<float> value(nFacies_);
   for(i=0;i<nFacies_;i++)
     priorFaciesCubes[i]->setAccessMode(FFTGrid::READANDWRITE);
@@ -1453,7 +1453,14 @@ void FaciesProb::normalizeCubes(FFTGrid **priorFaciesCubes)
         for (l=0; l<nFacies_; l++)
         {
           value[l] = priorFaciesCubes[l]->getNextReal();
-          if(value[l]<0.0)
+          if(value[l]==RMISSING)
+          {
+            value[l] = 0.0;
+            if(k<nx)
+              missing = true;
+
+          }
+          else if(value[l]<0.0)
           {
             if (value[l] < negative && k<nx)
               negative = value[l];
@@ -1471,16 +1478,20 @@ void FaciesProb::normalizeCubes(FFTGrid **priorFaciesCubes)
           else if( sum>0 && sum<0.999)
             small ++;
         }
-        if (sum>0.0)
+        for (l=0; l<nFacies_; l++)
         {
-          for (l=0; l<nFacies_; l++)
-          {
+          if(sum>0.0)
             value[l] = value[l]/sum;
-            priorFaciesCubes[l]->setNextReal(value[l]);
-          }
+          priorFaciesCubes[l]->setNextReal(value[l]);
         }
       }
     }
+  }
+
+  if(missing == true)
+  {
+    LogKit::LogFormatted(LogKit::Warning,"\nWARNING: Prior facies probability is undefined in one or more cells. The value is set to zero.\n");
+    TaskList::addTask("Missing prior facies probabilities detected. This is a serious problem. \n Make sure that the prior facies probability cubes have positive probability everywhere.");
   }
   if (negative<0)
   {
