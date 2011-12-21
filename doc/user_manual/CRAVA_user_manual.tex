@@ -1,18 +1,7 @@
-%\documentclass[screen,citenumeric,long,10pt]{nrdoc}
 \documentclass[screen,note,long,backref,indentpar]{nrdoc}
-%\documentclass[twoside,citenumeric,long,10pt]{nrdoc_060418}
 \usepackage{citesort}     % Virker ikke...
 \usepackage{multicol}
-%\usepackage{subfigure}
-%\usepackage{fancyvrb}     % For crava model file
 \usepackage{bm}           % For bold greek letters  --> /bm{theta}
-%\usepackage{showlabels}
-%\usepackage{floatflt}
-%\usepackage{wrapfig}
-
-
-
-
 
 % -------------------------------------------------
 \title{CRAVA User Manual version 1.1}
@@ -44,8 +33,6 @@
 \newcommand{\vect}[1]{\ensuremath{\mathbf{#1}}}
 \newcommand{\bmu}{\bm\mu}
 \newcommand{\bSigma}{\mbox{\large\ensuremath{\boldsymbol{\Sigma}}}}
-%\newcommand{\vp}{\ensuremath{\alpha}\xspace}     % V_{p}
-%\newcommand{\vs}{\ensuremath{\beta}\xspace}      % V_{s}
 \newcommand{\vp}{\ensuremath{V_p}\xspace}      % V_{p}
 \newcommand{\vs}{\ensuremath{V_s}\xspace}      % V_{s}
 \newcommand{\avp}{a_{\alpha}}
@@ -55,15 +42,13 @@
 \newcommand{\cel}{\nu_e}
 \newcommand{\cmt}{\nu_m}
 \newcommand{\cet}{\nu_e}
-%\newcommand{\cmt}{r_{\!m}}
-%\newcommand{\cet}{r_{\!e}}
 \newcommand{\rms}   {\textsf{Irap RMS}\xspace}
 \newcommand{\crava} {\textsf{CRAVA}\xspace}
 \newcommand{\storm} {\textsf{Storm}\xspace}
 \newcommand{\matlab}{\textsf{MATLAB}\xspace}
 \newcommand{\perl}  {\textsf{Perl}\xspace}
-\newcommand{\scriptref}[2]{\ifthenelse{\boolean{screen}}
-  {\hyperref[#1]{#2}}{#2 (see \ref{#1})}}
+\newcommand{\scriptref}[2]{\ifthenelse{\boolean{screen}}{\hyperref[#1]{#2}}{#2 (see \ref{#1})}}
+\newcommand{\jira}[1]{\href{https://jira.nr.no/browse/CRA-#1}{CRA-#1}}
 
 \providecommand{\autopageref}[1]{\hyperref[#1]{page~\pageref*{#1}}} %Missing definition in old version of hyperref
 \def\chapterautorefname{Chapter}%
@@ -76,11 +61,9 @@
 \newcommand{\kw}[1]{\hyperref[#1]{\texttt{<#1>}}}
 \newcommand{\rkw}[2]{\hyperref[#2]{\texttt{<#1>}}}
 \newcommand{\rrkw}[3]{\hyperref[#3]{\texttt{<#1>}}}
-%\newcommand{\rkw}[2]{\hyperref[#2]{\texttt{<#1>}}}
 \newcommand{\newkw}[1]{\label{#1}\kwindex{#1}}
 \newcommand{\rnewkw}[2]{\label{#2}\kwindex{#1}}
 \newcommand{\rrnewkw}[3]{\label{#3}\kwindex{#1}}
-%\newcommand{\kwindex}[1]{\index{#1@\texttt{<#1>}}\index{element!\texttt{<#1>}}}
 \newcommand{\kwindex}[1]{\index{keyword!\texttt{<#1>}}}
 \newcommand{\necessary}{\small{ (necessary)}}
 \newcommand{\hbracket}[1]{\texttt{<#1>}}
@@ -89,7 +72,6 @@
 \newcommand{\Default}{\makebox[\rrr][l]{\textit{Default:}\xspace}}
 \newlength{\rrr}
 \settowidth{\rrr}{\textit{Description:}}
-
 
 \newcommand{\slist}{\begin{itemize}}
 \newcommand{\elist}{\end{itemize}}
@@ -170,7 +152,10 @@ CRAVA is a simple inversion tool, particularly suited for quick generation of fi
 %---------------------------------------------------
 
 \input{A_sample_model_file}
+\newpage
 \input{B_test_suite_overview}
+\newpage
+\input{C_release_notes}
 
 %---------------------------------------------------
 
