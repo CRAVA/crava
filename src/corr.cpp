@@ -7,6 +7,7 @@
 #include "src/definitions.h"
 #include "src/fftfilegrid.h"
 #include "src/fftgrid.h"
+#include "src/tasklist.h"
 #include "src/corr.h"
 #include "src/io.h"
 
@@ -238,6 +239,19 @@ void Corr::printPriorVariances(void) const
   LogKit::LogFormatted(LogKit::Low,"ln Vp  | %5.2f     %5.2f     %5.2f \n",1.0f, corr01, corr02);
   LogKit::LogFormatted(LogKit::Low,"ln Vs  |           %5.2f     %5.2f \n",1.0f, corr12);
   LogKit::LogFormatted(LogKit::Low,"ln Rho |                     %5.2f \n",1.0f);
+
+  if (std::abs(corr01) > 1.0) {
+    LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The Vp-Vs correlation is wrong (%.2f).\n",corr01);
+    TaskList::addTask("Check your prior correlations. Corr(Vp,Vs) is out of bounds.");
+  }
+  if (std::abs(corr02) > 1.0) {
+    LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The Vp-Rho correlation is wrong (%.2f).\n",corr02);
+    TaskList::addTask("Check your prior correlations. Corr(Vp,Rho) is out of bounds.");
+  }
+  if (std::abs(corr12) > 1.0) {
+    LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The Vs-Rho correlation is wrong (%.2f).\n",corr12);
+    TaskList::addTask("Check your prior correlations. Corr(Vs,Rho) is out of bounds.");
+  }
 }
 
 //--------------------------------------------------------------------
@@ -245,6 +259,7 @@ void
 Corr::printPostVariances(void) const
 {
   LogKit::WriteHeader("Posterior Covariance");
+
   LogKit::LogFormatted(LogKit::Low,"\nVariances and correlations for parameter residuals:\n");
   LogKit::LogFormatted(LogKit::Low,"\n");
   LogKit::LogFormatted(LogKit::Low,"               ln Vp     ln Vs    ln Rho \n");
@@ -259,6 +274,19 @@ Corr::printPostVariances(void) const
   LogKit::LogFormatted(LogKit::Low,"ln Vp  | %5.2f     %5.2f     %5.2f \n",1.0f, corr01, corr02);
   LogKit::LogFormatted(LogKit::Low,"ln Vs  |           %5.2f     %5.2f \n",1.0f, corr12);
   LogKit::LogFormatted(LogKit::Low,"ln Rho |                     %5.2f \n",1.0f);
+
+  if (std::abs(corr01) > 1.0) {
+    LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The Vp-Vs correlation is wrong (%.2f).\n",corr01);
+    TaskList::addTask("Check your posterior correlations. Corr(Vp,Vs) is out of bounds.");
+  }
+  if (std::abs(corr02) > 1.0) {
+    LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The Vp-Rho correlation is wrong (%.2f).\n",corr02);
+    TaskList::addTask("Check your posterior correlations. Corr(Vp,Rho) is out of bounds.");
+  }
+  if (std::abs(corr12) > 1.0) {
+    LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The Vs-Rho correlation is wrong (%.2f).\n",corr12);
+    TaskList::addTask("Check your posterior correlations. Corr(Vs,Rho) is out of bounds.");
+  }
 }
 //--------------------------------------------------------------------
 void

@@ -1969,7 +1969,7 @@ XmlModelFile::parseIOSettings(TiXmlNode * node, std::string & errTxt)
     NRLib::OpenWrite(file, logFileName);
   }
   catch(NRLib::Exception & e) {
-    errTxt +=  "Cannot open file '" + logFileName +"' : " + e.what()+"\n";
+    errTxt += std::string(e.what()) + "\n";
   }
   file.close();
 
