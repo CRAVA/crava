@@ -25,19 +25,20 @@ private:
   int number_of_timesteps_;
 
   std::vector< NRLib::Matrix> evolution_matrix_;
-  std::vector< NRLib::Vector> delta_mu_tilde_;
-  std::vector< NRLib::Matrix> delta_tilde_;
+  std::vector< NRLib::Vector> mean_correction_term_;
+  std::vector< NRLib::Matrix> cov_correction_term_;
 
-  void Split  (int fourier_point);
-  void Predict(int fourier_point);
-  void Merge  (int fourier_point);
-  void SetUpEvolutionMatrix(std::vector< NRLib::Matrix> &evolution_matrix,
-                            int i_max, TimeLine & time_line,
-                            const DistributionsRockT0 * dist_rock,
-                            const DistributionsSaturation * dist_sat,
-                            const DistributionsGeochemical * dist_geochem);
-  void SetUpDeltaMuTilde   (std::vector< NRLib::Vector> &delta_mu_tilde);
-  void SetUpDeltaTilde     (std::vector< NRLib::Matrix> &delta_tilde);
+  void Split(SeismicParametersHolder &m, SeismicParametersHolder &m_dynamic, SeismicParametersHolder &m_static);
+  void Merge(SeismicParametersHolder &m, SeismicParametersHolder &m_dynamic, SeismicParametersHolder &m_static);
+
+  void SetUpEvolutionMatrices(std::vector< NRLib::Matrix> &evolution_matrix,
+                             std::vector< NRLib::Matrix> &cov_correction_term,
+                             std::vector< NRLib::Vector> &mean_correction_term,
+                             int i_max,
+                             TimeLine & time_line,
+                             const DistributionsRockT0 * dist_rock,
+                             const DistributionsSaturation * dist_sat,
+                             const DistributionsGeochemical * dist_geochem);
 };
 
 #endif
