@@ -882,12 +882,12 @@ void FaciesProb::calculateConditionalFaciesProb(WellData                      **
     low_probabilities = low_probabilities || low_probabilities_this_well;
   }
 
-  if (low_probabilities) {
-    std::string text;
-    text  = "Low facies probabilities have been detected for one or more wells. Check the conditional\n";
-    text += "   facies probabilities for all wells.\n";
-    TaskList::addTask(text);
-  }
+  //if (low_probabilities) {
+ //   std::string text;
+ //   text  = "Low facies probabilities have been detected for one or more wells. Check the conditional\n";
+ //   text += "   facies probabilities for all wells.\n";
+ //   TaskList::addTask(text);
+ // }
 
   //
   // Estimate P( facies2 | facies1 )
@@ -1036,13 +1036,16 @@ void FaciesProb::checkConditionalProbabilities(float                         ** 
       else if(faciesCount[f1] > 0) {
         std::string text;
         text += "\nWARNING: The total probability for facies \'"+faciesNames[f1]+"\' in well "+identifier+" is only ";
-        text += NRLib::ToString(totProb[f1],3)+". This\n         indicates a major problem. Check the well.\n";
+        text += NRLib::ToString(totProb[f1],3)+". This\n         may indicate a major problem. Check the well.\n";
         LogKit::LogFormatted(LogKit::Warning,text);
       }
       else {
         lowProbs = false;
         std::string text;
-        text += "\nWARNING: Facies \'"+faciesNames[f1]+"\' is not observed in well "+identifier+". Facies probability can not be estimated in this well.\n";
+        if(accumulative)
+          text += "\nWARNING: Facies \'"+faciesNames[f1]+"\' is not observed in any well. Facies probability can not be estimated for this facies.\n";
+        else
+          text += "\nWARNING: Facies \'"+faciesNames[f1]+"\' is not observed in well "+identifier+". Facies probability can not be estimated in this well.\n";
         LogKit::LogFormatted(LogKit::Warning,text);
       }
 

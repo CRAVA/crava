@@ -419,7 +419,7 @@ ModelAVOStatic::processWells(WellData          **& wells,
           fc+=faciesCount[j][i];
         }
         if(fc == 0){
-          LogKit::LogFormatted(LogKit::Low,"\nWARNING: Facies %s is not observed in any of the wells, and posterior facies probability can not be estimated for this well.\n",modelSettings->getFaciesName(i).c_str() );
+          LogKit::LogFormatted(LogKit::Low,"\nWARNING: Facies %s is not observed in any of the wells, and posterior facies probability can not be estimated for this facies.\n",modelSettings->getFaciesName(i).c_str() );
           TaskList::addTask("In order to estimate prior facies probability for facies "+ modelSettings->getFaciesName(i) + " add wells which contain observations of this facies.\n");
         }
       }
