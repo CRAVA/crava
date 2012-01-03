@@ -389,11 +389,7 @@ ModelAVOStatic::processWells(WellData          **& wells,
     delete [] nInvalidRho;
     delete [] rankCorr;
     delete [] devAngle;
-    if(nFacies > 0) {
-      for (int i = 0 ; i<nWells ; i++)
-        delete [] faciesCount[i];
-      delete [] faciesCount;
-    }
+
     if (nohit>0)
       LogKit::LogFormatted(LogKit::Low,"\nWARNING: %d well(s) do not hit the inversion volume and will be ignored.\n",nohit);
     if (empty>0)
@@ -414,6 +410,24 @@ ModelAVOStatic::processWells(WellData          **& wells,
       errText += "No wells available for estimation.";
       error = 1;
     }
+
+    if(nFacies > 0) {
+      int fc;
+      for(int i = 0; i < nFacies; i++){
+        fc = 0;
+        for(int j = 0; j < nWells; j++){
+          fc+=faciesCount[j][i];
+        }
+        if(fc == 0){
+          LogKit::LogFormatted(LogKit::Low,"\nWARNING: Facies %s is not observed in any of the wells, and posterior facies probability can not be estimated for this well.\n",modelSettings->getFaciesName(i).c_str() );
+          TaskList::addTask("In order to estimate prior facies probability for facies "+ modelSettings->getFaciesName(i) + " add wells which contain observations of this facies.\n");
+        }
+      }
+      for (int i = 0 ; i<nWells ; i++)
+        delete [] faciesCount[i];
+      delete [] faciesCount;
+    }
+
   }
   failed = error > 0;
   Timings::setTimeWells(wall,cpu);

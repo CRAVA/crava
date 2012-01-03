@@ -720,11 +720,18 @@ void FaciesProb::calculateConditionalFaciesProb(WellData                      **
   // Put all blocked facies logs in one vector
   //
   int ** BWfacies = new int * [nActiveWells];
+  int **faciesCountWell = new int * [nActiveWells];
+  int *faciesCount = new int[nFacies_];
+  for(int f=0; f < nFacies_; f++)
+    faciesCount[f] = 0;
   for (int i = 0 ; i < nActiveWells ; i++)
   {
     const int   nBlocks    = bw[i]->getNumberOfBlocks();
     const int * BWfacies_i = bw[i]->getFacies();
     BWfacies[i] = new int[nBlocks];
+    faciesCountWell[i] = new int[nFacies_];
+    for(int f=0; f < nFacies_; f++)
+      faciesCountWell[i][f] = 0;
 
     if (faciesEstimInterval.size() > 0) {
       const double * xPos  = bw[i]->getXpos();
@@ -745,6 +752,14 @@ void FaciesProb::calculateConditionalFaciesProb(WellData                      **
       for (int b = 0 ; b < nBlocks ; b++) {
         BWfacies[i][b] = BWfacies_i[b];
         //LogKit::LogFormatted(LogKit::Low,"ib, BWfacies[i][b] = %d %d\n",ib,BWfacies[ib]);
+      }
+    }
+    for(int b = 0; b < nBlocks; b++) {
+      for(int f=0; f < nFacies_; f++){
+        if(BWfacies[i][b] == f){
+          faciesCountWell[i][f]++;
+          faciesCount[f]++;
+        }
       }
     }
   }
@@ -863,7 +878,7 @@ void FaciesProb::calculateConditionalFaciesProb(WellData                      **
     LogKit::LogFormatted(LogKit::Low,"\n");
 
     bool low_probabilities_this_well = false;
-    checkConditionalProbabilities(condFaciesProb, faciesNames, nFacies_, bw[i]->getWellname(), false, low_probabilities_this_well);
+    checkConditionalProbabilities(condFaciesProb, faciesNames, nFacies_, bw[i]->getWellname(), false, low_probabilities_this_well, faciesCountWell[i]);
     low_probabilities = low_probabilities || low_probabilities_this_well;
   }
 
@@ -937,7 +952,7 @@ void FaciesProb::calculateConditionalFaciesProb(WellData                      **
   LogKit::LogFormatted(LogKit::Low,"\n");
 
   low_probabilities = false;
-  checkConditionalProbabilities(condFaciesProb, faciesNames, nFacies_, "NOT SET", true, low_probabilities);
+  checkConditionalProbabilities(condFaciesProb, faciesNames, nFacies_, "NOT SET", true, low_probabilities, faciesCount);
 
   if (low_probabilities) {
     std::string text;
@@ -960,7 +975,8 @@ void FaciesProb::checkConditionalProbabilities(float                         ** 
                                                const int                        nFacies,
                                                const std::string              & identifier,
                                                const bool                       accumulative,
-                                               bool                           & lowProbs)
+                                               bool                           & lowProbs,
+                                               int                            * faciesCount)
 {
   bool tooSmallDiff = false;
   bool wrongMaximum = false;
@@ -994,13 +1010,16 @@ void FaciesProb::checkConditionalProbabilities(float                         ** 
     }
     if (indMax != f1 && indMax !=-IMISSING) {
       wrongMaximum = true;
-      if (accumulative) {
+      if (accumulative && faciesCount[f1]> 0) {
         LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The probability of finding facies \'"+faciesNames[f1]+"\' is largest when the logs\n");
         LogKit::LogFormatted(LogKit::Warning,"         show \'"+faciesNames[indMax]+"\' and not when it shows \'"+faciesNames[f1]+"\'.\n");
       }
-      else {
+      else if(faciesCount[f1] > 0) {
         LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The probability of finding facies \'"+faciesNames[f1]+"\' is largest when the well log of\n");
         LogKit::LogFormatted(LogKit::Warning,"         well \'"+identifier+"\' shows \'"+faciesNames[indMax]+"\' and not when it shows \'"+faciesNames[f1]+"\'.\n");
+      }
+      else if(faciesCount[f1] == 0){
+        wrongMaximum = false;
       }
     }
   }
@@ -1008,18 +1027,25 @@ void FaciesProb::checkConditionalProbabilities(float                         ** 
   for (int f1=0 ; f1 < nFacies ; f1++) { // This loop cannot be joined with loop above
     if (totProb[f1] < 0.95) {
       lowProbs = true;
-      if (accumulative) {
+      if (accumulative && faciesCount[f1] > 0) {
         std::string text;
         text += "\nWARNING: The total probability for facies \'"+faciesNames[f1]+"\' is only "+NRLib::ToString(totProb[f1],3)+". This indicates";
         text += "\n         a major problem with the facies probability estimation.";
         LogKit::LogFormatted(LogKit::Warning,text);
       }
-      else {
+      else if(faciesCount[f1] > 0) {
         std::string text;
         text += "\nWARNING: The total probability for facies \'"+faciesNames[f1]+"\' in well "+identifier+" is only ";
         text += NRLib::ToString(totProb[f1],3)+". This\n         indicates a major problem. Check the well.\n";
         LogKit::LogFormatted(LogKit::Warning,text);
       }
+      else {
+        lowProbs = false;
+        std::string text;
+        text += "\nWARNING: Facies \'"+faciesNames[f1]+"\' is not observed in well "+identifier+". Facies probability can not be estimated in this well.\n";
+        LogKit::LogFormatted(LogKit::Warning,text);
+      }
+
     }
   }
 

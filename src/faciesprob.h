@@ -175,6 +175,7 @@ private:
                                                        const int                        nFacies,
                                                        const std::string              & identifier,
                                                        const bool                       accumulative,
-                                                       bool                           & lowProbs);
+                                                       bool                           & lowProbs,
+                                                       int                            * faciesCount = NULL);
 };
 #endif
