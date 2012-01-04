@@ -1044,8 +1044,8 @@ void FaciesProb::checkConditionalProbabilities(float                         ** 
         std::string text;
         if(accumulative)
           text += "\nWARNING: Facies \'"+faciesNames[f1]+"\' is not observed in any well. Facies probability can not be estimated for this facies.\n";
-        else
-          text += "\nWARNING: Facies \'"+faciesNames[f1]+"\' is not observed in well "+identifier+". Facies probability can not be estimated in this well.\n";
+   //     else
+   //       text += "\nWARNING: Facies \'"+faciesNames[f1]+"\' is not observed in well "+identifier+". Facies probability can not be estimated in this well.\n";
         LogKit::LogFormatted(LogKit::Warning,text);
       }
 
