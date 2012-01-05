@@ -1146,6 +1146,7 @@ XmlModelFile::parsePriorModel(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("facies-probabilities");
   legalCommands.push_back("earth-model");
   legalCommands.push_back("local-wavelet");
+  legalCommands.push_back("rock-physics");
 
   parseBackground(root, errTxt);
   parseEarthModel(root,errTxt);
@@ -1169,6 +1170,7 @@ XmlModelFile::parsePriorModel(TiXmlNode * node, std::string & errTxt)
     inputFiles_->setCorrDirFile(filename);
 
   parseFaciesProbabilities(root, errTxt);
+  parseRockPhysics(root, errTxt);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -1503,6 +1505,389 @@ TiXmlNode * root = node->FirstChildElement("facies");
 
 
 }
+
+bool
+XmlModelFile::parseRockPhysics(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("rock-physics");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("rock");
+  legalCommands.push_back("trend-cube");
+
+  if(parseRock(root, errTxt) == false)
+    errTxt += "A rock model needs to be specified in <rock> when <rock-physics> is requested\n";
+
+  int count = 0;
+  while(parseTrendCube(root, errTxt) == true)
+    count++;
+  if(count > 2)
+    errTxt += "The maximum allowed number of trend cubes in <rock-physics><trend-cube> is two.\n";
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseRock(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("rock");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("gaussian");
+  legalCommands.push_back("bounding-model");
+
+  while(parseGaussian(root, errTxt)){
+    modelSettings_->addConstantValue();
+    modelSettings_->addFirstTrendParameter();
+    modelSettings_->addSecondTrendParameter();
+    inputFiles_   ->addTrendFile();
+  }
+
+  while(parseBoundingModel(root,errTxt));
+
+  if(modelSettings_->getNumberOfRocks() == 0)
+    errTxt +="At least one <rock> in the rock physics prior model needs to be specified\n";
+
+  checkForJunk(root, errTxt, legalCommands); 
+  return(true);
+}
+
+bool
+XmlModelFile::parseGaussian(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("gaussian");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("name");
+  legalCommands.push_back("mean-vp");
+  legalCommands.push_back("mean-vs");
+  legalCommands.push_back("mean-density");
+  legalCommands.push_back("variance-vp");
+  legalCommands.push_back("variance-vs");
+  legalCommands.push_back("variance-density");
+  legalCommands.push_back("covariance-vp-vs");
+  legalCommands.push_back("covariance-vp-density");
+  legalCommands.push_back("covariance-vs-density");
+
+  std::string name;
+  if(parseValue(root, "name", name, errTxt) == true)
+    modelSettings_->addRockName(name);
+  else
+    errTxt += "<name> of <rock> in <rock-phyiscs-model><gaussian> needs to be given\n";
+
+  if(parseRockTrends(root, "mean-vp", errTxt) == false)
+    errTxt += "<mean-vp> of <rock> in <rock-phyiscs-model><gaussian> needs to be given\n";
+  
+  if(parseRockTrends(root, "mean-vs", errTxt) == false)
+    errTxt += "<mean-vs> of <rock> in <rock-phyiscs-model><gaussian> needs to be given\n";
+  
+  if(parseRockTrends(root, "mean-density", errTxt) == false)
+    errTxt += "<mean-density> of <rock> in <rock-phyiscs-model><gaussian> needs to be given\n";
+  
+  if(parseRockTrends(root, "variance-vp", errTxt) == false)
+    errTxt += "<variance-vp> of <rock> in <rock-phyiscs-model><gaussian> needs to be given\n";
+  
+  if(parseRockTrends(root, "variance-vs", errTxt) == false)
+    errTxt += "<variance-vs> of <rock> in <rock-phyiscs-model><gaussian> needs to be given\n";
+  
+  if(parseRockTrends(root, "variance-density", errTxt) == false)
+    errTxt += "<variance-density> of <rock> in <rock-phyiscs-model><gaussian> needs to be given\n";
+  
+  if(parseRockTrends(root, "covariance-vp-vs", errTxt) == false)
+    errTxt += "<covariance-vp-vs> of <rock> in <rock-phyiscs-model><gaussian> needs to be given\n";
+  
+  if(parseRockTrends(root, "covariance-vp-density", errTxt) == false)
+    errTxt += "<covariance-vp-density> of <rock> in <rock-phyiscs-model><gaussian> needs to be given\n";
+  
+  if(parseRockTrends(root, "covariance-vs-density", errTxt) == false)
+    errTxt += "<covariance-vs-density> of <rock> in <rock-phyiscs-model><gaussian> needs to be given\n";
+
+  checkForJunk(root, errTxt, legalCommands, true); 
+  return(true);
+}
+
+bool
+XmlModelFile::parseRockTrends(TiXmlNode * node, const std::string & keyword, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement(keyword);
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("trend-constant");
+  legalCommands.push_back("trend-1d");
+  legalCommands.push_back("trend-2d");
+
+  int meanGiven = 0;
+  if(parseConstantTrend(root, keyword, errTxt) == true)
+    meanGiven++;
+  if(parse1DTrend(root, keyword, errTxt) == true)
+    meanGiven++;
+  if(parse2DTrend(root, keyword, errTxt) == true)
+    meanGiven++;
+
+  if(meanGiven == 0)
+    errTxt += "One of <trend-constant>, <trend-1d> or <trend-2d> needs to be given for <"+keyword+"> in <rock-physics><rock><gaussian>\n";
+  else if(meanGiven > 1)
+    errTxt += "Only one of <trend-constant>, <trend-1d> or <trend-2d> can be given for <"+keyword+"> in <rock-physics><rock><gaussian>\n";
+
+  checkForJunk(root, errTxt, legalCommands); 
+  return(true);
+}
+bool
+XmlModelFile::parseConstantTrend(TiXmlNode * node, const std::string & keyword, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("trend-constant");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("value");
+
+  float value;
+  if(parseValue(root, "value", value, errTxt) == true){
+    modelSettings_->addConstantValueOneRock(keyword, value);
+    modelSettings_->addFirstTrendParameterOneRock(keyword, "");
+    modelSettings_->addSecondTrendParameterOneRock(keyword, "");
+    inputFiles_   ->addTrendFileOneRock(keyword, "");
+  }
+  else
+    errTxt += "The <value> for <"+keyword+"> needs to be given in <trend-constant> in <rock-physics>\n";
+
+  checkForJunk(root, errTxt, legalCommands); 
+  return(true);
+}
+
+bool
+XmlModelFile::parse1DTrend(TiXmlNode * node, const std::string & keyword, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("trend-1d");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("file-name");
+  legalCommands.push_back("parameter-name");
+
+  std::string name;
+  if(parseValue(root, "parameter-name", name, errTxt) == true){
+    modelSettings_->addFirstTrendParameterOneRock(keyword, name);
+  }
+  else
+    errTxt += "The trend <parameter-name> for <"+keyword+"> needs to be given in <trend-1d> in <rock-physics>\n";
+
+  if(parseValue(root, "file-name", name, errTxt) == true){
+    inputFiles_->addTrendFileOneRock(keyword, name);
+  }
+  else
+    errTxt += "The <file-name> for <"+keyword+"> needs to be given in <trend-1d> in <rock-physics>\n";
+  
+  modelSettings_->addConstantValueOneRock(keyword, RMISSING);
+  modelSettings_->addSecondTrendParameterOneRock(keyword, "");
+
+  checkForJunk(root, errTxt, legalCommands); 
+  return(true);
+}
+
+bool
+XmlModelFile::parse2DTrend(TiXmlNode * node, const std::string & keyword, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("trend-2d");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("file-name");
+  legalCommands.push_back("parameter-name-first-axis");
+  legalCommands.push_back("parameter-name-second-axis");
+
+  std::string name;
+  if(parseValue(root, "parameter-name-first-axis", name, errTxt) == true){
+    modelSettings_->addFirstTrendParameterOneRock(keyword, name);
+  }
+  else
+    errTxt += "The trend <parameter-name-first-axis> for <"+keyword+"> needs to be given in <trend-2d> in <rock-physics>\n";
+  
+  if(parseValue(root, "parameter-name-second-axis", name, errTxt) == true){
+    modelSettings_->addSecondTrendParameterOneRock(keyword, name);
+  }
+  else
+    errTxt += "The trend <parameter-name-second-axis> for <"+keyword+"> needs to be given in <trend-2d> in <rock-physics>\n";
+
+  if(parseValue(root, "file-name", name, errTxt) == true){
+    inputFiles_->addTrendFileOneRock(keyword, name);
+  }
+  else
+    errTxt += "The <file-name> for <"+keyword+"> needs to be given in <trend-2d> in <rock-physics>\n";
+
+  modelSettings_->addConstantValueOneRock(keyword, RMISSING);
+
+  checkForJunk(root, errTxt, legalCommands); 
+  return(true);
+}
+
+bool
+XmlModelFile::parseTrendCube(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("trend-cube");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("parameter-name");
+  legalCommands.push_back("file-name");
+
+  std::string name;
+  if(parseValue(root, "parameter-name", name, errTxt) == true)
+    modelSettings_->addTrendCubeName(name);
+  else
+    errTxt += "<parameter-name> needs to be specified in <trend-cube> when <rock-physics> is used.\n";
+
+  if(parseValue(root, "file-name", name, errTxt) == true)
+    inputFiles_->addTrendCubes(name);
+  else
+    errTxt += "<file-name> needs to be specified in <trend-cube> when <rock-physics> is used.\n"; 
+
+  checkForJunk(root, errTxt, legalCommands, true); //allow duplicates
+  return(true);
+}
+
+bool
+XmlModelFile::parseBoundingModel(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("bounding-model");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("name");
+  legalCommands.push_back("bulk-modulus");
+  legalCommands.push_back("shear-modulus");
+  legalCommands.push_back("density");
+
+  std::string name;
+  if(parseValue(root, "name", name, errTxt) == true)
+    modelSettings_->addRockName(name);
+  else
+    errTxt += "<name> of <rock> in <rock-phyiscs-model><bounding-model> needs to be given\n";
+
+  parseBulkModulus(root, errTxt);
+  parseShearModulus(root, errTxt);
+  parseDensity(root, errTxt);
+
+  checkForJunk(root, errTxt, legalCommands, true); 
+  return(true);
+}
+
+bool
+XmlModelFile::parseBulkModulus(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("bulk-modulus");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("upper-limit-rock");
+  legalCommands.push_back("lower-limit-rock");
+  legalCommands.push_back("upper-limit-fluid");
+  legalCommands.push_back("lower-limit-fluid");
+
+  float value;
+  if(parseValue(root, "upper-limit-rock", value, errTxt) == true)
+    modelSettings_->addUpperKRock(value);
+  else
+    modelSettings_->addDefaultUpperKRock();
+ 
+  if(parseValue(root, "lower-limit-rock", value, errTxt) == true)
+    modelSettings_->addLowerKRock(value);
+  else
+    modelSettings_->addDefaultLowerKRock();
+  
+  if(parseValue(root, "upper-limit-fluid", value, errTxt) == true)
+    modelSettings_->addUpperKFluid(value);
+  else
+    modelSettings_->addDefaultUpperKFluid();
+  
+  if(parseValue(root, "lower-limit-fluid", value, errTxt) == true)
+    modelSettings_->addLowerKFluid(value);
+  else
+    modelSettings_->addDefaultLowerKFluid();
+
+  checkForJunk(root, errTxt, legalCommands); 
+  return(true);
+}
+
+bool
+XmlModelFile::parseShearModulus(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("shear-modulus");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("upper-limit-rock");
+  legalCommands.push_back("lower-limit-rock");
+
+  float value;
+  if(parseValue(root, "upper-limit-rock", value, errTxt) == true)
+    modelSettings_->addUpperGRock(value);
+  else
+    modelSettings_->addDefaultUpperGRock();
+ 
+  if(parseValue(root, "lower-limit-rock", value, errTxt) == true)
+    modelSettings_->addLowerGRock(value);
+  else
+    modelSettings_->addDefaultLowerGRock();
+
+  checkForJunk(root, errTxt, legalCommands); 
+  return(true);
+}
+
+bool
+XmlModelFile::parseDensity(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("density");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("upper-limit-rock");
+  legalCommands.push_back("lower-limit-rock");
+  legalCommands.push_back("upper-limit-fluid");
+  legalCommands.push_back("lower-limit-fluid");
+
+  float value;
+  if(parseValue(root, "upper-limit-rock", value, errTxt) == true)
+    modelSettings_->addUpperDensityRock(value);
+  else
+    modelSettings_->addDefaultUpperDensityRock();
+ 
+  if(parseValue(root, "lower-limit-rock", value, errTxt) == true)
+    modelSettings_->addLowerDensityRock(value);
+  else
+    modelSettings_->addDefaultLowerDensityRock();
+  
+  if(parseValue(root, "upper-limit-fluid", value, errTxt) == true)
+    modelSettings_->addUpperDensityFluid(value);
+  else
+    modelSettings_->addDefaultUpperDensityFluid();
+  
+  if(parseValue(root, "lower-limit-fluid", value, errTxt) == true)
+    modelSettings_->addLowerDensityFluid(value);
+  else
+    modelSettings_->addDefaultLowerDensityFluid();
+
+  checkForJunk(root, errTxt, legalCommands); 
+  return(true);
+}
+
 bool
 XmlModelFile::parseProjectSettings(TiXmlNode * node, std::string & errTxt)
 {
@@ -3041,6 +3426,40 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
     errTxt += "Absolute facies probabilities can not be requested without requesting facies probabilities under inversion settings.\n";
   if (modelSettings_->getEstimateFaciesProb() == false && (modelSettings_->getOutputGridsOther() & IO::SEISMIC_QUALITY_GRID))
     errTxt += "Seismic quality grid can not be estimated without requesting facies probabilities under inversion settings.\n";
+
+  //Rock physics consistency
+  int nRocks = modelSettings_->getNumberOfRocks();
+  if(nRocks > 0){
+    typedef std::map<std::string, std::string> mapType;
+    std::vector<std::string> trendCubeNames = modelSettings_->getTrendCubeNames();
+
+    for(int i=0; i<nRocks; i++){
+      mapType firstTrendParameter  = modelSettings_->getFirstTrendParameter(i);
+      mapType secondTrendParameter = modelSettings_->getSecondTrendParameter(i);
+
+      for(mapType::iterator k = firstTrendParameter.begin(); k != firstTrendParameter.end(); k++){
+        if(k->second != ""){
+          for(size_t j=0; j<trendCubeNames.size(); j++){
+            if(k->second == trendCubeNames[j])
+              break;
+            if(j == trendCubeNames.size()-1)
+              errTxt += "The trend parameter <"+NRLib::ToString(k->second.c_str())+"> in <trend-1d> is not one of the trend cubes given in <trend-cubes>\n";
+          }
+        }
+      }
+      for(mapType::iterator k = secondTrendParameter.begin(); k != secondTrendParameter.end(); k++){
+        if(k->second != ""){
+          for(size_t j=0; j<trendCubeNames.size(); j++){
+            if(k->second == trendCubeNames[j])
+              break;
+            if(j == trendCubeNames.size()-1)
+              errTxt += "The trend parameter <"+NRLib::ToString(k->second.c_str())+"> in <trend-2d> is not one of the trend cubes given in <trend-cubes>\n";
+          }
+        }
+      }
+    }
+  }
+  //Check that only one of Gaussian or bounding model is given
 }
   
 void

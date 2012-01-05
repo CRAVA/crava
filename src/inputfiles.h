@@ -67,7 +67,10 @@ public:
   void setTempCorrFile(const std::string & tempCorrFile)                  { tempCorrFile_         = tempCorrFile      ;}
   void setRefSurfaceFile(const std::string & refSurfaceFile)              { refSurfaceFile_       = refSurfaceFile    ;}
   void setInputDirectory(std::string inputDirectory)                      { inputDirectory_       = inputDirectory    ;}
-  void setPriorFaciesProb(std::string name,std::string file)              { priorFaciesProb_[name] = file                ;}
+  void setPriorFaciesProb(std::string name,std::string file)              { priorFaciesProb_[name] = file             ;}
+  void addTrendCubes(std::string trendParameterFile)                      { trendCubes_.push_back(trendParameterFile) ;}
+  void addTrendFileOneRock(std::string name, std::string type)            { trendFileOneRock_[name] = type            ;}
+  void addTrendFile(void)                                                 { trendFile_.push_back(trendFileOneRock_)   ;}
   std::string addInputPathAndCheckFiles();
   
   void addDefaultWaveletEstIntFileTop(void)                               { waveletEstIntFileTop_.push_back("")       ;}
@@ -110,6 +113,10 @@ private:
   std::string                paramCorrFile_;         ///< File name for correlation between parameters.
   std::string                tempCorrFile_;          ///< File name for temporal parameter correlations.
   std::string                refSurfaceFile_;        ///< File name for reference time surface corresponding to z0.
+
+  std::vector<std::string>                         trendCubes_;               ///< File name for the trend cubes in the rock physics model
+  std::map<std::string, std::string>               trendFileOneRock_;         ///< File names for the trend parameters of the characteristics meanVp, meanVs, meandensity, varVp, ... for one of the rocks in the Guassian rock physics prior model
+  std::vector<std::map<std::string, std::string> > trendFile_;                ///< File names for the trend parameters in trendFileOneRock_
 
   std::string                inputDirectory_;        ///< Base directory for input files.
   std::vector<std::string>   localNoiseFiles_;       ///< File names: local noise

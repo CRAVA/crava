@@ -96,7 +96,8 @@ ProcessCodeLevel(const std::string & file, const std::string & command, std::str
     end = file.find("(",start);
     name = file.substr(start,end-start+1);
     if(name == "parseValue(" || name == "parseFileName(" || name == "parseBool(" ||
-       name == "parseVariogram(" || name == "parseTraceHeaderFormat(") {
+       name == "parseVariogram(" || name == "parseTraceHeaderFormat(" ||
+       name == "parseRockTrends(") {
       start = file.find("\"",end);
       end   = file.find("\"",start+1);
       name  = file.substr(start+1,end-start-1);
@@ -147,7 +148,7 @@ ProcessDocLevel(const std::string & file, int level, const std::vector<std::stri
     start = file.find("{", start);      //Jump to position before command name.
     end   = file.find("}", start+1);
     std::string name = file.substr(start+1,end-start-1);
-    if(name == "variogram-keyword")
+    if(name == "variogram-keyword" || name == "trend-parameters")
       return(NULL);
     node = new TiXmlElement(name);
   }

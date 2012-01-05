@@ -89,6 +89,18 @@ InputFiles::addInputPathAndCheckFiles()
   for(j=priorFaciesProb_.begin();j != priorFaciesProb_.end();j++) {
     errTxt += addPathAndCheck(j->second);
   }
+  for(i=0;i<trendCubes_.size();i++)
+    errTxt += addPathAndCheck(trendCubes_[i]);
+
+  std::map<std::string, std::string>::iterator k;
+  for(k=trendFileOneRock_.begin(); k!=trendFileOneRock_.end(); k++)
+    errTxt += addPathAndCheck(k->second);
+
+  for(i=0;i<trendFile_.size();i++){
+    std::map<std::string, std::string>::iterator j;
+    for(j=trendFile_[i].begin(); j!=trendFile_[i].end(); j++)
+      errTxt += addPathAndCheck(j->second);
+  }
 
   return(errTxt);
 }

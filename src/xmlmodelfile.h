@@ -53,6 +53,18 @@ private:
   bool   parseFaciesProbabilities(TiXmlNode * node, std::string & errTxt);
   bool   parsePriorFaciesProbabilities(TiXmlNode * node, std::string & errTxt);
   bool   parseFaciesEstimationInterval(TiXmlNode * node, std::string & errTxt);  
+  bool parseRockPhysics(TiXmlNode * node, std::string & errTxt);
+  bool parseGaussian(TiXmlNode * node, std::string & errTxt);
+  bool parseRock(TiXmlNode * node, std::string & errTxt);
+  bool parseRockTrends(TiXmlNode * node, const std::string & keyword, std::string & errTxt);
+  bool parseConstantTrend(TiXmlNode * node, const std::string & keyword, std::string & errTxt);
+  bool parse1DTrend(TiXmlNode * node, const std::string & keyword, std::string & errTxt);
+  bool parse2DTrend(TiXmlNode * node, const std::string & keyword, std::string & errTxt);
+  bool parseTrendCube(TiXmlNode * node, std::string & errTxt);
+  bool parseBoundingModel(TiXmlNode * node, std::string & errTxt);
+  bool parseBulkModulus(TiXmlNode * node, std::string & errTxt);
+  bool parseShearModulus(TiXmlNode * node, std::string & errTxt);
+  bool parseDensity(TiXmlNode * node, std::string & errTxt);
 
   bool parseProjectSettings(TiXmlNode * node, std::string & errTxt);
   bool   parseOutputVolume(TiXmlNode * node, std::string & errTxt);
