@@ -1723,10 +1723,16 @@ XmlModelFile::parseAreaFromSurface(TiXmlNode * node, std::string & errTxt)
     return(false);
   std::vector<std::string> legalCommands;
   legalCommands.push_back("file-name");
+  legalCommands.push_back("snap-to-seismic-data");
+
   std::string filename;
   if(parseFileName(root, "file-name", filename, errTxt) == true)
   {
     inputFiles_->setAreaSurfaceFile(filename);
+  }
+  bool snapToSeismicData = false;
+  if (parseBool(root, "snap-to-seismic-data", snapToSeismicData, errTxt) == true) {
+    modelSettings_->setSnapGridToSeismicData(true);
   }
 
   checkForJunk(root, errTxt, legalCommands);
@@ -1829,25 +1835,31 @@ XmlModelFile::parseUTMArea(TiXmlNode * node, std::string & errTxt)
     errTxt += "Y-length must be given in command <"+
       root->ValueStr()+"> "+lineColumnText(root)+".\n";
 
-  double dx = 0;
-  if(parseValue(root, "sample-density-x", dx, errTxt) == false)
-    errTxt += "Sample density for x must be given in command <"+
-      root->ValueStr()+"> "+lineColumnText(root)+".\n";
+  double dx = lx;
+  double dy = ly;
 
-  double dy = 0;
-  if(parseValue(root, "sample-density-y", dy, errTxt) == false)
-    errTxt += "Sample density for y must be given in command <"+
-      root->ValueStr()+"> "+lineColumnText(root)+".\n";
+  bool snapToSeismicData = false;
+  if (parseBool(root, "snap-to-seismic-data", snapToSeismicData, errTxt) == true) {
+    modelSettings_->setSnapGridToSeismicData(true);
+    if(parseValue(root, "sample-density-x", dx, errTxt))
+      TaskList::addTask("Keyword <sample-density-x> has no effect when <snap-to-seismic-data> has been specified.");
+    if(parseValue(root, "sample-density-y", dy, errTxt))
+      TaskList::addTask("Keyword <sample-density-y> has no effect when <snap-to-seismic-data> has been specified.");
+  }
+  else {
+    if(parseValue(root, "sample-density-x", dx, errTxt) == false)
+      errTxt += "Sample density for x must be given in command <"+
+        root->ValueStr()+"> "+lineColumnText(root)+".\n";
+
+    if(parseValue(root, "sample-density-y", dy, errTxt) == false)
+      errTxt += "Sample density for y must be given in command <"+
+        root->ValueStr()+"> "+lineColumnText(root)+".\n";
+  }
 
   double angle = 0;
   if(parseValue(root, "angle", angle, errTxt) == false)
     errTxt += "Rotation angle must be given in command <"+
       root->ValueStr()+"> "+lineColumnText(root)+".\n";
-
-  bool snapToSeismicData = false;
-  if (parseBool(root, "snap-to-seismic-data", snapToSeismicData, errTxt) == true) {
-    modelSettings_->setSnapGridToSeismicData(true);
-  }
 
   double rot = (-1)*angle*(NRLib::Pi/180.0);
   int nx = static_cast<int>(lx/dx);
