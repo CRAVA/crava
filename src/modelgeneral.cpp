@@ -348,6 +348,8 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
 
   bool estimationModeNeedILXL = modelSettings->getEstimationMode() &&
                                 (areaSpecification == ModelSettings::AREA_FROM_GRID_DATA ||
+                                 areaSpecification == ModelSettings::AREA_FROM_GRID_DATA_AND_UTM ||
+                                 areaSpecification == ModelSettings::AREA_FROM_GRID_DATA_AND_SURFACE ||
                                 (modelSettings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0 ||
                                 (modelSettings->getOutputGridFormat() & IO::SEGY) > 0);
 
@@ -358,6 +360,7 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
       gridFile = inputFiles->getSeismicFile(0); // Get area from first seismic data volume
   }
   SegyGeometry * ILXLGeometry = NULL; //Geometry with correct XL and IL settings.
+
   //
   // Set area geometry information
   // -----------------------------
@@ -377,7 +380,9 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
     SegyGeometry geometry(surf);
     modelSettings->setAreaParameters(&geometry);
   }
-  else if(areaSpecification == ModelSettings::AREA_FROM_GRID_DATA)
+  else if(areaSpecification == ModelSettings::AREA_FROM_GRID_DATA         ||
+          areaSpecification == ModelSettings::AREA_FROM_GRID_DATA_AND_UTM ||
+          areaSpecification == ModelSettings::AREA_FROM_GRID_DATA_AND_SURFACE)
   {
     LogKit::LogFormatted(LogKit::High,"\nFinding inversion area from grid data in file \'"+gridFile+"\'\n");
     areaType = "Grid data";
@@ -389,40 +394,78 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
                               tmpErrText);
 
     if(geometry != NULL) {
-      geometry->WriteGeometry(true);
-      if(modelSettings->getAreaILXL().size() > 0) {
+      geometry->WriteGeometry();
+
+      if (modelSettings->getAreaILXL().size() > 0 || modelSettings->getSnapGridToSeismicData()) {
         SegyGeometry * fullGeometry = geometry;
-        bool interpolated, aligned;
-        try {
-          geometry = fullGeometry->GetILXLSubGeometry(modelSettings->getAreaILXL(), interpolated, aligned);
-          std::string text;
-          if(interpolated == true) {
-            if(aligned == true) {
-              text  = "Check IL/XL specification: Specified IL- or XL-step is not an integer multiple\n";
-              text += "   of those found in the seismic data. Furthermore, the distance between first\n";
-              text += "   and last XL and/or IL does not match the step size.\n";
-              TaskList::addTask(text);
-            }
-            else {
-              text  = "Check IL/XL specifiaction: Specified IL- or XL-step is not an integer multiple\n";
-              text  = "   of those found in the seismic data.\n";
-              TaskList::addTask(text);
-            }
+
+        std::vector<int> areaILXL;
+        bool gotArea = true;
+
+        //
+        // Geometry is given as XY, but we snap it to IL and XL.
+        //
+        if (modelSettings->getSnapGridToSeismicData()) {
+          SegyGeometry * templateGeometry = NULL;
+          if (areaSpecification == ModelSettings::AREA_FROM_GRID_DATA_AND_UTM) {
+            templateGeometry = modelSettings->getAreaParameters();
           }
-          else if(aligned == true) {
-            text  = "Check IL/XL specification: Either start or end of IL and/or XL interval does not\n";
-            text += "   align with IL/XL in seismic data, or end IL and/or XL is not an integer multiple\n";
-            text += "   of steps away from the start.\n";
-            TaskList::addTask(text);
+          else if (areaSpecification == ModelSettings::AREA_FROM_GRID_DATA_AND_SURFACE) {
+            Surface surf(inputFiles->getAreaSurfaceFile());
+            templateGeometry = new SegyGeometry(surf);
+          }
+          else {
+            errText += "CRAVA has been asked to identify a proper ILXL inversion area based\n";
+            errText += "on XY input information, but no UTM coordinates or surface have\n";
+            errText += "been specified in model file.\n";
+            gotArea = false;
+          }
+          if (gotArea) {
+            areaILXL = fullGeometry->findAreaILXL(templateGeometry);
           }
         }
-        catch (NRLib::Exception & e) {
-          errText += "Error: "+std::string(e.what());
-          geometry->WriteGeometry(true);
-          geometry = NULL;
-          failed = true;
+        else {
+          areaILXL = modelSettings->getAreaILXL();
+        }
+
+        if (gotArea) {
+          try {
+            bool interpolated, aligned;
+            geometry = fullGeometry->GetILXLSubGeometry(areaILXL, interpolated, aligned);
+
+            std::string text;
+            if(interpolated == true) {
+              if(aligned == true) {
+                text  = "Check IL/XL specification: Specified IL- or XL-step is not an integer multiple\n";
+                text += "   of those found in the seismic data. Furthermore, the distance between first\n";
+                text += "   and last XL and/or IL does not match the step size.\n";
+                TaskList::addTask(text);
+              }
+              else {
+                text  = "Check IL/XL specification: Specified IL- or XL-step is not an integer multiple\n";
+                text  = "   of those found in the seismic data.\n";
+                TaskList::addTask(text);
+              }
+            }
+            else if(aligned == true) {
+              text  = "Check IL/XL specification: Either start or end of IL and/or XL interval does not\n";
+              text += "   align with IL/XL in seismic data, or end IL and/or XL is not an integer multiple\n";
+              text += "   of steps away from the start.\n";
+              TaskList::addTask(text);
+            }
+          }
+          catch (NRLib::Exception & e) {
+            errText += "Error: "+std::string(e.what());
+            geometry->WriteGeometry();
+            geometry->WriteILXL(true);
+            geometry = NULL;
+            failed = true;
+          }
         }
         delete fullGeometry;
+      }
+      else {
+        geometry->WriteILXL();
       }
       if(!failed) {
         modelSettings->setAreaParameters(geometry);
@@ -434,18 +477,16 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
       failed = true;
     }
   }
-
   if(!failed)
   {
     const SegyGeometry * areaParams = modelSettings->getAreaParameters();
     failed = timeSimbox->setArea(areaParams, errText);
 
-     if(failed)
+    if(failed)
     {
       writeAreas(areaParams,timeSimbox,areaType);
       errText += "The specified AREA extends outside the surface(s).\n";
     }
-
     else
     {
       LogKit::LogFormatted(LogKit::Low,"\nResolution                x0           y0            lx         ly     azimuth         dx      dy\n");
@@ -646,6 +687,7 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
   }
 }
 
+
 void
 ModelGeneral::logIntervalInformation(const Simbox      * simbox,
                                      const std::string & header_text1,
@@ -748,7 +790,7 @@ ModelGeneral::setSimboxSurfaces(Simbox                        *& simbox,
         }
         catch (NRLib::Exception & e) {
           errText += e.what();
-          std::string text(std::string("Seismic data"));
+          std::string text("Seismic data");
           writeAreas(modelSettings->getAreaParameters(),simbox,text);
           failed = true;
         }
@@ -1489,30 +1531,32 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
   }
   else {
     LogKit::LogFormatted(LogKit::Low,"\nInversion area");
-    if(areaSpecification == ModelSettings::AREA_FROM_GRID_DATA)
+    if(areaSpecification == ModelSettings::AREA_FROM_GRID_DATA ||
+       areaSpecification == ModelSettings::AREA_FROM_GRID_DATA_AND_UTM ||
+       areaSpecification == ModelSettings::AREA_FROM_GRID_DATA_AND_SURFACE)
       gridFile = inputFiles->getSeismicFile(0); // Get area from first seismic data volume
   }
   if (areaSpecification == ModelSettings::AREA_FROM_GRID_DATA) {
     const std::vector<int> & areaILXL = modelSettings->getAreaILXL();
     LogKit::LogFormatted(LogKit::Low," taken from grid\n");
     LogKit::LogFormatted(LogKit::Low,"  Grid                                     : "+gridFile+"\n");
-    if(areaILXL.size()>0)
-    {
-    if (areaILXL[0] != IMISSING)
-      LogKit::LogFormatted(LogKit::Low,"  In-line start                            : %10d\n", areaILXL[0]);
-    if (areaILXL[1] != IMISSING)
-      LogKit::LogFormatted(LogKit::Low,"  In-line end                              : %10d\n", areaILXL[1]);
-    if (areaILXL[4] != IMISSING)
-      LogKit::LogFormatted(LogKit::Low,"  In-line step                             : %10d\n", areaILXL[4]);
-    if (areaILXL[2] != IMISSING)
-      LogKit::LogFormatted(LogKit::Low,"  Cross-line start                         : %10d\n", areaILXL[2]);
-    if (areaILXL[3] != IMISSING)
-      LogKit::LogFormatted(LogKit::Low,"  Cross-line end                           : %10d\n", areaILXL[3]);
-    if (areaILXL[5] != IMISSING)
-      LogKit::LogFormatted(LogKit::Low,"  Cross-line step                          : %10d\n", areaILXL[5]);
+    if(areaILXL.size() > 0) {
+      if (areaILXL[0] != IMISSING)
+        LogKit::LogFormatted(LogKit::Low,"  In-line start                            : %10d\n", areaILXL[0]);
+      if (areaILXL[1] != IMISSING)
+        LogKit::LogFormatted(LogKit::Low,"  In-line end                              : %10d\n", areaILXL[1]);
+      if (areaILXL[4] != IMISSING)
+        LogKit::LogFormatted(LogKit::Low,"  In-line step                             : %10d\n", areaILXL[4]);
+      if (areaILXL[2] != IMISSING)
+        LogKit::LogFormatted(LogKit::Low,"  Cross-line start                         : %10d\n", areaILXL[2]);
+      if (areaILXL[3] != IMISSING)
+        LogKit::LogFormatted(LogKit::Low,"  Cross-line end                           : %10d\n", areaILXL[3]);
+      if (areaILXL[5] != IMISSING)
+        LogKit::LogFormatted(LogKit::Low,"  Cross-line step                          : %10d\n", areaILXL[5]);
     }
   }
-  else if (areaSpecification == ModelSettings::AREA_FROM_UTM) {
+  else if (areaSpecification == ModelSettings::AREA_FROM_UTM ||
+           areaSpecification == ModelSettings::AREA_FROM_GRID_DATA_AND_UTM) {
     LogKit::LogFormatted(LogKit::Low," given as UTM coordinates\n");
     const SegyGeometry * geometry = modelSettings->getAreaParameters();
     LogKit::LogFormatted(LogKit::Low,"  Reference point x                        : %10.1f\n", geometry->GetX0());
@@ -1522,10 +1566,18 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
     LogKit::LogFormatted(LogKit::Low,"  Sample density x                         : %10.1f\n", geometry->GetDx());
     LogKit::LogFormatted(LogKit::Low,"  Sample density y                         : %10.1f\n", geometry->GetDy());
     LogKit::LogFormatted(LogKit::Low,"  Rotation                                 : %10.4f\n", geometry->GetAngle()*(180.0/NRLib::Pi)*(-1));
+    if (areaSpecification == ModelSettings::AREA_FROM_GRID_DATA_AND_UTM) {
+      LogKit::LogFormatted(LogKit::Low," and snapped to seismic data\n");
+      LogKit::LogFormatted(LogKit::Low,"  Grid                                     : "+gridFile+"\n");
+    }
   }
   else if (areaSpecification == ModelSettings::AREA_FROM_SURFACE) {
     LogKit::LogFormatted(LogKit::Low," taken from surface\n");
     LogKit::LogFormatted(LogKit::Low,"  Reference surface                        : "+inputFiles->getAreaSurfaceFile()+"\n");
+    if (areaSpecification == ModelSettings::AREA_FROM_GRID_DATA_AND_SURFACE) {
+      LogKit::LogFormatted(LogKit::Low," and snapped to seismic data\n");
+      LogKit::LogFormatted(LogKit::Low,"  Grid                                     : "+gridFile+"\n");
+    }
   }
 
   //
@@ -2029,7 +2081,7 @@ ModelGeneral::writeAreas(const SegyGeometry * areaParams,
   if (azimuth < 0)
     azimuth += 360.0;
   LogKit::LogFormatted(LogKit::Low,"Model area       %11.2f  %11.2f    %10.2f %10.2f    %8.3f    %7.2f %7.2f\n\n",
-                       areaX0, areaY0, areaLx, areaLy, areaDx, areaDy, azimuth);
+                       areaX0, areaY0, areaLx, areaLy, azimuth, areaDx, areaDy);
 
   LogKit::LogFormatted(LogKit::Low,"Area                    xmin         xmax           ymin        ymax\n");
   LogKit::LogFormatted(LogKit::Low,"--------------------------------------------------------------------\n");

@@ -28,10 +28,7 @@ ModelSettings::ModelSettings(void)
     indFacies_(0),
     logNames_(5),
     inverseVelocity_(2),
-    faciesLabels_(0),
-    runFromPanel_(false),
-    noWellNeeded_(false),
-    noSeismicNeeded_(false)
+    faciesLabels_(0)
 {
   angularCorr_             = new GenExpVario(1, 10*static_cast<float>(NRLib::Pi/180.0)); // Power=1 range=10deg
   lateralCorr_             = new GenExpVario(1, 1000, 1000);
@@ -145,6 +142,11 @@ ModelSettings::ModelSettings(void)
   useLocalWavelet_         =    false;
   useLocalNoise_           =    false;
   optimizeWellLocation_    =    false;
+  runFromPanel_            =    false;
+  noWellNeeded_            =    false;
+  noSeismicNeeded_         =    false;
+  snapGridToSeismicData_   =    false;
+
   priorFaciesProbGiven_    = ModelSettings::FACIES_FROM_WELLS;
 
   generateSeismicAfterInv_ =    false;
@@ -197,7 +199,7 @@ ModelSettings::getDoInversion(void)
 
   elasticFlag  += IO::VP
                +  IO::VS
-                +  IO::RHO
+               +  IO::RHO
                +  IO::LAMELAMBDA
                +  IO::LAMEMU
                +  IO::POISSONRATIO
@@ -293,8 +295,10 @@ ModelSettings::copyBackgroundVarioToLocalWaveletVario(void)
 void
 ModelSettings::setAreaParameters(const SegyGeometry * geometry)
 {
-  if (geometry_ == NULL)
-    geometry_ = new SegyGeometry(geometry);
+  if (geometry_ != NULL) {
+    delete geometry_;      // Needed for snap_grid_to_seismic_data
+  }
+  geometry_ = new SegyGeometry(geometry);
 }
 
 void

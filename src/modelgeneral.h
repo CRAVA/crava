@@ -135,7 +135,6 @@ private:
   //Create planar surface with same extent as template, p[0]+p[1]*x+p[2]*y
   Surface *        createPlaneSurface(double  * planeParams,
                                       Surface * templateSurf);
-
   void             writeAreas(const SegyGeometry * areaParams,
                               Simbox             * timeSimbox,
                               std::string        & text);

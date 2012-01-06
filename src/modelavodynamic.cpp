@@ -435,7 +435,7 @@ ModelAVODynamic::processSeismic(FFTGrid        **& seisCube,
           if (geometry[i] != NULL) {
             double geoAngle = (-1)*timeSimbox->getAngle()*(180/M_PI);
             if (geoAngle < 0)
-              geoAngle += 360.0f;
+              geoAngle += 360.0;
             LogKit::LogFormatted(LogKit::Low,"Seismic data %d   %11.2f  %11.2f    %10.2f %10.2f    %8.3f    %7.2f %7.2f\n",i,
                                  geometry[i]->GetX0(), geometry[i]->GetY0(),
                                  geometry[i]->Getlx(), geometry[i]->Getly(), geoAngle,

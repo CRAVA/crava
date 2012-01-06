@@ -161,6 +161,7 @@ public:
   bool                             getOptimizeWellLocation(void)        const { return optimizeWellLocation_                      ;}
   bool                             getNoWellNedded(void)                const { return noWellNeeded_                              ;}
   bool                             getNoSeismicNeeded(void)             const { return noSeismicNeeded_                           ;}
+  bool                             getSnapGridToSeismicData(void)       const { return snapGridToSeismicData_                     ;}
   int                              getLogLevel(void)                    const { return logLevel_                                  ;}
   bool                             getErrorFileFlag()                   const { return ((otherFlag_ & IO::ERROR_FILE)>0)          ;}
   bool                             getTaskFileFlag()                    const { return ((otherFlag_ & IO::TASK_FILE)>0)           ;}
@@ -325,6 +326,7 @@ public:
   void setNoWellNeeded(bool wellNeeded)                   { noWellNeeded_             = wellNeeded               ;}
   void setTimeGradientSettings(float distance, float alpha);
   void setNoSeismicNeeded(bool seismicNeeded)             { noSeismicNeeded_          = seismicNeeded            ;}
+  void setSnapGridToSeismicData(bool snapToSeismicData)   { snapGridToSeismicData_    = snapToSeismicData        ;}
 
   enum          priorFacies{FACIES_FROM_WELLS,
                             FACIES_FROM_MODEL_FILE,
@@ -335,6 +337,8 @@ public:
   enum          indicators{NO, YES, NOTSET};
 
   enum          areaSpecification{AREA_FROM_GRID_DATA,
+                                  AREA_FROM_GRID_DATA_AND_UTM,     // Force area to be aligned with seismic data
+                                  AREA_FROM_GRID_DATA_AND_SURFACE, // Force area to be aligned with seismic data
                                   AREA_FROM_UTM,
                                   AREA_FROM_SURFACE};
 private:
@@ -520,6 +524,7 @@ private:
   bool                              runFromPanel_;               // True if run is started from RMS panel. Relaxed checking.
   bool                              noWellNeeded_;               // True for some configurations of input data
   bool                              noSeismicNeeded_;            // True for some estimation settings
+  bool                              snapGridToSeismicData_;      // Force inversion area to align with seismic data
   float                             distanceFromWell_;           // Minimum distance for where gradients should not cross
   float                             sigma_m_;                    // Smoothness level of the gradients
 

@@ -1807,6 +1807,7 @@ XmlModelFile::parseUTMArea(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("sample-density-x");
   legalCommands.push_back("sample-density-y");
   legalCommands.push_back("angle");
+  legalCommands.push_back("snap-to-seismic-data");
 
   double x0 = 0;
   if(parseValue(root, "reference-point-x", x0, errTxt) == false)
@@ -1842,6 +1843,11 @@ XmlModelFile::parseUTMArea(TiXmlNode * node, std::string & errTxt)
   if(parseValue(root, "angle", angle, errTxt) == false)
     errTxt += "Rotation angle must be given in command <"+
       root->ValueStr()+"> "+lineColumnText(root)+".\n";
+
+  bool snapToSeismicData = false;
+  if (parseBool(root, "snap-to-seismic-data", snapToSeismicData, errTxt) == true) {
+    modelSettings_->setSnapGridToSeismicData(true);
+  }
 
   double rot = (-1)*angle*(NRLib::Pi/180.0);
   int nx = static_cast<int>(lx/dx);
@@ -2820,11 +2826,17 @@ XmlModelFile::setDerivedParameters(std::string & errTxt)
     areaSpecification = ModelSettings::AREA_FROM_UTM;
     if (modelSettings_->getNoSeismicNeeded() && inputFiles_->getNumberOfSeismicFiles()>0)
       errTxt += "Seismic data should not be given when estimating background or correlations. \nExceptions are for optimization of well locations or if the area is taken from the seismic data.\n";
+    if (modelSettings_->getSnapGridToSeismicData()) {
+      areaSpecification = ModelSettings::AREA_FROM_GRID_DATA_AND_UTM;
+    }
   }
   else if(inputFiles_->getAreaSurfaceFile() != "") {
     areaSpecification = ModelSettings::AREA_FROM_SURFACE;
     if (modelSettings_->getNoSeismicNeeded() && inputFiles_->getNumberOfSeismicFiles()>0)
       errTxt += "Seismic data should not be given when estimating background or correlations. \nExceptions are for optimization of well locations or if the area is taken from the seismic data.";
+    if (modelSettings_->getSnapGridToSeismicData()) {
+      areaSpecification = ModelSettings::AREA_FROM_GRID_DATA_AND_SURFACE;
+    }
   }
   else {
     areaSpecification = ModelSettings::AREA_FROM_GRID_DATA; // inversion:seismic data, forward modelling: Vp
