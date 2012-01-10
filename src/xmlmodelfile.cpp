@@ -1838,23 +1838,21 @@ XmlModelFile::parseUTMArea(TiXmlNode * node, std::string & errTxt)
   double dx = lx;
   double dy = ly;
 
-  bool snapToSeismicData = false;
-  if (parseBool(root, "snap-to-seismic-data", snapToSeismicData, errTxt) == true) {
-    modelSettings_->setSnapGridToSeismicData(true);
-    if(parseValue(root, "sample-density-x", dx, errTxt))
-      TaskList::addTask("Keyword <sample-density-x> has no effect when <snap-to-seismic-data> has been specified.");
-    if(parseValue(root, "sample-density-y", dy, errTxt))
-      TaskList::addTask("Keyword <sample-density-y> has no effect when <snap-to-seismic-data> has been specified.");
-  }
-  else {
-    if(parseValue(root, "sample-density-x", dx, errTxt) == false)
-      errTxt += "Sample density for x must be given in command <"+
-        root->ValueStr()+"> "+lineColumnText(root)+".\n";
+  bool snapToSeismicData = parseBool(root, "snap-to-seismic-data", snapToSeismicData, errTxt);
 
-    if(parseValue(root, "sample-density-y", dy, errTxt) == false)
-      errTxt += "Sample density for y must be given in command <"+
-        root->ValueStr()+"> "+lineColumnText(root)+".\n";
-  }
+  bool densX = parseValue(root, "sample-density-x", dx, errTxt);
+  if(densX == true && snapToSeismicData == true) 
+    TaskList::addTask("Keyword <sample-density-x> has no effect when <snap-to-seismic-data> has been specified.");
+  else if(densX == false && snapToSeismicData == false)
+    errTxt += "Sample density for x must be given in command <"+
+      root->ValueStr()+"> "+lineColumnText(root)+".\n";
+
+  bool densY = parseValue(root, "sample-density-y", dy, errTxt);
+  if(densY == true && snapToSeismicData == true) 
+    TaskList::addTask("Keyword <sample-density-y> has no effect when <snap-to-seismic-data> has been specified.");
+  else if(densY == false && snapToSeismicData == false)
+    errTxt += "Sample density for y must be given in command <"+
+      root->ValueStr()+"> "+lineColumnText(root)+".\n";
 
   double angle = 0;
   if(parseValue(root, "angle", angle, errTxt) == false)
