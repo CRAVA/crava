@@ -456,7 +456,6 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
           }
           catch (NRLib::Exception & e) {
             errText += "Error: "+std::string(e.what());
-            geometry->WriteGeometry();
             geometry->WriteILXL(true);
             geometry = NULL;
             failed = true;
