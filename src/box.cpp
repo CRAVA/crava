@@ -41,12 +41,12 @@ CBox::~CBox() {
 
 }
 
-bool 
+bool
 CBox::IsInside(int i, int j, int k) const {
-  return (iMin_ <= i && iMax_ >= i && jMin_ <= j && jMax_ >= j && kMin_ <= k && kMax_ >= k); 
+  return (iMin_ <= i && iMax_ >= i && jMin_ <= j && jMax_ >= j && kMin_ <= k && kMax_ >= k);
 }
 
-void 
+void
 CBox::TruncateIndex(int& i, int& j, int& k, const Simbox* pSBox) {
   if (i < 0) i = 0; if (j < 0) j = 0; if (k < 0) k = 0;
   if (i >= pSBox->getnx()) i = pSBox->getnx() - 1;

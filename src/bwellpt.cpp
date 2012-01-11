@@ -12,8 +12,8 @@
 
 CBWellPt::CBWellPt(int i, int j, int k):
 i_(i), j_(j), k_(k)
-{ 
-  alpha_ = beta_ = rho_ = alphaOrig_ = betaOrig_ = rhoOrig_ = 0.0; 
+{
+  alpha_ = beta_ = rho_ = alphaOrig_ = betaOrig_ = rhoOrig_ = 0.0;
   noValidObsAlpha_ = noValidObsBeta_ = noValidObsRho_ = 0;
 }
 
@@ -21,7 +21,7 @@ CBWellPt::~CBWellPt(void)
 {
 }
 
-void CBWellPt::AddLog(float alpha, float beta, float rho) 
+void CBWellPt::AddLog(float alpha, float beta, float rho)
 {
   if (alpha != RMISSING) {
     alpha_ += float(log(alpha)); alphaOrig_ = alpha_;
@@ -55,10 +55,10 @@ void CBWellPt::SubtractOnly(Gamma type, float gamma) {
   default :
     assert(1 == 0);
     break;
-  }  
+  }
 }
 
-void CBWellPt::Divide() 
+void CBWellPt::Divide()
 {
   if (noValidObsAlpha_ > 0) {
     alpha_ /= noValidObsAlpha_; alphaOrig_ = alpha_;
@@ -69,5 +69,5 @@ void CBWellPt::Divide()
 
   if (noValidObsRho_ > 0) {
     rho_ /= noValidObsRho_; rhoOrig_ = rho_;
-  }  
+  }
 }

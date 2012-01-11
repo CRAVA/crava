@@ -66,19 +66,19 @@ WaveletFilter::getHalpha(double phi, double psi)const
 }
 
 const float
-WaveletFilter::getAlpha1(double phi, double psi) const 
+WaveletFilter::getAlpha1(double phi, double psi) const
 {
   return alpha1_.GetZ(phi*180/NRLib::Pi,psi*180/NRLib::Pi);
 }
-  
+
 const float
-WaveletFilter::getBeta1(double phi, double psi)  const 
+WaveletFilter::getBeta1(double phi, double psi)  const
 {
   return beta1_.GetZ(phi*180/NRLib::Pi,psi*180/NRLib::Pi)   ;
 }
 
 const float
-WaveletFilter::getHbeta(double phi, double psi)  const 
+WaveletFilter::getHbeta(double phi, double psi)  const
 {
   return Hbeta_.GetZ(phi*180/NRLib::Pi,psi*180/NRLib::Pi);
 }

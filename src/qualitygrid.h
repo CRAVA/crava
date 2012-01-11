@@ -12,7 +12,7 @@ class FFTGrid;
 class Vario;
 class ModelGeneral;
 
-class QualityGrid 
+class QualityGrid
 {
 
 public:
@@ -21,23 +21,23 @@ public:
               const Simbox              * simbox,
               const ModelSettings       * modelSettings,
               ModelGeneral              * modelGeneral);
-                      
+
 private:
 
-  void generateProbField(FFTGrid             *& grid, 
+  void generateProbField(FFTGrid             *& grid,
                          WellData            ** wells,
-                         const Simbox        *  simbox, 
+                         const Simbox        *  simbox,
                          const ModelSettings *  modelSettings) const;
 
-  void setupKrigingData2D(std::vector<KrigingData2D> & krigingData, 
+  void setupKrigingData2D(std::vector<KrigingData2D> & krigingData,
                           WellData                  ** wells,
-                          const Simbox               * simbox, 
-                          const int                    nWells) const; 
+                          const Simbox               * simbox,
+                          const int                    nWells) const;
 
-  void makeKrigedProbField(std::vector<KrigingData2D> & krigingData, 
+  void makeKrigedProbField(std::vector<KrigingData2D> & krigingData,
                            FFTGrid                   *& grid,
-                           const Simbox               * simbox, 
-                           const CovGrid2D            & cov, 
+                           const Simbox               * simbox,
+                           const CovGrid2D            & cov,
                            const bool                   isFile) const;
 
 

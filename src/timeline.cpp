@@ -1,6 +1,6 @@
 #include "src/timeline.h"
 
-TimeLine::TimeLine() 
+TimeLine::TimeLine()
 {
   current_time_  = time_.begin();
   current_event_ = event_type_.begin();
@@ -41,9 +41,9 @@ TimeLine::AddEvent(int time, int event_type, int event_data_index)
   current_index_ = event_data_index_.begin();
 }
 
-bool 
-TimeLine::GetNextEvent(int & event_type, 
-                       int & event_data_index, 
+bool
+TimeLine::GetNextEvent(int & event_type,
+                       int & event_data_index,
                        int & delta_time)
 {
   if(current_time_ != time_.end()) {

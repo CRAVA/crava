@@ -10,7 +10,7 @@
 #include "src/definitions.h"
 #include "src/timings.h"
 
-void 
+void
 Timings::reportAll(LogKit::MessageLevels logLevel)
 {
   LogKit::WriteHeader("Timings summary", logLevel);
@@ -43,20 +43,20 @@ Timings::reportAll(LogKit::MessageLevels logLevel)
   reportOne("Parameter filter         ", c_filtering_        , w_filtering_        , c_total_, w_total_,logLevel);
   reportOne("Facies probabilities     ", c_facies_           , w_facies_           , c_total_, w_total_,logLevel);
   reportOne("Kriging                  ", c_kriging_tot       , w_kriging_tot       , c_total_, w_total_,logLevel);
-  reportOne("Rest                     ", c_rest_             , w_rest_             , c_total_, w_total_,logLevel);
+  reportOne("Miscellaneous            ", c_rest_             , w_rest_             , c_total_, w_total_,logLevel);
   LogKit::LogFormatted(logLevel,  "---------------------------------------------------------------------\n");
   reportOne("Total                    ", c_total_            , w_total_            , c_total_, w_total_,logLevel);
 }
 
-void 
+void
 Timings::reportTotal()
 {
   LogKit::LogFormatted(LogKit::Low,"\nTotal CPU  time used in CRAVA: %6d seconds",   static_cast<int>(c_total_));
   LogKit::LogFormatted(LogKit::Low,"\nTotal Wall time used in CRAVA: %6d seconds\n", static_cast<int>(w_total_));
 }
 
-void 
-Timings::reportOne(const std::string & text, double cpuThis, double wallThis, 
+void
+Timings::reportOne(const std::string & text, double cpuThis, double wallThis,
                    double cpuTot, double wallTot, LogKit::MessageLevels logLevel)
 {
   if (wallThis < 0.00001) // To omit stupit zero-treatment in ToString()
@@ -73,31 +73,31 @@ Timings::reportOne(const std::string & text, double cpuThis, double wallThis,
   }
 }
 
-void 
+void
 Timings::calculateRest(void)
 {
   //
   // Note that kriging times are included in c_inversion_ and c_simulation_
   //
-  c_rest_ = c_total_ - (c_seismic_ 
-                        + c_wells_ 
-                        + c_wavelets_ 
-                        + c_priorExpectation_ 
-                        + c_priorCorrelation_ 
-                        + c_stochasticModel_ 
-                        + c_inversion_ 
-                        + c_simulation_ 
-                        + c_filtering_ 
+  c_rest_ = c_total_ - (c_seismic_
+                        + c_wells_
+                        + c_wavelets_
+                        + c_priorExpectation_
+                        + c_priorCorrelation_
+                        + c_stochasticModel_
+                        + c_inversion_
+                        + c_simulation_
+                        + c_filtering_
                         + c_facies_);
-  w_rest_ = w_total_ - (w_seismic_ 
-                        + w_wells_ 
-                        + w_wavelets_ 
-                        + w_priorExpectation_ 
-                        + w_priorCorrelation_ 
-                        + w_stochasticModel_ 
-                        + w_inversion_ 
-                        + w_simulation_ 
-                        + w_filtering_ 
+  w_rest_ = w_total_ - (w_seismic_
+                        + w_wells_
+                        + w_wavelets_
+                        + w_priorExpectation_
+                        + w_priorCorrelation_
+                        + w_stochasticModel_
+                        + w_inversion_
+                        + w_simulation_
+                        + w_filtering_
                         + w_facies_);
 }
 
@@ -128,8 +128,8 @@ C
          TRESTW = TRESTW + TIMWAL
       END IF
 C
-      IF (TIMCPU.GT.D1 .OR. 
-     &    TIMWAL.GT.D1 .OR. 
+      IF (TIMCPU.GT.D1 .OR.
+     &    TIMWAL.GT.D1 .OR.
      &    TIMEC.GT.DP01 .AND. TIMCPU.GT.DP01 .OR.
      &    TIMEW.GT.DP01 .AND. TIMWAL.GT.DP01 .OR.
      &    (REST.OR.TOTAL) .AND. (TIMEC.GT.DP01 .OR. TIMEW.GT.DP01)) THEN
@@ -148,7 +148,7 @@ Timings::setTimeTotal(double& wall, double& cpu)
   c_total_ = cpu;
 }
 
-void    
+void
 Timings::setTimeSeismic(double& wall, double& cpu)
 {
   TimeKit::getTime(wall,cpu);
@@ -156,7 +156,7 @@ Timings::setTimeSeismic(double& wall, double& cpu)
   c_seismic_ = cpu;
 }
 
-void    
+void
 Timings::setTimeResamplingSeismic(double& wall, double& cpu)
 {
   TimeKit::getTime(wall,cpu);
@@ -164,7 +164,7 @@ Timings::setTimeResamplingSeismic(double& wall, double& cpu)
   c_resamplingSeismic_ += cpu;
 }
 
-void    
+void
 Timings::setTimeWells(double& wall, double& cpu)
 {
   TimeKit::getTime(wall,cpu);
@@ -172,7 +172,7 @@ Timings::setTimeWells(double& wall, double& cpu)
   c_wells_ = cpu;
 }
 
-void    
+void
 Timings::setTimeWavelets(double& wall, double& cpu)
 {
   TimeKit::getTime(wall,cpu);
@@ -180,7 +180,7 @@ Timings::setTimeWavelets(double& wall, double& cpu)
   c_wavelets_ = cpu;
 }
 
-void    
+void
 Timings::setTimePriorExpectation(double& wall, double& cpu)
 {
   TimeKit::getTime(wall,cpu);
@@ -188,7 +188,7 @@ Timings::setTimePriorExpectation(double& wall, double& cpu)
   c_priorExpectation_ = cpu;
 }
 
-void    
+void
 Timings::setTimePriorCorrelation(double& wall, double& cpu)
 {
   TimeKit::getTime(wall,cpu);
@@ -196,7 +196,7 @@ Timings::setTimePriorCorrelation(double& wall, double& cpu)
   c_priorCorrelation_ = cpu;
 }
 
-void    
+void
 Timings::setTimeStochasticModel(double& wall, double& cpu)
 {
   TimeKit::getTime(wall,cpu);
@@ -204,7 +204,7 @@ Timings::setTimeStochasticModel(double& wall, double& cpu)
   c_stochasticModel_ = cpu;
 }
 
-void    
+void
 Timings::setTimeInversion(double& wall, double& cpu)
 {
   TimeKit::getTime(wall,cpu);
@@ -212,7 +212,7 @@ Timings::setTimeInversion(double& wall, double& cpu)
   c_inversion_ = cpu;
 }
 
-void    
+void
 Timings::setTimeSimulation(double& wall, double& cpu)
 {
   TimeKit::getTime(wall,cpu);
@@ -220,7 +220,7 @@ Timings::setTimeSimulation(double& wall, double& cpu)
   c_simulation_ = cpu;
 }
 
-void    
+void
 Timings::setTimeFiltering(double& wall, double& cpu)
 {
   TimeKit::getTime(wall,cpu);
@@ -228,7 +228,7 @@ Timings::setTimeFiltering(double& wall, double& cpu)
   c_filtering_ = cpu;
 }
 
-void    
+void
 Timings::setTimeFaciesProb(double& wall, double& cpu)
 {
   TimeKit::getTime(wall,cpu);
@@ -236,7 +236,7 @@ Timings::setTimeFaciesProb(double& wall, double& cpu)
   c_facies_ = cpu;
 }
 
-void    
+void
 Timings::setTimeKrigingPred(double& wall, double& cpu)
 {
   TimeKit::getTime(wall,cpu);
@@ -244,7 +244,7 @@ Timings::setTimeKrigingPred(double& wall, double& cpu)
   c_kriging_pred_ = cpu;
 }
 
-void    
+void
 Timings::addToTimeKrigingSim(double& wall, double& cpu)
 {
   TimeKit::getTime(wall,cpu);
@@ -288,7 +288,7 @@ double Timings::c_simulation_        = 0.0;
 
 double Timings::w_filtering_         = 0.0;
 double Timings::c_filtering_         = 0.0;
-                
+
 double Timings::w_facies_            = 0.0;
 double Timings::c_facies_            = 0.0;
 

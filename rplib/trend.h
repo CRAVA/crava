@@ -19,7 +19,7 @@ public:
 
 private:
   double trend_;
-  
+
 
 };
 
@@ -38,7 +38,7 @@ private:
 
 class Trend2D : public Trend {
 public:
-  Trend2D(const std::vector<double>& trend, 
+  Trend2D(const std::vector<double>& trend,
           double s1_min, double s1_max, int ns1,
           double s2_min, double s2_max, int ns2); //If error, throws NRLib::Exception
   virtual ~Trend2D();

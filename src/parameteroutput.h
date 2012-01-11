@@ -18,46 +18,46 @@ public:
   static void      writeParameters(const Simbox  * simbox,
                                    ModelGeneral  * modelGeneral,
                                    const ModelSettings * modelSettings,
-                                   FFTGrid       * postAlpha, 
-                                   FFTGrid       * postBeta, 
-                                   FFTGrid       * postRho, 
+                                   FFTGrid       * postAlpha,
+                                   FFTGrid       * postBeta,
+                                   FFTGrid       * postRho,
                                    int             outputFlag,
                                    bool            fileGrid,
                                    int             simNum,
-                                   bool            kriged); 
-  static void      writeToFile(const Simbox      * simbox, 
+                                   bool            kriged);
+  static void      writeToFile(const Simbox      * simbox,
                                ModelGeneral      * modelGeneral,
                                const ModelSettings     * modelSettings,
-                               FFTGrid           * grid, 
-                               const std::string & fileName, 
+                               FFTGrid           * grid,
+                               const std::string & fileName,
                                const std::string & sgriLabel);
-  
-private: 
+
+private:
   static void      computeAcousticImpedance(const Simbox * simbox, ModelGeneral * modelGeneral, const ModelSettings * modelSettings,
-                                            FFTGrid * Alpha, FFTGrid * Rho, 
+                                            FFTGrid * Alpha, FFTGrid * Rho,
                                             bool fileGrid, const std::string & fileName);
   static void      computeShearImpedance(const Simbox * simbox, ModelGeneral * modelGeneral, const ModelSettings * modelSettings,
-                                         FFTGrid * Beta, FFTGrid * Rho, 
+                                         FFTGrid * Beta, FFTGrid * Rho,
                                          bool fileGrid, const std::string & fileName);
   static void      computeVpVsRatio(const Simbox * simbox, ModelGeneral * modelGeneral, const ModelSettings * modelSettings,
-                                    FFTGrid * Alpha, FFTGrid * Beta, 
+                                    FFTGrid * Alpha, FFTGrid * Beta,
                                     bool fileGrid, const std::string & fileName);
   static void      computePoissonRatio(const Simbox * simbox, ModelGeneral * modelGeneral, const ModelSettings * modelSettings,
-                                       FFTGrid * Alpha, FFTGrid * Beta, 
+                                       FFTGrid * Alpha, FFTGrid * Beta,
                                        bool fileGrid, const std::string & fileName);
   static void      computeLameMu(const Simbox * simbox, ModelGeneral * modelGeneral, const ModelSettings * modelSettings,
-                                 FFTGrid * Beta, FFTGrid * Rho, 
+                                 FFTGrid * Beta, FFTGrid * Rho,
                                  bool fileGrid, const std::string & FileName);
   static void      computeLameLambda(const Simbox * simbox,ModelGeneral * modelGeneral, const ModelSettings * modelSettings,
-                                     FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho, 
+                                     FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho,
                                      bool fileGrid, const std::string & fileName);
   static void      computeMuRho(const Simbox * simbox, ModelGeneral * modelGeneral, const ModelSettings * modelSettings,
-                                FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho, 
+                                FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho,
                                 bool fileGrid, const std::string & fileName);
-  static void      computeLambdaRho(const Simbox * simbox, ModelGeneral * modelGeneral, const ModelSettings * modelSettings, 
-                                    FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho, 
+  static void      computeLambdaRho(const Simbox * simbox, ModelGeneral * modelGeneral, const ModelSettings * modelSettings,
+                                    FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho,
                                     bool fileGrid, const std::string & fileName);
-  
+
   static FFTGrid * createFFTGrid(FFTGrid * referenceGrid, bool fileGrid);
 };
 #endif

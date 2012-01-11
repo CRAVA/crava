@@ -13,15 +13,15 @@
 
 
 MultiNormalWithTrend::
-MultiNormalWithTrend(const NRLib::Normal&                      vp01, 
-                     const NRLib::Normal&                      vs01, 
+MultiNormalWithTrend(const NRLib::Normal&                      vp01,
+                     const NRLib::Normal&                      vs01,
                      const NRLib::Normal&                      rho01,
                      const Trend&                              mean_trend_vp,
                      const Trend&                              mean_trend_vs,
                      const Trend&                              mean_trend_rho,
                      const NRLib::Grid2D<Trend*>&              cov_trend) :
-  vp01_(vp01), vs01_(vs01), rho01_(rho01), 
-  mean_trend_vp_(mean_trend_vp), mean_trend_vs_(mean_trend_vs), mean_trend_rho_(mean_trend_rho), 
+  vp01_(vp01), vs01_(vs01), rho01_(rho01),
+  mean_trend_vp_(mean_trend_vp), mean_trend_vs_(mean_trend_vs), mean_trend_rho_(mean_trend_rho),
   cov_trend_(cov_trend)
 {
   if (cov_trend_.GetNI() != 3 || cov_trend_.GetNJ() != 3)
@@ -31,10 +31,10 @@ MultiNormalWithTrend(const NRLib::Normal&                      vp01,
 
 MultiNormalWithTrend::~MultiNormalWithTrend()
 {
-  
+
 }
 
-void   
+void
 MultiNormalWithTrend::ReSample(double s1, double s2,
                                double& vp, double& vs, double& rho) const {
   std::vector<double> rhs(3); // right hand side
@@ -46,11 +46,11 @@ MultiNormalWithTrend::ReSample(double s1, double s2,
 
   // fill cov matrix
   double ** cov_matrix = CreateCovMatrix(s1, s2);
-  
-  //cholesky 
-  lib_matrCholR(3, cov_matrix); 
 
-  MatrProdTranspCholVecRR(3, cov_matrix, &rc[0] , &rhs[0]); // rhs is given value 
+  //cholesky
+  lib_matrCholR(3, cov_matrix);
+
+  MatrProdTranspCholVecRR(3, cov_matrix, &rc[0] , &rhs[0]); // rhs is given value
 
   vp  =  rhs[0] + mean_trend_vp_.GetValue(s1, s2);
   vs  =  rhs[1] + mean_trend_vs_.GetValue(s1, s2);
@@ -60,7 +60,7 @@ MultiNormalWithTrend::ReSample(double s1, double s2,
 
 }
 
-void     
+void
 MultiNormalWithTrend::ReSample(double s1, double s2,
                                double** cov_matrix_cholesky,
                                double& vp, double& vs, double& rho,
@@ -72,12 +72,12 @@ MultiNormalWithTrend::ReSample(double s1, double s2,
   rc[0] = vp01_.Draw();
   rc[1] = vs01_.Draw();
   rc[2] = rho01_.Draw();
-  
-  //cholesky 
-  if (!is_cholesky)
-    lib_matrCholR(3, cov_matrix_cholesky); 
 
-  MatrProdTranspCholVecRR(3, cov_matrix_cholesky, &rc[0] , &rhs[0]); // rhs is given value 
+  //cholesky
+  if (!is_cholesky)
+    lib_matrCholR(3, cov_matrix_cholesky);
+
+  MatrProdTranspCholVecRR(3, cov_matrix_cholesky, &rc[0] , &rhs[0]); // rhs is given value
 
   vp  =  rhs[0] + mean_trend_vp_.GetValue(s1, s2);
   vs  =  rhs[1] + mean_trend_vs_.GetValue(s1, s2);
@@ -85,10 +85,10 @@ MultiNormalWithTrend::ReSample(double s1, double s2,
 
 }
 
-void     
-MultiNormalWithTrend::EstimateExpectation(double s1, double s2, int sample_size, 
+void
+MultiNormalWithTrend::EstimateExpectation(double s1, double s2, int sample_size,
                                           double& exp_vp, double& exp_vs, double& exp_rho) const {
-  
+
   exp_vp = exp_vs = exp_rho = 0;
 
   if (sample_size <= 0)
@@ -119,11 +119,11 @@ MultiNormalWithTrend::EstimateExpectation(double s1, double s2, int sample_size,
 
 }
 
-void     
+void
 MultiNormalWithTrend::EstimateExpectationAndVariance(double s1, double s2, int sample_size,
                                                      double& exp_vp, double& exp_vs, double& exp_rho,
                                                      double& var_vp, double& var_vs, double& var_rho) const {
-  
+
   exp_vp = exp_vs = exp_rho = 0;
   var_vp = var_vs = var_rho = 0;
 
@@ -163,7 +163,7 @@ MultiNormalWithTrend::EstimateExpectationAndVariance(double s1, double s2, int s
 
 }
 
-double** 
+double**
 MultiNormalWithTrend::CreateEstimateOfCovMatrix(double s1, double s2, int sample_size) const {
   if (sample_size <= 0)
     return NULL;
@@ -173,7 +173,7 @@ MultiNormalWithTrend::CreateEstimateOfCovMatrix(double s1, double s2, int sample
 
   exp_vp = exp_vs = exp_rho = 0;
   var_vp = var_vs = var_rho = 0;
-  
+
 
   // fill cov matrix
   double ** cov_matrix = CreateCovMatrix(s1, s2);
@@ -217,27 +217,27 @@ MultiNormalWithTrend::CreateEstimateOfCovMatrix(double s1, double s2, int sample
 
   cov_matrix[0][0] = var_vp;  cov_matrix[0][1] = vp_vs;   cov_matrix[0][2] = vp_rho;
   cov_matrix[1][0] = vp_vs;   cov_matrix[1][1] = var_vs;  cov_matrix[1][2] = vs_rho;
-  cov_matrix[2][0] = vp_rho;  cov_matrix[2][1] = vs_rho;  cov_matrix[2][2] = var_rho; 
+  cov_matrix[2][0] = vp_rho;  cov_matrix[2][1] = vs_rho;  cov_matrix[2][2] = var_rho;
 
   return cov_matrix;
 }
 
 void
 MultiNormalWithTrend::
-MatrProdTranspCholVecRR(int n, double **mat, double *in_vec,double* out_vec) const 
+MatrProdTranspCholVecRR(int n, double **mat, double *in_vec,double* out_vec) const
 {
   int i,j;
   for (i = 0; i < n; i++)
-  { 
+  {
     out_vec[i]=0.0;
     for (j = 0; j <= i; j++)
     {
-      out_vec[i] += mat[i][j]*in_vec[j]; 
+      out_vec[i] += mat[i][j]*in_vec[j];
     }
   }
 }
 
-double** 
+double**
 MultiNormalWithTrend::CreateCovMatrix(double s1, double s2) const {
   // fill cov matrix
   double ** cov_matrix = new double*[3];
@@ -252,7 +252,7 @@ MultiNormalWithTrend::CreateCovMatrix(double s1, double s2) const {
   return cov_matrix;
 }
 
-void     
+void
 MultiNormalWithTrend::DeleteCovMatrix(double** cov_matrix) const {
   //clean up
   for (int i = 0; i < 3; ++i)

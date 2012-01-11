@@ -21,7 +21,7 @@ bool doFirstAVOInversion(ModelSettings           * modelSettings,
                          ModelAVOStatic          * modelAVOStatic,
                          SeismicParametersHolder & seismicParameters,
                          InputFiles              * inputFiles,
-                         int                       sortedVintage, 
+                         int                       sortedVintage,
                          Simbox                  * timeBGSimbox);
 
 bool doTimeLapseAVOInversion(ModelSettings           * modelSettings,

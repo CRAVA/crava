@@ -13,7 +13,7 @@ public:
 
   virtual ~MultiNormalDistributedRockT0();
 
-  virtual Rock  * GenerateSample(const std::vector<double> & trend_params) const;  
+  virtual Rock  * GenerateSample(const std::vector<double> & trend_params) const;
 
 private:
   const MultiNormalWithTrend& mult_normal_distr_;

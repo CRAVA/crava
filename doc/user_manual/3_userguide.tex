@@ -70,7 +70,22 @@ For each available angle, the rest of the information is gathered under an \kw{a
 \subsubsection{Seismic data}
 \label{sec:basicseis}
 The name of the seismic data file is given with \kw{file-name}, as seen in \autoref{ex:survey}. Naturally, seismic data is always required when running an inversion.
-By default, \crava recognises three SegY formats; Seisworks, Charisma and IESX, but you are also allowed to define your own format using the \kw{segy-format}\kwindex{segy-format} command. A standard format is given by \kw{standard-format}. Possible arguments are 'seisworks', 'iesx', 'charisma' or 'SIP'. Modifications to the chosen standard format can be given by the following commands: \kw{location-x}, \kw{location-y}, \kw{location-il}, \kw{location-xl} and \kw{bypass-coordinate-scaling}. For more information on how to use this, see \kw{segy-format} in the reference manual chapter.
+By default, \crava recognises four SegY formats; Seisworks, Charisma, SIP and IESX, see Table~\ref{tab:segyformats}. 
+\begin{table}[h]
+\centering
+\caption{SegY formats recognized by Crava}
+\label{tab:segyformats}
+\begin{tabular}{|l|r|r|r|r|r|c|}
+\hline
+Name & X & Y & IL & XL & CoordScal & CoordSys \\ \hline \hline
+SeisWorks & 73 & 77 & 9 & 21 & 71 & UTM \\ \hline
+Charisma & 73 & 77 & 5 & 21 & 71 & UTM \\ \hline
+IESX & 73 & 77 & 221 & 21 & 71 & UTM \\ \hline
+SIP & 181 & 185 & 189 & 193 & 71 & UTM  \\ \hline
+\end{tabular}
+\end{table}
+
+You are also allowed to define your own format using the \kw{segy-format}\kwindex{segy-format} command. A standard format is given by \kw{standard-format}. Possible arguments are 'seisworks', 'iesx', 'charisma' or 'SIP'. Modifications to the chosen standard format can be given by the following commands: \kw{location-x}, \kw{location-y}, \kw{location-il}, \kw{location-xl} and \kw{bypass-coordinate-scaling}. For more information on how to use this, see \kw{segy-format} in the reference manual chapter.
  
 Other file formats recognised by \crava are storm, Sgri and crava.
 
@@ -764,13 +779,11 @@ pulse.
 An important feature in \crava is the ability to create facies
 probabilities. This requires that \kw{mode} is set to "inversion", and
 is triggered by the \kw{facies-probabilities} command under
-\kw{inversion-settings}. The value given here should be either
-"absolute" or "relative", corresponding to probability computations
-based on absolute or relative inverted parameters. If the distribution
-for elastic parameters for each facies is constant over the inversion
-volume, using absolute values is more stable. However, if there are
-trends in the elastic parameters, the relative values are more
-robust. 
+\kw{inversion-settings}. 
+%The value given here should be either
+%"absolute" or "relative", corresponding to probability computations
+%based on absolute or relative inverted parameters. 
+
 
 The facies probabilities are computed based on the inversion results
 and a distribution for inversion values given facies computed from
@@ -813,11 +826,11 @@ related to facies probabilities are given under
 \end{verbatim}
 \end{example}
 
-\begin{figure}
+\begin{figure}[h]
   \centering
   \includegraphics[width=.305\linewidth, height=100mm]{images/sand_probability_well_off}\qquad
   \includegraphics[width=.300\linewidth, height=100mm]{images/sand_probability_well_on}
-  \caption{A sample probability estimation. The black curve gives the
+  \caption{A sample facies probability estimation. The black curve gives the
     probability of sand in a well containing sand (orange), shale
     (green) and crevasse (brown). In the left figure the well was not
     included in the facies probability estimate whereas it was
@@ -825,9 +838,17 @@ related to facies probabilities are given under
   \label{fig:sandprob}
 \end{figure} 
 
-Instead of \kw{probability}, we can use \kw{probability-cube}, where
-prior facies probabilities are given on a file. A prior value for
-undefined facies is set with the command \kw{uncertainty-level}. 
+If \kw{use-absolute-elastic-parameters} is set to 'yes', facies probability is computed based on
+inverted parameters including background model.
+If the distribution
+for elastic parameters for each facies is constant over the inversion
+volume, using absolute values is more stable. However, if there are
+trends in the elastic parameters, the relative values are more
+robust. The default is to use relative values.
+
+%Instead of \kw{probability}, we can use \kw{probability-cube}, where
+%prior facies probabilities are given on a file. A prior value for
+%undefined facies is set with the command \kw{uncertainty-level}. 
 
 The interval to use for facies probability calculations can be
 set with \kw{estimation-interval}, similar to
@@ -835,11 +856,25 @@ estimation interval for wavelets. Parallel to the wavelet case, wells
 may also be excluded using the \kw{use-for-facies-probabilities}
 command under \kw{well}.
 
+\subsection{Prior probabilities}
+In order to get reliable probabilities, we need good prior
+probabilities. By default, \crava computes the average fraction of
+each facies in the relevant interval of the wells. This can be
+overridden using the \kw{prior-probabilities} command, which
+allows specification of these. Note that probabilities must be given
+for each facies. Probabilities can either be given globally, with
+\kw{probability}, or as a full 3D trend, using
+\kw{probability-cube}. The latter takes a grid file as argument,
+and the corresponding grid must cover the inversion volume.
+A prior value for
+undefined facies is set with the command \kw{uncertainty-level}. 
+
+\subsection{Output parameters}
 Facies probabilities can be written to file by using the command
 \kw{facies-probabilities}\kwindex{facies-probabilities} or
 \kw{facies-probabilities-with-undef}\kwindex{facies-probabilities-with-undef}
-given under \kw{project-settings}, \kw{io-settings} and 
-\kw{grid-output}. \kw{facies-probabilities} gives probabilities for
+given under \kw{project-settings}, \kw{io-settings},  
+\kw{grid-output} and \kw{other-parameters}. \kw{facies-probabilities} gives probabilities for
 the existing facies that sum up to one. This is recommended for use in
 RMS. \kw{facies-probabilities-with-undef} includes probability for
 undefined facies, and this cube will be the most correct
@@ -855,16 +890,6 @@ under \kw{io-settings} and \kw{other-output}. The distributions are
 written per facies, in a STORM grid with \vp, \vs and density as
 axes. 
 
-\subsection{Prior probabilities}
-In order to get reliable probabilities, we need good prior
-probabilities. By default, \crava computes the average fraction of
-each facies in the relevant interval of the wells. This can be
-overridden using the \kw{prior-probabilities} command, which
-allows specification of these. Note that probabilities must be given
-for each facies. Probabilities can either be given globally, with
-\kw{probability}, or as a full 3D trend, using
-\kw{probability-cube}. The latter takes a grid file as argument,
-and the corresponding grid must cover the inversion volume. 
 
 \section{Forward modelling}
 \label{sec:forwardusr}

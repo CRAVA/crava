@@ -14,18 +14,18 @@ class SpatialWellFilter
 public:
   SpatialWellFilter(int nwells);
   ~SpatialWellFilter();
-  
+
   void                     setPriorSpatialCorr(FFTGrid *parSpatialCorr, WellData *well, int wellnr);
-  void                     doFiltering(Corr                        * corr, 
-                                       WellData                   ** wells, 
-                                       int                           nWells, 
-                                       bool                          useVpRhoFilter, 
+  void                     doFiltering(Corr                        * corr,
+                                       WellData                   ** wells,
+                                       int                           nWells,
+                                       bool                          useVpRhoFilter,
                                        const std::vector<int>      & filterWell,
                                        int                           nAngles,
-                                       const Crava                 * cravaResult, 
+                                       const Crava                 * cravaResult,
                                        const std::vector<Grid2D *> & noiseScale);
   std::vector<double **> & getSigmae(void) {return sigmae_;}
-  
+
 private:
   std::vector<double **> sigmae_;
   std::vector<double **> sigmaeVpRho_;
@@ -34,11 +34,11 @@ private:
   int                  * n_;
   double             *** priorSpatialCorr_;
 
-  void doVpRhoFiltering(const double ** sigmapri, const double ** sigmapost, int n, 
+  void doVpRhoFiltering(const double ** sigmapri, const double ** sigmapost, int n,
                         BlockedLogs * blockedlogs);
   void updateSigmaE(double ** filter, double ** postCov, int n);
   void completeSigmaE(int lastn, const Crava * cravaResult, const std::vector<Grid2D *> & noiseScale);
-  
+
   void updateSigmaEVpRho(double ** filter, double ** postCov,  int nDim, int n);
   void completeSigmaEVpRho(int lastn, const Crava * cravaResult, const std::vector<Grid2D *> & noiseScale);
 

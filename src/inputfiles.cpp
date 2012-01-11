@@ -5,15 +5,15 @@
 #include "nrlib/exception/exception.hpp"
 
 InputFiles::InputFiles(void)
-  : seedFile_(""),          
-    wellFiles_(0),           
-    wellMoveIntFile_(2),   
-    faciesEstIntFile_(2),   
-    timeSurfFiles_(0),       
-    depthSurfFiles_(2),      
+  : seedFile_(""),
+    wellFiles_(0),
+    wellMoveIntFile_(2),
+    faciesEstIntFile_(2),
+    timeSurfFiles_(0),
+    depthSurfFiles_(2),
     velocityField_(""),
-    backFile_(3),           
-    backVelFile_(""),       
+    backFile_(3),
+    backVelFile_(""),
     reflMatrFile_(""),
     corrDirFile_(""),
     paramCorrFile_(""),
@@ -26,7 +26,7 @@ InputFiles::~InputFiles(void)
 {
 }
 
-std::string 
+std::string
 InputFiles::addInputPathAndCheckFiles()
 {
   unsigned int i;

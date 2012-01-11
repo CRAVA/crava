@@ -11,8 +11,8 @@ class SeismicParametersHolder
 {
 public:
   SeismicParametersHolder(void);
-  
-  ~SeismicParametersHolder(void); 
+
+  ~SeismicParametersHolder(void);
 
   void setSeismicParameters(FFTGrid  * muAlpha,
                             FFTGrid  * muBeta,
@@ -27,7 +27,7 @@ public:
   FFTGrid * GetCovRho()         { return covRho_         ;}
   FFTGrid * GetCrCovAlphaBeta() { return crCovAlphaBeta_ ;}
   FFTGrid * GetCrCovAlphaRho()  { return crCovAlphaRho_  ;}
-  FFTGrid * GetCrCovBetaRho()   { return crCovBetaRho_   ;} 
+  FFTGrid * GetCrCovBetaRho()   { return crCovBetaRho_   ;}
 
 
 private:

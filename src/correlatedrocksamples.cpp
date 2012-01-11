@@ -4,15 +4,15 @@ CorrelatedRockSamples::CorrelatedRockSamples()
 {
 }
 
-CorrelatedRockSamples::~CorrelatedRockSamples() 
+CorrelatedRockSamples::~CorrelatedRockSamples()
 {
 }
 
 std::vector< std::vector< std::vector<double> > >
 CorrelatedRockSamples::CreateSamples(int                              i_max,
                                      TimeLine                       & time_line,
-                                     const DistributionsRockT0      * dist_rock, 
-                                     const DistributionsSaturation  * dist_sat, 
+                                     const DistributionsRockT0      * dist_rock,
+                                     const DistributionsSaturation  * dist_sat,
                                      const DistributionsGeochemical * dist_geochem)
 {
   std::list<int> time;
@@ -28,8 +28,8 @@ CorrelatedRockSamples::CreateSamples(int                              i_max,
     for (int l = k; l < k_max; ++l)
       delta_time[l].push_back(dt);
   }
-  
-  // Set up data structures. 
+
+  // Set up data structures.
   // The order of indices is chosen to make extraction of all samples for a given time instance easy.
   std::vector< std::vector< std::vector<double> > > m(k_max);
   std::vector< std::vector< Rock * > > rock(k_max);
@@ -41,7 +41,7 @@ CorrelatedRockSamples::CreateSamples(int                              i_max,
   }
 
   const std::vector<double> trend_params_dummy(0);
-  // Finding the sets of correlated samples. 
+  // Finding the sets of correlated samples.
   // Each set of samples for a specific i are correlated in time.
   for (int i = 0; i < i_max; ++i){
     rock[0][i] = dist_rock->GenerateSample(trend_params_dummy);

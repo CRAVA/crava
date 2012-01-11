@@ -4,15 +4,15 @@
 #include "lib/utils.h"
 #include "src/definitions.h"
 
-#include "fft/include/fftw.h"
-#include "fft/include/rfftw.h"
-#include "fft/include/fftw-int.h"
-#include "fft/include/f77_func.h"
+#include "fftw.h"
+#include "rfftw.h"
+#include "fftw-int.h"
+#include "f77_func.h"
 
 #include "nrlib/iotools/logkit.hpp"
 
 //------------------------------------------------------------
-void    
+void
 Utils::writeTitler(const std::string & text)
 {
   const int length = static_cast<int>(text.length());
@@ -20,7 +20,7 @@ Utils::writeTitler(const std::string & text)
   for (int i = 0 ; i < length ; i++)
     LogKit::LogFormatted(LogKit::Low,"-");
   LogKit::LogFormatted(LogKit::Low,"\n");
-}  
+}
 
 //------------------------------------------------------------
 void
@@ -55,7 +55,7 @@ Utils::copyMatrix(const float ** from,
 }
 
 //------------------------------------------------------------
-void    
+void
 Utils::writeVectorToFile(const std::string & fileName,
                          float             * vector,
                          int                  ndim)
@@ -72,7 +72,7 @@ Utils::writeVectorToFile(const std::string & fileName,
 }
 
 //------------------------------------------------------------
-void    
+void
 Utils::writeVector(float * vector,
                    int     ndim)
 {
@@ -83,7 +83,7 @@ Utils::writeVector(float * vector,
 }
 
 //------------------------------------------------------------
-void    
+void
 Utils::writeVector(double * vector,
                    int      ndim)
 {
@@ -94,7 +94,7 @@ Utils::writeVector(double * vector,
 }
 
 //------------------------------------------------------------
-void    
+void
 Utils::writeMatrix(float ** matrix,
                    int      ndim1,
                    int      ndim2)
@@ -108,7 +108,7 @@ Utils::writeMatrix(float ** matrix,
 }
 
 //------------------------------------------------------------
-void    
+void
 Utils::writeMatrix(double ** matrix,
                    int       ndim1,
                    int       ndim2)
@@ -131,7 +131,7 @@ Utils::fft(fftw_real* rAmp,fftw_complex* cAmp,int nt)
 }
 
 //------------------------------------------------------------
-void           
+void
 Utils::fftInv(fftw_complex* cAmp,fftw_real* rAmp,int nt)
 {
   rfftwnd_plan p2 = rfftwnd_create_plan(1, &nt, FFTW_COMPLEX_TO_REAL, FFTW_ESTIMATE | FFTW_IN_PLACE);
@@ -142,7 +142,7 @@ Utils::fftInv(fftw_complex* cAmp,fftw_real* rAmp,int nt)
     rAmp[i]*=fftw_real(sf);
 }
 //-----------------------------------------------------------
-int 
+int
 Utils::findEnd(std::string & seek, int start, std::string & find)
 {
   size_t i    = start;
@@ -166,13 +166,13 @@ Utils::findEnd(std::string & seek, int start, std::string & find)
 //-------------------------------------------------------------
 void
 Utils::readUntilStop(int pos, std::string & in, std::string & out, std::string read)
-{ 
+{
   /*
-    reads a string from position pos+1 
-    until the terminating char given in stop 
+    reads a string from position pos+1
+    until the terminating char given in stop
     returns the string excluding the stop
   */
-  
+
   size_t stop = in.find(read,pos);
   if (stop != std::string::npos)
     stop = in.length();

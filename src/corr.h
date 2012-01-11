@@ -15,27 +15,27 @@ class Corr
 {
 public:
   Corr(float   ** pointVar0,
-       float   ** priorVar0, 
-       float    * priorCorrT, 
-       int        n, 
-       float      dt, 
+       float   ** priorVar0,
+       float    * priorCorrT,
+       int        n,
+       float      dt,
        Surface  * priorCorrXY);
 
-  Corr(int                       n,  
-       float                     dt, 
+  Corr(int                       n,
+       float                     dt,
        SeismicParametersHolder & seismicParameters);
 
-  ~Corr(void); 
+  ~Corr(void);
 
   float   ** getPriorVar0(void)                const { return priorVar0_                              ;}
   float    * getPriorCorrTFiltered(void)       const { return priorCorrTFiltered_                     ;}
   Surface  * getPriorCorrXY(void)              const { return priorCorrXY_                            ;}
 
-  int        getnx(void)                       const { return static_cast<int>(priorCorrXY_->GetNI()) ;} 
-  int        getny(void)                       const { return static_cast<int>(priorCorrXY_->GetNJ()) ;} 
+  int        getnx(void)                       const { return static_cast<int>(priorCorrXY_->GetNI()) ;}
+  int        getny(void)                       const { return static_cast<int>(priorCorrXY_->GetNJ()) ;}
   int        getn(void)                        const { return n_                                      ;}
   float      getdt(void)                       const { return dt_                                     ;}
- 
+
   float   ** getPostVar0(void)                 const { return postVar0_                               ;}
   float      getPostCovAlpha00(int k)          const { return postCovAlpha00_[k]                      ;}
   float      getPostCovBeta00(int k)           const { return postCovBeta00_[k]                       ;}
@@ -51,7 +51,7 @@ public:
   FFTGrid *& getPostCrCovBetaRho(void)               { return postCrCovBetaRho_                       ;}
 
   void       getNextParameterCovariance(fftw_complex **& parVar);
-  void       getNextErrorVariance(fftw_complex **& errVar, 
+  void       getNextErrorVariance(fftw_complex **& errVar,
                                   fftw_complex * errMult1,
                                   fftw_complex * errMult2,
                                   fftw_complex * errMult3,
@@ -60,13 +60,13 @@ public:
                                   double ** errThetaCov,
                                   bool invert_frequency);
 
-  fftw_real* initializeCorrelations(SpatialWellFilter * spatwellfilter, 
-                                    WellData         ** wells,  
-                                    float               corrGradI, 
-                                    float               corrGradJ, 
-                                    int                 lowIntCut, 
-                                    int                 nWells, 
-                                    int                 nz, 
+  fftw_real* initializeCorrelations(SpatialWellFilter * spatwellfilter,
+                                    WellData         ** wells,
+                                    float               corrGradI,
+                                    float               corrGradJ,
+                                    int                 lowIntCut,
+                                    int                 nWells,
+                                    int                 nz,
                                     int                 nzp);
   void       terminateAccess(void);
   void       initializeAccess(void);
@@ -107,7 +107,7 @@ private:
   Surface  * priorCorrXY_;
   float    * priorCorrT_;
   float    * priorCorrTFiltered_;
-        
+
   int        n_;                     // priorCorrT - length
   float      dt_;                    // priorCorrT - time step
 

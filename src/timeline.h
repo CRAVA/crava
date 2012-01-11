@@ -13,7 +13,7 @@ public:
   bool GetNextEvent(int & event_type, int & event_data_index, int & delta_time); //Returns false if no  more events.
                                                                                  //Not const, since it advances iterators.
   void ReSet();
-  void GetAllTimes(std::list<int> & time) const {time = time_;} 
+  void GetAllTimes(std::list<int> & time) const {time = time_;}
 
   enum event_types{AVO, TRAVEL_TIME, GRAVITY};
 

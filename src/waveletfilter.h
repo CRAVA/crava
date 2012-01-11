@@ -4,7 +4,7 @@
 #include "src/definitions.h"
 
 class WaveletFilter {
-public: 
+public:
   //Constructor
   WaveletFilter(const std::string & filename,
                 int               & errCode,
@@ -20,7 +20,7 @@ public:
   const float            getHalpha(double phi, double psi) const;
   const float            getBeta1(double phi, double psi)  const ;
   const float            getHbeta(double phi, double psi)  const ;
-  const bool             hasHalpha() const {return hasHalpha_;}  
+  const bool             hasHalpha() const {return hasHalpha_;}
 
 private:
 //  void                    createGrid();

@@ -7,7 +7,7 @@
 class DistributionsSaturationExmpl: public DistributionsSaturation {
 public:
 
-  DistributionsSaturationExmpl(const std::vector<Fluid *> & fluid, const std::vector<double> & p) 
+  DistributionsSaturationExmpl(const std::vector<Fluid *> & fluid, const std::vector<double> & p)
     : DistributionsSaturation(fluid), p_(p){}
 
   virtual ~DistributionsSaturationExmpl(){}

@@ -10,10 +10,10 @@
 #include "lib/random.h"
 #include "lib/timekit.hpp"
 
-#include "fft/include/fftw.h"
-#include "fft/include/rfftw.h"
-#include "fft/include/fftw-int.h"
-#include "fft/include/f77_func.h"
+#include "fftw.h"
+#include "rfftw.h"
+#include "fftw-int.h"
+#include "f77_func.h"
 
 #include "nrlib/iotools/logkit.hpp"
 #include "nrlib/iotools/fileio.hpp"
@@ -40,22 +40,25 @@ FFTGrid::FFTGrid(int nx, int ny, int nz, int nxp, int nyp, int nzp)
   nyp_            = nyp;
   nzp_            = nzp;
   scale_          = 1.0;
-
+  rValMin_        = RMISSING;
+  rValMax_        = RMISSING;
+  rValAvg_        = RMISSING;
   cnxp_           = nxp_/2+1;
-  rnxp_           = 2*(cnxp_);   
+  rnxp_           = 2*(cnxp_);
 
   csize_          = cnxp_*nyp_*nzp_;
   rsize_          = rnxp_*nyp_*nzp_;
 
-  counterForGet_  = 0; 
+  counterForGet_  = 0;
   counterForSet_  = 0;
   istransformed_  = false;
   rvalue_         = NULL;
   add_            = true;
+
   // index= i+rnxp_*j+k*rnxp_*nyp_;
-  // i index in x direction 
-  // j index in y direction 
-  // k index in z direction 
+  // i index in x direction
+  // j index in y direction
+  // k index in z direction
 }
 
 FFTGrid::FFTGrid(FFTGrid  * fftGrid, bool expTrans)
@@ -69,18 +72,21 @@ FFTGrid::FFTGrid(FFTGrid  * fftGrid, bool expTrans)
   nyp_            = fftGrid->nyp_;
   nzp_            = fftGrid->nzp_;
   scale_          = fftGrid->scale_;
+  rValMin_        = fftGrid->rValMin_;
+  rValMax_        = fftGrid->rValMax_;
+  rValAvg_        = fftGrid->rValAvg_;
 
   cnxp_           = nxp_/2+1;
-  rnxp_           = 2*(cnxp_);   
+  rnxp_           = 2*(cnxp_);
 
   csize_          = cnxp_*nyp_*nzp_;
   rsize_          = rnxp_*nyp_*nzp_;
 
-  counterForGet_  = fftGrid->getCounterForGet(); 
+  counterForGet_  = fftGrid->getCounterForGet();
   counterForSet_  = fftGrid->getCounterForSet();
   add_            = fftGrid->add_;
   istransformed_  = false;
-  
+
   createRealGrid(add_);
   for(int k=0;k<nzp_;k++) {
     for(int j=0;j<nyp_;j++) {
@@ -170,7 +176,7 @@ FFTGrid::fillInFromSegY(SegY* segy, Simbox *simbox, bool padding)
   {
     for( j = 0; j < nyp_; j++)
     {
-      for( i = 0; i < rnxp_; i++)   
+      for( i = 0; i < rnxp_; i++)
       {
         if(i<nxp_)
         {
@@ -180,7 +186,7 @@ FFTGrid::fillInFromSegY(SegY* segy, Simbox *simbox, bool padding)
           simbox->getCoord(refi,refj,refk,x,y,z);
           distx  = getDistToBoundary(i,nx_,nxp_);
           disty  = getDistToBoundary(j,ny_,nyp_);
-          distz  = getDistToBoundary(k,nz_,nzp_);         
+          distz  = getDistToBoundary(k,nz_,nzp_);
           mult   = static_cast<float>(pow(std::max<double>(1.0-distx*distx-disty*disty-distz*distz,0.0),3));
           value  = segy->GetValue(x,y,z, outMode );
           if(value != RMISSING) {
@@ -191,13 +197,13 @@ FFTGrid::fillInFromSegY(SegY* segy, Simbox *simbox, bool padding)
           }
         }
         else
-          value=RMISSING;        
+          value=RMISSING;
 
         setNextReal(value);
 
       } //for k,j,i
-      if (nyp_*k + j + 1 >= static_cast<int>(nextMonitor)) 
-      { 
+      if (nyp_*k + j + 1 >= static_cast<int>(nextMonitor))
+      {
         nextMonitor += monitorSize;
         printf("^");
         fflush(stdout);
@@ -214,8 +220,8 @@ FFTGrid::fillInFromSegY(SegY* segy, Simbox *simbox, bool padding)
 
 int
 FFTGrid::fillInFromStorm(Simbox            * actSimBox,
-                         StormContGrid     * grid, 
-                         const std::string & parName, 
+                         StormContGrid     * grid,
+                         const std::string & parName,
                          bool                scale,
                          bool                nopadding)
 {
@@ -241,7 +247,7 @@ FFTGrid::fillInFromStorm(Simbox            * actSimBox,
   //assert(cubetype_==PARAMETER);
 
   fftw_real value  = 0.0;
-  
+
   double x,y,z;
   float  val;
 
@@ -257,7 +263,7 @@ FFTGrid::fillInFromStorm(Simbox            * actSimBox,
       actSimBox->getCoord(refi, refj, nz_-1, x, y, z);
       if(grid->IsMissing(val) == false)
         val = (grid->GetValueZInterpolated(x*scalehor,y*scalehor,z*scalevert)+val)/2.0f;
-      else     
+      else
         val = grid->GetValueZInterpolated(x*scalehor,y*scalehor,z*scalevert);
       if(grid->IsMissing(val) == true) {
         meanvalue[i+j*nxp_] = RMISSING; //Translate missing code
@@ -272,27 +278,27 @@ FFTGrid::fillInFromStorm(Simbox            * actSimBox,
 
   LogKit::LogFormatted(LogKit::Low,"\nResampling %s into %dx%dx%d grid:\n",parName.c_str(),nxp_,nyp_,nzp_);
   setAccessMode(WRITE);
-  
+
   float monitorSize = std::max(1.0f, static_cast<float>(nyp_*nzp_)*0.02f);
   float nextMonitor = monitorSize;
   printf("\n  0%%       20%%       40%%       60%%       80%%      100%%");
   printf("\n  |    |    |    |    |    |    |    |    |    |    |  ");
   printf("\n  ^");
-  
+
   for( k = 0; k < nzp_; k++)
   {
     for( j = 0; j < nyp_; j++)
     {
-      for( i = 0; i < rnxp_; i++)   
+      for( i = 0; i < rnxp_; i++)
       {
         refi   = getXSimboxIndex(i);
         refj   = getYSimboxIndex(j);
         refk   = getZSimboxIndex(k);
         distx  = getDistToBoundary(i,nx_,nxp_);
         disty  = getDistToBoundary(j,ny_,nyp_);
-        distz  = getDistToBoundary(k,nz_,nzp_);         
+        distz  = getDistToBoundary(k,nz_,nzp_);
         mult   = float(pow(std::max(1.0-distx*distx-disty*disty-distz*distz,0.0),3));
-        
+
         if(i<nxp_)  // computes the index reference from the cube puts it in value
         {
           actSimBox->getCoord(refi, refj, refk, x, y, z);
@@ -309,12 +315,12 @@ FFTGrid::fillInFromStorm(Simbox            * actSimBox,
             value = RMISSING;
         }
         else
-          value=RMISSING;        
-        
+          value=RMISSING;
+
         setNextReal(value);
       } //for k,j,i
-      if (nyp_*k + j + 1 >= static_cast<int>(nextMonitor)) 
-      { 
+      if (nyp_*k + j + 1 >= static_cast<int>(nextMonitor))
+      {
         nextMonitor += monitorSize;
         printf("^");
         fflush(stdout);
@@ -329,39 +335,39 @@ FFTGrid::fillInFromStorm(Simbox            * actSimBox,
 
 void
 FFTGrid::fillInConstant(float value, bool add)
-{  
+{
   createRealGrid(add);
   int i,j,k;
   setAccessMode(WRITE);
   for( k = 0; k < nzp_; k++)
     for( j = 0; j < nyp_; j++)
-      for( i = 0; i < rnxp_; i++) 
+      for( i = 0; i < rnxp_; i++)
       {
         if(i<nxp_)
           setNextReal(value);
         else
           setNextReal(RMISSING);
-      }  
+      }
   endAccess();
 }
 
 void
 FFTGrid::fillInTest(float value1,float value2)
-{  
+{
   createRealGrid();
   int i,j,k;
-  float value; 
+  float value;
   setAccessMode(WRITE);
   for( k = 0; k < nzp_; k++)
     for( j = 0; j < nyp_; j++)
-      for( i = 0; i < rnxp_; i++) 
+      for( i = 0; i < rnxp_; i++)
       {
         if(k > nz_/2 && k < (nz_+nzp_)/2) value = value2; else value = value1;
         if(i<nxp_)
           setNextReal(value);
         else
           setNextReal(RMISSING);
-      }  
+      }
       endAccess();
 }
 
@@ -394,7 +400,7 @@ FFTGrid::fillInFromArray(float *value) //NB works only for padding size up to nx
         jj = j-jjj;
         jjj++;
       }
-      for( i = 0; i < rnxp_; i++) 
+      for( i = 0; i < rnxp_; i++)
       {
         if(i<nx_)
           ii = i;
@@ -407,11 +413,83 @@ FFTGrid::fillInFromArray(float *value) //NB works only for padding size up to nx
           setNextReal(value[ii+jj*nx_+kk*nx_*ny_]);
         else
           setNextReal(RMISSING);
-      }  
+      }
     }
   }
 
   endAccess();
+}
+
+void
+FFTGrid::calculateStatistics()
+{
+  rValMin_ = +std::numeric_limits<float>::infinity();
+  rValMax_ = -std::numeric_limits<float>::infinity();
+  rValAvg_ = 0.0f;
+
+  long long count = 0;
+  float sum_xyz = 0.0f;
+
+  setAccessMode(RANDOMACCESS);
+  for (int k = 0 ; k < nz_ ; k++) {
+    float sum_xy = 0.0f;
+    for (int j = 0 ; j < ny_ ; j++) {
+      float sum_x = 0.0f;
+      for (int i = 0 ; i < nx_ ; i++) {
+        float value = getRealValue(i,j,k);
+        if (value != RMISSING) {
+          if (value < rValMin_)
+            rValMin_ = value;
+          if (value > rValMax_)
+            rValMax_ = value;
+          sum_x += value;
+          count++;
+        }
+      }
+      sum_xy += sum_x;
+    }
+    sum_xyz += sum_xy;
+  }
+  endAccess();
+
+  if (count > 0) {
+    rValAvg_ = sum_xyz/count;
+  }
+}
+
+void
+FFTGrid::setUndefinedCellsToGlobalAverage() // Used for background model
+{
+  float globalAvg = getAvgReal();
+
+  if (globalAvg == RMISSING) {
+    calculateStatistics();
+  }
+
+  long long count = 0;
+
+  setAccessMode(RANDOMACCESS);
+  for (int k = 0 ; k < nzp_ ; k++) {
+    for (int j = 0 ; j < nyp_ ; j++) {
+      for (int i = 0 ; i < rnxp_ ; i++) {
+        float value = getRealValue(i,j,k,true);
+        if (value == RMISSING) {
+          setRealValue(i,j,k,globalAvg,true);
+          if (i < nx_ && j < ny_ && k < nz_) { // Do not count undefined in padding (confusing for user)
+            count++;
+          }
+        }
+      }
+    }
+  }
+  endAccess();
+
+  if (count > 0) {
+    long long nxyz = static_cast<long>(nx_)*static_cast<long>(ny_)*static_cast<long>(nz_);
+    LogKit::LogFormatted(LogKit::Medium, "\nThe grid contains %ld undefined grid cells (%.2f%). Setting these to global average\n",
+                         count, 100.0f*static_cast<float>(count)/(static_cast<float>(count) + static_cast<float>(nxyz)),
+                         globalAvg);
+  }
 }
 
 
@@ -432,8 +510,8 @@ FFTGrid::fillInParamCorr(Corr* corr,int minIntFq, float gradI, float gradJ)
   setAccessMode(WRITE);
   for( k = 0; k < nzp_; k++)
     for( j = 0; j < nyp_; j++)
-      for( i = 0; i < rnxp_; i++)   
-      {    
+      for( i = 0; i < rnxp_; i++)
+      {
         if(i < nxp_)  // computes the index reference from the cube puts it in value
         {
           cycleI = i-nxp_;
@@ -458,11 +536,11 @@ FFTGrid::fillInParamCorr(Corr* corr,int minIntFq, float gradI, float gradJ)
           value *= float( (*(corr->getPriorCorrXY()))(i+nxp_*j));
         }
         else
-          value = RMISSING;        
-        
+          value = RMISSING;
+
         setNextReal(value);
       } //for k,j,i
-  
+
   endAccess();
   return circCorrT;//fftw_free(circCorrT);
 }
@@ -471,7 +549,7 @@ FFTGrid::fillInParamCorr(Corr* corr,int minIntFq, float gradI, float gradJ)
 void
 FFTGrid::fillInErrCorr(Corr* parCorr, float gradI, float gradJ)
 {
-  // Note:  this contain the latteral correlation and the multiplyers for the 
+  // Note:  this contain the latteral correlation and the multiplyers for the
   // time correlation. The time correlation is further adjusted by the wavelet
   // and the derivative of the wavelet.
   // the angular correlation is given by a functional Expression elsewhere
@@ -486,8 +564,8 @@ FFTGrid::fillInErrCorr(Corr* parCorr, float gradI, float gradJ)
   setAccessMode(WRITE);
   for( k = 0; k < nzp_; k++)
     for( j = 0; j < nyp_; j++)
-      for( i = 0; i < rnxp_; i++)   
-      {    
+      for( i = 0; i < rnxp_; i++)
+      {
         cycleI = i-nxp_;
         if(i < -cycleI)
           cycleI = i;
@@ -515,7 +593,7 @@ FFTGrid::fillInErrCorr(Corr* parCorr, float gradI, float gradJ)
             value = 0;
         }
         else
-          value = RMISSING;        
+          value = RMISSING;
 
         setNextReal(value);
       } //for k,j,i
@@ -537,7 +615,7 @@ FFTGrid::fillInErrCorrFromCovAlpha(FFTGrid * covAlpha, float gradI, float gradJ)
 
   for( int k = 0; k < nzp_; k++){
     for( int j = 0; j < nyp_; j++){
-      for( int i = 0; i < rnxp_; i++){   
+      for( int i = 0; i < rnxp_; i++){
         cycleI = i-nxp_;
         if(i < -cycleI)
           cycleI = i;
@@ -553,13 +631,13 @@ FFTGrid::fillInErrCorrFromCovAlpha(FFTGrid * covAlpha, float gradI, float gradJ)
             value = 0;
         }
         else
-          value = RMISSING;        
+          value = RMISSING;
 
         setNextReal(value);
       }
     }
   }
-      
+
   endAccess();
   covAlpha->endAccess();
 }
@@ -620,42 +698,29 @@ FFTGrid::fillInComplexNoise(RandomGen * ranGen)
 void
 FFTGrid::createRealGrid(bool add)
 {
-  //  long int timestart, timeend;
-  //  time(&timestart);
   istransformed_=false;
-  rvalue_    = static_cast<fftw_real*>(fftw_malloc(rsize_ * sizeof(fftw_real)));
-  cvalue_    = reinterpret_cast<fftw_complex*>(rvalue_); //
-
-  counterForGet_  = 0; 
-  counterForSet_  = 0;
   add_ = add;
   if(add==true)
     nGrids_        += 1;
-
-  maxAllocatedGrids_ = std::max(nGrids_, maxAllocatedGrids_);
-
-  FFTMemUse_ += rsize_ * sizeof(fftw_real);
-  if(FFTMemUse_ > maxFFTMemUse_) {
-    maxFFTMemUse_ = FFTMemUse_;
-    LogKit::LogFormatted(LogKit::DebugLow,"\nNew FFT-grid memory peak (%2d): %10.2f MB\n",nGrids_, FFTMemUse_/(1024.f*1024.f));
-  }
-
-  //  time(&timeend);
-  //  LogKit::LogFormatted(LogKit::Low,"\nReal grid created in %ld seconds.\n",timeend-timestart);
+  createGrid();
 }
 
 void
 FFTGrid::createComplexGrid()
 {
-  //  long int timestart, timeend;
-  //  time(&timestart);
   istransformed_  = true;
+  nGrids_        += 1;
+  createGrid();
+}
+
+void FFTGrid::createGrid()
+{
   rvalue_         = static_cast<fftw_real*>(fftw_malloc(rsize_ * sizeof(fftw_real)));
   cvalue_         = reinterpret_cast<fftw_complex*>(rvalue_); //
 
-  counterForGet_  = 0; 
+  counterForGet_  = 0;
   counterForSet_  = 0;
-  nGrids_        += 1;
+
  // LogKit::LogFormatted(LogKit::Error,"\nFFTGrid createComplexGrid : nGrids = %d    maxGrids = %d\n",nGrids_,maxAllowedGrids_);
   if (nGrids_ > maxAllowedGrids_) {
     std::string text;
@@ -668,9 +733,9 @@ FFTGrid::createComplexGrid()
       LogKit::LogFormatted(LogKit::Error, text);
       exit(1);
     }
-    else
+    else if(nGrids_ == maxAllowedGrids_+1)
       TaskList::addTask("Crava needs more memory than expected. The results are still correct. \n Norwegian Computing Center would like to have a look at your project.");
-  }    
+  }
   maxAllocatedGrids_ = std::max(nGrids_, maxAllocatedGrids_);
 
   FFTMemUse_ += rsize_ * sizeof(fftw_real);
@@ -678,33 +743,34 @@ FFTGrid::createComplexGrid()
     maxFFTMemUse_ = FFTMemUse_;
     LogKit::LogFormatted(LogKit::DebugLow,"\nNew FFT-grid memory peak (%2d): %10.2f MB\n",nGrids_, FFTMemUse_/(1024.f*1024.f));
   }
-  //  time(&timeend);
-  //  LogKit::LogFormatted(LogKit::Low,"\nComplex grid created in %ld seconds.\n",timeend-timestart);
+
+
+
 }
 
-int 
+int
 FFTGrid::getFillNumber(int i, int n, int np )
 {
-  //  for the series                 i = 0,1,2,3,4,5,6,7 
+  //  for the series                 i = 0,1,2,3,4,5,6,7
   //  GetFillNumber(i, 5 , 8)  returns   0,1,2,3,4,4,1,0 (cut middle, i.e 3,2)
   //  GetFillNumber(i, 4 , 8)  returns   0,1,2,3,3,2,1,0 (copy)
   //  GetFillNumber(i, 3 , 8)  returns   0,1,2,2,1,1,1,0 (drag middle out, i.e. 1)
 
-  int refi     =  0; 
+  int refi     =  0;
   int BeloWnp, AbovEn;
 
-  if (i< np)  
+  if (i< np)
   {
     if (i<n)
       // then it is in the main cube
       refi  =  i;
     else
-    { 
-      // Get cyclic extention 
-      BeloWnp  = np-i-1;   
+    {
+      // Get cyclic extention
+      BeloWnp  = np-i-1;
       AbovEn   = i-n+1;
       if( AbovEn < BeloWnp )
-      { 
+      {
         // Then the index is closer to end than start.
         refi=std::max(n-AbovEn,n/2);
       }else{
@@ -717,13 +783,13 @@ FFTGrid::getFillNumber(int i, int n, int np )
   {
     // This happens when the index is larger than the padding size
     // this happens in some cases because rnxp_ is larger than nxp_
-    // and the x cycle is of length rnxp_ 
+    // and the x cycle is of length rnxp_
     refi=IMISSING;
-  }//endif 
+  }//endif
   return(refi);
 }
 
-int  
+int
 FFTGrid::getZSimboxIndex(int k)
 {
   int refk;
@@ -737,10 +803,10 @@ FFTGrid::getZSimboxIndex(int k)
 }
 
 
-float 
+float
 FFTGrid::getDistToBoundary(int i, int n, int np )
 {
-  //  for the series                 i = 0,1,2,3,4,5,6,7 
+  //  for the series                 i = 0,1,2,3,4,5,6,7
   //  GetFillNumber(i, 5 , 8)  returns   0,0,0,0,0,p,r,p  p is between 0 and 1, r is larger than 1
   //  GetFillNumber(i, 4 , 8)  returns   0,0,0,0,p,r,r,p  p is between 0 and 1, r's are larger than 1
   //  GetFillNumber(i, 3 , 8)  returns   0,0,0,p,r,r,r,p  p is between 0 and 1, r's are larger than 1
@@ -749,25 +815,25 @@ FFTGrid::getDistToBoundary(int i, int n, int np )
   float taperlength = 0.0;
   int   BeloWnp, AbovEn;
 
-  if (i< np)  
+  if (i< np)
   {
     if (i<n)
       // then it is in the main cube
       dist  =  0.0;
     else
-    { 
+    {
       taperlength = static_cast<float>((std::min(n,np-n)/2.1)) ;// taper goes to zero  at taperlength
-      BeloWnp  = np-i;   
+      BeloWnp  = np-i;
       AbovEn   = i-(n-1);
       if( AbovEn < BeloWnp )
-      { 
+      {
         // Then the index is closer to end than start.
         dist = static_cast<float>(AbovEn/taperlength);
       }
       else
       {
         // The it is closer to  start than the end (or identical to)
-        dist = static_cast<float>(BeloWnp/taperlength); 
+        dist = static_cast<float>(BeloWnp/taperlength);
       }//endif
     }//endif
   }//endif
@@ -775,55 +841,55 @@ FFTGrid::getDistToBoundary(int i, int n, int np )
   {
     // This happens when the index is larger than the padding size
     // this happens in some cases because rnxp_ is larger than nxp_
-    // and the x cycle is of length rnxp_ 
+    // and the x cycle is of length rnxp_
     dist=RMISSING;
-  }//endif 
+  }//endif
   return(dist);
 }
 
 
-fftw_complex 
-FFTGrid::getNextComplex() 
+fftw_complex
+FFTGrid::getNextComplex()
 {
   assert(istransformed_==true);
   assert(counterForGet_ < csize_);
-  counterForGet_  +=  1; 
+  counterForGet_  +=  1;
   if(counterForGet_ == csize_)
   {
     counterForGet_=0;
     return(cvalue_[csize_ - 1]);
   }
-  else 
+  else
     return(cvalue_[counterForGet_ - 1] );
 }
 
 
 
-float 
+float
 FFTGrid::getNextReal()
 {
   assert(istransformed_ == false);
   assert(counterForGet_ < rsize_);
   counterForGet_  +=  1;
   float r;
-  if(counterForGet_==rsize_)  
+  if(counterForGet_==rsize_)
   {
-    counterForGet_=0; 
+    counterForGet_=0;
     r = static_cast<float>(rvalue_[rsize_-1]);
-  } 
-  else  
-    r = static_cast<float>(rvalue_[counterForGet_-1]);  
+  }
+  else
+    r = static_cast<float>(rvalue_[counterForGet_-1]);
   return r;
-} 
+}
 
-float        
+float
 FFTGrid::getRealValue(int i, int j, int k, bool extSimbox) const
-{ 
-  // when index is in simbox (or the extended simbox if extSimbox is true) it returns the grid value  
+{
+  // when index is in simbox (or the extended simbox if extSimbox is true) it returns the grid value
   // else it returns RMISSING
-  // i index in x direction 
-  // j index in y direction 
-  // k index in z direction 
+  // i index in x direction
+  // j index in y direction
+  // k index in z direction
   float value;
 
   // assert(istransformed_==false);
@@ -832,11 +898,10 @@ FFTGrid::getRealValue(int i, int j, int k, bool extSimbox) const
     ((i < nx_) && (j < ny_) && (k < nz_)));
   bool  notMissing = ( (i > -1) && (j > -1) && (k > -1));
 
-
   if( inSimbox && notMissing )
   { // if index in simbox
     int index=i+rnxp_*j+k*rnxp_*nyp_;
-    value = static_cast<float>(rvalue_[index]); 
+    value = static_cast<float>(rvalue_[index]);
   }
   else
   {
@@ -853,7 +918,7 @@ FFTGrid::getRealTrace(float * value, int i, int j)
     value[k] = FFTGrid::getRealValue(i,j,k);
 }
 
-std::vector<float>   
+std::vector<float>
 FFTGrid::getRealTrace2(int i, int j)
 {
   std::vector<float> value;
@@ -862,21 +927,21 @@ FFTGrid::getRealTrace2(int i, int j)
   return value;
 }
 
-float        
+float
 FFTGrid::getRealValueCyclic(int i, int j, int k)
 {
   float value;
-  if(i<0) 
+  if(i<0)
     i = nxp_+i;
   if(j<0)
     j = nyp_+j;
   if(k<0)
     k = nzp_+k;
-  
+
   if(i<nxp_ && j<nyp_ && k<nzp_)
   {
     int index=i+rnxp_*j+k*rnxp_*nyp_;
-    value = static_cast<float>(rvalue_[index]); 
+    value = static_cast<float>(rvalue_[index]);
   }
   else
   {
@@ -887,13 +952,13 @@ FFTGrid::getRealValueCyclic(int i, int j, int k)
 
 }
 
-float        
+float
 FFTGrid::getRealValueInterpolated(int i, int j, float kindex, bool extSimbox)
-{ 
-  // when index is in simbox (or the extended simbox if extSimbox is true) it returns the grid value  
+{
+  // when index is in simbox (or the extended simbox if extSimbox is true) it returns the grid value
   // else it returns RMISSING
-  // i index in x direction 
-  // j index in y direction 
+  // i index in x direction
+  // j index in y direction
   // k index in z direction, float, should interpolate
 
   float value, val1, val2;
@@ -911,14 +976,14 @@ FFTGrid::getRealValueInterpolated(int i, int j, float kindex, bool extSimbox)
 
 }
 
-fftw_complex        
+fftw_complex
 FFTGrid::getComplexValue(int i, int j, int k, bool extSimbox) const
-{ 
-  // when index is in simbox (or the extended simbox if extSimbox is true) it returns the grid value  
+{
+  // when index is in simbox (or the extended simbox if extSimbox is true) it returns the grid value
   // else it returns RMISSING
-  // i index in x direction 
-  // j index in y direction 
-  // k index in z direction 
+  // i index in x direction
+  // j index in y direction
+  // k index in z direction
   fftw_complex value;
 
   assert(istransformed_==true);
@@ -931,7 +996,7 @@ FFTGrid::getComplexValue(int i, int j, int k, bool extSimbox) const
   if( inSimbox && notMissing )
   { // if index in simbox
     int index=i + j*cnxp_ + k*cnxp_*nyp_;
-    value = fftw_complex (cvalue_[index]); 
+    value = fftw_complex (cvalue_[index]);
   }
   else
   {
@@ -943,24 +1008,24 @@ FFTGrid::getComplexValue(int i, int j, int k, bool extSimbox) const
 }
 
 
-fftw_complex       
+fftw_complex
 FFTGrid::getFirstComplexValue()
-{  
-  assert(istransformed_);  
+{
+  assert(istransformed_);
   fftw_complex value;
 
   setAccessMode(READ);
   counterForGet_=0;
 
-  value = getNextComplex();  
+  value = getNextComplex();
 
-  counterForGet_=0; 
+  counterForGet_=0;
   endAccess();
 
   return( value );
 }
 
-int 
+int
 FFTGrid::setNextComplex(fftw_complex value)
 {
   assert(istransformed_==true);
@@ -971,31 +1036,31 @@ FFTGrid::setNextComplex(fftw_complex value)
     counterForSet_=0;
     cvalue_[csize_-1]=value;
   }
-  else 
+  else
     cvalue_[counterForSet_-1]=value;
-  return(0);  
+  return(0);
 }
 
-int   
+int
 FFTGrid::setNextReal(float  value)
-{    
+{
   assert(istransformed_== false);
   assert(counterForSet_ < rsize_);
-  counterForSet_  +=  1; 
+  counterForSet_  +=  1;
   if(counterForSet_==rsize_)
   {
     counterForSet_=0;
     rvalue_[rsize_-1] = static_cast<fftw_real>(value);
   }
-  else 
+  else
     rvalue_[counterForSet_-1] = static_cast<fftw_real>(value);
-  return(0);  
+  return(0);
 }
 
 
-int   
+int
 FFTGrid::setRealValue(int i, int j ,int k, float  value, bool extSimbox)
-{    
+{
   assert(istransformed_== false);
 
   bool  inSimbox   = (extSimbox ? ( (i < rnxp_) && (j < nyp_) && (k < nzp_)):
@@ -1005,7 +1070,7 @@ FFTGrid::setRealValue(int i, int j ,int k, float  value, bool extSimbox)
   if( inSimbox && notMissing )
   { // if index in simbox
     int index=i+rnxp_*j+k*rnxp_*nyp_;
-    rvalue_[index] = value; 
+    rvalue_[index] = value;
     return( 0 );
   }
   else
@@ -1025,9 +1090,9 @@ int FFTGrid::setRealTrace(int i, int j, float *value)
 
 
 }
-int   
+int
 FFTGrid::setComplexValue(int i, int j ,int k, fftw_complex value, bool extSimbox)
-{    
+{
   assert(istransformed_== true);
 
   bool  inSimbox   = (extSimbox ? ( (i < nxp_) && (j < nyp_) && (k < nzp_)):
@@ -1037,7 +1102,7 @@ FFTGrid::setComplexValue(int i, int j ,int k, fftw_complex value, bool extSimbox
   if( inSimbox && notMissing )
   { // if index in simbox
     int index=i + j*cnxp_ + k*cnxp_*nyp_;
-    cvalue_[index] = value; 
+    cvalue_[index] = value;
     return( 0 );
   }
   else
@@ -1081,7 +1146,7 @@ FFTGrid::square()
     }// i
   }
 
-  return(0);  
+  return(0);
 }
 
 int
@@ -1101,7 +1166,7 @@ FFTGrid::expTransf()
     }
 
   }// i
-  return(0);  
+  return(0);
 }
 
 int
@@ -1121,7 +1186,7 @@ FFTGrid::logTransf()
     }
 
   }// i
-  return(0);  
+  return(0);
 }
 
 int
@@ -1133,49 +1198,49 @@ FFTGrid::collapseAndAdd(float * grid)
 
 
   for(j = 0; j < nyp_; j++)
-    for(i=0;i<nxp_;i++)   
-    { 
+    for(i=0;i<nxp_;i++)
+    {
       value = rvalue_[i + j*rnxp_ ];
-      grid[i + j*nxp_] += value ;  
+      grid[i + j*nxp_] += value ;
     }
-    return(0);  
+    return(0);
 }
 
 void
 FFTGrid::fftInPlace()
-{ 
+{
   // uses norm preserving transform for parameter and data
-  // in case of correlation and cross correlation it  
-  // scale  by 1/N on the inverse such that it maps between 
-  // the correlation function and eigen values of the corresponding circular matrix 
+  // in case of correlation and cross correlation it
+  // scale  by 1/N on the inverse such that it maps between
+  // the correlation function and eigen values of the corresponding circular matrix
 
   time_t timestart, timeend;
   time(&timestart);
 
-  assert(istransformed_==false);   
+  assert(istransformed_==false);
   assert(cubetype_!= CTMISSING);
 
-  if( cubetype_!= COVARIANCE )  
+  if( cubetype_!= COVARIANCE )
     FFTGrid::multiplyByScalar(1.0f/sqrt(static_cast<float>(nxp_*nyp_*nzp_)));
 
   int flag;
-  rfftwnd_plan plan;  
+  rfftwnd_plan plan;
   flag = FFTW_ESTIMATE | FFTW_IN_PLACE;
   plan= rfftw3d_create_plan(nzp_,nyp_,nxp_,FFTW_REAL_TO_COMPLEX,flag);
   rfftwnd_one_real_to_complex(plan,rvalue_,cvalue_);
   fftwnd_destroy_plan(plan);
   istransformed_=true;
   time(&timeend);
-  LogKit::LogFormatted(LogKit::DebugLow,"\nFFT of grid type %d finished after %ld seconds \n",cubetype_, timeend-timestart);  
+  LogKit::LogFormatted(LogKit::DebugLow,"\nFFT of grid type %d finished after %ld seconds \n",cubetype_, timeend-timestart);
 }
 
 void
 FFTGrid::invFFTInPlace()
-{  
+{
   // uses norm preserving transform for parameter and data
-  // in case of correlation and cross correlation it  
-  // scale  by 1/N on the inverse such that it maps between 
-  // the correlation function and eigen values of the corresponding circular matrix 
+  // in case of correlation and cross correlation it
+  // scale  by 1/N on the inverse such that it maps between
+  // the correlation function and eigen values of the corresponding circular matrix
 
   time_t timestart, timeend;
   time(&timestart);
@@ -1185,7 +1250,7 @@ FFTGrid::invFFTInPlace()
 
   float scale;
   int flag;
-  rfftwnd_plan plan; 
+  rfftwnd_plan plan;
   if(cubetype_==COVARIANCE)
     scale=float( 1.0/(nxp_*nyp_*nzp_));
   else
@@ -1195,11 +1260,11 @@ FFTGrid::invFFTInPlace()
   plan= rfftw3d_create_plan(nzp_,nyp_,nxp_,FFTW_COMPLEX_TO_REAL,flag);
   rfftwnd_one_complex_to_real(plan,cvalue_,rvalue_);
   fftwnd_destroy_plan(plan);
-  istransformed_=false; 
+  istransformed_=false;
 
   FFTGrid::multiplyByScalar(scale);
   time(&timeend);
-  LogKit::LogFormatted(LogKit::DebugLow,"\nInverse FFT of grid type %d finished after %ld seconds \n",cubetype_, timeend-timestart);  
+  LogKit::LogFormatted(LogKit::DebugLow,"\nInverse FFT of grid type %d finished after %ld seconds \n",cubetype_, timeend-timestart);
 }
 
 void
@@ -1210,7 +1275,7 @@ FFTGrid::realAbs()
   for(i=0;i<csize_;i++)
   {
     cvalue_[i].re = float (  sqrt( cvalue_[i].re * cvalue_[i].re ) );
-    cvalue_[i].im = 0.0; 
+    cvalue_[i].im = 0.0;
   }
 }
 
@@ -1224,7 +1289,7 @@ FFTGrid::add(FFTGrid* fftGrid)
     for(i=0;i<csize_;i++)
     {
       cvalue_[i].re += fftGrid->cvalue_[i].re;
-      cvalue_[i].im += fftGrid->cvalue_[i].im; 
+      cvalue_[i].im += fftGrid->cvalue_[i].im;
     }
   }
 
@@ -1247,7 +1312,7 @@ FFTGrid::subtract(FFTGrid* fftGrid)
     for(i=0;i<csize_;i++)
     {
       cvalue_[i].re -= fftGrid->cvalue_[i].re;
-      cvalue_[i].im -= fftGrid->cvalue_[i].im; 
+      cvalue_[i].im -= fftGrid->cvalue_[i].im;
     }
   }
 
@@ -1269,7 +1334,7 @@ FFTGrid::changeSign()
     for(i=0;i<csize_;i++)
     {
       cvalue_[i].re = -cvalue_[i].re;
-      cvalue_[i].im = -cvalue_[i].im; 
+      cvalue_[i].im = -cvalue_[i].im;
     }
   }
 
@@ -1307,7 +1372,7 @@ FFTGrid::multiply(FFTGrid* fftGrid)
   }
 }
 
-void 
+void
 FFTGrid::multiplyByScalar(float scalar)
 {
   assert(istransformed_==false);
@@ -1317,15 +1382,15 @@ FFTGrid::multiplyByScalar(float scalar)
   }
 }
 
-fftw_complex* 
+fftw_complex*
 FFTGrid::fft1DzInPlace(fftw_real*  in, int nzp)
-{  
-  // in is over vritten by out 
+{
+  // in is over vritten by out
   // not norm preservingtransform ifft(fft(funk))=N*funk
 
   int flag;
 
-  rfftwnd_plan plan;  
+  rfftwnd_plan plan;
   fftw_complex* out;
   out = reinterpret_cast<fftw_complex*>(in);
 
@@ -1337,16 +1402,16 @@ FFTGrid::fft1DzInPlace(fftw_real*  in, int nzp)
   return out;
 }
 
-fftw_real*  
+fftw_real*
 FFTGrid::invFFT1DzInPlace(fftw_complex* in, int nzp)
 {
-  // in is over vritten by out 
+  // in is over vritten by out
   // not norm preserving transform  ifft(fft(funk))=N*funk
 
   int flag;
-  rfftwnd_plan plan; 
+  rfftwnd_plan plan;
   fftw_real*  out;
-  out = reinterpret_cast<fftw_real*>(in); 
+  out = reinterpret_cast<fftw_real*>(in);
 
   flag = FFTW_ESTIMATE | FFTW_IN_PLACE;
   plan= rfftwnd_create_plan(1,&nzp,FFTW_COMPLEX_TO_REAL,flag);
@@ -1368,23 +1433,23 @@ FFTGrid::consistentSize(int nx,int ny, int nz, int nxp, int nyp, int nzp)
 }
 
 
-void 
-FFTGrid::writeFile(const std::string       & fName, 
-                   const std::string       & subDir, 
-                   const Simbox            * simbox, 
-                   const std::string         label, 
-                   const float               z0, 
-                   GridMapping             * depthMap, 
+void
+FFTGrid::writeFile(const std::string       & fName,
+                   const std::string       & subDir,
+                   const Simbox            * simbox,
+                   const std::string         label,
+                   const float               z0,
+                   GridMapping             * depthMap,
                    GridMapping             * timeMap,
                    const TraceHeaderFormat & thf)
 {
-  std::string fileName = IO::makeFullFileName(subDir, fName);      
-  
+  std::string fileName = IO::makeFullFileName(subDir, fName);
+
   if(formatFlag_ > 0) //Output format specified.
   {
     if((domainFlag_ & IO::TIMEDOMAIN) > 0) {
-      if(timeMap == NULL) { //No resampling of storm 
-        if((formatFlag_ & IO::STORM) > 0) 
+      if(timeMap == NULL) { //No resampling of storm
+        if((formatFlag_ & IO::STORM) > 0)
           FFTGrid::writeStormFile(fileName, simbox, false);
         if((formatFlag_ & IO::ASCII) > 0)
           FFTGrid::writeStormFile(fileName, simbox, true);
@@ -1410,7 +1475,7 @@ FFTGrid::writeFile(const std::string       & fName,
             "WARNING: Depth interval lacking when trying to write %s. Write cancelled.\n",depthName.c_str());
           return;
         }
-        if((formatFlag_ & IO::STORM) > 0) 
+        if((formatFlag_ & IO::STORM) > 0)
           FFTGrid::writeStormFile(depthName, depthMap->getSimbox(), false);
         if((formatFlag_ & IO::ASCII) > 0)
           FFTGrid::writeStormFile(depthName, depthMap->getSimbox(), true);
@@ -1432,10 +1497,10 @@ FFTGrid::writeFile(const std::string       & fName,
 }
 
 void
-FFTGrid::writeStormFile(const std::string & fileName, 
-                        const Simbox      * simbox, 
-                        bool                ascii, 
-                        bool                padding, 
+FFTGrid::writeStormFile(const std::string & fileName,
+                        const Simbox      * simbox,
+                        bool                ascii,
+                        bool                padding,
                         bool                flat)
 {
   int nx, ny, nz;
@@ -1467,7 +1532,7 @@ FFTGrid::writeStormFile(const std::string & fileName,
       for(j=0;j<ny;j++)
         for(i=0;i<nx;i++)
         {
-          value = getRealValue(i,j,k,true);          
+          value = getRealValue(i,j,k,true);
           NRLib::WriteBinaryFloat(binFile, value);
         }
     binFile << "0\n";
@@ -1496,9 +1561,9 @@ FFTGrid::writeStormFile(const std::string & fileName,
 
 
 int
-FFTGrid::writeSegyFile(const std::string       & fileName, 
-                       const Simbox            * simbox, 
-                       float                     z0, 
+FFTGrid::writeSegyFile(const std::string       & fileName,
+                       const Simbox            * simbox,
+                       float                     z0,
                        const TraceHeaderFormat & thf)
 {
   //  long int timestart, timeend;
@@ -1515,10 +1580,10 @@ FFTGrid::writeSegyFile(const std::string       & fileName,
   simbox->getMinMaxZ(zmin,zmax);
   segynz = int(ceil((zmax-z0)/dz));
   SegY *segy = new SegY(gfName.c_str(),z0,segynz,dz,header, thf);
-  SegyGeometry * geometry = new SegyGeometry(simbox->getx0(), simbox->gety0(), simbox->getdx(), simbox->getdy(), 
-                                             simbox->getnx(), simbox->getny(),simbox->getIL0(), simbox->getXL0(), 
-                                             simbox->getILStepX(), simbox->getILStepY(), 
-                                             simbox->getXLStepX(), simbox->getXLStepY(),  
+  SegyGeometry * geometry = new SegyGeometry(simbox->getx0(), simbox->gety0(), simbox->getdx(), simbox->getdy(),
+                                             simbox->getnx(), simbox->getny(),simbox->getIL0(), simbox->getXL0(),
+                                             simbox->getILStepX(), simbox->getILStepY(),
+                                             simbox->getXLStepX(), simbox->getXLStepY(),
                                              simbox->getAngle());
   segy->SetGeometry(geometry);
   delete geometry; //Call above takes a copy.
@@ -1548,7 +1613,7 @@ FFTGrid::writeSegyFile(const std::string       & fileName,
 
         if(endData > segynz)
         {
-          printf("Internal warning: SEGY-grid too small (%d, %d needed). Truncating data.\n", nz_, endData); 
+          printf("Internal warning: SEGY-grid too small (%d, %d needed). Truncating data.\n", nz_, endData);
           endData = segynz;
         }
         for(k=0;k<firstData;k++)
@@ -1578,17 +1643,17 @@ FFTGrid::writeSegyFile(const std::string       & fileName,
 
 
 void
-FFTGrid::writeResampledStormCube(GridMapping       * gridmapping, 
-                                 const std::string & fileName, 
+FFTGrid::writeResampledStormCube(GridMapping       * gridmapping,
+                                 const std::string & fileName,
                                  const Simbox      * simbox,
                                  const int           format)
 {
   // simbox is related to the cube we resample from. gridmapping contains simbox for the cube we resample to.
- 
+
   float time, kindex;
   StormContGrid *mapping = gridmapping->getMapping();
   StormContGrid *outgrid = new StormContGrid(*mapping);
- 
+
   double x,y;
   int nz = static_cast<int>(mapping->GetNK());
   for(int i=0;i<nx_;i++)
@@ -1671,7 +1736,7 @@ FFTGrid::writeSgriFile(const std::string & fileName, const Simbox *simbox, const
   headerFile << x0*horScale << " " << y0*horScale << " " << z0*vertScale << std::endl;
   headerFile << simbox->getAngle() << " 0\n";
   headerFile << RMISSING << std::endl;
-  
+
   fName = fileName + IO::SuffixSgri();
   headerFile << fName << std::endl;
   headerFile << "0\n";
@@ -1747,7 +1812,7 @@ FFTGrid::writeCravaFile(const std::string & fileName, const Simbox * simbox)
 
 
 void
-FFTGrid::readCravaFile(const std::string & fileName, std::string & errText, bool nopadding) 
+FFTGrid::readCravaFile(const std::string & fileName, std::string & errText, bool nopadding)
 {
   std::string error;
   try {
@@ -1788,7 +1853,7 @@ FFTGrid::readCravaFile(const std::string & fileName, std::string & errText, bool
     int i;
     for(i=0;i<rsize_;i++)
       rvalue_[i] = NRLib::ReadBinaryFloat(binFile);
-    
+
     binFile.close();
   }
   catch (NRLib::Exception & e) {
@@ -1799,8 +1864,8 @@ FFTGrid::readCravaFile(const std::string & fileName, std::string & errText, bool
 
 
 float
-FFTGrid::getRegularZInterpolatedRealValue(int i, int j, double z0Reg, 
-                                          double dzReg, int kReg, 
+FFTGrid::getRegularZInterpolatedRealValue(int i, int j, double z0Reg,
+                                          double dzReg, int kReg,
                                           double z0Grid, double dzGrid)
 {
   float z     = static_cast<float> (z0Reg+dzReg*kReg);
@@ -1844,7 +1909,7 @@ FFTGrid::writeAsciiFile(const std::string & fileName)
     for(j=0;j<nyp_;j++)
       for(i=0;i<rnxp_;i++)
       {
-        value = getNextReal(); 
+        value = getNextReal();
         file << value << "\n";
       }
   file.close();
@@ -1863,7 +1928,7 @@ FFTGrid::writeAsciiRaw(const std::string & fileName)
     for(j=0;j<nyp_;j++)
       for(i=0;i<rnxp_;i++)
       {
-        value = getNextReal(); 
+        value = getNextReal();
         file << i << " " << j << " " << k << " " << value << " ";
       }
   file.close();
@@ -2032,7 +2097,7 @@ FFTGrid::extrapolateSeismic(int imin, int imax, int jmin, int jmax)
           value = getRealValue(refi, refj, k, true);
           distx  = getDistToBoundary(i,nx_,nxp_);
           disty  = getDistToBoundary(j,ny_,nyp_);
-          distz  = getDistToBoundary(k,nz_,nzp_);         
+          distz  = getDistToBoundary(k,nz_,nzp_);
           mult   = float(pow(std::max<double>(1.0-distx*distx-disty*disty-distz*distz,0.0),3));
           setRealValue(i, j, k, mult*value, true);
         }
@@ -2099,7 +2164,7 @@ void FFTGrid::writeSegyFromStorm(StormContGrid *data, std::string fileName)
       yt = float((j+0.5)*geometry.GetDy());
       x = float(geometry.GetX0()+xt*geometry.GetCosRot()-yt*geometry.GetSinRot());
       y = float(geometry.GetY0()+yt*geometry.GetCosRot()+xt*geometry.GetSinRot());
-  
+
       double zbot= data->GetBotSurface().GetZ(x,y);
       double ztop = data->GetTopSurface().GetZ(x,y);
       int    firstData = static_cast<int>(floor((ztop)/dz));
@@ -2107,7 +2172,7 @@ void FFTGrid::writeSegyFromStorm(StormContGrid *data, std::string fileName)
 
       if(endData > nz)
       {
-        printf("Internal warning: SEGY-grid too small (%d, %d needed). Truncating data.\n", nz, endData); 
+        printf("Internal warning: SEGY-grid too small (%d, %d needed). Truncating data.\n", nz, endData);
         endData = nz;
       }
       for(k=0;k<firstData;k++)
@@ -2126,7 +2191,7 @@ void FFTGrid::writeSegyFromStorm(StormContGrid *data, std::string fileName)
       }
       segyout.StoreTrace(x,y,datavec,NULL);
     }
-  
+
   segyout.WriteAllTracesToFile();
 
 }
@@ -2134,13 +2199,13 @@ void FFTGrid::writeSegyFromStorm(StormContGrid *data, std::string fileName)
 void FFTGrid::makeDepthCubeForSegy(Simbox *simbox,const std::string & fileName)
 {
   StormContGrid * stormcube = new StormContGrid((*simbox),nx_,ny_,nz_);
-  
+
   int i,j,k;
   for(k=0;k<nz_;k++)
     for(j=0;j<ny_;j++)
       for(i=0;i<nx_;i++)
         (*stormcube)(i,j,k) = getRealValue(i,j,k,true);
-  
+
   std::string fullFileName = fileName + IO::SuffixSegy();
   FFTGrid::writeSegyFromStorm(stormcube, fullFileName);
 }
@@ -2180,7 +2245,7 @@ int FFTGrid::findClosestFactorableNumber(int leastint)
 int FFTGrid::formatFlag_        = 0;
 int FFTGrid::domainFlag_        = IO::TIMEDOMAIN;
 int FFTGrid::maxAllowedGrids_   = 1;   // One grid is allocated and deallocated before memory check.
-int FFTGrid::maxAllocatedGrids_ = 0; 
+int FFTGrid::maxAllocatedGrids_ = 0;
 int FFTGrid::nGrids_            = 0;
 bool FFTGrid::terminateOnMaxGrid_ = false;
 float FFTGrid::maxFFTMemUse_    = 0;

@@ -21,8 +21,8 @@ public:
 
   std::vector< std::vector< std::vector<double> > > CreateSamples(int                              i_max,
                                                                   TimeLine                       & time_line,
-                                                                  const DistributionsRockT0      * dist_rock, 
-                                                                  const DistributionsSaturation  * dist_sat, 
+                                                                  const DistributionsRockT0      * dist_rock,
+                                                                  const DistributionsSaturation  * dist_sat,
                                                                   const DistributionsGeochemical * dist_geochem);
 };
 

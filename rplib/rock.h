@@ -18,14 +18,14 @@ public:
   virtual void ComputeSeismicParams(double & vp, double & vs, double & rho) const = 0;
 
   // Rock is an abstract class, hence pointer must be used here. Allocated memory (using new) MUST be deleted by caller.
-  virtual Rock * Evolve(const std::vector<int>         & delta_time, 
-                        const std::vector< Rock * >    & rock, 
+  virtual Rock * Evolve(const std::vector<int>         & delta_time,
+                        const std::vector< Rock * >    & rock,
                         const DistributionsSaturation  * dist_sat,
                         const DistributionsGeochemical * dist_geochem) const = 0;
-  
+
   void SetSaturation(std::vector<double> saturation) {saturation_ = saturation;}
 
-  static void SetFluid(std::vector<Fluid *> fluid) {fluid_ = fluid;}  
+  static void SetFluid(std::vector<Fluid *> fluid) {fluid_ = fluid;}
   static std::vector<Fluid *> fluid_;  // The same objects for all Rocks, fixed fluid properties..
 
 protected:

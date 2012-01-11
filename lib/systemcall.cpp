@@ -17,33 +17,33 @@ const std::string
 SystemCall::getUserName()
 {
 #if defined(_WIN32) || defined(WIN32) || defined(_WINDOWS)
-  std::string strUserName; 
+  std::string strUserName;
   DWORD nUserName = UNLEN;
-  char * userName = new char[nUserName]; 
-  if (GetUserName(userName, &nUserName)) 
+  char * userName = new char[nUserName];
+  if (GetUserName(userName, &nUserName))
   {
-    if (userName == NULL) 
+    if (userName == NULL)
       strUserName= std::string("Empty user name found");
     else
       strUserName = userName;
   }
-  else 
+  else
   {
     strUserName = std::string("User name not found");
   }
   delete [] userName;
 #else
-  struct passwd on_the_stack; 
-  struct passwd* pw = 0;  
+  struct passwd on_the_stack;
+  struct passwd* pw = 0;
   uid_t  uid    = geteuid();
   size_t size   = sysconf(_SC_GETPW_R_SIZE_MAX);
   char * buffer = new char[size];
-#ifdef NO_GETPWUID_R_PTR  
-  pw = getpwuid_r(uid, &on_the_stack, buffer, size);  
+#ifdef NO_GETPWUID_R_PTR
+  pw = getpwuid_r(uid, &on_the_stack, buffer, size);
 #else
-  getpwuid_r(uid, &on_the_stack, buffer, size, &pw);  
+  getpwuid_r(uid, &on_the_stack, buffer, size, &pw);
 #endif
-  std::string strUserName(pw->pw_name); 
+  std::string strUserName(pw->pw_name);
   delete [] buffer;
 #endif
   return strUserName;
@@ -62,14 +62,14 @@ SystemCall::getHostName()
    if ( err == 0 )
      gethostname(hostname, max_string);
    WSACleanup( );
-#else 
+#else
   int err = gethostname(hostname, max_string);
 #endif
 
   std::string strHostname;
-  
+
   if ( err == 0 )
-    strHostname = std::string(hostname); 
+    strHostname = std::string(hostname);
   else
     strHostname = std::string("*Not set*");
 
@@ -79,11 +79,11 @@ SystemCall::getHostName()
 }
 
 const std::string
-SystemCall::getCurrentTime(void) 
-{ 
-  time_t raw; 
-  time(&raw); 
-  
+SystemCall::getCurrentTime(void)
+{
+  time_t raw;
+  time(&raw);
+
 #if _MSC_VER >= 1400
   const size_t size = 26;
   char * buffer = new char[size];
@@ -93,6 +93,6 @@ SystemCall::getCurrentTime(void)
 #else
   std::string strBuffer = std::string(ctime(&raw));
 #endif
-  
+
   return strBuffer;
-} 
+}

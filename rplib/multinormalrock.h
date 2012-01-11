@@ -6,16 +6,16 @@
 class MultiNormalRock : public Rock {
 public:
 
-  // Parallel classes are 
-  MultiNormalRock(const std::vector<double>&  param, 
-                  const std::vector<double>&  saturation); 
+  // Parallel classes are
+  MultiNormalRock(const std::vector<double>&  param,
+                  const std::vector<double>&  saturation);
 
   virtual ~MultiNormalRock();
 
   virtual void ComputeSeismicParams(double& vp, double& vs, double& rho) const;
 
-  virtual Rock * Evolve(const std::vector<int>         & /*delta_time*/, 
-                        const std::vector< Rock * >    & /*rock*/, 
+  virtual Rock * Evolve(const std::vector<int>         & /*delta_time*/,
+                        const std::vector< Rock * >    & /*rock*/,
                         const DistributionsSaturation  * /*dist_sat*/,
                         const DistributionsGeochemical * /*dist_geochem*/) const { return new MultiNormalRock(*this); }
 

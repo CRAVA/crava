@@ -37,13 +37,13 @@ GridMapping::~GridMapping()
   delete z1Grid_;
 }
 
-void 
+void
 GridMapping::makeTimeTimeMapping(const Simbox * timeCutSimbox)
 {
   int nx   = timeCutSimbox->getnx();
   int ny   = timeCutSimbox->getny();
   int nz   = timeCutSimbox->getnz();
-  mapping_ = new StormContGrid(*timeCutSimbox, nx, ny, nz); 
+  mapping_ = new StormContGrid(*timeCutSimbox, nx, ny, nz);
   simbox_  = new Simbox(timeCutSimbox);
 
   for(int i=0;i<nx;i++)
@@ -53,15 +53,15 @@ GridMapping::makeTimeTimeMapping(const Simbox * timeCutSimbox)
       double x,y;
       timeCutSimbox->getXYCoord(i,j,x,y);
       double tTop   = timeCutSimbox->getTop(x,y);
-      double tBase  = timeCutSimbox->getBot(x,y); 
-      double deltaT = (tBase-tTop)/static_cast<double>(nz);    
-      for(int k=0;k<nz;k++)      
+      double tBase  = timeCutSimbox->getBot(x,y);
+      double deltaT = (tBase-tTop)/static_cast<double>(nz);
+      for(int k=0;k<nz;k++)
         (*mapping_)(i,j,k) = static_cast<float>(tTop + static_cast<double>(k)*deltaT);
     }
   }
 }
 
-void 
+void
 GridMapping::makeTimeDepthMapping(FFTGrid      * velocity,
                                   const Simbox * timeSimbox)
 {
@@ -79,13 +79,13 @@ GridMapping::makeTimeDepthMapping(FFTGrid      * velocity,
       double x,y;
       depthSimbox->getXYCoord(i,j,x,y);
       double tTop   = timeSimbox->getTop(x,y);
-      double tBase  = timeSimbox->getBot(x,y); 
+      double tBase  = timeSimbox->getBot(x,y);
       double zTop   = depthSimbox->getTop(x,y);
-      double zBase  = depthSimbox->getBot(x,y); 
+      double zBase  = depthSimbox->getBot(x,y);
       double deltaT = (tBase-tTop)/(static_cast<double>(2000*timeSimbox->getnz()));
-      double deltaZ = (zBase-zTop)/static_cast<double>(nz);    
+      double deltaZ = (zBase-zTop)/static_cast<double>(nz);
       double sum    = 0.0;
-      double sumz   = 0.0;    
+      double sumz   = 0.0;
       for(int k=0 ; k<timeSimbox->getnz() ; k++)
         sumz +=deltaT*velocity->getRealValue(i,j,k);
       double c = (zBase-zTop)/sumz;
@@ -150,8 +150,8 @@ GridMapping::setMappingFromVelocity(FFTGrid * velocity, const Simbox * timeSimbo
 
 
 
-void 
-GridMapping::calculateSurfaceFromVelocity(FFTGrid      * velocity, 
+void
+GridMapping::calculateSurfaceFromVelocity(FFTGrid      * velocity,
                                           const Simbox * timeSimbox)
 {
   if(z0Grid_==NULL || z1Grid_==NULL)
@@ -159,27 +159,27 @@ GridMapping::calculateSurfaceFromVelocity(FFTGrid      * velocity,
     Surface * isochore;
     if(z0Grid_==NULL)
       isochore = new Surface(*z1Grid_);
-    else    
+    else
       isochore = new Surface(*z0Grid_);
 
     //
     // If a constant time surface has been used, it may have only four grid
     // nodes. To handle this situation we use the grid resolution whenever
     // this is larger than the surface resolution.
-    //  
+    //
     int maxNx = std::max(timeSimbox->getnx(), static_cast<int>(isochore->GetNI()));
-    int maxNy = std::max(timeSimbox->getny(), static_cast<int>(isochore->GetNJ())); 
+    int maxNy = std::max(timeSimbox->getny(), static_cast<int>(isochore->GetNJ()));
     isochore->Resize(maxNx, maxNy);
 
     double dx = 0.5*isochore->GetDX();
     double dy = 0.5*isochore->GetDY();
 
-    for(int j=0 ; j<static_cast<int>(isochore->GetNJ()) ; j++) 
+    for(int j=0 ; j<static_cast<int>(isochore->GetNJ()) ; j++)
     {
-      for(int i=0 ; i<static_cast<int>(isochore->GetNI()) ; i++) 
+      for(int i=0 ; i<static_cast<int>(isochore->GetNI()) ; i++)
       {
         double x, y;
-        isochore->GetXY(i,j,x,y);   
+        isochore->GetXY(i,j,x,y);
         double tTop  = timeSimbox->getTop(x,y);
         double tBase = timeSimbox->getBot(x,y);
         int    nz    = timeSimbox->getnz();
@@ -218,7 +218,7 @@ GridMapping::calculateSurfaceFromVelocity(FFTGrid      * velocity,
           else
           {
             double sum = 0.0;
-            for(int k=0 ; k<nz ; k++) { 
+            for(int k=0 ; k<nz ; k++) {
               if(i1!=IMISSING && j1!=IMISSING)
                 sum += velocity->getRealValue(i1,j1,k);
               if(i2!=IMISSING && j2!=IMISSING)
@@ -234,13 +234,13 @@ GridMapping::calculateSurfaceFromVelocity(FFTGrid      * velocity,
       }
     }
 
-    if(z0Grid_==NULL) 
+    if(z0Grid_==NULL)
     {
       z0Grid_ = new Surface(*isochore);
       z0Grid_->Multiply(-1.0);
       z0Grid_->AddNonConform(z1Grid_);
     }
-    else 
+    else
     {
       z1Grid_ = new Surface(*isochore);
       z1Grid_->AddNonConform(z0Grid_);
@@ -249,9 +249,9 @@ GridMapping::calculateSurfaceFromVelocity(FFTGrid      * velocity,
   }
 }
 
-void 
-GridMapping::setDepthSurfaces(const std::vector<std::string> & surfFile, 
-                              bool                           & failed, 
+void
+GridMapping::setDepthSurfaces(const std::vector<std::string> & surfFile,
+                              bool                           & failed,
                               std::string                    & errText)
 {
   if(surfFile[0]=="" && surfFile[1]=="")
@@ -313,12 +313,12 @@ void GridMapping::setDepthSimbox(const Simbox * timeSimbox,
   LogKit::LogFormatted(LogKit::Low,"\nDepth output interval:\n");
   LogKit::LogFormatted(LogKit::Low,"  True vertical depth   avg / min / max    : %7.1f /%7.1f /%7.1f\n",
                        zmin+simbox_->getlz()*simbox_->getAvgRelThick()*0.5,
-                       zmin, zmax); 
-  LogKit::LogFormatted(LogKit::Low,"  Interval thickness    avg / min / max    : %7.1f /%7.1f /%7.1f\n", 
+                       zmin, zmax);
+  LogKit::LogFormatted(LogKit::Low,"  Interval thickness    avg / min / max    : %7.1f /%7.1f /%7.1f\n",
                        simbox_->getlz()*simbox_->getAvgRelThick(),
                        simbox_->getlz()*simbox_->getMinRelThick(),
                        simbox_->getlz());
-  LogKit::LogFormatted(LogKit::Low,"  Sampling density      avg / min / max    : %7.2f /%7.2f /%7.2f\n", 
+  LogKit::LogFormatted(LogKit::Low,"  Sampling density      avg / min / max    : %7.2f /%7.2f /%7.2f\n",
                        simbox_->getdz()*simbox_->getAvgRelThick(),
                        simbox_->getdz(),
                        simbox_->getdz()*simbox_->getMinRelThick());

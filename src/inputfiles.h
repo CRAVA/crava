@@ -23,7 +23,7 @@ public:
   const std::string              & getWaveletFilterFile(int i)   const { return waveletFilterFiles_[i];}
   const std::string              & getWaveletCorrFile(int i)     const { return waveletCorrFiles_[i]  ;}
   const std::string              & getWellMoveIntFile(int i)     const { return wellMoveIntFile_[i]   ;}
-  const std::string              & getFaciesEstIntFile(int i)    const { return faciesEstIntFile_[i]  ;}     
+  const std::string              & getFaciesEstIntFile(int i)    const { return faciesEstIntFile_[i]  ;}
   const std::vector<std::string> & getTimeSurfFiles(void)        const { return timeSurfFiles_        ;}
   const std::string              & getTimeSurfFile(int i)        const { return timeSurfFiles_[i]     ;}
   const std::vector<std::string> & getDepthSurfFiles(void)       const { return depthSurfFiles_       ;}
@@ -52,8 +52,8 @@ public:
   void setAreaSurfaceFile(const std::string &areaFile)                    { areaSurfaceFile_      = areaFile          ;}
   void addWaveletEstIntFileTop(const std::string & fileTop)               { waveletEstIntFileTop_.push_back(fileTop)  ;}
   void addWaveletEstIntFileBase(const std::string & fileBase)             { waveletEstIntFileBase_.push_back(fileBase);}
-  void addWaveletFilterFile(const std::string & filterFile)               { waveletFilterFiles_.push_back(filterFile) ;} 
-  void addWaveletCorrFile(const std::string & corrFile)                   { waveletCorrFiles_.push_back(corrFile)     ;} 
+  void addWaveletFilterFile(const std::string & filterFile)               { waveletFilterFiles_.push_back(filterFile) ;}
+  void addWaveletCorrFile(const std::string & corrFile)                   { waveletCorrFiles_.push_back(corrFile)     ;}
   void setWellMoveIntFile(int i, const std::string & wellMoveIntFile)     { wellMoveIntFile_[i]   = wellMoveIntFile   ;}
   void setFaciesEstIntFile(int i, const std::string & faciesEstIntFile)   { faciesEstIntFile_[i]  = faciesEstIntFile  ;}
   void addTimeSurfFile(const std::string & timeSurfFile)                  { timeSurfFiles_.push_back(timeSurfFile)    ;}
@@ -72,7 +72,7 @@ public:
   void addTrendFileOneRock(std::string name, std::string type)            { trendFileOneRock_[name] = type            ;}
   void addTrendFile(void)                                                 { trendFile_.push_back(trendFileOneRock_)   ;}
   std::string addInputPathAndCheckFiles();
-  
+
   void addDefaultWaveletEstIntFileTop(void)                               { waveletEstIntFileTop_.push_back("")       ;}
   void addDefaultWaveletEstIntFileBase(void)                              { waveletEstIntFileBase_.push_back("")      ;}
 

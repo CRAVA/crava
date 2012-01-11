@@ -3,7 +3,7 @@
 
 #include <time.h>
 
-class TimeKit 
+class TimeKit
 {
 public:
   static void     getTime(double& wall, double& cpu);

@@ -3,14 +3,14 @@
 \index{CRAVA!implementation}
 
 Whereas the general model was explained in \autoref{sec:theory} we
-explain a bit more of the actual implementation details here. 
+explain a bit more of the actual implementation details here.
 
 The estimation routines implemented in \crava are based on
 straightforward and commonly used techniques. This gives fast and
 robust estimation, although we may run into problems if the number of
 data points is too small, or the data quality is too low. The quality
 of an estimation result is never better than the quality of the data
-it is based on. 
+it is based on.
 
 \section{Estimating optimal well location}
 The positioning uncertainty between well data and seismic data is
@@ -33,7 +33,7 @@ equation~\eqref{mdist}, and consists of the expectations of the
 elastic parameters $V_p$, $V_s$, and $\rho$ collected in the vector
 $\bmu_m$, and their spatial correlation structure collected in the
 covariance matrix $\bSigma_m$. These expectations and covariances must
-be given prior values before the inversion. 
+be given prior values before the inversion.
 
 \subsection{Background model}
 \index{prior model!background}
@@ -53,7 +53,7 @@ seismic data contains enough energy to carry information.
 \includegraphics[width=.49\linewidth]{images/implementation/seismicFrequencies_S2}
 \caption{The frequency content of the seismic traces in two different
          wells. The frequency content of the near and far stacks are
-         shown as green and blue curves respectively.} 
+         shown as green and blue curves respectively.}
 \label{fig:frequencycontent}
 \end{figure}
 
@@ -62,14 +62,14 @@ in the seismic data in two different wells. The green curve gives the
 frequency content in the near stack and the blue curve gives the
 frequency content in the far stack. These plots show that the seismic
 data contain little energy below 5--6Hz, and the purpose of the
-background model is to fill this void. 
+background model is to fill this void.
 
 The estimation of the background model is made in two steps. First,
 we estimate a depth trend for the entire volume, and then we
 interpolate well logs into this volume using kriging. The estimation
 will by default contain information up to 6Hz, but this high-cut limit
 can be adjusted using the \texttt{<high-cut-background-modelling>}
-keyword. 
+keyword.
 
 When identifying the depth trend, it is important that the wells are
 appropriately aligned. The alignment is defined by the time interval
@@ -78,29 +78,29 @@ direction surface. It is important that the alignment reflects the
 correlation structure (deposition/compaction), and if the time
 surfaces are either eroding or onlapped, one should consider specifying
 the correlation direction separately using the
-\texttt{<correlation-direction>} keyword. 
+\texttt{<correlation-direction>} keyword.
 
 In \autoref{fig:log-aligning}, we show two well logs aligned according
 to deposition and according to the true time scale. Evidently, an
 incorrect trend will be identified if the true vertical depth is
-used. The size of the error will depend on the stratigraphy. 
+used. The size of the error will depend on the stratigraphy.
 
 \begin{figure}
 \centering
 \includegraphics[width=.45\linewidth]{images/implementation/Trend-analysis_dep-vs-comp}
 \caption{Well logs aligned according to true time scale (left) and
-         according to stratigraphic depth (right).} 
+         according to stratigraphic depth (right).}
 \label{fig:log-aligning}
 \end{figure}
- 
+
 Assuming properly aligned wells, the trend extraction starts by
 calculating an average log value for each layer. This average is
 calculated for the \vp, \vs, and $\rho$ well logs and is based on all
 available wells. The estimation uses a piecewise linear regression,
 rather than the more straightforward arithmetic mean or moving
 average, as these measures are sensitive to the amount of data
-available. The piecewise regression has the additional advantage 
-that it can give trend estimates also outside the interval for which 
+available. The piecewise regression has the additional advantage
+that it can give trend estimates also outside the interval for which
 we have data available.
 
 For the linear regression we require a minimum of 10 data points
@@ -110,10 +110,10 @@ ensure that data points from different time samples are always
 included. Alternatively, the regression would reduce to an arithmetic
 mean whenever there are 10 or more wells available. If we enter a region
 with no data points available at all, the minimum requirements are
-doubled. 
+doubled.
 
 To get the right frequency content in the depth trends, the regression
-values are eventually frequency filtered to 6Hz. 
+values are eventually frequency filtered to 6Hz.
 
 The trend extraction process is illustrated in
 \autoref{fig:vertical-trends} for the \vp and $\rho$ logs of a field
@@ -147,7 +147,7 @@ points behind each estimate.
 \fbox{\includegraphics[width=.480\linewidth]{images/implementation/BG_stratigraphic_trend_Vp}}
 \caption{\vp depth trend (left) and final background model
   (right). Well logs of \vp, high-cut filtered to 6Hz, are shown for
-  comparison.} 
+  comparison.}
 \label{fig:background}
 \end{figure}
 
@@ -158,7 +158,7 @@ background model for \vp is illustrated in the right part of
 \autoref{fig:background}. To the left is the corresponding depth
 trend. For comparison the well logs of \vp has plotted in both
 illustrations. Note how the wells influence the volume in a region
-around the well. 
+around the well.
 
 Ideally, the background model should be as smooth as possible,
 and a Gaussian variogram model with relatively long ranges may seem an
@@ -173,14 +173,14 @@ Since we model the covariance structure as separable, we have
 collapsed the full time dependent covariances between parameters into
 one parameter covariance matrix $\bSigma_{0,m}$, a lateral correlation
 vector $\cml(\xi)$, and a temporal correlation vector
-$\cmt(\tau)$. 
+$\cmt(\tau)$.
 
 We estimate the correlations by first blocking the wells into the
-grid, and then do standard correlation estimation using 
+grid, and then do standard correlation estimation using
 \begin{equation}
 %%\text{Cov}(X,Y) = \text{E}(XY)-E(X)E(Y),\quad\text{with}\quad
 %%X,Y\in\{\ln\vp, \ln\vs, \ln\rho\}
-\text{Cov}(X,Y) = \frac{\sum(x_i - \bar{x})(y_j - \bar{y})}{\sqrt{n - 1}},\ 
+\text{Cov}(X,Y) = \frac{\sum(x_i - \bar{x})(y_j - \bar{y})}{\sqrt{n - 1}},\
   \text{with}\ X,Y\in\{\ln\vp, \ln\vs, \ln\rho\}
 \end{equation}
 
@@ -191,12 +191,12 @@ sample field. The depicted distributions look similar to bivariate
 normal distributions, which supports the normal distribution
 assumptions made in \autoref{mdist}. If there are no \vs logs
 available, the prior \vs variance will be set equal to twice the \vp
-variance, and their covariance will be set equal to zero. 
+variance, and their covariance will be set equal to zero.
 
 The temporal correlation is estimated from the remaining lags in the
 well logs as depicted in \autoref{fig:temporal-correlation}. The
 temporal correlation will be a weighted average of the estimates made
-for all three elastic parameters. 
+for all three elastic parameters.
 
 While the covariance matrix and the temporal correlation can be readily
 estimated from well data, this is not the case for the lateral
@@ -215,7 +215,7 @@ of function gives rise to.
   \includegraphics[width=.33\linewidth]{images/implementation/correlation-scatterplot_vp_rho.jpg}
   \includegraphics[width=.33\linewidth]{images/implementation/correlation-scatterplot_vs_rho.jpg}
   \caption{Cross plots of logarithmic parameter residuals. From such
-           plots the parameter correlations may be estimated.} 
+           plots the parameter correlations may be estimated.}
   \label{fig:parameter-correlation}
   \vspace{2em}
   \centering
@@ -223,7 +223,7 @@ of function gives rise to.
   \includegraphics[width=.7\linewidth              ]{images/implementation/temporal_correlation.jpg}
   \caption{We obtain the temporal covariance by measuring the
     covariance between all pairs of points in the well log (left). The
-    resulting temporal correlation function (right).}  
+    resulting temporal correlation function (right).}
   \label{fig:temporal-correlation}
   \vspace{2em}
   \centering
@@ -232,9 +232,9 @@ of function gives rise to.
   \caption{Parametric lateral correlations. A two-dimensional
     exponential correlation function (left). The lateral correlation
     structure resulting from an anisotropic exponential correlation
-    function having an azimuth of $45^\circ$ degrees (right).}  
+    function having an azimuth of $45^\circ$ degrees (right).}
   \label{fig:lateral-correlation}
-\end{figure} 
+\end{figure}
 
 
 
@@ -243,7 +243,7 @@ of function gives rise to.
 As with the prior model for the elastic parameters, we have also
 collapsed the full time dependent error covariance matrix into a noise
 covariance matrix $\bSigma_{0,e}$, a lateral correlation vector
-$\cel(\xi)$, and a temporal correlation vector $\cet(\tau)$. 
+$\cel(\xi)$, and a temporal correlation vector $\cet(\tau)$.
 
 The lateral correlation is difficult to estimate and is chosen equal
 to that for the elastic parameters, that is, we use $\cel(\xi) =
@@ -267,27 +267,41 @@ are treated as independent of each other.
 
 \section{Estimating wavelets}
 \label{sec:waveestimp}
-The implemented wavelet estimation is based on \cite{White84}. Wavelets
-are estimated at well locations, where we obtain the reflection
-coefficients from well logs. We then use the relation 
+The implemented wavelet estimation uses the approach of spectral division, see \cite{White84}. 
+In this approach an estimate of the cross-correlation between data  
+and reflection coefficients, and an estimate of the auto-correlation of reflection coefficients
+are used to estimate the wavelet. The methodology requires that the reflection 
+coefficients are known,  thus wavelets are estimated at well locations. 
+The cross-correlation between data
+and reflection coefficients is found by convolving the data with the reflection coefficients, 
+and tapering the result. The auto-correlation of the reflection coefficients 
+are found similarly by convolving the reflection coefficients with themselves 
+and then applying a taper to the result. The tapering is 
+preformed in order to avoid spurious correlations at large lags.  
+
+Using the standard convolutional relation for seismic data,
 \begin{equation}
-\vect{d} = \vect{w}*\vect{c}+\vect{e} \label{fig:syntseis}
+\vect{d} = \vect{w}*\vect{c}+\vect{e}, \label{fig:syntseis}
 \end{equation}
 where $\vect{d}$ is the seismic amplitude data, $\vect{w}$ is the
 wavelet, $\vect{c}$ the reflection coefficients, and $\vect{e}$ is the
-noise. We transform this to the Fourier domain, multiply with with the
-reflection coefficients, and take the expectation to get 
+noise. We see that convolving the data with reflection-coefficients, 
+transforming to the  fourier domain, and take the expectation we get
 \begin{equation}
 d(\omega)\bar{c}(\omega) = w(\omega)|c(\omega)|^2
 \end{equation}
 Note that the convolution has disappeared, and the equation can be
-solved for each frequency $\omega$. However, solving this directly in
-the frequency domain is unstable, so we need to do a frequency
-smoothing. This is done by transforming $d(\omega)\bar{c}(\omega)$ and
-$|c(\omega)|^2$ back to time domain, multiplying with a Papoulis
-taper, and transforming them back to the frequency domain. This is the
-same as applying a local smoothing in the frequency domain. After
-this, we divide out $w(\omega)$, and transform back to time domain. 
+solved for each frequency $\omega$. We recognisee the left hand side as the 
+specter of the cross-correlation between data
+and reflection coefficients. And the left hand side as the wavelet multiplied with 
+specter of the auto-correlation of the reflection coefficients. 
+This can be obtained by dividing the specter of the cross-correlation with the 
+specter of the auto-correlation. 
+
+Tapering of the estimated cross-correlation and auto-correlation is required in order to stabilize the estimate. In Crava a Papoulis taper is used. Tapering is equivalent 
+to a local smoothing in the frequency domain, thus the resulting wavelet 
+estimate will behave smoothly in fourier domain. 
+
 
 We find the optimal vertical shift for each well. The global wavelet
 is then found by taking the arithmetic average of the zero-phase
@@ -298,7 +312,7 @@ the global wavelet at each well location. Optimal here means
 minimising the noise energy. We then use kriging to interpolate this
 between wells, with a shift of 0 and a scale of 1 as the mean level
 outside the well control area.  This is illustrated in
-\autoref{fig:local-wavelet}. 
+\autoref{fig:local-wavelet}.
 
 \begin{figure}
   \centering
@@ -318,7 +332,7 @@ As for the 1D wavelet, the pulse is estimated from wells. Using
 reflection coefficients from well logs, time gradients estimated from
 seismic data around wells and depth gradients computed from time
 gradients by using the reference time surface and average velocity given, a matrix $K$ can be constructed forming a linear regression model for the seismic
-data as  
+data as
 \begin{equation}
 \vect{d} = \vect{K}\vect{w}_0 + \vect{e}.
 \end{equation}
@@ -330,7 +344,7 @@ The least squares estimate for $\vect{w}_0$ is
 \section{Using FFT for inversion}
 As previously stated, \autoref{eq:WADm} separates when transformed
 into the Fourier domain. After this transformation, the equation
-becomes 
+becomes
 \begin{equation}
 \label{eq:fourierinv}
 \vect{\tilde{d}}(\omega,\vect{k}) = \vect{G}(\omega)\vect{\tilde{m}}(\omega,\vect{k}) + \vect{\tilde{e}}(\omega,\vect{k}))
@@ -351,7 +365,7 @@ large. After solving for $\vect{\tilde{m}}(\omega,\vect{k})$, we do
 the inverse transform of this to obtain the distribution for
 $\vect{m}$. The same does of course hold when we are using local
 wavelets that are divided out in advance, \autoref{eq:ADm}. For full
-details, see \cite{geo68ab2}. 
+details, see \cite{geo68ab2}.
 
 \section{A note one local wavelet and noise}
 \label{sec:nonstationaryimp}
@@ -359,7 +373,7 @@ As shown, even though the use of FFT-transform requires stationarity,
 we are able to work around this. Wavelets can be made local since
 these can be divided out before solving the equations, and locally
 higher noise levels can be approximated by interpolating the low-noise
-solution and the prior distribution. 
+solution and the prior distribution.
 
 \subsection{Local wavelet - dividing out the wavelet}
 \label{sec:divwavimp}
@@ -367,13 +381,13 @@ A simple division of data by wavelet can easily be done in the Fourier
 domain, where the convolution reduces to a multiplication, and the
 division can be done one frequency at a time. However, this is very
 unstable for frequencies where the wavelet is very weak or not
-present, and some sort of stabilisation is needed.  
+present, and some sort of stabilisation is needed.
 
 In \crava this is done in two ways. First, we set an upper and lower
 cutoff frequency for the wavelet, default set to 5 and 55
 Hz. Furthermore, for frequencies that fall below 10\% of the average
 amplitude, we set the amplitude to 10\% of average before doing the
-division. 
+division.
 
 \subsection{Local noise}
 \label{sec:localnoiseimp}
@@ -382,7 +396,7 @@ minimum noise level, to fulfil the stationarity requirements of the
 FFT algorithm. We then interpolate the values for each locations
 between the prior and this minimum noise posterior. When doing this
 interpolation, we ignore correlation between locations. This is not a
-problem as long as the noise varies slowly and smoothly. 
+problem as long as the noise varies slowly and smoothly.
 
 
 For each location $\vect{x}$ the adjusted estimate $\tilde{\bmu}_{m|d_{obs}}(\vect{x})$, is found
@@ -414,7 +428,7 @@ This removes the effect of the standard inversion and add the effect
 of the locally adapted inversion. The matrix $\vect{P}(\Sigma_{e}^0)$
 is not invertible, but since the local noise always is larger than the
 noise in the inversion the product in expression $\ref{eq:H}$ is
-always well defined. 
+always well defined.
 
 \section{Memory handling}
 Since the grids needed by \crava can become very large, we try to
@@ -425,29 +439,29 @@ The amount of memory needed by padded and unpadded grids are
 denoted $s_p$ and $s_u$ respectively.
 %%The number of padded grids used are counted in detail, while the unpadded grids are
 %%only counted in memory computations. In the following, any mention of grid
-%%means padded, unpadded will be explicitly stated. 
+%%means padded, unpadded will be explicitly stated.
 
 \crava also has an option to use disk space for intermediate storage
 of grids. This will reduce the memory consumption with a factor of at
 least 2 in realistic cases, but will also increase the computation
-time by a factor of almost 3. 
+time by a factor of almost 3.
 
 \subsection{Grid allocation with all grids in memory}
 If intermediate disk storage is not used, the grid memory allocation
-will go as follows: 
+will go as follows:
 
 \begin{enumerate}
 \item Background grids for Vp, Vs and density, 3 grids.
 \item If the background model is to be estimated, another 3 grids are
   allocated for estimation, but destroyed before any other
-  allocations. 
+  allocations.
 \item Seismic grids, $n_\theta$. If well optimisation is used, this
-  will come before background grids. 
+  will come before background grids.
 \item Possibly prior facies probability grids, indicated by $I_p$,
-  $n_f$ unpadded grids. 
+  $n_f$ unpadded grids.
 \item Prior covariance, 6 grids.
 \item If relative facies probabilities or local noise, a copy of
-  background indicated by $I_b$, 3 grids. 
+  background indicated by $I_b$, 3 grids.
 \item {\bf Peak:} At this stage, \crava reaches its first memory
   peak. Minimum memory in use is 10 grids, typical situation with
   three seismic grids and facies modelling requires 15 grids.\\
@@ -455,10 +469,10 @@ will go as follows:
 \item The posterior distribution is computed into the background and
   prior covariance grids, and seismic residuals are computed into the
   seismic grids. Thus, the inversion requires no extra grids. (But we
-  needed a copy of the background for local noise or facies.) 
+  needed a copy of the background for local noise or facies.)
 \item After the inversion, the seismic grids are released, taking us
-  off peak down to a base level: \\ 
-  Memory usage:  $P_\text{base} = (9+I_b*3)*s_p+I_p*n_f*s_u$. 
+  off peak down to a base level: \\
+  Memory usage:  $P_\text{base} = (9+I_b*3)*s_p+I_p*n_f*s_u$.
 \item If simulation is used:
 \begin{enumerate}
 \item Simulated grids are allocated, 3 grids.
@@ -466,22 +480,22 @@ will go as follows:
   $\mu\rho$, etc.), indicated by $I_s$, a computation grid is
   allocated, 1 grid.
 \item If kriging is used, indicated by $I_k$, 1 unpadded grid, not
-  concurrent with computation grid.  
+  concurrent with computation grid.
 \end{enumerate}
 \item {\bf Peak:} New possible peak, since the number of grids now
-  allocated may be larger than the released seismic grids. \\ 
+  allocated may be larger than the released seismic grids. \\
     Memory usage: $P_2 = (12+I_b*3+I_s)*s_p + (I_p*n_f + \max(0,I_k-I_s))*s_u$.
 \item New release of grids, back to $P_\text{base}$.
 \item If facies probabilities:
 \begin{enumerate}
 \item 3D histograms of elastic parameters per facies are created, each
-  of size 2MB, $n_f$ special grids. 
+  of size 2MB, $n_f$ special grids.
 \item Facies probability grids are created, including for undefined,
-  $n_f+1$ unpadded grids. 
+  $n_f+1$ unpadded grids.
 \end{enumerate}
 \item {\bf Peak:} New possible peak, since the new memory allocated
   may be larger than the released seismic grids and/or the
-  simulation+computation/kriging grids. \\ 
+  simulation+computation/kriging grids. \\
     Memory usage: $P_3 = (9+I_b*3)*s_p+(I_p*n_f + n_f +1)*s_u + 2*n_f$.
 \item Can now release all grids related to facies probability, memory down to $9*s_p$.
 \item Eventual kriging of prediction allocates 1 unpadded grid.
@@ -491,4 +505,4 @@ will go as follows:
 The maximum memory usage is thus the largest of the actual peaks. The
 maximum number of allocated padded grids will occur at either $P_1$ or
 $P_2$, whereas the largest number of other grids are allocated at
-$P_3$.  
+$P_3$.

@@ -11,8 +11,8 @@
 
 CovGridSeparated::CovGridSeparated(const FFTGrid & grid)
 {
-  nxp_ = grid.getNxp(); 
-  nyp_ = grid.getNyp(); 
+  nxp_ = grid.getNxp();
+  nyp_ = grid.getNyp();
   nzp_ = grid.getNzp();
   gammaXY_ = new float[nxp_*nyp_];
   gammaZ_  = new float[nzp_];
@@ -22,15 +22,15 @@ CovGridSeparated::CovGridSeparated(const FFTGrid & grid)
   FFTGrid& gridTmp = const_cast<FFTGrid&>(grid);
   gridTmp.setAccessMode(FFTGrid::RANDOMACCESS);
   bool isTrans = gridTmp.getIsTransformed();
-  if (isTrans) 
+  if (isTrans)
     gridTmp.invFFTInPlace();
 
   for (int j = 0; j < nyp_; j++) {
     for (int i = 0; i < nxp_; i++) {
       int index = Get2DIndex(i, j);
       gammaXY_[index] = gridTmp.getRealValue(i, j, 0, true);
-    } 
-  } 
+    }
+  }
   float maxval = fabs(gridTmp.getRealValue(0, 0, 0, true));
   int i = 1;
   float value = fabs(gridTmp.getRealValue(0, 0, i, true));
@@ -51,17 +51,17 @@ CovGridSeparated::CovGridSeparated(const FFTGrid & grid)
   gridTmp.endAccess();
 }
 
-CovGridSeparated::CovGridSeparated(int nxp, int nyp, int nzp, 
+CovGridSeparated::CovGridSeparated(int nxp, int nyp, int nzp,
                                    float dx, float dy, float dz,
-                                   float rangeX, float rangeY, float rangeZ, 
-                                   float power, float rotAngle, 
-                                   bool tabulateCor) : 
+                                   float rangeX, float rangeY, float rangeZ,
+                                   float power, float rotAngle,
+                                   bool tabulateCor) :
   nxp_(nxp), nyp_(nyp), nzp_(nzp), tabulateCorr_(tabulateCor),
   dx_(dx), dy_(dy), dz_(dz),
   rangeX_(rangeX), rangeY_(rangeY), rangeZ_(rangeZ), power_(power), rotAngle_(rotAngle) {
 
   InitRotMatrix();
-  
+
   if (!tabulateCor) {
     gammaXY_ = gammaZ_ = NULL;
     return;
@@ -72,7 +72,7 @@ CovGridSeparated::CovGridSeparated(int nxp, int nyp, int nzp,
   const int nzp2 = nzp/2; const int nyp2 = nyp/2; const int nxp2 = nxp/2;
   const int uppernxp2 = (nxp % 2 == 0 ? nxp2 : nxp2 + 1);
   const int uppernyp2 = (nyp % 2 == 0 ? nyp2 : nyp2 + 1);
-  const int uppernzp2 = (nzp % 2 == 0 ? nzp2 : nzp2 + 1);  
+  const int uppernzp2 = (nzp % 2 == 0 ? nzp2 : nzp2 + 1);
   //LogKit::LogFormatted(LogKit::DebugLow,": %d %d %d %d\n",nxp,nxp2,nyp,nyp2);
   int i, j;
   int countxy = 0;
@@ -82,7 +82,7 @@ CovGridSeparated::CovGridSeparated(int nxp, int nyp, int nzp,
         int i1 = (i < 0 ? nxp + i : i);
         float deltaX = i*dx;
         float deltaY = j*dy;
-        float deltaZ = 0.f; 
+        float deltaZ = 0.f;
         if (rotAngle != 0.f)
           RotateVec(deltaX, deltaY, deltaZ, rotMatrix_);
         float h = float(sqrt(deltaX*deltaX/(rangeX*rangeX) + deltaY*deltaY/(rangeY*rangeY)));
@@ -100,14 +100,14 @@ CovGridSeparated::CovGridSeparated(int nxp, int nyp, int nzp,
     gammaZ_[k1] = float(exp(-3.0*pow(h,power)));
     countz++;
   }
-  
+
   if (countxy != nxp_*nyp_ || countz != nzp_) {
     LogKit::LogFormatted(LogKit::Low,"ERROR in CovGridSeparated constructor.");
     exit(1);
   }
 }
 
-CovGridSeparated::CovGridSeparated(int nxp, int nyp, int nzp) : 
+CovGridSeparated::CovGridSeparated(int nxp, int nyp, int nzp) :
   nxp_(nxp), nyp_(nyp), nzp_(nzp), tabulateCorr_(true) {
   gammaXY_ = new float[nxp_*nyp_];
   gammaZ_ = new float[nzp_];
@@ -115,7 +115,7 @@ CovGridSeparated::CovGridSeparated(int nxp, int nyp, int nzp) :
   int index;
   for (index = 0; index < nxp_*nyp_; index++)
     gammaXY_[index] = 0.f;
-    
+
   for (index = 0; index < nzp_; index++) {
     gammaZ_[index] = 0.f;
   }
@@ -175,7 +175,7 @@ void CovGridSeparated::EstimateRangeX(int& rangeX) const {
         return;
       }
     } // end forward j
-  } // end i  
+  } // end i
 }
 
 void CovGridSeparated::EstimateRangeY(int& rangeY) const {
@@ -325,8 +325,8 @@ void CovGridSeparated::performTapering(float rangeX, float rangeY, float rangeZ)
 
 float CovGridSeparated::GetGamma2(int i1, int j1, int k1, int i2, int j2, int k2) const {
 
-  if (i1 == IMISSING || j1 == IMISSING || k1 == IMISSING || 
-      i2 == IMISSING || j2 == IMISSING || k2 == IMISSING) 
+  if (i1 == IMISSING || j1 == IMISSING || k1 == IMISSING ||
+      i2 == IMISSING || j2 == IMISSING || k2 == IMISSING)
     return RMISSING;
 
   int deltai = i2 - i1;
@@ -339,9 +339,9 @@ float CovGridSeparated::GetGamma2(int i1, int j1, int k1, int i2, int j2, int k2
     //LogKit::LogFormatted(LogKit::DebugHigh,"PAL: abs(deltai),abs(deltaj),abs(deltak) : nxp_/2 nyp_/2 nzp_/2  =  %d %d %d : %d %d %d\n",
     //                      abs(deltai),abs(deltaj),abs(deltak),nxp_/2,nyp_/2,nzp_/2);
     //
-    //NBNB-PAL: The variogram covers only half the grid in x- and y-directions. This explains 
-    //          the if below. This, however, is problematic if the grid is small and the ranges 
-    //          large. Probably the variogram should be defined in a grid twice as large (area) 
+    //NBNB-PAL: The variogram covers only half the grid in x- and y-directions. This explains
+    //          the if below. This, however, is problematic if the grid is small and the ranges
+    //          large. Probably the variogram should be defined in a grid twice as large (area)
     //          as the modelling grid, so that we can estimate the correct covariance between
     //          any pair of points in the grid.
     //
@@ -350,34 +350,34 @@ float CovGridSeparated::GetGamma2(int i1, int j1, int k1, int i2, int j2, int k2
 
     deltai = (deltai >= 0 ? deltai : nxp_ + deltai);
     deltaj = (deltaj >= 0 ? deltaj : nyp_ + deltaj);
-    deltak = (deltak >= 0 ? deltak : nzp_ + deltak); 
+    deltak = (deltak >= 0 ? deltak : nzp_ + deltak);
   }
   return GetGamma(deltai, deltaj, deltak);
 }
 
-float 
+float
 CovGridSeparated::GetGamma(int i, int j, int k) const {
   if (tabulateCorr_) {
     if (!IsIndexValid(i, j, k))
       return RMISSING;
     return gammaXY_[Get2DIndex(i, j)] * gammaZ_[k];
   }
- 
+
   float deltaX = i*dx_;
   float deltaY = j*dy_;
-  float deltaZ = k*dz_; 
+  float deltaZ = k*dz_;
   if (rotAngle_ != 0.f)
     RotateVec(deltaX, deltaY, deltaZ, rotMatrix_);
   float h = float(sqrt(deltaX*deltaX/(rangeX_*rangeX_) + deltaY*deltaY/(rangeY_*rangeY_) +
                        deltaZ*deltaZ/(rangeZ_*rangeZ_)));
   return float(exp(-3.0*pow(h,power_)));
-  
+
 }
 
 void CovGridSeparated::RotateVec(float& rx, float& ry, float& rz, const float mat[][3]) const {
-  float res[3] = {0.0f}; 
+  float res[3] = {0.0f};
 
-  float input[3]; 
+  float input[3];
   input[0] = rx; input[1] = ry; input[2] = rz;
   int i,j;
   for (i = 0; i < 3; i++) {
@@ -400,10 +400,10 @@ void CovGridSeparated::writeXYGrid(const std::string fName) const {
 
   std::ofstream file;
   NRLib::OpenWrite(file, fileName);
-  file << std::fixed 
+  file << std::fixed
        << nx << " " << ny << " 1.0 1.0\n"
        << std::setprecision(2)
-       << "0.0 " << static_cast<float>(nx-1) << " " 
+       << "0.0 " << static_cast<float>(nx-1) << " "
        << "0.0 " << static_cast<float>(ny-1) << "\n";
   for(int j=0 ; j < ny ; j++)
     for(int i=0 ; i < nx ; i++)

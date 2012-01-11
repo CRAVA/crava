@@ -9,7 +9,7 @@
 class Kriging2D
 {
 public:
-  static void      krigSurface(Grid2D              & trend, 
+  static void      krigSurface(Grid2D              & trend,
                                const KrigingData2D & krigingData,
                                const CovGrid2D     & cov,
                                bool                  getResiduals = false);
@@ -20,23 +20,23 @@ private:
                                  const std::vector<int> & indexi,
                                  const std::vector<int> & indexj,
                                  int                      md);
-  static void      fillKrigingMatrix(double                 ** K, 
-                                     const CovGrid2D         & cov, 
+  static void      fillKrigingMatrix(double                 ** K,
+                                     const CovGrid2D         & cov,
                                      const std::vector<int>  & indexi,
                                      const std::vector<int>  & indexj,
                                      int                       md);
-  static void      fillKrigingVector(double                 * k, 
+  static void      fillKrigingVector(double                 * k,
                                      const CovGrid2D        & cov,
                                      const std::vector<int> & indexi,
                                      const std::vector<int> & indexj,
                                      int md,
-                                     int i, 
-                                     int j);                             
-  static void      allocateSpaceForMatrixEq(double ** & K, 
+                                     int i,
+                                     int j);
+  static void      allocateSpaceForMatrixEq(double ** & K,
                                             double ** & C,
                                             double  * & k,
                                             int         md);
-  static void      deAllocateSpaceForMatrixEq(double ** K, 
+  static void      deAllocateSpaceForMatrixEq(double ** K,
                                               double ** C,
                                               double  * k,
                                               int       md);
@@ -46,6 +46,6 @@ private:
   static double ** copyMatrix(double ** in,
                               double ** out,
                               int       md);
-                                    
+
 };
 #endif

@@ -1,6 +1,6 @@
 #include "src/crava.h"
 
-#include "fft/include/rfftw.h"
+#include "rfftw.h"
 
 #include "src/wavelet.h"
 #include "src/wavelet1D.h"
@@ -39,18 +39,20 @@
 #include <assert.h>
 #include <time.h>
 
-Crava::Crava(ModelSettings * modelSettings,
-             ModelGeneral * modelGeneral, ModelAVOStatic * modelAVOstatic, ModelAVODynamic * modelAVOdynamic, 
-             SpatialWellFilter *spatwellfilter)
+Crava::Crava(ModelSettings     * modelSettings,
+             ModelGeneral      * modelGeneral,
+             ModelAVOStatic    * modelAVOstatic,
+             ModelAVODynamic   * modelAVOdynamic,
+             SpatialWellFilter * spatwellfilter)
 {
   if(modelSettings->getForwardModeling())
     LogKit::LogFormatted(LogKit::Low,"\nBuilding model ...\n");
 
   LogKit::WriteHeader("Building Stochastic Model");
-  
+
   time_t timestart, timeend;
   time(&timestart);
-  
+
   double wall=0.0, cpu=0.0;
   TimeKit::getTime(wall,cpu);
 
@@ -61,7 +63,7 @@ Crava::Crava(ModelSettings * modelSettings,
 
   nx_                = modelAVOdynamic_->getBackAlpha()->getNx();
   ny_                = modelAVOdynamic_->getBackAlpha()->getNy();
-  nz_                = modelAVOdynamic_->getBackAlpha()->getNz(); 
+  nz_                = modelAVOdynamic_->getBackAlpha()->getNz();
   nxp_               = modelAVOdynamic_->getBackAlpha()->getNxp();
   nyp_               = modelAVOdynamic_->getBackAlpha()->getNyp();
   nzp_               = modelAVOdynamic_->getBackAlpha()->getNzp();
@@ -78,8 +80,8 @@ Crava::Crava(ModelSettings * modelSettings,
   nWells_            = modelSettings_->getNumberOfWells();
   nSim_              = modelSettings_->getNumberOfSimulations();
   wells_             = modelAVOstatic_->getWells();
-  simbox_            = modelGeneral_->getTimeSimbox(); 
-  meanAlpha_         = modelAVOdynamic_->getBackAlpha(); 
+  simbox_            = modelGeneral_->getTimeSimbox();
+  meanAlpha_         = modelAVOdynamic_->getBackAlpha();
   meanBeta_          = modelAVOdynamic_->getBackBeta();
   meanRho_           = modelAVOdynamic_->getBackRho();
   correlations_      = modelAVOdynamic_->getCorrelations();
@@ -99,15 +101,15 @@ Crava::Crava(ModelSettings * modelSettings,
   dataVariance_      = new float[ntheta_];
   scaleWarning_      = 0;
   scaleWarningText_  = "";
-  errThetaCov_       = new double*[ntheta_]; 
+  errThetaCov_       = new double*[ntheta_];
   sigmamdnew_        = NULL;
   for(int i=0;i<ntheta_;i++) {
-    errThetaCov_[i]  = new double[ntheta_]; 
-    thetaDeg_[i]     = static_cast<float>(modelAVOdynamic_->getAngle(i)*180.0/NRLib::Pi); 
+    errThetaCov_[i]  = new double[ntheta_];
+    thetaDeg_[i]     = static_cast<float>(modelAVOdynamic_->getAngle(i)*180.0/NRLib::Pi);
   }
 
-  fftw_real * corrT = NULL; // =  fftw_malloc(2*(nzp_/2+1)*sizeof(fftw_real)); 
-  
+  fftw_real * corrT = NULL; // =  fftw_malloc(2*(nzp_/2+1)*sizeof(fftw_real));
+
   // reality check: all dimensions involved match
   assert(meanBeta_->consistentSize(nx_,ny_,nz_,nxp_,nyp_,nzp_));
   assert(meanRho_->consistentSize(nx_,ny_,nz_,nxp_,nyp_,nzp_));
@@ -115,11 +117,11 @@ Crava::Crava(ModelSettings * modelSettings,
   if(!modelSettings_->getForwardModeling())
   {
     seisData_       = modelAVOdynamic_->getSeisCubes();
-    modelAVOdynamic_->releaseGrids(); 
-    correlations_->createPostGrids(nx_,ny_,nz_,nxp_,nyp_,nzp_,fileGrid_); 
-    parPointCov_    = correlations_->getPriorVar0(); 
+    modelAVOdynamic_->releaseGrids();
+    correlations_->createPostGrids(nx_,ny_,nz_,nxp_,nyp_,nzp_,fileGrid_);
+    parPointCov_    = correlations_->getPriorVar0();
     // NBNB   nzp_*0.001*corr->getdt() = T    lowCut = lowIntCut*domega = lowIntCut/T
-    int lowIntCut = int(floor(lowCut_*(nzp_*0.001*correlations_->getdt()))); 
+    int lowIntCut = int(floor(lowCut_*(nzp_*0.001*correlations_->getdt())));
     // computes the integer whis corresponds to the low cut frequency.
     float corrGradI, corrGradJ;
     modelGeneral_->getCorrGradIJ(corrGradI, corrGradJ);
@@ -127,14 +129,14 @@ Crava::Crava(ModelSettings * modelSettings,
 
     if((modelSettings_->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0)
       correlations_->writeFilePriorCorrT(corrT,nzp_);     // No zeros in the middle
-  
+
     for(int i=0 ; i< ntheta_ ; i++)
-      assert(seisData_[i]->consistentSize(nx_,ny_,nz_,nxp_,nyp_,nzp_));  
-    
+      assert(seisData_[i]->consistentSize(nx_,ny_,nz_,nxp_,nyp_,nzp_));
+
     computeVariances(corrT,modelSettings_);
     scaleWarning_ = checkScale();  // fills in scaleWarningText_ if needed.
-    fftw_free(corrT);  
-    
+    fftw_free(corrT);
+
     if(simbox_->getIsConstantThick() == false)
       divideDataByScaleWavelet();
 
@@ -144,7 +146,7 @@ Crava::Crava(ModelSettings * modelSettings,
       seisData_[i]->endAccess();
     }
 
-    if ((modelSettings_->getEstimateFaciesProb() && modelSettings_->getFaciesProbRelative()) 
+    if ((modelSettings_->getEstimateFaciesProb() && modelSettings_->getFaciesProbRelative())
         || modelAVOdynamic_->getUseLocalNoise())
     {
       meanAlpha2_ = copyFFTGrid(meanAlpha_);
@@ -161,7 +163,7 @@ Crava::Crava(ModelSettings * modelSettings,
   }
 
   Timings::setTimeStochasticModel(wall,cpu);
-  
+
   if(!modelSettings->getForwardModeling()){
     if(scaleWarning_ != 0){
       LogKit::LogFormatted(LogKit::Low,"\nWarning  !!!\n");
@@ -170,14 +172,14 @@ Crava::Crava(ModelSettings * modelSettings,
     }
 
     printEnergyToScreen();
-    
+
     time(&timeend);
-    LogKit::LogFormatted(LogKit::DebugLow,"\nTime elapsed :  %d\n",timeend-timestart);  
+    LogKit::LogFormatted(LogKit::DebugLow,"\nTime elapsed :  %d\n",timeend-timestart);
 
     computePostMeanResidAndFFTCov();
-    
+
     time(&timeend);
-    LogKit::LogFormatted(LogKit::DebugLow,"\nTime elapsed :  %d\n",timeend-timestart);  
+    LogKit::LogFormatted(LogKit::DebugLow,"\nTime elapsed :  %d\n",timeend-timestart);
 
     if(modelSettings->getNumberOfSimulations() > 0)
       simulate(modelGeneral->getRandomGen());
@@ -189,18 +191,18 @@ Crava::Crava(ModelSettings * modelSettings,
     if((modelSettings->getOutputGridsOther() & IO::CORRELATION) > 0){
       correlations_->writeFilePostVariances();
       correlations_->writeFilePostCovGrids(modelGeneral->getTimeSimbox());
-    } 
+    }
     int activeAngles = 0; //How many dimensions for local noise interpolation? Turn off for now.
     if(modelAVOdynamic->getUseLocalNoise()==true)
       activeAngles = modelAVOdynamic->getNumberOfAngles();
     if(spatwellfilter != NULL)
       spatwellfilter->doFiltering(correlations_,
                                   modelAVOstatic->getWells(),
-                                  modelSettings->getNumberOfWells(), 
+                                  modelSettings->getNumberOfWells(),
                                   modelSettings->getNoVsFaciesProb(),
                                   modelSettings->getIndicatorFilter(),
-                                  activeAngles, 
-                                  this, 
+                                  activeAngles,
+                                  this,
                                   modelAVOdynamic->getLocalNoiseScales());
     if (modelSettings->getEstimateFaciesProb()) {
       bool useFilter = modelSettings->getUseFilterForFaciesProb();
@@ -223,7 +225,7 @@ Crava::Crava(ModelSettings * modelSettings,
   }
   else{
     LogKit::LogFormatted(LogKit::Low,"\n               ... model built\n");
-  
+
     computeSyntSeismic(postAlpha_,postBeta_,postRho_);
   }
 }
@@ -241,7 +243,7 @@ Crava::~Crava()
 
   for(int i = 0;i<ntheta_;i++)
     delete[] errThetaCov_[i];
-  delete [] errThetaCov_; 
+  delete [] errThetaCov_;
 
   if(sigmamdnew_!=NULL)
   {
@@ -275,10 +277,10 @@ Crava::computeDataVariance(void)
     long int ndata = 0;
     dataVariance_[l]=0.0;
     seisData_[l]->setAccessMode(FFTGrid::READ);
-    for(int k=0 ; k<nzp_ ; k++) 
+    for(int k=0 ; k<nzp_ ; k++)
     {
       double tmpvar1 = 0;
-      for(int j=0;j<nyp_;j++) 
+      for(int j=0;j<nyp_;j++)
       {
         double tmpvar2 = 0;
         for(int i=0; i <rnxp; i++)
@@ -315,7 +317,7 @@ Crava::setupErrorCorrelation(const std::vector<Grid2D *> & noiseScale)
     else
       errorVariance_[l] = dataVariance_[l]/empSNRatio_[l];
 
-    if (empSNRatio_[l] < 1.1f) 
+    if (empSNRatio_[l] < 1.1f)
     {
       LogKit::LogFormatted(LogKit::Low,"\nThe empirical signal-to-noise ratio for angle stack %d is %7.1e. Ratios smaller than\n",l+1,empSNRatio_[l]);
       LogKit::LogFormatted(LogKit::Low," 1 are illegal and CRAVA has to stop. CRAVA was for some reason not able to estimate\n");
@@ -327,7 +329,7 @@ Crava::setupErrorCorrelation(const std::vector<Grid2D *> & noiseScale)
   Vario * angularCorr = modelAVOdynamic_->getAngularCorr();
 
   for(int i = 0; i < ntheta_; i++)
-    for(int j = 0; j < ntheta_; j++) 
+    for(int j = 0; j < ntheta_; j++)
       {
         float dTheta = modelAVOdynamic_->getAngle(i) - modelAVOdynamic_->getAngle(j);
         errThetaCov_[i][j] = static_cast<float>(sqrt(errorVariance_[i])
@@ -342,7 +344,7 @@ Crava::computeVariances(fftw_real     * corrT,
                         ModelSettings * modelSettings)
 {
   computeDataVariance();
-    
+
   setupErrorCorrelation(modelAVOdynamic_->getLocalNoiseScales());
 
   Wavelet1D ** errorSmooth = new Wavelet1D*[ntheta_];
@@ -360,18 +362,18 @@ Crava::computeVariances(fftw_real     * corrT,
     errorSmooth[i]->printToFile(fileName);
   }
 
-  // Compute variation in parameters 
+  // Compute variation in parameters
   for(int i=0 ; i < ntheta_ ; i++)
   {
-    paramVar[i]=0.0; 
-    for(int l=0; l<3 ; l++) 
-      for(int m=0 ; m<3 ; m++) 
+    paramVar[i]=0.0;
+    for(int l=0; l<3 ; l++)
+      for(int m=0 ; m<3 ; m++)
         paramVar[i] += parPointCov_[l][m]*A_[i][l]*A_[i][m];
   }
 
   // Compute variation in wavelet
   for(int l=0 ; l < ntheta_ ; l++)
-  {      
+  {
     WDCorrMVar[l] = computeWDCorrMVar(errorSmooth[l],corrT);
   }
 
@@ -389,8 +391,8 @@ Crava::computeVariances(fftw_real     * corrT,
       LogKit::LogFormatted(LogKit::Low,"Matching syntethic and empirical energies:\n");
       float gain = sqrt((errorVariance_[l]/modelVariance_[l])*(empSNRatio_[l] - 1.0f));
       seisWavelet_[l]->scale(gain);
-      if((modelSettings->getWaveletOutputFlag() & IO::GLOBAL_WAVELETS) > 0 || 
-          (modelSettings->getEstimationMode() && modelAVOdynamic_->getEstimateWavelet(l))) 
+      if((modelSettings->getWaveletOutputFlag() & IO::GLOBAL_WAVELETS) > 0 ||
+          (modelSettings->getEstimationMode() && modelAVOdynamic_->getEstimateWavelet(l)))
       {
         std::string angle    = NRLib::ToString(thetaDeg_[l], 1);
         std::string fileName = IO::PrefixWavelet() + std::string("EnergyMatched_") + angle;
@@ -407,6 +409,37 @@ Crava::computeVariances(fftw_real     * corrT,
   for(int i=0;i<ntheta_;i++)
     delete errorSmooth[i];
   delete [] errorSmooth;
+}
+
+void
+Crava::computeElasticImpedanceTimeCovariance(fftw_real* eiCovT,const float* corrT,float** Var0,float * A ) const
+{
+  double eiVar=0.0;
+  for(int l=0; l<3 ; l++)
+      for(int m=0 ; m<3 ; m++)
+        eiVar += A[l]*Var0[l][m]*A[m];
+
+  for(int k=0;k<nzp_;k++)
+    eiCovT[k]=static_cast<fftw_real>(eiVar*corrT[k]);
+}
+
+void
+Crava::computeReflectionCoefficientTimeCovariance(fftw_real* refCovT,const float* corrT,float** Var0,float * A ) const
+{
+  computeElasticImpedanceTimeCovariance(refCovT,corrT,Var0,A );
+
+  fftw_real first = refCovT[0];
+  fftw_real prev  = refCovT[nzp_-1];
+
+  for(int i=0;i<nzp_-1;i++)
+  {
+    fftw_real curr = refCovT[i];
+    fftw_real next = refCovT[i+1];
+    refCovT[i] = 2*curr-next-prev;
+    prev =curr;
+  }
+  refCovT[nzp_-1] = 2*refCovT[nzp_-1] -first-prev;
+
 }
 
 
@@ -478,7 +511,7 @@ Crava::checkScale(void)
       if(isOk==0)
         {
         isOk = 4;
-        scaleWarningText_ = scaleWarning4+" for angle "+NRLib::ToString(int(thetaDeg_[l]+0.5))+"\n"; 
+        scaleWarningText_ = scaleWarning4+" for angle "+NRLib::ToString(int(thetaDeg_[l]+0.5))+"\n";
       }
       else
       {
@@ -494,18 +527,20 @@ void
 Crava:: divideDataByScaleWavelet()
 {
   int i,j,k,l,flag;
-  float modW, modScaleW;
 
   fftw_real*    rData;
   fftw_real     tmp;
   fftw_complex* cData ;
+  fftw_complex* adjustmentFactor;
 
-  fftw_complex scaleWVal;
-  rfftwnd_plan plan1,plan2; 
 
-  rData  = static_cast<fftw_real*>(fftw_malloc(2*(nzp_/2+1)*sizeof(fftw_real))); 
+  rfftwnd_plan plan1,plan2;
+
+  rData  = static_cast<fftw_real*>(fftw_malloc(2*(nzp_/2+1)*sizeof(fftw_real)));
   cData  = reinterpret_cast<fftw_complex*>(rData);
-  Wavelet* localWavelet ;
+  adjustmentFactor= static_cast<fftw_complex*>(fftw_malloc(2*(nzp_/2+1)*sizeof(fftw_real)));
+
+  Wavelet1D* localWavelet ;
 
   flag   = FFTW_ESTIMATE | FFTW_IN_PLACE;
   plan1  = rfftwnd_create_plan(1,&nzp_,FFTW_REAL_TO_COMPLEX,flag);
@@ -519,14 +554,11 @@ Crava:: divideDataByScaleWavelet()
       seisData_[l]->writeStormFile(fileName, simbox_, false, true, true);
     }
 
-    seisWavelet_[l]->fft1DInPlace();
-    modW = seisWavelet_[l]->getNorm();
-    modW *= modW/float(nzp_);
-
     seisData_[l]->setAccessMode(FFTGrid::RANDOMACCESS);
     for(i=0; i < nxp_; i++)
       for(j=0; j< nyp_; j++)
       {
+        // gets data
         int iInd=i;
         int jInd=j;
 
@@ -541,13 +573,11 @@ Crava:: divideDataByScaleWavelet()
           iInd = nxp_-iInd;
         if(iInd >= nx_ )
           iInd = 2*nx_-iInd-1;
-        
+
         if(jInd > (nyp_+ny_)/2)
           jInd = nyp_-jInd;
         if(jInd >= ny_ )
-          jInd = 2*ny_-jInd-1; 
-
-        localWavelet = seisWavelet_[l]->getLocalWavelet1D(iInd,jInd);  // NBNB causes difference ??
+          jInd = 2*ny_-jInd-1;
 
         for(k=0;k<nzp_;k++)
         {
@@ -555,39 +585,29 @@ Crava:: divideDataByScaleWavelet()
 
           if(k > nz_)
           {
-            float dist = seisData_[l]->getDistToBoundary( k, nz_, nzp_);  
+            float dist = seisData_[l]->getDistToBoundary( k, nz_, nzp_);
             rData[k] *= std::max<float>(1-dist*dist,0);
           }
         }
+        rfftwnd_one_real_to_complex(plan1,rData ,cData); // fourier transform of data in profile (i,j)
+        // end get data
 
-        rfftwnd_one_real_to_complex(plan1,rData ,cData);
+        // Wavelet local properties
+        localWavelet = seisWavelet_[l]->getLocalWavelet1D(iInd,jInd);  //
+        double sfLoc     =(simbox_->getRelThick(i,j)*seisWavelet_[l]->getLocalStretch(iInd,jInd));// scale factor from thickness stretch + (local stretch when 3D wavelet)
 
-        double sf     = simbox_->getRelThick(i,j)*seisWavelet_[l]->getLocalStretch(iInd,jInd);
         double relT   = simbox_->getRelThick(i,j);
-
         double deltaF = static_cast<double>(nz_)*1000.0/(relT*simbox_->getlz()*static_cast<double>(nzp_));
+
+        computeAdjustmentFactor( adjustmentFactor, localWavelet , sfLoc, seisWavelet_[l],  correlations_,A_[l],static_cast<float>(errThetaCov_[l][l]));
+        delete localWavelet;
 
         for(k=0;k < (nzp_/2 +1);k++) // all complex values
         {
-          scaleWVal =  localWavelet->getCAmp(k,static_cast<float>(sf));
-          modScaleW =  scaleWVal.re * scaleWVal.re + scaleWVal.im * scaleWVal.im;
-          // note scaleWVal is acctually the value of the complex conjugate
-          // (see definition of getCAmp)         
-          // wVal      =  seisWavelet_[l]->getCAmp(k);
-          // modW      =  wVal.re * wVal.re + wVal.im * wVal.im;
-          //  Here we need only the modulus
-          // ( see definition of getCAmp)         
-          if((modW > 0) && (deltaF*k < highCut_ ) && (deltaF*k > lowCut_ )) //NBNB frequency cleaning
+          if( (deltaF*k < highCut_ ) && (deltaF*k > lowCut_ )) //NBNB frequency cleaning
           {
-            float tolFac= 0.10f;
-            if(modScaleW <  tolFac * modW)
-              modScaleW =   float(sqrt(modScaleW*tolFac * modW));
-            if(modScaleW == 0)
-              modScaleW = 1;
-            tmp           = cData[k].re * (scaleWVal.re/modScaleW) 
-              -cData[k].im * (scaleWVal.im/modScaleW);
-            cData[k].im   = cData[k].im * (scaleWVal.re/modScaleW) 
-              +cData[k].re * (scaleWVal.im/modScaleW);
+            tmp           = cData[k].re * adjustmentFactor[k].re - cData[k].im * adjustmentFactor[k].im;
+            cData[k].im   = cData[k].im * adjustmentFactor[k].re + cData[k].re * adjustmentFactor[k].im;
             cData[k].re   = tmp;
           }
           else
@@ -596,7 +616,6 @@ Crava:: divideDataByScaleWavelet()
             cData[k].re = 0.0f;
           }
         }
-        delete localWavelet;
         rfftwnd_one_complex_to_real(plan2 ,cData ,rData);
         for(k=0;k<nzp_;k++)
         {
@@ -628,10 +647,98 @@ Crava:: divideDataByScaleWavelet()
   }
 
   fftw_free(rData);
-  fftwnd_destroy_plan(plan1); 
-  fftwnd_destroy_plan(plan2); 
+  fftw_free(adjustmentFactor);
+  fftwnd_destroy_plan(plan1);
+  fftwnd_destroy_plan(plan2);
 }
 
+
+void
+Crava::computeAdjustmentFactor(fftw_complex* adjustmentFactor, Wavelet1D* wLocal, double sf, Wavelet * wGlobal, const Corr* corr, float * A, float errorVar)
+{
+// Computes the 1D inversion (of a single cube) with the local wavelet
+// and then multiply up with the values of the global wavelet
+// in order to adjust the data that inversion is ok with new data.
+  float tolFac= 0.05f;
+
+  // computes the time covariance for reflection coefficients rcCovT can be globaly stored
+  fftw_real* rcCovT;
+  int flag   = FFTW_ESTIMATE | FFTW_IN_PLACE;
+  rfftwnd_plan plan1  = rfftwnd_create_plan(1, &nzp_ ,FFTW_REAL_TO_COMPLEX,flag);
+  rcCovT = static_cast<fftw_real*>(fftw_malloc(2*(nzp_/2+1)*sizeof(fftw_real)));
+  fftw_complex * rcSpecIntens = reinterpret_cast<fftw_complex*>(rcCovT);
+  const float * corrT = corr->getPriorCorrTFiltered();
+  computeReflectionCoefficientTimeCovariance( rcCovT, corrT,corr->getPriorVar0(),A);
+  rfftwnd_one_real_to_complex(plan1,rcCovT ,rcSpecIntens); // operator FFT (not isometric)
+
+
+  // computes the time Covariance in the errorterm with wavelet Local can be more efficiently computed
+  Wavelet1D *errorSmooth  = new Wavelet1D(wLocal ,Wavelet::FIRSTORDERFORWARDDIFF);
+  Wavelet1D *errorSmooth2 = new Wavelet1D(errorSmooth, Wavelet::FIRSTORDERBACKWARDDIFF);
+  Wavelet1D *errorSmooth3 = new Wavelet1D(errorSmooth2,Wavelet::FIRSTORDERCENTRALDIFF);
+  errorSmooth->fft1DInPlace();
+  float normF1 = errorSmooth->findNormWithinFrequencyBand(lowCut_,highCut_);
+  errorSmooth->multiplyRAmpByConstant(1.0f/normF1);
+  errorSmooth3->fft1DInPlace();
+  float normF3 = errorSmooth3->findNormWithinFrequencyBand(lowCut_,highCut_);
+  errorSmooth3->multiplyRAmpByConstant(1.0f/normF3);
+  wLocal->fft1DInPlace();
+
+  // Wavelet global properties sets order of size
+  wGlobal->fft1DInPlace();
+  float modW = wGlobal->getNorm();// note the wavelet norm is in time domain. In frequency domain we have an additional factor float(nzp_);
+                                  // this is because we define the wavelet as an operator hence the fft is not norm preserving.
+  modW *= modW;
+  float maxfrequency = static_cast<float>((nzp_/2)*1000.0*nz_)/static_cast<float>(simbox_->getlz()*nzp_);
+  modW *= maxfrequency/static_cast<float>(highCut_); // this is the mean squared sum over relevant frequency band.(up to highCut_)
+                                               // Makes the problem less sensitive to the padding size
+
+  for(int k=0;k< (nzp_/2 +1);k++)
+  {
+    fftw_complex wLoc   = wLocal->getCAmp(k,static_cast<float>(sf)); // returns complex conjugate ...see below
+    float wLoc2          = (wLoc.re*wLoc.re+wLoc.im*wLoc.im);
+    fftw_complex wGlob  = wGlobal->getCAmp(k);
+    float wGlob2          = (wGlob.re*wGlob.re+wGlob.im*wGlob.im);
+
+    fftw_complex eSkLoc = wLocal->getCAmp(k,static_cast<float>(sf));
+    //fftw_complex eSkLoc = errorSmooth->getCAmp(k,static_cast<float>(sf));
+    float sizeESkLoc    = (eSkLoc.re*eSkLoc.re  +  eSkLoc.im*eSkLoc.im)/(wLocal->getNorm()*wLocal->getNorm());
+    eSkLoc              = errorSmooth3->getCAmp(k,static_cast<float>(sf));
+    sizeESkLoc         += eSkLoc.re*eSkLoc.re  +  eSkLoc.im*eSkLoc.im;
+
+    fftw_complex eSkGlob = wLocal->getCAmp(k);
+    //fftw_complex eSkLoc = errorSmooth->getCAmp(k);
+    float sizeESkGlob    = (eSkGlob.re*eSkGlob.re  +  eSkGlob.im*eSkGlob.im)/(wLocal->getNorm()*wLocal->getNorm());;
+    eSkGlob              = errorSmooth3->getCAmp(k);
+    sizeESkGlob         += eSkGlob.re*eSkGlob.re  +  eSkGlob.im*eSkGlob.im;
+
+    float sigma2Loc  = errorVar*(wnc_ +(1.0f-wnc_)*0.5f*sizeESkLoc);
+    float sigma2Glob = errorVar*(wnc_ +(1.0f-wnc_)*0.5f*sizeESkGlob);
+    float tau2   = fabs(static_cast<float>(rcSpecIntens[k].re));
+
+    float wGlob2Adj = wGlob2;
+    float wLoc2Adj = wLoc2;
+
+    if(wGlob2 <  tolFac * modW)
+      wGlob2Adj =   float(0.5f*(wGlob2 + tolFac * modW));
+    if(wLoc2 <  tolFac * modW)
+      wLoc2Adj =   float(0.5f*(wLoc2 + tolFac * modW));
+    if(wLoc2Adj <  tolFac * wGlob2Adj)
+    {
+      wLoc2Adj =   float(0.5f*(wLoc2 + tolFac * wGlob2Adj));
+      sigma2Loc *= wLoc2Adj/wLoc2;
+    }
+
+    adjustmentFactor[k].re = (wLoc.re/(tau2*wLoc2Adj+sigma2Loc )) / ( wGlob2Adj/(tau2*wGlob2+sigma2Glob)) ;
+    adjustmentFactor[k].im = (wLoc.im/(tau2*wLoc2Adj+sigma2Loc )) / ( wGlob2Adj/(tau2*wGlob2+sigma2Glob)) ; // this is where we use thatthe value we have is the complex conjugate (otherwise it should be minus)
+  }
+  // clean up
+  delete errorSmooth;
+  delete errorSmooth2;
+  delete errorSmooth3;
+  fftwnd_destroy_plan(plan1);
+  fftw_free(rcCovT);
+}
 
 void
 Crava::multiplyDataByScaleWaveletAndWriteToFile(const std::string & typeName)
@@ -642,9 +749,9 @@ Crava::multiplyDataByScaleWaveletAndWriteToFile(const std::string & typeName)
   fftw_real     tmp;
   fftw_complex* cData;
   fftw_complex scaleWVal;
-  rfftwnd_plan plan1,plan2; 
+  rfftwnd_plan plan1,plan2;
 
-  rData  = static_cast<fftw_real*>(fftw_malloc(2*(nzp_/2+1)*sizeof(fftw_real))); 
+  rData  = static_cast<fftw_real*>(fftw_malloc(2*(nzp_/2+1)*sizeof(fftw_real)));
   cData  = reinterpret_cast<fftw_complex*>(rData);
 
   flag   = FFTW_ESTIMATE | FFTW_IN_PLACE;
@@ -669,14 +776,14 @@ Crava::multiplyDataByScaleWaveletAndWriteToFile(const std::string & typeName)
         }
 
         rfftwnd_one_real_to_complex(plan1,rData ,cData);
-        localWavelet = seisWavelet_[l]->getLocalWavelet1D(i,j); 
+        localWavelet = seisWavelet_[l]->getLocalWavelet1D(i,j);
 
         for(k=0;k < (nzp_/2 +1);k++) // all complex values
         {
             scaleWVal    =  localWavelet->getCAmp(k,sf);    // NBNB change here
           //scaleWVal    =  localWavelet->getCAmp(k);
           // note scaleWVal is acctually the value of the complex conjugate
-          // (see definition of getCAmp)         
+          // (see definition of getCAmp)
           tmp           = cData[k].re * scaleWVal.re + cData[k].im * scaleWVal.im;
           cData[k].im   = cData[k].im * scaleWVal.re - cData[k].re * scaleWVal.im;
           cData[k].re   = tmp;
@@ -697,12 +804,12 @@ Crava::multiplyDataByScaleWaveletAndWriteToFile(const std::string & typeName)
   }
 
   fftw_free(rData);
-  fftwnd_destroy_plan(plan1); 
-  fftwnd_destroy_plan(plan2); 
+  fftwnd_destroy_plan(plan1);
+  fftwnd_destroy_plan(plan2);
 }
 
 
-int 
+int
 Crava::computePostMeanResidAndFFTCov()
 {
   LogKit::WriteHeader("Posterior model / Performing Inversion");
@@ -721,7 +828,7 @@ Crava::computePostMeanResidAndFFTCov()
   fftw_complex * ijkDataMean = new fftw_complex[ntheta_];
   fftw_complex * ijkRes      = new fftw_complex[ntheta_];
   fftw_complex * ijkMean     = new fftw_complex[3];
-  fftw_complex * ijkAns      = new fftw_complex[3]; 
+  fftw_complex * ijkAns      = new fftw_complex[3];
   fftw_complex   kD,kD3;
 
   fftw_complex**  K  = new fftw_complex*[ntheta_];
@@ -734,7 +841,7 @@ Crava::computePostMeanResidAndFFTCov()
 
   fftw_complex**  KScc  = new fftw_complex*[3]; // cc - complex conjugate (and transposed)
   for(i = 0; i < 3; i++)
-    KScc[i] = new fftw_complex[ntheta_];  
+    KScc[i] = new fftw_complex[ntheta_];
 
   fftw_complex**  parVar = new fftw_complex*[3];
   for(i = 0; i < 3; i++)
@@ -750,7 +857,7 @@ Crava::computePostMeanResidAndFFTCov()
 
   fftw_complex** reduceVar = new fftw_complex*[3];
   for(i = 0; i < 3; i++)
-    reduceVar[i]= new fftw_complex[3];  
+    reduceVar[i]= new fftw_complex[3];
 
   Wavelet1D * diff1Operator = new Wavelet1D(Wavelet::FIRSTORDERFORWARDDIFF,nz_,nzp_);
   Wavelet1D * diff2Operator = new Wavelet1D(diff1Operator,Wavelet::FIRSTORDERBACKWARDDIFF);
@@ -771,12 +878,12 @@ Crava::computePostMeanResidAndFFTCov()
     std::string angle = NRLib::ToString(thetaDeg_[l], 1);
     std::string fileName;
     seisData_[l]->setAccessMode(FFTGrid::READANDWRITE);
-    
+
     Wavelet1D* wavelet1D = seisWavelet_[l]->getWavelet1DForErrorNorm(); //
-    
+
     errorSmooth[l]  = new Wavelet1D(wavelet1D ,Wavelet::FIRSTORDERFORWARDDIFF);
     errorSmooth2[l] = new Wavelet1D(errorSmooth[l], Wavelet::FIRSTORDERBACKWARDDIFF);
-    errorSmooth3[l] = new Wavelet1D(errorSmooth2[l],Wavelet::FIRSTORDERCENTRALDIFF); 
+    errorSmooth3[l] = new Wavelet1D(errorSmooth2[l],Wavelet::FIRSTORDERCENTRALDIFF);
     fileName = std::string("ErrorSmooth_") + angle + IO::SuffixGeneralData();
     errorSmooth3[l]->printToFile(fileName);
     errorSmooth3[l]->fft1DInPlace();
@@ -788,11 +895,11 @@ Crava::computePostMeanResidAndFFTCov()
     fileName = std::string("FourierWavelet_") + angle + IO::SuffixGeneralData();
     wavelet1D->printToFile(fileName);
     delete wavelet1D;
-    delete errorSmooth[l];
-    delete errorSmooth2[l];  
+
+    delete errorSmooth2[l];
   }
 
-  delete[] errorSmooth;
+
   delete[] errorSmooth2;
 
   meanAlpha_->setAccessMode(FFTGrid::READANDWRITE);  //   Note
@@ -805,10 +912,10 @@ Crava::computePostMeanResidAndFFTCov()
   FFTGrid * postCrCovAlphaBeta = correlations_->getPostCrCovAlphaBeta();
   FFTGrid * postCrCovAlphaRho  = correlations_->getPostCrCovAlphaRho();
   FFTGrid * postCrCovBetaRho   = correlations_->getPostCrCovBetaRho();
-  
+
   correlations_->initializeAccess(); //Accessmodes for covariance grids
 
-  // Computes the posterior mean first, below the covariance is computed 
+  // Computes the posterior mean first  below the covariance is computed
   // To avoid to many grids in mind at the same time
   double priorVarVp,justfactor;
 
@@ -822,103 +929,109 @@ Crava::computePostMeanResidAndFFTCov()
   {
     seisWaveletForNorm[l]=seisWavelet_[l]->getWavelet1DForErrorNorm();
     seisWaveletForNorm[l]->fft1DInPlace();
+    if(simbox_->getIsConstantThick()) {
+      seisWavelet_[l]->fft1DInPlace();
+    }
   }
 
   LogKit::LogFormatted(LogKit::Low,"\nBuilding posterior distribution:");
   float monitorSize = std::max(1.0f, static_cast<float>(nzp_)*0.02f);
   float nextMonitor = monitorSize;
-  std::cout 
+  std::cout
     << "\n  0%       20%       40%       60%       80%      100%"
     << "\n  |    |    |    |    |    |    |    |    |    |    |  "
-    << "\n  ^"; 
+    << "\n  ^";
 
   for(k = 0; k < nzp_; k++)
-  {  
+  {
     realFrequency = static_cast<float>((nz_*1000.0f)/(simbox_->getlz()*nzp_)*std::min(k,nzp_-k)); // the physical frequency
-    kD = diff1Operator->getCAmp(k);                   // defines content of kD  
-      if( simbox_->getIsConstantThick() == true)
+    kD = diff1Operator->getCAmp(k);                      // defines content of kD
+    if(simbox_->getIsConstantThick())
+    {
+      // defines content of K=WDA
+      fillkW(k, kW, seisWavelet_);
+
+      lib_matrProdScalVecCpx(kD, kW, ntheta_);
+      lib_matrProdDiagCpxR(kW, A_, ntheta_, 3, K); // defines content of (WDA) K
+
+      // defines error-term multipliers
+      fillkWNorm(k,errMult1,seisWaveletForNorm);         // defines input of  (kWNorm) errMult1
+      fillkWNorm(k,errMult2,errorSmooth3);               // defines input of  (kWD3Norm) errMult2
+      lib_matrFillOnesVecCpx(errMult3,ntheta_);          // defines content of errMult3
+    }
+    else
+    {
+      kD3 = diff3Operator->getCAmp(k);                   // defines  kD3
+
+      // defines content of K = DA
+      lib_matrFillValueVecCpx(kD, errMult1, ntheta_);    // errMult1 used as dummy
+      lib_matrProdDiagCpxR(errMult1, A_, ntheta_, 3, K); // defines content of ( K = DA )
+
+      // defines error-term multipliers
+      lib_matrFillOnesVecCpx(errMult1,ntheta_);          // defines content of errMult1
+      for(l=0; l < ntheta_; l++)
       {
-        // defines content of K=WDA  
-        fillkW(k,errMult1);                                    // errMult1 used as dummy
-        lib_matrProdScalVecCpx(kD, errMult1, ntheta_);         // errMult1 used as dummy     
-        lib_matrProdDiagCpxR(errMult1, A_, ntheta_, 3, K);     // defines content of (WDA)     K  
-
-        // defines error-term multipliers  
-
-        fillkWNorm(k,errMult1,seisWaveletForNorm);               // defines input of  (kWNorm) errMult1
-        fillkWNorm(k,errMult2,errorSmooth3);               // defines input of  (kWD3Norm) errMult2
-        lib_matrFillOnesVecCpx(errMult3,ntheta_);          // defines content of errMult3   
-
+        errMult1[l].re /= seisWavelet_[l]->getNorm();    // defines content of errMult1
       }
-      else //simbox_->getIsConstantThick() == false
+
+      lib_matrFillValueVecCpx(kD3,errMult2,ntheta_);     // defines content of errMult2
+      for(l=0; l < ntheta_; l++)
       {
-        kD3 = diff3Operator->getCAmp(k);          // defines  kD3  
+        //float errorSmoothMult =  1.0f/errorSmooth3[l]->findNormWithinFrequencyBand(lowCut_,highCut_); // defines scaleFactor;
+        float errorSmoothMult =  1.0f/errorSmooth3[l]->getNorm(); // defines scaleFactor;
+        errMult2[l].re  *= errorSmoothMult; // defines content of errMult2
+        errMult2[l].im  *= errorSmoothMult; // defines content of errMult2
+      }
+      fillInverseAbskWRobust(k,errMult3,seisWaveletForNorm);// defines content of errMult3
+    }
 
-        // defines content of K = DA  
-        lib_matrFillValueVecCpx(kD, errMult1, ntheta_);      // errMult1 used as dummy     
-        lib_matrProdDiagCpxR(errMult1, A_, ntheta_, 3, K); // defines content of ( K = DA )   
+    for( j = 0; j < nyp_; j++) {
+      for( i = 0; i < cnxp; i++) {
+        ijkMean[0] = meanAlpha_->getNextComplex();
+        ijkMean[1] = meanBeta_ ->getNextComplex();
+        ijkMean[2] = meanRho_  ->getNextComplex();
 
-        // defines error-term multipliers  
-        lib_matrFillOnesVecCpx(errMult1,ntheta_);        // defines content of errMult1
-        for(l=0; l < ntheta_; l++)
-          errMult1[l].re /= seisWavelet_[l]->getNorm();  // defines content of errMult1
-
-        lib_matrFillValueVecCpx(kD3,errMult2,ntheta_);   // defines content of errMult2
-        for(l=0; l < ntheta_; l++) 
+        for(l = 0; l < ntheta_; l++ )
         {
-          errMult2[l].re  /= errorSmooth3[l]->getNorm(); // defines content of errMult2
-          errMult2[l].im  /= errorSmooth3[l]->getNorm(); // defines content of errMult2
+          ijkData[l] = seisData_[l]->getNextComplex();
+          ijkRes[l]  = ijkData[l];
         }
-        fillInverseAbskWRobust(k,errMult3,seisWaveletForNorm);// defines content of errMult3
-      } //simbox_->getIsConstantThick() 
-  
-
-      for( j = 0; j < nyp_; j++) {
-        for( i = 0; i < cnxp; i++) {  
-          ijkMean[0] = meanAlpha_->getNextComplex();
-          ijkMean[1] = meanBeta_ ->getNextComplex();
-          ijkMean[2] = meanRho_  ->getNextComplex(); 
-
-          for(l = 0; l < ntheta_; l++ ){
-            ijkData[l] = seisData_[l]->getNextComplex();
-            ijkRes[l]  = ijkData[l];
-          }  
 
           correlations_->getNextParameterCovariance(parVar);
 
           bool invert_frequency = realFrequency > lowCut_*simbox_->getMinRelThick() &&  realFrequency < highCut_;
-           
-          priorVarVp = parVar[0][0].re; 
+
+          priorVarVp = parVar[0][0].re;
 
           correlations_->getNextErrorVariance(errVar, errMult1, errMult2, errMult3, ntheta_, wnc_, errThetaCov_, invert_frequency);
 
           if(invert_frequency){
-            lib_matrProdCpx(K, parVar , ntheta_, 3 ,3, KS);              //  KS is defined here  
-            lib_matrProdAdjointCpx(KS, K, ntheta_, 3 ,ntheta_, margVar); // margVar = (K)S(K)' is defined here      
-            lib_matrAddMatCpx(errVar, ntheta_,ntheta_, margVar);         // errVar  is added to margVar = (WDA)S(WDA)'  + errVar 
+            lib_matrProdCpx(K, parVar , ntheta_, 3 ,3, KS);              //  KS is defined here
+            lib_matrProdAdjointCpx(KS, K, ntheta_, 3 ,ntheta_, margVar); // margVar = (K)S(K)' is defined here
+            lib_matrAddMatCpx(errVar, ntheta_,ntheta_, margVar);         // errVar  is added to margVar = (WDA)S(WDA)'  + errVar
 
             cholFlag=lib_matrCholCpx(ntheta_,margVar);                   // Choleskey factor of margVar is Defined
 
             if(cholFlag==0)
-            { // then it is ok else posterior is identical to prior              
+            { // then it is ok else posterior is identical to prior
 
-              lib_matrAdjoint(KS,ntheta_,3,KScc);                        //  WDAScc is adjoint of WDAS   
-              lib_matrAXeqBMatCpx(ntheta_, margVar, KS, 3);              // redefines WDAS                 
+              lib_matrAdjoint(KS,ntheta_,3,KScc);                        //  WDAScc is adjoint of WDAS
+              lib_matrAXeqBMatCpx(ntheta_, margVar, KS, 3);              // redefines WDAS
               lib_matrProdCpx(KScc,KS,3,ntheta_,3,reduceVar);            // defines reduceVar
               //double hj=1000000.0;
               //if(reduceVar[0][0].im!=0)
               // hj = MAXIM(reduceVar[0][0].re/reduceVar[0][0].im,-reduceVar[0][0].re/reduceVar[0][0].im); //NBNB DEBUG
               lib_matrSubtMatCpx(reduceVar,3,3,parVar);                  // redefines parVar as the posterior solution
 
-              lib_matrProdMatVecCpx(K,ijkMean, ntheta_, 3, ijkDataMean); //  defines content of ijkDataMean      
-              lib_matrSubtVecCpx(ijkDataMean, ntheta_, ijkData);         //  redefines content of ijkData   
+              lib_matrProdMatVecCpx(K,ijkMean, ntheta_, 3, ijkDataMean); //  defines content of ijkDataMean
+              lib_matrSubtVecCpx(ijkDataMean, ntheta_, ijkData);         //  redefines content of ijkData
 
               lib_matrProdAdjointMatVecCpx(KS,ijkData,3,ntheta_,ijkAns); // defines ijkAns
 
-              lib_matrAddVecCpx(ijkAns, 3,ijkMean);                      // redefines ijkMean 
+              lib_matrAddVecCpx(ijkAns, 3,ijkMean);                      // redefines ijkMean
               lib_matrProdMatVecCpx(K,ijkMean, ntheta_, 3, ijkData);     // redefines ijkData
-              lib_matrSubtVecCpx(ijkData, ntheta_,ijkRes);               // redefines ijkRes      
-            } 
+              lib_matrSubtVecCpx(ijkData, ntheta_,ijkRes);               // redefines ijkRes
+            }
 
             // quality control DEBUG
             if(priorVarVp*4 < ijkAns[0].re*ijkAns[0].re + ijkAns[0].re*ijkAns[0].re)
@@ -935,15 +1048,15 @@ Crava::computePostMeanResidAndFFTCov()
           postCovRho  ->setNextComplex(parVar[2][2]);
           postCrCovAlphaBeta->setNextComplex(parVar[0][1]);
           postCrCovAlphaRho ->setNextComplex(parVar[0][2]);
-          postCrCovBetaRho  ->setNextComplex(parVar[1][2]); 
+          postCrCovBetaRho  ->setNextComplex(parVar[1][2]);
 
           for(l=0;l<ntheta_;l++)
             seisData_[l]->setNextComplex(ijkRes[l]);
       }
     }
     // Log progress
-    if (k+1 >= static_cast<int>(nextMonitor)) 
-    { 
+    if (k+1 >= static_cast<int>(nextMonitor))
+    {
       nextMonitor += monitorSize;
       std::cout << "^";
       fflush(stdout);
@@ -959,15 +1072,15 @@ Crava::computePostMeanResidAndFFTCov()
   meanRho_        = NULL; // the content is taken care of by  postRho_
 
   postAlpha_->endAccess();
-  postBeta_->endAccess(); 
-  postRho_->endAccess();  
+  postBeta_->endAccess();
+  postRho_->endAccess();
 
   postCovAlpha->endAccess();
-  postCovBeta->endAccess(); 
+  postCovBeta->endAccess();
   postCovRho->endAccess();
   postCrCovAlphaBeta->endAccess();
   postCrCovAlphaRho->endAccess();
-  postCrCovBetaRho->endAccess();  
+  postCrCovBetaRho->endAccess();
   correlations_->terminateAccess();
 
   postAlpha_->invFFTInPlace();
@@ -1025,7 +1138,7 @@ Crava::computePostMeanResidAndFFTCov()
   }
 
   if(writePrediction_ == true)
-    ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, postAlpha_, postBeta_, postRho_, 
+    ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, postAlpha_, postBeta_, postRho_,
     outputGridsElastic_, fileGrid_, -1, false);
 
   writeBWPredicted();
@@ -1036,7 +1149,7 @@ Crava::computePostMeanResidAndFFTCov()
   delete [] errMult2;
   delete [] errMult3;
   delete [] ijkData;
-  delete [] ijkDataMean; 
+  delete [] ijkDataMean;
   delete [] ijkRes;
   delete [] ijkMean ;
   delete [] ijkAns;
@@ -1050,7 +1163,8 @@ Crava::computePostMeanResidAndFFTCov()
     delete[]  KS[i];
     delete[]  margVar[i] ;
     delete[] errVar[i] ;
-    delete errorSmooth3[i];   
+    delete errorSmooth3[i];
+    delete errorSmooth[i];
     delete seisWaveletForNorm[i];
   }
 
@@ -1059,6 +1173,7 @@ Crava::computePostMeanResidAndFFTCov()
   delete[] margVar;
   delete[] errVar  ;
   delete[] errorSmooth3;
+  delete[] errorSmooth;
   delete[] seisWaveletForNorm;
 
   for(i = 0; i < 3; i++)
@@ -1068,7 +1183,7 @@ Crava::computePostMeanResidAndFFTCov()
     delete[] reduceVar[i];
   }
   delete[] KScc;
-  delete[] parVar;  
+  delete[] parVar;
   delete[] reduceVar;
 
   Timings::setTimeInversion(wall,cpu);
@@ -1081,16 +1196,16 @@ Crava::doPredictionKriging()
   if(writePrediction_ == true) { //No need to do this if output not requested.
     double wall2=0.0, cpu2=0.0;
     TimeKit::getTime(wall2,cpu2);
-    doPostKriging(*postAlpha_, *postBeta_, *postRho_); 
+    doPostKriging(*postAlpha_, *postBeta_, *postRho_);
     Timings::setTimeKrigingPred(wall2,cpu2);
-    ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, postAlpha_, postBeta_, postRho_, 
+    ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, postAlpha_, postBeta_, postRho_,
                                      outputGridsElastic_, fileGrid_, -1, true);
   }
 }
 
 int
 Crava::simulate(RandomGen * randomGen)
-{   
+{
   LogKit::WriteHeader("Simulating from posterior model");
 
   double wall=0.0, cpu=0.0;
@@ -1098,7 +1213,7 @@ Crava::simulate(RandomGen * randomGen)
 
   if(nSim_>0)
   {
-    bool kriging = (krigingParameter_ > 0); 
+    bool kriging = (krigingParameter_ > 0);
     FFTGrid * postCovAlpha       = correlations_->getPostCovAlpha();
     FFTGrid * postCovBeta        = correlations_->getPostCovBeta();
     FFTGrid * postCovRho         = correlations_->getPostCovRho();
@@ -1122,8 +1237,8 @@ Crava::simulate(RandomGen * randomGen)
 
     ijkPostCov = new fftw_complex*[3];
     for(l=0;l<3;l++)
-      ijkPostCov[l]=new fftw_complex[3]; 
-    
+      ijkPostCov[l]=new fftw_complex[3];
+
     ijkSeed = new fftw_complex[3];
 
     seed0 =  createFFTGrid();
@@ -1139,19 +1254,19 @@ Crava::simulate(RandomGen * randomGen)
     {
       // time(&timestart);
 
-      seed0->fillInComplexNoise(randomGen);    
-      seed1->fillInComplexNoise(randomGen);      
+      seed0->fillInComplexNoise(randomGen);
+      seed1->fillInComplexNoise(randomGen);
       seed2->fillInComplexNoise(randomGen);
 
-      postCovAlpha      ->setAccessMode(FFTGrid::READ);  
-      postCovBeta       ->setAccessMode(FFTGrid::READ);  
-      postCovRho        ->setAccessMode(FFTGrid::READ);  
-      postCrCovAlphaBeta->setAccessMode(FFTGrid::READ);  
-      postCrCovAlphaRho ->setAccessMode(FFTGrid::READ);  
-      postCrCovBetaRho  ->setAccessMode(FFTGrid::READ);  
-      seed0 ->setAccessMode(FFTGrid::READANDWRITE); 
-      seed1 ->setAccessMode(FFTGrid::READANDWRITE); 
-      seed2 ->setAccessMode(FFTGrid::READANDWRITE); 
+      postCovAlpha      ->setAccessMode(FFTGrid::READ);
+      postCovBeta       ->setAccessMode(FFTGrid::READ);
+      postCovRho        ->setAccessMode(FFTGrid::READ);
+      postCrCovAlphaBeta->setAccessMode(FFTGrid::READ);
+      postCrCovAlphaRho ->setAccessMode(FFTGrid::READ);
+      postCrCovBetaRho  ->setAccessMode(FFTGrid::READ);
+      seed0 ->setAccessMode(FFTGrid::READANDWRITE);
+      seed1 ->setAccessMode(FFTGrid::READANDWRITE);
+      seed2 ->setAccessMode(FFTGrid::READANDWRITE);
 
       int cnxp=nxp_/2+1;
       int cholFlag;
@@ -1163,7 +1278,7 @@ Crava::simulate(RandomGen * randomGen)
             ijkPostCov[1][1] = postCovBeta       ->getNextComplex();
             ijkPostCov[2][2] = postCovRho        ->getNextComplex();
             ijkPostCov[0][1] = postCrCovAlphaBeta->getNextComplex();
-            ijkPostCov[0][2] = postCrCovAlphaRho ->getNextComplex(); 
+            ijkPostCov[0][2] = postCrCovAlphaRho ->getNextComplex();
             ijkPostCov[1][2] = postCrCovBetaRho  ->getNextComplex();
 
             ijkPostCov[1][0].re =  ijkPostCov[0][1].re;
@@ -1183,25 +1298,25 @@ Crava::simulate(RandomGen * randomGen)
               lib_matrProdCholVec(3,ijkPostCov,ijkSeed); // write over ijkSeed
             }
             else
-            {  
+            {
               for(l=0; l< 3;l++)
               {
-                ijkSeed[l].re =0.0; 
+                ijkSeed[l].re =0.0;
                 ijkSeed[l].im = 0.0;
               }
 
             }
             seed0->setNextComplex(ijkSeed[0]);
             seed1->setNextComplex(ijkSeed[1]);
-            seed2->setNextComplex(ijkSeed[2]);      
+            seed2->setNextComplex(ijkSeed[2]);
           }
 
-          postCovAlpha->endAccess();  //         
-          postCovBeta->endAccess();   // 
+          postCovAlpha->endAccess();  //
+          postCovBeta->endAccess();   //
           postCovRho->endAccess();
           postCrCovAlphaBeta->endAccess();
           postCrCovAlphaRho->endAccess();
-          postCrCovBetaRho->endAccess(); 
+          postCrCovBetaRho->endAccess();
           seed0->endAccess();
           seed1->endAccess();
           seed2->endAccess();
@@ -1212,13 +1327,13 @@ Crava::simulate(RandomGen * randomGen)
 
           seed0->setAccessMode(FFTGrid::RANDOMACCESS);
           seed0->invFFTInPlace();
-         
+
           seed1->setAccessMode(FFTGrid::RANDOMACCESS);
-          seed1->invFFTInPlace(); 
-         
+          seed1->invFFTInPlace();
+
 
           seed2->setAccessMode(FFTGrid::RANDOMACCESS);
-          seed2->invFFTInPlace(); 
+          seed2->invFFTInPlace();
 
           if(modelAVOdynamic_->getUseLocalNoise()==true)
           {
@@ -1248,17 +1363,17 @@ Crava::simulate(RandomGen * randomGen)
           seed2->add(postRho_);
           seed2->endAccess();
 
-          if(kriging == true) { 
+          if(kriging == true) {
             double wall2=0.0, cpu2=0.0;
             TimeKit::getTime(wall2,cpu2);
-            doPostKriging(*seed0, *seed1, *seed2); 
+            doPostKriging(*seed0, *seed1, *seed2);
             Timings::addToTimeKrigingSim(wall2,cpu2);
           }
           ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, seed0, seed1, seed2,
                                            outputGridsElastic_, fileGrid_, simNr, kriging);
           // time(&timeend);
           // printf("Back transform and write of simulation in %ld seconds \n",timeend-timestart);
-    } 
+    }
 
     delete seed0;
     delete seed1;
@@ -1274,17 +1389,17 @@ Crava::simulate(RandomGen * randomGen)
   return(0);
 }
 
-void 
-Crava::doPostKriging(FFTGrid & postAlpha, 
-                     FFTGrid & postBeta, 
-                     FFTGrid & postRho) 
+void
+Crava::doPostKriging(FFTGrid & postAlpha,
+                     FFTGrid & postBeta,
+                     FFTGrid & postRho)
 {
 
   LogKit::WriteHeader("Kriging to wells");
 
   CovGridSeparated covGridAlpha      (*correlations_->getPostCovAlpha()      );
   CovGridSeparated covGridBeta       (*correlations_->getPostCovBeta()       );
-  CovGridSeparated covGridRho        (*correlations_->getPostCovRho()        ); 
+  CovGridSeparated covGridRho        (*correlations_->getPostCovRho()        );
   CovGridSeparated covGridCrAlphaBeta(*correlations_->getPostCrCovAlphaBeta());
   CovGridSeparated covGridCrAlphaRho (*correlations_->getPostCrCovAlphaRho() );
   CovGridSeparated covGridCrBetaRho  (*correlations_->getPostCrCovBetaRho()  );
@@ -1294,11 +1409,11 @@ Crava::doPostKriging(FFTGrid & postAlpha,
   std::string baseName = "Raw_" + IO::PrefixKrigingData() + IO::SuffixGeneralData();
   std::string fileName = IO::makeFullFileName(IO::PathToInversionResults(), baseName);
   kd.writeToFile(fileName);
-  
-  CKrigingAdmin pKriging(*simbox_, 
+
+  CKrigingAdmin pKriging(*simbox_,
                          kd.getData(), kd.getNumberOfData(),
-                         covGridAlpha, covGridBeta, covGridRho, 
-                         covGridCrAlphaBeta, covGridCrAlphaRho, covGridCrBetaRho, 
+                         covGridAlpha, covGridBeta, covGridRho,
+                         covGridCrAlphaBeta, covGridCrAlphaRho, covGridCrBetaRho,
                          krigingParameter_);
 
   pKriging.KrigAll(postAlpha, postBeta, postRho, false, modelSettings_->getDebugFlag(), modelSettings_->getDoSmoothKriging());
@@ -1325,7 +1440,7 @@ Crava::computeSeismicImpedance(FFTGrid * alpha, FFTGrid * beta, FFTGrid * rho, i
         imp += alpha->getNextReal()*A_[angle][0];
         imp += beta->getNextReal()*A_[angle][1];
         imp += rho->getNextReal()*A_[angle][2];
-        
+
         impedance->setNextReal(imp);
       }
     }
@@ -1338,10 +1453,10 @@ Crava::computeSeismicImpedance(FFTGrid * alpha, FFTGrid * beta, FFTGrid * rho, i
 }
 
 
-void 
+void
 Crava::computeSyntSeismic(FFTGrid * alpha, FFTGrid * beta, FFTGrid * rho)
 {
-  LogKit::WriteHeader("Compute Synthetic Seismic");
+  LogKit::WriteHeader("Compute Synthetic Seismic and Residuals");
 
   bool fftDomain = alpha->getIsTransformed();
   if(fftDomain == true) {
@@ -1371,12 +1486,12 @@ Crava::computeSyntSeismic(FFTGrid * alpha, FFTGrid * beta, FFTGrid * rho)
         Wavelet1D resultVec(&impVec, Wavelet::FIRSTORDERFORWARDDIFF);
         resultVec.fft1DInPlace();
         Wavelet1D * localWavelet = seisWavelet_[l]->getLocalWavelet1D(i,j);
-       
+
         float sf = static_cast<float>(simbox_->getRelThick(i, j))*seisWavelet_[l]->getLocalStretch(i,j);
 
         for(int k=0;k<(nzp_/2 +1);k++) {
           fftw_complex r = resultVec.getCAmp(k);
-          fftw_complex w = localWavelet->getCAmp(k,static_cast<float>(sf));
+          fftw_complex w = localWavelet->getCAmp(k,static_cast<float>(sf));// returns complex conjugate
           fftw_complex s;
           s.re = r.re*w.re+r.im*w.im; //Use complex conjugate of w
           s.im = -r.re*w.im+r.im*w.re;
@@ -1395,7 +1510,33 @@ Crava::computeSyntSeismic(FFTGrid * alpha, FFTGrid * beta, FFTGrid * rho)
     std::string angle     = NRLib::ToString(thetaDeg_[l],1);
     std::string sgriLabel = " Synthetic seismic for incidence angle "+angle;
     std::string fileName  = IO::PrefixSyntheticSeismicData() + angle;
-    imp->writeFile(fileName, IO::PathToSeismicData(), simbox_,sgriLabel);
+    if(((modelSettings_->getOutputGridsSeismic() & IO::SYNTHETIC_SEISMIC_DATA) > 0) ||
+      (modelSettings_->getForwardModeling() == true))
+      imp->writeFile(fileName, IO::PathToSeismicData(), simbox_,sgriLabel);
+    if((modelSettings_->getOutputGridsSeismic() & IO::SYNTHETIC_RESIDUAL) > 0) {
+      FFTGrid seis(nx_, ny_, nz_, nxp_, nyp_, nzp_);
+      std::string fileName = IO::FileTemporarySeismic()+NRLib::ToString(l)+IO::SuffixCrava();
+      std::string errText;
+      seis.readCravaFile(fileName, errText);
+      if(errText == "") {
+        seis.setAccessMode(FFTGrid::RANDOMACCESS);
+        for(int k=0;k<nz_;k++) {
+          for(int j=0;j<ny_;j++) {
+            for(int i=0;i<nx_;i++) {
+              float residual = seis.getRealValue(i, j, k) - imp->getRealValue(i,j,k);
+              imp->setRealValue(i, j, k, residual);
+            }
+          }
+        }
+        sgriLabel = "Residual computed from synthetic seismic for incidence angle "+angle;
+        fileName = IO::PrefixSyntheticResiduals() + angle;
+        imp->writeFile(fileName, IO::PathToSeismicData(), simbox_,sgriLabel);
+      }
+      else {
+        errText += "\nFailed to read temporary stored seismic data.\n";
+        LogKit::LogMessage(LogKit::Error,errText);
+      }
+    }
     delete imp;
   }
 
@@ -1407,7 +1548,7 @@ Crava::computeSyntSeismic(FFTGrid * alpha, FFTGrid * beta, FFTGrid * rho)
 }
 
 
-float  
+float
 Crava::computeWDCorrMVar (Wavelet1D* WD ,fftw_real* corrT)
 {
   float var = 0.0;
@@ -1422,70 +1563,25 @@ Crava::computeWDCorrMVar (Wavelet1D* WD ,fftw_real* corrT)
     return var;
 }
 
-/*
-float  
-Crava::computeWDCorrMVar (Wavelet* WD)
-{
-  float var = 0.0;
-  int cnxp = nxp_/2 + 1;
-  
-  int endX;
-  if (nxp_/2 == (nxp_+1)/2) //nxp_ even
-    endX = cnxp-1;
-  else 
-    endX = cnxp;
-
-  FFTGrid * parSpatialCorr = correlations_->getPostCovAlpha(); // Stored in postCovAlpha
-  parSpatialCorr->setAccessMode(FFTGrid::READANDWRITE); 
-  for(int k=0;k<nzp_;k++) {
-    for(int j=0;j<nyp_;j++) {
-      fftw_complex lambdaTmp = parSpatialCorr->getNextComplex();
-      float ijkLambda = sqrt(lambdaTmp.re * lambdaTmp.re);
-      fftw_complex wdTmp = WD->getCAmp(k,j,0);
-      float ijkWD = (wdTmp.re * wdTmp.re) + (wdTmp.im * wdTmp.im);
-      var += ijkLambda * ijkWD;
-      for (int i=1;i<endX;i++) {
-        lambdaTmp = parSpatialCorr->getNextComplex();
-        ijkLambda = sqrt(lambdaTmp.re * lambdaTmp.re);
-        wdTmp = WD->getCAmp(k,j,i);
-        ijkWD = (wdTmp.re * wdTmp.re) + (wdTmp.im * wdTmp.im);
-        var += 2.0f * ijkLambda * ijkWD;
-      }
-      if (endX == cnxp-1) { //nxp_ even, takes the last element once
-        lambdaTmp = parSpatialCorr->getNextComplex();
-        ijkLambda = sqrt(lambdaTmp.re * lambdaTmp.re);
-        wdTmp = WD->getCAmp(k,j,cnxp-1);
-        ijkWD = (wdTmp.re * wdTmp.re) + (wdTmp.im * wdTmp.im);
-        var += ijkLambda * ijkWD;
-      }
-    }
-  }
-  var /= static_cast<float>(nxp_*nyp_*nzp_);
-  parSpatialCorr->endAccess();
-  return var;
-}
-*/
 
 void
-Crava::fillkW(int k, fftw_complex* kW )
+Crava::fillkW(int k, fftw_complex* kW, Wavelet** seisWavelet)
+{
+  for(int l = 0; l < ntheta_; l++)
+  {
+    kW[l].re  =  float( seisWavelet[l]->getCAmp(k).re );
+    kW[l].im  = -float( seisWavelet[l]->getCAmp(k).im ); // adjust for complex conjugate in getCAmp(k)
+  }
+}
+
+void
+Crava::fillkWNorm(int k, fftw_complex* kWNorm, Wavelet1D** wavelet )
 {
   int l;
   for(l = 0; l < ntheta_; l++)
   {
-    kW[l].re  = float( seisWavelet_[l]->getCAmp(k).re );// 
-    kW[l].im  = float( seisWavelet_[l]->getCAmp(k).im );// 
-  }
-
-}
-
-void
-Crava::fillkWNorm(int k, fftw_complex* kWNorm,Wavelet1D** wavelet )
-{
-  int l;
-  for(l = 0; l < ntheta_; l++)
-  {
-    kWNorm[l].re   = float( wavelet[l]->getCAmp(k).re/wavelet[l]->getNorm());
-    kWNorm[l].im   = float( wavelet[l]->getCAmp(k).im/wavelet[l]->getNorm());
+    kWNorm[l].re   =  float( wavelet[l]->getCAmp(k).re/wavelet[l]->getNorm());
+    kWNorm[l].im   = -float( wavelet[l]->getCAmp(k).im/wavelet[l]->getNorm()); // // adjust for complex conjugate in getCAmp(k)
   }
 }
 
@@ -1508,7 +1604,7 @@ Crava::fillInverseAbskWRobust(int k, fftw_complex* invkW ,Wavelet1D** seisWavele
     if(maxMod > 0.0)
     {
       invkW[l].re = float( 1.0/sqrt(maxMod) );
-      invkW[l].im = 0.0f;    
+      invkW[l].im = 0.0f;
     }
     else
     {
@@ -1519,7 +1615,7 @@ Crava::fillInverseAbskWRobust(int k, fftw_complex* invkW ,Wavelet1D** seisWavele
 }
 
 
-FFTGrid*            
+FFTGrid*
 Crava::createFFTGrid()
 {
   FFTGrid* fftGrid;
@@ -1532,22 +1628,22 @@ Crava::createFFTGrid()
   return(fftGrid);
 }
 
-FFTGrid*            
+FFTGrid*
 Crava::copyFFTGrid(FFTGrid * fftGridOld)
 {
   FFTGrid* fftGrid;
   if(fileGrid_)
-    fftGrid =  new FFTFileGrid(reinterpret_cast<FFTFileGrid*>(fftGridOld)); 
+    fftGrid =  new FFTFileGrid(reinterpret_cast<FFTFileGrid*>(fftGridOld));
   else
-    fftGrid =  new FFTGrid(fftGridOld); 
+    fftGrid =  new FFTGrid(fftGridOld);
   return(fftGrid);
 }
 
 
-FFTFileGrid*            
+FFTFileGrid*
 Crava::copyFFTGrid(FFTFileGrid * fftGridOld)
 {
-  FFTFileGrid* fftGrid; 
+  FFTFileGrid* fftGrid;
   fftGrid =  new FFTFileGrid(fftGridOld);
   return(fftGrid);
 }
@@ -1576,7 +1672,7 @@ Crava::printEnergyToScreen()
 }
 
 
-void 
+void
 Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
 {
   ModelSettings * modelSettings = modelSettings_;
@@ -1587,18 +1683,18 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
 
     double wall=0.0, cpu=0.0;
     TimeKit::getTime(wall,cpu);
-    
+
     int nfac = modelSettings->getNumberOfFacies();
-    
-    LogKit::LogFormatted(LogKit::Low,"\nPrior facies probabilities:\n");
-    LogKit::LogFormatted(LogKit::Low,"\n");
-    LogKit::LogFormatted(LogKit::Low,"Facies         Probability\n");
-    LogKit::LogFormatted(LogKit::Low,"--------------------------\n");
-    const float * priorFacies = modelAVOstatic_->getPriorFacies();
-    for(int i=0 ; i<nfac; i++) {
-      LogKit::LogFormatted(LogKit::Low,"%-15s %10.4f\n",modelSettings->getFaciesName(i).c_str(),priorFacies[i]);
+    if(modelAVOstatic_->getPriorFacies() != NULL){
+      LogKit::LogFormatted(LogKit::Low,"\nPrior facies probabilities:\n");
+      LogKit::LogFormatted(LogKit::Low,"\n");
+      LogKit::LogFormatted(LogKit::Low,"Facies         Probability\n");
+      LogKit::LogFormatted(LogKit::Low,"--------------------------\n");
+      const float * priorFacies = modelAVOstatic_->getPriorFacies();
+      for(int i=0 ; i<nfac; i++) {
+        LogKit::LogFormatted(LogKit::Low,"%-15s %10.4f\n",modelSettings->getFaciesName(i).c_str(),priorFacies[i]);
+      }
     }
-    
     if (simbox_->getdz() > 4.01f) { // Require this density for estimation of facies probabilities
       LogKit::LogFormatted(LogKit::Low,"\nWARNING: The minimum sampling density is lower than 4.0. The FACIES PROBABILITIES\n");
       LogKit::LogFormatted(LogKit::Low,"         generated by CRAVA are not reliable. To get more reliable probabilities    \n");
@@ -1647,17 +1743,17 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
                               meanBeta2_,
                               meanRho2_,
                               nfac,
-                              modelSettings->getPundef(), 
-                              modelAVOstatic_->getPriorFacies(), 
+                              modelSettings->getPundef(),
+                              modelAVOstatic_->getPriorFacies(),
                               modelAVOstatic_->getPriorFaciesCubes(),
                               filteredlogs->getSigmae(),
                               useFilter,
-                              const_cast<const WellData **>(wells_), 
+                              const_cast<const WellData **>(wells_),
                               nWells_,
                               modelAVOstatic_->getFaciesEstimInterval(),
                               simbox_->getdz(),
                               true,
-                              modelSettings->getNoVsFaciesProb(), 
+                              modelSettings->getNoVsFaciesProb(),
                               this,
                               modelAVOdynamic_->getLocalNoiseScales(),
                               modelSettings_,
@@ -1672,25 +1768,25 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
                               postBeta_,
                               postRho_,
                               nfac,
-                              modelSettings->getPundef(), 
-                              modelAVOstatic_->getPriorFacies(), 
+                              modelSettings->getPundef(),
+                              modelAVOstatic_->getPriorFacies(),
                               modelAVOstatic_->getPriorFaciesCubes(),
                               filteredlogs->getSigmae(),
                               useFilter,
-                              const_cast<const WellData **>(wells_), 
+                              const_cast<const WellData **>(wells_),
                               nWells_,
                               modelAVOstatic_->getFaciesEstimInterval(),
                               simbox_->getdz(),
                               false,
-                              modelSettings->getNoVsFaciesProb(), 
+                              modelSettings->getNoVsFaciesProb(),
                               this,
                               modelAVOdynamic_->getLocalNoiseScales(),
                               modelSettings_,
                               likelihood);
       baseName += "Absolute_";
     }
-    fprob_->calculateConditionalFaciesProb(wells_, 
-                                           nWells_, 
+    fprob_->calculateConditionalFaciesProb(wells_,
+                                           nWells_,
                                            modelAVOstatic_->getFaciesEstimInterval(),
                                            modelSettings->getFaciesNames(),
                                            simbox_->getdz());
@@ -1711,7 +1807,7 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
 
     fprob_->calculateFaciesProbGeomodel(modelAVOstatic_->getPriorFacies(),
                                         modelAVOstatic_->getPriorFaciesCubes());
-    
+
     if (modelSettings->getOutputGridsOther() & IO::FACIESPROB){
       for(int i=0;i<nfac;i++)
       {
@@ -1722,26 +1818,26 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
     }
     fprob_->writeBWFaciesProb(wells_, nWells_);
     std::vector<double> pValue = fprob_->calculateChiSquareTest(wells_, nWells_, modelAVOstatic_->getFaciesEstimInterval());
-    
+
     if (modelSettings->getOutputGridsOther() & IO::SEISMIC_QUALITY_GRID)
       QualityGrid qualityGrid(pValue, wells_, simbox_, modelSettings, modelGeneral_);
 
     if(likelihood != NULL) {
       for(int i=0;i<nfac;i++) {
-        FFTGrid * grid = fprob_->createLHCube(likelihood, i, 
+        FFTGrid * grid = fprob_->createLHCube(likelihood, i,
                                               modelAVOstatic_->getPriorFacies(), modelAVOstatic_->getPriorFaciesCubes());
         std::string fileName = IO::PrefixLikelihood() + modelSettings->getFaciesName(i);
         ParameterOutput::writeToFile(simbox_, modelGeneral_, modelSettings_, grid,fileName,"");
         delete grid;
       }
     }
-    
+
     Timings::setTimeFaciesProb(wall,cpu);
   }
 }
 
 
-void 
+void
 Crava::filterLogs(Simbox          * timeSimboxConstThick,
                   FilterWellLogs *& filterlogs)
 {
@@ -1750,23 +1846,23 @@ Crava::filterLogs(Simbox          * timeSimboxConstThick,
   int relative;
   if(modelSettings_->getEstimateFaciesProb())
     relative = 1;
-  else 
+  else
     relative = 0;
 
-  filterlogs = new FilterWellLogs(timeSimboxConstThick, 
+  filterlogs = new FilterWellLogs(timeSimboxConstThick,
                                   simbox_,
                                   correlations_,
-                                  nzp_, nz_, 
-                                  wells_, nWells_, 
-                                  lowCut_, highCut_, 
+                                  nzp_, nz_,
+                                  wells_, nWells_,
+                                  lowCut_, highCut_,
                                   relative);
   Timings::setTimeFiltering(wall,cpu);
 }
 
-float**            
+float**
 Crava::getPriorVar0() const {return correlations_->getPriorVar0();}
 
-float**            
+float**
 Crava::getPostVar0() const {return correlations_->getPostVar0();}
 
 
@@ -1788,7 +1884,7 @@ void Crava::computeG(double **G) const
   for(i=0;i<3;i++)
     for(j=0;j<3;j++)
       sigmadelta[i][j] = double(sigmam[i][j]-sigmamd[i][j]);
- 
+
   double  * eigval      = new double[3];
   int     * error       = new int[1];
   double ** eigvec      = new double *[3];
@@ -1816,18 +1912,18 @@ void Crava::computeG(double **G) const
 
 
   lib_matr_eigen(sigmam,3,eigvec,eigval,error);
-  
+
   for(i=0 ; i<3 ; i++)
     delete [] sigmam[i];
   delete [] sigmam;
 
   double ** sigmaminv   = new double *[3];
   double ** A           = new double *[3];
- 
+
   for(i=0;i<3;i++)
-  { 
+  {
     sigmaminv[i]   = new double[3];
-    A[i]           = new double[3]; 
+    A[i]           = new double[3];
   }
   for(i=0;i<3;i++)
     for(j=0;j<3;j++)
@@ -1848,21 +1944,21 @@ void Crava::computeG(double **G) const
   double ** lambdag = new double*[ntheta_];
   for(i=0;i<ntheta_;i++)
     lambdag[i] = new double[3];
- 
+
     for(i=0;i<ntheta_;i++)
       for(j=0;j<3;j++)
         if(i==j)
           lambdag[i][j] = sqrt(eigval[j]/(1.0-eigval[j]));
         else
           lambdag[i][j] = 0.0;
- 
+
 
   double  * eigvale       = new double[ntheta_];
   double ** eigvece       = new double *[ntheta_];
   double ** eigvalmate    = new double*[ntheta_];
   double ** eigvecetrans  = new double *[ntheta_];
   double ** helpe         = new double *[ntheta_];
-  
+
 
   for(i=0;i<ntheta_;i++)
   {
@@ -1878,13 +1974,13 @@ void Crava::computeG(double **G) const
         eigvalmate[i][j] = sqrt(eigvale[i]);
       else
         eigvalmate[i][j] = 0.0;
-  
+
   lib_matrTranspose(eigvece,ntheta_,ntheta_,eigvecetrans);
   lib_matr_prod(eigvece,eigvalmate,ntheta_,ntheta_,ntheta_,helpe);
   lib_matr_prod(helpe,eigvecetrans,ntheta_,ntheta_,ntheta_,eigvece);
   double **help1= new double*[ntheta_];
   double **help2 = new double*[ntheta_];
-  
+
   for(i=0;i<ntheta_;i++)
   {
     help1[i] = new double[3];
@@ -1893,7 +1989,7 @@ void Crava::computeG(double **G) const
   lib_matr_prod(eigvece,lambdag,ntheta_,ntheta_,3,help1);
   lib_matr_prod(help1,eigvectrans,ntheta_,3,3,help2); //
   lib_matr_prod(help2,sigmaminv,ntheta_,3,3,G);
-  
+
   for(i=0;i<3;i++)
   {
     delete [] eigvec[i];
@@ -1930,10 +2026,10 @@ void Crava::computeG(double **G) const
   delete [] help1;
   delete [] help2;
   delete [] helpe;
-  delete [] error;  
+  delete [] error;
   delete [] lambdag;
 }
-void Crava::newPosteriorCovPointwise(double ** sigmanew, double **G, const std::vector<double> & scales, 
+void Crava::newPosteriorCovPointwise(double ** sigmanew, double **G, const std::vector<double> & scales,
                                      double ** sigmamdnew) const
 {
   //  this function name is not suited... it returns not what we should think perhaps...
@@ -1950,7 +2046,7 @@ void Crava::newPosteriorCovPointwise(double ** sigmanew, double **G, const std::
     D[i]         = new double[ntheta_];
     help[i]      = new double[ntheta_];
   }
-  
+
   for(i=0;i<ntheta_;i++)
     for(j=0;j<ntheta_;j++)
       if(i==j)
@@ -1986,7 +2082,7 @@ void Crava::newPosteriorCovPointwise(double ** sigmanew, double **G, const std::
   for(i=0;i<ntheta_;i++)
     for(j=0;j<ntheta_;j++)
       help[i][j]+=sigmaenew[i][j];
-  // help = G*Sigmam*GT+sigmaE_New 
+  // help = G*Sigmam*GT+sigmaE_New
 
 
   int     * error         = new int[1];
@@ -1994,12 +2090,12 @@ void Crava::newPosteriorCovPointwise(double ** sigmanew, double **G, const std::
   double ** eigvece       = new double * [ntheta_];
   double ** eigvalmate    = new double * [ntheta_];
   double ** eigvecetrans  = new double * [ntheta_];
-  
+
   for(i=0;i<ntheta_;i++)
   {
     eigvece[i]      = new double[ntheta_];
     eigvalmate[i]   = new double[ntheta_];
-    eigvecetrans[i] = new double[ntheta_];  
+    eigvecetrans[i] = new double[ntheta_];
   }
   lib_matr_eigen(help,ntheta_,eigvece,eigvale,error);
   for(i=0;i<ntheta_;i++)
@@ -2073,7 +2169,7 @@ void Crava::newPosteriorCovPointwise(double ** sigmanew, double **G, const std::
 
   float **sigmamd = correlations_->getPostVar0();
   double **sigmadelta = new double*[3];
-  
+
   for(i=0;i<3;i++)
     sigmadelta[i] = new double[3];
   for(i=0;i<3;i++)
@@ -2144,13 +2240,13 @@ void Crava::newPosteriorCovPointwise(double ** sigmanew, double **G, const std::
   delete [] eigvale;
 }
 
-void 
+void
 Crava::computeFilter( float ** priorCov, double ** posteriorCov,int n,double** filter) const
-{ 
+{
   double ** imat       = new double *[n];
   double ** priorCov2       = new double *[n];
   for(int i=0;i<n;i++)
-  { 
+  {
     imat[i] = new double [n];
     priorCov2[i] = new double [n];
     for(int j=0;j<n;j++)
@@ -2176,7 +2272,7 @@ Crava::computeFilter( float ** priorCov, double ** posteriorCov,int n,double** f
     delete [] imat[i];
     delete [] priorCov2[i];
   }
-  
+
   delete [] imat;
   delete [] priorCov2;
 }
@@ -2190,7 +2286,7 @@ void Crava::correctAlphaBetaRho(ModelSettings *modelSettings)
     G[i] = new double[3];
 
   computeG(G);
- 
+
   double **sigmanew = new double *[3];
   double **sigmamd = new double *[3];
   for(i=0;i<3;i++)
@@ -2199,7 +2295,7 @@ void Crava::correctAlphaBetaRho(ModelSettings *modelSettings)
     sigmamd[i] = new double[3];
   }
   double **sigmamdold = new double*[3];
-  
+
   for(i=0;i<3;i++)
     sigmamdold[i] = new double[3];
   for(i=0;i<3;i++)
@@ -2220,7 +2316,7 @@ void Crava::correctAlphaBetaRho(ModelSettings *modelSettings)
     help[i]        = new double[3];
   }
 
-  lib_matr_eigen(sigmamdold,3,eigvec,eigval,error); 
+  lib_matr_eigen(sigmamdold,3,eigvec,eigval,error);
   for(i=0;i<3;i++)
     for(j=0;j<3;j++)
       if(i==j && eigval[i]>0.0)
@@ -2255,9 +2351,9 @@ void Crava::correctAlphaBetaRho(ModelSettings *modelSettings)
   meanBeta2_->setAccessMode(FFTGrid::RANDOMACCESS);
   meanRho2_->setAccessMode(FFTGrid::RANDOMACCESS);
 
-  for(i=0;i<nx_;i++) 
+  for(i=0;i<nx_;i++)
   {
-    for(j=0;j<ny_;j++) 
+    for(j=0;j<ny_;j++)
     {
       std::vector<double> scales(modelAVOdynamic_->getNumberOfAngles());
       for(int angle=0;angle<modelAVOdynamic_->getNumberOfAngles();angle++)
@@ -2277,7 +2373,7 @@ void Crava::correctAlphaBetaRho(ModelSettings *modelSettings)
             (*sigmamdnew_)(i,j)[ii][jj] = eigvec[ii][jj];
         }
       }
-      
+
       postAlpha_->getRealTrace(alpha, i, j);
       postBeta_->getRealTrace(beta, i, j);
       postRho_->getRealTrace(rho, i, j);
@@ -2332,7 +2428,7 @@ void Crava::correctAlphaBetaRho(ModelSettings *modelSettings)
   for(i=0;i<ntheta_;i++)
     delete [] G[i];
   delete [] G;
-  
+
   for(i=0;i<3;i++)
   {
     delete [] eigvectrans[i];
@@ -2348,7 +2444,7 @@ void Crava::correctAlphaBetaRho(ModelSettings *modelSettings)
   delete [] sigmamdold;
   delete [] error;
   delete [] help;
-  
+
 }
 
 void Crava::writeBWPredicted(void)

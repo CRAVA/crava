@@ -10,11 +10,11 @@
 #include "src/definitions.h"
 #include "src/io.h"
 
-class Simbox : public NRLib::Volume 
+class Simbox : public NRLib::Volume
 {
 public:
   Simbox(void);
-  Simbox(double x0, double y0, const Surface & z0, double lx, 
+  Simbox(double x0, double y0, const Surface & z0, double lx,
          double ly, double lz, double rot, double dx, double dy, double dz); //Assumes constant thickness.
   Simbox(const Simbox *simbox);
   ~Simbox();
@@ -24,9 +24,9 @@ public:
   void           getIndexes(double x, double y, int & xInd, int & yInd) const;
   void           getIndexes(double x, double y, double z, int & xInd, int & yInd, int & zInd) const;
   void           getIndexesFull(double x, double y, double z, int & xInd, int & yInd, int & zInd) const;
-  void           getZInterpolation(double x, double y, double z, 
+  void           getZInterpolation(double x, double y, double z,
                                    int & index1, int & index2, double & t) const;
-  void           getInterpolationIndexes(double x, double y, double z, 
+  void           getInterpolationIndexes(double x, double y, double z,
                                          double & xInd, double & yInd, double & zInd) const;
   void           getCoord(int xInd, int yInd, int zInd, double &x, double &y, double &z) const;
   void           getXYCoord(int xInd, int yInd, double &x, double &y) const;
@@ -87,9 +87,9 @@ private:
   std::string    botName_;
 
   //Note: IL/XL information is just carried passively by this class.
-  double         inLine0_, crossLine0_;    // XL, IL at origin, not necessarily int. 
+  double         inLine0_, crossLine0_;    // XL, IL at origin, not necessarily int.
   double         ilStepX_, ilStepY_;       // Change in XL when moving along x and y
-  double         xlStepX_, xlStepY_;       // Change in XL when moving along x and y  
+  double         xlStepX_, xlStepY_;       // Change in XL when moving along x and y
 
   bool           constThick_;
   double         minRelThick_;

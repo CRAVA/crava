@@ -5,10 +5,10 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "fft/include/fftw.h"
-#include "fft/include/rfftw.h"
-#include "fft/include/fftw-int.h"
-#include "fft/include/f77_func.h"
+#include "fftw.h"
+#include "rfftw.h"
+#include "fftw-int.h"
+#include "f77_func.h"
 
 #include "nrlib/iotools/logkit.hpp"
 
@@ -41,11 +41,11 @@ FFTGrid()
   nzp_            = fftGrid->nzp_;
 
   cnxp_           = nxp_/2+1;
-  rnxp_           = 2*(cnxp_);   
+  rnxp_           = 2*(cnxp_);
 
   csize_          = cnxp_*nyp_*nzp_;
   rsize_          = rnxp_*nyp_*nzp_;
-  counterForGet_  = 0; 
+  counterForGet_  = 0;
   counterForSet_  = 0;
   istransformed_  = false;
   fNameIn_        = "";
@@ -149,8 +149,8 @@ FFTFileGrid::createComplexGrid()
 }
 
 
-fftw_complex 
-FFTFileGrid::getNextComplex() 
+fftw_complex
+FFTFileGrid::getNextComplex()
 {
   assert(istransformed_==true);
   assert(accMode_ == READ || accMode_ == READANDWRITE);
@@ -162,7 +162,7 @@ FFTFileGrid::getNextComplex()
 
 
 
-float 
+float
 FFTFileGrid::getNextReal()
 {
   assert(istransformed_ == false);
@@ -171,15 +171,15 @@ FFTFileGrid::getNextReal()
   char * buffer = reinterpret_cast<char *>(&rVal);
   inFile_.read(buffer,sizeof(float));
   return float(rVal);
-} 
+}
 
 
-float        
+float
 FFTFileGrid::getRealValue(int i, int j, int k, bool extSimbox)
-{ 
-  // i index in x direction 
-  // j index in y direction 
-  // k index in z direction 
+{
+  // i index in x direction
+  // j index in y direction
+  // k index in z direction
   assert(istransformed_==false);
   assert(accMode_ == RANDOMACCESS);
 
@@ -191,7 +191,7 @@ FFTFileGrid::getRealValue(int i, int j, int k, bool extSimbox)
  if( inSimbox && notMissing )
   { // if index in simbox
   int index=i+rnxp_*j+k*rnxp_*nyp_;
-  value = static_cast<float>(rvalue_[index]); 
+  value = static_cast<float>(rvalue_[index]);
   }
   else
   {
@@ -199,16 +199,16 @@ FFTFileGrid::getRealValue(int i, int j, int k, bool extSimbox)
   }
 
   return( value );
- // assert(index<rsize_); 
+ // assert(index<rsize_);
   //return(static_cast<float>(rvalue_[index]));
 }
 
-float        
+float
 FFTFileGrid::getRealValueInterpolated(int i, int j, float kindex)
-{ 
-  
-  // i index in x direction 
-  // j index in y direction 
+{
+
+  // i index in x direction
+  // j index in y direction
   // k index in z direction, float, should interpolate
   assert(istransformed_==false);
   assert(accMode_ == RANDOMACCESS);
@@ -216,38 +216,38 @@ FFTFileGrid::getRealValueInterpolated(int i, int j, float kindex)
   return(FFTGrid::getRealValueInterpolated(i, j, kindex));
 }
 
-int        
+int
 FFTFileGrid::setRealValue(int i, int j, int k, float value, bool extSimbox)
-{ 
-  // i index in x direction 
-  // j index in y direction 
-  // k index in z direction 
+{
+  // i index in x direction
+  // j index in y direction
+  // k index in z direction
   assert(istransformed_== false);
-  assert(accMode_ == RANDOMACCESS); 
+  assert(accMode_ == RANDOMACCESS);
   modified_ = 1;
   return(FFTGrid::setRealValue(i, j, k, value, extSimbox));
 }
 
 
-int 
+int
 FFTFileGrid::setNextComplex(fftw_complex value)
 {
   assert(istransformed_==true);
   assert(accMode_ == READANDWRITE || accMode_ == WRITE);
   char * buffer = reinterpret_cast<char *>(&value);
   outFile_.write(buffer,sizeof(fftw_complex));
-  return(0);  
+  return(0);
 }
 
 
-int   
+int
 FFTFileGrid::setNextReal(float  value)
-{    
+{
   assert(istransformed_== false);
   assert(accMode_ == READANDWRITE || accMode_ == WRITE);
   char * buffer = reinterpret_cast<char *>(&value);
   outFile_.write(buffer,sizeof(float));
-  return(0);  
+  return(0);
 }
 
 int
@@ -261,7 +261,7 @@ FFTFileGrid::square()
   FFTGrid::square();
   if(accMode_ != RANDOMACCESS)
     save();
-  return(0);  
+  return(0);
 }
 
 int
@@ -275,7 +275,7 @@ FFTFileGrid::expTransf()
   FFTGrid::expTransf();
   if(accMode_ != RANDOMACCESS)
     save();
-  return(0);  
+  return(0);
 }
 
 int
@@ -289,7 +289,7 @@ FFTFileGrid::logTransf()
   FFTGrid::logTransf();
   if(accMode_ != RANDOMACCESS)
     save();
-  return(0);  
+  return(0);
 }
 
 int
@@ -303,7 +303,7 @@ FFTFileGrid::collapseAndAdd(float * grid)
   FFTGrid::collapseAndAdd(grid);
   if(accMode_ != RANDOMACCESS)
     save();
-  return(0);  
+  return(0);
 }
 
 void
@@ -322,7 +322,7 @@ FFTFileGrid::fftInPlace()
 
 void
 FFTFileGrid::invFFTInPlace()
-{  
+{
   assert(accMode_ == NONE || accMode_ == RANDOMACCESS);
   if(accMode_ != RANDOMACCESS)
     load();
@@ -333,7 +333,7 @@ FFTFileGrid::invFFTInPlace()
     save();
 }
 
-void 
+void
 FFTFileGrid::multiplyByScalar(float scalar)
 {
   assert(accMode_ == NONE || accMode_ == RANDOMACCESS);
@@ -347,7 +347,7 @@ FFTFileGrid::multiplyByScalar(float scalar)
 }
 
 
-void 
+void
 FFTFileGrid::add(FFTGrid * fftGrid)
 {
   assert(accMode_ == NONE || accMode_ == RANDOMACCESS);
@@ -366,7 +366,7 @@ FFTFileGrid::add(FFTGrid * fftGrid)
     {
       value = fftGrid->getNextComplex();
       cvalue_[i].re += value.re;
-      cvalue_[i].im += value.im; 
+      cvalue_[i].im += value.im;
     }
   }
   else
@@ -383,7 +383,7 @@ FFTFileGrid::add(FFTGrid * fftGrid)
     save();
 }
 
-void 
+void
 FFTFileGrid::subtract(FFTGrid * fftGrid)
 {
   assert(accMode_ == NONE || accMode_ == RANDOMACCESS);
@@ -402,7 +402,7 @@ FFTFileGrid::subtract(FFTGrid * fftGrid)
     {
       value = fftGrid->getNextComplex();
       cvalue_[i].re -= value.re;
-      cvalue_[i].im -= value.im; 
+      cvalue_[i].im -= value.im;
     }
   }
   else
@@ -419,7 +419,7 @@ FFTFileGrid::subtract(FFTGrid * fftGrid)
     save();
 }
 
-void 
+void
 FFTFileGrid::changeSign()
 {
   assert(accMode_ == NONE || accMode_ == RANDOMACCESS);
@@ -433,9 +433,9 @@ FFTFileGrid::changeSign()
     int i;
     for(i=0;i<csize_;i++)
     {
-      
+
       cvalue_[i].re = -cvalue_[i].re;
-      cvalue_[i].im = -cvalue_[i].im; 
+      cvalue_[i].im = -cvalue_[i].im;
     }
   }
   else
@@ -446,13 +446,13 @@ FFTFileGrid::changeSign()
       rvalue_[i] = -rvalue_[i];
     }
   }
- 
+
 
   if(accMode_ != RANDOMACCESS)
     save();
 }
 
-void 
+void
 FFTFileGrid::multiply(FFTGrid * fftGrid)
 {
   assert(accMode_ == NONE || accMode_ == RANDOMACCESS);
@@ -471,7 +471,7 @@ FFTFileGrid::multiply(FFTGrid * fftGrid)
     {
       value = fftGrid->getNextComplex();
       cvalue_[i].re *= value.re;
-      cvalue_[i].im *= value.im; 
+      cvalue_[i].im *= value.im;
     }
   }
   else
@@ -488,7 +488,7 @@ FFTFileGrid::multiply(FFTGrid * fftGrid)
     save();
 }
 
-void 
+void
 FFTFileGrid::fillInComplexNoise(RandomGen * ranGen)
 {
   assert(accMode_ == NONE || accMode_ == RANDOMACCESS);
@@ -501,13 +501,13 @@ FFTFileGrid::fillInComplexNoise(RandomGen * ranGen)
     save();
 }
 
-void 
-FFTFileGrid::writeFile(const std::string & fileName, 
-                       const std::string & subDir, 
-                       const Simbox      * simbox, 
-                       const std::string   sgriLabel, 
-                       const float         z0, 
-                       GridMapping       * depthMap, 
+void
+FFTFileGrid::writeFile(const std::string & fileName,
+                       const std::string & subDir,
+                       const Simbox      * simbox,
+                       const std::string   sgriLabel,
+                       const float         z0,
+                       GridMapping       * depthMap,
                        GridMapping       * timeMap,
                        const TraceHeaderFormat & thf)
 {
@@ -580,7 +580,7 @@ FFTFileGrid::readCravaFile(const std::string & fileName, std::string & error, bo
 
 
 
-void 
+void
 FFTFileGrid::load()
 {
   assert(accMode_ == NONE || accMode_ == RANDOMACCESS);
@@ -602,7 +602,7 @@ FFTFileGrid::load()
   }
 }
 
-void 
+void
 FFTFileGrid::save()
 {
   assert(accMode_ == NONE || accMode_ == RANDOMACCESS);
@@ -634,7 +634,7 @@ FFTFileGrid::unload()
   cvalue_ = NULL;
 }
 
-void 
+void
 FFTFileGrid::genFileName()
 {
   fNameIn_  = "";
@@ -646,8 +646,8 @@ FFTFileGrid::genFileName()
 }
 
 void
-FFTFileGrid::writeResampledStormCube(GridMapping       * gridmapping, 
-                                     const std::string & fileName, 
+FFTFileGrid::writeResampledStormCube(GridMapping       * gridmapping,
+                                     const std::string & fileName,
                                      const Simbox      * simbox,
                                      const int           format)
 {
@@ -658,7 +658,7 @@ FFTFileGrid::writeResampledStormCube(GridMapping       * gridmapping,
   if(accMode_ != RANDOMACCESS)
     unload();
 }
- 
+
 void
 FFTFileGrid::getRealTrace(float * value, int i, int j)
 {
@@ -683,7 +683,7 @@ FFTFileGrid::setRealTrace(int i, int j, float *value)
   int notok = FFTGrid::setRealTrace(i,j, value);
   if(accMode_ != RANDOMACCESS)
     save();
-  return(notok);  
+  return(notok);
 }
 
 

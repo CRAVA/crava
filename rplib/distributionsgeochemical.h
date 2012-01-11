@@ -2,7 +2,7 @@
 #define DISTRIBUTIONSGEOCHEMICAL_H
 
 
-// Abstract class for holding distribution functions for 
+// Abstract class for holding distribution functions for
 // parameters needed for time evolution of geochemical effects.
 // One derived class for each rock physics model, the latter specified in a parallel, derived Rock class.
 

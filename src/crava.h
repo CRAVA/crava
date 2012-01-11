@@ -1,7 +1,7 @@
 #ifndef CRAVA_H
 #define CRAVA_H
 
-#include "fft/include/fftw.h"
+#include "fftw.h"
 #include "definitions.h"
 
 class ModelGeneral;
@@ -25,12 +25,14 @@ class Corr;
 class SpatialWellFilter;
 
 
-class Crava 
+class Crava
 {
 public:
-  Crava(ModelSettings * modelSettings, 
-        ModelGeneral * modelGeneral, ModelAVOStatic * modelAVOstatic, ModelAVODynamic * modelAVOdynamic, 
-        SpatialWellFilter *spatwellfilter);
+  Crava(ModelSettings     * modelSettings,
+        ModelGeneral      * modelGeneral,
+        ModelAVOStatic    * modelAVOstatic,
+        ModelAVODynamic   * modelAVOdynamic,
+        SpatialWellFilter * spatwellfilter);
   ~Crava();
 
   FFTGrid          * getPostAlpha()                 { return postAlpha_ ;}
@@ -41,11 +43,11 @@ public:
   void               computeG(double **G) const;
   float**            getPriorVar0() const;
   float**            getPostVar0() const;
-  void               newPosteriorCovPointwise(double ** sigmanew, double **G, 
+  void               newPosteriorCovPointwise(double ** sigmanew, double **G,
                                               const std::vector<double> & scales, double **sigmamdnew) const;
   void               computeFilter(float ** priorCov,  double ** posteriorCov,int n,double** filter) const;
 
-private: 
+private:
   void               computeDataVariance(void);
   void               setupErrorCorrelation(const std::vector<Grid2D *> & noiseScale);
   void               computeVariances(fftw_real* corrT, ModelSettings * modelSettings);
@@ -63,10 +65,16 @@ private:
   void               filterLogs(Simbox * timeSimboxConstThick, FilterWellLogs *& filterlogs);
   void               doPredictionKriging();
 
+  void               computeElasticImpedanceTimeCovariance(fftw_real* eiCovT,const float* corrT,float** Var0,float * A) const;
+  void               computeReflectionCoefficientTimeCovariance(fftw_real* refCovT,const float* corrT,float** Var0,float * A ) const ;
+
   int                checkScale(void);
-  void               fillkW(int k, fftw_complex* kW );
+  void               fillkW(int k, fftw_complex* kW, Wavelet** seisWavelet);
   void               fillInverseAbskWRobust(int k, fftw_complex* invkW ,Wavelet1D** seisWaveletForNorm);
   void               fillkWNorm(int k, fftw_complex* kWNorm, Wavelet1D** wavelet);
+
+  void               computeAdjustmentFactor(fftw_complex* relativeWeights, Wavelet1D* wLocal, double scaleF, Wavelet * wGlobal, const Corr* corr,float * A, float errorVar);
+
   FFTGrid          * createFFTGrid();
   FFTGrid          * copyFFTGrid(FFTGrid * fftGridOld);
   FFTFileGrid      * copyFFTGrid(FFTFileGrid * fftGridOld);
@@ -79,20 +87,20 @@ private:
 
   void               correctAlphaBetaRho(ModelSettings *modelSettings);
 
-  FFTGrid *          computeSeismicImpedance(FFTGrid * alpha, 
-                                             FFTGrid * beta, 
-                                             FFTGrid * rho, 
+  FFTGrid *          computeSeismicImpedance(FFTGrid * alpha,
+                                             FFTGrid * beta,
+                                             FFTGrid * rho,
                                              int angle);
 
 
-  bool               fileGrid_;         // is true if is storage is on file 
+  bool               fileGrid_;         // is true if is storage is on file
   const Simbox     * simbox_;           // the simbox
   int                nx_;               // dimensions of the problem
   int                ny_;
   int                nz_;
   int                nxp_;              // padded dimensions
   int                nyp_;
-  int                nzp_; 
+  int                nzp_;
 
   Corr             * correlations_;     //
 
@@ -106,18 +114,18 @@ private:
   FFTGrid          * meanAlpha_;        // mean values
   FFTGrid          * meanBeta_;
   FFTGrid          * meanRho_;
-  FFTGrid          * meanAlpha2_;       // copy of mean values, to be used for facies prob, new method 
+  FFTGrid          * meanAlpha2_;       // copy of mean values, to be used for facies prob, new method
   FFTGrid          * meanBeta2_;
   FFTGrid          * meanRho2_;
-  float           ** parPointCov_; 
+  float           ** parPointCov_;
 
   Wavelet         ** seisWavelet_;      // wavelet operator that define the forward map.
   FFTGrid         ** seisData_;         // Data
-  double           ** errThetaCov_;      //
+  double          ** errThetaCov_;      //
   float              wnc_ ;             // if wnc=0.01 1% of the error wariance is white this has largest effect on
                                         // high frequency components. It makes everything run smoother we
                                         // avoid ill posed problems.
-  float           ** A_;                // 
+  float           ** A_;                // coefficients in Aki-Richards 3 term reflection coefficients
 
   float            * empSNRatio_;       // signal noise ratio empirical
   float            * theoSNRatio_;      // signal noise ratio from model
@@ -126,14 +134,14 @@ private:
   float            * errorVariance_;
   float            * dataVariance_;
 
-  FFTGrid          * postAlpha_;        // posterior values 
+  FFTGrid          * postAlpha_;        // posterior values
   FFTGrid          * postBeta_;
   FFTGrid          * postRho_;
 
   int                krigingParameter_;
   WellData        ** wells_;
   int                nWells_;
-  
+
   int                scaleWarning_;
   std::string        scaleWarningText_;
 
@@ -146,7 +154,7 @@ private:
                                         // will be interpolated. Default 0, set from model.
   RandomGen        * random_;
   FaciesProb       * fprob_;
-  
+
   ModelSettings    * modelSettings_;
   ModelGeneral     * modelGeneral_;
   ModelAVOStatic   * modelAVOstatic_;

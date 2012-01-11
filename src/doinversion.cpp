@@ -20,36 +20,35 @@ void setupStaticModels(ModelGeneral   *& modelGeneral,
   // Construct ModelGeneral object first.
   // For each data type, construct the static model class before the dynamic.
   modelGeneral    = new ModelGeneral(modelSettings, inputFiles, timeBGSimbox);
-  modelAVOstatic  = new ModelAVOStatic(modelSettings, 
+  modelAVOstatic  = new ModelAVOStatic(modelSettings,
                                        inputFiles,
                                        modelGeneral->getFailedDetails(),
                                        modelGeneral->getTimeSimbox(),
                                        timeBGSimbox,
-                                       modelGeneral->getTimeSimboxConstThick(),
-                                       modelGeneral->getRandomGen());
+                                       modelGeneral->getTimeSimboxConstThick());
 }
 
 
 bool doFirstAVOInversion(ModelSettings           * modelSettings,
                          ModelGeneral            * modelGeneral,
-                         ModelAVOStatic          * modelAVOstatic, 
+                         ModelAVOStatic          * modelAVOstatic,
                          SeismicParametersHolder & seismicParameters,
                          InputFiles              * inputFiles,
-                         int                       vintage, 
+                         int                       vintage,
                          Simbox                  * timeBGSimbox)
 {
 
   ModelAVODynamic * modelAVOdynamic = NULL;
 
   // Wells are adjusted by ModelAVODynamic constructor.
-  modelAVOdynamic = new ModelAVODynamic(modelSettings, 
+  modelAVOdynamic = new ModelAVODynamic(modelSettings,
                                         inputFiles,
                                         modelGeneral->getFailedDetails(),
                                         modelAVOstatic->getFailedDetails(),
                                         modelGeneral->getTimeSimbox(),
                                         timeBGSimbox,
                                         modelGeneral->getRandomGen(),
-                                        modelGeneral->getTimeDepthMapping(), 
+                                        modelGeneral->getTimeDepthMapping(),
                                         modelGeneral->getTimeCutMapping(),
                                         modelAVOstatic,
                                         vintage);
@@ -74,7 +73,7 @@ bool doFirstAVOInversion(ModelSettings           * modelSettings,
     delete crava;
     delete spatwellfilter;
   }
-  
+
   modelAVOstatic->deleteDynamicWells(modelAVOstatic->getWells(),modelSettings->getNumberOfWells());
   delete modelAVOdynamic;
 
@@ -91,12 +90,12 @@ bool doTimeLapseAVOInversion(ModelSettings           * modelSettings,
 {
   ModelAVODynamic * modelAVOdynamic = NULL;
 
-  modelAVOdynamic = new ModelAVODynamic(modelSettings, 
+  modelAVOdynamic = new ModelAVODynamic(modelSettings,
                                         inputFiles,
                                         modelAVOstatic,
                                         seismicParameters,
                                         modelGeneral->getTimeSimbox(),
-                                        modelGeneral->getTimeDepthMapping(), 
+                                        modelGeneral->getTimeDepthMapping(),
                                         modelGeneral->getTimeCutMapping(),
                                         vintage);
 
@@ -111,7 +110,7 @@ bool doTimeLapseAVOInversion(ModelSettings           * modelSettings,
 
     delete crava;
   }
-  
+
   modelAVOstatic->deleteDynamicWells(modelAVOstatic->getWells(),modelSettings->getNumberOfWells());
   delete modelAVOdynamic;
 

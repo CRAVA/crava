@@ -1,6 +1,6 @@
 #include "rplib/fluid.h"
 
-Fluid::Fluid(const std::string& name, double k, double rho) 
+Fluid::Fluid(const std::string& name, double k, double rho)
 : name_(name)
 {
   elastics_.push_back(k);
@@ -10,7 +10,7 @@ Fluid::Fluid(const std::string& name, double k, double rho)
 Fluid::Fluid(const Fluid & rhs)
   : name_(rhs.name_), elastics_(rhs.elastics_)
 {
- 
+
 }
 
 Fluid::~Fluid() {}

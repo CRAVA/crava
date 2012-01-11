@@ -17,10 +17,10 @@ typedef  NRLib::SegyGeometry              SegyGeometry;
 typedef  NRLib::TraceHeaderFormat         TraceHeaderFormat;
 typedef  NRLib::TextualHeader             TextualHeader;
 /**
-   Class to hold definitions and constants used by CRAVA. 
-*/    
+   Class to hold definitions and constants used by CRAVA.
+*/
 
-namespace Definitions 
+namespace Definitions
 {
   inline static double AsciiIrapClassicUndefValue(void)       { return 9999900.0 ;}
   inline static double StormBinaryUndefValue(void)            { return    -999.0 ;}

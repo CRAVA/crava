@@ -3,10 +3,10 @@
 \index{CRAVA!test suite}
 
 This appendix gives an overview of the features that are currently
-tested in the test suite. 
+tested in the test suite.
 
 % Update the multicolumn number if more tests are added
-\newcommand{\mc}[1]{\multicolumn{17}{|l|}{\textbf{#1}}}
+\newcommand{\mc}[1]{\multicolumn{19}{|l|}{\textbf{#1}}}
 
 %\addtolength{\textheight}{2cm}
 
@@ -14,101 +14,91 @@ tested in the test suite.
 %Use \footnotesize if more tests are added and the table becomes too large
 
 \small
-\begin{tabular}{|l|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}\hline
-Test\ \textbackslash\ Case number    & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9 &10 &11 &12 &13 &14 &15 & 16\\ \hline
+\begin{tabular}{|l|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}\hline
+Test\ \textbackslash\ Case number    & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9 &10 &11 &12 &13 &14 &15 &16 &17 &18 \\ \hline
 \mc{Mode}\\ \hline
-\quad Forward                        & x &   &   &   &   &   &   &   &   &   &   &   &   &   &   &  \\ \hline
-\quad Estimation - 1D                &   &   &   &   &   &   &   &   &   &   & x &   &   &   &   &  \\ \hline
-\quad Estimation - 3D                &   &   &   &   &   &   &   &   &   &   &   &   &   &   & x & x\\ \hline
-\quad Inversion - prediction         &   & x & x &   & x & x & x & x & x & x &   & x & x & x &   &  \\ \hline
-\quad Inversion - simulation         &   &   &   & x &   &   &   &   &   &   &   &   &   &   &   &  \\ \hline
-\quad Inversion - kriging            &   &   & x & x &   & x &   &   &   &   &   &   &   &   &   &  \\ \hline
-\quad Inversion - facies prob.       &   &   &   &   &   &   &   &   & x &   &   & x & x & x &   &  \\ \hline
-
+\quad Forward                        & x &   &   &   &   &   &   &   &   &   &   &   &   &   &   &   &   &   \\ \hline
+\quad Estimation - 1D                &   &   &   &   &   &   &   &   &   &   & x &   &   &   & x &   &   &   \\ \hline
+\quad Estimation - 3D                &   &   &   &   &   &   &   &   &   &   &   &   &   &   &   &   &   & x \\ \hline
+\quad Inversion - prediction         &   & x & x &   & x & x & x & x & x & x &   & x & x & x &   & x & x &   \\ \hline
+\quad Inversion - simulation         &   &   &   & x &   &   &   &   &   &   &   &   &   &   &   &   &   &   \\ \hline
+\quad Inversion - kriging            &   &   & x & x &   & x &   &   &   &   &   &   &   &   &   &   &   &   \\ \hline
+\quad Inversion - facies prob.       &   &   &   &   &   &   &   &   & x &   &   & x & x & x &   &   &   &   \\ \hline
 \mc{Survey}\\ \hline
-\quad Angle gathers                  & 2 & 2 & 2 & 2 & 2 & 2 & 2 & 2 & 2 & 2 & 3 & 3 & 3 & 3 & 3 & 2\\ \hline
-\quad Estimate global wavelet        &   & x &   &   & x &   &   &   &   &   & x &   &   &   &   & x\\ \hline
-\quad Estimate global SN-ratio       &   & x &   &   & x &   &   &   &   &   & x &   &   &   &   & x\\ \hline
-\quad Estimate local noise           &   &   &   &   &   &   &   & x &   &   &   &   &   &   &   &  \\ \hline
-\quad Estimate local scale           &   &   &   &   &   &   &   & x &   &   &   &   &   &   &   &  \\ \hline
-\quad Estimate local shift           &   &   &   &   &   &   &   & x &   &   &   &   &   &   &   &  \\ \hline
-\quad Wavelet estimation interval    &   &   &   &   &   &   &   &   &   &   & x &   &   &   &   &  \\ \hline
-
+\quad Angle gathers                  & 2 & 2 & 2 & 2 & 2 & 2 & 2 & 2 & 2 & 2 & 3 & 3 & 3 & 3 & 3 & 2 & 2 & 2 \\ \hline
+\quad Estimate global wavelet        &   & x &   &   & x &   &   &   &   &   & x &   &   &   &   & x &   & x \\ \hline
+\quad Estimate global SN-ratio       &   & x &   &   & x &   &   &   &   &   & x &   &   &   &   & x &   & x \\ \hline
+\quad Estimate local noise           &   &   &   &   &   &   &   & x &   &   &   &   &   &   &   &   &   &   \\ \hline
+\quad Estimate local scale           &   &   &   &   &   &   &   & x &   &   &   &   &   &   &   &   &   &   \\ \hline
+\quad Estimate local shift           &   &   &   &   &   &   &   & x &   &   &   &   &   &   &   &   &   &   \\ \hline
+\quad Wavelet estimation interval    &   &   &   &   &   &   &   &   &   &   & x &   &   &   &   &   &   &   \\ \hline
 \mc{Wells}\\ \hline
-\quad Number of wells                &   & 1 & 1 & 1 & 4 & 4 & 4 & 4 & 1 & 1 & 6 & 6 & 6 & 6 & 1 & 3\\ \hline
-\quad Only synthetic Vs logs         &   & x &   &   &   &   &   &   &   &   &   &   &   &   &   &  \\ \hline
-\quad <use-for-facies-probabilities> &   &   &   &   &   &   &   &   &   &   &   & x & x &   &   &  \\ \hline
-\quad <synthetic-vs-log>             &   &   &   &   &   &   &   &   &   &   &   & x &   &   &   &  \\ \hline
-\quad <filter-elastic-logs>          &   &   &   &   &   &   &   &   &   &   &   & x & x &   &   &  \\ \hline
-\quad <optimize-position>            &   &   &   &   &   &   &   &   &   & x &   &   &   &   &   &  \\ \hline
-\quad <allowed-parameter-values>     &   &   &   &   &   &   &   &   &   &   &   &   &   &   & x & x\\ \hline
-
+\quad Number of wells                &   & 1 & 1 & 1 & 4 & 4 & 4 & 4 & 1 & 1 & 6 & 6 & 6 & 6 & 1 & 1 & 2 & 3 \\ \hline
+\quad Only synthetic Vs logs         &   & x &   &   &   &   &   &   &   &   &   &   &   &   &   & x &   &   \\ \hline
+\quad <use-for-facies-probabilities> &   &   &   &   &   &   &   &   &   &   &   & x & x &   &   &   &   &   \\ \hline
+\quad <synthetic-vs-log>             &   &   &   &   &   &   &   &   &   &   &   & x &   &   &   &   &   &   \\ \hline
+\quad <filter-elastic-logs>          &   &   &   &   &   &   &   &   &   &   &   & x & x &   &   &   &   &   \\ \hline
+\quad <optimize-position>            &   &   &   &   &   &   &   &   &   & x &   &   &   &   &   &   &   &   \\ \hline
+\quad <allowed-parameter-values>     &   &   &   &   &   &   &   &   &   &   &   &   &   &   & x & x & x & x \\ \hline
 \mc{Prior model}\\ \hline
-\quad Estimate covariance            &   & x &   &   & x &   & x & x & x &   & x &   &   &   &   &  \\ \hline
-\quad Estimate background            &   & x &   &   & x &   & x &   &   & x & x &   &   &   &   &  \\ \hline
-\quad Anisotropic background mod     &   &   &   &   & x & x & x & x &   &   & x &   &   &   &   &  \\ \hline
-\quad Anisotropic lateral corr       &   &   &   &   & x & x & x & x &   &   & x & x & x & x &   &  \\ \hline
-\quad Correlation direction          &   &   &   &   &   &   & x &   &   &   &   &   &   &   &   &  \\ \hline
-\quad VpVsRho filter                 &   &   &   &   &   &   &   &   & x &   &   & x &   &   &   &  \\ \hline
-\quad VpRho filter                   &   &   &   &   &   &   &   &   &   &   &   &   & x &   &   &  \\ \hline
-\quad Use prediction (not filter)    &   &   &   &   &   &   &   &   &   &   &   &   &   & x &   &  \\ \hline
-\quad Absolute params. for facies    &   &   &   &   &   &   &   &   & x &   &   &   &   &   &   &  \\ \hline
-\quad Facies estimation interval     &   &   &   &   &   &   &   &   &   &   &   & x & x & x &   &  \\ \hline
-
+\quad Estimate covariance            &   & x &   &   & x &   & x & x & x &   & x &   &   &   &   & x & x &   \\ \hline
+\quad Estimate background            &   & x &   &   & x &   & x &   &   & x & x &   &   &   &   & x & x &   \\ \hline
+\quad Anisotropic background mod     &   &   &   &   & x & x & x & x &   &   & x &   &   &   &   &   &   &   \\ \hline
+\quad Anisotropic lateral corr       &   &   &   &   & x & x & x & x &   &   & x & x & x & x &   &   &   &   \\ \hline
+\quad Correlation direction          &   &   &   &   &   &   & x &   &   &   &   &   &   &   &   &   &   &   \\ \hline
+\quad VpVsRho filter                 &   &   &   &   &   &   &   &   & x &   &   & x &   &   &   &   &   &   \\ \hline
+\quad VpRho filter                   &   &   &   &   &   &   &   &   &   &   &   &   & x &   &   &   &   &   \\ \hline
+\quad Use prediction (not filter)    &   &   &   &   &   &   &   &   &   &   &   &   &   & x &   &   &   &   \\ \hline
+\quad Absolute params. for facies    &   &   &   &   &   &   &   &   & x &   &   &   &   &   &   &   &   &   \\ \hline
+\quad Facies estimation interval     &   &   &   &   &   &   &   &   &   &   &   & x & x & x &   &   &   &   \\ \hline
 \mc{Output volume}\\ \hline
-\quad Area from UTM                  & x & x &   & x & x & x & x & x &   &   &   &   &   &   &   &  \\ \hline
-\quad Area from ILXL                 &   &   &   &   &   &   &   &   &   &   & x &   &   &   &   &  \\ \hline
-\quad Area from surface              &   &   &   &   &   &   &   &   &   &   &   &   &   &   &   &  \\ \hline
-\quad Area from first angle gather   &   &   & x &   &   &   &   &   & x & x &   & x & x & x & x &  \\ \hline
-\quad Two surfaces                   & x & x & x & x & x & x &   & x & x & x & x & x & x & x & x &  \\ \hline
-\quad Constant top and base          &   &   &   &   &   &   & x &   &   &   &   &   &   &   &   &  \\ \hline
-
+\quad Area from UTM                  & x & x &   & x & x & x & x & x &   &   &   &   &   &   &   & x & x &   \\ \hline
+\quad Area from ILXL                 &   &   &   &   &   &   &   &   &   &   & x &   &   &   &   &   &   &   \\ \hline
+\quad Area from surface              &   &   &   &   &   &   &   &   &   &   &   &   &   &   &   &   &   &   \\ \hline
+\quad Area from first angle gather   &   &   & x &   &   &   &   &   & x & x &   & x & x & x & x &   &   &   \\ \hline
+\quad One surface                    &   &   &   &   &   &   &   &   &   &   &   &   &   &   &   & x &   &   \\ \hline
+\quad Two surfaces                   & x & x & x & x & x & x &   & x & x & x & x & x & x & x & x &   & x &   \\ \hline
+\quad Constant top and base          &   &   &   &   &   &   & x &   &   &   &   &   &   &   &   &   &   &   \\ \hline
 \end{tabular}
 
 %Use \footnotesize if more tests are added and the table becomes too large
-\begin{tabular}{|l|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}\hline
-Test\ \textbackslash\ Case number    & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9 &10 &11 &12 &13 &14 &15 &16\\ \hline
-
+\begin{tabular}{|l|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}\hline
+Test\ \textbackslash\ Case number    & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9 &10 &11 &12 &13 &14 &15 &16 &17 &18 \\ \hline
 \mc{Depth conversion}\\ \hline
-\quad Vel. field - from file         &   & x &   &   &   &   &   &   &   &   &   &   &   &   &   &  \\ \hline
-\quad Vel. field - from inversion    &   &   &   &   & x &   &   &   &   &   &   &   &   &   &   &  \\ \hline
-\quad Vel. field - from surfaces     &   &   &   &   &   &   &   &   &   &   &   &   &   &   &   &  \\ \hline
-\quad Number of depth surfaces       &   & 2 &   &   & 1 &   &   &   &   &   &   &   &   &   &   &  \\ \hline
-
+\quad Vel. field - from file         &   & x &   &   &   &   &   &   &   &   &   &   &   &   &   & x &   &   \\ \hline
+\quad Vel. field - from inversion    &   &   &   &   & x &   &   &   &   &   &   &   &   &   &   &   &   &   \\ \hline
+\quad Vel. field - from surfaces     &   &   &   &   &   &   &   &   &   &   &   &   &   &   &   &   &   &   \\ \hline
+\quad Number of depth surfaces       &   & 2 &   &   & 1 &   &   &   &   &   &   &   &   &   &   & 2 &   &   \\ \hline
 \mc{Advanced settings}\\ \hline
-\quad FFT-grid-padding estimated     &   &   &   &   &   &   &   &   &   &   & x &   &   &   &   &  \\ \hline
-\quad Intermediate disk storage      &   &   & x &   &   &   &   &   &   &   &   &   &   &   &   &  \\ \hline
-\quad Smooth kriged parameters       &   &   & x &   &   &   &   &   &   &   &   &   &   &   &   &  \\ \hline
-
+\quad FFT-grid-padding estimated     &   &   &   &   &   &   &   &   &   &   & x &   &   &   &   &   &   &   \\ \hline
+\quad Intermediate disk storage      &   &   & x &   &   &   &   &   &   &   &   &   &   &   &   &   &   &   \\ \hline
+\quad Smooth kriged parameters       &   &   & x &   &   &   &   &   &   &   &   &   &   &   &   &   &   &   \\ \hline
 \mc{Well input formats}\\ \hline
-\quad Roxar                          & x & x & x & x & x & x & x & x & x & x & x & x & x & x &   &  \\ \hline
-\quad Norsar                         &   &   &   &   &   &   &   &   &   &   &   &   &   &   & x & x\\ \hline
-
+\quad Roxar                          & x & x & x & x & x & x & x & x & x & x & x & x & x & x &   & x & x &   \\ \hline
+\quad Norsar                         &   &   &   &   &   &   &   &   &   &   &   &   &   &   & x &   &   & x \\ \hline
 \mc{Surface input formats}\\ \hline
-\quad STORM BINARY                   &   & x & x & x & x & x & x & x &   & x &   & x & x & x & x &  \\ \hline
-\quad Roxar ASCII (Irap classic)     & x &   &   &   &   &   &   &   & x &   & x & x & x & x &   &  \\ \hline
-
+\quad STORM BINARY                   &   & x & x & x & x & x & x & x &   & x &   & x & x & x & x & x &   &   \\ \hline
+\quad Roxar ASCII (Irap classic)     & x &   &   &   &   &   &   &   & x &   & x & x & x & x &   &   & x &   \\ \hline
 \mc{Grid input formats}\\ \hline
-\quad STORM BINARY                   & x & x &   &   &   &   &   &   & x &   &   &   &   &   &   &  \\ \hline
-\quad SEGY                           &   & x &   &   & x & x & x & x & x &   & x &   &   &   &   &  \\ \hline
-\quad CRAVA                          &   &   & x & x &   &   &   &   &   & x &   & x & x & x &   &  \\ \hline
-\quad SGRI                           &   &   &   &   &   &   &   &   &   &   &   &   &   &   & x & x\\ \hline
-
+\quad STORM BINARY                   & x & x &   &   &   &   &   &   & x &   &   &   &   &   &   & x &   &   \\ \hline
+\quad SEGY                           &   & x &   &   & x & x & x & x & x &   & x &   &   &   &   & x & x &   \\ \hline
+\quad CRAVA                          &   &   & x & x &   &   &   &   &   & x &   & x & x & x &   &   &   &   \\ \hline
+\quad SGRI                           &   &   &   &   &   &   &   &   &   &   &   &   &   &   & x &   &   & x \\ \hline
 \mc{Output check of}\\ \hline
-\quad Depth domain                   &   & x &   &   & x &   &   &   &   &   &   &   &   &   &   &  \\ \hline
-\quad Generated seismic data         & x &   &   &   &   &   &   &   &   &   &   &   &   &   &   &  \\ \hline
-\quad Synthetic seismic data         &   & x & x &   &   &   &   & x &   &   &   &   &   &   &   &  \\ \hline
-\quad Pred/sim elastic parameters    &   & x & x & x & x & x & x & x &   &   &   &   &   &   &   &  \\ \hline
-\quad Background                     &   & x &   &   & x &   & x &   &   &   & x &   &   &   &   &  \\ \hline
-\quad Background trend               &   & x &   &   & x &   & x &   &   &   & x &   &   &   &   &  \\ \hline
-\quad Prior correlations             &   & x &   &   & x &   &   &   &   &   & x &   &   &   &   &  \\ \hline
-\quad Posterior correlations         &   & x &   &   &   &   &   &   &   &   &   &   &   &   &   &  \\ \hline
-\quad Blocked wells                  &   & x &   &   & x &   & x &   & x & x & x & x & x & x & x & x\\ \hline
-\quad Surfaces - top and base        &   & x &   &   & x &   &   &   &   &   &   &   &   &   &   &  \\ \hline
-\quad Surfaces - help grids          &   &   &   &   &   &   & x &   &   &   &   &   &   &   &   &  \\ \hline
-\quad Wavelet - global               &   & x &   &   & x &   &   & x &   &   & x &   &   &   & x & x\\ \hline
-\quad Wavelet - well                 &   & x &   &   & x &   &   &   &   &   & x &   &   &   & x & x\\ \hline
-\quad Wavelet - local shape          &   &   &   &   &   &   &   & x &   &   &   &   &   &   &   &  \\ \hline
-\quad Wavelet - local scale/shift    &   &   &   &   &   &   &   & x &   &   &   &   &   &   &   &  \\ \hline
-\quad Local noise                    &   &   &   &   &   &   &   & x &   &   &   &   &   &   &   &  \\ \hline
+\quad Depth domain                   &   & x &   &   & x &   &   &   &   &   &   &   &   &   &   &   &   &   \\ \hline
+\quad Generated seismic data         & x &   &   &   &   &   &   &   &   &   &   &   &   &   &   &   &   &   \\ \hline
+\quad Synthetic seismic data         &   & x & x &   &   &   &   & x &   &   &   &   &   &   &   &   &   &   \\ \hline
+\quad Pred/sim elastic parameters    &   & x & x & x & x & x & x & x &   &   &   &   &   &   &   & x & x &   \\ \hline
+\quad Background                     &   & x &   &   & x &   & x &   &   &   & x &   &   &   &   &   &   &   \\ \hline
+\quad Background trend               &   & x &   &   & x &   & x &   &   &   & x &   &   &   &   &   &   &   \\ \hline
+\quad Prior correlations             &   & x &   &   & x &   &   &   &   &   & x &   &   &   &   &   &   &   \\ \hline
+\quad Posterior correlations         &   & x &   &   &   &   &   &   &   &   &   &   &   &   &   &   &   &   \\ \hline
+\quad Blocked wells                  &   & x &   &   & x &   & x &   & x & x & x & x & x & x & x &   &   & x \\ \hline
+\quad Surfaces - top and base        &   & x &   &   & x &   &   &   &   &   &   &   &   &   &   &   &   &   \\ \hline
+\quad Surfaces - help grids          &   &   &   &   &   &   & x &   &   &   &   &   &   &   &   &   &   &   \\ \hline
+\quad Wavelet - global               &   & x &   &   & x &   &   & x &   &   & x &   &   &   & x &   &   & x \\ \hline
+\quad Wavelet - well                 &   & x &   &   & x &   &   &   &   &   & x &   &   &   & x &   &   & x \\ \hline
+\quad Wavelet - local shape          &   &   &   &   &   &   &   & x &   &   &   &   &   &   &   &   &   &   \\ \hline
+\quad Wavelet - local scale/shift    &   &   &   &   &   &   &   & x &   &   &   &   &   &   &   &   &   &   \\ \hline
+\quad Local noise                    &   &   &   &   &   &   &   & x &   &   &   &   &   &   &   &   &   &   \\ \hline
 \end{tabular}

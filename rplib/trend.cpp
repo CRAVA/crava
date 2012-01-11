@@ -22,7 +22,7 @@ ConstantTrend::~ConstantTrend() {
 }
 
 
-Trend1D::Trend1D(const std::vector<double>& trend, double s1_min, double s1_max) : 
+Trend1D::Trend1D(const std::vector<double>& trend, double s1_min, double s1_max) :
   trend_(trend), s1_min_(s1_min), s1_max_(s1_max) {
 
   if(!(s1_max_ > s1_min_ && !trend_.empty()))
@@ -35,7 +35,7 @@ Trend1D::~Trend1D() {
 
 }
 
-double 
+double
 Trend1D::GetValue(double s1, double /*s2*/) const {
   //Linear interpolation method
   double i = (s1 - s1_min_)*inv_s1_inc_;
@@ -55,7 +55,7 @@ Trend1D::GetValue(double s1, double /*s2*/) const {
 
 }
 
-Trend2D::Trend2D(const std::vector<double>& trend, 
+Trend2D::Trend2D(const std::vector<double>& trend,
                  double s1_min, double s1_max, int ns1,
                  double s2_min, double s2_max, int ns2) :
  trend_(trend), s1_min_(s1_min), s1_max_(s1_max), ns1_(ns1),
@@ -72,7 +72,7 @@ Trend2D::Trend2D(const std::vector<double>& trend,
 
 }
 
-double 
+double
 Trend2D::GetValue(double s1, double s2) const {
 
   //Bilinear interpolation method
@@ -88,19 +88,19 @@ Trend2D::GetValue(double s1, double s2) const {
   double val = 0;
   if (i1 < 0) {
     if (j1 < 0)
-      val = trend_[0]; 
+      val = trend_[0];
     else if (j1 + 1 > ns2_ - 1)
       val = trend_[0 + (ns2_ - 1)*ns1_];
     else
-      val = t2*trend_[0 + (j1+1)*ns1_] + (1.0 - t2)*trend_[0 + j1*ns1_]; 
+      val = t2*trend_[0 + (j1+1)*ns1_] + (1.0 - t2)*trend_[0 + j1*ns1_];
   }
   else if (i1 + 1 > ns1_ - 1) {
     if (j1 < 0)
-      val = trend_[ns1_ - 1 + 0]; 
+      val = trend_[ns1_ - 1 + 0];
     else if (j1 + 1 > ns2_ - 1)
       val = trend_[ns1_ - 1 + (ns2_ - 1)*ns1_];
     else
-      val = t2*trend_[ns1_ - 1 + (j1+1)*ns1_] + (1.0 - t2)*trend_[ns1_ - 1 + j1*ns1_]; 
+      val = t2*trend_[ns1_ - 1 + (j1+1)*ns1_] + (1.0 - t2)*trend_[ns1_ - 1 + j1*ns1_];
   }
   else if (j1 < 0)// i1 is inside
     val = t1*trend_[i1+1 + 0] + (1.0 - t1)*trend_[i1 + 0];

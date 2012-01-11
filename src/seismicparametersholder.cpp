@@ -19,18 +19,18 @@ SeismicParametersHolder::SeismicParametersHolder(void)
 
 SeismicParametersHolder::~SeismicParametersHolder(void)
 {
-  if(covAlpha_!=NULL)     
+  if(covAlpha_!=NULL)
     delete covAlpha_;
-  if(covBeta_!=NULL)       
+  if(covBeta_!=NULL)
     delete covBeta_;
-  if(covRho_!=NULL)        
+  if(covRho_!=NULL)
     delete covRho_;
 
   if(crCovAlphaBeta_!=NULL)
     delete crCovAlphaBeta_ ;
-  if(crCovAlphaRho_!=NULL) 
+  if(crCovAlphaRho_!=NULL)
     delete crCovAlphaRho_ ;
-  if(crCovBetaRho_!=NULL)  
+  if(crCovBetaRho_!=NULL)
     delete crCovBetaRho_;
   if(muAlpha_!=NULL)
     delete muAlpha_;

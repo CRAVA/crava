@@ -2,7 +2,7 @@
 #define DISTRIBUTIONSSATURATION_H
 
 
-// Abstract class for holding distribution functions for 
+// Abstract class for holding distribution functions for
 // parameters needed for time evolution of saturation.
 class DistributionsSaturation {
 public:

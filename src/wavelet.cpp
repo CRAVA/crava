@@ -6,10 +6,10 @@
 #define _USE_MATH_DEFINES
 #include <cmath>
 
-#include "fft/include/fftw.h"
-#include "fft/include/rfftw.h"
-#include "fft/include/fftw-int.h"
-#include "fft/include/f77_func.h"
+#include "fftw.h"
+#include "rfftw.h"
+#include "fftw-int.h"
+#include "f77_func.h"
 
 #include "lib/lib_matr.h"
 
@@ -48,7 +48,7 @@ Wavelet::Wavelet(int dim)
 
 
 
-Wavelet::Wavelet(int       dim, 
+Wavelet::Wavelet(int       dim,
                  Wavelet * wavelet)
   : theta_(wavelet->getTheta()),
     dz_(wavelet->getDz()),
@@ -70,28 +70,28 @@ Wavelet::Wavelet(int       dim,
 
   cnzp_ = nzp_/2+1;
   rnzp_ = 2*cnzp_;
-  rAmp_ = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));  
+  rAmp_ = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));
   cAmp_ = reinterpret_cast<fftw_complex*>(rAmp_);
 
   if(isReal_)
     for(int i = 0; i < rnzp_; i++) {
-      rAmp_[i] = wavelet->getRAmp(i);  
+      rAmp_[i] = wavelet->getRAmp(i);
     }
   else //NBNB-Frode: This will never happen?
     for(int i = 0; i < cnzp_; i++) {
-      cAmp_[i].re = wavelet->getCAmp(i).re; 
-      cAmp_[i].im = wavelet->getCAmp(i).im; 
+      cAmp_[i].re = wavelet->getCAmp(i).re;
+      cAmp_[i].im = wavelet->getCAmp(i).im;
     }
 }
 
 
-Wavelet::Wavelet(const std::string & fileName, 
-                 int                 fileFormat, 
-                 ModelSettings     * modelSettings, 
+Wavelet::Wavelet(const std::string & fileName,
+                 int                 fileFormat,
+                 ModelSettings     * modelSettings,
                  float             * reflCoef,
                  float               theta,
                  int                 dim,
-                 int               & errCode, 
+                 int               & errCode,
                  std::string       & errText)
   : theta_(theta),
     inFFTorder_(false),
@@ -105,7 +105,7 @@ Wavelet::Wavelet(const std::string & fileName,
   coeff_[1]       = reflCoef[1];
   coeff_[2]       = reflCoef[2];
   switch (fileFormat) {
-  case JASON: 
+  case JASON:
     WaveletReadJason(fileName, errCode, errText);
     break;
   case NORSAR:
@@ -117,7 +117,7 @@ Wavelet::Wavelet(const std::string & fileName,
   LogKit::LogFormatted(LogKit::Low,"\n  Estimated wavelet length:  %.1fms.\n",waveletLength_);
 
   if(errCode == 0) {
-    for(int i=0; i < rnzp_ ;i++) {  
+    for(int i=0; i < rnzp_ ;i++) {
       if(i < nzp_)
         rAmp_[i]*=scale_;
       else
@@ -125,10 +125,10 @@ Wavelet::Wavelet(const std::string & fileName,
     }//end for i
   }
 }
-Wavelet::Wavelet(ModelSettings     * modelSettings, 
+Wavelet::Wavelet(ModelSettings     * modelSettings,
                  float             * reflCoef,
                  float               theta,
-                 int                 dim, 
+                 int                 dim,
                  float               peakFrequency,
                  int               & errCode)
   : theta_(theta),
@@ -143,14 +143,14 @@ Wavelet::Wavelet(ModelSettings     * modelSettings,
   coeff_[1]       = reflCoef[1];
   coeff_[2]       = reflCoef[2];
    int length = 119;
-   
+
   dz_ = 1.0;
   nz_ = 2*length + 1;
  // cz_   =  static_cast<int>(floor((fabs(shift/dz_))+0.5));
   cz_ = length;
   nzp_  = nz_;
   cnzp_ = nzp_/2+1;
-  rnzp_ = 2*cnzp_; 
+  rnzp_ = 2*cnzp_;
   rAmp_ = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp_));
   cAmp_ = reinterpret_cast<fftw_complex*>(rAmp_);
   norm_ = RMISSING;
@@ -172,7 +172,7 @@ Wavelet::Wavelet(ModelSettings     * modelSettings,
   LogKit::LogFormatted(LogKit::Low,"\n  Estimated wavelet length:  %.1fms.\n",waveletLength_);
 
   if(errCode == 0) {
-    for(int i=0; i < rnzp_ ;i++) {  
+    for(int i=0; i < rnzp_ ;i++) {
       if(i < nzp_)
         rAmp_[i]*=scale_;
       else
@@ -180,11 +180,11 @@ Wavelet::Wavelet(ModelSettings     * modelSettings,
     }//end for i
   }
   printToFile("ricker20.txt",true);
- 
+
 }
 
-Wavelet::Wavelet(int /*difftype */, 
-                 int nz, 
+Wavelet::Wavelet(int /*difftype */,
+                 int nz,
                  int nzp)
   : theta_(RMISSING),
     dz_(RMISSING),
@@ -198,7 +198,7 @@ Wavelet::Wavelet(int /*difftype */,
 {
 }
 
-Wavelet::Wavelet(Wavelet * wavelet, 
+Wavelet::Wavelet(Wavelet * wavelet,
                  int     /*  difftype */)
   : theta_(wavelet->getTheta()),
     dz_(wavelet->getDz()),
@@ -211,7 +211,7 @@ Wavelet::Wavelet(Wavelet * wavelet,
     shiftGrid_(NULL),
     gainGrid_(NULL)
 {
-  if(! wavelet->getIsReal() ) 
+  if(! wavelet->getIsReal() )
     wavelet->invFFT1DInPlace();
   isReal_    = wavelet->getIsReal();  //NBNB-Frode: Always true?
   norm_      = wavelet->getNorm();
@@ -224,7 +224,7 @@ Wavelet::setupAsVector(int nz, int nzp)
   nzp_  = nzp;
   cnzp_ = nzp_/2+1;
   rnzp_ = 2*cnzp_;
-  rAmp_ = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));  
+  rAmp_ = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));
   cAmp_ = reinterpret_cast<fftw_complex*>(rAmp_);
 
   coeff_[0] = 0;
@@ -245,8 +245,8 @@ void Wavelet::fft1DInPlace()
 {
   // use the operator version of the fourier transform
   if(isReal_) {
-    int flag; 
-    rfftwnd_plan plan;  
+    int flag;
+    rfftwnd_plan plan;
     flag    = FFTW_ESTIMATE | FFTW_IN_PLACE;
     plan    = rfftwnd_create_plan(1, &nzp_ ,FFTW_REAL_TO_COMPLEX,flag);
     //
@@ -264,7 +264,7 @@ void Wavelet::invFFT1DInPlace()
   // use the operator version of the fourier transform
   if(!isReal_) {
     int flag;
-    rfftwnd_plan plan; 
+    rfftwnd_plan plan;
 
     flag = FFTW_ESTIMATE | FFTW_IN_PLACE;
     plan= rfftwnd_create_plan(1,&nzp_,FFTW_COMPLEX_TO_REAL,flag);
@@ -273,13 +273,13 @@ void Wavelet::invFFT1DInPlace()
     isReal_=true;
     double scale= static_cast<double>(1.0/static_cast<double>(nzp_));
     for(int i=0; i < nzp_; i++)
-      rAmp_[i] = static_cast<fftw_real>(rAmp_[i]*scale);  
+      rAmp_[i] = static_cast<fftw_real>(rAmp_[i]*scale);
   }
 }
 
 
 
-fftw_real  
+fftw_real
 Wavelet::getRAmp(int k)
 {
   fftw_real value;
@@ -303,7 +303,7 @@ Wavelet::getRAmp(int k)
 }
 
 
-fftw_complex   
+fftw_complex
 Wavelet::getCAmp(int k) const
 {
   assert(!isReal_);
@@ -322,8 +322,8 @@ Wavelet::getCAmp(int k) const
 }
 
 
-fftw_complex   
-Wavelet::getCAmp(int    k, 
+fftw_complex
+Wavelet::getCAmp(int    k,
                  float  scale) const
 {
   ///////////////////////////////////////////////////////////
@@ -331,16 +331,16 @@ Wavelet::getCAmp(int    k,
   // Get the  fourier transform of the streched wavelet.
   // scale is  in [0 1] wavelet
   // scale = 1 this is identical to getCAmp(int k)
-  // We use the normal scale relation:  
-  //  
+  // We use the normal scale relation:
+  //
   // FFT( w(s*t) ) = fw(w/s) * ( 1/s )   with  fw( w ) = FFT( w(t) )
   //
-  ///////////////////////////////////////////////////////////// 
+  /////////////////////////////////////////////////////////////
 
   assert(!isReal_);
 
   fftw_complex  value;
-  float omega,dOmega;  
+  float omega,dOmega;
   int   omU, omL;
   if( k < cnzp_) {
     omega  = float(k) / scale;
@@ -351,8 +351,8 @@ Wavelet::getCAmp(int    k,
     else {
       omL        = int(floor( omega ));
       omU        = int( floor( omega )) + 1;
-      if(omU >= cnzp_) 
-        omU -= 1;    
+      if(omU >= cnzp_)
+        omU -= 1;
 
       dOmega     = omega - float(omL);
       value.re =  cAmp_[omL].re * ( 1.0f - dOmega ) + cAmp_[omU].re * dOmega;
@@ -370,7 +370,7 @@ Wavelet::getCAmp(int    k,
     else {
       omL        = int(floor( omega ));
       omU        = int( floor( omega )) + 1;
-      if(omU >= cnzp_) 
+      if(omU >= cnzp_)
         omU -= 1;
       dOmega     = omega - float(omL);
       value.re =  cAmp_[omL].re * ( 1.0f - dOmega ) + cAmp_[omU].re * dOmega;
@@ -378,19 +378,19 @@ Wavelet::getCAmp(int    k,
     }
   }
   value.re /= scale;
-  value.im /= scale; 
+  value.im /= scale;
   return value;
 }
 
-void           
-Wavelet::setRAmp(float  value, 
+void
+Wavelet::setRAmp(float  value,
                  int    k)
 {
   rAmp_[k] = value;
 }
 
-void           
-Wavelet::setCAmp(fftw_complex value, 
+void
+Wavelet::setCAmp(fftw_complex value,
                  int    k)
 {
   cAmp_[k].re = value.re;
@@ -399,26 +399,26 @@ Wavelet::setCAmp(fftw_complex value,
 
 void
 Wavelet::convolve(fftw_complex  * var1_c ,
-                    fftw_complex  * var2_c, 
+                    fftw_complex  * var2_c,
                     fftw_complex  * out_c,
                     int             cnzp) const
 {
   for(int i=0;i<cnzp;i++) {
-    out_c[i].re = var1_c[i].re*var2_c[i].re+var1_c[i].im*var2_c[i].im; 
+    out_c[i].re = var1_c[i].re*var2_c[i].re+var1_c[i].im*var2_c[i].im;
     out_c[i].im = var1_c[i].im*var2_c[i].re - var1_c[i].re*var2_c[i].im;
   }
 }
 
 
 void
-Wavelet::resample(float dz, 
-                  int   nz, 
-                  int   nzp) 
+Wavelet::resample(float dz,
+                  int   nz,
+                  int   nzp)
 {
   //LogKit::LogFormatted(LogKit::Low,"  Resampling wavelet\n");
   assert(isReal_);
   assert(!inFFTorder_);
-  
+
   int cnzp  =  nzp/2 + 1;
   int rnzp  =  2*cnzp;
 
@@ -429,7 +429,7 @@ Wavelet::resample(float dz,
     if(k < nzp) {
       if(k < nzp/2+1)
         z = static_cast<float>( dz*k );
-      else 
+      else
         z = static_cast<float>( dz*(k-nzp) );
       wlet[k] = getWaveletValue(z, rAmp_ , cz_, nz_, dz_);
     }
@@ -438,12 +438,12 @@ Wavelet::resample(float dz,
   }
   fftw_free( rAmp_);
 
-  double norm2 = 0.0; 
-  for(int k=0; k < nzp; k++) 
+  double norm2 = 0.0;
+  for(int k=0; k < nzp; k++)
     norm2 += static_cast<double> (wlet[k]*wlet[k]);
   norm_       = static_cast<float>(sqrt( norm2));
 
-  rAmp_       = static_cast<fftw_real *>(wlet); // rAmp_ is not allocated 
+  rAmp_       = static_cast<fftw_real *>(wlet); // rAmp_ is not allocated
   cAmp_       = reinterpret_cast<fftw_complex*>(rAmp_);
   nzp_        = nzp;
   rnzp_       = rnzp;
@@ -460,10 +460,10 @@ Wavelet::resample(float dz,
   }
 }
 
-void 
+void
 Wavelet::multiplyRAmpByConstant(float c)
 {
-  for(int i=0; i < rnzp_ ;i++) {  
+  for(int i=0; i < rnzp_ ;i++) {
     if(i < nzp_)
       rAmp_[i]*=c;
     else
@@ -484,7 +484,7 @@ Wavelet::scale(float scale)
 }
 
 void
-Wavelet::printToFile(const std::string & fileName, 
+Wavelet::printToFile(const std::string & fileName,
                      bool                overrideDebug)
 {
   if(overrideDebug == true || ModelSettings::getDebugLevel() > 0) {
@@ -498,12 +498,12 @@ Wavelet::printToFile(const std::string & fileName,
 }
 
 void
-Wavelet::writeWaveletToFile(const std::string & fileName, 
+Wavelet::writeWaveletToFile(const std::string & fileName,
                             float               approxDzIn)
 {
   float approxDz = std::min(approxDzIn,static_cast<float>(floor(dz_*10)/10));
   approxDz = std::min(approxDzIn,dz_);
-  
+
   //Trick: Written wavelet may be shorter than the actual.
   //This gives inconsistency if a wavelet is read and written.
   //Make consistent by truncating wavelet to writing range before interpolation.
@@ -516,17 +516,17 @@ Wavelet::writeWaveletToFile(const std::string & fileName,
     rAmp_[nzp_-i]    = 0;
   }
   float          T            = nzp_*dz_;
-  int            nzpNew       = int(ceil(T/approxDz - 0.5));  
+  int            nzpNew       = int(ceil(T/approxDz - 0.5));
   float          dznew        = T/float(nzpNew);
   int            cnzpNew      = (nzpNew/2)+1;
-  
+
   fftw_real    * waveletNew_r =  new fftw_real[2*cnzpNew];
   fftw_complex * waveletNew_c =  reinterpret_cast<fftw_complex*>(waveletNew_r);
 
   fft1DInPlace();
 
   double         multiplyer = static_cast<double>(nzpNew)/static_cast<double>(nzp_);
-  
+
   for(int i=0;i<cnzpNew;i++) {
     if(i < cnzp_) {
       waveletNew_c[i].re = static_cast<fftw_real>(cAmp_[i].re*multiplyer);
@@ -534,7 +534,7 @@ Wavelet::writeWaveletToFile(const std::string & fileName,
       if((i==(cnzp_-1)) & (2*((cnzp_-1)/2) != cnzp_-1)) //boundary effect in fft domain
         waveletNew_c[i].re*=0.5;
     }
-    else { 
+    else {
       waveletNew_c[i].re = 0;
       waveletNew_c[i].im = 0;
     }
@@ -545,32 +545,32 @@ Wavelet::writeWaveletToFile(const std::string & fileName,
     rAmp_[nzp_-i] = remember[nzp_-i];
   }
   delete [] remember;
-  
-  
+
+
   Utils::fftInv(waveletNew_c,waveletNew_r,nzpNew );// note might be n^2 algorithm for some nzpNew
-  
+
   int wLength = int(floor(waveletLength_/dznew+0.5));
   int halfLength = wLength/2; // integer division
   wLength =  halfLength*2+1;// allways odd
-  if( wLength>nzpNew) {  
+  if( wLength>nzpNew) {
     wLength=2*(nzpNew/2)-1;// allways odd
     halfLength=wLength/2;
   }
-  
+
   float shift = -dznew*halfLength;
-  
+
   std::string fName;
   std::ofstream file;
-  
+
   if ((formats_ & IO::JASONWAVELET)>0)
     {
     fName = std::string(fileName) + NRLib::ToString(theta_*(180/NRLib::Pi), 1) + "deg" + IO::SuffixJasonWavelet();
     fName = IO::makeFullFileName(IO::PathToWavelets(), fName);
-    
+
     LogKit::LogFormatted(LogKit::Medium,"  Writing Wavelet to file \'"+fName+"\'\n");
-    
+
     NRLib::OpenWrite(file, fName);
-    
+
     file << "\"* Export format using Comma Separated Values\"\n"
          << "\"* Wavelet written from CRAVA\"\n"
          << "\"* Generated \"\n"
@@ -585,13 +585,13 @@ Wavelet::writeWaveletToFile(const std::string & fileName,
          << "\"* Data values are represented as floating point numbers,\"\n"
          << "\"* \"\n"
          << "\"wavelet\",\"none\",\"time\",\"ms\"\n"
-         << std::fixed 
+         << std::fixed
          << std::setprecision(0)
          << shift   << "\n"
          << std::setprecision(2)
          << dznew   << "\n"
          << wLength << "\n";
-    
+
     for(int i=halfLength ; i > 0 ; i--)
       file << std::setprecision(6) << waveletNew_r[nzpNew-i] << "\n";
     for(int i=0;i<=halfLength;i++)
@@ -599,12 +599,12 @@ Wavelet::writeWaveletToFile(const std::string & fileName,
     file.close();
   }
 
-  if ((formats_ & IO::NORSARWAVELET)>0)  
+  if ((formats_ & IO::NORSARWAVELET)>0)
     {
     //Writing wavelet in swav-format
     fName = std::string(fileName) + NRLib::ToString(theta_*(180/NRLib::Pi), 1) + "deg" + IO::SuffixNorsarWavelet();
     fName = IO::makeFullFileName(IO::PathToWavelets(), fName);
-  
+
     int   cznew = static_cast<int>(floor((fabs(shift/dznew))+0.5));
     float t0    = static_cast<float>(-dznew * cznew);
 
@@ -615,7 +615,7 @@ Wavelet::writeWaveletToFile(const std::string & fileName,
     file << "pulse file-3\n"
          << "* Written by CRAVA\n"
          << "* time - millisec - sample value legend\n"
-         << "Time 1 Amplitude\n" 
+         << "Time 1 Amplitude\n"
          << "* Min, main and max frequency/wavenumber\n"
          << "-999.99 -999.99 -999.99\n"
          << "* Number of samples - millisec sampling - time at first sample\n"
@@ -626,7 +626,7 @@ Wavelet::writeWaveletToFile(const std::string & fileName,
          << dznew
          << " "
          << std::setprecision(0)
-         << t0  
+         << t0
          << "\n";
 
     for (int i = halfLength ; i > 0 ; i--)
@@ -639,20 +639,20 @@ Wavelet::writeWaveletToFile(const std::string & fileName,
   delete [] waveletNew_r;
 }
 
-void 
+void
 Wavelet::setShiftGrid(Grid2D *grid)
 {
   if(shiftGrid_ != NULL)
     delete [] shiftGrid_;
-  shiftGrid_ = grid; 
+  shiftGrid_ = grid;
 }
 
-void 
+void
 Wavelet::setGainGrid(Grid2D * grid)
 {
   double sum = 0.0;
   int nData = 0;
-  
+
   if(gainGrid_ != NULL)
     delete [] gainGrid_;
   gainGrid_ = grid;
@@ -685,7 +685,7 @@ Wavelet::setGainGrid(Grid2D * grid)
 //////////////////////////////////////////////////////////////////////////////////////////////////
 //////////PROTECTED MEMBER METHODS////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////
-void 
+void
 Wavelet::doLocalShiftAndScale1D(Wavelet1D* localWavelet,// wavelet to shift and scale
                                  int       i,
                                  int       j)
@@ -703,8 +703,8 @@ Wavelet::findWaveletLength(float minRelativeAmp)
     invFFT1DInPlace();
     trans=true;
   }
-  
-  float maxAmp =  fabs(getRAmp(0)); // gets max amp 
+
+  float maxAmp =  fabs(getRAmp(0)); // gets max amp
   for(int i=1;i <nzp_;i++)
     if(fabs(getRAmp(i)) > maxAmp)
       maxAmp = fabs(getRAmp(i));
@@ -715,11 +715,11 @@ Wavelet::findWaveletLength(float minRelativeAmp)
 
   for(int i=nzp_/2;i>0;i--) {
     if(fabs(getRAmp(i)) >minAmp) {
-      wLength= (i*2+1);// adds both sides 
+      wLength= (i*2+1);// adds both sides
       break;
     }
     if(fabs(getRAmp(nzp_-i)) > minAmp) {
-      wLength= (2*i+1);// adds both sides 
+      wLength= (2*i+1);// adds both sides
       break;
     }
   }
@@ -732,15 +732,89 @@ Wavelet::findWaveletLength(float minRelativeAmp)
 
 float
 Wavelet::findNorm() const
-{
+{ // note there is a difference in scale since wavelet is an operator,
+  // the squared norm in fft domain is nzp_ times the squared in regular domain.
+  // for consistency we use the norm in real (time) domain
   double norm2=0.0;
-  for(int i=0; i < nzp_; i++ )
-    norm2 += static_cast<double> (rAmp_[i]*rAmp_[i]);
+  if(isReal_)
+    for(int i=0; i < nzp_; i++ )
+      norm2 += static_cast<double> (rAmp_[i]*rAmp_[i]);
+  else
+  {
+    double fac=1.0/double(nzp_);
+    norm2 = static_cast<double> (cAmp_[0].re*cAmp_[0].re*fac);
+    for(int i=1;i<cnzp_;i++)
+      norm2 += static_cast<double> (2.0*fac*(cAmp_[i].re*cAmp_[i].re+cAmp_[i].im*cAmp_[i].im));
+  }
+
   float norm = static_cast<float>(sqrt(norm2));
   return norm;
 }
 
-fftw_real* 
+float
+Wavelet::findNormWithinFrequencyBand(float loCut ,float hiCut ) const
+{ // note there is a difference in scale since wavelet is an operator,
+  // the squared norm in fft domain is nzp_ times the squared in regular domain.
+  // for consistency we use the norm in real (time) domain
+  double norm2=0.0;
+
+  assert(!isReal_);
+
+  float dOmega = 1.0/(nzp_*dz_*0.001);
+  int loI = std::max<int>(0,static_cast<int>(floor(loCut/dOmega)));
+  int hiI = std::min<int>(cnzp_,static_cast<int>(ceil(hiCut/dOmega)));
+
+  double fac=1.0/double(nzp_);
+  for(int i=loI;i<hiI;i++)
+    norm2 += static_cast<double> (2.0*fac*(cAmp_[i].re*cAmp_[i].re+cAmp_[i].im*cAmp_[i].im));
+
+  if(loI==0)
+    norm2 -=fac*(cAmp_[0].re*cAmp_[0].re+cAmp_[0].im*cAmp_[0].im);
+
+  float norm = static_cast<float>(sqrt(norm2));
+
+  return norm;
+}
+
+void
+Wavelet::nullOutsideFrequencyBand(float loCut ,float hiCut )
+{ // note there is a difference in scale since wavelet is an operator,
+  // the squared norm in fft domain is nzp_ times the squared in regular domain.
+  // for consistency we use the norm in real (time) domain
+  assert(!isReal_);
+
+  float dOmega = 1.0/(nzp_*dz_*0.001);
+  int loI = std::max<int>(0,static_cast<int>(floor(loCut/dOmega)));
+  int hiI = std::min<int>(cnzp_,static_cast<int>(ceil(hiCut/dOmega)));
+
+  double fac=1.0/double(nzp_);
+
+  for(int i=0;i<loI;i++)
+  {
+    cAmp_[i].re=0;
+    cAmp_[i].im=0;
+  }
+
+  for(int i =hiI;i<cnzp_;i++)
+  {
+    cAmp_[i].re=0;
+    cAmp_[i].im=0;
+  }
+
+  float norm2=0;
+  for(int i=loI;i<hiI;i++)
+    norm2 += static_cast<double> (2.0*fac*(cAmp_[i].re*cAmp_[i].re+cAmp_[i].im*cAmp_[i].im));
+  if(loI==0)
+      norm2 -=fac*(cAmp_[0].re*cAmp_[0].re+cAmp_[0].im*cAmp_[0].im);
+
+  setNorm(static_cast<float>(sqrt(norm2)));
+}
+
+
+
+
+
+fftw_real*
 Wavelet::averageWavelets(const std::vector<std::vector<fftw_real> > & wavelet_r,
                          int                                          nWells,
                          int                                          nzp,
@@ -749,7 +823,7 @@ Wavelet::averageWavelets(const std::vector<std::vector<fftw_real> > & wavelet_r,
                          float                                        dzOut) const
 {
   // assumes dz[w] < dzOut for all w
-  fftw_real* wave= static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));  
+  fftw_real* wave= static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));
   for(int i=0; i<nzp; i++)
     wave[i] = 0.0; // initialize
 
@@ -760,7 +834,7 @@ Wavelet::averageWavelets(const std::vector<std::vector<fftw_real> > & wavelet_r,
 
   for(int w=0; w<nWells; w++)
     weight[w] = wellWeight[w]/sum;
-  
+
   float ww;
 
   for(int w=0;w<nWells;w++) {
@@ -786,7 +860,7 @@ Wavelet::averageWavelets(const std::vector<std::vector<fftw_real> > & wavelet_r,
       }
     }
   }
-  
+
   std::string fileName;
   fileName = "wavelet_"+NRLib::ToString(int(floor(theta_/NRLib::Pi*180+0.5)))+"_fftOrder_noshift";
   printVecToFile(fileName,wave,nzp_);
@@ -800,7 +874,7 @@ Wavelet::fillInnWavelet(fftw_real* wavelet_r,
                         float dz)
 {
   //Note: Assumes that dz_ > dz
-  // NBNB OddK 
+  // NBNB OddK
   fftw_real previous1 = getRAmp(0);
   fftw_real previous2 = getRAmp(0);
   fftw_real current1 = 0.0f;
@@ -832,13 +906,13 @@ Wavelet::findBulkShift(fftw_real* vec_r,
   float shift=0.0f;
   float sum=0;
   int i,polarity;
-  // if the sum from -maxShift to maxShift ms is 
-  // positive then polarity is positive   
+  // if the sum from -maxShift to maxShift ms is
+  // positive then polarity is positive
   for(i=0;i<ceil(maxShift/dz);i++)//zero included
     sum+=vec_r[i];
   for(i=0;i<floor(maxShift/dz);i++)
     sum+=vec_r[nzp-i-1];
-    
+
   polarity=-1;
   if(sum > 0)
     polarity=1;
@@ -898,12 +972,12 @@ Wavelet::findBulkShift(fftw_real* vec_r,
   }
   shift = shiftF*dz;
   shiftReal(-shiftF,vec_r,nzp);// for testing
- 
+
   return shift;
 }
 
-void 
-Wavelet::shiftReal(float        shift, 
+void
+Wavelet::shiftReal(float        shift,
                    fftw_real  * rAmp,
                    int          nt)
 {
@@ -924,11 +998,11 @@ Wavelet::shiftReal(float        shift,
 }
 
 void
-Wavelet::printVecToFile(const std::string & fileName, 
-                        fftw_real         * vec, 
+Wavelet::printVecToFile(const std::string & fileName,
+                        fftw_real         * vec,
                         int                 nzp) const
 {
-  if( ModelSettings::getDebugLevel() > 0) { 
+  if( ModelSettings::getDebugLevel() > 0) {
     std::string fName = fileName + IO::SuffixGeneralData();
     fName = IO::makeFullFileName(IO::PathToWavelets(), fName);
     std::ofstream file;
@@ -936,21 +1010,21 @@ Wavelet::printVecToFile(const std::string & fileName,
     for(int i=0;i<nzp;i++)
       file << vec[i] << "\n";
     file.close();
-  }  
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 //////////PRIVATE MEMBER METHODS//////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
-float 
-Wavelet::getWaveletValue(float   z, 
-                         float * Wavelet, 
-                         int     center, 
-                         int     nz, 
+float
+Wavelet::getWaveletValue(float   z,
+                         float * Wavelet,
+                         int     center,
+                         int     nz,
                          float   dz)
 {
-  // returns the value of the vavelet in the location z. Wavelet have the length nz 
+  // returns the value of the vavelet in the location z. Wavelet have the length nz
   // and the center value is Wavelet[center]
   // uses kriging with ricker 20Hz wavelet as correlation function.
   float value;
@@ -963,7 +1037,7 @@ Wavelet::getWaveletValue(float   z,
     ind[k]=  ind[2]+k-2;
 
   for(k=0;k<6;k++)
-    val[k]=  getArrayValueOrZero(ind[k]+center , Wavelet,  nz); 
+    val[k]=  getArrayValueOrZero(ind[k]+center , Wavelet,  nz);
 
   double** Cov = new double*[6];
   double*  cov = new double[6];
@@ -971,7 +1045,7 @@ Wavelet::getWaveletValue(float   z,
   double   deltaT;
 
   for(k=0;k<6;k++)
-  { 
+  {
     Cov[k] = new double[6];
     deltaT = (dz*ind[k]-z)*0.001;
     cov[k] = (1-2*nu*nu*NRLib::Pi*NRLib::Pi*(deltaT)*(deltaT))*exp(-nu*nu*NRLib::Pi*NRLib::Pi*(deltaT)*(deltaT));
@@ -983,7 +1057,7 @@ Wavelet::getWaveletValue(float   z,
   }
   //OK not very intellegent implementation since chol is done for each time step.
   lib_matrCholR(6,  Cov);
-  lib_matrAxeqbR(6, Cov, cov); // cov contains now the kriging weigths; 
+  lib_matrAxeqbR(6, Cov, cov); // cov contains now the kriging weigths;
 
   value = 0.0;
   for(k=0;k<6;k++)
@@ -1000,9 +1074,9 @@ Wavelet::getWaveletValue(float   z,
 
 
 
-float 
+float
 Wavelet::getArrayValueOrZero(int     i,
-                             float * Wavelet, 
+                             float * Wavelet,
                              int     nz) const
 {
   float value;
@@ -1010,18 +1084,18 @@ Wavelet::getArrayValueOrZero(int     i,
   if(i > -1 && i < nz)
     value = Wavelet[i];
   else
-    value = 0.0; 
+    value = 0.0;
   return value;
 }
 
 
-float  
-Wavelet::getLocalTimeshift(int i, 
+float
+Wavelet::getLocalTimeshift(int i,
                            int j) const
 {
   float shift = 0.0f;
 
-  if(shiftGrid_ != NULL && i < static_cast<int>(shiftGrid_->GetNI()) && i>=0 && 
+  if(shiftGrid_ != NULL && i < static_cast<int>(shiftGrid_->GetNI()) && i>=0 &&
      j < static_cast<int>(shiftGrid_->GetNJ()) &&  j>=0) {
     if((*shiftGrid_)(i,j) != WELLMISSING)
       shift = float((*shiftGrid_)(i,j));
@@ -1030,13 +1104,13 @@ Wavelet::getLocalTimeshift(int i,
   return shift;
 }
 
-float  
-Wavelet::getLocalGainFactor(int i, 
+float
+Wavelet::getLocalGainFactor(int i,
                             int j) const
 {
   float gain = 1.0f;
-  
-  if(gainGrid_ != NULL && i < static_cast<int>(gainGrid_->GetNI()) &&  i>=0 && 
+
+  if(gainGrid_ != NULL && i < static_cast<int>(gainGrid_->GetNI()) &&  i>=0 &&
     j < static_cast<int>(gainGrid_->GetNJ()) &&  j>=0) {
     if((*gainGrid_)(i,j) != WELLMISSING)
       gain = float((*gainGrid_)(i,j));
@@ -1047,29 +1121,29 @@ Wavelet::getLocalGainFactor(int i,
 
 
 void
-Wavelet::WaveletReadJason(const std::string & fileName, 
-                          int               & errCode, 
+Wavelet::WaveletReadJason(const std::string & fileName,
+                          int               & errCode,
                           std::string       & errText)
 {
   std::ifstream file;
   NRLib::OpenRead(file,fileName);
   std::string dummyStr;
-  
-  bool lineIsComment = true; 
+
+  bool lineIsComment = true;
   int  line          = 0;
   int  thisLine      = 0;
 
   while( lineIsComment == true) {
     if(NRLib::CheckEndOfFile(file)) {
       errText += "Error: End of file "+fileName+" premature.\n";
-      errCode=1; 
+      errCode=1;
       return;
     }
 
     NRLib::ReadNextToken(file,dummyStr,line);
     if (line == thisLine)
       NRLib::DiscardRestOfLine(file,line,false);
-    thisLine = line;        
+    thisLine = line;
     if((dummyStr[0]!='*') &  (dummyStr[0]!='"')) {
       lineIsComment = false;
     }
@@ -1079,9 +1153,9 @@ Wavelet::WaveletReadJason(const std::string & fileName,
 
   if (NRLib::CheckEndOfFile(file))  {
     errText += "Error: End of file "+fileName+" premature.\n";
-    errCode=1; 
+    errCode=1;
     return;
-  } 
+  }
   NRLib::ReadNextToken(file,dummyStr,line);
   if (line == thisLine)
     NRLib::DiscardRestOfLine(file,line,false);
@@ -1091,19 +1165,19 @@ Wavelet::WaveletReadJason(const std::string & fileName,
 
   if (NRLib::CheckEndOfFile(file)) {
     errText += "Error: End of file "+fileName+" premature.\n";
-    errCode=1; 
+    errCode=1;
     return;
   }
-  NRLib::ReadNextToken(file,dummyStr,line); 
+  NRLib::ReadNextToken(file,dummyStr,line);
   if (line == thisLine)
     NRLib::DiscardRestOfLine(file,line,false);
   thisLine = line;
- 
+
   nz_ = NRLib::ParseType<int>(dummyStr);
   cz_   =  static_cast<int>(floor((fabs(shift/dz_))+0.5));
   nzp_  = nz_;
   cnzp_ = nzp_/2+1;
-  rnzp_ = 2*cnzp_; 
+  rnzp_ = 2*cnzp_;
   rAmp_ = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp_));
   cAmp_ = reinterpret_cast<fftw_complex*>(rAmp_);
   norm_ = RMISSING;
@@ -1111,9 +1185,9 @@ Wavelet::WaveletReadJason(const std::string & fileName,
   for(int i=0; i<nz_;i++) {
     if (NRLib::CheckEndOfFile(file)) {
       errText += "Error: End of file "+fileName+" premature.\n";
-      errCode=1; 
+      errCode=1;
       return;
-    } 
+    }
     NRLib::ReadNextToken(file,dummyStr,line);
 
     rAmp_[i] = static_cast<fftw_real>(NRLib::ParseType<float>(dummyStr));
@@ -1122,15 +1196,15 @@ Wavelet::WaveletReadJason(const std::string & fileName,
 }
 
 void
-Wavelet::WaveletReadNorsar(const std::string & fileName, 
-                           int               & errCode, 
+Wavelet::WaveletReadNorsar(const std::string & fileName,
+                           int               & errCode,
                            std::string       & errText)
 {
   std::ifstream file;
   NRLib::OpenRead(file,fileName);
   std::string dummyStr;
-  
-  bool  lineIsComment = true; 
+
+  bool  lineIsComment = true;
   int   line          = 0;
   int   timeUnits;
   float milliSec;
@@ -1143,12 +1217,12 @@ Wavelet::WaveletReadNorsar(const std::string & fileName,
   while (lineIsComment == true) {
     if(NRLib::CheckEndOfFile(file)) {
       errText += "Error: End of file "+fileName+" premature.\n";
-      errCode=1; 
+      errCode=1;
       return;
     }
 
     NRLib::ReadNextToken(file,dummyStr,line);
-    if (dummyStr[0] != '*') 
+    if (dummyStr[0] != '*')
       lineIsComment = false;
     else
       NRLib::DiscardRestOfLine(file,line,false);
@@ -1170,30 +1244,30 @@ Wavelet::WaveletReadNorsar(const std::string & fileName,
   while( lineIsComment == true) {
     if(NRLib::CheckEndOfFile(file)) {
       errText += "Error: End of file "+fileName+" premature.\n";
-      errCode=1; 
+      errCode=1;
       return;
     }
 
     NRLib::ReadNextToken(file,dummyStr,line);
-    if (dummyStr[0] != '*') 
+    if (dummyStr[0] != '*')
       lineIsComment = false;
     else
       NRLib::DiscardRestOfLine(file,line,false);
   }
- 
+
   NRLib::DiscardRestOfLine(file,line,false); //Line contains frequency information not used by CRAVA
 
   // Sample info
-  lineIsComment = true; 
+  lineIsComment = true;
   while( lineIsComment == true) {
     if(NRLib::CheckEndOfFile(file)) {
       errText += "Error: End of file "+fileName+" premature.\n";
-      errCode=1; 
+      errCode=1;
       return;
     }
 
     NRLib::ReadNextToken(file,dummyStr,line);
-    if (dummyStr[0] != '*') 
+    if (dummyStr[0] != '*')
       lineIsComment = false;
     else
       NRLib::DiscardRestOfLine(file,line,false);
@@ -1202,12 +1276,12 @@ Wavelet::WaveletReadNorsar(const std::string & fileName,
   nz_         = NRLib::ParseType<int>(dummyStr);
   samplingInt = NRLib::ReadNext<float>(file,line);
   firstSample = NRLib::ReadNext<float>(file,line);
-  
+
   dz_   = samplingInt * milliSec;
   cz_   = static_cast<int>((-firstSample / dz_) + 0.5);
   nzp_  = nz_;
   cnzp_ = nzp_/2+1;
-  rnzp_ = 2*cnzp_; 
+  rnzp_ = 2*cnzp_;
   rAmp_ = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp_));
   cAmp_ = reinterpret_cast<fftw_complex*>(rAmp_);
   norm_ = RMISSING;
@@ -1216,9 +1290,9 @@ Wavelet::WaveletReadNorsar(const std::string & fileName,
   for(int i=0; i<nz_;i++) {
     if (NRLib::CheckEndOfFile(file)) {
       errText += "Error: End of file "+fileName+" premature.\n";
-      errCode=1; 
+      errCode=1;
       return;
-    } 
+    }
     NRLib::ReadNextToken(file,dummyStr,line);
 
     rAmp_[i] = static_cast<fftw_real>(NRLib::ParseType<float>(dummyStr));
@@ -1226,7 +1300,7 @@ Wavelet::WaveletReadNorsar(const std::string & fileName,
   file.close();
 }
 
-double 
+double
 Wavelet::Ricker(double t, float peakF)
 {
   double c = NRLib::Pi * NRLib::Pi * peakF * peakF * t * t * 1e-6;

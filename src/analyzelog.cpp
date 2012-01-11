@@ -48,7 +48,7 @@ Analyzelog::~Analyzelog(void)
 //
 // Do the covariance and correlation estimation
 //
-void 
+void
 Analyzelog::estimate(ModelSettings * modelSettings,
                      Background    * background,
                      std::string   & errTxt)
@@ -57,13 +57,13 @@ Analyzelog::estimate(ModelSettings * modelSettings,
   float ** lnDataBeta  = new float*[nwells_];
   float ** lnDataRho   = new float*[nwells_];
 
-  // We do not want syntethic Vs logs to part of the estimation of Var(Vs), 
-  // Cov(Vp,Vs) and Cov(Vs,Rho) if non-synthetic logs exists. If all Vs logs 
+  // We do not want syntethic Vs logs to part of the estimation of Var(Vs),
+  // Cov(Vp,Vs) and Cov(Vs,Rho) if non-synthetic logs exists. If all Vs logs
   // are synthetic we use them for Var(Vs).
   bool allVsLogsAreSynthetic = true;
   for(int i=0 ; i<nwells_ ; i++)
-  { 
-    allVsLogsAreSynthetic = allVsLogsAreSynthetic && wells_[i]->hasSyntheticVsLog();  
+  {
+    allVsLogsAreSynthetic = allVsLogsAreSynthetic && wells_[i]->hasSyntheticVsLog();
   }
   if (allVsLogsAreSynthetic)
   {
@@ -82,11 +82,11 @@ Analyzelog::estimate(ModelSettings * modelSettings,
   calculateNumberOfLags(numberOfLags_, maxnd, errTxt);
 
   CorrT_ = new float[numberOfLags_+1];
-  float dt = static_cast<float>(simbox_->getdz()); 
+  float dt = static_cast<float>(simbox_->getdz());
 
-  estimateCorrTAndVar0(CorrT_, Var0_, 
-                       lnDataAlpha, lnDataBeta, lnDataRho, 
-                       allVsLogsAreSynthetic, dt, 
+  estimateCorrTAndVar0(CorrT_, Var0_,
+                       lnDataAlpha, lnDataBeta, lnDataRho,
+                       allVsLogsAreSynthetic, dt,
                        numberOfLags_, maxnd,
                        errTxt);
 
@@ -111,22 +111,22 @@ Analyzelog::calculateNumberOfLags(int         & numberOfLags,
   //
   // Find n (number of lags)
   //
-  // Note: The old approach that didn't involve simbox->getTop and 
+  // Note: The old approach that didn't involve simbox->getTop and
   // simbox->getRelThick produced out-of-bounds lags in estimateCorrTAndVar0.
   //
-  // Maybe we can calculate 'n' in a more slick way using min(topsurface) 
+  // Maybe we can calculate 'n' in a more slick way using min(topsurface)
   // and max(bottomsurface)? This will give a faster and nicer code, but
   // also lags that are larger than actually needed.
   //
-  double dt      = simbox_->getdz(); 
+  double dt      = simbox_->getdz();
   double maxdist = 0.0;
   maxnd = 0;
   for(int i=0 ; i<nwells_ ; i++)
   {
     int nd;
-    const double * xpos = wells_[i]->getXpos(nd);      
-    const double * ypos = wells_[i]->getYpos(nd);      
-    const double * zpos = wells_[i]->getZpos(nd);      
+    const double * xpos = wells_[i]->getXpos(nd);
+    const double * ypos = wells_[i]->getYpos(nd);
+    const double * zpos = wells_[i]->getZpos(nd);
     float * z = new float[nd];
     if(nd>maxnd)
       maxnd=nd;
@@ -136,6 +136,7 @@ Analyzelog::calculateNumberOfLags(int         & numberOfLags,
       float yj = static_cast<float>(ypos[j]);
       z[j] = static_cast<float>((zpos[j]-simbox_->getTop(xj,yj))/simbox_->getRelThick(xj,yj));
     }
+    std::string wellErrTxt = "";
     for(int j=0 ; j<nd ; j++)
     {
       for(int k=j+1 ; k<nd ; k++)
@@ -143,20 +144,22 @@ Analyzelog::calculateNumberOfLags(int         & numberOfLags,
         double dist = z[k] - z[j];
         if(dist > maxdist)
           maxdist = dist;
-        if(dist < 0)              // Small negative lags were observed on Smorbukk Sor
-          if (floor(dist/dt+0.5)) // Check that error is numerically significant
+        if(dist < 0) {             // Small negative lags were observed on Smorbukk Sor
+          if (floor(dist/dt+0.5) < 0 && wellErrTxt == "") // Check that error is numerically significant
           {
-            errTxt += std::string("Negative lags in well \'") + wells_[i]->getWellname() +  + "\'.z[k]=";
-            errTxt += NRLib::ToString(z[k],3) + std::string(" z[j]=") + NRLib::ToString(z[j],3) + "\n";
+            wellErrTxt += std::string("Negative lags in well \'") + wells_[i]->getWellname() +  + "\'.z[k]=";
+            wellErrTxt += NRLib::ToString(z[k],3) + std::string(" z[j]=") + NRLib::ToString(z[j],3) + "\n";
           }
+        }
       }
     }
+    errTxt += wellErrTxt;
     delete [] z;
   }
   numberOfLags = int(maxdist/dt)+1;
 }
 
-void 
+void
 Analyzelog::estimateLnData(float      **& lnData,
                            FFTGrid      * background,
                            int            logNr,
@@ -164,23 +167,23 @@ Analyzelog::estimateLnData(float      **& lnData,
 {
   float globalMean = 0.0f;
   int tell = 0;
-  background->setAccessMode(FFTGrid::RANDOMACCESS);  
+  background->setAccessMode(FFTGrid::RANDOMACCESS);
   for(int i=0 ; i<nwells_ ; i++)
-  { 
-    int nd; 
+  {
+    int nd;
     const double * xpos  = wells_[i]->getXpos(nd);
     const double * ypos  = wells_[i]->getYpos(nd);
     const double * zpos  = wells_[i]->getZpos(nd);
-    
+
     const float * wLog = NULL;
     if (logNr == 0)
-      wLog = wells_[i]->getAlpha(nd); 
+      wLog = wells_[i]->getAlpha(nd);
     else if (logNr == 1)
-      wLog = wells_[i]->getBeta(nd); 
+      wLog = wells_[i]->getBeta(nd);
     else if (logNr == 2)
-      wLog = wells_[i]->getRho(nd); 
+      wLog = wells_[i]->getRho(nd);
     else
-      errTxt += std::string("In Analyzelog::estimateLnData: Log number ") + NRLib::ToString(logNr) 
+      errTxt += std::string("In Analyzelog::estimateLnData: Log number ") + NRLib::ToString(logNr)
               + std::string(" does not exist (Vp=1,Vs=2,Rho=3)\n");
 
     float * mean = new float[nd];
@@ -198,14 +201,14 @@ Analyzelog::estimateLnData(float      **& lnData,
       else
         lnData[i][j] = RMISSING;
     }
-    delete [] mean;     
+    delete [] mean;
   }
   background->endAccess();
 
   //
   // Subtract global mean from data.
   //
-  if(tell > 0) 
+  if(tell > 0)
   {
     globalMean /= tell;
     for(int i=0 ; i<nwells_ ; i++)
@@ -228,10 +231,10 @@ Analyzelog::estimateLnData(float      **& lnData,
 //
 // Read background model in well positions.
 //
-void Analyzelog::readMeanData(FFTGrid *cube, int nd, 
-                              const double * xpos, 
-                              const double * ypos, 
-                              const double * zpos, 
+void Analyzelog::readMeanData(FFTGrid *cube, int nd,
+                              const double * xpos,
+                              const double * ypos,
+                              const double * zpos,
                               float * meanValue)
 {
   int i, j, k, n;
@@ -326,7 +329,7 @@ Analyzelog::estimatePointVar0(float      ** Var0,
         sum6 = lnDataBeta[i][j]*lnDataRho[i][j];
         tell6++;
       }
-    }  
+    }
   }
 
   if(tell1 < 2)
@@ -362,19 +365,21 @@ Analyzelog::estimatePointVar0(float      ** Var0,
 // Estimate auto correlation and variances. Use lag 0 to estimate variance.
 //
 void
-Analyzelog::estimateCorrTAndVar0(float       * CorrT, 
+Analyzelog::estimateCorrTAndVar0(float       * CorrT,
                                  float      ** Var0,
                                  float      ** lnDataAlpha,
                                  float      ** lnDataBeta,
                                  float      ** lnDataRho,
                                  bool          allVsLogsAreSynthetic,
-                                 float         dt, 
-                                 int           n, 
+                                 float         dt,
+                                 int           n,
                                  int           maxnd,
                                  std::string & errTxt)
 {
   time_t timestart, timeend;
-  time(&timestart);    
+  time(&timestart);
+
+  std::string tmpErrTxt = "";
 
   float * corTT    = new float[n+1];
   float * varAj    = new float[n+1];
@@ -397,7 +402,7 @@ Analyzelog::estimateCorrTAndVar0(float       * CorrT,
 
   int i,j,k;
   for(i=0;i<n+1;i++)
-  {    
+  {
     varAj[i] = 0.0;
     varBj[i] = 0.0;
     varRj[i] = 0.0;
@@ -422,7 +427,7 @@ Analyzelog::estimateCorrTAndVar0(float       * CorrT,
   for(i=0;i<nwells_;i++)
   {
     time_t timestart, timeend;
-    time(&timestart);    
+    time(&timestart);
     //
     // Extract z-coordinates of each log entry
     //
@@ -456,21 +461,21 @@ Analyzelog::estimateCorrTAndVar0(float       * CorrT,
     int nr=0;
     for(j=0;j<nd;j++)
     {
-      if (dLnAlpha[j] != RMISSING)  
+      if (dLnAlpha[j] != RMISSING)
       {
         indA[na] = j;
         na++;
-      } 
+      }
       if (dLnBeta[j] != RMISSING)
       {
         indB[nb] = j;
         nb++;
-      } 
+      }
       if (dLnRho[j] != RMISSING)
       {
         indR[nr] = j;
         nr++;
-      } 
+      }
     }
     //
     // Calculate Cov_t(A,A), Cov_t(B,B), and Cov_t(R,R)
@@ -482,10 +487,12 @@ Analyzelog::estimateCorrTAndVar0(float       * CorrT,
       for(k=j;k<na;k++) // indA points to nonmissing entries of dLnAlpha[]
       {
         h = static_cast<int>(floor(z[indA[k]]-z[indA[j]]+0.5));
-        covAA[h] += dLnAlpha[indA[j]]*dLnAlpha[indA[k]];
-        varAj[h] += dLnAlpha[indA[j]]*dLnAlpha[indA[j]];
-        varAk[h] += dLnAlpha[indA[k]]*dLnAlpha[indA[k]];
-        nAA[h]++;
+        if(h >= 0) { //Guard against small upwards movements in transformed domain.
+          covAA[h] += dLnAlpha[indA[j]]*dLnAlpha[indA[k]];
+          varAj[h] += dLnAlpha[indA[j]]*dLnAlpha[indA[j]];
+          varAk[h] += dLnAlpha[indA[k]]*dLnAlpha[indA[k]];
+          nAA[h]++;
+        }
       }
     }
     if (allVsLogsAreSynthetic || !wells_[i]->hasSyntheticVsLog())
@@ -495,10 +502,12 @@ Analyzelog::estimateCorrTAndVar0(float       * CorrT,
         for(k=j;k<nb;k++) // indB points to nonmissing entries of dLnBeta[]
         {
           h = static_cast<int>(floor(z[indB[k]]-z[indB[j]]+0.5));
-          covBB[h] += dLnBeta[indB[j]]*dLnBeta[indB[k]];
-          varBj[h] += dLnBeta[indB[j]]*dLnBeta[indB[j]];
-          varBk[h] += dLnBeta[indB[k]]*dLnBeta[indB[k]];
-          nBB[h]++;
+          if(h >= 0) { //Guard against small upwards movements in transformed domain.
+            covBB[h] += dLnBeta[indB[j]]*dLnBeta[indB[k]];
+            varBj[h] += dLnBeta[indB[j]]*dLnBeta[indB[j]];
+            varBk[h] += dLnBeta[indB[k]]*dLnBeta[indB[k]];
+            nBB[h]++;
+          }
         }
       }
     }
@@ -507,18 +516,20 @@ Analyzelog::estimateCorrTAndVar0(float       * CorrT,
       for(k=j;k<nr;k++) // indR points to nonmissing entries of dLnRho[]
       {
         h = static_cast<int>(floor(z[indR[k]]-z[indR[j]]+0.5));
-        covRR[h] += dLnRho[indR[j]]*dLnRho[indR[k]];
-        varRj[h] += dLnRho[indR[j]]*dLnRho[indR[j]];
-        varRk[h] += dLnRho[indR[k]]*dLnRho[indR[k]];
-        nRR[h]++;
+        if(h >= 0) { //Guard against small upwards movements in transformed domain.
+          covRR[h] += dLnRho[indR[j]]*dLnRho[indR[k]];
+          varRj[h] += dLnRho[indR[j]]*dLnRho[indR[j]];
+          varRk[h] += dLnRho[indR[k]]*dLnRho[indR[k]];
+          nRR[h]++;
+        }
       }
     }
     //
     //  Cov_0(A,B) Cov_0(A,R), and Cov_0(B,R)   (Cov_0(B,A),... follows by sym)
     //  -------------------------------------
     //
-    //  We cannot use the reduced loop structure involving indA, indB, and indC 
-    //  when we mix A, B, or R. This is not performance problem, however, since 
+    //  We cannot use the reduced loop structure involving indA, indB, and indC
+    //  when we mix A, B, or R. This is not performance problem, however, since
     //  most of the calculation time will go into calculating Cov_t
     //
     for(j=0;j<nd;j++)
@@ -532,7 +543,7 @@ Analyzelog::estimateCorrTAndVar0(float       * CorrT,
           {
             if(dLnAlpha[j]!=RMISSING && dLnBeta[k]!=RMISSING) //cov(Aj,Bk)
             {
-              covAB += dLnAlpha[j]*dLnBeta[k];             
+              covAB += dLnAlpha[j]*dLnBeta[k];
               nAB++;
             }
             if(dLnAlpha[k]!=RMISSING && dLnBeta[j]!=RMISSING) //cov(Ak,Bj)
@@ -572,14 +583,14 @@ Analyzelog::estimateCorrTAndVar0(float       * CorrT,
 
   if(nAA[0]<2)
   {
-    errTxt += "Not enough well data within simulation area to estimate variance of Vp.\n";
+    tmpErrTxt += "Not enough well data within simulation area to estimate variance of Vp.\n";
   }
   if(nRR[0]<2)
   {
-    errTxt += "Not enough well data within simulation area to estimate variance of Rho.\n";
+    tmpErrTxt += "Not enough well data within simulation area to estimate variance of Rho.\n";
   }
 
-  if(errTxt == "")
+  if(tmpErrTxt == "")
   { //
     // Calculate Var0 (covariances at zero lag)
     // ==============
@@ -589,33 +600,33 @@ Analyzelog::estimateCorrTAndVar0(float       * CorrT,
     if(nBB[0]>1)
       Var0[1][1] = covBB[0]/(nBB[0]-1);
     else
-    {  
+    {
       LogKit::LogFormatted(LogKit::Low,"\nEstimating Vs variance as 2 * Vp variance.\n");
       Var0[1][1] = 2*Var0[0][0];
     }
     // Default covariance between Vp and Vs. Value is explained in Jira issue CRA-220.
-    Var0[0][1] = Var0[1][0] = static_cast<float>(std::sqrt(Var0[0][0])*std::sqrt(Var0[1][1])*0.70); 
+    Var0[0][1] = Var0[1][0] = static_cast<float>(std::sqrt(Var0[0][0])*std::sqrt(Var0[1][1])*0.70);
     Var0[0][2] = Var0[2][0] = 0.0;
     Var0[1][2] = Var0[2][1] = 0.0;
-    if (nAB>1)  
+    if (nAB>1)
       Var0[0][1] = Var0[1][0] = covAB/(nAB-1);
-    if (nAR>1)  
+    if (nAR>1)
       Var0[0][2] = Var0[2][0] = covAR/(nAR-1);
-    if (nBR>1)  
+    if (nBR>1)
       Var0[1][2] = Var0[2][1] = covBR/(nBR-1);
 
     //
     // Calculate CorrT
     // ===============
-    // The joint correlation CorrT is calculated as a weighted 
+    // The joint correlation CorrT is calculated as a weighted
     // sum of correlations corAA, corBB, and corRR.
     //
     // 1) Individual correlations: covAA -> corAA
-    // 2) weighted_sum(corAA,corBB,corRR) -> corTT 
-    // 3) Scale corTT[i] -> corTT[i]/corTT[0]; 
+    // 2) weighted_sum(corAA,corBB,corRR) -> corTT
+    // 3) Scale corTT[i] -> corTT[i]/corTT[0];
     // 4) Linear interpolate corTT -> CorrT
     // 5) Linear downscale CorrT with distance from 0
-    //  
+    //
     for(i=0;i<n+1;i++)
     {
       int naa = 0;       // These must be initialised to zero.
@@ -629,40 +640,40 @@ Analyzelog::estimateCorrTAndVar0(float       * CorrT,
       //
       if(nAA[i]>1 && varAj[i]>0.0 && varAk[i]>0.0)
       {
-        corAA = covAA[i]/sqrt(varAj[i]*varAk[i]); 
+        corAA = covAA[i]/sqrt(varAj[i]*varAk[i]);
         naa = nAA[i];
       }
       if(nBB[i]>1 && varBj[i]>0.0 && varBk[i]>0.0)
       {
-        corBB = covBB[i]/sqrt(varBj[i]*varBk[i]); 
+        corBB = covBB[i]/sqrt(varBj[i]*varBk[i]);
         nbb = nBB[i];
       }
       if(nRR[i]>1 && varRj[i]>0.0 && varRk[i]>0.0)
       {
-        corRR = covRR[i]/sqrt(varRj[i]*varRk[i]); 
+        corRR = covRR[i]/sqrt(varRj[i]*varRk[i]);
         nrr = nRR[i];
       }
 
       if (corAA<-1 || corAA>1)
       {
-        errTxt += std::string("Correlation corAA=") + NRLib::ToString(corAA, 3) 
+        tmpErrTxt += std::string("Correlation corAA=") + NRLib::ToString(corAA, 3)
                 + std::string(" out of range for element ") + NRLib::ToString(i) + "\n";
       }
       if (corBB<-1 || corBB>1)
       {
-        errTxt += std::string("Correlation corBB=") + NRLib::ToString(corBB, 3) 
+        tmpErrTxt += std::string("Correlation corBB=") + NRLib::ToString(corBB, 3)
                 + std::string(" out of range for element ") + NRLib::ToString(i) + "\n";
       }
       if (corRR<-1 || corRR>1)
       {
-        errTxt += std::string("Correlation corRR=") + NRLib::ToString(corRR, 3) 
+        tmpErrTxt += std::string("Correlation corRR=") + NRLib::ToString(corRR, 3)
                 + std::string(" out of range for element ") + NRLib::ToString(i) + "\n";
       }
       if (naa>1 || nbb>1 || nrr>1)
-        corTT[i] = (naa*corAA + nbb*corBB + nrr*corRR)/(static_cast<float>(naa+nbb+nrr));  
+        corTT[i] = (naa*corAA + nbb*corBB + nrr*corRR)/(static_cast<float>(naa+nbb+nrr));
       else
         corTT[i] = WELLMISSING;
-      nTT[i] = naa+nbb+nrr;   
+      nTT[i] = naa+nbb+nrr;
 
       covAA[i] = corAA; // quickhack to get correlations printed to file
       covBB[i] = corBB;
@@ -674,13 +685,13 @@ Analyzelog::estimateCorrTAndVar0(float       * CorrT,
     for(i=0;i<n+1;i++)
       corTT[i]/=corTT[0];
     //
-    // Replace missing-values after last nonzero element with zero  
-    //    
+    // Replace missing-values after last nonzero element with zero
+    //
     int   nend;
     int   iprev,inext,nipol;
     float cprev,cnext,cipol;
     i=n;
-    while(nTT[i]==0 && i>0)  
+    while(nTT[i]==0 && i>0)
     {
       CorrT[i]=0.0;
       i--;
@@ -694,7 +705,7 @@ Analyzelog::estimateCorrTAndVar0(float       * CorrT,
     iprev = 0;
     inext = 1;
     nend  = i;
-    for(i=1;i<nend;i++)                      
+    for(i=1;i<nend;i++)
     {
       if(nTT[i-1]>0)                         // Find previous correlation
         iprev=i-1;
@@ -723,7 +734,7 @@ Analyzelog::estimateCorrTAndVar0(float       * CorrT,
       ntot+=nTT[i];
     float b = static_cast<float>((2*ntot)/static_cast<float>(nend+1));  // counts the zero-element as well
     float a = b/static_cast<float>(nend+1);
-    for(i=1;i<nend+1;i++)        
+    for(i=1;i<nend+1;i++)
     {
       CorrT[i] *= (b - a*i)/b;
     }
@@ -736,9 +747,9 @@ Analyzelog::estimateCorrTAndVar0(float       * CorrT,
            << "----------------------------------------------------------------------------------------\n";
       for(i=0;i<n+1;i++)
       {
-        file << std::fixed 
+        file << std::fixed
              << std::right
-             << std::setprecision(3) 
+             << std::setprecision(3)
              << std::setw(4) << i        << " "
              << std::setw(8) << nAA[i]   << " "
              << std::setw(8) << covAA[i] << " "
@@ -754,6 +765,8 @@ Analyzelog::estimateCorrTAndVar0(float       * CorrT,
       file.close();
     }
   }
+
+  errTxt += tmpErrTxt;
   //
   // Return replace n by nonzero elements nend?
   //
@@ -792,39 +805,39 @@ Analyzelog::checkVariances(ModelSettings  * modelSettings,
 {
   //| These min and max values below are used for consistency check. If a variance
   //| is outside these ranges there is probably a problem with the log.
-  //|                                                                  
-  //| The limits are for point variances. The minimum allowed variance 
-  //| for parameters will be scaled with 1/dt*dt                       
-  
-  float minVarAlpha = modelSettings->getVarAlphaMin(); 
-  float maxVarAlpha = modelSettings->getVarAlphaMax();
-  float minVarBeta  = modelSettings->getVarBetaMin(); 
-  float maxVarBeta  = modelSettings->getVarBetaMax(); 
-  float minVarRho   = modelSettings->getVarRhoMin();  
-  float maxVarRho   = modelSettings->getVarRhoMax();  
+  //|
+  //| The limits are for point variances. The minimum allowed variance
+  //| for parameters will be scaled with 1/dt*dt
 
-  if (pointVar0[0][0] < minVarAlpha || pointVar0[0][0] > maxVarAlpha) 
+  float minVarAlpha = modelSettings->getVarAlphaMin();
+  float maxVarAlpha = modelSettings->getVarAlphaMax();
+  float minVarBeta  = modelSettings->getVarBetaMin();
+  float maxVarBeta  = modelSettings->getVarBetaMax();
+  float minVarRho   = modelSettings->getVarRhoMin();
+  float maxVarRho   = modelSettings->getVarRhoMax();
+
+  if (pointVar0[0][0] < minVarAlpha || pointVar0[0][0] > maxVarAlpha)
   {
     std::ostringstream o;
-    o << std::scientific << std::setprecision(2) << "The Vp point variance "  << pointVar0[0][0] 
+    o << std::scientific << std::setprecision(2) << "The Vp point variance "  << pointVar0[0][0]
       << " is outside allowed interval Min=" << minVarAlpha << " Max=" << maxVarAlpha << "\n";
     errTxt += o.str();
   }
-  if (pointVar0[1][1] < minVarBeta || pointVar0[1][1] > maxVarBeta) 
+  if (pointVar0[1][1] < minVarBeta || pointVar0[1][1] > maxVarBeta)
   {
     std::ostringstream o;
-    o << std::scientific << std::setprecision(2) << "The Vs point variance "  << pointVar0[1][1] 
+    o << std::scientific << std::setprecision(2) << "The Vs point variance "  << pointVar0[1][1]
       << " is outside allowed interval Min=" << minVarBeta << " Max=" << maxVarBeta << "\n";
     errTxt += o.str();
   }
-  if (pointVar0[2][2] < minVarRho || pointVar0[2][2] > maxVarRho) 
+  if (pointVar0[2][2] < minVarRho || pointVar0[2][2] > maxVarRho)
   {
     std::ostringstream o;
-    o << std::scientific << std::setprecision(2) << "The Rho point variance "  << pointVar0[2][2] 
+    o << std::scientific << std::setprecision(2) << "The Rho point variance "  << pointVar0[2][2]
       << " is outside allowed interval Min=" << minVarRho << " Max=" << maxVarRho << "\n";
     errTxt += o.str();
   }
-  
+
   if (errTxt != "")
   {
     LogKit::LogFormatted(LogKit::Low,"\n\n---------------------------------------------------");
@@ -832,28 +845,28 @@ Analyzelog::checkVariances(ModelSettings  * modelSettings,
     LogKit::LogFormatted(LogKit::Low,"\nWell log variances:   %.2e  %.2e  %.2e ",pointVar0[0][0],pointVar0[1][1],pointVar0[2][2]);
     LogKit::LogFormatted(LogKit::Low,"\n---------------------------------------------------\n");
   }
-  
+
   //
   // We scale the minimum variances allowed with 1/dt since the variance decreases with increasing dt..
   //
-  if (Var0[0][0] < minVarAlpha/dt || Var0[0][0] > maxVarAlpha) 
+  if (Var0[0][0] < minVarAlpha/dt || Var0[0][0] > maxVarAlpha)
   {
     std::ostringstream o;
-    o << std::scientific << std::setprecision(2) << "The Vp variance "  << Var0[0][0] 
+    o << std::scientific << std::setprecision(2) << "The Vp variance "  << Var0[0][0]
       << " is outside allowed interval Min=" << minVarAlpha/dt << " Max=" << maxVarAlpha << "\n";
     errTxt += o.str();
   }
-  if (Var0[1][1] < minVarBeta/dt || Var0[1][1] > maxVarBeta) 
+  if (Var0[1][1] < minVarBeta/dt || Var0[1][1] > maxVarBeta)
   {
     std::ostringstream o;
-    o << std::scientific << std::setprecision(2) << "The Vs variance "  << Var0[1][1] 
+    o << std::scientific << std::setprecision(2) << "The Vs variance "  << Var0[1][1]
       << " is outside allowed interval Min=" << minVarBeta/dt << " Max=" << maxVarBeta << "\n";
     errTxt += o.str();
   }
-  if (Var0[2][2] < minVarRho/dt || Var0[2][2] > maxVarRho) 
+  if (Var0[2][2] < minVarRho/dt || Var0[2][2] > maxVarRho)
   {
     std::ostringstream o;
-    o << std::scientific << std::setprecision(2) << "The Rho variance "  << Var0[2][2] 
+    o << std::scientific << std::setprecision(2) << "The Rho variance "  << Var0[2][2]
       << " is outside allowed interval Min=" << minVarRho/dt << " Max=" << maxVarRho << "\n";
     errTxt += o.str();
   }

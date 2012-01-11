@@ -11,5 +11,5 @@ DistributionWithTrend::DistributionWithTrend(const NRLib::Distribution<double>& 
 
 DistributionWithTrend::~DistributionWithTrend()
 {
-  
+
 }

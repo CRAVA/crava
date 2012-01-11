@@ -8,14 +8,14 @@
 #include "nrlib/iotools/logkit.hpp"
 
 
-void Kriging2D::krigSurface(Grid2D              & trend, 
+void Kriging2D::krigSurface(Grid2D              & trend,
                             const KrigingData2D & krigingData,
                             const CovGrid2D     & cov,
                             bool                  getResiduals)
 {
   //
   // This routine by default returns z(x) = m(x) + k(x)K^{-1}(d - m). If only
-  // residuals are wanted a copy of the inpuit trend 
+  // residuals are wanted a copy of the inpuit trend
   //
   int md = krigingData.getNumberOfData();
   const std::vector<int> & indexi = krigingData.getIndexI();
@@ -27,15 +27,15 @@ void Kriging2D::krigSurface(Grid2D              & trend,
   if (md < nx*ny) {
     subtractTrend(data, trend, indexi, indexj, md);
 
-    double ** K;  // Kriging matrix                     
-    double ** C;  // Kriging matrix cholesky decomposed 
-    double *  k;  // Kriging vector                     
+    double ** K;  // Kriging matrix
+    double ** C;  // Kriging matrix cholesky decomposed
+    double *  k;  // Kriging vector
 
     allocateSpaceForMatrixEq(K, C, k, md);
     fillKrigingMatrix(K, cov, indexi, indexj, md);
     cholesky(K, C, md);
 
-    for (int i = 0 ; i < nx ; i++) 
+    for (int i = 0 ; i < nx ; i++)
       for (int j = 0 ; j < ny ; j++)
       {
         fillKrigingVector(k, cov, indexi, indexj, md, i, j);
@@ -51,16 +51,16 @@ void Kriging2D::krigSurface(Grid2D              & trend,
   }
 }
 
-void 
+void
 Kriging2D::subtractTrend(std::vector<float>     & data,
                          const Grid2D           & trend,
                          const std::vector<int> & indexi,
                          const std::vector<int> & indexj,
                          int                      md)
-{  
-  for (int i = 0 ; i < md ; i++) 
+{
+  for (int i = 0 ; i < md ; i++)
     data[i] -= static_cast<float>(trend(indexi[i],indexj[i]));
-  
+
   bool debug = false;
   if (debug) {
     LogKit::LogFormatted(LogKit::Low,"\nData vector after trend subtraction:\n");
@@ -71,10 +71,10 @@ Kriging2D::subtractTrend(std::vector<float>     & data,
 }
 
 void
-Kriging2D::fillKrigingMatrix(double                 ** K, 
-                             const CovGrid2D         & cov, 
-                             const std::vector<int>  & indexi, 
-                             const std::vector<int>  & indexj, 
+Kriging2D::fillKrigingMatrix(double                 ** K,
+                             const CovGrid2D         & cov,
+                             const std::vector<int>  & indexi,
+                             const std::vector<int>  & indexj,
                              int                       md)
 {
   for(int i=0;i<md;i++)
@@ -86,7 +86,7 @@ Kriging2D::fillKrigingMatrix(double                 ** K,
     }
 }
 
-void 
+void
 Kriging2D::fillKrigingVector(double                 * k,
                              const CovGrid2D        & cov,
                              const std::vector<int> & indexi,
@@ -101,23 +101,23 @@ Kriging2D::fillKrigingVector(double                 * k,
   }
 }
 
-void 
-Kriging2D::allocateSpaceForMatrixEq(double ** & K, 
+void
+Kriging2D::allocateSpaceForMatrixEq(double ** & K,
                                     double ** & C,
                                     double  * & k,
                                     int         md)
 {
-  K = new double * [md];  
-  C = new double * [md];  
-  k = new double[md];   
+  K = new double * [md];
+  C = new double * [md];
+  k = new double[md];
   for (int i = 0 ; i < md ; i++) {
     K[i] = new double[md];
-    C[i] = new double[md]; 
+    C[i] = new double[md];
   }
 }
 
-void 
-Kriging2D::deAllocateSpaceForMatrixEq(double ** K, 
+void
+Kriging2D::deAllocateSpaceForMatrixEq(double ** K,
                                       double ** C,
                                       double  * k,
                                       int       md)
@@ -128,7 +128,7 @@ Kriging2D::deAllocateSpaceForMatrixEq(double ** K,
   }
   delete [] K;
   delete [] C;
-  delete [] k; 
+  delete [] k;
   K = NULL;
   C = NULL;
   k = NULL;
@@ -150,7 +150,7 @@ Kriging2D::cholesky(double ** K,
   }
 }
 
-double ** 
+double **
 Kriging2D::copyMatrix(double ** in,
                       double ** out,
                       int       md)

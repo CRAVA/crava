@@ -4,9 +4,9 @@
 #include "src/definitions.h"
 #include "nrlib/iotools/logkit.hpp"
 
-class Timings 
+class Timings
 {
-public: 
+public:
   static void    reportAll(LogKit::MessageLevels logLevel);
   static void    reportTotal();
 
@@ -26,7 +26,7 @@ public:
   static void    addToTimeKrigingSim(double& wall, double& cpu);
 
 private:
-  static void    reportOne(const std::string & text, double cpuThis, double wallThis, 
+  static void    reportOne(const std::string & text, double cpuThis, double wallThis,
                            double cpuTot, double wallTot, LogKit::MessageLevels logLevel);
   static void    calculateRest(void);
 

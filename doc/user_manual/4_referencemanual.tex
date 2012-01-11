@@ -246,12 +246,19 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
    \item \Default
  \elist
 
+
 \subsubsection{\hbracket{area-from-surface}}\newkw{area-from-surface}
  \slist
-   \item \Description Inversion area can be defined by a surface. Then the name of the surface is given in this command. Other ways to define inversion area are by the commands \kw{utm-coordinates} or \kw{inline-crossline-numbers}. If none of these commands are used, the area is defined by the first seismic data file, or from Vp if we do forward modelling.
+   \item \Description Inversion area can be defined by a surface. Then
+     the name of the surface is given in this command. Other ways to
+     define inversion area are by the commands \kw{utm-coordinates} or
+     \kw{inline-crossline-numbers}. If none of these commands are
+     used, the area is defined by the first seismic data file, or from
+     Vp if we do forward modelling.
    \item \Argument
    \item \Default
  \elist
+
 \paragraph{\hbracket{file-name}}\rnewkw{file-name}{file-name5}
 \slist
    \item \Description File name for standard surface file.
@@ -259,13 +266,23 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
    \item \Default
  \elist
 
+\paragraph{\hbracket{snap-to-seismic-data}}\rnewkw{snap-to-seismic-data}{snap-to-seismic-data2}
+\slist
+   \item \Description Find the smallest rectangular IL-XL box
+     enclosing the entire surface and do the inversion using these
+     IL-XL values. This allows a user to specify an inversion area in
+     UTM and get the inversion volume aligned with seismic data.
+   \item \Argument  'yes' or 'no'
+   \item \Default 'no'
+ \elist
+
+
 \subsubsection{\hbracket{utm-coordinates}}\newkw{utm-coordinates}
  \slist
    \item \Description Describe area by UTM coordinates.
    \item \Argument
    \item \Default
  \elist
-
 
 \paragraph{\hbracket{reference-point-x}}\newkw{reference-point-x}
  \slist
@@ -315,6 +332,20 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
    \item \Argument
    \item \Default
  \elist
+
+\paragraph{\hbracket{snap-to-seismic-data}}\rnewkw{snap-to-seismic-data}{snap-to-seismic-data1}
+\slist
+   \item \Description Find the smallest rectangular IL-XL box
+     enclosing the entire UTM specified area and do the inversion
+     using these IL-XL values. This allows a user to specify an
+     inversion area in UTM coordinates and get an inversion volume
+     aligned with seismic data. Keywords \hbracket{sample-density-x}
+     and \hbracket{sample-density-y} are not needed when snapping
+     is activated.
+   \item \Argument  'yes' or 'no'
+   \item \Default 'no'
+ \elist
+
 
 \subsubsection{\hbracket{inline-crossline-numbers}}\newkw{inline-crossline-numbers}
  \slist
@@ -454,11 +485,11 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 
 \subparagraph{\hbracket{segy-format}}\newkw{segy-format}
  \slist
-   \item \Description Information about the segy format. By default CRAVA recognises SeisWorks, IESX, SIP and Charisma.
+   \item \Description Information about the segy format. By default CRAVA recognises SeisWorks, IESX, SIP and Charisma, see Table~\ref{tab:segyformats}.
    \item \Argument Elements containing information about the segy format.
    \item \Default
  \elist
- 
+
 \subsubparagraph{\hbracket{standard-format}}\newkw{standard-format}
  \slist
    \item \Description Giving the starting format for modifications.
@@ -665,9 +696,16 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 
 \subparagraph{\hbracket{residuals}}\newkw{residuals}
  \slist
-   \item \Description
+   \item \Description Residuals computed in the actual inversion. Will not add up to original seismic data when combined with synthetic seismic, due to some filtering and numerical imprecision.
    \item \Argument 'yes' or 'no'
-   \item \Default
+   \item \Default 'no'
+\elist
+
+\subparagraph{\hbracket{synthetic-residuals}}\newkw{synthetic-residuals}
+ \slist
+   \item \Description Residuals computed by taking the original seismic and subtracting the synthetic seismic. This means that these parameters are a matched set.
+   \item \Argument 'yes' or 'no'
+   \item \Default 'no'
 \elist
 
 \paragraph{\hbracket{other-parameters}}\newkw{other-parameters}
@@ -958,13 +996,24 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 
 \subsubsection{\hbracket{vp-vs-ratio}}\newkw{vp-vs-ratio}
  \slist
-   \item \Description Value of Vp/Vs-ratio used in reflection
-     matrix. If not specified, the Vp/Vs-ratio is estimated from the
+   \item \Description Value of Vp/Vs ratio used in reflection
+     matrix. By default, the Vp/Vs ratio is estimated from the
      background model.
    \item \Argument Value
    \item \Default Not set
    \elist
-     
+
+\subsubsection{\hbracket{vp-vs-ratio-from-wells}}\newkw{vp-vs-ratio-from-wells}
+ \slist
+   \item \Description If this command is given, the Vp/Vs ratio used
+     in the reflection matrix will be estimated from well data. By
+     default, the ratio is taken from the background model. If the
+     keyword \kw{wavelet-estimation-interval} has also been specified,
+     the estimate will be limited to that interval.
+   \item \Argument 'yes' or 'no'
+   \item \Default 'no'
+   \elist
+
 \subsubsection{\hbracket{maximum-relative-thickness-difference}}\newkw{maximum-relative-thickness-difference}
  \slist
    \item \Description Value giving the limit of how small the minimum interval thickness can be relative to maximum. If this gets too low, the transformation to stationarity for the FFT-algorithm gives strange results.
@@ -1088,7 +1137,7 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
  \subsection{\hbracket{angular-correlation}}\newkw{angular-correlation}
  \slist
    \item \Description 1D variogram. Gives the noise correlation between survey angles.
-   \item \Argument 1D variogram
+   \item \Argument 1D variogram, see \autoref{sec:variogram}.
    \item \Default
  \elist
 
@@ -1137,7 +1186,7 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 
 \paragraph{\hbracket{segy-format}}\rnewkw{segy-format}{segy-format2}
  \slist
-   \item \Description Information about the segy format. By default, CRAVA recognises SeisWorks, IESX, SIP and Charisma.
+   \item \Description Information about the segy format. By default, CRAVA recognises SeisWorks, IESX, SIP and Charisma. See Table \ref{tab:segyformats}.
    \item \Argument Elements containing information about the segy format
    \item \Default
  \elist
@@ -1874,11 +1923,11 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
  \slist
    \item \Description File name for the parameter correlation file. The file is an ascii file, containing covariances between Vp, Vs and density.
    It is most common to use a file resulting from an earlier run of \crava, and the file might look like this:
-   
+
   \begin{verbatim}
-    0.001171   0.000786   0.000046 
-  	0.000786   0.001810  -0.000395 
-  	0.000046  -0.000395   0.000530 
+    0.001171   0.000786   0.000046
+  	0.000786   0.001810  -0.000395
+  	0.000046  -0.000395   0.000530
   \end{verbatim}
    \item \Argument File name
    \item \Default
@@ -2278,12 +2327,10 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
    \item \Default 
  \elist
 
-
-
-\section{2D variogram}\newkw{variogram-keyword}
+\section{Variogram}\newkw{variogram-keyword}
 \label{sec:variogram}
-  2D variograms are given on the following form:
- 
+  The variograms are given on the following form:
+
 \subsection{\hbracket{variogram-type}}\newkw{variogram-type}
  \slist
    \item \Description Either 'genexp' or 'spherical' for general exponential or spherical variogram.
@@ -2293,7 +2340,7 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 
 \subsection{\hbracket{angle}}\rnewkw{angle}{angle2}
  \slist
-   \item \Description Value for the azimuth direction.
+   \item \Description Value for the azimuth direction. Only for 2D variograms.
    \item \Argument
    \item \Default
  \elist
@@ -2307,7 +2354,7 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 
 \subsection{\hbracket{subrange}}\newkw{subrange}
  \slist
-   \item \Description Value for the range normal to the azimuth direction.
+   \item \Description Value for the range normal to the azimuth direction. Only for 2D variograms.
    \item \Argument
    \item \Default
  \elist

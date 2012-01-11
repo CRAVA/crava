@@ -11,19 +11,27 @@
 #include "src/simbox.h"
 
 ModelSettings::ModelSettings(void)
-  : constBackValue_(3),
+  : localSegyOffset_(0),
+    localTHF_(0),
+    seismicType_(0),
+    angle_(0),
+    waveletScale_(0),
+    SNRatio_(0),
+    matchEnergies_(0),
+    estimateWavelet_(0),
+    estimateSNRatio_(0),
+    estimateLocalNoise_(0),
+    estimateGlobalWaveletScale_(0),
+    constBackValue_(3),
     indBGTrend_(0),
     indWavelet_(0),
     indFacies_(0),
     logNames_(5),
     inverseVelocity_(2),
-    faciesLabels_(0),
-    runFromPanel_(false),
-    noWellNeeded_(false),
-    noSeismicNeeded_(false)
+    faciesLabels_(0)
 {
-  lateralCorr_             = new GenExpVario(1, 1000, 1000); 
-  backgroundVario_         = new GenExpVario(1, 2000, 2000); 
+  lateralCorr_             = new GenExpVario(1, 1000, 1000);
+  backgroundVario_         = new GenExpVario(1, 2000, 2000);
   localWaveletVario_       =     NULL; // Will be set equal to backgroundVario unless it is set separately
   geometry_                =     NULL;
   traceHeaderFormat_       =     NULL;
@@ -42,84 +50,85 @@ ModelSettings::ModelSettings(void)
   beta_max_                =  4200.0f;   // Nam: 3000
   rho_min_                 =     1.4f;   // Nam:  1.5
   rho_max_                 =     3.3f;   // Nam:  3.0
-                           
-  var_alpha_min_           =   5.e-4f;  
-  var_alpha_max_           = 250.e-4f; 
-  var_beta_min_            =  10.e-4f; 
-  var_beta_max_            = 500.e-4f; 
-  var_rho_min_             =   2.e-4f; 
-  var_rho_max_             = 100.e-4f; 
+
+  var_alpha_min_           =   5.e-4f;
+  var_alpha_max_           = 250.e-4f;
+  var_beta_min_            =  10.e-4f;
+  var_beta_max_            = 500.e-4f;
+  var_rho_min_             =   2.e-4f;
+  var_rho_max_             = 100.e-4f;
 
   vp_vs_ratio_             = RMISSING;
+  vp_vs_ratio_from_wells_  =    false;
   vp_vs_ratio_min_         =     1.4f;
   vp_vs_ratio_max_         =     3.0f;
-                           
-  maxHz_background_        =     6.0f;       
-  maxHz_seismic_           =    40.0f;       
-                           
+
+  maxHz_background_        =     6.0f;
+  maxHz_seismic_           =    40.0f;
+
   maxRankCorr_             =    0.99f;
-  maxMergeDist_            =    0.01f;   // 0.01ms (approx. 2-3cm) 
+  maxMergeDist_            =    0.01f;   // 0.01ms (approx. 2-3cm)
   maxDevAngle_             =    15.0f;
-                           
-  lowCut_                  =     5.0f;   
-  highCut_                 =    55.0f;   
-                           
+
+  lowCut_                  =     5.0f;
+  highCut_                 =    55.0f;
+
   wnc_                     =     0.1f;
-                           
+
   energyThreshold_         =     0.0f;
-                           
+
   maxWellShift_            =    11.0f;
   maxWellOffset_           =   250.0f;
-                           
+
   minRelWaveletAmp_        =    0.04f;
   maxWaveletShift_         =    11.0f;
   waveletTaperingL_        =   200.0f;
-  
+
   minSamplingDensity_      =     0.5f;
   minHorizontalRes_        =     5.0f;
 
   xPadFac_                 =      0.0;
   yPadFac_                 =      0.0;
   zPadFac_                 =      0.0;
-                           
-  nxPad_                   = IMISSING;   
-  nyPad_                   = IMISSING;   
-  nzPad_                   = IMISSING;   
-                            
+
+  nxPad_                   = IMISSING;
+  nyPad_                   = IMISSING;
+  nzPad_                   = IMISSING;
+
   estimateXYPadding_       =     true;
   estimateZPadding_        =     true;
 
   p_undef_                 =    0.01f;
-                           
+
   lzLimit_                 =     0.41;   // NB! This is a double ==> do not use 'f'.
   time_dTop_               = RMISSING;
   time_lz_                 = RMISSING;
   time_dz_                 = RMISSING;
   time_nz_                 = IMISSING;
   velocityFromInv_         =    false;
-                           
-  areaILXL_                = std::vector<int>(0); 
+
+  areaILXL_                = std::vector<int>(0);
 
   writePrediction_         =    false;  //Will be set to true if no simulations.
   outputGridsElastic_      = IO::VP + IO::VS + IO::RHO;  // Default output
   outputGridsOther_        =        0;
   outputGridsSeismic_      =        0;
   outputGridsDefault_      =     true;
-  formatFlag_              = IO::STORM;   
-  domainFlag_              = IO::TIMEDOMAIN;   
-  wellFlag_                =        0;   
+  formatFlag_              = IO::STORM;
+  domainFlag_              = IO::TIMEDOMAIN;
+  wellFlag_                =        0;
   wellFormatFlag_          = IO::RMSWELL;
   waveletFlag_             =        0;
   waveletFormatFlag_       = IO::JASONWAVELET;
-  otherFlag_               =        0;   
+  otherFlag_               =        0;
   debugFlag_               =        0;
   fileGrid_                =    false;
-  waveletFormatManual_     =    false;   
+  waveletFormatManual_     =    false;
 
   estimationMode_          =    false;
   forwardModeling_         =    false;
   generateBackground_      =     true;
-  useAIBackground_         =    false;  
+  useAIBackground_         =    false;
   useVpVsBackground_       =    false;
   estimateFaciesProb_      =    false;
   faciesProbRelative_      =     true;
@@ -130,6 +139,11 @@ ModelSettings::ModelSettings(void)
   parallelTimeSurfaces_    =    false;
   useLocalWavelet_         =    false;
   optimizeWellLocation_    =    false;
+  runFromPanel_            =    false;
+  noWellNeeded_            =    false;
+  noSeismicNeeded_         =    false;
+  snapGridToSeismicData_   =    false;
+
   priorFaciesProbGiven_    = ModelSettings::FACIES_FROM_WELLS;
 
   generateSeismicAfterInv_ =    false;
@@ -147,7 +161,7 @@ ModelSettings::ModelSettings(void)
 }
 
 ModelSettings::~ModelSettings(void)
-{ 
+{
   for(size_t i = 0; i<angularCorr_.size(); i++)
     delete angularCorr_[i];
 
@@ -170,7 +184,7 @@ ModelSettings::~ModelSettings(void)
     delete traceHeaderFormatOutput_;
 }
 
-bool 
+bool
 ModelSettings::getDoInversion(void)
 {
   int elasticFlag  = 0;
@@ -178,19 +192,19 @@ ModelSettings::getDoInversion(void)
   int seismicFlag  = 0;
   int blockedWells = 0;
 
-  elasticFlag  += IO::VP 
-               +  IO::VS 
-                +  IO::RHO 
-               +  IO::LAMELAMBDA 
-               +  IO::LAMEMU 
+  elasticFlag  += IO::VP
+               +  IO::VS
+               +  IO::RHO
+               +  IO::LAMELAMBDA
+               +  IO::LAMEMU
                +  IO::POISSONRATIO
-               +  IO::AI 
+               +  IO::AI
                +  IO::SI
-               +  IO::VPVSRATIO 
-               +  IO::MURHO 
+               +  IO::VPVSRATIO
+               +  IO::MURHO
                +  IO::LAMBDARHO;
 
-  otherFlag    += IO::FACIESPROB 
+  otherFlag    += IO::FACIESPROB
                +  IO::FACIESPROB_WITH_UNDEF
                +  IO::CORRELATION;
 
@@ -199,7 +213,7 @@ ModelSettings::getDoInversion(void)
 
   blockedWells += IO::BLOCKED_WELLS;
 
-  if (((elasticFlag  & outputGridsElastic_) > 0  || 
+  if (((elasticFlag  & outputGridsElastic_) > 0  ||
        (otherFlag    & outputGridsOther_  ) > 0  ||
        (seismicFlag  & outputGridsSeismic_) > 0  ||
        (blockedWells & wellFlag_          ) > 0) &&
@@ -209,7 +223,7 @@ ModelSettings::getDoInversion(void)
     return false;
 }
 
-bool 
+bool
 ModelSettings::getDoDepthConversion(void) const
 {
   return(depthDataOk_ & ((domainFlag_ & IO::DEPTHDOMAIN) > 0));
@@ -222,8 +236,8 @@ ModelSettings::rotateVariograms(float angle)
   localWaveletVario_->rotateCounterClockwise(-angle);
 }
 
-void           
-ModelSettings::setLastAngularCorr(Vario * vario)               
+void
+ModelSettings::setLastAngularCorr(Vario * vario)
 {
   size_t i = angularCorr_.size()-1;
   if (angularCorr_[i] != NULL)
@@ -231,7 +245,7 @@ ModelSettings::setLastAngularCorr(Vario * vario)
   angularCorr_[i] = vario;
 }
 
-void           
+void
 ModelSettings::setLateralCorr(Vario * vario)
 {
   if (lateralCorr_ != NULL)
@@ -239,7 +253,7 @@ ModelSettings::setLateralCorr(Vario * vario)
   lateralCorr_ = vario;
 }
 
-void           
+void
 ModelSettings::setBackgroundVario(Vario * vario)
 {
   if (backgroundVario_ != NULL)
@@ -247,7 +261,7 @@ ModelSettings::setBackgroundVario(Vario * vario)
   backgroundVario_ = vario;
 }
 
-void           
+void
 ModelSettings::setLocalWaveletVario(Vario * vario)
 {
   if (localWaveletVario_ != NULL)
@@ -255,7 +269,7 @@ ModelSettings::setLocalWaveletVario(Vario * vario)
   localWaveletVario_ = vario;
 }
 
-void           
+void
 ModelSettings::copyBackgroundVarioToLocalWaveletVario(void)
 {
   float range1 = backgroundVario_->getRange();
@@ -269,26 +283,28 @@ ModelSettings::copyBackgroundVarioToLocalWaveletVario(void)
   else
   {
     GenExpVario * vario = dynamic_cast<GenExpVario *>(backgroundVario_);
-    float power = vario->getPower();  
-    localWaveletVario_ = new GenExpVario(power, range1, range2, angle); 
+    float power = vario->getPower();
+    localWaveletVario_ = new GenExpVario(power, range1, range2, angle);
   }
 }
 
-void           
+void
 ModelSettings::setAreaParameters(const SegyGeometry * geometry)
 {
-  if (geometry_ == NULL) 
-    geometry_ = new SegyGeometry(geometry);
+  if (geometry_ != NULL) {
+    delete geometry_;      // Needed for snap_grid_to_seismic_data
+  }
+  geometry_ = new SegyGeometry(geometry);
 }
 
-void           
+void
 ModelSettings::setTraceHeaderFormat(const TraceHeaderFormat & traceHeaderFormat)
 {
   if (traceHeaderFormat_ != NULL)
     delete traceHeaderFormat_;
   traceHeaderFormat_ = new TraceHeaderFormat(traceHeaderFormat);
 }
-void           
+void
 ModelSettings::setTraceHeaderFormatOutput(TraceHeaderFormat * traceHeaderFormat)
 {
   if (traceHeaderFormatOutput_ != NULL)
@@ -297,17 +313,17 @@ ModelSettings::setTraceHeaderFormatOutput(TraceHeaderFormat * traceHeaderFormat)
 }
 
 
-void           
+void
 ModelSettings::addTraceHeaderFormat(TraceHeaderFormat * traceHeaderFormat)
 {
   localTHF_.push_back(traceHeaderFormat);
 }
 
-void 
+void
 ModelSettings::addTimeGradientSettings(float distance, float sigma_m)
-{ 
+{
   distanceFromWell_.push_back(distance);
-  sigma_m_.push_back(sigma_m);                   
+  sigma_m_.push_back(sigma_m);
 }
 
 void
@@ -339,7 +355,7 @@ ModelSettings::addDefaultVintage(void)
   vintageMonth_.push_back(IMISSING);
   vintageDay_.push_back(IMISSING);
 }
-  
+
 int
 ModelSettings::getEstimateNumberOfWavelets(int t) const
 {
@@ -366,8 +382,8 @@ ModelSettings::findSortedVintages(void) const
   int tmp;
   for(int i=0; i<n; i++){
     for(int j=i+1; j<n; j++){
-      if(vintageYear_[j]<vintageYear_[i] || 
-        (vintageYear_[j]==vintageYear_[i] && vintageMonth_[j]<vintageMonth_[i]) || 
+      if(vintageYear_[j]<vintageYear_[i] ||
+        (vintageYear_[j]==vintageYear_[i] && vintageMonth_[j]<vintageMonth_[i]) ||
         (vintageYear_[j]==vintageYear_[i] && vintageMonth_[j]==vintageMonth_[i] && vintageDay_[j]<vintageDay_[i])){
         tmp      = index[i];
         index[i] = index[j];

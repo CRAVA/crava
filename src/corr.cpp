@@ -11,14 +11,15 @@
 #include "src/fftfilegrid.h"
 #include "src/welldata.h"
 #include "src/fftgrid.h"
+#include "src/tasklist.h"
 #include "src/corr.h"
 #include "src/io.h"
 
-Corr::Corr(float  ** pointVar0, 
-           float  ** priorVar0, 
-           float   * priorCorrT, 
-           int       n, 
-           float     dt, 
+Corr::Corr(float  ** pointVar0,
+           float  ** priorVar0,
+           float   * priorCorrT,
+           int       n,
+           float     dt,
            Surface * priorCorrXY)
   : priorCorrTFiltered_(NULL),
     postVar0_(NULL),
@@ -45,8 +46,8 @@ Corr::Corr(float  ** pointVar0,
 
 }
 
-Corr::Corr(int                       n,  
-           float                     dt, 
+Corr::Corr(int                       n,
+           float                     dt,
            SeismicParametersHolder & seismicParameters)
   : errCorr_(NULL)
 {
@@ -58,13 +59,13 @@ Corr::Corr(int                       n,
   postCrCovBetaRho_   = seismicParameters.GetCrCovBetaRho();
   dt_                 = dt;
   common_correlation_  = false;
-   
+
   if((n % 2) == 0)
     n_ = n/2+1;
   else
     n_ = n/2;
- 
- createPriorVar0(); 
+
+ createPriorVar0();
 }
 
 
@@ -77,15 +78,15 @@ Corr::~Corr(void)
       delete [] pointVar0_;
     }
     delete priorCorrXY_;
-    delete [] priorCorrT_;  
+    delete [] priorCorrT_;
 
     if(priorCorrTFiltered_!=NULL)
-      delete [] priorCorrTFiltered_; 
+      delete [] priorCorrTFiltered_;
 
   }
   else
     delete errCorr_;
-  
+
   if(priorVar0_!=NULL){
     for(int i=0; i<3; i++)
       delete [] priorVar0_[i];
@@ -109,7 +110,7 @@ Corr::~Corr(void)
   if(postCrCovAlphaRho00_!=NULL)
     delete [] postCrCovAlphaRho00_ ;
   if(postCrCovBetaRho00_!=NULL)
-    delete [] postCrCovBetaRho00_;  
+    delete [] postCrCovBetaRho00_;
 
   //Covariance grids are deleted in seismicParametersHolder
 }
@@ -121,12 +122,12 @@ Corr::createPostGrids(int nx,  int ny,  int nz,
                       bool fileGrid)
 {
   if(common_correlation_ == true){
-    postCovAlpha_       = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid);   //Deleted in seismicParametersHolder                  
-    postCovBeta_        = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid);   //Deleted in seismicParametersHolder    
-    postCovRho_         = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid);   //Deleted in seismicParametersHolder    
-    postCrCovAlphaBeta_ = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid);   //Deleted in seismicParametersHolder    
-    postCrCovAlphaRho_  = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid);   //Deleted in seismicParametersHolder    
-    postCrCovBetaRho_   = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid);   //Deleted in seismicParametersHolder    
+    postCovAlpha_       = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid);   //Deleted in seismicParametersHolder
+    postCovBeta_        = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid);   //Deleted in seismicParametersHolder
+    postCovRho_         = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid);   //Deleted in seismicParametersHolder
+    postCrCovAlphaBeta_ = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid);   //Deleted in seismicParametersHolder
+    postCrCovAlphaRho_  = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid);   //Deleted in seismicParametersHolder
+    postCrCovBetaRho_   = createFFTGrid(nx,ny,nz,nxp,nyp,nzp,fileGrid);   //Deleted in seismicParametersHolder
 
     postCovAlpha_       ->setType(FFTGrid::COVARIANCE);
     postCovBeta_        ->setType(FFTGrid::COVARIANCE);
@@ -177,7 +178,7 @@ Corr::computeCircCorrT(fftw_real* CircCorrT, int nzp)
 }
 //-------------------------------------------------------------------
 fftw_real*
-Corr::extractParamCorr(FFTGrid * covAlpha, int nzp) 
+Corr::extractParamCorr(FFTGrid * covAlpha, int nzp)
 {
   assert(covAlpha->getIsTransformed() == false);
 
@@ -193,7 +194,7 @@ Corr::extractParamCorr(FFTGrid * covAlpha, int nzp)
         refk = k;
       else
         refk = nzp - k;
-      if(refk < n_) 
+      if(refk < n_)
         circCorrT[k] = covAlpha->getRealValue(0,0,refk)/constant;
       else
         circCorrT[k] = 0.0;
@@ -217,14 +218,14 @@ Corr::makeCircCorrTPosDef(fftw_real* CircCorrT, int minIntFq, int nzp)
     if(k <= minIntFq)
       fftCircCorrT[k].re = 0.0 ;
     else
-      fftCircCorrT[k].re = float(sqrt(fftCircCorrT[k].re * fftCircCorrT[k].re + 
+      fftCircCorrT[k].re = float(sqrt(fftCircCorrT[k].re * fftCircCorrT[k].re +
                                       fftCircCorrT[k].im * fftCircCorrT[k].im ));
     fftCircCorrT[k].im = 0.0;
   }
 
   CircCorrT   = FFTGrid::invFFT1DzInPlace(fftCircCorrT, nzp);
   //
-  // NBNB-PAL: If the number of layers is too small CircCorrT[0] = 0. How 
+  // NBNB-PAL: If the number of layers is too small CircCorrT[0] = 0. How
   //           do we avoid this, or how do we flag the problem?
   //
   float scale;
@@ -235,14 +236,14 @@ Corr::makeCircCorrTPosDef(fftw_real* CircCorrT, int minIntFq, int nzp)
     LogKit::LogFormatted(LogKit::Low,"\nERROR: The circular temporal correlation (CircCorrT) is undefined. You\n");
     LogKit::LogFormatted(LogKit::Low,"       probably need to increase the number of layers...\n\nAborting\n");
     exit(1);
-  }    
+  }
   for(k = 0; k < nzp; k++)
   {
     CircCorrT[k] *= scale;
   }
 }
 //-------------------------------------------------------------------
-FFTGrid*            
+FFTGrid*
 Corr::createFFTGrid(int nx,  int ny,  int nz,
                     int nxp, int nyp, int nzp,
                     bool fileGrid)
@@ -354,6 +355,19 @@ void Corr::printPriorVariances(void) const
   LogKit::LogFormatted(LogKit::Low,"ln Vp  | %5.2f     %5.2f     %5.2f \n",1.0f, corr01, corr02);
   LogKit::LogFormatted(LogKit::Low,"ln Vs  |           %5.2f     %5.2f \n",1.0f, corr12);
   LogKit::LogFormatted(LogKit::Low,"ln Rho |                     %5.2f \n",1.0f);
+
+  if (std::abs(corr01) > 1.0) {
+    LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The Vp-Vs correlation is wrong (%.2f).\n",corr01);
+    TaskList::addTask("Check your prior correlations. Corr(Vp,Vs) is out of bounds.");
+  }
+  if (std::abs(corr02) > 1.0) {
+    LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The Vp-Rho correlation is wrong (%.2f).\n",corr02);
+    TaskList::addTask("Check your prior correlations. Corr(Vp,Rho) is out of bounds.");
+  }
+  if (std::abs(corr12) > 1.0) {
+    LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The Vs-Rho correlation is wrong (%.2f).\n",corr12);
+    TaskList::addTask("Check your prior correlations. Corr(Vs,Rho) is out of bounds.");
+  }
 }
 
 //--------------------------------------------------------------------
@@ -361,11 +375,12 @@ void
 Corr::printPostVariances(void) const
 {
   LogKit::WriteHeader("Posterior Covariance");
+
   LogKit::LogFormatted(LogKit::Low,"\nVariances and correlations for parameter residuals:\n");
   LogKit::LogFormatted(LogKit::Low,"\n");
   LogKit::LogFormatted(LogKit::Low,"               ln Vp     ln Vs    ln Rho \n");
   LogKit::LogFormatted(LogKit::Low,"-----------------------------------------\n");
-  LogKit::LogFormatted(LogKit::Low,"Variances:   %.1e   %.1e   %.1e    \n",postVar0_[0][0],postVar0_[1][1],postVar0_[2][2]); 
+  LogKit::LogFormatted(LogKit::Low,"Variances:   %.1e   %.1e   %.1e    \n",postVar0_[0][0],postVar0_[1][1],postVar0_[2][2]);
   LogKit::LogFormatted(LogKit::Low,"\n");
   float corr01 = postVar0_[0][1]/(sqrt(postVar0_[0][0]*postVar0_[1][1]));
   float corr02 = postVar0_[0][2]/(sqrt(postVar0_[0][0]*postVar0_[2][2]));
@@ -375,22 +390,35 @@ Corr::printPostVariances(void) const
   LogKit::LogFormatted(LogKit::Low,"ln Vp  | %5.2f     %5.2f     %5.2f \n",1.0f, corr01, corr02);
   LogKit::LogFormatted(LogKit::Low,"ln Vs  |           %5.2f     %5.2f \n",1.0f, corr12);
   LogKit::LogFormatted(LogKit::Low,"ln Rho |                     %5.2f \n",1.0f);
+
+  if (std::abs(corr01) > 1.0) {
+    LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The Vp-Vs correlation is wrong (%.2f).\n",corr01);
+    TaskList::addTask("Check your posterior correlations. Corr(Vp,Vs) is out of bounds.");
+  }
+  if (std::abs(corr02) > 1.0) {
+    LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The Vp-Rho correlation is wrong (%.2f).\n",corr02);
+    TaskList::addTask("Check your posterior correlations. Corr(Vp,Rho) is out of bounds.");
+  }
+  if (std::abs(corr12) > 1.0) {
+    LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The Vs-Rho correlation is wrong (%.2f).\n",corr12);
+    TaskList::addTask("Check your posterior correlations. Corr(Vs,Rho) is out of bounds.");
+  }
 }
 //--------------------------------------------------------------------
 void
 Corr::getNextParameterCovariance(fftw_complex **& parVar)
 {
-  if(common_correlation_ == true) {  
+  if(common_correlation_ == true) {
     fftw_complex ijkParLam;
-    fftw_complex ijkTmp = postCovAlpha_->getNextComplex(); 
+    fftw_complex ijkTmp = postCovAlpha_->getNextComplex();
 
     ijkParLam.re = float ( sqrt(ijkTmp.re * ijkTmp.re));
     ijkParLam.im = 0.0;
 
     for(int l = 0; l < 3; l++ ){
       for(int m = 0; m < 3; m++ )
-      {        
-        parVar[l][m].re = priorVar0_[l][m] * ijkParLam.re;      
+      {
+        parVar[l][m].re = priorVar0_[l][m] * ijkParLam.re;
         parVar[l][m].im = 0.0;
         // if(l!=m)
         //   parVar[l][m].re *= 0.75;  //NBNB OK DEBUG TEST
@@ -426,33 +454,33 @@ Corr::getNextParameterCovariance(fftw_complex **& parVar)
     jk.im = 0.0;
 
     parVar[0][0].re = ii.re;
-    parVar[0][0].im = ii.im; 
-    
+    parVar[0][0].im = ii.im;
+
     parVar[1][1].re = jj.re;
-    parVar[1][1].im = jj.im; 
+    parVar[1][1].im = jj.im;
 
     parVar[2][2].re = kk.re;
-    parVar[2][2].im = kk.im; 
+    parVar[2][2].im = kk.im;
 
     parVar[0][1].re = ij.re;
-    parVar[0][1].im = ij.im; 
+    parVar[0][1].im = ij.im;
     parVar[1][0].re = ij.re;
-    parVar[1][0].im = -ij.im;  
+    parVar[1][0].im = -ij.im;
 
     parVar[0][2].re = ik.re;
-    parVar[0][2].im = ik.im; 
+    parVar[0][2].im = ik.im;
     parVar[2][0].re = ik.re;
-    parVar[2][0].im = ik.im; 
+    parVar[2][0].im = ik.im;
 
     parVar[1][2].re = jk.re;
-    parVar[1][2].im = jk.im; 
+    parVar[1][2].im = jk.im;
     parVar[2][1].re = jk.re;
-    parVar[2][1].im = -jk.im; 
+    parVar[2][1].im = -jk.im;
   }
 }
 //--------------------------------------------------------------------
 void
-Corr::getNextErrorVariance(fftw_complex **& errVar, 
+Corr::getNextErrorVariance(fftw_complex **& errVar,
                            fftw_complex * errMult1,
                            fftw_complex * errMult2,
                            fftw_complex * errMult3,
@@ -466,7 +494,7 @@ Corr::getNextErrorVariance(fftw_complex **& errVar,
   if(common_correlation_ == true)
     ijkTmp = postCovBeta_->getNextComplex();
   else
-    ijkTmp = errCorr_->getNextComplex();  
+    ijkTmp = errCorr_->getNextComplex();
 
   ijkErrLam.re        = float( sqrt(ijkTmp.re * ijkTmp.re));
   ijkErrLam.im        = 0.0;
@@ -477,12 +505,12 @@ Corr::getNextErrorVariance(fftw_complex **& errVar,
     for(int l = 0; l < ntheta; l++ ) {
       for(int m = 0; m < ntheta; m++ )
       {        // Note we multiply kWNorm[l] and comp.conj(kWNorm[m]) hence the + and not a minus as in pure multiplication
-        errVar[l][m].re  = float( 0.5*(1.0-wnc)*errThetaCov[l][m] * ijkErrLam.re * ( errMult1[l].re *  errMult1[m].re +  errMult1[l].im *  errMult1[m].im)); 
-        errVar[l][m].re += float( 0.5*(1.0-wnc)*errThetaCov[l][m] * ijkErrLam.re * ( errMult2[l].re *  errMult2[m].re +  errMult2[l].im *  errMult2[m].im)); 
+        errVar[l][m].re  = float( 0.5*(1.0-wnc)*errThetaCov[l][m] * ijkErrLam.re * ( errMult1[l].re *  errMult1[m].re +  errMult1[l].im *  errMult1[m].im));
+        errVar[l][m].re += float( 0.5*(1.0-wnc)*errThetaCov[l][m] * ijkErrLam.re * ( errMult2[l].re *  errMult2[m].re +  errMult2[l].im *  errMult2[m].im));
         if(l==m) {
           errVar[l][m].re += float( wnc*errThetaCov[l][m] * errMult3[l].re  * errMult3[l].re);
-          errVar[l][m].im   = 0.0;             
-        }   
+          errVar[l][m].im   = 0.0;
+        }
         else {
           errVar[l][m].im  = float( 0.5*(1.0-wnc)*errThetaCov[l][m] * ijkErrLam.re * (-errMult1[l].re * errMult1[m].im + errMult1[l].im * errMult1[m].re));
           errVar[l][m].im += float( 0.5*(1.0-wnc)*errThetaCov[l][m] * ijkErrLam.re * (-errMult2[l].re * errMult2[m].im + errMult2[l].im * errMult2[m].re));
@@ -495,8 +523,8 @@ Corr::getNextErrorVariance(fftw_complex **& errVar,
 fftw_real*
 Corr::initializeCorrelations(SpatialWellFilter *spatwellfilter, WellData ** wells, float corrGradI, float corrGradJ, int lowIntCut, int nWells, int nz, int nzp)
 {
-  
-  fftw_real * corrT = NULL; // =  fftw_malloc(2*(nzp_/2+1)*sizeof(fftw_real)); 
+
+  fftw_real * corrT = NULL; // =  fftw_malloc(2*(nzp_/2+1)*sizeof(fftw_real));
 
   if(common_correlation_ == true){
     corrT = postCovAlpha_->fillInParamCorr(this, lowIntCut, corrGradI, corrGradJ);
@@ -504,23 +532,23 @@ Corr::initializeCorrelations(SpatialWellFilter *spatwellfilter, WellData ** well
 
     if(spatwellfilter != NULL){
       postCovAlpha_->setAccessMode(FFTGrid::RANDOMACCESS);
-      
+
       for(int i=0; i<nWells; i++)
         spatwellfilter->setPriorSpatialCorr(postCovAlpha_, wells[i], i);
 
       postCovAlpha_->endAccess();
     }
-    
-    postCovBeta_->fillInErrCorr(this, corrGradI, corrGradJ); 
+
+    postCovBeta_->fillInErrCorr(this, corrGradI, corrGradJ);
   }
   else{
-    
+
     corrT = extractParamCorr(postCovAlpha_, nzp);
     setPriorCorrTFiltered(corrT, nz, nzp);
 
     errCorr_->fillInErrCorrFromCovAlpha(postCovAlpha_, corrGradI, corrGradJ);
   }
-  
+
   return(corrT);
 }
 //--------------------------------------------------------------------
@@ -531,21 +559,21 @@ Corr::initializeAccess(void)
 
     postCovAlpha_      ->fftInPlace();
     postCovBeta_       ->fftInPlace();
-    
+
     postCovAlpha_      ->setAccessMode(FFTGrid::READANDWRITE);  //endAccess() in Crava::computePostMeanResidAndFFTCov()
-    postCovBeta_       ->setAccessMode(FFTGrid::READANDWRITE);  
+    postCovBeta_       ->setAccessMode(FFTGrid::READANDWRITE);
     postCovRho_        ->setAccessMode(FFTGrid::WRITE);
     postCrCovAlphaBeta_->setAccessMode(FFTGrid::WRITE);
     postCrCovAlphaRho_ ->setAccessMode(FFTGrid::WRITE);
     postCrCovBetaRho_  ->setAccessMode(FFTGrid::WRITE);
   }
   else{
- 
+
     FFT();
 
     errCorr_           ->setAccessMode(FFTGrid::READ);          //endAccess() in Corr::terminateAccess
     postCovAlpha_      ->setAccessMode(FFTGrid::READANDWRITE);  //endAccess() in Crava::computePostMeanResidAndFFTCov()
-    postCovBeta_       ->setAccessMode(FFTGrid::READANDWRITE);  
+    postCovBeta_       ->setAccessMode(FFTGrid::READANDWRITE);
     postCovRho_        ->setAccessMode(FFTGrid::READANDWRITE);
     postCrCovAlphaBeta_->setAccessMode(FFTGrid::READANDWRITE);
     postCrCovAlphaRho_ ->setAccessMode(FFTGrid::READANDWRITE);
@@ -586,7 +614,7 @@ Corr::createPostVariances(void)
 }
 
 //--------------------------------------------------------------------
-float 
+float
 Corr::getOrigin(FFTGrid * grid) const
 {
   grid->setAccessMode(FFTGrid::RANDOMACCESS);
@@ -619,7 +647,7 @@ Corr::createPriorVar0(void)
   postCrCovAlphaBeta_->setAccessMode(FFTGrid::RANDOMACCESS);
   postCrCovAlphaRho_ ->setAccessMode(FFTGrid::RANDOMACCESS);
   postCrCovBetaRho_  ->setAccessMode(FFTGrid::RANDOMACCESS);
- 
+
   priorVar0_ = new float*[3];
   for(int i=0 ; i<3 ; i++)
     priorVar0_[i] = new float[3];
@@ -650,8 +678,8 @@ Corr::writeFilePriorCorrT(float* corrT, int nzp) const
   std::string fileName = IO::makeFullFileName(IO::PathToCorrelations(), baseName);
   std::ofstream file;
   NRLib::OpenWrite(file, fileName);
-  file << std::fixed 
-       << std::right  
+  file << std::fixed
+       << std::right
        << std::setprecision(6)
        << dt_ << "\n";
   for(int i=0 ; i<nzp ; i++) {
@@ -683,8 +711,8 @@ void Corr::writeFilePriorVariances(ModelSettings * modelSettings) const
   file.close();
 
   NRLib::OpenWrite(file, fileName2);
-  file << std::fixed 
-       << std::right  
+  file << std::fixed
+       << std::right
        << std::setprecision(8)
        << dt_ << "\n";
   for(int i=0 ; i<n_ ; i++) {
@@ -727,8 +755,8 @@ Corr::writeFilePostVariances(void) const
 //--------------------------------------------------------------------
 void
 Corr::writeFilePostCorrT(float             * postCov,
-                         int                 nz,   
-                         const std::string & subDir,   
+                         int                 nz,
+                         const std::string & subDir,
                          const std::string & baseName) const
 {
   std::string fileName = IO::makeFullFileName(subDir,baseName);
@@ -754,27 +782,27 @@ Corr::writeFilePostCovGrids(Simbox * simbox) const
   postCovAlpha_ ->setAccessMode(FFTGrid::RANDOMACCESS);
   postCovAlpha_ ->writeFile(fileName, IO::PathToCorrelations(), simbox, "Posterior covariance for Vp");
   postCovAlpha_ ->endAccess();
-  
+
   fileName = IO::PrefixPosterior() + IO::PrefixCovariance() + "Vs";
   postCovBeta_ ->setAccessMode(FFTGrid::RANDOMACCESS);
   postCovBeta_ ->writeFile(fileName, IO::PathToCorrelations(), simbox, "Posterior covariance for Vs");
   postCovBeta_ ->endAccess();
-  
+
   fileName = IO::PrefixPosterior() + IO::PrefixCovariance() + "Rho";
   postCovRho_ ->setAccessMode(FFTGrid::RANDOMACCESS);
   postCovRho_ ->writeFile(fileName, IO::PathToCorrelations(), simbox, "Posterior covariance for density");
   postCovRho_ ->endAccess();
-  
+
   fileName = IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VpVs";
   postCrCovAlphaBeta_ ->setAccessMode(FFTGrid::RANDOMACCESS);
   postCrCovAlphaBeta_ ->writeFile(fileName, IO::PathToCorrelations(), simbox, "Posterior cross-covariance for (Vp,Vs)");
   postCrCovAlphaBeta_ ->endAccess();
-  
+
   fileName = IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VpRho";
   postCrCovAlphaRho_ ->setAccessMode(FFTGrid::RANDOMACCESS);
   postCrCovAlphaRho_ ->writeFile(fileName, IO::PathToCorrelations(), simbox, "Posterior cross-covariance for (Vp,density)");
   postCrCovAlphaRho_ ->endAccess();
-  
+
   fileName = IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VsRho";
   postCrCovBetaRho_ ->setAccessMode(FFTGrid::RANDOMACCESS);
   postCrCovBetaRho_ ->writeFile(fileName, IO::PathToCorrelations(), simbox, "Posterior cross-covariance for (Vs,density)");
