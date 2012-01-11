@@ -97,9 +97,8 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings       *& modelSettings,
                         errText, failedBackground);
       if (!failedBackground)
       {
-        bool gotEarthModel = true;
         processReflectionMatrix(reflectionMatrix_, background_, modelAVOstatic->getWells(), modelSettings,
-                                inputFiles, gotEarthModel, errText, failedReflMat);
+                                inputFiles, errText, failedReflMat);
         if (!failedReflMat)
         {
           processWavelets(wavelet_, seisCube_, modelAVOstatic->getWells(), reflectionMatrix_,
@@ -135,18 +134,16 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings       *& modelSettings,
             (estimationMode == false || modelSettings->getEstimateWaveletNoise() ||
              modelSettings->getOptimizeWellLocation() == true))
           {
-            bool gotBackground = true;
             processReflectionMatrix(reflectionMatrix_, background_, modelAVOstatic->getWells(), modelSettings,
-                                      inputFiles, gotBackground, errText, failedReflMat);
+                                      inputFiles, errText, failedReflMat);
           }
           else if(estimationMode == true &&
                   modelSettings->getEstimateWaveletNoise() == true &&
                   modelSettings->getEstimateBackground() == false &&
                   modelSettings->getEstimateCorrelations() == false)
           {
-            bool gotBackground = false;
             processReflectionMatrix(reflectionMatrix_, background_, modelAVOstatic->getWells(), modelSettings,
-                                      inputFiles, gotBackground, errText, failedReflMat);
+                                      inputFiles, errText, failedReflMat);
             backgroundDone = true; //Not really, but do not need it in this case.
           }
           if(failedBackground == false && backgroundDone == true &&
@@ -175,9 +172,8 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings       *& modelSettings,
           // locations need to be estimated before the background model is processed.
           //
         {
-          bool gotBackground = false;
           processReflectionMatrix(reflectionMatrix_, background_, modelAVOstatic->getWells(), modelSettings,
-                                    inputFiles, gotBackground, errText, failedReflMat);
+                                    inputFiles, errText, failedReflMat);
           if (failedReflMat == false && failedExtraSurf == false)
           {
             processSeismic(seisCube_, timeSimbox, timeDepthMapping, timeCutMapping,
@@ -875,7 +871,6 @@ ModelAVODynamic::processReflectionMatrix(float            **& reflectionMatrix,
                                          WellData          ** wells,
                                          ModelSettings      * modelSettings,
                                          const InputFiles   * inputFiles,
-                                         bool                 gotBackground,
                                          std::string        & errText,
                                          bool               & failed)
 {
