@@ -268,7 +268,8 @@ void SpatialWellFilter::doFiltering(Corr                        * corr,
     }
   }
 
-  completeSigmaE(lastn, cravaResult,noiseScale);
+  if(no_wells_filtered == false)
+    completeSigmaE(lastn, cravaResult,noiseScale);
 
   if(useVpRhoFilter == true)
     completeSigmaEVpRho(lastn,cravaResult,noiseScale);
