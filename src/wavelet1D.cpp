@@ -442,8 +442,8 @@ Wavelet1D::Wavelet1D(ModelSettings * modelSettings,
 
 
 Wavelet1D*
-Wavelet1D::getLocalWavelet1D(int i,
-                             int j)
+Wavelet1D::createLocalWavelet1D(int i,
+                                int j)
 {
   Wavelet1D* localWavelet;
   localWavelet = new Wavelet1D(this);
@@ -452,8 +452,8 @@ Wavelet1D::getLocalWavelet1D(int i,
   return localWavelet;
 }
 
-Wavelet1D*
-Wavelet1D::getWavelet1DForErrorNorm()
+Wavelet1D *
+Wavelet1D::createWavelet1DForErrorNorm()
 {
   Wavelet1D* errorWavelet;
   errorWavelet= new Wavelet1D(this);

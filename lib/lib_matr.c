@@ -972,7 +972,14 @@ RETURN VALUE:
   lib_matr_tred2(i_n, l_mat, l_d, l_e);
   lib_matr_tqli(l_e, i_n, l_mat, l_d, o_error);
 
-  if (*o_error > 0) return;
+  if (*o_error > 0) {
+    for(i=0;i<i_n;i++)
+      free(l_mat[i]);
+    free(l_mat);
+    free(l_d);
+    free(l_e);
+    return;
+  }
 
   for (i=0; i<=i_n-1; i++) {
     o_eigval[i] = l_d[i];

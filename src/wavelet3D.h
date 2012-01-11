@@ -56,8 +56,8 @@ public:
 //                                                Grid2D       *& /*noiseScaled*/,
 //                                                Grid2D       *& /*shift*/,
 //                                                Grid2D       *& /*gain*/);
-Wavelet1D*  getWavelet1DForErrorNorm();
-Wavelet1D * getLocalWavelet1D( int i, int j);
+Wavelet1D*  createWavelet1DForErrorNorm(void);
+Wavelet1D * createLocalWavelet1D( int i, int j);
 float       getLocalStretch(int i,int j);
 
 Wavelet1D*  getSourceWavelet();

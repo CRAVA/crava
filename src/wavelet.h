@@ -104,9 +104,9 @@ public:
                                 int /*j*/) {return 1.0f;} // note Not robust towards padding
 
 
-  virtual Wavelet1D * getLocalWavelet1D(int /*i*/,
-                                        int /*j*/) {return 0;} // note Not robust towards padding
-  virtual Wavelet1D * getWavelet1DForErrorNorm() {return 0;}
+  virtual Wavelet1D * createLocalWavelet1D(int /*i*/,
+                                           int /*j*/) {return 0;} // note Not robust towards padding
+  virtual Wavelet1D * createWavelet1DForErrorNorm() {return 0;}
 
 
 

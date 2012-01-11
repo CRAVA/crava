@@ -1900,8 +1900,7 @@ void BlockedLogs::findSeismicGradient(FFTGrid                  ** seisCube,
   char* buffer = new char[1000];
   sprintf(buffer,"%s.txt", "C:/Outputfiles/traces");
   std::ofstream out(buffer);
-  //bool welltmp = false;
-
+  delete [] buffer;
 
   double dz, ztop, dzW, ztopW;
   for(l = 0; l < nAngles; l++){
@@ -2145,6 +2144,7 @@ void BlockedLogs::computeGradient(std::vector<double> &Qepsilon, std::vector<dou
     out.open(buffer);
     append = true;
   }
+  delete [] buffer;
 
   int ndata;
   double data;
@@ -2339,6 +2339,7 @@ void BlockedLogs::smoothGradient(std::vector<double> &xGradient, std::vector<dou
        out2 << xGradient[i] << " " << yGradient[i];
      out2 << std::endl;
    }
+  delete [] buffer2;
 
   for(i = 0; i < n_beta; i++){
     if(Qbeta_data[i] != NULL)
@@ -2349,10 +2350,6 @@ void BlockedLogs::smoothGradient(std::vector<double> &xGradient, std::vector<dou
   delete [] Qbeta_data;
   delete [] Identity;
   delete [] res;
-
-
-
-
 }
 
 void BlockedLogs::computePrecisionMatrix(double &a, double &b, double &c)
@@ -2422,7 +2419,7 @@ void BlockedLogs::generateSyntheticSeismic(float   ** reflCoef,
     fillInCpp(reflCoef[i],start,length,cpp_r,nzp);
     Utils::fft(cpp_r,cpp_c,nzp);
 
-    localWavelet = wavelet[i]->getLocalWavelet1D(ipos_[0],jpos_[0]);
+    localWavelet = wavelet[i]->createLocalWavelet1D(ipos_[0],jpos_[0]);
     localWavelet->fft1DInPlace();
    // float sf = wavelet[i]->getLocalStretch(ipos_[0],jpos_[0]);
    // what about relative thickness ????

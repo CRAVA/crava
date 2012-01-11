@@ -719,9 +719,9 @@ void FaciesProb::calculateConditionalFaciesProb(WellData                      **
   //
   // Put all blocked facies logs in one vector
   //
-  int ** BWfacies = new int * [nActiveWells];
-  int **faciesCountWell = new int * [nActiveWells];
-  int *faciesCount = new int[nFacies_];
+  int ** BWfacies        = new int * [nActiveWells];
+  int ** faciesCountWell = new int * [nActiveWells];
+  int *  faciesCount     = new int[nFacies_];
   for(int f=0; f < nFacies_; f++)
     faciesCount[f] = 0;
   for (int i = 0 ; i < nActiveWells ; i++)
@@ -882,12 +882,16 @@ void FaciesProb::calculateConditionalFaciesProb(WellData                      **
     low_probabilities = low_probabilities || low_probabilities_this_well;
   }
 
+  for (int i = 0 ; i < nActiveWells ; i++)
+    delete [] faciesCountWell[i];
+  delete [] faciesCountWell;
+
   //if (low_probabilities) {
- //   std::string text;
- //   text  = "Low facies probabilities have been detected for one or more wells. Check the conditional\n";
- //   text += "   facies probabilities for all wells.\n";
- //   TaskList::addTask(text);
- // }
+  //   std::string text;
+  //   text  = "Low facies probabilities have been detected for one or more wells. Check the conditional\n";
+  //   text += "   facies probabilities for all wells.\n";
+  //   TaskList::addTask(text);
+  // }
 
   //
   // Estimate P( facies2 | facies1 )
@@ -962,6 +966,7 @@ void FaciesProb::calculateConditionalFaciesProb(WellData                      **
   }
 
   delete [] totProb;
+  delete [] faciesCount;
 
   for(int i=0 ; i < nFacies_ ; i++)
     delete [] condFaciesProb[i];

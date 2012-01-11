@@ -309,11 +309,9 @@ Crava::computeVariances(fftw_real     * corrT,
 
   for(int i=0 ; i < ntheta_ ; i++)
   {
-    Wavelet1D* wavelet1D=seisWavelet_[i]->getWavelet1DForErrorNorm();
-
+    Wavelet1D * wavelet1D = seisWavelet_[i]->createWavelet1DForErrorNorm();
     errorSmooth[i] = new Wavelet1D(wavelet1D,Wavelet::FIRSTORDERFORWARDDIFF);
-    if (seisWavelet_[i]->getDim() != 1) // do not delete seisWavelet_[i]!!
-      delete wavelet1D;
+    delete wavelet1D;
 
     std::string angle    = NRLib::ToString(thetaDeg_[i], 1);
     std::string fileName = IO::PrefixWavelet() + std::string("Diff_") + angle + IO::SuffixGeneralData();
@@ -551,8 +549,8 @@ Crava:: divideDataByScaleWavelet()
         // end get data
 
         // Wavelet local properties
-        localWavelet = seisWavelet_[l]->getLocalWavelet1D(iInd,jInd);  //
-        double sfLoc     =(simbox_->getRelThick(i,j)*seisWavelet_[l]->getLocalStretch(iInd,jInd));// scale factor from thickness stretch + (local stretch when 3D wavelet)
+        localWavelet = seisWavelet_[l]->createLocalWavelet1D(iInd,jInd);  //
+        double sfLoc =(simbox_->getRelThick(i,j)*seisWavelet_[l]->getLocalStretch(iInd,jInd));// scale factor from thickness stretch + (local stretch when 3D wavelet)
 
         double relT   = simbox_->getRelThick(i,j);
         double deltaF = static_cast<double>(nz_)*1000.0/(relT*simbox_->getlz()*static_cast<double>(nzp_));
@@ -734,7 +732,7 @@ Crava::multiplyDataByScaleWaveletAndWriteToFile(const std::string & typeName)
         }
 
         rfftwnd_one_real_to_complex(plan1,rData ,cData);
-        localWavelet = seisWavelet_[l]->getLocalWavelet1D(i,j);
+        localWavelet = seisWavelet_[l]->createLocalWavelet1D(i,j);
 
         for(k=0;k < (nzp_/2 +1);k++) // all complex values
         {
@@ -840,7 +838,7 @@ Crava::computePostMeanResidAndFFTCov()
     std::string fileName;
     seisData_[l]->setAccessMode(FFTGrid::READANDWRITE);
 
-    Wavelet1D* wavelet1D = seisWavelet_[l]->getWavelet1DForErrorNorm(); //
+    Wavelet1D* wavelet1D = seisWavelet_[l]->createWavelet1DForErrorNorm(); //
 
     errorSmooth[l]  = new Wavelet1D(wavelet1D ,Wavelet::FIRSTORDERFORWARDDIFF);
     errorSmooth2[l] = new Wavelet1D(errorSmooth[l], Wavelet::FIRSTORDERBACKWARDDIFF);
@@ -894,7 +892,7 @@ Crava::computePostMeanResidAndFFTCov()
   Wavelet1D** seisWaveletForNorm = new Wavelet1D*[ntheta_];
   for(l = 0; l < ntheta_; l++)
   {
-    seisWaveletForNorm[l]=seisWavelet_[l]->getWavelet1DForErrorNorm();
+    seisWaveletForNorm[l]=seisWavelet_[l]->createWavelet1DForErrorNorm();
     seisWaveletForNorm[l]->fft1DInPlace();
     if(simbox_->getIsConstantThick()) {
       seisWavelet_[l]->fft1DInPlace();
@@ -1478,7 +1476,8 @@ Crava::computeSyntSeismic(FFTGrid * alpha, FFTGrid * beta, FFTGrid * rho)
         }
         Wavelet1D resultVec(&impVec, Wavelet::FIRSTORDERFORWARDDIFF);
         resultVec.fft1DInPlace();
-        Wavelet1D * localWavelet = seisWavelet_[l]->getLocalWavelet1D(i,j);
+
+        Wavelet1D * localWavelet = seisWavelet_[l]->createLocalWavelet1D(i,j);
 
         float sf = static_cast<float>(simbox_->getRelThick(i, j))*seisWavelet_[l]->getLocalStretch(i,j);
 
@@ -1490,6 +1489,8 @@ Crava::computeSyntSeismic(FFTGrid * alpha, FFTGrid * beta, FFTGrid * rho)
           s.im = -r.re*w.im+r.im*w.re;
           resultVec.setCAmp(s,k);
         }
+        delete localWavelet;
+
         resultVec.invFFT1DInPlace();
         for(int k=0;k<nzp_;k++){
           float value = resultVec.getRAmp(k);

@@ -116,7 +116,6 @@ GridMapping::setMappingFromVelocity(FFTGrid * velocity, const Simbox * timeSimbo
 {
   if(simbox_!=NULL)  //Allow this to be called to override old mappings.
   {
-    //z0Grid_, z1Grid_ points into simbox. Must copy the relevant before deleting.
     if(surfaceMode_ == TOPGIVEN) {
       z0Grid_ = new Surface(*z0Grid_);
       z1Grid_ = NULL;

@@ -53,9 +53,9 @@ Wavelet1D(ModelSettings * modelSettings,
 
 // Methods that are virtual in Wavelet
 
-  Wavelet1D*  getWavelet1DForErrorNorm();
-  Wavelet1D * getLocalWavelet1D(int i,
-                                int j);
+  Wavelet1D * createWavelet1DForErrorNorm(void);
+  Wavelet1D * createLocalWavelet1D(int i,
+                                   int j);
 
   float         findGlobalScaleForGivenWavelet(ModelSettings * modelSettings,
                                                Simbox        * simbox,

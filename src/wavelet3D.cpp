@@ -321,7 +321,7 @@ Wavelet3D::getLocalStretch(int i,  int j) // Note: Not robust towards padding
 }
 
 Wavelet1D*
-Wavelet3D::getLocalWavelet1D( int i, int j)// note Not robust towards padding
+Wavelet3D::createLocalWavelet1D(int i, int j)// note Not robust towards padding
 {
   // returns the local wavelet exccept from the strech factor
   // The stretch factor is given by  getLocalStretch
@@ -379,10 +379,11 @@ Wavelet3D::dipAdjustWavelet(Wavelet1D* wavelet, double phi, double psi)
 
 
 Wavelet1D*
-Wavelet3D::getWavelet1DForErrorNorm()
+Wavelet3D::createWavelet1DForErrorNorm(void)
 {
   Wavelet1D* errorWavelet;
-  errorWavelet=getLocalWavelet1D( 0, 0);
+  errorWavelet = createLocalWavelet1D( 0, 0);
+
   // NBNB OK gjør om denne skaleringen til RMS gain.
   return errorWavelet;
 }
