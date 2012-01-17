@@ -1569,7 +1569,7 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
     }
     LogKit::LogFormatted(LogKit::Low,"  Rotation                                 : %10.4f\n", geometry->GetAngle()*(180.0/NRLib::Pi)*(-1));
     if (areaSpecification == ModelSettings::AREA_FROM_GRID_DATA_AND_UTM) {
-      LogKit::LogFormatted(LogKit::Low," and snapped to seismic data\n");
+      LogKit::LogFormatted(LogKit::Low,"and snapped to seismic data\n");
       LogKit::LogFormatted(LogKit::Low,"  Grid                                     : "+gridFile+"\n");
     }
   }

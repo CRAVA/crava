@@ -1835,29 +1835,33 @@ XmlModelFile::parseUTMArea(TiXmlNode * node, std::string & errTxt)
     errTxt += "Y-length must be given in command <"+
       root->ValueStr()+"> "+lineColumnText(root)+".\n";
 
-  double dx = lx;
-  double dy = ly;
-
   bool snapToSeismicData = parseBool(root, "snap-to-seismic-data", snapToSeismicData, errTxt);
 
-  bool densX = parseValue(root, "sample-density-x", dx, errTxt);
-  if(densX == true && snapToSeismicData == true) 
-    TaskList::addTask("Keyword <sample-density-x> has no effect when <snap-to-seismic-data> has been specified.");
-  else if(densX == false && snapToSeismicData == false)
-    errTxt += "Sample density for x must be given in command <"+
-      root->ValueStr()+"> "+lineColumnText(root)+".\n";
+  double dx = RMISSING;
+  double dy = RMISSING;
 
+  bool densX = parseValue(root, "sample-density-x", dx, errTxt);
   bool densY = parseValue(root, "sample-density-y", dy, errTxt);
-  if(densY == true && snapToSeismicData == true) 
-    TaskList::addTask("Keyword <sample-density-y> has no effect when <snap-to-seismic-data> has been specified.");
-  else if(densY == false && snapToSeismicData == false)
-    errTxt += "Sample density for y must be given in command <"+
-      root->ValueStr()+"> "+lineColumnText(root)+".\n";
+
+  if (snapToSeismicData) {
+    modelSettings_->setSnapGridToSeismicData(true);
+    dx = lx;
+    dy = ly;
+    if(densX)
+      TaskList::addTask("Keyword <sample-density-x> has no effect when <snap-to-seismic-data> has been specified.");
+    if(densY)
+      TaskList::addTask("Keyword <sample-density-y> has no effect when <snap-to-seismic-data> has been specified.");
+  }
+  else {
+    if (!densX)
+      errTxt += "Sample density for x must be given in command <"+ root->ValueStr()+"> "+lineColumnText(root)+".\n";
+    if (!densY)
+      errTxt += "Sample density for y must be given in command <"+ root->ValueStr()+"> "+lineColumnText(root)+".\n";
+  }
 
   double angle = 0;
   if(parseValue(root, "angle", angle, errTxt) == false)
-    errTxt += "Rotation angle must be given in command <"+
-      root->ValueStr()+"> "+lineColumnText(root)+".\n";
+    errTxt += "Rotation angle must be given in command <"+root->ValueStr()+"> "+lineColumnText(root)+".\n";
 
   double rot = (-1)*angle*(NRLib::Pi/180.0);
   int nx = static_cast<int>(lx/dx);
