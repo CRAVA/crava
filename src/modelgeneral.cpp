@@ -393,6 +393,7 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
                               geometry,
                               tmpErrText);
 
+    modelSettings->setSeismicDataAreaParameters(geometry);
     if(geometry != NULL) {
       geometry->WriteGeometry();
 

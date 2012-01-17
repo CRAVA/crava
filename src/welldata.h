@@ -68,6 +68,7 @@ public:
   void                setWrongLogEntriesUndefined(int & count_alpha, int & count_beta, int & count_rho);
   void                filterLogs(void);
   void                lookForSyntheticVsLog(float & rank_correlation);
+  void                findILXLAtStartPosition(void);
   void                calculateDeviation(float  & devAngle,
                                          Simbox * timeSimbox);
   void                countFacies(Simbox *simbox, int * faciesCount);

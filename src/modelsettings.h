@@ -25,6 +25,7 @@ public:
   Vario                          * getBackgroundVario(void)             const { return backgroundVario_                           ;}
   Vario                          * getLocalWaveletVario(void)           const { return localWaveletVario_                         ;}
   SegyGeometry                   * getAreaParameters(void)              const { return geometry_                                  ;}
+  SegyGeometry                   * getSeismicDataAreaParameters(void)   const { return geometry_full_                             ;}
   TraceHeaderFormat              * getTraceHeaderFormat(void)           const { return traceHeaderFormat_                         ;}
   TraceHeaderFormat              * getTraceHeaderFormatOutput(void)     const { return traceHeaderFormatOutput_                   ;}
   TraceHeaderFormat              * getTraceHeaderFormat(int i)          const { return localTHF_[i]                               ;}
@@ -180,6 +181,7 @@ public:
   void setLocalWaveletVario(Vario * vario);
   void copyBackgroundVarioToLocalWaveletVario(void);
   void setAreaParameters(const SegyGeometry * geometry);
+  void setSeismicDataAreaParameters(const SegyGeometry * geometry);
   void setTraceHeaderFormat(const TraceHeaderFormat & traceHeaderFormat);
   void setTraceHeaderFormatOutput(TraceHeaderFormat * traceHeaderFormat);
   void addTraceHeaderFormat(TraceHeaderFormat * traceHeaderFormat);
@@ -348,6 +350,7 @@ private:
   Vario                           * backgroundVario_;            // Used for lateral background correlation.
   Vario                           * localWaveletVario_;          // Used for local wavelet (gain and shift) and local noise.
 
+  SegyGeometry                    * geometry_full_;              // area parameters of full seismic data
   SegyGeometry                    * geometry_;                   // area parameters
   float                             segyOffset_;                 // Starttime for SegY cubes.
   std::vector<float>                localSegyOffset_;            // Starttime for SegY cubes per angle.

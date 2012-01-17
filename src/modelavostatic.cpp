@@ -269,6 +269,7 @@ ModelAVOStatic::processWells(WellData          **& wells,
           validWells[count] = i;
           count++;
         }
+        wells[i]->findILXLAtStartPosition();
       }
     }
     //

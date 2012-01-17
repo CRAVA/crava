@@ -1433,6 +1433,19 @@ bool compare(const std::pair<int, float>& i1, const std::pair<int, float>& i2)
 
 //----------------------------------------------------------------------------
 void
+WellData::findILXLAtStartPosition(void)
+{
+  const SegyGeometry * full_geometry = modelSettings_->getSeismicDataAreaParameters();
+
+  if (full_geometry != NULL) {
+    int IL0, XL0;
+    full_geometry->FindILXL(static_cast<float>(xpos0_), static_cast<float>(ypos0_), IL0, XL0);
+    LogKit::LogFormatted(LogKit::Low,"   IL/XL at start of well is %d/%d\n",IL0,XL0);
+  }
+}
+
+//----------------------------------------------------------------------------
+void
 WellData::lookForSyntheticVsLog(float & rank_correlation)
 {
   float corr_threshold = modelSettings_->getMaxRankCorr();
