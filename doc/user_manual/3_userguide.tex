@@ -73,7 +73,7 @@ The name of the seismic data file is given with \kw{file-name}, as seen in \auto
 By default, \crava recognises four SegY formats; Seisworks, Charisma, SIP and IESX, see Table~\ref{tab:segyformats}. 
 \begin{table}[h]
 \centering
-\caption{SegY formats recognized by Crava}
+\caption{SegY formats recognised by Crava}
 \label{tab:segyformats}
 \begin{tabular}{|l|r|r|r|r|r|c|}
 \hline
@@ -109,7 +109,7 @@ We can read wavelets on JASON and NORSAR format.
 
 The Ricker wavelet is implemented in \crava, and can be used by the command \kw{ricker}\kwindex{ricker}. The peak frequency is given as argument.
 
-If the \kw{wavelet} command is not given, or given without \kw{file-name}, the wavelet is estimated. See \autoref{sec:waveestimp} for how this is done. If the wavelet is given on file, but unscaled, the command \kw{scale}\kwindex{scale} should be used if the scale is known, otherwise, the scale can be estimated by using the \kw{estimate-scale}\kwindex{estimate-scale} command. If none of these are specified, the wavelet will be used as it is on file.
+If the \kw{wavelet} command is not given, or given without \kw{file-name}, the wavelet is estimated. See \autoref{sec:waveestimp} for how this is done. If the wavelet is given on file, but not scaled, the command \kw{scale}\kwindex{scale} should be used if the scale is known, otherwise, the scale can be estimated by using the \kw{estimate-scale}\kwindex{estimate-scale} command. If none of these are specified, the wavelet will be used as it is on file.
 
 \subsubsection{Signal/noise ratio}
 \label{sec:basicnoise}
@@ -164,7 +164,7 @@ which must all be specified:
 \item \kw{sample-density-x}\kwindex{sample-density-x} is the length of one grid cell along the local x-axis.
 \item \kw{sample-density-y}\kwindex{sample-density-y} is the length of one grid cell along the local y-axis.
 \end{itemize}
-If the grid has the same rotation as the SegY volume read as input, output SegY volumes will have correct inlines and crosslines. Otherwise, these numbers are just counting from the initial corner.
+If the grid has the same rotation as the SegY volume read as input, output SegY volumes will have correct in-lines and cross-lines. Otherwise, these numbers are just counting from the initial corner.
 The command \kw{area-from-surface} contains only one parameter, \kw{file-name}\kwindex{file-name}, the name of a storm surface file defining the lateral extent of the inversion volume.
 The last way to define the inversion area is by the command \kw{inline-crossline-numbers}\kwindex{inline-crossline-numbers}. By this command, the following parameters can be used:
 \begin{itemize}
@@ -187,7 +187,7 @@ file name for the top surface is given under command
 \kw{top-surface}\kwindex{top-surface}, \kw{time-file}, and the base
 surface is given similarly under \kw{base-surface}
 \kwindex{base-surface}, \kw{time-file}. The file format is binary
-storm or ASCII irap. Top and base time values for the inversion
+storm or ASCII Irap. Top and base time values for the inversion
 interval can be given as constants instead of files, by using the
 command \kw{time-value}\kwindex{time-value}.   
 
@@ -292,7 +292,7 @@ Since seismic data only contain information about relative elastic parameters, t
 
 \subsubsection{Background model}
 \label{sec:basicbg}
-The background model is given under the \kw{background}\kwindex{background} command. It can be given from file, using \kw{vp-file}\kwindex{vp-file}, \kw{vs-file}\kwindex{vs-file} and \kw{density-file}\kwindex{density-file}. These files should either be on Storm, crava, Sgri or SegY format. Alternatively, constant values can be used for background model, specified with \kw{vp-constant}\kwindex{vp-constant}, \kw{vs-constant}\kwindex{vs-constant} and \kw{density-constant}\kwindex{density-constant}. Any combinations of files and constants are also ok. If none of these are given, the background model will be estimated.
+The background model is given under the \kw{background}\kwindex{background} command. It can be given from file, using \kw{vp-file}\kwindex{vp-file}, \kw{vs-file}\kwindex{vs-file} and \kw{density-file}\kwindex{density-file}. These files should either be on Storm, crava, Sgri or SegY format. Alternatively, constant values can be used for background model, specified with \kw{vp-constant}\kwindex{vp-constant}, \kw{vs-constant}\kwindex{vs-constant} and \kw{density-constant}\kwindex{density-constant}. Any combinations of files and constants are also accepted. If none of these are given, the background model will be estimated.
 \subsubsection{Covariances}
 \label{sec:basiccorr}
 As shown in \autoref{sec:statmodthe} the prior covariance structure for the elastic parameters consists of three parts:
@@ -301,7 +301,7 @@ As shown in \autoref{sec:statmodthe} the prior covariance structure for the elas
 \item A temporal correlation vector, length equal to number of layers in grid, $n_t$. May be read from ASCII file using the command \kw{temporal-correlation}\kwindex{temporal-correlation}.
 \item A lateral correlation structure. May be given as a parametric variogram using the command \kw{lateral-correlation}.
 \end{enumerate}
-By default, the two first are estimated from well data, and the lateral correlation structure is set to a isotropic exponential variogram with range 1000. The reason for the latter choice is that this is hard to estimate, see \autoref{sec:correstimp} for details. The most common to override is the lateral correlation, where the variogram used for petrophysical modelling is a good choice.
+By default, the two first are estimated from well data, and the lateral correlation structure is set to a isotropic exponential variogram with range 1000. The reason for the latter choice is that this is hard to estimate, see \autoref{sec:correstimp} for details. The most common to override is the lateral correlation, where the variogram used for petro-physical modelling is a good choice.
 \subsection{Well data}
 Unless all information about wavelet, signal to noise and correlations are specified, well data are needed for estimation. Wells are given with the command \kw{well-data}\kwindex{well-data}, and may look like this:
 \svex{ex:welldata}
