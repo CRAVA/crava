@@ -11,11 +11,11 @@ required to be able to open the links.
 
 \item [New features:] \mbox{ }
   \begin{itemize}
-    \item Allow background model to be specified with AI and/or
+    \item Allow background model to be specified with AI and\!/\!or
       \vp/\vs, as a complement to \vp, \vs, and $\rho$. Specify files
       for these parameters with keyword \kw{ai-file} and
       \kw{vp-vs-file}. \jira{214}
-    \item Allow users to specify a \vp/\vs for use in the
+    \item Allow users to specify \vp/\vs for use in the
       reflection matrix.  Use keyword \kw{vp-vs-ratio}. \jira{219}
     \item Remove certain QC checks when \crava is run from
       \rms, as \rms will perform these tests. Activated with keyword
@@ -29,7 +29,7 @@ required to be able to open the links.
       facies probabilities are not requested, well logs will not be
       (multi-parameter) filtered. \jira{242}
     \item Allow \vp/\vs to be estimated from wells. Activated
-      with keyword \kw{vp-vs-ratio-from-wells}. If a
+      with keyword \kw{vp-vs-ratio-from-wells}. If
       \kw{wavelet-estimation-interval} has been specified, this
       interval will also be used for the \vp/\vs estimate. \jira{247}
     \item If automatic SegY format detection fails, list trace
@@ -67,7 +67,7 @@ required to be able to open the links.
   \begin{itemize}
     \item Fixed crash in background modelling when there were
       (unrealistically) few layers in grid. \jira{200}
-    \item Background volumes of AI and/or \vp/\vs containing undefined
+    \item Background volumes of AI and\!/\!or \vp/\vs containing undefined
       values caused troubles. The fix is to set such undefined values
       to global mean. \jira{222}
     \item Removed bugs in estimation of wavelet norm, which indirectly
