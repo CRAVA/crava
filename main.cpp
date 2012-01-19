@@ -130,14 +130,14 @@ int main(int argc, char** argv)
   LogKit::StartBuffering();
 
   Program program( 1,                     // Major version
-                   1,                     // Minor version
+                   2,                     // Minor version
                    0,                     // Patch number
-                   "",                    // Use empty string "" for release versions
-                   //" beta",                // Use empty string "" for release versions
+                   //"",                    // Use empty string "" for release versions
+                   " beta",                // Use empty string "" for release versions
                    -1,                    // Validity of licence in days (-1 = infinite)
                    //"Roxar",
-                   //"NORSAR",
-                  "Norsk Regnesentral/Statoil");  // Who this copy of CRAVA is licensed to
+                   //"NORSAR");
+                   "Norsk Regnesentral/Statoil");  // Who this copy of CRAVA is licensed to
 
   double wall=0.0, cpu=0.0;
   TimeKit::getTime(wall,cpu);
