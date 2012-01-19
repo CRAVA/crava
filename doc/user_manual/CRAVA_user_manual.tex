@@ -47,16 +47,19 @@
 \newcommand{\storm} {\textsf{Storm}\xspace}
 \newcommand{\matlab}{\textsf{MATLAB}\xspace}
 \newcommand{\perl}  {\textsf{Perl}\xspace}
-\newcommand{\scriptref}[2]{\ifthenelse{\boolean{screen}}{\hyperref[#1]{#2}}{#2 (see \ref{#1})}}
-\newcommand{\jira}[1]{\href{https://jira.nr.no/browse/CRA-#1}{CRA-#1}}
 
-\providecommand{\autopageref}[1]{\hyperref[#1]{page~\pageref*{#1}}} %Missing definition in old version of hyperref
 \def\chapterautorefname{Chapter}%
 \def\sectionautorefname{Section}%
 \def\subsectionautorefname{Section}%
 \def\subsubsectionautorefname{Section}%
 \def\paragraphautorefname{Section}%
 
+\hypersetup{
+    linkcolor=blue,         % color of internal links
+    citecolor=red,          % color of links to bibliography
+    filecolor=magenta,      % color of file links
+    urlcolor=green          % color of external links
+}
 
 \newcommand{\kw}[1]{\hyperref[#1]{\texttt{<#1>}}}
 \newcommand{\rkw}[2]{\hyperref[#2]{\texttt{<#1>}}}
@@ -70,6 +73,9 @@
 \newcommand{\Description}{\makebox[\rrr][l]{\textit{Description:}\xspace}}
 \newcommand{\Argument}{\makebox[\rrr][l]{\textit{Argument:}\xspace}}
 \newcommand{\Default}{\makebox[\rrr][l]{\textit{Default:}\xspace}}
+\newcommand{\jira}[1]{\href{https://jira.nr.no/browse/CRA-#1}{CRA-#1}}
+\providecommand{\autopageref}[1]{\hyperref[#1]{page~\pageref*{#1}}} %Missing definition in old version of hyperref
+
 \newlength{\rrr}
 \settowidth{\rrr}{\textit{Description:}}
 
