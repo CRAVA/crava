@@ -61,6 +61,7 @@ required to be able to open the links.
       becomes facies\_to\_choose $= (k + 1)\ \%\ n$, where $k$ is the
       layer number. This used to be randomly chosen, so that identical
       runs could give different facies predictions. \jira{249}
+    \item Changed the computation of SegY geometry, and improved error messages. The new version should be more accurate and robust.
   \end{itemize}
 
 \item [Bug fixes:] \mbox{ }
@@ -89,5 +90,6 @@ required to be able to open the links.
       NRLib. \jira{256}
     \item Fixed several bugs encountered when using 3D prior facies
       probability volumes. \jira{272}
+    \item Fixed bug with interpolation of Storm-grids used for input.
  \end{itemize}
 \end{description}
