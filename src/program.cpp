@@ -21,7 +21,7 @@ Program::Program(const unsigned int  major,
     licensed_to_(licensed_to)
 {
   std::string version = NRLib::ToString(major)+"."+NRLib::ToString(minor)+"."+NRLib::ToString(patch)+extra_text;
-  std::string blanks(39 - version.size(), ' ');
+  std::string blanks(40 - version.size(), ' ');
 
   LogKit::LogFormatted(LogKit::Low,"\n***************************************************************************************************");
   LogKit::LogFormatted(LogKit::Low,"\n*****                                                                                         *****");
@@ -30,8 +30,10 @@ Program::Program(const unsigned int  major,
   LogKit::LogFormatted(LogKit::Low,"\n*****                                                                                         *****");
   LogKit::LogFormatted(LogKit::Low,"\n***************************************************************************************************\n\n");
 
+  bool release = (extra_text == "");
   CheckForLicenceExpiration(licence_days_,
-                            licensed_to_);
+                            licensed_to_,
+                            release);
 
   LogKit::LogFormatted(LogKit::Low,"Log written by                             : "+SystemCall::getUserName()+"\n");
   LogKit::LogFormatted(LogKit::Low,"Date and time                              : "+SystemCall::getCurrentTime());
@@ -44,7 +46,8 @@ Program::~Program(void)
 
 void
 Program::CheckForLicenceExpiration(const int           licence_days,
-                                   const std::string & licensed_to) const
+                                   const std::string & licensed_to,
+                                   const bool          release) const
 {
   if (licence_days >= 0) {
     time_t now = time(0);
@@ -67,7 +70,11 @@ Program::CheckForLicenceExpiration(const int           licence_days,
   }
   else
   {
-    LogKit::LogFormatted(LogKit::Low,"Compiled: %s/%s\n\n",SystemCall::getDate().c_str(),SystemCall::getTime().c_str());
+    if (!release) {
+      LogKit::LogFormatted(LogKit::Low,"Compiled: %s/%s\n\n",SystemCall::getDate().c_str(),SystemCall::getTime().c_str());
+    }
+    LogKit::LogFormatted(LogKit::Error,"License expiration                         : Never\n");
+    LogKit::LogFormatted(LogKit::Error,"Licensed to                                : %s\n\n",licensed_to.c_str());
   }
 }
 
