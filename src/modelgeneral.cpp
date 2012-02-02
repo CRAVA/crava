@@ -1693,15 +1693,32 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
       LogKit::LogFormatted(LogKit::Low,"\nEarth model:\n");
     else
       LogKit::LogFormatted(LogKit::Low,"\nBackground model:\n");
-    if (modelSettings->getConstBackValue(0) > 0)
-      LogKit::LogFormatted(LogKit::Low,"  P-wave velocity                          : %10.1f\n",modelSettings->getConstBackValue(0));
-    else
-      LogKit::LogFormatted(LogKit::Low,"  P-wave velocity read from file           : "+inputFiles->getBackFile(0)+"\n");
 
-    if (modelSettings->getConstBackValue(1) > 0)
-      LogKit::LogFormatted(LogKit::Low,"  S-wave velocity                          : %10.1f\n",modelSettings->getConstBackValue(1));
-    else
-      LogKit::LogFormatted(LogKit::Low,"  S-wave velocity read from file           : "+inputFiles->getBackFile(1)+"\n");
+    if (modelSettings->getUseAIBackground() > 0) {
+      if (modelSettings->getConstBackValue(0) > 0)
+        LogKit::LogFormatted(LogKit::Low,"  Acoustic impedance                       : %10.1f\n",modelSettings->getConstBackValue(0));
+      else
+        LogKit::LogFormatted(LogKit::Low,"  Acoustic impedance read from file        : "+inputFiles->getBackFile(0)+"\n");
+    }
+    else {
+      if (modelSettings->getConstBackValue(0) > 0)
+        LogKit::LogFormatted(LogKit::Low,"  P-wave velocity                          : %10.1f\n",modelSettings->getConstBackValue(0));
+      else
+        LogKit::LogFormatted(LogKit::Low,"  P-wave velocity read from file           : "+inputFiles->getBackFile(0)+"\n");
+    }
+
+    if (modelSettings->getUseVpVsBackground()) {
+      if (modelSettings->getConstBackValue(1) > 0)
+        LogKit::LogFormatted(LogKit::Low,"  Vp/Vs                                    : %10.1f\n",modelSettings->getConstBackValue(1));
+      else
+        LogKit::LogFormatted(LogKit::Low,"  Vp/Vs  read from file                    : "+inputFiles->getBackFile(1)+"\n");
+    }
+    else {
+      if (modelSettings->getConstBackValue(1) > 0)
+        LogKit::LogFormatted(LogKit::Low,"  S-wave velocity                          : %10.1f\n",modelSettings->getConstBackValue(1));
+      else
+        LogKit::LogFormatted(LogKit::Low,"  S-wave velocity read from file           : "+inputFiles->getBackFile(1)+"\n");
+    }
 
     if (modelSettings->getConstBackValue(2) > 0)
       LogKit::LogFormatted(LogKit::Low,"  Density                                  : %10.1f\n",modelSettings->getConstBackValue(2));
