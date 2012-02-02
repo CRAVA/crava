@@ -535,7 +535,9 @@ ModelAVODynamic::processBackground(Background         *& background,
       parName.push_back("AI "+modelSettings->getBackgroundType());
     else
       parName.push_back("Vp "+modelSettings->getBackgroundType());
-    if (modelSettings->getUseVpVsBackground())
+    if (modelSettings->getUseSIBackground())
+      parName.push_back("SI "+modelSettings->getBackgroundType());
+    else if (modelSettings->getUseVpVsBackground())
       parName.push_back("Vp/Vs "+modelSettings->getBackgroundType());
     else
       parName.push_back("Vs "+modelSettings->getBackgroundType());
@@ -617,7 +619,11 @@ ModelAVODynamic::processBackground(Background         *& background,
         LogKit::LogMessage(LogKit::Low, "\nMaking Vp background from AI and Rho\n");
         backModel[0]->subtract(backModel[2]);
       }
-      if (modelSettings->getUseVpVsBackground()) { // Vs = Vp/(Vp/Vs) ==> lnVs = lnVp - ln(Vp/Vs)
+      if (modelSettings->getUseVpVsBackground()) { // Vs = SI/Rho     ==> lnVs = lnSI - lnRho
+        LogKit::LogMessage(LogKit::Low, "\nMaking Vs background from SI and Rho\n");
+        backModel[1]->subtract(backModel[2]);
+      }
+      else if (modelSettings->getUseVpVsBackground()) { // Vs = Vp/(Vp/Vs) ==> lnVs = lnVp - ln(Vp/Vs)
         LogKit::LogMessage(LogKit::Low, "\nMaking Vs background from Vp and Vp/Vs\n");
         backModel[1]->subtract(backModel[0]);
         backModel[1]->changeSign();

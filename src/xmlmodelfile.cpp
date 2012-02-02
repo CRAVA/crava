@@ -1188,6 +1188,7 @@ XmlModelFile::parseBackground(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("vs-file");
   legalCommands.push_back("density-file");
   legalCommands.push_back("ai-file");
+  legalCommands.push_back("si-file");
   legalCommands.push_back("vp-vs-ratio-file");
   legalCommands.push_back("vp-constant");
   legalCommands.push_back("vs-constant");
@@ -1222,6 +1223,13 @@ XmlModelFile::parseBackground(TiXmlNode * node, std::string & errTxt)
     inputFiles_->setBackFile(0, filename);     // Store AI background in Vp slot
     modelSettings_->setConstBackValue(0, -1);  //
     modelSettings_->setUseAIBackground(true);
+  }
+
+  bool si = parseFileName(root, "si-file", filename, errTxt);
+  if(si == true) {
+    inputFiles_->setBackFile(1, filename);     // Store SI background in Vs slot
+    modelSettings_->setConstBackValue(1, -1);  //
+    modelSettings_->setUseSIBackground(true);
   }
 
   bool vpvs = parseFileName(root, "vp-vs-ratio-file", filename, errTxt);
@@ -1263,16 +1271,32 @@ XmlModelFile::parseBackground(TiXmlNode * node, std::string & errTxt)
   }
 
   if (vp && ai) {
-      errTxt += "Both AI background and Vp background has been given in command <"+root->ValueStr()+"> "+
+      errTxt += "Both AI background and Vp background has been specified in command <"+root->ValueStr()+"> "+
+        lineColumnText(root)+". Please give only one.\n";
+  }
+
+  if (vs && si) {
+      errTxt += "Both SI background and Vs background has been specified in command <"+root->ValueStr()+"> "+
         lineColumnText(root)+". Please give only one.\n";
   }
 
   if (vs && vpvs) {
-      errTxt += "Both AI background and Vp background has been given in command <"+root->ValueStr()+"> "+
+      errTxt += "Both Vs background and Vp/Vs background has been specified in command <"+root->ValueStr()+"> "+
         lineColumnText(root)+". Please give only one.\n";
   }
 
-  bool bgGiven = (vp & vs & rho) || (ai & vs & rho) || (vp & vpvs & rho) || (ai & vpvs & rho);
+  if (si && vpvs) {
+      errTxt += "Both SI background and Vp/Vs background has been specified in command <"+root->ValueStr()+"> "+
+        lineColumnText(root)+". Please give only one.\n";
+  }
+
+  bool bgGiven =
+    (vp & vs   & rho)  ||
+    (vp & si   & rho)  ||
+    (vp & vpvs & rho)  ||
+    (ai & vs   & rho)  ||
+    (ai & si   & rho)  ||
+    (ai & vpvs & rho);
 
   bool estimate = !(vp | vs | rho);
   modelSettings_->setGenerateBackground(estimate);

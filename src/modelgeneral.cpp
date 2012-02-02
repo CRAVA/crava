@@ -1707,7 +1707,13 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
         LogKit::LogFormatted(LogKit::Low,"  P-wave velocity read from file           : "+inputFiles->getBackFile(0)+"\n");
     }
 
-    if (modelSettings->getUseVpVsBackground()) {
+    if (modelSettings->getUseSIBackground()) {
+      if (modelSettings->getConstBackValue(1) > 0)
+        LogKit::LogFormatted(LogKit::Low,"  Shear impedance                          : %10.1f\n",modelSettings->getConstBackValue(1));
+      else
+        LogKit::LogFormatted(LogKit::Low,"  Shear impedance read from file           : "+inputFiles->getBackFile(1)+"\n");
+    }
+    else if (modelSettings->getUseVpVsBackground()) {
       if (modelSettings->getConstBackValue(1) > 0)
         LogKit::LogFormatted(LogKit::Low,"  Vp/Vs                                    : %10.1f\n",modelSettings->getConstBackValue(1));
       else

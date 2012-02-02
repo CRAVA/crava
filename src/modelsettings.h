@@ -33,6 +33,7 @@ public:
   int                              getKrigingParameter(void)            const { return krigingParameter_                          ;}
   float                            getConstBackValue(int i)             const { return constBackValue_[i]                         ;}
   bool                             getUseAIBackground(void)             const { return useAIBackground_                           ;}
+  bool                             getUseSIBackground(void)             const { return useSIBackground_                           ;}
   bool                             getUseVpVsBackground(void)           const { return useVpVsBackground_                         ;}
   int                              getNumberOfAngles(void)              const { return static_cast<int>(angle_.size())            ;}
   int                              getSeismicType(int i)                const { return seismicType_[i]                            ;}
@@ -188,6 +189,7 @@ public:
   void setKrigingParameter(int krigingParameter)          { krigingParameter_         = krigingParameter         ;}
   void setConstBackValue(int i, float constBackValue)     { constBackValue_[i]        = constBackValue           ;}
   void setUseAIBackground(bool useAIBackground)           { useAIBackground_          = useAIBackground          ;}
+  void setUseSIBackground(bool useSIBackground)           { useSIBackground_          = useSIBackground          ;}
   void setUseVpVsBackground(bool useVpVsBackground)       { useVpVsBackground_        = useVpVsBackground        ;}
   void addSeismicType(int seismicType)                    { seismicType_.push_back(seismicType)                  ;}
   void addAngle(float angle)                              { angle_.push_back(angle)                              ;}
@@ -397,6 +399,7 @@ private:
   std::vector<float>                constBackValue_;             // Values set for constant background model
                                                                  // Negative value ==> read from file (actual value gives format).
   bool                              useAIBackground_;            // Read in file for AI background instead of Vp background
+  bool                              useSIBackground_;            // Read in file for SI background instead of Vs background
   bool                              useVpVsBackground_;          // Read in file for VpVs background instead of Vs background
   std::string                       backgroundType_;             // background or earth model
 

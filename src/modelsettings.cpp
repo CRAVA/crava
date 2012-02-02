@@ -132,6 +132,7 @@ ModelSettings::ModelSettings(void)
   forwardModeling_         =    false;
   generateBackground_      =     true;
   useAIBackground_         =    false;
+  useSIBackground_         =    false;
   useVpVsBackground_       =    false;
   estimateFaciesProb_      =    false;
   faciesProbRelative_      =     true;
