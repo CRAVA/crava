@@ -9,12 +9,12 @@ class TimeLine;
 class DistributionsRockT0;
 class DistributionsSaturation;
 class DistributionsGeochemical;
+class FFTGrid;
 
 class TimeEvolution
 {
 public:
-  TimeEvolution(int number_of_timesteps,
-                int i_max,
+  TimeEvolution(int i_max,
                 TimeLine & time_line,
                 const DistributionsRockT0 * dist_rock,
                 const DistributionsSaturation * dist_sat,
@@ -28,9 +28,25 @@ private:
   std::vector< NRLib::Vector> mean_correction_term_;
   std::vector< NRLib::Matrix> cov_correction_term_;
 
-  void Split(SeismicParametersHolder &m, SeismicParametersHolder &m_dynamic, SeismicParametersHolder &m_static);
-  void Merge(SeismicParametersHolder &m, SeismicParametersHolder &m_dynamic, SeismicParametersHolder &m_static);
+  //Expand every 3-vector into a 6-vector of 3 static and 3 dynamic elements.
+  void SplitSamplesStaticDynamic(std::vector<std::vector<std::vector<double> > > & m_ik);
 
+  // Create the FFTGrids and fill them according to split-formulas:
+  void Split(const SeismicParametersHolder &m_combined,
+             std::vector<FFTGrid *>        &mu_s,
+             std::vector<FFTGrid *>        &mu_d,
+             std::vector<FFTGrid *>        &sigma_ss,
+             std::vector<FFTGrid *>        &sigma_dd,
+             std::vector<FFTGrid *>        &sigma_sd);
+  // Merge and fill back into SeismicParametersHolder, delete the FFTGrids:
+  void Merge(SeismicParametersHolder       &m_combined,
+             std::vector<FFTGrid *>        &mu_s,
+             std::vector<FFTGrid *>        &mu_d,
+             std::vector<FFTGrid *>        &sigma_ss,
+             std::vector<FFTGrid *>        &sigma_dd,
+             std::vector<FFTGrid *>        &sigma_sd);
+
+  // Estimate time evolution matrices and correction term mean and covariance:
   void SetUpEvolutionMatrices(std::vector< NRLib::Matrix> &evolution_matrix,
                              std::vector< NRLib::Matrix> &cov_correction_term,
                              std::vector< NRLib::Vector> &mean_correction_term,
@@ -39,6 +55,29 @@ private:
                              const DistributionsRockT0 * dist_rock,
                              const DistributionsSaturation * dist_sat,
                              const DistributionsGeochemical * dist_geochem);
+
+  // Adjusting diagonal of matrix to be inverted if necessary,
+  // and adjusting the other matrices similarly to ensure block form of evolution
+  // matrices and correction term covariance:
+  void DoRobustInversion(NRLib::Matrix & SigmaInv,
+                         NRLib::Matrix & Cov_mk_mk,
+                         NRLib::Matrix & Cov_mk_mkm1,
+                         NRLib::Matrix & Cov_mkm1_mkm1,
+                         int             dim,
+                         double          adjustment_factor);
+  bool DiagonalOK(const NRLib::Matrix & A, int dim);
+  void FixMatrices(NRLib::Matrix & Cov_mk_mk,
+                   NRLib::Matrix & Cov_mk_mkm1,
+                   NRLib::Matrix & Cov_mkm1_mkm1,
+                   int             dim,
+                   double          adjustment_factor);
+
+  // Removing numerical noise from known blocks:
+  void AdjustMatrixAForm(NRLib::Matrix & A_k, int dim);
+  void AdjustMatrixDeltaForm(NRLib::Matrix & delta_k, int dim);
+
+  void PrintToScreen(NRLib::Matrix, int dim1, int dim2, std::string name);
+  void PrintToScreen(NRLib::Vector, int dim, std::string name);
 };
 
 #endif
