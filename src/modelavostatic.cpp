@@ -997,7 +997,6 @@ void ModelAVOStatic::readPriorFaciesProbCubes(const InputFiles      * inputFiles
       const TraceHeaderFormat * dummy2 = NULL;
       const float               offset = modelSettings->getSegyOffset();
       std::string errorText("");
-      int outsideTraces = 0;
       ModelGeneral::readGridFromFile(faciesProbFile,
                        "priorfaciesprob",
                        offset,
@@ -1007,7 +1006,6 @@ void ModelAVOStatic::readPriorFaciesProbCubes(const InputFiles      * inputFiles
                        FFTGrid::PARAMETER,
                        timeSimbox,
                        modelSettings,
-                       outsideTraces,
                        errorText,
                        true);
       if(errorText != "")

@@ -73,6 +73,22 @@ Utils::writeVectorToFile(const std::string & fileName,
 
 //------------------------------------------------------------
 void
+Utils::writeVectorToFile(const std::string        & fileName,
+                         const std::vector<float> & vector)
+{
+  std::ofstream fout;
+  NRLib::OpenWrite(fout,fileName);
+  fout << std::setprecision(6);
+  for (size_t i = 0 ; i < vector.size() ; i++) {
+    fout << std::setw(6)  << i + 1
+         << std::setw(12) << vector[i] << "\n";
+  }
+  fout << std::endl;
+  fout.close();
+}
+
+//------------------------------------------------------------
+void
 Utils::writeVector(float * vector,
                    int     ndim)
 {

@@ -55,10 +55,9 @@ public:
                                     int                       gridType,
                                     Simbox                  * timeSimbox,
                                     ModelSettings           * modelSettings,
-                                    int                     & outsideTraces,
                                     std::string             & errorText,
                                     bool                      nopadding = false);
-  static int       readSegyFile(const std::string       & fileName,
+  static void      readSegyFile(const std::string       & fileName,
                                 FFTGrid                *& target,
                                 Simbox                 *& timeSimbox,
                                 ModelSettings          *& modelSettings,
@@ -68,7 +67,7 @@ public:
                                 const TraceHeaderFormat * format,
                                 std::string             & errText,
                                 bool                      nopadding = false);
-  static int       readStormFile(const std::string  & fileName,
+  static void      readStormFile(const std::string  & fileName,
                                  FFTGrid           *& target,
                                  const int            gridType,
                                  const std::string  & parName,

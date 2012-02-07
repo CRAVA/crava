@@ -22,13 +22,18 @@ public:
                             float       ** to,
                             int            ndim1,
                             int            ndim2);
+
   static void    writeVector(float * vector,
                              int     ndim);
   static void    writeVector(double * vector,
                              int      ndim);
+
   static void    writeVectorToFile(const std::string & filename,
                                    float             * vector,
                                    int                 ndim);
+  static void    writeVectorToFile(const std::string        & filename,
+                                   const std::vector<float> & vector);
+
   static void    writeMatrix(float ** matrix,
                              int      ndim1,
                              int      ndim2);

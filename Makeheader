@@ -1,8 +1,8 @@
 #
 # The available CRAVA compiler directives are
-#    -DBIGENDIAN   (needed for IRIX, SUNOS, etc...)  
+#    -DBIGENDIAN   (needed for IRIX, SUNOS, etc...)
 #
-CDIR       = 
+CDIR       =
 CXX        = g++
 CC         = gcc
 GCCWARNING = -Wall -pedantic -Wno-long-long -Werror
@@ -10,13 +10,13 @@ GCCWARNING = -Wall -pedantic -Wno-long-long -Werror
 # The directive -fno-strict-aliasing has been included to avoid a following compilator error:
 # segy/traceheader.cpp: In member function ‘int NRLib::TraceHeader::GetInt32(int) const’:
 # segy/traceheader.cpp:519: error: dereferencing type-punned pointer will break strict-aliasing rules
-# 
+#
 GXXWARNING = -Wall -pedantic -Woverloaded-virtual -Wno-long-long -Wold-style-cast -Werror -fno-strict-aliasing
 PROGRAM    = cravarun
 GRAMMAR    = grammar
 OPT        = -O2
 DEBUG      =
-PURIFY     = 
+PURIFY     =
 mode       = all
 
 ifeq ($(mode),debug)
@@ -27,7 +27,7 @@ endif
 
 ifeq ($(mode),profile)
 # Don't use -ggdb here
-DEBUG   = -g 
+DEBUG   = -g
 PROFILE = -pg
 endif
 
@@ -50,4 +50,4 @@ EXTRAFLAGS = $(strip $(OPT) $(PROFILE) $(DEBUG) $(CDIR))
 CFLAGS     = $(GCCWARNING)
 CXXFLAGS   = $(GXXWARNING)
 CPPFLAGS   = $(EXTRAFLAGS)
-LFLAGS     = $(PROFILE) $(DEBUG) -lm
+LFLAGS     = $(PROFILE) $(DEBUG) -lm -static

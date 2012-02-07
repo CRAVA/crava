@@ -366,7 +366,6 @@ ModelAVODynamic::processSeismic(FFTGrid        **& seisCube,
     const SegyGeometry ** geometry = new const SegyGeometry * [nAngles];
     seisCube = new FFTGrid * [nAngles];
 
-    bool outsideWarning = false;
     for (int i = 0 ; i < nAngles ; i++) {
       geometry[i] = NULL;
       std::string tmpErrText("");
@@ -377,7 +376,6 @@ ModelAVODynamic::processSeismic(FFTGrid        **& seisCube,
       if(offset < 0)
         offset = modelSettings->getSegyOffset();
 
-      int outsideTraces = 0;
       ModelGeneral::readGridFromFile(fileName,
                                      dataName,
                                      offset,
@@ -387,7 +385,6 @@ ModelAVODynamic::processSeismic(FFTGrid        **& seisCube,
                                      FFTGrid::DATA,
                                      timeSimbox,
                                      modelSettings,
-                                     outsideTraces,
                                      tmpErrText);
       if(tmpErrText != "")
       {
@@ -397,22 +394,10 @@ ModelAVODynamic::processSeismic(FFTGrid        **& seisCube,
       }
       else {
         seisCube[i]->setAngle(modelSettings->getAngle(i));
-        if(outsideTraces > 0) {
-          if(outsideTraces == seisCube[i]->getNxp()*seisCube[i]->getNyp()) {
-            errText += "Error: Data in file "+fileName+" was completely outside the inversion area.\n";
-            failed = true;
-          }
-          else {
-            LogKit::LogMessage(LogKit::Warning, "Warning: "+NRLib::ToString(outsideTraces)+" traces in the grid were outside the data area in file "
-              +fileName+". Note that this includes traces in the padding.\n");
-            outsideWarning = true;
-          }
-        }
       }
     }
+
     LogKit::LogFormatted(LogKit::Low,"\n");
-    if(outsideWarning == true)
-      TaskList::addTask("Check seismic volumes and inversion area: One or more of the seismic input files did not have data enough for the entire area (including padding).\n");
 
     if(failed == false)
     {
@@ -557,7 +542,6 @@ ModelAVODynamic::processBackground(Background         *& background,
           const TraceHeaderFormat * dummy2 = NULL;
           const float               offset = modelSettings->getSegyOffset();
           std::string errorText("");
-          int outsideTraces = 0;
           ModelGeneral::readGridFromFile(backFile,
                                          parName[i],
                                          offset,
@@ -567,7 +551,6 @@ ModelAVODynamic::processBackground(Background         *& background,
                                          FFTGrid::PARAMETER,
                                          timeSimbox,
                                          modelSettings,
-                                         outsideTraces,
                                          errorText);
           if(errorText != "")
           {
@@ -579,11 +562,6 @@ ModelAVODynamic::processBackground(Background         *& background,
             backModel[i]->calculateStatistics();
             backModel[i]->setUndefinedCellsToGlobalAverage();
             backModel[i]->logTransf();
-
-            if(outsideTraces > 0) {
-                errText += "Error: Background model in file "+backFile+" does not cover the inversion area.\n";
-                failed = true;
-            }
           }
         }
         else
