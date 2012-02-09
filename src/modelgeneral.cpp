@@ -645,8 +645,9 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
         float minSampDens = modelSettings->getMinSamplingDensity();
         if (timeSimbox->getdz()*timeSimbox->getMinRelThick() < minSampDens){
           failed   = true;
-          errText += "The sampling density should normally be above "+NRLib::ToString(minSampDens)
-            +" ms.If you need denser\n sampling, please specify a new <advanced-settings><minimum-sampling-density>\n";
+          errText += "We normally discourage denser sampling than "+NRLib::ToString(minSampDens);
+          errText += "ms in the time grid. If you really need\nthis, please use ";
+          errText += "<project-settings><advanced-settings><minimum-sampling-density>\n";
         }
 
         if(status == Simbox::BOXOK)
@@ -712,21 +713,24 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
 
           if(failed == false) {
             estimateXYPaddingSizes(timeSimbox, modelSettings);
-            unsigned long long int gridsize = (timeSimbox->getnx()+modelSettings->getNXpad())*(timeSimbox->getny()+modelSettings->getNYpad())*(timeSimbox->getnz()+modelSettings->getNZpad());
 
-            if(gridsize > std::numeric_limits<unsigned int>::max())
-            {
+            unsigned long long int gridsize = static_cast<unsigned long long int>(modelSettings->getNXpad())*modelSettings->getNYpad()*modelSettings->getNZpad();
+
+            if(gridsize > std::numeric_limits<unsigned int>::max()) {
+              float fsize = 4.0f*static_cast<float>(gridsize)/static_cast<float>(1024*1024*1024);
+              float fmax  = 4.0f*static_cast<float>(std::numeric_limits<unsigned int>::max()/static_cast<float>(1024*1024*1024));
+              errText += "Grids as large as "+NRLib::ToString(fsize,1)+"GB cannot be handled. The largest accepted grid size\n";
+              errText += "is "+NRLib::ToString(fmax)+"GB. Please reduce the number of layers or the lateral resolution.\n";
               failed = true;
-              errText+= "Grid size is too large.  Reduce resolution or extend the grid.\n";
             }
 
             LogKit::LogFormatted(LogKit::Low,"\nTime simulation grids:\n");
-            LogKit::LogFormatted(LogKit::Low,"  Output grid         %4i * %4i * %4i   : %10i\n",
+            LogKit::LogFormatted(LogKit::Low,"  Output grid         %4i * %4i * %4i   : %10llu\n",
                                  timeSimbox->getnx(),timeSimbox->getny(),timeSimbox->getnz(),
-                                 timeSimbox->getnx()*timeSimbox->getny()*timeSimbox->getnz());
-            LogKit::LogFormatted(LogKit::Low,"  FFT grid            %4i * %4i * %4i   : %10i\n",
+                                 static_cast<unsigned long long int>(timeSimbox->getnx())*timeSimbox->getny()*timeSimbox->getnz());
+            LogKit::LogFormatted(LogKit::Low,"  FFT grid            %4i * %4i * %4i   :%11llu\n",
                                  modelSettings->getNXpad(),modelSettings->getNYpad(),modelSettings->getNZpad(),
-                                 modelSettings->getNXpad()*modelSettings->getNYpad()*modelSettings->getNZpad());
+                                 static_cast<unsigned long long int>(modelSettings->getNXpad())*modelSettings->getNYpad()*modelSettings->getNZpad());
           }
 
           //
