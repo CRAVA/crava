@@ -1545,10 +1545,13 @@ XmlModelFile::parseRock(TiXmlNode * node, std::string & errTxt)
     modelSettings_->addConstantValue();
     modelSettings_->addFirstTrendParameter();
     modelSettings_->addSecondTrendParameter();
+    modelSettings_->addTrendType();
     inputFiles_   ->addTrendFile();
   }
 
   while(parseBoundingModel(root,errTxt));
+
+  modelSettings_->setFaciesProbFromRockPhysics(true);
 
   if(modelSettings_->getNumberOfRocks() == 0)
     errTxt +="At least one <rock> in the rock physics prior model needs to be specified\n";
@@ -1572,9 +1575,9 @@ XmlModelFile::parseGaussian(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("variance-vp");
   legalCommands.push_back("variance-vs");
   legalCommands.push_back("variance-density");
-  legalCommands.push_back("covariance-vp-vs");
-  legalCommands.push_back("covariance-vp-density");
-  legalCommands.push_back("covariance-vs-density");
+  legalCommands.push_back("correlation-vp-vs");
+  legalCommands.push_back("correlation-vp-density");
+  legalCommands.push_back("correlation-vs-density");
 
   std::string name;
   if(parseValue(root, "name", name, errTxt) == true)
@@ -1600,14 +1603,14 @@ XmlModelFile::parseGaussian(TiXmlNode * node, std::string & errTxt)
   if(parseRockTrends(root, "variance-density", errTxt) == false)
     errTxt += "<variance-density> of <rock> in <rock-phyiscs-model><gaussian> needs to be given\n";
 
-  if(parseRockTrends(root, "covariance-vp-vs", errTxt) == false)
-    errTxt += "<covariance-vp-vs> of <rock> in <rock-phyiscs-model><gaussian> needs to be given\n";
+  if(parseRockTrends(root, "correlation-vp-vs", errTxt) == false)
+    errTxt += "<correlation-vp-vs> of <rock> in <rock-phyiscs-model><gaussian> needs to be given\n";
 
-  if(parseRockTrends(root, "covariance-vp-density", errTxt) == false)
-    errTxt += "<covariance-vp-density> of <rock> in <rock-phyiscs-model><gaussian> needs to be given\n";
+  if(parseRockTrends(root, "correlation-vp-density", errTxt) == false)
+    errTxt += "<correlation-vp-density> of <rock> in <rock-phyiscs-model><gaussian> needs to be given\n";
 
-  if(parseRockTrends(root, "covariance-vs-density", errTxt) == false)
-    errTxt += "<covariance-vs-density> of <rock> in <rock-phyiscs-model><gaussian> needs to be given\n";
+  if(parseRockTrends(root, "correlation-vs-density", errTxt) == false)
+    errTxt += "<correlation-vs-density> of <rock> in <rock-phyiscs-model><gaussian> needs to be given\n";
 
   checkForJunk(root, errTxt, legalCommands, true);
   return(true);
@@ -1652,14 +1655,15 @@ XmlModelFile::parseConstantTrend(TiXmlNode * node, const std::string & keyword, 
   legalCommands.push_back("value");
 
   float value;
-  if(parseValue(root, "value", value, errTxt) == true){
+  if(parseValue(root, "value", value, errTxt) == true)
     modelSettings_->addConstantValueOneRock(keyword, value);
-    modelSettings_->addFirstTrendParameterOneRock(keyword, "");
-    modelSettings_->addSecondTrendParameterOneRock(keyword, "");
-    inputFiles_   ->addTrendFileOneRock(keyword, "");
-  }
   else
     errTxt += "The <value> for <"+keyword+"> needs to be given in <trend-constant> in <rock-physics>\n";
+
+  modelSettings_->addTrendTypeOneRock(keyword, ModelSettings::TREND_CONSTANT);
+  modelSettings_->addFirstTrendParameterOneRock(keyword, "");
+  modelSettings_->addSecondTrendParameterOneRock(keyword, "");
+  inputFiles_   ->addTrendFileOneRock(keyword, "");
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -1674,21 +1678,20 @@ XmlModelFile::parse1DTrend(TiXmlNode * node, const std::string & keyword, std::s
 
   std::vector<std::string> legalCommands;
   legalCommands.push_back("file-name");
-  legalCommands.push_back("parameter-name");
+  legalCommands.push_back("reference-parameter");
 
   std::string name;
-  if(parseValue(root, "parameter-name", name, errTxt) == true){
+  if(parseValue(root, "reference-parameter", name, errTxt) == true)
     modelSettings_->addFirstTrendParameterOneRock(keyword, name);
-  }
   else
-    errTxt += "The trend <parameter-name> for <"+keyword+"> needs to be given in <trend-1d> in <rock-physics>\n";
+    errTxt += "The <reference-parameter> for <"+keyword+"> needs to be given in <trend-1d>\n";
 
-  if(parseValue(root, "file-name", name, errTxt) == true){
+  if(parseValue(root, "file-name", name, errTxt) == true)
     inputFiles_->addTrendFileOneRock(keyword, name);
-  }
   else
-    errTxt += "The <file-name> for <"+keyword+"> needs to be given in <trend-1d> in <rock-physics>\n";
+    errTxt += "The <file-name> for <"+keyword+"> needs to be given in <trend-1d>\n";
 
+  modelSettings_->addTrendTypeOneRock(keyword, ModelSettings::TREND_1D);
   modelSettings_->addConstantValueOneRock(keyword, RMISSING);
   modelSettings_->addSecondTrendParameterOneRock(keyword, "");
 
@@ -1705,28 +1708,26 @@ XmlModelFile::parse2DTrend(TiXmlNode * node, const std::string & keyword, std::s
 
   std::vector<std::string> legalCommands;
   legalCommands.push_back("file-name");
-  legalCommands.push_back("parameter-name-first-axis");
-  legalCommands.push_back("parameter-name-second-axis");
+  legalCommands.push_back("reference-parameter-first-axis");
+  legalCommands.push_back("reference-parameter-second-axis");
 
   std::string name;
-  if(parseValue(root, "parameter-name-first-axis", name, errTxt) == true){
+  if(parseValue(root, "reference-parameter-first-axis", name, errTxt) == true)
     modelSettings_->addFirstTrendParameterOneRock(keyword, name);
-  }
   else
-    errTxt += "The trend <parameter-name-first-axis> for <"+keyword+"> needs to be given in <trend-2d> in <rock-physics>\n";
+    errTxt += "The <reference-parameter-first-axis> for <"+keyword+"> needs to be given in <trend-2d>\n";
 
-  if(parseValue(root, "parameter-name-second-axis", name, errTxt) == true){
+  if(parseValue(root, "reference-parameter-second-axis", name, errTxt) == true)
     modelSettings_->addSecondTrendParameterOneRock(keyword, name);
-  }
   else
-    errTxt += "The trend <parameter-name-second-axis> for <"+keyword+"> needs to be given in <trend-2d> in <rock-physics>\n";
+    errTxt += "The <reference-parameter-second-axis> for <"+keyword+"> needs to be given in <trend-2d>n";
 
-  if(parseValue(root, "file-name", name, errTxt) == true){
+  if(parseValue(root, "file-name", name, errTxt) == true)
     inputFiles_->addTrendFileOneRock(keyword, name);
-  }
   else
-    errTxt += "The <file-name> for <"+keyword+"> needs to be given in <trend-2d> in <rock-physics>\n";
+    errTxt += "The <file-name> for <"+keyword+"> needs to be given in <trend-2d>\n";
 
+  modelSettings_->addTrendTypeOneRock(keyword, ModelSettings::TREND_2D);
   modelSettings_->addConstantValueOneRock(keyword, RMISSING);
 
   checkForJunk(root, errTxt, legalCommands);
@@ -3439,7 +3440,7 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
 
   if (modelSettings_->getNumberOfWells() == 0) {
     std::vector<bool> useRicker = modelSettings_->getUseRickerWavelet(0);
-    if (inputFiles_->getBackFile(0)!="" &&
+    if ((inputFiles_->getBackFile(0)!="" || modelSettings_->getGenerateBackground() == false) &&
         (inputFiles_->getWaveletFile(0,0)!="" || useRicker[0] == true) &&
         inputFiles_->getTempCorrFile()!="" &&
         inputFiles_->getParamCorrFile()!="")
@@ -3450,7 +3451,7 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
     }
     if (modelSettings_->getKrigingParameter()>0)
       errTxt += "Wells are needed for kriging.\n";
-    if (modelSettings_->getEstimateFaciesProb())
+    if (modelSettings_->getEstimateFaciesProb() && !modelSettings_->getFaciesProbFromRockPhysics())
       errTxt += "Wells are needed for facies probabilities.\n";
   }
 
@@ -3476,10 +3477,14 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
     errTxt += "Seismic quality grid can not be estimated without requesting facies probabilities under inversion settings.\n";
 
   //Rock physics consistency
-  int nRocks = modelSettings_->getNumberOfRocks();
-  if(nRocks > 0){
+  if(modelSettings_->getFaciesProbFromRockPhysics()){
+
+    if(modelSettings_->getEstimateFaciesProb() == false)
+      errTxt += "Rocks in the rock physics prior model should not be given without requesting facies probabilities under inversion settings.\n";
+
     typedef std::map<std::string, std::string> mapType;
     std::vector<std::string> trendCubeNames = modelSettings_->getTrendCubeNames();
+    int nRocks = modelSettings_->getNumberOfRocks();
 
     for(int i=0; i<nRocks; i++){
       mapType firstTrendParameter  = modelSettings_->getFirstTrendParameter(i);

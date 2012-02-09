@@ -2112,23 +2112,23 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
    \item \Default 
  \elist
 
-\subparagraph{\hbracket{covariance-vp-vs}}\newkw{covariance-vp-vs}
+\subparagraph{\hbracket{correlation-vp-vs}}\newkw{correlation-vp-vs}
  \slist
-   \item \Description Elements controlling the covariance of (vp, vs)
+   \item \Description Elements controlling the covariance between (vp, vs)
    \item \Argument Trend parameters, see \autoref{sec:trendparameters}
    \item \Default 
  \elist
 
-\subparagraph{\hbracket{covariance-vp-density}}\newkw{covariance-vp-density}
+\subparagraph{\hbracket{correlation-vp-density}}\newkw{correlation-vp-density}
  \slist
-   \item \Description Elements controlling the covariance of (vp, density)
+   \item \Description Elements controlling the correlation between (vp, density)
    \item \Argument Trend parameters, see \autoref{sec:trendparameters}
    \item \Default 
  \elist
 
-\subparagraph{\hbracket{covariance-vs-density}}\newkw{covariance-vs-density}
+\subparagraph{\hbracket{correlation-vs-density}}\newkw{correlation-vs-density}
  \slist
-   \item \Description Elements controlling the covariance of (vs, density)
+   \item \Description Elements controlling the correlation between (vs, density)
    \item \Argument Trend parameters, see \autoref{sec:trendparameters}
    \item \Default 
  \elist
@@ -2245,7 +2245,7 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
    \item \Default 
  \elist
 
-\paragraph{\hbracket{parameter-name}}\rnewkw{parameter-name}{parameter-name2}
+\paragraph{\hbracket{parameter-name}}\newkw{parameter-name}
  \slist
    \item \Description Name of the parameter in the trend cube. Must coincide with \kw{parameter-name}, \kw{parameter-name-first-axis} or \kw{parameter-name-second-axis}
    \item \Argument String
@@ -2292,9 +2292,9 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
    \item \Default 
  \elist
 
-\subsubsection{\hbracket{parameter-name}}\newkw{parameter-name}
+\subsubsection{\hbracket{reference-parameter}}\newkw{reference-parameter}
  \slist
-   \item \Description Name of the parameter in the 1D trend. Must be the same as \rkw{parameter-name}{parameter-name2} in one of \kw{trend-cube}
+   \item \Description Name of the trend cube used as reference for the trend. Must be the same as \kw{parameter-name} in one of \kw{trend-cube}
    \item \Argument String
    \item \Default 
  \elist
@@ -2313,16 +2313,16 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
    \item \Default 
  \elist
 
-\subsubsection{\hbracket{parameter-name-first-axis}}\newkw{parameter-name-first-axis}
+\subsubsection{\hbracket{reference-parameter-first-axis}}\newkw{reference-parameter-first-axis}
  \slist
-   \item \Description Name of the first parameter in the 2D trend. Must be the same as \rkw{parameter-name}{parameter-name2} in one of \kw{trend-cube}, but not the same as \kw{parameter-name-second-axis}
+   \item \Description Name of the trend cube used as reference for the trend corresponding to the first axis of the 2D trend file. Must be the same as \kw{parameter-name} in one of \kw{trend-cube}, but not the same as \kw{reference-parameter-second-axis}
    \item \Argument String
    \item \Default 
  \elist
 
-\subsubsection{\hbracket{parameter-name-second-axis}}\newkw{parameter-name-second-axis}
+\subsubsection{\hbracket{reference-parameter-second-axis}}\newkw{reference-parameter-second-axis}
  \slist
-   \item \Description Name of the second parameter in the 2D trend. Must be the same as \rkw{parameter-name}{parameter-name2} in one of \kw{trend-cube}, but not the same as \kw{parameter-name-first-axis}
+   \item \Description  Name of the trend cube used as reference for the trend corresponding to the first axis of the 2D trend file. Must be the same as \kw{parameter-name} in one of \kw{trend-cube}, but not the same as \kw{reference-parameter-first-axis}
    \item \Argument String
    \item \Default 
  \elist

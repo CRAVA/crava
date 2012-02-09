@@ -3,7 +3,7 @@
 #
 include Makeheader
 
-DIRS        = src lib nrlib fft/fftw fft/rfftw flens
+DIRS        = src lib nrlib fft/fftw fft/rfftw flens rplib
 OBJDIR      = obj
 OBJSUBDIR   = obj/fft
 OBJNRLIBDIR = obj/nrlib

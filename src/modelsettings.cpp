@@ -132,6 +132,7 @@ ModelSettings::ModelSettings(void)
   useVpVsBackground_       =    false;
   estimateFaciesProb_      =    false;
   faciesProbRelative_      =     true;
+  faciesProbFromRockPhysics_=   false;
   noVsFaciesProb_          =    false;
   useFilterForProb_        =     true;
   faciesLogGiven_          =    false;

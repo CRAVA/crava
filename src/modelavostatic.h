@@ -19,6 +19,7 @@ class WellData;
 class FFTGrid;
 class GridMapping;
 class InputFiles;
+class Trend;
 
 class ModelAVOStatic
 {
@@ -35,6 +36,15 @@ public:
   const float                 * getPriorFacies()           const { return priorFacies_            ;}
   FFTGrid                    ** getPriorFaciesCubes()      const { return priorFaciesProbCubes_   ;}
   const std::vector<Surface*> & getFaciesEstimInterval()   const { return faciesEstimInterval_    ;}
+  Trend                       * getMeanVp(int i)           const { return meanVp_[i]              ;}
+  Trend                       * getMeanVs(int i)           const { return meanVs_[i]              ;}
+  Trend                       * getMeanDensity(int i)      const { return meanDensity_[i]         ;}
+  Trend                       * getVarianceVp(int i)       const { return varianceVp_[i]          ;}
+  Trend                       * getVarianceVs(int i)       const { return varianceVs_[i]          ;}
+  Trend                       * getVarianceDensity(int i)  const { return varianceDensity_[i]     ;}
+  Trend                       * getCorrelationVpVs(int i)   const { return correlationVpVs_[i]    ;}
+  Trend                       * getCorrelationVpDensity(int i)const { return correlationVpDensity_[i] ;}
+  Trend                       * getCorrelationVsDensity(int i)const { return correlationVsDensity_[i] ;}
 
   /*const*/ std::vector<Surface *> & getWaveletEstimInterval()  /*const*/ { return waveletEstimInterval_   ;}
   /*const*/ std::vector<Surface *> & getFaciesEstimInterval()   /*const*/ { return faciesEstimInterval_   ;}
@@ -87,6 +97,20 @@ private:
                                           bool                         & failed,
                                           std::string                  & errTxt,
                                           const InputFiles             * inputFiles);
+
+  void             processRockPhysics(Simbox                       * timeSimbox,
+                                      ModelSettings                * modelSettings,
+                                      bool                         & failed,
+                                      std::string                  & errTxt,
+                                      const InputFiles             * inputFiles);
+
+  void             createNormalTrend(ModelSettings                * modelSettings,
+                                     const InputFiles             * inputFiles,
+                                     std::string                  & errTxt,
+                                     std::vector<Trend *>         & trendVariable,
+                                     std::string                    variableName,
+                                     int                            i);
+
   void             readPriorFaciesProbCubes(const InputFiles * inputFiles,
                                             ModelSettings    * modelSettings,
                                             FFTGrid        **& priorFaciesProbCubes,
@@ -110,6 +134,16 @@ private:
                                         ModelSettings       * modelSettings,
                                         const InputFiles    * inputFiles);
 
+  int              getTrend1DFileFormat(const std::string & fileName,
+                                        std::string       & errText);
+
+  void             readTrend1D(const std::string   & fileName,
+                               std::string         & errText,
+                               std::vector<double> & trend1d,
+                               double              & s1,
+                               double              & s2);
+
+
   bool                      forwardModeling_;
   int                       numberOfWells_;
 
@@ -121,6 +155,19 @@ private:
 
   float                   * priorFacies_;           ///<
   FFTGrid                ** priorFaciesProbCubes_;  ///< Cubes for prior facies probabilities
+
+  FFTGrid                ** trendCubes_;            ///< Trend cubes used in rock phyiscs prior model
+  int                       numberOfTrendCubes_;    ///< Defined for deletion of trendCubes_
+
+  std::vector<Trend *>      meanVp_;                ///< Variable for Gaussian rock physics model
+  std::vector<Trend *>      meanVs_;                ///< Variable for Gaussian rock physics model
+  std::vector<Trend *>      meanDensity_;           ///< Variable for Gaussian rock physics model
+  std::vector<Trend *>      varianceVp_;            ///< Variable for Gaussian rock physics model
+  std::vector<Trend *>      varianceVs_;            ///< Variable for Gaussian rock physics model
+  std::vector<Trend *>      varianceDensity_;       ///< Variable for Gaussian rock physics model
+  std::vector<Trend *>      correlationVpVs_;       ///< Variable for Gaussian rock physics model
+  std::vector<Trend *>      correlationVpDensity_;  ///< Variable for Gaussian rock physics model
+  std::vector<Trend *>      correlationVsDensity_;  ///< Variable for Gaussian rock physics model
 
   bool                      failed_;                ///< Indicates whether errors occured during construction.
   std::vector<bool>         failed_details_;        ///< Detailed failed information.

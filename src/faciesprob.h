@@ -17,6 +17,7 @@ class ModelSettings;
 class FilterWellLogs;
 class WellData;
 class SpatialWellFilter;
+class ModelAVOStatic;
 
 class FaciesProb
 {
@@ -40,6 +41,14 @@ public:
              const std::vector<Grid2D *>  & noiseScale,
              const ModelSettings          * modelSettings,
              FFTGrid                      * seismicLH);
+
+  FaciesProb(FFTGrid        * alpha,
+             FFTGrid        * beta,
+             FFTGrid        * rho,
+             int              nFac,
+             float            p_undef,
+             FFTGrid        * seismicLH,
+             ModelAVOStatic * modelAVOstatic);
 
   ~FaciesProb();
 
@@ -167,6 +176,13 @@ private:
                                              FFTGrid                     ** priorFaciesCubes,
                                              const std::vector<Grid2D *>   & noiseScale,
                                              FFTGrid                       * seismicLH);
+
+  void                   calculateFaciesProbFromRockPhysicsModel(FFTGrid                      * alphagrid,
+                                                                 FFTGrid                      * betagrid,
+                                                                 FFTGrid                      * rhogrid,
+                                                                 float                          p_undef,
+                                                                 FFTGrid                       * seismicLH,
+                                                                 ModelAVOStatic                * modelAVOstatic);
 
   void                   normalizeCubes(FFTGrid **priorFaciesCubes);
 

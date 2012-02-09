@@ -155,6 +155,7 @@ public:
   bool                             getGenerateBackground(void)          const { return generateBackground_                        ;}
   bool                             getEstimateFaciesProb(void)          const { return estimateFaciesProb_                        ;}
   bool                             getFaciesProbRelative(void)          const { return faciesProbRelative_                        ;}
+  bool                             getFaciesProbFromRockPhysics(void)   const { return faciesProbFromRockPhysics_                 ;}
   bool                             getNoVsFaciesProb(void)              const { return noVsFaciesProb_                            ;}
   bool                             getUseFilterForFaciesProb()          const { return useFilterForProb_                          ;}
   bool                             getFaciesLogGiven(void)              const { return faciesLogGiven_                            ;}
@@ -183,6 +184,8 @@ public:
   int                              getNumberOfRocks(void)               const { return static_cast<int>(rockName_.size())   ;}
   std::map<std::string,std::string>getFirstTrendParameter(int i)        const { return firstTrendParameter_[i]              ;}
   std::map<std::string,std::string>getSecondTrendParameter(int i)       const { return secondTrendParameter_[i]             ;}
+  std::map<std::string,int>        getTrendType(int i)                  const { return trendType_[i]                        ;}
+  std::map<std::string,float>      getTrendConstantValue(int i)         const { return constantValue_[i]                    ;}
 
   void rotateVariograms(float angle);
   void setLastAngularCorr(Vario * vario);
@@ -229,6 +232,8 @@ public:
   void addSecondTrendParameter(void)                                     { secondTrendParameter_.push_back(secondTrendParameterOneRock_)  ;}
   void addConstantValueOneRock(std::string name, float value)            { constantValueOneRock_[name] = value                            ;}
   void addConstantValue(void)                                            { constantValue_.push_back(constantValueOneRock_ )               ;}
+  void addTrendTypeOneRock(std::string name, int type)                   { trendTypeOneRock_[name] = type                                 ;}
+  void addTrendType(void)                                                { trendType_.push_back(trendTypeOneRock_)                        ;}
 
   void addUpperKRock(float value)                                        { upperKRock_.push_back(value)                                   ;}
   void addLowerKRock(float value)                                        { lowerKRock_.push_back(value)                                   ;}
@@ -351,6 +356,7 @@ public:
   void setGenerateBackground(bool generateBackgr)         { generateBackground_       = generateBackgr           ;}
   void setEstimateFaciesProb(bool estFaciesProb)          { estimateFaciesProb_       = estFaciesProb            ;}
   void setFaciesProbRelative(bool faciesProbRel)          { faciesProbRelative_       = faciesProbRel            ;}
+  void setFaciesProbFromRockPhysics(bool rockPhysics)     { faciesProbFromRockPhysics_= rockPhysics              ;}
   void setNoVsFaciesProb(bool noVsFaciesProb)             { noVsFaciesProb_           = noVsFaciesProb           ;}
   void setUseFilterForFaciesProb(bool useFilterForProb)   { useFilterForProb_         = useFilterForProb         ;}
   void setFaciesLogGiven(bool faciesLogGiven)             { faciesLogGiven_           = faciesLogGiven           ;}
@@ -417,6 +423,10 @@ public:
   enum          priorFacies{FACIES_FROM_WELLS,
                             FACIES_FROM_MODEL_FILE,
                             FACIES_FROM_CUBES};
+
+  enum          gaussianTrend{TREND_CONSTANT,
+                              TREND_1D,
+                              TREND_2D};
 
   enum          sseismicTypes{STANDARDSEIS = 0, PSSEIS = 1};
 
@@ -615,6 +625,7 @@ private:
   bool                              generateBackground_;         // Make background model
   bool                              estimateFaciesProb_;         // Shall facies probabilites be estimated?
   bool                              faciesProbRelative_;         // Use relative elastic parameters for facies prob estimation?
+  bool                              faciesProbFromRockPhysics_;  // Calculate facies probabilities using rock physics models
   bool                              noVsFaciesProb_;             // Do not use Vs for faciesprob.
   bool                              useFilterForProb_;           // Use filtered logs for facies probs, otherwise, use sampled inversion.
   bool                              faciesLogGiven_;
@@ -642,6 +653,8 @@ private:
   std::vector<std::map<std::string, std::string> > secondTrendParameter_;        // Names of the trend parameters in secondTrendParameterOneRock_
   std::map<std::string, float>                     constantValueOneRock_;        // Constant mean value for each of vp, vs, density, var_vp, var_vs, var_density, cov_vp_vs, cov_vp_density, cov_vs_density for one rock
   std::vector<std::map<std::string, float> >       constantValue_;               // Constant mean values in constantValueOneRock_ for all the rocks specified in the Gaussian rock physics model
+  std::map<std::string, int>                       trendTypeOneRock_;            // Trend type
+  std::vector<std::map<std::string, int> >         trendType_;                   // Trend types all rocks
 
   std::vector<float> upperKRock_;
   std::vector<float> lowerKRock_;

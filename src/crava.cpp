@@ -1739,51 +1739,73 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
       meanBeta2_->changeSign();
       meanRho2_->subtract(postRho_);
       meanRho2_->changeSign();
-      fprob_ = new FaciesProb(meanAlpha2_,
-                              meanBeta2_,
-                              meanRho2_,
-                              nfac,
-                              modelSettings->getPundef(),
-                              modelAVOstatic_->getPriorFacies(),
-                              modelAVOstatic_->getPriorFaciesCubes(),
-                              filteredlogs->getSigmae(),
-                              useFilter,
-                              const_cast<const WellData **>(wells_),
-                              nWells_,
-                              modelAVOstatic_->getFaciesEstimInterval(),
-                              simbox_->getdz(),
-                              true,
-                              modelSettings->getNoVsFaciesProb(),
-                              this,
-                              modelAVOdynamic_->getLocalNoiseScales(),
-                              modelSettings_,
-                              likelihood);
+      if(!modelSettings->getFaciesProbFromRockPhysics())
+        fprob_ = new FaciesProb(meanAlpha2_,
+                                meanBeta2_,
+                                meanRho2_,
+                                nfac,
+                                modelSettings->getPundef(),
+                                modelAVOstatic_->getPriorFacies(),
+                                modelAVOstatic_->getPriorFaciesCubes(),
+                                filteredlogs->getSigmae(),
+                                useFilter,
+                                const_cast<const WellData **>(wells_),
+                                nWells_,
+                                modelAVOstatic_->getFaciesEstimInterval(),
+                                simbox_->getdz(),
+                                true,
+                                modelSettings->getNoVsFaciesProb(),
+                                this,
+                                modelAVOdynamic_->getLocalNoiseScales(),
+                                modelSettings_,
+                                likelihood);
+      else {
+        fprob_ = new FaciesProb(postAlpha_,
+                                postBeta_,
+                                postRho_,
+                                nfac,
+                                modelSettings->getPundef(),
+                                likelihood,
+                                modelAVOstatic_);
+        baseName += "Rock_Physics_";
+      }
       delete meanAlpha2_;
       delete meanBeta2_;
       delete meanRho2_;
     }
-    else
+    else if(modelSettings->getFaciesProbRelative() == false)
     {
-      fprob_ = new FaciesProb(postAlpha_,
-                              postBeta_,
-                              postRho_,
-                              nfac,
-                              modelSettings->getPundef(),
-                              modelAVOstatic_->getPriorFacies(),
-                              modelAVOstatic_->getPriorFaciesCubes(),
-                              filteredlogs->getSigmae(),
-                              useFilter,
-                              const_cast<const WellData **>(wells_),
-                              nWells_,
-                              modelAVOstatic_->getFaciesEstimInterval(),
-                              simbox_->getdz(),
-                              false,
-                              modelSettings->getNoVsFaciesProb(),
-                              this,
-                              modelAVOdynamic_->getLocalNoiseScales(),
-                              modelSettings_,
-                              likelihood);
       baseName += "Absolute_";
+      if(!modelSettings->getFaciesProbFromRockPhysics())
+        fprob_ = new FaciesProb(postAlpha_,
+                                postBeta_,
+                                postRho_,
+                                nfac,
+                                modelSettings->getPundef(),
+                                modelAVOstatic_->getPriorFacies(),
+                                modelAVOstatic_->getPriorFaciesCubes(),
+                                filteredlogs->getSigmae(),
+                                useFilter,
+                                const_cast<const WellData **>(wells_),
+                                nWells_,
+                                modelAVOstatic_->getFaciesEstimInterval(),
+                                simbox_->getdz(),
+                                false,
+                                modelSettings->getNoVsFaciesProb(),
+                                this,
+                                modelAVOdynamic_->getLocalNoiseScales(),
+                                modelSettings_,
+                                likelihood);
+      else {
+        fprob_ = new FaciesProb(postAlpha_,
+                                postBeta_,
+                                postRho_,
+                                nfac,
+                                modelSettings->getPundef(),
+                                likelihood,
+                                modelAVOstatic_);
+        baseName += "Rock_Physics_";
+      }
     }
     fprob_->calculateConditionalFaciesProb(wells_,
                                            nWells_,

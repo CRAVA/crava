@@ -22,8 +22,9 @@ ConstantTrend::~ConstantTrend() {
 }
 
 
-Trend1D::Trend1D(const std::vector<double>& trend, double s1_min, double s1_max) :
-  trend_(trend), s1_min_(s1_min), s1_max_(s1_max) {
+Trend1D::Trend1D(const std::vector<double> trend, double s1_min, double s1_max) :
+  trend_(trend), s1_min_(s1_min), s1_max_(s1_max) 
+  {
 
   if(!(s1_max_ > s1_min_ && !trend_.empty()))
     throw NRLib::Exception("Trend1D: Input parameters are not valid.");
@@ -44,7 +45,7 @@ Trend1D::GetValue(double s1, double /*s2*/) const {
   double val = 0;
   if (i1 < 0)
     val = trend_.front();
-  else if (i1+1 > trend_.size() - 1)
+  else if (i1+1 > static_cast<int>(trend_.size()) - 1)
     val = trend_.back();
   else {
     double t = i - i1;
@@ -55,14 +56,14 @@ Trend1D::GetValue(double s1, double /*s2*/) const {
 
 }
 
-Trend2D::Trend2D(const std::vector<double>& trend,
+Trend2D::Trend2D(const std::vector<double> trend,
                  double s1_min, double s1_max, int ns1,
                  double s2_min, double s2_max, int ns2) :
- trend_(trend), s1_min_(s1_min), s1_max_(s1_max), ns1_(ns1),
- s2_min_(s2_min), s2_max_(s2_max), ns2_(ns2)
+ trend_(trend), ns1_(ns1), ns2_(ns2), s1_min_(s1_min), s1_max_(s1_max), 
+ s2_min_(s2_min), s2_max_(s2_max)
 {
   if(!(s1_max_ > s1_min_ && !trend_.empty() &&
-      s2_max_ > s2_min_ && trend_.size() == ns1*ns2))
+      s2_max_ > s2_min_ && static_cast<int>(trend_.size()) == ns1*ns2))
     throw NRLib::Exception("Trend2D: Input parameters are not valid.");
 
   inv_s1_inc_ = (ns1_ - 1)/(s1_max_ - s1_min_);

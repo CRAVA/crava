@@ -62,6 +62,7 @@ private:
   void               printEnergyToScreen();
   void               computeSyntSeismic(FFTGrid * alpha, FFTGrid * beta, FFTGrid * rho);
   void               computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter);
+  void               computeFaciesProbFromRockPhysicsModel(SpatialWellFilter *filteredlogs, bool useFilter);
   void               filterLogs(Simbox * timeSimboxConstThick, FilterWellLogs *& filterlogs);
   void               doPredictionKriging();
 

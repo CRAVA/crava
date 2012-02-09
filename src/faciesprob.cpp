@@ -27,6 +27,10 @@
 #include "src/simbox.h"
 #include "src/io.h"
 #include "src/tasklist.h"
+#include "src/modelavostatic.h"
+
+#include "rplib/trend.h"
+#include "rplib/multinormalwithtrend.h"
 
 FaciesProb::FaciesProb(FFTGrid                      * alpha,
                        FFTGrid                      * beta,
@@ -52,6 +56,18 @@ FaciesProb::FaciesProb(FFTGrid                      * alpha,
                  faciesEstimInterval, dz, relative, noVs,
                  p_undef, priorFacies, priorFaciesCubes, cravaResult, noiseScale,
                  modelSettings, seismicLH);
+}
+
+FaciesProb::FaciesProb(FFTGrid        * alpha,
+                       FFTGrid        * beta,
+                       FFTGrid        * rho,
+                       int              nFac,
+                       float            p_undef,
+                       FFTGrid        * seismicLH,
+                       ModelAVOStatic * modelAVOstatic)
+                       : nFacies_(nFac)
+{
+  calculateFaciesProbFromRockPhysicsModel(alpha, beta, rho, p_undef, seismicLH, modelAVOstatic);
 }
 
 FaciesProb::~FaciesProb()
@@ -1246,6 +1262,166 @@ void FaciesProb::calculateFaciesProb(FFTGrid                                    
     seismicLH->endAccess();
 
   delete [] value;
+}
+
+void FaciesProb::calculateFaciesProbFromRockPhysicsModel(FFTGrid                                    * alphagrid,
+                                                         FFTGrid                                    * betagrid,
+                                                         FFTGrid                                    * rhogrid,
+                                                         float                                        p_undefined,
+                                                         FFTGrid                                    * seismicLH,
+                                                         ModelAVOStatic                             * modelAVOstatic)
+{
+  float * value = new float[nFacies_];
+  int i,j,k,l;
+  int nx, ny, nz, rnxp, nyp, nzp, smallrnxp;
+  float alpha, beta, rho, sum;
+
+  rnxp = alphagrid->getRNxp();
+  nyp  = alphagrid->getNyp();
+  nzp  = alphagrid->getNzp();
+  nx   = alphagrid->getNx();
+  ny   = alphagrid->getNy();
+  nz   = alphagrid->getNz();
+  faciesProb_ = new FFTGrid*[nFacies_];
+  if(alphagrid->isFile()==1)
+    faciesProbUndef_ = new FFTFileGrid(nx, ny, nz, nx, ny, nz);
+  else
+    faciesProbUndef_ = new FFTGrid(nx, ny, nz, nx, ny, nz);
+  alphagrid->setAccessMode(FFTGrid::READ);
+  betagrid->setAccessMode(FFTGrid::READ);
+  rhogrid->setAccessMode(FFTGrid::READ);
+  for(i=0;i<nFacies_;i++){
+    if(alphagrid->isFile()==1){
+      faciesProb_[i] = new FFTFileGrid(nx, ny, nz, nx, ny, nz);
+    }
+    else{
+      faciesProb_[i] = new FFTGrid(nx, ny, nz, nx, ny, nz);
+    }
+    faciesProb_[i]->setAccessMode(FFTGrid::WRITE);
+    faciesProb_[i]->createRealGrid(false);
+  }
+  faciesProbUndef_->setAccessMode(FFTGrid::WRITE);
+  faciesProbUndef_->createRealGrid(false);
+  if(seismicLH != NULL)
+    seismicLH->setAccessMode(FFTGrid::WRITE);
+
+  FFTGrid    ** priorFaciesCubes = modelAVOstatic->getPriorFaciesCubes();
+  const float * priorFacies      = modelAVOstatic->getPriorFacies();
+  if(priorFaciesCubes != NULL)
+    normalizeCubes(priorFaciesCubes);
+
+  if(priorFaciesCubes!=NULL)
+    for(i=0;i<nFacies_;i++)
+      priorFaciesCubes[i]->setAccessMode(FFTGrid::READ);
+
+  smallrnxp = faciesProb_[0]->getRNxp();
+
+  LogKit::LogFormatted(LogKit::Low,"\nBuilding facies probabilities:");
+  float monitorSize = std::max(1.0f, static_cast<float>(nzp)*0.02f);
+  float nextMonitor = monitorSize;
+  std::cout
+    << "\n  0%       20%       40%       60%       80%      100%"
+    << "\n  |    |    |    |    |    |    |    |    |    |    |  "
+    << "\n  ^";
+
+  std::vector<MultiNormalWithTrend *> multi(nFacies_);
+  for(int i=0; i<nFacies_; i++){
+
+    NRLib::Normal norm_vp;
+    NRLib::Normal norm_vs;
+    NRLib::Normal norm_density;
+
+    Trend * mean_trend_vp      = modelAVOstatic->getMeanVp(i);
+    Trend * mean_trend_vs      = modelAVOstatic->getMeanVs(i);
+    Trend * mean_trend_density = modelAVOstatic->getMeanDensity(i);
+
+    NRLib::Grid2D<Trend*> cov(3,3,NULL);
+    cov(0,0) = modelAVOstatic->getVarianceVp(i);
+    cov(0,1) = modelAVOstatic->getCorrelationVpVs(i);
+    cov(0,2) = modelAVOstatic->getCorrelationVpDensity(i);
+    cov(1,0) = modelAVOstatic->getCorrelationVpVs(i);
+    cov(1,1) = modelAVOstatic->getVarianceVs(i);
+    cov(1,2) = modelAVOstatic->getCorrelationVsDensity(i);
+    cov(2,0) = modelAVOstatic->getCorrelationVpDensity(i);
+    cov(2,1) = modelAVOstatic->getCorrelationVsDensity(i);
+    cov(2,2) = modelAVOstatic->getVarianceDensity(i);
+
+    multi[i] = new MultiNormalWithTrend(norm_vp, norm_vs, norm_density, mean_trend_vp, mean_trend_vs, mean_trend_density, cov);
+  }
+
+  double dummy1 = 0;
+  double dummy2 = 0;
+  float  help;
+  float  dens;
+  float  undefSum = p_undefined / 10;
+  for(i=0;i<nzp;i++){
+    for(j=0;j<nyp;j++){
+      for(k=0;k<rnxp;k++){
+        alpha = alphagrid->getNextReal();
+        beta = betagrid->getNextReal();
+        rho = rhogrid->getNextReal();
+        if(k<smallrnxp && j<ny && i<nz) {
+          sum = undefSum;
+          for(l=0;l<nFacies_;l++){
+            if(k<nx)
+              multi[l]->CalculatePDF(dummy1,dummy2,alpha,beta,rho,dens);
+            else
+              dens = 1.0;
+            if(priorFaciesCubes!=NULL)
+              value[l] = priorFaciesCubes[l]->getNextReal()*dens;
+            else
+              value[l] = priorFacies[l]*dens;
+            sum = sum+value[l];
+          }
+          for(l=0;l<nFacies_;l++){
+            help = value[l]/sum;
+            if(k<nx){
+              faciesProb_[l]->setNextReal(help);
+            }
+            else{
+              faciesProb_[l]->setNextReal(RMISSING);
+            }
+          }
+          if(k<nx){
+            faciesProbUndef_->setNextReal(undefSum/sum);
+            if(seismicLH != NULL)
+              seismicLH->setNextReal(sum);
+          }
+          else{
+            faciesProbUndef_->setNextReal(RMISSING);
+            if(seismicLH != NULL)
+              seismicLH->setNextReal(RMISSING);
+          }
+        }
+      }
+    }
+    // Log progress
+    if (i+1 >= static_cast<int>(nextMonitor)){
+      nextMonitor += monitorSize;
+      std::cout << "^";
+      fflush(stdout);
+    }
+  }
+  std::cout << "\n";
+
+  if(priorFaciesCubes!=NULL)
+    for(i=0;i<nFacies_;i++){
+      priorFaciesCubes[i]->endAccess();
+    }
+  for(i=0;i<nFacies_;i++)
+    faciesProb_[i]->endAccess();
+  alphagrid->endAccess();
+  betagrid->endAccess();
+  rhogrid->endAccess();
+  faciesProbUndef_->endAccess();
+  if(seismicLH != NULL)
+    seismicLH->endAccess();
+
+  delete [] value;
+
+  /*for(int i=0; i<nFacies_; i++)
+    delete [] multi[i];
+  delete [] multi;*/
 }
 
 void FaciesProb::calculateFaciesProbGeomodel(const float  * priorFacies,

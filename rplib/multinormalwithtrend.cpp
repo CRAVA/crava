@@ -4,6 +4,7 @@
 
 #include "nrlib/exception/exception.hpp"
 #include "nrlib/grid/grid2d.hpp"
+#include "nrlib/flens/nrlib_flens.hpp"
 
 #include "lib/lib_matr.h"
 
@@ -16,10 +17,10 @@ MultiNormalWithTrend::
 MultiNormalWithTrend(const NRLib::Normal&                      vp01,
                      const NRLib::Normal&                      vs01,
                      const NRLib::Normal&                      rho01,
-                     const Trend&                              mean_trend_vp,
-                     const Trend&                              mean_trend_vs,
-                     const Trend&                              mean_trend_rho,
-                     const NRLib::Grid2D<Trend*>&              cov_trend) :
+                     const Trend*                              mean_trend_vp,
+                     const Trend*                              mean_trend_vs,
+                     const Trend*                              mean_trend_rho,
+                     const NRLib::Grid2D<Trend*>               cov_trend) :
   vp01_(vp01), vs01_(vs01), rho01_(rho01),
   mean_trend_vp_(mean_trend_vp), mean_trend_vs_(mean_trend_vs), mean_trend_rho_(mean_trend_rho),
   cov_trend_(cov_trend)
@@ -52,9 +53,9 @@ MultiNormalWithTrend::ReSample(double s1, double s2,
 
   MatrProdTranspCholVecRR(3, cov_matrix, &rc[0] , &rhs[0]); // rhs is given value
 
-  vp  =  rhs[0] + mean_trend_vp_.GetValue(s1, s2);
-  vs  =  rhs[1] + mean_trend_vs_.GetValue(s1, s2);
-  rho =  rhs[2] + mean_trend_rho_.GetValue(s1, s2);
+  vp  =  rhs[0] + mean_trend_vp_->GetValue(s1, s2);
+  vs  =  rhs[1] + mean_trend_vs_->GetValue(s1, s2);
+  rho =  rhs[2] + mean_trend_rho_->GetValue(s1, s2);
 
   DeleteCovMatrix(cov_matrix);
 
@@ -79,9 +80,9 @@ MultiNormalWithTrend::ReSample(double s1, double s2,
 
   MatrProdTranspCholVecRR(3, cov_matrix_cholesky, &rc[0] , &rhs[0]); // rhs is given value
 
-  vp  =  rhs[0] + mean_trend_vp_.GetValue(s1, s2);
-  vs  =  rhs[1] + mean_trend_vs_.GetValue(s1, s2);
-  rho =  rhs[2] + mean_trend_rho_.GetValue(s1, s2);
+  vp  =  rhs[0] + mean_trend_vp_->GetValue(s1, s2);
+  vs  =  rhs[1] + mean_trend_vs_->GetValue(s1, s2);
+  rho =  rhs[2] + mean_trend_rho_->GetValue(s1, s2);
 
 }
 
@@ -163,6 +164,61 @@ MultiNormalWithTrend::EstimateExpectationAndVariance(double s1, double s2, int s
 
 }
 
+
+void
+MultiNormalWithTrend::CalculatePDF(double s1, double s2, double obs_vp, double obs_vs, double obs_rho, float& prob) const
+{
+  double E_vp  = mean_trend_vp_ ->GetValue(s1,s2);
+  double E_vs  = mean_trend_vs_ ->GetValue(s1,s2);
+  double E_rho = mean_trend_rho_->GetValue(s1,s2);
+
+  int dim = 3;
+
+  double ** cov_matrix = CreateCovMatrix(s1, s2);
+
+  cov_matrix[0][0] = std::log(1+cov_matrix[0][0]/(E_vp*E_vp));
+  cov_matrix[1][1] = std::log(1+cov_matrix[1][1]/(E_vs*E_vs));
+  cov_matrix[2][2] = std::log(1+cov_matrix[2][2]/(E_rho*E_rho));
+
+  for(int i=0; i<2; i++) {
+    for(int j=i+1; j<3; j++) {
+      cov_matrix[i][j] = cov_matrix[i][j]*std::sqrt(cov_matrix[i][i]*cov_matrix[j][j]);
+      cov_matrix[j][i] = cov_matrix[i][j];
+    }
+  }
+
+  E_vp  = std::log(E_vp)  - 0.5*cov_matrix[0][0];
+  E_vs  = std::log(E_vs)  - 0.5*cov_matrix[1][1];
+  E_rho = std::log(E_rho) - 0.5*cov_matrix[2][2];
+
+  NRLib::Vector diff(dim);
+  diff(0) = obs_vp  - E_vp;
+  diff(1) = obs_vs  - E_vs;
+  diff(2) = obs_rho - E_rho;
+
+  NRLib::Matrix inv_cov_mat(dim,dim);
+  for(int i=0; i<3; i++)
+    for(int j=0; j<3; j++)
+      inv_cov_mat(i,j) = cov_matrix[i][j];
+  NRLib::invert(inv_cov_mat);
+
+  double determinant;
+  CalculateDeterminant(cov_matrix, determinant);
+  DeleteCovMatrix(cov_matrix);
+
+  NRLib::Vector b(dim);
+  b = inv_cov_mat * diff;
+
+  double prod = 0;
+  for(int i=0; i<dim; i++)
+    prod += diff(i)*b(i);
+
+  double aa = std::exp(-0.5*prod);
+  double bb = std::pow(2*NRLib::Pi,1.5)*std::pow(determinant,0.5);
+
+  prob = static_cast<float>(std::exp(std::log(aa)-std::log(bb)));
+}
+
 double**
 MultiNormalWithTrend::CreateEstimateOfCovMatrix(double s1, double s2, int sample_size) const {
   if (sample_size <= 0)
@@ -235,6 +291,14 @@ MatrProdTranspCholVecRR(int n, double **mat, double *in_vec,double* out_vec) con
       out_vec[i] += mat[i][j]*in_vec[j];
     }
   }
+}
+
+void MultiNormalWithTrend::
+CalculateDeterminant(double** cov_matrix, double& determinant) const
+{
+  determinant = cov_matrix[0][0]*(cov_matrix[2][2]*cov_matrix[1][1]-cov_matrix[2][1]*cov_matrix[1][2])
+               -cov_matrix[1][0]*(cov_matrix[2][2]*cov_matrix[0][1]-cov_matrix[2][1]*cov_matrix[0][2])
+               +cov_matrix[2][0]*(cov_matrix[1][2]*cov_matrix[0][1]-cov_matrix[1][1]*cov_matrix[0][2]);
 }
 
 double**

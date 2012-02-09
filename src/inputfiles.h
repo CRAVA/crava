@@ -39,6 +39,8 @@ public:
   const std::string              & getInputDirectory(void)       const { return inputDirectory_       ;}
   const std::map<std::string,std::string> & getPriorFaciesProbFile(void)   const {return priorFaciesProb_ ;}
   const std::string              & getAreaSurfaceFile(void)      const { return areaSurfaceFile_      ;}
+  const std::string              & getTrendCube(int i)           const { return trendCubes_[i]        ;}
+  const std::map<std::string, std::string> & getTrendFile(int i) const { return trendFile_[i]         ;}
 
   int                              getNumberOfSeismicFiles(int i)const { return static_cast<int>(timeLapseSeismicFiles_[i].size());}
 
