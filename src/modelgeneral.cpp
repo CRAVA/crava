@@ -267,6 +267,7 @@ ModelGeneral::readSegyFile(const std::string       & fileName,
 
       target->fillInSeismicDataFromSegY(segy,
                                         timeSimbox,
+                                        modelSettings->getDefaultWaveletLength(),
                                         missingInSimbox,
                                         missingInPadding,
                                         errText);
@@ -1240,9 +1241,10 @@ ModelGeneral::estimateZPaddingSize(Simbox         * timeSimbox,
 
   if (modelSettings->getEstimateZPadding())
   {
-    double wLength = 200.0;                     // Assume a wavelet is approx 200ms.
-    zPad           = wLength/2.0;               // Use half a wavelet as padding
-    zPadFac        = std::min(1.0, zPad/minLz); // More than 100% padding is not sensible
+    double wLength = static_cast<double>(modelSettings->getDefaultWaveletLength());
+    double pfac    = 1.0;
+    zPad           = wLength/pfac;                             // Use half a wavelet as padding
+    zPadFac        = std::min(1.0, zPad/minLz);                // More than 100% padding is not sensible
   }
   int nzPad        = setPaddingSize(nz, zPadFac);
   zPadFac          = static_cast<double>(nzPad - nz)/static_cast<double>(nz);

@@ -105,6 +105,7 @@ public:
   float                            getEnergyThreshold(void)             const { return energyThreshold_                           ;}
   float                            getMaxWellOffset(void)               const { return maxWellOffset_                             ;}
   float                            getMaxWellShift(void)                const { return maxWellShift_                              ;}
+  float                            getDefaultWaveletLength(void)        const { return defaultWaveletLength_                      ;}
   float                            getMinRelWaveletAmp(void)            const { return minRelWaveletAmp_                          ;}
   float                            getMaxWaveletShift(void)             const { return maxWaveletShift_                           ;}
   float                            getWaveletTaperingL(void)            const { return waveletTaperingL_                          ;}
@@ -461,6 +462,7 @@ private:
   float                             maxWellOffset_;              // Maximum offset for moving of wells
   float                             maxWellShift_;               // Maximum vertical shift for moving of wells
 
+  float                             defaultWaveletLength_;       // Assumed length of a wavelet
   float                             minRelWaveletAmp_;           // Minimum relative wavelet amplitude. Smaller amplitudes are disregarded.
   float                             maxWaveletShift_;            // Largest allowed shift when estimating wavelet
   float                             waveletTaperingL_;           // Til Odds waveletestimering

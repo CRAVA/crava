@@ -29,6 +29,7 @@ public:
   int                  fillInFromSegY(SegY * segy, Simbox *simbox, bool nopadding = false ); // No mode
   void                 fillInSeismicDataFromSegY(SegY        * segy,
                                                  Simbox      * simbox,
+                                                 float         wavelet_length,
                                                  int         & missingInSimbox,
                                                  int         & missingInPadding,
                                                  std::string & errTxt);
@@ -39,6 +40,7 @@ public:
                                               float                z0_grid,
                                               float                zn_grid,
                                               float                dz_grid,
+                                              float                wavelet_length,
                                               std::string        & errTxt);
   void                 resampleTrace(const std::vector<float> & data_trace,
                                      const rfftwnd_plan       & fftplan1,

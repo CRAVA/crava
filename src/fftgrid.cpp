@@ -117,6 +117,7 @@ FFTGrid::~FFTGrid()
 void
 FFTGrid::fillInSeismicDataFromSegY(SegY        * segy,
                                    Simbox      * simbox,
+                                   float         wavelet_length,
                                    int         & missingInSimbox,
                                    int         & missingInPadding,
                                    std::string & errTxt)
@@ -139,7 +140,7 @@ FFTGrid::fillInSeismicDataFromSegY(SegY        * segy,
   printf("\n  ^");
 
   //
-  // Find needed length of time samples to get N*log(N) performance in FFT.
+  // Find proper length of time samples to get N*log(N) performance in FFT.
   //
   size_t n_samples = segy->FindNumberOfSamplesInLongestTrace();
   int    nt        = findClosestFactorableNumber(static_cast<int>(n_samples));
@@ -209,6 +210,7 @@ FFTGrid::fillInSeismicDataFromSegY(SegY        * segy,
           //                     npad_above,
           //                     npad_below);
 
+          std::string errText = "";
           smoothTraceInGuardZone(data_trace,
                                  z0_data,
                                  zn_data,
@@ -216,8 +218,8 @@ FFTGrid::fillInSeismicDataFromSegY(SegY        * segy,
                                  z0_grid,
                                  zn_grid,
                                  dz_grid,
-                                 errTxt);
-
+                                 wavelet_length,
+                                 errText);
           resampleTrace(data_trace,
                         fftplan1,
                         fftplan2,
@@ -227,7 +229,6 @@ FFTGrid::fillInSeismicDataFromSegY(SegY        * segy,
                         rnt,
                         cmt,
                         rmt);
-
           interpolateGridValues(grid_trace,
                                 z0_grid,     // Centre of first cell
                                 dz_grid,
@@ -236,41 +237,44 @@ FFTGrid::fillInSeismicDataFromSegY(SegY        * segy,
                                 dz_min,
                                 rmt);
 
-          /*
-          std::ofstream fout;
+          errTxt += errText;
 
-          NRLib::OpenWrite(fout,"data.txt");
-          for (size_t k = 0 ; k < data_trace.size() ; k++) {
-            fout << std::fixed
-                 << std::setprecision(2)
-                 << std::setw(6)  << k
-                 << std::setw(10) << z0_data + k*dz_data
-                 << std::setw(12) << data_trace[k] << "\n";
+          if (errText != "") {
+            std::cout << "i j = " << i << " " << j << std::endl;
+            std::ofstream fout;
+
+            NRLib::OpenWrite(fout,"data.txt");
+            for (size_t k = 0 ; k < data_trace.size() ; k++) {
+              fout << std::fixed
+                   << std::setprecision(2)
+                   << std::setw(6)  << k
+                   << std::setw(10) << z0_data + k*dz_data
+                   << std::setw(12) << data_trace[k] << "\n";
+            }
+            fout.close();
+
+            NRLib::OpenWrite(fout,"fine.txt");
+            for (int k = 0 ; k < static_cast<int>(data_trace.size())*4 ; k++) {
+              fout << std::fixed
+                   << std::setprecision(2)
+                   << std::setw(6)  << k
+                   << std::setw(10) << z0_data + k*dz_min
+                   << std::setw(12) << rAmpFine[k] << "\n";
+            }
+            fout.close();
+
+            NRLib::OpenWrite(fout,"grid.txt");
+            for (size_t k = 0 ; k < grid_trace.size() ; k++) {
+              fout << std::fixed
+                   << std::setprecision(2)
+                   << std::setw(6)  << k
+                   << std::setw(10) << z0_grid + k*dz_grid
+                   << std::setw(12) << grid_trace[k] << "\n";
+            }
+            fout.close();
+
+            exit(1);
           }
-          fout.close();
-
-          NRLib::OpenWrite(fout,"fine.txt");
-               for (int k = 0 ; k < static_cast<int>(data_trace.size())*4 ; k++) {
-            fout << std::fixed
-                 << std::setprecision(2)
-                 << std::setw(6)  << k
-                 << std::setw(10) << z0_data + k*dz_min
-                 << std::setw(12) << rAmpFine[k] << "\n";
-          }
-          fout.close();
-
-          NRLib::OpenWrite(fout,"grid.txt");
-          for (size_t k = 0 ; k < grid_trace.size() ; k++) {
-            fout << std::fixed
-                 << std::setprecision(2)
-                 << std::setw(6)  << k
-                 << std::setw(10) << z0_grid + k*dz_grid
-                 << std::setw(12) << grid_trace[k] << "\n";
-          }
-          fout.close();
-
-          exit(1);
-          */
 
           fftw_free(rAmpData);
           fftw_free(rAmpFine);
@@ -311,6 +315,7 @@ FFTGrid::smoothTraceInGuardZone(std::vector<float> & data_trace,
                                 float                z0_grid,
                                 float                zn_grid,
                                 float                dz_grid,
+                                float                wavelet_length,
                                 std::string        & errTxt)
 {
   //
@@ -321,17 +326,17 @@ FFTGrid::smoothTraceInGuardZone(std::vector<float> & data_trace,
   // identical since the amount of padding above an below is the same
   // with the possible exception of one grid cell.
   //
-  float wlength   = 200.0f;
-  int   n_smooth  = static_cast<int>(floor(0.5*wlength/dz_data));
+  float smooth_length = 0.5f*wavelet_length;
+  int   n_smooth      = static_cast<int>(floor(smooth_length/dz_data));
 
   /*
-  float guard_top = z0_grid - z0_data;
-  float guard_bot = zn_data - zn_grid;
+  float guard_top     = z0_grid - z0_data;
+  float guard_bot     = zn_data - zn_grid;
 
-  if (guard_top < 0.5f*wlength || guard_bot < 0.5f*wlength) {
-    errTxt += "There is not seismic data above and/or below interval of interest. Minimum\n";
-    errTxt += "required guard zone is "+NRLib::ToString(wlength/2,1)+"ms on each side of the interval, ";
-    errTxt += "whereas the\navailable guard zone is "+NRLib::ToString(guard_top,1)+"ms above";
+  if (guard_top < smooth_length || guard_bot < smooth_length) {
+    errTxt += "There is not enough seismic data above and/or below interval of interest. Minimum\n";
+    errTxt += "required guard zone is "+NRLib::ToString(smooth_length,1)+"ms on each side of the interval, ";
+    errTxt += "whereas the available\nguard zone is "+NRLib::ToString(guard_top,1)+"ms above";
     errTxt += " and "+NRLib::ToString(guard_bot,1)+"ms below the interval.\n";
   }
   */
