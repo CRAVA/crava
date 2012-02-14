@@ -266,7 +266,7 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
    \item \Default
  \elist
 
-\paragraph{\hbracket{snap-to-seismic-data}}\rnewkw{snap-to-seismic-data}{snap-to-seismic-data2}
+\paragraph{\hbracket{snap-to-seismic-data}}\newkw{snap-to-seismic-data}
 \slist
    \item \Description Find the smallest rectangular IL-XL box
      enclosing the entire surface and do the inversion using these
@@ -333,7 +333,7 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
    \item \Default
  \elist
 
-\paragraph{\hbracket{snap-to-seismic-data}}\rnewkw{snap-to-seismic-data}{snap-to-seismic-data1}
+\paragraph{\hbracket{snap-to-seismic-data}}\rnewkw{snap-to-seismic-data}{snap-to-seismic-data2}
 \slist
    \item \Description Find the smallest rectangular IL-XL box
      enclosing the entire UTM specified area and do the inversion
@@ -994,7 +994,7 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
    \item \Default
  \elist
 
-\subsubsection{\hbracket{vp-vs-ratio}}\newkw{vp-vs-ratio}
+\subsubsection{\hbracket{vp-vs-ratio}}\rnewkw{vp-vs-ratio}{vp-vs-ratio2}
  \slist
    \item \Description Value of Vp/Vs ratio used in reflection
      matrix. By default, the Vp/Vs ratio is estimated from the
@@ -1868,6 +1868,30 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 \subsubsection{\hbracket{density-file}}\rnewkw{density-file}{density-file2}
  \slist
    \item \Description File name 3D grid file, giving density.
+   \item \Argument File name
+   \item \Default
+ \elist
+
+\subsubsection{\hbracket{ai-file}}\rnewkw{ai-file}{ai-file2}
+ \slist
+   \item \Description File name for 3D grid file, giving AI. Can not
+     be given together with \kw{vp-file} .
+   \item \Argument File name
+   \item \Default
+ \elist
+
+\subsubsection{\hbracket{si-file}}\rnewkw{si-file}{si-file2}
+ \slist
+   \item \Description File name for 3D grid file, giving SI. Can not
+   be given together with \kw{vs-file2} or \kw{vp-vs-ratio-file2}.
+   \item \Argument File name
+   \item \Default
+ \elist
+
+\subsubsection{\hbracket{vp-vs-ratio-file}}\rnewkw{vp-vs-ratio-file}{vp-vs-ratio-file2}
+ \slist
+   \item \Description File name for 3D grid file, giving Vp/Vs. Can
+   not be given together with \kw{vs-file2}.
    \item \Argument File name
    \item \Default
  \elist

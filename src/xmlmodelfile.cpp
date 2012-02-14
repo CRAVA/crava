@@ -1141,6 +1141,9 @@ XmlModelFile::parseEarthModel(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("vp-file");
   legalCommands.push_back("vs-file");
   legalCommands.push_back("density-file");
+  legalCommands.push_back("ai-file");
+  legalCommands.push_back("si-file");
+  legalCommands.push_back("vp-vs-ratio-file");
 
   if (modelSettings_->getBackgroundType() != "")
     errTxt += "Both background and earth-model can not be given. Under forward mode, the earth-model must be used.\n";
@@ -1152,24 +1155,72 @@ XmlModelFile::parseEarthModel(TiXmlNode * node, std::string & errTxt)
     inputFiles_->setBackFile(0, filename);
     modelSettings_->setConstBackValue(0, -1);
   }
-  else
-    errTxt += "Vp is not given in command earth-model.\n";
 
   bool vs = parseFileName(root, "vs-file", filename, errTxt);
   if(vs == true) {
     inputFiles_->setBackFile(1, filename);
     modelSettings_->setConstBackValue(1, -1);
   }
-  else
-    errTxt += "Vs is not given in command earth-model.";
 
   bool rho = parseFileName(root, "density-file", filename, errTxt);
   if(rho == true) {
     inputFiles_->setBackFile(2, filename);
     modelSettings_->setConstBackValue(2, -1);
   }
-  else
-    errTxt += "Density is not given in command earth-model.";
+
+  bool ai = parseFileName(root, "ai-file", filename, errTxt);
+  if(ai == true) {
+    inputFiles_->setBackFile(0, filename);     // Store AI earth model in Vp slot
+    modelSettings_->setConstBackValue(0, -1);  //
+    modelSettings_->setUseAIBackground(true);
+  }
+
+  bool si = parseFileName(root, "si-file", filename, errTxt);
+  if(si == true) {
+    inputFiles_->setBackFile(1, filename);     // Store SI earth model in Vs slot
+    modelSettings_->setConstBackValue(1, -1);  //
+    modelSettings_->setUseSIBackground(true);
+  }
+
+  bool vpvs = parseFileName(root, "vp-vs-ratio-file", filename, errTxt);
+  if(vpvs == true) {
+    inputFiles_->setBackFile(1, filename);     // Store Vp/Vs earth model in Vs slot
+    modelSettings_->setConstBackValue(1, -1);  //
+    modelSettings_->setUseVpVsBackground(true);
+  }
+
+  if (vp && ai) {
+      errTxt += "Earth model for both AI and Vp has been specified in command <"+root->ValueStr()+"> "+
+        lineColumnText(root)+". Please give only one.\n";
+  }
+
+  if (vs && si) {
+      errTxt += "Earth model for both SI and Vs has been specified in command <"+root->ValueStr()+"> "+
+        lineColumnText(root)+". Please give only one.\n";
+  }
+
+  if (vs && vpvs) {
+      errTxt += "Earth model for both Vs and Vp/Vs has been specified in command <"+root->ValueStr()+"> "+
+        lineColumnText(root)+". Please give only one.\n";
+  }
+
+  if (si && vpvs) {
+      errTxt += "Earth model for both SI and Vp/Vs has been specified in command <"+root->ValueStr()+"> "+
+        lineColumnText(root)+". Please give only one.\n";
+  }
+
+  bool earthModelGiven =
+    (vp & vs   & rho)  ||
+    (vp & si   & rho)  ||
+    (vp & vpvs & rho)  ||
+    (ai & vs   & rho)  ||
+    (ai & si   & rho)  ||
+    (ai & vpvs & rho);
+
+  if (!earthModelGiven) {
+      errTxt += "Earth model has not been completely specified in command <"+root->ValueStr()+"> "+
+        lineColumnText(root)+". Please specify {Vp,Vs,Rho}, {AI,SI,Rho}, or {AI,Vp/Vs,Rho}.\n";
+  }
 
   modelSettings_->setGenerateBackground(false);
   checkForJunk(root, errTxt, legalCommands);
