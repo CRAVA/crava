@@ -1,8 +1,7 @@
 #ifndef RPLIB_DISTRIBUTIONWITHTREND_H
 #define RPLIB_DISTRIBUTIONWITHTREND_H
 
-#include "rplib/trend.h"
-
+#include "nrlib/trend/trend.hpp"
 #include "nrlib/random/distribution.hpp"
 
 class DistributionWithTrend {

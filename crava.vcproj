@@ -6181,7 +6181,7 @@
 					>
 				</File>
 				<File
-					RelativePath=".\rplib\trend.cpp"
+					RelativePath=".\rplib\rockphysicsstorage.cpp"
 					>
 				</File>
 			</Filter>
@@ -6382,6 +6382,50 @@
 				</File>
 				<File
 					RelativePath=".\nrlib\segy\traceheader.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\nrlib\trend\trend.cpp"
+					>
+					<FileConfiguration
+						Name="Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\$(InputName)1.obj"
+							XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug|x64"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\$(InputName)1.obj"
+							XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\$(InputName)1.obj"
+							XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|x64"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\$(InputName)1.obj"
+							XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath=".\nrlib\trend\trendstorage.cpp"
 					>
 				</File>
 				<File
@@ -6802,6 +6846,14 @@
 					>
 				</File>
 				<File
+					RelativePath=".\nrlib\trend\trend.hpp"
+					>
+				</File>
+				<File
+					RelativePath=".\nrlib\trend\trendstorage.hpp"
+					>
+				</File>
+				<File
 					RelativePath=".\nrlib\random\uniform.hpp"
 					>
 				</File>
@@ -7138,7 +7190,7 @@
 					>
 				</File>
 				<File
-					RelativePath=".\rplib\trend.h"
+					RelativePath=".\rplib\rockphysicsstorage.h"
 					>
 				</File>
 			</Filter>

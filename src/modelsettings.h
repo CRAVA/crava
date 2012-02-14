@@ -11,6 +11,7 @@
 #include "nrlib/iotools/logkit.hpp"
 #include "nrlib/segy/traceheader.hpp"
 #include "nrlib/segy/segy.hpp"
+#include "rplib/rockphysicsstorage.h"
 
 class Simbox;
 
@@ -182,10 +183,7 @@ public:
   std::vector<int>                 findSortedVintages(void)             const;
   std::vector<std::string>         getTrendCubeNames(void)              const { return trendCubeName_                       ;}
   int                              getNumberOfRocks(void)               const { return static_cast<int>(rockName_.size())   ;}
-  std::map<std::string,std::string>getFirstTrendParameter(int i)        const { return firstTrendParameter_[i]              ;}
-  std::map<std::string,std::string>getSecondTrendParameter(int i)       const { return secondTrendParameter_[i]             ;}
-  std::map<std::string,int>        getTrendType(int i)                  const { return trendType_[i]                        ;}
-  std::map<std::string,float>      getTrendConstantValue(int i)         const { return constantValue_[i]                    ;}
+  RockPhysicsStorage             * getRockPhysicsStorage(int i)         const { return rockPhysics_[i]                      ;}
 
   void rotateVariograms(float angle);
   void setLastAngularCorr(Vario * vario);
@@ -226,14 +224,7 @@ public:
 
   void addTrendCubeName(std::string parameterName)                       { trendCubeName_.push_back(parameterName)                        ;}
   void addRockName(std::string rockName)                                 { rockName_.push_back(rockName)                                  ;}
-  void addFirstTrendParameterOneRock(std::string name, std::string type) { firstTrendParameterOneRock_[name]  = type                      ;}
-  void addFirstTrendParameter(void)                                      { firstTrendParameter_.push_back(firstTrendParameterOneRock_)    ;}
-  void addSecondTrendParameterOneRock(std::string name, std::string type){ secondTrendParameterOneRock_[name] = type                      ;}
-  void addSecondTrendParameter(void)                                     { secondTrendParameter_.push_back(secondTrendParameterOneRock_)  ;}
-  void addConstantValueOneRock(std::string name, float value)            { constantValueOneRock_[name] = value                            ;}
-  void addConstantValue(void)                                            { constantValue_.push_back(constantValueOneRock_ )               ;}
-  void addTrendTypeOneRock(std::string name, int type)                   { trendTypeOneRock_[name] = type                                 ;}
-  void addTrendType(void)                                                { trendType_.push_back(trendTypeOneRock_)                        ;}
+  void addRockPhysicsStorage(RockPhysicsStorage * rock)                  { rockPhysics_.push_back(rock)                                   ;}
 
   void addUpperKRock(float value)                                        { upperKRock_.push_back(value)                                   ;}
   void addLowerKRock(float value)                                        { lowerKRock_.push_back(value)                                   ;}
@@ -647,14 +638,7 @@ private:
 
   std::vector<std::string>                         trendCubeName_;               // Name of the trend parameters in the rock physics model
   std::vector<std::string>                         rockName_;                    // Name of rock in the rock physics model
-  std::map<std::string, std::string>               firstTrendParameterOneRock_;  // Specifies the name of the trend parameter for each of vp, vs, density, var_vp, var_vs, var_density, cov_vp_vs, cov_vp_density, cov_vs_density for one rock. The names must correspond to one of the names in trendParameterName_
-  std::vector<std::map<std::string, std::string> > firstTrendParameter_;         // Names of the trend parameters in firstTrendParameterOneRock_
-  std::map<std::string, std::string>               secondTrendParameterOneRock_; // Specifies the name of the trend parameter on the second axis for each of vp, vs, density, var_vp, var_vs, var_density, cov_vp_vs, cov_vp_density, cov_vs_density for one rock. The names must correspond to one of the names in trendParameterName_
-  std::vector<std::map<std::string, std::string> > secondTrendParameter_;        // Names of the trend parameters in secondTrendParameterOneRock_
-  std::map<std::string, float>                     constantValueOneRock_;        // Constant mean value for each of vp, vs, density, var_vp, var_vs, var_density, cov_vp_vs, cov_vp_density, cov_vs_density for one rock
-  std::vector<std::map<std::string, float> >       constantValue_;               // Constant mean values in constantValueOneRock_ for all the rocks specified in the Gaussian rock physics model
-  std::map<std::string, int>                       trendTypeOneRock_;            // Trend type
-  std::vector<std::map<std::string, int> >         trendType_;                   // Trend types all rocks
+  std::vector<RockPhysicsStorage *>                rockPhysics_;                 // Stores trend-values needed for different rock physics models
 
   std::vector<float> upperKRock_;
   std::vector<float> lowerKRock_;

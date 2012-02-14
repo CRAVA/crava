@@ -11,6 +11,7 @@
 #include "nrlib/iotools/stringtools.hpp"
 #include "nrlib/iotools/logkit.hpp"
 #include "nrlib/segy/segy.hpp"
+#include "nrlib/trend/trendstorage.hpp"
 
 #include "src/modelsettings.h"
 #include "src/xmlmodelfile.h"
@@ -21,6 +22,8 @@
 #include "src/vario.h"
 #include "tasklist.h"
 #include "src/io.h"
+
+#include "rplib/rockphysicsstorage.h"
 
 XmlModelFile::XmlModelFile(const std::string & fileName)
 {
@@ -1541,13 +1544,7 @@ XmlModelFile::parseRock(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("gaussian");
   legalCommands.push_back("bounding-model");
 
-  while(parseGaussian(root, errTxt)){
-    modelSettings_->addConstantValue();
-    modelSettings_->addFirstTrendParameter();
-    modelSettings_->addSecondTrendParameter();
-    modelSettings_->addTrendType();
-    inputFiles_   ->addTrendFile();
-  }
+  while(parseGaussian(root, errTxt));
 
   while(parseBoundingModel(root,errTxt));
 
@@ -1585,39 +1582,60 @@ XmlModelFile::parseGaussian(TiXmlNode * node, std::string & errTxt)
   else
     errTxt += "<name> of <rock> in <rock-phyiscs-model><gaussian> needs to be given\n";
 
-  if(parseRockTrends(root, "mean-vp", errTxt) == false)
+  TrendStorage * mean_vp;
+  if(parseRockTrends(root, "mean-vp", mean_vp, errTxt) == false)
     errTxt += "<mean-vp> of <rock> in <rock-phyiscs-model><gaussian> needs to be given\n";
 
-  if(parseRockTrends(root, "mean-vs", errTxt) == false)
+  TrendStorage * mean_vs;
+  if(parseRockTrends(root, "mean-vs", mean_vs, errTxt) == false)
     errTxt += "<mean-vs> of <rock> in <rock-phyiscs-model><gaussian> needs to be given\n";
 
-  if(parseRockTrends(root, "mean-density", errTxt) == false)
+  TrendStorage * mean_density;
+  if(parseRockTrends(root, "mean-density", mean_density, errTxt) == false)
     errTxt += "<mean-density> of <rock> in <rock-phyiscs-model><gaussian> needs to be given\n";
 
-  if(parseRockTrends(root, "variance-vp", errTxt) == false)
+  TrendStorage * variance_vp;
+  if(parseRockTrends(root, "variance-vp", variance_vp, errTxt) == false)
     errTxt += "<variance-vp> of <rock> in <rock-phyiscs-model><gaussian> needs to be given\n";
 
-  if(parseRockTrends(root, "variance-vs", errTxt) == false)
+  TrendStorage * variance_vs;
+  if(parseRockTrends(root, "variance-vs", variance_vs, errTxt) == false)
     errTxt += "<variance-vs> of <rock> in <rock-phyiscs-model><gaussian> needs to be given\n";
 
-  if(parseRockTrends(root, "variance-density", errTxt) == false)
+  TrendStorage * variance_density;
+  if(parseRockTrends(root, "variance-density", variance_density, errTxt) == false)
     errTxt += "<variance-density> of <rock> in <rock-phyiscs-model><gaussian> needs to be given\n";
 
-  if(parseRockTrends(root, "correlation-vp-vs", errTxt) == false)
+  TrendStorage * correlation_vp_vs;
+  if(parseRockTrends(root, "correlation-vp-vs", correlation_vp_vs, errTxt) == false)
     errTxt += "<correlation-vp-vs> of <rock> in <rock-phyiscs-model><gaussian> needs to be given\n";
 
-  if(parseRockTrends(root, "correlation-vp-density", errTxt) == false)
+  TrendStorage * correlation_vp_density;
+  if(parseRockTrends(root, "correlation-vp-density", correlation_vp_density, errTxt) == false)
     errTxt += "<correlation-vp-density> of <rock> in <rock-phyiscs-model><gaussian> needs to be given\n";
 
-  if(parseRockTrends(root, "correlation-vs-density", errTxt) == false)
+  TrendStorage * correlation_vs_density;
+  if(parseRockTrends(root, "correlation-vs-density", correlation_vs_density, errTxt) == false)
     errTxt += "<correlation-vs-density> of <rock> in <rock-phyiscs-model><gaussian> needs to be given\n";
+
+  RockPhysicsStorage * rock = new GaussianRockPhysicsStorage(mean_vp,
+                                                             mean_vs,
+                                                             mean_density,
+                                                             variance_vp,
+                                                             variance_vs,
+                                                             variance_density,
+                                                             correlation_vp_vs,
+                                                             correlation_vp_density,
+                                                             correlation_vs_density);
+
+  modelSettings_->addRockPhysicsStorage(rock);
 
   checkForJunk(root, errTxt, legalCommands, true);
   return(true);
 }
 
 bool
-XmlModelFile::parseRockTrends(TiXmlNode * node, const std::string & keyword, std::string & errTxt)
+XmlModelFile::parseRockTrends(TiXmlNode * node, const std::string & keyword, TrendStorage *& trend, std::string & errTxt)
 {
   TiXmlNode * root = node->FirstChildElement(keyword);
   if(root == 0)
@@ -1628,24 +1646,24 @@ XmlModelFile::parseRockTrends(TiXmlNode * node, const std::string & keyword, std
   legalCommands.push_back("trend-1d");
   legalCommands.push_back("trend-2d");
 
-  int meanGiven = 0;
-  if(parseConstantTrend(root, keyword, errTxt) == true)
-    meanGiven++;
-  if(parse1DTrend(root, keyword, errTxt) == true)
-    meanGiven++;
-  if(parse2DTrend(root, keyword, errTxt) == true)
-    meanGiven++;
+  int trendGiven = 0;
+  if(parseConstantTrend(root, keyword, trend, errTxt) == true)
+    trendGiven++;
+  if(parse1DTrend(root, keyword, trend, errTxt) == true)
+    trendGiven++;
+  if(parse2DTrend(root, keyword, trend, errTxt) == true)
+    trendGiven++;
 
-  if(meanGiven == 0)
+  if(trendGiven == 0)
     errTxt += "One of <trend-constant>, <trend-1d> or <trend-2d> needs to be given for <"+keyword+"> in <rock-physics><rock><gaussian>\n";
-  else if(meanGiven > 1)
+  else if(trendGiven > 1)
     errTxt += "Only one of <trend-constant>, <trend-1d> or <trend-2d> can be given for <"+keyword+"> in <rock-physics><rock><gaussian>\n";
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
 bool
-XmlModelFile::parseConstantTrend(TiXmlNode * node, const std::string & keyword, std::string & errTxt)
+XmlModelFile::parseConstantTrend(TiXmlNode * node, const std::string & keyword, TrendStorage *& trend, std::string & errTxt)
 {
   TiXmlNode * root = node->FirstChildElement("trend-constant");
   if(root == 0)
@@ -1654,23 +1672,18 @@ XmlModelFile::parseConstantTrend(TiXmlNode * node, const std::string & keyword, 
   std::vector<std::string> legalCommands;
   legalCommands.push_back("value");
 
-  float value;
-  if(parseValue(root, "value", value, errTxt) == true)
-    modelSettings_->addConstantValueOneRock(keyword, value);
-  else
+  double value;
+  if(parseValue(root, "value", value, errTxt) == false)
     errTxt += "The <value> for <"+keyword+"> needs to be given in <trend-constant> in <rock-physics>\n";
 
-  modelSettings_->addTrendTypeOneRock(keyword, ModelSettings::TREND_CONSTANT);
-  modelSettings_->addFirstTrendParameterOneRock(keyword, "");
-  modelSettings_->addSecondTrendParameterOneRock(keyword, "");
-  inputFiles_   ->addTrendFileOneRock(keyword, "");
+  trend = new TrendConstantStorage(value);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
 
 bool
-XmlModelFile::parse1DTrend(TiXmlNode * node, const std::string & keyword, std::string & errTxt)
+XmlModelFile::parse1DTrend(TiXmlNode * node, const std::string & keyword, TrendStorage *& trend, std::string & errTxt)
 {
   TiXmlNode * root = node->FirstChildElement("trend-1d");
   if(root == 0)
@@ -1680,27 +1693,22 @@ XmlModelFile::parse1DTrend(TiXmlNode * node, const std::string & keyword, std::s
   legalCommands.push_back("file-name");
   legalCommands.push_back("reference-parameter");
 
-  std::string name;
-  if(parseValue(root, "reference-parameter", name, errTxt) == true)
-    modelSettings_->addFirstTrendParameterOneRock(keyword, name);
-  else
+  std::string reference_parameter;
+  if(parseValue(root, "reference-parameter", reference_parameter, errTxt) == false)
     errTxt += "The <reference-parameter> for <"+keyword+"> needs to be given in <trend-1d>\n";
 
-  if(parseValue(root, "file-name", name, errTxt) == true)
-    inputFiles_->addTrendFileOneRock(keyword, name);
-  else
+  std::string file_name;
+  if(parseValue(root, "file-name", file_name, errTxt) == false)
     errTxt += "The <file-name> for <"+keyword+"> needs to be given in <trend-1d>\n";
 
-  modelSettings_->addTrendTypeOneRock(keyword, ModelSettings::TREND_1D);
-  modelSettings_->addConstantValueOneRock(keyword, RMISSING);
-  modelSettings_->addSecondTrendParameterOneRock(keyword, "");
+  trend = new Trend1DStorage(file_name,reference_parameter);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
 
 bool
-XmlModelFile::parse2DTrend(TiXmlNode * node, const std::string & keyword, std::string & errTxt)
+XmlModelFile::parse2DTrend(TiXmlNode * node, const std::string & keyword, TrendStorage *& trend, std::string & errTxt)
 {
   TiXmlNode * root = node->FirstChildElement("trend-2d");
   if(root == 0)
@@ -1711,24 +1719,19 @@ XmlModelFile::parse2DTrend(TiXmlNode * node, const std::string & keyword, std::s
   legalCommands.push_back("reference-parameter-first-axis");
   legalCommands.push_back("reference-parameter-second-axis");
 
-  std::string name;
-  if(parseValue(root, "reference-parameter-first-axis", name, errTxt) == true)
-    modelSettings_->addFirstTrendParameterOneRock(keyword, name);
-  else
+  std::string first_reference;
+  if(parseValue(root, "reference-parameter-first-axis", first_reference, errTxt) == false)
     errTxt += "The <reference-parameter-first-axis> for <"+keyword+"> needs to be given in <trend-2d>\n";
 
-  if(parseValue(root, "reference-parameter-second-axis", name, errTxt) == true)
-    modelSettings_->addSecondTrendParameterOneRock(keyword, name);
-  else
+  std::string second_reference;
+  if(parseValue(root, "reference-parameter-second-axis", second_reference, errTxt) == false)
     errTxt += "The <reference-parameter-second-axis> for <"+keyword+"> needs to be given in <trend-2d>n";
 
-  if(parseValue(root, "file-name", name, errTxt) == true)
-    inputFiles_->addTrendFileOneRock(keyword, name);
-  else
+  std::string file_name;
+  if(parseValue(root, "file-name", file_name, errTxt) == false)
     errTxt += "The <file-name> for <"+keyword+"> needs to be given in <trend-2d>\n";
 
-  modelSettings_->addTrendTypeOneRock(keyword, ModelSettings::TREND_2D);
-  modelSettings_->addConstantValueOneRock(keyword, RMISSING);
+  trend = new Trend2DStorage(file_name, first_reference, second_reference);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -3481,38 +3484,7 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
 
     if(modelSettings_->getEstimateFaciesProb() == false)
       errTxt += "Rocks in the rock physics prior model should not be given without requesting facies probabilities under inversion settings.\n";
-
-    typedef std::map<std::string, std::string> mapType;
-    std::vector<std::string> trendCubeNames = modelSettings_->getTrendCubeNames();
-    int nRocks = modelSettings_->getNumberOfRocks();
-
-    for(int i=0; i<nRocks; i++){
-      mapType firstTrendParameter  = modelSettings_->getFirstTrendParameter(i);
-      mapType secondTrendParameter = modelSettings_->getSecondTrendParameter(i);
-
-      for(mapType::iterator k = firstTrendParameter.begin(); k != firstTrendParameter.end(); k++){
-        if(k->second != ""){
-          for(size_t j=0; j<trendCubeNames.size(); j++){
-            if(k->second == trendCubeNames[j])
-              break;
-            if(j == trendCubeNames.size()-1)
-              errTxt += "The trend parameter <"+NRLib::ToString(k->second.c_str())+"> in <trend-1d> is not one of the trend cubes given in <trend-cubes>\n";
-          }
-        }
-      }
-      for(mapType::iterator k = secondTrendParameter.begin(); k != secondTrendParameter.end(); k++){
-        if(k->second != ""){
-          for(size_t j=0; j<trendCubeNames.size(); j++){
-            if(k->second == trendCubeNames[j])
-              break;
-            if(j == trendCubeNames.size()-1)
-              errTxt += "The trend parameter <"+NRLib::ToString(k->second.c_str())+"> in <trend-2d> is not one of the trend cubes given in <trend-cubes>\n";
-          }
-        }
-      }
-    }
   }
-  //Check that only one of Gaussian or bounding model is given
 }
 
 void

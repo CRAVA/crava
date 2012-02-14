@@ -2,7 +2,7 @@
 include ../Makeheader
 
 # NRLib directories where we want all files are given here. 
-FULLMODULES := grid iotools segy stormgrid  volume tinyxml boost random math
+FULLMODULES := grid iotools segy stormgrid  volume tinyxml boost random math trend
 
 SRC := 
 

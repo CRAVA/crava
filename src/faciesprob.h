@@ -177,12 +177,12 @@ private:
                                              const std::vector<Grid2D *>   & noiseScale,
                                              FFTGrid                       * seismicLH);
 
-  void                   calculateFaciesProbFromRockPhysicsModel(FFTGrid                      * alphagrid,
-                                                                 FFTGrid                      * betagrid,
-                                                                 FFTGrid                      * rhogrid,
-                                                                 float                          p_undef,
-                                                                 FFTGrid                       * seismicLH,
-                                                                 ModelAVOStatic                * modelAVOstatic);
+  void                   calculateFaciesProbFromRockPhysicsModel(FFTGrid                      * /*alphagrid*/,
+                                                                 FFTGrid                      * /*betagrid*/,
+                                                                 FFTGrid                      * /*rhogrid*/,
+                                                                 float                          /*p_undef*/,
+                                                                 FFTGrid                       * /*seismicLH*/,
+                                                                 ModelAVOStatic                * /*modelAVOstatic*/);
 
   void                   normalizeCubes(FFTGrid **priorFaciesCubes);
 

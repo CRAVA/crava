@@ -10,6 +10,8 @@
 #include "src/modelsettings.h"
 #include "src/inputfiles.h"
 
+#include "rplib/distributionsrockt0.h"
+
 struct irapgrid;
 class Corr;
 class Wavelet;
@@ -119,6 +121,13 @@ private:
                                           const InputFiles * inputFiles,
                                           std::string      & errText,
                                           bool             & failedVelocity);
+
+  void             processRockPhysics(Simbox                       * timeSimbox,
+                                      ModelSettings                * modelSettings,
+                                      bool                         & failed,
+                                      std::string                  & errTxt,
+                                      const InputFiles             * inputFiles);
+
   void             setSimboxSurfaces(Simbox                        *& simbox,
                                      const std::vector<std::string> & surfFile,
                                      ModelSettings                  * modelSettings,
@@ -168,6 +177,10 @@ private:
   double                    gradX_;                 ///< X-gradient of correlation rotation.
   double                    gradY_;                 ///< Y-gradient of correlation rotation.
                                                     ///< These are only used with correlation surfaces.
+
+  FFTGrid                ** trendCubes_;            ///< Trend cubes used in rock phyiscs prior model
+  int                       numberOfTrendCubes_;    ///< Defined for deletion of trendCubes_
+  std::vector<DistributionsRockT0 *> rock_distributions_; ///< Rock physics prior models
 
   GridMapping             * timeDepthMapping_;      ///< Contains both simbox and mapping used for depth conversion
   GridMapping             * timeCutMapping_;        ///< Simbox and mapping for timeCut

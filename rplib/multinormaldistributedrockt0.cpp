@@ -25,3 +25,29 @@ MultiNormalDistributedRockT0::GenerateSample(const std::vector<double> & trend_p
   mult_normal_distr_.ReSample(s1, s2, param[0], param[1], param[2]);
   return new MultiNormalRock(param, saturation);
 }
+
+std::vector<double>
+MultiNormalDistributedRockT0::GetExpectation(const std::vector<double> & trend_params) const
+{
+  double s1 = 0, s2 = 0;
+  if (trend_params.size() >= 2) {
+    s1 = trend_params[0];
+    s2 = trend_params[1];
+  }
+  std::vector<double> expectation;
+  mult_normal_distr_.GetExpectation(s1, s2, expectation);
+  return(expectation);
+}
+
+NRLib::Matrix
+MultiNormalDistributedRockT0::GetCovariance(const std::vector<double> & trend_params) const
+{
+  double s1 = 0, s2 = 0;
+  if (trend_params.size() >= 2) {
+    s1 = trend_params[0];
+    s2 = trend_params[1];
+  }
+  NRLib::Matrix covariance;
+  mult_normal_distr_.GetCovariance(s1, s2, covariance);
+  return(covariance);
+}

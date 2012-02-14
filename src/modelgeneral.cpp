@@ -43,6 +43,7 @@
 #include "nrlib/surface/regularsurface.hpp"
 #include "nrlib/iotools/logkit.hpp"
 #include "nrlib/stormgrid/stormcontgrid.hpp"
+#include "rplib/rockphysicsstorage.h"
 
 
 ModelGeneral::ModelGeneral(ModelSettings *& modelSettings, const InputFiles * inputFiles, Simbox *& timeBGSimbox)
@@ -62,8 +63,11 @@ ModelGeneral::ModelGeneral(ModelSettings *& modelSettings, const InputFiles * in
 
   bool failedSimbox       = false;
   bool failedDepthConv    = false;
+  bool failedRockPhysics  = false;
 
   bool failedLoadingModel = false;
+
+  trendCubes_             = NULL;
 
   Simbox * timeCutSimbox  = NULL;
   timeLine_               = NULL;
@@ -142,6 +146,9 @@ ModelGeneral::ModelGeneral(ModelSettings *& modelSettings, const InputFiles * in
                                  inputFiles, errText, failedDepthConv);
         }
 
+        if(failedDepthConv == false)
+          processRockPhysics(timeSimbox_, modelSettings, failedRockPhysics, errText, inputFiles);
+
         //Set up timeline.
         timeLine_ = new TimeLine();
         //Activate below when gravity data are ready.
@@ -194,6 +201,12 @@ ModelGeneral::~ModelGeneral(void)
 
   if(correlationDirection_ !=NULL)
     delete correlationDirection_;
+
+  if(trendCubes_ != NULL){
+    for(int i=0; i<numberOfTrendCubes_; i++)
+      delete trendCubes_[i];
+    delete [] trendCubes_;
+  }
 
   delete randomGen_;
   delete timeSimbox_;
@@ -2014,6 +2027,57 @@ ModelGeneral::processDepthConversion(Simbox            * timeCutSimbox,
   }
   if(velocity != NULL)
     delete velocity;
+}
+
+void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
+                                      ModelSettings                * modelSettings,
+                                      bool                         & failed,
+                                      std::string                  & errTxt,
+                                      const InputFiles             * inputFiles)
+{
+  if(modelSettings->getFaciesProbFromRockPhysics()){
+    std::vector<std::string> trendCubeName = modelSettings->getTrendCubeNames();
+    numberOfTrendCubes_ = static_cast<int>(trendCubeName.size());
+
+    if(numberOfTrendCubes_ > 0){
+      trendCubes_ = new FFTGrid*[numberOfTrendCubes_];
+      const SegyGeometry      * dummy1 = NULL;
+      const TraceHeaderFormat * dummy2 = NULL;
+      const float               offset = modelSettings->getSegyOffset(0); //Facies estimation only allowed for one time lapse
+      int outsideTraces = 0;
+
+      for(int i=0; i<numberOfTrendCubes_; i++){
+        std::string trendCubeName = inputFiles->getTrendCube(i);
+        std::string errorText("");
+        ModelGeneral::readGridFromFile(trendCubeName,
+                                       "trendcube",
+                                       offset,
+                                       trendCubes_[i],
+                                       dummy1,
+                                       dummy2,
+                                       FFTGrid::PARAMETER,
+                                       timeSimbox,
+                                       modelSettings,
+                                       outsideTraces,
+                                       errorText,
+                                       true);
+        if(errorText != ""){
+          errorText += "Reading of file \'"+trendCubeName+"\' failed\n";
+          errTxt += errorText;
+          failed = true;
+        }
+      }
+    }
+    std::string path = inputFiles->getInputDirectory();
+    for(int i=0; i<modelSettings->getNumberOfRocks(); i++){
+      RockPhysicsStorage * rock_physics = modelSettings->getRockPhysicsStorage(i);
+
+      rock_distributions_.push_back(rock_physics->GenerateRockPhysics(path,errTxt));
+
+    }
+    if(errTxt != "")
+      failed = true;
+  }
 }
 
 void

@@ -2,6 +2,8 @@
 #define DISTRIBUTIONSROCKT0_H
 
 #include "rplib/rock.h"
+#include <nrlib/flens/nrlib_flens.hpp>
+
 
 // Abstract class for holding all t = 0 distribution functions for rock physics parameters and saturation.
 // One derived class for each rock physics model, the latter specified in a parallel, derived Rock class.
@@ -14,7 +16,11 @@ public:
   virtual ~DistributionsRockT0(){}
 
   // Rock is an abstract class, hence pointer must be used here. Allocated memory (using new) MUST be deleted by caller.
-  virtual Rock  * GenerateSample(const std::vector<double> & trend_params) const = 0;
+  virtual Rock                * GenerateSample(const std::vector<double> & trend_params) const = 0;
+
+  virtual std::vector<double>   GetExpectation(const std::vector<double> & trend_params) const = 0;
+
+  virtual NRLib::Matrix         GetCovariance(const std::vector<double> & trend_params) const = 0;
 
 };
 

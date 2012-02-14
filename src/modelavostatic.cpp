@@ -43,7 +43,6 @@
 #include "nrlib/surface/regularsurface.hpp"
 #include "nrlib/iotools/logkit.hpp"
 #include "nrlib/stormgrid/stormcontgrid.hpp"
-#include "rplib/trend.h"
 
 
 ModelAVOStatic::ModelAVOStatic(ModelSettings      *& modelSettings,
@@ -59,7 +58,6 @@ ModelAVOStatic::ModelAVOStatic(ModelSettings      *& modelSettings,
   priorFacies_            = NULL;
   priorFaciesProbCubes_   = NULL;
   wells_                  = NULL;
-  trendCubes_             = NULL;
 
   bool failedSimbox       = failedGeneralDetails[0];
 
@@ -100,12 +98,6 @@ ModelAVOStatic::ModelAVOStatic(ModelSettings      *& modelSettings,
                                failedPriorFacies,
                                errText,
                                inputFiles);
-        if(!failedPriorFacies)
-          processRockPhysics(timeSimbox,
-                             modelSettings,
-                             failedRockPhysics,
-                             errText,
-                             inputFiles);
       }
     }
   }
@@ -156,24 +148,6 @@ ModelAVOStatic::~ModelAVOStatic(void)
       delete wellMoveInterval_[0];
     if (wellMoveInterval_[1] != NULL)
       delete wellMoveInterval_[1];
-  }
-
-  if(trendCubes_ != NULL){
-    for(int i=0; i<numberOfTrendCubes_; i++)
-      delete trendCubes_[i];
-    delete [] trendCubes_;
-  }
-
-  for(size_t i=0; i<meanVp_.size(); i++){
-    delete meanVp_[i];
-    delete meanVs_[i];
-    delete meanDensity_[i];
-    delete varianceVp_[i];
-    delete varianceVs_[i];
-    delete varianceDensity_[i];
-    delete correlationVpVs_[i];
-    delete correlationVpDensity_[i];
-    delete correlationVsDensity_[i];
   }
 }
 
@@ -998,186 +972,6 @@ void ModelAVOStatic::processPriorFaciesProb(const std::vector<Surface *> & facie
     }
   }
 }
-
-void ModelAVOStatic::processRockPhysics(Simbox                       * timeSimbox,
-                                        ModelSettings                * modelSettings,
-                                        bool                         & failed,
-                                        std::string                  & errTxt,
-                                        const InputFiles             * inputFiles)
-{
-  if(modelSettings->getFaciesProbFromRockPhysics()){
-    std::vector<std::string> trendCubeName = modelSettings->getTrendCubeNames();
-    numberOfTrendCubes_ = static_cast<int>(trendCubeName.size());
-
-    if(numberOfTrendCubes_ > 0){
-      trendCubes_ = new FFTGrid*[numberOfTrendCubes_];
-      const SegyGeometry      * dummy1 = NULL;
-      const TraceHeaderFormat * dummy2 = NULL;
-      const float               offset = modelSettings->getSegyOffset(0); //Facies estimation only allowed for one time lapse
-      int outsideTraces = 0;
-
-      for(int i=0; i<numberOfTrendCubes_; i++){
-        std::string trendCubeName = inputFiles->getTrendCube(i);
-        std::string errorText("");
-        ModelGeneral::readGridFromFile(trendCubeName,
-                                       "trendcube",
-                                       offset,
-                                       trendCubes_[i],
-                                       dummy1,
-                                       dummy2,
-                                       FFTGrid::PARAMETER,
-                                       timeSimbox,
-                                       modelSettings,
-                                       outsideTraces,
-                                       errorText,
-                                       true);
-        if(errorText != ""){
-          errorText += "Reading of file \'"+trendCubeName+"\' failed\n";
-          errTxt += errorText;
-          failed = true;
-        }
-      }
-    }
-
-    int nRocks = modelSettings->getNumberOfRocks();
-
-    for(int i=0; i<nRocks; i++){
-      createNormalTrend(modelSettings,inputFiles,errTxt,meanVp_,              "mean-vp",               i);
-      createNormalTrend(modelSettings,inputFiles,errTxt,meanVs_,              "mean-vs",               i);
-      createNormalTrend(modelSettings,inputFiles,errTxt,meanDensity_,         "mean-density",          i);
-      createNormalTrend(modelSettings,inputFiles,errTxt,varianceVp_,          "variance-vp",           i);
-      createNormalTrend(modelSettings,inputFiles,errTxt,varianceVs_,          "variance-vs",           i);
-      createNormalTrend(modelSettings,inputFiles,errTxt,varianceDensity_,     "variance-density",      i);
-      createNormalTrend(modelSettings,inputFiles,errTxt,correlationVpVs_,     "correlation-vp-vs",     i);
-      createNormalTrend(modelSettings,inputFiles,errTxt,correlationVpDensity_,"correlation-vp-density",i);
-      createNormalTrend(modelSettings,inputFiles,errTxt,correlationVsDensity_,"correlation-vs-density",i);
-
-    }
-  }
-}
-
-void ModelAVOStatic::createNormalTrend(ModelSettings                * modelSettings,
-                                       const InputFiles             * inputFiles,
-                                       std::string                  & errTxt,
-                                       std::vector<Trend *>         & trendVariable,
-                                       std::string                    variableName,
-                                       int                            i)
-{
-  typedef std::map<std::string, int>         mapTypeInt;
-  typedef std::map<std::string, float>       mapTypeFloat;
-  typedef std::map<std::string, std::string> mapTypeString;
-
-  mapTypeInt    trendType     = modelSettings->getTrendType(i);
-  mapTypeFloat  constantTrend = modelSettings->getTrendConstantValue(i);
-  mapTypeString trendFile     = inputFiles   ->getTrendFile(i);
-
-  mapTypeInt::iterator it = trendType.find(variableName);
-  if(it != trendType.end()){
-    if(it->second == ModelSettings::TREND_CONSTANT){
-
-      mapTypeFloat::iterator iter = constantTrend.find(it->first);
-      if(iter != constantTrend.end())
-        trendVariable.push_back(new ConstantTrend(iter->second));
-      else
-        errTxt += "The constant-trend value for "+NRLib::ToString(iter->first.c_str())+" is not given\n";
-    }
-    else if(it->second == ModelSettings::TREND_1D){
-      mapTypeString::iterator iter = trendFile.find(it->first);
-
-      if(iter != trendFile.end()){
-        std::string fileName = iter->second;
-        int fileFormat = getTrend1DFileFormat(fileName, errTxt);
-        std::vector<double> trend1d;
-        double              s_min;
-        double              s_max;
-
-        if(fileFormat < 0)
-          errTxt += "Unknown file format of file '"+NRLib::ToString(iter->second.c_str())+"'\n";
-        else{
-          readTrend1D(fileName,errTxt,trend1d,s_min,s_max);
-          trendVariable.push_back(new Trend1D(trend1d,s_min,s_max));
-        }
-      }
-      else
-        errTxt += "The 1D trend file for "+NRLib::ToString(iter->first.c_str())+" is not given\n";
-    }
-
-    else{
-      errTxt += "TREND-2D is not implemented\n";
-
-    }
-  }
-  else
-    errTxt += "The trend for "+NRLib::ToString(it->first.c_str())+" is not given\n";
-}
-
-void ModelAVOStatic::readTrend1D(const std::string   & fileName,
-                                 std::string         & errText,
-                                 std::vector<double> & trend1d,
-                                 double              & s1,
-                                 double              & s2)
-{
-  std::ifstream file;
-  NRLib::OpenRead(file,fileName);
-  std::string dummyStr;
-  bool lineIsComment = true;
-  int  line          = 0;
-  int  thisLine      = 0;
-  while( lineIsComment == true) {
-    if(NRLib::CheckEndOfFile(file)) {
-      errText += "Error: End of file "+fileName+" premature.\n";
-      return;
-    }
-
-    NRLib::ReadNextToken(file,dummyStr,line);
-    if (line == thisLine)
-      NRLib::DiscardRestOfLine(file,line,false);
-    thisLine = line;
-    if((dummyStr[0]!='*') &  (dummyStr[0]!='"')) {
-      lineIsComment = false;
-    }
-  }
-
-  s1 = NRLib::ParseType<double>(dummyStr);
-
-  if (NRLib::CheckEndOfFile(file))  {
-    errText += "Error: End of file "+fileName+" premature.\n";
-    return;
-  }
-  NRLib::ReadNextToken(file,dummyStr,line);
-  if (line == thisLine)
-    NRLib::DiscardRestOfLine(file,line,false);
-  thisLine = line;
-
-  double dz = NRLib::ParseType<double>(dummyStr);
-
-  if (NRLib::CheckEndOfFile(file)) {
-    errText += "Error: End of file "+fileName+" premature.\n";
-    return;
-  }
-  NRLib::ReadNextToken(file,dummyStr,line);
-  if (line == thisLine)
-    NRLib::DiscardRestOfLine(file,line,false);
-  thisLine = line;
-
-  int nz = NRLib::ParseType<int>(dummyStr);
-
-  s2 = s1+dz*nz;
-
-  trend1d.resize(nz);
-
-  for(int i=0; i<nz; i++) {
-    if (NRLib::CheckEndOfFile(file)) {
-      errText += "Error: End of file "+fileName+" premature.\n";
-      return;
-    }
-    NRLib::ReadNextToken(file,dummyStr,line);
-
-    trend1d[i] = NRLib::ParseType<double>(dummyStr);
-  }
-  file.close();
-}
-
 void ModelAVOStatic::readPriorFaciesProbCubes(const InputFiles      * inputFiles,
                                               ModelSettings   * modelSettings,
                                               FFTGrid       **& priorFaciesProbCubes,
@@ -1231,55 +1025,6 @@ void ModelAVOStatic::readPriorFaciesProbCubes(const InputFiles      * inputFiles
       break;
     }
   }
-}
-
-int
-ModelAVOStatic::getTrend1DFileFormat(const std::string & fileName, std::string & errText)
-{
-  int fileformat = -1;
-  int line       = 0;
-  int pos;
-  std::string dummyStr;
-  std::string targetString;
-
-  std::ifstream file;
-  NRLib::OpenRead(file,fileName);
-
-  std::getline(file,dummyStr);
-  line++;
-  targetString = "pulse file-3";
-  pos = Utils::findEnd(dummyStr, 0, targetString);
-  if (pos >= 0)
-    fileformat = Wavelet::NORSAR;
-  file.close();
-  file.clear();
-
-  if(fileformat<0) { // not norsar format
-      // test for jason file format
-    NRLib::OpenRead(file,fileName);
-    line         = 0;
-    int thisLine = 0;
-    bool lineIsComment = true;
-    while (lineIsComment == true) {
-      NRLib::ReadNextToken(file,dummyStr,line);
-      if (NRLib::CheckEndOfFile(file)) {
-        errText += "End of wavelet file "+fileName+" is premature\n";
-        return 0;
-      }
-      else {
-        if (thisLine == line) {
-          NRLib::DiscardRestOfLine(file,line,false);
-          thisLine = line;
-        }
-        if((dummyStr[0]!='*') &  (dummyStr[0]!='"'))
-          lineIsComment = false;
-      }
-    }
-    file.close();
-    if (NRLib::IsNumber(dummyStr)) // not convertable number
-      fileformat= Wavelet::JASON;
-  }
-  return fileformat;
 }
 
 void

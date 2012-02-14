@@ -1,7 +1,6 @@
 #include "rplib/multinormalwithtrend.h"
 
-#include "rplib/trend.h"
-
+#include "nrlib/trend/trend.hpp"
 #include "nrlib/exception/exception.hpp"
 #include "nrlib/grid/grid2d.hpp"
 #include "nrlib/flens/nrlib_flens.hpp"
@@ -14,13 +13,13 @@
 
 
 MultiNormalWithTrend::
-MultiNormalWithTrend(const NRLib::Normal&                      vp01,
+MultiNormalWithTrend(const NRLib::Normal&                      vp01, //Marit: Hva brukes de tre første variablene til?
                      const NRLib::Normal&                      vs01,
                      const NRLib::Normal&                      rho01,
                      const Trend*                              mean_trend_vp,
                      const Trend*                              mean_trend_vs,
                      const Trend*                              mean_trend_rho,
-                     const NRLib::Grid2D<Trend*>               cov_trend) :
+                     const NRLib::Grid2D<Trend*>               cov_trend) : //Marit: Vil ta inn verdiene direkte uten grid
   vp01_(vp01), vs01_(vs01), rho01_(rho01),
   mean_trend_vp_(mean_trend_vp), mean_trend_vs_(mean_trend_vs), mean_trend_rho_(mean_trend_rho),
   cov_trend_(cov_trend)
@@ -84,6 +83,23 @@ MultiNormalWithTrend::ReSample(double s1, double s2,
   vs  =  rhs[1] + mean_trend_vs_->GetValue(s1, s2);
   rho =  rhs[2] + mean_trend_rho_->GetValue(s1, s2);
 
+}
+
+void
+MultiNormalWithTrend::GetExpectation(double s1, double s2, std::vector<double>& expectation) const
+{
+  expectation[0] = mean_trend_vp_->GetValue(s1, s2);
+  expectation[1] = mean_trend_vs_->GetValue(s1, s2);
+  expectation[2] = mean_trend_rho_->GetValue(s1, s2);
+}
+
+void
+MultiNormalWithTrend::GetCovariance(double s1, double s2, NRLib::Matrix & covariance) const
+{
+  for (int j = 0; j < 3; ++j) {
+    for (int i = 0; i < 3; ++i)
+      covariance(j, i) = cov_trend_(i, j)->GetValue(s1, s2);
+  }
 }
 
 void

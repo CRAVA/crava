@@ -11,6 +11,7 @@
 
 #include "nrlib/random/chisquared.hpp"
 #include "nrlib/iotools/logkit.hpp"
+#include "nrlib/trend/trend.hpp"
 
 #include "src/welldata.h"
 #include "src/faciesprob.h"
@@ -29,8 +30,9 @@
 #include "src/tasklist.h"
 #include "src/modelavostatic.h"
 
-#include "rplib/trend.h"
 #include "rplib/multinormalwithtrend.h"
+#include "rplib/distributionsrockt0.h"
+#include "rplib/multinormaldistributedrockt0.h"
 
 FaciesProb::FaciesProb(FFTGrid                      * alpha,
                        FFTGrid                      * beta,
@@ -1264,14 +1266,14 @@ void FaciesProb::calculateFaciesProb(FFTGrid                                    
   delete [] value;
 }
 
-void FaciesProb::calculateFaciesProbFromRockPhysicsModel(FFTGrid                                    * alphagrid,
-                                                         FFTGrid                                    * betagrid,
-                                                         FFTGrid                                    * rhogrid,
-                                                         float                                        p_undefined,
-                                                         FFTGrid                                    * seismicLH,
-                                                         ModelAVOStatic                             * modelAVOstatic)
+void FaciesProb::calculateFaciesProbFromRockPhysicsModel(FFTGrid                                    * /*alphagrid*/,
+                                                         FFTGrid                                    * /*betagrid*/,
+                                                         FFTGrid                                    * /*rhogrid*/,
+                                                         float                                        /*p_undefined*/,
+                                                         FFTGrid                                    * /*seismicLH*/,
+                                                         ModelAVOStatic                             * /*modelAVOstatic*/)
 {
-  float * value = new float[nFacies_];
+  /*float * value = new float[nFacies_];
   int i,j,k,l;
   int nx, ny, nz, rnxp, nyp, nzp, smallrnxp;
   float alpha, beta, rho, sum;
@@ -1323,8 +1325,10 @@ void FaciesProb::calculateFaciesProbFromRockPhysicsModel(FFTGrid                
     << "\n  0%       20%       40%       60%       80%      100%"
     << "\n  |    |    |    |    |    |    |    |    |    |    |  "
     << "\n  ^";
+*/
+  /*std::vector<MultiNormalWithTrend *> multi(nFacies_);
+  std::vector<DistributionsRockT0 *> test(nFacies_);
 
-  std::vector<MultiNormalWithTrend *> multi(nFacies_);
   for(int i=0; i<nFacies_; i++){
 
     NRLib::Normal norm_vp;
@@ -1346,7 +1350,10 @@ void FaciesProb::calculateFaciesProbFromRockPhysicsModel(FFTGrid                
     cov(2,1) = modelAVOstatic->getCorrelationVsDensity(i);
     cov(2,2) = modelAVOstatic->getVarianceDensity(i);
 
-    multi[i] = new MultiNormalWithTrend(norm_vp, norm_vs, norm_density, mean_trend_vp, mean_trend_vs, mean_trend_density, cov);
+    MultiNormalWithTrend mult(norm_vp, norm_vs, norm_density, mean_trend_vp, mean_trend_vs, mean_trend_density, cov);
+
+    //multi[i] = new MultiNormalWithTrend(norm_vp, norm_vs, norm_density, mean_trend_vp, mean_trend_vs, mean_trend_density, cov);
+    test[i]  = new MultiNormalDistributedRockT0(mult);
   }
 
   double dummy1 = 0;
@@ -1403,8 +1410,8 @@ void FaciesProb::calculateFaciesProbFromRockPhysicsModel(FFTGrid                
     }
   }
   std::cout << "\n";
-
-  if(priorFaciesCubes!=NULL)
+*/
+ /* if(priorFaciesCubes!=NULL)
     for(i=0;i<nFacies_;i++){
       priorFaciesCubes[i]->endAccess();
     }
@@ -1419,9 +1426,8 @@ void FaciesProb::calculateFaciesProbFromRockPhysicsModel(FFTGrid                
 
   delete [] value;
 
-  /*for(int i=0; i<nFacies_; i++)
-    delete [] multi[i];
-  delete [] multi;*/
+  //Marit: Delete multi
+*/
 }
 
 void FaciesProb::calculateFaciesProbGeomodel(const float  * priorFacies,

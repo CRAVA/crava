@@ -25,6 +25,12 @@ class MultiNormalWithTrend {
                         const Trend*                              mean_trend_vs,
                         const Trend*                              mean_trend_rho,
                         const NRLib::Grid2D<Trend*>               cov_trend); //If error, throws NRLib::IndexOutOfRange
+                        //const Trend*                              variance_trend_vp,
+                        //const Trend*                              variance_trend_vs,
+                        //const Trend*                              variance_trend_rho,
+                        //const Trend*                              correlation_trend_vp_vs,
+                        //const Trend*                              correlation_trend_vp_rho,
+                        //const Trend*                              correlation_trend_vs_rho); //If error, throws NRLib::IndexOutOfRange
 
    virtual ~MultiNormalWithTrend();
 
@@ -35,6 +41,10 @@ class MultiNormalWithTrend {
                      double** cov_matrix_cholesky,
                      double& vp, double& vs, double& rho,
                      bool is_cholesky = true) const;
+
+   void     GetExpectation(double s1, double s2, std::vector<double>& expectation) const;
+
+   void     GetCovariance(double s1, double s2, NRLib::Matrix & covariance) const;
 
    void     EstimateExpectation(double s1, double s2, int sample_size,
                                 double& exp_vp, double& exp_vs, double& exp_rho) const;
