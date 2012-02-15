@@ -54,7 +54,6 @@ GaussianRockPhysicsStorage::GenerateRockPhysics(const std::string & path,
   Trend * correlation_vp_density_trend = correlation_vp_density_->GenerateTrend(path,errTxt);
   Trend * correlation_vs_density_trend = correlation_vs_density_->GenerateTrend(path,errTxt);
 
-  NRLib::Normal vp0, vs0, density0;
   NRLib::Grid2D<Trend*> cov(3,3,NULL);
 
   cov(0,0) = variance_vp_trend;
@@ -67,13 +66,15 @@ GaussianRockPhysicsStorage::GenerateRockPhysics(const std::string & path,
   cov(2,1) = correlation_vs_density_trend;
   cov(2,2) = variance_density_trend;
 
-  MultiNormalWithTrend multi(vp0,
-                             vs0,
-                             density0,
-                             mean_vp_trend,
+  MultiNormalWithTrend multi(mean_vp_trend,
                              mean_vs_trend,
                              mean_density_trend,
-                             cov);
+                             variance_vp_trend,
+                             variance_vs_trend,
+                             variance_density_trend,
+                             correlation_vp_vs_trend,
+                             correlation_vp_density_trend,
+                             correlation_vs_density_trend);
 
   DistributionsRockT0 * rock = new MultiNormalDistributedRockT0(multi);
 
