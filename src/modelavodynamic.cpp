@@ -366,6 +366,12 @@ ModelAVODynamic::processSeismic(FFTGrid        **& seisCube,
     const SegyGeometry ** geometry = new const SegyGeometry * [nAngles];
     seisCube = new FFTGrid * [nAngles];
 
+    Simbox * timeCutSimbox = NULL;
+    if (timeCutMapping != NULL)
+      timeCutSimbox = timeCutMapping->getSimbox(); // For the got-enough-data test
+    else
+      timeCutSimbox = timeSimbox;
+
     for (int i = 0 ; i < nAngles ; i++) {
       geometry[i] = NULL;
       std::string tmpErrText("");
@@ -384,6 +390,7 @@ ModelAVODynamic::processSeismic(FFTGrid        **& seisCube,
                                      modelSettings->getTraceHeaderFormat(i),
                                      FFTGrid::DATA,
                                      timeSimbox,
+                                     timeCutSimbox,
                                      modelSettings,
                                      tmpErrText);
       if(tmpErrText != "")
@@ -439,7 +446,8 @@ ModelAVODynamic::processSeismic(FFTGrid        **& seisCube,
                                  sgriLabel,
                                  offset,
                                  timeDepthMapping,
-                                 timeCutMapping, *modelSettings->getTraceHeaderFormatOutput());
+                                 timeCutMapping,
+                                 *modelSettings->getTraceHeaderFormatOutput());
         }
       }
       if((modelSettings->getOutputGridsSeismic() & IO::SYNTHETIC_RESIDUAL) > 0) {
@@ -481,6 +489,12 @@ ModelAVODynamic::processBackground(Background         *& background,
   double wall=0.0, cpu=0.0;
   TimeKit::getTime(wall,cpu);
 
+  Simbox * timeCutSimbox = NULL;
+  if (timeCutMapping != NULL)
+    timeCutSimbox = timeCutMapping->getSimbox(); // For the got-enough-data test
+  else
+    timeCutSimbox = timeSimbox;
+
   FFTGrid * backModel[3];
   const int nx    = timeSimbox->getnx();
   const int ny    = timeSimbox->getny();
@@ -494,7 +508,14 @@ ModelAVODynamic::processBackground(Background         *& background,
     std::string backVelFile = inputFiles->getBackVelFile();
     if (backVelFile != ""){
       bool dummy;
-      ModelGeneral::loadVelocity(velocity, timeSimbox, modelSettings, backVelFile, dummy, errText, failed);
+      ModelGeneral::loadVelocity(velocity,
+                                 timeSimbox,
+                                 timeCutSimbox,
+                                 modelSettings,
+                                 backVelFile,
+                                 dummy,
+                                 errText,
+                                 failed);
     }
     if (!failed)
     {
@@ -550,6 +571,7 @@ ModelAVODynamic::processBackground(Background         *& background,
                                          dummy2,
                                          FFTGrid::PARAMETER,
                                          timeSimbox,
+                                         timeCutSimbox,
                                          modelSettings,
                                          errorText);
           if(errorText != "")

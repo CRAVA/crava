@@ -378,6 +378,17 @@ Simbox::getTop(double x, double y) const
 }
 
 double
+Simbox::getBot(int i, int j) const
+{
+  double x, y;
+  getXYCoord(i,j,x,y);
+  double zBot = GetBotSurface().GetZ(x, y);
+  if(GetBotSurface().IsMissing(zBot))
+    zBot = RMISSING;
+  return(zBot);
+}
+
+double
 Simbox::getBot(double x, double y) const
 {
   double zBot = GetBotSurface().GetZ(x, y);

@@ -2548,6 +2548,7 @@ XmlModelFile::parseAdvancedSettings(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("debug-level");
   legalCommands.push_back("smooth-kriged-parameters");
   legalCommands.push_back("rms-panel-mode");
+  legalCommands.push_back("guard-zone");
 
   parseFFTGridPadding(root, errTxt);
 
@@ -2608,6 +2609,14 @@ XmlModelFile::parseAdvancedSettings(TiXmlNode * node, std::string & errTxt)
   bool panel = false;
   if(parseBool(root, "rms-panel-mode", panel, errTxt) == true)
     modelSettings_->setRunFromPanel(panel);
+
+  value = 0.0f;
+  if(parseValue(root, "guard-zone", value, errTxt) == true) {
+    float smooth_length = modelSettings_->getSmoothLength();
+    smooth_length = std::min(smooth_length, value);
+    modelSettings_->setGuardZone(value);
+    modelSettings_->setSmoothLength(smooth_length);
+  }
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);

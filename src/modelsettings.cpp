@@ -83,6 +83,9 @@ ModelSettings::ModelSettings(void)
   maxWellOffset_           =   250.0f;
 
   defaultWaveletLength_    =   200.0f;
+  guard_zone_              =  defaultWaveletLength_*0.5f;
+  smooth_length_           =  defaultWaveletLength_*0.5f;
+
   minRelWaveletAmp_        =    0.04f;
   maxWaveletShift_         =    11.0f;
   waveletTaperingL_        =   200.0f;

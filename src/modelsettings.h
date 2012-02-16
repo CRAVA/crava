@@ -106,6 +106,8 @@ public:
   float                            getMaxWellOffset(void)               const { return maxWellOffset_                             ;}
   float                            getMaxWellShift(void)                const { return maxWellShift_                              ;}
   float                            getDefaultWaveletLength(void)        const { return defaultWaveletLength_                      ;}
+  float                            getGuardZone(void)                   const { return guard_zone_                                ;}
+  float                            getSmoothLength(void)                const { return smooth_length_                             ;}
   float                            getMinRelWaveletAmp(void)            const { return minRelWaveletAmp_                          ;}
   float                            getMaxWaveletShift(void)             const { return maxWaveletShift_                           ;}
   float                            getWaveletTaperingL(void)            const { return waveletTaperingL_                          ;}
@@ -267,6 +269,8 @@ public:
   void setHighCut(float highCut)                          { highCut_                  = highCut                  ;}
   void setWNC(float wnc)                                  { wnc_                      = wnc                      ;}
   void setEnergyThreshold(float energyThreshold)          { energyThreshold_          = energyThreshold          ;}
+  void setGuardZone(float guard_zone)                     { guard_zone_               = guard_zone               ;}
+  void setSmoothLength(float smooth_length)               { smooth_length_            = smooth_length            ;}
   void setMinRelWaveletAmp(float minRelWaveletAmp)        { minRelWaveletAmp_         = minRelWaveletAmp         ;}
   void setMaxWaveletShift(float maxWaveletShift)          { maxWaveletShift_          = maxWaveletShift          ;}
   void setMinSamplingDensity(float minSamplingDens)       { minSamplingDensity_       = minSamplingDens          ;}
@@ -463,6 +467,9 @@ private:
   float                             maxWellShift_;               // Maximum vertical shift for moving of wells
 
   float                             defaultWaveletLength_;       // Assumed length of a wavelet
+  float                             guard_zone_;                 // Band outside target interval (on each side) where data is required
+  float                             smooth_length_;              // How much of data in guard zone to smooth (to end up with zero)
+
   float                             minRelWaveletAmp_;           // Minimum relative wavelet amplitude. Smaller amplitudes are disregarded.
   float                             maxWaveletShift_;            // Largest allowed shift when estimating wavelet
   float                             waveletTaperingL_;           // Til Odds waveletestimering

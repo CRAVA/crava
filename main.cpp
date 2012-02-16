@@ -29,6 +29,7 @@
 #include "src/wavelet.h"
 #include "src/crava.h"
 #include "src/fftgrid.h"
+#include "src/gridmapping.h"
 #include "src/simbox.h"
 #include "src/welldata.h"
 #include "src/filterwelllogs.h"
@@ -170,11 +171,12 @@ int main(int argc, char** argv)
 
     // Construct ModelGeneral object first.
     // For each data type, construct the static model class before the dynamic.
-    Simbox * timeBGSimbox   = NULL;
+    Simbox * timeBGSimbox = NULL;
     modelGeneral    = new ModelGeneral(modelSettings, inputFiles, timeBGSimbox);
     modelAVOstatic  = new ModelAVOStatic(modelSettings,
                                          inputFiles,
                                          modelGeneral->getFailedDetails(),
+                                         modelGeneral->getTimeCutMapping(),
                                          modelGeneral->getTimeSimbox(),
                                          timeBGSimbox,
                                          modelGeneral->getTimeSimboxConstThick());

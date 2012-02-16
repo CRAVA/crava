@@ -48,6 +48,7 @@
 ModelAVOStatic::ModelAVOStatic(ModelSettings      *& modelSettings,
                                const InputFiles    * inputFiles,
                                std::vector<bool>     failedGeneralDetails,
+                               GridMapping         * timeCutMapping,
                                Simbox              * timeSimbox,
                                Simbox             *& timeBGSimbox,
                                Simbox              * timeSimboxConstThick)
@@ -87,12 +88,17 @@ ModelAVOStatic::ModelAVOStatic(ModelSettings      *& modelSettings,
       bool estimationMode = modelSettings->getEstimationMode();
       if (estimationMode == false && !failedWells && !failedExtraSurf)
       {
+        Simbox * timeCutSimbox = NULL;
+        if (timeCutMapping != NULL)
+          timeCutSimbox = timeCutMapping->getSimbox(); // For the got-enough-data test
+        else
+          timeCutSimbox = timeSimbox;
+
         processPriorFaciesProb(faciesEstimInterval_,
                                priorFacies_,
                                wells_,
-                               timeSimbox->getnz(),
-                               static_cast<float> (timeSimbox->getdz()),
                                timeSimbox,
+                               timeCutSimbox,
                                modelSettings,
                                failedPriorFacies,
                                errText,
@@ -712,16 +718,15 @@ ModelAVOStatic::checkAvailableMemory(Simbox        * timeSimbox,
   }
 }
 
-void ModelAVOStatic::processPriorFaciesProb(const std::vector<Surface *> & faciesEstimInterval,
+void ModelAVOStatic::processPriorFaciesProb(const std::vector<Surface*>  & faciesEstimInterval,
                                             float                       *& priorFacies,
                                             WellData                    ** wells,
-                                            int                            nz,
-                                            float                          dz,
                                             Simbox                       * timeSimbox,
+                                            Simbox                       * timeCutSimbox,
                                             ModelSettings                * modelSettings,
                                             bool                         & failed,
                                             std::string                  & errTxt,
-                                            const InputFiles                   * inputFiles)
+                                            const InputFiles             * inputFiles)
 {
   if (modelSettings->getEstimateFaciesProb())
   {
@@ -732,9 +737,11 @@ void ModelAVOStatic::processPriorFaciesProb(const std::vector<Surface *> & facie
     {
       if (nFacies > 0)
       {
-        int nWells  = modelSettings->getNumberOfWells();
-        int nFacies = modelSettings->getNumberOfFacies();
-        int ndata   = nWells*nz;
+        int   nz      = timeSimbox->getnz();
+        float dz      = static_cast<float>(timeSimbox->getdz());
+        int   nWells  = modelSettings->getNumberOfWells();
+        int   nFacies = modelSettings->getNumberOfFacies();
+        int   ndata   = nWells*nz;
 
         int ** faciesCount = new int * [nWells];
         for (int w = 0 ; w < nWells ; w++)
@@ -956,11 +963,12 @@ void ModelAVOStatic::processPriorFaciesProb(const std::vector<Surface *> & facie
     else if(modelSettings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_CUBES)
     {
       readPriorFaciesProbCubes(inputFiles,
-                                modelSettings,
-                                priorFaciesProbCubes_,
-                                timeSimbox,
-                                errTxt,
-                                failed);
+                               modelSettings,
+                               priorFaciesProbCubes_,
+                               timeSimbox,
+                               timeCutSimbox,
+                               errTxt,
+                               failed);
 
        typedef std::map<std::string,std::string> mapType;
        mapType myMap = inputFiles->getPriorFaciesProbFile();
@@ -974,12 +982,13 @@ void ModelAVOStatic::processPriorFaciesProb(const std::vector<Surface *> & facie
   }
 }
 
-void ModelAVOStatic::readPriorFaciesProbCubes(const InputFiles      * inputFiles,
-                                              ModelSettings   * modelSettings,
-                                              FFTGrid       **& priorFaciesProbCubes,
-                                              Simbox          * timeSimbox,
-                                              std::string     & errTxt,
-                                              bool            & failed)
+void ModelAVOStatic::readPriorFaciesProbCubes(const InputFiles  * inputFiles,
+                                              ModelSettings     * modelSettings,
+                                              FFTGrid         **& priorFaciesProbCubes,
+                                              Simbox            * timeSimbox,
+                                              Simbox            * timeCutSimbox,
+                                              std::string       & errTxt,
+                                              bool              & failed)
 {
   int nFacies = modelSettings->getNumberOfFacies();
   priorFaciesProbCubes = new FFTGrid*[nFacies];
@@ -1005,6 +1014,7 @@ void ModelAVOStatic::readPriorFaciesProbCubes(const InputFiles      * inputFiles
                        dummy2,
                        FFTGrid::PARAMETER,
                        timeSimbox,
+                       timeCutSimbox,
                        modelSettings,
                        errorText,
                        true);

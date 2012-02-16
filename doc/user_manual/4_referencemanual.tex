@@ -1127,6 +1127,16 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
    \item \Default no
 \elist
 
+\subsubsection{\hbracket{guard-zone}}\newkw{guard-zone}
+\slist
+   \item \Description Change the amount of data that will be required
+     outside the interval of interest. The guard zone contains data
+     that will contribute to the inversion results in the interval of
+     interest, and reducing the guard zone is therefore discouraged.
+   \item \Argument Value
+   \item \Default 100ms
+\elist
+
  \section{\hbracket{survey}\necessary} \newkw{survey}
  \slist
    \item \Description All information about the seismic data is collected here.

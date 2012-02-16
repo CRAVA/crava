@@ -65,6 +65,7 @@ public:
   int            isInside(double x, double y) const;
   int            insideRectangle(const SegyGeometry *  geometry) const;
   double         getTop(int i, int j) const;
+  double         getBot(int i, int j) const;
   double         getTop(double x, double y) const;
   double         getBot(double x, double y) const;
   std::string    getStormHeader(int cubetype, int nx, int ny, int nz, bool flat = false, bool ascii = false) const;
