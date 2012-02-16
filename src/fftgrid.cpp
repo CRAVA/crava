@@ -234,6 +234,7 @@ FFTGrid::fillInSeismicDataFromSegY(SegY        * segy,
           errTxt += errText;
 
           if (errText != "") {
+            // Keep for a few weeks until new resampling has been tested extensively.
             //  if (true) {
             std::cout << "i j = " << i << " " << j << std::endl;
             std::cout << errText << std::endl;

@@ -225,17 +225,16 @@ ModelGeneral::readSegyFile(const std::string       & fileName,
 
     if (errTxt == "") {
       bool onlyVolume      = true;
-      //bool padding         = 2*guard_zone;
-      //bool relativePadding = false;
+      float padding        = 2*guard_zone; // This is *not* the same as FFT-grid padding
+      bool relativePadding = false;
 
-      /*    segy->ReadAllTraces(timeCutSimbox,
-            padding,
-            onlyVolume,
-            relativePadding);
-      */
-      segy->ReadAllTraces(timeSimbox,
-                          modelSettings->getZPadFac(),
-                          onlyVolume);
+      segy->ReadAllTraces(timeCutSimbox,
+                          padding,
+                          onlyVolume,
+                          relativePadding);
+      //segy->ReadAllTraces(timeSimbox,
+      //                    modelSettings->getZPadFac(),
+      //                    onlyVolume);
 
       segy->CreateRegularGrid();
     }
@@ -350,23 +349,35 @@ ModelGeneral::checkThatDataCoverGrid(SegY        * segy,
 
   // Top and base of interval of interest
   float top_grid = timeCutSimbox->getTopZMin();
-  float bot_grid = timeCutSimbox->getTopZMax();
+  float bot_grid = timeCutSimbox->getBotZMax();
 
   // Find guard zone
-  float top_guard  = top_grid - guard_zone;
-  float bot_guard  = bot_grid + guard_zone;
+  float top_guard = top_grid - guard_zone;
+  float bot_guard = bot_grid + guard_zone;
 
   if (top_guard < z0) {
     float z0_new = z0 - ceil((z0 - top_guard)/dz)*dz;
-    errText += "There is not enough seismic data above the interval of interest. The seismic\n";
-    errText += "data must start at "+NRLib::ToString(z0_new)+"ms to allow for a ";
-    errText += NRLib::ToString(guard_zone)+"ms FFT guard zone.\n";
+    errText += "\nThere is not enough seismic data above the interval of interest. The seismic data\n";
+    errText += "must start at "+NRLib::ToString(z0_new)+"ms (in CRAVA grid) to allow for a ";
+    errText += NRLib::ToString(guard_zone)+"ms FFT guard zone:\n\n";
+    errText += "  Seismic data start           : "+NRLib::ToString(z0,1)+"  (in CRAVA grid)\n";
+    errText += "  Seismic data end             : "+NRLib::ToString(zn,1)+"  (in CRAVA grid)\n\n";
+    errText += "  Top of interval-of-interest  : "+NRLib::ToString(top_grid,1)+"\n";
+    errText += "  Base of interval-of-interest : "+NRLib::ToString(bot_grid,1)+"\n\n";
+    errText += "  Top of upper guard zone      : "+NRLib::ToString(top_guard,1)+"\n";
+    errText += "  Base of lower guard zone     : "+NRLib::ToString(bot_guard,1)+"\n";
   }
   if (bot_guard > zn) {
-    float zn_new = zn + ceil((bot_guard - z0)/dz)*dz;
-    errText += "There is not enough seismic data below the interval of interest. The seismic\n";
-    errText += "data must start at "+NRLib::ToString(zn_new)+"ms to allow for a ";
-    errText += NRLib::ToString(guard_zone)+"ms FFT guard zone.\n";
+    float zn_new = zn + ceil((bot_guard - zn)/dz)*dz;
+    errText += "\nThere is not enough seismic data below the interval of interest. The seismic data\n";
+    errText += "must end at "+NRLib::ToString(zn_new)+"ms (in CRAVA grid) to allow for a ";
+    errText += NRLib::ToString(guard_zone)+"ms FFT guard zone:\n\n";
+    errText += "  Seismic data start           : "+NRLib::ToString(z0,1)+"  (in CRAVA grid)\n";
+    errText += "  Seismic data end             : "+NRLib::ToString(zn,1)+"  (in CRAVA grid)\n\n";
+    errText += "  Top of interval-of-interest  : "+NRLib::ToString(top_grid,1)+"\n";
+    errText += "  Base of interval-of-interest : "+NRLib::ToString(bot_grid,1)+"\n\n";
+    errText += "  Top of upper guard zone      : "+NRLib::ToString(top_guard,1)+"\n";
+    errText += "  Base of lower guard zone     : "+NRLib::ToString(bot_guard,1)+"\n";
   }
 }
 
