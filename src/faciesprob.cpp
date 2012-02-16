@@ -30,7 +30,6 @@
 #include "src/tasklist.h"
 #include "src/modelavostatic.h"
 
-#include "rplib/multinormalwithtrend.h"
 #include "rplib/distributionsrockt0.h"
 #include "rplib/multinormaldistributedrockt0.h"
 

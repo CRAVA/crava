@@ -16,15 +16,15 @@ public:
 
 class GaussianRockPhysicsStorage : public RockPhysicsStorage {
 public:
-  GaussianRockPhysicsStorage(TrendStorage * mean_vp,
-                             TrendStorage * mean_vs,
-                             TrendStorage * mean_density,
-                             TrendStorage * variance_vp,
-                             TrendStorage * variance_vs,
-                             TrendStorage * variance_density,
-                             TrendStorage * correlation_vp_vs,
-                             TrendStorage * correlation_vp_density,
-                             TrendStorage * correlation_vs_density);
+  GaussianRockPhysicsStorage(NRLib::TrendStorage * mean_vp,
+                             NRLib::TrendStorage * mean_vs,
+                             NRLib::TrendStorage * mean_density,
+                             NRLib::TrendStorage * variance_vp,
+                             NRLib::TrendStorage * variance_vs,
+                             NRLib::TrendStorage * variance_density,
+                             NRLib::TrendStorage * correlation_vp_vs,
+                             NRLib::TrendStorage * correlation_vp_density,
+                             NRLib::TrendStorage * correlation_vs_density);
 
   virtual ~GaussianRockPhysicsStorage();
 
@@ -33,15 +33,15 @@ public:
 
 private:
 
-  TrendStorage * mean_vp_;
-  TrendStorage * mean_vs_;
-  TrendStorage * mean_density_;
-  TrendStorage * variance_vp_;
-  TrendStorage * variance_vs_;
-  TrendStorage * variance_density_;
-  TrendStorage * correlation_vp_vs_;
-  TrendStorage * correlation_vp_density_;
-  TrendStorage * correlation_vs_density_;
+  NRLib::TrendStorage * mean_vp_;
+  NRLib::TrendStorage * mean_vs_;
+  NRLib::TrendStorage * mean_density_;
+  NRLib::TrendStorage * variance_vp_;
+  NRLib::TrendStorage * variance_vs_;
+  NRLib::TrendStorage * variance_density_;
+  NRLib::TrendStorage * correlation_vp_vs_;
+  NRLib::TrendStorage * correlation_vp_density_;
+  NRLib::TrendStorage * correlation_vs_density_;
 };
 
 #endif

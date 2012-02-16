@@ -1,9 +1,9 @@
 #include "rplib/multinormaldistributedrockt0.h"
 
 #include "rplib/multinormalrock.h"
-#include "rplib/multinormalwithtrend.h"
+#include "rplib/trinormalwith2dtrend.h"
 
-MultiNormalDistributedRockT0::MultiNormalDistributedRockT0(const MultiNormalWithTrend& mult_normal_distr) :
+MultiNormalDistributedRockT0::MultiNormalDistributedRockT0(const TriNormalWith2DTrend& mult_normal_distr) :
   mult_normal_distr_(mult_normal_distr)
 {
 }

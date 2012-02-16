@@ -7,20 +7,21 @@
 class DistributionWithTrend {
  public:
    DistributionWithTrend(const NRLib::Distribution<double>&  distr,
-                         const Trend&                        mean,
-                         const Trend&                        sd);
+                         const NRLib::Trend&                 mean,
+                         const NRLib::Trend&                 sd);
    virtual ~DistributionWithTrend();
 
 
    double ReSample(double s1, double s2) const {
-     return sd_.GetValue(s1, s2)*distr_.Draw() + mean_.GetValue(s1, s2);
+     double dummy = 0;
+     return sd_.GetValue(s1, s2, dummy)*distr_.Draw() + mean_.GetValue(s1, s2, dummy);
    }
 
 
  private:
   const NRLib::Distribution<double>&  distr_; // in standard form
-  const Trend&                        mean_;
-  const Trend&                        sd_;
+  const NRLib::Trend&                 mean_;
+  const NRLib::Trend&                 sd_;
 
 };
 #endif

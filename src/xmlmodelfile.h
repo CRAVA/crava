@@ -57,10 +57,10 @@ private:
   bool parseRockPhysics(TiXmlNode * node, std::string & errTxt);
   bool parseGaussian(TiXmlNode * node, std::string & errTxt);
   bool parseRock(TiXmlNode * node, std::string & errTxt);
-  bool parseRockTrends(TiXmlNode * node, const std::string & keyword, TrendStorage *& trend, std::string & errTxt);
-  bool parseConstantTrend(TiXmlNode * node, const std::string & keyword, TrendStorage *& trend, std::string & errTxt);
-  bool parse1DTrend(TiXmlNode * node, const std::string & keyword, TrendStorage *& trend, std::string & errTxt);
-  bool parse2DTrend(TiXmlNode * node, const std::string & keyword, TrendStorage *& trend, std::string & errTxt);
+  bool parseRockTrends(TiXmlNode * node, const std::string & keyword, NRLib::TrendStorage *& trend, std::string & errTxt);
+  bool parseConstantTrend(TiXmlNode * node, const std::string & keyword, NRLib::TrendStorage *& trend, std::string & errTxt);
+  bool parse1DTrend(TiXmlNode * node, const std::string & keyword, NRLib::TrendStorage *& trend, std::string & errTxt);
+  bool parse2DTrend(TiXmlNode * node, const std::string & keyword, NRLib::TrendStorage *& trend, std::string & errTxt);
   bool parseTrendCube(TiXmlNode * node, std::string & errTxt);
   bool parseBoundingModel(TiXmlNode * node, std::string & errTxt);
   bool parseBulkModulus(TiXmlNode * node, std::string & errTxt);

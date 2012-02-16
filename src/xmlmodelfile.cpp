@@ -1582,39 +1582,39 @@ XmlModelFile::parseGaussian(TiXmlNode * node, std::string & errTxt)
   else
     errTxt += "<name> of <rock> in <rock-phyiscs-model><gaussian> needs to be given\n";
 
-  TrendStorage * mean_vp;
+  NRLib::TrendStorage * mean_vp;
   if(parseRockTrends(root, "mean-vp", mean_vp, errTxt) == false)
     errTxt += "<mean-vp> of <rock> in <rock-phyiscs-model><gaussian> needs to be given\n";
 
-  TrendStorage * mean_vs;
+  NRLib::TrendStorage * mean_vs;
   if(parseRockTrends(root, "mean-vs", mean_vs, errTxt) == false)
     errTxt += "<mean-vs> of <rock> in <rock-phyiscs-model><gaussian> needs to be given\n";
 
-  TrendStorage * mean_density;
+  NRLib::TrendStorage * mean_density;
   if(parseRockTrends(root, "mean-density", mean_density, errTxt) == false)
     errTxt += "<mean-density> of <rock> in <rock-phyiscs-model><gaussian> needs to be given\n";
 
-  TrendStorage * variance_vp;
+  NRLib::TrendStorage * variance_vp;
   if(parseRockTrends(root, "variance-vp", variance_vp, errTxt) == false)
     errTxt += "<variance-vp> of <rock> in <rock-phyiscs-model><gaussian> needs to be given\n";
 
-  TrendStorage * variance_vs;
+  NRLib::TrendStorage * variance_vs;
   if(parseRockTrends(root, "variance-vs", variance_vs, errTxt) == false)
     errTxt += "<variance-vs> of <rock> in <rock-phyiscs-model><gaussian> needs to be given\n";
 
-  TrendStorage * variance_density;
+  NRLib::TrendStorage * variance_density;
   if(parseRockTrends(root, "variance-density", variance_density, errTxt) == false)
     errTxt += "<variance-density> of <rock> in <rock-phyiscs-model><gaussian> needs to be given\n";
 
-  TrendStorage * correlation_vp_vs;
+  NRLib::TrendStorage * correlation_vp_vs;
   if(parseRockTrends(root, "correlation-vp-vs", correlation_vp_vs, errTxt) == false)
     errTxt += "<correlation-vp-vs> of <rock> in <rock-phyiscs-model><gaussian> needs to be given\n";
 
-  TrendStorage * correlation_vp_density;
+  NRLib::TrendStorage * correlation_vp_density;
   if(parseRockTrends(root, "correlation-vp-density", correlation_vp_density, errTxt) == false)
     errTxt += "<correlation-vp-density> of <rock> in <rock-phyiscs-model><gaussian> needs to be given\n";
 
-  TrendStorage * correlation_vs_density;
+  NRLib::TrendStorage * correlation_vs_density;
   if(parseRockTrends(root, "correlation-vs-density", correlation_vs_density, errTxt) == false)
     errTxt += "<correlation-vs-density> of <rock> in <rock-phyiscs-model><gaussian> needs to be given\n";
 
@@ -1635,7 +1635,7 @@ XmlModelFile::parseGaussian(TiXmlNode * node, std::string & errTxt)
 }
 
 bool
-XmlModelFile::parseRockTrends(TiXmlNode * node, const std::string & keyword, TrendStorage *& trend, std::string & errTxt)
+XmlModelFile::parseRockTrends(TiXmlNode * node, const std::string & keyword, NRLib::TrendStorage *& trend, std::string & errTxt)
 {
   TiXmlNode * root = node->FirstChildElement(keyword);
   if(root == 0)
@@ -1663,7 +1663,7 @@ XmlModelFile::parseRockTrends(TiXmlNode * node, const std::string & keyword, Tre
   return(true);
 }
 bool
-XmlModelFile::parseConstantTrend(TiXmlNode * node, const std::string & keyword, TrendStorage *& trend, std::string & errTxt)
+XmlModelFile::parseConstantTrend(TiXmlNode * node, const std::string & keyword, NRLib::TrendStorage *& trend, std::string & errTxt)
 {
   TiXmlNode * root = node->FirstChildElement("trend-constant");
   if(root == 0)
@@ -1676,14 +1676,14 @@ XmlModelFile::parseConstantTrend(TiXmlNode * node, const std::string & keyword, 
   if(parseValue(root, "value", value, errTxt) == false)
     errTxt += "The <value> for <"+keyword+"> needs to be given in <trend-constant> in <rock-physics>\n";
 
-  trend = new TrendConstantStorage(value);
+  trend = new NRLib::TrendConstantStorage(value);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
 
 bool
-XmlModelFile::parse1DTrend(TiXmlNode * node, const std::string & keyword, TrendStorage *& trend, std::string & errTxt)
+XmlModelFile::parse1DTrend(TiXmlNode * node, const std::string & keyword, NRLib::TrendStorage *& trend, std::string & errTxt)
 {
   TiXmlNode * root = node->FirstChildElement("trend-1d");
   if(root == 0)
@@ -1701,14 +1701,14 @@ XmlModelFile::parse1DTrend(TiXmlNode * node, const std::string & keyword, TrendS
   if(parseValue(root, "file-name", file_name, errTxt) == false)
     errTxt += "The <file-name> for <"+keyword+"> needs to be given in <trend-1d>\n";
 
-  trend = new Trend1DStorage(file_name,reference_parameter);
+  trend = new NRLib::Trend1DStorage(file_name,reference_parameter);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
 
 bool
-XmlModelFile::parse2DTrend(TiXmlNode * node, const std::string & keyword, TrendStorage *& trend, std::string & errTxt)
+XmlModelFile::parse2DTrend(TiXmlNode * node, const std::string & keyword, NRLib::TrendStorage *& trend, std::string & errTxt)
 {
   TiXmlNode * root = node->FirstChildElement("trend-2d");
   if(root == 0)
@@ -1731,7 +1731,7 @@ XmlModelFile::parse2DTrend(TiXmlNode * node, const std::string & keyword, TrendS
   if(parseValue(root, "file-name", file_name, errTxt) == false)
     errTxt += "The <file-name> for <"+keyword+"> needs to be given in <trend-2d>\n";
 
-  trend = new Trend2DStorage(file_name, first_reference, second_reference);
+  trend = new NRLib::Trend2DStorage(file_name, first_reference, second_reference);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);

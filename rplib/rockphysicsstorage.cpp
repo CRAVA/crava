@@ -4,7 +4,7 @@
 
 #include "rplib/rockphysicsstorage.h"
 #include "rplib/distributionsrockt0.h"
-#include "rplib/multinormalwithtrend.h"
+#include "rplib/trinormalwith2dtrend.h"
 #include "rplib/multinormaldistributedrockt0.h"
 
 RockPhysicsStorage::RockPhysicsStorage()
@@ -15,15 +15,15 @@ RockPhysicsStorage::~RockPhysicsStorage()
 {
 }
 
-GaussianRockPhysicsStorage::GaussianRockPhysicsStorage(TrendStorage *mean_vp,
-                                                       TrendStorage *mean_vs,
-                                                       TrendStorage *mean_density,
-                                                       TrendStorage *variance_vp,
-                                                       TrendStorage *variance_vs,
-                                                       TrendStorage *variance_density,
-                                                       TrendStorage *correlation_vp_vs,
-                                                       TrendStorage *correlation_vp_density,
-                                                       TrendStorage *correlation_vs_density)
+GaussianRockPhysicsStorage::GaussianRockPhysicsStorage(NRLib::TrendStorage *mean_vp,
+                                                       NRLib::TrendStorage *mean_vs,
+                                                       NRLib::TrendStorage *mean_density,
+                                                       NRLib::TrendStorage *variance_vp,
+                                                       NRLib::TrendStorage *variance_vs,
+                                                       NRLib::TrendStorage *variance_density,
+                                                       NRLib::TrendStorage *correlation_vp_vs,
+                                                       NRLib::TrendStorage *correlation_vp_density,
+                                                       NRLib::TrendStorage *correlation_vs_density)
 : mean_vp_(mean_vp),
   mean_vs_(mean_vs),
   mean_density_(mean_density),
@@ -44,29 +44,21 @@ DistributionsRockT0 *
 GaussianRockPhysicsStorage::GenerateRockPhysics(const std::string & path,
                                                 std::string       & errTxt) const
 {
-  Trend * mean_vp_trend                = mean_vp_               ->GenerateTrend(path,errTxt);
-  Trend * mean_vs_trend                = mean_vs_               ->GenerateTrend(path,errTxt);
-  Trend * mean_density_trend           = mean_density_          ->GenerateTrend(path,errTxt);
-  Trend * variance_vp_trend            = variance_vp_           ->GenerateTrend(path,errTxt);
-  Trend * variance_vs_trend            = variance_vs_           ->GenerateTrend(path,errTxt);
-  Trend * variance_density_trend       = variance_density_      ->GenerateTrend(path,errTxt);
-  Trend * correlation_vp_vs_trend      = correlation_vp_vs_     ->GenerateTrend(path,errTxt);
-  Trend * correlation_vp_density_trend = correlation_vp_density_->GenerateTrend(path,errTxt);
-  Trend * correlation_vs_density_trend = correlation_vs_density_->GenerateTrend(path,errTxt);
+  NRLib::Trend * mean_vp_trend                = mean_vp_               ->GenerateTrend(path,errTxt);
+  NRLib::Trend * mean_vs_trend                = mean_vs_               ->GenerateTrend(path,errTxt);
+  NRLib::Trend * mean_density_trend           = mean_density_          ->GenerateTrend(path,errTxt);
+  NRLib::Trend * variance_vp_trend            = variance_vp_           ->GenerateTrend(path,errTxt);
+  NRLib::Trend * variance_vs_trend            = variance_vs_           ->GenerateTrend(path,errTxt);
+  NRLib::Trend * variance_density_trend       = variance_density_      ->GenerateTrend(path,errTxt);
+  NRLib::Trend * correlation_vp_vs_trend      = correlation_vp_vs_     ->GenerateTrend(path,errTxt);
+  NRLib::Trend * correlation_vp_density_trend = correlation_vp_density_->GenerateTrend(path,errTxt);
+  NRLib::Trend * correlation_vs_density_trend = correlation_vs_density_->GenerateTrend(path,errTxt);
 
-  NRLib::Grid2D<Trend*> cov(3,3,NULL);
+  //Marit: Transponer variablene her
+  //Marit: Resample trendverdiene til de som trengs, vha global min/max
+  //Marit: Sjekk at referanseparametre og kuber har samme navn
 
-  cov(0,0) = variance_vp_trend;
-  cov(0,1) = correlation_vp_vs_trend;
-  cov(0,2) = correlation_vp_density_trend;
-  cov(1,0) = correlation_vp_vs_trend;
-  cov(1,1) = variance_vs_trend;
-  cov(1,2) = correlation_vs_density_trend;
-  cov(2,0) = correlation_vp_density_trend;
-  cov(2,1) = correlation_vs_density_trend;
-  cov(2,2) = variance_density_trend;
-
-  MultiNormalWithTrend multi(mean_vp_trend,
+  TriNormalWith2DTrend multi(mean_vp_trend,
                              mean_vs_trend,
                              mean_density_trend,
                              variance_vp_trend,

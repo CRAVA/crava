@@ -6173,15 +6173,15 @@
 					>
 				</File>
 				<File
-					RelativePath=".\rplib\multinormalwithtrend.cpp"
-					>
-				</File>
-				<File
 					RelativePath=".\rplib\rock.cpp"
 					>
 				</File>
 				<File
 					RelativePath=".\rplib\rockphysicsstorage.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\trinormalwith2dtrend.cpp"
 					>
 				</File>
 			</Filter>
@@ -6266,6 +6266,10 @@
 				</File>
 				<File
 					RelativePath=".\nrlib\well\norsarwell.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\nrlib\geometry\point.cpp"
 					>
 				</File>
 				<File
@@ -6802,6 +6806,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\nrlib\geometry\point.hpp"
+					>
+				</File>
+				<File
 					RelativePath=".\nrlib\random\random.hpp"
 					>
 				</File>
@@ -7170,10 +7178,6 @@
 					>
 				</File>
 				<File
-					RelativePath=".\rplib\multinormalwithtrend.h"
-					>
-				</File>
-				<File
 					RelativePath=".\rplib\pdf3d.h"
 					>
 				</File>
@@ -7191,6 +7195,10 @@
 				</File>
 				<File
 					RelativePath=".\rplib\rockphysicsstorage.h"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\trinormalwith2dtrend.h"
 					>
 				</File>
 			</Filter>

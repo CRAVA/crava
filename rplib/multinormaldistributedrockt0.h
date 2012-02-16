@@ -6,12 +6,12 @@
 #include <rplib/distributionsrockt0.h>
 
 class Rock;
-class MultiNormalWithTrend;
+class TriNormalWith2DTrend;
 
 class MultiNormalDistributedRockT0 : public DistributionsRockT0 {
 public:
 
-  MultiNormalDistributedRockT0(const MultiNormalWithTrend& mult_normal_distr);
+  MultiNormalDistributedRockT0(const TriNormalWith2DTrend& mult_normal_distr);
 
   virtual ~MultiNormalDistributedRockT0();
 
@@ -23,7 +23,7 @@ public:
 
 
 private:
-  const MultiNormalWithTrend& mult_normal_distr_;
+  const TriNormalWith2DTrend& mult_normal_distr_;
 
 
 };
