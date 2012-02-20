@@ -3,6 +3,7 @@
 
 #include "rplib/rock.h"
 #include <nrlib/flens/nrlib_flens.hpp>
+#include "nrlib/grid/grid2d.hpp"
 
 
 // Abstract class for holding all t = 0 distribution functions for rock physics parameters and saturation.
@@ -20,7 +21,7 @@ public:
 
   virtual std::vector<double>   GetExpectation(const std::vector<double> & trend_params) const = 0;
 
-  virtual NRLib::Matrix         GetCovariance(const std::vector<double> & trend_params) const = 0;
+  virtual NRLib::Grid2D<double> GetCovariance(const std::vector<double> & trend_params) const = 0;
 
 };
 

@@ -10,27 +10,14 @@
 #include <cmath>
 
 
-
-
-TriNormalWith2DTrend::
-TriNormalWith2DTrend(NRLib::Trend * mean_trend_vp,
-                     NRLib::Trend * mean_trend_vs,
-                     NRLib::Trend * mean_trend_rho,
-                     NRLib::Trend * variance_trend_vp,
-                     NRLib::Trend * variance_trend_vs,
-                     NRLib::Trend * variance_trend_rho,
-                     NRLib::Trend * correlation_trend_vp_vs,
-                     NRLib::Trend * correlation_trend_vp_rho,
-                     NRLib::Trend * correlation_trend_vs_rho)
+TriNormalWith2DTrend::TriNormalWith2DTrend(NRLib::Trend               *  mean_trend_vp,
+                                           NRLib::Trend               *  mean_trend_vs,
+                                           NRLib::Trend               *  mean_trend_rho,
+                                           NRLib::Grid2D<NRLib::Trend *> covariance_matrix)
 : mean_trend_vp_(mean_trend_vp),
   mean_trend_vs_(mean_trend_vs),
   mean_trend_rho_(mean_trend_rho),
-  variance_trend_vp_(variance_trend_vp),
-  variance_trend_vs_(variance_trend_vs),
-  variance_trend_rho_(variance_trend_rho),
-  correlation_trend_vp_vs_(correlation_trend_vp_vs),
-  correlation_trend_vp_rho_(correlation_trend_vp_rho),
-  correlation_trend_vs_rho_(correlation_trend_vs_rho)
+  covariance_matrix_(covariance_matrix)
 {
 }
 
@@ -56,11 +43,11 @@ TriNormalWith2DTrend::ReSample(const NRLib::Normal & vp01,
   rc[1] = vs01.Draw();
   rc[2] = rho01.Draw();
 
-  // fill cov matrix
-  double ** cov_matrix = CalculateCovMatrix(s1, s2);
+  std::vector<double> expectation(3);
+  GetExpectation(s1,s2,expectation);
 
-  double E_vp, E_vs, E_rho;
-  CalculateExpectation(E_vp, E_vs, E_rho, s1, s2, cov_matrix);
+  // fill cov matrix
+  double ** cov_matrix = GetCovMatrix(s1, s2);
 
   //cholesky
   lib_matrCholR(3, cov_matrix);
@@ -68,9 +55,9 @@ TriNormalWith2DTrend::ReSample(const NRLib::Normal & vp01,
   MatrProdTranspCholVecRR(3, cov_matrix, &rc[0] , &rhs[0]); // rhs is given value
   DeleteCovMatrix(cov_matrix);
 
-  vp  =  rhs[0] + E_vp;
-  vs  =  rhs[1] + E_vs;
-  rho =  rhs[2] + E_rho;
+  vp  =  rhs[0] + expectation[0];
+  vs  =  rhs[1] + expectation[1];
+  rho =  rhs[2] + expectation[2];
 
 }
 
@@ -107,30 +94,30 @@ TriNormalWith2DTrend::ReSample(const NRLib::Normal & vp01,
 }
 
 void
-TriNormalWith2DTrend::CalculateExpectation(const double        & s1,
-                                           const double        & s2,
-                                           std::vector<double> & expectation) const
+TriNormalWith2DTrend::GetExpectation(const double        & s1,
+                                     const double        & s2,
+                                     std::vector<double> & expectation) const
 {
-  CalculateExpectation(expectation[0],
-                       expectation[1],
-                       expectation[2],
-                       s1,
-                       s2);
+  double dummy = 0;
+
+  expectation[0] = mean_trend_vp_ ->GetValue(s1,s2,dummy);
+  expectation[1] = mean_trend_vs_ ->GetValue(s1,s2,dummy);
+  expectation[2] = mean_trend_rho_->GetValue(s1,s2,dummy);
+
 }
 
 void
-TriNormalWith2DTrend::CalculateCovariance(const double  & s1,
-                                          const double  & s2,
-                                          NRLib::Matrix & covariance) const
+TriNormalWith2DTrend::GetCovariance(const double          & s1,
+                                    const double          & s2,
+                                    NRLib::Grid2D<double> & covariance) const
 {
-  double ** cov_matrix = CalculateCovMatrix(s1, s2);
+  double dummy = 0;
 
-  for (int i=0; i<3; i++) {
-    for (int j=0; j<3; j++)
-      covariance(i,j) = cov_matrix[i][j];
+  for(int i=0; i<3; i++) {
+    for(int j=0; j<3; j++) {
+      covariance(i,j) = covariance_matrix_(i,j)->GetValue(s1,s2,dummy);
+    }
   }
-
-  DeleteCovMatrix(cov_matrix);
 }
 
 void
@@ -150,11 +137,11 @@ TriNormalWith2DTrend::DebugEstimateExpectation(const NRLib::Normal & vp01,
   if (sample_size <= 0)
     return;
 
-  // fill cov matrix
-  double ** cov_matrix = CalculateCovMatrix(s1, s2);
+  std::vector<double> expectation(3);
+  GetExpectation(s1,s2,expectation);
 
-  double E_vp, E_vs, E_rho;
-  CalculateExpectation(E_vp, E_vs, E_rho, s1, s2, cov_matrix);
+  // fill cov matrix
+  double ** cov_matrix = GetCovMatrix(s1, s2);
 
   // cholesky
   lib_matrCholR(3, cov_matrix);
@@ -163,7 +150,9 @@ TriNormalWith2DTrend::DebugEstimateExpectation(const NRLib::Normal & vp01,
     double vp, vs, rho;
     ReSample(vp01,vs01, rho01,
              cov_matrix,
-             E_vp, E_vs, E_rho,
+             expectation[0],
+             expectation[1],
+             expectation[2],
              vp, vs, rho);
 
     exp_vp  += vp;
@@ -200,11 +189,11 @@ TriNormalWith2DTrend::DebugEstimateExpectationAndVariance(const NRLib::Normal & 
   if (sample_size <= 0)
     return;
 
-  // fill cov matrix
-  double ** cov_matrix = CalculateCovMatrix(s1, s2);
+  std::vector<double> expectation(3);
+  GetExpectation(s1,s2,expectation);
 
-  double E_vp, E_vs, E_rho;
-  CalculateExpectation(E_vp, E_vs, E_rho, s1, s2, cov_matrix);
+  // fill cov matrix
+  double ** cov_matrix = GetCovMatrix(s1, s2);
 
   // cholesky
   lib_matrCholR(3, cov_matrix);
@@ -213,7 +202,9 @@ TriNormalWith2DTrend::DebugEstimateExpectationAndVariance(const NRLib::Normal & 
     double vp, vs, rho;
     ReSample(vp01, vs01, rho01,
              cov_matrix,
-             E_vp, E_vs, E_rho,
+             expectation[0],
+             expectation[1],
+             expectation[2],
              vp, vs, rho);
 
     exp_vp  += vp;
@@ -248,15 +239,15 @@ TriNormalWith2DTrend::CalculatePDF(const double & s1,
 {
   int dim = 3;
 
-  double ** cov_matrix = CalculateCovMatrix(s1, s2);
-
-  double E_vp, E_vs, E_rho;
-  CalculateExpectation(E_vp, E_vs, E_rho, s1, s2, cov_matrix);
+  std::vector<double> expectation(3);
+  GetExpectation(s1,s2,expectation);
 
   NRLib::Vector diff(dim);
-  diff(0) = obs_vp  - E_vp;
-  diff(1) = obs_vs  - E_vs;
-  diff(2) = obs_rho - E_rho;
+  diff(0) = obs_vp  - expectation[0];
+  diff(1) = obs_vs  - expectation[1];
+  diff(2) = obs_rho - expectation[2];
+
+  double ** cov_matrix = GetCovMatrix(s1, s2);
 
   NRLib::Matrix inv_cov_mat(dim,dim);
   for(int i=0; i<3; i++)
@@ -299,10 +290,10 @@ TriNormalWith2DTrend::DebugCreateEstimateOfCovMatrix(const NRLib::Normal & vp01,
 
 
   // fill cov matrix
-  double ** cov_matrix = CalculateCovMatrix(s1, s2);
+  double ** cov_matrix = GetCovMatrix(s1, s2);
 
-  double E_vp, E_vs, E_rho;
-  CalculateExpectation(E_vp, E_vs, E_rho, s1, s2, cov_matrix);
+  std::vector<double> expectation(3);
+  GetExpectation(s1,s2,expectation);
 
   // cholesky
   lib_matrCholR(3, cov_matrix);
@@ -315,7 +306,9 @@ TriNormalWith2DTrend::DebugCreateEstimateOfCovMatrix(const NRLib::Normal & vp01,
     double vp = 0, vs = 0, rho = 0;
     ReSample(vp01, vs01, rho01,
              cov_matrix,
-             E_vp, E_vs, E_rho,
+             expectation[0],
+             expectation[1],
+             expectation[2],
              vp, vs, rho);
 
     vp_vs    += vp*vs;
@@ -373,40 +366,19 @@ void TriNormalWith2DTrend::CalculateDeterminant(double ** cov_matrix,
 }
 
 double**
-TriNormalWith2DTrend::CalculateCovMatrix(const double & s1,
-                                         const double & s2) const
+TriNormalWith2DTrend::GetCovMatrix(const double & s1,
+                                   const double & s2) const
 {
-  double dummy = 0;
-
-  double E_vp        = mean_trend_vp_           ->GetValue(s1,s2,dummy);
-  double E_vs        = mean_trend_vs_           ->GetValue(s1,s2,dummy);
-  double E_rho       = mean_trend_rho_          ->GetValue(s1,s2,dummy);
-  double var_vp      = variance_trend_vp_       ->GetValue(s1,s2,dummy);
-  double var_vs      = variance_trend_vs_       ->GetValue(s1,s2,dummy);
-  double var_rho     = variance_trend_rho_      ->GetValue(s1,s2,dummy);
-  double corr_vp_vs  = correlation_trend_vp_vs_ ->GetValue(s1,s2,dummy);
-  double corr_vp_rho = correlation_trend_vp_rho_->GetValue(s1,s2,dummy);
-  double corr_vs_rho = correlation_trend_vs_rho_->GetValue(s1,s2,dummy);
+  NRLib::Grid2D<double> covariance(3,3,0);
+  GetCovariance(s1,s2,covariance);
 
   double ** cov_matrix = new double*[3];
   for (int i = 0; i < 3; ++i)
     cov_matrix[i] = new double[3];
 
-  // Transpose to log(vp), log(vs), log(rho)
-  // sigma^2 = log(1+Var(X)/E(X)^2)
-  cov_matrix[0][0] = std::log(1 + var_vp /(E_vp *E_vp));
-  cov_matrix[1][1] = std::log(1 + var_vs /(E_vs *E_vs));
-  cov_matrix[2][2] = std::log(1 + var_rho/(E_rho*E_rho));
-
-  // Calculate covariances
-  // Cov(X,Y) = Corr(X,Y)*sqrt(Var(X)*Var(Y))
-  cov_matrix[0][1] = corr_vp_vs  * std::sqrt(cov_matrix[0][0]*cov_matrix[1][1]);
-  cov_matrix[0][2] = corr_vp_rho * std::sqrt(cov_matrix[0][0]*cov_matrix[2][2]);
-  cov_matrix[1][2] = corr_vs_rho * std::sqrt(cov_matrix[1][1]*cov_matrix[2][2]);
-
-  cov_matrix[1][0] = cov_matrix[0][1];
-  cov_matrix[2][0] = cov_matrix[0][2];
-  cov_matrix[2][1] = cov_matrix[1][2];
+  for(int i=0; i<3; i++)
+    for(int j=0; j<3; j++)
+      cov_matrix[i][j] = covariance(i,j);
 
   return cov_matrix;
 }
@@ -417,56 +389,4 @@ TriNormalWith2DTrend::DeleteCovMatrix(double ** cov_matrix) const {
   for (int i = 0; i < 3; ++i)
     delete [] cov_matrix[i];
   delete [] cov_matrix;
-}
-
-void
-TriNormalWith2DTrend::CalculateExpectation(double       & E_vp,
-                                           double       & E_vs,
-                                           double       & E_rho,
-                                           const double & s1,
-                                           const double & s2) const
-{
-  // Use function when the covariance matrix not is calculated
-  double dummy = 0;
-
-  E_vp  = mean_trend_vp_ ->GetValue(s1,s2,dummy);
-  E_vs  = mean_trend_vs_ ->GetValue(s1,s2,dummy);
-  E_rho = mean_trend_rho_->GetValue(s1,s2,dummy);
-
-  double ** cov_matrix = CalculateCovMatrix(s1, s2);
-
-  // Transpose to log(vp), log(vs), log(rho)
-  // mu = log(E(X))-0.5*log(1+Var(X)/E(X)^2) = log(E(X))-0.5*sigma^2
-  E_vp  = std::log(E_vp)  - 0.5*cov_matrix[0][0];
-  E_vs  = std::log(E_vs)  - 0.5*cov_matrix[1][1];
-  E_rho = std::log(E_rho) - 0.5*cov_matrix[2][2];
-
-  DeleteCovMatrix(cov_matrix);
-}
-
-void
-TriNormalWith2DTrend::CalculateExpectation(double       & E_vp,
-                                           double       & E_vs,
-                                           double       & E_rho,
-                                           const double & s1,
-                                           const double & s2,
-                                           double      ** cov_matrix,
-                                           const bool   & is_cholesky) const
-{
-  // Use function when there is a covariance matrix
-
-  if(is_cholesky == true)
-    throw NRLib::Exception("TriNormalWith2DTrend: Covariance matrix should not be cholesky. Use alternative CalculateException().");
-
-  double dummy = 0;
-  E_vp  = mean_trend_vp_ ->GetValue(s1,s2,dummy);
-  E_vs  = mean_trend_vs_ ->GetValue(s1,s2,dummy);
-  E_rho = mean_trend_rho_->GetValue(s1,s2,dummy);
-
-  // Transpose to log(vp), log(vs), log(rho)
-  // mu = log(E(X))-0.5*log(1+Var(X)/E(X)^2) = log(E(X))-0.5*sigma^2
-  E_vp  = std::log(E_vp)  - 0.5*cov_matrix[0][0];
-  E_vs  = std::log(E_vs)  - 0.5*cov_matrix[1][1];
-  E_rho = std::log(E_rho) - 0.5*cov_matrix[2][2];
-
 }

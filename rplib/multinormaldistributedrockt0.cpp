@@ -1,7 +1,8 @@
 #include "rplib/multinormaldistributedrockt0.h"
-
 #include "rplib/multinormalrock.h"
 #include "rplib/trinormalwith2dtrend.h"
+
+#include "nrlib/grid/grid2d.hpp"
 
 MultiNormalDistributedRockT0::MultiNormalDistributedRockT0(const TriNormalWith2DTrend& mult_normal_distr) :
   mult_normal_distr_(mult_normal_distr)
@@ -36,12 +37,12 @@ MultiNormalDistributedRockT0::GetExpectation(const std::vector<double> & trend_p
     s1 = trend_params[0];
     s2 = trend_params[1];
   }
-  std::vector<double> expectation;
-  mult_normal_distr_.CalculateExpectation(s1, s2, expectation);
+  std::vector<double> expectation(3);
+  mult_normal_distr_.GetExpectation(s1, s2, expectation);
   return(expectation);
 }
 
-NRLib::Matrix
+NRLib::Grid2D<double>
 MultiNormalDistributedRockT0::GetCovariance(const std::vector<double> & trend_params) const
 {
   double s1 = 0, s2 = 0;
@@ -49,7 +50,7 @@ MultiNormalDistributedRockT0::GetCovariance(const std::vector<double> & trend_pa
     s1 = trend_params[0];
     s2 = trend_params[1];
   }
-  NRLib::Matrix covariance;
-  mult_normal_distr_.CalculateCovariance(s1, s2, covariance);
+  NRLib::Grid2D<double> covariance(3,3,0);
+  mult_normal_distr_.GetCovariance(s1, s2, covariance);
   return(covariance);
 }

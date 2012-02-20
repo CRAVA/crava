@@ -17,15 +17,11 @@ namespace NRLib {
 
 class TriNormalWith2DTrend {
  public:
-   TriNormalWith2DTrend(NRLib::Trend * mean_trend_vp,
-                        NRLib::Trend * mean_trend_vs,
-                        NRLib::Trend * mean_trend_rho,
-                        NRLib::Trend * variance_trend_vp,
-                        NRLib::Trend * variance_trend_vs,
-                        NRLib::Trend * variance_trend_rho,
-                        NRLib::Trend * correlation_trend_vp_vs,
-                        NRLib::Trend * correlation_trend_vp_rho,
-                        NRLib::Trend * correlation_trend_vs_rho);
+
+   TriNormalWith2DTrend(NRLib::Trend               *  mean_trend_vp,
+                        NRLib::Trend               *  mean_trend_vs,
+                        NRLib::Trend               *  mean_trend_rho,
+                        NRLib::Grid2D<NRLib::Trend *> covariance_matrix);
 
    virtual ~TriNormalWith2DTrend();
 
@@ -50,13 +46,13 @@ class TriNormalWith2DTrend {
                      double              & rho,
                      const bool          & is_cholesky = true) const;
 
-   void     CalculateExpectation(const double        & s1,
-                                 const double        & s2,
-                                 std::vector<double> & expectation) const;
+   void     GetExpectation(const double        & s1,
+                           const double        & s2,
+                           std::vector<double> & expectation) const;
 
-   void     CalculateCovariance(const double  & s1,
-                                const double  & s2,
-                                NRLib::Matrix & covariance) const;
+   void     GetCovariance(const double          & s1,
+                          const double          & s2,
+                          NRLib::Grid2D<double> & covariance) const;
 
    void     DebugEstimateExpectation(const NRLib::Normal & vp01,
                                      const NRLib::Normal & vs01,
@@ -100,38 +96,19 @@ class TriNormalWith2DTrend {
                                      double  * in_vec,
                                      double  * out_vec) const; //NBNB fjellvoll replace with library function?
 
-   double ** CalculateCovMatrix(const double & s1,
-                                const double & s2) const;
+   double ** GetCovMatrix(const double & s1,
+                          const double & s2) const;
 
    void      DeleteCovMatrix(double** cov_matrix) const;
 
    void      CalculateDeterminant(double ** cov_matrix,
                                   double  & determinant) const;
 
-   void      CalculateExpectation(double       & E_vp,
-                                  double       & E_vs,
-                                  double       & E_rho,
-                                  const double & s1,
-                                  const double & s2) const;
-
-   void      CalculateExpectation(double       & E_vp,
-                                  double       & E_vs,
-                                  double       & E_rho,
-                                  const double & s1,
-                                  const double & s2,
-                                  double      ** cov_matrix,
-                                  const bool   & is_cholesky = false) const;
-
  private:
-  NRLib::Trend *      mean_trend_vp_;            // mean trend of vp
-  NRLib::Trend *      mean_trend_vs_;            // mean trend of vs
-  NRLib::Trend *      mean_trend_rho_;           // mean trend of rho
-  NRLib::Trend *      variance_trend_vp_;        // variance trend of vp
-  NRLib::Trend *      variance_trend_vs_;        // variance trend of vs
-  NRLib::Trend *      variance_trend_rho_;       // variance trend of rho
-  NRLib::Trend *      correlation_trend_vp_vs_;  // correlation trend of vp,vs
-  NRLib::Trend *      correlation_trend_vp_rho_; // corraletion trend of vp,rho
-  NRLib::Trend *      correlation_trend_vs_rho_; // correlation trend of vs,rho
+  NRLib::Trend               *  mean_trend_vp_;            // mean trend of vp
+  NRLib::Trend               *  mean_trend_vs_;            // mean trend of vs
+  NRLib::Trend               *  mean_trend_rho_;           // mean trend of rho
+  NRLib::Grid2D<NRLib::Trend *> covariance_matrix_;
 
 };
 #endif

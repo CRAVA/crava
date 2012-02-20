@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <nrlib/flens/nrlib_flens.hpp>
+#include "nrlib/grid/grid2d.hpp"
 #include <rplib/distributionsrockt0.h>
 
 class Rock;
@@ -19,7 +20,7 @@ public:
 
   virtual std::vector<double> GetExpectation(const std::vector<double> & trend_params) const;
 
-  virtual NRLib::Matrix       GetCovariance(const std::vector<double> & trend_params) const;
+  virtual NRLib::Grid2D<double> GetCovariance(const std::vector<double> & trend_params) const;
 
 
 private:

@@ -2072,7 +2072,7 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
     for(int i=0; i<modelSettings->getNumberOfRocks(); i++){
       RockPhysicsStorage * rock_physics = modelSettings->getRockPhysicsStorage(i);
 
-      rock_distributions_.push_back(rock_physics->GenerateRockPhysics(path,errTxt));
+      rock_distributions_.push_back(rock_physics->GenerateRockPhysics(path,trendCubeName,errTxt));
 
     }
     if(errTxt != "")
