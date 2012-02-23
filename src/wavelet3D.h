@@ -7,6 +7,7 @@
 
 #include "src/wavelet.h"
 #include "src/waveletfilter.h"
+#include "src/wavelet1D.h"
 
 class BlockedLogs;
 class Wavelet1D;
@@ -43,7 +44,7 @@ public:
   virtual ~Wavelet3D();
 
   WaveletFilter  getFilter() const {return filter_;}
-  static void setGradientMaps( NRLib::Grid2D<float> gradX , NRLib::Grid2D<float> gradY ){gradX_=gradX; gradY_=gradY;}
+  static void setGradientMaps( NRLib::Grid2D<float> gradX , NRLib::Grid2D<float> gradY ){structureDepthGradX_=gradX; structureDepthGradY_=gradY;}
 
   // Methods that are virtual in Wavelet
 //  float         calculateSNRatioAndLocalWavelet(Simbox        * /*simbox*/,
@@ -58,13 +59,15 @@ public:
 //                                                Grid2D       *& /*gain*/);
 Wavelet1D*  createWavelet1DForErrorNorm(void);
 Wavelet1D * createLocalWavelet1D( int i, int j);
+Wavelet1D * getGlobalWavelet(){ return averageWavelet_;}
 float       getLocalStretch(int i,int j);
 
 Wavelet1D*  getSourceWavelet();
+Wavelet1D*  createAverageWavelet(Simbox * simBox);
 Wavelet1D*  extractLocalWaveletByDip1D(double phi, double psi);
 void        dipAdjustWavelet(Wavelet1D* Wavelet, double phi, double psi);
-float      GetLocalDepthGradientX(int i, int j){ return gradX_(i,j);}
-float      GetLocalDepthGradientY(int i, int j){ return gradY_(i,j);}
+float      GetLocalDepthGradientX(int i, int j){ return structureDepthGradX_(i,j);}
+float      GetLocalDepthGradientY(int i, int j){ return structureDepthGradY_(i,j);}
 
   float         calculateSNRatio(Simbox                                   * simbox,
                                  FFTGrid                                  * seisCube,
@@ -135,8 +138,9 @@ private:
                                 int                                       m) const;
 
   WaveletFilter  filter_;
-  static NRLib::Grid2D<float>  gradX_;
-  static NRLib::Grid2D<float>  gradY_;
+  Wavelet1D*      averageWavelet_;
+  static NRLib::Grid2D<float>  structureDepthGradX_;// gradX_
+  static NRLib::Grid2D<float>  structureDepthGradY_;// gradY_
 };
 
 #endif

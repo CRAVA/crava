@@ -94,8 +94,8 @@ public:
                                                      int nzp,
                                                      const Simbox * timeSimbox);
   void                      setSeismicGradient(  double v0,
-                                                 const NRLib::Grid2D<float>   &    stuctureDepthGradX,
-                                                 const NRLib::Grid2D<float>   &    stuctureDepthGradY,
+                                                 const NRLib::Grid2D<float>   &    structureDepthGradX,
+                                                 const NRLib::Grid2D<float>   &    structureDepthGradY,
                                                  const NRLib::Grid2D<float>   &    refTimeGradX ,
                                                  const NRLib::Grid2D<float>   &    refTimeGradY,
                                                  std::vector<double>        & xGradient,

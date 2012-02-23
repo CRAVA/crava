@@ -56,6 +56,7 @@ Wavelet1D(ModelSettings * modelSettings,
   Wavelet1D * createWavelet1DForErrorNorm(void);
   Wavelet1D * createLocalWavelet1D(int i,
                                    int j);
+  Wavelet1D * getGlobalWavelet(){ return this;}
 
   float         findGlobalScaleForGivenWavelet(ModelSettings * modelSettings,
                                                Simbox        * simbox,

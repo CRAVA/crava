@@ -635,7 +635,7 @@ FFTGrid::fillInFromStorm(Simbox            * actSimBox,
       if(grid->IsMissing(val) == true) {
         meanvalue[i+j*nxp_] = RMISSING; //Translate missing code
         if(cubetype_ == DATA || (i < nx_ && j< ny_)) //Count padding traces only for data.
-          if(grid->IsInside(x,y) == false)
+          if(grid->IsInside(x*scalehor,y*scalehor) == false)
             outsideTraces++;
       }
     else
@@ -1851,7 +1851,7 @@ FFTGrid::writeFile(const std::string       & fName,
         FFTGrid::writeResampledStormCube(timeMap, fileName, simbox, formatFlag_);
       }
 
-      //SEGY, SGRI, and CRAVA are never resampled in time.
+      //SEGY, SGRI CRAVA are never resampled in time.
       if((formatFlag_ & IO::SEGY) >0)
         FFTGrid::writeSegyFile(fileName, simbox, z0, thf);
       if((formatFlag_ & IO::SGRI) >0)
@@ -2105,7 +2105,7 @@ FFTGrid::writeSgriFile(const std::string & fileName, const Simbox *simbox, const
   headerFile << "3\n";
   headerFile << "X (km)\n";
   headerFile << "Y (km)\n";
-  headerFile << "Z (s)\n";
+  headerFile << "T (s)\n";
   headerFile << "FFT-grid\n";
   headerFile << "1\n";
   headerFile << label << std::endl;
@@ -2150,9 +2150,8 @@ FFTGrid::writeSgriFile(const std::string & fileName, const Simbox *simbox, const
         if (z < zTop || z > zBot)
           value = RMISSING;
         else {
-          int simboxK = static_cast<int> ((z - zTop)/ (simbox->getdz()*simbox->getRelThick(i,j)) + 0.5);
-          value = getRealValue(i,j,simboxK);
-        }
+           int simboxK = static_cast<int> ((z - zTop)/ (simbox->getdz()*simbox->getRelThick(i,j)) + 0.5);
+          value = getRealValue(i,j,simboxK);        }
 #ifndef BIGENDIAN
         NRLib::WriteBinaryFloat(binFile, value);
 #else

@@ -40,6 +40,7 @@ public:
   std::vector<bool>   getFailedDetails()         const { return failed_details_         ;}
 
   void                getCorrGradIJ(float & corrGradI, float &corrGradJ) const;
+  Surface           * getCorrelationDirection()  const {return correlationDirection_    ;}
 
   static FFTGrid    * createFFTGrid(int nx,
                                     int ny,
@@ -162,6 +163,7 @@ private:
                                               std::string             & errText);
   SegyGeometry    * geometryFromCravaFile(const std::string & fileName);
   SegyGeometry    * geometryFromStormFile(const std::string & fileName, std::string & errText, bool scale = false);
+  //void             processStructureParameters();
 
   Simbox            * timeSimbox_;            ///< Information about simulation area.
   Simbox            * timeSimboxConstThick_;  ///< Simbox with constant thickness

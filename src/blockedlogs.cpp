@@ -1803,8 +1803,8 @@ void BlockedLogs::findOptimalWellLocation(FFTGrid                   ** seisCube,
 
 
 void BlockedLogs::setSeismicGradient(double v0,
-                                      const NRLib::Grid2D<float>   &    stuctureDepthGradX,
-                                      const NRLib::Grid2D<float>   &    stuctureDepthGradY,
+                                      const NRLib::Grid2D<float>   &    structureDepthGradX,
+                                      const NRLib::Grid2D<float>   &    structureDepthGradY,
                                       const NRLib::Grid2D<float>   &    refTimeGradX ,
                                       const NRLib::Grid2D<float>   &    refTimeGradY,
                                       std::vector<double>        & xGradient,
@@ -1817,8 +1817,8 @@ void BlockedLogs::setSeismicGradient(double v0,
   for(int k = 0; k < nBlocks_; k++){
     int i = ipos_[k];
     int j = jpos_[k];
-    xGradient[k]= stuctureDepthGradX(i,j)*mp+refTimeGradX(i,j);
-    yGradient[k]= stuctureDepthGradY(i,j)*mp+refTimeGradY(i,j);
+    xGradient[k]= structureDepthGradX(i,j)*mp+refTimeGradX(i,j);
+    yGradient[k]= structureDepthGradY(i,j)*mp+refTimeGradY(i,j);
   }
 }
 

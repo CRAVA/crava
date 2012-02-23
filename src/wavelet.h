@@ -107,6 +107,7 @@ public:
   virtual Wavelet1D * createLocalWavelet1D(int /*i*/,
                                            int /*j*/) {return 0;} // note Not robust towards padding
   virtual Wavelet1D * createWavelet1DForErrorNorm() {return 0;}
+  virtual Wavelet1D * getGlobalWavelet(){return 0;}
 
 
 
@@ -141,6 +142,7 @@ public:
 
  float          findNormWithinFrequencyBand(float loCut ,float hiCut ) const;
  void           nullOutsideFrequencyBand(float loCut ,float hiCut );
+ float          findNorm() const;
 
 protected:
   float          getTheta()          const {return theta_;}
@@ -165,7 +167,6 @@ protected:
                           fftw_complex                       * out_c,
                           int                                  cnzp)           const;
 
-  float          findNorm() const;
   void           printVecToFile(const std::string                       & fileName,
                                 fftw_real                               * vec ,
                                 int                                       nzp) const;

@@ -186,6 +186,7 @@ int main(int argc, char** argv)
                                           modelAVOstatic->getFailedDetails(),
                                           modelGeneral->getTimeSimbox(),
                                           timeBGSimbox,
+                                          modelGeneral->getCorrelationDirection(),
                                           modelGeneral->getRandomGen(),
                                           modelGeneral->getTimeDepthMapping(),
                                           modelGeneral->getTimeCutMapping(),

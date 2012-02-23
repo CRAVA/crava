@@ -52,6 +52,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings       *& modelSettings,
                                  std::vector<bool>      failedStaticDetails,
                                  Simbox               * timeSimbox,
                                  Simbox              *& timeBGSimbox,
+                                 Surface              * correlationDirection,
                                  RandomGen            * randomGen,
                                  GridMapping          * timeDepthMapping,
                                  GridMapping          * timeCutMapping,
@@ -102,7 +103,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings       *& modelSettings,
         if (!failedReflMat)
         {
           processWavelets(wavelet_, seisCube_, modelAVOstatic->getWells(), reflectionMatrix_,
-                          timeSimbox, waveletEstimInterval,
+                          timeSimbox, correlationDirection, waveletEstimInterval,
                           modelSettings, inputFiles, errText, failedWavelet);
         }
       }
@@ -211,7 +212,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings       *& modelSettings,
           if(failedReflMat == false && failedExtraSurf == false)
           {
             processWavelets(wavelet_, seisCube_, modelAVOstatic->getWells(), reflectionMatrix_,
-                            timeSimbox, waveletEstimInterval,
+                            timeSimbox, correlationDirection, waveletEstimInterval,
                             modelSettings, inputFiles, errText, failedWavelet);
           }
         }
@@ -993,6 +994,7 @@ ModelAVODynamic::processWavelets(Wavelet                    **& wavelet,
                                  WellData                    ** wells,
                                  float                       ** reflectionMatrix,
                                  Simbox                       * timeSimbox,
+                                 const Surface                * correlationDirection,
                                  const std::vector<Surface *> & waveletEstimInterval,
                                  ModelSettings                * modelSettings,
                                  const InputFiles             * inputFiles,
@@ -1025,21 +1027,45 @@ ModelAVODynamic::processWavelets(Wavelet                    **& wavelet,
   std::vector<std::vector<double> > tGradX(nWells);
   std::vector<std::vector<double> > tGradY(nWells);
 
+  NRLib::Grid2D<float>    structureDepthGradX;          ///< Depth gradient in x-direction for structure ( correlationDirection-t0)*v0/2
+  NRLib::Grid2D<float>    structureDepthGradY;          ///< Depth gradient in y-direction for structure ( correlationDirection-t0)*v0/2
+
 
   if (has3Dwavelet) {
     if (inputFiles->getRefSurfaceFile() != "") {
-      if (findTimeGradientSurface(inputFiles->getRefSurfaceFile(), timeSimbox, refTimeGradX, refTimeGradY) == false) {
-        errText += "Simbox is not completely inside reference time surface in (x,y).\n";
+      Surface  t0Surf;
+      try {
+        t0Surf =Surface(inputFiles->getRefSurfaceFile());
+      }
+      catch (NRLib::Exception & e) {
+        errText += e.what();
+        failed = true;
+      }
+       if(!failed)
+      {
+        double v0=modelSettings->getAverageVelocity();
+        computeStructureDepthGradient(v0, timeSimbox, &t0Surf,correlationDirection,structureDepthGradX,structureDepthGradY);
+        Wavelet3D::setGradientMaps(structureDepthGradX,structureDepthGradY);
+        computeReferenceTimeGradient(timeSimbox, &t0Surf, refTimeGradX, refTimeGradY);
+      }
+      else{
+        errText += "Problems reading reference time surface in (x,y).\n";
         error = 1;
       }
     }
+    bool estimateWellGradient=false;// NBNB Pål this should to interface advanced settings
     float distance, sigma_m;
     modelSettings->getTimeGradientSettings(distance, sigma_m);
     std::vector<std::vector<double> > SigmaXY;
     for (unsigned int w=0; w<nWells; w++) {
       BlockedLogs *bl    = wells[w]->getBlockedLogsOrigThick();
-      bl->setTimeGradientSettings(distance, sigma_m);
-      bl->findSeismicGradient(seisCube, timeSimbox, nAngles,tGradX[w], tGradY[w],SigmaXY);
+      if(!estimateWellGradient & ((structureDepthGradX.GetN()> 0) & (structureDepthGradY.GetN()>0))){ // then we allready have the
+        double v0=modelSettings->getAverageVelocity();
+        bl->setSeismicGradient(v0,structureDepthGradX,structureDepthGradY,refTimeGradX, refTimeGradY,tGradX[w], tGradY[w]);
+      }else{
+        bl->setTimeGradientSettings(distance, sigma_m);
+        bl->findSeismicGradient(seisCube, timeSimbox, nAngles,tGradX[w], tGradY[w],SigmaXY);
+      }
     }
   }
 
@@ -1336,8 +1362,8 @@ ModelAVODynamic::process3DWavelet(ModelSettings                           * mode
                           modelSettings->getNZpad());
     }
   }
-  if ((modelSettings->getEstimationMode() == false) && !timeSimbox->getIsConstantThick()) {
-    errText += "Simbox must have constant thickness if forward modelling or inversion when 3D wavelet.\n";
+  if ((modelSettings->getEstimationMode() == false) && timeSimbox->getIsConstantThick()) {
+    errText += "Simbox with constant thicknessis not implemented for modelling or inversion when 3D wavelet.\n";
     error++;
   }
   if (error == 0) {
@@ -1599,5 +1625,162 @@ ModelAVODynamic::findTimeGradientSurface(const std::string    & refTimeFile,
   }
 
   return(inside);
+}
+
+void
+ModelAVODynamic::computeStructureDepthGradient(double              v0,
+                                      const Simbox     *timeSimbox,
+                                      const Surface * t0Surf,
+                                      const Surface * correlationDirection_,
+                                      NRLib::Grid2D<float> & structureDepthGradX,
+                                      NRLib::Grid2D<float> & structureDepthGradY)
+ {
+   double radius = 100.0; // NBNB Pål this should to interface
+   double ds = 12.5;
+
+   int nx = timeSimbox->getnx();
+   int ny = timeSimbox->getny();
+   structureDepthGradX.Resize(nx,ny);
+   structureDepthGradY.Resize(nx,ny);
+   double mp=v0*0.001*0.5; // 0.001 is due to s vs ms convension
+
+   for(int i=0;i<nx;i++)
+     for(int j=0;j<ny;j++)
+     {
+       double x,y;
+       double gx,gy,gxTmp,gyTmp;
+       gx=0.0;
+       gy=0.0;
+       timeSimbox->getXYCoord(i,j,x,y);
+       calculateSmoothGrad( t0Surf, x, y, radius, ds,gxTmp, gyTmp);
+       gx=-gxTmp;
+       gy=-gyTmp;
+       if( correlationDirection_!=NULL){
+         calculateSmoothGrad( correlationDirection_, x, y, radius, ds,gxTmp, gyTmp);
+         gx+=gxTmp;
+         gy+=gyTmp;
+       }else{
+         calculateSmoothGrad( &(dynamic_cast<const Surface &> (timeSimbox->GetTopSurface())), x, y, radius, ds,gxTmp, gyTmp);
+         gx+=gxTmp*0.5;
+         gy+=gyTmp*0.5;
+         calculateSmoothGrad( &(dynamic_cast<const Surface &> (timeSimbox->GetBotSurface())), x, y, radius, ds,gxTmp, gyTmp);
+         gx+=gxTmp*0.5;
+         gy+=gyTmp*0.5;
+       }
+
+       gx*=mp;
+       gy*=mp;
+       structureDepthGradX(i,j) =float(gx);
+       structureDepthGradY(i,j) =float(gy);
+     }
+ }
+
+void
+ModelAVODynamic::computeReferenceTimeGradient(const Simbox     *timeSimbox,
+                              const Surface * t0Surf,
+                              NRLib::Grid2D<float> &refTimeGradX,
+                              NRLib::Grid2D<float> &refTimeGradY)
+ {
+   double radius = 50.0;
+   double ds = 12.5;
+   int nx = timeSimbox->getnx();
+   int ny = timeSimbox->getny();
+   refTimeGradX.Resize(nx,ny);
+   refTimeGradY.Resize(nx,ny);
+   for(int i=0;i<nx;i++)
+     for(int j=0;j<ny;j++)
+     {
+       double x,y;
+       double gx,gy;
+       timeSimbox->getXYCoord(i,j,x,y);
+       calculateSmoothGrad( t0Surf, x, y, radius, ds,gx, gy);
+       refTimeGradX(i,j) =float(gx);
+       refTimeGradY(i,j) =float(gy);
+     }
+ }
+
+
+void
+ModelAVODynamic::calculateSmoothGrad(const Surface * surf, double x, double y, double radius, double ds,  double& gx, double& gy)
+{
+  /// Return smoothed Gradient. Computes the gradient as a regression
+  /// among points within a given distance from the central point.
+  //  Returns missing if central point is outside the grid.
+  /// Returns  otherwise it is ok,
+  int i,j,k,l;
+  int discRadius = int(floor(radius/ds));
+  int nPoints    = (2*discRadius+1)*(2*discRadius+1);
+  std::vector<double> Z(3*nPoints,0.0);
+  std::vector<double> Y(nPoints,0.0);
+  std::vector<double> cov(9,0.0);
+  std::vector<double> invCov(9,0.0);
+  std::vector<double> proj(3,0.0);
+  double z0;
+  int cy=0;
+  int cz=0;
+
+  double baseDepth =surf->GetZ(x,y);
+
+
+  for(i=- discRadius;i<=discRadius;i++)
+    for( j=- discRadius;j<=discRadius;j++)
+    {
+      double dx= i*ds;
+      double dy= j*ds;
+      double foo=surf->GetZ(x+dx,y+dy);
+      Y[cy] = foo;
+      Z[cz] = 1.0;
+      Z[cz + 1] = dx;
+      Z[cz + 2] = dy;
+      cy++;
+      cz += 3;
+    }
+
+  int nData=0;
+  for(i=0; i < nPoints; i++)
+  {
+    if(!surf->IsMissing(Y[i]))
+    {
+      nData++;
+      for(k=0;k<3;k++)
+      {
+        for(l=0;l<3;l++)
+          cov[k+l*3]+=Z[k + 3*i] * Z[l + 3*i];
+
+        proj[k]+=Z[k + 3*i]*(Y[i]-baseDepth);
+      }
+    }
+  }
+
+  double det = cov[0]*(cov[4]*cov[8] - cov[5]*cov[7]) - cov[1]*(cov[3]*cov[8] - cov[5]*cov[6])
+                  +   cov[2]*(cov[3]*cov[7] - cov[4]*cov[6]);
+
+  if(det != 0)
+  {
+      invCov[0] = (cov[4]*cov[8] - cov[5]*cov[7]) / det;
+      invCov[1] = (cov[2]*cov[7] - cov[1]*cov[8]) / det;
+      invCov[2] = (cov[1]*cov[5] - cov[2]*cov[4]) / det;
+      invCov[3] = (cov[5]*cov[6] - cov[3]*cov[8]) / det;
+      invCov[4] = (cov[0]*cov[8] - cov[2]*cov[6]) / det;
+      invCov[5] = (cov[2]*cov[3] - cov[0]*cov[5]) / det;
+      invCov[6] = (cov[3]*cov[7] - cov[4]*cov[6]) / det;
+      invCov[7] = (cov[1]*cov[6] - cov[0]*cov[7]) / det;
+      invCov[8] = (cov[0]*cov[4] - cov[1]*cov[3]) / det;
+
+      z0 = baseDepth;
+      gx = 0.0;
+      gy = 0.0;
+      for(k=0;k<3;k++)
+      {
+        z0 += invCov[k]*proj[k]; //NBNB check
+        gx += invCov[3+k]*proj[k];
+        gy += invCov[6+k]*proj[k];
+      }
+  }
+  else
+  {
+   gx = RMISSING;
+   gy = RMISSING;
+  }
 }
 

@@ -504,6 +504,7 @@ Crava:: divideDataByScaleWavelet()
 
   for(l=0 ; l< ntheta_ ; l++ )
   {
+    int dim=seisWavelet_[l]->getDim();
     std::string angle = NRLib::ToString(thetaDeg_[l], 1);
     if(ModelSettings::getDebugLevel() > 0) {
       std::string fileName = IO::PrefixOriginalSeismicData() + "With_Padding_" + angle;
@@ -554,8 +555,11 @@ Crava:: divideDataByScaleWavelet()
 
         double relT   = simbox_->getRelThick(i,j);
         double deltaF = static_cast<double>(nz_)*1000.0/(relT*simbox_->getlz()*static_cast<double>(nzp_));
+        if(dim==1)
+          computeAdjustmentFactor( adjustmentFactor, localWavelet , sfLoc, seisWavelet_[l],  correlations_,A_[l],static_cast<float>(errThetaCov_[l][l]));
+        else
+          computeAdjustmentFactor( adjustmentFactor, localWavelet , sfLoc, seisWavelet_[l]->getGlobalWavelet(),  correlations_,A_[l],static_cast<float>(errThetaCov_[l][l]));
 
-        computeAdjustmentFactor( adjustmentFactor, localWavelet , sfLoc, seisWavelet_[l],  correlations_,A_[l],static_cast<float>(errThetaCov_[l][l]));
         delete localWavelet;
 
         for(k=0;k < (nzp_/2 +1);k++) // all complex values
@@ -617,7 +621,7 @@ Crava::computeAdjustmentFactor(fftw_complex* adjustmentFactor, Wavelet1D* wLocal
 // in order to adjust the data that inversion is ok with new data.
   float tolFac= 0.05f;
 
-  // computes the time covariance for reflection coefficients rcCovT can be globaly stored
+    // computes the time covariance for reflection coefficients rcCovT can be globaly stored
   fftw_real* rcCovT;
   int flag   = FFTW_ESTIMATE | FFTW_IN_PLACE;
   rfftwnd_plan plan1  = rfftwnd_create_plan(1, &nzp_ ,FFTW_REAL_TO_COMPLEX,flag);
@@ -647,7 +651,7 @@ Crava::computeAdjustmentFactor(fftw_complex* adjustmentFactor, Wavelet1D* wLocal
   modW *= modW;
   float maxfrequency = static_cast<float>((nzp_/2)*1000.0*nz_)/static_cast<float>(simbox_->getlz()*nzp_);
   modW *= maxfrequency/static_cast<float>(highCut_); // this is the mean squared sum over relevant frequency band.(up to highCut_)
-                                               // Makes the problem less sensitive to the padding size
+                                                     // Makes the problem less sensitive to the padding size
 
   for(int k=0;k< (nzp_/2 +1);k++)
   {
