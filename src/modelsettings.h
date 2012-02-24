@@ -167,8 +167,8 @@ public:
   bool                             getNoWellNedded(void)                const { return noWellNeeded_                              ;}
   bool                             getNoSeismicNeeded(void)             const { return noSeismicNeeded_                           ;}
   bool                             getSnapGridToSeismicData(void)       const { return snapGridToSeismicData_                     ;}
-  float                            getWavelet3DTuningFactor(void)       const { return wavelet3DTuningFactor_                     ;}
-  float                            getGradientSmoothingRange(void)      const { return gradientSmoothingRange_                    ;}
+  double                           getWavelet3DTuningFactor(void)       const { return wavelet3DTuningFactor_                     ;}
+  double                           getGradientSmoothingRange(void)      const { return gradientSmoothingRange_                    ;}
   bool                             getEstimateWellGradientFromSeismic() const { return wellGradientFromSeismic_                   ;}
   int                              getLogLevel(void)                    const { return logLevel_                                  ;}
   bool                             getErrorFileFlag()                   const { return ((otherFlag_ & IO::ERROR_FILE)>0)          ;}
@@ -339,8 +339,8 @@ public:
   void setTimeGradientSettings(float distance, float alpha);
   void setNoSeismicNeeded(bool seismicNeeded)             { noSeismicNeeded_          = seismicNeeded            ;}
   void setSnapGridToSeismicData(bool snapToSeismicData)   { snapGridToSeismicData_    = snapToSeismicData        ;}
-  void setWavelet3DTuningFactor(float tuningFactor)       { wavelet3DTuningFactor_    = tuningFactor             ;}
-  void setGradientSmoothingRange(float smoothingRange)    { gradientSmoothingRange_   = smoothingRange           ;}
+  void setWavelet3DTuningFactor(double tuningFactor)      { wavelet3DTuningFactor_    = tuningFactor             ;}
+  void setGradientSmoothingRange(double smoothingRange)   { gradientSmoothingRange_   = smoothingRange           ;}
   void setEstimateWellGradientFromSeismic(bool estimate)  { wellGradientFromSeismic_  = estimate                 ;}
 
   enum          priorFacies{FACIES_FROM_WELLS,
@@ -548,8 +548,8 @@ private:
   bool                              snapGridToSeismicData_;      ///< Force inversion area to align with seismic data
   float                             distanceFromWell_;           ///< Minimum distance for where gradients should not cross
   float                             sigma_m_;                    ///< Smoothness level of the gradients
-  float                             wavelet3DTuningFactor_;      ///< Large value forces better fit of wavelet
-  float                             gradientSmoothingRange_;     ///< Controls smoothing of gradient used in 3D wavelet estimate/inversion
+  double                            wavelet3DTuningFactor_;      ///< Large value forces better fit of wavelet
+  double                            gradientSmoothingRange_;     ///< Controls smoothing of gradient used in 3D wavelet estimate/inversion
   bool                              wellGradientFromSeismic_;    ///< Estimate well gradient used for 3D wavelet estimation from seismic?
 
   int                               logLevel_;

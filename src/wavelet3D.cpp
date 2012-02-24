@@ -222,9 +222,9 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
           }
         }
 
-
         wellWavelets[w] = calculateWellWavelet(gMat,
                                                dVec,
+                                               modelSettings->getWavelet3DTuningFactor(),
                                                nWl,
                                                nhalfWl,
                                                nPoints);
@@ -930,6 +930,7 @@ Wavelet3D::calculateGradients(BlockedLogs                * bl,
 std::vector<fftw_real>
 Wavelet3D::calculateWellWavelet(const std::vector<std::vector<float> > & gMat,
                                 const std::vector<float>               & dVec,
+                                double                                   SNR,
                                 int                                      nWl,
                                 int                                      nhalfWl,
                                 int                                      nPoints) const
@@ -958,10 +959,7 @@ Wavelet3D::calculateWellWavelet(const std::vector<std::vector<float> > & gMat,
 
   double *gTrd = new double[nWl];
   double alpha = 4.0;
-  double SNR   = 50.0; // NBNB Pål this should to interface
-                        // Note this is artificial large in order to reduce SNR as much as possible
-                        // if this is too low the wavelet amplitude will be too low and this might give too large oscilations in result.
-  double beta = 0.5;
+  double beta  = 0.5;
   for (int i=0; i<nWl; i++) {
     gTrd[i] = 0.0;
     double a;

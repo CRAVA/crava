@@ -1021,14 +1021,15 @@ ModelAVODynamic::processWavelets(Wavelet                    **& wavelet,
       modelSettings->setWaveletScale(i,1.0);
   }
 
-  NRLib::Grid2D<float>      refTimeGradX;          ///< Time gradient in x-direction for reference time surface (t0)
-  NRLib::Grid2D<float>      refTimeGradY;          ///< Time gradient in x-direction for reference time surface (t0)
-  unsigned int nWells = modelSettings->getNumberOfWells();
+  unsigned int                      nWells = modelSettings->getNumberOfWells();
+
   std::vector<std::vector<double> > tGradX(nWells);
   std::vector<std::vector<double> > tGradY(nWells);
 
-  NRLib::Grid2D<float>    structureDepthGradX;          ///< Depth gradient in x-direction for structure ( correlationDirection-t0)*v0/2
-  NRLib::Grid2D<float>    structureDepthGradY;          ///< Depth gradient in y-direction for structure ( correlationDirection-t0)*v0/2
+  NRLib::Grid2D<float>              refTimeGradX;         ///< Time gradient in x-direction for reference time surface (t0)
+  NRLib::Grid2D<float>              refTimeGradY;         ///< Time gradient in x-direction for reference time surface (t0)
+  NRLib::Grid2D<float>              structureDepthGradX;  ///< Depth gradient in x-direction for structure ( correlationDirection-t0)*v0/2
+  NRLib::Grid2D<float>              structureDepthGradY;  ///< Depth gradient in y-direction for structure ( correlationDirection-t0)*v0/2
 
 
   if (has3Dwavelet) {
@@ -1044,16 +1045,26 @@ ModelAVODynamic::processWavelets(Wavelet                    **& wavelet,
        if(!failed)
       {
         double v0=modelSettings->getAverageVelocity();
-        computeStructureDepthGradient(v0, timeSimbox, &t0Surf,correlationDirection,structureDepthGradX,structureDepthGradY);
-        Wavelet3D::setGradientMaps(structureDepthGradX,structureDepthGradY);
-        computeReferenceTimeGradient(timeSimbox, &t0Surf, refTimeGradX, refTimeGradY);
+        computeStructureDepthGradient(v0,
+                                      modelSettings->getGradientSmoothingRange(),
+                                      timeSimbox,
+                                      &t0Surf,
+                                      correlationDirection,
+                                      structureDepthGradX,
+                                      structureDepthGradY);
+        Wavelet3D::setGradientMaps(structureDepthGradX,
+                                   structureDepthGradY);
+        computeReferenceTimeGradient(timeSimbox,
+                                     &t0Surf,
+                                     refTimeGradX,
+                                     refTimeGradY);
       }
       else{
         errText += "Problems reading reference time surface in (x,y).\n";
         error = 1;
       }
     }
-    bool estimateWellGradient=false;// NBNB Pål this should to interface advanced settings
+    bool estimateWellGradient = modelSettings->getEstimateWellGradientFromSeismic();
     float distance, sigma_m;
     modelSettings->getTimeGradientSettings(distance, sigma_m);
     std::vector<std::vector<double> > SigmaXY;
@@ -1628,14 +1639,14 @@ ModelAVODynamic::findTimeGradientSurface(const std::string    & refTimeFile,
 }
 
 void
-ModelAVODynamic::computeStructureDepthGradient(double              v0,
-                                      const Simbox     *timeSimbox,
-                                      const Surface * t0Surf,
-                                      const Surface * correlationDirection_,
-                                      NRLib::Grid2D<float> & structureDepthGradX,
-                                      NRLib::Grid2D<float> & structureDepthGradY)
+ModelAVODynamic::computeStructureDepthGradient(double                 v0,
+                                               double                 radius,
+                                               const Simbox         * timeSimbox,
+                                               const Surface        * t0Surf,
+                                               const Surface        * correlationDirection_,
+                                               NRLib::Grid2D<float> & structureDepthGradX,
+                                               NRLib::Grid2D<float> & structureDepthGradY)
  {
-   double radius = 100.0; // NBNB Pål this should to interface
    double ds = 12.5;
 
    int nx = timeSimbox->getnx();

@@ -162,16 +162,17 @@ private:
                                            Simbox                * simbox,
                                            NRLib::Grid2D<float>  & refTimeGradX,
                                            NRLib::Grid2D<float>  & refTimeGradY);
-  void             computeStructureDepthGradient(double              v0,
-                                      const Simbox     *timeSimbox,
-                                      const Surface * t0Surf,
-                                      const Surface * correlationDirection,
-                                      NRLib::Grid2D<float> & structureDepthGradX,
-                                      NRLib::Grid2D<float> & structureDepthGradY);
-  void            computeReferenceTimeGradient( const Simbox     *timeSimbox,
-                              const Surface * t0Surf,
-                              NRLib::Grid2D<float> &refTimeGradX,
-                              NRLib::Grid2D<float> &refTimeGradY);
+  void             computeStructureDepthGradient(double                 v0,
+                                                 double                 radius,
+                                                 const Simbox         * timeSimbox,
+                                                 const Surface        * t0Surf,
+                                                 const Surface        * correlationDirection,
+                                                 NRLib::Grid2D<float> & structureDepthGradX,
+                                                 NRLib::Grid2D<float> & structureDepthGradY);
+  void            computeReferenceTimeGradient( const Simbox         * timeSimbox,
+                                                const Surface        * t0Surf,
+                                                NRLib::Grid2D<float> & refTimeGradX,
+                                                NRLib::Grid2D<float> & refTimeGradY);
 
   void              calculateSmoothGrad(const Surface * surf, double x, double y, double radius, double ds,  double& gx, double& gy);
 

@@ -93,8 +93,8 @@ ModelSettings::ModelSettings(void)
   maxWaveletShift_         =    11.0f;
   waveletTaperingL_        =   200.0f;
 
-  wavelet3DTuningFactor_   =    50.0f;
-  gradientSmoothingRange_  =   100.0f;
+  wavelet3DTuningFactor_   =     50.0; // double
+  gradientSmoothingRange_  =    100.0; // double
 
   minSamplingDensity_      =     0.5f;
   minHorizontalRes_        =     5.0f;
