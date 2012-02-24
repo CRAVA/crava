@@ -82,6 +82,9 @@ ModelSettings::ModelSettings(void)
   maxWellShift_            =    11.0f;
   maxWellOffset_           =   250.0f;
 
+  distanceFromWell_        =   100.0f;
+  sigma_m_                 =     1.0f;
+
   defaultWaveletLength_    =   200.0f;
   guard_zone_              =  defaultWaveletLength_*0.5f;
   smooth_length_           =  defaultWaveletLength_*0.5f;
@@ -89,6 +92,9 @@ ModelSettings::ModelSettings(void)
   minRelWaveletAmp_        =    0.04f;
   maxWaveletShift_         =    11.0f;
   waveletTaperingL_        =   200.0f;
+
+  wavelet3DTuningFactor_   =    50.0f;
+  gradientSmoothingRange_  =   100.0f;
 
   minSamplingDensity_      =     0.5f;
   minHorizontalRes_        =     5.0f;
@@ -152,6 +158,7 @@ ModelSettings::ModelSettings(void)
   noWellNeeded_            =    false;
   noSeismicNeeded_         =    false;
   snapGridToSeismicData_   =    false;
+  wellGradientFromSeismic_ =    false;
 
   priorFaciesProbGiven_    = ModelSettings::FACIES_FROM_WELLS;
 
@@ -164,9 +171,6 @@ ModelSettings::ModelSettings(void)
 
   logLevel_                = LogKit::L_Low;
   smoothKrigedParameters_  =    false;
-
-  distanceFromWell_        =      100;
-  sigma_m_                 =        1;
 
   seed_                    =        0;
 }

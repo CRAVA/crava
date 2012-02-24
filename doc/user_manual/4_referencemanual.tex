@@ -10,6 +10,10 @@ All commands are optional, unless otherwise stated. A necessary command under an
 
 Standard grid formats for surfaces and 3D grids are given in \autoref{sec:gridformats}.
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%                            ACTIONS                            %%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \section{\hbracket{actions}\necessary} \newkw{actions}
  \slist
    \item \Description Controls the main purpose of the run.
@@ -111,6 +115,10 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
    \item \Argument 'yes' or 'no'
    \item \Default 'yes'
  \elist
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%                          PROJECT SETTINGS                     %%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
  \section{\hbracket{project-settings}\necessary} \newkw{project-settings}
  \slist
@@ -1129,13 +1137,44 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 
 \subsubsection{\hbracket{guard-zone}}\newkw{guard-zone}
 \slist
-   \item \Description Change the amount of data that will be required
+   \item \Description Changes the amount of data that will be required
      outside the interval of interest. The guard zone contains data
      that will contribute to the inversion results in the interval of
      interest, and reducing the guard zone is therefore discouraged.
    \item \Argument Value
    \item \Default 100ms
 \elist
+
+\subsubsection{\hbracket{3d-wavelet-tuning-factor}}\newkw{3d-wavelet-tuning-factor}
+\slist
+   \item \Description Allows tuning of the 3D wavelet estimation. A
+   large value forces better fit of wavelet, while a smaller value
+   gives smaller secondary peaks in wavelet.
+   \item \Argument Value
+   \item \Default 50
+\elist
+
+\subsubsection{\hbracket{gradient-smoothing-range}}\newkw{gradient-smoothing-range}
+\slist
+   \item \Description Controls smoothing of the gradient used in 3D
+     wavelet estimate and 3D inversion. This should be of the order of
+     the horisontal extent of the 3D wavelet.
+   \item \Argument Value
+   \item \Default 100
+\elist
+
+\subsubsection{\hbracket{estimate-well-gradient-from-seismic}}\newkw{estimate-well-gradient-from-seismic}
+\slist
+   \item \Description If 'yes', the well gradient used for 3D wavelet
+     estimation is estimated from seismic. Otherwise this is taken
+     from the correlation direction.
+   \item \Argument yes or no
+   \item \Default no
+\elist
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%                             SURVEY                            %%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
  \section{\hbracket{survey}\necessary} \newkw{survey}
  \slist
@@ -1446,6 +1485,10 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
    \item \Default 1 ms/m
  \elist
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%                           WELL DATA                           %%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \section{\hbracket{well-data}} \newkw{well-data}
  \slist
    \item \Description All information about the well data is collected here.
@@ -1749,7 +1792,9 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
    \item \Default
  \elist
 
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%                         PRIOR MODEL                           %%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{\hbracket{prior-model}}\newkw{prior-model}
  \slist
@@ -2056,6 +2101,10 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
    \item \Argument Value
    \item \Default 0.01
  \elist
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%                            VARIOGRAM                          %%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Variogram}\newkw{variogram-keyword}
 \label{sec:variogram}

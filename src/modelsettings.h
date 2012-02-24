@@ -167,6 +167,9 @@ public:
   bool                             getNoWellNedded(void)                const { return noWellNeeded_                              ;}
   bool                             getNoSeismicNeeded(void)             const { return noSeismicNeeded_                           ;}
   bool                             getSnapGridToSeismicData(void)       const { return snapGridToSeismicData_                     ;}
+  float                            getWavelet3DTuningFactor(void)       const { return wavelet3DTuningFactor_                     ;}
+  float                            getGradientSmoothingRange(void)      const { return gradientSmoothingRange_                    ;}
+  bool                             getEstimateWellGradientFromSeismic() const { return wellGradientFromSeismic_                   ;}
   int                              getLogLevel(void)                    const { return logLevel_                                  ;}
   bool                             getErrorFileFlag()                   const { return ((otherFlag_ & IO::ERROR_FILE)>0)          ;}
   bool                             getTaskFileFlag()                    const { return ((otherFlag_ & IO::TASK_FILE)>0)           ;}
@@ -336,6 +339,9 @@ public:
   void setTimeGradientSettings(float distance, float alpha);
   void setNoSeismicNeeded(bool seismicNeeded)             { noSeismicNeeded_          = seismicNeeded            ;}
   void setSnapGridToSeismicData(bool snapToSeismicData)   { snapGridToSeismicData_    = snapToSeismicData        ;}
+  void setWavelet3DTuningFactor(float tuningFactor)       { wavelet3DTuningFactor_    = tuningFactor             ;}
+  void setGradientSmoothingRange(float smoothingRange)    { gradientSmoothingRange_   = smoothingRange           ;}
+  void setEstimateWellGradientFromSeismic(bool estimate)  { wellGradientFromSeismic_  = estimate                 ;}
 
   enum          priorFacies{FACIES_FROM_WELLS,
                             FACIES_FROM_MODEL_FILE,
@@ -346,206 +352,209 @@ public:
   enum          indicators{NO, YES, NOTSET};
 
   enum          areaSpecification{AREA_FROM_GRID_DATA,
-                                  AREA_FROM_GRID_DATA_AND_UTM,     // Force area to be aligned with seismic data
-                                  AREA_FROM_GRID_DATA_AND_SURFACE, // Force area to be aligned with seismic data
+                                  AREA_FROM_GRID_DATA_AND_UTM,     ///< Force area to be aligned with seismic data
+                                  AREA_FROM_GRID_DATA_AND_SURFACE, ///< Force area to be aligned with seismic data
                                   AREA_FROM_UTM,
                                   AREA_FROM_SURFACE};
 private:
 
-  Vario                           * angularCorr_;                // Variogram for lateral error correlation
-  Vario                           * lateralCorr_;                // Variogram for lateral parameter correlation
-  Vario                           * backgroundVario_;            // Used for lateral background correlation.
-  Vario                           * localWaveletVario_;          // Used for local wavelet (gain and shift) and local noise.
+  Vario                           * angularCorr_;                ///< Variogram for lateral error correlation
+  Vario                           * lateralCorr_;                ///< Variogram for lateral parameter correlation
+  Vario                           * backgroundVario_;            ///< Used for lateral background correlation.
+  Vario                           * localWaveletVario_;          ///< Used for local wavelet (gain and shift) and local noise.
 
-  SegyGeometry                    * geometry_full_;              // area parameters of full seismic data
-  SegyGeometry                    * geometry_;                   // area parameters
-  float                             segyOffset_;                 // Starttime for SegY cubes.
-  std::vector<float>                localSegyOffset_;            // Starttime for SegY cubes per angle.
-  TraceHeaderFormat               * traceHeaderFormat_;          // traceheader of input
-  std::vector<TraceHeaderFormat*>   localTHF_;                   // traceheader per angle
-  TraceHeaderFormat               * traceHeaderFormatOutput_;    // traceheader for output files
+  SegyGeometry                    * geometry_full_;              ///< area parameters of full seismic data
+  SegyGeometry                    * geometry_;                   ///< area parameters
+  float                             segyOffset_;                 ///< Starttime for SegY cubes.
+  std::vector<float>                localSegyOffset_;            ///< Starttime for SegY cubes per angle.
+  TraceHeaderFormat               * traceHeaderFormat_;          ///< traceheader of input
+  std::vector<TraceHeaderFormat*>   localTHF_;                   ///< traceheader per angle
+  TraceHeaderFormat               * traceHeaderFormatOutput_;    ///< traceheader for output files
   int                               krigingParameter_;
 
-  std::vector<int>                  seismicType_;                // PP- or PS- seismic
-  std::vector<float>                angle_;                      // Angles
-  std::vector<float>                waveletScale_;               // Signal-to-noise ratio
-  std::vector<float>                SNRatio_;                    // Signal-to-noise ratio
+  std::vector<int>                  seismicType_;                ///< PP- or PS- seismic
+  std::vector<float>                angle_;                      ///< Angles
+  std::vector<float>                waveletScale_;               ///< Signal-to-noise ratio
+  std::vector<float>                SNRatio_;                    ///< Signal-to-noise ratio
 
-  std::vector<float>                moveAngle_;                  // Angles for moving wells, local temporary variable
-  std::vector<float>                moveWeight_;                 // Angle weights for moving wells, local temporary variable
-  std::vector<std::vector<float> >  wellMoveAngle_;              // moveAngle_ collected for all wells
-  std::vector<std::vector<float> >  wellMoveWeight_;             // moveWeight_ collected for all wells
+  std::vector<float>                moveAngle_;                  ///< Angles for moving wells, local temporary variable
+  std::vector<float>                moveWeight_;                 ///< Angle weights for moving wells, local temporary variable
+  std::vector<std::vector<float> >  wellMoveAngle_;              ///< moveAngle_ collected for all wells
+  std::vector<std::vector<float> >  wellMoveWeight_;             ///< moveWeight_ collected for all wells
 
   // --------- Start Purify-motivated use of 'int' instead of 'bool' -------------
   // NBNB-PAL: I have temporarily converted the arrays below from bool ==> int to avoid annoying UMRs in Purify
-  std::vector<int>                  matchEnergies_;              // Let dataVariance_ = signalVariance_
-  std::vector<int>                  estimateWavelet_;            //
-  std::vector<int>                  estimateSNRatio_;            //
-  std::vector<int>                  estimateLocalShift_;         // Estimate local wavelet shift
-  std::vector<int>                  estimateLocalScale_;         // Estimate local wavelet scale
-  std::vector<int>                  estimateLocalNoise_;         // Estimate local noise
+  std::vector<int>                  matchEnergies_;              ///< Let dataVariance_ = signalVariance_
+  std::vector<int>                  estimateWavelet_;            ///<
+  std::vector<int>                  estimateSNRatio_;            ///<
+  std::vector<int>                  estimateLocalShift_;         ///< Estimate local wavelet shift
+  std::vector<int>                  estimateLocalScale_;         ///< Estimate local wavelet scale
+  std::vector<int>                  estimateLocalNoise_;         ///< Estimate local noise
   std::vector<int>                  estimateGlobalWaveletScale_;
   std::vector<int>                  useRickerWavelet_;
   // --------- End Purify-motivated use of 'int' instead of 'bool' -------------
 
   std::vector<float>                rickerPeakFrequency_;
 
-  std::vector<int>                  waveletDim_;                 // Holds if 1D-wavelet (=0) or 3D-wavelet (=1)
-  std::vector<float>                stretchFactor_;              // Stretch factor for pulse in 3D-wavelet
-  std::vector<float>                estRangeX_;                  // Estimation range in x-direction for 3D-wavelet
-  std::vector<float>                estRangeY_;                  // Estimation range in y-direction for 3D-wavelet
+  std::vector<int>                  waveletDim_;                 ///< Holds if 1D-wavelet (=0) or 3D-wavelet (=1)
+  std::vector<float>                stretchFactor_;              ///< Stretch factor for pulse in 3D-wavelet
+  std::vector<float>                estRangeX_;                  ///< Estimation range in x-direction for 3D-wavelet
+  std::vector<float>                estRangeY_;                  ///< Estimation range in y-direction for 3D-wavelet
 
-  bool                              estimateBackground_;         // In estimation mode, skip estimation of background if false
-  bool                              estimateCorrelations_;       // As above, but correlations.
-  bool                              estimateWaveletNoise_;       // As above, but for wavelet and noise parameters.
-  bool                              estimate3DWavelet_;          // True if a 3D wavelet is estimated for at least one angle.
-  bool                              hasTime3DMapping_;           // True if command time-3D-mapping is used
+  bool                              estimateBackground_;         ///< In estimation mode, skip estimation of background if false
+  bool                              estimateCorrelations_;       ///< As above, but correlations.
+  bool                              estimateWaveletNoise_;       ///< As above, but for wavelet and noise parameters.
+  bool                              estimate3DWavelet_;          ///< True if a 3D wavelet is estimated for at least one angle.
+  bool                              hasTime3DMapping_;           ///< True if command time-3D-mapping is used
 
-  std::vector<float>                constBackValue_;             // Values set for constant background model
-                                                                 // Negative value ==> read from file (actual value gives format).
-  bool                              useAIBackground_;            // Read in file for AI background instead of Vp background
-  bool                              useSIBackground_;            // Read in file for SI background instead of Vs background
-  bool                              useVpVsBackground_;          // Read in file for VpVs background instead of Vs background
-  std::string                       backgroundType_;             // background or earth model
+  std::vector<float>                constBackValue_;             ///< Values set for constant background model
+                                                                 ///< Negative value ==> read from file (actual value gives format).
+  bool                              useAIBackground_;            ///< Read in file for AI background instead of Vp background
+  bool                              useSIBackground_;            ///< Read in file for SI background instead of Vs background
+  bool                              useVpVsBackground_;          ///< Read in file for VpVs background instead of Vs background
+  std::string                       backgroundType_;             ///< background or earth model
 
-  //The following indicators use the indicators enum above. (2 = yes, but may override in QC, 1=yes, 0=no)
-  std::vector<int>                  indBGTrend_;                 // Use well to estimate background trend?
-  std::vector<int>                  indWavelet_;                 // Use well to estimate wavelet?
-  std::vector<int>                  indFacies_;                  // Use well to estimate facies?
-  std::vector<int>                  indRealVs_;                  // Treat Vs log as real?
-  std::vector<int>                  indFilter_;                  // Filter elastic logs using spatial multi-parameter filter?
+  // The following indicators use the indicators enum above. (2 = yes, but may override in QC, 1=yes, 0=no)
+  std::vector<int>                  indBGTrend_;                 ///< Use well to estimate background trend?
+  std::vector<int>                  indWavelet_;                 ///< Use well to estimate wavelet?
+  std::vector<int>                  indFacies_;                  ///< Use well to estimate facies?
+  std::vector<int>                  indRealVs_;                  ///< Treat Vs log as real?
+  std::vector<int>                  indFilter_;                  ///< Filter elastic logs using spatial multi-parameter filter?
 
-  std::vector<std::string>          logNames_;                   // The keywords to look for for time, sonic, shear sonic and density
-  std::vector<bool>                 inverseVelocity_;            // If element 0 is true, vp comes from dt, if 1 is true, vs comes from dts in well.
+  std::vector<std::string>          logNames_;                   ///< The keywords to look for for time, sonic, shear sonic and density
+  std::vector<bool>                 inverseVelocity_;            ///< If element 0 is true, vp comes from dt, if 1 is true, vs comes from dts in well.
 
-  std::vector<int>                  faciesLabels_;               // Facies labels
-  std::vector<std::string>          faciesNames_;                // Facies names   (nFacies = faciesNames.size())
+  std::vector<int>                  faciesLabels_;               ///< Facies labels
+  std::vector<std::string>          faciesNames_;                ///< Facies names   (nFacies = faciesNames.size())
   int                               priorFaciesProbGiven_;
   std::map<std::string, float>      priorFaciesProb_;
 
   int                               nWells_;
   int                               nSimulations_;
 
-  float                             alpha_min_;                  // Vp - smallest allowed value
-  float                             alpha_max_;                  // Vp - largest allowed value
-  float                             beta_min_;                   // Vs - smallest allowed value
-  float                             beta_max_;                   // Vs - largest allowed value
-  float                             rho_min_;                    // Rho - smallest allowed value
-  float                             rho_max_;                    // Rho - largest allowed value
+  float                             alpha_min_;                  ///< Vp - smallest allowed value
+  float                             alpha_max_;                  ///< Vp - largest allowed value
+  float                             beta_min_;                   ///< Vs - smallest allowed value
+  float                             beta_max_;                   ///< Vs - largest allowed value
+  float                             rho_min_;                    ///< Rho - smallest allowed value
+  float                             rho_max_;                    ///< Rho - largest allowed value
 
-  float                             var_alpha_min_;              //| These min and max values are used for consistency check. If
-  float                             var_alpha_max_;              //| variances are outside these ranges there is probably a
-  float                             var_beta_min_;               //| problem with the logs.
-  float                             var_beta_max_;               //|
-  float                             var_rho_min_;                //| The limits are for point variances. The minimum allowed variance
-  float                             var_rho_max_;                //| for parameters will be scaled with 1/dt*dt
+  float                             var_alpha_min_;              ///<| These min and max values are used for consistency check. If
+  float                             var_alpha_max_;              ///<| variances are outside these ranges there is probably a
+  float                             var_beta_min_;               ///<| problem with the logs.
+  float                             var_beta_max_;               ///<|
+  float                             var_rho_min_;                ///<| The limits are for point variances. The minimum allowed variance
+  float                             var_rho_max_;                ///<| for parameters will be scaled with 1/dt*dt
 
-  float                             vp_vs_ratio_min_;            // Smallest Vp/Vs-ratio regarded as likely
-  float                             vp_vs_ratio_max_;            // Largest Vp/Vs-ratio regarded as likely
-  float                             vp_vs_ratio_;                // Vp/Vs-ratio from input
-  bool                              vp_vs_ratio_from_wells_;     // Estimate Vp/Vs-ratio from well data
+  float                             vp_vs_ratio_min_;            ///< Smallest Vp/Vs-ratio regarded as likely
+  float                             vp_vs_ratio_max_;            ///< Largest Vp/Vs-ratio regarded as likely
+  float                             vp_vs_ratio_;                ///< Vp/Vs-ratio from input
+  bool                              vp_vs_ratio_from_wells_;     ///< Estimate Vp/Vs-ratio from well data
 
-  float                             ref_depth_;                  // z0 - reference depth for target area
-  float                             average_velocity_;           // v0 - average velocity in target area
+  float                             ref_depth_;                  ///< z0 - reference depth for target area
+  float                             average_velocity_;           ///< v0 - average velocity in target area
 
-  float                             maxHz_background_;           // Background resolution (high cut frequency)
-  float                             maxHz_seismic_;              // Seismic resolution (high cut frequency)
+  float                             maxHz_background_;           ///< Background resolution (high cut frequency)
+  float                             maxHz_seismic_;              ///< Seismic resolution (high cut frequency)
 
-  float                             maxRankCorr_;                // Vp-Vs correlation threshold for regarding Vs log synthetic
-  float                             maxMergeDist_;               // log entries closer than this will be merged
-  float                             maxDevAngle_;                // Wells with a local deviation larger than this is treated as deviated
+  float                             maxRankCorr_;                ///< Vp-Vs correlation threshold for regarding Vs log synthetic
+  float                             maxMergeDist_;               ///< log entries closer than this will be merged
+  float                             maxDevAngle_;                ///< Wells with a local deviation larger than this is treated as deviated
 
-  float                             lowCut_;                     // lower limit for frequency to be inverted
-  float                             highCut_;                    // upper limit for frecuency to be inverted
+  float                             lowCut_;                     ///< lower limit for frequency to be inverted
+  float                             highCut_;                    ///< upper limit for frecuency to be inverted
 
-  float                             wnc_;                        // White noise component, see crava.h
+  float                             wnc_;                        ///< White noise component, see crava.h
 
-  float                             energyThreshold_;            // If energy in reflection trace divided by mean energy
-                                                                 // in reflection traces is lower than this, the reflections
-                                                                 // will be interpolated. Default 0.
-  float                             maxWellOffset_;              // Maximum offset for moving of wells
-  float                             maxWellShift_;               // Maximum vertical shift for moving of wells
+  float                             energyThreshold_;            ///< If energy in reflection trace divided by mean energy
+                                                                 ///< in reflection traces is lower than this, the reflections
+                                                                 ///< will be interpolated. Default 0.
+  float                             maxWellOffset_;              ///< Maximum offset for moving of wells
+  float                             maxWellShift_;               ///< Maximum vertical shift for moving of wells
 
-  float                             defaultWaveletLength_;       // Assumed length of a wavelet
-  float                             guard_zone_;                 // Band outside target interval (on each side) where data is required
-  float                             smooth_length_;              // How much of data in guard zone to smooth (to end up with zero)
+  float                             defaultWaveletLength_;       ///< Assumed length of a wavelet
+  float                             guard_zone_;                 ///< Band outside target interval (on each side) where data is required
+  float                             smooth_length_;              ///< How much of data in guard zone to smooth (to end up with zero)
 
-  float                             minRelWaveletAmp_;           // Minimum relative wavelet amplitude. Smaller amplitudes are disregarded.
-  float                             maxWaveletShift_;            // Largest allowed shift when estimating wavelet
-  float                             waveletTaperingL_;           // Til Odds waveletestimering
+  float                             minRelWaveletAmp_;           ///< Minimum relative wavelet amplitude. Smaller amplitudes are disregarded.
+  float                             maxWaveletShift_;            ///< Largest allowed shift when estimating wavelet
+  float                             waveletTaperingL_;           ///< Til Odds waveletestimering
 
-  float                             minSamplingDensity_;         // Threshold value for minimum sampling density in dz
-  float                             minHorizontalRes_;           // Threshold value for minimum horizontal resolution in dx and dy
+  float                             minSamplingDensity_;         ///< Threshold value for minimum sampling density in dz
+  float                             minHorizontalRes_;           ///< Threshold value for minimum horizontal resolution in dx and dy
 
-  double                            xPadFac_;                    // Padding factor/fraction in x direction
-  double                            yPadFac_;                    // Padding factor/fraction in y direction
-  double                            zPadFac_;                    // Padding factor/fraction in z direction
+  double                            xPadFac_;                    ///< Padding factor/fraction in x direction
+  double                            yPadFac_;                    ///< Padding factor/fraction in y direction
+  double                            zPadFac_;                    ///< Padding factor/fraction in z direction
 
-  int                               nxPad_;                      // Number of cells to pad in x direction
+  int                               nxPad_;                      ///< Number of cells to pad in x direction
   int                               nyPad_;
   int                               nzPad_;
 
-  bool                              estimateXYPadding_;          // Estimate the z-padding from ranges
-  bool                              estimateZPadding_;           // Estimate the z-padding from wavelet length
+  bool                              estimateXYPadding_;          ///< Estimate the z-padding from ranges
+  bool                              estimateZPadding_;           ///< Estimate the z-padding from wavelet length
 
-  float                             p_undef_;                    // Level for undefined facies
+  float                             p_undef_;                    ///< Level for undefined facies
 
-  double                            lzLimit_;                    // Minimum allowed value for (min interval thickness)/(max interval thickness)
-  double                            time_dTop_;                  // Used when top and base surfaces are parallel
-  double                            time_lz_;                    // Used when top and base surfaces are parallel
-  double                            time_dz_;                    // Used when top and base surfaces are parallel
-  int                               time_nz_;                    // Used when top and base surfaces are parallel
-  bool                              velocityFromInv_;            // Velocity for time depth from inverted Vp.
+  double                            lzLimit_;                    ///< Minimum allowed value for (min interval thickness)/(max interval thickness)
+  double                            time_dTop_;                  ///< Used when top and base surfaces are parallel
+  double                            time_lz_;                    ///< Used when top and base surfaces are parallel
+  double                            time_dz_;                    ///< Used when top and base surfaces are parallel
+  int                               time_nz_;                    ///< Used when top and base surfaces are parallel
+  bool                              velocityFromInv_;            ///< Velocity for time depth from inverted Vp.
 
-  int                               areaSpecification_;          // Specifying whether are is taken from UTM-coord, seismic or surface
-  std::vector<int>                  areaILXL_;                   // Vector with 6 elements (if used), in this order:
-                                                                 // [0] = IL start
-                                                                 // [1] = IL end
-                                                                 // [2] = XL start
-                                                                 // [3] = XL end
-                                                                 // [4] = IL step
-                                                                 // [5] = XL step
+  int                               areaSpecification_;          ///< Specifying whether are is taken from UTM-coord, seismic or surface
+  std::vector<int>                  areaILXL_;                   ///< Vector with 6 elements (if used), in this order:
+                                                                 ///< [0] = IL start
+                                                                 ///< [1] = IL end
+                                                                 ///< [2] = XL start
+                                                                 ///< [3] = XL end
+                                                                 ///< [4] = IL step
+                                                                 ///< [5] = XL step
 
-  bool                              writePrediction_;            // Determines whether prediction is written.
-  int                               outputGridsElastic_;         // Decides which elastic grids to be written to file.
-  int                               outputGridsOther_;           // Decides other grid output to be written to file
-  int                               outputGridsSeismic_;         // Decides seismic grid output to be written to file.
-  int                               domainFlag_;                 // Decides writing in time and/or depth.
-  int                               formatFlag_;                 // Decides output format, see above.
-  int                               wellFlag_;                   // Decides well output.
-  int                               wellFormatFlag_;             // Decides well output format.
-  int                               waveletFlag_;                // Decides wavelet output
-  int                               waveletFormatFlag_;          // Decides wavelet output format
-  int                               otherFlag_;                  // Decides output beyond grids and wells.
-  bool                              fileGrid_;                   // Indicator telling if grids are to be kept on file
-  bool                              outputGridsDefault_;         // Indicator telling if grid output has been actively controlled
-  bool                              waveletFormatManual_;        // True if wavelet format is decided in the model file
+  bool                              writePrediction_;            ///< Determines whether prediction is written.
+  int                               outputGridsElastic_;         ///< Decides which elastic grids to be written to file.
+  int                               outputGridsOther_;           ///< Decides other grid output to be written to file
+  int                               outputGridsSeismic_;         ///< Decides seismic grid output to be written to file.
+  int                               domainFlag_;                 ///< Decides writing in time and/or depth.
+  int                               formatFlag_;                 ///< Decides output format, see above.
+  int                               wellFlag_;                   ///< Decides well output.
+  int                               wellFormatFlag_;             ///< Decides well output format.
+  int                               waveletFlag_;                ///< Decides wavelet output
+  int                               waveletFormatFlag_;          ///< Decides wavelet output format
+  int                               otherFlag_;                  ///< Decides output beyond grids and wells.
+  bool                              fileGrid_;                   ///< Indicator telling if grids are to be kept on file
+  bool                              outputGridsDefault_;         ///< Indicator telling if grid output has been actively controlled
+  bool                              waveletFormatManual_;        ///< True if wavelet format is decided in the model file
 
-  bool                              forwardModeling_;            // Forward modelling
-  bool                              estimationMode_;             // Estimation
-  bool                              generateSeismicAfterInv_;    // Synthetic seismic from inversion result
-  bool                              generateBackground_;         // Make background model
-  bool                              estimateFaciesProb_;         // Shall facies probabilites be estimated?
-  bool                              faciesProbRelative_;         // Use relative elastic parameters for facies prob estimation?
-  bool                              noVsFaciesProb_;             // Do not use Vs for faciesprob.
-  bool                              useFilterForProb_;           // Use filtered logs for facies probs, otherwise, use sampled inversion.
+  bool                              forwardModeling_;            ///< Forward modelling
+  bool                              estimationMode_;             ///< Estimation
+  bool                              generateSeismicAfterInv_;    ///< Synthetic seismic from inversion result
+  bool                              generateBackground_;         ///< Make background model
+  bool                              estimateFaciesProb_;         ///< Shall facies probabilites be estimated?
+  bool                              faciesProbRelative_;         ///< Use relative elastic parameters for facies prob estimation?
+  bool                              noVsFaciesProb_;             ///< Do not use Vs for faciesprob.
+  bool                              useFilterForProb_;           ///< Use filtered logs for facies probs, otherwise, use sampled inversion.
   bool                              faciesLogGiven_;
-  bool                              depthDataOk_;                // We have what we need to do depth conversion
+  bool                              depthDataOk_;                ///< We have what we need to do depth conversion
   bool                              parallelTimeSurfaces_;
-  bool                              useLocalWavelet_;            // Wavelets are multiplied with gain and shift maps
-  bool                              useLocalNoise_;              // Signal-to-noise is multiplied with gain and shift maps
-  bool                              optimizeWellLocation_;       // True if at least one well is to be moved
-  bool                              smoothKrigedParameters_;     // True if we should smooth borders between kriging blocks
-  bool                              runFromPanel_;               // True if run is started from RMS panel. Relaxed checking.
-  bool                              noWellNeeded_;               // True for some configurations of input data
-  bool                              noSeismicNeeded_;            // True for some estimation settings
-  bool                              snapGridToSeismicData_;      // Force inversion area to align with seismic data
-  float                             distanceFromWell_;           // Minimum distance for where gradients should not cross
-  float                             sigma_m_;                    // Smoothness level of the gradients
+  bool                              useLocalWavelet_;            ///< Wavelets are multiplied with gain and shift maps
+  bool                              useLocalNoise_;              ///< Signal-to-noise is multiplied with gain and shift maps
+  bool                              optimizeWellLocation_;       ///< True if at least one well is to be moved
+  bool                              smoothKrigedParameters_;     ///< True if we should smooth borders between kriging blocks
+  bool                              runFromPanel_;               ///< True if run is started from RMS panel. Relaxed checking.
+  bool                              noWellNeeded_;               ///< True for some configurations of input data
+  bool                              noSeismicNeeded_;            ///< True for some estimation settings
+  bool                              snapGridToSeismicData_;      ///< Force inversion area to align with seismic data
+  float                             distanceFromWell_;           ///< Minimum distance for where gradients should not cross
+  float                             sigma_m_;                    ///< Smoothness level of the gradients
+  float                             wavelet3DTuningFactor_;      ///< Large value forces better fit of wavelet
+  float                             gradientSmoothingRange_;     ///< Controls smoothing of gradient used in 3D wavelet estimate/inversion
+  bool                              wellGradientFromSeismic_;    ///< Estimate well gradient used for 3D wavelet estimation from seismic?
 
   int                               logLevel_;
 
-  int                               seed_;                       // Random seed.
+  int                               seed_;                       ///< Random seed.
 
   static int                        debugFlag_;
 };

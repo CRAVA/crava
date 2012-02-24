@@ -224,18 +224,14 @@ ModelGeneral::readSegyFile(const std::string       & fileName,
                            errTxt);
 
     if (errTxt == "") {
-      bool onlyVolume      = true;
+      bool  onlyVolume      = true;
       float padding        = 2*guard_zone; // This is *not* the same as FFT-grid padding
-      bool relativePadding = false;
+      bool  relativePadding = false;
 
       segy->ReadAllTraces(timeCutSimbox,
                           padding,
                           onlyVolume,
                           relativePadding);
-      //segy->ReadAllTraces(timeSimbox,
-      //                    modelSettings->getZPadFac(),
-      //                    onlyVolume);
-
       segy->CreateRegularGrid();
     }
     else {
@@ -437,28 +433,22 @@ ModelGeneral::readStormFile(const std::string  & fName,
   if (stormgrid != NULL)
     delete stormgrid;
 
-
-  //xxxxxxxxxxxxxxxxxxxxx
-
   if(outsideTraces > 0) {
     if(outsideTraces == timeSimbox->getnx()*timeSimbox->getny()) {
-      errText += "Error: Data in file "+fName+" was completely outside the inversion area.\n";
+      errText += "Error: Data in file \'"+fName+"\' was completely outside the inversion area.\n";
       failed = true;
     }
     else {
       if(gridType == FFTGrid::PARAMETER) {
-        errText += "Error: XXXXXXXXXXXXXX model in file "+fName+" does not cover the inversion area.\n";
+        errText += "Error: Data read from file \'"+fName+"\' does not cover the inversion area.\n";
       }
       else {
-        LogKit::LogMessage(LogKit::Warning, "Warning: "+NRLib::ToString(outsideTraces)+" traces in the grid were outside the data area in file "
-                           +fName+". Note that this includes traces in the padding.\n");
-        TaskList::addTask("Check seismic volumes and inversion area: One or more of the seismic input files did not have data enough for the entire area (including padding).\n");
-      }
+        LogKit::LogMessage(LogKit::Warning, "Warning: "+NRLib::ToString(outsideTraces)
+                           + " grid columns were outside the seismic data in file \'"+fName+"\'.\n");
+        TaskList::addTask("Check seismic data and inversion area: One or volumes did not have data enough to cover entire grid.\n");
+     }
     }
   }
-
-
-
 }
 
 int
@@ -1530,10 +1520,26 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
       LogKit::LogFormatted(LogKit::Medium,"  Time-to-depth velocity                   :        yes\n");
   }
 
-  // NBNB-PAL: Vi får utvide testen nedenfor etter hvert...
-  if (modelSettings->getFileGrid()) {
+  if (modelSettings->getFileGrid())
     LogKit::LogFormatted(LogKit::Medium,"\nAdvanced settings:\n");
-    LogKit::LogFormatted(LogKit::Medium, "  Use intermediate disk storage for grids  :        yes\n");
+  else
+    LogKit::LogFormatted(LogKit::High,"\nAdvanced settings:\n");
+
+  LogKit::LogFormatted(LogKit::Medium, "  Use intermediate disk storage for grids  : %10s\n", (modelSettings->getFileGrid() ? "yes" : "no"));
+
+  if (inputFiles->getReflMatrFile() != "")
+    LogKit::LogFormatted(LogKit::Medium, "  Take reflection matrix from file         : %10s\n", inputFiles->getReflMatrFile().c_str());
+
+  if (modelSettings->getVpVsRatio() != RMISSING)
+    LogKit::LogFormatted(LogKit::High ,"  Vp-Vs ratio used in reflection coef.     : %10.2f\n", modelSettings->getVpVsRatio());
+
+  LogKit::LogFormatted(LogKit::High, "  RMS panel mode                           : %10s\n"  , (modelSettings->getRunFromPanel() ? "yes" : "no"));
+  LogKit::LogFormatted(LogKit::High ,"  Smallest allowed length increment (dxy)  : %10.2f\n", modelSettings->getMinHorizontalRes());
+  LogKit::LogFormatted(LogKit::High ,"  Smallest allowed time increment (dt)     : %10.2f\n", modelSettings->getMinSamplingDensity());
+
+  if (modelSettings->getKrigingParameter()>0) { // We are doing kriging
+    LogKit::LogFormatted(LogKit::High ,"  Data in neighbourhood when doing kriging : %10.2f\n", modelSettings->getKrigingParameter());
+    LogKit::LogFormatted(LogKit::High, "  Smooth kriged parameters                 : %10s\n", (modelSettings->getDoSmoothKriging() ? "yes" : "no"));
   }
 
   LogKit::LogFormatted(LogKit::High,"\nUnit settings/assumptions:\n");
@@ -1556,6 +1562,7 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
                          modelSettings->getMaxDevAngle(),tan(modelSettings->getMaxDevAngle()*M_PI/180.0));
     LogKit::LogFormatted(LogKit::High,"  High cut for background modelling        : %10.1f\n",modelSettings->getMaxHzBackground());
     LogKit::LogFormatted(LogKit::High,"  High cut for seismic resolution          : %10.1f\n",modelSettings->getMaxHzSeismic());
+    LogKit::LogFormatted(LogKit::High,"  Estimate Vp-Vs ratio from well data      : %10s\n", (modelSettings->getVpVsRatioFromWells() ? "yes" : "no"));
   }
   LogKit::LogFormatted(LogKit::High,"\nRange of allowed parameter values:\n");
   LogKit::LogFormatted(LogKit::High,"  Vp  - min                                : %10.0f\n",modelSettings->getAlphaMin());
@@ -1971,6 +1978,7 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
       LogKit::LogFormatted(LogKit::Low,"  High cut for inversion                   : %10.1f\n",modelSettings->getHighCut());
       LogKit::LogFormatted(LogKit::Low,"  Guard zone outside interval of interest  : %10.1f ms\n",modelSettings->getGuardZone());
       LogKit::LogFormatted(LogKit::Low,"  Smoothing length in guard zone           : %10.1f ms\n",modelSettings->getSmoothLength());
+      LogKit::LogFormatted(LogKit::Low,"  Interpolation threshold                  : %10.1f ms\n",modelSettings->getEnergyThreshold());
       corr  = modelSettings->getAngularCorr();
       GenExpVario * pCorr = dynamic_cast<GenExpVario*>(corr);
       LogKit::LogFormatted(LogKit::Low,"  Angular correlation:\n");
@@ -1990,8 +1998,12 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
       LogKit::LogFormatted(LogKit::Low,"\nGeneral settings for wavelet:\n");
       if (estimateNoise)
         LogKit::LogFormatted(LogKit::Low,"  Maximum shift in noise estimation        : %10.1f\n",modelSettings->getMaxWaveletShift());
-      LogKit::LogFormatted(LogKit::Low,"  Minimum relative amplitude               : %10.3f\n",modelSettings->getMinRelWaveletAmp());
-      LogKit::LogFormatted(LogKit::Low,"  Wavelet tapering length                  : %10.1f\n",modelSettings->getWaveletTaperingL());
+      LogKit::LogFormatted(LogKit::High,  "  Minimum relative amplitude               : %10.3f\n",modelSettings->getMinRelWaveletAmp());
+      LogKit::LogFormatted(LogKit::High,  "  Wavelet tapering length                  : %10.1f\n",modelSettings->getWaveletTaperingL());
+      LogKit::LogFormatted(LogKit::High, "  Tuning factor for 3D wavelet estimation  : %10.1f\n", modelSettings->getWavelet3DTuningFactor());
+      LogKit::LogFormatted(LogKit::High, "  Smoothing range for gradient (3D wavelet): %10.1f\n", modelSettings->getGradientSmoothingRange());
+      LogKit::LogFormatted(LogKit::High, "  Estimate well gradient for seismic data  : %10s\n", (modelSettings->getEstimateWellGradientFromSeismic() ? "yes" : "no"));
+
       if (modelSettings->getOptimizeWellLocation()) {
         LogKit::LogFormatted(LogKit::Low,"\nGeneral settings for well locations:\n");
         LogKit::LogFormatted(LogKit::Low,"  Maximum offset                           : %10.1f\n",modelSettings->getMaxWellOffset());

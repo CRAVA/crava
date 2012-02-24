@@ -2549,6 +2549,9 @@ XmlModelFile::parseAdvancedSettings(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("smooth-kriged-parameters");
   legalCommands.push_back("rms-panel-mode");
   legalCommands.push_back("guard-zone");
+  legalCommands.push_back("3d-wavelet-tuning-factor");
+  legalCommands.push_back("gradient-smoothing-range");
+  legalCommands.push_back("estimate-well-gradient-from-seismic");
 
   parseFFTGridPadding(root, errTxt);
 
@@ -2597,6 +2600,8 @@ XmlModelFile::parseAdvancedSettings(TiXmlNode * node, std::string & errTxt)
   if(parseValue(root, "kriging-data-limit", kLimit, errTxt) == true) {
     if(modelSettings_->getKrigingParameter() >= 0)
       modelSettings_->setKrigingParameter(kLimit);
+    else
+      errTxt += "The number of data in neighbourhood when doing kriging must be larger than or equal to zero\n";
   }
   int level = 0;
   if(parseValue(root, "debug-level", level, errTxt) == true)
@@ -2610,13 +2615,25 @@ XmlModelFile::parseAdvancedSettings(TiXmlNode * node, std::string & errTxt)
   if(parseBool(root, "rms-panel-mode", panel, errTxt) == true)
     modelSettings_->setRunFromPanel(panel);
 
-  value = 0.0f;
   if(parseValue(root, "guard-zone", value, errTxt) == true) {
     float smooth_length = modelSettings_->getSmoothLength();
     smooth_length = std::min(smooth_length, value);
     modelSettings_->setGuardZone(value);
     modelSettings_->setSmoothLength(smooth_length);
   }
+  if(parseValue(root, "3d-wavelet-tuning-factor", value, errTxt) == true) {
+    modelSettings_->setWavelet3DTuningFactor(value);
+    if (value < 1.0f || value > 500.0f)
+      errTxt += "The 3D wavelet tuning factor must be in range [1.0, 500.0]\n";
+  }
+  if(parseValue(root, "gradient-smoothing-range", value, errTxt) == true) {
+    modelSettings_->setGradientSmoothingRange(value);
+    if (value < 25.0f || value > 500.0f)
+      errTxt += "The gradient smoothing range for 3D wavelet estimation/inversion must be in range [25.0, 500.0]\n";
+  }
+  bool estimate = false;
+  if(parseBool(root, "estimate-well-gradient-from-seismic", estimate, errTxt) == true)
+    modelSettings_->setEstimateWellGradientFromSeismic(estimate);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
