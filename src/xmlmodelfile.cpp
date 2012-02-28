@@ -1750,7 +1750,7 @@ XmlModelFile::parseTrendCube(TiXmlNode * node, std::string & errTxt)
 
   std::string name;
   if(parseValue(root, "parameter-name", name, errTxt) == true)
-    modelSettings_->addTrendCubeName(name);
+    modelSettings_->addTrendCubeParameter(name);
   else
     errTxt += "<parameter-name> needs to be specified in <trend-cube> when <rock-physics> is used.\n";
 

@@ -6429,6 +6429,10 @@
 					</FileConfiguration>
 				</File>
 				<File
+					RelativePath=".\nrlib\trend\trendkit.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\nrlib\trend\trendstorage.cpp"
 					>
 				</File>
@@ -6858,6 +6862,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\nrlib\trend\trendkit.hpp"
+					>
+				</File>
+				<File
 					RelativePath=".\nrlib\trend\trendstorage.hpp"
 					>
 				</File>
@@ -6881,11 +6889,11 @@
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\filesystem\config.hpp"
+						RelativePath=".\nrlib\boost\system\config.hpp"
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\system\config.hpp"
+						RelativePath=".\nrlib\boost\filesystem\config.hpp"
 						>
 					</File>
 					<File

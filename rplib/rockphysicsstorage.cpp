@@ -15,6 +15,7 @@ RockPhysicsStorage::~RockPhysicsStorage()
 {
 }
 
+//----------------------------------------------------------------------------------//
 GaussianRockPhysicsStorage::GaussianRockPhysicsStorage(NRLib::TrendStorage *mean_vp,
                                                        NRLib::TrendStorage *mean_vs,
                                                        NRLib::TrendStorage *mean_density,
@@ -41,26 +42,23 @@ GaussianRockPhysicsStorage::~GaussianRockPhysicsStorage()
 }
 
 DistributionsRockT0 *
-GaussianRockPhysicsStorage::GenerateRockPhysics(const std::string              & path,
-                                                const std::vector<std::string> & trend_cube_names,
-                                                std::string                    & errTxt) const
+GaussianRockPhysicsStorage::GenerateRockPhysics(const std::string                      & path,
+                                                const std::vector<std::string>         & trend_cube_parameters,
+                                                const std::vector<std::vector<float> > & trend_cube_sampling,
+                                                std::string                            & errTxt) const
 {
-  NRLib::Trend * mean_vp_trend                = mean_vp_               ->GenerateTrend(path,trend_cube_names,errTxt);
-  NRLib::Trend * mean_vs_trend                = mean_vs_               ->GenerateTrend(path,trend_cube_names,errTxt);
-  NRLib::Trend * mean_density_trend           = mean_density_          ->GenerateTrend(path,trend_cube_names,errTxt);
-  NRLib::Trend * variance_vp_trend            = variance_vp_           ->GenerateTrend(path,trend_cube_names,errTxt);
-  NRLib::Trend * variance_vs_trend            = variance_vs_           ->GenerateTrend(path,trend_cube_names,errTxt);
-  NRLib::Trend * variance_density_trend       = variance_density_      ->GenerateTrend(path,trend_cube_names,errTxt);
-  NRLib::Trend * correlation_vp_vs_trend      = correlation_vp_vs_     ->GenerateTrend(path,trend_cube_names,errTxt);
-  NRLib::Trend * correlation_vp_density_trend = correlation_vp_density_->GenerateTrend(path,trend_cube_names,errTxt);
-  NRLib::Trend * correlation_vs_density_trend = correlation_vs_density_->GenerateTrend(path,trend_cube_names,errTxt);
+  NRLib::Trend * mean_vp_trend                = mean_vp_               ->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,errTxt);
+  NRLib::Trend * mean_vs_trend                = mean_vs_               ->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,errTxt);
+  NRLib::Trend * mean_density_trend           = mean_density_          ->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,errTxt);
+  NRLib::Trend * variance_vp_trend            = variance_vp_           ->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,errTxt);
+  NRLib::Trend * variance_vs_trend            = variance_vs_           ->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,errTxt);
+  NRLib::Trend * variance_density_trend       = variance_density_      ->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,errTxt);
+  NRLib::Trend * correlation_vp_vs_trend      = correlation_vp_vs_     ->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,errTxt);
+  NRLib::Trend * correlation_vp_density_trend = correlation_vp_density_->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,errTxt);
+  NRLib::Trend * correlation_vs_density_trend = correlation_vs_density_->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,errTxt);
   NRLib::Trend * covariance_vp_vs_trend       = NULL;
   NRLib::Trend * covariance_vp_density_trend  = NULL;
   NRLib::Trend * covariance_vs_density_trend  = NULL;
-
-  //Marit: Resample trendverdiene til de som trengs, vha global min/max
-  //Pass på å vri 2D-gridene i resamplingen, slik at alle får samme parametre langs samme akser
-  //Ønsker samme oppløsning for alle trender etter resampling. Finner dette fra trendkubene, utfra min/max-verdi der
 
   CalculateCovarianceFromCorrelation(correlation_vp_vs_trend,
                                      variance_vp_trend,
@@ -97,10 +95,8 @@ GaussianRockPhysicsStorage::GenerateRockPhysics(const std::string              &
 
   for(int i=0; i<3; i++) {
     for(int j=i; j<3; j++) {
-
       if(i == j)
         diagonal_element = true;
-
       else
         diagonal_element = false;
 
@@ -171,9 +167,9 @@ GaussianRockPhysicsStorage::LogTransformExpectationAndCovariance(NRLib::Trend * 
                               log_covariance,
                               log_mu);
 
-      log_mean = new NRLib::ConstantTrend(log_mu);
+      log_mean = new NRLib::TrendConstant(log_mu);
     }
-    log_cov = new NRLib::ConstantTrend(log_covariance);
+    log_cov = new NRLib::TrendConstant(log_covariance);
   }
 
   else if(new_dim == 1) {
@@ -265,7 +261,7 @@ GaussianRockPhysicsStorage::CalculateCovarianceFromCorrelation(NRLib::Trend *  c
                         trender[2]->GetTrendElement(dummy,dummy,dummy),
                         covariance);
 
-    cov = new NRLib::ConstantTrend(covariance);
+    cov = new NRLib::TrendConstant(covariance);
   }
 
   else if(new_dim == 1) {

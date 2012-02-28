@@ -181,7 +181,7 @@ public:
   void                             getTimeGradientSettings(float &distance, float &alpha, int t);
   int                              getEstimateNumberOfWavelets(int t)   const;
   std::vector<int>                 findSortedVintages(void)             const;
-  std::vector<std::string>         getTrendCubeNames(void)              const { return trendCubeName_                       ;}
+  std::vector<std::string>         getTrendCubeParameters(void)         const { return trendCubeParameter_                  ;}
   int                              getNumberOfRocks(void)               const { return static_cast<int>(rockName_.size())   ;}
   RockPhysicsStorage             * getRockPhysicsStorage(int i)         const { return rockPhysics_[i]                      ;}
 
@@ -222,7 +222,7 @@ public:
   void addEstRangeX(float estRangeX)                      { estRangeX_.push_back(estRangeX)                      ;}
   void addEstRangeY(float estRangeY)                      { estRangeY_.push_back(estRangeY)                      ;}
 
-  void addTrendCubeName(std::string parameterName)                       { trendCubeName_.push_back(parameterName)                        ;}
+  void addTrendCubeParameter(std::string parameterName)                  { trendCubeParameter_.push_back(parameterName)                   ;}
   void addRockName(std::string rockName)                                 { rockName_.push_back(rockName)                                  ;}
   void addRockPhysicsStorage(RockPhysicsStorage * rock)                  { rockPhysics_.push_back(rock)                                   ;}
 
@@ -636,7 +636,7 @@ private:
   std::vector<int>                  vintageMonth_;               // Month the seismic time lapse data were collected
   std::vector<int>                  vintageYear_;                // Year the seismic time lapse data were collected
 
-  std::vector<std::string>                         trendCubeName_;               // Name of the trend parameters in the rock physics model
+  std::vector<std::string>                         trendCubeParameter_;          // Name of the trend parameters in the rock physics model
   std::vector<std::string>                         rockName_;                    // Name of rock in the rock physics model
   std::vector<RockPhysicsStorage *>                rockPhysics_;                 // Stores trend-values needed for different rock physics models
 

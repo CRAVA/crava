@@ -2036,8 +2036,13 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
                                       const InputFiles             * inputFiles)
 {
   if(modelSettings->getFaciesProbFromRockPhysics()){
-    std::vector<std::string> trendCubeName = modelSettings->getTrendCubeNames();
-    numberOfTrendCubes_ = static_cast<int>(trendCubeName.size());
+    std::vector<std::string> trendCubeParameters = modelSettings->getTrendCubeParameters();
+    numberOfTrendCubes_ = static_cast<int>(trendCubeParameters.size());
+    std::vector<std::string> trendCubeNames(numberOfTrendCubes_);
+
+    std::vector<float> trend_cube_min;
+    std::vector<float> trend_cube_max;
+    std::vector<std::vector<float> > trend_cube_sampling;
 
     if(numberOfTrendCubes_ > 0){
       trendCubes_ = new FFTGrid*[numberOfTrendCubes_];
@@ -2047,9 +2052,9 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
       int outsideTraces = 0;
 
       for(int i=0; i<numberOfTrendCubes_; i++){
-        std::string trendCubeName = inputFiles->getTrendCube(i);
+        trendCubeNames[i] = inputFiles->getTrendCube(i);
         std::string errorText("");
-        ModelGeneral::readGridFromFile(trendCubeName,
+        ModelGeneral::readGridFromFile(trendCubeNames[i],
                                        "trendcube",
                                        offset,
                                        trendCubes_[i],
@@ -2062,17 +2067,30 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
                                        errorText,
                                        true);
         if(errorText != ""){
-          errorText += "Reading of file \'"+trendCubeName+"\' failed\n";
+          errorText += "Reading of file \'"+trendCubeNames[i]+"\' failed\n";
           errTxt += errorText;
           failed = true;
         }
+
+        trendCubes_[i]->calculateStatistics();
+        float max = std::ceil(trendCubes_[i]->getMaxReal());
+        float min = std::floor(trendCubes_[i]->getMinReal());
+
+        int n_samples = static_cast<int>(max-min+1);
+        std::vector<float> sampling(n_samples);
+
+        for(int j=0; j<n_samples; j++)
+          sampling[j] = min + j;
+        trend_cube_sampling.push_back(sampling);
+
       }
     }
     std::string path = inputFiles->getInputDirectory();
+
     for(int i=0; i<modelSettings->getNumberOfRocks(); i++){
       RockPhysicsStorage * rock_physics = modelSettings->getRockPhysicsStorage(i);
 
-      rock_distributions_.push_back(rock_physics->GenerateRockPhysics(path,trendCubeName,errTxt));
+      rock_distributions_.push_back(rock_physics->GenerateRockPhysics(path,trendCubeParameters,trend_cube_sampling,errTxt));
 
     }
     if(errTxt != "")

@@ -5,15 +5,17 @@
 #include "nrlib/trend/trendstorage.hpp"
 #include "nrlib/trend/trend.hpp"
 
+
 class RockPhysicsStorage {
 public:
   RockPhysicsStorage();
 
   virtual ~RockPhysicsStorage();
 
-  virtual DistributionsRockT0 * GenerateRockPhysics(const std::string              & /*path*/,
-                                                    const std::vector<std::string> & /*trend_cube_names*/,
-                                                    std::string                    & /*errTxt*/) const = 0;
+  virtual DistributionsRockT0 * GenerateRockPhysics(const std::string                      & /*path*/,
+                                                    const std::vector<std::string>         & /*trend_cube_parameters*/,
+                                                    const std::vector<std::vector<float> > & /*trend_cube_sampling*/,
+                                                    std::string                            & /*errTxt*/) const = 0;
 };
 
 class GaussianRockPhysicsStorage : public RockPhysicsStorage {
@@ -30,9 +32,10 @@ public:
 
   virtual ~GaussianRockPhysicsStorage();
 
-  virtual DistributionsRockT0 * GenerateRockPhysics(const std::string              & path,
-                                                    const std::vector<std::string> & trend_cube_names,
-                                                    std::string                    & errTxt) const;
+  virtual DistributionsRockT0 * GenerateRockPhysics(const std::string                      & path,
+                                                    const std::vector<std::string>         & trend_cube_parameters,
+                                                    const std::vector<std::vector<float> > & trend_cube_sampling,
+                                                    std::string                            & errTxt) const;
 
 private:
   int                                 FindNewGridDimension(const std::vector<NRLib::Trend *> trender) const;
