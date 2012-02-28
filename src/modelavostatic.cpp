@@ -105,6 +105,8 @@ ModelAVOStatic::ModelAVOStatic(ModelSettings      *& modelSettings,
                                inputFiles);
       }
     }
+    else // forward modeling
+      checkAvailableMemory(timeSimbox, modelSettings, inputFiles);
   }
   failedLoadingModel = failedWells || failedExtraSurf || failedPriorFacies;
 
@@ -600,7 +602,7 @@ ModelAVOStatic::checkAvailableMemory(Simbox        * timeSimbox,
     if (modelSettings->getFileGrid())  // Use disk buffering
       nGrids = nGridFileMode;
     else
-      nGrids = nGridParameters + nGridSeismicData;
+      nGrids = nGridParameters + 1;
 
     gridMem = nGrids*gridSizePad;
   }

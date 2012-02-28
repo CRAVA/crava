@@ -6622,6 +6622,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\nrlib\math\mathutility.hpp"
+					>
+				</File>
+				<File
 					RelativePath=".\nrlib\random\mt19937_32.hpp"
 					>
 				</File>
@@ -6705,11 +6709,11 @@
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\system\config.hpp"
+						RelativePath=".\nrlib\boost\filesystem\config.hpp"
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\filesystem\config.hpp"
+						RelativePath=".\nrlib\boost\system\config.hpp"
 						>
 					</File>
 					<File
