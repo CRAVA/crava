@@ -257,7 +257,6 @@ int main(int argc, char** argv)
                                       modelAVOstatic->getWells(),
                                       modelSettings->getNumberOfWells(),
                                       modelSettings->getNoVsFaciesProb(),
-                                      modelSettings->getIndicatorFilter(),
                                       activeAngles,
                                       crava,
                                       modelAVOdynamic->getLocalNoiseScales());

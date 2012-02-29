@@ -16,6 +16,7 @@ public:
            const std::vector<bool>        & inverseVelocity,
            ModelSettings                  * modelSettings,
            int                              indicatorFacies,
+           int                              indicatorFilter,
            int                              indicatorWavelet,
            int                              indicatorBGTrend,
            int                              indicatorRealVs,
@@ -42,6 +43,7 @@ public:
   bool                hasSyntheticVsLog(void)            const { return(realVsLog_ == 0)               ;}
   bool                isDeviated(void)                   const { return isDeviated_                    ;}
   bool                getUseForFaciesProbabilities(void) const { return(useForFaciesProbabilities_ > 0);}
+  bool                getUseForFiltering(void)           const { return(useForFiltering_ > 0)          ;}
   bool                getUseForWaveletEstimation(void)   const { return(useForWaveletEstimation_ > 0)  ;}
   bool                getUseForBackgroundTrend(void)     const { return(useForBackgroundTrend_ > 0)    ;}
   bool                isFaciesLogDefined(void) const;
@@ -130,6 +132,7 @@ private:
   BlockedLogs             * blockedLogsExtendedBG_;
 
   int                       useForFaciesProbabilities_;   //Uses the indicator enum from Modelsettings.
+  int                       useForFiltering_;             //Uses the indicator enum from Modelsettings.
   int                       useForWaveletEstimation_;     //Uses the indicator enum from Modelsettings.
   int                       useForBackgroundTrend_;       //Uses the indicator enum from Modelsettings.
 

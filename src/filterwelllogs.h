@@ -6,7 +6,6 @@
 #include "f77_func.h"
 
 class Simbox;
-class ModelSettings;
 class CKrigingAdmin;
 class KrigingData;
 class Corr;

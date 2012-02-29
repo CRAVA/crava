@@ -20,7 +20,6 @@ public:
                                        WellData                   ** wells,
                                        int                           nWells,
                                        bool                          useVpRhoFilter,
-                                       const std::vector<int>      & filterWell,
                                        int                           nAngles,
                                        const Crava                 * cravaResult,
                                        const std::vector<Grid2D *> & noiseScale);
