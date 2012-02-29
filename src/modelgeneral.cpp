@@ -1846,11 +1846,11 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
       LogKit::LogFormatted(LogKit::Low,"  Low cut for inversion                    : %10.1f\n",modelSettings->getLowCut());
       LogKit::LogFormatted(LogKit::Low,"  High cut for inversion                   : %10.1f\n",modelSettings->getHighCut());
 
-      if (modelSettings->getNumberOfTimeLapses() > 1)
+      if (modelSettings->getDo4DInversion())
         LogKit::LogFormatted(LogKit::Low,"\n4D seismic data:\n");
 
       for (int i=0; i<modelSettings->getNumberOfTimeLapses(); i++){
-        if(modelSettings->getNumberOfTimeLapses() > 1)
+        if(modelSettings->getDo4DInversion())
           LogKit::LogFormatted(LogKit::Low,"\nVintage:\n");
         if(modelSettings->getVintageMonth(i)==IMISSING && modelSettings->getVintageYear(i) != IMISSING)
           LogKit::LogFormatted(LogKit::Low,"    %-2d                                     : %10d\n", i+1, modelSettings->getVintageYear(i));

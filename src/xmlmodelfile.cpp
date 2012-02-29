@@ -631,6 +631,8 @@ XmlModelFile::parseSurvey(TiXmlNode * node, std::string & errTxt)
   while(parseAngleGather(root, errTxt) == true);
   modelSettings_->addTimeLapse();
   inputFiles_->addTimeLapse();
+  if(modelSettings_->getNumberOfTimeLapses() > 1)
+    modelSettings_->setDo4DInversion(true);
 
   if(parseWaveletEstimationInterval(root, errTxt) == false){
     inputFiles_->addDefaultWaveletEstIntFileTop();
@@ -3341,7 +3343,7 @@ XmlModelFile::checkConsistency(std::string & errTxt) {
   if(modelSettings_->getOptimizeWellLocation()==true)
     checkAngleConsistency(errTxt);
   checkIOConsistency(errTxt);
-  if(modelSettings_->getNumberOfTimeLapses() > 1 && surveyFailed_ == false)
+  if(modelSettings_->getDo4DInversion() && surveyFailed_ == false)
     checkTimeLapseConsistency(errTxt);
 
   if (inputFiles_->getReflMatrFile() != "") {
@@ -3372,7 +3374,7 @@ void
 XmlModelFile::checkForwardConsistency(std::string & errTxt)
 {
 
-  if (modelSettings_->getNumberOfTimeLapses() > 1)
+  if (modelSettings_->getDo4DInversion())
     errTxt += "Forward modeling can not be done in 4D.\n";
 
   if (modelSettings_->getNumberOfAngles(0) == 0) {

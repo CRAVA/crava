@@ -55,6 +55,7 @@ public:
   bool                             getEstimateLocalShift(int i, int j)  const { return timeLapseEstimateLocalShift_[i][j]         ;}
   bool                             getEstimateLocalNoise(int i, int j)  const { return timeLapseEstimateLocalNoise_[i][j]         ;}
   bool                             getEstimateGlobalWaveletScale(int i, int j) const { return timeLapseEstimateGlobalWaveletScale_[i][j];}
+  bool                             getDo4DInversion(void)                     { return do4DInversion_                             ;}
   bool                             getEstimateBackground(void)          const { return estimateBackground_                        ;}
   bool                             getEstimateCorrelations(void)        const { return estimateCorrelations_                      ;}
   bool                             getEstimateWaveletNoise(void)        const { return estimateWaveletNoise_                      ;}
@@ -248,6 +249,7 @@ public:
   void addDefaultUpperDensityFluid(void)                                 { upperDensityFluid_.push_back(1025.0f)                          ;}
   void addDefaultLowerDensityFluid(void)                                 { lowerDensityFluid_.push_back(800.0f)                           ;}
 
+  void setDo4DInversion(bool do4DInversion)               { do4DInversion_            = do4DInversion            ;}
   void setEstimateBackground(bool estimateBackground)     { estimateBackground_       = estimateBackground       ;}
   void setEstimateCorrelations(bool estimateCorrelations) { estimateCorrelations_     = estimateCorrelations     ;}
   void setEstimateWaveletNoise(bool estimateWaveletNoise) { estimateWaveletNoise_     = estimateWaveletNoise     ;}
@@ -488,6 +490,7 @@ private:
   std::vector<float>                estRangeX_;                  // Estimation range in x-direction for 3D-wavelet
   std::vector<float>                estRangeY_;                  // Estimation range in y-direction for 3D-wavelet
 
+  bool                              do4DInversion_;              // True if CRAVA is to run a 4D inversion
   bool                              estimateBackground_;         // In estimation mode, skip estimation of background if false
   bool                              estimateCorrelations_;       // As above, but correlations.
   bool                              estimateWaveletNoise_;       // As above, but for wavelet and noise parameters.

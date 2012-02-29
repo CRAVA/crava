@@ -125,6 +125,7 @@ ModelSettings::ModelSettings(void)
   fileGrid_                =    false;
   waveletFormatManual_     =    false;
 
+  do4DInversion_           =    false;
   estimationMode_          =    false;
   forwardModeling_         =    false;
   generateBackground_      =     true;
