@@ -45,17 +45,17 @@ public:
 
   WaveletFilter          getFilter(void) const {return filter_;}
   static void            setGradientMaps( NRLib::Grid2D<float> gradX , NRLib::Grid2D<float> gradY ){structureDepthGradX_=gradX; structureDepthGradY_=gradY;}
-Wavelet1D              * createWavelet1DForErrorNorm(void);
-Wavelet1D              * createLocalWavelet1D( int i, int j);
-Wavelet1D              * getGlobalWavelet(){ return averageWavelet_;}
-float                    getLocalStretch(int i,int j);
+  Wavelet1D            * createWavelet1DForErrorNorm(void);
+  Wavelet1D            * createLocalWavelet1D( int i, int j);
+  Wavelet1D            * getGlobalWavelet(){ return averageWavelet_;}
+  float                  getLocalStretch(int i,int j);
 
-Wavelet1D              * getSourceWavelet();
-Wavelet1D              * createAverageWavelet(Simbox * simBox);
-Wavelet1D              * extractLocalWaveletByDip1D(double phi, double psi);
-void                     dipAdjustWavelet(Wavelet1D* Wavelet, double phi, double psi);
-float                    GetLocalDepthGradientX(int i, int j){ return structureDepthGradX_(i,j);}
-float                    GetLocalDepthGradientY(int i, int j){ return structureDepthGradY_(i,j);}
+  Wavelet1D            * createSourceWavelet();
+  Wavelet1D            * createAverageWavelet(Simbox * simBox);
+  Wavelet1D            * extractLocalWaveletByDip1D(double phi, double psi);
+  void                   dipAdjustWavelet(Wavelet1D* Wavelet, double phi, double psi);
+  float                  GetLocalDepthGradientX(int i, int j){ return structureDepthGradX_(i,j);}
+  float                  GetLocalDepthGradientY(int i, int j){ return structureDepthGradY_(i,j);}
 
   float                  calculateSNRatio(Simbox                                   * simbox,
                                           FFTGrid                                  * seisCube,

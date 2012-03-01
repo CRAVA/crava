@@ -276,7 +276,7 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
   fftw_free(rAmp_);
   rAmp_ = trueAmp;
   cAmp_ = reinterpret_cast<fftw_complex *>(rAmp_);
-  averageWavelet_=createAverageWavelet(simBox);
+  averageWavelet_ = createAverageWavelet(simBox);
 }
 
 
@@ -300,6 +300,7 @@ Wavelet3D::Wavelet3D(Wavelet * wavelet)
 
 Wavelet3D::~Wavelet3D()
 {
+  delete averageWavelet_;
 }
 
 float
@@ -410,19 +411,19 @@ Wavelet3D::createAverageWavelet(Simbox * simBox)
 }
 
 
-Wavelet1D*
+Wavelet1D *
 Wavelet3D::extractLocalWaveletByDip1D(double phi,double psi)
 {
-  Wavelet1D* wavelet = getSourceWavelet();
+  Wavelet1D* wavelet = createSourceWavelet();
   dipAdjustWavelet(wavelet,phi,psi);
 
   return wavelet;
 }
 
-Wavelet1D*
-Wavelet3D::getSourceWavelet()
+Wavelet1D *
+Wavelet3D::createSourceWavelet()
 {
-    Wavelet1D* sourceWavelet = new Wavelet1D(this);
+    Wavelet1D * sourceWavelet = new Wavelet1D(this);
     return sourceWavelet;
 }
 
