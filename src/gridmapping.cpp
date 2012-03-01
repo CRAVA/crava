@@ -117,16 +117,16 @@ GridMapping::setMappingFromVelocity(FFTGrid * velocity, const Simbox * timeSimbo
   if(simbox_!=NULL)  //Allow this to be called to override old mappings.
   {
     if(surfaceMode_ == TOPGIVEN) {
-      z0Grid_ = new Surface(*z0Grid_);
-      z1Grid_ = NULL;
+      if(z1Grid_ != NULL) {
+        delete z1Grid_;
+        z1Grid_ = NULL;
+      }
     }
     else if(surfaceMode_ == BOTTOMGIVEN) {
-      z0Grid_ = NULL;
-      z1Grid_ = new Surface(*z1Grid_);
-    }
-    else {
-      z0Grid_ = new Surface(*z0Grid_);
-      z1Grid_ = new Surface(*z1Grid_);
+      if(z0Grid_ != NULL) {
+        delete z0Grid_;
+        z0Grid_ = NULL;
+      }
     }
     delete simbox_;
     simbox_ = NULL;
@@ -261,6 +261,8 @@ GridMapping::setDepthSurfaces(const std::vector<std::string> & surfFile,
   if(surfFile[0] != "")
   {
     try {
+      if(z0Grid_ != NULL)
+        delete z0Grid_;
       Surface tmpSurf(surfFile[0]);
       z0Grid_ = new Surface(tmpSurf);
       surfaceMode_ = TOPGIVEN;
@@ -273,6 +275,8 @@ GridMapping::setDepthSurfaces(const std::vector<std::string> & surfFile,
   if(surfFile[1] != "")
   {
     try {
+      if(z1Grid_ != NULL)
+        delete z1Grid_;
       Surface tmpSurf(surfFile[1]);
       z1Grid_ = new Surface(tmpSurf);
       if(surfaceMode_ == TOPGIVEN)
