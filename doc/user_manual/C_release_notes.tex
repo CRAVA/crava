@@ -5,7 +5,54 @@ system called
 \index{JIRA, project management} Note that access permission is
 required to be able to open the links.
 
-\section{Changes from \crava Version 1.0 to Version 1.1}
+\section{Changes from v1.1 to v1.2}
+
+\begin{description}
+
+\item [New features:] \mbox{ }
+  \begin{itemize}
+    \item Introduce new and more efficient resampling of seismic
+      data. \jira{274}
+    \item Add SI (=Vs*Rho) as possible input type for background
+      model. \jira{287}
+    \item For forward modelling allow earth model to be input as
+      (AI,SI,Rho) and (AI,Vp/Vs,Rho). \jira{302}
+    \item Add new SegY format "SIPX" to list of auto-detected
+      formats.\jira{290}
+    \item Added 3D wavelet estimation/inversion. \jira{304}, \jira{308},
+      \jira{309}
+  \end{itemize}
+
+\item [Changes:] \mbox{ }
+  \begin{itemize}
+    \item Require seismic data in target zone+guard zone rather than
+      in full inversion grid (simbox). \jira{216}
+    \item Cleaned test suite and findgrammar for <TAB> and trailing
+      blanks, and added "no trailings blanks" as requirement for passing
+      test suite. \jira{275}, \jira{276}
+    \item Use one wavelet (200ms) as default when estimating vertical
+      padding size. Previous default was half a wavelet
+      (100ms). \jira{300}
+    \item Ensure that we log the parameter values of all parameters
+      available under the \kw{advanced-settings} keyword. \jira{307}
+  \end{itemize}
+
+\item [Bug fixes:] \mbox{ }
+  \begin{itemize}
+    \item Fixed problem identifying the lateral geometry of seismic
+      data. \jira{277}
+    \item Vp and Vs were reported as input data types for background
+      model in logFile.txt when AI and Vp/Vs were used. \jira{288}
+    \item An incorrect grid size estimate made inversion runs stop
+      even for medium sized grids. \jira{292}
+    \item Fixed crash when the \kw{filter-elastic-logs} option was
+      used. \jira{310}
+    \item Removed memory leaks in test suite using Purify. \jira{265}.
+  \end{itemize}
+\end{description}
+
+
+\section{Changes from v1.0 to v1.1}
 
 \begin{description}
 
@@ -93,3 +140,4 @@ required to be able to open the links.
     \item Fixed bug with interpolation of Storm-grids used for input.
  \end{itemize}
 \end{description}
+
