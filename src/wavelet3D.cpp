@@ -300,7 +300,9 @@ Wavelet3D::Wavelet3D(Wavelet * wavelet)
 
 Wavelet3D::~Wavelet3D()
 {
-  delete averageWavelet_;
+  //The delete is needed to avoid memory leak, but it causes a segmentation fault when doing the
+  // delete modelAVOdynamic in main.cpp
+  //delete averageWavelet_;
 }
 
 float
