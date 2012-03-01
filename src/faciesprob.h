@@ -6,6 +6,8 @@
 #include "fftw-int.h"
 #include "f77_func.h"
 
+#include <rplib/distributionsrockt0.h>
+
 class Corr;
 class FFTGrid;
 class Crava;
@@ -42,13 +44,14 @@ public:
              const ModelSettings          * modelSettings,
              FFTGrid                      * seismicLH);
 
-  FaciesProb(FFTGrid        * alpha,
-             FFTGrid        * beta,
-             FFTGrid        * rho,
-             int              nFac,
-             float            p_undef,
-             FFTGrid        * seismicLH,
-             ModelAVOStatic * modelAVOstatic);
+  FaciesProb(FFTGrid                            * alpha,
+             FFTGrid                            * beta,
+             FFTGrid                            * rho,
+             int                                  nFac,
+             float                                p_undef,
+             FFTGrid                            * seismicLH,
+             ModelAVOStatic                     * modelAVOstatic,
+             std::vector<DistributionsRockT0 *>   rock_distributions);
 
   ~FaciesProb();
 
@@ -177,12 +180,13 @@ private:
                                              const std::vector<Grid2D *>   & noiseScale,
                                              FFTGrid                       * seismicLH);
 
-  void                   calculateFaciesProbFromRockPhysicsModel(FFTGrid                      * /*alphagrid*/,
-                                                                 FFTGrid                      * /*betagrid*/,
-                                                                 FFTGrid                      * /*rhogrid*/,
-                                                                 float                          /*p_undef*/,
-                                                                 FFTGrid                       * /*seismicLH*/,
-                                                                 ModelAVOStatic                * /*modelAVOstatic*/);
+  void                   calculateFaciesProbFromRockPhysicsModel(FFTGrid                            * alphagrid,
+                                                                 FFTGrid                            * betagrid,
+                                                                 FFTGrid                            * rhogrid,
+                                                                 float                                p_undef,
+                                                                 FFTGrid                            * seismicLH,
+                                                                 ModelAVOStatic                     * modelAVOstatic,
+                                                                 std::vector<DistributionsRockT0 *>   rock_distributions);
 
   void                   normalizeCubes(FFTGrid **priorFaciesCubes);
 

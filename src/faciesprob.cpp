@@ -31,7 +31,7 @@
 #include "src/modelavostatic.h"
 
 #include "rplib/distributionsrockt0.h"
-#include "rplib/multinormaldistributedrockt0.h"
+#include "rplib/pdf3d.h"
 
 FaciesProb::FaciesProb(FFTGrid                      * alpha,
                        FFTGrid                      * beta,
@@ -59,16 +59,17 @@ FaciesProb::FaciesProb(FFTGrid                      * alpha,
                  modelSettings, seismicLH);
 }
 
-FaciesProb::FaciesProb(FFTGrid        * alpha,
-                       FFTGrid        * beta,
-                       FFTGrid        * rho,
-                       int              nFac,
-                       float            p_undef,
-                       FFTGrid        * seismicLH,
-                       ModelAVOStatic * modelAVOstatic)
-                       : nFacies_(nFac)
+FaciesProb::FaciesProb(FFTGrid                             * alpha,
+                       FFTGrid                             * beta,
+                       FFTGrid                             * rho,
+                       int                                   nFac,
+                       float                                 p_undef,
+                       FFTGrid                             * seismicLH,
+                       ModelAVOStatic                      * modelAVOstatic,
+                       std::vector<DistributionsRockT0 *>    rock_distributions)
+: nFacies_(nFac)
 {
-  calculateFaciesProbFromRockPhysicsModel(alpha, beta, rho, p_undef, seismicLH, modelAVOstatic);
+  calculateFaciesProbFromRockPhysicsModel(alpha, beta, rho, p_undef, seismicLH, modelAVOstatic, rock_distributions);
 }
 
 FaciesProb::~FaciesProb()
@@ -1265,24 +1266,21 @@ void FaciesProb::calculateFaciesProb(FFTGrid                                    
   delete [] value;
 }
 
-void FaciesProb::calculateFaciesProbFromRockPhysicsModel(FFTGrid                                    * /*alphagrid*/,
-                                                         FFTGrid                                    * /*betagrid*/,
-                                                         FFTGrid                                    * /*rhogrid*/,
-                                                         float                                        /*p_undefined*/,
-                                                         FFTGrid                                    * /*seismicLH*/,
-                                                         ModelAVOStatic                             * /*modelAVOstatic*/)
+void FaciesProb::calculateFaciesProbFromRockPhysicsModel(FFTGrid                            * alphagrid,
+                                                         FFTGrid                            * betagrid,
+                                                         FFTGrid                            * rhogrid,
+                                                         float                                p_undefined,
+                                                         FFTGrid                            * seismicLH,
+                                                         ModelAVOStatic                     * modelAVOstatic,
+                                                         std::vector<DistributionsRockT0 *>   rock_distributions)
 {
-  /*float * value = new float[nFacies_];
-  int i,j,k,l;
-  int nx, ny, nz, rnxp, nyp, nzp, smallrnxp;
-  float alpha, beta, rho, sum;
+  int rnxp = alphagrid->getRNxp();
+  int nyp  = alphagrid->getNyp();
+  int nzp  = alphagrid->getNzp();
+  int nx   = alphagrid->getNx();
+  int ny   = alphagrid->getNy();
+  int nz   = alphagrid->getNz();
 
-  rnxp = alphagrid->getRNxp();
-  nyp  = alphagrid->getNyp();
-  nzp  = alphagrid->getNzp();
-  nx   = alphagrid->getNx();
-  ny   = alphagrid->getNy();
-  nz   = alphagrid->getNz();
   faciesProb_ = new FFTGrid*[nFacies_];
   if(alphagrid->isFile()==1)
     faciesProbUndef_ = new FFTFileGrid(nx, ny, nz, nx, ny, nz);
@@ -1291,7 +1289,8 @@ void FaciesProb::calculateFaciesProbFromRockPhysicsModel(FFTGrid                
   alphagrid->setAccessMode(FFTGrid::READ);
   betagrid->setAccessMode(FFTGrid::READ);
   rhogrid->setAccessMode(FFTGrid::READ);
-  for(i=0;i<nFacies_;i++){
+
+  for(int i=0; i<nFacies_; i++){
     if(alphagrid->isFile()==1){
       faciesProb_[i] = new FFTFileGrid(nx, ny, nz, nx, ny, nz);
     }
@@ -1301,6 +1300,7 @@ void FaciesProb::calculateFaciesProbFromRockPhysicsModel(FFTGrid                
     faciesProb_[i]->setAccessMode(FFTGrid::WRITE);
     faciesProb_[i]->createRealGrid(false);
   }
+
   faciesProbUndef_->setAccessMode(FFTGrid::WRITE);
   faciesProbUndef_->createRealGrid(false);
   if(seismicLH != NULL)
@@ -1312,10 +1312,14 @@ void FaciesProb::calculateFaciesProbFromRockPhysicsModel(FFTGrid                
     normalizeCubes(priorFaciesCubes);
 
   if(priorFaciesCubes!=NULL)
-    for(i=0;i<nFacies_;i++)
+    for(int i=0; i<nFacies_; i++)
       priorFaciesCubes[i]->setAccessMode(FFTGrid::READ);
 
-  smallrnxp = faciesProb_[0]->getRNxp();
+  int smallrnxp = faciesProb_[0]->getRNxp();
+
+  std::vector<Pdf3D *> rock_pdf(nFacies_);
+  for(int i=0; i<nFacies_; i++)
+    rock_pdf[i] = rock_distributions[i]->GeneratePdf();
 
   LogKit::LogFormatted(LogKit::Low,"\nBuilding facies probabilities:");
   float monitorSize = std::max(1.0f, static_cast<float>(nzp)*0.02f);
@@ -1324,53 +1328,30 @@ void FaciesProb::calculateFaciesProbFromRockPhysicsModel(FFTGrid                
     << "\n  0%       20%       40%       60%       80%      100%"
     << "\n  |    |    |    |    |    |    |    |    |    |    |  "
     << "\n  ^";
-*/
-  /*std::vector<MultiNormalWithTrend *> multi(nFacies_);
-  std::vector<DistributionsRockT0 *> test(nFacies_);
 
-  for(int i=0; i<nFacies_; i++){
+  float  alpha;
+  float  beta;
+  float  rho;
+  double sum;
+  double help;
+  double dens;
+  double dummy = 0;
 
-    NRLib::Normal norm_vp;
-    NRLib::Normal norm_vs;
-    NRLib::Normal norm_density;
+  double * value  = new double[nFacies_];
+  float  undefSum = p_undefined / 10; //Nevner må beregnes
 
-    Trend * mean_trend_vp      = modelAVOstatic->getMeanVp(i);
-    Trend * mean_trend_vs      = modelAVOstatic->getMeanVs(i);
-    Trend * mean_trend_density = modelAVOstatic->getMeanDensity(i);
-
-    NRLib::Grid2D<Trend*> cov(3,3,NULL);
-    cov(0,0) = modelAVOstatic->getVarianceVp(i);
-    cov(0,1) = modelAVOstatic->getCorrelationVpVs(i);
-    cov(0,2) = modelAVOstatic->getCorrelationVpDensity(i);
-    cov(1,0) = modelAVOstatic->getCorrelationVpVs(i);
-    cov(1,1) = modelAVOstatic->getVarianceVs(i);
-    cov(1,2) = modelAVOstatic->getCorrelationVsDensity(i);
-    cov(2,0) = modelAVOstatic->getCorrelationVpDensity(i);
-    cov(2,1) = modelAVOstatic->getCorrelationVsDensity(i);
-    cov(2,2) = modelAVOstatic->getVarianceDensity(i);
-
-    MultiNormalWithTrend mult(norm_vp, norm_vs, norm_density, mean_trend_vp, mean_trend_vs, mean_trend_density, cov);
-
-    //multi[i] = new MultiNormalWithTrend(norm_vp, norm_vs, norm_density, mean_trend_vp, mean_trend_vs, mean_trend_density, cov);
-    test[i]  = new MultiNormalDistributedRockT0(mult);
-  }
-
-  double dummy1 = 0;
-  double dummy2 = 0;
-  float  help;
-  float  dens;
-  float  undefSum = p_undefined / 10;
-  for(i=0;i<nzp;i++){
-    for(j=0;j<nyp;j++){
-      for(k=0;k<rnxp;k++){
+  for(int i=0; i<nzp; i++){
+    for(int j=0; j<nyp; j++){
+      for(int k=0; k<rnxp; k++){
         alpha = alphagrid->getNextReal();
         beta = betagrid->getNextReal();
         rho = rhogrid->getNextReal();
+
         if(k<smallrnxp && j<ny && i<nz) {
           sum = undefSum;
-          for(l=0;l<nFacies_;l++){
+          for(int l=0; l<nFacies_; l++){
             if(k<nx)
-              multi[l]->CalculatePDF(dummy1,dummy2,alpha,beta,rho,dens);
+              dens = rock_pdf[l]->density(alpha, beta, rho, dummy, dummy);
             else
               dens = 1.0;
             if(priorFaciesCubes!=NULL)
@@ -1379,19 +1360,21 @@ void FaciesProb::calculateFaciesProbFromRockPhysicsModel(FFTGrid                
               value[l] = priorFacies[l]*dens;
             sum = sum+value[l];
           }
-          for(l=0;l<nFacies_;l++){
+
+          for(int l=0; l<nFacies_; l++){
             help = value[l]/sum;
             if(k<nx){
-              faciesProb_[l]->setNextReal(help);
+              faciesProb_[l]->setNextReal(static_cast<float>(help));
             }
             else{
               faciesProb_[l]->setNextReal(RMISSING);
             }
           }
+
           if(k<nx){
-            faciesProbUndef_->setNextReal(undefSum/sum);
+            faciesProbUndef_->setNextReal(static_cast<float>(undefSum/sum));
             if(seismicLH != NULL)
-              seismicLH->setNextReal(sum);
+              seismicLH->setNextReal(static_cast<float>(sum));
           }
           else{
             faciesProbUndef_->setNextReal(RMISSING);
@@ -1409,12 +1392,12 @@ void FaciesProb::calculateFaciesProbFromRockPhysicsModel(FFTGrid                
     }
   }
   std::cout << "\n";
-*/
- /* if(priorFaciesCubes!=NULL)
-    for(i=0;i<nFacies_;i++){
+
+  if(priorFaciesCubes!=NULL) {
+    for(int i=0; i<nFacies_; i++)
       priorFaciesCubes[i]->endAccess();
-    }
-  for(i=0;i<nFacies_;i++)
+  }
+  for(int i=0; i<nFacies_; i++)
     faciesProb_[i]->endAccess();
   alphagrid->endAccess();
   betagrid->endAccess();
@@ -1424,9 +1407,6 @@ void FaciesProb::calculateFaciesProbFromRockPhysicsModel(FFTGrid                
     seismicLH->endAccess();
 
   delete [] value;
-
-  //Marit: Delete multi
-*/
 }
 
 void FaciesProb::calculateFaciesProbGeomodel(const float  * priorFacies,

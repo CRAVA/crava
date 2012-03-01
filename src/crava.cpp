@@ -1766,7 +1766,8 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
                                 nfac,
                                 modelSettings->getPundef(),
                                 likelihood,
-                                modelAVOstatic_);
+                                modelAVOstatic_,
+                                modelGeneral_->getRockDistributions());
         baseName += "Rock_Physics_";
       }
       delete meanAlpha2_;
@@ -1803,7 +1804,8 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
                                 nfac,
                                 modelSettings->getPundef(),
                                 likelihood,
-                                modelAVOstatic_);
+                                modelAVOstatic_,
+                                modelGeneral_->getRockDistributions());
         baseName += "Rock_Physics_";
       }
     }

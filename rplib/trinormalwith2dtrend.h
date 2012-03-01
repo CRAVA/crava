@@ -82,7 +82,7 @@ class TriNormalWith2DTrend {
                          const double & obs_vp,
                          const double & obs_vs,
                          const double & obs_rho,
-                         float        & prob) const;
+                         double       & prob) const;
 
    double** DebugCreateEstimateOfCovMatrix(const NRLib::Normal & vp01,
                                            const NRLib::Normal & vs01,

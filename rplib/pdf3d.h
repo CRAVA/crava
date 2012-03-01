@@ -8,10 +8,15 @@
 class Pdf3D {
 public:
 
-  Pdf3D () {}
-  virtual ~Pdf3D(){}
+  Pdf3D() {}
 
-  virtual double density(double v1, double v2, double v3) const = 0;
+  virtual ~Pdf3D() {}
+
+  virtual double density(const double & vp,
+                         const double & vs,
+                         const double & rho,
+                         const double & s1,
+                         const double & s2) const = 0;
 
 };
 

@@ -2,6 +2,7 @@
 #define DISTRIBUTIONSROCKT0_H
 
 #include "rplib/rock.h"
+#include "rplib/pdf3d.h"
 #include <nrlib/flens/nrlib_flens.hpp>
 #include "nrlib/grid/grid2d.hpp"
 
@@ -21,7 +22,10 @@ public:
 
   virtual std::vector<double>   GetExpectation(const std::vector<double> & trend_params) const = 0;
 
-  virtual NRLib::Grid2D<double> GetCovariance(const std::vector<double> & trend_params) const = 0;
+  virtual NRLib::Grid2D<double> GetCovariance(const std::vector<double> & trend_params)  const = 0;
+
+  virtual Pdf3D               * GeneratePdf(void)                                        const = 0;
+
 
 };
 

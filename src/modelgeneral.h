@@ -44,6 +44,8 @@ public:
 
   TimeLine                    * getTimeLine() const {return(timeLine_);}
 
+  std::vector<DistributionsRockT0 *> getRockDistributions(void) const { return rock_distributions_;}
+
   static FFTGrid*               createFFTGrid(int nx,
                                               int ny,
                                               int nz,

@@ -21,7 +21,11 @@ public:
   virtual ~Pdf3DEmpirical()
 
   // Returns missing if values are outside definition area.
-  virtual double density(double v1, double v2, double v3) const;
+  virtual double density(const double & vp,
+                         const double & vs,
+                         const double & rho,
+                         const double & s1,
+                         const double & s2) const;
 
 private:
 

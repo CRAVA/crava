@@ -8,6 +8,7 @@
 
 class Rock;
 class TriNormalWith2DTrend;
+class Pdf3D;
 
 class MultiNormalDistributedRockT0 : public DistributionsRockT0 {
 public:
@@ -22,6 +23,7 @@ public:
 
   virtual NRLib::Grid2D<double> GetCovariance(const std::vector<double> & trend_params) const;
 
+  virtual Pdf3D * GeneratePdf(void) const;
 
 private:
   const TriNormalWith2DTrend& mult_normal_distr_;

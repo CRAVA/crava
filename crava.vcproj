@@ -6173,6 +6173,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\rplib\pdf3dgaussian.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\rplib\rock.cpp"
 					>
 				</File>
@@ -7191,6 +7195,10 @@
 				</File>
 				<File
 					RelativePath=".\rplib\pdf3dempirical.h"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\pdf3dgaussian.h"
 					>
 				</File>
 				<File

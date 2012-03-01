@@ -235,7 +235,7 @@ TriNormalWith2DTrend::CalculatePDF(const double & s1,
                                    const double & obs_vp,
                                    const double & obs_vs,
                                    const double & obs_rho,
-                                   float        & prob) const
+                                   double       & prob) const
 {
   int dim = 3;
 
@@ -269,7 +269,7 @@ TriNormalWith2DTrend::CalculatePDF(const double & s1,
   double aa = std::exp(-0.5*prod);
   double bb = std::pow(2*NRLib::Pi,1.5)*std::pow(determinant,0.5);
 
-  prob = static_cast<float>(std::exp(std::log(aa)-std::log(bb)));
+  prob = std::exp(std::log(aa)-std::log(bb));
 }
 
 double**

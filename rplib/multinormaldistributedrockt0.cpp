@@ -1,6 +1,8 @@
 #include "rplib/multinormaldistributedrockt0.h"
 #include "rplib/multinormalrock.h"
 #include "rplib/trinormalwith2dtrend.h"
+#include "rplib/pdf3dgaussian.h"
+#include "rplib/pdf3d.h"
 
 #include "nrlib/grid/grid2d.hpp"
 
@@ -53,4 +55,12 @@ MultiNormalDistributedRockT0::GetCovariance(const std::vector<double> & trend_pa
   NRLib::Grid2D<double> covariance(3,3,0);
   mult_normal_distr_.GetCovariance(s1, s2, covariance);
   return(covariance);
+}
+
+Pdf3D* 
+MultiNormalDistributedRockT0::GeneratePdf(void) const
+{
+
+  return new Pdf3DGaussian(mult_normal_distr_);
+
 }
