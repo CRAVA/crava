@@ -208,6 +208,9 @@ ModelGeneral::~ModelGeneral(void)
     delete [] trendCubes_;
   }
 
+  for(int i=0; i<static_cast<int>(rock_distributions_.size()); i++)
+    delete rock_distributions_[i];
+
   delete randomGen_;
   delete timeSimbox_;
   delete timeSimboxConstThick_;

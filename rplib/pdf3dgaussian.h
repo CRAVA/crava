@@ -2,8 +2,7 @@
 #define PDF3DGAUSSIAN_H
 
 #include <rplib/pdf3d.h>
-
-class TriNormalWith2DTrend;
+#include <rplib/trinormalwith2dtrend.h>
 
 // Class for holding a 3D Gaussian pdf.
 
@@ -22,7 +21,7 @@ public:
 
 private:
 
-  const TriNormalWith2DTrend & tri_normal_distr_;
+  TriNormalWith2DTrend tri_normal_distr_;
 
 };
 

@@ -6,8 +6,8 @@
 
 #include "nrlib/grid/grid2d.hpp"
 
-MultiNormalDistributedRockT0::MultiNormalDistributedRockT0(const TriNormalWith2DTrend& mult_normal_distr) :
-  mult_normal_distr_(mult_normal_distr)
+MultiNormalDistributedRockT0::MultiNormalDistributedRockT0(const TriNormalWith2DTrend & mult_normal_distr)
+: mult_normal_distr_(mult_normal_distr)
 {
 }
 

@@ -14,15 +14,30 @@ TriNormalWith2DTrend::TriNormalWith2DTrend(NRLib::Trend               *  mean_tr
                                            NRLib::Trend               *  mean_trend_vs,
                                            NRLib::Trend               *  mean_trend_rho,
                                            NRLib::Grid2D<NRLib::Trend *> covariance_matrix)
-: mean_trend_vp_(mean_trend_vp),
-  mean_trend_vs_(mean_trend_vs),
-  mean_trend_rho_(mean_trend_rho),
-  covariance_matrix_(covariance_matrix)
 {
+  mean_trend_vp_  = mean_trend_vp->Clone();
+  mean_trend_vs_  = mean_trend_vs->Clone();
+  mean_trend_rho_ = mean_trend_rho->Clone();
+
+  covariance_matrix_.Resize(3,3,0);
+  for(int i=0; i<3; i++) {
+    for(int j=0; j<3; j++) {
+      covariance_matrix_(i,j) = covariance_matrix(i,j)->Clone();
+    }
+  }
+
 }
 
 TriNormalWith2DTrend::~TriNormalWith2DTrend()
 {
+  delete mean_trend_vp_;
+  delete mean_trend_vs_;
+  delete mean_trend_rho_;
+  for(int i=0; i<3; i++) {
+    for(int j=0; j<3; j++) {
+      delete covariance_matrix_(i,j);
+    }
+  }
 
 }
 

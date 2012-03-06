@@ -1407,6 +1407,9 @@ void FaciesProb::calculateFaciesProbFromRockPhysicsModel(FFTGrid                
     seismicLH->endAccess();
 
   delete [] value;
+
+  for(int i=0; i<nFacies_; i++)
+    delete rock_pdf[i];
 }
 
 void FaciesProb::calculateFaciesProbGeomodel(const float  * priorFacies,

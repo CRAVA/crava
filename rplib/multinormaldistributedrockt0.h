@@ -3,17 +3,17 @@
 
 #include <vector>
 #include <nrlib/flens/nrlib_flens.hpp>
-#include "nrlib/grid/grid2d.hpp"
+#include <nrlib/grid/grid2d.hpp>
 #include <rplib/distributionsrockt0.h>
+#include <rplib/trinormalwith2dtrend.h>
 
 class Rock;
-class TriNormalWith2DTrend;
 class Pdf3D;
 
 class MultiNormalDistributedRockT0 : public DistributionsRockT0 {
 public:
 
-  MultiNormalDistributedRockT0(const TriNormalWith2DTrend& mult_normal_distr);
+  MultiNormalDistributedRockT0(const TriNormalWith2DTrend & mult_normal_distr);
 
   virtual ~MultiNormalDistributedRockT0();
 
@@ -26,7 +26,7 @@ public:
   virtual Pdf3D * GeneratePdf(void) const;
 
 private:
-  const TriNormalWith2DTrend& mult_normal_distr_;
+  TriNormalWith2DTrend mult_normal_distr_;
 
 
 };

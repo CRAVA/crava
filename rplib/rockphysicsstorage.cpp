@@ -114,24 +114,32 @@ GaussianRockPhysicsStorage::GenerateRockPhysics(const std::string               
       log_cov(i,j) = log_cov(j,i);
   }
 
-  delete correlation_vp_vs_trend;
-  delete correlation_vp_density_trend;
-  delete correlation_vs_density_trend;
-
-  for(int i=0; i<3; i++) {
-    delete mean_vec[i];
-
-    for(int j=0; j<3; j++) {
-      delete cov_mat(i,j);
-    }
-  }
-
   TriNormalWith2DTrend multi(log_mean[0],
                              log_mean[1],
                              log_mean[2],
                              log_cov);
 
   DistributionsRockT0 * rock = new MultiNormalDistributedRockT0(multi);
+
+  delete mean_vp_trend;
+  delete mean_vs_trend;
+  delete mean_density_trend;
+  delete variance_vp_trend;
+  delete variance_vs_trend;
+  delete variance_density_trend;
+  delete covariance_vp_vs_trend;
+  delete covariance_vp_density_trend;
+  delete covariance_vs_density_trend;
+  delete correlation_vp_vs_trend;
+  delete correlation_vp_density_trend;
+  delete correlation_vs_density_trend;
+
+  for(int i=0; i<3; i++) {
+    delete log_mean[i];
+    for(int j=i; j<3; j++) {
+      delete log_cov(i,j);
+    }
+  }
 
   return(rock);
 }
