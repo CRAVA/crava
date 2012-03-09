@@ -17,13 +17,13 @@ public:
 
   virtual ~MultiNormalDistributedRockT0();
 
-  virtual Rock  * GenerateSample(const std::vector<double> & trend_params) const;
+  virtual Rock                     * GenerateSample(const std::vector<double> & trend_params) const;
 
-  virtual std::vector<double> GetExpectation(const std::vector<double> & trend_params) const;
+  virtual std::vector<double>        GetExpectation(const std::vector<double> & trend_params) const;
 
-  virtual NRLib::Grid2D<double> GetCovariance(const std::vector<double> & trend_params) const;
+  virtual NRLib::Grid2D<double>      GetCovariance(const std::vector<double> & trend_params) const;
 
-  virtual Pdf3D * GeneratePdf(void) const;
+  virtual Pdf3D                    * GeneratePdf() const;
 
 private:
   TriNormalWith2DTrend mult_normal_distr_;

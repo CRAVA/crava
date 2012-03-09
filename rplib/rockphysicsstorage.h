@@ -15,7 +15,7 @@ public:
   virtual DistributionsRockT0 * GenerateRockPhysics(const std::string                      & /*path*/,
                                                     const std::vector<std::string>         & /*trend_cube_parameters*/,
                                                     const std::vector<std::vector<float> > & /*trend_cube_sampling*/,
-                                                    std::string                            & /*errTxt*/) const = 0;
+                                                    std::string                            & /*errTxt*/)                    const = 0;
 };
 
 class GaussianRockPhysicsStorage : public RockPhysicsStorage {

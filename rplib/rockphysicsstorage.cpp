@@ -16,15 +16,15 @@ RockPhysicsStorage::~RockPhysicsStorage()
 }
 
 //----------------------------------------------------------------------------------//
-GaussianRockPhysicsStorage::GaussianRockPhysicsStorage(NRLib::TrendStorage *mean_vp,
-                                                       NRLib::TrendStorage *mean_vs,
-                                                       NRLib::TrendStorage *mean_density,
-                                                       NRLib::TrendStorage *variance_vp,
-                                                       NRLib::TrendStorage *variance_vs,
-                                                       NRLib::TrendStorage *variance_density,
-                                                       NRLib::TrendStorage *correlation_vp_vs,
-                                                       NRLib::TrendStorage *correlation_vp_density,
-                                                       NRLib::TrendStorage *correlation_vs_density)
+GaussianRockPhysicsStorage::GaussianRockPhysicsStorage(NRLib::TrendStorage * mean_vp,
+                                                       NRLib::TrendStorage * mean_vs,
+                                                       NRLib::TrendStorage * mean_density,
+                                                       NRLib::TrendStorage * variance_vp,
+                                                       NRLib::TrendStorage * variance_vs,
+                                                       NRLib::TrendStorage * variance_density,
+                                                       NRLib::TrendStorage * correlation_vp_vs,
+                                                       NRLib::TrendStorage * correlation_vp_density,
+                                                       NRLib::TrendStorage * correlation_vs_density)
 : mean_vp_(mean_vp),
   mean_vs_(mean_vs),
   mean_density_(mean_density),
@@ -39,6 +39,15 @@ GaussianRockPhysicsStorage::GaussianRockPhysicsStorage(NRLib::TrendStorage *mean
 
 GaussianRockPhysicsStorage::~GaussianRockPhysicsStorage()
 {
+  delete mean_vp_;
+  delete mean_vs_;
+  delete mean_density_;
+  delete variance_vp_;
+  delete variance_vs_;
+  delete variance_density_;
+  delete correlation_vp_vs_;
+  delete correlation_vp_density_;
+  delete correlation_vs_density_;
 }
 
 DistributionsRockT0 *

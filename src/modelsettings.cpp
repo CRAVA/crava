@@ -184,6 +184,9 @@ ModelSettings::~ModelSettings(void)
 
   if(traceHeaderFormatOutput_ != NULL)
     delete traceHeaderFormatOutput_;
+
+  for(size_t i=0; i<rockPhysics_.size(); i++)
+    delete rockPhysics_[i];
 }
 
 bool
