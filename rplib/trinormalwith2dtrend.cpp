@@ -28,6 +28,10 @@ TriNormalWith2DTrend::TriNormalWith2DTrend(NRLib::Trend               *  mean_tr
 
 }
 
+TriNormalWith2DTrend::TriNormalWith2DTrend()
+{
+}
+
 TriNormalWith2DTrend::~TriNormalWith2DTrend()
 {
   delete mean_trend_vp_;

@@ -23,6 +23,8 @@ class TriNormalWith2DTrend {
                         NRLib::Trend               *  mean_trend_rho,
                         NRLib::Grid2D<NRLib::Trend *> covariance_matrix);
 
+   TriNormalWith2DTrend();
+
    virtual ~TriNormalWith2DTrend();
 
    void     ReSample(const NRLib::Normal & vp01,

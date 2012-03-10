@@ -9,7 +9,7 @@
 class Pdf3DGaussian : public Pdf3D {
 public:
 
-  Pdf3DGaussian(const TriNormalWith2DTrend & tri_normal_distr);
+  Pdf3DGaussian(TriNormalWith2DTrend * tri_normal_distr);
 
   virtual ~Pdf3DGaussian();
 
@@ -21,7 +21,7 @@ public:
 
 private:
 
-  TriNormalWith2DTrend tri_normal_distr_;
+  TriNormalWith2DTrend * tri_normal_distr_; //deleted in MultiNormalDistributedRockT0
 
 };
 

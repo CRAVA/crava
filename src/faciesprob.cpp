@@ -1315,7 +1315,6 @@ void FaciesProb::calculateFaciesProbFromRockPhysicsModel(FFTGrid                
     for(int i=0; i<nFacies_; i++)
       priorFaciesCubes[i]->setAccessMode(FFTGrid::READ);
 
-  int smallrnxp = faciesProb_[0]->getRNxp();
 
   std::vector<Pdf3D *> rock_pdf(nFacies_);
   for(int i=0; i<nFacies_; i++)
@@ -1337,8 +1336,9 @@ void FaciesProb::calculateFaciesProbFromRockPhysicsModel(FFTGrid                
   double dens;
   double dummy = 0;
 
-  double * value  = new double[nFacies_];
-  float  undefSum = p_undefined / 10; //Nevner må beregnes
+  double * value   = new double[nFacies_];
+  float  undefSum  = p_undefined / 10; //Nevner må beregnes
+  int    smallrnxp = faciesProb_[0]->getRNxp();
 
   for(int i=0; i<nzp; i++){
     for(int j=0; j<nyp; j++){
