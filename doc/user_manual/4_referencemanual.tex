@@ -1862,6 +1862,54 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
    \item \Default 6.0 Hz
  \elist
 
+\subsubsection{\hbracket{multizone-model}}\newkw{multizone-model}
+ \slist
+   \item \Description  Information about the multizone background model
+   \item \Argument Elements containing information about the multizone background model
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{top-surface-file}}\rnewkw{top-surface-file}{top-surface-file4}
+ \slist
+   \item \Description Name of the top surface file used in multizone background estimation
+   \item \Argument File name
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{top-surface-erosion-priority}}\newkw{top-surface-erosion-priority}
+ \slist
+   \item \Description Priority of the top surface file. The top surface file and all base surface files in the zones need to given different priority
+   \item \Argument Int
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{zone}}\newkw{zone}
+ \slist
+   \item \Description Information about the different zones in the multizone background model
+   \item \Argument Elements controlling the zones of the multizone background model
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{base-surface-file}}\rnewkw{base-surface-file}{base-surface-file4}
+ \slist
+   \item \Description Name of a base surface file. The base surface files need to be given in descending order such that surfaces that are higher in the reservoir comes in before surfaces that are further down.
+   \item \Argument File name
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{erosion-priority}}\newkw{erosion-priority}
+ \slist
+   \item \Description Priority of the base surface file. The top surface file and all base surface files in the zones need to given different priority
+   \item \Argument Int
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{correlation-structure}}\newkw{correlation-structure}
+ \slist
+   \item \Description Correlation structure of the zone
+   \item \Argument 'top', 'base' or 'compaction'
+   \item \Default
+ \elist
 
 \subsection{\hbracket{earth-model}}\newkw{earth-model}
  \slist

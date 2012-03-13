@@ -223,6 +223,9 @@ public:
   void addEstRangeX(float estRangeX)                      { estRangeX_.push_back(estRangeX)                      ;}
   void addEstRangeY(float estRangeY)                      { estRangeY_.push_back(estRangeY)                      ;}
 
+  void addErosionPriority(int priority)                   { erosionPriority_.push_back(priority)                 ;}
+  void addCorrelationStructure(int structure)             { correlationStructure_.push_back(structure)           ;}
+
   void addTrendCubeParameter(std::string parameterName)                  { trendCubeParameter_.push_back(parameterName)                   ;}
   void addRockName(std::string rockName)                                 { rockName_.push_back(rockName)                                  ;}
   void addRockPhysicsStorage(RockPhysicsStorage * rock)                  { rockPhysics_.push_back(rock)                                   ;}
@@ -417,10 +420,6 @@ public:
                             FACIES_FROM_MODEL_FILE,
                             FACIES_FROM_CUBES};
 
-  enum          gaussianTrend{TREND_CONSTANT,
-                              TREND_1D,
-                              TREND_2D};
-
   enum          sseismicTypes{STANDARDSEIS = 0, PSSEIS = 1};
 
   enum          indicators{NO, YES, NOTSET};
@@ -430,6 +429,10 @@ public:
                                   AREA_FROM_GRID_DATA_AND_SURFACE, // Force area to be aligned with seismic data
                                   AREA_FROM_UTM,
                                   AREA_FROM_SURFACE};
+
+  enum          correlationStructure{TOP,
+                                     BASE,
+                                     COMPACTION};
 private:
 
   std::vector<Vario*>               angularCorr_;                // Variogram for lateral error correlation, time lapse
@@ -638,6 +641,9 @@ private:
   std::vector<int>                  vintageDay_;                 // Day of month the seismic time lapse data were collected
   std::vector<int>                  vintageMonth_;               // Month the seismic time lapse data were collected
   std::vector<int>                  vintageYear_;                // Year the seismic time lapse data were collected
+
+  std::vector<int>                  erosionPriority_;            // Erosion priority of the different layers in the multizone background model
+  std::vector<int>                  correlationStructure_;       // Correlation structure for the different layers in the multizone background model
 
   std::vector<std::string>                         trendCubeParameter_;          // Name of the trend parameters in the rock physics model
   std::vector<std::string>                         rockName_;                    // Name of rock in the rock physics model

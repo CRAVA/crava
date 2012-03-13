@@ -74,6 +74,8 @@ InputFiles::addInputPathAndCheckFiles()
     errTxt += addPathAndCheck(timeSurfFiles_[i], true);
   for(i=0;i<depthSurfFiles_.size();i++)
     errTxt += addPathAndCheck(depthSurfFiles_[i]);
+  for(i=0;i<multizoneSurfaceFiles_.size();i++)
+    errTxt += addPathAndCheck(multizoneSurfaceFiles_[i]);
   errTxt += addPathAndCheck(velocityField_);
   for(i=0;i<backFile_.size();i++)
     errTxt += addPathAndCheck(backFile_[i]);
@@ -91,16 +93,6 @@ InputFiles::addInputPathAndCheckFiles()
   }
   for(i=0;i<trendCubes_.size();i++)
     errTxt += addPathAndCheck(trendCubes_[i]);
-
-  std::map<std::string, std::string>::iterator k;
-  for(k=trendFileOneRock_.begin(); k!=trendFileOneRock_.end(); k++)
-    errTxt += addPathAndCheck(k->second);
-
-  for(i=0;i<trendFile_.size();i++){
-    std::map<std::string, std::string>::iterator j;
-    for(j=trendFile_[i].begin(); j!=trendFile_[i].end(); j++)
-      errTxt += addPathAndCheck(j->second);
-  }
 
   return(errTxt);
 }

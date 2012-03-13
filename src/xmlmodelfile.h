@@ -51,6 +51,8 @@ private:
   bool parseEarthModel(TiXmlNode * node, std::string & errTxt);
   bool parsePriorLocalWavelet(TiXmlNode * node, std::string & errTxt);
   bool   parseBackground(TiXmlNode * node, std::string & errTxt);
+  bool parseMultizoneModel(TiXmlNode * node, std::string & errTxt);
+  bool parseZone(TiXmlNode * node, std::string & errTxt);
   bool   parseFaciesProbabilities(TiXmlNode * node, std::string & errTxt);
   bool   parsePriorFaciesProbabilities(TiXmlNode * node, std::string & errTxt);
   bool   parseFaciesEstimationInterval(TiXmlNode * node, std::string & errTxt);

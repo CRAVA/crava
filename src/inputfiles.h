@@ -40,7 +40,6 @@ public:
   const std::map<std::string,std::string> & getPriorFaciesProbFile(void)   const {return priorFaciesProb_ ;}
   const std::string              & getAreaSurfaceFile(void)      const { return areaSurfaceFile_      ;}
   const std::string              & getTrendCube(int i)           const { return trendCubes_[i]        ;}
-  const std::map<std::string, std::string> & getTrendFile(int i) const { return trendFile_[i]         ;}
 
   int                              getNumberOfSeismicFiles(int i)const { return static_cast<int>(timeLapseSeismicFiles_[i].size());}
 
@@ -60,6 +59,7 @@ public:
   void setFaciesEstIntFile(int i, const std::string & faciesEstIntFile)   { faciesEstIntFile_[i]  = faciesEstIntFile  ;}
   void addTimeSurfFile(const std::string & timeSurfFile)                  { timeSurfFiles_.push_back(timeSurfFile)    ;}
   void setDepthSurfFile(int i, const std::string & depthSurfFile)         { depthSurfFiles_[i]    = depthSurfFile     ;}
+  void addMultizoneSurfaceFile(const std::string & fileName)              { multizoneSurfaceFiles_.push_back(fileName);}
   void setVelocityField(const std::string & velocityField)                { velocityField_        = velocityField     ;}
   void setBackFile(int i, const std::string & backFile)                   { backFile_[i]          = backFile          ;}
   void setBackVelFile(const std::string & backVelFile)                    { backVelFile_          = backVelFile       ;}
@@ -71,8 +71,6 @@ public:
   void setInputDirectory(std::string inputDirectory)                      { inputDirectory_       = inputDirectory    ;}
   void setPriorFaciesProb(std::string name,std::string file)              { priorFaciesProb_[name] = file             ;}
   void addTrendCubes(std::string trendParameterFile)                      { trendCubes_.push_back(trendParameterFile) ;}
-  void addTrendFileOneRock(std::string name, std::string type)            { trendFileOneRock_[name] = type            ;}
-  void addTrendFile(void)                                                 { trendFile_.push_back(trendFileOneRock_)   ;}
   std::string addInputPathAndCheckFiles();
 
   void addDefaultWaveletEstIntFileTop(void)                               { waveletEstIntFileTop_.push_back("")       ;}
@@ -107,6 +105,7 @@ private:
   std::vector<std::string>   faciesEstIntFile_;      ///< File names: Facies estimation interval
   std::vector<std::string>   timeSurfFiles_;         ///< File names: top and base time surfaces
   std::vector<std::string>   depthSurfFiles_;        ///< File names: top and base depth surfaces
+  std::vector<std::string>   multizoneSurfaceFiles_; ///< File names: top and base surfaces for multizone background model
   std::string                velocityField_;         ///< File names: velocity field, or command
   std::vector<std::string>   backFile_;              ///< File names (temporarily stored).
   std::string                backVelFile_;           ///< File names Vp-velocity for background modelling
@@ -117,8 +116,6 @@ private:
   std::string                refSurfaceFile_;        ///< File name for reference time surface corresponding to z0.
 
   std::vector<std::string>                         trendCubes_;               ///< File name for the trend cubes in the rock physics model
-  std::map<std::string, std::string>               trendFileOneRock_;         ///< File names for the trend parameters of the characteristics meanVp, meanVs, meandensity, varVp, ... for one of the rocks in the Guassian rock physics prior model
-  std::vector<std::map<std::string, std::string> > trendFile_;                ///< File names for the trend parameters in trendFileOneRock_
 
   std::string                inputDirectory_;        ///< Base directory for input files.
   std::vector<std::string>   localNoiseFiles_;       ///< File names: local noise
