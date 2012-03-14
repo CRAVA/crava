@@ -352,7 +352,7 @@ Crava::computeVariances(fftw_real     * corrT,
       {
         std::string angle    = NRLib::ToString(thetaDeg_[l], 1);
         std::string fileName = IO::PrefixWavelet() + std::string("EnergyMatched_") + angle;
-        seisWavelet_[l]->writeWaveletToFile(fileName, 1.0); // dt_max = 1.0;
+        seisWavelet_[l]->writeWaveletToFile(fileName, 1.0,false); // dt_max = 1.0;
       }
       modelVariance_[l] *= gain*gain;
       signalVariance_[l] = errorVariance_[l] + modelVariance_[l];

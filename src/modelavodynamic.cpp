@@ -1262,12 +1262,20 @@ ModelAVODynamic::process1DWavelet(ModelSettings                * modelSettings,
          (modelSettings->getEstimationMode() && modelSettings->getEstimateWavelet(i))) {
         std::string type;
         if (modelSettings->getEstimateWavelet(i))
+        {
           type = "Estimated_";
+          wavelet->writeWaveletToFile(IO::PrefixWavelet()+type, 1.0,true); // dt_max = 1.0;
+        }
         else if (modelSettings->getWaveletScale(i) == 1.00)
+        {
           type = "";
+          wavelet->writeWaveletToFile(IO::PrefixWavelet()+type, 1.0,false); // dt_max = 1.0;
+        }
         else
+        {
           type = "Scaled_";
-        wavelet->writeWaveletToFile(IO::PrefixWavelet()+type, 1.0); // dt_max = 1.0;
+          wavelet->writeWaveletToFile(IO::PrefixWavelet()+type, 1.0,false); // dt_max = 1.0;
+        }
       }
 
       float SNRatio = modelSettings->getSNRatio(i);
@@ -1404,12 +1412,23 @@ ModelAVODynamic::process3DWavelet(ModelSettings                           * mode
          (modelSettings->getEstimationMode() && modelSettings->getEstimateWavelet(i))) {
         std::string type;
         if (modelSettings->getEstimateWavelet(i))
+        {
           type = "Estimated_";
+          if(wavelet->getDim()==1)
+            wavelet->writeWaveletToFile(IO::PrefixWavelet()+type, 1.0,true); // dt_max = 1.0;
+          else
+            wavelet->writeWaveletToFile(IO::PrefixWavelet()+type, 1.0,false); // dt_max = 1.0;
+        }
         else if (modelSettings->getWaveletScale(i) == 1.00)
+        {
           type = "";
+          wavelet->writeWaveletToFile(IO::PrefixWavelet()+type, 1.0,false); // dt_max = 1.0;
+        }
         else
+        {
           type = "Scaled_";
-        wavelet->writeWaveletToFile(IO::PrefixWavelet()+type, 1.0); // dt_max = 1.0;
+          wavelet->writeWaveletToFile(IO::PrefixWavelet()+type, 1.0,false); // dt_max = 1.0;
+        }
       }
 
       float SNRatio = modelSettings->getSNRatio(i);

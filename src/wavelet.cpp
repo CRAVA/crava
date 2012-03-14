@@ -113,7 +113,7 @@ Wavelet::Wavelet(const std::string & fileName,
     break;
   }
   formats_       = modelSettings->getWaveletFormatFlag();
-  waveletLength_ = findWaveletLength(modelSettings->getMinRelWaveletAmp());
+  waveletLength_ = findWaveletLength(modelSettings->getMinRelWaveletAmp(),0.0f);
   LogKit::LogFormatted(LogKit::Low,"\n  Estimated wavelet length:  %.1fms.\n",waveletLength_);
 
   if(errCode == 0) {
@@ -168,7 +168,7 @@ Wavelet::Wavelet(ModelSettings     * modelSettings,
 
 
   formats_       = modelSettings->getWaveletFormatFlag();
-  waveletLength_ = findWaveletLength(modelSettings->getMinRelWaveletAmp());
+  waveletLength_ = findWaveletLength(modelSettings->getMinRelWaveletAmp(),0.0f);
   LogKit::LogFormatted(LogKit::Low,"\n  Estimated wavelet length:  %.1fms.\n",waveletLength_);
 
   if(errCode == 0) {
@@ -456,7 +456,7 @@ Wavelet::resample(float dz,
   if( ModelSettings::getDebugLevel() > 0 ) {
     std::string fileName = "resampled_wavelet_";
     float dzOut = 1.0; // sample at least as dense as this
-    writeWaveletToFile(fileName, dzOut);
+    writeWaveletToFile(fileName, dzOut,false);
   }
 }
 
@@ -499,7 +499,8 @@ Wavelet::printToFile(const std::string & fileName,
 
 void
 Wavelet::writeWaveletToFile(const std::string & fileName,
-                            float               approxDzIn)
+                            float               approxDzIn,
+                            bool                makePrintedWaveletIntegralZero)
 {
   float approxDz = std::min(approxDzIn,static_cast<float>(floor(dz_*10)/10));
   approxDz = std::min(approxDzIn,dz_);
@@ -526,7 +527,6 @@ Wavelet::writeWaveletToFile(const std::string & fileName,
   fft1DInPlace();
 
   double         multiplyer = static_cast<double>(nzpNew)/static_cast<double>(nzp_);
-
   for(int i=0;i<cnzpNew;i++) {
     if(i < cnzp_) {
       waveletNew_c[i].re = static_cast<fftw_real>(cAmp_[i].re*multiplyer);
@@ -546,11 +546,58 @@ Wavelet::writeWaveletToFile(const std::string & fileName,
   }
   delete [] remember;
 
-
   Utils::fftInv(waveletNew_c,waveletNew_r,nzpNew );// note might be n^2 algorithm for some nzpNew
-
+  double sumPos = 0.0;
+  double sumNeg = 0.0;
   int wLength = int(floor(waveletLength_/dznew+0.5));
   int halfLength = wLength/2; // integer division
+
+  if( makePrintedWaveletIntegralZero)
+  {
+    // Hack for making integral of printed wavelet zero
+    for(int i=halfLength ; i > 0 ; i--)
+        if( waveletNew_r[nzpNew-i] > 0 )
+          sumPos +=waveletNew_r[nzpNew-i];
+        else
+          sumNeg +=waveletNew_r[nzpNew-i];
+
+    for(int i=0;i<=halfLength;i++)
+     if( waveletNew_r[i]  > 0 )
+          sumPos +=waveletNew_r[i];
+        else
+          sumNeg +=waveletNew_r[i];
+
+    double sumTot = sumPos+sumNeg ;
+    if(sumTot  < 0)
+    {
+      // sum is negative
+      // mute negative part
+      double muteFac=(fabs(sumNeg)-fabs(sumTot))/fabs(sumNeg);
+      for(int i=halfLength ; i > 0 ; i--)
+        if( waveletNew_r[nzpNew-i] < 0 )
+          waveletNew_r[nzpNew-i]*=muteFac;
+
+      for(int i=0;i<=halfLength;i++)
+        if( waveletNew_r[i]  < 0 )
+           waveletNew_r[i]*=muteFac;
+
+    }else
+    {
+      // sum is positive
+      // mute positive part
+      double muteFac=(sumPos-fabs(sumTot))/sumPos;
+      for(int i=halfLength ; i > 0 ; i--)
+        if( waveletNew_r[nzpNew-i] > 0 )
+          waveletNew_r[nzpNew-i]*=muteFac;
+
+      for(int i=0;i<=halfLength;i++)
+        if( waveletNew_r[i]  > 0 )
+           waveletNew_r[i]*=muteFac;
+
+    }
+  }
+
+
   wLength =  halfLength*2+1;// allways odd
   if( wLength>nzpNew) {
     wLength=2*(nzpNew/2)-1;// allways odd
@@ -636,6 +683,10 @@ Wavelet::writeWaveletToFile(const std::string & fileName,
     file.close();
   }
 
+
+
+
+
   delete [] waveletNew_r;
 }
 
@@ -696,7 +747,7 @@ Wavelet::doLocalShiftAndScale1D(Wavelet1D* localWavelet,// wavelet to shift and 
 }
 
 float
-Wavelet::findWaveletLength(float minRelativeAmp)
+Wavelet::findWaveletLength(float minRelativeAmp,float minimumWaveletLength)
 {
   bool trans=false;
   if(isReal_==false) {
@@ -723,11 +774,14 @@ Wavelet::findWaveletLength(float minRelativeAmp)
       break;
     }
   }
-  wLength = std::min(wLength,2*((nzp_+1)/2) - 1); // always odd number
+  wLength=std::max(wLength,2*(static_cast<int>(minimumWaveletLength/dz_+1)/2)+1); // always odd number
+  wLength = std::min(wLength,2*((nzp_+1)/2) - 1); // always odd number less than or equal to nzp_
+
   if(trans==true)
     fft1DInPlace();
 
-  return (dz_*static_cast<float>(wLength));
+
+  return ( dz_*static_cast<float>(wLength));
 }
 
 float
@@ -861,9 +915,10 @@ Wavelet::averageWavelets(const std::vector<std::vector<fftw_real> > & wavelet_r,
     }
   }
 
-  std::string fileName;
-  fileName = "wavelet_"+NRLib::ToString(int(floor(theta_/NRLib::Pi*180+0.5)))+"_fftOrder_noshift";
-  printVecToFile(fileName,wave,nzp_);
+  // if(debugLevel)
+  //std::string fileName;
+  //fileName = "wavelet_"+NRLib::ToString(int(floor(theta_/NRLib::Pi*180+0.5)))+"_fftOrder_noshift";
+  //printVecToFile(fileName,wave,nzp_);
 
   return wave;
 }

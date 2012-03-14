@@ -198,9 +198,13 @@ Wavelet1D::Wavelet1D(Simbox                       * simbox,
     std::vector<float> shiftWell(nWells);
     float shiftAvg = shiftOptimal(ccor_seis_cpp_r, wellWeight, dzWell, nWells, nzp_, shiftWell, modelSettings->getMaxWaveletShift());
     multiplyPapolouis(ccor_seis_cpp_r, dzWell, nWells, nzp_, waveletTaperLength, wellWeight);
+    for(int w=0;w<nWells;w++)
+    {
+      if(wellWeight[w]>0)
+        adjustLowfrequency(ccor_seis_cpp_r[w], dzWell[w],  nzp_, waveletTaperLength);
+    }
     multiplyPapolouis(cor_cpp_r, dzWell, nWells, nzp_, waveletTaperLength, wellWeight);
-    getWavelet(ccor_seis_cpp_r, cor_cpp_r, wavelet_r, wellWeight, nWells, nzp_);
-
+    findWavelet(ccor_seis_cpp_r, cor_cpp_r, wavelet_r, wellWeight, nWells, nzp_);
     // Save estimated wavelet for each well, write to file later because waveletlength calculted for average wavelet is used for all well wavelets
     // to simplify comparison
     std::vector<std::vector<fftw_real> > wellWavelets(nWells);
@@ -213,9 +217,29 @@ Wavelet1D::Wavelet1D(Simbox                       * simbox,
           wellWavelets[w][i] = 0;
       }
     }
-
     rAmp_ = averageWavelets(wellWavelets, nWells, nzp_, wellWeight, dzWell, dz_); // wavelet centered
+    adjustLowfrequency(rAmp_, dz_,  nzp_, waveletTaperLength);
     cAmp_ = reinterpret_cast<fftw_complex*>(rAmp_);
+
+    for(int w=0;w<nWells;w++)
+    {
+      if(wellWeight[w]>0)
+        adjustLowfrequency(wavelet_r[w], dzWell[w],  nzp_, waveletTaperLength);
+    }
+
+
+    // Save estimated wavelet for each well, write to file later because waveletlength calculted for average wavelet is used for all well wavelets
+    // to simplify comparison
+    for(int w=0; w<nWells; w++) {
+      wellWavelets[w].resize(nzp_);
+      for(int i=0;i<nzp_;i++) {
+        if(wellWeight[w] > 0)
+          wellWavelets[w][i] = wavelet_r[w][i];
+        else
+          wellWavelets[w][i] = 0;
+      }
+    }
+
 
     for(int w=0;w<nWells;w++) { // gets syntetic seismic with estimated wavelet
       fillInnWavelet(wavelet_r[w], nzp_, dzWell[w]);
@@ -246,34 +270,45 @@ Wavelet1D::Wavelet1D(Simbox                       * simbox,
 
     shiftAndScale(shiftAvg, scaleOpt);//shifts wavelet average from wells
     invFFT1DInPlace();
-    waveletLength_ = findWaveletLength(modelSettings->getMinRelWaveletAmp());
+    waveletLength_ = findWaveletLength(modelSettings->getMinRelWaveletAmp(),modelSettings->getWaveletTaperingL());
     LogKit::LogFormatted(LogKit::Low,"  Estimated wavelet length:  %.1fms\n",waveletLength_);
 
-    if( ModelSettings::getDebugLevel() > 0 )
-      writeWaveletToFile("estimated_wavelet_", 1.0f);
+    if( ModelSettings::getDebugLevel() > 0 ){
+      writeWaveletToFile("estimated_wavelet_adjusted_", 1.0f,true);
+      writeWaveletToFile("estimated_wavelet_", 1.0f,false);
+    }
 
     norm_ = findNorm();
 
     //Writing well wavelets to file. Using writeWaveletToFile, so manipulating rAmp_
     fftw_real * trueAmp = rAmp_;
+
+
+
+    float  truedDz=dz_;
     rAmp_               = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));
     cAmp_               = reinterpret_cast<fftw_complex *>(rAmp_);
     for(int w=0; w<nWells; w++) {
       if (wells[w]->getUseForWaveletEstimation() &&
          ((modelSettings->getWaveletOutputFlag() & IO::WELL_WAVELETS)>0 || modelSettings->getEstimationMode()))
       {
+        dz_=dzWell[w];
         for(int i=0;i<nzp_;i++)
           rAmp_[i] = wellWavelets[w][i];
         std::string wellname(wells[w]->getWellname());
         NRLib::Substitute(wellname,"/","_");
         NRLib::Substitute(wellname," ","_");
         fileName = IO::PrefixWellWavelet() + wellname + "_";
-        writeWaveletToFile(fileName, 1.0f);
+        writeWaveletToFile(fileName, 1.0f,true);
       }
     }
+
     fftw_free(rAmp_);
     rAmp_ = trueAmp;
     cAmp_ = reinterpret_cast<fftw_complex *>(rAmp_);
+    dz_   = truedDz;
+
+
 
     if(ModelSettings::getDebugLevel() > 1)
       writeDebugInfo(seis_r, cor_cpp_r, ccor_seis_cpp_r, cpp_r, nWells);
@@ -1415,7 +1450,57 @@ Wavelet1D::multiplyPapolouis(fftw_real                ** vec,
 }
 
 void
-Wavelet1D::getWavelet(fftw_real               ** ccor_seis_cpp_r,
+Wavelet1D::adjustLowfrequency(fftw_real                * vec_r,
+                             float                       dz,
+                             int                         nzp,
+                             float                       waveletLength) const
+{
+  assert(nzp==nzp_);
+
+  fftw_real              * taper_r;
+  taper_r                = new fftw_real[rnzp_];
+  fftw_complex * taper_c = reinterpret_cast<fftw_complex*>(taper_r);
+  fftw_complex * vec_c;
+  float wHL              = float( waveletLength/2.0);
+  float weight,dist;
+
+  taper_r[0]=1;
+  for(int i=1;i<nzp_;i++) {
+    dist = std::min(i,nzp_-i)*dz;
+    if(dist < wHL) {
+      weight  = float(1.0/NRLib::Pi*fabs(sin(NRLib::Pi*(dist)/wHL)));
+      weight += float((1-fabs(dist)/wHL)*cos(NRLib::Pi*dist/wHL));
+    }
+    else
+    {
+      vec_r[i]=0;
+      weight=0;
+    }
+    taper_r[i]=weight;
+  }
+  Utils::fft(taper_r, taper_c, nzp_);
+
+  vec_c=reinterpret_cast<fftw_complex*>(vec_r);
+  Utils::fft(vec_r,vec_c, nzp_);
+  float baseScale = sqrt((vec_c[0].re*vec_c[0].re+vec_c[0].im*vec_c[0].im)/(taper_c[0].re*taper_c[0].re+taper_c[0].im*taper_c[0].im));
+  vec_c[0].re = 0.0f;
+  vec_c[0].im = 0.0f;
+  for(int i=1;i<cnzp_;i++) {
+    float modFac = baseScale* sqrt(taper_c[i].re*taper_c[i].re + taper_c[i].im*taper_c[i].im);   // vec_c[0].im is allways zero
+    float curFac = sqrt(vec_c[i].re*vec_c[i].re + vec_c[i].im*vec_c[i].im);
+    float adjustFac =(curFac-modFac)/curFac;
+    vec_c[i].re = adjustFac * vec_c[i].re;
+    vec_c[i].im = adjustFac * vec_c[i].im;
+  }
+  Utils::fftInv(vec_c,vec_r, nzp_);
+
+  delete [] taper_r;
+}
+
+
+
+void
+Wavelet1D::findWavelet(fftw_real               ** ccor_seis_cpp_r,
                       fftw_real               ** cor_cpp_r,
                       fftw_real               ** wavelet_r,
                       const std::vector<float> & wellWeight,
@@ -1436,8 +1521,10 @@ Wavelet1D::getWavelet(fftw_real               ** ccor_seis_cpp_r,
       wav    = reinterpret_cast<fftw_complex*>(wavelet_r[w]);
 
       for(int i=0;i<cnzp;i++)
-      {
-        wav[i].re=c_sc[i].re/c_cc[i].re;//note c_cc[i].im =0
+      {// NOTE c_cc is a strictly non negative function which has been smoothed,
+       // Thus the minimum value is not likely to be very small.
+       // Hence it is unlikely that this division will cause instability
+        wav[i].re=c_sc[i].re/c_cc[i].re; //note c_cc[i].im =0
         wav[i].im=c_sc[i].im/c_cc[i].re;
       }
       Utils::fftInv(c_sc,ccor_seis_cpp_r[w],nt);
