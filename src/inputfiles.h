@@ -56,6 +56,7 @@ public:
   void setFaciesEstIntFile(int i, const std::string & faciesEstIntFile)   { faciesEstIntFile_[i]  = faciesEstIntFile  ;}
   void addTimeSurfFile(const std::string & timeSurfFile)                  { timeSurfFiles_.push_back(timeSurfFile)    ;}
   void setDepthSurfFile(int i, const std::string & depthSurfFile)         { depthSurfFiles_[i]    = depthSurfFile     ;}
+  void addMultizoneSurfaceFile(const std::string & fileName)              { multizoneSurfaceFiles_.push_back(fileName);}
   void setVelocityField(const std::string & velocityField)                { velocityField_        = velocityField     ;}
   void setBackFile(int i, const std::string & backFile)                   { backFile_[i]          = backFile          ;}
   void setBackVelFile(const std::string & backVelFile)                    { backVelFile_          = backVelFile       ;}
@@ -84,6 +85,7 @@ private:
   std::vector<std::string>   faciesEstIntFile_;      ///< File names: Facies estimation interval
   std::vector<std::string>   timeSurfFiles_;         ///< File names: top and base time surfaces
   std::vector<std::string>   depthSurfFiles_;        ///< File names: top and base depth surfaces
+  std::vector<std::string>   multizoneSurfaceFiles_; ///< File names: top and base surfaces for multizone background model
   std::string                velocityField_;         ///< File names: velocity field, or command
   std::vector<std::string>   backFile_;              ///< File names (temporarily stored).
   std::string                backVelFile_;           ///< File names Vp-velocity for background modelling

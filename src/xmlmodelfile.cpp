@@ -1247,6 +1247,7 @@ XmlModelFile::parseBackground(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("velocity-field");
   legalCommands.push_back("lateral-correlation");
   legalCommands.push_back("high-cut-background-modelling");
+  legalCommands.push_back("multizone-model");
 
   modelSettings_->setBackgroundType("background");
 
@@ -1368,10 +1369,86 @@ XmlModelFile::parseBackground(TiXmlNode * node, std::string & errTxt)
   if(parseValue(root, "high-cut-background-modelling", value, errTxt) == true)
     modelSettings_->setMaxHzBackground(value);
 
+  parseMultizoneModel(root,errTxt);
+
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
 
+
+bool
+XmlModelFile::parseMultizoneModel(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("multizone-model");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("top-surface-file");
+  legalCommands.push_back("top-surface-erosion-priority");
+  legalCommands.push_back("zone");
+
+  std::string file_name;
+  if(parseFileName(root, "top-surface-file", file_name, errTxt) == true)
+    inputFiles_->addMultizoneSurfaceFile(file_name);
+  else
+    errTxt += "<top-surface-file> needs to be given in <background><multizone-model>\n";
+
+  int erosion_priority;
+  if(parseValue(root, "top-surface-erosion-priority", erosion_priority, errTxt) == true)
+    modelSettings_->addErosionPriority(erosion_priority);
+  else
+    errTxt += "<top-surface-erosion-priority> needs to be given in <background><multizone-model>\n";
+
+  modelSettings_->addCorrelationStructure(ModelSettings::TOP); //Dummy variable used for balance in vector
+
+  while(parseZone(root,errTxt) == true);
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseZone(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("zone");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("base-surface-file");
+  legalCommands.push_back("erosion-priority");
+  legalCommands.push_back("correlation-structure");
+
+  std::string file_name;
+  if(parseFileName(root, "base-surface-file", file_name, errTxt) == true)
+    inputFiles_->addMultizoneSurfaceFile(file_name);
+  else
+    errTxt += "<base-surface-file> needs to be given for all zones in <background><multizone-model><zone>\n";
+
+  int erosion_priority;
+  if(parseValue(root, "erosion-priority", erosion_priority, errTxt) == true)
+    modelSettings_->addErosionPriority(erosion_priority);
+  else
+    errTxt += "<erosion-priority> needs to be given for all zones in <background><multizone-model><zone>\n";
+
+  std::string correlation_structure;
+  if(parseValue(root, "correlation-structure", correlation_structure, errTxt) == true) {
+    if(correlation_structure == "top")
+      modelSettings_->addCorrelationStructure(ModelSettings::TOP);
+    else if(correlation_structure == "base")
+      modelSettings_->addCorrelationStructure(ModelSettings::BASE);
+    else if(correlation_structure == "compaction")
+      modelSettings_->addCorrelationStructure(ModelSettings::COMPACTION);
+    else
+      errTxt += "<correlation-structure> in <background><multizone-model><zone> needs to be either 'top', 'base' or 'compaction'\n";
+  }
+  else
+    errTxt += "<correlation-structure> needs to be given for all zones in <background><multizone-model><zone>\n";
+
+  checkForJunk(root, errTxt, legalCommands, true);
+  return(true);
+}
 
 bool
 XmlModelFile::parseFaciesProbabilities(TiXmlNode * node, std::string & errTxt)

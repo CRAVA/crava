@@ -221,6 +221,9 @@ public:
   void addEstRangeX(float estRangeX)                      { estRangeX_.push_back(estRangeX)                      ;}
   void addEstRangeY(float estRangeY)                      { estRangeY_.push_back(estRangeY)                      ;}
 
+  void addErosionPriority(int priority)                   { erosionPriority_.push_back(priority)                 ;}
+  void addCorrelationStructure(int structure)             { correlationStructure_.push_back(structure)           ;}
+
   void setEstimateBackground(bool estimateBackground)     { estimateBackground_       = estimateBackground       ;}
   void setEstimateCorrelations(bool estimateCorrelations) { estimateCorrelations_     = estimateCorrelations     ;}
   void setEstimateWaveletNoise(bool estimateWaveletNoise) { estimateWaveletNoise_     = estimateWaveletNoise     ;}
@@ -356,6 +359,10 @@ public:
                                   AREA_FROM_GRID_DATA_AND_SURFACE, ///< Force area to be aligned with seismic data
                                   AREA_FROM_UTM,
                                   AREA_FROM_SURFACE};
+
+  enum          correlationStructure{TOP,
+                                     BASE,
+                                     COMPACTION};
 private:
 
   Vario                           * angularCorr_;                ///< Variogram for lateral error correlation
@@ -551,6 +558,9 @@ private:
   double                            wavelet3DTuningFactor_;      ///< Large value forces better fit of wavelet
   double                            gradientSmoothingRange_;     ///< Controls smoothing of gradient used in 3D wavelet estimate/inversion
   bool                              wellGradientFromSeismic_;    ///< Estimate well gradient used for 3D wavelet estimation from seismic?
+
+  std::vector<int>                  erosionPriority_;            // Erosion priority of the different layers in the multizone background model
+  std::vector<int>                  correlationStructure_;       // Correlation structure for the different layers in the multizone background model
 
   int                               logLevel_;
 
