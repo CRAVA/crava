@@ -33,6 +33,7 @@ ModelSettings::ModelSettings(void)
   lateralCorr_             = new GenExpVario(1, 1000, 1000);
   backgroundVario_         = new GenExpVario(1, 2000, 2000);
   localWaveletVario_       =     NULL; // Will be set equal to backgroundVario unless it is set separately
+  geometry_full_           =     NULL;
   geometry_                =     NULL;
   traceHeaderFormat_       =     NULL;
   traceHeaderFormatOutput_ = new TraceHeaderFormat(TraceHeaderFormat::SEISWORKS);
@@ -80,9 +81,16 @@ ModelSettings::ModelSettings(void)
   maxWellShift_            =    11.0f;
   maxWellOffset_           =   250.0f;
 
+  defaultWaveletLength_    =   200.0f;
+  guard_zone_              =  defaultWaveletLength_*0.5f;
+  smooth_length_           =  defaultWaveletLength_*0.5f;
+
   minRelWaveletAmp_        =    0.04f;
   maxWaveletShift_         =    11.0f;
   waveletTaperingL_        =   200.0f;
+
+  wavelet3DTuningFactor_   =     50.0; // double
+  gradientSmoothingRange_  =    100.0; // double
 
   minSamplingDensity_      =     0.5f;
   minHorizontalRes_        =     5.0f;
@@ -130,6 +138,7 @@ ModelSettings::ModelSettings(void)
   forwardModeling_         =    false;
   generateBackground_      =     true;
   useAIBackground_         =    false;
+  useSIBackground_         =    false;
   useVpVsBackground_       =    false;
   estimateFaciesProb_      =    false;
   faciesProbRelative_      =     true;
@@ -145,6 +154,7 @@ ModelSettings::ModelSettings(void)
   noWellNeeded_            =    false;
   noSeismicNeeded_         =    false;
   snapGridToSeismicData_   =    false;
+  wellGradientFromSeismic_ =    false;
 
   priorFaciesProbGiven_    = ModelSettings::FACIES_FROM_WELLS;
 
@@ -178,6 +188,9 @@ ModelSettings::~ModelSettings(void)
 
   if(geometry_ != NULL)
     delete geometry_;
+
+  if(geometry_ != NULL)
+    delete geometry_full_;
 
   if(traceHeaderFormat_ != NULL)
     delete traceHeaderFormat_;
@@ -300,6 +313,15 @@ ModelSettings::setAreaParameters(const SegyGeometry * geometry)
     delete geometry_;      // Needed for snap_grid_to_seismic_data
   }
   geometry_ = new SegyGeometry(geometry);
+}
+
+void
+ModelSettings::setSeismicDataAreaParameters(const SegyGeometry * geometry)
+{
+  if (geometry_full_ != NULL) {
+    delete geometry_full_;
+  }
+  geometry_full_ = new SegyGeometry(geometry);
 }
 
 void

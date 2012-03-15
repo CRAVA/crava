@@ -25,6 +25,7 @@ WellData::WellData(const std::string              & wellFileName,
                    const std::vector<bool>        & inverseVelocity,
                    ModelSettings                  * modelSettings,
                    int                              indicatorFacies,
+                   int                              indicatorFiltering,
                    int                              indicatorWavelet,
                    int                              indicatorBGTrend,
                    int                              indicatorRealVs,
@@ -50,6 +51,7 @@ WellData::WellData(const std::string              & wellFileName,
     blockedLogsConstThick_(NULL),
     blockedLogsExtendedBG_(NULL),
     useForFaciesProbabilities_(indicatorFacies),
+    useForFiltering_(indicatorFiltering),
     useForWaveletEstimation_(indicatorWavelet),
     useForBackgroundTrend_(indicatorBGTrend),
     realVsLog_(indicatorRealVs)
@@ -1429,6 +1431,19 @@ WellData::applyFilter(float * log_filtered, float *log_interpolated, int n_time_
 bool compare(const std::pair<int, float>& i1, const std::pair<int, float>& i2)
 {
   return (i1.second < i2.second);
+}
+
+//----------------------------------------------------------------------------
+void
+WellData::findILXLAtStartPosition(void)
+{
+  const SegyGeometry * full_geometry = modelSettings_->getSeismicDataAreaParameters();
+
+  if (full_geometry != NULL) {
+    int IL0, XL0;
+    full_geometry->FindILXL(static_cast<float>(xpos0_), static_cast<float>(ypos0_), IL0, XL0);
+    LogKit::LogFormatted(LogKit::Low,"   IL/XL at start of well is %d/%d\n",IL0,XL0);
+  }
 }
 
 //----------------------------------------------------------------------------

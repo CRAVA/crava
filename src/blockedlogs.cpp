@@ -1873,8 +1873,8 @@ void BlockedLogs::findOptimalWellLocation(FFTGrid                   ** seisCube,
 
 
 void BlockedLogs::setSeismicGradient(double v0,
-                                      const NRLib::Grid2D<float>   &    stuctureDepthGradX,
-                                      const NRLib::Grid2D<float>   &    stuctureDepthGradY,
+                                      const NRLib::Grid2D<float>   &    structureDepthGradX,
+                                      const NRLib::Grid2D<float>   &    structureDepthGradY,
                                       const NRLib::Grid2D<float>   &    refTimeGradX ,
                                       const NRLib::Grid2D<float>   &    refTimeGradY,
                                       std::vector<double>        & xGradient,
@@ -1887,8 +1887,8 @@ void BlockedLogs::setSeismicGradient(double v0,
   for(int k = 0; k < nBlocks_; k++){
     int i = ipos_[k];
     int j = jpos_[k];
-    xGradient[k]= stuctureDepthGradX(i,j)*mp+refTimeGradX(i,j);
-    yGradient[k]= stuctureDepthGradY(i,j)*mp+refTimeGradY(i,j);
+    xGradient[k]= structureDepthGradX(i,j)*mp+refTimeGradX(i,j);
+    yGradient[k]= structureDepthGradY(i,j)*mp+refTimeGradY(i,j);
   }
 }
 
@@ -1970,8 +1970,7 @@ void BlockedLogs::findSeismicGradient(FFTGrid                  ** seisCube,
   char* buffer = new char[1000];
   sprintf(buffer,"%s.txt", "C:/Outputfiles/traces");
   std::ofstream out(buffer);
-  //bool welltmp = false;
-
+  delete [] buffer;
 
   double dz, ztop, dzW, ztopW;
   for(l = 0; l < nAngles; l++){
@@ -2215,6 +2214,7 @@ void BlockedLogs::computeGradient(std::vector<double> &Qepsilon, std::vector<dou
     out.open(buffer);
     append = true;
   }
+  delete [] buffer;
 
   int ndata;
   double data;
@@ -2409,6 +2409,7 @@ void BlockedLogs::smoothGradient(std::vector<double> &xGradient, std::vector<dou
        out2 << xGradient[i] << " " << yGradient[i];
      out2 << std::endl;
    }
+  delete [] buffer2;
 
   for(i = 0; i < n_beta; i++){
     if(Qbeta_data[i] != NULL)
@@ -2419,10 +2420,6 @@ void BlockedLogs::smoothGradient(std::vector<double> &xGradient, std::vector<dou
   delete [] Qbeta_data;
   delete [] Identity;
   delete [] res;
-
-
-
-
 }
 
 void BlockedLogs::computePrecisionMatrix(double &a, double &b, double &c)
@@ -2492,7 +2489,7 @@ void BlockedLogs::generateSyntheticSeismic(float   ** reflCoef,
     fillInCpp(reflCoef[i],start,length,cpp_r,nzp);
     Utils::fft(cpp_r,cpp_c,nzp);
 
-    localWavelet = wavelet[i]->getLocalWavelet1D(ipos_[0],jpos_[0]);
+    localWavelet = wavelet[i]->createLocalWavelet1D(ipos_[0],jpos_[0]);
     localWavelet->fft1DInPlace();
    // float sf = wavelet[i]->getLocalStretch(ipos_[0],jpos_[0]);
    // what about relative thickness ????

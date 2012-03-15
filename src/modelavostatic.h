@@ -26,6 +26,7 @@ public:
   ModelAVOStatic(ModelSettings      *& modelSettings,
                  const InputFiles    * inputFiles,
                  std::vector<bool>     failedGeneralDetails,
+                 GridMapping         * timeCutMapping,
                  Simbox              * timeSimbox,
                  Simbox             *& timeBGSimbox,
                  Simbox              * timeSimboxConstThick);
@@ -77,24 +78,22 @@ private:
                                 std::string      & errText,
                                 bool             & failed);
 
-  void             processPriorFaciesProb(const std::vector<Surface *> & faciesEstimInterval,
+  void             processPriorFaciesProb(const std::vector<Surface*>  & faciesEstimInterval,
                                           float                       *& priorFacies,
                                           WellData                    ** wells,
-                                          int                            nz,
-                                          float                          dz,
                                           Simbox                       * timeSimbox,
+                                          Simbox                       * timeCutSimbox,
                                           ModelSettings                * modelSettings,
                                           bool                         & failed,
                                           std::string                  & errTxt,
                                           const InputFiles             * inputFiles);
-
- void             readPriorFaciesProbCubes(const InputFiles * inputFiles,
-                                           ModelSettings    * modelSettings,
-                                           FFTGrid        **& priorFaciesProbCubes,
-                                           Simbox           * timeSimbox,
-                                           std::string      & errTxt,
-                                           bool             & failed);
-
+  void             readPriorFaciesProbCubes(const InputFiles  * inputFiles,
+                                            ModelSettings     * modelSettings,
+                                            FFTGrid         **& priorFaciesProbCubes,
+                                            Simbox            * timeSimbox,
+                                            Simbox            * timeCutSimbox,
+                                            std::string       & errTxt,
+                                            bool              & failed);
   void             loadExtraSurfaces(std::vector<Surface *> & waveletEstimInterval,
                                      std::vector<Surface *> & faciesEstimInterval,
                                      std::vector<Surface *> & wellMoveInterval,

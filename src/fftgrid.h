@@ -5,6 +5,7 @@
 #include <string>
 
 #include "fftw.h"
+#include "rfftw.h"
 #include "definitions.h"
 
 class Corr;
@@ -13,7 +14,8 @@ class Simbox;
 class RandomGen;
 class GridMapping;
 
-class FFTGrid{
+class FFTGrid
+{
 public:
 
   FFTGrid(int nx, int ny, int nz, int nxp, int nyp, int nzp);
@@ -24,8 +26,42 @@ public:
   void setType(int cubeType) {cubetype_ = cubeType;}
   void setAngle(float angle) {theta_ = angle;}
 
-  int                  fillInFromSegY(SegY * segy, Simbox *simbox, bool nopadding = false );            // No mode
-
+  int                  fillInFromSegY(SegY * segy, Simbox *simbox, bool nopadding = false ); // No mode
+  void                 fillInSeismicDataFromSegY(SegY        * segy,
+                                                 Simbox      * timeSimbox,
+                                                 Simbox      * timeCutSimbox,
+                                                 float         smooth_length,
+                                                 int         & missingTracesSimbox,
+                                                 int         & missingTracesPadding,
+                                                 int         & deadTracesSimbox,
+                                                 std::string & errTxt);
+  void                 smoothTraceInGuardZone(std::vector<float> & data_trace,
+                                              float                z0_data,
+                                              float                zn_data,
+                                              float                dz_data,
+                                              float                ztop,
+                                              float                zbase,
+                                              float                dz,
+                                              float                smooth_length,
+                                              std::string        & errTxt);
+  void                 resampleTrace(const std::vector<float> & data_trace,
+                                     const rfftwnd_plan       & fftplan1,
+                                     const rfftwnd_plan       & fftplan2,
+                                     fftw_real                * rAmpData,
+                                     fftw_real                * rAmpFine,
+                                     int                        cnt,
+                                     int                        rnt,
+                                     int                        cmt,
+                                     int                        rmt);
+  void                 interpolateGridValues(std::vector<float> & grid_trace,
+                                             float                z0_grid,
+                                             float                dz_grid,
+                                             fftw_real          * rAmpFine,
+                                             float                z0_data,
+                                             float                dz_fine,
+                                             int                  n_fine);
+  void                 setTrace(const std::vector<float> & trace, size_t i, size_t j);
+  void                 setTrace(float value, size_t i, size_t j);
   int                  fillInFromStorm(Simbox            * actSimBox,
                                        StormContGrid     * grid,
                                        const std::string & parName,
@@ -86,8 +122,10 @@ public:
   float                getMaxReal() const {return rValMax_;}
   float                getAvgReal() const {return rValAvg_;}
   bool                 getIsTransformed() const {return(istransformed_);}
-  enum                 gridTypes{CTMISSING,DATA,PARAMETER,COVARIANCE,VELOCITY};
-  enum                 accessMode{NONE,READ,WRITE,READANDWRITE,RANDOMACCESS};
+
+  enum                 gridTypes{CTMISSING, DATA, PARAMETER, COVARIANCE, VELOCITY};
+  enum                 accessMode{NONE, READ, WRITE, READANDWRITE, RANDOMACCESS};
+
   virtual void         multiplyByScalar(float scalar);      //No mode/randomaccess
   int                  getType() const {return(cubetype_);}
   virtual void         setAccessMode(int mode){assert(mode>=0);}
@@ -155,8 +193,8 @@ protected:
   //int                setPaddingSize(int n, float p);
   int                  getFillNumber(int i, int n, int np );
 
-  int                  getXSimboxIndex(int i){return(getFillNumber(i, nx_, nxp_ ));}
-  int                  getYSimboxIndex(int j){return(getFillNumber(j, ny_, nyp_ ));}
+  int                  getXSimboxIndex(int i) { return (getFillNumber(i, nx_, nxp_ )) ;}
+  int                  getYSimboxIndex(int j) { return (getFillNumber(j, ny_, nyp_ )) ;}
   int                  getZSimboxIndex(int k);
 
   //Interpolation into SegY and sgri

@@ -86,7 +86,6 @@ void SpatialWellFilter::doFiltering(Corr                        * corr,
                                     WellData                   ** wells,
                                     int                           nWells,
                                     bool                          useVpRhoFilter,
-                                    const std::vector<int>      & filterWell,
                                     int                           nAngles,
                                     const Crava                 * cravaResult,
                                     const std::vector<Grid2D *> & noiseScale)
@@ -133,7 +132,7 @@ void SpatialWellFilter::doFiltering(Corr                        * corr,
   {
     n = wells[w1]->getBlockedLogsOrigThick()->getNumberOfBlocks();
 
-    if (filterWell[w1] != ModelSettings::NO)
+    if (wells[w1]->getUseForFiltering() == true)
     {
       LogKit::LogFormatted(LogKit::Low,"\nFiltering well "+wells[w1]->getWellname());
       no_wells_filtered = false;
@@ -268,7 +267,8 @@ void SpatialWellFilter::doFiltering(Corr                        * corr,
     }
   }
 
-  completeSigmaE(lastn, cravaResult,noiseScale);
+  if(no_wells_filtered == false)
+    completeSigmaE(lastn, cravaResult,noiseScale);
 
   if(useVpRhoFilter == true)
     completeSigmaEVpRho(lastn,cravaResult,noiseScale);

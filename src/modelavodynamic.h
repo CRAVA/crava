@@ -32,9 +32,13 @@ public:
                   std::vector<bool>      failedStaticDetails,
                   Simbox               * timeSimbox,
                   Simbox              *& timeBGSimbox,
+                  Surface              * correlationDirection,
                   RandomGen            * randomGen,
                   GridMapping          * timeDepthMapping,
                   GridMapping          * timeCutMapping,
+                  std::vector<Surface *> waveletEstimInterval,
+                  std::vector<Surface *> wellMoveInterval,
+                  std::vector<Surface *> faciesEstimInterval,
                   ModelAVOStatic       * modelAVOstatic,
                   int                    t);    // modelAVOstatic::wells_ are altered. modelAVOstatic is deliberately sent in as un-const.
 
@@ -43,6 +47,7 @@ public:
                   ModelAVOStatic          * modelAVOstatic,
                   SeismicParametersHolder & seismicParameters,
                   Simbox                  * timeSimbox,
+                  Surface                 * correlationDirection,
                   GridMapping             * timeDepthMapping,
                   GridMapping             * timeCutMapping,
                   int                       t);
@@ -106,7 +111,6 @@ private:
                                            WellData         ** wells,
                                            ModelSettings     * modelSettings,
                                            const InputFiles  * inputFiles,
-                                           bool                gotBackground,
                                            std::string       & errText,
                                            bool              & failed);
 
@@ -115,6 +119,7 @@ private:
                                    WellData                    ** wells,
                                    float                       ** reflectionMatrix,
                                    Simbox                       * timeSimbox,
+                                   const Surface                * correlationDirection,
                                    const std::vector<Surface *> & waveletEstimInterval,
                                    ModelSettings                * modelSettings,
                                    const InputFiles             * inputFiles,
@@ -179,6 +184,19 @@ private:
                                            Simbox                * simbox,
                                            NRLib::Grid2D<float>  & refTimeGradX,
                                            NRLib::Grid2D<float>  & refTimeGradY);
+  void             computeStructureDepthGradient(double                 v0,
+                                                 double                 radius,
+                                                 const Simbox         * timeSimbox,
+                                                 const Surface        * t0Surf,
+                                                 const Surface        * correlationDirection,
+                                                 NRLib::Grid2D<float> & structureDepthGradX,
+                                                 NRLib::Grid2D<float> & structureDepthGradY);
+  void            computeReferenceTimeGradient( const Simbox         * timeSimbox,
+                                                const Surface        * t0Surf,
+                                                NRLib::Grid2D<float> & refTimeGradX,
+                                                NRLib::Grid2D<float> & refTimeGradY);
+
+  void              calculateSmoothGrad(const Surface * surf, double x, double y, double radius, double ds,  double& gx, double& gy);
 
   int                       numberOfAngles_;
   Background              * background_;            ///< Holds the background model.

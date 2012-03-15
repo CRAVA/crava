@@ -1210,6 +1210,9 @@ XmlModelFile::parseEarthModel(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("vp-file");
   legalCommands.push_back("vs-file");
   legalCommands.push_back("density-file");
+  legalCommands.push_back("ai-file");
+  legalCommands.push_back("si-file");
+  legalCommands.push_back("vp-vs-ratio-file");
 
   if (modelSettings_->getBackgroundType() != "")
     errTxt += "Both background and earth-model can not be given. Under forward mode, the earth-model must be used.\n";
@@ -1221,24 +1224,72 @@ XmlModelFile::parseEarthModel(TiXmlNode * node, std::string & errTxt)
     inputFiles_->setBackFile(0, filename);
     modelSettings_->setConstBackValue(0, -1);
   }
-  else
-    errTxt += "Vp is not given in command earth-model.\n";
 
   bool vs = parseFileName(root, "vs-file", filename, errTxt);
   if(vs == true) {
     inputFiles_->setBackFile(1, filename);
     modelSettings_->setConstBackValue(1, -1);
   }
-  else
-    errTxt += "Vs is not given in command earth-model.";
 
   bool rho = parseFileName(root, "density-file", filename, errTxt);
   if(rho == true) {
     inputFiles_->setBackFile(2, filename);
     modelSettings_->setConstBackValue(2, -1);
   }
-  else
-    errTxt += "Density is not given in command earth-model.";
+
+  bool ai = parseFileName(root, "ai-file", filename, errTxt);
+  if(ai == true) {
+    inputFiles_->setBackFile(0, filename);     // Store AI earth model in Vp slot
+    modelSettings_->setConstBackValue(0, -1);  //
+    modelSettings_->setUseAIBackground(true);
+  }
+
+  bool si = parseFileName(root, "si-file", filename, errTxt);
+  if(si == true) {
+    inputFiles_->setBackFile(1, filename);     // Store SI earth model in Vs slot
+    modelSettings_->setConstBackValue(1, -1);  //
+    modelSettings_->setUseSIBackground(true);
+  }
+
+  bool vpvs = parseFileName(root, "vp-vs-ratio-file", filename, errTxt);
+  if(vpvs == true) {
+    inputFiles_->setBackFile(1, filename);     // Store Vp/Vs earth model in Vs slot
+    modelSettings_->setConstBackValue(1, -1);  //
+    modelSettings_->setUseVpVsBackground(true);
+  }
+
+  if (vp && ai) {
+      errTxt += "Earth model for both AI and Vp has been specified in command <"+root->ValueStr()+"> "+
+        lineColumnText(root)+". Please give only one.\n";
+  }
+
+  if (vs && si) {
+      errTxt += "Earth model for both SI and Vs has been specified in command <"+root->ValueStr()+"> "+
+        lineColumnText(root)+". Please give only one.\n";
+  }
+
+  if (vs && vpvs) {
+      errTxt += "Earth model for both Vs and Vp/Vs has been specified in command <"+root->ValueStr()+"> "+
+        lineColumnText(root)+". Please give only one.\n";
+  }
+
+  if (si && vpvs) {
+      errTxt += "Earth model for both SI and Vp/Vs has been specified in command <"+root->ValueStr()+"> "+
+        lineColumnText(root)+". Please give only one.\n";
+  }
+
+  bool earthModelGiven =
+    (vp & vs   & rho)  ||
+    (vp & si   & rho)  ||
+    (vp & vpvs & rho)  ||
+    (ai & vs   & rho)  ||
+    (ai & si   & rho)  ||
+    (ai & vpvs & rho);
+
+  if (!earthModelGiven) {
+      errTxt += "Earth model has not been completely specified in command <"+root->ValueStr()+"> "+
+        lineColumnText(root)+". Please specify {Vp,Vs,Rho}, {AI,SI,Rho}, or {AI,Vp/Vs,Rho}.\n";
+  }
 
   modelSettings_->setGenerateBackground(false);
   checkForJunk(root, errTxt, legalCommands);
@@ -1257,6 +1308,7 @@ XmlModelFile::parseBackground(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("vs-file");
   legalCommands.push_back("density-file");
   legalCommands.push_back("ai-file");
+  legalCommands.push_back("si-file");
   legalCommands.push_back("vp-vs-ratio-file");
   legalCommands.push_back("vp-constant");
   legalCommands.push_back("vs-constant");
@@ -1292,6 +1344,13 @@ XmlModelFile::parseBackground(TiXmlNode * node, std::string & errTxt)
     inputFiles_->setBackFile(0, filename);     // Store AI background in Vp slot
     modelSettings_->setConstBackValue(0, -1);  //
     modelSettings_->setUseAIBackground(true);
+  }
+
+  bool si = parseFileName(root, "si-file", filename, errTxt);
+  if(si == true) {
+    inputFiles_->setBackFile(1, filename);     // Store SI background in Vs slot
+    modelSettings_->setConstBackValue(1, -1);  //
+    modelSettings_->setUseSIBackground(true);
   }
 
   bool vpvs = parseFileName(root, "vp-vs-ratio-file", filename, errTxt);
@@ -1333,16 +1392,32 @@ XmlModelFile::parseBackground(TiXmlNode * node, std::string & errTxt)
   }
 
   if (vp && ai) {
-      errTxt += "Both AI background and Vp background has been given in command <"+root->ValueStr()+"> "+
+      errTxt += "Both AI background and Vp background has been specified in command <"+root->ValueStr()+"> "+
+        lineColumnText(root)+". Please give only one.\n";
+  }
+
+  if (vs && si) {
+      errTxt += "Both SI background and Vs background has been specified in command <"+root->ValueStr()+"> "+
         lineColumnText(root)+". Please give only one.\n";
   }
 
   if (vs && vpvs) {
-      errTxt += "Both AI background and Vp background has been given in command <"+root->ValueStr()+"> "+
+      errTxt += "Both Vs background and Vp/Vs background has been specified in command <"+root->ValueStr()+"> "+
         lineColumnText(root)+". Please give only one.\n";
   }
 
-  bool bgGiven = (vp & vs & rho) || (ai & vs & rho) || (vp & vpvs & rho) || (ai & vpvs & rho);
+  if (si && vpvs) {
+      errTxt += "Both SI background and Vp/Vs background has been specified in command <"+root->ValueStr()+"> "+
+        lineColumnText(root)+". Please give only one.\n";
+  }
+
+  bool bgGiven =
+    (vp & vs   & rho)  ||
+    (vp & si   & rho)  ||
+    (vp & vpvs & rho)  ||
+    (ai & vs   & rho)  ||
+    (ai & si   & rho)  ||
+    (ai & vpvs & rho);
 
   bool estimate = !(vp | vs | rho);
   modelSettings_->setGenerateBackground(estimate);
@@ -2365,29 +2440,33 @@ XmlModelFile::parseUTMArea(TiXmlNode * node, std::string & errTxt)
     errTxt += "Y-length must be given in command <"+
       root->ValueStr()+"> "+lineColumnText(root)+".\n";
 
-  double dx = lx;
-  double dy = ly;
-
   bool snapToSeismicData = parseBool(root, "snap-to-seismic-data", snapToSeismicData, errTxt);
 
-  bool densX = parseValue(root, "sample-density-x", dx, errTxt);
-  if(densX == true && snapToSeismicData == true)
-    TaskList::addTask("Keyword <sample-density-x> has no effect when <snap-to-seismic-data> has been specified.");
-  else if(densX == false && snapToSeismicData == false)
-    errTxt += "Sample density for x must be given in command <"+
-      root->ValueStr()+"> "+lineColumnText(root)+".\n";
+  double dx = RMISSING;
+  double dy = RMISSING;
 
+  bool densX = parseValue(root, "sample-density-x", dx, errTxt);
   bool densY = parseValue(root, "sample-density-y", dy, errTxt);
-  if(densY == true && snapToSeismicData == true)
-    TaskList::addTask("Keyword <sample-density-y> has no effect when <snap-to-seismic-data> has been specified.");
-  else if(densY == false && snapToSeismicData == false)
-    errTxt += "Sample density for y must be given in command <"+
-      root->ValueStr()+"> "+lineColumnText(root)+".\n";
+
+  if (snapToSeismicData) {
+    modelSettings_->setSnapGridToSeismicData(true);
+    dx = lx;
+    dy = ly;
+    if(densX)
+      TaskList::addTask("Keyword <sample-density-x> has no effect when <snap-to-seismic-data> has been specified.");
+    if(densY)
+      TaskList::addTask("Keyword <sample-density-y> has no effect when <snap-to-seismic-data> has been specified.");
+  }
+  else {
+    if (!densX)
+      errTxt += "Sample density for x must be given in command <"+ root->ValueStr()+"> "+lineColumnText(root)+".\n";
+    if (!densY)
+      errTxt += "Sample density for y must be given in command <"+ root->ValueStr()+"> "+lineColumnText(root)+".\n";
+  }
 
   double angle = 0;
   if(parseValue(root, "angle", angle, errTxt) == false)
-    errTxt += "Rotation angle must be given in command <"+
-      root->ValueStr()+"> "+lineColumnText(root)+".\n";
+    errTxt += "Rotation angle must be given in command <"+root->ValueStr()+"> "+lineColumnText(root)+".\n";
 
   double rot = (-1)*angle*(NRLib::Pi/180.0);
   int nx = static_cast<int>(lx/dx);
@@ -2999,6 +3078,10 @@ XmlModelFile::parseAdvancedSettings(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("debug-level");
   legalCommands.push_back("smooth-kriged-parameters");
   legalCommands.push_back("rms-panel-mode");
+  legalCommands.push_back("guard-zone");
+  legalCommands.push_back("3d-wavelet-tuning-factor");
+  legalCommands.push_back("gradient-smoothing-range");
+  legalCommands.push_back("estimate-well-gradient-from-seismic");
 
   parseFFTGridPadding(root, errTxt);
 
@@ -3047,6 +3130,8 @@ XmlModelFile::parseAdvancedSettings(TiXmlNode * node, std::string & errTxt)
   if(parseValue(root, "kriging-data-limit", kLimit, errTxt) == true) {
     if(modelSettings_->getKrigingParameter() >= 0)
       modelSettings_->setKrigingParameter(kLimit);
+    else
+      errTxt += "The number of data in neighbourhood when doing kriging must be larger than or equal to zero\n";
   }
   int level = 0;
   if(parseValue(root, "debug-level", level, errTxt) == true)
@@ -3059,6 +3144,26 @@ XmlModelFile::parseAdvancedSettings(TiXmlNode * node, std::string & errTxt)
   bool panel = false;
   if(parseBool(root, "rms-panel-mode", panel, errTxt) == true)
     modelSettings_->setRunFromPanel(panel);
+
+  if(parseValue(root, "guard-zone", value, errTxt) == true) {
+    float smooth_length = modelSettings_->getSmoothLength();
+    smooth_length = std::min(smooth_length, value);
+    modelSettings_->setGuardZone(value);
+    modelSettings_->setSmoothLength(smooth_length);
+  }
+  if(parseValue(root, "3d-wavelet-tuning-factor", value, errTxt) == true) {
+    modelSettings_->setWavelet3DTuningFactor(value);
+    if (value < 1.0f || value > 500.0f)
+      errTxt += "The 3D wavelet tuning factor must be in range [1.0, 500.0]\n";
+  }
+  if(parseValue(root, "gradient-smoothing-range", value, errTxt) == true) {
+    modelSettings_->setGradientSmoothingRange(value);
+    if (value < 25.0f || value > 500.0f)
+      errTxt += "The gradient smoothing range for 3D wavelet estimation/inversion must be in range [25.0, 500.0]\n";
+  }
+  bool estimate = false;
+  if(parseBool(root, "estimate-well-gradient-from-seismic", estimate, errTxt) == true)
+    modelSettings_->setEstimateWellGradientFromSeismic(estimate);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);

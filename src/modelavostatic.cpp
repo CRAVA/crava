@@ -48,6 +48,7 @@
 ModelAVOStatic::ModelAVOStatic(ModelSettings      *& modelSettings,
                                const InputFiles    * inputFiles,
                                std::vector<bool>     failedGeneralDetails,
+                               GridMapping         * timeCutMapping,
                                Simbox              * timeSimbox,
                                Simbox             *& timeBGSimbox,
                                Simbox              * timeSimboxConstThick)
@@ -88,18 +89,25 @@ ModelAVOStatic::ModelAVOStatic(ModelSettings      *& modelSettings,
       bool estimationMode = modelSettings->getEstimationMode();
       if (estimationMode == false && !failedWells && !failedExtraSurf)
       {
+        Simbox * timeCutSimbox = NULL;
+        if (timeCutMapping != NULL)
+          timeCutSimbox = timeCutMapping->getSimbox(); // For the got-enough-data test
+        else
+          timeCutSimbox = timeSimbox;
+
         processPriorFaciesProb(faciesEstimInterval_,
                                priorFacies_,
                                wells_,
-                               timeSimbox->getnz(),
-                               static_cast<float> (timeSimbox->getdz()),
                                timeSimbox,
+                               timeCutSimbox,
                                modelSettings,
                                failedPriorFacies,
                                errText,
                                inputFiles);
       }
     }
+    else // forward modeling
+      checkAvailableMemory(timeSimbox, modelSettings, inputFiles);
   }
   failedLoadingModel = failedWells || failedExtraSurf || failedPriorFacies || failedRockPhysics;
 
@@ -173,8 +181,7 @@ ModelAVOStatic::processWells(WellData          **& wells,
 
     bool    faciesLogGiven = modelSettings->getFaciesLogGiven();
     int     nFacies        = 0;
-
-    int error = 0;
+    int     error = 0;
 
     std::string tmpErrText("");
     wells = new WellData *[nWells];
@@ -184,6 +191,7 @@ ModelAVOStatic::processWells(WellData          **& wells,
         modelSettings->getInverseVelocity(),
         modelSettings,
         modelSettings->getIndicatorFacies(i),
+        modelSettings->getIndicatorFilter(i),
         modelSettings->getIndicatorWavelet(i),
         modelSettings->getIndicatorBGTrend(i),
         modelSettings->getIndicatorRealVs(i),
@@ -193,6 +201,7 @@ ModelAVOStatic::processWells(WellData          **& wells,
         error = 1;
       }
     }
+
 
     if (error == 0) {
       if(modelSettings->getFaciesLogGiven()) {
@@ -597,7 +606,7 @@ ModelAVOStatic::checkAvailableMemory(Simbox        * timeSimbox,
     if (modelSettings->getFileGrid())  // Use disk buffering
       nGrids = nGridFileMode;
     else
-      nGrids = nGridParameters + nGridSeismicData;
+      nGrids = nGridParameters + 1;
 
     gridMem = nGrids*gridSizePad;
   }
@@ -684,10 +693,10 @@ ModelAVOStatic::checkAvailableMemory(Simbox        * timeSimbox,
   LogKit::LogFormatted(LogKit::High,  "Memory needed for holding internal grids (%2d): %10.2f MB\n",nGrids, mem1/(1024.f*1024.f));
   LogKit::LogFormatted(LogKit::High,  "Memory needed for holding other entities     : %10.2f MB\n",mem0/(1024.f*1024.f));
 
-  if (gigaBytes < 1.0f)
-    LogKit::LogFormatted(LogKit::Low,"\nMemory needed by CRAVA:  %.2f megaBytes\n",megaBytes);
+  if (megaBytes > 1000.0f)
+    LogKit::LogFormatted(LogKit::Low,"\nMemory needed by CRAVA:  %.1f gigaBytes\n",gigaBytes);
   else
-    LogKit::LogFormatted(LogKit::Low,"\nMemory needed by CRAVA:  %.2f gigaBytes\n",gigaBytes);
+    LogKit::LogFormatted(LogKit::Low,"\nMemory needed by CRAVA:  %.1f megaBytes\n",megaBytes);
 
   if(mem2>mem1)
     LogKit::LogFormatted(LogKit::Low,"\n This estimate is too high because seismic data are cut to fit the internal grid\n");
@@ -715,16 +724,15 @@ ModelAVOStatic::checkAvailableMemory(Simbox        * timeSimbox,
   }
 }
 
-void ModelAVOStatic::processPriorFaciesProb(const std::vector<Surface *> & faciesEstimInterval,
+void ModelAVOStatic::processPriorFaciesProb(const std::vector<Surface*>  & faciesEstimInterval,
                                             float                       *& priorFacies,
                                             WellData                    ** wells,
-                                            int                            nz,
-                                            float                          dz,
                                             Simbox                       * timeSimbox,
+                                            Simbox                       * timeCutSimbox,
                                             ModelSettings                * modelSettings,
                                             bool                         & failed,
                                             std::string                  & errTxt,
-                                            const InputFiles                   * inputFiles)
+                                            const InputFiles             * inputFiles)
 {
   if (modelSettings->getEstimateFaciesProb())
   {
@@ -735,9 +743,11 @@ void ModelAVOStatic::processPriorFaciesProb(const std::vector<Surface *> & facie
     {
       if (nFacies > 0)
       {
-        int nWells  = modelSettings->getNumberOfWells();
-        int nFacies = modelSettings->getNumberOfFacies();
-        int ndata   = nWells*nz;
+        int   nz      = timeSimbox->getnz();
+        float dz      = static_cast<float>(timeSimbox->getdz());
+        int   nWells  = modelSettings->getNumberOfWells();
+        int   nFacies = modelSettings->getNumberOfFacies();
+        int   ndata   = nWells*nz;
 
         int ** faciesCount = new int * [nWells];
         for (int w = 0 ; w < nWells ; w++)
@@ -959,11 +969,12 @@ void ModelAVOStatic::processPriorFaciesProb(const std::vector<Surface *> & facie
     else if(modelSettings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_CUBES)
     {
       readPriorFaciesProbCubes(inputFiles,
-                                modelSettings,
-                                priorFaciesProbCubes_,
-                                timeSimbox,
-                                errTxt,
-                                failed);
+                               modelSettings,
+                               priorFaciesProbCubes_,
+                               timeSimbox,
+                               timeCutSimbox,
+                               errTxt,
+                               failed);
 
        typedef std::map<std::string,std::string> mapType;
        mapType myMap = inputFiles->getPriorFaciesProbFile();
@@ -976,12 +987,13 @@ void ModelAVOStatic::processPriorFaciesProb(const std::vector<Surface *> & facie
     }
   }
 }
-void ModelAVOStatic::readPriorFaciesProbCubes(const InputFiles      * inputFiles,
-                                              ModelSettings   * modelSettings,
-                                              FFTGrid       **& priorFaciesProbCubes,
-                                              Simbox          * timeSimbox,
-                                              std::string     & errTxt,
-                                              bool            & failed)
+void ModelAVOStatic::readPriorFaciesProbCubes(const InputFiles  * inputFiles,
+                                              ModelSettings     * modelSettings,
+                                              FFTGrid         **& priorFaciesProbCubes,
+                                              Simbox            * timeSimbox,
+                                              Simbox            * timeCutSimbox,
+                                              std::string       & errTxt,
+                                              bool              & failed)
 {
   int nFacies = modelSettings->getNumberOfFacies();
   priorFaciesProbCubes = new FFTGrid*[nFacies];
@@ -999,7 +1011,6 @@ void ModelAVOStatic::readPriorFaciesProbCubes(const InputFiles      * inputFiles
       const TraceHeaderFormat * dummy2 = NULL;
       const float               offset = modelSettings->getSegyOffset(0); //Facies estimation only allowed for one time lapse
       std::string errorText("");
-      int outsideTraces = 0;
       ModelGeneral::readGridFromFile(faciesProbFile,
                        "priorfaciesprob",
                        offset,
@@ -1008,8 +1019,8 @@ void ModelAVOStatic::readPriorFaciesProbCubes(const InputFiles      * inputFiles
                        dummy2,
                        FFTGrid::PARAMETER,
                        timeSimbox,
+                       timeCutSimbox,
                        modelSettings,
-                       outsideTraces,
                        errorText,
                        true);
       if(errorText != "")

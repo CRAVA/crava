@@ -200,7 +200,6 @@ Crava::Crava(ModelSettings     * modelSettings,
                                   modelAVOstatic->getWells(),
                                   modelSettings->getNumberOfWells(),
                                   modelSettings->getNoVsFaciesProb(),
-                                  modelSettings->getIndicatorFilter(),
                                   activeAngles,
                                   this,
                                   modelAVOdynamic->getLocalNoiseScales());
@@ -353,7 +352,7 @@ Crava::computeVariances(fftw_real     * corrT,
 
   for(int i=0 ; i < ntheta_ ; i++)
   {
-    Wavelet1D* wavelet1D=seisWavelet_[i]->getWavelet1DForErrorNorm();
+    Wavelet1D * wavelet1D = seisWavelet_[i]->createWavelet1DForErrorNorm();
     errorSmooth[i] = new Wavelet1D(wavelet1D,Wavelet::FIRSTORDERFORWARDDIFF);
     delete wavelet1D;
 
@@ -548,6 +547,7 @@ Crava:: divideDataByScaleWavelet()
 
   for(l=0 ; l< ntheta_ ; l++ )
   {
+    int dim=seisWavelet_[l]->getDim();
     std::string angle = NRLib::ToString(thetaDeg_[l], 1);
     if(ModelSettings::getDebugLevel() > 0) {
       std::string fileName = IO::PrefixOriginalSeismicData() + "With_Padding_" + angle;
@@ -593,13 +593,16 @@ Crava:: divideDataByScaleWavelet()
         // end get data
 
         // Wavelet local properties
-        localWavelet = seisWavelet_[l]->getLocalWavelet1D(iInd,jInd);  //
-        double sfLoc     =(simbox_->getRelThick(i,j)*seisWavelet_[l]->getLocalStretch(iInd,jInd));// scale factor from thickness stretch + (local stretch when 3D wavelet)
+        localWavelet = seisWavelet_[l]->createLocalWavelet1D(iInd,jInd);  //
+        double sfLoc =(simbox_->getRelThick(i,j)*seisWavelet_[l]->getLocalStretch(iInd,jInd));// scale factor from thickness stretch + (local stretch when 3D wavelet)
 
         double relT   = simbox_->getRelThick(i,j);
         double deltaF = static_cast<double>(nz_)*1000.0/(relT*simbox_->getlz()*static_cast<double>(nzp_));
+        if(dim==1)
+          computeAdjustmentFactor( adjustmentFactor, localWavelet , sfLoc, seisWavelet_[l],  correlations_,A_[l],static_cast<float>(errThetaCov_[l][l]));
+        else
+          computeAdjustmentFactor( adjustmentFactor, localWavelet , sfLoc, seisWavelet_[l]->getGlobalWavelet(),  correlations_,A_[l],static_cast<float>(errThetaCov_[l][l]));
 
-        computeAdjustmentFactor( adjustmentFactor, localWavelet , sfLoc, seisWavelet_[l],  correlations_,A_[l],static_cast<float>(errThetaCov_[l][l]));
         delete localWavelet;
 
         for(k=0;k < (nzp_/2 +1);k++) // all complex values
@@ -661,7 +664,7 @@ Crava::computeAdjustmentFactor(fftw_complex* adjustmentFactor, Wavelet1D* wLocal
 // in order to adjust the data that inversion is ok with new data.
   float tolFac= 0.05f;
 
-  // computes the time covariance for reflection coefficients rcCovT can be globaly stored
+    // computes the time covariance for reflection coefficients rcCovT can be globaly stored
   fftw_real* rcCovT;
   int flag   = FFTW_ESTIMATE | FFTW_IN_PLACE;
   rfftwnd_plan plan1  = rfftwnd_create_plan(1, &nzp_ ,FFTW_REAL_TO_COMPLEX,flag);
@@ -691,7 +694,7 @@ Crava::computeAdjustmentFactor(fftw_complex* adjustmentFactor, Wavelet1D* wLocal
   modW *= modW;
   float maxfrequency = static_cast<float>((nzp_/2)*1000.0*nz_)/static_cast<float>(simbox_->getlz()*nzp_);
   modW *= maxfrequency/static_cast<float>(highCut_); // this is the mean squared sum over relevant frequency band.(up to highCut_)
-                                               // Makes the problem less sensitive to the padding size
+                                                     // Makes the problem less sensitive to the padding size
 
   for(int k=0;k< (nzp_/2 +1);k++)
   {
@@ -776,7 +779,7 @@ Crava::multiplyDataByScaleWaveletAndWriteToFile(const std::string & typeName)
         }
 
         rfftwnd_one_real_to_complex(plan1,rData ,cData);
-        localWavelet = seisWavelet_[l]->getLocalWavelet1D(i,j);
+        localWavelet = seisWavelet_[l]->createLocalWavelet1D(i,j);
 
         for(k=0;k < (nzp_/2 +1);k++) // all complex values
         {
@@ -879,7 +882,7 @@ Crava::computePostMeanResidAndFFTCov()
     std::string fileName;
     seisData_[l]->setAccessMode(FFTGrid::READANDWRITE);
 
-    Wavelet1D* wavelet1D = seisWavelet_[l]->getWavelet1DForErrorNorm(); //
+    Wavelet1D* wavelet1D = seisWavelet_[l]->createWavelet1DForErrorNorm(); //
 
     errorSmooth[l]  = new Wavelet1D(wavelet1D ,Wavelet::FIRSTORDERFORWARDDIFF);
     errorSmooth2[l] = new Wavelet1D(errorSmooth[l], Wavelet::FIRSTORDERBACKWARDDIFF);
@@ -927,7 +930,7 @@ Crava::computePostMeanResidAndFFTCov()
   Wavelet1D** seisWaveletForNorm = new Wavelet1D*[ntheta_];
   for(l = 0; l < ntheta_; l++)
   {
-    seisWaveletForNorm[l]=seisWavelet_[l]->getWavelet1DForErrorNorm();
+    seisWaveletForNorm[l]=seisWavelet_[l]->createWavelet1DForErrorNorm();
     seisWaveletForNorm[l]->fft1DInPlace();
     if(simbox_->getIsConstantThick()) {
       seisWavelet_[l]->fft1DInPlace();
@@ -1485,7 +1488,8 @@ Crava::computeSyntSeismic(FFTGrid * alpha, FFTGrid * beta, FFTGrid * rho)
         }
         Wavelet1D resultVec(&impVec, Wavelet::FIRSTORDERFORWARDDIFF);
         resultVec.fft1DInPlace();
-        Wavelet1D * localWavelet = seisWavelet_[l]->getLocalWavelet1D(i,j);
+
+        Wavelet1D * localWavelet = seisWavelet_[l]->createLocalWavelet1D(i,j);
 
         float sf = static_cast<float>(simbox_->getRelThick(i, j))*seisWavelet_[l]->getLocalStretch(i,j);
 
@@ -1497,7 +1501,6 @@ Crava::computeSyntSeismic(FFTGrid * alpha, FFTGrid * beta, FFTGrid * rho)
           s.im = -r.re*w.im+r.im*w.re;
           resultVec.setCAmp(s,k);
         }
-
         delete localWavelet;
 
         resultVec.invFFT1DInPlace();

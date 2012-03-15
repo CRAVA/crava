@@ -222,9 +222,9 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
           }
         }
 
-
         wellWavelets[w] = calculateWellWavelet(gMat,
                                                dVec,
+                                               modelSettings->getWavelet3DTuningFactor(),
                                                nWl,
                                                nhalfWl,
                                                nPoints);
@@ -276,6 +276,7 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
   fftw_free(rAmp_);
   rAmp_ = trueAmp;
   cAmp_ = reinterpret_cast<fftw_complex *>(rAmp_);
+  averageWavelet_ = createAverageWavelet(simBox);
 }
 
 
@@ -299,6 +300,9 @@ Wavelet3D::Wavelet3D(Wavelet * wavelet)
 
 Wavelet3D::~Wavelet3D()
 {
+  //The delete is needed to avoid memory leak, but it causes a segmentation fault when doing the
+  // delete modelAVOdynamic in main.cpp
+  //delete averageWavelet_;
 }
 
 float
@@ -307,7 +311,7 @@ Wavelet3D::getLocalStretch(int i,  int j) // Note: Not robust towards padding
   float gx=0.0f;
   float gy=0.0f;
 
-  if(gradX_.GetN()>0)
+  if(structureDepthGradX_.GetN()>0)
   {
     gx        = GetLocalDepthGradientX(i,j);
     gy        = GetLocalDepthGradientY(i,j);
@@ -321,7 +325,7 @@ Wavelet3D::getLocalStretch(int i,  int j) // Note: Not robust towards padding
 }
 
 Wavelet1D*
-Wavelet3D::getLocalWavelet1D( int i, int j)// note Not robust towards padding
+Wavelet3D::createLocalWavelet1D(int i, int j)// note Not robust towards padding
 {
   // returns the local wavelet exccept from the strech factor
   // The stretch factor is given by  getLocalStretch
@@ -331,7 +335,7 @@ Wavelet3D::getLocalWavelet1D( int i, int j)// note Not robust towards padding
   float gy=0.0f;
 
   Wavelet1D* localWavelet;
-  if(gradX_.GetN()>0)
+  if(structureDepthGradX_.GetN()>0)
   {
     gx        = GetLocalDepthGradientX(i,j);
     gy        = GetLocalDepthGradientY(i,j);
@@ -351,18 +355,77 @@ Wavelet3D::getLocalWavelet1D( int i, int j)// note Not robust towards padding
 }
 
 Wavelet1D*
+Wavelet3D::createAverageWavelet(Simbox * simBox)
+{
+  Wavelet1D*  w1;
+  fftw_complex* average1;
+  fftw_complex* average2;
+  average1 = static_cast<fftw_complex*>(fftw_malloc(2*(nzp_/2+1)*sizeof(fftw_real)));
+  average2 = static_cast<fftw_complex*>(fftw_malloc(2*(nzp_/2+1)*sizeof(fftw_real)));
+  int k;
+  for(k=0;k < (nzp_/2 +1);k++)
+  {
+    average1[k].re=0;
+    average1[k].im=0;
+  }
+  int nx =simBox->getnx();
+  int ny =simBox->getny();
+  double divNx=static_cast<double>(1.0/nx);
+  double divNy=static_cast<double>(1.0/ny);
+
+  for(int i=0;i<nx;i++){
+    for(k=0;k < (nzp_/2 +1);k++)
+    {
+      average2[k].re=0;
+      average2[k].im=0;
+    }
+    for(int j=0;j<ny;j++)
+    {
+      w1= createLocalWavelet1D( i, j);
+      w1->fft1DInPlace();
+      double sfLoc =(simBox->getRelThick(i,j)*w1->getLocalStretch(i,j));// scale factor from thickness stretch + (local stretch when 3D wavelet)
+      //double relT   = simBox->getRelThick(i,j);
+      //double deltaF = static_cast<double>(nz_)*1000.0/(relT*simBox->getlz()*static_cast<double>(nzp_));
+      for(int k=0;k < (nzp_/2 +1);k++)
+      {
+        fftw_complex amp = w1->getCAmp(k,sfLoc);
+        average2[k].re+= amp.re*divNy;
+        average2[k].im+= amp.im*divNy;
+      }
+      delete w1;
+    }
+    for(k=0;k < (nzp_/2 +1);k++)
+    {
+      average1[k].re+=average2[k].re*divNx;
+      average1[k].im+=average2[k].im*divNx;
+    }
+  }
+  w1= createLocalWavelet1D( 0, 0);
+  w1->fft1DInPlace();
+  for(k=0;k < (nzp_/2 +1);k++)
+  {
+    w1->setCAmp(average1[k],k);
+  }
+
+  fftw_free(average1);
+  fftw_free(average2);
+  return w1;
+}
+
+
+Wavelet1D *
 Wavelet3D::extractLocalWaveletByDip1D(double phi,double psi)
 {
-  Wavelet1D* wavelet = getSourceWavelet();
+  Wavelet1D* wavelet = createSourceWavelet();
   dipAdjustWavelet(wavelet,phi,psi);
 
   return wavelet;
 }
 
-Wavelet1D*
-Wavelet3D::getSourceWavelet()
+Wavelet1D *
+Wavelet3D::createSourceWavelet()
 {
-    Wavelet1D* sourceWavelet = new Wavelet1D(this);
+    Wavelet1D * sourceWavelet = new Wavelet1D(this);
     return sourceWavelet;
 }
 
@@ -379,10 +442,15 @@ Wavelet3D::dipAdjustWavelet(Wavelet1D* wavelet, double phi, double psi)
 
 
 Wavelet1D*
-Wavelet3D::getWavelet1DForErrorNorm()
+Wavelet3D::createWavelet1DForErrorNorm(void)
 {
   Wavelet1D* errorWavelet;
-  errorWavelet=getLocalWavelet1D( 0, 0);
+  errorWavelet = createLocalWavelet1D( 0, 0);
+  errorWavelet->fft1DInPlace();
+  for(int k=0;k < (nzp_/2 +1);k++)
+    errorWavelet->setCAmp(averageWavelet_->getCAmp(k),k);
+  errorWavelet->invFFT1DInPlace();
+  errorWavelet->findNorm();
   // NBNB OK gjør om denne skaleringen til RMS gain.
   return errorWavelet;
 }
@@ -867,6 +935,7 @@ Wavelet3D::calculateGradients(BlockedLogs                * bl,
 std::vector<fftw_real>
 Wavelet3D::calculateWellWavelet(const std::vector<std::vector<float> > & gMat,
                                 const std::vector<float>               & dVec,
+                                double                                   SNR,
                                 int                                      nWl,
                                 int                                      nhalfWl,
                                 int                                      nPoints) const
@@ -895,9 +964,7 @@ Wavelet3D::calculateWellWavelet(const std::vector<std::vector<float> > & gMat,
 
   double *gTrd = new double[nWl];
   double alpha = 4.0;
-  double SNR   = 4.0;
-//  double beta  = 1.0;
-  double beta = 0.5;
+  double beta  = 0.5;
   for (int i=0; i<nWl; i++) {
     gTrd[i] = 0.0;
     double a;
@@ -971,5 +1038,5 @@ Wavelet3D::printMatToFile(const std::string                       & fileName,
 }
 
 
-NRLib::Grid2D<float> Wavelet3D::gradX_    = NRLib::Grid2D<float>(0,0);
-NRLib::Grid2D<float> Wavelet3D::gradY_    = NRLib::Grid2D<float>(0,0);
+NRLib::Grid2D<float> Wavelet3D::structureDepthGradX_    = NRLib::Grid2D<float>(0,0);
+NRLib::Grid2D<float> Wavelet3D::structureDepthGradY_    = NRLib::Grid2D<float>(0,0);

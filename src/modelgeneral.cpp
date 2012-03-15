@@ -45,7 +45,6 @@
 #include "nrlib/stormgrid/stormcontgrid.hpp"
 #include "rplib/rockphysicsstorage.h"
 
-
 ModelGeneral::ModelGeneral(ModelSettings *& modelSettings, const InputFiles * inputFiles, Simbox *& timeBGSimbox)
 {
   timeSimbox_             = new Simbox();
@@ -147,7 +146,7 @@ ModelGeneral::ModelGeneral(ModelSettings *& modelSettings, const InputFiles * in
         }
 
         if(failedDepthConv == false)
-          processRockPhysics(timeSimbox_, modelSettings, failedRockPhysics, errText, inputFiles);
+          processRockPhysics(timeSimbox_, timeCutSimbox, modelSettings, failedRockPhysics, errText, inputFiles);
 
         //Set up timeline.
         timeLine_ = new TimeLine();
@@ -218,11 +217,11 @@ ModelGeneral::~ModelGeneral(void)
 }
 
 
-
-int
+void
 ModelGeneral::readSegyFile(const std::string       & fileName,
                            FFTGrid                *& target,
-                           Simbox                 *& timeSimbox,
+                           Simbox                  * timeSimbox,
+                           Simbox                  * timeCutSimbox,
                            ModelSettings          *& modelSettings,
                            const SegyGeometry     *& geometry,
                            int                       gridType,
@@ -247,7 +246,6 @@ ModelGeneral::readSegyFile(const std::string       & fileName,
       {
         traceHeaderFormats.push_back(modelSettings->getTraceHeaderFormat());
       }
-
       segy = new SegY(fileName,
                       offset,
                       traceHeaderFormats,
@@ -256,11 +254,30 @@ ModelGeneral::readSegyFile(const std::string       & fileName,
     else //Known format, read directly.
       segy = new SegY(fileName, offset, *format);
 
-    bool onlyVolume = modelSettings->getAreaParameters() != NULL; // This is now always true
-    segy->ReadAllTraces(timeSimbox,
-                        modelSettings->getZPadFac(),
-                        onlyVolume);
-    segy->CreateRegularGrid();
+    float guard_zone = modelSettings->getGuardZone();
+
+    std::string errTxt = "";
+    checkThatDataCoverGrid(segy,
+                           offset,
+                           timeCutSimbox,
+                           guard_zone,
+                           errTxt);
+
+    if (errTxt == "") {
+      bool  onlyVolume      = true;
+      float padding        = 2*guard_zone; // This is *not* the same as FFT-grid padding
+      bool  relativePadding = false;
+
+      segy->ReadAllTraces(timeCutSimbox,
+                          padding,
+                          onlyVolume,
+                          relativePadding);
+      segy->CreateRegularGrid();
+    }
+    else {
+      errText += errTxt;
+      failed = true;
+    }
   }
   catch (NRLib::Exception & e)
   {
@@ -268,9 +285,12 @@ ModelGeneral::readSegyFile(const std::string       & fileName,
     failed = true;
   }
 
-  int outsideTraces = 0;
-  if (failed == false)
+  if (!failed)
   {
+    int missingTracesSimbox  = 0;
+    int missingTracesPadding = 0;
+    int deadTracesSimbox     = 0;
+
     const SegyGeometry * geo;
     geo = segy->GetGeometry();
     geo->WriteGeometry();
@@ -278,17 +298,17 @@ ModelGeneral::readSegyFile(const std::string       & fileName,
       geometry = new SegyGeometry(geo);
 
     int xpad, ypad, zpad;
-    if(nopadding==false)
-    {
-      xpad = modelSettings->getNXpad();
-      ypad = modelSettings->getNYpad();
-      zpad = modelSettings->getNZpad();
-    }
-    else
+    if(nopadding)
     {
       xpad = timeSimbox->getnx();
       ypad = timeSimbox->getny();
       zpad = timeSimbox->getnz();
+    }
+    else
+    {
+      xpad = modelSettings->getNXpad();
+      ypad = modelSettings->getNYpad();
+      zpad = modelSettings->getNZpad();
     }
     target = createFFTGrid(timeSimbox->getnx(),
                            timeSimbox->getny(),
@@ -298,15 +318,107 @@ ModelGeneral::readSegyFile(const std::string       & fileName,
                            zpad,
                            modelSettings->getFileGrid());
     target->setType(gridType);
-    outsideTraces = target->fillInFromSegY(segy, timeSimbox, nopadding);
+
+    if (gridType == FFTGrid::DATA) {
+      target->fillInSeismicDataFromSegY(segy,
+                                        timeSimbox,
+                                        timeCutSimbox,
+                                        modelSettings->getSmoothLength(),
+                                        missingTracesSimbox,
+                                        missingTracesPadding,
+                                        deadTracesSimbox,
+                                        errText);
+    }
+    else {
+      missingTracesSimbox = target->fillInFromSegY(segy,
+                                                   timeSimbox,
+                                                   nopadding);
+    }
+
+    if (missingTracesSimbox > 0) {
+      if(missingTracesSimbox == timeSimbox->getnx()*timeSimbox->getny()) {
+        errText += "Error: Data in file "+fileName+" was completely outside the inversion area.\n";
+        failed = true;
+      }
+      else {
+        if(gridType == FFTGrid::PARAMETER) {
+          errText += "Grid in file "+fileName+" does not cover the inversion area.\n";
+        }
+        else {
+          LogKit::LogMessage(LogKit::Warning, "Warning: "+NRLib::ToString(missingTracesSimbox)
+                             +" grid columns were outside the seismic data area.");
+          std::string text;
+          text += "Check seismic volumes and inversion area: A part of the inversion area is outside\n";
+          text += "    the seismic data specified in file \'"+fileName+"\'.";
+          TaskList::addTask(text);
+        }
+      }
+    }
+    if (missingTracesPadding > 0) {
+      int nxpad  = xpad - timeSimbox->getnx();
+      int nypad  = ypad - timeSimbox->getny();
+      int nxypad = nxpad*nypad;
+      LogKit::LogMessage(LogKit::High, "Number of grid columns in padding with no seismic data: "
+                         +NRLib::ToString(missingTracesPadding)+" of "+NRLib::ToString(nxypad)+"\n");
+    }
+    if (deadTracesSimbox > 0) {
+      LogKit::LogMessage(LogKit::High, "Number of grid columns in grid with no seismic data   : "
+                         +NRLib::ToString(missingTracesPadding)+" of "+NRLib::ToString(timeSimbox->getnx()*timeSimbox->getny())+"\n");
+    }
   }
   if (segy != NULL)
     delete segy;
-  return(outsideTraces);
 }
 
 
-int
+void
+ModelGeneral::checkThatDataCoverGrid(SegY        * segy,
+                                     float         offset,
+                                     Simbox      * timeCutSimbox,
+                                     float         guard_zone,
+                                     std::string & errText)
+{
+  // Seismic data coverage (translate to CRAVA grid by adding half a grid cell)
+  float dz = segy->GetDz();
+  float z0 = offset + 0.5f*dz;
+  float zn = z0 + (segy->GetNz() - 1)*dz;
+
+  // Top and base of interval of interest
+  float top_grid = timeCutSimbox->getTopZMin();
+  float bot_grid = timeCutSimbox->getBotZMax();
+
+  // Find guard zone
+  float top_guard = top_grid - guard_zone;
+  float bot_guard = bot_grid + guard_zone;
+
+  if (top_guard < z0) {
+    float z0_new = z0 - ceil((z0 - top_guard)/dz)*dz;
+    errText += "\nThere is not enough seismic data above the interval of interest. The seismic data\n";
+    errText += "must start at "+NRLib::ToString(z0_new)+"ms (in CRAVA grid) to allow for a ";
+    errText += NRLib::ToString(guard_zone)+"ms FFT guard zone:\n\n";
+    errText += "  Seismic data start           : "+NRLib::ToString(z0,1)+"  (in CRAVA grid)\n";
+    errText += "  Seismic data end             : "+NRLib::ToString(zn,1)+"  (in CRAVA grid)\n\n";
+    errText += "  Top of interval-of-interest  : "+NRLib::ToString(top_grid,1)+"\n";
+    errText += "  Base of interval-of-interest : "+NRLib::ToString(bot_grid,1)+"\n\n";
+    errText += "  Top of upper guard zone      : "+NRLib::ToString(top_guard,1)+"\n";
+    errText += "  Base of lower guard zone     : "+NRLib::ToString(bot_guard,1)+"\n";
+  }
+  if (bot_guard > zn) {
+    float zn_new = zn + ceil((bot_guard - zn)/dz)*dz;
+    errText += "\nThere is not enough seismic data below the interval of interest. The seismic data\n";
+    errText += "must end at "+NRLib::ToString(zn_new)+"ms (in CRAVA grid) to allow for a ";
+    errText += NRLib::ToString(guard_zone)+"ms FFT guard zone:\n\n";
+    errText += "  Seismic data start           : "+NRLib::ToString(z0,1)+"  (in CRAVA grid)\n";
+    errText += "  Seismic data end             : "+NRLib::ToString(zn,1)+"  (in CRAVA grid)\n\n";
+    errText += "  Top of interval-of-interest  : "+NRLib::ToString(top_grid,1)+"\n";
+    errText += "  Base of interval-of-interest : "+NRLib::ToString(bot_grid,1)+"\n\n";
+    errText += "  Top of upper guard zone      : "+NRLib::ToString(top_guard,1)+"\n";
+    errText += "  Base of lower guard zone     : "+NRLib::ToString(bot_guard,1)+"\n";
+  }
+}
+
+
+void
 ModelGeneral::readStormFile(const std::string  & fName,
                             FFTGrid           *& target,
                             const int            gridType,
@@ -343,6 +455,7 @@ ModelGeneral::readStormFile(const std::string  & fName,
     ypad = timeSimbox->getny();
     zpad = timeSimbox->getnz();
   }
+
   int outsideTraces = 0;
   if(failed == false)
   {
@@ -360,7 +473,22 @@ ModelGeneral::readStormFile(const std::string  & fName,
   if (stormgrid != NULL)
     delete stormgrid;
 
-  return(outsideTraces);
+  if(outsideTraces > 0) {
+    if(outsideTraces == timeSimbox->getnx()*timeSimbox->getny()) {
+      errText += "Error: Data in file \'"+fName+"\' was completely outside the inversion area.\n";
+      failed = true;
+    }
+    else {
+      if(gridType == FFTGrid::PARAMETER) {
+        errText += "Error: Data read from file \'"+fName+"\' does not cover the inversion area.\n";
+      }
+      else {
+        LogKit::LogMessage(LogKit::Warning, "Warning: "+NRLib::ToString(outsideTraces)
+                           + " grid columns were outside the seismic data in file \'"+fName+"\'.\n");
+        TaskList::addTask("Check seismic data and inversion area: One or volumes did not have data enough to cover entire grid.\n");
+     }
+    }
+  }
 }
 
 int
@@ -433,6 +561,7 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
                               geometry,
                               tmpErrText);
 
+    modelSettings->setSeismicDataAreaParameters(geometry);
     if(geometry != NULL) {
       geometry->WriteGeometry();
 
@@ -496,7 +625,6 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
           }
           catch (NRLib::Exception & e) {
             errText += "Error: "+std::string(e.what());
-            geometry->WriteGeometry();
             geometry->WriteILXL(true);
             geometry = NULL;
             failed = true;
@@ -612,8 +740,9 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
         float minSampDens = modelSettings->getMinSamplingDensity();
         if (timeSimbox->getdz()*timeSimbox->getMinRelThick() < minSampDens){
           failed   = true;
-          errText += "The sampling density should normally be above "+NRLib::ToString(minSampDens)
-            +" ms.If you need denser\n sampling, please specify a new <advanced-settings><minimum-sampling-density>\n";
+          errText += "We normally discourage denser sampling than "+NRLib::ToString(minSampDens);
+          errText += "ms in the time grid. If you really need\nthis, please use ";
+          errText += "<project-settings><advanced-settings><minimum-sampling-density>\n";
         }
 
         if(status == Simbox::BOXOK)
@@ -679,21 +808,24 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
 
           if(failed == false) {
             estimateXYPaddingSizes(timeSimbox, modelSettings);
-            unsigned long long int gridsize = (timeSimbox->getnx()+modelSettings->getNXpad())*(timeSimbox->getny()+modelSettings->getNYpad())*(timeSimbox->getnz()+modelSettings->getNZpad());
 
-            if(gridsize > std::numeric_limits<unsigned int>::max())
-            {
+            unsigned long long int gridsize = static_cast<unsigned long long int>(modelSettings->getNXpad())*modelSettings->getNYpad()*modelSettings->getNZpad();
+
+            if(gridsize > std::numeric_limits<unsigned int>::max()) {
+              float fsize = 4.0f*static_cast<float>(gridsize)/static_cast<float>(1024*1024*1024);
+              float fmax  = 4.0f*static_cast<float>(std::numeric_limits<unsigned int>::max()/static_cast<float>(1024*1024*1024));
+              errText += "Grids as large as "+NRLib::ToString(fsize,1)+"GB cannot be handled. The largest accepted grid size\n";
+              errText += "is "+NRLib::ToString(fmax)+"GB. Please reduce the number of layers or the lateral resolution.\n";
               failed = true;
-              errText+= "Grid size is too large.  Reduce resolution or extend the grid.\n";
             }
 
             LogKit::LogFormatted(LogKit::Low,"\nTime simulation grids:\n");
-            LogKit::LogFormatted(LogKit::Low,"  Output grid         %4i * %4i * %4i   : %10i\n",
+            LogKit::LogFormatted(LogKit::Low,"  Output grid         %4i * %4i * %4i   : %10llu\n",
                                  timeSimbox->getnx(),timeSimbox->getny(),timeSimbox->getnz(),
-                                 timeSimbox->getnx()*timeSimbox->getny()*timeSimbox->getnz());
-            LogKit::LogFormatted(LogKit::Low,"  FFT grid            %4i * %4i * %4i   : %10i\n",
+                                 static_cast<unsigned long long int>(timeSimbox->getnx())*timeSimbox->getny()*timeSimbox->getnz());
+            LogKit::LogFormatted(LogKit::Low,"  FFT grid            %4i * %4i * %4i   :%11llu\n",
                                  modelSettings->getNXpad(),modelSettings->getNYpad(),modelSettings->getNZpad(),
-                                 modelSettings->getNXpad()*modelSettings->getNYpad()*modelSettings->getNZpad());
+                                 static_cast<unsigned long long int>(modelSettings->getNXpad())*modelSettings->getNYpad()*modelSettings->getNZpad());
           }
 
           //
@@ -1203,9 +1335,10 @@ ModelGeneral::estimateZPaddingSize(Simbox         * timeSimbox,
 
   if (modelSettings->getEstimateZPadding())
   {
-    double wLength = 200.0;                     // Assume a wavelet is approx 200ms.
-    zPad           = wLength/2.0;               // Use half a wavelet as padding
-    zPadFac        = std::min(1.0, zPad/minLz); // More than 100% padding is not sensible
+    double wLength = static_cast<double>(modelSettings->getDefaultWaveletLength());
+    double pfac    = 1.0;
+    zPad           = wLength/pfac;                             // Use half a wavelet as padding
+    zPadFac        = std::min(1.0, zPad/minLz);                // More than 100% padding is not sensible
   }
   int nzPad        = setPaddingSize(nz, zPadFac);
   zPadFac          = static_cast<double>(nzPad - nz)/static_cast<double>(nz);
@@ -1223,14 +1356,13 @@ ModelGeneral::readGridFromFile(const std::string       & fileName,
                                const TraceHeaderFormat * format,
                                int                       gridType,
                                Simbox                  * timeSimbox,
+                               Simbox                  * timeCutSimbox,
                                ModelSettings           * modelSettings,
-                               int                     & outsideTraces,
                                std::string             & errText,
                                bool                      nopadding)
 {
   int fileType = IO::findGridType(fileName);
 
-  outsideTraces = 0;
   if(fileType == IO::CRAVA)
   {
     int nxPad, nyPad, nzPad;
@@ -1259,17 +1391,17 @@ ModelGeneral::readGridFromFile(const std::string       & fileName,
     grid->readCravaFile(fileName, errText, nopadding);
   }
   else if(fileType == IO::SEGY)
-    outsideTraces = readSegyFile(fileName, grid, timeSimbox, modelSettings, geometry,
-                                 gridType, offset, format, errText, nopadding);
+    readSegyFile(fileName, grid, timeSimbox, timeCutSimbox, modelSettings, geometry,
+                 gridType, offset, format, errText, nopadding);
   else if(fileType == IO::STORM)
-    outsideTraces = readStormFile(fileName, grid, gridType, parName, timeSimbox, modelSettings, errText, false, nopadding);
+    readStormFile(fileName, grid, gridType, parName, timeSimbox, modelSettings, errText, false, nopadding);
   else if(fileType == IO::SGRI)
-    outsideTraces = readStormFile(fileName, grid, gridType, parName, timeSimbox, modelSettings, errText, true, nopadding);
+    readStormFile(fileName, grid, gridType, parName, timeSimbox, modelSettings, errText, true, nopadding);
   else
   {
-    errText += "\nReading of file \'"+fileName+"\' for grid type \'"
-               +parName+"\'failed. File type not recognized.\n";
+    errText += "\nReading of file \'"+fileName+"\' for grid type \'"+parName+"\'failed. File type not recognized.\n";
   }
+
 }
 
 void
@@ -1428,10 +1560,26 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
       LogKit::LogFormatted(LogKit::Medium,"  Time-to-depth velocity                   :        yes\n");
   }
 
-  // NBNB-PAL: Vi får utvide testen nedenfor etter hvert...
-  if (modelSettings->getFileGrid()) {
+  if (modelSettings->getFileGrid())
     LogKit::LogFormatted(LogKit::Medium,"\nAdvanced settings:\n");
-    LogKit::LogFormatted(LogKit::Medium, "  Use intermediate disk storage for grids  :        yes\n");
+  else
+    LogKit::LogFormatted(LogKit::High,"\nAdvanced settings:\n");
+
+  LogKit::LogFormatted(LogKit::Medium, "  Use intermediate disk storage for grids  : %10s\n", (modelSettings->getFileGrid() ? "yes" : "no"));
+
+  if (inputFiles->getReflMatrFile() != "")
+    LogKit::LogFormatted(LogKit::Medium, "  Take reflection matrix from file         : %10s\n", inputFiles->getReflMatrFile().c_str());
+
+  if (modelSettings->getVpVsRatio() != RMISSING)
+    LogKit::LogFormatted(LogKit::High ,"  Vp-Vs ratio used in reflection coef.     : %10.2f\n", modelSettings->getVpVsRatio());
+
+  LogKit::LogFormatted(LogKit::High, "  RMS panel mode                           : %10s\n"  , (modelSettings->getRunFromPanel() ? "yes" : "no"));
+  LogKit::LogFormatted(LogKit::High ,"  Smallest allowed length increment (dxy)  : %10.2f\n", modelSettings->getMinHorizontalRes());
+  LogKit::LogFormatted(LogKit::High ,"  Smallest allowed time increment (dt)     : %10.2f\n", modelSettings->getMinSamplingDensity());
+
+  if (modelSettings->getKrigingParameter()>0) { // We are doing kriging
+    LogKit::LogFormatted(LogKit::High ,"  Data in neighbourhood when doing kriging : %10.2f\n", modelSettings->getKrigingParameter());
+    LogKit::LogFormatted(LogKit::High, "  Smooth kriged parameters                 : %10s\n", (modelSettings->getDoSmoothKriging() ? "yes" : "no"));
   }
 
   LogKit::LogFormatted(LogKit::High,"\nUnit settings/assumptions:\n");
@@ -1454,6 +1602,7 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
                          modelSettings->getMaxDevAngle(),tan(modelSettings->getMaxDevAngle()*M_PI/180.0));
     LogKit::LogFormatted(LogKit::High,"  High cut for background modelling        : %10.1f\n",modelSettings->getMaxHzBackground());
     LogKit::LogFormatted(LogKit::High,"  High cut for seismic resolution          : %10.1f\n",modelSettings->getMaxHzSeismic());
+    LogKit::LogFormatted(LogKit::High,"  Estimate Vp-Vs ratio from well data      : %10s\n", (modelSettings->getVpVsRatioFromWells() ? "yes" : "no"));
   }
   LogKit::LogFormatted(LogKit::High,"\nRange of allowed parameter values:\n");
   LogKit::LogFormatted(LogKit::High,"  Vp  - min                                : %10.0f\n",modelSettings->getAlphaMin());
@@ -1612,7 +1761,7 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
     }
     LogKit::LogFormatted(LogKit::Low,"  Rotation                                 : %10.4f\n", geometry->GetAngle()*(180.0/NRLib::Pi)*(-1));
     if (areaSpecification == ModelSettings::AREA_FROM_GRID_DATA_AND_UTM) {
-      LogKit::LogFormatted(LogKit::Low," and snapped to seismic data\n");
+      LogKit::LogFormatted(LogKit::Low,"and snapped to seismic data\n");
       LogKit::LogFormatted(LogKit::Low,"  Grid                                     : "+gridFile+"\n");
     }
   }
@@ -1736,15 +1885,38 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
       LogKit::LogFormatted(LogKit::Low,"\nEarth model:\n");
     else
       LogKit::LogFormatted(LogKit::Low,"\nBackground model:\n");
-    if (modelSettings->getConstBackValue(0) > 0)
-      LogKit::LogFormatted(LogKit::Low,"  P-wave velocity                          : %10.1f\n",modelSettings->getConstBackValue(0));
-    else
-      LogKit::LogFormatted(LogKit::Low,"  P-wave velocity read from file           : "+inputFiles->getBackFile(0)+"\n");
 
-    if (modelSettings->getConstBackValue(1) > 0)
-      LogKit::LogFormatted(LogKit::Low,"  S-wave velocity                          : %10.1f\n",modelSettings->getConstBackValue(1));
-    else
-      LogKit::LogFormatted(LogKit::Low,"  S-wave velocity read from file           : "+inputFiles->getBackFile(1)+"\n");
+    if (modelSettings->getUseAIBackground()) {
+      if (modelSettings->getConstBackValue(0) > 0)
+        LogKit::LogFormatted(LogKit::Low,"  Acoustic impedance                       : %10.1f\n",modelSettings->getConstBackValue(0));
+      else
+        LogKit::LogFormatted(LogKit::Low,"  Acoustic impedance read from file        : "+inputFiles->getBackFile(0)+"\n");
+    }
+    else {
+      if (modelSettings->getConstBackValue(0) > 0)
+        LogKit::LogFormatted(LogKit::Low,"  P-wave velocity                          : %10.1f\n",modelSettings->getConstBackValue(0));
+      else
+        LogKit::LogFormatted(LogKit::Low,"  P-wave velocity read from file           : "+inputFiles->getBackFile(0)+"\n");
+    }
+
+    if (modelSettings->getUseSIBackground()) {
+      if (modelSettings->getConstBackValue(1) > 0)
+        LogKit::LogFormatted(LogKit::Low,"  Shear impedance                          : %10.1f\n",modelSettings->getConstBackValue(1));
+      else
+        LogKit::LogFormatted(LogKit::Low,"  Shear impedance read from file           : "+inputFiles->getBackFile(1)+"\n");
+    }
+    else if (modelSettings->getUseVpVsBackground()) {
+      if (modelSettings->getConstBackValue(1) > 0)
+        LogKit::LogFormatted(LogKit::Low,"  Vp/Vs                                    : %10.1f\n",modelSettings->getConstBackValue(1));
+      else
+        LogKit::LogFormatted(LogKit::Low,"  Vp/Vs  read from file                    : "+inputFiles->getBackFile(1)+"\n");
+    }
+    else {
+      if (modelSettings->getConstBackValue(1) > 0)
+        LogKit::LogFormatted(LogKit::Low,"  S-wave velocity                          : %10.1f\n",modelSettings->getConstBackValue(1));
+      else
+        LogKit::LogFormatted(LogKit::Low,"  S-wave velocity read from file           : "+inputFiles->getBackFile(1)+"\n");
+    }
 
     if (modelSettings->getConstBackValue(2) > 0)
       LogKit::LogFormatted(LogKit::Low,"  Density                                  : %10.1f\n",modelSettings->getConstBackValue(2));
@@ -1848,6 +2020,9 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
       LogKit::LogFormatted(LogKit::Low,"  White noise component                    : %10.2f\n",modelSettings->getWNC());
       LogKit::LogFormatted(LogKit::Low,"  Low cut for inversion                    : %10.1f\n",modelSettings->getLowCut());
       LogKit::LogFormatted(LogKit::Low,"  High cut for inversion                   : %10.1f\n",modelSettings->getHighCut());
+      LogKit::LogFormatted(LogKit::Low,"  Guard zone outside interval of interest  : %10.1f ms\n",modelSettings->getGuardZone());
+      LogKit::LogFormatted(LogKit::Low,"  Smoothing length in guard zone           : %10.1f ms\n",modelSettings->getSmoothLength());
+      LogKit::LogFormatted(LogKit::Low,"  Interpolation threshold                  : %10.1f ms\n",modelSettings->getEnergyThreshold());
 
       if (modelSettings->getDo4DInversion())
         LogKit::LogFormatted(LogKit::Low,"\n4D seismic data:\n");
@@ -1862,37 +2037,43 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
         else if(modelSettings->getVintageDay(i)!=IMISSING && modelSettings->getVintageMonth(i)!=IMISSING && modelSettings->getVintageYear(i) != IMISSING)
           LogKit::LogFormatted(LogKit::Low,"    %-2d                                     : %10d %4d %4d\n", i+1, modelSettings->getVintageYear(i), modelSettings->getVintageMonth(i), modelSettings->getVintageDay(i));
 
-        corr  = modelSettings->getAngularCorr(i);
-        GenExpVario * pCorr = dynamic_cast<GenExpVario*>(corr);
-        LogKit::LogFormatted(LogKit::Low,"  \nAngular correlation:\n");
-        LogKit::LogFormatted(LogKit::Low,"    Model                                  : %10s\n",(corr->getType()).c_str());
-        if (pCorr != NULL)
-          LogKit::LogFormatted(LogKit::Low,"    Power                                  : %10.1f\n",pCorr->getPower());
-        LogKit::LogFormatted(LogKit::Low,"    Range                                  : %10.1f\n",corr->getRange()*180.0/M_PI);
-        if (corr->getAnisotropic())
-       {
-         LogKit::LogFormatted(LogKit::Low,"    Subrange                               : %10.1f\n",corr->getSubRange()*180.0/M_PI);
-          LogKit::LogFormatted(LogKit::Low,"    Angle                                  : %10.1f\n",corr->getAngle());
-        }
-        bool estimateNoise = false;
-        for (int j = 0 ; j < modelSettings->getNumberOfAngles(i) ; j++) {
-          estimateNoise = estimateNoise || modelSettings->getEstimateSNRatio(i,j);
-        }
-        LogKit::LogFormatted(LogKit::Low,"\nGeneral settings for wavelet:\n");
-       if (estimateNoise)
-          LogKit::LogFormatted(LogKit::Low,"  Maximum shift in noise estimation        : %10.1f\n",modelSettings->getMaxWaveletShift());
-        LogKit::LogFormatted(LogKit::Low,"  Minimum relative amplitude               : %10.3f\n",modelSettings->getMinRelWaveletAmp());
-        LogKit::LogFormatted(LogKit::Low,"  Wavelet tapering length                  : %10.1f\n",modelSettings->getWaveletTaperingL());
-        if (modelSettings->getOptimizeWellLocation()) {
-          LogKit::LogFormatted(LogKit::Low,"\nGeneral settings for well locations:\n");
-          LogKit::LogFormatted(LogKit::Low,"  Maximum offset                           : %10.1f\n",modelSettings->getMaxWellOffset());
-          LogKit::LogFormatted(LogKit::Low,"  Maximum vertical shift                   : %10.1f\n",modelSettings->getMaxWellShift());
-        }
+      corr  = modelSettings->getAngularCorr(i);
+      GenExpVario * pCorr = dynamic_cast<GenExpVario*>(corr);
+      LogKit::LogFormatted(LogKit::Low,"  Angular correlation:\n");
+      LogKit::LogFormatted(LogKit::Low,"    Model                                  : %10s\n",(corr->getType()).c_str());
+      if (pCorr != NULL)
+        LogKit::LogFormatted(LogKit::Low,"    Power                                  : %10.1f\n",pCorr->getPower());
+      LogKit::LogFormatted(LogKit::Low,"    Range                                  : %10.1f\n",corr->getRange()*180.0/M_PI);
+      if (corr->getAnisotropic())
+      {
+        LogKit::LogFormatted(LogKit::Low,"    Subrange                               : %10.1f\n",corr->getSubRange()*180.0/M_PI);
+        LogKit::LogFormatted(LogKit::Low,"    Angle                                  : %10.1f\n",corr->getAngle());
+      }
+      bool estimateNoise = false;
+      for (int j = 0 ; j < modelSettings->getNumberOfAngles(i) ; j++) {
+        estimateNoise = estimateNoise || modelSettings->getEstimateSNRatio(i,j);
+      }
+      LogKit::LogFormatted(LogKit::Low,"\nGeneral settings for wavelet:\n");
+      if (estimateNoise)
+        LogKit::LogFormatted(LogKit::Low,"  Maximum shift in noise estimation        : %10.1f\n",modelSettings->getMaxWaveletShift());
+      LogKit::LogFormatted(LogKit::High,  "  Minimum relative amplitude               : %10.3f\n",modelSettings->getMinRelWaveletAmp());
+      LogKit::LogFormatted(LogKit::High,  "  Wavelet tapering length                  : %10.1f\n",modelSettings->getWaveletTaperingL());
+      LogKit::LogFormatted(LogKit::High, "  Tuning factor for 3D wavelet estimation  : %10.1f\n", modelSettings->getWavelet3DTuningFactor());
+      LogKit::LogFormatted(LogKit::High, "  Smoothing range for gradient (3D wavelet): %10.1f\n", modelSettings->getGradientSmoothingRange());
+      LogKit::LogFormatted(LogKit::High, "  Estimate well gradient for seismic data  : %10s\n", (modelSettings->getEstimateWellGradientFromSeismic() ? "yes" : "no"));
 
+      if (modelSettings->getOptimizeWellLocation()) {
+        LogKit::LogFormatted(LogKit::Low,"\nGeneral settings for well locations:\n");
+        LogKit::LogFormatted(LogKit::Low,"  Maximum offset                           : %10.1f\n",modelSettings->getMaxWellOffset());
+        LogKit::LogFormatted(LogKit::Low,"  Maximum vertical shift                   : %10.1f\n",modelSettings->getMaxWellShift());
+      }
         std::vector<float> angle = modelSettings->getAngle(i);
         std::vector<float> SNRatio = modelSettings->getSNRatio(i);
         std::vector<bool>  estimateWavelet = modelSettings->getEstimateWavelet(i);
         std::vector<bool>  matchEnergies = modelSettings->getMatchEnergies(i);
+
+
+
 
         for (int j = 0 ; j < modelSettings->getNumberOfAngles(i) ; j++)
         {
@@ -1983,11 +2164,11 @@ ModelGeneral::processDepthConversion(Simbox            * timeCutSimbox,
 {
   FFTGrid * velocity = NULL;
   if(timeCutSimbox != NULL)
-    loadVelocity(velocity, timeCutSimbox, modelSettings,
+    loadVelocity(velocity, timeCutSimbox, timeCutSimbox, modelSettings,
                  inputFiles->getVelocityField(), velocityFromInversion_,
                  errText, failed);
   else
-    loadVelocity(velocity, timeSimbox, modelSettings,
+    loadVelocity(velocity, timeSimbox, timeCutSimbox, modelSettings,
                  inputFiles->getVelocityField(), velocityFromInversion_,
                  errText, failed);
 
@@ -2033,6 +2214,7 @@ ModelGeneral::processDepthConversion(Simbox            * timeCutSimbox,
 }
 
 void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
+                                      Simbox                       * timeCutSimbox,
                                       ModelSettings                * modelSettings,
                                       bool                         & failed,
                                       std::string                  & errTxt,
@@ -2052,7 +2234,6 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
       const SegyGeometry      * dummy1 = NULL;
       const TraceHeaderFormat * dummy2 = NULL;
       const float               offset = modelSettings->getSegyOffset(0); //Facies estimation only allowed for one time lapse
-      int outsideTraces = 0;
 
       for(int i=0; i<numberOfTrendCubes_; i++){
         trendCubeNames[i] = inputFiles->getTrendCube(i);
@@ -2065,8 +2246,8 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
                                        dummy2,
                                        FFTGrid::PARAMETER,
                                        timeSimbox,
+                                       timeCutSimbox,
                                        modelSettings,
-                                       outsideTraces,
                                        errorText,
                                        true);
         if(errorText != ""){
@@ -2102,13 +2283,14 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
 }
 
 void
-ModelGeneral::loadVelocity(FFTGrid          *& velocity,
-                           Simbox            * timeSimbox,
-                           ModelSettings     * modelSettings,
-                           const std::string & velocityField,
-                           bool              & velocityFromInversion,
-                           std::string       & errText,
-                           bool              & failed)
+ModelGeneral::loadVelocity(FFTGrid           *& velocity,
+                           Simbox             * timeSimbox,
+                           Simbox             * timeCutSimbox,
+                           ModelSettings      * modelSettings,
+                           const std::string  & velocityField,
+                           bool               & velocityFromInversion,
+                           std::string        & errText,
+                           bool               & failed)
 {
   LogKit::WriteHeader("Setup time-to-depth relationship");
 
@@ -2125,7 +2307,6 @@ ModelGeneral::loadVelocity(FFTGrid          *& velocity,
     const TraceHeaderFormat * dummy2 = NULL;
     const float               offset = modelSettings->getSegyOffset(0); //Segy offset needs to be the same for all time lapse data
     std::string errorText("");
-    int outsideTraces = 0;
     readGridFromFile(velocityField,
                      "velocity field",
                      offset,
@@ -2134,8 +2315,8 @@ ModelGeneral::loadVelocity(FFTGrid          *& velocity,
                      dummy2,
                      FFTGrid::PARAMETER,
                      timeSimbox,
+                     timeCutSimbox,
                      modelSettings,
-                     outsideTraces,
                      errorText);
 
     if (errorText == "") { // No errors

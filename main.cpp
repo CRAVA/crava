@@ -29,6 +29,7 @@
 #include "src/wavelet.h"
 #include "src/crava.h"
 #include "src/fftgrid.h"
+#include "src/gridmapping.h"
 #include "src/simbox.h"
 #include "src/welldata.h"
 #include "src/filterwelllogs.h"
@@ -134,12 +135,14 @@ int main(int argc, char** argv)
   LogKit::StartBuffering();
 
   Program program( 1,                     // Major version
-                   1,                     // Minor version
+                   3,                     // Minor version
                    0,                     // Patch number
-                   //"",                    // Use empty string "" for release versions
-                   " beta",                // Use empty string "" for release versions
+                   //"",                  // Use empty string "" for release versions
+                   " beta",               // Use empty string "" for release versions
                    -1,                    // Validity of licence in days (-1 = infinite)
-                  "Norsk Regnesentral");  // Who this copy of CRAVA is licensed to
+                   //"Roxar",
+                   //"NORSAR");
+                   "Norsk Regnesentral/Statoil");  // Who this copy of CRAVA is licensed to
 
   double wall=0.0, cpu=0.0;
   TimeKit::getTime(wall,cpu);
@@ -169,7 +172,7 @@ int main(int argc, char** argv)
       return(1);
     }
 
-    Simbox * timeBGSimbox   = NULL;
+    Simbox * timeBGSimbox = NULL;
     SeismicParametersHolder seismicParameters;
 
     setupStaticModels(modelGeneral,

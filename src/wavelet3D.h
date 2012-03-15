@@ -7,6 +7,7 @@
 
 #include "src/wavelet.h"
 #include "src/waveletfilter.h"
+#include "src/wavelet1D.h"
 
 class BlockedLogs;
 class Wavelet1D;
@@ -42,66 +43,55 @@ public:
 
   virtual ~Wavelet3D();
 
-  WaveletFilter  getFilter() const {return filter_;}
-  static void setGradientMaps( NRLib::Grid2D<float> gradX , NRLib::Grid2D<float> gradY ){gradX_=gradX; gradY_=gradY;}
+  WaveletFilter          getFilter(void) const {return filter_;}
+  static void            setGradientMaps( NRLib::Grid2D<float> gradX , NRLib::Grid2D<float> gradY ){structureDepthGradX_=gradX; structureDepthGradY_=gradY;}
+  Wavelet1D            * createWavelet1DForErrorNorm(void);
+  Wavelet1D            * createLocalWavelet1D( int i, int j);
+  Wavelet1D            * getGlobalWavelet(){ return averageWavelet_;}
+  float                  getLocalStretch(int i,int j);
 
-  // Methods that are virtual in Wavelet
-//  float         calculateSNRatioAndLocalWavelet(Simbox        * /*simbox*/,
-//                                                FFTGrid       * /*seisCube*/,
-//                                                WellData     ** /*wells*/,
-//                                                ModelSettings * /*modelSettings*/,
-//                                                std::string   & errText,
-//                                                int           & error,
-//                                                int             /*number*/,
-//                                                Grid2D       *& /*noiseScaled*/,
-//                                                Grid2D       *& /*shift*/,
-//                                                Grid2D       *& /*gain*/,
-//                                                float           /*SNRatio*/);
-Wavelet1D*  getWavelet1DForErrorNorm();
-Wavelet1D * getLocalWavelet1D( int i, int j);
-float       getLocalStretch(int i,int j);
+  Wavelet1D            * createSourceWavelet();
+  Wavelet1D            * createAverageWavelet(Simbox * simBox);
+  Wavelet1D            * extractLocalWaveletByDip1D(double phi, double psi);
+  void                   dipAdjustWavelet(Wavelet1D* Wavelet, double phi, double psi);
+  float                  GetLocalDepthGradientX(int i, int j){ return structureDepthGradX_(i,j);}
+  float                  GetLocalDepthGradientY(int i, int j){ return structureDepthGradY_(i,j);}
 
-Wavelet1D*  getSourceWavelet();
-Wavelet1D*  extractLocalWaveletByDip1D(double phi, double psi);
-void        dipAdjustWavelet(Wavelet1D* Wavelet, double phi, double psi);
-float      GetLocalDepthGradientX(int i, int j){ return gradX_(i,j);}
-float      GetLocalDepthGradientY(int i, int j){ return gradY_(i,j);}
-
-  float         calculateSNRatio(Simbox                                   * simbox,
-                                 FFTGrid                                  * seisCube,
-                                 WellData                                ** wells,
-                                 ModelSettings                            * modelSettings,
-                                 std::string                              & errText,
-                                 int                                      & error,
-                                 const NRLib::Grid2D<float>               & refTimeGradX,
-                                 const NRLib::Grid2D<float>               & refTimeGradY,
-                                 const std::vector<std::vector<double> >  & tGradX,
-                                 const std::vector<std::vector<double> >  & tGradY,
-                                 int                                        number,
-                                 float                                      SNRatio,
-                                 bool                                       estimateSNRatio,
-                                 bool                                       estimateWavelet);
+  float                  calculateSNRatio(Simbox                                   * simbox,
+                                          FFTGrid                                  * seisCube,
+                                          WellData                                ** wells,
+                                          ModelSettings                            * modelSettings,
+                                          std::string                              & errText,
+                                          int                                      & error,
+                                          const NRLib::Grid2D<float>               & refTimeGradX,
+                                          const NRLib::Grid2D<float>               & refTimeGradY,
+                                          const std::vector<std::vector<double> >  & tGradX,
+                                          const std::vector<std::vector<double> >  & tGradY,
+                                          int                                        number,
+                                          float                                      SNRatio,
+                                          bool                                       estimateSNRatio,
+                                          bool                                       estimateWavelet);
 
 private:
-  void          findLayersWithData(const std::vector<Surface *> & estimInterval,
-                                   BlockedLogs                  * bl,
-                                   FFTGrid                      * seisCube,
-                                   const std::vector<float>     & az,
-                                   const std::vector<float>     & bz,
-                                   std::vector<bool>            & hasWellData) const;
+  void                   findLayersWithData(const std::vector<Surface *> & estimInterval,
+                                            BlockedLogs                  * bl,
+                                            FFTGrid                      * seisCube,
+                                            const std::vector<float>     & az,
+                                            const std::vector<float>     & bz,
+                                            std::vector<bool>            & hasWellData) const;
 
-  double         findPhi(float                                    a,
-                         float                                    b)           const;
+  double                 findPhi(float a,
+                                 float b) const;
 
-  double         findPsi(float                                    r)           const;
+  double                 findPsi(float r) const;
 
-  fftw_complex   findWLvalue(float                                omega)       const;
+  fftw_complex           findWLvalue(float omega) const;
 
-  float          calculateWellWeight(int                                      nWl,
-                                     int                                      nPoints,
-                                     const std::vector<std::vector<float> > & gMat,
-                                     const std::vector<float>               & wellWavelet,
-                                     const std::vector<float>               & dVec) const;
+  float                  calculateWellWeight(int                                      nWl,
+                                             int                                      nPoints,
+                                             const std::vector<std::vector<float> > & gMat,
+                                             const std::vector<float>               & wellWavelet,
+                                             const std::vector<float>               & dVec) const;
 
   std::vector<fftw_real> adjustCpp(BlockedLogs              * bl,
                                    const std::vector<float> & az,
@@ -112,35 +102,37 @@ private:
                                    const std::string        & wellname,
                                    const std::string        & angle) const;
 
-  void           calculateGradients(BlockedLogs                * bl,
-                                    const std::vector<int>     & iPos,
-                                    const std::vector<int>     & jPos,
-                                    const NRLib::Grid2D<float> & refTimeGradX,
-                                    const NRLib::Grid2D<float> & refTimeGradY,
-                                    const std::vector<double>  & tGradX,
-                                    const std::vector<double>  & tGradY,
-                                    float                        v0,
-                                    std::vector<float>         & az,
-                                    std::vector<float>         & bz,
-                                    std::vector<float>         & at0,
-                                    std::vector<float>         & bt0) const;
+  void                   calculateGradients(BlockedLogs                * bl,
+                                            const std::vector<int>     & iPos,
+                                            const std::vector<int>     & jPos,
+                                            const NRLib::Grid2D<float> & refTimeGradX,
+                                            const NRLib::Grid2D<float> & refTimeGradY,
+                                            const std::vector<double>  & tGradX,
+                                            const std::vector<double>  & tGradY,
+                                            float                        v0,
+                                            std::vector<float>         & az,
+                                            std::vector<float>         & bz,
+                                            std::vector<float>         & at0,
+                                            std::vector<float>         & bt0) const;
 
 
 
   std::vector<fftw_real> calculateWellWavelet(const std::vector<std::vector<float> > & gMat,
                                               const std::vector<float>               & dVec,
+                                              double                                   SNR,
                                               int                                      nWl,
                                               int                                      nhalfWl,
                                               int                                      nPoints) const;
 
-  void           printMatToFile(const std::string                       & fileName,
-                                const std::vector<std::vector<float> >  & mat,
-                                int                                       n,
-                                int                                       m) const;
+  void                   printMatToFile(const std::string                       & fileName,
+                                        const std::vector<std::vector<float> >  & mat,
+                                        int                                       n,
+                                        int                                       m) const;
 
-  WaveletFilter  filter_;
-  static NRLib::Grid2D<float>  gradX_;
-  static NRLib::Grid2D<float>  gradY_;
+  WaveletFilter                  filter_;
+  Wavelet1D                    * averageWavelet_;
+  static NRLib::Grid2D<float>    structureDepthGradX_;// gradX_
+  static NRLib::Grid2D<float>    structureDepthGradY_;// gradY_
 };
 
 #endif
