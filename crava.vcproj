@@ -6157,6 +6157,14 @@
 				Name="rplib"
 				>
 				<File
+					RelativePath=".\rplib\dem.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\demmodelling.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\rplib\distributionwithtrend.cpp"
 					>
 				</File>
@@ -6170,6 +6178,10 @@
 				</File>
 				<File
 					RelativePath=".\rplib\multinormalrock.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\orddiffeqsolver.cpp"
 					>
 				</File>
 				<File
@@ -6893,11 +6905,11 @@
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\system\config.hpp"
+						RelativePath=".\nrlib\boost\filesystem\config.hpp"
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\filesystem\config.hpp"
+						RelativePath=".\nrlib\boost\system\config.hpp"
 						>
 					</File>
 					<File
@@ -7150,6 +7162,14 @@
 				Name="rplib"
 				>
 				<File
+					RelativePath=".\rplib\dem.h"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\demmodelling.h"
+					>
+				</File>
+				<File
 					RelativePath=".\rplib\distributionsgeochemical.h"
 					>
 				</File>
@@ -7187,6 +7207,10 @@
 				</File>
 				<File
 					RelativePath=".\rplib\multinormalrock.h"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\orddiffeqsolver.h"
 					>
 				</File>
 				<File
