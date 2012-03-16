@@ -3,36 +3,32 @@
 
 #include <string>
 #include <vector>
+#include "rplib/distributionsfluidevolution.h"
 
-
+// Abstract fluid class.
+// Each derived class has parallel classes derived from DistributionsFluidT0 and DistributionsFluidEvolve.
 class Fluid {
 public:
 
-  Fluid(const std::string& name, double k, double rho);
-  Fluid(const Fluid & rhs);
-  ~Fluid();
-  Fluid& operator=(const Fluid& rhs);
+  Fluid(double temp, double pore_pressure);
+  virtual ~Fluid();
 
-  const std::string         & GetName()        const {return name_;}
-  double                      GetBulkModulus() const {return elastics_[0];}
-  double                      GetDensity()     const {return elastics_[1];}
-  const std::vector<double> & GetElastics()    const {return elastics_;}
+  virtual void ComputeElasticParams(double & k, double & rho) const = 0;
 
+  // Fluid is an abstract class, hence pointer must be used here. Allocated memory (using new) MUST be deleted by caller.
+  virtual Fluid * Evolve(const std::vector<int>             & delta_time,
+                         const std::vector< Fluid * >       & fluid,
+                         const DistributionsFluidEvolution  * dist_fluid_evolve) const = 0;
 
-private:
-  std::string name_;// Fluid identifier.
+  void SetCommonParams(const double temp, const double pore_pressure){
+    temp_          = temp;
+    pore_pressure_ = pore_pressure;
+  }
 
-  // Elastic properties assumed to be deterministic.
-  // Replace vector type double with NRLib::Distribution if changing to stochastic.
-  // If stochastic, the Get-functions must change return values,
-  // if we want to give access to the whole distribution.
-  // The return value should then be a const reference.
-  // Example: NRLib::Distribution & const GetBulkModulus() const {return elastics_[0];}
-  // Sampled values from the distributions would typically also be requested.
-  // Example: double GetBulkModulusSample() const;
-
-  std::vector<double> elastics_; // elastics_[0] = bulk modulus, elastics_[1] = density.
-
+protected:
+  // Sampled values of parameters common to all fluid classes.
+  double temp_;
+  double pore_pressure_;
 };
 
 #endif
