@@ -2,8 +2,9 @@
 
 MultiNormalRock::MultiNormalRock(const std::vector<double>&  param,
                                  const std::vector<double>&  saturation)
-: Rock(param, saturation)
+: Rock(saturation)
 {
+  param_ = param;
 }
 
 

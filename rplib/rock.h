@@ -12,7 +12,7 @@
 // Each derived class has parallel classes derived from DistributionsRockT0 and DistributionsGeochemical.
 class Rock {
 public:
-  Rock(const std::vector<double> & param, const std::vector<double> & saturation);
+  Rock(const std::vector<double> & saturation);
   virtual ~Rock();
 
   virtual void ComputeSeismicParams(double & vp, double & vs, double & rho) const = 0;
@@ -29,7 +29,6 @@ public:
   static std::vector<Fluid *> fluid_;  // The same objects for all Rocks, fixed fluid properties..
 
 protected:
-  const std::vector<double> param_;    // Sampled rock physics parameters, apart from saturation and fluid properties.
   std::vector<double> saturation_;     // Sampled saturations.
 };
 

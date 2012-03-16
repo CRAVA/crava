@@ -7,9 +7,10 @@ class RockDEM : public Rock {
 public:
 
   // Parallel classes are DistributionsGeochemicalDEM and DistributionsRockT0DEM.
-  RockDEM(const std::vector<double> & param, const std::vector<double> & saturation)
-  : Rock(param, saturation)
+  RockDEM(const double par_dem, const std::vector<double> & saturation)
+  : Rock(saturation)
   {
+    par_dem_ = par_dem;
   }
 
   virtual ~RockDEM(){}
@@ -32,11 +33,14 @@ public:
     std::vector<double> param_sat;
     dist_sat->GetParameters(param_sat);
 
-    std::vector<double> evolved_param(param_.size(), param_[0] + param_geochem[0]);             //FAKE
+    double evolved_param_dem = par_dem_ + param_geochem[0];             //FAKE
     std::vector<double> evolved_saturation(saturation_.size(), saturation_[0] * param_sat[0]);  //FAKE
-    Rock * new_rock = new RockDEM(evolved_param, evolved_saturation);
+    Rock * new_rock = new RockDEM(evolved_param_dem, evolved_saturation);
     return new_rock;
   }
+
+private:
+  double par_dem_; // Example, to be substituted with real DEM parameters.
 };
 
 #endif

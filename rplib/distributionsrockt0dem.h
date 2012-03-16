@@ -12,14 +12,27 @@ public:
 
   virtual ~DistributionsRockT0DEM(){}
 
-  virtual Rock  * GenerateSample(const std::vector<double> & trend_params) const {
-    std::vector<double> param(6);      //FAKE
-    if (trend_params.size() > 0)       //FAKE
-      param[0] -= trend_params[0];     //FAKE
+  virtual Rock  * GenerateSample(const std::vector<double> & /*trend_params*/) const {
+    double par_dem = 1.1;              //FAKE
     std::vector<double> saturation(2); //FAKE
-    saturation[0] = 1;                 //FAKE
-    Rock * rock = new RockDEM(param, saturation);
+    saturation[0] = 1.0;               //FAKE
+    Rock * rock = new RockDEM(par_dem, saturation);
     return rock;
+  }
+
+  virtual std::vector<double>   GetExpectation(const std::vector<double> & /*trend_params*/) const {
+    std::vector<double> expectation(3, 0.0); //FAKE
+    return expectation;
+  }
+
+  virtual NRLib::Grid2D<double> GetCovariance(const std::vector<double> & /*trend_params*/) const {
+    NRLib::Grid2D<double> grid2d(3,3,5.0); //FAKE
+    return grid2d;
+  }
+
+  virtual Pdf3D * GeneratePdf(void) const {
+    Pdf3D * pdf3D = NULL; //FAKE
+    return pdf3D;
   }
 
 };

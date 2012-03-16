@@ -21,6 +21,7 @@ public:
 
 
 private:
+  std::vector<double>  param_; //vp, vs, rho
 
 };
 

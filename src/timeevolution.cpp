@@ -302,7 +302,7 @@ void TimeEvolution::DoRobustInversion(NRLib::Matrix & SigmaInv,
                                       double                   adjustment_factor)
 {
   // The inversion may need to be stabilized.
-  // The adjustment made for this must be repeated also for the other covariance
+  // The adjustment made for this is repeated also for the other covariance
   // matrices to ensure block form of evolution matrix and correction term covariance.
 
   int max_counter     = 10;
@@ -363,6 +363,8 @@ void TimeEvolution::FixMatrices(NRLib::Matrix & Cov_mk_mk,
   NRLib::Matrix tmp_ss = Cov_mk_mk;  // We will only use the static-static block of this covariance matrix.
   for (int d = 0; d < dim2; ++d) {
     double x                          = tmp_ss(d,d) * adjustment_factor;
+    if (x == 0.0)
+      x = adjustment_factor;
     Cov_mkm1_mkm1(d,d)               += x;
     Cov_mk_mkm1(d,d)                 += x;
     Cov_mk_mk(d,d)                   += x;
