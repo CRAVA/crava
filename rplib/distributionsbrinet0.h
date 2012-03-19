@@ -1,7 +1,9 @@
 #ifndef DISTRIBUTIONSBRINET0_H
 #define DISTRIBUTIONSBRINET0_H
 
+#include "rplib/distributionsfluidt0.h"
 #include "rplib/fluid.h"
+#include "rplib/brine.h"
 
 // Parallel classes are Brine and DistributionsBrineEvolution.
 class DistributionsBrineT0 : public DistributionsFluidT0 {

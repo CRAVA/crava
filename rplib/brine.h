@@ -2,6 +2,7 @@
 #define BRINE_H
 
 #include "rplib/fluid.h"
+#include "rplib/distributionsbrineevolution.h"
 
 class Brine : public Fluid {
 public:
@@ -21,17 +22,16 @@ public:
 
   virtual Fluid * Evolve(const std::vector<int>             & delta_time,
                          const std::vector< Fluid * >       & fluid,
-                         const DistributionsFluidEvolution  * dist_fluid_evolve) const {
+                         DistributionsFluidEvolution        * dist_fluid_evolve) const {
+    DistributionsBrineEvolution * dist_brine_evolve = dynamic_cast<DistributionsBrineEvolution*>(dist_fluid_evolve);
+    assert(dist_brine_evolve != NULL);
     assert(delta_time.size() == fluid.size() + 1);
 
-    // Temporary implementation that just copies this brine:
-    Fluid * new_fluid = new Brine(temp_, pore_pressure_, salinity_);
-    return new_fluid;
-  }
+    // Temporary implementation that simply makes a copy, but illustrates the use of dist_brine_evolve:
+    double example_param = dist_brine_evolve->Sample();
+    Fluid * new_fluid = new Brine(temp_*example_param, pore_pressure_, salinity_);
 
-  void SetParams(const double temp, const double pore_pressure, const double salinity) {
-    SetCommonParams(temp, pore_pressure);
-    salinity_ = salinity;
+    return new_fluid;
   }
 
 private:

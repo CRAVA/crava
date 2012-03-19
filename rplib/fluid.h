@@ -15,10 +15,17 @@ public:
 
   virtual void ComputeElasticParams(double & k, double & rho) const = 0;
 
-  // Fluid is an abstract class, hence pointer must be used here. Allocated memory (using new) MUST be deleted by caller.
+  // Fluid is an abstract class, hence pointer must be used in Evolve. 
+  // Allocated memory (using new) MUST be deleted by caller.
+  // Derived class Evolve implementation should always start with casting and assert.
+  // Example from derived class Brine:
+          //DistributionsBrineEvolution * dist_brine_evolve = 
+          //      dynamic_cast<DistributionsBrineEvolution*>(dist_fluid_evolve);
+          //assert(dist_brine_evolve != NULL);
+          //assert(delta_time.size() == fluid.size() + 1);
   virtual Fluid * Evolve(const std::vector<int>             & delta_time,
                          const std::vector< Fluid * >       & fluid,
-                         const DistributionsFluidEvolution  * dist_fluid_evolve) const = 0;
+                         DistributionsFluidEvolution        * dist_fluid_evolve) const = 0;
 
   void SetCommonParams(const double temp, const double pore_pressure){
     temp_          = temp;
