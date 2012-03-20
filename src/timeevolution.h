@@ -6,7 +6,7 @@
 
 class SeismicParametersHolder;
 class TimeLine;
-class DistributionsRockT0;
+class DistributionsRock;
 class DistributionsSaturation;
 class DistributionsGeochemical;
 class FFTGrid;
@@ -16,7 +16,7 @@ class TimeEvolution
 public:
   TimeEvolution(int i_max,
                 TimeLine & time_line,
-                const DistributionsRockT0 * dist_rock,
+                const DistributionsRock       * dist_rock,
                 const DistributionsSaturation * dist_sat,
                 const DistributionsGeochemical * dist_geochem);
   void Evolve(int time_step, SeismicParametersHolder &m);
@@ -47,13 +47,13 @@ private:
              std::vector<FFTGrid *>        &sigma_sd);
 
   // Estimate time evolution matrices and correction term mean and covariance:
-  void SetUpEvolutionMatrices(std::vector< NRLib::Matrix> &evolution_matrix,
-                             std::vector< NRLib::Matrix> &cov_correction_term,
-                             std::vector< NRLib::Vector> &mean_correction_term,
-                             int i_max,
-                             TimeLine & time_line,
-                             const DistributionsRockT0 * dist_rock,
-                             const DistributionsSaturation * dist_sat,
+  void SetUpEvolutionMatrices(std::vector< NRLib::Matrix>   & evolution_matrix,
+                             std::vector< NRLib::Matrix>    & cov_correction_term,
+                             std::vector< NRLib::Vector>    & mean_correction_term,
+                             int                              i_max,
+                             TimeLine                       & time_line,
+                             const DistributionsRock        * dist_rock,
+                             const DistributionsSaturation  * dist_sat,
                              const DistributionsGeochemical * dist_geochem);
 
   // Adjusting diagonal of matrix to be inverted if necessary,

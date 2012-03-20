@@ -30,7 +30,7 @@
 #include "src/tasklist.h"
 #include "src/modelavostatic.h"
 
-#include "rplib/distributionsrockt0.h"
+#include "rplib/distributionsrock.h"
 #include "rplib/pdf3d.h"
 
 FaciesProb::FaciesProb(FFTGrid                      * alpha,
@@ -66,7 +66,7 @@ FaciesProb::FaciesProb(FFTGrid                             * alpha,
                        float                                 p_undef,
                        FFTGrid                             * seismicLH,
                        ModelAVOStatic                      * modelAVOstatic,
-                       std::vector<DistributionsRockT0 *>    rock_distributions)
+                       std::vector<DistributionsRock *>      rock_distributions)
 : nFacies_(nFac)
 {
   calculateFaciesProbFromRockPhysicsModel(alpha, beta, rho, p_undef, seismicLH, modelAVOstatic, rock_distributions);
@@ -1277,7 +1277,7 @@ void FaciesProb::calculateFaciesProbFromRockPhysicsModel(FFTGrid                
                                                          float                                p_undefined,
                                                          FFTGrid                            * seismicLH,
                                                          ModelAVOStatic                     * modelAVOstatic,
-                                                         std::vector<DistributionsRockT0 *>   rock_distributions)
+                                                         std::vector<DistributionsRock *>     rock_distributions)
 {
   int rnxp = alphagrid->getRNxp();
   int nyp  = alphagrid->getNyp();

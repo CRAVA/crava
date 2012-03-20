@@ -3,9 +3,9 @@
 #include "nrlib/grid/grid2d.hpp"
 
 #include "rplib/rockphysicsstorage.h"
-#include "rplib/distributionsrockt0.h"
+#include "rplib/distributionsrock.h"
 #include "rplib/trinormalwith2dtrend.h"
-#include "rplib/multinormaldistributedrockt0.h"
+#include "rplib/multinormaldistributedrock.h"
 
 RockPhysicsStorage::RockPhysicsStorage()
 {
@@ -50,7 +50,7 @@ GaussianRockPhysicsStorage::~GaussianRockPhysicsStorage()
   delete correlation_vs_density_;
 }
 
-DistributionsRockT0 *
+DistributionsRock *
 GaussianRockPhysicsStorage::GenerateRockPhysics(const std::string                      & path,
                                                 const std::vector<std::string>         & trend_cube_parameters,
                                                 const std::vector<std::vector<float> > & trend_cube_sampling,
@@ -66,15 +66,15 @@ GaussianRockPhysicsStorage::GenerateRockPhysics(const std::string               
   NRLib::Trend * correlation_vp_density_trend = correlation_vp_density_->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,errTxt);
   NRLib::Trend * correlation_vs_density_trend = correlation_vs_density_->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,errTxt);
 
-  DistributionsRockT0 * rock = new MultiNormalDistributedRockT0(mean_vp_trend,
-                                                                mean_vs_trend,
-                                                                mean_density_trend,
-                                                                variance_vp_trend,
-                                                                variance_vs_trend,
-                                                                variance_density_trend,
-                                                                correlation_vp_vs_trend,
-                                                                correlation_vp_density_trend,
-                                                                correlation_vs_density_trend);
+  DistributionsRock * rock = new MultiNormalDistributedRock(mean_vp_trend,
+                                                            mean_vs_trend,
+                                                            mean_density_trend,
+                                                            variance_vp_trend,
+                                                            variance_vs_trend,
+                                                            variance_density_trend,
+                                                            correlation_vp_vs_trend,
+                                                            correlation_vp_density_trend,
+                                                            correlation_vs_density_trend);
 
 
   delete mean_vp_trend;

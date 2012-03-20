@@ -11,7 +11,7 @@ CorrelatedRockSamples::~CorrelatedRockSamples()
 std::vector< std::vector< std::vector<double> > >
 CorrelatedRockSamples::CreateSamples(int                              i_max,
                                      TimeLine                       & time_line,
-                                     const DistributionsRockT0      * dist_rock,
+                                     const DistributionsRock        * dist_rock,
                                      const DistributionsSaturation  * dist_sat,
                                      const DistributionsGeochemical * dist_geochem)
 {
@@ -54,7 +54,7 @@ CorrelatedRockSamples::CreateSamples(int                              i_max,
     }
   }
 
-  // Must delete memory allocated by classes DistributionsRockT0 and Rock.
+  // Must delete memory allocated by classes DistributionsRock and Rock.
   for (int k = 1; k < k_max; ++k){
     for (int i = 0; i < i_max; ++i){
       if (rock[k][i] != NULL)

@@ -7,7 +7,7 @@
 
 
 // Abstract rock class.
-// Each derived class has parallel classes derived from DistributionsRockT0 and DistributionsGeochemical.
+// Each derived class has parallel classes derived from DistributionsRock and DistributionsGeochemical.
 class Rock {
 public:
   Rock();

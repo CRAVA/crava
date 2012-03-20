@@ -7,7 +7,7 @@
 class Brine : public Fluid {
 public:
 
-  // Parallel classes are DistributionsBrineEvolution and DistributionsBrineT0.
+  // Parallel classes are DistributionsBrineEvolution and DistributionsBrine.
   Brine(const double temp, const double pore_pressure, const double salinity)
   : Fluid(temp, pore_pressure) {
     salinity_ = salinity;

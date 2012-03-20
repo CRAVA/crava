@@ -1,17 +1,16 @@
-#ifndef DISTRIBUTIONSBRINET0_H
-#define DISTRIBUTIONSBRINET0_H
+#ifndef DISTRIBUTIONSBRINE_H
+#define DISTRIBUTIONSBRINE_H
 
-#include "rplib/distributionsfluidt0.h"
-#include "rplib/fluid.h"
+#include "rplib/distributionsfluid.h"
 #include "rplib/brine.h"
 
 // Parallel classes are Brine and DistributionsBrineEvolution.
-class DistributionsBrineT0 : public DistributionsFluidT0 {
+class DistributionsBrine : public DistributionsFluid {
 public:
 
-  DistributionsBrineT0() : DistributionsFluidT0(){}
+  DistributionsBrine() : DistributionsFluid(){}
 
-  virtual ~DistributionsBrineT0(){}
+  virtual ~DistributionsBrine(){}
 
   virtual Fluid * GenerateSample() const {
     double temperature   = 30.0;     //FAKE

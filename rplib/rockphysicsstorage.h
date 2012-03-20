@@ -1,7 +1,7 @@
 #ifndef RPLIB_ROCK_PHYSICS_STORAGE_HPP
 #define RPLIB_ROCK_PHYSICS_STORAGE_HPP
 
-#include "rplib/distributionsrockt0.h"
+#include "rplib/distributionsrock.h"
 #include "nrlib/trend/trendstorage.hpp"
 #include "nrlib/trend/trend.hpp"
 
@@ -12,10 +12,10 @@ public:
 
   virtual ~RockPhysicsStorage();
 
-  virtual DistributionsRockT0 * GenerateRockPhysics(const std::string                      & /*path*/,
-                                                    const std::vector<std::string>         & /*trend_cube_parameters*/,
-                                                    const std::vector<std::vector<float> > & /*trend_cube_sampling*/,
-                                                    std::string                            & /*errTxt*/)                    const = 0;
+  virtual DistributionsRock * GenerateRockPhysics(const std::string                      & /*path*/,
+                                                  const std::vector<std::string>         & /*trend_cube_parameters*/,
+                                                  const std::vector<std::vector<float> > & /*trend_cube_sampling*/,
+                                                  std::string                            & /*errTxt*/)                    const = 0;
 };
 
 class GaussianRockPhysicsStorage : public RockPhysicsStorage {
@@ -32,10 +32,10 @@ public:
 
   virtual ~GaussianRockPhysicsStorage();
 
-  virtual DistributionsRockT0 * GenerateRockPhysics(const std::string                      & path,
-                                                    const std::vector<std::string>         & trend_cube_parameters,
-                                                    const std::vector<std::vector<float> > & trend_cube_sampling,
-                                                    std::string                            & errTxt) const;
+  virtual DistributionsRock * GenerateRockPhysics(const std::string                      & path,
+                                                  const std::vector<std::string>         & trend_cube_parameters,
+                                                  const std::vector<std::vector<float> > & trend_cube_sampling,
+                                                  std::string                            & errTxt) const;
 
 private:
 

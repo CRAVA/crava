@@ -10,13 +10,13 @@
 #include "src/correlatedrocksamples.h"
 #include "src/tasklist.h"
 
-#include "rplib/distributionsrockt0.h"
+#include "rplib/distributionsrock.h"
 
 
 TimeEvolution::TimeEvolution(int i_max,
                              TimeLine & time_line,
-                             const DistributionsRockT0 * dist_rock,
-                             const DistributionsSaturation * dist_sat,
+                             const DistributionsRock        * dist_rock,
+                             const DistributionsSaturation  * dist_sat,
                              const DistributionsGeochemical * dist_geochem)
 {
   std::list<int> time;
@@ -199,13 +199,13 @@ void TimeEvolution::Evolve(int time_step, SeismicParametersHolder &m_combined){
 }
 
 
-void TimeEvolution::SetUpEvolutionMatrices(std::vector< NRLib::Matrix> &evolution_matrix,
-                                           std::vector< NRLib::Matrix> &cov_correction_term,
-                                           std::vector< NRLib::Vector> &mean_correction_term,
-                                           int i_max,
-                                           TimeLine & time_line,
-                                           const DistributionsRockT0 * dist_rock,
-                                           const DistributionsSaturation * dist_sat,
+void TimeEvolution::SetUpEvolutionMatrices(std::vector< NRLib::Matrix>    & evolution_matrix,
+                                           std::vector< NRLib::Matrix>    & cov_correction_term,
+                                           std::vector< NRLib::Vector>    & mean_correction_term,
+                                           int                              i_max,
+                                           TimeLine                       & time_line,
+                                           const DistributionsRock        * dist_rock,
+                                           const DistributionsSaturation  * dist_sat,
                                            const DistributionsGeochemical * dist_geochem)
 {
   // A note on variable names in this function:

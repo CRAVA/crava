@@ -2,7 +2,7 @@
 #define CORRELATEDROCKSAMPLES_H
 
 #include "src/timeline.h"
-#include "rplib/distributionsrockt0.h"
+#include "rplib/distributionsrock.h"
 #include "rplib/distributionssaturation.h"
 #include "rplib/distributionsgeochemical.h"
 
@@ -21,7 +21,7 @@ public:
 
   std::vector< std::vector< std::vector<double> > > CreateSamples(int                              i_max,
                                                                   TimeLine                       & time_line,
-                                                                  const DistributionsRockT0      * dist_rock,
+                                                                  const DistributionsRock        * dist_rock,
                                                                   const DistributionsSaturation  * dist_sat,
                                                                   const DistributionsGeochemical * dist_geochem);
 };

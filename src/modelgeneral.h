@@ -10,7 +10,7 @@
 #include "src/modelsettings.h"
 #include "src/inputfiles.h"
 
-#include "rplib/distributionsrockt0.h"
+#include "rplib/distributionsrock.h"
 
 struct irapgrid;
 class Corr;
@@ -47,7 +47,7 @@ public:
 
   TimeLine                    * getTimeLine() const {return(timeLine_);}
 
-  std::vector<DistributionsRockT0 *> getRockDistributions(void) const { return rock_distributions_;}
+  std::vector<DistributionsRock *> getRockDistributions(void) const { return rock_distributions_;}
 
   static FFTGrid    * createFFTGrid(int nx,
                                     int ny,
@@ -193,7 +193,7 @@ private:
 
   FFTGrid                ** trendCubes_;            ///< Trend cubes used in rock phyiscs prior model
   int                       numberOfTrendCubes_;    ///< Defined for deletion of trendCubes_
-  std::vector<DistributionsRockT0 *> rock_distributions_; ///< Rock physics prior models
+  std::vector<DistributionsRock *> rock_distributions_; ///< Rock physics prior models
 
   GridMapping       * timeDepthMapping_;      ///< Contains both simbox and mapping used for depth conversion
   GridMapping       * timeCutMapping_;        ///< Simbox and mapping for timeCut

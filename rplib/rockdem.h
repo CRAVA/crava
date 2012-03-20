@@ -7,7 +7,7 @@
 class RockDEM : public Rock {
 public:
 
-  // Parallel classes are DistributionsGeochemicalDEM and DistributionsRockT0DEM.
+  // Parallel classes are DistributionsGeochemicalDEM and DistributionsRockDEM.
   RockDEM(const double par_dem)
   : Rock()
   {

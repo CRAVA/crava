@@ -3,7 +3,7 @@
 
 #include "rplib/distributionsgeochemical.h"
 
-// Parallel classes are RockDEM and DistributionsRockT0DEM.
+// Parallel classes are RockDEM and DistributionsRockDEM.
 class DistributionsGeochemicalDEM : public DistributionsGeochemical{
 public:
 

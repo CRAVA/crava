@@ -21,7 +21,7 @@ public:
 
 private:
 
-  TriNormalWith2DTrend * tri_normal_distr_; //deleted in MultiNormalDistributedRockT0
+  TriNormalWith2DTrend * tri_normal_distr_; //deleted in MultiNormalDistributedRock
 
 };
 

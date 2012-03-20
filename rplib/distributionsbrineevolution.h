@@ -3,7 +3,7 @@
 
 #include "rplib/distributionsfluidevolution.h"
 
-// Parallel classes are Brine and DistributionsBrineT0.
+// Parallel classes are Brine and DistributionsBrine.
 class DistributionsBrineEvolution : public DistributionsFluidEvolution {
 public:
 

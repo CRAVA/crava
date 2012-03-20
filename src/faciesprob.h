@@ -6,7 +6,7 @@
 #include "fftw-int.h"
 #include "f77_func.h"
 
-#include <rplib/distributionsrockt0.h>
+#include <rplib/distributionsrock.h>
 
 class Corr;
 class FFTGrid;
@@ -51,7 +51,7 @@ public:
              float                                p_undef,
              FFTGrid                            * seismicLH,
              ModelAVOStatic                     * modelAVOstatic,
-             std::vector<DistributionsRockT0 *>   rock_distributions);
+             std::vector<DistributionsRock *>     rock_distributions);
 
   ~FaciesProb();
 
@@ -186,7 +186,7 @@ private:
                                                                  float                                p_undef,
                                                                  FFTGrid                            * seismicLH,
                                                                  ModelAVOStatic                     * modelAVOstatic,
-                                                                 std::vector<DistributionsRockT0 *>   rock_distributions);
+                                                                 std::vector<DistributionsRock *>     rock_distributions);
 
   void                   normalizeCubes(FFTGrid **priorFaciesCubes);
 

@@ -6,7 +6,7 @@
 #include "rplib/distributionsfluidevolution.h"
 
 // Abstract fluid class.
-// Each derived class has parallel classes derived from DistributionsFluidT0 and DistributionsFluidEvolve.
+// Each derived class has parallel classes derived from DistributionsFluid and DistributionsFluidEvolve.
 class Fluid {
 public:
 
