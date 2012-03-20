@@ -205,8 +205,8 @@ ModelAVOStatic::processWells(WellData          **& wells,
 
     if (error == 0) {
       if(modelSettings->getFaciesLogGiven()) {
-        checkFaciesNames(wells, modelSettings, inputFiles, tmpErrText, error);
-        nFacies = modelSettings->getNumberOfFacies(); // nFacies is set in checkFaciesNames()
+        setFaciesNames(wells, modelSettings, tmpErrText, error);
+        nFacies = modelSettings->getNumberOfFacies(); // nFacies is set in setFaciesNames()
       }
       if (error>0)
         errText += "Prior facies probabilities failed.\n"+tmpErrText;
@@ -446,13 +446,11 @@ ModelAVOStatic::processWells(WellData          **& wells,
   }
 }
 
-void ModelAVOStatic::checkFaciesNames(WellData ** wells,
-                             ModelSettings     *& modelSettings,
-                             const InputFiles   * inputFiles,
-                             std::string        & tmpErrText,
-                             int                & error)
+void ModelAVOStatic::setFaciesNames(WellData          ** wells,
+                                    ModelSettings     *& modelSettings,
+                                    std::string        & tmpErrText,
+                                    int                & error)
 {
-  //Compare facies names from wells with facies names given in model file or read from proability cubes
   int min,max;
   int globalmin = 0;
   int globalmax = 0;
@@ -520,36 +518,79 @@ void ModelAVOStatic::checkFaciesNames(WellData ** wells,
       modelSettings->addFaciesLabel(globalmin + i);
     }
   }
+}
 
-  // Compare names in wells with names given in .xml-file
-  if(modelSettings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_MODEL_FILE)
-  {
-    typedef std::map<std::string,float> mapType;
-    mapType myMap = modelSettings->getPriorFaciesProb();
+void ModelAVOStatic::processFaciesInformation(ModelSettings     *& modelSettings,
+                                              const InputFiles   * inputFiles,
+                                              std::string        & tmpErrText,
+                                              int                & error) const
+{
+  int nFacies = modelSettings->getNumberOfFacies();
+  if(nFacies == 0) {
+    // Get facies information from rock physics prior model
+    std::vector<std::string> rock_name = modelSettings->getRockName();
 
-    for(int i=0;i<nFacies;i++)
-    {
-      mapType::iterator iter = myMap.find(modelSettings->getFaciesName(i));
-      if (iter==myMap.end())
-      {
-        tmpErrText += "Problem with facies logs. Facies "+modelSettings->getFaciesName(i)+" is not one of the facies given in the xml-file.\n";
-        error++;
-      }
+    nFacies = static_cast<int>(rock_name.size());
+
+    for(int i=0; i<nFacies; i++) {
+      modelSettings->addFaciesName(rock_name[i]);
+      modelSettings->addFaciesLabel(i);
     }
   }
-  // Compare names in wells with names given as input in proability cubes
-  else if(modelSettings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_CUBES)
-  {
-    typedef std::map<std::string,std::string> mapType;
-    mapType myMap = inputFiles->getPriorFaciesProbFile();
+  else {
+    std::vector<std::string> facies_name = modelSettings->getFaciesNames();
+    std::vector<std::string> rock_name   = modelSettings->getRockName();
 
-    for(int i=0;i<nFacies;i++)
-    {
-      mapType::iterator iter = myMap.find(modelSettings->getFaciesName(i));
-      if (iter==myMap.end())
-      {
-        tmpErrText += "Problem with facies logs. Facies "+modelSettings->getFaciesName(i)+" is not one of the facies given in the xml-file.\n";
+    // Compare names in wells with names given in rock physics prior model
+    if(rock_name.size()>0) {
+      int nRocks  = static_cast<int>(rock_name.size());
+      if(nRocks > nFacies) {
+        tmpErrText += "Problem with facies logs. The number of rocks in the rock physics prior model is larger than the number of facies found in the wells.\n";
         error++;
+      }
+      for(int i=0; i<nFacies; i++) {
+        int j=0;
+        while(j<nRocks) {
+          if(facies_name[i] == rock_name[j])
+            break;
+          j++;
+        }
+        if(j == nRocks) {
+          tmpErrText += "Problem with facies logs. Facies "+facies_name[i]+" found in a well is not one of the rocks given in rock physics prior model\n";
+          error++;
+        }
+      }
+    }
+    // Compare names in wells with names given in .xml-file
+    if(modelSettings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_MODEL_FILE)
+    {
+      typedef std::map<std::string,float> mapType;
+      mapType myMap = modelSettings->getPriorFaciesProb();
+
+      for(int i=0;i<nFacies;i++)
+      {
+        mapType::iterator iter = myMap.find(modelSettings->getFaciesName(i));
+        if (iter==myMap.end())
+        {
+          tmpErrText += "Problem with facies logs. Facies "+modelSettings->getFaciesName(i)+" is not one of the facies given in the xml-file.\n";
+          error++;
+        }
+      }
+    }
+    // Compare names in wells with names given as input in proability cubes
+    else if(modelSettings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_CUBES)
+    {
+      typedef std::map<std::string,std::string> mapType;
+      mapType myMap = inputFiles->getPriorFaciesProbFile();
+
+      for(int i=0;i<nFacies;i++)
+      {
+        mapType::iterator iter = myMap.find(modelSettings->getFaciesName(i));
+        if (iter==myMap.end())
+        {
+          tmpErrText += "Problem with facies logs. Facies "+modelSettings->getFaciesName(i)+" is not one of the facies given in the xml-file.\n";
+          error++;
+        }
       }
     }
   }
@@ -737,6 +778,17 @@ void ModelAVOStatic::processPriorFaciesProb(const std::vector<Surface*>  & facie
   if (modelSettings->getEstimateFaciesProb())
   {
     LogKit::WriteHeader("Prior Facies Probabilities");
+
+    int error = 0;
+    std::string tmpErrText = "";
+    processFaciesInformation(modelSettings,
+                             inputFiles,
+                             tmpErrText,
+                             error);
+    if (error>0)
+      errTxt += "Prior facies probabilities failed.\n"+tmpErrText;
+
+
     int nFacies = modelSettings->getNumberOfFacies();
 
     if(modelSettings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_WELLS)

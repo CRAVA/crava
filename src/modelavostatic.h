@@ -101,11 +101,15 @@ private:
                                      const InputFiles       * inputFiles,
                                      std::string            & errText,
                                      bool                   & failed);
-  void             checkFaciesNames(WellData        ** wells,
-                                    ModelSettings   *& modelSettings,
-                                    const InputFiles * inputFiles,
-                                    std::string      & tmpErrText,
-                                    int              & error);
+  void             setFaciesNames(WellData        ** wells,
+                                  ModelSettings   *& modelSettings,
+                                  std::string      & tmpErrText,
+                                  int              & error);
+
+  void             processFaciesInformation(ModelSettings     *& modelSettings,
+                                            const InputFiles   * inputFiles,
+                                            std::string        & tmpErrText,
+                                            int                & error) const;
 
   void             checkAvailableMemory(Simbox              * timeSimbox,
                                         ModelSettings       * modelSettings,

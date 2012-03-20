@@ -192,6 +192,7 @@ public:
   std::vector<int>                 findSortedVintages(void)             const;
   std::vector<std::string>         getTrendCubeParameters(void)         const { return trendCubeParameter_                  ;}
   int                              getNumberOfRocks(void)               const { return static_cast<int>(rockName_.size())   ;}
+  std::vector<std::string>         getRockName()                        const { return rockName_                            ;}
   RockPhysicsStorage             * getRockPhysicsStorage(int i)         const { return rockPhysics_[i]                      ;}
 
   void rotateVariograms(float angle);

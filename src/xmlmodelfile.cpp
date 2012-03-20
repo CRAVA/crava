@@ -3664,10 +3664,37 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
     errTxt += "Seismic quality grid can not be estimated without requesting facies probabilities under inversion settings.\n";
 
   //Rock physics consistency
-  if(modelSettings_->getFaciesProbFromRockPhysics()){
+  if(modelSettings_->getFaciesProbFromRockPhysics()) {
 
     if(modelSettings_->getEstimateFaciesProb() == false)
       errTxt += "Rocks in the rock physics prior model should not be given without requesting facies probabilities under inversion settings.\n";
+
+    std::vector<std::string> rock_name = modelSettings_->getRockName();
+    int nRocks = static_cast<int>(rock_name.size());
+
+    // Compare names in rock physics model with names given in .xml-file
+    if(modelSettings_->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_MODEL_FILE) {
+      typedef std::map<std::string,float> mapType;
+      mapType myMap = modelSettings_->getPriorFaciesProb();
+
+      for(int i=0;i<nRocks;i++) {
+        mapType::iterator iter = myMap.find(rock_name[i]);
+        if (iter==myMap.end())
+          errTxt += "Problem with rock physics prior model. Rock "+rock_name[i]+" is not one of the facies given in the xml-file.\n";
+      }
+    }
+
+    // Compare names in rock physics model with names given as input in proability cubes
+    else if(modelSettings_->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_CUBES) {
+      typedef std::map<std::string,std::string> mapType;
+      mapType myMap = inputFiles_->getPriorFaciesProbFile();
+
+      for(int i=0;i<nRocks;i++) {
+        mapType::iterator iter = myMap.find(rock_name[i]);
+        if (iter==myMap.end())
+          errTxt += "Problem with rock physics prior model. Rock "+rock_name[i]+" is not one of the facies given in the xml-file.\n";
+      }
+    }
   }
 }
 
