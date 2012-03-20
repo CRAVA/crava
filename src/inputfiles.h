@@ -38,6 +38,7 @@ public:
   const std::string              & getInputDirectory(void)       const { return inputDirectory_       ;}
   const std::map<std::string,std::string> & getPriorFaciesProbFile(void)   const {return priorFaciesProb_ ;}
   const std::string              & getAreaSurfaceFile(void)      const { return areaSurfaceFile_      ;}
+  const std::vector<std::string> & getMultizoneSurfaceFiles()    const { return multizoneSurfaceFiles_;}
 
   int                              getNumberOfSeismicFiles(void) const { return static_cast<int>(seismicFiles_.size());}
 

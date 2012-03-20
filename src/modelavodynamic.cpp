@@ -44,6 +44,7 @@
 #include "nrlib/surface/regularsurface.hpp"
 #include "nrlib/iotools/logkit.hpp"
 #include "nrlib/stormgrid/stormcontgrid.hpp"
+#include "nrlib/volume/volume.hpp"
 
 
 ModelAVODynamic::ModelAVODynamic(ModelSettings       *& modelSettings,
@@ -534,6 +535,13 @@ ModelAVODynamic::processBackground(Background         *& background,
     }
     if(velocity != NULL)
       delete velocity;
+
+    if(static_cast<int>(modelSettings->getErosionPriority().size()) != 0) {
+      generateMultizoneBackground(timeSimbox,
+                                  modelSettings->getErosionPriority(),
+                                  modelSettings->getCorrelationStructure(),
+                                  inputFiles->getMultizoneSurfaceFiles());
+    }
   }
   else
   {
@@ -1814,3 +1822,81 @@ ModelAVODynamic::calculateSmoothGrad(const Surface * surf, double x, double y, d
   }
 }
 
+//---------------------------------------------------------------------------
+void
+ModelAVODynamic::generateMultizoneBackground(const Simbox                   * simbox,
+                                             const std::vector<int>         & /*erosion_priority*/,
+                                             const std::vector<int>         & correlation_structure,
+                                             const std::vector<std::string> & surface_files) const
+{
+  int nZones = static_cast<int>(correlation_structure.size()) - 1;
+
+  int    nx    = simbox->getnx();
+  int    ny    = simbox->getny();
+  int    nz    = simbox->getnz();
+  double x_min = simbox->GetXMin();
+  double y_min = simbox->GetYMin();
+  double lx    = simbox->GetLX();
+  double ly    = simbox->GetLY();
+  double lz    = simbox->GetLZ();
+  double angle = simbox->getAngle();
+  double dz    = lz/nz;
+
+  std::vector<Surface> surf(nZones+1);
+  for(int i=0; i<nZones+1; i++) {
+    Surface tmpSurf(surface_files[i]);
+    surf[i] = tmpSurf;
+  }
+
+  //Build zones
+  std::vector<StormContGrid *> zones(nZones);
+
+  for(int i=1; i<nZones+1; i++) {
+    Surface temp_top;
+    Surface temp_base;
+    double  x;
+    double  y;
+    double  z_top;
+    double  z_base;
+
+    Surface top  = surf[i-1];
+    Surface base = surf[i];
+
+    //Find maximum distance
+    double max_distance = 0;
+    for(int j=0; j<nx; j++) {
+      for(int k=0; k<ny; k++) {
+        simbox->getXYCoord(j,k,x,y);
+        z_top = top.GetZ(x,y);
+        z_base = base.GetZ(x,y);
+        if(z_base-z_top > max_distance)
+          max_distance = z_base-z_top;
+      }
+    }
+
+    //Make new top and base surfaces
+    if(correlation_structure[i] == ModelSettings::TOP) {
+      temp_top  = top;
+      temp_base = top;
+      temp_base.Add(max_distance);
+    }
+    else if(correlation_structure[i] == ModelSettings::BASE) {
+      temp_top  = base;
+      temp_top.Subtract(max_distance);
+      temp_base = base;
+    }
+    else {
+      temp_top  = top;
+      temp_base = base;
+    }
+
+    NRLib::Volume volume(x_min, y_min, lx, ly, temp_top, temp_base, angle);
+
+    int nz_zone = static_cast<int>(std::ceil(max_distance/dz));
+
+    zones[i-1] = new StormContGrid(volume, nx, ny, nz_zone);
+  }
+
+  for(int i=0; i<nZones; i++)
+    delete zones[i];
+}

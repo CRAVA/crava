@@ -180,6 +180,8 @@ public:
   bool                             getRunFromPanel(void)                const { return runFromPanel_ ;}
   void                             getTimeGradientSettings(float &distance, float &alpha);
   int                              getEstimateNumberOfWavelets(void)    const;
+  std::vector<int>                 getErosionPriority()                 const { return erosionPriority_                           ;}
+  std::vector<int>                 getCorrelationStructure()            const { return correlationStructure_                      ;}
 
   void rotateVariograms(float angle);
   void setAngularCorr(Vario * vario);
