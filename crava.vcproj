@@ -7214,6 +7214,14 @@
 					>
 				</File>
 				<File
+					RelativePath=".\rplib\distributionssolid.h"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\distributionssolidevolution.h"
+					>
+				</File>
+				<File
 					RelativePath=".\rplib\distributionwithtrend.h"
 					>
 				</File>
@@ -7255,6 +7263,10 @@
 				</File>
 				<File
 					RelativePath=".\rplib\rockphysicsstorage.h"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\solid.h"
 					>
 				</File>
 				<File
