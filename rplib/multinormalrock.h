@@ -7,8 +7,7 @@ class MultiNormalRock : public Rock {
 public:
 
   // Parallel classes are
-  MultiNormalRock(const std::vector<double>&  param,
-                  const std::vector<double>&  saturation);
+  MultiNormalRock(const std::vector<double>&  param);
 
   virtual ~MultiNormalRock();
 

@@ -99,7 +99,6 @@ MultiNormalDistributedRockT0::~MultiNormalDistributedRockT0()
 Rock*
 MultiNormalDistributedRockT0::GenerateSample(const std::vector<double> & trend_params) const {
   std::vector<double>  param(3, 0);
-  std::vector<double>  saturation;
   double s1 = 0, s2 = 0;
   if (trend_params.size() >= 2) {
     s1 = trend_params[0];
@@ -108,7 +107,7 @@ MultiNormalDistributedRockT0::GenerateSample(const std::vector<double> & trend_p
   
   NRLib::Normal vp0, vs0, density0;
   mult_normal_distr_->ReSample(vp0, vs0, density0, s1, s2, param[0], param[1], param[2]);
-  return new MultiNormalRock(param, saturation);
+  return new MultiNormalRock(param);
 }
 
 std::vector<double>

@@ -22,8 +22,8 @@ public:
 
   virtual Fluid * Evolve(const std::vector<int>             & delta_time,
                          const std::vector< Fluid * >       & fluid,
-                         DistributionsFluidEvolution        * dist_fluid_evolve) const {
-    DistributionsBrineEvolution * dist_brine_evolve = dynamic_cast<DistributionsBrineEvolution*>(dist_fluid_evolve);
+                         const DistributionsFluidEvolution  * dist_fluid_evolve) const {
+    const DistributionsBrineEvolution * dist_brine_evolve = dynamic_cast<const DistributionsBrineEvolution*>(dist_fluid_evolve);
     assert(dist_brine_evolve != NULL);
     assert(delta_time.size() == fluid.size() + 1);
 

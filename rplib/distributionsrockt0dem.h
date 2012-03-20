@@ -14,9 +14,7 @@ public:
 
   virtual Rock  * GenerateSample(const std::vector<double> & /*trend_params*/) const {
     double par_dem = 1.1;              //FAKE
-    std::vector<double> saturation(2); //FAKE
-    saturation[0] = 1.0;               //FAKE
-    Rock * rock = new RockDEM(par_dem, saturation);
+    Rock * rock = new RockDEM(par_dem);
     return rock;
   }
 

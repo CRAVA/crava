@@ -7162,11 +7162,31 @@
 				Name="rplib"
 				>
 				<File
+					RelativePath=".\rplib\brine.h"
+					>
+				</File>
+				<File
 					RelativePath=".\rplib\dem.h"
 					>
 				</File>
 				<File
 					RelativePath=".\rplib\demmodelling.h"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\distributionsbrineevolution.h"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\distributionsbrinet0.h"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\distributionsfluidevolution.h"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\distributionsfluidt0.h"
 					>
 				</File>
 				<File

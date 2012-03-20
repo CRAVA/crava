@@ -2,13 +2,14 @@
 #define ROCKDEM_H
 
 #include "rplib/rock.h"
+#include "rplib/distributionsgeochemicaldem.h"
 
 class RockDEM : public Rock {
 public:
 
   // Parallel classes are DistributionsGeochemicalDEM and DistributionsRockT0DEM.
-  RockDEM(const double par_dem, const std::vector<double> & saturation)
-  : Rock(saturation)
+  RockDEM(const double par_dem)
+  : Rock()
   {
     par_dem_ = par_dem;
   }
@@ -25,17 +26,16 @@ public:
                         const std::vector< Rock * >    & rock,
                         const DistributionsSaturation  * dist_sat,
                         const DistributionsGeochemical * dist_geochem) const {
-
+    DistributionsGeochemicalDEM const * dist_geochem_dem = dynamic_cast<const DistributionsGeochemicalDEM*>(dist_geochem);
+    assert(dist_geochem_dem != NULL);
     assert(delta_time.size() == rock.size() + 1);
 
-    std::vector<double> param_geochem;
-    dist_geochem->GetParameters(param_geochem);
-    std::vector<double> param_sat;
-    dist_sat->GetParameters(param_sat);
+    //FAKE, TEMPORARY:
+    std::vector<double> param_geochem_dem;
+    dist_geochem_dem->GetParameters(param_geochem_dem);
+    double evolved_param_dem = par_dem_ + param_geochem_dem[0];
+    Rock * new_rock = new RockDEM(evolved_param_dem);
 
-    double evolved_param_dem = par_dem_ + param_geochem[0];             //FAKE
-    std::vector<double> evolved_saturation(saturation_.size(), saturation_[0] * param_sat[0]);  //FAKE
-    Rock * new_rock = new RockDEM(evolved_param_dem, evolved_saturation);
     return new_rock;
   }
 

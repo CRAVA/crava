@@ -11,7 +11,7 @@ public:
 
   virtual ~DistributionsGeochemicalDEM(){}
 
-  virtual void GetParameters(std::vector<double> & param_geochem) const {
+  void GetParameters(std::vector<double> & param_geochem) const {
     param_geochem.resize(1);  //FAKE!
     param_geochem[0] = 1.0;   //FAKE!
   }

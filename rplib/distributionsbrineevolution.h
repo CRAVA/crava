@@ -11,7 +11,7 @@ public:
 
   virtual ~DistributionsBrineEvolution(){}
 
-  double Sample(){return 1.0:}  // FAKE
+  double Sample() const {return 1.0;}  // FAKE
 
 };
 

@@ -1,6 +1,7 @@
 #ifndef DISTRIBUTIONSSATURATION_H
 #define DISTRIBUTIONSSATURATION_H
 
+#include "rplib/fluid.h"
 
 // Abstract class for holding distribution functions for
 // parameters needed for time evolution of saturation.

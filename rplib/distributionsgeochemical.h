@@ -13,7 +13,9 @@ public:
 
   virtual ~DistributionsGeochemical(){}
 
-  virtual void GetParameters(std::vector<double> & param_geochem) const = 0; //Resample the distributions and return the new sample.
+  // Functions for sampling the distribution functions and returning the sampled values
+  // must be declared and defined for each derived class.
+  // These functions are to be used by the Evolve function of the parallel, derived Fluid class.
 
 };
 

@@ -1,8 +1,7 @@
 #include "rplib/multinormalrock.h"
 
-MultiNormalRock::MultiNormalRock(const std::vector<double>&  param,
-                                 const std::vector<double>&  saturation)
-: Rock(saturation)
+MultiNormalRock::MultiNormalRock(const std::vector<double>&  param)
+: Rock()
 {
   param_ = param;
 }
