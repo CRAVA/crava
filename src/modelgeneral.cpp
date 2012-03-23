@@ -185,6 +185,7 @@ ModelGeneral::readSegyFile(const std::string       & fileName,
                            ModelSettings          *& modelSettings,
                            const SegyGeometry     *& geometry,
                            int                       gridType,
+                           const std::string       & parName,
                            float                     offset,
                            const TraceHeaderFormat * format,
                            std::string             & errText,
@@ -292,6 +293,7 @@ ModelGeneral::readSegyFile(const std::string       & fileName,
     else {
       missingTracesSimbox = target->fillInFromSegY(segy,
                                                    timeSimbox,
+                                                   parName,
                                                    nopadding);
     }
 
@@ -1352,7 +1354,7 @@ ModelGeneral::readGridFromFile(const std::string       & fileName,
   }
   else if(fileType == IO::SEGY)
     readSegyFile(fileName, grid, timeSimbox, timeCutSimbox, modelSettings, geometry,
-                 gridType, offset, format, errText, nopadding);
+                 gridType, parName, offset, format, errText, nopadding);
   else if(fileType == IO::STORM)
     readStormFile(fileName, grid, gridType, parName, timeSimbox, modelSettings, errText, false, nopadding);
   else if(fileType == IO::SGRI)

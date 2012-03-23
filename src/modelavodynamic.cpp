@@ -628,7 +628,7 @@ ModelAVODynamic::processBackground(Background         *& background,
         LogKit::LogMessage(LogKit::Low, "\nMaking Vp background from AI and Rho\n");
         backModel[0]->subtract(backModel[2]);
       }
-      if (modelSettings->getUseVpVsBackground()) { // Vs = SI/Rho     ==> lnVs = lnSI - lnRho
+      if (modelSettings->getUseSIBackground()) { // Vs = SI/Rho     ==> lnVs = lnSI - lnRho
         LogKit::LogMessage(LogKit::Low, "\nMaking Vs background from SI and Rho\n");
         backModel[1]->subtract(backModel[2]);
       }

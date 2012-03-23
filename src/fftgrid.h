@@ -26,7 +26,10 @@ public:
   void setType(int cubeType) {cubetype_ = cubeType;}
   void setAngle(float angle) {theta_ = angle;}
 
-  int                  fillInFromSegY(SegY * segy, Simbox *simbox, bool nopadding = false ); // No mode
+  int                  fillInFromSegY(SegY              * segy,
+                                      Simbox            * simbox,
+                                      const std::string & parName,
+                                      bool                nopadding = false ); // No mode
   void                 fillInSeismicDataFromSegY(SegY        * segy,
                                                  Simbox      * timeSimbox,
                                                  Simbox      * timeCutSimbox,

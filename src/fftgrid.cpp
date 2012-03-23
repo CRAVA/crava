@@ -481,7 +481,10 @@ FFTGrid::setTrace(float value, size_t i, size_t j)
 }
 
 int
-FFTGrid::fillInFromSegY(SegY* segy, Simbox *simbox, bool padding)
+FFTGrid::fillInFromSegY(SegY              * segy,
+                        Simbox            * simbox,
+                        const std::string & parName,
+                        bool                padding)
 {
   assert(cubetype_  !=  CTMISSING);
 
@@ -530,7 +533,7 @@ FFTGrid::fillInFromSegY(SegY* segy, Simbox *simbox, bool padding)
   double wall=0.0, cpu=0.0;
   TimeKit::getTime(wall,cpu);
 
-  LogKit::LogFormatted(LogKit::Low,"\nResampling seismic data into %dx%dx%d grid:",nxp_,nyp_,nzp_);
+  LogKit::LogFormatted(LogKit::Low,"\nResampling %s into %dx%dx%d grid:\n",parName.c_str(),nxp_,nyp_,nzp_);
   setAccessMode(WRITE);
 
   float monitorSize = std::max(1.0f, static_cast<float>(nyp_*nzp_)*0.02f);

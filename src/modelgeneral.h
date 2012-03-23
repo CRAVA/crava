@@ -68,6 +68,7 @@ public:
                                    ModelSettings          *& modelSettings,
                                    const SegyGeometry     *& geometry,
                                    int                       gridType,
+                                   const std::string       & parName,
                                    float                     offset,
                                    const TraceHeaderFormat * format,
                                    std::string             & errText,
