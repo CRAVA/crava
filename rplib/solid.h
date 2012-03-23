@@ -12,7 +12,7 @@ public:
   Solid();
   virtual ~Solid();
 
-  virtual void ComputeElasticParams(double & k, double & rho) const = 0;
+  virtual void ComputeElasticParams(double & k, double & mu, double & rho) const = 0;
 
   // Solid is an abstract class, hence pointer must be used in Evolve.
   // Allocated memory (using new) MUST be deleted by caller.

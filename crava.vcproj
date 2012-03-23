@@ -7178,10 +7178,6 @@
 					>
 				</File>
 				<File
-					RelativePath=".\rplib\distributionsbrineevolution.h"
-					>
-				</File>
-				<File
 					RelativePath=".\rplib\distributionsfluid.h"
 					>
 				</File>
@@ -7195,6 +7191,10 @@
 				</File>
 				<File
 					RelativePath=".\rplib\distributionsgeochemicaldem.h"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\distributionsmineral.h"
 					>
 				</File>
 				<File
@@ -7227,6 +7227,10 @@
 				</File>
 				<File
 					RelativePath=".\rplib\fluid.h"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\mineral.h"
 					>
 				</File>
 				<File
