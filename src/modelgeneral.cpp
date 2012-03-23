@@ -317,15 +317,17 @@ ModelGeneral::readSegyFile(const std::string       & fileName,
       }
     }
     if (missingTracesPadding > 0) {
-      int nxpad  = xpad - timeSimbox->getnx();
-      int nypad  = ypad - timeSimbox->getny();
-      int nxypad = nxpad*nypad;
-      LogKit::LogMessage(LogKit::High, "Number of grid columns in padding with no seismic data: "
+      int nx     = timeSimbox->getnx();
+      int ny     = timeSimbox->getny();
+      int nxpad  = xpad - nx;
+      int nypad  = ypad - ny;
+      int nxypad = nxpad*ny + nx*nypad - nxpad*nypad;
+      LogKit::LogMessage(LogKit::High, "Number of grid columns in padding which is outside seismic data: "
                          +NRLib::ToString(missingTracesPadding)+" of "+NRLib::ToString(nxypad)+"\n");
     }
     if (deadTracesSimbox > 0) {
-      LogKit::LogMessage(LogKit::High, "Number of grid columns in grid with no seismic data   : "
-                         +NRLib::ToString(missingTracesPadding)+" of "+NRLib::ToString(timeSimbox->getnx()*timeSimbox->getny())+"\n");
+      LogKit::LogMessage(LogKit::High, "Number of grid columns in grid which is outside seismic data   : "
+                         +NRLib::ToString(deadTracesSimbox)+" of "+NRLib::ToString(timeSimbox->getnx()*timeSimbox->getny())+"\n");
     }
   }
   if (segy != NULL)
