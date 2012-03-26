@@ -308,7 +308,7 @@ ModelGeneral::readSegyFile(const std::string       & fileName,
         }
         else {
           LogKit::LogMessage(LogKit::Warning, "Warning: "+NRLib::ToString(missingTracesSimbox)
-                             +" grid columns were outside the seismic data area.");
+                             +" grid columns are outside the area defiend by the seismic data.");
           std::string text;
           text += "Check seismic volumes and inversion area: A part of the inversion area is outside\n";
           text += "    the seismic data specified in file \'"+fileName+"\'.";
@@ -322,11 +322,11 @@ ModelGeneral::readSegyFile(const std::string       & fileName,
       int nxpad  = xpad - nx;
       int nypad  = ypad - ny;
       int nxypad = nxpad*ny + nx*nypad - nxpad*nypad;
-      LogKit::LogMessage(LogKit::High, "Number of grid columns in padding which is outside seismic data: "
+      LogKit::LogMessage(LogKit::High, "Number of grid columns in padding outside area defined by seismic data : "
                          +NRLib::ToString(missingTracesPadding)+" of "+NRLib::ToString(nxypad)+"\n");
     }
     if (deadTracesSimbox > 0) {
-      LogKit::LogMessage(LogKit::High, "Number of grid columns in grid which is outside seismic data   : "
+      LogKit::LogMessage(LogKit::High, "Number of grid columns in grid with zero amplitude traces (dead traces) : "
                          +NRLib::ToString(deadTracesSimbox)+" of "+NRLib::ToString(timeSimbox->getnx()*timeSimbox->getny())+"\n");
     }
   }
