@@ -322,11 +322,11 @@ ModelGeneral::readSegyFile(const std::string       & fileName,
       int nxpad  = xpad - nx;
       int nypad  = ypad - ny;
       int nxypad = nxpad*ny + nx*nypad - nxpad*nypad;
-      LogKit::LogMessage(LogKit::High, "Number of grid columns in padding outside area defined by seismic data : "
+      LogKit::LogMessage(LogKit::High, "Number of grid columns in padding that are outside area defined by seismic data : "
                          +NRLib::ToString(missingTracesPadding)+" of "+NRLib::ToString(nxypad)+"\n");
     }
     if (deadTracesSimbox > 0) {
-      LogKit::LogMessage(LogKit::High, "Number of grid columns in grid with zero amplitude traces (dead traces) : "
+      LogKit::LogMessage(LogKit::High, "Number of grid columns with no seismic data (nearest trace is dead) : "
                          +NRLib::ToString(deadTracesSimbox)+" of "+NRLib::ToString(timeSimbox->getnx()*timeSimbox->getny())+"\n");
     }
   }
