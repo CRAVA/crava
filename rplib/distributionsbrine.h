@@ -13,10 +13,8 @@ public:
   virtual ~DistributionsBrine(){}
 
   virtual Fluid * GenerateSample() const {
-    double temperature   = 30.0;     //FAKE
-    double pore_pressure = 10.0;     //FAKE
     double salinity      = 0.05;     //FAKE
-    Fluid * fluid = new Brine(temperature, pore_pressure, salinity);
+    Fluid * fluid = new Brine(salinity);
     return fluid;
   }
 };

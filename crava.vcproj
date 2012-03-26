@@ -6169,10 +6169,6 @@
 					>
 				</File>
 				<File
-					RelativePath=".\rplib\fluid.cpp"
-					>
-				</File>
-				<File
 					RelativePath=".\rplib\multinormaldistributedrock.cpp"
 					>
 				</File>
@@ -6905,11 +6901,11 @@
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\filesystem\config.hpp"
+						RelativePath=".\nrlib\boost\system\config.hpp"
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\system\config.hpp"
+						RelativePath=".\nrlib\boost\filesystem\config.hpp"
 						>
 					</File>
 					<File
@@ -7175,6 +7171,10 @@
 				</File>
 				<File
 					RelativePath=".\rplib\distributionsbrine.h"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\distributionsbrineevolution.h"
 					>
 				</File>
 				<File
