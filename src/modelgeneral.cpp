@@ -2655,9 +2655,8 @@ ModelGeneral::generateRockPhysics3DBackground(const std::vector<DistributionsRoc
         }
 
         // If outside in z-direction, use linear interpolation between top and base values of the expectations
-        // SPØRSMÅL: Interpolasjonen: Skal den være lik top i k==nz+1? og lik base i k==nzp??
         else if(k >= nz) {
-          double t  = double(nzp-k+1)/(nzp-nz+1);  // +1 i nevneren
+          double t  = double(nzp-k+1)/(nzp-nz+1);
           double vpVal =  topVp(i,j)*t  + baseVp(i,j)*(1-t);
           double vsVal =  topVs(i,j)*t  + baseVs(i,j)*(1-t);
           double rhoVal = topRho(i,j)*t + baseRho(i,j)*(1-t);
