@@ -46,6 +46,19 @@ public:
                  const double & vs,
                  const double & rho) const;
 
+  // Get functions for the limits of the variables
+  double getV1Min() const { return v1_min_; }
+  double getV1Max() const { return v1_max_; }
+  double getdV1()   const { return dv1_; }
+
+  double getV2Min() const { return v2_min_; }
+  double getV2Max() const { return v2_max_; }
+  double getdV2()   const { return dv2_; }
+
+  double getV3Min() const { return v3_min_; }
+  double getV3Max() const { return v3_max_; }
+  double getdV3()   const { return dv3_; }
+
 private:
 
   FFTGrid * histogram_;   // Density grid of size n1_ \times n2_ \times n3_
