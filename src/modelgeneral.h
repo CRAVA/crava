@@ -102,6 +102,16 @@ public:
                                    std::string        & errText,
                                    bool               & failed);
 
+  void                generateRockPhysics3DBackground(const std::vector<DistributionsRock *> & rock,
+                                                      const std::vector<double>             & probability,
+                                                      double                                  lowCut,
+                                                      const FFTGrid                         & trend1,
+                                                      const FFTGrid                         & trend2,
+                                                      Corr                                  & correlations, //The grids here get/set correctly.
+                                                      FFTGrid                               & vp,
+                                                      FFTGrid                               & vs,
+                                                      FFTGrid                               & rho);
+
 private:
   void                makeTimeSimboxes(Simbox          *& timeSimbox,
                                        Simbox          *& timeCutSimbox,

@@ -2607,3 +2607,114 @@ ModelGeneral::computeTime(int year, int month, int day) const
   }
   return(time);
 }
+
+void
+ModelGeneral::generateRockPhysics3DBackground(const std::vector<DistributionsRock *> & rock,
+                                              const std::vector<double>             & probability,
+                                              double                                  lowCut,
+                                              const FFTGrid                         & trend1,
+                                              const FFTGrid                         & trend2,
+                                              Corr                                  & correlations, //The grids here get/set correctly.
+                                              FFTGrid                               & vp,
+                                              FFTGrid                               & vs,
+                                              FFTGrid                               & rho)
+{
+  // Set up of expectations grids and covariance grids given rock physics.
+
+  // OBS: Covariance grids not yet implemented!
+
+  // Variables for looping through FFTGrids
+  const int nzp = vp.getNzp();
+  const int nyp = vp.getNyp();
+  const int nz  = vp.getNz();
+  const int ny  = vp.getNy();
+  const int nx  = vp.getNx();
+  const int rnxp = vp.getRNxp();
+
+  const size_t number_of_facies = probability.size();
+
+  // Temporary grids for storing top and base values of (vp,vs,rho) for use in linear interpolation in the padding
+  NRLib::Grid2D<float> topVp(nx,ny, 0.0);
+  NRLib::Grid2D<float> topVs(nx,ny, 0.0);
+  NRLib::Grid2D<float> topRho(nx,ny, 0.0);
+  NRLib::Grid2D<float> baseVp(nx,ny, 0.0);
+  NRLib::Grid2D<float> baseVs(nx,ny, 0.0);
+  NRLib::Grid2D<float> baseRho(nx,ny, 0.0);
+
+
+  // Loop through all cells in the FFTGrids
+  for(int k = 0; k < nzp; k++)
+    for(int j = 0; j < nyp; j++)
+      for(int i = 0; i < rnxp; i++) {
+
+        // If outside/If in the padding in x- and y-direction, set expectation equal to 0
+        if(i >= nx || j >= ny) {
+          vp.setNextReal(0.0f);
+          vs.setNextReal(0.0f);
+          rho.setNextReal(0.0f);
+        }
+
+        // If outside in z-direction, use linear interpolation between top and base values of the expectations
+        // SPØRSMÅL: Interpolasjonen: Skal den være lik top i k==nz+1? og lik base i k==nzp??
+        else if(k >= nz) {
+          double t  = double(nzp-k+1)/(nzp-nz+1);  // +1 i nevneren
+          double vpVal =  topVp(i,j)*t  + baseVp(i,j)*(1-t);
+          double vsVal =  topVs(i,j)*t  + baseVs(i,j)*(1-t);
+          double rhoVal = topRho(i,j)*t + baseRho(i,j)*(1-t);
+
+          // Set interpolated values in expectation grids
+          vp.setNextReal(static_cast<float>(vpVal));
+          vs.setNextReal(static_cast<float>(vsVal));
+          rho.setNextReal(static_cast<float>(rhoVal));
+        }
+
+        // Otherwise use trend values to get expectations for each facies
+        else {
+          std::vector<double> trend_params(2);
+          trend_params[0] = trend1.getRealValue(i,j,k);
+          trend_params[1] = trend2.getRealValue(i,j,k);
+
+          std::vector<float> expectations(3);  // Antar initialisert til 0.
+          // Sum up for all facies: probability for a facies multiplied with the expectations of (vp, vs, rho) given the facies
+          for(size_t f = 0; f < number_of_facies; f++){
+            std::vector<double> m(3);
+            m = rock[f]->GetExpectation(trend_params);
+            expectations[0] += static_cast<float>(m[0]*probability[f]);
+            expectations[1] += static_cast<float>(m[1]*probability[f]);
+            expectations[2] += static_cast<float>(m[2]*probability[f]);
+          }
+
+          // Set values in expectation grids
+          vp.setNextReal(expectations[0]);
+          vs.setNextReal(expectations[1]);
+          rho.setNextReal(expectations[2]);
+
+          // Store top and base values of the expectations for later use in interpolation in the padded region.
+          if(k==0) {
+            topVp(i,j)  = expectations[0];
+            topVs(i,j)  = expectations[1];
+            topRho(i,j) = expectations[2];
+          }
+          else if(k==nz-1) {
+            baseVp(i,j)  = expectations[0];
+            baseVs(i,j)  = expectations[1];
+            baseRho(i,j) = expectations[2];
+          }
+        }
+      }
+
+      // Covariance grids
+      float variance = 0; // Combined variance for all facies in the given grid cell. Wait with this...
+      FFTGrid postCovAlpha = correlations.getPostCovAlpha();
+      FFTGrid postCovBeta = correlations.getPostCovBeta();
+      FFTGrid postCovRho = correlations.getPostCovAlpha();
+      FFTGrid postCrCovAlphaBeta = correlations.getPostCrCovAlphaBeta();
+      FFTGrid postCrCovAlphaRho = correlations.getPostCrCovAlphaRho();
+      FFTGrid postCrCovBetaRho = correlations.getPostCrCovBetaRho();
+
+      postCovAlpha.multiplyByScalar(variance);
+      // etc
+
+      //TODO: Calculate variance for two pdfs with different probability
+
+}
