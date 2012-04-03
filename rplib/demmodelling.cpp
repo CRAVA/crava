@@ -1,6 +1,12 @@
 #include "rplib/demmodelling.h"
 
 #include "rplib/dem.h"
+#include "rplib/mineral.h"
+#include "rplib/brine.h"
+#include "rplib/co2.h"
+#include "rplib/solidmixed.h"
+#include "rplib/fluidmixed.h"
+#include "rplib/rockinclusion.h"
 
 #include "nrlib/exception/exception.hpp"
 
@@ -37,7 +43,6 @@ DEMTools::CalcDensityOfBrineFromTPS(double temperature,
 void
 DEMTools::CalcCo2Prop(double& bulk_modulus,
                       double& density,
-                      double& velocity,
                       double ti,
                       double pi) {
 
@@ -51,41 +56,41 @@ DEMTools::CalcCo2Prop(double& bulk_modulus,
   std::vector<double> pmpa(pmpatmp, pmpatmp + np);
 
   static std::vector< std::vector<double> > co2_bulk(np, std::vector<double>(nt, 0.0));
-  static std::vector< std::vector<double> > co2_velocity(np, std::vector<double>(nt, 0.0));
+  /*static std::vector< std::vector<double> > co2_velocity(np, std::vector<double>(nt, 0.0));*/ //Velocity interpolation commented out
   static std::vector< std::vector<double> > co2_density(np, std::vector<double>(nt, 0.0));
 
-  { // local scope co2 velocity
-    double tmp0[] = {2.6400000e+002,  2.6800000e+002,  2.7200000e+002,  2.7600000e+002,  2.8000000e+002,  2.8400000e+002,  2.8800000e+002,  2.9100000e+002,  2.9500000e+002,  2.9900000e+002,  3.0200000e+002,  3.0600000e+002};
-    co2_velocity[0] = std::vector<double>(tmp0, tmp0 + nt);
+  //{ // local scope co2 velocity
+  //  double tmp0[] = {2.6400000e+002,  2.6800000e+002,  2.7200000e+002,  2.7600000e+002,  2.8000000e+002,  2.8400000e+002,  2.8800000e+002,  2.9100000e+002,  2.9500000e+002,  2.9900000e+002,  3.0200000e+002,  3.0600000e+002};
+  //  co2_velocity[0] = std::vector<double>(tmp0, tmp0 + nt);
 
-    double tmp1[] = {2.5600000e+002,  2.6100000e+002,  2.6600000e+002,  2.7000000e+002,  2.7500000e+002,  2.7900000e+002,  2.8400000e+002,  2.8800000e+002,  2.9200000e+002,  2.9600000e+002,  3.0000000e+002,  3.0400000e+002};
-    co2_velocity[1] = std::vector<double>(tmp1, tmp1 + nt);
+  //  double tmp1[] = {2.5600000e+002,  2.6100000e+002,  2.6600000e+002,  2.7000000e+002,  2.7500000e+002,  2.7900000e+002,  2.8400000e+002,  2.8800000e+002,  2.9200000e+002,  2.9600000e+002,  3.0000000e+002,  3.0400000e+002};
+  //  co2_velocity[1] = std::vector<double>(tmp1, tmp1 + nt);
 
-    double tmp2[] = {2.2000000e+002,  2.3100000e+002,  2.4100000e+002,  2.5100000e+002,  2.5900000e+002,  2.6400000e+002,  2.7100000e+002,  2.7600000e+002,  2.8100000e+002,  2.8700000e+002,  2.9200000e+002,  2.9600000e+002};
-    co2_velocity[2] = std::vector<double>(tmp2, tmp2 + nt);
+  //  double tmp2[] = {2.2000000e+002,  2.3100000e+002,  2.4100000e+002,  2.5100000e+002,  2.5900000e+002,  2.6400000e+002,  2.7100000e+002,  2.7600000e+002,  2.8100000e+002,  2.8700000e+002,  2.9200000e+002,  2.9600000e+002};
+  //  co2_velocity[2] = std::vector<double>(tmp2, tmp2 + nt);
 
-    double tmp3[] = {3.7900000e+002,  1.8500000e+002,  2.0900000e+002,  2.1900000e+002,  2.3700000e+002,  2.5200000e+002,  2.6300000e+002,  2.7000000e+002,  2.7600000e+002,  2.8200000e+002,  2.8500000e+002,  2.9000000e+002};
-    co2_velocity[3] = std::vector<double>(tmp3, tmp3 + nt);
+  //  double tmp3[] = {3.7900000e+002,  1.8500000e+002,  2.0900000e+002,  2.1900000e+002,  2.3700000e+002,  2.5200000e+002,  2.6300000e+002,  2.7000000e+002,  2.7600000e+002,  2.8200000e+002,  2.8500000e+002,  2.9000000e+002};
+  //  co2_velocity[3] = std::vector<double>(tmp3, tmp3 + nt);
 
-    double tmp4[] = {4.8300000e+002,  4.1100000e+002,  1.4200000e+002,  1.8300000e+002,  2.1200000e+002,  2.3800000e+002,  2.4900000e+002,  2.5700000e+002,  2.6500000e+002,  2.7200000e+002, 2.7800000e+002,  2.8600000e+002};
-    co2_velocity[4] = std::vector<double>(tmp4, tmp4 + nt);
+  //  double tmp4[] = {4.8300000e+002,  4.1100000e+002,  1.4200000e+002,  1.8300000e+002,  2.1200000e+002,  2.3800000e+002,  2.4900000e+002,  2.5700000e+002,  2.6500000e+002,  2.7200000e+002, 2.7800000e+002,  2.8600000e+002};
+  //  co2_velocity[4] = std::vector<double>(tmp4, tmp4 + nt);
 
-    double tmp5[] = {5.5400000e+002,  4.9600000e+002,  3.6600000e+002,  2.6900000e+002,  2.4700000e+002,  2.4800000e+002,  2.5500000e+002,  2.6000000e+002,  2.6900000e+002,  2.7800000e+002,  2.8500000e+002,  2.9100000e+002};
-    co2_velocity[5] = std::vector<double>(tmp5, tmp5 + nt);
+  //  double tmp5[] = {5.5400000e+002,  4.9600000e+002,  3.6600000e+002,  2.6900000e+002,  2.4700000e+002,  2.4800000e+002,  2.5500000e+002,  2.6000000e+002,  2.6900000e+002,  2.7800000e+002,  2.8500000e+002,  2.9100000e+002};
+  //  co2_velocity[5] = std::vector<double>(tmp5, tmp5 + nt);
 
-    double tmp6[] = {6.3700000e+002,  5.8600000e+002, 5.0200000e+002,  4.4100000e+002,  3.8200000e+002,  3.5800000e+002,  3.5300000e+002,  3.4500000e+002,  3.3700000e+002,  3.2800000e+002,  3.2000000e+002,  3.1400000e+002};
-    co2_velocity[6] = std::vector<double>(tmp6, tmp6 + nt);
+  //  double tmp6[] = {6.3700000e+002,  5.8600000e+002, 5.0200000e+002,  4.4100000e+002,  3.8200000e+002,  3.5800000e+002,  3.5300000e+002,  3.4500000e+002,  3.3700000e+002,  3.2800000e+002,  3.2000000e+002,  3.1400000e+002};
+  //  co2_velocity[6] = std::vector<double>(tmp6, tmp6 + nt);
 
-    double tmp7[] = { 6.8800000e+002,  6.4000000e+002,  5.9100000e+002,  5.3800000e+002,  4.8800000e+002,  4.6000000e+002,  4.3100000e+002,  4.1300000e+002,  3.9700000e+002,  3.8200000e+002,  3.6600000e+002,  3.5200000e+002};
-    co2_velocity[7] = std::vector<double>(tmp7, tmp7 + nt);
+  //  double tmp7[] = { 6.8800000e+002,  6.4000000e+002,  5.9100000e+002,  5.3800000e+002,  4.8800000e+002,  4.6000000e+002,  4.3100000e+002,  4.1300000e+002,  3.9700000e+002,  3.8200000e+002,  3.6600000e+002,  3.5200000e+002};
+  //  co2_velocity[7] = std::vector<double>(tmp7, tmp7 + nt);
 
-    double tmp8[] = {7.3700000e+002,  6.8700000e+002,  6.4100000e+002,  5.9600000e+002,  5.5200000e+002,  5.2100000e+002,  4.9400000e+002,  4.7000000e+002,  4.5000000e+002,  4.2900000e+002,  4.1200000e+002,  3.9700000e+002};
-    co2_velocity[8] = std::vector<double>(tmp8, tmp8 + nt);
+  //  double tmp8[] = {7.3700000e+002,  6.8700000e+002,  6.4100000e+002,  5.9600000e+002,  5.5200000e+002,  5.2100000e+002,  4.9400000e+002,  4.7000000e+002,  4.5000000e+002,  4.2900000e+002,  4.1200000e+002,  3.9700000e+002};
+  //  co2_velocity[8] = std::vector<double>(tmp8, tmp8 + nt);
 
-    double tmp9[] = { 8.1400000e+002,  7.6600000e+002,  7.1400000e+002,  6.7600000e+002,  6.3900000e+002,  6.1500000e+002,  5.9200000e+002,  5.6400000e+002,  5.4500000e+002,  5.2600000e+002,  5.0400000e+002,  4.8700000e+002};
-    co2_velocity[9] = std::vector<double>(tmp9, tmp9 + nt);
+  //  double tmp9[] = { 8.1400000e+002,  7.6600000e+002,  7.1400000e+002,  6.7600000e+002,  6.3900000e+002,  6.1500000e+002,  5.9200000e+002,  5.6400000e+002,  5.4500000e+002,  5.2600000e+002,  5.0400000e+002,  4.8700000e+002};
+  //  co2_velocity[9] = std::vector<double>(tmp9, tmp9 + nt);
 
-  } // local scope end co2 velocity
+  //} // local scope end co2 velocity
 
   { // local scope co2 density
     double tmp0[] = {1.8600000e-003,  1.8000000e-003,  1.7400000e-003,  1.6800000e-003,  1.6300000e-003,  1.5800000e-003,  1.5400000e-003,  1.4900000e-003,  1.4500000e-003,  1.4100000e-003,  1.3800000e-003,  1.3400000e-003};
@@ -188,9 +193,9 @@ DEMTools::CalcCo2Prop(double& bulk_modulus,
   val_s1_2 = t1*co2_density[j1+1][i1+1] + (1.0 - t1)*co2_density[j1+1][i1];
   density  = t2*val_s1_2 + (1-t2)*val_s1_1;
 
-  val_s1_1 = t1*co2_velocity[j1][i1+1] + (1.0 - t1)*co2_velocity[j1][i1];
+  /*val_s1_1 = t1*co2_velocity[j1][i1+1] + (1.0 - t1)*co2_velocity[j1][i1];
   val_s1_2 = t1*co2_velocity[j1+1][i1+1] + (1.0 - t1)*co2_velocity[j1+1][i1];
-  velocity = t2*val_s1_2 + (1-t2)*val_s1_1;
+  velocity = t2*val_s1_2 + (1-t2)*val_s1_1;*/
 
 }
 
@@ -396,9 +401,8 @@ DEMTools::DebugTestCalcEffectiveModulus(double& effective_bulk_modulus,
 
   double co2_k;
   double co2_rho;
-  double co2_density;
 
-  CalcCo2Prop(co2_k, co2_rho, co2_density, temperature, porepressure);
+  CalcCo2Prop(co2_k, co2_rho, temperature, porepressure);
 
 
 
@@ -427,11 +431,13 @@ DEMTools::DebugTestCalcEffectiveModulus(double& effective_bulk_modulus,
   double solid_k                 = CalcEffectiveElasticModuliUsingHill(clay_k, lithology, quartz_k);
   double solid_mu                = CalcEffectiveElasticModuliUsingHill(clay_mu, lithology, quartz_mu);
   double solid_rho               = CalcEffectiveDensity(clay_rho, lithology, quartz_rho);
+
+
   ////
   // effective fluid properties
   double fluid_k                 = CalcEffectiveElasticModuliUsingReuss(brine_k, saturation, co2_k);     // homogeneous
   // fluid.k                 = geqhill(brine.k, saturation, co2.k);      // patchy
-  double fluid_rho               = CalcEffectiveDensity(brine_rho, saturation, brine_rho);
+  double fluid_rho               = CalcEffectiveDensity(brine_rho, saturation, co2_rho);
   ////
 
   //// effective rock physics properties
@@ -472,6 +478,139 @@ DEMTools::DebugTestCalcEffectiveModulus(double& effective_bulk_modulus,
                                    solid_mu,
                                    effective_bulk_modulus,
                                    effective_shear_modulus);
+
+
+}
+
+
+void
+DEMTools::DebugTestCalcEffectiveModulus2(double& effective_bulk_modulus,
+                                         double& effective_shear_modulus,
+                                         double& effective_density) {
+
+  // Script for rock physics modelling using differential effective medium theory (DEM).
+  // Specifications
+  // Mineral properties
+  // (According to Table A.4.1, p458-459, RP Handbook, Mavko et al. 2009).
+  double quartz_k                = 37;   // gpa
+  double quartz_mu               = 44;   // gpa
+  double quartz_rho              = 2.65; // g/ccm
+
+  Mineral quartz(quartz_k, quartz_mu, quartz_rho);
+
+  double clay_k                  = 21;   // gpa
+  double clay_mu                 = 7;    // gpa
+  double clay_rho                = 2.6;  // g/ccm
+
+  Mineral clay(clay_k, clay_mu, clay_rho);
+
+  // Fluid properties
+  // (Brine properties according to Batzle, M. and Wang, Z. 1992, and
+  //  CO2 properties according to Z. Wang's compilation and measurements, RPH Tools)
+  double porepressure            = 20;   // mpa
+  double temperature             = 50;   // °c
+
+  double brine_salinity          = 0.05; // 100*//
+
+  Brine brine(brine_salinity);
+
+  double brine_k;
+  double brine_rho;
+
+  brine.ComputeElasticParams(temperature, porepressure, brine_k, brine_rho);
+
+  double co2_k;
+  double co2_rho;
+
+  CO2 co2;
+  co2.ComputeElasticParams(temperature, porepressure, co2_k, co2_rho);
+
+  ////
+  enum GeometryType {Spherical, Mixed};
+  GeometryType my_geo_type = Mixed; // pore geometry, this enum chooses the one to use.
+  // example 1: spherical
+  double inclusiongeometry_spectrum          = 1.0;
+  double inclusiongeometry_concentration     = 1.0;
+  // example 2: mixed (oblate)
+  double aspect_ratio2_tmp []          = {1, 0.5000, 0.1000, 0.0100, 1.0000e-003, 1.0000e-004};
+  double concentration2_tmp []     = {0.6419, 0.3205, 0.0321, 0.0050, 5.0000e-004, 5.0000e-005};
+  std::vector<double> aspect_ratio2(aspect_ratio2_tmp, aspect_ratio2_tmp + 6);
+  std::vector<double> concentration2(concentration2_tmp, concentration2_tmp + 6);
+
+  //// plf
+  ////
+  double porosity = 0.2;
+  double lithology = 0.15;     // volume fraction of clay
+  double saturation = 0.8;      // volume fraction of brine
+  ////
+
+  //// mixing
+  // effective solid properties
+  ////
+  std::vector<double> volume_fraction(2);
+
+  volume_fraction[0] = lithology;
+  volume_fraction[1] = 1.0 - volume_fraction[0];
+
+  std::vector<Mineral*> mineral(2);
+  mineral[0] = &clay;
+  mineral[1] = &quartz;
+
+  SolidMixed solidmixed(mineral, volume_fraction);
+
+  // effective fluid properties
+  //General problem: since a CO2 or Brine do not know k or rho we cannot use these classes itself to mix fluids! Is this really correct?
+  //One solution would be to store the k and rho values inside the class or pointers to the values outside of class.
+
+  std::vector<double> k(2);
+  std::vector<double> rho(2);
+  k[0] = brine_k;
+  k[1] = co2_k;
+
+  std::vector<double> volume_fraction2(2);
+  volume_fraction2[0] = saturation;
+  volume_fraction2[1] = 1.0 - volume_fraction2[0];
+
+  rho[0] = brine_rho;
+  rho[1] = co2_rho;
+
+
+  FluidMixed fluid_mix(k, rho, volume_fraction2);
+  ////
+
+
+  //// effective rock physics properties
+  // without gassmann
+  /*[rock.k rock.mu]        = geqdem(   [solid.k fluid.k*ones(1, nrofinclgeo)], ...
+                                      [solid.mu 0*ones(1, nrofinclgeo)], ...
+                                      inclusiongeometry.spectrum, ...
+                                      porosity*inclusiongeometry.concentration);*/
+
+ std::vector<double> bulk_modulus;
+ std::vector<double> shear_modulus;
+ std::vector<double> aspect_ratio;
+ std::vector<double> concentration;
+
+ double fluid_k, dummy1=44.0, dummy2=5.0, dummy3=6.0;
+ fluid_mix.ComputeElasticParams(dummy1, dummy2, fluid_k, dummy3);
+ if (my_geo_type == Spherical) {
+   bulk_modulus =  std::vector<double>(1, fluid_k);
+   shear_modulus = std::vector<double>(1, 0.0);
+   aspect_ratio = std::vector<double>(1, inclusiongeometry_spectrum);
+   concentration = std::vector<double>(1, inclusiongeometry_concentration*porosity);
+ }
+ else if (my_geo_type == Mixed) {
+   bulk_modulus =  std::vector<double>(aspect_ratio2.size(), fluid_k);
+   shear_modulus = std::vector<double>(aspect_ratio2.size(), 0.0);
+   aspect_ratio  = aspect_ratio2;
+   for (size_t i = 0; i < concentration2.size(); i++)
+    concentration2[i] *= porosity;
+   concentration = concentration2;
+ }
+
+ RockInclusion rock_inclusion(solidmixed, fluid_mix, bulk_modulus, shear_modulus, aspect_ratio, concentration, porosity);
+
+ rock_inclusion.GetSeimsmicParams(effective_bulk_modulus, effective_shear_modulus, effective_density);
 
 
 }

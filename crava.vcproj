@@ -7170,6 +7170,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\rplib\co2.h"
+					>
+				</File>
+				<File
 					RelativePath=".\rplib\dem.h"
 					>
 				</File>
@@ -7183,6 +7187,10 @@
 				</File>
 				<File
 					RelativePath=".\rplib\distributionsbrineevolution.h"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\distributionsco2evolution.h"
 					>
 				</File>
 				<File
@@ -7238,6 +7246,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\rplib\fluidmixed.h"
+					>
+				</File>
+				<File
 					RelativePath=".\rplib\mineral.h"
 					>
 				</File>
@@ -7278,11 +7290,19 @@
 					>
 				</File>
 				<File
+					RelativePath=".\rplib\rockinclusion.h"
+					>
+				</File>
+				<File
 					RelativePath=".\rplib\rockphysicsstorage.h"
 					>
 				</File>
 				<File
 					RelativePath=".\rplib\solid.h"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\solidmixed.h"
 					>
 				</File>
 				<File

@@ -15,7 +15,6 @@ namespace DEMTools {
 
   void   CalcCo2Prop(double& bulk_modulus,
                      double& density,
-                     double& velocity,
                      double ti,
                      double pi);
 
@@ -64,6 +63,10 @@ namespace DEMTools {
   void DebugTestCalcEffectiveModulus(double& effective_bulk_modulus,
                                      double& effective_shear_modulus,
                                      double& effective_density);
+
+  void DebugTestCalcEffectiveModulus2(double& effective_bulk_modulus,
+                                      double& effective_shear_modulus,
+                                      double& effective_density);
 
 
 

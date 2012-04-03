@@ -3,6 +3,9 @@
 
 #include "rplib/fluid.h"
 #include "rplib/distributionsbrineevolution.h"
+#include "rplib/demmodelling.h"
+
+#include <cassert>
 
 class Brine : public Fluid {
 public:
@@ -39,12 +42,11 @@ public:
 
 private:
   double ComputeBulkModulusOfBrineFromTPS(double temp, double pore_pressure, double salinity) const {
-    double k   = 4.0;  //TEMPORARY
-    return k;
+    return DEMTools::CalcBulkModulusOfBrineFromTPS(temp, pore_pressure, salinity) * 0.001; /*gpa*/
   }
+
   double ComputeDensityOfBrineFromTPS(double temp, double pore_pressure, double salinity) const {
-    double rho = 3.0;  //TEMPORARY
-    return rho;
+    return DEMTools::CalcDensityOfBrineFromTPS(temp, pore_pressure, salinity);
   }
 
   double salinity_;

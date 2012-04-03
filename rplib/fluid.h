@@ -10,8 +10,8 @@
 class Fluid {
 public:
 
-  Fluid();
-  virtual ~Fluid();
+  Fluid() {}
+  virtual ~Fluid() {}
 
   virtual void ComputeElasticParams(const double   temp,
                                     const double   pore_pressure,

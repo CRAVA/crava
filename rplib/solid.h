@@ -9,8 +9,8 @@
 class Solid {
 public:
 
-  Solid();
-  virtual ~Solid();
+  Solid() {}
+  virtual ~Solid() {}
 
   virtual void ComputeElasticParams(double & k, double & mu, double & rho) const = 0;
 
