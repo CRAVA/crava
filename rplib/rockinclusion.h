@@ -22,8 +22,8 @@ public:
                 double porosity)
   : Rock()
   {
-    double fluid_rho, fluid_k, dummy1 = 0;
-    fluid_mix.ComputeElasticParams(dummy1, dummy1, fluid_k, fluid_rho);
+    double fluid_rho, fluid_k;
+    fluid_mix.GetElasticParams(fluid_k, fluid_rho);
 
     double solid_rho, solid_k, solid_mu;
     solid_mix.ComputeElasticParams(solid_k, solid_mu, solid_rho);

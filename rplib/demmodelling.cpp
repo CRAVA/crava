@@ -512,19 +512,9 @@ DEMTools::DebugTestCalcEffectiveModulus2(double& effective_bulk_modulus,
 
   double brine_salinity          = 0.05; // 100*//
 
-  Brine brine(brine_salinity);
+  Brine brine(brine_salinity, temperature, porepressure);
 
-  double brine_k;
-  double brine_rho;
-
-  brine.ComputeElasticParams(temperature, porepressure, brine_k, brine_rho);
-
-  double co2_k;
-  double co2_rho;
-
-  CO2 co2;
-  co2.ComputeElasticParams(temperature, porepressure, co2_k, co2_rho);
-
+  CO2 co2(temperature, porepressure);
   ////
   enum GeometryType {Spherical, Mixed};
   GeometryType my_geo_type = Mixed; // pore geometry, this enum chooses the one to use.
@@ -552,18 +542,22 @@ DEMTools::DebugTestCalcEffectiveModulus2(double& effective_bulk_modulus,
   volume_fraction[0] = lithology;
   volume_fraction[1] = 1.0 - volume_fraction[0];
 
-  std::vector<Mineral*> mineral(2);
+  std::vector<Solid*> mineral(2);
   mineral[0] = &clay;
   mineral[1] = &quartz;
 
   SolidMixed solidmixed(mineral, volume_fraction);
 
-  // effective fluid properties
-  //General problem: since a CO2 or Brine do not know k or rho we cannot use these classes itself to mix fluids! Is this really correct?
-  //One solution would be to store the k and rho values inside the class or pointers to the values outside of class.
-
   std::vector<double> k(2);
   std::vector<double> rho(2);
+
+  double brine_k;
+  double brine_rho;
+  brine.GetElasticParams(brine_k, brine_rho);
+
+  double co2_k;
+  double co2_rho;
+  co2.GetElasticParams(co2_k, co2_rho);
   k[0] = brine_k;
   k[1] = co2_k;
 
@@ -571,11 +565,12 @@ DEMTools::DebugTestCalcEffectiveModulus2(double& effective_bulk_modulus,
   volume_fraction2[0] = saturation;
   volume_fraction2[1] = 1.0 - volume_fraction2[0];
 
-  rho[0] = brine_rho;
-  rho[1] = co2_rho;
+  std::vector<Fluid*> fluid(2);
+  fluid[0] = &brine;
+  fluid[1] = &co2;
 
 
-  FluidMixed fluid_mix(k, rho, volume_fraction2);
+  FluidMixed fluid_mix(fluid, volume_fraction2);
   ////
 
 
@@ -591,8 +586,8 @@ DEMTools::DebugTestCalcEffectiveModulus2(double& effective_bulk_modulus,
  std::vector<double> aspect_ratio;
  std::vector<double> concentration;
 
- double fluid_k, dummy1=44.0, dummy2=5.0, dummy3=6.0;
- fluid_mix.ComputeElasticParams(dummy1, dummy2, fluid_k, dummy3);
+ double fluid_k, dummy3 = 6.0;
+ fluid_mix.GetElasticParams(fluid_k, dummy3);
  if (my_geo_type == Spherical) {
    bulk_modulus =  std::vector<double>(1, fluid_k);
    shear_modulus = std::vector<double>(1, 0.0);

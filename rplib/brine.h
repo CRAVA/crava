@@ -11,19 +11,25 @@ class Brine : public Fluid {
 public:
 
   // Parallel classes are DistributionsBrineEvolution and DistributionsBrine.
-  Brine(const double salinity)
+  Brine(double salinity,
+        double temp,
+        double pore_pressure)
   : Fluid() {
     salinity_ = salinity;
+    ComputeElasticParams(temp, pore_pressure);
   }
 
   virtual ~Brine(){}
 
-  virtual void ComputeElasticParams(const double   temp,
-                                    const double   pore_pressure,
-                                    double       & k,
-                                    double       & rho) const {
-    k   = ComputeBulkModulusOfBrineFromTPS(temp, pore_pressure, salinity_);
-    rho = ComputeDensityOfBrineFromTPS(temp, pore_pressure, salinity_);
+  virtual void ComputeElasticParams(double   temp,
+                                    double   pore_pressure) {
+    k_   = ComputeBulkModulusOfBrineFromTPS(temp, pore_pressure, salinity_);
+    rho_ = ComputeDensityOfBrineFromTPS(temp, pore_pressure, salinity_);
+  }
+
+  virtual void GetElasticParams(double& k, double& rho) const {
+    k     = k_;
+    rho   = rho_;
   }
 
   virtual Fluid * Evolve(const std::vector<int>             & delta_time,
@@ -35,7 +41,7 @@ public:
 
     // Temporary implementation that simply makes a copy, but illustrates the possible use of dist_brine_evolve:
     double example_param = dist_brine_evolve->Sample();
-    Fluid * new_fluid = new Brine(salinity_*example_param);
+    Fluid * new_fluid = new Brine(salinity_*example_param, 1.0, 1.0); //FAKE
 
     return new_fluid;
   }
@@ -50,6 +56,8 @@ private:
   }
 
   double salinity_;
+  double k_;
+  double rho_;
 };
 
 #endif

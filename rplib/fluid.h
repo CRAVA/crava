@@ -13,10 +13,10 @@ public:
   Fluid() {}
   virtual ~Fluid() {}
 
-  virtual void ComputeElasticParams(const double   temp,
-                                    const double   pore_pressure,
-                                    double       & k,
-                                    double       & rho) const = 0;
+  virtual void ComputeElasticParams(double   temp,
+                                    double   pore_pressure) = 0;
+
+  virtual void GetElasticParams(double& k, double& rho) const = 0;
 
   // Fluid is an abstract class, hence pointer must be used in Evolve.
   // Allocated memory (using new) MUST be deleted by caller.

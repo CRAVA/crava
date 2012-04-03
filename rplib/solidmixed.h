@@ -13,22 +13,22 @@
 class SolidMixed : public Solid {
 public:
 
-  SolidMixed(const std::vector<Mineral*>& mineral,
+  SolidMixed(const std::vector<Solid*>& solid,
              const std::vector<double>&   volume_fraction)
   : Solid() {
 
     k_   = mu_ = rho_ = 0;
 
-    if (mineral.size() != volume_fraction.size())
+    if (solid.size() != volume_fraction.size())
       throw NRLib::Exception("Invalid arguments:Number of properties are different from number of volume fractions.");
     else if (std::accumulate(volume_fraction.begin(), volume_fraction.end(), 0.0) > 1.0) //NBNB fjellvoll possible to give warning to user and then rescale
       throw NRLib::Exception("Invalid arguments:Sum of volume fractions > 1.0");
-    else if (mineral.size() != 2) //NBNB fjellvoll this is only tmp.
+    else if (solid.size() != 2) //NBNB fjellvoll this is only tmp.
       throw NRLib::Exception("Invalid arguments:Number of volume fractions is different than 2.");
     else {
-      std::vector<double> k(mineral.size()), mu(mineral.size()), rho(mineral.size());
-      for (size_t i = 0; i < mineral.size(); i++)
-        mineral[i]->ComputeElasticParams(k[i], mu[i], rho[i]);
+      std::vector<double> k(solid.size()), mu(solid.size()), rho(solid.size());
+      for (size_t i = 0; i < solid.size(); i++)
+        solid[i]->ComputeElasticParams(k[i], mu[i], rho[i]);
 
       //NBNB fjellvoll only pair-mix allowed at the moment
       k_      = DEMTools::CalcEffectiveElasticModuliUsingHill(k[0], volume_fraction[0], k[1]);
