@@ -548,9 +548,6 @@ DEMTools::DebugTestCalcEffectiveModulus2(double& effective_bulk_modulus,
 
   SolidMixed solidmixed(mineral, volume_fraction);
 
-  std::vector<double> k(2);
-  std::vector<double> rho(2);
-
   double brine_k;
   double brine_rho;
   brine.GetElasticParams(brine_k, brine_rho);
@@ -558,8 +555,6 @@ DEMTools::DebugTestCalcEffectiveModulus2(double& effective_bulk_modulus,
   double co2_k;
   double co2_rho;
   co2.GetElasticParams(co2_k, co2_rho);
-  k[0] = brine_k;
-  k[1] = co2_k;
 
   std::vector<double> volume_fraction2(2);
   volume_fraction2[0] = saturation;
