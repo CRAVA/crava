@@ -55,7 +55,7 @@ public:
     rho = rho_;
   }
 
-  void GetSeimsmicParams(double & k, double & mu, double & rho) const {
+  void GetElasticParams(double & k, double & mu, double & rho) const {
     k   = k_;
     mu  = mu_;
     rho = rho_;

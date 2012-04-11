@@ -600,7 +600,7 @@ DEMTools::DebugTestCalcEffectiveModulus2(double& effective_bulk_modulus,
 
  RockInclusion rock_inclusion(solidmixed, fluid_mix, bulk_modulus, shear_modulus, aspect_ratio, concentration, porosity);
 
- rock_inclusion.GetSeimsmicParams(effective_bulk_modulus, effective_shear_modulus, effective_density);
+ rock_inclusion.GetElasticParams(effective_bulk_modulus, effective_shear_modulus, effective_density);
 
 
 }
