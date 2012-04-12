@@ -2621,7 +2621,7 @@ ModelGeneral::generateRockPhysics3DBackground(const std::vector<DistributionsRoc
 {
   // Set up of expectations grids and covariance grids given rock physics.
 
-  // OBS: Covariance grids not yet implemented!
+  // OBS: input parameter lowCut unused!
 
   // Variables for looping through FFTGrids
   const int nzp = vp.getNzp();
@@ -2634,13 +2634,20 @@ ModelGeneral::generateRockPhysics3DBackground(const std::vector<DistributionsRoc
   const size_t number_of_facies = probability.size();
 
   // Temporary grids for storing top and base values of (vp,vs,rho) for use in linear interpolation in the padding
-  NRLib::Grid2D<float> topVp(nx,ny, 0.0);
-  NRLib::Grid2D<float> topVs(nx,ny, 0.0);
-  NRLib::Grid2D<float> topRho(nx,ny, 0.0);
-  NRLib::Grid2D<float> baseVp(nx,ny, 0.0);
-  NRLib::Grid2D<float> baseVs(nx,ny, 0.0);
-  NRLib::Grid2D<float> baseRho(nx,ny, 0.0);
+  NRLib::Grid2D<float> topVp  (nx, ny, 0.0);
+  NRLib::Grid2D<float> topVs  (nx, ny, 0.0);
+  NRLib::Grid2D<float> topRho (nx, ny, 0.0);
+  NRLib::Grid2D<float> baseVp (nx ,ny, 0.0);
+  NRLib::Grid2D<float> baseVs (nx, ny, 0.0);
+  NRLib::Grid2D<float> baseRho(nx, ny, 0.0);
 
+  // Covariances grids
+  FFTGrid postCovAlpha = correlations.getPostCovAlpha();
+  FFTGrid postCovBeta = correlations.getPostCovBeta();
+  FFTGrid postCovRho = correlations.getPostCovAlpha();
+  FFTGrid postCrCovAlphaBeta = correlations.getPostCrCovAlphaBeta();
+  FFTGrid postCrCovAlphaRho = correlations.getPostCrCovAlphaRho();
+  FFTGrid postCrCovBetaRho = correlations.getPostCrCovBetaRho();
 
   // Loop through all cells in the FFTGrids
   for(int k = 0; k < nzp; k++)
@@ -2667,7 +2674,7 @@ ModelGeneral::generateRockPhysics3DBackground(const std::vector<DistributionsRoc
           rho.setNextReal(static_cast<float>(rhoVal));
         }
 
-        // Otherwise use trend values to get expectations for each facies
+        // Otherwise use trend values to get expectation values for each facies from the rock
         else {
           std::vector<double> trend_params(2);
           trend_params[0] = trend1.getRealValue(i,j,k);
@@ -2699,21 +2706,41 @@ ModelGeneral::generateRockPhysics3DBackground(const std::vector<DistributionsRoc
             baseVs(i,j)  = expectations[1];
             baseRho(i,j) = expectations[2];
           }
+
+          // Compute combined variance for all facies in the given grid cell.
+          // Calculation of variance for a set of pdfs with given probability in the rock physics model:
+          //
+          // Var(X) = E([X-E(X)]^2) = E([X - E(X|facies)]^2) + E([E(X|facies) -E(X)]^2) = E(Var(X|facies)) + Var(E(X|facies))
+          //        = Sum_{over all facies} (probability of facies * variance given facies) + sum_{over all facies} probability of facies * (expected value given facies - EX)^2,
+          // where EX is the sum of probability of a facies multiplied with expectation of \mu given facies
+
+          NRLib::Grid2D<double> sumVariance(3,3);
+
+          // For all facies: Summing up expected value of variances and variance of expected values
+          for(size_t f = 0; f < number_of_facies; f++){
+            NRLib::Grid2D<double> sigma;
+            std::vector<double> m(3);
+            sigma = rock[f]->GetCovariance(trend_params);
+            m = rock[f]->GetExpectation(trend_params);
+
+            // For all elements in the 3x3 matrix of the combined variance
+            for(size_t ni=0; ni<sigma.GetNI(); ni++){
+              for(size_t nj=0; nj<sigma.GetNJ(); nj++){
+                sumVariance(ni,nj) += probability[f]*sigma(ni,nj);
+
+                sumVariance(ni,nj) += probability[f]*(m[ni] - expectations[ni])*(m[nj] - expectations[nj]);
+              }
+            }
+          }
+          // Multiplication of covariance grids with the combined variance
+          postCovAlpha.setNextReal(static_cast<float>(postCovAlpha.getNextReal()*sumVariance(0,0)));
+          postCovBeta.setNextReal(static_cast<float>(postCovBeta.getNextReal()*sumVariance(1,1)));
+          postCovRho.setNextReal(static_cast<float>(postCovRho.getNextReal()*sumVariance(2,2)));
+          postCrCovAlphaBeta.setNextReal(static_cast<float>(postCrCovAlphaBeta.getNextReal()*sumVariance(0,1)));
+          postCrCovAlphaRho.setNextReal(static_cast<float>(postCrCovAlphaRho.getNextReal()*sumVariance(0,2)));
+          postCrCovBetaRho.setNextReal(static_cast<float>(postCrCovBetaRho.getNextReal()*sumVariance(1,2)));
+
         }
       }
-
-      // Covariance grids
-      float variance = 0; // Combined variance for all facies in the given grid cell. Wait with this...
-      FFTGrid postCovAlpha = correlations.getPostCovAlpha();
-      FFTGrid postCovBeta = correlations.getPostCovBeta();
-      FFTGrid postCovRho = correlations.getPostCovAlpha();
-      FFTGrid postCrCovAlphaBeta = correlations.getPostCrCovAlphaBeta();
-      FFTGrid postCrCovAlphaRho = correlations.getPostCrCovAlphaRho();
-      FFTGrid postCrCovBetaRho = correlations.getPostCrCovBetaRho();
-
-      postCovAlpha.multiplyByScalar(variance);
-      // etc
-
-      //TODO: Calculate variance for two pdfs with different probability
 
 }
