@@ -91,8 +91,7 @@ void TimeEvolution::Evolve(int time_step, SeismicParametersHolder &m_combined){
 
   int nzp_ = mu[0]->getNzp();
   int nyp_ = mu[0]->getNyp();
-  int nxp_ = mu[0]->getNxp();
-  int cnxp = nxp_/2+1;
+  int cnxp = mu[0]->getCNxp();
 
 
   // Iterate through all points in the grid and perform forward transition in time

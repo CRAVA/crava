@@ -114,6 +114,7 @@ public:
   int                  getNyp()     const {return(nyp_);}
   int                  getNzp()     const {return(nzp_);}
   int                  getRNxp()    const {return(rnxp_);}
+  int                  getCNxp()    const {return(cnxp_);}
   int                  getcsize()   const {return(csize_);}
   int                  getrsize()   const {return(rsize_);}
   float                getTheta()   const {return(theta_);}
