@@ -176,11 +176,6 @@ private:
 
   void              calculateSmoothGrad(const Surface * surf, double x, double y, double radius, double ds,  double& gx, double& gy);
 
-  void              generateMultizoneBackground(const Simbox                   * simbox,
-                                                const std::vector<int>         & erosion_priority,
-                                                const std::vector<int>         & correlation_structure,
-                                                const std::vector<std::string> & surface_files) const;
-
   int                       numberOfAngles_;
   Background              * background_;            ///< Holds the background model.
   Corr                    * correlations_;          ///<

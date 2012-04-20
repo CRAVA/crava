@@ -489,6 +489,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\src\blockedlogsforzone.cpp"
+					>
+				</File>
+				<File
 					RelativePath="src\box.cpp"
 					>
 					<FileConfiguration
@@ -6382,6 +6386,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\src\blockedlogsforzone.h"
+					>
+				</File>
+				<File
 					RelativePath="src\box.h"
 					>
 				</File>
@@ -6709,11 +6717,11 @@
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\system\config.hpp"
+						RelativePath=".\nrlib\boost\filesystem\config.hpp"
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\filesystem\config.hpp"
+						RelativePath=".\nrlib\boost\system\config.hpp"
 						>
 					</File>
 					<File
