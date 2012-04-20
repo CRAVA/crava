@@ -42,9 +42,6 @@ public:
                                               float                z0_data,
                                               float                zn_data,
                                               float                dz_data,
-                                              float                ztop,
-                                              float                zbase,
-                                              float                dz,
                                               float                smooth_length,
                                               std::string        & errTxt);
   void                 resampleTrace(const std::vector<float> & data_trace,

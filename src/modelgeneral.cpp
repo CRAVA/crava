@@ -226,7 +226,10 @@ ModelGeneral::readSegyFile(const std::string       & fileName,
 
     if (errTxt == "") {
       bool  onlyVolume      = true;
-      float padding        = 2*guard_zone; // This is *not* the same as FFT-grid padding
+      // This is *not* the same as FFT-grid padding. If the padding
+      // size is changed from 2*guard_zone, the smoothing done in
+      // FFTGrid::smoothTraceInGuardZone() will become incorrect.
+      float padding         = 2*guard_zone;
       bool  relativePadding = false;
 
       segy->ReadAllTraces(timeCutSimbox,

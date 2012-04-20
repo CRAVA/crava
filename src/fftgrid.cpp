@@ -194,10 +194,6 @@ FFTGrid::fillInSeismicDataFromSegY(SegY        * segy,
           fftw_real * rAmpData = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnt));
           fftw_real * rAmpFine = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rmt));
 
-          float       dz_cut   = static_cast<float>(timeCutSimbox->getdz(refi, refj));
-          float       z0_cut   = static_cast<float>(timeCutSimbox->getTop(refi, refj));
-          float       zn_cut   = static_cast<float>(timeCutSimbox->getBot(refi, refj));
-
           float       dz_grid  = static_cast<float>(dz);
           float       z0_grid  = static_cast<float>(z0);
 
@@ -210,9 +206,6 @@ FFTGrid::fillInSeismicDataFromSegY(SegY        * segy,
                                  z0_data,
                                  zn_data,
                                  dz_data,
-                                 z0_cut,
-                                 zn_cut,
-                                 dz_cut,
                                  smooth_length,
                                  errText);
           resampleTrace(data_trace,
@@ -311,28 +304,23 @@ FFTGrid::smoothTraceInGuardZone(std::vector<float> & data_trace,
                                 float                z0_data,
                                 float                zn_data,
                                 float                dz_data,
-                                float                ztop,
-                                float                zbase,
-                                float                dz,
                                 float                smooth_length,
                                 std::string        & errTxt)
 {
-  //
   // We recommend a guard zone of at least half a wavelet on each side of
   // the target zone and that half a wavelet of the guard zone is smoothed.
-  // A wavelet is assumed 200ms.
   //
-  float guard_top = ztop    - z0_data + dz; // Add 0.5*dz to account for seismic data shift
-  float guard_bot = zn_data - zbase   + dz; // another half to get rid of numerical issues
-
-  if (guard_top < smooth_length || guard_bot < smooth_length) {
-    errTxt += "There is not enough seismic data above and/or below interval of interest. Minimum\n";
-    errTxt += "required guard zone is "+NRLib::ToString(smooth_length,1)+"ms on each side of the interval, ";
-    errTxt += "whereas the available\nguard zone is "+NRLib::ToString(guard_top,1)+"ms above";
-    errTxt += " and "+NRLib::ToString(guard_bot,1)+"ms below the interval.\n";
-  }
-
+  // By default, we have: guard_zone = smooth_length = 0.5*wavelet = 100ms
   //
+  // Originally, we checked here that the guard zone was larger than or equal
+  // to the smooth length. However, as a trace is generally not located in
+  // the center of the grid cell, we made an invalid comparison of z-values
+  // from different reference systems. Only when the top/base surface is flat
+  // such a comparison becomes valid. Instead, we hope and assume that the
+  // SegY volume made in ModelGeneral::readSegyFile() has been made with
+  // the correct guard zone in method.
+
+ //
   // k=n_smooth is the first sample within the simbox. For this sample
   // the smoothing factor (if it had been applied) should be one.
   //
