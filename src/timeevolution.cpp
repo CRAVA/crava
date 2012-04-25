@@ -15,14 +15,12 @@
 
 TimeEvolution::TimeEvolution(int i_max,
                              TimeLine & time_line,
-                             const DistributionsRock        * dist_rock,
-                             const DistributionsSaturation  * dist_sat,
-                             const DistributionsGeochemical * dist_geochem)
+                             const DistributionsRock        * dist_rock)
 {
   std::list<int> time;
   time_line.GetAllTimes(time);
   number_of_timesteps_ = static_cast<int>( time.size() );
-  SetUpEvolutionMatrices(evolution_matrix_, cov_correction_term_, mean_correction_term_, i_max, time_line, dist_rock, dist_sat, dist_geochem);
+  SetUpEvolutionMatrices(evolution_matrix_, cov_correction_term_, mean_correction_term_, i_max, time_line, dist_rock);
 }
 
 void TimeEvolution::Evolve(int time_step, SeismicParametersHolder &m_combined){
@@ -203,9 +201,7 @@ void TimeEvolution::SetUpEvolutionMatrices(std::vector< NRLib::Matrix>    & evol
                                            std::vector< NRLib::Vector>    & mean_correction_term,
                                            int                              i_max,
                                            TimeLine                       & time_line,
-                                           const DistributionsRock        * dist_rock,
-                                           const DistributionsSaturation  * dist_sat,
-                                           const DistributionsGeochemical * dist_geochem)
+                                           const DistributionsRock        * dist_rock)
 {
   // A note on variable names in this function:
   // _mk in the variable names refers to the seismic parameter m with subscript k, time index.
@@ -222,7 +218,7 @@ void TimeEvolution::SetUpEvolutionMatrices(std::vector< NRLib::Matrix>    & evol
   // Cov_mkm1_mkm1: Denotes the covariance of m_{k-1} and m_{k-1}, Cov(m_{k-1}, m_{k-1})
 
   CorrelatedRockSamples correlated_rock_samples;
-  std::vector<std::vector<std::vector<double> > > m_ik = correlated_rock_samples.CreateSamples(i_max, time_line, dist_rock, dist_sat, dist_geochem);
+  std::vector<std::vector<std::vector<double> > > m_ik = correlated_rock_samples.CreateSamples(i_max, time_line, dist_rock);
   // The dimension of m_ik[k][i] is expected to be equal to 3, in other words we do not expect to receive samples splitted into dynamic and static parts.
   // Now do the separation, which expands m_ik[k][i] to double size:
   SplitSamplesStaticDynamic(m_ik);

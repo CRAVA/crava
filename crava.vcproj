@@ -6169,6 +6169,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\rplib\mineral.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\rplib\multinormaldistributedrock.cpp"
 					>
 				</File>
@@ -6201,6 +6205,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\rplib\solidmixed.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\rplib\trinormalwith2dtrend.cpp"
 					>
 				</File>
@@ -6218,6 +6226,10 @@
 				</File>
 				<File
 					RelativePath=".\nrlib\math\constants.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\nrlib\random\delta.cpp"
 					>
 				</File>
 				<File
@@ -6778,6 +6790,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\nrlib\random\delta.hpp"
+					>
+				</File>
+				<File
 					RelativePath=".\nrlib\random\distribution.hpp"
 					>
 				</File>
@@ -6909,11 +6925,11 @@
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\system\config.hpp"
+						RelativePath=".\nrlib\boost\filesystem\config.hpp"
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\filesystem\config.hpp"
+						RelativePath=".\nrlib\boost\system\config.hpp"
 						>
 					</File>
 					<File
@@ -7190,6 +7206,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\rplib\distributionsco2.h"
+					>
+				</File>
+				<File
 					RelativePath=".\rplib\distributionsco2evolution.h"
 					>
 				</File>
@@ -7198,15 +7218,11 @@
 					>
 				</File>
 				<File
-					RelativePath=".\rplib\distributionsfluidevolution.h"
+					RelativePath=".\rplib\distributionsfluidmix.h"
 					>
 				</File>
 				<File
-					RelativePath=".\rplib\distributionsgeochemical.h"
-					>
-				</File>
-				<File
-					RelativePath=".\rplib\distributionsgeochemicaldem.h"
+					RelativePath=".\rplib\distributionsfluidmixevolution.h"
 					>
 				</File>
 				<File
@@ -7214,19 +7230,19 @@
 					>
 				</File>
 				<File
+					RelativePath=".\rplib\distributionsmineralevolution.h"
+					>
+				</File>
+				<File
 					RelativePath=".\rplib\distributionsrock.h"
 					>
 				</File>
 				<File
-					RelativePath=".\rplib\distributionsrockdem.h"
+					RelativePath=".\rplib\distributionsrockinclusion.h"
 					>
 				</File>
 				<File
-					RelativePath=".\rplib\distributionssaturation.h"
-					>
-				</File>
-				<File
-					RelativePath=".\rplib\distributionssaturationexmpl.h"
+					RelativePath=".\rplib\distributionsrockinclusionevolution.h"
 					>
 				</File>
 				<File
@@ -7234,7 +7250,11 @@
 					>
 				</File>
 				<File
-					RelativePath=".\rplib\distributionssolidevolution.h"
+					RelativePath=".\rplib\distributionssolidmix.h"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\distributionssolidmixevolution.h"
 					>
 				</File>
 				<File
@@ -7283,10 +7303,6 @@
 				</File>
 				<File
 					RelativePath=".\rplib\rock.h"
-					>
-				</File>
-				<File
-					RelativePath=".\rplib\rockdem.h"
 					>
 				</File>
 				<File

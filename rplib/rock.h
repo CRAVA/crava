@@ -1,13 +1,11 @@
-#ifndef ROCK_H
-#define ROCK_H
+#ifndef RPLIB_ROCK_H
+#define RPLIB_ROCK_H
 
 #include <assert.h>
-#include "rplib/distributionssaturation.h"
-#include "rplib/distributionsgeochemical.h"
+#include <vector>
 
 
 // Abstract rock class.
-// Each derived class has parallel classes derived from DistributionsRock and DistributionsGeochemical.
 class Rock {
 public:
   Rock();
@@ -17,16 +15,12 @@ public:
 
   // Rock is an abstract class, hence pointer must be used in Evolve.  
   // Allocated memory (using new) MUST be deleted by caller.
-  // Derived class Evolve implementation should always start with casting and assert.
-  // Example from derived class RockDEM:
-          // DistributionsGeochemicalDEM const * dist_geochem_dem 
-          //      = dynamic_cast<const DistributionsGeochemicalDEM*>(dist_geochem);
-          // assert(dist_geochem_dem != NULL);
-          // assert(delta_time.size() == rock.size() + 1);
+  // Input parameters:
+  //      delta_time : the set of previous and present incremental time steps
+  //      rock : the set of previous rock samples 
+  // Recommended in implementation: assert(delta_time.size() == rock.size() + 1);
   virtual Rock * Evolve(const std::vector<int>         & delta_time,
-                        const std::vector< Rock * >    & rock,
-                        const DistributionsSaturation  * dist_sat,
-                        const DistributionsGeochemical * dist_geochem) const = 0;
+                        const std::vector< Rock * >    & rock) const = 0;
   
 
 protected:

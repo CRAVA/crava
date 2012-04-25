@@ -1,17 +1,13 @@
-#ifndef DISTRIBUTIONSBRINEEVOLUTION_H
-#define DISTRIBUTIONSBRINEEVOLUTION_H
+#ifndef RPLIB_DISTRIBUTIONSBRINEEVOLUTION_H
+#define RPLIB_DISTRIBUTIONSBRINEEVOLUTION_H
 
-#include "rplib/distributionsfluidevolution.h"
 
-// Parallel classes are Brine and DistributionsBrine.
-class DistributionsBrineEvolution : public DistributionsFluidEvolution {
+class DistributionsBrineEvolution {
 public:
 
-  DistributionsBrineEvolution() : DistributionsFluidEvolution(){}
+  DistributionsBrineEvolution() {}
 
   virtual ~DistributionsBrineEvolution(){}
-
-  double Sample() const {return 1.0;}  // FAKE
 
 };
 

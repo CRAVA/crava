@@ -1,17 +1,21 @@
-#ifndef FLUID_H
-#define FLUID_H
+#ifndef RPLIB_FLUID_H
+#define RPLIB_FLUID_H
 
 #include <string>
 #include <vector>
-#include "rplib/distributionsfluidevolution.h"
 
 // Abstract fluid class.
-// Each derived class has parallel classes derived from DistributionsFluid and DistributionsFluidEvolve.
 class Fluid {
 public:
 
   Fluid() {}
+  Fluid(const Fluid& /*rhs*/){}
   virtual ~Fluid() {}
+
+  // Assignment operator, not yet implemented.
+  /*Fluid& operator=(const Fluid& rhs);*/
+
+  virtual Fluid * Clone() const = 0;
 
   virtual void ComputeElasticParams(double   temp,
                                     double   pore_pressure) = 0;
@@ -20,15 +24,12 @@ public:
 
   // Fluid is an abstract class, hence pointer must be used in Evolve.
   // Allocated memory (using new) MUST be deleted by caller.
-  // Derived class Evolve implementation should always start with casting and assert.
-  // Example from derived class Brine:
-          //const DistributionsBrineEvolution * dist_brine_evolve =
-          //      dynamic_cast<const DistributionsBrineEvolution*>(dist_fluid_evolve);
-          //assert(dist_brine_evolve != NULL);
-          //assert(delta_time.size() == fluid.size() + 1);
+  // Input parameters:
+  //      delta_time : the set of previous and present incremental time steps
+  //      fluid : the set of previous fluid samples 
+  // Recommended in implementation: assert(delta_time.size() == fluid.size() + 1);
   virtual Fluid * Evolve(const std::vector<int>             & delta_time,
-                         const std::vector< Fluid * >       & fluid,
-                         const DistributionsFluidEvolution  * dist_fluid_evolve) const = 0;
+                         const std::vector< Fluid * >       & fluid) const = 0;
 
 
 protected:

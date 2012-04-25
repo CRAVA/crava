@@ -59,6 +59,12 @@ namespace DEMTools {
   double CalcDensityOfWaterFromTP(double temperature,
                                   double pressure);
 
+  void CalcSeismicParamsFromElasticParams(const double bulk_modulus,
+                                          const double shear_modulus,
+                                          const double density,
+                                          double & vp,
+                                          double & vs);
+
   //list of debug/testing functions
   void DebugTestCalcEffectiveModulus(double& effective_bulk_modulus,
                                      double& effective_shear_modulus,
@@ -68,9 +74,11 @@ namespace DEMTools {
                                       double& effective_shear_modulus,
                                       double& effective_density);
 
+  void DebugTestCalcEffectiveModulus3(double& effective_bulk_modulus,
+                                      double& effective_shear_modulus,
+                                      double& effective_density);
 
-
-
+  void DebugTestDeletionAndCopying();
 }
 #endif
 

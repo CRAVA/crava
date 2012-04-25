@@ -11,9 +11,7 @@ CorrelatedRockSamples::~CorrelatedRockSamples()
 std::vector< std::vector< std::vector<double> > >
 CorrelatedRockSamples::CreateSamples(int                              i_max,
                                      TimeLine                       & time_line,
-                                     const DistributionsRock        * dist_rock,
-                                     const DistributionsSaturation  * dist_sat,
-                                     const DistributionsGeochemical * dist_geochem)
+                                     const DistributionsRock        * dist_rock)
 {
   std::list<int> time;
   time_line.GetAllTimes(time);
@@ -48,7 +46,7 @@ CorrelatedRockSamples::CreateSamples(int                              i_max,
     rock[0][i]->ComputeSeismicParams(m[0][i][0], m[0][i][1], m[0][i][2]);
     std::vector< Rock * > rock_seen(1, rock[0][i]);
     for (int k = 1; k < k_max; ++k){
-      rock[k][i] = rock[k-1][i]->Evolve(delta_time[k], rock_seen, dist_sat, dist_geochem); // delta_time info also for the rock to be found.
+      rock[k][i] = rock[k-1][i]->Evolve(delta_time[k], rock_seen); // delta_time info also for the rock to be found.
       rock[k][i]->ComputeSeismicParams(m[k][i][0], m[k][i][1], m[k][i][2]);
       rock_seen.push_back(rock[k][i]);
     }

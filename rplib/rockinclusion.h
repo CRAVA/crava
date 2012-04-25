@@ -2,9 +2,9 @@
 #define RPLIB_ROCKINCLUSION_H
 
 #include "rplib/rock.h"
-#include "rplib/distributionsgeochemicaldem.h"
 #include "rplib/solidmixed.h"
 #include "rplib/fluidmixed.h"
+#include "rplib/distributionsrockinclusionevolution.h"
 #include "rplib/demmodelling.h"
 
 #include <vector>
@@ -12,34 +12,46 @@
 class RockInclusion : public Rock {
 public:
 
-  // Parallel classes are DistributionsGeochemicalRockInclusion and DistributionsRockInclusion.
-  RockInclusion(const SolidMixed& solid_mix,
-                const FluidMixed& fluid_mix,
-                const std::vector<double>& bulk_modulus,
-                const std::vector<double>& shear_modulus,
-                const std::vector<double>& aspect_ratio,
-                const std::vector<double>& concentration,
-                double porosity)
+  RockInclusion(const Solid                         * solid,
+                const Fluid                         * fluid,
+                const std::vector<double>           & inclusion_spectrum,
+                const std::vector<double>           & inclusion_concentration,
+                double                                porosity,
+                DistributionsRockInclusionEvolution * distr_evolution = NULL)
   : Rock()
   {
+    // Deep copy of solid and fluid:
+    solid_ = solid->Clone();
+    fluid_ = fluid->Clone();
+
+    inclusion_spectrum_      = inclusion_spectrum;
+    inclusion_concentration_ = inclusion_concentration;
+    porosity_                = porosity;
+    distr_evolution_         = distr_evolution;
+
     double fluid_rho, fluid_k;
-    fluid_mix.GetElasticParams(fluid_k, fluid_rho);
+    fluid_->GetElasticParams(fluid_k, fluid_rho);
 
     double solid_rho, solid_k, solid_mu;
-    solid_mix.ComputeElasticParams(solid_k, solid_mu, solid_rho);
+    solid_->ComputeElasticParams(solid_k, solid_mu, solid_rho);
 
-    rho_  = DEMTools::CalcEffectiveDensity(fluid_rho, porosity, solid_rho);
+    rho_  = DEMTools::CalcEffectiveDensity(fluid_rho, porosity_, solid_rho);
 
-    std::vector<double> conc = concentration;
+    std::vector<double> inclusion_k   =  std::vector<double>(inclusion_spectrum_.size(), fluid_k);
+    std::vector<double> inclusion_mu  = std::vector<double>(inclusion_spectrum_.size(), 0.0);
+    std::vector<double> conc = inclusion_concentration_; // inclusion concentration scaled by porosity
+    for (size_t i = 0; i < conc.size(); i++)
+     conc[i] *= porosity_;
 
-    DEMTools::CalcEffectiveBulkAndShearModulus(bulk_modulus,
-                                               shear_modulus,
-                                               aspect_ratio,
+    DEMTools::CalcEffectiveBulkAndShearModulus(inclusion_k,
+                                               inclusion_mu,
+                                               inclusion_spectrum_,
                                                conc,
                                                solid_k,
                                                solid_mu,
                                                k_,
                                                mu_);
+    DEMTools::CalcSeismicParamsFromElasticParams(k_, mu_, rho_, vp_, vs_);
 
   }
 
@@ -47,7 +59,11 @@ public:
     vp_ = vs_ = rho_ = k_ = mu_ = 0;
   }
 
-  virtual ~RockInclusion(){}
+  virtual ~RockInclusion()
+  {
+    delete solid_;
+    delete fluid_;
+  }
 
   virtual void ComputeSeismicParams(double & vp, double & vs, double & rho) const {
     vp  = vp_;
@@ -61,17 +77,53 @@ public:
     rho = rho_;
   }
 
-  virtual Rock * Evolve(const std::vector<int>         & /*delta_time*/,
-                        const std::vector< Rock * >    & /*rock*/,
-                        const DistributionsSaturation  * /*dist_sat*/,
-                        const DistributionsGeochemical * /*dist_geochem*/) const {
+  Solid *  GetSolid() const {return solid_;}
+  Fluid *  GetFluid() const {return fluid_;}
 
-    Rock * new_rock = new RockInclusion;
+  virtual Rock * Evolve(const std::vector<int>         & delta_time,
+                        const std::vector< Rock * >    & rock) const {
 
-    return new_rock;
+    size_t n_rocks = rock.size();
+    std::vector< RockInclusion * > rock_incl(n_rocks);
+    std::vector< Solid * > solid(n_rocks);
+    std::vector< Fluid * > fluid(n_rocks);
+    for (size_t i = 0; i < n_rocks; ++i) {
+      rock_incl[i] = dynamic_cast<RockInclusion*>(rock[i]);
+      assert(rock_incl[i] != NULL);
+      solid[i] = rock_incl[i]->GetSolid();
+      fluid[i] = rock_incl[i]->GetFluid();
+    }
+    Solid * solid_new = solid_->Evolve(delta_time, solid);
+    Fluid * fluid_new = fluid_->Evolve(delta_time, fluid);
+
+    // Change the assignment of the following three variables when a time develop model has been defined.
+    std::vector<double> inclusion_spectrum      = inclusion_spectrum_;
+    std::vector<double> inclusion_concentration = inclusion_concentration_;
+    double  porosity                            = porosity_;
+
+    Rock * rock_new = new RockInclusion(solid_new,
+                                        fluid_new,
+                                        inclusion_spectrum,
+                                        inclusion_concentration,
+                                        porosity,
+                                        distr_evolution_);
+
+    // Deep copy taken by constructor of RockInclusion, hence delete
+    // solid_new and fluid_new here:
+    delete solid_new;
+    delete fluid_new;
+
+    return rock_new;
   }
 
 private:
+  Solid                               * solid_;
+  Fluid                               * fluid_;
+  std::vector<double>                   inclusion_spectrum_;
+  std::vector<double>                   inclusion_concentration_;
+  double                                porosity_;
+  DistributionsRockInclusionEvolution * distr_evolution_;
+
   double vp_, vs_, rho_;
   double k_, mu_;
 };

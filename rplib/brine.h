@@ -1,5 +1,5 @@
-#ifndef BRINE_H
-#define BRINE_H
+#ifndef RPLIB_BRINE_H
+#define RPLIB_BRINE_H
 
 #include "rplib/fluid.h"
 #include "rplib/distributionsbrineevolution.h"
@@ -10,16 +10,33 @@
 class Brine : public Fluid {
 public:
 
-  // Parallel classes are DistributionsBrineEvolution and DistributionsBrine.
-  Brine(double salinity,
-        double temp,
-        double pore_pressure)
+  Brine(double                        salinity,
+        double                        temp,
+        double                        pore_pressure,
+        DistributionsBrineEvolution * distr_evolution = NULL)
   : Fluid() {
-    salinity_ = salinity;
+    salinity_        = salinity;
+    distr_evolution_ = distr_evolution;
     ComputeElasticParams(temp, pore_pressure);
   }
 
+  // Copy constructor
+  Brine(const Brine & rhs) : Fluid(rhs)
+  {
+    k_        = rhs.k_;
+    rho_      = rhs.rho_;
+    salinity_ = rhs.salinity_;
+    distr_evolution_ = rhs.distr_evolution_;
+  }
+
   virtual ~Brine(){}
+
+  // Assignment operator, not yet implemented.
+  /*Brine& operator=(const Brine& rhs);*/
+
+  virtual Fluid * Clone() const {
+    return new Brine(*this);
+  }
 
   virtual void ComputeElasticParams(double   temp,
                                     double   pore_pressure) {
@@ -32,18 +49,9 @@ public:
     rho   = rho_;
   }
 
-  virtual Fluid * Evolve(const std::vector<int>             & delta_time,
-                         const std::vector< Fluid * >       & fluid,
-                         const DistributionsFluidEvolution  * dist_fluid_evolve) const {
-    const DistributionsBrineEvolution * dist_brine_evolve = dynamic_cast<const DistributionsBrineEvolution*>(dist_fluid_evolve);
-    assert(dist_brine_evolve != NULL);
-    assert(delta_time.size() == fluid.size() + 1);
-
-    // Temporary implementation that simply makes a copy, but illustrates the possible use of dist_brine_evolve:
-    double example_param = dist_brine_evolve->Sample();
-    Fluid * new_fluid = new Brine(salinity_*example_param, 1.0, 1.0); //FAKE
-
-    return new_fluid;
+  virtual Fluid * Evolve(const std::vector<int>             & /*delta_time*/,
+                         const std::vector< Fluid * >       & /*fluid*/) const {
+    return new Brine(*this);
   }
 
 private:
@@ -56,6 +64,8 @@ private:
   }
 
   double salinity_;
+  DistributionsBrineEvolution * distr_evolution_;
+
   double k_;
   double rho_;
 };

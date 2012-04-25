@@ -7,8 +7,6 @@
 class SeismicParametersHolder;
 class TimeLine;
 class DistributionsRock;
-class DistributionsSaturation;
-class DistributionsGeochemical;
 class FFTGrid;
 
 class TimeEvolution
@@ -16,9 +14,7 @@ class TimeEvolution
 public:
   TimeEvolution(int i_max,
                 TimeLine & time_line,
-                const DistributionsRock       * dist_rock,
-                const DistributionsSaturation * dist_sat,
-                const DistributionsGeochemical * dist_geochem);
+                const DistributionsRock       * dist_rock);
   void Evolve(int time_step, SeismicParametersHolder &m);
 
 private:
@@ -52,9 +48,7 @@ private:
                              std::vector< NRLib::Vector>    & mean_correction_term,
                              int                              i_max,
                              TimeLine                       & time_line,
-                             const DistributionsRock        * dist_rock,
-                             const DistributionsSaturation  * dist_sat,
-                             const DistributionsGeochemical * dist_geochem);
+                             const DistributionsRock        * dist_rock);
 
   // Adjusting diagonal of matrix to be inverted if necessary,
   // and adjusting the other matrices similarly to ensure block form of evolution
