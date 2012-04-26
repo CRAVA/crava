@@ -28,7 +28,7 @@ public:
                          const std::vector< Solid * > & /*fluid*/) const;
 
 private:
-  DistributionsMineralEvolution * distr_evolution_;
+  DistributionsMineralEvolution * distr_evolution_; // Pointer to external object.
 
   double k_;
   double mu_;

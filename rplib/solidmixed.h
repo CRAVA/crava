@@ -34,9 +34,9 @@ private:
   //Copy constructor, used by Clone:
   SolidMixed(const SolidMixed & rhs) : Solid(rhs) {}
 
-  std::vector<Solid*>              solid_;             // Owned and deleted by this class.
+  std::vector<Solid*>              solid_;           // Owned and deleted by this class.
   std::vector<double>              volume_fraction_;
-  DistributionsSolidMixEvolution * distr_evolution_;
+  DistributionsSolidMixEvolution * distr_evolution_; // Pointer to external object.
 
   double k_;
   double mu_;

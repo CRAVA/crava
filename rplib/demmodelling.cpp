@@ -436,7 +436,7 @@ DEMTools::DebugTestCalcEffectiveModulus(double& effective_bulk_modulus,
 
   ////
   enum GeometryType {Spherical, Mixed};
-  GeometryType my_geo_type = Mixed; // pore geometry, this enum chooses the one to use.
+  GeometryType my_geo_type = Spherical; // pore geometry, this enum chooses the one to use.
   // example 1: spherical
   double inclusiongeometry_spectrum          = 1.0;
   double inclusiongeometry_concentration     = 1.0;
@@ -593,7 +593,7 @@ DEMTools::DebugTestCalcEffectiveModulus2(double& effective_bulk_modulus,
                                       inclusiongeometry.spectrum, ...
                                       porosity*inclusiongeometry.concentration);*/
   enum GeometryType {Spherical, Mixed};
-  GeometryType my_geo_type = Mixed; // pore geometry, this enum chooses the one to use.
+  GeometryType my_geo_type = Spherical; // pore geometry, this enum chooses the one to use.
 
   std::vector<double> inclusion_spectrum;
   std::vector<double> inclusion_concentration;
@@ -684,7 +684,7 @@ DEMTools::DebugTestCalcEffectiveModulus3(double& effective_bulk_modulus,
 
   //// Geometry specification
   enum GeometryType {Spherical, Mixed};
-  GeometryType my_geo_type = Mixed; // pore geometry, this enum chooses the one to use.
+  GeometryType my_geo_type = Spherical; // pore geometry, this enum chooses the one to use.
 
   std::vector< NRLib::Distribution<double> * > distr_incl_spectrum;
   std::vector< NRLib::Distribution<double> * > distr_incl_concentration;
@@ -812,7 +812,7 @@ DEMTools::DebugTestDeletionAndCopying() {
 
   //// Geometry specification
   enum GeometryType {Spherical, Mixed};
-  GeometryType my_geo_type = Mixed; // pore geometry, this enum chooses the one to use.
+  GeometryType my_geo_type = Spherical; // pore geometry, this enum chooses the one to use.
 
   std::vector< NRLib::Distribution<double> * > distr_incl_spectrum;
   std::vector< NRLib::Distribution<double> * > distr_incl_concentration;

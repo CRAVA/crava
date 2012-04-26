@@ -6157,6 +6157,14 @@
 				Name="rplib"
 				>
 				<File
+					RelativePath=".\rplib\brine.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\co2.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\rplib\dem.cpp"
 					>
 				</File>
@@ -6165,7 +6173,35 @@
 					>
 				</File>
 				<File
+					RelativePath=".\rplib\distributionsbrine.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\distributionsco2.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\distributionsfluidmix.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\distributionsmineral.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\distributionsrockinclusion.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\distributionssolidmix.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\rplib\distributionwithtrend.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\fluidmixed.cpp"
 					>
 				</File>
 				<File
@@ -6198,6 +6234,10 @@
 				</File>
 				<File
 					RelativePath=".\rplib\rock.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\rockinclusion.cpp"
 					>
 				</File>
 				<File

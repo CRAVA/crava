@@ -13,15 +13,15 @@ public:
 
   virtual void ComputeSeismicParams(double & vp, double & vs, double & rho) const = 0;
 
-  // Rock is an abstract class, hence pointer must be used in Evolve.  
+  // Rock is an abstract class, hence pointer must be used in Evolve.
   // Allocated memory (using new) MUST be deleted by caller.
   // Input parameters:
   //      delta_time : the set of previous and present incremental time steps
-  //      rock : the set of previous rock samples 
+  //      rock : the set of previous rock samples
   // Recommended in implementation: assert(delta_time.size() == rock.size() + 1);
   virtual Rock * Evolve(const std::vector<int>         & delta_time,
                         const std::vector< Rock * >    & rock) const = 0;
-  
+
 
 protected:
 

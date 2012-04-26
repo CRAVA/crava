@@ -12,46 +12,27 @@ public:
 
   CO2(double                      temp,
       double                      pore_pressure,
-      DistributionsCO2Evolution * distr_evolution = NULL)
-  : Fluid() {
-    distr_evolution_ = distr_evolution;
-    ComputeElasticParams(temp, pore_pressure);
-  }
+      DistributionsCO2Evolution * distr_evolution = NULL);
 
   // Copy constructor
-  CO2(const CO2 & rhs) : Fluid(rhs)
-  {
-    k_   = rhs.k_;
-    rho_ = rhs.rho_;
-    distr_evolution_ = rhs.distr_evolution_;
-  }
+  CO2(const CO2 & rhs);
 
-  virtual ~CO2(){}
+  virtual ~CO2();
 
   // Assignment operator, not yet implemented.
   /*CO2& operator=(const CO2& rhs);*/
 
-  virtual Fluid * Clone() const {
-    return new CO2(*this);
-  }
+  virtual Fluid * Clone() const;
 
-  virtual void ComputeElasticParams(double   temp,
-                                    double   pore_pressure) {
-    DEMTools::CalcCo2Prop(k_, rho_, temp, pore_pressure);
-  }
+  virtual void ComputeElasticParams(double temp, double pore_pressure);
 
-  virtual void GetElasticParams(double& k, double& rho) const {
-    k     = k_;
-    rho   = rho_;
-  }
+  virtual void GetElasticParams(double& k, double& rho) const;
 
-  virtual Fluid * Evolve(const std::vector<int>             & /*delta_time*/,
-                         const std::vector< Fluid * >       & /*fluid*/) const {
-    return new CO2(*this);
-  }
+  virtual Fluid * Evolve(const std::vector<int>       & /*delta_time*/,
+                         const std::vector< Fluid * > & /*fluid*/) const;
 
 private:
-  DistributionsCO2Evolution * distr_evolution_;
+  DistributionsCO2Evolution * distr_evolution_; // Pointer to external object.
 
   double k_;
   double rho_;
