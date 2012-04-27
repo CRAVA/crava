@@ -10,6 +10,8 @@ public:
 
   virtual ~MultiNormalRock();
 
+  virtual Rock * Clone() const;
+
   virtual void ComputeSeismicParams(double& vp, double& vs, double& rho) const;
 
   virtual Rock * Evolve(const std::vector<int>         & /*delta_time*/,

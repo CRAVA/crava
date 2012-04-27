@@ -8,7 +8,7 @@ class Solid {
 public:
 
   Solid(){}
-  Solid(const Solid& /*rhs*/){}
+  //Solid(const Solid& /*rhs*/){}
   virtual ~Solid() {}
 
   // Assignment operator, not yet implemented.
@@ -25,7 +25,7 @@ public:
   //      solid : the set of previous fluid samples
   // Recommended in implementation: assert(delta_time.size() == solid.size() + 1);
   virtual Solid * Evolve(const std::vector<int>             & delta_time,
-                         const std::vector< Solid * >       & solid) const = 0;
+                         const std::vector< const Solid * > & solid) const = 0;
 
 protected:
 

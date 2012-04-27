@@ -23,17 +23,22 @@ public:
 
   virtual ~RockInclusion();
 
+  virtual Rock * Clone() const;
+
   virtual void ComputeSeismicParams(double & vp, double & vs, double & rho) const;
 
   void GetElasticParams(double & k, double & mu, double & rho) const;
 
-  Solid *  GetSolid() const {return solid_;}
-  Fluid *  GetFluid() const {return fluid_;}
+  const Solid *  GetSolid() const {return solid_;}
+  const Fluid *  GetFluid() const {return fluid_;}
 
   virtual Rock * Evolve(const std::vector<int>         & delta_time,
                         const std::vector< Rock * >    & rock) const;
 
 private:
+  //Copy constructor for getting base class variables , used by Clone:
+  RockInclusion(const RockInclusion & rhs) : Rock(rhs) {}
+
   Solid                               * solid_; // Owned and deleted by this class.
   Fluid                               * fluid_; // Owned and deleted by this class.
   std::vector<double>                   inclusion_spectrum_;

@@ -39,8 +39,8 @@ Brine::GetElasticParams(double& k, double& rho) const {
 }
 
 Fluid *
-Brine::Evolve(const std::vector<int>       & /*delta_time*/,
-              const std::vector< Fluid * > & /*fluid*/) const {
+Brine::Evolve(const std::vector<int>             & /*delta_time*/,
+              const std::vector< const Fluid * > & /*fluid*/) const {
   return new Brine(*this);
 }
 

@@ -9,7 +9,7 @@ class Fluid {
 public:
 
   Fluid() {}
-  Fluid(const Fluid& /*rhs*/){}
+  //Fluid(const Fluid& /*rhs*/){}
   virtual ~Fluid() {}
 
   // Assignment operator, not yet implemented.
@@ -29,7 +29,7 @@ public:
   //      fluid : the set of previous fluid samples 
   // Recommended in implementation: assert(delta_time.size() == fluid.size() + 1);
   virtual Fluid * Evolve(const std::vector<int>             & delta_time,
-                         const std::vector< Fluid * >       & fluid) const = 0;
+                         const std::vector< const Fluid * > & fluid) const = 0;
 
 
 protected:

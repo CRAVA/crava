@@ -35,6 +35,6 @@ Mineral::ComputeElasticParams(double & k, double & mu, double & rho) const {
 
 Solid *
 Mineral::Evolve(const std::vector<int>             & /*delta_time*/,
-                const std::vector< Solid * >       & /*fluid*/) const {
+                const std::vector< const Solid * > & /*fluid*/) const {
   return new Mineral(*this);  // Evolve when model is defined.
 }

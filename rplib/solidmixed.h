@@ -28,10 +28,10 @@ public:
   virtual void ComputeElasticParams(double & k, double & mu, double & rho) const;
 
   virtual Solid * Evolve(const std::vector<int>             & delta_time,
-                         const std::vector< Solid * >       & solid) const;
+                         const std::vector< const Solid * > & solid) const;
 
 private:
-  //Copy constructor, used by Clone:
+  //Copy constructor for getting base class variables , used by Clone:
   SolidMixed(const SolidMixed & rhs) : Solid(rhs) {}
 
   std::vector<Solid*>              solid_;           // Owned and deleted by this class.

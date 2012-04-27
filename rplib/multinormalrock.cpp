@@ -11,6 +11,11 @@ MultiNormalRock::~MultiNormalRock()
 {
 }
 
+Rock *
+MultiNormalRock::Clone() const {
+  return new MultiNormalRock(*this);
+}
+
 void
 MultiNormalRock::ComputeSeismicParams(double& vp, double& vs, double& rho) const {
   vp  = param_[0];

@@ -70,7 +70,7 @@ SolidMixed::ComputeElasticParams(double & k, double & mu, double & rho) const {
 
 Solid *
 SolidMixed::Evolve(const std::vector<int>             & delta_time,
-                   const std::vector< Solid * >       & solid) const {
+                   const std::vector< const Solid * > & solid) const {
   size_t n_solids = solid_.size();
   std::vector<Solid*> solid_new(n_solids);
   for (size_t i = 0; i < n_solids; ++i)

@@ -24,8 +24,8 @@ public:
 
   virtual void ComputeElasticParams(double & k, double & mu, double & rho) const;
 
-  virtual Solid * Evolve(const std::vector<int>       & /*delta_time*/,
-                         const std::vector< Solid * > & /*fluid*/) const;
+  virtual Solid * Evolve(const std::vector<int>             & /*delta_time*/,
+                         const std::vector< const Solid * > & /*fluid*/) const;
 
 private:
   DistributionsMineralEvolution * distr_evolution_; // Pointer to external object.

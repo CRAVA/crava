@@ -73,8 +73,8 @@ FluidMixed::GetElasticParams(double& k, double& rho) const
 }
 
 Fluid *
-FluidMixed::Evolve(const std::vector<int>       & delta_time,
-                   const std::vector< Fluid * > & fluid) const
+FluidMixed::Evolve(const std::vector<int>             & delta_time,
+                   const std::vector< const Fluid * > & fluid) const
 {
   size_t n_fluids = fluid_.size();
   std::vector<Fluid*> fluid_new(n_fluids);

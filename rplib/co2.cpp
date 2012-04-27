@@ -36,8 +36,8 @@ CO2::GetElasticParams(double& k, double& rho) const {
 }
 
 Fluid *
-CO2::Evolve(const std::vector<int>       & /*delta_time*/,
-            const std::vector< Fluid * > & /*fluid*/) const {
+CO2::Evolve(const std::vector<int>             & /*delta_time*/,
+            const std::vector< const Fluid * > & /*fluid*/) const {
   return new CO2(*this);
 }
 

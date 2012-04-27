@@ -855,14 +855,44 @@ DEMTools::DebugTestDeletionAndCopying() {
   std::vector<double>  exp_vec = distr_rock_incl->GetExpectation(dummy); //TMP TMP TMP TMP TMP TMP TMP
   Rock * rock_incl = distr_rock_incl->GenerateSample(dummy);
 
-  ////Begin Evolution Rock --- Testing
+  //// Evolve Rock --- Testing
   std::vector<Rock *> rock_tmp;
   std::vector<int> delta_time2(1,6);
   Rock * rock_incl_new1 = rock_incl->Evolve(delta_time2, rock_tmp);
   rock_tmp.push_back(rock_incl_new1);
   delta_time2.push_back(32);
   Rock * rock_incl_new2 = rock_incl->Evolve(delta_time2, rock_tmp);
-  ////End Evolution Rock --- Testing
+
+  //// Copying and assignment
+  Rock * rock_incl_new3 = rock_incl->Evolve(delta_time2, rock_tmp);
+  Rock * rock_incl_base = rock_incl_new3->Clone();
+
+  const Solid * s3 = (dynamic_cast<RockInclusion*>(rock_incl_new3))->GetSolid();
+  const Fluid * f3 = (dynamic_cast<RockInclusion*>(rock_incl_new3))->GetFluid();
+  assert(s3 != NULL && f3 != NULL);
+  delete rock_incl_new3;
+  // Now s3 and f3 shoud be pointing to nothing.
+
+  // test that rock_incl_base is intact after rock_incl_new3 is deleted.
+  double vp, vs, rho;
+  rock_incl_base->ComputeSeismicParams(vp, vs, rho);
+  const Solid * s = (dynamic_cast<RockInclusion*>(rock_incl_base))->GetSolid();
+  const Fluid * f = (dynamic_cast<RockInclusion*>(rock_incl_base))->GetFluid();
+  assert(s != NULL && f != NULL); // Now s and f shoud be meaningful.
+
+  // A note on object deletion: There is no compiler errors or warnings
+  // if we try to invoke
+  // delete s;
+  // delete f;
+  // I.e. the const in the return values of functions GetSolid() and
+  // getFluid() does not prevent this. But when we later come to
+  // delete rock_incl_base;
+  // there is a run-time error since we try to free memory that has
+  // already been freed.
+  // This should not be allowed:
+  //s->SetTull(5); // Not allowed by compiler. Good!
+
+  delete rock_incl_base;
 
   {
     Solid * quartz = distr_quartz->GenerateSample();
@@ -883,6 +913,7 @@ DEMTools::DebugTestDeletionAndCopying() {
   delete rock_incl_new2;
   delete rock_incl_new1;
   delete rock_incl;
+
   delete distr_rock_incl;
   size_t n_incl = distr_incl_spectrum.size();
   for (size_t i = 0; i < n_incl; ++i) {

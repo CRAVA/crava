@@ -11,6 +11,11 @@ public:
   Rock();
   virtual ~Rock();
 
+  // Assignment operator, not yet implemented.
+  /*Rock& operator=(const Rock& rhs);*/
+
+  virtual Rock * Clone() const = 0;
+
   virtual void ComputeSeismicParams(double & vp, double & vs, double & rho) const = 0;
 
   // Rock is an abstract class, hence pointer must be used in Evolve.

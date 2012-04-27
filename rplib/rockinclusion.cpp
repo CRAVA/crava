@@ -54,6 +54,27 @@ RockInclusion::~RockInclusion()
   delete fluid_;
 }
 
+Rock *
+RockInclusion::Clone() const {
+  // Provide base class variables.
+  RockInclusion * r = new RockInclusion(*this);
+
+  // Provide variables specific to RockInclusion.
+  r->solid_                   = this->solid_->Clone();          // Deep copy.
+  r->fluid_                   = this->fluid_->Clone();          // Deep copy.
+  r->inclusion_spectrum_      = this->inclusion_spectrum_;
+  r->inclusion_concentration_ = this->inclusion_concentration_;
+  r->porosity_                = this->porosity_;
+  r->distr_evolution_         = this->distr_evolution_;         // Not deep copy.
+  r->vp_                      = this->vp_;
+  r->vs_                      = this->vs_;
+  r->rho_                     = this->rho_;
+  r->k_                       = this->k_;
+  r->mu_                      = this->mu_;
+
+  return r;
+}
+
 void
 RockInclusion::ComputeSeismicParams(double & vp, double & vs, double & rho) const
 {
@@ -76,8 +97,8 @@ RockInclusion::Evolve(const std::vector<int>         & delta_time,
 
   size_t n_rocks = rock.size();
   std::vector< RockInclusion * > rock_incl(n_rocks);
-  std::vector< Solid * > solid(n_rocks);
-  std::vector< Fluid * > fluid(n_rocks);
+  std::vector< const Solid * > solid(n_rocks);
+  std::vector< const Fluid * > fluid(n_rocks);
   for (size_t i = 0; i < n_rocks; ++i) {
     rock_incl[i] = dynamic_cast<RockInclusion*>(rock[i]);
     assert(rock_incl[i] != NULL);

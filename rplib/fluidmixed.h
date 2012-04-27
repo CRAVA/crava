@@ -29,8 +29,8 @@ public:
 
   virtual void GetElasticParams(double& k, double& rho) const;
 
-  virtual Fluid * Evolve(const std::vector<int>       & delta_time,
-                         const std::vector< Fluid * > & fluid) const;
+  virtual Fluid * Evolve(const std::vector<int>             & delta_time,
+                         const std::vector< const Fluid * > & fluid) const;
 
 private:
   //Copy constructor for getting base class variables , used by Clone:
