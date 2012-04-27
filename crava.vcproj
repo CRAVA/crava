@@ -865,6 +865,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\src\state4d.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\src\tasklist.cpp"
 					>
 				</File>
@@ -6719,6 +6723,10 @@
 				</File>
 				<File
 					RelativePath=".\src\spatialwellfilter.h"
+					>
+				</File>
+				<File
+					RelativePath=".\src\state4d.h"
 					>
 				</File>
 				<File

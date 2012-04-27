@@ -30,6 +30,7 @@
 #include "src/waveletfilter.h"
 #include "src/tasklist.h"
 #include "src/timeline.h"
+#include "src/state4d.h"
 
 #include "lib/utils.h"
 #include "lib/random.h"
@@ -2610,18 +2611,20 @@ ModelGeneral::computeTime(int year, int month, int day) const
 
 void
 ModelGeneral::generateRockPhysics3DBackground(const std::vector<DistributionsRock *> & rock,
-                                              const std::vector<double>             & probability,
-                                              double                                  lowCut,
-                                              const FFTGrid                         & trend1,
-                                              const FFTGrid                         & trend2,
-                                              Corr                                  & correlations, //The grids here get/set correctly.
-                                              FFTGrid                               & vp,
-                                              FFTGrid                               & vs,
-                                              FFTGrid                               & rho)
+                                              const std::vector<double>              & probability,
+                                              const FFTGrid                          & trend1,
+                                              const FFTGrid                          & trend2,
+                                              FFTGrid                                & vp,
+                                              FFTGrid                                & vs,
+                                              FFTGrid                                & rho,
+                                              double                                 & varVp,
+                                              double                                 & varVs,
+                                              double                                 & varRho,
+                                              double                                 & crossVpVs,
+                                              double                                 & crossVpRho,
+                                              double                                 & crossVsRho)
 {
-  // Set up of expectations grids and covariance grids given rock physics.
-
-  // OBS: input parameter lowCut unused!
+  // Set up of expectations grids and computation of covariance sums given rock physics.
 
   // Variables for looping through FFTGrids
   const int nzp = vp.getNzp();
@@ -2641,13 +2644,8 @@ ModelGeneral::generateRockPhysics3DBackground(const std::vector<DistributionsRoc
   NRLib::Grid2D<float> baseVs (nx, ny, 0.0);
   NRLib::Grid2D<float> baseRho(nx, ny, 0.0);
 
-  // Covariances grids
-  FFTGrid postCovAlpha = correlations.getPostCovAlpha();
-  FFTGrid postCovBeta = correlations.getPostCovBeta();
-  FFTGrid postCovRho = correlations.getPostCovAlpha();
-  FFTGrid postCrCovAlphaBeta = correlations.getPostCrCovAlphaBeta();
-  FFTGrid postCrCovAlphaRho = correlations.getPostCrCovAlphaRho();
-  FFTGrid postCrCovBetaRho = correlations.getPostCrCovBetaRho();
+  // Local storage for summed combined variances
+  NRLib::Grid2D<double> sumVariance(3,3);
 
   // Loop through all cells in the FFTGrids
   for(int k = 0; k < nzp; k++)
@@ -2714,8 +2712,6 @@ ModelGeneral::generateRockPhysics3DBackground(const std::vector<DistributionsRoc
           //        = Sum_{over all facies} (probability of facies * variance given facies) + sum_{over all facies} probability of facies * (expected value given facies - EX)^2,
           // where EX is the sum of probability of a facies multiplied with expectation of \mu given facies
 
-          NRLib::Grid2D<double> sumVariance(3,3);
-
           // For all facies: Summing up expected value of variances and variance of expected values
           for(size_t f = 0; f < number_of_facies; f++){
             NRLib::Grid2D<double> sigma;
@@ -2724,23 +2720,123 @@ ModelGeneral::generateRockPhysics3DBackground(const std::vector<DistributionsRoc
             m = rock[f]->GetExpectation(trend_params);
 
             // For all elements in the 3x3 matrix of the combined variance
-            for(size_t ni=0; ni<sigma.GetNI(); ni++){
-              for(size_t nj=0; nj<sigma.GetNJ(); nj++){
-                sumVariance(ni,nj) += probability[f]*sigma(ni,nj);
-
-                sumVariance(ni,nj) += probability[f]*(m[ni] - expectations[ni])*(m[nj] - expectations[nj]);
+            for(size_t a=0; a<sigma.GetNI(); a++){
+              for(size_t b=0; b<sigma.GetNJ(); b++){
+                sumVariance(a,b) += probability[f]*sigma(a,b);
+                sumVariance(a,b) += probability[f]*(m[a] - expectations[a])*(m[b] - expectations[b]);
               }
             }
           }
-          // Multiplication of covariance grids with the combined variance
-          postCovAlpha.setNextReal(static_cast<float>(postCovAlpha.getNextReal()*sumVariance(0,0)));
-          postCovBeta.setNextReal(static_cast<float>(postCovBeta.getNextReal()*sumVariance(1,1)));
-          postCovRho.setNextReal(static_cast<float>(postCovRho.getNextReal()*sumVariance(2,2)));
-          postCrCovAlphaBeta.setNextReal(static_cast<float>(postCrCovAlphaBeta.getNextReal()*sumVariance(0,1)));
-          postCrCovAlphaRho.setNextReal(static_cast<float>(postCrCovAlphaRho.getNextReal()*sumVariance(0,2)));
-          postCrCovBetaRho.setNextReal(static_cast<float>(postCrCovBetaRho.getNextReal()*sumVariance(1,2)));
-
         }
       }
+
+      // Setting output variables
+      varVp  = sumVariance(0,0);
+      varVs  = sumVariance(1,1);
+      varRho = sumVariance(2,2);
+      crossVpVs  = sumVariance(0,1);
+      crossVpRho = sumVariance(0,2);
+      crossVsRho = sumVariance(1,2);
+
+}
+
+void
+ModelGeneral::generateRockPhysics4DBackground(const std::vector<DistributionsRock *> & rock,
+                                              const std::vector<double>              & probability,
+                                              int                                      lowCut,
+                                              const FFTGrid                          & trend1,
+                                              const FFTGrid                          & trend2,
+                                              Corr                                   & correlations, //The grids here get/set correctly.
+                                              const Simbox                           & timeSimbox,
+                                              const ModelSettings                    & modelSettings,
+                                              State4D                                & state4d)
+{
+  // Create all necessary grids for 4D inversion and return all grids in a State4D object.
+  // We assume an existing object of the class Corr and an empty object of state4d.
+
+  // Static mu
+  FFTGrid * vp_stat;
+  FFTGrid * vs_stat;
+  FFTGrid * rho_stat;
+
+  // Static sigma
+  FFTGrid * vp_vp_stat;
+  FFTGrid * vp_vs_stat;
+  FFTGrid * vp_rho_stat;
+  FFTGrid * vs_vs_stat;
+  FFTGrid * vs_rho_stat;
+  FFTGrid * rho_rho_stat;
+
+  // The dynamic grids are NULL
+
+  // Variance coefficients which will be set in generateRockPhysics3DBackground
+  double varVp;
+  double varVs;
+  double varRho;
+  double crVpVs;
+  double crVpRho;
+  double crVsRho;
+
+  // Parameters for generating new FFTGrids
+  const int nx    = timeSimbox.getnx();
+  const int ny    = timeSimbox.getny();
+  const int nz    = timeSimbox.getnz();
+  const int nxPad = modelSettings.getNXpad();
+  const int nyPad = modelSettings.getNYpad();
+  const int nzPad = modelSettings.getNZpad();
+
+  // Creating grids for mu static
+  vp_stat  = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, modelSettings.getFileGrid());
+  vs_stat  = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, modelSettings.getFileGrid());
+  rho_stat = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, modelSettings.getFileGrid());
+
+  vp_stat ->createRealGrid();
+  vs_stat ->createRealGrid();
+  rho_stat->createRealGrid();
+
+  // Creating grids for sigma static
+  vp_vp_stat   = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, modelSettings.getFileGrid());
+  vp_vs_stat   = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, modelSettings.getFileGrid());
+  vp_rho_stat  = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, modelSettings.getFileGrid());
+  vs_vs_stat   = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, modelSettings.getFileGrid());
+  vs_rho_stat  = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, modelSettings.getFileGrid());
+  rho_rho_stat = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, modelSettings.getFileGrid());
+
+  vp_vp_stat  ->createRealGrid();
+  vp_vs_stat  ->createRealGrid();
+  vp_rho_stat ->createRealGrid();
+  vs_vs_stat  ->createRealGrid();
+  vs_rho_stat ->createRealGrid();
+  rho_rho_stat->createRealGrid();
+
+  // For the static variables, generate expectation grids and variance coefficients from the 3D settings.
+  ModelGeneral::generateRockPhysics3DBackground(rock, probability, trend1, trend2, *vp_stat, *vs_stat, *rho_stat, varVp, varVs, varRho, crVpVs, crVpRho, crVsRho);
+
+  // Correlations
+  float corrGradI, corrGradJ;
+  ModelGeneral::getCorrGradIJ(corrGradI, corrGradJ);
+  vp_vp_stat  ->fillInParamCorr(&correlations, lowCut, corrGradI, corrGradJ);
+  vp_vs_stat  ->fillInParamCorr(&correlations, lowCut, corrGradI, corrGradJ);
+  vp_rho_stat ->fillInParamCorr(&correlations, lowCut, corrGradI, corrGradJ);
+  vs_vs_stat  ->fillInParamCorr(&correlations, lowCut, corrGradI, corrGradJ);
+  vs_rho_stat ->fillInParamCorr(&correlations, lowCut, corrGradI, corrGradJ);
+  rho_rho_stat->fillInParamCorr(&correlations, lowCut, corrGradI, corrGradJ);
+
+  // Multiply covariance grids with scalar variance coefficients
+  vp_vp_stat  ->multiplyByScalar(varVp);
+  vp_vs_stat  ->multiplyByScalar(crVpVs);
+  vp_rho_stat ->multiplyByScalar(crVpRho);
+  vs_vs_stat  ->multiplyByScalar(varVs);
+  vs_rho_stat ->multiplyByScalar(crVsRho);
+  rho_rho_stat->multiplyByScalar(varRho);
+
+  // Set the static and dynamic grids in the state4d object
+  state4d.SetStaticMu(vp_stat, vs_stat, rho_stat);
+  state4d.SetStaticSigma(vp_vp_stat, vp_vs_stat, vp_rho_stat, vs_vs_stat, vs_rho_stat, rho_rho_stat);
+
+  // Not necessary to set dynamic grids, as all grids are initially initialized as NULL in State4D.
+  //state4d.SetDynamicMu(NULL, NULL, NULL);
+  //state4d.SetDynamicSigma(NULL, NULL, NULL, NULL, NULL, NULL);
+  //state4d.SetStaticDynamicSigma(NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
 }

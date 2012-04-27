@@ -23,6 +23,7 @@ class RandomGen;
 class GridMapping;
 class InputFiles;
 class TimeLine;
+class State4D;
 
 class ModelGeneral
 {
@@ -104,13 +105,27 @@ public:
 
   void                generateRockPhysics3DBackground(const std::vector<DistributionsRock *> & rock,
                                                       const std::vector<double>             & probability,
-                                                      double                                  lowCut,
+                                                      const FFTGrid                         & trend1,
+                                                      const FFTGrid                         & trend2,
+                                                      FFTGrid                               & vp,
+                                                      FFTGrid                               & vs,
+                                                      FFTGrid                               & rho,
+                                                      double                                & varVp,
+                                                      double                                & varVs,
+                                                      double                                & varRho,
+                                                      double                                & crossVpVs,
+                                                      double                                & crossVpRho,
+                                                      double                                & crossVsRho);
+
+  void                generateRockPhysics4DBackground(const std::vector<DistributionsRock *> & rock,
+                                                      const std::vector<double>             & probability,
+                                                      int                                     lowCut,
                                                       const FFTGrid                         & trend1,
                                                       const FFTGrid                         & trend2,
                                                       Corr                                  & correlations, //The grids here get/set correctly.
-                                                      FFTGrid                               & vp,
-                                                      FFTGrid                               & vs,
-                                                      FFTGrid                               & rho);
+                                                      const Simbox                          & timeSimbox,
+                                                      const ModelSettings                   & modelSettings,
+                                                      State4D                               & state4d);
 
 private:
   void                makeTimeSimboxes(Simbox          *& timeSimbox,
