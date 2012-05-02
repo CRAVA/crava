@@ -47,9 +47,9 @@ SolidMixed::Clone() const {
   SolidMixed * s = new SolidMixed(*this);
 
   // Provide variables specific to SolidMixed.
-  s->k_ = this->k_;
-  s->mu_ = this->mu_;
-  s->rho_ = this->rho_;
+  s->k_               = this->k_;
+  s->mu_              = this->mu_;
+  s->rho_             = this->rho_;
   s->volume_fraction_ = this->volume_fraction_;
   s->distr_evolution_ = this->distr_evolution_;
 
@@ -59,6 +59,29 @@ SolidMixed::Clone() const {
     s->solid_[i] = this->solid_[i]->Clone();
 
   return s;
+}
+
+SolidMixed& SolidMixed::operator=(const SolidMixed& rhs)
+{
+  if (this != &rhs) {
+    Solid::operator=(rhs);
+
+    k_               = rhs.k_;
+    mu_              = rhs.mu_;
+    rho_             = rhs.rho_;
+    volume_fraction_ = rhs.volume_fraction_;
+    distr_evolution_ = rhs.distr_evolution_;
+
+    size_t n_solids_old = solid_.size();
+    for (size_t i = 0; i < n_solids_old; ++i)
+      delete solid_[i];
+
+    size_t n_solids = rhs.solid_.size();
+    solid_.resize(n_solids);
+    for (size_t i = 0; i < n_solids; ++i)
+      solid_[i] = rhs.solid_[i]->Clone();
+  }
+  return *this;
 }
 
 void

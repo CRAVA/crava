@@ -54,6 +54,30 @@ RockInclusion::~RockInclusion()
   delete fluid_;
 }
 
+RockInclusion& RockInclusion::operator=(const RockInclusion& rhs)
+{
+  if (this != &rhs) {
+    Rock::operator=(rhs);
+
+    k_                       = rhs.k_;
+    mu_                      = rhs.mu_;
+    rho_                     = rhs.rho_;
+    vp_                      = rhs.vp_;
+    vs_                      = rhs.vs_;
+    inclusion_spectrum_      = rhs.inclusion_spectrum_;
+    inclusion_concentration_ = rhs.inclusion_concentration_;
+    porosity_                = rhs.porosity_;
+    distr_evolution_         = rhs.distr_evolution_;
+
+    delete solid_;
+    delete fluid_;
+    solid_ = rhs.solid_->Clone();
+    fluid_ = rhs.fluid_->Clone();
+
+  }
+  return *this;
+}
+
 Rock *
 RockInclusion::Clone() const {
   // Provide base class variables.

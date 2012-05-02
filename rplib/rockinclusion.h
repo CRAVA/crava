@@ -23,6 +23,9 @@ public:
 
   virtual ~RockInclusion();
 
+  // Assignment operator.
+  RockInclusion& operator=(const RockInclusion& rhs);
+
   virtual Rock * Clone() const;
 
   virtual void ComputeSeismicParams(double & vp, double & vs, double & rho) const;

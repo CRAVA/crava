@@ -9,11 +9,7 @@ class Fluid {
 public:
 
   Fluid() {}
-  //Fluid(const Fluid& /*rhs*/){}
   virtual ~Fluid() {}
-
-  // Assignment operator, not yet implemented.
-  /*Fluid& operator=(const Fluid& rhs);*/
 
   virtual Fluid * Clone() const = 0;
 

@@ -8,11 +8,7 @@ class Solid {
 public:
 
   Solid(){}
-  //Solid(const Solid& /*rhs*/){}
   virtual ~Solid() {}
-
-  // Assignment operator, not yet implemented.
-  /*Solid& operator=(const Solid& rhs);*/
 
   virtual Solid * Clone() const = 0;
 

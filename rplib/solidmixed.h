@@ -20,8 +20,8 @@ public:
 
   virtual ~SolidMixed();
 
-  // Assignment operator, not yet implemented.
-  /*SolidMixed& operator=(const SolidMixed& rhs);*/
+  // Assignment operator.
+  SolidMixed& operator=(const SolidMixed& rhs);
 
   virtual Solid * Clone() const;
 

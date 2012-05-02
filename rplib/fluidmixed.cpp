@@ -59,6 +59,28 @@ FluidMixed::Clone() const
   return s;
 }
 
+FluidMixed& FluidMixed::operator=(const FluidMixed& rhs)
+{
+  if (this != &rhs) {
+    Fluid::operator=(rhs);
+
+    k_               = rhs.k_;
+    rho_             = rhs.rho_;
+    volume_fraction_ = rhs.volume_fraction_;
+    distr_evolution_ = rhs.distr_evolution_;
+
+    size_t n_fluids_old = fluid_.size();
+    for (size_t i = 0; i < n_fluids_old; ++i)
+      delete fluid_[i];
+
+    size_t n_fluids = rhs.fluid_.size();
+    fluid_.resize(n_fluids);
+    for (size_t i = 0; i < n_fluids; ++i)
+      fluid_[i] = rhs.fluid_[i]->Clone();
+  }
+  return *this;
+}
+
 void
 FluidMixed::ComputeElasticParams(double /*temp*/, double /*pore_pressure*/)
 {

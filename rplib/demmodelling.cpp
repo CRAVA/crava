@@ -723,7 +723,6 @@ DEMTools::DebugTestCalcEffectiveModulus3(double& effective_bulk_modulus,
   //// Generating a sample of the rock.
   //// This function call generates the whole tree of solid and fluid objects from which this rock is composed.
   std::vector<double> dummy(1, 0.0);
-  std::vector<double>  exp_vec = distr_rock_incl->GetExpectation(dummy); //TMP TMP TMP TMP TMP TMP TMP
   Rock * rock_incl = distr_rock_incl->GenerateSample(dummy);
 
   //// Getting the elastic parameters.
@@ -852,7 +851,7 @@ DEMTools::DebugTestDeletionAndCopying() {
   //// Generating a sample of the rock.
   //// This function call generates the whole tree of solid and fluid objects from which this rock is composed.
   std::vector<double> dummy(1, 0.0);
-  std::vector<double>  exp_vec = distr_rock_incl->GetExpectation(dummy); //TMP TMP TMP TMP TMP TMP TMP
+  //std::vector<double>  exp_vec = distr_rock_incl->GetExpectation(dummy); //TMP implementation.
   Rock * rock_incl = distr_rock_incl->GenerateSample(dummy);
 
   //// Evolve Rock --- Testing
@@ -863,9 +862,9 @@ DEMTools::DebugTestDeletionAndCopying() {
   delta_time2.push_back(32);
   Rock * rock_incl_new2 = rock_incl->Evolve(delta_time2, rock_tmp);
 
-  //// Copying and assignment
+  //// COPYING
   Rock * rock_incl_new3 = rock_incl->Evolve(delta_time2, rock_tmp);
-  Rock * rock_incl_base = rock_incl_new3->Clone();
+  Rock * rock_incl_base = rock_incl_new3->Clone(); // Copy!
 
   const Solid * s3 = (dynamic_cast<RockInclusion*>(rock_incl_new3))->GetSolid();
   const Fluid * f3 = (dynamic_cast<RockInclusion*>(rock_incl_new3))->GetFluid();
@@ -879,7 +878,6 @@ DEMTools::DebugTestDeletionAndCopying() {
   const Solid * s = (dynamic_cast<RockInclusion*>(rock_incl_base))->GetSolid();
   const Fluid * f = (dynamic_cast<RockInclusion*>(rock_incl_base))->GetFluid();
   assert(s != NULL && f != NULL); // Now s and f shoud be meaningful.
-
   // A note on object deletion: There is no compiler errors or warnings
   // if we try to invoke
   // delete s;
@@ -889,31 +887,80 @@ DEMTools::DebugTestDeletionAndCopying() {
   // delete rock_incl_base;
   // there is a run-time error since we try to free memory that has
   // already been freed.
-  // This should not be allowed:
-  //s->SetTull(5); // Not allowed by compiler. Good!
-
   delete rock_incl_base;
 
   {
-    Solid * quartz = distr_quartz->GenerateSample();
-    delete quartz;
-    Solid * clay = distr_clay->GenerateSample();
-    delete clay;
-    Fluid * brine = distr_brine->GenerateSample();
-    delete brine;
-    Fluid * co2   = distr_co2->GenerateSample();
-    delete co2;
-    Solid * solid_mixed = distr_solid_mixed->GenerateSample();
-    delete solid_mixed;
-    Fluid * fluid_mixed = distr_fluid_mixed->GenerateSample();
-    delete fluid_mixed;
-  }
+    // ASSIGNMENT ROCK
+    std::vector<double> incl_spec(1, 1.0);
+    std::vector<double> incl_conc(1, 1.0);
+    Solid * q = distr_quartz->GenerateSample();
+    Fluid * b = distr_brine->GenerateSample();
+    RockInclusion rock_incl2(q, b, incl_spec, incl_conc, 0.3);
+    rock_incl2 = *(dynamic_cast<RockInclusion*>(rock_incl)); // Assignment
+    /*const Solid * s4 = (dynamic_cast<RockInclusion*>(rock_incl))->GetSolid();
+    const Fluid * f4 = (dynamic_cast<RockInclusion*>(rock_incl))->GetFluid();
+    const Solid * s_incl = rock_incl2.GetSolid();
+    const Fluid * f_incl = rock_incl2.GetFluid();*/
+    delete q;
+    delete b;
+  } //Here rock_incl2, s4, f4, s_incl, and f_incl go out of scope. Destruction should work!
+  delete rock_incl; // Should destroy s4 and f4, but not s_incl and f_incl.
 
-  //// Deleting dynamically allocated memory.
+  {
+    Solid * quartz = distr_quartz->GenerateSample();
+    Solid * clay = distr_clay->GenerateSample();
+    Fluid * brine = distr_brine->GenerateSample();
+    Fluid * co2   = distr_co2->GenerateSample();
+
+    Solid * solid_mixed = distr_solid_mixed->GenerateSample();
+    std::vector<Solid *> s_ass;
+    s_ass.push_back(clay);
+    s_ass.push_back(quartz);
+    std::vector<double>  v_ass;
+    v_ass.push_back(0.3);
+    v_ass.push_back(0.7);
+    // ASSIGNMENT SOLIDMIXED
+    SolidMixed sol_mixed_ass(s_ass, v_ass);
+    sol_mixed_ass = *(dynamic_cast<SolidMixed*>(solid_mixed)); // Assignment
+    double k_mix, mu_mix, rho_mix;
+    solid_mixed->ComputeElasticParams(k_mix, mu_mix, rho_mix);
+
+    delete solid_mixed;
+    double k_ass, mu_ass, rho_ass;
+    sol_mixed_ass.ComputeElasticParams(k_ass, mu_ass, rho_ass); // Should work.
+    //solid_mixed->ComputeElasticParams(k_mix, mu_mix, rho_mix); //Should not work.
+
+    Fluid * fluid_mixed = distr_fluid_mixed->GenerateSample();
+    std::vector<Fluid *> f_ass;
+    f_ass.push_back(co2);
+    f_ass.push_back(brine);
+    std::vector<double>  vf_ass;
+    vf_ass.push_back(0.47);
+    vf_ass.push_back(0.53);
+    // ASSIGNMENT FLUIDMIXED
+    FluidMixed flu_mixed_ass(f_ass, vf_ass);
+    flu_mixed_ass = *(dynamic_cast<FluidMixed*>(fluid_mixed)); // Assignment
+    double fk_mix, frho_mix;
+    fluid_mixed->GetElasticParams(fk_mix, frho_mix);
+
+    delete fluid_mixed;
+    double fk_ass, frho_ass;
+    flu_mixed_ass.GetElasticParams(fk_ass, frho_ass); // Should work.
+    //fluid_mixed->GetElasticParams(fk_mix, frho_mix); //Should not work.
+
+
+    delete clay;
+    delete quartz;
+    delete brine;
+    delete co2;
+  }  //Here sol_mixed_ass and flu_mixed_ass go out of scope. Destruction should work!
+
+
   delete rock_incl_new2;
   delete rock_incl_new1;
-  delete rock_incl;
+  //delete rock_incl;
 
+  //// Deleting dynamically allocated memory for distribution functions.
   delete distr_rock_incl;
   size_t n_incl = distr_incl_spectrum.size();
   for (size_t i = 0; i < n_incl; ++i) {

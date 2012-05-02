@@ -20,8 +20,8 @@ public:
 
   virtual ~FluidMixed();
 
-  // Assignment operator, not yet implemented.
-  /*FluidMixed& operator=(const FluidMixed& rhs);*/
+  // Assignment operator.
+  FluidMixed& operator=(const FluidMixed& rhs);
 
   virtual Fluid * Clone() const;
 
