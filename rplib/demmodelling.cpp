@@ -851,7 +851,8 @@ DEMTools::DebugTestDeletionAndCopying() {
   //// Generating a sample of the rock.
   //// This function call generates the whole tree of solid and fluid objects from which this rock is composed.
   std::vector<double> dummy(1, 0.0);
-  //std::vector<double>  exp_vec = distr_rock_incl->GetExpectation(dummy); //TMP implementation.
+  std::vector<double>  mean_m = distr_rock_incl->GetExpectation(dummy);
+  NRLib::Grid2D<double> cov_m = distr_rock_incl->GetCovariance(dummy);
   Rock * rock_incl = distr_rock_incl->GenerateSample(dummy);
 
   //// Evolve Rock --- Testing
