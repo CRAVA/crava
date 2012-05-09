@@ -3,6 +3,8 @@
 
 #include <stdio.h>
 
+#include "nrlib/random/beta.hpp"
+
 class Vario;
 class Simbox;
 class FFTGrid;
@@ -123,12 +125,12 @@ private:
                              const std::string  & name) const;
 
   void         getWellTrendsZone(std::vector<BlockedLogsForZone *> & bl,
-                                 std::vector<float *>              & wellTrend,
-                                 std::vector<float *>              & highCutWellTrend,
+                                 const std::vector<float *>        & wellTrend,
+                                 const std::vector<float *>        & highCutWellTrend,
                                  WellData                         ** wells,
-                                 StormContGrid                     * eroded_zone,
-                                 const std::string                  & name,
-                                 const int                          & i) const;
+                                 StormContGrid                     & eroded_zone,
+                                 const std::string                 & name,
+                                 const int                         & i) const;
 
   void         writeTrendsToFile(float             * trend,
                                  Simbox            * simbox,
@@ -137,29 +139,41 @@ private:
                                  bool                hasVelocityTrend,
                                  const std::string & name,
                                  bool                isFile);
+
+  void         writeMultizoneTrendsToFile(const std::vector<float *>   alpha_zones,
+                                          const std::vector<float *>   beta_zones,
+                                          const std::vector<float *>   rho_zones,
+                                          const std::vector<int>     & nz,
+                                          Simbox                     * simbox,
+                                          const std::vector<int>     & erosion_priority,
+                                          const std::vector<Surface> & surface,
+                                          const std::vector<double>  & surface_uncertainty,
+                                          const bool                   isFile) const;
+
   const CovGrid2D & makeCovGrid2D(Simbox * simbox,
                                   Vario  * vario,
                                   int      debugFlag);
-  void         setupKrigingData2D(std::vector<KrigingData2D> & krigingDataAlpha,
-                                  std::vector<KrigingData2D> & krigingDataBeta,
-                                  std::vector<KrigingData2D> & krigingDataRho,
-                                  float                      * trendAlpha,
-                                  float                      * trendBeta,
-                                  float                      * trendRho,
-                                  int                          outputFlag,
-                                  const int                  & nz,
-                                  const float                & dz,
-                                  const int                  & totBlocks,
-                                  std::vector<int>           & nBlocks,
-                                  std::vector<float *>       & blAlpha,
-                                  std::vector<float *>       & blBeta,
-                                  std::vector<float *>       & blRho,
-                                  std::vector<float *>       & vtAlpha,
-                                  std::vector<float *>       & vtBeta,
-                                  std::vector<float *>       & vtRho,
-                                  std::vector<const int *>    ipos,
-                                  std::vector<const int *>    jpos,
-                                  std::vector<const int *>    kpos) const;
+
+  void         setupKrigingData2D(std::vector<KrigingData2D>     & krigingDataAlpha,
+                                  std::vector<KrigingData2D>     & krigingDataBeta,
+                                  std::vector<KrigingData2D>     & krigingDataRho,
+                                  float                          * trendAlpha,
+                                  float                          * trendBeta,
+                                  float                          * trendRho,
+                                  const int                        outputFlag,
+                                  const int                      & nz,
+                                  const float                    & dz,
+                                  const int                      & totBlocks,
+                                  const std::vector<int>         & nBlocks,
+                                  const std::vector<float *>     & blAlpha,
+                                  const std::vector<float *>     & blBeta,
+                                  const std::vector<float *>     & blRho,
+                                  const std::vector<float *>     & vtAlpha,
+                                  const std::vector<float *>     & vtBeta,
+                                  const std::vector<float *>     & vtRho,
+                                  const std::vector<const int *>   ipos,
+                                  const std::vector<const int *>   jpos,
+                                  const std::vector<const int *>   kpos) const;
 
   void         makeKrigedBackground(const std::vector<KrigingData2D> & krigingData,
                                     FFTGrid                         *& bgGrid,
@@ -169,10 +183,31 @@ private:
                                     const std::string                & type,
                                     bool                               isFile) const;
 
-  void         makeKrigedBackgroundZone(const std::vector<KrigingData2D> & krigingData,
-                                        float                            * trend,
-                                        StormContGrid                    * correlation_zone,
-                                        const CovGrid2D                  & covGrid2D) const;
+  void         makeTrendZone(const float   * trend,
+                             StormContGrid & trend_zone) const;
+
+  void         makeTrendZoneGrid(StormContGrid & grid,
+                                 const Surface & top_surface,
+                                 const Surface & base_surface,
+                                 const int     & nz,
+                                 const Simbox  * simbox) const;
+
+  void         makeKrigedZone(const std::vector<KrigingData2D> & krigingData,
+                              const float                      * trend,
+                              StormContGrid                    & kriged_zone,
+                              const CovGrid2D                  & covGrid2D) const;
+
+  void         MakeMultizoneBackground(FFTGrid                         *& bgAlpha,
+                                       FFTGrid                         *& bgBeta,
+                                       FFTGrid                         *& bgRho,
+                                       const std::vector<StormContGrid> & alpha_zones,
+                                       const std::vector<StormContGrid> & beta_zones,
+                                       const std::vector<StormContGrid> & rho_zones,
+                                       const Simbox                     * simbox,
+                                       const std::vector<int>           & erosion_priority,
+                                       const std::vector<Surface>       & surface,
+                                       const std::vector<double>        & surface_uncertainty,
+                                       const bool                         isFile) const;
 
   void         calculateVelocityDeviations(FFTGrid   * velocity,
                                            WellData ** wells,
@@ -195,16 +230,6 @@ private:
                                       int                  nz,
                                       float                dz,
                                       const std::string  & name);
-
-  void         calculateVerticalTrendZone(WellData         ** wells,
-                                          float             * trend,
-                                          float               logMin,
-                                          float               logMax,
-                                          float               maxHz,
-                                          int                 nWells,
-                                          int                 nz,
-                                          float               dz,
-                                          const std::string & name) const;
 
   void         writeVerticalTrend(float      * trend,
                                   float        dz,
@@ -240,21 +265,29 @@ private:
                            const bool  expTrans,
                            const bool  fileGrid) const;
 
+   void        ComputeZoneProbability(const double                   & z,
+                                      const std::vector<NRLib::Beta> & horizon_distributions,
+                                      const std::vector<int>         & erosion_priority,
+                                      std::vector<double>            & zone_probability) const;
+
   void         ErodeSurface(Surface       *& surface,
-                            const Surface  * priority_surface,
-                            const Simbox   * simbox,
-                            const bool     & compare_upward) const;
+                            const Surface *  priority_surface,
+                            const Simbox  *  simbox,
+                            const bool    &  compare_upward) const;
 
-  void         BuildErodedZones(std::vector<StormContGrid *> & eroded_zones,
-                                const std::vector<int>       & erosion_priority,
-                                const std::vector<Surface>   & surf,
-                                const std::vector<int>       & nz_zone,
-                                const Simbox                 * simbox) const;
+  void         BuildErodedZones(std::vector<StormContGrid> & eroded_zones,
+                                const std::vector<int>     & erosion_priority,
+                                const std::vector<Surface> & surf,
+                                const std::vector<int>     & nz_zone,
+                                const Simbox               * simbox) const;
 
-  void         BuildCorrelationZones(std::vector<StormContGrid *> & correlation_zones,
-                                     const std::vector<Surface>   & surf,
-                                     const std::vector<int>       & correlation_structure,
-                                     const Simbox                 * simbox) const;
+  void         BuildSeismicPropertyZones(std::vector<StormContGrid> & vp_zones,
+                                         std::vector<StormContGrid> & vs_zones,
+                                         std::vector<StormContGrid> & rho_zones,
+                                         const std::vector<Surface> & surf,
+                                         const std::vector<int>     & correlation_structure,
+                                         const Simbox               * simbox,
+                                         const float                & dz) const;
 
   FFTGrid    * backModel_[3];       // Cubes for background model files.
   int          DataTarget_;         // Number of data requested in a kriging block

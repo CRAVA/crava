@@ -100,6 +100,7 @@ private:
   void checkEstimationConsistency(std::string & errTxt);
   void checkInversionConsistency(std::string & errTxt);
   void checkIOConsistency(std::string & errTxt);
+  void checkMultizoneBackgroundConsistency(std::string & errTxt);
 
   void setMissing(int & value)         { value = IMISSING ;}
   void setMissing(float & value)       { value = RMISSING ;}

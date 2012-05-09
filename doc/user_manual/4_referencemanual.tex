@@ -1191,7 +1191,7 @@ the vertical sampling interval we find the the number of parameters that is esti
  \slist
    \item \Description 1D variogram. Gives the noise correlation between survey angles.
    \item \Argument 1D variogram, see \autoref{sec:variogram}.
-   \item \Default
+   \item \Default General exponential with power=1, range=10 degrees
  \elist
 
  \subsection{\hbracket{segy-start-time}}\newkw{segy-start-time}
@@ -1892,7 +1892,7 @@ the vertical sampling interval we find the the number of parameters that is esti
  \slist
    \item \Description 2D variogram for the lateral correlation in the elastic parameters in the estimated background model, used for kriging of wells. Can not be used if the background parameters are given.
    \item \Argument 2D variogram, see \autoref{sec:variogram}.
-   \item \Default
+   \item \Default General exponential with power=1, range=2000, subrange=2000, angle=0
  \elist
 
 \subsubsection{\hbracket{high-cut-background-modelling}}\newkw{high-cut-background-modelling}
@@ -1919,20 +1919,20 @@ the vertical sampling interval we find the the number of parameters that is esti
 \paragraph{\hbracket{top-surface-erosion-priority}}\newkw{top-surface-erosion-priority}
  \slist
    \item \Description Priority of the top surface file. The top surface file and all base surface files in the zones need to given different priority
-   \item \Argument Int
+   \item \Argument Integer
    \item \Default
  \elist
 
 \paragraph{\hbracket{zone}}\newkw{zone}
  \slist
-   \item \Description Information about the different zones in the multizone background model
+   \item \Description Repeatable command, one for each zone. Contains information about the different zones in the multizone background model. The zones need to be given in descending order in the reservoir
    \item \Argument Elements controlling the zones of the multizone background model
    \item \Default
  \elist
 
 \subparagraph{\hbracket{base-surface-file}}\rnewkw{base-surface-file}{base-surface-file4}
  \slist
-   \item \Description Name of a base surface file. The base surface files need to be given in descending order such that surfaces that are higher in the reservoir comes in before surfaces that are further down.
+   \item \Description Name of a base surface file
    \item \Argument File name
    \item \Default
  \elist
@@ -1940,7 +1940,7 @@ the vertical sampling interval we find the the number of parameters that is esti
 \subparagraph{\hbracket{erosion-priority}}\newkw{erosion-priority}
  \slist
    \item \Description Priority of the base surface file. The top surface file and all base surface files in the zones need to given different priority
-   \item \Argument Int
+   \item \Argument Integer
    \item \Default
  \elist
 
@@ -1948,6 +1948,13 @@ the vertical sampling interval we find the the number of parameters that is esti
  \slist
    \item \Description Correlation structure of the zone
    \item \Argument 'top', 'base' or 'compaction'
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{surface-uncertainty}}\newkw{surface-uncertainty}
+ \slist
+   \item \Description Beta distributed uncertainty for the base surface. Needs to be zero for the surface in the last zone, that is, the zone furtest down in the reservoir.
+   \item \Argument Value
    \item \Default
  \elist
 
@@ -2021,7 +2028,7 @@ the vertical sampling interval we find the the number of parameters that is esti
  \slist
    \item \Description 2D variogram for the lateral correlation in the elastic parameters.
    \item \Argument 2D variogram, see \autoref{sec:variogram}.
-   \item \Default
+   \item \Default General exponential with power=1, range=1000, subrange=1000, angle=0
  \elist
 
 \subsection{\hbracket{temporal-correlation}}\newkw{temporal-correlation}

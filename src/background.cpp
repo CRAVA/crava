@@ -7,6 +7,8 @@
 #include "lib/utils.h"
 
 #include "nrlib/iotools/logkit.hpp"
+#include "nrlib/random/beta.hpp"
+#include "nrlib/random/distribution.hpp"
 
 #include "src/blockedlogsforzone.h"
 #include "src/definitions.h"
@@ -318,9 +320,9 @@ Background::generateBackgroundModel(FFTGrid      *& bgAlpha,
 }
 //-------------------------------------------------------------------------------
 void
-Background::generateMultizoneBackgroundModel(FFTGrid                       *& /*bgAlpha*/,
-                                             FFTGrid                       *& /*bgBeta*/,
-                                             FFTGrid                       *& /*bgRho*/,
+Background::generateMultizoneBackgroundModel(FFTGrid                       *& bgAlpha,
+                                             FFTGrid                       *& bgBeta,
+                                             FFTGrid                       *& bgRho,
                                              WellData                      ** wells,
                                              Simbox                         * simbox,
                                              ModelSettings                  * modelSettings,
@@ -329,60 +331,49 @@ Background::generateMultizoneBackgroundModel(FFTGrid                       *& /*
   std::vector<int> correlation_structure = modelSettings->getCorrelationStructure();
   std::vector<int> erosion_priority      = modelSettings->getErosionPriority();
 
+  int    nWells    = modelSettings->getNumberOfWells();
   int    nZones    = static_cast<int>(correlation_structure.size()) - 1;
-  int    nz_simbox = simbox->getnz();
-  double lz        = simbox->GetLZ();
-  float  dz        = static_cast<float>(lz/nz_simbox);
+  float  dz        = static_cast<float>(simbox->getdz()*simbox->getAvgRelThick());
 
-  std::vector<Surface> surf(nZones+1);
-  for(int i=0; i<nZones+1; i++) {
-    Surface tmpSurf(surface_files[i]);
-    surf[i] = tmpSurf;
-  }
 
-  std::vector<StormContGrid *> correlation_zones(nZones);
-  for(int i=0; i<nZones; i++)
-    correlation_zones[i] = NULL;
+  std::vector<Surface> surface(nZones+1);
+  for(int i=0; i<nZones+1; i++)
+    surface[i] = Surface(surface_files[i]);
 
-  BuildCorrelationZones(correlation_zones,
-                        surf,
-                        correlation_structure,
-                        simbox);
+  std::vector<StormContGrid> alpha_zones(nZones);
+  std::vector<StormContGrid> beta_zones(nZones);
+  std::vector<StormContGrid> rho_zones(nZones);
+
+  BuildSeismicPropertyZones(alpha_zones,
+                            beta_zones,
+                            rho_zones,
+                            surface,
+                            correlation_structure,
+                            simbox,
+                            dz);
+
+  std::vector<StormContGrid> eroded_zones(nZones);
 
   std::vector<int> nz_zone(nZones);
   for(int i=0; i<nZones; i++)
-    nz_zone[i] = static_cast<int>(correlation_zones[i]->GetNK());
+    nz_zone[i] = static_cast<int>(alpha_zones[i].GetNK());
 
-  std::vector<StormContGrid *> eroded_zones(nZones);
-  for(int i=0; i<nZones; i++)
-    eroded_zones[i] = NULL;
-
-  BuildErodedZones(eroded_zones,
-                   erosion_priority,
-                   surf,
-                   nz_zone,
-                   simbox);
-
-  std::vector<float *> trendAlphaZone(nZones); //Marit: Tror disse kan opprettes i sonene
+  std::vector<float *> trendAlphaZone(nZones);
   std::vector<float *> trendBetaZone(nZones);
   std::vector<float *> trendRhoZone(nZones);
-
-  std::vector<float *> avgDevAlphaZone(nZones);
-  std::vector<float *> avgDevBetaZone(nZones);
-  std::vector<float *> avgDevRhoZone(nZones);
-
-  int nWells = modelSettings->getNumberOfWells();
 
   for(int i=0; i<nZones; i++) {
     int nz = nz_zone[i];
     trendAlphaZone[i] = new float[nz];
     trendBetaZone[i]  = new float[nz];
     trendRhoZone[i]   = new float[nz];
-
-    avgDevAlphaZone[i] = new float[nWells];
-    avgDevBetaZone[i]  = new float[nWells];
-    avgDevRhoZone[i]   = new float[nWells];
   }
+
+  BuildErodedZones(eroded_zones,
+                   erosion_priority,
+                   surface,
+                   nz_zone,
+                   simbox);
 
   const CovGrid2D & covGrid2D = makeCovGrid2D(simbox, modelSettings->getBackgroundVario(), modelSettings->getDebugFlag());
 
@@ -391,12 +382,16 @@ Background::generateMultizoneBackgroundModel(FFTGrid                       *& /*
   std::string name_rho = "Rho";
 
   for(int i=0; i<nZones; i++) {
+    int nz = static_cast<int>(alpha_zones[i].GetNK());
 
-    int nz = nz_zone[i];
+    float * avgDevAlphaZone = new float[nWells];
+    float * avgDevBetaZone  = new float[nWells];
+    float * avgDevRhoZone   = new float[nWells];
 
     std::vector<float *> wellTrendAlpha(nWells);
     std::vector<float *> wellTrendBeta(nWells);
     std::vector<float *> wellTrendRho(nWells);
+
     std::vector<float *> highCutWellTrendAlpha(nWells);
     std::vector<float *> highCutWellTrendBeta(nWells);
     std::vector<float *> highCutWellTrendRho(nWells);
@@ -405,6 +400,7 @@ Background::generateMultizoneBackgroundModel(FFTGrid                       *& /*
       wellTrendAlpha[j]        = new float[nz];
       wellTrendBeta[j]         = new float[nz];
       wellTrendRho[j]          = new float[nz];
+
       highCutWellTrendAlpha[j] = new float[nz];
       highCutWellTrendBeta[j]  = new float[nz];
       highCutWellTrendRho[j]   = new float[nz];
@@ -417,8 +413,8 @@ Background::generateMultizoneBackgroundModel(FFTGrid                       *& /*
     getWellTrendsZone(blocked_logs, wellTrendRho,   highCutWellTrendRho,   wells, eroded_zones[i], name_rho, i);
 
     calculateBackgroundTrend(trendAlphaZone[i],
-                             avgDevAlphaZone[i],
-                             nz_zone[i],
+                             avgDevAlphaZone,
+                             nz,
                              dz,
                              modelSettings->getAlphaMin(),
                              modelSettings->getAlphaMax(),
@@ -427,8 +423,8 @@ Background::generateMultizoneBackgroundModel(FFTGrid                       *& /*
                              highCutWellTrendAlpha,
                              name_vp);
     calculateBackgroundTrend(trendBetaZone[i],
-                             avgDevBetaZone[i],
-                             nz_zone[i],
+                             avgDevBetaZone,
+                             nz,
                              dz,
                              modelSettings->getBetaMin(),
                              modelSettings->getBetaMax(),
@@ -437,8 +433,8 @@ Background::generateMultizoneBackgroundModel(FFTGrid                       *& /*
                              highCutWellTrendBeta,
                              name_vs);
     calculateBackgroundTrend(trendRhoZone[i],
-                             avgDevRhoZone[i],
-                             nz_zone[i],
+                             avgDevRhoZone,
+                             nz,
                              dz,
                              modelSettings->getRhoMin(),
                              modelSettings->getRhoMax(),
@@ -447,35 +443,24 @@ Background::generateMultizoneBackgroundModel(FFTGrid                       *& /*
                              highCutWellTrendRho,
                              name_rho);
 
-  //Marit: Sett sammen til felles simbox, skriv deretter til fil
-  /*bool hasVelocityTrend = velocity != NULL;
-  bool write1D          = ((modelSettings->getOtherOutputFlag()& IO::BACKGROUND_TREND_1D) > 0);
-  bool write3D          = ((modelSettings->getOutputGridsElastic() & IO::BACKGROUND_TREND) > 0);
-
-  writeTrendsToFile(trendAlpha,simbox,write1D,write3D,hasVelocityTrend,name_vp,modelSettings->getFileGrid());
-  writeTrendsToFile(trendBeta,simbox,write1D,write3D,hasVelocityTrend,name_vs,modelSettings->getFileGrid());
-  writeTrendsToFile(trendRho,simbox,write1D,write3D,hasVelocityTrend,name_rho,modelSettings->getFileGrid());*/
-
-    writeDeviationsFromVerticalTrend(avgDevAlphaZone[i],
-                                     avgDevBetaZone[i],
-                                     avgDevRhoZone[i],
+    writeDeviationsFromVerticalTrend(avgDevAlphaZone,
+                                     avgDevBetaZone,
+                                     avgDevRhoZone,
                                      trendAlphaZone[i],
                                      trendBetaZone[i],
                                      trendRhoZone[i],
                                      wells,
                                      nWells,
-                                     nz_zone[i]);
-
-    std::vector<KrigingData2D> krigingDataAlpha(nz_zone[i]);
-    std::vector<KrigingData2D> krigingDataBeta(nz_zone[i]);
-    std::vector<KrigingData2D> krigingDataRho(nz_zone[i]);
+                                     nz);
 
     std::vector<float *>     blAlpha(nWells);   // bl = blocked logs
     std::vector<float *>     blBeta(nWells);
     std::vector<float *>     blRho(nWells);
+
     std::vector<float *>     vtAlpha(nWells);   // vt = vertical trend
     std::vector<float *>     vtBeta(nWells);
     std::vector<float *>     vtRho(nWells);
+
     std::vector<const int *> ipos(nWells);
     std::vector<const int *> jpos(nWells);
     std::vector<const int *> kpos(nWells);
@@ -495,18 +480,25 @@ Background::generateMultizoneBackgroundModel(FFTGrid                       *& /*
                              ipos,jpos,kpos,
                              nBlocks,totBlocks);
 
+    std::vector<KrigingData2D> krigingDataAlpha(nz);
+    std::vector<KrigingData2D> krigingDataBeta(nz);
+    std::vector<KrigingData2D> krigingDataRho(nz);
+
     setupKrigingData2D(krigingDataAlpha,krigingDataBeta,krigingDataRho,
                        trendAlphaZone[i],trendBetaZone[i],trendRhoZone[i],
                        modelSettings->getOutputGridsElastic(),
-                       nz_zone[i],dz,totBlocks,nBlocks,
+                       nz,dz,totBlocks,nBlocks,
                        blAlpha,blBeta,blRho,
                        vtAlpha,vtBeta,vtRho,
                        ipos,jpos,kpos);
 
-    makeKrigedBackgroundZone(krigingDataAlpha, trendAlphaZone[i], correlation_zones[i], covGrid2D);
-    makeKrigedBackgroundZone(krigingDataBeta , trendBetaZone[i] , correlation_zones[i], covGrid2D);
-    makeKrigedBackgroundZone(krigingDataRho  , trendRhoZone[i]  , correlation_zones[i], covGrid2D);
+    makeKrigedZone(krigingDataAlpha, trendAlphaZone[i], alpha_zones[i], covGrid2D);
+    makeKrigedZone(krigingDataBeta , trendBetaZone[i] , beta_zones[i],  covGrid2D);
+    makeKrigedZone(krigingDataRho  , trendRhoZone[i]  , rho_zones[i],   covGrid2D);
 
+    delete [] avgDevAlphaZone;
+    delete [] avgDevBetaZone;
+    delete [] avgDevRhoZone;
 
     for(int j=0; j<nWells; j++) {
       delete [] wellTrendAlpha[j];
@@ -529,29 +521,180 @@ Background::generateMultizoneBackgroundModel(FFTGrid                       *& /*
     }
   }
 
+  MakeMultizoneBackground(bgAlpha,bgBeta,bgRho,
+                          alpha_zones,beta_zones,rho_zones,
+                          simbox,
+                          erosion_priority,
+                          surface,
+                          modelSettings->getSurfaceUncertainty(),
+                          modelSettings->getFileGrid());
+
+  bool write3D = ((modelSettings->getOutputGridsElastic() & IO::BACKGROUND_TREND) > 0);
+  if(write3D)
+    writeMultizoneTrendsToFile(trendAlphaZone,trendBetaZone,trendRhoZone,
+                               nz_zone,
+                               simbox,
+                               erosion_priority,
+                               surface,
+                               modelSettings->getSurfaceUncertainty(),
+                               modelSettings->getFileGrid());
+
+
   delete &covGrid2D;
 
   for(int i=0; i<nZones; i++) {
-    delete [] avgDevAlphaZone[i];
-    delete [] avgDevBetaZone[i];
-    delete [] avgDevRhoZone[i];
-
     delete [] trendAlphaZone[i];
     delete [] trendBetaZone[i];
     delete [] trendRhoZone[i];
+  }
 
-    delete correlation_zones[i];
-    delete eroded_zones[i];
+}
+
+void
+Background::MakeMultizoneBackground(FFTGrid                         *& bgAlpha,
+                                    FFTGrid                         *& bgBeta,
+                                    FFTGrid                         *& bgRho,
+                                    const std::vector<StormContGrid> & alpha_zones,
+                                    const std::vector<StormContGrid> & beta_zones,
+                                    const std::vector<StormContGrid> & rho_zones,
+                                    const Simbox                     * simbox,
+                                    const std::vector<int>           & erosion_priority,
+                                    const std::vector<Surface>       & surface,
+                                    const std::vector<double>        & surface_uncertainty,
+                                    const bool                         isFile) const
+{
+  int nZones = static_cast<int>(alpha_zones.size());
+
+  int nx = simbox->getnx();
+  int ny = simbox->getny();
+  int nz = simbox->getnz();
+
+  const int nxp  = nx;
+  const int nyp  = ny;
+  const int nzp  = nz;
+  const int rnxp = 2*(nxp/2 + 1);
+
+  bgAlpha = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, isFile);
+  bgBeta  = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, isFile);
+  bgRho   = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, isFile);
+
+  bgAlpha->createRealGrid();
+  bgBeta ->createRealGrid();
+  bgRho  ->createRealGrid();
+
+  bgAlpha->setType(FFTGrid::PARAMETER);
+  bgBeta ->setType(FFTGrid::PARAMETER);
+  bgRho  ->setType(FFTGrid::PARAMETER);
+
+  bgAlpha->setAccessMode(FFTGrid::WRITE);
+  bgBeta ->setAccessMode(FFTGrid::WRITE);
+  bgRho  ->setAccessMode(FFTGrid::WRITE);
+
+  double x;
+  double y;
+
+  for(int i=0; i<rnxp; i++) {
+
+    for(int j=0; j<nyp; j++) {
+      simbox->getXYCoord(i,j,x,y);
+
+      // Beta distributed uncertainty on each surface
+      std::vector<NRLib::Beta> horizon_distributions(nZones+1);
+      for(int zone=0; zone<nZones+1; zone++) {
+        double z = surface[zone].GetZ(x,y);
+        horizon_distributions[zone] = NRLib::Beta(z-surface_uncertainty[zone], z+surface_uncertainty[zone], 2, 2);
+      }
+
+      for(int k=0; k<nzp; k++) {
+        double z;
+        simbox->getZCoord(k,x,y,z);
+
+        std::vector<double> zone_probability(nZones);
+
+        ComputeZoneProbability(z, horizon_distributions, erosion_priority, zone_probability);
+
+        double vp  = 0;
+        double vs  = 0;
+        double rho = 0;
+
+        for(int zone=0; zone<nZones; zone++) {
+          double vp_zone  = alpha_zones[zone].GetValueZInterpolated(x,y,z);
+          double vs_zone  = beta_zones[zone].GetValueZInterpolated(x,y,z);
+          double rho_zone = rho_zones[zone].GetValueZInterpolated(x,y,z);
+
+          vp  +=  vp_zone  * zone_probability[zone];
+          vs  +=  vs_zone  * zone_probability[zone];
+          rho +=  rho_zone * zone_probability[zone];
+        }
+        if(i<nx) {
+          bgAlpha->setRealValue(i, j, k, float(vp));
+          bgBeta ->setRealValue(i, j, k, float(vs));
+          bgRho  ->setRealValue(i, j, k, float(rho));
+        }
+        else {
+          bgAlpha->setRealValue(i, j, k, 0);
+          bgBeta ->setRealValue(i, j, k, 0);
+          bgRho  ->setRealValue(i, j, k, 0);
+        }
+      }
+    }
+  }
+  bgAlpha->endAccess();
+  bgBeta ->endAccess();
+  bgRho  ->endAccess();
+}
+//---------------------------------------------------------------------------
+void
+Background::ComputeZoneProbability(const double                   & z,
+                                   const std::vector<NRLib::Beta> & horizon_distributions,
+                                   const std::vector<int>         & erosion_priority,
+                                   std::vector<double>            & zone_probability) const
+{
+
+  int nZones = static_cast<int>(zone_probability.size());
+
+  for(int zone=0; zone<nZones; zone++) {
+    //Initialize with probability that we are below top surface for zone
+    double prob = horizon_distributions[zone].Cdf(z);
+
+    //Multiply with probability that we are above base surface for zone
+    prob *= (1-horizon_distributions[zone+1].Cdf(z));
+
+    //We may be eroded from above. Must consider the surfaces that
+    //1. Are above top in the standard sequence.
+    //2. Have lower erosion priority number than the top.
+    //3. Have no horizons with lower erosion priority number between it and top.
+    int min_erosion = erosion_priority[zone];
+    for(int prev_hor = zone-1; prev_hor >=0; prev_hor--) {
+      if(erosion_priority[prev_hor] < min_erosion) {
+        prob *= horizon_distributions[prev_hor].Cdf(z);
+        min_erosion = erosion_priority[prev_hor]; //Those with higher number stop in this
+      }
+    }
+
+    //We may be eroded from below. Must consider the surfaces that
+    //1. Are below base in the standard sequence.
+    //2. Have lower erosion priority number than the base.
+    //3. Have no horizons with lower erosion priority number between it and base.
+    min_erosion = erosion_priority[zone+1];
+    for(int late_hor = zone+2; late_hor < nZones+1; late_hor++) {
+      if(erosion_priority[late_hor] < min_erosion) {
+        prob *= (1-horizon_distributions[late_hor].Cdf(z));
+        min_erosion = erosion_priority[late_hor]; //Those with higher number stop in this
+      }
+    }
+
+    zone_probability[zone] = prob;
   }
 }
 
 //---------------------------------------------------------------------------
 void
-Background::BuildErodedZones(std::vector<StormContGrid *> & eroded_zones,
-                             const std::vector<int>       & erosion_priority,
-                             const std::vector<Surface>   & surf,
-                             const std::vector<int>       & nz_zone,
-                             const Simbox                 * simbox) const
+Background::BuildErodedZones(std::vector<StormContGrid> & eroded_zones,
+                             const std::vector<int>     & erosion_priority,
+                             const std::vector<Surface> & surface,
+                             const std::vector<int>     & nz_zone,
+                             const Simbox               * simbox) const
 {
   int    nZones    = static_cast<int>(eroded_zones.size());
   int    nx        = simbox->getnx();
@@ -562,8 +705,7 @@ Background::BuildErodedZones(std::vector<StormContGrid *> & eroded_zones,
   double ly        = simbox->GetLY();
   double angle     = simbox->getAngle();
 
-  // Make eroded surfaces
-  std::vector<Surface *> eroded_surface(nZones+1); //Marit: Fjerne peker hvis flatene ikke skal brukes mer
+  std::vector<Surface *> eroded_surface(nZones+1);
   for(int i=0; i<nZones+1; i++)
     eroded_surface[i] = NULL;
 
@@ -573,7 +715,7 @@ Background::BuildErodedZones(std::vector<StormContGrid *> & eroded_zones,
     while(i+1 != erosion_priority[l])
       l++;
 
-    Surface * temp_surface = new Surface(surf[l]);
+    Surface * temp_surface = new Surface(surface[l]);
 
     //Find closest eroded surface downward
     for(int k=l+1; k<nZones+1; k++) {
@@ -597,29 +739,32 @@ Background::BuildErodedZones(std::vector<StormContGrid *> & eroded_zones,
 
     NRLib::Volume volume(x_min, y_min, lx, ly, *eroded_surface[i-1], *eroded_surface[i], angle);
 
-    eroded_zones[i-1] = new StormContGrid(volume, nx, ny, nz_zone[i-1]);
+    eroded_zones[i-1] = StormContGrid(volume, nx, ny, nz_zone[i-1]);
   }
+
+  for(int i=0; i<nZones+1; i++)
+    delete eroded_surface[i];
 }
 
 //---------------------------------------------------------------------------
 
 void
-Background::BuildCorrelationZones(std::vector<StormContGrid *> & correlation_zones,
-                                  const std::vector<Surface>   & surf,
-                                  const std::vector<int>       & correlation_structure,
-                                  const Simbox                 * simbox) const
+Background::BuildSeismicPropertyZones(std::vector<StormContGrid> & alpha_zones,
+                                      std::vector<StormContGrid> & beta_zones,
+                                      std::vector<StormContGrid> & rho_zones,
+                                      const std::vector<Surface> & surface,
+                                      const std::vector<int>     & correlation_structure,
+                                      const Simbox               * simbox,
+                                      const float                & dz) const
 {
-  int    nZones    = static_cast<int>(correlation_zones.size());
+  int    nZones    = static_cast<int>(alpha_zones.size());
   int    nx        = simbox->getnx();
   int    ny        = simbox->getny();
-  int    nz_simbox = simbox->getnz();
   double x_min     = simbox->GetXMin();
   double y_min     = simbox->GetYMin();
   double lx        = simbox->GetLX();
   double ly        = simbox->GetLY();
-  double lz        = simbox->GetLZ();
   double angle     = simbox->getAngle();
-  float  dz        = static_cast<float>(lz/nz_simbox);
 
   for(int i=1; i<nZones+1; i++) {
     Surface temp_top;
@@ -629,8 +774,8 @@ Background::BuildCorrelationZones(std::vector<StormContGrid *> & correlation_zon
     double  z_top;
     double  z_base;
 
-    Surface top  = surf[i-1];
-    Surface base = surf[i];
+    Surface top  = surface[i-1];
+    Surface base = surface[i];
 
     //Find maximum distance between the surfaces
     double max_distance = 0;
@@ -667,9 +812,12 @@ Background::BuildCorrelationZones(std::vector<StormContGrid *> & correlation_zon
 
     int nz_zone = static_cast<int>(std::ceil(max_distance/dz));
 
-    correlation_zones[i-1] = new StormContGrid(volume, nx, ny, nz_zone);
+    alpha_zones[i-1] = StormContGrid(volume, nx, ny, nz_zone);
+    beta_zones[i-1]  = StormContGrid(volume, nx, ny, nz_zone);
+    rho_zones[i-1]   = StormContGrid(volume, nx, ny, nz_zone);
   }
 }
+
 //---------------------------------------------------------------------------
 
 void
@@ -817,6 +965,7 @@ Background::getKrigingWellTrends(std::vector<float *>     & blAlpha,
     ipos[w] = bl->getIpos();
     jpos[w] = bl->getJpos();
     kpos[w] = bl->getKpos();
+
   }
 }
 //---------------------------------------------------------------------------
@@ -924,10 +1073,10 @@ Background::getWellTrends(std::vector<float *> wellTrend,
 //---------------------------------------------------------------------------
 void
 Background::getWellTrendsZone(std::vector<BlockedLogsForZone *> & bl,
-                              std::vector<float *>              & wellTrend,
-                              std::vector<float *>              & highCutWellTrend,
+                              const std::vector<float *>        & wellTrend,
+                              const std::vector<float *>        & highCutWellTrend,
                               WellData                         ** wells,
-                              StormContGrid                     * eroded_zone,
+                              StormContGrid                     & eroded_zone,
                               const std::string                 & name,
                               const int                         & i) const
 {
@@ -1026,29 +1175,93 @@ Background::writeTrendsToFile(float             * trend,
     delete expTrend;
   }
 }
+//---------------------------------------------------------------------------
+void
+Background::writeMultizoneTrendsToFile(const std::vector<float *>   alpha_zones,
+                                       const std::vector<float *>   beta_zones,
+                                       const std::vector<float *>   rho_zones,
+                                       const std::vector<int>     & nz,
+                                       Simbox                     * simbox,
+                                       const std::vector<int>     & erosion_priority,
+                                       const std::vector<Surface> & surface,
+                                       const std::vector<double>  & surface_uncertainty,
+                                       const bool                   isFile) const
+{
+  int nZones = static_cast<int>(alpha_zones.size());
+
+  std::vector<StormContGrid> alpha_trend_zone(nZones);
+  std::vector<StormContGrid> beta_trend_zone(nZones);
+  std::vector<StormContGrid> rho_trend_zone(nZones);
+
+  for(int i=0; i<nZones; i++) {
+    makeTrendZoneGrid(alpha_trend_zone[i], surface[i], surface[i+1], nz[i], simbox);
+    makeTrendZoneGrid(beta_trend_zone[i],  surface[i], surface[i+1], nz[i], simbox);
+    makeTrendZoneGrid(rho_trend_zone[i],   surface[i], surface[i+1], nz[i], simbox);
+  }
+
+  for(int i=0; i<nZones; i++) {
+    makeTrendZone(alpha_zones[i], alpha_trend_zone[i]);
+    makeTrendZone(beta_zones[i],  beta_trend_zone[i]);
+    makeTrendZone(rho_zones[i],   rho_trend_zone[i]);
+  }
+
+  FFTGrid * trendAlpha;
+  FFTGrid * trendBeta;
+  FFTGrid * trendRho;
+
+  MakeMultizoneBackground(trendAlpha,trendBeta,trendRho,
+                          alpha_trend_zone,beta_trend_zone,rho_trend_zone,
+                          simbox,
+                          erosion_priority,
+                          surface,
+                          surface_uncertainty,
+                          isFile);
+
+
+
+  FFTGrid * expTrendAlpha = copyFFTGrid(trendAlpha, true, isFile);
+  FFTGrid * expTrendBeta  = copyFFTGrid(trendBeta,  true, isFile);
+  FFTGrid * expTrendRho   = copyFFTGrid(trendRho,   true, isFile);
+
+  std::string fileNameAlpha = IO::PrefixBackground() + IO::PrefixTrend() + "Vp";
+  std::string fileNameBeta  = IO::PrefixBackground() + IO::PrefixTrend() + "Vs";
+  std::string fileNameRho   = IO::PrefixBackground() + IO::PrefixTrend() + "Rho";
+
+  expTrendAlpha->writeFile(fileNameAlpha, IO::PathToBackground(), simbox);
+  expTrendBeta ->writeFile(fileNameBeta,  IO::PathToBackground(), simbox);
+  expTrendRho  ->writeFile(fileNameRho,   IO::PathToBackground(), simbox);
+
+  delete expTrendAlpha;
+  delete expTrendBeta;
+  delete expTrendRho;
+
+  delete trendAlpha;
+  delete trendBeta;
+  delete trendRho;
+}
 
 //-------------------------------------------------------------------------------
 void
-Background::setupKrigingData2D(std::vector<KrigingData2D> & krigingDataAlpha,
-                               std::vector<KrigingData2D> & krigingDataBeta,
-                               std::vector<KrigingData2D> & krigingDataRho,
-                               float                      * trendAlpha,
-                               float                      * trendBeta,
-                               float                      * trendRho,
-                               int                          outputFlag,
-                               const int                  & nz,
-                               const float                & dz,
-                               const int                  & totBlocks,
-                               std::vector<int>           & nBlocks,
-                               std::vector<float *>       & blAlpha,
-                               std::vector<float *>       & blBeta,
-                               std::vector<float *>       & blRho,
-                               std::vector<float *>       & vtAlpha,
-                               std::vector<float *>       & vtBeta,
-                               std::vector<float *>       & vtRho,
-                               std::vector<const int *>    ipos,
-                               std::vector<const int *>    jpos,
-                               std::vector<const int *>    kpos) const
+Background::setupKrigingData2D(std::vector<KrigingData2D>     & krigingDataAlpha,
+                               std::vector<KrigingData2D>     & krigingDataBeta,
+                               std::vector<KrigingData2D>     & krigingDataRho,
+                               float                          * trendAlpha,
+                               float                          * trendBeta,
+                               float                          * trendRho,
+                               const int                        outputFlag,
+                               const int                      & nz,
+                               const float                    & dz,
+                               const int                      & totBlocks,
+                               const std::vector<int>         & nBlocks,
+                               const std::vector<float *>     & blAlpha,
+                               const std::vector<float *>     & blBeta,
+                               const std::vector<float *>     & blRho,
+                               const std::vector<float *>     & vtAlpha,
+                               const std::vector<float *>     & vtBeta,
+                               const std::vector<float *>     & vtRho,
+                               const std::vector<const int *>   ipos,
+                               const std::vector<const int *>   jpos,
+                               const std::vector<const int *>   kpos) const
 {
   //
   // Although unnecessary, we have chosen to set up kriging data from
@@ -1102,8 +1315,7 @@ Background::setupKrigingData2D(std::vector<KrigingData2D> & krigingDataAlpha,
                        nBlocks[w]);
   }
 
-  for (int k=0 ; k<nz ; k++)
-  {
+  for (int k=0 ; k<nz ; k++) {
     krigingDataAlpha[k].findMeanValues();
     krigingDataBeta[k].findMeanValues();
     krigingDataRho[k].findMeanValues();
@@ -1214,22 +1426,72 @@ Background::makeKrigedBackground(const std::vector<KrigingData2D> & krigingData,
   }
   bgGrid->endAccess();
 }
+//---------------------------------------------------------------------------
+void
+Background::makeTrendZoneGrid(StormContGrid & grid,
+                              const Surface & top_surface,
+                              const Surface & base_surface,
+                              const int     & nz,
+                              const Simbox  * simbox) const
+{
+  double x_min     = simbox->GetXMin();
+  double y_min     = simbox->GetYMin();
+  double lx        = simbox->GetLX();
+  double ly        = simbox->GetLY();
+  double angle     = simbox->getAngle();
+  int    nx        = simbox->getnx();
+  int    ny        = simbox->getny();
+
+  NRLib::Volume volume(x_min, y_min, lx, ly, top_surface, base_surface, angle);
+
+  grid = StormContGrid(volume, nx, ny, nz);
+
+  }
+//---------------------------------------------------------------------------
+void
+Background::makeTrendZone(const float   * trend,
+                          StormContGrid & trend_zone) const
+{
+  const size_t nx   = trend_zone.GetNI();
+  const size_t ny   = trend_zone.GetNJ();
+  const size_t nz   = trend_zone.GetNK();
+
+  const double x0   = trend_zone.GetXMin();
+  const double y0   = trend_zone.GetYMin();
+  const double lx   = trend_zone.GetLX();
+  const double ly   = trend_zone.GetLY();
+  //
+  // Template surface to be kriged
+  //
+  Surface surface(x0, y0, lx, ly, nx, ny, RMISSING);
+  for (size_t k=0; k<nz; k++) {
+
+    // Set trend for layer
+    surface.Assign(trend[k]);
+
+    // Set layer in background model from surface
+    for(size_t j=0 ; j<ny; j++) {
+      for(size_t i=0 ; i<nx; i++)
+        trend_zone(i,j,k) = float(surface(i,j));
+    }
+  }
+}
 
 //---------------------------------------------------------------------------
 void
-Background::makeKrigedBackgroundZone(const std::vector<KrigingData2D> & krigingData,
-                                     float                            * trend,
-                                     StormContGrid                    * correlation_zone,
-                                     const CovGrid2D                  & covGrid2D) const
+Background::makeKrigedZone(const std::vector<KrigingData2D> & krigingData,
+                           const float                      * trend,
+                           StormContGrid                    & kriged_zone,
+                           const CovGrid2D                  & covGrid2D) const
 {
-  const size_t    nx   = correlation_zone->GetNI();
-  const size_t    ny   = correlation_zone->GetNJ();
-  const size_t    nz   = correlation_zone->GetNK();
+  const size_t nx   = kriged_zone.GetNI();
+  const size_t ny   = kriged_zone.GetNJ();
+  const size_t nz   = kriged_zone.GetNK();
 
-  const double x0   = correlation_zone->GetXMin();
-  const double y0   = correlation_zone->GetYMin();
-  const double lx   = correlation_zone->GetLX();
-  const double ly   = correlation_zone->GetLY();
+  const double x0   = kriged_zone.GetXMin();
+  const double y0   = kriged_zone.GetYMin();
+  const double lx   = kriged_zone.GetLX();
+  const double ly   = kriged_zone.GetLY();
   //
   // Template surface to be kriged
   //
@@ -1245,7 +1507,7 @@ Background::makeKrigedBackgroundZone(const std::vector<KrigingData2D> & krigingD
     // Set layer in background model from surface
     for(size_t j=0 ; j<ny; j++) {
       for(size_t i=0 ; i<nx; i++)
-        (*correlation_zone)(i,j,k) = float(surface(i,j));
+        kriged_zone(i,j,k) = float(surface(i,j));
     }
   }
 }
@@ -2110,9 +2372,9 @@ Background::copyFFTGrid(FFTGrid   * origGrid,
 
 void
 Background::ErodeSurface(Surface       *& surface,
-                         const Surface  * priority_surface,
-                         const Simbox   * simbox,
-                         const bool     & compare_upward) const
+                         const Surface *  priority_surface,
+                         const Simbox  *  simbox,
+                         const bool    &  compare_upward) const
 {
   int nx    = simbox->getnx();
   int ny    = simbox->getny();
@@ -2130,8 +2392,7 @@ Background::ErodeSurface(Surface       *& surface,
   double missing = surface->GetMissingValue();
   for(int i=0; i<nx; i++) {
     for(int j=0; j<ny; j++) {
-
-      priority_surface->GetXY(i,j,x,y);
+      simbox->getXYCoord(i,j,x,y);
 
       z_priority = priority_surface->GetZ(x,y);
       z          = surface->GetZ(x,y);

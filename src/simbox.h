@@ -30,6 +30,8 @@ public:
                                          double & xInd, double & yInd, double & zInd) const;
   void           getCoord(int xInd, int yInd, int zInd, double &x, double &y, double &z) const;
   void           getXYCoord(int xInd, int yInd, double &x, double &y) const;
+  void           getZCoord(int zInd, double x, double y, double &z) const;
+
   int            getnx()                         const { return nx_                      ;}
   int            getny()                         const { return ny_                      ;}
   int            getnz()                         const { return nz_                      ;}

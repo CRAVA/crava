@@ -6137,6 +6137,10 @@
 				Name="nrlib"
 				>
 				<File
+					RelativePath=".\nrlib\random\beta.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\nrlib\random\chisquared.cpp"
 					>
 				</File>
@@ -6586,6 +6590,10 @@
 				Name="nrlib"
 				>
 				<File
+					RelativePath=".\nrlib\random\beta.hpp"
+					>
+				</File>
+				<File
 					RelativePath=".\nrlib\random\chisquared.hpp"
 					>
 				</File>
@@ -6717,11 +6725,11 @@
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\filesystem\config.hpp"
+						RelativePath=".\nrlib\boost\system\config.hpp"
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\system\config.hpp"
+						RelativePath=".\nrlib\boost\filesystem\config.hpp"
 						>
 					</File>
 					<File

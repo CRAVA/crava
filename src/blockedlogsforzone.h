@@ -14,7 +14,7 @@ class BlockedLogsForZone
 {
 public:
   BlockedLogsForZone(WellData            * well,
-                     const StormContGrid * stormgrid);
+                     const StormContGrid & stormgrid);
 
   ~BlockedLogsForZone();
 
@@ -36,16 +36,16 @@ public:
                                       float                    * trend) const;
 
 private:
-  void       blockContinuousLog(const std::vector<int>    bInd,
-                                const float            *  wellLog,
-                                std::vector<float>    & blockedLog);
+  void       blockContinuousLog(const std::vector<int>   bInd,
+                                const float            * wellLog,
+                                std::vector<float>     & blockedLog);
 
   void       findBlockIJK(WellData               * well,
-                          const StormContGrid    * stormgrid,
+                          const StormContGrid    & stormgrid,
                           const std::vector<int>   bInd);
 
   void       findSizeAndBlockPointers(WellData            * well,
-                                      const StormContGrid * stormgrid,
+                                      const StormContGrid & stormgrid,
                                       std::vector<int>    & bInd);
 
   std::vector<float>        alpha_;                    ///<

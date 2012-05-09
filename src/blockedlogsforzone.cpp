@@ -20,12 +20,12 @@
 #include "src/io.h"
 
 BlockedLogsForZone::BlockedLogsForZone(WellData            * well,
-                                       const StormContGrid * stormgrid)
+                                       const StormContGrid & stormgrid)
 : firstM_(IMISSING),
   lastM_(IMISSING)
 {
-  nLayers_ = static_cast<int>(stormgrid->GetNK());
-  dz_      = static_cast<double>(stormgrid->GetLZ()/stormgrid->GetNK());
+  nLayers_ = static_cast<int>(stormgrid.GetNK());
+  dz_      = static_cast<double>(stormgrid.GetLZ()/stormgrid.GetNK());
 
   std::vector<int> bInd(well->getNd()); // Gives which block each well log entry contributes to
 
@@ -57,7 +57,7 @@ BlockedLogsForZone::~BlockedLogsForZone()
 
 void
 BlockedLogsForZone::findBlockIJK(WellData               * well,
-                                 const StormContGrid    * stormgrid,
+                                 const StormContGrid    & stormgrid,
                                  const std::vector<int>   bInd)
 {
   ipos_ = new int[nBlocks_];
@@ -76,7 +76,7 @@ BlockedLogsForZone::findBlockIJK(WellData               * well,
   size_t firstI;
   size_t firstJ;
   size_t firstK;
-  stormgrid->FindIndex(x[firstM_], y[firstM_], z[firstM_], firstI, firstJ, firstK);
+  stormgrid.FindIndex(x[firstM_], y[firstM_], z[firstM_], firstI, firstJ, firstK);
 
   for (size_t k = 0 ; k < firstK ; k++) {
     b++;
@@ -96,7 +96,7 @@ BlockedLogsForZone::findBlockIJK(WellData               * well,
   for (int m = firstM_ + 1 ; m < lastM_ + 1 ; m++) {
     if (bInd[m] != bInd[m - 1]) {
       b++;
-      stormgrid->FindIndex(x[m], y[m], z[m], i, j, k);
+      stormgrid.FindIndex(x[m], y[m], z[m], i, j, k);
       ipos_[b] = static_cast<int>(i);
       jpos_[b] = static_cast<int>(j);
       kpos_[b] = static_cast<int>(k);
@@ -109,7 +109,7 @@ BlockedLogsForZone::findBlockIJK(WellData               * well,
   // Set IJK for the virtual part of well in lower part of simbox
   //
   size_t lastI,  lastJ,  lastK;
-  stormgrid->FindIndex(x[lastM_], y[lastM_], z[lastM_], lastI, lastJ, lastK);
+  stormgrid.FindIndex(x[lastM_], y[lastM_], z[lastM_], lastI, lastJ, lastK);
 
   for (int k = static_cast<int>(lastK) + 1 ; k < nLayers_ ; k++) {
     b++;
@@ -159,7 +159,7 @@ BlockedLogsForZone::blockContinuousLog(const std::vector<int>    bInd,
 
 void
 BlockedLogsForZone::findSizeAndBlockPointers(WellData             * well,
-                                             const StormContGrid  * stormgrid,
+                                             const StormContGrid  & stormgrid,
                                              std::vector<int>     & bInd)
 {
   int            dummy;
@@ -178,9 +178,9 @@ BlockedLogsForZone::findSizeAndBlockPointers(WellData             * well,
   size_t firstK = missing;
 
   for(int m=0; m<nd; m++) {
-    inside = stormgrid->IsInside(x[m], y[m], z[m]);
+    inside = stormgrid.IsInside(x[m], y[m], z[m]);
     if(inside == true) {
-      stormgrid->FindIndex(x[m], y[m], z[m], firstI, firstJ, firstK);
+      stormgrid.FindIndex(x[m], y[m], z[m], firstI, firstJ, firstK);
       firstM_ = m;
       break;
     }
@@ -198,9 +198,9 @@ BlockedLogsForZone::findSizeAndBlockPointers(WellData             * well,
   size_t lastK = missing;
 
   for (int m=nd-1; m>0; m--) {
-    inside = stormgrid->IsInside(x[m], y[m], z[m]);
+    inside = stormgrid.IsInside(x[m], y[m], z[m]);
     if(inside == true) {
-      stormgrid->FindIndex(x[m], y[m], z[m], lastI, lastJ, lastK);
+      stormgrid.FindIndex(x[m], y[m], z[m], lastI, lastJ, lastK);
       lastM_ = m;
       break;
     }
@@ -216,8 +216,8 @@ BlockedLogsForZone::findSizeAndBlockPointers(WellData             * well,
   bInd[firstM_] = static_cast<int>(firstK); // The first defined well log entry contributes to this block.
 
   std::vector<int> stormInd(nd);
-  const int nx    = static_cast<int>(stormgrid->GetNI());
-  const int ny    = static_cast<int>(stormgrid->GetNJ());
+  const int nx    = static_cast<int>(stormgrid.GetNI());
+  const int ny    = static_cast<int>(stormgrid.GetNJ());
   stormInd[0] = nx*ny*static_cast<int>(oldK) + nx*static_cast<int>(oldJ)+static_cast<int>(oldI);
 
   size_t newI = missing;
@@ -225,7 +225,7 @@ BlockedLogsForZone::findSizeAndBlockPointers(WellData             * well,
   size_t newK = missing;
 
   for (int m = firstM_ + 1 ; m < lastM_ + 1 ; m++) {
-    stormgrid->FindIndex(x[m], y[m], z[m], newI, newJ, newK);
+    stormgrid.FindIndex(x[m], y[m], z[m], newI, newJ, newK);
 
     if (newI != oldI || newJ != oldJ || newK != oldK) {
 

@@ -531,19 +531,13 @@ ModelAVODynamic::processBackground(Background         *& background,
         backModel[i] = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, modelSettings->getFileGrid());
         backModel[i]->setType(FFTGrid::PARAMETER);
       }
-      background = new Background(backModel, wells, velocity, timeSimbox, timeBGSimbox, modelSettings);
+      if(static_cast<int>(modelSettings->getErosionPriority().size()) == 0)
+        background = new Background(backModel, wells, velocity, timeSimbox, timeBGSimbox, modelSettings);
+      else
+        background = new Background(backModel, wells, timeSimbox, modelSettings, inputFiles->getMultizoneSurfaceFiles());
     }
     if(velocity != NULL)
       delete velocity;
-
-    if(static_cast<int>(modelSettings->getErosionPriority().size()) != 0) {
-      for (int i=0 ; i<3 ; i++) {
-        backModel[i] = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, modelSettings->getFileGrid());
-        backModel[i]->setType(FFTGrid::PARAMETER);
-      }
-      background = new Background(backModel, wells, timeSimbox, modelSettings, inputFiles->getMultizoneSurfaceFiles());
-
-    }
   }
   else
   {

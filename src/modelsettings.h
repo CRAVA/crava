@@ -182,6 +182,7 @@ public:
   int                              getEstimateNumberOfWavelets(void)    const;
   std::vector<int>                 getErosionPriority()                 const { return erosionPriority_                           ;}
   std::vector<int>                 getCorrelationStructure()            const { return correlationStructure_                      ;}
+  std::vector<double>              getSurfaceUncertainty()              const { return surfaceUncertainty_                        ;}
 
   void rotateVariograms(float angle);
   void setAngularCorr(Vario * vario);
@@ -225,6 +226,7 @@ public:
 
   void addErosionPriority(int priority)                   { erosionPriority_.push_back(priority)                 ;}
   void addCorrelationStructure(int structure)             { correlationStructure_.push_back(structure)           ;}
+  void addSurfaceUncertainty(double uncertainty)          { surfaceUncertainty_.push_back(uncertainty)           ;}
 
   void setEstimateBackground(bool estimateBackground)     { estimateBackground_       = estimateBackground       ;}
   void setEstimateCorrelations(bool estimateCorrelations) { estimateCorrelations_     = estimateCorrelations     ;}
@@ -563,6 +565,7 @@ private:
 
   std::vector<int>                  erosionPriority_;            // Erosion priority of the different layers in the multizone background model
   std::vector<int>                  correlationStructure_;       // Correlation structure for the different layers in the multizone background model
+  std::vector<double>               surfaceUncertainty_;         // Uncertainty for the horizons in the multizone backround model
 
   int                               logLevel_;
 

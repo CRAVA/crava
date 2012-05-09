@@ -855,19 +855,19 @@ int WellData::checkSimbox(Simbox * simbox)
 
 //----------------------------------------------------------------------------
 
-int WellData::checkStormgrid(StormContGrid * stormgrid) const
+int WellData::checkStormgrid(StormContGrid & stormgrid) const
 {
   bool insideArea = false;
   int  error      = 1;
 
   if(timemissing_ == 0) {
 
-    NRLib::Surface<double> & top  = stormgrid->GetTopSurface();
-    NRLib::Surface<double> & base = stormgrid->GetBotSurface();
+    NRLib::Surface<double> & top  = stormgrid.GetTopSurface();
+    NRLib::Surface<double> & base = stormgrid.GetBotSurface();
 
     for(int i=0;i<nd_;i++) {
 
-      if(stormgrid->IsInside(xpos_[i], ypos_[i])) {
+      if(stormgrid.IsInside(xpos_[i], ypos_[i])) {
         insideArea = true;
         //
         // Correct handling of top and base checking.
