@@ -60,14 +60,14 @@ public:
                                   double ** errThetaCov,
                                   bool invert_frequency);
 
-  fftw_real* initializeCorrelations(SpatialWellFilter * spatwellfilter,
-                                    WellData         ** wells,
-                                    float               corrGradI,
-                                    float               corrGradJ,
-                                    int                 lowIntCut,
-                                    int                 nWells,
-                                    int                 nz,
-                                    int                 nzp);
+  fftw_real* initializeCorrelations(SpatialWellFilter     * spatwellfilter,
+                                    std::vector<WellData *> wells,
+                                    float                   corrGradI,
+                                    float                   corrGradJ,
+                                    int                     lowIntCut,
+                                    int                     nWells,
+                                    int                     nz,
+                                    int                     nzp);
   void       terminateAccess(void);
   void       initializeAccess(void);
 

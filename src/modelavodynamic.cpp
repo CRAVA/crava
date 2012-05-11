@@ -61,6 +61,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings       *& modelSettings,
                                  std::vector<Surface *> wellMoveInterval,
                                  std::vector<Surface *> faciesEstimInterval,
                                  ModelAVOStatic       * modelAVOstatic,
+                                 ModelGeneral         * modelGeneral,
                                  int                    t)
 {
   background_             = NULL;
@@ -78,10 +79,10 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings       *& modelSettings,
   matchEnergies_          = modelSettings->getMatchEnergies(thisTimeLapse_);
   numberOfAngles_         = modelSettings->getNumberOfAngles(thisTimeLapse_);
 
-  bool failedSimbox       = failedGeneralDetails[0];;
+  bool failedSimbox       = failedGeneralDetails[0];
   bool failedDepthConv    = failedGeneralDetails[1];
-  bool failedWells        = failedStaticDetails[0];
-  bool failedExtraSurf    = failedStaticDetails[1];
+  bool failedWells        = failedGeneralDetails[2];
+  bool failedExtraSurf    = failedStaticDetails[0];
   // ModelAVOStatic's failedPriorFacies is not used here.
 
   bool failedWavelet      = false;
@@ -101,17 +102,17 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings       *& modelSettings,
     //
     if (modelSettings->getForwardModeling() == true)
     {
-      processBackground(background_, modelAVOstatic->getWells(), timeSimbox, timeBGSimbox,
+      processBackground(background_, modelGeneral->getWells(), timeSimbox, timeBGSimbox,
                         timeDepthMapping, timeCutMapping,
                         modelSettings, inputFiles,
                         errText, failedBackground);
       if (!failedBackground)
       {
-        processReflectionMatrix(reflectionMatrix_, background_, modelAVOstatic->getWells(), modelSettings,
+        processReflectionMatrix(reflectionMatrix_, background_, modelGeneral->getWells(), modelSettings,
                                 inputFiles, errText, failedReflMat);
         if (!failedReflMat)
         {
-          processWavelets(wavelet_, seisCube_, modelAVOstatic->getWells(), reflectionMatrix_,
+          processWavelets(wavelet_, seisCube_, modelGeneral->getWells(), reflectionMatrix_,
                           timeSimbox, correlationDirection, waveletEstimInterval,
                           modelSettings, inputFiles, errText, failedWavelet);
         }
@@ -134,7 +135,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings       *& modelSettings,
              modelSettings->getEstimateCorrelations() == true ||
              modelSettings->getOptimizeWellLocation() == true)
           {
-            processBackground(background_, modelAVOstatic->getWells(), timeSimbox, timeBGSimbox,
+            processBackground(background_, modelGeneral->getWells(), timeSimbox, timeBGSimbox,
                               timeDepthMapping, timeCutMapping,
                               modelSettings, inputFiles,
                               errText, failedBackground);
@@ -144,7 +145,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings       *& modelSettings,
             (estimationMode == false || modelSettings->getEstimateWaveletNoise() ||
              modelSettings->getOptimizeWellLocation() == true))
           {
-            processReflectionMatrix(reflectionMatrix_, background_, modelAVOstatic->getWells(), modelSettings,
+            processReflectionMatrix(reflectionMatrix_, background_, modelGeneral->getWells(), modelSettings,
                                       inputFiles, errText, failedReflMat);
           }
           else if(estimationMode == true &&
@@ -152,7 +153,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings       *& modelSettings,
                   modelSettings->getEstimateBackground() == false &&
                   modelSettings->getEstimateCorrelations() == false)
           {
-            processReflectionMatrix(reflectionMatrix_, background_, modelAVOstatic->getWells(), modelSettings,
+            processReflectionMatrix(reflectionMatrix_, background_, modelGeneral->getWells(), modelSettings,
                                       inputFiles, errText, failedReflMat);
             backgroundDone = true; //Not really, but do not need it in this case.
           }
@@ -167,8 +168,8 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings       *& modelSettings,
             {
               for(int i=0;i<numberOfAngles_;i++)
                 seisCube_[i]->setAccessMode(FFTGrid::RANDOMACCESS);
-              modelAVOstatic->processWellLocation(seisCube_, modelAVOstatic->getWells(), reflectionMatrix_,
-                                                  timeSimbox, modelSettings, modelAVOstatic->getWellMoveInterval());
+              modelGeneral->processWellLocation(seisCube_, reflectionMatrix_,
+                                                modelSettings, modelAVOstatic->getWellMoveInterval());
               for(int i=0;i<numberOfAngles_;i++)
                 seisCube_[i]->endAccess();
             }
@@ -182,7 +183,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings       *& modelSettings,
           // locations need to be estimated before the background model is processed.
           //
         {
-          processReflectionMatrix(reflectionMatrix_, background_, modelAVOstatic->getWells(), modelSettings,
+          processReflectionMatrix(reflectionMatrix_, background_, modelGeneral->getWells(), modelSettings,
                                     inputFiles, errText, failedReflMat);
           if (failedReflMat == false && failedExtraSurf == false)
           {
@@ -190,8 +191,8 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings       *& modelSettings,
                            modelSettings, inputFiles, errText, failedSeismic);
             if(failedSeismic == false)
             {
-              modelAVOstatic->processWellLocation(seisCube_, modelAVOstatic->getWells(), reflectionMatrix_,
-                                                  timeSimbox, modelSettings, modelAVOstatic->getWellMoveInterval());
+              modelGeneral->processWellLocation(seisCube_, reflectionMatrix_,
+                                                modelSettings, modelAVOstatic->getWellMoveInterval());
             }
           }
           if(estimationMode == false ||
@@ -199,7 +200,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings       *& modelSettings,
              modelSettings->getEstimateCorrelations() == true ||
              modelSettings->getEstimateWaveletNoise() == true)
           {
-            processBackground(background_, modelAVOstatic->getWells(), timeSimbox, timeBGSimbox,
+            processBackground(background_, modelGeneral->getWells(), timeSimbox, timeBGSimbox,
                               timeDepthMapping, timeCutMapping,
                               modelSettings, inputFiles, errText, failedBackground);
             backgroundDone = true;
@@ -210,17 +211,17 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings       *& modelSettings,
            failedSeismic == false && failedReflMat == false &&
            (estimationMode == false || modelSettings->getEstimateCorrelations() == true))
         {
-          processPriorCorrelations(correlations_, background_, modelAVOstatic->getWells(), timeSimbox, modelSettings,
+          processPriorCorrelations(correlations_, background_, modelGeneral->getWells(), timeSimbox, modelSettings,
                                    inputFiles, errText, failedPriorCorr);
         }
 
         if(failedSeismic == false && failedBackground == false &&
           (estimationMode == false || modelSettings->getEstimateWaveletNoise() || modelSettings->getOptimizeWellLocation()))
         {
-          modelAVOstatic->addSeismicLogs(modelAVOstatic->getWells(), seisCube_, modelSettings, numberOfAngles_);
+          modelAVOstatic->addSeismicLogs(modelGeneral->getWells(), seisCube_, modelSettings, numberOfAngles_);
           if(failedReflMat == false && failedExtraSurf == false)
           {
-            processWavelets(wavelet_, seisCube_, modelAVOstatic->getWells(), reflectionMatrix_,
+            processWavelets(wavelet_, seisCube_, modelGeneral->getWells(), reflectionMatrix_,
                             timeSimbox, correlationDirection, waveletEstimInterval,
                             modelSettings, inputFiles, errText, failedWavelet);
           }
@@ -228,15 +229,15 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings       *& modelSettings,
         if(failedSeismic == false && failedWavelet == false && failedReflMat == false && failedBackground == false &&
           (modelSettings->getOptimizeWellLocation() || modelSettings->getEstimateWaveletNoise() ))
         {
-          modelAVOstatic->generateSyntheticSeismic(wavelet_, modelAVOstatic->getWells(), reflectionMatrix_, timeSimbox, modelSettings, numberOfAngles_);
+          modelAVOstatic->generateSyntheticSeismic(wavelet_, modelGeneral->getWells(), reflectionMatrix_, timeSimbox, modelSettings, numberOfAngles_);
         }
       }
 
       if (!failedWells) {
         if(estimationMode || (modelSettings->getWellOutputFlag() & IO::WELLS) > 0)
-          modelAVOstatic->writeWells(modelAVOstatic->getWells(), modelSettings);
+          modelAVOstatic->writeWells(modelGeneral->getWells(), modelSettings);
         if(estimationMode)
-          modelAVOstatic->writeBlockedWells(modelAVOstatic->getWells(), modelSettings);
+          modelAVOstatic->writeBlockedWells(modelGeneral->getWells(), modelSettings);
       }
     }
   }
@@ -260,6 +261,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings       *& modelSettings,
 ModelAVODynamic::ModelAVODynamic(ModelSettings          *& modelSettings,
                                  const InputFiles        * inputFiles,
                                  ModelAVOStatic          * modelAVOstatic,
+                                 ModelGeneral            * modelGeneral,
                                  SeismicParametersHolder & seismicParameters,
                                  Simbox                  * timeSimbox,
                                  Surface                 * correlationDirection,
@@ -301,7 +303,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& modelSettings,
     background_ = new Background(backModel);
   }
   if(estimationMode == false || modelSettings->getEstimateWaveletNoise() ){
-    processReflectionMatrix(reflectionMatrix_, background_, modelAVOstatic->getWells(), modelSettings,
+    processReflectionMatrix(reflectionMatrix_, background_, modelGeneral->getWells(), modelSettings,
                               inputFiles, errText, failedReflMat);
   }
 
@@ -314,19 +316,19 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& modelSettings,
     correlations_ = new Corr(modelSettings->getNZpad(), static_cast<float>(timeSimbox->getdz()), seismicParameters);
 
   if(failedSeismic == false && (estimationMode == false || modelSettings->getEstimateWaveletNoise() )){
-    modelAVOstatic->addSeismicLogs(modelAVOstatic->getWells(), seisCube_, modelSettings, numberOfAngles_);
+    modelAVOstatic->addSeismicLogs(modelGeneral->getWells(), seisCube_, modelSettings, numberOfAngles_);
     if(failedReflMat == false)
-      processWavelets(wavelet_, seisCube_, modelAVOstatic->getWells(), reflectionMatrix_,
+      processWavelets(wavelet_, seisCube_, modelGeneral->getWells(), reflectionMatrix_,
                       timeSimbox, correlationDirection, modelAVOstatic->getWaveletEstimInterval(),
                       modelSettings, inputFiles, errText, failedWavelet);
   }
   if(failedSeismic == false && failedWavelet == false && failedReflMat == false && modelSettings->getEstimateWaveletNoise() )
-    modelAVOstatic->generateSyntheticSeismic(wavelet_, modelAVOstatic->getWells(), reflectionMatrix_, timeSimbox, modelSettings, numberOfAngles_);
+    modelAVOstatic->generateSyntheticSeismic(wavelet_, modelGeneral->getWells(), reflectionMatrix_, timeSimbox, modelSettings, numberOfAngles_);
 
   if(estimationMode || (modelSettings->getWellOutputFlag() & IO::WELLS) > 0)
-    modelAVOstatic->writeWells(modelAVOstatic->getWells(), modelSettings);
+    modelAVOstatic->writeWells(modelGeneral->getWells(), modelSettings);
   if(estimationMode)
-    modelAVOstatic->writeBlockedWells(modelAVOstatic->getWells(), modelSettings);
+    modelAVOstatic->writeBlockedWells(modelGeneral->getWells(), modelSettings);
 
   failedLoadingModel = failedSeismic || failedPriorCorr || failedReflMat || failedWavelet;
 
@@ -559,16 +561,16 @@ ModelAVODynamic::processSeismic(FFTGrid        **& seisCube,
 
 
 void
-ModelAVODynamic::processBackground(Background         *& background,
-                                   WellData           ** wells,
-                                   Simbox              * timeSimbox,
-                                   Simbox              * timeBGSimbox,
-                                   GridMapping        *& timeDepthMapping,
-                                   GridMapping        *& timeCutMapping,
-                                   ModelSettings       * modelSettings,
-                                   const InputFiles    * inputFiles,
-                                   std::string         & errText,
-                                   bool                & failed)
+ModelAVODynamic::processBackground(Background           *& background,
+                                   std::vector<WellData *> wells,
+                                   Simbox                * timeSimbox,
+                                   Simbox                * timeBGSimbox,
+                                   GridMapping          *& timeDepthMapping,
+                                   GridMapping          *& timeCutMapping,
+                                   ModelSettings         * modelSettings,
+                                   const InputFiles      * inputFiles,
+                                   std::string           & errText,
+                                   bool                  & failed)
 {
   if (modelSettings->getForwardModeling())
     LogKit::WriteHeader("Earth Model");
@@ -738,7 +740,7 @@ ModelAVODynamic::processBackground(Background         *& background,
 void
 ModelAVODynamic::processPriorCorrelations(Corr                   *& correlations,
                                           Background              * background,
-                                          WellData               ** wells,
+                                          std::vector<WellData *>   wells,
                                           Simbox                  * timeSimbox,
                                           ModelSettings           * modelSettings,
                                           const InputFiles        * inputFiles,
@@ -959,13 +961,13 @@ ModelAVODynamic::estimateCorrXYFromSeismic(Surface *& corrXY,
 }
 
 void
-ModelAVODynamic::processReflectionMatrix(float            **& reflectionMatrix,
-                                         Background         * background,
-                                         WellData          ** wells,
-                                         ModelSettings      * modelSettings,
-                                         const InputFiles   * inputFiles,
-                                         std::string        & errText,
-                                         bool               & failed)
+ModelAVODynamic::processReflectionMatrix(float               **& reflectionMatrix,
+                                         Background            * background,
+                                         std::vector<WellData *> wells,
+                                         ModelSettings         * modelSettings,
+                                         const InputFiles      * inputFiles,
+                                         std::string           & errText,
+                                         bool                  & failed)
 {
   LogKit::WriteHeader("Reflection matrix");
   //
@@ -1061,8 +1063,8 @@ ModelAVODynamic::setupDefaultReflectionMatrix(float       **& reflectionMatrix,
   }
 }
 
-double ModelAVODynamic::vsvpFromWells(WellData ** wells,
-                                      int         nWells)
+double ModelAVODynamic::vsvpFromWells(std::vector<WellData *> wells,
+                                      int                     nWells)
 {
   int   N      = 0;
   float VsVp   = 0.0f;
@@ -1079,7 +1081,7 @@ double ModelAVODynamic::vsvpFromWells(WellData ** wells,
 void
 ModelAVODynamic::processWavelets(Wavelet                    **& wavelet,
                                  FFTGrid                     ** seisCube,
-                                 WellData                    ** wells,
+                                 std::vector<WellData *>        wells,
                                  float                       ** reflectionMatrix,
                                  Simbox                       * timeSimbox,
                                  const Surface                * correlationDirection,
@@ -1238,7 +1240,7 @@ ModelAVODynamic::process1DWavelet(ModelSettings                * modelSettings,
                                   const InputFiles             * inputFiles,
                                   Simbox                       * timeSimbox,
                                   FFTGrid                     ** seisCube,
-                                  WellData                    ** wells,
+                                  std::vector<WellData *>        wells,
                                   const std::vector<Surface *> & waveletEstimInterval,
                                   float                        * reflectionMatrix,
                                   std::string                  & errText,
@@ -1418,7 +1420,7 @@ ModelAVODynamic::process3DWavelet(ModelSettings                           * mode
                                   const InputFiles                        * inputFiles,
                                   Simbox                                  * timeSimbox,
                                   FFTGrid                                ** seisCube,
-                                  WellData                               ** wells,
+                                  std::vector<WellData *>                   wells,
                                   const std::vector<Surface *>            & waveletEstimInterval,
                                   float                                   * reflectionMatrix,
                                   std::string                             & errText,

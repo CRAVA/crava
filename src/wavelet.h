@@ -111,34 +111,34 @@ public:
 
 
 
-  virtual float findGlobalScaleForGivenWavelet(ModelSettings * /*modelSettings*/,
-                                               Simbox        * /*simbox*/,
-                                               FFTGrid       * /*seisCube*/,
-                                               WellData     ** /*wells*/) {return 1.0f;}
+  virtual float findGlobalScaleForGivenWavelet(ModelSettings         * /*modelSettings*/,
+                                               Simbox                * /*simbox*/,
+                                               FFTGrid               * /*seisCube*/,
+                                               std::vector<WellData *> /*wells*/) {return 1.0f;}
 
   // for noise estimation
-  virtual float calculateSNRatioAndLocalWavelet(Simbox        * /*simbox*/,
-                                                FFTGrid       * /*seisCube*/,
-                                                WellData     ** /*wells*/,
-                                                ModelSettings * /*modelSettings*/,
-                                                std::string   & /*errText*/,
-                                                int           & /*error*/,
-                                                int             /*number*/,
-                                                Grid2D       *& /*noiseScaled*/,
-                                                Grid2D       *& /*shift*/,
-                                                Grid2D       *& /*gain*/,
-                                                float           /*SNRatio*/,
-                                                float           /*waveletScale*/,
-                                                bool            /*estimateSNRatio*/,
-                                                bool            /*estimateGlobalScale*/,
-                                                bool            /*estimateLocalNoise*/,
-                                                bool            /*estimateLocalShift*/,
-                                                bool            /*estimateLocalScale*/,
-                                                bool            /*estimateWavelet*/) {return 1.0f;}
+  virtual float calculateSNRatioAndLocalWavelet(Simbox                * /*simbox*/,
+                                                FFTGrid               * /*seisCube*/,
+                                                std::vector<WellData *> /*wells*/,
+                                                ModelSettings         * /*modelSettings*/,
+                                                std::string           & /*errText*/,
+                                                int                   & /*error*/,
+                                                int                     /*number*/,
+                                                Grid2D               *& /*noiseScaled*/,
+                                                Grid2D               *& /*shift*/,
+                                                Grid2D               *& /*gain*/,
+                                                float                   /*SNRatio*/,
+                                                float                   /*waveletScale*/,
+                                                bool                    /*estimateSNRatio*/,
+                                                bool                    /*estimateGlobalScale*/,
+                                                bool                    /*estimateLocalNoise*/,
+                                                bool                    /*estimateLocalShift*/,
+                                                bool                    /*estimateLocalScale*/,
+                                                bool                    /*estimateWavelet*/) {return 1.0f;}
 
   virtual float calculateSNRatio(Simbox                                   * /*simbox*/,
                                  FFTGrid                                  * /*seisCube*/,
-                                 WellData                                ** /*wells*/,
+                                 std::vector<WellData *>                    /*wells*/,
                                  ModelSettings                            * /*modelSettings*/,
                                  std::string                              & /*errText*/,
                                  int                                      & /*error*/,

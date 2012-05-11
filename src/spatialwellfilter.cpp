@@ -83,7 +83,7 @@ void SpatialWellFilter::setPriorSpatialCorr(FFTGrid *parSpatialCorr, WellData *w
 }
 
 void SpatialWellFilter::doFiltering(Corr                        * corr,
-                                    WellData                   ** wells,
+                                    std::vector<WellData  *>      wells,
                                     int                           nWells,
                                     bool                          useVpRhoFilter,
                                     int                           nAngles,

@@ -10,11 +10,11 @@ struct irapgrid;
 
 class Analyzelog {
 public:
-  Analyzelog(WellData      ** wells,
-             Background     * background,
-             Simbox         * simbox,
-             ModelSettings  * modelSettings,
-             std::string    & errTxt);
+  Analyzelog(std::vector<WellData *> wells,
+             Background            * background,
+             Simbox                * simbox,
+             ModelSettings         * modelSettings,
+             std::string           & errTxt);
   ~Analyzelog(void);
 
   float        ** getVar0(void)         const { return Var0_         ;}
@@ -64,9 +64,9 @@ private:
                                  float            dt,
                                  std::string    & errTxt);
 
-  const Simbox  * simbox_;
-  WellData     ** wells_;
-  int             nwells_;       // Number of wells
+  const Simbox          * simbox_;
+  std::vector<WellData *> wells_;
+  int                     nwells_;       // Number of wells
 
   float        ** Var0_;
   float        ** pointVar0_;

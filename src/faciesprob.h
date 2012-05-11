@@ -33,7 +33,7 @@ public:
              FFTGrid                     ** priorFaciesCubes,
              const std::vector<double **> & sigmaEOrig,
              bool                           useFilter,
-             const WellData              ** wells,
+             std::vector<WellData *>        wells,
              int                            nWells,
              const std::vector<Surface *> & faciesEstimInterval,
              const double                   dz,
@@ -59,7 +59,7 @@ public:
 
   FFTGrid              * getFaciesProbUndef(){return faciesProbUndef_;};
 
-  void                   calculateConditionalFaciesProb(WellData                      ** wells,
+  void                   calculateConditionalFaciesProb(std::vector<WellData *>          wells,
                                                         int                              nwells,
                                                         const std::vector<Surface *>   & faciesEstimInterval,
                                                         const std::vector<std::string> & faciesNames,
@@ -68,11 +68,11 @@ public:
   void                   calculateFaciesProbGeomodel(const float *                  priorFacies,
                                                      FFTGrid                    ** priorFaciesCubes);
 
-  std::vector<double>    calculateChiSquareTest(WellData                    ** wells,
+  std::vector<double>    calculateChiSquareTest(std::vector<WellData *>        wells,
                                                 int                            nWells,
                                                 const std::vector<Surface *> & faciesEstimInterval);
 
-  void                   calculateChiSquareAlternativeTest(WellData                    ** wells,
+  void                   calculateChiSquareAlternativeTest(std::vector<WellData *>        wells,
                                                            int                            nWells,
                                                            const std::vector<Surface *> & faciesEstimInterval,
                                                            const ModelSettings          * modelSettings);
@@ -82,7 +82,7 @@ public:
                                       const float * priorFacies,
                                       FFTGrid    ** priorFaciesCubes);
 
-  void writeBWFaciesProb(WellData ** wells,
+  void writeBWFaciesProb(std::vector<WellData *> wells,
                          int         nWells);
 
 private:
@@ -96,7 +96,7 @@ private:
                                         FFTGrid                      * postRho,
                                         const std::vector<double **> & sigmaEOrig,
                                         bool                           useFilter,
-                                        const WellData              ** wells,
+                                        std::vector<WellData *>        wells,
                                         int                            nWells,
                                         const std::vector<Surface *> & faciesEstimInterval,
                                         const double                   dz,
@@ -131,7 +131,7 @@ private:
                                         Crava                         *cravaResult,
                                         const std::vector<Grid2D *>   & noiseScale);
 
-  void                   setNeededLogsSpatial(const WellData              ** wells,
+  void                   setNeededLogsSpatial(std::vector<WellData  *>       wells,
                                               int                            nWells,
                                               const std::vector<Surface *> & faciesEstimInterval,
                                               const double                   dz,

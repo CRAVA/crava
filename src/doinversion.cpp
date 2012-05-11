@@ -26,7 +26,8 @@ void setupStaticModels(ModelGeneral   *& modelGeneral,
                                        modelGeneral->getTimeCutMapping(),
                                        modelGeneral->getTimeSimbox(),
                                        timeBGSimbox,
-                                       modelGeneral->getTimeSimboxConstThick());
+                                       modelGeneral->getTimeSimboxConstThick(),
+                                       modelGeneral->getWells());
 }
 
 
@@ -56,6 +57,7 @@ bool doFirstAVOInversion(ModelSettings           * modelSettings,
                                         modelAVOstatic->getWellMoveInterval(),
                                         modelAVOstatic->getFaciesEstimInterval(),
                                         modelAVOstatic,
+                                        modelGeneral,
                                         vintage);
 
   bool failedLoadingModel = modelAVOdynamic == NULL || modelAVOdynamic->getFailed();
@@ -79,7 +81,7 @@ bool doFirstAVOInversion(ModelSettings           * modelSettings,
     delete spatwellfilter;
   }
 
-  modelAVOstatic->deleteDynamicWells(modelAVOstatic->getWells(),modelSettings->getNumberOfWells());
+  modelAVOstatic->deleteDynamicWells(modelGeneral->getWells(),modelSettings->getNumberOfWells());
   delete modelAVOdynamic;
 
   return(failedLoadingModel);
@@ -98,6 +100,7 @@ bool doTimeLapseAVOInversion(ModelSettings           * modelSettings,
   modelAVOdynamic = new ModelAVODynamic(modelSettings,
                                         inputFiles,
                                         modelAVOstatic,
+                                        modelGeneral,
                                         seismicParameters,
                                         modelGeneral->getTimeSimbox(),
                                         modelGeneral->getCorrelationDirection(),
@@ -117,7 +120,7 @@ bool doTimeLapseAVOInversion(ModelSettings           * modelSettings,
     delete crava;
   }
 
-  modelAVOstatic->deleteDynamicWells(modelAVOstatic->getWells(),modelSettings->getNumberOfWells());
+  modelAVOstatic->deleteDynamicWells(modelGeneral->getWells(),modelSettings->getNumberOfWells());
   delete modelAVOdynamic;
 
   return(failedLoadingModel);

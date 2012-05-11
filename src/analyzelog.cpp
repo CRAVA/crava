@@ -15,11 +15,11 @@
 #include "src/simbox.h"
 #include "src/io.h"
 
-Analyzelog::Analyzelog(WellData      ** wells,
-                       Background     * background,
-                       Simbox         * simbox,
-                       ModelSettings  * modelSettings,
-                       std::string    & errTxt)
+Analyzelog::Analyzelog(std::vector<WellData *> wells,
+                       Background            * background,
+                       Simbox                * simbox,
+                       ModelSettings         * modelSettings,
+                       std::string           & errTxt)
 {
   pointVar0_ = new float*[3];
   for(int i=0 ; i<3 ; i++)

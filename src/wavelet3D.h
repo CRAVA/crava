@@ -23,7 +23,7 @@ public:
             const std::vector<std::vector<double> >    & tGradY,
             FFTGrid                                    * seisCube,
             ModelSettings                              * modelSettings,
-            WellData                                  ** wells,
+            std::vector<WellData *>                      wells,
             Simbox                                     * simBox,
             float                                      * reflCoef,
             int                                          angle_index,
@@ -59,7 +59,7 @@ public:
 
   float                  calculateSNRatio(Simbox                                   * simbox,
                                           FFTGrid                                  * seisCube,
-                                          WellData                                ** wells,
+                                          std::vector<WellData *>                    wells,
                                           ModelSettings                            * modelSettings,
                                           std::string                              & errText,
                                           int                                      & error,

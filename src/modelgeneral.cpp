@@ -67,10 +67,16 @@ ModelGeneral::ModelGeneral(ModelSettings *& modelSettings, const InputFiles * in
 
   bool failedLoadingModel = false;
 
+  bool failedWells        = false;
+
   trendCubes_             = NULL;
 
   Simbox * timeCutSimbox  = NULL;
   timeLine_               = NULL;
+
+  forwardModeling_        = modelSettings->getForwardModeling();
+  numberOfWells_          = modelSettings->getNumberOfWells();
+
 
   {
     int debugLevel = modelSettings->getLogLevel();
@@ -171,9 +177,10 @@ ModelGeneral::ModelGeneral(ModelSettings *& modelSettings, const InputFiles * in
           if(modelSettings->getNumberOfAngles(i) > 0) //Check for AVO data, could be pure travel time.
             timeLine_->AddEvent(time, TimeLine::AVO, i);
         }
+        processWells(wells_, timeSimbox_, modelSettings, inputFiles, errText, failedWells);
       }
     }
-    failedLoadingModel = failedSimbox  || failedDepthConv;
+    failedLoadingModel = failedSimbox  || failedDepthConv || failedWells;
 
     if (failedLoadingModel) {
       LogKit::WriteHeader("Error(s) while loading data");
@@ -185,6 +192,7 @@ ModelGeneral::ModelGeneral(ModelSettings *& modelSettings, const InputFiles * in
   failed_ = failedLoadingModel;
   failed_details_.push_back(failedSimbox);
   failed_details_.push_back(failedDepthConv);
+  failed_details_.push_back(failedWells);
 
   if(timeCutSimbox != NULL)
     delete timeCutSimbox;
@@ -214,6 +222,13 @@ ModelGeneral::~ModelGeneral(void)
   delete randomGen_;
   delete timeSimbox_;
   delete timeSimboxConstThick_;
+
+   if(!forwardModeling_)
+  {
+    for(int i=0 ; i<numberOfWells_ ; i++)
+      if(wells_[i] != NULL)
+        delete wells_[i];
+  }
 
 }
 
@@ -2823,12 +2838,12 @@ ModelGeneral::generateRockPhysics4DBackground(const std::vector<DistributionsRoc
   rho_rho_stat->fillInParamCorr(&correlations, lowCut, corrGradI, corrGradJ);
 
   // Multiply covariance grids with scalar variance coefficients
-  vp_vp_stat  ->multiplyByScalar(varVp);
-  vp_vs_stat  ->multiplyByScalar(crVpVs);
-  vp_rho_stat ->multiplyByScalar(crVpRho);
-  vs_vs_stat  ->multiplyByScalar(varVs);
-  vs_rho_stat ->multiplyByScalar(crVsRho);
-  rho_rho_stat->multiplyByScalar(varRho);
+  vp_vp_stat  ->multiplyByScalar(static_cast<float>(varVp));
+  vp_vs_stat  ->multiplyByScalar(static_cast<float>(crVpVs));
+  vp_rho_stat ->multiplyByScalar(static_cast<float>(crVpRho));
+  vs_vs_stat  ->multiplyByScalar(static_cast<float>(varVs));
+  vs_rho_stat ->multiplyByScalar(static_cast<float>(crVsRho));
+  rho_rho_stat->multiplyByScalar(static_cast<float>(varRho));
 
   // Set the static and dynamic grids in the state4d object
   state4d.SetStaticMu(vp_stat, vs_stat, rho_stat);
@@ -2839,4 +2854,446 @@ ModelGeneral::generateRockPhysics4DBackground(const std::vector<DistributionsRoc
   //state4d.SetDynamicSigma(NULL, NULL, NULL, NULL, NULL, NULL);
   //state4d.SetStaticDynamicSigma(NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
+}
+
+void
+ModelGeneral::processWells(std::vector<WellData *> & wells,
+                             Simbox              * timeSimbox,
+                             ModelSettings      *& modelSettings,
+                             const InputFiles    * inputFiles,
+                             std::string         & errText,
+                             bool                & failed)
+{
+  int     nWells         = modelSettings->getNumberOfWells();
+
+  if(nWells > 0) {
+
+    double wall=0.0, cpu=0.0;
+    TimeKit::getTime(wall,cpu);
+
+    LogKit::WriteHeader("Reading and processing wells");
+
+    bool    faciesLogGiven = modelSettings->getFaciesLogGiven();
+    int     nFacies        = 0;
+    int     error = 0;
+
+    std::string tmpErrText("");
+    wells.resize(nWells);
+    for(int i=0 ; i<nWells ; i++) {
+      wells[i] = new WellData(inputFiles->getWellFile(i),
+        modelSettings->getLogNames(),
+        modelSettings->getInverseVelocity(),
+        modelSettings,
+        modelSettings->getIndicatorFacies(i),
+        modelSettings->getIndicatorFilter(i),
+        modelSettings->getIndicatorWavelet(i),
+        modelSettings->getIndicatorBGTrend(i),
+        modelSettings->getIndicatorRealVs(i),
+        faciesLogGiven);
+      if(wells[i]->checkError(tmpErrText) != 0) {
+        errText += tmpErrText;
+        error = 1;
+      }
+    }
+
+
+    if (error == 0) {
+      if(modelSettings->getFaciesLogGiven()) {
+        setFaciesNames(wells, modelSettings, tmpErrText, error);
+        nFacies = modelSettings->getNumberOfFacies(); // nFacies is set in setFaciesNames()
+      }
+      if (error>0)
+        errText += "Prior facies probabilities failed.\n"+tmpErrText;
+
+      int   * validWells    = new int[nWells];
+      bool  * validIndex    = new bool[nWells];
+      int   * nMerges       = new int[nWells];
+      int   * nInvalidAlpha = new int[nWells];
+      int   * nInvalidBeta  = new int[nWells];
+      int   * nInvalidRho   = new int[nWells];
+      float * rankCorr      = new float[nWells];
+      float * devAngle      = new float[nWells];
+      int  ** faciesCount   = NULL;
+
+      if(nFacies > 0) {
+        faciesCount = new int * [nWells];
+        for (int i = 0 ; i < nWells ; i++)
+          faciesCount[i] = new int[nFacies];
+      }
+
+      int count = 0;
+      int nohit=0;
+      int empty=0;
+      int facieslognotok = 0;
+      int upwards=0;
+      LogKit::LogFormatted(LogKit::Low,"\n");
+      for (int i=0 ; i<nWells ; i++)
+      {
+        bool skip = false;
+        LogKit::LogFormatted(LogKit::Low,wells[i]->getWellname()+" : \n");
+        if(wells[i]!=NULL) {
+          if(wells[i]->checkSimbox(timeSimbox) == 1) {
+            skip = true;
+            nohit++;
+            TaskList::addTask("Consider increasing the inversion volume such that well "+wells[i]->getWellname()+ " can be included");
+          }
+          if(wells[i]->getNd() == 0) {
+            LogKit::LogFormatted(LogKit::Low,"  IGNORED (no log entries found)\n");
+            skip = true;
+            empty++;
+            TaskList::addTask("Check the log entries in well "+wells[i]->getWellname()+".");
+          }
+          if(wells[i]->isFaciesOk()==0) {
+            LogKit::LogFormatted(LogKit::Low,"   IGNORED (facies log has wrong entries)\n");
+            skip = true;
+            facieslognotok++;
+            TaskList::addTask("Check the facies logs in well "+wells[i]->getWellname()+".\n       The facies logs in this well are wrong and the well is ignored");
+          }
+          if(wells[i]->removeDuplicateLogEntries(timeSimbox, nMerges[i]) == false) {
+            LogKit::LogFormatted(LogKit::Low,"   IGNORED (well is too far from monotonous in time)\n");
+            skip = true;
+            upwards++;
+            TaskList::addTask("Check the TWT log in well "+wells[i]->getWellname()+".\n       The well is moving too much upwards, and the well is ignored");
+          }
+          if(skip)
+            validIndex[i] = false;
+          else {
+            validIndex[i] = true;
+            wells[i]->setWrongLogEntriesUndefined(nInvalidAlpha[i], nInvalidBeta[i], nInvalidRho[i]);
+            wells[i]->filterLogs();
+            //wells[i]->findMeanVsVp(waveletEstimInterval_);
+            wells[i]->lookForSyntheticVsLog(rankCorr[i]);
+            wells[i]->calculateDeviation(devAngle[i], timeSimbox);
+
+            if (nFacies > 0)
+              wells[i]->countFacies(timeSimbox,faciesCount[i]);
+            validWells[count] = i;
+            count++;
+          }
+        }
+      }
+      //
+      // Write summary.
+      //
+      LogKit::LogFormatted(LogKit::Low,"\n");
+      LogKit::LogFormatted(LogKit::Low,"                                      Invalid                                    \n");
+      LogKit::LogFormatted(LogKit::Low,"Well                    Merges      Vp   Vs  Rho  synthVs/Corr    Deviated/Angle \n");
+      LogKit::LogFormatted(LogKit::Low,"---------------------------------------------------------------------------------\n");
+      for(int i=0 ; i<nWells ; i++) {
+        if (validIndex[i])
+          LogKit::LogFormatted(LogKit::Low,"%-23s %6d    %4d %4d %4d     %3s / %5.3f      %3s / %4.1f\n",
+          wells[i]->getWellname().c_str(),
+          nMerges[i],
+          nInvalidAlpha[i],
+          nInvalidBeta[i],
+          nInvalidRho[i],
+          (wells[i]->hasSyntheticVsLog() ? "yes" : " no"),
+          rankCorr[i],
+          (devAngle[i] > modelSettings->getMaxDevAngle() ? "yes" : " no"),
+          devAngle[i]);
+        else
+          LogKit::LogFormatted(LogKit::Low,"%-23s      -       -    -    -       - /     -       -  /    -\n",
+          wells[i]->getWellname().c_str());
+      }
+
+      //
+      // Print facies count for each well
+      //
+      if(nFacies > 0) {
+        //
+        // Probabilities
+        //
+        LogKit::LogFormatted(LogKit::Low,"\nFacies distributions for each well: \n");
+        LogKit::LogFormatted(LogKit::Low,"\nWell                    ");
+        for (int i = 0 ; i < nFacies ; i++)
+          LogKit::LogFormatted(LogKit::Low,"%12s ",modelSettings->getFaciesName(i).c_str());
+        LogKit::LogFormatted(LogKit::Low,"\n");
+        for (int i = 0 ; i < 24+13*nFacies ; i++)
+          LogKit::LogFormatted(LogKit::Low,"-");
+        LogKit::LogFormatted(LogKit::Low,"\n");
+        for (int i = 0 ; i < nWells ; i++) {
+          if (validIndex[i]) {
+            float tot = 0.0;
+            for (int f = 0 ; f < nFacies ; f++)
+              tot += static_cast<float>(faciesCount[i][f]);
+            LogKit::LogFormatted(LogKit::Low,"%-23s ",wells[i]->getWellname().c_str());
+            for (int f = 0 ; f < nFacies ; f++) {
+              if (tot > 0) {
+                float faciesProb = static_cast<float>(faciesCount[i][f])/tot;
+                LogKit::LogFormatted(LogKit::Low,"%12.4f ",faciesProb);
+              }
+              else
+                LogKit::LogFormatted(LogKit::Low,"         -   ");
+            }
+            LogKit::LogFormatted(LogKit::Low,"\n");
+          }
+          else {
+            LogKit::LogFormatted(LogKit::Low,"%-23s ",wells[i]->getWellname().c_str());
+            for (int f = 0 ; f < nFacies ; f++)
+              LogKit::LogFormatted(LogKit::Low,"         -   ");
+            LogKit::LogFormatted(LogKit::Low,"\n");
+
+          }
+        }
+        LogKit::LogFormatted(LogKit::Low,"\n");
+        //
+        // Counts
+        //
+        LogKit::LogFormatted(LogKit::Medium,"\nFacies counts for each well: \n");
+        LogKit::LogFormatted(LogKit::Medium,"\nWell                    ");
+        for (int i = 0 ; i < nFacies ; i++)
+          LogKit::LogFormatted(LogKit::Medium,"%12s ",modelSettings->getFaciesName(i).c_str());
+        LogKit::LogFormatted(LogKit::Medium,"\n");
+        for (int i = 0 ; i < 24+13*nFacies ; i++)
+          LogKit::LogFormatted(LogKit::Medium,"-");
+        LogKit::LogFormatted(LogKit::Medium,"\n");
+        for (int i = 0 ; i < nWells ; i++) {
+          if (validIndex[i]) {
+            float tot = 0.0;
+            for (int f = 0 ; f < nFacies ; f++)
+              tot += static_cast<float>(faciesCount[i][f]);
+            LogKit::LogFormatted(LogKit::Medium,"%-23s ",wells[i]->getWellname().c_str());
+            for (int f = 0 ; f < nFacies ; f++) {
+              LogKit::LogFormatted(LogKit::Medium,"%12d ",faciesCount[i][f]);
+            }
+            LogKit::LogFormatted(LogKit::Medium,"\n");
+          }
+          else {
+            LogKit::LogFormatted(LogKit::Medium,"%-23s ",wells[i]->getWellname().c_str());
+            for (int f = 0 ; f < nFacies ; f++)
+              LogKit::LogFormatted(LogKit::Medium,"         -   ");
+            LogKit::LogFormatted(LogKit::Medium,"\n");
+
+          }
+        }
+        LogKit::LogFormatted(LogKit::Medium,"\n");
+      }
+
+      //
+      // Remove invalid wells
+      //
+      for(int i=0 ; i<nWells ; i++)
+        if (!validIndex[i])
+          delete wells[i];
+      for(int i=0 ; i<count ; i++)
+        wells[i] = wells[validWells[i]];
+      for(int i=count ; i<nWells ; i++)
+        wells[i] = NULL;
+      nWells = count;
+      modelSettings->setNumberOfWells(nWells);
+
+      delete [] validWells;
+      delete [] validIndex;
+      delete [] nMerges;
+      delete [] nInvalidAlpha;
+      delete [] nInvalidBeta;
+      delete [] nInvalidRho;
+      delete [] rankCorr;
+      delete [] devAngle;
+
+      if (nohit>0)
+        LogKit::LogFormatted(LogKit::Low,"\nWARNING: %d well(s) do not hit the inversion volume and will be ignored.\n",nohit);
+      if (empty>0)
+        LogKit::LogFormatted(LogKit::Low,"\nWARNING: %d well(s) contain no log entries and will be ignored.\n",empty);
+      if(facieslognotok>0)
+        LogKit::LogFormatted(LogKit::Low,"\nWARNING: %d well(s) have wrong facies logs and will be ignored.\n",facieslognotok);
+      if(upwards>0)
+        LogKit::LogFormatted(LogKit::Low,"\nWARNING: %d well(s) are moving upwards in TWT and will be ignored.\n",upwards);
+      if (nWells==0 && modelSettings->getNoWellNedded()==false) {
+        LogKit::LogFormatted(LogKit::Low,"\nERROR: There are no wells left for data analysis. Please check that the inversion area given");
+        LogKit::LogFormatted(LogKit::Low,"\n       below is correct. If it is not, you probably have problems with coordinate scaling.");
+        LogKit::LogFormatted(LogKit::Low,"\n                                   X0          Y0        DeltaX      DeltaY      Angle");
+        LogKit::LogFormatted(LogKit::Low,"\n       -------------------------------------------------------------------------------");
+        LogKit::LogFormatted(LogKit::Low,"\n       Inversion area:    %11.2f %11.2f   %11.2f %11.2f   %8.3f\n",
+          timeSimbox->getx0(), timeSimbox->gety0(),
+          timeSimbox->getlx(), timeSimbox->getly(),
+          (timeSimbox->getAngle()*180)/M_PI);
+        errText += "No wells available for estimation.";
+        error = 1;
+      }
+
+      if(nFacies > 0) {
+        int fc;
+        for(int i = 0; i < nFacies; i++){
+          fc = 0;
+          for(int j = 0; j < nWells; j++){
+            fc+=faciesCount[j][i];
+          }
+          if(fc == 0){
+            LogKit::LogFormatted(LogKit::Low,"\nWARNING: Facies %s is not observed in any of the wells, and posterior facies probability can not be estimated for this facies.\n",modelSettings->getFaciesName(i).c_str() );
+            TaskList::addTask("In order to estimate prior facies probability for facies "+ modelSettings->getFaciesName(i) + " add wells which contain observations of this facies.\n");
+          }
+        }
+        for (int i = 0 ; i<nWells ; i++)
+          delete [] faciesCount[i];
+        delete [] faciesCount;
+      }
+
+    }
+    failed = error > 0;
+    Timings::setTimeWells(wall,cpu);
+  }
+}
+
+void
+ModelGeneral::setFaciesNames(std::vector<WellData *>     wells,
+                             ModelSettings            *& modelSettings,
+                             std::string               & tmpErrText,
+                             int                       & error)
+{
+  int min,max;
+  int globalmin = 0;
+  int globalmax = 0;
+  bool first = true;
+  for (int w = 0; w < modelSettings->getNumberOfWells(); w++) {
+    if(wells[w]->isFaciesLogDefined())
+    {
+      wells[w]->getMinMaxFnr(min,max);
+      if(first==true)
+      {
+        globalmin = min;
+        globalmax = max;
+        first = false;
+      }
+      else
+      {
+        if(min<globalmin)
+          globalmin = min;
+        if(max>globalmax)
+          globalmax = max;
+      }
+    }
+  }
+
+  int nnames = globalmax - globalmin + 1;
+  std::vector<std::string> names(nnames);
+
+  for(int w=0 ; w<modelSettings->getNumberOfWells() ; w++)
+  {
+    if(wells[w]->isFaciesLogDefined())
+    {
+      for(int i=0 ; i < wells[w]->getNFacies() ; i++)
+      {
+        std::string name = wells[w]->getFaciesName(i);
+        int         fnr  = wells[w]->getFaciesNr(i) - globalmin;
+
+        if(names[fnr] == "") {
+          names[fnr] = name;
+        }
+        else if(names[fnr] != name)
+        {
+          tmpErrText += "Problem with facies logs. Facies names and numbers are not uniquely defined.\n";
+          error++;
+        }
+      }
+    }
+  }
+
+  LogKit::LogFormatted(LogKit::Low,"\nFaciesLabel      FaciesName           ");
+  LogKit::LogFormatted(LogKit::Low,"\n--------------------------------------\n");
+  for(int i=0 ; i<nnames ; i++)
+    if(names[i] != "")
+      LogKit::LogFormatted(LogKit::Low,"    %2d           %-20s\n",i+globalmin,names[i].c_str());
+
+  int nFacies = 0;
+  for(int i=0 ; i<nnames ; i++)
+    if(names[i] != "")
+      nFacies++;
+
+  for(int i=0 ; i<nnames ; i++)
+  {
+    if(names[i] != "")
+    {
+      modelSettings->addFaciesName(names[i]);
+      modelSettings->addFaciesLabel(globalmin + i);
+    }
+  }
+}
+
+void
+ModelGeneral::processWellLocation(FFTGrid                       ** seisCube,
+                                    float                       ** reflectionMatrix,
+                                    ModelSettings                * modelSettings,
+                                    const std::vector<Surface *> & interval)
+{
+  LogKit::WriteHeader("Estimating optimized well location");
+
+  double  deltaX, deltaY;
+  float   sum;
+  float   kMove;
+  float   moveAngle;
+  int     iMove;
+  int     jMove;
+  int     i,j,w;
+  int     iMaxOffset;
+  int     jMaxOffset;
+  int     nMoveAngles = 0;
+  int     nWells      = modelSettings->getNumberOfWells();
+  int     nAngles     = modelSettings->getNumberOfAngles(0);//Well location is not estimated when using time lapse data
+  float   maxShift    = modelSettings->getMaxWellShift();
+  float   maxOffset   = modelSettings->getMaxWellOffset();
+  double  angle       = timeSimbox_->getAngle();
+  double  dx          = timeSimbox_->getdx();
+  double  dy          = timeSimbox_->getdx();
+  std::vector<float> seismicAngle = modelSettings->getAngle(0); //Use first time lapse as this not is allowed in 4D
+
+  std::vector<float> angleWeight(nAngles);
+  LogKit::LogFormatted(LogKit::Low,"\n");
+  LogKit::LogFormatted(LogKit::Low,"  Well             Shift[ms]       DeltaI   DeltaX[m]   DeltaJ   DeltaY[m] \n");
+  LogKit::LogFormatted(LogKit::Low,"  ----------------------------------------------------------------------------------\n");
+
+  for (w = 0 ; w < nWells ; w++) {
+    if( wells_[w]->isDeviated()==true )
+      continue;
+
+    BlockedLogs * bl = wells_[w]->getBlockedLogsOrigThick();
+    nMoveAngles = modelSettings->getNumberOfWellAngles(w);
+
+    if( nMoveAngles==0 )
+      continue;
+
+    for( i=0; i<nAngles; i++ )
+      angleWeight[i] = 0;
+
+    for( i=0; i<nMoveAngles; i++ ){
+      moveAngle   = modelSettings->getWellMoveAngle(w,i);
+
+      for( j=0; j<nAngles; j++ ){
+        if( moveAngle == seismicAngle[j]){
+          angleWeight[j] = modelSettings->getWellMoveWeight(w,i);
+          break;
+        }
+      }
+    }
+
+    sum = 0;
+    for( i=0; i<nAngles; i++ )
+      sum += angleWeight[i];
+    if( sum == 0 )
+      continue;
+
+    iMaxOffset = static_cast<int>(std::ceil(maxOffset/dx));
+    jMaxOffset = static_cast<int>(std::ceil(maxOffset/dy));
+
+    bl->findOptimalWellLocation(seisCube,timeSimbox_,reflectionMatrix,nAngles,angleWeight,maxShift,iMaxOffset,jMaxOffset,interval,iMove,jMove,kMove);
+
+    deltaX = iMove*dx*cos(angle) - jMove*dy*sin(angle);
+    deltaY = iMove*dx*sin(angle) + jMove*dy*cos(angle);
+    wells_[w]->moveWell(timeSimbox_,deltaX,deltaY,kMove);
+    wells_[w]->deleteBlockedLogsOrigThick();
+    wells_[w]->setBlockedLogsOrigThick( new BlockedLogs(wells_[w], timeSimbox_, modelSettings->getRunFromPanel()) );
+    LogKit::LogFormatted(LogKit::Low,"  %-13s %11.2f %12d %11.2f %8d %11.2f \n",
+    wells_[w]->getWellname().c_str(), kMove, iMove, deltaX, jMove, deltaY);
+  }
+
+   for (w = 0 ; w < nWells ; w++){
+     nMoveAngles = modelSettings->getNumberOfWellAngles(w);
+
+    if( wells_[w]->isDeviated()==true && nMoveAngles > 0 )
+    {
+      LogKit::LogFormatted(LogKit::Warning,"\nWARNING: Well %7s is treated as deviated and can not be moved.\n",
+          wells_[w]->getWellname().c_str());
+      TaskList::addTask("Well "+NRLib::ToString(wells_[w]->getWellname())+" can not be moved. Remove <optimize-location-to> for this well");
+    }
+   }
 }

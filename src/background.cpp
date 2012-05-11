@@ -25,12 +25,12 @@
 #include "src/gridmapping.h"
 #include "src/io.h"
 
-Background::Background(FFTGrid       ** grids,
-                       WellData      ** wells,
-                       FFTGrid       *& velocity,
-                       Simbox         * timeSimbox,
-                       Simbox         * timeBGSimbox,
-                       ModelSettings  * modelSettings)
+Background::Background(FFTGrid              ** grids,
+                       std::vector<WellData *> wells,
+                       FFTGrid              *& velocity,
+                       Simbox                * timeSimbox,
+                       Simbox                * timeBGSimbox,
+                       ModelSettings         * modelSettings)
   : DataTarget_(250), // For kriging: Increase surrounding until 250 data points is aquired
     vsvp_(RMISSING)
 {
@@ -97,13 +97,13 @@ Background::releaseGrids()
 
 //-------------------------------------------------------------------------------
 void
-Background::generateBackgroundModel(FFTGrid      *& bgAlpha,
-                                    FFTGrid      *& bgBeta,
-                                    FFTGrid      *& bgRho,
-                                    FFTGrid      *& velocity,
-                                    WellData     ** wells,
-                                    Simbox        * simbox,
-                                    ModelSettings * modelSettings)
+Background::generateBackgroundModel(FFTGrid              *& bgAlpha,
+                                    FFTGrid              *& bgBeta,
+                                    FFTGrid              *& bgRho,
+                                    FFTGrid              *& velocity,
+                                    std::vector<WellData *> wells,
+                                    Simbox                * simbox,
+                                    ModelSettings         * modelSettings)
 {
   const int nz = simbox->getnz();
   float * trendAlpha = new float[nz];
@@ -204,14 +204,14 @@ Background::generateBackgroundModel(FFTGrid      *& bgAlpha,
 
 //---------------------------------------------------------------------------
 void
-Background::calculateVelocityDeviations(FFTGrid   * velocity,
-                                        WellData ** wells,
-                                        Simbox    * simbox,
-                                        float    *& trendVel,
-                                        float    *& avgDevVel,
-                                        float     * avgDevAlpha,
-                                        int         outputFlag,
-                                        int         nWells)
+Background::calculateVelocityDeviations(FFTGrid               * velocity,
+                                        std::vector<WellData *> wells,
+                                        Simbox                * simbox,
+                                        float                *& trendVel,
+                                        float                *& avgDevVel,
+                                        float                 * avgDevAlpha,
+                                        int                     outputFlag,
+                                        int                     nWells)
 {
   if((outputFlag & IO::BACKGROUND_TREND) > 0) {
     std::string fileName = IO::PrefixBackground() + IO::PrefixTrend() + "VpFromFile";
@@ -274,19 +274,19 @@ Background::calculateVelocityDeviations(FFTGrid   * velocity,
 
 //---------------------------------------------------------------------------
 void
-Background::calculateBackgroundTrend(float             * trend,
-                                     float             * avgDev,
-                                     WellData         ** wells,
-                                     Simbox            * simbox,
-                                     float               logMin,
-                                     float               logMax,
-                                     float               maxHz,
-                                     bool                write1D,
-                                     bool                write3D,
-                                     int                 nWells,
-                                     bool                hasVelocityTrend,
-                                     const std::string & name,
-                                     bool                isFile)
+Background::calculateBackgroundTrend(float                 * trend,
+                                     float                 * avgDev,
+                                     std::vector<WellData *> wells,
+                                     Simbox                * simbox,
+                                     float                   logMin,
+                                     float                   logMax,
+                                     float                   maxHz,
+                                     bool                    write1D,
+                                     bool                    write3D,
+                                     int                     nWells,
+                                     bool                    hasVelocityTrend,
+                                     const std::string     & name,
+                                     bool                   isFile)
 {
   const int   nz = simbox->getnz();
   const float dz = static_cast<float>(simbox->getdz()*simbox->getAvgRelThick());
@@ -327,7 +327,7 @@ Background::setupKrigingData2D(std::vector<KrigingData2D> & krigingDataAlpha,
                                float                      * trendRho ,
                                int                          outputFlag,
                                Simbox                     * simbox,
-                               WellData                  ** wells,
+                               std::vector<WellData *>      wells,
                                const int                    nWells)
 {
   //
@@ -534,15 +534,15 @@ Background::makeKrigedBackground(const std::vector<KrigingData2D> & krigingData,
 
 //-------------------------------------------------------------------------------
 void
-Background::calculateVerticalTrend(WellData         ** wells,
-                                   float             * trend,
-                                   float               logMin,
-                                   float               logMax,
-                                   float               maxHz,
-                                   int                 nWells,
-                                   int                 nz,
-                                   float               dz,
-                                   const std::string & name)
+Background::calculateVerticalTrend(std::vector<WellData *> wells,
+                                   float                 * trend,
+                                   float                   logMin,
+                                   float                   logMax,
+                                   float                   maxHz,
+                                   int                     nWells,
+                                   int                     nz,
+                                   float                   dz,
+                                   const std::string     & name)
 {
   float * filtered_log = new float[nz];
   float * wellTrend    = filtered_log;   // Use same memory twice
@@ -904,12 +904,12 @@ Background::writeVerticalTrend(float      * trend,
 
 //-------------------------------------------------------------------------------
 void
-Background::calculateDeviationFromVerticalTrend(WellData    ** wells,
-                                                const float  * globalTrend,
-                                                float        * avg_dev,
-                                                int            nWells,
-                                                int            nz,
-                                                std::string    name)
+Background::calculateDeviationFromVerticalTrend(std::vector<WellData *> wells,
+                                                const float           * globalTrend,
+                                                float                 * avg_dev,
+                                                int                     nWells,
+                                                int                     nz,
+                                                std::string             name)
 {
   float * wellTrend = new float[nz];
 
@@ -944,15 +944,15 @@ Background::calculateDeviationFromVerticalTrend(WellData    ** wells,
 
 //-------------------------------------------------------------------------------
 void
-Background::writeDeviationsFromVerticalTrend(const float *  avg_dev_alpha,
-                                             const float *  avg_dev_beta,
-                                             const float *  avg_dev_rho,
-                                             const float *  trend_alpha,
-                                             const float *  trend_beta,
-                                             const float *  trend_rho,
-                                             WellData    ** wells,
-                                             const int      nWells,
-                                             const int      nz)
+Background::writeDeviationsFromVerticalTrend(const float           * avg_dev_alpha,
+                                             const float           * avg_dev_beta,
+                                             const float           * avg_dev_rho,
+                                             const float           * trend_alpha,
+                                             const float           * trend_beta,
+                                             const float           * trend_rho,
+                                             std::vector<WellData *> wells,
+                                             const int               nWells,
+                                             const int               nz)
 {
   float global_mean_alpha = 0.0f;
   float global_mean_beta  = 0.0f;

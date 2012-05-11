@@ -13,7 +13,7 @@ public:
   Wavelet1D();
   Wavelet1D(Simbox                       * simbox,
             FFTGrid                      * seisCube,
-            WellData                    ** wells,
+            std::vector<WellData *>        wells,
             const std::vector<Surface *> & estimInterval,
             ModelSettings                * modelSettings,
             float                        * reflCoef,
@@ -58,29 +58,29 @@ Wavelet1D(ModelSettings * modelSettings,
                                    int j);
   Wavelet1D * getGlobalWavelet(){ return this;}
 
-  float         findGlobalScaleForGivenWavelet(ModelSettings * modelSettings,
-                                               Simbox        * simbox,
-                                               FFTGrid       * seisCube,
-                                               WellData     ** wells);
+  float         findGlobalScaleForGivenWavelet(ModelSettings        * modelSettings,
+                                               Simbox               * simbox,
+                                               FFTGrid              * seisCube,
+                                               std::vector<WellData *> wells);
 
-  float         calculateSNRatioAndLocalWavelet(Simbox        * simbox,
-                                                FFTGrid       * seisCube,
-                                                WellData     ** wells,
-                                                ModelSettings * modelSettings,
-                                                std::string   & errText,
-                                                int           & error,
-                                                int             number,
-                                                Grid2D      *& noiseScaled,
-                                                Grid2D      *& shift,
-                                                Grid2D      *& gain,
-                                                float          SNRatio,
-                                                float          waveletScale,
-                                                bool           estimateSNRatio,
-                                                bool           estimateGlobalScale,
-                                                bool           estimateLocalNoise,
-                                                bool           estimateLocalShift,
-                                                bool           estimateLocalScale,
-                                                bool           estimateWavelet);
+  float         calculateSNRatioAndLocalWavelet(Simbox                * simbox,
+                                                FFTGrid               * seisCube,
+                                                std::vector<WellData *> wells,
+                                                ModelSettings         * modelSettings,
+                                                std::string           & errText,
+                                                int                   & error,
+                                                int                     number,
+                                                Grid2D               *& noiseScaled,
+                                                Grid2D               *& shift,
+                                                Grid2D               *& gain,
+                                                float                   SNRatio,
+                                                float                   waveletScale,
+                                                bool                    estimateSNRatio,
+                                                bool                    estimateGlobalScale,
+                                                bool                    estimateLocalNoise,
+                                                bool                    estimateLocalShift,
+                                                bool                    estimateLocalScale,
+                                                bool                    estimateWavelet);
 
 private:
   float         findOptimalWaveletScale(fftw_real               ** synt_seis_r,
@@ -109,7 +109,7 @@ private:
                                             std::vector<float>       & errWellOptScale,
                                             std::vector<float>       & scaleOptWell,
                                             Grid2D                   * gain,
-                                            WellData                ** wells,
+                                            std::vector<WellData *>    wells,
                                             Simbox                   * simbox)       const;
 
   void          estimateLocalGain(const CovGrid2D             & cov,
@@ -118,7 +118,7 @@ private:
                                   float                         globalScale,
                                   const std::vector<int>      & nActiveData,
                                   Simbox                      * simbox,
-                                  WellData                   ** wells,
+                                  std::vector<WellData *>       wells,
                                   int                           nWells);
 
   void          estimateLocalShift(const CovGrid2D            & cov,
@@ -126,7 +126,7 @@ private:
                                    const std::vector<float>   & shiftWell,
                                    const std::vector<int>     & nActiveData,
                                    Simbox                     * simbox,
-                                   WellData                  ** wells,
+                                   std::vector<WellData *>      wells,
                                    int                          nWells);
 
   void          estimateLocalNoise(const CovGrid2D           & cov,
@@ -135,7 +135,7 @@ private:
                                    const std::vector<float>  & errWellOptScale,
                                    const std::vector<int>    & nActiveData,
                                    Simbox                    * simbox,
-                                   WellData                 ** wells,
+                                   std::vector<WellData *>     wells,
                                    int                         nWells);
 
   float         shiftOptimal(fftw_real                      ** ccor_seis_cpp_r,

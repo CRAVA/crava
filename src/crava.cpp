@@ -79,7 +79,7 @@ Crava::Crava(ModelSettings     * modelSettings,
   krigingParameter_  = modelSettings_->getKrigingParameter();
   nWells_            = modelSettings_->getNumberOfWells();
   nSim_              = modelSettings_->getNumberOfSimulations();
-  wells_             = modelAVOstatic_->getWells();
+  wells_             = modelGeneral_->getWells();
   simbox_            = modelGeneral_->getTimeSimbox();
   meanAlpha_         = modelAVOdynamic_->getBackAlpha();
   meanBeta_          = modelAVOdynamic_->getBackBeta();
@@ -197,7 +197,7 @@ Crava::Crava(ModelSettings     * modelSettings,
       activeAngles = modelAVOdynamic->getNumberOfAngles();
     if(spatwellfilter != NULL)
       spatwellfilter->doFiltering(correlations_,
-                                  modelAVOstatic->getWells(),
+                                  modelGeneral->getWells(),
                                   modelSettings->getNumberOfWells(),
                                   modelSettings->getNoVsFaciesProb(),
                                   activeAngles,
@@ -216,7 +216,7 @@ Crava::Crava(ModelSettings     * modelSettings,
     // Temporary placement.
     //
     if((modelSettings->getWellOutputFlag() & IO::BLOCKED_WELLS) > 0) {
-      modelAVOstatic->writeBlockedWells(modelAVOstatic->getWells(),modelSettings);
+      modelAVOstatic->writeBlockedWells(modelGeneral->getWells(),modelSettings);
     }
     if((modelSettings->getWellOutputFlag() & IO::BLOCKED_LOGS) > 0) {
       LogKit::LogFormatted(LogKit::Low,"\nWARNING: Writing of BLOCKED_LOGS is not implemented yet.\n");
@@ -1752,7 +1752,7 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
                                 modelAVOstatic_->getPriorFaciesCubes(),
                                 filteredlogs->getSigmae(),
                                 useFilter,
-                                const_cast<const WellData **>(wells_),
+                                wells_,
                                 nWells_,
                                 modelAVOstatic_->getFaciesEstimInterval(),
                                 simbox_->getdz(),
@@ -1790,7 +1790,7 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
                                 modelAVOstatic_->getPriorFaciesCubes(),
                                 filteredlogs->getSigmae(),
                                 useFilter,
-                                const_cast<const WellData **>(wells_),
+                                wells_,
                                 nWells_,
                                 modelAVOstatic_->getFaciesEstimInterval(),
                                 simbox_->getdz(),

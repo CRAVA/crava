@@ -16,16 +16,16 @@
 #include "nrlib/iotools/logkit.hpp"
 
 
-FilterWellLogs::FilterWellLogs(const Simbox * timeSimboxConstThick,
-                               const Simbox * timeSimboxOrigThick,
-                               const Corr   * correlations,
-                               int            nzp,
-                               int            nz,
-                               WellData    ** wells,
-                               int            nWells,
-                               float          lowCut,
-                               float          highCut,
-                               int            relative)
+FilterWellLogs::FilterWellLogs(const Simbox          * timeSimboxConstThick,
+                               const Simbox          * timeSimboxOrigThick,
+                               const Corr            * correlations,
+                               int                     nzp,
+                               int                     nz,
+                               std::vector<WellData *> wells,
+                               int                     nWells,
+                               float                   lowCut,
+                               float                   highCut,
+                               int                     relative)
   : vtAlphaFiltered_(NULL),
     vtBetaFiltered_(NULL),
     vtRhoFiltered_(NULL),
@@ -140,23 +140,23 @@ FilterWellLogs::~FilterWellLogs()
   delete [] vtRho_;
 }
 
-void FilterWellLogs::doFiltering(const Simbox  * timeSimboxConstThick,
-                                 const Simbox  * timeSimboxOrigThick,
-                                 WellData     ** wells,
-                                 int             nWells,
-                                 float        ** sigma0,
-                                 fftw_real     * postcova,
-                                 fftw_real     * postcovb,
-                                 fftw_real     * postcovr,
-                                 fftw_real     * postcrab,
-                                 fftw_real     * postcrar,
-                                 fftw_real     * postcrbr,
-                                 fftw_real     * corrprior,
-                                 float           lowCut,
-                                 float           highCut,
-                                 int             relative,
-                                 int             nz,
-                                 int             nzp)
+void FilterWellLogs::doFiltering(const Simbox          * timeSimboxConstThick,
+                                 const Simbox          * timeSimboxOrigThick,
+                                 std::vector<WellData *> wells,
+                                 int                     nWells,
+                                 float                ** sigma0,
+                                 fftw_real             * postcova,
+                                 fftw_real             * postcovb,
+                                 fftw_real             * postcovr,
+                                 fftw_real             * postcrab,
+                                 fftw_real             * postcrar,
+                                 fftw_real             * postcrbr,
+                                 fftw_real             * corrprior,
+                                 float                   lowCut,
+                                 float                   highCut,
+                                 int                     relative,
+                                 int                     nz,
+                                 int                     nzp)
 {
   LogKit::LogFormatted(LogKit::Low,"\nFiltering well logs\n");
 

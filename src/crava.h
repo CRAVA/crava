@@ -139,9 +139,9 @@ private:
   FFTGrid          * postBeta_;
   FFTGrid          * postRho_;
 
-  int                krigingParameter_;
-  WellData        ** wells_;
-  int                nWells_;
+  int                     krigingParameter_;
+  std::vector<WellData *> wells_;
+  int                     nWells_;
 
   int                scaleWarning_;
   std::string        scaleWarningText_;

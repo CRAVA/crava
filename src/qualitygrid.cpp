@@ -13,7 +13,7 @@
 #include "src/vario.h"
 
 QualityGrid::QualityGrid(const std::vector<double>   pValue,
-                         WellData                 ** wells,
+                         std::vector<WellData *>     wells,
                          const Simbox              * simbox,
                          const ModelSettings       * modelSettings,
                          ModelGeneral              * modelGeneral)
@@ -43,10 +43,10 @@ QualityGrid::QualityGrid(const std::vector<double>   pValue,
   delete grid;
 }
 
-void QualityGrid::generateProbField(FFTGrid             *& grid,
-                                    WellData            ** wells,
-                                    const Simbox        *  simbox,
-                                    const ModelSettings *  modelSettings) const
+void QualityGrid::generateProbField(FFTGrid              *& grid,
+                                    std::vector<WellData *> wells,
+                                    const Simbox          * simbox,
+                                    const ModelSettings   * modelSettings) const
 {
 
   const int nz     = simbox->getnz();
@@ -67,7 +67,7 @@ void QualityGrid::generateProbField(FFTGrid             *& grid,
 }
 
 void QualityGrid::setupKrigingData2D(std::vector<KrigingData2D> & krigingData,
-                                     WellData                  ** wells,
+                                     std::vector<WellData *>      wells,
                                      const Simbox               * simbox,
                                      const int                    nWells) const
 {

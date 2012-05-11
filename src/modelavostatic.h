@@ -15,24 +15,22 @@ class Corr;
 class Wavelet;
 class Vario;
 class Simbox;
-class WellData;
 class FFTGrid;
 class GridMapping;
 class InputFiles;
-
 class ModelAVOStatic
 {
 public:
-  ModelAVOStatic(ModelSettings      *& modelSettings,
-                 const InputFiles    * inputFiles,
-                 std::vector<bool>     failedGeneralDetails,
-                 GridMapping         * timeCutMapping,
-                 Simbox              * timeSimbox,
-                 Simbox             *& timeBGSimbox,
-                 Simbox              * timeSimboxConstThick);
+  ModelAVOStatic(ModelSettings        *& modelSettings,
+                 const InputFiles      * inputFiles,
+                 std::vector<bool>       failedGeneralDetails,
+                 GridMapping           * timeCutMapping,
+                 Simbox                * timeSimbox,
+                 Simbox               *& timeBGSimbox,
+                 Simbox                * timeSimboxConstThick,
+                 std::vector<WellData *> wells);
   ~ModelAVOStatic();
 
-  WellData                  **& getWells()                 /*const*/ { return wells_                  ;}
   const float                 * getPriorFacies()           const { return priorFacies_            ;}
   FFTGrid                    ** getPriorFaciesCubes()      const { return priorFaciesProbCubes_   ;}
   const std::vector<Surface*> & getFaciesEstimInterval()   const { return faciesEstimInterval_    ;}
@@ -45,48 +43,41 @@ public:
   bool                          getFailed()                const { return failed_                 ;}
   std::vector<bool>             getFailedDetails()         const { return failed_details_         ;}
 
-  void                          writeWells(       WellData ** wells, ModelSettings * modelSettings) const;
-  void                          writeBlockedWells(WellData ** wells, ModelSettings * modelSettings) const;
+  void                          writeWells(       std::vector<WellData *> wells, ModelSettings * modelSettings) const;
+  void                          writeBlockedWells(std::vector<WellData *> wells, ModelSettings * modelSettings) const;
 
-  void             addSeismicLogs(WellData      ** wells,
-                                  FFTGrid       ** seisCube,
-                                  ModelSettings  * modelSettings,
-                                  int              nAngles);                              // Changes wells
-  void             generateSyntheticSeismic(Wavelet      ** wavelet,
-                                            WellData     ** wells,
-                                            float        ** reflectionMatrix,
-                                            Simbox        * timeSimbox,
-                                            ModelSettings * modelSettings,
-                                            int             nAngles);                    // Changes wells
-  void             processWellLocation(FFTGrid                     ** seisCube,
-                                       WellData                    ** wells,
-                                       float                       ** reflectionMatrix,
-                                       Simbox                       * timeSimbox,
-                                       ModelSettings                * modelSettings,
-                                       const std::vector<Surface *> & interval);              // Changes wells
+  void             addSeismicLogs(std::vector<WellData *>     wells,
+                                  FFTGrid                  ** seisCube,
+                                  ModelSettings             * modelSettings,
+                                  int                         nAngles);                              // Changes wells
 
-  void             deleteDynamicWells(WellData ** wells,
+  void             generateSyntheticSeismic(Wavelet              ** wavelet,
+                                            std::vector<WellData *> wells,
+                                            float                ** reflectionMatrix,
+                                            Simbox                * timeSimbox,
+                                            ModelSettings         * modelSettings,
+                                            int                     nAngles);                    // Changes wells
+
+  void             deleteDynamicWells(std::vector<WellData *> wells,
                                       int         nWells);
 
 private:
-  void             processWells(WellData       **& wells,
-                                Simbox           * timeSimbox,
-                                Simbox           * timeBGSimbox,
-                                Simbox           * timeSimboxConstThick,
-                                ModelSettings   *& modelSettings,
-                                const InputFiles * inputFiles,
-                                std::string      & errText,
-                                bool             & failed);
+  void             blockLogs(std::vector<WellData *> & wells,
+                                Simbox               * timeSimbox,
+                                Simbox               * timeBGSimbox,
+                                Simbox               * timeSimboxConstThick,
+                                ModelSettings       *& modelSettings);
 
   void             processPriorFaciesProb(const std::vector<Surface*>  & faciesEstimInterval,
                                           float                       *& priorFacies,
-                                          WellData                    ** wells,
+                                          std::vector<WellData *>        wells,
                                           Simbox                       * timeSimbox,
                                           Simbox                       * timeCutSimbox,
                                           ModelSettings                * modelSettings,
                                           bool                         & failed,
                                           std::string                  & errTxt,
                                           const InputFiles             * inputFiles);
+
   void             readPriorFaciesProbCubes(const InputFiles  * inputFiles,
                                             ModelSettings     * modelSettings,
                                             FFTGrid         **& priorFaciesProbCubes,
@@ -94,6 +85,7 @@ private:
                                             Simbox            * timeCutSimbox,
                                             std::string       & errTxt,
                                             bool              & failed);
+
   void             loadExtraSurfaces(std::vector<Surface *> & waveletEstimInterval,
                                      std::vector<Surface *> & faciesEstimInterval,
                                      std::vector<Surface *> & wellMoveInterval,
@@ -101,10 +93,6 @@ private:
                                      const InputFiles       * inputFiles,
                                      std::string            & errText,
                                      bool                   & failed);
-  void             setFaciesNames(WellData        ** wells,
-                                  ModelSettings   *& modelSettings,
-                                  std::string      & tmpErrText,
-                                  int              & error);
 
   void             processFaciesInformation(ModelSettings     *& modelSettings,
                                             const InputFiles   * inputFiles,
@@ -118,7 +106,6 @@ private:
   bool                      forwardModeling_;
   int                       numberOfWells_;
 
-  WellData               ** wells_;                 ///< Well data
 
   std::vector<Surface *>    waveletEstimInterval_;  ///< Grids giving the wavelet estimation interval.
   std::vector<Surface *>    faciesEstimInterval_;   ///< Grids giving the facies estimation intervals.

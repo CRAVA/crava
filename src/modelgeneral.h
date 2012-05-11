@@ -24,6 +24,7 @@ class GridMapping;
 class InputFiles;
 class TimeLine;
 class State4D;
+class WellData;
 
 class ModelGeneral
 {
@@ -47,6 +48,8 @@ public:
   Surface           * getCorrelationDirection()  const {return correlationDirection_    ;}
 
   TimeLine                    * getTimeLine() const {return(timeLine_);}
+
+  std::vector<WellData *>     & getWells()                 /*const*/ { return wells_    ;}
 
   std::vector<DistributionsRock *> getRockDistributions(void) const { return rock_distributions_;}
 
@@ -127,7 +130,25 @@ public:
                                                       const ModelSettings                   & modelSettings,
                                                       State4D                               & state4d);
 
+  void             processWellLocation(FFTGrid                     ** seisCube,
+                                       float                       ** reflectionMatrix,
+                                       ModelSettings                * modelSettings,
+                                       const std::vector<Surface *> & interval);              // Changes wells
+
+
 private:
+  void             processWells(std::vector<WellData *> & wells,
+                                Simbox                  * timeSimbox,
+                                ModelSettings          *& modelSettings,
+                                const InputFiles        * inputFiles,
+                                std::string             & errText,
+                                bool                    & failed);
+
+  void             setFaciesNames(std::vector<WellData *>     wells,
+                                  ModelSettings               *& modelSettings,
+                                  std::string                  & tmpErrText,
+                                  int                          & error);
+
   void                makeTimeSimboxes(Simbox          *& timeSimbox,
                                        Simbox          *& timeCutSimbox,
                                        Simbox          *& timeBGSimbox,
@@ -229,6 +250,11 @@ private:
   std::vector<bool>   failed_details_;        ///< Detailed failed information.
 
   TimeLine                * timeLine_;
+  std::vector<WellData *>   wells_;           ///< Well data
+
+  bool                      forwardModeling_;
+  int                       numberOfWells_;
+
 };
 
 #endif

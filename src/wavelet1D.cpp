@@ -37,7 +37,7 @@ Wavelet1D::Wavelet1D()
 
 Wavelet1D::Wavelet1D(Simbox                       * simbox,
                      FFTGrid                      * seisCube,
-                     WellData                    ** wells,
+                     std::vector<WellData *>        wells,
                      const std::vector<Surface *> & estimInterval,
                      ModelSettings                * modelSettings,
                      float                        * reflCoef,
@@ -546,10 +546,10 @@ Wavelet1D::adjustForAmplitudeEffect(double multiplyer, double Halpha)
 
 
 float
-Wavelet1D::findGlobalScaleForGivenWavelet(ModelSettings * modelSettings,
-                                          Simbox        * simbox,
-                                          FFTGrid       * seisCube,
-                                          WellData     ** wells)
+Wavelet1D::findGlobalScaleForGivenWavelet(ModelSettings         * modelSettings,
+                                          Simbox                * simbox,
+                                          FFTGrid               * seisCube,
+                                          std::vector<WellData *> wells)
 {
   int nWells          = modelSettings->getNumberOfWells();
 //The reason why the next three variables are not taken from the class variables is that this function is called
@@ -624,24 +624,24 @@ Wavelet1D::findGlobalScaleForGivenWavelet(ModelSettings * modelSettings,
 
 
 float
-Wavelet1D::calculateSNRatioAndLocalWavelet(Simbox        * simbox,
-                                           FFTGrid       * seisCube,
-                                           WellData     ** wells,
-                                           ModelSettings * modelSettings,
-                                           std::string   & errText,
-                                           int           & error,
-                                           int             number,
-                                           Grid2D      *& noiseScaled,
-                                           Grid2D      *& shiftGrid,
-                                           Grid2D      *& gainGrid,
-                                           float          SNRatio,
-                                           float          waveletScale,
-                                           bool           doEstimateSNRatio,
-                                           bool           doEstimateGlobalScale,
-                                           bool           doEstimateLocalNoise,
-                                           bool           doEstimateLocalShift,
-                                           bool           doEstimateLocalScale,
-                                           bool           doEstimateWavelet)
+Wavelet1D::calculateSNRatioAndLocalWavelet(Simbox                * simbox,
+                                           FFTGrid               * seisCube,
+                                           std::vector<WellData *> wells,
+                                           ModelSettings         * modelSettings,
+                                           std::string           & errText,
+                                           int                   & error,
+                                           int                     number,
+                                           Grid2D               *& noiseScaled,
+                                           Grid2D               *& shiftGrid,
+                                           Grid2D               *& gainGrid,
+                                           float                   SNRatio,
+                                           float                   waveletScale,
+                                           bool                    doEstimateSNRatio,
+                                           bool                    doEstimateGlobalScale,
+                                           bool                    doEstimateLocalNoise,
+                                           bool                    doEstimateLocalShift,
+                                           bool                    doEstimateLocalScale,
+                                           bool                    doEstimateWavelet)
 {
   LogKit::LogFormatted(LogKit::Medium,"\n  Estimating/checking noise from seismic data and (nonfiltered) blocked wells");
   float errStd  = 0.0f;
@@ -1089,7 +1089,7 @@ Wavelet1D::findLocalNoiseWithGainGiven(fftw_real              ** synt_seis_r,
                                      std::vector<float>        & scaleOptWell,
                                      std::vector<float>        & errWellOptScale,
                                      Grid2D                    * gain,
-                                     WellData                 ** wells,
+                                     std::vector<WellData *>     wells,
                                      Simbox                    * simbox) const
 {
   double *scale = new double[nWells];
@@ -1166,7 +1166,7 @@ Wavelet1D::estimateLocalShift(const CovGrid2D          & cov,
                               const std::vector<float> & shiftWell,
                               const std::vector<int>   & nActiveData,
                               Simbox                   * simbox,
-                              WellData                ** wells,
+                              std::vector<WellData *>    wells,
                               int                        nWells)
 {
   //
@@ -1214,7 +1214,7 @@ Wavelet1D::estimateLocalGain(const CovGrid2D           & cov,
                              float                       globalScale,
                              const std::vector<int>    & nActiveData,
                              Simbox                    * simbox,
-                             WellData                 ** wells,
+                             std::vector<WellData *>     wells,
                              int                         nWells)
 {
   //
@@ -1257,7 +1257,7 @@ Wavelet1D::estimateLocalNoise(const CovGrid2D          & cov,
                               const std::vector<float> & errWellOptScale,
                               const std::vector<int>   & nActiveData,
                               Simbox                   * simbox,
-                              WellData                ** wells,
+                              std::vector<WellData *>    wells,
                               int                        nWells)
 {
   //

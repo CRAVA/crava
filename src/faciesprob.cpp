@@ -42,7 +42,7 @@ FaciesProb::FaciesProb(FFTGrid                      * alpha,
                        FFTGrid                     ** priorFaciesCubes,
                        const std::vector<double **> & sigmaEOrig,
                        bool                           useFilter,
-                       const WellData              ** wells,
+                       std::vector<WellData *>        wells,
                        int                            nWells,
                        const std::vector<Surface *> & faciesEstimInterval,
                        const double                   dz,
@@ -436,7 +436,7 @@ void FaciesProb::makeFaciesProb(int                            nfac,
                                 FFTGrid                      * postRho,
                                 const std::vector<double **> & sigmaEOrig,
                                 bool                           useFilter,
-                                const WellData              ** wells,
+                                std::vector<WellData *>        wells,
                                 int                            nWells,
                                 const std::vector<Surface *> & faciesEstimInterval,
                                 const double                   dz,
@@ -710,7 +710,7 @@ FaciesProb::createExpVol(const Simbox * volume)
 }
 
 
-void FaciesProb::calculateConditionalFaciesProb(WellData                      ** wells,
+void FaciesProb::calculateConditionalFaciesProb(std::vector<WellData *>          wells,
                                                 int                              nWells,
                                                 const std::vector<Surface *>   & faciesEstimInterval,
                                                 const std::vector<std::string> & faciesNames,
@@ -1511,7 +1511,7 @@ void FaciesProb::calculateVariances(const std::vector<float> & alpha,
 }
 
 
-void FaciesProb::setNeededLogsSpatial(const WellData              ** wells,
+void FaciesProb::setNeededLogsSpatial(std::vector<WellData *>        wells,
                                       int                            nWells,
                                       const std::vector<Surface *> & faciesEstimInterval,
                                       const double                   dz,
@@ -1715,7 +1715,7 @@ void FaciesProb::normalizeCubes(FFTGrid **priorFaciesCubes)
     priorFaciesCubes[i]->endAccess();
 }
 
-std::vector<double> FaciesProb::calculateChiSquareTest(WellData                    ** wells,
+std::vector<double> FaciesProb::calculateChiSquareTest(std::vector<WellData *>        wells,
                                                        int                            nWells,
                                                        const std::vector<Surface *> & faciesEstimInterval)
 {
@@ -1914,7 +1914,7 @@ std::vector<double> FaciesProb::calculateChiSquareTest(WellData                 
   return pValue;
 }
 
- void FaciesProb::writeBWFaciesProb(WellData ** wells,
+void FaciesProb::writeBWFaciesProb(std::vector<WellData *> wells,
                                     int         nWells)
 {
   int i, j;
@@ -1930,7 +1930,7 @@ std::vector<double> FaciesProb::calculateChiSquareTest(WellData                 
    }
 }
 
- void FaciesProb::calculateChiSquareAlternativeTest(WellData                    ** wells,
+void FaciesProb::calculateChiSquareAlternativeTest(std::vector<WellData *>         wells,
                                                     int                            nWells,
                                                     const std::vector<Surface *> & faciesEstimInterval,
                                                     const ModelSettings          * modelSettings)

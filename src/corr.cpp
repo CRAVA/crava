@@ -521,7 +521,7 @@ Corr::getNextErrorVariance(fftw_complex **& errVar,
 }
 //--------------------------------------------------------------------
 fftw_real*
-Corr::initializeCorrelations(SpatialWellFilter *spatwellfilter, WellData ** wells, float corrGradI, float corrGradJ, int lowIntCut, int nWells, int nz, int nzp)
+Corr::initializeCorrelations(SpatialWellFilter *spatwellfilter, std::vector<WellData *> wells, float corrGradI, float corrGradJ, int lowIntCut, int nWells, int nz, int nzp)
 {
 
   fftw_real * corrT = NULL; // =  fftw_malloc(2*(nzp_/2+1)*sizeof(fftw_real));

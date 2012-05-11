@@ -19,12 +19,12 @@ class ModelSettings;
 class Background
 {
 public:
-  Background(FFTGrid       ** grids,
-             WellData      ** wells,
-             FFTGrid       *& velocity,
-             Simbox         * timeSimbox,
-             Simbox         * timeBGSimbox,
-             ModelSettings  * modelSettings);
+  Background(FFTGrid              ** grids,
+             std::vector<WellData *> wells,
+             FFTGrid              *& velocity,
+             Simbox                * timeSimbox,
+             Simbox                * timeBGSimbox,
+             ModelSettings         * modelSettings);
   Background(FFTGrid ** grids);
   ~Background(void);
 
@@ -44,13 +44,13 @@ public:
   void         releaseGrids(); //backModel grids are now taken care of by other classes.
 
 private:
-  void         generateBackgroundModel(FFTGrid      *& bgAlpha,
-                                       FFTGrid      *& bgBeta,
-                                       FFTGrid      *& bgRho,
-                                       FFTGrid      *& velocity,
-                                       WellData     ** wells,
-                                       Simbox        * simbox,
-                                       ModelSettings * modelSettings);
+  void         generateBackgroundModel(FFTGrid              *& bgAlpha,
+                                       FFTGrid              *& bgBeta,
+                                       FFTGrid              *& bgRho,
+                                       FFTGrid              *& velocity,
+                                       std::vector<WellData *> wells,
+                                       Simbox                * simbox,
+                                       ModelSettings         * modelSettings);
   void         resampleBackgroundModel(FFTGrid      *& bgAlpha,
                                        FFTGrid      *& bgBeta,
                                        FFTGrid      *& bgRho,
@@ -62,19 +62,19 @@ private:
                                         FFTGrid * bgRho);
   void         createPaddedParameter(FFTGrid *& pNew,
                                      FFTGrid  * pOld);
-  void         calculateBackgroundTrend(float             * trend,
-                                        float             * avgDev,
-                                        WellData         ** wells,
-                                        Simbox            * simbox,
-                                        float               logMin,
-                                        float               logMax,
-                                        float               maxHz,
-                                        bool                write1D,
-                                        bool                write3D,
-                                        int                 nWells,
-                                        bool                hasVelocityTrend,
-                                        const std::string & name,
-                                        bool                isFile);
+  void         calculateBackgroundTrend(float                 * trend,
+                                        float                 * avgDev,
+                                        std::vector<WellData *> wells,
+                                        Simbox                * simbox,
+                                        float                   logMin,
+                                        float                   logMax,
+                                        float                   maxHz,
+                                        bool                    write1D,
+                                        bool                    write3D,
+                                        int                     nWells,
+                                        bool                    hasVelocityTrend,
+                                        const std::string     & name,
+                                        bool                  isFile);
   const CovGrid2D & makeCovGrid2D(Simbox * simbox,
                                   Vario  * vario,
                                   int      debugFlag);
@@ -86,7 +86,7 @@ private:
                                   float                      * trendRho ,
                                   int                          debugFlag,
                                   Simbox                     * simbox,
-                                  WellData                  ** wells,
+                                  std::vector<WellData *>      wells,
                                   const int                    nWells);
   void         makeKrigedBackground(const std::vector<KrigingData2D> & krigingData,
                                     FFTGrid                         *& bgGrid,
@@ -95,47 +95,47 @@ private:
                                     const CovGrid2D                  & covGrid2D,
                                     const std::string                & type,
                                     bool                               isFile);
-  void         calculateVelocityDeviations(FFTGrid   * velocity,
-                                           WellData ** wells,
-                                           Simbox    * simbox,
-                                           float    *& trendVel,
-                                           float    *& avgDevVel,
-                                           float     * avgDevAlpha,
-                                           int         outputFlag,
-                                           int         nWells);
+  void         calculateVelocityDeviations(FFTGrid               * velocity,
+                                           std::vector<WellData *> wells,
+                                           Simbox                * simbox,
+                                           float                *& trendVel,
+                                           float                *& avgDevVel,
+                                           float                 * avgDevAlpha,
+                                           int                     outputFlag,
+                                           int                     nWells);
   void         resampleParameter(FFTGrid *& parameterNew,
                                  FFTGrid  * parameterOld,
                                  Simbox   * simboxNew,
                                  Simbox   * simboxOld,
                                  bool       isFile);
-  void         calculateVerticalTrend(WellData         ** wells,
-                                      float             * trend,
-                                      float               logMin,
-                                      float               logMax,
-                                      float               maxHz,
-                                      int                 nWells,
-                                      int                 nz,
-                                      float               dz,
-                                      const std::string & name);
+  void         calculateVerticalTrend(std::vector<WellData *> wells,
+                                      float                 * trend,
+                                      float                   logMin,
+                                      float                   logMax,
+                                      float                   maxHz,
+                                      int                     nWells,
+                                      int                     nz,
+                                      float                   dz,
+                                      const std::string     & name);
   void         writeVerticalTrend(float      * trend,
                                   float        dz,
                                   int          nz,
                                   std::string  name);
-  void         calculateDeviationFromVerticalTrend(WellData    ** wells,
-                                                   const float  * trend,
-                                                   float        * avg_dev,
-                                                   int            nWells,
-                                                   int            nd,
-                                                   std::string    name);
-  void         writeDeviationsFromVerticalTrend(const float *  avg_dev_alpha,
-                                                const float *  avg_dev_beta,
-                                                const float *  avg_dev_rho,
-                                                const float *  trend_alpha,
-                                                const float *  trend_beta,
-                                                const float *  trend_rho,
-                                                WellData    ** wells,
-                                                const int      nWells,
-                                                const int      nz);
+  void         calculateDeviationFromVerticalTrend(std::vector<WellData *> wells,
+                                                   const float           * trend,
+                                                   float                 * avg_dev,
+                                                   int                     nWells,
+                                                   int                     nd,
+                                                   std::string             name);
+  void         writeDeviationsFromVerticalTrend(const float           * avg_dev_alpha,
+                                                const float           * avg_dev_beta,
+                                                const float           * avg_dev_rho,
+                                                const float           * trend_alpha,
+                                                const float           * trend_beta,
+                                                const float           * trend_rho,
+                                                std::vector<WellData *> wells,
+                                                const int               nWells,
+                                                const int               nz);
   void         smoothTrendWithLocalLinearRegression(float      * trend,
                                                     int        * count,
                                                     int          nWells,
