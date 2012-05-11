@@ -268,8 +268,6 @@ int main(int argc, char** argv)
     Timings::reportTotal();
     LogKit::LogFormatted(LogKit::Low,"\n*** CRAVA closing  ***\n");
     LogKit::LogFormatted(LogKit::Low,"\n*** CRAVA finished ***\n");
-    LogKit::EndLog();
-
   }
   catch (std::bad_alloc& ba)
   {
@@ -281,5 +279,6 @@ int main(int argc, char** argv)
   LicenseSystem::Instance()->CheckIn(&feature);
 #endif
 
+  LogKit::EndLog(); //Debug messages may occur when variables go out of scope above, so this must be the final call.
   return(0);
 }
