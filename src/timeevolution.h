@@ -5,9 +5,11 @@
 #include <nrlib/flens/nrlib_flens.hpp>
 
 class SeismicParametersHolder;
+class State4D;
 class TimeLine;
 class DistributionsRock;
 class FFTGrid;
+
 
 class TimeEvolution
 {
@@ -15,7 +17,9 @@ public:
   TimeEvolution(int i_max,
                 TimeLine & time_line,
                 const DistributionsRock       * dist_rock);
-  void Evolve(int time_step, SeismicParametersHolder &m);
+  //void Split(const SeismicParametersHolder &m_combined, State4D & state4D);
+  void Evolve(int time_step, State4D & state4D);
+  //void Merge(const State4D & state4D, SeismicParametersHolder &m_combined);
 
 private:
   int number_of_timesteps_;
@@ -27,20 +31,6 @@ private:
   //Expand every 3-vector into a 6-vector of 3 static and 3 dynamic elements.
   void SplitSamplesStaticDynamic(std::vector<std::vector<std::vector<double> > > & m_ik);
 
-  // Create the FFTGrids and fill them according to split-formulas:
-  void Split(const SeismicParametersHolder &m_combined,
-             std::vector<FFTGrid *>        &mu_s,
-             std::vector<FFTGrid *>        &mu_d,
-             std::vector<FFTGrid *>        &sigma_ss,
-             std::vector<FFTGrid *>        &sigma_dd,
-             std::vector<FFTGrid *>        &sigma_sd);
-  // Merge and fill back into SeismicParametersHolder, delete the FFTGrids:
-  void Merge(SeismicParametersHolder       &m_combined,
-             std::vector<FFTGrid *>        &mu_s,
-             std::vector<FFTGrid *>        &mu_d,
-             std::vector<FFTGrid *>        &sigma_ss,
-             std::vector<FFTGrid *>        &sigma_dd,
-             std::vector<FFTGrid *>        &sigma_sd);
 
   // Estimate time evolution matrices and correction term mean and covariance:
   void SetUpEvolutionMatrices(std::vector< NRLib::Matrix>   & evolution_matrix,

@@ -13,6 +13,8 @@ public:
   SeismicParametersHolder(void);
 
   ~SeismicParametersHolder(void);
+  //void getMeanReferenceVector(std::vector<FFTGrid *> mu);
+  //void getCovReferenceVector(std::vector<FFTGrid *> sigma);
 
   void setSeismicParameters(FFTGrid  * muAlpha,
                             FFTGrid  * muBeta,
@@ -28,6 +30,7 @@ public:
   FFTGrid * GetCrCovAlphaBeta() { return crCovAlphaBeta_ ;}
   FFTGrid * GetCrCovAlphaRho()  { return crCovAlphaRho_  ;}
   FFTGrid * GetCrCovBetaRho()   { return crCovBetaRho_   ;}
+
 
 
 private:

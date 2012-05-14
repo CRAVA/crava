@@ -56,3 +56,4 @@ SeismicParametersHolder::setSeismicParameters(FFTGrid  * muAlpha,
   crCovAlphaRho_  = correlations->getPostCrCovAlphaRho();
   crCovBetaRho_   = correlations->getPostCrCovBetaRho();
 }
+

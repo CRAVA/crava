@@ -5,6 +5,7 @@
 #include "nrlib/flens/nrlib_flens.cpp"
 
 #include "src/seismicparametersholder.h"
+#include "src/state4d.h"
 #include "src/fftgrid.h"
 #include "src/timeline.h"
 #include "src/correlatedrocksamples.h"
@@ -23,57 +24,55 @@ TimeEvolution::TimeEvolution(int i_max,
   SetUpEvolutionMatrices(evolution_matrix_, cov_correction_term_, mean_correction_term_, i_max, time_line, dist_rock);
 }
 
-void TimeEvolution::Evolve(int time_step, SeismicParametersHolder &m_combined){
 
-  // The following new FFTGrids will be created and filled by Split(...).
-  std::vector<FFTGrid *> mu_s(3);
-  std::vector<FFTGrid *> mu_d(3);
-  std::vector<FFTGrid *> sigma_ss(6);
-  std::vector<FFTGrid *> sigma_dd(6);
-  std::vector<FFTGrid *> sigma_sd(9);
-  Split(m_combined, mu_s, mu_d, sigma_ss, sigma_dd, sigma_sd);
 
+void TimeEvolution::Evolve(int time_step, State4D & state4D)
+{
   // Holders of FFTGrid pointers
   std::vector<FFTGrid *> mu(6);
+//  state4D.getMeanReferenceVector(mu);
+
   std::vector<FFTGrid *> sigma(21);
+  // Check the order of the grids here:
+  // The order is used later in set-up of symmetric sigma matrix
 
-  mu[0] = mu_s[0]; //mu_s_Alpha
-  mu[1] = mu_s[1]; //mu_s_Beta
-  mu[2] = mu_s[2]; //mu_s_Rho
-  mu[3] = mu_d[0]; //mu_d_Alpha
-  mu[4] = mu_d[1]; //mu_d_Beta
-  mu[5] = mu_d[2]; //mu_d_Rho
 
-  // Note the order of the grids here: The order is used later in set-up of symmetric sigma matrix
-  sigma[0]  = sigma_ss[0]; //cov_ss_AlphaAlpha
-  sigma[1]  = sigma_ss[1]; //cov_ss_AlphaBeta
-  sigma[2]  = sigma_ss[2]; //cov_ss_AlphaRho
-  sigma[3]  = sigma_ss[3]; //cov_ss_BetaBeta
-  sigma[4]  = sigma_ss[4]; //cov_ss_BetaRho
-  sigma[5]  = sigma_ss[5]; //cov_ss_RhoRho
-  sigma[6]  = sigma_dd[0]; //cov_dd_AlphaAlpha
-  sigma[7]  = sigma_dd[1]; //cov_dd_AlphaBeta
-  sigma[8]  = sigma_dd[2]; //cov_dd_AlphaRho
-  sigma[9]  = sigma_dd[3]; //cov_dd_BetaBeta
-  sigma[10] = sigma_dd[4]; //cov_dd_BetaRho
-  sigma[11] = sigma_dd[5]; //cov_dd_RhoRho
-  sigma[12] = sigma_sd[0]; //cov_sd_AlphaAlpha
-  sigma[13] = sigma_sd[1]; //cov_sd_AlphaBeta
-  sigma[14] = sigma_sd[2]; //cov_sd_AlphaRho
-  sigma[15] = sigma_sd[3]; //cov_sd_BetaAlpha
-  sigma[16] = sigma_sd[4]; //cov_sd_BetaBeta
-  sigma[17] = sigma_sd[5]; //cov_sd_BetaRho
-  sigma[18] = sigma_sd[6]; //cov_sd_RhoAlpha
-  sigma[19] = sigma_sd[7]; //cov_sd_RhoBeta
-  sigma[20] = sigma_sd[8]; //cov_sd_RhoRho
+  mu[0] = state4D.getMuVpStatic()  ; //mu_static_Alpha
+  mu[1] = state4D.getMuVsStatic(); //mu_static_Beta
+  mu[2] = state4D.getMuRhoStatic(); //mu_static_Rho
+  mu[3] = state4D.getMuVpDynamic(); //mu_dynamic_Alpha
+  mu[4] = state4D.getMuVsDynamic(); //mu_dynamic_Beta
+  mu[5] = state4D.getMuRhoDynamic(); //mu_dynamic_Rho
 
+  // Note the order of the grids here: The order is used other places in code.
+  sigma[0]  = state4D.getCovVpVpStaticStatic(); //cov_ss_AlphaStatic AlphaStatic
+  sigma[1]  = state4D.getCovVpVsStaticStatic();  //cov_ss_AlphaStaticBetaStatic
+  sigma[2]  = state4D.getCovVpRhoStaticStatic();  //cov_ss_AlphaStaticRhoStatic
+  sigma[3]  = state4D.getCovVsVsStaticStatic(); //cov_ss_BetaStaticBetaStatic
+  sigma[4]  = state4D.getCovVsRhoStaticStatic(); //cov_ss_BetaStaticRhoStatic
+  sigma[5]  = state4D.getCovRhoRhoStaticStatic(); //cov_ss_RhoStaticRhoStatic
+  sigma[6]  = state4D.getCovVpVpDynamicDynamic(); //cov_dd_AlphaDynamicAlphaDynamic
+  sigma[7]  = state4D.getCovVpVsDynamicDynamic(); //cov_dd_AlphaDynamicBetaDynamic
+  sigma[8]  = state4D.getCovVpRhoDynamicDynamic(); //cov_dd_AlphaDynamicRhoDynamic
+  sigma[9]  = state4D.getCovVsVsDynamicDynamic(); //cov_dd_BetaDynamicBetaDynamic
+  sigma[10] = state4D.getCovVsRhoDynamicDynamic(); //cov_dd_BetaDynamicRhoDynamic
+  sigma[11] = state4D.getCovRhoRhoDynamicDynamic(); //cov_dd_RhoDynamicRhoDynamic
+
+  sigma[12] = state4D.getCovVpVpStaticDynamic(); //cov_sd_AlphaStaticAlphaDynamic
+  sigma[13] = state4D.getCovVpVsStaticDynamic();  //cov_sd_AlphaStaticBetaDynamic
+  sigma[14] = state4D.getCovVpRhoStaticDynamic(); //cov_sd_AlphaStaticRhoDynamic
+  sigma[15] = state4D.getCovVsVpStaticDynamic();  //cov_sd_BetaStaticAlphaDynamic
+  sigma[16] = state4D.getCovVsVsStaticDynamic();  //cov_sd_BetaStaticBetaDynamic
+  sigma[17] = state4D.getCovVsRhoStaticDynamic(); //cov_sd_BetaStaticRhoDynamic
+  sigma[18] = state4D.getCovRhoVpStaticDynamic(); //cov_sd_RhoStaticAlphaDynamic
+  sigma[19] = state4D.getCovRhoVsStaticDynamic(); //cov_sd_RhoStaticBetaDynamic
+  sigma[20] = state4D.getCovRhoRhoStaticDynamic();  //cov_sd_RhoStaticRhoDynamic
 
   // We assume FFT transformed grids
   for(int i = 0; i<6; i++)
     assert(mu[i]->getIsTransformed());
   for(int i = 0; i<21; i++)
     assert(sigma[i]->getIsTransformed());
-
 
   NRLib::Vector mu_real(6);
   NRLib::Vector mu_imag(6);
@@ -85,7 +84,7 @@ void TimeEvolution::Evolve(int time_step, SeismicParametersHolder &m_combined){
   NRLib::Matrix sigma_real_next(6,6);
   NRLib::Matrix sigma_imag_next(6,6);
 
-  fftw_complex return_value;
+  fftw_complex get_value,return_value;
 
   int nzp_ = mu[0]->getNzp();
   int nyp_ = mu[0]->getNyp();
@@ -99,8 +98,9 @@ void TimeEvolution::Evolve(int time_step, SeismicParametersHolder &m_combined){
 
         // Set up vectors from the FFT grids
         for (int d = 0; d < 6; d++) {
-          mu_real(d) = (mu[d]->getNextComplex()).re;
-          mu_imag(d) = (mu[d]->getNextComplex()).im;
+          get_value  = mu[d]->getNextComplex();
+          mu_real(d) = get_value.re;
+          mu_imag(d) = get_value.im;
         }
 
         // Evolve values
@@ -113,19 +113,18 @@ void TimeEvolution::Evolve(int time_step, SeismicParametersHolder &m_combined){
           return_value.im = static_cast<float>(mu_imag_next(d));
           mu[d]->setNextComplex(return_value);
         }
-
-
         // Set up matrices from the FFT-grids.
         // Note: Here we assume a specific order of the elements in the sigma-vector.
         // Static and dynamic parts.
         int counter = 0;
         for (int d1 = 0; d1 < 3; d1++) {
           for (int d2 = d1; d2 < 3; d2++) {
-            sigma_real(d1, d2) = (sigma[counter]->getNextComplex()).re;
-            sigma_imag(d1, d2) = (sigma[counter]->getNextComplex()).im;
-
-            sigma_real(d1+3, d2+3) = (sigma[counter+6]->getNextComplex()).re;  // d1+3 and d2+3 due to block structure of matrix
-            sigma_imag(d1+3, d2+3) = (sigma[counter+6]->getNextComplex()).im;
+            get_value  = sigma[counter]->getNextComplex();
+            sigma_real(d1, d2) = get_value.re;
+            sigma_imag(d1, d2) = get_value.im;
+            get_value  = sigma[counter+6]->getNextComplex();
+            sigma_real(d1+3, d2+3) = get_value.re;  // d1+3 and d2+3 due to block structure of matrix
+            sigma_imag(d1+3, d2+3) = get_value.im;
 
             counter++;
 
@@ -143,9 +142,9 @@ void TimeEvolution::Evolve(int time_step, SeismicParametersHolder &m_combined){
         counter = 12;
         for (int d1 = 0; d1 < 3; d1++) {
           for (int d2 = 3; d2 < 6; d2++) {
-            sigma_real(d1, d2) = (sigma[counter]->getNextComplex()).re;
-            sigma_imag(d1, d2) = (sigma[counter]->getNextComplex()).im;
-
+            get_value=sigma[counter]->getNextComplex();
+            sigma_real(d1, d2) = get_value.re;
+            sigma_imag(d1, d2) = get_value.im;
             counter++;
 
             //Enforcing symmetry of overall matrix.
@@ -153,8 +152,6 @@ void TimeEvolution::Evolve(int time_step, SeismicParametersHolder &m_combined){
             sigma_imag(d2 ,d1) = sigma_imag(d1, d2);
           }
         }
-
-
         // Evolve values.
         sigma_real_next = (evolution_matrix_[time_step]*sigma_real);
         sigma_real_next = sigma_real_next*transpose(evolution_matrix_[time_step]) + cov_correction_term_[time_step];
@@ -162,12 +159,9 @@ void TimeEvolution::Evolve(int time_step, SeismicParametersHolder &m_combined){
         sigma_imag_next = evolution_matrix_[time_step]*sigma_imag;
         sigma_imag_next = sigma_imag_next*transpose(evolution_matrix_[time_step]);
 
-
-        // Update values in the FFT-grids.
-        // Static and dynamic parts.
         counter = 0;
-        for (int d1 = 0; d1 < 3; d1++) {
-          for (int d2 = d1; d2 < 3; d2++) {
+        for (int d1 = 0; d1 < 3; d1++) {// Update values in the FFT-grids.
+          for (int d2 = d1; d2 < 3; d2++) {// Static and dynamic parts.
             return_value.re = static_cast<float>(sigma_real_next(d1, d2));
             return_value.im = static_cast<float>(sigma_imag_next(d1, d2));
             sigma[counter]->setNextComplex(return_value);
@@ -186,13 +180,12 @@ void TimeEvolution::Evolve(int time_step, SeismicParametersHolder &m_combined){
             return_value.re = static_cast<float>(sigma_real_next(d1, d2));
             return_value.im = static_cast<float>(sigma_imag_next(d1, d2));
             sigma[counter]->setNextComplex(return_value);
+            counter++;
           }
         }
-
       }
     }
   }
-  Merge(m_combined, mu_s, mu_d, sigma_ss, sigma_dd, sigma_sd);
 }
 
 
@@ -414,66 +407,8 @@ void TimeEvolution::AdjustMatrixDeltaForm(NRLib::Matrix & delta_k, int dim)
   }
 }
 
-void TimeEvolution::Split(const SeismicParametersHolder &m_combined,
-                          std::vector<FFTGrid *>        &mu_s,
-                          std::vector<FFTGrid *>        &mu_d,
-                          std::vector<FFTGrid *>        &sigma_ss,
-                          std::vector<FFTGrid *>        &sigma_dd,
-                          std::vector<FFTGrid *>        &sigma_sd)
-{
-  // m_combined = unsplit parameters.
-  // Create FFTGrids, split, and assign the split versions to the vectors mu_s, mu_d, sigma_ss, sigma_dd, sigma_sd.
-  // The new grids should be in transformed modus. All grids should have the same size.
 
-  // Make sure the vectors are ordered as follows, with the notation
-  // _s = static, _d = dynamic, _ss = static static, _dd = dynamic dynamic, _sd = static dynamic,
-  // mu, cov are expectation and covariance:
 
-  /*mu_s[0] = mu_s_Alpha;
-  mu_s[1] = mu_s_Beta;
-  mu_s[2] = mu_s_Rho;
-  mu_d[0] = mu_d_Alpha;
-  mu_d[1] = mu_d_Beta;
-  mu_d[2] = mu_d_Rho;
-
-  sigma_ss[0] = cov_ss_AlphaAlpha;
-  sigma_ss[1] = cov_ss_AlphaBeta;
-  sigma_ss[2] = cov_ss_AlphaRho;
-  sigma_ss[3] = cov_ss_BetaBeta;
-  sigma_ss[4] = cov_ss_BetaRho;
-  sigma_ss[5] = cov_ss_RhoRho;
-
-  sigma_dd[0] = cov_dd_AlphaAlpha;
-  sigma_dd[1] = cov_dd_AlphaBeta;
-  sigma_dd[2] = cov_dd_AlphaRho;
-  sigma_dd[3] = cov_dd_BetaBeta;
-  sigma_dd[4] = cov_dd_BetaRho;
-  sigma_dd[5] = cov_dd_RhoRho;
-
-  sigma_sd[0] = cov_sd_AlphaAlpha;
-  sigma_sd[1] = cov_sd_AlphaBeta;
-  sigma_sd[2] = cov_sd_AlphaRho;
-  sigma_sd[3] = cov_sd_BetaAlpha;
-  sigma_sd[4] = cov_sd_BetaBeta;
-  sigma_sd[5] = cov_sd_BetaRho;
-  sigma_sd[6] = cov_sd_RhoAlpha;
-  sigma_sd[7] = cov_sd_RhoBeta;
-  sigma_sd[8] = cov_sd_RhoRho;*/
-
-  return;
-}
-
-void TimeEvolution::Merge(SeismicParametersHolder       &m_combined,
-                          std::vector<FFTGrid *>        &mu_s,
-                          std::vector<FFTGrid *>        &mu_d,
-                          std::vector<FFTGrid *>        &sigma_ss,
-                          std::vector<FFTGrid *>        &sigma_dd,
-                          std::vector<FFTGrid *>        &sigma_sd)
-{
-  // Merge and then delete temporary grids that were made by Split.
-
-  return;
-}
 
 void TimeEvolution::SplitSamplesStaticDynamic(std::vector<std::vector<std::vector<double> > > & m_ik)
 {

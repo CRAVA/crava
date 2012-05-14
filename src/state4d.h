@@ -3,7 +3,9 @@
 
 #include <vector>
 
+class SeismicParametersHolder;
 class FFTGrid;
+class TimeEvolution;
 
 // This class holds FFTGrids for the 4D inversion. This includes grids for the static and dynamic variables \mu and \sigma, and the covariance grids between static and dynamic covariances.
 // The grids are:
@@ -31,16 +33,20 @@ public:
 
   void SetStaticDynamicSigma(FFTGrid *vpvp, FFTGrid *vpvs, FFTGrid *vprho, FFTGrid *vsvp, FFTGrid *vsvs, FFTGrid *vsrho, FFTGrid *rhovp, FFTGrid *rhovs, FFTGrid *rhorho);  // OBS note order of parameters
 
-  /*
+  void   merge(SeismicParametersHolder & current_state );
+  void   split(const SeismicParametersHolder current_state );
+  void   evolve(int time_step, const TimeEvolution timeEvolution );
+
+
+
   // Suggestions for get-functions. Not yet used. Naming etc to be decided later when actual in use.
+  FFTGrid * getMuVpStatic(void)  { return mu_static_[0]; }
+  FFTGrid * getMuVsStatic(void)  { return mu_static_[1]; }
+  FFTGrid * getMuRhoStatic(void) { return mu_static_[2]; }
 
-  FFTGrid * getVpStatic(void)  { return mu_static_[0]; }
-  FFTGrid * getVsStatic(void)  { return mu_static_[1]; }
-  FFTGrid * getRhoStatic(void) { return mu_static_[2]; }
-
-  FFTGrid * getVpDynamic(void)  { return mu_dynamic_[0]; }
-  FFTGrid * getVsDynamic(void)  { return mu_dynamic_[1]; }
-  FFTGrid * getRhoDynamic(void) { return mu_dynamic_[2]; }
+  FFTGrid * getMuVpDynamic(void)  { return mu_dynamic_[0]; }
+  FFTGrid * getMuVsDynamic(void)  { return mu_dynamic_[1]; }
+  FFTGrid * getMuRhoDynamic(void) { return mu_dynamic_[2]; }
 
   FFTGrid * getCovVpVpStaticStatic(void)   { return sigma_static_static_[0]; }
   FFTGrid * getCovVpVsStaticStatic(void)   { return sigma_static_static_[1]; }
@@ -60,21 +66,24 @@ public:
   FFTGrid * getCovVpVpStaticDynamic(void)   { return sigma_static_dynamic_[0]; }
   FFTGrid * getCovVpVsStaticDynamic(void)   { return sigma_static_dynamic_[1]; }
   FFTGrid * getCovVpRhoStaticDynamic(void)  { return sigma_static_dynamic_[2]; }
-  FFTGrid * getCovVsVsStaticDynamic(void)   { return sigma_static_dynamic_[3]; }
-  FFTGrid * getCovVsRhoStaticDynamic(void)  { return sigma_static_dynamic_[4]; }
-  FFTGrid * getCovRhoRhoStaticDynamic(void) { return sigma_static_dynamic_[5]; }
-  FFTGrid * getCovVsVpStaticDynamic(void)   { return sigma_static_dynamic_[6]; }
-  FFTGrid * getCovRhoVpStaticDynamic(void)  { return sigma_static_dynamic_[7]; }
-  FFTGrid * getCovRhoVsStaticDynamic(void)  { return sigma_static_dynamic_[8]; }
-  */
+  FFTGrid * getCovVsVpStaticDynamic(void)   { return sigma_static_dynamic_[3]; }
+  FFTGrid * getCovVsVsStaticDynamic(void)  { return sigma_static_dynamic_[4]; }
+  FFTGrid * getCovVsRhoStaticDynamic(void) { return sigma_static_dynamic_[5]; }
+  FFTGrid * getCovRhoVpStaticDynamic(void)   { return sigma_static_dynamic_[6]; }
+  FFTGrid * getCovRhoVsStaticDynamic(void)  { return sigma_static_dynamic_[7]; }
+  FFTGrid * getCovRhoRhoStaticDynamic(void)  { return sigma_static_dynamic_[8]; }
+
 
 private:
+  bool allGridsAreTransformed();
   std::vector<FFTGrid *> mu_static_;            // [0] = vp, [1] = vs, [2] = rho
   std::vector<FFTGrid *> mu_dynamic_;           // [0] = vp, [1] = vs, [2] = rho
-  std::vector<FFTGrid *> sigma_static_static_;  // [0] = vp_vp, [1] = vp_vs, [2] = vp_rho ,[3] = vs_vs, [4] = vs_rho, [5] = rho_rho
-  std::vector<FFTGrid *> sigma_dynamic_dynamic_;
-  std::vector<FFTGrid *> sigma_static_dynamic_; // [0] = vp_vp, [1] = vp_vs, [2] = vp_rho ,[3] = vs_vs, [4] = vs_rho, [5] = rho_rho, [6]=vs_vp, [7] = rho_vp, [8] = rho_vs
+  std::vector<FFTGrid *> sigma_static_static_;  // [0] = vp_vp, [1] = vp_vs, [2] = vp_rho ,[3] = vs_vs, [4] = vs_rho, [5] = rho_rho (all static)
+  std::vector<FFTGrid *> sigma_dynamic_dynamic_;// [0] = vp_vp, [1] = vp_vs, [2] = vp_rho ,[3] = vs_vs, [4] = vs_rho, [5] = rho_rho (all dynamix)
+  std::vector<FFTGrid *> sigma_static_dynamic_; // [0] = vpStat_vpDyn, [1] = vpStat_vsDyn, [2] = vpStat_rhoDyn ,[3] = vsStat_vpDyn,
+                                                // [4] = vsStat_vsDyn, [5] =  vsStat_rhoDyn, [6]=rhoStat_vpDyn, [7] = rhoStat_vsDyn, [8] = rhoStat_rhoDyn
 
 };
 
 #endif
+
