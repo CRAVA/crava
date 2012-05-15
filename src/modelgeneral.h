@@ -135,6 +135,15 @@ public:
                                        ModelSettings                * modelSettings,
                                        const std::vector<Surface *> & interval);              // Changes wells
 
+  void             processPriorCorrelations(Corr                 *& correlations,
+                                            Background            * background,
+                                            std::vector<WellData *> wells,
+                                            Simbox                * timeSimbox,
+                                            ModelSettings         * modelSettings,
+                                            FFTGrid              ** seisCube,
+                                            const InputFiles      * inputFiles,
+                                            std::string           & errText,
+                                            bool                  & failed);
 
 private:
   void             processWells(std::vector<WellData *> & wells,
@@ -224,6 +233,11 @@ private:
   SegyGeometry    * geometryFromCravaFile(const std::string & fileName);
   SegyGeometry    * geometryFromStormFile(const std::string & fileName, std::string & errText, bool scale = false);
   //void             processStructureParameters();
+
+  void             estimateCorrXYFromSeismic(Surface *& CorrXY,
+                                             FFTGrid ** seisCube,
+                                             int numberOfAngles);
+  Surface        * findCorrXYGrid(Simbox * timeSimbox, ModelSettings * modelSettings);
 
   int              computeTime(int year, int month, int day) const;
 

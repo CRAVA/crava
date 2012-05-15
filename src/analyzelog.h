@@ -32,6 +32,10 @@ private:
                                  int            logNr,
                                  std::string  & errTxt);
 
+  void            estimateLnData(float      **& lnData,
+                                 int            logNr,
+                                 std::string  & errTxt);
+
   void            estimatePointVar0(float       ** Var0,
                                     float       ** lnDataAlpha,
                                     float       ** lnDataBeta,

@@ -70,9 +70,16 @@ Analyzelog::estimate(ModelSettings * modelSettings,
     LogKit::LogFormatted(LogKit::Low,"\nThere are no nonsynthetic Vs logs available. Corr(Vp,Vs) and Corr(Vs,Rho) are set 0.7.\n");
   }
 
-  estimateLnData(lnDataAlpha, background->getAlpha(), 0, errTxt);
-  estimateLnData(lnDataBeta, background->getBeta(), 1, errTxt);
-  estimateLnData(lnDataRho, background->getRho(), 2, errTxt);
+  if(background == NULL){
+    estimateLnData(lnDataAlpha, 0, errTxt);
+    estimateLnData(lnDataBeta,  1, errTxt);
+    estimateLnData(lnDataRho,   2, errTxt);
+  }
+  else{
+    estimateLnData(lnDataAlpha, background->getAlpha(), 0, errTxt);
+    estimateLnData(lnDataBeta, background->getBeta(), 1, errTxt);
+    estimateLnData(lnDataRho, background->getRho(), 2, errTxt);
+  }
   if (errTxt != "")
     return;
 
@@ -205,6 +212,63 @@ Analyzelog::estimateLnData(float      **& lnData,
   }
   background->endAccess();
 
+  //
+  // Subtract global mean from data.
+  //
+  if(tell > 0)
+  {
+    globalMean /= tell;
+    for(int i=0 ; i<nwells_ ; i++)
+    {
+      for(int j=0 ; j<wells_[i]->getNd() ; j++)
+      {
+        if (lnData[i][j] != RMISSING)
+        {
+          lnData[i][j] -= globalMean;
+        }
+      }
+    }
+  }
+  else
+  {
+    errTxt += std::string("Could not estimate globalMean for log") + NRLib::ToString(logNr) + " (Vp=0,Vs=1,Rho=2)\n";
+  }
+}
+
+void
+Analyzelog::estimateLnData(float      **& lnData,
+                           int            logNr,
+                           std::string  & errTxt)
+{
+  float globalMean = 0.0f;
+  int tell = 0;
+  for(int i=0 ; i<nwells_ ; i++)
+  {
+    int nd = 0;
+    const float * wLog = NULL;
+    if (logNr == 0)
+      wLog = wells_[i]->getAlpha(nd);
+    else if (logNr == 1)
+      wLog = wells_[i]->getBeta(nd);
+    else if (logNr == 2)
+      wLog = wells_[i]->getRho(nd);
+    else
+      errTxt += std::string("In Analyzelog::estimateLnData: Log number ") + NRLib::ToString(logNr)
+              + std::string(" does not exist (Vp=1,Vs=2,Rho=3)\n");
+
+    lnData[i] = new float[nd];
+    for(int j=0 ; j<nd ; j++)
+    {
+      if(wLog[j]!= RMISSING)
+      {
+        lnData[i][j] = static_cast<float>(log(wLog[j]));
+        globalMean += lnData[i][j];
+        tell++;
+      }
+      else
+        lnData[i][j] = RMISSING;
+    }
+  }
   //
   // Subtract global mean from data.
   //

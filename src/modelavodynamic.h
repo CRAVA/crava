@@ -80,6 +80,13 @@ public:
 
 
   void                          releaseGrids();                        // Cuts connection to SeisCube_ and  backModel_
+
+  static float  ** readMatrix(const std::string & fileName,
+                              int                 n1,
+                              int                 n2,
+                              const std::string & readReason,
+                              std::string       & errText);
+
 private:
   void             processSeismic(FFTGrid         **& seisCube,
                                   Simbox           *& timeSimbox,
@@ -100,15 +107,6 @@ private:
                                      const InputFiles      * inputFile,
                                      std::string           & errText,
                                      bool                  & failed);
-
-  void             processPriorCorrelations(Corr                 *& correlations,
-                                            Background            * background,
-                                            std::vector<WellData *> wells,
-                                            Simbox                * timeSimbox,
-                                            ModelSettings         * modelSettings,
-                                            const InputFiles      * inputFiles,
-                                            std::string           & errText,
-                                            bool                  & failed);
 
   void             processReflectionMatrix(float               **& reflectionMatrix,
                                            Background            * background,
@@ -156,14 +154,7 @@ private:
                                     const NRLib::Grid2D<float>              & refTimeGradY,
                                     const std::vector<std::vector<double> > & tGradX,
                                     const std::vector<std::vector<double> > & tGradY);
-  void             estimateCorrXYFromSeismic(Surface *& CorrXY,
-                                             FFTGrid ** seisCube);
-  Surface        * findCorrXYGrid(Simbox * timeSimbox, ModelSettings * modelSettings);
-  float         ** readMatrix(const std::string & fileName,
-                              int                 n1,
-                              int                 n2,
-                              const std::string & readReason,
-                              std::string       & errText);
+
   void             setupDefaultReflectionMatrix(float       **& reflectionMatrix,
                                                 double          vsvp,
                                                 ModelSettings * modelSettings);
