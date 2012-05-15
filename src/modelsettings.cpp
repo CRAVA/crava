@@ -141,6 +141,7 @@ ModelSettings::ModelSettings(void)
   estimationMode_          =    false;
   forwardModeling_         =    false;
   generateBackground_      =     true;
+  multizoneBackground_     =    false;
   useAIBackground_         =    false;
   useSIBackground_         =    false;
   useVpVsBackground_       =    false;

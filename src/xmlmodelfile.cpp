@@ -1418,6 +1418,8 @@ XmlModelFile::parseMultizoneModel(TiXmlNode * node, std::string & errTxt)
 
   while(parseZone(root,errTxt) == true);
 
+  modelSettings_->setMultizoneBackground(true);
+
   // Check erosion priority consistency
   std::vector<int> erosion = modelSettings_->getErosionPriority();
   int nHorizons = static_cast<int>(erosion.size());
@@ -3311,8 +3313,8 @@ XmlModelFile::checkIOConsistency(std::string & errTxt)
 void
 XmlModelFile::checkMultizoneBackgroundConsistency(std::string & errTxt)
 {
-  std::vector<std::string> multizoneSurface = inputFiles_->getMultizoneSurfaceFiles();
-  if(multizoneSurface.size() > 0) {
+  if(modelSettings_->getMultizoneBackground() == true) {
+    std::vector<std::string> multizoneSurface = inputFiles_->getMultizoneSurfaceFiles();
     int nSurfaces = static_cast<int>(multizoneSurface.size());
     const std::string & top = inputFiles_->getTimeSurfFile(0);
     const std::string & base = inputFiles_->getTimeSurfFile(1);

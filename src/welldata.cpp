@@ -844,11 +844,14 @@ int WellData::checkSimbox(Simbox * simbox)
   if (error)
   {
     if (insideArea) {
+      LogKit::LogFormatted(LogKit::Low," \nWell "+wellname_+":\n");
       LogKit::LogFormatted(LogKit::Low,"   IGNORED (well is inside inversion area but does not hit the inversion volume)\n");
       LogKit::LogFormatted(LogKit::Low,"           (well-depth: min,max = "+NRLib::ToString(zpos_[0])+","+NRLib::ToString(zpos_[nd_-1])+")\n");
     }
-    else
+    else {
+      LogKit::LogFormatted(LogKit::Low," \nWell "+wellname_+":\n");
       LogKit::LogFormatted(LogKit::Low,"   IGNORED (well is not inside inversion area)\n");
+    }
   }
   return(error);
 }
@@ -887,11 +890,14 @@ int WellData::checkStormgrid(StormContGrid & stormgrid) const
 
   if (error) {
     if (insideArea) {
+      LogKit::LogFormatted(LogKit::Low," \nWell "+wellname_+":\n");
       LogKit::LogFormatted(LogKit::Low,"   IGNORED (well is inside inversion area but does not hit the inversion volume)\n");
       LogKit::LogFormatted(LogKit::Low,"           (well-depth: min,max = "+NRLib::ToString(zpos_[0])+","+NRLib::ToString(zpos_[nd_-1])+")\n");
     }
-    else
+    else {
+      LogKit::LogFormatted(LogKit::Low," \nWell "+wellname_+":\n");
       LogKit::LogFormatted(LogKit::Low,"   IGNORED (well is not inside inversion area)\n");
+    }
   }
   return(error);
 }

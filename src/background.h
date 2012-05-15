@@ -116,19 +116,21 @@ private:
                                         std::vector<const int *>          & jpos,
                                         std::vector<const int *>          & kpos,
                                         std::vector<int>                  & nBlocks,
-                                        int                               & totBlocks) const;
+                                        int                               & totBlocks,
+                                        const int                         & nz) const;
 
-  void         getWellTrends(std::vector<float *> wellTrend,
-                             std::vector<float *> highCutWellTrend,
-                             WellData          ** wells,
-                             const int          & nWells,
-                             const std::string  & name) const;
+  void         getWellTrends(std::vector<float *> & wellTrend,
+                             std::vector<float *> & highCutWellTrend,
+                             WellData            ** wells,
+                             const int            & nz,
+                             const std::string    & name) const;
 
   void         getWellTrendsZone(std::vector<BlockedLogsForZone *> & bl,
-                                 const std::vector<float *>        & wellTrend,
-                                 const std::vector<float *>        & highCutWellTrend,
+                                 std::vector<float *>              & wellTrend,
+                                 std::vector<float *>              & highCutWellTrend,
                                  WellData                         ** wells,
                                  StormContGrid                     & eroded_zone,
+                                 const int                         & nz,
                                  const std::string                 & name,
                                  const int                         & i) const;
 

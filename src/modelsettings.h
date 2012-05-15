@@ -152,6 +152,7 @@ public:
   bool                             getForwardModeling(void)             const { return forwardModeling_                           ;}
   bool                             getGenerateSeismicAfterInv(void)     const { return generateSeismicAfterInv_                   ;}
   bool                             getGenerateBackground(void)          const { return generateBackground_                        ;}
+  bool                             getMultizoneBackground()             const { return multizoneBackground_                       ;}
   bool                             getEstimateFaciesProb(void)          const { return estimateFaciesProb_                        ;}
   bool                             getFaciesProbRelative(void)          const { return faciesProbRelative_                        ;}
   bool                             getNoVsFaciesProb(void)              const { return noVsFaciesProb_                            ;}
@@ -325,6 +326,7 @@ public:
   void setEstimationMode(bool estimationMode)             { estimationMode_           = estimationMode           ;}
   void setForwardModeling(bool forwardModeling)           { forwardModeling_          = forwardModeling          ;}
   void setGenerateSeismicAfterInv( bool generateSeismic)  { generateSeismicAfterInv_  = generateSeismic          ;}
+  void setMultizoneBackground(bool multizone)             { multizoneBackground_      = multizone                ;}
   void setGenerateBackground(bool generateBackgr)         { generateBackground_       = generateBackgr           ;}
   void setEstimateFaciesProb(bool estFaciesProb)          { estimateFaciesProb_       = estFaciesProb            ;}
   void setFaciesProbRelative(bool faciesProbRel)          { faciesProbRelative_       = faciesProbRel            ;}
@@ -542,6 +544,7 @@ private:
   bool                              estimationMode_;             ///< Estimation
   bool                              generateSeismicAfterInv_;    ///< Synthetic seismic from inversion result
   bool                              generateBackground_;         ///< Make background model
+  bool                              multizoneBackground_;        ///< Make multizone background model
   bool                              estimateFaciesProb_;         ///< Shall facies probabilites be estimated?
   bool                              faciesProbRelative_;         ///< Use relative elastic parameters for facies prob estimation?
   bool                              noVsFaciesProb_;             ///< Do not use Vs for faciesprob.

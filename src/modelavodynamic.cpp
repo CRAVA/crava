@@ -531,7 +531,7 @@ ModelAVODynamic::processBackground(Background         *& background,
         backModel[i] = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, modelSettings->getFileGrid());
         backModel[i]->setType(FFTGrid::PARAMETER);
       }
-      if(static_cast<int>(modelSettings->getErosionPriority().size()) == 0)
+      if(modelSettings->getMultizoneBackground() == false)
         background = new Background(backModel, wells, velocity, timeSimbox, timeBGSimbox, modelSettings);
       else
         background = new Background(backModel, wells, timeSimbox, modelSettings, inputFiles->getMultizoneSurfaceFiles());
