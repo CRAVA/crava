@@ -15,6 +15,7 @@ public:
 
   SolidMixed(const std::vector<Solid*>      & solid,
              const std::vector<double>      & volume_fraction,
+             DEMTools::MixMethod              mix_method,
              DistributionsSolidMixEvolution * distr_evolution = NULL);
 
 
@@ -36,6 +37,7 @@ private:
 
   std::vector<Solid*>              solid_;           // Owned and deleted by this class.
   std::vector<double>              volume_fraction_;
+  DEMTools::MixMethod              mix_method_;
   DistributionsSolidMixEvolution * distr_evolution_; // Pointer to external object.
 
   double k_;

@@ -2,6 +2,7 @@
 
 FluidMixed::FluidMixed(const std::vector<Fluid*>      & fluid,
                        const std::vector<double>      & volume_fraction,
+                       DEMTools::MixMethod              mix_method,
                        DistributionsFluidMixEvolution * distr_evolution)
 : Fluid()
 {
@@ -13,6 +14,7 @@ FluidMixed::FluidMixed(const std::vector<Fluid*>      & fluid,
   }
 
   volume_fraction_ = volume_fraction;
+  mix_method_      = mix_method;
   distr_evolution_ = distr_evolution;
 
   k_ = rho_ = 0;
@@ -28,7 +30,20 @@ FluidMixed::FluidMixed(const std::vector<Fluid*>      & fluid,
     std::vector<double> k(fluid.size()), rho(fluid.size());
     for (size_t i = 0; i < fluid.size(); i++)
       fluid[i]->GetElasticParams(k[i], rho[i]);
-    k_    = DEMTools::CalcEffectiveElasticModuliUsingReuss(k[0], volume_fraction[0], k[1]);     // homogeneous
+
+    switch (mix_method_) {
+      case DEMTools::Hill :
+        k_    = DEMTools::CalcEffectiveElasticModuliUsingHill(k[0], volume_fraction[0], k[1]);
+        break;
+      case DEMTools::Reuss :
+        k_    = DEMTools::CalcEffectiveElasticModuliUsingReuss(k[0], volume_fraction[0], k[1]);     // homogeneous
+        break;
+      case DEMTools::Voigt :
+        k_    = DEMTools::CalcEffectiveElasticModuliUsingVoigt(k[0], volume_fraction[0], k[1]);
+        break;
+      default :
+        throw NRLib::Exception("Invalid fluid mixing algorithm specified.");
+    }
     rho_  = DEMTools::CalcEffectiveDensity(rho[0], volume_fraction[0], rho[1]);
   }
 }
@@ -49,6 +64,7 @@ FluidMixed::Clone() const
   s->k_ = this->k_;
   s->rho_ = this->rho_;
   s->volume_fraction_ = this->volume_fraction_;
+  s->mix_method_      = this->mix_method_;
   s->distr_evolution_ = this->distr_evolution_;
 
   size_t n_fluids = this->fluid_.size();
@@ -67,6 +83,7 @@ FluidMixed& FluidMixed::operator=(const FluidMixed& rhs)
     k_               = rhs.k_;
     rho_             = rhs.rho_;
     volume_fraction_ = rhs.volume_fraction_;
+    mix_method_      = rhs.mix_method_;
     distr_evolution_ = rhs.distr_evolution_;
 
     size_t n_fluids_old = fluid_.size();
@@ -104,7 +121,7 @@ FluidMixed::Evolve(const std::vector<int>             & delta_time,
     fluid_new[i] = fluid_[i]->Evolve(delta_time, fluid);
 
   std::vector<double> volume_fraction = volume_fraction_; // Evolve when model is defined.
-  Fluid * fluid_mixed_new = new FluidMixed(fluid_new, volume_fraction, distr_evolution_);
+  Fluid * fluid_mixed_new = new FluidMixed(fluid_new, volume_fraction, mix_method_, distr_evolution_);
 
   // Deep copy taken by constructor of FluidMixed, hence delete fluid_new here:
   for (size_t i = 0; i < n_fluids; ++i)

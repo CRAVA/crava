@@ -436,7 +436,7 @@ DEMTools::DebugTestCalcEffectiveModulus(double& effective_bulk_modulus,
 
   ////
   enum GeometryType {Spherical, Mixed};
-  GeometryType my_geo_type = Spherical; // pore geometry, this enum chooses the one to use.
+  GeometryType my_geo_type = Mixed; // pore geometry, this enum chooses the one to use.
   // example 1: spherical
   double inclusiongeometry_spectrum          = 1.0;
   double inclusiongeometry_concentration     = 1.0;
@@ -563,7 +563,7 @@ DEMTools::DebugTestCalcEffectiveModulus2(double& effective_bulk_modulus,
   mineral[0] = &clay;
   mineral[1] = &quartz;
 
-  SolidMixed solidmixed(mineral, volume_fraction);
+  SolidMixed solidmixed(mineral, volume_fraction, DEMTools::Hill);
 
   double brine_k;
   double brine_rho;
@@ -582,7 +582,7 @@ DEMTools::DebugTestCalcEffectiveModulus2(double& effective_bulk_modulus,
   fluid[1] = &co2;
 
 
-  FluidMixed fluid_mix(fluid, volume_fraction2);
+  FluidMixed fluid_mix(fluid, volume_fraction2, DEMTools::Reuss);
   ////
 
 
@@ -593,7 +593,7 @@ DEMTools::DebugTestCalcEffectiveModulus2(double& effective_bulk_modulus,
                                       inclusiongeometry.spectrum, ...
                                       porosity*inclusiongeometry.concentration);*/
   enum GeometryType {Spherical, Mixed};
-  GeometryType my_geo_type = Spherical; // pore geometry, this enum chooses the one to use.
+  GeometryType my_geo_type = Mixed; // pore geometry, this enum chooses the one to use.
 
   std::vector<double> inclusion_spectrum;
   std::vector<double> inclusion_concentration;
@@ -654,7 +654,7 @@ DEMTools::DebugTestCalcEffectiveModulus3(double& effective_bulk_modulus,
   distr_vol_frac.push_back(new NRLib::Delta(0.15));
   distr_vol_frac.push_back(new NRLib::Delta(1.0 - 0.15));
   DistributionsSolidMixEvolution * distr_solidmix_evolution = NULL;
-  DistributionsSolid * distr_solid_mixed = new DistributionsSolidMix(distr_solid, distr_vol_frac, distr_solidmix_evolution);
+  DistributionsSolid * distr_solid_mixed = new DistributionsSolidMix(distr_solid, distr_vol_frac, DEMTools::Hill, distr_solidmix_evolution);
   //Solid * solid_mixed = distr_solid_mixed->GenerateSample();
 
   //// Fluid properties
@@ -678,13 +678,13 @@ DEMTools::DebugTestCalcEffectiveModulus3(double& effective_bulk_modulus,
   distr_vol_frac2.push_back(new NRLib::Delta(0.8));
   distr_vol_frac2.push_back(new NRLib::Delta(1.0 - 0.8));
   DistributionsFluidMixEvolution * distr_fluidmix_evolution  = NULL;
-  DistributionsFluid * distr_fluid_mixed = new DistributionsFluidMix(distr_fluid, distr_vol_frac2, distr_fluidmix_evolution);
+  DistributionsFluid * distr_fluid_mixed = new DistributionsFluidMix(distr_fluid, distr_vol_frac2, DEMTools::Reuss, distr_fluidmix_evolution);
   //Fluid * fluid_mixed = distr_fluid_mixed->GenerateSample();
 
 
   //// Geometry specification
   enum GeometryType {Spherical, Mixed};
-  GeometryType my_geo_type = Spherical; // pore geometry, this enum chooses the one to use.
+  GeometryType my_geo_type = Mixed; // pore geometry, this enum chooses the one to use.
 
   std::vector< NRLib::Distribution<double> * > distr_incl_spectrum;
   std::vector< NRLib::Distribution<double> * > distr_incl_concentration;
@@ -786,7 +786,7 @@ DEMTools::DebugTestDeletionAndCopying() {
   distr_vol_frac.push_back(new NRLib::Delta(0.15));
   distr_vol_frac.push_back(new NRLib::Delta(1.0 - 0.15));
   DistributionsSolidMixEvolution * distr_solidmix_evolution = NULL;
-  DistributionsSolid * distr_solid_mixed = new DistributionsSolidMix(distr_solid, distr_vol_frac, distr_solidmix_evolution);
+  DistributionsSolid * distr_solid_mixed = new DistributionsSolidMix(distr_solid, distr_vol_frac, DEMTools::Hill, distr_solidmix_evolution);
 
   //// Fluid properties
   //// (Brine properties according to Batzle, M. and Wang, Z. 1992, and
@@ -807,11 +807,11 @@ DEMTools::DebugTestDeletionAndCopying() {
   distr_vol_frac2.push_back(new NRLib::Delta(0.8));
   distr_vol_frac2.push_back(new NRLib::Delta(1.0 - 0.8));
   DistributionsFluidMixEvolution * distr_fluidmix_evolution  = NULL;
-  DistributionsFluid * distr_fluid_mixed = new DistributionsFluidMix(distr_fluid, distr_vol_frac2, distr_fluidmix_evolution);
+  DistributionsFluid * distr_fluid_mixed = new DistributionsFluidMix(distr_fluid, distr_vol_frac2, DEMTools::Reuss, distr_fluidmix_evolution);
 
   //// Geometry specification
   enum GeometryType {Spherical, Mixed};
-  GeometryType my_geo_type = Spherical; // pore geometry, this enum chooses the one to use.
+  GeometryType my_geo_type = Mixed; // pore geometry, this enum chooses the one to use.
 
   std::vector< NRLib::Distribution<double> * > distr_incl_spectrum;
   std::vector< NRLib::Distribution<double> * > distr_incl_concentration;
@@ -921,7 +921,7 @@ DEMTools::DebugTestDeletionAndCopying() {
     v_ass.push_back(0.3);
     v_ass.push_back(0.7);
     // ASSIGNMENT SOLIDMIXED
-    SolidMixed sol_mixed_ass(s_ass, v_ass);
+    SolidMixed sol_mixed_ass(s_ass, v_ass, DEMTools::Hill);
     sol_mixed_ass = *(dynamic_cast<SolidMixed*>(solid_mixed)); // Assignment
     double k_mix, mu_mix, rho_mix;
     solid_mixed->ComputeElasticParams(k_mix, mu_mix, rho_mix);
@@ -939,7 +939,7 @@ DEMTools::DebugTestDeletionAndCopying() {
     vf_ass.push_back(0.47);
     vf_ass.push_back(0.53);
     // ASSIGNMENT FLUIDMIXED
-    FluidMixed flu_mixed_ass(f_ass, vf_ass);
+    FluidMixed flu_mixed_ass(f_ass, vf_ass, DEMTools::Reuss);
     flu_mixed_ass = *(dynamic_cast<FluidMixed*>(fluid_mixed)); // Assignment
     double fk_mix, frho_mix;
     fluid_mixed->GetElasticParams(fk_mix, frho_mix);

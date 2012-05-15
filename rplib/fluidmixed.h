@@ -16,6 +16,7 @@ public:
 
   FluidMixed(const std::vector<Fluid*>      & fluid,
              const std::vector<double>      & volume_fraction,
+             DEMTools::MixMethod              mix_method,
              DistributionsFluidMixEvolution * distr_evolution = NULL);
 
   virtual ~FluidMixed();
@@ -38,6 +39,7 @@ private:
 
   std::vector<Fluid*> fluid_;                        // Owned and deleted by this class.
   std::vector<double> volume_fraction_;
+  DEMTools::MixMethod mix_method_;
   DistributionsFluidMixEvolution * distr_evolution_; // Pointer to external object.
 
   double k_;

@@ -2,12 +2,14 @@
 
 DistributionsFluidMix::DistributionsFluidMix(std::vector< DistributionsFluid * >            distr_fluid,
                                              std::vector< NRLib::Distribution<double> * >   distr_vol_frac,
+                                             DEMTools::MixMethod                            mix_method,
                                              DistributionsFluidMixEvolution               * distr_evolution)
 : DistributionsFluid()
 {
   assert(distr_fluid.size() == distr_vol_frac.size());
   distr_fluid_      = distr_fluid;
   distr_vol_frac_   = distr_vol_frac;
+  mix_method_       = mix_method;
   distr_evolution_  = distr_evolution;
 }
 
@@ -25,7 +27,7 @@ DistributionsFluidMix::GenerateSample() const
     fluid[i] = distr_fluid_[i]->GenerateSample();
     volume_fraction[i] = distr_vol_frac_[i]->Draw();
   }
-  Fluid * fluid_mixed = new FluidMixed(fluid, volume_fraction, distr_evolution_);
+  Fluid * fluid_mixed = new FluidMixed(fluid, volume_fraction, mix_method_, distr_evolution_);
 
   // Deep copy taken by constructor of FluidMixed, hence delete fluid here:
   for(size_t i = 0; i < n_fluids; ++i)

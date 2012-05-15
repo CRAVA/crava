@@ -4,6 +4,8 @@
 #include <vector>
 
 namespace DEMTools {
+  enum MixMethod{Hill = 0, Reuss, Voigt};
+
   //list of main functions
   double CalcBulkModulusOfBrineFromTPS(double temperature,
                                        double pressure,
