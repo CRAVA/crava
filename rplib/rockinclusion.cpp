@@ -17,29 +17,7 @@ RockInclusion::RockInclusion(const Solid                         * solid,
   porosity_                = porosity;
   distr_evolution_         = distr_evolution;
 
-  double fluid_rho, fluid_k;
-  fluid_->GetElasticParams(fluid_k, fluid_rho);
-
-  double solid_rho, solid_k, solid_mu;
-  solid_->ComputeElasticParams(solid_k, solid_mu, solid_rho);
-
-  rho_  = DEMTools::CalcEffectiveDensity(fluid_rho, porosity_, solid_rho);
-
-  std::vector<double> inclusion_k   =  std::vector<double>(inclusion_spectrum_.size(), fluid_k);
-  std::vector<double> inclusion_mu  = std::vector<double>(inclusion_spectrum_.size(), 0.0);
-  std::vector<double> conc = inclusion_concentration_; // inclusion concentration scaled by porosity
-  for (size_t i = 0; i < conc.size(); i++)
-   conc[i] *= porosity_;
-
-  DEMTools::CalcEffectiveBulkAndShearModulus(inclusion_k,
-                                             inclusion_mu,
-                                             inclusion_spectrum_,
-                                             conc,
-                                             solid_k,
-                                             solid_mu,
-                                             k_,
-                                             mu_);
-  DEMTools::CalcSeismicParamsFromElasticParams(k_, mu_, rho_, vp_, vs_);
+  ComputeSeismicAndElasticParams();
 
 }
 
@@ -102,7 +80,6 @@ RockInclusion::Clone() const {
 void
 RockInclusion::ComputeSeismicParams(double & vp, double & vs, double & rho) const
 {
-  // Computation done in constructor.
   vp  = vp_;
   vs  = vs_;
   rho = rho_;
@@ -150,5 +127,39 @@ RockInclusion::Evolve(const std::vector<int>         & delta_time,
   delete fluid_new;
 
   return rock_new;
+}
+
+void
+RockInclusion::SetPorosity(double porosity) {
+  porosity_ = porosity;
+  ComputeSeismicAndElasticParams();
+}
+
+void
+RockInclusion::ComputeSeismicAndElasticParams() {
+
+  double fluid_rho, fluid_k;
+  fluid_->GetElasticParams(fluid_k, fluid_rho);
+
+  double solid_rho, solid_k, solid_mu;
+  solid_->ComputeElasticParams(solid_k, solid_mu, solid_rho);
+
+  rho_  = DEMTools::CalcEffectiveDensity(fluid_rho, porosity_, solid_rho);
+
+  std::vector<double> inclusion_k   =  std::vector<double>(inclusion_spectrum_.size(), fluid_k);
+  std::vector<double> inclusion_mu  = std::vector<double>(inclusion_spectrum_.size(), 0.0);
+  std::vector<double> conc = inclusion_concentration_; // inclusion concentration scaled by porosity
+  for (size_t i = 0; i < conc.size(); i++)
+   conc[i] *= porosity_;
+
+  DEMTools::CalcEffectiveBulkAndShearModulus(inclusion_k,
+                                             inclusion_mu,
+                                             inclusion_spectrum_,
+                                             conc,
+                                             solid_k,
+                                             solid_mu,
+                                             k_,
+                                             mu_);
+  DEMTools::CalcSeismicParamsFromElasticParams(k_, mu_, rho_, vp_, vs_);
 }
 

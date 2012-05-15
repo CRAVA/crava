@@ -17,6 +17,8 @@ public:
   virtual Rock * Evolve(const std::vector<int>         & /*delta_time*/,
                         const std::vector< Rock * >    & /*rock*/) const { return new MultiNormalRock(*this); }
 
+  virtual void SetPorosity(double /*porosity*/){}
+
 
 private:
   std::vector<double>  param_; //vp, vs, rho

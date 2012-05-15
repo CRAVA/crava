@@ -38,9 +38,15 @@ public:
   virtual Rock * Evolve(const std::vector<int>         & delta_time,
                         const std::vector< Rock * >    & rock) const;
 
+  virtual void SetPorosity(double porosity);
+
 private:
   //Copy constructor for getting base class variables , used by Clone:
   RockInclusion(const RockInclusion & rhs) : Rock(rhs) {}
+
+  // Calculate elastic and seismic parameters, to be
+  // used whenever new information is sent to class.
+  void ComputeSeismicAndElasticParams();
 
   Solid                               * solid_; // Owned and deleted by this class.
   Fluid                               * fluid_; // Owned and deleted by this class.
