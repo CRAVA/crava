@@ -3,6 +3,9 @@
 #include "src/timeevolution.h"
 #include "lib/lib_matr.h"
 
+#include "nrlib/flens/nrlib_flens.cpp"
+
+
 State4D::State4D(){
 
   // Initilizing the 27 grids. All grids initialize to NULL.
@@ -456,7 +459,168 @@ void State4D::split(SeismicParametersHolder current_state )
 
 void State4D::evolve(int time_step, const TimeEvolution timeEvolution )
 {
-  // move  void TimeEvolution::Evolve(int time_step, State4D & state4D) here.
+  // Evolution matrix and correction terms from TimeEvolution class
+  NRLib::Matrix evolution_matrix     = timeEvolution.getEvolutionMatrix(time_step);
+  NRLib::Vector mean_correction_term = timeEvolution.getMeanCorrectionTerm(time_step);
+  NRLib::Matrix cov_correction_term  = timeEvolution.getCovarianceCorrectionTerm(time_step);
+
+   // Holders of FFTGrid pointers
+  std::vector<FFTGrid *> mu(6);
+
+  std::vector<FFTGrid *> sigma(21);
+  // Check the order of the grids here:
+  // The order is used later in set-up of symmetric sigma matrix
+
+
+  mu[0] = getMuVpStatic(); //mu_static_Alpha
+  mu[1] = getMuVsStatic(); //mu_static_Beta
+  mu[2] = getMuRhoStatic(); //mu_static_Rho
+  mu[3] = getMuVpDynamic(); //mu_dynamic_Alpha
+  mu[4] = getMuVsDynamic(); //mu_dynamic_Beta
+  mu[5] = getMuRhoDynamic(); //mu_dynamic_Rho
+
+  // Note the order of the grids here: The order is used other places in code.
+  sigma[0]  = getCovVpVpStaticStatic(); //cov_ss_AlphaStatic AlphaStatic
+  sigma[1]  = getCovVpVsStaticStatic();  //cov_ss_AlphaStaticBetaStatic
+  sigma[2]  = getCovVpRhoStaticStatic();  //cov_ss_AlphaStaticRhoStatic
+  sigma[3]  = getCovVsVsStaticStatic(); //cov_ss_BetaStaticBetaStatic
+  sigma[4]  = getCovVsRhoStaticStatic(); //cov_ss_BetaStaticRhoStatic
+  sigma[5]  = getCovRhoRhoStaticStatic(); //cov_ss_RhoStaticRhoStatic
+  sigma[6]  = getCovVpVpDynamicDynamic(); //cov_dd_AlphaDynamicAlphaDynamic
+  sigma[7]  = getCovVpVsDynamicDynamic(); //cov_dd_AlphaDynamicBetaDynamic
+  sigma[8]  = getCovVpRhoDynamicDynamic(); //cov_dd_AlphaDynamicRhoDynamic
+  sigma[9]  = getCovVsVsDynamicDynamic(); //cov_dd_BetaDynamicBetaDynamic
+  sigma[10] = getCovVsRhoDynamicDynamic(); //cov_dd_BetaDynamicRhoDynamic
+  sigma[11] = getCovRhoRhoDynamicDynamic(); //cov_dd_RhoDynamicRhoDynamic
+
+  sigma[12] = getCovVpVpStaticDynamic(); //cov_sd_AlphaStaticAlphaDynamic
+  sigma[13] = getCovVpVsStaticDynamic();  //cov_sd_AlphaStaticBetaDynamic
+  sigma[14] = getCovVpRhoStaticDynamic(); //cov_sd_AlphaStaticRhoDynamic
+  sigma[15] = getCovVsVpStaticDynamic();  //cov_sd_BetaStaticAlphaDynamic
+  sigma[16] = getCovVsVsStaticDynamic();  //cov_sd_BetaStaticBetaDynamic
+  sigma[17] = getCovVsRhoStaticDynamic(); //cov_sd_BetaStaticRhoDynamic
+  sigma[18] = getCovRhoVpStaticDynamic(); //cov_sd_RhoStaticAlphaDynamic
+  sigma[19] = getCovRhoVsStaticDynamic(); //cov_sd_RhoStaticBetaDynamic
+  sigma[20] = getCovRhoRhoStaticDynamic();  //cov_sd_RhoStaticRhoDynamic
+
+  // We assume FFT transformed grids
+  for(int i = 0; i<6; i++)
+    assert(mu[i]->getIsTransformed());
+  for(int i = 0; i<21; i++)
+    assert(sigma[i]->getIsTransformed());
+
+  NRLib::Vector mu_real(6);
+  NRLib::Vector mu_imag(6);
+  NRLib::Vector mu_real_next(6);
+  NRLib::Vector mu_imag_next(6);
+
+  NRLib::Matrix sigma_real(6,6);
+  NRLib::Matrix sigma_imag(6,6);
+  NRLib::Matrix sigma_real_next(6,6);
+  NRLib::Matrix sigma_imag_next(6,6);
+
+  fftw_complex get_value,return_value;
+
+  int nzp_ = mu[0]->getNzp();
+  int nyp_ = mu[0]->getNyp();
+  int cnxp = mu[0]->getCNxp();
+
+
+  // Iterate through all points in the grid and perform forward transition in time
+  for (int k = 0; k < nzp_; k++) {
+    for (int j = 0; j < nyp_; j++) {
+      for (int i = 0; i < cnxp; i++) {
+
+        // Set up vectors from the FFT grids
+        for (int d = 0; d < 6; d++) {
+          get_value  = mu[d]->getNextComplex();
+          mu_real(d) = get_value.re;
+          mu_imag(d) = get_value.im;
+        }
+
+        // Evolve values
+        mu_real_next = evolution_matrix*mu_real + mean_correction_term;
+        mu_imag_next = evolution_matrix*mu_imag;
+
+        // Update values in the FFT-grids
+        for (int d = 0; d < 6; d++) {
+          return_value.re = static_cast<float>(mu_real_next(d));
+          return_value.im = static_cast<float>(mu_imag_next(d));
+          mu[d]->setNextComplex(return_value);
+        }
+        // Set up matrices from the FFT-grids.
+        // Note: Here we assume a specific order of the elements in the sigma-vector.
+        // Static and dynamic parts.
+        int counter = 0;
+        for (int d1 = 0; d1 < 3; d1++) {
+          for (int d2 = d1; d2 < 3; d2++) {
+            get_value  = sigma[counter]->getNextComplex();
+            sigma_real(d1, d2) = get_value.re;
+            sigma_imag(d1, d2) = get_value.im;
+            get_value  = sigma[counter+6]->getNextComplex();
+            sigma_real(d1+3, d2+3) = get_value.re;  // d1+3 and d2+3 due to block structure of matrix
+            sigma_imag(d1+3, d2+3) = get_value.im;
+
+            counter++;
+
+            //Enforcing symmetry of overall matrix.
+            if (d1 != d2) {
+              sigma_real(d2, d1) = sigma_real(d1, d2);
+              sigma_imag(d2 ,d1) = sigma_imag(d1, d2);
+
+              sigma_real(d2+3, d1+3) = sigma_real(d1+3, d2+3);
+              sigma_imag(d2+3 ,d1+3) = sigma_imag(d1+3, d2+3);
+            }
+          }
+        }
+        // Static-dynamic covariance.
+        counter = 12;
+        for (int d1 = 0; d1 < 3; d1++) {
+          for (int d2 = 3; d2 < 6; d2++) {
+            get_value=sigma[counter]->getNextComplex();
+            sigma_real(d1, d2) = get_value.re;
+            sigma_imag(d1, d2) = get_value.im;
+            counter++;
+
+            //Enforcing symmetry of overall matrix.
+            sigma_real(d2, d1) = sigma_real(d1, d2);
+            sigma_imag(d2 ,d1) = sigma_imag(d1, d2);
+          }
+        }
+        // Evolve values.
+        sigma_real_next = (evolution_matrix*sigma_real);
+        sigma_real_next = sigma_real_next*transpose(evolution_matrix) + cov_correction_term;
+
+        sigma_imag_next = evolution_matrix*sigma_imag;
+        sigma_imag_next = sigma_imag_next*transpose(evolution_matrix);
+
+        counter = 0;
+        for (int d1 = 0; d1 < 3; d1++) {// Update values in the FFT-grids.
+          for (int d2 = d1; d2 < 3; d2++) {// Static and dynamic parts.
+            return_value.re = static_cast<float>(sigma_real_next(d1, d2));
+            return_value.im = static_cast<float>(sigma_imag_next(d1, d2));
+            sigma[counter]->setNextComplex(return_value);
+
+            return_value.re = static_cast<float>(sigma_real_next(d1+3, d2+3));  //d1+3 and d2+3 due to block structure of matrix
+            return_value.im = static_cast<float>(sigma_imag_next(d1+3, d2+3));
+            sigma[counter+6]->setNextComplex(return_value);
+
+            counter++;
+          }
+        }
+        // Static-dynamic covariance.
+        counter = 12;
+        for (int d1 = 0; d1 < 3; d1++) {
+          for (int d2 = 3; d2 < 6; d2++) {
+            return_value.re = static_cast<float>(sigma_real_next(d1, d2));
+            return_value.im = static_cast<float>(sigma_imag_next(d1, d2));
+            sigma[counter]->setNextComplex(return_value);
+            counter++;
+          }
+        }
+      }
+    }
+  }
 }
 
 bool

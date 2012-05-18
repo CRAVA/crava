@@ -18,8 +18,12 @@ public:
                 TimeLine & time_line,
                 const DistributionsRock       * dist_rock);
   //void Split(const SeismicParametersHolder &m_combined, State4D & state4D);
-  void Evolve(int time_step, State4D & state4D);
+  //void Evolve(int time_step, State4D & state4D);
   //void Merge(const State4D & state4D, SeismicParametersHolder &m_combined);
+
+  NRLib::Matrix getEvolutionMatrix(int time_step)          const { return evolution_matrix_[time_step]; }
+  NRLib::Vector getMeanCorrectionTerm(int time_step)       const { return mean_correction_term_[time_step];}
+  NRLib::Matrix getCovarianceCorrectionTerm(int time_step) const { return cov_correction_term_[time_step]; }
 
 private:
   int number_of_timesteps_;

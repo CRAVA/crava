@@ -67,11 +67,11 @@ public:
   FFTGrid * getCovVpVsStaticDynamic(void)   { return sigma_static_dynamic_[1]; }
   FFTGrid * getCovVpRhoStaticDynamic(void)  { return sigma_static_dynamic_[2]; }
   FFTGrid * getCovVsVpStaticDynamic(void)   { return sigma_static_dynamic_[3]; }
-  FFTGrid * getCovVsVsStaticDynamic(void)  { return sigma_static_dynamic_[4]; }
-  FFTGrid * getCovVsRhoStaticDynamic(void) { return sigma_static_dynamic_[5]; }
-  FFTGrid * getCovRhoVpStaticDynamic(void)   { return sigma_static_dynamic_[6]; }
+  FFTGrid * getCovVsVsStaticDynamic(void)   { return sigma_static_dynamic_[4]; }
+  FFTGrid * getCovVsRhoStaticDynamic(void)  { return sigma_static_dynamic_[5]; }
+  FFTGrid * getCovRhoVpStaticDynamic(void)  { return sigma_static_dynamic_[6]; }
   FFTGrid * getCovRhoVsStaticDynamic(void)  { return sigma_static_dynamic_[7]; }
-  FFTGrid * getCovRhoRhoStaticDynamic(void)  { return sigma_static_dynamic_[8]; }
+  FFTGrid * getCovRhoRhoStaticDynamic(void) { return sigma_static_dynamic_[8]; }
 
 
 private:
@@ -81,7 +81,7 @@ private:
   std::vector<FFTGrid *> sigma_static_static_;  // [0] = vp_vp, [1] = vp_vs, [2] = vp_rho ,[3] = vs_vs, [4] = vs_rho, [5] = rho_rho (all static)
   std::vector<FFTGrid *> sigma_dynamic_dynamic_;// [0] = vp_vp, [1] = vp_vs, [2] = vp_rho ,[3] = vs_vs, [4] = vs_rho, [5] = rho_rho (all dynamix)
   std::vector<FFTGrid *> sigma_static_dynamic_; // [0] = vpStat_vpDyn, [1] = vpStat_vsDyn, [2] = vpStat_rhoDyn ,[3] = vsStat_vpDyn,
-                                                // [4] = vsStat_vsDyn, [5] =  vsStat_rhoDyn, [6]=rhoStat_vpDyn, [7] = rhoStat_vsDyn, [8] = rhoStat_rhoDyn
+                                                // [4] = vsStat_vsDyn, [5] = vsStat_rhoDyn, [6]= rhoStat_vpDyn, [7] = rhoStat_vsDyn, [8] = rhoStat_rhoDyn
 
 };
 
