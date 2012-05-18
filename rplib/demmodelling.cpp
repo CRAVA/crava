@@ -211,88 +211,64 @@ DEMTools::CalcCo2Prop(double& bulk_modulus,
 
 }
 
+
 double
-DEMTools::CalcEffectiveElasticModuliUsingHill(double property1,
-                                              double volumefraction1,
-                                              double property2,
-                                              double volumefraction2) {
+DEMTools::CalcEffectiveElasticModuliUsingHill(const std::vector<double> & prop,
+                                              const std::vector<double> & volumefraction) {
+  return 0.5*(CalcEffectiveElasticModuliUsingReuss(prop, volumefraction) +
+              CalcEffectiveElasticModuliUsingVoigt(prop, volumefraction));
+}
 
-  if (volumefraction2 < 0)
-    volumefraction2 = 1.0 - volumefraction1;
+double
+DEMTools::CalcEffectiveElasticModuliUsingReuss(const std::vector<double> & prop,
+                                               const std::vector<double> & volumefraction) {
 
-  if (volumefraction1 + volumefraction2 > 1.0) {
-    //NBNB fjellvoll add some warning
-    volumefraction2 = 1 - volumefraction1;
+  assert (prop.size() == volumefraction.size());
+  assert (std::accumulate(volumefraction.begin(), volumefraction.end(), 0.0) == 1.0);
+
+  bool found_zero = false;
+  for (size_t i = 0; i < prop.size(); ++i) {
+    if (prop[i] == 0.0)
+      found_zero = true;
   }
+  if (found_zero)
+    throw NRLib::Exception("Invalid arguments: One of the properties is zero.");
 
-  return 0.5*(CalcEffectiveElasticModuliUsingReuss(property1,
-                                                   volumefraction1,
-                                                   property2,
-                                                   volumefraction2) +
-               CalcEffectiveElasticModuliUsingVoigt(property1,
-                                                    volumefraction1,
-                                                    property2,
-                                                    volumefraction2));
+  double eff_prop = 0.0;
+  for (size_t i = 0; i < volumefraction.size(); ++i)
+    eff_prop += volumefraction[i] / prop[i];
+  eff_prop = 1.0 / eff_prop;
 
+  return eff_prop;
+}
+
+double
+DEMTools::CalcEffectiveElasticModuliUsingVoigt(const std::vector<double> & prop,
+                                               const std::vector<double> & volumefraction) {
+
+  assert (prop.size() == volumefraction.size());
+  assert (std::accumulate(volumefraction.begin(), volumefraction.end(), 0.0) == 1.0);
+
+  double eff_prop = 0.0;
+  for (size_t i = 0; i < volumefraction.size(); ++i)
+    eff_prop += volumefraction[i] * prop[i];
+
+  return eff_prop;
 
 }
 
 double
-DEMTools::CalcEffectiveElasticModuliUsingReuss(double property1,
-                                               double volumefraction1,
-                                               double property2,
-                                               double volumefraction2) {
+DEMTools::CalcEffectiveDensity(const std::vector<double> & rho,
+                               const std::vector<double> & volumefraction) {
 
-  if (volumefraction2 < 0)
-    volumefraction2 = 1.0 - volumefraction1;
+  assert (rho.size() == volumefraction.size());
+  assert (std::accumulate(volumefraction.begin(), volumefraction.end(), 0.0) == 1.0);
 
-  if (volumefraction1 + volumefraction2 > 1.0) {
-    //NBNB fjellvoll add some warning
-    volumefraction2 = 1 - volumefraction1;
-  }
+  double eff_rho = 0.0;
+  for (size_t i = 0; i < volumefraction.size(); ++i)
+    eff_rho += volumefraction[i] * rho[i];
 
-  if (property1 == 0.0 || property2 == 0.0)
-    throw NRLib::Exception("Invalid arguments:One of the properties are zero.");
-
-  return 1.0/(volumefraction1/property1 + volumefraction2/property2);
-
-
-}
-
-double
-DEMTools::CalcEffectiveElasticModuliUsingVoigt(double property1,
-                                               double volumefraction1,
-                                               double property2,
-                                               double volumefraction2) {
-
-  if (volumefraction2 < 0)
-    volumefraction2 = 1.0 - volumefraction1;
-
-  if (volumefraction1 + volumefraction2 > 1.0) {
-    //NBNB fjellvoll add some warning
-    volumefraction2 = 1 - volumefraction1;
-  }
-
-  return volumefraction1*property1 + volumefraction2*property2;
-
-}
-
-double
-DEMTools::CalcEffectiveDensity(double rho1,
-                               double volumefraction1,
-                               double rho2,
-                               double volumefraction2) {
-
-  if (volumefraction2 < 0)
-    volumefraction2 = 1.0 - volumefraction1;
-
-  if (volumefraction1 + volumefraction2 > 1.0) {
-    //NBNB fjellvoll add some warning
-    volumefraction2 = 1 - volumefraction1;
-  }
-
-  return volumefraction1*rho1 + volumefraction2*rho2;
-
+  return eff_rho;
 }
 
 
@@ -456,22 +432,49 @@ DEMTools::DebugTestCalcEffectiveModulus(double& effective_bulk_modulus,
   //// mixing
   // effective solid properties
   ////
-  double solid_k                 = CalcEffectiveElasticModuliUsingHill(clay_k, lithology, quartz_k);
-  double solid_mu                = CalcEffectiveElasticModuliUsingHill(clay_mu, lithology, quartz_mu);
-  double solid_rho               = CalcEffectiveDensity(clay_rho, lithology, quartz_rho);
+  std::vector<double> v_mineral_k;
+  v_mineral_k.push_back(clay_k);
+  v_mineral_k.push_back(quartz_k);
+  std::vector<double> v_mineral_mu;
+  v_mineral_mu.push_back(clay_mu);
+  v_mineral_mu.push_back(quartz_mu);
+  std::vector<double> v_mineral_rho;
+  v_mineral_rho.push_back(clay_rho);
+  v_mineral_rho.push_back(quartz_rho);
+  std::vector<double> v_lith;
+  v_lith.push_back(lithology);
+  v_lith.push_back(1.0 - lithology);
+  double solid_k                 = CalcEffectiveElasticModuliUsingHill(v_mineral_k, v_lith);
+  double solid_mu                = CalcEffectiveElasticModuliUsingHill(v_mineral_mu, v_lith);
+  double solid_rho               = CalcEffectiveDensity(v_mineral_rho, v_lith);
 
 
   ////
   // effective fluid properties
-  double fluid_k                 = CalcEffectiveElasticModuliUsingReuss(brine_k, saturation, co2_k);     // homogeneous
+  std::vector<double> v_fluid_k;
+  v_fluid_k.push_back(brine_k);
+  v_fluid_k.push_back(co2_k);
+  std::vector<double> v_fluid_rho;
+  v_fluid_rho.push_back(brine_rho);
+  v_fluid_rho.push_back(co2_rho);
+  std::vector<double> v_sat;
+  v_sat.push_back(saturation);
+  v_sat.push_back(1.0 - saturation);
+  double fluid_k                 = CalcEffectiveElasticModuliUsingReuss(v_fluid_k, v_sat);     // homogeneous
   // fluid.k                 = geqhill(brine.k, saturation, co2.k);      // patchy
-  double fluid_rho               = CalcEffectiveDensity(brine_rho, saturation, co2_rho);
+  double fluid_rho               = CalcEffectiveDensity(v_fluid_rho, v_sat);
   ////
 
   //// effective rock physics properties
   //
   ////
- effective_density                = CalcEffectiveDensity(fluid_rho, porosity, solid_rho);
+  std::vector<double> v_rock_rho;
+  v_rock_rho.push_back(fluid_rho);
+  v_rock_rho.push_back(solid_rho);
+  std::vector<double> v_poro;
+  v_poro.push_back(porosity);
+  v_poro.push_back(1.0 - porosity);
+ effective_density                = CalcEffectiveDensity(v_rock_rho, v_poro);
   // without gassmann
   /*[rock.k rock.mu]        = geqdem(   [solid.k fluid.k*ones(1, nrofinclgeo)], ...
                                       [solid.mu 0*ones(1, nrofinclgeo)], ...

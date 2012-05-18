@@ -144,7 +144,13 @@ RockInclusion::ComputeSeismicAndElasticParams() {
   double solid_rho, solid_k, solid_mu;
   solid_->ComputeElasticParams(solid_k, solid_mu, solid_rho);
 
-  rho_  = DEMTools::CalcEffectiveDensity(fluid_rho, porosity_, solid_rho);
+  std::vector<double> rho;
+  rho.push_back(fluid_rho);
+  rho.push_back(solid_rho);
+  std::vector<double> poro;
+  poro.push_back(porosity_);
+  poro.push_back(1.0 - porosity_);
+  rho_  = DEMTools::CalcEffectiveDensity(rho, poro);
 
   std::vector<double> inclusion_k   =  std::vector<double>(inclusion_spectrum_.size(), fluid_k);
   std::vector<double> inclusion_mu  = std::vector<double>(inclusion_spectrum_.size(), 0.0);

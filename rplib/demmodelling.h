@@ -20,25 +20,17 @@ namespace DEMTools {
                      double ti,
                      double pi);
 
-  double CalcEffectiveElasticModuliUsingHill(double property1,
-                                             double volumefraction1,
-                                             double property2,
-                                             double volumefraction2 = -1.0);
+  double CalcEffectiveElasticModuliUsingHill(const std::vector<double> & prop,
+                                             const std::vector<double> & volumefraction);
 
-  double CalcEffectiveElasticModuliUsingReuss(double property1,
-                                              double volumefraction1,
-                                              double property2,
-                                              double volumefraction2 = -1.0);
+  double CalcEffectiveElasticModuliUsingReuss(const std::vector<double> & prop,
+                                              const std::vector<double> & volumefraction);
 
-  double CalcEffectiveElasticModuliUsingVoigt(double property1,
-                                              double volumefraction1,
-                                              double property2,
-                                              double volumefraction2 = -1.0);
+  double CalcEffectiveElasticModuliUsingVoigt(const std::vector<double> & prop,
+                                              const std::vector<double> & volumefraction);
 
-  double CalcEffectiveDensity(double rho1,
-                              double volumefraction1,
-                              double rho2,
-                              double volumefraction2 = -1.0);
+  double CalcEffectiveDensity(const std::vector<double> & rho,
+                              const std::vector<double> & volumefraction);
 
   void   CalcEffectiveBulkAndShearModulus(const std::vector<double>&       bulk_modulus,
                                           const std::vector<double>&       shear_modulus,

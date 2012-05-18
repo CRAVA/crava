@@ -23,28 +23,25 @@ FluidMixed::FluidMixed(const std::vector<Fluid*>      & fluid,
     throw NRLib::Exception("Invalid arguments:Number of properties are different from number of volume fractions.");
   else if (std::accumulate(volume_fraction.begin(), volume_fraction.end(), 0.0) > 1.0) //NBNB fjellvoll possible to give warning to user and then rescale
     throw NRLib::Exception("Invalid arguments:Sum of volume fractions > 1.0");
-  else if (fluid.size() != 2) //NBNB fjellvoll this is only tmp.
-    throw NRLib::Exception("Invalid arguments:Number of volume fractions is different than 2.");
   else {
-    //NBNB fjellvoll only pair-mix allowed at the moment
     std::vector<double> k(fluid.size()), rho(fluid.size());
     for (size_t i = 0; i < fluid.size(); i++)
       fluid[i]->GetElasticParams(k[i], rho[i]);
 
     switch (mix_method_) {
       case DEMTools::Hill :
-        k_    = DEMTools::CalcEffectiveElasticModuliUsingHill(k[0], volume_fraction[0], k[1]);
+        k_    = DEMTools::CalcEffectiveElasticModuliUsingHill(k, volume_fraction);
         break;
       case DEMTools::Reuss :
-        k_    = DEMTools::CalcEffectiveElasticModuliUsingReuss(k[0], volume_fraction[0], k[1]);     // homogeneous
+        k_    = DEMTools::CalcEffectiveElasticModuliUsingReuss(k, volume_fraction);     // homogeneous
         break;
       case DEMTools::Voigt :
-        k_    = DEMTools::CalcEffectiveElasticModuliUsingVoigt(k[0], volume_fraction[0], k[1]);
+        k_    = DEMTools::CalcEffectiveElasticModuliUsingVoigt(k, volume_fraction);
         break;
       default :
         throw NRLib::Exception("Invalid fluid mixing algorithm specified.");
     }
-    rho_  = DEMTools::CalcEffectiveDensity(rho[0], volume_fraction[0], rho[1]);
+    rho_  = DEMTools::CalcEffectiveDensity(rho, volume_fraction);
   }
 }
 
