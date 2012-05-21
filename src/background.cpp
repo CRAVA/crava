@@ -320,6 +320,8 @@ Background::generateMultizoneBackgroundModel(FFTGrid                       *& bg
                                              ModelSettings                  * modelSettings,
                                              const std::vector<std::string> & surface_files)
 {
+  LogKit::LogFormatted(LogKit::Low,"Building multizone background model:\n");
+
   std::vector<int> correlation_structure = modelSettings->getCorrelationStructure();
   std::vector<int> erosion_priority      = modelSettings->getErosionPriority();
 
@@ -331,6 +333,9 @@ Background::generateMultizoneBackgroundModel(FFTGrid                       *& bg
   std::vector<Surface> surface(nZones+1);
   for(int i=0; i<nZones+1; i++)
     surface[i] = Surface(surface_files[i]);
+
+  //Check that surfaces cover inversion area
+  checkSurfaces(surface, simbox);
 
   std::vector<StormContGrid> alpha_zones(nZones);
   std::vector<StormContGrid> beta_zones(nZones);
@@ -362,8 +367,6 @@ Background::generateMultizoneBackgroundModel(FFTGrid                       *& bg
   std::string name_vs  = "Vs";
   std::string name_rho = "Rho";
 
-  LogKit::LogFormatted(LogKit::Low,"Building multizone background model:\n");
-
   std::vector<float *> trendAlphaZone(nZones);
   std::vector<float *> trendBetaZone(nZones);
   std::vector<float *> trendRhoZone(nZones);
@@ -381,11 +384,14 @@ Background::generateMultizoneBackgroundModel(FFTGrid                       *& bg
     std::vector<float *> highCutWellTrendBeta(nWells);
     std::vector<float *> highCutWellTrendRho(nWells);
 
+    std::vector<bool> hitZone(nWells);
+    checkWellHitsZone(hitZone, wells, eroded_zones[i], nWells);
+
     std::vector<BlockedLogsForZone *> blocked_logs(nWells);
 
-    getWellTrendsZone(blocked_logs, wellTrendAlpha, highCutWellTrendAlpha, wells, eroded_zones[i], nz, name_vp,  i);
-    getWellTrendsZone(blocked_logs, wellTrendBeta,  highCutWellTrendBeta,  wells, eroded_zones[i], nz, name_vs,  i);
-    getWellTrendsZone(blocked_logs, wellTrendRho,   highCutWellTrendRho,   wells, eroded_zones[i], nz, name_rho, i);
+    getWellTrendsZone(blocked_logs, wellTrendAlpha, highCutWellTrendAlpha, wells, eroded_zones[i], hitZone, nz, name_vp,  i);
+    getWellTrendsZone(blocked_logs, wellTrendBeta,  highCutWellTrendBeta,  wells, eroded_zones[i], hitZone, nz, name_vs,  i);
+    getWellTrendsZone(blocked_logs, wellTrendRho,   highCutWellTrendRho,   wells, eroded_zones[i], hitZone, nz, name_rho, i);
 
     trendAlphaZone[i] = new float[nz];
     trendBetaZone[i]  = new float[nz];
@@ -800,7 +806,43 @@ Background::BuildSeismicPropertyZones(std::vector<StormContGrid> & alpha_zones,
 }
 
 //---------------------------------------------------------------------------
+void
+Background::checkSurfaces(const std::vector<Surface> & surface,
+                          const Simbox               * simbox) const
+{
+  int    nSurf     = static_cast<int>(surface.size());
+  int    nx        = simbox->getnx();
+  int    ny        = simbox->getny();
 
+  for(int i=0; i<nSurf; i++) {
+
+    double  x;
+    double  y;
+    double  z;
+
+    Surface surf  = surface[i];
+
+    double surf_missing  = surf.GetMissingValue();
+
+    for(int j=0; j<nx; j++) {
+      for(int k=0; k<ny; k++) {
+
+        simbox->getXYCoord(j,k,x,y);
+
+        z  = surf.GetZInside(x,y);
+
+        if(z == surf_missing) {
+          const std::string name = surf.GetName();
+
+          LogKit::LogFormatted(LogKit::Low,"ERROR: Surface \'"+name+"\' does not cover the inversion grid, or it contains missing values.\n");
+          exit(1);
+        }
+      }
+    }
+  }
+}
+
+//---------------------------------------------------------------------------
 void
 Background::calculateVelocityDeviations(FFTGrid   * velocity,
                                         WellData ** wells,
@@ -1092,6 +1134,7 @@ Background::getWellTrendsZone(std::vector<BlockedLogsForZone *> & bl,
                               std::vector<float *>              & highCutWellTrend,
                               WellData                         ** wells,
                               StormContGrid                     & eroded_zone,
+                              const std::vector<bool>           & hitZone,
                               const int                         & nz,
                               const std::string                 & name,
                               const int                         & i) const
@@ -1103,7 +1146,7 @@ Background::getWellTrendsZone(std::vector<BlockedLogsForZone *> & bl,
   std::vector<bool> use_for_background(nWells);
 
   for(int w=0; w<nWells; w++) {
-    if(wells[w]->checkStormgrid(eroded_zone) == 0) {
+    if(hitZone[w] == true) {
       bl[w] = new BlockedLogsForZone(wells[w], eroded_zone);
       nValidWellsInZone++;
     }
@@ -1169,6 +1212,21 @@ Background::getWellTrendsZone(std::vector<BlockedLogsForZone *> & bl,
     }
     else
       highCutWellTrend[w] = NULL;
+  }
+}
+//---------------------------------------------------------------------------
+void
+Background::checkWellHitsZone(std::vector<bool>   & hitZone,
+                              WellData           ** wells,
+                              StormContGrid       & eroded_zone,
+                              const int           & nWells) const
+{
+  for(int w=0; w<nWells; w++) {
+    if(wells[w]->checkStormgrid(eroded_zone) == 0) {
+      hitZone[w] = true;
+    }
+    else
+      hitZone[w] = false;
   }
 }
 //---------------------------------------------------------------------------

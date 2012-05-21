@@ -91,6 +91,9 @@ private:
                                         std::vector<float *> highCutWellTrend,
                                         const std::string  & name);
 
+  void         checkSurfaces(const std::vector<Surface> & surface,
+                             const Simbox               * simbox) const;
+
   void         getKrigingWellTrends(std::vector<float *>     & blAlpha,
                                     std::vector<float *>     & blBeta,
                                     std::vector<float *>     & blRho,
@@ -130,9 +133,15 @@ private:
                                  std::vector<float *>              & highCutWellTrend,
                                  WellData                         ** wells,
                                  StormContGrid                     & eroded_zone,
+                                 const std::vector<bool>           & hitZone,
                                  const int                         & nz,
                                  const std::string                 & name,
                                  const int                         & i) const;
+
+  void        checkWellHitsZone(std::vector<bool>   & hitZone,
+                                WellData           ** wells,
+                                StormContGrid       & eroded_zone,
+                                const int           & nWells) const;
 
   void         writeTrendsToFile(float             * trend,
                                  Simbox            * simbox,
