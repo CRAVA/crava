@@ -55,7 +55,6 @@ ModelAVOStatic::ModelAVOStatic(ModelSettings        *& modelSettings,
                                std::vector<WellData *> wells)
 {
   forwardModeling_        = modelSettings->getForwardModeling();
-  numberOfWells_          = modelSettings->getNumberOfWells();
 
   priorFacies_            = NULL;
   priorFaciesProbCubes_   = NULL;

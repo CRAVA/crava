@@ -104,8 +104,6 @@ private:
                                         const InputFiles    * inputFiles);
 
   bool                      forwardModeling_;
-  int                       numberOfWells_;
-
 
   std::vector<Surface *>    waveletEstimInterval_;  ///< Grids giving the wavelet estimation interval.
   std::vector<Surface *>    faciesEstimInterval_;   ///< Grids giving the facies estimation intervals.
