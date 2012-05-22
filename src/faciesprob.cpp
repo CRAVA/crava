@@ -28,7 +28,7 @@
 #include "src/simbox.h"
 #include "src/io.h"
 #include "src/tasklist.h"
-#include "src/modelavostatic.h"
+#include "src/modelgeneral.h"
 
 #include "rplib/distributionsrock.h"
 #include "rplib/pdf3d.h"
@@ -38,8 +38,8 @@ FaciesProb::FaciesProb(FFTGrid                      * alpha,
                        FFTGrid                      * rho,
                        int                            nFac,
                        float                          p_undef,
-                       const float                  * priorFacies,
-                       FFTGrid                     ** priorFaciesCubes,
+                       const std::vector<float>     & priorFacies,
+                       std::vector<FFTGrid *>         priorFaciesCubes,
                        const std::vector<double **> & sigmaEOrig,
                        bool                           useFilter,
                        std::vector<WellData *>        wells,
@@ -65,11 +65,11 @@ FaciesProb::FaciesProb(FFTGrid                             * alpha,
                        int                                   nFac,
                        float                                 p_undef,
                        FFTGrid                             * seismicLH,
-                       ModelAVOStatic                      * modelAVOstatic,
+                       ModelGeneral                        * modelGeneral,
                        std::vector<DistributionsRock *>      rock_distributions)
 : nFacies_(nFac)
 {
-  calculateFaciesProbFromRockPhysicsModel(alpha, beta, rho, p_undef, seismicLH, modelAVOstatic, rock_distributions);
+  calculateFaciesProbFromRockPhysicsModel(alpha, beta, rho, p_undef, seismicLH, modelGeneral, rock_distributions);
 }
 
 FaciesProb::~FaciesProb()
@@ -443,8 +443,8 @@ void FaciesProb::makeFaciesProb(int                            nfac,
                                 bool                           relative,
                                 bool                           noVs,
                                 float                          p_undef,
-                                const float                  * priorFacies,
-                                FFTGrid                     ** priorFaciesCubes,
+                                const std::vector<float>     & priorFacies,
+                                std::vector<FFTGrid *>       & priorFaciesCubes,
                                 Crava                        * cravaResult,
                                 const std::vector<Grid2D *>  & noiseScale,
                                 const ModelSettings          * modelSettings,
@@ -497,7 +497,7 @@ void FaciesProb::makeFaciesProb(int                            nfac,
     }
   }
 
-  if(priorFaciesCubes != NULL)
+  if(priorFaciesCubes.size() != 0)
     normalizeCubes(priorFaciesCubes);
 
   calculateFaciesProb(postAlpha, postBeta, postRho, density, volume,
@@ -1113,8 +1113,8 @@ void FaciesProb::calculateFaciesProb(FFTGrid                                    
                                      const std::vector<std::vector<FFTGrid *> > & density,
                                      const std::vector<Simbox *>                  volume,
                                      float                                        p_undefined,
-                                     const float                                * priorFacies,
-                                     FFTGrid                                   ** priorFaciesCubes,
+                                     const std::vector<float>                   & priorFacies,
+                                     std::vector<FFTGrid *>                     & priorFaciesCubes,
                                      const std::vector<Grid2D *>                & noiseScale,
                                      FFTGrid                                    * seismicLH)
 {
@@ -1155,7 +1155,7 @@ void FaciesProb::calculateFaciesProb(FFTGrid                                    
   if(seismicLH != NULL)
     seismicLH->setAccessMode(FFTGrid::WRITE);
 
-  if(priorFaciesCubes!=NULL)
+  if(priorFaciesCubes.size() != 0)
     for(i=0;i<nFacies_;i++)
       priorFaciesCubes[i]->setAccessMode(FFTGrid::READ);
 
@@ -1214,7 +1214,7 @@ void FaciesProb::calculateFaciesProb(FFTGrid                                    
             }
             else
               dens = 1.0;
-            if(priorFaciesCubes!=NULL)
+            if(priorFaciesCubes.size() != 0)
               value[l] = priorFaciesCubes[l]->getNextReal()*dens;
             else
               value[l] = priorFacies[l]*dens;
@@ -1254,7 +1254,7 @@ void FaciesProb::calculateFaciesProb(FFTGrid                                    
   }
   std::cout << "\n";
 
-  if(priorFaciesCubes!=NULL)
+  if(priorFaciesCubes.size() != 0)
     for(i=0;i<nFacies_;i++)
     {
       priorFaciesCubes[i]->endAccess();
@@ -1276,7 +1276,7 @@ void FaciesProb::calculateFaciesProbFromRockPhysicsModel(FFTGrid                
                                                          FFTGrid                            * rhogrid,
                                                          float                                p_undefined,
                                                          FFTGrid                            * seismicLH,
-                                                         ModelAVOStatic                     * modelAVOstatic,
+                                                         ModelGeneral                       * modelGeneral,
                                                          std::vector<DistributionsRock *>     rock_distributions)
 {
   int rnxp = alphagrid->getRNxp();
@@ -1311,12 +1311,12 @@ void FaciesProb::calculateFaciesProbFromRockPhysicsModel(FFTGrid                
   if(seismicLH != NULL)
     seismicLH->setAccessMode(FFTGrid::WRITE);
 
-  FFTGrid    ** priorFaciesCubes = modelAVOstatic->getPriorFaciesCubes();
-  const float * priorFacies      = modelAVOstatic->getPriorFacies();
-  if(priorFaciesCubes != NULL)
+  std::vector<FFTGrid *>   priorFaciesCubes = modelGeneral->getPriorFaciesCubes();
+  const std::vector<float> priorFacies      = modelGeneral->getPriorFacies();
+  if(priorFaciesCubes.size() != 0)
     normalizeCubes(priorFaciesCubes);
 
-  if(priorFaciesCubes!=NULL)
+  if(priorFaciesCubes.size() != 0)
     for(int i=0; i<nFacies_; i++)
       priorFaciesCubes[i]->setAccessMode(FFTGrid::READ);
 
@@ -1359,7 +1359,7 @@ void FaciesProb::calculateFaciesProbFromRockPhysicsModel(FFTGrid                
               dens = rock_pdf[l]->density(alpha, beta, rho, dummy, dummy);
             else
               dens = 1.0;
-            if(priorFaciesCubes!=NULL)
+            if(priorFaciesCubes.size() != 0)
               value[l] = priorFaciesCubes[l]->getNextReal()*dens;
             else
               value[l] = priorFacies[l]*dens;
@@ -1398,7 +1398,7 @@ void FaciesProb::calculateFaciesProbFromRockPhysicsModel(FFTGrid                
   }
   std::cout << "\n";
 
-  if(priorFaciesCubes!=NULL) {
+  if(priorFaciesCubes.size() != 0) {
     for(int i=0; i<nFacies_; i++)
       priorFaciesCubes[i]->endAccess();
   }
@@ -1417,8 +1417,8 @@ void FaciesProb::calculateFaciesProbFromRockPhysicsModel(FFTGrid                
     delete rock_pdf[i];
 }
 
-void FaciesProb::calculateFaciesProbGeomodel(const float  * priorFacies,
-                                             FFTGrid     ** priorFaciesCubes)
+void FaciesProb::calculateFaciesProbGeomodel(const std::vector<float> & priorFacies,
+                                             std::vector<FFTGrid *>   priorFaciesCubes)
 {
   int i,j,k,l;
   int nx, ny, nz;
@@ -1430,7 +1430,7 @@ void FaciesProb::calculateFaciesProbGeomodel(const float  * priorFacies,
   for(i=0;i<nFacies_;i++)
     faciesProb_[i]->setAccessMode(FFTGrid::READANDWRITE);
   faciesProbUndef_->setAccessMode(FFTGrid::READ);
-  if(priorFaciesCubes!=NULL)
+  if(priorFaciesCubes.size() != 0)
     for(i=0;i<nFacies_;i++)
       priorFaciesCubes[i]->setAccessMode(FFTGrid::READ);
   int smallrnxp = faciesProb_[0]->getRNxp();
@@ -1442,7 +1442,7 @@ void FaciesProb::calculateFaciesProbGeomodel(const float  * priorFacies,
         undef = faciesProbUndef_->getNextReal();
         for(l=0;l<nFacies_;l++)
         {
-          if(priorFaciesCubes!=NULL)
+          if(priorFaciesCubes.size() != 0)
             value = priorFaciesCubes[l]->getNextReal()*undef+faciesProb_[l]->getNextReal();
           else
             value = priorFacies[l]*undef+faciesProb_[l]->getNextReal();
@@ -1457,7 +1457,7 @@ void FaciesProb::calculateFaciesProbGeomodel(const float  * priorFacies,
   for(i=0;i<nFacies_;i++)
     faciesProb_[i]->endAccess();
   faciesProbUndef_->endAccess();
-  if(priorFaciesCubes!=NULL)
+  if(priorFaciesCubes.size() != 0)
     for(i=0;i<nFacies_;i++)
       priorFaciesCubes[i]->endAccess();
 
@@ -1623,7 +1623,7 @@ void FaciesProb::setNeededLogsSpatial(std::vector<WellData *>        wells,
   faciesLog.resize(index);
 }
 
-void FaciesProb::normalizeCubes(FFTGrid **priorFaciesCubes)
+void FaciesProb::normalizeCubes(std::vector<FFTGrid *> & priorFaciesCubes)
 {
   int   i,j,k,l;
   float sum;
@@ -2058,8 +2058,8 @@ void FaciesProb::calculateChiSquareAlternativeTest(std::vector<WellData *>      
 FFTGrid *
 FaciesProb::createLHCube(FFTGrid     * likelihood,
                          int           fac,
-                         const float * priorFacies,
-                         FFTGrid    ** priorFaciesCubes)
+                         const std::vector<float> & priorFacies,
+                         std::vector<FFTGrid *>     priorFaciesCubes)
 {
   int nx = likelihood->getNx();
   int ny = likelihood->getNy();
@@ -2068,7 +2068,7 @@ FaciesProb::createLHCube(FFTGrid     * likelihood,
   result->createRealGrid(false);
   result->setAccessMode(FFTGrid::WRITE);
   faciesProb_[fac]->setAccessMode(FFTGrid::READ);
-  if(priorFaciesCubes != NULL)
+  if(priorFaciesCubes.size() != 0)
     priorFaciesCubes[fac]->setAccessMode(FFTGrid::READ);
 
   int i,j,k, rnx = likelihood->getRNxp();
@@ -2077,7 +2077,7 @@ FaciesProb::createLHCube(FFTGrid     * likelihood,
       for(k=0;k<rnx;k++) {
         float prob  = faciesProb_[fac]->getNextReal();
         float prior;
-        if(priorFaciesCubes != NULL)
+        if(priorFaciesCubes.size() != 0)
           prior = priorFaciesCubes[fac]->getNextReal();
         else
           prior = priorFacies[fac];
@@ -2094,7 +2094,7 @@ FaciesProb::createLHCube(FFTGrid     * likelihood,
   result->endAccess();
   likelihood->endAccess();
   faciesProb_[fac]->endAccess();
-  if(priorFaciesCubes != NULL)
+  if(priorFaciesCubes.size() != 0)
     priorFaciesCubes[fac]->endAccess();
 
   return(result);

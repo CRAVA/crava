@@ -19,7 +19,7 @@ class ModelSettings;
 class FilterWellLogs;
 class WellData;
 class SpatialWellFilter;
-class ModelAVOStatic;
+class ModelGeneral;
 
 class FaciesProb
 {
@@ -29,8 +29,8 @@ public:
              FFTGrid                      * rho,
              int                            nFac,
              float                          p_undef,
-             const float                  * priorFacies,
-             FFTGrid                     ** priorFaciesCubes,
+             const std::vector<float>     & priorFacies,
+             std::vector<FFTGrid *>         priorFaciesCubes,
              const std::vector<double **> & sigmaEOrig,
              bool                           useFilter,
              std::vector<WellData *>        wells,
@@ -50,7 +50,7 @@ public:
              int                                  nFac,
              float                                p_undef,
              FFTGrid                            * seismicLH,
-             ModelAVOStatic                     * modelAVOstatic,
+             ModelGeneral                       * modelGeneral,
              std::vector<DistributionsRock *>     rock_distributions);
 
   ~FaciesProb();
@@ -65,8 +65,8 @@ public:
                                                         const std::vector<std::string> & faciesNames,
                                                         const double                     dz);
 
-  void                   calculateFaciesProbGeomodel(const float *                  priorFacies,
-                                                     FFTGrid                    ** priorFaciesCubes);
+  void                   calculateFaciesProbGeomodel(const std::vector<float>           & priorFacies,
+                                                     std::vector<FFTGrid *>               priorFaciesCubes);
 
   std::vector<double>    calculateChiSquareTest(std::vector<WellData *>        wells,
                                                 int                            nWells,
@@ -77,13 +77,13 @@ public:
                                                            const std::vector<Surface *> & faciesEstimInterval,
                                                            const ModelSettings          * modelSettings);
 
-  FFTGrid *              createLHCube(FFTGrid     * likelihood,
-                                      int           fac,
-                                      const float * priorFacies,
-                                      FFTGrid    ** priorFaciesCubes);
+  FFTGrid *              createLHCube(FFTGrid                  * likelihood,
+                                      int                        fac,
+                                      const std::vector<float> & priorFacies,
+                                      std::vector<FFTGrid *>     priorFaciesCubes);
 
   void writeBWFaciesProb(std::vector<WellData *> wells,
-                         int         nWells);
+                         int                     nWells);
 
 private:
   int             nFacies_;
@@ -103,8 +103,8 @@ private:
                                         bool                           relative,
                                         bool                           noVs,
                                         float                          p_undef,
-                                        const float                  * priorFacies,
-                                        FFTGrid                     ** priorFaciesCubes,
+                                        const std::vector<float>     & priorFacies,
+                                        std::vector<FFTGrid *>       & priorFaciesCubes,
                                         Crava                        * cravaResult,
                                         const std::vector<Grid2D *>  & noiseScale,
                                         const ModelSettings          * modelSettings,
@@ -175,8 +175,8 @@ private:
                                              const std::vector<std::vector<FFTGrid *> > & density,
                                              const std::vector<Simbox *>    volume,
                                              float                          p_undef,
-                                             const float                  * priorFacies,
-                                             FFTGrid                     ** priorFaciesCubes,
+                                             const std::vector<float>     & priorFacies,
+                                             std::vector<FFTGrid *>       & priorFaciesCubes,
                                              const std::vector<Grid2D *>   & noiseScale,
                                              FFTGrid                       * seismicLH);
 
@@ -185,10 +185,10 @@ private:
                                                                  FFTGrid                            * rhogrid,
                                                                  float                                p_undef,
                                                                  FFTGrid                            * seismicLH,
-                                                                 ModelAVOStatic                     * modelAVOstatic,
+                                                                 ModelGeneral                       * modelGeneral,
                                                                  std::vector<DistributionsRock *>     rock_distributions);
 
-  void                   normalizeCubes(FFTGrid **priorFaciesCubes);
+  void                   normalizeCubes(std::vector<FFTGrid *> & priorFaciesCubes);
 
   void                   checkConditionalProbabilities(float                         ** condFaciesProb,
                                                        const std::vector<std::string> & faciesNames,

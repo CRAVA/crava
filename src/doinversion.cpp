@@ -21,6 +21,7 @@ void setupStaticModels(ModelGeneral   *& modelGeneral,
   // For each data type, construct the static model class before the dynamic.
   modelGeneral    = new ModelGeneral(modelSettings, inputFiles, timeBGSimbox);
   modelAVOstatic  = new ModelAVOStatic(modelSettings,
+                                       modelGeneral,
                                        inputFiles,
                                        modelGeneral->getFailedDetails(),
                                        modelGeneral->getTimeCutMapping(),

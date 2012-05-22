@@ -22,6 +22,7 @@ class ModelAVOStatic
 {
 public:
   ModelAVOStatic(ModelSettings        *& modelSettings,
+                 ModelGeneral         *& modelGeneral,
                  const InputFiles      * inputFiles,
                  std::vector<bool>       failedGeneralDetails,
                  GridMapping           * timeCutMapping,
@@ -31,8 +32,6 @@ public:
                  std::vector<WellData *> wells);
   ~ModelAVOStatic();
 
-  const float                 * getPriorFacies()           const { return priorFacies_            ;}
-  FFTGrid                    ** getPriorFaciesCubes()      const { return priorFaciesProbCubes_   ;}
   const std::vector<Surface*> & getFaciesEstimInterval()   const { return faciesEstimInterval_    ;}
 
   /*const*/ std::vector<Surface *> & getWaveletEstimInterval()  /*const*/ { return waveletEstimInterval_   ;}
@@ -68,24 +67,6 @@ private:
                                 Simbox               * timeSimboxConstThick,
                                 ModelSettings       *& modelSettings);
 
-  void             processPriorFaciesProb(const std::vector<Surface*>  & faciesEstimInterval,
-                                          float                       *& priorFacies,
-                                          std::vector<WellData *>        wells,
-                                          Simbox                       * timeSimbox,
-                                          Simbox                       * timeCutSimbox,
-                                          ModelSettings                * modelSettings,
-                                          bool                         & failed,
-                                          std::string                  & errTxt,
-                                          const InputFiles             * inputFiles);
-
-  void             readPriorFaciesProbCubes(const InputFiles  * inputFiles,
-                                            ModelSettings     * modelSettings,
-                                            FFTGrid         **& priorFaciesProbCubes,
-                                            Simbox            * timeSimbox,
-                                            Simbox            * timeCutSimbox,
-                                            std::string       & errTxt,
-                                            bool              & failed);
-
   void             loadExtraSurfaces(std::vector<Surface *> & waveletEstimInterval,
                                      std::vector<Surface *> & faciesEstimInterval,
                                      std::vector<Surface *> & wellMoveInterval,
@@ -93,11 +74,6 @@ private:
                                      const InputFiles       * inputFiles,
                                      std::string            & errText,
                                      bool                   & failed);
-
-  void             processFaciesInformation(ModelSettings     *& modelSettings,
-                                            const InputFiles   * inputFiles,
-                                            std::string        & tmpErrText,
-                                            int                & error) const;
 
   void             checkAvailableMemory(Simbox              * timeSimbox,
                                         ModelSettings       * modelSettings,
@@ -108,9 +84,6 @@ private:
   std::vector<Surface *>    waveletEstimInterval_;  ///< Grids giving the wavelet estimation interval.
   std::vector<Surface *>    faciesEstimInterval_;   ///< Grids giving the facies estimation intervals.
   std::vector<Surface *>    wellMoveInterval_;      ///< Grids giving the facies estimation intervals.
-
-  float                   * priorFacies_;           ///<
-  FFTGrid                ** priorFaciesProbCubes_;  ///< Cubes for prior facies probabilities
 
   bool                      failed_;                ///< Indicates whether errors occured during construction.
   std::vector<bool>         failed_details_;        ///< Detailed failed information.

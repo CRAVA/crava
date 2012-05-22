@@ -1688,12 +1688,12 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
     TimeKit::getTime(wall,cpu);
 
     int nfac = modelSettings->getNumberOfFacies();
-    if(modelAVOstatic_->getPriorFacies() != NULL){
+    if(modelGeneral_->getPriorFacies().size() != 0){
       LogKit::LogFormatted(LogKit::Low,"\nPrior facies probabilities:\n");
       LogKit::LogFormatted(LogKit::Low,"\n");
       LogKit::LogFormatted(LogKit::Low,"Facies         Probability\n");
       LogKit::LogFormatted(LogKit::Low,"--------------------------\n");
-      const float * priorFacies = modelAVOstatic_->getPriorFacies();
+      const std::vector<float> priorFacies = modelGeneral_->getPriorFacies();
       for(int i=0 ; i<nfac; i++) {
         LogKit::LogFormatted(LogKit::Low,"%-15s %10.4f\n",modelSettings->getFaciesName(i).c_str(),priorFacies[i]);
       }
@@ -1748,8 +1748,8 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
                                 meanRho2_,
                                 nfac,
                                 modelSettings->getPundef(),
-                                modelAVOstatic_->getPriorFacies(),
-                                modelAVOstatic_->getPriorFaciesCubes(),
+                                modelGeneral_->getPriorFacies(),
+                                modelGeneral_->getPriorFaciesCubes(),
                                 filteredlogs->getSigmae(),
                                 useFilter,
                                 wells_,
@@ -1769,7 +1769,7 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
                                 nfac,
                                 modelSettings->getPundef(),
                                 likelihood,
-                                modelAVOstatic_,
+                                modelGeneral_,
                                 modelGeneral_->getRockDistributions());
         baseName += "Rock_Physics_";
       }
@@ -1786,8 +1786,8 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
                                 postRho_,
                                 nfac,
                                 modelSettings->getPundef(),
-                                modelAVOstatic_->getPriorFacies(),
-                                modelAVOstatic_->getPriorFaciesCubes(),
+                                modelGeneral_->getPriorFacies(),
+                                modelGeneral_->getPriorFaciesCubes(),
                                 filteredlogs->getSigmae(),
                                 useFilter,
                                 wells_,
@@ -1807,7 +1807,7 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
                                 nfac,
                                 modelSettings->getPundef(),
                                 likelihood,
-                                modelAVOstatic_,
+                                modelGeneral_,
                                 modelGeneral_->getRockDistributions());
         baseName += "Rock_Physics_";
       }
@@ -1832,8 +1832,8 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
       ParameterOutput::writeToFile(simbox_, modelGeneral_, modelSettings_, grid, fileName,"");
     }
 
-    fprob_->calculateFaciesProbGeomodel(modelAVOstatic_->getPriorFacies(),
-                                        modelAVOstatic_->getPriorFaciesCubes());
+    fprob_->calculateFaciesProbGeomodel(modelGeneral_->getPriorFacies(),
+                                        modelGeneral_->getPriorFaciesCubes());
 
     if (modelSettings->getOutputGridsOther() & IO::FACIESPROB){
       for(int i=0;i<nfac;i++)
@@ -1852,7 +1852,7 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
     if(likelihood != NULL) {
       for(int i=0;i<nfac;i++) {
         FFTGrid * grid = fprob_->createLHCube(likelihood, i,
-                                              modelAVOstatic_->getPriorFacies(), modelAVOstatic_->getPriorFaciesCubes());
+                                              modelGeneral_->getPriorFacies(), modelGeneral_->getPriorFaciesCubes());
         std::string fileName = IO::PrefixLikelihood() + modelSettings->getFaciesName(i);
         ParameterOutput::writeToFile(simbox_, modelGeneral_, modelSettings_, grid,fileName,"");
         delete grid;

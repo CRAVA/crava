@@ -47,11 +47,13 @@ public:
   void                getCorrGradIJ(float & corrGradI, float &corrGradJ) const;
   Surface           * getCorrelationDirection()  const {return correlationDirection_    ;}
 
-  TimeLine                    * getTimeLine() const {return(timeLine_);}
-
+  TimeLine                    * getTimeLine()                  const {return(timeLine_) ;}
   std::vector<WellData *>     & getWells()                 /*const*/ { return wells_    ;}
 
-  std::vector<DistributionsRock *> getRockDistributions(void) const { return rock_distributions_;}
+  std::vector<DistributionsRock *> getRockDistributions(void)  const { return rock_distributions_;}
+
+  const std::vector<float>       & getPriorFacies()           /*const*/ { return priorFacies_            ;}
+  const std::vector<FFTGrid *>   & getPriorFaciesCubes()      /*const*/ { return priorFaciesProbCubes_   ;}
 
   static FFTGrid    * createFFTGrid(int nx,
                                     int ny,
@@ -144,6 +146,15 @@ public:
                                             const InputFiles      * inputFiles,
                                             std::string           & errText,
                                             bool                  & failed);
+
+   void             processPriorFaciesProb(const std::vector<Surface*>  & faciesEstimInterval,
+                                          std::vector<WellData *>        wells,
+                                          Simbox                       * timeSimbox,
+                                          Simbox                       * timeCutSimbox,
+                                          ModelSettings                * modelSettings,
+                                          bool                         & failed,
+                                          std::string                  & errTxt,
+                                          const InputFiles             * inputFiles);
 
 private:
   void             processWells(std::vector<WellData *> & wells,
@@ -241,6 +252,19 @@ private:
 
   int              computeTime(int year, int month, int day) const;
 
+  void             processFaciesInformation(ModelSettings     *& modelSettings,
+                                            const InputFiles   * inputFiles,
+                                            std::string        & tmpErrText,
+                                            int                & error) const;
+
+  void             readPriorFaciesProbCubes(const InputFiles        * inputFiles,
+                                            ModelSettings           * modelSettings,
+                                            std::vector<FFTGrid *>  & priorFaciesProbCubes,
+                                            Simbox                  * timeSimbox,
+                                            Simbox                  * timeCutSimbox,
+                                            std::string             & errTxt,
+                                            bool                    & failed);
+
   Simbox            * timeSimbox_;            ///< Information about simulation area.
   Simbox            * timeSimboxConstThick_;  ///< Simbox with constant thickness
 
@@ -268,6 +292,9 @@ private:
 
   bool                      forwardModeling_;
   int                       numberOfWells_;
+
+  std::vector<float>                  priorFacies_;           ///< Prior facies probabilities
+  std::vector<FFTGrid *>              priorFaciesProbCubes_;  ///< Cubes for prior facies probabilities
 
 };
 
