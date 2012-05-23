@@ -1,5 +1,6 @@
 #include <src/timeevolution.h>
 #include <assert.h>
+#include <float.h>
 
 #include "nrlib/statistics/statistics.hpp"
 
@@ -100,7 +101,7 @@ void TimeEvolution::SetUpEvolutionMatrices(std::vector< NRLib::Matrix>    & evol
     }
 
     NRLib::Matrix SigmaInv;
-    double adjustment_factor = 0.001;         // WHAT IS A GENERALLY GOOD VALUE HERE?
+    double adjustment_factor = 0.001;         // To be changed if DoRobustInversion() produce warnings.
     DoRobustInversion(SigmaInv, Cov_mk_mk, Cov_mk_mkm1, Cov_mkm1_mkm1, dim, adjustment_factor);
     A_k = Cov_mk_mkm1*SigmaInv;               // A_k = Cov(m_{k}, m_{k-1})\Sigma_{k-1}^{-1}
     AdjustMatrixAForm(A_k, dim);              // Should be done before the matrix is used further.
@@ -121,8 +122,8 @@ void TimeEvolution::DoRobustInversion(NRLib::Matrix & SigmaInv,
                                       NRLib::Matrix & Cov_mk_mk,
                                       NRLib::Matrix & Cov_mk_mkm1,
                                       NRLib::Matrix & Cov_mkm1_mkm1,
-                                      int                      dim,
-                                      double                   adjustment_factor)
+                                      int             dim,
+                                      double          adjustment_factor)
 {
   // The inversion may need to be stabilized.
   // The adjustment made for this is repeated also for the other covariance
@@ -200,7 +201,7 @@ void TimeEvolution::FixMatrices(NRLib::Matrix & Cov_mk_mk,
 bool TimeEvolution::DiagonalOK(const NRLib::Matrix & A, int dim)
 {
   bool d_ok = true;
-  double low_limit = 1.192092896e-07F; // WHAT IS A GENERALLY GOOD VALUE HERE? The present value is copied from FLT_EPSILON in float.h in Visual Studio 8.
+  double low_limit = FLT_EPSILON; // The value for FLT_EPSILON is defined in float.h and is 1.192092896e-07F in Visual Studio 8, Windows 7.
   for (int d = 0; d < dim; ++d) {
     if (std::abs(A(d, d)) < low_limit)
       d_ok = false;
@@ -212,20 +213,40 @@ void TimeEvolution::AdjustMatrixAForm(NRLib::Matrix & A_k, int dim)
 {
   assert(dim % 2 == 0);
   int dim2 = dim/2;
+  bool all_ok = true;
+  double sensitivity_limit = FLT_EPSILON;
+
   // 1st block is supposed to be identity matrix:
   for (int d1 = 0; d1 < dim2; d1++) {
     for (int d2 = 0; d2 < dim2; d2++) {
-      if (d2 != d1)
+      if (d2 != d1) {
+        if (A_k(d1, d2) - 0.0 > sensitivity_limit || A_k(d1, d2) - 0.0 < -sensitivity_limit) // Detecting if form is far off.
+          all_ok = false;
         A_k(d1, d2) = 0.0;
-      else
+      }
+      else {
+        if (A_k(d1, d2) - 1.0 > sensitivity_limit || A_k(d1, d2) - 1.0 < -sensitivity_limit) // Detecting if form is far off.
+          all_ok = false;
         A_k(d1, d2) = 1.0;
+      }
     }
   }
   // 2nd block is supposed to be zero matrix:
   for (int d1 = 0; d1 < dim2; d1++) {
     for (int d2 = dim2; d2 < dim; d2++) {
+      if (A_k(d1, d2) - 0.0 > sensitivity_limit || A_k(d1, d2) - 0.0 < -sensitivity_limit) // Detecting if form is far off.
+          all_ok = false;
       A_k(d1, d2) = 0.0;
     }
+  }
+
+  if (!all_ok) {
+    std::string text("");
+    text += "\nWARNING: Evolution matrix off by too much before adjustment.\n";
+    LogKit::LogFormatted(LogKit::High,text);
+    text = "";
+    text += "Check whether sensitivity is set too restrictive or there is something seriously wrong with matrix in TimeEvolution::AdjustMatrixAForm(). \n";
+    TaskList::addTask(text);
   }
 }
 
@@ -234,11 +255,25 @@ void TimeEvolution::AdjustMatrixDeltaForm(NRLib::Matrix & delta_k, int dim)
   // 1st and 3rd blocks are guaranteed to be zero matrices already, given that AdjustMatrixAForm() has been done.
   assert(dim % 2 == 0);
   int dim2 = dim/2;
+  bool all_ok = true;
+  double sensitivity_limit = FLT_EPSILON;
+
   // 2nd block is to be a zero matrix:
   for (int d1 = 0; d1 < dim2; d1++) {
     for (int d2 = dim2; d2 < dim; d2++) {
+      if (delta_k(d1, d2) - 0.0 > sensitivity_limit || delta_k(d1, d2) - 0.0 < -sensitivity_limit) // Detecting if form is far off.
+          all_ok = false;
       delta_k(d1, d2) = 0.0;
     }
+  }
+
+  if (!all_ok) {
+    std::string text("");
+    text += "\nWARNING: Covariance correction matrix off by too much before adjustment.\n";
+    LogKit::LogFormatted(LogKit::High,text);
+    text = "";
+    text += "Check whether sensitivity is set too restrictive or there is something seriously wrong with matrix in TimeEvolution::AdjustMatrixDeltaForm(). \n";
+    TaskList::addTask(text);
   }
 }
 
