@@ -218,7 +218,8 @@ private:
                                        const std::vector<int>           & erosion_priority,
                                        const std::vector<Surface>       & surface,
                                        const std::vector<double>        & surface_uncertainty,
-                                       const bool                         isFile) const;
+                                       const bool                         isFile,
+                                       const std::string                & type) const;
 
   void         calculateVelocityDeviations(FFTGrid   * velocity,
                                            WellData ** wells,
@@ -286,11 +287,16 @@ private:
                             const Simbox  *  simbox,
                             const bool    &  compare_upward) const;
 
-  void         BuildErodedZones(std::vector<StormContGrid> & eroded_zones,
+  void         ErodeAllSurfaces(std::vector<Surface *>     & eroded_surfaces,
                                 const std::vector<int>     & erosion_priority,
-                                const std::vector<Surface> & surf,
-                                const std::vector<int>     & nz_zone,
+                                const std::vector<Surface> & surface,
                                 const Simbox               * simbox) const;
+
+  void         BuildErodedZones(StormContGrid                & eroded_zone,
+                                const std::vector<Surface *> & eroded_surfaces,
+                                const int                    & nz,
+                                const Simbox                 * simbox,
+                                const int                    & i) const;
 
   void         BuildSeismicPropertyZones(std::vector<StormContGrid> & vp_zones,
                                          std::vector<StormContGrid> & vs_zones,

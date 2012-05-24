@@ -320,15 +320,14 @@ Background::generateMultizoneBackgroundModel(FFTGrid                       *& bg
                                              ModelSettings                  * modelSettings,
                                              const std::vector<std::string> & surface_files)
 {
-  LogKit::LogFormatted(LogKit::Low,"Building multizone background model:\n");
+  LogKit::LogFormatted(LogKit::Low,"Multizone background model:\n");
 
   std::vector<int> correlation_structure = modelSettings->getCorrelationStructure();
   std::vector<int> erosion_priority      = modelSettings->getErosionPriority();
 
   int    nWells    = modelSettings->getNumberOfWells();
   int    nZones    = static_cast<int>(correlation_structure.size()) - 1;
-  float  dz        = static_cast<float>(simbox->getdz()*simbox->getAvgRelThick());
-
+  float  dz        = static_cast<float>(simbox->getdz()*simbox->getAvgRelThick()) * 4; //NBNB Marit: Multiply by 4 to save mamory
 
   std::vector<Surface> surface(nZones+1);
   for(int i=0; i<nZones+1; i++)
@@ -349,16 +348,13 @@ Background::generateMultizoneBackgroundModel(FFTGrid                       *& bg
                             simbox,
                             dz);
 
-  std::vector<int> nz_zone(nZones);
-  for(int i=0; i<nZones; i++)
-    nz_zone[i] = static_cast<int>(alpha_zones[i].GetNK());
+  std::vector<Surface *> eroded_surfaces(nZones+1);
+  for(int i=0; i<nZones+1; i++)
+    eroded_surfaces[i] = NULL;
 
-  std::vector<StormContGrid> eroded_zones(nZones);
-
-  BuildErodedZones(eroded_zones,
+  ErodeAllSurfaces(eroded_surfaces,
                    erosion_priority,
                    surface,
-                   nz_zone,
                    simbox);
 
   const CovGrid2D & covGrid2D = makeCovGrid2D(simbox, modelSettings->getBackgroundVario(), modelSettings->getDebugFlag());
@@ -384,14 +380,22 @@ Background::generateMultizoneBackgroundModel(FFTGrid                       *& bg
     std::vector<float *> highCutWellTrendBeta(nWells);
     std::vector<float *> highCutWellTrendRho(nWells);
 
+    StormContGrid eroded_zone;
+
+    BuildErodedZones(eroded_zone,
+                     eroded_surfaces,
+                     nz,
+                     simbox,
+                     i);
+
     std::vector<bool> hitZone(nWells);
-    checkWellHitsZone(hitZone, wells, eroded_zones[i], nWells);
+    checkWellHitsZone(hitZone, wells, eroded_zone, nWells);
 
     std::vector<BlockedLogsForZone *> blocked_logs(nWells);
 
-    getWellTrendsZone(blocked_logs, wellTrendAlpha, highCutWellTrendAlpha, wells, eroded_zones[i], hitZone, nz, name_vp,  i);
-    getWellTrendsZone(blocked_logs, wellTrendBeta,  highCutWellTrendBeta,  wells, eroded_zones[i], hitZone, nz, name_vs,  i);
-    getWellTrendsZone(blocked_logs, wellTrendRho,   highCutWellTrendRho,   wells, eroded_zones[i], hitZone, nz, name_rho, i);
+    getWellTrendsZone(blocked_logs, wellTrendAlpha, highCutWellTrendAlpha, wells, eroded_zone, hitZone, nz, name_vp,  i);
+    getWellTrendsZone(blocked_logs, wellTrendBeta,  highCutWellTrendBeta,  wells, eroded_zone, hitZone, nz, name_vs,  i);
+    getWellTrendsZone(blocked_logs, wellTrendRho,   highCutWellTrendRho,   wells, eroded_zone, hitZone, nz, name_rho, i);
 
     trendAlphaZone[i] = new float[nz];
     trendBetaZone[i]  = new float[nz];
@@ -510,10 +514,22 @@ Background::generateMultizoneBackgroundModel(FFTGrid                       *& bg
                           erosion_priority,
                           surface,
                           modelSettings->getSurfaceUncertainty(),
-                          modelSettings->getFileGrid());
+                          modelSettings->getFileGrid(),
+                          "multizone");
+
 
   bool write3D = ((modelSettings->getOutputGridsElastic() & IO::BACKGROUND_TREND) > 0);
-  if(write3D)
+
+  if(write3D) {
+
+    std::vector<int> nz_zone(nZones);
+    for(int i=0; i<nZones; i++)
+      nz_zone[i] = static_cast<int>(alpha_zones[i].GetNK());
+
+    alpha_zones.clear();
+    beta_zones.clear();
+    rho_zones.clear();
+
     writeMultizoneTrendsToFile(trendAlphaZone,trendBetaZone,trendRhoZone,
                                nz_zone,
                                simbox,
@@ -522,6 +538,7 @@ Background::generateMultizoneBackgroundModel(FFTGrid                       *& bg
                                modelSettings->getSurfaceUncertainty(),
                                modelSettings->getFileGrid());
 
+  }
 
   delete &covGrid2D;
 
@@ -529,6 +546,8 @@ Background::generateMultizoneBackgroundModel(FFTGrid                       *& bg
     delete [] trendAlphaZone[i];
     delete [] trendBetaZone[i];
     delete [] trendRhoZone[i];
+
+    delete eroded_surfaces[i];
   }
 
 }
@@ -544,8 +563,13 @@ Background::MakeMultizoneBackground(FFTGrid                         *& bgAlpha,
                                     const std::vector<int>           & erosion_priority,
                                     const std::vector<Surface>       & surface,
                                     const std::vector<double>        & surface_uncertainty,
-                                    const bool                         isFile) const
+                                    const bool                         isFile,
+                                    const std::string                & type) const
 {
+
+  std::string text = "\nBuilding "+type+" background:";
+  LogKit::LogFormatted(LogKit::Low,text);
+
   int nZones = static_cast<int>(alpha_zones.size());
 
   int nx = simbox->getnx();
@@ -556,6 +580,20 @@ Background::MakeMultizoneBackground(FFTGrid                         *& bgAlpha,
   const int nyp  = ny;
   const int nzp  = nz;
   const int rnxp = 2*(nxp/2 + 1);
+
+  float monitorSize = std::max(1.0f, static_cast<float>(rnxp)*0.02f);
+  float nextMonitor = monitorSize;
+  std::cout
+    << "\n  0%       20%       40%       60%       80%      100%"
+    << "\n  |    |    |    |    |    |    |    |    |    |    |  "
+    << "\n  ^";
+
+
+  for (int k=0 ; k<nzp ; k++)
+  {
+
+
+  }
 
   bgAlpha = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, isFile);
   bgBeta  = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, isFile);
@@ -621,6 +659,13 @@ Background::MakeMultizoneBackground(FFTGrid                         *& bgAlpha,
         }
       }
     }
+
+    // Log progress
+    if (i+1 >= static_cast<int>(nextMonitor)) {
+      nextMonitor += monitorSize;
+      std::cout << "^";
+      fflush(stdout);
+    }
   }
   bgAlpha->endAccess();
   bgBeta ->endAccess();
@@ -673,13 +718,12 @@ Background::ComputeZoneProbability(const double                   & z,
 
 //---------------------------------------------------------------------------
 void
-Background::BuildErodedZones(std::vector<StormContGrid> & eroded_zones,
-                             const std::vector<int>     & erosion_priority,
-                             const std::vector<Surface> & surface,
-                             const std::vector<int>     & nz_zone,
-                             const Simbox               * simbox) const
+Background::BuildErodedZones(StormContGrid                & eroded_zone,
+                             const std::vector<Surface *> & eroded_surfaces,
+                             const int                    & nz,
+                             const Simbox                 * simbox,
+                             const int                    & i) const
 {
-  int    nZones    = static_cast<int>(eroded_zones.size());
   int    nx        = simbox->getnx();
   int    ny        = simbox->getny();
   double x_min     = simbox->GetXMin();
@@ -688,11 +732,22 @@ Background::BuildErodedZones(std::vector<StormContGrid> & eroded_zones,
   double ly        = simbox->GetLY();
   double angle     = simbox->getAngle();
 
-  std::vector<Surface *> eroded_surface(nZones+1);
-  for(int i=0; i<nZones+1; i++)
-    eroded_surface[i] = NULL;
 
-  for(int i=0; i<nZones+1; i++) {
+  NRLib::Volume volume(x_min, y_min, lx, ly, *eroded_surfaces[i], *eroded_surfaces[i+1], angle);
+
+  eroded_zone = StormContGrid(volume, nx, ny, nz);
+
+}
+//---------------------------------------------------------------------------
+void
+Background::ErodeAllSurfaces(std::vector<Surface *>     & eroded_surfaces,
+                             const std::vector<int>     & erosion_priority,
+                             const std::vector<Surface> & surface,
+                             const Simbox               * simbox) const
+{
+  int    nSurf     = static_cast<int>(eroded_surfaces.size());
+
+  for(int i=0; i<nSurf; i++) {
     int l=0;
     while(i+1 != erosion_priority[l])
       l++;
@@ -700,32 +755,21 @@ Background::BuildErodedZones(std::vector<StormContGrid> & eroded_zones,
     Surface * temp_surface = new Surface(surface[l]);
 
     //Find closest eroded surface downward
-    for(int k=l+1; k<nZones+1; k++) {
-      if(eroded_surface[k] != NULL) {
-        ErodeSurface(temp_surface, eroded_surface[k], simbox, false);
+    for(int k=l+1; k<nSurf; k++) {
+      if(eroded_surfaces[k] != NULL) {
+        ErodeSurface(temp_surface, eroded_surfaces[k], simbox, false);
         break;
       }
     }
     //Find closest eroded surface upward
     for(int k=l-1; k>=0; k--) {
-      if(eroded_surface[k] != NULL) {
-        ErodeSurface(temp_surface, eroded_surface[k], simbox, true);
+      if(eroded_surfaces[k] != NULL) {
+        ErodeSurface(temp_surface, eroded_surfaces[k], simbox, true);
         break;
       }
     }
-    eroded_surface[l] = temp_surface;
+    eroded_surfaces[l] = temp_surface;
   }
-
-  //Build eroded_zones
-  for(int i=1; i<nZones+1; i++) {
-
-    NRLib::Volume volume(x_min, y_min, lx, ly, *eroded_surface[i-1], *eroded_surface[i], angle);
-
-    eroded_zones[i-1] = StormContGrid(volume, nx, ny, nz_zone[i-1]);
-  }
-
-  for(int i=0; i<nZones+1; i++)
-    delete eroded_surface[i];
 }
 
 //---------------------------------------------------------------------------
@@ -1299,7 +1343,8 @@ Background::writeMultizoneTrendsToFile(const std::vector<float *>   alpha_zones,
                           erosion_priority,
                           surface,
                           surface_uncertainty,
-                          isFile);
+                          isFile,
+                          "trend in multizone");
 
 
 
