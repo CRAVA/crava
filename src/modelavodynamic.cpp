@@ -688,6 +688,7 @@ ModelAVODynamic::processBackground(Background           *& background,
         backModel[i] = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, modelSettings->getFileGrid());
         backModel[i]->setType(FFTGrid::PARAMETER);
         backModel[i]->fillInConstant(float( log( constBackValue )));
+        backModel[i]->calculateStatistics();
       }
       else
       {
