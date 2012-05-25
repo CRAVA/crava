@@ -1770,7 +1770,8 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
                                 modelSettings->getPundef(),
                                 likelihood,
                                 modelGeneral_,
-                                modelGeneral_->getRockDistributions());
+                                modelGeneral_->getRockDistributions(),
+                                modelGeneral_->getTrendCubes());
         baseName += "Rock_Physics_";
       }
       delete meanAlpha2_;
@@ -1808,7 +1809,8 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
                                 modelSettings->getPundef(),
                                 likelihood,
                                 modelGeneral_,
-                                modelGeneral_->getRockDistributions());
+                                modelGeneral_->getRockDistributions(),
+                                modelGeneral_->getTrendCubes());
         baseName += "Rock_Physics_";
       }
     }

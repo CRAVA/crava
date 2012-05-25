@@ -32,6 +32,7 @@
 #include "src/timeline.h"
 #include "src/state4d.h"
 #include "src/modelavodynamic.h"
+#include "src/cravatrend.h"
 
 #include "lib/utils.h"
 #include "lib/random.h"
@@ -69,8 +70,6 @@ ModelGeneral::ModelGeneral(ModelSettings *& modelSettings, const InputFiles * in
   bool failedLoadingModel = false;
 
   bool failedWells        = false;
-
-  trendCubes_             = NULL;
 
   Simbox * timeCutSimbox  = NULL;
   timeLine_               = NULL;
@@ -210,12 +209,6 @@ ModelGeneral::~ModelGeneral(void)
 
   if(correlationDirection_ !=NULL)
     delete correlationDirection_;
-
-  if(trendCubes_ != NULL){
-    for(int i=0; i<numberOfTrendCubes_; i++)
-      delete trendCubes_[i];
-    delete [] trendCubes_;
-  }
 
   for(int i=0; i<static_cast<int>(rock_distributions_.size()); i++)
     delete rock_distributions_[i];
@@ -401,8 +394,8 @@ ModelGeneral::checkThatDataCoverGrid(SegY        * segy,
   float zn = z0 + (segy->GetNz() - 1)*dz;
 
   // Top and base of interval of interest
-  float top_grid = timeCutSimbox->getTopZMin();
-  float bot_grid = timeCutSimbox->getBotZMax();
+  float top_grid = static_cast<float>(timeCutSimbox->getTopZMin());
+  float bot_grid = static_cast<float>(timeCutSimbox->getBotZMax());
 
   // Find guard zone
   float top_guard = top_grid - guard_zone;
@@ -2238,60 +2231,29 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
                                       const InputFiles             * inputFiles)
 {
   if(modelSettings->getFaciesProbFromRockPhysics()){
-    std::vector<std::string> trendCubeParameters = modelSettings->getTrendCubeParameters();
-    numberOfTrendCubes_ = static_cast<int>(trendCubeParameters.size());
-    std::vector<std::string> trendCubeNames(numberOfTrendCubes_);
 
-    std::vector<float> trend_cube_min;
-    std::vector<float> trend_cube_max;
-    std::vector<std::vector<float> > trend_cube_sampling;
+    LogKit::WriteHeader("Processing rock physics");
 
-    if(numberOfTrendCubes_ > 0){
-      trendCubes_ = new FFTGrid*[numberOfTrendCubes_];
-      const SegyGeometry      * dummy1 = NULL;
-      const TraceHeaderFormat * dummy2 = NULL;
-      const float               offset = modelSettings->getSegyOffset(0); //Facies estimation only allowed for one time lapse
+    trend_cubes_ = CravaTrend(timeSimbox,
+                              timeCutSimbox,
+                              modelSettings,
+                              failed,
+                              errTxt,
+                              inputFiles);
 
-      for(int i=0; i<numberOfTrendCubes_; i++){
-        trendCubeNames[i] = inputFiles->getTrendCube(i);
-        std::string errorText("");
-        ModelGeneral::readGridFromFile(trendCubeNames[i],
-                                       "trendcube",
-                                       offset,
-                                       trendCubes_[i],
-                                       dummy1,
-                                       dummy2,
-                                       FFTGrid::PARAMETER,
-                                       timeSimbox,
-                                       timeCutSimbox,
-                                       modelSettings,
-                                       errorText,
-                                       true);
-        if(errorText != ""){
-          errorText += "Reading of file \'"+trendCubeNames[i]+"\' failed\n";
-          errTxt += errorText;
-          failed = true;
-        }
+    std::vector<std::string> trend_cube_parameters = modelSettings->getTrendCubeParameters();
 
-        trendCubes_[i]->calculateStatistics();
-        float max = std::ceil(trendCubes_[i]->getMaxReal());
-        float min = std::floor(trendCubes_[i]->getMinReal());
-
-        int n_samples = static_cast<int>(max-min+1);
-        std::vector<float> sampling(n_samples);
-
-        for(int j=0; j<n_samples; j++)
-          sampling[j] = min + j;
-        trend_cube_sampling.push_back(sampling);
-
-      }
-    }
     std::string path = inputFiles->getInputDirectory();
 
     for(int i=0; i<modelSettings->getNumberOfRocks(); i++){
-      RockPhysicsStorage * rock_physics = modelSettings->getRockPhysicsStorage(i);
 
-      rock_distributions_.push_back(rock_physics->GenerateRockPhysics(path,trendCubeParameters,trend_cube_sampling,errTxt));
+      std::vector<std::vector<double> > trend_cube_sampling   = trend_cubes_.GetTrendCubeSampling();
+
+      RockPhysicsStorage * rock_physics      = modelSettings->getRockPhysicsStorage(i);
+
+      DistributionsRock  * rock_distribution = rock_physics->GenerateRockPhysics(path,trend_cube_parameters,trend_cube_sampling,errTxt);
+
+      rock_distributions_.push_back(rock_distribution);
 
     }
     if(errTxt != "")
@@ -2628,8 +2590,6 @@ ModelGeneral::computeTime(int year, int month, int day) const
 void
 ModelGeneral::generateRockPhysics3DBackground(const std::vector<DistributionsRock *> & rock,
                                               const std::vector<double>              & probability,
-                                              const FFTGrid                          & trend1,
-                                              const FFTGrid                          & trend2,
                                               FFTGrid                                & vp,
                                               FFTGrid                                & vs,
                                               FFTGrid                                & rho,
@@ -2690,15 +2650,13 @@ ModelGeneral::generateRockPhysics3DBackground(const std::vector<DistributionsRoc
 
         // Otherwise use trend values to get expectation values for each facies from the rock
         else {
-          std::vector<double> trend_params(2);
-          trend_params[0] = trend1.getRealValue(i,j,k);
-          trend_params[1] = trend2.getRealValue(i,j,k);
+          std::vector<double> trend_position = trend_cubes_.GetTrendPosition(k,j,i);
 
           std::vector<float> expectations(3);  // Antar initialisert til 0.
           // Sum up for all facies: probability for a facies multiplied with the expectations of (vp, vs, rho) given the facies
           for(size_t f = 0; f < number_of_facies; f++){
             std::vector<double> m(3);
-            m = rock[f]->GetExpectation(trend_params);
+            m = rock[f]->GetExpectation(trend_position);
             expectations[0] += static_cast<float>(m[0]*probability[f]);
             expectations[1] += static_cast<float>(m[1]*probability[f]);
             expectations[2] += static_cast<float>(m[2]*probability[f]);
@@ -2732,8 +2690,8 @@ ModelGeneral::generateRockPhysics3DBackground(const std::vector<DistributionsRoc
           for(size_t f = 0; f < number_of_facies; f++){
             NRLib::Grid2D<double> sigma;
             std::vector<double> m(3);
-            sigma = rock[f]->GetCovariance(trend_params);
-            m = rock[f]->GetExpectation(trend_params);
+            sigma = rock[f]->GetCovariance(trend_position);
+            m = rock[f]->GetExpectation(trend_position);
 
             // For all elements in the 3x3 matrix of the combined variance
             for(size_t a=0; a<sigma.GetNI(); a++){
@@ -2760,8 +2718,6 @@ void
 ModelGeneral::generateRockPhysics4DBackground(const std::vector<DistributionsRock *> & rock,
                                               const std::vector<double>              & probability,
                                               int                                      lowCut,
-                                              const FFTGrid                          & trend1,
-                                              const FFTGrid                          & trend2,
                                               Corr                                   & correlations, //The grids here get/set correctly.
                                               const Simbox                           & timeSimbox,
                                               const ModelSettings                    & modelSettings,
@@ -2826,7 +2782,7 @@ ModelGeneral::generateRockPhysics4DBackground(const std::vector<DistributionsRoc
   rho_rho_stat->createRealGrid();
 
   // For the static variables, generate expectation grids and variance coefficients from the 3D settings.
-  ModelGeneral::generateRockPhysics3DBackground(rock, probability, trend1, trend2, *vp_stat, *vs_stat, *rho_stat, varVp, varVs, varRho, crVpVs, crVpRho, crVsRho);
+  ModelGeneral::generateRockPhysics3DBackground(rock, probability, *vp_stat, *vs_stat, *rho_stat, varVp, varVs, varRho, crVpVs, crVpRho, crVsRho);
 
   // Correlations
   float corrGradI, corrGradJ;

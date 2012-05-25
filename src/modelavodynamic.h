@@ -34,7 +34,7 @@ public:
                   Simbox               * timeSimbox,
                   Simbox              *& timeBGSimbox,
                   Surface              * correlationDirection,
-                  RandomGen            * randomGen,
+                  RandomGen            * /*randomGen*/,
                   GridMapping          * timeDepthMapping,
                   GridMapping          * timeCutMapping,
                   std::vector<Surface *> waveletEstimInterval,

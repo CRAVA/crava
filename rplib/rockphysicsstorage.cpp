@@ -51,10 +51,10 @@ GaussianRockPhysicsStorage::~GaussianRockPhysicsStorage()
 }
 
 DistributionsRock *
-GaussianRockPhysicsStorage::GenerateRockPhysics(const std::string                      & path,
-                                                const std::vector<std::string>         & trend_cube_parameters,
-                                                const std::vector<std::vector<float> > & trend_cube_sampling,
-                                                std::string                            & errTxt) const
+GaussianRockPhysicsStorage::GenerateRockPhysics(const std::string                       & path,
+                                                const std::vector<std::string>          & trend_cube_parameters,
+                                                const std::vector<std::vector<double> > & trend_cube_sampling,
+                                                std::string                             & errTxt) const
 {
   NRLib::Trend * mean_vp_trend                = mean_vp_               ->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,errTxt);
   NRLib::Trend * mean_vs_trend                = mean_vs_               ->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,errTxt);

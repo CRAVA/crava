@@ -9,6 +9,7 @@
 #include "src/background.h" //or move getAlpha & co to cpp-file.
 #include "src/modelsettings.h"
 #include "src/inputfiles.h"
+#include "src/cravatrend.h"
 
 #include "rplib/distributionsrock.h"
 
@@ -39,6 +40,7 @@ public:
   RandomGen         * getRandomGen()             const { return randomGen_              ;}
   GridMapping       * getTimeDepthMapping()      const { return timeDepthMapping_       ;}
   GridMapping       * getTimeCutMapping()        const { return timeCutMapping_         ;}
+  CravaTrend          getTrendCubes()            const { return trend_cubes_            ;}
 
   bool                getVelocityFromInversion() const { return velocityFromInversion_  ;}
   bool                getFailed()                const { return failed_                 ;}
@@ -110,8 +112,6 @@ public:
 
   void                generateRockPhysics3DBackground(const std::vector<DistributionsRock *> & rock,
                                                       const std::vector<double>             & probability,
-                                                      const FFTGrid                         & trend1,
-                                                      const FFTGrid                         & trend2,
                                                       FFTGrid                               & vp,
                                                       FFTGrid                               & vs,
                                                       FFTGrid                               & rho,
@@ -125,8 +125,6 @@ public:
   void                generateRockPhysics4DBackground(const std::vector<DistributionsRock *> & rock,
                                                       const std::vector<double>             & probability,
                                                       int                                     lowCut,
-                                                      const FFTGrid                         & trend1,
-                                                      const FFTGrid                         & trend2,
                                                       Corr                                  & correlations, //The grids here get/set correctly.
                                                       const Simbox                          & timeSimbox,
                                                       const ModelSettings                   & modelSettings,
@@ -275,8 +273,8 @@ private:
   double              gradY_;                 ///< Y-gradient of correlation rotation.
                                               ///< These are only used with correlation surfaces.
 
-  FFTGrid                ** trendCubes_;            ///< Trend cubes used in rock phyiscs prior model
-  int                       numberOfTrendCubes_;    ///< Defined for deletion of trendCubes_
+
+  CravaTrend                       trend_cubes_;        ///< Trend cubes used in rock phyiscs prior model
   std::vector<DistributionsRock *> rock_distributions_; ///< Rock physics prior models
 
   GridMapping       * timeDepthMapping_;      ///< Contains both simbox and mapping used for depth conversion

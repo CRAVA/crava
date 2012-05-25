@@ -12,10 +12,10 @@ public:
 
   virtual ~RockPhysicsStorage();
 
-  virtual DistributionsRock * GenerateRockPhysics(const std::string                      & /*path*/,
-                                                  const std::vector<std::string>         & /*trend_cube_parameters*/,
-                                                  const std::vector<std::vector<float> > & /*trend_cube_sampling*/,
-                                                  std::string                            & /*errTxt*/)                    const = 0;
+  virtual DistributionsRock * GenerateRockPhysics(const std::string                       & /*path*/,
+                                                  const std::vector<std::string>          & /*trend_cube_parameters*/,
+                                                  const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
+                                                  std::string                             & /*errTxt*/)                    const = 0;
 };
 
 class GaussianRockPhysicsStorage : public RockPhysicsStorage {
@@ -32,10 +32,10 @@ public:
 
   virtual ~GaussianRockPhysicsStorage();
 
-  virtual DistributionsRock * GenerateRockPhysics(const std::string                      & path,
-                                                  const std::vector<std::string>         & trend_cube_parameters,
-                                                  const std::vector<std::vector<float> > & trend_cube_sampling,
-                                                  std::string                            & errTxt) const;
+  virtual DistributionsRock * GenerateRockPhysics(const std::string                       & path,
+                                                  const std::vector<std::string>          & trend_cube_parameters,
+                                                  const std::vector<std::vector<double> > & trend_cube_sampling,
+                                                  std::string                             & errTxt) const;
 
 private:
 

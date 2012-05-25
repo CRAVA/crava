@@ -29,6 +29,7 @@
 #include "src/io.h"
 #include "src/tasklist.h"
 #include "src/modelgeneral.h"
+#include "src/cravatrend.h"
 
 #include "rplib/distributionsrock.h"
 #include "rplib/pdf3d.h"
@@ -66,10 +67,18 @@ FaciesProb::FaciesProb(FFTGrid                             * alpha,
                        float                                 p_undef,
                        FFTGrid                             * seismicLH,
                        ModelGeneral                        * modelGeneral,
-                       std::vector<DistributionsRock *>      rock_distributions)
+                       std::vector<DistributionsRock *>      rock_distributions,
+                       const CravaTrend                    & trend_cubes)
 : nFacies_(nFac)
 {
-  calculateFaciesProbFromRockPhysicsModel(alpha, beta, rho, p_undef, seismicLH, modelGeneral, rock_distributions);
+  calculateFaciesProbFromRockPhysicsModel(alpha,
+                                          beta,
+                                          rho,
+                                          p_undef,
+                                          seismicLH,
+                                          modelGeneral,
+                                          rock_distributions,
+                                          trend_cubes);
 }
 
 FaciesProb::~FaciesProb()
@@ -1277,7 +1286,8 @@ void FaciesProb::calculateFaciesProbFromRockPhysicsModel(FFTGrid                
                                                          float                                p_undefined,
                                                          FFTGrid                            * seismicLH,
                                                          ModelGeneral                       * modelGeneral,
-                                                         std::vector<DistributionsRock *>     rock_distributions)
+                                                         std::vector<DistributionsRock *>     rock_distributions,
+                                                         const CravaTrend                   & trend_cubes)
 {
   int rnxp = alphagrid->getRNxp();
   int nyp  = alphagrid->getNyp();
@@ -1339,7 +1349,6 @@ void FaciesProb::calculateFaciesProbFromRockPhysicsModel(FFTGrid                
   double sum;
   double help;
   double dens;
-  double dummy = 0;
 
   double * value   = new double[nFacies_];
   float  undefSum  = p_undefined / 10; //Nevner må beregnes
@@ -1353,10 +1362,11 @@ void FaciesProb::calculateFaciesProbFromRockPhysicsModel(FFTGrid                
         rho = rhogrid->getNextReal();
 
         if(k<smallrnxp && j<ny && i<nz) {
+          std::vector<double> trend_position = trend_cubes.GetTrendPosition(k,j,i);
           sum = undefSum;
           for(int l=0; l<nFacies_; l++){
             if(k<nx)
-              dens = rock_pdf[l]->density(alpha, beta, rho, dummy, dummy);
+              dens = rock_pdf[l]->density(alpha, beta, rho, trend_position[0], trend_position[1]);
             else
               dens = 1.0;
             if(priorFaciesCubes.size() != 0)

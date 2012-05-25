@@ -20,6 +20,7 @@ class FilterWellLogs;
 class WellData;
 class SpatialWellFilter;
 class ModelGeneral;
+class CravaTrend;
 
 class FaciesProb
 {
@@ -51,7 +52,8 @@ public:
              float                                p_undef,
              FFTGrid                            * seismicLH,
              ModelGeneral                       * modelGeneral,
-             std::vector<DistributionsRock *>     rock_distributions);
+             std::vector<DistributionsRock *>     rock_distributions,
+             const CravaTrend                   & trend_cubes);
 
   ~FaciesProb();
 
@@ -186,7 +188,8 @@ private:
                                                                  float                                p_undef,
                                                                  FFTGrid                            * seismicLH,
                                                                  ModelGeneral                       * modelGeneral,
-                                                                 std::vector<DistributionsRock *>     rock_distributions);
+                                                                 std::vector<DistributionsRock *>     rock_distributions,
+                                                                 const CravaTrend                   & trend_cubes);
 
   void                   normalizeCubes(std::vector<FFTGrid *> & priorFaciesCubes);
 

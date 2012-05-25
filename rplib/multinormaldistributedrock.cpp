@@ -156,8 +156,12 @@ MultiNormalDistributedRock::LogTransformExpectationAndCovariance(NRLib::Trend * 
   trender[1] = mean2;
   trender[2] = cov;
 
-  int new_dim           = FindNewGridDimension(trender);
-  std::vector<int> size = FindNewGridSize(trender, new_dim);
+  int new_dim = FindNewGridDimension(trender);
+
+  std::vector<int>    size(2);
+  std::vector<double> increment(2);
+
+  FindNewGridSizeAndIncrement(size, increment, trender, new_dim);
 
   if(new_dim == 0) {
     double log_mu;
@@ -212,9 +216,9 @@ MultiNormalDistributedRock::LogTransformExpectationAndCovariance(NRLib::Trend * 
     }
 
     if(diagonal_element == true)
-      log_mean = new NRLib::Trend1D(log_mu, reference);
+      log_mean = new NRLib::Trend1D(log_mu, reference, increment[0]);
 
-    log_cov = new NRLib::Trend1D(log_covariance,reference);
+    log_cov = new NRLib::Trend1D(log_covariance, reference, increment[0]);
   }
 
   else {
@@ -239,9 +243,9 @@ MultiNormalDistributedRock::LogTransformExpectationAndCovariance(NRLib::Trend * 
     }
 
     if(diagonal_element == true)
-      log_mean = new NRLib::Trend2D(log_mu,1,2);
+      log_mean = new NRLib::Trend2D(log_mu, 1, 2, increment[0], increment[1]);
 
-    log_cov = new NRLib::Trend2D(log_covariance,1,2);
+    log_cov = new NRLib::Trend2D(log_covariance, 1, 2, increment[0], increment[1]);
   }
 }
 
@@ -256,8 +260,13 @@ MultiNormalDistributedRock::CalculateCovarianceFromCorrelation(NRLib::Trend *  c
   trender[1] = var1;
   trender[2] = var2;
 
-  int new_dim           = FindNewGridDimension(trender);
-  std::vector<int> size = FindNewGridSize(trender, new_dim);
+
+  int new_dim = FindNewGridDimension(trender);
+
+  std::vector<int>    size(2);
+  std::vector<double> increment(2);
+
+  FindNewGridSizeAndIncrement(size, increment, trender, new_dim);
 
   if(new_dim == 0) {
     double covariance;
@@ -295,7 +304,7 @@ MultiNormalDistributedRock::CalculateCovarianceFromCorrelation(NRLib::Trend *  c
         break;
       }
 
-    cov = new NRLib::Trend1D(covariance,reference);
+    cov = new NRLib::Trend1D(covariance, reference, increment[0]);
   }
 
   else {
@@ -313,7 +322,7 @@ MultiNormalDistributedRock::CalculateCovarianceFromCorrelation(NRLib::Trend *  c
       }
     }
 
-    cov = new NRLib::Trend2D(covariance,1,2);
+    cov = new NRLib::Trend2D(covariance, 1, 2, increment[0], increment[1]);
   }
 }
 
@@ -361,57 +370,80 @@ MultiNormalDistributedRock::FindNewGridDimension(const std::vector<NRLib::Trend 
   return(new_dim);
 }
 
-std::vector<int>
-MultiNormalDistributedRock::FindNewGridSize(const std::vector<NRLib::Trend *> trender,
-                                            const int                         new_dim) const
+void
+MultiNormalDistributedRock::FindNewGridSizeAndIncrement(std::vector<int>                  & size,
+                                                        std::vector<double>               & increment,
+                                                        const std::vector<NRLib::Trend *> & trender,
+                                                        const int                         & new_dim) const
 {
+  int n_trends = static_cast<int>(trender.size());
+
+  // Find dimension of each of the trends in trender
   std::vector<int> dim;
-  for(int i=0; i<static_cast<int>(trender.size()); i++)
+  for(int i=0; i<n_trends; i++)
     dim.push_back(trender[i]->GetTrendDimension());
 
-  std::vector<int> size(2);
-  for(int i=0; i<2; i++)
+  for(int i=0; i<static_cast<int>(size.size()); i++)
     size[i] = 0;
 
+  for(int i=0; i<static_cast<int>(increment.size()); i++)
+    increment[i] = 0;
+
   if(new_dim == 1) {
-    for(int k=0; k<static_cast<int>(trender.size()); k++) {
+    // Know that at least one trend is 1D, and that if more than one trend is 1D,
+    // they all use the same trend cube reference
+
+    for(int k=0; k<n_trends; k++) {
 
       if(dim[k] > 0) {
-        std::vector<int> trend_size = trender[k]->GetTrendSize();
         int reference = trender[k]->GetReference();
+
+        std::vector<int> trend_size = trender[k]->GetTrendSize();
         size[0] = trend_size[reference-1];
+
+        std::vector<double> inc = trender[k]->GetIncrement();
+        increment[0] = inc[reference-1];
+
+        break;
       }
     }
   }
 
   else if(new_dim == 2) {
-    std::vector<int> trend_size(static_cast<int>(trender.size()));
-    int              reference;
+    std::vector<int>    trend_size(n_trends);
+    std::vector<double> inc(n_trends);
+    int                 reference;
 
-    for(int i=0; i<2; i++)
-      size[i] = 0;
+    for(int k=0; k<n_trends; k++) {
 
-    for(int k=0; k<static_cast<int>(trender.size()); k++) {
-      if(dim[k] == 1) { //Build 2D grid from two 1D grids with different reference parameter
+      trend_size = trender[k]->GetTrendSize();
+      inc        = trender[k]->GetIncrement();
+      reference  = trender[k]->GetReference();
 
-        trend_size = trender[k]->GetTrendSize();
-        reference  = trender[k]->GetReference();
+      if(dim[k] == 1) {
+        // Build 2D grid from 1D grids with different reference parameter
+        // All 1D trends with the same reference parameter have same sampling; hence the size is the same
 
-        if(trend_size[reference-1] != 0)
-          size[reference-1] = trend_size[reference-1];
+        if(trend_size[reference-1] != 0) {
+          size[reference-1]      = trend_size[reference-1];
+          increment[reference-1] = inc[reference-1];
+        }
       }
 
       else if(dim[k] == 2) {
+        // Sufficient to find dimension of the first 2D trend,
+        // as all 2D trends have same sampling
 
-        trend_size = trender[k]->GetTrendSize();
-
-        for(int i=0; i<2; i++)
+        for(int i=0; i<static_cast<int>(size.size()); i++)
           size[i] = trend_size[i];
+
+        for(int i=0; i<static_cast<int>(increment.size()); i++)
+          increment[i] = inc[i];
+
+        break;
       }
     }
   }
-
-  return(size);
 }
 
 std::vector<std::vector<double> >

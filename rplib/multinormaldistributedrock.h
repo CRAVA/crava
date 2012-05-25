@@ -36,8 +36,10 @@ public:
 private:
   int                                 FindNewGridDimension(const std::vector<NRLib::Trend *> trender) const;
 
-  std::vector<int>                    FindNewGridSize(const std::vector<NRLib::Trend *> trender,
-                                                      const int                         new_dim) const;
+  void                                FindNewGridSizeAndIncrement(std::vector<int>                  & size,
+                                                                  std::vector<double>               & increment,
+                                                                  const std::vector<NRLib::Trend *> & trender,
+                                                                  const int                         & new_dim) const;
 
   std::vector<std::vector<double> >   ExpandGrids1D(const std::vector<NRLib::Trend *> trender,
                                                     const std::vector<int>         &  size) const;
