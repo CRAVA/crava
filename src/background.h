@@ -22,9 +22,9 @@ public:
   Background(FFTGrid              ** grids,
              std::vector<WellData *> wells,
              FFTGrid              *& velocity,
-             Simbox                * timeSimbox,
-             Simbox                * timeBGSimbox,
-             ModelSettings         * modelSettings);
+             const Simbox          * timeSimbox,
+             const Simbox          * timeBGSimbox,
+             const ModelSettings   * modelSettings);
   Background(FFTGrid ** grids);
   ~Background(void);
 
@@ -35,9 +35,9 @@ public:
 
   void         setClassicVsVp(); //For debugging purposes.
 
-  void         writeBackgrounds(Simbox                  * simbox,
+  void         writeBackgrounds(const Simbox            * simbox,
                                 GridMapping             * depthMapping,
-                                GridMapping             * timeMapping,
+                                const GridMapping       * timeMapping,
                                 const bool                isFile,
                                 const TraceHeaderFormat & thf = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS)) const;
 
@@ -49,14 +49,14 @@ private:
                                        FFTGrid              *& bgRho,
                                        FFTGrid              *& velocity,
                                        std::vector<WellData *> wells,
-                                       Simbox                * simbox,
-                                       ModelSettings         * modelSettings);
+                                       const Simbox          * simbox,
+                                       const ModelSettings   * modelSettings);
   void         resampleBackgroundModel(FFTGrid      *& bgAlpha,
                                        FFTGrid      *& bgBeta,
                                        FFTGrid      *& bgRho,
-                                       Simbox        * timeBGsimbox,
-                                       Simbox        * timeSimbox,
-                                       ModelSettings * modelSettings);
+                                       const Simbox  * timeBGsimbox,
+                                       const Simbox  * timeSimbox,
+                                       const ModelSettings * modelSettings);
   void         padAndSetBackgroundModel(FFTGrid * bgAlpha,
                                         FFTGrid * bgBeta,
                                         FFTGrid * bgRho);
@@ -65,7 +65,7 @@ private:
   void         calculateBackgroundTrend(float                 * trend,
                                         float                 * avgDev,
                                         std::vector<WellData *> wells,
-                                        Simbox                * simbox,
+                                        const Simbox          * simbox,
                                         float                   logMin,
                                         float                   logMax,
                                         float                   maxHz,
@@ -75,7 +75,7 @@ private:
                                         bool                    hasVelocityTrend,
                                         const std::string     & name,
                                         bool                  isFile);
-  const CovGrid2D & makeCovGrid2D(Simbox * simbox,
+  const CovGrid2D & makeCovGrid2D(const Simbox * simbox,
                                   Vario  * vario,
                                   int      debugFlag);
   void         setupKrigingData2D(std::vector<KrigingData2D> & krigingDataAlpha,
@@ -85,19 +85,19 @@ private:
                                   float                      * trendBeta,
                                   float                      * trendRho ,
                                   int                          debugFlag,
-                                  Simbox                     * simbox,
+                                  const Simbox               * simbox,
                                   std::vector<WellData *>      wells,
                                   const int                    nWells);
   void         makeKrigedBackground(const std::vector<KrigingData2D> & krigingData,
                                     FFTGrid                         *& bgGrid,
-                                    float                            * trend,
-                                    Simbox                           * simbox,
+                                    const float                      * trend,
+                                    const Simbox                     * simbox,
                                     const CovGrid2D                  & covGrid2D,
                                     const std::string                & type,
                                     bool                               isFile);
   void         calculateVelocityDeviations(FFTGrid               * velocity,
                                            std::vector<WellData *> wells,
-                                           Simbox                * simbox,
+                                           const Simbox          * simbox,
                                            float                *& trendVel,
                                            float                *& avgDevVel,
                                            float                 * avgDevAlpha,
@@ -105,8 +105,8 @@ private:
                                            int                     nWells);
   void         resampleParameter(FFTGrid *& parameterNew,
                                  FFTGrid  * parameterOld,
-                                 Simbox   * simboxNew,
-                                 Simbox   * simboxOld,
+                                 const Simbox   * simboxNew,
+                                 const Simbox   * simboxOld,
                                  bool       isFile);
   void         calculateVerticalTrend(std::vector<WellData *> wells,
                                       float                 * trend,

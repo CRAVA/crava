@@ -26,10 +26,10 @@ public:
   void setType(int cubeType) {cubetype_ = cubeType;}
   void setAngle(float angle) {theta_ = angle;}
 
-  int                  fillInFromSegY(SegY * segy, Simbox *simbox, bool nopadding = false ); // No mode
-  void                 fillInSeismicDataFromSegY(SegY        * segy,
-                                                 Simbox      * timeSimbox,
-                                                 Simbox      * timeCutSimbox,
+  int                  fillInFromSegY(const SegY * segy, const Simbox *simbox, bool nopadding = false ); // No mode
+  void                 fillInSeismicDataFromSegY(const SegY   * segy,
+                                                 const Simbox * timeSimbox,
+                                                 const Simbox * timeCutSimbox,
                                                  float         smooth_length,
                                                  int         & missingTracesSimbox,
                                                  int         & missingTracesPadding,
@@ -62,7 +62,7 @@ public:
                                              int                  n_fine);
   void                 setTrace(const std::vector<float> & trace, size_t i, size_t j);
   void                 setTrace(float value, size_t i, size_t j);
-  int                  fillInFromStorm(Simbox            * actSimBox,
+  int                  fillInFromStorm(const Simbox      * actSimBox,
                                        StormContGrid     * grid,
                                        const std::string & parName,
                                        bool                scale = false,
@@ -136,8 +136,8 @@ public:
                                  const Simbox      * simbox,
                                  const std::string   sgriLabel = "NO_LABEL",
                                  const float         z0        = 0.0,
-                                 GridMapping       * depthMap  = NULL,
-                                 GridMapping       * timeMap   = NULL,
+                                 const GridMapping * depthMap  = NULL,
+                                 const GridMapping * timeMap   = NULL,
                                  const TraceHeaderFormat & thf  = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS));
   //Use this instead of the ones below.
   virtual void         writeStormFile(const std::string & fileName, const Simbox * simbox, bool ascii = false,
@@ -147,7 +147,7 @@ public:
   virtual int          writeSgriFile(const std::string & fileName, const Simbox * simbox, const std::string label);
   virtual void         writeAsciiFile(const std::string & fileName);
   virtual void         writeAsciiRaw(const std::string & fileName);
-  virtual void         writeResampledStormCube(GridMapping *gridmapping, const std::string & fileName,
+  virtual void         writeResampledStormCube(const GridMapping *gridmapping, const std::string & fileName,
                                                const Simbox *simbox, const int format);
   virtual void         writeCravaFile(const std::string & fileName, const Simbox * simbox);
   virtual void         readCravaFile(const std::string & fileName, std::string & errText, bool nopadding = false);

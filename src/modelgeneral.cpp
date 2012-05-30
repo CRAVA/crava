@@ -230,9 +230,9 @@ ModelGeneral::~ModelGeneral(void)
 void
 ModelGeneral::readSegyFile(const std::string       & fileName,
                            FFTGrid                *& target,
-                           Simbox                  * timeSimbox,
-                           Simbox                  * timeCutSimbox,
-                           ModelSettings          *& modelSettings,
+                           const Simbox            * timeSimbox,
+                           const Simbox            * timeCutSimbox,
+                           const ModelSettings     * modelSettings,
                            const SegyGeometry     *& geometry,
                            int                       gridType,
                            float                     offset,
@@ -382,9 +382,9 @@ ModelGeneral::readSegyFile(const std::string       & fileName,
 
 
 void
-ModelGeneral::checkThatDataCoverGrid(SegY        * segy,
+ModelGeneral::checkThatDataCoverGrid(const SegY   * segy,
                                      float         offset,
-                                     Simbox      * timeCutSimbox,
+                                     const Simbox * timeCutSimbox,
                                      float         guard_zone,
                                      std::string & errText)
 {
@@ -433,8 +433,8 @@ ModelGeneral::readStormFile(const std::string  & fName,
                             FFTGrid           *& target,
                             const int            gridType,
                             const std::string  & parName,
-                            Simbox             * timeSimbox,
-                            ModelSettings     *& modelSettings,
+                            const Simbox       * timeSimbox,
+                            const ModelSettings * modelSettings,
                             std::string        & errText,
                             bool                 scale,
                             bool                 nopadding)
@@ -1365,9 +1365,9 @@ ModelGeneral::readGridFromFile(const std::string       & fileName,
                                const SegyGeometry     *& geometry,
                                const TraceHeaderFormat * format,
                                int                       gridType,
-                               Simbox                  * timeSimbox,
-                               Simbox                  * timeCutSimbox,
-                               ModelSettings           * modelSettings,
+                               const Simbox            * timeSimbox,
+                               const Simbox            * timeCutSimbox,
+                               const ModelSettings     * modelSettings,
                                std::string             & errText,
                                bool                      nopadding)
 {
@@ -2263,9 +2263,9 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
 
 void
 ModelGeneral::loadVelocity(FFTGrid           *& velocity,
-                           Simbox             * timeSimbox,
-                           Simbox             * timeCutSimbox,
-                           ModelSettings      * modelSettings,
+                           const Simbox       * timeSimbox,
+                           const Simbox       * timeCutSimbox,
+                           const ModelSettings * modelSettings,
                            const std::string  & velocityField,
                            bool               & velocityFromInversion,
                            std::string        & errText,

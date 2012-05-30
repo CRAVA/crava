@@ -115,9 +115,9 @@ FFTGrid::~FFTGrid()
 }
 
 void
-FFTGrid::fillInSeismicDataFromSegY(SegY        * segy,
-                                   Simbox      * timeSimbox,
-                                   Simbox      * timeCutSimbox,
+FFTGrid::fillInSeismicDataFromSegY(const SegY   * segy,
+                                   const Simbox * timeSimbox,
+                                   const Simbox * timeCutSimbox,
                                    float         smooth_length,
                                    int         & missingTracesSimbox,
                                    int         & missingTracesPadding,
@@ -481,7 +481,7 @@ FFTGrid::setTrace(float value, size_t i, size_t j)
 }
 
 int
-FFTGrid::fillInFromSegY(SegY* segy, Simbox *simbox, bool padding)
+FFTGrid::fillInFromSegY(const SegY* segy, const Simbox *simbox, bool padding)
 {
   assert(cubetype_  !=  CTMISSING);
 
@@ -586,7 +586,7 @@ FFTGrid::fillInFromSegY(SegY* segy, Simbox *simbox, bool padding)
 }
 
 int
-FFTGrid::fillInFromStorm(Simbox            * actSimBox,
+FFTGrid::fillInFromStorm(const Simbox      * actSimBox,
                          StormContGrid     * grid,
                          const std::string & parName,
                          bool                scale,
@@ -1805,8 +1805,8 @@ FFTGrid::writeFile(const std::string       & fName,
                    const Simbox            * simbox,
                    const std::string         label,
                    const float               z0,
-                   GridMapping             * depthMap,
-                   GridMapping             * timeMap,
+                   const GridMapping       * depthMap,
+                   const GridMapping       * timeMap,
                    const TraceHeaderFormat & thf)
 {
   std::string fileName = IO::makeFullFileName(subDir, fName);
@@ -2009,7 +2009,7 @@ FFTGrid::writeSegyFile(const std::string       & fileName,
 
 
 void
-FFTGrid::writeResampledStormCube(GridMapping       * gridmapping,
+FFTGrid::writeResampledStormCube(const GridMapping * gridmapping,
                                  const std::string & fileName,
                                  const Simbox      * simbox,
                                  const int           format)

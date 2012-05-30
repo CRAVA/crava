@@ -90,7 +90,7 @@ public:
   void       writeFilePriorCorrT(float* corrT, int nzp) const;
   void       writeFilePriorVariances(ModelSettings * modelSettings) const;
   void       writeFilePostVariances(void) const;
-  void       writeFilePostCovGrids(Simbox * simbox) const;
+  void       writeFilePostCovGrids(Simbox const * simbox) const;
 
 private:
   FFTGrid  * createFFTGrid(int nx, int ny, int nz, int nxp, int nyp, int nzp, bool fileGrid);

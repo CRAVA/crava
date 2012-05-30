@@ -28,9 +28,9 @@
 Background::Background(FFTGrid              ** grids,
                        std::vector<WellData *> wells,
                        FFTGrid              *& velocity,
-                       Simbox                * timeSimbox,
-                       Simbox                * timeBGSimbox,
-                       ModelSettings         * modelSettings)
+                       const Simbox          * timeSimbox,
+                       const Simbox          * timeBGSimbox,
+                       const ModelSettings   * modelSettings)
   : DataTarget_(250), // For kriging: Increase surrounding until 250 data points is aquired
     vsvp_(RMISSING)
 {
@@ -102,8 +102,8 @@ Background::generateBackgroundModel(FFTGrid              *& bgAlpha,
                                     FFTGrid              *& bgRho,
                                     FFTGrid              *& velocity,
                                     std::vector<WellData *> wells,
-                                    Simbox                * simbox,
-                                    ModelSettings         * modelSettings)
+                                    const Simbox          * simbox,
+                                    const ModelSettings   * modelSettings)
 {
   const int nz = simbox->getnz();
   float * trendAlpha = new float[nz];
@@ -206,7 +206,7 @@ Background::generateBackgroundModel(FFTGrid              *& bgAlpha,
 void
 Background::calculateVelocityDeviations(FFTGrid               * velocity,
                                         std::vector<WellData *> wells,
-                                        Simbox                * simbox,
+                                        const Simbox          * simbox,
                                         float                *& trendVel,
                                         float                *& avgDevVel,
                                         float                 * avgDevAlpha,
@@ -277,7 +277,7 @@ void
 Background::calculateBackgroundTrend(float                 * trend,
                                      float                 * avgDev,
                                      std::vector<WellData *> wells,
-                                     Simbox                * simbox,
+                                     const Simbox          * simbox,
                                      float                   logMin,
                                      float                   logMax,
                                      float                   maxHz,
@@ -326,7 +326,7 @@ Background::setupKrigingData2D(std::vector<KrigingData2D> & krigingDataAlpha,
                                float                      * trendBeta,
                                float                      * trendRho ,
                                int                          outputFlag,
-                               Simbox                     * simbox,
+                               const Simbox               * simbox,
                                std::vector<WellData *>      wells,
                                const int                    nWells)
 {
@@ -436,7 +436,7 @@ Background::setupKrigingData2D(std::vector<KrigingData2D> & krigingDataAlpha,
 
 //---------------------------------------------------------------------------
 const CovGrid2D &
-Background::makeCovGrid2D(Simbox * simbox,
+Background::makeCovGrid2D(const Simbox * simbox,
                           Vario  * vario,
                           int      debugFlag)
 {
@@ -463,8 +463,8 @@ Background::makeCovGrid2D(Simbox * simbox,
 void
 Background::makeKrigedBackground(const std::vector<KrigingData2D> & krigingData,
                                  FFTGrid                         *& bgGrid,
-                                 float                            * trend,
-                                 Simbox                           * simbox,
+                                 const float                      * trend,
+                                 const Simbox                     * simbox,
                                  const CovGrid2D                  & covGrid2D,
                                  const std::string                & type,
                                  bool                               isFile)
@@ -1095,9 +1095,9 @@ void
 Background::resampleBackgroundModel(FFTGrid      *& bgAlpha,
                                     FFTGrid      *& bgBeta,
                                     FFTGrid      *& bgRho,
-                                    Simbox        * timeBGSimbox,
-                                    Simbox        * timeSimbox,
-                                    ModelSettings * modelSettings)
+                                    const Simbox  * timeBGSimbox,
+                                    const Simbox  * timeSimbox,
+                                    const ModelSettings * modelSettings)
 {
   bool isFile = modelSettings->getFileGrid();
 
@@ -1159,8 +1159,8 @@ Background::resampleBackgroundModel(FFTGrid      *& bgAlpha,
 void
 Background::resampleParameter(FFTGrid *& pNew,        // Resample to
                               FFTGrid  * pOld,        // Resample from
-                              Simbox   * simboxNew,
-                              Simbox   * simboxOld,
+                              const Simbox   * simboxNew,
+                              const Simbox   * simboxOld,
                               bool       isFile)
 {
   int nx  = simboxNew->getnx();
@@ -1364,9 +1364,9 @@ Background::createPaddedParameter(FFTGrid *& pNew,     // Padded
 
 //-------------------------------------------------------------------------------
 void
-Background::writeBackgrounds(Simbox                  * simbox,
+Background::writeBackgrounds(const Simbox            * simbox,
                              GridMapping             * depthMapping,
-                             GridMapping             * timeMapping,
+                             const GridMapping       * timeMapping,
                              const bool                isFile,
                              const TraceHeaderFormat & thf) const
 {

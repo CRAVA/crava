@@ -441,10 +441,10 @@ ModelAVODynamic::readMatrix(const std::string & fileName, int n1, int n2,
 
 void
 ModelAVODynamic::processSeismic(FFTGrid        **& seisCube,
-                                Simbox          *& timeSimbox,
-                                GridMapping     *& timeDepthMapping,
-                                GridMapping     *& timeCutMapping,
-                                ModelSettings   *& modelSettings,
+                                const Simbox     * timeSimbox,
+                                const GridMapping * timeDepthMapping,
+                                const GridMapping * timeCutMapping,
+                                const ModelSettings * modelSettings,
                                 const InputFiles * inputFiles,
                                 std::string      & errText,
                                 bool             & failed)
@@ -460,7 +460,7 @@ ModelAVODynamic::processSeismic(FFTGrid        **& seisCube,
     const SegyGeometry ** geometry       = new const SegyGeometry * [numberOfAngles_];
     seisCube                             = new FFTGrid * [numberOfAngles_];
 
-    Simbox * timeCutSimbox = NULL;
+    const Simbox * timeCutSimbox = NULL;
     if (timeCutMapping != NULL)
       timeCutSimbox = timeCutMapping->getSimbox(); // For the got-enough-data test
     else
@@ -563,11 +563,11 @@ ModelAVODynamic::processSeismic(FFTGrid        **& seisCube,
 void
 ModelAVODynamic::processBackground(Background           *& background,
                                    std::vector<WellData *> wells,
-                                   Simbox                * timeSimbox,
-                                   Simbox                * timeBGSimbox,
+                                   const Simbox          * timeSimbox,
+                                   const Simbox          * timeBGSimbox,
                                    GridMapping          *& timeDepthMapping,
-                                   GridMapping          *& timeCutMapping,
-                                   ModelSettings         * modelSettings,
+                                   const GridMapping    * timeCutMapping,
+                                   const ModelSettings   * modelSettings,
                                    const InputFiles      * inputFiles,
                                    std::string           & errText,
                                    bool                  & failed)
@@ -580,7 +580,7 @@ ModelAVODynamic::processBackground(Background           *& background,
   double wall=0.0, cpu=0.0;
   TimeKit::getTime(wall,cpu);
 
-  Simbox * timeCutSimbox = NULL;
+  const Simbox * timeCutSimbox = NULL;
   if (timeCutMapping != NULL)
     timeCutSimbox = timeCutMapping->getSimbox(); // For the got-enough-data test
   else

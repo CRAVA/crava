@@ -89,21 +89,21 @@ public:
 
 private:
   void             processSeismic(FFTGrid         **& seisCube,
-                                  Simbox           *& timeSimbox,
-                                  GridMapping      *& timeDepthMapping,
-                                  GridMapping      *& timeCutMapping,
-                                  ModelSettings    *& modelSettings,
+                                  const Simbox      * timeSimbox,
+                                  const GridMapping * timeDepthMapping,
+                                  const GridMapping * timeCutMapping,
+                                  const ModelSettings * modelSettings,
                                   const InputFiles  * inputFiles,
                                   std::string       & errText,
                                   bool              & failed);
 
   void             processBackground(Background           *& background,
                                      std::vector<WellData *> wells,
-                                     Simbox                * timeSimbox,
-                                     Simbox                * timeBGSimbox,
+                                     const Simbox          * timeSimbox,
+                                     const Simbox          * timeBGSimbox,
                                      GridMapping          *& timeDepthMapping,
-                                     GridMapping          *& timeCutMapping,
-                                     ModelSettings         * modelSettings,
+                                     const GridMapping     * timeCutMapping,
+                                     const ModelSettings   * modelSettings,
                                      const InputFiles      * inputFile,
                                      std::string           & errText,
                                      bool                  & failed);

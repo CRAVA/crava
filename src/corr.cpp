@@ -775,7 +775,7 @@ Corr::writeFilePostCorrT(float             * postCov,
 
 //--------------------------------------------------------------------
 void
-Corr::writeFilePostCovGrids(Simbox * simbox) const
+Corr::writeFilePostCovGrids(Simbox const * simbox) const
 {
   std::string fileName;
   fileName = IO::PrefixPosterior() + IO::PrefixCovariance() + "Vp";

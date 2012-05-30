@@ -919,7 +919,7 @@ BlockedLogs::interpolateTrend(const int * blockedLog, int * trend)
 
 //------------------------------------------------------------------------------
 void
-BlockedLogs::getBlockedGrid(FFTGrid * grid,
+BlockedLogs::getBlockedGrid(const FFTGrid * grid,
                             float   * blockedLog,
                             int       iOffset,
                             int       jOffset)

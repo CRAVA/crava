@@ -60,7 +60,7 @@ public:
   void                      getVerticalTrend(const float * blockedLog, float * trend);
   void                      getVerticalTrendLimited(const float * blockedLog, float * trend, const std::vector<Surface *> & limits);
   void                      getVerticalTrend(const int * blockedLog,int * trend);
-  void                      getBlockedGrid(FFTGrid * grid, float * blockedLog, int iOffset = 0, int jOffset = 0);
+  void                      getBlockedGrid(const FFTGrid * grid, float * blockedLog, int iOffset = 0, int jOffset = 0);
   void                      setLogFromVerticalTrend(float * vertical_trend, double z0, double dz,
                                          int nz, std::string type, int iAngle = IMISSING);
   void                      setLogFromGrid(FFTGrid * grid, int iAngle, int nAngles, std::string type);
