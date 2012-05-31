@@ -589,11 +589,7 @@ Background::MakeMultizoneBackground(FFTGrid                         *& bgAlpha,
     << "\n  ^";
 
 
-  for (int k=0 ; k<nzp ; k++)
-  {
 
-
-  }
 
   bgAlpha = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, isFile);
   bgBeta  = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, isFile);
@@ -611,47 +607,55 @@ Background::MakeMultizoneBackground(FFTGrid                         *& bgAlpha,
   bgBeta ->setAccessMode(FFTGrid::WRITE);
   bgRho  ->setAccessMode(FFTGrid::WRITE);
 
-  double x;
-  double y;
+  // Beta distributed uncertainty on each surface
+  std::vector<NRLib::Beta> horizon_distributions(nZones+1);
+  for(int zone=0; zone<nZones+1; zone++) {
+    horizon_distributions[zone] = NRLib::Beta(-surface_uncertainty[zone], surface_uncertainty[zone], 2, 2);
+  }
 
   for(int i=0; i<rnxp; i++) {
 
     for(int j=0; j<nyp; j++) {
-      simbox->getXYCoord(i,j,x,y);
-
-      // Beta distributed uncertainty on each surface
-      std::vector<NRLib::Beta> horizon_distributions(nZones+1);
-      for(int zone=0; zone<nZones+1; zone++) {
-        double z = surface[zone].GetZ(x,y);
-        horizon_distributions[zone] = NRLib::Beta(z-surface_uncertainty[zone], z+surface_uncertainty[zone], 2, 2);
-      }
 
       for(int k=0; k<nzp; k++) {
-        double z;
-        simbox->getZCoord(k,x,y,z);
 
-        std::vector<double> zone_probability(nZones);
-
-        ComputeZoneProbability(z, horizon_distributions, erosion_priority, zone_probability);
-
-        double vp  = 0;
-        double vs  = 0;
-        double rho = 0;
-
-        for(int zone=0; zone<nZones; zone++) {
-          double vp_zone  = alpha_zones[zone].GetValueZInterpolated(x,y,z);
-          double vs_zone  = beta_zones[zone].GetValueZInterpolated(x,y,z);
-          double rho_zone = rho_zones[zone].GetValueZInterpolated(x,y,z);
-
-          vp  +=  vp_zone  * zone_probability[zone];
-          vs  +=  vs_zone  * zone_probability[zone];
-          rho +=  rho_zone * zone_probability[zone];
-        }
         if(i<nx) {
+
+          double x;
+          double y;
+          double z;
+          simbox->getCoord(i,j,k,x,y,z);
+
+          std::vector<double> z_relative(nZones+1);
+          for(int zone=0; zone<nZones+1; zone++)
+            z_relative[zone] = z - surface[zone].GetZ(x,y);
+
+          std::vector<double> zone_probability(nZones);
+
+          ComputeZoneProbability(z_relative, horizon_distributions, erosion_priority, zone_probability);
+
+          double vp  = 0;
+          double vs  = 0;
+          double rho = 0;
+
+          for(int zone=0; zone<nZones; zone++) {
+            // if-test to speed up computations
+            if(zone_probability[zone] > 0) {
+              double vp_zone  = alpha_zones[zone].GetValueZInterpolated(x,y,z);
+              double vs_zone  = beta_zones[zone].GetValueZInterpolated(x,y,z);
+              double rho_zone = rho_zones[zone].GetValueZInterpolated(x,y,z);
+
+              vp  +=  vp_zone  * zone_probability[zone];
+              vs  +=  vs_zone  * zone_probability[zone];
+              rho +=  rho_zone * zone_probability[zone];
+            }
+          }
+
           bgAlpha->setRealValue(i, j, k, float(vp));
           bgBeta ->setRealValue(i, j, k, float(vs));
           bgRho  ->setRealValue(i, j, k, float(rho));
         }
+
         else {
           bgAlpha->setRealValue(i, j, k, 0);
           bgBeta ->setRealValue(i, j, k, 0);
@@ -673,7 +677,7 @@ Background::MakeMultizoneBackground(FFTGrid                         *& bgAlpha,
 }
 //---------------------------------------------------------------------------
 void
-Background::ComputeZoneProbability(const double                   & z,
+Background::ComputeZoneProbability(const std::vector<double>      & z,
                                    const std::vector<NRLib::Beta> & horizon_distributions,
                                    const std::vector<int>         & erosion_priority,
                                    std::vector<double>            & zone_probability) const
@@ -683,10 +687,10 @@ Background::ComputeZoneProbability(const double                   & z,
 
   for(int zone=0; zone<nZones; zone++) {
     //Initialize with probability that we are below top surface for zone
-    double prob = horizon_distributions[zone].Cdf(z);
+    double prob = horizon_distributions[zone].Cdf(z[zone]);
 
     //Multiply with probability that we are above base surface for zone
-    prob *= (1-horizon_distributions[zone+1].Cdf(z));
+    prob *= (1-horizon_distributions[zone+1].Cdf(z[zone+1]));
 
     //We may be eroded from above. Must consider the surfaces that
     //1. Are above top in the standard sequence.
@@ -695,7 +699,7 @@ Background::ComputeZoneProbability(const double                   & z,
     int min_erosion = erosion_priority[zone];
     for(int prev_hor = zone-1; prev_hor >=0; prev_hor--) {
       if(erosion_priority[prev_hor] < min_erosion) {
-        prob *= horizon_distributions[prev_hor].Cdf(z);
+        prob *= horizon_distributions[prev_hor].Cdf(z[prev_hor]);
         min_erosion = erosion_priority[prev_hor]; //Those with higher number stop in this
       }
     }
@@ -707,7 +711,7 @@ Background::ComputeZoneProbability(const double                   & z,
     min_erosion = erosion_priority[zone+1];
     for(int late_hor = zone+2; late_hor < nZones+1; late_hor++) {
       if(erosion_priority[late_hor] < min_erosion) {
-        prob *= (1-horizon_distributions[late_hor].Cdf(z));
+        prob *= (1-horizon_distributions[late_hor].Cdf(z[late_hor]));
         min_erosion = erosion_priority[late_hor]; //Those with higher number stop in this
       }
     }
