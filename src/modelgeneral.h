@@ -138,8 +138,8 @@ public:
   void             processPriorCorrelations(Corr                 *& correlations,
                                             Background            * background,
                                             std::vector<WellData *> wells,
-                                            Simbox                * timeSimbox,
-                                            ModelSettings         * modelSettings,
+                                            const Simbox          * timeSimbox,
+                                            const ModelSettings   * modelSettings,
                                             FFTGrid              ** seisCube,
                                             const InputFiles      * inputFiles,
                                             std::string           & errText,
@@ -246,7 +246,7 @@ private:
   void             estimateCorrXYFromSeismic(Surface *& CorrXY,
                                              FFTGrid ** seisCube,
                                              int numberOfAngles);
-  Surface        * findCorrXYGrid(Simbox * timeSimbox, ModelSettings * modelSettings);
+  Surface        * findCorrXYGrid(const Simbox * timeSimbox, const ModelSettings * modelSettings);
 
   int              computeTime(int year, int month, int day) const;
 

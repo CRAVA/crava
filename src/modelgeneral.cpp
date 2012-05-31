@@ -3258,8 +3258,8 @@ void
 ModelGeneral::processPriorCorrelations(Corr                   *& correlations,
                                        Background              * background,
                                        std::vector<WellData *>   wells,
-                                       Simbox                  * timeSimbox,
-                                       ModelSettings           * modelSettings,
+                                       const Simbox            * timeSimbox,
+                                       const ModelSettings     * modelSettings,
                                        FFTGrid                ** seisCube,
                                        const InputFiles        * inputFiles,
                                        std::string             & errText,
@@ -3403,7 +3403,7 @@ ModelGeneral::processPriorCorrelations(Corr                   *& correlations,
   }
 }
 Surface *
-ModelGeneral::findCorrXYGrid(Simbox * timeSimbox, ModelSettings * modelSettings)
+ModelGeneral::findCorrXYGrid(const Simbox * timeSimbox, const ModelSettings * modelSettings)
 {
   float dx  = static_cast<float>(timeSimbox->getdx());
   float dy  = static_cast<float>(timeSimbox->getdy());

@@ -183,7 +183,7 @@ public:
   bool                             getErrorFileFlag()                   const { return ((otherFlag_ & IO::ERROR_FILE)>0)          ;}
   bool                             getTaskFileFlag()                    const { return ((otherFlag_ & IO::TASK_FILE)>0)           ;}
   int                              getSeed(void)                        const { return seed_                                      ;}
-  bool                             getDoInversion(void);
+  bool                             getDoInversion(void)                 const;
   bool                             getDoDepthConversion(void)           const;
   bool                             getDoSmoothKriging(void)             const { return smoothKrigedParameters_ ;}
   bool                             getRunFromPanel(void)                const { return runFromPanel_ ;}

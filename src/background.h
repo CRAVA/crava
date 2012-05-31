@@ -20,7 +20,7 @@ class Background
 {
 public:
   Background(FFTGrid              ** grids,
-             std::vector<WellData *> wells,
+             const std::vector<WellData *> & wells,
              FFTGrid              *& velocity,
              const Simbox          * timeSimbox,
              const Simbox          * timeBGSimbox,
@@ -31,7 +31,7 @@ public:
   FFTGrid    * getAlpha(void) { return backModel_[0]; }
   FFTGrid    * getBeta(void)  { return backModel_[1]; }
   FFTGrid    * getRho(void)   { return backModel_[2]; }
-  double       getMeanVsVp()  { return vsvp_;}
+  double       getMeanVsVp() const { return vsvp_;}
 
   void         setClassicVsVp(); //For debugging purposes.
 
@@ -48,7 +48,7 @@ private:
                                        FFTGrid              *& bgBeta,
                                        FFTGrid              *& bgRho,
                                        FFTGrid              *& velocity,
-                                       std::vector<WellData *> wells,
+                                       const std::vector<WellData *> & wells,
                                        const Simbox          * simbox,
                                        const ModelSettings   * modelSettings);
   void         resampleBackgroundModel(FFTGrid      *& bgAlpha,
@@ -64,7 +64,7 @@ private:
                                      FFTGrid  * pOld);
   void         calculateBackgroundTrend(float                 * trend,
                                         float                 * avgDev,
-                                        std::vector<WellData *> wells,
+                                        const std::vector<WellData *> & wells,
                                         const Simbox          * simbox,
                                         float                   logMin,
                                         float                   logMax,
@@ -86,7 +86,7 @@ private:
                                   float                      * trendRho ,
                                   int                          debugFlag,
                                   const Simbox               * simbox,
-                                  std::vector<WellData *>      wells,
+                                  const std::vector<WellData *> & wells,
                                   const int                    nWells);
   void         makeKrigedBackground(const std::vector<KrigingData2D> & krigingData,
                                     FFTGrid                         *& bgGrid,
@@ -96,7 +96,7 @@ private:
                                     const std::string                & type,
                                     bool                               isFile);
   void         calculateVelocityDeviations(FFTGrid               * velocity,
-                                           std::vector<WellData *> wells,
+                                           const std::vector<WellData *> & wells,
                                            const Simbox          * simbox,
                                            float                *& trendVel,
                                            float                *& avgDevVel,
@@ -108,7 +108,7 @@ private:
                                  const Simbox   * simboxNew,
                                  const Simbox   * simboxOld,
                                  bool       isFile);
-  void         calculateVerticalTrend(std::vector<WellData *> wells,
+  void         calculateVerticalTrend(const std::vector<WellData *> & wells,
                                       float                 * trend,
                                       float                   logMin,
                                       float                   logMax,
@@ -121,7 +121,7 @@ private:
                                   float        dz,
                                   int          nz,
                                   std::string  name);
-  void         calculateDeviationFromVerticalTrend(std::vector<WellData *> wells,
+  void         calculateDeviationFromVerticalTrend(const std::vector<WellData *> & wells,
                                                    const float           * trend,
                                                    float                 * avg_dev,
                                                    int                     nWells,
@@ -133,7 +133,7 @@ private:
                                                 const float           * trend_alpha,
                                                 const float           * trend_beta,
                                                 const float           * trend_rho,
-                                                std::vector<WellData *> wells,
+                                                const std::vector<WellData *> & wells,
                                                 const int               nWells,
                                                 const int               nz);
   void         smoothTrendWithLocalLinearRegression(float      * trend,

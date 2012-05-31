@@ -88,7 +88,7 @@ public:
   void       printPostVariances(void) const;
 
   void       writeFilePriorCorrT(float* corrT, int nzp) const;
-  void       writeFilePriorVariances(ModelSettings * modelSettings) const;
+  void       writeFilePriorVariances(const ModelSettings * modelSettings) const;
   void       writeFilePostVariances(void) const;
   void       writeFilePostCovGrids(Simbox const * simbox) const;
 

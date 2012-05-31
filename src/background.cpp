@@ -26,7 +26,7 @@
 #include "src/io.h"
 
 Background::Background(FFTGrid              ** grids,
-                       std::vector<WellData *> wells,
+                       const std::vector<WellData *> & wells,
                        FFTGrid              *& velocity,
                        const Simbox          * timeSimbox,
                        const Simbox          * timeBGSimbox,
@@ -101,7 +101,7 @@ Background::generateBackgroundModel(FFTGrid              *& bgAlpha,
                                     FFTGrid              *& bgBeta,
                                     FFTGrid              *& bgRho,
                                     FFTGrid              *& velocity,
-                                    std::vector<WellData *> wells,
+                                    const std::vector<WellData *> & wells,
                                     const Simbox          * simbox,
                                     const ModelSettings   * modelSettings)
 {
@@ -205,7 +205,7 @@ Background::generateBackgroundModel(FFTGrid              *& bgAlpha,
 //---------------------------------------------------------------------------
 void
 Background::calculateVelocityDeviations(FFTGrid               * velocity,
-                                        std::vector<WellData *> wells,
+                                        const std::vector<WellData *> & wells,
                                         const Simbox          * simbox,
                                         float                *& trendVel,
                                         float                *& avgDevVel,
@@ -276,7 +276,7 @@ Background::calculateVelocityDeviations(FFTGrid               * velocity,
 void
 Background::calculateBackgroundTrend(float                 * trend,
                                      float                 * avgDev,
-                                     std::vector<WellData *> wells,
+                                     const std::vector<WellData *> & wells,
                                      const Simbox          * simbox,
                                      float                   logMin,
                                      float                   logMax,
@@ -327,7 +327,7 @@ Background::setupKrigingData2D(std::vector<KrigingData2D> & krigingDataAlpha,
                                float                      * trendRho ,
                                int                          outputFlag,
                                const Simbox               * simbox,
-                               std::vector<WellData *>      wells,
+                               const std::vector<WellData *> & wells,
                                const int                    nWells)
 {
   //
@@ -534,7 +534,7 @@ Background::makeKrigedBackground(const std::vector<KrigingData2D> & krigingData,
 
 //-------------------------------------------------------------------------------
 void
-Background::calculateVerticalTrend(std::vector<WellData *> wells,
+Background::calculateVerticalTrend(const std::vector<WellData *> & wells,
                                    float                 * trend,
                                    float                   logMin,
                                    float                   logMax,
@@ -904,7 +904,7 @@ Background::writeVerticalTrend(float      * trend,
 
 //-------------------------------------------------------------------------------
 void
-Background::calculateDeviationFromVerticalTrend(std::vector<WellData *> wells,
+Background::calculateDeviationFromVerticalTrend(const std::vector<WellData *> & wells,
                                                 const float           * globalTrend,
                                                 float                 * avg_dev,
                                                 int                     nWells,
@@ -950,7 +950,7 @@ Background::writeDeviationsFromVerticalTrend(const float           * avg_dev_alp
                                              const float           * trend_alpha,
                                              const float           * trend_beta,
                                              const float           * trend_rho,
-                                             std::vector<WellData *> wells,
+                                             const std::vector<WellData *> & wells,
                                              const int               nWells,
                                              const int               nz)
 {

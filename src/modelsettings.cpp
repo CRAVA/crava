@@ -203,7 +203,7 @@ ModelSettings::~ModelSettings(void)
 }
 
 bool
-ModelSettings::getDoInversion(void)
+ModelSettings::getDoInversion(void) const
 {
   int elasticFlag  = 0;
   int otherFlag    = 0;

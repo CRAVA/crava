@@ -17,8 +17,8 @@
 
 Analyzelog::Analyzelog(std::vector<WellData *> wells,
                        Background            * background,
-                       Simbox                * simbox,
-                       ModelSettings         * modelSettings,
+                       const Simbox          * simbox,
+                       const ModelSettings   * modelSettings,
                        std::string           & errTxt)
 {
   pointVar0_ = new float*[3];
@@ -49,7 +49,7 @@ Analyzelog::~Analyzelog(void)
 // Do the covariance and correlation estimation
 //
 void
-Analyzelog::estimate(ModelSettings * modelSettings,
+Analyzelog::estimate(const ModelSettings * modelSettings,
                      Background    * background,
                      std::string   & errTxt)
 {
@@ -811,9 +811,9 @@ Analyzelog::estimateCorrTAndVar0(float       * CorrT,
 }
 
 void
-Analyzelog::checkVariances(ModelSettings  * modelSettings,
-                           float         ** pointVar0,
-                           float         ** Var0,
+Analyzelog::checkVariances(const ModelSettings  * modelSettings,
+                           const float  * const * pointVar0,
+                           const float  * const * Var0,
                            float            dt,
                            std::string    & errTxt)
 {

@@ -87,7 +87,7 @@ public:
                                                     int                        & iMove,
                                                     int                        & jMove,
                                                     float                      & kMove);
-  void                      generateSyntheticSeismic(float ** reflCoef,
+  void                      generateSyntheticSeismic(const float * const * reflCoef,
                                                      int nAngles,
                                                      Wavelet ** wavelet,
                                                      int nz,
@@ -102,8 +102,8 @@ public:
                                                  std::vector<double>        & yGradient);
 
   void                      setTimeGradientSettings(float distance, float sigma_m);
-  void                      findSeismicGradient(FFTGrid                  ** seisCube,
-                                                Simbox                   * timeSimbox,
+  void                      findSeismicGradient(const FFTGrid     * const * seisCube,
+                                                const Simbox              * timeSimbox,
                                                 int                        nAngles,
                                                 std::vector<double>       & xGradient,
                                                 std::vector<double>       & yGradient,

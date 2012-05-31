@@ -11,20 +11,20 @@ class Wavelet1D : public Wavelet {
 public:
 //Constructors and destructor
   Wavelet1D();
-  Wavelet1D(Simbox                       * simbox,
-            FFTGrid                      * seisCube,
+  Wavelet1D(const Simbox                 * simbox,
+            const FFTGrid                * seisCube,
             std::vector<WellData *>        wells,
             const std::vector<Surface *> & estimInterval,
-            ModelSettings                * modelSettings,
-            float                        * reflCoef,
+            const ModelSettings          * modelSettings,
+            const float                  * reflCoef,
             int                            iAngle,
             int                          & errCode,
             std::string                  & errTxt);
 
   Wavelet1D(const std::string & fileName,
             int                 fileFormat,
-            ModelSettings     * modelSettings,
-            float             * reflCoef,
+            const ModelSettings     * modelSettings,
+            const float             * reflCoef,
             float               theta,
             int               & errCode,
             std::string       & errText);
@@ -40,8 +40,8 @@ public:
           int                 nz,
           int                 nzp);
 
-Wavelet1D(ModelSettings * modelSettings,
-          float         * reflCoef,
+Wavelet1D(const ModelSettings * modelSettings,
+          const float         * reflCoef,
           float           theta,
           float           peakFrequency,
           int           & errCode);
@@ -58,15 +58,15 @@ Wavelet1D(ModelSettings * modelSettings,
                                    int j);
   Wavelet1D * getGlobalWavelet(){ return this;}
 
-  float         findGlobalScaleForGivenWavelet(ModelSettings        * modelSettings,
-                                               Simbox               * simbox,
-                                               FFTGrid              * seisCube,
+  float         findGlobalScaleForGivenWavelet(const ModelSettings        * modelSettings,
+                                               const Simbox               * simbox,
+                                               const FFTGrid              * seisCube,
                                                std::vector<WellData *> wells);
 
-  float         calculateSNRatioAndLocalWavelet(Simbox                * simbox,
-                                                FFTGrid               * seisCube,
+  float         calculateSNRatioAndLocalWavelet(const Simbox          * simbox,
+                                                const FFTGrid         * seisCube,
                                                 std::vector<WellData *> wells,
-                                                ModelSettings         * modelSettings,
+                                                const ModelSettings   * modelSettings,
                                                 std::string           & errText,
                                                 int                   & error,
                                                 int                     number,
@@ -110,14 +110,14 @@ private:
                                             std::vector<float>       & scaleOptWell,
                                             Grid2D                   * gain,
                                             std::vector<WellData *>    wells,
-                                            Simbox                   * simbox)       const;
+                                            const Simbox             * simbox)       const;
 
   void          estimateLocalGain(const CovGrid2D             & cov,
                                   Grid2D                     *& gain,
                                   const std::vector<float>    & scaleOptWell,
                                   float                         globalScale,
                                   const std::vector<int>      & nActiveData,
-                                  Simbox                      * simbox,
+                                  const Simbox                * simbox,
                                   std::vector<WellData *>       wells,
                                   int                           nWells);
 
@@ -125,7 +125,7 @@ private:
                                    Grid2D                    *& shift,
                                    const std::vector<float>   & shiftWell,
                                    const std::vector<int>     & nActiveData,
-                                   Simbox                     * simbox,
+                                   const Simbox               * simbox,
                                    std::vector<WellData *>      wells,
                                    int                          nWells);
 
@@ -134,7 +134,7 @@ private:
                                    float                       globalNoise,
                                    const std::vector<float>  & errWellOptScale,
                                    const std::vector<int>    & nActiveData,
-                                   Simbox                    * simbox,
+                                   const Simbox              * simbox,
                                    std::vector<WellData *>     wells,
                                    int                         nWells);
 

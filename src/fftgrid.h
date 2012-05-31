@@ -179,7 +179,7 @@ public:
   float                getDistToBoundary(int i, int n , int np);
   virtual void         getRealTrace(float * value, int i, int j);
   virtual int          setRealTrace(int i, int j, float *value);
-  std::vector<float>   getRealTrace2(int i, int j);
+  std::vector<float>   getRealTrace2(int i, int j) const;
 
 
   static void          reportFFTMemoryAndWait(const std::string & msg) {

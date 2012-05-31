@@ -12,8 +12,8 @@ class Analyzelog {
 public:
   Analyzelog(std::vector<WellData *> wells,
              Background            * background,
-             Simbox                * simbox,
-             ModelSettings         * modelSettings,
+             const Simbox          * simbox,
+             const ModelSettings   * modelSettings,
              std::string           & errTxt);
   ~Analyzelog(void);
 
@@ -23,7 +23,7 @@ public:
   int             getNumberOfLags(void) const { return numberOfLags_ ;}
 
 private:
-  void            estimate(ModelSettings * modelSettings,
+  void            estimate(const ModelSettings * modelSettings,
                            Background    * background,
                            std::string   & errTxt);
 
@@ -58,9 +58,9 @@ private:
 
   void            findConstructedVsLogs(void);
 
-  void            checkVariances(ModelSettings  * modelSettings,
-                                 float         ** pointVar0,
-                                 float         ** Var0,
+  void            checkVariances(const ModelSettings  * modelSettings,
+                                 const float  * const * pointVar0,
+                                 const float  * const * Var0,
                                  float            dt,
                                  std::string    & errTxt);
 

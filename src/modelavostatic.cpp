@@ -476,7 +476,7 @@ void ModelAVOStatic::writeBlockedWells(std::vector<WellData *> wells, ModelSetti
 
 void ModelAVOStatic::addSeismicLogs(std::vector<WellData *> wells,
                                     FFTGrid      ** seisCube,
-                                    ModelSettings * modelSettings,
+                                    const ModelSettings * modelSettings,
                                     int             nAngles)
 {
   int nWells  = modelSettings->getNumberOfWells();
@@ -492,9 +492,9 @@ void ModelAVOStatic::addSeismicLogs(std::vector<WellData *> wells,
 
 void ModelAVOStatic::generateSyntheticSeismic(Wavelet      ** wavelet,
                                               std::vector<WellData *> wells,
-                                              float        ** reflectionMatrix,
-                                              Simbox        * timeSimbox,
-                                              ModelSettings * modelSettings,
+                                              const float * const * reflectionMatrix,
+                                              const Simbox        * timeSimbox,
+                                              const ModelSettings * modelSettings,
                                               int             nAngles)
 {
   int nWells  = modelSettings->getNumberOfWells();

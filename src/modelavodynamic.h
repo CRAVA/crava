@@ -31,15 +31,15 @@ public:
                   const InputFiles     * inputFiles,
                   std::vector<bool>      failedGeneralDetails,
                   std::vector<bool>      failedStaticDetails,
-                  Simbox               * timeSimbox,
-                  Simbox              *& timeBGSimbox,
-                  Surface              * correlationDirection,
+                  const Simbox         * timeSimbox,
+                  const Simbox         * timeBGSimbox,
+                  const Surface        * correlationDirection,
                   RandomGen            * /*randomGen*/,
                   GridMapping          * timeDepthMapping,
-                  GridMapping          * timeCutMapping,
-                  std::vector<Surface *> waveletEstimInterval,
-                  std::vector<Surface *> wellMoveInterval,
-                  std::vector<Surface *> faciesEstimInterval,
+                  const GridMapping    * timeCutMapping,
+                  const std::vector<Surface *> & waveletEstimInterval,
+                  const std::vector<Surface *> & /*wellMoveInterval*/,
+                  const std::vector<Surface *> & /*faciesEstimInterval*/,
                   ModelAVOStatic       * modelAVOstatic,
                   ModelGeneral         * modelGeneral,
                   int                    t);    // modelAVOstatic::wells_ are altered. modelAVOstatic is deliberately sent in as un-const.
@@ -49,10 +49,10 @@ public:
                   ModelAVOStatic          * modelAVOstatic,
                   ModelGeneral            * modelGeneral,
                   SeismicParametersHolder & seismicParameters,
-                  Simbox                  * timeSimbox,
-                  Surface                 * correlationDirection,
-                  GridMapping             * timeDepthMapping,
-                  GridMapping             * timeCutMapping,
+                  const Simbox            * timeSimbox,
+                  const Surface           * correlationDirection,
+                  const GridMapping       * timeDepthMapping,
+                  const GridMapping       * timeCutMapping,
                   int                       t);
 
   ~ModelAVODynamic();
@@ -98,7 +98,7 @@ private:
                                   bool              & failed);
 
   void             processBackground(Background           *& background,
-                                     std::vector<WellData *> wells,
+                                     const std::vector<WellData *> & wells,
                                      const Simbox          * timeSimbox,
                                      const Simbox          * timeBGSimbox,
                                      GridMapping          *& timeDepthMapping,
@@ -109,9 +109,9 @@ private:
                                      bool                  & failed);
 
   void             processReflectionMatrix(float               **& reflectionMatrix,
-                                           Background            * background,
-                                           std::vector<WellData *> wells,
-                                           ModelSettings         * modelSettings,
+                                           const Background      * background,
+                                           const std::vector<WellData *> & wells,
+                                           const ModelSettings   * modelSettings,
                                            const InputFiles      * inputFiles,
                                            std::string           & errText,
                                            bool                  & failed);
@@ -119,8 +119,8 @@ private:
   void             processWavelets(Wavelet                    **& wavelet,
                                    FFTGrid                     ** seisCube,
                                    std::vector<WellData *>        wells,
-                                   float                       ** reflectionMatrix,
-                                   Simbox                       * timeSimbox,
+                                   const float          * const * reflectionMatrix,
+                                   const Simbox                 * timeSimbox,
                                    const Surface                * correlationDirection,
                                    const std::vector<Surface *> & waveletEstimInterval,
                                    ModelSettings                * modelSettings,
@@ -128,25 +128,25 @@ private:
                                    std::string                  & errText,
                                    bool                         & failed);
 
-  int              process1DWavelet(ModelSettings                * modelSettings,
+  int              process1DWavelet(const ModelSettings          * modelSettings,
                                     const InputFiles             * inputFiles,
-                                    Simbox                       * timeSimbox,
-                                    FFTGrid                     ** seisCube,
+                                    const Simbox                 * timeSimbox,
+                                    const FFTGrid        * const * seisCube,
                                     std::vector<WellData *>        wells,
                                     const std::vector<Surface *> & waveletEstimInterval,
-                                    float                        * reflectionMatrix,
+                                    const float                  * reflectionMatrix,
                                     std::string                  & errText,
                                     Wavelet                     *& wavelet,
                                     unsigned int                   i,
                                     bool                           useRickerWavelet);
 
- int               process3DWavelet(ModelSettings                           * modelSettings,
+ int               process3DWavelet(const ModelSettings                     * modelSettings,
                                     const InputFiles                        * inputFiles,
-                                    Simbox                                  * timeSimbox,
-                                    FFTGrid                                ** seisCube,
-                                    std::vector<WellData *>                   wells,
+                                    const Simbox                            * timeSimbox,
+                                    const FFTGrid                   * const * seisCube,
+                                    const std::vector<WellData *>           & wells,
                                     const std::vector<Surface *>            & waveletEstimInterval,
-                                    float                                   * reflectionMatrix,
+                                    const float                             * reflectionMatrix,
                                     std::string                             & errText,
                                     Wavelet                                *& wavelet,
                                     unsigned int                              i,
@@ -157,18 +157,18 @@ private:
 
   void             setupDefaultReflectionMatrix(float       **& reflectionMatrix,
                                                 double          vsvp,
-                                                ModelSettings * modelSettings);
+                                                const ModelSettings * modelSettings);
   int              getWaveletFileFormat(const std::string & fileName,
                                         std::string & errText);
-  double           vsvpFromWells(std::vector<WellData *> wells,
+  double           vsvpFromWells(const std::vector<WellData *> & wells,
                                  int                     nWells);
   void             readAndWriteLocalGridsToFile(const std::string   & fileName,
                                                 const std::string   & type,
                                                 const float           scaleFactor,
                                                 const ModelSettings * modelSettings,
                                                 const unsigned int    i,
-                                                Simbox              * timeSimbox,
-                                                Grid2D             *& grid);
+                                                const Simbox        * timeSimbox,
+                                                const Grid2D        * grid);
   void             resampleSurfaceToGrid2D(const Simbox  * simbox,
                                            const Surface * surface,
                                            Grid2D        * outgrid);
@@ -176,7 +176,7 @@ private:
                                            const Grid2D  * grid,
                                            Surface      *& surface);
   bool             findTimeGradientSurface(const std::string     & refTimeFile,
-                                           Simbox                * simbox,
+                                           const Simbox          * simbox,
                                            NRLib::Grid2D<float>  & refTimeGradX,
                                            NRLib::Grid2D<float>  & refTimeGradY);
   void             computeStructureDepthGradient(double                 v0,

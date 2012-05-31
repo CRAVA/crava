@@ -1902,8 +1902,8 @@ BlockedLogs::setTimeGradientSettings(float distance, float sigma_m)
 
 
 
-void BlockedLogs::findSeismicGradient(FFTGrid                  ** seisCube,
-                                      Simbox                   * timeSimbox,
+void BlockedLogs::findSeismicGradient(const FFTGrid     * const * seisCube,
+                                      const Simbox              * timeSimbox,
                                       int                         nAngles,
                                       std::vector<double>       & xGradient,
                                       std::vector<double>       & yGradient,
@@ -2441,7 +2441,7 @@ void BlockedLogs::computePrecisionMatrix(double &a, double &b, double &c)
 
 }
 
-void BlockedLogs::generateSyntheticSeismic(float   ** reflCoef,
+void BlockedLogs::generateSyntheticSeismic(const float   * const * reflCoef,
                                            int        nAngles,
                                            Wavelet ** wavelet,
                                            int        nz,

@@ -689,7 +689,7 @@ Corr::writeFilePriorCorrT(float* corrT, int nzp) const
 }
 
 //--------------------------------------------------------------------
-void Corr::writeFilePriorVariances(ModelSettings * modelSettings) const
+void Corr::writeFilePriorVariances(const ModelSettings * modelSettings) const
 {
   std::string baseName1 = IO::PrefixPrior() + IO::FileParameterCov() + IO::SuffixCrava();
   std::string baseName2 = IO::PrefixPrior() + IO::FileTemporalCorr() + IO::SuffixCrava();

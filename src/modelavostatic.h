@@ -47,14 +47,14 @@ public:
 
   void             addSeismicLogs(std::vector<WellData *>     wells,
                                   FFTGrid                  ** seisCube,
-                                  ModelSettings             * modelSettings,
+                                  const ModelSettings             * modelSettings,
                                   int                         nAngles);                              // Changes wells
 
   void             generateSyntheticSeismic(Wavelet              ** wavelet,
                                             std::vector<WellData *> wells,
-                                            float                ** reflectionMatrix,
-                                            Simbox                * timeSimbox,
-                                            ModelSettings         * modelSettings,
+                                            const float   * const * reflectionMatrix,
+                                            const Simbox          * timeSimbox,
+                                            const ModelSettings   * modelSettings,
                                             int                     nAngles);                    // Changes wells
 
   void             deleteDynamicWells(std::vector<WellData *> wells,
