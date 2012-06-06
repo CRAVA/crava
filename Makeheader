@@ -2,22 +2,27 @@
 # The available CRAVA compiler directives are
 #    -DBIGENDIAN   (needed for IRIX, SUNOS, etc...)
 #
-CDIR       =
-CXX        = g++
-CC         = gcc
-GCCWARNING = -Wall -pedantic -Wno-long-long -Werror
+CDIR        =
+CXX         = g++
+CC          = gcc
+GCCNEW      = $(shell expr `gcc -dumpversion | sed s/\\.//` \>= 46)
+GCCWARNING := -Wall -pedantic -Wno-long-long -Werror
 #
 # The directive -fno-strict-aliasing has been included to avoid a following compilator error:
 # segy/traceheader.cpp: In member function ‘int NRLib::TraceHeader::GetInt32(int) const’:
 # segy/traceheader.cpp:519: error: dereferencing type-punned pointer will break strict-aliasing rules
 #
-GXXWARNING = -Wall -pedantic -Woverloaded-virtual -Wno-long-long -Wno-unused-but-set-variable -Wold-style-cast -Werror -fno-strict-aliasing
-PROGRAM    = cravarun
-GRAMMAR    = grammar
-OPT        = -O2
-DEBUG      =
-PURIFY     =
-mode       = all
+GXXWARNING  = -Wall -pedantic -Woverloaded-virtual -Wno-long-long -Wold-style-cast -Werror -fno-strict-aliasing
+PROGRAM     = cravarun
+GRAMMAR     = grammar
+OPT         = -O2
+DEBUG       =
+PURIFY      =
+mode        = all
+
+ifeq ($(GCCNEW),1)
+GXXWARNING += -Wno-unused-but-set-variable
+endif
 
 ifeq ($(mode),debug)
 # Don't use -O2 (makes it impossible to set breakpoints)
