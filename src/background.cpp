@@ -333,9 +333,6 @@ Background::generateMultizoneBackgroundModel(FFTGrid                       *& bg
   for(int i=0; i<nZones+1; i++)
     surface[i] = Surface(surface_files[i]);
 
-  //Check that surfaces cover inversion area
-  checkSurfaces(surface, simbox);
-
   std::vector<StormContGrid> alpha_zones(nZones);
   std::vector<StormContGrid> beta_zones(nZones);
   std::vector<StormContGrid> rho_zones(nZones);
@@ -581,15 +578,12 @@ Background::MakeMultizoneBackground(FFTGrid                         *& bgAlpha,
   const int nzp  = nz;
   const int rnxp = 2*(nxp/2 + 1);
 
-  float monitorSize = std::max(1.0f, static_cast<float>(rnxp)*0.02f);
+  float monitorSize = std::max(1.0f, static_cast<float>(nzp)*0.02f);
   float nextMonitor = monitorSize;
   std::cout
     << "\n  0%       20%       40%       60%       80%      100%"
     << "\n  |    |    |    |    |    |    |    |    |    |    |  "
     << "\n  ^";
-
-
-
 
   bgAlpha = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, isFile);
   bgBeta  = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, isFile);
@@ -603,9 +597,9 @@ Background::MakeMultizoneBackground(FFTGrid                         *& bgAlpha,
   bgBeta ->setType(FFTGrid::PARAMETER);
   bgRho  ->setType(FFTGrid::PARAMETER);
 
-  bgAlpha->setAccessMode(FFTGrid::WRITE);
-  bgBeta ->setAccessMode(FFTGrid::WRITE);
-  bgRho  ->setAccessMode(FFTGrid::WRITE);
+  bgAlpha->setAccessMode(FFTGrid::RANDOMACCESS);
+  bgBeta ->setAccessMode(FFTGrid::RANDOMACCESS);
+  bgRho  ->setAccessMode(FFTGrid::RANDOMACCESS);
 
   // Beta distributed uncertainty on each surface
   std::vector<NRLib::Beta> horizon_distributions(nZones+1);
@@ -613,22 +607,37 @@ Background::MakeMultizoneBackground(FFTGrid                         *& bgAlpha,
     horizon_distributions[zone] = NRLib::Beta(-surface_uncertainty[zone], surface_uncertainty[zone], 2, 2);
   }
 
+  NRLib::Grid<double> z_surface(rnxp, nyp, nZones+1);
   for(int i=0; i<rnxp; i++) {
+    for(int j=0; j<nyp; j++) {
+      double x;
+      double y;
+      simbox->getXYCoord(i, j, x, y);
+
+      for(int k=0; k<nZones+1; k++)
+        z_surface(i, j, k) = surface[k].GetZ(x,y);
+    }
+  }
+
+ for(int k=0; k<nzp; k++) {
 
     for(int j=0; j<nyp; j++) {
 
-      for(int k=0; k<nzp; k++) {
+      for(int i=0; i<rnxp; i++) {
 
         if(i<nx) {
 
           double x;
           double y;
-          double z;
-          simbox->getCoord(i,j,k,x,y,z);
+
+          simbox->getXYCoord(i, j, x, y);
+
+          // Calculate z directly to decrease computation time
+          double z = z_surface(i,j,0)+(z_surface(i,j,nZones)-z_surface(i,j,0))*static_cast<double>(k+0.5)/static_cast<double>(nzp);
 
           std::vector<double> z_relative(nZones+1);
           for(int zone=0; zone<nZones+1; zone++)
-            z_relative[zone] = z - surface[zone].GetZ(x,y);
+            z_relative[zone] = z - z_surface(i,j,zone);
 
           std::vector<double> zone_probability(nZones);
 
@@ -639,11 +648,17 @@ Background::MakeMultizoneBackground(FFTGrid                         *& bgAlpha,
           double rho = 0;
 
           for(int zone=0; zone<nZones; zone++) {
-            // if-test to speed up computations
+
             if(zone_probability[zone] > 0) {
-              double vp_zone  = alpha_zones[zone].GetValueZInterpolated(x,y,z);
-              double vs_zone  = beta_zones[zone].GetValueZInterpolated(x,y,z);
-              double rho_zone = rho_zones[zone].GetValueZInterpolated(x,y,z);
+              size_t ind1;
+              size_t ind2;
+              double t;
+
+              alpha_zones[zone].FindZInterpolatedIndex(x, y, z, ind1, ind2, t);
+
+              double vp_zone  = alpha_zones[zone].GetValueZInterpolatedFromIndexNoMissing(ind1, ind2, t);
+              double vs_zone  = beta_zones[zone].GetValueZInterpolatedFromIndexNoMissing(ind1, ind2, t);
+              double rho_zone = rho_zones[zone].GetValueZInterpolatedFromIndexNoMissing(ind1, ind2, t);
 
               vp  +=  vp_zone  * zone_probability[zone];
               vs  +=  vs_zone  * zone_probability[zone];
@@ -665,12 +680,13 @@ Background::MakeMultizoneBackground(FFTGrid                         *& bgAlpha,
     }
 
     // Log progress
-    if (i+1 >= static_cast<int>(nextMonitor)) {
+    if (k+1 >= static_cast<int>(nextMonitor)) {
       nextMonitor += monitorSize;
       std::cout << "^";
       fflush(stdout);
     }
   }
+
   bgAlpha->endAccess();
   bgBeta ->endAccess();
   bgRho  ->endAccess();
@@ -820,11 +836,29 @@ Background::BuildSeismicPropertyZones(std::vector<StormContGrid> & alpha_zones,
         z_top  = top.GetZ(x,y);
         z_base = base.GetZ(x,y);
 
+        if(z_top == top_missing) {
+          const std::string name = top.GetName();
+
+          LogKit::LogFormatted(LogKit::Low,"ERROR: Surface \'"+name+"\' does not cover the inversion grid, or it contains missing values.\n");
+          exit(1);
+        }
+        else if(z_base == base_missing) {
+          const std::string name = base.GetName();
+
+          LogKit::LogFormatted(LogKit::Low,"ERROR: Surface \'"+name+"\' does not cover the inversion grid, or it contains missing values.\n");
+          exit(1);
+        }
+
         if(z_base-z_top > max_distance) {
           if(z_top != top_missing && z_base != base_missing)
             max_distance = z_base-z_top;
         }
       }
+    }
+
+    if(max_distance == 0) {
+      LogKit::LogFormatted(LogKit::Low,"ERROR: Zone number "+NRLib::ToString(i)+" has size zero. Check the that surface "+NRLib::ToString(i)+" is above surface "+NRLib::ToString(i+1)+".\n");
+      exit(1);
     }
 
     //Make new top and base surfaces
@@ -850,43 +884,6 @@ Background::BuildSeismicPropertyZones(std::vector<StormContGrid> & alpha_zones,
     alpha_zones[i-1] = StormContGrid(volume, nx, ny, nz_zone);
     beta_zones[i-1]  = StormContGrid(volume, nx, ny, nz_zone);
     rho_zones[i-1]   = StormContGrid(volume, nx, ny, nz_zone);
-  }
-}
-
-//---------------------------------------------------------------------------
-void
-Background::checkSurfaces(const std::vector<Surface> & surface,
-                          const Simbox               * simbox) const
-{
-  int    nSurf     = static_cast<int>(surface.size());
-  int    nx        = simbox->getnx();
-  int    ny        = simbox->getny();
-
-  for(int i=0; i<nSurf; i++) {
-
-    double  x;
-    double  y;
-    double  z;
-
-    Surface surf  = surface[i];
-
-    double surf_missing  = surf.GetMissingValue();
-
-    for(int j=0; j<nx; j++) {
-      for(int k=0; k<ny; k++) {
-
-        simbox->getXYCoord(j,k,x,y);
-
-        z  = surf.GetZInside(x,y);
-
-        if(z == surf_missing) {
-          const std::string name = surf.GetName();
-
-          LogKit::LogFormatted(LogKit::Low,"ERROR: Surface \'"+name+"\' does not cover the inversion grid, or it contains missing values.\n");
-          exit(1);
-        }
-      }
-    }
   }
 }
 

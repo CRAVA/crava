@@ -91,9 +91,6 @@ private:
                                         std::vector<float *> highCutWellTrend,
                                         const std::string  & name);
 
-  void         checkSurfaces(const std::vector<Surface> & surface,
-                             const Simbox               * simbox) const;
-
   void         getKrigingWellTrends(std::vector<float *>     & blAlpha,
                                     std::vector<float *>     & blBeta,
                                     std::vector<float *>     & blRho,
