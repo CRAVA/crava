@@ -1164,6 +1164,7 @@ ModelAVODynamic::process1DWavelet(ModelSettings                * modelSettings,
   int error = 0;
   Grid2D * shiftGrid(NULL);
   Grid2D * gainGrid(NULL);
+
   if(modelSettings->getUseLocalWavelet() && inputFiles->getScaleFile(i) != "") {
       Surface help(inputFiles->getScaleFile(i));
       gainGrid = new Grid2D(timeSimbox->getnx(),timeSimbox->getny(), 0.0);
@@ -1180,7 +1181,7 @@ ModelAVODynamic::process1DWavelet(ModelSettings                * modelSettings,
     resampleSurfaceToGrid2D(timeSimbox, &helpNoise, localNoiseScale_[i]);
   }
 
-  if (modelSettings->getEstimateWavelet(i))
+  if (modelSettings->getEstimateWavelet(i)) {
     wavelet = new Wavelet1D(timeSimbox,
                             seisCube[i],
                             wells,
@@ -1190,7 +1191,7 @@ ModelAVODynamic::process1DWavelet(ModelSettings                * modelSettings,
                             i,
                             error,
                             errText);
-
+  }
   else { //Not estimation modus
     if(modelSettings->getUseRickerWavelet(i))
         wavelet = new Wavelet1D(modelSettings,

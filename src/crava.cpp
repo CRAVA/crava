@@ -252,7 +252,14 @@ Crava::computeDataVariance(void)
       totvar += tmpvar1;
     }
     seisData_[l]->endAccess();
-    dataVariance_[l] = static_cast<float>(totvar/static_cast<double>(ndata));
+    if (ndata == 0) {
+      dataVariance_[l] = 0.0;
+      LogKit::LogFormatted(LogKit::Low,"\nWARNING: All seismic data in stack "+NRLib::ToString(l)+" have zero amplitude.\n");
+      TaskList::addTask("Check the seismic data for stack"+NRLib::ToString(l)+". All data have zero amplitude.");
+    }
+    else {
+      dataVariance_[l] = static_cast<float>(totvar/static_cast<double>(ndata));
+    }
   }
 }
 
@@ -304,8 +311,8 @@ Crava::computeVariances(fftw_real     * corrT,
   setupErrorCorrelation(modelSettings, modelAVOdynamic_->getLocalNoiseScales());
 
   Wavelet1D ** errorSmooth = new Wavelet1D*[ntheta_];
-  float    * paramVar    = new float[ntheta_] ;
-  float    * WDCorrMVar  = new float[ntheta_];
+  float      * paramVar    = new float[ntheta_] ;
+  float      * WDCorrMVar  = new float[ntheta_];
 
   for(int i=0 ; i < ntheta_ ; i++)
   {
