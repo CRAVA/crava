@@ -327,7 +327,7 @@ Background::generateMultizoneBackgroundModel(FFTGrid                       *& bg
 
   int    nWells    = modelSettings->getNumberOfWells();
   int    nZones    = static_cast<int>(correlation_structure.size()) - 1;
-  float  dz        = static_cast<float>(simbox->getdz()*simbox->getAvgRelThick()) * 4; //NBNB Marit: Multiply by 4 to save mamory
+  float  dz        = static_cast<float>(simbox->getdz()*simbox->getAvgRelThick()) * 4; //NBNB Marit: Multiply by 4 to save memory
 
   std::vector<Surface> surface(nZones+1);
   for(int i=0; i<nZones+1; i++)
@@ -506,7 +506,7 @@ Background::generateMultizoneBackgroundModel(FFTGrid                       *& bg
   }
 
   MakeMultizoneBackground(bgAlpha,bgBeta,bgRho,
-                          alpha_zones,beta_zones,rho_zones,
+                          alpha_zones, beta_zones, rho_zones,
                           simbox,
                           erosion_priority,
                           surface,
@@ -518,17 +518,8 @@ Background::generateMultizoneBackgroundModel(FFTGrid                       *& bg
   bool write3D = ((modelSettings->getOutputGridsElastic() & IO::BACKGROUND_TREND) > 0);
 
   if(write3D) {
-
-    std::vector<int> nz_zone(nZones);
-    for(int i=0; i<nZones; i++)
-      nz_zone[i] = static_cast<int>(alpha_zones[i].GetNK());
-
-    alpha_zones.clear();
-    beta_zones.clear();
-    rho_zones.clear();
-
-    writeMultizoneTrendsToFile(trendAlphaZone,trendBetaZone,trendRhoZone,
-                               nz_zone,
+    writeMultizoneTrendsToFile(trendAlphaZone, trendBetaZone, trendRhoZone,
+                               alpha_zones, beta_zones, rho_zones,
                                simbox,
                                erosion_priority,
                                surface,
@@ -1309,7 +1300,9 @@ void
 Background::writeMultizoneTrendsToFile(const std::vector<float *>   alpha_zones,
                                        const std::vector<float *>   beta_zones,
                                        const std::vector<float *>   rho_zones,
-                                       const std::vector<int>     & nz,
+                                       std::vector<StormContGrid> & alpha_trend_zone,
+                                       std::vector<StormContGrid> & beta_trend_zone,
+                                       std::vector<StormContGrid> & rho_trend_zone,
                                        Simbox                     * simbox,
                                        const std::vector<int>     & erosion_priority,
                                        const std::vector<Surface> & surface,
@@ -1317,16 +1310,6 @@ Background::writeMultizoneTrendsToFile(const std::vector<float *>   alpha_zones,
                                        const bool                   isFile) const
 {
   int nZones = static_cast<int>(alpha_zones.size());
-
-  std::vector<StormContGrid> alpha_trend_zone(nZones);
-  std::vector<StormContGrid> beta_trend_zone(nZones);
-  std::vector<StormContGrid> rho_trend_zone(nZones);
-
-  for(int i=0; i<nZones; i++) {
-    makeTrendZoneGrid(alpha_trend_zone[i], surface[i], surface[i+1], nz[i], simbox);
-    makeTrendZoneGrid(beta_trend_zone[i],  surface[i], surface[i+1], nz[i], simbox);
-    makeTrendZoneGrid(rho_trend_zone[i],   surface[i], surface[i+1], nz[i], simbox);
-  }
 
   for(int i=0; i<nZones; i++) {
     makeTrendZone(alpha_zones[i], alpha_trend_zone[i]);
@@ -1338,8 +1321,12 @@ Background::writeMultizoneTrendsToFile(const std::vector<float *>   alpha_zones,
   FFTGrid * trendBeta;
   FFTGrid * trendRho;
 
-  MakeMultizoneBackground(trendAlpha,trendBeta,trendRho,
-                          alpha_trend_zone,beta_trend_zone,rho_trend_zone,
+  MakeMultizoneBackground(trendAlpha,
+                          trendBeta,
+                          trendRho,
+                          alpha_trend_zone,
+                          beta_trend_zone,
+                          rho_trend_zone,
                           simbox,
                           erosion_priority,
                           surface,
@@ -1558,27 +1545,7 @@ Background::makeKrigedBackground(const std::vector<KrigingData2D> & krigingData,
   }
   bgGrid->endAccess();
 }
-//---------------------------------------------------------------------------
-void
-Background::makeTrendZoneGrid(StormContGrid & grid,
-                              const Surface & top_surface,
-                              const Surface & base_surface,
-                              const int     & nz,
-                              const Simbox  * simbox) const
-{
-  double x_min     = simbox->GetXMin();
-  double y_min     = simbox->GetYMin();
-  double lx        = simbox->GetLX();
-  double ly        = simbox->GetLY();
-  double angle     = simbox->getAngle();
-  int    nx        = simbox->getnx();
-  int    ny        = simbox->getny();
 
-  NRLib::Volume volume(x_min, y_min, lx, ly, top_surface, base_surface, angle);
-
-  grid = StormContGrid(volume, nx, ny, nz);
-
-  }
 //---------------------------------------------------------------------------
 void
 Background::makeTrendZone(const float   * trend,

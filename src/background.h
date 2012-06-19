@@ -151,7 +151,9 @@ private:
   void         writeMultizoneTrendsToFile(const std::vector<float *>   alpha_zones,
                                           const std::vector<float *>   beta_zones,
                                           const std::vector<float *>   rho_zones,
-                                          const std::vector<int>     & nz,
+                                          std::vector<StormContGrid> & alpha_trend_zone,
+                                          std::vector<StormContGrid> & beta_trend_zone,
+                                          std::vector<StormContGrid> & rho_trend_zone,
                                           Simbox                     * simbox,
                                           const std::vector<int>     & erosion_priority,
                                           const std::vector<Surface> & surface,
@@ -193,12 +195,6 @@ private:
 
   void         makeTrendZone(const float   * trend,
                              StormContGrid & trend_zone) const;
-
-  void         makeTrendZoneGrid(StormContGrid & grid,
-                                 const Surface & top_surface,
-                                 const Surface & base_surface,
-                                 const int     & nz,
-                                 const Simbox  * simbox) const;
 
   void         makeKrigedZone(const std::vector<KrigingData2D> & krigingData,
                               const float                      * trend,
