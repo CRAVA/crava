@@ -475,7 +475,7 @@ Simbox::setTopBotName(const std::string & topname,
                       int                 outputFormat)
 {
   std::string suffix;
-  if ((outputFormat & IO::ASCII) > 0)
+  if ((outputFormat & IO::ASCII) > 0 && (outputFormat & IO::STORM) == 0)
     suffix = IO::SuffixAsciiIrapClassic();
   else
     suffix = IO::SuffixStormBinary();
