@@ -42,9 +42,12 @@ IO::writeSurfaceToFile(const Surface     & surface,
 {
   std::string fileName = IO::makeFullFileName(path, baseName);
 
-  if((format & ASCII) > 0)
+  if ((format & ASCII) > 0)
     surface.WriteToFile(fileName + SuffixAsciiIrapClassic(), NRLib::SURF_IRAP_CLASSIC_ASCII);
-  else
+
+  // Ensure surfaces in STORM format when STORM grids are requested. Otherwise
+  // STORM cubes cannot be imported to RMS.
+  if ((format & STORM) > 0 || (format & ASCII) == 0)
     surface.WriteToFile(fileName + SuffixStormBinary(), NRLib::SURF_STORM_BINARY);
 }
 

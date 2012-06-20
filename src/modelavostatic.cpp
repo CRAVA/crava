@@ -238,7 +238,7 @@ ModelAVOStatic::processWells(WellData          **& wells,
         if(wells[i]->checkSimbox(timeSimbox) == 1) {
           skip = true;
           nohit++;
-          TaskList::addTask("Consider increasing the inversion volume such that well "+wells[i]->getWellname()+ " can be included");
+          TaskList::addTask("Consider increasing the inversion volume such that well "+wells[i]->getWellname()+ " can be included\n");
         }
         if(wells[i]->getNd() == 0) {
           LogKit::LogFormatted(LogKit::Low,"  IGNORED (no log entries found)\n");
@@ -914,7 +914,7 @@ void ModelAVOStatic::processPriorFaciesProb(const std::vector<Surface*>  & facie
           else {
             LogKit::LogFormatted(LogKit::Warning,"\nWARNING: No valid facies log entries have been found\n");
             modelSettings->setEstimateFaciesProb(false);
-            TaskList::addTask("Consider using a well containing facies log entries to be able to estimate facies probabilities.");
+            TaskList::addTask("Consider using a well containing facies log entries to be able to estimate facies probabilities.\n");
 
           }
           delete [] nData;
@@ -926,7 +926,7 @@ void ModelAVOStatic::processPriorFaciesProb(const std::vector<Surface*>  & facie
           LogKit::LogFormatted(LogKit::Warning,"\n         be able to estimate these probabilities...\n");
           modelSettings->setEstimateFaciesProb(false);
 
-          TaskList::addTask("Consider using a well containing facies log entries to be able to estimate facies probabilities.");
+          TaskList::addTask("Consider using a well containing facies log entries to be able to estimate facies probabilities.\n");
         }
       }
       else
@@ -935,7 +935,7 @@ void ModelAVOStatic::processPriorFaciesProb(const std::vector<Surface*>  & facie
         LogKit::LogFormatted(LogKit::Warning,"\n         have been found and CRAVA will therefore not be able to estimate");
         LogKit::LogFormatted(LogKit::Warning,"\n         these probabilities...\n");
         modelSettings->setEstimateFaciesProb(false);
-        TaskList::addTask("Consider using a well containing facies log entries to be able to estimate facies probabilities.");
+        TaskList::addTask("Consider using a well containing facies log entries to be able to estimate facies probabilities.\n");
       }
     }
     else if(modelSettings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_MODEL_FILE)

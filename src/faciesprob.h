@@ -21,25 +21,26 @@ class SpatialWellFilter;
 class FaciesProb
 {
 public:
-  FaciesProb(FFTGrid                      * alpha,
-             FFTGrid                      * beta,
-             FFTGrid                      * rho,
-             int                            nFac,
-             float                          p_undef,
-             const float                  * priorFacies,
-             FFTGrid                     ** priorFaciesCubes,
-             const std::vector<double **> & sigmaEOrig,
-             bool                           useFilter,
-             const WellData              ** wells,
-             int                            nWells,
-             const std::vector<Surface *> & faciesEstimInterval,
-             const double                   dz,
-             bool                           relative,
-             bool                           noVs,
-             Crava                         *cravaResult,
-             const std::vector<Grid2D *>  & noiseScale,
-             const ModelSettings          * modelSettings,
-             FFTGrid                      * seismicLH);
+  FaciesProb(FFTGrid                        * alpha,
+             FFTGrid                        * beta,
+             FFTGrid                        * rho,
+             const std::vector<std::string> & faciesNames,
+             int                              nFac,
+             float                            p_undef,
+             const float                    * priorFacies,
+             FFTGrid                       ** priorFaciesCubes,
+             const std::vector<double **>   & sigmaEOrig,
+             bool                             useFilter,
+             const WellData                ** wells,
+             int                              nWells,
+             const std::vector<Surface *>   & faciesEstimInterval,
+             const double                     dz,
+             bool                             relative,
+             bool                             noVs,
+             Crava                          * cravaResult,
+             const std::vector<Grid2D *>    & noiseScale,
+             const ModelSettings            * modelSettings,
+             FFTGrid                        * seismicLH);
 
   ~FaciesProb();
 
@@ -74,10 +75,6 @@ public:
                          int         nWells);
 
 private:
-  int             nFacies_;
-  FFTGrid      ** faciesProb_;
-  FFTGrid      *  faciesProbUndef_;
-
   void                   makeFaciesProb(int                            nfac,
                                         FFTGrid                      * postAlpha,
                                         FFTGrid                      * postBeta,
@@ -97,6 +94,10 @@ private:
                                         const std::vector<Grid2D *>  & noiseScale,
                                         const ModelSettings          * modelSettings,
                                         FFTGrid                      * seismicLH);
+
+  void                   checkProbabilities(const std::vector<std::string>  & faciesNames,
+                                            FFTGrid                        ** faciesProb,
+                                            int                               nFacies) const;
 
   std::vector<FFTGrid *> makeFaciesHistAndSetPriorProb(const std::vector<float> & alpha,
                                                        const std::vector<float> & beta,
@@ -177,5 +178,8 @@ private:
                                                        const bool                       accumulative,
                                                        bool                           & lowProbs,
                                                        int                            * faciesCount = NULL);
+  int             nFacies_;
+  FFTGrid      ** faciesProb_;
+  FFTGrid       * faciesProbUndef_;
 };
 #endif

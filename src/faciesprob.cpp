@@ -28,30 +28,35 @@
 #include "src/io.h"
 #include "src/tasklist.h"
 
-FaciesProb::FaciesProb(FFTGrid                      * alpha,
-                       FFTGrid                      * beta,
-                       FFTGrid                      * rho,
-                       int                            nFac,
-                       float                          p_undef,
-                       const float                  * priorFacies,
-                       FFTGrid                     ** priorFaciesCubes,
-                       const std::vector<double **> & sigmaEOrig,
-                       bool                           useFilter,
-                       const WellData              ** wells,
-                       int                            nWells,
-                       const std::vector<Surface *> & faciesEstimInterval,
-                       const double                   dz,
-                       bool                           relative,
-                       bool                           noVs,
-                       Crava                          *cravaResult,
-                       const std::vector<Grid2D *>   & noiseScale,
-                       const ModelSettings *           modelSettings,
-                       FFTGrid                       * seismicLH)
+FaciesProb::FaciesProb(FFTGrid                        * alpha,
+                       FFTGrid                        * beta,
+                       FFTGrid                        * rho,
+                       const std::vector<std::string> & faciesNames,
+                       int                              nFac,
+                       float                            p_undef,
+                       const float                    * priorFacies,
+                       FFTGrid                       ** priorFaciesCubes,
+                       const std::vector<double **>   & sigmaEOrig,
+                       bool                             useFilter,
+                       const WellData                ** wells,
+                       int                              nWells,
+                       const std::vector<Surface *>   & faciesEstimInterval,
+                       const double                     dz,
+                       bool                             relative,
+                       bool                             noVs,
+                       Crava                          * cravaResult,
+                       const std::vector<Grid2D *>    & noiseScale,
+                       const ModelSettings *            modelSettings,
+                       FFTGrid                        * seismicLH)
 {
   makeFaciesProb(nFac, alpha, beta, rho, sigmaEOrig, useFilter, wells, nWells,
                  faciesEstimInterval, dz, relative, noVs,
                  p_undef, priorFacies, priorFaciesCubes, cravaResult, noiseScale,
                  modelSettings, seismicLH);
+
+  checkProbabilities(faciesNames,
+                     faciesProb_,
+                     nFac);
 }
 
 FaciesProb::~FaciesProb()
@@ -62,6 +67,31 @@ FaciesProb::~FaciesProb()
   }
   delete [] faciesProb_;
   delete faciesProbUndef_;
+}
+
+void
+FaciesProb::checkProbabilities(const std::vector<std::string>  & faciesNames,
+                               FFTGrid                        ** faciesProb,
+                               int                               nFacies) const
+{
+  //
+  // Check that facies probabilities are in legal range [0, 1]
+  //
+  for (int i = 0 ; i < nFacies ; i++) {
+    faciesProb[i]->calculateStatistics();
+    float min_prob = faciesProb[i]->getMinReal();
+    float max_prob = faciesProb[i]->getMaxReal();
+    if (min_prob < 0.0f) {
+      std::string text = "The minimum probability for facies \'" + faciesNames[i] + "\' is less than zero (" + NRLib::ToString(min_prob, 2) + ")\n";
+      LogKit::LogFormatted(LogKit::Warning, "\nERROR: " + text + "       This indicates an error in the calculation.\n");
+      TaskList::addTask(text + "    Check the facies probability estimation.\n");
+    }
+    if (min_prob > 1.0f) {
+      std::string text = "The maximum probability for facies \'" + faciesNames[i] + "\' is larger than one (" + NRLib::ToString(max_prob, 2) + ")\n";
+      LogKit::LogFormatted(LogKit::Warning, "\nERROR: " + text + "       This indicates an error in the calculation.\n");
+      TaskList::addTask(text + "    Check the facies probability estimation.\n");
+    }
+  }
 }
 
 std::vector<FFTGrid *>
@@ -146,9 +176,9 @@ FaciesProb::makeFaciesDens(int nfac,
                            std::vector<FFTGrid *>       & density,
                            Simbox                      ** volume,
                            int                            index,
-                           double                       **G,
-                           Crava                         *cravaResult,
-                           const std::vector<Grid2D *>   & noiseScale)
+                           double                      ** G,
+                           Crava                        * cravaResult,
+                           const std::vector<Grid2D *>  & noiseScale)
 {
   //Note: If noVs is true, the beta dimension is mainly dummy. Due to the lookup mechanism that maps
   //      values outside the denisty table to the edge, any values should do in this dimension.
