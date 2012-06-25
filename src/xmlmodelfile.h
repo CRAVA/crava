@@ -7,6 +7,7 @@
 #include "nrlib/tinyxml/tinyxml.h"
 #include "src/definitions.h"
 #include "nrlib/trend/trendstorage.hpp"
+#include "rplib/distributionwithtrendstorage.h"
 
 class Vario;
 class ModelSettings;
@@ -57,10 +58,8 @@ private:
   bool   parsePriorFaciesProbabilities(TiXmlNode * node, std::string & errTxt);
   bool   parseFaciesEstimationInterval(TiXmlNode * node, std::string & errTxt);
   bool parseRockPhysics(TiXmlNode * node, std::string & errTxt);
-  bool parseGaussian(TiXmlNode * node, std::string & errTxt);
-  bool parseRock(TiXmlNode * node, std::string & errTxt);
-  bool parseRockTrends(TiXmlNode * node, const std::string & keyword, NRLib::TrendStorage *& trend, std::string & errTxt);
-  bool parseConstantTrend(TiXmlNode * node, const std::string & keyword, NRLib::TrendStorage *& trend, std::string & errTxt);
+  bool parseReservoir(TiXmlNode * node, std::string & errTxt);
+  bool parseGaussianDistribution(TiXmlNode * node, const std::string & keyword, DistributionWithTrendStorage *& storage, std::string & errTxt);
   bool parse1DTrend(TiXmlNode * node, const std::string & keyword, NRLib::TrendStorage *& trend, std::string & errTxt);
   bool parse2DTrend(TiXmlNode * node, const std::string & keyword, NRLib::TrendStorage *& trend, std::string & errTxt);
   bool parseTrendCube(TiXmlNode * node, std::string & errTxt);
@@ -97,6 +96,12 @@ private:
   bool     parseFacies(TiXmlNode * node, std::string & errTxt);
   template <typename T>
   bool parseValue(TiXmlNode * node, const std::string & keyword, T & value, std::string & errTxt, bool allowDuplicates = false);
+  bool parseDistributionWithTrend(TiXmlNode                     * node,
+                                  const std::string             & keyword,
+                                  DistributionWithTrendStorage *& storage,
+                                  std::string                   & label,
+                                  std::string                   & errTxt,
+                                  bool                            allowDistribution);
   bool parseBool(TiXmlNode * node, const std::string & keyword, bool & value, std::string & errTxt, bool allowDuplicates = false);
   bool parseVariogram(TiXmlNode * node, const std::string & keyword, Vario * & vario, std::string & errTxt);
   bool parseTraceHeaderFormat(TiXmlNode * node, const std::string & keyword, TraceHeaderFormat *& thf, std::string & errTxt);

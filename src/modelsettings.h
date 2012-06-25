@@ -12,6 +12,7 @@
 #include "nrlib/segy/traceheader.hpp"
 #include "nrlib/segy/segy.hpp"
 #include "rplib/rockphysicsstorage.h"
+#include "rplib/distributionwithtrendstorage.h"
 
 class Simbox;
 
@@ -194,6 +195,7 @@ public:
   int                              getNumberOfRocks(void)               const { return static_cast<int>(rockName_.size())   ;}
   std::vector<std::string>         getRockName()                        const { return rockName_                            ;}
   RockPhysicsStorage             * getRockPhysicsStorage(int i)         const { return rockPhysics_[i]                      ;}
+  std::map<std::string, DistributionWithTrendStorage *> getReservoirVariable() const { return reservoirVariable_              ;}
 
   void rotateVariograms(float angle);
   void setLastAngularCorr(Vario * vario);
@@ -240,6 +242,7 @@ public:
   void addTrendCubeParameter(std::string parameterName)                  { trendCubeParameter_.push_back(parameterName)                   ;}
   void addRockName(std::string rockName)                                 { rockName_.push_back(rockName)                                  ;}
   void addRockPhysicsStorage(RockPhysicsStorage * rock)                  { rockPhysics_.push_back(rock)                                   ;}
+  void addReservoirVariable(std::string variable, DistributionWithTrendStorage * dist) { reservoirVariable_[variable] = dist                ;}
 
   void addUpperKRock(float value)                                        { upperKRock_.push_back(value)                                   ;}
   void addLowerKRock(float value)                                        { lowerKRock_.push_back(value)                                   ;}
@@ -673,6 +676,8 @@ private:
   std::vector<std::string>                         trendCubeParameter_;          // Name of the trend parameters in the rock physics model
   std::vector<std::string>                         rockName_;                    // Name of rock in the rock physics model
   std::vector<RockPhysicsStorage *>                rockPhysics_;                 // Stores trend-values needed for different rock physics models
+
+  std::map<std::string, DistributionWithTrendStorage *>   reservoirVariable_;           // Rock physics variables defined in reservoir
 
   std::vector<float> upperKRock_;
   std::vector<float> lowerKRock_;

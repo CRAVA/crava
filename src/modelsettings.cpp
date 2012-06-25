@@ -5,6 +5,8 @@
 #include <map>
 #include "nrlib/iotools/logkit.hpp"
 
+#include "rplib/distributionwithtrendstorage.h"
+
 #include "src/definitions.h"
 #include "src/modelsettings.h"
 #include "src/vario.h"
@@ -200,6 +202,11 @@ ModelSettings::~ModelSettings(void)
 
   for(size_t i=0; i<rockPhysics_.size(); i++)
     delete rockPhysics_[i];
+
+  for(std::map<std::string, DistributionWithTrendStorage *>::iterator it = reservoirVariable_.begin(); it != reservoirVariable_.end(); it++) {
+    DistributionWithTrendStorage * storage = it->second;
+    delete storage;
+  }
 }
 
 bool

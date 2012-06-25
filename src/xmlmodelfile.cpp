@@ -12,6 +12,8 @@
 #include "nrlib/iotools/logkit.hpp"
 #include "nrlib/segy/segy.hpp"
 #include "nrlib/trend/trendstorage.hpp"
+#include "nrlib/random/distribution.hpp"
+#include "nrlib/random/normal.hpp"
 
 #include "src/modelsettings.h"
 #include "src/xmlmodelfile.h"
@@ -24,6 +26,7 @@
 #include "src/io.h"
 
 #include "rplib/rockphysicsstorage.h"
+#include "rplib/distributionwithtrendstorage.h"
 
 XmlModelFile::XmlModelFile(const std::string & fileName)
 {
@@ -1672,10 +1675,11 @@ XmlModelFile::parseRockPhysics(TiXmlNode * node, std::string & errTxt)
 
   std::vector<std::string> legalCommands;
   legalCommands.push_back("rock");
+  legalCommands.push_back("reservoir");
+  legalCommands.push_back("predefinitions");
   legalCommands.push_back("trend-cube");
 
-  if(parseRock(root, errTxt) == false)
-    errTxt += "A rock model needs to be specified in <rock> when <rock-physics> is requested\n";
+  parseReservoir(root, errTxt);
 
   int count = 0;
   while(parseTrendCube(root, errTxt) == true)
@@ -1683,13 +1687,144 @@ XmlModelFile::parseRockPhysics(TiXmlNode * node, std::string & errTxt)
   if(count > 2)
     errTxt += "The maximum allowed number of trend cubes in <rock-physics><trend-cube> is two.\n";
 
+  modelSettings_->setFaciesProbFromRockPhysics(true);
+
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
 
 bool
+XmlModelFile::parseReservoir(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("reservoir");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("variable");
+
+  std::string                    label;
+  DistributionWithTrendStorage * distributionWithTrend; //Deleted in ~Modelsettings
+
+  while(parseDistributionWithTrend(root, "variable", distributionWithTrend, label, errTxt, true) == true) {
+    modelSettings_->addReservoirVariable(label, distributionWithTrend);
+  }
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseDistributionWithTrend(TiXmlNode                     * node,
+                                         const std::string             & keyword,
+                                         DistributionWithTrendStorage *& storage,
+                                         std::string                   & label,
+                                         std::string                   & errTxt,
+                                         bool                            allowDistribution)
+{
+  TiXmlNode * root = node->FirstChildElement(keyword);
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("label");
+  legalCommands.push_back("value");
+  legalCommands.push_back("trend-constant");
+  legalCommands.push_back("trend-1d");
+  legalCommands.push_back("trend-2d");
+  if(allowDistribution == true) {
+    legalCommands.push_back("gaussian");
+  }
+
+  label = "";
+  parseValue(root, "label", label, errTxt);
+
+  int trendGiven = 0;
+
+  double value;
+  if(root->FirstChildElement() == NULL) { //We have an explicit value
+    parseValue(node, keyword, value, errTxt);
+    storage = new DistributionWithTrendStorage(value);
+    trendGiven++;
+    return(true);
+  }
+
+  if(parseValue(root, "value", value, errTxt) == true) {
+    storage = new DistributionWithTrendStorage(value);
+    trendGiven++;
+  }
+
+  if(parseValue(root, "trend-constant", value, errTxt) == true) {
+    storage = new DistributionWithTrendStorage(value);
+    trendGiven++;
+  }
+
+  NRLib::TrendStorage * trend;
+  if(parse1DTrend(root, "trend-1d", trend, errTxt) == true) {
+    storage = new DistributionWithTrendStorage(trend);
+    trendGiven++;
+  }
+
+  if(parse2DTrend(root, "trend-2d", trend, errTxt) == true) {
+    storage = new DistributionWithTrendStorage(trend);
+    trendGiven++;
+  }
+
+  if(allowDistribution == true) {
+    if(parseGaussianDistribution(root, "gaussian", storage, errTxt) == true)
+      trendGiven++;
+  }
+
+  if(trendGiven == 0)
+    errTxt += "Need at least one definition for the variable in <"+keyword+">\n";
+  else if(trendGiven > 1)
+    errTxt += "There can only be one definition for the variable in <"+keyword+">\n";
+
+  checkForJunk(root, errTxt, legalCommands, true);
+  return(true);
+}
+
+
+bool
+XmlModelFile::parseGaussianDistribution(TiXmlNode                     * node,
+                                        const std::string             & keyword,
+                                        DistributionWithTrendStorage *& storage,
+                                        std::string                   & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement(keyword);
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("mean");
+  legalCommands.push_back("variance");
+
+  DistributionWithTrendStorage * mean_storage;
+  std::string label;
+  if(parseDistributionWithTrend(root, "mean", mean_storage, label, errTxt, false) == false)
+    errTxt += "The mean needs to be specified for the variable having a Gaussian distribution\n";
+
+  DistributionWithTrendStorage * variance_storage;
+  if(parseDistributionWithTrend(root, "variance", variance_storage, label, errTxt, false) == false)
+    errTxt += "The variance needs to be specified for the variable having a Gaussian distribution\n";
+
+  const NRLib::Distribution<double> * gaussian = new NRLib::Normal();
+  const NRLib::TrendStorage         * mean     = mean_storage->CloneMean();
+  const NRLib::TrendStorage         * variance = variance_storage->CloneMean();
+
+  delete mean_storage;
+  delete variance_storage;
+
+  storage = new DistributionWithTrendStorage(gaussian, mean, variance);
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+/*bool
 XmlModelFile::parseRock(TiXmlNode * node, std::string & errTxt)
 {
+//Marit: Beholder denne til innlesning av rock phyiscs er ferdig
   TiXmlNode * root = node->FirstChildElement("rock");
   if(root == 0)
     return(false);
@@ -1710,10 +1845,12 @@ XmlModelFile::parseRock(TiXmlNode * node, std::string & errTxt)
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
+*/
 
-bool
+/*bool
 XmlModelFile::parseGaussian(TiXmlNode * node, std::string & errTxt)
 {
+//Marit: Beholder denne til innlesning av rock phyiscs er ferdig
   TiXmlNode * root = node->FirstChildElement("gaussian");
   if(root == 0)
     return(false);
@@ -1786,11 +1923,13 @@ XmlModelFile::parseGaussian(TiXmlNode * node, std::string & errTxt)
 
   checkForJunk(root, errTxt, legalCommands, true);
   return(true);
-}
+}*/
 
-bool
+
+/*bool
 XmlModelFile::parseRockTrends(TiXmlNode * node, const std::string & keyword, NRLib::TrendStorage *& trend, std::string & errTxt)
 {
+//Marit: Beholder denne til innlesning av rock phyiscs er ferdig
   TiXmlNode * root = node->FirstChildElement(keyword);
   if(root == 0)
     return(false);
@@ -1815,26 +1954,7 @@ XmlModelFile::parseRockTrends(TiXmlNode * node, const std::string & keyword, NRL
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
-}
-bool
-XmlModelFile::parseConstantTrend(TiXmlNode * node, const std::string & keyword, NRLib::TrendStorage *& trend, std::string & errTxt)
-{
-  TiXmlNode * root = node->FirstChildElement("trend-constant");
-  if(root == 0)
-    return(false);
-
-  std::vector<std::string> legalCommands;
-  legalCommands.push_back("value");
-
-  double value;
-  if(parseValue(root, "value", value, errTxt) == false)
-    errTxt += "The <value> for <"+keyword+"> needs to be given in <trend-constant> in <rock-physics>\n";
-
-  trend = new NRLib::TrendConstantStorage(value);
-
-  checkForJunk(root, errTxt, legalCommands);
-  return(true);
-}
+}*/
 
 bool
 XmlModelFile::parse1DTrend(TiXmlNode * node, const std::string & keyword, NRLib::TrendStorage *& trend, std::string & errTxt)

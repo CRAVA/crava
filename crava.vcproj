@@ -6209,6 +6209,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\rplib\distributionwithtrendstorage.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\rplib\fluidmixed.cpp"
 					>
 				</File>
@@ -6264,6 +6268,10 @@
 			<Filter
 				Name="nrlib"
 				>
+				<File
+					RelativePath=".\nrlib\random\beta.cpp"
+					>
+				</File>
 				<File
 					RelativePath=".\nrlib\random\chisquared.cpp"
 					>
@@ -6834,6 +6842,10 @@
 				Name="nrlib"
 				>
 				<File
+					RelativePath=".\nrlib\random\beta.hpp"
+					>
+				</File>
+				<File
 					RelativePath=".\nrlib\random\chisquared.hpp"
 					>
 				</File>
@@ -7315,6 +7327,10 @@
 				</File>
 				<File
 					RelativePath=".\rplib\distributionwithtrend.h"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\distributionwithtrendstorage.h"
 					>
 				</File>
 				<File
