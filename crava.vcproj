@@ -6193,6 +6193,14 @@
 					>
 				</File>
 				<File
+					RelativePath=".\rplib\distributionsfluidstorage.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\distributionsfluidtabulated.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\rplib\distributionsmineral.cpp"
 					>
 				</File>
@@ -6993,11 +7001,11 @@
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\filesystem\config.hpp"
+						RelativePath=".\nrlib\boost\system\config.hpp"
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\system\config.hpp"
+						RelativePath=".\nrlib\boost\filesystem\config.hpp"
 						>
 					</File>
 					<File
@@ -7291,6 +7299,14 @@
 				</File>
 				<File
 					RelativePath=".\rplib\distributionsfluidmixevolution.h"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\distributionsfluidstorage.h"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\distributionsfluidtabulated.h"
 					>
 				</File>
 				<File

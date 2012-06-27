@@ -1,5 +1,6 @@
 
 #include "rplib/distributionwithtrendstorage.h"
+#include "rplib/distributionwithtrend.h"
 
 #include "nrlib/random/distribution.hpp"
 #include "nrlib/random/delta.hpp"
@@ -10,7 +11,7 @@ DistributionWithTrendStorage::DistributionWithTrendStorage()
 {
 }
 
-DistributionWithTrendStorage::DistributionWithTrendStorage(const double value)
+DistributionWithTrendStorage::DistributionWithTrendStorage(double value)
 {
   distribution_ = new NRLib::Delta();
   mean_         = new NRLib::TrendConstantStorage(value);
@@ -24,7 +25,7 @@ DistributionWithTrendStorage::DistributionWithTrendStorage(const NRLib::TrendSto
   variance_     = new NRLib::TrendConstantStorage(0);
 }
 
-DistributionWithTrendStorage::DistributionWithTrendStorage(const NRLib::Distribution<double> * distribution,
+DistributionWithTrendStorage::DistributionWithTrendStorage(NRLib::Distribution<double>       * distribution,
                                                            const NRLib::TrendStorage         * mean,
                                                            const NRLib::TrendStorage         * variance)
 {
@@ -45,4 +46,22 @@ DistributionWithTrendStorage::CloneMean()
 {
   NRLib::TrendStorage * cloned_mean = mean_->Clone();
   return(cloned_mean);
+}
+
+const DistributionWithTrend *
+DistributionWithTrendStorage::GenerateDistributionWithTrend(const std::string                       & path,
+                                                            const std::vector<std::string>          & trend_cube_parameters,
+                                                            const std::vector<std::vector<double> > & trend_cube_sampling,
+                                                            std::string                             & errTxt)
+{
+  NRLib::Trend * mean_trend      = mean_              ->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,errTxt);
+  NRLib::Trend * variance_trend  = variance_          ->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,errTxt);
+
+  DistributionWithTrend * dist_with_trend             = new DistributionWithTrend(distribution_, mean_trend, variance_trend);
+
+  //distribution_, mean_trend and variance_trend are deleted in dist_with_trend
+
+  distribution_ = NULL;
+
+  return(dist_with_trend);
 }

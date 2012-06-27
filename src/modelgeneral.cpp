@@ -46,7 +46,9 @@
 #include "nrlib/surface/regularsurface.hpp"
 #include "nrlib/iotools/logkit.hpp"
 #include "nrlib/stormgrid/stormcontgrid.hpp"
+
 #include "rplib/rockphysicsstorage.h"
+#include "rplib/distributionsfluidstorage.h"
 
 ModelGeneral::ModelGeneral(ModelSettings *& modelSettings, const InputFiles * inputFiles, Simbox *& timeBGSimbox)
 {
@@ -212,6 +214,11 @@ ModelGeneral::~ModelGeneral(void)
 
   for(int i=0; i<static_cast<int>(rock_distributions_.size()); i++)
     delete rock_distributions_[i];
+
+  for(std::map<std::string, DistributionsFluid *>::iterator it = fluid_distributions_.begin(); it != fluid_distributions_.end(); it++) {
+    DistributionsFluid * fluid = it->second;
+    delete fluid;
+  }
 
   delete randomGen_;
   delete timeSimbox_;
@@ -2245,9 +2252,9 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
 
     std::string path = inputFiles->getInputDirectory();
 
-    for(int i=0; i<modelSettings->getNumberOfRocks(); i++){
+    std::vector<std::vector<double> > trend_cube_sampling   = trend_cubes_.GetTrendCubeSampling();
 
-      std::vector<std::vector<double> > trend_cube_sampling   = trend_cubes_.GetTrendCubeSampling();
+    for(int i=0; i<modelSettings->getNumberOfRocks(); i++){
 
       RockPhysicsStorage * rock_physics      = modelSettings->getRockPhysicsStorage(i);
 
@@ -2256,6 +2263,16 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
       rock_distributions_.push_back(rock_distribution);
 
     }
+
+    std::map<std::string, DistributionsFluidStorage *>      fluid_storage = modelSettings->getFluidStorage();
+
+    for(std::map<std::string, DistributionsFluidStorage *>::iterator it = fluid_storage.begin(); it != fluid_storage.end(); it++) {
+      DistributionsFluidStorage     * storage    = it     ->second;
+      DistributionsFluid            * fluid      = storage->GenerateDistributionsFluid(path,trend_cube_parameters,trend_cube_sampling,errTxt);
+      fluid_distributions_[it->first]            = fluid;
+  }
+
+
     if(errTxt != "")
       failed = true;
   }

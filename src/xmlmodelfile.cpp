@@ -26,6 +26,7 @@
 #include "src/io.h"
 
 #include "rplib/rockphysicsstorage.h"
+#include "rplib/distributionsfluidstorage.h"
 #include "rplib/distributionwithtrendstorage.h"
 
 XmlModelFile::XmlModelFile(const std::string & fileName)
@@ -1680,6 +1681,7 @@ XmlModelFile::parseRockPhysics(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("trend-cube");
 
   parseReservoir(root, errTxt);
+  parsePredefinitions(root, errTxt);
 
   int count = 0;
   while(parseTrendCube(root, errTxt) == true)
@@ -1688,6 +1690,120 @@ XmlModelFile::parseRockPhysics(TiXmlNode * node, std::string & errTxt)
     errTxt += "The maximum allowed number of trend cubes in <rock-physics><trend-cube> is two.\n";
 
   modelSettings_->setFaciesProbFromRockPhysics(true);
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parsePredefinitions(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("predefinitions");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("fluid");
+  legalCommands.push_back("solid"); //Not implemented
+  legalCommands.push_back("dry-rock"); //Not implemented
+
+  parseFluid(root, errTxt);
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseFluid(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("fluid");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("label");
+  legalCommands.push_back("use");
+  legalCommands.push_back("tabulated");
+  legalCommands.push_back("reuss"); //Not implemented
+  legalCommands.push_back("voigt"); //Not implemented
+  legalCommands.push_back("hill"); //Not implemented
+  legalCommands.push_back("batzle-wang-brine"); //Not implemented
+  legalCommands.push_back("dem"); //Not implemented
+  legalCommands.push_back("hashin-shtrikman"); //Not implemented
+  legalCommands.push_back("walton"); //Not implemented
+  legalCommands.push_back("gassmann"); //Not implemented
+
+  std::string label;
+  parseValue(root, "label", label, errTxt);
+
+  std::string use;
+  parseValue(root, "use", use, errTxt);
+  //Gå gjennom fluider fra modelSettings for å se om den det spørres etter finnes
+  //Dersom den finnes må fluid knyttes opp mot tidligere fluid på et vis
+  //Kan ikke angis i kombinasjon med label
+
+  DistributionsFluidStorage * fluid;
+  parseTabulatedFluid(root, fluid, errTxt);
+
+  //Sjekk at kun en modell angis for hver fluid
+  modelSettings_->addFluid(label, fluid);
+
+  checkForJunk(root, errTxt, legalCommands, true);
+  return(true);
+}
+
+bool
+XmlModelFile::parseTabulatedFluid(TiXmlNode * node, DistributionsFluidStorage *& fluid, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("tabulated");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("density");
+  legalCommands.push_back("vp");
+  legalCommands.push_back("correlation-vp-density");
+  legalCommands.push_back("bulk-modulus");
+  legalCommands.push_back("correlation-bulk-density");
+
+  std::string dummy;
+
+  bool use_vp      = false;
+  bool use_modulus = false;
+
+  DistributionWithTrendStorage * vp;
+  if(parseDistributionWithTrend(root, "vp", vp, dummy, errTxt, true) == true)
+    use_vp = true;
+
+  DistributionWithTrendStorage * bulk_modulus;
+  if(parseDistributionWithTrend(root, "bulk-modulus", bulk_modulus, dummy, errTxt, true) == true)
+    use_modulus = true;
+
+  if(use_vp == true && use_modulus == true)
+    errTxt += "Both <vp> and <bulk-modulus> can not be used in <fluid><tabulated>\n";
+  else if(use_vp == false && use_modulus == false)
+    errTxt += "One of <vp> or <bulk-modulus> must be used in <fluid><tabulated>\n";
+
+  DistributionWithTrendStorage * density;
+  if(parseDistributionWithTrend(root, "density", density, dummy, errTxt, true) == false)
+    errTxt += "<density> needs to be specified in <fluid><tabulated>\n";
+
+  DistributionWithTrendStorage * correlation_vp_density;
+  if(parseDistributionWithTrend(root, "correlation-vp-density", correlation_vp_density, dummy, errTxt, true) == false && use_vp == true) {
+    double mean = 0;
+    correlation_vp_density = new DistributionWithTrendStorage(mean);
+  }
+
+  DistributionWithTrendStorage * correlation_bulk_density;
+  if(parseDistributionWithTrend(root, "correlation-bulk-density", correlation_bulk_density, dummy, errTxt, true) == false && use_modulus == true) {
+    double mean = 0;
+    correlation_bulk_density = new DistributionWithTrendStorage(mean);
+  }
+
+  if(use_vp)
+    fluid = new TabulatedFluidStorage(vp, density, correlation_vp_density);
+  else
+    errTxt += "<fluid><tabulated> using bulk-modulus is not implemented yet\n";
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -1808,7 +1924,7 @@ XmlModelFile::parseGaussianDistribution(TiXmlNode                     * node,
   if(parseDistributionWithTrend(root, "variance", variance_storage, label, errTxt, false) == false)
     errTxt += "The variance needs to be specified for the variable having a Gaussian distribution\n";
 
-  const NRLib::Distribution<double> * gaussian = new NRLib::Normal();
+  NRLib::Distribution<double>       * gaussian = new NRLib::Normal();
   const NRLib::TrendStorage         * mean     = mean_storage->CloneMean();
   const NRLib::TrendStorage         * variance = variance_storage->CloneMean();
 

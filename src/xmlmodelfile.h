@@ -8,6 +8,8 @@
 #include "src/definitions.h"
 #include "nrlib/trend/trendstorage.hpp"
 #include "rplib/distributionwithtrendstorage.h"
+#include "rplib/rockphysicsstorage.h"
+#include "rplib/distributionsfluidstorage.h"
 
 class Vario;
 class ModelSettings;
@@ -58,6 +60,9 @@ private:
   bool   parsePriorFaciesProbabilities(TiXmlNode * node, std::string & errTxt);
   bool   parseFaciesEstimationInterval(TiXmlNode * node, std::string & errTxt);
   bool parseRockPhysics(TiXmlNode * node, std::string & errTxt);
+  bool parsePredefinitions(TiXmlNode * node, std::string & errTxt);
+  bool parseFluid(TiXmlNode * node, std::string & errTxt);
+  bool parseTabulatedFluid(TiXmlNode * node, DistributionsFluidStorage *& fluid, std::string & errTxt);
   bool parseReservoir(TiXmlNode * node, std::string & errTxt);
   bool parseGaussianDistribution(TiXmlNode * node, const std::string & keyword, DistributionWithTrendStorage *& storage, std::string & errTxt);
   bool parse1DTrend(TiXmlNode * node, const std::string & keyword, NRLib::TrendStorage *& trend, std::string & errTxt);
