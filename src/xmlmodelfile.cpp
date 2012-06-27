@@ -28,6 +28,7 @@
 #include "rplib/rockphysicsstorage.h"
 #include "rplib/distributionsfluidstorage.h"
 #include "rplib/distributionssolidstorage.h"
+#include "rplib/distributionsrockstorage.h"
 #include "rplib/distributionwithtrendstorage.h"
 
 XmlModelFile::XmlModelFile(const std::string & fileName)
@@ -1714,6 +1715,41 @@ XmlModelFile::parsePredefinitions(TiXmlNode * node, std::string & errTxt)
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
+bool
+XmlModelFile::parseRock(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("rock");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("label");
+  legalCommands.push_back("use");
+  legalCommands.push_back("tabulated");
+  legalCommands.push_back("reuss"); //Not implemented
+  legalCommands.push_back("voigt"); //Not implemented
+  legalCommands.push_back("hill"); //Not implemented
+  legalCommands.push_back("dem"); //Not implemented
+  legalCommands.push_back("hashin-shtrikman"); //Not implemented
+  legalCommands.push_back("walton"); //Not implemented
+  legalCommands.push_back("gassmann"); //Not implemented
+
+  std::string label;
+  parseValue(root, "label", label, errTxt);
+
+  std::string use;
+  parseValue(root, "use", use, errTxt);
+  //Gå gjennom fluider fra modelSettings for å se om den det spørres etter finnes
+  //Dersom den finnes må fluid knyttes opp mot tidligere fluid på et vis
+  //Kan ikke angis i kombinasjon med label
+
+  int constituent_type = ModelSettings::ROCK;
+
+  parseTabulated(root, constituent_type, label, errTxt);
+
+  checkForJunk(root, errTxt, legalCommands, true);
+  return(true);
+}
 
 bool
 XmlModelFile::parseSolid(TiXmlNode * node, std::string & errTxt)
@@ -1743,18 +1779,53 @@ XmlModelFile::parseSolid(TiXmlNode * node, std::string & errTxt)
   //Dersom den finnes må fluid knyttes opp mot tidligere fluid på et vis
   //Kan ikke angis i kombinasjon med label
 
-  DistributionsSolidStorage * solid;
-  parseTabulatedSolid(root, solid, errTxt);
+  int constituent_type = ModelSettings::SOLID;
 
-  //Sjekk at kun en modell angis for hver fluid
-  modelSettings_->addSolid(label, solid);
+  parseTabulated(root, constituent_type, label, errTxt);
 
   checkForJunk(root, errTxt, legalCommands, true);
   return(true);
 }
 
 bool
-XmlModelFile::parseTabulatedSolid(TiXmlNode * node, DistributionsSolidStorage *& solid, std::string & errTxt)
+XmlModelFile::parseFluid(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("fluid");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("label");
+  legalCommands.push_back("use");
+  legalCommands.push_back("tabulated");
+  legalCommands.push_back("reuss"); //Not implemented
+  legalCommands.push_back("voigt"); //Not implemented
+  legalCommands.push_back("hill"); //Not implemented
+  legalCommands.push_back("batzle-wang-brine"); //Not implemented
+  legalCommands.push_back("dem"); //Not implemented
+  legalCommands.push_back("hashin-shtrikman"); //Not implemented
+  legalCommands.push_back("walton"); //Not implemented
+  legalCommands.push_back("gassmann"); //Not implemented
+
+  std::string label;
+  parseValue(root, "label", label, errTxt);
+
+  std::string use;
+  parseValue(root, "use", use, errTxt);
+  //Gå gjennom fluider fra modelSettings for å se om den det spørres etter finnes
+  //Dersom den finnes må fluid knyttes opp mot tidligere fluid på et vis
+  //Kan ikke angis i kombinasjon med label
+
+  int constituent_type = ModelSettings::FLUID;
+
+  parseTabulatedFluid(root, constituent_type, label, errTxt);
+
+  checkForJunk(root, errTxt, legalCommands, true);
+  return(true);
+}
+
+bool
+XmlModelFile::parseTabulated(TiXmlNode * node, int constituent, std::string label, std::string & errTxt)
 {
   TiXmlNode * root = node->FirstChildElement("tabulated");
   if(root == 0)
@@ -1838,8 +1909,19 @@ XmlModelFile::parseTabulatedSolid(TiXmlNode * node, DistributionsSolidStorage *&
     correlation_shear_density = new DistributionWithTrendStorage(mean);
   }
 
-  if(use_vp)
-    solid = new TabulatedSolidStorage(vp, vs, density, correlation_vp_vs, correlation_vp_density, correlation_vs_density);
+  if(use_vp) {
+    if(constituent == ModelSettings::FLUID) {
+      errTxt += "Implementation error: parseTabulated() can not be used for fluids. Use parseTabulatedFluid()\n";
+    }
+    else if(constituent == ModelSettings::SOLID) {
+      DistributionsSolidStorage * solid = new TabulatedSolidStorage(vp, vs, density, correlation_vp_vs, correlation_vp_density, correlation_vs_density);
+      modelSettings_->addSolid(label, solid);
+    }
+    else if(constituent == ModelSettings::ROCK) {
+      DistributionsRockStorage * rock = new TabulatedRockStorage(vp, vs, density, correlation_vp_vs, correlation_vp_density, correlation_vs_density);
+      modelSettings_->addRock(label, rock);
+    }
+  }
   else
     errTxt += "<solid><tabulated> using bulk-modulus is not implemented yet\n";
 
@@ -1848,46 +1930,7 @@ XmlModelFile::parseTabulatedSolid(TiXmlNode * node, DistributionsSolidStorage *&
 }
 
 bool
-XmlModelFile::parseFluid(TiXmlNode * node, std::string & errTxt)
-{
-  TiXmlNode * root = node->FirstChildElement("fluid");
-  if(root == 0)
-    return(false);
-
-  std::vector<std::string> legalCommands;
-  legalCommands.push_back("label");
-  legalCommands.push_back("use");
-  legalCommands.push_back("tabulated");
-  legalCommands.push_back("reuss"); //Not implemented
-  legalCommands.push_back("voigt"); //Not implemented
-  legalCommands.push_back("hill"); //Not implemented
-  legalCommands.push_back("batzle-wang-brine"); //Not implemented
-  legalCommands.push_back("dem"); //Not implemented
-  legalCommands.push_back("hashin-shtrikman"); //Not implemented
-  legalCommands.push_back("walton"); //Not implemented
-  legalCommands.push_back("gassmann"); //Not implemented
-
-  std::string label;
-  parseValue(root, "label", label, errTxt);
-
-  std::string use;
-  parseValue(root, "use", use, errTxt);
-  //Gå gjennom fluider fra modelSettings for å se om den det spørres etter finnes
-  //Dersom den finnes må fluid knyttes opp mot tidligere fluid på et vis
-  //Kan ikke angis i kombinasjon med label
-
-  DistributionsFluidStorage * fluid;
-  parseTabulatedFluid(root, fluid, errTxt);
-
-  //Sjekk at kun en modell angis for hver fluid
-  modelSettings_->addFluid(label, fluid);
-
-  checkForJunk(root, errTxt, legalCommands, true);
-  return(true);
-}
-
-bool
-XmlModelFile::parseTabulatedFluid(TiXmlNode * node, DistributionsFluidStorage *& fluid, std::string & errTxt)
+XmlModelFile::parseTabulatedFluid(TiXmlNode * node, int constituent, std::string label, std::string & errTxt)
 {
   TiXmlNode * root = node->FirstChildElement("tabulated");
   if(root == 0)
@@ -1934,8 +1977,15 @@ XmlModelFile::parseTabulatedFluid(TiXmlNode * node, DistributionsFluidStorage *&
     correlation_bulk_density = new DistributionWithTrendStorage(mean);
   }
 
-  if(use_vp)
-    fluid = new TabulatedFluidStorage(vp, density, correlation_vp_density);
+  if(use_vp) {
+    if(constituent == ModelSettings::FLUID) {
+      DistributionsFluidStorage * fluid = new TabulatedFluidStorage(vp, density, correlation_vp_density);
+      modelSettings_->addFluid(label, fluid);
+    }
+    else {
+      errTxt += "Implementation error: parseTabulatedFluid() can only be used for fluids. Use parseTabulated()\n";
+    }
+  }
   else
     errTxt += "<fluid><tabulated> using bulk-modulus is not implemented yet\n";
 

@@ -54,7 +54,7 @@ public:
   TimeLine                    * getTimeLine()                  const {return(timeLine_) ;}
   std::vector<WellData *>     & getWells()                 /*const*/ { return wells_    ;}
 
-  std::vector<DistributionsRock *> getRockDistributions(void)  const { return rock_distributions_;}
+  std::map<std::string, DistributionsRock *> getRockDistributions(void)  const { return rock_distributions_;}
 
   const std::vector<float>       & getPriorFacies()           /*const*/ { return priorFacies_            ;}
   const std::vector<FFTGrid *>   & getPriorFaciesCubes()      /*const*/ { return priorFaciesProbCubes_   ;}
@@ -277,7 +277,7 @@ private:
 
 
   CravaTrend                       trend_cubes_;        ///< Trend cubes used in rock phyiscs prior model
-  std::vector<DistributionsRock *> rock_distributions_; ///< Rock physics prior models
+  std::map<std::string, DistributionsRock  *> rock_distributions_;  ///< Rocks used in rock physics model
   std::map<std::string, DistributionsSolid *> solid_distributions_; ///< Fluids used in rock physics model
   std::map<std::string, DistributionsFluid *> fluid_distributions_; ///< Fluids used in rock physics model
 

@@ -61,10 +61,12 @@ private:
   bool   parsePriorFaciesProbabilities(TiXmlNode * node, std::string & errTxt);
   bool   parseFaciesEstimationInterval(TiXmlNode * node, std::string & errTxt);
   bool parseRockPhysics(TiXmlNode * node, std::string & errTxt);
+  bool parseRock(TiXmlNode * node, std::string & errTxt);
   bool parsePredefinitions(TiXmlNode * node, std::string & errTxt);
   bool parseSolid(TiXmlNode * node, std::string & errTxt);
-  bool parseTabulatedSolid(TiXmlNode * node, DistributionsSolidStorage *& solid, std::string & errTxt);
   bool parseFluid(TiXmlNode * node, std::string & errTxt);
+  bool parseTabulated(TiXmlNode * node, int constituent, std::string label, std::string & errTxt);
+  bool parseTabulatedFluid(TiXmlNode * node, int constituent, std::string label, std::string & errTxt);
   bool parseTabulatedFluid(TiXmlNode * node, DistributionsFluidStorage *& fluid, std::string & errTxt);
   bool parseReservoir(TiXmlNode * node, std::string & errTxt);
   bool parseGaussianDistribution(TiXmlNode * node, const std::string & keyword, DistributionWithTrendStorage *& storage, std::string & errTxt);

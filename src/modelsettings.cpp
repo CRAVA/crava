@@ -6,6 +6,7 @@
 #include "nrlib/iotools/logkit.hpp"
 
 #include "rplib/distributionwithtrendstorage.h"
+#include "rplib/distributionsrockstorage.h"
 #include "rplib/distributionssolidstorage.h"
 #include "rplib/distributionsfluidstorage.h"
 
@@ -207,6 +208,10 @@ ModelSettings::~ModelSettings(void)
 
   for(std::map<std::string, DistributionWithTrendStorage *>::iterator it = reservoirVariable_.begin(); it != reservoirVariable_.end(); it++) {
     DistributionWithTrendStorage * storage = it->second;
+    delete storage;
+  }
+  for(std::map<std::string, DistributionsRockStorage *>::iterator it = rockStorage_.begin(); it != rockStorage_.end(); it++) {
+    DistributionsRockStorage * storage = it->second;
     delete storage;
   }
   for(std::map<std::string, DistributionsSolidStorage *>::iterator it = solidStorage_.begin(); it != solidStorage_.end(); it++) {

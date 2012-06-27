@@ -12,6 +12,7 @@
 #include "nrlib/segy/traceheader.hpp"
 #include "nrlib/segy/segy.hpp"
 #include "rplib/rockphysicsstorage.h"
+#include "rplib/distributionsrockstorage.h"
 #include "rplib/distributionssolidstorage.h"
 #include "rplib/distributionsfluidstorage.h"
 #include "rplib/distributionwithtrendstorage.h"
@@ -194,12 +195,13 @@ public:
   int                              getEstimateNumberOfWavelets(int t)   const;
   std::vector<int>                 findSortedVintages(void)             const;
   std::vector<std::string>         getTrendCubeParameters(void)         const { return trendCubeParameter_                  ;}
-  int                              getNumberOfRocks(void)               const { return static_cast<int>(rockName_.size())   ;}
+  int                              getNumberOfRocks(void)               const { return static_cast<int>(rockStorage_.size())   ;}
   int                              getNumberOfSolids()                  const { return static_cast<int>(solidStorage_.size())  ;}
   int                              getNumberOfFluids()                  const { return static_cast<int>(fluidStorage_.size())  ;}
   std::vector<std::string>         getRockName()                        const { return rockName_                            ;}
   RockPhysicsStorage             * getRockPhysicsStorage(int i)         const { return rockPhysics_[i]                      ;}
   std::map<std::string, DistributionWithTrendStorage *> getReservoirVariable() const { return reservoirVariable_            ;}
+  std::map<std::string, DistributionsRockStorage  *>    getRockStorage()       const { return rockStorage_                  ;}
   std::map<std::string, DistributionsSolidStorage *>    getSolidStorage()      const { return solidStorage_                 ;}
   std::map<std::string, DistributionsFluidStorage *>    getFluidStorage()      const { return fluidStorage_                 ;}
 
@@ -250,6 +252,7 @@ public:
   void addRockName(std::string rockName)                                 { rockName_.push_back(rockName)                                  ;}
   void addRockPhysicsStorage(RockPhysicsStorage * rock)                  { rockPhysics_.push_back(rock)                                   ;}
   void addReservoirVariable(std::string variable, DistributionWithTrendStorage * dist) { reservoirVariable_[variable] = dist              ;}
+  void addRock(std::string label,  DistributionsRockStorage  * rock)                   { rockStorage_[label]  = rock                      ;}
   void addSolid(std::string label, DistributionsSolidStorage * solid)                  { solidStorage_[label] = solid                     ;}
   void addFluid(std::string label, DistributionsFluidStorage * fluid)                  { fluidStorage_[label] = fluid                     ;}
 
@@ -462,6 +465,11 @@ public:
   enum          correlationStructure{TOP,
                                      BASE,
                                      COMPACTION};
+
+  enum          rockConstituents{FLUID,
+                                 SOLID,
+                                 DRY_ROCK,
+                                 ROCK};
 private:
 
   std::vector<Vario*>               angularCorr_;                ///< Variogram for lateral error correlation, time lapse
@@ -688,6 +696,7 @@ private:
   std::vector<RockPhysicsStorage *>                rockPhysics_;                 // Stores trend-values needed for different rock physics models
 
   std::map<std::string, DistributionWithTrendStorage *>   reservoirVariable_;           // Rock physics variables defined in reservoir
+  std::map<std::string, DistributionsRockStorage *>       rockStorage_;                 // Rock physics rocks defined in predefinitions
   std::map<std::string, DistributionsSolidStorage *>      solidStorage_;                // Rock physics solids defined in predefinitions
   std::map<std::string, DistributionsFluidStorage *>      fluidStorage_;                // Rock physics fluids defined in predefinitions
 

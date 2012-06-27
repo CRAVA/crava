@@ -60,15 +60,15 @@ FaciesProb::FaciesProb(FFTGrid                      * alpha,
                  modelSettings, seismicLH);
 }
 
-FaciesProb::FaciesProb(FFTGrid                             * alpha,
-                       FFTGrid                             * beta,
-                       FFTGrid                             * rho,
-                       int                                   nFac,
-                       float                                 p_undef,
-                       FFTGrid                             * seismicLH,
-                       ModelGeneral                        * modelGeneral,
-                       std::vector<DistributionsRock *>      rock_distributions,
-                       const CravaTrend                    & trend_cubes)
+FaciesProb::FaciesProb(FFTGrid                                          * alpha,
+                       FFTGrid                                          * beta,
+                       FFTGrid                                          * rho,
+                       int                                                nFac,
+                       float                                              p_undef,
+                       FFTGrid                                          * seismicLH,
+                       ModelGeneral                                     * modelGeneral,
+                       const std::map<std::string, DistributionsRock *>   rock_distributions,
+                       const CravaTrend                                 & trend_cubes)
 : nFacies_(nFac)
 {
   calculateFaciesProbFromRockPhysicsModel(alpha,
@@ -1280,14 +1280,14 @@ void FaciesProb::calculateFaciesProb(FFTGrid                                    
   delete [] value;
 }
 
-void FaciesProb::calculateFaciesProbFromRockPhysicsModel(FFTGrid                            * alphagrid,
-                                                         FFTGrid                            * betagrid,
-                                                         FFTGrid                            * rhogrid,
-                                                         float                                p_undefined,
-                                                         FFTGrid                            * seismicLH,
-                                                         ModelGeneral                       * modelGeneral,
-                                                         std::vector<DistributionsRock *>     rock_distributions,
-                                                         const CravaTrend                   & trend_cubes)
+void FaciesProb::calculateFaciesProbFromRockPhysicsModel(FFTGrid                                          * alphagrid,
+                                                         FFTGrid                                          * betagrid,
+                                                         FFTGrid                                          * rhogrid,
+                                                         float                                              p_undefined,
+                                                         FFTGrid                                          * seismicLH,
+                                                         ModelGeneral                                     * modelGeneral,
+                                                         const std::map<std::string, DistributionsRock *> & rock_distributions,
+                                                         const CravaTrend                                 & trend_cubes)
 {
   int rnxp = alphagrid->getRNxp();
   int nyp  = alphagrid->getNyp();
@@ -1332,8 +1332,10 @@ void FaciesProb::calculateFaciesProbFromRockPhysicsModel(FFTGrid                
 
 
   std::vector<Pdf3D *> rock_pdf(nFacies_);
-  for(int i=0; i<nFacies_; i++)
-    rock_pdf[i] = rock_distributions[i]->GeneratePdf();
+  for(std::map<std::string, DistributionsRock *>::const_iterator it = rock_distributions.begin(); it != rock_distributions.end(); it++) {
+    Pdf3D * pdf = it->second->GeneratePdf();
+    rock_pdf.push_back(pdf); //Marit: Mister sammenheng med navn. Iterere ved find, slik at vi har kontroll på elementene.
+  }
 
   LogKit::LogFormatted(LogKit::Low,"\nBuilding facies probabilities:");
   float monitorSize = std::max(1.0f, static_cast<float>(nzp)*0.02f);

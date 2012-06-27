@@ -45,15 +45,15 @@ public:
              const ModelSettings          * modelSettings,
              FFTGrid                      * seismicLH);
 
-  FaciesProb(FFTGrid                            * alpha,
-             FFTGrid                            * beta,
-             FFTGrid                            * rho,
-             int                                  nFac,
-             float                                p_undef,
-             FFTGrid                            * seismicLH,
-             ModelGeneral                       * modelGeneral,
-             std::vector<DistributionsRock *>     rock_distributions,
-             const CravaTrend                   & trend_cubes);
+  FaciesProb(FFTGrid                                           * alpha,
+             FFTGrid                                           * beta,
+             FFTGrid                                           * rho,
+             int                                                 nFac,
+             float                                               p_undef,
+             FFTGrid                                           * seismicLH,
+             ModelGeneral                                      * modelGeneral,
+             const std::map<std::string, DistributionsRock *>    rock_distributions,
+             const CravaTrend                                  & trend_cubes);
 
   ~FaciesProb();
 
@@ -182,14 +182,14 @@ private:
                                              const std::vector<Grid2D *>   & noiseScale,
                                              FFTGrid                       * seismicLH);
 
-  void                   calculateFaciesProbFromRockPhysicsModel(FFTGrid                            * alphagrid,
-                                                                 FFTGrid                            * betagrid,
-                                                                 FFTGrid                            * rhogrid,
-                                                                 float                                p_undef,
-                                                                 FFTGrid                            * seismicLH,
-                                                                 ModelGeneral                       * modelGeneral,
-                                                                 std::vector<DistributionsRock *>     rock_distributions,
-                                                                 const CravaTrend                   & trend_cubes);
+  void                   calculateFaciesProbFromRockPhysicsModel(FFTGrid                                          * alphagrid,
+                                                                 FFTGrid                                          * betagrid,
+                                                                 FFTGrid                                          * rhogrid,
+                                                                 float                                              p_undef,
+                                                                 FFTGrid                                          * seismicLH,
+                                                                 ModelGeneral                                     * modelGeneral,
+                                                                 const std::map<std::string, DistributionsRock *> & rock_distributions,
+                                                                 const CravaTrend                                 & trend_cubes);
 
   void                   normalizeCubes(std::vector<FFTGrid *> & priorFaciesCubes);
 

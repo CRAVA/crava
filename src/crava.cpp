@@ -33,6 +33,7 @@
 #include "nrlib/stormgrid/stormcontgrid.hpp"
 #include "nrlib/grid/grid2d.hpp"
 
+#include "rplib/distributionsrock.h"
 
 #define _USE_MATH_DEFINES
 #include <math.h>
