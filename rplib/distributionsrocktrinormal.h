@@ -1,5 +1,5 @@
-#ifndef RPLIB_MULTINORMALDISTRIBUTEDROCK_H
-#define RPLIB_MULTINORMALDISTRIBUTEDROCK_H
+#ifndef RPLIB_DISTRIBUTIONS_ROCK_TRI_NORMAL_H
+#define RPLIB_DISTRIBUTIONS_ROCK_TRI_NORMAL_H
 
 #include <vector>
 #include <nrlib/flens/nrlib_flens.hpp>
@@ -10,10 +10,10 @@
 class Rock;
 class Pdf3D;
 
-class MultiNormalDistributedRock : public DistributionsRock {
+class DistributionsRockTriNormal : public DistributionsRock {
 public:
 
-  MultiNormalDistributedRock(NRLib::Trend * mean_vp,
+  DistributionsRockTriNormal(NRLib::Trend * mean_vp,
                              NRLib::Trend * mean_vs,
                              NRLib::Trend * mean_density,
                              NRLib::Trend * variance_vp,
@@ -23,7 +23,7 @@ public:
                              NRLib::Trend * correlation_vp_density,
                              NRLib::Trend * correlation_vs_density);
 
-  virtual ~MultiNormalDistributedRock();
+  virtual ~DistributionsRockTriNormal();
 
   virtual Rock                     * GenerateSample(const std::vector<double> & trend_params) const;
 

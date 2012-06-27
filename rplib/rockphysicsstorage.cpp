@@ -6,7 +6,7 @@
 #include "rplib/rockphysicsstorage.h"
 #include "rplib/distributionsrock.h"
 #include "rplib/trinormalwith2dtrend.h"
-#include "rplib/multinormaldistributedrock.h"
+#include "rplib/distributionsrocktrinormal.h"
 #include "rplib/distributionwithtrendstorage.h"
 
 
@@ -69,7 +69,7 @@ GaussianRockPhysicsStorage::GenerateRockPhysics(const std::string               
   NRLib::Trend * correlation_vp_density_trend = correlation_vp_density_->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,errTxt);
   NRLib::Trend * correlation_vs_density_trend = correlation_vs_density_->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,errTxt);
 
-  DistributionsRock * rock = new MultiNormalDistributedRock(mean_vp_trend,
+  DistributionsRock * rock = new DistributionsRockTriNormal(mean_vp_trend,
                                                             mean_vs_trend,
                                                             mean_density_trend,
                                                             variance_vp_trend,

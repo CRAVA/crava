@@ -1,4 +1,4 @@
-#include "rplib/multinormaldistributedrock.h"
+#include "rplib/distributionsrocktrinormal.h"
 #include "rplib/multinormalrock.h"
 #include "rplib/trinormalwith2dtrend.h"
 #include "rplib/pdf3dgaussian.h"
@@ -7,7 +7,7 @@
 #include "nrlib/grid/grid2d.hpp"
 
 
-MultiNormalDistributedRock::MultiNormalDistributedRock(NRLib::Trend * mean_vp,
+DistributionsRockTriNormal::DistributionsRockTriNormal(NRLib::Trend * mean_vp,
                                                        NRLib::Trend * mean_vs,
                                                        NRLib::Trend * mean_density,
                                                        NRLib::Trend * variance_vp,
@@ -91,13 +91,13 @@ MultiNormalDistributedRock::MultiNormalDistributedRock(NRLib::Trend * mean_vp,
   }
 }
 
-MultiNormalDistributedRock::~MultiNormalDistributedRock()
+DistributionsRockTriNormal::~DistributionsRockTriNormal()
 {
   delete mult_normal_distr_;
 }
 
 Rock*
-MultiNormalDistributedRock::GenerateSample(const std::vector<double> & trend_params) const {
+DistributionsRockTriNormal::GenerateSample(const std::vector<double> & trend_params) const {
   std::vector<double>  param(3, 0);
   double s1 = 0, s2 = 0;
   if (trend_params.size() >= 2) {
@@ -111,7 +111,7 @@ MultiNormalDistributedRock::GenerateSample(const std::vector<double> & trend_par
 }
 
 std::vector<double>
-MultiNormalDistributedRock::GetExpectation(const std::vector<double> & trend_params) const
+DistributionsRockTriNormal::GetExpectation(const std::vector<double> & trend_params) const
 {
   double s1 = 0, s2 = 0;
   if (trend_params.size() >= 2) {
@@ -124,7 +124,7 @@ MultiNormalDistributedRock::GetExpectation(const std::vector<double> & trend_par
 }
 
 NRLib::Grid2D<double>
-MultiNormalDistributedRock::GetCovariance(const std::vector<double> & trend_params) const
+DistributionsRockTriNormal::GetCovariance(const std::vector<double> & trend_params) const
 {
   double s1 = 0, s2 = 0;
   if (trend_params.size() >= 2) {
@@ -137,14 +137,14 @@ MultiNormalDistributedRock::GetCovariance(const std::vector<double> & trend_para
 }
 
 Pdf3D*
-MultiNormalDistributedRock::GeneratePdf(void) const
+DistributionsRockTriNormal::GeneratePdf(void) const
 {
 
   return new Pdf3DGaussian(mult_normal_distr_);
 
 }
 void
-MultiNormalDistributedRock::LogTransformExpectationAndCovariance(NRLib::Trend *  mean1,
+DistributionsRockTriNormal::LogTransformExpectationAndCovariance(NRLib::Trend *  mean1,
                                                                  NRLib::Trend *  mean2,
                                                                  NRLib::Trend *  cov,
                                                                  NRLib::Trend *& log_mean,
@@ -250,7 +250,7 @@ MultiNormalDistributedRock::LogTransformExpectationAndCovariance(NRLib::Trend * 
 }
 
 void
-MultiNormalDistributedRock::CalculateCovarianceFromCorrelation(NRLib::Trend *  corr,
+DistributionsRockTriNormal::CalculateCovarianceFromCorrelation(NRLib::Trend *  corr,
                                                                NRLib::Trend *  var1,
                                                                NRLib::Trend *  var2,
                                                                NRLib::Trend *& cov) const
@@ -327,7 +327,7 @@ MultiNormalDistributedRock::CalculateCovarianceFromCorrelation(NRLib::Trend *  c
 }
 
 int
-MultiNormalDistributedRock::FindNewGridDimension(const std::vector<NRLib::Trend *> trender) const
+DistributionsRockTriNormal::FindNewGridDimension(const std::vector<NRLib::Trend *> trender) const
 {
   int new_dim;
 
@@ -371,7 +371,7 @@ MultiNormalDistributedRock::FindNewGridDimension(const std::vector<NRLib::Trend 
 }
 
 void
-MultiNormalDistributedRock::FindNewGridSizeAndIncrement(std::vector<int>                  & size,
+DistributionsRockTriNormal::FindNewGridSizeAndIncrement(std::vector<int>                  & size,
                                                         std::vector<double>               & increment,
                                                         const std::vector<NRLib::Trend *> & trender,
                                                         const int                         & new_dim) const
@@ -447,7 +447,7 @@ MultiNormalDistributedRock::FindNewGridSizeAndIncrement(std::vector<int>        
 }
 
 std::vector<std::vector<double> >
-MultiNormalDistributedRock::ExpandGrids1D(const std::vector<NRLib::Trend *> trender,
+DistributionsRockTriNormal::ExpandGrids1D(const std::vector<NRLib::Trend *> trender,
                                           const std::vector<int>         &   size) const
 {
   std::vector<std::vector<double> > expanded_trend(3);
@@ -480,7 +480,7 @@ MultiNormalDistributedRock::ExpandGrids1D(const std::vector<NRLib::Trend *> tren
 }
 
 std::vector<NRLib::Grid2D<double> >
-MultiNormalDistributedRock::ExpandGrids2D(const std::vector<NRLib::Trend *> trender,
+DistributionsRockTriNormal::ExpandGrids2D(const std::vector<NRLib::Trend *> trender,
                                           const std::vector<int>         &  size) const
 {
   std::vector<NRLib::Grid2D<double> > expanded_trend(3);
@@ -538,7 +538,7 @@ MultiNormalDistributedRock::ExpandGrids2D(const std::vector<NRLib::Trend *> tren
 }
 
 void
-MultiNormalDistributedRock::LogTransformExpectation(const double & expectation,
+DistributionsRockTriNormal::LogTransformExpectation(const double & expectation,
                                                     const double & log_variance,
                                                     double       & mu) const
 {
@@ -549,7 +549,7 @@ MultiNormalDistributedRock::LogTransformExpectation(const double & expectation,
 }
 
 void
-MultiNormalDistributedRock::LogTransformCovariance(const double & expectation1,
+DistributionsRockTriNormal::LogTransformCovariance(const double & expectation1,
                                                    const double & expectation2,
                                                    const double & covariance,
                                                    double       & s2) const
@@ -561,7 +561,7 @@ MultiNormalDistributedRock::LogTransformCovariance(const double & expectation1,
 }
 
 void
-MultiNormalDistributedRock::CalculateCovariance(const double & corr,
+DistributionsRockTriNormal::CalculateCovariance(const double & corr,
                                                 const double & var1,
                                                 const double & var2,
                                                 double       & cov) const

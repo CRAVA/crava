@@ -1684,6 +1684,7 @@ XmlModelFile::parseRockPhysics(TiXmlNode * node, std::string & errTxt)
 
   parseReservoir(root, errTxt);
   parsePredefinitions(root, errTxt);
+  while(parseRock(root, errTxt));
 
   int count = 0;
   while(parseTrendCube(root, errTxt) == true)
@@ -2115,7 +2116,7 @@ XmlModelFile::parseGaussianDistribution(TiXmlNode                     * node,
   delete mean_storage;
   delete variance_storage;
 
-  storage = new DistributionWithTrendStorage(gaussian, mean, variance);
+  storage = new DistributionWithTrendStorage(gaussian, mean, variance, true);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);

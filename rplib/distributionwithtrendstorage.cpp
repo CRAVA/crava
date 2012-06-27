@@ -8,10 +8,12 @@
 
 
 DistributionWithTrendStorage::DistributionWithTrendStorage()
+: is_gaussian_(false)
 {
 }
 
 DistributionWithTrendStorage::DistributionWithTrendStorage(double value)
+: is_gaussian_(false)
 {
   distribution_ = new NRLib::Delta();
   mean_         = new NRLib::TrendConstantStorage(value);
@@ -19,6 +21,7 @@ DistributionWithTrendStorage::DistributionWithTrendStorage(double value)
 }
 
 DistributionWithTrendStorage::DistributionWithTrendStorage(const NRLib::TrendStorage * trend)
+: is_gaussian_(false)
 {
   distribution_ = new NRLib::Delta();
   mean_         = trend;
@@ -27,7 +30,9 @@ DistributionWithTrendStorage::DistributionWithTrendStorage(const NRLib::TrendSto
 
 DistributionWithTrendStorage::DistributionWithTrendStorage(NRLib::Distribution<double>       * distribution,
                                                            const NRLib::TrendStorage         * mean,
-                                                           const NRLib::TrendStorage         * variance)
+                                                           const NRLib::TrendStorage         * variance,
+                                                           bool                                is_gaussian)
+: is_gaussian_(is_gaussian)
 {
   distribution_ = distribution;
   mean_         = mean;
@@ -48,6 +53,13 @@ DistributionWithTrendStorage::CloneMean()
   return(cloned_mean);
 }
 
+const NRLib::TrendStorage *
+DistributionWithTrendStorage::CloneVariance()
+{
+  NRLib::TrendStorage * cloned_variance = variance_->Clone();
+  return(cloned_variance);
+}
+
 const DistributionWithTrend *
 DistributionWithTrendStorage::GenerateDistributionWithTrend(const std::string                       & path,
                                                             const std::vector<std::string>          & trend_cube_parameters,
@@ -64,4 +76,10 @@ DistributionWithTrendStorage::GenerateDistributionWithTrend(const std::string   
   distribution_ = NULL;
 
   return(dist_with_trend);
+}
+
+const bool
+DistributionWithTrendStorage::GetIsGaussian() const
+{
+  return(is_gaussian_);
 }
