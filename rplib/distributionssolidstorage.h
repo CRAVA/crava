@@ -1,18 +1,18 @@
-#ifndef RPLIB_DISTRIBUTIONS_FLUID_STORAGE_HPP
-#define RPLIB_DISTRIBUTIONS_FLUID_STORAGE_HPP
+#ifndef RPLIB_DISTRIBUTIONS_SOLID_STORAGE_HPP
+#define RPLIB_DISTRIBUTIONS_SOLID_STORAGE_HPP
 
-#include "rplib/distributionsfluid.h"
+#include "rplib/distributionssolid.h"
 #include "rplib/distributionwithtrendstorage.h"
 #include "nrlib/trend/trendstorage.hpp"
 #include "nrlib/trend/trend.hpp"
 
-class DistributionsFluidStorage {
+class DistributionsSolidStorage {
 public:
-  DistributionsFluidStorage();
+  DistributionsSolidStorage();
 
-  virtual ~DistributionsFluidStorage();
+  virtual ~DistributionsSolidStorage();
 
-  virtual DistributionsFluid * GenerateDistributionsFluid(const std::string                       & /*path*/,
+  virtual DistributionsSolid * GenerateDistributionsSolid(const std::string                       & /*path*/,
                                                           const std::vector<std::string>          & /*trend_cube_parameters*/,
                                                           const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
                                                           std::string                             & /*errTxt*/)                    const = 0;
@@ -20,23 +20,29 @@ public:
 
 //----------------------------------------------------------------------------------//
 
-class TabulatedFluidStorage : public DistributionsFluidStorage {
+class TabulatedSolidStorage : public DistributionsSolidStorage {
 public:
-  TabulatedFluidStorage(DistributionWithTrendStorage * vp,
+  TabulatedSolidStorage(DistributionWithTrendStorage * vp,
+                        DistributionWithTrendStorage * vs,
                         DistributionWithTrendStorage * density,
-                        DistributionWithTrendStorage * correlation_vp_density);
+                        DistributionWithTrendStorage * correlation_vp_vs,
+                        DistributionWithTrendStorage * correlation_vp_density,
+                        DistributionWithTrendStorage * correlation_vs_density);
 
-  virtual ~TabulatedFluidStorage();
+  virtual ~TabulatedSolidStorage();
 
-  virtual DistributionsFluid * GenerateDistributionsFluid(const std::string                       & path,
+  virtual DistributionsSolid * GenerateDistributionsSolid(const std::string                       & path,
                                                           const std::vector<std::string>          & trend_cube_parameters,
                                                           const std::vector<std::vector<double> > & trend_cube_sampling,
                                                           std::string                             & errTxt) const;
 
 private:
   DistributionWithTrendStorage * vp_;
+  DistributionWithTrendStorage * vs_;
   DistributionWithTrendStorage * density_;
+  DistributionWithTrendStorage * correlation_vp_vs_;
   DistributionWithTrendStorage * correlation_vp_density_;
+  DistributionWithTrendStorage * correlation_vs_density_;
 };
 
 #endif

@@ -6,8 +6,6 @@
 #include "nrlib/trend/trendstorage.hpp"
 #include "nrlib/trend/trend.hpp"
 
-//Omdøpes til DistributionsMineralStorage
-//Følger da DistributionsFluidStorage
 class RockPhysicsStorage {
 public:
   RockPhysicsStorage();
@@ -55,28 +53,4 @@ private:
 
 //----------------------------------------------------------------------------------//
 
-/*class DistributionsFluidTabulated : public DistributionsFluid {
-public:
-
-  //NB: Class is not completed
-  DistributionsFluidTabulated(const DistributionWithTrend * vp,
-                              const DistributionWithTrend * vs,
-                              const DistributionWithTrend * density,
-                              const DistributionWithTrend * corr_vp_vs,
-                              const DistributionWithTrend * corr_vp_density,
-                              const DistributionWithTrend * corr_vs_density);
-
-  virtual ~DistributionsFluidTabulated();
-
-  // Fluid is an abstract class, hence pointer must be used here. Allocated memory (using new) MUST be deleted by caller.
-  virtual Fluid * GenerateSample() const;
-
-private:
-  const DistributionWithTrend * vp_;
-  const DistributionWithTrend * vs_;
-  const DistributionWithTrend * density_;
-  const DistributionWithTrend * corr_vp_vs_;
-  const DistributionWithTrend * corr_vp_density_;
-  const DistributionWithTrend * corr_vs_density_;
-};*/
 #endif

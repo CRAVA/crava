@@ -13,6 +13,7 @@
 
 #include "rplib/distributionsrock.h"
 #include "rplib/distributionsfluid.h"
+#include "rplib/distributionssolid.h"
 
 struct irapgrid;
 class Corr;
@@ -277,6 +278,7 @@ private:
 
   CravaTrend                       trend_cubes_;        ///< Trend cubes used in rock phyiscs prior model
   std::vector<DistributionsRock *> rock_distributions_; ///< Rock physics prior models
+  std::map<std::string, DistributionsSolid *> solid_distributions_; ///< Fluids used in rock physics model
   std::map<std::string, DistributionsFluid *> fluid_distributions_; ///< Fluids used in rock physics model
 
   GridMapping       * timeDepthMapping_;      ///< Contains both simbox and mapping used for depth conversion

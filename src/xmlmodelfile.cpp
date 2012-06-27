@@ -27,6 +27,7 @@
 
 #include "rplib/rockphysicsstorage.h"
 #include "rplib/distributionsfluidstorage.h"
+#include "rplib/distributionssolidstorage.h"
 #include "rplib/distributionwithtrendstorage.h"
 
 XmlModelFile::XmlModelFile(const std::string & fileName)
@@ -1704,10 +1705,143 @@ XmlModelFile::parsePredefinitions(TiXmlNode * node, std::string & errTxt)
 
   std::vector<std::string> legalCommands;
   legalCommands.push_back("fluid");
-  legalCommands.push_back("solid"); //Not implemented
+  legalCommands.push_back("solid");
   legalCommands.push_back("dry-rock"); //Not implemented
 
-  parseFluid(root, errTxt);
+  while(parseFluid(root, errTxt));
+  while(parseSolid(root, errTxt));
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseSolid(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("solid");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("label");
+  legalCommands.push_back("use");
+  legalCommands.push_back("tabulated");
+  legalCommands.push_back("reuss"); //Not implemented
+  legalCommands.push_back("voigt"); //Not implemented
+  legalCommands.push_back("hill"); //Not implemented
+  legalCommands.push_back("dem"); //Not implemented
+  legalCommands.push_back("hashin-shtrikman"); //Not implemented
+  legalCommands.push_back("walton"); //Not implemented
+  legalCommands.push_back("gassmann"); //Not implemented
+
+  std::string label;
+  parseValue(root, "label", label, errTxt);
+
+  std::string use;
+  parseValue(root, "use", use, errTxt);
+  //Gå gjennom fluider fra modelSettings for å se om den det spørres etter finnes
+  //Dersom den finnes må fluid knyttes opp mot tidligere fluid på et vis
+  //Kan ikke angis i kombinasjon med label
+
+  DistributionsSolidStorage * solid;
+  parseTabulatedSolid(root, solid, errTxt);
+
+  //Sjekk at kun en modell angis for hver fluid
+  modelSettings_->addSolid(label, solid);
+
+  checkForJunk(root, errTxt, legalCommands, true);
+  return(true);
+}
+
+bool
+XmlModelFile::parseTabulatedSolid(TiXmlNode * node, DistributionsSolidStorage *& solid, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("tabulated");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("density");
+  legalCommands.push_back("vp");
+  legalCommands.push_back("vs");
+  legalCommands.push_back("correlation-vp-vs");
+  legalCommands.push_back("correlation-vp-density");
+  legalCommands.push_back("correlation-vs-density");
+  legalCommands.push_back("bulk-modulus");
+  legalCommands.push_back("shear-modulus");
+  legalCommands.push_back("correlation-bulk-shear");
+  legalCommands.push_back("correlation-bulk-density");
+  legalCommands.push_back("correlation-shear-density");
+
+  std::string dummy;
+
+  bool use_vp      = false;
+  bool use_modulus = false;
+
+  DistributionWithTrendStorage * vp;
+  if(parseDistributionWithTrend(root, "vp", vp, dummy, errTxt, true) == true)
+    use_vp = true;
+
+  DistributionWithTrendStorage * vs;
+  if(parseDistributionWithTrend(root, "vs", vs, dummy, errTxt, true) == false && use_vp == true)
+    errTxt +="Both <vp> and <vs> need to be given in <solid><tabulated>\n";
+
+  DistributionWithTrendStorage * bulk_modulus;
+  if(parseDistributionWithTrend(root, "bulk-modulus", bulk_modulus, dummy, errTxt, true) == true)
+    use_modulus = true;
+
+  DistributionWithTrendStorage * shear_modulus;
+  if(parseDistributionWithTrend(root, "shear-modulus", shear_modulus, dummy, errTxt, true) == false && use_modulus == true)
+    errTxt +="Both <bulk-modulus> and <shear-modulus> need to be given in <solid><tabulated>\n";
+
+  if(use_vp == true && use_modulus == true)
+    errTxt += "Both <vp> and <bulk-modulus> can not be used in <solid><tabulated>\n";
+  else if(use_vp == false && use_modulus == false)
+    errTxt += "One of <vp> or <bulk-modulus> must be used in <solid><tabulated>\n";
+
+  DistributionWithTrendStorage * density;
+  if(parseDistributionWithTrend(root, "density", density, dummy, errTxt, true) == false)
+    errTxt += "<density> needs to be specified in <solid><tabulated>\n";
+
+  DistributionWithTrendStorage * correlation_vp_vs;
+  if(parseDistributionWithTrend(root, "correlation-vp-vs", correlation_vp_vs, dummy, errTxt, true) == false && use_vp == true) {
+    double mean = 0;
+    correlation_vp_vs = new DistributionWithTrendStorage(mean);
+  }
+
+  DistributionWithTrendStorage * correlation_vp_density;
+  if(parseDistributionWithTrend(root, "correlation-vp-density", correlation_vp_density, dummy, errTxt, true) == false && use_vp == true) {
+    double mean = 0;
+    correlation_vp_density = new DistributionWithTrendStorage(mean);
+  }
+
+  DistributionWithTrendStorage * correlation_vs_density;
+  if(parseDistributionWithTrend(root, "correlation-vs-density", correlation_vs_density, dummy, errTxt, true) == false && use_vp == true) {
+    double mean = 0;
+    correlation_vs_density = new DistributionWithTrendStorage(mean);
+  }
+
+  DistributionWithTrendStorage * correlation_bulk_shear;
+  if(parseDistributionWithTrend(root, "correlation-bulk-shear", correlation_bulk_shear, dummy, errTxt, true) == false && use_modulus == true) {
+    double mean = 0;
+    correlation_bulk_shear = new DistributionWithTrendStorage(mean);
+  }
+  DistributionWithTrendStorage * correlation_bulk_density;
+  if(parseDistributionWithTrend(root, "correlation-bulk-density", correlation_bulk_density, dummy, errTxt, true) == false && use_modulus == true) {
+    double mean = 0;
+    correlation_bulk_density = new DistributionWithTrendStorage(mean);
+  }
+
+  DistributionWithTrendStorage * correlation_shear_density;
+  if(parseDistributionWithTrend(root, "correlation-shear-density", correlation_shear_density, dummy, errTxt, true) == false && use_modulus == true) {
+    double mean = 0;
+    correlation_shear_density = new DistributionWithTrendStorage(mean);
+  }
+
+  if(use_vp)
+    solid = new TabulatedSolidStorage(vp, vs, density, correlation_vp_vs, correlation_vp_density, correlation_vs_density);
+  else
+    errTxt += "<solid><tabulated> using bulk-modulus is not implemented yet\n";
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);

@@ -6213,6 +6213,14 @@
 					>
 				</File>
 				<File
+					RelativePath=".\rplib\distributionssolidstorage.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\distributionssolidtabulated.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\rplib\distributionwithtrend.cpp"
 					>
 				</File>
@@ -7339,6 +7347,14 @@
 				</File>
 				<File
 					RelativePath=".\rplib\distributionssolidmixevolution.h"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\distributionssolidstorage.h"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\distributionssolidtabulated.h"
 					>
 				</File>
 				<File

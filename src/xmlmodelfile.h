@@ -10,6 +10,7 @@
 #include "rplib/distributionwithtrendstorage.h"
 #include "rplib/rockphysicsstorage.h"
 #include "rplib/distributionsfluidstorage.h"
+#include "rplib/distributionssolidstorage.h"
 
 class Vario;
 class ModelSettings;
@@ -61,6 +62,8 @@ private:
   bool   parseFaciesEstimationInterval(TiXmlNode * node, std::string & errTxt);
   bool parseRockPhysics(TiXmlNode * node, std::string & errTxt);
   bool parsePredefinitions(TiXmlNode * node, std::string & errTxt);
+  bool parseSolid(TiXmlNode * node, std::string & errTxt);
+  bool parseTabulatedSolid(TiXmlNode * node, DistributionsSolidStorage *& solid, std::string & errTxt);
   bool parseFluid(TiXmlNode * node, std::string & errTxt);
   bool parseTabulatedFluid(TiXmlNode * node, DistributionsFluidStorage *& fluid, std::string & errTxt);
   bool parseReservoir(TiXmlNode * node, std::string & errTxt);

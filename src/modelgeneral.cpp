@@ -49,6 +49,7 @@
 
 #include "rplib/rockphysicsstorage.h"
 #include "rplib/distributionsfluidstorage.h"
+#include "rplib/distributionssolidstorage.h"
 
 ModelGeneral::ModelGeneral(ModelSettings *& modelSettings, const InputFiles * inputFiles, Simbox *& timeBGSimbox)
 {
@@ -214,6 +215,11 @@ ModelGeneral::~ModelGeneral(void)
 
   for(int i=0; i<static_cast<int>(rock_distributions_.size()); i++)
     delete rock_distributions_[i];
+
+  for(std::map<std::string, DistributionsSolid *>::iterator it = solid_distributions_.begin(); it != solid_distributions_.end(); it++) {
+    DistributionsSolid * solid = it->second;
+    delete solid;
+  }
 
   for(std::map<std::string, DistributionsFluid *>::iterator it = fluid_distributions_.begin(); it != fluid_distributions_.end(); it++) {
     DistributionsFluid * fluid = it->second;
@@ -2262,6 +2268,14 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
 
       rock_distributions_.push_back(rock_distribution);
 
+    }
+
+    std::map<std::string, DistributionsSolidStorage *>      solid_storage = modelSettings->getSolidStorage();
+
+    for(std::map<std::string, DistributionsSolidStorage *>::iterator it = solid_storage.begin(); it != solid_storage.end(); it++) {
+      DistributionsSolidStorage     * storage    = it     ->second;
+      DistributionsSolid            * solid      = storage->GenerateDistributionsSolid(path,trend_cube_parameters,trend_cube_sampling,errTxt);
+      solid_distributions_[it->first]            = solid;
     }
 
     std::map<std::string, DistributionsFluidStorage *>      fluid_storage = modelSettings->getFluidStorage();

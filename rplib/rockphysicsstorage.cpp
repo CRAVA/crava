@@ -92,19 +92,3 @@ GaussianRockPhysicsStorage::GenerateRockPhysics(const std::string               
 
   return(rock);
 }
-
-/*DistributionsFluidTabulated::DistributionsFluidTabulated(const DistributionWithTrend * vp,
-                                                         const DistributionWithTrend * vs,
-                                                         const DistributionWithTrend * density,
-                                                         const DistributionWithTrend * corr_vp_vs,
-                                                         const DistributionWithTrend * corr_vp_density,
-                                                         const DistributionWithTrend * corr_vs_density)
-: vp_(vp),
-  vs_(vs),
-  density_(density),
-  corr_vp_vs_(corr_vp_vs),
-  corr_vp_density_(corr_vp_density),
-  corr_vs_density_(corr_vs_density)
-{
-}
-*/
