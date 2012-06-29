@@ -45,4 +45,27 @@ private:
   DistributionWithTrendStorage * correlation_vs_density_;
 };
 
+//----------------------------------------------------------------------------------//
+
+class DEMRockStorage : public DistributionsRockStorage {
+public:
+  DEMRockStorage(std::string                                 host_label,
+                 DistributionWithTrendStorage *              host_volume_fraction,
+                 std::vector<std::string>                    inclusion_label,
+                 std::vector<DistributionWithTrendStorage *> inclusion_volume_fraction);
+
+  virtual ~DEMRockStorage();
+
+  virtual DistributionsRock * GenerateDistributionsRock(const std::string                       & path,
+                                                        const std::vector<std::string>          & trend_cube_parameters,
+                                                        const std::vector<std::vector<double> > & trend_cube_sampling,
+                                                        std::string                             & errTxt) const;
+
+private:
+  std::string                                 host_label_;
+  DistributionWithTrendStorage *              host_volume_fraction_;
+  std::vector<std::string>                    inclusion_label_;
+  std::vector<DistributionWithTrendStorage *> inclusion_volume_fraction_;
+
+};
 #endif

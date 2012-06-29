@@ -14,7 +14,7 @@ DistributionsFluidTabulated::~DistributionsFluidTabulated()
 }
 
 Fluid *
-DistributionsFluidTabulated::GenerateSample() const
+DistributionsFluidTabulated::GenerateSample(const std::vector<double> & /*trend_params*/) const
 {
   //Dummy function. Needs to be implemented
   Fluid * fluid = NULL;

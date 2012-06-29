@@ -138,3 +138,32 @@ TabulatedRockStorage::GenerateDistributionsRock(const std::string               
   return(rock);
 }
 
+//----------------------------------------------------------------------------------//
+
+DEMRockStorage::DEMRockStorage(std::string                                 host_label,
+                               DistributionWithTrendStorage *              host_volume_fraction,
+                               std::vector<std::string>                    inclusion_label,
+                               std::vector<DistributionWithTrendStorage *> inclusion_volume_fraction)
+: host_label_(host_label),
+  host_volume_fraction_(host_volume_fraction),
+  inclusion_label_(inclusion_label),
+  inclusion_volume_fraction_(inclusion_volume_fraction)
+{
+}
+
+DEMRockStorage::~DEMRockStorage()
+{
+}
+
+DistributionsRock *
+DEMRockStorage::GenerateDistributionsRock(const std::string                       & /*path*/,
+                                          const std::vector<std::string>          & /*trend_cube_parameters*/,
+                                          const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
+                                          std::string                             & /*errTxt*/) const
+{
+  //Gjør sjekk på om volume-fractions er double ved nytt kall. Feilmelding dersom ikke double.
+  //Sjekk siste tallet i inclusion_volume_fraction, og pass på at det summeres til 1
+
+  DistributionsRock * rock = NULL; //new DistributionsRockInclusion();
+  return(rock);
+}

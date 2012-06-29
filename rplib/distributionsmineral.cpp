@@ -15,7 +15,7 @@ DistributionsMineral::DistributionsMineral(NRLib::Distribution<double>   * distr
 DistributionsMineral::~DistributionsMineral(){}
 
 Solid *
-DistributionsMineral::GenerateSample() const
+DistributionsMineral::GenerateSample(const std::vector<double> & /*trend_params*/) const
 {
   double k   = distr_k_->Draw();
   double mu  = distr_mu_->Draw();

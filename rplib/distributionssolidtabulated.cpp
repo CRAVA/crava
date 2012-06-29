@@ -20,7 +20,7 @@ DistributionsSolidTabulated::~DistributionsSolidTabulated()
 }
 
 Solid *
-DistributionsSolidTabulated::GenerateSample() const
+DistributionsSolidTabulated::GenerateSample(const std::vector<double> & /*trend_params*/) const
 {
   //Dummy function. Needs to be implemented
   Solid * solid = NULL;

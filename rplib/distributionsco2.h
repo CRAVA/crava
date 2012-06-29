@@ -16,7 +16,7 @@ public:
 
   virtual ~DistributionsCO2();
 
-  virtual Fluid * GenerateSample() const;
+  virtual Fluid * GenerateSample(const std::vector<double> & /*trend_params*/) const;
 
 private:
   NRLib::Distribution<double> * distr_temperature_;   // Pointer to external object.

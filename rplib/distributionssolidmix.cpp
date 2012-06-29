@@ -18,7 +18,7 @@ DistributionsSolidMix::DistributionsSolidMix(std::vector< DistributionsSolid * >
 DistributionsSolidMix::~DistributionsSolidMix(){}
 
 Solid *
-DistributionsSolidMix::GenerateSample() const
+DistributionsSolidMix::GenerateSample(const std::vector<double> & trend_params) const
 {
 
   size_t n_solids = distr_solid_.size();
@@ -26,7 +26,7 @@ DistributionsSolidMix::GenerateSample() const
   std::vector<double> volume_fraction(n_solids);
 
   for(size_t i = 0; i < n_solids; ++i) {
-    solid[i] = distr_solid_[i]->GenerateSample();
+    solid[i] = distr_solid_[i]->GenerateSample(trend_params);
     volume_fraction[i] = distr_vol_frac_[i]->Draw();
   }
   Solid * solid_mixed = new SolidMixed(solid, volume_fraction, mix_method_, distr_evolution_);

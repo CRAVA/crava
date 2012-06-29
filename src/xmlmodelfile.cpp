@@ -1710,8 +1710,12 @@ XmlModelFile::parsePredefinitions(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("solid");
   legalCommands.push_back("dry-rock"); //Not implemented
 
-  while(parseFluid(root, errTxt));
-  while(parseSolid(root, errTxt));
+  std::string label;
+  while(parseFluid(root, label, errTxt))
+  while(parseSolid(root, label, errTxt))
+
+  //Gå gjennom alle navn i check consistency for å se at alle er unike.
+  //Lag 'set' av alle labels som er brukt
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -1730,30 +1734,30 @@ XmlModelFile::parseRock(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("reuss"); //Not implemented
   legalCommands.push_back("voigt"); //Not implemented
   legalCommands.push_back("hill"); //Not implemented
-  legalCommands.push_back("dem"); //Not implemented
+  legalCommands.push_back("dem");
   legalCommands.push_back("hashin-shtrikman"); //Not implemented
   legalCommands.push_back("walton"); //Not implemented
   legalCommands.push_back("gassmann"); //Not implemented
 
-  std::string label;
+  std::string label = "";
   parseValue(root, "label", label, errTxt);
 
-  std::string use;
+  std::string use = "";
   parseValue(root, "use", use, errTxt);
-  //Gå gjennom fluider fra modelSettings for å se om den det spørres etter finnes
-  //Dersom den finnes må fluid knyttes opp mot tidligere fluid på et vis
-  //Kan ikke angis i kombinasjon med label
+  if(use != "" && label != "")
+    errTxt += "Both <label> and <use> can not be given in <rock>\n";
 
   int constituent_type = ModelSettings::ROCK;
 
   parseTabulated(root, constituent_type, label, errTxt);
+  parseDEM(root, constituent_type, label, errTxt);
 
   checkForJunk(root, errTxt, legalCommands, true);
   return(true);
 }
 
 bool
-XmlModelFile::parseSolid(TiXmlNode * node, std::string & errTxt)
+XmlModelFile::parseSolid(TiXmlNode * node, std::string & label, std::string & errTxt)
 {
   TiXmlNode * root = node->FirstChildElement("solid");
   if(root == 0)
@@ -1766,30 +1770,33 @@ XmlModelFile::parseSolid(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("reuss"); //Not implemented
   legalCommands.push_back("voigt"); //Not implemented
   legalCommands.push_back("hill"); //Not implemented
-  legalCommands.push_back("dem"); //Not implemented
+  legalCommands.push_back("dem");
   legalCommands.push_back("hashin-shtrikman"); //Not implemented
   legalCommands.push_back("walton"); //Not implemented
   legalCommands.push_back("gassmann"); //Not implemented
 
-  std::string label;
+  label = "";
   parseValue(root, "label", label, errTxt);
 
-  std::string use;
+  std::string use = "";
   parseValue(root, "use", use, errTxt);
-  //Gå gjennom fluider fra modelSettings for å se om den det spørres etter finnes
-  //Dersom den finnes må fluid knyttes opp mot tidligere fluid på et vis
-  //Kan ikke angis i kombinasjon med label
+
+  if(use != "" && label != "")
+    errTxt += "Both <label> and <use> can not be given in <solid>\n";
+  else if(use != "")
+    label = use;
 
   int constituent_type = ModelSettings::SOLID;
 
   parseTabulated(root, constituent_type, label, errTxt);
+  parseDEM(root, constituent_type, label, errTxt);
 
   checkForJunk(root, errTxt, legalCommands, true);
   return(true);
 }
 
 bool
-XmlModelFile::parseFluid(TiXmlNode * node, std::string & errTxt)
+XmlModelFile::parseFluid(TiXmlNode * node, std::string & label, std::string & errTxt)
 {
   TiXmlNode * root = node->FirstChildElement("fluid");
   if(root == 0)
@@ -1803,25 +1810,162 @@ XmlModelFile::parseFluid(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("voigt"); //Not implemented
   legalCommands.push_back("hill"); //Not implemented
   legalCommands.push_back("batzle-wang-brine"); //Not implemented
-  legalCommands.push_back("dem"); //Not implemented
   legalCommands.push_back("hashin-shtrikman"); //Not implemented
   legalCommands.push_back("walton"); //Not implemented
   legalCommands.push_back("gassmann"); //Not implemented
 
-  std::string label;
+  label = "";
   parseValue(root, "label", label, errTxt);
 
-  std::string use;
+  std::string use = "";
   parseValue(root, "use", use, errTxt);
-  //Gå gjennom fluider fra modelSettings for å se om den det spørres etter finnes
-  //Dersom den finnes må fluid knyttes opp mot tidligere fluid på et vis
-  //Kan ikke angis i kombinasjon med label
+
+  if(use != "" && label != "")
+    errTxt += "Both <label> and <use> can not be given in <fluid>\n";
+  else if(use != "")
+    label = use;
 
   int constituent_type = ModelSettings::FLUID;
 
   parseTabulatedFluid(root, constituent_type, label, errTxt);
 
   checkForJunk(root, errTxt, legalCommands, true);
+  return(true);
+}
+
+bool
+XmlModelFile::parseDEM(TiXmlNode * node, int constituent, std::string label, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("dem");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("host");
+  legalCommands.push_back("inclusion");
+
+  DistributionWithTrendStorage * host_volume = NULL;
+  std::string host_label;
+
+  parseDEMHost(root, host_label, host_volume, errTxt);
+
+  std::vector<std::string>                    inclusion_label;
+  std::vector<DistributionWithTrendStorage *> inclusion_volume;
+  std::vector<double>                         aspect_ratio;
+
+  DistributionWithTrendStorage * volume = NULL;
+  double      aspect;
+  std::string this_label;
+
+  while(parseDEMInclusion(root, this_label, aspect, volume, errTxt) == true) {
+    inclusion_label.push_back(this_label);
+    inclusion_volume.push_back(volume);
+    aspect_ratio.push_back(aspect);
+  }
+
+  if(constituent == ModelSettings::FLUID) {
+    errTxt += "Implementation error: The DEM model can not be used to mix a fluid\n";
+  }
+  else if(constituent == ModelSettings::SOLID) {
+    DistributionsSolidStorage * solid = new DEMSolidStorage(label, host_volume, inclusion_label, inclusion_volume);
+    modelSettings_->addSolid(label, solid);
+  }
+  else if(constituent == ModelSettings::ROCK) {
+    DistributionsRockStorage * rock = new DEMRockStorage(label, host_volume, inclusion_label, inclusion_volume);
+    modelSettings_->addRock(label, rock);
+  }
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseDEMHost(TiXmlNode * node, std::string & label, DistributionWithTrendStorage * volume_fraction, std::string & errTxt)
+{
+
+  TiXmlNode * root = node->FirstChildElement("host");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("solid");
+  legalCommands.push_back("fluid");
+  legalCommands.push_back("dry-rock"); //Not implemented
+  legalCommands.push_back("volume-fraction");
+
+  int host_given = 0;
+  while(parseSolid(root, label, errTxt) == true)
+    host_given++;
+  while(parseFluid(root, label, errTxt) == true)
+    host_given++;
+
+  if(host_given > 1)
+    errTxt += "There can only be one constituent in the host of the DEM model\n";
+
+  parseVolumeFraction(root, volume_fraction, errTxt);
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseDEMInclusion(TiXmlNode * node, std::string & label, double & aspect_ratio, DistributionWithTrendStorage * volume_fraction, std::string & errTxt)
+{
+
+  TiXmlNode * root = node->FirstChildElement("inclusion");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("solid");
+  legalCommands.push_back("fluid");
+  legalCommands.push_back("dry-rock"); //Not implemented
+  legalCommands.push_back("volume-fraction"); //Not implemented
+  legalCommands.push_back("aspect-ratio");
+
+  int inclusion_given = 0;
+  while(parseSolid(root, label, errTxt) == true)
+    inclusion_given++;
+  while(parseFluid(root, label, errTxt) == true)
+    inclusion_given++;
+
+  if(inclusion_given > 1)
+    errTxt += "There can only be one constituent for each of the inclusions of the DEM model\n";
+
+  parseVolumeFraction(root, volume_fraction, errTxt);
+
+  aspect_ratio = 0;
+  //parseAspectRatio()
+
+  checkForJunk(root, errTxt, legalCommands, true);
+  return(true);
+}
+
+bool
+XmlModelFile::parseVolumeFraction(TiXmlNode * node, DistributionWithTrendStorage * volume_fraction, std::string & errTxt)
+{
+
+  TiXmlNode * root = node->FirstChildElement("volume-fraction");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("reservoir-variable");
+
+  std::string dummy;
+
+  if(parseDistributionWithTrend(root, "volume-fraction", volume_fraction, dummy, errTxt, false) == false) {
+    std::string reservoir_variable;
+    if(parseValue(root, "reservoir-variable", reservoir_variable, errTxt) == false) //Denne må et nivå lenger inn. Lag parseVolumeFraction()
+      errTxt += "The volume fractions must be given for all hosts and inclusions\n";
+    else {
+      //Må finne variabelen i reservoir-variabler
+      std::map<std::string, DistributionWithTrendStorage *> storage = modelSettings_->getReservoirVariable();
+      volume_fraction = storage.find("ord")->second;
+    }
+  }
+
+  checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
 

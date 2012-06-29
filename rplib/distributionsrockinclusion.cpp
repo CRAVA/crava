@@ -25,10 +25,10 @@ DistributionsRockInclusion::DistributionsRockInclusion(DistributionsSolid       
 DistributionsRockInclusion::~DistributionsRockInclusion(){}
 
 Rock *
-DistributionsRockInclusion::GenerateSample(const std::vector<double> & /*trend_params*/) const
+DistributionsRockInclusion::GenerateSample(const std::vector<double> & trend_params) const
 {
-  Solid * solid = distr_solid_->GenerateSample();
-  Fluid * fluid = distr_fluid_->GenerateSample();
+  Solid * solid = distr_solid_->GenerateSample(trend_params);
+  Fluid * fluid = distr_fluid_->GenerateSample(trend_params);
   size_t n_incl = distr_incl_spectrum_.size();
   std::vector<double> inclusion_spectrum(n_incl);
   std::vector<double> inclusion_concentration(n_incl);

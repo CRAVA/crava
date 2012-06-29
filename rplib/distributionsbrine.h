@@ -17,7 +17,7 @@ public:
 
   virtual ~DistributionsBrine();
 
-  virtual Fluid * GenerateSample() const;
+  virtual Fluid * GenerateSample(const std::vector<double> & /*trend_params*/) const;
 
 
 private:

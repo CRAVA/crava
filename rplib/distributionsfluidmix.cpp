@@ -1,3 +1,5 @@
+
+#include "rplib/fluid.h"
 #include "rplib/distributionsfluidmix.h"
 
 DistributionsFluidMix::DistributionsFluidMix(std::vector< DistributionsFluid * >            distr_fluid,
@@ -16,7 +18,7 @@ DistributionsFluidMix::DistributionsFluidMix(std::vector< DistributionsFluid * >
 DistributionsFluidMix::~DistributionsFluidMix(){}
 
 Fluid *
-DistributionsFluidMix::GenerateSample() const
+DistributionsFluidMix::GenerateSample(const std::vector<double> & trend_params) const
 {
 
   size_t n_fluids = distr_fluid_.size();
@@ -24,7 +26,7 @@ DistributionsFluidMix::GenerateSample() const
   std::vector<double> volume_fraction(n_fluids);
 
   for(size_t i = 0; i < n_fluids; ++i) {
-    fluid[i] = distr_fluid_[i]->GenerateSample();
+    fluid[i] = distr_fluid_[i]->GenerateSample(trend_params);
     volume_fraction[i] = distr_vol_frac_[i]->Draw();
   }
   Fluid * fluid_mixed = new FluidMixed(fluid, volume_fraction, mix_method_, distr_evolution_);

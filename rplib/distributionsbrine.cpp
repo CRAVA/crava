@@ -15,7 +15,7 @@ DistributionsBrine::DistributionsBrine(NRLib::Distribution<double> * distr_tempe
 DistributionsBrine::~DistributionsBrine(){}
 
 Fluid *
-DistributionsBrine::GenerateSample() const
+DistributionsBrine::GenerateSample(const std::vector<double> & /*trend_params*/) const
 {
   double salinity      = distr_salinity_->Draw();
   double temperature   = distr_temperature_->Draw();

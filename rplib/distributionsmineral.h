@@ -17,7 +17,7 @@ public:
 
   virtual ~DistributionsMineral();
 
-  virtual Solid * GenerateSample() const;
+  virtual Solid * GenerateSample(const std::vector<double> & /*trend_params*/) const;
 
 private:
   NRLib::Distribution<double>   * distr_k_;         // Pointer to external object.

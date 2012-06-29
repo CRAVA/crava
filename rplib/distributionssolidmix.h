@@ -17,7 +17,7 @@ public:
 
   virtual ~DistributionsSolidMix();
 
-  virtual Solid * GenerateSample() const;
+  virtual Solid * GenerateSample(const std::vector<double> & /*trend_params*/) const;
 
 private:
   std::vector< DistributionsSolid * >            distr_solid_;     // Pointers to external objects.

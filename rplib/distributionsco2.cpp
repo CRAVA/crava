@@ -13,7 +13,7 @@ DistributionsCO2::DistributionsCO2(NRLib::Distribution<double> * distr_temperatu
 DistributionsCO2::~DistributionsCO2(){}
 
 Fluid *
-DistributionsCO2::GenerateSample() const
+DistributionsCO2::GenerateSample(const std::vector<double> & /*trend_params*/) const
 {
   double temperature   = distr_temperature_->Draw();
   double pore_pressure = distr_pore_pressure_->Draw();

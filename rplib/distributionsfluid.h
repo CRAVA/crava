@@ -1,5 +1,5 @@
-#ifndef RPLIB_DISTRIBUTIONSFLUID_H
-#define RPLIB_DISTRIBUTIONSFLUID_H
+#ifndef RPLIB_DISTRIBUTIONS_FLUID_H
+#define RPLIB_DISTRIBUTIONS_FLUID_H
 
 #include "rplib/fluid.h"
 
@@ -14,7 +14,7 @@ public:
   virtual ~DistributionsFluid(){}
 
   // Fluid is an abstract class, hence pointer must be used here. Allocated memory (using new) MUST be deleted by caller.
-  virtual Fluid * GenerateSample() const = 0;
+  virtual Fluid * GenerateSample(const std::vector<double> & /*trend_params*/) const = 0;
 
 };
 

@@ -17,7 +17,7 @@ public:
 
   virtual ~DistributionsFluidMix();
 
-  virtual Fluid * GenerateSample() const;
+  virtual Fluid * GenerateSample(const std::vector<double> & /*trend_params*/) const;
 
 private:
   std::vector< DistributionsFluid * >            distr_fluid_;     // Pointers to external objects.

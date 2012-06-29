@@ -897,8 +897,8 @@ DEMTools::DebugTestDeletionAndCopying() {
     // ASSIGNMENT ROCK
     std::vector<double> incl_spec(1, 1.0);
     std::vector<double> incl_conc(1, 1.0);
-    Solid * q = distr_quartz->GenerateSample();
-    Fluid * b = distr_brine->GenerateSample();
+    Solid * q = distr_quartz->GenerateSample(dummy);
+    Fluid * b = distr_brine->GenerateSample(dummy);
     RockInclusion rock_incl2(q, b, incl_spec, incl_conc, 0.3);
     rock_incl2 = *(dynamic_cast<RockInclusion*>(rock_incl)); // Assignment
     /*const Solid * s4 = (dynamic_cast<RockInclusion*>(rock_incl))->GetSolid();
@@ -911,12 +911,12 @@ DEMTools::DebugTestDeletionAndCopying() {
   delete rock_incl; // Should destroy s4 and f4, but not s_incl and f_incl.
 
   {
-    Solid * quartz = distr_quartz->GenerateSample();
-    Solid * clay = distr_clay->GenerateSample();
-    Fluid * brine = distr_brine->GenerateSample();
-    Fluid * co2   = distr_co2->GenerateSample();
+    Solid * quartz = distr_quartz->GenerateSample(dummy);
+    Solid * clay = distr_clay->GenerateSample(dummy);
+    Fluid * brine = distr_brine->GenerateSample(dummy);
+    Fluid * co2   = distr_co2->GenerateSample(dummy);
 
-    Solid * solid_mixed = distr_solid_mixed->GenerateSample();
+    Solid * solid_mixed = distr_solid_mixed->GenerateSample(dummy);
     std::vector<Solid *> s_ass;
     s_ass.push_back(clay);
     s_ass.push_back(quartz);
@@ -934,7 +934,7 @@ DEMTools::DebugTestDeletionAndCopying() {
     sol_mixed_ass.ComputeElasticParams(k_ass, mu_ass, rho_ass); // Should work.
     //solid_mixed->ComputeElasticParams(k_mix, mu_mix, rho_mix); //Should not work.
 
-    Fluid * fluid_mixed = distr_fluid_mixed->GenerateSample();
+    Fluid * fluid_mixed = distr_fluid_mixed->GenerateSample(dummy);
     std::vector<Fluid *> f_ass;
     f_ass.push_back(co2);
     f_ass.push_back(brine);
