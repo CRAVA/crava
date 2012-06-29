@@ -1,5 +1,5 @@
-#ifndef DISTRIBUTIONSSOLID_H
-#define DISTRIBUTIONSSOLID_H
+#ifndef DISTRIBUTIONS_SOLID_H
+#define DISTRIBUTIONS_SOLID_H
 
 #include "rplib/solid.h"
 

@@ -15,6 +15,7 @@
 #include "rplib/distributionsrockstorage.h"
 #include "rplib/distributionssolidstorage.h"
 #include "rplib/distributionsfluidstorage.h"
+#include "rplib/distributionsdryrockstorage.h"
 #include "rplib/distributionwithtrendstorage.h"
 
 class Simbox;
@@ -196,12 +197,14 @@ public:
   std::vector<int>                 findSortedVintages(void)             const;
   std::vector<std::string>         getTrendCubeParameters(void)         const { return trendCubeParameter_                  ;}
   int                              getNumberOfRocks(void)               const { return static_cast<int>(rockStorage_.size())   ;}
+  int                              getNumberOfDryRocks(void)            const { return static_cast<int>(dryRockStorage_.size());}
   int                              getNumberOfSolids()                  const { return static_cast<int>(solidStorage_.size())  ;}
   int                              getNumberOfFluids()                  const { return static_cast<int>(fluidStorage_.size())  ;}
   std::vector<std::string>         getRockName()                        const { return rockName_                            ;}
   RockPhysicsStorage             * getRockPhysicsStorage(int i)         const { return rockPhysics_[i]                      ;}
   std::map<std::string, DistributionWithTrendStorage *> getReservoirVariable() const { return reservoirVariable_            ;}
-  std::map<std::string, DistributionsRockStorage  *>    getRockStorage()       const { return rockStorage_                  ;}
+  std::map<std::string, DistributionsRockStorage *>     getRockStorage()       const { return rockStorage_                  ;}
+  std::map<std::string, DistributionsDryRockStorage *>  getDryRockStorage()    const { return dryRockStorage_               ;}
   std::map<std::string, DistributionsSolidStorage *>    getSolidStorage()      const { return solidStorage_                 ;}
   std::map<std::string, DistributionsFluidStorage *>    getFluidStorage()      const { return fluidStorage_                 ;}
 
@@ -252,9 +255,10 @@ public:
   void addRockName(std::string rockName)                                 { rockName_.push_back(rockName)                                  ;}
   void addRockPhysicsStorage(RockPhysicsStorage * rock)                  { rockPhysics_.push_back(rock)                                   ;}
   void addReservoirVariable(std::string variable, DistributionWithTrendStorage * dist) { reservoirVariable_[variable] = dist              ;}
-  void addRock(std::string label,  DistributionsRockStorage  * rock)                   { rockStorage_[label]  = rock                      ;}
-  void addSolid(std::string label, DistributionsSolidStorage * solid)                  { solidStorage_[label] = solid                     ;}
-  void addFluid(std::string label, DistributionsFluidStorage * fluid)                  { fluidStorage_[label] = fluid                     ;}
+  void addRock(std::string label,  DistributionsRockStorage  * rock)                   { rockStorage_[label]    = rock                    ;}
+  void addDryRock(std::string label,  DistributionsDryRockStorage  * dry_rock)         { dryRockStorage_[label] = dry_rock                ;}
+  void addSolid(std::string label, DistributionsSolidStorage * solid)                  { solidStorage_[label]   = solid                   ;}
+  void addFluid(std::string label, DistributionsFluidStorage * fluid)                  { fluidStorage_[label]   = fluid                   ;}
 
 
   void addUpperKRock(float value)                                        { upperKRock_.push_back(value)                                   ;}
@@ -697,6 +701,7 @@ private:
 
   std::map<std::string, DistributionWithTrendStorage *>   reservoirVariable_;           // Rock physics variables defined in reservoir
   std::map<std::string, DistributionsRockStorage *>       rockStorage_;                 // Rock physics rocks defined in predefinitions
+  std::map<std::string, DistributionsDryRockStorage *>    dryRockStorage_;              // Rock physics dry rocks defined in predefinitions
   std::map<std::string, DistributionsSolidStorage *>      solidStorage_;                // Rock physics solids defined in predefinitions
   std::map<std::string, DistributionsFluidStorage *>      fluidStorage_;                // Rock physics fluids defined in predefinitions
 

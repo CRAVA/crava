@@ -6189,6 +6189,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\rplib\distributionsdryrockstorage.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\rplib\distributionsfluidmix.cpp"
 					>
 				</File>
@@ -7021,11 +7025,11 @@
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\filesystem\config.hpp"
+						RelativePath=".\nrlib\boost\system\config.hpp"
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\system\config.hpp"
+						RelativePath=".\nrlib\boost\filesystem\config.hpp"
 						>
 					</File>
 					<File
@@ -7310,6 +7314,14 @@
 					>
 				</File>
 				<File
+					RelativePath=".\rplib\distributionsdryrock.h"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\distributionsdryrockstorage.h"
+					>
+				</File>
+				<File
 					RelativePath=".\rplib\distributionsfluid.h"
 					>
 				</File>
@@ -7391,6 +7403,10 @@
 				</File>
 				<File
 					RelativePath=".\rplib\distributionwithtrendstorage.h"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\dryrock.h"
 					>
 				</File>
 				<File

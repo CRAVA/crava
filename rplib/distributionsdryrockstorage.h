@@ -1,0 +1,80 @@
+#ifndef RPLIB_DISTRIBUTIONS_DRY_ROCK_STORAGE_HPP
+#define RPLIB_DISTRIBUTIONS_DRY_ROCK_STORAGE_HPP
+
+#include "rplib/distributionsdryrock.h"
+#include "rplib/distributionwithtrendstorage.h"
+#include "nrlib/trend/trendstorage.hpp"
+#include "nrlib/trend/trend.hpp"
+
+class DistributionsDryRockStorage {
+public:
+  DistributionsDryRockStorage();
+
+  virtual ~DistributionsDryRockStorage();
+
+  virtual DistributionsDryRock * GenerateDistributionsDryRock(const std::string                       & /*path*/,
+                                                              const std::vector<std::string>          & /*trend_cube_parameters*/,
+                                                              const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
+                                                              std::string                             & /*errTxt*/)                    const = 0;
+};
+
+//----------------------------------------------------------------------------------//
+
+class TabulatedDryRockStorage : public DistributionsDryRockStorage {
+public:
+  TabulatedDryRockStorage(DistributionWithTrendStorage * vp,
+                          DistributionWithTrendStorage * vs,
+                          DistributionWithTrendStorage * density,
+                          DistributionWithTrendStorage * correlation_vp_vs,
+                          DistributionWithTrendStorage * correlation_vp_density,
+                          DistributionWithTrendStorage * correlation_vs_density,
+                          DistributionWithTrendStorage * total_porosity,
+                          std::string                    moduli);
+
+  virtual ~TabulatedDryRockStorage();
+
+  virtual DistributionsDryRock * GenerateDistributionsDryRock(const std::string                       & path,
+                                                              const std::vector<std::string>          & trend_cube_parameters,
+                                                              const std::vector<std::vector<double> > & trend_cube_sampling,
+                                                              std::string                             & errTxt) const;
+
+private:
+  DistributionWithTrendStorage * vp_;
+  DistributionWithTrendStorage * vs_;
+  DistributionWithTrendStorage * density_;
+  DistributionWithTrendStorage * correlation_vp_vs_;
+  DistributionWithTrendStorage * correlation_vp_density_;
+  DistributionWithTrendStorage * correlation_vs_density_;
+  DistributionWithTrendStorage * total_porosity_;
+  std::string                    mineral_moduli_;
+};
+//----------------------------------------------------------------------------------//
+
+class DEMDryRockStorage : public DistributionsDryRockStorage {
+public:
+  DEMDryRockStorage(std::string                                 host_label,
+                    DistributionWithTrendStorage *              host_volume_fraction,
+                    std::vector<std::string>                    inclusion_label,
+                    std::vector<DistributionWithTrendStorage *> inclusion_volume_fraction,
+                    std::vector<DistributionWithTrendStorage *> inclusion_aspect_ratio,
+                    DistributionWithTrendStorage *              total_porosity,
+                    std::string                                 moduli);
+
+  virtual ~DEMDryRockStorage();
+
+  virtual DistributionsDryRock * GenerateDistributionsDryRock(const std::string                       & path,
+                                                              const std::vector<std::string>          & trend_cube_parameters,
+                                                              const std::vector<std::vector<double> > & trend_cube_sampling,
+                                                              std::string                             & errTxt) const;
+
+private:
+  std::string                                 host_label_;
+  DistributionWithTrendStorage *              host_volume_fraction_;
+  std::vector<std::string>                    inclusion_label_;
+  std::vector<DistributionWithTrendStorage *> inclusion_volume_fraction_;
+  std::vector<DistributionWithTrendStorage *> inclusion_aspect_ratio_;
+  DistributionWithTrendStorage              * total_porosity_;
+  std::string                                 mineral_moduli_;
+};
+
+#endif

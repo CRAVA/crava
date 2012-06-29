@@ -72,11 +72,13 @@ TabulatedSolidStorage::GenerateDistributionsSolid(const std::string             
 DEMSolidStorage::DEMSolidStorage(std::string                                 host_label,
                                  DistributionWithTrendStorage *              host_volume_fraction,
                                  std::vector<std::string>                    inclusion_label,
-                                 std::vector<DistributionWithTrendStorage *> inclusion_volume_fraction)
+                                 std::vector<DistributionWithTrendStorage *> inclusion_volume_fraction,
+                                 std::vector<DistributionWithTrendStorage *> inclusion_aspect_ratio)
 : host_label_(host_label),
   host_volume_fraction_(host_volume_fraction),
   inclusion_label_(inclusion_label),
-  inclusion_volume_fraction_(inclusion_volume_fraction)
+  inclusion_volume_fraction_(inclusion_volume_fraction),
+  inclusion_aspect_ratio_(inclusion_aspect_ratio)
 {
 }
 

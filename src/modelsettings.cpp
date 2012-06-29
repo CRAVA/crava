@@ -7,6 +7,7 @@
 
 #include "rplib/distributionwithtrendstorage.h"
 #include "rplib/distributionsrockstorage.h"
+#include "rplib/distributionsdryrockstorage.h"
 #include "rplib/distributionssolidstorage.h"
 #include "rplib/distributionsfluidstorage.h"
 
@@ -212,6 +213,10 @@ ModelSettings::~ModelSettings(void)
   }
   for(std::map<std::string, DistributionsRockStorage *>::iterator it = rockStorage_.begin(); it != rockStorage_.end(); it++) {
     DistributionsRockStorage * storage = it->second;
+    delete storage;
+  }
+  for(std::map<std::string, DistributionsDryRockStorage *>::iterator it = dryRockStorage_.begin(); it != dryRockStorage_.end(); it++) {
+    DistributionsDryRockStorage * storage = it->second;
     delete storage;
   }
   for(std::map<std::string, DistributionsSolidStorage *>::iterator it = solidStorage_.begin(); it != solidStorage_.end(); it++) {

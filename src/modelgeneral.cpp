@@ -2275,6 +2275,7 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
 
     }*/
 
+    // Ikke laget dette for dry rock
     std::map<std::string, DistributionsFluidStorage *>      fluid_storage = modelSettings->getFluidStorage();
     for(std::map<std::string, DistributionsFluidStorage *>::iterator it = fluid_storage.begin(); it != fluid_storage.end(); it++) {
       DistributionsFluidStorage     * storage    = it     ->second;

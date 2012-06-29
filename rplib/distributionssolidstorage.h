@@ -51,7 +51,8 @@ public:
   DEMSolidStorage(std::string                                 host_label,
                   DistributionWithTrendStorage *              host_volume_fraction,
                   std::vector<std::string>                    inclusion_label,
-                  std::vector<DistributionWithTrendStorage *> inclusion_volume_fraction);
+                  std::vector<DistributionWithTrendStorage *> inclusion_volume_fraction,
+                  std::vector<DistributionWithTrendStorage *> inclusion_aspect_ratio);
 
   virtual ~DEMSolidStorage();
 
@@ -65,6 +66,7 @@ private:
   DistributionWithTrendStorage *              host_volume_fraction_;
   std::vector<std::string>                    inclusion_label_;
   std::vector<DistributionWithTrendStorage *> inclusion_volume_fraction_;
+  std::vector<DistributionWithTrendStorage *> inclusion_aspect_ratio_;
 };
 
 #endif
