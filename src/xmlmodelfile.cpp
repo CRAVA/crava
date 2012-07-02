@@ -1734,13 +1734,13 @@ XmlModelFile::parseRock(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("label");
   legalCommands.push_back("use");
   legalCommands.push_back("tabulated");
-  legalCommands.push_back("reuss"); //Not implemented
-  legalCommands.push_back("voigt"); //Not implemented
-  legalCommands.push_back("hill"); //Not implemented
+  legalCommands.push_back("reuss");
+  legalCommands.push_back("voigt");
+  legalCommands.push_back("hill");
   legalCommands.push_back("dem");
-  legalCommands.push_back("hashin-shtrikman"); //Not implemented
-  legalCommands.push_back("walton"); //Not implemented
-  legalCommands.push_back("gassmann"); //Not implemented
+  legalCommands.push_back("hashin-shtrikman");
+  legalCommands.push_back("walton");
+  legalCommands.push_back("gassmann");
 
   std::string label = "";
   parseValue(root, "label", label, errTxt);
@@ -1756,7 +1756,18 @@ XmlModelFile::parseRock(TiXmlNode * node, std::string & errTxt)
   std::string                    moduli = "";
 
   parseTabulated(root, constituent_type, label, porosity, moduli, errTxt);
+  parseReuss(root, constituent_type, label, porosity, moduli, errTxt);
+  parseVoigt(root, constituent_type, label, porosity, moduli, errTxt);
+  parseHill(root, constituent_type, label, porosity, moduli, errTxt);
   parseDEM(root, constituent_type, label, porosity, moduli, errTxt);
+
+  std::string hashin;
+  if(parseValue(root, "hashin-shtrikman", hashin, errTxt) == true)
+    errTxt += "The Hashin-Shtrikman model has not been implemented\n";
+
+  std::string walton;
+  if(parseValue(root, "walton", walton, errTxt) == true)
+    errTxt += "The Walton model has not been implemented\n";
 
   checkForJunk(root, errTxt, legalCommands, true);
   return(true);
@@ -1773,12 +1784,12 @@ XmlModelFile::parseSolid(TiXmlNode * node, std::string & label, std::string & er
   legalCommands.push_back("label");
   legalCommands.push_back("use");
   legalCommands.push_back("tabulated");
-  legalCommands.push_back("reuss"); //Not implemented
-  legalCommands.push_back("voigt"); //Not implemented
-  legalCommands.push_back("hill"); //Not implemented
+  legalCommands.push_back("reuss");
+  legalCommands.push_back("voigt");
+  legalCommands.push_back("hill");
   legalCommands.push_back("dem");
-  legalCommands.push_back("hashin-shtrikman"); //Not implemented
-  legalCommands.push_back("walton"); //Not implemented
+  legalCommands.push_back("hashin-shtrikman");
+  legalCommands.push_back("walton");
 
   label = "";
   parseValue(root, "label", label, errTxt);
@@ -1797,7 +1808,18 @@ XmlModelFile::parseSolid(TiXmlNode * node, std::string & label, std::string & er
   std::string                    moduli = "";
 
   parseTabulated(root, constituent_type, label, porosity, moduli, errTxt);
+  parseReuss(root, constituent_type, label, porosity, moduli, errTxt);
+  parseVoigt(root, constituent_type, label, porosity, moduli, errTxt);
+  parseHill(root, constituent_type, label, porosity, moduli, errTxt);
   parseDEM(root, constituent_type, label, porosity, moduli, errTxt);
+
+  std::string hashin;
+  if(parseValue(root, "hashin-shtrikman", hashin, errTxt) == true)
+    errTxt += "The Hashin-Shtrikman model has not been implemented\n";
+
+  std::string walton;
+  if(parseValue(root, "walton", walton, errTxt) == true)
+    errTxt += "The Walton model has not been implemented\n";
 
   checkForJunk(root, errTxt, legalCommands, true);
   return(true);
@@ -1814,12 +1836,12 @@ XmlModelFile::parseDryRock(TiXmlNode * node, std::string & label, std::string & 
   legalCommands.push_back("label");
   legalCommands.push_back("use");
   legalCommands.push_back("tabulated");
-  legalCommands.push_back("reuss"); //Not implemented
-  legalCommands.push_back("voigt"); //Not implemented
-  legalCommands.push_back("hill"); //Not implemented
+  legalCommands.push_back("reuss");
+  legalCommands.push_back("voigt");
+  legalCommands.push_back("hill");
   legalCommands.push_back("dem");
-  legalCommands.push_back("hashin-shtrikman"); //Not implemented
-  legalCommands.push_back("walton"); //Not implemented
+  legalCommands.push_back("hashin-shtrikman");
+  legalCommands.push_back("walton");
   legalCommands.push_back("total-porosity");
   legalCommands.push_back("mineral-moduli");
 
@@ -1846,7 +1868,18 @@ XmlModelFile::parseDryRock(TiXmlNode * node, std::string & label, std::string & 
   int constituent_type = ModelSettings::DRY_ROCK;
 
   parseTabulated(root, constituent_type, label, total_porosity, moduli, errTxt);
+  parseReuss(root, constituent_type, label, total_porosity, moduli, errTxt);
+  parseVoigt(root, constituent_type, label, total_porosity, moduli, errTxt);
+  parseHill(root, constituent_type, label, total_porosity, moduli, errTxt);
   parseDEM(root, constituent_type, label, total_porosity, moduli, errTxt);
+
+  std::string hashin;
+  if(parseValue(root, "hashin-shtrikman", hashin, errTxt) == true)
+    errTxt += "The Hashin-Shtrikman model has not been implemented\n";
+
+  std::string walton;
+  if(parseValue(root, "walton", walton, errTxt) == true)
+    errTxt += "The Walton model has not been implemented\n";
 
   checkForJunk(root, errTxt, legalCommands, true);
   return(true);
@@ -1863,12 +1896,12 @@ XmlModelFile::parseFluid(TiXmlNode * node, std::string & label, std::string & er
   legalCommands.push_back("label");
   legalCommands.push_back("use");
   legalCommands.push_back("tabulated");
-  legalCommands.push_back("reuss"); //Not implemented
-  legalCommands.push_back("voigt"); //Not implemented
-  legalCommands.push_back("hill"); //Not implemented
-  legalCommands.push_back("batzle-wang-brine"); //Not implemented
-  legalCommands.push_back("hashin-shtrikman"); //Not implemented
-  legalCommands.push_back("walton"); //Not implemented
+  legalCommands.push_back("reuss");
+  legalCommands.push_back("voigt");
+  legalCommands.push_back("hill");
+  legalCommands.push_back("batzle-wang-brine");
+  legalCommands.push_back("hashin-shtrikman");
+  legalCommands.push_back("walton");
 
   label = "";
   parseValue(root, "label", label, errTxt);
@@ -1883,9 +1916,224 @@ XmlModelFile::parseFluid(TiXmlNode * node, std::string & label, std::string & er
 
   int constituent_type = ModelSettings::FLUID;
 
+  DistributionWithTrendStorage * porosity = NULL;
+  std::string                    moduli = "";
+
   parseTabulatedFluid(root, constituent_type, label, errTxt);
+  parseReuss(root, constituent_type, label, porosity, moduli, errTxt);
+  parseVoigt(root, constituent_type, label, porosity, moduli, errTxt);
+  parseHill(root, constituent_type, label, porosity, moduli, errTxt);
+  parseBatzleWangBrine(root, constituent_type, label, errTxt);
+
+  std::string hashin;
+  if(parseValue(root, "hashin-shtrikman", hashin, errTxt) == true)
+    errTxt += "The Hashin-Shtrikman model has not been implemented\n";
+
+  std::string walton;
+  if(parseValue(root, "walton", walton, errTxt) == true)
+    errTxt += "The Walton model has not been implemented\n";
 
   checkForJunk(root, errTxt, legalCommands, true);
+  return(true);
+}
+
+bool
+XmlModelFile::parseReuss(TiXmlNode * node, int constituent, std::string label, DistributionWithTrendStorage * total_porosity, std::string moduli, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("reuss");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("constituent");
+
+  std::vector<std::string>                    constituent_label;
+  std::vector<DistributionWithTrendStorage *> constituent_fraction;
+
+  std::string                    this_label;
+  DistributionWithTrendStorage * volume_fraction   = NULL;
+
+  while(parseConstituent(root, this_label, volume_fraction, errTxt) == true) {
+    constituent_label.push_back(this_label);
+    constituent_fraction.push_back(volume_fraction);
+  }
+
+  if(constituent == ModelSettings::FLUID) {
+    DistributionsFluidStorage * fluid = new ReussFluidStorage(constituent_label, constituent_fraction);
+    modelSettings_->addFluid(label, fluid);
+  }
+  else if(constituent == ModelSettings::SOLID) {
+    DistributionsSolidStorage * solid = new ReussSolidStorage(constituent_label, constituent_fraction);
+    modelSettings_->addSolid(label, solid);
+  }
+  else if(constituent == ModelSettings::DRY_ROCK) {
+    DistributionsDryRockStorage * dry_rock = new ReussDryRockStorage(constituent_label, constituent_fraction, total_porosity, moduli);
+    modelSettings_->addDryRock(label, dry_rock);
+  }
+  else if(constituent == ModelSettings::ROCK) {
+    DistributionsRockStorage * rock = new ReussRockStorage(constituent_label, constituent_fraction);
+    modelSettings_->addRock(label, rock);
+  }
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+bool
+XmlModelFile::parseVoigt(TiXmlNode * node, int constituent, std::string label, DistributionWithTrendStorage * total_porosity, std::string moduli, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("voigt");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("constituent");
+
+  std::vector<std::string>                    constituent_label;
+  std::vector<DistributionWithTrendStorage *> constituent_fraction;
+
+  std::string                    this_label;
+  DistributionWithTrendStorage * volume_fraction   = NULL;
+
+  while(parseConstituent(root, this_label, volume_fraction, errTxt) == true) {
+    constituent_label.push_back(this_label);
+    constituent_fraction.push_back(volume_fraction);
+  }
+
+  if(constituent == ModelSettings::FLUID) {
+    DistributionsFluidStorage * fluid = new VoigtFluidStorage(constituent_label, constituent_fraction);
+    modelSettings_->addFluid(label, fluid);
+  }
+  else if(constituent == ModelSettings::SOLID) {
+    DistributionsSolidStorage * solid = new VoigtSolidStorage(constituent_label, constituent_fraction);
+    modelSettings_->addSolid(label, solid);
+  }
+  else if(constituent == ModelSettings::DRY_ROCK) {
+    DistributionsDryRockStorage * dry_rock = new VoigtDryRockStorage(constituent_label, constituent_fraction, total_porosity, moduli);
+    modelSettings_->addDryRock(label, dry_rock);
+  }
+  else if(constituent == ModelSettings::ROCK) {
+    DistributionsRockStorage * rock = new VoigtRockStorage(constituent_label, constituent_fraction);
+    modelSettings_->addRock(label, rock);
+  }
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+bool
+XmlModelFile::parseHill(TiXmlNode * node, int constituent, std::string label, DistributionWithTrendStorage * total_porosity, std::string moduli, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("hill");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("constituent");
+
+  std::vector<std::string>                    constituent_label;
+  std::vector<DistributionWithTrendStorage *> constituent_fraction;
+
+  std::string                    this_label;
+  DistributionWithTrendStorage * volume_fraction   = NULL;
+
+  while(parseConstituent(root, this_label, volume_fraction, errTxt) == true) {
+    constituent_label.push_back(this_label);
+    constituent_fraction.push_back(volume_fraction);
+  }
+
+  if(constituent == ModelSettings::FLUID) {
+    DistributionsFluidStorage * fluid = new HillFluidStorage(constituent_label, constituent_fraction);
+    modelSettings_->addFluid(label, fluid);
+  }
+  else if(constituent == ModelSettings::SOLID) {
+    DistributionsSolidStorage * solid = new HillSolidStorage(constituent_label, constituent_fraction);
+    modelSettings_->addSolid(label, solid);
+  }
+  else if(constituent == ModelSettings::DRY_ROCK) {
+    DistributionsDryRockStorage * dry_rock = new HillDryRockStorage(constituent_label, constituent_fraction, total_porosity, moduli);
+    modelSettings_->addDryRock(label, dry_rock);
+  }
+  else if(constituent == ModelSettings::ROCK) {
+    DistributionsRockStorage * rock = new HillRockStorage(constituent_label, constituent_fraction);
+    modelSettings_->addRock(label, rock);
+  }
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseConstituent(TiXmlNode * node, std::string & label, DistributionWithTrendStorage * volume_fraction, std::string & errTxt)
+{
+
+  TiXmlNode * root = node->FirstChildElement("constituent");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("solid");
+  legalCommands.push_back("fluid");
+  legalCommands.push_back("dry-rock");
+  legalCommands.push_back("volume-fraction");
+
+  int constituent_given = 0;
+  while(parseSolid(root, label, errTxt) == true)
+    constituent_given++;
+  while(parseFluid(root, label, errTxt) == true)
+    constituent_given++;
+  while(parseDryRock(root, label, errTxt) == true)
+    constituent_given++;
+
+  if(constituent_given > 1)
+    errTxt += "There can only be one element in each constituent of the rock physics model\n";
+
+  std::string dummy;
+  parseDistributionWithTrend(root, "volume-fraction", volume_fraction, dummy, errTxt);
+
+  checkForJunk(root, errTxt, legalCommands, true);
+  return(true);
+}
+
+bool
+XmlModelFile::parseBatzleWangBrine(TiXmlNode * node, int constituent, std::string label, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("batzle-wang-brine");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("pore-pressure");
+  legalCommands.push_back("temperature");
+  legalCommands.push_back("salinity");
+
+  std::string dummy;
+
+  DistributionWithTrendStorage * pore_pressure;
+  if(parseDistributionWithTrend(root, "pore-pressure", pore_pressure, dummy, errTxt) == false)
+    errTxt += "The pore pressure must be given in the Batzle-Wang brine model\n";
+
+  DistributionWithTrendStorage * temperature;
+  if(parseDistributionWithTrend(root, "temperature", temperature, dummy, errTxt) == false)
+    errTxt += "The temperature must be given in the Batzle-Wang brine model\n";
+
+  DistributionWithTrendStorage * salinity;
+  if(parseDistributionWithTrend(root, "salinity", salinity, dummy, errTxt) == false)
+    errTxt += "The salinity must be given in the Batzle-Wang brine model\n";
+
+  if(constituent == ModelSettings::FLUID) {
+    DistributionsFluidStorage * fluid = new BatzleWangFluidStorage(pore_pressure, temperature, salinity);
+    modelSettings_->addFluid(label, fluid);
+  }
+  else if(constituent == ModelSettings::SOLID) {
+    errTxt += "Implementation error: The Batzle-Wang brine model can not be used to make a solid\n";
+  }
+  else if(constituent == ModelSettings::DRY_ROCK) {
+    errTxt += "Implementation error: The Batzle-Wang brine model can not be used to make a dry-rock\n";
+  }
+  else if(constituent == ModelSettings::ROCK) {
+    errTxt += "Implementation error: The Batzle-Wang brine model can not be used to make a rock\n";
+  }
+
+  checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
 
@@ -1923,15 +2171,15 @@ XmlModelFile::parseDEM(TiXmlNode * node, int constituent, std::string label, Dis
     errTxt += "Implementation error: The DEM model can not be used to mix a fluid\n";
   }
   else if(constituent == ModelSettings::SOLID) {
-    DistributionsSolidStorage * solid = new DEMSolidStorage(label, host_volume, inclusion_label, inclusion_volume, aspect_ratio);
+    DistributionsSolidStorage * solid = new DEMSolidStorage(host_label, host_volume, inclusion_label, inclusion_volume, aspect_ratio);
     modelSettings_->addSolid(label, solid);
   }
   else if(constituent == ModelSettings::DRY_ROCK) {
-    DistributionsDryRockStorage * dry_rock = new DEMDryRockStorage(label, host_volume, inclusion_label, inclusion_volume, aspect_ratio, total_porosity, moduli);
+    DistributionsDryRockStorage * dry_rock = new DEMDryRockStorage(host_label, host_volume, inclusion_label, inclusion_volume, aspect_ratio, total_porosity, moduli);
     modelSettings_->addDryRock(label, dry_rock);
   }
   else if(constituent == ModelSettings::ROCK) {
-    DistributionsRockStorage * rock = new DEMRockStorage(label, host_volume, inclusion_label, inclusion_volume, aspect_ratio);
+    DistributionsRockStorage * rock = new DEMRockStorage(host_label, host_volume, inclusion_label, inclusion_volume, aspect_ratio);
     modelSettings_->addRock(label, rock);
   }
 
@@ -1950,13 +2198,15 @@ XmlModelFile::parseDEMHost(TiXmlNode * node, std::string & label, DistributionWi
   std::vector<std::string> legalCommands;
   legalCommands.push_back("solid");
   legalCommands.push_back("fluid");
-  legalCommands.push_back("dry-rock"); //Not implemented
+  legalCommands.push_back("dry-rock");
   legalCommands.push_back("volume-fraction");
 
   int host_given = 0;
   while(parseSolid(root, label, errTxt) == true)
     host_given++;
   while(parseFluid(root, label, errTxt) == true)
+    host_given++;
+  while(parseDryRock(root, label, errTxt) == true)
     host_given++;
 
   if(host_given > 1)
@@ -1990,6 +2240,8 @@ XmlModelFile::parseDEMInclusion(TiXmlNode * node, std::string & label, Distribut
     inclusion_given++;
   while(parseFluid(root, label, errTxt) == true)
     inclusion_given++;
+  while(parseDryRock(root, label, errTxt) == true)
+    inclusion_given++;
 
   if(inclusion_given > 1)
     errTxt += "There can only be one constituent for each of the inclusions of the DEM model\n";
@@ -2002,6 +2254,55 @@ XmlModelFile::parseDEMInclusion(TiXmlNode * node, std::string & label, Distribut
     errTxt += "The aspect ratio must be given for the inclusions of the dry-rock\n";
 
   checkForJunk(root, errTxt, legalCommands, true);
+  return(true);
+}
+
+bool
+XmlModelFile::parseGassmann(TiXmlNode * node, int constituent, std::string label, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("gassmann");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("dry-rock");
+  legalCommands.push_back("fluid");
+
+  int dry_rock_given = 0;
+  std::string dry_rock;
+  while(parseDryRock(root, dry_rock, errTxt) == true)
+    dry_rock_given++;
+
+  if(dry_rock_given == 0)
+    errTxt += "A dry-rock must be given in the Gassmann model\n";
+  else if(dry_rock_given > 1)
+    errTxt += "Only one dry-rock can be given in the Gassmann model\n";
+
+  int fluid_given = 0;
+  std::string fluid;
+  while(parseFluid(root, fluid, errTxt) == true)
+    fluid_given++;
+
+  if(fluid_given == 0)
+    errTxt += "A fluid must be given in the Gassmann model\n";
+  else if(fluid_given > 1)
+    errTxt += "Only one fluid can be given in the Gassmann model\n";
+
+  if(constituent == ModelSettings::FLUID) {
+    errTxt += "Implementation error: The Gassmann model can not be used to make a fluid\n";
+  }
+  else if(constituent == ModelSettings::SOLID) {
+    errTxt += "Implementation error: The Gassmann model can not be used to make a solid\n";
+  }
+  else if(constituent == ModelSettings::DRY_ROCK) {
+    errTxt += "Implementation error: The Gassmann model can not be used to make a fluid\n";
+  }
+  else if(constituent == ModelSettings::ROCK) {
+    DistributionsRockStorage * rock = new GassmannRockStorage(dry_rock, fluid);
+    modelSettings_->addRock(label, rock);
+  }
+
+  checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
 
@@ -2114,21 +2415,35 @@ XmlModelFile::parseTabulated(TiXmlNode * node, int constituent, std::string labe
       errTxt += "Implementation error: parseTabulated() can not be used for fluids. Use parseTabulatedFluid()\n";
     }
     else if(constituent == ModelSettings::SOLID) {
-      DistributionsSolidStorage * solid = new TabulatedSolidStorage(vp, vs, density, correlation_vp_vs, correlation_vp_density, correlation_vs_density);
+      DistributionsSolidStorage * solid = new TabulatedVelocitySolidStorage(vp, vs, density, correlation_vp_vs, correlation_vp_density, correlation_vs_density);
       modelSettings_->addSolid(label, solid);
     }
     else if(constituent == ModelSettings::DRY_ROCK) {
-      DistributionsDryRockStorage * dry_rock = new TabulatedDryRockStorage(vp, vs, density, correlation_vp_vs, correlation_vp_density, correlation_vs_density,total_porosity, moduli);
+      DistributionsDryRockStorage * dry_rock = new TabulatedVelocityDryRockStorage(vp, vs, density, correlation_vp_vs, correlation_vp_density, correlation_vs_density, total_porosity, moduli);
       modelSettings_->addDryRock(label, dry_rock);
   }
     else if(constituent == ModelSettings::ROCK) {
-      DistributionsRockStorage * rock = new TabulatedRockStorage(vp, vs, density, correlation_vp_vs, correlation_vp_density, correlation_vs_density);
+      DistributionsRockStorage * rock = new TabulatedVelocityRockStorage(vp, vs, density, correlation_vp_vs, correlation_vp_density, correlation_vs_density);
       modelSettings_->addRock(label, rock);
     }
   }
-  else
-    errTxt += "<tabulated> using bulk-modulus is not implemented yet\n";
-
+  else {
+    if(constituent == ModelSettings::FLUID) {
+      errTxt += "Implementation error: parseTabulated() can not be used for fluids. Use parseTabulatedFluid()\n";
+    }
+    else if(constituent == ModelSettings::SOLID) {
+      DistributionsSolidStorage * solid = new TabulatedModulusSolidStorage(bulk_modulus, shear_modulus, density, correlation_bulk_shear, correlation_bulk_density, correlation_shear_density);
+      modelSettings_->addSolid(label, solid);
+    }
+    else if(constituent == ModelSettings::DRY_ROCK) {
+      DistributionsDryRockStorage * dry_rock = new TabulatedModulusDryRockStorage(bulk_modulus, shear_modulus, density, correlation_bulk_shear, correlation_bulk_density, correlation_shear_density, total_porosity, moduli);
+      modelSettings_->addDryRock(label, dry_rock);
+  }
+    else if(constituent == ModelSettings::ROCK) {
+      DistributionsRockStorage * rock = new TabulatedModulusRockStorage(bulk_modulus, shear_modulus, density, correlation_bulk_shear, correlation_bulk_density, correlation_shear_density);
+      modelSettings_->addRock(label, rock);
+    }
+  }
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
@@ -2183,15 +2498,22 @@ XmlModelFile::parseTabulatedFluid(TiXmlNode * node, int constituent, std::string
 
   if(use_vp) {
     if(constituent == ModelSettings::FLUID) {
-      DistributionsFluidStorage * fluid = new TabulatedFluidStorage(vp, density, correlation_vp_density);
+      DistributionsFluidStorage * fluid = new TabulatedVelocityFluidStorage(vp, density, correlation_vp_density);
       modelSettings_->addFluid(label, fluid);
     }
     else {
       errTxt += "Implementation error: parseTabulatedFluid() can only be used for fluids. Use parseTabulated()\n";
     }
   }
-  else
-    errTxt += "<fluid><tabulated> using bulk-modulus is not implemented yet\n";
+  else {
+    if(constituent == ModelSettings::FLUID) {
+      DistributionsFluidStorage * fluid = new TabulatedModulusFluidStorage(bulk_modulus, density, correlation_vp_density);
+      modelSettings_->addFluid(label, fluid);
+    }
+    else {
+      errTxt += "Implementation error: parseTabulatedFluid() can only be used for fluids. Use parseTabulated()\n";
+    }
+  }
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);

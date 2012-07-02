@@ -5,7 +5,7 @@
 #include "rplib/distributionwithtrend.h"
 #include "rplib/distributionsrock.h"
 #include "rplib/distributionsrockstorage.h"
-#include "rplib/distributionsrocktabulated.h"
+#include "rplib/distributionsrocktabulatedvelocity.h"
 #include "rplib/distributionsrocktrinormal.h"
 #include "rplib/distributionwithtrendstorage.h"
 
@@ -19,12 +19,12 @@ DistributionsRockStorage::~DistributionsRockStorage()
 }
 
 //----------------------------------------------------------------------------------//
-TabulatedRockStorage::TabulatedRockStorage(DistributionWithTrendStorage * vp,
-                                             DistributionWithTrendStorage * vs,
-                                             DistributionWithTrendStorage * density,
-                                             DistributionWithTrendStorage * correlation_vp_vs,
-                                             DistributionWithTrendStorage * correlation_vp_density,
-                                             DistributionWithTrendStorage * correlation_vs_density)
+TabulatedVelocityRockStorage::TabulatedVelocityRockStorage(DistributionWithTrendStorage * vp,
+                                                           DistributionWithTrendStorage * vs,
+                                                           DistributionWithTrendStorage * density,
+                                                           DistributionWithTrendStorage * correlation_vp_vs,
+                                                           DistributionWithTrendStorage * correlation_vp_density,
+                                                           DistributionWithTrendStorage * correlation_vs_density)
 : vp_(vp),
   vs_(vs),
   density_(density),
@@ -34,7 +34,7 @@ TabulatedRockStorage::TabulatedRockStorage(DistributionWithTrendStorage * vp,
 {
 }
 
-TabulatedRockStorage::~TabulatedRockStorage()
+TabulatedVelocityRockStorage::~TabulatedVelocityRockStorage()
 {
   delete vp_;
   delete vs_;
@@ -45,7 +45,7 @@ TabulatedRockStorage::~TabulatedRockStorage()
 }
 
 DistributionsRock *
-TabulatedRockStorage::GenerateDistributionsRock(const std::string                       & path,
+TabulatedVelocityRockStorage::GenerateDistributionsRock(const std::string                       & path,
                                                 const std::vector<std::string>          & trend_cube_parameters,
                                                 const std::vector<std::vector<double> > & trend_cube_sampling,
                                                 std::string                             & errTxt) const
@@ -127,19 +127,129 @@ TabulatedRockStorage::GenerateDistributionsRock(const std::string               
     const DistributionWithTrend * corr_vp_density_dist_with_trend = correlation_vp_density_->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
     const DistributionWithTrend * corr_vs_density_dist_with_trend = correlation_vs_density_->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
 
-    rock = new DistributionsRockTabulated(vp_dist_with_trend,
-                                                              vs_dist_with_trend,
-                                                              density_dist_with_trend,
-                                                              corr_vp_vs_dist_with_trend,
-                                                              corr_vp_density_dist_with_trend,
-                                                              corr_vs_density_dist_with_trend);
+    rock = new DistributionsRockTabulatedVelocity(vp_dist_with_trend,
+                                                  vs_dist_with_trend,
+                                                  density_dist_with_trend,
+                                                  corr_vp_vs_dist_with_trend,
+                                                  corr_vp_density_dist_with_trend,
+                                                  corr_vs_density_dist_with_trend);
   }
 
   return(rock);
 }
 
 //----------------------------------------------------------------------------------//
+TabulatedModulusRockStorage::TabulatedModulusRockStorage(DistributionWithTrendStorage * bulk_modulus,
+                                                         DistributionWithTrendStorage * shear_modulus,
+                                                         DistributionWithTrendStorage * density,
+                                                         DistributionWithTrendStorage * correlation_bulk_shear,
+                                                         DistributionWithTrendStorage * correlation_bulk_density,
+                                                         DistributionWithTrendStorage * correlation_shear_density)
+: bulk_modulus_(bulk_modulus),
+  shear_modulus_(shear_modulus),
+  density_(density),
+  correlation_bulk_shear_(correlation_bulk_shear),
+  correlation_bulk_density_(correlation_bulk_density),
+  correlation_shear_density_(correlation_shear_density)
+{
+}
 
+TabulatedModulusRockStorage::~TabulatedModulusRockStorage()
+{
+  delete bulk_modulus_;
+  delete shear_modulus_;
+  delete density_;
+  delete correlation_bulk_shear_;
+  delete correlation_bulk_density_;
+  delete correlation_shear_density_;
+}
+
+DistributionsRock *
+TabulatedModulusRockStorage::GenerateDistributionsRock(const std::string                       & /*path*/,
+                                                       const std::vector<std::string>          & /*trend_cube_parameters*/,
+                                                       const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
+                                                       std::string                             & /*errTxt*/) const
+{
+  DistributionsRock * rock = NULL;
+
+  return(rock);
+}
+//----------------------------------------------------------------------------------//
+ReussRockStorage::ReussRockStorage(std::vector<std::string>                    constituent_label,
+                                   std::vector<DistributionWithTrendStorage *> constituent_volume_fraction)
+: constituent_label_(constituent_label),
+  constituent_volume_fraction_(constituent_volume_fraction)
+{
+}
+
+ReussRockStorage::~ReussRockStorage()
+{
+}
+
+DistributionsRock *
+ReussRockStorage::GenerateDistributionsRock(const std::string                       & /*path*/,
+                                            const std::vector<std::string>          & /*trend_cube_parameters*/,
+                                            const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
+                                            std::string                             & /*errTxt*/) const
+{
+  //Gjør sjekk på om volume-fractions er double ved nytt kall. Feilmelding dersom ikke double.
+  //Sjekk siste tallet i inclusion_volume_fraction, og pass på at det summeres til 1
+
+  DistributionsRock * rock = NULL; //new DistributionsRockReuss();
+  return(rock);
+}
+
+//----------------------------------------------------------------------------------//
+VoigtRockStorage::VoigtRockStorage(std::vector<std::string>                    constituent_label,
+                                   std::vector<DistributionWithTrendStorage *> constituent_volume_fraction)
+: constituent_label_(constituent_label),
+  constituent_volume_fraction_(constituent_volume_fraction)
+{
+}
+
+VoigtRockStorage::~VoigtRockStorage()
+{
+}
+
+DistributionsRock *
+VoigtRockStorage::GenerateDistributionsRock(const std::string                       & /*path*/,
+                                            const std::vector<std::string>          & /*trend_cube_parameters*/,
+                                            const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
+                                            std::string                             & /*errTxt*/) const
+{
+  //Gjør sjekk på om volume-fractions er double ved nytt kall. Feilmelding dersom ikke double.
+  //Sjekk siste tallet i inclusion_volume_fraction, og pass på at det summeres til 1
+
+  DistributionsRock * rock = NULL; //new DistributionsRockVoigt();
+  return(rock);
+}
+
+//----------------------------------------------------------------------------------//
+HillRockStorage::HillRockStorage(std::vector<std::string>                    constituent_label,
+                                 std::vector<DistributionWithTrendStorage *> constituent_volume_fraction)
+: constituent_label_(constituent_label),
+  constituent_volume_fraction_(constituent_volume_fraction)
+{
+}
+
+HillRockStorage::~HillRockStorage()
+{
+}
+
+DistributionsRock *
+HillRockStorage::GenerateDistributionsRock(const std::string                       & /*path*/,
+                                           const std::vector<std::string>          & /*trend_cube_parameters*/,
+                                           const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
+                                           std::string                             & /*errTxt*/) const
+{
+  //Gjør sjekk på om volume-fractions er double ved nytt kall. Feilmelding dersom ikke double.
+  //Sjekk siste tallet i inclusion_volume_fraction, og pass på at det summeres til 1
+
+  DistributionsRock * rock = NULL; //new DistributionsRockHill();
+  return(rock);
+}
+
+//----------------------------------------------------------------------------------//
 DEMRockStorage::DEMRockStorage(std::string                                 host_label,
                                DistributionWithTrendStorage *              host_volume_fraction,
                                std::vector<std::string>                    inclusion_label,
@@ -167,5 +277,27 @@ DEMRockStorage::GenerateDistributionsRock(const std::string                     
   //Sjekk siste tallet i inclusion_volume_fraction, og pass på at det summeres til 1
 
   DistributionsRock * rock = NULL; //new DistributionsRockInclusion();
+  return(rock);
+}
+
+//----------------------------------------------------------------------------------//
+GassmannRockStorage::GassmannRockStorage(std::string dry_rock,
+                                         std::string fluid)
+: dry_rock_(dry_rock),
+  fluid_(fluid)
+{
+}
+
+GassmannRockStorage::~GassmannRockStorage()
+{
+}
+
+DistributionsRock *
+GassmannRockStorage::GenerateDistributionsRock(const std::string                       & /*path*/,
+                                               const std::vector<std::string>          & /*trend_cube_parameters*/,
+                                               const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
+                                               std::string                             & /*errTxt*/) const
+{
+  DistributionsRock * rock = NULL; //new DistributionsRockGassmann();
   return(rock);
 }

@@ -19,17 +19,16 @@ public:
 };
 
 //----------------------------------------------------------------------------------//
-
-class TabulatedRockStorage : public DistributionsRockStorage {
+class TabulatedVelocityRockStorage : public DistributionsRockStorage {
 public:
-  TabulatedRockStorage(DistributionWithTrendStorage * vp,
-                       DistributionWithTrendStorage * vs,
-                       DistributionWithTrendStorage * density,
-                       DistributionWithTrendStorage * correlation_vp_vs,
-                       DistributionWithTrendStorage * correlation_vp_density,
-                       DistributionWithTrendStorage * correlation_vs_density);
+  TabulatedVelocityRockStorage(DistributionWithTrendStorage * vp,
+                               DistributionWithTrendStorage * vs,
+                               DistributionWithTrendStorage * density,
+                               DistributionWithTrendStorage * correlation_vp_vs,
+                               DistributionWithTrendStorage * correlation_vp_density,
+                               DistributionWithTrendStorage * correlation_vs_density);
 
-  virtual ~TabulatedRockStorage();
+  virtual ~TabulatedVelocityRockStorage();
 
   virtual DistributionsRock * GenerateDistributionsRock(const std::string                       & path,
                                                         const std::vector<std::string>          & trend_cube_parameters,
@@ -46,7 +45,86 @@ private:
 };
 
 //----------------------------------------------------------------------------------//
+class TabulatedModulusRockStorage : public DistributionsRockStorage {
+public:
+  TabulatedModulusRockStorage(DistributionWithTrendStorage * bulk_modulus,
+                              DistributionWithTrendStorage * shear_modulus,
+                              DistributionWithTrendStorage * density,
+                              DistributionWithTrendStorage * correlation_bulk_shear,
+                              DistributionWithTrendStorage * correlation_bulk_density,
+                              DistributionWithTrendStorage * correlation_shear_density);
 
+  virtual ~TabulatedModulusRockStorage();
+
+  virtual DistributionsRock * GenerateDistributionsRock(const std::string                       & path,
+                                                        const std::vector<std::string>          & trend_cube_parameters,
+                                                        const std::vector<std::vector<double> > & trend_cube_sampling,
+                                                        std::string                             & errTxt) const;
+
+private:
+  DistributionWithTrendStorage * bulk_modulus_;
+  DistributionWithTrendStorage * shear_modulus_;
+  DistributionWithTrendStorage * density_;
+  DistributionWithTrendStorage * correlation_bulk_shear_;
+  DistributionWithTrendStorage * correlation_bulk_density_;
+  DistributionWithTrendStorage * correlation_shear_density_;
+};
+
+//----------------------------------------------------------------------------------//
+class ReussRockStorage : public DistributionsRockStorage {
+public:
+  ReussRockStorage(std::vector<std::string>                    constituent_label,
+                   std::vector<DistributionWithTrendStorage *> constituent_volume_fraction);
+
+  virtual ~ReussRockStorage();
+
+  virtual DistributionsRock * GenerateDistributionsRock(const std::string                       & path,
+                                                        const std::vector<std::string>          & trend_cube_parameters,
+                                                        const std::vector<std::vector<double> > & trend_cube_sampling,
+                                                        std::string                             & errTxt) const;
+
+private:
+  std::vector<std::string>                    constituent_label_;
+  std::vector<DistributionWithTrendStorage *> constituent_volume_fraction_;
+};
+
+//----------------------------------------------------------------------------------//
+class VoigtRockStorage : public DistributionsRockStorage {
+public:
+  VoigtRockStorage(std::vector<std::string>                    constituent_label,
+                   std::vector<DistributionWithTrendStorage *> constituent_volume_fraction);
+
+  virtual ~VoigtRockStorage();
+
+  virtual DistributionsRock * GenerateDistributionsRock(const std::string                       & path,
+                                                        const std::vector<std::string>          & trend_cube_parameters,
+                                                        const std::vector<std::vector<double> > & trend_cube_sampling,
+                                                        std::string                             & errTxt) const;
+
+private:
+  std::vector<std::string>                    constituent_label_;
+  std::vector<DistributionWithTrendStorage *> constituent_volume_fraction_;
+};
+
+//----------------------------------------------------------------------------------//
+class HillRockStorage : public DistributionsRockStorage {
+public:
+  HillRockStorage(std::vector<std::string>                    constituent_label,
+                  std::vector<DistributionWithTrendStorage *> constituent_volume_fraction);
+
+  virtual ~HillRockStorage();
+
+  virtual DistributionsRock * GenerateDistributionsRock(const std::string                       & path,
+                                                        const std::vector<std::string>          & trend_cube_parameters,
+                                                        const std::vector<std::vector<double> > & trend_cube_sampling,
+                                                        std::string                             & errTxt) const;
+
+private:
+  std::vector<std::string>                    constituent_label_;
+  std::vector<DistributionWithTrendStorage *> constituent_volume_fraction_;
+};
+
+//----------------------------------------------------------------------------------//
 class DEMRockStorage : public DistributionsRockStorage {
 public:
   DEMRockStorage(std::string                                 host_label,
@@ -68,6 +146,24 @@ private:
   std::vector<std::string>                    inclusion_label_;
   std::vector<DistributionWithTrendStorage *> inclusion_volume_fraction_;
   std::vector<DistributionWithTrendStorage *> inclusion_aspect_ratio_;
-
 };
+
+//----------------------------------------------------------------------------------//
+class GassmannRockStorage : public DistributionsRockStorage {
+public:
+  GassmannRockStorage(std::string dry_rock,
+                      std::string fluid);
+
+  virtual ~GassmannRockStorage();
+
+  virtual DistributionsRock * GenerateDistributionsRock(const std::string                       & path,
+                                                        const std::vector<std::string>          & trend_cube_parameters,
+                                                        const std::vector<std::vector<double> > & trend_cube_sampling,
+                                                        std::string                             & errTxt) const;
+
+private:
+  std::string dry_rock_;
+  std::string fluid_;
+};
+
 #endif
