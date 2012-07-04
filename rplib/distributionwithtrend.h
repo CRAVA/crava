@@ -8,7 +8,8 @@ class DistributionWithTrend {
  public:
    DistributionWithTrend(const NRLib::Distribution<double> * distr,
                          const NRLib::Trend                * mean,
-                         const NRLib::Trend                * sd);
+                         const NRLib::Trend                * sd,
+                         bool                                sheared);
    virtual ~DistributionWithTrend();
 
 
@@ -22,6 +23,7 @@ class DistributionWithTrend {
   const NRLib::Distribution<double> * distribution_; // in standard form
   const NRLib::Trend                * mean_;
   const NRLib::Trend                * sd_;
+  const bool                          is_sheared_; // Use is_shared like in DistributionWithTrendStorage to know if we have a reservoir variable.
 
 };
 #endif

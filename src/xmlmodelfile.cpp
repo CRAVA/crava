@@ -1715,10 +1715,6 @@ XmlModelFile::parsePredefinitions(TiXmlNode * node, std::string & errTxt)
   while(parseSolid(root, label, errTxt));
   while(parseDryRock(root, label, errTxt));
 
-
-  //Gå gjennom alle navn i check consistency for å se at alle er unike.
-  //Lag 'set' av alle labels som er brukt
-
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
@@ -2618,6 +2614,8 @@ XmlModelFile::parseDistributionWithTrend(TiXmlNode                     * node,
   legalCommands.push_back("trend-2d");
   if(allowDistribution == true) {
     legalCommands.push_back("gaussian");
+    legalCommands.push_back("uniform");
+    legalCommands.push_back("beta");
   }
 
   label = "";

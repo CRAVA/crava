@@ -3,10 +3,10 @@
 
 DistributionWithTrend::DistributionWithTrend(const NRLib::Distribution<double> * distr,
                                              const NRLib::Trend                * mean,
-                                             const NRLib::Trend                * sd)
-: distribution_(distr), mean_(mean), sd_(sd)
+                                             const NRLib::Trend                * sd,
+                                             bool                                sheared)
+: distribution_(distr), mean_(mean), sd_(sd), is_sheared_(sheared)
 {
-//Marit: Har tatt inn variance, ikke sd
 }
 
 DistributionWithTrend::~DistributionWithTrend()
