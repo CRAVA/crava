@@ -8,7 +8,6 @@
 #include "src/definitions.h"
 #include "nrlib/trend/trendstorage.hpp"
 #include "rplib/distributionwithtrendstorage.h"
-#include "rplib/rockphysicsstorage.h"
 #include "rplib/distributionsfluidstorage.h"
 #include "rplib/distributionssolidstorage.h"
 
@@ -71,16 +70,16 @@ private:
   bool parseReuss(TiXmlNode * node, int constituent, std::string label, DistributionWithTrendStorage * total_porosity, std::string moduli, std::string & errTxt);
   bool parseVoigt(TiXmlNode * node, int constituent, std::string label, DistributionWithTrendStorage * total_porosity, std::string moduli, std::string & errTxt);
   bool parseHill(TiXmlNode * node, int constituent, std::string label, DistributionWithTrendStorage * total_porosity, std::string moduli, std::string & errTxt);
-  bool parseConstituent(TiXmlNode * node, std::string & label, DistributionWithTrendStorage * volume_fraction, std::string & errTxt);
+  bool parseConstituent(TiXmlNode * node, std::string & label, DistributionWithTrendStorage *& volume_fraction, std::string & errTxt);
   bool parseBatzleWangBrine(TiXmlNode * node, int constituent, std::string label, std::string & errTxt);
   bool parseDEM(TiXmlNode * node, int constituent, std::string label, DistributionWithTrendStorage * total_porosity, std::string moduli, std::string & errTxt);
-  bool parseDEMHost(TiXmlNode * node, std::string & label, DistributionWithTrendStorage * volume_fraction, std::string & errTxt);
-  bool parseDEMInclusion(TiXmlNode * node, std::string & label, DistributionWithTrendStorage * aspect_ratio, DistributionWithTrendStorage * volume_fraction, std::string & errTxt);
+  bool parseDEMHost(TiXmlNode * node, std::string & label, DistributionWithTrendStorage *& volume_fraction, std::string & errTxt);
+  bool parseDEMInclusion(TiXmlNode * node, std::string & label, DistributionWithTrendStorage *& aspect_ratio, DistributionWithTrendStorage *& volume_fraction, std::string & errTxt);
   bool parseGassmann(TiXmlNode * node, int constituent, std::string label, std::string & errTxt);
   bool parseMineralModuli(TiXmlNode * node, std::string & moduli, std::string & errTxt);
   bool parseInclusion(TiXmlNode * node, std::string & errTxt);
   bool parseReservoir(TiXmlNode * node, std::string & errTxt);
-  bool parseGaussianDistribution(TiXmlNode * node, const std::string & keyword, DistributionWithTrendStorage *& storage, std::string & errTxt);
+  bool parseGaussianDistribution(TiXmlNode * node, DistributionWithTrendStorage *& storage, bool is_sheared, std::string & errTxt);
   bool parse1DTrend(TiXmlNode * node, const std::string & keyword, NRLib::TrendStorage *& trend, std::string & errTxt);
   bool parse2DTrend(TiXmlNode * node, const std::string & keyword, NRLib::TrendStorage *& trend, std::string & errTxt);
   bool parseTrendCube(TiXmlNode * node, std::string & errTxt);
@@ -121,6 +120,7 @@ private:
                                   const std::string             & keyword,
                                   DistributionWithTrendStorage *& storage,
                                   std::string                   & label,
+                                  bool                            is_sheared,
                                   std::string                   & errTxt,
                                   bool                            allowDistribution = true);
   bool parseBool(TiXmlNode * node, const std::string & keyword, bool & value, std::string & errTxt, bool allowDuplicates = false);

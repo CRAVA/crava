@@ -204,9 +204,6 @@ ModelSettings::~ModelSettings(void)
   if(traceHeaderFormatOutput_ != NULL)
     delete traceHeaderFormatOutput_;
 
-  for(size_t i=0; i<rockPhysics_.size(); i++)
-    delete rockPhysics_[i];
-
   for(std::map<std::string, DistributionWithTrendStorage *>::iterator it = reservoirVariable_.begin(); it != reservoirVariable_.end(); it++) {
     DistributionWithTrendStorage * storage = it->second;
     delete storage;

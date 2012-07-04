@@ -6,6 +6,7 @@
 #include "rplib/distributionsdryrock.h"
 #include "rplib/distributionsdryrockstorage.h"
 #include "rplib/distributionwithtrendstorage.h"
+#include "rplib/distributionsstoragekit.h"
 
 
 DistributionsDryRockStorage::DistributionsDryRockStorage()
@@ -44,6 +45,9 @@ TabulatedVelocityDryRockStorage::~TabulatedVelocityDryRockStorage()
   delete correlation_vp_vs_;
   delete correlation_vp_density_;
   delete correlation_vs_density_;
+
+  if(total_porosity_->GetIsSheared() == false)
+    delete total_porosity_;
 }
 
 DistributionsDryRock *
@@ -52,9 +56,6 @@ TabulatedVelocityDryRockStorage::GenerateDistributionsDryRock(const std::string 
                                                               const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
                                                               std::string                             & /*errTxt*/) const
 {
-  //Gjør sjekk på om volume-fractions er double ved nytt kall. Feilmelding dersom ikke double.
-  //Sjekk siste tallet i inclusion_volume_fraction, og pass på at det summeres til 1
-
   DistributionsDryRock * dry_rock = NULL; //new DistributionsDryRockInclusion();
   return(dry_rock);
 }
@@ -87,6 +88,9 @@ TabulatedModulusDryRockStorage::~TabulatedModulusDryRockStorage()
   delete correlation_bulk_shear_;
   delete correlation_bulk_density_;
   delete correlation_shear_density_;
+
+  if(total_porosity_->GetIsSheared() == false)
+    delete total_porosity_;
 }
 
 DistributionsDryRock *
@@ -114,16 +118,20 @@ ReussDryRockStorage::ReussDryRockStorage(std::vector<std::string>               
 
 ReussDryRockStorage::~ReussDryRockStorage()
 {
+  for(int i=0; i<static_cast<int>(constituent_volume_fraction_.size()); i++)
+    delete constituent_volume_fraction_[i];
+
+  if(total_porosity_->GetIsSheared() == false)
+    delete total_porosity_;
 }
 
 DistributionsDryRock *
-ReussDryRockStorage::GenerateDistributionsDryRock(const std::string                       & /*path*/,
-                                                  const std::vector<std::string>          & /*trend_cube_parameters*/,
-                                                  const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
-                                                  std::string                             & /*errTxt*/) const
+ReussDryRockStorage::GenerateDistributionsDryRock(const std::string                       & path,
+                                                  const std::vector<std::string>          & trend_cube_parameters,
+                                                  const std::vector<std::vector<double> > & trend_cube_sampling,
+                                                  std::string                             & errTxt) const
 {
-  //Gjør sjekk på om volume-fractions er double ved nytt kall. Feilmelding dersom ikke double.
-  //Sjekk siste tallet i inclusion_volume_fraction, og pass på at det summeres til 1
+  std::vector<double> volume = getVolume(constituent_volume_fraction_, path, trend_cube_parameters, trend_cube_sampling, errTxt);
 
   DistributionsDryRock * dry_rock = NULL; //new DistributionsDryRockReuss();
   return(dry_rock);
@@ -143,16 +151,20 @@ VoigtDryRockStorage::VoigtDryRockStorage(std::vector<std::string>               
 
 VoigtDryRockStorage::~VoigtDryRockStorage()
 {
+  for(int i=0; i<static_cast<int>(constituent_volume_fraction_.size()); i++)
+    delete constituent_volume_fraction_[i];
+
+  if(total_porosity_->GetIsSheared() == false)
+    delete total_porosity_;
 }
 
 DistributionsDryRock *
-VoigtDryRockStorage::GenerateDistributionsDryRock(const std::string                       & /*path*/,
-                                                  const std::vector<std::string>          & /*trend_cube_parameters*/,
-                                                  const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
-                                                  std::string                             & /*errTxt*/) const
+VoigtDryRockStorage::GenerateDistributionsDryRock(const std::string                       & path,
+                                                  const std::vector<std::string>          & trend_cube_parameters,
+                                                  const std::vector<std::vector<double> > & trend_cube_sampling,
+                                                  std::string                             & errTxt) const
 {
-  //Gjør sjekk på om volume-fractions er double ved nytt kall. Feilmelding dersom ikke double.
-  //Sjekk siste tallet i inclusion_volume_fraction, og pass på at det summeres til 1
+  std::vector<double> volume = getVolume(constituent_volume_fraction_, path, trend_cube_parameters, trend_cube_sampling, errTxt);
 
   DistributionsDryRock * dry_rock = NULL; //new DistributionsDryRockVoigt();
   return(dry_rock);
@@ -172,16 +184,20 @@ HillDryRockStorage::HillDryRockStorage(std::vector<std::string>                 
 
 HillDryRockStorage::~HillDryRockStorage()
 {
+  for(int i=0; i<static_cast<int>(constituent_volume_fraction_.size()); i++)
+    delete constituent_volume_fraction_[i];
+
+  if(total_porosity_->GetIsSheared() == false)
+    delete total_porosity_;
 }
 
 DistributionsDryRock *
-HillDryRockStorage::GenerateDistributionsDryRock(const std::string                       & /*path*/,
-                                                 const std::vector<std::string>          & /*trend_cube_parameters*/,
-                                                 const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
-                                                 std::string                             & /*errTxt*/) const
+HillDryRockStorage::GenerateDistributionsDryRock(const std::string                       & path,
+                                                 const std::vector<std::string>          & trend_cube_parameters,
+                                                 const std::vector<std::vector<double> > & trend_cube_sampling,
+                                                 std::string                             & errTxt) const
 {
-  //Gjør sjekk på om volume-fractions er double ved nytt kall. Feilmelding dersom ikke double.
-  //Sjekk siste tallet i inclusion_volume_fraction, og pass på at det summeres til 1
+  std::vector<double> volume = getVolume(constituent_volume_fraction_, path, trend_cube_parameters, trend_cube_sampling, errTxt);
 
   DistributionsDryRock * dry_rock = NULL; //new DistributionsDryRockHill();
   return(dry_rock);
@@ -208,16 +224,38 @@ DEMDryRockStorage::DEMDryRockStorage(std::string                                
 
 DEMDryRockStorage::~DEMDryRockStorage()
 {
+  if(host_volume_fraction_->GetIsSheared() == false)
+    delete host_volume_fraction_;
+
+  for(int i=0; i<static_cast<int>(inclusion_volume_fraction_.size()); i++) {
+    if(inclusion_volume_fraction_[i]->GetIsSheared() == false)
+      delete inclusion_volume_fraction_[i];
+  }
+
+  for(int i=0; i<static_cast<int>(inclusion_aspect_ratio_.size()); i++) {
+    if(inclusion_aspect_ratio_[i]->GetIsSheared() == false)
+      delete inclusion_aspect_ratio_[i];
+  }
+
+  if(total_porosity_->GetIsSheared() == false)
+    delete total_porosity_;
 }
 
 DistributionsDryRock *
-DEMDryRockStorage::GenerateDistributionsDryRock(const std::string                       & /*path*/,
-                                                const std::vector<std::string>          & /*trend_cube_parameters*/,
-                                                const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
-                                                std::string                             & /*errTxt*/) const
+DEMDryRockStorage::GenerateDistributionsDryRock(const std::string                       & path,
+                                                const std::vector<std::string>          & trend_cube_parameters,
+                                                const std::vector<std::vector<double> > & trend_cube_sampling,
+                                                std::string                             & errTxt) const
 {
-  //Gjør sjekk på om volume-fractions er double ved nytt kall. Feilmelding dersom ikke double.
-  //Sjekk siste tallet i inclusion_volume_fraction, og pass på at det summeres til 1
+  int n_inclusions = static_cast<int>(inclusion_volume_fraction_.size());
+
+  std::vector<DistributionWithTrendStorage *> volume_fractions(n_inclusions + 1);
+  volume_fractions[0] = host_volume_fraction_;
+
+  for(int i=1; i<n_inclusions+1; i++)
+    volume_fractions[i] = inclusion_volume_fraction_[i-1];
+
+  std::vector<double> volume = getVolume(volume_fractions, path, trend_cube_parameters, trend_cube_sampling, errTxt);
 
   DistributionsDryRock * dry_rock = NULL; //new DistributionsDryRockInclusion();
   return(dry_rock);

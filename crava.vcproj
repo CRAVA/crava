@@ -6241,6 +6241,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\rplib\distributionsstoragekit.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\rplib\distributionwithtrend.cpp"
 					>
 				</File>
@@ -6282,10 +6286,6 @@
 				</File>
 				<File
 					RelativePath=".\rplib\rockinclusion.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\rplib\rockphysicsstorage.cpp"
 					>
 				</File>
 				<File
@@ -7025,11 +7025,11 @@
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\system\config.hpp"
+						RelativePath=".\nrlib\boost\filesystem\config.hpp"
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\filesystem\config.hpp"
+						RelativePath=".\nrlib\boost\system\config.hpp"
 						>
 					</File>
 					<File
@@ -7398,6 +7398,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\rplib\distributionsstoragekit.h"
+					>
+				</File>
+				<File
 					RelativePath=".\rplib\distributionwithtrend.h"
 					>
 				</File>
@@ -7451,10 +7455,6 @@
 				</File>
 				<File
 					RelativePath=".\rplib\rockinclusion.h"
-					>
-				</File>
-				<File
-					RelativePath=".\rplib\rockphysicsstorage.h"
 					>
 				</File>
 				<File

@@ -11,6 +11,9 @@ DistributionsFluidTabulatedVelocity::DistributionsFluidTabulatedVelocity(const D
 
 DistributionsFluidTabulatedVelocity::~DistributionsFluidTabulatedVelocity()
 {
+  delete vp_;
+  delete density_;
+  delete corr_vp_density_;
 }
 
 Fluid *

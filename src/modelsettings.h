@@ -11,7 +11,6 @@
 #include "nrlib/iotools/logkit.hpp"
 #include "nrlib/segy/traceheader.hpp"
 #include "nrlib/segy/segy.hpp"
-#include "rplib/rockphysicsstorage.h"
 #include "rplib/distributionsrockstorage.h"
 #include "rplib/distributionssolidstorage.h"
 #include "rplib/distributionsfluidstorage.h"
@@ -201,7 +200,6 @@ public:
   int                              getNumberOfSolids()                  const { return static_cast<int>(solidStorage_.size())  ;}
   int                              getNumberOfFluids()                  const { return static_cast<int>(fluidStorage_.size())  ;}
   std::vector<std::string>         getRockName()                        const { return rockName_                            ;}
-  RockPhysicsStorage             * getRockPhysicsStorage(int i)         const { return rockPhysics_[i]                      ;}
   std::map<std::string, DistributionWithTrendStorage *> getReservoirVariable() const { return reservoirVariable_            ;}
   std::map<std::string, DistributionsRockStorage *>     getRockStorage()       const { return rockStorage_                  ;}
   std::map<std::string, DistributionsDryRockStorage *>  getDryRockStorage()    const { return dryRockStorage_               ;}
@@ -253,7 +251,6 @@ public:
 
   void addTrendCubeParameter(std::string parameterName)                  { trendCubeParameter_.push_back(parameterName)                   ;}
   void addRockName(std::string rockName)                                 { rockName_.push_back(rockName)                                  ;}
-  void addRockPhysicsStorage(RockPhysicsStorage * rock)                  { rockPhysics_.push_back(rock)                                   ;}
   void addReservoirVariable(std::string variable, DistributionWithTrendStorage * dist) { reservoirVariable_[variable] = dist              ;}
   void addRock(std::string label,  DistributionsRockStorage  * rock)                   { rockStorage_[label]    = rock                    ;}
   void addDryRock(std::string label,  DistributionsDryRockStorage  * dry_rock)         { dryRockStorage_[label] = dry_rock                ;}
@@ -697,7 +694,6 @@ private:
 
   std::vector<std::string>                         trendCubeParameter_;          // Name of the trend parameters in the rock physics model
   std::vector<std::string>                         rockName_;                    // Name of rock in the rock physics model
-  std::vector<RockPhysicsStorage *>                rockPhysics_;                 // Stores trend-values needed for different rock physics models
 
   std::map<std::string, DistributionWithTrendStorage *>   reservoirVariable_;           // Rock physics variables defined in reservoir
   std::map<std::string, DistributionsRockStorage *>       rockStorage_;                 // Rock physics rocks defined in predefinitions

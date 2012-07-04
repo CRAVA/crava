@@ -47,10 +47,10 @@
 #include "nrlib/iotools/logkit.hpp"
 #include "nrlib/stormgrid/stormcontgrid.hpp"
 
-#include "rplib/rockphysicsstorage.h"
 #include "rplib/distributionsfluidstorage.h"
 #include "rplib/distributionssolidstorage.h"
 #include "rplib/distributionsrockstorage.h"
+#include "rplib/distributionsdryrockstorage.h"
 
 
 ModelGeneral::ModelGeneral(ModelSettings *& modelSettings, const InputFiles * inputFiles, Simbox *& timeBGSimbox)
@@ -215,6 +215,11 @@ ModelGeneral::~ModelGeneral(void)
   if(correlationDirection_ !=NULL)
     delete correlationDirection_;
 
+  for(std::map<std::string, DistributionsDryRock *>::iterator it = dry_rock_distributions_.begin(); it != dry_rock_distributions_.end(); it++) {
+    DistributionsDryRock * dry_rock = it->second;
+    delete dry_rock;
+  }
+
   for(std::map<std::string, DistributionsRock *>::iterator it = rock_distributions_.begin(); it != rock_distributions_.end(); it++) {
     DistributionsRock * rock = it->second;
     delete rock;
@@ -228,6 +233,11 @@ ModelGeneral::~ModelGeneral(void)
   for(std::map<std::string, DistributionsFluid *>::iterator it = fluid_distributions_.begin(); it != fluid_distributions_.end(); it++) {
     DistributionsFluid * fluid = it->second;
     delete fluid;
+  }
+
+  for(std::map<std::string, const DistributionWithTrend *>::iterator it = reservoir_variables_.begin(); it != reservoir_variables_.end(); it++) {
+    const DistributionWithTrend * variable = it->second;
+    delete variable;
   }
 
   delete randomGen_;
@@ -2264,18 +2274,13 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
 
     std::vector<std::vector<double> > trend_cube_sampling   = trend_cubes_.GetTrendCubeSampling();
 
-    //Marit: beholder for å se hvordan det var tidligere
-    /*for(int i=0; i<modelSettings->getNumberOfRocks(); i++){
+    std::map<std::string, DistributionWithTrendStorage *> reservoir_variable = modelSettings->getReservoirVariable();
+    for(std::map<std::string, DistributionWithTrendStorage *>::iterator it = reservoir_variable.begin(); it != reservoir_variable.end(); it++) {
+      DistributionWithTrendStorage * storage     = it->second;
+      const DistributionWithTrend  * dist        = storage->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
+      reservoir_variables_[it->first]            = dist;
+    }
 
-      RockPhysicsStorage * rock_physics      = modelSettings->getRockPhysicsStorage(i);
-
-      DistributionsRock  * rock_distribution = rock_physics->GenerateRockPhysics(path,trend_cube_parameters,trend_cube_sampling,errTxt);
-
-      rock_distributions_.push_back(rock_distribution);
-
-    }*/
-
-    // Ikke laget dette for dry rock
     std::map<std::string, DistributionsFluidStorage *>      fluid_storage = modelSettings->getFluidStorage();
     for(std::map<std::string, DistributionsFluidStorage *>::iterator it = fluid_storage.begin(); it != fluid_storage.end(); it++) {
       DistributionsFluidStorage     * storage    = it     ->second;
@@ -2288,6 +2293,13 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
       DistributionsSolidStorage     * storage    = it     ->second;
       DistributionsSolid            * solid      = storage->GenerateDistributionsSolid(path,trend_cube_parameters,trend_cube_sampling,errTxt);
       solid_distributions_[it->first]            = solid;
+    }
+
+    std::map<std::string, DistributionsDryRockStorage *>      dry_rock_storage = modelSettings->getDryRockStorage();
+    for(std::map<std::string, DistributionsDryRockStorage *>::iterator it = dry_rock_storage.begin(); it != dry_rock_storage.end(); it++) {
+      DistributionsDryRockStorage  * storage    = it     ->second;
+      DistributionsDryRock         * dry_rock   = storage->GenerateDistributionsDryRock(path,trend_cube_parameters,trend_cube_sampling,errTxt);
+      dry_rock_distributions_[it->first]        = dry_rock;
     }
 
     std::map<std::string, DistributionsRockStorage *>      rock_storage = modelSettings->getRockStorage();

@@ -11,19 +11,22 @@ class DistributionWithTrendStorage
 public:
   DistributionWithTrendStorage();
 
-  DistributionWithTrendStorage(double value);
+  DistributionWithTrendStorage(double value,
+                               bool is_sheared);
 
-  DistributionWithTrendStorage(const NRLib::TrendStorage * trend);
+  DistributionWithTrendStorage(const NRLib::TrendStorage * trend,
+                               bool                        is_sheared);
 
   DistributionWithTrendStorage(NRLib::Distribution<double>       * distribution,
                                const NRLib::TrendStorage         * mean,
                                const NRLib::TrendStorage         * variance,
-                               bool                                is_gaussian);
+                               bool                                is_gaussian,
+                               bool                                is_sheared);
 
   ~DistributionWithTrendStorage();
 
-  const NRLib::TrendStorage            * CloneMean();
-  const NRLib::TrendStorage            * CloneVariance();
+  NRLib::TrendStorage                  * CloneMean();
+  NRLib::TrendStorage                  * CloneVariance();
 
   const DistributionWithTrend          * GenerateDistributionWithTrend(const std::string                       & path,
                                                                        const std::vector<std::string>          & trend_cube_parameters,
@@ -31,12 +34,17 @@ public:
                                                                        std::string                             & errTxt);
 
   const bool                             GetIsGaussian() const;
+  const bool                             GetIsDouble()   const;
+  const bool                             GetIsSheared()  const;
 
 private:
   NRLib::Distribution<double>          * distribution_;
   const NRLib::TrendStorage            * mean_;
   const NRLib::TrendStorage            * variance_;
+  DistributionWithTrend                * distribution_with_trend_;
   const bool                             is_gaussian_;
+  const bool                             is_double_;
+  const bool                             is_sheared_;
 };
 
 #endif

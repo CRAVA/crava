@@ -8,6 +8,7 @@
 #include "rplib/distributionsrocktabulatedvelocity.h"
 #include "rplib/distributionsrocktrinormal.h"
 #include "rplib/distributionwithtrendstorage.h"
+#include "rplib/distributionsstoragekit.h"
 
 
 DistributionsRockStorage::DistributionsRockStorage()
@@ -184,16 +185,19 @@ ReussRockStorage::ReussRockStorage(std::vector<std::string>                    c
 
 ReussRockStorage::~ReussRockStorage()
 {
+  for(int i=0; i<static_cast<int>(constituent_volume_fraction_.size()); i++) {
+    if(constituent_volume_fraction_[i]->GetIsSheared() == false)
+      delete constituent_volume_fraction_[i];
+  }
 }
 
 DistributionsRock *
-ReussRockStorage::GenerateDistributionsRock(const std::string                       & /*path*/,
-                                            const std::vector<std::string>          & /*trend_cube_parameters*/,
-                                            const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
-                                            std::string                             & /*errTxt*/) const
+ReussRockStorage::GenerateDistributionsRock(const std::string                       & path,
+                                            const std::vector<std::string>          & trend_cube_parameters,
+                                            const std::vector<std::vector<double> > & trend_cube_sampling,
+                                            std::string                             & errTxt) const
 {
-  //Gjør sjekk på om volume-fractions er double ved nytt kall. Feilmelding dersom ikke double.
-  //Sjekk siste tallet i inclusion_volume_fraction, og pass på at det summeres til 1
+  std::vector<double> volume = getVolume(constituent_volume_fraction_, path, trend_cube_parameters, trend_cube_sampling, errTxt);
 
   DistributionsRock * rock = NULL; //new DistributionsRockReuss();
   return(rock);
@@ -209,16 +213,19 @@ VoigtRockStorage::VoigtRockStorage(std::vector<std::string>                    c
 
 VoigtRockStorage::~VoigtRockStorage()
 {
+  for(int i=0; i<static_cast<int>(constituent_volume_fraction_.size()); i++) {
+    if(constituent_volume_fraction_[i]->GetIsSheared() == false)
+      delete constituent_volume_fraction_[i];
+  }
 }
 
 DistributionsRock *
-VoigtRockStorage::GenerateDistributionsRock(const std::string                       & /*path*/,
-                                            const std::vector<std::string>          & /*trend_cube_parameters*/,
-                                            const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
-                                            std::string                             & /*errTxt*/) const
+VoigtRockStorage::GenerateDistributionsRock(const std::string                       & path,
+                                            const std::vector<std::string>          & trend_cube_parameters,
+                                            const std::vector<std::vector<double> > & trend_cube_sampling,
+                                            std::string                             & errTxt) const
 {
-  //Gjør sjekk på om volume-fractions er double ved nytt kall. Feilmelding dersom ikke double.
-  //Sjekk siste tallet i inclusion_volume_fraction, og pass på at det summeres til 1
+  std::vector<double> volume = getVolume(constituent_volume_fraction_, path, trend_cube_parameters, trend_cube_sampling, errTxt);
 
   DistributionsRock * rock = NULL; //new DistributionsRockVoigt();
   return(rock);
@@ -234,16 +241,19 @@ HillRockStorage::HillRockStorage(std::vector<std::string>                    con
 
 HillRockStorage::~HillRockStorage()
 {
+  for(int i=0; i<static_cast<int>(constituent_volume_fraction_.size()); i++) {
+    if(constituent_volume_fraction_[i]->GetIsSheared() == false)
+      delete constituent_volume_fraction_[i];
+  }
 }
 
 DistributionsRock *
-HillRockStorage::GenerateDistributionsRock(const std::string                       & /*path*/,
-                                           const std::vector<std::string>          & /*trend_cube_parameters*/,
-                                           const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
-                                           std::string                             & /*errTxt*/) const
+HillRockStorage::GenerateDistributionsRock(const std::string                       & path,
+                                           const std::vector<std::string>          & trend_cube_parameters,
+                                           const std::vector<std::vector<double> > & trend_cube_sampling,
+                                           std::string                             & errTxt) const
 {
-  //Gjør sjekk på om volume-fractions er double ved nytt kall. Feilmelding dersom ikke double.
-  //Sjekk siste tallet i inclusion_volume_fraction, og pass på at det summeres til 1
+  std::vector<double> volume = getVolume(constituent_volume_fraction_, path, trend_cube_parameters, trend_cube_sampling, errTxt);
 
   DistributionsRock * rock = NULL; //new DistributionsRockHill();
   return(rock);
@@ -265,16 +275,35 @@ DEMRockStorage::DEMRockStorage(std::string                                 host_
 
 DEMRockStorage::~DEMRockStorage()
 {
+  if(host_volume_fraction_->GetIsSheared() == false)
+    delete host_volume_fraction_;
+
+  for(int i=0; i<static_cast<int>(inclusion_volume_fraction_.size()); i++) {
+    if(inclusion_volume_fraction_[i]->GetIsSheared() == false)
+      delete inclusion_volume_fraction_[i];
+  }
+
+  for(int i=0; i<static_cast<int>(inclusion_aspect_ratio_.size()); i++) {
+    if(inclusion_aspect_ratio_[i]->GetIsSheared() == false)
+      delete inclusion_aspect_ratio_[i];
+  }
 }
 
 DistributionsRock *
-DEMRockStorage::GenerateDistributionsRock(const std::string                       & /*path*/,
-                                          const std::vector<std::string>          & /*trend_cube_parameters*/,
-                                          const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
-                                          std::string                             & /*errTxt*/) const
+DEMRockStorage::GenerateDistributionsRock(const std::string                       & path,
+                                          const std::vector<std::string>          & trend_cube_parameters,
+                                          const std::vector<std::vector<double> > & trend_cube_sampling,
+                                          std::string                             & errTxt) const
 {
-  //Gjør sjekk på om volume-fractions er double ved nytt kall. Feilmelding dersom ikke double.
-  //Sjekk siste tallet i inclusion_volume_fraction, og pass på at det summeres til 1
+  int n_inclusions = static_cast<int>(inclusion_volume_fraction_.size());
+
+  std::vector<DistributionWithTrendStorage *> volume_fractions(n_inclusions + 1);
+  volume_fractions[0] = host_volume_fraction_;
+
+  for(int i=1; i<n_inclusions+1; i++)
+    volume_fractions[i] = inclusion_volume_fraction_[i-1];
+
+  std::vector<double> volume = getVolume(volume_fractions, path, trend_cube_parameters, trend_cube_sampling, errTxt);
 
   DistributionsRock * rock = NULL; //new DistributionsRockInclusion();
   return(rock);
