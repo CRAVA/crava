@@ -76,6 +76,8 @@ ModelGeneral::ModelGeneral(ModelSettings *& modelSettings, const InputFiles * in
 
   bool failedWells        = false;
 
+  bool failedBackground   = false;
+
   Simbox * timeCutSimbox  = NULL;
   timeLine_               = NULL;
 
@@ -183,6 +185,10 @@ ModelGeneral::ModelGeneral(ModelSettings *& modelSettings, const InputFiles * in
             timeLine_->AddEvent(time, TimeLine::AVO, i);
         }
         processWells(wells_, timeSimbox_, modelSettings, inputFiles, errText, failedWells);
+
+        if(modelSettings->getDo4DInversion()){
+          process4DBackground(modelSettings, inputFiles, errText, failedBackground);
+        }
       }
     }
     failedLoadingModel = failedSimbox  || failedDepthConv || failedWells;
@@ -2641,17 +2647,17 @@ ModelGeneral::computeTime(int year, int month, int day) const
 }
 
 void
-ModelGeneral::generateRockPhysics3DBackground(const std::vector<DistributionsRock *> & rock,
-                                              const std::vector<double>              & probability,
-                                              FFTGrid                                & vp,
-                                              FFTGrid                                & vs,
-                                              FFTGrid                                & rho,
-                                              double                                 & varVp,
-                                              double                                 & varVs,
-                                              double                                 & varRho,
-                                              double                                 & crossVpVs,
-                                              double                                 & crossVpRho,
-                                              double                                 & crossVsRho)
+ModelGeneral::generateRockPhysics3DBackground(const std::map<std::string, DistributionsRock *> & rock,
+                                              const std::vector<double>                        & probability,
+                                              FFTGrid                                          & vp,
+                                              FFTGrid                                          & vs,
+                                              FFTGrid                                          & rho,
+                                              double                                           & varVp,
+                                              double                                           & varVs,
+                                              double                                           & varRho,
+                                              double                                           & crossVpVs,
+                                              double                                           & crossVpRho,
+                                              double                                           & crossVsRho)
 {
   // Set up of expectations grids and computation of covariance sums given rock physics.
 
@@ -2675,6 +2681,15 @@ ModelGeneral::generateRockPhysics3DBackground(const std::vector<DistributionsRoc
 
   // Local storage for summed combined variances
   NRLib::Grid2D<double> sumVariance(3,3);
+
+  // Make a vector of rock objects instead of a map
+  // Find a better solution of using rock_distribution map later
+  std::vector<DistributionsRock *> rock_vector(rock.size());
+  size_t i=0;
+  for(std::map<std::string, DistributionsRock *>::const_iterator it = rock.begin(); it != rock.end(); it++){
+    rock_vector[i] = it->second;
+    i++;
+  }
 
   // Loop through all cells in the FFTGrids
   for(int k = 0; k < nzp; k++)
@@ -2709,7 +2724,7 @@ ModelGeneral::generateRockPhysics3DBackground(const std::vector<DistributionsRoc
           // Sum up for all facies: probability for a facies multiplied with the expectations of (vp, vs, rho) given the facies
           for(size_t f = 0; f < number_of_facies; f++){
             std::vector<double> m(3);
-            m = rock[f]->GetExpectation(trend_position);
+            m = rock_vector[f]->GetExpectation(trend_position);
             expectations[0] += static_cast<float>(m[0]*probability[f]);
             expectations[1] += static_cast<float>(m[1]*probability[f]);
             expectations[2] += static_cast<float>(m[2]*probability[f]);
@@ -2743,8 +2758,8 @@ ModelGeneral::generateRockPhysics3DBackground(const std::vector<DistributionsRoc
           for(size_t f = 0; f < number_of_facies; f++){
             NRLib::Grid2D<double> sigma;
             std::vector<double> m(3);
-            sigma = rock[f]->GetCovariance(trend_position);
-            m = rock[f]->GetExpectation(trend_position);
+            sigma = rock_vector[f]->GetCovariance(trend_position);
+            m = rock_vector[f]->GetExpectation(trend_position);
 
             // For all elements in the 3x3 matrix of the combined variance
             for(size_t a=0; a<sigma.GetNI(); a++){
@@ -2768,13 +2783,13 @@ ModelGeneral::generateRockPhysics3DBackground(const std::vector<DistributionsRoc
 }
 
 void
-ModelGeneral::generateRockPhysics4DBackground(const std::vector<DistributionsRock *> & rock,
-                                              const std::vector<double>              & probability,
-                                              int                                      lowCut,
-                                              Corr                                   & correlations, //The grids here get/set correctly.
-                                              const Simbox                           & timeSimbox,
-                                              const ModelSettings                    & modelSettings,
-                                              State4D                                & state4d)
+ModelGeneral::generateRockPhysics4DBackground(const std::map<std::string, DistributionsRock *> & rock,
+                                              const std::vector<double>                        & probability,
+                                              int                                                lowCut,
+                                              Corr                                             & correlations, //The grids here get/set correctly.
+                                              const Simbox                                     & timeSimbox,
+                                              const ModelSettings                              & modelSettings,
+                                              State4D                                          & state4d)
 {
   // Create all necessary grids for 4D inversion and return all grids in a State4D object.
   // We assume an existing object of the class Corr and an empty object of state4d.
@@ -3936,4 +3951,46 @@ ModelGeneral::readPriorFaciesProbCubes(const InputFiles        * inputFiles,
       break;
     }
   }
+}
+
+bool
+ModelGeneral::process4DBackground(ModelSettings        *& modelSettings,
+                                  const InputFiles     *  inputFiles,
+                                  std::string          &  errText,
+                                  bool                 &  failed)
+{
+  bool failedPriorCorr = false;
+
+  // Variables to be created in this function
+  Corr       * correlations;
+  State4D      state4D;
+
+  Background * background = NULL;
+
+  int lowCut         = -1;    // vet ikke hva denne skal være
+  FFTGrid **seisCube = NULL;  // vet ikke hva denne skal være
+
+  // Get prior probabilities for the facies in a vector
+  std::vector<double> priorProbability;
+  priorProbability.resize(modelSettings->getNumberOfFacies());
+  typedef std::map<std::string,float> mapType;
+  mapType myMap = modelSettings->getPriorFaciesProb();
+
+  for(int i=0;i<modelSettings->getNumberOfFacies();i++)
+  {
+    mapType::iterator iter = myMap.find(modelSettings->getFaciesName(i));
+    if(iter!=myMap.end())
+      priorProbability[i] = iter->second;
+  }
+
+  // NOT able to call function correctly with correlations
+  processPriorCorrelations(correlations, background, wells_, timeSimbox_, modelSettings,
+                           seisCube, inputFiles, errText, failedPriorCorr);
+  generateRockPhysics4DBackground(rock_distributions_, priorProbability, lowCut, *correlations, timeSimbox_, *modelSettings, state4D);
+
+  // Add more handling of possible failing situations
+  failed = failedPriorCorr; // || failedRockPhysics4DBackground
+
+  return failed;
+
 }

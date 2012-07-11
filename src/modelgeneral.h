@@ -112,25 +112,25 @@ public:
                                    std::string        & errText,
                                    bool               & failed);
 
-  void                generateRockPhysics3DBackground(const std::vector<DistributionsRock *> & rock,
-                                                      const std::vector<double>             & probability,
-                                                      FFTGrid                               & vp,
-                                                      FFTGrid                               & vs,
-                                                      FFTGrid                               & rho,
-                                                      double                                & varVp,
-                                                      double                                & varVs,
-                                                      double                                & varRho,
-                                                      double                                & crossVpVs,
-                                                      double                                & crossVpRho,
-                                                      double                                & crossVsRho);
+  void                generateRockPhysics3DBackground(const std::map<std::string, DistributionsRock *> & rock,
+                                                      const std::vector<double>                        & probability,
+                                                      FFTGrid                                          & vp,
+                                                      FFTGrid                                          & vs,
+                                                      FFTGrid                                          & rho,
+                                                      double                                           & varVp,
+                                                      double                                           & varVs,
+                                                      double                                           & varRho,
+                                                      double                                           & crossVpVs,
+                                                      double                                           & crossVpRho,
+                                                      double                                           & crossVsRho);
 
-  void                generateRockPhysics4DBackground(const std::vector<DistributionsRock *> & rock,
-                                                      const std::vector<double>             & probability,
-                                                      int                                     lowCut,
-                                                      Corr                                  & correlations, //The grids here get/set correctly.
-                                                      const Simbox                          & timeSimbox,
-                                                      const ModelSettings                   & modelSettings,
-                                                      State4D                               & state4d);
+  void                generateRockPhysics4DBackground(const std::map<std::string, DistributionsRock *> & rock,
+                                                      const std::vector<double>                        & probability,
+                                                      int                                                lowCut,
+                                                      Corr                                             & correlations, //The grids here get/set correctly.
+                                                      const Simbox                                     & timeSimbox,
+                                                      const ModelSettings                              & modelSettings,
+                                                      State4D                                          & state4d);
 
   void             processWellLocation(FFTGrid                     ** seisCube,
                                        float                       ** reflectionMatrix,
@@ -146,6 +146,11 @@ public:
                                             const InputFiles      * inputFiles,
                                             std::string           & errText,
                                             bool                  & failed);
+
+   bool            process4DBackground(ModelSettings     *& modelSettings,
+                                      const InputFiles   * inputFiles,
+                                      std::string        & errText,
+                                      bool               & failed);
 
    void             processPriorFaciesProb(const std::vector<Surface*>  & faciesEstimInterval,
                                           std::vector<WellData *>        wells,
