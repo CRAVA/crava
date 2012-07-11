@@ -191,7 +191,7 @@ ModelGeneral::ModelGeneral(ModelSettings *& modelSettings, const InputFiles * in
         }
       }
     }
-    failedLoadingModel = failedSimbox  || failedDepthConv || failedWells;
+    failedLoadingModel = failedSimbox  || failedDepthConv || failedWells || failedBackground;
 
     if (failedLoadingModel) {
       LogKit::WriteHeader("Error(s) while loading data");
@@ -204,6 +204,7 @@ ModelGeneral::ModelGeneral(ModelSettings *& modelSettings, const InputFiles * in
   failed_details_.push_back(failedSimbox);
   failed_details_.push_back(failedDepthConv);
   failed_details_.push_back(failedWells);
+  failed_details_.push_back(failedBackground);
 
   if(timeCutSimbox != NULL)
     delete timeCutSimbox;
@@ -3993,4 +3994,17 @@ ModelGeneral::process4DBackground(ModelSettings        *& modelSettings,
 
   return failed;
 
+}
+
+void
+ModelGeneral::get3DPriorFrom4D(SeismicParametersHolder seismicParameters,
+                               FFTGrid *vp, FFTGrid *vs, FFTGrid *rho,
+                               FFTGrid *crCovVpVp, FFTGrid *crCovVpVs, FFTGrid *crCovVpRho,
+                               FFTGrid *crCovVsVs, FFTGrid *crCovVsRho,
+                               FFTGrid *crCovRhoRho)
+{
+  State4D state4d;
+  state4d.setStaticMu(vp, vs,rho);
+  state4d.setStaticSigma(crCovVpVp, crCovVpVs, crCovVpRho, crCovVsVs, crCovVsRho, crCovRhoRho);
+  state4d.merge(seismicParameters);
 }
