@@ -25,13 +25,13 @@ public:
 
   ~State4D();
 
-  void SetStaticMu (FFTGrid *vp, FFTGrid *vs, FFTGrid *rho);
-  void SetDynamicMu(FFTGrid *vp, FFTGrid *vs, FFTGrid *rho);
+  void setStaticMu (FFTGrid *vp, FFTGrid *vs, FFTGrid *rho);
+  void setDynamicMu(FFTGrid *vp, FFTGrid *vs, FFTGrid *rho);
 
-  void SetStaticSigma (FFTGrid *vpvp, FFTGrid *vpvs, FFTGrid *vprho, FFTGrid *vsvs, FFTGrid *vsrho, FFTGrid *rhorho);
-  void SetDynamicSigma(FFTGrid *vpvp, FFTGrid *vpvs, FFTGrid *vprho, FFTGrid *vsvs, FFTGrid *vsrho, FFTGrid *rhorho);
+  void setStaticSigma (FFTGrid *vpvp, FFTGrid *vpvs, FFTGrid *vprho, FFTGrid *vsvs, FFTGrid *vsrho, FFTGrid *rhorho);
+  void setDynamicSigma(FFTGrid *vpvp, FFTGrid *vpvs, FFTGrid *vprho, FFTGrid *vsvs, FFTGrid *vsrho, FFTGrid *rhorho);
 
-  void SetStaticDynamicSigma(FFTGrid *vpvp, FFTGrid *vpvs, FFTGrid *vprho, FFTGrid *vsvp, FFTGrid *vsvs, FFTGrid *vsrho, FFTGrid *rhovp, FFTGrid *rhovs, FFTGrid *rhorho);  // OBS note order of parameters
+  void setStaticDynamicSigma(FFTGrid *vpvp, FFTGrid *vpvs, FFTGrid *vprho, FFTGrid *vsvp, FFTGrid *vsvs, FFTGrid *vsrho, FFTGrid *rhovp, FFTGrid *rhovs, FFTGrid *rhorho);  // OBS note order of parameters
 
   void   merge(SeismicParametersHolder & current_state );
   void   split(const SeismicParametersHolder current_state );

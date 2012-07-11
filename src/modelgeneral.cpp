@@ -2856,13 +2856,13 @@ ModelGeneral::generateRockPhysics4DBackground(const std::vector<DistributionsRoc
   rho_rho_stat->multiplyByScalar(static_cast<float>(varRho));
 
   // Set the static and dynamic grids in the state4d object
-  state4d.SetStaticMu(vp_stat, vs_stat, rho_stat);
-  state4d.SetStaticSigma(vp_vp_stat, vp_vs_stat, vp_rho_stat, vs_vs_stat, vs_rho_stat, rho_rho_stat);
+  state4d.setStaticMu(vp_stat, vs_stat, rho_stat);
+  state4d.setStaticSigma(vp_vp_stat, vp_vs_stat, vp_rho_stat, vs_vs_stat, vs_rho_stat, rho_rho_stat);
 
   // Not necessary to set dynamic grids, as all grids are initially initialized as NULL in State4D.
-  //state4d.SetDynamicMu(NULL, NULL, NULL);
-  //state4d.SetDynamicSigma(NULL, NULL, NULL, NULL, NULL, NULL);
-  //state4d.SetStaticDynamicSigma(NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+  //state4d.setDynamicMu(NULL, NULL, NULL);
+  //state4d.setDynamicSigma(NULL, NULL, NULL, NULL, NULL, NULL);
+  //state4d.setStaticDynamicSigma(NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
 }
 
