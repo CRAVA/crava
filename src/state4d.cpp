@@ -460,9 +460,9 @@ void State4D::split(SeismicParametersHolder current_state )
 void State4D::evolve(int time_step, const TimeEvolution timeEvolution )
 {
   // Evolution matrix and correction terms from TimeEvolution class
-  NRLib::Matrix evolution_matrix     = timeEvolution.getEvolutionMatrix(time_step);
-  NRLib::Vector mean_correction_term = timeEvolution.getMeanCorrectionTerm(time_step);
-  NRLib::Matrix cov_correction_term  = timeEvolution.getCovarianceCorrectionTerm(time_step);
+  const NRLib::Matrix evolution_matrix     = timeEvolution.getEvolutionMatrix(time_step);
+  const NRLib::Vector mean_correction_term = timeEvolution.getMeanCorrectionTerm(time_step);
+  const NRLib::Matrix cov_correction_term  = timeEvolution.getCovarianceCorrectionTerm(time_step);
 
    // Holders of FFTGrid pointers
   std::vector<FFTGrid *> mu(6);

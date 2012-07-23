@@ -3331,6 +3331,7 @@ ModelGeneral::processPriorCorrelations(Corr                   *& correlations,
                                        const ModelSettings     * modelSettings,
                                        FFTGrid                ** seisCube,
                                        const InputFiles        * inputFiles,
+                                       std::vector<double>       coefFromRPForVariances,
                                        std::string             & errText,
                                        bool                    & failed)
 {
@@ -3469,6 +3470,17 @@ ModelGeneral::processPriorCorrelations(Corr                   *& correlations,
     }
 
     Timings::setTimePriorCorrelation(wall,cpu);
+  }
+
+  // To be done? In case of using rock physics prior in 3D inversion. To be continued by CRA-333.
+  if(coefFromRPForVariances.size() > 0 && 0){
+    assert(coefFromRPForVariances.size()==6);
+    correlations->getPostCovAlpha()->multiplyByScalar(static_cast<float>(coefFromRPForVariances[0]));
+    correlations->getPostCovBeta()->multiplyByScalar(static_cast<float>(coefFromRPForVariances[1]));
+    correlations->getPostCovRho()->multiplyByScalar(static_cast<float>(coefFromRPForVariances[2]));
+    correlations->getPostCrCovAlphaBeta()->multiplyByScalar(static_cast<float>(coefFromRPForVariances[3]));
+    correlations->getPostCrCovAlphaRho()->multiplyByScalar(static_cast<float>(coefFromRPForVariances[4]));
+    correlations->getPostCrCovBetaRho()->multiplyByScalar(static_cast<float>(coefFromRPForVariances[5]));
   }
 }
 Surface *
@@ -3984,11 +3996,10 @@ ModelGeneral::process4DBackground(ModelSettings        *& modelSettings,
       priorProbability[i] = iter->second;
   }
 
-  // NOT able to call function correctly with correlations
+  std::vector<double> dummyVector;
   processPriorCorrelations(correlations, background, wells_, timeSimbox_, modelSettings,
-                           seisCube, inputFiles, errText, failedPriorCorr);
+                           seisCube, inputFiles, dummyVector, errText, failedPriorCorr);
   generateRockPhysics4DBackground(rock_distributions_, priorProbability, lowCut, *correlations, timeSimbox_, *modelSettings, state4D);
-
   // Add more handling of possible failing situations
   failed = failedPriorCorr; // || failedRockPhysics4DBackground
 

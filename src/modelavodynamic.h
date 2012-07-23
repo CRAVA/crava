@@ -104,7 +104,9 @@ private:
                                      GridMapping          *& timeDepthMapping,
                                      const GridMapping     * timeCutMapping,
                                      const ModelSettings   * modelSettings,
+                                     ModelGeneral          * modelGeneral,
                                      const InputFiles      * inputFile,
+                                     std::vector<double>   & coefFromRPForVariances,
                                      std::string           & errText,
                                      bool                  & failed);
 

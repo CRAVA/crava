@@ -62,6 +62,7 @@ public:
   bool                             getEstimateLocalNoise(int i, int j)  const { return timeLapseEstimateLocalNoise_[i][j]         ;}
   bool                             getEstimateGlobalWaveletScale(int i, int j) const { return timeLapseEstimateGlobalWaveletScale_[i][j];}
   bool                             getDo4DInversion(void)                     { return do4DInversion_                             ;}
+  bool                             getBackgroundFromRockPhysics(void)   const { return backgroundFromRockPhysics_                 ;} // relevant?
   bool                             getEstimateBackground(void)          const { return estimateBackground_                        ;}
   bool                             getEstimateCorrelations(void)        const { return estimateCorrelations_                      ;}
   bool                             getEstimateWaveletNoise(void)        const { return estimateWaveletNoise_                      ;}
@@ -533,6 +534,7 @@ private:
   std::vector<float>                estRangeY_;                  ///< Estimation range in y-direction for 3D-wavelet
 
   bool                              do4DInversion_;              // True if CRAVA is to run a 4D inversion
+  bool                              backgroundFromRockPhysics_;  //< True if background is to be generated from rock physics. Is this relevant? Or same as faciesProbFromRockPhysics_?
   bool                              estimateBackground_;         ///< In estimation mode, skip estimation of background if false
   bool                              estimateCorrelations_;       ///< As above, but correlations.
   bool                              estimateWaveletNoise_;       ///< As above, but for wavelet and noise parameters.

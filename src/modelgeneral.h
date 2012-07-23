@@ -145,6 +145,7 @@ public:
                                             const ModelSettings   * modelSettings,
                                             FFTGrid              ** seisCube,
                                             const InputFiles      * inputFiles,
+                                            std::vector<double>     coefFromRPForVariances,
                                             std::string           & errText,
                                             bool                  & failed);
 
