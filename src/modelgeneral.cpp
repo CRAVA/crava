@@ -4004,7 +4004,7 @@ ModelGeneral::get3DPriorFrom4D(SeismicParametersHolder seismicParameters,
                                FFTGrid *crCovRhoRho)
 {
   State4D state4d;
-  state4d.setStaticMu(vp, vs,rho);
+  state4d.setStaticMu(vp, vs, rho);
   state4d.setStaticSigma(crCovVpVp, crCovVpVs, crCovVpRho, crCovVsVs, crCovVsRho, crCovRhoRho);
   state4d.merge(seismicParameters);
 }

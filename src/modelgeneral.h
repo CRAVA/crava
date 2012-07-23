@@ -154,8 +154,8 @@ public:
                                       bool               & failed);
 
     void           get3DPriorFrom4D(SeismicParametersHolder seismicParameters,
-                                  FFTGrid *vp, FFTGrid *vs, FFTGrid *rho,
-                                  FFTGrid *crCovVpVp, FFTGrid *crCovVpVs, FFTGrid *crCovVpRho, FFTGrid *crCovVsVs, FFTGrid *crCovVsRho, FFTGrid *crCovRhoRho);
+                                    FFTGrid *vp, FFTGrid *vs, FFTGrid *rho,
+                                    FFTGrid *crCovVpVp, FFTGrid *crCovVpVs, FFTGrid *crCovVpRho, FFTGrid *crCovVsVs, FFTGrid *crCovVsRho, FFTGrid *crCovRhoRho);
 
    void             processPriorFaciesProb(const std::vector<Surface*>  & faciesEstimInterval,
                                           std::vector<WellData *>        wells,

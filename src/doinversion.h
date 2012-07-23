@@ -31,6 +31,11 @@ bool doTimeLapseAVOInversion(ModelSettings           * modelSettings,
                              SeismicParametersHolder & seismicParameters,
                              int                       sortedVintage);
 
+// Possibly misplaced function. Open for better suggestion of where to place the function!
+bool allocate4DGrids(SeismicParametersHolder   & seismicParameters,
+                     ModelSettings             * modelSettings,
+                     ModelGeneral              * modelGeneral,
+                     Simbox                    * timeBGSimbox);
 
 #endif
 

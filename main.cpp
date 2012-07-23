@@ -204,6 +204,7 @@ int main(int argc, char** argv)
       modelGeneral->getTimeLine()->GetNextEvent(eventType, eventIndex, oldTime);
       switch(eventType) {
       case TimeLine::AVO :
+        // In case of 3D inversion
         failedFirst = doFirstAVOInversion(modelSettings,
                                           modelGeneral,
                                           modelAVOstatic,
@@ -211,6 +212,14 @@ int main(int argc, char** argv)
                                           inputFiles,
                                           eventIndex,
                                           timeBGSimbox);
+
+        // In case of 4D inversion, use 4D prior
+        // For now deactivating the whole if-segment by testing on 0 as well.
+        if(modelSettings->getDo4DInversion() && 0){
+          bool failedAllocating = 0;
+          failedAllocating      = allocate4DGrids(seismicParameters, modelSettings, modelGeneral, timeBGSimbox);
+          failedFirst           = doTimeLapseAVOInversion(modelSettings, modelGeneral, modelAVOstatic, inputFiles, seismicParameters, eventIndex);
+        }
         break;
       case TimeLine::TRAVEL_TIME :
       case TimeLine::GRAVITY :
