@@ -65,6 +65,9 @@ TabulatedVelocitySolidStorage::GenerateDistributionsSolid(const std::string     
                                                                        corr_vp_density_dist_with_trend,
                                                                        corr_vs_density_dist_with_trend);
 
+  if(solid == NULL)
+    errTxt += "The tabulated model has not been implemented yet for solids\n"; //Marit: Denne feilmeldingen fjernes når modellen er implementert
+
   return(solid);
 }
 
@@ -98,7 +101,7 @@ DistributionsSolid *
 TabulatedModulusSolidStorage::GenerateDistributionsSolid(const std::string                       & /*path*/,
                                                          const std::vector<std::string>          & /*trend_cube_parameters*/,
                                                          const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
-                                                         std::string                             & /*errTxt*/) const
+                                                         std::string                             & errTxt) const
 {
   /*const DistributionWithTrend * bulk_dist_with_trend               = bulk_modulus_              ->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
   const DistributionWithTrend * shear_dist_with_trend              = shear_modulus_             ->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
@@ -114,6 +117,9 @@ TabulatedModulusSolidStorage::GenerateDistributionsSolid(const std::string      
                                                                       corr_bulk_density_dist_with_trend,
                                                                       corr_shear_density_dist_with_trend);*/
   DistributionsSolid * solid = NULL;
+
+  if(solid == NULL)
+    errTxt += "The tabulated model has not been implemented yet for solids\n"; //Marit: Denne feilmeldingen fjernes når modellen er implementert
 
   return(solid);
 }
@@ -143,6 +149,10 @@ ReussSolidStorage::GenerateDistributionsSolid(const std::string                 
   std::vector<double> volume = getVolume(constituent_volume_fraction_, path, trend_cube_parameters, trend_cube_sampling, errTxt);
 
   DistributionsSolid * solid = NULL; //new DistributionsSolidReuss();
+
+  if(solid == NULL)
+    errTxt += "The Reuss model has not been implemented yet for solids\n"; //Marit: Denne feilmeldingen fjernes når modellen er implementert
+
   return(solid);
 }
 
@@ -171,6 +181,10 @@ VoigtSolidStorage::GenerateDistributionsSolid(const std::string                 
   std::vector<double> volume = getVolume(constituent_volume_fraction_, path, trend_cube_parameters, trend_cube_sampling, errTxt);
 
   DistributionsSolid * solid = NULL; //new DistributionsSolidVoigt();
+
+  if(solid == NULL)
+    errTxt += "The Voigt model has not been implemented yet for solids\n"; //Marit: Denne feilmeldingen fjernes når modellen er implementert
+
   return(solid);
 }
 
@@ -199,6 +213,10 @@ HillSolidStorage::GenerateDistributionsSolid(const std::string                  
   std::vector<double> volume = getVolume(constituent_volume_fraction_, path, trend_cube_parameters, trend_cube_sampling, errTxt);
 
   DistributionsSolid * solid = NULL; //new DistributionsSolidHill();
+
+  if(solid == NULL)
+    errTxt += "The Hill model has not been implemented yet for solids\n"; //Marit: Denne feilmeldingen fjernes når modellen er implementert
+
   return(solid);
 }
 
@@ -250,5 +268,9 @@ DEMSolidStorage::GenerateDistributionsSolid(const std::string                   
   std::vector<double> volume = getVolume(volume_fractions, path, trend_cube_parameters, trend_cube_sampling, errTxt);
 
   DistributionsSolid * solid = NULL; //new DistributionsSolidInclusion();
+
+  if(solid == NULL)
+    errTxt += "The DEM model has not been implemented yet for solids\n"; //Marit: Denne feilmeldingen fjernes når modellen er implementert
+
   return(solid);
 }

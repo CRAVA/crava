@@ -49,6 +49,9 @@ TabulatedVelocityFluidStorage::GenerateDistributionsFluid(const std::string     
                                                                        density_dist_with_trend,
                                                                        corr_vp_density_dist_with_trend);
 
+  if(fluid == NULL)
+    errTxt += "The tabulated model has not been implemented yet for fluids\n"; //Marit: Denne feilmeldingen fjernes når modellen er implementert
+
   return(fluid);
 }
 //----------------------------------------------------------------------------------//
@@ -86,6 +89,9 @@ TabulatedModulusFluidStorage::GenerateDistributionsFluid(const std::string      
   delete density_dist_with_trend;
   delete corr_bulk_dens_dist_with_trend;
 
+  if(fluid == NULL)
+    errTxt += "The tabulated model has not been implemented yet for fluids\n"; //Marit: Denne feilmeldingen fjernes når modellen er implementert
+
   return(fluid);
 }
 
@@ -113,6 +119,10 @@ ReussFluidStorage::GenerateDistributionsFluid(const std::string                 
 
   //Make new DistributionsFluidReuss(constituent_label, volume);
   DistributionsFluid * fluid = NULL; //new DistributionsFluidReuss(constituent_label, volume);
+
+  if(fluid == NULL)
+    errTxt += "The Reuss model has not been implemented yet for fluids\n"; //Marit: Denne feilmeldingen fjernes når modellen er implementert
+
   return(fluid);
 }
 
@@ -139,6 +149,10 @@ VoigtFluidStorage::GenerateDistributionsFluid(const std::string                 
   std::vector<double> volume = getVolume(constituent_volume_fraction_, path, trend_cube_parameters, trend_cube_sampling, errTxt);
 
   DistributionsFluid * fluid = NULL; //new DistributionsFluidVoigt();
+
+  if(fluid == NULL)
+    errTxt += "The Voigt model has not been implemented yet for fluids\n"; //Marit: Denne feilmeldingen fjernes når modellen er implementert
+
   return(fluid);
 }
 
@@ -165,6 +179,10 @@ HillFluidStorage::GenerateDistributionsFluid(const std::string                  
   std::vector<double> volume = getVolume(constituent_volume_fraction_, path, trend_cube_parameters, trend_cube_sampling, errTxt);
 
   DistributionsFluid * fluid = NULL; //new DistributionsFluidHill();
+
+  if(fluid == NULL)
+    errTxt += "The Hill model has not been implemented yet for fluids\n"; //Marit: Denne feilmeldingen fjernes når modellen er implementert
+
   return(fluid);
 }
 
@@ -194,8 +212,12 @@ DistributionsFluid *
 BatzleWangFluidStorage::GenerateDistributionsFluid(const std::string                       & /*path*/,
                                                    const std::vector<std::string>          & /*trend_cube_parameters*/,
                                                    const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
-                                                   std::string                             & /*errTxt*/) const
+                                                   std::string                             & errTxt) const
 {
   DistributionsFluid * fluid = NULL; //new DistributionsFluidBatzleWang();
+
+  if(fluid == NULL)
+    errTxt += "The Batzle-Wang model has not been implemented yet\n"; //Marit: Denne feilmeldingen fjernes når modellen er implementert
+
   return(fluid);
 }

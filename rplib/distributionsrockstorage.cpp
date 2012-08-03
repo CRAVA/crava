@@ -169,9 +169,12 @@ DistributionsRock *
 TabulatedModulusRockStorage::GenerateDistributionsRock(const std::string                       & /*path*/,
                                                        const std::vector<std::string>          & /*trend_cube_parameters*/,
                                                        const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
-                                                       std::string                             & /*errTxt*/) const
+                                                       std::string                             & errTxt) const
 {
   DistributionsRock * rock = NULL;
+
+  if(rock == NULL)
+    errTxt += "The tabulated moduli model has not been implemented yet for rocks\n"; //Marit: Denne feilmeldingen fjernes når modellen er implementert
 
   return(rock);
 }
@@ -200,6 +203,10 @@ ReussRockStorage::GenerateDistributionsRock(const std::string                   
   std::vector<double> volume = getVolume(constituent_volume_fraction_, path, trend_cube_parameters, trend_cube_sampling, errTxt);
 
   DistributionsRock * rock = NULL; //new DistributionsRockReuss();
+
+  if(rock == NULL)
+    errTxt += "The Reuss model has not been implemented yet for rocks\n"; //Marit: Denne feilmeldingen fjernes når modellen er implementert
+
   return(rock);
 }
 
@@ -228,6 +235,10 @@ VoigtRockStorage::GenerateDistributionsRock(const std::string                   
   std::vector<double> volume = getVolume(constituent_volume_fraction_, path, trend_cube_parameters, trend_cube_sampling, errTxt);
 
   DistributionsRock * rock = NULL; //new DistributionsRockVoigt();
+
+  if(rock == NULL)
+    errTxt += "The Voigt model has not been implemented yet for rocks\n"; //Marit: Denne feilmeldingen fjernes når modellen er implementert
+
   return(rock);
 }
 
@@ -256,6 +267,10 @@ HillRockStorage::GenerateDistributionsRock(const std::string                    
   std::vector<double> volume = getVolume(constituent_volume_fraction_, path, trend_cube_parameters, trend_cube_sampling, errTxt);
 
   DistributionsRock * rock = NULL; //new DistributionsRockHill();
+
+  if(rock == NULL)
+    errTxt += "The Hill model has not been implemented yet for rocks\n"; //Marit: Denne feilmeldingen fjernes når modellen er implementert
+
   return(rock);
 }
 
@@ -306,6 +321,10 @@ DEMRockStorage::GenerateDistributionsRock(const std::string                     
   std::vector<double> volume = getVolume(volume_fractions, path, trend_cube_parameters, trend_cube_sampling, errTxt);
 
   DistributionsRock * rock = NULL; //new DistributionsRockInclusion();
+
+  if(rock == NULL)
+    errTxt += "The DEM model has not been implemented yet for rocks\n"; //Marit: Denne feilmeldingen fjernes når modellen er implementert
+
   return(rock);
 }
 
@@ -325,8 +344,12 @@ DistributionsRock *
 GassmannRockStorage::GenerateDistributionsRock(const std::string                       & /*path*/,
                                                const std::vector<std::string>          & /*trend_cube_parameters*/,
                                                const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
-                                               std::string                             & /*errTxt*/) const
+                                               std::string                             & errTxt) const
 {
   DistributionsRock * rock = NULL; //new DistributionsRockGassmann();
+
+  if(rock == NULL)
+    errTxt += "The Gassmann model has not been implemented yet for rocks\n"; //Marit: Denne feilmeldingen fjernes når modellen er implementert
+
   return(rock);
 }

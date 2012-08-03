@@ -54,9 +54,13 @@ DistributionsDryRock *
 TabulatedVelocityDryRockStorage::GenerateDistributionsDryRock(const std::string                       & /*path*/,
                                                               const std::vector<std::string>          & /*trend_cube_parameters*/,
                                                               const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
-                                                              std::string                             & /*errTxt*/) const
+                                                              std::string                             & errTxt) const
 {
   DistributionsDryRock * dry_rock = NULL; //new DistributionsDryRockInclusion();
+
+  if(dry_rock == NULL)
+    errTxt += "The tabulated model has not been implemented yet for dry-rocks\n"; //Marit: Denne feilmeldingen fjernes når modellen er implementert
+
   return(dry_rock);
 }
 
@@ -97,9 +101,12 @@ DistributionsDryRock *
 TabulatedModulusDryRockStorage::GenerateDistributionsDryRock(const std::string                       & /*path*/,
                                                              const std::vector<std::string>          & /*trend_cube_parameters*/,
                                                              const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
-                                                             std::string                             & /*errTxt*/) const
+                                                             std::string                             & errTxt) const
 {
   DistributionsDryRock * dry_rock = NULL;
+
+  if(dry_rock == NULL)
+    errTxt += "The tabulated model has not been implemented yet for dry-rocks\n"; //Marit: Denne feilmeldingen fjernes når modellen er implementert
 
   return(dry_rock);
 }
@@ -134,6 +141,10 @@ ReussDryRockStorage::GenerateDistributionsDryRock(const std::string             
   std::vector<double> volume = getVolume(constituent_volume_fraction_, path, trend_cube_parameters, trend_cube_sampling, errTxt);
 
   DistributionsDryRock * dry_rock = NULL; //new DistributionsDryRockReuss();
+
+  if(dry_rock == NULL)
+    errTxt += "The Reuss model has not been implemented yet for dry-rocks\n"; //Marit: Denne feilmeldingen fjernes når modellen er implementert
+
   return(dry_rock);
 }
 
@@ -167,6 +178,10 @@ VoigtDryRockStorage::GenerateDistributionsDryRock(const std::string             
   std::vector<double> volume = getVolume(constituent_volume_fraction_, path, trend_cube_parameters, trend_cube_sampling, errTxt);
 
   DistributionsDryRock * dry_rock = NULL; //new DistributionsDryRockVoigt();
+
+  if(dry_rock == NULL)
+    errTxt += "The Voigt model has not been implemented yet for dry-rocks\n"; //Marit: Denne feilmeldingen fjernes når modellen er implementert
+
   return(dry_rock);
 }
 
@@ -200,6 +215,10 @@ HillDryRockStorage::GenerateDistributionsDryRock(const std::string              
   std::vector<double> volume = getVolume(constituent_volume_fraction_, path, trend_cube_parameters, trend_cube_sampling, errTxt);
 
   DistributionsDryRock * dry_rock = NULL; //new DistributionsDryRockHill();
+
+  if(dry_rock == NULL)
+    errTxt += "The Hill model has not been implemented yet for dry-rocks\n"; //Marit: Denne feilmeldingen fjernes når modellen er implementert
+
   return(dry_rock);
 }
 
@@ -258,5 +277,9 @@ DEMDryRockStorage::GenerateDistributionsDryRock(const std::string               
   std::vector<double> volume = getVolume(volume_fractions, path, trend_cube_parameters, trend_cube_sampling, errTxt);
 
   DistributionsDryRock * dry_rock = NULL; //new DistributionsDryRockInclusion();
+
+  if(dry_rock == NULL)
+    errTxt += "The DEM model has not been implemented yet for dry-rocks\n"; //Marit: Denne feilmeldingen fjernes når modellen er implementert
+
   return(dry_rock);
 }

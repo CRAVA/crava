@@ -1733,8 +1733,6 @@ XmlModelFile::parseRock(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("voigt");
   legalCommands.push_back("hill");
   legalCommands.push_back("dem");
-  legalCommands.push_back("hashin-shtrikman");
-  legalCommands.push_back("walton");
   legalCommands.push_back("gassmann");
 
   std::string label = "";
@@ -1750,7 +1748,7 @@ XmlModelFile::parseRock(TiXmlNode * node, std::string & errTxt)
   int constituent_type = ModelSettings::ROCK;
 
   DistributionWithTrendStorage * porosity = NULL;
-  std::string                    moduli = "";
+  std::string                    moduli   = "";
 
   if(parseTabulated(root, constituent_type, label, porosity, moduli, errTxt) == true)
     given++;
@@ -1762,14 +1760,8 @@ XmlModelFile::parseRock(TiXmlNode * node, std::string & errTxt)
     given++;
   if(parseDEM(root, constituent_type, label, porosity, moduli, errTxt) == true)
     given++;
-
-  std::string hashin;
-  if(parseValue(root, "hashin-shtrikman", hashin, errTxt) == true)
-    errTxt += "The Hashin-Shtrikman model has not been implemented\n";
-
-  std::string walton;
-  if(parseValue(root, "walton", walton, errTxt) == true)
-    errTxt += "The Walton model has not been implemented\n";
+  if(parseGassmann(root, constituent_type, label, errTxt) == true)
+    given++;
 
   if(given == 0)
     errTxt += "A theory or <use> needs to follow after <label> in <rock>\n";
@@ -1795,8 +1787,8 @@ XmlModelFile::parseSolid(TiXmlNode * node, std::string & label, std::string & er
   legalCommands.push_back("voigt");
   legalCommands.push_back("hill");
   legalCommands.push_back("dem");
-  legalCommands.push_back("hashin-shtrikman");
-  legalCommands.push_back("walton");
+  //legalCommands.push_back("hashin-shtrikman");
+  //legalCommands.push_back("walton");
 
   label = "";
   parseValue(root, "label", label, errTxt);
@@ -1829,14 +1821,6 @@ XmlModelFile::parseSolid(TiXmlNode * node, std::string & label, std::string & er
   if(parseDEM(root, constituent_type, label, porosity, moduli, errTxt) == true)
     given++;
 
-  std::string hashin;
-  if(parseValue(root, "hashin-shtrikman", hashin, errTxt) == true)
-    errTxt += "The Hashin-Shtrikman model has not been implemented\n";
-
-  std::string walton;
-  if(parseValue(root, "walton", walton, errTxt) == true)
-    errTxt += "The Walton model has not been implemented\n";
-
   if(given == 0)
     errTxt += "A theory or <use> needs to follow after <label> in <solid>\n";
   else if(given > 1)
@@ -1861,8 +1845,8 @@ XmlModelFile::parseDryRock(TiXmlNode * node, std::string & label, std::string & 
   legalCommands.push_back("voigt");
   legalCommands.push_back("hill");
   legalCommands.push_back("dem");
-  legalCommands.push_back("hashin-shtrikman");
-  legalCommands.push_back("walton");
+  //legalCommands.push_back("hashin-shtrikman");
+  //legalCommands.push_back("walton");
   legalCommands.push_back("total-porosity");
   legalCommands.push_back("mineral-moduli");
 
@@ -1903,14 +1887,6 @@ XmlModelFile::parseDryRock(TiXmlNode * node, std::string & label, std::string & 
   if(parseDEM(root, constituent_type, label, total_porosity, moduli, errTxt) == true)
     given++;
 
-  std::string hashin;
-  if(parseValue(root, "hashin-shtrikman", hashin, errTxt) == true)
-    errTxt += "The Hashin-Shtrikman model has not been implemented\n";
-
-  std::string walton;
-  if(parseValue(root, "walton", walton, errTxt) == true)
-    errTxt += "The Walton model has not been implemented\n";
-
  if(given == 0)
     errTxt += "A theory or <use> needs to follow after <label> in <dry-rock>\n";
   else if(given > 1)
@@ -1935,8 +1911,8 @@ XmlModelFile::parseFluid(TiXmlNode * node, std::string & label, std::string & er
   legalCommands.push_back("voigt");
   legalCommands.push_back("hill");
   legalCommands.push_back("batzle-wang-brine");
-  legalCommands.push_back("hashin-shtrikman");
-  legalCommands.push_back("walton");
+  //legalCommands.push_back("hashin-shtrikman");
+  //legalCommands.push_back("walton");
 
   label = "";
   parseValue(root, "label", label, errTxt);
@@ -1968,14 +1944,6 @@ XmlModelFile::parseFluid(TiXmlNode * node, std::string & label, std::string & er
     given++;
   if(parseBatzleWangBrine(root, constituent_type, label, errTxt) == true)
     given++;
-
-  std::string hashin;
-  if(parseValue(root, "hashin-shtrikman", hashin, errTxt) == true)
-    errTxt += "The Hashin-Shtrikman model has not been implemented\n";
-
-  std::string walton;
-  if(parseValue(root, "walton", walton, errTxt) == true)
-    errTxt += "The Walton model has not been implemented\n";
 
   if(given == 0)
     errTxt += "A theory or <use> needs to follow after <label> in <fluid>\n";
@@ -2609,7 +2577,6 @@ XmlModelFile::parseDistributionWithTrend(TiXmlNode                     * node,
   legalCommands.push_back("label");
   legalCommands.push_back("reservoir-variable");
   legalCommands.push_back("value");
-  legalCommands.push_back("trend-constant");
   legalCommands.push_back("trend-1d");
   legalCommands.push_back("trend-2d");
   if(allowDistribution == true) {
@@ -2632,11 +2599,6 @@ XmlModelFile::parseDistributionWithTrend(TiXmlNode                     * node,
   }
 
   if(parseValue(root, "value", value, errTxt) == true) {
-    storage = new DistributionWithTrendStorage(value, is_sheared);
-    trendGiven++;
-  }
-
-  if(parseValue(root, "trend-constant", value, errTxt) == true) {
     storage = new DistributionWithTrendStorage(value, is_sheared);
     trendGiven++;
   }
