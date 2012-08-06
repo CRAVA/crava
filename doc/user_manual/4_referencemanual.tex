@@ -2189,193 +2189,1059 @@ the vertical sampling interval we find the the number of parameters that is esti
    \item \Default
  \elist
 
+\subsubsection{\hbracket{reservoir}}\newkw{reservoir}
+ \slist
+   \item \Description <reservoir> contains reservoir properties, such as various pressures, temperature, porosity, fluid saturation, lithology, etc. Reservoir properties given under the keyword <reservoir> are parameters that are common for all fluids, solids, dry rocks and rocks. For models that depend on these parameters, the values given under reservoir can be used, although they may be overridden locally. The elements <reservoir> are defined by labels to be referred to with the \kw{reservoir-variable} statement. Hence, they must be unique. After <reservoir>, the command \kw{reservoir-variable} follows.
+   \item \Argument 
+   \item \Default 
+ \elist
+
+\paragraph{\hbracket{variable}}\rnewkw{variable}{reservoir-variable}
+ \slist
+   \item \Description Repeated command, one for each reservoir variable
+   \item \Argument Value, trend or distribution, see \autoref{sec:valueassignment}
+   \item \Default 
+ \elist
+
+\subparagraph{\hbracket{label}}\newkw{label}
+ \slist
+   \item \Description Repeated command, one for each reservoir variable
+   \item \Argument Value, trend or distribution, see \autoref{sec:valueassignment}
+   \item \Default 
+ \elist
+
+\subsubsection{\hbracket{predefinitions}}\newkw{predefinitions}
+ \slist
+   \item \Description <predefinitions> is used for specifying and calculating the elastic properties of basic building blocks, being \kw{fluid}, \kw{solid} and \kw{solid}, or elements and mixtures of these. It will typically use properties specified under \kw{reservoir}. Under the keyword <predefinitions>, fluids, solids and dry rocks are defined for later use, to make the xml-file more readable. Each time a building block is defined, it is given a unique identifying name using the <label> keyword. This is followed by a keyword specifying which theory we use for building this constituent. However, if we want to use a constituent that is already defined, we use the keyword <use> instead of <label>, followed by the unique name of the element. Thus, constituents can easily be used over and over once they are defined. 
+   \item \Argument 
+   \item \Default 
+ \elist
+
+\paragraph{\hbracket{fluid}}\newkw{fluid}
+ \slist
+   \item \Description Fluids are generally defined by the command <fluid>. The fluid command is followed either by the command <label> to specify a new fluid, or <use> to use a predefined fluid. In the latter case, the fluid is now done; in the former case, the next keyword is the theory used to model the fluid.
+   \item \Argument 
+   \item \Default 
+ \elist
+
+\subparagraph{\hbracket{use}}\rnewkw{use}{use-fluid}
+ \slist
+   \item \Description  To use a fluid that is already defined, we use the keyword <use> followed by the unique name of the fluid element.
+   \item \Argument Unique name of the fluid element to be used
+   \item \Default 
+ \elist
+
+\subparagraph{\hbracket{label}}\rnewkw{label}{label-fluid}
+ \slist
+   \item \Description Unique idenitfication of the fluid. Each time a fluid is defined, it is given a unique identifying name using
+the <label> keyword. The <label> keyword needs to be followed by a keyword specifying which theory we use for building this fluid. The possible theories are listet below. 
+   \item \Argument String
+   \item \Default 
+ \elist
+
+\subparagraph{\hbracket{tabulated}}\rnewkw{tabulated}{tabulated-fluid}
+ \slist
+   \item \Description The tabulated theory allows specifying properties explicitly. For fluids, the properties can either be specified by the set <density> and <bulk-modulus>, or by the set <density> and <vp>. The correlations between the variables may also be added. If the correlations are not used, the variables are assumed to have zero correlation. 
+   \item \Argument
+   \item \Default 
+ \elist
+
+\subsubparagraph{\hbracket{density}}\rnewkw{density}{density-tabulated-fluid}
+ \slist
+   \item \Description Density. Needs to be specified
+   \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
+   \item \Default 
+ \elist
+
+\subsubparagraph{\hbracket{bulk-modulus}}\rnewkw{bulk-modulus}{bulk-modulus-fluid}
+ \slist
+   \item \Description Bulk modulus. One of <bulk-modulus> or \rkw{vp}{vp-tabulated-fluid} needs to be specified.
+   \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
+   \item \Default 
+ \elist
+
+\subsubparagraph{\hbracket{correlation-bulk-density}}\rnewkw{correlation-bulk-density}{correlation-bulk-density-fluid}
+ \slist
+   \item \Description Correlation between the bulk modulus and density
+   \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
+   \item \Default 0
+ \elist
+
+\subsubparagraph{\hbracket{vp}}\rnewkw{vp}{vp-tabulated-fluid}
+ \slist
+   \item \Description P-wave velocity. One of \rkw{bulk-modulus}{bulk-modulus-fluid} or <vp> needs to be specified.
+   \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
+   \item \Default 
+ \elist
+
+\subsubparagraph{\hbracket{correlation-vp-density}}\rnewkw{correlation-vp-density}{correlation-vp-density-fluid}
+ \slist
+   \item \Description Correlation between vp and density
+   \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
+   \item \Default 0
+ \elist
+
+\subparagraph{\hbracket{reuss}}\rnewkw{reuss}{reuss-fluid}
+ \slist
+   \item \Description Used for calculating the harmonic average of various constituents. Typically used for calculating effective bulk moduli of fluids, then referred to as Wood's theory. 
+   \item \Argument
+   \item \Default 
+ \elist
+
+\subsubparagraph{\hbracket{constituent}}\rnewkw{constituent}{constituent-reuss-fluid}
+ \slist
+   \item \Description Repeated command, one for each constituent of the Reuss model
+   \item \Argument <fluid> followed by <volume-fraction>
+   \item \Default
+ \elist
+
+\subsubsubparagraph{\hbracket{fluid}}\rnewkw{fluid}{fluid-reuss-fluid}
+ \slist
+   \item \Description May define a new fluid here, or use a predefined \kw{fluid} from \kw{predefinitions} using the keyword \rkw{use}{use-fluid} followed by the unique name of the fluid. When a new fluid is defined, follow the construction of \kw{fluid} in \kw{predefinitions}
+   \item \Argument <use> or <label> followed by a theory following the lines of \kw{fluid}
+   \item \Default
+ \elist
+
+\subsubsubparagraph{\hbracket{volume-fraction}}\rnewkw{volume-fraction}{volume-fraction-reuss-fluid}
+ \slist
+   \item \Description Volume fraction of the constituent. Must to be specified for all but the last constituents, where it may be calculated to ensure that the sum of the volume fractions of all the constituents is one. If the volume fraction of the last constituent is included, the sum of volume fractions must be one. 
+   \item \Argument Value
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{voigt}}\rnewkw{voigt}{voigt-fluid}
+ \slist
+   \item \Description Used for calculating the harmonic average of various constituents. Typically used for calculating effective bulk moduli of fluids, then referred to as Wood's theory. 
+   \item \Argument
+   \item \Default 
+ \elist
+
+\subsubparagraph{\hbracket{constituent}}\rnewkw{constituent}{constituent-voigt-fluid}
+ \slist
+   \item \Description Repeated command, one for each constituent of the Voigt model
+   \item \Argument <fluid> followed by <volume-fraction>
+   \item \Default
+ \elist
+
+\subsubsubparagraph{\hbracket{fluid}}\rnewkw{fluid}{fluid-voigt-fluid}
+ \slist
+   \item \Description May define a new fluid here, or use a predefined \kw{fluid} from \kw{predefinitions} using the keyword \rkw{use}{use-fluid} followed by the unique name of the fluid. When a new fluid is defined, follow the construction of \kw{fluid} in \kw{predefinitions}
+   \item \Argument <use> or <label> followed by a theory following the lines of \kw{fluid}
+   \item \Default
+ \elist
+
+\subsubsubparagraph{\hbracket{volume-fraction}}\rnewkw{volume-fraction}{volume-fraction-voigt-fluid}
+ \slist
+   \item \Description Volume fraction of the constituent. Must to be specified for all but the last constituents, where it may be calculated to ensure that the sum of the volume fractions of all the constituents is one. If the volume fraction of the last constituent is included, the sum of volume fractions must be one. 
+   \item \Argument Value
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{hill}}\rnewkw{hill}{hill-fluid}
+ \slist
+   \item \Description Used for calculating the average of Reuss and Voigt of various constituents. Note that Hill can be used to calculate the effective bulk modulus of a patchy fluid.
+   \item \Argument
+   \item \Default 
+ \elist
+
+\subsubparagraph{\hbracket{constituent}}\rnewkw{constituent}{constituent-hill-fluid}
+ \slist
+   \item \Description Repeated command, one for each constituent of the Hill model
+   \item \Argument <fluid> followed by <volume-fraction>
+   \item \Default
+ \elist
+
+\subsubsubparagraph{\hbracket{fluid}}\rnewkw{fluid}{fluid-hill-fluid}
+ \slist
+   \item \Description May define a new fluid here, or use a predefined \kw{fluid} from \kw{predefinitions} using the keyword \rkw{use}{use-fluid} followed by the unique name of the fluid. When a new fluid is defined, follow the construction of \kw{fluid} in \kw{predefinitions}
+   \item \Argument <use> or <label> followed by a theory following the lines of \kw{fluid}
+   \item \Default
+ \elist
+
+\subsubsubparagraph{\hbracket{volume-fraction}}\rnewkw{volume-fraction}{volume-fraction-hill-fluid}
+ \slist
+   \item \Description Volume fraction of the constituent. Must to be specified for all but the last constituents, where it may be calculated to ensure that the sum of the volume fractions of all the constituents is one. If the volume fraction of the last constituent is included, the sum of volume fractions must be one. 
+   \item \Argument Value
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{batzle-wang-brine}}\newkw{batzle-wang-brine}
+ \slist
+   \item \Description The theoty of Batzle and Wang used for calculating the brine properties.
+   \item \Argument 
+   \item \Default 
+ \elist
+
+\subsubparagraph{\hbracket{pore-pressure}}\newkw{pore-pressure}
+ \slist
+   \item \Description
+   \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
+   \item \Default
+ \elist
+
+\subsubparagraph{\hbracket{temperature}}\newkw{temperature}
+ \slist
+   \item \Description
+   \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
+   \item \Default
+ \elist
+
+\subsubparagraph{\hbracket{salinity}}\newkw{salinity}
+ \slist
+   \item \Description Fraction of one
+   \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{solid}}\newkw{solid}
+ \slist
+   \item \Description Solids follow the same pattern as fluids, with <solid> as the defining keyword, followed by <label>, and the following keyword defining the theory used. As with fluids, <use> can be used instead of <label>, to use a previously specified solid.
+   \item \Argument 
+   \item \Default 
+ \elist
+
+\subparagraph{\hbracket{use}\rnewkw{use}{use-solid}}
+ \slist
+   \item \Description  To use a solid that is already defined, we use the keyword <use> followed by the unique name of the solid element.
+   \item \Argument Unique name of the solid element to be used
+   \item \Default 
+ \elist
+
+\subparagraph{\hbracket{label}}\rnewkw{label}{label-solid}
+ \slist
+   \item \Description Unique idenitfication of the solid. Each time a solid is defined, it is given a unique identifying name using
+the <label> keyword. The <label> keyword needs to be followed by a keyword specifying which theory we use for building this solid. The possible theories are listet below. 
+   \item \Argument String
+   \item \Default 
+ \elist
+
+\subparagraph{\hbracket{tabulated}}\rnewkw{tabulated}{tabulated-solid}
+ \slist
+   \item \Description The tabulated theory allows specifying properties explicitly. The properties can either be specified by the set <density>, <bulk-modulus> and <shear-modulus>, or by the set <density>, <vp> and <vs>. The correlations between the variables may also be added. If the correlations are not used, the variables are assumed to have zero correlation. 
+   \item \Argument
+   \item \Default 
+ \elist
+
+\subsubparagraph{\hbracket{density}}\rnewkw{density}{density-tabulated-solid}
+ \slist
+   \item \Description Density. Needs to be specified
+   \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
+   \item \Default 
+ \elist
+
+\subsubparagraph{\hbracket{bulk-modulus}}\rnewkw{bulk-modulus}{bulk-modulus-solid}
+ \slist
+   \item \Description Bulk modulus. One of <bulk-modulus> or \rkw{vp}{vp-tabulated-solid} needs to be specified.
+   \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
+   \item \Default 
+ \elist
+
+\subsubparagraph{\hbracket{shear-modulus}}\rnewkw{shear-modulus}{shear-modulus-solid}
+ \slist
+   \item \Description Shear modulus. One of <shear-modulus> or \rkw{vs}{vs-tabulated-solid} needs to be specified.
+   \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
+   \item \Default 
+ \elist
+
+\subsubparagraph{\hbracket{correlation-bulk-shear}}\rnewkw{correlation-bulk-shear}{correlation-bulk-shear-solid}
+ \slist
+   \item \Description Correlation between the bulk and shear moduli
+   \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
+   \item \Default 0
+ \elist
+
+\subsubparagraph{\hbracket{correlation-bulk-density}}\rnewkw{correlation-bulk-density}{correlation-bulk-density-solid}
+ \slist
+   \item \Description Correlation between the bulk modulus and density
+   \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
+   \item \Default 0
+ \elist
+
+\subsubparagraph{\hbracket{correlation-shear-density}}\rnewkw{correlation-shear-density}{correlation-shear-density-solid}
+ \slist
+   \item \Description Correlation between the shear modulus and density
+   \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
+   \item \Default 0
+ \elist
+
+\subsubparagraph{\hbracket{vp}}\rnewkw{vp}{vp-tabulated-solid}
+ \slist
+   \item \Description P-wave velocity. One of \rkw{bulk-modulus}{bulk-modulus-solid} or <vp> needs to be specified.
+   \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
+   \item \Default 
+ \elist
+
+\subsubparagraph{\hbracket{vs}}\rnewkw{vs}{vs-tabulated-solid}
+ \slist
+   \item \Description S-wave velocity. One of \rkw{shear-modulus}{shear-modulus-solid} or <vs> needs to be specified.
+   \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
+   \item \Default 
+ \elist
+
+\subsubparagraph{\hbracket{correlation-vp-vs}}\rnewkw{correlation-vp-vs}{correlation-vp-vs-solid}
+ \slist
+   \item \Description Correlation between vp and vs
+   \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
+   \item \Default 0
+ \elist
+
+\subsubparagraph{\hbracket{correlation-vp-density}}\rnewkw{correlation-vp-density}{correlation-vp-density-solid}
+ \slist
+   \item \Description Correlation between vp and density
+   \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
+   \item \Default 0
+ \elist
+
+\subsubparagraph{\hbracket{correlation-vs-density}}\rnewkw{correlation-vs-density}{correlation-vs-density-solid}
+ \slist
+   \item \Description Correlation between vs and density
+   \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
+   \item \Default 0
+ \elist
+
+\subparagraph{\hbracket{reuss}}\rnewkw{reuss}{reuss-solid}
+ \slist
+   \item \Description Used for calculating the harmonic average of various constituents. Typically used for calculating effective bulk moduli. 
+   \item \Argument
+   \item \Default 
+ \elist
+
+\subsubparagraph{\hbracket{constituent}}\rnewkw{constituent}{constituent-reuss-solid}
+ \slist
+   \item \Description Repeated command, one for each constituent of the Reuss model
+   \item \Argument <solid> followed by <volume-fraction>
+   \item \Default
+ \elist
+
+\subsubsubparagraph{\hbracket{solid}}\rnewkw{solid}{solid-reuss-solid}
+ \slist
+   \item \Description May define a new solid here, or use a predefined \kw{solid} from \kw{predefinitions} using the keyword \rkw{use}{use-solid} followed by the unique name of the solid. When a new solid is defined, follow the construction of \kw{solid} in \kw{predefinitions}
+   \item \Argument <use> or <label> followed by a theory following the lines of \kw{solid}
+   \item \Default
+ \elist
+
+\subsubsubparagraph{\hbracket{volume-fraction}}\rnewkw{volume-fraction}{volume-fraction-reuss-solid}
+ \slist
+   \item \Description Volume fraction of the constituent. Must to be specified for all but the last constituents, where it may be calculated to ensure that the sum of the volume fractions of all the constituents is one. If the volume fraction of the last constituent is included, the sum of volume fractions must be one. 
+   \item \Argument Value
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{voigt}}\rnewkw{voigt}{voigt-solid}
+ \slist
+   \item \Description Used for calculating the aritmetic average of various constituents. Typically used for calculating effective bulk moduli. 
+   \item \Argument
+   \item \Default 
+ \elist
+
+\subsubparagraph{\hbracket{constituent}}\rnewkw{constituent}{constituent-voigt-solid}
+ \slist
+   \item \Description Repeated command, one for each constituent of the Voigt model
+   \item \Argument <solid> followed by <volume-fraction>
+   \item \Default
+ \elist
+
+\subsubsubparagraph{\hbracket{solid}}\rnewkw{solid}{solid-voigt-solid}
+ \slist
+   \item \Description May define a new solid here, or use a predefined \kw{solid} from \kw{predefinitions} using the keyword \rkw{use}{use-solid} followed by the unique name of the solid. When a new solid is defined, follow the construction of \kw{solid} in \kw{predefinitions}
+   \item \Argument <use> or <label> followed by a theory following the lines of \kw{solid}
+   \item \Default
+ \elist
+
+\subsubsubparagraph{\hbracket{volume-fraction}}\rnewkw{volume-fraction}{volume-fraction-voigt-solid}
+ \slist
+   \item \Description Volume fraction of the constituent. Must to be specified for all but the last constituents, where it may be calculated to ensure that the sum of the volume fractions of all the constituents is one. If the volume fraction of the last constituent is included, the sum of volume fractions must be one. 
+   \item \Argument Value
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{hill}}\rnewkw{hill}{hill-solid}
+ \slist
+   \item \Description Used for calculating the average og Reuss and Voigt of various constituents.
+   \item \Argument
+   \item \Default 
+ \elist
+
+\subsubparagraph{\hbracket{constituent}}\rnewkw{constituent}{constituent-hill-solid}
+ \slist
+   \item \Description Repeated command, one for each constituent of the Hill model
+   \item \Argument <solid> followed by <volume-fraction>
+   \item \Default
+ \elist
+
+\subsubsubparagraph{\hbracket{solid}}\rnewkw{solid}{solid-hill-solid}
+ \slist
+   \item \Description May define a new solid here, or use a predefined \kw{solid} from \kw{predefinitions} using the keyword \rkw{use}{use-solid} followed by the unique name of the solid. When a new solid is defined, follow the construction of \kw{solid} in \kw{predefinitions}
+   \item \Argument <use> or <label> followed by a theory following the lines of \kw{solid}
+   \item \Default
+ \elist
+
+\subsubsubparagraph{\hbracket{volume-fraction}}\rnewkw{volume-fraction}{volume-fraction-hill-solid}
+ \slist
+   \item \Description Volume fraction of the constituent. Must to be specified for all but the last constituents, where it may be calculated to ensure that the sum of the volume fractions of all the constituents is one. If the volume fraction of the last constituent is included, the sum of volume fractions must be one. 
+   \item \Argument Value
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{dem}}\rnewkw{dem}{dem-solid}
+ \slist
+   \item \Description Differential effective medium (DEM) theory is an inclusion based model. One of the constituents acts as the host material while the other constituents are treated as inclusions. In addition to volume fractions of the inclusions, their pore geometry must be specified. Typical use of DEM is mixing two solids, adding vacuum pores to a solid ("later" saturated using Gassmann theory) or adding fluid filled pores in a solid directly. Note that this is an asymmetric model, where interchanging host and constituent typically leads to different solutions. Note that inclusions beyond the first one are optional. The same material can be used in all inclusions, with different geometries. It is also possible to use different materials for the various inclusions.
+   \item \Argument
+   \item \Default 
+ \elist
+
+\subsubparagraph{\hbracket{host}}\rnewkw{host}{host-solid}
+ \slist
+   \item \Description The host of the DEM model
+   \item \Argument <solid> followed by <volume-fraction>
+   \item \Default
+ \elist
+
+\subsubsubparagraph{\hbracket{solid}}\rnewkw{solid}{solid-dem-solid}
+ \slist
+   \item \Description May define a new solid here, or use a predefined \kw{solid} from \kw{predefinitions} using the keyword \rkw{use}{use-solid} followed by the unique name of the solid. When a new solid is defined, follow the construction of \kw{solid} in \kw{predefinitions}
+   \item \Argument <use> or <label> followed by a theory following the lines of \kw{solid}
+   \item \Default
+ \elist
+
+\subsubsubparagraph{\hbracket{volume-fraction}}\rnewkw{volume-fraction}{volume-fraction-dem-solid}
+ \slist
+   \item \Description Volume fraction of the constituent. Must to be specified for all but the last constituents, where it may be calculated to ensure that the sum of the volume fractions of all the constituents is one. If the volume fraction of the last constituent is included, the sum of volume fractions must be one. 
+   \item \Argument Value
+   \item \Default
+ \elist
+
+\subsubparagraph{\hbracket{inclusion}}\rnewkw{inclusion}{inclusion-solid}
+ \slist
+   \item \Description Repeated command, one for each inclusion of the DEM model
+   \item \Argument <solid> followed by <volume-fraction>
+   \item \Default
+ \elist
+
+\subsubsubparagraph{\hbracket{solid}}\rnewkw{solid}{solid-dem-inclusion-solid}
+ \slist
+   \item \Description May define a new solid here, or use a predefined \kw{solid} from \kw{predefinitions} using the keyword \rkw{use}{use-solid} followed by the unique name of the solid. When a new solid is defined, follow the construction of \kw{solid} in \kw{predefinitions}
+   \item \Argument <use> or <label> followed by a theory following the lines of \kw{solid}
+   \item \Default
+ \elist
+
+\subsubsubparagraph{\hbracket{volume-fraction}}\rnewkw{volume-fraction}{volume-fraction-dem-inclusion-solid}
+ \slist
+   \item \Description Volume fraction of the constituent. Must to be specified for all but the last constituents, where it may be calculated to ensure that the sum of the volume fractions of all the constituents is one. If the volume fraction of the last constituent is included, the sum of volume fractions must be one. 
+   \item \Argument Value
+   \item \Default
+ \elist
+
+\subsubsubparagraph{\hbracket{aspect-ratio}}\rnewkw{aspect-ratio}{aspect-ratio-solid}
+ \slist
+   \item \Description Aspect ratio of the inclusion
+   \item \Argument Value, trend, distribution or <reservoir-variable>, see \autoref{sec:valueassignment}
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{dry-rock}}\newkw{dry-rock}
+ \slist
+   \item \Description Dry rocks are a particular type of solid, as they have a defined porosity, yet no fluids added, so they are not rocks according to the rock-definition in \kw{rock}. In addition to the density and effective elastic moduli for the specified porosity, they also contain information about the effective mineral properties. 
+Dry rocks are specified with <dry-rock>, followed by <label> or <use>. If <label> is given, it is followed by a theory for calculating the effective elastic moduli. Then the <total-porosity> and <mineral-moduli> (i.e. bulk and shear moduli of the effective mineral) are defined. An implicit part of the theories is that the density is calculated using the arithmetic average of the constituents.
+   \item \Argument 
+   \item \Default 
+ \elist
+
+\subparagraph{\hbracket{use}}\rnewkw{use}{use-dry-rock}
+ \slist
+   \item \Description  To use a dry-rock that is already defined, we use the keyword <use> followed by the unique name of the dry-rock element.
+   \item \Argument Unique name of the dry-rock element to be used
+   \item \Default 
+ \elist
+
+\subparagraph{\hbracket{label}}\rnewkw{label}{label-dry-rock}
+ \slist
+   \item \Description Unique idenitfication of the dry-rock. Each time a dry-rock is defined, it is given a unique identifying name using
+the <label> keyword. The <label> keyword needs to be followed by a keyword specifying which theory we use for building this dry-rock. The possible theories are listet below. 
+   \item \Argument String
+   \item \Default 
+ \elist
+
+\subparagraph{\hbracket{tabulated}}\rnewkw{tabulated}{tabulated-dry-rock}
+ \slist
+   \item \Description The tabulated theory allows specifying properties explicitly. The properties can either be specified by the set <density>, <bulk-modulus> and <shear-modulus>, or by the set <density>, <vp> and <vs>. The correlations between the variables may also be added. If the correlations are not used, the variables are assumed to have zero correlation. 
+   \item \Argument
+   \item \Default 
+ \elist
+
+\subsubparagraph{\hbracket{density}}\rnewkw{density}{density-tabulated-dry-rock}
+ \slist
+   \item \Description Density. Needs to be specified
+   \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
+   \item \Default 
+ \elist
+
+\subsubparagraph{\hbracket{bulk-modulus}}\rnewkw{bulk-modulus}{bulk-modulus-dry-rock}
+ \slist
+   \item \Description Bulk modulus. One of <bulk-modulus> or \rkw{vp}{vp-tabulated-dry-rock} needs to be specified.
+   \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
+   \item \Default 
+ \elist
+
+\subsubparagraph{\hbracket{shear-modulus}}\rnewkw{shear-modulus}{shear-modulus-dry-rock}
+ \slist
+   \item \Description Shear modulus. One of <shear-modulus> or \rkw{vs}{vs-tabulated-dry-rock} needs to be specified.
+   \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
+   \item \Default 
+ \elist
+
+\subsubparagraph{\hbracket{correlation-bulk-shear}}\rnewkw{correlation-bulk-shear}{correlation-bulk-shear-dry-rock}
+ \slist
+   \item \Description Correlation between the bulk and shear moduli
+   \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
+   \item \Default 0
+ \elist
+
+\subsubparagraph{\hbracket{correlation-bulk-density}}\rnewkw{correlation-bulk-density}{correlation-bulk-density-dry-rock}
+ \slist
+   \item \Description Correlation between the bulk modulus and density
+   \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
+   \item \Default 0
+ \elist
+
+\subsubparagraph{\hbracket{correlation-shear-density}}\rnewkw{correlation-shear-density}{correlation-shear-density-dry-rock}
+ \slist
+   \item \Description Correlation between the shear modulus and density
+   \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
+   \item \Default 0
+ \elist
+
+\subsubparagraph{\hbracket{vp}}\rnewkw{vp}{vp-tabulated-dry-rock}
+ \slist
+   \item \Description P-wave velocity. One of \rkw{bulk-modulus}{bulk-modulus-dry-rock} or <vp> needs to be specified.
+   \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
+   \item \Default 
+ \elist
+
+\subsubparagraph{\hbracket{vs}}\rnewkw{vs}{vs-tabulated-dry-rock}
+ \slist
+   \item \Description S-wave velocity. One of \rkw{shear-modulus}{shear-modulus-dry-rock} or <vs> needs to be specified.
+   \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
+   \item \Default 
+ \elist
+
+\subsubparagraph{\hbracket{correlation-vp-vs}}\rnewkw{correlation-vp-vs}{correlation-vp-vs-dry-rock}
+ \slist
+   \item \Description Correlation between vp and vs
+   \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
+   \item \Default 0
+ \elist
+
+\subsubparagraph{\hbracket{correlation-vp-density}}\rnewkw{correlation-vp-density}{correlation-vp-density-dry-rock}
+ \slist
+   \item \Description Correlation between vp and density
+   \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
+   \item \Default 0
+ \elist
+
+\subsubparagraph{\hbracket{correlation-vs-density}}\rnewkw{correlation-vs-density}{correlation-vs-density-dry-rock}
+ \slist
+   \item \Description Correlation between vs and density
+   \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
+   \item \Default 0
+ \elist
+
+\subparagraph{\hbracket{reuss}}\rnewkw{reuss}{reuss-dry-rock}
+ \slist
+   \item \Description Used for calculating the harmonic average of various constituents. Typically used for calculating effective bulk moduli. 
+   \item \Argument
+   \item \Default 
+ \elist
+
+\subsubparagraph{\hbracket{constituent}}\rnewkw{constituent}{constituent-reuss-dry-rock}
+ \slist
+   \item \Description Repeated command, one for each constituent of the Reuss model
+   \item \Argument <dry-rock> followed by <volume-fraction>
+   \item \Default
+ \elist
+
+\subsubsubparagraph{\hbracket{dry-rock}}\rnewkw{dry-rock}{dry-rock-reuss-dry-rock}
+ \slist
+   \item \Description May define a new dry-rock here, or use a predefined \kw{dry-rock} from \kw{predefinitions} using the keyword \rkw{use}{use-dry-rock} followed by the unique name of the dry-rock. When a new dry-rock is defined, follow the construction of \kw{dry-rock} in \kw{predefinitions}
+   \item \Argument <use> or <label> followed by a theory following the lines of \kw{dry-rock}
+   \item \Default
+ \elist
+
+\subsubsubparagraph{\hbracket{volume-fraction}}\rnewkw{volume-fraction}{volume-fraction-reuss-dry-rock}
+ \slist
+   \item \Description Volume fraction of the constituent. Must to be specified for all but the last constituents, where it may be calculated to ensure that the sum of the volume fractions of all the constituents is one. If the volume fraction of the last constituent is included, the sum of volume fractions must be one. 
+   \item \Argument Value
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{voigt}}\rnewkw{voigt}{voigt-dry-rock}
+ \slist
+   \item \Description Used for calculating the aritmetic average of various constituents. Typically used for calculating effective bulk moduli. 
+   \item \Argument
+   \item \Default 
+ \elist
+
+\subsubparagraph{\hbracket{constituent}}\rnewkw{constituent}{constituent-voigt-dry-rock}
+ \slist
+   \item \Description Repeated command, one for each constituent of the Voigt model
+   \item \Argument <dry-rock> followed by <volume-fraction>
+   \item \Default
+ \elist
+
+\subsubsubparagraph{\hbracket{dry-rock}}\rnewkw{dry-rock}{dry-rock-voigt-dry-rock}
+ \slist
+   \item \Description May define a new dry-rock here, or use a predefined \kw{dry-rock} from \kw{predefinitions} using the keyword \rkw{use}{use-dry-rock} followed by the unique name of the dry-rock. When a new dry-rock is defined, follow the construction of \kw{dry-rock} in \kw{predefinitions}
+   \item \Argument <use> or <label> followed by a theory following the lines of \kw{dry-rock}
+   \item \Default
+ \elist
+
+\subsubsubparagraph{\hbracket{volume-fraction}}\rnewkw{volume-fraction}{volume-fraction-voigt-dry-rock}
+ \slist
+   \item \Description Volume fraction of the constituent. Must to be specified for all but the last constituents, where it may be calculated to ensure that the sum of the volume fractions of all the constituents is one. If the volume fraction of the last constituent is included, the sum of volume fractions must be one. 
+   \item \Argument Value
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{hill}}\rnewkw{hill}{hill-dry-rock}
+ \slist
+   \item \Description Used for calculating the average of Reuss and Voigt of various constituents.
+   \item \Argument
+   \item \Default 
+ \elist
+
+\subsubparagraph{\hbracket{constituent}}\rnewkw{constituent}{constituent-hill-dry-rock}
+ \slist
+   \item \Description Repeated command, one for each constituent of the Hill model
+   \item \Argument <dry-rock> followed by <volume-fraction>
+   \item \Default
+ \elist
+
+\subsubsubparagraph{\hbracket{dry-rock}}\rnewkw{dry-rock}{dry-rock-hill-dry-rock}
+ \slist
+   \item \Description May define a new dry-rock here, or use a predefined \kw{dry-rock} from \kw{predefinitions} using the keyword \rkw{use}{use-dry-rock} followed by the unique name of the dry-rock. When a new dry-rock is defined, follow the construction of \kw{dry-rock} in \kw{predefinitions}
+   \item \Argument <use> or <label> followed by a theory following the lines of \kw{dry-rock}
+   \item \Default
+ \elist
+
+\subsubsubparagraph{\hbracket{volume-fraction}}\rnewkw{volume-fraction}{volume-fraction-hill-dry-rock}
+ \slist
+   \item \Description Volume fraction of the constituent. Must to be specified for all but the last constituents, where it may be calculated to ensure that the sum of the volume fractions of all the constituents is one. If the volume fraction of the last constituent is included, the sum of volume fractions must be one. 
+   \item \Argument Value
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{dem}}\rnewkw{dem}{dem-dry-rock}
+ \slist
+   \item \Description Differential effective medium (DEM) theory is an inclusion based model. One of the constituents acts as the host material while the other constituents are treated as inclusions. In addition to volume fractions of the inclusions, their pore geometry must be specified. Typical use of DEM is mixing two solids, adding vacuum pores to a solid ("later" saturated using Gassmann theory) or adding fluid filled pores in a solid directly. Note that this is an asymmetric model, where interchanging host and constituent typically leads to different solutions. Note that inclusions beyond the first one are optional. The same material can be used in all inclusions, with different geometries. It is also possible to use different materials for the various inclusions.
+   \item \Argument
+   \item \Default 
+ \elist
+
+\subsubparagraph{\hbracket{host}}\rnewkw{host}{host-dry-rock}
+ \slist
+   \item \Description The host of the DEM model
+   \item \Argument <dry-rock> followed by <volume-fraction>
+   \item \Default
+ \elist
+
+\subsubsubparagraph{\hbracket{dry-rock}}\rnewkw{dry-rock}{dry-rock-dem-dry-rock}
+ \slist
+   \item \Description  May define a new dry-rock here, or use a predefined \kw{dry-rock} from \kw{predefinitions} using the keyword \rkw{use}{use-dry-rock} followed by the unique name of the dry-rock. When a new dry-rock is defined, follow the construction of \kw{dry-rock} in \kw{predefinitions}
+   \item \Argument <use> or <label> followed by a theory following the lines of \kw{dry-rock}
+   \item \Default
+ \elist
+
+\subsubsubparagraph{\hbracket{volume-fraction}}\rnewkw{volume-fraction}{volume-fraction-dem-dry-rock}
+ \slist
+   \item \Description Volume fraction of the constituent. Must to be specified for all but the last constituents, where it may be calculated to ensure that the sum of the volume fractions of all the constituents is one. If the volume fraction of the last constituent is included, the sum of volume fractions must be one. 
+   \item \Argument Value
+   \item \Default
+ \elist
+
+\subsubparagraph{\hbracket{inclusion}}\rnewkw{inclusion}{inclusion-dry-rock}
+ \slist
+   \item \Description Repeated command, one for each inclusion of the DEM model
+   \item \Argument <dry-rock> followed by <volume-fraction>
+   \item \Default
+ \elist
+
+\subsubsubparagraph{\hbracket{dry-rock}}\rnewkw{dry-rock}{dry-rock-dem-inclusion-dry-rock}
+ \slist
+   \item \Description  May define a new dry-rock here, or use a predefined \kw{dry-rock} from \kw{predefinitions} using the keyword \rkw{use}{use-dry-rock} followed by the unique name of the dry-rock. When a new dry-rock is defined, follow the construction of \kw{dry-rock} in \kw{predefinitions}
+   \item \Argument <use> or <label> followed by a theory following the lines of \kw{dry-rock}
+   \item \Default
+ \elist
+
+\subsubsubparagraph{\hbracket{volume-fraction}}\rnewkw{volume-fraction}{volume-fraction-dem-inclusion-dry-rock}
+ \slist
+   \item \Description Volume fraction of the constituent. Must to be specified for all but the last constituents, where it may be calculated to ensure that the sum of the volume fractions of all the constituents is one. If the volume fraction of the last constituent is included, the sum of volume fractions must be one. 
+   \item \Argument Value
+   \item \Default
+ \elist
+
+\subsubsubparagraph{\hbracket{aspect-ratio}}\rnewkw{aspect-ratio}{aspect-ratio-dry-rock}
+ \slist
+   \item \Description Aspect ratio of the inclusion
+   \item \Argument Value, trend, distribution or <reservoir-variable>, see \autoref{sec:valueassignment}
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{total-porosity}}\newkw{total-porosity}
+ \slist
+   \item \Description Total porosity of the dry-rock
+   \item \Argument Value, trend, distribution or <reservoir-variable>, see \autoref{sec:valueassignment}
+   \item \Default 
+ \elist
+
+\subparagraph{\hbracket{mineral-moduli}}\newkw{mineral-moduli}
+ \slist
+   \item \Description Mineral moduli, i.e., the bulk and shear moduli of the effective mineral of the dry-rock
+   \item \Argument Value, trend, distribution or <reservoir-variable>, see \autoref{sec:valueassignment}
+   \item \Default 
+ \elist
+
+\subsubparagraph{\hbracket{use}}\rnewkw{use}{use-mineral-moduli}
+ \slist
+   \item \Description The name of the variable giving the mineral moduli
+   \item \Argument 
+   \item \Default 
+ \elist
+
 \subsubsection{\hbracket{rock}}\newkw{rock}
  \slist
-   \item \Description Commands for the rock in the rock physics prior model
+   \item \Description <rock> contains the final composition of the rock, and will typically use details specified in \kw{reservoir} and \kw{predefinitions}. The <rock> command is followed by either <label> or <use>. If <label> is used, the next keyword is a theory.
    \item \Argument 
    \item \Default 
  \elist
 
-\paragraph{\hbracket{gaussian}}\newkw{gaussian}
+\paragraph{\hbracket{use}}\newkw{use}
  \slist
-   \item \Description Repeating command, one for each rock assuming a Gaussian prior model. When used, all elements under Gaussian must be given
-   \item \Argument 
+   \item \Description To use a rock that is already defined, we use the keyword <use> followed by the unique name of the rock element.
+   \item \Argument Unique name of the rock element to be used
    \item \Default 
  \elist
 
-\subparagraph{\hbracket{name}}\rnewkw{name}{name2}
+\paragraph{\hbracket{label}}\newkw{label}
  \slist
-   \item \Description Name of the rock
+   \item \Description Unique idenitfication of the rock. Each time a rock is defined, it is given a unique identifying name using
+the <label> keyword. The <label> keyword needs to be followed by a keyword specifying which theory we use for building this rock. The possible theories are listet below. 
    \item \Argument String
    \item \Default 
  \elist
 
-\subparagraph{\hbracket{mean-vp}}\newkw{mean-vp}
+\paragraph{\hbracket{tabulated}}\newkw{tabulated}
  \slist
-   \item \Description Elements controlling the mean value of vp
-   \item \Argument Trend parameters, see \autoref{sec:trendparameters}
+   \item \Description The tabulated theory allows specifying properties explicitly. The properties can either be specified by the set <density>, <bulk-modulus> and <shear-modulus>, or by the set <density>, <vp> and <vs>. The correlations between the variables may also be added. If the correlations are not used, the variables are assumed to have zero correlation. 
+   \item \Argument
    \item \Default 
  \elist
 
-\subparagraph{\hbracket{mean-vs}}\newkw{mean-vs}
+\subparagraph{\hbracket{density}}\rnewkw{density}{density-tabulated-rock}
  \slist
-   \item \Description Elements controlling the mean value of vs
-   \item \Argument Trend parameters, see \autoref{sec:trendparameters}
-   \item \Default 
- \elist
-
-\subparagraph{\hbracket{mean-density}}\newkw{mean-density}
- \slist
-   \item \Description Elements controlling the mean value of density
-   \item \Argument Trend parameters, see \autoref{sec:trendparameters}
-   \item \Default 
- \elist
-
-\subparagraph{\hbracket{variance-vp}}\newkw{variance-vp}
- \slist
-   \item \Description Elements controlling the variance of vp
-   \item \Argument Trend parameters, see \autoref{sec:trendparameters}
-   \item \Default 
- \elist
-
-\subparagraph{\hbracket{variance-vs}}\newkw{variance-vs}
- \slist
-   \item \Description Elements controlling the variance of vs
-   \item \Argument Trend parameters, see \autoref{sec:trendparameters}
-   \item \Default 
- \elist
-
-\subparagraph{\hbracket{variance-density}}\newkw{variance-density}
- \slist
-   \item \Description Elements controlling the variance of density
-   \item \Argument Trend parameters, see \autoref{sec:trendparameters}
-   \item \Default 
- \elist
-
-\subparagraph{\hbracket{correlation-vp-vs}}\newkw{correlation-vp-vs}
- \slist
-   \item \Description Elements controlling the covariance between (vp, vs)
-   \item \Argument Trend parameters, see \autoref{sec:trendparameters}
-   \item \Default 
- \elist
-
-\subparagraph{\hbracket{correlation-vp-density}}\newkw{correlation-vp-density}
- \slist
-   \item \Description Elements controlling the correlation between (vp, density)
-   \item \Argument Trend parameters, see \autoref{sec:trendparameters}
-   \item \Default 
- \elist
-
-\subparagraph{\hbracket{correlation-vs-density}}\newkw{correlation-vs-density}
- \slist
-   \item \Description Elements controlling the correlation between (vs, density)
-   \item \Argument Trend parameters, see \autoref{sec:trendparameters}
-   \item \Default 
- \elist
-
-\paragraph{\hbracket{bounding-model}}\newkw{bounding-model}
- \slist
-   \item \Description Repeating command, one for each rock assuming a bounding model
-   \item \Argument 
-   \item \Default 
- \elist
-
-\subparagraph{\hbracket{name}}\rnewkw{name}{name3}
- \slist
-   \item \Description Name of the rock
-   \item \Argument String
+   \item \Description Density. Needs to be specified
+   \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
    \item \Default 
  \elist
 
 \subparagraph{\hbracket{bulk-modulus}}\newkw{bulk-modulus}
  \slist
-   \item \Description Elements controlling the bulk modulus of the rock
-   \item \Argument
+   \item \Description Bulk modulus. One of <bulk-modulus> or \rkw{vp}{vp-tabulated-rock} needs to be specified.
+   \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
    \item \Default 
- \elist
-
-\subsubparagraph{\hbracket{upper-limit-rock}}\newkw{upper-limit-rock}
- \slist
-   \item \Description The highest value of the bulk modulus that can be assumed for the rock
-   \item \Argument Value
-   \item \Default 36 GPa
- \elist
-
-\subsubparagraph{\hbracket{lower-limit-rock}}\newkw{lower-limit-rock}
- \slist
-   \item \Description The lowest value of the bulk modulus that can be assumed for the rock
-   \item \Argument Value
-   \item \Default 30 GPa
- \elist
-
-\subsubparagraph{\hbracket{upper-limit-fluid}}\newkw{upper-limit-fluid}
- \slist
-   \item \Description The highest value of the bulk modulus that can be assumed for the fluid
-   \item \Argument Value
-   \item \Default 2.75 GPa
- \elist
-
-\subsubparagraph{\hbracket{lower-limit-fluid}}\newkw{lower-limit-fluid}
- \slist
-   \item \Description The lowest value of the bulk modulus that can be assumed for the fluid
-   \item \Argument Value
-   \item \Default 1.3 GPa
  \elist
 
 \subparagraph{\hbracket{shear-modulus}}\newkw{shear-modulus}
  \slist
-   \item \Description Elements controlling the shear modulus of the rock
+   \item \Description Shear modulus. One of <shear-modulus> or \rkw{vs}{vs-tabulated-rock} needs to be specified.
+   \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
+   \item \Default 
+ \elist
+
+\subparagraph{\hbracket{correlation-bulk-shear}}\newkw{correlation-bulk-shear}
+ \slist
+   \item \Description Correlation between the bulk and shear moduli
+   \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
+   \item \Default 0
+ \elist
+
+\subparagraph{\hbracket{correlation-bulk-density}}\newkw{correlation-bulk-density}
+ \slist
+   \item \Description Correlation between the bulk modulus and density
+   \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
+   \item \Default 0
+ \elist
+
+\subparagraph{\hbracket{correlation-shear-density}}\newkw{correlation-shear-density}
+ \slist
+   \item \Description Correlation between the shear modulus and density
+   \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
+   \item \Default 0
+ \elist
+
+\subparagraph{\hbracket{vp}}\rnewkw{vp}{vp-tabulated-rock}
+ \slist
+   \item \Description P-wave velocity. One of \kw{bulk-modulus} or <vp> needs to be specified.
+   \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
+   \item \Default 
+ \elist
+
+\subparagraph{\hbracket{vs}}\rnewkw{vs}{vs-tabulated-rock}
+ \slist
+   \item \Description S-wave velocity. One of \kw{shear-modulus} or <vs> needs to be specified.
+   \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
+   \item \Default 
+ \elist
+
+\subparagraph{\hbracket{correlation-vp-vs}}\newkw{correlation-vp-vs}
+ \slist
+   \item \Description Correlation between vp and vs
+   \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
+   \item \Default 0
+ \elist
+
+\subparagraph{\hbracket{correlation-vp-density}}\newkw{correlation-vp-density}
+ \slist
+   \item \Description Correlation between vp and density
+   \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
+   \item \Default 0
+ \elist
+
+\subparagraph{\hbracket{correlation-vs-density}}\newkw{correlation-vs-density}
+ \slist
+   \item \Description Correlation between vs and density
+   \item \Argument Value, trend, distribution or variable defined in \kw{reservoir}, see \autoref{sec:valueassignment}
+   \item \Default 0
+ \elist
+
+\paragraph{\hbracket{reuss}}\newkw{reuss}
+ \slist
+   \item \Description Used for calculating the harmonic average of various constituents. Typically used for calculating effective bulk moduli. 
    \item \Argument
    \item \Default 
  \elist
 
-\subsubparagraph{\hbracket{upper-limit-rock}}\rnewkw{upper-limit-rock}{upper-limit-rock2}
+\subparagraph{\hbracket{constituent}}\newkw{constituent}
  \slist
-   \item \Description The highest value of the shear modulus that can be assumed for the rock
-   \item \Argument Value
-   \item \Default 41 GPa
+   \item \Description Repeated command, one for each constituent of the Reuss model
+   \item \Argument One of <fluid>, <solid> or <dry-rock>, followed by <volume-fraction>
+   \item \Default
  \elist
 
-\subsubparagraph{\hbracket{lower-limit-rock}}\rnewkw{lower-limit-rock}{lower-limit-rock2}
+\subsubparagraph{\hbracket{fluid}}\rnewkw{fluid}{fluid-reuss-rock}
  \slist
-   \item \Description The lowest value of the shear modulus that can be assumed for the rock
-   \item \Argument Value
-   \item \Default 10 GPa
+   \item \Description May define a new fluid here, or use a predefined \kw{fluid} from \kw{predefinitions} using the keyword \rkw{use}{use-fluid} followed by the unique name of the fluid. When a new fluid is defined, follow the construction of \kw{fluid} in \kw{predefinitions}
+   \item \Argument <use> or <label> followed by a theory following the lines of \kw{fluid}
+   \item \Default
  \elist
 
-\subparagraph{\hbracket{density}}\rnewkw{density}{density3}
+\subsubparagraph{\hbracket{solid}}\rnewkw{solid}{solid-reuss-rock}
  \slist
-   \item \Description Elements controlling the density of the rock
+   \item \Description May define a new solid here, or use a predefined \kw{solid} from \kw{predefinitions} using the keyword \rkw{use}{use-solid} followed by the unique name of the solid. When a new solid is defined, follow the construction of \kw{solid} in \kw{predefinitions}
+   \item \Argument <use> or <label> followed by a theory following the lines of \kw{solid}
+   \item \Default
+ \elist
+
+\subsubparagraph{\hbracket{dry-rock}}\rnewkw{dry-rock}{dry-rock-reuss-rock}
+ \slist
+   \item \Description  May define a new dry-rock here, or use a predefined \kw{dry-rock} from \kw{predefinitions} using the keyword \rkw{use}{use-dry-rock} followed by the unique name of the dry-rock. When a new dry-rock is defined, follow the construction of \kw{dry-rock} in \kw{predefinitions}
+   \item \Argument <use> or <label> followed by a theory following the lines of \kw{dry-rock}
+   \item \Default
+ \elist
+
+\subsubparagraph{\hbracket{volume-fraction}}\newkw{volume-fraction}
+ \slist
+   \item \Description Volume fraction of the constituent. Must to be specified for all but the last constituents, where it may be calculated to ensure that the sum of the volume fractions of all the constituents is one. If the volume fraction of the last constituent is included, the sum of volume fractions must be one. 
+   \item \Argument Value
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{voigt}}\newkw{voigt}
+ \slist
+   \item \Description Used for calculating the harmonic average of various constituents. Typically used for calculating effective bulk moduli. 
    \item \Argument
    \item \Default 
  \elist
 
-\subsubparagraph{\hbracket{upper-limit-rock}}\rnewkw{upper-limit-rock}{upper-limit-rock3}
+\subparagraph{\hbracket{constituent}}\rnewkw{constituent}{constituent-voigt}
  \slist
-   \item \Description The highest value of the density that can be assumed for the rock
-   \item \Argument Value
-   \item \Default 2650 kg/m$^3$
+   \item \Description Repeated command, one for each constituent of the Voigt model
+   \item \Argument One of <fluid>, <solid> or <dry-rock>, followed by <volume-fraction>
+   \item \Default
  \elist
 
-\subsubparagraph{\hbracket{lower-limit-rock}}\rnewkw{lower-limit-rock}{lower-limit-rock3}
+\subsubparagraph{\hbracket{fluid}}\rnewkw{fluid}{fluid-voigt-rock}
  \slist
-   \item \Description The lowest value of the density that can be assumed for the rock
-   \item \Argument Value
-   \item \Default  2650 kg/m$^3$
+   \item \Description May define a new fluid here, or use a predefined \kw{fluid} from \kw{predefinitions} using the keyword \rkw{use}{use-fluid} followed by the unique name of the fluid. When a new fluid is defined, follow the construction of \kw{fluid} in \kw{predefinitions}
+   \item \Argument <use> or <label> followed by a theory following the lines of \kw{fluid}
+   \item \Default
  \elist
 
-\subsubparagraph{\hbracket{upper-limit-fluid}}\rnewkw{upper-limit-fluid}{upper-limit-fluid2}
+\subsubparagraph{\hbracket{solid}}\rnewkw{solid}{solid-voigt-rock}
  \slist
-   \item \Description The highest value of the density that can be assumed for the fluid
-   \item \Argument Value
-   \item \Default 1025 kg/m$^3$
+   \item \Description May define a new solid here, or use a predefined \kw{solid} from \kw{predefinitions} using the keyword \rkw{use}{use-solid} followed by the unique name of the solid. When a new solid is defined, follow the construction of \kw{solid} in \kw{predefinitions}
+   \item \Argument <use> or <label> followed by a theory following the lines of \kw{solid}
+   \item \Default
  \elist
 
-\subsubparagraph{\hbracket{lower-limit-fluid}}\rnewkw{lower-limit-fluid}{lower-limit-fluid2}
+\subsubparagraph{\hbracket{dry-rock}}\rnewkw{dry-rock}{dry-rock-voigt-rock}
  \slist
-   \item \Description The lowest value of the density that can be assumed for the fluid
-   \item \Argument Value 
-   \item \Default 800 kg/m$^3$
+   \item \Description  May define a new dry-rock here, or use a predefined \kw{dry-rock} from \kw{predefinitions} using the keyword \rkw{use}{use-dry-rock} followed by the unique name of the dry-rock. When a new dry-rock is defined, follow the construction of \kw{dry-rock} in \kw{predefinitions}
+   \item \Argument <use> or <label> followed by a theory following the lines of \kw{dry-rock}
+   \item \Default
+ \elist
+
+\subsubparagraph{\hbracket{volume-fraction}}\rnewkw{volume-fraction}{volume-fraction-voigt}
+ \slist
+   \item \Description Volume fraction of the constituent. Must to be specified for all but the last constituents, where it may be calculated to ensure that the sum of the volume fractions of all the constituents is one. If the volume fraction of the last constituent is included, the sum of volume fractions must be one. 
+   \item \Argument Value
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{hill}}\newkw{hill}
+ \slist
+   \item \Description Used for calculating the average og Reuss and Voigt for various constituents
+   \item \Argument
+   \item \Default 
+ \elist
+
+\subparagraph{\hbracket{constituent}}\rnewkw{constituent}{constituent-hill}
+ \slist
+   \item \Description Repeated command, one for each constituent of the Hill model
+   \item \Argument One of <fluid>, <solid> or <dry-rock>, followed by <volume-fraction>
+   \item \Default
+ \elist
+
+\subsubparagraph{\hbracket{fluid}}\rnewkw{fluid}{fluid-hill-rock}
+ \slist
+   \item \Description May define a new fluid here, or use a predefined \kw{fluid} from \kw{predefinitions} using the keyword \rkw{use}{use-fluid} followed by the unique name of the fluid. When a new fluid is defined, follow the construction of \kw{fluid} in \kw{predefinitions}
+   \item \Argument <use> or <label> followed by a theory following the lines of \kw{fluid}
+   \item \Default
+ \elist
+
+\subsubparagraph{\hbracket{solid}}\rnewkw{solid}{solid-hill-rock}
+ \slist
+   \item \Description May define a new solid here, or use a predefined \kw{solid} from \kw{predefinitions} using the keyword \rkw{use}{use-solid} followed by the unique name of the solid. When a new solid is defined, follow the construction of \kw{solid} in \kw{predefinitions}
+   \item \Argument <use> or <label> followed by a theory following the lines of \kw{solid}
+   \item \Default
+ \elist
+
+\subsubparagraph{\hbracket{dry-rock}}\rnewkw{dry-rock}{dry-rock-hill-rock}
+ \slist
+   \item \Description  May define a new dry-rock here, or use a predefined \kw{dry-rock} from \kw{predefinitions} using the keyword \rkw{use}{use-dry-rock} followed by the unique name of the dry-rock. When a new dry-rock is defined, follow the construction of \kw{dry-rock} in \kw{predefinitions}
+   \item \Argument <use> or <label> followed by a theory following the lines of \kw{dry-rock}
+   \item \Default
+ \elist
+
+\subsubparagraph{\hbracket{volume-fraction}}\rnewkw{volume-fraction}{volume-fraction-hill}
+ \slist
+   \item \Description Volume fraction of the constituent. Must to be specified for all but the last constituents, where it may be calculated to ensure that the sum of the volume fractions of all the constituents is one. If the volume fraction of the last constituent is included, the sum of volume fractions must be one. 
+   \item \Argument Value
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{dem}}\newkw{dem}
+ \slist
+   \item \Description Differential effective medium (DEM) theory is an inclusion based model. One of the constituents acts as the host material while the other constituents are treated as inclusions. In addition to volume fractions of the inclusions, their pore geometry must be specified. Typical use of DEM is mixing two solids, adding vacuum pores to a solid ("later" saturated using Gassmann theory) or adding fluid filled pores in a solid directly. Note that this is an asymmetric model, where interchanging host and constituent typically leads to different solutions. Note that inclusions beyond the first one are optional. The same material can be used in all inclusions, with different geometries. It is also possible to use different materials for the various inclusions.
+   \item \Argument
+   \item \Default 
+ \elist
+
+\subparagraph{\hbracket{host}}\newkw{host}
+ \slist
+   \item \Description The host of the DEM model
+   \item \Argument One of <fluid>, <solid> or <dry-rock>, followed by <volume-fraction>
+   \item \Default
+ \elist
+
+\subsubparagraph{\hbracket{fluid}}\rnewkw{fluid}{fluid-dem-rock}
+ \slist
+   \item \Description May define a new fluid here, or use a predefined \kw{fluid} from \kw{predefinitions} using the keyword \rkw{use}{use-fluid} followed by the unique name of the fluid. When a new fluid is defined, follow the construction of \kw{fluid} in \kw{predefinitions}
+   \item \Argument <use> or <label> followed by a theory following the lines of \kw{fluid}
+   \item \Default
+ \elist
+
+\subsubparagraph{\hbracket{solid}}\rnewkw{solid}{solid-dem-rock}
+ \slist
+   \item \Description May define a new solid here, or use a predefined \kw{solid} from \kw{predefinitions} using the keyword \rkw{use}{use-solid} followed by the unique name of the solid. When a new solid is defined, follow the construction of \kw{solid} in \kw{predefinitions}
+   \item \Argument <use> or <label> followed by a theory following the lines of \kw{solid}
+   \item \Default
+ \elist
+
+\subsubparagraph{\hbracket{dry-rock}}\rnewkw{dry-rock}{dry-rock-dem-rock}
+ \slist
+   \item \Description  May define a new dry-rock here, or use a predefined \kw{dry-rock} from \kw{predefinitions} using the keyword \rkw{use}{use-dry-rock} followed by the unique name of the dry-rock. When a new dry-rock is defined, follow the construction of \kw{dry-rock} in \kw{predefinitions}
+   \item \Argument <use> or <label> followed by a theory following the lines of \kw{dry-rock}
+   \item \Default
+ \elist
+
+\subsubparagraph{\hbracket{volume-fraction}}\rnewkw{volume-fraction}{volume-fraction-dem}
+ \slist
+   \item \Description Volume fraction of the constituent. Must to be specified for all but the last constituents, where it may be calculated to ensure that the sum of the volume fractions of all the constituents is one. If the volume fraction of the last constituent is included, the sum of volume fractions must be one. 
+   \item \Argument Value
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{inclusion}}\newkw{inclusion}
+ \slist
+   \item \Description Repeated command, one for each inclusion of the DEM model
+   \item \Argument One of <fluid>, <solid> or <dry-rock>, followed by <volume-fraction>
+   \item \Default
+ \elist
+
+\subsubparagraph{\hbracket{fluid}}\rnewkw{fluid}{fluid-dem-inclusion-rock}
+ \slist
+   \item \Description May define a new fluid here, or use a predefined \kw{fluid} from \kw{predefinitions} using the keyword \rkw{use}{use-fluid} followed by the unique name of the fluid. When a new fluid is defined, follow the construction of \kw{fluid} in \kw{predefinitions}
+   \item \Argument <use> or <label> followed by a theory following the lines of \kw{fluid}
+   \item \Default
+ \elist
+
+\subsubparagraph{\hbracket{solid}}\rnewkw{solid}{solid-dem-inclusion-rock}
+ \slist
+   \item \Description May define a new solid here, or use a predefined \kw{solid} from \kw{predefinitions} using the keyword \rkw{use}{use-solid} followed by the unique name of the solid. When a new solid is defined, follow the construction of \kw{solid} in \kw{predefinitions}
+   \item \Argument <use> or <label> followed by a theory following the lines of \kw{solid}
+   \item \Default
+ \elist
+
+\subsubparagraph{\hbracket{dry-rock}}\rnewkw{dry-rock}{dry-rock-dem-inclusion-rock}
+ \slist
+   \item \Description  May define a new dry-rock here, or use a predefined \kw{dry-rock} from \kw{predefinitions} using the keyword \rkw{use}{use-dry-rock} followed by the unique name of the dry-rock. When a new dry-rock is defined, follow the construction of \kw{dry-rock} in \kw{predefinitions}
+   \item \Argument <use> or <label> followed by a theory following the lines of \kw{dry-rock}
+   \item \Default
+ \elist
+
+\subsubparagraph{\hbracket{volume-fraction}}\rnewkw{volume-fraction}{volume-fraction-dem-inclusion}
+ \slist
+   \item \Description Volume fraction of the constituent. Must to be specified for all but the last constituents, where it may be calculated to ensure that the sum of the volume fractions of all the constituents is one. If the volume fraction of the last constituent is included, the sum of volume fractions must be one. 
+   \item \Argument Value
+   \item \Default
+ \elist
+
+\subsubparagraph{\hbracket{aspect-ratio}}\newkw{aspect-ratio}
+ \slist
+   \item \Description Aspect ratio of the inclusion
+   \item \Argument Value, trend, distribution or <reservoir-variable>, see \autoref{sec:valueassignment}
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{gassmann}}\newkw{gassmann}
+ \slist
+   \item \Description Gassmann can be used for calculating the effective elastic properties of rock when substituting one fluid with another. Here, it is restricted to the case of replacing vacuum filled pores with some type of fluid (liquid or gas). 
+   \item \Argument <dry-rock> and <fluid>
+   \item \Default 
+ \elist
+
+\subparagraph{\hbracket{fluid}}\rnewkw{fluid}{fluid-gassmann-rock}
+ \slist
+   \item \Description May define a new fluid here, or use a predefined \kw{fluid} from \kw{predefinitions} using the keyword \rkw{use}{use-fluid} followed by the unique name of the fluid. When a new fluid is defined, follow the construction of \kw{fluid} in \kw{predefinitions}
+   \item \Argument <use> or <label> followed by a theory following the lines of \kw{fluid}
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{dry-rock}}\rnewkw{dry-rock}{dry-rock-gassmann-rock}
+ \slist
+   \item \Description  May define a new dry-rock here, or use a predefined \kw{dry-rock} from \kw{predefinitions} using the keyword \rkw{use}{use-dry-rock} followed by the unique name of the dry-rock. When a new dry-rock is defined, follow the construction of \kw{dry-rock} in \kw{predefinitions}
+   \item \Argument <use> or <label> followed by a theory following the lines of \kw{dry-rock}
+   \item \Default
  \elist
 
 \subsubsection{\hbracket{trend-cube}}\newkw{trend-cube}
@@ -2399,28 +3265,21 @@ the vertical sampling interval we find the the number of parameters that is esti
    \item \Default 
  \elist
  
-\section{Trend parameters}\newkw{trend-parameters}
-\label{sec:trendparameters}
-  Trend parameters are given on the following form:
+\section{Value assignments}\newkw{value-assignments}
+\label{sec:valueassignment}
+All the properties and function parameters can use previously assigned values in \kw{reservoir}, or be assigned values directly in \kw{predefinitions}. The possible types of value assignments are value, trend or distribution. Variables defined in \kw{reservoir} can also be used by the \kw{reservoir-variable} keyword.
 
-\subsection{\hbracket{trend-constant}}\newkw{trend-constant}
+\subsection{\hbracket{value}}\newkw{value}
  \slist
-   \item \Description Command controlling the constant trend. Can not be used in combination with \kw{trend-1d} nor \kw{trend-2d}
-   \item \Argument 
-   \item \Default 
- \elist
-
-\subsubsection{\hbracket{value}}\newkw{value}
- \slist
-   \item \Description Value of the constant trend
-   \item \Argument Float
+   \item \Description The simplest form of deterministic value assignment is a single value. For the variables in \kw{reservoir}, the value is given by the command <value>, while it may be given directly for the variable commands of \kw{predefinitions}. 
+   \item \Argument Double
    \item \Default 
  \elist
 
 
 \subsection{\hbracket{trend-1d}}\newkw{trend-1d}
  \slist
-   \item \Description Commands controlling a 1D-trend. Can not be used in combination with \kw{trend-constant} nor \kw{trend-2d}
+   \item \Description Commands controlling a 1D-trend. Can not be used in combination with \kw{trend-2d}. When <trend-1d> is used, a corresponding trend cube must be given in \kw{trend-cube}
    \item \Argument
    \item \Default 
  \elist
@@ -2441,7 +3300,7 @@ the vertical sampling interval we find the the number of parameters that is esti
 
 \subsection{\hbracket{trend-2d}}\newkw{trend-2d}
  \slist
-   \item \Description Commands controlling a 2D-trend. Can not be used in combination with \kw{trend-constant} nor \kw{trend-1d}
+   \item \Description Commands controlling a 2D-trend. Can not be used in combination with \kw{trend-1d}.  When <trend-2d> is used, the corresponding trend cubes must be given in \kw{trend-cube}
    \item \Argument
    \item \Default 
  \elist
@@ -2467,6 +3326,33 @@ the vertical sampling interval we find the the number of parameters that is esti
    \item \Default 
  \elist
 
+\subsection{\hbracket{gaussian}}\newkw{gaussian}
+ \slist
+   \item \Description Commands controlling assignment of Gaussian probabilistic values to a variable. Whenever several building blocks use the same stochastic variable defined under \kw{reservoir}, the same sample of the variable is used for all the building blocks. 
+   \item \Argument
+   \item \Default 
+ \elist
+
+\subsubsection{\hbracket{mean}}\newkw{mean-gaussian}
+ \slist
+   \item \Description Mean value of the Gaussian distribution
+   \item \Argument Value or trend
+   \item \Default 
+ \elist
+
+\subsubsection{\hbracket{variance}}\newkw{variance-gaussian}
+ \slist
+   \item \Description Variance of the Gaussian distribution
+   \item \Argument Value or trend
+   \item \Default 
+ \elist
+
+\subsection{\hbracket{reservoir-variable}}\newkw{reservoir-variable}
+ \slist
+   \item \Description Use elements defined in \kw{reservoir}
+   \item \Argument Name of the reservoir variable
+   \item \Default 
+ \elist
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%                            VARIOGRAM                          %%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
