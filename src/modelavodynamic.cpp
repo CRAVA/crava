@@ -627,49 +627,59 @@ ModelAVODynamic::processBackground(Background           *& background,
       }
       background = new Background(backModel, wells, velocity, timeSimbox, timeBGSimbox, modelSettings);
 
-      if(modelSettings->getBackgroundFromRockPhysics() && 0) {     // Or use getFaciesProbFromRockPhysics_()
-
-        // Get prior probabilities for the facies in a vector
-        std::vector<double> priorProbability;
-        priorProbability.resize(modelSettings->getNumberOfFacies());
-        typedef std::map<std::string,float> mapType;
-        mapType myMap = modelSettings->getPriorFaciesProb();
-
-        for(int i=0;i<modelSettings->getNumberOfFacies();i++)
-        {
-          mapType::iterator iter = myMap.find(modelSettings->getFaciesName(i));
-          if(iter!=myMap.end())
-            priorProbability[i] = iter->second;
-        }
-
-        double varVp, varVs, varRho, crVpVs,crVpRho, crVsRho;
-        // filling in the backModel in Background
-        modelGeneral->generateRockPhysics3DBackground(modelGeneral->getRockDistributions(),priorProbability,
-                                                     *background->getAlpha(), *background->getBeta(), *background->getRho(),
-                                                      varVp, varVs, varRho, crVpVs, crVpRho, crVsRho);
-
-        // keeping the coefficients to the variances for later use in processPriorCorrelations
-        coefFromRPForVariances[0] = varVp;
-        coefFromRPForVariances[1] = varVs;
-        coefFromRPForVariances[2] = varRho;
-        coefFromRPForVariances[3] = crVpVs;
-        coefFromRPForVariances[4] = crVpRho;
-        coefFromRPForVariances[5] = crVsRho;
-
-        // To be done later:
-        /*
-        correlations_->getPostCovAlpha()->multiplyByScalar(static_cast<float>(varVp));
-        correlations_->getPostCovBeta()->multiplyByScalar(static_cast<float>(varVs));
-        correlations_->getPostCovRho()->multiplyByScalar(static_cast<float>(varRho));
-        correlations_->getPostCrCovAlphaBeta()->multiplyByScalar(static_cast<float>(crVpVs));
-        correlations_->getPostCrCovAlphaRho()->multiplyByScalar(static_cast<float>(crVpRho));
-        correlations_->getPostCrCovBetaRho()->multiplyByScalar(static_cast<float>(crVsRho));
-        */
-      }
-    }
     if(velocity != NULL)
       delete velocity;
+    }
   }
+    else if(modelSettings->getBackgroundFromRockPhysics() && 0) {     // Or use getFaciesProbFromRockPhysics_()
+
+      for (int i=0 ; i<3 ; i++)
+      {
+        backModel[i] = ModelGeneral::createFFTGrid(nx, ny, nz, nxPad, nyPad, nzPad, modelSettings->getFileGrid());
+        backModel[i]->createRealGrid();
+        backModel[i]->setType(FFTGrid::PARAMETER);
+      }
+
+      // Get prior probabilities for the facies in a vector
+      std::vector<double> priorProbability;
+      priorProbability.resize(modelSettings->getNumberOfFacies());
+      typedef std::map<std::string,float> mapType;
+      mapType myMap = modelSettings->getPriorFaciesProb();
+
+      for(int i=0;i<modelSettings->getNumberOfFacies();i++)
+      {
+        mapType::iterator iter = myMap.find(modelSettings->getFaciesName(i));
+        if(iter!=myMap.end())
+          priorProbability[i] = iter->second;
+      }
+
+      double varVp, varVs, varRho, crVpVs,crVpRho, crVsRho;
+      // filling in the backModel in Background
+      modelGeneral->generateRockPhysics3DBackground(modelGeneral->getRockDistributions(),priorProbability,
+        //*background->getAlpha(), *background->getBeta(), *background->getRho(),
+        *backModel[0], *backModel[1], *backModel[2],
+        varVp, varVs, varRho, crVpVs, crVpRho, crVsRho);
+
+      background = new Background(backModel);
+
+      // keeping the coefficients to the variances for later use in processPriorCorrelations
+      coefFromRPForVariances[0] = varVp;
+      coefFromRPForVariances[1] = varVs;
+      coefFromRPForVariances[2] = varRho;
+      coefFromRPForVariances[3] = crVpVs;
+      coefFromRPForVariances[4] = crVpRho;
+      coefFromRPForVariances[5] = crVsRho;
+
+      // To be done later:
+      /*
+      correlations_->getPostCovAlpha()->multiplyByScalar(static_cast<float>(varVp));
+      correlations_->getPostCovBeta()->multiplyByScalar(static_cast<float>(varVs));
+      correlations_->getPostCovRho()->multiplyByScalar(static_cast<float>(varRho));
+      correlations_->getPostCrCovAlphaBeta()->multiplyByScalar(static_cast<float>(crVpVs));
+      correlations_->getPostCrCovAlphaRho()->multiplyByScalar(static_cast<float>(crVpRho));
+      correlations_->getPostCrCovBetaRho()->multiplyByScalar(static_cast<float>(crVsRho));
+      */
+    }
   else
   {
     std::vector<std::string> parName;
