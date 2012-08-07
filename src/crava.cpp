@@ -38,6 +38,7 @@
 #include <math.h>
 #include <assert.h>
 #include <time.h>
+#include <string>
 
 Crava::Crava(ModelSettings     * modelSettings,
              ModelGeneral      * modelGeneral,
@@ -1517,7 +1518,8 @@ Crava::computeSyntSeismic(FFTGrid * alpha, FFTGrid * beta, FFTGrid * rho)
       imp->writeFile(fileName, IO::PathToSeismicData(), simbox_,sgriLabel);
     if((modelSettings_->getOutputGridsSeismic() & IO::SYNTHETIC_RESIDUAL) > 0) {
       FFTGrid seis(nx_, ny_, nz_, nxp_, nyp_, nzp_);
-      std::string fileName = IO::FileTemporarySeismic()+NRLib::ToString(l)+IO::SuffixCrava();
+
+      std::string fileName = IO::makeFullFileName(IO::PathToSeismicData(), IO::FileTemporarySeismic()+NRLib::ToString(l)+IO::SuffixCrava());
       std::string errText;
       seis.readCravaFile(fileName, errText);
       if(errText == "") {
