@@ -83,10 +83,6 @@ private:
   bool parse1DTrend(TiXmlNode * node, const std::string & keyword, NRLib::TrendStorage *& trend, std::string & errTxt);
   bool parse2DTrend(TiXmlNode * node, const std::string & keyword, NRLib::TrendStorage *& trend, std::string & errTxt);
   bool parseTrendCube(TiXmlNode * node, std::string & errTxt);
-  bool parseBoundingModel(TiXmlNode * node, std::string & errTxt);
-  bool parseBulkModulus(TiXmlNode * node, std::string & errTxt);
-  bool parseShearModulus(TiXmlNode * node, std::string & errTxt);
-  bool parseDensity(TiXmlNode * node, std::string & errTxt);
 
   bool parseProjectSettings(TiXmlNode * node, std::string & errTxt);
   bool   parseOutputVolume(TiXmlNode * node, std::string & errTxt);

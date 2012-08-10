@@ -77,10 +77,6 @@ public:
   const std::string                getBackgroundType(void)              const { return backgroundType_                            ;}
   const std::vector<std::string> & getLogNames(void)                    const { return logNames_                                  ;}
   const std::vector<bool>        & getInverseVelocity(void)             const { return inverseVelocity_                           ;}
-  int                              getNumberOfFacies(void)              const { return static_cast<int>(faciesNames_.size())      ;}
-  const std::vector<std::string> & getFaciesNames(void)                 const { return faciesNames_                               ;}
-  const std::string              & getFaciesName(int i)                 const { return faciesNames_[i]                            ;}
-  int                              getFaciesLabel(int i)                const { return faciesLabels_[i]                           ;}
   int                              getIndicatorBGTrend(int i)           const { return indBGTrend_[i]                             ;}
   int                              getIndicatorWavelet(int i)           const { return indWavelet_[i]                             ;}
   int                              getIndicatorFacies(int i)            const { return indFacies_[i]                              ;}
@@ -196,11 +192,6 @@ public:
   int                              getEstimateNumberOfWavelets(int t)   const;
   std::vector<int>                 findSortedVintages(void)             const;
   std::vector<std::string>         getTrendCubeParameters(void)         const { return trendCubeParameter_                  ;}
-  int                              getNumberOfRocks(void)               const { return static_cast<int>(rockStorage_.size())   ;}
-  int                              getNumberOfDryRocks(void)            const { return static_cast<int>(dryRockStorage_.size());}
-  int                              getNumberOfSolids()                  const { return static_cast<int>(solidStorage_.size())  ;}
-  int                              getNumberOfFluids()                  const { return static_cast<int>(fluidStorage_.size())  ;}
-  std::vector<std::string>         getRockName()                        const { return rockName_                            ;}
   std::map<std::string, DistributionWithTrendStorage *> getReservoirVariable() const { return reservoirVariable_            ;}
   std::map<std::string, DistributionsRockStorage *>     getRockStorage()       const { return rockStorage_                  ;}
   std::map<std::string, DistributionsDryRockStorage *>  getDryRockStorage()    const { return dryRockStorage_               ;}
@@ -251,35 +242,11 @@ public:
   void addCorrelationStructure(int structure)             { correlationStructure_.push_back(structure)           ;}
 
   void addTrendCubeParameter(std::string parameterName)                  { trendCubeParameter_.push_back(parameterName)                   ;}
-  void addRockName(std::string rockName)                                 { rockName_.push_back(rockName)                                  ;}
   void addReservoirVariable(std::string variable, DistributionWithTrendStorage * dist) { reservoirVariable_[variable] = dist              ;}
   void addRock(std::string label,  DistributionsRockStorage  * rock)                   { rockStorage_[label]    = rock                    ;}
   void addDryRock(std::string label,  DistributionsDryRockStorage  * dry_rock)         { dryRockStorage_[label] = dry_rock                ;}
   void addSolid(std::string label, DistributionsSolidStorage * solid)                  { solidStorage_[label]   = solid                   ;}
   void addFluid(std::string label, DistributionsFluidStorage * fluid)                  { fluidStorage_[label]   = fluid                   ;}
-
-
-  void addUpperKRock(float value)                                        { upperKRock_.push_back(value)                                   ;}
-  void addLowerKRock(float value)                                        { lowerKRock_.push_back(value)                                   ;}
-  void addUpperKFluid(float value)                                       { upperKFluid_.push_back(value)                                  ;}
-  void addLowerKFluid(float value)                                       { lowerKFluid_.push_back(value)                                  ;}
-  void addUpperGRock(float value)                                        { upperGRock_.push_back(value)                                   ;}
-  void addLowerGRock(float value)                                        { lowerGRock_.push_back(value)                                   ;}
-  void addUpperDensityRock(float value)                                  { upperDensityRock_.push_back(value)                             ;}
-  void addLowerDensityRock(float value)                                  { lowerDensityRock_.push_back(value)                             ;}
-  void addUpperDensityFluid(float value)                                 { upperDensityFluid_.push_back(value)                            ;}
-  void addLowerDensityFluid(float value)                                 { lowerDensityFluid_.push_back(value)                            ;}
-
-  void addDefaultUpperKRock(void)                                        { upperKRock_.push_back(36.0f)                                   ;}
-  void addDefaultLowerKRock(void)                                        { lowerKRock_.push_back(30.0f)                                   ;}
-  void addDefaultUpperKFluid(void)                                       { upperKFluid_.push_back(2.75f)                                  ;}
-  void addDefaultLowerKFluid(void)                                       { lowerKFluid_.push_back(1.3f)                                   ;}
-  void addDefaultUpperGRock(void)                                        { upperGRock_.push_back(41.0f)                                   ;}
-  void addDefaultLowerGRock(void)                                        { lowerGRock_.push_back(10.0f)                                   ;}
-  void addDefaultUpperDensityRock(void)                                  { upperDensityRock_.push_back(2650.0f)                           ;}
-  void addDefaultLowerDensityRock(void)                                  { lowerDensityRock_.push_back(2650.0f)                           ;}
-  void addDefaultUpperDensityFluid(void)                                 { upperDensityFluid_.push_back(1025.0f)                          ;}
-  void addDefaultLowerDensityFluid(void)                                 { lowerDensityFluid_.push_back(800.0f)                           ;}
 
   void setDo4DInversion(bool do4DInversion)               { do4DInversion_            = do4DInversion            ;}
   void setEstimateBackground(bool estimateBackground)     { estimateBackground_       = estimateBackground       ;}
@@ -303,8 +270,6 @@ public:
   void setIndicatorFilter(int i ,int indicator)           { indFilter_[i]             = indicator                ;}
   void setLogName(int i, const std::string & logName)     { logNames_[i]              = NRLib::Uppercase(logName);}
   void setInverseVelocity(int i, bool inverse)            { inverseVelocity_[i]       = inverse                  ;}
-  void addFaciesLabel(int faciesLabel)                    { faciesLabels_.push_back(faciesLabel)                 ;}
-  void addFaciesName(const std::string & faciesName)      { faciesNames_.push_back(faciesName)                   ;}
   void setNumberOfWells(int nWells)                       { nWells_                   = nWells                   ;}
   void setNumberOfSimulations(int nSimulations)           { nSimulations_             = nSimulations             ;}
   void setAlphaMin(float alpha_min)                       { alpha_min_                = alpha_min                ;}
@@ -559,8 +524,6 @@ private:
   std::vector<std::string>          logNames_;                   ///< The keywords to look for for time, sonic, shear sonic and density
   std::vector<bool>                 inverseVelocity_;            ///< If element 0 is true, vp comes from dt, if 1 is true, vs comes from dts in well.
 
-  std::vector<int>                  faciesLabels_;               ///< Facies labels
-  std::vector<std::string>          faciesNames_;                ///< Facies names   (nFacies = faciesNames.size())
   int                               priorFaciesProbGiven_;
   std::map<std::string, float>      priorFaciesProb_;
 
@@ -695,24 +658,12 @@ private:
   std::vector<int>                  correlationStructure_;       // Correlation structure for the different layers in the multizone background model
 
   std::vector<std::string>                         trendCubeParameter_;          // Name of the trend parameters in the rock physics model
-  std::vector<std::string>                         rockName_;                    // Name of rock in the rock physics model
 
   std::map<std::string, DistributionWithTrendStorage *>   reservoirVariable_;           // Rock physics variables defined in reservoir
   std::map<std::string, DistributionsRockStorage *>       rockStorage_;                 // Rock physics rocks defined in predefinitions
   std::map<std::string, DistributionsDryRockStorage *>    dryRockStorage_;              // Rock physics dry rocks defined in predefinitions
   std::map<std::string, DistributionsSolidStorage *>      solidStorage_;                // Rock physics solids defined in predefinitions
   std::map<std::string, DistributionsFluidStorage *>      fluidStorage_;                // Rock physics fluids defined in predefinitions
-
-  std::vector<float> upperKRock_;
-  std::vector<float> lowerKRock_;
-  std::vector<float> upperKFluid_;
-  std::vector<float> lowerKFluid_;
-  std::vector<float> upperGRock_;
-  std::vector<float> lowerGRock_;
-  std::vector<float> upperDensityRock_;
-  std::vector<float> lowerDensityRock_;
-  std::vector<float> upperDensityFluid_;
-  std::vector<float> lowerDensityFluid_;
 
   int                               logLevel_;
 

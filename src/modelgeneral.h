@@ -59,6 +59,11 @@ public:
 
   const std::vector<float>       & getPriorFacies()           /*const*/ { return priorFacies_            ;}
   const std::vector<FFTGrid *>   & getPriorFaciesCubes()      /*const*/ { return priorFaciesProbCubes_   ;}
+  const std::vector<std::string> & getFaciesNames(void)                 const { return faciesNames_      ;}
+  std::vector<int>                 getFaciesLabel()                     const { return faciesLabels_     ;}
+
+  void addFaciesLabel(int faciesLabel)                    { faciesLabels_.push_back(faciesLabel)                 ;}
+  void addFaciesName(const std::string & faciesName)      { faciesNames_.push_back(faciesName)                   ;}
 
   static FFTGrid    * createFFTGrid(int nx,
                                     int ny,
@@ -175,10 +180,12 @@ private:
                                 std::string             & errText,
                                 bool                    & failed);
 
-  void             setFaciesNames(std::vector<WellData *>     wells,
-                                  ModelSettings               *& modelSettings,
-                                  std::string                  & tmpErrText,
-                                  int                          & error);
+  void             setFaciesNamesFromWells(std::vector<WellData *>        wells,
+                                           ModelSettings               *& modelSettings,
+                                           std::string                  & tmpErrText,
+                                           int                          & error);
+
+  void             setFaciesNamesFromRockPhysics();
 
   void                makeTimeSimboxes(Simbox          *& timeSimbox,
                                        Simbox          *& timeCutSimbox,
@@ -263,10 +270,9 @@ private:
 
   int              computeTime(int year, int month, int day) const;
 
-  void             processFaciesInformation(ModelSettings     *& modelSettings,
-                                            const InputFiles   * inputFiles,
-                                            std::string        & tmpErrText,
-                                            int                & error) const;
+  void             checkFaciesNamesConsistency(ModelSettings     *& modelSettings,
+                                               const InputFiles   * inputFiles,
+                                               std::string        & tmpErrText) const;
 
   void             readPriorFaciesProbCubes(const InputFiles        * inputFiles,
                                             ModelSettings           * modelSettings,
@@ -310,6 +316,9 @@ private:
 
   std::vector<float>                  priorFacies_;           ///< Prior facies probabilities
   std::vector<FFTGrid *>              priorFaciesProbCubes_;  ///< Cubes for prior facies probabilities
+
+  std::vector<int>                  faciesLabels_;               ///< Facies labels, flyttes til blockedlogs
+  std::vector<std::string>          faciesNames_;                ///< Facies names   (nFacies = faciesNames.size()). Use for ordering of facies
 
 };
 

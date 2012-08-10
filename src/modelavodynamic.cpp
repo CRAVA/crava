@@ -240,7 +240,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings       *& modelSettings,
         if(estimationMode || (modelSettings->getWellOutputFlag() & IO::WELLS) > 0)
           modelAVOstatic->writeWells(modelGeneral->getWells(), modelSettings);
         if(estimationMode)
-          modelAVOstatic->writeBlockedWells(modelGeneral->getWells(), modelSettings);
+          modelAVOstatic->writeBlockedWells(modelGeneral->getWells(), modelSettings, modelGeneral->getFaciesNames(), modelGeneral->getFaciesLabel());
       }
     }
   }
@@ -331,7 +331,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& modelSettings,
   if(estimationMode || (modelSettings->getWellOutputFlag() & IO::WELLS) > 0)
     modelAVOstatic->writeWells(modelGeneral->getWells(), modelSettings);
   if(estimationMode)
-    modelAVOstatic->writeBlockedWells(modelGeneral->getWells(), modelSettings);
+    modelAVOstatic->writeBlockedWells(modelGeneral->getWells(), modelSettings, modelGeneral->getFaciesNames(), modelGeneral->getFaciesLabel());
 
   failedLoadingModel = failedSeismic || failedPriorCorr || failedReflMat || failedWavelet;
 
@@ -641,14 +641,16 @@ ModelAVODynamic::processBackground(Background           *& background,
       }
 
       // Get prior probabilities for the facies in a vector
-      std::vector<double> priorProbability;
-      priorProbability.resize(modelSettings->getNumberOfFacies());
+      std::vector<std::string> facies_names = modelGeneral->getFaciesNames();
+      int                      n_facies     = static_cast<int>(facies_names.size());
+
+      std::vector<double> priorProbability(n_facies);
       typedef std::map<std::string,float> mapType;
       mapType myMap = modelSettings->getPriorFaciesProb();
 
-      for(int i=0;i<modelSettings->getNumberOfFacies();i++)
+      for(int i=0;i<n_facies;i++)
       {
-        mapType::iterator iter = myMap.find(modelSettings->getFaciesName(i));
+        mapType::iterator iter = myMap.find(facies_names[i]);
         if(iter!=myMap.end())
           priorProbability[i] = iter->second;
       }

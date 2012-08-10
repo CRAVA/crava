@@ -43,7 +43,8 @@ public:
              Crava                         *cravaResult,
              const std::vector<Grid2D *>  & noiseScale,
              const ModelSettings          * modelSettings,
-             FFTGrid                      * seismicLH);
+             FFTGrid                      * seismicLH,
+             const std::vector<std::string> facies_names);
 
   FaciesProb(FFTGrid                                           * alpha,
              FFTGrid                                           * beta,
@@ -73,11 +74,6 @@ public:
   std::vector<double>    calculateChiSquareTest(std::vector<WellData *>        wells,
                                                 int                            nWells,
                                                 const std::vector<Surface *> & faciesEstimInterval);
-
-  void                   calculateChiSquareAlternativeTest(std::vector<WellData *>        wells,
-                                                           int                            nWells,
-                                                           const std::vector<Surface *> & faciesEstimInterval,
-                                                           const ModelSettings          * modelSettings);
 
   FFTGrid *              createLHCube(FFTGrid                  * likelihood,
                                       int                        fac,
@@ -110,7 +106,8 @@ private:
                                         Crava                        * cravaResult,
                                         const std::vector<Grid2D *>  & noiseScale,
                                         const ModelSettings          * modelSettings,
-                                        FFTGrid                      * seismicLH);
+                                        FFTGrid                      * seismicLH,
+                                        const std::vector<std::string> facies_names);
 
   std::vector<FFTGrid *> makeFaciesHistAndSetPriorProb(const std::vector<float> & alpha,
                                                        const std::vector<float> & beta,

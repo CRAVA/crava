@@ -217,7 +217,7 @@ Crava::Crava(ModelSettings     * modelSettings,
     // Temporary placement.
     //
     if((modelSettings->getWellOutputFlag() & IO::BLOCKED_WELLS) > 0) {
-      modelAVOstatic->writeBlockedWells(modelGeneral->getWells(),modelSettings);
+      modelAVOstatic->writeBlockedWells(modelGeneral->getWells(),modelSettings, modelGeneral->getFaciesNames(), modelGeneral->getFaciesLabel());
     }
     if((modelSettings->getWellOutputFlag() & IO::BLOCKED_LOGS) > 0) {
       LogKit::LogFormatted(LogKit::Low,"\nWARNING: Writing of BLOCKED_LOGS is not implemented yet.\n");
@@ -1688,7 +1688,8 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
     double wall=0.0, cpu=0.0;
     TimeKit::getTime(wall,cpu);
 
-    int nfac = modelSettings->getNumberOfFacies();
+    std::vector<std::string> facies_names = modelGeneral_->getFaciesNames();
+    int nfac = static_cast<int>(facies_names.size());
     if(modelGeneral_->getPriorFacies().size() != 0){
       LogKit::LogFormatted(LogKit::Low,"\nPrior facies probabilities:\n");
       LogKit::LogFormatted(LogKit::Low,"\n");
@@ -1696,7 +1697,7 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
       LogKit::LogFormatted(LogKit::Low,"--------------------------\n");
       const std::vector<float> priorFacies = modelGeneral_->getPriorFacies();
       for(int i=0 ; i<nfac; i++) {
-        LogKit::LogFormatted(LogKit::Low,"%-15s %10.4f\n",modelSettings->getFaciesName(i).c_str(),priorFacies[i]);
+        LogKit::LogFormatted(LogKit::Low,"%-15s %10.4f\n",facies_names[i].c_str(),priorFacies[i]);
       }
     }
     if (simbox_->getdz() > 4.01f) { // Require this density for estimation of facies probabilities
@@ -1762,7 +1763,8 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
                                 this,
                                 modelAVOdynamic_->getLocalNoiseScales(),
                                 modelSettings_,
-                                likelihood);
+                                likelihood,
+                                modelGeneral_->getFaciesNames());
       else {
         fprob_ = new FaciesProb(postAlpha_,
                                 postBeta_,
@@ -1801,7 +1803,8 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
                                 this,
                                 modelAVOdynamic_->getLocalNoiseScales(),
                                 modelSettings_,
-                                likelihood);
+                                likelihood,
+                                modelGeneral_->getFaciesNames());
       else {
         fprob_ = new FaciesProb(postAlpha_,
                                 postBeta_,
@@ -1818,7 +1821,7 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
     fprob_->calculateConditionalFaciesProb(wells_,
                                            nWells_,
                                            modelAVOstatic_->getFaciesEstimInterval(),
-                                           modelSettings->getFaciesNames(),
+                                           facies_names,
                                            simbox_->getdz());
     LogKit::LogFormatted(LogKit::Low,"\nProbability cubes done\n");
 
@@ -1827,7 +1830,7 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
       for(int i=0;i<nfac;i++)
       {
         FFTGrid * grid = fprob_->getFaciesProb(i);
-        std::string fileName = baseName +"With_Undef_"+ modelSettings->getFaciesName(i);
+        std::string fileName = baseName +"With_Undef_"+ facies_names[i];
         ParameterOutput::writeToFile(simbox_, modelGeneral_, modelSettings_, grid, fileName,"");
       }
       FFTGrid * grid = fprob_->getFaciesProbUndef();
@@ -1842,7 +1845,7 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
       for(int i=0;i<nfac;i++)
       {
         FFTGrid * grid = fprob_->getFaciesProb(i);
-        std::string fileName = baseName + modelSettings->getFaciesName(i);
+        std::string fileName = baseName + facies_names[i];
         ParameterOutput::writeToFile(simbox_, modelGeneral_, modelSettings_, grid, fileName,"");
       }
     }
@@ -1856,7 +1859,7 @@ Crava::computeFaciesProb(SpatialWellFilter *filteredlogs, bool useFilter)
       for(int i=0;i<nfac;i++) {
         FFTGrid * grid = fprob_->createLHCube(likelihood, i,
                                               modelGeneral_->getPriorFacies(), modelGeneral_->getPriorFaciesCubes());
-        std::string fileName = IO::PrefixLikelihood() + modelSettings->getFaciesName(i);
+        std::string fileName = IO::PrefixLikelihood() + facies_names[i];
         ParameterOutput::writeToFile(simbox_, modelGeneral_, modelSettings_, grid,fileName,"");
         delete grid;
       }

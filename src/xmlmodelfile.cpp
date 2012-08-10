@@ -1602,10 +1602,9 @@ XmlModelFile::parsePriorFaciesProbabilities(TiXmlNode * node, std::string & errT
   std::vector<std::string> legalCommands;
   legalCommands.push_back("facies");
 
-  float sum;
-  int status = 0;
-  sum = 0.0;
-  int oldStatus = 0;
+  float sum       = 0.0;
+  int   status    = 0;
+  int   oldStatus = 0;
 
   while(parseFacies(root,errTxt)==true)
   {
@@ -2685,86 +2684,6 @@ XmlModelFile::parseGaussianDistribution(TiXmlNode                     * node,
   return(true);
 }
 
-/*bool
-XmlModelFile::parseGaussian(TiXmlNode * node, std::string & errTxt)
-{
-//Marit: Beholder denne til innlesning av rock phyiscs er ferdig
-  TiXmlNode * root = node->FirstChildElement("gaussian");
-  if(root == 0)
-    return(false);
-
-  std::vector<std::string> legalCommands;
-  legalCommands.push_back("name");
-  legalCommands.push_back("mean-vp");
-  legalCommands.push_back("mean-vs");
-  legalCommands.push_back("mean-density");
-  legalCommands.push_back("variance-vp");
-  legalCommands.push_back("variance-vs");
-  legalCommands.push_back("variance-density");
-  legalCommands.push_back("correlation-vp-vs");
-  legalCommands.push_back("correlation-vp-density");
-  legalCommands.push_back("correlation-vs-density");
-
-  std::string name;
-  if(parseValue(root, "name", name, errTxt) == true)
-    modelSettings_->addRockName(name);
-  else
-    errTxt += "<name> of <rock> in <rock-phyiscs-model><gaussian> needs to be given\n";
-
-  NRLib::TrendStorage * mean_vp;
-  if(parseRockTrends(root, "mean-vp", mean_vp, errTxt) == false)
-    errTxt += "<mean-vp> of <rock> in <rock-phyiscs-model><gaussian> needs to be given\n";
-
-  NRLib::TrendStorage * mean_vs;
-  if(parseRockTrends(root, "mean-vs", mean_vs, errTxt) == false)
-    errTxt += "<mean-vs> of <rock> in <rock-phyiscs-model><gaussian> needs to be given\n";
-
-  NRLib::TrendStorage * mean_density;
-  if(parseRockTrends(root, "mean-density", mean_density, errTxt) == false)
-    errTxt += "<mean-density> of <rock> in <rock-phyiscs-model><gaussian> needs to be given\n";
-
-  NRLib::TrendStorage * variance_vp;
-  if(parseRockTrends(root, "variance-vp", variance_vp, errTxt) == false)
-    errTxt += "<variance-vp> of <rock> in <rock-phyiscs-model><gaussian> needs to be given\n";
-
-  NRLib::TrendStorage * variance_vs;
-  if(parseRockTrends(root, "variance-vs", variance_vs, errTxt) == false)
-    errTxt += "<variance-vs> of <rock> in <rock-phyiscs-model><gaussian> needs to be given\n";
-
-  NRLib::TrendStorage * variance_density;
-  if(parseRockTrends(root, "variance-density", variance_density, errTxt) == false)
-    errTxt += "<variance-density> of <rock> in <rock-phyiscs-model><gaussian> needs to be given\n";
-
-  NRLib::TrendStorage * correlation_vp_vs;
-  if(parseRockTrends(root, "correlation-vp-vs", correlation_vp_vs, errTxt) == false)
-    errTxt += "<correlation-vp-vs> of <rock> in <rock-phyiscs-model><gaussian> needs to be given\n";
-
-  NRLib::TrendStorage * correlation_vp_density;
-  if(parseRockTrends(root, "correlation-vp-density", correlation_vp_density, errTxt) == false)
-    errTxt += "<correlation-vp-density> of <rock> in <rock-phyiscs-model><gaussian> needs to be given\n";
-
-  NRLib::TrendStorage * correlation_vs_density;
-  if(parseRockTrends(root, "correlation-vs-density", correlation_vs_density, errTxt) == false)
-    errTxt += "<correlation-vs-density> of <rock> in <rock-phyiscs-model><gaussian> needs to be given\n";
-
-  RockPhysicsStorage * rock = new GaussianRockPhysicsStorage(mean_vp,
-                                                             mean_vs,
-                                                             mean_density,
-                                                             variance_vp,
-                                                             variance_vs,
-                                                             variance_density,
-                                                             correlation_vp_vs,
-                                                             correlation_vp_density,
-                                                             correlation_vs_density);
-
-  modelSettings_->addRockPhysicsStorage(rock);
-
-  checkForJunk(root, errTxt, legalCommands, true);
-  return(true);
-}*/
-
-
-
 bool
 XmlModelFile::parse1DTrend(TiXmlNode * node, const std::string & keyword, NRLib::TrendStorage *& trend, std::string & errTxt)
 {
@@ -2843,135 +2762,6 @@ XmlModelFile::parseTrendCube(TiXmlNode * node, std::string & errTxt)
     errTxt += "<file-name> needs to be specified in <trend-cube> when <rock-physics> is used.\n";
 
   checkForJunk(root, errTxt, legalCommands, true); //allow duplicates
-  return(true);
-}
-
-bool
-XmlModelFile::parseBoundingModel(TiXmlNode * node, std::string & errTxt)
-{
-  TiXmlNode * root = node->FirstChildElement("bounding-model");
-  if(root == 0)
-    return(false);
-
-  std::vector<std::string> legalCommands;
-  legalCommands.push_back("name");
-  legalCommands.push_back("bulk-modulus");
-  legalCommands.push_back("shear-modulus");
-  legalCommands.push_back("density");
-
-  std::string name;
-  if(parseValue(root, "name", name, errTxt) == true)
-    modelSettings_->addRockName(name);
-  else
-    errTxt += "<name> of <rock> in <rock-phyiscs-model><bounding-model> needs to be given\n";
-
-  parseBulkModulus(root, errTxt);
-  parseShearModulus(root, errTxt);
-  parseDensity(root, errTxt);
-
-  checkForJunk(root, errTxt, legalCommands, true);
-  return(true);
-}
-
-bool
-XmlModelFile::parseBulkModulus(TiXmlNode * node, std::string & errTxt)
-{
-  TiXmlNode * root = node->FirstChildElement("bulk-modulus");
-  if(root == 0)
-    return(false);
-
-  std::vector<std::string> legalCommands;
-  legalCommands.push_back("upper-limit-rock");
-  legalCommands.push_back("lower-limit-rock");
-  legalCommands.push_back("upper-limit-fluid");
-  legalCommands.push_back("lower-limit-fluid");
-
-  float value;
-  if(parseValue(root, "upper-limit-rock", value, errTxt) == true)
-    modelSettings_->addUpperKRock(value);
-  else
-    modelSettings_->addDefaultUpperKRock();
-
-  if(parseValue(root, "lower-limit-rock", value, errTxt) == true)
-    modelSettings_->addLowerKRock(value);
-  else
-    modelSettings_->addDefaultLowerKRock();
-
-  if(parseValue(root, "upper-limit-fluid", value, errTxt) == true)
-    modelSettings_->addUpperKFluid(value);
-  else
-    modelSettings_->addDefaultUpperKFluid();
-
-  if(parseValue(root, "lower-limit-fluid", value, errTxt) == true)
-    modelSettings_->addLowerKFluid(value);
-  else
-    modelSettings_->addDefaultLowerKFluid();
-
-  checkForJunk(root, errTxt, legalCommands);
-  return(true);
-}
-
-bool
-XmlModelFile::parseShearModulus(TiXmlNode * node, std::string & errTxt)
-{
-  TiXmlNode * root = node->FirstChildElement("shear-modulus");
-  if(root == 0)
-    return(false);
-
-  std::vector<std::string> legalCommands;
-  legalCommands.push_back("upper-limit-rock");
-  legalCommands.push_back("lower-limit-rock");
-
-  float value;
-  if(parseValue(root, "upper-limit-rock", value, errTxt) == true)
-    modelSettings_->addUpperGRock(value);
-  else
-    modelSettings_->addDefaultUpperGRock();
-
-  if(parseValue(root, "lower-limit-rock", value, errTxt) == true)
-    modelSettings_->addLowerGRock(value);
-  else
-    modelSettings_->addDefaultLowerGRock();
-
-  checkForJunk(root, errTxt, legalCommands);
-  return(true);
-}
-
-bool
-XmlModelFile::parseDensity(TiXmlNode * node, std::string & errTxt)
-{
-  TiXmlNode * root = node->FirstChildElement("density");
-  if(root == 0)
-    return(false);
-
-  std::vector<std::string> legalCommands;
-  legalCommands.push_back("upper-limit-rock");
-  legalCommands.push_back("lower-limit-rock");
-  legalCommands.push_back("upper-limit-fluid");
-  legalCommands.push_back("lower-limit-fluid");
-
-  float value;
-  if(parseValue(root, "upper-limit-rock", value, errTxt) == true)
-    modelSettings_->addUpperDensityRock(value);
-  else
-    modelSettings_->addDefaultUpperDensityRock();
-
-  if(parseValue(root, "lower-limit-rock", value, errTxt) == true)
-    modelSettings_->addLowerDensityRock(value);
-  else
-    modelSettings_->addDefaultLowerDensityRock();
-
-  if(parseValue(root, "upper-limit-fluid", value, errTxt) == true)
-    modelSettings_->addUpperDensityFluid(value);
-  else
-    modelSettings_->addDefaultUpperDensityFluid();
-
-  if(parseValue(root, "lower-limit-fluid", value, errTxt) == true)
-    modelSettings_->addLowerDensityFluid(value);
-  else
-    modelSettings_->addDefaultLowerDensityFluid();
-
-  checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
 
@@ -4598,18 +4388,18 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
     if(modelSettings_->getEstimateFaciesProb() == false)
       errTxt += "Rocks in the rock physics prior model should not be given without requesting facies probabilities under inversion settings.\n";
 
-    std::vector<std::string> rock_name = modelSettings_->getRockName();
-    int nRocks = static_cast<int>(rock_name.size());
+    std::map<std::string, DistributionsRockStorage *> rock_storage = modelSettings_->getRockStorage();
 
     // Compare names in rock physics model with names given in .xml-file
     if(modelSettings_->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_MODEL_FILE) {
       typedef std::map<std::string,float> mapType;
       mapType myMap = modelSettings_->getPriorFaciesProb();
 
-      for(int i=0;i<nRocks;i++) {
-        mapType::iterator iter = myMap.find(rock_name[i]);
-        if (iter==myMap.end())
-          errTxt += "Problem with rock physics prior model. Rock "+rock_name[i]+" is not one of the facies given in the xml-file.\n";
+      for(std::map<std::string, DistributionsRockStorage *>::iterator it = rock_storage.begin(); it != rock_storage.end(); it++) {
+        mapType::iterator iter = myMap.find(it->first);
+
+        if (iter == myMap.end())
+          errTxt += "Problem with rock physics prior model. Rock "+it->first+" is not one of the facies given in the xml-file.\n";
       }
     }
 
@@ -4618,10 +4408,10 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
       typedef std::map<std::string,std::string> mapType;
       mapType myMap = inputFiles_->getPriorFaciesProbFile();
 
-      for(int i=0;i<nRocks;i++) {
-        mapType::iterator iter = myMap.find(rock_name[i]);
-        if (iter==myMap.end())
-          errTxt += "Problem with rock physics prior model. Rock "+rock_name[i]+" is not one of the facies given in the xml-file.\n";
+      for(std::map<std::string, DistributionsRockStorage *>::const_iterator it = rock_storage.begin(); it != rock_storage.end(); it++) {
+        mapType::iterator iter = myMap.find(it->first);
+        if (iter == myMap.end())
+          errTxt += "Problem with rock physics prior model. Rock "+it->first+" is not one of the facies given in the xml-file.\n";
       }
     }
   }

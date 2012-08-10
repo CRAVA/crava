@@ -171,9 +171,9 @@ ModelAVOStatic::blockLogs(std::vector<WellData *> & wells,
 
 
 void
-ModelAVOStatic::checkAvailableMemory(Simbox        * timeSimbox,
-                                   ModelSettings * modelSettings,
-                                   const InputFiles    * inputFiles)
+ModelAVOStatic::checkAvailableMemory(Simbox           * timeSimbox,
+                                     ModelSettings    * modelSettings,
+                                     const InputFiles * inputFiles)
 {
   LogKit::WriteHeader("Estimating amount of memory needed");
   //
@@ -209,8 +209,10 @@ ModelAVOStatic::checkAvailableMemory(Simbox        * timeSimbox,
   int nGridCovariances = 6;                                      // Covariances, padded
   int nGridSeismicData = modelSettings->getNumberOfAngles(0);     // One for each angle stack, padded
 
-  int nGridFacies       = modelSettings->getNumberOfFacies()+1;   // One for each facies, one for undef, unpadded.
-  int nGridHistograms   = modelSettings->getNumberOfFacies();     // One for each facies, 2MB.
+  std::map<std::string, float> facies_prob = modelSettings->getPriorFaciesProb(); //Used to find number of facies grids needed
+
+  int nGridFacies       = static_cast<int>(facies_prob.size())+1; // One for each facies, one for undef, unpadded.
+  int nGridHistograms   = static_cast<int>(facies_prob.size());   // One for each facies, 2MB.
   int nGridKriging      = 1;                                      // One grid for kriging, unpadded.
   int nGridCompute      = 1;                                      // Computation grid, padded (for convenience)
   int nGridFileMode     = 1;                                      // One grid for intermediate file storage
@@ -246,7 +248,7 @@ ModelAVOStatic::checkAvailableMemory(Simbox        * timeSimbox,
         baseP += nGridBackground;
       int baseU = 0;
       if(modelSettings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_CUBES)
-        baseU += modelSettings->getNumberOfFacies();
+        baseU += static_cast<int>(facies_prob.size());
 
       //First peak: At inversion
       int peak1P = baseP + nGridSeismicData; //Need seismic data as well here.
@@ -467,11 +469,11 @@ void ModelAVOStatic::writeWells(std::vector<WellData *> wells, ModelSettings * m
     wells[i]->writeWell(modelSettings->getWellFormatFlag());
 }
 
-void ModelAVOStatic::writeBlockedWells(std::vector<WellData *> wells, ModelSettings * modelSettings) const
+void ModelAVOStatic::writeBlockedWells(std::vector<WellData *> wells, ModelSettings * modelSettings, std::vector<std::string> facies_name, std::vector<int> facies_label) const
 {
   int nWells  = modelSettings->getNumberOfWells();
   for(int i=0;i<nWells;i++)
-    wells[i]->getBlockedLogsOrigThick()->writeWell(modelSettings);
+    wells[i]->getBlockedLogsOrigThick()->writeWell(modelSettings, facies_name, facies_label);
 }
 
 void ModelAVOStatic::addSeismicLogs(std::vector<WellData *> wells,

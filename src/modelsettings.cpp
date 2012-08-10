@@ -33,8 +33,7 @@ ModelSettings::ModelSettings(void)
     indWavelet_(0),
     indFacies_(0),
     logNames_(5),
-    inverseVelocity_(2),
-    faciesLabels_(0)
+    inverseVelocity_(2)
 {
   lateralCorr_             = new GenExpVario(1, 1000, 1000);
   backgroundVario_         = new GenExpVario(1, 2000, 2000);

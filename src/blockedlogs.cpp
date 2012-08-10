@@ -1082,18 +1082,18 @@ BlockedLogs::setLogFromVerticalTrend(float     *& blockedLog,
 
 //------------------------------------------------------------------------------
 void
-BlockedLogs::writeWell(ModelSettings * modelSettings)
+BlockedLogs::writeWell(ModelSettings * modelSettings, std::vector<std::string> facies_name, std::vector<int> facies_label)
 {
   int formats = modelSettings->getWellFormatFlag();
   if((formats & IO::RMSWELL) > 0)
-    writeRMSWell(modelSettings);
+    writeRMSWell(modelSettings, facies_name, facies_label);
   if((formats & IO::NORSARWELL) > 0)
     writeNorsarWell(modelSettings);
 }
 
 
 void
-BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
+BlockedLogs::writeRMSWell(ModelSettings * modelSettings, std::vector<std::string> facies_name, std::vector<int> facies_label)
 {
   float maxHz_background = modelSettings->getMaxHzBackground();
   float maxHz_seismic    = modelSettings->getMaxHzSeismic();
@@ -1176,8 +1176,8 @@ BlockedLogs::writeRMSWell(ModelSettings * modelSettings)
   }
   if (gotFacies) {
     file << "FaciesLog  DISC ";
-    for (int i =0 ; i < modelSettings->getNumberOfFacies() ; i++)
-      file << " " << modelSettings->getFaciesLabel(i) << " " << modelSettings->getFaciesName(i);
+    for (int i =0 ; i < static_cast<int>(facies_name.size()) ; i++)
+      file << " " << facies_label[i] << " " << facies_name[i];
     file << "\n";
   }
   if (gotFaciesProb) {

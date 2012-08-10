@@ -52,12 +52,13 @@ FaciesProb::FaciesProb(FFTGrid                      * alpha,
                        Crava                          *cravaResult,
                        const std::vector<Grid2D *>   & noiseScale,
                        const ModelSettings *           modelSettings,
-                       FFTGrid                       * seismicLH)
+                       FFTGrid                       * seismicLH,
+                       const std::vector<std::string>  facies_names)
 {
   makeFaciesProb(nFac, alpha, beta, rho, sigmaEOrig, useFilter, wells, nWells,
                  faciesEstimInterval, dz, relative, noVs,
                  p_undef, priorFacies, priorFaciesCubes, cravaResult, noiseScale,
-                 modelSettings, seismicLH);
+                 modelSettings, seismicLH, facies_names);
 }
 
 FaciesProb::FaciesProb(FFTGrid                                          * alpha,
@@ -457,7 +458,8 @@ void FaciesProb::makeFaciesProb(int                            nfac,
                                 Crava                        * cravaResult,
                                 const std::vector<Grid2D *>  & noiseScale,
                                 const ModelSettings          * modelSettings,
-                                FFTGrid                      * seismicLH)
+                                FFTGrid                      * seismicLH,
+                                const std::vector<std::string> facies_names)
 {
   std::vector<float> alphaFiltered;
   std::vector<float> betaFiltered;
@@ -497,7 +499,7 @@ void FaciesProb::makeFaciesProb(int                            nfac,
         }
         else
           baseName = "Rock_Physics_";
-        baseName = baseName + modelSettings->getFaciesName(j);
+        baseName = baseName + facies_names[i];
         std::string fileName = IO::makeFullFileName(IO::PathToInversionResults(), baseName);
         bool writeSurface = (j==0); //writeSurface is true if j == 0.
         resampleAndWriteDensity(density[i][j], fileName, volume[i], expVol, i, writeSurface);
@@ -1331,10 +1333,14 @@ void FaciesProb::calculateFaciesProbFromRockPhysicsModel(FFTGrid                
       priorFaciesCubes[i]->setAccessMode(FFTGrid::READ);
 
 
+  const std::vector<std::string> facies_names = modelGeneral->getFaciesNames();
+  int n_facies = static_cast<int>(facies_names.size());
+
   std::vector<Pdf3D *> rock_pdf(nFacies_);
-  for(std::map<std::string, DistributionsRock *>::const_iterator it = rock_distributions.begin(); it != rock_distributions.end(); it++) {
-    Pdf3D * pdf = it->second->GeneratePdf();
-    rock_pdf.push_back(pdf); //Marit: Mister sammenheng med navn. Iterere ved find, slik at vi har kontroll på elementene.
+  for(int i=0; i<n_facies; i++) {
+    std::map<std::string, DistributionsRock *>::const_iterator iter = rock_distributions.find(facies_names[i]);
+    Pdf3D * pdf = iter->second->GeneratePdf();
+    rock_pdf[i] = pdf;
   }
 
   LogKit::LogFormatted(LogKit::Low,"\nBuilding facies probabilities:");
@@ -1352,7 +1358,7 @@ void FaciesProb::calculateFaciesProbFromRockPhysicsModel(FFTGrid                
   double help;
   double dens;
 
-  double * value   = new double[nFacies_];
+  std::vector<double> value(nFacies_);
   float  undefSum  = p_undefined / 10; //Nevner må beregnes
   int    smallrnxp = faciesProb_[0]->getRNxp();
 
@@ -1422,8 +1428,6 @@ void FaciesProb::calculateFaciesProbFromRockPhysicsModel(FFTGrid                
   faciesProbUndef_->endAccess();
   if(seismicLH != NULL)
     seismicLH->endAccess();
-
-  delete [] value;
 
   for(int i=0; i<nFacies_; i++)
     delete rock_pdf[i];
@@ -1941,131 +1945,6 @@ void FaciesProb::writeBWFaciesProb(std::vector<WellData *> wells,
     }
    }
 }
-
-void FaciesProb::calculateChiSquareAlternativeTest(std::vector<WellData *>         wells,
-                                                    int                            nWells,
-                                                    const std::vector<Surface *> & faciesEstimInterval,
-                                                    const ModelSettings          * modelSettings)
-{
-  // Alternative approach for evaluating facies fit.
-  // Is not being called, but is saved for later by approval from Ragnar.
-
-  int    i, j, k;
-  int    df;
-  int    bin;
-  double pValue;
-  double chi;
-
-  std::vector<float>  prob(nFacies_);
-  std::vector<int>    nPos(10);
-  std::vector<int>    nObs(10);
-
-  std::vector<std::vector<std::string> > fit(nWells,std::vector<std::string>(nFacies_));
-
-  for (i=0; i<nWells; i++)
-  {
-    BlockedLogs  * bw       = wells[i]->getBlockedLogsOrigThick();
-    const int      nBlocks  = bw->getNumberOfBlocks();
-    const int    * BWfacies = bw->getFacies();
-    const int    * ipos     = bw->getIpos();
-    const int    * jpos     = bw->getJpos();
-    const int    * kpos     = bw->getKpos();
-    const double   dz       = bw->getDz();
-    const double * xPos     = bw->getXpos();
-    const double * yPos     = bw->getYpos();
-    const double * zPos     = bw->getZpos();
-
-
-    std::vector<std::vector<float> > BWfaciesProb(nBlocks,std::vector<float>(nFacies_));
-    for (j = 0 ; j < nFacies_ ; j++)
-    {
-      faciesProb_[j]->setAccessMode(FFTGrid::RANDOMACCESS);
-      for(k = 0 ; k < nBlocks ; k++)
-      {
-        BWfaciesProb[k][j] = faciesProb_[j]->getRealValue(ipos[k],jpos[k],kpos[k]);
-      }
-      faciesProb_[j]->endAccess();
-    }
-
-    for (k=0; k < nFacies_; k++)
-    {
-      for (j=0; j<10; j++)
-      {
-        nPos[j] = 0;
-        nObs[j] = 0;
-      }
-
-      for (j=0 ; j < nBlocks ; j++)
-      {
-        if (faciesEstimInterval.size() > 0)
-        {
-          const double zTop  = faciesEstimInterval[0]->GetZ(xPos[j],yPos[j]);
-          const double zBase = faciesEstimInterval[1]->GetZ(xPos[j],yPos[j]);
-          if ( !( (zPos[j]-0.5*dz) < zTop || (zPos[j]+0.5*dz) > zBase || BWfacies[j]==IMISSING) )
-          {
-            bin = static_cast<int>(std::floor(BWfaciesProb[j][k]*10));
-            nObs[bin] += 1;
-            if (BWfacies[j] == k)
-              nPos[bin] += 1;
-          }
-        }
-        else
-        {
-          if (BWfacies[j]!=IMISSING)
-          {
-            bin = static_cast<int>(std::floor(BWfaciesProb[j][k]*10));
-            nObs[bin] += 1;
-            if (BWfacies[j] == k)
-              nPos[bin] += 1;
-          }
-        }
-      }
-      chi = 0;
-      df  = 0;
-      for (j=0; j<10; j++)
-      {
-        if (nObs[j] > 0)
-        {
-          df  += 1;
-          chi += std::pow(nPos[j]        -nObs[j]   *(j*0.1+0.05) ,2)/(nObs[j]*   (j*0.1+0.05));
-          chi += std::pow(nObs[j]-nPos[j]-nObs[j]*(1-(j*0.1+0.05)),2)/(nObs[j]*(1-(j*0.1+0.05)));
-        }
-      }
-      NRLib::ChiSquared chisquared(df);
-      pValue = 1-chisquared.Cdf(chi);
-
-      if (pValue >= 0.05)
-        fit[i][k] = "good";
-      if (pValue < 0.05 && pValue >= 0.025)
-        fit[i][k] = "poor";
-      if (pValue < 0.025 && pValue >= 0.005)
-        fit[i][k] = "bad";
-      if (pValue < 0.005)
-        fit[i][k] = "very bad";
-    }
-  }
-
-  LogKit::LogFormatted(LogKit::Medium,"\nFit between facies probabilities and facies observed in wells: \n");
-  LogKit::LogFormatted(LogKit::Medium,"\nWell                      ");
-  for (int i = 0 ; i < nFacies_ ; i++)
-    LogKit::LogFormatted(LogKit::Medium,"%12s ",modelSettings->getFaciesName(i).c_str());
-  LogKit::LogFormatted(LogKit::Medium,"\n");
-  for (int i = 0 ; i < 24+13*nFacies_ ; i++)
-    LogKit::LogFormatted(LogKit::Medium,"-");
-  LogKit::LogFormatted(LogKit::Medium,"\n");
-  for (int w = 0 ; w < nWells ; w++)
-  {
-    LogKit::LogFormatted(LogKit::Medium,"%-24s ",wells[w]->getWellname().c_str());
-    for (int i = 0 ; i < nFacies_ ; i++)
-    {
-      LogKit::LogFormatted(LogKit::Medium,"        ");
-      LogKit::LogFormatted(LogKit::Medium,fit[w][i]);
-    }
-      LogKit::LogFormatted(LogKit::Medium,"\n");
-  }
-  LogKit::LogFormatted(LogKit::Medium,"\n");
-}
-
 
 FFTGrid *
 FaciesProb::createLHCube(FFTGrid     * likelihood,

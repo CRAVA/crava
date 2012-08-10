@@ -43,7 +43,7 @@ public:
   std::vector<bool>             getFailedDetails()         const { return failed_details_         ;}
 
   void                          writeWells(       std::vector<WellData *> wells, ModelSettings * modelSettings) const;
-  void                          writeBlockedWells(std::vector<WellData *> wells, ModelSettings * modelSettings) const;
+  void                          writeBlockedWells(std::vector<WellData *> wells, ModelSettings * modelSettings, std::vector<std::string> facies_name, std::vector<int> facies_label) const;
 
   void             addSeismicLogs(std::vector<WellData *>     wells,
                                   FFTGrid                  ** seisCube,

@@ -2266,7 +2266,7 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
 {
   if(modelSettings->getFaciesProbFromRockPhysics()){
 
-    LogKit::WriteHeader("Processing rock physics");
+    LogKit::WriteHeader("Processing Rock Physics");
 
     trend_cubes_ = CravaTrend(timeSimbox,
                               timeCutSimbox,
@@ -2925,11 +2925,11 @@ ModelGeneral::processWells(std::vector<WellData *> & wells,
 
     if (error == 0) {
       if(modelSettings->getFaciesLogGiven()) {
-        setFaciesNames(wells, modelSettings, tmpErrText, error);
-        nFacies = modelSettings->getNumberOfFacies(); // nFacies is set in setFaciesNames()
+        setFaciesNamesFromWells(wells, modelSettings, tmpErrText, error);
+        nFacies = static_cast<int>(faciesNames_.size()); // nFacies is set in setFaciesNames()
       }
       if (error>0)
-        errText += "Prior facies probabilities failed.\n"+tmpErrText;
+        errText += "Prior facies probabilities from wells failed.\n"+tmpErrText;
 
       int   * validWells    = new int[nWells];
       bool  * validIndex    = new bool[nWells];
@@ -3032,7 +3032,7 @@ ModelGeneral::processWells(std::vector<WellData *> & wells,
         LogKit::LogFormatted(LogKit::Low,"\nFacies distributions for each well: \n");
         LogKit::LogFormatted(LogKit::Low,"\nWell                    ");
         for (int i = 0 ; i < nFacies ; i++)
-          LogKit::LogFormatted(LogKit::Low,"%12s ",modelSettings->getFaciesName(i).c_str());
+          LogKit::LogFormatted(LogKit::Low,"%12s ",faciesNames_[i].c_str());
         LogKit::LogFormatted(LogKit::Low,"\n");
         for (int i = 0 ; i < 24+13*nFacies ; i++)
           LogKit::LogFormatted(LogKit::Low,"-");
@@ -3068,7 +3068,7 @@ ModelGeneral::processWells(std::vector<WellData *> & wells,
         LogKit::LogFormatted(LogKit::Medium,"\nFacies counts for each well: \n");
         LogKit::LogFormatted(LogKit::Medium,"\nWell                    ");
         for (int i = 0 ; i < nFacies ; i++)
-          LogKit::LogFormatted(LogKit::Medium,"%12s ",modelSettings->getFaciesName(i).c_str());
+          LogKit::LogFormatted(LogKit::Medium,"%12s ",faciesNames_[i].c_str());
         LogKit::LogFormatted(LogKit::Medium,"\n");
         for (int i = 0 ; i < 24+13*nFacies ; i++)
           LogKit::LogFormatted(LogKit::Medium,"-");
@@ -3146,8 +3146,8 @@ ModelGeneral::processWells(std::vector<WellData *> & wells,
             fc+=faciesCount[j][i];
           }
           if(fc == 0){
-            LogKit::LogFormatted(LogKit::Low,"\nWARNING: Facies %s is not observed in any of the wells, and posterior facies probability can not be estimated for this facies.\n",modelSettings->getFaciesName(i).c_str() );
-            TaskList::addTask("In order to estimate prior facies probability for facies "+ modelSettings->getFaciesName(i) + " add wells which contain observations of this facies.\n");
+            LogKit::LogFormatted(LogKit::Low,"\nWARNING: Facies %s is not observed in any of the wells, and posterior facies probability can not be estimated for this facies.\n",faciesNames_[i].c_str() );
+            TaskList::addTask("In order to estimate prior facies probability for facies "+ faciesNames_[i] + " add wells which contain observations of this facies.\n");
           }
         }
         for (int i = 0 ; i<nWells ; i++)
@@ -3162,10 +3162,10 @@ ModelGeneral::processWells(std::vector<WellData *> & wells,
 }
 
 void
-ModelGeneral::setFaciesNames(std::vector<WellData *>     wells,
-                             ModelSettings            *& modelSettings,
-                             std::string               & tmpErrText,
-                             int                       & error)
+ModelGeneral::setFaciesNamesFromWells(std::vector<WellData *>     wells,
+                                      ModelSettings            *& modelSettings,
+                                      std::string               & tmpErrText,
+                                      int                       & error)
 {
   int min,max;
   int globalmin = 0;
@@ -3226,12 +3226,10 @@ ModelGeneral::setFaciesNames(std::vector<WellData *>     wells,
     if(names[i] != "")
       nFacies++;
 
-  for(int i=0 ; i<nnames ; i++)
-  {
-    if(names[i] != "")
-    {
-      modelSettings->addFaciesName(names[i]);
-      modelSettings->addFaciesLabel(globalmin + i);
+  for(int i=0 ; i<nnames ; i++) {
+    if(names[i] != "") {
+      faciesLabels_.push_back(globalmin + i);
+      faciesNames_.push_back(names[i]);
     }
   }
 }
@@ -3559,79 +3557,62 @@ ModelGeneral::estimateCorrXYFromSeismic(Surface *& corrXY,
   delete [] grid;
 }
 
-void ModelGeneral::processFaciesInformation(ModelSettings     *& modelSettings,
-                                            const InputFiles   * inputFiles,
-                                            std::string        & tmpErrText,
-                                            int                & error) const
+void ModelGeneral::checkFaciesNamesConsistency(ModelSettings     *& modelSettings,
+                                               const InputFiles   * inputFiles,
+                                               std::string        & tmpErrText) const
 {
-  int nFacies = modelSettings->getNumberOfFacies();
-  if(nFacies == 0) {
-    // Get facies information from rock physics prior model
-    std::vector<std::string> rock_name = modelSettings->getRockName();
+  int nFacies = static_cast<int>(faciesNames_.size());
 
-    nFacies = static_cast<int>(rock_name.size());
-
+  // Compare names in wells with names given in rock physics prior model
+  if(rock_distributions_.size() > 0) {
+    int nRocks  = static_cast<int>(rock_distributions_.size());
+    if(nRocks > nFacies)
+      tmpErrText += "Problem with facies logs. The number of rocks in the rock physics prior model is larger than the number of facies found in the wells.\n";
     for(int i=0; i<nFacies; i++) {
-      modelSettings->addFaciesName(rock_name[i]);
-      modelSettings->addFaciesLabel(i);
+      if(rock_distributions_.find(faciesNames_[i]) == rock_distributions_.end())
+        tmpErrText += "Problem with facies logs. Facies "+faciesNames_[i]+" found in a well is not one of the rocks given in rock physics prior model\n";
     }
   }
-  else {
-    std::vector<std::string> facies_name = modelSettings->getFaciesNames();
-    std::vector<std::string> rock_name   = modelSettings->getRockName();
 
-    // Compare names in wells with names given in rock physics prior model
-    if(rock_name.size()>0) {
-      int nRocks  = static_cast<int>(rock_name.size());
-      if(nRocks > nFacies) {
-        tmpErrText += "Problem with facies logs. The number of rocks in the rock physics prior model is larger than the number of facies found in the wells.\n";
-        error++;
-      }
-      for(int i=0; i<nFacies; i++) {
-        int j=0;
-        while(j<nRocks) {
-          if(facies_name[i] == rock_name[j])
-            break;
-          j++;
-        }
-        if(j == nRocks) {
-          tmpErrText += "Problem with facies logs. Facies "+facies_name[i]+" found in a well is not one of the rocks given in rock physics prior model\n";
-          error++;
-        }
-      }
-    }
-    // Compare names in wells with names given in .xml-file
-    if(modelSettings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_MODEL_FILE)
+  // Compare names in wells with names given in .xml-file
+  if(modelSettings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_MODEL_FILE)
+  {
+    typedef std::map<std::string,float> mapType;
+    mapType myMap = modelSettings->getPriorFaciesProb();
+
+    for(int i=0;i<nFacies;i++)
     {
-      typedef std::map<std::string,float> mapType;
-      mapType myMap = modelSettings->getPriorFaciesProb();
-
-      for(int i=0;i<nFacies;i++)
-      {
-        mapType::iterator iter = myMap.find(modelSettings->getFaciesName(i));
-        if (iter==myMap.end())
-        {
-          tmpErrText += "Problem with facies logs. Facies "+modelSettings->getFaciesName(i)+" is not one of the facies given in the xml-file.\n";
-          error++;
-        }
-      }
+      mapType::iterator iter = myMap.find(faciesNames_[i]);
+      if (iter==myMap.end())
+        tmpErrText += "Problem with facies logs. Facies "+faciesNames_[i]+" is not one of the facies given in the xml-file.\n";
     }
-    // Compare names in wells with names given as input in proability cubes
-    else if(modelSettings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_CUBES)
+  }
+
+  // Compare names in wells with names given as input in proability cubes
+  else if(modelSettings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_CUBES)
+  {
+    typedef std::map<std::string,std::string> mapType;
+    mapType myMap = inputFiles->getPriorFaciesProbFile();
+
+    for(int i=0;i<nFacies;i++)
     {
-      typedef std::map<std::string,std::string> mapType;
-      mapType myMap = inputFiles->getPriorFaciesProbFile();
-
-      for(int i=0;i<nFacies;i++)
-      {
-        mapType::iterator iter = myMap.find(modelSettings->getFaciesName(i));
-        if (iter==myMap.end())
-        {
-          tmpErrText += "Problem with facies logs. Facies "+modelSettings->getFaciesName(i)+" is not one of the facies given in the xml-file.\n";
-          error++;
-        }
-      }
+      mapType::iterator iter = myMap.find(faciesNames_[i]);
+      if (iter==myMap.end())
+        tmpErrText += "Problem with facies logs. Facies "+faciesNames_[i]+" is not one of the facies given in the xml-file.\n";
     }
+  }
+}
+
+void
+ModelGeneral::setFaciesNamesFromRockPhysics()
+{
+  typedef std::map<std::string, DistributionsRock *> mapType;
+
+  int i = 0;
+  for(std::map<std::string, DistributionsRock *>::const_iterator it = rock_distributions_.begin(); it != rock_distributions_.end(); it++) {
+    faciesNames_.push_back(it->first);
+    faciesLabels_.push_back(i);
+    i++;
   }
 }
 
@@ -3649,17 +3630,17 @@ ModelGeneral::processPriorFaciesProb(const std::vector<Surface*>  & faciesEstimI
   {
     LogKit::WriteHeader("Prior Facies Probabilities");
 
-    int error = 0;
+    if(faciesNames_.size() == 0)
+      setFaciesNamesFromRockPhysics();
+
     std::string tmpErrText = "";
-    processFaciesInformation(modelSettings,
-                             inputFiles,
-                             tmpErrText,
-                             error);
-    if (error>0)
+    checkFaciesNamesConsistency(modelSettings,
+                                inputFiles,
+                                tmpErrText);
+    if (tmpErrText != "")
       errTxt += "Prior facies probabilities failed.\n"+tmpErrText;
 
-
-    int nFacies = modelSettings->getNumberOfFacies();
+    int nFacies = static_cast<int>(faciesNames_.size());
 
     if(modelSettings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_WELLS)
     {
@@ -3668,7 +3649,6 @@ ModelGeneral::processPriorFaciesProb(const std::vector<Surface*>  & faciesEstimI
         int   nz      = timeSimbox->getnz();
         float dz      = static_cast<float>(timeSimbox->getdz());
         int   nWells  = modelSettings->getNumberOfWells();
-        int   nFacies = modelSettings->getNumberOfFacies();
         int   ndata   = nWells*nz;
 
         int ** faciesCount = new int * [nWells];
@@ -3753,7 +3733,7 @@ ModelGeneral::processPriorFaciesProb(const std::vector<Surface*>  & faciesEstimI
           LogKit::LogFormatted(LogKit::Low,"\nFacies distributions for each blocked well: \n");
           LogKit::LogFormatted(LogKit::Low,"\nBlockedWell              ");
           for (int i = 0 ; i < nFacies ; i++)
-            LogKit::LogFormatted(LogKit::Low,"%12s ",modelSettings->getFaciesName(i).c_str());
+            LogKit::LogFormatted(LogKit::Low,"%12s ",faciesNames_[i].c_str());
           LogKit::LogFormatted(LogKit::Low,"\n");
           for (int i = 0 ; i < 24+13*nFacies ; i++)
             LogKit::LogFormatted(LogKit::Low,"-");
@@ -3783,7 +3763,7 @@ ModelGeneral::processPriorFaciesProb(const std::vector<Surface*>  & faciesEstimI
 
           LogKit::LogFormatted(LogKit::Medium,"\nBlockedWell              ");
           for (int i = 0 ; i < nFacies ; i++)
-            LogKit::LogFormatted(LogKit::Medium,"%12s ",modelSettings->getFaciesName(i).c_str());
+            LogKit::LogFormatted(LogKit::Medium,"%12s ",faciesNames_[i].c_str());
           LogKit::LogFormatted(LogKit::Medium,"\n");
           for (int i = 0 ; i < 24+13*nFacies ; i++)
             LogKit::LogFormatted(LogKit::Medium,"-");
@@ -3830,10 +3810,10 @@ ModelGeneral::processPriorFaciesProb(const std::vector<Surface*>  & faciesEstimI
             LogKit::LogFormatted(LogKit::Low,"Facies probabilities based on all blocked wells:\n\n");
             LogKit::LogFormatted(LogKit::Low,"Facies         Probability\n");
             LogKit::LogFormatted(LogKit::Low,"--------------------------\n");
-            priorFacies_.resize(nFacies); // = new float[nFacies];
+            priorFacies_.resize(nFacies);
             for(int i=0 ; i<nFacies ; i++) {
               priorFacies_[i] = float(nData[i])/sum;
-              LogKit::LogFormatted(LogKit::Low,"%-15s %10.4f\n",modelSettings->getFaciesName(i).c_str(),priorFacies_[i]);
+              LogKit::LogFormatted(LogKit::Low,"%-15s %10.4f\n",faciesNames_[i].c_str(),priorFacies_[i]);
             }
           }
           else {
@@ -3865,26 +3845,26 @@ ModelGeneral::processPriorFaciesProb(const std::vector<Surface*>  & faciesEstimI
     }
     else if(modelSettings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_MODEL_FILE)
     {
-      priorFacies_.resize(nFacies);// = new float[nFacies];
+      priorFacies_.resize(nFacies);
       typedef std::map<std::string,float> mapType;
       mapType myMap = modelSettings->getPriorFaciesProb();
 
       for(int i=0;i<nFacies;i++)
       {
-        mapType::iterator iter = myMap.find(modelSettings->getFaciesName(i));
+        mapType::iterator iter = myMap.find(faciesNames_[i]);
         if(iter!=myMap.end())
           priorFacies_[i] = iter->second;
         else
         {
-          LogKit::LogFormatted(LogKit::Warning,"\nWARNING: No prior facies probability found for facies %12s\n",modelSettings->getFaciesName(i).c_str());
+          LogKit::LogFormatted(LogKit::Warning,"\nWARNING: No prior facies probability found for facies %12s\n",faciesNames_[i].c_str());
           modelSettings->setEstimateFaciesProb(false);
-          TaskList::addTask("Check that facies " +NRLib::ToString(modelSettings->getFaciesName(i).c_str())+" is given a prior probability in the xml-file");
+          TaskList::addTask("Check that facies " +NRLib::ToString(faciesNames_[i].c_str())+" is given a prior probability in the xml-file");
         }
       }
       LogKit::LogFormatted(LogKit::Low,"Facies         Probability\n");
       LogKit::LogFormatted(LogKit::Low,"--------------------------\n");
       for(int i=0 ; i<nFacies ; i++) {
-        LogKit::LogFormatted(LogKit::Low,"%-15s %10.4f\n",modelSettings->getFaciesName(i).c_str(),priorFacies_[i]);
+        LogKit::LogFormatted(LogKit::Low,"%-15s %10.4f\n",faciesNames_[i].c_str(),priorFacies_[i]);
       }
 
     }
@@ -3919,14 +3899,14 @@ ModelGeneral::readPriorFaciesProbCubes(const InputFiles        * inputFiles,
                                        std::string             & errTxt,
                                        bool                    & failed)
 {
-  int nFacies = modelSettings->getNumberOfFacies();
-  priorFaciesProbCubes.resize(nFacies);// = new FFTGrid*[nFacies];
+  int nFacies = static_cast<int>(faciesNames_.size());
+  priorFaciesProbCubes.resize(nFacies);
 
   typedef std::map<std::string,std::string> mapType;
   mapType myMap = inputFiles->getPriorFaciesProbFile();
   for(int i=0;i<nFacies;i++)
   {
-    mapType::iterator iter = myMap.find(modelSettings->getFaciesName(i));
+    mapType::iterator iter = myMap.find(faciesNames_[i]);
 
     if(iter!=myMap.end())
     {
@@ -3950,7 +3930,7 @@ ModelGeneral::readPriorFaciesProbCubes(const InputFiles        * inputFiles,
       if(errorText != "")
       {
         errorText += "Reading of file \'"+faciesProbFile+"\' for prior facies probability for facies \'"
-                     +modelSettings->getFaciesName(i)+"\' failed\n";
+                     +faciesNames_[i]+"\' failed\n";
         errTxt += errorText;
         failed = true;
       }
@@ -3958,8 +3938,8 @@ ModelGeneral::readPriorFaciesProbCubes(const InputFiles        * inputFiles,
     else
     {
       LogKit::LogFormatted(LogKit::Warning,"\nWARNING: No prior facies probability found for facies %12s\n",
-                           modelSettings->getFaciesName(i).c_str());
-      TaskList::addTask("Check that facies "+NRLib::ToString(modelSettings->getFaciesName(i).c_str())+" is given prior probability in the xml-file");
+                           faciesNames_[i].c_str());
+      TaskList::addTask("Check that facies "+NRLib::ToString(faciesNames_[i].c_str())+" is given prior probability in the xml-file");
       modelSettings->setEstimateFaciesProb(false);
       break;
     }
@@ -3983,15 +3963,17 @@ ModelGeneral::process4DBackground(ModelSettings        *& modelSettings,
   int lowCut         = -1;    // vet ikke hva denne skal være
   FFTGrid **seisCube = NULL;  // vet ikke hva denne skal være
 
+  int n_facies = static_cast<int>(faciesNames_.size());
+
   // Get prior probabilities for the facies in a vector
   std::vector<double> priorProbability;
-  priorProbability.resize(modelSettings->getNumberOfFacies());
+  priorProbability.resize(n_facies);
   typedef std::map<std::string,float> mapType;
   mapType myMap = modelSettings->getPriorFaciesProb();
 
-  for(int i=0;i<modelSettings->getNumberOfFacies();i++)
+  for(int i=0;i<n_facies;i++)
   {
-    mapType::iterator iter = myMap.find(modelSettings->getFaciesName(i));
+    mapType::iterator iter = myMap.find(faciesNames_[i]);
     if(iter!=myMap.end())
       priorProbability[i] = iter->second;
   }
