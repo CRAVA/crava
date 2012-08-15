@@ -1064,14 +1064,18 @@ void FaciesProb::checkConditionalProbabilities(float                         ** 
       lowProbs = true;
       if (accumulative && faciesCount[f1] > 0) {
         std::string text;
-        text += "\nWARNING: The total probability for facies \'"+faciesNames[f1]+"\' is only "+NRLib::ToString(totProb[f1],3)+". This indicates";
-        text += "\n         a major problem with the facies probability estimation.";
+        text += "\nWARNING: The total probability for facies \'"+faciesNames[f1]+"\' is only "+NRLib::ToString(totProb[f1],3)+". This means";
+        text += "\n         that too often when \'"+faciesNames[f1]+"\' is observed in wells, the inverted (Vp,Vs,Rho)";
+        text += "\n         do not predict any of the "+NRLib::ToString(nFacies)+" observed facies. Check";
+        text += "\n         the inverted elastic parameters against well logs.";
         LogKit::LogFormatted(LogKit::Warning,text);
       }
       else if(faciesCount[f1] > 0) {
         std::string text;
-        text += "\nWARNING: The total probability for facies \'"+faciesNames[f1]+"\' in well "+identifier+" is only ";
-        text += NRLib::ToString(totProb[f1],3)+". This\n         may indicate a major problem. Check the well.\n";
+        text += "\nWARNING: The total probability for facies \'"+faciesNames[f1]+"\' in well "+identifier+" is only "+NRLib::ToString(totProb[f1],3)+". This";
+        text += "\n         means that some of the places where \'"+faciesNames[f1]+"\' are observed in the well, the";
+        text += "\n         inverted (Vp,Vs,Rho) do not predict any of the "+NRLib::ToString(nFacies)+" observed facies. Check";
+        text += "\n         the inverted elastic parameters against well logs.";
         LogKit::LogFormatted(LogKit::Warning,text);
       }
       else {
@@ -1079,8 +1083,8 @@ void FaciesProb::checkConditionalProbabilities(float                         ** 
         std::string text;
         if(accumulative)
           text += "\nWARNING: Facies \'"+faciesNames[f1]+"\' is not observed in any well. Facies probability can not be estimated for this facies.\n";
-   //     else
-   //       text += "\nWARNING: Facies \'"+faciesNames[f1]+"\' is not observed in well "+identifier+". Facies probability can not be estimated in this well.\n";
+        //else
+        //  text += "\nWARNING: Facies \'"+faciesNames[f1]+"\' is not observed in well "+identifier+". Facies probability can not be estimated in this well.\n";
         LogKit::LogFormatted(LogKit::Warning,text);
       }
 

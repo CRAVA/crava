@@ -443,8 +443,8 @@ FFTGrid::interpolateGridValues(std::vector<float> & grid_trace,
         grid_trace[k] = rAmpFine[l1];
       }
       else {
-        float w1 = dl - floor(dl);
-        float w2 = ceil(dl) - dl;
+        float w1 = ceil(dl) - dl;
+        float w2 = dl - floor(dl);
         grid_trace[k] = w1*rAmpFine[l1] + w2*rAmpFine[l2];
       }
     }
