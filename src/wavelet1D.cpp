@@ -274,59 +274,58 @@ Wavelet1D::Wavelet1D(Simbox                       * simbox,
 
     float scaleOpt = findOptimalWaveletScale(synt_seis_r, seis_r, nWells, nzp_, wellWeight);
 
+    shiftAndScale(shiftAvg, scaleOpt);//shifts wavelet average from wells
+    invFFT1DInPlace();
+    waveletLength_ = findWaveletLength(modelSettings->getMinRelWaveletAmp(),modelSettings->getWaveletTaperingL());
+    LogKit::LogFormatted(LogKit::Low,"  Estimated wavelet length:  %.1fms\n",waveletLength_);
+
+    if (waveletLength_ < 50.0) {
+      LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The estimated wavelet length is unusually small.\n");
+      TaskList::addTask("Check the estimated wavelet lengths. A small length of "+NRLib::ToString(waveletLength_,2)+" has been found.");
+    }
+    if (waveletLength_ > 400.0) {
+      LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The estimated wavelet length is unusually large.\n");
+      TaskList::addTask("Check the estimated wavelet lengths. A large length of "+NRLib::ToString(waveletLength_,2)+" has been found.");
+    }
+
+    if( ModelSettings::getDebugLevel() > 0 ){
+      writeWaveletToFile("estimated_wavelet_adjusted_", 1.0f,true);
+      writeWaveletToFile("estimated_wavelet_", 1.0f,false);
+    }
+
+    norm_ = findNorm();
+
+    //Writing well wavelets to file. Using writeWaveletToFile, so manipulating rAmp_
+    fftw_real * trueAmp = rAmp_;
+    float       truedDz = dz_;
+    rAmp_               = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));
+    cAmp_               = reinterpret_cast<fftw_complex *>(rAmp_);
+    for(int w=0; w<nWells; w++) {
+      if (wells[w]->getUseForWaveletEstimation() &&
+          ((modelSettings->getWaveletOutputFlag() & IO::WELL_WAVELETS)>0 || modelSettings->getEstimationMode())) {
+        dz_ = dzWell[w];
+        for(int i = 0 ; i < nzp_ ; i++)
+          rAmp_[i] = wellWavelets[w][i];
+        std::string wellname(wells[w]->getWellname());
+        NRLib::Substitute(wellname,"/","_");
+        NRLib::Substitute(wellname," ","_");
+        fileName = IO::PrefixWellWavelet() + wellname + "_";
+          writeWaveletToFile(fileName, 1.0f,true);
+      }
+    }
+
+    fftw_free(rAmp_);
+    rAmp_ = trueAmp;
+    cAmp_ = reinterpret_cast<fftw_complex *>(rAmp_);
+    dz_   = truedDz;
+
+    if(ModelSettings::getDebugLevel() > 1)
+      writeDebugInfo(seis_r, cor_cpp_r, ccor_seis_cpp_r, cpp_r, nWells);
+
     if (scaleOpt == RMISSING) {
       errCode = 1;
+      LogKit::LogFormatted(LogKit::Error,"  Could not estimate global wavelet scale\n");
       errTxt += "Could not estimate global wavelet scale for stack "+NRLib::ToString(iAngle)+".\n";
-    }
-    else {
-      shiftAndScale(shiftAvg, scaleOpt);//shifts wavelet average from wells
-      invFFT1DInPlace();
-      waveletLength_ = findWaveletLength(modelSettings->getMinRelWaveletAmp(),modelSettings->getWaveletTaperingL());
-      LogKit::LogFormatted(LogKit::Low,"  Estimated wavelet length:  %.1fms\n",waveletLength_);
-
-      if (waveletLength_ < 50.0) {
-        LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The estimated wavelet length is unusually small.\n");
-        TaskList::addTask("Check the estimated wavelet lengths. A small length of "+NRLib::ToString(waveletLength_,2)+" has been found.");
-      }
-      if (waveletLength_ > 400.0) {
-        LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The estimated wavelet length is unusually large.\n");
-        TaskList::addTask("Check the estimated wavelet lengths. A large length of "+NRLib::ToString(waveletLength_,2)+" has been found.");
-      }
-
-      if( ModelSettings::getDebugLevel() > 0 ){
-        writeWaveletToFile("estimated_wavelet_adjusted_", 1.0f,true);
-        writeWaveletToFile("estimated_wavelet_", 1.0f,false);
-      }
-
-      norm_ = findNorm();
-
-      //Writing well wavelets to file. Using writeWaveletToFile, so manipulating rAmp_
-      fftw_real * trueAmp = rAmp_;
-      float       truedDz = dz_;
-      rAmp_               = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));
-      cAmp_               = reinterpret_cast<fftw_complex *>(rAmp_);
-      for(int w=0; w<nWells; w++) {
-        if (wells[w]->getUseForWaveletEstimation() &&
-            ((modelSettings->getWaveletOutputFlag() & IO::WELL_WAVELETS)>0 || modelSettings->getEstimationMode()))
-          {
-            dz_ = dzWell[w];
-            for(int i = 0 ; i < nzp_ ; i++)
-              rAmp_[i] = wellWavelets[w][i];
-            std::string wellname(wells[w]->getWellname());
-            NRLib::Substitute(wellname,"/","_");
-            NRLib::Substitute(wellname," ","_");
-            fileName = IO::PrefixWellWavelet() + wellname + "_";
-            writeWaveletToFile(fileName, 1.0f,true);
-          }
-      }
-
-      fftw_free(rAmp_);
-      rAmp_ = trueAmp;
-      cAmp_ = reinterpret_cast<fftw_complex *>(rAmp_);
-      dz_   = truedDz;
-
-      if(ModelSettings::getDebugLevel() > 1)
-        writeDebugInfo(seis_r, cor_cpp_r, ccor_seis_cpp_r, cpp_r, nWells);
     }
   }
 
@@ -1073,53 +1072,57 @@ Wavelet1D::findOptimalWaveletScale(fftw_real               ** synt_seis_r,
 
   int   optInd=0;
   float optValue=error[0];
-  for(int i=1;i<nScales;i++)
+  for(int i=1;i<nScales;i++) {
     if(error[i]<optValue) {
       optValue=error[i];
       optInd=i;
     }
+  }
+  delete [] error;
 
-    delete [] error;
+  bool noGlobalScale = false;
+  if (optInd == 0 || optInd == nScales - 1)
+    noGlobalScale = true;
 
-    err = sqrt(optValue/static_cast<float>(totCount));
-    optScale = scales[optInd];
+  err = sqrt(optValue/static_cast<float>(totCount));
+  optScale = scales[optInd];
 
-    for(int i=0;i<nWells;i++) {
-      if(counter[i]>0)
-        errWell[i] = sqrt(resNorm[i][optInd]/counter[i]);
-      else
-        errWell[i] = 0.0f;
-    }
-
-    for(int i=0;i<nWells;i++) {
-      if(wellWeight[i]>0) {
-        optValue = resNorm[i][0];
-        optInd=0;
-        for(int j=1;j<nScales;j++)
-          if(resNorm[i][j]<optValue) {
-            optValue=resNorm[i][j];
-            optInd=j;
-          }
-          scaleOptWell[i]    = scales[optInd];
-          errWellOptScale[i] = sqrt(optValue/float(counter[i]));
-      }
-      else {
-        scaleOptWell[i]    = 0.0f;
-        errWellOptScale[i] = 0.0f;
-      }
-    }
-
-    for (int i=0; i<nWells; i++)
-      delete [] resNorm[i];
-    delete [] resNorm;
-    delete [] seisNorm;
-    delete [] counter;
-    delete [] scales;
-
-    if (optInd == 0 || optInd == nScales - 1)
-      return RMISSING;
+  for(int i=0;i<nWells;i++) {
+    if(counter[i]>0)
+      errWell[i] = sqrt(resNorm[i][optInd]/counter[i]);
     else
-      return optScale;
+      errWell[i] = 0.0f;
+  }
+
+  for(int i=0;i<nWells;i++) {
+    if(wellWeight[i]>0) {
+      optValue = resNorm[i][0];
+      optInd=0;
+      for(int j=1;j<nScales;j++)
+        if(resNorm[i][j]<optValue) {
+          optValue=resNorm[i][j];
+          optInd=j;
+        }
+      scaleOptWell[i]    = scales[optInd];
+      errWellOptScale[i] = sqrt(optValue/float(counter[i]));
+    }
+    else {
+      scaleOptWell[i]    = 0.0f;
+      errWellOptScale[i] = 0.0f;
+    }
+  }
+
+  for (int i=0; i<nWells; i++)
+    delete [] resNorm[i];
+  delete [] resNorm;
+  delete [] seisNorm;
+  delete [] counter;
+  delete [] scales;
+
+  if (noGlobalScale)
+    return RMISSING;
+  else
+    return optScale;
 }
 
 float
