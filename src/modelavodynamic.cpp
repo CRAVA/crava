@@ -455,12 +455,8 @@ ModelAVODynamic::processSeismic(FFTGrid        **& seisCube,
       if((modelSettings->getOutputGridsSeismic() & IO::SYNTHETIC_RESIDUAL) > 0) {
         for(int i=0;i<nAngles;i++) {
           std::string angle    = NRLib::ToString(i);
-          std::string sgriLabel = std::string("Temporary seismic data for angle stack ") + angle;
-          std::string baseName = IO::FileTemporarySeismic() + angle;
-          seisCube[i]->writeFile(baseName,
-                                IO::PathToSeismicData(),
-                                 timeSimbox,
-                                 sgriLabel);
+          std::string fileName = IO::makeFullFileName(IO::PathToSeismicData(), IO::FileTemporarySeismic()+angle);
+          seisCube[i]->writeCravaFile(fileName, timeSimbox);
         }
       }
 
