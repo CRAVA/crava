@@ -4,6 +4,7 @@
 #include <time.h>
 #include <assert.h>
 #include <stdio.h>
+#include <string>
 
 #include "lib/lib_matr.h"
 #include "lib/random.h"
@@ -501,9 +502,8 @@ void FaciesProb::makeFaciesProb(int                            nfac,
         else
           baseName = "Rock_Physics_";
         baseName = baseName + modelSettings->getFaciesName(j);
-        std::string fileName = IO::makeFullFileName(IO::PathToInversionResults(), baseName);
         bool writeSurface = (j==0); //writeSurface is true if j == 0.
-        resampleAndWriteDensity(density[i][j], fileName, volume[i], expVol, i, writeSurface);
+        resampleAndWriteDensity(density[i][j], baseName, volume[i], expVol, i, writeSurface);
       }
       delete expVol;
     }
