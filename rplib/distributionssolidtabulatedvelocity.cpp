@@ -27,3 +27,21 @@ DistributionsSolidTabulatedVelocity::GenerateSample(const std::vector<double> & 
 
   return solid;
 }
+
+bool
+DistributionsSolidTabulatedVelocity::HasDistribution() const
+{
+  bool dummy = false;
+  return(dummy);
+}
+
+std::vector<bool>
+DistributionsSolidTabulatedVelocity::HasTrend() const
+{
+  std::vector<bool> dummy(2);
+
+  for(int i=0; i<2; i++)
+    dummy[i] = false;
+
+  return(dummy);
+}

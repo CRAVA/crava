@@ -18,6 +18,10 @@ public:
 
   virtual Fluid * GenerateSample(const std::vector<double> & /*trend_params*/) const;
 
+  virtual bool                  HasDistribution() const;
+
+  virtual std::vector<bool>     HasTrend() const;
+
 private:
   NRLib::Distribution<double> * distr_temperature_;   // Pointer to external object.
   NRLib::Distribution<double> * distr_pore_pressure_; // Pointer to external object.

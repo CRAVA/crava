@@ -21,3 +21,21 @@ DistributionsCO2::GenerateSample(const std::vector<double> & /*trend_params*/) c
 
   return fluid;
 }
+
+bool
+DistributionsCO2::HasDistribution() const
+{
+  bool dummy = false;
+  return(dummy);
+}
+
+std::vector<bool>
+DistributionsCO2::HasTrend() const
+{
+  std::vector<bool> dummy(2);
+
+  for(int i=0; i<2; i++)
+    dummy[i] = false;
+
+  return(dummy);
+}

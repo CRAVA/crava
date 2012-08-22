@@ -10,7 +10,8 @@
 DistributionWithTrendStorage::DistributionWithTrendStorage()
 : is_gaussian_(false),
   is_double_(false),
-  is_sheared_(false)
+  is_sheared_(false),
+  is_distribution_(false)
 {
 }
 
@@ -18,7 +19,8 @@ DistributionWithTrendStorage::DistributionWithTrendStorage(double value,
                                                            bool   is_sheared)
 : is_gaussian_(false),
   is_double_(true),
-  is_sheared_(is_sheared)
+  is_sheared_(is_sheared),
+  is_distribution_(false)
 {
   //Use this constructor when mean_ is a double
   distribution_ = new NRLib::Delta();
@@ -31,7 +33,8 @@ DistributionWithTrendStorage::DistributionWithTrendStorage(const NRLib::TrendSto
                                                            bool                        is_sheared)
 : is_gaussian_(false),
   is_double_(false),
-  is_sheared_(is_sheared)
+  is_sheared_(is_sheared),
+  is_distribution_(false)
 
 {
   //Use this constructor when mean is a trend, and no distribution is given
@@ -48,7 +51,8 @@ DistributionWithTrendStorage::DistributionWithTrendStorage(NRLib::Distribution<d
                                                            bool                                is_sheared)
 : is_gaussian_(is_gaussian),
   is_double_(false),
-  is_sheared_(is_sheared)
+  is_sheared_(is_sheared),
+  is_distribution_(true)
 {
   //Use this constructor when a distribution is given
   distribution_ = distribution;
@@ -90,7 +94,7 @@ DistributionWithTrendStorage::GenerateDistributionWithTrend(const std::string   
     NRLib::Trend * mean_trend      = mean_              ->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,errTxt);
     NRLib::Trend * variance_trend  = variance_          ->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,errTxt);
 
-    distribution_with_trend_                            = new DistributionWithTrend(distribution_, mean_trend, variance_trend, is_sheared_); //NBNB Marit: Use variance here, but sd is used in DistributionWithTrend(). Need to fix this
+    distribution_with_trend_                            = new DistributionWithTrend(distribution_, mean_trend, variance_trend, is_sheared_, is_distribution_); //NBNB Marit: Use variance here, but sd is used in DistributionWithTrend(). Need to fix this
 
     //distribution_, mean_trend and variance_trend are deleted in dist_with_trend
     distribution_ = NULL;

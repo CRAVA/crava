@@ -42,9 +42,10 @@ private:
   const NRLib::TrendStorage            * mean_;
   const NRLib::TrendStorage            * variance_;
   DistributionWithTrend                * distribution_with_trend_;
-  const bool                             is_gaussian_;
-  const bool                             is_double_;
-  const bool                             is_sheared_;
+  const bool                             is_gaussian_;                         // True if distribution is Gaussian
+  const bool                             is_double_;                           // True if object is a double, i.e., if no distribution or trend is used
+  const bool                             is_sheared_;                          // True if object is a reservoir variable that can be used for more fluids/solids/rocks/dry-rocks
+  bool                                   is_distribution_;                     // True if object is a distribution
 };
 
 #endif

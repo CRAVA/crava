@@ -38,3 +38,20 @@ DistributionsFluidMix::GenerateSample(const std::vector<double> & trend_params) 
   return fluid_mixed;
 }
 
+bool
+DistributionsFluidMix::HasDistribution() const
+{
+  bool dummy = false;
+  return(dummy);
+}
+
+std::vector<bool>
+DistributionsFluidMix::HasTrend() const
+{
+  std::vector<bool> dummy(2);
+
+  for(int i=0; i<2; i++)
+    dummy[i] = false;
+
+  return(dummy);
+}

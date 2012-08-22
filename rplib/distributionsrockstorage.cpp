@@ -47,9 +47,9 @@ TabulatedVelocityRockStorage::~TabulatedVelocityRockStorage()
 
 DistributionsRock *
 TabulatedVelocityRockStorage::GenerateDistributionsRock(const std::string                       & path,
-                                                const std::vector<std::string>          & trend_cube_parameters,
-                                                const std::vector<std::vector<double> > & trend_cube_sampling,
-                                                std::string                             & errTxt) const
+                                                        const std::vector<std::string>          & trend_cube_parameters,
+                                                        const std::vector<std::vector<double> > & trend_cube_sampling,
+                                                        std::string                             & errTxt) const
 {
   bool is_gaussian = false;
 

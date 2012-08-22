@@ -77,7 +77,24 @@ DistributionsRockTriNormal::DistributionsRockTriNormal(NRLib::Trend * mean_vp,
       log_cov(i,j) = log_cov(j,i);
   }
 
-  mult_normal_distr_ = new TriNormalWith2DTrend(log_mean[0],log_mean[1],log_mean[2],log_cov);
+  mult_normal_distr_ = new TriNormalWith2DTrend(log_mean[0],
+                                                log_mean[1],
+                                                log_mean[2],
+                                                log_cov);
+
+  use_trend_cube_.resize(2);
+  for(int i=0; i<2; i++)
+    use_trend_cube_[i] = false;
+
+  FindUseTrendCube(mean_vp               ->GetTrendDimension(), mean_vp               ->GetReference());
+  FindUseTrendCube(mean_vs               ->GetTrendDimension(), mean_vs               ->GetReference());
+  FindUseTrendCube(mean_density          ->GetTrendDimension(), mean_density          ->GetReference());
+  FindUseTrendCube(variance_vp           ->GetTrendDimension(), variance_vp           ->GetReference());
+  FindUseTrendCube(variance_vs           ->GetTrendDimension(), variance_vs           ->GetReference());
+  FindUseTrendCube(variance_density      ->GetTrendDimension(), variance_density      ->GetReference());
+  FindUseTrendCube(correlation_vp_vs     ->GetTrendDimension(), correlation_vp_vs     ->GetReference());
+  FindUseTrendCube(correlation_vp_density->GetTrendDimension(), correlation_vp_density->GetReference());
+  FindUseTrendCube(correlation_vs_density->GetTrendDimension(), correlation_vs_density->GetReference());
 
   delete covariance_vp_vs;
   delete covariance_vp_density;
@@ -143,6 +160,32 @@ DistributionsRockTriNormal::GeneratePdf(void) const
   return new Pdf3DGaussian(mult_normal_distr_);
 
 }
+
+bool
+DistributionsRockTriNormal::HasDistribution() const
+{
+  bool has_distribution = false; //Always false as no variable is allowed to have a distribution
+  return(has_distribution);
+}
+
+std::vector<bool>
+DistributionsRockTriNormal::HasTrend() const
+{
+  return(use_trend_cube_);
+}
+
+void
+DistributionsRockTriNormal::FindUseTrendCube(int dim, int reference)
+{
+  if(dim == 1) {
+    use_trend_cube_[reference-1] = true;
+  }
+  else if(dim == 2) {
+    use_trend_cube_[0] = true;
+    use_trend_cube_[1] = true;
+  }
+}
+
 void
 DistributionsRockTriNormal::LogTransformExpectationAndCovariance(NRLib::Trend *  mean1,
                                                                  NRLib::Trend *  mean2,

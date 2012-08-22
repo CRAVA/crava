@@ -67,6 +67,24 @@ DistributionsRockInclusion::GeneratePdf(void) const
   return pdf3D;
 }
 
+bool
+DistributionsRockInclusion::HasDistribution() const
+{
+  bool dummy = false;
+  return(dummy);
+}
+
+std::vector<bool>
+DistributionsRockInclusion::HasTrend() const
+{
+  std::vector<bool> dummy(2);
+
+  for(int i=0; i<2; i++)
+    dummy[i] = false;
+
+  return(dummy);
+}
+
 void
 DistributionsRockInclusion::SampleVpVsRhoExpectationAndCovariance(std::vector<double>   & expectation,
                                                                   NRLib::Grid2D<double> & covariance)

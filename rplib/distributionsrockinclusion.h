@@ -30,6 +30,10 @@ public:
 
   virtual Pdf3D * GeneratePdf(void) const; // Returns NULL.
 
+  virtual bool                  HasDistribution() const; //dummy function that needs to be implemented
+
+  virtual std::vector<bool>     HasTrend() const; //dummy function that needs to be implemented
+
 private:
   void SampleVpVsRhoExpectationAndCovariance(std::vector<double>   & expectation,
                                              NRLib::Grid2D<double> & covariance);

@@ -21,10 +21,15 @@ public:
   // Fluid is an abstract class, hence pointer must be used here. Allocated memory (using new) MUST be deleted by caller.
   virtual Fluid * GenerateSample(const std::vector<double> & /*trend_params*/) const;
 
+  virtual bool         HasDistribution() const;
+
+  virtual std::vector<bool> HasTrend() const;
+
 private:
   const DistributionWithTrend * vp_;
   const DistributionWithTrend * density_;
   const DistributionWithTrend * corr_vp_density_;
+  bool                          has_distribution_;
 };
 
 #endif

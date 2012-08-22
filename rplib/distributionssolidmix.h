@@ -19,6 +19,10 @@ public:
 
   virtual Solid * GenerateSample(const std::vector<double> & /*trend_params*/) const;
 
+  virtual bool                  HasDistribution() const;
+
+  virtual std::vector<bool>     HasTrend() const;
+
 private:
   std::vector< DistributionsSolid * >            distr_solid_;     // Pointers to external objects.
   std::vector< NRLib::Distribution<double> * >   distr_vol_frac_;  // Pointers to external objects.

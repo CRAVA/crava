@@ -37,3 +37,21 @@ DistributionsSolidMix::GenerateSample(const std::vector<double> & trend_params) 
 
   return solid_mixed;
 }
+
+bool
+DistributionsSolidMix::HasDistribution() const
+{
+  bool dummy = false;
+  return(dummy);
+}
+
+std::vector<bool>
+DistributionsSolidMix::HasTrend() const
+{
+  std::vector<bool> dummy(2);
+
+  for(int i=0; i<2; i++)
+    dummy[i] = false;
+
+  return(dummy);
+}

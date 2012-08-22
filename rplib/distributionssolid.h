@@ -15,6 +15,10 @@ public:
 
   // Solid is an abstract class, hence pointer must be used here. Allocated memory (using new) MUST be deleted by caller.
   virtual Solid * GenerateSample(const std::vector<double> & /*trend_params*/) const = 0;
+
+  virtual bool                  HasDistribution()                                        const = 0;
+
+  virtual std::vector<bool>     HasTrend()                                               const = 0;
 };
 
 #endif

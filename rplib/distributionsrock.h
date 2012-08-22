@@ -26,6 +26,9 @@ public:
 
   virtual Pdf3D               * GeneratePdf(void)                                        const = 0;
 
+  virtual bool                  HasDistribution()                                        const = 0;
+
+  virtual std::vector<bool>     HasTrend()                                               const = 0;
 
 };
 

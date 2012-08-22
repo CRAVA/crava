@@ -23,3 +23,21 @@ DistributionsMineral::GenerateSample(const std::vector<double> & /*trend_params*
   Solid * solid = new Mineral(k, mu, rho, distr_evolution_);
   return solid;
 }
+
+bool
+DistributionsMineral::HasDistribution() const
+{
+  bool dummy = false;
+  return(dummy);
+}
+
+std::vector<bool>
+DistributionsMineral::HasTrend() const
+{
+  std::vector<bool> dummy(2);
+
+  for(int i=0; i<2; i++)
+    dummy[i] = false;
+
+  return(dummy);
+}

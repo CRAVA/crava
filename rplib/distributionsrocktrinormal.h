@@ -33,6 +33,10 @@ public:
 
   virtual Pdf3D                    * GeneratePdf() const;
 
+  virtual bool                       HasDistribution() const;
+
+  virtual std::vector<bool>          HasTrend() const;
+
 private:
   int                                 FindNewGridDimension(const std::vector<NRLib::Trend *> trender) const;
 
@@ -73,8 +77,11 @@ private:
                            const double & var2,
                            double       & cov) const;
 
+  void FindUseTrendCube(int dim, int reference);
 
   TriNormalWith2DTrend * mult_normal_distr_;
+
+  std::vector<bool> use_trend_cube_;          // First element true if first trend cube is used, second true if second is used, and both true if both are used
 
 
 };
