@@ -1,9 +1,13 @@
 #include "rplib/distributionssolidmix.h"
 
+#include "rplib/distributionssolidmixevolution.h"
+#include "rplib/solidmixed.h"
+#include "rplib/distributionwithtrend.h"
+
 #include <cassert>
 
-DistributionsSolidMix::DistributionsSolidMix(std::vector< DistributionsSolid * >            distr_solid,
-                                             std::vector< NRLib::Distribution<double> * >   distr_vol_frac,
+DistributionsSolidMix::DistributionsSolidMix(std::vector< DistributionsSolid * >          & distr_solid,
+                                             std::vector< DistributionWithTrend * >       & distr_vol_frac,
                                              DEMTools::MixMethod                            mix_method,
                                              DistributionsSolidMixEvolution               * distr_evolution)
 : DistributionsSolid()
@@ -27,7 +31,7 @@ DistributionsSolidMix::GenerateSample(const std::vector<double> & trend_params) 
 
   for(size_t i = 0; i < n_solids; ++i) {
     solid[i] = distr_solid_[i]->GenerateSample(trend_params);
-    volume_fraction[i] = distr_vol_frac_[i]->Draw();
+    volume_fraction[i] = distr_vol_frac_[i]->ReSample(trend_params[0], trend_params[1]);
   }
   Solid * solid_mixed = new SolidMixed(solid, volume_fraction, mix_method_, distr_evolution_);
 

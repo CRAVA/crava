@@ -1,8 +1,11 @@
 #include "rplib/distributionsmineral.h"
 
-DistributionsMineral::DistributionsMineral(NRLib::Distribution<double>   * distr_k,
-                                           NRLib::Distribution<double>   * distr_mu,
-                                           NRLib::Distribution<double>   * distr_rho,
+#include "rplib/distributionsmineralevolution.h"
+#include "rplib/distributionwithtrend.h"
+
+DistributionsMineral::DistributionsMineral(DistributionWithTrend         * distr_k,
+                                           DistributionWithTrend         * distr_mu,
+                                           DistributionWithTrend         * distr_rho,
                                            DistributionsMineralEvolution * distr_evolution)
 : DistributionsSolid()
 {
@@ -15,11 +18,11 @@ DistributionsMineral::DistributionsMineral(NRLib::Distribution<double>   * distr
 DistributionsMineral::~DistributionsMineral(){}
 
 Solid *
-DistributionsMineral::GenerateSample(const std::vector<double> & /*trend_params*/) const
+DistributionsMineral::GenerateSample(const std::vector<double> & trend_params) const
 {
-  double k   = distr_k_->Draw();
-  double mu  = distr_mu_->Draw();
-  double rho = distr_rho_->Draw();
+  double k   = distr_k_->ReSample(trend_params[0], trend_params[1]);
+  double mu  = distr_mu_->ReSample(trend_params[0], trend_params[1]);
+  double rho = distr_rho_->ReSample(trend_params[0], trend_params[1]);
   Solid * solid = new Mineral(k, mu, rho, distr_evolution_);
   return solid;
 }

@@ -3,21 +3,23 @@
 
 #include "rplib/distributionsfluid.h"
 #include "rplib/fluidmixed.h"
-#include "rplib/distributionsfluidmixevolution.h"
 
 #include "nrlib/random/distribution.hpp"
+
+class DistributionWithTrend;
+class DistributionsFluidMixEvolution;
 
 class DistributionsFluidMix : public DistributionsFluid {
 public:
 
-  DistributionsFluidMix(std::vector< DistributionsFluid * >            distr_fluid,
-                        std::vector< NRLib::Distribution<double> * >   distr_vol_frac,
+  DistributionsFluidMix(std::vector< DistributionsFluid * >          & distr_fluid,
+                        std::vector< DistributionWithTrend * >       & distr_vol_frac,
                         DEMTools::MixMethod                            mix_method,
                         DistributionsFluidMixEvolution               * distr_evolution = NULL);
 
   virtual ~DistributionsFluidMix();
 
-  virtual Fluid * GenerateSample(const std::vector<double> & /*trend_params*/) const;
+  virtual Fluid * GenerateSample(const std::vector<double> & trend_params) const;
 
   virtual bool                  HasDistribution() const;
 
@@ -25,7 +27,7 @@ public:
 
 private:
   std::vector< DistributionsFluid * >            distr_fluid_;     // Pointers to external objects.
-  std::vector< NRLib::Distribution<double> * >   distr_vol_frac_;  // Pointers to external objects.
+  std::vector< DistributionWithTrend * >         distr_vol_frac_;  // Pointers to external objects.
   DEMTools::MixMethod                            mix_method_;
   DistributionsFluidMixEvolution               * distr_evolution_; // Pointer to external object.
 };

@@ -2,8 +2,11 @@
 #include "rplib/fluid.h"
 #include "rplib/distributionsfluidmix.h"
 
-DistributionsFluidMix::DistributionsFluidMix(std::vector< DistributionsFluid * >            distr_fluid,
-                                             std::vector< NRLib::Distribution<double> * >   distr_vol_frac,
+#include "rplib/distributionwithtrend.h"
+#include "rplib/distributionsfluidmixevolution.h"
+
+DistributionsFluidMix::DistributionsFluidMix(std::vector< DistributionsFluid * >          & distr_fluid,
+                                             std::vector< DistributionWithTrend * >       & distr_vol_frac,
                                              DEMTools::MixMethod                            mix_method,
                                              DistributionsFluidMixEvolution               * distr_evolution)
 : DistributionsFluid()
@@ -27,7 +30,7 @@ DistributionsFluidMix::GenerateSample(const std::vector<double> & trend_params) 
 
   for(size_t i = 0; i < n_fluids; ++i) {
     fluid[i] = distr_fluid_[i]->GenerateSample(trend_params);
-    volume_fraction[i] = distr_vol_frac_[i]->Draw();
+    volume_fraction[i] = distr_vol_frac_[i]->ReSample(trend_params[0], trend_params[1]);
   }
   Fluid * fluid_mixed = new FluidMixed(fluid, volume_fraction, mix_method_, distr_evolution_);
 

@@ -17,10 +17,12 @@
 #include "rplib/distributionsco2evolution.h"
 #include "rplib/distributionsfluidmixevolution.h"
 #include "rplib/distributionsrockinclusionevolution.h"
+#include "rplib/distributionwithtrend.h"
 
 #include "nrlib/exception/exception.hpp"
 #include "nrlib/random/delta.hpp"
 #include "nrlib/random/normal.hpp"
+#include "nrlib/trend/trend.hpp"
 
 #include <cmath>
 
@@ -626,8 +628,142 @@ DEMTools::DebugTestCalcEffectiveModulus2(double& effective_bulk_modulus,
 }
 
 
+//void
+//DEMTools::DebugTestCalcEffectiveModulus3(double& effective_bulk_modulus,
+//                                         double& effective_shear_modulus,
+//                                         double& effective_density) {
+//
+//  //// Script for rock physics modelling using differential effective medium theory (DEM).
+//
+//  //// Mineral properties, distribution functions.
+//  //// (According to Table A.4.1, p458-459, RP Handbook, Mavko et al. 2009).
+//  NRLib::Delta distr_quartz_k(37.0);
+//  NRLib::Delta distr_quartz_mu(44.0);
+//  NRLib::Delta distr_quartz_rho(2.65);
+//  DistributionsMineralEvolution * distr_quartz_evolution = NULL;
+//  DistributionsSolid * distr_quartz = new DistributionsMineral(&distr_quartz_k, &distr_quartz_mu, &distr_quartz_rho, distr_quartz_evolution);
+//  //Solid * quartz = distr_quartz->GenerateSample();
+//
+//  NRLib::Delta distr_clay_k(21.0);
+//  NRLib::Delta distr_clay_mu(7.0);
+//  NRLib::Delta distr_clay_rho(2.6);
+//  DistributionsMineralEvolution * distr_clay_evolution = NULL;
+//  DistributionsSolid * distr_clay = new DistributionsMineral(&distr_clay_k, &distr_clay_mu, &distr_clay_rho, distr_clay_evolution);
+//  //Solid * clay = distr_clay->GenerateSample();
+//
+//  //// Mixing, effective solid properties. Distribution functions.
+//  std::vector< DistributionsSolid * > distr_solid;
+//  distr_solid.push_back(distr_clay);
+//  distr_solid.push_back(distr_quartz);
+//  std::vector< NRLib::Distribution<double> * > distr_vol_frac;
+//  distr_vol_frac.push_back(new NRLib::Delta(0.15));
+//  distr_vol_frac.push_back(new NRLib::Delta(1.0 - 0.15));
+//  DistributionsSolidMixEvolution * distr_solidmix_evolution = NULL;
+//  DistributionsSolid * distr_solid_mixed = new DistributionsSolidMix(distr_solid, distr_vol_frac, DEMTools::Hill, distr_solidmix_evolution);
+//  //Solid * solid_mixed = distr_solid_mixed->GenerateSample();
+//
+//  //// Fluid properties
+//  //// (Brine properties according to Batzle, M. and Wang, Z. 1992, and
+//  //// CO2 properties according to Z. Wang's compilation and measurements, RPH Tools)
+//  NRLib::Delta distr_pore_pressure(20.0);
+//  NRLib::Delta distr_temperature(50.0);
+//  NRLib::Delta distr_salinity(0.05);
+//  DistributionsBrineEvolution * distr_brine_evolution = NULL;
+//  DistributionsCO2Evolution   * distr_co2_evolution   = NULL;
+//  DistributionsFluid * distr_brine  = new DistributionsBrine(&distr_temperature, &distr_pore_pressure, &distr_salinity, distr_brine_evolution);
+//  DistributionsFluid * distr_co2    = new DistributionsCO2(&distr_temperature, &distr_pore_pressure, distr_co2_evolution);
+//  //Fluid * brine = distr_brine->GenerateSample();
+//  //Fluid * co2   = distr_co2->GenerateSample();
+//
+//  //// Mixing, effective fluid properties. Distribution functions.
+//  std::vector< DistributionsFluid * > distr_fluid;
+//  distr_fluid.push_back(distr_brine);
+//  distr_fluid.push_back(distr_co2);
+//  std::vector< NRLib::Distribution<double> * > distr_vol_frac2;
+//  distr_vol_frac2.push_back(new NRLib::Delta(0.8));
+//  distr_vol_frac2.push_back(new NRLib::Delta(1.0 - 0.8));
+//  DistributionsFluidMixEvolution * distr_fluidmix_evolution  = NULL;
+//  DistributionsFluid * distr_fluid_mixed = new DistributionsFluidMix(distr_fluid, distr_vol_frac2, DEMTools::Reuss, distr_fluidmix_evolution);
+//  //Fluid * fluid_mixed = distr_fluid_mixed->GenerateSample();
+//
+//
+//  //// Geometry specification
+//  enum GeometryType {Spherical, Mixed};
+//  GeometryType my_geo_type = Mixed; // pore geometry, this enum chooses the one to use.
+//
+//  std::vector< NRLib::Distribution<double> * > distr_incl_spectrum;
+//  std::vector< NRLib::Distribution<double> * > distr_incl_concentration;
+//
+//  if (my_geo_type == Spherical) {
+//    distr_incl_spectrum.push_back( new NRLib::Delta(1.0));
+//    distr_incl_concentration.push_back( new NRLib::Delta(1.0));
+//  }
+//  else if (my_geo_type == Mixed) {
+//    distr_incl_spectrum.push_back( new NRLib::Delta(1.0));
+//    distr_incl_spectrum.push_back( new NRLib::Delta(0.5000));
+//    distr_incl_spectrum.push_back( new NRLib::Delta(0.1000));
+//    distr_incl_spectrum.push_back( new NRLib::Delta(0.0100));
+//    distr_incl_spectrum.push_back( new NRLib::Delta(1.0000e-003));
+//    distr_incl_spectrum.push_back( new NRLib::Delta(1.0000e-004));
+//    distr_incl_concentration.push_back( new NRLib::Delta(0.6419));
+//    distr_incl_concentration.push_back( new NRLib::Delta(0.3205));
+//    distr_incl_concentration.push_back( new NRLib::Delta(0.0321));
+//    distr_incl_concentration.push_back( new NRLib::Delta(0.0050));
+//    distr_incl_concentration.push_back( new NRLib::Delta(5.0000e-004));
+//    distr_incl_concentration.push_back( new NRLib::Delta(5.0000e-005));
+//  }
+//  NRLib::Delta distr_porosity(0.2);
+//
+//
+//  //// Rock, distribution functions.
+//  DistributionsRockInclusionEvolution * distr_evolution = NULL;
+//  DistributionsRock * distr_rock_incl  = new DistributionsRockInclusion(distr_solid_mixed,
+//                                                                        distr_fluid_mixed,
+//                                                                        distr_incl_spectrum,
+//                                                                        distr_incl_concentration,
+//                                                                        &distr_porosity,
+//                                                                        distr_evolution);
+//
+//
+//  //// Generating a sample of the rock.
+//  //// This function call generates the whole tree of solid and fluid objects from which this rock is composed.
+//  std::vector<double> dummy(1, 0.0);
+//  Rock * rock_incl = distr_rock_incl->GenerateSample(dummy);
+//
+//  //// Getting the elastic parameters.
+//  RockInclusion * rock_incl_casted = dynamic_cast<RockInclusion*>(rock_incl);
+//  rock_incl_casted->GetElasticParams(effective_bulk_modulus, effective_shear_modulus, effective_density);
+//
+//
+//  //// Deleting dynamically allocated memory.
+//  delete rock_incl;
+//  delete distr_rock_incl;
+//  size_t n_incl = distr_incl_spectrum.size();
+//  for (size_t i = 0; i < n_incl; ++i) {
+//    delete distr_incl_spectrum[i];
+//    delete distr_incl_concentration[i];
+//  }
+//
+//  delete distr_fluid_mixed;
+//  size_t n_vol2 = distr_vol_frac2.size();
+//  for (size_t i = 0; i < n_vol2; ++i)
+//    delete distr_vol_frac2[i];
+//
+//  delete distr_co2;
+//  delete distr_brine;
+//
+//  delete distr_solid_mixed;
+//  size_t n_vol = distr_vol_frac.size();
+//  for (size_t i = 0; i < n_vol; ++i)
+//    delete distr_vol_frac[i];
+//
+//  delete distr_clay;
+//  delete distr_quartz;
+//}
+
+
 void
-DEMTools::DebugTestCalcEffectiveModulus3(double& effective_bulk_modulus,
+DEMTools::DebugTestCalcEffectiveModulus4(double& effective_bulk_modulus,
                                          double& effective_shear_modulus,
                                          double& effective_density) {
 
@@ -635,27 +771,62 @@ DEMTools::DebugTestCalcEffectiveModulus3(double& effective_bulk_modulus,
 
   //// Mineral properties, distribution functions.
   //// (According to Table A.4.1, p458-459, RP Handbook, Mavko et al. 2009).
-  NRLib::Delta distr_quartz_k(37.0);
-  NRLib::Delta distr_quartz_mu(44.0);
-  NRLib::Delta distr_quartz_rho(2.65);
+
+  NRLib::Distribution<double> * distr_quartz_k2  = new NRLib::Delta(0.0);
+  NRLib::Trend * trend_quartz_k         = new NRLib::TrendConstant(37.0);
+  NRLib::Trend * std_quartz_k           = new NRLib::TrendConstant(0.0);
+  DistributionWithTrend distr_quartz_k(distr_quartz_k2, trend_quartz_k, std_quartz_k, false, false);
+
+  NRLib::Distribution<double> * distr_quartz_mu2  = new NRLib::Delta(0.0);
+  NRLib::Trend * trend_quartz_mu         = new NRLib::TrendConstant(44.0);
+  NRLib::Trend * std_quartz_mu           = new NRLib::TrendConstant(0.0);
+  DistributionWithTrend distr_quartz_mu(distr_quartz_mu2, trend_quartz_mu, std_quartz_mu, false, false);
+
+  NRLib::Distribution<double> * distr_quartz_rho2  = new NRLib::Delta(0.0);
+  NRLib::Trend * trend_quartz_rho         = new NRLib::TrendConstant(2.65);
+  NRLib::Trend * std_quartz_rho           = new NRLib::TrendConstant(0.0);
+  DistributionWithTrend distr_quartz_rho(distr_quartz_rho2, trend_quartz_rho, std_quartz_rho, false, false);
+
   DistributionsMineralEvolution * distr_quartz_evolution = NULL;
   DistributionsSolid * distr_quartz = new DistributionsMineral(&distr_quartz_k, &distr_quartz_mu, &distr_quartz_rho, distr_quartz_evolution);
-  //Solid * quartz = distr_quartz->GenerateSample();
 
-  NRLib::Delta distr_clay_k(21.0);
-  NRLib::Delta distr_clay_mu(7.0);
-  NRLib::Delta distr_clay_rho(2.6);
+  NRLib::Distribution<double> * distr_clay_k2  = new NRLib::Delta(0.0);
+  NRLib::Trend * trend_clay_k         = new NRLib::TrendConstant(21.0);
+  NRLib::Trend * std_clay_k           = new NRLib::TrendConstant(0.0);
+  DistributionWithTrend distr_clay_k(distr_clay_k2, trend_clay_k, std_clay_k, false, false);
+
+  NRLib::Distribution<double> * distr_clay_mu2  = new NRLib::Delta(0.0);
+  NRLib::Trend * trend_clay_mu         = new NRLib::TrendConstant(7.0);
+  NRLib::Trend * std_clay_mu           = new NRLib::TrendConstant(0.0);
+  DistributionWithTrend distr_clay_mu(distr_clay_mu2, trend_clay_mu, std_clay_mu, false, false);
+
+  NRLib::Distribution<double> * distr_clay_rho2  = new NRLib::Delta(0.0);
+  NRLib::Trend * trend_clay_rho         = new NRLib::TrendConstant(2.6);
+  NRLib::Trend * std_clay_rho           = new NRLib::TrendConstant(0.0);
+  DistributionWithTrend distr_clay_rho(distr_clay_rho2, trend_clay_rho, std_clay_rho, false, false);
+
   DistributionsMineralEvolution * distr_clay_evolution = NULL;
   DistributionsSolid * distr_clay = new DistributionsMineral(&distr_clay_k, &distr_clay_mu, &distr_clay_rho, distr_clay_evolution);
-  //Solid * clay = distr_clay->GenerateSample();
 
   //// Mixing, effective solid properties. Distribution functions.
   std::vector< DistributionsSolid * > distr_solid;
   distr_solid.push_back(distr_clay);
   distr_solid.push_back(distr_quartz);
-  std::vector< NRLib::Distribution<double> * > distr_vol_frac;
-  distr_vol_frac.push_back(new NRLib::Delta(0.15));
-  distr_vol_frac.push_back(new NRLib::Delta(1.0 - 0.15));
+
+  std::vector< DistributionWithTrend * > distr_vol_frac;
+
+  NRLib::Distribution<double> * distr_vol_frac2  = new NRLib::Delta(0.0);
+  NRLib::Trend * trend_vol_frac                  = new NRLib::TrendConstant(0.15);
+  NRLib::Trend * std_vol_frac                    = new NRLib::TrendConstant(0.0);
+
+
+  NRLib::Distribution<double> * distr_vol_fracbg   = new NRLib::Delta(0.0);
+  NRLib::Trend * trend_vol_fracbg                  = new NRLib::TrendConstant(1.0-0.15);
+  NRLib::Trend * std_vol_fracbg                    = new NRLib::TrendConstant(0.0);
+
+  distr_vol_frac.push_back(new DistributionWithTrend(distr_vol_frac2, trend_vol_frac, std_vol_frac, false, false));
+  distr_vol_frac.push_back(new DistributionWithTrend(distr_vol_fracbg, trend_vol_fracbg, std_vol_fracbg, false, false));
+
   DistributionsSolidMixEvolution * distr_solidmix_evolution = NULL;
   DistributionsSolid * distr_solid_mixed = new DistributionsSolidMix(distr_solid, distr_vol_frac, DEMTools::Hill, distr_solidmix_evolution);
   //Solid * solid_mixed = distr_solid_mixed->GenerateSample();
@@ -663,9 +834,21 @@ DEMTools::DebugTestCalcEffectiveModulus3(double& effective_bulk_modulus,
   //// Fluid properties
   //// (Brine properties according to Batzle, M. and Wang, Z. 1992, and
   //// CO2 properties according to Z. Wang's compilation and measurements, RPH Tools)
-  NRLib::Delta distr_pore_pressure(20.0);
-  NRLib::Delta distr_temperature(50.0);
-  NRLib::Delta distr_salinity(0.05);
+  NRLib::Distribution<double> * distr_pore  = new NRLib::Delta(0.0);
+  NRLib::Trend * trend_pore                 = new NRLib::TrendConstant(20.0);
+  NRLib::Trend * std_pore                   = new NRLib::TrendConstant(0.0);
+  DistributionWithTrend distr_pore_pressure(distr_pore, trend_pore, std_pore, false, false);
+
+  NRLib::Distribution<double> * distr_temp         = new NRLib::Delta(0.0);
+  NRLib::Trend * trend_temperature                 = new NRLib::TrendConstant(50.0);
+  NRLib::Trend * std_temperature                   = new NRLib::TrendConstant(0.0);
+  DistributionWithTrend distr_temperature(distr_temp, trend_temperature, std_temperature, false, false);
+
+  NRLib::Distribution<double> * distr_salinity2         = new NRLib::Delta(0.0);
+  NRLib::Trend * trend_salinity                         = new NRLib::TrendConstant(0.05);
+  NRLib::Trend * std_salinity                           = new NRLib::TrendConstant(0.0);
+  DistributionWithTrend distr_salinity(distr_salinity2, trend_salinity, std_salinity, false, false);
+
   DistributionsBrineEvolution * distr_brine_evolution = NULL;
   DistributionsCO2Evolution   * distr_co2_evolution   = NULL;
   DistributionsFluid * distr_brine  = new DistributionsBrine(&distr_temperature, &distr_pore_pressure, &distr_salinity, distr_brine_evolution);
@@ -677,11 +860,13 @@ DEMTools::DebugTestCalcEffectiveModulus3(double& effective_bulk_modulus,
   std::vector< DistributionsFluid * > distr_fluid;
   distr_fluid.push_back(distr_brine);
   distr_fluid.push_back(distr_co2);
-  std::vector< NRLib::Distribution<double> * > distr_vol_frac2;
-  distr_vol_frac2.push_back(new NRLib::Delta(0.8));
-  distr_vol_frac2.push_back(new NRLib::Delta(1.0 - 0.8));
+
+  std::vector< DistributionWithTrend * > distr_vol_frac2f;
+  distr_vol_frac2f.push_back(new DistributionWithTrend(new NRLib::Delta(0.0), new NRLib::TrendConstant(0.8), new NRLib::TrendConstant(0.0), false, false));
+  distr_vol_frac2f.push_back(new DistributionWithTrend(new NRLib::Delta(0.0), new NRLib::TrendConstant(1.0 - 0.8), new NRLib::TrendConstant(0.0), false, false));
+
   DistributionsFluidMixEvolution * distr_fluidmix_evolution  = NULL;
-  DistributionsFluid * distr_fluid_mixed = new DistributionsFluidMix(distr_fluid, distr_vol_frac2, DEMTools::Reuss, distr_fluidmix_evolution);
+  DistributionsFluid * distr_fluid_mixed = new DistributionsFluidMix(distr_fluid, distr_vol_frac2f, DEMTools::Reuss, distr_fluidmix_evolution);
   //Fluid * fluid_mixed = distr_fluid_mixed->GenerateSample();
 
 
@@ -689,28 +874,32 @@ DEMTools::DebugTestCalcEffectiveModulus3(double& effective_bulk_modulus,
   enum GeometryType {Spherical, Mixed};
   GeometryType my_geo_type = Mixed; // pore geometry, this enum chooses the one to use.
 
-  std::vector< NRLib::Distribution<double> * > distr_incl_spectrum;
-  std::vector< NRLib::Distribution<double> * > distr_incl_concentration;
+  std::vector< DistributionWithTrend * > distr_incl_spectrum;
+  std::vector< DistributionWithTrend * > distr_incl_concentration;
 
   if (my_geo_type == Spherical) {
-    distr_incl_spectrum.push_back( new NRLib::Delta(1.0));
-    distr_incl_concentration.push_back( new NRLib::Delta(1.0));
+    distr_incl_spectrum.push_back( new DistributionWithTrend(new NRLib::Delta(0.0), new NRLib::TrendConstant(1.0), new NRLib::TrendConstant(0.0), false, false));
+    distr_incl_concentration.push_back( new DistributionWithTrend(new NRLib::Delta(0.0), new NRLib::TrendConstant(1.0), new NRLib::TrendConstant(0.0), false, false));
   }
   else if (my_geo_type == Mixed) {
-    distr_incl_spectrum.push_back( new NRLib::Delta(1.0));
-    distr_incl_spectrum.push_back( new NRLib::Delta(0.5000));
-    distr_incl_spectrum.push_back( new NRLib::Delta(0.1000));
-    distr_incl_spectrum.push_back( new NRLib::Delta(0.0100));
-    distr_incl_spectrum.push_back( new NRLib::Delta(1.0000e-003));
-    distr_incl_spectrum.push_back( new NRLib::Delta(1.0000e-004));
-    distr_incl_concentration.push_back( new NRLib::Delta(0.6419));
-    distr_incl_concentration.push_back( new NRLib::Delta(0.3205));
-    distr_incl_concentration.push_back( new NRLib::Delta(0.0321));
-    distr_incl_concentration.push_back( new NRLib::Delta(0.0050));
-    distr_incl_concentration.push_back( new NRLib::Delta(5.0000e-004));
-    distr_incl_concentration.push_back( new NRLib::Delta(5.0000e-005));
+    distr_incl_spectrum.push_back( new DistributionWithTrend(new NRLib::Delta(0.0), new NRLib::TrendConstant(1.0), new NRLib::TrendConstant(0.0), false, false));
+    distr_incl_spectrum.push_back( new DistributionWithTrend(new NRLib::Delta(0.0), new NRLib::TrendConstant(0.5000), new NRLib::TrendConstant(0.0), false, false));
+    distr_incl_spectrum.push_back( new DistributionWithTrend(new NRLib::Delta(0.0), new NRLib::TrendConstant(0.1000), new NRLib::TrendConstant(0.0), false, false));
+    distr_incl_spectrum.push_back( new DistributionWithTrend(new NRLib::Delta(0.0), new NRLib::TrendConstant(0.0100), new NRLib::TrendConstant(0.0), false, false));
+    distr_incl_spectrum.push_back( new DistributionWithTrend(new NRLib::Delta(0.0), new NRLib::TrendConstant(1.0000e-003), new NRLib::TrendConstant(0.0), false, false));
+    distr_incl_spectrum.push_back( new DistributionWithTrend(new NRLib::Delta(0.0), new NRLib::TrendConstant(1.0000e-004), new NRLib::TrendConstant(0.0), false, false));
+    distr_incl_concentration.push_back( new DistributionWithTrend(new NRLib::Delta(0.0), new NRLib::TrendConstant(0.6419), new NRLib::TrendConstant(0.0), false, false));
+    distr_incl_concentration.push_back( new DistributionWithTrend(new NRLib::Delta(0.0), new NRLib::TrendConstant(0.3205), new NRLib::TrendConstant(0.0), false, false));
+    distr_incl_concentration.push_back( new DistributionWithTrend(new NRLib::Delta(0.0), new NRLib::TrendConstant(0.0321), new NRLib::TrendConstant(0.0), false, false));
+    distr_incl_concentration.push_back( new DistributionWithTrend(new NRLib::Delta(0.0), new NRLib::TrendConstant(0.0050), new NRLib::TrendConstant(0.0), false, false));
+    distr_incl_concentration.push_back( new DistributionWithTrend(new NRLib::Delta(0.0), new NRLib::TrendConstant(5.0000e-004), new NRLib::TrendConstant(0.0), false, false));
+    distr_incl_concentration.push_back( new DistributionWithTrend(new NRLib::Delta(0.0), new NRLib::TrendConstant(5.0000e-005), new NRLib::TrendConstant(0.0), false, false));
   }
-  NRLib::Delta distr_porosity(0.2);
+
+  NRLib::Distribution<double> * distr_porosity2         = new NRLib::Delta(0.0);
+  NRLib::Trend * trend_porosity                         = new NRLib::TrendConstant(0.2);
+  NRLib::Trend * std_porosity                           = new NRLib::TrendConstant(0.0);
+  DistributionWithTrend distr_porosity(distr_porosity2, trend_porosity, std_porosity, false, false);
 
 
   //// Rock, distribution functions.
@@ -725,7 +914,7 @@ DEMTools::DebugTestCalcEffectiveModulus3(double& effective_bulk_modulus,
 
   //// Generating a sample of the rock.
   //// This function call generates the whole tree of solid and fluid objects from which this rock is composed.
-  std::vector<double> dummy(1, 0.0);
+  std::vector<double> dummy(2, 0.0);
   Rock * rock_incl = distr_rock_incl->GenerateSample(dummy);
 
   //// Getting the elastic parameters.
@@ -743,9 +932,9 @@ DEMTools::DebugTestCalcEffectiveModulus3(double& effective_bulk_modulus,
   }
 
   delete distr_fluid_mixed;
-  size_t n_vol2 = distr_vol_frac2.size();
+  size_t n_vol2 = distr_vol_frac2f.size();
   for (size_t i = 0; i < n_vol2; ++i)
-    delete distr_vol_frac2[i];
+    delete distr_vol_frac2f[i];
 
   delete distr_co2;
   delete distr_brine;
@@ -759,233 +948,233 @@ DEMTools::DebugTestCalcEffectiveModulus3(double& effective_bulk_modulus,
   delete distr_quartz;
 }
 
-void
-DEMTools::DebugTestDeletionAndCopying() {
-
-  //// For testing the RP design's memory allocation and freeing of
-  //// memory, using the differential effective medium theory (DEM).
-  //// Will be further developed.
-
-  ////SETTING UP DISTRIBUTIONS************************************
-  //// Mineral properties, distribution functions.
-  //// (According to Table A.4.1, p458-459, RP Handbook, Mavko et al. 2009).
-  NRLib::Delta distr_quartz_k(37.0);
-  NRLib::Delta distr_quartz_mu(44.0);
-  NRLib::Delta distr_quartz_rho(2.65);
-  DistributionsMineralEvolution * distr_quartz_evolution = NULL;
-  DistributionsSolid * distr_quartz = new DistributionsMineral(&distr_quartz_k, &distr_quartz_mu, &distr_quartz_rho, distr_quartz_evolution);
-
-  NRLib::Delta distr_clay_k(21.0);
-  NRLib::Delta distr_clay_mu(7.0);
-  NRLib::Delta distr_clay_rho(2.6);
-  DistributionsMineralEvolution * distr_clay_evolution = NULL;
-  DistributionsSolid * distr_clay = new DistributionsMineral(&distr_clay_k, &distr_clay_mu, &distr_clay_rho, distr_clay_evolution);
-
-  //// Mixing, effective solid properties. Distribution functions.
-  std::vector< DistributionsSolid * > distr_solid;
-  distr_solid.push_back(distr_clay);
-  distr_solid.push_back(distr_quartz);
-  std::vector< NRLib::Distribution<double> * > distr_vol_frac;
-  distr_vol_frac.push_back(new NRLib::Delta(0.15));
-  distr_vol_frac.push_back(new NRLib::Delta(1.0 - 0.15));
-  DistributionsSolidMixEvolution * distr_solidmix_evolution = NULL;
-  DistributionsSolid * distr_solid_mixed = new DistributionsSolidMix(distr_solid, distr_vol_frac, DEMTools::Hill, distr_solidmix_evolution);
-
-  //// Fluid properties
-  //// (Brine properties according to Batzle, M. and Wang, Z. 1992, and
-  //// CO2 properties according to Z. Wang's compilation and measurements, RPH Tools)
-  NRLib::Delta distr_pore_pressure(20.0);
-  NRLib::Delta distr_temperature(50.0);
-  NRLib::Delta distr_salinity(0.05);
-  DistributionsBrineEvolution * distr_brine_evolution = NULL;
-  DistributionsCO2Evolution   * distr_co2_evolution   = NULL;
-  DistributionsFluid * distr_brine  = new DistributionsBrine(&distr_temperature, &distr_pore_pressure, &distr_salinity, distr_brine_evolution);
-  DistributionsFluid * distr_co2    = new DistributionsCO2(&distr_temperature, &distr_pore_pressure, distr_co2_evolution);
-
-  //// Mixing, effective fluid properties. Distribution functions.
-  std::vector< DistributionsFluid * > distr_fluid;
-  distr_fluid.push_back(distr_brine);
-  distr_fluid.push_back(distr_co2);
-  std::vector< NRLib::Distribution<double> * > distr_vol_frac2;
-  distr_vol_frac2.push_back(new NRLib::Delta(0.8));
-  distr_vol_frac2.push_back(new NRLib::Delta(1.0 - 0.8));
-  DistributionsFluidMixEvolution * distr_fluidmix_evolution  = NULL;
-  DistributionsFluid * distr_fluid_mixed = new DistributionsFluidMix(distr_fluid, distr_vol_frac2, DEMTools::Reuss, distr_fluidmix_evolution);
-
-  //// Geometry specification
-  enum GeometryType {Spherical, Mixed};
-  GeometryType my_geo_type = Mixed; // pore geometry, this enum chooses the one to use.
-
-  std::vector< NRLib::Distribution<double> * > distr_incl_spectrum;
-  std::vector< NRLib::Distribution<double> * > distr_incl_concentration;
-
-  if (my_geo_type == Spherical) {
-    distr_incl_spectrum.push_back( new NRLib::Delta(1.0));
-    distr_incl_concentration.push_back( new NRLib::Delta(1.0));
-  }
-  else if (my_geo_type == Mixed) {
-    distr_incl_spectrum.push_back( new NRLib::Delta(1.0));
-    distr_incl_spectrum.push_back( new NRLib::Delta(0.5000));
-    distr_incl_spectrum.push_back( new NRLib::Delta(0.1000));
-    distr_incl_spectrum.push_back( new NRLib::Delta(0.0100));
-    distr_incl_spectrum.push_back( new NRLib::Delta(1.0000e-003));
-    distr_incl_spectrum.push_back( new NRLib::Delta(1.0000e-004));
-    distr_incl_concentration.push_back( new NRLib::Delta(0.6419));
-    distr_incl_concentration.push_back( new NRLib::Delta(0.3205));
-    distr_incl_concentration.push_back( new NRLib::Delta(0.0321));
-    distr_incl_concentration.push_back( new NRLib::Delta(0.0050));
-    distr_incl_concentration.push_back( new NRLib::Delta(5.0000e-004));
-    distr_incl_concentration.push_back( new NRLib::Delta(5.0000e-005));
-  }
-  NRLib::Delta distr_porosity(0.2);
-
-
-  //// Rock, distribution functions.
-  DistributionsRockInclusionEvolution * distr_evolution = NULL;
-  DistributionsRock * distr_rock_incl  = new DistributionsRockInclusion(distr_solid_mixed,
-                                                                        distr_fluid_mixed,
-                                                                        distr_incl_spectrum,
-                                                                        distr_incl_concentration,
-                                                                        &distr_porosity,
-                                                                        distr_evolution);
-
-
-  ////TESTING************************************
-  //// Generating a sample of the rock.
-  //// This function call generates the whole tree of solid and fluid objects from which this rock is composed.
-  std::vector<double> dummy(1, 0.0);
-  std::vector<double>  mean_m = distr_rock_incl->GetExpectation(dummy);
-  NRLib::Grid2D<double> cov_m = distr_rock_incl->GetCovariance(dummy);
-  Rock * rock_incl = distr_rock_incl->GenerateSample(dummy);
-
-  //// Evolve Rock --- Testing
-  std::vector<Rock *> rock_tmp;
-  std::vector<int> delta_time2(1,6);
-  Rock * rock_incl_new1 = rock_incl->Evolve(delta_time2, rock_tmp);
-  rock_tmp.push_back(rock_incl_new1);
-  delta_time2.push_back(32);
-  Rock * rock_incl_new2 = rock_incl->Evolve(delta_time2, rock_tmp);
-
-  //// COPYING
-  Rock * rock_incl_new3 = rock_incl->Evolve(delta_time2, rock_tmp);
-  Rock * rock_incl_base = rock_incl_new3->Clone(); // Copy!
-
-  const Solid * s3 = (dynamic_cast<RockInclusion*>(rock_incl_new3))->GetSolid();
-  const Fluid * f3 = (dynamic_cast<RockInclusion*>(rock_incl_new3))->GetFluid();
-  assert(s3 != NULL && f3 != NULL);
-  delete rock_incl_new3;
-  // Now s3 and f3 shoud be pointing to nothing.
-
-  // test that rock_incl_base is intact after rock_incl_new3 is deleted.
-  double vp, vs, rho;
-  rock_incl_base->ComputeSeismicParams(vp, vs, rho);
-  const Solid * s = (dynamic_cast<RockInclusion*>(rock_incl_base))->GetSolid();
-  const Fluid * f = (dynamic_cast<RockInclusion*>(rock_incl_base))->GetFluid();
-  assert(s != NULL && f != NULL); // Now s and f shoud be meaningful.
-  // A note on object deletion: There is no compiler errors or warnings
-  // if we try to invoke
-  // delete s;
-  // delete f;
-  // I.e. the const in the return values of functions GetSolid() and
-  // getFluid() does not prevent this. But when we later come to
-  // delete rock_incl_base;
-  // there is a run-time error since we try to free memory that has
-  // already been freed.
-  delete rock_incl_base;
-
-  {
-    // ASSIGNMENT ROCK
-    std::vector<double> incl_spec(1, 1.0);
-    std::vector<double> incl_conc(1, 1.0);
-    Solid * q = distr_quartz->GenerateSample(dummy);
-    Fluid * b = distr_brine->GenerateSample(dummy);
-    RockInclusion rock_incl2(q, b, incl_spec, incl_conc, 0.3);
-    rock_incl2 = *(dynamic_cast<RockInclusion*>(rock_incl)); // Assignment
-    /*const Solid * s4 = (dynamic_cast<RockInclusion*>(rock_incl))->GetSolid();
-    const Fluid * f4 = (dynamic_cast<RockInclusion*>(rock_incl))->GetFluid();
-    const Solid * s_incl = rock_incl2.GetSolid();
-    const Fluid * f_incl = rock_incl2.GetFluid();*/
-    delete q;
-    delete b;
-  } //Here rock_incl2, s4, f4, s_incl, and f_incl go out of scope. Destruction should work!
-  delete rock_incl; // Should destroy s4 and f4, but not s_incl and f_incl.
-
-  {
-    Solid * quartz = distr_quartz->GenerateSample(dummy);
-    Solid * clay = distr_clay->GenerateSample(dummy);
-    Fluid * brine = distr_brine->GenerateSample(dummy);
-    Fluid * co2   = distr_co2->GenerateSample(dummy);
-
-    Solid * solid_mixed = distr_solid_mixed->GenerateSample(dummy);
-    std::vector<Solid *> s_ass;
-    s_ass.push_back(clay);
-    s_ass.push_back(quartz);
-    std::vector<double>  v_ass;
-    v_ass.push_back(0.3);
-    v_ass.push_back(0.7);
-    // ASSIGNMENT SOLIDMIXED
-    SolidMixed sol_mixed_ass(s_ass, v_ass, DEMTools::Hill);
-    sol_mixed_ass = *(dynamic_cast<SolidMixed*>(solid_mixed)); // Assignment
-    double k_mix, mu_mix, rho_mix;
-    solid_mixed->ComputeElasticParams(k_mix, mu_mix, rho_mix);
-
-    delete solid_mixed;
-    double k_ass, mu_ass, rho_ass;
-    sol_mixed_ass.ComputeElasticParams(k_ass, mu_ass, rho_ass); // Should work.
-    //solid_mixed->ComputeElasticParams(k_mix, mu_mix, rho_mix); //Should not work.
-
-    Fluid * fluid_mixed = distr_fluid_mixed->GenerateSample(dummy);
-    std::vector<Fluid *> f_ass;
-    f_ass.push_back(co2);
-    f_ass.push_back(brine);
-    std::vector<double>  vf_ass;
-    vf_ass.push_back(0.47);
-    vf_ass.push_back(0.53);
-    // ASSIGNMENT FLUIDMIXED
-    FluidMixed flu_mixed_ass(f_ass, vf_ass, DEMTools::Reuss);
-    flu_mixed_ass = *(dynamic_cast<FluidMixed*>(fluid_mixed)); // Assignment
-    double fk_mix, frho_mix;
-    fluid_mixed->GetElasticParams(fk_mix, frho_mix);
-
-    delete fluid_mixed;
-    double fk_ass, frho_ass;
-    flu_mixed_ass.GetElasticParams(fk_ass, frho_ass); // Should work.
-    //fluid_mixed->GetElasticParams(fk_mix, frho_mix); //Should not work.
-
-
-    delete clay;
-    delete quartz;
-    delete brine;
-    delete co2;
-  }  //Here sol_mixed_ass and flu_mixed_ass go out of scope. Destruction should work!
-
-
-  delete rock_incl_new2;
-  delete rock_incl_new1;
-  //delete rock_incl;
-
-  //// Deleting dynamically allocated memory for distribution functions.
-  delete distr_rock_incl;
-  size_t n_incl = distr_incl_spectrum.size();
-  for (size_t i = 0; i < n_incl; ++i) {
-    delete distr_incl_spectrum[i];
-    delete distr_incl_concentration[i];
-  }
-
-  delete distr_fluid_mixed;
-  size_t n_vol2 = distr_vol_frac2.size();
-  for (size_t i = 0; i < n_vol2; ++i)
-    delete distr_vol_frac2[i];
-
-  delete distr_co2;
-  delete distr_brine;
-
-  delete distr_solid_mixed;
-  size_t n_vol = distr_vol_frac.size();
-  for (size_t i = 0; i < n_vol; ++i)
-    delete distr_vol_frac[i];
-
-  delete distr_clay;
-  delete distr_quartz;
-
-}
+//void
+//DEMTools::DebugTestDeletionAndCopying() {
+//
+//  //// For testing the RP design's memory allocation and freeing of
+//  //// memory, using the differential effective medium theory (DEM).
+//  //// Will be further developed.
+//
+//  ////SETTING UP DISTRIBUTIONS************************************
+//  //// Mineral properties, distribution functions.
+//  //// (According to Table A.4.1, p458-459, RP Handbook, Mavko et al. 2009).
+//  NRLib::Delta distr_quartz_k(37.0);
+//  NRLib::Delta distr_quartz_mu(44.0);
+//  NRLib::Delta distr_quartz_rho(2.65);
+//  DistributionsMineralEvolution * distr_quartz_evolution = NULL;
+//  DistributionsSolid * distr_quartz = new DistributionsMineral(&distr_quartz_k, &distr_quartz_mu, &distr_quartz_rho, distr_quartz_evolution);
+//
+//  NRLib::Delta distr_clay_k(21.0);
+//  NRLib::Delta distr_clay_mu(7.0);
+//  NRLib::Delta distr_clay_rho(2.6);
+//  DistributionsMineralEvolution * distr_clay_evolution = NULL;
+//  DistributionsSolid * distr_clay = new DistributionsMineral(&distr_clay_k, &distr_clay_mu, &distr_clay_rho, distr_clay_evolution);
+//
+//  //// Mixing, effective solid properties. Distribution functions.
+//  std::vector< DistributionsSolid * > distr_solid;
+//  distr_solid.push_back(distr_clay);
+//  distr_solid.push_back(distr_quartz);
+//  std::vector< NRLib::Distribution<double> * > distr_vol_frac;
+//  distr_vol_frac.push_back(new NRLib::Delta(0.15));
+//  distr_vol_frac.push_back(new NRLib::Delta(1.0 - 0.15));
+//  DistributionsSolidMixEvolution * distr_solidmix_evolution = NULL;
+//  DistributionsSolid * distr_solid_mixed = new DistributionsSolidMix(distr_solid, distr_vol_frac, DEMTools::Hill, distr_solidmix_evolution);
+//
+//  //// Fluid properties
+//  //// (Brine properties according to Batzle, M. and Wang, Z. 1992, and
+//  //// CO2 properties according to Z. Wang's compilation and measurements, RPH Tools)
+//  NRLib::Delta distr_pore_pressure(20.0);
+//  NRLib::Delta distr_temperature(50.0);
+//  NRLib::Delta distr_salinity(0.05);
+//  DistributionsBrineEvolution * distr_brine_evolution = NULL;
+//  DistributionsCO2Evolution   * distr_co2_evolution   = NULL;
+//  DistributionsFluid * distr_brine  = new DistributionsBrine(&distr_temperature, &distr_pore_pressure, &distr_salinity, distr_brine_evolution);
+//  DistributionsFluid * distr_co2    = new DistributionsCO2(&distr_temperature, &distr_pore_pressure, distr_co2_evolution);
+//
+//  //// Mixing, effective fluid properties. Distribution functions.
+//  std::vector< DistributionsFluid * > distr_fluid;
+//  distr_fluid.push_back(distr_brine);
+//  distr_fluid.push_back(distr_co2);
+//  std::vector< NRLib::Distribution<double> * > distr_vol_frac2;
+//  distr_vol_frac2.push_back(new NRLib::Delta(0.8));
+//  distr_vol_frac2.push_back(new NRLib::Delta(1.0 - 0.8));
+//  DistributionsFluidMixEvolution * distr_fluidmix_evolution  = NULL;
+//  DistributionsFluid * distr_fluid_mixed = new DistributionsFluidMix(distr_fluid, distr_vol_frac2, DEMTools::Reuss, distr_fluidmix_evolution);
+//
+//  //// Geometry specification
+//  enum GeometryType {Spherical, Mixed};
+//  GeometryType my_geo_type = Mixed; // pore geometry, this enum chooses the one to use.
+//
+//  std::vector< NRLib::Distribution<double> * > distr_incl_spectrum;
+//  std::vector< NRLib::Distribution<double> * > distr_incl_concentration;
+//
+//  if (my_geo_type == Spherical) {
+//    distr_incl_spectrum.push_back( new NRLib::Delta(1.0));
+//    distr_incl_concentration.push_back( new NRLib::Delta(1.0));
+//  }
+//  else if (my_geo_type == Mixed) {
+//    distr_incl_spectrum.push_back( new NRLib::Delta(1.0));
+//    distr_incl_spectrum.push_back( new NRLib::Delta(0.5000));
+//    distr_incl_spectrum.push_back( new NRLib::Delta(0.1000));
+//    distr_incl_spectrum.push_back( new NRLib::Delta(0.0100));
+//    distr_incl_spectrum.push_back( new NRLib::Delta(1.0000e-003));
+//    distr_incl_spectrum.push_back( new NRLib::Delta(1.0000e-004));
+//    distr_incl_concentration.push_back( new NRLib::Delta(0.6419));
+//    distr_incl_concentration.push_back( new NRLib::Delta(0.3205));
+//    distr_incl_concentration.push_back( new NRLib::Delta(0.0321));
+//    distr_incl_concentration.push_back( new NRLib::Delta(0.0050));
+//    distr_incl_concentration.push_back( new NRLib::Delta(5.0000e-004));
+//    distr_incl_concentration.push_back( new NRLib::Delta(5.0000e-005));
+//  }
+//  NRLib::Delta distr_porosity(0.2);
+//
+//
+//  //// Rock, distribution functions.
+//  DistributionsRockInclusionEvolution * distr_evolution = NULL;
+//  DistributionsRock * distr_rock_incl  = new DistributionsRockInclusion(distr_solid_mixed,
+//                                                                        distr_fluid_mixed,
+//                                                                        distr_incl_spectrum,
+//                                                                        distr_incl_concentration,
+//                                                                        &distr_porosity,
+//                                                                        distr_evolution);
+//
+//
+//  ////TESTING************************************
+//  //// Generating a sample of the rock.
+//  //// This function call generates the whole tree of solid and fluid objects from which this rock is composed.
+//  std::vector<double> dummy(1, 0.0);
+//  std::vector<double>  mean_m = distr_rock_incl->GetExpectation(dummy);
+//  NRLib::Grid2D<double> cov_m = distr_rock_incl->GetCovariance(dummy);
+//  Rock * rock_incl = distr_rock_incl->GenerateSample(dummy);
+//
+//  //// Evolve Rock --- Testing
+//  std::vector<Rock *> rock_tmp;
+//  std::vector<int> delta_time2(1,6);
+//  Rock * rock_incl_new1 = rock_incl->Evolve(delta_time2, rock_tmp);
+//  rock_tmp.push_back(rock_incl_new1);
+//  delta_time2.push_back(32);
+//  Rock * rock_incl_new2 = rock_incl->Evolve(delta_time2, rock_tmp);
+//
+//  //// COPYING
+//  Rock * rock_incl_new3 = rock_incl->Evolve(delta_time2, rock_tmp);
+//  Rock * rock_incl_base = rock_incl_new3->Clone(); // Copy!
+//
+//  const Solid * s3 = (dynamic_cast<RockInclusion*>(rock_incl_new3))->GetSolid();
+//  const Fluid * f3 = (dynamic_cast<RockInclusion*>(rock_incl_new3))->GetFluid();
+//  assert(s3 != NULL && f3 != NULL);
+//  delete rock_incl_new3;
+//  // Now s3 and f3 shoud be pointing to nothing.
+//
+//  // test that rock_incl_base is intact after rock_incl_new3 is deleted.
+//  double vp, vs, rho;
+//  rock_incl_base->ComputeSeismicParams(vp, vs, rho);
+//  const Solid * s = (dynamic_cast<RockInclusion*>(rock_incl_base))->GetSolid();
+//  const Fluid * f = (dynamic_cast<RockInclusion*>(rock_incl_base))->GetFluid();
+//  assert(s != NULL && f != NULL); // Now s and f shoud be meaningful.
+//  // A note on object deletion: There is no compiler errors or warnings
+//  // if we try to invoke
+//  // delete s;
+//  // delete f;
+//  // I.e. the const in the return values of functions GetSolid() and
+//  // getFluid() does not prevent this. But when we later come to
+//  // delete rock_incl_base;
+//  // there is a run-time error since we try to free memory that has
+//  // already been freed.
+//  delete rock_incl_base;
+//
+//  {
+//    // ASSIGNMENT ROCK
+//    std::vector<double> incl_spec(1, 1.0);
+//    std::vector<double> incl_conc(1, 1.0);
+//    Solid * q = distr_quartz->GenerateSample(dummy);
+//    Fluid * b = distr_brine->GenerateSample(dummy);
+//    RockInclusion rock_incl2(q, b, incl_spec, incl_conc, 0.3);
+//    rock_incl2 = *(dynamic_cast<RockInclusion*>(rock_incl)); // Assignment
+//    /*const Solid * s4 = (dynamic_cast<RockInclusion*>(rock_incl))->GetSolid();
+//    const Fluid * f4 = (dynamic_cast<RockInclusion*>(rock_incl))->GetFluid();
+//    const Solid * s_incl = rock_incl2.GetSolid();
+//    const Fluid * f_incl = rock_incl2.GetFluid();*/
+//    delete q;
+//    delete b;
+//  } //Here rock_incl2, s4, f4, s_incl, and f_incl go out of scope. Destruction should work!
+//  delete rock_incl; // Should destroy s4 and f4, but not s_incl and f_incl.
+//
+//  {
+//    Solid * quartz = distr_quartz->GenerateSample(dummy);
+//    Solid * clay = distr_clay->GenerateSample(dummy);
+//    Fluid * brine = distr_brine->GenerateSample(dummy);
+//    Fluid * co2   = distr_co2->GenerateSample(dummy);
+//
+//    Solid * solid_mixed = distr_solid_mixed->GenerateSample(dummy);
+//    std::vector<Solid *> s_ass;
+//    s_ass.push_back(clay);
+//    s_ass.push_back(quartz);
+//    std::vector<double>  v_ass;
+//    v_ass.push_back(0.3);
+//    v_ass.push_back(0.7);
+//    // ASSIGNMENT SOLIDMIXED
+//    SolidMixed sol_mixed_ass(s_ass, v_ass, DEMTools::Hill);
+//    sol_mixed_ass = *(dynamic_cast<SolidMixed*>(solid_mixed)); // Assignment
+//    double k_mix, mu_mix, rho_mix;
+//    solid_mixed->ComputeElasticParams(k_mix, mu_mix, rho_mix);
+//
+//    delete solid_mixed;
+//    double k_ass, mu_ass, rho_ass;
+//    sol_mixed_ass.ComputeElasticParams(k_ass, mu_ass, rho_ass); // Should work.
+//    //solid_mixed->ComputeElasticParams(k_mix, mu_mix, rho_mix); //Should not work.
+//
+//    Fluid * fluid_mixed = distr_fluid_mixed->GenerateSample(dummy);
+//    std::vector<Fluid *> f_ass;
+//    f_ass.push_back(co2);
+//    f_ass.push_back(brine);
+//    std::vector<double>  vf_ass;
+//    vf_ass.push_back(0.47);
+//    vf_ass.push_back(0.53);
+//    // ASSIGNMENT FLUIDMIXED
+//    FluidMixed flu_mixed_ass(f_ass, vf_ass, DEMTools::Reuss);
+//    flu_mixed_ass = *(dynamic_cast<FluidMixed*>(fluid_mixed)); // Assignment
+//    double fk_mix, frho_mix;
+//    fluid_mixed->GetElasticParams(fk_mix, frho_mix);
+//
+//    delete fluid_mixed;
+//    double fk_ass, frho_ass;
+//    flu_mixed_ass.GetElasticParams(fk_ass, frho_ass); // Should work.
+//    //fluid_mixed->GetElasticParams(fk_mix, frho_mix); //Should not work.
+//
+//
+//    delete clay;
+//    delete quartz;
+//    delete brine;
+//    delete co2;
+//  }  //Here sol_mixed_ass and flu_mixed_ass go out of scope. Destruction should work!
+//
+//
+//  delete rock_incl_new2;
+//  delete rock_incl_new1;
+//  //delete rock_incl;
+//
+//  //// Deleting dynamically allocated memory for distribution functions.
+//  delete distr_rock_incl;
+//  size_t n_incl = distr_incl_spectrum.size();
+//  for (size_t i = 0; i < n_incl; ++i) {
+//    delete distr_incl_spectrum[i];
+//    delete distr_incl_concentration[i];
+//  }
+//
+//  delete distr_fluid_mixed;
+//  size_t n_vol2 = distr_vol_frac2.size();
+//  for (size_t i = 0; i < n_vol2; ++i)
+//    delete distr_vol_frac2[i];
+//
+//  delete distr_co2;
+//  delete distr_brine;
+//
+//  delete distr_solid_mixed;
+//  size_t n_vol = distr_vol_frac.size();
+//  for (size_t i = 0; i < n_vol; ++i)
+//    delete distr_vol_frac[i];
+//
+//  delete distr_clay;
+//  delete distr_quartz;
+//
+//}

@@ -3,30 +3,30 @@
 
 #include "rplib/distributionssolid.h"
 #include "rplib/mineral.h"
-#include "rplib/distributionsmineralevolution.h"
 
-#include "nrlib/random/distribution.hpp"
+class DistributionWithTrend;
+class DistributionsBrineEvolution;
 
 class DistributionsMineral : public DistributionsSolid {
 public:
 
-  DistributionsMineral(NRLib::Distribution<double>   * distr_k,
-                       NRLib::Distribution<double>   * distr_mu,
-                       NRLib::Distribution<double>   * distr_rho,
+  DistributionsMineral(DistributionWithTrend         * distr_k,
+                       DistributionWithTrend         * distr_mu,
+                       DistributionWithTrend         * distr_rho,
                        DistributionsMineralEvolution * distr_evolution = NULL);
 
   virtual ~DistributionsMineral();
 
-  virtual Solid * GenerateSample(const std::vector<double> & /*trend_params*/) const;
+  virtual Solid * GenerateSample(const std::vector<double> & trend_params) const;
 
   virtual bool                  HasDistribution() const;
 
   virtual std::vector<bool>     HasTrend() const;
 
 private:
-  NRLib::Distribution<double>   * distr_k_;         // Pointer to external object.
-  NRLib::Distribution<double>   * distr_mu_;        // Pointer to external object.
-  NRLib::Distribution<double>   * distr_rho_;       // Pointer to external object.
+  DistributionWithTrend         * distr_k_;         // Pointer to external object.
+  DistributionWithTrend         * distr_mu_;        // Pointer to external object.
+  DistributionWithTrend         * distr_rho_;       // Pointer to external object.
   DistributionsMineralEvolution * distr_evolution_; // Pointer to external object.
 };
 

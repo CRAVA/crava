@@ -1,7 +1,10 @@
 #include "rplib/distributionsco2.h"
 
-DistributionsCO2::DistributionsCO2(NRLib::Distribution<double> * distr_temperature,
-                                   NRLib::Distribution<double> * distr_pore_pressure,
+#include "rplib/distributionsco2evolution.h"
+#include "rplib/distributionwithtrend.h"
+
+DistributionsCO2::DistributionsCO2(DistributionWithTrend       * distr_temperature,
+                                   DistributionWithTrend       * distr_pore_pressure,
                                    DistributionsCO2Evolution   * distr_evolution)
 : DistributionsFluid()
 {
@@ -13,10 +16,10 @@ DistributionsCO2::DistributionsCO2(NRLib::Distribution<double> * distr_temperatu
 DistributionsCO2::~DistributionsCO2(){}
 
 Fluid *
-DistributionsCO2::GenerateSample(const std::vector<double> & /*trend_params*/) const
+DistributionsCO2::GenerateSample(const std::vector<double> & trend_params) const
 {
-  double temperature   = distr_temperature_->Draw();
-  double pore_pressure = distr_pore_pressure_->Draw();
+  double temperature   = distr_temperature_->ReSample(trend_params[0], trend_params[1]);
+  double pore_pressure = distr_pore_pressure_->ReSample(trend_params[0], trend_params[1]);
   Fluid * fluid = new CO2(temperature, pore_pressure, distr_evolution_);
 
   return fluid;

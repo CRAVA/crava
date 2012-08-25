@@ -1,12 +1,14 @@
 #include "rplib/distributionsrockinclusion.h"
 
+#include "rplib/distributionwithtrend.h"
+
 #include "nrlib/statistics/statistics.hpp"
 
 DistributionsRockInclusion::DistributionsRockInclusion(DistributionsSolid                           * distr_solid,
                                                        DistributionsFluid                           * distr_fluid,
-                                                       std::vector< NRLib::Distribution<double> * >   distr_incl_spectrum,
-                                                       std::vector< NRLib::Distribution<double> * >   distr_incl_concentration,
-                                                       NRLib::Distribution<double>                  * distr_porosity,
+                                                       std::vector< DistributionWithTrend * >       & distr_incl_spectrum,
+                                                       std::vector< DistributionWithTrend * >       & distr_incl_concentration,
+                                                       DistributionWithTrend                        * distr_porosity,
                                                        DistributionsRockInclusionEvolution          * distr_evolution)
 : DistributionsRock()
 {
@@ -34,10 +36,10 @@ DistributionsRockInclusion::GenerateSample(const std::vector<double> & trend_par
   std::vector<double> inclusion_concentration(n_incl);
 
   for (size_t i = 0; i < n_incl; ++i) {
-    inclusion_spectrum[i] = distr_incl_spectrum_[i]->Draw();
-    inclusion_concentration[i] = distr_incl_concentration_[i]->Draw();
+    inclusion_spectrum[i] = distr_incl_spectrum_[i]->ReSample(trend_params[0], trend_params[1]);
+    inclusion_concentration[i] = distr_incl_concentration_[i]->ReSample(trend_params[0], trend_params[1]);
   }
-  double porosity = distr_porosity_->Draw();
+  double porosity = distr_porosity_->ReSample(trend_params[0], trend_params[1]);
   Rock * new_rock = new RockInclusion(solid, fluid, inclusion_spectrum, inclusion_concentration, porosity, distr_evolution_);
 
   // Deep copy taken by constructor of RockInclusion, hence delete
@@ -96,7 +98,7 @@ DistributionsRockInclusion::SampleVpVsRhoExpectationAndCovariance(std::vector<do
   NRLib::Vector vs(nsamples);
   NRLib::Vector rho(nsamples);
 
-  std::vector<double> dummy(1, 0.0);
+  std::vector<double> dummy(2, 0.0);
   for (int i = 0; i < nsamples; ++i) {
     Rock * rock = GenerateSample(dummy);
     rock->ComputeSeismicParams(vp(i), vs(i), rho(i));
