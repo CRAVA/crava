@@ -133,12 +133,12 @@ ReussDryRockStorage::~ReussDryRockStorage()
 }
 
 DistributionsDryRock *
-ReussDryRockStorage::GenerateDistributionsDryRock(const std::string                       & path,
-                                                  const std::vector<std::string>          & trend_cube_parameters,
-                                                  const std::vector<std::vector<double> > & trend_cube_sampling,
+ReussDryRockStorage::GenerateDistributionsDryRock(const std::string                       & /*path*/,
+                                                  const std::vector<std::string>          & /*trend_cube_parameters*/,
+                                                  const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
                                                   std::string                             & errTxt) const
 {
-  std::vector<double> volume = getVolume(constituent_volume_fraction_, path, trend_cube_parameters, trend_cube_sampling, errTxt);
+  CheckVolumeConsistency(constituent_volume_fraction_, errTxt);
 
   DistributionsDryRock * dry_rock = NULL; //new DistributionsDryRockReuss();
 
@@ -170,12 +170,12 @@ VoigtDryRockStorage::~VoigtDryRockStorage()
 }
 
 DistributionsDryRock *
-VoigtDryRockStorage::GenerateDistributionsDryRock(const std::string                       & path,
-                                                  const std::vector<std::string>          & trend_cube_parameters,
-                                                  const std::vector<std::vector<double> > & trend_cube_sampling,
+VoigtDryRockStorage::GenerateDistributionsDryRock(const std::string                       & /*path*/,
+                                                  const std::vector<std::string>          & /*trend_cube_parameters*/,
+                                                  const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
                                                   std::string                             & errTxt) const
 {
-  std::vector<double> volume = getVolume(constituent_volume_fraction_, path, trend_cube_parameters, trend_cube_sampling, errTxt);
+  CheckVolumeConsistency(constituent_volume_fraction_, errTxt);
 
   DistributionsDryRock * dry_rock = NULL; //new DistributionsDryRockVoigt();
 
@@ -207,12 +207,12 @@ HillDryRockStorage::~HillDryRockStorage()
 }
 
 DistributionsDryRock *
-HillDryRockStorage::GenerateDistributionsDryRock(const std::string                       & path,
-                                                 const std::vector<std::string>          & trend_cube_parameters,
-                                                 const std::vector<std::vector<double> > & trend_cube_sampling,
+HillDryRockStorage::GenerateDistributionsDryRock(const std::string                       & /*path*/,
+                                                 const std::vector<std::string>          & /*trend_cube_parameters*/,
+                                                 const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
                                                  std::string                             & errTxt) const
 {
-  std::vector<double> volume = getVolume(constituent_volume_fraction_, path, trend_cube_parameters, trend_cube_sampling, errTxt);
+  CheckVolumeConsistency(constituent_volume_fraction_, errTxt);
 
   DistributionsDryRock * dry_rock = NULL; //new DistributionsDryRockHill();
 
@@ -226,6 +226,7 @@ HillDryRockStorage::GenerateDistributionsDryRock(const std::string              
 
 DEMDryRockStorage::DEMDryRockStorage(std::string                                 host_label,
                                      DistributionWithTrendStorage *              host_volume_fraction,
+                                     DistributionWithTrendStorage *              host_aspect_ratio,
                                      std::vector<std::string>                    inclusion_label,
                                      std::vector<DistributionWithTrendStorage *> inclusion_volume_fraction,
                                      std::vector<DistributionWithTrendStorage *> inclusion_aspect_ratio,
@@ -233,6 +234,7 @@ DEMDryRockStorage::DEMDryRockStorage(std::string                                
                                      std::string                                 moduli)
 : host_label_(host_label),
   host_volume_fraction_(host_volume_fraction),
+  host_aspect_ratio_(host_aspect_ratio),
   inclusion_label_(inclusion_label),
   inclusion_volume_fraction_(inclusion_volume_fraction),
   inclusion_aspect_ratio_(inclusion_aspect_ratio),
@@ -245,6 +247,9 @@ DEMDryRockStorage::~DEMDryRockStorage()
 {
   if(host_volume_fraction_->GetIsSheared() == false)
     delete host_volume_fraction_;
+
+  if(host_aspect_ratio_->GetIsSheared() == false)
+    delete host_aspect_ratio_;
 
   for(int i=0; i<static_cast<int>(inclusion_volume_fraction_.size()); i++) {
     if(inclusion_volume_fraction_[i]->GetIsSheared() == false)
@@ -261,9 +266,9 @@ DEMDryRockStorage::~DEMDryRockStorage()
 }
 
 DistributionsDryRock *
-DEMDryRockStorage::GenerateDistributionsDryRock(const std::string                       & path,
-                                                const std::vector<std::string>          & trend_cube_parameters,
-                                                const std::vector<std::vector<double> > & trend_cube_sampling,
+DEMDryRockStorage::GenerateDistributionsDryRock(const std::string                       & /*path*/,
+                                                const std::vector<std::string>          & /*trend_cube_parameters*/,
+                                                const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
                                                 std::string                             & errTxt) const
 {
   int n_inclusions = static_cast<int>(inclusion_volume_fraction_.size());
@@ -274,7 +279,7 @@ DEMDryRockStorage::GenerateDistributionsDryRock(const std::string               
   for(int i=1; i<n_inclusions+1; i++)
     volume_fractions[i] = inclusion_volume_fraction_[i-1];
 
-  std::vector<double> volume = getVolume(volume_fractions, path, trend_cube_parameters, trend_cube_sampling, errTxt);
+  CheckVolumeConsistency(volume_fractions, errTxt);
 
   DistributionsDryRock * dry_rock = NULL; //new DistributionsDryRockInclusion();
 

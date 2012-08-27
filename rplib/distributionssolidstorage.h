@@ -129,6 +129,7 @@ class DEMSolidStorage : public DistributionsSolidStorage {
 public:
   DEMSolidStorage(std::string                                 host_label,
                   DistributionWithTrendStorage *              host_volume_fraction,
+                  DistributionWithTrendStorage *              host_aspect_ratio,
                   std::vector<std::string>                    inclusion_label,
                   std::vector<DistributionWithTrendStorage *> inclusion_volume_fraction,
                   std::vector<DistributionWithTrendStorage *> inclusion_aspect_ratio);
@@ -143,6 +144,7 @@ public:
 private:
   std::string                                 host_label_;
   DistributionWithTrendStorage *              host_volume_fraction_;
+  DistributionWithTrendStorage *              host_aspect_ratio_;
   std::vector<std::string>                    inclusion_label_;
   std::vector<DistributionWithTrendStorage *> inclusion_volume_fraction_;
   std::vector<DistributionWithTrendStorage *> inclusion_aspect_ratio_;

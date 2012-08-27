@@ -33,19 +33,19 @@ public:
                                                                        const std::vector<std::vector<double> > & trend_cube_sampling,
                                                                        std::string                             & errTxt);
 
-  const bool                             GetIsGaussian() const;
-  const bool                             GetIsDouble()   const;
-  const bool                             GetIsSheared()  const;
+  const bool                             GetIsGaussian()     const;
+  const bool                             GetIsSheared()      const;
+  const bool                             GetIsDistribution() const;
 
 private:
   NRLib::Distribution<double>          * distribution_;
   const NRLib::TrendStorage            * mean_;
   const NRLib::TrendStorage            * variance_;
   DistributionWithTrend                * distribution_with_trend_;
-  const bool                             is_gaussian_;                         // True if distribution is Gaussian
-  const bool                             is_double_;                           // True if object is a double, i.e., if no distribution or trend is used
+
+  const bool                             is_gaussian_;                         // True if distribution is Gaussian //Marit: Slettes hvis Gaussian ikke krever spesielle funksjoner
   const bool                             is_sheared_;                          // True if object is a reservoir variable that can be used for more fluids/solids/rocks/dry-rocks
-  bool                                   is_distribution_;                     // True if object is a distribution
+  const bool                             is_distribution_;                     // True if object is a distribution
 };
 
 #endif

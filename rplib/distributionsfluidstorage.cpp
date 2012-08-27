@@ -111,12 +111,12 @@ ReussFluidStorage::~ReussFluidStorage()
 }
 
 DistributionsFluid *
-ReussFluidStorage::GenerateDistributionsFluid(const std::string                       & path,
-                                              const std::vector<std::string>          & trend_cube_parameters,
-                                              const std::vector<std::vector<double> > & trend_cube_sampling,
+ReussFluidStorage::GenerateDistributionsFluid(const std::string                       & /*path*/,
+                                              const std::vector<std::string>          & /*trend_cube_parameters*/,
+                                              const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
                                               std::string                             & errTxt) const
 {
-  std::vector<double> volume = getVolume(constituent_volume_fraction_, path, trend_cube_parameters, trend_cube_sampling, errTxt);
+  CheckVolumeConsistency(constituent_volume_fraction_, errTxt);
 
   //Make new DistributionsFluidReuss(constituent_label, volume);
   DistributionsFluid * fluid = NULL; //new DistributionsFluidReuss(constituent_label, volume);
@@ -142,12 +142,12 @@ VoigtFluidStorage::~VoigtFluidStorage()
 }
 
 DistributionsFluid *
-VoigtFluidStorage::GenerateDistributionsFluid(const std::string                       & path,
-                                              const std::vector<std::string>          & trend_cube_parameters,
-                                              const std::vector<std::vector<double> > & trend_cube_sampling,
+VoigtFluidStorage::GenerateDistributionsFluid(const std::string                       & /*path*/,
+                                              const std::vector<std::string>          & /*trend_cube_parameters*/,
+                                              const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
                                               std::string                             & errTxt) const
 {
-  std::vector<double> volume = getVolume(constituent_volume_fraction_, path, trend_cube_parameters, trend_cube_sampling, errTxt);
+  CheckVolumeConsistency(constituent_volume_fraction_, errTxt);
 
   DistributionsFluid * fluid = NULL; //new DistributionsFluidVoigt();
 
@@ -172,12 +172,12 @@ HillFluidStorage::~HillFluidStorage()
 }
 
 DistributionsFluid *
-HillFluidStorage::GenerateDistributionsFluid(const std::string                       & path,
-                                             const std::vector<std::string>          & trend_cube_parameters,
-                                             const std::vector<std::vector<double> > & trend_cube_sampling,
+HillFluidStorage::GenerateDistributionsFluid(const std::string                       & /*path*/,
+                                             const std::vector<std::string>          & /*trend_cube_parameters*/,
+                                             const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
                                              std::string                             & errTxt) const
 {
-  std::vector<double> volume = getVolume(constituent_volume_fraction_, path, trend_cube_parameters, trend_cube_sampling, errTxt);
+  CheckVolumeConsistency(constituent_volume_fraction_, errTxt);
 
   DistributionsFluid * fluid = NULL; //new DistributionsFluidHill();
 

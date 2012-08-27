@@ -141,12 +141,12 @@ ReussSolidStorage::~ReussSolidStorage()
 }
 
 DistributionsSolid *
-ReussSolidStorage::GenerateDistributionsSolid(const std::string                       & path,
-                                              const std::vector<std::string>          & trend_cube_parameters,
-                                              const std::vector<std::vector<double> > & trend_cube_sampling,
+ReussSolidStorage::GenerateDistributionsSolid(const std::string                       & /*path*/,
+                                              const std::vector<std::string>          & /*trend_cube_parameters*/,
+                                              const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
                                               std::string                             & errTxt) const
 {
-  std::vector<double> volume = getVolume(constituent_volume_fraction_, path, trend_cube_parameters, trend_cube_sampling, errTxt);
+  CheckVolumeConsistency(constituent_volume_fraction_, errTxt);
 
   DistributionsSolid * solid = NULL; //new DistributionsSolidReuss();
 
@@ -173,12 +173,12 @@ VoigtSolidStorage::~VoigtSolidStorage()
 }
 
 DistributionsSolid *
-VoigtSolidStorage::GenerateDistributionsSolid(const std::string                       & path,
-                                              const std::vector<std::string>          & trend_cube_parameters,
-                                              const std::vector<std::vector<double> > & trend_cube_sampling,
+VoigtSolidStorage::GenerateDistributionsSolid(const std::string                       & /*path*/,
+                                              const std::vector<std::string>          & /*trend_cube_parameters*/,
+                                              const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
                                               std::string                             & errTxt) const
 {
-  std::vector<double> volume = getVolume(constituent_volume_fraction_, path, trend_cube_parameters, trend_cube_sampling, errTxt);
+  CheckVolumeConsistency(constituent_volume_fraction_, errTxt);
 
   DistributionsSolid * solid = NULL; //new DistributionsSolidVoigt();
 
@@ -205,12 +205,12 @@ HillSolidStorage::~HillSolidStorage()
 }
 
 DistributionsSolid *
-HillSolidStorage::GenerateDistributionsSolid(const std::string                       & path,
-                                             const std::vector<std::string>          & trend_cube_parameters,
-                                             const std::vector<std::vector<double> > & trend_cube_sampling,
+HillSolidStorage::GenerateDistributionsSolid(const std::string                       & /*path*/,
+                                             const std::vector<std::string>          & /*trend_cube_parameters*/,
+                                             const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
                                              std::string                             & errTxt) const
 {
-  std::vector<double> volume = getVolume(constituent_volume_fraction_, path, trend_cube_parameters, trend_cube_sampling, errTxt);
+  CheckVolumeConsistency(constituent_volume_fraction_, errTxt);
 
   DistributionsSolid * solid = NULL; //new DistributionsSolidHill();
 
@@ -224,11 +224,13 @@ HillSolidStorage::GenerateDistributionsSolid(const std::string                  
 
 DEMSolidStorage::DEMSolidStorage(std::string                                 host_label,
                                  DistributionWithTrendStorage *              host_volume_fraction,
+                                 DistributionWithTrendStorage *              host_aspect_ratio,
                                  std::vector<std::string>                    inclusion_label,
                                  std::vector<DistributionWithTrendStorage *> inclusion_volume_fraction,
                                  std::vector<DistributionWithTrendStorage *> inclusion_aspect_ratio)
 : host_label_(host_label),
   host_volume_fraction_(host_volume_fraction),
+  host_aspect_ratio_(host_aspect_ratio),
   inclusion_label_(inclusion_label),
   inclusion_volume_fraction_(inclusion_volume_fraction),
   inclusion_aspect_ratio_(inclusion_aspect_ratio)
@@ -239,6 +241,9 @@ DEMSolidStorage::~DEMSolidStorage()
 {
   if(host_volume_fraction_->GetIsSheared() == false)
     delete host_volume_fraction_;
+
+  if(host_aspect_ratio_->GetIsSheared() == false)
+    delete host_aspect_ratio_;
 
   for(int i=0; i<static_cast<int>(inclusion_volume_fraction_.size()); i++) {
     if(inclusion_volume_fraction_[i]->GetIsSheared() == false)
@@ -252,9 +257,9 @@ DEMSolidStorage::~DEMSolidStorage()
 }
 
 DistributionsSolid *
-DEMSolidStorage::GenerateDistributionsSolid(const std::string                       & path,
-                                            const std::vector<std::string>          & trend_cube_parameters,
-                                            const std::vector<std::vector<double> > & trend_cube_sampling,
+DEMSolidStorage::GenerateDistributionsSolid(const std::string                       & /*path*/,
+                                            const std::vector<std::string>          & /*trend_cube_parameters*/,
+                                            const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
                                             std::string                             & errTxt) const
 {
   int n_inclusions = static_cast<int>(inclusion_volume_fraction_.size());
@@ -265,7 +270,7 @@ DEMSolidStorage::GenerateDistributionsSolid(const std::string                   
   for(int i=1; i<n_inclusions+1; i++)
     volume_fractions[i] = inclusion_volume_fraction_[i-1];
 
-  std::vector<double> volume = getVolume(volume_fractions, path, trend_cube_parameters, trend_cube_sampling, errTxt);
+  CheckVolumeConsistency(volume_fractions, errTxt);
 
   DistributionsSolid * solid = NULL; //new DistributionsSolidInclusion();
 

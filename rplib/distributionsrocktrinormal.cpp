@@ -164,7 +164,7 @@ DistributionsRockTriNormal::GeneratePdf(void) const
 bool
 DistributionsRockTriNormal::HasDistribution() const
 {
-  bool has_distribution = false; //Always false as no variable is allowed to have a distribution
+  bool has_distribution = true; //Always true as tri Normal is a Gaussian distribution
   return(has_distribution);
 }
 

@@ -2106,7 +2106,7 @@ XmlModelFile::parseConstituent(TiXmlNode * node, std::string & label, Distributi
 
   std::string dummy;
   if(parseDistributionWithTrend(root, "volume-fraction", volume_fraction, dummy, false, errTxt) == false)
-    volume_fraction = new DistributionWithTrendStorage(RMISSING, false);
+    volume_fraction = NULL;
 
   checkForJunk(root, errTxt, legalCommands, true);
   return(true);
@@ -2168,17 +2168,18 @@ XmlModelFile::parseDEM(TiXmlNode * node, int constituent, std::string label, Dis
   legalCommands.push_back("inclusion");
 
   DistributionWithTrendStorage * host_volume = NULL;
-  std::string host_label;
+  DistributionWithTrendStorage * host_aspect = NULL;
+  std::string                    host_label  = "";
 
-  parseDEMHost(root, host_label, host_volume, errTxt);
+  parseDEMHost(root, host_label, host_aspect, host_volume, errTxt);
 
   std::vector<std::string>                    inclusion_label;
   std::vector<DistributionWithTrendStorage *> inclusion_volume;
   std::vector<DistributionWithTrendStorage *> aspect_ratio;
 
-  DistributionWithTrendStorage * volume = NULL;
-  DistributionWithTrendStorage * aspect = NULL;
-  std::string this_label;
+  DistributionWithTrendStorage * volume     = NULL;
+  DistributionWithTrendStorage * aspect     = NULL;
+  std::string                    this_label = "";
 
   while(parseDEMInclusion(root, this_label, aspect, volume, errTxt) == true) {
     inclusion_label.push_back(this_label);
@@ -2190,15 +2191,15 @@ XmlModelFile::parseDEM(TiXmlNode * node, int constituent, std::string label, Dis
     errTxt += "Implementation error: The DEM model can not be used to mix a fluid\n";
   }
   else if(constituent == ModelSettings::SOLID) {
-    DistributionsSolidStorage * solid = new DEMSolidStorage(host_label, host_volume, inclusion_label, inclusion_volume, aspect_ratio);
+    DistributionsSolidStorage * solid = new DEMSolidStorage(host_label, host_volume, host_aspect, inclusion_label, inclusion_volume, aspect_ratio);
     modelSettings_->addSolid(label, solid);
   }
   else if(constituent == ModelSettings::DRY_ROCK) {
-    DistributionsDryRockStorage * dry_rock = new DEMDryRockStorage(host_label, host_volume, inclusion_label, inclusion_volume, aspect_ratio, total_porosity, moduli);
+    DistributionsDryRockStorage * dry_rock = new DEMDryRockStorage(host_label, host_volume, host_aspect, inclusion_label, inclusion_volume, aspect_ratio, total_porosity, moduli);
     modelSettings_->addDryRock(label, dry_rock);
   }
   else if(constituent == ModelSettings::ROCK) {
-    DistributionsRockStorage * rock = new DEMRockStorage(host_label, host_volume, inclusion_label, inclusion_volume, aspect_ratio);
+    DistributionsRockStorage * rock = new DEMRockStorage(host_label, host_volume, host_aspect, inclusion_label, inclusion_volume, aspect_ratio);
     modelSettings_->addRock(label, rock);
   }
 
@@ -2207,7 +2208,11 @@ XmlModelFile::parseDEM(TiXmlNode * node, int constituent, std::string label, Dis
 }
 
 bool
-XmlModelFile::parseDEMHost(TiXmlNode * node, std::string & label, DistributionWithTrendStorage *& volume_fraction, std::string & errTxt)
+XmlModelFile::parseDEMHost(TiXmlNode                     * node,
+                           std::string                   & label,
+                           DistributionWithTrendStorage *& aspect_ratio,
+                           DistributionWithTrendStorage *& volume_fraction,
+                           std::string                   & errTxt)
 {
 
   TiXmlNode * root = node->FirstChildElement("host");
@@ -2219,6 +2224,7 @@ XmlModelFile::parseDEMHost(TiXmlNode * node, std::string & label, DistributionWi
   legalCommands.push_back("fluid");
   legalCommands.push_back("dry-rock");
   legalCommands.push_back("volume-fraction");
+  legalCommands.push_back("aspect-ratio");
 
   int host_given = 0;
   while(parseSolid(root, label, errTxt) == true)
@@ -2233,7 +2239,10 @@ XmlModelFile::parseDEMHost(TiXmlNode * node, std::string & label, DistributionWi
 
   std::string dummy;
   if(parseDistributionWithTrend(root, "volume-fraction", volume_fraction, dummy, false, errTxt) == false)
-    errTxt += "The volume fraction must be given for the host of the dry-rock\n";
+    errTxt += "The volume fraction must be given for the host of the DEM model\n";
+
+  if(parseDistributionWithTrend(root, "aspect-ratio", aspect_ratio, dummy, false, errTxt) == false)
+    errTxt += "The aspect ratio must be given for the host of the DEM model\n";
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -2267,10 +2276,10 @@ XmlModelFile::parseDEMInclusion(TiXmlNode * node, std::string & label, Distribut
 
   std::string dummy;
   if(parseDistributionWithTrend(root, "volume-fraction", volume_fraction, dummy, false, errTxt) == false)
-    errTxt += "The volume fraction must be given for the inclusions of the dry-rock\n";
+    errTxt += "The volume fraction must be given for the inclusions of the DEM model\n";
 
   if(parseDistributionWithTrend(root, "aspect-ratio", aspect_ratio, dummy, false, errTxt) == false)
-    errTxt += "The aspect ratio must be given for the inclusions of the dry-rock\n";
+    errTxt += "The aspect ratio must be given for the inclusions of the DEM model\n";
 
   checkForJunk(root, errTxt, legalCommands, true);
   return(true);

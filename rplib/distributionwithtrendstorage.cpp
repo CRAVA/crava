@@ -9,7 +9,6 @@
 
 DistributionWithTrendStorage::DistributionWithTrendStorage()
 : is_gaussian_(false),
-  is_double_(false),
   is_sheared_(false),
   is_distribution_(false)
 {
@@ -18,7 +17,6 @@ DistributionWithTrendStorage::DistributionWithTrendStorage()
 DistributionWithTrendStorage::DistributionWithTrendStorage(double value,
                                                            bool   is_sheared)
 : is_gaussian_(false),
-  is_double_(true),
   is_sheared_(is_sheared),
   is_distribution_(false)
 {
@@ -32,7 +30,6 @@ DistributionWithTrendStorage::DistributionWithTrendStorage(double value,
 DistributionWithTrendStorage::DistributionWithTrendStorage(const NRLib::TrendStorage * trend,
                                                            bool                        is_sheared)
 : is_gaussian_(false),
-  is_double_(false),
   is_sheared_(is_sheared),
   is_distribution_(false)
 
@@ -50,7 +47,6 @@ DistributionWithTrendStorage::DistributionWithTrendStorage(NRLib::Distribution<d
                                                            bool                                is_gaussian,
                                                            bool                                is_sheared)
 : is_gaussian_(is_gaussian),
-  is_double_(false),
   is_sheared_(is_sheared),
   is_distribution_(true)
 {
@@ -91,13 +87,14 @@ DistributionWithTrendStorage::GenerateDistributionWithTrend(const std::string   
 {
   //Make sure sheared variables are only generated one time
   if(distribution_with_trend_ == NULL) {
-    NRLib::Trend * mean_trend      = mean_              ->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,errTxt);
-    NRLib::Trend * variance_trend  = variance_          ->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,errTxt);
+    NRLib::Trend * mean_trend      = mean_    ->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,errTxt);
+    NRLib::Trend * variance_trend  = variance_->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,errTxt);
 
-    distribution_with_trend_                            = new DistributionWithTrend(distribution_, mean_trend, variance_trend, is_sheared_, is_distribution_); //NBNB Marit: Use variance here, but sd is used in DistributionWithTrend(). Need to fix this
+    distribution_with_trend_= new DistributionWithTrend(distribution_, mean_trend, variance_trend, is_sheared_, is_distribution_); //NBNB Marit: Use variance here, but sd is used in DistributionWithTrend(). Need to fix this
 
-    //distribution_, mean_trend and variance_trend are deleted in dist_with_trend
     distribution_ = NULL;
+
+    // Variables are deleted in distribution_with_trend
   }
 
   return(distribution_with_trend_);
@@ -110,13 +107,13 @@ DistributionWithTrendStorage::GetIsGaussian() const
 }
 
 const bool
-DistributionWithTrendStorage::GetIsDouble() const
-{
-  return(is_double_);
-}
-
-const bool
 DistributionWithTrendStorage::GetIsSheared() const
 {
   return(is_sheared_);
+}
+
+const bool
+DistributionWithTrendStorage::GetIsDistribution() const
+{
+  return(is_distribution_);
 }
