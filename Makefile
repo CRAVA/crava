@@ -3,26 +3,27 @@
 #
 include Makeheader
 
-DIRS        = src lib nrlib fft/fftw fft/rfftw
+DIRS        = src lib nrlib boost fft/fftw fft/rfftw
 OBJDIR      = obj
-OBJSUBDIR   = obj/fft
+OBJFFTDIR   = obj/fft
+OBJBOOSTDIR = obj/boost
 OBJNRLIBDIR = obj/nrlib
 OBJFINDGRAM = findgrammar/findgrammar.o
-OBJGRAMMAR  = obj/nrlib/iotools/fileio.o               \
-              obj/nrlib/tinyxml/tinyxml.o              \
-              obj/nrlib/tinyxml/tinyxmlerror.o         \
-              obj/nrlib/tinyxml/tinyxmlparser.o        \
-              obj/nrlib/boost/system/error_code.o      \
-              obj/nrlib/boost/filesystem/path.o        \
-              obj/nrlib/boost/filesystem/operations.o  \
-              obj/nrlib/boost/filesystem/portability.o
+OBJGRAMMAR  = obj/nrlib/iotools/fileio.o         \
+              obj/nrlib/tinyxml/tinyxml.o        \
+              obj/nrlib/tinyxml/tinyxmlerror.o   \
+              obj/nrlib/tinyxml/tinyxmlparser.o  \
+              obj/boost/system/error_code.o      \
+              obj/boost/filesystem/path.o        \
+              obj/boost/filesystem/operations.o  \
+              obj/boost/filesystem/portability.o
 INCLUDE     = -I. -I./fft/include -I./nrlib
-CPPFLAGS   += $(INCLUDE) 
+CPPFLAGS   += $(INCLUDE)
 
 all:	$(PROGRAM)
 
 $(PROGRAM): $(DIRS) main.o
-	$(PURIFY) $(CXX) $(CXXFLAGS) $(LFLAGS) -o $@ $(OBJDIR)/*.o $(OBJSUBDIR)/*.o $(OBJNRLIBDIR)/*/*.o $(OBJNRLIBDIR)/*/*/*.o main.o
+	$(PURIFY) $(CXX) $(CXXFLAGS) $(LFLAGS) -o $@ $(OBJDIR)/*.o $(OBJFFTDIR)/*.o $(OBJBOOSTDIR)/*/*.o $(OBJNRLIBDIR)/*/*.o  main.o
 
 $(GRAMMAR): findgrammar/findgrammar.o
 	$(PURIFY) $(CXX) $(CXXFLAGS) $(LFLAGS) -o $@ $(OBJGRAMMAR) $(OBJFINDGRAM)
@@ -30,12 +31,12 @@ $(GRAMMAR): findgrammar/findgrammar.o
 $(OBJDIR):
 	install -d $(OBJDIR)
 
-$(OBJSUBDIR):
-	install -d $(OBJSUBDIR)
+$(OBJFFTDIR):
+	install -d $(OBJFFTDIR)
 
 .PHONY: clean $(DIRS)
 
-$(DIRS): $(OBJDIR) $(OBJSUBDIR)
+$(DIRS): $(OBJDIR) $(OBJFFTDIR)
 	cd $@ && $(MAKE)
 
 clean:
@@ -46,13 +47,12 @@ cleanlib:
 	rm -f $(OBJDIR)/*.o
 	rm -f $(PROGRAM) main.o
 	rm -f $(OBJNRLIBDIR)/*/*.o
-	rm -f $(OBJNRLIBDIR)/*/*/*.o
 
 cleanall:
 	rm -f $(OBJDIR)/*.o
-	rm -f $(OBJSUBDIR)/*.o
+	rm -f $(OBJFFTDIR)/*.o
 	rm -f $(OBJNRLIBDIR)/*/*.o
-	rm -f $(OBJNRLIBDIR)/*/*/*.o
+	rm -f $(OBJBOOOSTDIR)/*/*.o
 	rm -f $(PROGRAM) $(GRAMMAR) $(OBJFINDGRAM) main.o
 
 test:	$(PROGRAM) $(GRAMMAR)
