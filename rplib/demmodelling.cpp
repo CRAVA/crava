@@ -18,6 +18,7 @@
 #include "rplib/distributionsfluidmixevolution.h"
 #include "rplib/distributionsrockinclusionevolution.h"
 #include "rplib/distributionwithtrend.h"
+#include "rplib/deltadistributionwithtrend.h"
 
 #include "nrlib/exception/exception.hpp"
 #include "nrlib/random/delta.hpp"
@@ -772,41 +773,29 @@ DEMTools::DebugTestCalcEffectiveModulus4(double& effective_bulk_modulus,
   //// Mineral properties, distribution functions.
   //// (According to Table A.4.1, p458-459, RP Handbook, Mavko et al. 2009).
 
-  NRLib::Distribution<double> * distr_quartz_k2  = new NRLib::Delta(0.0);
-  NRLib::Trend * trend_quartz_k         = new NRLib::TrendConstant(37.0);
-  NRLib::Trend * std_quartz_k           = new NRLib::TrendConstant(0.0);
-  DistributionWithTrend distr_quartz_k(distr_quartz_k2, trend_quartz_k, std_quartz_k, false, false);
+  NRLib::Trend * trend_quartz_k          = new NRLib::TrendConstant(37.0);
+  DistributionWithTrend * distr_quartz_k = new DeltaDistributionWithTrend(trend_quartz_k, false);
 
-  NRLib::Distribution<double> * distr_quartz_mu2  = new NRLib::Delta(0.0);
-  NRLib::Trend * trend_quartz_mu         = new NRLib::TrendConstant(44.0);
-  NRLib::Trend * std_quartz_mu           = new NRLib::TrendConstant(0.0);
-  DistributionWithTrend distr_quartz_mu(distr_quartz_mu2, trend_quartz_mu, std_quartz_mu, false, false);
+  NRLib::Trend * trend_quartz_mu          = new NRLib::TrendConstant(44.0);
+  DistributionWithTrend * distr_quartz_mu = new DeltaDistributionWithTrend(trend_quartz_mu, false);
 
-  NRLib::Distribution<double> * distr_quartz_rho2  = new NRLib::Delta(0.0);
-  NRLib::Trend * trend_quartz_rho         = new NRLib::TrendConstant(2.65);
-  NRLib::Trend * std_quartz_rho           = new NRLib::TrendConstant(0.0);
-  DistributionWithTrend distr_quartz_rho(distr_quartz_rho2, trend_quartz_rho, std_quartz_rho, false, false);
+  NRLib::Trend * trend_quartz_rho          = new NRLib::TrendConstant(2.65);
+  DistributionWithTrend * distr_quartz_rho = new DeltaDistributionWithTrend(trend_quartz_rho, false);
 
   DistributionsMineralEvolution * distr_quartz_evolution = NULL;
-  DistributionsSolid * distr_quartz = new DistributionsMineral(&distr_quartz_k, &distr_quartz_mu, &distr_quartz_rho, distr_quartz_evolution);
+  DistributionsSolid * distr_quartz = new DistributionsMineral(distr_quartz_k, distr_quartz_mu, distr_quartz_rho, distr_quartz_evolution);
 
-  NRLib::Distribution<double> * distr_clay_k2  = new NRLib::Delta(0.0);
-  NRLib::Trend * trend_clay_k         = new NRLib::TrendConstant(21.0);
-  NRLib::Trend * std_clay_k           = new NRLib::TrendConstant(0.0);
-  DistributionWithTrend distr_clay_k(distr_clay_k2, trend_clay_k, std_clay_k, false, false);
+  NRLib::Trend * trend_clay_k          = new NRLib::TrendConstant(21.0);
+  DistributionWithTrend * distr_clay_k = new DeltaDistributionWithTrend(trend_clay_k, false);
 
-  NRLib::Distribution<double> * distr_clay_mu2  = new NRLib::Delta(0.0);
-  NRLib::Trend * trend_clay_mu         = new NRLib::TrendConstant(7.0);
-  NRLib::Trend * std_clay_mu           = new NRLib::TrendConstant(0.0);
-  DistributionWithTrend distr_clay_mu(distr_clay_mu2, trend_clay_mu, std_clay_mu, false, false);
+  NRLib::Trend * trend_clay_mu          = new NRLib::TrendConstant(7.0);
+  DistributionWithTrend * distr_clay_mu = new DeltaDistributionWithTrend(trend_clay_mu, false);
 
-  NRLib::Distribution<double> * distr_clay_rho2  = new NRLib::Delta(0.0);
-  NRLib::Trend * trend_clay_rho         = new NRLib::TrendConstant(2.6);
-  NRLib::Trend * std_clay_rho           = new NRLib::TrendConstant(0.0);
-  DistributionWithTrend distr_clay_rho(distr_clay_rho2, trend_clay_rho, std_clay_rho, false, false);
+  NRLib::Trend * trend_clay_rho          = new NRLib::TrendConstant(2.6);
+  DistributionWithTrend * distr_clay_rho = new DeltaDistributionWithTrend(trend_clay_rho, false);
 
   DistributionsMineralEvolution * distr_clay_evolution = NULL;
-  DistributionsSolid * distr_clay = new DistributionsMineral(&distr_clay_k, &distr_clay_mu, &distr_clay_rho, distr_clay_evolution);
+  DistributionsSolid * distr_clay = new DistributionsMineral(distr_clay_k, distr_clay_mu, distr_clay_rho, distr_clay_evolution);
 
   //// Mixing, effective solid properties. Distribution functions.
   std::vector< DistributionsSolid * > distr_solid;
@@ -815,17 +804,11 @@ DEMTools::DebugTestCalcEffectiveModulus4(double& effective_bulk_modulus,
 
   std::vector< DistributionWithTrend * > distr_vol_frac;
 
-  NRLib::Distribution<double> * distr_vol_frac2  = new NRLib::Delta(0.0);
-  NRLib::Trend * trend_vol_frac                  = new NRLib::TrendConstant(0.15);
-  NRLib::Trend * std_vol_frac                    = new NRLib::TrendConstant(0.0);
+  NRLib::Trend * trend_vol_frac    = new NRLib::TrendConstant(0.15);
+  NRLib::Trend * trend_vol_fracbg  = new NRLib::TrendConstant(1.0-0.15);
 
-
-  NRLib::Distribution<double> * distr_vol_fracbg   = new NRLib::Delta(0.0);
-  NRLib::Trend * trend_vol_fracbg                  = new NRLib::TrendConstant(1.0-0.15);
-  NRLib::Trend * std_vol_fracbg                    = new NRLib::TrendConstant(0.0);
-
-  distr_vol_frac.push_back(new DistributionWithTrend(distr_vol_frac2, trend_vol_frac, std_vol_frac, false, false));
-  distr_vol_frac.push_back(new DistributionWithTrend(distr_vol_fracbg, trend_vol_fracbg, std_vol_fracbg, false, false));
+  distr_vol_frac.push_back(new DeltaDistributionWithTrend(trend_vol_frac, false));
+  distr_vol_frac.push_back(new DeltaDistributionWithTrend(trend_vol_fracbg, false));
 
   DistributionsSolidMixEvolution * distr_solidmix_evolution = NULL;
   DistributionsSolid * distr_solid_mixed = new DistributionsSolidMix(distr_solid, distr_vol_frac, DEMTools::Hill, distr_solidmix_evolution);
@@ -834,25 +817,19 @@ DEMTools::DebugTestCalcEffectiveModulus4(double& effective_bulk_modulus,
   //// Fluid properties
   //// (Brine properties according to Batzle, M. and Wang, Z. 1992, and
   //// CO2 properties according to Z. Wang's compilation and measurements, RPH Tools)
-  NRLib::Distribution<double> * distr_pore  = new NRLib::Delta(0.0);
-  NRLib::Trend * trend_pore                 = new NRLib::TrendConstant(20.0);
-  NRLib::Trend * std_pore                   = new NRLib::TrendConstant(0.0);
-  DistributionWithTrend distr_pore_pressure(distr_pore, trend_pore, std_pore, false, false);
+  NRLib::Trend * trend_pore                   = new NRLib::TrendConstant(20.0);
+  DistributionWithTrend * distr_pore_pressure = new DeltaDistributionWithTrend(trend_pore, false);
 
-  NRLib::Distribution<double> * distr_temp         = new NRLib::Delta(0.0);
-  NRLib::Trend * trend_temperature                 = new NRLib::TrendConstant(50.0);
-  NRLib::Trend * std_temperature                   = new NRLib::TrendConstant(0.0);
-  DistributionWithTrend distr_temperature(distr_temp, trend_temperature, std_temperature, false, false);
+  NRLib::Trend * trend_temperature          = new NRLib::TrendConstant(50.0);
+  DistributionWithTrend * distr_temperature = new DeltaDistributionWithTrend(trend_temperature, false);
 
-  NRLib::Distribution<double> * distr_salinity2         = new NRLib::Delta(0.0);
-  NRLib::Trend * trend_salinity                         = new NRLib::TrendConstant(0.05);
-  NRLib::Trend * std_salinity                           = new NRLib::TrendConstant(0.0);
-  DistributionWithTrend distr_salinity(distr_salinity2, trend_salinity, std_salinity, false, false);
+  NRLib::Trend * trend_salinity          = new NRLib::TrendConstant(0.05);
+  DistributionWithTrend * distr_salinity = new DeltaDistributionWithTrend(trend_salinity, false);
 
   DistributionsBrineEvolution * distr_brine_evolution = NULL;
   DistributionsCO2Evolution   * distr_co2_evolution   = NULL;
-  DistributionsFluid * distr_brine  = new DistributionsBrine(&distr_temperature, &distr_pore_pressure, &distr_salinity, distr_brine_evolution);
-  DistributionsFluid * distr_co2    = new DistributionsCO2(&distr_temperature, &distr_pore_pressure, distr_co2_evolution);
+  DistributionsFluid * distr_brine  = new DistributionsBrine(distr_temperature, distr_pore_pressure, distr_salinity, distr_brine_evolution);
+  DistributionsFluid * distr_co2    = new DistributionsCO2(distr_temperature, distr_pore_pressure, distr_co2_evolution);
   //Fluid * brine = distr_brine->GenerateSample();
   //Fluid * co2   = distr_co2->GenerateSample();
 
@@ -862,8 +839,8 @@ DEMTools::DebugTestCalcEffectiveModulus4(double& effective_bulk_modulus,
   distr_fluid.push_back(distr_co2);
 
   std::vector< DistributionWithTrend * > distr_vol_frac2f;
-  distr_vol_frac2f.push_back(new DistributionWithTrend(new NRLib::Delta(0.0), new NRLib::TrendConstant(0.8), new NRLib::TrendConstant(0.0), false, false));
-  distr_vol_frac2f.push_back(new DistributionWithTrend(new NRLib::Delta(0.0), new NRLib::TrendConstant(1.0 - 0.8), new NRLib::TrendConstant(0.0), false, false));
+  distr_vol_frac2f.push_back(new DeltaDistributionWithTrend(new NRLib::TrendConstant(0.8), false));
+  distr_vol_frac2f.push_back(new DeltaDistributionWithTrend(new NRLib::TrendConstant(1.0 - 0.8), false));
 
   DistributionsFluidMixEvolution * distr_fluidmix_evolution  = NULL;
   DistributionsFluid * distr_fluid_mixed = new DistributionsFluidMix(distr_fluid, distr_vol_frac2f, DEMTools::Reuss, distr_fluidmix_evolution);
@@ -878,28 +855,26 @@ DEMTools::DebugTestCalcEffectiveModulus4(double& effective_bulk_modulus,
   std::vector< DistributionWithTrend * > distr_incl_concentration;
 
   if (my_geo_type == Spherical) {
-    distr_incl_spectrum.push_back( new DistributionWithTrend(new NRLib::Delta(0.0), new NRLib::TrendConstant(1.0), new NRLib::TrendConstant(0.0), false, false));
-    distr_incl_concentration.push_back( new DistributionWithTrend(new NRLib::Delta(0.0), new NRLib::TrendConstant(1.0), new NRLib::TrendConstant(0.0), false, false));
+    distr_incl_spectrum.push_back( new DeltaDistributionWithTrend(new NRLib::TrendConstant(1.0), false));
+    distr_incl_concentration.push_back( new DeltaDistributionWithTrend(new NRLib::TrendConstant(1.0), false));
   }
   else if (my_geo_type == Mixed) {
-    distr_incl_spectrum.push_back( new DistributionWithTrend(new NRLib::Delta(0.0), new NRLib::TrendConstant(1.0), new NRLib::TrendConstant(0.0), false, false));
-    distr_incl_spectrum.push_back( new DistributionWithTrend(new NRLib::Delta(0.0), new NRLib::TrendConstant(0.5000), new NRLib::TrendConstant(0.0), false, false));
-    distr_incl_spectrum.push_back( new DistributionWithTrend(new NRLib::Delta(0.0), new NRLib::TrendConstant(0.1000), new NRLib::TrendConstant(0.0), false, false));
-    distr_incl_spectrum.push_back( new DistributionWithTrend(new NRLib::Delta(0.0), new NRLib::TrendConstant(0.0100), new NRLib::TrendConstant(0.0), false, false));
-    distr_incl_spectrum.push_back( new DistributionWithTrend(new NRLib::Delta(0.0), new NRLib::TrendConstant(1.0000e-003), new NRLib::TrendConstant(0.0), false, false));
-    distr_incl_spectrum.push_back( new DistributionWithTrend(new NRLib::Delta(0.0), new NRLib::TrendConstant(1.0000e-004), new NRLib::TrendConstant(0.0), false, false));
-    distr_incl_concentration.push_back( new DistributionWithTrend(new NRLib::Delta(0.0), new NRLib::TrendConstant(0.6419), new NRLib::TrendConstant(0.0), false, false));
-    distr_incl_concentration.push_back( new DistributionWithTrend(new NRLib::Delta(0.0), new NRLib::TrendConstant(0.3205), new NRLib::TrendConstant(0.0), false, false));
-    distr_incl_concentration.push_back( new DistributionWithTrend(new NRLib::Delta(0.0), new NRLib::TrendConstant(0.0321), new NRLib::TrendConstant(0.0), false, false));
-    distr_incl_concentration.push_back( new DistributionWithTrend(new NRLib::Delta(0.0), new NRLib::TrendConstant(0.0050), new NRLib::TrendConstant(0.0), false, false));
-    distr_incl_concentration.push_back( new DistributionWithTrend(new NRLib::Delta(0.0), new NRLib::TrendConstant(5.0000e-004), new NRLib::TrendConstant(0.0), false, false));
-    distr_incl_concentration.push_back( new DistributionWithTrend(new NRLib::Delta(0.0), new NRLib::TrendConstant(5.0000e-005), new NRLib::TrendConstant(0.0), false, false));
+    distr_incl_spectrum.push_back( new DeltaDistributionWithTrend(new NRLib::TrendConstant(1.0), false));
+    distr_incl_spectrum.push_back( new DeltaDistributionWithTrend(new NRLib::TrendConstant(0.5000), false));
+    distr_incl_spectrum.push_back( new DeltaDistributionWithTrend(new NRLib::TrendConstant(0.1000), false));
+    distr_incl_spectrum.push_back( new DeltaDistributionWithTrend(new NRLib::TrendConstant(0.0100), false));
+    distr_incl_spectrum.push_back( new DeltaDistributionWithTrend(new NRLib::TrendConstant(1.0000e-003), false));
+    distr_incl_spectrum.push_back( new DeltaDistributionWithTrend(new NRLib::TrendConstant(1.0000e-004), false));
+    distr_incl_concentration.push_back( new DeltaDistributionWithTrend(new NRLib::TrendConstant(0.6419), false));
+    distr_incl_concentration.push_back( new DeltaDistributionWithTrend(new NRLib::TrendConstant(0.3205), false));
+    distr_incl_concentration.push_back( new DeltaDistributionWithTrend(new NRLib::TrendConstant(0.0321), false));
+    distr_incl_concentration.push_back( new DeltaDistributionWithTrend(new NRLib::TrendConstant(0.0050), false));
+    distr_incl_concentration.push_back( new DeltaDistributionWithTrend(new NRLib::TrendConstant(5.0000e-004), false));
+    distr_incl_concentration.push_back( new DeltaDistributionWithTrend(new NRLib::TrendConstant(5.0000e-005), false));
   }
 
-  NRLib::Distribution<double> * distr_porosity2         = new NRLib::Delta(0.0);
-  NRLib::Trend * trend_porosity                         = new NRLib::TrendConstant(0.2);
-  NRLib::Trend * std_porosity                           = new NRLib::TrendConstant(0.0);
-  DistributionWithTrend distr_porosity(distr_porosity2, trend_porosity, std_porosity, false, false);
+  NRLib::Trend * trend_porosity          = new NRLib::TrendConstant(0.2);
+  DistributionWithTrend * distr_porosity = new DeltaDistributionWithTrend(trend_porosity, false);
 
 
   //// Rock, distribution functions.
@@ -908,7 +883,7 @@ DEMTools::DebugTestCalcEffectiveModulus4(double& effective_bulk_modulus,
                                                                         distr_fluid_mixed,
                                                                         distr_incl_spectrum,
                                                                         distr_incl_concentration,
-                                                                        &distr_porosity,
+                                                                        distr_porosity,
                                                                         distr_evolution);
 
 
@@ -946,6 +921,21 @@ DEMTools::DebugTestCalcEffectiveModulus4(double& effective_bulk_modulus,
 
   delete distr_clay;
   delete distr_quartz;
+
+  delete distr_quartz_k;
+  delete distr_quartz_mu;
+  delete distr_quartz_rho;
+
+  delete distr_clay_k;
+  delete distr_clay_mu;
+  delete distr_clay_rho;
+
+  delete distr_pore_pressure;
+  delete distr_temperature;
+
+  delete distr_salinity;
+
+  delete distr_porosity;
 }
 
 //void

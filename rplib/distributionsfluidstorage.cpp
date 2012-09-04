@@ -199,13 +199,13 @@ BatzleWangFluidStorage::BatzleWangFluidStorage(DistributionWithTrendStorage * po
 
 BatzleWangFluidStorage::~BatzleWangFluidStorage()
 {
-  if(pore_pressure_->GetIsSheared() == false)
+  if(pore_pressure_->GetIsShared() == false)
     delete pore_pressure_;
 
-  if(temperature_->GetIsSheared() == false)
+  if(temperature_->GetIsShared() == false)
     delete temperature_;
 
-  if(salinity_->GetIsSheared() == false)
+  if(salinity_->GetIsShared() == false)
     delete salinity_;
 }
 

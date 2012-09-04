@@ -6,46 +6,80 @@
 #include "nrlib/random/distribution.hpp"
 #include "nrlib/trend/trendstorage.hpp"
 
+
 class DistributionWithTrendStorage
 {
 public:
   DistributionWithTrendStorage();
 
-  DistributionWithTrendStorage(double value,
-                               bool is_sheared);
+  virtual ~DistributionWithTrendStorage();
 
-  DistributionWithTrendStorage(const NRLib::TrendStorage * trend,
-                               bool                        is_sheared);
+  virtual DistributionWithTrend        * GenerateDistributionWithTrend(const std::string                       & /*path*/,
+                                                                       const std::vector<std::string>          & /*trend_cube_parameters*/,
+                                                                       const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
+                                                                       std::string                             & /*errTxt*/)                    = 0;
 
-  DistributionWithTrendStorage(NRLib::Distribution<double>       * distribution,
-                               const NRLib::TrendStorage         * mean,
-                               const NRLib::TrendStorage         * variance,
-                               bool                                is_gaussian,
-                               bool                                is_sheared);
+  virtual NRLib::TrendStorage          * CloneMean() const = 0;
 
-  ~DistributionWithTrendStorage();
+  virtual bool                           GetIsShared() const = 0;
 
-  NRLib::TrendStorage                  * CloneMean();
-  NRLib::TrendStorage                  * CloneVariance();
+};
 
-  const DistributionWithTrend          * GenerateDistributionWithTrend(const std::string                       & path,
-                                                                       const std::vector<std::string>          & trend_cube_parameters,
-                                                                       const std::vector<std::vector<double> > & trend_cube_sampling,
-                                                                       std::string                             & errTxt);
+class DeltaDistributionWithTrendStorage : public DistributionWithTrendStorage
+{
+public:
 
-  const bool                             GetIsGaussian()     const;
-  const bool                             GetIsSheared()      const;
-  const bool                             GetIsDistribution() const;
+  DeltaDistributionWithTrendStorage();
+
+  DeltaDistributionWithTrendStorage(double mean,
+                                    bool   is_shared);
+
+  DeltaDistributionWithTrendStorage(const NRLib::TrendStorage * mean,
+                                    bool                        is_shared);
+
+  virtual ~DeltaDistributionWithTrendStorage();
+
+  virtual DistributionWithTrend          * GenerateDistributionWithTrend(const std::string                       & path,
+                                                                         const std::vector<std::string>          & trend_cube_parameters,
+                                                                         const std::vector<std::vector<double> > & trend_cube_sampling,
+                                                                         std::string                             & errTxt);
+
+  virtual NRLib::TrendStorage            * CloneMean() const;
+
+  virtual bool                             GetIsShared() const   { return(is_shared_) ;}
 
 private:
-  NRLib::Distribution<double>          * distribution_;
+  const NRLib::TrendStorage            * mean_;
+  DistributionWithTrend                * distribution_with_trend_;
+  const bool                             is_shared_;                          // True if object is a reservoir variable that can be used for more fluids/solids/rocks/dry-rocks
+};
+
+class NormalDistributionWithTrendStorage : public DistributionWithTrendStorage
+{
+public:
+
+  NormalDistributionWithTrendStorage();
+
+  NormalDistributionWithTrendStorage(const NRLib::TrendStorage * mean,
+                                     const NRLib::TrendStorage * variance,
+                                     bool                        is_shared);
+
+  virtual ~NormalDistributionWithTrendStorage();
+
+  virtual DistributionWithTrend          * GenerateDistributionWithTrend(const std::string                       & path,
+                                                                         const std::vector<std::string>          & trend_cube_parameters,
+                                                                         const std::vector<std::vector<double> > & trend_cube_sampling,
+                                                                         std::string                             & errTxt);
+
+  virtual NRLib::TrendStorage            * CloneMean() const;
+
+  virtual bool                             GetIsShared() const   { return(is_shared_) ;}
+
+private:
   const NRLib::TrendStorage            * mean_;
   const NRLib::TrendStorage            * variance_;
   DistributionWithTrend                * distribution_with_trend_;
-
-  const bool                             is_gaussian_;                         // True if distribution is Gaussian //Marit: Slettes hvis Gaussian ikke krever spesielle funksjoner
-  const bool                             is_sheared_;                          // True if object is a reservoir variable that can be used for more fluids/solids/rocks/dry-rocks
-  const bool                             is_distribution_;                     // True if object is a distribution
+  const bool                             is_shared_;                          // True if object is a reservoir variable that can be used for more fluids/solids/rocks/dry-rocks
 };
 
 #endif

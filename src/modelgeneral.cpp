@@ -51,6 +51,7 @@
 #include "rplib/distributionssolidstorage.h"
 #include "rplib/distributionsrockstorage.h"
 #include "rplib/distributionsdryrockstorage.h"
+#include "rplib/distributionwithtrendstorage.h"
 
 
 ModelGeneral::ModelGeneral(ModelSettings *& modelSettings, const InputFiles * inputFiles, Simbox *& timeBGSimbox)

@@ -46,7 +46,7 @@ TabulatedVelocityDryRockStorage::~TabulatedVelocityDryRockStorage()
   delete correlation_vp_density_;
   delete correlation_vs_density_;
 
-  if(total_porosity_->GetIsSheared() == false)
+  if(total_porosity_->GetIsShared() == false)
     delete total_porosity_;
 }
 
@@ -93,7 +93,7 @@ TabulatedModulusDryRockStorage::~TabulatedModulusDryRockStorage()
   delete correlation_bulk_density_;
   delete correlation_shear_density_;
 
-  if(total_porosity_->GetIsSheared() == false)
+  if(total_porosity_->GetIsShared() == false)
     delete total_porosity_;
 }
 
@@ -128,7 +128,7 @@ ReussDryRockStorage::~ReussDryRockStorage()
   for(int i=0; i<static_cast<int>(constituent_volume_fraction_.size()); i++)
     delete constituent_volume_fraction_[i];
 
-  if(total_porosity_->GetIsSheared() == false)
+  if(total_porosity_->GetIsShared() == false)
     delete total_porosity_;
 }
 
@@ -165,7 +165,7 @@ VoigtDryRockStorage::~VoigtDryRockStorage()
   for(int i=0; i<static_cast<int>(constituent_volume_fraction_.size()); i++)
     delete constituent_volume_fraction_[i];
 
-  if(total_porosity_->GetIsSheared() == false)
+  if(total_porosity_->GetIsShared() == false)
     delete total_porosity_;
 }
 
@@ -202,7 +202,7 @@ HillDryRockStorage::~HillDryRockStorage()
   for(int i=0; i<static_cast<int>(constituent_volume_fraction_.size()); i++)
     delete constituent_volume_fraction_[i];
 
-  if(total_porosity_->GetIsSheared() == false)
+  if(total_porosity_->GetIsShared() == false)
     delete total_porosity_;
 }
 
@@ -245,23 +245,23 @@ DEMDryRockStorage::DEMDryRockStorage(std::string                                
 
 DEMDryRockStorage::~DEMDryRockStorage()
 {
-  if(host_volume_fraction_->GetIsSheared() == false)
+  if(host_volume_fraction_->GetIsShared() == false)
     delete host_volume_fraction_;
 
-  if(host_aspect_ratio_->GetIsSheared() == false)
+  if(host_aspect_ratio_->GetIsShared() == false)
     delete host_aspect_ratio_;
 
   for(int i=0; i<static_cast<int>(inclusion_volume_fraction_.size()); i++) {
-    if(inclusion_volume_fraction_[i]->GetIsSheared() == false)
+    if(inclusion_volume_fraction_[i]->GetIsShared() == false)
       delete inclusion_volume_fraction_[i];
   }
 
   for(int i=0; i<static_cast<int>(inclusion_aspect_ratio_.size()); i++) {
-    if(inclusion_aspect_ratio_[i]->GetIsSheared() == false)
+    if(inclusion_aspect_ratio_[i]->GetIsShared() == false)
       delete inclusion_aspect_ratio_[i];
   }
 
-  if(total_porosity_->GetIsSheared() == false)
+  if(total_porosity_->GetIsShared() == false)
     delete total_porosity_;
 }
 

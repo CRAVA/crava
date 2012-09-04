@@ -6173,6 +6173,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\rplib\deltadistributionwithtrend.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\rplib\dem.cpp"
 					>
 				</File>
@@ -6262,6 +6266,10 @@
 				</File>
 				<File
 					RelativePath=".\rplib\multinormalrock.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\normaldistributionwithtrend.cpp"
 					>
 				</File>
 				<File
@@ -7025,11 +7033,11 @@
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\filesystem\config.hpp"
+						RelativePath=".\nrlib\boost\system\config.hpp"
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\system\config.hpp"
+						RelativePath=".\nrlib\boost\filesystem\config.hpp"
 						>
 					</File>
 					<File
@@ -7290,6 +7298,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\rplib\deltadistributionwithtrend.h"
+					>
+				</File>
+				<File
 					RelativePath=".\rplib\dem.h"
 					>
 				</File>
@@ -7427,6 +7439,10 @@
 				</File>
 				<File
 					RelativePath=".\rplib\multinormalrock.h"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\normaldistributionwithtrend.h"
 					>
 				</File>
 				<File

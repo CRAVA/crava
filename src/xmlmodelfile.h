@@ -79,7 +79,8 @@ private:
   bool parseMineralModuli(TiXmlNode * node, std::string & moduli, std::string & errTxt);
   bool parseInclusion(TiXmlNode * node, std::string & errTxt);
   bool parseReservoir(TiXmlNode * node, std::string & errTxt);
-  bool parseGaussianDistribution(TiXmlNode * node, DistributionWithTrendStorage *& storage, bool is_sheared, std::string & errTxt);
+  bool parseGaussianWithTrend(TiXmlNode * node, DistributionWithTrendStorage *& storage, bool is_shared, std::string & errTxt);
+  bool parseBetaWithTrend(TiXmlNode * node, DistributionWithTrendStorage *& storage, bool is_shared, std::string & errTxt);
   bool parse1DTrend(TiXmlNode * node, const std::string & keyword, NRLib::TrendStorage *& trend, std::string & errTxt);
   bool parse2DTrend(TiXmlNode * node, const std::string & keyword, NRLib::TrendStorage *& trend, std::string & errTxt);
   bool parseTrendCube(TiXmlNode * node, std::string & errTxt);
@@ -116,7 +117,7 @@ private:
                                   const std::string             & keyword,
                                   DistributionWithTrendStorage *& storage,
                                   std::string                   & label,
-                                  bool                            is_sheared,
+                                  bool                            is_shared,
                                   std::string                   & errTxt,
                                   bool                            allowDistribution = true);
   bool parseBool(TiXmlNode * node, const std::string & keyword, bool & value, std::string & errTxt, bool allowDuplicates = false);

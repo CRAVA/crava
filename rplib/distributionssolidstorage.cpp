@@ -135,7 +135,7 @@ ReussSolidStorage::ReussSolidStorage(std::vector<std::string>                   
 ReussSolidStorage::~ReussSolidStorage()
 {
   for(int i=0; i<static_cast<int>(constituent_volume_fraction_.size()); i++) {
-    if(constituent_volume_fraction_[i]->GetIsSheared() == false)
+    if(constituent_volume_fraction_[i]->GetIsShared() == false)
       delete constituent_volume_fraction_[i];
   }
 }
@@ -167,7 +167,7 @@ VoigtSolidStorage::VoigtSolidStorage(std::vector<std::string>                   
 VoigtSolidStorage::~VoigtSolidStorage()
 {
   for(int i=0; i<static_cast<int>(constituent_volume_fraction_.size()); i++) {
-    if(constituent_volume_fraction_[i]->GetIsSheared() == false)
+    if(constituent_volume_fraction_[i]->GetIsShared() == false)
       delete constituent_volume_fraction_[i];
   }
 }
@@ -199,7 +199,7 @@ HillSolidStorage::HillSolidStorage(std::vector<std::string>                    c
 HillSolidStorage::~HillSolidStorage()
 {
   for(int i=0; i<static_cast<int>(constituent_volume_fraction_.size()); i++) {
-    if(constituent_volume_fraction_[i]->GetIsSheared() == false)
+    if(constituent_volume_fraction_[i]->GetIsShared() == false)
       delete constituent_volume_fraction_[i];
   }
 }
@@ -239,19 +239,19 @@ DEMSolidStorage::DEMSolidStorage(std::string                                 hos
 
 DEMSolidStorage::~DEMSolidStorage()
 {
-  if(host_volume_fraction_->GetIsSheared() == false)
+  if(host_volume_fraction_->GetIsShared() == false)
     delete host_volume_fraction_;
 
-  if(host_aspect_ratio_->GetIsSheared() == false)
+  if(host_aspect_ratio_->GetIsShared() == false)
     delete host_aspect_ratio_;
 
   for(int i=0; i<static_cast<int>(inclusion_volume_fraction_.size()); i++) {
-    if(inclusion_volume_fraction_[i]->GetIsSheared() == false)
+    if(inclusion_volume_fraction_[i]->GetIsShared() == false)
       delete inclusion_volume_fraction_[i];
   }
 
   for(int i=0; i<static_cast<int>(inclusion_aspect_ratio_.size()); i++) {
-    if(inclusion_aspect_ratio_[i]->GetIsSheared() == false)
+    if(inclusion_aspect_ratio_[i]->GetIsShared() == false)
       delete inclusion_aspect_ratio_[i];
   }
 }

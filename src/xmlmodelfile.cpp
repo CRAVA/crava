@@ -2406,36 +2406,36 @@ XmlModelFile::parseTabulated(TiXmlNode * node, int constituent, std::string labe
   DistributionWithTrendStorage * correlation_vp_vs;
   if(parseDistributionWithTrend(root, "correlation-vp-vs", correlation_vp_vs, dummy, false, errTxt, true) == false && use_vp == true) {
     double mean = 0;
-    correlation_vp_vs = new DistributionWithTrendStorage(mean, false);
+    correlation_vp_vs = new DeltaDistributionWithTrendStorage(mean, false);
   }
 
   DistributionWithTrendStorage * correlation_vp_density;
   if(parseDistributionWithTrend(root, "correlation-vp-density", correlation_vp_density, dummy, false, errTxt, true) == false && use_vp == true) {
     double mean = 0;
-    correlation_vp_density = new DistributionWithTrendStorage(mean, false);
+    correlation_vp_density = new DeltaDistributionWithTrendStorage(mean, false);
   }
 
   DistributionWithTrendStorage * correlation_vs_density;
   if(parseDistributionWithTrend(root, "correlation-vs-density", correlation_vs_density, dummy, false, errTxt, true) == false && use_vp == true) {
     double mean = 0;
-    correlation_vs_density = new DistributionWithTrendStorage(mean, false);
+    correlation_vs_density = new DeltaDistributionWithTrendStorage(mean, false);
   }
 
   DistributionWithTrendStorage * correlation_bulk_shear;
   if(parseDistributionWithTrend(root, "correlation-bulk-shear", correlation_bulk_shear, dummy, false, errTxt, true) == false && use_modulus == true) {
     double mean = 0;
-    correlation_bulk_shear = new DistributionWithTrendStorage(mean, false);
+    correlation_bulk_shear = new DeltaDistributionWithTrendStorage(mean, false);
   }
   DistributionWithTrendStorage * correlation_bulk_density;
   if(parseDistributionWithTrend(root, "correlation-bulk-density", correlation_bulk_density, dummy, false, errTxt, true) == false && use_modulus == true) {
     double mean = 0;
-    correlation_bulk_density = new DistributionWithTrendStorage(mean, false);
+    correlation_bulk_density = new DeltaDistributionWithTrendStorage(mean, false);
   }
 
   DistributionWithTrendStorage * correlation_shear_density;
   if(parseDistributionWithTrend(root, "correlation-shear-density", correlation_shear_density, dummy, false, errTxt, true) == false && use_modulus == true) {
     double mean = 0;
-    correlation_shear_density = new DistributionWithTrendStorage(mean, false);
+    correlation_shear_density = new DeltaDistributionWithTrendStorage(mean, false);
   }
 
   if(use_vp) {
@@ -2515,13 +2515,13 @@ XmlModelFile::parseTabulatedFluid(TiXmlNode * node, int constituent, std::string
   DistributionWithTrendStorage * correlation_vp_density;
   if(parseDistributionWithTrend(root, "correlation-vp-density", correlation_vp_density, dummy, false, errTxt, true) == false && use_vp == true) {
     double mean = 0;
-    correlation_vp_density = new DistributionWithTrendStorage(mean, false);
+    correlation_vp_density = new DeltaDistributionWithTrendStorage(mean, false);
   }
 
   DistributionWithTrendStorage * correlation_bulk_density;
   if(parseDistributionWithTrend(root, "correlation-bulk-density", correlation_bulk_density, dummy, false, errTxt, true) == false && use_modulus == true) {
     double mean = 0;
-    correlation_bulk_density = new DistributionWithTrendStorage(mean, false);
+    correlation_bulk_density = new DeltaDistributionWithTrendStorage(mean, false);
   }
 
   if(use_vp) {
@@ -2573,7 +2573,7 @@ XmlModelFile::parseDistributionWithTrend(TiXmlNode                     * node,
                                          const std::string             & keyword,
                                          DistributionWithTrendStorage *& storage,
                                          std::string                   & label,
-                                         bool                            is_sheared,       //True for the variables in reservoir
+                                         bool                            is_shared,       //True for the variables in reservoir
                                          std::string                   & errTxt,
                                          bool                            allowDistribution)
 {
@@ -2601,34 +2601,34 @@ XmlModelFile::parseDistributionWithTrend(TiXmlNode                     * node,
   double value;
   if(root->FirstChildElement() == NULL) { //We have an explicit value
     parseValue(node, keyword, value, errTxt);
-    storage = new DistributionWithTrendStorage(value, is_sheared);
+    storage = new DeltaDistributionWithTrendStorage(value, is_shared);
     trendGiven++;
     return(true);
   }
 
   if(parseValue(root, "value", value, errTxt) == true) {
-    storage = new DistributionWithTrendStorage(value, is_sheared);
+    storage = new DeltaDistributionWithTrendStorage(value, is_shared);
     trendGiven++;
   }
 
   NRLib::TrendStorage * trend;
   if(parse1DTrend(root, "trend-1d", trend, errTxt) == true) {
-    storage = new DistributionWithTrendStorage(trend, is_sheared);
+    storage = new DeltaDistributionWithTrendStorage(trend, is_shared);
     trendGiven++;
   }
 
   if(parse2DTrend(root, "trend-2d", trend, errTxt) == true) {
-    storage = new DistributionWithTrendStorage(trend, is_sheared);
+    storage = new DeltaDistributionWithTrendStorage(trend, is_shared);
     trendGiven++;
   }
 
   if(allowDistribution == true) {
-    if(parseGaussianDistribution(root, storage, is_sheared, errTxt) == true)
+    if(parseGaussianWithTrend(root, storage, is_shared, errTxt) == true)
       trendGiven++;
 
     std::string beta;
-    if(parseValue(root, "beta", beta, errTxt) == true)
-      errTxt += "The Beta distribution has not been implemented\n";
+    if(parseBetaWithTrend(root, storage, is_shared, errTxt) == true)
+      trendGiven++;
 
     std::string uniform;
     if(parseValue(root, "uniform", uniform, errTxt) == true)
@@ -2658,10 +2658,10 @@ XmlModelFile::parseDistributionWithTrend(TiXmlNode                     * node,
 }
 
 bool
-XmlModelFile::parseGaussianDistribution(TiXmlNode                     * node,
-                                        DistributionWithTrendStorage *& storage,
-                                        bool                            is_sheared,
-                                        std::string                   & errTxt)
+XmlModelFile::parseGaussianWithTrend(TiXmlNode                     * node,
+                                     DistributionWithTrendStorage *& storage,
+                                     bool                            is_shared,
+                                     std::string                   & errTxt)
 {
   TiXmlNode * root = node->FirstChildElement("gaussian");
   if(root == 0)
@@ -2673,21 +2673,55 @@ XmlModelFile::parseGaussianDistribution(TiXmlNode                     * node,
 
   DistributionWithTrendStorage * mean_storage;
   std::string label;
-  if(parseDistributionWithTrend(root, "mean", mean_storage, label, is_sheared, errTxt, false) == false)
+  if(parseDistributionWithTrend(root, "mean", mean_storage, label, is_shared, errTxt, false) == false)
     errTxt += "The mean needs to be specified for the variable having a Gaussian distribution\n";
 
   DistributionWithTrendStorage * variance_storage;
-  if(parseDistributionWithTrend(root, "variance", variance_storage, label, is_sheared, errTxt, false) == false)
+  if(parseDistributionWithTrend(root, "variance", variance_storage, label, is_shared, errTxt, false) == false)
     errTxt += "The variance needs to be specified for the variable having a Gaussian distribution\n";
 
-  NRLib::Distribution<double>       * gaussian = new NRLib::Normal();
-  const NRLib::TrendStorage         * mean     = mean_storage->CloneMean();
+  const NRLib::TrendStorage         * mean     = mean_storage    ->CloneMean();
   const NRLib::TrendStorage         * variance = variance_storage->CloneMean();
 
   delete mean_storage;
   delete variance_storage;
 
-  storage = new DistributionWithTrendStorage(gaussian, mean, variance, true, is_sheared);
+  storage = new NormalDistributionWithTrendStorage(mean, variance, is_shared);
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseBetaWithTrend(TiXmlNode                     * node,
+                                 DistributionWithTrendStorage *& /*storage*/,
+                                 bool                            is_shared,
+                                 std::string                   & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("beta");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("mean");
+  legalCommands.push_back("variance");
+
+  DistributionWithTrendStorage * mean_storage;
+  std::string label;
+  if(parseDistributionWithTrend(root, "mean", mean_storage, label, is_shared, errTxt, false) == false)
+    errTxt += "The mean needs to be specified for the variable having a Gaussian distribution\n";
+
+  DistributionWithTrendStorage * variance_storage;
+  if(parseDistributionWithTrend(root, "variance", variance_storage, label, is_shared, errTxt, false) == false)
+    errTxt += "The variance needs to be specified for the variable having a Gaussian distribution\n";
+
+  /*const NRLib::TrendStorage         * mean     = mean_storage->CloneMean();
+  const NRLib::TrendStorage         * variance = variance_storage->CloneMean();
+
+  delete mean_storage;
+  delete variance_storage;*/
+
+  //storage = new BetaDistributionWithTrendStorage(gaussian, mean, variance, true, is_shared);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);

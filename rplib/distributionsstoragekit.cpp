@@ -9,12 +9,12 @@ void CheckVolumeConsistency(const std::vector<DistributionWithTrendStorage *> & 
 {
   int n_constituents = static_cast<int>(volume_fraction.size());
 
-  if(n_constituents > 2) {
+  /*if(n_constituents > 2) {
     for(int i = 0; i<n_constituents; i++) {
       if(volume_fraction[i]->GetIsDistribution() == true)
         errTxt += "The volume fractions can not be defined by a distribution when more than two constituents are used in a rock physics model\n";
     }
-  }
+  }*/
 
   int n_missing = 0;
 

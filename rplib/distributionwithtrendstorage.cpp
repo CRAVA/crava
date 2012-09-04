@@ -1,119 +1,119 @@
 
 #include "rplib/distributionwithtrendstorage.h"
 #include "rplib/distributionwithtrend.h"
+#include "rplib/deltadistributionwithtrend.h"
+#include "rplib/normaldistributionwithtrend.h"
 
 #include "nrlib/random/distribution.hpp"
 #include "nrlib/random/delta.hpp"
 #include "nrlib/trend/trendstorage.hpp"
 
-
 DistributionWithTrendStorage::DistributionWithTrendStorage()
-: is_gaussian_(false),
-  is_sheared_(false),
-  is_distribution_(false)
 {
-}
-
-DistributionWithTrendStorage::DistributionWithTrendStorage(double value,
-                                                           bool   is_sheared)
-: is_gaussian_(false),
-  is_sheared_(is_sheared),
-  is_distribution_(false)
-{
-  //Use this constructor when mean_ is a double
-  distribution_ = new NRLib::Delta();
-  mean_         = new NRLib::TrendConstantStorage(value);
-  variance_     = new NRLib::TrendConstantStorage(0);
-  distribution_with_trend_ = NULL;
-}
-
-DistributionWithTrendStorage::DistributionWithTrendStorage(const NRLib::TrendStorage * trend,
-                                                           bool                        is_sheared)
-: is_gaussian_(false),
-  is_sheared_(is_sheared),
-  is_distribution_(false)
-
-{
-  //Use this constructor when mean is a trend, and no distribution is given
-  distribution_ = new NRLib::Delta();
-  mean_         = trend;
-  variance_     = new NRLib::TrendConstantStorage(0);
-  distribution_with_trend_ = NULL;
-}
-
-DistributionWithTrendStorage::DistributionWithTrendStorage(NRLib::Distribution<double>       * distribution,
-                                                           const NRLib::TrendStorage         * mean,
-                                                           const NRLib::TrendStorage         * variance,
-                                                           bool                                is_gaussian,
-                                                           bool                                is_sheared)
-: is_gaussian_(is_gaussian),
-  is_sheared_(is_sheared),
-  is_distribution_(true)
-{
-  //Use this constructor when a distribution is given
-  distribution_ = distribution;
-  mean_         = mean;
-  variance_     = variance;
-  distribution_with_trend_ = NULL;
 }
 
 DistributionWithTrendStorage::~DistributionWithTrendStorage()
 {
-  delete distribution_;
-  delete mean_;
-  delete variance_;
+}
+
+//--------------------------------------------------------------//
+
+DeltaDistributionWithTrendStorage::DeltaDistributionWithTrendStorage()
+: is_shared_(false)
+{
+}
+
+DeltaDistributionWithTrendStorage::DeltaDistributionWithTrendStorage(double mean,
+                                                                     bool   is_shared)
+: is_shared_(is_shared)
+{
+  //Use this constructor when mean_ is a double
+
+  mean_                    = new NRLib::TrendConstantStorage(mean);
   distribution_with_trend_ = NULL;
 }
 
-NRLib::TrendStorage *
-DistributionWithTrendStorage::CloneMean()
+DeltaDistributionWithTrendStorage::DeltaDistributionWithTrendStorage(const NRLib::TrendStorage * mean,
+                                                                     bool                        is_shared)
+: is_shared_(is_shared)
 {
-  NRLib::TrendStorage * cloned_mean = mean_->Clone();
-  return(cloned_mean);
+  mean_                    = mean;
+  distribution_with_trend_ = NULL;
 }
 
-NRLib::TrendStorage *
-DistributionWithTrendStorage::CloneVariance()
+DeltaDistributionWithTrendStorage::~DeltaDistributionWithTrendStorage()
 {
-  NRLib::TrendStorage * cloned_variance = variance_->Clone();
-  return(cloned_variance);
+  delete mean_;
+
+  distribution_with_trend_ = NULL;
 }
 
-const DistributionWithTrend *
-DistributionWithTrendStorage::GenerateDistributionWithTrend(const std::string                       & path,
-                                                            const std::vector<std::string>          & trend_cube_parameters,
-                                                            const std::vector<std::vector<double> > & trend_cube_sampling,
-                                                            std::string                             & errTxt)
+DistributionWithTrend *
+DeltaDistributionWithTrendStorage::GenerateDistributionWithTrend(const std::string                       & path,
+                                                                 const std::vector<std::string>          & trend_cube_parameters,
+                                                                 const std::vector<std::vector<double> > & trend_cube_sampling,
+                                                                 std::string                             & errTxt)
 {
-  //Make sure sheared variables are only generated one time
-  if(distribution_with_trend_ == NULL) {
-    NRLib::Trend * mean_trend      = mean_    ->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,errTxt);
-    NRLib::Trend * variance_trend  = variance_->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,errTxt);
+  if(distribution_with_trend_ == NULL) {  //Make sure shared variables are only generated one time
 
-    distribution_with_trend_= new DistributionWithTrend(distribution_, mean_trend, variance_trend, is_sheared_, is_distribution_); //NBNB Marit: Use variance here, but sd is used in DistributionWithTrend(). Need to fix this
+    NRLib::Trend * mean_trend = mean_->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,errTxt);
 
-    distribution_ = NULL;
-
-    // Variables are deleted in distribution_with_trend
+    distribution_with_trend_= new DeltaDistributionWithTrend(mean_trend, is_shared_);
   }
 
   return(distribution_with_trend_);
 }
 
-const bool
-DistributionWithTrendStorage::GetIsGaussian() const
+NRLib::TrendStorage *
+DeltaDistributionWithTrendStorage::CloneMean() const
 {
-  return(is_gaussian_);
+  NRLib::TrendStorage * cloned_mean = mean_->Clone();
+  return(cloned_mean);
 }
 
-const bool
-DistributionWithTrendStorage::GetIsSheared() const
+//--------------------------------------------------------------//
+NormalDistributionWithTrendStorage::NormalDistributionWithTrendStorage()
+: is_shared_(false)
 {
-  return(is_sheared_);
 }
 
-const bool
-DistributionWithTrendStorage::GetIsDistribution() const
+NormalDistributionWithTrendStorage::NormalDistributionWithTrendStorage(const NRLib::TrendStorage * mean,
+                                                                       const NRLib::TrendStorage * variance,
+                                                                       bool                        is_shared)
+: is_shared_(is_shared)
 {
-  return(is_distribution_);
+  mean_                     = mean;
+  variance_                 = variance;
+  distribution_with_trend_  = NULL;
+}
+
+NormalDistributionWithTrendStorage::~NormalDistributionWithTrendStorage()
+{
+  delete mean_;
+  delete variance_;
+  distribution_with_trend_ = NULL;
+}
+
+DistributionWithTrend *
+NormalDistributionWithTrendStorage::GenerateDistributionWithTrend(const std::string                       & path,
+                                                                  const std::vector<std::string>          & trend_cube_parameters,
+                                                                  const std::vector<std::vector<double> > & trend_cube_sampling,
+                                                                  std::string                             & errTxt)
+{
+  if(distribution_with_trend_ == NULL) {     //Make sure shared variables are only generated one time
+
+    NRLib::Trend * mean_trend      = mean_    ->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,errTxt);
+    NRLib::Trend * variance_trend  = variance_->GenerateTrend(path,trend_cube_parameters,trend_cube_sampling,errTxt);
+
+    distribution_with_trend_= new NormalDistributionWithTrend(mean_trend, variance_trend, is_shared_);
+  }
+
+  return(distribution_with_trend_);
+}
+
+NRLib::TrendStorage *
+NormalDistributionWithTrendStorage::CloneMean() const
+{
+  NRLib::TrendStorage * cloned_mean = mean_->Clone();
+  return(cloned_mean);
 }
