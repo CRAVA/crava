@@ -3,7 +3,7 @@
 #
 include Makeheader
 
-DIRS        = src lib nrlib libs/boost fft/fftw fft/rfftw
+DIRS        = src libs/lib libs/boost nrlib fft/fftw fft/rfftw
 OBJDIR      = obj
 OBJFFTDIR   = obj/fft
 OBJBOOSTDIR = obj/libs/boost
@@ -17,7 +17,7 @@ OBJGRAMMAR  = obj/nrlib/iotools/fileio.o         \
               obj/boost/filesystem/path.o        \
               obj/boost/filesystem/operations.o  \
               obj/boost/filesystem/portability.o
-INCLUDE     = -I. -I./fft/include -I./nrlib
+INCLUDE     = -I. -I./libs -I./fft/include -I./nrlib
 CPPFLAGS   += $(INCLUDE)
 
 all:	$(PROGRAM)

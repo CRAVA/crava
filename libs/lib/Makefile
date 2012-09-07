@@ -1,9 +1,9 @@
-include ../Makeheader
+include ../../Makeheader
 
-INCLUDE =  -I.. -I ../fft/include
+INCLUDE = -I../.. -I../../libs -I../../fft/include
 CPPFLAGS += $(INCLUDE)
 
-OBJDIR = ../obj
+OBJDIR = ../../obj
 CSRCS = $(wildcard *.c)
 CXXSRCS = $(wildcard *.cpp)
 OBJECTS = $(CSRCS:%.c=$(OBJDIR)/%.o) $(CXXSRCS:%.cpp=$(OBJDIR)/%.o)
@@ -14,4 +14,4 @@ $(OBJDIR)/%.o : %.cpp
 $(OBJDIR)/%.o : %.c
 	$(CC) -c $(CPPFLAGS) $(CFLAGS) $< -o $@
 
-all: $(OBJECTS) 
+all: $(OBJECTS)
