@@ -1,5 +1,5 @@
 
-include ../Makeheader
+include ../../Makeheader
 
 # Boost directories where we want all files are given here.
 FULLMODULES := system filesystem
@@ -12,7 +12,7 @@ include $(patsubst %, %/module.mk, $(FULLMODULES))
 # This file contains the files we want from Boost where we do not want entire directory.
 #include submodulescrava.mk
 
-OBJDIR = ../obj/boost/
+OBJDIR = ../../obj/libs/boost/
 
 OBJECTS := $(patsubst %.cpp, $(OBJDIR)%.o, $(filter %.cpp, $(SRC)))
 

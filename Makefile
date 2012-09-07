@@ -3,10 +3,10 @@
 #
 include Makeheader
 
-DIRS        = src lib nrlib boost fft/fftw fft/rfftw
+DIRS        = src lib nrlib libs/boost fft/fftw fft/rfftw
 OBJDIR      = obj
 OBJFFTDIR   = obj/fft
-OBJBOOSTDIR = obj/boost
+OBJBOOSTDIR = obj/libs/boost
 OBJNRLIBDIR = obj/nrlib
 OBJFINDGRAM = findgrammar/findgrammar.o
 OBJGRAMMAR  = obj/nrlib/iotools/fileio.o         \

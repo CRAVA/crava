@@ -11,7 +11,7 @@
 
 \NeedsTeXFormat{LaTeX2e}[1995/12/01]
 
-\ProvidesClass{nrdoc_060418}[2006/04/18 v2.2.7-0 NR report class]
+\ProvidesClass{nrdoc}[2007/10/08 v2.2.11-1 NR report class]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %   Adding logic and math to latex for easy programming
@@ -21,6 +21,7 @@
 \RequirePackage{calc}               % for math in class file
 \RequirePackage{textcase}
 \RequirePackage{ifpdf}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %   Adding new variables
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -33,7 +34,7 @@
 %\setboolean{pdfdataset}{false}
 
 \newboolean{aboutauthors}\setboolean{aboutauthors}{false}
-
+\newboolean{qualityassurance}\setboolean{qualityassurance}{false}
 
 \newboolean{longreport}
 \newboolean{onesided} 
@@ -43,7 +44,9 @@
 \newboolean{showlabels}
 \newboolean{closedavailability}
 \newboolean{noindentpar}
-\setboolean{noindentpar}{false}
+\setboolean{noindentpar}{true}
+\newboolean{indentpar}
+\setboolean{indentpar}{false}
 \newboolean{firstindent}
 \newboolean{language_selected}
 \newboolean{norsk_selected}
@@ -56,6 +59,8 @@
 \newboolean{nodesign}
 \newboolean{noindex}
 \newboolean{nobibstyle}
+\newboolean{utf8}
+\setboolean{utf8}{false}
 
 \setboolean{nobibstyle}{false}
 \setboolean{noindex}{false}
@@ -64,7 +69,8 @@
 \newcounter{numberofauthors}
 \setcounter{numberofauthors}{1}
 
-
+\newcounter{largenumberofauthors}
+\setcounter{largenumberofauthors}{4}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %   Adding new functions
@@ -75,14 +81,19 @@
 \providecommand{\availabilitylevel}                     {Confidential}
 \providecommand{\availabilitylevelopen}                 {Open}
 \providecommand{\availabilitylevelinternal}             {Internal}
-\providecommand{\availabilitylevelcondidential}         {Confidential}
+\providecommand{\availabilitylevelconfidential}         {Confidential}
+\providecommand{\availabilitylevelstatoilhydro}         {StatoilHydro restricted}
+\providecommand{\availabilitylevelstatoil}         {Statoil restricted}
 \providecommand{\availabilitylevelstrictlyconfidential} {Strictly confidential}
 \providecommand{\closedavailable}       {Closed}
 \providecommand{\datename}              {Date}
+\providecommand{\qaname}              	{Quality assurance}
 \providecommand{\examplename}           {Example}
+\providecommand{\exercisename}          {Exercise}
 \providecommand{\emailname}             {e-mail}
 \providecommand{\keywordsname}          {Keywords}
 \providecommand{\listexamplename}       {List of Examples}
+\providecommand{\listexercisename}    	{List of Exercises}
 \providecommand{\numberofpagesname}     {Number of pages}
 \providecommand{\notename}              {Note}
 \providecommand{\nrdocument}            {NR Document}
@@ -103,6 +114,7 @@
 
 
 \providecommand{\aboutauthors}[1]{\setboolean{aboutauthors}{true}\renewcommand{\aboutauthorstext}{#1}}
+\providecommand{\qa}[1]{\setboolean{qualityassurance}{true}\renewcommand{\printqa}{#1}}
 
 \providecommand{\designelement}[1]{%
   \ifthenelse{\boolean{nodesign}}{%
@@ -154,6 +166,11 @@
     \MakeUppercase{#1}}}
 \providecommand{\pdfprintkeywords}{%
 }
+\providecommand{\printqa}{%
+  \typeout{NRdoc warning: QA person undefined}Unknown}
+\providecommand{\printqatext}{%
+  \ifthenelse{\boolean{qualityassurance}}{%
+       \titleitem{\qaname}	\printqa}{}}
 \providecommand{\printkeywords}{%
   \protect\typeout{NRdoc warning: Keywords not defined}}
 \providecommand{\keywords}[1]{\renewcommand{\printkeywords}{#1}%
@@ -184,10 +201,12 @@ defined}}
 \providecommand{\availability}[1]{%
 \ifthenelse{\equal{#1}{Open}}{\renewcommand{\availabilitylevel}{\availabilitylevelopen}}{%
 \ifthenelse{\equal{#1}{Internal}}{\renewcommand{\availabilitylevel}{\availabilitylevelinternal}}{%
+\ifthenelse{\equal{#1}{StatoilHydro restricted}}{\renewcommand{\availabilitylevel}{\availabilitylevelstatoilhydro}}{%
+\ifthenelse{\equal{#1}{Statoil restricted}}{\renewcommand{\availabilitylevel}{\availabilitylevelstatoil}}{%
 \ifthenelse{\equal{#1}{Confidential}}{}{%
 \ifthenelse{\equal{#1}{Strictlyconfidential}}{\renewcommand{\availabilitylevel}{\availabilitylevelstrictlyconfidential}}{%
 \typeout{NRdoc warning: Unknown availability level: #1} %
-}}}}
+}}}}}}
 \renewcommand{\printavailability}{\availabilitylevel}}
 
 \providecommand{\printresearchfield}{%
@@ -195,6 +214,8 @@ defined}}
 \providecommand{\researchfield}[1]{\renewcommand{\printresearchfield}{#1}}
 
 \newboolean{frontpagefiguredefined}
+\setboolean{frontpagefiguredefined}{false}
+
 \providecommand{\frontpagefigurefile}{}
 \providecommand{\frontpagefigurecpright}{}
 \providecommand{\frontpagefigure}[2][{}]{%
@@ -215,6 +236,7 @@ defined}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \DeclareOption{noindex}{\setboolean{noindex}{true}}
+\DeclareOption{utf8}{\setboolean{utf8}{true}}
 
 \DeclareOption{long}{\setboolean{longreport}{true}}
 \DeclareOption{10pt}{%
@@ -275,6 +297,7 @@ the documentclass command!\MessageBreak}}{}
 
 \DeclareOption{closed}{\setboolean{closedavailability}{true}}
 \DeclareOption{noindentpar}{\setboolean{noindentpar}{true}}
+\DeclareOption{indentpar}{\setboolean{noindentpar}{false}}
 % The bluelines option is obsolete (kept for backwards compatability)
 \DeclareOption{bluelines}{\typeout{NRdoc warning: Option bluelines is obsolete.}}
 \DeclareOption{american}{\PassOptionsToPackage{american}{babel}
@@ -334,13 +357,18 @@ the documentclass command!\MessageBreak}}{}
         \renewcommand{\availabilitylevel}                       {Konfidensiell}
         \renewcommand{\availabilitylevelopen}                   {{\AA}pen}
         \renewcommand{\availabilitylevelinternal}               {Intern}
-        \renewcommand{\availabilitylevelcondidential}           {Konfidensiell}
+        \renewcommand{\availabilitylevelconfidential}           {Konfidensiell}
+        \renewcommand{\availabilitylevelstatoilhydro}           {StatoilHydro begrenset}
+        \renewcommand{\availabilitylevelstatoil}           {Statoil begrenset}
         \renewcommand{\availabilitylevelstrictlyconfidential}   {Strengt konfidensiell}
         \renewcommand{\datename}                {Dato}
+	\renewcommand{\qaname}              	{Kvalitetssikring} 
         \renewcommand{\examplename}             {Eksempel}
+        \renewcommand{\exercisename}            {Oppgave}
         \renewcommand{\emailname}               {e-post}
         \renewcommand{\keywordsname}            {Emneord}
         \renewcommand{\listexamplename}         {Eksempler}
+        \renewcommand{\listexercisename}        {Oppgaver}
         \renewcommand{\numberofpagesname}       {Antall sider}
         \renewcommand{\notename}                {Notat}
         \renewcommand{\openavailable}           {{\AA}pen}
@@ -362,6 +390,8 @@ the documentclass command!\MessageBreak}}{}
 %  Nynorsk
 \ifthenelse{\boolean{nynorsk_selected}}{%
         \renewcommand{\listexamplename}         {Eksempel}
+        \renewcommand{\listexercisename}        {Oppg\aa ver}
+        \renewcommand{\exercisename}        	{Oppg\aa ve}
         \renewcommand{\authorname}              {Forfattar\ifthenelse{\value{numberofauthors}>1}{ar}{}}
         \renewcommand{\availabilityname}        {Tilgjengeleg}
         \renewcommand{\availabilitylevelopen}   {Open}
@@ -378,7 +408,7 @@ the documentclass command!\MessageBreak}}{}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \RequirePackage[T1]{fontenc}
-\RequirePackage[latin1]{inputenc}
+
 \RequirePackage{amsmath}        % for advanced math
 \RequirePackage{fancyhdr}       % for headers
 \RequirePackage{rotating}       % for text rotation
@@ -392,6 +422,8 @@ the documentclass command!\MessageBreak}}{}
 \RequirePackage{float}          % for float control
 \RequirePackage[plain]{algorithm}       % algorithm
 
+
+
 \ifpdf\RequirePackage{thumbpdf} \fi      % for thumbnails
 
 \RequirePackage{afterpage}      % for float control
@@ -402,7 +434,9 @@ the documentclass command!\MessageBreak}}{}
   \RequirePackage{babel}
 }{}
 
-
+\ifthenelse{\boolean{utf8}}{%
+\RequirePackage[utf8]{inputenc}}{%
+\RequirePackage[latin1]{inputenc}}
 
 
 
@@ -418,6 +452,7 @@ the documentclass command!\MessageBreak}}{}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %   Loading other packages after the base class
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
 \ifthenelse{\boolean{showlabels}}{%
  \RequirePackage{showlabels}}
@@ -446,6 +481,7 @@ the documentclass command!\MessageBreak}}{}
 }{%
  \RequirePackage[sort,round]{natbib}
 }
+
 
 % NR profile blue in CMYK values
 \definecolor{nrblue}{cmyk}{1,0.66,0,0}
@@ -505,6 +541,10 @@ the documentclass command!\MessageBreak}}{}
 % Load geometry and set page layout
 \RequirePackage{geometry}[2002/07/08]
 
+\ifthenelse{\boolean{screen}}{%
+\geometry{a4paper, left=30mm, right=30mm, 
+top=20mm, bottom=35mm,
+footskip=20mm, footnotesep=\baselineskip, nohead, twoside=false}}{}
 
 \ifthenelse{\boolean{onesided}}{%
 \typeout{Selecting onesided page geometry}
@@ -552,6 +592,10 @@ the documentclass command!\MessageBreak}}{}
 \titlespacing{\subsection}{0pt}{\baselineskip-\parskip}{-\parskip}
 \titlespacing{\subsubsection}{0pt}{\baselineskip-\parskip}{-\parskip}
 
+
+\RequirePackage[absolute]{textpos}[2003/09/07]
+
+
 % Format the captions
 \RequirePackage{caption}[2004/01/23]
 \captionsetup{%
@@ -560,9 +604,8 @@ the documentclass command!\MessageBreak}}{}
   singlelinecheck=false,
   font={small, sf}}
 
-% Absolute positioning of elements, handy for the front page
-\RequirePackage[absolute]{textpos}[2003/09/07]
-
+\RequirePackage{subfig}
+\RequirePackage{eso-pic}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %   Miscellaneous formatting
@@ -573,9 +616,10 @@ the documentclass command!\MessageBreak}}{}
 
 % Fix layout of list environments with utilities from the paralist
 % package.
-\setdefaultitem{\textperiodcentered}{--}
+\setdefaultitem{\textbullet}%\textperiodcentered
+               {--}
                {\textasteriskcentered}%{\footnotesize\textbullet}
-               {\textbullet}
+               {\textperiodcentered}
 \setdefaultenum{1.}{a.}{1)}{a)}
 \setdefaultleftmargin{2em}{2em}{2em}{2em}{1em}{1em}
 
@@ -602,22 +646,19 @@ the documentclass command!\MessageBreak}}{}
 \textblockorigin{0mm}{0mm}
 
 \providecommand{\frontpageprintelements}{%
-  \begin{textblock}{211}(0,0)
-    \noindent
-    \ifthenelse{\boolean{report}}{%
-      \ifthenelse{\boolean{norsk_selected} \or
-        \boolean{nynorsk_selected}}{%
-        \designelement{elements/rapport-s1}
-      }{%
-        \designelement{elements/report-s1}
-      }}{%
-      \ifthenelse{\boolean{norsk_selected} \or
-        \boolean{nynorsk_selected}}{%
-        \designelement{elements/notat-s1}
-      }{%
-        \designelement{elements/note-s1}
-      }}
-  \end{textblock}
+  \ifthenelse{\boolean{report}}{%
+    \ifthenelse{\boolean{norsk_selected} \or
+      \boolean{nynorsk_selected}}{%
+      \designelement{elements/rapport-s1}
+    }{%
+      \designelement{elements/report-s1}
+    }}{%
+    \ifthenelse{\boolean{norsk_selected} \or
+      \boolean{nynorsk_selected}}{%
+      \designelement{elements/notat-s1}
+    }{%
+      \designelement{elements/note-s1}
+    }}
 }
 
 \providecommand{\frontpageprinttitle}{
@@ -650,7 +691,12 @@ the documentclass command!\MessageBreak}}{}
         }
         && \printreportnumber\\
         \colorbox{nrblue}{\textcolor{white}{\authorname}}
-        && \@author\\
+        && 
+        \ifthenelse{\value{numberofauthors}>\value{largenumberofauthors}}{\vspace{-2em}\begin{multicols}{2}
+        }{}
+        \@author 
+        \ifthenelse{\value{numberofauthors}>\value{largenumberofauthors}}{\end{multicols}}{}
+        \\
         \colorbox{nrblue}{\textcolor{white}{\datename}}
         && \@date\\
         \ifthenelse{\boolean{report}}{%
@@ -671,7 +717,8 @@ the documentclass command!\MessageBreak}}{}
 }
 
 \providecommand{\nrfrontpage}{%
-  \ifthenelse{\boolean{draftversion}}{}{% else final version
+  \ifthenelse{\boolean{draftversion}}{
+    \AddToShipoutPicture*{\frontpageprintelements}	
     \thispagestyle{empty}%
     \noindent
     \setboolean{hidden}{true}%\typeout{Making front page!}
@@ -681,7 +728,21 @@ the documentclass command!\MessageBreak}}{}
     \frontpageprinttitle
     \frontpageprintmatter
     \frontpageprintfigure
-    \frontpageprintelements
+    % Trick LaTeX into believing there is something here...
+    \hspace{0pt}
+    \clearpage
+   }
+   {% else final version
+    \AddToShipoutPicture*{\frontpageprintelements}
+    \thispagestyle{empty}%
+    \noindent
+    \setboolean{hidden}{true}%\typeout{Making front page!}
+        % Write authors outside page.    
+    \makebox[0pt]{\mbox{}\hspace{100cm}\textcolor{white}{\@author}}
+    \setboolean{hidden}{false}
+    \frontpageprinttitle
+    \frontpageprintmatter
+    \frontpageprintfigure
     % Trick LaTeX into believing there is something here...
     \hspace{0pt}
     \clearpage
@@ -701,40 +762,42 @@ the documentclass command!\MessageBreak}}{}
 Use \texttt{$\backslash$aboutauthors} to enter author information.}
 
 \providecommand{\aboutnrtext}{%
-  Norsk Regnesentral (Norwegian Computing Center, NR) is a private,
-  independent, non-profit foundation established in 1952. NR carries
-  out contract research and development projects in the areas of
-  information and communication technology and applied statistical
-  modeling. The clients are a broad range of industrial, commercial
-  and public service organizations in the national as well as the
-  international market. Our scientific and technical capabilities are
-  further developed in co-operation with The Research Council of
-  Norway and key customers. The results of our projects may take the
-  form of reports, software, prototypes, and short courses. A proof of
-  the confidence and appreciation our clients have for us is given by
-  the fact that most of our new contracts are signed with previous
-  customers.}
+Norsk Regnesentral (Norwegian Computing Center, NR) is a private,
+independent, non-profit foundation established in 1952. NR carries out
+contract research and development projects in information and
+communication technology and applied statistical-mathe\-matical
+modelling. The clients include a broad range of industrial, commercial
+and public service organisations in the national as well as the
+international market. Our scientific and technical capabilities are
+further developed in co-operation with The Research Council of Norway
+and key customers. The results of our projects may take the form of
+reports, software, prototypes, and short courses. A proof of the
+confidence and appreciation our clients have in us is given by the
+fact that most of our new contracts are signed with previous
+customers. }
 
 % A separate translation into nynorsk should be provided here
 \ifthenelse{\boolean{norsk_selected} \or
   \boolean{nynorsk_selected}}{%
   \renewcommand{\aboutnrtext}{%
-    Norsk Regnesentral (NR) er en privat, uavhengig stiftelse som
-    utf{\o}rer oppdragsforskning for bedrifter og det offentlige i det
-    norske og internasjonale markedet. NR ble etablert i 1952 og har
-    kontorer i Informatikkbygningen ved Universitetet i Oslo. NR er et
-    av Europas st{\o}rste milj{\o}er innen anvendt statistikk. Det
-    jobbes med sv{\ae}rt mange forskjellige problemstillinger slik som
-    estimering av torskebestanden, finansiell risiko, beskrivelse av
-    geologien i petroleumsreservoarer og overv{\aa}king av
-    klimaendringer. NR er ogs{\aa} ledende i Norge innen utvalgte
-    deler av informasjons- og kommunikasjonsteknologi.
-    Problemstillinger kan v{\ae}re overv{\aa}ke inntrengning i
-    datasystemer, e-l{\ae}ring i skole og n{\ae}ringsliv, bruk av
-    datateknologi i markedsanalyser samt anvendelser av multimedia
-    p{\aa} forskjellige plattformer. NRs visjon er
-    forskningsresultater som brukes og synes.}}{}
+Norsk Regnesentral (NR) er en privat, uavhengig stiftelse som utf{\o}rer
+oppdrags\-forskning for bedrifter og det offentlige i det norske og
+internasjonale markedet. NR ble etablert i 1952 og har kontorer i
+Kristen Nygaards hus ved Universitetet i Oslo. NR er et av Europas
+st{\o}rste milj{\o}er innen anvendt statistisk-matematisk modellering og har
+et senter for forskningsdrevet innovasjon, Statistics for Innovation --
+(sfi)$^2$, med finansiering fra Norges forskningsr{\aa}d. Det jobbes med et
+bredt spekter av problemstillinger, for eksempel finansiell risiko,
+jord\-observasjon, estimering av fiske\-bestander og beskrivelse av
+geologien i petroleums\-reservoarer. NR er ledende i Norge innen
+utvalgte deler av informasjons- og kommunikasjonsteknologi. Innen
+IKT-omr{\aa}det har NR innsatsomr{\aa}dene e-inkludering,
+infor\-ma\-sjons\-sikkerhet og smarte infor\-masjons\-systemer. 
 
+\begin{center}
+NRs visjon er forskningsresultater som brukes og synes.
+\end{center}
+}}{}
 % The command \aboutothers is provided to allow entries for other
 % organisations, eg. if an author is external to NR. A
 % redefinition should be of the form:
@@ -744,14 +807,18 @@ Use \texttt{$\backslash$aboutauthors} to enter author information.}
 % If several entries are required, use multiple calls to
 % \aboutpageentry and separate them with \par\bigskip as in
 % \aboutpagetext below.
-\providecommand{\aboutothers}{}
+\providecommand{\aboutotherstext}{}
+
+\providecommand{\aboutothers}[2]{%
+\renewcommand{\aboutotherstext}{\aboutpageentry{#1}{#2}}}
 
 \providecommand{\printaboutpagetext}{%
   \ifthenelse{\boolean{aboutauthors}}{%
   \aboutpageentry{\aboutauthorsheading}{\aboutauthorstext}\par\bigskip}{}
   \aboutpageentry{\nrname}{\aboutnrtext}\par\bigskip
-  \aboutothers
+  \aboutotherstext\par\bigskip
 }
+
 
 \providecommand{\nraboutpage}{%
   \thispagestyle{empty}
@@ -799,7 +866,8 @@ Use \texttt{$\backslash$aboutauthors} to enter author information.}
   \begin{titlelist}
     \titleitem{\textbf{\large\titlename}}{\textbf{\large\printtitle}}
     \titleitem{\textbf{\authorname}}     {\textbf{\@author}}
-    \titleitem{\datename}                {\@date}
+    \printqatext
+   \titleitem{\datename}                {\@date}
 %    \titleitem{\yearname}                {\printyear}
     \ifthenelse{\boolean{report}}{\titleitem{\isbnname}{\printisbn}}{}
     \titleitem{\publicationnumbername}   {\printreportnumber}
@@ -865,6 +933,7 @@ Use \texttt{$\backslash$aboutauthors} to enter author information.}
   \setcounter{figure}{0}%
   \renewcommand{\thefigure}{\thesection.\arabic{figure}}%
   \gdef\theHfigure{\theHsection.\arabic{figure}}%
+  \gdef\theHsubfigure{\theHfigure.\arabic{subfigure}}%
   }%
 }
 
@@ -971,6 +1040,55 @@ Use \texttt{$\backslash$aboutauthors} to enter author information.}
   labelfont=bf%
 }
 
+% Exercise
+\newcommand{\listofexercises}{% 
+  \clearemptydoublepage
+  \ifthenelse{\boolean{longreport}}{%
+    \chapter*{\listexercisename}}{%
+    \section*{\listexercisename}}
+  \addtocontents{loe}{\protect\hypertarget{loe}{}%
+    \protect\pdfbookmark[1]{\listexercisename}{loe}}
+  \@starttoc{loe}%
+  \clearemptydoublepage
+}
+
+
+% Exercise environment
+\ifthenelse{\boolean{longreport}}{
+  \newcounter{exercise}[chapter]
+  \def\theexercise{\thechapter.\@arabic\c@exercise}
+}{
+  \newcounter{exercise}[section]
+  \def\theexercise{\thesection.\@arabic\c@exercise}
+}
+\let\l@exercise\l@figure
+\providecommand\ext@exercise{loe}
+\providecommand\fnum@exercise{\exercisename~\theexercise}
+\def\toclevel@exercise{0}
+\def\ftype@exercise{2}
+
+\newenvironment{exercise}{%
+
+  \list{}{\topsep 0pt%
+          \itemsep 0pt%
+          \labelwidth 0pt%
+          \leftmargin 0pt%
+          \listparindent \parindent%
+          \itemindent 0pt
+          \parsep 0pt}\item\relax%  
+ \def\@captype{exercise}%
+}{\endlist}
+
+\captionsetup[exercise]{%
+  belowskip=10pt,
+  position=above,
+  format=default,
+  labelsep=period,  
+  singlelinecheck=false,
+  font={normalsize, rm},
+  labelfont=bf%
+}
+
 % Titletoc formats the table of contents, LoF etc.
 \RequirePackage{titletoc}[2002/03/27]
 \contentsmargin{2em}
@@ -1013,6 +1131,11 @@ Use \texttt{$\backslash$aboutauthors} to enter author information.}
   {\textnormal{\sffamily\titlerule*[1pc]{.}}\contentspage}
 \contentsuse{example}{loe}
 \titlecontents{example}[2em]%
+  {\sffamily}{\contentslabel{2em}}%
+  {\hspace{-2em}}%
+  {\textnormal{\sffamily\titlerule*[1pc]{.}}\contentspage}
+\contentsuse{exercise}{loe}
+\titlecontents{exercise}[2em]%
   {\sffamily}{\contentslabel{2em}}%
   {\hspace{-2em}}%
   {\textnormal{\sffamily\titlerule*[1pc]{.}}\contentspage}
@@ -1104,9 +1227,11 @@ Use \texttt{$\backslash$aboutauthors} to enter author information.}
   }
 }
 
-\renewenvironment{thebibliography}[1]{%
+\renewenvironment{thebibliography}[1]{% 
   \ifthenelse{\boolean{longreport}}{%
+    \phantomsection
     \chapter*{\refname}\addcontentsline{toc}{chapter}{\refname}}{%
+    \phantomsection
     \section*{\refname}\addcontentsline{toc}{section}{\refname}}
   \list{\@biblabel{\@arabic\c@enumiv}}{%
     \settowidth\labelwidth{\@biblabel{#1}}%
