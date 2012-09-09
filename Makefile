@@ -53,7 +53,7 @@ cleanall:
 	rm -f $(OBJDIR)/*.o
 	rm -f $(OBJFFTDIR)/*.o
 	rm -f $(OBJNRLIBDIR)/*/*.o
-	rm -f $(OBJBOOOSTDIR)/*/*.o
+	rm -f $(OBJBOOSTDIR)/*/*.o
 	rm -f $(PROGRAM) $(GRAMMAR) $(OBJFINDGRAM) main.o
 
 test:	$(PROGRAM) $(GRAMMAR)
