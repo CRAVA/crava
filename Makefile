@@ -3,7 +3,7 @@
 #
 include Makeheader
 
-DIRS        = src libs/lib libs/boost libs/nrlib fft/fftw fft/rfftw
+DIRS        = src libs/lib libs/boost libs fft/fftw fft/rfftw
 OBJDIR      = obj
 OBJFFTDIR   = obj/fft
 OBJBOOSTDIR = obj/libs/boost
