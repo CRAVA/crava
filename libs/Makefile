@@ -33,7 +33,8 @@ OBJECTS := $(patsubst %.cpp, $(OBJDIR)%.o, $(filter %.cpp, $(SRC)))
 
 DIRS := $(sort $(dir $(OBJECTS)))
 
-#INCLUDE := -I../libs/
+INCLUDE := -I../libs/
+
 CPPFLAGS += $(INCLUDE)
 
 $(OBJDIR)%.o : %.cpp
