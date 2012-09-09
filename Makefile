@@ -3,21 +3,21 @@
 #
 include Makeheader
 
-DIRS        = src libs/lib libs/boost nrlib fft/fftw fft/rfftw
+DIRS        = src libs/lib libs/boost libs/nrlib fft/fftw fft/rfftw
 OBJDIR      = obj
 OBJFFTDIR   = obj/fft
 OBJBOOSTDIR = obj/libs/boost
-OBJNRLIBDIR = obj/nrlib
+OBJNRLIBDIR = obj/libs/nrlib
 OBJFINDGRAM = findgrammar/findgrammar.o
-OBJGRAMMAR  = obj/nrlib/iotools/fileio.o         \
-              obj/nrlib/tinyxml/tinyxml.o        \
-              obj/nrlib/tinyxml/tinyxmlerror.o   \
-              obj/nrlib/tinyxml/tinyxmlparser.o  \
-              obj/boost/system/error_code.o      \
-              obj/boost/filesystem/path.o        \
-              obj/boost/filesystem/operations.o  \
-              obj/boost/filesystem/portability.o
-INCLUDE     = -I. -I./libs -I./fft/include -I./nrlib
+OBJGRAMMAR  = obj/libs/nrlib/iotools/fileio.o         \
+              obj/libs/nrlib/tinyxml/tinyxml.o        \
+              obj/libs/nrlib/tinyxml/tinyxmlerror.o   \
+              obj/libs/nrlib/tinyxml/tinyxmlparser.o  \
+              obj/libs/boost/system/error_code.o      \
+              obj/libs/boost/filesystem/path.o        \
+              obj/libs/boost/filesystem/operations.o  \
+              obj/libs/boost/filesystem/portability.o
+INCLUDE     = -I. -I./libs -I./libs/nrlib -I./fft/include
 CPPFLAGS   += $(INCLUDE)
 
 all:	$(PROGRAM)
@@ -47,6 +47,7 @@ cleanlib:
 	rm -f $(OBJDIR)/*.o
 	rm -f $(PROGRAM) main.o
 	rm -f $(OBJNRLIBDIR)/*/*.o
+	rm -f $(OBJBOOSTDIR)/*/*.o
 
 cleanall:
 	rm -f $(OBJDIR)/*.o
