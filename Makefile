@@ -5,6 +5,7 @@ include Makeheader
 
 DIRS        = src libs libs/lib libs/boost libs/fft/fftw libs/fft/rfftw
 OBJDIR      = obj
+OBJLIBDIR   = obj/libs/lib
 OBJFFTDIR   = obj/libs/fft
 OBJBOOSTDIR = obj/libs/boost
 OBJNRLIBDIR = obj/libs/nrlib
@@ -23,7 +24,7 @@ CPPFLAGS   += $(INCLUDE)
 all:	$(PROGRAM)
 
 $(PROGRAM): $(DIRS) main.o
-	$(PURIFY) $(CXX) $(CXXFLAGS) $(LFLAGS) -o $@ $(OBJDIR)/*.o $(OBJFFTDIR)/*.o $(OBJBOOSTDIR)/*/*.o $(OBJNRLIBDIR)/*/*.o  main.o
+	$(PURIFY) $(CXX) $(CXXFLAGS) $(LFLAGS) -o $@ $(OBJDIR)/*.o $(OBJLIBDIR)/*.o $(OBJFFTDIR)/*.o $(OBJBOOSTDIR)/*/*.o $(OBJNRLIBDIR)/*/*.o  main.o
 
 $(GRAMMAR): findgrammar/findgrammar.o
 	$(PURIFY) $(CXX) $(CXXFLAGS) $(LFLAGS) -o $@ $(OBJGRAMMAR) $(OBJFINDGRAM)
@@ -46,11 +47,13 @@ clean:
 cleanlib:
 	rm -f $(OBJDIR)/*.o
 	rm -f $(PROGRAM) main.o
+	rm -f $(OBJLIBDIR)/*.o
 	rm -f $(OBJNRLIBDIR)/*/*.o
 	rm -f $(OBJBOOSTDIR)/*/*.o
 
 cleanall:
 	rm -f $(OBJDIR)/*.o
+	rm -f $(OBJLIBDIR)/*.o
 	rm -f $(OBJFFTDIR)/*.o
 	rm -f $(OBJNRLIBDIR)/*/*.o
 	rm -f $(OBJBOOSTDIR)/*/*.o
