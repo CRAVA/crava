@@ -3,21 +3,21 @@
 #
 include Makeheader
 
-DIRS        = src libs/lib libs/boost libs fft/fftw fft/rfftw
+DIRS        = src libs libs/lib libs/boost libs/fft/fftw libs/fft/rfftw
 OBJDIR      = obj
-OBJFFTDIR   = obj/fft
+OBJFFTDIR   = obj/libs/fft
 OBJBOOSTDIR = obj/libs/boost
 OBJNRLIBDIR = obj/libs/nrlib
 OBJFINDGRAM = findgrammar/findgrammar.o
-OBJGRAMMAR  = obj/libs/nrlib/iotools/fileio.o         \
-              obj/libs/nrlib/tinyxml/tinyxml.o        \
-              obj/libs/nrlib/tinyxml/tinyxmlerror.o   \
-              obj/libs/nrlib/tinyxml/tinyxmlparser.o  \
-              obj/libs/boost/system/error_code.o      \
-              obj/libs/boost/filesystem/path.o        \
-              obj/libs/boost/filesystem/operations.o  \
-              obj/libs/boost/filesystem/portability.o
-INCLUDE     = -I. -I./libs -I./libs/nrlib -I./fft/include
+OBJGRAMMAR  = $(OBJNRLIBDIR)/iotools/fileio.o         \
+              $(OBJNRLIBDIR)/tinyxml/tinyxml.o        \
+              $(OBJNRLIBDIR)/tinyxml/tinyxmlerror.o   \
+              $(OBJNRLIBDIR)/tinyxml/tinyxmlparser.o  \
+              $(OBJBOOSTDIR)/system/error_code.o      \
+              $(OBJBOOSTDIR)/filesystem/path.o        \
+              $(OBJBOOSTDIR)/filesystem/operations.o  \
+              $(OBJBOOSTDIR)/filesystem/portability.o
+INCLUDE     = -I. -I./libs -I./libs/nrlib -I./libs/fft/include
 CPPFLAGS   += $(INCLUDE)
 
 all:	$(PROGRAM)
