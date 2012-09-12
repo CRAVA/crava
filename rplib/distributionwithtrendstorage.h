@@ -25,6 +25,8 @@ public:
 
 };
 
+//--------------------------------------------------------------//
+
 class DeltaDistributionWithTrendStorage : public DistributionWithTrendStorage
 {
 public:
@@ -54,6 +56,8 @@ private:
   const bool                             is_shared_;                          // True if object is a reservoir variable that can be used for more fluids/solids/rocks/dry-rocks
 };
 
+//--------------------------------------------------------------//
+
 class NormalDistributionWithTrendStorage : public DistributionWithTrendStorage
 {
 public:
@@ -82,4 +86,37 @@ private:
   const bool                             is_shared_;                          // True if object is a reservoir variable that can be used for more fluids/solids/rocks/dry-rocks
 };
 
+//--------------------------------------------------------------//
+
+class BetaDistributionWithTrendStorage : public DistributionWithTrendStorage
+{
+public:
+
+  BetaDistributionWithTrendStorage();
+
+  BetaDistributionWithTrendStorage(const NRLib::TrendStorage * mean,
+                                   const NRLib::TrendStorage * variance,
+                                   bool                        is_shared);
+
+  virtual ~BetaDistributionWithTrendStorage();
+
+  virtual DistributionWithTrend          * GenerateDistributionWithTrend(const std::string                       & path,
+                                                                         const std::vector<std::string>          & trend_cube_parameters,
+                                                                         const std::vector<std::vector<double> > & trend_cube_sampling,
+                                                                         std::string                             & errTxt);
+
+  virtual NRLib::TrendStorage            * CloneMean() const;
+
+  virtual bool                             GetIsShared() const   { return(is_shared_) ;}
+
+private:
+  void                                     CheckBetaConsistency(NRLib::Trend * mean,
+                                                                NRLib::Trend * variance,
+                                                                std::string  & errTxt) const;
+
+  const NRLib::TrendStorage            * mean_;
+  const NRLib::TrendStorage            * variance_;
+  DistributionWithTrend                * distribution_with_trend_;
+  const bool                             is_shared_;                          // True if object is a reservoir variable that can be used for more fluids/solids/rocks/dry-rocks
+};
 #endif

@@ -192,7 +192,7 @@ ModelGeneral::ModelGeneral(ModelSettings *& modelSettings, const InputFiles * in
         }
       }
     }
-    failedLoadingModel = failedSimbox  || failedDepthConv || failedWells || failedBackground;
+    failedLoadingModel = failedSimbox  || failedDepthConv || failedWells || failedBackground || failedRockPhysics;
 
     if (failedLoadingModel) {
       LogKit::WriteHeader("Error(s) while loading data");

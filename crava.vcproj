@@ -6165,6 +6165,10 @@
 				Name="rplib"
 				>
 				<File
+					RelativePath=".\rplib\betadistributionwithtrend.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\rplib\brine.cpp"
 					>
 				</File>
@@ -7289,6 +7293,10 @@
 			<Filter
 				Name="rplib"
 				>
+				<File
+					RelativePath=".\rplib\betadistributionwithtrend.h"
+					>
+				</File>
 				<File
 					RelativePath=".\rplib\brine.h"
 					>

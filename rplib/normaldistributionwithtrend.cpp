@@ -10,9 +10,9 @@ NormalDistributionWithTrend::NormalDistributionWithTrend()
 {
 }
 
-NormalDistributionWithTrend::NormalDistributionWithTrend(const NRLib::Trend                * mean,
-                                                         const NRLib::Trend                * var,
-                                                         bool                                shared)
+NormalDistributionWithTrend::NormalDistributionWithTrend(const NRLib::Trend * mean,
+                                                         const NRLib::Trend * var,
+                                                         bool                 shared)
 : mean_(mean),
   var_(var),
   is_shared_(shared)
@@ -46,6 +46,7 @@ NormalDistributionWithTrend::ReSample(double s1, double s2) const
 
   double dummy = 0;
 
-  return  mean_->GetValue(s1, s2, dummy) + gaussian_->Draw() * std::sqrt(var_->GetValue(s1, s2, dummy));
+  double y = mean_->GetValue(s1, s2, dummy) + gaussian_->Draw() * std::sqrt(var_->GetValue(s1, s2, dummy));
 
+  return y;
 }

@@ -2561,6 +2561,9 @@ XmlModelFile::parseReservoir(TiXmlNode * node, std::string & errTxt)
   DistributionWithTrendStorage * distributionWithTrend; //Deleted in ~Modelsettings
 
   while(parseDistributionWithTrend(root, "variable", distributionWithTrend, label, true, errTxt) == true) {
+    if(label == "")
+      errTxt += "All reservoir variables need to be defined using <label>\n";
+
     modelSettings_->addReservoirVariable(label, distributionWithTrend);
   }
 
@@ -2694,7 +2697,7 @@ XmlModelFile::parseGaussianWithTrend(TiXmlNode                     * node,
 
 bool
 XmlModelFile::parseBetaWithTrend(TiXmlNode                     * node,
-                                 DistributionWithTrendStorage *& /*storage*/,
+                                 DistributionWithTrendStorage *& storage,
                                  bool                            is_shared,
                                  std::string                   & errTxt)
 {
@@ -2715,13 +2718,13 @@ XmlModelFile::parseBetaWithTrend(TiXmlNode                     * node,
   if(parseDistributionWithTrend(root, "variance", variance_storage, label, is_shared, errTxt, false) == false)
     errTxt += "The variance needs to be specified for the variable having a Gaussian distribution\n";
 
-  /*const NRLib::TrendStorage         * mean     = mean_storage->CloneMean();
-  const NRLib::TrendStorage         * variance = variance_storage->CloneMean();
+  const NRLib::TrendStorage * mean     = mean_storage    ->CloneMean();
+  const NRLib::TrendStorage * variance = variance_storage->CloneMean();
 
   delete mean_storage;
-  delete variance_storage;*/
+  delete variance_storage;
 
-  //storage = new BetaDistributionWithTrendStorage(gaussian, mean, variance, true, is_shared);
+  storage = new BetaDistributionWithTrendStorage(mean, variance, is_shared);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);

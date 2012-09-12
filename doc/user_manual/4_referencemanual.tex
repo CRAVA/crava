@@ -3354,16 +3354,37 @@ All the properties and function parameters can use previously assigned values in
    \item \Default 
  \elist
 
-\subsubsection{\hbracket{mean}}\newkw{mean-gaussian}
+\subsubsection{\hbracket{mean}}\rnewkw{mean}{mean-gaussian}
  \slist
    \item \Description Mean value of the Gaussian distribution
    \item \Argument Value or trend
    \item \Default 
  \elist
 
-\subsubsection{\hbracket{variance}}\newkw{variance-gaussian}
+\subsubsection{\hbracket{variance}}\rnewkw{variance}{variance-gaussian}
  \slist
    \item \Description Variance of the Gaussian distribution
+   \item \Argument Value or trend
+   \item \Default 
+ \elist
+
+\subsection{\hbracket{beta}}\newkw{beta}
+ \slist
+   \item \Description Commands controlling assignment of Beta probabilistic values to a variable. The Beta distribution is defined in the interval [0,1]. Whenever several building blocks use the same stochastic variable defined under \kw{reservoir}, the same sample of the variable is used for all the building blocks. 
+   \item \Argument
+   \item \Default 
+ \elist
+
+\subsubsection{\hbracket{mean}}\rnewkw{mean}{mean-beta}
+ \slist
+   \item \Description Mean value of the Beta distribution on [0,1]
+   \item \Argument Value or trend
+   \item \Default 
+ \elist
+
+\subsubsection{\hbracket{variance}}\rnewkw{variance}{variance-beta}
+ \slist
+   \item \Description Variance of the Beta distribution on [0,1]
    \item \Argument Value or trend
    \item \Default 
  \elist

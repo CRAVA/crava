@@ -11,9 +11,9 @@ class NormalDistributionWithTrend : public DistributionWithTrend {
 
    NormalDistributionWithTrend();
 
-   NormalDistributionWithTrend(const NRLib::Trend                * mean,
-                               const NRLib::Trend                * var,
-                               bool                                shared);
+   NormalDistributionWithTrend(const NRLib::Trend * mean,
+                               const NRLib::Trend * var,
+                               bool                 shared);
 
    virtual ~NormalDistributionWithTrend();
 
