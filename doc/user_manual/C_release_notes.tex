@@ -5,6 +5,38 @@ system called
 \index{JIRA, project management} Note that access permission is
 required to be able to open the links.
 
+\section{Changes from v1.2 to v1.3}
+
+\begin{description}
+\item [New features:] \mbox{ }
+  \begin{itemize}
+    \item Smoothing values from illumination vector grid. \jira{162}
+    \item Build zones for multizone background model. \jira{317}
+    \item Fill in values in the multizone background model. \jira{319}
+    \item Generate complete multizone background model in timeSimbox. \jira{325}
+    \item Include beta distribution in nrlib/random \jira{331}
+ \end{itemize}
+
+\item [Changes:] \mbox{ }
+  \begin{itemize}
+   \item Check that facies probabilities are between 0 and 1. \jira{347}
+   \item Adjust estimated wavelet such that it is smooth and the amplitude goes smoothly to zero in frequency domain. \jira{315}
+   \item Make CRAVA compile under g++ 4.6.3 (Ubuntu 12.04). \jira{345}
+ \end{itemize}
+
+\item [Bug fixes:] \mbox{ }
+  \begin{itemize}
+  \item If ASCII grid output is requested, STORM grids cannot be imported to RMS \jira{224}
+    \item Incorrect guard zone check done before smoothing seismic data in new resampling. \jira{330}
+    \item Problems if <seg-start-time> is used when it should not have been. \jira{346}
+    \item Bug in writing of background trend to file for multizone background model \jira{348}
+    \item Failed to open temporal seismic file in crava format for writing. \jira{349}
+    \item In new resampling algorithm of seismic data, wrong weights are used when doing interpolation. \jira{350}
+    \item CRAVA incorrectly reports that no optimal global wavelet scale has been found. \jira{351}
+    \item Some segy files are given the same path twice. \jira{352}
+  \end{itemize}
+\end{description}
+
 \section{Changes from v1.1 to v1.2}
 
 \begin{description}
