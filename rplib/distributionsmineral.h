@@ -6,14 +6,18 @@
 
 class DistributionWithTrend;
 class DistributionsBrineEvolution;
+class DistributionsMineralEvolution;
 
 class DistributionsMineral : public DistributionsSolid {
 public:
 
-  DistributionsMineral(DistributionWithTrend         * distr_k,
-                       DistributionWithTrend         * distr_mu,
-                       DistributionWithTrend         * distr_rho,
-                       DistributionsMineralEvolution * distr_evolution = NULL);
+  DistributionsMineral(const DistributionWithTrend         * distr_k,
+                       const DistributionWithTrend         * distr_mu,
+                       const DistributionWithTrend         * distr_rho,
+                       const DistributionWithTrend         * corr_k_mu,
+                       const DistributionWithTrend         * corr_k_rho,
+                       const DistributionWithTrend         * corr_mu_rho,
+                             DistributionsMineralEvolution * distr_evolution = NULL);
 
   virtual ~DistributionsMineral();
 
@@ -24,10 +28,13 @@ public:
   virtual std::vector<bool>     HasTrend() const;
 
 private:
-  DistributionWithTrend         * distr_k_;         // Pointer to external object.
-  DistributionWithTrend         * distr_mu_;        // Pointer to external object.
-  DistributionWithTrend         * distr_rho_;       // Pointer to external object.
-  DistributionsMineralEvolution * distr_evolution_; // Pointer to external object.
+  const DistributionWithTrend         * distr_k_;         // Pointer to external object.
+  const DistributionWithTrend         * distr_mu_;        // Pointer to external object.
+  const DistributionWithTrend         * distr_rho_;       // Pointer to external object.
+  const DistributionWithTrend         * corr_k_mu_;       // Pointer to external object.
+  const DistributionWithTrend         * corr_k_rho_;      // Pointer to external object.
+  const DistributionWithTrend         * corr_mu_rho_;     // Pointer to external object.
+        DistributionsMineralEvolution * distr_evolution_; // Pointer to external object.
 };
 
 #endif

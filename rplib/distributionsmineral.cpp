@@ -3,16 +3,23 @@
 #include "rplib/distributionsmineralevolution.h"
 #include "rplib/distributionwithtrend.h"
 
-DistributionsMineral::DistributionsMineral(DistributionWithTrend         * distr_k,
-                                           DistributionWithTrend         * distr_mu,
-                                           DistributionWithTrend         * distr_rho,
-                                           DistributionsMineralEvolution * distr_evolution)
-: DistributionsSolid()
+DistributionsMineral::DistributionsMineral(const DistributionWithTrend         * distr_k,
+                                           const DistributionWithTrend         * distr_mu,
+                                           const DistributionWithTrend         * distr_rho,
+                                           const DistributionWithTrend         * corr_k_mu,
+                                           const DistributionWithTrend         * corr_k_rho,
+                                           const DistributionWithTrend         * corr_mu_rho,
+                                                 DistributionsMineralEvolution * distr_evolution)
+: DistributionsSolid(),
+  distr_k_(distr_k),
+  distr_mu_(distr_mu),
+  distr_rho_(distr_rho),
+  corr_k_mu_(corr_k_mu),
+  corr_k_rho_(corr_k_rho),
+  corr_mu_rho_(corr_mu_rho),
+  distr_evolution_(distr_evolution)
 {
-  distr_k_          = distr_k;
-  distr_mu_         = distr_mu;
-  distr_rho_        = distr_rho;
-  distr_evolution_  = distr_evolution;;
+
 }
 
 DistributionsMineral::~DistributionsMineral(){}

@@ -2298,9 +2298,11 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
 
     std::map<std::string, DistributionsSolidStorage *>      solid_storage = modelSettings->getSolidStorage();
     for(std::map<std::string, DistributionsSolidStorage *>::iterator it = solid_storage.begin(); it != solid_storage.end(); it++) {
-      DistributionsSolidStorage     * storage    = it     ->second;
-      DistributionsSolid            * solid      = storage->GenerateDistributionsSolid(path,trend_cube_parameters,trend_cube_sampling,errTxt);
-      solid_distributions_[it->first]            = solid;
+      if (solid_distributions_.count(it->first) == 0) {
+        DistributionsSolidStorage     * storage    = it     ->second;
+        DistributionsSolid            * solid      = storage->GenerateDistributionsSolid(path,trend_cube_parameters,trend_cube_sampling,solid_storage,solid_distributions_, errTxt);
+        solid_distributions_[it->first]            = solid;
+      }
     }
 
     std::map<std::string, DistributionsDryRockStorage *>      dry_rock_storage = modelSettings->getDryRockStorage();

@@ -27,12 +27,25 @@ DistributionsSolidMix::GenerateSample(const std::vector<double> & trend_params) 
 
   size_t n_solids = distr_solid_.size();
   std::vector<Solid*> solid(n_solids);
-  std::vector<double> volume_fraction(n_solids);
+  std::vector<double> volume_fraction(n_solids, 0.0);
 
+  size_t missing_index = n_solids;
   for(size_t i = 0; i < n_solids; ++i) {
     solid[i] = distr_solid_[i]->GenerateSample(trend_params);
-    volume_fraction[i] = distr_vol_frac_[i]->ReSample(trend_params[0], trend_params[1]);
+    if (distr_vol_frac_[i])
+      volume_fraction[i] = distr_vol_frac_[i]->ReSample(trend_params[0], trend_params[1]);
+    else
+      missing_index    = i;
   }
+
+  if (missing_index != n_solids) {
+    double sum = 0.0;
+    for (size_t i = 0; i < volume_fraction.size(); ++i)
+      sum += volume_fraction[i];
+
+    volume_fraction[missing_index] = 1.0 - sum;
+  }
+
   Solid * solid_mixed = new SolidMixed(solid, volume_fraction, mix_method_, distr_evolution_);
 
   // Deep copy taken by constructor of SolidMixed, hence delete solid here:

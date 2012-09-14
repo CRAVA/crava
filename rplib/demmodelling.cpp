@@ -783,7 +783,7 @@ DEMTools::DebugTestCalcEffectiveModulus4(double& effective_bulk_modulus,
   DistributionWithTrend * distr_quartz_rho = new DeltaDistributionWithTrend(trend_quartz_rho, false);
 
   DistributionsMineralEvolution * distr_quartz_evolution = NULL;
-  DistributionsSolid * distr_quartz = new DistributionsMineral(distr_quartz_k, distr_quartz_mu, distr_quartz_rho, distr_quartz_evolution);
+  DistributionsSolid * distr_quartz = new DistributionsMineral(distr_quartz_k, distr_quartz_mu, distr_quartz_rho, NULL, NULL, NULL,distr_quartz_evolution);
 
   NRLib::Trend * trend_clay_k          = new NRLib::TrendConstant(21.0);
   DistributionWithTrend * distr_clay_k = new DeltaDistributionWithTrend(trend_clay_k, false);
@@ -795,7 +795,7 @@ DEMTools::DebugTestCalcEffectiveModulus4(double& effective_bulk_modulus,
   DistributionWithTrend * distr_clay_rho = new DeltaDistributionWithTrend(trend_clay_rho, false);
 
   DistributionsMineralEvolution * distr_clay_evolution = NULL;
-  DistributionsSolid * distr_clay = new DistributionsMineral(distr_clay_k, distr_clay_mu, distr_clay_rho, distr_clay_evolution);
+  DistributionsSolid * distr_clay = new DistributionsMineral(distr_clay_k, distr_clay_mu, distr_clay_rho, NULL, NULL, NULL, distr_clay_evolution);
 
   //// Mixing, effective solid properties. Distribution functions.
   std::vector< DistributionsSolid * > distr_solid;
