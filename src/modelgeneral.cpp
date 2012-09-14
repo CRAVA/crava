@@ -579,7 +579,7 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
               }
               else {
                 text  = "Check IL/XL specification: Specified IL- or XL-step is not an integer multiple\n";
-                text  = "   of those found in the seismic data.\n";
+                text += "   of those found in the seismic data.\n";
                 TaskList::addTask(text);
               }
             }

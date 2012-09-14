@@ -1909,7 +1909,7 @@ the vertical sampling interval we find the the number of parameters that is esti
    \item \Default
  \elist
 
-\paragraph{\hbracket{top-surface-file}}\rnewkw{top-surface-file}{top-surface-file4}
+\paragraph{\hbracket{top-surface-file}}\rnewkw{top-surface-file}{top-surface-file-multizone}
  \slist
    \item \Description Name of the top surface file used in multizone background estimation
    \item \Argument File name
@@ -1930,7 +1930,7 @@ the vertical sampling interval we find the the number of parameters that is esti
    \item \Default
  \elist
 
-\subparagraph{\hbracket{base-surface-file}}\rnewkw{base-surface-file}{base-surface-file4}
+\subparagraph{\hbracket{base-surface-file}}\rnewkw{base-surface-file}{base-surface-file-multizone}
  \slist
    \item \Description Name of a base surface file
    \item \Argument File name
@@ -1989,7 +1989,7 @@ the vertical sampling interval we find the the number of parameters that is esti
 \subsubsection{\hbracket{ai-file}}\rnewkw{ai-file}{ai-file2}
  \slist
    \item \Description File name for 3D grid file, giving AI. Can not
-     be given together with \kw{vp-file} .
+     be given together with \rkw{vp-file}{vp-file} .
    \item \Argument File name
    \item \Default
  \elist
@@ -1997,7 +1997,7 @@ the vertical sampling interval we find the the number of parameters that is esti
 \subsubsection{\hbracket{si-file}}\rnewkw{si-file}{si-file2}
  \slist
    \item \Description File name for 3D grid file, giving SI. Can not
-   be given together with \kw{vs-file2} or \kw{vp-vs-ratio-file2}.
+   be given together with \rkw{vs-file}{vs-file2} nor \rkw{vp-vs-ratio-file}{vp-vs-ratio-file2}.
    \item \Argument File name
    \item \Default
  \elist
@@ -2005,7 +2005,7 @@ the vertical sampling interval we find the the number of parameters that is esti
 \subsubsection{\hbracket{vp-vs-ratio-file}}\rnewkw{vp-vs-ratio-file}{vp-vs-ratio-file2}
  \slist
    \item \Description File name for 3D grid file, giving Vp/Vs. Can
-   not be given together with \kw{vs-file2}.
+   not be given together with \rkw{vs-file}{vs-file2}.
    \item \Argument File name
    \item \Default
  \elist

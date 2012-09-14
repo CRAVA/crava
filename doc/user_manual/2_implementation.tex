@@ -166,6 +166,9 @@ obvious choice. This model is too smooth, however, and should be
 omitted as it often give parameter over- and undershooting away
 from wells.
 
+\subsubsection{Multizone background model}
+In the \kw{multizone-model}, the reservoir is divided into several horizontal zones defined by surfaces in the inversion volume. In each zone, a local backround model is made by estimating a depth trend for the zone volume, then kriging well logs to the depth trend. The full multizone background model is made from the zone background models by using Beta distributions with $\alpha = \beta =2$ for the transitions between the zones. The limits of the Beta distribution may be different for each surface, and they are given as input to the model. The background model in each zone contains frequencies up to 6Hz, but the frequency content is higher in the transitions between the zones. These higher frequencies will, however, contain information about the locations of the zones; hence they contain important prior information. Higher uncertainty gives smoother background models with lower frequency.
+
 \subsection{Covariance}
 \label{sec:correstimp}
 
