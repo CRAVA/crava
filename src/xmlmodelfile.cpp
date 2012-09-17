@@ -1693,6 +1693,14 @@ XmlModelFile::parseRockPhysics(TiXmlNode * node, std::string & errTxt)
 
   modelSettings_->setFaciesProbFromRockPhysics(true);
 
+  if(modelSettings_->getGenerateBackground()) {
+    modelSettings_->setBackgroundFromRockPhysics(true);
+    modelSettings_->setGenerateBackground(false);
+  }
+  else{
+   errTxt += "Background should either be generated from given input or from rock physics.";
+  }
+
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
@@ -4395,7 +4403,8 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
     if ((inputFiles_->getBackFile(0)!="" || modelSettings_->getGenerateBackground() == false) &&
         (inputFiles_->getWaveletFile(0,0)!="" || useRicker[0] == true) &&
         inputFiles_->getTempCorrFile()!="" &&
-        inputFiles_->getParamCorrFile()!="")
+        inputFiles_->getParamCorrFile()!="" ||
+        modelSettings_->getBackgroundFromRockPhysics())
       modelSettings_->setNoWellNeeded(true);
     else {
       errTxt += "Wells are needed for the inversion. ";
@@ -4461,6 +4470,12 @@ XmlModelFile::checkInversionConsistency(std::string & errTxt) {
       }
     }
   }
+  if(modelSettings_->getBackgroundFromRockPhysics())
+    // In case of setting background/prior model from rock physics, the file inputFiles_->getParamCorrFile() should not be set.
+    // This assumption is relevant for the function ModelGeneral::processPriorCorrelations.
+    if(inputFiles_->getParamCorrFile()!=""){
+      errTxt += "Parameter correlation should not be specified in file when background/prior model is build from rock physics.";
+    }
 }
 
 void

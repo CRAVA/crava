@@ -62,7 +62,7 @@ public:
   bool                             getEstimateLocalNoise(int i, int j)  const { return timeLapseEstimateLocalNoise_[i][j]         ;}
   bool                             getEstimateGlobalWaveletScale(int i, int j) const { return timeLapseEstimateGlobalWaveletScale_[i][j];}
   bool                             getDo4DInversion(void)                     { return do4DInversion_                             ;}
-  bool                             getBackgroundFromRockPhysics(void)   const { return backgroundFromRockPhysics_                 ;} // relevant?
+  bool                             getBackgroundFromRockPhysics(void)   const { return backgroundFromRockPhysics_                 ;}
   bool                             getEstimateBackground(void)          const { return estimateBackground_                        ;}
   bool                             getEstimateCorrelations(void)        const { return estimateCorrelations_                      ;}
   bool                             getEstimateWaveletNoise(void)        const { return estimateWaveletNoise_                      ;}
@@ -346,6 +346,7 @@ public:
   void setForwardModeling(bool forwardModeling)           { forwardModeling_          = forwardModeling          ;}
   void setGenerateSeismicAfterInv( bool generateSeismic)  { generateSeismicAfterInv_  = generateSeismic          ;}
   void setGenerateBackground(bool generateBackgr)         { generateBackground_       = generateBackgr           ;}
+  void setBackgroundFromRockPhysics(bool backgroundFromRP){ backgroundFromRockPhysics_= backgroundFromRP         ;}
   void setEstimateFaciesProb(bool estFaciesProb)          { estimateFaciesProb_       = estFaciesProb            ;}
   void setFaciesProbRelative(bool faciesProbRel)          { faciesProbRelative_       = faciesProbRel            ;}
   void setFaciesProbFromRockPhysics(bool rockPhysics)     { faciesProbFromRockPhysics_= rockPhysics              ;}

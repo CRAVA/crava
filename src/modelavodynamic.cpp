@@ -95,7 +95,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings       *& modelSettings,
 
   std::string errText("");
 
-  std::vector<double> coefFromRPForVariances(6);
+  std::vector<double> variancesFromRockPhysics(0);   // Length will be set in processBackground
 
   if(!failedSimbox)
   {
@@ -106,7 +106,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings       *& modelSettings,
     {
       processBackground(background_, modelGeneral->getWells(), timeSimbox, timeBGSimbox,
                         timeDepthMapping, timeCutMapping,
-                        modelSettings, modelGeneral, inputFiles, coefFromRPForVariances,
+                        modelSettings, modelGeneral, inputFiles, variancesFromRockPhysics,
                         errText, failedBackground);
       if (!failedBackground)
       {
@@ -139,7 +139,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings       *& modelSettings,
           {
             processBackground(background_, modelGeneral->getWells(), timeSimbox, timeBGSimbox,
                               timeDepthMapping, timeCutMapping,
-                              modelSettings, modelGeneral, inputFiles, coefFromRPForVariances,
+                              modelSettings, modelGeneral, inputFiles, variancesFromRockPhysics,
                               errText, failedBackground);
             backgroundDone = true;
           }
@@ -204,7 +204,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings       *& modelSettings,
           {
             processBackground(background_, modelGeneral->getWells(), timeSimbox, timeBGSimbox,
                               timeDepthMapping, timeCutMapping,
-                              modelSettings, modelGeneral, inputFiles, coefFromRPForVariances,
+                              modelSettings, modelGeneral, inputFiles, variancesFromRockPhysics,
                               errText, failedBackground);
             backgroundDone = true;
           }
@@ -215,7 +215,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings       *& modelSettings,
            (estimationMode == false || modelSettings->getEstimateCorrelations() == true))
         {
           modelGeneral->processPriorCorrelations(correlations_, background_, modelGeneral->getWells(), timeSimbox, modelSettings,
-                                                 seisCube_, inputFiles, coefFromRPForVariances, errText, failedPriorCorr);
+                                                 seisCube_, inputFiles, variancesFromRockPhysics, errText, failedPriorCorr);
         }
 
         if(failedSeismic == false && failedBackground == false &&
@@ -573,7 +573,7 @@ ModelAVODynamic::processBackground(Background           *& background,
                                    const ModelSettings   * modelSettings,
                                    ModelGeneral          * modelGeneral,
                                    const InputFiles      * inputFiles,
-                                   std::vector<double>   & coefFromRPForVariances,
+                                   std::vector<double>   & variancesFromRockPhysics,
                                    std::string           & errText,
                                    bool                  & failed)
 {
@@ -631,7 +631,7 @@ ModelAVODynamic::processBackground(Background           *& background,
       delete velocity;
     }
   }
-    else if(modelSettings->getBackgroundFromRockPhysics() && 0) {     // Or use getFaciesProbFromRockPhysics_()
+  else if(modelSettings->getBackgroundFromRockPhysics()) {
 
       for (int i=0 ; i<3 ; i++)
       {
@@ -658,30 +658,20 @@ ModelAVODynamic::processBackground(Background           *& background,
       double varVp, varVs, varRho, crVpVs,crVpRho, crVsRho;
       // filling in the backModel in Background
       modelGeneral->generateRockPhysics3DBackground(modelGeneral->getRockDistributions(),priorProbability,
-        //*background->getAlpha(), *background->getBeta(), *background->getRho(),
         *backModel[0], *backModel[1], *backModel[2],
         varVp, varVs, varRho, crVpVs, crVpRho, crVsRho);
 
       background = new Background(backModel);
 
-      // keeping the coefficients to the variances for later use in processPriorCorrelations
-      coefFromRPForVariances[0] = varVp;
-      coefFromRPForVariances[1] = varVs;
-      coefFromRPForVariances[2] = varRho;
-      coefFromRPForVariances[3] = crVpVs;
-      coefFromRPForVariances[4] = crVpRho;
-      coefFromRPForVariances[5] = crVsRho;
-
-      // To be done later:
-      /*
-      correlations_->getPostCovAlpha()->multiplyByScalar(static_cast<float>(varVp));
-      correlations_->getPostCovBeta()->multiplyByScalar(static_cast<float>(varVs));
-      correlations_->getPostCovRho()->multiplyByScalar(static_cast<float>(varRho));
-      correlations_->getPostCrCovAlphaBeta()->multiplyByScalar(static_cast<float>(crVpVs));
-      correlations_->getPostCrCovAlphaRho()->multiplyByScalar(static_cast<float>(crVpRho));
-      correlations_->getPostCrCovBetaRho()->multiplyByScalar(static_cast<float>(crVsRho));
-      */
-    }
+      // keeping variances for later use in paramCorr in ModelGeneral::processPriorCorrelations
+      variancesFromRockPhysics.resize(6);
+      variancesFromRockPhysics[0] = varVp;
+      variancesFromRockPhysics[1] = varVs;
+      variancesFromRockPhysics[2] = varRho;
+      variancesFromRockPhysics[3] = crVpVs;
+      variancesFromRockPhysics[4] = crVpRho;
+      variancesFromRockPhysics[5] = crVsRho;
+  }
   else
   {
     std::vector<std::string> parName;

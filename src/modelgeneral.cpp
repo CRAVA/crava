@@ -2722,7 +2722,7 @@ ModelGeneral::generateRockPhysics3DBackground(const std::map<std::string, Distri
 
         // Otherwise use trend values to get expectation values for each facies from the rock
         else {
-          std::vector<double> trend_position = trend_cubes_.GetTrendPosition(k,j,i);
+          std::vector<double> trend_position = trend_cubes_.GetTrendPosition(i,j,k);
 
           std::vector<float> expectations(3);  // Antar initialisert til 0.
           // Sum up for all facies: probability for a facies multiplied with the expectations of (vp, vs, rho) given the facies
@@ -3332,7 +3332,7 @@ ModelGeneral::processPriorCorrelations(Corr                   *& correlations,
                                        const ModelSettings     * modelSettings,
                                        FFTGrid                ** seisCube,
                                        const InputFiles        * inputFiles,
-                                       std::vector<double>       coefFromRPForVariances,
+                                       std::vector<double>       variancesFromRockPhysics,
                                        std::string             & errText,
                                        bool                    & failed)
 {
@@ -3352,20 +3352,31 @@ ModelGeneral::processPriorCorrelations(Corr                   *& correlations,
     bool estimateTempCorr = corrTFile    == "";
 
     //
-    // Read parameter covariance (Var0) from file
+    // Read parameter covariance (Var0) from file or set from output from function generateRockPhysics3DBackground.
+    // Consistency check that only one option (file or rock physics) is possible, is done in XmlModelFile::checkInversionConsistency
     //
     float ** paramCorr = NULL;
     bool failedParamCorr = false;
-    if(!estimateParamCov)
-    {
-      std::string tmpErrText("");
+    std::string tmpErrText("");
+    if(!estimateParamCov) {
       paramCorr = ModelAVODynamic::readMatrix(paramCovFile, 3, 3, "parameter covariance", tmpErrText);
-      if(paramCorr == NULL)
-      {
-        errText += "Reading of file "+paramCovFile+" for parameter covariance matrix failed\n";
-        errText += tmpErrText;
-        failedParamCorr = true;
+    }
+    else if(variancesFromRockPhysics.size() == 6) {
+      paramCorr = new float * [3];
+      int index = 0;
+      for(int i=0;i<3;i++) {
+        paramCorr[i] = new float[3];
+        for(int j=i;j<3;j++) {
+          paramCorr[i][j] = variancesFromRockPhysics[index];
+          index++;
+        }
       }
+    }
+    if(!estimateParamCov && paramCorr == NULL)
+    {
+      errText += "Reading of file "+paramCovFile+" for parameter covariance matrix failed\n";
+      errText += tmpErrText;
+      failedParamCorr = true;
     }
 
     //
@@ -3471,17 +3482,6 @@ ModelGeneral::processPriorCorrelations(Corr                   *& correlations,
     }
 
     Timings::setTimePriorCorrelation(wall,cpu);
-  }
-
-  // To be done? In case of using rock physics prior in 3D inversion. To be continued by CRA-333.
-  if(coefFromRPForVariances.size() > 0 && 0){
-    assert(coefFromRPForVariances.size()==6);
-    correlations->getPostCovAlpha()->multiplyByScalar(static_cast<float>(coefFromRPForVariances[0]));
-    correlations->getPostCovBeta()->multiplyByScalar(static_cast<float>(coefFromRPForVariances[1]));
-    correlations->getPostCovRho()->multiplyByScalar(static_cast<float>(coefFromRPForVariances[2]));
-    correlations->getPostCrCovAlphaBeta()->multiplyByScalar(static_cast<float>(coefFromRPForVariances[3]));
-    correlations->getPostCrCovAlphaRho()->multiplyByScalar(static_cast<float>(coefFromRPForVariances[4]));
-    correlations->getPostCrCovBetaRho()->multiplyByScalar(static_cast<float>(coefFromRPForVariances[5]));
   }
 }
 Surface *
