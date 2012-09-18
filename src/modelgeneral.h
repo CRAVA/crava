@@ -11,6 +11,7 @@
 #include "src/inputfiles.h"
 #include "src/cravatrend.h"
 #include "src/seismicparametersholder.h"
+#include "src/state4d.h"
 
 #include "rplib/distributionsrock.h"
 #include "rplib/distributionsfluid.h"
@@ -27,7 +28,6 @@ class RandomGen;
 class GridMapping;
 class InputFiles;
 class TimeLine;
-class State4D;
 class WellData;
 
 class ModelGeneral
@@ -319,6 +319,8 @@ private:
 
   std::vector<int>                  faciesLabels_;               ///< Facies labels, flyttes til blockedlogs
   std::vector<std::string>          faciesNames_;                ///< Facies names   (nFacies = faciesNames.size()). Use for ordering of facies
+
+  State4D                           state4d_;                    ///< State4D holds the 27 grdis needed for 4D inversion.
 
 };
 

@@ -3999,8 +3999,7 @@ ModelGeneral::get3DPriorFrom4D(SeismicParametersHolder seismicParameters,
                                FFTGrid *crCovVsVs, FFTGrid *crCovVsRho,
                                FFTGrid *crCovRhoRho)
 {
-  State4D state4d;
-  state4d.setStaticMu(vp, vs, rho);
-  state4d.setStaticSigma(crCovVpVp, crCovVpVs, crCovVpRho, crCovVsVs, crCovVsRho, crCovRhoRho);
-  state4d.merge(seismicParameters);
+  state4d_.setStaticMu(vp, vs, rho);
+  state4d_.setStaticSigma(crCovVpVp, crCovVpVs, crCovVpRho, crCovVsVs, crCovVsRho, crCovRhoRho);
+  state4d_.merge(seismicParameters);
 }

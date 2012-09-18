@@ -215,7 +215,7 @@ int main(int argc, char** argv)
 
         // In case of 4D inversion, use 4D prior
         // For now deactivating the whole if-segment by testing on 0 as well.
-        if(modelSettings->getDo4DInversion() && 0){
+        if(modelSettings->getDo4DInversion()){
           bool failedAllocating = 0;
           failedAllocating      = allocate4DGrids(seismicParameters, modelSettings, modelGeneral, timeBGSimbox);
           failedFirst           = doTimeLapseAVOInversion(modelSettings, modelGeneral, modelAVOstatic, inputFiles, seismicParameters, eventIndex);
