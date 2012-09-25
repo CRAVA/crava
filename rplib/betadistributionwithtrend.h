@@ -23,6 +23,7 @@ class BetaDistributionWithTrend : public DistributionWithTrend {
    virtual std::vector<bool>          GetUseTrendCube() const                 { return(use_trend_cube_)                     ;}
 
    virtual double                     ReSample(double s1, double s2) const;
+   virtual double                     GetQuantileValue(double u, double s1, double s2) const;
 
  private:
    void CalculateAlpha(double mean, double var, double & alpha) const;

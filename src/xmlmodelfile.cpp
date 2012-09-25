@@ -1697,9 +1697,6 @@ XmlModelFile::parseRockPhysics(TiXmlNode * node, std::string & errTxt)
     modelSettings_->setBackgroundFromRockPhysics(true);
     modelSettings_->setGenerateBackground(false);
   }
-  else{
-   errTxt += "Background should either be generated from given input or from rock physics.";
-  }
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);

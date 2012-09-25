@@ -16,6 +16,25 @@ DistributionsRockTabulatedVelocity::DistributionsRockTabulatedVelocity(const Dis
   corr_vp_density_(corr_vp_density),
   corr_vs_density_(corr_vs_density)
 {
+
+  /*std::vector<const DistributionWithTrend *> elastic_variables(3);
+  elastic_variables[0] = vp_;
+  elastic_variables[1] = vs_;
+  elastic_variables[2] = density_;
+
+  NRLib::Grid2D<double> corr_matrix(3,3,0);
+
+  for(int i=0; i<3; i++)
+    corr_matrix(i,i) = 1;
+
+  corr_matrix(0,1) = corr_elast1_elast2;
+  corr_matrix(1,0) = corr_elast1_elast2;
+  corr_matrix(0,2) = corr_elast1_dens;
+  corr_matrix(2,0) = corr_elast1_dens;
+  corr_matrix(1,2) = corr_elast2_dens;
+  corr_matrix(2,1) = corr_elast2_dens;
+
+  Tabulated distr_tab(elastic_variables, corr_matrix);*/
 }
 
 DistributionsRockTabulatedVelocity::~DistributionsRockTabulatedVelocity()
@@ -25,10 +44,10 @@ DistributionsRockTabulatedVelocity::~DistributionsRockTabulatedVelocity()
 Rock *
 DistributionsRockTabulatedVelocity::GenerateSample(const std::vector<double> & /*trend_params*/) const
 {
-  //Dummy function. Needs to be implemented
-  Rock * rock = NULL;
 
-  return rock;
+  Rock * new_rock = NULL; //new RockTabulatedVelocity();
+
+  return new_rock;
 }
 
 std::vector<double>

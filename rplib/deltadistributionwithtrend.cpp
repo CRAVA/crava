@@ -36,10 +36,25 @@ double
 DeltaDistributionWithTrend::ReSample(double s1, double s2) const
 {
 
+  // There is no random element in the Delta distribution
+  double dummy = 0;
+
+  double value = GetQuantileValue(dummy, s1, s2);
+
+  return(value);
+
+}
+
+double
+DeltaDistributionWithTrend::GetQuantileValue(double /*u*/, double s1, double s2) const
+{
+
   // Want sample from Y(s1, s2) ~ Delta(mu(s1, s2)) which is one in mu(s1, s2) and zero otherwise; hence sample is equal to mean value
 
   double dummy = 0;
 
-  return  mean_->GetValue(s1, s2, dummy);
+  double y = mean_->GetValue(s1, s2, dummy);
+
+  return(y);
 
 }

@@ -2,7 +2,7 @@
 include ../Makeheader
 
 # NRLib directories where we want all files are given here. 
-FULLMODULES := grid iotools segy stormgrid  volume tinyxml boost random math trend geometry
+FULLMODULES := grid iotools segy stormgrid  volume tinyxml boost random math trend geometry flens
 
 SRC := 
 
@@ -18,7 +18,7 @@ OBJECTS := $(patsubst %.cpp, $(OBJDIR)%.o, $(filter %.cpp, $(SRC)))
 
 DIRS := $(sort $(dir $(OBJECTS)))
 
-INCLUDE := -I./
+INCLUDE := -I./ -I../flens
 CPPFLAGS += $(INCLUDE)
 
 $(OBJDIR)%.o : %.cpp

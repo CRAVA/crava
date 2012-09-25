@@ -1,6 +1,7 @@
 
 #include "nrlib/random/distribution.hpp"
 #include "nrlib/random/normal.hpp"
+#include "nrlib/random/uniform.hpp"
 
 #include "rplib/distributionwithtrend.h"
 #include "rplib/normaldistributionwithtrend.h"
@@ -19,6 +20,7 @@ NormalDistributionWithTrend::NormalDistributionWithTrend(const NRLib::Trend * me
 {
 
   gaussian_ = new NRLib::Normal();
+  uniform_  = new NRLib::Uniform();
 
   use_trend_cube_.resize(2);
   for(int i=0; i<2; i++)
@@ -32,6 +34,7 @@ NormalDistributionWithTrend::NormalDistributionWithTrend(const NRLib::Trend * me
 NormalDistributionWithTrend::~NormalDistributionWithTrend()
 {
   delete gaussian_;
+  delete uniform_;
   delete mean_;
   delete var_;
 }
@@ -40,13 +43,24 @@ double
 NormalDistributionWithTrend::ReSample(double s1, double s2) const
 {
 
+  double u = uniform_->Draw();
+
+  double probability = GetQuantileValue(u, s1, s2);
+
+  return probability;
+}
+
+double
+NormalDistributionWithTrend::GetQuantileValue(double u, double s1, double s2) const
+{
+
   // Want sample from Y(s1, s2) ~ Normal(mu(s1, s2), var(s1,s2))
   // Generate sample from Z ~ Normal(0, 1)
   // Calculate y(s1, s2) = mu(s1, s2) + z*sqrt(var(s1,s2))
 
   double dummy = 0;
 
-  double y = mean_->GetValue(s1, s2, dummy) + gaussian_->Draw() * std::sqrt(var_->GetValue(s1, s2, dummy));
+  double y = mean_->GetValue(s1, s2, dummy) + u * std::sqrt(var_->GetValue(s1, s2, dummy));
 
   return y;
 }

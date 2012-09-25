@@ -22,10 +22,12 @@ class NormalDistributionWithTrend : public DistributionWithTrend {
    virtual std::vector<bool>          GetUseTrendCube() const                 { return(use_trend_cube_)                     ;}
 
    virtual double                     ReSample(double s1, double s2) const;
+   virtual double                     GetQuantileValue(double u, double s1, double s2) const;
 
  private:
 
   const NRLib::Distribution<double> * gaussian_;
+  const NRLib::Distribution<double> * uniform_;
   const NRLib::Trend                * mean_;
   const NRLib::Trend                * var_;
   const bool                          is_shared_;       // Use is_shared_ like in DistributionWithTrendStorage to know if we have a reservoir variable.

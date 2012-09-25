@@ -3,9 +3,6 @@
 #include "src/timeevolution.h"
 #include "lib/lib_matr.h"
 
-#include "nrlib/flens/nrlib_flens.cpp"
-
-
 State4D::State4D(){
 
   // Initilizing the 27 grids. All grids initialize to NULL.

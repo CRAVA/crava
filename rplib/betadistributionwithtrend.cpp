@@ -111,24 +111,30 @@ BetaDistributionWithTrend::~BetaDistributionWithTrend()
 double
 BetaDistributionWithTrend::ReSample(double s1, double s2) const
 {
+  double uniform     = uniform_distribution_->Draw();
+  double probability = GetQuantileValue(uniform, s1, s2);
+
+  return(probability);
+}
+
+double
+BetaDistributionWithTrend::GetQuantileValue(double u, double s1, double s2) const
+{
   // Want sample from Y(s1, s2) ~ Beta(0, 1, alpha(s1,s2), beta(s1,s2))
   // Generate sample from Z ~ Uniform(0, 1)
-  // Calculated X_{ij}~Beta(alpha_i,beta_j) using quantile mapping in locations (i,j) around Y(s1,s2) where the Beta distribution is initialized
+  // Calculate X_{ij}~Beta(alpha_i,beta_j) using quantile mapping in locations (i,j) around Y(s1,s2) where the Beta distribution is initialized
   // Calculate y(s1, s2) by interpolating between the generated X_{ij}
 
-  double dummy = 0;
-
-  double mean_trend = mean_->GetValue(s1, s2, dummy);
-  double var_trend  = var_ ->GetValue(s1, s2, dummy);
-
-  double uniform = uniform_distribution_->Draw();
-
-  double probability;
+  double y;
 
   if(ni_ == 1 && nj_ == 1)
-    probability = (*beta_distribution_)(0,0)->Quantile(uniform);
+    y = (*beta_distribution_)(0,0)->Quantile(u);
 
   else {
+    double dummy = 0;
+
+    double mean_trend = mean_->GetValue(s1, s2, dummy);
+    double var_trend  = var_ ->GetValue(s1, s2, dummy);
 
     int ix;
     for(ix = 0; ix < n_samples_mean_; ix++) {
@@ -159,16 +165,16 @@ BetaDistributionWithTrend::ReSample(double s1, double s2) const
     for(int i=0; i<ni_; i++) {
       for(int j=0; j<nj_; j++) {
         NRLib::Distribution<double> * dist = (*beta_distribution_)(ix+i, jy+j);
-        quantile_grid(i,j) = dist->Quantile(uniform);
+        quantile_grid(i,j) = dist->Quantile(u);
       }
     }
 
     NRLib::RegularSurface<double> surf(mean_sampling_[ix], var_sampling_[jy], li, lj, quantile_grid);
 
-    probability = surf.GetZ(mean_trend, var_trend);
+    y = surf.GetZ(mean_trend, var_trend);
   }
 
-  return(probability);
+  return(y);
 }
 
 void
