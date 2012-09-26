@@ -5,9 +5,9 @@
 DistributionsMineral::DistributionsMineral(const DistributionWithTrend         * distr_k,
                                            const DistributionWithTrend         * distr_mu,
                                            const DistributionWithTrend         * distr_rho,
-                                           const DistributionWithTrend         * corr_k_mu,
-                                           const DistributionWithTrend         * corr_k_rho,
-                                           const DistributionWithTrend         * corr_mu_rho,
+                                           const double                          corr_k_mu,
+                                           const double                          corr_k_rho,
+                                           const double                          corr_mu_rho,
                                                  DistributionsMineralEvolution * distr_evolution)
 : DistributionsSolid(),
   distr_k_(distr_k),

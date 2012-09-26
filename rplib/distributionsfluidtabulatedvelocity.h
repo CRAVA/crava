@@ -12,9 +12,9 @@ class DistributionsFluidTabulatedVelocity : public DistributionsFluid {
 public:
 
   //NB: Class is not completed
-                                DistributionsFluidTabulatedVelocity(const DistributionWithTrend * vp,
-                                                                    const DistributionWithTrend * density,
-                                                                    const DistributionWithTrend * corr_vp_density);
+  DistributionsFluidTabulatedVelocity(const DistributionWithTrend * vp,
+                                      const DistributionWithTrend * density,
+                                      double                        corr_vp_density);
 
   virtual                       ~DistributionsFluidTabulatedVelocity();
 
@@ -32,7 +32,7 @@ protected:
 private:
   const DistributionWithTrend * vp_;
   const DistributionWithTrend * density_;
-  const DistributionWithTrend * corr_vp_density_;
+  double                        corr_vp_density_;
   bool                          has_distribution_;
 };
 

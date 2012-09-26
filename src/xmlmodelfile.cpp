@@ -2408,40 +2408,29 @@ XmlModelFile::parseTabulated(TiXmlNode * node, int constituent, std::string labe
   if(parseDistributionWithTrend(root, "density", density, dummy, false, errTxt, true) == false)
     errTxt += "<density> needs to be specified in <solid><tabulated>\n";
 
-  DistributionWithTrendStorage * correlation_vp_vs;
-  if(parseDistributionWithTrend(root, "correlation-vp-vs", correlation_vp_vs, dummy, false, errTxt, true) == false && use_vp == true) {
-    double mean = 0;
-    correlation_vp_vs = new DeltaDistributionWithTrendStorage(mean, false);
-  }
+  double correlation_vp_vs;
+  if(parseValue(root, "correlation-vp-vs", correlation_vp_vs, errTxt) == false)
+    correlation_vp_vs = modelSettings_->getDefaultCorrelationVpVs();
 
-  DistributionWithTrendStorage * correlation_vp_density;
-  if(parseDistributionWithTrend(root, "correlation-vp-density", correlation_vp_density, dummy, false, errTxt, true) == false && use_vp == true) {
-    double mean = 0;
-    correlation_vp_density = new DeltaDistributionWithTrendStorage(mean, false);
-  }
+  double correlation_vp_density;
+  if(parseValue(root, "correlation-vp-density", correlation_vp_density, errTxt) == false)
+    correlation_vp_density = 0;
 
-  DistributionWithTrendStorage * correlation_vs_density;
-  if(parseDistributionWithTrend(root, "correlation-vs-density", correlation_vs_density, dummy, false, errTxt, true) == false && use_vp == true) {
-    double mean = 0;
-    correlation_vs_density = new DeltaDistributionWithTrendStorage(mean, false);
-  }
+  double correlation_vs_density;
+  if(parseValue(root, "correlation-vs-density", correlation_vs_density, errTxt) == false)
+    correlation_vs_density = 0;
 
-  DistributionWithTrendStorage * correlation_bulk_shear;
-  if(parseDistributionWithTrend(root, "correlation-bulk-shear", correlation_bulk_shear, dummy, false, errTxt, true) == false && use_modulus == true) {
-    double mean = 0;
-    correlation_bulk_shear = new DeltaDistributionWithTrendStorage(mean, false);
-  }
-  DistributionWithTrendStorage * correlation_bulk_density;
-  if(parseDistributionWithTrend(root, "correlation-bulk-density", correlation_bulk_density, dummy, false, errTxt, true) == false && use_modulus == true) {
-    double mean = 0;
-    correlation_bulk_density = new DeltaDistributionWithTrendStorage(mean, false);
-  }
+  double correlation_bulk_shear;
+  if(parseValue(root, "correlation-bulk-shear", correlation_bulk_shear, errTxt) == false)
+    correlation_bulk_shear = modelSettings_->getDefaultCorrelationVpVs();
 
-  DistributionWithTrendStorage * correlation_shear_density;
-  if(parseDistributionWithTrend(root, "correlation-shear-density", correlation_shear_density, dummy, false, errTxt, true) == false && use_modulus == true) {
-    double mean = 0;
-    correlation_shear_density = new DeltaDistributionWithTrendStorage(mean, false);
-  }
+  double correlation_bulk_density;
+  if(parseValue(root, "correlation-bulk-density", correlation_bulk_density, errTxt) == false)
+    correlation_bulk_density = 0;
+
+  double correlation_shear_density;
+  if(parseValue(root, "correlation-shear-density", correlation_shear_density, errTxt) == false)
+    correlation_shear_density = 0;
 
   if(use_vp) {
     if(constituent == ModelSettings::FLUID) {
@@ -2517,17 +2506,14 @@ XmlModelFile::parseTabulatedFluid(TiXmlNode * node, int constituent, std::string
   if(parseDistributionWithTrend(root, "density", density, dummy, false, errTxt, true) == false)
     errTxt += "<density> needs to be specified in <fluid><tabulated>\n";
 
-  DistributionWithTrendStorage * correlation_vp_density;
-  if(parseDistributionWithTrend(root, "correlation-vp-density", correlation_vp_density, dummy, false, errTxt, true) == false && use_vp == true) {
-    double mean = 0;
-    correlation_vp_density = new DeltaDistributionWithTrendStorage(mean, false);
-  }
+  double correlation_vp_density;
+  if(parseValue(root, "correlation-vp-density", correlation_vp_density, errTxt) == false)
+    correlation_vp_density = 0;
 
-  DistributionWithTrendStorage * correlation_bulk_density;
-  if(parseDistributionWithTrend(root, "correlation-bulk-density", correlation_bulk_density, dummy, false, errTxt, true) == false && use_modulus == true) {
-    double mean = 0;
-    correlation_bulk_density = new DeltaDistributionWithTrendStorage(mean, false);
-  }
+  double correlation_bulk_density;
+  if(parseValue(root, "correlation-bulk-density", correlation_bulk_density, errTxt) == false)
+    correlation_bulk_density = 0;
+
 
   if(use_vp) {
     if(constituent == ModelSettings::FLUID) {
@@ -2540,7 +2526,7 @@ XmlModelFile::parseTabulatedFluid(TiXmlNode * node, int constituent, std::string
   }
   else {
     if(constituent == ModelSettings::FLUID) {
-      DistributionsFluidStorage * fluid = new TabulatedModulusFluidStorage(bulk_modulus, density, correlation_vp_density);
+      DistributionsFluidStorage * fluid = new TabulatedModulusFluidStorage(bulk_modulus, density, correlation_bulk_density);
       modelSettings_->addFluid(label, fluid);
     }
     else {

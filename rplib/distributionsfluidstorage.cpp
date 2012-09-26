@@ -26,7 +26,7 @@ DistributionsFluidStorage::~DistributionsFluidStorage()
 //----------------------------------------------------------------------------------//
 TabulatedVelocityFluidStorage::TabulatedVelocityFluidStorage(DistributionWithTrendStorage * vp,
                                                              DistributionWithTrendStorage * density,
-                                                             DistributionWithTrendStorage * correlation_vp_density)
+                                                             double                         correlation_vp_density)
 : vp_(vp),
   density_(density),
   correlation_vp_density_(correlation_vp_density)
@@ -37,7 +37,6 @@ TabulatedVelocityFluidStorage::~TabulatedVelocityFluidStorage()
 {
   delete vp_;
   delete density_;
-  delete correlation_vp_density_;
 }
 
 DistributionsFluid *
@@ -48,11 +47,10 @@ TabulatedVelocityFluidStorage::GenerateDistributionsFluid(const std::string     
 {
   const DistributionWithTrend * vp_dist_with_trend              = vp_                    ->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
   const DistributionWithTrend * density_dist_with_trend         = density_               ->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
-  const DistributionWithTrend * corr_vp_density_dist_with_trend = correlation_vp_density_->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
 
   DistributionsFluid * fluid = new DistributionsFluidTabulatedVelocity(vp_dist_with_trend,
                                                                        density_dist_with_trend,
-                                                                       corr_vp_density_dist_with_trend);
+                                                                       correlation_vp_density_);
 
   if(fluid == NULL)
     errTxt += "The tabulated model has not been implemented yet for fluids\n"; //Marit: Denne feilmeldingen fjernes når modellen er implementert
@@ -63,7 +61,7 @@ TabulatedVelocityFluidStorage::GenerateDistributionsFluid(const std::string     
 //----------------------------------------------------------------------------------//
 TabulatedModulusFluidStorage::TabulatedModulusFluidStorage(DistributionWithTrendStorage * bulk_modulus,
                                                            DistributionWithTrendStorage * density,
-                                                           DistributionWithTrendStorage * correlation_bulk_density)
+                                                           double                         correlation_bulk_density)
 : bulk_modulus_(bulk_modulus),
   density_(density),
   correlation_bulk_density_(correlation_bulk_density)
@@ -74,7 +72,6 @@ TabulatedModulusFluidStorage::~TabulatedModulusFluidStorage()
 {
   delete bulk_modulus_;
   delete density_;
-  delete correlation_bulk_density_;
 }
 
 DistributionsFluid *
@@ -85,7 +82,6 @@ TabulatedModulusFluidStorage::GenerateDistributionsFluid(const std::string      
 {
   const DistributionWithTrend * bulk_dist_with_trend           = bulk_modulus_            ->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
   const DistributionWithTrend * density_dist_with_trend        = density_                 ->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
-  const DistributionWithTrend * corr_bulk_dens_dist_with_trend = correlation_bulk_density_->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
 
   DistributionsFluid * fluid = NULL;
   //Make new DistributionsFluidTabulatedModulus(bulk_dist_with_trend, density_dist_with_trend, bulk_dist_with_trend)
@@ -93,7 +89,6 @@ TabulatedModulusFluidStorage::GenerateDistributionsFluid(const std::string      
   //Delete these pointers in new class:
   delete bulk_dist_with_trend;
   delete density_dist_with_trend;
-  delete corr_bulk_dens_dist_with_trend;
 
   if(fluid == NULL)
     errTxt += "The tabulated model has not been implemented yet for fluids\n"; //Marit: Denne feilmeldingen fjernes når modellen er implementert

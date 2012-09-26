@@ -21,9 +21,9 @@ DistributionsDryRockStorage::~DistributionsDryRockStorage()
 TabulatedVelocityDryRockStorage::TabulatedVelocityDryRockStorage(DistributionWithTrendStorage * vp,
                                                                  DistributionWithTrendStorage * vs,
                                                                  DistributionWithTrendStorage * density,
-                                                                 DistributionWithTrendStorage * correlation_vp_vs,
-                                                                 DistributionWithTrendStorage * correlation_vp_density,
-                                                                 DistributionWithTrendStorage * correlation_vs_density,
+                                                                 double                         correlation_vp_vs,
+                                                                 double                         correlation_vp_density,
+                                                                 double                         correlation_vs_density,
                                                                  DistributionWithTrendStorage * total_porosity,
                                                                  std::string                    moduli)
 : vp_(vp),
@@ -42,9 +42,6 @@ TabulatedVelocityDryRockStorage::~TabulatedVelocityDryRockStorage()
   delete vp_;
   delete vs_;
   delete density_;
-  delete correlation_vp_vs_;
-  delete correlation_vp_density_;
-  delete correlation_vs_density_;
 
   if(total_porosity_->GetIsShared() == false)
     delete total_porosity_;
@@ -68,9 +65,9 @@ TabulatedVelocityDryRockStorage::GenerateDistributionsDryRock(const std::string 
 TabulatedModulusDryRockStorage::TabulatedModulusDryRockStorage(DistributionWithTrendStorage * bulk_modulus,
                                                                DistributionWithTrendStorage * shear_modulus,
                                                                DistributionWithTrendStorage * density,
-                                                               DistributionWithTrendStorage * correlation_bulk_shear,
-                                                               DistributionWithTrendStorage * correlation_bulk_density,
-                                                               DistributionWithTrendStorage * correlation_shear_density,
+                                                               double                         correlation_bulk_shear,
+                                                               double                         correlation_bulk_density,
+                                                               double                         correlation_shear_density,
                                                                DistributionWithTrendStorage * total_porosity,
                                                                std::string                    moduli)
 : bulk_modulus_(bulk_modulus),
@@ -89,9 +86,6 @@ TabulatedModulusDryRockStorage::~TabulatedModulusDryRockStorage()
   delete bulk_modulus_;
   delete shear_modulus_;
   delete density_;
-  delete correlation_bulk_shear_;
-  delete correlation_bulk_density_;
-  delete correlation_shear_density_;
 
   if(total_porosity_->GetIsShared() == false)
     delete total_porosity_;

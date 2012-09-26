@@ -3,9 +3,9 @@
 DistributionsSolidTabulatedVelocity::DistributionsSolidTabulatedVelocity(const DistributionWithTrend * vp,
                                                                          const DistributionWithTrend * vs,
                                                                          const DistributionWithTrend * density,
-                                                                         const DistributionWithTrend * corr_vp_vs,
-                                                                         const DistributionWithTrend * corr_vp_density,
-                                                                         const DistributionWithTrend * corr_vs_density)
+                                                                         double                        corr_vp_vs,
+                                                                         double                        corr_vp_density,
+                                                                         double                        corr_vs_density)
 : vp_(vp),
   vs_(vs),
   density_(density),

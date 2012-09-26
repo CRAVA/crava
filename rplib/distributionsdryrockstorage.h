@@ -25,9 +25,9 @@ public:
   TabulatedVelocityDryRockStorage(DistributionWithTrendStorage * vp,
                                   DistributionWithTrendStorage * vs,
                                   DistributionWithTrendStorage * density,
-                                  DistributionWithTrendStorage * correlation_vp_vs,
-                                  DistributionWithTrendStorage * correlation_vp_density,
-                                  DistributionWithTrendStorage * correlation_vs_density,
+                                  double                         correlation_vp_vs,
+                                  double                         correlation_vp_density,
+                                  double                         correlation_vs_density,
                                   DistributionWithTrendStorage * total_porosity,
                                   std::string                    moduli);
 
@@ -42,9 +42,9 @@ private:
   DistributionWithTrendStorage * vp_;
   DistributionWithTrendStorage * vs_;
   DistributionWithTrendStorage * density_;
-  DistributionWithTrendStorage * correlation_vp_vs_;
-  DistributionWithTrendStorage * correlation_vp_density_;
-  DistributionWithTrendStorage * correlation_vs_density_;
+  double                         correlation_vp_vs_;
+  double                         correlation_vp_density_;
+  double                         correlation_vs_density_;
   DistributionWithTrendStorage * total_porosity_;
   std::string                    mineral_moduli_;
 };
@@ -55,9 +55,9 @@ public:
   TabulatedModulusDryRockStorage(DistributionWithTrendStorage * bulk_modulus,
                                  DistributionWithTrendStorage * shear_modulus,
                                  DistributionWithTrendStorage * density,
-                                 DistributionWithTrendStorage * correlation_bulk_shear,
-                                 DistributionWithTrendStorage * correlation_bulk_density,
-                                 DistributionWithTrendStorage * correlation_shear_density,
+                                 double                         correlation_bulk_shear,
+                                 double                         correlation_bulk_density,
+                                 double                         correlation_shear_density,
                                  DistributionWithTrendStorage * total_porosity,
                                  std::string                    moduli);
 
@@ -72,9 +72,9 @@ private:
   DistributionWithTrendStorage * bulk_modulus_;
   DistributionWithTrendStorage * shear_modulus_;
   DistributionWithTrendStorage * density_;
-  DistributionWithTrendStorage * correlation_bulk_shear_;
-  DistributionWithTrendStorage * correlation_bulk_density_;
-  DistributionWithTrendStorage * correlation_shear_density_;
+  double                         correlation_bulk_shear_;
+  double                         correlation_bulk_density_;
+  double                         correlation_shear_density_;
   DistributionWithTrendStorage * total_porosity_;
   std::string                    mineral_moduli_;
 };

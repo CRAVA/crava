@@ -375,6 +375,8 @@ public:
   void addDefaultAngularCorr(void)                        { angularCorr_.push_back(new GenExpVario(1, 10*static_cast<float>(NRLib::Pi/180.0)));} // Power=1 range=10deg
   void setDefaultUseLocalNoise(void)                      { useLocalNoise_ = false                               ;}
 
+  double getDefaultCorrelationVpVs()                      { double corr = 1/std::sqrt(2.0f); return(corr)        ;}
+
   void clearTimeLapse(void)                               { angle_.clear();
                                                             localTHF_.clear();
                                                             localSegyOffset_.clear();

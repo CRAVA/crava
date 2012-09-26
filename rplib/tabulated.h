@@ -33,6 +33,8 @@
 class Tabulated {
 public:
 
+  Tabulated();
+
   Tabulated(std::vector<const DistributionWithTrend *> elastic,
             NRLib::Grid2D<double>                      correlation_matrix);
 

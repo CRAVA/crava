@@ -24,7 +24,7 @@ class TabulatedVelocityFluidStorage : public DistributionsFluidStorage {
 public:
   TabulatedVelocityFluidStorage(DistributionWithTrendStorage * vp,
                                 DistributionWithTrendStorage * density,
-                                DistributionWithTrendStorage * correlation_vp_density);
+                                double                         correlation_vp_density);
 
   virtual ~TabulatedVelocityFluidStorage();
 
@@ -36,7 +36,7 @@ public:
 private:
   DistributionWithTrendStorage * vp_;
   DistributionWithTrendStorage * density_;
-  DistributionWithTrendStorage * correlation_vp_density_;
+  double                         correlation_vp_density_;
 };
 
 //----------------------------------------------------------------------------------//
@@ -44,7 +44,7 @@ class TabulatedModulusFluidStorage : public DistributionsFluidStorage {
 public:
   TabulatedModulusFluidStorage(DistributionWithTrendStorage * bulk_modulus,
                                DistributionWithTrendStorage * density,
-                               DistributionWithTrendStorage * correlation_bulk_density);
+                               double                         correlation_bulk_density);
 
   virtual ~TabulatedModulusFluidStorage();
 
@@ -56,7 +56,7 @@ public:
 private:
   DistributionWithTrendStorage * bulk_modulus_;
   DistributionWithTrendStorage * density_;
-  DistributionWithTrendStorage * correlation_bulk_density_;
+  double                         correlation_bulk_density_;
 };
 
 //----------------------------------------------------------------------------------//

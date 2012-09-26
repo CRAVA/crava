@@ -6,6 +6,10 @@
 #include "nrlib/random/uniform.hpp"
 #include "nrlib/random/normal.hpp"
 
+Tabulated::Tabulated()
+{
+}
+
 Tabulated::Tabulated(std::vector<const DistributionWithTrend *> elastic,
                      NRLib::Grid2D<double>                      correlation_matrix)
 {

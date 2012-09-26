@@ -2,13 +2,13 @@
 
 DistributionsFluidTabulatedVelocity::DistributionsFluidTabulatedVelocity(const DistributionWithTrend * vp,
                                                                          const DistributionWithTrend * density,
-                                                                         const DistributionWithTrend * corr_vp_density)
+                                                                         double                        corr_vp_density)
 : vp_(vp),
   density_(density),
   corr_vp_density_(corr_vp_density)
 {
 
-  if(vp_->GetIsDistribution() == true || density_->GetIsDistribution() == true || corr_vp_density_->GetIsDistribution() == true) {
+  if(vp_->GetIsDistribution() == true || density_->GetIsDistribution() == true) {
     has_distribution_ = true;
   }
   else
@@ -19,7 +19,6 @@ DistributionsFluidTabulatedVelocity::~DistributionsFluidTabulatedVelocity()
 {
   delete vp_;
   delete density_;
-  delete corr_vp_density_;
 }
 
 Fluid *

@@ -4,6 +4,7 @@
 #include "rplib/rock.h"
 #include "rplib/distributionsrock.h"
 #include "rplib/distributionwithtrend.h"
+#include "rplib/tabulated.h"
 
 // Abstract class for holding all t = 0 distribution functions for rock parameters.
 // One derived class for each rock model, the latter specified in a parallel, derived Rock class.
@@ -15,9 +16,9 @@ public:
   DistributionsRockTabulatedVelocity(const DistributionWithTrend * vp,
                                      const DistributionWithTrend * vs,
                                      const DistributionWithTrend * density,
-                                     const DistributionWithTrend * corr_vp_vs,
-                                     const DistributionWithTrend * corr_vp_density,
-                                     const DistributionWithTrend * corr_vs_density);
+                                     double                        corr_vp_vs,
+                                     double                        corr_vp_density,
+                                     double                        corr_vs_density);
 
   virtual ~DistributionsRockTabulatedVelocity();
 
@@ -38,9 +39,10 @@ private:
   const DistributionWithTrend * vp_;
   const DistributionWithTrend * vs_;
   const DistributionWithTrend * density_;
-  const DistributionWithTrend * corr_vp_vs_;
-  const DistributionWithTrend * corr_vp_density_;
-  const DistributionWithTrend * corr_vs_density_;
+  double                        corr_vp_vs_;
+  double                        corr_vp_density_;
+  double                        corr_vs_density_;
+  Tabulated                     tabulated_;
 };
 
 #endif

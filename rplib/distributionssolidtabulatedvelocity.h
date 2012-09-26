@@ -12,12 +12,12 @@ class DistributionsSolidTabulatedVelocity : public DistributionsSolid {
 public:
 
   //NB: Class is not completed
-                                DistributionsSolidTabulatedVelocity(const DistributionWithTrend * vp,
-                                                                    const DistributionWithTrend * vs,
-                                                                    const DistributionWithTrend * density,
-                                                                    const DistributionWithTrend * corr_vp_vs,
-                                                                    const DistributionWithTrend * corr_vp_density,
-                                                                    const DistributionWithTrend * corr_vs_density);
+  DistributionsSolidTabulatedVelocity(const DistributionWithTrend * vp,
+                                      const DistributionWithTrend * vs,
+                                      const DistributionWithTrend * density,
+                                      double                        corr_vp_vs,
+                                      double                        corr_vp_density,
+                                      double                        corr_vs_density);
 
   virtual                       ~DistributionsSolidTabulatedVelocity();
 
@@ -36,9 +36,9 @@ private:
   const DistributionWithTrend * vp_;
   const DistributionWithTrend * vs_;
   const DistributionWithTrend * density_;
-  const DistributionWithTrend * corr_vp_vs_;
-  const DistributionWithTrend * corr_vp_density_;
-  const DistributionWithTrend * corr_vs_density_;
+  double                        corr_vp_vs_;
+  double                        corr_vp_density_;
+  double                        corr_vs_density_;
 };
 
 #endif

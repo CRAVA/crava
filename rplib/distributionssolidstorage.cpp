@@ -86,9 +86,9 @@ DistributionsSolidStorage::CreateDistributionsSolidMix(const std::string        
 TabulatedVelocitySolidStorage::TabulatedVelocitySolidStorage(DistributionWithTrendStorage * vp,
                                                              DistributionWithTrendStorage * vs,
                                                              DistributionWithTrendStorage * density,
-                                                             DistributionWithTrendStorage * correlation_vp_vs,
-                                                             DistributionWithTrendStorage * correlation_vp_density,
-                                                             DistributionWithTrendStorage * correlation_vs_density)
+                                                             double                         correlation_vp_vs,
+                                                             double                         correlation_vp_density,
+                                                             double                         correlation_vs_density)
 : vp_(vp),
   vs_(vs),
   density_(density),
@@ -103,9 +103,6 @@ TabulatedVelocitySolidStorage::~TabulatedVelocitySolidStorage()
   delete vp_;
   delete vs_;
   delete density_;
-  delete correlation_vp_vs_;
-  delete correlation_vp_density_;
-  delete correlation_vs_density_;
 }
 
 DistributionsSolid *
@@ -119,16 +116,13 @@ TabulatedVelocitySolidStorage::GenerateDistributionsSolid(const std::string     
   const DistributionWithTrend * vp_dist_with_trend              = vp_                    ->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
   const DistributionWithTrend * vs_dist_with_trend              = vs_                    ->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
   const DistributionWithTrend * density_dist_with_trend         = density_               ->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
-  const DistributionWithTrend * corr_vp_vs_dist_with_trend      = correlation_vp_vs_     ->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
-  const DistributionWithTrend * corr_vp_density_dist_with_trend = correlation_vp_density_->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
-  const DistributionWithTrend * corr_vs_density_dist_with_trend = correlation_vs_density_->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
 
   DistributionsSolid * solid = new DistributionsSolidTabulatedVelocity(vp_dist_with_trend,
                                                                        vs_dist_with_trend,
                                                                        density_dist_with_trend,
-                                                                       corr_vp_vs_dist_with_trend,
-                                                                       corr_vp_density_dist_with_trend,
-                                                                       corr_vs_density_dist_with_trend);
+                                                                       correlation_vp_vs_,
+                                                                       correlation_vp_density_,
+                                                                       correlation_vs_density_);
 
   if(solid == NULL)
     errTxt += "The tabulated model has not been implemented yet for solids\n"; //Marit: Denne feilmeldingen fjernes når modellen er implementert
@@ -140,9 +134,9 @@ TabulatedVelocitySolidStorage::GenerateDistributionsSolid(const std::string     
 TabulatedModulusSolidStorage::TabulatedModulusSolidStorage(DistributionWithTrendStorage * bulk_modulus,
                                                            DistributionWithTrendStorage * shear_modulus,
                                                            DistributionWithTrendStorage * density,
-                                                           DistributionWithTrendStorage * correlation_bulk_shear,
-                                                           DistributionWithTrendStorage * correlation_bulk_density,
-                                                           DistributionWithTrendStorage * correlation_shear_density)
+                                                           double                         correlation_bulk_shear,
+                                                           double                         correlation_bulk_density,
+                                                           double                         correlation_shear_density)
 : bulk_modulus_(bulk_modulus),
   shear_modulus_(shear_modulus),
   density_(density),
@@ -157,9 +151,6 @@ TabulatedModulusSolidStorage::~TabulatedModulusSolidStorage()
   delete bulk_modulus_;
   delete shear_modulus_;
   delete density_;
-  delete correlation_bulk_shear_;
-  delete correlation_bulk_density_;
-  delete correlation_shear_density_;
 }
 
 DistributionsSolid *
@@ -174,18 +165,14 @@ TabulatedModulusSolidStorage::GenerateDistributionsSolid(const std::string      
   const DistributionWithTrend * shear_dist_with_trend              = shear_modulus_             ->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
   const DistributionWithTrend * density_dist_with_trend            = density_                   ->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
 
-
-  const DistributionWithTrend * correlation_bulk_shear             = correlation_bulk_shear_    ->GenerateDistributionWithTrend(path,trend_cube_parameters,trend_cube_sampling,errTxt);
-  const DistributionWithTrend * correlation_bulk_density           = correlation_bulk_density_  ->GenerateDistributionWithTrend(path,trend_cube_parameters,trend_cube_sampling,errTxt);
-  const DistributionWithTrend * correlation_shear_density          = correlation_shear_density_ ->GenerateDistributionWithTrend(path,trend_cube_parameters,trend_cube_sampling,errTxt);
   DistributionsMineralEvolution* p_mineral_distr_evolve = NULL;
 
   DistributionsSolid * solid = new DistributionsMineral(bulk_dist_with_trend,
                                                         shear_dist_with_trend,
                                                         density_dist_with_trend,
-                                                        correlation_bulk_shear,
-                                                        correlation_bulk_density,
-                                                        correlation_shear_density,
+                                                        correlation_bulk_shear_,
+                                                        correlation_bulk_density_,
+                                                        correlation_shear_density_,
                                                         p_mineral_distr_evolve);
 
   return(solid);
