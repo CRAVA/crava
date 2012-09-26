@@ -12,18 +12,22 @@ class DistributionsFluidTabulatedVelocity : public DistributionsFluid {
 public:
 
   //NB: Class is not completed
-  DistributionsFluidTabulatedVelocity(const DistributionWithTrend * vp,
-                                      const DistributionWithTrend * density,
-                                      const DistributionWithTrend * corr_vp_density);
+                                DistributionsFluidTabulatedVelocity(const DistributionWithTrend * vp,
+                                                                    const DistributionWithTrend * density,
+                                                                    const DistributionWithTrend * corr_vp_density);
 
-  virtual ~DistributionsFluidTabulatedVelocity();
+  virtual                       ~DistributionsFluidTabulatedVelocity();
 
   // Fluid is an abstract class, hence pointer must be used here. Allocated memory (using new) MUST be deleted by caller.
-  virtual Fluid * GenerateSample(const std::vector<double> & /*trend_params*/) const;
+  virtual Fluid               * GenerateSample(const std::vector<double> & /*trend_params*/) const;
 
-  virtual bool         HasDistribution() const;
+  virtual bool                  HasDistribution() const;
 
-  virtual std::vector<bool> HasTrend() const;
+  virtual std::vector<bool>     HasTrend() const;
+
+protected:
+  virtual Fluid               * UpdateSample(const std::vector< double > & /*corr*/,
+                                             const Fluid                 & /*fluid*/) const;
 
 private:
   const DistributionWithTrend * vp_;

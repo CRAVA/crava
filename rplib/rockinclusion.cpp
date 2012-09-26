@@ -142,7 +142,7 @@ RockInclusion::ComputeSeismicAndElasticParams() {
   fluid_->GetElasticParams(fluid_k, fluid_rho);
 
   double solid_rho, solid_k, solid_mu;
-  solid_->ComputeElasticParams(solid_k, solid_mu, solid_rho);
+  solid_->GetElasticParams(solid_k, solid_mu, solid_rho);
 
   std::vector<double> rho;
   rho.push_back(fluid_rho);

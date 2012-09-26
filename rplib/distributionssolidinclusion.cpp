@@ -42,3 +42,10 @@ DistributionsSolidInclusion::GenerateSample(const std::vector<double> & /*trend_
 
   return new_solid;
 }
+
+Solid *
+DistributionsSolidInclusion::UpdateSample(const std::vector< double > &/*corr*/,
+                                          const Solid                 & /*solid*/) const {
+
+  return NULL;
+}

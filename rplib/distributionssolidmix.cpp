@@ -1,6 +1,5 @@
 #include "rplib/distributionssolidmix.h"
 
-#include "rplib/distributionssolidmixevolution.h"
 #include "rplib/solidmixed.h"
 #include "rplib/distributionwithtrend.h"
 
@@ -71,4 +70,11 @@ DistributionsSolidMix::HasTrend() const
     dummy[i] = false;
 
   return(dummy);
+}
+
+Solid *
+DistributionsSolidMix::UpdateSample(const std::vector< double > &/*corr*/,
+                                    const Solid                 & /*solid*/) const {
+
+  return NULL;
 }

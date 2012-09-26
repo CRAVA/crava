@@ -12,21 +12,25 @@ class DistributionsSolidTabulatedVelocity : public DistributionsSolid {
 public:
 
   //NB: Class is not completed
-  DistributionsSolidTabulatedVelocity(const DistributionWithTrend * vp,
-                                      const DistributionWithTrend * vs,
-                                      const DistributionWithTrend * density,
-                                      const DistributionWithTrend * corr_vp_vs,
-                                      const DistributionWithTrend * corr_vp_density,
-                                      const DistributionWithTrend * corr_vs_density);
+                                DistributionsSolidTabulatedVelocity(const DistributionWithTrend * vp,
+                                                                    const DistributionWithTrend * vs,
+                                                                    const DistributionWithTrend * density,
+                                                                    const DistributionWithTrend * corr_vp_vs,
+                                                                    const DistributionWithTrend * corr_vp_density,
+                                                                    const DistributionWithTrend * corr_vs_density);
 
-  virtual ~DistributionsSolidTabulatedVelocity();
+  virtual                       ~DistributionsSolidTabulatedVelocity();
 
   // Solid is an abstract class, hence pointer must be used here. Allocated memory (using new) MUST be deleted by caller.
-  virtual Solid * GenerateSample(const std::vector<double> & /*trend_params*/) const;
+  virtual Solid               * GenerateSample(const std::vector<double> & /*trend_params*/) const;
 
-  virtual bool    HasDistribution() const;
+  virtual bool                  HasDistribution() const;
 
-  virtual std::vector<bool> HasTrend() const;
+  virtual std::vector<bool>     HasTrend() const;
+
+protected:
+  virtual Solid *               UpdateSample(const std::vector< double > & /*corr*/,
+                                             const Solid                 & /*solid*/) const;
 
 private:
   const DistributionWithTrend * vp_;

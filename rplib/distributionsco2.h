@@ -10,22 +10,26 @@ class DistributionsCO2Evolution;
 class DistributionsCO2 : public DistributionsFluid {
 public:
 
-  DistributionsCO2(DistributionWithTrend       * distr_temperature,
-                   DistributionWithTrend       * distr_pore_pressure,
-                   DistributionsCO2Evolution   * distr_evolution = NULL);
+                                      DistributionsCO2(const DistributionWithTrend       * distr_temperature,
+                                                     const DistributionWithTrend       * distr_pore_pressure,
+                                                     DistributionsCO2Evolution   * distr_evolution = NULL);
 
-  virtual ~DistributionsCO2();
+  virtual                             ~DistributionsCO2();
 
-  virtual Fluid * GenerateSample(const std::vector<double> & trend_params) const;
+  virtual Fluid                     * GenerateSample(const std::vector<double> & trend_params) const;
 
-  virtual bool                  HasDistribution() const;
+  virtual bool                        HasDistribution() const;
 
-  virtual std::vector<bool>     HasTrend() const;
+  virtual std::vector<bool>           HasTrend() const;
+
+protected:
+  virtual Fluid *                     UpdateSample(const std::vector< double > & /*corr*/,
+                                                   const Fluid                 & /*fluid*/) const;
 
 private:
-  DistributionWithTrend       * distr_temperature_;   // Pointer to external object.
-  DistributionWithTrend       * distr_pore_pressure_; // Pointer to external object.
-  DistributionsCO2Evolution   * distr_evolution_;     // Pointer to external object.
+  const DistributionWithTrend       * distr_temperature_;   // Pointer to external object.
+  const DistributionWithTrend       * distr_pore_pressure_; // Pointer to external object.
+        DistributionsCO2Evolution   * distr_evolution_;     // Pointer to external object.
 };
 
 #endif

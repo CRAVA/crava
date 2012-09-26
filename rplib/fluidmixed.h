@@ -14,36 +14,29 @@
 class FluidMixed : public Fluid {
 public:
 
-  FluidMixed(const std::vector<Fluid*>      & fluid,
-             const std::vector<double>      & volume_fraction,
-             DEMTools::MixMethod              mix_method,
-             DistributionsFluidMixEvolution * distr_evolution = NULL);
+                                    FluidMixed(const std::vector<Fluid*>      & fluid,
+                                               const std::vector<double>      & volume_fraction,
+                                               DEMTools::MixMethod              mix_method,
+                                               DistributionsFluidMixEvolution * distr_evolution = NULL);
 
-  virtual ~FluidMixed();
+  virtual                           ~FluidMixed();
 
-  // Assignment operator.
-  FluidMixed& operator=(const FluidMixed& rhs);
+                                    // Assignment operator.
+                                    FluidMixed& operator=(const FluidMixed& rhs);
 
-  virtual Fluid * Clone() const;
+  virtual Fluid *                   Clone() const;
 
-  virtual void ComputeElasticParams(double /*temp*/, double /*pore_pressure*/);
-
-  virtual void GetElasticParams(double& k, double& rho) const;
-
-  virtual Fluid * Evolve(const std::vector<int>             & delta_time,
-                         const std::vector< const Fluid * > & fluid) const;
+  virtual Fluid *                   Evolve(const std::vector<int>             & delta_time,
+                                           const std::vector< const Fluid * > & fluid) const;
 
 private:
-  //Copy constructor for getting base class variables , used by Clone:
-  FluidMixed(const FluidMixed & rhs) : Fluid(rhs) {}
+                                    //Copy constructor for getting base class variables , used by Clone:
+                                    FluidMixed(const FluidMixed & rhs) : Fluid(rhs) {}
 
-  std::vector<Fluid*> fluid_;                        // Owned and deleted by this class.
-  std::vector<double> volume_fraction_;
-  DEMTools::MixMethod mix_method_;
-  DistributionsFluidMixEvolution * distr_evolution_; // Pointer to external object.
-
-  double k_;
-  double rho_;
+  std::vector<Fluid*>               fluid_;           // Owned and deleted by this class.
+  std::vector<double>               volume_fraction_;
+  DEMTools::MixMethod               mix_method_;
+  DistributionsFluidMixEvolution *  distr_evolution_; // Pointer to external object.
 
 };
 

@@ -9,16 +9,27 @@
 class DistributionsFluid {
 public:
 
-  DistributionsFluid(){}
+                                DistributionsFluid(){}
 
-  virtual ~DistributionsFluid(){}
+  virtual                       ~DistributionsFluid(){}
 
-  // Fluid is an abstract class, hence pointer must be used here. Allocated memory (using new) MUST be deleted by caller.
-  virtual Fluid * GenerateSample(const std::vector<double> & /*trend_params*/) const = 0;
+  virtual Fluid *               GenerateSample(const std::vector<double> & /*trend_params*/)  const = 0;
 
-  virtual bool                  HasDistribution()                                        const = 0;
+  std::vector< Fluid* >         GenerateWellSample(const  std::vector<double> & trend_params,
+                                                   double                       corr)         const;
 
-  virtual std::vector<bool>     HasTrend()                                               const = 0;
+  virtual bool                  HasDistribution()                                             const = 0;
+
+  virtual std::vector<bool>     HasTrend()                                                    const = 0;
+
+  Fluid *                       EvolveSample(double         time,
+                                             const Fluid &  fluid)                            const;
+
+protected:
+  virtual Fluid *               UpdateSample(const std::vector< double > & corr,
+                                             const Fluid                 & fluid)             const = 0;
+
+  std::vector< double >         alpha_;
 
 };
 

@@ -29,8 +29,6 @@ public:
 
   virtual Solid * Clone() const;
 
-  virtual void    ComputeElasticParams(double & k, double & mu, double & rho) const;
-
   const   Solid * GetSolidHost()      const {return solid_;}
   const   Solid * GetSolidInclusion() const {return solid_inc_;}
 
@@ -53,8 +51,6 @@ private:
   std::vector<double>                   inclusion_concentration_;
   double                                porosity_;
   DistributionsSolidDEMEvolution      * distr_evolution_; // Pointer to external object.
-
-  double                                rho_, k_, mu_;
 };
 
 #endif

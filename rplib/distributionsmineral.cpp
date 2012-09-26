@@ -1,6 +1,5 @@
 #include "rplib/distributionsmineral.h"
 
-#include "rplib/distributionsmineralevolution.h"
 #include "rplib/distributionwithtrend.h"
 
 DistributionsMineral::DistributionsMineral(const DistributionWithTrend         * distr_k,
@@ -50,4 +49,11 @@ DistributionsMineral::HasTrend() const
     dummy[i] = false;
 
   return(dummy);
+}
+
+Solid *
+DistributionsMineral::UpdateSample(const std::vector< double > &/*corr*/,
+                                   const Solid                 & /*solid*/) const {
+
+  return NULL;
 }

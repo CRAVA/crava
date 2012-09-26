@@ -26,8 +26,6 @@ public:
 
   virtual Solid * Clone() const;
 
-  virtual void ComputeElasticParams(double & k, double & mu, double & rho) const;
-
   virtual Solid * Evolve(const std::vector<int>             & delta_time,
                          const std::vector< const Solid * > & solid) const;
 
@@ -39,10 +37,6 @@ private:
   std::vector<double>              volume_fraction_;
   DEMTools::MixMethod              mix_method_;
   DistributionsSolidMixEvolution * distr_evolution_; // Pointer to external object.
-
-  double k_;
-  double mu_;
-  double rho_;
 };
 
 #endif

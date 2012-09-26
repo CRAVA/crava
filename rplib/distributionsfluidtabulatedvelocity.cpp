@@ -47,3 +47,10 @@ DistributionsFluidTabulatedVelocity::HasTrend() const
 
   return(dummy);
 }
+
+Fluid *
+DistributionsFluidTabulatedVelocity::UpdateSample(const std::vector< double > & /*corr*/,
+                                                  const Fluid                 & /*fluid*/) const {
+
+  return NULL;
+}

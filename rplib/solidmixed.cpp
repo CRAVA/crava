@@ -25,7 +25,7 @@ SolidMixed::SolidMixed(const std::vector<Solid*>      & solid,
   else {
     std::vector<double> k(solid.size()), mu(solid.size()), rho(solid.size());
     for (size_t i = 0; i < solid.size(); i++)
-      solid[i]->ComputeElasticParams(k[i], mu[i], rho[i]);
+      solid[i]->GetElasticParams(k[i], mu[i], rho[i]);
 
     switch (mix_method_) {
       case DEMTools::Hill :
@@ -60,9 +60,6 @@ SolidMixed::Clone() const {
   SolidMixed * s = new SolidMixed(*this);
 
   // Provide variables specific to SolidMixed.
-  s->k_               = this->k_;
-  s->mu_              = this->mu_;
-  s->rho_             = this->rho_;
   s->volume_fraction_ = this->volume_fraction_;
   s->mix_method_      = this->mix_method_;
   s->distr_evolution_ = this->distr_evolution_;
@@ -80,9 +77,6 @@ SolidMixed& SolidMixed::operator=(const SolidMixed& rhs)
   if (this != &rhs) {
     Solid::operator=(rhs);
 
-    k_               = rhs.k_;
-    mu_              = rhs.mu_;
-    rho_             = rhs.rho_;
     volume_fraction_ = rhs.volume_fraction_;
     mix_method_      = rhs.mix_method_;
     distr_evolution_ = rhs.distr_evolution_;
@@ -97,13 +91,6 @@ SolidMixed& SolidMixed::operator=(const SolidMixed& rhs)
       solid_[i] = rhs.solid_[i]->Clone();
   }
   return *this;
-}
-
-void
-SolidMixed::ComputeElasticParams(double & k, double & mu, double & rho) const {
-  k   = k_;
-  mu  = mu_;
-  rho = rho_;
 }
 
 Solid *

@@ -67,3 +67,10 @@ DistributionsSolidDEM::HasTrend() const
 
   return(dummy);
 }
+
+Solid *
+DistributionsSolidDEM::UpdateSample(const std::vector< double > & /*corr*/,
+                                    const Solid                 & /*solid*/) const {
+
+  return NULL;
+}

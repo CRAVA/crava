@@ -3,7 +3,6 @@
 #include "rplib/distributionsfluidmix.h"
 
 #include "rplib/distributionwithtrend.h"
-#include "rplib/distributionsfluidmixevolution.h"
 
 DistributionsFluidMix::DistributionsFluidMix(std::vector< DistributionsFluid * >          & distr_fluid,
                                              std::vector< DistributionWithTrend * >       & distr_vol_frac,
@@ -57,4 +56,11 @@ DistributionsFluidMix::HasTrend() const
     dummy[i] = false;
 
   return(dummy);
+}
+
+Fluid *
+DistributionsFluidMix::UpdateSample(const std::vector< double > & /*corr*/,
+                                    const Fluid                 & /*fluid*/) const {
+
+  return NULL;
 }

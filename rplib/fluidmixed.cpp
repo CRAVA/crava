@@ -58,8 +58,6 @@ FluidMixed::Clone() const
   FluidMixed * s = new FluidMixed(*this);
 
   // Provide variables specific to FluidMixed.
-  s->k_ = this->k_;
-  s->rho_ = this->rho_;
   s->volume_fraction_ = this->volume_fraction_;
   s->mix_method_      = this->mix_method_;
   s->distr_evolution_ = this->distr_evolution_;
@@ -77,8 +75,6 @@ FluidMixed& FluidMixed::operator=(const FluidMixed& rhs)
   if (this != &rhs) {
     Fluid::operator=(rhs);
 
-    k_               = rhs.k_;
-    rho_             = rhs.rho_;
     volume_fraction_ = rhs.volume_fraction_;
     mix_method_      = rhs.mix_method_;
     distr_evolution_ = rhs.distr_evolution_;
@@ -95,18 +91,6 @@ FluidMixed& FluidMixed::operator=(const FluidMixed& rhs)
   return *this;
 }
 
-void
-FluidMixed::ComputeElasticParams(double /*temp*/, double /*pore_pressure*/)
-{
-  // Done in constructor.
-}
-
-void
-FluidMixed::GetElasticParams(double& k, double& rho) const
-{
-  k     = k_;
-  rho   = rho_;
-}
 
 Fluid *
 FluidMixed::Evolve(const std::vector<int>             & delta_time,

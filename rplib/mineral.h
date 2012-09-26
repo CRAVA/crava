@@ -30,9 +30,7 @@ public:
 private:
   DistributionsMineralEvolution * distr_evolution_; // Pointer to external object.
 
-  double k_;
-  double mu_;
-  double rho_;
+
 };
 
 #endif

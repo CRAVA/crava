@@ -41,9 +41,6 @@ SolidDEM& SolidDEM::operator=(const SolidDEM& rhs)
   if (this != &rhs) {
     Solid::operator=(rhs);
 
-    k_                       = rhs.k_;
-    mu_                      = rhs.mu_;
-    rho_                     = rhs.rho_;
     inclusion_spectrum_      = rhs.inclusion_spectrum_;
     inclusion_concentration_ = rhs.inclusion_concentration_;
     porosity_                = rhs.porosity_;
@@ -70,18 +67,8 @@ SolidDEM::Clone() const {
   r->inclusion_concentration_ = this->inclusion_concentration_;
   r->porosity_                = this->porosity_;
   r->distr_evolution_         = this->distr_evolution_;         // Not deep copy.
-  r->rho_                     = this->rho_;
-  r->k_                       = this->k_;
-  r->mu_                      = this->mu_;
 
   return r;
-}
-
-void
-SolidDEM::ComputeElasticParams(double & k, double & mu, double & rho) const {
-  k   = k_;
-  mu  = mu_;
-  rho = rho_;
 }
 
 Solid *
@@ -131,10 +118,10 @@ void
 SolidDEM::ComputeElasticParams() {
 
   double solid_inc_rho, solid_inc_k, solid_inc_mu;
-  solid_inc_->ComputeElasticParams(solid_inc_k, solid_inc_mu, solid_inc_rho);
+  solid_inc_->GetElasticParams(solid_inc_k, solid_inc_mu, solid_inc_rho);
 
   double solid_rho, solid_k, solid_mu;
-  solid_->ComputeElasticParams(solid_k, solid_mu, solid_rho);
+  solid_->GetElasticParams(solid_k, solid_mu, solid_rho);
 
   std::vector<double> rho;
   rho.push_back(solid_inc_rho);

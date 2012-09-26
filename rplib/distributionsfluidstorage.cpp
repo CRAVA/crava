@@ -8,6 +8,11 @@
 #include "rplib/distributionsfluidtabulatedvelocity.h"
 #include "rplib/distributionwithtrendstorage.h"
 #include "rplib/distributionsstoragekit.h"
+#include "rplib/distributionsbrine.h"
+#include "rplib/distributionsco2.h"
+
+class DistributionsBrineEvolution;
+class DistributionsCO2Evolution;
 
 
 DistributionsFluidStorage::DistributionsFluidStorage()
@@ -210,15 +215,27 @@ BatzleWangFluidStorage::~BatzleWangFluidStorage()
 }
 
 DistributionsFluid *
-BatzleWangFluidStorage::GenerateDistributionsFluid(const std::string                       & /*path*/,
-                                                   const std::vector<std::string>          & /*trend_cube_parameters*/,
-                                                   const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
+BatzleWangFluidStorage::GenerateDistributionsFluid(const std::string                       & path,
+                                                   const std::vector<std::string>          & trend_cube_parameters,
+                                                   const std::vector<std::vector<double> > & trend_cube_sampling,
                                                    std::string                             & errTxt) const
 {
-  DistributionsFluid * fluid = NULL; //new DistributionsFluidBatzleWang();
+  DistributionsFluid          *                fluid = NULL;
 
-  if(fluid == NULL)
-    errTxt += "The Batzle-Wang model has not been implemented yet\n"; //Marit: Denne feilmeldingen fjernes når modellen er implementert
+  const DistributionWithTrend * pore_pressure_distr  = pore_pressure_->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
+  const DistributionWithTrend * temperature_distr    = temperature_  ->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
+  const DistributionWithTrend * salinity_distr       = salinity_     ->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
+
+  DistributionsBrineEvolution * distr_evolve         = NULL;
+  DistributionsCO2Evolution   * distr_evolve_co2     = NULL;
+
+  //NBNB fjellvoll //NBNB marit CO2 is not finished yet in XML interface
+  bool is_co2 = false;
+
+  if (is_co2)
+    fluid       = new DistributionsCO2(temperature_distr, pore_pressure_distr, distr_evolve_co2);
+  else
+    fluid       = new DistributionsBrine(temperature_distr, pore_pressure_distr, salinity_distr, distr_evolve);
 
   return(fluid);
 }

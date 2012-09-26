@@ -13,8 +13,6 @@ Brine::Brine(double                        salinity,
 
 Brine::Brine(const Brine & rhs) : Fluid(rhs)
 {
-  k_        = rhs.k_;
-  rho_      = rhs.rho_;
   salinity_ = rhs.salinity_;
   distr_evolution_ = rhs.distr_evolution_;
 }
@@ -30,12 +28,6 @@ void
 Brine::ComputeElasticParams(double temp, double pore_pressure) {
   k_   = ComputeBulkModulusOfBrineFromTPS(temp, pore_pressure, salinity_);
   rho_ = ComputeDensityOfBrineFromTPS(temp, pore_pressure, salinity_);
-}
-
-void
-Brine::GetElasticParams(double& k, double& rho) const {
-  k     = k_;
-  rho   = rho_;
 }
 
 Fluid *

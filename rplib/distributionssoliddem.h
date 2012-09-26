@@ -11,12 +11,12 @@ class DistributionsSolidDEMEvolution;
 class DistributionsSolidDEM : public DistributionsSolid {
 public:
 
-  DistributionsSolidDEM(DistributionsSolid                           * distr_solid,
-                        DistributionsSolid                           * distr_solid_inc,
-                        std::vector< DistributionWithTrend * >       & distr_incl_spectrum,
-                        std::vector< DistributionWithTrend * >       & distr_incl_concentration,
-                        DistributionWithTrend                        * distr_porosity,
-                        DistributionsSolidDEMEvolution               * distr_evolution = NULL);
+                                DistributionsSolidDEM(DistributionsSolid                           * distr_solid,
+                                                      DistributionsSolid                           * distr_solid_inc,
+                                                      std::vector< DistributionWithTrend * >       & distr_incl_spectrum,
+                                                      std::vector< DistributionWithTrend * >       & distr_incl_concentration,
+                                                      DistributionWithTrend                        * distr_porosity,
+                                                      DistributionsSolidDEMEvolution               * distr_evolution = NULL);
 
   virtual                       ~DistributionsSolidDEM();
 
@@ -25,6 +25,10 @@ public:
   virtual bool                  HasDistribution() const; //dummy function that needs to be implemented
 
   virtual std::vector<bool>     HasTrend() const; //dummy function that needs to be implemented
+
+protected:
+  virtual Solid               * UpdateSample(const std::vector< double > & /*corr*/,
+                                             const Solid                 & /*solid*/)            const;
 
 private:
 

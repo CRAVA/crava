@@ -11,8 +11,6 @@ CO2::CO2(double                      temp,
 
 CO2::CO2(const CO2 & rhs) : Fluid(rhs)
 {
-  k_   = rhs.k_;
-  rho_ = rhs.rho_;
   distr_evolution_ = rhs.distr_evolution_;
 }
 
@@ -27,12 +25,6 @@ CO2::Clone() const {
 void
 CO2::ComputeElasticParams(double temp, double pore_pressure) {
   DEMTools::CalcCo2Prop(k_, rho_, temp, pore_pressure);
-}
-
-void
-CO2::GetElasticParams(double& k, double& rho) const {
-  k     = k_;
-  rho   = rho_;
 }
 
 Fluid *

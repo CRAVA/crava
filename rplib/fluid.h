@@ -8,15 +8,12 @@
 class Fluid {
 public:
 
-  Fluid() {}
-  virtual ~Fluid() {}
+                              Fluid() {}
+  virtual                     ~Fluid() {}
 
-  virtual Fluid * Clone() const = 0;
+  virtual Fluid *             Clone()                                                               const = 0;
 
-  virtual void ComputeElasticParams(double   temp,
-                                    double   pore_pressure) = 0;
-
-  virtual void GetElasticParams(double& k, double& rho) const = 0;
+  void                        GetElasticParams(double& k, double& rho) const { k = k_; rho = rho_; }
 
   // Fluid is an abstract class, hence pointer must be used in Evolve.
   // Allocated memory (using new) MUST be deleted by caller.
@@ -24,11 +21,16 @@ public:
   //      delta_time : the set of previous and present incremental time steps
   //      fluid : the set of previous fluid samples 
   // Recommended in implementation: assert(delta_time.size() == fluid.size() + 1);
-  virtual Fluid * Evolve(const std::vector<int>             & delta_time,
-                         const std::vector< const Fluid * > & fluid) const = 0;
+  virtual Fluid *             Evolve(const std::vector<int>             & delta_time,
+                                     const std::vector< const Fluid * > & fluid)                    const = 0;
+
+  const std::vector<double>&  GetU()                                                                const { return u_; }
 
 
 protected:
+  double                      k_;
+  double                      rho_;
+  std::vector<double>         u_;
 };
 
 #endif

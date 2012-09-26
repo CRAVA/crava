@@ -19,14 +19,18 @@ public:
 
   virtual Solid * GenerateSample(const std::vector<double> & /*trend_params*/) const;
 
+protected:
+  virtual Solid * UpdateSample(const std::vector< double > & /*corr*/,
+                               const Solid                 & /*solid*/)            const;
+
 
 private:
   std::vector<DistributionsSolid *>              distr_solid_;              // Pointer to external object.
   std::vector<double>                            distr_incl_spectrum_;      // Pointers to external objects.
   std::vector<double>                            distr_incl_concentration_; // Pointers to external objects.
 
-  std::vector<double>   expectation_;
-  NRLib::Grid2D<double> covariance_;
+  std::vector<double>                            expectation_;
+  NRLib::Grid2D<double>                          covariance_;
 
 };
 
