@@ -40,8 +40,8 @@ public:
 
   ~Tabulated();
 
-  std::vector<double> GenerateSample(std::vector<double> & u, double s1, double s2);
-  std::vector<double> GetQuantileValues(const std::vector<double> u, double s1, double s2);
+  std::vector<double> GenerateSample(std::vector<double> & u, double s1, double s2) const;
+  std::vector<double> GetQuantileValues(const std::vector<double> u, double s1, double s2) const;
 
 private:
 

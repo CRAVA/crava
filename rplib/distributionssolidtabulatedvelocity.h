@@ -4,6 +4,8 @@
 #include "rplib/solid.h"
 #include "rplib/distributionssolid.h"
 #include "rplib/distributionwithtrend.h"
+#include "rplib/tabulated.h"
+
 
 // Abstract class for holding all t = 0 distribution functions for solid parameters.
 // One derived class for each solid model, the latter specified in a parallel, derived Solid class.
@@ -33,12 +35,15 @@ protected:
                                              const Solid                 & /*solid*/) const;
 
 private:
-  const DistributionWithTrend * vp_;
-  const DistributionWithTrend * vs_;
-  const DistributionWithTrend * density_;
-  double                        corr_vp_vs_;
-  double                        corr_vp_density_;
-  double                        corr_vs_density_;
+  const DistributionWithTrend   * vp_;
+  const DistributionWithTrend   * vs_;
+  const DistributionWithTrend   * density_;
+  double                          corr_vp_vs_;
+  double                          corr_vp_density_;
+  double                          corr_vs_density_;
+  Tabulated                       tabulated_;
+  bool                            has_distribution_;
+  std::vector<bool>               has_trend_;
 };
 
 #endif

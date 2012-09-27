@@ -6,7 +6,6 @@
 #include "rplib/distributionsrock.h"
 #include "rplib/distributionsrockstorage.h"
 #include "rplib/distributionsrocktabulatedvelocity.h"
-#include "rplib/distributionsrocktrinormal.h"
 #include "rplib/distributionwithtrendstorage.h"
 #include "rplib/distributionsstoragekit.h"
 
@@ -37,9 +36,12 @@ TabulatedVelocityRockStorage::TabulatedVelocityRockStorage(DistributionWithTrend
 
 TabulatedVelocityRockStorage::~TabulatedVelocityRockStorage()
 {
-  delete vp_;
-  delete vs_;
-  delete density_;
+  if(vp_->GetIsShared() == false)
+    delete vp_;
+  if(vs_->GetIsShared() == false)
+    delete vs_;
+  if(density_->GetIsShared() == false)
+    delete density_;
 }
 
 DistributionsRock *

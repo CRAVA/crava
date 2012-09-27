@@ -21,8 +21,9 @@ public:
   virtual Solid *            Evolve(const std::vector<int>             & delta_time,
                                     const std::vector< const Solid * > & solid)       const = 0;
 
-  void                       GetElasticParams(double & k, double & mu, double & rho)  const {
-                              k = k_; mu  = mu_; rho = rho_;
+  void                       GetElasticParams(double & k, double & mu, double & rho)  const
+                             {
+                                   k = k_; mu  = mu_; rho = rho_;
                              }
 
   const std::vector<double>& GetU()                                                   const { return u_; }

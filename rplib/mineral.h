@@ -7,9 +7,10 @@
 class Mineral : public Solid {
 public:
 
-  Mineral(const double k,
-          const double mu,
-          const double rho,
+  Mineral(const double                    k,
+          const double                    mu,
+          const double                    rho,
+          std::vector<double>             u,
           DistributionsMineralEvolution * distr_evolution = NULL);
 
   // Copy constructor

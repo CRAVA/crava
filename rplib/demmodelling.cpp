@@ -520,7 +520,11 @@ DEMTools::DebugTestCalcEffectiveModulus(double& effective_bulk_modulus,
 void
 DEMTools::DebugTestCalcEffectiveModulus2(double& effective_bulk_modulus,
                                          double& effective_shear_modulus,
-                                         double& effective_density) {
+                                         double& effective_density)
+{
+  std::vector<double> dummy_u(3);
+  for(int i=0; i<3; i++)
+    dummy_u[i] = 0;
 
   // Script for rock physics modelling using differential effective medium theory (DEM).
   // Specifications
@@ -530,13 +534,13 @@ DEMTools::DebugTestCalcEffectiveModulus2(double& effective_bulk_modulus,
   double quartz_mu               = 44;   // gpa
   double quartz_rho              = 2.65; // g/ccm
 
-  Mineral quartz(quartz_k, quartz_mu, quartz_rho);
+  Mineral quartz(quartz_k, quartz_mu, quartz_rho, dummy_u);
 
   double clay_k                  = 21;   // gpa
   double clay_mu                 = 7;    // gpa
   double clay_rho                = 2.6;  // g/ccm
 
-  Mineral clay(clay_k, clay_mu, clay_rho);
+  Mineral clay(clay_k, clay_mu, clay_rho, dummy_u);
 
   // Fluid properties
   // (Brine properties according to Batzle, M. and Wang, Z. 1992, and

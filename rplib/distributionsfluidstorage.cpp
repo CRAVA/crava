@@ -35,8 +35,10 @@ TabulatedVelocityFluidStorage::TabulatedVelocityFluidStorage(DistributionWithTre
 
 TabulatedVelocityFluidStorage::~TabulatedVelocityFluidStorage()
 {
-  delete vp_;
-  delete density_;
+  if(vp_->GetIsShared() == false)
+    delete vp_;
+  if(density_->GetIsShared() == false)
+    delete density_;
 }
 
 DistributionsFluid *
@@ -51,9 +53,6 @@ TabulatedVelocityFluidStorage::GenerateDistributionsFluid(const std::string     
   DistributionsFluid * fluid = new DistributionsFluidTabulatedVelocity(vp_dist_with_trend,
                                                                        density_dist_with_trend,
                                                                        correlation_vp_density_);
-
-  if(fluid == NULL)
-    errTxt += "The tabulated model has not been implemented yet for fluids\n"; //Marit: Denne feilmeldingen fjernes når modellen er implementert
 
   return(fluid);
 }
@@ -70,8 +69,10 @@ TabulatedModulusFluidStorage::TabulatedModulusFluidStorage(DistributionWithTrend
 
 TabulatedModulusFluidStorage::~TabulatedModulusFluidStorage()
 {
-  delete bulk_modulus_;
-  delete density_;
+  if(bulk_modulus_->GetIsShared() == false)
+    delete bulk_modulus_;
+  if(density_->GetIsShared() == false)
+    delete density_;
 }
 
 DistributionsFluid *

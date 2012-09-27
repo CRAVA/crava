@@ -11,7 +11,7 @@ public:
                               Fluid() {}
   virtual                     ~Fluid() {}
 
-  virtual Fluid *             Clone()                                                               const = 0;
+  virtual Fluid            *  Clone()                                                               const = 0;
 
   void                        GetElasticParams(double& k, double& rho) const { k = k_; rho = rho_; }
 

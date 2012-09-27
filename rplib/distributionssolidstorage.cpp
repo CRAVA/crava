@@ -100,9 +100,12 @@ TabulatedVelocitySolidStorage::TabulatedVelocitySolidStorage(DistributionWithTre
 
 TabulatedVelocitySolidStorage::~TabulatedVelocitySolidStorage()
 {
-  delete vp_;
-  delete vs_;
-  delete density_;
+  if(vp_->GetIsShared() == false)
+    delete vp_;
+  if(vs_->GetIsShared() == false)
+    delete vs_;
+  if(density_->GetIsShared() == false)
+    delete density_;
 }
 
 DistributionsSolid *
@@ -123,9 +126,6 @@ TabulatedVelocitySolidStorage::GenerateDistributionsSolid(const std::string     
                                                                        correlation_vp_vs_,
                                                                        correlation_vp_density_,
                                                                        correlation_vs_density_);
-
-  if(solid == NULL)
-    errTxt += "The tabulated model has not been implemented yet for solids\n"; //Marit: Denne feilmeldingen fjernes når modellen er implementert
 
   return(solid);
 }
@@ -148,9 +148,12 @@ TabulatedModulusSolidStorage::TabulatedModulusSolidStorage(DistributionWithTrend
 
 TabulatedModulusSolidStorage::~TabulatedModulusSolidStorage()
 {
-  delete bulk_modulus_;
-  delete shear_modulus_;
-  delete density_;
+  if(bulk_modulus_->GetIsShared() == false)
+    delete bulk_modulus_;
+  if(shear_modulus_->GetIsShared() == false)
+    delete shear_modulus_;
+  if(density_->GetIsShared()== false)
+    delete density_;
 }
 
 DistributionsSolid *

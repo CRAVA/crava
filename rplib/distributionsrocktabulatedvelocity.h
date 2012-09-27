@@ -33,7 +33,7 @@ public:
 
   virtual bool                       HasDistribution() const;
 
-  virtual std::vector<bool>          HasTrend() const; //dummy function that needs to be implemented
+  virtual std::vector<bool>          HasTrend() const;
 
 private:
   const DistributionWithTrend * vp_;
@@ -43,6 +43,8 @@ private:
   double                        corr_vp_density_;
   double                        corr_vs_density_;
   Tabulated                     tabulated_;
+  bool                          has_distribution_;
+  std::vector<bool>             has_trend_;
 };
 
 #endif

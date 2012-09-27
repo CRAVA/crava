@@ -17,6 +17,7 @@ DistributionsRockTabulatedVelocity::DistributionsRockTabulatedVelocity(const Dis
   corr_vs_density_(corr_vs_density)
 {
 
+  // Generate tabulated_
   std::vector<const DistributionWithTrend *> elastic_variables(3);
   elastic_variables[0] = vp_;
   elastic_variables[1] = vs_;
@@ -35,6 +36,27 @@ DistributionsRockTabulatedVelocity::DistributionsRockTabulatedVelocity(const Dis
   corr_matrix(2,1) = corr_vs_density_;
 
   tabulated_ = Tabulated(elastic_variables, corr_matrix);
+
+   // Find has_distribution_
+  if(vp_->GetIsDistribution() == true || vs_->GetIsDistribution() == true || density_->GetIsDistribution() == true) {
+    has_distribution_ = true;
+  }
+  else
+    has_distribution_ = false;
+
+  // Find has_trend_
+  std::vector<bool> vp_trend      = vp_     ->GetUseTrendCube();
+  std::vector<bool> vs_trend      = vs_     ->GetUseTrendCube();
+  std::vector<bool> density_trend = density_->GetUseTrendCube();
+
+  has_trend_.resize(2);
+  for(int i=0; i<2; i++) {
+    if(vp_trend[i] == true || vs_trend[i] == true || density_trend[i] == true)
+      has_trend_[i] = true;
+    else
+      has_trend_[i] = false;
+  }
+
 }
 
 DistributionsRockTabulatedVelocity::~DistributionsRockTabulatedVelocity()
@@ -55,9 +77,9 @@ DistributionsRockTabulatedVelocity::GenerateSample(const std::vector<double> & /
 
   /*std::vector<double> u;
 
-  std::vector<double> elastic_parameters;
+  std::vector<double> sample;
 
-  elastic_parameters = tabulated_.GenerateSample(u, trend_params[0], trend_params[1]);*/
+  sample = tabulated_.GenerateSample(u, trend_params[0], trend_params[1]);*/
 
   Rock * new_rock = NULL; //new RockTabulatedVelocity();
 
@@ -88,31 +110,11 @@ DistributionsRockTabulatedVelocity::GeneratePdf() const
 bool
 DistributionsRockTabulatedVelocity::HasDistribution() const
 {
-  bool has_distribution;
-
-  if(vp_->GetIsDistribution() == true || vs_->GetIsDistribution() == true || density_->GetIsDistribution() == true)
-    has_distribution = true;
-  else
-    has_distribution = false;
-
-  return(has_distribution);
+  return(has_distribution_);
 }
 
 std::vector<bool>
 DistributionsRockTabulatedVelocity::HasTrend() const
 {
-  std::vector<bool> vp_trend      = vp_     ->GetUseTrendCube();
-  std::vector<bool> vs_trend      = vs_     ->GetUseTrendCube();
-  std::vector<bool> density_trend = density_->GetUseTrendCube();
-
-  std::vector<bool> has_trend(2);
-
-  for(int i=0; i<2; i++) {
-    if(vp_trend[i] == true || vs_trend[i] == true || density_trend[i] == true)
-      has_trend[i] = true;
-    else
-      has_trend[i] = false;
-  }
-
-  return(has_trend);
+  return(has_trend_);
 }

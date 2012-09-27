@@ -6209,6 +6209,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\rplib\distributionsfluidtabulatedmodulus.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\rplib\distributionsfluidtabulatedvelocity.cpp"
 					>
 				</File>
@@ -6226,10 +6230,6 @@
 				</File>
 				<File
 					RelativePath=".\rplib\distributionsrocktabulatedvelocity.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\rplib\distributionsrocktrinormal.cpp"
 					>
 				</File>
 				<File
@@ -6269,6 +6269,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\rplib\fluidtabulatedmodulus.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\rplib\mineral.cpp"
 					>
 				</File>
@@ -6293,10 +6297,6 @@
 					>
 				</File>
 				<File
-					RelativePath=".\rplib\pdf3dgaussian.cpp"
-					>
-				</File>
-				<File
 					RelativePath=".\rplib\rock.cpp"
 					>
 				</File>
@@ -6314,10 +6314,6 @@
 				</File>
 				<File
 					RelativePath=".\rplib\tabulated.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\rplib\trinormalwith2dtrend.cpp"
 					>
 				</File>
 			</Filter>
@@ -7057,11 +7053,11 @@
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\system\config.hpp"
+						RelativePath=".\nrlib\boost\filesystem\config.hpp"
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\filesystem\config.hpp"
+						RelativePath=".\nrlib\boost\system\config.hpp"
 						>
 					</File>
 					<File
@@ -7378,6 +7374,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\rplib\distributionsfluidtabulatedmodulus.h"
+					>
+				</File>
+				<File
 					RelativePath=".\rplib\distributionsfluidtabulatedvelocity.h"
 					>
 				</File>
@@ -7407,10 +7407,6 @@
 				</File>
 				<File
 					RelativePath=".\rplib\distributionsrocktabulatedvelocity.h"
-					>
-				</File>
-				<File
-					RelativePath=".\rplib\distributionsrocktrinormal.h"
 					>
 				</File>
 				<File
@@ -7470,6 +7466,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\rplib\fluidtabulatedmodulus.h"
+					>
+				</File>
+				<File
 					RelativePath=".\rplib\mineral.h"
 					>
 				</File>
@@ -7498,10 +7498,6 @@
 					>
 				</File>
 				<File
-					RelativePath=".\rplib\pdf3dgaussian.h"
-					>
-				</File>
-				<File
 					RelativePath=".\rplib\rock.h"
 					>
 				</File>
@@ -7523,10 +7519,6 @@
 				</File>
 				<File
 					RelativePath=".\rplib\tabulated.h"
-					>
-				</File>
-				<File
-					RelativePath=".\rplib\trinormalwith2dtrend.h"
 					>
 				</File>
 			</Filter>
