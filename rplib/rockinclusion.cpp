@@ -23,7 +23,7 @@ RockInclusion::RockInclusion(const Solid                         * solid,
 
 RockInclusion::RockInclusion() : Rock()
 {
-  vp_ = vs_ = rho_ = k_ = mu_ = 0;
+   k_ = mu_ = 0;
 }
 
 RockInclusion::~RockInclusion()
@@ -39,9 +39,6 @@ RockInclusion& RockInclusion::operator=(const RockInclusion& rhs)
 
     k_                       = rhs.k_;
     mu_                      = rhs.mu_;
-    rho_                     = rhs.rho_;
-    vp_                      = rhs.vp_;
-    vs_                      = rhs.vs_;
     inclusion_spectrum_      = rhs.inclusion_spectrum_;
     inclusion_concentration_ = rhs.inclusion_concentration_;
     porosity_                = rhs.porosity_;
@@ -67,22 +64,11 @@ RockInclusion::Clone() const {
   r->inclusion_spectrum_      = this->inclusion_spectrum_;
   r->inclusion_concentration_ = this->inclusion_concentration_;
   r->porosity_                = this->porosity_;
-  r->distr_evolution_         = this->distr_evolution_;         // Not deep copy.
-  r->vp_                      = this->vp_;
-  r->vs_                      = this->vs_;
-  r->rho_                     = this->rho_;
+  r->distr_evolution_         = this->distr_evolution_;         // Not deep copy
   r->k_                       = this->k_;
   r->mu_                      = this->mu_;
 
   return r;
-}
-
-void
-RockInclusion::ComputeSeismicParams(double & vp, double & vs, double & rho) const
-{
-  vp  = vp_;
-  vs  = vs_;
-  rho = rho_;
 }
 
 void

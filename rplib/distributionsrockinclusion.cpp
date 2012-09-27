@@ -21,7 +21,7 @@ DistributionsRockInclusion::DistributionsRockInclusion(DistributionsSolid       
   distr_porosity_           = distr_porosity;
   distr_evolution_          = distr_evolution;
 
-  SampleVpVsRhoExpectationAndCovariance(expectation_, covariance_);
+  SampleVpVsRhoExpectationAndCovariance(expectation_old_, covariance_old_);
 }
 
 DistributionsRockInclusion::~DistributionsRockInclusion(){}
@@ -48,18 +48,6 @@ DistributionsRockInclusion::GenerateSample(const std::vector<double> & trend_par
   delete fluid;
 
   return new_rock;
-}
-
-std::vector<double>
-DistributionsRockInclusion::GetExpectation(const std::vector<double> & /*trend_params*/) const
-{
-  return(expectation_);
-}
-
-NRLib::Grid2D<double>
-DistributionsRockInclusion::GetCovariance(const std::vector<double> & /*trend_params*/)  const
-{
-  return(covariance_);
 }
 
 Pdf3D *
@@ -101,7 +89,7 @@ DistributionsRockInclusion::SampleVpVsRhoExpectationAndCovariance(std::vector<do
   std::vector<double> dummy(2, 0.0);
   for (int i = 0; i < nsamples; ++i) {
     Rock * rock = GenerateSample(dummy);
-    rock->ComputeSeismicParams(vp(i), vs(i), rho(i));
+    rock->GetSeismicParams(vp(i), vs(i), rho(i));
     delete rock;
   }
   m[0] = vp;

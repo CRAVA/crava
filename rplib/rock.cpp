@@ -2,6 +2,7 @@
 
 Rock::Rock()
 {
+  vp_ = vs_ = rho_ = 0.0;
 }
 
 

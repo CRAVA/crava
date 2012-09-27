@@ -13,22 +13,50 @@
 class DistributionsRock {
 public:
 
-  DistributionsRock(){}
+                                        DistributionsRock(){}
 
-  virtual ~DistributionsRock(){}
+  virtual                               ~DistributionsRock(){}
 
-  // Rock is an abstract class, hence pointer must be used here. Allocated memory (using new) MUST be deleted by caller.
-  virtual Rock                * GenerateSample(const std::vector<double> & trend_params) const = 0;
+  virtual Rock                        * GenerateSample(const std::vector<double> & trend_params)          const = 0;
 
-  virtual std::vector<double>   GetExpectation(const std::vector<double> & trend_params) const = 0;
+  std::vector< Rock* >                  GenerateWellSample(const  std::vector<double> & trend_params,
+                                                           double corr)                                   const    ;
 
-  virtual NRLib::Grid2D<double> GetCovariance(const std::vector<double> & trend_params)  const = 0;
+  Rock                                * EvolveSample(double       time,
+                                                     const Rock & rock)                                   const    ;
 
-  virtual Pdf3D               * GeneratePdf(void)                                        const = 0;
+  virtual Pdf3D                       * GeneratePdf(void)                                                 const = 0;
 
-  virtual bool                  HasDistribution()                                        const = 0;
+  virtual bool                          HasDistribution()                                                 const = 0;
 
-  virtual std::vector<bool>     HasTrend()                                               const = 0;
+  virtual std::vector<bool>             HasTrend()                                                        const = 0;
+
+  //NBNB fjellvoll the first two functions should probably survive the new format.
+  std::vector<double>                   GetExpectations(const std::vector<double> & trend_params)         const    ;
+
+  NRLib::Grid2D<double>                 GetCovariances(const std::vector<double> & trend_params)          const    ;
+
+  virtual std::vector<double>           GetExpectation(const std::vector<double> & /*trend_params*/)      const = 0;
+
+  virtual NRLib::Grid2D<double>         GetCovariance(const std::vector<double> & /*trend_params*/)       const = 0;
+
+protected:
+  virtual Rock                        * UpdateSample(const std::vector<double> & /*corr*/,
+                                                     const Rock                & /*rock*/)                const = 0;
+
+                                        //This function should be called last step in constructor
+                                        //for all children classes.
+  void                                  SetupExpectationAndCovariances(const std::vector<double> & s_min,
+                                                                       const std::vector<double> & s_max);
+
+  NRLib::Grid2D< std::vector<double> >  expectation_;
+  NRLib::Grid2D< std::vector<double> >  covariance_;
+
+  std::vector<double>                   s_min_;
+  std::vector<double>                   s_max_;
+
+private:
+  std::vector<double>                   alpha_;
 
 };
 

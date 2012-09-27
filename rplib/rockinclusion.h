@@ -12,41 +12,39 @@
 class RockInclusion : public Rock {
 public:
 
-  RockInclusion(const Solid                         * solid,
-                const Fluid                         * fluid,
-                const std::vector<double>           & inclusion_spectrum,
-                const std::vector<double>           & inclusion_concentration,
-                double                                porosity,
-                DistributionsRockInclusionEvolution * distr_evolution = NULL);
+                                        RockInclusion(const Solid                         * solid,
+                                                      const Fluid                         * fluid,
+                                                      const std::vector<double>           & inclusion_spectrum,
+                                                      const std::vector<double>           & inclusion_concentration,
+                                                      double                                porosity,
+                                                      DistributionsRockInclusionEvolution * distr_evolution = NULL);
 
-  RockInclusion();
+                                        RockInclusion();
 
-  virtual ~RockInclusion();
+  virtual                               ~RockInclusion();
 
   // Assignment operator.
-  RockInclusion& operator=(const RockInclusion& rhs);
+  RockInclusion                       & operator=(const RockInclusion& rhs);
 
-  virtual Rock * Clone() const;
+  virtual Rock                        * Clone()                                                 const;
 
-  virtual void ComputeSeismicParams(double & vp, double & vs, double & rho) const;
+  void                                  GetElasticParams(double & k, double & mu, double & rho) const;
 
-  void GetElasticParams(double & k, double & mu, double & rho) const;
+  const Solid                         * GetSolid()                                              const {return solid_;}
+  const Fluid                         * GetFluid()                                              const {return fluid_;}
 
-  const Solid *  GetSolid() const {return solid_;}
-  const Fluid *  GetFluid() const {return fluid_;}
+  virtual Rock                        * Evolve(const std::vector<int>         & delta_time,
+                                               const std::vector< Rock * >    & rock)           const;
 
-  virtual Rock * Evolve(const std::vector<int>         & delta_time,
-                        const std::vector< Rock * >    & rock) const;
-
-  virtual void SetPorosity(double porosity);
+  virtual void                          SetPorosity(double porosity);
 
 private:
-  //Copy constructor for getting base class variables , used by Clone:
-  RockInclusion(const RockInclusion & rhs) : Rock(rhs) {}
+                                        //Copy constructor for getting base class variables , used by Clone:
+                                        RockInclusion(const RockInclusion & rhs) : Rock(rhs) {}
 
-  // Calculate elastic and seismic parameters, to be
-  // used whenever new information is sent to class.
-  void ComputeSeismicAndElasticParams();
+                                        // Calculate elastic and seismic parameters, to be
+                                        // used whenever new information is sent to class.
+  void                                  ComputeSeismicAndElasticParams();
 
   Solid                               * solid_; // Owned and deleted by this class.
   Fluid                               * fluid_; // Owned and deleted by this class.
@@ -55,7 +53,6 @@ private:
   double                                porosity_;
   DistributionsRockInclusionEvolution * distr_evolution_; // Pointer to external object.
 
-  double vp_, vs_, rho_;
   double k_, mu_;
 };
 
