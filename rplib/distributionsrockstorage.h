@@ -2,6 +2,13 @@
 #define RPLIB_DISTRIBUTIONS_ROCK_STORAGE_HPP
 
 #include "rplib/distributionsrock.h"
+#include "rplib/distributionssolid.h"
+#include "rplib/distributionsdryrock.h"
+#include "rplib/distributionsfluid.h"
+#include "rplib/distributionsrockstorage.h"
+#include "rplib/distributionssolidstorage.h"
+#include "rplib/distributionsdryrockstorage.h"
+#include "rplib/distributionsfluidstorage.h"
 #include "rplib/distributionwithtrendstorage.h"
 #include "nrlib/trend/trendstorage.hpp"
 #include "nrlib/trend/trend.hpp"
@@ -12,10 +19,25 @@ public:
 
   virtual ~DistributionsRockStorage();
 
-  virtual DistributionsRock * GenerateDistributionsRock(const std::string                       & /*path*/,
-                                                        const std::vector<std::string>          & /*trend_cube_parameters*/,
-                                                        const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
-                                                        std::string                             & /*errTxt*/)                    const = 0;
+  virtual DistributionsRock * GenerateDistributionsRock(const std::string                                          & /*path*/,
+                                                        const std::vector<std::string>                             & /*trend_cube_parameters*/,
+                                                        const std::vector<std::vector<double> >                    & /*trend_cube_sampling*/,
+                                                        const std::map<std::string, DistributionsRockStorage *>    & model_rock_storage,
+                                                        const std::map<std::string, DistributionsSolidStorage *>   & model_solid_storage,
+                                                        const std::map<std::string, DistributionsDryRockStorage *> & model_dry_rock_storage,
+                                                        const std::map<std::string, DistributionsFluidStorage *>   & model_fluid_storage,
+                                                        std::map<std::string, DistributionsRock *>                 & rock_distribution,
+                                                        std::map<std::string, DistributionsSolid *>                & solid_distribution,
+                                                        std::map<std::string, DistributionsDryRock *>              & dry_rock_distribution,
+                                                        std::map<std::string, DistributionsFluid *>                & fluid_distribution,
+                                                        std::string                                                & /*errTxt*/)                    const = 0;
+
+  //virtual int                 GetRockDistributionType() const = 0;
+
+//protected:
+
+  //enum          RockDistributions{TABULATED_VELOCITY};
+
 };
 
 //----------------------------------------------------------------------------------//
@@ -30,10 +52,21 @@ public:
 
   virtual ~TabulatedVelocityRockStorage();
 
-  virtual DistributionsRock * GenerateDistributionsRock(const std::string                       & path,
-                                                        const std::vector<std::string>          & trend_cube_parameters,
-                                                        const std::vector<std::vector<double> > & trend_cube_sampling,
-                                                        std::string                             & errTxt) const;
+  virtual DistributionsRock * GenerateDistributionsRock(const std::string                                          & path,
+                                                        const std::vector<std::string>                             & trend_cube_parameters,
+                                                        const std::vector<std::vector<double> >                    & trend_cube_sampling,
+                                                        const std::map<std::string, DistributionsRockStorage *>    & model_rock_storage,
+                                                        const std::map<std::string, DistributionsSolidStorage *>   & model_solid_storage,
+                                                        const std::map<std::string, DistributionsDryRockStorage *> & model_dry_rock_storage,
+                                                        const std::map<std::string, DistributionsFluidStorage *>   & model_fluid_storage,
+                                                        std::map<std::string, DistributionsRock *>                 & rock_distribution,
+                                                        std::map<std::string, DistributionsSolid *>                & solid_distribution,
+                                                        std::map<std::string, DistributionsDryRock *>              & dry_rock_distribution,
+                                                        std::map<std::string, DistributionsFluid *>                & fluid_distribution,
+                                                        std::string                                                & errTxt) const;
+
+  //virtual int                 GetRockDistributionType() const { return(distribution_type_); }
+
 
 private:
   DistributionWithTrendStorage * vp_;
@@ -42,6 +75,7 @@ private:
   double                         correlation_vp_vs_;
   double                         correlation_vp_density_;
   double                         correlation_vs_density_;
+  //int                            distribution_type_;
 };
 
 //----------------------------------------------------------------------------------//
@@ -56,10 +90,18 @@ public:
 
   virtual ~TabulatedModulusRockStorage();
 
-  virtual DistributionsRock * GenerateDistributionsRock(const std::string                       & path,
-                                                        const std::vector<std::string>          & trend_cube_parameters,
-                                                        const std::vector<std::vector<double> > & trend_cube_sampling,
-                                                        std::string                             & errTxt) const;
+  virtual DistributionsRock * GenerateDistributionsRock(const std::string                                          & path,
+                                                        const std::vector<std::string>                             & trend_cube_parameters,
+                                                        const std::vector<std::vector<double> >                    & trend_cube_sampling,
+                                                        const std::map<std::string, DistributionsRockStorage *>    & model_rock_storage,
+                                                        const std::map<std::string, DistributionsSolidStorage *>   & model_solid_storage,
+                                                        const std::map<std::string, DistributionsDryRockStorage *> & model_dry_rock_storage,
+                                                        const std::map<std::string, DistributionsFluidStorage *>   & model_fluid_storage,
+                                                        std::map<std::string, DistributionsRock *>                 & rock_distribution,
+                                                        std::map<std::string, DistributionsSolid *>                & solid_distribution,
+                                                        std::map<std::string, DistributionsDryRock *>              & dry_rock_distribution,
+                                                        std::map<std::string, DistributionsFluid *>                & fluid_distribution,
+                                                        std::string                                                & errTxt) const;
 
 private:
   DistributionWithTrendStorage * bulk_modulus_;
@@ -78,10 +120,18 @@ public:
 
   virtual ~ReussRockStorage();
 
-  virtual DistributionsRock * GenerateDistributionsRock(const std::string                       & path,
-                                                        const std::vector<std::string>          & trend_cube_parameters,
-                                                        const std::vector<std::vector<double> > & trend_cube_sampling,
-                                                        std::string                             & errTxt) const;
+  virtual DistributionsRock * GenerateDistributionsRock(const std::string                                          & path,
+                                                        const std::vector<std::string>                             & trend_cube_parameters,
+                                                        const std::vector<std::vector<double> >                    & trend_cube_sampling,
+                                                        const std::map<std::string, DistributionsRockStorage *>    & model_rock_storage,
+                                                        const std::map<std::string, DistributionsSolidStorage *>   & model_solid_storage,
+                                                        const std::map<std::string, DistributionsDryRockStorage *> & model_dry_rock_storage,
+                                                        const std::map<std::string, DistributionsFluidStorage *>   & model_fluid_storage,
+                                                        std::map<std::string, DistributionsRock *>                 & rock_distribution,
+                                                        std::map<std::string, DistributionsSolid *>                & solid_distribution,
+                                                        std::map<std::string, DistributionsDryRock *>              & dry_rock_distribution,
+                                                        std::map<std::string, DistributionsFluid *>                & fluid_distribution,
+                                                        std::string                                                & errTxt) const;
 
 private:
   std::vector<std::string>                    constituent_label_;
@@ -96,10 +146,18 @@ public:
 
   virtual ~VoigtRockStorage();
 
-  virtual DistributionsRock * GenerateDistributionsRock(const std::string                       & path,
-                                                        const std::vector<std::string>          & trend_cube_parameters,
-                                                        const std::vector<std::vector<double> > & trend_cube_sampling,
-                                                        std::string                             & errTxt) const;
+  virtual DistributionsRock * GenerateDistributionsRock(const std::string                                          & path,
+                                                        const std::vector<std::string>                             & trend_cube_parameters,
+                                                        const std::vector<std::vector<double> >                    & trend_cube_sampling,
+                                                        const std::map<std::string, DistributionsRockStorage *>    & model_rock_storage,
+                                                        const std::map<std::string, DistributionsSolidStorage *>   & model_solid_storage,
+                                                        const std::map<std::string, DistributionsDryRockStorage *> & model_dry_rock_storage,
+                                                        const std::map<std::string, DistributionsFluidStorage *>   & model_fluid_storage,
+                                                        std::map<std::string, DistributionsRock *>                 & rock_distribution,
+                                                        std::map<std::string, DistributionsSolid *>                & solid_distribution,
+                                                        std::map<std::string, DistributionsDryRock *>              & dry_rock_distribution,
+                                                        std::map<std::string, DistributionsFluid *>                & fluid_distribution,
+                                                        std::string                                                & errTxt) const;
 
 private:
   std::vector<std::string>                    constituent_label_;
@@ -114,10 +172,18 @@ public:
 
   virtual ~HillRockStorage();
 
-  virtual DistributionsRock * GenerateDistributionsRock(const std::string                       & path,
-                                                        const std::vector<std::string>          & trend_cube_parameters,
-                                                        const std::vector<std::vector<double> > & trend_cube_sampling,
-                                                        std::string                             & errTxt) const;
+  virtual DistributionsRock * GenerateDistributionsRock(const std::string                                          & path,
+                                                        const std::vector<std::string>                             & trend_cube_parameters,
+                                                        const std::vector<std::vector<double> >                    & trend_cube_sampling,
+                                                        const std::map<std::string, DistributionsRockStorage *>    & model_rock_storage,
+                                                        const std::map<std::string, DistributionsSolidStorage *>   & model_solid_storage,
+                                                        const std::map<std::string, DistributionsDryRockStorage *> & model_dry_rock_storage,
+                                                        const std::map<std::string, DistributionsFluidStorage *>   & model_fluid_storage,
+                                                        std::map<std::string, DistributionsRock *>                 & rock_distribution,
+                                                        std::map<std::string, DistributionsSolid *>                & solid_distribution,
+                                                        std::map<std::string, DistributionsDryRock *>              & dry_rock_distribution,
+                                                        std::map<std::string, DistributionsFluid *>                & fluid_distribution,
+                                                        std::string                                                & errTxt) const;
 
 private:
   std::vector<std::string>                    constituent_label_;
@@ -136,10 +202,18 @@ public:
 
   virtual ~DEMRockStorage();
 
-  virtual DistributionsRock * GenerateDistributionsRock(const std::string                       & path,
-                                                        const std::vector<std::string>          & trend_cube_parameters,
-                                                        const std::vector<std::vector<double> > & trend_cube_sampling,
-                                                        std::string                             & errTxt) const;
+  virtual DistributionsRock * GenerateDistributionsRock(const std::string                                          & path,
+                                                        const std::vector<std::string>                             & trend_cube_parameters,
+                                                        const std::vector<std::vector<double> >                    & trend_cube_sampling,
+                                                        const std::map<std::string, DistributionsRockStorage *>    & model_rock_storage,
+                                                        const std::map<std::string, DistributionsSolidStorage *>   & model_solid_storage,
+                                                        const std::map<std::string, DistributionsDryRockStorage *> & model_dry_rock_storage,
+                                                        const std::map<std::string, DistributionsFluidStorage *>   & model_fluid_storage,
+                                                        std::map<std::string, DistributionsRock *>                 & rock_distribution,
+                                                        std::map<std::string, DistributionsSolid *>                & solid_distribution,
+                                                        std::map<std::string, DistributionsDryRock *>              & dry_rock_distribution,
+                                                        std::map<std::string, DistributionsFluid *>                & fluid_distribution,
+                                                        std::string                                                & errTxt) const;
 
 private:
   std::string                                 host_label_;
@@ -158,14 +232,55 @@ public:
 
   virtual ~GassmannRockStorage();
 
-  virtual DistributionsRock * GenerateDistributionsRock(const std::string                       & path,
-                                                        const std::vector<std::string>          & trend_cube_parameters,
-                                                        const std::vector<std::vector<double> > & trend_cube_sampling,
-                                                        std::string                             & errTxt) const;
+  virtual DistributionsRock * GenerateDistributionsRock(const std::string                                          & path,
+                                                        const std::vector<std::string>                             & trend_cube_parameters,
+                                                        const std::vector<std::vector<double> >                    & trend_cube_sampling,
+                                                        const std::map<std::string, DistributionsRockStorage *>    & model_rock_storage,
+                                                        const std::map<std::string, DistributionsSolidStorage *>   & model_solid_storage,
+                                                        const std::map<std::string, DistributionsDryRockStorage *> & model_dry_rock_storage,
+                                                        const std::map<std::string, DistributionsFluidStorage *>   & model_fluid_storage,
+                                                        std::map<std::string, DistributionsRock *>                 & rock_distribution,
+                                                        std::map<std::string, DistributionsSolid *>                & solid_distribution,
+                                                        std::map<std::string, DistributionsDryRock *>              & dry_rock_distribution,
+                                                        std::map<std::string, DistributionsFluid *>                & fluid_distribution,
+                                                        std::string                                                & errTxt) const;
 
 private:
   std::string dry_rock_;
   std::string fluid_;
+};
+
+//----------------------------------------------------------------------------------//
+class BoundingRockStorage : public DistributionsRockStorage {
+public:
+  BoundingRockStorage(std::string                    upper_rock,
+                      std::string                    lower_rock,
+                      DistributionWithTrendStorage * bulk_weight,
+                      DistributionWithTrendStorage * p_wave_weight,
+                      double                         correlation_weights);
+
+  virtual ~BoundingRockStorage();
+
+  virtual DistributionsRock * GenerateDistributionsRock(const std::string                                          & path,
+                                                        const std::vector<std::string>                             & trend_cube_parameters,
+                                                        const std::vector<std::vector<double> >                    & trend_cube_sampling,
+                                                        const std::map<std::string, DistributionsRockStorage *>    & model_rock_storage,
+                                                        const std::map<std::string, DistributionsSolidStorage *>   & model_solid_storage,
+                                                        const std::map<std::string, DistributionsDryRockStorage *> & model_dry_rock_storage,
+                                                        const std::map<std::string, DistributionsFluidStorage *>   & model_fluid_storage,
+                                                        std::map<std::string, DistributionsRock *>                 & rock_distribution,
+                                                        std::map<std::string, DistributionsSolid *>                & solid_distribution,
+                                                        std::map<std::string, DistributionsDryRock *>              & dry_rock_distribution,
+                                                        std::map<std::string, DistributionsFluid *>                & fluid_distribution,
+                                                        std::string                                                & errTxt) const;
+
+private:
+  std::string                    upper_rock_;
+  std::string                    lower_rock_;
+  DistributionWithTrendStorage * bulk_weight_;
+  DistributionWithTrendStorage * p_wave_weight_;
+  double                         correlation_weights_;
+
 };
 
 #endif

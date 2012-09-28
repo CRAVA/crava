@@ -46,7 +46,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalOptions="/D &quot;_CRT_SECURE_NO_DEPRECATE&quot;  /wd4512 /wd4127 /w44263 /w44264 /w44062 /I &quot;.&quot; /I &quot;.\fft\include&quot; /D &quot;BYPASS_COORDINATE_SCALING&quot;"
+				AdditionalOptions="/D &quot;_CRT_SECURE_NO_DEPRECATE&quot;  /wd4512 /wd4127 /w44263 /w44264 /w44062 /I &quot;.&quot; /I &quot;.\fft\include&quot; /D &quot;BYPASS_COORDINATE_SCALING&quot; /GR /EHsc&#x0D;&#x0A;"
 				Optimization="0"
 				AdditionalIncludeDirectories=".;nrlib;fft;G:\sand\Libraries;&quot;$(INTEL_PE121_300_INSTALL_DIR)MKL\Include&quot;;&quot;$(INTEL_PE121_300_INSTALL_DIR)MKL\Include\ia32&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;MKL;FLENS_FIRST_INDEX=0;INTEL_SUITE_VERSION=PE121_300"

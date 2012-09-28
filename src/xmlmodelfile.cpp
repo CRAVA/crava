@@ -1683,7 +1683,8 @@ XmlModelFile::parseRockPhysics(TiXmlNode * node, std::string & errTxt)
 
   parseReservoir(root, errTxt);
   parsePredefinitions(root, errTxt);
-  while(parseRock(root, errTxt));
+  std::string dummy;
+  while(parseRock(root, dummy, errTxt));
 
   int count = 0;
   while(parseTrendCube(root, errTxt) == true)
@@ -1723,7 +1724,7 @@ XmlModelFile::parsePredefinitions(TiXmlNode * node, std::string & errTxt)
   return(true);
 }
 bool
-XmlModelFile::parseRock(TiXmlNode * node, std::string & errTxt)
+XmlModelFile::parseRock(TiXmlNode * node, std::string & label, std::string & errTxt)
 {
   TiXmlNode * root = node->FirstChildElement("rock");
   if(root == 0)
@@ -1738,11 +1739,10 @@ XmlModelFile::parseRock(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("hill");
   legalCommands.push_back("dem");
   legalCommands.push_back("gassmann");
+  legalCommands.push_back("bounding");
 
-  std::string label = "";
+  label = "";
   parseValue(root, "label", label, errTxt);
-
-  int given = 0;
 
   std::string use = "";
   parseValue(root, "use", use, errTxt);
@@ -1750,6 +1750,7 @@ XmlModelFile::parseRock(TiXmlNode * node, std::string & errTxt)
     errTxt += "Both <label> and <use> can not be given in <rock>\n";
 
   int constituent_type = ModelSettings::ROCK;
+  int given            = 0;
 
   DistributionWithTrendStorage * porosity = NULL;
   std::string                    moduli   = "";
@@ -1765,6 +1766,8 @@ XmlModelFile::parseRock(TiXmlNode * node, std::string & errTxt)
   if(parseDEM(root, constituent_type, label, porosity, moduli, errTxt) == true)
     given++;
   if(parseGassmann(root, constituent_type, label, errTxt) == true)
+    given++;
+  if(parseBounding(root, constituent_type, label, errTxt) == true)
     given++;
 
   if(given == 0)
@@ -2328,12 +2331,107 @@ XmlModelFile::parseGassmann(TiXmlNode * node, int constituent, std::string label
     errTxt += "Implementation error: The Gassmann model can not be used to make a solid\n";
   }
   else if(constituent == ModelSettings::DRY_ROCK) {
-    errTxt += "Implementation error: The Gassmann model can not be used to make a fluid\n";
+    errTxt += "Implementation error: The Gassmann model can not be used to make a dry-rock\n";
   }
   else if(constituent == ModelSettings::ROCK) {
     DistributionsRockStorage * rock = new GassmannRockStorage(dry_rock, fluid);
     modelSettings_->addRock(label, rock);
   }
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseBounding(TiXmlNode * node, int constituent, std::string label, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("bounding");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("upper-bound");
+  legalCommands.push_back("lower-bound");
+  legalCommands.push_back("bulk-modulus-weight");
+  legalCommands.push_back("p-wave-modulus-weight");
+  legalCommands.push_back("correlation-weights");
+
+  std::string upper_bound;
+  parseUpperBound(root, upper_bound, errTxt);
+
+  std::string lower_bound;
+  parseLowerBound(root, lower_bound, errTxt);
+
+  std::string dummy;
+  DistributionWithTrendStorage * bulk_weight  = NULL;
+  parseDistributionWithTrend(root, "bulk-modulus-weight", bulk_weight, dummy, false, errTxt, true);
+
+  DistributionWithTrendStorage * p_wave_weight = NULL;
+  parseDistributionWithTrend(root, "p-wave-modulus-weight", p_wave_weight, dummy, false, errTxt, true);
+
+  double correlation;
+  if(parseValue(root, "correlation-weights", correlation, errTxt) == false)
+    correlation = 0;
+
+  if(constituent == ModelSettings::FLUID) {
+    errTxt += "Implementation error: The Bounding model can not be used to make a fluid\n";
+  }
+  else if(constituent == ModelSettings::SOLID) {
+    errTxt += "Implementation error: The Bounding model can not be used to make a solid\n";
+  }
+  else if(constituent == ModelSettings::DRY_ROCK) {
+    errTxt += "Implementation error: The Gassmann model can not be used to make a dry-rock\n";
+  }
+  else if(constituent == ModelSettings::ROCK) {
+    DistributionsRockStorage * rock = new BoundingRockStorage(upper_bound, lower_bound, bulk_weight, p_wave_weight, correlation);
+    modelSettings_->addRock(label, rock);
+  }
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseUpperBound(TiXmlNode * node, std::string & label, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("upper-bound");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("rock");
+
+  int rock_given = 0;
+  while(parseRock(root, label, errTxt) == true)
+    rock_given++;
+
+  if(rock_given == 0)
+    errTxt += "A rock must be given for the upper bound in the Bounding model\n";
+  else if(rock_given > 1)
+    errTxt += "Only one rock can be given for the upper bound in the Bounding model\n";
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseLowerBound(TiXmlNode * node, std::string & label, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("lower-bound");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("rock");
+
+  int rock_given = 0;
+  while(parseRock(root, label, errTxt) == true)
+    rock_given++;
+
+  if(rock_given == 0)
+    errTxt += "A rock must be given for the lower bound in the Bounding model\n";
+  else if(rock_given > 1)
+    errTxt += "Only one rock can be given for the lower bound in the Bounding model\n";
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);

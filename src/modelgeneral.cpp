@@ -2315,7 +2315,18 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
     std::map<std::string, DistributionsRockStorage *>      rock_storage = modelSettings->getRockStorage();
     for(std::map<std::string, DistributionsRockStorage *>::iterator it = rock_storage.begin(); it != rock_storage.end(); it++) {
       DistributionsRockStorage     * storage    = it     ->second;
-      DistributionsRock            * rock       = storage->GenerateDistributionsRock(path,trend_cube_parameters,trend_cube_sampling,errTxt);
+      DistributionsRock            * rock       = storage->GenerateDistributionsRock(path,
+                                                                                     trend_cube_parameters,
+                                                                                     trend_cube_sampling,
+                                                                                     rock_storage,
+                                                                                     solid_storage,
+                                                                                     dry_rock_storage,
+                                                                                     fluid_storage,
+                                                                                     rock_distributions_,
+                                                                                     solid_distributions_,
+                                                                                     dry_rock_distributions_,
+                                                                                     fluid_distributions_,
+                                                                                     errTxt);
       rock_distributions_[it->first]            = rock;
     }
 
