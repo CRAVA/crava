@@ -1,4 +1,5 @@
 #include "rplib/distributionsrocktabulatedvelocity.h"
+#include "rplib/rocktabulatedvelocity.h"
 #include "rplib/pdf3d.h"
 
 #include "nrlib/grid/grid2d.hpp"
@@ -35,7 +36,7 @@ DistributionsRockTabulatedVelocity::DistributionsRockTabulatedVelocity(const Dis
   corr_matrix(1,2) = corr_vs_density_;
   corr_matrix(2,1) = corr_vs_density_;
 
-  tabulated_ = Tabulated(elastic_variables, corr_matrix);
+  tabulated_ = new Tabulated(elastic_variables, corr_matrix);
 
    // Find has_distribution_
   if(vp_->GetIsDistribution() == true || vs_->GetIsDistribution() == true || density_->GetIsDistribution() == true) {
@@ -69,19 +70,24 @@ DistributionsRockTabulatedVelocity::~DistributionsRockTabulatedVelocity()
 
   if(density_->GetIsShared() == false)
     delete density_;
+
+  delete tabulated_;
 }
 
 Rock *
-DistributionsRockTabulatedVelocity::GenerateSample(const std::vector<double> & /*trend_params*/) const
+DistributionsRockTabulatedVelocity::GenerateSample(const std::vector<double> & trend_params) const
 {
 
-  /*std::vector<double> u;
-
+  std::vector<double> u;
   std::vector<double> sample;
 
-  sample = tabulated_.GenerateSample(u, trend_params[0], trend_params[1]);*/
+  sample = tabulated_->GenerateSample(u, trend_params[0], trend_params[1]);
 
-  Rock * new_rock = NULL; //new RockTabulatedVelocity();
+  double sample_vp      = sample[0];
+  double sample_vs      = sample[1];
+  double sample_density = sample[2];
+
+  Rock * new_rock = new RockTabulatedVelocity(sample_vp, sample_vs, sample_density, u);
 
   return new_rock;
 }

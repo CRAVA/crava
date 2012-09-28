@@ -36,7 +36,7 @@ DistributionsMineral::DistributionsMineral(const DistributionWithTrend         *
   corr_matrix(1,2) = corr_mu_rho_;
   corr_matrix(2,1) = corr_mu_rho_;
 
-  tabulated_ = Tabulated(elastic_variables, corr_matrix);
+  tabulated_ = new Tabulated(elastic_variables, corr_matrix);
 
   // Find has_distribution_
   if(distr_k_->GetIsDistribution() == true || distr_mu_->GetIsDistribution() == true || distr_rho_->GetIsDistribution() == true) {
@@ -68,14 +68,17 @@ DistributionsMineral::~DistributionsMineral()
     delete distr_mu_;
   if(distr_rho_->GetIsShared() == false)
     delete distr_rho_;
+
+  delete tabulated_;
 }
 
 Solid *
 DistributionsMineral::GenerateSample(const std::vector<double> & trend_params) const
 {
   std::vector<double> u;
+  std::vector<double> sample;
 
-  std::vector<double> sample = tabulated_.GenerateSample(u, trend_params[0], trend_params[1]);
+  sample = tabulated_->GenerateSample(u, trend_params[0], trend_params[1]);
 
   double k   = sample[0];
   double mu  = sample[1];

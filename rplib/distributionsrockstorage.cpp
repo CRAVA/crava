@@ -38,7 +38,6 @@ TabulatedVelocityRockStorage::TabulatedVelocityRockStorage(DistributionWithTrend
   correlation_vp_vs_(correlation_vp_vs),
   correlation_vp_density_(correlation_vp_density),
   correlation_vs_density_(correlation_vs_density)
-  //distribution_type_(RockDistributions(TABULATED_VELOCITY))
 {
 }
 

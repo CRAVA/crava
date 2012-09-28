@@ -33,7 +33,7 @@ private:
   const DistributionWithTrend * vp_;
   const DistributionWithTrend * density_;
   double                        corr_vp_density_;
-  Tabulated                     tabulated_;
+  Tabulated                   * tabulated_;
   bool                          has_distribution_;
   std::vector<bool>             has_trend_;
 };

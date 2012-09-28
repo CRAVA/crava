@@ -17,6 +17,8 @@ Tabulated::Tabulated(std::vector<const DistributionWithTrend *> elastic,
 
   elastic_variables_ = elastic;
 
+  Sigma_sqrt_.Resize(n_variables_, n_variables_, 0);
+
   normal_ = new NRLib::Normal();
 
   CalculateSigmaSqrt(correlation_matrix);

@@ -33,7 +33,7 @@ private:
   const DistributionWithTrend * bulk_modulus_;
   const DistributionWithTrend * density_;
   double                        corr_bulk_density_;
-  Tabulated                     tabulated_;
+  Tabulated                   * tabulated_;
   bool                          has_distribution_;
   std::vector<bool>             has_trend_;
 };

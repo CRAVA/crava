@@ -6229,6 +6229,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\rplib\distributionsrocktabulatedmodulus.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\rplib\distributionsrocktabulatedvelocity.cpp"
 					>
 				</File>
@@ -6302,6 +6306,10 @@
 				</File>
 				<File
 					RelativePath=".\rplib\rockinclusion.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\rocktabulatedvelocity.cpp"
 					>
 				</File>
 				<File
@@ -7406,6 +7414,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\rplib\distributionsrocktabulatedmodulus.h"
+					>
+				</File>
+				<File
 					RelativePath=".\rplib\distributionsrocktabulatedvelocity.h"
 					>
 				</File>
@@ -7503,6 +7515,10 @@
 				</File>
 				<File
 					RelativePath=".\rplib\rockinclusion.h"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\rocktabulatedvelocity.h"
 					>
 				</File>
 				<File

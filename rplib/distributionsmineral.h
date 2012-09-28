@@ -39,7 +39,7 @@ private:
   const double                          corr_k_mu_;
   const double                          corr_k_rho_;
   const double                          corr_mu_rho_;
-  Tabulated                             tabulated_;
+  Tabulated                           * tabulated_;
   bool                                  has_distribution_;
   std::vector<bool>                     has_trend_;
   DistributionsMineralEvolution       * distr_evolution_; // Pointer to external object.

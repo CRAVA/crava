@@ -33,7 +33,7 @@ DistributionsSolidTabulatedVelocity::DistributionsSolidTabulatedVelocity(const D
   corr_matrix(1,2) = corr_vs_density_;
   corr_matrix(2,1) = corr_vs_density_;
 
-  tabulated_ = Tabulated(elastic_variables, corr_matrix);
+  tabulated_ = new Tabulated(elastic_variables, corr_matrix);
 
    // Find has_distribution_
   if(vp_->GetIsDistribution() == true || vs_->GetIsDistribution() == true || density_->GetIsDistribution() == true) {
@@ -65,16 +65,17 @@ DistributionsSolidTabulatedVelocity::~DistributionsSolidTabulatedVelocity()
     delete vs_;
   if(density_->GetIsShared() == false)
     delete density_;
+
+  delete tabulated_;
 }
 
 Solid *
 DistributionsSolidTabulatedVelocity::GenerateSample(const std::vector<double> & trend_params) const
 {
   std::vector<double> u;
-
   std::vector<double> seismic_sample;
 
-  seismic_sample = tabulated_.GenerateSample(u, trend_params[0], trend_params[1]);
+  seismic_sample = tabulated_->GenerateSample(u, trend_params[0], trend_params[1]);
 
   double vp_sample      = seismic_sample[0];
   double vs_sample      = seismic_sample[1];

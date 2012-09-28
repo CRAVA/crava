@@ -41,7 +41,7 @@ private:
   double                          corr_vp_vs_;
   double                          corr_vp_density_;
   double                          corr_vs_density_;
-  Tabulated                       tabulated_;
+  Tabulated                     * tabulated_;
   bool                            has_distribution_;
   std::vector<bool>               has_trend_;
 };

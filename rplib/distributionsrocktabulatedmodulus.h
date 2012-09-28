@@ -1,22 +1,22 @@
-#ifndef RPLIB_DISTRIBUTIONS_ROCK_TABULATED_VELOCITY_H
-#define RPLIB_DISTRIBUTIONS_ROCK_TABULATED_VELOCITY_H
+#ifndef RPLIB_DISTRIBUTIONS_ROCK_TABULATED_MODULUS_H
+#define RPLIB_DISTRIBUTIONS_ROCK_TABULATED_MODULUS_H
 
 #include "rplib/rock.h"
 #include "rplib/distributionsrock.h"
 #include "rplib/distributionwithtrend.h"
 #include "rplib/tabulated.h"
 
-class DistributionsRockTabulatedVelocity : public DistributionsRock {
+class DistributionsRockTabulatedModulus : public DistributionsRock {
 public:
 
-  DistributionsRockTabulatedVelocity(const DistributionWithTrend * vp,
-                                     const DistributionWithTrend * vs,
-                                     const DistributionWithTrend * density,
-                                     double                        corr_vp_vs,
-                                     double                        corr_vp_density,
-                                     double                        corr_vs_density);
+  DistributionsRockTabulatedModulus(const DistributionWithTrend * bulk_modulus,
+                                    const DistributionWithTrend * shear_modulus,
+                                    const DistributionWithTrend * density,
+                                    double                        corr_bulk_shear,
+                                    double                        corr_bulk_density,
+                                    double                        corr_shear_density);
 
-  virtual ~DistributionsRockTabulatedVelocity();
+  virtual ~DistributionsRockTabulatedModulus();
 
   // Rock is an abstract class, hence pointer must be used here. Allocated memory (using new) MUST be deleted by caller.
   virtual Rock                     * GenerateSample(const std::vector<double> & trend_params) const;
@@ -35,12 +35,12 @@ public:
   virtual std::vector<bool>          HasTrend() const;
 
 private:
-  const DistributionWithTrend * vp_;
-  const DistributionWithTrend * vs_;
+  const DistributionWithTrend * bulk_modulus_;
+  const DistributionWithTrend * shear_modulus_;
   const DistributionWithTrend * density_;
-  double                        corr_vp_vs_;
-  double                        corr_vp_density_;
-  double                        corr_vs_density_;
+  double                        corr_bulk_shear_;
+  double                        corr_bulk_density_;
+  double                        corr_shear_density_;
   Tabulated                   * tabulated_;
   bool                          has_distribution_;
   std::vector<bool>             has_trend_;

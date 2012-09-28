@@ -32,12 +32,6 @@ public:
                                                         std::map<std::string, DistributionsFluid *>                & fluid_distribution,
                                                         std::string                                                & /*errTxt*/)                    const = 0;
 
-  //virtual int                 GetRockDistributionType() const = 0;
-
-//protected:
-
-  //enum          RockDistributions{TABULATED_VELOCITY};
-
 };
 
 //----------------------------------------------------------------------------------//
@@ -65,9 +59,6 @@ public:
                                                         std::map<std::string, DistributionsFluid *>                & fluid_distribution,
                                                         std::string                                                & errTxt) const;
 
-  //virtual int                 GetRockDistributionType() const { return(distribution_type_); }
-
-
 private:
   DistributionWithTrendStorage * vp_;
   DistributionWithTrendStorage * vs_;
@@ -75,7 +66,6 @@ private:
   double                         correlation_vp_vs_;
   double                         correlation_vp_density_;
   double                         correlation_vs_density_;
-  //int                            distribution_type_;
 };
 
 //----------------------------------------------------------------------------------//

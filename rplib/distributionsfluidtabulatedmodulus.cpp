@@ -23,7 +23,7 @@ DistributionsFluidTabulatedModulus::DistributionsFluidTabulatedModulus(const Dis
   corr_matrix(0,1) = corr_bulk_density_;
   corr_matrix(1,0) = corr_bulk_density_;
 
-  tabulated_ = Tabulated(elastic_variables, corr_matrix);
+  tabulated_ = new Tabulated(elastic_variables, corr_matrix);
 
   // Find has_distribution_
   if(bulk_modulus_->GetIsDistribution() == true || density_->GetIsDistribution() == true) {
@@ -51,6 +51,8 @@ DistributionsFluidTabulatedModulus::~DistributionsFluidTabulatedModulus()
     delete bulk_modulus_;
   if(density_->GetIsShared() == false)
     delete density_;
+
+  delete tabulated_;
 }
 
 Fluid *
@@ -59,7 +61,7 @@ DistributionsFluidTabulatedModulus::GenerateSample(const std::vector<double> & t
   std::vector<double> u;
   std::vector<double> sample;
 
-  sample = tabulated_.GenerateSample(u, trend_params[0], trend_params[1]);
+  sample = tabulated_->GenerateSample(u, trend_params[0], trend_params[1]);
 
   double bulk_sample    = sample[0];
   double density_sample = sample[1];

@@ -11,6 +11,7 @@
 #include "nrlib/iotools/stringtools.hpp"
 #include "nrlib/iotools/logkit.hpp"
 #include "nrlib/segy/segy.hpp"
+#include "nrlib/flens/nrlib_flens.hpp"
 #include "nrlib/trend/trendstorage.hpp"
 #include "nrlib/random/distribution.hpp"
 #include "nrlib/random/normal.hpp"
@@ -2509,26 +2510,86 @@ XmlModelFile::parseTabulated(TiXmlNode * node, int constituent, std::string labe
   double correlation_vp_vs;
   if(parseValue(root, "correlation-vp-vs", correlation_vp_vs, errTxt) == false)
     correlation_vp_vs = modelSettings_->getDefaultCorrelationVpVs();
+  else {
+    if(correlation_vp_vs < 0 || correlation_vp_vs > 1)
+      errTxt += "<correlation-vp-vs> needs to be in (0,1) in the tabulated model\n";
+  }
 
   double correlation_vp_density;
   if(parseValue(root, "correlation-vp-density", correlation_vp_density, errTxt) == false)
     correlation_vp_density = 0;
+  else {
+    if(correlation_vp_density < 0 || correlation_vp_density > 1)
+      errTxt += "<correlation-vp-density> needs to be in (0,1) in the tabulated model\n";
+  }
 
   double correlation_vs_density;
   if(parseValue(root, "correlation-vs-density", correlation_vs_density, errTxt) == false)
     correlation_vs_density = 0;
+  else {
+    if(correlation_vs_density < 0 || correlation_vs_density > 1)
+      errTxt += "<correlation-vs-density> needs to be in (0,1) in the tabulated model\n";
+  }
+
 
   double correlation_bulk_shear;
   if(parseValue(root, "correlation-bulk-shear", correlation_bulk_shear, errTxt) == false)
     correlation_bulk_shear = modelSettings_->getDefaultCorrelationVpVs();
+  else {
+    if(correlation_bulk_shear < 0 || correlation_bulk_shear > 1)
+      errTxt += "<correlation-bulk-shear> needs to be in (0,1) in the tabulated model\n";
+  }
+
 
   double correlation_bulk_density;
   if(parseValue(root, "correlation-bulk-density", correlation_bulk_density, errTxt) == false)
     correlation_bulk_density = 0;
+  else {
+    if(correlation_bulk_density < 0 || correlation_bulk_density > 1)
+      errTxt += "<correlation-bulk-density> needs to be in (0,1) in the tabulated model\n";
+  }
 
   double correlation_shear_density;
   if(parseValue(root, "correlation-shear-density", correlation_shear_density, errTxt) == false)
     correlation_shear_density = 0;
+  else {
+    if(correlation_shear_density < 0 || correlation_shear_density > 1)
+      errTxt += "<correlation-vp-density> needs to be in (0,1) in the tabulated model\n";
+  }
+
+  NRLib::Matrix corr_matrix(3,3);
+  for(int i=0; i<3; i++)
+    corr_matrix(i,i) = 1;
+
+  if(use_vp) {
+    corr_matrix(0,1) = correlation_vp_vs;
+    corr_matrix(1,0) = correlation_vp_vs;
+    corr_matrix(0,2) = correlation_vp_density;
+    corr_matrix(2,0) = correlation_vp_density;
+    corr_matrix(1,2) = correlation_vs_density;
+    corr_matrix(2,1) = correlation_vs_density;
+  }
+  else {
+    corr_matrix(0,1) = correlation_bulk_shear;
+    corr_matrix(1,0) = correlation_bulk_shear;
+    corr_matrix(0,2) = correlation_bulk_density;
+    corr_matrix(2,0) = correlation_bulk_density;
+    corr_matrix(1,2) = correlation_shear_density;
+    corr_matrix(2,1) = correlation_shear_density;
+  }
+
+  NRLib::Vector eigen_values(3);
+  NRLib::Matrix eigen_vectors(3,3);
+  NRLib::ComputeEigenVectors(corr_matrix, eigen_values, eigen_vectors);
+
+  bool pos_def = true;
+  for( int i=0; i<3; i++) {
+    if(eigen_values(i) < 0)
+      pos_def = false;
+  }
+
+  if(pos_def == false)
+    errTxt += "The correlations in the tabulated model need to give a positive definite matrix\n";
 
   if(use_vp) {
     if(constituent == ModelSettings::FLUID) {
