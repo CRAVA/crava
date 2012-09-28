@@ -28,7 +28,6 @@ Tabulated::Tabulated(std::vector<const DistributionWithTrend *> elastic,
 Tabulated::~Tabulated()
 {
   delete normal_;
-  delete uniform_;
 }
 
 std::vector<double>
@@ -75,7 +74,7 @@ Tabulated::GenerateSample(std::vector<double> & u, double s1, double s2) const
   u.resize(n_variables_);
 
   for(int i=0; i<n_variables_; i++)
-    u[i] = uniform_->Draw();
+    u[i] = NRLib::Random::Unif01();
 
   std::vector<double> correlated_elastic_variables(n_variables_);
 

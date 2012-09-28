@@ -56,8 +56,6 @@ private:
   NRLib::Grid2D<double>                        Sigma_sqrt_;
 
   NRLib::Distribution<double>                * normal_;
-  NRLib::Distribution<double>                * uniform_;
-
 
 };
 

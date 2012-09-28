@@ -2511,24 +2511,24 @@ XmlModelFile::parseTabulated(TiXmlNode * node, int constituent, std::string labe
   if(parseValue(root, "correlation-vp-vs", correlation_vp_vs, errTxt) == false)
     correlation_vp_vs = modelSettings_->getDefaultCorrelationVpVs();
   else {
-    if(correlation_vp_vs < 0 || correlation_vp_vs > 1)
-      errTxt += "<correlation-vp-vs> needs to be in (0,1) in the tabulated model\n";
+    if(correlation_vp_vs <= -1 || correlation_vp_vs >= 1)
+      errTxt += "<correlation-vp-vs> needs to be in the interval (-1,1) in the tabulated model\n";
   }
 
   double correlation_vp_density;
   if(parseValue(root, "correlation-vp-density", correlation_vp_density, errTxt) == false)
     correlation_vp_density = 0;
   else {
-    if(correlation_vp_density < 0 || correlation_vp_density > 1)
-      errTxt += "<correlation-vp-density> needs to be in (0,1) in the tabulated model\n";
+    if(correlation_vp_density <= -1 || correlation_vp_density >= 1)
+      errTxt += "<correlation-vp-density> needs to be in the interval (-1,1) in the tabulated model\n";
   }
 
   double correlation_vs_density;
   if(parseValue(root, "correlation-vs-density", correlation_vs_density, errTxt) == false)
     correlation_vs_density = 0;
   else {
-    if(correlation_vs_density < 0 || correlation_vs_density > 1)
-      errTxt += "<correlation-vs-density> needs to be in (0,1) in the tabulated model\n";
+    if(correlation_vs_density <= -1 || correlation_vs_density >= 1)
+      errTxt += "<correlation-vs-density> needs to be in the interval (-1,1) in the tabulated model\n";
   }
 
 
@@ -2536,8 +2536,8 @@ XmlModelFile::parseTabulated(TiXmlNode * node, int constituent, std::string labe
   if(parseValue(root, "correlation-bulk-shear", correlation_bulk_shear, errTxt) == false)
     correlation_bulk_shear = modelSettings_->getDefaultCorrelationVpVs();
   else {
-    if(correlation_bulk_shear < 0 || correlation_bulk_shear > 1)
-      errTxt += "<correlation-bulk-shear> needs to be in (0,1) in the tabulated model\n";
+    if(correlation_bulk_shear <= -1 || correlation_bulk_shear >= 1)
+      errTxt += "<correlation-bulk-shear> needs to be in the interval (-1,1) in the tabulated model\n";
   }
 
 
@@ -2545,51 +2545,23 @@ XmlModelFile::parseTabulated(TiXmlNode * node, int constituent, std::string labe
   if(parseValue(root, "correlation-bulk-density", correlation_bulk_density, errTxt) == false)
     correlation_bulk_density = 0;
   else {
-    if(correlation_bulk_density < 0 || correlation_bulk_density > 1)
-      errTxt += "<correlation-bulk-density> needs to be in (0,1) in the tabulated model\n";
+    if(correlation_bulk_density <= -1 || correlation_bulk_density >= 1)
+      errTxt += "<correlation-bulk-density> needs to be in the interval (-1,1) in the tabulated model\n";
   }
 
   double correlation_shear_density;
   if(parseValue(root, "correlation-shear-density", correlation_shear_density, errTxt) == false)
     correlation_shear_density = 0;
   else {
-    if(correlation_shear_density < 0 || correlation_shear_density > 1)
-      errTxt += "<correlation-vp-density> needs to be in (0,1) in the tabulated model\n";
+    if(correlation_shear_density <= -1 || correlation_shear_density >= 1)
+      errTxt += "<correlation-vp-density> needs to be in the interval (-1,1) in the tabulated model\n";
   }
 
-  NRLib::Matrix corr_matrix(3,3);
-  for(int i=0; i<3; i++)
-    corr_matrix(i,i) = 1;
+  if(use_vp)
+    CheckPositiveDefiniteCorrMatrix(correlation_vp_vs, correlation_vp_density, correlation_vs_density, errTxt);
+  else
+    CheckPositiveDefiniteCorrMatrix(correlation_bulk_shear, correlation_bulk_density, correlation_shear_density, errTxt);
 
-  if(use_vp) {
-    corr_matrix(0,1) = correlation_vp_vs;
-    corr_matrix(1,0) = correlation_vp_vs;
-    corr_matrix(0,2) = correlation_vp_density;
-    corr_matrix(2,0) = correlation_vp_density;
-    corr_matrix(1,2) = correlation_vs_density;
-    corr_matrix(2,1) = correlation_vs_density;
-  }
-  else {
-    corr_matrix(0,1) = correlation_bulk_shear;
-    corr_matrix(1,0) = correlation_bulk_shear;
-    corr_matrix(0,2) = correlation_bulk_density;
-    corr_matrix(2,0) = correlation_bulk_density;
-    corr_matrix(1,2) = correlation_shear_density;
-    corr_matrix(2,1) = correlation_shear_density;
-  }
-
-  NRLib::Vector eigen_values(3);
-  NRLib::Matrix eigen_vectors(3,3);
-  NRLib::ComputeEigenVectors(corr_matrix, eigen_values, eigen_vectors);
-
-  bool pos_def = true;
-  for( int i=0; i<3; i++) {
-    if(eigen_values(i) < 0)
-      pos_def = false;
-  }
-
-  if(pos_def == false)
-    errTxt += "The correlations in the tabulated model need to give a positive definite matrix\n";
 
   if(use_vp) {
     if(constituent == ModelSettings::FLUID) {
@@ -2610,7 +2582,7 @@ XmlModelFile::parseTabulated(TiXmlNode * node, int constituent, std::string labe
   }
   else {
     if(constituent == ModelSettings::FLUID) {
-      errTxt += "Implementation error: parseTabulated() can not be used for fluids. Use parseTabulatedFluid()\n";
+      errTxt += "Implementation error: parseTabulated() can not be used for fluids. Use parseTabulatedFluid(\n";
     }
     else if(constituent == ModelSettings::SOLID) {
       DistributionsSolidStorage * solid = new TabulatedModulusSolidStorage(bulk_modulus, shear_modulus, density, correlation_bulk_shear, correlation_bulk_density, correlation_shear_density);
@@ -2668,10 +2640,18 @@ XmlModelFile::parseTabulatedFluid(TiXmlNode * node, int constituent, std::string
   double correlation_vp_density;
   if(parseValue(root, "correlation-vp-density", correlation_vp_density, errTxt) == false)
     correlation_vp_density = 0;
+  else {
+    if(correlation_vp_density <= -1 || correlation_vp_density >= 1)
+      errTxt += "<correlation-vp-density> needs to be in the interval (-1,1) in the tabulated fluid model\n";
+  }
 
   double correlation_bulk_density;
   if(parseValue(root, "correlation-bulk-density", correlation_bulk_density, errTxt) == false)
     correlation_bulk_density = 0;
+  else {
+    if(correlation_bulk_density <= -1 || correlation_bulk_density >= 1)
+      errTxt += "<correlation-bulk-density> needs to be in the interval (-1,1) in the tabulated fluid model\n";
+  }
 
 
   if(use_vp) {
@@ -4743,4 +4723,33 @@ XmlModelFile::checkIOConsistency(std::string & errTxt)
     errTxt += "A format is requested in wavelet-output without specifying any of the wavelet\n";
     errTxt += " outputs <well-wavelets>, <global-wavelets> nor <local-wavelets>.\n";
   }
+}
+
+void
+XmlModelFile::CheckPositiveDefiniteCorrMatrix(double corr01, double corr02, double corr12, std::string & errTxt)
+{
+
+  NRLib::Matrix corr_matrix(3,3);
+  for(int i=0; i<3; i++)
+    corr_matrix(i,i) = 1;
+
+  corr_matrix(0,1) = corr01;
+  corr_matrix(1,0) = corr01;
+  corr_matrix(0,2) = corr02;
+  corr_matrix(2,0) = corr02;
+  corr_matrix(1,2) = corr12;
+  corr_matrix(2,1) = corr12;
+
+  NRLib::Vector eigen_values(3);
+  NRLib::Matrix eigen_vectors(3,3);
+  NRLib::ComputeEigenVectors(corr_matrix, eigen_values, eigen_vectors);
+
+  bool pos_def = true;
+  for( int i=0; i<3; i++) {
+    if(eigen_values(i) < 0)
+      pos_def = false;
+  }
+
+  if(pos_def == false)
+    errTxt += "The correlations giveb in the tabulated rock physics model need to generate a positive definite matrix\n";
 }

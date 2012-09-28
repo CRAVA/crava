@@ -142,6 +142,7 @@ private:
   void checkInversionConsistency(std::string & errTxt);
   void checkTimeLapseConsistency(std::string & errTxt);
   void checkIOConsistency(std::string & errTxt);
+  void CheckPositiveDefiniteCorrMatrix(double corr01, double corr02, double corr12, std::string & errTxt);
 
   void setMissing(int & value)         { value = IMISSING ;}
   void setMissing(float & value)       { value = RMISSING ;}
