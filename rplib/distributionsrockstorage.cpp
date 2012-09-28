@@ -12,6 +12,7 @@
 #include "rplib/distributionsdryrockstorage.h"
 #include "rplib/distributionsfluidstorage.h"
 #include "rplib/distributionsrocktabulatedvelocity.h"
+#include "rplib/distributionsrocktabulatedmodulus.h"
 #include "rplib/distributionwithtrendstorage.h"
 #include "rplib/distributionsstoragekit.h"
 
@@ -103,9 +104,9 @@ TabulatedModulusRockStorage::~TabulatedModulusRockStorage()
 }
 
 DistributionsRock *
-TabulatedModulusRockStorage::GenerateDistributionsRock(const std::string                                          & /*path*/,
-                                                       const std::vector<std::string>                             & /*trend_cube_parameters*/,
-                                                       const std::vector<std::vector<double> >                    & /*trend_cube_sampling*/,
+TabulatedModulusRockStorage::GenerateDistributionsRock(const std::string                                          & path,
+                                                       const std::vector<std::string>                             & trend_cube_parameters,
+                                                       const std::vector<std::vector<double> >                    & trend_cube_sampling,
                                                        const std::map<std::string, DistributionsRockStorage *>    & /*model_rock_storage*/,
                                                        const std::map<std::string, DistributionsSolidStorage *>   & /*model_solid_storage*/,
                                                        const std::map<std::string, DistributionsDryRockStorage *> & /*model_dry_rock_storage*/,
@@ -116,10 +117,17 @@ TabulatedModulusRockStorage::GenerateDistributionsRock(const std::string        
                                                        std::map<std::string, DistributionsFluid *>                & /*fluid_distribution*/,
                                                        std::string                                                & errTxt) const
 {
-  DistributionsRock * rock = NULL;
 
-  if(rock == NULL)
-    errTxt += "The tabulated moduli model has not been implemented yet for rocks\n"; //Marit: Denne feilmeldingen fjernes når modellen er implementert
+  const DistributionWithTrend * bulk_with_trend    = bulk_modulus_ ->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
+  const DistributionWithTrend * shear_with_trend   = shear_modulus_->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
+  const DistributionWithTrend * density_with_trend = density_      ->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
+
+  DistributionsRock * rock = new DistributionsRockTabulatedModulus(bulk_with_trend,
+                                                                   shear_with_trend,
+                                                                   density_with_trend,
+                                                                   correlation_bulk_shear_,
+                                                                   correlation_bulk_density_,
+                                                                   correlation_shear_density_);
 
   return(rock);
 }
