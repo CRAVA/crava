@@ -39,9 +39,8 @@ DistributionsRockTabulatedModulus::DistributionsRockTabulatedModulus(const Distr
   tabulated_ = new Tabulated(seismic_variables, corr_matrix);
 
    // Find has_distribution_
-  if(bulk_modulus_->GetIsDistribution() == true || shear_modulus_->GetIsDistribution() == true || density_->GetIsDistribution() == true) {
+  if(bulk_modulus_->GetIsDistribution() == true || shear_modulus_->GetIsDistribution() == true || density_->GetIsDistribution() == true)
     has_distribution_ = true;
-  }
   else
     has_distribution_ = false;
 

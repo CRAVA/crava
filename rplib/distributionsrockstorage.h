@@ -30,6 +30,7 @@ public:
                                                         std::map<std::string, DistributionsSolid *>                & solid_distribution,
                                                         std::map<std::string, DistributionsDryRock *>              & dry_rock_distribution,
                                                         std::map<std::string, DistributionsFluid *>                & fluid_distribution,
+                                                        std::map<std::string, const DistributionWithTrend *>       & reservoir_variables,
                                                         std::string                                                & /*errTxt*/)                    const = 0;
 
 };
@@ -57,6 +58,7 @@ public:
                                                         std::map<std::string, DistributionsSolid *>                & solid_distribution,
                                                         std::map<std::string, DistributionsDryRock *>              & dry_rock_distribution,
                                                         std::map<std::string, DistributionsFluid *>                & fluid_distribution,
+                                                        std::map<std::string, const DistributionWithTrend *>       & reservoir_variables,
                                                         std::string                                                & errTxt) const;
 
 private:
@@ -91,6 +93,7 @@ public:
                                                         std::map<std::string, DistributionsSolid *>                & solid_distribution,
                                                         std::map<std::string, DistributionsDryRock *>              & dry_rock_distribution,
                                                         std::map<std::string, DistributionsFluid *>                & fluid_distribution,
+                                                        std::map<std::string, const DistributionWithTrend *>       & reservoir_variables,
                                                         std::string                                                & errTxt) const;
 
 private:
@@ -121,6 +124,7 @@ public:
                                                         std::map<std::string, DistributionsSolid *>                & solid_distribution,
                                                         std::map<std::string, DistributionsDryRock *>              & dry_rock_distribution,
                                                         std::map<std::string, DistributionsFluid *>                & fluid_distribution,
+                                                        std::map<std::string, const DistributionWithTrend *>       & reservoir_variables,
                                                         std::string                                                & errTxt) const;
 
 private:
@@ -147,6 +151,7 @@ public:
                                                         std::map<std::string, DistributionsSolid *>                & solid_distribution,
                                                         std::map<std::string, DistributionsDryRock *>              & dry_rock_distribution,
                                                         std::map<std::string, DistributionsFluid *>                & fluid_distribution,
+                                                        std::map<std::string, const DistributionWithTrend *>       & reservoir_variables,
                                                         std::string                                                & errTxt) const;
 
 private:
@@ -173,6 +178,7 @@ public:
                                                         std::map<std::string, DistributionsSolid *>                & solid_distribution,
                                                         std::map<std::string, DistributionsDryRock *>              & dry_rock_distribution,
                                                         std::map<std::string, DistributionsFluid *>                & fluid_distribution,
+                                                        std::map<std::string, const DistributionWithTrend *>       & reservoir_variables,
                                                         std::string                                                & errTxt) const;
 
 private:
@@ -203,6 +209,7 @@ public:
                                                         std::map<std::string, DistributionsSolid *>                & solid_distribution,
                                                         std::map<std::string, DistributionsDryRock *>              & dry_rock_distribution,
                                                         std::map<std::string, DistributionsFluid *>                & fluid_distribution,
+                                                        std::map<std::string, const DistributionWithTrend *>       & reservoir_variables,
                                                         std::string                                                & errTxt) const;
 
 private:
@@ -233,6 +240,7 @@ public:
                                                         std::map<std::string, DistributionsSolid *>                & solid_distribution,
                                                         std::map<std::string, DistributionsDryRock *>              & dry_rock_distribution,
                                                         std::map<std::string, DistributionsFluid *>                & fluid_distribution,
+                                                        std::map<std::string, const DistributionWithTrend *>       & reservoir_variables,
                                                         std::string                                                & errTxt) const;
 
 private:
@@ -262,6 +270,7 @@ public:
                                                         std::map<std::string, DistributionsSolid *>                & solid_distribution,
                                                         std::map<std::string, DistributionsDryRock *>              & dry_rock_distribution,
                                                         std::map<std::string, DistributionsFluid *>                & fluid_distribution,
+                                                        std::map<std::string, const DistributionWithTrend *>       & reservoir_variables,
                                                         std::string                                                & errTxt) const;
 
 private:

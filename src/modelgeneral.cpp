@@ -2326,6 +2326,7 @@ void ModelGeneral::processRockPhysics(Simbox                       * timeSimbox,
                                                                                      solid_distributions_,
                                                                                      dry_rock_distributions_,
                                                                                      fluid_distributions_,
+                                                                                     reservoir_variables_,
                                                                                      errTxt);
       rock_distributions_[it->first]            = rock;
     }

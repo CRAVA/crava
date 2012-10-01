@@ -59,6 +59,12 @@ namespace DEMTools {
                                           double & vp,
                                           double & vs);
 
+  void CalcElasticParamsFromSeismicParams(const double vs,
+                                          const double vp,
+                                          const double density,
+                                          double & bulk_modulus,
+                                          double & shear_modulus);
+
   //list of debug/testing functions
   void DebugTestCalcEffectiveModulus(double& effective_bulk_modulus,
                                      double& effective_shear_modulus,

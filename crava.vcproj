@@ -6221,6 +6221,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\rplib\distributionsrockbounding.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\rplib\distributionsrockinclusion.cpp"
 					>
 				</File>
@@ -6302,6 +6306,10 @@
 				</File>
 				<File
 					RelativePath=".\rplib\rock.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\rockbounding.cpp"
 					>
 				</File>
 				<File
@@ -7061,11 +7069,11 @@
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\filesystem\config.hpp"
+						RelativePath=".\nrlib\boost\system\config.hpp"
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\system\config.hpp"
+						RelativePath=".\nrlib\boost\filesystem\config.hpp"
 						>
 					</File>
 					<File
@@ -7402,6 +7410,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\rplib\distributionsrockbounding.h"
+					>
+				</File>
+				<File
 					RelativePath=".\rplib\distributionsrockinclusion.h"
 					>
 				</File>
@@ -7511,6 +7523,10 @@
 				</File>
 				<File
 					RelativePath=".\rplib\rock.h"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\rockbounding.h"
 					>
 				</File>
 				<File

@@ -367,7 +367,8 @@ DEMTools::CalcSeismicParamsFromElasticParams(const double bulk_modulus,
                                              const double shear_modulus,
                                              const double density,
                                              double & vp,
-                                             double & vs) {
+                                             double & vs)
+{
   assert(density != 0.0);
   vp = (bulk_modulus + 4.0 * shear_modulus / 3.0) / density;
   assert(vp > 0.0);
@@ -376,6 +377,17 @@ DEMTools::CalcSeismicParamsFromElasticParams(const double bulk_modulus,
   assert(vs > 0.0);
   vs = sqrt(vs);
 
+}
+
+void
+DEMTools::CalcElasticParamsFromSeismicParams(const double vs,
+                                             const double vp,
+                                             const double density,
+                                             double & bulk_modulus,
+                                             double & shear_modulus)
+{
+  bulk_modulus = density * (std::pow(vp,2) - 4/3*std::pow(vs,2));
+  shear_modulus = density * std::pow(vs,2);
 }
 
 void

@@ -13,7 +13,7 @@ DistributionsFluidTabulatedModulus::DistributionsFluidTabulatedModulus(const Dis
   // Generate tabulated_
   std::vector<const DistributionWithTrend *> elastic_variables(2);
   elastic_variables[0] = bulk_modulus_;
-  elastic_variables[2] = density_;
+  elastic_variables[1] = density_;
 
   NRLib::Grid2D<double> corr_matrix(2,2,0);
 

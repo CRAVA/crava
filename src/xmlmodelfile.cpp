@@ -1745,13 +1745,18 @@ XmlModelFile::parseRock(TiXmlNode * node, std::string & label, std::string & err
   label = "";
   parseValue(root, "label", label, errTxt);
 
+  int given = 0;
+
   std::string use = "";
   parseValue(root, "use", use, errTxt);
+
   if(use != "" && label != "")
     errTxt += "Both <label> and <use> can not be given in <rock>\n";
-
+  else if(use != "") {
+    label = use;
+    given++;
+  }
   int constituent_type = ModelSettings::ROCK;
-  int given            = 0;
 
   DistributionWithTrendStorage * porosity = NULL;
   std::string                    moduli   = "";

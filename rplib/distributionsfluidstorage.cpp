@@ -6,6 +6,7 @@
 #include "rplib/distributionsfluid.h"
 #include "rplib/distributionsfluidstorage.h"
 #include "rplib/distributionsfluidtabulatedvelocity.h"
+#include "rplib/distributionsfluidtabulatedmodulus.h"
 #include "rplib/distributionwithtrendstorage.h"
 #include "rplib/distributionsstoragekit.h"
 #include "rplib/distributionsbrine.h"
@@ -81,18 +82,12 @@ TabulatedModulusFluidStorage::GenerateDistributionsFluid(const std::string      
                                                          const std::vector<std::vector<double> > & trend_cube_sampling,
                                                          std::string                             & errTxt) const
 {
-  const DistributionWithTrend * bulk_dist_with_trend           = bulk_modulus_            ->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
-  const DistributionWithTrend * density_dist_with_trend        = density_                 ->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
+  const DistributionWithTrend * bulk_dist_with_trend    = bulk_modulus_->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
+  const DistributionWithTrend * density_dist_with_trend = density_     ->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
 
-  DistributionsFluid * fluid = NULL;
-  //Make new DistributionsFluidTabulatedModulus(bulk_dist_with_trend, density_dist_with_trend, bulk_dist_with_trend)
-
-  //Delete these pointers in new class:
-  delete bulk_dist_with_trend;
-  delete density_dist_with_trend;
-
-  if(fluid == NULL)
-    errTxt += "The tabulated model has not been implemented yet for fluids\n"; //Marit: Denne feilmeldingen fjernes når modellen er implementert
+  DistributionsFluid * fluid = new DistributionsFluidTabulatedModulus(bulk_dist_with_trend,
+                                                                      density_dist_with_trend,
+                                                                      correlation_bulk_density_);
 
   return(fluid);
 }
