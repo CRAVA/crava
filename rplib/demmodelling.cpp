@@ -274,6 +274,20 @@ DEMTools::CalcEffectiveDensity(const std::vector<double> & rho,
   return eff_rho;
 }
 
+double
+DEMTools::CalcEffectivePorosity(const std::vector<double> & porosity,
+                                const std::vector<double> & volumefraction) {
+
+  assert (porosity.size() == volumefraction.size());
+  assert (std::accumulate(volumefraction.begin(), volumefraction.end(), 0.0) == 1.0);
+
+  double eff_porosity = 0.0;
+  for (size_t i = 0; i < volumefraction.size(); ++i)
+    eff_porosity += volumefraction[i] * porosity[i];
+
+  return eff_porosity;
+}
+
 
 void
 DEMTools::CalcEffectiveBulkAndShearModulus(const std::vector<double>&       bulk_modulus,

@@ -32,6 +32,9 @@ namespace DEMTools {
   double CalcEffectiveDensity(const std::vector<double> & rho,
                               const std::vector<double> & volumefraction);
 
+  double CalcEffectivePorosity(const std::vector<double> & porosity,
+                               const std::vector<double> & volumefraction);
+
   void   CalcEffectiveBulkAndShearModulus(const std::vector<double>&       bulk_modulus,
                                           const std::vector<double>&       shear_modulus,
                                           const std::vector<double>&       aspect_ratio,

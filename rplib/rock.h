@@ -24,6 +24,8 @@ public:
   virtual                           Rock * Evolve(const std::vector<int>         & delta_time,
                                                   const std::vector< Rock * >    & rock)          const = 0;
 
+  virtual double                    GetPorosity()                                                 const = 0;
+  
   virtual void                      SetPorosity(double porosity)                                        = 0;
 
   const std::vector<double>       & GetU()                                                        const { return u_; }

@@ -8,8 +8,6 @@
 #include "rplib/distributionssolidmixevolution.h"
 #include "rplib/demmodelling.h"
 
-#include "nrlib/exception/exception.hpp"
-
 class SolidMixed : public Solid {
 public:
 
@@ -22,21 +20,21 @@ public:
   virtual ~SolidMixed();
 
   // Assignment operator.
-  SolidMixed& operator=(const SolidMixed& rhs);
+  SolidMixed                      & operator=(const SolidMixed& rhs);
 
-  virtual Solid * Clone() const;
+  virtual Solid                   * Clone() const;
 
-  virtual Solid * Evolve(const std::vector<int>             & delta_time,
-                         const std::vector< const Solid * > & solid) const;
+  virtual Solid                   * Evolve(const std::vector<int>             & delta_time,
+                                           const std::vector< const Solid * > & solid) const;
 
 private:
   //Copy constructor for getting base class variables , used by Clone:
   SolidMixed(const SolidMixed & rhs) : Solid(rhs) {}
 
-  std::vector<Solid*>              solid_;           // Owned and deleted by this class.
-  std::vector<double>              volume_fraction_;
-  DEMTools::MixMethod              mix_method_;
-  DistributionsSolidMixEvolution * distr_evolution_; // Pointer to external object.
+  std::vector<Solid*>               solid_;           // Owned and deleted by this class.
+  std::vector<double>               volume_fraction_;
+  DEMTools::MixMethod               mix_method_;
+  DistributionsSolidMixEvolution  * distr_evolution_; // Pointer to external object.
 };
 
 #endif

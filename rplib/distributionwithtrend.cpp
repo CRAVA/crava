@@ -11,7 +11,7 @@ DistributionWithTrend::~DistributionWithTrend()
 
 void
 DistributionWithTrend::FindUseTrendCube(std::vector<bool> & use_trend_cube,
-                                        int                 dim, 
+                                        int                 dim,
                                         int                 reference)
 {
   if(dim == 1) {

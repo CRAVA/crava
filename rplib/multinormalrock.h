@@ -10,18 +10,20 @@ public:
 
   virtual ~MultiNormalRock();
 
-  virtual Rock * Clone() const;
+  virtual Rock                  * Clone() const;
 
-  virtual void ComputeSeismicParams(double& vp, double& vs, double& rho) const;
+  virtual void                    ComputeSeismicParams(double& vp, double& vs, double& rho) const;
 
-  virtual Rock * Evolve(const std::vector<int>         & /*delta_time*/,
-                        const std::vector< Rock * >    & /*rock*/) const { return new MultiNormalRock(*this); }
+  virtual Rock *                  Evolve(const std::vector<int>         & /*delta_time*/,
+                                         const std::vector< Rock * >    & /*rock*/) const { return new MultiNormalRock(*this); }
 
-  virtual void SetPorosity(double /*porosity*/){}
+  virtual double                  GetPorosity()                                     const { return 0; }
+
+  virtual void                    SetPorosity(double /*porosity*/){}
 
 
 private:
-  std::vector<double>  param_; //vp, vs, rho
+  std::vector<double>             param_; //vp, vs, rho
 
 };
 

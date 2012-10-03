@@ -1,10 +1,11 @@
 #ifndef RPLIB_DISTRIBUTIONS_ROCK_BOUNDING_H
 #define RPLIB_DISTRIBUTIONS_ROCK_BOUNDING_H
 
-#include "rplib/rock.h"
 #include "rplib/distributionsrock.h"
-#include "rplib/distributionwithtrend.h"
-#include "rplib/tabulated.h"
+
+class Rock;
+class DistributionWithTrend;
+class Tabulated;
 
 class DistributionsRockBounding : public DistributionsRock {
 public:

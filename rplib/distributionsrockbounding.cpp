@@ -1,6 +1,10 @@
 #include "rplib/distributionsrockbounding.h"
 #include "rplib/rockbounding.h"
 
+#include "rplib/rock.h"
+#include "rplib/distributionwithtrend.h"
+#include "rplib/tabulated.h"
+
 
 DistributionsRockBounding::DistributionsRockBounding(const DistributionsRock     * upper_rock,
                                                      const DistributionsRock     * lower_rock,

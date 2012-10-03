@@ -1,5 +1,7 @@
 #include "rplib/solidmixed.h"
 
+#include "nrlib/exception/exception.hpp"
+
 SolidMixed::SolidMixed(const std::vector<Solid*>      & solid,
                        const std::vector<double>      & volume_fraction,
                        DEMTools::MixMethod              mix_method,
