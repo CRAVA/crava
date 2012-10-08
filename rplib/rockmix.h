@@ -6,7 +6,9 @@
 #include "rplib/rock.h"
 #include "rplib/demmodelling.h"
 
+//This file contains two classes RockMixOfRock and RockMixOfSolidAndFluid.
 
+//-------------------------------------- RockMixOfRock ---------------------------------------------------------
 
 class RockMixOfRock : public Rock {
 public:
@@ -38,6 +40,49 @@ private:
   std::vector<double>         volume_fraction_;
   DEMTools::MixMethod         mix_method_;
   double                      porosity_;
+};
+
+//----------------------------------- RockMixOfSolidAndFluid -------------------------------------------------
+
+class Solid;
+class Fluid;
+
+class RockMixOfSolidAndFluid : public Rock {
+public:
+
+  RockMixOfSolidAndFluid(const std::vector<Solid*> &   solid,
+                         const std::vector<Fluid*> &   fluid,
+                         const std::vector<double> &   volume_fraction,
+                         double                        porosity,
+                         DEMTools::MixMethod           mix_method);
+
+  virtual ~RockMixOfSolidAndFluid();
+
+  // Assignment operator.
+  RockMixOfSolidAndFluid              & operator=(const RockMixOfSolidAndFluid& rhs);
+
+  virtual Rock                        * Clone()                                                                    const;
+
+  virtual Rock *                        Evolve(const std::vector<int>              & delta_time,
+                                               const std::vector< Rock * >         & /*rock*/)                         const;
+
+  virtual double                        GetPorosity()                                                              const;
+
+  virtual void                          SetPorosity(double porosity);
+
+  //const std::vector< Solid* >         & GetSolid()                                                                 const { return solid_; }
+
+  //const std::vector< Fluid* >         & GetFluid()                                                                 const { return fluid_; }
+
+private:
+  //Copy constructor for getting base class variables , used by Clone:
+  RockMixOfSolidAndFluid(const RockMixOfSolidAndFluid & rhs) : Rock(rhs) {}
+
+  std::vector< Solid* >                 solid_;             // Owned and deleted by this class.
+  std::vector< Fluid* >                 fluid_;             // Owned and deleted by this class.
+  std::vector<double>                   volume_fraction_;
+  DEMTools::MixMethod                   mix_method_;
+  double                                porosity_;
 };
 
 #endif
