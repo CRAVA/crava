@@ -1,31 +1,28 @@
-#ifndef RPLIB_DISTRIBUTIONSROCKINCLUSION_H
-#define RPLIB_DISTRIBUTIONSROCKINCLUSION_H
+#ifndef RPLIB_DISTRIBUTIONSROCKDEM_H
+#define RPLIB_DISTRIBUTIONSROCKDEM_H
 
 #include "rplib/distributionsrock.h"
-#include "rplib/distributionssolid.h"
-#include "rplib/distributionsfluid.h"
-#include "rplib/rockinclusion.h"
-#include "rplib/distributionsrockinclusionevolution.h"
 
-#include "nrlib/random/distribution.hpp"
 #include "nrlib/grid/grid2d.hpp"
 
+
 class DistributionWithTrend;
+class DistributionsSolid;
+class DistributionsFluid;
 
 //NBNB fjellvoll not finished yet
 //TODO:covariance and expectations functions and variables.
 
-class DistributionsRockInclusion : public DistributionsRock {
+class DistributionsRockDEM : public DistributionsRock {
 public:
 
-                                                 DistributionsRockInclusion(DistributionsSolid                           * distr_solid,
-                                                                            DistributionsFluid                           * distr_fluid,
-                                                                            std::vector< DistributionWithTrend * >       & distr_incl_spectrum,
-                                                                            std::vector< DistributionWithTrend * >       & distr_incl_concentration,
-                                                                            DistributionWithTrend                        * distr_porosity,
-                                                                            DistributionsRockInclusionEvolution          * distr_evolution = NULL);
+ DistributionsRockDEM(DistributionsSolid                           * distr_solid,
+                      DistributionsFluid                           * distr_fluid,
+                      std::vector< DistributionWithTrend * >       & distr_incl_spectrum,
+                      std::vector< DistributionWithTrend * >       & distr_incl_concentration,
+                      DistributionWithTrend                        * distr_porosity);
 
-  virtual                                        ~DistributionsRockInclusion();
+  virtual                                        ~DistributionsRockDEM();
 
   virtual Rock                                 * GenerateSample(const std::vector<double> & trend_params) const;
 
@@ -51,7 +48,6 @@ private:
   std::vector< DistributionWithTrend * >         distr_incl_spectrum_;      // Pointers to external objects.
   std::vector< DistributionWithTrend * >         distr_incl_concentration_; // Pointers to external objects.
   DistributionWithTrend                        * distr_porosity_;           // Pointer to external object.
-  DistributionsRockInclusionEvolution          * distr_evolution_;          // Pointer to external object.
 
   //NBNB fjellvoll dummy to be removed soon
   std::vector<double>                            expectation_old_;

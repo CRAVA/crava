@@ -1,30 +1,29 @@
-#ifndef RPLIB_ROCKINCLUSION_H
-#define RPLIB_ROCKINCLUSION_H
+#ifndef RPLIB_ROCK_DEM_H
+#define RPLIB_ROCK_DEM_H
 
 #include "rplib/rock.h"
-#include "rplib/solidmixed.h"
-#include "rplib/fluidmixed.h"
-#include "rplib/distributionsrockinclusionevolution.h"
 #include "rplib/demmodelling.h"
 
 #include <vector>
 
-class RockInclusion : public Rock {
+class Solid;
+class Fluid;
+
+class RockDEM : public Rock {
 public:
 
-                                        RockInclusion(const Solid                         * solid,
-                                                      const Fluid                         * fluid,
-                                                      const std::vector<double>           & inclusion_spectrum,
-                                                      const std::vector<double>           & inclusion_concentration,
-                                                      double                                porosity,
-                                                      DistributionsRockInclusionEvolution * distr_evolution = NULL);
+RockDEM(const Solid                         * solid,
+        const Fluid                         * fluid,
+        const std::vector<double>           & inclusion_spectrum,
+        const std::vector<double>           & inclusion_concentration,
+        double                                porosity);
 
-                                        RockInclusion();
+RockDEM();
 
-  virtual                               ~RockInclusion();
+  virtual                               ~RockDEM();
 
   // Assignment operator.
-  RockInclusion                       & operator=(const RockInclusion& rhs);
+  RockDEM                             & operator=(const RockDEM& rhs);
 
   virtual Rock                        * Clone()                                                 const;
 
@@ -42,7 +41,7 @@ public:
 
 private:
                                         //Copy constructor for getting base class variables , used by Clone:
-                                        RockInclusion(const RockInclusion & rhs) : Rock(rhs) {}
+                                        RockDEM(const RockDEM & rhs) : Rock(rhs) {}
 
                                         // Calculate elastic and seismic parameters, to be
                                         // used whenever new information is sent to class.
@@ -53,7 +52,6 @@ private:
   std::vector<double>                   inclusion_spectrum_;
   std::vector<double>                   inclusion_concentration_;
   double                                porosity_;
-  DistributionsRockInclusionEvolution * distr_evolution_; // Pointer to external object.
 
   double k_, mu_;
 };

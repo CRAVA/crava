@@ -1,15 +1,20 @@
-#include "rplib/distributionsrockinclusion.h"
+#include "rplib/distributionsrockdem.h"
 
 #include "rplib/distributionwithtrend.h"
 
 #include "nrlib/statistics/statistics.hpp"
 
-DistributionsRockInclusion::DistributionsRockInclusion(DistributionsSolid                           * distr_solid,
-                                                       DistributionsFluid                           * distr_fluid,
-                                                       std::vector< DistributionWithTrend * >       & distr_incl_spectrum,
-                                                       std::vector< DistributionWithTrend * >       & distr_incl_concentration,
-                                                       DistributionWithTrend                        * distr_porosity,
-                                                       DistributionsRockInclusionEvolution          * distr_evolution)
+#include "rplib/distributionssolid.h"
+#include "rplib/distributionsfluid.h"
+#include "rplib/rockdem.h"
+
+#include "nrlib/random/distribution.hpp"
+
+DistributionsRockDEM::DistributionsRockDEM(DistributionsSolid                           * distr_solid,
+                                           DistributionsFluid                           * distr_fluid,
+                                           std::vector< DistributionWithTrend * >       & distr_incl_spectrum,
+                                           std::vector< DistributionWithTrend * >       & distr_incl_concentration,
+                                           DistributionWithTrend                        * distr_porosity)
 : DistributionsRock()
 {
   assert( distr_incl_spectrum.size() == distr_incl_concentration.size() );
@@ -19,15 +24,14 @@ DistributionsRockInclusion::DistributionsRockInclusion(DistributionsSolid       
   distr_incl_spectrum_      = distr_incl_spectrum;
   distr_incl_concentration_ = distr_incl_concentration;
   distr_porosity_           = distr_porosity;
-  distr_evolution_          = distr_evolution;
 
   SampleVpVsRhoExpectationAndCovariance(expectation_old_, covariance_old_);
 }
 
-DistributionsRockInclusion::~DistributionsRockInclusion(){}
+DistributionsRockDEM::~DistributionsRockDEM(){}
 
 Rock *
-DistributionsRockInclusion::GenerateSample(const std::vector<double> & trend_params) const
+DistributionsRockDEM::GenerateSample(const std::vector<double> & trend_params) const
 {
   Solid * solid = distr_solid_->GenerateSample(trend_params);
   Fluid * fluid = distr_fluid_->GenerateSample(trend_params);
@@ -40,7 +44,7 @@ DistributionsRockInclusion::GenerateSample(const std::vector<double> & trend_par
     inclusion_concentration[i] = distr_incl_concentration_[i]->ReSample(trend_params[0], trend_params[1]);
   }
   double porosity = distr_porosity_->ReSample(trend_params[0], trend_params[1]);
-  Rock * new_rock = new RockInclusion(solid, fluid, inclusion_spectrum, inclusion_concentration, porosity, distr_evolution_);
+  Rock * new_rock = new RockDEM(solid, fluid, inclusion_spectrum, inclusion_concentration, porosity);
 
   // Deep copy taken by constructor of RockInclusion, hence delete
   // solid and fluid here:
@@ -51,21 +55,21 @@ DistributionsRockInclusion::GenerateSample(const std::vector<double> & trend_par
 }
 
 Pdf3D *
-DistributionsRockInclusion::GeneratePdf(void) const
+DistributionsRockDEM::GeneratePdf(void) const
 {
   Pdf3D * pdf3D = NULL;
   return pdf3D;
 }
 
 bool
-DistributionsRockInclusion::HasDistribution() const
+DistributionsRockDEM::HasDistribution() const
 {
   bool dummy = false;
   return(dummy);
 }
 
 std::vector<bool>
-DistributionsRockInclusion::HasTrend() const
+DistributionsRockDEM::HasTrend() const
 {
   std::vector<bool> dummy(2);
 
@@ -76,8 +80,8 @@ DistributionsRockInclusion::HasTrend() const
 }
 
 void
-DistributionsRockInclusion::SampleVpVsRhoExpectationAndCovariance(std::vector<double>   & expectation,
-                                                                  NRLib::Grid2D<double> & covariance)
+DistributionsRockDEM::SampleVpVsRhoExpectationAndCovariance(std::vector<double>   & expectation,
+                                                            NRLib::Grid2D<double> & covariance)
 {
   int nsamples = 100;
 

@@ -6,17 +6,16 @@
 #include "rplib/co2.h"
 #include "rplib/solidmixed.h"
 #include "rplib/fluidmixed.h"
-#include "rplib/rockinclusion.h"
+#include "rplib/rockdem.h"
 #include "rplib/distributionssolidtabulatedmodulus.h"
 #include "rplib/distributionsbrine.h"
 #include "rplib/distributionsco2.h"
-#include "rplib/distributionsrockinclusion.h"
+#include "rplib/distributionsrockdem.h"
 #include "rplib/distributionssolidmix.h"
 #include "rplib/distributionsfluidmix.h"
 #include "rplib/distributionsbrineevolution.h"
 #include "rplib/distributionsco2evolution.h"
 #include "rplib/distributionsfluidmixevolution.h"
-#include "rplib/distributionsrockinclusionevolution.h"
 #include "rplib/distributionwithtrend.h"
 #include "rplib/deltadistributionwithtrend.h"
 
@@ -653,7 +652,7 @@ DEMTools::DebugTestCalcEffectiveModulus2(double& effective_bulk_modulus,
     inclusion_concentration.push_back(5.0000e-005);
   }
 
-  RockInclusion rock_inclusion(&solidmixed, &fluid_mix, inclusion_spectrum, inclusion_concentration, porosity);
+  RockDEM rock_inclusion(&solidmixed, &fluid_mix, inclusion_spectrum, inclusion_concentration, porosity);
   rock_inclusion.GetElasticParams(effective_bulk_modulus, effective_shear_modulus, effective_density);
 
 }
@@ -745,13 +744,13 @@ DEMTools::DebugTestCalcEffectiveModulus2(double& effective_bulk_modulus,
 //
 //
 //  //// Rock, distribution functions.
-//  DistributionsRockInclusionEvolution * distr_evolution = NULL;
-//  DistributionsRock * distr_rock_incl  = new DistributionsRockInclusion(distr_solid_mixed,
+//
+//  DistributionsRock * distr_rock_incl  = new DistributionsRockDEM(distr_solid_mixed,
 //                                                                        distr_fluid_mixed,
 //                                                                        distr_incl_spectrum,
 //                                                                        distr_incl_concentration,
 //                                                                        &distr_porosity,
-//                                                                        distr_evolution);
+//                                                                        );
 //
 //
 //  //// Generating a sample of the rock.
@@ -760,7 +759,7 @@ DEMTools::DebugTestCalcEffectiveModulus2(double& effective_bulk_modulus,
 //  Rock * rock_incl = distr_rock_incl->GenerateSample(dummy);
 //
 //  //// Getting the elastic parameters.
-//  RockInclusion * rock_incl_casted = dynamic_cast<RockInclusion*>(rock_incl);
+//  RockDEM * rock_incl_casted = dynamic_cast<RockDEM*>(rock_incl);
 //  rock_incl_casted->GetElasticParams(effective_bulk_modulus, effective_shear_modulus, effective_density);
 //
 //
@@ -904,13 +903,11 @@ DEMTools::DebugTestCalcEffectiveModulus4(double& effective_bulk_modulus,
 
 
   //// Rock, distribution functions.
-  DistributionsRockInclusionEvolution * distr_evolution = NULL;
-  DistributionsRock * distr_rock_incl  = new DistributionsRockInclusion(distr_solid_mixed,
+  DistributionsRock * distr_rock_incl  = new DistributionsRockDEM(distr_solid_mixed,
                                                                         distr_fluid_mixed,
                                                                         distr_incl_spectrum,
                                                                         distr_incl_concentration,
-                                                                        distr_porosity,
-                                                                        distr_evolution);
+                                                                        distr_porosity);
 
 
   //// Generating a sample of the rock.
@@ -919,7 +916,7 @@ DEMTools::DebugTestCalcEffectiveModulus4(double& effective_bulk_modulus,
   Rock * rock_incl = distr_rock_incl->GenerateSample(dummy);
 
   //// Getting the elastic parameters.
-  RockInclusion * rock_incl_casted = dynamic_cast<RockInclusion*>(rock_incl);
+  RockDEM * rock_incl_casted = dynamic_cast<RockDEM*>(rock_incl);
   rock_incl_casted->GetElasticParams(effective_bulk_modulus, effective_shear_modulus, effective_density);
 
 
@@ -1044,13 +1041,13 @@ DEMTools::DebugTestCalcEffectiveModulus4(double& effective_bulk_modulus,
 //
 //
 //  //// Rock, distribution functions.
-//  DistributionsRockInclusionEvolution * distr_evolution = NULL;
-//  DistributionsRock * distr_rock_incl  = new DistributionsRockInclusion(distr_solid_mixed,
+//
+//  DistributionsRock * distr_rock_incl  = new DistributionsRockDEM(distr_solid_mixed,
 //                                                                        distr_fluid_mixed,
 //                                                                        distr_incl_spectrum,
 //                                                                        distr_incl_concentration,
 //                                                                        &distr_porosity,
-//                                                                        distr_evolution);
+//                                                                        );
 //
 //
 //  ////TESTING************************************
@@ -1073,8 +1070,8 @@ DEMTools::DebugTestCalcEffectiveModulus4(double& effective_bulk_modulus,
 //  Rock * rock_incl_new3 = rock_incl->Evolve(delta_time2, rock_tmp);
 //  Rock * rock_incl_base = rock_incl_new3->Clone(); // Copy!
 //
-//  const Solid * s3 = (dynamic_cast<RockInclusion*>(rock_incl_new3))->GetSolid();
-//  const Fluid * f3 = (dynamic_cast<RockInclusion*>(rock_incl_new3))->GetFluid();
+//  const Solid * s3 = (dynamic_cast<RockDEM*>(rock_incl_new3))->GetSolid();
+//  const Fluid * f3 = (dynamic_cast<RockDEM*>(rock_incl_new3))->GetFluid();
 //  assert(s3 != NULL && f3 != NULL);
 //  delete rock_incl_new3;
 //  // Now s3 and f3 shoud be pointing to nothing.
@@ -1082,8 +1079,8 @@ DEMTools::DebugTestCalcEffectiveModulus4(double& effective_bulk_modulus,
 //  // test that rock_incl_base is intact after rock_incl_new3 is deleted.
 //  double vp, vs, rho;
 //  rock_incl_base->ComputeSeismicParams(vp, vs, rho);
-//  const Solid * s = (dynamic_cast<RockInclusion*>(rock_incl_base))->GetSolid();
-//  const Fluid * f = (dynamic_cast<RockInclusion*>(rock_incl_base))->GetFluid();
+//  const Solid * s = (dynamic_cast<RockDEM*>(rock_incl_base))->GetSolid();
+//  const Fluid * f = (dynamic_cast<RockDEM*>(rock_incl_base))->GetFluid();
 //  assert(s != NULL && f != NULL); // Now s and f shoud be meaningful.
 //  // A note on object deletion: There is no compiler errors or warnings
 //  // if we try to invoke
@@ -1102,10 +1099,10 @@ DEMTools::DebugTestCalcEffectiveModulus4(double& effective_bulk_modulus,
 //    std::vector<double> incl_conc(1, 1.0);
 //    Solid * q = distr_quartz->GenerateSample(dummy);
 //    Fluid * b = distr_brine->GenerateSample(dummy);
-//    RockInclusion rock_incl2(q, b, incl_spec, incl_conc, 0.3);
-//    rock_incl2 = *(dynamic_cast<RockInclusion*>(rock_incl)); // Assignment
-//    /*const Solid * s4 = (dynamic_cast<RockInclusion*>(rock_incl))->GetSolid();
-//    const Fluid * f4 = (dynamic_cast<RockInclusion*>(rock_incl))->GetFluid();
+//    RockDEM rock_incl2(q, b, incl_spec, incl_conc, 0.3);
+//    rock_incl2 = *(dynamic_cast<RockDEM*>(rock_incl)); // Assignment
+//    /*const Solid * s4 = (dynamic_cast<RockDEM*>(rock_incl))->GetSolid();
+//    const Fluid * f4 = (dynamic_cast<RockDEM*>(rock_incl))->GetFluid();
 //    const Solid * s_incl = rock_incl2.GetSolid();
 //    const Fluid * f_incl = rock_incl2.GetFluid();*/
 //    delete q;

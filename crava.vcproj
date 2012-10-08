@@ -6221,7 +6221,7 @@
 					>
 				</File>
 				<File
-					RelativePath=".\rplib\distributionsrockinclusion.cpp"
+					RelativePath=".\rplib\distributionsrockdem.cpp"
 					>
 				</File>
 				<File
@@ -6242,10 +6242,6 @@
 				</File>
 				<File
 					RelativePath=".\rplib\distributionssoliddem.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\rplib\distributionssolidinclusion.cpp"
 					>
 				</File>
 				<File
@@ -6313,7 +6309,7 @@
 					>
 				</File>
 				<File
-					RelativePath=".\rplib\rockinclusion.cpp"
+					RelativePath=".\rplib\rockdem.cpp"
 					>
 				</File>
 				<File
@@ -7077,11 +7073,11 @@
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\filesystem\config.hpp"
+						RelativePath=".\nrlib\boost\system\config.hpp"
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\system\config.hpp"
+						RelativePath=".\nrlib\boost\filesystem\config.hpp"
 						>
 					</File>
 					<File
@@ -7414,11 +7410,7 @@
 					>
 				</File>
 				<File
-					RelativePath=".\rplib\distributionsrockinclusion.h"
-					>
-				</File>
-				<File
-					RelativePath=".\rplib\distributionsrockinclusionevolution.h"
+					RelativePath=".\rplib\distributionsrockdem.h"
 					>
 				</File>
 				<File
@@ -7447,10 +7439,6 @@
 				</File>
 				<File
 					RelativePath=".\rplib\distributionssoliddemevolution.h"
-					>
-				</File>
-				<File
-					RelativePath=".\rplib\distributionssolidinclusion.h"
 					>
 				</File>
 				<File
@@ -7534,7 +7522,7 @@
 					>
 				</File>
 				<File
-					RelativePath=".\rplib\rockinclusion.h"
+					RelativePath=".\rplib\rockdem.h"
 					>
 				</File>
 				<File
