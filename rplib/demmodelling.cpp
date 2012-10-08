@@ -1,13 +1,13 @@
 #include "rplib/demmodelling.h"
 
 #include "rplib/dem.h"
-#include "rplib/mineral.h"
+#include "rplib/solidtabulatedmodulus.h"
 #include "rplib/brine.h"
 #include "rplib/co2.h"
 #include "rplib/solidmixed.h"
 #include "rplib/fluidmixed.h"
 #include "rplib/rockinclusion.h"
-#include "rplib/distributionsmineral.h"
+#include "rplib/distributionssolidtabulatedmodulus.h"
 #include "rplib/distributionsbrine.h"
 #include "rplib/distributionsco2.h"
 #include "rplib/distributionsrockinclusion.h"
@@ -560,13 +560,13 @@ DEMTools::DebugTestCalcEffectiveModulus2(double& effective_bulk_modulus,
   double quartz_mu               = 44;   // gpa
   double quartz_rho              = 2.65; // g/ccm
 
-  Mineral quartz(quartz_k, quartz_mu, quartz_rho, dummy_u);
+  SolidTabulatedModulus quartz(quartz_k, quartz_mu, quartz_rho, dummy_u);
 
   double clay_k                  = 21;   // gpa
   double clay_mu                 = 7;    // gpa
   double clay_rho                = 2.6;  // g/ccm
 
-  Mineral clay(clay_k, clay_mu, clay_rho, dummy_u);
+  SolidTabulatedModulus clay(clay_k, clay_mu, clay_rho, dummy_u);
 
   // Fluid properties
   // (Brine properties according to Batzle, M. and Wang, Z. 1992, and
@@ -671,15 +671,13 @@ DEMTools::DebugTestCalcEffectiveModulus2(double& effective_bulk_modulus,
 //  NRLib::Delta distr_quartz_k(37.0);
 //  NRLib::Delta distr_quartz_mu(44.0);
 //  NRLib::Delta distr_quartz_rho(2.65);
-//  DistributionsMineralEvolution * distr_quartz_evolution = NULL;
-//  DistributionsSolid * distr_quartz = new DistributionsMineral(&distr_quartz_k, &distr_quartz_mu, &distr_quartz_rho, distr_quartz_evolution);
+//  DistributionsSolid * distr_quartz = new DistributionsSolidTabulatedModulus(&distr_quartz_k, &distr_quartz_mu, &distr_quartz_rho, distr_quartz_evolution);
 //  //Solid * quartz = distr_quartz->GenerateSample();
 //
 //  NRLib::Delta distr_clay_k(21.0);
 //  NRLib::Delta distr_clay_mu(7.0);
 //  NRLib::Delta distr_clay_rho(2.6);
-//  DistributionsMineralEvolution * distr_clay_evolution = NULL;
-//  DistributionsSolid * distr_clay = new DistributionsMineral(&distr_clay_k, &distr_clay_mu, &distr_clay_rho, distr_clay_evolution);
+//  DistributionsSolid * distr_clay = new DistributionsSolidTabulatedModulus(&distr_clay_k, &distr_clay_mu, &distr_clay_rho, distr_clay_evolution);
 //  //Solid * clay = distr_clay->GenerateSample();
 //
 //  //// Mixing, effective solid properties. Distribution functions.
@@ -812,8 +810,7 @@ DEMTools::DebugTestCalcEffectiveModulus4(double& effective_bulk_modulus,
   NRLib::Trend * trend_quartz_rho          = new NRLib::TrendConstant(2.65);
   DistributionWithTrend * distr_quartz_rho = new DeltaDistributionWithTrend(trend_quartz_rho, false);
 
-  DistributionsMineralEvolution * distr_quartz_evolution = NULL;
-  DistributionsSolid * distr_quartz = new DistributionsMineral(distr_quartz_k, distr_quartz_mu, distr_quartz_rho, 0, 0, 0, distr_quartz_evolution);
+  DistributionsSolid * distr_quartz = new DistributionsSolidTabulatedModulus(distr_quartz_k, distr_quartz_mu, distr_quartz_rho, 0, 0, 0);
 
   NRLib::Trend * trend_clay_k          = new NRLib::TrendConstant(21.0);
   DistributionWithTrend * distr_clay_k = new DeltaDistributionWithTrend(trend_clay_k, false);
@@ -824,8 +821,7 @@ DEMTools::DebugTestCalcEffectiveModulus4(double& effective_bulk_modulus,
   NRLib::Trend * trend_clay_rho          = new NRLib::TrendConstant(2.6);
   DistributionWithTrend * distr_clay_rho = new DeltaDistributionWithTrend(trend_clay_rho, false);
 
-  DistributionsMineralEvolution * distr_clay_evolution = NULL;
-  DistributionsSolid * distr_clay = new DistributionsMineral(distr_clay_k, distr_clay_mu, distr_clay_rho, 0, 0, 0, distr_clay_evolution);
+  DistributionsSolid * distr_clay = new DistributionsSolidTabulatedModulus(distr_clay_k, distr_clay_mu, distr_clay_rho, 0, 0, 0);
 
   //// Mixing, effective solid properties. Distribution functions.
   std::vector< DistributionsSolid * > distr_solid;
@@ -981,14 +977,12 @@ DEMTools::DebugTestCalcEffectiveModulus4(double& effective_bulk_modulus,
 //  NRLib::Delta distr_quartz_k(37.0);
 //  NRLib::Delta distr_quartz_mu(44.0);
 //  NRLib::Delta distr_quartz_rho(2.65);
-//  DistributionsMineralEvolution * distr_quartz_evolution = NULL;
-//  DistributionsSolid * distr_quartz = new DistributionsMineral(&distr_quartz_k, &distr_quartz_mu, &distr_quartz_rho, distr_quartz_evolution);
+//  DistributionsSolid * distr_quartz = new DistributionsMineral(&distr_quartz_k, &distr_quartz_mu, &distr_quartz_rho);
 //
 //  NRLib::Delta distr_clay_k(21.0);
 //  NRLib::Delta distr_clay_mu(7.0);
 //  NRLib::Delta distr_clay_rho(2.6);
-//  DistributionsMineralEvolution * distr_clay_evolution = NULL;
-//  DistributionsSolid * distr_clay = new DistributionsMineral(&distr_clay_k, &distr_clay_mu, &distr_clay_rho, distr_clay_evolution);
+//  DistributionsSolid * distr_clay = new DistributionsMineral(&distr_clay_k, &distr_clay_mu, &distr_clay_rho);
 //
 //  //// Mixing, effective solid properties. Distribution functions.
 //  std::vector< DistributionsSolid * > distr_solid;

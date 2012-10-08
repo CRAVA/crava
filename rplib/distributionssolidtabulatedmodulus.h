@@ -1,26 +1,23 @@
-#ifndef DISTRIBUTIONSMINERAL_H
-#define DISTRIBUTIONSMINERAL_H
+#ifndef DISTRIBUTIONS_SOLID_TABULATED_MODULUS_H
+#define DISTRIBUTIONS_SOLID_TABULATED_MODULUS_H
 
 #include "rplib/distributionssolid.h"
-#include "rplib/mineral.h"
+#include "rplib/solidtabulatedmodulus.h"
 #include "rplib/tabulated.h"
 
 class DistributionWithTrend;
-class DistributionsBrineEvolution;
-class DistributionsMineralEvolution;
 
-class DistributionsMineral : public DistributionsSolid {
+class DistributionsSolidTabulatedModulus : public DistributionsSolid {
 public:
 
-  DistributionsMineral(const DistributionWithTrend         * distr_k,
-                       const DistributionWithTrend         * distr_mu,
-                       const DistributionWithTrend         * distr_rho,
-                       const double                          corr_k_mu,
-                       const double                          corr_k_rho,
-                       const double                          corr_mu_rho,
-                       DistributionsMineralEvolution       * distr_evolution = NULL);
+  DistributionsSolidTabulatedModulus(const DistributionWithTrend         * distr_k,
+                                     const DistributionWithTrend         * distr_mu,
+                                     const DistributionWithTrend         * distr_rho,
+                                     const double                          corr_k_mu,
+                                     const double                          corr_k_rho,
+                                     const double                          corr_mu_rho);
 
-  virtual                               ~DistributionsMineral();
+  virtual                               ~DistributionsSolidTabulatedModulus();
 
   virtual Solid                       * GenerateSample(const std::vector<double> & trend_params) const;
 
@@ -42,7 +39,7 @@ private:
   Tabulated                           * tabulated_;
   bool                                  has_distribution_;
   std::vector<bool>                     has_trend_;
-  DistributionsMineralEvolution       * distr_evolution_; // Pointer to external object.
+
 };
 
 #endif

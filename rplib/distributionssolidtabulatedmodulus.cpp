@@ -1,22 +1,20 @@
-#include "rplib/distributionsmineral.h"
+#include "rplib/distributionssolidtabulatedmodulus.h"
 
 #include "rplib/distributionwithtrend.h"
 
-DistributionsMineral::DistributionsMineral(const DistributionWithTrend         * distr_k,
-                                           const DistributionWithTrend         * distr_mu,
-                                           const DistributionWithTrend         * distr_rho,
-                                           const double                          corr_k_mu,
-                                           const double                          corr_k_rho,
-                                           const double                          corr_mu_rho,
-                                           DistributionsMineralEvolution       * distr_evolution)
+DistributionsSolidTabulatedModulus::DistributionsSolidTabulatedModulus(const DistributionWithTrend         * distr_k,
+                                                                       const DistributionWithTrend         * distr_mu,
+                                                                       const DistributionWithTrend         * distr_rho,
+                                                                       const double                          corr_k_mu,
+                                                                       const double                          corr_k_rho,
+                                                                       const double                          corr_mu_rho)
 : DistributionsSolid(),
   distr_k_(distr_k),
   distr_mu_(distr_mu),
   distr_rho_(distr_rho),
   corr_k_mu_(corr_k_mu),
   corr_k_rho_(corr_k_rho),
-  corr_mu_rho_(corr_mu_rho),
-  distr_evolution_(distr_evolution)
+  corr_mu_rho_(corr_mu_rho)
 {
   // Generate tabulated_
   std::vector<const DistributionWithTrend *> elastic_variables(3);
@@ -60,7 +58,7 @@ DistributionsMineral::DistributionsMineral(const DistributionWithTrend         *
 
 }
 
-DistributionsMineral::~DistributionsMineral()
+DistributionsSolidTabulatedModulus::~DistributionsSolidTabulatedModulus()
 {
   if(distr_k_->GetIsShared() == false)
     delete distr_k_;
@@ -73,7 +71,7 @@ DistributionsMineral::~DistributionsMineral()
 }
 
 Solid *
-DistributionsMineral::GenerateSample(const std::vector<double> & trend_params) const
+DistributionsSolidTabulatedModulus::GenerateSample(const std::vector<double> & trend_params) const
 {
   std::vector<double> u;
   std::vector<double> sample;
@@ -84,26 +82,26 @@ DistributionsMineral::GenerateSample(const std::vector<double> & trend_params) c
   double mu  = sample[1];
   double rho = sample[2];
 
-  Solid * solid = new Mineral(k, mu, rho, u, distr_evolution_);
+  Solid * solid = new SolidTabulatedModulus(k, mu, rho, u);
 
   return solid;
 }
 
 bool
-DistributionsMineral::HasDistribution() const
+DistributionsSolidTabulatedModulus::HasDistribution() const
 {
   return(has_distribution_);
 }
 
 std::vector<bool>
-DistributionsMineral::HasTrend() const
+DistributionsSolidTabulatedModulus::HasTrend() const
 {
   return(has_trend_);
 }
 
 Solid *
-DistributionsMineral::UpdateSample(const std::vector< double > &/*corr*/,
-                                   const Solid                 & /*solid*/) const {
+DistributionsSolidTabulatedModulus::UpdateSample(const std::vector< double > &/*corr*/,
+                                                 const Solid                 & /*solid*/) const {
 
   return NULL;
 }

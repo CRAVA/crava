@@ -12,10 +12,7 @@
 #include "rplib/distributionwithtrendstorage.h"
 
 #include "rplib/distributionsstoragekit.h"
-
-
-#include "rplib/distributionsmineral.h"
-#include "distributionsmineralevolution.h"
+#include "rplib/distributionssolidtabulatedmodulus.h"
 
 
 DistributionsSolidStorage::DistributionsSolidStorage()
@@ -168,15 +165,12 @@ TabulatedModulusSolidStorage::GenerateDistributionsSolid(const std::string      
   const DistributionWithTrend * shear_dist_with_trend              = shear_modulus_             ->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
   const DistributionWithTrend * density_dist_with_trend            = density_                   ->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
 
-  DistributionsMineralEvolution* p_mineral_distr_evolve = NULL;
-
-  DistributionsSolid * solid = new DistributionsMineral(bulk_dist_with_trend,
-                                                        shear_dist_with_trend,
-                                                        density_dist_with_trend,
-                                                        correlation_bulk_shear_,
-                                                        correlation_bulk_density_,
-                                                        correlation_shear_density_,
-                                                        p_mineral_distr_evolve);
+  DistributionsSolid * solid = new DistributionsSolidTabulatedModulus(bulk_dist_with_trend,
+                                                                      shear_dist_with_trend,
+                                                                      density_dist_with_trend,
+                                                                      correlation_bulk_shear_,
+                                                                      correlation_bulk_density_,
+                                                                      correlation_shear_density_);
 
   return(solid);
 }

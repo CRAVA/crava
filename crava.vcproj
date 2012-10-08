@@ -6217,10 +6217,6 @@
 					>
 				</File>
 				<File
-					RelativePath=".\rplib\distributionsmineral.cpp"
-					>
-				</File>
-				<File
 					RelativePath=".\rplib\distributionsrockbounding.cpp"
 					>
 				</File>
@@ -6261,6 +6257,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\rplib\distributionssolidtabulatedmodulus.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\rplib\distributionssolidtabulatedvelocity.cpp"
 					>
 				</File>
@@ -6282,10 +6282,6 @@
 				</File>
 				<File
 					RelativePath=".\rplib\fluidtabulatedmodulus.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\rplib\mineral.cpp"
 					>
 				</File>
 				<File
@@ -6334,6 +6330,10 @@
 				</File>
 				<File
 					RelativePath=".\rplib\solidmixed.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\solidtabulatedmodulus.cpp"
 					>
 				</File>
 				<File
@@ -7406,14 +7406,6 @@
 					>
 				</File>
 				<File
-					RelativePath=".\rplib\distributionsmineral.h"
-					>
-				</File>
-				<File
-					RelativePath=".\rplib\distributionsmineralevolution.h"
-					>
-				</File>
-				<File
 					RelativePath=".\rplib\distributionsrock.h"
 					>
 				</File>
@@ -7474,6 +7466,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\rplib\distributionssolidtabulatedmodulus.h"
+					>
+				</File>
+				<File
 					RelativePath=".\rplib\distributionssolidtabulatedvelocity.h"
 					>
 				</File>
@@ -7503,10 +7499,6 @@
 				</File>
 				<File
 					RelativePath=".\rplib\fluidtabulatedmodulus.h"
-					>
-				</File>
-				<File
-					RelativePath=".\rplib\mineral.h"
 					>
 				</File>
 				<File
@@ -7563,6 +7555,10 @@
 				</File>
 				<File
 					RelativePath=".\rplib\solidmixed.h"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\solidtabulatedmodulus.h"
 					>
 				</File>
 				<File

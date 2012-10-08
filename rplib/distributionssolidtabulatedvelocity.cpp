@@ -1,5 +1,5 @@
 #include "rplib/distributionssolidtabulatedvelocity.h"
-#include "rplib/mineral.h"
+#include "rplib/solidtabulatedmodulus.h"
 #include "rplib/tabulated.h"
 
 DistributionsSolidTabulatedVelocity::DistributionsSolidTabulatedVelocity(const DistributionWithTrend * vp,
@@ -84,7 +84,7 @@ DistributionsSolidTabulatedVelocity::GenerateSample(const std::vector<double> & 
   double bulk_sample  = density_sample * (std::pow(vp_sample,2) - 4/3 * std::pow(vs_sample,2));
   double shear_sample = density_sample *  std::pow(vs_sample,2);
 
-  Solid * solid = new Mineral(bulk_sample, shear_sample, density_sample, u, NULL);
+  Solid * solid = new SolidTabulatedModulus(bulk_sample, shear_sample, density_sample, u);
 
   return solid;
 }
