@@ -1,26 +1,23 @@
-#ifndef RPLIB_SOLIDMIXED_H
-#define RPLIB_SOLIDMIXED_H
+#ifndef RPLIB_SOLIDMIX_H
+#define RPLIB_SOLIDMIX_H
 
 #include <vector>
-#include <numeric>
 
 #include "rplib/solid.h"
-#include "rplib/distributionssolidmixevolution.h"
 #include "rplib/demmodelling.h"
 
-class SolidMixed : public Solid {
+class SolidMix : public Solid {
 public:
 
-  SolidMixed(const std::vector<Solid*>      & solid,
-             const std::vector<double>      & volume_fraction,
-             DEMTools::MixMethod              mix_method,
-             DistributionsSolidMixEvolution * distr_evolution = NULL);
+  SolidMix(const std::vector<Solid*>      & solid,
+           const std::vector<double>      & volume_fraction,
+           DEMTools::MixMethod              mix_method);
 
 
-  virtual ~SolidMixed();
+  virtual ~SolidMix();
 
   // Assignment operator.
-  SolidMixed                      & operator=(const SolidMixed& rhs);
+  SolidMix                        & operator=(const SolidMix& rhs);
 
   virtual Solid                   * Clone() const;
 
@@ -29,12 +26,11 @@ public:
 
 private:
   //Copy constructor for getting base class variables , used by Clone:
-  SolidMixed(const SolidMixed & rhs) : Solid(rhs) {}
+  SolidMix(const SolidMix & rhs) : Solid(rhs) {}
 
   std::vector<Solid*>               solid_;           // Owned and deleted by this class.
   std::vector<double>               volume_fraction_;
   DEMTools::MixMethod               mix_method_;
-  DistributionsSolidMixEvolution  * distr_evolution_; // Pointer to external object.
 };
 
 #endif

@@ -1,7 +1,5 @@
 #include "rplib/soliddem.h"
 
-#include "rplib/solidmixed.h"
-
 #include <cassert>
 
 SolidDEM::SolidDEM(const Solid                         * solid,

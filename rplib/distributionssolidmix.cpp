@@ -1,21 +1,19 @@
 #include "rplib/distributionssolidmix.h"
 
-#include "rplib/solidmixed.h"
+#include "rplib/solidmix.h"
 #include "rplib/distributionwithtrend.h"
 
 #include <cassert>
 
 DistributionsSolidMix::DistributionsSolidMix(std::vector< DistributionsSolid * >          & distr_solid,
                                              std::vector< DistributionWithTrend * >       & distr_vol_frac,
-                                             DEMTools::MixMethod                            mix_method,
-                                             DistributionsSolidMixEvolution               * distr_evolution)
+                                             DEMTools::MixMethod                            mix_method)
 : DistributionsSolid()
 {
   assert(distr_solid.size() == distr_vol_frac.size());
   distr_solid_      = distr_solid;
   distr_vol_frac_   = distr_vol_frac;
   mix_method_       = mix_method;
-  distr_evolution_  = distr_evolution;
 }
 
 DistributionsSolidMix::~DistributionsSolidMix(){}
@@ -45,9 +43,9 @@ DistributionsSolidMix::GenerateSample(const std::vector<double> & trend_params) 
     volume_fraction[missing_index] = 1.0 - sum;
   }
 
-  Solid * solid_mixed = new SolidMixed(solid, volume_fraction, mix_method_, distr_evolution_);
+  Solid * solid_mixed = new SolidMix(solid, volume_fraction, mix_method_);
 
-  // Deep copy taken by constructor of SolidMixed, hence delete solid here:
+  // Deep copy taken by constructor of SolidMix, hence delete solid here:
   for(size_t i = 0; i < n_solids; ++i)
     delete solid[i];
 

@@ -1,11 +1,12 @@
-#include "rplib/solidmixed.h"
+#include "rplib/solidmix.h"
 
 #include "nrlib/exception/exception.hpp"
 
-SolidMixed::SolidMixed(const std::vector<Solid*>      & solid,
-                       const std::vector<double>      & volume_fraction,
-                       DEMTools::MixMethod              mix_method,
-                       DistributionsSolidMixEvolution * distr_evolution)
+#include <numeric>
+
+SolidMix::SolidMix(const std::vector<Solid*>      & solid,
+                   const std::vector<double>      & volume_fraction,
+                   DEMTools::MixMethod              mix_method)
 : Solid()
 {
   // Deep copy of solid:
@@ -16,7 +17,6 @@ SolidMixed::SolidMixed(const std::vector<Solid*>      & solid,
 
   volume_fraction_ = volume_fraction;
   mix_method_      = mix_method;
-  distr_evolution_ = distr_evolution;
 
   k_   = mu_ = rho_ = 0;
 
@@ -50,21 +50,20 @@ SolidMixed::SolidMixed(const std::vector<Solid*>      & solid,
 }
 
 
-SolidMixed::~SolidMixed()
+SolidMix::~SolidMix()
 {
   for (size_t i = 0; i < solid_.size(); ++i)
     delete solid_[i];
 }
 
 Solid *
-SolidMixed::Clone() const {
+SolidMix::Clone() const {
   // Provide base class variables.
-  SolidMixed * s = new SolidMixed(*this);
+  SolidMix * s = new SolidMix(*this);
 
-  // Provide variables specific to SolidMixed.
+  // Provide variables specific to SolidMix.
   s->volume_fraction_ = this->volume_fraction_;
   s->mix_method_      = this->mix_method_;
-  s->distr_evolution_ = this->distr_evolution_;
 
   size_t n_solids = this->solid_.size();
   s->solid_.resize(n_solids);
@@ -74,14 +73,13 @@ SolidMixed::Clone() const {
   return s;
 }
 
-SolidMixed& SolidMixed::operator=(const SolidMixed& rhs)
+SolidMix& SolidMix::operator=(const SolidMix& rhs)
 {
   if (this != &rhs) {
     Solid::operator=(rhs);
 
     volume_fraction_ = rhs.volume_fraction_;
     mix_method_      = rhs.mix_method_;
-    distr_evolution_ = rhs.distr_evolution_;
 
     size_t n_solids_old = solid_.size();
     for (size_t i = 0; i < n_solids_old; ++i)
@@ -96,17 +94,17 @@ SolidMixed& SolidMixed::operator=(const SolidMixed& rhs)
 }
 
 Solid *
-SolidMixed::Evolve(const std::vector<int>             & delta_time,
-                   const std::vector< const Solid * > & solid) const {
+SolidMix::Evolve(const std::vector<int>             & delta_time,
+                 const std::vector< const Solid * > & solid) const {
   size_t n_solids = solid_.size();
   std::vector<Solid*> solid_new(n_solids);
   for (size_t i = 0; i < n_solids; ++i)
     solid_new[i] = solid_[i]->Evolve(delta_time, solid);
 
   std::vector<double> volume_fraction = volume_fraction_; // Evolve when model is defined.
-  Solid * solid_mixed_new = new SolidMixed(solid_new, volume_fraction, mix_method_, distr_evolution_);
+  Solid * solid_mixed_new = new SolidMix(solid_new, volume_fraction, mix_method_);
 
-  // Deep copy taken by constructor of SolidMixed, hence delete solid_new here:
+  // Deep copy taken by constructor of SolidMix, hence delete solid_new here:
   for (size_t i = 0; i < n_solids; ++i)
     delete solid_new[i];
 

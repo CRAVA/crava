@@ -56,8 +56,7 @@ DistributionsSolidStorage::CreateDistributionsSolidMix(const std::string        
   CheckVolumeConsistency(final_distr_vol_frac, errTxt);
 
   if (errTxt == "") {
-    DistributionsSolidMixEvolution * distr_solidmix_evolution = NULL;
-    solid = new DistributionsSolidMix(final_distr_solid, final_distr_vol_frac, mix_method, distr_solidmix_evolution);
+    solid = new DistributionsSolidMix(final_distr_solid, final_distr_vol_frac, mix_method);
   }
 
   return(solid);

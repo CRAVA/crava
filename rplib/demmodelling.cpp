@@ -4,7 +4,7 @@
 #include "rplib/solidtabulatedmodulus.h"
 #include "rplib/brine.h"
 #include "rplib/co2.h"
-#include "rplib/solidmixed.h"
+#include "rplib/solidmix.h"
 #include "rplib/fluidmix.h"
 #include "rplib/rockdem.h"
 #include "rplib/distributionssolidtabulatedmodulus.h"
@@ -597,7 +597,7 @@ DEMTools::DebugTestCalcEffectiveModulus2(double& effective_bulk_modulus,
   mineral[0] = &clay;
   mineral[1] = &quartz;
 
-  SolidMixed solidmixed(mineral, volume_fraction, DEMTools::Hill);
+  SolidMix solidmixed(mineral, volume_fraction, DEMTools::Hill);
 
   double brine_k;
   double brine_rho;
@@ -685,8 +685,7 @@ DEMTools::DebugTestCalcEffectiveModulus2(double& effective_bulk_modulus,
 //  std::vector< NRLib::Distribution<double> * > distr_vol_frac;
 //  distr_vol_frac.push_back(new NRLib::Delta(0.15));
 //  distr_vol_frac.push_back(new NRLib::Delta(1.0 - 0.15));
-//  DistributionsSolidMixEvolution * distr_solidmix_evolution = NULL;
-//  DistributionsSolid * distr_solid_mixed = new DistributionsSolidMix(distr_solid, distr_vol_frac, DEMTools::Hill, distr_solidmix_evolution);
+//  DistributionsSolid * distr_solid_mixed = new DistributionsSolidMix(distr_solid, distr_vol_frac, DEMTools::Hill);
 //  //Solid * solid_mixed = distr_solid_mixed->GenerateSample();
 //
 //  //// Fluid properties
@@ -833,8 +832,7 @@ DEMTools::DebugTestCalcEffectiveModulus4(double& effective_bulk_modulus,
   distr_vol_frac.push_back(new DeltaDistributionWithTrend(trend_vol_frac, false));
   distr_vol_frac.push_back(new DeltaDistributionWithTrend(trend_vol_fracbg, false));
 
-  DistributionsSolidMixEvolution * distr_solidmix_evolution = NULL;
-  DistributionsSolid * distr_solid_mixed = new DistributionsSolidMix(distr_solid, distr_vol_frac, DEMTools::Hill, distr_solidmix_evolution);
+  DistributionsSolid * distr_solid_mixed = new DistributionsSolidMix(distr_solid, distr_vol_frac, DEMTools::Hill);
   //Solid * solid_mixed = distr_solid_mixed->GenerateSample();
 
   //// Fluid properties
@@ -985,8 +983,7 @@ DEMTools::DebugTestCalcEffectiveModulus4(double& effective_bulk_modulus,
 //  std::vector< NRLib::Distribution<double> * > distr_vol_frac;
 //  distr_vol_frac.push_back(new NRLib::Delta(0.15));
 //  distr_vol_frac.push_back(new NRLib::Delta(1.0 - 0.15));
-//  DistributionsSolidMixEvolution * distr_solidmix_evolution = NULL;
-//  DistributionsSolid * distr_solid_mixed = new DistributionsSolidMix(distr_solid, distr_vol_frac, DEMTools::Hill, distr_solidmix_evolution);
+//  DistributionsSolid * distr_solid_mixed = new DistributionsSolidMix(distr_solid, distr_vol_frac, DEMTools::Hill);
 //
 //  //// Fluid properties
 //  //// (Brine properties according to Batzle, M. and Wang, Z. 1992, and
@@ -1120,8 +1117,8 @@ DEMTools::DebugTestCalcEffectiveModulus4(double& effective_bulk_modulus,
 //    v_ass.push_back(0.3);
 //    v_ass.push_back(0.7);
 //    // ASSIGNMENT SOLIDMIXED
-//    SolidMixed sol_mixed_ass(s_ass, v_ass, DEMTools::Hill);
-//    sol_mixed_ass = *(dynamic_cast<SolidMixed*>(solid_mixed)); // Assignment
+//    SolidMix sol_mixed_ass(s_ass, v_ass, DEMTools::Hill);
+//    sol_mixed_ass = *(dynamic_cast<SolidMix*>(solid_mixed)); // Assignment
 //    double k_mix, mu_mix, rho_mix;
 //    solid_mixed->ComputeElasticParams(k_mix, mu_mix, rho_mix);
 //

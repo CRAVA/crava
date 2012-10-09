@@ -23,6 +23,8 @@
 #include "nrlib/segy/segy.hpp"
 #include "nrlib/iotools/logkit.hpp"
 
+#include "rplib/demmodelling.h"
+
 #include "src/program.h"
 #include "src/definitions.h"
 #include "src/corr.h"
@@ -126,6 +128,18 @@ int main(int argc, char** argv)
                       ReleaseInfo::GetLicenseVersion());
   Appl::Instance()->Main(argc, argv);
 #endif
+
+  /*if(0) {
+    double effective_bulk_modulus;
+    double effective_shear_modulus;
+    double effective_density;
+    DEMTools::DebugTestCalcEffectiveModulus4(effective_bulk_modulus,
+                                             effective_shear_modulus,
+                                             effective_density);
+    float tmp10 = 5.0f;
+
+
+  }*/
 
   if (argc != 2) {
     printf("Usage: %s modelfile\n",argv[0]);
