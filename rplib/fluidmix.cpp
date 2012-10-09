@@ -1,9 +1,10 @@
-#include "rplib/fluidmixed.h"
+#include "rplib/fluidmix.h"
 
-FluidMixed::FluidMixed(const std::vector<Fluid*>      & fluid,
-                       const std::vector<double>      & volume_fraction,
-                       DEMTools::MixMethod              mix_method,
-                       DistributionsFluidMixEvolution * distr_evolution)
+#include "nrlib/exception/exception.hpp"
+
+FluidMix::FluidMix(const std::vector<Fluid*>      & fluid,
+                   const std::vector<double>      & volume_fraction,
+                   DEMTools::MixMethod              mix_method)
 : Fluid()
 {
 
@@ -15,7 +16,6 @@ FluidMixed::FluidMixed(const std::vector<Fluid*>      & fluid,
 
   volume_fraction_ = volume_fraction;
   mix_method_      = mix_method;
-  distr_evolution_ = distr_evolution;
 
   k_ = rho_ = 0;
 
@@ -45,22 +45,21 @@ FluidMixed::FluidMixed(const std::vector<Fluid*>      & fluid,
   }
 }
 
-FluidMixed::~FluidMixed()
+FluidMix::~FluidMix()
 {
   for (size_t i = 0; i < fluid_.size(); ++i)
     delete fluid_[i];
 }
 
 Fluid *
-FluidMixed::Clone() const
+FluidMix::Clone() const
 {
   // Provide base class variables.
-  FluidMixed * s = new FluidMixed(*this);
+  FluidMix * s = new FluidMix(*this);
 
-  // Provide variables specific to FluidMixed.
+  // Provide variables specific to FluidMix.
   s->volume_fraction_ = this->volume_fraction_;
   s->mix_method_      = this->mix_method_;
-  s->distr_evolution_ = this->distr_evolution_;
 
   size_t n_fluids = this->fluid_.size();
   s->fluid_.resize(n_fluids);
@@ -70,14 +69,13 @@ FluidMixed::Clone() const
   return s;
 }
 
-FluidMixed& FluidMixed::operator=(const FluidMixed& rhs)
+FluidMix& FluidMix::operator=(const FluidMix& rhs)
 {
   if (this != &rhs) {
     Fluid::operator=(rhs);
 
     volume_fraction_ = rhs.volume_fraction_;
     mix_method_      = rhs.mix_method_;
-    distr_evolution_ = rhs.distr_evolution_;
 
     size_t n_fluids_old = fluid_.size();
     for (size_t i = 0; i < n_fluids_old; ++i)
@@ -93,8 +91,8 @@ FluidMixed& FluidMixed::operator=(const FluidMixed& rhs)
 
 
 Fluid *
-FluidMixed::Evolve(const std::vector<int>             & delta_time,
-                   const std::vector< const Fluid * > & fluid) const
+FluidMix::Evolve(const std::vector<int>             & delta_time,
+                 const std::vector< const Fluid * > & fluid) const
 {
   size_t n_fluids = fluid_.size();
   std::vector<Fluid*> fluid_new(n_fluids);
@@ -102,9 +100,9 @@ FluidMixed::Evolve(const std::vector<int>             & delta_time,
     fluid_new[i] = fluid_[i]->Evolve(delta_time, fluid);
 
   std::vector<double> volume_fraction = volume_fraction_; // Evolve when model is defined.
-  Fluid * fluid_mixed_new = new FluidMixed(fluid_new, volume_fraction, mix_method_, distr_evolution_);
+  Fluid * fluid_mixed_new = new FluidMix(fluid_new, volume_fraction, mix_method_);
 
-  // Deep copy taken by constructor of FluidMixed, hence delete fluid_new here:
+  // Deep copy taken by constructor of FluidMix, hence delete fluid_new here:
   for (size_t i = 0; i < n_fluids; ++i)
     delete fluid_new[i];
 

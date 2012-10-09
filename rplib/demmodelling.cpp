@@ -5,7 +5,7 @@
 #include "rplib/brine.h"
 #include "rplib/co2.h"
 #include "rplib/solidmixed.h"
-#include "rplib/fluidmixed.h"
+#include "rplib/fluidmix.h"
 #include "rplib/rockdem.h"
 #include "rplib/distributionssolidtabulatedmodulus.h"
 #include "rplib/distributionsbrine.h"
@@ -15,7 +15,6 @@
 #include "rplib/distributionsfluidmix.h"
 #include "rplib/distributionsbrineevolution.h"
 #include "rplib/distributionsco2evolution.h"
-#include "rplib/distributionsfluidmixevolution.h"
 #include "rplib/distributionwithtrend.h"
 #include "rplib/deltadistributionwithtrend.h"
 
@@ -617,7 +616,7 @@ DEMTools::DebugTestCalcEffectiveModulus2(double& effective_bulk_modulus,
   fluid[1] = &co2;
 
 
-  FluidMixed fluid_mix(fluid, volume_fraction2, DEMTools::Reuss);
+  FluidMix fluid_mix(fluid, volume_fraction2, DEMTools::Reuss);
   ////
 
 
@@ -710,8 +709,7 @@ DEMTools::DebugTestCalcEffectiveModulus2(double& effective_bulk_modulus,
 //  std::vector< NRLib::Distribution<double> * > distr_vol_frac2;
 //  distr_vol_frac2.push_back(new NRLib::Delta(0.8));
 //  distr_vol_frac2.push_back(new NRLib::Delta(1.0 - 0.8));
-//  DistributionsFluidMixEvolution * distr_fluidmix_evolution  = NULL;
-//  DistributionsFluid * distr_fluid_mixed = new DistributionsFluidMix(distr_fluid, distr_vol_frac2, DEMTools::Reuss, distr_fluidmix_evolution);
+//  DistributionsFluid * distr_fluid_mixed = new DistributionsFluidMix(distr_fluid, distr_vol_frac2, DEMTools::Reuss);
 //  //Fluid * fluid_mixed = distr_fluid_mixed->GenerateSample();
 //
 //
@@ -867,8 +865,7 @@ DEMTools::DebugTestCalcEffectiveModulus4(double& effective_bulk_modulus,
   distr_vol_frac2f.push_back(new DeltaDistributionWithTrend(new NRLib::TrendConstant(0.8), false));
   distr_vol_frac2f.push_back(new DeltaDistributionWithTrend(new NRLib::TrendConstant(1.0 - 0.8), false));
 
-  DistributionsFluidMixEvolution * distr_fluidmix_evolution  = NULL;
-  DistributionsFluid * distr_fluid_mixed = new DistributionsFluidMix(distr_fluid, distr_vol_frac2f, DEMTools::Reuss, distr_fluidmix_evolution);
+  DistributionsFluid * distr_fluid_mixed = new DistributionsFluidMix(distr_fluid, distr_vol_frac2f, DEMTools::Reuss);
   //Fluid * fluid_mixed = distr_fluid_mixed->GenerateSample();
 
 
@@ -1009,8 +1006,7 @@ DEMTools::DebugTestCalcEffectiveModulus4(double& effective_bulk_modulus,
 //  std::vector< NRLib::Distribution<double> * > distr_vol_frac2;
 //  distr_vol_frac2.push_back(new NRLib::Delta(0.8));
 //  distr_vol_frac2.push_back(new NRLib::Delta(1.0 - 0.8));
-//  DistributionsFluidMixEvolution * distr_fluidmix_evolution  = NULL;
-//  DistributionsFluid * distr_fluid_mixed = new DistributionsFluidMix(distr_fluid, distr_vol_frac2, DEMTools::Reuss, distr_fluidmix_evolution);
+//  DistributionsFluid * distr_fluid_mixed = new DistributionsFluidMix(distr_fluid, distr_vol_frac2, DEMTools::Reuss);
 //
 //  //// Geometry specification
 //  enum GeometryType {Spherical, Mixed};

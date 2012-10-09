@@ -1,20 +1,20 @@
 
 #include "rplib/fluid.h"
+
+#include "rplib/fluidmix.h"
 #include "rplib/distributionsfluidmix.h"
 
 #include "rplib/distributionwithtrend.h"
 
 DistributionsFluidMix::DistributionsFluidMix(std::vector< DistributionsFluid * >          & distr_fluid,
                                              std::vector< DistributionWithTrend * >       & distr_vol_frac,
-                                             DEMTools::MixMethod                            mix_method,
-                                             DistributionsFluidMixEvolution               * distr_evolution)
+                                             DEMTools::MixMethod                            mix_method)
 : DistributionsFluid()
 {
   assert(distr_fluid.size() == distr_vol_frac.size());
   distr_fluid_      = distr_fluid;
   distr_vol_frac_   = distr_vol_frac;
   mix_method_       = mix_method;
-  distr_evolution_  = distr_evolution;
 }
 
 DistributionsFluidMix::~DistributionsFluidMix(){}
@@ -31,7 +31,7 @@ DistributionsFluidMix::GenerateSample(const std::vector<double> & trend_params) 
     fluid[i] = distr_fluid_[i]->GenerateSample(trend_params);
     volume_fraction[i] = distr_vol_frac_[i]->ReSample(trend_params[0], trend_params[1]);
   }
-  Fluid * fluid_mixed = new FluidMixed(fluid, volume_fraction, mix_method_, distr_evolution_);
+  Fluid * fluid_mixed = new FluidMix(fluid, volume_fraction, mix_method_);
 
   // Deep copy taken by constructor of FluidMixed, hence delete fluid here:
   for(size_t i = 0; i < n_fluids; ++i)

@@ -6273,7 +6273,7 @@
 					>
 				</File>
 				<File
-					RelativePath=".\rplib\fluidmixed.cpp"
+					RelativePath=".\rplib\fluidmix.cpp"
 					>
 				</File>
 				<File
@@ -7073,11 +7073,11 @@
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\system\config.hpp"
+						RelativePath=".\nrlib\boost\filesystem\config.hpp"
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\filesystem\config.hpp"
+						RelativePath=".\nrlib\boost\system\config.hpp"
 						>
 					</File>
 					<File
@@ -7386,10 +7386,6 @@
 					>
 				</File>
 				<File
-					RelativePath=".\rplib\distributionsfluidmixevolution.h"
-					>
-				</File>
-				<File
 					RelativePath=".\rplib\distributionsfluidstorage.h"
 					>
 				</File>
@@ -7482,7 +7478,7 @@
 					>
 				</File>
 				<File
-					RelativePath=".\rplib\fluidmixed.h"
+					RelativePath=".\rplib\fluidmix.h"
 					>
 				</File>
 				<File
