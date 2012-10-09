@@ -31,6 +31,8 @@ public:
 
   virtual std::vector<bool>             HasTrend()                                                        const = 0;
 
+  virtual bool                          GetIsOkForBounding()                                              const = 0;
+
   //NBNB fjellvoll the first two functions should probably survive the new format.
   std::vector<double>                   GetExpectations(const std::vector<double> & trend_params)         const    ;
 

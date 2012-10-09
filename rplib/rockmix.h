@@ -52,8 +52,8 @@ public:
 
   RockMixOfSolidAndFluid(const std::vector<Solid*> &   solid,
                          const std::vector<Fluid*> &   fluid,
-                         const std::vector<double> &   volume_fraction,
-                         double                        porosity,
+                         const std::vector<double> &   volume_fraction_solid,
+                         const std::vector<double> &   volume_fraction_fluid,
                          DEMTools::MixMethod           mix_method);
 
   virtual ~RockMixOfSolidAndFluid();
@@ -78,11 +78,13 @@ private:
   //Copy constructor for getting base class variables , used by Clone:
   RockMixOfSolidAndFluid(const RockMixOfSolidAndFluid & rhs) : Rock(rhs) {}
 
+  void                                  ComputeSeismicVariables();
+
   std::vector< Solid* >                 solid_;             // Owned and deleted by this class.
   std::vector< Fluid* >                 fluid_;             // Owned and deleted by this class.
-  std::vector<double>                   volume_fraction_;
+  std::vector<double>                   volume_fraction_solid_;
+  std::vector<double>                   volume_fraction_fluid_;
   DEMTools::MixMethod                   mix_method_;
-  double                                porosity_;
 };
 
 #endif

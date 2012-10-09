@@ -2092,7 +2092,7 @@ XmlModelFile::parseHill(TiXmlNode * node, int constituent, std::string label, Di
 }
 
 bool
-XmlModelFile::parseConstituent(TiXmlNode * node, std::string & label, DistributionWithTrendStorage *& volume_fraction, std::string & errTxt)
+XmlModelFile::parseConstituent(TiXmlNode * node, std::string & constituent_label, DistributionWithTrendStorage *& volume_fraction, std::string & errTxt)
 {
 
   TiXmlNode * root = node->FirstChildElement("constituent");
@@ -2106,11 +2106,11 @@ XmlModelFile::parseConstituent(TiXmlNode * node, std::string & label, Distributi
   legalCommands.push_back("volume-fraction");
 
   int constituent_given = 0;
-  while(parseSolid(root, label, errTxt) == true)
+  while(parseSolid(root, constituent_label, errTxt) == true)
     constituent_given++;
-  while(parseFluid(root, label, errTxt) == true)
+  while(parseFluid(root, constituent_label, errTxt) == true)
     constituent_given++;
-  while(parseDryRock(root, label, errTxt) == true)
+  while(parseDryRock(root, constituent_label, errTxt) == true)
     constituent_given++;
 
   if(constituent_given == 0)
@@ -2118,8 +2118,8 @@ XmlModelFile::parseConstituent(TiXmlNode * node, std::string & label, Distributi
   else if(constituent_given > 1)
     errTxt += "There can only be one element in each constituent of the rock physics model\n";
 
-  std::string dummy;
-  if(parseDistributionWithTrend(root, "volume-fraction", volume_fraction, dummy, false, errTxt) == false)
+  std::string volume_label = "";
+  if(parseDistributionWithTrend(root, "volume-fraction", volume_fraction, volume_label, false, errTxt) == false)
     volume_fraction = NULL;
 
   checkForJunk(root, errTxt, legalCommands, true);
@@ -2780,10 +2780,13 @@ XmlModelFile::parseDistributionWithTrend(TiXmlNode                     * node,
     my_map::iterator it = reservoir_variable.find(variable);
     if(it != reservoir_variable.end()) {
       storage = it->second;
+      label   = variable;
       trendGiven++;
     }
-    else
-      errTxt += "The variable "+variable+" is not defined in <reservoir-variable>\n";
+    else {
+      errTxt += "The variable "+variable+" is not defined in <reservoir-variable>.\n";
+      errTxt += "  <reservoir-variable> needs to be given before <rock> and <predefinitions> in <rock-physics>\n";
+    }
   }
 
   if(trendGiven == 0)

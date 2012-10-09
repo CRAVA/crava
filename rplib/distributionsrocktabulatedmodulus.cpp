@@ -126,3 +126,16 @@ DistributionsRockTabulatedModulus::HasTrend() const
 {
   return(has_trend_);
 }
+
+bool
+DistributionsRockTabulatedModulus::GetIsOkForBounding() const
+{
+  bool is_ok_for_bounding;
+
+  if(has_distribution_ == false && has_trend_[0] == false && has_trend_[1] == false)
+    is_ok_for_bounding = true;
+  else
+    is_ok_for_bounding = false;
+
+  return(is_ok_for_bounding);
+}

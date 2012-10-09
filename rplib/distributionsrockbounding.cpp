@@ -66,6 +66,9 @@ DistributionsRockBounding::DistributionsRockBounding(const DistributionsRock    
       has_trend_[i] = false;
   }
 
+  // Find is_ok_for_bounding_
+  if(upper_rock_->GetIsOkForBounding() == true && lower_rock->GetIsOkForBounding() == true)
+    is_ok_for_bounding_ = true;
 
 }
 
@@ -138,4 +141,10 @@ std::vector<bool>
 DistributionsRockBounding::HasTrend() const
 {
   return(has_trend_);
+}
+
+bool
+DistributionsRockBounding::GetIsOkForBounding() const
+{
+  return(is_ok_for_bounding_);
 }

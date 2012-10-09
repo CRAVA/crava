@@ -32,44 +32,30 @@ DistributionsSolidStorage::CreateDistributionsSolidMix(const std::string        
                                                        const std::vector<DistributionWithTrendStorage *>        & constituent_volume_fraction,
                                                        std::map<std::string, DistributionsSolid *>              & solid_distribution,
                                                        DEMTools::MixMethod                                        mix_method,
-                                                       std::string                                              & errTxt) const {
-  CheckVolumeConsistency(constituent_volume_fraction, errTxt);
+                                                       std::string                                              & errTxt) const
+{
 
   DistributionsSolid * solid = NULL;
 
   std::vector<DistributionsSolid*> final_distr_solid;
   std::vector<DistributionWithTrend*> final_distr_vol_frac;
-  unsigned int error_count = 0;
   size_t s;
   for (s = 0; s != constituent_label.size(); ++s) {
-    std::map<std::string, DistributionsSolid *>::iterator m = solid_distribution.find(constituent_label[s]);
-    if (m == solid_distribution.end()) { // label not found in solid_distribution map
-      std::map<std::string, DistributionsSolidStorage *>::const_iterator m_all = model_solid_storage.find(constituent_label[s]);
-      if (m_all == model_solid_storage.end()) { // fatal error
-        error_count++;
-        errTxt += "Failed to find solid label " + constituent_label[s] + "\n";
-      }
-      else { //label found
-        DistributionsSolidStorage     * storage     = m_all->second;
-        solid                                       = storage->GenerateDistributionsSolid(path, trend_cube_parameters, trend_cube_sampling, model_solid_storage, solid_distribution, errTxt);
-        solid_distribution[m_all->first]            = solid;
-        final_distr_solid.push_back(solid);
-      }
+    DistributionsSolid * constit_solid = NULL;
+    constit_solid = ReadSolid(constituent_label[s], path, trend_cube_parameters, trend_cube_sampling, model_solid_storage, solid_distribution, errTxt);
+    final_distr_solid.push_back(constit_solid);
 
-    }
-    else { // label found
-      final_distr_solid.push_back(m->second);
-    }
-
-    if (!error_count && constituent_volume_fraction[s]) {
-        const DistributionWithTrend * vol_frac = constituent_volume_fraction[s]->GenerateDistributionWithTrend(path,trend_cube_parameters,trend_cube_sampling,errTxt);
-        final_distr_vol_frac.push_back(const_cast<DistributionWithTrend *>(vol_frac));
+    if (errTxt == "" && constituent_volume_fraction[s]) {
+      const DistributionWithTrend * vol_frac = constituent_volume_fraction[s]->GenerateDistributionWithTrend(path,trend_cube_parameters,trend_cube_sampling,errTxt);
+      final_distr_vol_frac.push_back(const_cast<DistributionWithTrend *>(vol_frac));
     }
     else
       final_distr_vol_frac.push_back(NULL);
-  } // end outer loop
+  }
 
-  if (!error_count) {
+  CheckVolumeConsistency(final_distr_vol_frac, errTxt);
+
+  if (errTxt == "") {
     DistributionsSolidMixEvolution * distr_solidmix_evolution = NULL;
     solid = new DistributionsSolidMix(final_distr_solid, final_distr_vol_frac, mix_method, distr_solidmix_evolution);
   }
@@ -336,8 +322,6 @@ DEMSolidStorage::GenerateDistributionsSolid(const std::string                   
   for(int i=1; i<n_inclusions+1; i++)
     volume_fractions[i] = inclusion_volume_fraction_[i-1];
 
-  CheckVolumeConsistency(volume_fractions, errTxt);
-
   DistributionsSolid * solid = NULL;
 
   std::vector< DistributionWithTrend *> inclusion_volume_fraction_distr(inclusion_volume_fraction_.size()+1, NULL);
@@ -353,45 +337,16 @@ DEMSolidStorage::GenerateDistributionsSolid(const std::string                   
     inclusion_aspect_ratio_distr[i] = inclusion_aspect_ratio_[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
 
   //Read host label
-  unsigned int          error_count       = 0;
   DistributionsSolid  * final_distr_solid = NULL;
-  std::map<std::string, DistributionsSolid *>::iterator m = solid_distribution.find(host_label_);
-  if (m == solid_distribution.end()) { // label not found in solid_distribution map
-    std::map<std::string, DistributionsSolidStorage *>::const_iterator m_all = model_solid_storage.find(host_label_);
-    if (m_all == model_solid_storage.end()) { // fatal error
-      error_count++;
-      errTxt += "Failed to find solid label " + host_label_ + "\n";
-    }
-    else { //label found
-      DistributionsSolidStorage     * storage     = m_all->second;
-      solid                                       = storage->GenerateDistributionsSolid(path, trend_cube_parameters, trend_cube_sampling, model_solid_storage, solid_distribution, errTxt);
-      solid_distribution[m_all->first]            = solid;
-      final_distr_solid                           = solid;
-    }
-  }
-  else // label found
-    final_distr_solid = m->second;
+  final_distr_solid = ReadSolid(host_label_,path, trend_cube_parameters, trend_cube_sampling, model_solid_storage, solid_distribution, errTxt);
 
   //Read inclusion label
   std::vector< DistributionsSolid* > final_distr_solid_inc;
   size_t s;
   for (s = 0; s != inclusion_label_.size(); ++s) {
-    m = solid_distribution.find(inclusion_label_[s]);
-    if (m == solid_distribution.end()) { // label not found in solid_distribution map
-      std::map<std::string, DistributionsSolidStorage *>::const_iterator m_all = model_solid_storage.find(inclusion_label_[s]);
-      if (m_all == model_solid_storage.end()) { // fatal error
-        error_count++;
-        errTxt += "Failed to find solid label " + inclusion_label_[s] + "\n";
-      }
-      else { //label found
-        DistributionsSolidStorage     * storage     = m_all->second;
-        solid                                       = storage->GenerateDistributionsSolid(path, trend_cube_parameters, trend_cube_sampling, model_solid_storage, solid_distribution, errTxt);
-        solid_distribution[m_all->first]            = solid;
-        final_distr_solid_inc.push_back(solid);
-      }
-    }
-    else // label found
-      final_distr_solid_inc.push_back(m->second);
+    DistributionsSolid * incl_solid;
+    incl_solid = ReadSolid(inclusion_label_[s],path, trend_cube_parameters, trend_cube_sampling, model_solid_storage, solid_distribution, errTxt);
+    final_distr_solid_inc.push_back(incl_solid);
   }
 
   //Questions //NBNB fjellvoll //NBNB marit
@@ -402,7 +357,9 @@ DEMSolidStorage::GenerateDistributionsSolid(const std::string                   
   NRLib::Trend * trend_porosity          = new NRLib::TrendConstant(1.0);
   DistributionWithTrend * distr_porosity = new DeltaDistributionWithTrend(trend_porosity, false);
 
-  if (!error_count) {
+  //CheckVolumeConsistency(distr_porosity, errTxt); //Fix when questions are solved
+
+  if (errTxt == "") {
     DistributionsSolidDEMEvolution * distr_evolution = NULL;
     solid = new DistributionsSolidDEM(final_distr_solid,
                                       final_distr_solid_inc[0],         //tmp solution only single inclusion supported

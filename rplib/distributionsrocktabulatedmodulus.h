@@ -34,6 +34,8 @@ public:
 
   virtual std::vector<bool>          HasTrend() const;
 
+  virtual bool                       GetIsOkForBounding() const;
+
 private:
   const DistributionWithTrend * bulk_modulus_;
   const DistributionWithTrend * shear_modulus_;

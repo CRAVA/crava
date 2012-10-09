@@ -36,6 +36,8 @@ public:
 
   virtual std::vector<bool>               HasTrend()                                               const;
 
+  virtual bool                            GetIsOkForBounding()                                     const { return false; }
+
 private:
   std::vector< DistributionsRock * >      distr_rock_;
   std::vector< DistributionWithTrend * >  distr_vol_frac_;
@@ -53,8 +55,8 @@ public:
 
   DistributionsRockMixOfSolidAndFluid(const std::vector< DistributionsSolid * >           & distr_solid,
                                       const std::vector< DistributionsFluid * >           & distr_fluid,
-                                      const std::vector< DistributionWithTrend * >        & distr_vol_frac,
-                                      const DistributionWithTrend                         * distr_porosity,
+                                      const std::vector< DistributionWithTrend * >        & distr_vol_frac_solid,
+                                      const std::vector< DistributionWithTrend * >        & distr_vol_frac_fluid,
                                       DEMTools::MixMethod                                   mix_method);
 
   virtual ~DistributionsRockMixOfSolidAndFluid();
@@ -75,11 +77,13 @@ public:
 
   virtual std::vector<bool>               HasTrend()                                               const;
 
+  virtual bool                            GetIsOkForBounding()                                     const;
+
 private:
   std::vector< DistributionsSolid * >     distr_solid_;
   std::vector< DistributionsFluid * >     distr_fluid_;
-  std::vector< DistributionWithTrend * >  distr_vol_frac_;
-  const DistributionWithTrend           * distr_porosity_;
+  std::vector< DistributionWithTrend * >  distr_vol_frac_solid_;
+  std::vector< DistributionWithTrend * >  distr_vol_frac_fluid_;
   DEMTools::MixMethod                     mix_method_;
 };
 

@@ -132,7 +132,7 @@ ReussDryRockStorage::GenerateDistributionsDryRock(const std::string             
                                                   const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
                                                   std::string                             & errTxt) const
 {
-  CheckVolumeConsistency(constituent_volume_fraction_, errTxt);
+  //CheckVolumeConsistency(constituent_volume_fraction_, errTxt);
 
   DistributionsDryRock * dry_rock = NULL; //new DistributionsDryRockReuss();
 
@@ -169,7 +169,7 @@ VoigtDryRockStorage::GenerateDistributionsDryRock(const std::string             
                                                   const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
                                                   std::string                             & errTxt) const
 {
-  CheckVolumeConsistency(constituent_volume_fraction_, errTxt);
+  //CheckVolumeConsistency(constituent_volume_fraction_, errTxt);
 
   DistributionsDryRock * dry_rock = NULL; //new DistributionsDryRockVoigt();
 
@@ -206,7 +206,7 @@ HillDryRockStorage::GenerateDistributionsDryRock(const std::string              
                                                  const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
                                                  std::string                             & errTxt) const
 {
-  CheckVolumeConsistency(constituent_volume_fraction_, errTxt);
+  //CheckVolumeConsistency(constituent_volume_fraction_, errTxt);
 
   DistributionsDryRock * dry_rock = NULL; //new DistributionsDryRockHill();
 
@@ -273,7 +273,7 @@ DEMDryRockStorage::GenerateDistributionsDryRock(const std::string               
   for(int i=1; i<n_inclusions+1; i++)
     volume_fractions[i] = inclusion_volume_fraction_[i-1];
 
-  CheckVolumeConsistency(volume_fractions, errTxt);
+  //CheckVolumeConsistency(volume_fractions, errTxt);
 
   DistributionsDryRock * dry_rock = NULL; //new DistributionsDryRockInclusion();
 

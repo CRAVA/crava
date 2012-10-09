@@ -112,7 +112,7 @@ ReussFluidStorage::GenerateDistributionsFluid(const std::string                 
                                               const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
                                               std::string                             & errTxt) const
 {
-  CheckVolumeConsistency(constituent_volume_fraction_, errTxt);
+  //CheckVolumeConsistency(constituent_volume_fraction_, errTxt);
 
   //Make new DistributionsFluidReuss(constituent_label, volume);
   DistributionsFluid * fluid = NULL; //new DistributionsFluidReuss(constituent_label, volume);
@@ -143,7 +143,7 @@ VoigtFluidStorage::GenerateDistributionsFluid(const std::string                 
                                               const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
                                               std::string                             & errTxt) const
 {
-  CheckVolumeConsistency(constituent_volume_fraction_, errTxt);
+  //CheckVolumeConsistency(constituent_volume_fraction_, errTxt);
 
   DistributionsFluid * fluid = NULL; //new DistributionsFluidVoigt();
 
@@ -173,7 +173,7 @@ HillFluidStorage::GenerateDistributionsFluid(const std::string                  
                                              const std::vector<std::vector<double> > & /*trend_cube_sampling*/,
                                              std::string                             & errTxt) const
 {
-  CheckVolumeConsistency(constituent_volume_fraction_, errTxt);
+  //CheckVolumeConsistency(constituent_volume_fraction_, errTxt);
 
   DistributionsFluid * fluid = NULL; //new DistributionsFluidHill();
 

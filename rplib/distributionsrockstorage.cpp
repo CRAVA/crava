@@ -2,20 +2,26 @@
 #include "nrlib/trend/trend.hpp"
 #include "nrlib/grid/grid2d.hpp"
 
-#include "rplib/distributionwithtrend.h"
 #include "rplib/distributionsrock.h"
 #include "rplib/distributionssolid.h"
 #include "rplib/distributionsdryrock.h"
 #include "rplib/distributionsfluid.h"
+
 #include "rplib/distributionsrockstorage.h"
 #include "rplib/distributionssolidstorage.h"
 #include "rplib/distributionsdryrockstorage.h"
 #include "rplib/distributionsfluidstorage.h"
+
 #include "rplib/distributionsrocktabulatedvelocity.h"
 #include "rplib/distributionsrocktabulatedmodulus.h"
 #include "rplib/distributionsrockbounding.h"
+#include "rplib/distributionsrockmix.h"
+
+#include "rplib/distributionwithtrend.h"
 #include "rplib/distributionwithtrendstorage.h"
 #include "rplib/distributionsstoragekit.h"
+
+#include "src/modelsettings.h"
 
 #include <typeinfo>
 
@@ -25,6 +31,127 @@ DistributionsRockStorage::DistributionsRockStorage()
 
 DistributionsRockStorage::~DistributionsRockStorage()
 {
+}
+
+DistributionsRock *
+DistributionsRockStorage::CreateDistributionsRockMix(const std::string                                          & path,
+                                                     const std::vector<std::string>                             & trend_cube_parameters,
+                                                     const std::vector<std::vector<double> >                    & trend_cube_sampling,
+                                                     const std::vector<std::string>                             & constituent_label,
+                                                     const std::vector<DistributionWithTrendStorage *>          & constituent_volume_fraction,
+                                                     const std::map<std::string, DistributionsRockStorage *>    & model_rock_storage,
+                                                     const std::map<std::string, DistributionsSolidStorage *>   & model_solid_storage,
+                                                     const std::map<std::string, DistributionsDryRockStorage *> & model_dry_rock_storage,
+                                                     const std::map<std::string, DistributionsFluidStorage *>   & model_fluid_storage,
+                                                     std::map<std::string, const DistributionWithTrend *>       & reservoir_variables,
+                                                     std::map<std::string, DistributionsRock *>                 & rock_distribution,
+                                                     std::map<std::string, DistributionsSolid *>                & solid_distribution,
+                                                     std::map<std::string, DistributionsDryRock *>              & dry_rock_distribution,
+                                                     std::map<std::string, DistributionsFluid *>                & fluid_distribution,
+                                                     DEMTools::MixMethod                                          mix_method,
+                                                     std::string                                                & errTxt) const
+{
+  DistributionsRock * rock = NULL;
+
+  std::string tmpErrTxt = "";
+
+  int n_constituents = static_cast<int>(constituent_label.size());
+
+  std::vector<DistributionWithTrend *> distr_volume_fraction(n_constituents);
+  for(int i=0; i<n_constituents; i++) {
+    if(constituent_volume_fraction[i] == NULL)
+      distr_volume_fraction[i] = NULL;
+    else
+      distr_volume_fraction[i] = constituent_volume_fraction[i]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
+  }
+
+  CheckVolumeConsistency(distr_volume_fraction, tmpErrTxt);
+
+  std::vector<DistributionsRock *> distributions_rock(n_constituents);
+  bool mix_rock  = false;
+  bool mix_fluid = false;
+  bool mix_solid = false;
+
+  std::vector<int> constituent_type(n_constituents);
+
+  FindMixTypesForRock(constituent_label,
+                      n_constituents,
+                      model_rock_storage,
+                      model_solid_storage,
+                      model_dry_rock_storage,
+                      model_fluid_storage,
+                      mix_rock,
+                      mix_solid,
+                      mix_fluid,
+                      constituent_type,
+                      tmpErrTxt);
+
+
+  if(mix_rock == true) {
+    std::vector<DistributionsRock *> distr_rock(n_constituents);
+    for(int i=0; i<n_constituents; i++) {
+      distr_rock[i] = ReadRock(constituent_label[i],
+                               path,
+                               trend_cube_parameters,
+                               trend_cube_sampling,
+                               model_rock_storage,
+                               model_solid_storage,
+                               model_dry_rock_storage,
+                               model_fluid_storage,
+                               rock_distribution,
+                               solid_distribution,
+                               dry_rock_distribution,
+                               fluid_distribution,
+                               reservoir_variables,
+                               tmpErrTxt);
+    }
+
+    rock = new DistributionsRockMixOfRock(distr_rock, distr_volume_fraction, mix_method);
+  }
+  else if(mix_fluid == true && mix_solid == true) {
+    std::vector<DistributionsFluid *>    distr_fluid;
+    std::vector<DistributionsSolid *>    distr_solid;
+    std::vector<DistributionWithTrend *> fluid_volume_fractions;
+    std::vector<DistributionWithTrend *> solid_volume_fractions;
+
+    for(int i=0; i<n_constituents; i++) {
+
+      if(constituent_type[i] == ModelSettings::FLUID) {
+        DistributionsFluid * constit_fluid = NULL;
+
+        constit_fluid = ReadFluid(constituent_label[i],
+                                  path,
+                                  trend_cube_parameters,
+                                  trend_cube_sampling,
+                                  model_fluid_storage,
+                                  fluid_distribution,
+                                  errTxt);
+
+        distr_fluid.push_back(constit_fluid);
+
+        fluid_volume_fractions.push_back(distr_volume_fraction[i]);
+      }
+      else {
+        DistributionsSolid * constit_solid = NULL;
+
+        constit_solid = ReadSolid(constituent_label[i],
+                                  path,
+                                  trend_cube_parameters,
+                                  trend_cube_sampling,
+                                  model_solid_storage,
+                                  solid_distribution,
+                                  errTxt);
+
+        distr_solid.push_back(constit_solid);
+
+        solid_volume_fractions.push_back(distr_volume_fraction[i]);
+      }
+    }
+
+    rock = new DistributionsRockMixOfSolidAndFluid(distr_solid, distr_fluid, solid_volume_fractions, fluid_volume_fractions, mix_method);
+  }
+
+  return(rock);
 }
 
 //----------------------------------------------------------------------------------//
@@ -151,26 +278,46 @@ ReussRockStorage::~ReussRockStorage()
 }
 
 DistributionsRock *
-ReussRockStorage::GenerateDistributionsRock(const std::string                                          & /*path*/,
-                                            const std::vector<std::string>                             & /*trend_cube_parameters*/,
-                                            const std::vector<std::vector<double> >                    & /*trend_cube_sampling*/,
-                                            const std::map<std::string, DistributionsRockStorage *>    & /*model_rock_storage*/,
-                                            const std::map<std::string, DistributionsSolidStorage *>   & /*model_solid_storage*/,
-                                            const std::map<std::string, DistributionsDryRockStorage *> & /*model_dry_rock_storage*/,
-                                            const std::map<std::string, DistributionsFluidStorage *>   & /*model_fluid_storage*/,
-                                            std::map<std::string, DistributionsRock *>                 & /*rock_distribution*/,
-                                            std::map<std::string, DistributionsSolid *>                & /*solid_distribution*/,
-                                            std::map<std::string, DistributionsDryRock *>              & /*dry_rock_distribution*/,
-                                            std::map<std::string, DistributionsFluid *>                & /*fluid_distribution*/,
-                                            std::map<std::string, const DistributionWithTrend *>       & /*reservoir_variables*/,
+ReussRockStorage::GenerateDistributionsRock(const std::string                                          & path,
+                                            const std::vector<std::string>                             & trend_cube_parameters,
+                                            const std::vector<std::vector<double> >                    & trend_cube_sampling,
+                                            const std::map<std::string, DistributionsRockStorage *>    & model_rock_storage,
+                                            const std::map<std::string, DistributionsSolidStorage *>   & model_solid_storage,
+                                            const std::map<std::string, DistributionsDryRockStorage *> & model_dry_rock_storage,
+                                            const std::map<std::string, DistributionsFluidStorage *>   & model_fluid_storage,
+                                            std::map<std::string, DistributionsRock *>                 & rock_distribution,
+                                            std::map<std::string, DistributionsSolid *>                & solid_distribution,
+                                            std::map<std::string, DistributionsDryRock *>              & dry_rock_distribution,
+                                            std::map<std::string, DistributionsFluid *>                & fluid_distribution,
+                                            std::map<std::string, const DistributionWithTrend *>       & reservoir_variables,
                                             std::string                                                & errTxt) const
 {
-  CheckVolumeConsistency(constituent_volume_fraction_, errTxt);
 
-  DistributionsRock * rock = NULL; //new DistributionsRockReuss();
+  DistributionsRock * rock = NULL;
 
-  if(rock == NULL)
-    errTxt += "The Reuss model has not been implemented yet for rocks\n"; //Marit: Denne feilmeldingen fjernes når modellen er implementert
+  std::string tmpErrTxt    = "";
+
+  rock =   CreateDistributionsRockMix(path,
+                                      trend_cube_parameters,
+                                      trend_cube_sampling,
+                                      constituent_label_,
+                                      constituent_volume_fraction_,
+                                      model_rock_storage,
+                                      model_solid_storage,
+                                      model_dry_rock_storage,
+                                      model_fluid_storage,
+                                      reservoir_variables,
+                                      rock_distribution,
+                                      solid_distribution,
+                                      dry_rock_distribution,
+                                      fluid_distribution,
+                                      DEMTools::Reuss,
+                                      tmpErrTxt);
+
+  if(tmpErrTxt != "") {
+    errTxt += "\nProblems with the Reuss rock physics model for <rock>:\n";
+    errTxt += tmpErrTxt;
+  }
 
   return(rock);
 }
@@ -192,26 +339,47 @@ VoigtRockStorage::~VoigtRockStorage()
 }
 
 DistributionsRock *
-VoigtRockStorage::GenerateDistributionsRock(const std::string                                          & /*path*/,
-                                            const std::vector<std::string>                             & /*trend_cube_parameters*/,
-                                            const std::vector<std::vector<double> >                    & /*trend_cube_sampling*/,
-                                            const std::map<std::string, DistributionsRockStorage *>    & /*model_rock_storage*/,
-                                            const std::map<std::string, DistributionsSolidStorage *>   & /*model_solid_storage*/,
-                                            const std::map<std::string, DistributionsDryRockStorage *> & /*model_dry_rock_storage*/,
-                                            const std::map<std::string, DistributionsFluidStorage *>   & /*model_fluid_storage*/,
-                                            std::map<std::string, DistributionsRock *>                 & /*rock_distribution*/,
-                                            std::map<std::string, DistributionsSolid *>                & /*solid_distribution*/,
-                                            std::map<std::string, DistributionsDryRock *>              & /*dry_rock_distribution*/,
-                                            std::map<std::string, DistributionsFluid *>                & /*fluid_distribution*/,
-                                            std::map<std::string, const DistributionWithTrend *>       & /*reservoir_variables*/,
+VoigtRockStorage::GenerateDistributionsRock(const std::string                                          & path,
+                                            const std::vector<std::string>                             & trend_cube_parameters,
+                                            const std::vector<std::vector<double> >                    & trend_cube_sampling,
+                                            const std::map<std::string, DistributionsRockStorage *>    & model_rock_storage,
+                                            const std::map<std::string, DistributionsSolidStorage *>   & model_solid_storage,
+                                            const std::map<std::string, DistributionsDryRockStorage *> & model_dry_rock_storage,
+                                            const std::map<std::string, DistributionsFluidStorage *>   & model_fluid_storage,
+                                            std::map<std::string, DistributionsRock *>                 & rock_distribution,
+                                            std::map<std::string, DistributionsSolid *>                & solid_distribution,
+                                            std::map<std::string, DistributionsDryRock *>              & dry_rock_distribution,
+                                            std::map<std::string, DistributionsFluid *>                & fluid_distribution,
+                                            std::map<std::string, const DistributionWithTrend *>       & reservoir_variables,
                                             std::string                                                & errTxt) const
 {
-  CheckVolumeConsistency(constituent_volume_fraction_, errTxt);
 
-  DistributionsRock * rock = NULL; //new DistributionsRockVoigt();
+  DistributionsRock * rock = NULL;
 
-  if(rock == NULL)
-    errTxt += "The Voigt model has not been implemented yet for rocks\n"; //Marit: Denne feilmeldingen fjernes når modellen er implementert
+  std::string tmpErrTxt    = "";
+
+  rock =   CreateDistributionsRockMix(path,
+                                      trend_cube_parameters,
+                                      trend_cube_sampling,
+                                      constituent_label_,
+                                      constituent_volume_fraction_,
+                                      model_rock_storage,
+                                      model_solid_storage,
+                                      model_dry_rock_storage,
+                                      model_fluid_storage,
+                                      reservoir_variables,
+                                      rock_distribution,
+                                      solid_distribution,
+                                      dry_rock_distribution,
+                                      fluid_distribution,
+                                      DEMTools::Voigt,
+                                      tmpErrTxt);
+
+
+  if(tmpErrTxt != "") {
+    errTxt += "\nProblems with the Voigt rock physics model for <rock>:\n";
+    errTxt += tmpErrTxt;
+  }
 
   return(rock);
 }
@@ -233,26 +401,46 @@ HillRockStorage::~HillRockStorage()
 }
 
 DistributionsRock *
-HillRockStorage::GenerateDistributionsRock(const std::string                                          & /*path*/,
-                                           const std::vector<std::string>                             & /*trend_cube_parameters*/,
-                                           const std::vector<std::vector<double> >                    & /*trend_cube_sampling*/,
-                                           const std::map<std::string, DistributionsRockStorage *>    & /*model_rock_storage*/,
-                                           const std::map<std::string, DistributionsSolidStorage *>   & /*model_solid_storage*/,
-                                           const std::map<std::string, DistributionsDryRockStorage *> & /*model_dry_rock_storage*/,
-                                           const std::map<std::string, DistributionsFluidStorage *>   & /*model_fluid_storage*/,
-                                           std::map<std::string, DistributionsRock *>                 & /*rock_distribution*/,
-                                           std::map<std::string, DistributionsSolid *>                & /*solid_distribution*/,
-                                           std::map<std::string, DistributionsDryRock *>              & /*dry_rock_distribution*/,
-                                           std::map<std::string, DistributionsFluid *>                & /*fluid_distribution*/,
-                                           std::map<std::string, const DistributionWithTrend *>       & /*reservoir_variables*/,
-                                           std::string                                                & errTxt) const
+HillRockStorage::GenerateDistributionsRock(const std::string                                          & path,
+                                            const std::vector<std::string>                             & trend_cube_parameters,
+                                            const std::vector<std::vector<double> >                    & trend_cube_sampling,
+                                            const std::map<std::string, DistributionsRockStorage *>    & model_rock_storage,
+                                            const std::map<std::string, DistributionsSolidStorage *>   & model_solid_storage,
+                                            const std::map<std::string, DistributionsDryRockStorage *> & model_dry_rock_storage,
+                                            const std::map<std::string, DistributionsFluidStorage *>   & model_fluid_storage,
+                                            std::map<std::string, DistributionsRock *>                 & rock_distribution,
+                                            std::map<std::string, DistributionsSolid *>                & solid_distribution,
+                                            std::map<std::string, DistributionsDryRock *>              & dry_rock_distribution,
+                                            std::map<std::string, DistributionsFluid *>                & fluid_distribution,
+                                            std::map<std::string, const DistributionWithTrend *>       & reservoir_variables,
+                                            std::string                                                & errTxt) const
 {
-  CheckVolumeConsistency(constituent_volume_fraction_, errTxt);
 
-  DistributionsRock * rock = NULL; //new DistributionsRockHill();
+  DistributionsRock * rock = NULL;
 
-  if(rock == NULL)
-    errTxt += "The Hill model has not been implemented yet for rocks\n"; //Marit: Denne feilmeldingen fjernes når modellen er implementert
+  std::string tmpErrTxt    = "";
+
+  rock =   CreateDistributionsRockMix(path,
+                                      trend_cube_parameters,
+                                      trend_cube_sampling,
+                                      constituent_label_,
+                                      constituent_volume_fraction_,
+                                      model_rock_storage,
+                                      model_solid_storage,
+                                      model_dry_rock_storage,
+                                      model_fluid_storage,
+                                      reservoir_variables,
+                                      rock_distribution,
+                                      solid_distribution,
+                                      dry_rock_distribution,
+                                      fluid_distribution,
+                                      DEMTools::Hill,
+                                      tmpErrTxt);
+
+  if(tmpErrTxt != "") {
+    errTxt += "\nProblems with the Hill rock physics model for <rock>:\n";
+    errTxt += tmpErrTxt;
+  }
 
   return(rock);
 }
@@ -315,7 +503,7 @@ DEMRockStorage::GenerateDistributionsRock(const std::string                     
   for(int i=1; i<n_inclusions+1; i++)
     volume_fractions[i] = inclusion_volume_fraction_[i-1];
 
-  CheckVolumeConsistency(volume_fractions, errTxt);
+  //CheckVolumeConsistency(volume_fractions, errTxt);
 
   DistributionsRock * rock = NULL; //new DistributionsRockInclusion();
 
@@ -416,6 +604,11 @@ BoundingRockStorage::GenerateDistributionsRock(const std::string                
                               reservoir_variables,
                               tmpErrTxt);
 
+  if(distr_upper_rock->GetIsOkForBounding() == false) {
+    tmpErrTxt += "The upper bound does not follow the requirements for the bounding model.\n";
+    tmpErrTxt += " The solid and fluid being mix need to be tabulated where the variables don't have distributions nor trends\n";
+  }
+
   DistributionsRock   * distr_lower_rock = NULL;
 
   distr_lower_rock = ReadRock(lower_rock_,
@@ -433,12 +626,17 @@ BoundingRockStorage::GenerateDistributionsRock(const std::string                
                               reservoir_variables,
                               tmpErrTxt);
 
-  std::string upper_type = typeid(distr_upper_rock).name();
-  if(upper_type != "voigt")
+  if(distr_lower_rock->GetIsOkForBounding() == false) {
+    tmpErrTxt += "The lower bound does not follow the requirements for the bounding model.\n";
+    tmpErrTxt += " The solid and fluid being mix need to be tabulated where the variables don't have distributions nor trends\n";
+  }
+
+  std::string upper_type = typeid(distr_upper_rock).name(); //Marit: Denne testn fungerer ikke
+  if(upper_type != "class DistributionsRock *")
     tmpErrTxt += "The upper bound in the Bounding rock physics model needs follow a Voigt model\n";
 
-  std::string lower_type = typeid(distr_lower_rock).name();
-  if(lower_type != "reuss")
+  std::string lower_type = typeid(distr_lower_rock).name(); //Marit: Denne testen fungerer ikke
+  if(lower_type != "class DistributionsRock *")
     tmpErrTxt += "The lower bound in the Bounding rock physics model needs follow a Reuss model\n";
 
   // Check that the porosities in upper_rock and lower_rock are the same, and given in reservoir_variables
@@ -449,20 +647,14 @@ BoundingRockStorage::GenerateDistributionsRock(const std::string                
   DistributionWithTrend * distr_bulk_weight   = bulk_weight_  ->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
   DistributionWithTrend * distr_p_wave_weight = p_wave_weight_->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling, errTxt);
 
-  if(distr_bulk_weight->GetIsDistribution() == false)
-    tmpErrTxt += "The bulk-modulus-weights need to follow a distribution in the Bounding rock physics model\n";
-
-  if(distr_p_wave_weight->GetIsDistribution() == false)
-    tmpErrTxt += "The p-wave-weights need to follow a distribution in the Bounding rock physics model\n";
-
-
-  //DistributionsRock * rock = new DistributionsRockBounding(distr_upper_rock, distr_lower_rock, NULL, distr_bulk_weight, distr_p_wave_weight, correlation_weights_);
+  DistributionsRock * rock = new DistributionsRockBounding(distr_upper_rock, distr_lower_rock, NULL, distr_bulk_weight, distr_p_wave_weight, correlation_weights_);
 
 
   if(tmpErrTxt != "") {
-    errTxt += "Problems with the Bounding rock physics model:\n";
+    errTxt += "\nProblems with the Bounding rock physics model:\n";
     errTxt += tmpErrTxt;
   }
 
-  return(distr_upper_rock);
+  return(rock);
 }
+

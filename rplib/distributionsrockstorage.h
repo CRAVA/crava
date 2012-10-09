@@ -33,8 +33,25 @@ public:
                                                         std::map<std::string, const DistributionWithTrend *>       & reservoir_variables,
                                                         std::string                                                & /*errTxt*/)                    const = 0;
 
-};
+protected:
+  DistributionsRock * CreateDistributionsRockMix(const std::string                                          & path,
+                                                 const std::vector<std::string>                             & trend_cube_parameters,
+                                                 const std::vector<std::vector<double> >                    & trend_cube_sampling,
+                                                 const std::vector<std::string>                             & constituent_label,
+                                                 const std::vector<DistributionWithTrendStorage *>          & constituent_volume_fraction,
+                                                 const std::map<std::string, DistributionsRockStorage *>    & model_rock_storage,
+                                                 const std::map<std::string, DistributionsSolidStorage *>   & model_solid_storage,
+                                                 const std::map<std::string, DistributionsDryRockStorage *> & model_dry_rock_storage,
+                                                 const std::map<std::string, DistributionsFluidStorage *>   & model_fluid_storage,
+                                                 std::map<std::string, const DistributionWithTrend *>       & reservoir_variables,
+                                                 std::map<std::string, DistributionsRock *>                 & rock_distribution,
+                                                 std::map<std::string, DistributionsSolid *>                & solid_distribution,
+                                                 std::map<std::string, DistributionsDryRock *>              & dry_rock_distribution,
+                                                 std::map<std::string, DistributionsFluid *>                & fluid_distribution,
+                                                 DEMTools::MixMethod                                          mix_method,
+                                                 std::string                                                & errTxt) const;
 
+  };
 //----------------------------------------------------------------------------------//
 class TabulatedVelocityRockStorage : public DistributionsRockStorage {
 public:

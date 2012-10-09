@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include "rplib/distributionwithtrendstorage.h"
+#include "rplib/distributionwithtrend.h"
 #include "rplib/distributionsrock.h"
 #include "rplib/distributionssolid.h"
 #include "rplib/distributionsdryrock.h"
@@ -14,8 +14,20 @@
 #include "rplib/distributionsdryrockstorage.h"
 #include "rplib/distributionsfluidstorage.h"
 
-void CheckVolumeConsistency(const std::vector<DistributionWithTrendStorage *> & volume_fraction,
-                            std::string                                       & errTxt);
+void CheckVolumeConsistency(const std::vector<DistributionWithTrend *> & volume_fraction,
+                            std::string                                & errTxt);
+
+void FindMixTypesForRock(std::vector<std::string> constituent_label,
+                         int n_constituents,
+                         const std::map<std::string, DistributionsRockStorage *>    & model_rock_storage,
+                         const std::map<std::string, DistributionsSolidStorage *>   & model_solid_storage,
+                         const std::map<std::string, DistributionsDryRockStorage *> & model_dry_rock_storage,
+                         const std::map<std::string, DistributionsFluidStorage *>   & model_fluid_storage,
+                         bool & mix_rock,
+                         bool & mix_solid,
+                         bool & mix_fluid,
+                         std::vector<int> & constituent_type,
+                         std::string & tmpErrTxt);
 
 DistributionsRock *
 ReadRock(const std::string                                          & target_rock,
@@ -32,4 +44,23 @@ ReadRock(const std::string                                          & target_roc
          std::map<std::string, DistributionsFluid *>                & fluid_distribution,
          std::map<std::string, const DistributionWithTrend *>       & reservoir_variables,
          std::string                                                & errTxt);
+
+DistributionsSolid *
+ReadSolid(const std::string                                          & target_solid,
+          const std::string                                          & path,
+          const std::vector<std::string>                             & trend_cube_parameters,
+          const std::vector<std::vector<double> >                    & trend_cube_sampling,
+          const std::map<std::string, DistributionsSolidStorage *>   & model_solid_storage,
+          std::map<std::string, DistributionsSolid *>                & solid_distribution,
+          std::string                                                & errTxt);
+
+DistributionsFluid *
+ReadFluid(const std::string                                          & target_fluid,
+          const std::string                                          & path,
+          const std::vector<std::string>                             & trend_cube_parameters,
+          const std::vector<std::vector<double> >                    & trend_cube_sampling,
+          const std::map<std::string, DistributionsFluidStorage *>   & model_fluid_storage,
+          std::map<std::string, DistributionsFluid *>                & fluid_distribution,
+          std::string                                                & errTxt);
+
 #endif

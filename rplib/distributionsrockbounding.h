@@ -35,6 +35,8 @@ public:
 
   virtual std::vector<bool>          HasTrend() const;
 
+  virtual bool                       GetIsOkForBounding() const;
+
 private:
   const DistributionsRock     * upper_rock_;
   const DistributionsRock     * lower_rock_;
@@ -45,6 +47,7 @@ private:
   Tabulated                   * tabulated_;
   bool                          has_distribution_;
   std::vector<bool>             has_trend_;
+  bool                          is_ok_for_bounding_;
 };
 
 #endif
