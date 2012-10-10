@@ -6169,10 +6169,6 @@
 					>
 				</File>
 				<File
-					RelativePath=".\rplib\brine.cpp"
-					>
-				</File>
-				<File
 					RelativePath=".\rplib\co2.cpp"
 					>
 				</File>
@@ -6189,15 +6185,15 @@
 					>
 				</File>
 				<File
-					RelativePath=".\rplib\distributionsbrine.cpp"
-					>
-				</File>
-				<File
 					RelativePath=".\rplib\distributionsco2.cpp"
 					>
 				</File>
 				<File
 					RelativePath=".\rplib\distributionsdryrockstorage.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\distributionsfluidbatzlewang.cpp"
 					>
 				</File>
 				<File
@@ -6270,6 +6266,10 @@
 				</File>
 				<File
 					RelativePath=".\rplib\distributionwithtrendstorage.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\fluidbatzlewang.cpp"
 					>
 				</File>
 				<File
@@ -7073,11 +7073,11 @@
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\filesystem\config.hpp"
+						RelativePath=".\nrlib\boost\system\config.hpp"
 						>
 					</File>
 					<File
-						RelativePath=".\nrlib\boost\system\config.hpp"
+						RelativePath=".\nrlib\boost\filesystem\config.hpp"
 						>
 					</File>
 					<File
@@ -7334,10 +7334,6 @@
 					>
 				</File>
 				<File
-					RelativePath=".\rplib\brine.h"
-					>
-				</File>
-				<File
 					RelativePath=".\rplib\co2.h"
 					>
 				</File>
@@ -7354,10 +7350,6 @@
 					>
 				</File>
 				<File
-					RelativePath=".\rplib\distributionsbrine.h"
-					>
-				</File>
-				<File
 					RelativePath=".\rplib\distributionsco2.h"
 					>
 				</File>
@@ -7371,6 +7363,10 @@
 				</File>
 				<File
 					RelativePath=".\rplib\distributionsfluid.h"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\distributionsfluidbatzlewang.h"
 					>
 				</File>
 				<File
@@ -7459,6 +7455,10 @@
 				</File>
 				<File
 					RelativePath=".\rplib\fluid.h"
+					>
+				</File>
+				<File
+					RelativePath=".\rplib\fluidbatzlewang.h"
 					>
 				</File>
 				<File

@@ -1,19 +1,20 @@
-#ifndef RPLIB_DISTRIBUTIONSBRINE_H
-#define RPLIB_DISTRIBUTIONSBRINE_H
+#ifndef RPLIB_DISTRIBUTIONS_FLUID_BATZLE_WANG_H
+#define RPLIB_DISTRIBUTIONS_FLUID_BATZLE_WANG_H
 
 #include "rplib/distributionsfluid.h"
-#include "rplib/brine.h"
+
+class Fluid;
 
 class DistributionWithTrend;
 
-class DistributionsBrine : public DistributionsFluid {
+class DistributionsFluidBatzleWang : public DistributionsFluid {
 public:
 
-  DistributionsBrine(const DistributionWithTrend * distr_temperature,
-                     const DistributionWithTrend * distr_pore_pressure,
-                     const DistributionWithTrend * distr_salinity);
+  DistributionsFluidBatzleWang(const DistributionWithTrend * distr_temperature,
+                               const DistributionWithTrend * distr_pore_pressure,
+                               const DistributionWithTrend * distr_salinity);
 
-  virtual ~DistributionsBrine();
+  virtual ~DistributionsFluidBatzleWang();
 
   virtual Fluid                     * GenerateSample(const std::vector<double> & trend_params) const;
 

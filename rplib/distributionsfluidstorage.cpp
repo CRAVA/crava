@@ -9,11 +9,8 @@
 #include "rplib/distributionsfluidtabulatedmodulus.h"
 #include "rplib/distributionwithtrendstorage.h"
 #include "rplib/distributionsstoragekit.h"
-#include "rplib/distributionsbrine.h"
+#include "rplib/distributionsfluidbatzlewang.h"
 #include "rplib/distributionsco2.h"
-
-class DistributionsBrineEvolution;
-class DistributionsCO2Evolution;
 
 
 DistributionsFluidStorage::DistributionsFluidStorage()
@@ -224,7 +221,7 @@ BatzleWangFluidStorage::GenerateDistributionsFluid(const std::string            
   if (is_co2)
     fluid       = new DistributionsCO2(temperature_distr, pore_pressure_distr);
   else
-    fluid       = new DistributionsBrine(temperature_distr, pore_pressure_distr, salinity_distr);
+    fluid       = new DistributionsFluidBatzleWang(temperature_distr, pore_pressure_distr, salinity_distr);
 
   return(fluid);
 }
